@@ -11,13 +11,23 @@ type PGSearchPathItem struct {
 // ParsePGConfiguredSearchPath parses a PostgreSQL search_path setting while preserving
 // non-system configured entries, including the special $user placeholder.
 func ParsePGConfiguredSearchPath(searchPath string) []PGSearchPathItem {
+	return parsePGConfiguredSearchPathItems(searchPath, false)
+}
+
+// ParsePGConfiguredSearchPathIncludingSystem also keeps an explicitly listed system
+// schema such as pg_catalog, whose position changes what an unqualified name means.
+func ParsePGConfiguredSearchPathIncludingSystem(searchPath string) []PGSearchPathItem {
+	return parsePGConfiguredSearchPathItems(searchPath, true)
+}
+
+func parsePGConfiguredSearchPathItems(searchPath string, includeSystem bool) []PGSearchPathItem {
 	if searchPath == "" {
 		return []PGSearchPathItem{}
 	}
 
 	var result []PGSearchPathItem
 	for _, token := range splitPGSearchPath(searchPath) {
-		item, ok := parsePGSearchPathItem(token)
+		item, ok := parsePGSearchPathItem(token, includeSystem)
 		if !ok {
 			continue
 		}
@@ -62,7 +72,7 @@ func (i PGSearchPathItem) resolve(currentUser string) (string, bool) {
 	return i.Schema, true
 }
 
-func parsePGSearchPathItem(token string) (PGSearchPathItem, bool) {
+func parsePGSearchPathItem(token string, includeSystem bool) (PGSearchPathItem, bool) {
 	token = strings.TrimSpace(token)
 	if token == "" {
 		return PGSearchPathItem{}, false
@@ -80,7 +90,7 @@ func parsePGSearchPathItem(token string) (PGSearchPathItem, bool) {
 	if schema == "$user" {
 		return PGSearchPathItem{CurrentUser: true}, true
 	}
-	if isPGSystemPath(schema) {
+	if isPGSystemPath(schema) && !includeSystem {
 		return PGSearchPathItem{}, false
 	}
 	if schema == "" {

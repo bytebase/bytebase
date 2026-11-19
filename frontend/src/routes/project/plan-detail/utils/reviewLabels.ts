@@ -1,3 +1,4 @@
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import type {
   AutomatedReviewer,
   AutomatedReviewRow,
@@ -6,12 +7,23 @@ import type {
 
 type T = (key: string, options?: Record<string, unknown>) => string;
 
+// The review's name, which every review result carries as its author. Under
+// SQL Review V2 it is one review, whichever part of it found the problem.
+// Beside V1's plan checks it is the AI review alone, and the plan checks'
+// SQL review keeps its own name.
+export const reviewerName = (t: T): string =>
+  sqlReviewV2Enabled()
+    ? t("sql-review.reviewer")
+    : t("sql-review.ai-review.self");
+
 export const reviewerLabel = (t: T, reviewer: AutomatedReviewer): string => {
   switch (reviewer) {
     case "review":
-      return t("sql-review.reviewer");
+      return reviewerName(t);
     case "policy":
-      return t("plan.automated-review.policy");
+      return sqlReviewV2Enabled()
+        ? t("plan.automated-review.policy")
+        : t("task.check-type.sql-review.self");
     case "ghost":
       return t("plan.automated-review.ghost");
     case "checks":

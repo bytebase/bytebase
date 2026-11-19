@@ -3,6 +3,7 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/app/router/handles";
+import { FeatureAttention } from "@/components/FeatureAttention";
 import { RouterLink } from "@/components/RouterLink";
 import {
   type ReviewAIPolicyDraft,
@@ -12,7 +13,11 @@ import {
 import { SwitchRow } from "@/components/sql-review/SwitchRow";
 import { Alert } from "@/components/ui/alert";
 import { FormFieldGroup, FormSection } from "@/components/ui/form";
-import { useServerState, useWorkspaceResourceName } from "@/hooks/useAppState";
+import {
+  usePlanFeature,
+  useServerState,
+  useWorkspaceResourceName,
+} from "@/hooks/useAppState";
 import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
@@ -24,6 +29,7 @@ import {
   Setting_SettingName,
   SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export interface WorkspaceAIReview {
@@ -98,27 +104,34 @@ export function useWorkspaceAIReview(): WorkspaceAIReview {
 
 // The workspace policy reaches the review of every project, together with the
 // project's own.
-export function useWorkspaceReviewAIPolicy(
-  enabled: boolean
-): ReviewAIPolicyDraft {
+export function useWorkspaceReviewAIPolicy(): ReviewAIPolicyDraft {
   const workspace = useWorkspaceResourceName();
   return useReviewAIPolicyDraft({
     parentPath: workspace,
     resourceType: PolicyResourceType.WORKSPACE,
     can: hasWorkspacePermissionV2,
-    enabled,
+    enabled: true,
   });
 }
 
+// `standardRules` says whether the standard rules review beside the AI. Beside
+// V1's review policies they do not, the AI review's findings are comments, and
+// its policy is named apart from the SQL review policies.
 export function SQLReviewAIReviewSection({
   aiReview,
   policy,
+  standardRules = true,
 }: {
   aiReview: WorkspaceAIReview;
   policy: ReviewAIPolicyDraft;
+  standardRules?: boolean;
 }) {
   const { t } = useTranslation();
   const { isSaaSMode } = useServerState();
+  // The AI review is an Enterprise feature: without it the review is off,
+  // whatever the switch says.
+  const licensed = usePlanFeature(PlanFeature.FEATURE_AI_SQL_REVIEW);
+  const reviewOn = licensed && aiReview.aiEnabled && aiReview.enabled;
   // AI is turned on in the general settings, whose AI section shows its
   // controls only to a user who can open that page and read the AI setting.
   const canTurnOnAI =
@@ -132,9 +145,16 @@ export function SQLReviewAIReviewSection({
       layout="single-column"
       padding="none"
       title={t("sql-review.ai-review.self")}
-      description={t("sql-review.ai-review.description")}
+      description={
+        standardRules
+          ? t("sql-review.ai-review.description")
+          : t("sql-review.ai-review.comments-description")
+      }
     >
-      {!aiReview.aiEnabled && (
+      {!licensed && (
+        <FeatureAttention feature={PlanFeature.FEATURE_AI_SQL_REVIEW} compact />
+      )}
+      {licensed && !aiReview.aiEnabled && (
         <Alert
           variant="warning"
           description={
@@ -166,15 +186,21 @@ export function SQLReviewAIReviewSection({
           className="rounded-sm border border-block-border px-4 py-3"
           title={t("sql-review.ai-review.enable.self")}
           description={t("sql-review.ai-review.enable.description")}
-          checked={aiReview.aiEnabled && aiReview.enabled}
+          checked={reviewOn}
           onCheckedChange={aiReview.setEnabled}
           disabled={aiReview.saving}
-          readOnly={!aiReview.canEdit}
+          readOnly={!licensed || !aiReview.canEdit}
         />
-        {aiReview.aiEnabled && aiReview.enabled && (
+        {reviewOn && (
           <ReviewAIPolicyField
             policy={policy}
             placeholder={t("sql-review.ai-review.policy.placeholder")}
+            standardRules={standardRules}
+            title={
+              standardRules
+                ? undefined
+                : t("sql-review.ai-review.policy.ai-review-policy")
+            }
           />
         )}
       </FormFieldGroup>

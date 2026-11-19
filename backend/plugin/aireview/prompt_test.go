@@ -57,7 +57,7 @@ func TestBuildMessages(t *testing.T) {
 
 	require.Equal(t, roleSystem, messages[0].GetRole())
 	system := messages[0].GetContent()
-	require.True(t, strings.HasPrefix(system, strings.TrimSpace(basePrompt)), "the base prompt comes first so the vendor cache holds it")
+	require.True(t, strings.HasPrefix(system, basePromptWithoutRules), "the base prompt comes first so the vendor cache holds it")
 	require.Contains(t, system, "When the two conflict, the project policy wins.")
 	require.Contains(t, system, "## Workspace policy\n\nNo TRUNCATE in production.\n")
 	require.Contains(t, system, "## Project policy\n\n(none)\n")
@@ -108,9 +108,9 @@ func TestBuildMessagesStatesTheStandardRules(t *testing.T) {
 			},
 		},
 		{
-			name:    "every rule is off when the standard review is switched off",
-			request: &Request{StandardReviewRuns: true},
-			want:    []string{"- SYNTAX (off): ", "- REQUIRE_WHERE (off): ", "- DISALLOW_TRUNCATE (off): "},
+			name:    "the rules that are not on are off",
+			request: &Request{StandardRules: on[:1], StandardReviewRuns: true},
+			want:    []string{"- SYNTAX (yours, P0): ", "- REQUIRE_WHERE (off): ", "- DISALLOW_TRUNCATE (off): "},
 		},
 	}
 	for _, tc := range tests {
@@ -123,12 +123,29 @@ func TestBuildMessagesStatesTheStandardRules(t *testing.T) {
 				require.Contains(t, system, want)
 			}
 			section := strings.Index(system, "\n# Standard rules\n")
-			require.Greater(t, section, len(strings.TrimSpace(basePrompt)), "the standard rules follow the base prompt")
+			require.True(t, strings.HasPrefix(system, basePrompt), "the base prompt that names the standard rules comes first")
+			require.Greater(t, section, len(basePrompt), "the standard rules follow the base prompt")
 			require.Less(t, section, strings.Index(system, "\n# Policy\n"), "the policy, which decides over the rules, comes last")
 			require.Equal(t, len(standardRuleSentences), strings.Count(system[section:], "\n- ")-strings.Count(standardRulesPrompt, "\n- "), "every rule the prompt states has one line")
 			require.NotContains(t, system, "ONLINE_MIGRATION", "the review does not see the change's options")
 			require.NotContains(t, messages[1].GetContent(), "# Standard rules")
 		})
+	}
+}
+
+// With no standard rule on, as on a server whose SQL review is the plan
+// checks', the prompt names no standard rule, so none of them is left out of
+// the review and none is the model's to check.
+func TestBuildMessagesNamesNoStandardRuleWhenNoneIsOn(t *testing.T) {
+	t.Parallel()
+
+	for _, request := range []*Request{{}, {StandardReviewRuns: true}} {
+		system := buildMessages(request, "1\tUPDATE orders SET status = 'x';", "NONCE", true)[0].GetContent()
+		require.True(t, strings.HasPrefix(system, basePromptWithoutRules))
+		require.NotContains(t, strings.ToLower(system), "standard rule")
+		require.NotContains(t, system, "REQUIRE_WHERE")
+		require.Contains(t, system, "against what to look for, and each policy sentence.")
+		require.Contains(t, system, "\n\n# Policy\n\n", "the policy keeps its own section")
 	}
 }
 
@@ -151,6 +168,58 @@ func TestStandardRuleSentencesCoverEveryRule(t *testing.T) {
 			require.Contains(t, stated, rule)
 		}
 	}
+}
+
+func TestCitesStandardRule(t *testing.T) {
+	t.Parallel()
+
+	where := storepb.ReviewRuleType_REQUIRE_WHERE
+	require.True(t, CitesStandardRule("REQUIRE_WHERE: An UPDATE or DELETE with no WHERE clause changes every row of its table.", where))
+	require.True(t, CitesStandardRule("Standard rule REQUIRE_WHERE", where), "the name alone")
+	require.True(t, CitesStandardRule("An UPDATE or DELETE with no WHERE clause changes every row of its table.", where), "the sentence alone")
+	require.False(t, CitesStandardRule("Every UPDATE needs a WHERE clause.", where), "a policy sentence on the same condition is not the rule")
+	require.False(t, CitesStandardRule("DISALLOW_TRUNCATE: A TRUNCATE removes every row of its table.", where))
+	require.False(t, CitesStandardRule("REVIEW_RULE_TYPE_UNSPECIFIED", storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED))
+	require.True(t, CitesStandardRule("ONLINE_MIGRATION", storepb.ReviewRuleType_ONLINE_MIGRATION), "a rule the prompt states no sentence for")
+}
+
+func TestCitesPolicyAndPrompt(t *testing.T) {
+	t.Parallel()
+
+	const policy = "Each new table requires an `id` column.\nEvery UPDATE needs a WHERE clause. Treat it as P0."
+	for _, tc := range []struct {
+		description string
+		rule        string
+		policy      bool
+		prompt      bool
+	}{
+		{"a policy sentence", "Every UPDATE needs a WHERE clause. Treat it as P0.", true, false},
+		{"one sentence of the policy, which the prompt gives as an example", "Every UPDATE needs a WHERE clause.", true, true},
+		{"a policy sentence without its code marks", "\"Each new table requires an id column\"", true, false},
+		{"sentences of the prompt", "Breakage: a statement fails on this database for a reason no standard rule names, on or off, or makes later code fail. A view, function, trigger, or foreign key depends on what it changes.", false, true},
+		{"a later sentence of a bullet under the bullet's label", "Breakage: A view, function, trigger, or foreign key depends on what it changes.", false, true},
+		{"a standard rule by name and sentence", "`REQUIRE_WHERE`: An UPDATE or DELETE with no WHERE clause changes every row of its table.", false, true},
+		{"a standard rule by name", "WALK_THROUGH", false, true},
+		{"a reworded prompt sentence under its label", "Breakage: a statement fails on this database or makes later code fail when a view depends on what it changes.", false, true},
+		{"a reworded standard rule under its name", "`REQUIRE_WHERE`: an UPDATE without WHERE touches every row.", false, true},
+		{"a policy sentence under a label of the prompt", "Data loss: never touch the ledger tables.", false, true},
+		{"a sentence of neither", "Never touch the ledger tables.", false, false},
+		{"a prompt sentence with one of neither", "A long lock, a table rewrite, or a full scan on a large table. Never touch the ledger tables.", false, false},
+		{"letters inside a word of the prompt and of the policy", "r", false, false},
+		{"part of a policy word", "Each new tab", false, false},
+		{"nothing", " . ", false, false},
+	} {
+		require.Equal(t, tc.policy, CitesPolicy(tc.rule, "", policy), tc.description)
+		require.Equal(t, tc.prompt, CitesPrompt(tc.rule), tc.description)
+	}
+	require.False(t, CitesPolicy("Every UPDATE needs a WHERE clause."), "no policy")
+	require.True(t, CitesPolicy("Data loss: never touch the ledger tables.", "Data loss: never touch the ledger tables."), "the policy is asked first, so its own sentence under such a label stays")
+
+	var labels []string
+	for _, label := range promptLabels.FindAllStringSubmatch(basePrompt, -1) {
+		labels = append(labels, label[1])
+	}
+	require.Equal(t, []string{"Breakage", "Operational risk", "Data loss"}, labels)
 }
 
 func TestBuildMessagesKeepsTargetFactsOnOneLine(t *testing.T) {

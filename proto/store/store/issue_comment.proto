@@ -7,7 +7,6 @@ import "store/common.proto";
 import "store/issue.proto";
 import "store/plan.proto";
 import "store/review_rule.proto";
-import "store/review_run.proto";
 
 option go_package = "generated-go/store";
 
@@ -57,9 +56,10 @@ message IssueCommentPayload {
   // it did to the earlier results. Posted with no creator, in the
   // transaction that posts the run's results.
   message ReviewRunCompletion {
-    // Set on a completion from before an issue had one review run, and on no
-    // later one.
-    ReviewRun.Type run_type = 1;
+    // Rows written before the field was removed still hold the key.
+    reserved 1;
+    reserved "run_type";
+
     // The run's review_run.attempt; its new results carry the same
     // ReviewMetadata.attempt.
     int64 attempt = 2;
@@ -102,10 +102,12 @@ message IssueCommentPayload {
       P2 = 3;
     }
 
-    // The reviewer that found the result. One run holds the results of every
-    // reviewer.
-    ReviewRun.Type run_type = 1;
-    // The rule judged against. Set if and only if run_type is RULE.
+    // Rows written before the field was removed still hold the key.
+    reserved 1;
+    reserved "run_type";
+
+    // The rule judged against. Set on a result of a standard rule, and on no
+    // result that the AI review posts on its own.
     ReviewRuleType rule_type = 2;
     // A result merged across databases carries the highest priority among
     // them.

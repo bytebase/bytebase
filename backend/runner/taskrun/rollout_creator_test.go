@@ -440,7 +440,6 @@ func TestTryCreateRolloutWaitsForTheReview(t *testing.T) {
 			Payload: &storepb.IssueCommentPayload{
 				Comment: "UPDATE without WHERE",
 				ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-					RunType:  storepb.ReviewRun_RULE,
 					RuleType: storepb.ReviewRuleType_REQUIRE_WHERE,
 					Priority: storepb.IssueCommentPayload_ReviewMetadata_P1,
 				},
@@ -452,7 +451,6 @@ func TestTryCreateRolloutWaitsForTheReview(t *testing.T) {
 			Payload: &storepb.IssueCommentPayload{
 				Comment: "A view reads the dropped column.",
 				ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-					RunType:  storepb.ReviewRun_AI,
 					Priority: storepb.IssueCommentPayload_ReviewMetadata_P0,
 					Title:    "DROP COLUMN breaks a view",
 				},
@@ -575,7 +573,6 @@ func TestReviewRestartsWhenThePlanLosesItsSQL(t *testing.T) {
 		Payload: &storepb.IssueCommentPayload{
 			Comment: "UPDATE without WHERE",
 			ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-				RunType:  storepb.ReviewRun_RULE,
 				RuleType: storepb.ReviewRuleType_REQUIRE_WHERE,
 				Priority: storepb.IssueCommentPayload_ReviewMetadata_P1,
 			},
@@ -631,11 +628,11 @@ func TestReviewDoesNotHoldARolloutWithNothingToRead(t *testing.T) {
 	require.Nil(t, run, "no review starts without SQL to read")
 }
 
-func TestTryCreateRolloutIgnoresThreadsWithoutSQLReviewV2(t *testing.T) {
+func TestTryCreateRolloutWaitsForOpenThreadsWithoutSQLReviewV2(t *testing.T) {
 	ctx := context.Background()
 	s, plan, issue := newAutoRolloutIssue(ctx, t)
 	open := store.ThreadStateOpen
-	_, err := s.CreateIssueComments(ctx, "creator@example.com", &store.IssueCommentMessage{
+	thread, err := s.CreateIssueComments(ctx, "creator@example.com", &store.IssueCommentMessage{
 		ProjectID:   issue.ProjectID,
 		IssueUID:    issue.UID,
 		Payload:     &storepb.IssueCommentPayload{Comment: "Is this safe?"},
@@ -645,10 +642,25 @@ func TestTryCreateRolloutIgnoresThreadsWithoutSQLReviewV2(t *testing.T) {
 
 	b, err := bus.New()
 	require.NoError(t, err)
-	NewRolloutCreator(s, b, nil, false).tryCreateRollout(ctx, bus.PlanRef{ProjectID: plan.ProjectID, PlanID: plan.UID})
-	got, err := s.GetPlan(ctx, &store.FindPlanMessage{ProjectID: plan.ProjectID, UID: &plan.UID})
+	hasRollout := func() bool {
+		t.Helper()
+		NewRolloutCreator(s, b, nil, false).tryCreateRollout(ctx, bus.PlanRef{ProjectID: plan.ProjectID, PlanID: plan.UID})
+		got, err := s.GetPlan(ctx, &store.FindPlanMessage{ProjectID: plan.ProjectID, UID: &plan.UID})
+		require.NoError(t, err)
+		return got.Config.GetHasRollout()
+	}
+	require.False(t, hasRollout(), "an open thread holds the rollout with no review to wait for")
+	run, err := s.GetReviewRun(ctx, issue.ProjectID, issue.UID)
 	require.NoError(t, err)
-	require.True(t, got.Config.GetHasRollout())
+	require.Nil(t, run, "the hold starts no review")
+
+	resolved := store.ThreadStateResolved
+	require.NoError(t, s.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{
+		ProjectID:   issue.ProjectID,
+		ResourceID:  thread.ResourceID,
+		ThreadState: &resolved,
+	}))
+	require.True(t, hasRollout())
 }
 
 const autoRolloutWorkspaceID = "workspace-a"

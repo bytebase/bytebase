@@ -555,10 +555,17 @@ func validatePolicyType(policyType storepb.Policy_Type, policyResourceType store
 }
 
 func (s *OrgPolicyService) checkPolicyFeatureGuard(ctx context.Context, policyType v1pb.PolicyType) error {
-	if policyType == v1pb.PolicyType_DATA_QUERY {
-		if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
-			return connect.NewError(connect.CodePermissionDenied, err)
-		}
+	var feature v1pb.PlanFeature
+	switch policyType {
+	case v1pb.PolicyType_DATA_QUERY:
+		feature = v1pb.PlanFeature_FEATURE_QUERY_POLICY
+	case v1pb.PolicyType_REVIEW_AI:
+		feature = v1pb.PlanFeature_FEATURE_AI_SQL_REVIEW
+	default:
+		return nil
+	}
+	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), feature); err != nil {
+		return connect.NewError(connect.CodePermissionDenied, err)
 	}
 	return nil
 }

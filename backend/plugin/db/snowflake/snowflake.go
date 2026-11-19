@@ -30,7 +30,8 @@ import (
 )
 
 var (
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver        = (*Driver)(nil)
+	_ db.SQLDBProvider = (*Driver)(nil)
 )
 
 func init() {

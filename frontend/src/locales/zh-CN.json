@@ -1633,6 +1633,25 @@
         "title": "检查数据库引擎支持"
       }
     },
+    "connection-string": {
+      "filled": "已从 URL 填充",
+      "filled-missing-password": "已从 URL 填充，请输入数据库密码。",
+      "help": {
+        "mssql": "粘贴 SQL Server 连接 URL 或连接字符串以自动填充主机、端口、凭据、数据库和 TLS。",
+        "mysql": "粘贴 MySQL 连接 URL 以自动填充主机、端口、凭据和 TLS。",
+        "oracle": "粘贴 Oracle 连接 URL 或 Easy Connect 字符串以自动填充主机、端口、凭据、服务名或 SID 以及 TLS。",
+        "postgres": "粘贴 PostgreSQL 连接 URL 或连接字符串以自动填充主机、端口、凭据、数据库和 TLS。"
+      },
+      "invalid": {
+        "engine-mismatch": "这看起来是 {{detected}} 连接字符串。请在上方将数据库引擎切换为 {{detected}}，或输入 {{selected}} 连接字符串。",
+        "mssql": "请输入有效的 sqlserver:// URL 或 Server=…; 连接字符串。",
+        "mysql": "请输入有效的 mysql:// 连接 URL。",
+        "oracle": "请输入包含服务名或 SID 的有效 oracle:// URL 或 Easy Connect 字符串。",
+        "postgres": "请输入有效的 postgresql:// URL 或 key=value 连接字符串。"
+      },
+      "label": "连接 URL",
+      "trigger": "从 URL 导入"
+    },
     "create-failed": "实例创建失败",
     "create-gcp-credentials": "创建凭据的方法见",
     "database-region": "数据库区域",
@@ -2734,10 +2753,6 @@
       "ghost": "在线迁移试运行",
       "n-databases_one": "{{count}} 个数据库",
       "n-databases_other": "{{count}} 个数据库",
-      "n-errors_one": "{{count}} 个错误",
-      "n-errors_other": "{{count}} 个错误",
-      "n-warnings_one": "{{count}} 个警告",
-      "n-warnings_other": "{{count}} 个警告",
       "needs-attention": "{{total}} 项中有 {{count}} 项需要处理",
       "no-findings": "未发现问题",
       "not-run": "尚未运行",
@@ -2975,8 +2990,8 @@
         "confirm-unresolved-threads_one": "{{count}} 个未解决的讨论",
         "confirm-unresolved-threads_other": "{{count}} 个未解决的讨论",
         "creating-rollout-automatically": "正在自动创建发布...",
-        "errors-passed-not-created_one": "{{count}} 项错误，{{passed}} 项通过。未自动创建发布。",
-        "errors-passed-not-created_other": "{{count}} 项错误，{{passed}} 项通过。未自动创建发布。",
+        "errors-passed-not-created_one": "{{count}} 项 P0，{{passed}} 项通过。未自动创建发布。",
+        "errors-passed-not-created_other": "{{count}} 项 P0，{{passed}} 项通过。未自动创建发布。",
         "gate-approval": "工单审批",
         "gate-no-failed-checks": "无失败的检查",
         "gates-blocked": "项目所设置的条件未满足，无法部署。",
@@ -3100,13 +3115,11 @@
       "n-changes": "{{n}} 个变更",
       "n-database-groups": "{{n}} 个数据库组",
       "n-databases": "{{n}} 个数据库",
-      "n-error": "{{n}} 错误",
       "n-of-m-approved": "{{n}}/{{m}} 已审批",
       "n-of-m-tasks": "{{n}}/{{m}} 任务",
       "n-passed": "{{n}} 通过",
       "n-unresolved-threads_one": "{{count}} 个未解决的讨论",
       "n-unresolved-threads_other": "{{count}} 个未解决的讨论",
-      "n-warning": "{{n}} 警告",
       "no-approval-required": "无需审批"
     },
     "targets": {
@@ -4504,7 +4517,7 @@
     "access-type-export": "导出查询结果",
     "access-type-unmask": "查看未脱敏的敏感数据",
     "activate-access": "激活",
-    "activate-confirm": "确定要激活此访问授权吗？",
+    "activate-confirm": "激活后，可通过此访问授权执行已批准的查询。",
     "add-a-new-instance": "添加新实例",
     "admin-mode": {
       "exit": "退出管理员模式",
@@ -4813,7 +4826,7 @@
     },
     "result-view-mode": "结果视图模式",
     "revoke-access": "撤销",
-    "revoke-confirm": "确定要撤销此访问授权吗？",
+    "revoke-confirm": "撤销后，此访问授权将不再允许执行已批准的查询。",
     "rows": {
       "self": "行"
     },

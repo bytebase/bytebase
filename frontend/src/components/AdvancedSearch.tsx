@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
+import { Popover, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types/common";
 
@@ -163,6 +163,7 @@ export function AdvancedSearch({
 }: AdvancedSearchProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const tagsContainerRef = useRef<HTMLDivElement>(null);
   const scopeMenuListRef = useRef<HTMLDivElement>(null);
   const valueMenuListRef = useRef<HTMLDivElement>(null);
@@ -187,12 +188,15 @@ export function AdvancedSearch({
     }
   }, [params.query]);
 
-  // Click outside to close
+  // Click outside to close. The menu is portaled out of the container, so
+  // presses inside it count as inside too.
   useEffect(() => {
     const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
       if (
         containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
+        !containerRef.current.contains(target) &&
+        !menuRef.current?.contains(target)
       ) {
         setMenuView(undefined);
         setCurrentScope(undefined);
@@ -806,13 +810,18 @@ export function AdvancedSearch({
         )}
       </div>
 
-      {/* Dropdown menu */}
-      {showMenu && (
-        <div
-          className={cn(
-            "absolute top-[38px] w-full bg-control-bg shadow-xl origin-top-left rounded-sm overflow-hidden",
-            LAYER_SURFACE_CLASS
-          )}
+      {/* Dropdown menu. Focus stays in the input, which owns keyboard
+          navigation and Escape; the outside-press handler above owns dismissal. */}
+      <Popover open={showMenu}>
+        <PopoverContent
+          ref={menuRef}
+          anchor={containerRef}
+          side="bottom"
+          align="start"
+          sideOffset={2}
+          initialFocus={false}
+          finalFocus={false}
+          className="relative w-(--anchor-width) overflow-hidden rounded-sm border-0 bg-control-bg p-0 shadow-xl"
           onMouseDown={(e) => e.preventDefault()}
         >
           {/* Scope menu */}
@@ -945,8 +954,8 @@ export function AdvancedSearch({
               )}
             </div>
           )}
-        </div>
-      )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

@@ -12,8 +12,10 @@ vi.mock("@/lib/i18n", () => ({
 }));
 
 import {
+  accessGrantExpirationReading,
   accessGrantStatusReading,
   getAccessGrantExpireTimeMs,
+  isAccessGrantExpired,
 } from "./accessGrant";
 
 const HOUR_MS = 3_600_000;
@@ -46,6 +48,26 @@ describe("access grant status over time", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
+
+  test.each([0, 0.5])(
+    "activation eligibility ends at its fixed deadline (+%s ms)",
+    (fractionMs) => {
+      const deadlineMs = baseMs + HOUR_MS + fractionMs;
+      vi.setSystemTime(baseMs + HOUR_MS - 1);
+      expect(isAccessGrantExpired(deadlineMs)).toBe(false);
+      expect(accessGrantExpirationReading.read(deadlineMs)).toBe(false);
+      expect(accessGrantExpirationReading.nextChangeAt(deadlineMs)).toBe(
+        baseMs + HOUR_MS + (fractionMs === 0 ? 0 : 1)
+      );
+      vi.setSystemTime(baseMs + HOUR_MS);
+      expect(isAccessGrantExpired(deadlineMs)).toBe(fractionMs === 0);
+      vi.setSystemTime(baseMs + HOUR_MS + 1);
+      expect(isAccessGrantExpired(deadlineMs)).toBe(true);
+      expect(accessGrantExpirationReading.nextChangeAt(deadlineMs)).toBe(
+        Number.POSITIVE_INFINITY
+      );
+    }
+  );
 
   test.each([0, 0.5])(
     "an activated grant reads expired from the instant after its deadline (+%s ms)",

@@ -81,8 +81,6 @@ type ComboboxBaseProps = {
   clearable?: boolean;
   /** Trigger size — matches the shared control size tier names. Defaults to `md`. */
   size?: ControlSize;
-  /** Render dropdown via portal (use when inside overflow:hidden containers like modals) */
-  portal?: boolean;
 };
 
 type ComboboxProps = ComboboxBaseProps &
@@ -118,7 +116,6 @@ export function Combobox(props: ComboboxProps) {
     disabled,
     clearable = true,
     size = "md",
-    portal,
   } = props;
   const { t } = useTranslation();
   const multiple = props.multiple === true;
@@ -171,10 +168,10 @@ export function Combobox(props: ComboboxProps) {
       .filter((g) => g.options.length > 0);
   }, [options, search, onSearch]);
 
-  // Position dropdown for portal mode — useLayoutEffect prevents a
+  // Position the portaled dropdown — useLayoutEffect prevents a
   // one-frame flash at a stale/empty position before the browser paints.
   useLayoutEffect(() => {
-    if (!open || !portal || !containerRef.current) return;
+    if (!open || !containerRef.current) return;
 
     const updateDropdownPosition = () => {
       if (!containerRef.current) return;
@@ -207,7 +204,7 @@ export function Combobox(props: ComboboxProps) {
       window.removeEventListener("resize", updateDropdownPosition);
       window.removeEventListener("scroll", handleScroll, true);
     };
-  }, [open, portal, filteredGroups]);
+  }, [open, filteredGroups]);
 
   // Click outside (handles both container and portal dropdown)
   useEffect(() => {
@@ -401,12 +398,8 @@ export function Combobox(props: ComboboxProps) {
   const dropdownContent = (
     <div
       ref={dropdownRef}
-      style={portal ? dropdownStyle : undefined}
-      className={cn(
-        overlaySurfaceClassName,
-        LAYER_SURFACE_CLASS,
-        !portal && "absolute mt-1 min-w-full w-max"
-      )}
+      style={dropdownStyle}
+      className={cn(overlaySurfaceClassName, LAYER_SURFACE_CLASS)}
     >
       <SearchInput
         ref={inputRef}
@@ -503,10 +496,7 @@ export function Combobox(props: ComboboxProps) {
       </div>
 
       {/* Dropdown */}
-      {open &&
-        (portal
-          ? createPortal(dropdownContent, getLayerRoot("overlay"))
-          : dropdownContent)}
+      {open && createPortal(dropdownContent, getLayerRoot("overlay"))}
     </div>
   );
 }

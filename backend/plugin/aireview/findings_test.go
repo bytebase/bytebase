@@ -119,7 +119,7 @@ func TestParseReply(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, problems := parseReply(tc.reply, 5)
+			got, problems := parseReply(tc.reply, 5, nil)
 			if tc.wantProblemContains != nil {
 				require.Nil(t, got)
 				require.Len(t, problems, len(tc.wantProblemContains))
@@ -143,7 +143,7 @@ func TestParseReplyReportsTheErrorInsideTheFence(t *testing.T) {
 	t.Parallel()
 
 	// The model must hear about the wrong type of line, not about the fence.
-	_, problems := parseReply("```json\n{\"findings\": [{\"line\": \"3\"}]}\n```", 5)
+	_, problems := parseReply("```json\n{\"findings\": [{\"line\": \"3\"}]}\n```", 5, nil)
 	require.Len(t, problems, 1)
 	require.Contains(t, problems[0], "unmarshal JSON string into Go int")
 	require.Contains(t, problems[0], `"/findings/0/line"`)
@@ -161,7 +161,7 @@ func TestParseReplyCapsTheProblemList(t *testing.T) {
 	}
 	reply += `]}`
 
-	_, problems := parseReply(reply, 5)
+	_, problems := parseReply(reply, 5, nil)
 	require.Len(t, problems, maxReportedProblems+1)
 	require.Equal(t, "and 14 more problems", problems[maxReportedProblems])
 }

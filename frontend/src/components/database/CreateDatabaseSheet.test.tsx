@@ -16,14 +16,12 @@ vi.mock("@/components/InstanceSelect", () => ({
   InstanceSelect: (props: {
     onChange: (name: string, instance: unknown) => void;
     disabled?: boolean;
-    portal?: boolean;
     project?: string;
     value: string;
   }) =>
     createElement("input", {
       "data-testid": "instance-select",
       disabled: props.disabled,
-      "data-portal": String(Boolean(props.portal)),
       "data-project": props.project ?? "",
       value: props.value,
       onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -79,7 +77,6 @@ vi.mock("@/components/ui/combobox", () => ({
     onChange,
     placeholder,
     disabled,
-    portal,
   }: {
     value: string;
     onChange: (v: string) => void;
@@ -88,12 +85,10 @@ vi.mock("@/components/ui/combobox", () => ({
     options?: unknown[];
     onSearch?: (q: string) => void;
     disabled?: boolean;
-    portal?: boolean;
     renderValue?: (opt: unknown) => ReactNode;
   }) =>
     createElement("input", {
       "data-testid": "combobox",
-      "data-portal": String(Boolean(portal)),
       value,
       placeholder,
       disabled,
@@ -412,20 +407,6 @@ async function flush(): Promise<void> {
 }
 
 describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
-  it("portals project and instance dropdowns out of the scrollable sheet body", async () => {
-    await renderSheetWithoutFixedProject();
-
-    const projectSelect = container.querySelector(
-      "input[placeholder='common.project']"
-    ) as HTMLInputElement;
-    const instanceSelect = container.querySelector(
-      "[data-testid='instance-select']"
-    ) as HTMLInputElement;
-
-    expect(projectSelect.dataset.portal).toBe("true");
-    expect(instanceSelect.dataset.portal).toBe("true");
-  });
-
   it("offers the fixed project's instances in the instance select", async () => {
     await renderSheet(false);
 
@@ -578,31 +559,6 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
     await flush();
 
     expect(mocks.pushNotification).not.toHaveBeenCalled();
-  });
-
-  it("portals owner and environment dropdowns from the sheet body", async () => {
-    setupProjectMock(false);
-    const postgres = {
-      name: "instances/postgres",
-      engine: Engine.POSTGRES,
-      environment: "environments/dev",
-      roles: [{ name: "instances/postgres/roles/app", roleName: "app" }],
-    };
-    mocks.instancesByName[postgres.name] = postgres;
-    await renderSheet(false);
-    mocks.getOrFetchInstanceByName.mockResolvedValue(postgres);
-
-    await fillInstance(postgres.name);
-    await flush();
-
-    const ownerInput = container.querySelector(
-      "input[placeholder='create-db.database-owner-name']"
-    ) as HTMLInputElement;
-    const environmentInput = container.querySelector(
-      "input[placeholder='common.environment']"
-    ) as HTMLInputElement;
-    expect(ownerInput.dataset.portal).toBe("true");
-    expect(environmentInput.dataset.portal).toBe("true");
   });
 
   it("auto-fills title from database name when enforceIssueTitle is false", async () => {

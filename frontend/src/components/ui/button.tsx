@@ -14,6 +14,7 @@ const buttonStyles = cva(
       },
       appearance: {
         solid: "",
+        soft: "",
         outline: "border border-control-border bg-transparent",
         secondary: "",
         ghost: "bg-transparent",
@@ -33,6 +34,12 @@ const buttonStyles = cva(
         variant: "default",
         appearance: "solid",
         className: "bg-accent text-accent-text hover:bg-accent-hover",
+      },
+      {
+        variant: "default",
+        appearance: "soft",
+        className:
+          "bg-control-bg text-control hover:bg-control-bg-hover hover:text-control-hover",
       },
       {
         variant: "default",
@@ -58,6 +65,11 @@ const buttonStyles = cva(
         variant: "destructive",
         appearance: "solid",
         className: "bg-error text-accent-text hover:bg-error-hover",
+      },
+      {
+        variant: "destructive",
+        appearance: "soft",
+        className: "bg-error/10 text-error hover:bg-error/15",
       },
       {
         variant: "destructive",

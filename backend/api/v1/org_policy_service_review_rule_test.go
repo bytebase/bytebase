@@ -43,7 +43,6 @@ func TestConvertToIssueCommentReviewResult(t *testing.T) {
 		Payload: &storepb.IssueCommentPayload{
 			Comment: "UPDATE without WHERE",
 			ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-				RunType:    storepb.ReviewRun_RULE,
 				RuleType:   storepb.ReviewRuleType_REQUIRE_WHERE,
 				Priority:   storepb.IssueCommentPayload_ReviewMetadata_P1,
 				Targets:    []string{"instances/i/databases/a", "instances/i/databases/b"},

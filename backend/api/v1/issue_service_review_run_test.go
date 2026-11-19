@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/webhook"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
@@ -277,6 +278,7 @@ func TestRunReviewWithoutSQLReviewV2(t *testing.T) {
 	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
 	service := newIssueServiceForTest(t, stores)
 	service.profile = &config.Profile{}
+	service.licenseService = newEnterpriseLicenseService(ctx, t, stores)
 	runReview := func() (*connect.Response[v1pb.ReviewRun], error) {
 		return service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{
 			Name: reviewRunName("project-a", issue.UID),
@@ -329,13 +331,14 @@ func TestStartReview(t *testing.T) {
 		return attempts
 	}
 	sqlReviewV2 := &config.Profile{SQLReviewV2: true}
+	licenseService := newEnterpriseLicenseService(ctx, t, stores)
 
 	issue := createReviewRunIssue(ctx, t, stores, "project-a")
-	startReview(ctx, &config.Profile{}, stores, b, issue)
-	require.Empty(t, claimedAttempts(), "SQL Review V2 is off")
+	startReview(ctx, &config.Profile{}, stores, licenseService, b, issue)
+	require.Empty(t, claimedAttempts(), "without SQL Review V2 the review is the AI review, which is off")
 	require.Empty(t, b.ReviewRunTickleChan)
 
-	startReview(ctx, sqlReviewV2, stores, b, issue)
+	startReview(ctx, sqlReviewV2, stores, licenseService, b, issue)
 	require.Equal(t, []int64{0}, claimedAttempts())
 	require.Len(t, b.ReviewRunTickleChan, 1)
 
@@ -345,24 +348,20 @@ func TestStartReview(t *testing.T) {
 		Value:     &storepb.AISetting{Enabled: true, SqlReviewEnabled: true},
 	})
 	require.NoError(t, err)
-	startReview(ctx, sqlReviewV2, stores, b, issue)
+	startReview(ctx, sqlReviewV2, stores, licenseService, b, issue)
 	require.Equal(t, []int64{1}, claimedAttempts(), "the review is one run with the AI review on too")
 
 	issue.Status = storepb.Issue_DONE
-	startReview(ctx, sqlReviewV2, stores, b, issue)
+	startReview(ctx, sqlReviewV2, stores, licenseService, b, issue)
 	require.Empty(t, claimedAttempts(), "a closed issue is skipped")
-	startReview(ctx, sqlReviewV2, stores, b, nil)
+	startReview(ctx, sqlReviewV2, stores, licenseService, b, nil)
 	require.Empty(t, claimedAttempts(), "a plan with no issue is skipped")
 }
 
-// TestReviewStartsWhenTheSQLIsSubmittedOrChanged pins the points the review
-// starts on its own: creating the issue and changing the plan's SQL. Rerunning
-// the plan checks leaves it alone.
-func TestReviewStartsWhenTheSQLIsSubmittedOrChanged(t *testing.T) {
-	t.Parallel()
-	ctx := issueServiceTestContext()
-	stores := setupIssueServiceTestStore(ctx, t)
-	projectID := "project-a"
+// createReviewablePlan creates a plan whose one spec runs the first of two
+// sheets on a PostgreSQL database of the project, and returns both sheets.
+func createReviewablePlan(ctx context.Context, t *testing.T, stores *store.Store, projectID string) (*store.PlanMessage, []*store.SheetMessage) {
+	t.Helper()
 	_, err := stores.CreateInstance(ctx, &store.InstanceMessage{
 		ResourceID: "prod",
 		Workspace:  "default",
@@ -385,12 +384,6 @@ func TestReviewStartsWhenTheSQLIsSubmittedOrChanged(t *testing.T) {
 		&store.SheetMessage{Statement: "ALTER TABLE t ADD COLUMN b INT;"},
 	)
 	require.NoError(t, err)
-	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
-		Name:      storepb.SettingName_AI,
-		Workspace: "default",
-		Value:     &storepb.AISetting{Enabled: true, SqlReviewEnabled: true},
-	})
-	require.NoError(t, err)
 	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
 		ProjectID: projectID,
 		Name:      "plan",
@@ -405,6 +398,51 @@ func TestReviewStartsWhenTheSQLIsSubmittedOrChanged(t *testing.T) {
 		}}},
 	}, "creator@example.com")
 	require.NoError(t, err)
+	return plan, sheets
+}
+
+func setAIReviewForTest(ctx context.Context, t *testing.T, stores *store.Store, on bool) {
+	t.Helper()
+	_, err := stores.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_AI,
+		Workspace: "default",
+		Value:     &storepb.AISetting{Enabled: true, SqlReviewEnabled: on},
+	})
+	require.NoError(t, err)
+}
+
+// updatePlanSheetForTest points the plan's one spec at the sheet, which
+// changes the plan's SQL.
+func updatePlanSheetForTest(ctx context.Context, t *testing.T, planService *PlanService, plan *store.PlanMessage, sheet *store.SheetMessage) {
+	t.Helper()
+	_, err := planService.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+		Plan: &v1pb.Plan{
+			Name: common.FormatPlan(plan.ProjectID, plan.UID),
+			Specs: []*v1pb.Plan_Spec{{
+				Id: "spec-1",
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Targets: []string{"instances/prod/databases/app"},
+						Sheet:   common.FormatSheet(plan.ProjectID, sheet.Sha256),
+					},
+				},
+			}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"specs"}},
+	}))
+	require.NoError(t, err)
+}
+
+// TestReviewStartsWhenTheSQLIsSubmittedOrChanged pins the points the review
+// starts on its own: creating the issue and changing the plan's SQL. Rerunning
+// the plan checks leaves it alone.
+func TestReviewStartsWhenTheSQLIsSubmittedOrChanged(t *testing.T) {
+	t.Parallel()
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	projectID := "project-a"
+	plan, sheets := createReviewablePlan(ctx, t, stores, projectID)
+	setAIReviewForTest(ctx, t, stores, true)
 
 	issueService := newIssueServiceForTest(t, stores)
 	iamManager, err := iam.NewManager(stores, nil, false)
@@ -438,22 +476,7 @@ func TestReviewStartsWhenTheSQLIsSubmittedOrChanged(t *testing.T) {
 	require.Equal(t, int64(0), run.Attempt)
 	claimAll()
 
-	_, err = planService.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
-		Plan: &v1pb.Plan{
-			Name: common.FormatPlan(projectID, plan.UID),
-			Specs: []*v1pb.Plan_Spec{{
-				Id: "spec-1",
-				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Targets: []string{"instances/prod/databases/app"},
-						Sheet:   common.FormatSheet(projectID, sheets[1].Sha256),
-					},
-				},
-			}},
-		},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"specs"}},
-	}))
-	require.NoError(t, err)
+	updatePlanSheetForTest(ctx, t, planService, plan, sheets[1])
 	updatedPlan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: projectID, UID: &plan.UID})
 	require.NoError(t, err)
 	run = getRun(issueUID)
@@ -469,6 +492,159 @@ func TestReviewStartsWhenTheSQLIsSubmittedOrChanged(t *testing.T) {
 	run = getRun(issueUID)
 	require.Equal(t, storepb.ReviewRun_RUNNING, run.Status, "rerunning the checks leaves the review alone")
 	require.Equal(t, int64(1), run.Attempt)
+}
+
+// TestAIReviewStartsOnceTheIssueIsSubmitted pins a server without SQL Review
+// V2, where the review is the AI review beside the plan checks' SQL review: it
+// starts when the issue is submitted for review and when the submitted SQL
+// changes, never on a draft, and only while the AI review is on or over an
+// earlier run.
+func TestAIReviewStartsOnADraft(t *testing.T) {
+	t.Parallel()
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	projectID := "project-a"
+	plan, sheets := createReviewablePlan(ctx, t, stores, projectID)
+	setAIReviewForTest(ctx, t, stores, true)
+
+	issueService := newIssueServiceForTest(t, stores)
+	issueService.profile = &config.Profile{}
+	issueService.licenseService = newEnterpriseLicenseService(ctx, t, stores)
+	iamManager, err := iam.NewManager(stores, nil, false)
+	require.NoError(t, err)
+	planService := NewPlanService(stores, issueService.bus, iamManager, webhook.NewManager(stores, nil), issueService.licenseService, &config.Profile{})
+	getRun := func(issueUID int64) *store.ReviewRunMessage {
+		t.Helper()
+		run, err := stores.GetReviewRun(ctx, projectID, issueUID)
+		require.NoError(t, err)
+		return run
+	}
+	claimAll := func() {
+		t.Helper()
+		_, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
+		require.NoError(t, err)
+	}
+	createDraft := func(planUID int64) (string, int64) {
+		t.Helper()
+		created, err := issueService.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+			Parent: "projects/" + projectID,
+			Issue: &v1pb.Issue{
+				Type:  v1pb.Issue_DATABASE_CHANGE,
+				Plan:  common.FormatPlan(projectID, planUID),
+				Draft: true,
+			},
+		}))
+		require.NoError(t, err)
+		_, issueUID, err := common.GetProjectIDIssueUID(created.Msg.Name)
+		require.NoError(t, err)
+		return created.Msg.Name, issueUID
+	}
+
+	issueName, issueUID := createDraft(plan.UID)
+	run := getRun(issueUID)
+	require.NotNil(t, run, "a draft is reviewed once it is created")
+	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status)
+	require.Equal(t, int64(0), run.Attempt)
+	claimAll()
+
+	updatePlanSheetForTest(ctx, t, planService, plan, sheets[1])
+	run = getRun(issueUID)
+	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status, "changing a draft's SQL restarts the review")
+	require.Equal(t, int64(1), run.Attempt)
+	claimAll()
+
+	// A submission waits for the plan checks of the current SQL.
+	currentPlan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: projectID, UID: &plan.UID})
+	require.NoError(t, err)
+	checkRun, err := stores.GetPlanCheckRun(ctx, projectID, plan.UID)
+	require.NoError(t, err)
+	require.NotNil(t, checkRun)
+	require.NoError(t, stores.UpdatePlanCheckRun(ctx, projectID, store.PlanCheckRunStatusDone, &storepb.PlanCheckRunResult{
+		ApprovalInputVersion: currentPlan.Config.GetApprovalInputVersion(),
+	}, checkRun.UID))
+	_, err = issueService.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
+		Issue:      &v1pb.Issue{Name: issueName, Draft: false},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"draft"}},
+	}))
+	require.NoError(t, err)
+	require.Equal(t, int64(1), getRun(issueUID).Attempt, "submitting does not review the same SQL again")
+
+	updatePlanSheetForTest(ctx, t, planService, plan, sheets[0])
+	run = getRun(issueUID)
+	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status, "changing the submitted SQL restarts the review")
+	require.Equal(t, int64(2), run.Attempt)
+	claimAll()
+
+	setAIReviewForTest(ctx, t, stores, false)
+	updatePlanSheetForTest(ctx, t, planService, plan, sheets[1])
+	run = getRun(issueUID)
+	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status, "a run over an earlier one resolves its findings on the old SQL")
+	require.Equal(t, int64(3), run.Attempt)
+
+	otherPlan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: projectID,
+		Name:      "other",
+		Config:    plan.Config,
+	}, "creator@example.com")
+	require.NoError(t, err)
+	_, otherUID := createDraft(otherPlan.UID)
+	require.Nil(t, getRun(otherUID), "no review starts while the AI review is off")
+	_, err = issueService.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: reviewRunName(projectID, otherUID)}))
+	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err), "nor by hand")
+
+	setAIReviewForTest(ctx, t, stores, true)
+	_, err = issueService.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: reviewRunName(projectID, otherUID)}))
+	require.NoError(t, err, "a draft can be reviewed by hand")
+	require.NotNil(t, getRun(otherUID))
+}
+
+func TestAIReviewNeedsTheEnterprisePlan(t *testing.T) {
+	t.Parallel()
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	projectID := "project-a"
+	plan, _ := createReviewablePlan(ctx, t, stores, projectID)
+	setAIReviewForTest(ctx, t, stores, true)
+	issueService := newIssueServiceForTest(t, stores)
+	issueService.profile = &config.Profile{}
+	issueService.licenseService = newEnterpriseLicenseService(ctx, t, stores)
+
+	// createIssue submits a new issue for review and reports whether its
+	// review started.
+	createIssue := func() (int64, bool) {
+		t.Helper()
+		issuePlan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+			ProjectID: projectID,
+			Name:      "plan",
+			Config:    plan.Config,
+		}, "creator@example.com")
+		require.NoError(t, err)
+		created, err := issueService.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+			Parent: "projects/" + projectID,
+			Issue: &v1pb.Issue{
+				Type: v1pb.Issue_DATABASE_CHANGE,
+				Plan: common.FormatPlan(projectID, issuePlan.UID),
+			},
+		}))
+		require.NoError(t, err)
+		_, issueUID, err := common.GetProjectIDIssueUID(created.Msg.Name)
+		require.NoError(t, err)
+		run, err := stores.GetReviewRun(ctx, projectID, issueUID)
+		require.NoError(t, err)
+		return issueUID, run != nil
+	}
+
+	_, started := createIssue()
+	require.True(t, started, "the Enterprise plan reviews an issue while the workspace switch is on")
+
+	freeLicenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+	issueService.licenseService = freeLicenseService
+	issueUID, started := createIssue()
+	require.False(t, started, "a plan without the AI review reviews nothing")
+	_, err = issueService.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: reviewRunName(projectID, issueUID)}))
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+	require.ErrorContains(t, err, "FEATURE_AI_SQL_REVIEW")
 }
 
 func TestGetReviewRunReportsAnOutdatedRun(t *testing.T) {
@@ -528,10 +704,12 @@ func TestResolvingAThreadRequestsARolloutCheck(t *testing.T) {
 		require.NoError(t, err)
 	}
 
+	// Beside V1's plan checks open threads hold the rollout too, so resolving
+	// one asks for the check as under SQL Review V2.
 	withoutV2 := newIssueServiceForTest(t, stores)
 	withoutV2.profile = &config.Profile{}
 	setThreadState(withoutV2, v1pb.IssueComment_RESOLVED)
-	require.Empty(t, withoutV2.bus.RolloutCreationChan)
+	require.Len(t, withoutV2.bus.RolloutCreationChan, 1)
 
 	service := newIssueServiceForTest(t, stores)
 	setThreadState(service, v1pb.IssueComment_OPEN)

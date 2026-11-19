@@ -1,19 +1,11 @@
 package cockroachdb
 
 import (
-	"bytes"
-	"compress/zlib"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/base64"
-	"encoding/pem"
-	"math/big"
-	"strings"
+	"context"
 	"testing"
 	"time"
 
+	omnidriver "github.com/bytebase/omni/driver"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -21,283 +13,200 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
-func TestGetDatabaseInCreateDatabaseStatement(t *testing.T) {
-	tests := []struct {
-		createDatabaseStatement string
-		want                    string
-		wantErr                 bool
+func TestCockroachConfig(t *testing.T) {
+	taskRunUID := int64(7)
+	for _, tc := range []struct {
+		name   string
+		config db.ConnectionConfig
+		want   omnidriver.Config
 	}{
 		{
-			`CREATE DATABASE "hello" ENCODING "UTF8";`,
-			"hello",
-			false,
+			name: "data source database",
+			config: db.ConnectionConfig{
+				DataSource: &storepb.DataSource{Username: "dba", Password: "secret", Host: "crdb.example.com", Port: "26257", Database: "app"},
+				Password:   "resolved",
+			},
+			want: omnidriver.Config{
+				Host:            "crdb.example.com",
+				Port:            "26257",
+				Database:        "app",
+				User:            "dba",
+				Password:        "resolved",
+				ApplicationName: "bytebase",
+			},
 		},
 		{
-			`CREATE DATABASE "hello";`,
-			"hello",
-			false,
+			name: "connection context database wins",
+			config: db.ConnectionConfig{
+				DataSource:        &storepb.DataSource{Username: "dba", Host: "crdb.example.com", Port: "26257", Database: "app"},
+				ConnectionContext: db.ConnectionContext{DatabaseName: "tenant", TaskRunUID: &taskRunUID, ReadOnly: true, EngineVersion: "25.2"},
+			},
+			want: omnidriver.Config{
+				Host:            "crdb.example.com",
+				Port:            "26257",
+				Database:        "tenant",
+				User:            "dba",
+				ApplicationName: "bytebase-taskrun-7",
+				ReadOnly:        true,
+				EngineVersion:   "25.2",
+			},
 		},
-		{
-			`CREATE DATABASE hello;`,
-			"hello",
-			false,
-		},
-		{
-			`CREATE DATABASE hello ENCODING "UTF8";`,
-			"hello",
-			false,
-		},
-		{
-			`CREATE DATABASE;`,
-			"",
-			true,
-		},
-	}
-
-	for _, test := range tests {
-		got, err := getDatabaseInCreateDatabaseStatement(test.createDatabaseStatement)
-		if test.wantErr {
-			require.Error(t, err)
-		} else {
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := cockroachConfig(tc.config)
 			require.NoError(t, err)
-		}
-		require.Equal(t, test.want, got)
+			require.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestCockroachConfigMapsTLSOnlyWhenAsked(t *testing.T) {
+	got, err := cockroachConfig(db.ConnectionConfig{DataSource: &storepb.DataSource{Username: "dba", Host: "crdb.example.com", Port: "26257"}})
+	require.NoError(t, err)
+	require.Nil(t, got.TLS)
+
+	got, err = cockroachConfig(db.ConnectionConfig{DataSource: &storepb.DataSource{
+		Username: "dba",
+		Host:     "crdb-1.example.com,crdb-2.example.com",
+		Port:     "26257",
+		UseSsl:   true,
+	}})
+	require.NoError(t, err)
+	require.NotNil(t, got.TLS)
+	tlsConfig, err := got.TLS("crdb-2.example.com")
+	require.NoError(t, err)
+	require.True(t, tlsConfig.InsecureSkipVerify)
+	require.Nil(t, tlsConfig.Certificates)
+}
+
+func TestCockroachConfigRefusesHalfAClientCertificate(t *testing.T) {
+	for _, dataSource := range []*storepb.DataSource{
+		{Username: "dba", Host: "crdb.example.com", Port: "26257", SslCert: "cert"},
+		{Username: "dba", Host: "crdb.example.com", Port: "26257", SslKey: "key"},
+	} {
+		_, err := cockroachConfig(db.ConnectionConfig{DataSource: dataSource})
+		require.EqualError(t, err, "ssl-cert and ssl-key must be both set or unset")
 	}
 }
 
 func TestGetRoutingIDFromCockroachCloudURL(t *testing.T) {
-	tests := []struct {
-		host     string
-		expected string
+	for _, tc := range []struct {
+		host string
+		want string
+	}{
+		{host: "routing-id.cockroachlabs.cloud", want: "routing-id"},
+		{host: "bytebase-cluster-7749.6xw.aws-ap-southeast-1.cockroachlabs.cloud", want: "bytebase-cluster-7749"},
+		{host: "subdomain.routing-id.cockroachlabs.cloud", want: "subdomain"},
+		{host: "cockroachlabs.cloud", want: ""},
+		{host: "example.com", want: ""},
+	} {
+		require.Equal(t, tc.want, getRoutingIDFromCockroachCloudURL(tc.host), "host: %s", tc.host)
+	}
+}
+
+// GetDB hands back a pool for db.SQLDB callers, and OwnsQuerySession keeps the
+// editor from opening a second connection no statement uses.
+func TestGetDBReturnsPool(t *testing.T) {
+	driver, err := (&Driver{}).Open(context.Background(), storepb.Engine_COCKROACHDB, db.ConnectionConfig{
+		DataSource: &storepb.DataSource{Username: "dba", Host: "127.0.0.1", Port: "26257", Database: "app"},
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = driver.Close(context.Background()) })
+
+	require.NotNil(t, db.SQLDB(driver))
+	require.Same(t, db.SQLDB(driver), db.SQLDB(driver))
+	require.True(t, db.OwnsQuerySession(driver))
+}
+
+func TestExplainFormat(t *testing.T) {
+	require.Equal(t, "JSON", explainFormat(v1pb.QueryOption_JSON))
+	require.Equal(t, "TEXT", explainFormat(v1pb.QueryOption_TEXT))
+	require.Equal(t, "TEXT", explainFormat(v1pb.QueryOption_XML))
+	require.Equal(t, "TEXT", explainFormat(v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED))
+}
+
+func TestExecuteOptions(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		script     string
+		options    db.ExecuteOptions
+		wantScript string
+		wantMode   omnidriver.TransactionMode
 	}{
 		{
-			host:     "routing-id.cockroachlabs.cloud",
-			expected: "routing-id",
+			name:       "no directive is transactional",
+			script:     "SELECT 1;",
+			wantScript: "SELECT 1;",
+			wantMode:   omnidriver.Transactional,
 		},
 		{
-			host:     "bytebase-cluster-7749.6xw.aws-ap-southeast-1.cockroachlabs.cloud",
-			expected: "bytebase-cluster-7749",
+			name:       "directive off is auto commit and is stripped",
+			script:     "-- txn-mode = off\nSELECT 1;",
+			wantScript: "SELECT 1;",
+			wantMode:   omnidriver.AutoCommit,
 		},
 		{
-			host:     "subdomain.routing-id.cockroachlabs.cloud",
-			expected: "subdomain",
+			name:       "an unknown mode stays transactional and keeps the comment",
+			script:     "-- txn-mode = whatever\nSELECT 1;",
+			wantScript: "-- txn-mode = whatever\nSELECT 1;",
+			wantMode:   omnidriver.Transactional,
 		},
 		{
-			host:     "subdomain.routing-id.cockroachlabs.cloud",
-			expected: "subdomain",
+			name:       "create database passes through",
+			script:     "CREATE DATABASE app;",
+			options:    db.ExecuteOptions{CreateDatabase: true},
+			wantScript: "CREATE DATABASE app;",
+			wantMode:   omnidriver.Transactional,
 		},
-		{
-			host:     "cockroachlabs.cloud",
-			expected: "",
-		},
-		{
-			host:     "example.com",
-			expected: "",
-		},
-	}
-
-	for _, test := range tests {
-		got := getRoutingIDFromCockroachCloudURL(test.host)
-		require.Equal(t, test.expected, got, "host: %s", test.host)
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			script, options := executeOptions(tc.script, tc.options)
+			require.Equal(t, tc.wantScript, script)
+			require.Equal(t, tc.wantMode, options.Transaction)
+			require.Equal(t, tc.options.CreateDatabase, options.CreateDatabase)
+			require.NotNil(t, options.Log)
+		})
 	}
 }
 
-func TestGetCockroachConnectionConfigAddsClientCertificateForAllHosts(t *testing.T) {
-	certPEM, keyPEM := generateClientCertificatePEM(t)
-	connConfig, err := getCockroachConnectionConfig(db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Username:             "dba",
-			Host:                 "172.18.22.61,172.18.22.62,172.18.22.63",
-			Port:                 "26257",
-			UseSsl:               true,
-			VerifyTlsCertificate: false,
-			SslCert:              certPEM,
-			SslKey:               keyPEM,
-		},
-		ConnectionContext: db.ConnectionContext{
-			DatabaseName: "defaultdb",
-		},
-	})
-	require.NoError(t, err)
-	require.NotNil(t, connConfig.TLSConfig)
-	require.Len(t, connConfig.TLSConfig.Certificates, 1)
-	require.Len(t, connConfig.Fallbacks, 2)
-	for _, fallback := range connConfig.Fallbacks {
-		require.NotNil(t, fallback.TLSConfig)
-		require.True(t, fallback.TLSConfig.InsecureSkipVerify)
-		require.Len(t, fallback.TLSConfig.Certificates, 1)
-	}
-}
-
-func TestGetCockroachConnectionConfigKeepsEachValueWhole(t *testing.T) {
-	_, err := getCockroachConnectionConfig(db.ConnectionConfig{
-		DataSource: &storepb.DataSource{Username: "dba", Host: "crdb.example.com", Port: "26257 host=other.example.com"},
-	})
-	require.ErrorContains(t, err, "invalid port")
-
-	connConfig, err := getCockroachConnectionConfig(db.ConnectionConfig{
-		DataSource: &storepb.DataSource{Username: "dba", Host: "routing-id.aws-us-east-1.cockroachlabs.cloud", Port: "26257"},
-	})
-	require.NoError(t, err)
-	require.Equal(t, "--cluster=routing-id", connConfig.RuntimeParams["options"])
-}
-
-func TestGetCockroachConnectionConfigVerifiesCustomCAForAllHosts(t *testing.T) {
-	hosts := []string{"crdb-1.example.com", "crdb-2.example.com", "crdb-3.example.com"}
-	caPEM, serverCertDERByHost := generateCAAndServerCertificates(t, hosts)
-	connConfig, err := getCockroachConnectionConfig(db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Username:             "dba",
-			Host:                 "crdb-1.example.com,crdb-2.example.com,crdb-3.example.com",
-			Port:                 "26257",
-			UseSsl:               true,
-			VerifyTlsCertificate: true,
-			SslCa:                caPEM,
-		},
-		ConnectionContext: db.ConnectionContext{
-			DatabaseName: "defaultdb",
-		},
-	})
-	require.NoError(t, err)
-	require.NotNil(t, connConfig.TLSConfig)
-	require.NotNil(t, connConfig.TLSConfig.RootCAs)
-	require.NotNil(t, connConfig.TLSConfig.VerifyPeerCertificate)
-	require.NoError(t, connConfig.TLSConfig.VerifyPeerCertificate([][]byte{serverCertDERByHost[hosts[0]]}, nil))
-	require.Len(t, connConfig.Fallbacks, 2)
-	for i, fallback := range connConfig.Fallbacks {
-		require.NotNil(t, fallback.TLSConfig)
-		require.NotNil(t, fallback.TLSConfig.RootCAs)
-		require.NotNil(t, fallback.TLSConfig.VerifyPeerCertificate)
-		require.NoError(t, fallback.TLSConfig.VerifyPeerCertificate([][]byte{serverCertDERByHost[hosts[i+1]]}, nil))
-	}
-}
-
-func generateClientCertificatePEM(t *testing.T) (string, string) {
-	t.Helper()
-
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
-	require.NoError(t, err)
-
-	template := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			CommonName: "bytebase-test-client",
-		},
-		NotBefore: time.Now().Add(-time.Hour),
-		NotAfter:  time.Now().Add(time.Hour),
-		KeyUsage:  x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{
-			x509.ExtKeyUsageClientAuth,
+// executeLogger bridges the contract's steps onto the task run log in the shape
+// the product reads.
+func TestExecuteLogger(t *testing.T) {
+	var logs []*storepb.TaskRunLog
+	opts := db.ExecuteOptions{
+		LogCommandStatement: true,
+		CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
+			logs = append(logs, entry)
+			return nil
 		},
 	}
-	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
-	require.NoError(t, err)
+	logger := executeLogger{opts: opts}
+	logger.CommandExecute(omnidriver.Command{Text: "SELECT 1;", ByteStart: 14, ByteEnd: 23})
+	logger.CommandResponse(2, []int64{1, 1}, nil)
+	logger.TransactionControl(omnidriver.Begin, nil)
+	logger.TransactionControl(omnidriver.Rollback, context.DeadlineExceeded)
+	logger.Retry(context.DeadlineExceeded, 2, 3)
 
-	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
-	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
-	return string(certPEM), string(keyPEM)
-}
+	require.Len(t, logs, 5)
+	require.Equal(t, "SELECT 1;", logs[0].GetCommandExecute().GetStatement())
+	require.Equal(t, int64(2), logs[1].GetCommandResponse().GetAffectedRows())
+	require.Equal(t, []int64{1, 1}, logs[1].GetCommandResponse().GetAllAffectedRows())
+	require.Empty(t, logs[1].GetCommandResponse().GetError())
+	require.Equal(t, storepb.TaskRunLog_TransactionControl_BEGIN, logs[2].GetTransactionControl().GetType())
+	require.Equal(t, storepb.TaskRunLog_TransactionControl_ROLLBACK, logs[3].GetTransactionControl().GetType())
+	require.Equal(t, context.DeadlineExceeded.Error(), logs[3].GetTransactionControl().GetError())
+	require.Equal(t, int32(2), logs[4].GetRetryInfo().GetRetryCount())
 
-func generateCAAndServerCertificates(t *testing.T, hosts []string) (string, map[string][]byte) {
-	t.Helper()
-
-	caKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	require.NoError(t, err)
-	caTemplate := &x509.Certificate{
-		SerialNumber:          big.NewInt(1),
-		Subject:               pkix.Name{CommonName: "bytebase-test-ca"},
-		NotBefore:             time.Now().Add(-time.Hour),
-		NotAfter:              time.Now().Add(time.Hour),
-		KeyUsage:              x509.KeyUsageCertSign,
-		BasicConstraintsValid: true,
-		IsCA:                  true,
-	}
-	caDER, err := x509.CreateCertificate(rand.Reader, caTemplate, caTemplate, &caKey.PublicKey, caKey)
-	require.NoError(t, err)
-
-	serverCertDERByHost := make(map[string][]byte, len(hosts))
-	for i, host := range hosts {
-		serverKey, err := rsa.GenerateKey(rand.Reader, 2048)
-		require.NoError(t, err)
-		serverTemplate := &x509.Certificate{
-			SerialNumber: big.NewInt(int64(i + 2)),
-			Subject:      pkix.Name{CommonName: host},
-			DNSNames:     []string{host},
-			NotBefore:    time.Now().Add(-time.Hour),
-			NotAfter:     time.Now().Add(time.Hour),
-			KeyUsage:     x509.KeyUsageDigitalSignature,
-			ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		}
-		serverDER, err := x509.CreateCertificate(rand.Reader, serverTemplate, caTemplate, &serverKey.PublicKey, caKey)
-		require.NoError(t, err)
-		serverCertDERByHost[host] = serverDER
-	}
-
-	caPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER})
-	return string(caPEM), serverCertDERByHost
-}
-
-// encodeDiagram is how CockroachDB encodes the plan behind the link it prints:
-// deflated, then base64 in the standard alphabet.
-func encodeDiagram(t *testing.T, plan string) string {
-	t.Helper()
-	var deflated bytes.Buffer
-	writer := zlib.NewWriter(&deflated)
-	_, err := writer.Write([]byte(plan))
-	require.NoError(t, err)
-	require.NoError(t, writer.Close())
-	return base64.RawStdEncoding.EncodeToString(deflated.Bytes())
-}
-
-func diagramResult(lines ...string) *v1pb.QueryResult {
-	result := &v1pb.QueryResult{ColumnNames: []string{"info"}}
-	for _, line := range lines {
-		result.Rows = append(result.Rows, &v1pb.QueryRow{Values: []*v1pb.RowValue{
-			{Kind: &v1pb.RowValue_StringValue{StringValue: line}},
-		}})
-	}
-	return result
-}
-
-// TestPlanDiagram covers the one machine-readable plan CockroachDB publishes.
-// Every EXPLAIN option of its own returns text; this is the payload behind the
-// link EXPLAIN (DISTSQL) prints beside that text.
-func TestPlanDiagram(t *testing.T) {
-	t.Parallel()
-	const plan = `{"processors":[{"core":{"title":"TableReader/0"}}],"edges":[]}`
-
-	t.Run("reads the plan out of the link", func(t *testing.T) {
-		t.Parallel()
-		result, err := planDiagram(diagramResult(
-			"distribution: local",
-			"• scan",
-			"Diagram: https://cockroachdb.github.io/distsqlplan/decode.html#"+encodeDiagram(t, plan),
-		))
-		require.NoError(t, err)
-		require.Equal(t, []string{"plan"}, result.GetColumnNames())
-		require.Len(t, result.GetRows(), 1)
-		require.JSONEq(t, plan, result.GetRows()[0].GetValues()[0].GetStringValue())
-	})
-
-	t.Run("reads a link written in the URL alphabet", func(t *testing.T) {
-		t.Parallel()
-		// The payload rides in a URL fragment, so either spelling of the two
-		// bytes that differ between the alphabets has to decode.
-		encoded := strings.NewReplacer("+", "-", "/", "_").Replace(encodeDiagram(t, plan))
-		result, err := planDiagram(diagramResult("Diagram: https://example.test/#" + encoded))
-		require.NoError(t, err)
-		require.JSONEq(t, plan, result.GetRows()[0].GetValues()[0].GetStringValue())
-	})
-
-	t.Run("refuses a plan with no link in it", func(t *testing.T) {
-		t.Parallel()
-		_, err := planDiagram(diagramResult("distribution: local", "• scan"))
-		require.ErrorContains(t, err, "no diagram")
-	})
-
-	t.Run("refuses a link it cannot read", func(t *testing.T) {
-		t.Parallel()
-		_, err := planDiagram(diagramResult("Diagram: https://example.test/#bm90emxpYg"))
-		require.Error(t, err)
-	})
+	// Without the statement flag the log carries the command's range instead,
+	// which is what the task run view highlights.
+	logs = nil
+	logger = executeLogger{opts: db.ExecuteOptions{CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
+		logs = append(logs, entry)
+		return nil
+	}}}
+	logger.CommandExecute(omnidriver.Command{Text: "SELECT 1;", ByteStart: 14, ByteEnd: 23})
+	require.Len(t, logs, 1)
+	require.Empty(t, logs[0].GetCommandExecute().GetStatement())
+	require.Equal(t, int32(14), logs[0].GetCommandExecute().GetRange().GetStart())
+	require.Equal(t, int32(23), logs[0].GetCommandExecute().GetRange().GetEnd())
 }

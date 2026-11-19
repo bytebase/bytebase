@@ -185,21 +185,26 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 		}
 	}
 
+	// Under SQL Review V2 the review and its threads hold the rollout; beside
+	// V1's plan checks every open thread does, whoever started it.
+	var blocked bool
 	if rc.sqlReviewV2 {
-		blocked, err := rc.reviewBlocksRollout(ctx, project, plan, issue)
-		if err != nil {
-			slog.Error("failed to check the review for rollout creation",
-				slog.String("project", ref.ProjectID),
-				slog.Int("plan_id", int(planID)),
-				log.BBError(err))
-			return
-		}
-		if blocked {
-			slog.Debug("review not finished or threads open, skipping rollout creation",
-				slog.String("project", ref.ProjectID),
-				slog.Int("plan_id", int(planID)))
-			return
-		}
+		blocked, err = rc.reviewBlocksRollout(ctx, project, plan, issue)
+	} else {
+		blocked, err = rc.hasOpenThread(ctx, issue)
+	}
+	if err != nil {
+		slog.Error("failed to check the review for rollout creation",
+			slog.String("project", ref.ProjectID),
+			slog.Int("plan_id", int(planID)),
+			log.BBError(err))
+		return
+	}
+	if blocked {
+		slog.Debug("review not finished or threads open, skipping rollout creation",
+			slog.String("project", ref.ProjectID),
+			slog.Int("plan_id", int(planID)))
+		return
 	}
 
 	// All conditions met - create the rollout
@@ -267,6 +272,11 @@ func (rc *RolloutCreator) reviewBlocksRollout(ctx context.Context, project *stor
 	if run != nil && run.Status != storepb.ReviewRun_DONE {
 		return true, nil
 	}
+	return rc.hasOpenThread(ctx, issue)
+}
+
+// hasOpenThread reports whether a thread on the issue is open.
+func (rc *RolloutCreator) hasOpenThread(ctx context.Context, issue *store.IssueMessage) (bool, error) {
 	open := store.ThreadStateOpen
 	limit := 1
 	threads, err := rc.store.ListIssueComment(ctx, &store.FindIssueCommentMessage{

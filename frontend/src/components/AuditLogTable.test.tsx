@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { timestampFromMs, anyPack } from "@bufbuild/protobuf/wkt";
-import { fireEvent, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -360,7 +360,7 @@ describe("AuditLogTable", () => {
 
     const box = within(search.container);
     fireEvent.click(box.getByRole("textbox"));
-    fireEvent.click(box.getByText("actor"));
+    fireEvent.click(screen.getByText("actor"));
     fireEvent.change(box.getByRole("textbox"), {
       target: { value: `actor:${actor.name}` },
     });
@@ -368,7 +368,7 @@ describe("AuditLogTable", () => {
       await vi.advanceTimersByTimeAsync(DEBOUNCE_SEARCH_DELAY);
     });
 
-    expect(box.getByTitle(actor.name)).toBeInstanceOf(HTMLElement);
+    expect(screen.getByTitle(actor.name)).toBeInstanceOf(HTMLElement);
     expect(mocks.listUsers).toHaveBeenLastCalledWith(
       expect.objectContaining({ filter: { query: actor.email } })
     );

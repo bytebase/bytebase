@@ -257,10 +257,10 @@ var (
 			},
 		},
 	}
-	// MockOracleDatabase is the mock Oracle database for test. Oracle sync
-	// (`backend/plugin/db/oracle/sync.go`) stores SchemaMetadata{Name: ""}
-	// — a single anonymous schema containing every object. The mock mirrors
-	// this so advisors resolve tables the same way in tests and production.
+	// MockOracleDatabase is the mock Oracle database for test. Oracle's sync
+	// (omni's oracle/driver) stores SchemaMetadata{Name: ""} — a single
+	// anonymous schema containing every object. The mock mirrors this so
+	// advisors resolve tables the same way in tests and production.
 	MockOracleDatabase = &metadatapb.DatabaseSchemaMetadata{
 		Name: "TEST_DB",
 		Schemas: []*metadatapb.SchemaMetadata{

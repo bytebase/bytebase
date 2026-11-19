@@ -17,7 +17,6 @@ interface WorkloadIdentitySelectProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  portal?: boolean;
   // The line under each identity's name. Defaults to its email.
   describe?: (workloadIdentity: WorkloadIdentity) => string;
   // Why an identity cannot be picked, or undefined when it can. A disabled
@@ -32,7 +31,6 @@ export function WorkloadIdentitySelect({
   placeholder,
   disabled,
   className,
-  portal,
   describe,
   disabledReason,
 }: WorkloadIdentitySelectProps) {
@@ -110,7 +108,6 @@ export function WorkloadIdentitySelect({
       onLoadMore={loadMore}
       disabled={disabled}
       className={cn("w-full", className)}
-      portal={portal}
     />
   );
 }

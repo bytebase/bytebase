@@ -373,6 +373,8 @@ enum PlanFeature {
   FEATURE_DEDICATED_SUPPORT_WITH_SLA = 71;
   // Upload exports to SharePoint.
   FEATURE_SHAREPOINT_EXPORT = 72;
+  // An AI model reviews the SQL of an issue.
+  FEATURE_AI_SQL_REVIEW = 73;
 }
 
 // PlanConfig represents the configuration for all plans loaded from plan.yaml

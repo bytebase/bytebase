@@ -211,6 +211,8 @@ const (
 	PlanFeature_FEATURE_DEDICATED_SUPPORT_WITH_SLA PlanFeature = 71
 	// Upload exports to SharePoint.
 	PlanFeature_FEATURE_SHAREPOINT_EXPORT PlanFeature = 72
+	// An AI model reviews the SQL of an issue.
+	PlanFeature_FEATURE_AI_SQL_REVIEW PlanFeature = 73
 )
 
 // Enum value maps for PlanFeature.
@@ -289,6 +291,7 @@ var (
 		70: "FEATURE_EMAIL_SUPPORT",
 		71: "FEATURE_DEDICATED_SUPPORT_WITH_SLA",
 		72: "FEATURE_SHAREPOINT_EXPORT",
+		73: "FEATURE_AI_SQL_REVIEW",
 	}
 	PlanFeature_value = map[string]int32{
 		"FEATURE_UNSPECIFIED":                            0,
@@ -364,6 +367,7 @@ var (
 		"FEATURE_EMAIL_SUPPORT":                          70,
 		"FEATURE_DEDICATED_SUPPORT_WITH_SLA":             71,
 		"FEATURE_SHAREPOINT_EXPORT":                      72,
+		"FEATURE_AI_SQL_REVIEW":                          73,
 	}
 )
 
@@ -1821,7 +1825,7 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x04FREE\x10\x01\x12\b\n" +
 	"\x04TEAM\x10\x02\x12\x0e\n" +
 	"\n" +
-	"ENTERPRISE\x10\x03*\x84\x13\n" +
+	"ENTERPRISE\x10\x03*\x9f\x13\n" +
 	"\vPlanFeature\x12\x17\n" +
 	"\x13FEATURE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17FEATURE_DATABASE_CHANGE\x10\x01\x12,\n" +
@@ -1896,7 +1900,8 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x19FEATURE_COMMUNITY_SUPPORT\x10E\x12\x19\n" +
 	"\x15FEATURE_EMAIL_SUPPORT\x10F\x12&\n" +
 	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10G\x12\x1d\n" +
-	"\x19FEATURE_SHAREPOINT_EXPORT\x10H2\x8d\r\n" +
+	"\x19FEATURE_SHAREPOINT_EXPORT\x10H\x12\x19\n" +
+	"\x15FEATURE_AI_SQL_REVIEW\x10I2\x8d\r\n" +
 	"\x13SubscriptionService\x12v\n" +
 	"\x0fGetSubscription\x12#.bytebase.v1.GetSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"#\xdaA\x00\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/subscription\x12\xcc\x01\n" +
 	"\x16ExportVCSProviderUsers\x12*.bytebase.v1.ExportVCSProviderUsersRequest\x1a+.bytebase.v1.ExportVCSProviderUsersResponse\"Y\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02)\x12'/v1/subscription:vcsProviderUsersExport\x12\x9c\x01\n" +

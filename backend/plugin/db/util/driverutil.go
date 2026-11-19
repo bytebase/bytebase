@@ -216,10 +216,6 @@ func TrimStatement(statement string) string {
 	return strings.TrimLeftFunc(strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon), unicode.IsSpace)
 }
 
-func MySQLPrependBytebaseAppComment(statement string) string {
-	return fmt.Sprintf("/*app=bytebase*/ %s", statement)
-}
-
 // ConvertYesNo converts YES/NO to bool.
 func ConvertYesNo(s string) (bool, error) {
 	// ClickHouse uses 0 and 1.
@@ -231,15 +227,6 @@ func ConvertYesNo(s string) (bool, error) {
 	default:
 		return false, errors.Errorf("unrecognized isNullable type %q", s)
 	}
-}
-
-func GetColumnIndex(columns []string, name string) (int, bool) {
-	for i, c := range columns {
-		if c == name {
-			return i, true
-		}
-	}
-	return 0, false
 }
 
 func FormatMaximumSQLResultSizeMessage(limit int64) string {

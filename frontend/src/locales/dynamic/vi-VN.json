@@ -33,6 +33,10 @@
         "desc": "Nhận gợi ý truy vấn và khuyến nghị chỉ mục được hỗ trợ bởi AI.",
         "title": "Gợi ý truy vấn AI"
       },
+      "FEATURE_AI_SQL_REVIEW": {
+        "desc": "Một mô hình AI đánh giá SQL của mỗi issue theo chính sách của bạn và bình luận về các rủi ro tìm thấy.",
+        "title": "Đánh giá SQL bằng AI"
+      },
       "FEATURE_API_INTEGRATION_GUIDANCE": {
         "desc": "Tài liệu và hướng dẫn cho tích hợp API.",
         "title": "Hướng dẫn tích hợp API"

@@ -1633,6 +1633,25 @@
         "title": "Check database engine support"
       }
     },
+    "connection-string": {
+      "filled": "Filled from URL",
+      "filled-missing-password": "Filled from URL. Enter the database password.",
+      "help": {
+        "mssql": "Paste a SQL Server connection URL or string to autofill host, port, credentials, database, and TLS.",
+        "mysql": "Paste a MySQL connection URL to autofill host, port, credentials, and TLS.",
+        "oracle": "Paste an Oracle connection URL or Easy Connect string to autofill host, port, credentials, service name or SID, and TLS.",
+        "postgres": "Paste a PostgreSQL connection URL or string to autofill host, port, credentials, database, and TLS."
+      },
+      "invalid": {
+        "engine-mismatch": "This looks like a {{detected}} connection string. Switch Engine to {{detected}} above, or enter a {{selected}} string.",
+        "mssql": "Enter a valid sqlserver:// URL or Server=…; connection string.",
+        "mysql": "Enter a valid mysql:// connection URL.",
+        "oracle": "Enter a valid oracle:// URL or Easy Connect string with a service name or SID.",
+        "postgres": "Enter a valid postgresql:// URL or key=value connection string."
+      },
+      "label": "Connection URL",
+      "trigger": "Import from URL"
+    },
     "create-failed": "Instance creation failed",
     "create-gcp-credentials": "To create credentials, see",
     "database-region": "Database Region",
@@ -2734,10 +2753,6 @@
       "ghost": "Online migration dry run",
       "n-databases_one": "{{count}} database",
       "n-databases_other": "{{count}} databases",
-      "n-errors_one": "{{count}} error",
-      "n-errors_other": "{{count}} errors",
-      "n-warnings_one": "{{count}} warning",
-      "n-warnings_other": "{{count}} warnings",
       "needs-attention": "Needs attention: {{count}} of {{total}}",
       "no-findings": "No findings",
       "not-run": "Not run yet",
@@ -2975,8 +2990,8 @@
         "confirm-unresolved-threads_one": "{{count}} unresolved thread",
         "confirm-unresolved-threads_other": "{{count}} unresolved threads",
         "creating-rollout-automatically": "creating rollout automatically...",
-        "errors-passed-not-created_one": "{{count}} error, {{passed}} passed. Rollout was not created automatically.",
-        "errors-passed-not-created_other": "{{count}} errors, {{passed}} passed. Rollout was not created automatically.",
+        "errors-passed-not-created_one": "{{count}} P0, {{passed}} passed. Rollout was not created automatically.",
+        "errors-passed-not-created_other": "{{count}} P0, {{passed}} passed. Rollout was not created automatically.",
         "gate-approval": "Issue approval",
         "gate-no-failed-checks": "No failed plan checks",
         "gates-blocked": "Required project gates are not met — deployment is blocked.",
@@ -3100,13 +3115,11 @@
       "n-changes": "{{n}} changes",
       "n-database-groups": "{{n}} database groups",
       "n-databases": "{{n}} databases",
-      "n-error": "Errors: {{n}}",
       "n-of-m-approved": "{{n}} of {{m}} approved",
       "n-of-m-tasks": "{{n}}/{{m}} tasks",
       "n-passed": "{{n}} passed",
       "n-unresolved-threads_one": "{{count}} unresolved thread",
       "n-unresolved-threads_other": "{{count}} unresolved threads",
-      "n-warning": "Warnings: {{n}}",
       "no-approval-required": "No approval required"
     },
     "targets": {
@@ -4504,7 +4517,7 @@
     "access-type-export": "Export the query result",
     "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
-    "activate-confirm": "Are you sure you want to activate this access grant?",
+    "activate-confirm": "This access grant will allow its approved query to run.",
     "add-a-new-instance": "Add new instance",
     "admin-mode": {
       "exit": "Exit admin mode",
@@ -4813,7 +4826,7 @@
     },
     "result-view-mode": "Result view mode",
     "revoke-access": "Revoke",
-    "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "revoke-confirm": "This access grant will no longer authorize its approved query.",
     "rows": {
       "self": "rows"
     },

@@ -52,13 +52,17 @@ type Request struct {
 	ProjectPolicy   string
 	// StandardRules is the standard review's rules that are on for the
 	// project. The prompt leaves the others unchecked unless the policy names
-	// them.
+	// them. With none on, the prompt names no standard rule at all.
 	StandardRules []StandardRule
 	// StandardReviewRuns is true when the standard review runs on the
 	// target's engine. The prompt says so, since a rule it does not evaluate
 	// there is the model's either way.
 	StandardReviewRuns bool
-	Target             Target
+	// StandardFindings are the findings the standard review posted on the
+	// target for this sheet. The model adds facts to them and does not report
+	// them again.
+	StandardFindings []StandardFinding
+	Target           Target
 	// Statement is the sheet text. Finding lines refer to its lines.
 	Statement string
 }
@@ -66,6 +70,8 @@ type Request struct {
 // Result is the outcome of a completed review. No findings means the change passes.
 type Result struct {
 	Findings []Finding
+	// Facts are what the model adds to the request's standard findings.
+	Facts []Fact
 	// Notes name what the model could not check and why, for example a fact
 	// the sync does not hold. They are for the backend's telemetry, not for
 	// the user, and they do not affect the verdict.
@@ -214,9 +220,10 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 			continue
 		}
 
-		parsed, problems := parseReply(content, lineCount)
+		parsed, problems := parseReply(content, lineCount, request.StandardFindings)
 		if len(problems) == 0 {
 			result.Findings = parsed.Findings
+			result.Facts = parsed.Facts
 			result.Notes = parsed.Notes
 			return result, nil
 		}

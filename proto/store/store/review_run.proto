@@ -9,17 +9,6 @@ option go_package = "generated-go/store";
 // ReviewRun is the status slot of the review on one issue. Results live in
 // issue comments; the run carries none.
 message ReviewRun {
-  // The reviewer that found a result. One run holds every reviewer, so the
-  // type is recorded on each result, not on the run.
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    // Review against the standard rules.
-    RULE = 1;
-    // Review against the natural-language AI review policy, performed by a
-    // model.
-    AI = 2;
-  }
-
   // Strictly 1:1 with the status CHECK constraint — no unpersisted values.
   enum Status {
     STATUS_UNSPECIFIED = 0;

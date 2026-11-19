@@ -13,7 +13,6 @@ interface BaseProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  portal?: boolean;
   projectName?: string;
   environmentName?: string;
   allowedEngineTypeList?: Engine[];
@@ -44,7 +43,6 @@ export function DatabaseSelect(props: DatabaseSelectProps) {
     placeholder,
     disabled,
     className,
-    portal,
     projectName,
     environmentName,
     allowedEngineTypeList,
@@ -198,7 +196,6 @@ export function DatabaseSelect(props: DatabaseSelectProps) {
     onLoadMore: loadMore,
     disabled,
     className,
-    portal,
     options,
   };
 

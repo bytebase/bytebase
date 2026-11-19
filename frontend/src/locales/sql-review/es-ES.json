@@ -3,12 +3,14 @@
   "add-rules": "Agregar reglas",
   "ai-review": {
     "ai-off": "La IA está desactivada en el espacio de trabajo, por lo que no se ejecuta ninguna revisión con IA.",
+    "comments-description": "Un modelo de IA revisa el SQL de una incidencia, incluso en borrador, y comenta los riesgos que encuentra. El despliegue queda bloqueado hasta que se resuelvan todos sus comentarios.",
     "description": "Un modelo de IA que revisa el SQL de un issue en busca de riesgos que las reglas estándar no pueden ver.",
     "enable": {
       "description": "Cada revisión envía al proveedor de IA las sentencias tal como están escritas, y puede enviar el esquema de las bases de datos de destino y las estadísticas de sus tablas. No lee ninguna fila de las bases de datos.",
       "self": "Revisar los cambios con IA"
     },
     "policy": {
+      "ai-review-policy": "Política de revisión con IA",
       "cannot-clear": "Tu rol no puede eliminar políticas, por lo que esta política no se puede vaciar.",
       "description": "Esta política define lo que la IA revisa al evaluar cambios en la base de datos. Se aplica a todos los proyectos del espacio de trabajo y cada proyecto puede agregar su propia política.",
       "load-failed": "No se pudo cargar la política de revisión.",
@@ -69,7 +71,8 @@
   },
   "delete": "Eliminar política de revisión SQL",
   "delete-description": "La política de revisión SQL y todas sus reglas se eliminarán permanentemente. Esta acción no se puede deshacer.",
-  "description": "La política de revisión de SQL puede definir diferentes conjuntos de reglas de lint SQL para los entornos respectivos. Ayuda a los equipos a adoptar las mejores prácticas de SQL y a hacer cumplir la consistencia del esquema en diferentes bases de datos. Cada vez que intente realizar un cambio DDL/DML o use el Editor SQL para consultar datos, la consulta se verificará en función de la política de revisión de SQL configurada.",
+  "delete-policy-title": "¿Eliminar {{name}}?",
+  "description": "Reglas que revisan cada cambio de SQL y cada consulta del Editor SQL. Una política se aplica a los entornos o proyectos a los que está asociada.",
   "disable-description": "Deshabilitar esta política dejará de aplicar sus reglas a los recursos adjuntos. Puede volver a habilitarla más tarde.",
   "disabled": "La revisión de SQL está deshabilitada",
   "enable-description": "Habilitar esta política comenzará a aplicar sus reglas a los recursos adjuntos.",
@@ -145,11 +148,10 @@
   "input-then-press-enter": "Ingrese el valor y luego presione enter para agregar",
   "level": {
     "disabled": "Deshabilitado",
-    "error": "Error",
-    "name": "Nivel de Error",
-    "warning": "Advertencia"
+    "name": "Prioridad"
   },
   "no-permission": "Solo el DBA o el administrador tiene permiso para crear o actualizar la política de revisión.",
+  "policies": "Políticas de revisión de SQL",
   "policy-create-failed": "No se pudo crear la política de revisión.",
   "policy-created": "La política de revisión se creó correctamente.",
   "policy-removed": "La política de revisión se eliminó correctamente.",

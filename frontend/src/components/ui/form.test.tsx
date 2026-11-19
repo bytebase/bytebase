@@ -16,6 +16,7 @@ import {
 import {
   denseFormContentStyle,
   denseFormHeaderStyle,
+  denseFormHeadingRowHorizontalStyle,
   denseFormSectionStyle,
   denseFormTitleStyle,
   formControlGroupStyle,
@@ -380,6 +381,29 @@ describe("Form section layouts", () => {
       stylex.props(denseFormContentStyle()).className ?? ""
     );
     expect(slot("-description")?.parentElement).toBe(slot("-header"));
+
+    unmount();
+  });
+
+  test("aligns stacked section actions with the horizontal field control column", () => {
+    const { container, unmount } = renderIntoContainer(
+      <ResponsiveFormLayout layout="horizontal">
+        <FormSection
+          layout="stacked"
+          title="Connection"
+          action={<button type="button">Import from URL</button>}
+        >
+          <div>Content</div>
+        </FormSection>
+      </ResponsiveFormLayout>
+    );
+
+    const row = container.querySelector(
+      '[data-slot="form-section-heading-row"]'
+    );
+    expect(row?.className).toContain(
+      stylex.props(denseFormHeadingRowHorizontalStyle()).className ?? ""
+    );
 
     unmount();
   });

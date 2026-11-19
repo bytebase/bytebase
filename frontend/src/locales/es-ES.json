@@ -1633,6 +1633,25 @@
         "title": "Revisar soporte del motor de base de datos"
       }
     },
+    "connection-string": {
+      "filled": "Rellenado desde URL",
+      "filled-missing-password": "Rellenado desde URL. Introduce la contraseña de la base de datos.",
+      "help": {
+        "mssql": "Pega una URL o cadena de conexión de SQL Server para rellenar el host, el puerto, las credenciales, la base de datos y TLS.",
+        "mysql": "Pega una URL de conexión de MySQL para rellenar el host, el puerto, las credenciales y TLS.",
+        "oracle": "Pega una URL de conexión o cadena Easy Connect de Oracle para rellenar el host, el puerto, las credenciales, el nombre de servicio o SID y TLS.",
+        "postgres": "Pega una URL o cadena de conexión de PostgreSQL para rellenar el host, el puerto, las credenciales, la base de datos y TLS."
+      },
+      "invalid": {
+        "engine-mismatch": "Parece una cadena de conexión de {{detected}}. Cambia el motor a {{detected}} arriba o introduce una cadena de {{selected}}.",
+        "mssql": "Introduce una URL sqlserver:// o cadena de conexión Server=…; válida.",
+        "mysql": "Introduce una URL de conexión mysql:// válida.",
+        "oracle": "Introduce una URL oracle:// o cadena Easy Connect válida con nombre de servicio o SID.",
+        "postgres": "Introduce una URL postgresql:// o cadena de conexión key=value válida."
+      },
+      "label": "URL de conexión",
+      "trigger": "Importar desde URL"
+    },
     "create-failed": "Error al crear la instancia",
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "database-region": "Región de la base de datos",
@@ -2734,10 +2753,6 @@
       "ghost": "Simulación de migración en línea",
       "n-databases_one": "{{count}} base de datos",
       "n-databases_other": "{{count}} bases de datos",
-      "n-errors_one": "{{count}} error",
-      "n-errors_other": "{{count}} errores",
-      "n-warnings_one": "{{count}} advertencia",
-      "n-warnings_other": "{{count}} advertencias",
       "needs-attention": "{{count}} de {{total}} requieren atención",
       "no-findings": "Sin hallazgos",
       "not-run": "Aún no se ha ejecutado",
@@ -2975,8 +2990,8 @@
         "confirm-unresolved-threads_one": "{{count}} hilo sin resolver",
         "confirm-unresolved-threads_other": "{{count}} hilos sin resolver",
         "creating-rollout-automatically": "creando el despliegue automáticamente...",
-        "errors-passed-not-created_one": "{{count}} error, {{passed}} superadas. El despliegue no se creó automáticamente.",
-        "errors-passed-not-created_other": "{{count}} errores, {{passed}} superadas. El despliegue no se creó automáticamente.",
+        "errors-passed-not-created_one": "{{count}} P0, {{passed}} superadas. El despliegue no se creó automáticamente.",
+        "errors-passed-not-created_other": "{{count}} P0, {{passed}} superadas. El despliegue no se creó automáticamente.",
         "gate-approval": "Aprobación del problema",
         "gate-no-failed-checks": "Sin comprobaciones fallidas",
         "gates-blocked": "No se cumplen los controles obligatorios del proyecto: el despliegue está bloqueado.",
@@ -3100,13 +3115,11 @@
       "n-changes": "{{n}} cambios",
       "n-database-groups": "{{n}} grupos de bases de datos",
       "n-databases": "{{n}} bases de datos",
-      "n-error": "{{n}} error",
       "n-of-m-approved": "{{n}} de {{m}} aprobadas",
       "n-of-m-tasks": "{{n}}/{{m}} tareas",
       "n-passed": "{{n}} aprobadas",
       "n-unresolved-threads_one": "{{count}} hilo sin resolver",
       "n-unresolved-threads_other": "{{count}} hilos sin resolver",
-      "n-warning": "{{n}} advertencia",
       "no-approval-required": "No requiere aprobación"
     },
     "targets": {
@@ -4504,7 +4517,7 @@
     "access-type-export": "Exportar el resultado de la consulta",
     "access-type-unmask": "Ver datos sensibles sin enmascarar",
     "activate-access": "Activar",
-    "activate-confirm": "¿Está seguro de que desea activar esta concesión de acceso?",
+    "activate-confirm": "Al activar esta concesión, se permitirá ejecutar la consulta aprobada.",
     "add-a-new-instance": "Agregar nueva instancia",
     "admin-mode": {
       "exit": "Salir del modo administrador",
@@ -4813,7 +4826,7 @@
     },
     "result-view-mode": "Modo de vista de resultados",
     "revoke-access": "Revocar",
-    "revoke-confirm": "¿Está seguro de que desea revocar esta concesión de acceso?",
+    "revoke-confirm": "Esta concesión dejará de autorizar la consulta aprobada.",
     "rows": {
       "self": "filas"
     },

@@ -428,9 +428,6 @@ func (*IssueCommentPayload_ReviewSubmission) Descriptor() ([]byte, []int) {
 // transaction that posts the run's results.
 type IssueCommentPayload_ReviewRunCompletion struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Set on a completion from before an issue had one review run, and on no
-	// later one.
-	RunType ReviewRun_Type `protobuf:"varint,1,opt,name=run_type,json=runType,proto3,enum=bytebase.store.ReviewRun_Type" json:"run_type,omitempty"`
 	// The run's review_run.attempt; its new results carry the same
 	// ReviewMetadata.attempt.
 	Attempt int64 `protobuf:"varint,2,opt,name=attempt,proto3" json:"attempt,omitempty"`
@@ -472,13 +469,6 @@ func (x *IssueCommentPayload_ReviewRunCompletion) ProtoReflect() protoreflect.Me
 // Deprecated: Use IssueCommentPayload_ReviewRunCompletion.ProtoReflect.Descriptor instead.
 func (*IssueCommentPayload_ReviewRunCompletion) Descriptor() ([]byte, []int) {
 	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 3}
-}
-
-func (x *IssueCommentPayload_ReviewRunCompletion) GetRunType() ReviewRun_Type {
-	if x != nil {
-		return x.RunType
-	}
-	return ReviewRun_TYPE_UNSPECIFIED
 }
 
 func (x *IssueCommentPayload_ReviewRunCompletion) GetAttempt() int64 {
@@ -574,10 +564,8 @@ func (x *IssueCommentPayload_PlanUpdate) GetToSpecs() []*PlanConfig_Spec {
 // transaction that posts the new results.
 type IssueCommentPayload_ReviewMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The reviewer that found the result. One run holds the results of every
-	// reviewer.
-	RunType ReviewRun_Type `protobuf:"varint,1,opt,name=run_type,json=runType,proto3,enum=bytebase.store.ReviewRun_Type" json:"run_type,omitempty"`
-	// The rule judged against. Set if and only if run_type is RULE.
+	// The rule judged against. Set on a result of a standard rule, and on no
+	// result that the AI review posts on its own.
 	RuleType ReviewRuleType `protobuf:"varint,2,opt,name=rule_type,json=ruleType,proto3,enum=bytebase.store.ReviewRuleType" json:"rule_type,omitempty"`
 	// A result merged across databases carries the highest priority among
 	// them.
@@ -638,13 +626,6 @@ func (x *IssueCommentPayload_ReviewMetadata) ProtoReflect() protoreflect.Message
 // Deprecated: Use IssueCommentPayload_ReviewMetadata.ProtoReflect.Descriptor instead.
 func (*IssueCommentPayload_ReviewMetadata) Descriptor() ([]byte, []int) {
 	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 5}
-}
-
-func (x *IssueCommentPayload_ReviewMetadata) GetRunType() ReviewRun_Type {
-	if x != nil {
-		return x.RunType
-	}
-	return ReviewRun_TYPE_UNSPECIFIED
 }
 
 func (x *IssueCommentPayload_ReviewMetadata) GetRuleType() ReviewRuleType {
@@ -787,7 +768,7 @@ var File_store_issue_comment_proto protoreflect.FileDescriptor
 
 const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\x1a\x17store/review_rule.proto\x1a\x16store/review_run.proto\"\xfd\x11\n" +
+	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\x1a\x17store/review_rule.proto\"\xa7\x11\n" +
 	"\x13IssueCommentPayload\x12\x18\n" +
 	"\acomment\x18\x01 \x01(\tR\acomment\x12J\n" +
 	"\bapproval\x18\x02 \x01(\v2,.bytebase.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12T\n" +
@@ -820,21 +801,19 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\f_from_statusB\f\n" +
 	"\n" +
 	"_to_status\x1a\x12\n" +
-	"\x10ReviewSubmission\x1a\xd7\x01\n" +
-	"\x13ReviewRunCompletion\x129\n" +
-	"\brun_type\x18\x01 \x01(\x0e2\x1e.bytebase.store.ReviewRun.TypeR\arunType\x12\x18\n" +
+	"\x10ReviewSubmission\x1a\xac\x01\n" +
+	"\x13ReviewRunCompletion\x12\x18\n" +
 	"\aattempt\x18\x02 \x01(\x03R\aattempt\x12!\n" +
 	"\fposted_count\x18\x03 \x01(\x05R\vpostedCount\x12\x1d\n" +
 	"\n" +
 	"kept_count\x18\x04 \x01(\x05R\tkeptCount\x12)\n" +
-	"\x10superseded_count\x18\x05 \x01(\x05R\x0fsupersededCount\x1a\x88\x01\n" +
+	"\x10superseded_count\x18\x05 \x01(\x05R\x0fsupersededCountJ\x04\b\x01\x10\x02R\brun_type\x1a\x88\x01\n" +
 	"\n" +
 	"PlanUpdate\x12>\n" +
 	"\n" +
 	"from_specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\tfromSpecs\x12:\n" +
-	"\bto_specs\x18\x02 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\atoSpecs\x1a\xc1\x03\n" +
-	"\x0eReviewMetadata\x129\n" +
-	"\brun_type\x18\x01 \x01(\x0e2\x1e.bytebase.store.ReviewRun.TypeR\arunType\x12;\n" +
+	"\bto_specs\x18\x02 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\atoSpecs\x1a\x96\x03\n" +
+	"\x0eReviewMetadata\x12;\n" +
 	"\trule_type\x18\x02 \x01(\x0e2\x1e.bytebase.store.ReviewRuleTypeR\bruleType\x12W\n" +
 	"\bpriority\x18\x03 \x01(\x0e2;.bytebase.store.IssueCommentPayload.ReviewMetadata.PriorityR\bpriority\x12\x18\n" +
 	"\atargets\x18\x04 \x03(\tR\atargets\x12\x1e\n" +
@@ -849,7 +828,7 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\x14PRIORITY_UNSPECIFIED\x10\x00\x12\x06\n" +
 	"\x02P0\x10\x01\x12\x06\n" +
 	"\x02P1\x10\x02\x12\x06\n" +
-	"\x02P2\x10\x03\x1a\xcb\x01\n" +
+	"\x02P2\x10\x03J\x04\b\x01\x10\x02R\brun_type\x1a\xcb\x01\n" +
 	"\x0fStatementAnchor\x12\x17\n" +
 	"\aspec_id\x18\x01 \x01(\tR\x06specId\x12!\n" +
 	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12?\n" +
@@ -884,10 +863,9 @@ var file_store_issue_comment_proto_goTypes = []any{
 	(*IssueCommentPayload_StatementAnchor)(nil),      // 8: bytebase.store.IssueCommentPayload.StatementAnchor
 	(IssuePayloadApproval_Approver_Status)(0),        // 9: bytebase.store.IssuePayloadApproval.Approver.Status
 	(Issue_Status)(0),                                // 10: bytebase.store.Issue.Status
-	(ReviewRun_Type)(0),                              // 11: bytebase.store.ReviewRun.Type
-	(*PlanConfig_Spec)(nil),                          // 12: bytebase.store.PlanConfig.Spec
-	(ReviewRuleType)(0),                              // 13: bytebase.store.ReviewRuleType
-	(*Position)(nil),                                 // 14: bytebase.store.Position
+	(*PlanConfig_Spec)(nil),                          // 11: bytebase.store.PlanConfig.Spec
+	(ReviewRuleType)(0),                              // 12: bytebase.store.ReviewRuleType
+	(*Position)(nil),                                 // 13: bytebase.store.Position
 }
 var file_store_issue_comment_proto_depIdxs = []int32{
 	2,  // 0: bytebase.store.IssueCommentPayload.approval:type_name -> bytebase.store.IssueCommentPayload.Approval
@@ -900,19 +878,17 @@ var file_store_issue_comment_proto_depIdxs = []int32{
 	9,  // 7: bytebase.store.IssueCommentPayload.Approval.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
 	10, // 8: bytebase.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.store.Issue.Status
 	10, // 9: bytebase.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.store.Issue.Status
-	11, // 10: bytebase.store.IssueCommentPayload.ReviewRunCompletion.run_type:type_name -> bytebase.store.ReviewRun.Type
-	12, // 11: bytebase.store.IssueCommentPayload.PlanUpdate.from_specs:type_name -> bytebase.store.PlanConfig.Spec
-	12, // 12: bytebase.store.IssueCommentPayload.PlanUpdate.to_specs:type_name -> bytebase.store.PlanConfig.Spec
-	11, // 13: bytebase.store.IssueCommentPayload.ReviewMetadata.run_type:type_name -> bytebase.store.ReviewRun.Type
-	13, // 14: bytebase.store.IssueCommentPayload.ReviewMetadata.rule_type:type_name -> bytebase.store.ReviewRuleType
-	0,  // 15: bytebase.store.IssueCommentPayload.ReviewMetadata.priority:type_name -> bytebase.store.IssueCommentPayload.ReviewMetadata.Priority
-	14, // 16: bytebase.store.IssueCommentPayload.StatementAnchor.start_position:type_name -> bytebase.store.Position
-	14, // 17: bytebase.store.IssueCommentPayload.StatementAnchor.end_position:type_name -> bytebase.store.Position
-	18, // [18:18] is the sub-list for method output_type
-	18, // [18:18] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	11, // 10: bytebase.store.IssueCommentPayload.PlanUpdate.from_specs:type_name -> bytebase.store.PlanConfig.Spec
+	11, // 11: bytebase.store.IssueCommentPayload.PlanUpdate.to_specs:type_name -> bytebase.store.PlanConfig.Spec
+	12, // 12: bytebase.store.IssueCommentPayload.ReviewMetadata.rule_type:type_name -> bytebase.store.ReviewRuleType
+	0,  // 13: bytebase.store.IssueCommentPayload.ReviewMetadata.priority:type_name -> bytebase.store.IssueCommentPayload.ReviewMetadata.Priority
+	13, // 14: bytebase.store.IssueCommentPayload.StatementAnchor.start_position:type_name -> bytebase.store.Position
+	13, // 15: bytebase.store.IssueCommentPayload.StatementAnchor.end_position:type_name -> bytebase.store.Position
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_store_issue_comment_proto_init() }
@@ -925,7 +901,6 @@ func file_store_issue_comment_proto_init() {
 	file_store_issue_proto_init()
 	file_store_plan_proto_init()
 	file_store_review_rule_proto_init()
-	file_store_review_run_proto_init()
 	file_store_issue_comment_proto_msgTypes[0].OneofWrappers = []any{
 		(*IssueCommentPayload_Approval_)(nil),
 		(*IssueCommentPayload_IssueUpdate_)(nil),

@@ -290,7 +290,7 @@ test.describe("Approval + plan-check gate with ERROR-level SQL review", () => {
     // plans, and the footer's bypass confirm sheet hard-blocks deploy on the
     // mandatory gate. (Symmetric to the `with gate on` test in
     // plan-detail-checks.spec.ts.)
-    await expect(planPage.checksSummary()).toContainText("Error", {
+    await expect(planPage.checksSummary()).toContainText("P0", {
       timeout: 15_000,
     });
     await planPage.expandSection("Review");

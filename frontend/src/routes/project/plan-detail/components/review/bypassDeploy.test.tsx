@@ -38,7 +38,7 @@ vi.mock("@/stores/app", () => ({
 
 vi.mock("../../hooks/useSqlReviewV2", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../hooks/useSqlReviewV2")>()),
-  useSqlReviewV2: () => mocks.sqlReview,
+  useReviewHold: () => mocks.sqlReview,
 }));
 
 vi.mock("../../shell/focusPhase", () => ({ focusPlanPhase: vi.fn() }));
@@ -80,6 +80,7 @@ test("asks to acknowledge open threads before deploying past them", async () => 
   mocks.sqlReview = {
     unresolvedThreads: 2,
     threadsLoaded: true,
+    reviewHolds: true,
     review: {
       run: { state: ReviewRun_State.SUCCEEDED },
       stale: false,
@@ -106,6 +107,7 @@ test("counts a failed review as a failed check", () => {
   mocks.sqlReview = {
     unresolvedThreads: 0,
     threadsLoaded: true,
+    reviewHolds: true,
     review: { run: { state: ReviewRun_State.FAILED } },
   };
   const { result } = renderHook(() => useBypassDeploy(issue, plan));
@@ -125,7 +127,12 @@ test.each([
     { run: { state: ReviewRun_State.SUCCEEDED }, stale: true, loadFailed: false },
   ],
 ])("asks to confirm deploying past a review it cannot read %s", (_, review) => {
-  mocks.sqlReview = { unresolvedThreads: 0, threadsLoaded: true, review };
+  mocks.sqlReview = {
+    unresolvedThreads: 0,
+    threadsLoaded: true,
+    reviewHolds: true,
+    review,
+  };
   const { result } = renderHook(() => useBypassDeploy(issue, plan));
   expect(result.current.state.kind).toBe("all-gates-passed");
   expect(result.current.warnings).toEqual([
@@ -141,6 +148,7 @@ test("asks to confirm deploying past a review that never ran on the SQL", () => 
   mocks.sqlReview = {
     unresolvedThreads: 0,
     threadsLoaded: true,
+    reviewHolds: true,
     review: { run: null, stale: false, loadFailed: false },
   };
   const { result } = renderHook(() => useBypassDeploy(issue, plan));
@@ -157,6 +165,7 @@ test("deploys at once where the plan has no SQL to review", async () => {
   mocks.sqlReview = {
     unresolvedThreads: 0,
     threadsLoaded: true,
+    reviewHolds: true,
     review: { run: null, stale: false, loadFailed: false },
   };
   const releasePlan = planOf({
@@ -176,6 +185,7 @@ test("asks to confirm deploying before the threads have loaded", () => {
   mocks.sqlReview = {
     unresolvedThreads: 0,
     threadsLoaded: false,
+    reviewHolds: true,
     review: {
       run: { state: ReviewRun_State.SUCCEEDED },
       stale: false,
@@ -197,6 +207,7 @@ test("deploys at once after the review has succeeded", async () => {
   mocks.sqlReview = {
     unresolvedThreads: 0,
     threadsLoaded: true,
+    reviewHolds: true,
     review: {
       run: { state: ReviewRun_State.SUCCEEDED },
       stale: false,
@@ -212,7 +223,16 @@ test("deploys at once after the review has succeeded", async () => {
   expect(mocks.createRollout).toHaveBeenCalledTimes(1);
 });
 
-test("deploys at once where SQL Review V2 is off", async () => {
+test("beside V1's plan checks only open threads hold, not the review", () => {
+  mocks.sqlReview = { unresolvedThreads: 1, threadsLoaded: true, reviewHolds: false };
+  const { result } = renderHook(() => useBypassDeploy(issue, plan));
+  expect(result.current.state.kind).toBe("approved-threads-open");
+  expect(result.current.warnings).toEqual([
+    "plan.review.footer.confirm-unresolved-threads:1",
+  ]);
+});
+
+test("deploys at once where nothing holds the rollout", async () => {
   mocks.sqlReview = undefined;
   const { result } = renderHook(() => useBypassDeploy(issue, plan));
   expect(result.current.state.kind).toBe("all-gates-passed");

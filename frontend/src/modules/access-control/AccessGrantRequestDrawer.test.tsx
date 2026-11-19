@@ -220,14 +220,12 @@ vi.mock("@/components/ui/combobox", () => ({
     options,
     multiple,
     onSearch,
-    portal,
   }: {
     value: string | string[];
     onChange: (val: string | string[]) => void;
     options: { value: string; label: string }[];
     multiple?: boolean;
     onSearch?: (q: string) => void;
-    portal?: boolean;
   }) => {
     // Only the multi database picker sets this; the single Expiration combobox
     // (multiple falsy) is skipped. Pre-fix the local MultiDatabaseSelect passes
@@ -236,7 +234,6 @@ vi.mock("@/components/ui/combobox", () => ({
     return (
       <select
         data-testid={multiple ? "multi-combobox" : "combobox"}
-        data-portal={String(portal === true)}
         multiple={multiple}
         value={multiple ? (value as string[]) : (value as string)}
         onChange={(e) => {
@@ -415,27 +412,6 @@ describe("AccessGrantRequestDrawer", () => {
 
     unmount();
   });
-
-  test.each(["multi-combobox", "combobox"])(
-    "%s opens outside the scrolling sheet body",
-    async (testId) => {
-      const { container, render, unmount } = renderIntoContainer(
-        <AccessGrantRequestDrawer
-          project="projects/explicit"
-          onClose={vi.fn()}
-        />
-      );
-      await render();
-
-      expect(
-        container
-          .querySelector(`[data-testid='${testId}']`)
-          ?.getAttribute("data-portal")
-      ).toBe("true");
-
-      unmount();
-    }
-  );
 
   test("does not infer targets from the SQL Editor tab", async () => {
     const { container, render, unmount } = renderIntoContainer(

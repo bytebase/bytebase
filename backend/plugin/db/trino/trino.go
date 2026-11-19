@@ -30,6 +30,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
+var _ db.SessionQuerier = (*Driver)(nil)
+
 func init() {
 	db.Register(storepb.Engine_TRINO, newDriver)
 }
@@ -99,6 +101,10 @@ func (d *Driver) Ping(ctx context.Context) error {
 func (*Driver) GetDB() *sql.DB {
 	return nil
 }
+
+// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
+// rather than on the *sql.Conn a caller passes, which is unused.
+func (*Driver) OwnsQuerySession() {}
 
 // Execute runs the script's statements, reporting each step to the task run log.
 // Trino commits DDL on its own and supports transactions for only some

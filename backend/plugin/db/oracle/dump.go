@@ -5,17 +5,10 @@ import (
 	"io"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
-// Dump dumps the database.
-func (*Driver) Dump(_ context.Context, out io.Writer, metadata *metadatapb.DatabaseSchemaMetadata) error {
-	text, err := schema.GetDatabaseDefinition(storepb.Engine_ORACLE, schema.GetDefinitionContext{}, metadata)
-	if err != nil {
-		return err
-	}
-	_, _ = out.Write([]byte(text))
-	return nil
+// Dump renders the synced schema as DDL. The renderer reads no server, so an
+// edit or an omission in the metadata reaches the dump.
+func (d *Driver) Dump(ctx context.Context, out io.Writer, metadata *metadatapb.DatabaseSchemaMetadata) error {
+	return d.impl.Dump(ctx, out, metadata)
 }

@@ -1,0 +1,735 @@
+{
+  "queries": [
+    {
+      "name": "select",
+      "script": "SELECT id, name FROM parity.parity_t ORDER BY id",
+      "schema": "",
+      "datashare": false,
+      "limit": 0,
+      "explain": false,
+      "max_bytes": 1048576,
+      "masking": false,
+      "results": [
+        {
+          "statement": "SELECT id, name FROM parity.parity_t ORDER BY id",
+          "columns": [
+            "id",
+            "name"
+          ],
+          "column_types": [
+            "INT4",
+            "TEXT"
+          ],
+          "rows": [
+            [
+              "int64_value:1",
+              "string_value:\"alpha\""
+            ],
+            [
+              "int64_value:2",
+              "string_value:\"beta\""
+            ],
+            [
+              "int64_value:3",
+              "string_value:\"gamma\""
+            ]
+          ],
+          "error": "",
+          "rows_count": 3,
+          "plan": ""
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "types",
+      "script": "SELECT 42 AS c_int, 'hi'::text AS c_text, true AS c_bool, 1.25::float8 AS c_float, DATE '2026-01-02' AS c_date, TIMESTAMP '2026-01-02 03:04:05.123' AS c_ts, TIMESTAMPTZ '2026-01-02 03:04:05.123+02' AS c_tstz, NULL::varchar AS c_null, B'1010' AS c_bit, TIME '01:02:03.5' AS c_time",
+      "schema": "",
+      "datashare": false,
+      "limit": 0,
+      "explain": false,
+      "max_bytes": 1048576,
+      "masking": false,
+      "results": [
+        {
+          "statement": "SELECT 42 AS c_int, 'hi'::text AS c_text, true AS c_bool, 1.25::float8 AS c_float, DATE '2026-01-02' AS c_date, TIMESTAMP '2026-01-02 03:04:05.123' AS c_ts, TIMESTAMPTZ '2026-01-02 03:04:05.123+02' AS c_tstz, NULL::varchar AS c_null, B'1010' AS c_bit, TIME '01:02:03.5' AS c_time",
+          "columns": [
+            "c_int",
+            "c_text",
+            "c_bool",
+            "c_float",
+            "c_date",
+            "c_ts",
+            "c_tstz",
+            "c_null",
+            "c_bit",
+            "c_time"
+          ],
+          "column_types": [
+            "INT4",
+            "TEXT",
+            "BOOL",
+            "FLOAT8",
+            "DATE",
+            "TIMESTAMP",
+            "TIMESTAMPTZ",
+            "VARCHAR",
+            "BIT",
+            "TIME"
+          ],
+          "rows": [
+            [
+              "int64_value:42",
+              "string_value:\"hi\"",
+              "bool_value:true",
+              "double_value:1.25",
+              "string_value:\"2026-01-02\"",
+              "timestamp_value:{google_timestamp:{seconds:1767323045 nanos:123000000} accuracy:6}",
+              "timestamp_tz_value:{google_timestamp:{seconds:1767315845 nanos:123000000} zone:\"UTC\" accuracy:6}",
+              "null_value:NULL_VALUE",
+              "bytes_value:\"1010\"",
+              "string_value:\"01:02:03.500000\""
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "plan": ""
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "multi statement",
+      "script": "SELECT 1 AS a;\nSELECT 2 AS b",
+      "schema": "",
+      "datashare": false,
+      "limit": 0,
+      "explain": false,
+      "max_bytes": 1048576,
+      "masking": false,
+      "results": [
+        {
+          "statement": "SELECT 1 AS a;",
+          "columns": [
+            "a"
+          ],
+          "column_types": [
+            "INT4"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "plan": ""
+        },
+        {
+          "statement": "\nSELECT 2 AS b",
+          "columns": [
+            "b"
+          ],
+          "column_types": [
+            "INT4"
+          ],
+          "rows": [
+            [
+              "int64_value:2"
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "plan": ""
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "schema",
+      "script": "SELECT name FROM parity_t ORDER BY id",
+      "schema": "parity",
+      "datashare": false,
+      "limit": 0,
+      "explain": false,
+      "max_bytes": 1048576,
+      "masking": false,
+      "results": [
+        {
+          "statement": "SELECT name FROM parity_t ORDER BY id",
+          "columns": [
+            "name"
+          ],
+          "column_types": [
+            "TEXT"
+          ],
+          "rows": [
+            [
+              "string_value:\"alpha\""
+            ],
+            [
+              "string_value:\"beta\""
+            ],
+            [
+              "string_value:\"gamma\""
+            ]
+          ],
+          "error": "",
+          "rows_count": 3,
+          "plan": ""
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "limit",
+      "script": "SELECT id FROM parity.parity_t ORDER BY id",
+      "schema": "",
+      "datashare": false,
+      "limit": 2,
+      "explain": false,
+      "max_bytes": 1048576,
+      "masking": false,
+      "results": [
+        {
+          "statement": "SELECT id FROM parity.parity_t ORDER BY id LIMIT 2",
+          "columns": [
+            "id"
+          ],
+          "column_types": [
+            "INT4"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ],
+            [
+              "int64_value:2"
+            ]
+          ],
+          "error": "",
+          "rows_count": 2,
+          "plan": ""
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "limit kept",
+      "script": "SELECT id FROM parity.parity_t ORDER BY id LIMIT 1",
+      "schema": "",
+      "datashare": false,
+      "limit": 2,
+      "explain": false,
+      "max_bytes": 1048576,
+      "masking": false,
+      "results": [
+        {
+          "statement": "SELECT id FROM parity.parity_t ORDER BY id LIMIT 1",
+          "columns": [
+            "id"
+          ],
+          "column_types": [
+            "INT4"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "plan": ""
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "explain",
+      "script": "SELECT id FROM parity.parity_t WHERE id \u003e 1",
+      "schema": "",
+      "datashare": false,
+      "limit": 0,
+      "explain": true,
+      "max_bytes": 1048576,
+      "masking": false,
+      "results": [
+        {
+          "statement": "EXPLAIN SELECT id FROM parity.parity_t WHERE id \u003e 1",
+          "columns": [
+            "QUERY PLAN"
+          ],
+          "column_types": [
+            "TEXT"
+          ],
+          "rows": [
+            [
+              "string_value:\"Seq Scan on parity_t (cost=0.00..25.88 rows=423 width=4)\""
+            ],
+            [
+              "string_value:\" Filter: (id \u003e 1)\""
+            ]
+          ],
+          "error": "",
+          "rows_count": 2,
+          "plan": ""
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "ddl through the query path",
+      "script": "CREATE TABLE parity.parity_ddl (id int)",
+      "schema": "",
+      "datashare": false,
+      "limit": 0,
+      "explain": false,
+      "max_bytes": 1048576,
+      "masking": false,
+      "results": [
+        {
+          "statement": "CREATE TABLE parity.parity_ddl (id int)",
+          "columns": [
+            "Affected Rows"
+          ],
+          "column_types": [
+            "INT"
+          ],
+          "rows": [
+            [
+              "int64_value:0"
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "plan": ""
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "dml through the query path",
+      "script": "INSERT INTO parity.parity_t (id, name) VALUES (4, 'delta')",
+      "schema": "",
+      "datashare": false,
+      "limit": 0,
+      "explain": false,
+      "max_bytes": 1048576,
+      "masking": false,
+      "results": [
+        {
+          "statement": "INSERT INTO parity.parity_t (id, name) VALUES (4, 'delta')",
+          "columns": [
+            "Affected Rows"
+          ],
+          "column_types": [
+            "INT"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "plan": ""
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "error stops the script",
+      "script": "SELECT 1 AS a;\nSELECT * FROM parity.parity_missing;\nSELECT 2 AS b",
+      "schema": "",
+      "datashare": false,
+      "limit": 0,
+      "explain": false,
+      "max_bytes": 1048576,
+      "masking": false,
+      "results": [
+        {
+          "statement": "SELECT 1 AS a;",
+          "columns": [
+            "a"
+          ],
+          "column_types": [
+            "INT4"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "plan": ""
+        },
+        {
+          "statement": "\nSELECT * FROM parity.parity_missing;",
+          "columns": null,
+          "column_types": null,
+          "rows": [],
+          "error": "ERROR: relation \"parity.parity_missing\" does not exist (SQLSTATE 42P01)",
+          "rows_count": 0,
+          "plan": ""
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "truncation",
+      "script": "SELECT g AS n, 'abcdefghij' AS pad FROM generate_series(1, 10) AS g ORDER BY g",
+      "schema": "",
+      "datashare": false,
+      "limit": 0,
+      "explain": false,
+      "max_bytes": 120,
+      "masking": false,
+      "results": [
+        {
+          "statement": "SELECT g AS n, 'abcdefghij' AS pad FROM generate_series(1, 10) AS g ORDER BY g",
+          "columns": [
+            "n",
+            "pad"
+          ],
+          "column_types": [
+            "INT4",
+            "TEXT"
+          ],
+          "rows": [
+            [
+              "int64_value:1",
+              "string_value:\"abcdefghij\""
+            ],
+            [
+              "int64_value:2",
+              "string_value:\"abcdefghij\""
+            ],
+            [
+              "int64_value:3",
+              "string_value:\"abcdefghij\""
+            ],
+            [
+              "int64_value:4",
+              "string_value:\"abcdefghij\""
+            ],
+            [
+              "int64_value:5",
+              "string_value:\"abcdefghij\""
+            ],
+            [
+              "int64_value:6",
+              "string_value:\"abcdefghij\""
+            ],
+            [
+              "int64_value:7",
+              "string_value:\"abcdefghij\""
+            ],
+            [
+              "int64_value:8",
+              "string_value:\"abcdefghij\""
+            ]
+          ],
+          "error": "Output of query exceeds max allowed output size of 0MB",
+          "rows_count": 8,
+          "plan": ""
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "session setting persists",
+      "script": "SET search_path TO parity\n-- next --\nSELECT name FROM parity_t ORDER BY id",
+      "schema": "",
+      "datashare": false,
+      "limit": 0,
+      "explain": false,
+      "max_bytes": 1048576,
+      "masking": false,
+      "results": [
+        {
+          "statement": "SET search_path TO parity",
+          "columns": [
+            "Affected Rows"
+          ],
+          "column_types": [
+            "INT"
+          ],
+          "rows": [
+            [
+              "int64_value:0"
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "plan": ""
+        },
+        {
+          "statement": "SELECT name FROM parity_t ORDER BY id",
+          "columns": [
+            "name"
+          ],
+          "column_types": [
+            "TEXT"
+          ],
+          "rows": [
+            [
+              "string_value:\"alpha\""
+            ],
+            [
+              "string_value:\"beta\""
+            ],
+            [
+              "string_value:\"gamma\""
+            ],
+            [
+              "string_value:\"delta\""
+            ]
+          ],
+          "error": "",
+          "rows_count": 4,
+          "plan": ""
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "masking leaves a traced select alone",
+      "script": "SELECT id FROM parity.parity_t ORDER BY id",
+      "schema": "",
+      "datashare": false,
+      "limit": 0,
+      "explain": false,
+      "max_bytes": 1048576,
+      "masking": true,
+      "results": [
+        {
+          "statement": "SELECT id FROM parity.parity_t ORDER BY id",
+          "columns": [
+            "id"
+          ],
+          "column_types": [
+            "INT4"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ],
+            [
+              "int64_value:2"
+            ],
+            [
+              "int64_value:3"
+            ],
+            [
+              "int64_value:4"
+            ]
+          ],
+          "error": "",
+          "rows_count": 4,
+          "plan": ""
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "empty script",
+      "script": "-- only a comment\n",
+      "schema": "",
+      "datashare": false,
+      "limit": 0,
+      "explain": false,
+      "max_bytes": 1048576,
+      "masking": false,
+      "results": null,
+      "call_error": ""
+    },
+    {
+      "name": "datashare qualifier",
+      "script": "SELECT 'keep {database}.parity' AS label\n-- next --\nSELECT id FROM {database}.parity.parity_t ORDER BY id",
+      "schema": "",
+      "datashare": true,
+      "limit": 0,
+      "explain": false,
+      "max_bytes": 1048576,
+      "masking": false,
+      "results": [
+        {
+          "statement": "SELECT 'keep parity' AS label",
+          "columns": [
+            "label"
+          ],
+          "column_types": [
+            "TEXT"
+          ],
+          "rows": [
+            [
+              "string_value:\"keep parity\""
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "plan": ""
+        },
+        {
+          "statement": "SELECT id FROM parity.parity_t ORDER BY id",
+          "columns": [
+            "id"
+          ],
+          "column_types": [
+            "INT4"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ],
+            [
+              "int64_value:2"
+            ],
+            [
+              "int64_value:3"
+            ],
+            [
+              "int64_value:4"
+            ]
+          ],
+          "error": "",
+          "rows_count": 4,
+          "plan": ""
+        }
+      ],
+      "call_error": ""
+    }
+  ],
+  "execute": [
+    {
+      "name": "ddl",
+      "script": "CREATE TABLE parity.parity_exec_ddl (id int)",
+      "datashare": false,
+      "affected": 0,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"CREATE TABLE parity.parity_exec_ddl (id int)\"}",
+        "type:COMMAND_RESPONSE command_response:{}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "dml",
+      "script": "INSERT INTO parity.parity_t (id, name) VALUES (5, 'epsilon');\nINSERT INTO parity.parity_t (id, name) VALUES (6, 'zeta')",
+      "datashare": false,
+      "affected": 2,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"INSERT INTO parity.parity_t (id, name) VALUES (5, 'epsilon');\"}",
+        "type:COMMAND_RESPONSE command_response:{affected_rows:1}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"\\nINSERT INTO parity.parity_t (id, name) VALUES (6, 'zeta')\"}",
+        "type:COMMAND_RESPONSE command_response:{affected_rows:1}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "transaction",
+      "script": "INSERT INTO parity.parity_t (id, name) VALUES (7, 'eta')",
+      "datashare": false,
+      "affected": 1,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"INSERT INTO parity.parity_t (id, name) VALUES (7, 'eta')\"}",
+        "type:COMMAND_RESPONSE command_response:{affected_rows:1}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "transaction off",
+      "script": "-- txn-mode = off\nINSERT INTO parity.parity_t (id, name) VALUES (8, 'theta');\nINSERT INTO parity.parity_t (id, name) VALUES (9, 'iota')",
+      "datashare": false,
+      "affected": 2,
+      "error": "",
+      "logs": [
+        "type:COMMAND_EXECUTE command_execute:{statement:\"INSERT INTO parity.parity_t (id, name) VALUES (8, 'theta');\"}",
+        "type:COMMAND_RESPONSE command_response:{affected_rows:1}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"\\nINSERT INTO parity.parity_t (id, name) VALUES (9, 'iota')\"}",
+        "type:COMMAND_RESPONSE command_response:{affected_rows:1}"
+      ]
+    },
+    {
+      "name": "error rolls back",
+      "script": "INSERT INTO parity.parity_t (id, name) VALUES (10, 'kappa');\nINSERT INTO parity.parity_missing (id) VALUES (1)",
+      "datashare": false,
+      "affected": 0,
+      "error": "ERROR: relation \"parity.parity_missing\" does not exist (SQLSTATE 42P01)",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"INSERT INTO parity.parity_t (id, name) VALUES (10, 'kappa');\"}",
+        "type:COMMAND_RESPONSE command_response:{affected_rows:1}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"\\nINSERT INTO parity.parity_missing (id) VALUES (1)\"}",
+        "type:COMMAND_RESPONSE command_response:{error:\"ERROR: relation \\\"parity.parity_missing\\\" does not exist (SQLSTATE 42P01)\"}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:ROLLBACK}"
+      ]
+    },
+    {
+      "name": "empty script",
+      "script": "-- only a comment\n",
+      "datashare": false,
+      "affected": 0,
+      "error": "",
+      "logs": []
+    },
+    {
+      "name": "truncate in a transactional script",
+      "script": "TRUNCATE parity.parity_t",
+      "datashare": false,
+      "affected": 0,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"TRUNCATE parity.parity_t\"}",
+        "type:COMMAND_RESPONSE command_response:{}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "transaction control in a script",
+      "script": "BEGIN;\nINSERT INTO parity.parity_t (id, name) VALUES (11, 'lambda');\nCOMMIT",
+      "datashare": false,
+      "affected": 1,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"BEGIN;\"}",
+        "type:COMMAND_RESPONSE command_response:{}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"\\nINSERT INTO parity.parity_t (id, name) VALUES (11, 'lambda');\"}",
+        "type:COMMAND_RESPONSE command_response:{affected_rows:1}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"\\nCOMMIT\"}",
+        "type:COMMAND_RESPONSE command_response:{}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "datashare refused",
+      "script": "INSERT INTO parity.parity_t (id, name) VALUES (12, 'mu')",
+      "datashare": true,
+      "affected": 0,
+      "error": "datashare database cannot be updated",
+      "logs": []
+    }
+  ],
+  "count": [
+    {
+      "name": "select estimate",
+      "statement": "SELECT * FROM parity.parity_t WHERE id \u003e 1",
+      "rows": 423,
+      "error": ""
+    },
+    {
+      "name": "search path prefix",
+      "statement": "SET LOCAL search_path TO \"parity\";\nSELECT * FROM parity_t WHERE id \u003e 1",
+      "rows": 423,
+      "error": ""
+    }
+  ]
+}

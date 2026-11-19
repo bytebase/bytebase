@@ -253,7 +253,7 @@ describe("StyleX common UI style contracts", () => {
     });
 
     const option = Array.from(
-      combobox.container.querySelectorAll("button")
+      document.body.querySelectorAll("button")
     ).find((button) => button.textContent?.includes("Alpha"));
     expect(option).not.toBeUndefined();
     expectClasses(
@@ -264,7 +264,7 @@ describe("StyleX common UI style contracts", () => {
     expect(option?.getAttribute("data-selected")).toBe("true");
 
     const disabledOption = Array.from(
-      combobox.container.querySelectorAll("button")
+      document.body.querySelectorAll("button")
     ).find((button) => button.textContent?.includes("Disabled"));
     expect(disabledOption?.disabled).toBe(true);
     expectClasses(disabledOption?.className, menuRowStateClassName);

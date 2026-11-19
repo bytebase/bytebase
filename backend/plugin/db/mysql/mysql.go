@@ -1,4 +1,48 @@
-// Package mysql is the plugin for MySQL driver.
+// Package mysql is Bytebase's MySQL driver: an adapter over
+// github.com/bytebase/omni/mysql/driver, and over github.com/bytebase/omni/mariadb/driver
+// for the MARIADB engine value this package also registers. It maps a
+// db.ConnectionConfig onto the contract's Config, the contract's results back
+// onto the product's types, and keeps the credential, tunnel and TLS material
+// in Bytebase where it belongs.
+//
+// The adapter keeps what is product: the data source to contract conversion,
+// the AWS RDS and Google Cloud SQL IAM paths, the RDS CA bundle, SSH tunnels,
+// TLS material, the transaction directive a script carries, the task-run
+// logger, the QueryContext mapping, the v1pb conversion, and the live-review
+// capabilities db.Prober and db.RowEstimator.
+//
+// GetDB keeps returning a *sql.DB, because db.Driver still requires it and
+// gh-ost runs its five binlog probes through it. The contract's pool is the
+// driver's, so the adapter owns a second pool built from the same resolved
+// config; GetDB hands out that pool and Close closes it. Every caller of
+// GetDB compiles and behaves as before.
+//
+// QueryConn holds one contract session from the first call until Close. The
+// editor asks one statement at a time on a driver it keeps, so a session
+// variable, a temporary table or an open transaction survives between calls,
+// as it did on the caller's pooled *sql.Conn. The *sql.Conn argument is unused:
+// the contract's Session is not one.
+//
+// Known differences from the driver this replaced:
+//   - A script's parse error arrives before any statement of it runs, because
+//     the contract reads the whole script first; statements after a failure are
+//     not sent.
+//   - Unsigned integers and the binary families arrive as the contract's typed
+//     values rather than as strings, and an empty binary cell is empty bytes
+//     rather than NULL.
+//   - The result-size cap is byte-accurate rather than checked at power-of-two
+//     row counts. A cap of zero keeps the old zero-byte behaviour: one row and
+//     the "0MB" cap error, because the product reads zero as "no rows".
+//   - Execute ignores db.ExecuteOptions.CreateDatabase and MaximumRetries, as
+//     the old driver did; the txn-mode and txn-isolation directives still decide
+//     the transaction mode and isolation level.
+//   - A probe runs on a contract session: START TRANSACTION, the pre-executions
+//     and the statement, then ROLLBACK, as the old *sql.DB probe did. With
+//     ProbeContext.Autocommit the statement runs alone.
+//   - SyncDBSchema answers driver.ErrNotFound for a database the server no
+//     longer has, where the old driver returned the server's error.
+//   - Instance roles are read in (user, host) order, and an account whose name
+//     contains a quote is read instead of skipped.
 package mysql
 
 import (
@@ -6,46 +50,45 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
-	"database/sql/driver"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 	"net/http"
-	"regexp"
+	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"cloud.google.com/go/cloudsqlconn"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
-	"github.com/go-sql-driver/mysql"
-	"github.com/google/uuid"
+	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/singleflight"
-	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
+	odriver "github.com/bytebase/omni/driver"
+	mariadbast "github.com/bytebase/omni/mariadb/ast"
+	mariadbd "github.com/bytebase/omni/mariadb/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
+	mysqlast "github.com/bytebase/omni/mysql/ast"
+	mysqld "github.com/bytebase/omni/mysql/driver"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
-	baseTableType = "BASE TABLE"
-	viewTableType = "VIEW"
-	// MariaDB-only TABLE_TYPE values. Both kinds share the table namespace.
-	mariaDBSystemVersionedTableType = "SYSTEM VERSIONED"
-	mariaDBSequenceTableType        = "SEQUENCE"
-
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver         = (*Driver)(nil)
+	_ db.Prober         = (*Driver)(nil)
+	_ db.RowEstimator   = (*Driver)(nil)
+	_ db.SessionQuerier = (*Driver)(nil)
+	_ db.SQLDBProvider  = (*Driver)(nil)
 )
 
 func init() {
@@ -53,195 +96,552 @@ func init() {
 	db.Register(storepb.Engine_MARIADB, newDriver)
 }
 
-// validateMySQLExtraConnectionParameters validates that no dangerous parameters are present.
-func validateMySQLExtraConnectionParameters(params map[string]string) error {
-	for key := range params {
-		// Normalize key to lowercase for case-insensitive comparison
-		normalizedKey := strings.ToLower(strings.TrimSpace(key))
-		if normalizedKey == "allowallfiles" {
-			// Disables file allowlist for LOAD DATA LOCAL INFILE and allows all files (might be insecure)
-			return errors.Errorf("connection parameter %q is not allowed for security reasons", key)
-		}
-	}
-	return nil
+// omniDriver is the method set the MySQL and MariaDB contract drivers share.
+type omniDriver interface {
+	Ping(ctx context.Context) error
+	Close() error
+	SyncInstance(ctx context.Context) (*odriver.Instance, error)
+	SyncDatabase(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error)
+	Dump(ctx context.Context, w io.Writer, db *metadatapb.DatabaseSchemaMetadata) error
+	Session(ctx context.Context) (odriver.Session, error)
+	Execute(ctx context.Context, script string, opts odriver.ExecuteOptions) (int64, error)
+	CountAffectedRows(ctx context.Context, statement string) (int64, error)
+	ExplainJSON(ctx context.Context, statement string) (string, error)
 }
 
-// Driver is the MySQL driver.
+// Driver is Bytebase's MySQL driver.
 type Driver struct {
-	dbType       storepb.Engine
-	db           *sql.DB
-	databaseName string
-	sshClient    *ssh.Client
+	dbType storepb.Engine
+	driver omniDriver
+	// sqlDB is the direct-connection pool GetDB hands out. The contract's
+	// pool is the driver's own and is not reachable, so this adapter owns a
+	// second one built from the same resolved config. gh-ost runs its binlog
+	// probes through it.
+	sqlDB *sql.DB
 
-	// cloudSQLDialer refreshes its ephemeral certificate in the background until
-	// closed, so it lives and dies with the driver. It is reached through the
-	// cloudSQLProtocol network name, set with it.
-	cloudSQLDialer   *cloudsqlconn.Dialer
-	cloudSQLProtocol string
+	sshClient *ssh.Client
+	// cloudSQLDialer owns the background certificate refresh; it lives and
+	// dies with the driver.
+	cloudSQLDialer *cloudsqlconn.Dialer
 
-	// Called upon driver.Open() finishes.
-	openCleanUp []func()
+	// sessionMu guards session. The editor keeps one driver for a whole stream,
+	// so one contract session serves it from the first QueryConn until Close.
+	sessionMu sync.Mutex
+	session   odriver.Session
 }
 
 func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open opens a MySQL driver.
+// Open maps the resolved data source onto the contract's Config.
 func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
-	opened := false
+	// A driver whose Open fails is discarded without a Close, so Open releases
+	// the tunnel, Cloud SQL dialer and pools it acquired itself.
+	success := false
 	defer func() {
-		for _, f := range d.openCleanUp {
-			f()
-		}
-		// A driver whose Open fails is discarded without a Close, so Open
-		// releases what it acquired itself.
-		if !opened {
+		if !success {
 			_ = d.Close(ctx)
 		}
 	}()
 
-	var dsn string
-	var err error
-	switch connCfg.DataSource.GetAuthenticationType() {
-	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
-		dsn, err = d.getCloudSQLConnection(ctx, connCfg)
-	case storepb.DataSource_AWS_RDS_IAM:
-		dsn, err = d.getRDSConnection(ctx, connCfg)
-	default:
-		dsn, err = d.getMySQLConnection(connCfg)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		return nil, err
+	dataSource := connCfg.DataSource
+	if dataSource == nil {
+		return nil, errors.New("mysql: a data source is required")
 	}
 	d.dbType = dbType
-	d.db = db
-	// TODO(d): remove the work-around once we have clean-up the migration connection hack.
-	db.SetConnMaxLifetime(2 * time.Hour)
-	db.SetMaxOpenConns(50)
-	db.SetMaxIdleConns(15)
-	d.databaseName = connCfg.ConnectionContext.DatabaseName
 
-	opened = true
+	cfg := odriver.Config{
+		Host:            dataSource.Host,
+		Port:            dataSource.Port,
+		Database:        connCfg.ConnectionContext.DatabaseName,
+		User:            dataSource.Username,
+		Password:        connCfg.Password,
+		ApplicationName: "bytebase",
+		EngineVersion:   connCfg.ConnectionContext.EngineVersion,
+		Params:          dataSource.GetExtraConnectionParameters(),
+	}
+
+	switch dataSource.GetAuthenticationType() {
+	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
+		dialer, err := util.GetGCPConnectionConfig(ctx, connCfg)
+		if err != nil {
+			return nil, errors.Wrap(err, "load gcp config failed")
+		}
+		d.cloudSQLDialer = dialer
+		instance := dataSource.Host
+		cfg.Dial = func(ctx context.Context, _, _ string) (net.Conn, error) {
+			return dialer.Dial(ctx, instance)
+		}
+	case storepb.DataSource_AWS_RDS_IAM:
+		if err := d.openRDS(ctx, connCfg, &cfg); err != nil {
+			return nil, err
+		}
+	default:
+		if dataSource.GetSshHost() != "" {
+			sshClient, err := util.GetSSHClient(dataSource)
+			if err != nil {
+				return nil, err
+			}
+			d.sshClient = sshClient
+			cfg.Dial = func(_ context.Context, _, address string) (net.Conn, error) {
+				return sshClient.Dial("tcp", address)
+			}
+		}
+		tlsConfig, err := util.GetTLSConfig(dataSource)
+		if err != nil {
+			return nil, errors.Wrap(err, "sql: tls config error")
+		}
+		if tlsConfig != nil {
+			cfg.TLS = func(string) (*tls.Config, error) { return tlsConfig, nil }
+		}
+	}
+
+	var opened omniDriver
+	var err error
+	switch dbType {
+	case storepb.Engine_MYSQL:
+		opened, err = mysqld.Open(ctx, cfg)
+	case storepb.Engine_MARIADB:
+		opened, err = mariadbd.Open(ctx, cfg)
+	default:
+		return nil, errors.Errorf("mysql: unsupported engine %s", dbType)
+	}
+	if err != nil {
+		return nil, err
+	}
+	d.driver = opened
+
+	// The direct-connection pool GetDB hands out uses the same resolved values,
+	// including the tunnel and TLS config, so gh-ost reaches the same server.
+	sqlDB, err := newSQLDB(cfg)
+	if err != nil {
+		return nil, err
+	}
+	d.sqlDB = sqlDB
+	success = true
 	return d, nil
 }
 
-func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error) {
-	protocol := "tcp"
-	if strings.HasPrefix(connCfg.DataSource.Host, "/") {
-		protocol = "unix"
-	}
-
+// newSQLDB builds the direct-connection pool GetDB returns from the contract
+// config Open already resolved. It never replaces the driver's own pool; it is
+// the one a caller that needs database/sql (gh-ost's binlog probes) uses.
+func newSQLDB(cfg odriver.Config) (*sql.DB, error) {
 	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
-	if err := validateMySQLExtraConnectionParameters(connCfg.DataSource.GetExtraConnectionParameters()); err != nil {
-		return "", err
+	keys := make([]string, 0, len(cfg.Params))
+	for key := range cfg.Params {
+		keys = append(keys, key)
 	}
-	for key, value := range connCfg.DataSource.GetExtraConnectionParameters() {
-		params = append(params, fmt.Sprintf("%s=%s", key, value))
-	}
-	if connCfg.DataSource.GetSshHost() != "" {
-		sshClient, err := util.GetSSHClient(connCfg.DataSource)
-		if err != nil {
-			return "", err
+	slices.Sort(keys)
+	for _, key := range keys {
+		if strings.EqualFold(strings.TrimSpace(key), "allowallfiles") {
+			return nil, errors.Errorf("connection parameter %q is not allowed for security reasons", key)
 		}
-		d.sshClient = sshClient
-		protocol = "mysql-tcp-" + uuid.NewString()[:8]
-		// Now we register the dialer with the ssh connection as a parameter.
-		mysql.RegisterDialContext(protocol, func(_ context.Context, addr string) (net.Conn, error) {
-			return sshClient.Dial("tcp", addr)
-		})
+		params = append(params, fmt.Sprintf("%s=%s", key, cfg.Params[key]))
 	}
-
-	tlscfg, err := util.GetTLSConfig(connCfg.DataSource)
+	mc, err := gomysql.ParseDSN("u@tcp(placeholder:3306)/?" + strings.Join(params, "&"))
 	if err != nil {
-		return "", errors.Wrap(err, "sql: tls config error")
+		return nil, err
 	}
-	tlsKey := uuid.NewString()
-	if tlscfg != nil {
-		if err := mysql.RegisterTLSConfig(tlsKey, tlscfg); err != nil {
-			return "", errors.Wrap(err, "sql: failed to register tls config")
+	if mc.AllowAllFiles {
+		return nil, errors.New("connection parameter \"allowAllFiles\" is not allowed for security reasons")
+	}
+	mc.User = cfg.User
+	mc.Passwd = cfg.Password
+	mc.DBName = cfg.Database
+
+	switch {
+	case cfg.Dial != nil:
+		mc.Net = "tcp"
+		switch {
+		case cfg.Host != "" && cfg.Port != "":
+			mc.Addr = net.JoinHostPort(cfg.Host, cfg.Port)
+		case cfg.Host != "":
+			mc.Addr = cfg.Host
+		default:
+			mc.Addr = "dial"
 		}
-		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
-		d.openCleanUp = append(d.openCleanUp, func() { mysql.DeregisterTLSConfig(tlsKey) })
-		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
+		mc.DialFunc = cfg.Dial
+	case strings.HasPrefix(cfg.Host, "/"):
+		mc.Net = "unix"
+		mc.Addr = cfg.Host
+	default:
+		mc.Net = "tcp"
+		mc.Addr = net.JoinHostPort(cfg.Host, cfg.Port)
 	}
-	return fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.DataSource.Username, connCfg.Password, protocol, connCfg.DataSource.Host, connCfg.DataSource.Port, connCfg.ConnectionContext.DatabaseName, strings.Join(params, "&")), nil
+	if cfg.TLS != nil {
+		tlsConfig, err := cfg.TLS(cfg.Host)
+		if err != nil {
+			return nil, err
+		}
+		mc.TLS = tlsConfig
+		mc.TLSConfig = ""
+		mc.AllowFallbackToPlaintext = false
+	}
+	connector, err := gomysql.NewConnector(mc)
+	if err != nil {
+		return nil, err
+	}
+	sqlDB := sql.OpenDB(connector)
+	sqlDB.SetConnMaxLifetime(2 * time.Hour)
+	sqlDB.SetMaxOpenConns(50)
+	sqlDB.SetMaxIdleConns(15)
+	return sqlDB, nil
+}
+
+func (*Driver) openRDS(ctx context.Context, connCfg db.ConnectionConfig, cfg *odriver.Config) error {
+	dataSource := connCfg.DataSource
+	dbEndpoint := fmt.Sprintf("%s:%s", dataSource.Host, dataSource.Port)
+	awsConfig, err := util.GetAWSConnectionConfig(ctx, connCfg)
+	if err != nil {
+		return errors.Wrap(err, "load aws config failed")
+	}
+	if err := util.AssumeRoleIfNeeded(ctx, &awsConfig, connCfg.ConnectionContext, dataSource.GetAwsCredential()); err != nil {
+		return err
+	}
+	token, err := auth.BuildAuthToken(ctx, dbEndpoint, dataSource.GetRegion(), dataSource.Username, awsConfig.Credentials)
+	if err != nil {
+		return errors.Wrap(err, "failed to create authentication token")
+	}
+	tlsConfig, err := rdsTLSConfig(ctx, dataSource)
+	if err != nil {
+		return err
+	}
+	cfg.Password = token
+	cfg.TLS = func(string) (*tls.Config, error) { return tlsConfig, nil }
+	// RDS IAM authenticates with the clear-password plugin, which the client
+	// only sends when it is allowed to.
+	if cfg.Params == nil {
+		cfg.Params = map[string]string{}
+	}
+	cfg.Params["allowCleartextPasswords"] = "true"
+	return nil
+}
+
+func (d *Driver) Close(context.Context) error {
+	var err error
+	d.sessionMu.Lock()
+	if d.session != nil {
+		err = multierr.Append(err, d.session.Close())
+		d.session = nil
+	}
+	d.sessionMu.Unlock()
+	if d.driver != nil {
+		err = multierr.Append(err, d.driver.Close())
+	}
+	if d.sqlDB != nil {
+		err = multierr.Append(err, d.sqlDB.Close())
+	}
+	if d.sshClient != nil {
+		err = multierr.Append(err, d.sshClient.Close())
+	}
+	if d.cloudSQLDialer != nil {
+		err = multierr.Append(err, d.cloudSQLDialer.Close())
+	}
+	return err
+}
+
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.driver.Ping(ctx)
+}
+
+// GetDB returns the direct-connection pool gh-ost's binlog probes use. It is
+// not the contract's pool, which the driver keeps private.
+func (d *Driver) GetDB() *sql.DB {
+	return d.sqlDB
+}
+
+// OwnsQuerySession reports that QueryConn runs on the adapter's held session,
+// not on a connection a caller opens from GetDB.
+func (*Driver) OwnsQuerySession() {}
+
+// SyncInstance converts the contract's instance into the API's metadata.
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	instance, err := d.driver.SyncInstance(ctx)
+	if err != nil {
+		return nil, err
+	}
+	roles := make([]*storepb.InstanceRole, len(instance.Roles))
+	for i, role := range instance.Roles {
+		roles[i] = &storepb.InstanceRole{
+			Name:            role.Name,
+			ConnectionLimit: role.ConnectionLimit,
+			ValidUntil:      role.ValidUntil,
+			Attribute:       role.Attribute,
+		}
+	}
+	return &db.InstanceMetadata{
+		Version:   instance.Version,
+		Databases: instance.Databases,
+		Metadata: &storepb.Instance{
+			MysqlLowerCaseTableNames: instance.LowerCaseTableNames,
+			Roles:                    roles,
+		},
+	}, nil
+}
+
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return d.driver.SyncDatabase(ctx)
+}
+
+func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
+	return d.driver.Dump(ctx, out, dbMetadata)
+}
+
+// Execute runs the script's statements, reporting each step to the task run
+// log. The transaction directive is read here unless the caller already did.
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	config, cleaned := base.ParseTransactionConfig(statement)
+	if config.Mode == transaction.ModeUnspecified {
+		config.Mode = transaction.DefaultMode()
+	}
+	mode := odriver.Transactional
+	if config.Mode == transaction.ModeOff {
+		mode = odriver.AutoCommit
+	}
+	// CreateDatabase and MaximumRetries are not mapped: the driver this
+	// replaced read neither, and mapping them would change a create-database
+	// script's transaction shape and retry a script the product did not retry.
+	return d.driver.Execute(ctx, cleaned, odriver.ExecuteOptions{
+		Transaction: mode,
+		Isolation:   odriver.IsolationLevel(config.Isolation),
+		Log:         &executeLogger{opts: opts},
+	})
+}
+
+// QueryConn runs the script on the driver's session. The *sql.Conn argument is
+// the caller's pooled connection, which the contract cannot accept; the adapter
+// holds its own session instead, from the first call until Close, so a stream's
+// session state survives between calls.
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	d.sessionMu.Lock()
+	defer d.sessionMu.Unlock()
+	if d.session == nil {
+		session, err := d.driver.Session(ctx)
+		if err != nil {
+			return nil, err
+		}
+		d.session = session
+	}
+	session := d.session
+
+	// The product reads a zero cap as "no rows", and the contract reads it as
+	// "no cap". A one-byte cap keeps the old zero-byte behaviour without letting
+	// the query read every row a policy meant to bound.
+	maxResultBytes := queryContext.MaximumSQLResultSize
+	if maxResultBytes <= 0 {
+		maxResultBytes = 1
+	}
+	results, err := session.Query(ctx, statement, odriver.QueryOptions{
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		ExplainFormat:  explainFormat(queryContext),
+		MaxResultBytes: maxResultBytes,
+		MaskingEnabled: queryContext.MaskingEnabled,
+	})
+	if err != nil {
+		// The client closes the connection when a statement's context ends, and an
+		// errored statement leaves the session's state unknown; either way the next
+		// statement on this stream would find a session it cannot use.
+		_ = session.Close()
+		d.session = nil
+		return nil, err
+	}
+	if ctx.Err() != nil {
+		_ = session.Close()
+		d.session = nil
+	}
+	queryResults := make([]*v1pb.QueryResult, 0, len(results))
+	for _, result := range results {
+		queryResult := util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize)
+		if queryContext.Explain {
+			// An explain request's rows are the plan already; the old driver
+			// reported no typed plan for one.
+			queryResult.QueryPlan = nil
+		}
+		queryResults = append(queryResults, queryResult)
+	}
+	return queryResults, nil
+}
+
+// Probe runs a live review rule's probe on a fresh session. The contract has no
+// probe primitive, so the adapter starts a transaction, runs the pre-executions
+// and the statement in order, and rolls back, as the old *sql.DB probe did.
+// pCtx.Autocommit runs the statement alone; a MySQL probe is an EXPLAIN, so
+// either shape answers the same.
+func (d *Driver) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
+	session, err := d.driver.Session(ctx)
+	if err != nil {
+		return db.ProbeResult{}, err
+	}
+	defer session.Close()
+
+	if !pCtx.Autocommit {
+		if _, err := session.Query(ctx, "START TRANSACTION", odriver.QueryOptions{}); err != nil {
+			return db.ProbeResult{}, errors.Wrap(err, "failed to start the probe transaction")
+		}
+		defer func() {
+			_, _ = session.Query(ctx, "ROLLBACK", odriver.QueryOptions{})
+		}()
+	}
+	for _, preExec := range pCtx.PreExecutions {
+		if preExec == "" {
+			continue
+		}
+		if _, err := session.Query(ctx, preExec, odriver.QueryOptions{}); err != nil {
+			return db.ProbeResult{}, errors.Wrapf(err, "failed to execute pre-execution: %s", preExec)
+		}
+	}
+	results, err := session.Query(ctx, statement, odriver.QueryOptions{})
+	if err != nil {
+		return db.ProbeResult{}, err
+	}
+	if len(results) == 0 {
+		return db.ProbeResult{}, nil
+	}
+	result := results[len(results)-1]
+	if result.Err != nil {
+		return db.ProbeResult{}, result.Err
+	}
+	probeResult := db.ProbeResult{
+		Columns:     make([]string, len(result.Columns)),
+		ColumnTypes: make([]string, len(result.Columns)),
+	}
+	for i, column := range result.Columns {
+		probeResult.Columns[i] = column.Name
+		probeResult.ColumnTypes[i] = column.TypeName
+	}
+	for _, row := range result.Rows {
+		values := make([]any, len(row))
+		for i, value := range row {
+			values[i] = probeValue(value)
+		}
+		probeResult.Rows = append(probeResult.Rows, values)
+	}
+	return probeResult, nil
+}
+
+// probeValue converts one contract cell to the untyped value a rule reads.
+func probeValue(value odriver.Value) any {
+	switch value.Kind {
+	case odriver.Bool:
+		return value.Bool
+	case odriver.Bytes:
+		return value.Bytes
+	case odriver.Float32, odriver.Float64:
+		return value.Float64
+	case odriver.Int32, odriver.Int64:
+		return value.Int64
+	case odriver.Uint32, odriver.Uint64:
+		return value.Uint64
+	case odriver.String:
+		return value.String
+	case odriver.Structured:
+		return value.Structured
+	case odriver.Timestamp, odriver.TimestampTZ:
+		return value.Time
+	default:
+		return nil
+	}
+}
+
+func explainFormat(queryContext db.QueryContext) string {
+	switch db.ExplainFormat(queryContext.Option.GetExplainFormat()) {
+	case base.ExplainFormatJSON:
+		return "JSON"
+	case base.ExplainFormatText:
+		return "TEXT"
+	default:
+		return ""
+	}
+}
+
+// CountAffectedRows returns the planner's estimate for one DML statement.
+func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
+	return d.driver.CountAffectedRows(ctx, statement)
+}
+
+// ExplainJSON returns EXPLAIN FORMAT=JSON for one statement.
+func (d *Driver) ExplainJSON(ctx context.Context, statement string) (string, error) {
+	return d.driver.ExplainJSON(ctx, statement)
+}
+
+// EstimateAffectedRows reads a MySQL node's estimate from plan.
+func (d *Driver) EstimateAffectedRows(ctx context.Context, stmt mysqlast.Node, query, plan string) (int64, error) {
+	driver, ok := d.driver.(*mysqld.Driver)
+	if !ok {
+		return 0, errors.New("mysql: EstimateAffectedRows needs the MySQL driver")
+	}
+	return driver.EstimateAffectedRows(ctx, stmt, query, plan)
+}
+
+// EstimateAffectedRowsMariaDB reads a MariaDB node's estimate from plan.
+func (d *Driver) EstimateAffectedRowsMariaDB(ctx context.Context, stmt mariadbast.Node, query, plan string) (int64, error) {
+	driver, ok := d.driver.(*mariadbd.Driver)
+	if !ok {
+		return 0, errors.New("mysql: EstimateAffectedRowsMariaDB needs the MariaDB driver")
+	}
+	return driver.EstimateAffectedRows(ctx, stmt, query, plan)
+}
+
+// executeLogger bridges the contract's ExecuteLogger onto the task run log.
+type executeLogger struct {
+	opts db.ExecuteOptions
+}
+
+func (l *executeLogger) CommandExecute(command odriver.Command) {
+	l.opts.LogCommandExecute(&storepb.Range{Start: int32(command.ByteStart), End: int32(command.ByteEnd)}, command.Text)
+}
+
+func (l *executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
+	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
+}
+
+func (l *executeLogger) TransactionControl(op odriver.TransactionOp, err error) {
+	l.opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_Type(storepb.TaskRunLog_TransactionControl_Type_value[string(op)]), errorString(err))
+}
+
+func (l *executeLogger) Retry(err error, attempt, _ int) {
+	l.opts.LogRetryInfo(err, attempt)
+}
+
+func errorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
 
 // rdsCertBundleURL is a variable so tests can point it at a local server.
 var rdsCertBundleURL = "https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem"
 
-// rdsCertFetchTimeout bounds the download so a stalled fetch cannot hold a
-// connection attempt open indefinitely.
 const rdsCertFetchTimeout = 30 * time.Second
 
-// maxRDSCertBundleSize bounds the downloaded bundle so a misbehaving endpoint
-// cannot stream unbounded data into memory (the real global bundle is ~165 KB).
 const maxRDSCertBundleSize int64 = 4 << 20
 
-// rdsCertPool caches the downloaded bundle for the process lifetime.
-var rdsCertPool atomic.Pointer[x509.CertPool]
+var (
+	rdsCertPool  atomic.Pointer[x509.CertPool]
+	rdsCertGroup singleflight.Group
+)
 
-// rdsCertGroup collapses concurrent cold-start downloads into one request.
-var rdsCertGroup singleflight.Group
-
-// getRDSCertPool downloads and returns the RDS CA certificate pool.
-// AWS RDS connection with IAM require TLS connection.
-//
-// refs:
-// https://github.com/aws/aws-sdk-go/issues/1248
-// https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/mysql-ssl-connections.html
-func getRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rdsCertBundleURL, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build request for rds cert")
+// rdsRootCAs prefers an operator-supplied CA, so a deployment can serve RDS IAM
+// connections without any outbound network access.
+func rdsRootCAs(ctx context.Context, dataSource *storepb.DataSource) (*x509.CertPool, error) {
+	if ca := dataSource.GetSslCa(); ca != "" {
+		pool := x509.NewCertPool()
+		if !pool.AppendCertsFromPEM([]byte(ca)) {
+			return nil, errors.Errorf("failed to parse ssl_ca certificates")
+		}
+		return pool, nil
 	}
-
-	client := &http.Client{Timeout: rdsCertFetchTimeout}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	// Without this an error page would reach AppendCertsFromPEM and surface as
-	// "failed to parse RDS CA certificates", hiding the real cause.
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("failed to download RDS CA certificates: %s", resp.Status)
-	}
-
-	pem, err := io.ReadAll(io.LimitReader(resp.Body, maxRDSCertBundleSize+1))
-	if err != nil {
-		return nil, err
-	}
-	if int64(len(pem)) > maxRDSCertBundleSize {
-		return nil, errors.Errorf("RDS CA bundle exceeds %d bytes", maxRDSCertBundleSize)
-	}
-
-	rootCertPool := x509.NewCertPool()
-	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
-		return nil, errors.Errorf("failed to parse RDS CA certificates")
-	}
-
-	return rootCertPool, nil
+	return cachedRDSCertPool(ctx)
 }
 
-// cachedRDSCertPool returns the AWS RDS CA bundle, downloading it once per
-// process. Only successes are cached, so a transient failure can still recover.
 func cachedRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
 	if pool := rdsCertPool.Load(); pool != nil {
 		return pool, nil
 	}
-	// Collapse a cold-start burst into one download. The shared fetch does not
-	// inherit any one caller's context, so the caller that starts it cannot
-	// cancel it for everybody else; each caller waits on its own context below.
 	ch := rdsCertGroup.DoChan("", func() (any, error) {
-		// Double check after entering singleflight.
 		if pool := rdsCertPool.Load(); pool != nil {
 			return pool, nil
 		}
@@ -269,25 +669,38 @@ func cachedRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
 	}
 }
 
-// rdsRootCAs prefers an operator-supplied CA, so a deployment can serve RDS IAM
-// connections without any outbound network access.
-func rdsRootCAs(ctx context.Context, dataSource *storepb.DataSource) (*x509.CertPool, error) {
-	if ca := dataSource.GetSslCa(); ca != "" {
-		pool := x509.NewCertPool()
-		if !pool.AppendCertsFromPEM([]byte(ca)) {
-			return nil, errors.Errorf("failed to parse ssl_ca certificates")
-		}
-		return pool, nil
+func getRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rdsCertBundleURL, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build request for rds cert")
 	}
-	return cachedRDSCertPool(ctx)
+	client := &http.Client{Timeout: rdsCertFetchTimeout}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("failed to download RDS CA certificates: %s", resp.Status)
+	}
+	pem, err := io.ReadAll(io.LimitReader(resp.Body, maxRDSCertBundleSize+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(pem)) > maxRDSCertBundleSize {
+		return nil, errors.Errorf("RDS CA bundle exceeds %d bytes", maxRDSCertBundleSize)
+	}
+	rootCertPool := x509.NewCertPool()
+	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+		return nil, errors.Errorf("failed to parse RDS CA certificates")
+	}
+	return rootCertPool, nil
 }
 
-// rdsTLSConfig builds the TLS config for an RDS IAM connection. IAM auth always
-// requires TLS, so this always returns a config.
+// rdsTLSConfig builds the TLS config for an RDS IAM connection.
 func rdsTLSConfig(ctx context.Context, dataSource *storepb.DataSource) (*tls.Config, error) {
 	if !dataSource.GetVerifyTlsCertificate() {
-		// No verifier runs in this mode, so a root pool would never be consulted.
-		return &tls.Config{InsecureSkipVerify: true}, nil // NOSONAR(go:S4830,go:S5527) operator disabled verification (verify_tls_certificate=false)
+		return &tls.Config{InsecureSkipVerify: true}, nil // NOSONAR(go:S4830,go:S5527) operator disabled verification
 	}
 	rootCertPool, err := rdsRootCAs(ctx, dataSource)
 	if err != nil {
@@ -295,429 +708,7 @@ func rdsTLSConfig(ctx context.Context, dataSource *storepb.DataSource) (*tls.Con
 	}
 	return &tls.Config{ // NOSONAR(go:S4830) VerifyPeerCertificate below verifies chain and hostname
 		RootCAs:               rootCertPool,
-		InsecureSkipVerify:    true, // superseded by VerifyPeerCertificate below
+		InsecureSkipVerify:    true,
 		VerifyPeerCertificate: util.CreateCertificateVerifier(rootCertPool, dataSource.GetHost()),
 	}, nil
-}
-
-// getRDSConnection returns the connection string with IAM for AWS RDS.
-//
-// refs:
-// https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.Connecting.Go.html
-// https://repost.aws/knowledge-center/rds-mysql-access-denied
-func (d *Driver) getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, error) {
-	dbEndpoint := fmt.Sprintf("%s:%s", connCfg.DataSource.Host, connCfg.DataSource.Port)
-	cfg, err := util.GetAWSConnectionConfig(ctx, connCfg)
-	if err != nil {
-		return "", errors.Wrap(err, "load aws config failed")
-	}
-
-	// Handle cross-account role assumption if configured
-	if err := util.AssumeRoleIfNeeded(ctx, &cfg, connCfg.ConnectionContext, connCfg.DataSource.GetAwsCredential()); err != nil {
-		return "", err
-	}
-
-	authenticationToken, err := auth.BuildAuthToken(
-		ctx, dbEndpoint, connCfg.DataSource.GetRegion(), connCfg.DataSource.Username, cfg.Credentials)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to create authentication token")
-	}
-
-	tlsConfig, err := rdsTLSConfig(ctx, connCfg.DataSource)
-	if err != nil {
-		return "", err
-	}
-
-	// Create TLS config with unique name for this connection
-	tlsKey := uuid.NewString()
-
-	// Register the TLS config with unique name
-	if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
-		return "", errors.Wrap(err, "failed to register RDS TLS config")
-	}
-
-	// Clean up the TLS config after connection
-	d.openCleanUp = append(d.openCleanUp, func() { mysql.DeregisterTLSConfig(tlsKey) })
-
-	return fmt.Sprintf("%s:%s@tcp(%s)/%s?tls=%s&allowCleartextPasswords=true&multiStatements=true&maxAllowedPacket=0",
-		connCfg.DataSource.Username, authenticationToken, dbEndpoint, connCfg.ConnectionContext.DatabaseName, tlsKey,
-	), nil
-}
-
-func (d *Driver) getCloudSQLConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, error) {
-	dialer, err := util.GetGCPConnectionConfig(ctx, connCfg)
-	if err != nil {
-		return "", errors.Wrap(err, "load gcp config failed")
-	}
-	d.cloudSQLDialer = dialer
-
-	// The network name keys a process-wide registry, so it has to be unique per
-	// driver: a shared name would let the next Cloud SQL driver take over this
-	// driver's pool and dial its own instance instead.
-	d.cloudSQLProtocol = "cloudsqlconn-" + uuid.NewString()
-	mysql.RegisterDialContext(d.cloudSQLProtocol,
-		func(ctx context.Context, _ string) (net.Conn, error) {
-			return dialer.Dial(ctx, connCfg.DataSource.Host)
-		})
-
-	return fmt.Sprintf("%s:empty@%s(localhost:3306)/%s?parseTime=true&multiStatements=true&maxAllowedPacket=0",
-		connCfg.DataSource.Username, d.cloudSQLProtocol, connCfg.ConnectionContext.DatabaseName), nil
-}
-
-// Close closes the driver.
-func (d *Driver) Close(context.Context) error {
-	var err error
-	if d.db != nil {
-		err = multierr.Append(err, d.db.Close())
-	}
-	if d.sshClient != nil {
-		err = multierr.Append(err, d.sshClient.Close())
-	}
-	err = multierr.Append(err, d.closeCloudSQL())
-	return err
-}
-
-func (d *Driver) closeCloudSQL() error {
-	if d.cloudSQLDialer == nil {
-		return nil
-	}
-	mysql.DeregisterDialContext(d.cloudSQLProtocol)
-	return d.cloudSQLDialer.Close()
-}
-
-// Ping pings the database.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.db.PingContext(ctx)
-}
-
-// GetDB gets the database.
-func (d *Driver) GetDB() *sql.DB {
-	return d.db
-}
-
-// getVersion gets the version.
-func (d *Driver) getVersion(ctx context.Context) (string, string, error) {
-	query := "SELECT VERSION()"
-	var version string
-	if err := d.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
-		if err == sql.ErrNoRows {
-			return "", "", common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return "", "", util.FormatErrorWithQuery(err, query)
-	}
-
-	return parseVersion(version)
-}
-
-func parseVersion(version string) (string, string, error) {
-	if loc := regexp.MustCompile(`^\d+.\d+.\d+`).FindStringIndex(version); loc != nil {
-		return version[loc[0]:loc[1]], version[loc[1]:], nil
-	}
-	return "", "", errors.Errorf("failed to parse version %q", version)
-}
-
-func buildExecuteCommands(statement string) ([]base.Statement, error) {
-	if len(statement) > common.MaxSheetCheckSize {
-		return []base.Statement{{Text: statement}}, nil
-	}
-
-	commands, err := mysqlparser.SplitSQL(statement)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to split sql")
-	}
-	commands = base.FilterEmptyStatements(commands)
-	if len(commands) == 0 {
-		return nil, nil
-	}
-	if len(commands) > common.MaximumCommands {
-		return []base.Statement{{Text: statement}}, nil
-	}
-
-	return commands, nil
-}
-
-// Execute executes a SQL statement.
-func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	// Parse transaction configuration from the script
-	transactionConfig, cleanedStatement := base.ParseTransactionConfig(statement)
-	statement = cleanedStatement
-
-	// Apply default when transaction mode is not specified
-	if transactionConfig.Mode == transaction.ModeUnspecified {
-		transactionConfig.Mode = transaction.DefaultMode()
-	}
-
-	conn, err := d.db.Conn(ctx)
-	if err != nil {
-		return 0, err
-	}
-	defer conn.Close()
-
-	connectionID, err := getConnectionID(ctx, conn)
-	if err != nil {
-		return 0, err
-	}
-	slog.Debug("connectionID", slog.String("connectionID", connectionID))
-
-	commands, err := buildExecuteCommands(statement)
-	if err != nil {
-		return 0, err
-	}
-	if len(commands) == 0 {
-		return 0, nil
-	}
-
-	// Validate isolation level for MySQL if specified
-	if transactionConfig.Isolation != transaction.IsolationLevelDefault {
-		validLevels := map[transaction.IsolationLevel]bool{
-			transaction.IsolationLevelReadUncommitted: true,
-			transaction.IsolationLevelReadCommitted:   true,
-			transaction.IsolationLevelRepeatableRead:  true,
-			transaction.IsolationLevelSerializable:    true,
-		}
-		if !validLevels[transactionConfig.Isolation] {
-			return 0, errors.Errorf("invalid isolation level for MySQL: %s. Supported levels: READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ, SERIALIZABLE", transactionConfig.Isolation)
-		}
-	}
-
-	// Execute based on transaction mode
-	if transactionConfig.Mode == transaction.ModeOff {
-		return d.executeInAutoCommitMode(ctx, conn, commands, opts, connectionID)
-	}
-	return d.executeInTransactionMode(ctx, conn, commands, opts, connectionID, transactionConfig.Isolation)
-}
-
-// executeInTransactionMode executes statements within a single transaction
-func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, opts db.ExecuteOptions, connectionID string, isolationLevel transaction.IsolationLevel) (int64, error) {
-	var totalRowsAffected int64
-
-	if err := conn.Raw(func(driverConn any) error {
-		//nolint
-		exer := driverConn.(driver.ExecerContext)
-		//nolint
-		txer := driverConn.(driver.ConnBeginTx)
-
-		// Set isolation level if specified
-		txOptions := driver.TxOptions{}
-		if isolationLevel != transaction.IsolationLevelDefault {
-			txOptions.Isolation = driver.IsolationLevel(transaction.ToSQLIsolation(isolationLevel))
-		}
-
-		tx, err := txer.BeginTx(ctx, txOptions)
-		if err != nil {
-			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
-			return err
-		} else {
-			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
-		}
-
-		committed := false
-		defer func() {
-			err := tx.Rollback()
-			if committed {
-				return
-			}
-			var rerr string
-			if err != nil {
-				rerr = err.Error()
-			}
-			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
-		}()
-
-		for _, command := range commands {
-			opts.LogCommandExecute(command.Range, command.Text)
-
-			sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(command.Text)
-			sqlResult, err := exer.ExecContext(ctx, sqlWithBytebaseAppComment, nil)
-			if err != nil {
-				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-					slog.Info("cancel connection", slog.String("connectionID", connectionID))
-					if err := d.StopConnectionByID(connectionID); err != nil {
-						slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
-					}
-				}
-
-				opts.LogCommandResponse(0, nil, err.Error())
-
-				return err
-			}
-
-			allRowsAffected := sqlResult.(mysql.Result).AllRowsAffected()
-			var rowsAffected int64
-			var allRowsAffectedInt64 []int64
-			for _, a := range allRowsAffected {
-				rowsAffected += a
-				allRowsAffectedInt64 = append(allRowsAffectedInt64, a)
-			}
-			totalRowsAffected += rowsAffected
-
-			opts.LogCommandResponse(rowsAffected, allRowsAffectedInt64, "")
-		}
-
-		if err := tx.Commit(); err != nil {
-			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
-			return errors.Wrapf(err, "failed to commit execute transaction")
-		} else {
-			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
-			committed = true
-		}
-		return nil
-	}); err != nil {
-		return 0, err
-	}
-
-	return totalRowsAffected, nil
-}
-
-// executeInAutoCommitMode executes statements sequentially in auto-commit mode
-func (d *Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, opts db.ExecuteOptions, connectionID string) (int64, error) {
-	var totalRowsAffected int64
-
-	if err := conn.Raw(func(driverConn any) error {
-		//nolint
-		exer := driverConn.(driver.ExecerContext)
-
-		for _, command := range commands {
-			opts.LogCommandExecute(command.Range, command.Text)
-
-			sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(command.Text)
-			sqlResult, err := exer.ExecContext(ctx, sqlWithBytebaseAppComment, nil)
-			if err != nil {
-				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-					slog.Info("cancel connection", slog.String("connectionID", connectionID))
-					if err := d.StopConnectionByID(connectionID); err != nil {
-						slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
-					}
-				}
-
-				opts.LogCommandResponse(0, nil, err.Error())
-				// In auto-commit mode, we stop at the first error
-				// The database is left in a partially migrated state
-				return err
-			}
-
-			allRowsAffected := sqlResult.(mysql.Result).AllRowsAffected()
-			var rowsAffected int64
-			var allRowsAffectedInt64 []int64
-			for _, a := range allRowsAffected {
-				rowsAffected += a
-				allRowsAffectedInt64 = append(allRowsAffectedInt64, a)
-			}
-			totalRowsAffected += rowsAffected
-
-			opts.LogCommandResponse(rowsAffected, allRowsAffectedInt64, "")
-		}
-
-		return nil
-	}); err != nil {
-		return 0, err
-	}
-
-	return totalRowsAffected, nil
-}
-
-// QueryConn queries a SQL statement in a given connection.
-func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
-	if err != nil {
-		return nil, err
-	}
-	singleSQLs = base.FilterEmptyStatements(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return nil, nil
-	}
-
-	connectionID, err := getConnectionID(ctx, conn)
-	if err != nil {
-		return nil, err
-	}
-	slog.Debug("connectionID", slog.String("connectionID", connectionID))
-
-	var results []*v1pb.QueryResult
-	for _, singleSQL := range singleSQLs {
-		statement := singleSQL.Text
-		if queryContext.Explain {
-			explained, err := base.ExplainStatement(storepb.Engine_MYSQL, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
-			if err != nil {
-				return nil, err
-			}
-			statement = explained
-		} else if queryContext.Limit > 0 {
-			statement = base.StatementWithResultLimit(storepb.Engine_MYSQL, statement, queryContext.Limit, "")
-		}
-		sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(statement)
-
-		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_MYSQL, statement)
-		if err != nil {
-			slog.Error("failed to validate sql", slog.String("statement", statement), log.BBError(err))
-			allQuery = true
-		}
-		startTime := time.Now()
-		queryResult, err := func() (*v1pb.QueryResult, error) {
-			if allQuery {
-				rows, err := conn.QueryContext(ctx, sqlWithBytebaseAppComment)
-				if err != nil {
-					return nil, err
-				}
-				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
-				if err != nil {
-					return nil, err
-				}
-				if err := rows.Err(); err != nil {
-					return nil, err
-				}
-				if !queryContext.Explain {
-					r.QueryPlan = db.TypedExplainPlan(mysqlparser.DescribeExplain(statement))
-				}
-				return r, nil
-			}
-
-			sqlResult, err := conn.ExecContext(ctx, statement)
-			if err != nil {
-				return nil, err
-			}
-			affectedRows, err := sqlResult.RowsAffected()
-			if err != nil {
-				slog.Info("rowsAffected returns error", log.BBError(err))
-			}
-			return util.BuildAffectedRowsResult(affectedRows, nil), nil
-		}()
-		stop := false
-		if err != nil {
-			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-				slog.Info("cancel connection", slog.String("connectionID", connectionID))
-				if err := d.StopConnectionByID(connectionID); err != nil {
-					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
-				}
-			}
-			queryResult = &v1pb.QueryResult{
-				Error: err.Error(),
-			}
-			stop = true
-		}
-		queryResult.Statement = statement
-		queryResult.Latency = durationpb.New(time.Since(startTime))
-		queryResult.RowsCount = int64(len(queryResult.Rows))
-		results = append(results, queryResult)
-		if stop {
-			break
-		}
-	}
-
-	return results, nil
-}
-
-func (d *Driver) StopConnectionByID(id string) error {
-	// We cannot use placeholder parameter because TiDB doesn't accept it.
-	_, err := d.db.Exec(fmt.Sprintf("KILL QUERY %s", id))
-	return err
-}
-
-func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
-	var id string
-	if err := conn.QueryRowContext(ctx, `SELECT CONNECTION_ID();`).Scan(&id); err != nil {
-		return "", err
-	}
-	return id, nil
 }

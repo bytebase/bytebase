@@ -854,23 +854,17 @@ const projectV1Routes: RouteObject[] = [
           (m) => m.WorkloadIdentitiesPage
         ),
       },
-      // Dark-launched with SQL Review V2: the route exists only where the
-      // sidebar entry that leads to it does.
-      ...(sqlReviewV2Enabled()
-        ? [
-            {
-              path: "sql-review",
-              handle: {
-                name: PROJECT_V1_ROUTE_SQL_REVIEW,
-                requiredPermissionList: (): Permission[] => ["bb.policies.get"],
-              },
-              lazy: lazyPage(
-                () => import("@/routes/project/ProjectSQLReviewPage"),
-                (m) => m.ProjectSQLReviewPage
-              ),
-            },
-          ]
-        : []),
+      {
+        path: "sql-review",
+        handle: {
+          name: PROJECT_V1_ROUTE_SQL_REVIEW,
+          requiredPermissionList: (): Permission[] => ["bb.policies.get"],
+        },
+        lazy: lazyPage(
+          () => import("@/routes/project/ProjectSQLReviewPage"),
+          (m) => m.ProjectSQLReviewPage
+        ),
+      },
       {
         path: "settings",
         handle: { name: PROJECT_V1_ROUTE_SETTINGS },

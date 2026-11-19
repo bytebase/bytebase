@@ -110,6 +110,7 @@ func TestReviewLiveStandardRules(t *testing.T) {
 			name:      "a rule that is off comes back when the policy names it",
 			statement: "UPDATE orders SET currency = 'EUR';",
 			policy:    whereSentence,
+			rules:     []StandardRule{{Type: storepb.ReviewRuleType_SYNTAX, Severity: SeverityP0, Reviewed: true}},
 			runs:      true,
 			check: func(t *testing.T, findings []Finding) {
 				require.True(t, anyFinding(findings, citesRule(whereSentence)), "a finding quotes the policy")

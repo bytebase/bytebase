@@ -113,7 +113,6 @@ export function DatabasesStep({
               {/* The sticky footer would cover an inline menu, so the
                   pickers on this page render theirs in the overlay layer. */}
               <Combobox
-                portal
                 value={groupName}
                 options={groups.map((group) => ({
                   value: group.name,
@@ -148,7 +147,6 @@ export function DatabasesStep({
               hint={t("gitops.setup.databases.databases-hint")}
             >
               <DatabaseSelect
-                portal
                 multiple
                 requireEnvironment
                 projectName={projectName}

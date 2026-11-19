@@ -27,7 +27,7 @@ import { useAppStore } from "@/stores/app";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { useSqlReviewV2, withReviewRun } from "../../hooks/useSqlReviewV2";
+import { useReviewHold, withReviewRun } from "../../hooks/useSqlReviewV2";
 import { focusPlanPhase } from "../../shell/focusPhase";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import type { PlanCheckSummary } from "../../utils/phaseSummary";
@@ -71,7 +71,7 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [acknowledge, setAcknowledge] = useState(false);
 
-  const sqlReview = useSqlReviewV2();
+  const sqlReview = useReviewHold();
   const review = sqlReview?.review;
   const reviewRun = review?.run;
   const dbGroupsByName = useAppStore((state) => state.dbGroupsByName);
@@ -85,7 +85,7 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
   // when it never ran on a plan with SQL to review: the server may still be
   // running it, or start it before an automatic rollout.
   const reviewUnknown =
-    !!sqlReview &&
+    !!sqlReview?.reviewHolds &&
     (!review ||
       review.run === undefined ||
       (review.run === null && reviewsSQL) ||

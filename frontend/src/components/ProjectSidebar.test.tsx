@@ -58,6 +58,7 @@ const t = vi.hoisted(
       "settings.members.workload-identities": "Workload Identities",
       "settings.sidebar.audit-log": "Audit Logs",
       "settings.sidebar.data-access": "Data Access",
+      "sql-review.title": "SQL Review",
       "sql-editor.access-grants": "Access Grants",
     })[key] ?? key
 );
@@ -321,6 +322,17 @@ describe("ProjectSidebar", () => {
       });
 
       expect(activeLabels(container)).toEqual(["Plans"]);
+
+      unmount();
+    });
+
+    test("lists SQL Review, whichever SQL review the workspace runs", () => {
+      const { container, unmount } = renderAt("workspace.project.detail");
+
+      const labels = Array.from(container.querySelectorAll("a")).map((link) =>
+        link.textContent?.trim()
+      );
+      expect(labels).toContain("SQL Review");
 
       unmount();
     });

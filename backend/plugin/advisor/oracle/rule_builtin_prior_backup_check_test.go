@@ -19,7 +19,7 @@ import (
 // backup fails at run time with no earlier signal unless the check warns.
 func TestPriorBackupLongColumnWarning(t *testing.T) {
 	// The real Oracle sync stores the connection schema's tables under an
-	// EMPTY schema name (db/oracle/sync.go) — the fixture must match that
+	// EMPTY schema name (omni's oracle/driver) — the fixture must match that
 	// shape or the schema comparison is never exercised realistically.
 	dbSchema := &metadatapb.DatabaseSchemaMetadata{
 		Name: "DB",

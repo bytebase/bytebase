@@ -14,6 +14,7 @@ import {
   PolicyType,
   ReviewAIPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 
 const SWITCH = { name: "sql-review.ai-review.enable.self" };
@@ -21,6 +22,7 @@ const POLICY_EDITOR = { name: "sql-review.ai-review.policy.self" };
 const WORKSPACE = "workspaces/ws";
 
 const mocks = vi.hoisted(() => ({
+  licensed: true,
   permissions: {} as Record<string, boolean>,
   saas: { value: false },
   upsertSetting: vi.fn(),
@@ -33,6 +35,7 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
+  usePlanFeature: () => mocks.licensed,
   useServerState: () => ({ isSaaSMode: mocks.saas.value }),
   useWorkspaceResourceName: () => "workspaces/ws",
 }));
@@ -40,6 +43,12 @@ vi.mock("@/hooks/useAppState", () => ({
 vi.mock("@/utils", () => ({
   hasWorkspacePermissionV2: (permission: string) =>
     mocks.permissions[permission] ?? true,
+}));
+
+vi.mock("@/components/FeatureAttention", () => ({
+  FeatureAttention: ({ feature }: { feature: number }) => (
+    <div role="note">feature-attention-{feature}</div>
+  ),
 }));
 
 vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
@@ -151,14 +160,18 @@ const {
   useWorkspaceReviewAIPolicy,
 } = await import("./SQLReviewAIReviewSection");
 
-function Harness() {
+function Harness({ standardRules }: { standardRules?: boolean }) {
   const aiReview = useWorkspaceAIReview();
-  const policy = useWorkspaceReviewAIPolicy(true);
+  const policy = useWorkspaceReviewAIPolicy();
   const [saved, setSaved] = useState<boolean>();
   const [policySaved, setPolicySaved] = useState<boolean>();
   return (
     <>
-      <SQLReviewAIReviewSection aiReview={aiReview} policy={policy} />
+      <SQLReviewAIReviewSection
+        aiReview={aiReview}
+        policy={policy}
+        standardRules={standardRules}
+      />
       <output>{aiReview.isDirty ? "dirty" : "clean"}</output>
       <output>{`saved: ${saved}`}</output>
       <output>{`policy ${policy.isDirty ? "dirty" : "clean"}`}</output>
@@ -191,6 +204,7 @@ describe("SQLReviewAIReviewSection", () => {
   beforeEach(() => {
     mocks.permissions = {};
     mocks.saas.value = false;
+    mocks.licensed = true;
     mocks.upsertSetting.mockReset();
     mocks.upsertPolicy.mockReset();
     mocks.pushNotification.mockReset();
@@ -229,6 +243,23 @@ describe("SQLReviewAIReviewSection", () => {
     expect(screen.getByText("policy saved: true")).toBeInTheDocument();
     expect(mocks.upsertSetting).not.toHaveBeenCalled();
     expect(mocks.pushNotification).not.toHaveBeenCalled();
+  });
+
+  test("without the Enterprise plan the review is off and asks for the plan", async () => {
+    mocks.licensed = false;
+    seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: true });
+    render(<Harness />);
+
+    expect(
+      screen.getByText(`feature-attention-${PlanFeature.FEATURE_AI_SQL_REVIEW}`)
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("switch", { name: "sql-review.ai-review.enable.self" })
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("sql-review.standard-rules.off")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("textbox", POLICY_EDITOR)
+    ).not.toBeInTheDocument();
   });
 
   test("a failed policy save keeps the edit", async () => {
@@ -338,6 +369,22 @@ describe("SQLReviewAIReviewSection", () => {
       "aria-checked",
       "false"
     );
+  });
+
+  test.each([
+    [true, "sql-review.ai-review.description", "sql-review.ai-review.policy.self", true],
+    [false, "sql-review.ai-review.comments-description", "sql-review.ai-review.policy.ai-review-policy", false],
+  ])("with the standard rules %s, describes the review and its policy for them", async (standardRules, description, policyTitle, hint) => {
+    seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: true });
+    render(<Harness standardRules={standardRules} />);
+    await act(async () => {});
+
+    expect(screen.getByText(description)).toBeInTheDocument();
+    expect(screen.getByText(policyTitle)).toBeInTheDocument();
+    expect(
+      screen.queryByText("sql-review.ai-review.policy.standard-rules-hint") !==
+        null
+    ).toBe(hint);
   });
 
   test("hides the policy while AI review is off", async () => {

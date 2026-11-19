@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import {
   denseFormContentStyle,
   denseFormHeaderStyle,
+  denseFormHeadingRowHorizontalStyle,
   denseFormSectionStyle,
   denseFormTitleStyle,
   formControlGroupStyle,
@@ -374,13 +375,18 @@ function FormSection({
   padding = "default",
   ...props
 }: FormSectionProps) {
+  const { layout: fieldLayout } = useContext(FormLayoutContext);
   const styles = formSectionLayoutStyles[layout];
   const sectionStylexProps = stylex.props(
     styles.section(),
     padding === "none" && formSectionNoPaddingStyle()
   );
   const headerStylexProps = stylex.props(styles.header());
-  const headingRowStylexProps = stylex.props(formSectionHeadingRowStyle());
+  const headingRowStylexProps = stylex.props(
+    layout === "stacked" && fieldLayout === "horizontal"
+      ? denseFormHeadingRowHorizontalStyle()
+      : formSectionHeadingRowStyle()
+  );
   const titleStylexProps = stylex.props(styles.title());
   const descriptionStylexProps = stylex.props(formSectionDescriptionStyle());
   const contentStylexProps = stylex.props(styles.content());

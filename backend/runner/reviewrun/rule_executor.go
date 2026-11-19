@@ -34,10 +34,11 @@ func NewRuleExecutor(s *store.Store) *RuleExecutor {
 	return &RuleExecutor{store: s, reviewFuncs: reviewFuncs}
 }
 
-// RunOnce implements Executor. Collect-all, no fail-fast: every unit is
-// attempted, failures aggregate into one message, and the findings are
+// review returns the rules' results before they become comments, so that the
+// AI review's findings can join them. Collect-all, no fail-fast: every unit is
+// attempted, failures aggregate into one message, and the results are
 // returned only when every unit was evaluated.
-func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID int64) ([]*store.IssueCommentMessage, error) {
+func (e *RuleExecutor) review(ctx context.Context, projectID string, issueUID int64) ([]*ruleResult, error) {
 	plan, project, err := loadReviewPlan(ctx, e.store, projectID, issueUID)
 	if err != nil {
 		return nil, err
@@ -80,7 +81,7 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 	}
 	markOtherSpecs(targets)
 
-	var comments []*store.IssueCommentMessage
+	var results []*ruleResult
 	sheets := make(map[string]string)
 	for _, unit := range groupReviewUnits(reviewRules(policy), targets) {
 		if err := ctx.Err(); err != nil {
@@ -121,13 +122,12 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 			}
 			unitErrs = append(unitErrs, errors.Wrapf(failure.Err, "%s", unit.Targets[failure.Target].Check.Target))
 		}
-		comments = append(comments, reviewResultComments(projectID, issueUID, unit, sql, result)...)
+		results = append(results, reviewResults(unit, sql, result)...)
 	}
 	if err := aggregateUnitErrors(len(checkTargets), unitErrs); err != nil {
 		return nil, err
 	}
-	sortReviewResults(plan.Config.GetSpecs(), comments)
-	return comments, nil
+	return results, nil
 }
 
 // failures reports one error per target of the unit, so the aggregate counts

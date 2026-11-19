@@ -528,7 +528,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	// The review starts before the workflow, whose approval check can create
 	// the rollout: a slot already in place holds it until the review is done.
 	if created {
-		startReview(ctx, s.profile, s.store, s.bus, issue)
+		startReview(ctx, s.profile, s.store, s.licenseService, s.bus, issue)
 	}
 	if created && !issue.Payload.GetDraft() {
 		issue, err = startIssueWorkflow(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)
@@ -1417,7 +1417,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 	if err := s.store.UpdateIssueComment(ctx, update); err != nil {
 		return nil, issueCommentError(err)
 	}
-	if s.profile.SQLReviewV2 && update.ThreadState != nil && *update.ThreadState == store.ThreadStateResolved {
+	if update.ThreadState != nil && *update.ThreadState == store.ThreadStateResolved {
 		requestRolloutCheck(ctx, s.store, s.bus, parentProjectID, parentIssueUID)
 	}
 	issueComment, err = s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: parentProjectID, ResourceID: &issueCommentID})

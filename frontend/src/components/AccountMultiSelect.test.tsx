@@ -156,7 +156,7 @@ describe("AccountMultiSelect", () => {
       );
     });
 
-    const input = container.querySelector(
+    const input = document.querySelector(
       '[data-testid="search"]'
     ) as HTMLInputElement;
     await act(async () => {
@@ -171,7 +171,7 @@ describe("AccountMultiSelect", () => {
       await Promise.resolve();
     });
 
-    const title = Array.from(container.querySelectorAll("b")).find(
+    const title = Array.from(document.querySelectorAll("b")).find(
       (element) => element.textContent === "Alice"
     );
     expect(title?.dataset.keyword).toBe("ali");
@@ -234,7 +234,7 @@ describe("AccountMultiSelect", () => {
       );
     });
 
-    const rendered = Array.from(container.querySelectorAll("b")).map(
+    const rendered = Array.from(document.querySelectorAll("b")).map(
       (element) => element.textContent
     );
     expect(rendered).toContain("Bob");
@@ -275,7 +275,7 @@ describe("AccountMultiSelect", () => {
       );
     });
 
-    expect(container.textContent).toContain("common.no-data");
+    expect(document.body.textContent).toContain("common.no-data");
     act(() => root.unmount());
   });
 
@@ -304,7 +304,7 @@ describe("AccountMultiSelect", () => {
         new MouseEvent("click", { bubbles: true })
       );
     });
-    const search = container.querySelector('[data-testid="search"]');
+    const search = document.querySelector('[data-testid="search"]');
     expect(search).not.toBeNull();
 
     await act(async () => {
@@ -313,7 +313,7 @@ describe("AccountMultiSelect", () => {
       );
     });
 
-    expect(container.querySelector('[data-testid="search"]')).toBeNull();
+    expect(document.querySelector('[data-testid="search"]')).toBeNull();
     expect(outerKeydown).not.toHaveBeenCalled();
     document.removeEventListener("keydown", outerKeydown);
     act(() => root.unmount());
@@ -333,7 +333,7 @@ describe("AccountMultiSelect", () => {
         />
       );
     });
-    expect(container.textContent).toContain("Add users or groups");
+    expect(document.body.textContent).toContain("Add users or groups");
     act(() => root.unmount());
   });
 
@@ -358,9 +358,9 @@ describe("AccountMultiSelect", () => {
         new MouseEvent("click", { bubbles: true })
       );
     });
-    expect(container.textContent).toContain("settings.members.all-users");
+    expect(document.body.textContent).toContain("settings.members.all-users");
 
-    const input = container.querySelector(
+    const input = document.querySelector(
       '[data-testid="search"]'
     ) as HTMLInputElement;
     await act(async () => {
@@ -373,8 +373,8 @@ describe("AccountMultiSelect", () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).not.toContain("settings.members.all-users");
-    expect(container.textContent).toContain("common.no-data");
+    expect(document.body.textContent).not.toContain("settings.members.all-users");
+    expect(document.body.textContent).toContain("common.no-data");
     act(() => root.unmount());
   });
 
@@ -395,8 +395,8 @@ describe("AccountMultiSelect", () => {
       );
     });
 
-    expect(container.textContent).toContain("deploy@service.bytebase.com");
-    expect(container.textContent).toContain("ci@workload.bytebase.com");
+    expect(document.body.textContent).toContain("deploy@service.bytebase.com");
+    expect(document.body.textContent).toContain("ci@workload.bytebase.com");
     act(() => root.unmount());
   });
 
@@ -421,7 +421,7 @@ describe("AccountMultiSelect", () => {
       );
     });
 
-    const input = container.querySelector(
+    const input = document.querySelector(
       '[data-testid="search"]'
     ) as HTMLInputElement;
     await act(async () => {
@@ -435,7 +435,7 @@ describe("AccountMultiSelect", () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).not.toContain(
+    expect(document.body.textContent).not.toContain(
       "settings.members.service-account"
     );
     act(() => root.unmount());
@@ -462,7 +462,7 @@ describe("AccountMultiSelect", () => {
       );
     });
 
-    const input = container.querySelector(
+    const input = document.querySelector(
       '[data-testid="search"]'
     ) as HTMLInputElement;
     await act(async () => {
@@ -476,7 +476,7 @@ describe("AccountMultiSelect", () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).not.toContain(
+    expect(document.body.textContent).not.toContain(
       "settings.members.service-account"
     );
     act(() => root.unmount());
@@ -504,7 +504,7 @@ describe("AccountMultiSelect", () => {
       );
     });
 
-    const input = container.querySelector(
+    const input = document.querySelector(
       '[data-testid="search"]'
     ) as HTMLInputElement;
     await act(async () => {
@@ -520,7 +520,7 @@ describe("AccountMultiSelect", () => {
 
     expect(mocks.listServiceAccounts).not.toHaveBeenCalled();
     expect(mocks.listWorkloadIdentities).not.toHaveBeenCalled();
-    expect(container.textContent).not.toContain("deploy@service.bytebase.com");
+    expect(document.body.textContent).not.toContain("deploy@service.bytebase.com");
 
     act(() => root.unmount());
   });
@@ -557,7 +557,7 @@ describe("AccountMultiSelect", () => {
       );
     });
 
-    const input = container.querySelector(
+    const input = document.querySelector(
       '[data-testid="search"]'
     ) as HTMLInputElement;
     await act(async () => {
@@ -571,7 +571,7 @@ describe("AccountMultiSelect", () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain("Deploy bot");
+    expect(document.body.textContent).toContain("Deploy bot");
     expect(mocks.listServiceAccounts).toHaveBeenLastCalledWith({
       parent: "workspaces/default",
       pageSize: 50,
@@ -579,7 +579,7 @@ describe("AccountMultiSelect", () => {
       filter: { query: "deploy" },
       skipCache: true,
     });
-    const deployBot = Array.from(container.querySelectorAll("b")).find(
+    const deployBot = Array.from(document.querySelectorAll("b")).find(
       (element) => element.textContent === "Deploy bot"
     );
     await act(async () => {
@@ -635,7 +635,7 @@ describe("AccountMultiSelect", () => {
       );
     });
 
-    const input = container.querySelector(
+    const input = document.querySelector(
       '[data-testid="search"]'
     ) as HTMLInputElement;
     await act(async () => {
@@ -654,12 +654,12 @@ describe("AccountMultiSelect", () => {
         .slice(-2)
         .map(([params]) => params.parent)
     ).toEqual(["workspaces/default", "projects/project-1"]);
-    expect(container.textContent).toContain("settings.members.service-accounts");
-    expect(container.textContent).toContain(
+    expect(document.body.textContent).toContain("settings.members.service-accounts");
+    expect(document.body.textContent).toContain(
       "settings.members.workload-identities"
     );
-    expect(container.textContent?.match(/Deploy bot/g)).toHaveLength(1);
-    const ciBot = Array.from(container.querySelectorAll("b")).find(
+    expect(document.body.textContent?.match(/Deploy bot/g)).toHaveLength(1);
+    const ciBot = Array.from(document.querySelectorAll("b")).find(
       (element) => element.textContent === "CI bot"
     );
     await act(async () => {
@@ -698,7 +698,7 @@ describe("AccountMultiSelect", () => {
       );
     });
 
-    const input = container.querySelector(
+    const input = document.querySelector(
       '[data-testid="search"]'
     ) as HTMLInputElement;
     const valueSetter = Object.getOwnPropertyDescriptor(
@@ -712,7 +712,7 @@ describe("AccountMultiSelect", () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).not.toContain(
+    expect(document.body.textContent).not.toContain(
       "settings.members.service-account"
     );
 
@@ -722,7 +722,7 @@ describe("AccountMultiSelect", () => {
       await Promise.resolve();
       await Promise.resolve();
     });
-    const ci = Array.from(container.querySelectorAll("b")).find(
+    const ci = Array.from(document.querySelectorAll("b")).find(
       (element) => element.textContent === "ci"
     );
     await act(async () => {
@@ -764,7 +764,7 @@ describe("AccountMultiSelect", () => {
         new MouseEvent("click", { bubbles: true })
       );
     });
-    const input = container.querySelector(
+    const input = document.querySelector(
       '[data-testid="search"]'
     ) as HTMLInputElement;
     await act(async () => {
@@ -776,7 +776,7 @@ describe("AccountMultiSelect", () => {
       input.dispatchEvent(new Event("input", { bubbles: true }));
       await Promise.resolve();
     });
-    const deploy = Array.from(container.querySelectorAll("b")).find(
+    const deploy = Array.from(document.querySelectorAll("b")).find(
       (element) => element.textContent === "deploy"
     );
     await act(async () => {

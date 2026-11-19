@@ -1,76 +1,148 @@
 package doris
 
 import (
+	"context"
 	"database/sql"
 
+	omnidriver "github.com/bytebase/omni/driver"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
-	switch typeName {
-	case "VARCHAR", "TEXT", "UUID", "DATETIME", "TIMESTAMP":
-		return new(sql.NullString)
-	case "BOOL":
-		return new(sql.NullBool)
-	case "INT", "INTEGER", "TINYINT", "SMALLINT", "MEDIUMINT", "BIGINT", "INT2", "INT4", "INT8":
-		return new(sql.NullInt64)
-	case "FLOAT", "DOUBLE", "FLOAT4", "FLOAT8":
-		return new(sql.NullFloat64)
-	case "BIT", "VARBIT":
-		return new([]byte)
-	default:
-		return new(sql.NullString)
+// QueryConn queries a SQL statement in a given connection. The caller's
+// connection is unused: the driver holds one server session for the driver's
+// life and runs every call of the editor stream on it, so a user variable, a
+// SET value or a temporary table a statement establishes is still there for the
+// next one. Calls are serialized the way they were on the caller's *sql.Conn.
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	d.sessionMu.Lock()
+	defer d.sessionMu.Unlock()
+	if d.session == nil {
+		session, err := d.impl.Session(ctx)
+		if err != nil {
+			return nil, err
+		}
+		d.session = session
+	}
+	session := d.session
+
+	results, err := session.Query(ctx, statement, queryOptions(queryContext))
+	if err != nil {
+		// The script could not be run at all, so what the session holds is unknown
+		// and the statement after this one opens a new session.
+		_ = session.Close()
+		d.session = nil
+		return nil, err
+	}
+	if ctx.Err() != nil {
+		// The client closes the connection when a statement's context ends, so the
+		// stream's next statement must open a new session.
+		_ = session.Close()
+		d.session = nil
+	}
+	return toQueryResults(results, queryContext.MaximumSQLResultSize), nil
+}
+
+// queryOptions maps the product's query context onto the driver's.
+//
+// MaskingEnabled is carried because this engine is a MySQL fork and MySQL's
+// driver withholds the rows of a statement masking cannot trace: a stored
+// procedure call answers with rows no column of the statement names. This
+// driver classifies a CALL as a command, so it returns no such rows today and
+// the flag changes nothing until the withholding lands here.
+func queryOptions(queryContext db.QueryContext) omnidriver.QueryOptions {
+	return omnidriver.QueryOptions{
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		MaxResultBytes: queryContext.MaximumSQLResultSize,
+		MaskingEnabled: queryContext.MaskingEnabled,
 	}
 }
 
-func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
-	switch raw := value.(type) {
-	case *sql.NullString:
-		if raw.Valid {
-			if typeName == "TIMESTAMP" || typeName == "DATETIME" {
-				_, scale, _ := columnType.DecimalSize()
-				return util.BuildTimestampOrStringRowValue(raw.String, scale)
-			}
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_StringValue{
-					StringValue: raw.String,
-				},
-			}
-		}
-	case *sql.NullInt64:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_Int64Value{
-					Int64Value: raw.Int64,
-				},
-			}
-		}
-	case *[]byte:
-		if len(*raw) > 0 {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_BytesValue{
-					BytesValue: *raw,
-				},
-			}
-		}
-	case *sql.NullBool:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_BoolValue{
-					BoolValue: raw.Bool,
-				},
-			}
-		}
-	case *sql.NullFloat64:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_DoubleValue{
-					DoubleValue: raw.Float64,
-				},
-			}
-		}
-	default:
+// toQueryResults converts the driver's results into the API's, keeping each
+// statement's error, text and latency. The driver's plan description is not
+// carried into QueryResult.QueryPlan: an explain request already answers with
+// the plan's rows, which is what the editor shows for this engine.
+func toQueryResults(results []*omnidriver.Result, maxResultBytes int64) []*v1pb.QueryResult {
+	if len(results) == 0 {
+		return nil
 	}
-	return util.NullRowValue
+	queryResults := make([]*v1pb.QueryResult, 0, len(results))
+	for _, result := range results {
+		queryResults = append(queryResults, toQueryResult(result, maxResultBytes))
+	}
+	return queryResults
+}
+
+func toQueryResult(result *omnidriver.Result, maxResultBytes int64) *v1pb.QueryResult {
+	latency := durationpb.New(result.Latency)
+	if result.AffectedRows != nil {
+		affected := util.BuildAffectedRowsResult(*result.AffectedRows, nil)
+		affected.Statement = result.Statement
+		affected.Latency = latency
+		affected.RowsCount = int64(len(affected.Rows))
+		return affected
+	}
+
+	queryResult := &v1pb.QueryResult{
+		Statement: result.Statement,
+		Latency:   latency,
+	}
+	for _, column := range result.Columns {
+		queryResult.ColumnNames = append(queryResult.ColumnNames, column.Name)
+		queryResult.ColumnTypeNames = append(queryResult.ColumnTypeNames, column.TypeName)
+	}
+	for _, row := range result.Rows {
+		values := make([]*v1pb.RowValue, 0, len(row))
+		for _, value := range row {
+			values = append(values, toRowValue(value))
+		}
+		queryResult.Rows = append(queryResult.Rows, &v1pb.QueryRow{Values: values})
+	}
+	queryResult.RowsCount = int64(len(queryResult.Rows))
+	if result.Truncated {
+		queryResult.Error = util.FormatMaximumSQLResultSizeMessage(maxResultBytes)
+	}
+	if result.Err != nil {
+		queryResult.Error = result.Err.Error()
+	}
+	return queryResult
+}
+
+func toRowValue(value omnidriver.Value) *v1pb.RowValue {
+	switch value.Kind {
+	case omnidriver.Null:
+		return util.NullRowValue
+	case omnidriver.Bool:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value.Bool}}
+	case omnidriver.Bytes:
+		// Doris reports BIT and VARBIT as bytes, and a zero-byte value has always
+		// been a NULL cell here: the length is what decides, not whether the
+		// driver sent an empty (non-nil) slice.
+		if len(value.Bytes) == 0 {
+			return util.NullRowValue
+		}
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.Bytes}}
+	case omnidriver.Float32, omnidriver.Float64:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: value.Float64}}
+	case omnidriver.Int32, omnidriver.Int64:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: value.Int64}}
+	case omnidriver.String:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String}}
+	case omnidriver.Timestamp:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampValue{
+			TimestampValue: &v1pb.RowValue_Timestamp{
+				GoogleTimestamp: timestamppb.New(value.Time),
+				Accuracy:        value.Precision,
+			},
+		}}
+	default:
+		// Doris has no other kind: the driver's unsigneds, zone-aware timestamps
+		// and structured documents are other engines' shapes.
+		return util.NullRowValue
+	}
 }

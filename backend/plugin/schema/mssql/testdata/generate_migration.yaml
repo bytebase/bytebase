@@ -311,9 +311,8 @@
       CONSTRAINT [PK_employees] PRIMARY KEY CLUSTERED ([id]),
       CONSTRAINT [FK_employees_departments] FOREIGN KEY ([department_id]) REFERENCES [dbo].[departments] ([id])
     );
-  expected: |+
+  expected: |
     ALTER TABLE [dbo].[employees] ADD CONSTRAINT [FK_employees_departments] FOREIGN KEY ([department_id]) REFERENCES [dbo].[departments] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
-
 - description: Drop foreign key constraint
   oldSchema: |
     CREATE TABLE [dbo].[departments] (
@@ -952,9 +951,9 @@
   newSchema: ""
   expected: |
     ALTER TABLE [dbo].[orders] DROP CONSTRAINT [FK_orders_users];
-    DROP PROCEDURE [dbo].[sp_get_user_orders];
-    GO
     DROP VIEW [dbo].[v_user_orders];
+    GO
+    DROP PROCEDURE [dbo].[sp_get_user_orders];
     GO
     DROP TABLE [dbo].[orders];
     DROP TABLE [dbo].[users];
@@ -1273,6 +1272,7 @@
     );
   expected: |+
     ALTER TABLE [sales].[orders] DROP COLUMN [product_id];
+    GO
     DROP TABLE [inventory].[products];
     DROP SCHEMA [inventory];
     GO
@@ -1848,15 +1848,15 @@
 
     CREATE INDEX [idx_author] ON [library].[books] ([author_id]);
     CREATE INDEX [idx_year] ON [library].[books] ([published_year]);
-  expected: |+
+  expected: |
     ALTER TABLE [library].[books] DROP CONSTRAINT [fk_author_new];
     GO
     ALTER TABLE [library].[books] DROP CONSTRAINT [chk_title_length];
     ALTER TABLE [library].[books] DROP CONSTRAINT [chk_year_extended];
 
     ALTER TABLE [library].[books] ADD CONSTRAINT [chk_year_valid] CHECK ([published_year] >= 1000 AND [published_year] <= 2100);
-    ALTER TABLE [library].[books] ADD CONSTRAINT [fk_author] FOREIGN KEY ([author_id]) REFERENCES [library].[authors] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
+    ALTER TABLE [library].[books] ADD CONSTRAINT [fk_author] FOREIGN KEY ([author_id]) REFERENCES [library].[authors] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
 - description: Self-referencing foreign keys and complex view dependencies
   oldSchema: |
     CREATE SCHEMA [company];
@@ -1947,13 +1947,13 @@
     -- Add self-referencing foreign key
     ALTER TABLE [company].[departments] ADD CONSTRAINT [fk_manager] FOREIGN KEY ([manager_id]) REFERENCES [company].[employees]([id]);
   expected: |
-    DROP PROCEDURE [company].[GetDepartmentReport];
-    GO
     DROP VIEW [company].[dept_manager_summary];
     GO
     DROP VIEW [company].[dept_summary];
     GO
     DROP VIEW [company].[dept_employee_count];
+    GO
+    DROP PROCEDURE [company].[GetDepartmentReport];
     GO
 - description: Adding comments to tables and columns using SQL Server extended properties
   oldSchema: |
@@ -2124,15 +2124,15 @@
   expected: |
     ALTER TABLE [test].[invoices] DROP COLUMN [payment_status];
 
-    EXEC sp_updateextendedproperty 'MS_Description', 'Customer information database', 'SCHEMA', 'test', 'TABLE', 'customers';
-    EXEC sp_updateextendedproperty 'MS_Description', 'Customer unique ID', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'id';
-    EXEC sp_updateextendedproperty 'MS_Description', 'Customer full name', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'name';
-    EXEC sp_updateextendedproperty 'MS_Description', 'Customer email for marketing', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'email';
-    EXEC sp_addextendedproperty 'MS_Description', 'Customer contact number', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'phone';
+    EXEC sp_updateextendedproperty 'MS_Description', N'Customer information database', 'SCHEMA', 'test', 'TABLE', 'customers';
+    EXEC sp_updateextendedproperty 'MS_Description', N'Customer unique ID', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'id';
+    EXEC sp_updateextendedproperty 'MS_Description', N'Customer full name', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'name';
+    EXEC sp_updateextendedproperty 'MS_Description', N'Customer email for marketing', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'email';
+    EXEC sp_addextendedproperty 'MS_Description', N'Customer contact number', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'phone';
     EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'created_at';
-    EXEC sp_updateextendedproperty 'MS_Description', 'Invoice records for billing', 'SCHEMA', 'test', 'TABLE', 'invoices';
-    EXEC sp_addextendedproperty 'MS_Description', 'Invoice number', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'id';
-    EXEC sp_addextendedproperty 'MS_Description', 'Link to customer', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'customer_id';
+    EXEC sp_updateextendedproperty 'MS_Description', N'Invoice records for billing', 'SCHEMA', 'test', 'TABLE', 'invoices';
+    EXEC sp_addextendedproperty 'MS_Description', N'Invoice number', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', N'Link to customer', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'customer_id';
     GO
 - description: Comments with special characters, quotes, multiline text, and Unicode
   oldSchema: |
@@ -2839,7 +2839,7 @@
         CONSTRAINT [ck_employees_salary] CHECK ([salary] > 0),
         CONSTRAINT [ck_employees_status] CHECK ([status] IN ('ACTIVE', 'INACTIVE', 'TERMINATED'))
     );
-  expected: |+
+  expected: |
     ALTER TABLE [hr].[employees] DROP CONSTRAINT [PK_employees_1];
 
     CREATE TABLE [hr].[departments] (
@@ -2854,9 +2854,9 @@
     ALTER TABLE [hr].[employees] ADD CONSTRAINT [PK_employees_2] PRIMARY KEY ([id]);
     ALTER TABLE [hr].[employees] ADD CONSTRAINT [ck_employees_salary] CHECK ([salary] > 0);
     ALTER TABLE [hr].[employees] ADD CONSTRAINT [ck_employees_status] CHECK ([status] IN ('ACTIVE', 'INACTIVE', 'TERMINATED'));
+
     ALTER TABLE [hr].[employees] ADD CONSTRAINT [fk_employees_department] FOREIGN KEY ([department_id]) REFERENCES [hr].[departments] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
     ALTER TABLE [hr].[employees] ADD CONSTRAINT [fk_employees_manager] FOREIGN KEY ([manager_id]) REFERENCES [hr].[employees] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
-
 - description: Reverse of multiple schema dependencies - dropping cross-schema references
   oldSchema: |
     CREATE SCHEMA [core];
@@ -3147,23 +3147,23 @@
     );
     ALTER TABLE [app].[orders] ADD CONSTRAINT [fk_orders_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
     ALTER TABLE [app].[orders] ADD CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [app].[products] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
-    EXEC sp_addextendedproperty 'MS_Description', 'Customer orders tracking system', 'SCHEMA', 'app', 'TABLE', 'orders';
-    EXEC sp_addextendedproperty 'MS_Description', 'Unique order identifier', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'id';
-    EXEC sp_addextendedproperty 'MS_Description', 'Reference to the user who placed the order', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'user_id';
-    EXEC sp_addextendedproperty 'MS_Description', 'Reference to the ordered product', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'product_id';
-    EXEC sp_addextendedproperty 'MS_Description', 'Number of items ordered', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'quantity';
-    EXEC sp_addextendedproperty 'MS_Description', 'When the order was placed', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'order_date';
-    EXEC sp_addextendedproperty 'MS_Description', 'Product catalog with pricing information', 'SCHEMA', 'app', 'TABLE', 'products';
-    EXEC sp_addextendedproperty 'MS_Description', 'Unique product identifier', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'id';
-    EXEC sp_addextendedproperty 'MS_Description', 'Product display name', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'name';
-    EXEC sp_addextendedproperty 'MS_Description', 'Product price in USD', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'price';
-    EXEC sp_addextendedproperty 'MS_Description', 'Product category classification', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'category';
-    EXEC sp_addextendedproperty 'MS_Description', 'User accounts and profile information', 'SCHEMA', 'app', 'TABLE', 'users';
-    EXEC sp_addextendedproperty 'MS_Description', 'Unique identifier for each user', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'id';
-    EXEC sp_addextendedproperty 'MS_Description', 'Unique username for login authentication', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'username';
-    EXEC sp_addextendedproperty 'MS_Description', 'User email address for notifications', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'email';
-    EXEC sp_addextendedproperty 'MS_Description', 'Timestamp when the user account was created', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'created_at';
-    EXEC sp_addextendedproperty 'MS_Description', 'Current status: active, inactive, or suspended', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'status';
+    EXEC sp_addextendedproperty 'MS_Description', N'Customer orders tracking system', 'SCHEMA', 'app', 'TABLE', 'orders';
+    EXEC sp_addextendedproperty 'MS_Description', N'Unique order identifier', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', N'Reference to the user who placed the order', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'user_id';
+    EXEC sp_addextendedproperty 'MS_Description', N'Reference to the ordered product', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'product_id';
+    EXEC sp_addextendedproperty 'MS_Description', N'Number of items ordered', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'quantity';
+    EXEC sp_addextendedproperty 'MS_Description', N'When the order was placed', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'order_date';
+    EXEC sp_addextendedproperty 'MS_Description', N'Product catalog with pricing information', 'SCHEMA', 'app', 'TABLE', 'products';
+    EXEC sp_addextendedproperty 'MS_Description', N'Unique product identifier', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', N'Product display name', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'name';
+    EXEC sp_addextendedproperty 'MS_Description', N'Product price in USD', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'price';
+    EXEC sp_addextendedproperty 'MS_Description', N'Product category classification', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'category';
+    EXEC sp_addextendedproperty 'MS_Description', N'User accounts and profile information', 'SCHEMA', 'app', 'TABLE', 'users';
+    EXEC sp_addextendedproperty 'MS_Description', N'Unique identifier for each user', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', N'Unique username for login authentication', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'username';
+    EXEC sp_addextendedproperty 'MS_Description', N'User email address for notifications', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'email';
+    EXEC sp_addextendedproperty 'MS_Description', N'Timestamp when the user account was created', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'created_at';
+    EXEC sp_addextendedproperty 'MS_Description', N'Current status: active, inactive, or suspended', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'status';
     GO
 - description: Reverse of default constraint operations - dropping tables, columns with defaults, and default constraints
   oldSchema: |
@@ -3436,25 +3436,25 @@
       [data] NVARCHAR(MAX) NULL,
       CONSTRAINT [PK_test_extreme_3] PRIMARY KEY ([id])
     );
-    EXEC sp_addextendedproperty 'MS_Description', 'Document storage system - handles files, "metadata", & special chars: @#$%^&*()_+-={}[]|\:";''<>?,./', 'SCHEMA', 'special', 'TABLE', 'documents';
-    EXEC sp_addextendedproperty 'MS_Description', 'Primary key (auto-increment) - unique ID for each document', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'id';
-    EXEC sp_addextendedproperty 'MS_Description', 'Document title - may contain "quotes", ''apostrophes'', and symbols: @#$%', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'title';
-    EXEC sp_addextendedproperty 'MS_Description', 'Document content field:
+    EXEC sp_addextendedproperty 'MS_Description', N'Document storage system - handles files, "metadata", & special chars: @#$%^&*()_+-={}[]|\:";''<>?,./', 'SCHEMA', 'special', 'TABLE', 'documents';
+    EXEC sp_addextendedproperty 'MS_Description', N'Primary key (auto-increment) - unique ID for each document', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', N'Document title - may contain "quotes", ''apostrophes'', and symbols: @#$%', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'title';
+    EXEC sp_addextendedproperty 'MS_Description', N'Document content field:
       • Supports rich text formatting
       • HTML tags like <p>, <div>, <span>
       • Special characters: © ® ™ § ¶ † ‡ • ‰ ′ ″
       • Mathematical: ± × ÷ ≠ ≤ ≥ ∞ ∑ ∏ ∫
       • Currency: $ € £ ¥ ₹ ₽
       • Arrows: ← → ↑ ↓ ↔ ⇐ ⇒ ⇔', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'content';
-    EXEC sp_addextendedproperty 'MS_Description', 'Author name field - prevents SQL injection like ''; DROP TABLE users; --', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'author';
-    EXEC sp_addextendedproperty 'MS_Description', 'Metadata JSON: {"version": "1.0", "tags": ["important", "draft"], "settings": {"public": false}}', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'metadata';
-    EXEC sp_addextendedproperty 'MS_Description', 'This is an extremely long comment designed to test the limits of extended property storage in SQL Server. It contains multiple lines of text with various formatting, special characters, and technical information. The purpose is to verify that the migration system can properly handle, store, and retrieve complex comment data without truncation or corruption. This comment includes: numbers (123456789), symbols (!@#$%^&*()_+-={}[]|\:";''<>?,./ ), Unicode characters (αβγδε中文العربيةрусский한국어), and structured data like JSON {"key": "value", "array": [1, 2, 3], "nested": {"deep": true}}. Additionally, it tests SQL-like syntax: SELECT * FROM table WHERE column = ''value'' AND other_column IN (1, 2, 3); as well as HTML markup: <html><body><p class="test">Content</p></body></html> and XML: <?xml version="1.0"?><root><item id="1">Test</item></root>. The comment system should preserve all these characters and structures exactly as written, demonstrating robust handling of complex metadata in database schema documentation.', 'SCHEMA', 'special', 'TABLE', 'test_extreme';
-    EXEC sp_addextendedproperty 'MS_Description', 'Translation table for international support:
+    EXEC sp_addextendedproperty 'MS_Description', N'Author name field - prevents SQL injection like ''; DROP TABLE users; --', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'author';
+    EXEC sp_addextendedproperty 'MS_Description', N'Metadata JSON: {"version": "1.0", "tags": ["important", "draft"], "settings": {"public": false}}', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'metadata';
+    EXEC sp_addextendedproperty 'MS_Description', N'This is an extremely long comment designed to test the limits of extended property storage in SQL Server. It contains multiple lines of text with various formatting, special characters, and technical information. The purpose is to verify that the migration system can properly handle, store, and retrieve complex comment data without truncation or corruption. This comment includes: numbers (123456789), symbols (!@#$%^&*()_+-={}[]|\:";''<>?,./ ), Unicode characters (αβγδε中文العربيةрусский한국어), and structured data like JSON {"key": "value", "array": [1, 2, 3], "nested": {"deep": true}}. Additionally, it tests SQL-like syntax: SELECT * FROM table WHERE column = ''value'' AND other_column IN (1, 2, 3); as well as HTML markup: <html><body><p class="test">Content</p></body></html> and XML: <?xml version="1.0"?><root><item id="1">Test</item></root>. The comment system should preserve all these characters and structures exactly as written, demonstrating robust handling of complex metadata in database schema documentation.', 'SCHEMA', 'special', 'TABLE', 'test_extreme';
+    EXEC sp_addextendedproperty 'MS_Description', N'Translation table for international support:
     - Supports Unicode characters: αβγδε, 中文, العربية, русский
     - Handles quotes: "double quotes" and ''single quotes''
     - Special symbols: @#$%^&*()_+-={}[]|\:";''<>?,./', 'SCHEMA', 'special', 'TABLE', 'translations';
-    EXEC sp_addextendedproperty 'MS_Description', 'Language code: en-US, fr-FR, de-DE, ja-JP, zh-CN, ar-SA, ru-RU, hi-IN, 한국어, ไทย', 'SCHEMA', 'special', 'TABLE', 'translations', 'COLUMN', 'lang_code';
-    EXEC sp_addextendedproperty 'MS_Description', 'Translated content - may reference URLs like https://example.com/path?param=value&other=123 or file paths C:\Users\Name\Documents\file.txt', 'SCHEMA', 'special', 'TABLE', 'translations', 'COLUMN', 'translated_content';
+    EXEC sp_addextendedproperty 'MS_Description', N'Language code: en-US, fr-FR, de-DE, ja-JP, zh-CN, ar-SA, ru-RU, hi-IN, 한국어, ไทย', 'SCHEMA', 'special', 'TABLE', 'translations', 'COLUMN', 'lang_code';
+    EXEC sp_addextendedproperty 'MS_Description', N'Translated content - may reference URLs like https://example.com/path?param=value&other=123 or file paths C:\Users\Name\Documents\file.txt', 'SCHEMA', 'special', 'TABLE', 'translations', 'COLUMN', 'translated_content';
     GO
 - description: Reverse of edge case defaults - dropping special default constraints and columns
   oldSchema: |
@@ -3624,17 +3624,13 @@
     USING GEOGRAPHY_GRID
     WITH (
         GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM),
-        CELLS_PER_OBJECT = 16,
-        ALLOW_ROW_LOCKS = ON,
-        ALLOW_PAGE_LOCKS = ON
+        CELLS_PER_OBJECT = 16
     );
     CREATE SPATIAL INDEX [idx_area] ON [geo].[locations] ([area])
     USING GEOGRAPHY_GRID
     WITH (
         GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM),
-        CELLS_PER_OBJECT = 8,
-        ALLOW_ROW_LOCKS = ON,
-        ALLOW_PAGE_LOCKS = ON
+        CELLS_PER_OBJECT = 8
     );
     ALTER TABLE [geo].[regions] ADD CONSTRAINT [PK_regions_2] PRIMARY KEY ([id]);
 
@@ -3773,18 +3769,14 @@
     USING GEOGRAPHY_GRID
     WITH (
         GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM),
-        CELLS_PER_OBJECT = 32,
-        ALLOW_ROW_LOCKS = ON,
-        ALLOW_PAGE_LOCKS = ON
+        CELLS_PER_OBJECT = 32
     );
     CREATE SPATIAL INDEX [idx_location] ON [geo].[spatial_data] ([location])
     USING GEOMETRY_GRID
     WITH (
         BOUNDING_BOX = (-100, -100, 100, 100),
         GRIDS = (LEVEL_1 = LOW, LEVEL_2 = LOW, LEVEL_3 = LOW, LEVEL_4 = LOW),
-        CELLS_PER_OBJECT = 16,
-        ALLOW_ROW_LOCKS = ON,
-        ALLOW_PAGE_LOCKS = ON
+        CELLS_PER_OBJECT = 16
     );
 
 - description: Spatial table schema changes - adding columns and indexes while preserving existing spatial indexes

@@ -36,6 +36,7 @@ import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { extractDatabaseGroupName } from "@/utils/v1/databaseGroup";
+import { reviewerName } from "../../utils/reviewLabels";
 import { getDatabaseGroupRouteParams } from "../../utils/targets";
 import { PlanTargetDisplay } from "../PlanTargetDisplay";
 import {
@@ -92,12 +93,6 @@ export function useCommentAuthor(comment: IssueComment): {
 
 export function ReviewerIcon({ className }: { className: string }) {
   return <ListChecks className={className} />;
-}
-
-// Every review result names the one review as its author, whichever part of
-// it found the problem.
-export function reviewerName(t: TFunction): string {
-  return t("sql-review.reviewer");
 }
 
 export function ReviewPriorityBadge({

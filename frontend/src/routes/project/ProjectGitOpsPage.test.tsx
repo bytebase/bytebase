@@ -213,12 +213,8 @@ vi.mock("@/components/ui/copy-button", () => ({
 }));
 
 vi.mock("@/components/ui/combobox", () => ({
-  Combobox: ({ value, portal }: { value: string; portal?: boolean }) => (
-    <div
-      data-testid="group-select"
-      data-value={value}
-      data-portal={String(!!portal)}
-    />
+  Combobox: ({ value }: { value: string }) => (
+    <div data-testid="group-select" data-value={value} />
   ),
 }));
 
@@ -226,17 +222,11 @@ vi.mock("@/components/DatabaseSelect", () => ({
   DatabaseSelect: ({
     value,
     onChange,
-    portal,
   }: {
     value: string[];
     onChange: (names: string[]) => void;
-    portal?: boolean;
   }) => (
-    <div
-      data-testid="database-select"
-      data-value={value.join(",")}
-      data-portal={String(!!portal)}
-    >
+    <div data-testid="database-select" data-value={value.join(",")}>
       <button
         type="button"
         onClick={() => onChange(["instances/pg-prod/databases/shop_a"])}
@@ -274,18 +264,12 @@ vi.mock("./WorkloadIdentitySelect", () => ({
     value,
     onChange,
     disabledReason,
-    portal,
   }: {
     value: string;
     onChange: (name: string) => void;
     disabledReason: (wi: WorkloadIdentity) => string | undefined;
-    portal?: boolean;
   }) => (
-    <div
-      data-testid="identity-select"
-      data-value={value}
-      data-portal={String(!!portal)}
-    >
+    <div data-testid="identity-select" data-value={value}>
       {mocks.state.identities.map((wi) => {
         const reason = disabledReason(wi);
         return (
@@ -691,35 +675,6 @@ describe("ProjectGitOpsPage", () => {
     expect(copyButtons.length).toBeGreaterThan(0);
     expect(copyButtons.every((b) => b.disabled)).toBe(true);
     expect(container.textContent).toContain("gitops.setup.files.url-missing");
-  });
-
-  test("every picker opens its menu above the sticky footer", async () => {
-    const portal = (testId: string) =>
-      container
-        .querySelector(`[data-testid="${testId}"]`)
-        ?.getAttribute("data-portal");
-    setProject({
-      groups: 1,
-      databases: [databaseOf("shop", "environments/prod")],
-      identities: [DEPLOY_CI],
-      members: [DEPLOY_CI],
-    });
-    await render();
-    expect(portal("group-select")).toBe("true");
-    act(() => root.unmount());
-    container.remove();
-
-    // With no group the Databases tab opens and its one database is picked.
-    setProject({
-      databases: [databaseOf("shop", "environments/prod")],
-      identities: [DEPLOY_CI],
-      members: [DEPLOY_CI],
-    });
-    await render();
-    expect(portal("database-select")).toBe("true");
-
-    await click(continueButton());
-    expect(portal("identity-select")).toBe("true");
   });
 
   test("a long file shows its first lines until Show all, and Copy takes the whole file", async () => {

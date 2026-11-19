@@ -1,13 +1,12 @@
-// Package mariadb registers MariaDB's DDL simulation.
+// Package mariadb registers MariaDB's DDL simulation and its metadata diff.
 //
-// Unlike the other engine packages here it owns no catalog work. omni's MariaDB
-// catalog has New, Exec and LoadSQL but no LoadMetadata, Diff, GenerateMigration
-// or version handling — 56 of the 66 catalog entry points schema/mysql uses are
-// absent — so there is nothing to install a synced schema into and nothing to
-// diff. MariaDB therefore simulates on omni's MySQL catalog, and this package
-// exists to hold that decision in a MariaDB file rather than as a special case
-// inside schema/mysql. When omni's catalog grows those entry points, this is
-// where the real fork goes.
+// The metadata diff (metadata_migration.go) runs on omni's MariaDB catalog, which
+// is the only catalog that installs MariaDB-only definitions such as WITH SYSTEM
+// VERSIONING.
+//
+// The walk-through still simulates on omni's MySQL catalog, re-reading the script
+// with omni's MySQL parser and discarding a script that parser rejects. Nothing in
+// the MariaDB catalog blocks moving it; that is a change of its own.
 package mariadb
 
 import (

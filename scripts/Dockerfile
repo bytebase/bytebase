@@ -10,7 +10,7 @@ COPY . .
 RUN pnpm --dir ./frontend i
 RUN pnpm --dir ./frontend release-docker
 
-FROM golang:1.27.3-alpine3.24 AS backend
+FROM golang:1.27.4-alpine3.24 AS backend
 ARG VERSION
 ARG GIT_COMMIT
 
@@ -32,7 +32,7 @@ RUN CC=clang go build \
   -ldflags="-extldflags '-Wl,-z,stack-size=0x1000000' -w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
   -o bytebase ./backend/bin/server/main.go
 
-FROM alpine:3.24.3 AS monolithic
+FROM alpine:3.24.4 AS monolithic
 ARG VERSION
 ARG GIT_COMMIT
 

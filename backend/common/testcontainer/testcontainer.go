@@ -235,11 +235,19 @@ func getTLSPgContainer(ctx context.Context) (retC *Container, retErr error) {
 // GetMySQLContainer starts MySQL. Exported for the same reason as GetPgContainer.
 func GetMySQLContainer(ctx context.Context) (*Container, error) {
 	const user, password = "root", "root-password"
-	return start(ctx, testcontainers.ContainerRequest{
-		Image:      "mysql:8.0.33",
+	image := os.Getenv("BB_TEST_MYSQL_IMAGE")
+	if image == "" {
+		image = "mysql:8.0.33"
+	}
+	req := testcontainers.ContainerRequest{
+		Image:      image,
 		Env:        map[string]string{"MYSQL_ROOT_PASSWORD": password},
 		WaitingFor: wait.ForLog("ready for connections").WithOccurrence(2).WithStartupTimeout(5 * time.Minute),
-	}, spec{
+	}
+	if os.Getenv("BB_TEST_MYSQL_LOWER_CASE_TABLE_NAMES") == "1" {
+		req.Cmd = []string{"--lower-case-table-names=1"}
+	}
+	return start(ctx, req, spec{
 		port:     "3306/tcp",
 		username: user,
 		password: password,
@@ -342,9 +350,13 @@ func getTrinoContainer(ctx context.Context) (*Container, error) {
 	})
 }
 
+// getTiDBContainer starts the TiDB release the cutover was measured on: v8.5.5
+// is the release omni's engine test matrix pins for tidb, and the one the
+// partition-order, unsigned-integer, binary and role-grant changes were diffed
+// against.
 func getTiDBContainer(ctx context.Context) (*Container, error) {
 	return start(ctx, testcontainers.ContainerRequest{
-		Image:      "pingcap/tidb:v8.5.0",
+		Image:      "pingcap/tidb:v8.5.5",
 		WaitingFor: wait.ForLog("server is running MySQL protocol").WithStartupTimeout(5 * time.Minute),
 	}, spec{
 		port:     "4000/tcp",
@@ -360,10 +372,10 @@ func getTiDBContainer(ctx context.Context) (*Container, error) {
 // tests open the Mongo driver themselves from the container's credentials.
 //
 // The image is pinned to the oldest MongoDB release Bytebase supports
-// (mongodb.MinSupportedServerVersion), so that a driver upgrade which raises the
-// floor above it fails this suite instead of reaching customers. Importing that
-// constant here would invert the dependency between the harness and the plugin,
-// so the two are kept in step by hand.
+// (mongo/driver.MinSupportedServerVersion), so that a driver upgrade which
+// raises the floor above it fails this suite instead of reaching customers.
+// Importing that constant here would invert the dependency between the harness
+// and the engine driver, so the two are kept in step by hand.
 func getMongoDBContainer(ctx context.Context) (*Container, error) {
 	const user, password = "testuser", "testpass"
 	return start(ctx, testcontainers.ContainerRequest{
@@ -644,6 +656,22 @@ func getRedisClusterContainer(ctx context.Context) (retC *Container, retErr erro
 			return nil, ctx.Err()
 		}
 	}
+}
+
+// getClickHouseContainer starts ClickHouse. Its native protocol, on 9000, is
+// what the driver speaks. The image disables network access for its default
+// account unless the entrypoint is told not to, so the container starts with
+// CLICKHOUSE_SKIP_USER_SETUP=1: the account tests use is the image's own
+// "default", with no password. The server's stdout carries only the
+// entrypoint's lines, so boot waits for the listening port; the driver's own
+// first query covers the moment between the port and a runnable query.
+func getClickHouseContainer(ctx context.Context) (*Container, error) {
+	return start(ctx, testcontainers.ContainerRequest{
+		Image: "clickhouse/clickhouse-server:26.8.38.9",
+		Env:   map[string]string{"CLICKHOUSE_SKIP_USER_SETUP": "1"},
+		WaitingFor: wait.ForListeningPort("9000/tcp").
+			WithStartupTimeout(2 * time.Minute),
+	}, spec{port: "9000/tcp", username: "default"})
 }
 
 // redisCLI runs redis-cli inside the container, which keeps the cluster

@@ -140,16 +140,100 @@ type ruleFinding struct {
 	message     string
 	anchor      *storepb.IssueCommentPayload_StatementAnchor
 	fingerprint string
+	// facts is what the AI review adds to the finding about its statement on
+	// the databases, which the result's comment carries after the finding's
+	// own text. It is empty when folded is not.
+	facts string
+	// folded is the AI review's problems on the finding's operation, each as
+	// the text the result's comment carries after the finding's own.
+	folded []string
+	// raised is the highest priority among those problems that report more
+	// than the rule's own condition, or unspecified.
+	raised storepb.IssueCommentPayload_ReviewMetadata_Priority
 }
 
-// reviewResultComments converts a unit's findings into the review result
-// comments to post, each an OPEN root naming the rule, its priority, every
-// target it applies to, its codes, and its fingerprint. A finding is posted on
-// its own, anchored to its range on the spec's sheet, unless its rule reports
-// mergeAtStatements or more statements, whatever databases each applies to;
-// those findings post as one merged result instead. A finding for a rule this
-// server does not know is dropped, as the contract says.
-func reviewResultComments(projectID string, issueUID int64, unit *reviewUnit, sql string, result *review.Result) []*store.IssueCommentMessage {
+// priority is the rule's, or the higher one a problem on the finding's
+// operation raises it to.
+func (f *ruleFinding) priority() storepb.IssueCommentPayload_ReviewMetadata_Priority {
+	priority := rulePriority(f.rule)
+	if priorityRank(f.raised) < priorityRank(priority) {
+		return f.raised
+	}
+	return priority
+}
+
+// ruleThread is the thread an earlier run left for a rule result that this
+// run reports again.
+type ruleThread struct {
+	Comment  string
+	Priority storepb.IssueCommentPayload_ReviewMetadata_Priority
+}
+
+// ruleResult is one result the standard rules post: a finding on its own, or
+// the findings of one rule that reports mergeAtStatements or more statements.
+type ruleResult struct {
+	specID      string
+	sheetSha256 string
+	engine      storepb.Engine
+	// members are the result's findings, in statement order when merged.
+	members []*ruleFinding
+	// statements is how many statements a merged result covers, and zero for
+	// a finding on its own.
+	statements int
+	// earlier is the thread an earlier run left for the result, or nil.
+	earlier *ruleThread
+	// keepsEarlier is true when the earlier thread's comment already states
+	// what this run found, so the result keeps that comment and its priority.
+	keepsEarlier bool
+}
+
+// payload is the result as it posts: the rule, its priority, every target it
+// applies to, its codes, and its fingerprint, with the text of its findings
+// and of the AI review's problems on their operations.
+func (r *ruleResult) payload() *storepb.IssueCommentPayload {
+	var payload *storepb.IssueCommentPayload
+	if r.statements > 0 {
+		payload = mergedPayload(r.members, r.statements)
+	} else {
+		payload = findingPayload(r.members[0])
+	}
+	if r.keepsEarlier && r.earlier != nil {
+		payload.Comment, payload.ReviewMetadata.Priority = r.earlier.Comment, r.earlier.Priority
+	}
+	return payload
+}
+
+// ruleText is the result's comment with nothing the AI review adds to it.
+func (r *ruleResult) ruleText() string {
+	bare := &ruleResult{statements: r.statements}
+	for _, member := range r.members {
+		clone := *member
+		clone.facts, clone.folded = "", nil
+		bare.members = append(bare.members, &clone)
+	}
+	return bare.payload().Comment
+}
+
+// ruleResultComments converts results into the review result comments to
+// post, each an OPEN root.
+func ruleResultComments(projectID string, issueUID int64, results []*ruleResult) []*store.IssueCommentMessage {
+	comments := make([]*store.IssueCommentMessage, 0, len(results))
+	for _, result := range results {
+		comments = append(comments, &store.IssueCommentMessage{
+			ProjectID: projectID,
+			IssueUID:  issueUID,
+			Payload:   result.payload(),
+		})
+	}
+	return comments
+}
+
+// reviewResults groups a unit's findings into the results to post. A finding
+// is posted on its own, anchored to its range on the spec's sheet, unless its
+// rule reports mergeAtStatements or more statements, whatever databases each
+// applies to; those findings post as one merged result instead. A finding for
+// a rule this server does not know is dropped, as the contract says.
+func reviewResults(unit *reviewUnit, sql string, result *review.Result) []*ruleResult {
 	findings := ruleFindings(unit, sql, result)
 
 	groups := make(map[storepb.ReviewRuleType][]*ruleFinding)
@@ -166,26 +250,22 @@ func reviewResultComments(projectID string, issueUID int64, unit *reviewUnit, sq
 		statements[f.rule][f.statement] = true
 	}
 
-	comments := make([]*store.IssueCommentMessage, 0, len(findings))
+	results := make([]*ruleResult, 0, len(findings))
 	posted := make(map[storepb.ReviewRuleType]bool)
 	for _, f := range findings {
-		var payload *storepb.IssueCommentPayload
+		r := &ruleResult{specID: unit.SpecID, sheetSha256: unit.SheetSha256, engine: unit.Engine, members: []*ruleFinding{f}}
 		if f.statement >= 0 && len(statements[f.rule]) >= mergeAtStatements {
 			if posted[f.rule] {
 				continue
 			}
 			posted[f.rule] = true
-			payload = mergedPayload(groups[f.rule], len(statements[f.rule]))
-		} else {
-			payload = findingPayload(f)
+			r.members = slices.Clone(groups[f.rule])
+			slices.SortStableFunc(r.members, func(a, b *ruleFinding) int { return cmp.Compare(a.statement, b.statement) })
+			r.statements = len(statements[f.rule])
 		}
-		comments = append(comments, &store.IssueCommentMessage{
-			ProjectID: projectID,
-			IssueUID:  issueUID,
-			Payload:   payload,
-		})
+		results = append(results, r)
 	}
-	return comments
+	return results
 }
 
 // ruleFindings resolves a unit's findings in the order the reviewer gave them,
@@ -228,14 +308,24 @@ func ruleFindings(unit *reviewUnit, sql string, result *review.Result) []*ruleFi
 	return findings
 }
 
+// added is what the AI review adds to a finding's text: each problem it found
+// on the finding's operation, or else its facts.
+func (f *ruleFinding) added() []string {
+	if len(f.folded) > 0 || f.facts == "" {
+		return f.folded
+	}
+	return []string{f.facts}
+}
+
+// findingPayload posts one finding as a result: its message, and then what
+// the AI review adds to it.
 func findingPayload(f *ruleFinding) *storepb.IssueCommentPayload {
 	return &storepb.IssueCommentPayload{
-		Comment:         f.message,
+		Comment:         strings.Join(append([]string{f.message}, f.added()...), "\n\n"),
 		StatementAnchor: f.anchor,
 		ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-			RunType:     storepb.ReviewRun_RULE,
 			RuleType:    f.rule,
-			Priority:    rulePriority(f.rule),
+			Priority:    f.priority(),
 			Targets:     f.targets,
 			Fingerprint: f.fingerprint,
 			Codes:       f.codes,
@@ -243,19 +333,22 @@ func findingPayload(f *ruleFinding) *storepb.IssueCommentPayload {
 	}
 }
 
-// mergedPayload posts one rule's findings as a single result, anchored to the
-// first of them, carrying every code they report and applying to every
-// database any of them applies to. Its fingerprint hashes the set of its
-// findings' fingerprints, so a later run keeps the thread only while it
-// reports exactly these findings on exactly their databases: accepting the
-// result never covers a statement or a database nobody saw in it.
+// mergedPayload posts one rule's findings, in statement order, as a single
+// result, anchored to the first of them, carrying every code they report,
+// the highest priority among them, and applying to every database any of them
+// applies to. Its fingerprint hashes the set of its findings' fingerprints, so
+// a later run keeps the thread only while it reports exactly these findings on
+// exactly their databases: accepting the result never covers a statement or a
+// database nobody saw in it.
 func mergedPayload(members []*ruleFinding, statements int) *storepb.IssueCommentPayload {
-	members = slices.Clone(members)
-	slices.SortStableFunc(members, func(a, b *ruleFinding) int { return cmp.Compare(a.statement, b.statement) })
 	first := members[0]
 
+	priority := first.priority()
 	var codes, targets, fingerprints []string
 	for _, m := range members {
+		if priorityRank(m.priority()) < priorityRank(priority) {
+			priority = m.priority()
+		}
 		for _, code := range m.codes {
 			if !slices.Contains(codes, code) {
 				codes = append(codes, code)
@@ -272,9 +365,8 @@ func mergedPayload(members []*ruleFinding, statements int) *storepb.IssueComment
 		Comment:         mergedComment(members, statements, targets),
 		StatementAnchor: first.anchor,
 		ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-			RunType:     storepb.ReviewRun_RULE,
 			RuleType:    first.rule,
-			Priority:    rulePriority(first.rule),
+			Priority:    priority,
 			Targets:     targets,
 			Fingerprint: hashFields(append([]string{"merged"}, fingerprints...)...),
 			Codes:       codes,
@@ -287,7 +379,9 @@ func mergedPayload(members []*ruleFinding, statements int) *storepb.IssueComment
 // summary line goes on its item, followed by the databases the finding is on
 // when that is only some of targets, the result's databases. The rest of a
 // message, when every finding shares it, is said once after the list, else
-// under its own item.
+// under its own item. What the AI review adds to a finding goes under its
+// item too, and a finding with a problem is listed past maxMergedItems, so
+// that the limit never hides a problem.
 func mergedComment(members []*ruleFinding, statements int, targets []string) string {
 	lineOf := func(m *ruleFinding) int32 { return m.anchor.GetStartPosition().GetLine() }
 	labels := databaseLabels(targets)
@@ -307,13 +401,21 @@ func mergedComment(members []*ruleFinding, statements int, targets []string) str
 	} else {
 		fmt.Fprintf(&b, "%d statements, on lines %d to %d.\n\n", statements, firstLine, lastLine)
 	}
-	for i, m := range members[:min(len(members), maxMergedItems)] {
+	listed := 0
+	for i, m := range members {
+		if i >= maxMergedItems && len(m.folded) == 0 {
+			continue
+		}
+		listed++
 		item := fmt.Sprintf("Line %d: %s", lineOf(m), summaries[i])
 		if len(m.targets) > 0 && len(m.targets) < len(targets) {
 			item += " Only on " + databaseList(m.targets, labels) + "."
 		}
 		if !shared && details[i] != "" {
 			item += "\n\n" + details[i]
+		}
+		for _, text := range m.added() {
+			item += "\n\n" + text
 		}
 		// Continuation lines are indented to stay inside the item.
 		lines := strings.Split(item, "\n")
@@ -324,7 +426,7 @@ func mergedComment(members []*ruleFinding, statements int, targets []string) str
 		}
 		fmt.Fprintf(&b, "- %s\n", strings.Join(lines, "\n"))
 	}
-	if more := len(members) - maxMergedItems; more > 0 {
+	if more := len(members) - listed; more > 0 {
 		fmt.Fprintf(&b, "\nAnd %d more.\n", more)
 	}
 	if shared && details[0] != "" {

@@ -26,7 +26,8 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		d.session = session
 	}
 
-	results, err := d.session.Query(ctx, statement, omnidriver.QueryOptions{
+	session := d.session
+	results, err := session.Query(ctx, statement, omnidriver.QueryOptions{
 		Schema:         queryContext.Schema,
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
@@ -35,7 +36,14 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		MaskingEnabled: queryContext.MaskingEnabled,
 	})
 	if err != nil {
+		// The script could not be run at all; the session is not one to keep.
+		d.discardSessionLocked(session)
 		return nil, err
+	}
+	if ctx.Err() != nil {
+		// The client closes the connection when a statement's context ends, so the
+		// next statement must open a new session.
+		d.discardSessionLocked(session)
 	}
 	queryResults := make([]*v1pb.QueryResult, len(results))
 	for i, result := range results {
@@ -50,6 +58,16 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		queryResults[i] = util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize)
 	}
 	return queryResults, nil
+}
+
+// discardSessionLocked closes a session a statement took with it, so the next
+// statement opens a new one instead of reusing a dead one. The caller holds
+// sessionMu.
+func (d *Driver) discardSessionLocked(session omnidriver.Session) {
+	_ = session.Close()
+	if d.session == session {
+		d.session = nil
+	}
 }
 
 // explainFormat names the plan format the API's enum asks for in the contract's

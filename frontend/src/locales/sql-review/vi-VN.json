@@ -3,12 +3,14 @@
   "add-rules": "Thêm quy tắc",
   "ai-review": {
     "ai-off": "AI đang tắt trong không gian làm việc nên không có lần đánh giá bằng AI nào được chạy.",
+    "comments-description": "Một mô hình AI xem xét SQL của issue, kể cả bản nháp, và bình luận về các rủi ro tìm thấy. Việc triển khai bị chặn cho đến khi mọi bình luận được giải quyết.",
     "description": "Một mô hình AI đánh giá SQL của issue để tìm các rủi ro mà quy tắc tiêu chuẩn không phát hiện được.",
     "enable": {
       "description": "Mỗi lần đánh giá sẽ gửi nguyên văn các câu lệnh tới nhà cung cấp AI, và có thể gửi lược đồ của các cơ sở dữ liệu đích cùng số liệu thống kê bảng của chúng. Tính năng này không đọc bất kỳ hàng dữ liệu nào trong cơ sở dữ liệu.",
       "self": "Đánh giá thay đổi bằng AI"
     },
     "policy": {
+      "ai-review-policy": "Chính sách đánh giá bằng AI",
       "cannot-clear": "Vai trò của bạn không thể xóa chính sách, nên không thể để trống chính sách này.",
       "description": "Chính sách này xác định những gì AI kiểm tra khi đánh giá thay đổi cơ sở dữ liệu. Nó áp dụng cho mọi dự án trong không gian làm việc và mỗi dự án có thể thêm chính sách riêng.",
       "load-failed": "Không thể tải chính sách đánh giá.",
@@ -69,7 +71,8 @@
   },
   "delete": "Xóa chính sách đánh giá SQL",
   "delete-description": "Chính sách đánh giá SQL và tất cả các quy tắc của nó sẽ bị xóa vĩnh viễn. Không thể hoàn tác hành động này.",
-  "description": "Chính sách đánh giá SQL có thể xác định các bộ quy tắc lint SQL khác nhau cho các môi trường tương ứng. Nó giúp các nhóm áp dụng thực tiễn tốt nhất về SQL và thực thi tính nhất quán của lược đồ trên các cơ sở dữ liệu khác nhau. Bất cứ khi nào bạn cố gắng thay đổi DDL/DML hoặc sử dụng Trình soạn thảo SQL để truy vấn dữ liệu, truy vấn sẽ được kiểm tra theo chính sách đánh giá SQL đã định cấu hình.",
+  "delete-policy-title": "Xóa {{name}}?",
+  "description": "Các quy tắc kiểm tra mỗi thay đổi SQL và mỗi truy vấn trong SQL Editor. Một chính sách áp dụng cho các môi trường hoặc dự án mà nó được gắn vào.",
   "disable-description": "Tắt chính sách này sẽ ngừng áp dụng các quy tắc của nó trên các tài nguyên đã đính kèm. Bạn có thể bật lại sau.",
   "disabled": "Đánh giá SQL bị vô hiệu hóa",
   "enable-description": "Bật chính sách này sẽ bắt đầu áp dụng các quy tắc của nó trên các tài nguyên đã đính kèm.",
@@ -145,11 +148,10 @@
   "input-then-press-enter": "Nhập giá trị sau đó nhấn enter để thêm",
   "level": {
     "disabled": "Đã tắt",
-    "error": "Lỗi",
-    "name": "Mức độ lỗi",
-    "warning": "Cảnh báo"
+    "name": "Mức ưu tiên"
   },
   "no-permission": "Chỉ DBA hoặc Quản trị viên mới có quyền tạo hoặc cập nhật chính sách đánh giá.",
+  "policies": "Chính sách đánh giá SQL",
   "policy-create-failed": "Không tạo được chính sách đánh giá.",
   "policy-created": "Đã tạo thành công chính sách đánh giá.",
   "policy-removed": "Đã xóa thành công chính sách đánh giá.",

@@ -3,12 +3,14 @@
   "add-rules": "Add rules",
   "ai-review": {
     "ai-off": "AI is off for the workspace, so no AI review runs.",
+    "comments-description": "An AI model reviews the SQL of an issue, including a draft, and comments on the risks it finds. The rollout is blocked until every comment is resolved.",
     "description": "An AI model that reviews the SQL of an issue for risks the standard rules cannot see.",
     "enable": {
       "description": "Each review sends the statements as written to the AI provider, and can send the schema of the target databases and their table statistics. It reads no rows from the databases.",
       "self": "Review changes with AI"
     },
     "policy": {
+      "ai-review-policy": "AI review policy",
       "cannot-clear": "Your role cannot delete policies, so this policy cannot be emptied.",
       "description": "This policy defines what the AI checks when reviewing database changes. It applies to every project in the workspace, and each project can add its own policy.",
       "load-failed": "The review policy could not be loaded.",
@@ -69,7 +71,8 @@
   },
   "delete": "Delete SQL review policy",
   "delete-description": "The SQL review policy and all its rules will be permanently removed. This cannot be undone.",
-  "description": "SQL review policies can define different sets of SQL lint rules for different environments. They help teams adopt SQL best practices and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
+  "delete-policy-title": "Delete {{name}}?",
+  "description": "Lint rules that check each SQL change and SQL Editor query. A policy applies to the environments or projects it is attached to.",
   "disable-description": "Disabling this policy will stop enforcing its rules on the attached resources. You can re-enable it later.",
   "disabled": "SQL review is disabled",
   "enable-description": "Enabling this policy will start enforcing its rules on the attached resources.",
@@ -145,11 +148,10 @@
   "input-then-press-enter": "Input the value then press enter to add",
   "level": {
     "disabled": "Disabled",
-    "error": "Error",
-    "name": "Error Level",
-    "warning": "Warning"
+    "name": "Priority"
   },
   "no-permission": "Only DBA or Admin has permission to create or update review policy.",
+  "policies": "SQL review policies",
   "policy-create-failed": "Failed to create the review policy.",
   "policy-created": "Successfully created the review policy.",
   "policy-removed": "Successfully removed the review policy.",

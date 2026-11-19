@@ -98,11 +98,6 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 			dmlCount++
 			dmlStatements = append(dmlStatements, statementText(parsed))
 
-		case *ast.MergeStmt:
-			addTable(n.Target, false)
-			dmlCount++
-			dmlStatements = append(dmlStatements, statementText(parsed))
-
 		// Non-table object DDL: gate by the object's own explicit database qualifier only.
 		// CREATE FUNCTION is absent because its AST keeps the name inside RawSignature
 		// rather than as an ObjectName, so there is nothing to qualify by.

@@ -1,460 +1,369 @@
-// Package tidb is the plugin for TiDB driver.
+// Package tidb is Bytebase's TiDB driver: an adapter over
+// github.com/bytebase/omni/tidb/driver. It maps a db.ConnectionConfig onto the
+// contract's Config and the contract's results back onto the product's types;
+// the connection, the sync queries, the plan estimate, the splitter, the query
+// rewrites and the dump belong to the omni driver.
+//
+// The adapter keeps what is product: the data source to contract conversion,
+// the SSH tunnel and TLS material, the `-- txn-mode` directive, the advisor
+// probe, the v1pb conversion and the task-run logger.
+//
+// Constraints of the engine and the contract, here rather than at each call:
+//   - Config.ReadOnly is unused: TiDB's MySQL wire handshake has no read-only
+//     session parameter.
+//   - Config.ApplicationName is "bytebase", which renders the /*app=bytebase*/
+//     comment every statement of a query or a change script carries.
+//   - Execute ignores ExecuteOptions.CreateDatabase and the `-- txn-isolation`
+//     directive: a create-database script runs under the transaction directive,
+//     and no isolation level is set.
+//   - A change script still reads its transaction mode from
+//     ParseTransactionConfig, so the directives do not reach the server.
+//   - A probe runs on one session so its pre-executions and its statement share
+//     a transaction, opened with the "START TRANSACTION" go-sql-driver's
+//     BeginTx sends and ended with "ROLLBACK".
+//   - QueryConn takes a *sql.Conn the caller pooled and ignores it: the omni
+//     driver hands out its own Session, which the adapter keeps until Close, so
+//     the statements of one editor request share it.
+//   - Dump renders omni's catalog, whose partitions keep their ordinal order;
+//     that order is what makes a partitioned table's dump restorable.
+//   - Query results carry the contract's typed values: an unsigned integer is a
+//     Uint64 value, the BLOB, BINARY and VARBINARY families are bytes, and an
+//     empty binary is empty bytes rather than NULL.
+//   - A result-size cap is checked against a row's real encoded size, and a cap
+//     of zero is refused: the product reads 0 as "no rows" and the contract
+//     reads it as "no cap".
+//   - Instance roles are read in a deterministic (user, host) order, and a
+//     grant names its account with proper quoting, so an account whose name
+//     contains a quote is read.
 package tidb
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
-	"database/sql/driver"
-	"fmt"
-	"log/slog"
+	"io"
 	"net"
-	"strings"
-	"time"
+	"sync"
 
-	"github.com/go-sql-driver/mysql"
-	"github.com/google/uuid"
+	omnidriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
+	tidbdriver "github.com/bytebase/omni/tidb/driver"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
 var (
-	baseTableType = "BASE TABLE"
-	viewTableType = "VIEW"
+	_ db.Driver         = (*Driver)(nil)
+	_ db.SessionQuerier = (*Driver)(nil)
 
-	_ db.Driver = (*Driver)(nil)
+	// applicationName renders the /*app=bytebase*/ comment the old driver
+	// prepended to a query and to a change script's commands.
+	applicationName = "bytebase"
 )
 
 func init() {
 	db.Register(storepb.Engine_TIDB, newDriver)
 }
 
-// Driver is the MySQL driver.
+// Driver is Bytebase's TiDB driver.
 type Driver struct {
-	dbType       storepb.Engine
-	db           *sql.DB
+	impl         *tidbdriver.Driver
 	databaseName string
-	sshClient    *ssh.Client
+	// sshClient is the tunnel an SSH data source opened; Close closes it.
+	sshClient *ssh.Client
 
-	// Called upon driver.Open() finishes.
-	openCleanUp []func()
+	// sessionMu guards session. A driver is opened per request, and the editor
+	// asks for one statement at a time, but the session is one server
+	// connection: the lock covers acquisition, the query and teardown so two
+	// calls can never interleave their statements on it.
+	sessionMu sync.Mutex
+	session   omnidriver.Session
 }
 
 func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// validateTiDBExtraConnectionParameters validates that no dangerous parameters are present.
-func validateTiDBExtraConnectionParameters(params map[string]string) error {
-	for key := range params {
-		normalizedKey := strings.ToLower(strings.TrimSpace(key))
-		if normalizedKey == "allowallfiles" {
-			return errors.Errorf("connection parameter %q is not allowed for security reasons", key)
-		}
-	}
-	return nil
-}
-
-// Open opens a TiDB driver.
-func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
-	defer func() {
-		for _, f := range d.openCleanUp {
-			f()
-		}
-	}()
-
-	dsn, err := d.getTiDBConnection(connCfg)
+// Open maps the connection config onto the contract's Config. Like the driver
+// this replaced, Open does not reach the server; Ping does.
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	driverConfig, sshClient, err := buildConfig(config)
 	if err != nil {
 		return nil, err
 	}
-	db, err := sql.Open("mysql", dsn)
+	impl, err := tidbdriver.Open(ctx, driverConfig)
 	if err != nil {
+		if sshClient != nil {
+			_ = sshClient.Close()
+		}
 		return nil, err
 	}
-	d.dbType = dbType
-	d.db = db
-	// TODO(d): remove the work-around once we have clean-up the migration connection hack.
-	db.SetConnMaxLifetime(2 * time.Hour)
-	db.SetMaxOpenConns(50)
-	db.SetMaxIdleConns(15)
-	d.databaseName = connCfg.ConnectionContext.DatabaseName
+	d.impl = impl
+	d.sshClient = sshClient
+	d.databaseName = config.ConnectionContext.DatabaseName
 	return d, nil
 }
 
-func (d *Driver) getTiDBConnection(connCfg db.ConnectionConfig) (string, error) {
-	protocol := "tcp"
-	if strings.HasPrefix(connCfg.DataSource.Host, "/") {
-		protocol = "unix"
+// buildConfig resolves what Bytebase knows about reaching a TiDB server into the
+// plain values tidb/driver takes. The returned SSH client, when not nil, is the
+// tunnel the driver dials through and belongs to the caller to close.
+func buildConfig(config db.ConnectionConfig) (omnidriver.Config, *ssh.Client, error) {
+	dataSource := config.DataSource
+	if dataSource == nil {
+		return omnidriver.Config{}, nil, errors.New("a data source is required")
 	}
-	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
-	if err := validateTiDBExtraConnectionParameters(connCfg.DataSource.GetExtraConnectionParameters()); err != nil {
-		return "", err
+	params := map[string]string{}
+	for key, value := range dataSource.GetExtraConnectionParameters() {
+		params[key] = value
 	}
-	for key, value := range connCfg.DataSource.GetExtraConnectionParameters() {
-		params = append(params, fmt.Sprintf("%s=%s", key, value))
+	driverConfig := omnidriver.Config{
+		Host:            dataSource.Host,
+		Port:            dataSource.Port,
+		Database:        config.ConnectionContext.DatabaseName,
+		User:            dataSource.Username,
+		Password:        config.Password,
+		Params:          params,
+		ApplicationName: applicationName,
+		EngineVersion:   config.ConnectionContext.EngineVersion,
 	}
-	if connCfg.DataSource.GetSshHost() != "" {
-		sshClient, err := util.GetSSHClient(connCfg.DataSource)
+
+	var sshClient *ssh.Client
+	if dataSource.GetSshHost() != "" {
+		client, err := util.GetSSHClient(dataSource)
 		if err != nil {
-			return "", err
+			return omnidriver.Config{}, nil, err
 		}
-		d.sshClient = sshClient
-		// Now we register the dialer with the ssh connection as a parameter.
-		protocol = "mysql-tcp-" + uuid.NewString()[:8]
-		// Now we register the dialer with the ssh connection as a parameter.
-		mysql.RegisterDialContext(protocol, func(_ context.Context, addr string) (net.Conn, error) {
-			return sshClient.Dial("tcp", addr)
-		})
+		sshClient = client
+		driverConfig.Dial = func(_ context.Context, network, address string) (net.Conn, error) {
+			return client.Dial(network, address)
+		}
 	}
 
-	tlscfg, err := util.GetTLSConfig(connCfg.DataSource)
-	if err != nil {
-		return "", errors.Wrap(err, "sql: tls config error")
-	}
-	tlsKey := uuid.NewString()
-	if tlscfg != nil {
-		if err := mysql.RegisterTLSConfig(tlsKey, tlscfg); err != nil {
-			return "", errors.Wrap(err, "sql: failed to register tls config")
+	if dataSource.GetUseSsl() {
+		// The contract asks for one host at a time so a caller can bind
+		// verification to the host it reaches; Bytebase's material does not
+		// depend on which one that is.
+		driverConfig.TLS = func(string) (*tls.Config, error) {
+			return util.GetTLSConfig(dataSource)
 		}
-		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
-		d.openCleanUp = append(d.openCleanUp, func() { mysql.DeregisterTLSConfig(tlsKey) })
-		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
 	}
-
-	return fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.DataSource.Username, connCfg.Password, protocol, connCfg.DataSource.Host, connCfg.DataSource.Port, connCfg.ConnectionContext.DatabaseName, strings.Join(params, "&")), nil
+	return driverConfig, sshClient, nil
 }
 
-// Close closes the driver.
 func (d *Driver) Close(context.Context) error {
 	var err error
-	err = multierr.Append(err, d.db.Close())
+	d.sessionMu.Lock()
+	if d.session != nil {
+		err = multierr.Append(err, d.session.Close())
+		d.session = nil
+	}
+	d.sessionMu.Unlock()
+	err = multierr.Append(err, d.impl.Close())
 	if d.sshClient != nil {
 		err = multierr.Append(err, d.sshClient.Close())
 	}
 	return err
 }
 
-// Ping pings the database.
+// Ping reaches the server.
 func (d *Driver) Ping(ctx context.Context) error {
-	return d.db.PingContext(ctx)
+	return d.impl.Ping(ctx)
 }
 
-// GetDB gets the database.
-func (d *Driver) GetDB() *sql.DB {
-	return d.db
+// GetDB returns no *sql.DB: the contract's session is not one. Every caller
+// already tolerates nil, and gh-ost refuses an engine that is not MySQL or
+// MariaDB before it asks for a pool.
+func (*Driver) GetDB() *sql.DB {
+	return nil
 }
 
-// getVersion returns the verbatim VERSION() output, e.g. "8.0.11-TiDB-v8.5.0". It is
-// stored and displayed as-is; callers that gate behavior on a version parse it
-// themselves, so a version string we do not recognize costs a feature rather than the
-// whole sync.
-func (d *Driver) getVersion(ctx context.Context) (string, error) {
-	query := "SELECT VERSION()"
-	var version string
-	if err := d.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
-		if err == sql.ErrNoRows {
-			return "", common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return "", util.FormatErrorWithQuery(err, query)
-	}
+// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
+// rather than on the *sql.Conn a caller passes, which is unused.
+func (*Driver) OwnsQuerySession() {}
 
-	return version, nil
-}
-
-func buildExecuteCommands(statement string) ([]base.Statement, error) {
-	if len(statement) > common.MaxSheetCheckSize {
-		return []base.Statement{{Text: statement}}, nil
-	}
-
-	commands, err := tidbparser.SplitSQL(statement)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to split sql")
-	}
-	commands = base.FilterEmptyStatements(commands)
-	if len(commands) == 0 {
-		return nil, nil
-	}
-	if len(commands) > common.MaximumCommands {
-		return []base.Statement{{Text: statement}}, nil
-	}
-
-	return commands, nil
-}
-
-// Execute executes a SQL statement.
+// Execute runs the script's statements under the transaction directive it
+// carries, reporting each step to the task run log.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	// Parse transaction mode from the script
 	config, cleanedStatement := base.ParseTransactionConfig(statement)
-	statement = cleanedStatement
-	transactionMode := config.Mode
-
-	// Apply default when transaction mode is not specified
-	if transactionMode == transaction.ModeUnspecified {
-		transactionMode = transaction.DefaultMode()
+	mode := config.Mode
+	if mode == transaction.ModeUnspecified {
+		mode = transaction.DefaultMode()
 	}
-
-	conn, err := d.db.Conn(ctx)
-	if err != nil {
-		return 0, err
+	options := omnidriver.ExecuteOptions{
+		Transaction: omnidriver.Transactional,
+		MaxRetries:  opts.MaximumRetries,
+		Log:         &executeLogger{opts: opts},
 	}
-	defer conn.Close()
-
-	connectionID, err := getConnectionID(ctx, conn)
-	if err != nil {
-		return 0, err
+	if mode == transaction.ModeOff {
+		options.Transaction = omnidriver.AutoCommit
 	}
-	slog.Debug("connectionID", slog.String("connectionID", connectionID))
-
-	commands, err := buildExecuteCommands(statement)
-	if err != nil {
-		return 0, err
-	}
-	if len(commands) == 0 {
-		return 0, nil
-	}
-
-	// Execute based on transaction mode
-	if transactionMode == transaction.ModeOff {
-		return d.executeInAutoCommitMode(ctx, conn, commands, opts, connectionID)
-	}
-	return d.executeInTransactionMode(ctx, conn, commands, opts, connectionID)
+	return d.impl.Execute(ctx, cleanedStatement, options)
 }
 
-// executeInTransactionMode executes statements within a single transaction
-func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, opts db.ExecuteOptions, connectionID string) (int64, error) {
-	var totalRowsAffected int64
-
-	if err := conn.Raw(func(driverConn any) error {
-		//nolint
-		exer := driverConn.(driver.ExecerContext)
-		//nolint
-		txer := driverConn.(driver.ConnBeginTx)
-		tx, err := txer.BeginTx(ctx, driver.TxOptions{})
-		if err != nil {
-			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
-			return err
-		} else {
-			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
-		}
-
-		committed := false
-		defer func() {
-			err := tx.Rollback()
-			if committed {
-				return
-			}
-			var rerr string
-			if err != nil {
-				rerr = err.Error()
-			}
-			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
-		}()
-
-		for _, command := range commands {
-			opts.LogCommandExecute(command.Range, command.Text)
-
-			sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(command.Text)
-			sqlResult, err := exer.ExecContext(ctx, sqlWithBytebaseAppComment, nil)
-			if err != nil {
-				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-					slog.Info("cancel connection", slog.String("connectionID", connectionID))
-					if err := d.StopConnectionByID(connectionID); err != nil {
-						slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
-					}
-				}
-
-				opts.LogCommandResponse(0, nil, err.Error())
-
-				return err
-			}
-
-			allRowsAffected := sqlResult.(mysql.Result).AllRowsAffected()
-			var rowsAffected int64
-			var allRowsAffectedInt64 []int64
-			for _, a := range allRowsAffected {
-				rowsAffected += a
-				allRowsAffectedInt64 = append(allRowsAffectedInt64, a)
-			}
-			totalRowsAffected += rowsAffected
-
-			opts.LogCommandResponse(rowsAffected, allRowsAffectedInt64, "")
-		}
-
-		if err := tx.Commit(); err != nil {
-			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
-			return errors.Wrapf(err, "failed to commit execute transaction")
-		} else {
-			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
-			committed = true
-		}
-		return nil
-	}); err != nil {
-		return 0, err
-	}
-
-	return totalRowsAffected, nil
+// executeLogger bridges the contract's ExecuteLogger onto the task run log.
+type executeLogger struct {
+	opts db.ExecuteOptions
 }
 
-// executeInAutoCommitMode executes statements sequentially in auto-commit mode
-func (d *Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, opts db.ExecuteOptions, connectionID string) (int64, error) {
-	var totalRowsAffected int64
-
-	if err := conn.Raw(func(driverConn any) error {
-		//nolint
-		exer := driverConn.(driver.ExecerContext)
-
-		for _, command := range commands {
-			opts.LogCommandExecute(command.Range, command.Text)
-
-			sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(command.Text)
-			sqlResult, err := exer.ExecContext(ctx, sqlWithBytebaseAppComment, nil)
-			if err != nil {
-				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-					slog.Info("cancel connection", slog.String("connectionID", connectionID))
-					if err := d.StopConnectionByID(connectionID); err != nil {
-						slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
-					}
-				}
-
-				opts.LogCommandResponse(0, nil, err.Error())
-				// In auto-commit mode, we stop at the first error
-				// The database is left in a partially migrated state
-				return err
-			}
-
-			allRowsAffected := sqlResult.(mysql.Result).AllRowsAffected()
-			var rowsAffected int64
-			var allRowsAffectedInt64 []int64
-			for _, a := range allRowsAffected {
-				rowsAffected += a
-				allRowsAffectedInt64 = append(allRowsAffectedInt64, a)
-			}
-			totalRowsAffected += rowsAffected
-
-			opts.LogCommandResponse(rowsAffected, allRowsAffectedInt64, "")
-		}
-
-		return nil
-	}); err != nil {
-		return 0, err
-	}
-
-	return totalRowsAffected, nil
+func (l *executeLogger) CommandExecute(command omnidriver.Command) {
+	// The contract's command text and byte range both include the statement's
+	// terminating semicolon, which is the range Bytebase's splitter reported.
+	l.opts.LogCommandExecute(&storepb.Range{Start: int32(command.ByteStart), End: int32(command.ByteEnd)}, command.Text)
 }
 
-// QueryConn queries a SQL statement in a given connection.
-func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
+func (l *executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
+	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
+}
+
+func (l *executeLogger) TransactionControl(op omnidriver.TransactionOp, err error) {
+	l.opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_Type(storepb.TaskRunLog_TransactionControl_Type_value[string(op)]), errorString(err))
+}
+
+func (l *executeLogger) Retry(err error, attempt, _ int) {
+	l.opts.LogRetryInfo(err, attempt)
+}
+
+func errorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}
+
+// QueryConn queries a SQL statement on the driver's session.
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	// A non-positive cap means "no rows" to the product and "no cap" to the
+	// contract, so refuse it rather than read every row a policy meant to
+	// bound.
+	if queryContext.MaximumSQLResultSize <= 0 {
+		return nil, errors.New("maximum SQL result size must be positive")
+	}
+	d.sessionMu.Lock()
+	defer d.sessionMu.Unlock()
+	session, err := d.querySessionLocked(ctx)
 	if err != nil {
 		return nil, err
 	}
-	singleSQLs = base.FilterEmptyStatements(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return nil, nil
-	}
-
-	connectionID, err := getConnectionID(ctx, conn)
+	results, err := session.Query(ctx, statement, omnidriver.QueryOptions{
+		Schema:         queryContext.Schema,
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		ExplainFormat:  explainFormat(queryContext.Option.GetExplainFormat()),
+		MaxResultBytes: queryContext.MaximumSQLResultSize,
+		MaskingEnabled: queryContext.MaskingEnabled,
+	})
 	if err != nil {
+		// The script could not be run at all; the session is not one to keep.
+		d.discardSessionLocked(session)
 		return nil, err
 	}
-	slog.Debug("connectionID", slog.String("connectionID", connectionID))
+	if ctx.Err() != nil {
+		// The client closes the connection when a statement's context ends, so the
+		// stream's next statement must open a new session.
+		d.discardSessionLocked(session)
+	}
 
-	var results []*v1pb.QueryResult
-	for _, singleSQL := range singleSQLs {
-		statement := singleSQL.Text
+	queryResults := make([]*v1pb.QueryResult, 0, len(results))
+	for _, result := range results {
+		queryResult := util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize)
+		// QueryPlan describes a plan the caller's own statement asked for. An
+		// explain request's rows are the plan already, and the old driver
+		// reported no typed plan for one.
 		if queryContext.Explain {
-			explained, err := base.ExplainStatement(storepb.Engine_TIDB, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
-			if err != nil {
-				return nil, err
-			}
-			statement = explained
-		} else if queryContext.Limit > 0 {
-			statement = base.StatementWithResultLimit(storepb.Engine_TIDB, statement, queryContext.Limit, "")
+			queryResult.QueryPlan = nil
 		}
-		sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(statement)
-
-		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_TIDB, statement)
-		if err != nil {
-			return nil, err
-		}
-		startTime := time.Now()
-		queryResult, err := func() (*v1pb.QueryResult, error) {
-			if allQuery {
-				rows, err := conn.QueryContext(ctx, sqlWithBytebaseAppComment)
-				if err != nil {
-					return nil, err
-				}
-				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
-				if err != nil {
-					return nil, err
-				}
-				if err := rows.Err(); err != nil {
-					return nil, err
-				}
-				if !queryContext.Explain {
-					r.QueryPlan = db.TypedExplainPlan(tidbparser.DescribeExplain(statement))
-				}
-				return r, nil
-			}
-
-			sqlResult, err := conn.ExecContext(ctx, statement)
-			if err != nil {
-				return nil, err
-			}
-			affectedRows, err := sqlResult.RowsAffected()
-			if err != nil {
-				slog.Info("rowsAffected returns error", log.BBError(err))
-			}
-			return util.BuildAffectedRowsResult(affectedRows, nil), nil
-		}()
-		stop := false
-		if err != nil {
-			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-				slog.Info("cancel connection", slog.String("connectionID", connectionID))
-				if err := d.StopConnectionByID(connectionID); err != nil {
-					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
-				}
-			}
-			queryResult = &v1pb.QueryResult{
-				Error: err.Error(),
-			}
-			stop = true
-		}
-
-		queryResult.Statement = statement
-		queryResult.Latency = durationpb.New(time.Since(startTime))
-		queryResult.RowsCount = int64(len(queryResult.Rows))
-		results = append(results, queryResult)
-		if stop {
-			break
-		}
+		queryResults = append(queryResults, queryResult)
 	}
-
-	return results, nil
+	return queryResults, nil
 }
 
-func (d *Driver) StopConnectionByID(id string) error {
-	// We cannot use placeholder parameter because TiDB doesn't accept it.
-	_, err := d.db.Exec(fmt.Sprintf("KILL QUERY %s", id)) // NOSONAR(go:S2077) id is from CONNECTION_ID() server function, not user input
-	return err
+// explainFormat is the plan format in tidb/driver's vocabulary: only JSON has a
+// reader downstream, and every other format gets the engine's default plan.
+func explainFormat(format v1pb.QueryOption_ExplainFormat) string {
+	if format == v1pb.QueryOption_JSON {
+		return "JSON"
+	}
+	return "TEXT"
 }
 
-func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
-	var id string
-	if err := conn.QueryRowContext(ctx, `SELECT CONNECTION_ID();`).Scan(&id); err != nil {
-		return "", err
+// discardSessionLocked closes a session a statement took with it, so the
+// stream's next statement opens a new one instead of reusing the dead one. The
+// caller holds sessionMu.
+func (d *Driver) discardSessionLocked(session omnidriver.Session) {
+	_ = session.Close()
+	if d.session == session {
+		d.session = nil
 	}
-	return id, nil
+}
+
+// querySessionLocked returns the session QueryConn runs on, opening it on first
+// use. The caller holds sessionMu.
+func (d *Driver) querySessionLocked(ctx context.Context) (omnidriver.Session, error) {
+	if d.session != nil {
+		return d.session, nil
+	}
+	session, err := d.impl.Session(ctx)
+	if err != nil {
+		return nil, err
+	}
+	d.session = session
+	return session, nil
+}
+
+// SyncInstance reads the server version, its user databases and its roles.
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	instance, err := d.impl.SyncInstance(ctx)
+	if err != nil {
+		return nil, err
+	}
+	roles := make([]*storepb.InstanceRole, 0, len(instance.Roles))
+	for _, role := range instance.Roles {
+		roles = append(roles, &storepb.InstanceRole{
+			Name:      role.Name,
+			Attribute: role.Attribute,
+		})
+	}
+	return &db.InstanceMetadata{
+		Version:   instance.Version,
+		Databases: instance.Databases,
+		Metadata: &storepb.Instance{
+			MysqlLowerCaseTableNames: instance.LowerCaseTableNames,
+			Roles:                    roles,
+		},
+	}, nil
+}
+
+// SyncDBSchema syncs the connected database's schema. A database the server no
+// longer has keeps answering the product's not-found error, as the old driver
+// did when the database row was missing.
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	metadata, err := d.impl.SyncDatabase(ctx)
+	if err != nil {
+		if errors.Is(err, omnidriver.ErrNotFound) {
+			return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
+		}
+		return nil, err
+	}
+	return metadata, nil
+}
+
+// Dump writes the synced schema as TiDB's DDL.
+func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
+	return d.impl.Dump(ctx, out, dbMetadata)
+}
+
+// CountAffectedRows returns TiDB's planner estimate of the rows statement
+// modifies. The contract answers it for exactly one INSERT, UPDATE or DELETE and
+// refuses any other statement before it reaches the server.
+func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
+	return d.impl.CountAffectedRows(ctx, statement)
 }
