@@ -34,8 +34,8 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	}
 	// $user expands to the session login, which this layer does not have, so it stays
 	// unresolved and rejectAmbiguousUserTypes refuses the migrations it would decide.
-	sourceSearchPath := getConfiguredSearchPath(oldSchema)
-	targetSearchPath := getConfiguredSearchPath(newSchema)
+	sourceSearchPath := getMigrationSearchPath(oldSchema)
+	targetSearchPath := getMigrationSearchPath(newSchema)
 	sourceDrops := sourceOnlyMissingDrops(oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
 	if err := unloadableChanges(oldSchema.GetProto(), newSchema.GetProto(), sourceDrops, fromReport, toReport); err != nil {
 		return "", err
@@ -71,7 +71,7 @@ func loadMetadataCatalog(d *model.DatabaseMetadata) (*catalog.Catalog, *catalog.
 	c := catalog.New()
 	meta := &metadatapb.DatabaseSchemaMetadata{}
 	if d != nil {
-		if searchPath := getConfiguredSearchPath(d); len(searchPath) > 0 {
+		if searchPath := getMigrationSearchPath(d); len(searchPath) > 0 {
 			c.SetSearchPath(searchPath)
 		}
 		if p := d.GetProto(); p != nil {
@@ -83,6 +83,26 @@ func loadMetadataCatalog(d *model.DatabaseMetadata) (*catalog.Catalog, *catalog.
 		return nil, nil, err
 	}
 	return c, report, nil
+}
+
+// getMigrationSearchPath is getConfiguredSearchPath but keeps an explicitly listed
+// pg_catalog, whose position lets an earlier user schema shadow a built-in.
+func getMigrationSearchPath(d *model.DatabaseMetadata) []string {
+	if d == nil {
+		return nil
+	}
+	configured := model.ParsePGConfiguredSearchPathIncludingSystem(d.GetProto().GetSearchPath())
+	searchPath := make([]string, 0, len(configured))
+	for _, item := range configured {
+		if item.CurrentUser {
+			searchPath = append(searchPath, "$user")
+			continue
+		}
+		if item.Schema != "" {
+			searchPath = append(searchPath, item.Schema)
+		}
+	}
+	return searchPath
 }
 
 // orderTypeAndTableCreates puts a created type, or a created table whose row type
@@ -1128,8 +1148,90 @@ func rejectAmbiguousUserTypes(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadat
 				}
 			}
 		}
+		if err := rejectAmbiguousViewReferences(meta, searchPath); err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+func rejectAmbiguousViewReferences(meta *metadatapb.DatabaseSchemaMetadata, searchPath []string) error {
+	if !slices.Contains(searchPath, "$user") {
+		return nil
+	}
+	objects := typeObjects(meta)
+	for _, schema := range meta.GetSchemas() {
+		for _, view := range schema.GetViews() {
+			if err := ambiguousViewDependencies(schema.GetName(), view.GetName(), view.GetDefinition(), view.GetDependencyColumns(), objects, searchPath); err != nil {
+				return err
+			}
+		}
+		for _, view := range schema.GetMaterializedViews() {
+			if err := ambiguousViewDependencies(schema.GetName(), view.GetName(), view.GetDefinition(), view.GetDependencyColumns(), objects, searchPath); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func ambiguousViewDependencies(viewSchema, viewName, definition string, dependencies []*metadatapb.DependencyColumn, objects map[string]bool, searchPath []string) error {
+	userIndex := slices.Index(searchPath, "$user")
+	if userIndex < 0 {
+		return nil
+	}
+	for _, dependency := range dependencies {
+		actualSchema, actualTable := dependency.GetSchema(), dependency.GetTable()
+		if actualSchema == "" || actualTable == "" {
+			continue
+		}
+		actualKey := objectKey(actualSchema, actualTable)
+		if !objects[actualKey] {
+			continue
+		}
+		if index := slices.Index(searchPath, actualSchema); index >= 0 && index < userIndex {
+			continue
+		}
+		if visible, ok := firstRelationNamed(actualTable, objects, searchPath); ok && visible == actualKey {
+			continue
+		}
+		if definitionQualifies(definition, actualSchema, actualTable) {
+			continue
+		}
+		return errors.Errorf("cannot generate a migration: view %s has an unqualified reference to %s, whose $user search-path resolution is ambiguous", quoteQualified(viewSchema, viewName), quoteQualified(actualSchema, actualTable))
+	}
+	return nil
+}
+
+func firstRelationNamed(objectName string, relations map[string]bool, searchPath []string) (string, bool) {
+	for _, searchSchema := range searchPath {
+		if searchSchema == "$user" {
+			continue
+		}
+		for key := range relations {
+			schemaName, name := splitObjectKey(key)
+			if schemaName == searchSchema && name == objectName {
+				return key, true
+			}
+		}
+	}
+	return "", false
+}
+
+// definitionQualifies reports whether the view text names the dependency with its
+// schema, so the match cannot have depended on the unresolved user schema.
+func definitionQualifies(definition, schemaName, objectName string) bool {
+	for _, qualified := range []string{
+		quoteQualified(schemaName, objectName),
+		schemaName + "." + objectName,
+		quoteIdentifier(schemaName) + "." + objectName,
+		schemaName + "." + quoteIdentifier(objectName),
+	} {
+		if strings.Contains(definition, qualified) {
+			return true
+		}
+	}
+	return false
 }
 
 func ambiguousRoutineTypes(signature, definition string, objects map[string]bool, searchPath []string) bool {
@@ -1210,8 +1312,7 @@ func ambiguousSearchPathType(reference typeReference, relations map[string]bool,
 	if reference.qualified {
 		return false
 	}
-	if !reference.object.quoted && builtinType(reference.object.name) {
-		// pg_catalog is searched first, so a built-in type is never shadowed.
+	if builtinTypeWins(reference, relations, searchPath) {
 		return false
 	}
 	userIndex := -1
@@ -1240,11 +1341,35 @@ func ambiguousSearchPathType(reference typeReference, relations map[string]bool,
 	return false
 }
 
-// builtinType reports whether pg_catalog defines a type of that name, which its
-// implicit first position in the search path can never be shadowed out of.
+// builtinType reports whether pg_catalog defines a type of that name.
 func builtinType(name string) bool {
 	_, _, err := builtinCatalog().ResolveType(catalog.TypeName{Name: name, TypeMod: -1})
 	return err == nil
+}
+
+// builtinTypeWins reports whether an unqualified name resolves to the pg_catalog
+// type. pg_catalog is implicit first only when the path does not list it; an
+// explicit position lets an earlier user schema's same-named relation shadow it.
+func builtinTypeWins(reference typeReference, relations map[string]bool, searchPath []string) bool {
+	if reference.object.quoted || !builtinType(reference.object.name) {
+		return false
+	}
+	pgCatalogIndex := slices.Index(searchPath, "pg_catalog")
+	if pgCatalogIndex < 0 {
+		return true
+	}
+	for _, searchSchema := range searchPath[:pgCatalogIndex] {
+		if searchSchema == "$user" {
+			return false
+		}
+		for key := range relations {
+			schemaName, objectName := splitObjectKey(key)
+			if schemaName == searchSchema && reference.object.matches(objectName) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 var builtinCatalog = sync.OnceValue(catalog.New)
@@ -1262,8 +1387,7 @@ func resolveTypeReference(reference typeReference, relations map[string]bool, se
 		}
 		return "", false
 	}
-	if !reference.object.quoted && builtinType(reference.object.name) {
-		// pg_catalog comes first, so an unqualified built-in names no relation.
+	if builtinTypeWins(reference, relations, searchPath) {
 		return "", false
 	}
 	if len(searchPath) == 0 {

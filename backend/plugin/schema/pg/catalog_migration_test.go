@@ -1189,6 +1189,57 @@ func TestUnresolvedSearchPathUserRejectsAmbiguousType(t *testing.T) {
 		"the session login decides $user, not the database owner, so this layer refuses")
 }
 
+// TestUnresolvedSearchPathUserRejectsAmbiguousViewReference covers a view body
+// whose unqualified relation is actually in the login's schema while public has a
+// same-named relation: loading with the literal $user would bind the wrong one.
+func TestUnresolvedSearchPathUserRejectsAmbiguousViewReference(t *testing.T) {
+	snapshot := func(definition string) *model.DatabaseMetadata {
+		schemas := []*metadatapb.SchemaMetadata{
+			{Name: "alice", Tables: []*metadatapb.TableMetadata{pgTable("v", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})}},
+			{Name: "public", Tables: []*metadatapb.TableMetadata{pgTable("v", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})}},
+		}
+		if definition != "" {
+			schemas = append(schemas, &metadatapb.SchemaMetadata{
+				Name: "app",
+				Views: []*metadatapb.ViewMetadata{{
+					Name:       "w",
+					Definition: definition,
+					DependencyColumns: []*metadatapb.DependencyColumn{{
+						Schema: "alice", Table: "v",
+					}},
+				}},
+			})
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			SearchPath: `"$user", public`,
+			Schemas:    schemas,
+		}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot(""), snapshot("SELECT * FROM v"))
+	require.ErrorContains(t, err, `view "app"."w" has an unqualified reference to "alice"."v"`)
+
+	_, err = schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot(""), snapshot("SELECT * FROM alice.v"))
+	require.NoError(t, err, "a qualified reference does not depend on the user schema")
+}
+
+// TestExplicitPgCatalogPositionDecidesBuiltin covers PostgreSQL's rule that
+// pg_catalog is implicit first only when the path does not list it; an explicit
+// user schema before pg_catalog can shadow a built-in name.
+func TestExplicitPgCatalogPositionDecidesBuiltin(t *testing.T) {
+	relations := map[string]bool{objectKey("public", "text"): true}
+	key, ok := referencedRelation("text", relations, []string{"public", "pg_catalog"})
+	require.True(t, ok, "an explicit pg_catalog after public lets public.text shadow text")
+	require.Equal(t, objectKey("public", "text"), key)
+	_, ok = referencedRelation("text", relations, []string{"pg_catalog", "public"})
+	require.False(t, ok, "pg_catalog before public keeps the built-in")
+	_, ok = referencedRelation("text", relations, []string{"public"})
+	require.False(t, ok, "an implicit pg_catalog stays first")
+
+	metadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{SearchPath: "public, pg_catalog"}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	require.Equal(t, []string{"public", "pg_catalog"}, getMigrationSearchPath(metadata), "an explicit pg_catalog keeps its position")
+}
+
 // TestTypeNameMatchingKeepsIdentifierBoundaries pins quoted identifier parsing:
 // a dot inside quotes belongs to that identifier, so `"a.b"."c"` and `"a"."b.c"`
 // name different relations.
