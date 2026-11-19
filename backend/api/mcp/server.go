@@ -64,6 +64,10 @@ type Server struct {
 	// internalAPITimeoutOverride lets tests shorten the bound on one internal
 	// API call. Zero means use the default (internalAPITimeout).
 	internalAPITimeoutOverride time.Duration
+
+	// sessionIdleTimeout is the SessionTimeout the /mcp handler was built with,
+	// kept so a test can check the production value.
+	sessionIdleTimeout time.Duration
 }
 
 type serverStore interface {
@@ -115,6 +119,12 @@ func maskingSkipsUnactivatedUnder(licenses instanceLicense) func(ctx context.Con
 }
 
 func newServerWithStore(stores serverStore, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
+	return newServerWithIdleTimeout(stores, profile, secret, internalAPI, mcpSessionIdleTimeout)
+}
+
+// newServerWithIdleTimeout builds the server with a given session idle timeout,
+// so tests can shorten it without leaving the production construction.
+func newServerWithIdleTimeout(stores serverStore, profile *config.Profile, secret string, internalAPI http.Handler, idleTimeout time.Duration) (*Server, error) {
 	mcpServer := mcp.NewServer(&mcp.Implementation{
 		Name:    "bytebase",
 		Version: profile.Version,
@@ -136,6 +146,7 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 		// Until NewServer binds the license, the form warns whenever an
 		// instance is not activated.
 		maskingSkipsUnactivated: func(context.Context, string) bool { return true },
+		sessionIdleTimeout:      idleTimeout,
 	}
 	s.registerTools()
 
@@ -167,11 +178,20 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 	// DEFER: no tool-level statement cap, so an oversized body is refused by the
 	// transport with no code, size or remedy; upgrade when a caller reports it,
 	// or when a multi-file CreateRelease needs more than the cap.
+	//
+	// SessionTimeout closes a session that has had no request for that long.
+	// The MCP spec only says clients SHOULD send DELETE when they are done, and
+	// many don't. Each session left open holds a goroutine and its state, and
+	// with no timeout the SDK keeps them until the process exits (BYT-10375). A
+	// request in flight pauses the clock and an open GET stream does not. A
+	// client that returns after expiry gets 404 and must initialize again, as
+	// the spec requires.
 	streamable := mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
 		return s.mcpServer
 	}, &mcp.StreamableHTTPOptions{
 		DisableLocalhostProtection: true,
 		MaxRequestBodyBytes:        maxMCPRequestBodyBytes,
+		SessionTimeout:             idleTimeout,
 	})
 
 	// Refresh per-request metadata that would otherwise be frozen at session
@@ -212,6 +232,9 @@ const (
 
 	// maxMCPRequestBodyBytes is documented at the handler that applies it.
 	maxMCPRequestBodyBytes = 4 << 20
+
+	// mcpSessionIdleTimeout is documented at the handler that applies it.
+	mcpSessionIdleTimeout = time.Hour
 )
 
 // negotiateLegacyProtocol keeps a session's recorded revision equal to the one
@@ -276,9 +299,9 @@ func askInChatWithoutForm(next mcp.MethodHandler) mcp.MethodHandler {
 // by opening a session: discover fills in InitializeParams, the field the
 // cleanup checks before closing a session nobody adopted, while a session ID is
 // returned only on an initialize response. The client never learns that ID and
-// never deletes it, and no SessionTimeout is set, so each connect would strand
-// one session for the process's life. Clients fall back to the initialize
-// handshake on any discover error, which is the path they take here anyway.
+// never deletes it, so each connect would strand one session until the idle
+// timeout closes it. Clients fall back to the initialize handshake on any
+// discover error, which is the path they take here anyway.
 //
 // DEFER: refuses the revision whole; upgrade when the transport can serve it.
 func refuseSessionlessProtocol(next http.Handler) http.Handler {
