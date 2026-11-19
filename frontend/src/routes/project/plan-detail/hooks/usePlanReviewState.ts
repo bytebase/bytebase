@@ -125,9 +125,10 @@ function planCheckRows(
 }
 
 // The AI review and the plan checks beside it on V1's page, once the page
-// reads the AI review's run. Its findings are comments that hold nothing, so
-// there are no gates: V1's footer says what the rollout waits on. Undefined
-// under SQL Review V2, where `usePlanReviewState` has the rows.
+// reads the AI review's run. Its run holds nothing, so there are no gates: its
+// findings hold the rollout only as open threads, which V1's footer counts
+// with every other thread. Undefined under SQL Review V2, where
+// `usePlanReviewState` has the rows.
 export function useAIReviewBesideV1():
   | Pick<PlanReviewState, "rows">
   | undefined {
