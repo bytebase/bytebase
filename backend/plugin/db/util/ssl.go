@@ -208,31 +208,6 @@ func configureClientCertificates(ds *storepb.DataSource, cfg *tls.Config) error 
 	return nil
 }
 
-// SSLMode is the PGSSLMode type.
-// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-SSLMODE
-type SSLMode string
-
-const (
-	sslModeRequire    SSLMode = "require"
-	sslModeVerifyCA   SSLMode = "verify-ca"
-	sslModeVerifyFull SSLMode = "verify-full"
-)
-
-// GetPGSSLMode is used only when SSL is enabled.
-// We should consider allowing user to override this default in the future even if SSL is enabled.
-func GetPGSSLMode(ds *storepb.DataSource) SSLMode {
-	if !ds.GetVerifyTlsCertificate() {
-		return sslModeRequire
-	}
-	sslMode := sslModeVerifyFull
-	if ds.GetSslCa() != "" {
-		if ds.GetSshHost() != "" {
-			sslMode = sslModeVerifyCA
-		}
-	}
-	return sslMode
-}
-
 // GetPGTLSConfigForHost returns Bytebase's TLS settings for one host the pg
 // driver dials: the client certificate and CA from the data source, the
 // verification mode it chose, and a server name and hostname verifier bound to
