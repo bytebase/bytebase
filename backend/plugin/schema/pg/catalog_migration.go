@@ -2199,10 +2199,10 @@ func routineDropArguments(signature, definition string) string {
 	return "(" + arguments + ")"
 }
 
-// insertSourceOnlyDrops puts a routine drop before the catalog's own PhasePre
-// drops, which may drop the type or table its signature uses, and other
-// metadata-derived drops after them, so an index or constraint is gone before
-// the column it names changes.
+// insertSourceOnlyDrops puts a routine or constraint drop before the catalog's
+// own PhasePre drops, which may drop the type, table or referenced table it
+// depends on, and other metadata-derived drops after them, so an index is gone
+// before the column it names changes.
 func insertSourceOnlyDrops(ops []catalog.MigrationOp, drops map[string]catalog.MigrationOp) []catalog.MigrationOp {
 	if len(drops) == 0 {
 		return ops
@@ -2212,23 +2212,24 @@ func insertSourceOnlyDrops(ops []catalog.MigrationOp, drops map[string]catalog.M
 		keys = append(keys, key)
 	}
 	slices.Sort(keys)
-	routines := make([]catalog.MigrationOp, 0, len(drops))
-	others := make([]catalog.MigrationOp, 0, len(drops))
+	early := make([]catalog.MigrationOp, 0, len(drops))
+	late := make([]catalog.MigrationOp, 0, len(drops))
 	for _, key := range keys {
-		if drops[key].Type == catalog.OpDropFunction {
-			routines = append(routines, drops[key])
-			continue
+		switch drops[key].Type {
+		case catalog.OpDropFunction, catalog.OpDropConstraint:
+			early = append(early, drops[key])
+		default:
+			late = append(late, drops[key])
 		}
-		others = append(others, drops[key])
 	}
 	at := 0
 	for at < len(ops) && ops[at].Phase == catalog.PhasePre {
 		at++
 	}
-	result := make([]catalog.MigrationOp, 0, len(ops)+len(routines)+len(others))
-	result = append(result, routines...)
+	result := make([]catalog.MigrationOp, 0, len(ops)+len(early)+len(late))
+	result = append(result, early...)
 	result = append(result, ops[:at]...)
-	result = append(result, others...)
+	result = append(result, late...)
 	result = append(result, ops[at:]...)
 	return result
 }

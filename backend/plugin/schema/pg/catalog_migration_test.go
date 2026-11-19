@@ -312,24 +312,27 @@ func TestSourceOnlyMissingObjectsAreDropped(t *testing.T) {
 	require.ErrorContains(t, err, "could not be loaded", "creating an object without a stand-in is still refused")
 }
 
-// TestSourceOnlyRoutineDropsPrecedeTheTypesTheyUse pins the order a missing
-// routine needs: its DROP comes before the catalog's drops of the type or table
-// its signature uses, while an index DROP stays before the column it names.
-func TestSourceOnlyRoutineDropsPrecedeTheTypesTheyUse(t *testing.T) {
+// TestSourceOnlyDependentDropsPrecedeTheirProviders pins the order a missing
+// routine or constraint needs: its DROP comes before the catalog's drops of the
+// type, table or referenced table it depends on, while an index DROP stays before
+// the column it names.
+func TestSourceOnlyDependentDropsPrecedeTheirProviders(t *testing.T) {
 	ops := []catalog.MigrationOp{
 		{Type: catalog.OpDropType, SQL: `DROP TYPE "public"."w"`, Phase: catalog.PhasePre},
 		{Type: catalog.OpDropTable, SQL: `DROP TABLE "public"."t" CASCADE`, Phase: catalog.PhasePre},
 		{Type: catalog.OpCreateTable, SQL: `CREATE TABLE "public"."next" ("id" integer)`, Phase: catalog.PhaseMain},
 	}
 	drops := map[string]catalog.MigrationOp{
-		"func:public.f|f(public.w)": {Type: catalog.OpDropFunction, SQL: `DROP FUNCTION "public"."f"(public.w)`, Phase: catalog.PhasePre},
-		"idx:public.t.t_idx":        {Type: catalog.OpDropIndex, SQL: `DROP INDEX "public"."t_idx"`, Phase: catalog.PhasePre},
+		"con:public.child.fk_parent": {Type: catalog.OpDropConstraint, SQL: `ALTER TABLE "public"."child" DROP CONSTRAINT "fk_parent"`, Phase: catalog.PhasePre},
+		"func:public.f|f(public.w)":  {Type: catalog.OpDropFunction, SQL: `DROP FUNCTION "public"."f"(public.w)`, Phase: catalog.PhasePre},
+		"idx:public.t.t_idx":         {Type: catalog.OpDropIndex, SQL: `DROP INDEX "public"."t_idx"`, Phase: catalog.PhasePre},
 	}
 	var got []string
 	for _, op := range insertSourceOnlyDrops(ops, drops) {
 		got = append(got, op.SQL)
 	}
 	require.Equal(t, []string{
+		`ALTER TABLE "public"."child" DROP CONSTRAINT "fk_parent"`,
 		`DROP FUNCTION "public"."f"(public.w)`,
 		`DROP TYPE "public"."w"`,
 		`DROP TABLE "public"."t" CASCADE`,
