@@ -3016,6 +3016,19 @@ func indexOutsideQuotes(text, needle string) int {
 				i = end
 				continue
 			}
+		case '/':
+			if strings.HasPrefix(text[i:], "/*") {
+				i = blockCommentEnd(text, i) - 1
+				continue
+			}
+		case '-':
+			if strings.HasPrefix(text[i:], "--") {
+				if end := strings.IndexByte(text[i+2:], '\n'); end >= 0 {
+					i += 2 + end
+					continue
+				}
+				return -1
+			}
 		default:
 		}
 		if i+len(needle) <= len(text) && strings.EqualFold(text[i:i+len(needle)], needle) {
