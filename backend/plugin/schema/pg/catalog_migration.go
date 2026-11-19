@@ -839,7 +839,7 @@ func indexByName(meta *metadatapb.DatabaseSchemaMetadata, fallbackSchema, ownerS
 			if table.GetName() == ownerObject {
 				return indexInTable(table, name)
 			}
-			if index := partitionIndexByName(table.GetPartitions(), ownerObject, ownerObject, name); index != nil {
+			if index := partitionIndexByName(table.GetPartitions(), ownerSchema, ownerObject, ownerSchema, name); index != nil {
 				return index
 			}
 		}
@@ -852,7 +852,7 @@ func indexByName(meta *metadatapb.DatabaseSchemaMetadata, fallbackSchema, ownerS
 		// schema, so the owner's schema alone does not find it.
 		for _, parent := range meta.GetSchemas() {
 			for _, table := range parent.GetTables() {
-				if index := partitionIndexByName(table.GetPartitions(), ownerObject, "", name); index != nil {
+				if index := partitionIndexByName(table.GetPartitions(), parent.GetName(), ownerObject, ownerSchema, name); index != nil {
 					return index
 				}
 			}
@@ -899,15 +899,19 @@ func indexInTable(table *metadatapb.TableMetadata, name string) *metadatapb.Inde
 }
 
 // partitionIndexByName returns the index of that name on the partition named
-// partitionName or one of its subpartitions. An empty requiredSchema accepts a
-// partition in any schema.
-func partitionIndexByName(partitions []*metadatapb.TablePartitionMetadata, partitionName, requiredSchema, name string) *metadatapb.IndexMetadata {
+// partitionName or one of its subpartitions. A partition without its own schema
+// keeps its parent's. An empty requiredSchema accepts any schema.
+func partitionIndexByName(partitions []*metadatapb.TablePartitionMetadata, parentSchema, partitionName, requiredSchema, name string) *metadatapb.IndexMetadata {
 	var found *metadatapb.IndexMetadata
 	forEachPartition(partitions, func(partition *metadatapb.TablePartitionMetadata) {
 		if found != nil || partition.GetName() != partitionName {
 			return
 		}
-		if requiredSchema != "" && partition.GetSchema() != "" && partition.GetSchema() != requiredSchema {
+		partitionSchema := partition.GetSchema()
+		if partitionSchema == "" {
+			partitionSchema = parentSchema
+		}
+		if requiredSchema != "" && partitionSchema != requiredSchema {
 			return
 		}
 		found = findIndex(partition.GetIndexes(), name)
@@ -2257,14 +2261,12 @@ func sourceOnlyMissingDrops(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata,
 // names the overload without repeating its name. A routine without one drops by
 // name when its name is unique, as PostgreSQL allows.
 func routineDropArguments(signature, definition string) string {
-	arguments := routineArgumentList(signature)
-	if strings.TrimSpace(arguments) == "" {
-		arguments = routineArgumentList(definition)
+	for _, text := range []string{signature, definition} {
+		if indexOutsideQuotes(text, "(") >= 0 {
+			return "(" + routineArgumentList(text) + ")"
+		}
 	}
-	if strings.TrimSpace(arguments) == "" {
-		return ""
-	}
-	return "(" + arguments + ")"
+	return ""
 }
 
 // insertSourceOnlyDrops puts a routine or constraint drop before the catalog's

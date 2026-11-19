@@ -310,6 +310,41 @@ func TestPartitionIndexInAnotherSchema(t *testing.T) {
 	require.Equal(t, definition, plan.Ops[0].SQL)
 }
 
+// TestSameNamedPartitionsKeepTheirSchema covers same-named partitions held under
+// parents in other schemas: the global lookup must keep the owner clause's schema.
+func TestSameNamedPartitionsKeepTheirSchema(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+		{Name: "a", Tables: []*metadatapb.TableMetadata{{
+			Name: "parent_a",
+			Partitions: []*metadatapb.TablePartitionMetadata{{
+				Name:    "p",
+				Schema:  "a",
+				Indexes: []*metadatapb.IndexMetadata{{Name: "idx", Definition: "a definition"}},
+			}},
+		}}},
+		{Name: "b", Tables: []*metadatapb.TableMetadata{{
+			Name: "parent_b",
+			Partitions: []*metadatapb.TablePartitionMetadata{{
+				Name:    "p",
+				Schema:  "b",
+				Indexes: []*metadatapb.IndexMetadata{{Name: "idx", Definition: "b definition"}},
+			}},
+		}}},
+	}}
+	require.Equal(t, "b definition", indexByName(meta, "b", "b", "p", "idx").GetDefinition())
+	require.Equal(t, "a definition", indexByName(meta, "a", "a", "p", "idx").GetDefinition())
+}
+
+// TestRoutineDropArgumentsKeepsEmptyList covers an explicitly empty argument list:
+// PostgreSQL lets the list go only when the name is unique, so an overload keeps
+// its parentheses.
+func TestRoutineDropArgumentsKeepsEmptyList(t *testing.T) {
+	require.Equal(t, "()", routineDropArguments("f()", ""))
+	require.Equal(t, "(integer)", routineDropArguments("f(integer)", ""))
+	require.Equal(t, "()", routineDropArguments("", "CREATE FUNCTION public.f() RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$"))
+	require.Equal(t, "", routineDropArguments("", ""))
+}
+
 // TestIndexOwnerSkipsQuotedNames covers an index name that contains the owner
 // clause's text: the owner is read after the quoted identifier.
 func TestIndexOwnerSkipsQuotedNames(t *testing.T) {
