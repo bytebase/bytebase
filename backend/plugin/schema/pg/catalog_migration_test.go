@@ -1906,6 +1906,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "out parameter name contains default",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "od",
+				Signature:  "od()",
+				Definition: "CREATE FUNCTION public.od(OUT mydefault public.v) RETURNS record LANGUAGE sql AS $$ SELECT $$",
+			}},
+			refused: true,
+		},
+		{
 			name: "quoted parameter before an out parameter",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "q",
@@ -3510,5 +3519,27 @@ func TestViewDependencyQualificationSeesThreePartRelation(t *testing.T) {
 		}},
 	}
 	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
+
+// TestViewDependencyQualificationSeesIsOf covers IS OF type lists.
+func TestViewDependencyQualificationSeesIsOf(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT NULL::public.t IS OF (t) FROM public.t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+
+	meta.Schemas[0].Views[0].Definition = "SELECT NULL::public.t IS OF (public.t) FROM public.t"
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }

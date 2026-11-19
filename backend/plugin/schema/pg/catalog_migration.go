@@ -608,7 +608,7 @@ func parametersNameType(parameters, key string, objects map[string]bool, searchP
 			}
 		}
 		declaration := parameters[start:i]
-		if index := indexOutsideQuotes(declaration, "DEFAULT"); index >= 0 {
+		if index := indexOutsideQuotesKeyword(declaration, "DEFAULT"); index >= 0 {
 			declaration = declaration[:index]
 		}
 		if index := indexOutsideQuotes(declaration, "="); index >= 0 {
@@ -1341,6 +1341,29 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 			default:
 			}
 		}
+		if !token.quoted && strings.EqualFold(token.text, "IS") {
+			ofIndex := i + 1
+			if ofIndex < len(tokens) && tokens[ofIndex].punct == 0 && !tokens[ofIndex].quoted && strings.EqualFold(tokens[ofIndex].text, "NOT") {
+				ofIndex++
+			}
+			if ofIndex+1 < len(tokens) && tokens[ofIndex].punct == 0 && !tokens[ofIndex].quoted && strings.EqualFold(tokens[ofIndex].text, "OF") && tokens[ofIndex+1].punct == '(' {
+				ofEnd := skipParenthesized(tokens, ofIndex+1)
+				for k := ofIndex + 2; k < ofEnd; k++ {
+					if tokens[k].punct != 0 {
+						continue
+					}
+					if matched, unqualified := typeReferenceAfter(tokens, k, schemaName, objectName); matched {
+						qualified = true
+					} else if unqualified {
+						return false
+					}
+					for k < ofEnd && tokens[k].punct != ',' {
+						k++
+					}
+				}
+				i = ofEnd
+			}
+		}
 		if !inRelations {
 			continue
 		}
@@ -1845,7 +1868,7 @@ func ambiguousParameters(parameters string, objects map[string]bool, searchPath 
 			}
 		}
 		declaration := parameters[start:i]
-		if index := indexOutsideQuotes(declaration, "DEFAULT"); index >= 0 {
+		if index := indexOutsideQuotesKeyword(declaration, "DEFAULT"); index >= 0 {
 			declaration = declaration[:index]
 		}
 		if index := indexOutsideQuotes(declaration, "="); index >= 0 {
@@ -2555,6 +2578,39 @@ func indexOutsideQuotes(text, needle string) int {
 		if i+len(needle) <= len(text) && strings.EqualFold(text[i:i+len(needle)], needle) {
 			return i
 		}
+	}
+	return -1
+}
+
+func indexOutsideQuotesKeyword(text, keyword string) int {
+	for i := 0; i < len(text); i++ {
+		switch text[i] {
+		case '"', '\'':
+			i = closingQuote(text, i, text[i])
+			continue
+		case '$':
+			if end, ok := dollarQuoteEnd(text, i); ok {
+				i = end
+				continue
+			}
+		default:
+		}
+		if i+len(keyword) > len(text) || !strings.EqualFold(text[i:i+len(keyword)], keyword) {
+			continue
+		}
+		if i > 0 {
+			previous, _ := utf8.DecodeLastRuneInString(text[:i])
+			if isIdentifierRune(previous) {
+				continue
+			}
+		}
+		if i+len(keyword) < len(text) {
+			next, _ := utf8.DecodeRuneInString(text[i+len(keyword):])
+			if isIdentifierRune(next) {
+				continue
+			}
+		}
+		return i
 	}
 	return -1
 }
