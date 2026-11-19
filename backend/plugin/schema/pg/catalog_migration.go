@@ -786,8 +786,10 @@ func builtinMultiwordType(text string) bool {
 	for strings.HasSuffix(text, "[]") {
 		text = strings.TrimSpace(strings.TrimSuffix(text, "[]"))
 	}
-	if index := strings.LastIndex(text, "("); index >= 0 && strings.HasSuffix(text, ")") {
-		text = strings.TrimSpace(text[:index])
+	if open := strings.Index(text, "("); open >= 0 {
+		if closeIndex := strings.Index(text[open:], ")"); closeIndex >= 0 {
+			text = strings.TrimSpace(text[:open] + text[open+closeIndex+1:])
+		}
 	}
 	for _, multiword := range []string{
 		"double precision",
