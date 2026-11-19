@@ -3332,3 +3332,40 @@ func TestCTESearchAndCycleClausesDoNotHideSiblings(t *testing.T) {
 	meta.Schemas[0].Views[0].Definition = "WITH RECURSIVE x AS (SELECT 1) CYCLE id SET is_cycle USING path, t AS (SELECT 1) SELECT * FROM public.t UNION ALL SELECT * FROM t"
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }
+
+// TestCompositeReorderInBackupSchemaIsIgnored covers backup-only metadata drift:
+// the schema is filtered from the generated plan, so its reorder must not fail
+// validation before the filter.
+func TestCompositeReorderInBackupSchemaIsIgnored(t *testing.T) {
+	snapshot := func(reordered bool) *model.DatabaseMetadata {
+		attributes := []*metadatapb.CompositeTypeAttribute{{Name: "a", Type: "text"}, {Name: "b", Type: "integer"}}
+		if reordered {
+			attributes[0], attributes[1] = attributes[1], attributes[0]
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+			{Name: "public"},
+			{Name: "bbdataarchive", CompositeTypes: []*metadatapb.CompositeTypeMetadata{{Name: "addr", Attributes: attributes}}},
+		}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot(false), snapshot(true))
+	require.NoError(t, err)
+	require.Empty(t, sql)
+}
+
+// TestCTECollectsNestedWith covers a WITH declared inside another CTE body.
+func TestCTECollectsNestedWith(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "WITH x AS (WITH t AS (SELECT 1) SELECT * FROM t) SELECT * FROM public.t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}

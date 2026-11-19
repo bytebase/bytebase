@@ -1353,6 +1353,10 @@ func isCTEReference(scopes []cteScope, name identifier, index int) bool {
 // definitionCTEs collects the scoped names declared by WITH, so a CTE reference
 // is not mistaken for a reference to a same-named dependency relation.
 func definitionCTEs(tokens []definitionToken) []cteScope {
+	return definitionCTEsAt(tokens, 0)
+}
+
+func definitionCTEsAt(tokens []definitionToken, offset int) []cteScope {
 	depthBefore := make([]int, len(tokens))
 	depth := 0
 	for i, token := range tokens {
@@ -1425,7 +1429,8 @@ func definitionCTEs(tokens []definitionToken) []cteScope {
 				}
 				visibleFrom = recursiveStart
 			}
-			scopes = append(scopes, cteScope{name: name, start: visibleFrom, end: end})
+			scopes = append(scopes, cteScope{name: name, start: visibleFrom + offset, end: end + offset})
+			scopes = append(scopes, definitionCTEsAt(tokens[bodyStart+1:bodyEnd], offset+bodyStart+1)...)
 			for i < len(tokens) && tokens[i].punct == 0 && !tokens[i].quoted {
 				switch strings.ToUpper(tokens[i].text) {
 				case "SEARCH":
@@ -1907,6 +1912,9 @@ func compositeByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb
 // new attribute before an existing one, and PostgreSQL cannot reorder fields.
 func refuseUnsupportedCompositeReordering(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) error {
 	for _, schema := range newMeta.GetSchemas() {
+		if schema.GetName() == "bbdataarchive" {
+			continue
+		}
 		oldSchema := schemaByName(oldMeta, schema.GetName())
 		if oldSchema == nil {
 			continue
