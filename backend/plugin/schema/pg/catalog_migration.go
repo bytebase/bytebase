@@ -748,7 +748,7 @@ func routineReturnClause(definition string) string {
 			end = searchStart + i
 		}
 	}
-	return rest[:end]
+	return stripSQLComments(rest[:end])
 }
 
 // namesType reports whether text ends in a declaration of the relation's type.
@@ -1965,6 +1965,48 @@ func literalRelationReference(text, schemaName, objectName string) (bool, bool) 
 		return false, false
 	}
 	return false, (identifier{name: first, quoted: firstQuoted}).matches(objectName)
+}
+
+func stripSQLComments(text string) string {
+	var result strings.Builder
+	for i := 0; i < len(text); {
+		switch text[i] {
+		case '"', '\'':
+			end := closingQuote(text, i, text[i])
+			result.WriteString(text[i : end+1])
+			i = end + 1
+		case '$':
+			if end, ok := dollarQuoteEnd(text, i); ok {
+				result.WriteString(text[i : end+1])
+				i = end + 1
+			} else {
+				result.WriteByte(text[i])
+				i++
+			}
+		case '/':
+			if strings.HasPrefix(text[i:], "/*") {
+				i = blockCommentEnd(text, i)
+			} else {
+				result.WriteByte(text[i])
+				i++
+			}
+		case '-':
+			if strings.HasPrefix(text[i:], "--") {
+				if end := strings.IndexByte(text[i+2:], '\n'); end >= 0 {
+					i += 2 + end
+				} else {
+					return result.String()
+				}
+			} else {
+				result.WriteByte(text[i])
+				i++
+			}
+		default:
+			result.WriteByte(text[i])
+			i++
+		}
+	}
+	return result.String()
 }
 
 func blockCommentEnd(text string, start int) int {
