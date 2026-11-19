@@ -48,6 +48,7 @@ import {
   fillableWidth,
   useColumnWidths,
 } from "@/hooks/useColumnWidths";
+import { useLatestRef } from "@/hooks/useLatestRef";
 import { PagedTableFooter, usePagedData } from "@/hooks/usePagedData";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { useTimeReading } from "@/hooks/useTimeReading";
@@ -500,9 +501,16 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
 
   const paged = usePagedData<AccessGrant>({
     sessionKey: `project-${projectName}-access-grants`,
+    cacheKey: JSON.stringify([
+      "project-access-grants",
+      projectName,
+      searchParams,
+      orderBy,
+    ]),
     fetchList,
     enabled: canList,
   });
+  const refreshRef = useLatestRef(paged.refresh);
 
   useEffect(() => {
     const pendingWithMissingIssue = paged.dataList.filter(
@@ -576,9 +584,9 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         title:
           type === "activate" ? t("common.activated") : t("common.revoked"),
       });
-      paged.refresh();
+      refreshRef.current();
     },
-    [activateAccessGrant, revokeAccessGrant, t, paged]
+    [activateAccessGrant, revokeAccessGrant, t, refreshRef]
   );
 
   return (

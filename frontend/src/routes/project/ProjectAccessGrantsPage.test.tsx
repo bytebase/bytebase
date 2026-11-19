@@ -549,6 +549,9 @@ describe("ProjectAccessGrantsPage refresh", () => {
 
   beforeEach(() => {
     originalState = useAppStore.getState();
+    localStorage.removeItem(
+      "bb.paged-table.project-projects/p1-access-grants.alice@example.com"
+    );
     const project = create(ProjectSchema, {
       name: "projects/p1",
       title: "Example project",
@@ -601,10 +604,14 @@ describe("ProjectAccessGrantsPage refresh", () => {
     render(<ProjectAccessGrantsPage projectId="p1" />);
     const trigger = await screen.findByRole("button", { name: "common.more" });
     const table = screen.getByRole("table");
-    fireEvent.click(trigger);
-    fireEvent.click(
-      await screen.findByRole("menuitem", { name: "sql-editor.revoke-access" })
-    );
+    await act(async () => trigger.focus());
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    const revokeItem = await screen.findByRole("menuitem", {
+      name: "sql-editor.revoke-access",
+    });
+    await waitFor(() => expect(revokeItem).toHaveFocus());
+    fireEvent.keyDown(revokeItem, { key: "Enter" });
+    fireEvent.keyUp(revokeItem, { key: "Enter" });
     const popup = await screen.findByRole("dialog", {
       name: "sql-editor.revoke-access",
     });
@@ -623,6 +630,141 @@ describe("ProjectAccessGrantsPage refresh", () => {
     );
     expect(screen.getByRole("table")).toBe(table);
     expect(screen.getByRole("button", { name: "common.more" })).toBe(trigger);
+  });
+
+  test.each(["search", "status", "sort", "page size", "project"])(
+    "hides stale rows while a new %s query is loading",
+    async (changed) => {
+      const grant = create(AccessGrantSchema, {
+        name: "projects/p1/accessGrants/1",
+        creator: "users/alice@example.com",
+        status: AccessGrant_Status.ACTIVE,
+        query: "SELECT id FROM orders",
+      });
+      type ListResult = Awaited<
+        ReturnType<ReturnType<typeof useAppStore.getState>["listAccessGrants"]>
+      >;
+      let resolveNext!: (result: ListResult) => void;
+      const listAccessGrants = vi
+        .fn()
+        .mockResolvedValueOnce({
+          accessGrants: [grant],
+          nextPageToken: "old-token",
+        })
+        .mockImplementationOnce(
+          () =>
+            new Promise<ListResult>((resolve) => {
+              resolveNext = resolve;
+            })
+        );
+      useAppStore.setState({ listAccessGrants });
+      const view = render(<ProjectAccessGrantsPage projectId="p1" />);
+      const trigger = await screen.findByRole("button", {
+        name: "common.more",
+      });
+      const table = screen.getByRole("table");
+
+      if (changed === "search") {
+        fireEvent.change(
+          screen.getByPlaceholderText("issue.advanced-search.filter"),
+          { target: { value: "other query" } }
+        );
+      } else if (changed === "status") {
+        const input = screen.getByPlaceholderText("issue.advanced-search.filter");
+        fireEvent.change(input, { target: { value: "status:" } });
+        fireEvent.click(screen.getByText("common.pending"));
+      } else if (changed === "sort") {
+        fireEvent.click(
+          screen.getByRole("columnheader", { name: "common.creator" })
+        );
+      } else if (changed === "page size") {
+        fireEvent.click(screen.getByRole("combobox"));
+        const option = await screen.findByRole("option", {
+          name: "100",
+        });
+        await act(async () => option.focus());
+        fireEvent.keyDown(option, { key: "Enter" });
+        fireEvent.keyUp(option, { key: "Enter" });
+      } else {
+        const project = create(ProjectSchema, {
+          name: "projects/p2",
+          title: "Other project",
+        });
+        await act(async () =>
+          useAppStore.setState((state) => ({
+            projectsByName: { ...state.projectsByName, [project.name]: project },
+          }))
+        );
+        view.rerender(<ProjectAccessGrantsPage projectId="p2" />);
+      }
+
+      await waitFor(() => expect(listAccessGrants).toHaveBeenCalledTimes(2));
+      const request = listAccessGrants.mock.lastCall?.[0];
+      expect(request.pageToken).toBeUndefined();
+      if (changed === "search")
+        expect(request.filter.statement).toBe("other query");
+      if (changed === "status") expect(request.filter.status).toEqual(["PENDING"]);
+      if (changed === "sort") expect(request.orderBy).toBe("creator desc");
+      if (changed === "page size") expect(request.pageSize).toBe(100);
+      if (changed === "project") expect(request.parent).toBe("projects/p2");
+      expect(table).not.toBeInTheDocument();
+      expect(trigger).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "common.more" })
+      ).not.toBeInTheDocument();
+      expect(screen.getByText("common.loading")).toBeVisible();
+      await act(async () => resolveNext({ accessGrants: [], nextPageToken: "" }));
+      expect(await screen.findByText("common.no-data")).toBeVisible();
+    }
+  );
+
+  test("refreshes the current query when an earlier query's action completes", async () => {
+    const grant = create(AccessGrantSchema, {
+      name: "projects/p1/accessGrants/1",
+      creator: "users/alice@example.com",
+      status: AccessGrant_Status.ACTIVE,
+      query: "SELECT id FROM orders",
+    });
+    let resolveWrite!: (value: typeof grant) => void;
+    const revokeAccessGrant = vi.fn(
+      () =>
+        new Promise<typeof grant>((resolve) => {
+          resolveWrite = resolve;
+        })
+    );
+    const listAccessGrants = vi
+      .fn()
+      .mockResolvedValueOnce({ accessGrants: [grant], nextPageToken: "" })
+      .mockResolvedValue({ accessGrants: [], nextPageToken: "" });
+    useAppStore.setState({ listAccessGrants, revokeAccessGrant });
+    render(<ProjectAccessGrantsPage projectId="p1" />);
+    const trigger = await screen.findByRole("button", { name: "common.more" });
+    await act(async () => trigger.focus());
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    const item = await screen.findByRole("menuitem", {
+      name: "sql-editor.revoke-access",
+    });
+    await waitFor(() => expect(item).toHaveFocus());
+    fireEvent.keyDown(item, { key: "Enter" });
+    fireEvent.keyUp(item, { key: "Enter" });
+    const popup = await screen.findByRole("dialog", {
+      name: "sql-editor.revoke-access",
+    });
+    fireEvent.click(
+      within(popup).getByRole("button", { name: "sql-editor.revoke-access" })
+    );
+    await waitFor(() => expect(revokeAccessGrant).toHaveBeenCalledTimes(1));
+    fireEvent.change(
+      screen.getByPlaceholderText("issue.advanced-search.filter"),
+      { target: { value: "other query" } }
+    );
+    await waitFor(() => expect(listAccessGrants).toHaveBeenCalledTimes(2));
+    expect(listAccessGrants.mock.lastCall?.[0].filter.statement).toBe("other query");
+    await act(async () =>
+      resolveWrite({ ...grant, status: AccessGrant_Status.REVOKED })
+    );
+    await waitFor(() => expect(listAccessGrants).toHaveBeenCalledTimes(3));
+    expect(listAccessGrants.mock.lastCall?.[0].filter.statement).toBe("other query");
   });
 
   test("shows loading rather than an empty state before the initial response", async () => {
