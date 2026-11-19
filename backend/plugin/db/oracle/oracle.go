@@ -1,92 +1,189 @@
-// Package oracle is the plugin for Oracle driver.
+// Package oracle is Bytebase's Oracle driver: an adapter over
+// github.com/bytebase/omni/oracle/driver that maps Bytebase's connection config
+// onto the driver contract and the contract's results back into the product's.
+// The conversation with Oracle — session setup, sync, the metadata-rendered
+// dump, queries, change scripts, plan estimates and the database-link probe — is
+// the driver's.
+//
+// The adapter keeps what is product: the data source to contract conversion
+// (TLS material, the SSH tunnel, SID and service name, extra connection
+// parameters), the QueryContext/ExecuteOptions mapping, the transaction-mode
+// directive, GetDB-shaped callers, the v1pb conversion and the task-run logger.
+//
+// Known differences from the driver this replaced; each is either pinned by a
+// test in cutover_parity_test.go or named here as the cutover proof measured it:
+//   - The private-link guard takes no connection: OwnsPrivateDatabaseLink asks
+//     the driver, which opens its own session. Every linked read used to be
+//     refused once GetDB returned nil, so this is the fix the cutover owed.
+//   - A SELECT that declares PL/SQL returns its rows. The old driver asked
+//     ValidateSQLForEditor and ran anything it did not call a query through Exec,
+//     dropping the rows; the contract decides by the statement's shape.
+//   - QueryContext.Schema switches the session, so the editor's schema choice
+//     reaches Oracle; the old driver ignored it. The driver switches back when
+//     the session closes.
+//   - The result-size cut is byte-accurate, where the old driver checked
+//     proto.Size at power-of-two row counts. The message is the same.
+//   - EXPLAIN PLAN statement IDs are a per-driver counter, not a timestamp with
+//     a random suffix. The plan's statements only differ in that ID.
+//   - A dump is the old text except for two additions: the sequence's full
+//     definition (the old sync read only its name) and COMMENT statements (the
+//     old renderer wrote none). A synced key column renders quoted once, as
+//     before; the doubled "PRIMARY KEY (""ID"")" omni#1388 records is
+//     backend/plugin/schema/oracle quoting a column that already arrives quoted,
+//     on the migration path rather than in a dump.
+//   - A schema the server no longer has answers driver.ErrNotFound, so the sync
+//     records a failure instead of overwriting the schema with nothing.
+//   - An SSH data source dials through Config.Dial; the old driver dialled the
+//     direct host and ignored the jump host.
+//   - TIMESTAMP WITH LOCAL TIME ZONE is rendered in the session's zone, which is
+//     what SQL*Plus prints, where the old driver relabelled whichever zone
+//     go-ora reported as UTC. The two agree while the session zone is the
+//     database's, so the corpus renders the same value on both sides.
+//   - Open defaults an empty port to 1521 and refuses an empty host or user up
+//     front, where the old driver failed inside URL parsing or at first use.
+//
+// The transaction-mode directive stays here and its isolation level is not
+// applied, as before: Oracle's BEGIN opens a PL/SQL block, so the isolation
+// directive was never read.
+//
+// A SQL*Plus command is not SQL and Oracle does not execute one over a session,
+// and the driver sends every segment it splits: the adapter blanks the command
+// out of the script first, which keeps the script running as it did. Blanks
+// rather than deletion keep every other statement's byte offsets, so the
+// statement after a command starts with the blanked command as leading
+// whitespace — the one difference this leaves in a result's or a log's statement
+// text.
 package oracle
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/tls"
 	"database/sql"
-	"database/sql/driver"
-	"encoding/json"
-	"fmt"
-	"log/slog"
-	"math/big"
-	"strconv"
+	"net"
 	"strings"
-	"time"
+	"sync"
 
-	// Import go-ora Oracle driver.
-
+	omnidriver "github.com/bytebase/omni/driver"
+	oracledriver "github.com/bytebase/omni/oracle/driver"
+	oracleparser "github.com/bytebase/omni/oracle/parser"
 	"github.com/pkg/errors"
-	goora "github.com/sijms/go-ora/v2"
-	"google.golang.org/protobuf/types/known/durationpb"
+	"golang.org/x/crypto/ssh"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver         = (*Driver)(nil)
+	_ db.Prober         = (*Driver)(nil)
+	_ db.RowEstimator   = (*Driver)(nil)
+	_ db.SessionQuerier = (*Driver)(nil)
 )
 
 func init() {
 	db.Register(storepb.Engine_ORACLE, newDriver)
 }
 
-// Driver is the Oracle driver.
+// Driver is Bytebase's Oracle driver.
 type Driver struct {
-	db            *sql.DB
-	databaseName  string
-	serviceName   string
-	connectionCtx db.ConnectionContext
+	impl      *oracledriver.Driver
+	sshClient *ssh.Client
+	// sessionMu guards session, which QueryConn keeps until Close so an editor
+	// request's statements share one session, as the caller's *sql.Conn did.
+	sessionMu sync.Mutex
+	session   omnidriver.Session
 }
 
 func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// GetVersion gets the Oracle version.
-func (d *Driver) GetVersion() (*plsqlparser.Version, error) {
-	return plsqlparser.ParseVersion(d.connectionCtx.EngineVersion)
-}
-
-// Open opens a Oracle driver.
+// Open maps the connection config onto the driver contract. It reaches the
+// server when the config names a schema, because the contract's Open does: a
+// schema the account cannot switch to fails here rather than at the first
+// statement, as it did before.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	port, err := strconv.Atoi(config.DataSource.Port)
-	if err != nil {
-		return nil, errors.Errorf("invalid port %q", config.DataSource.Port)
+	dataSource := config.DataSource
+	cfg := omnidriver.Config{
+		Host:          dataSource.GetHost(),
+		Port:          dataSource.GetPort(),
+		Database:      config.ConnectionContext.DatabaseName,
+		User:          dataSource.GetUsername(),
+		Password:      config.Password,
+		Params:        connectionParams(dataSource),
+		EngineVersion: config.ConnectionContext.EngineVersion,
 	}
-	tlsConfig, err := getTLSConfig(config.DataSource)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to build TLS configuration")
-	}
-	options := connectionOptions(config.DataSource.GetSid(), config.DataSource.GetExtraConnectionParameters(), tlsConfig != nil)
-	dsn := goora.BuildUrl(config.DataSource.Host, port, config.DataSource.GetServiceName(), config.DataSource.Username, config.Password, options)
-	db := sql.OpenDB(&connector{drv: goora.NewDriver(), dsn: dsn, tlsConfig: tlsConfig, currentSchema: config.ConnectionContext.DatabaseName})
-	if config.ConnectionContext.DatabaseName != "" {
-		// Connect now so that a schema the session can't switch to fails Open, not the first statement.
-		if err := db.PingContext(ctx); err != nil {
-			_ = db.Close()
-			return nil, err
+	// The TLS callback keeps certificate verification bound to the host go-ora
+	// dials, which is why it clears util.GetTLSConfig's own verifier: go-ora sets
+	// ServerName per server, and a SERVER address or a listener redirect is
+	// checked against its own name.
+	if dataSource.GetUseSsl() {
+		cfg.TLS = func(string) (*tls.Config, error) {
+			return getTLSConfig(dataSource)
 		}
 	}
-	d.db = db
-	d.databaseName = config.ConnectionContext.DatabaseName
-	d.serviceName = config.DataSource.GetServiceName()
-	d.connectionCtx = config.ConnectionContext
+	if dataSource.GetSshHost() != "" {
+		sshClient, err := util.GetSSHClient(dataSource)
+		if err != nil {
+			return nil, err
+		}
+		d.sshClient = sshClient
+		cfg.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
+			return util.DialSSHTunnel(ctx, sshClient, network, address)
+		}
+	}
+
+	impl, err := oracledriver.Open(ctx, cfg)
+	if err != nil {
+		d.closeSSHClient()
+		return nil, err
+	}
+	d.impl = impl
 	return d, nil
 }
 
-// getTLSConfig returns the TLS configuration for the data source's TLS section, or nil when TLS
-// is off. It leaves the name check to crypto/tls instead of util.GetTLSConfig's verifier, which
-// checks Hostname: go-ora sets ServerName to each server it dials, so a SERVER address or a
-// listener redirect is checked against its own name.
+// connectionParams is the driver contract's Params for a data source: the
+// data source's extra parameters in their own spelling, then the endpoint's
+// service name field and SID field unless an extra parameter names the same
+// option.
+//
+// go-ora upper-cases option keys, so two spellings of one option would leave the
+// winner to map iteration order; the fields yield to the caller's parameters in
+// any spelling, which is what the old driver's option map did.
+func connectionParams(dataSource *storepb.DataSource) map[string]string {
+	params := make(map[string]string, len(dataSource.GetExtraConnectionParameters())+2)
+	named := make(map[string]bool, len(params))
+	for key, value := range dataSource.GetExtraConnectionParameters() {
+		params[key] = value
+		named[strings.ToUpper(key)] = true
+	}
+	for option, value := range map[string]string{
+		"SERVICE_NAME": dataSource.GetServiceName(),
+		"SID":          dataSource.GetSid(),
+	} {
+		if value == "" || named[option] {
+			continue
+		}
+		params[option] = value
+	}
+	// An unset dial timeout leaves go-ora to the transport's own, which behind an
+	// unreachable primary can outlast the whole connect check before the next
+	// address in a SERVER list is tried. go-ora reads either spelling, and
+	// upper-cases the keys, so the check is on the upper-cased names.
+	if !named["CONNECTION TIMEOUT"] && !named["CONNECT TIMEOUT"] {
+		params["CONNECTION TIMEOUT"] = "10"
+	}
+	return params
+}
+
+// getTLSConfig returns the TLS configuration for the data source's TLS
+// section. It leaves the name check to crypto/tls instead of
+// util.GetTLSConfig's verifier, which checks the data source's Host: go-ora
+// sets ServerName to each server it dials, so a SERVER address or a listener
+// redirect is checked against its own name.
 func getTLSConfig(dataSource *storepb.DataSource) (*tls.Config, error) {
 	config, err := util.GetTLSConfig(dataSource)
 	if err != nil || config == nil {
@@ -97,424 +194,151 @@ func getTLSConfig(dataSource *storepb.DataSource) (*tls.Config, error) {
 	return config, nil
 }
 
-// connector opens each connection with its own copy of the TLS configuration: go-ora sets
-// ServerName on the configuration it is given, so connections opened in parallel can't share
-// one.
-//
-// It also sets currentSchema on every session it opens, because the pool opens a new session
-// whenever none is idle or one goes bad. go-ora's AddSessionParam can't do this: it stores the
-// parameter on the driver rather than the session.
-//
-// drv is this data source's own go-ora driver, never the process-wide default one. A go-ora
-// driver keeps the character set converters of the first connection opened through it and
-// copies them onto every later connection in place of the one that connection negotiates, so
-// a shared driver decodes every database's text with the first database's character set
-// (#21902).
-type connector struct {
-	drv           *goora.OracleDriver
-	dsn           string
-	tlsConfig     *tls.Config
-	currentSchema string
+func (d *Driver) Close(context.Context) error {
+	d.sessionMu.Lock()
+	if d.session != nil {
+		_ = d.session.Close()
+		d.session = nil
+	}
+	d.sessionMu.Unlock()
+	d.closeSSHClient()
+	if d.impl != nil {
+		return d.impl.Close()
+	}
+	return nil
 }
 
-func (c *connector) Connect(ctx context.Context) (driver.Conn, error) {
-	oracleConnector, err := c.drv.OpenConnector(c.dsn)
-	if err != nil {
-		return nil, err
+func (d *Driver) closeSSHClient() {
+	if d.sshClient != nil {
+		_ = d.sshClient.Close()
+		d.sshClient = nil
 	}
-	oracleConnector.(*goora.OracleConnector).WithTLSConfig(c.tlsConfig.Clone())
-	conn, err := oracleConnector.Connect(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if c.currentSchema == "" {
-		return conn, nil
-	}
-	if _, err := conn.(driver.ExecerContext).ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", c.currentSchema), nil); err != nil {
-		_ = conn.Close()
-		return nil, errors.Wrapf(err, "failed to set current schema to %q", c.currentSchema)
-	}
-	return conn, nil
 }
 
-func (c *connector) Driver() driver.Driver {
-	return c.drv
-}
-
-const (
-	sidOption              = "SID"
-	sslOption              = "SSL"
-	dialTimeoutOption      = "CONNECTION TIMEOUT"
-	dialTimeoutOptionAlias = "CONNECT TIMEOUT"
-	// defaultDialTimeoutSeconds bounds the wait for one address to accept a connection, DNS
-	// lookup included, so an unreachable address fails over in seconds. It does not limit
-	// how long a statement runs.
-	defaultDialTimeoutSeconds = "10"
-)
-
-// connectionOptions returns the go-ora URL options for a data source: the extra connection
-// parameters as typed, the SID field and the default dial timeout unless an extra parameter
-// sets the same option, and SSL=TRUE when TLS is on.
-//
-// go-ora upper-cases option keys and reads CONNECT TIMEOUT as CONNECTION TIMEOUT. A Bytebase
-// key sent next to a user key for the same option would leave the winner to go-ora's map
-// iteration order, so only one is sent: the user's key for SID and the dial timeout, and
-// Bytebase's SSL, which the TLS section decides.
-func connectionOptions(sid string, extraParameters map[string]string, useTLS bool) map[string]string {
-	options := make(map[string]string, len(extraParameters)+3)
-	userOptions := make(map[string]bool, len(extraParameters))
-	for key, value := range extraParameters {
-		option := strings.ToUpper(key)
-		if useTLS && option == sslOption {
-			continue
-		}
-		options[key] = value
-		userOptions[option] = true
-	}
-	if sid != "" && !userOptions[sidOption] {
-		options[sidOption] = sid
-	}
-	if !userOptions[dialTimeoutOption] && !userOptions[dialTimeoutOptionAlias] {
-		options[dialTimeoutOption] = defaultDialTimeoutSeconds
-	}
-	if useTLS {
-		options[sslOption] = "TRUE"
-	}
-	return options
-}
-
-// Close closes the driver.
-func (d *Driver) Close(_ context.Context) error {
-	return d.db.Close()
-}
-
-// Ping pings the database.
+// Ping reaches the server.
 func (d *Driver) Ping(ctx context.Context) error {
-	return d.db.PingContext(ctx)
+	return d.impl.Ping(ctx)
 }
 
-// GetDB gets the database.
-func (d *Driver) GetDB() *sql.DB {
-	return d.db
+// GetDB returns nil: Oracle is driven through omni's session, not a *sql.DB.
+func (*Driver) GetDB() *sql.DB {
+	return nil
 }
 
-// Execute executes the migration, `beforeCommitTxFunc` will be called before transaction commit and after executing `statement`.
-//
-// Callers can use `beforeCommitTx` to do some extra work before transaction commit, like get the transaction id.
-// Any error returned by `beforeCommitTx` will rollback the transaction, so it is the callers' responsibility to return nil if the error occurs in `beforeCommitTx` is not fatal.
+// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
+// rather than on the *sql.Conn a caller passes, which is unused.
+func (*Driver) OwnsQuerySession() {}
+
+// Execute runs the script's statements, reporting each to the task run's log.
+// The script's transaction-mode directive is parsed here, because the product
+// sends it inside the statement text; the isolation directive is not applied,
+// as before.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	if opts.CreateDatabase {
 		return 0, errors.New("create database is not supported for Oracle")
 	}
-
-	// Parse transaction mode from the script
 	config, cleanedStatement := base.ParseTransactionConfig(statement)
-	statement = cleanedStatement
-	transactionMode := config.Mode
-
-	// Apply default when transaction mode is not specified
-	if transactionMode == transaction.ModeUnspecified {
-		transactionMode = transaction.DefaultMode()
+	mode := config.Mode
+	if mode == transaction.ModeUnspecified {
+		mode = transaction.DefaultMode()
 	}
+	transactionMode := omnidriver.Transactional
+	if mode == transaction.ModeOff {
+		transactionMode = omnidriver.AutoCommit
+	}
+	return d.impl.Execute(ctx, withoutSQLPlusCommands(cleanedStatement), omnidriver.ExecuteOptions{
+		Transaction: transactionMode,
+		MaxRetries:  opts.MaximumRetries,
+		Log:         executeLogger{opts: opts},
+	})
+}
 
-	commands, err := buildExecuteCommands(statement)
-	if err != nil {
-		return 0, err
+// withoutSQLPlusCommands blanks the SQL*Plus commands of a script, which Oracle
+// does not execute over a session: a script that starts with SET DEFINE OFF, as
+// the SQL*Plus scripts the console imports do, used to run because Bytebase's
+// splitter skipped them, and the driver sends every segment it splits.
+//
+// The commands are blanked rather than removed, so every other statement keeps
+// its byte offsets and the range a task run logs still names the script's own
+// text.
+func withoutSQLPlusCommands(script string) string {
+	var commands []oracleparser.Segment
+	for _, segment := range oracleparser.Split(script) {
+		if segment.Kind == oracleparser.SegmentSQLPlusCommand {
+			commands = append(commands, segment)
+		}
 	}
 	if len(commands) == 0 {
-		return 0, nil
+		return script
 	}
-
-	conn, err := d.db.Conn(ctx)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get connection")
-	}
-	defer conn.Close()
-
-	// Execute based on transaction mode
-	if transactionMode == transaction.ModeOff {
-		return d.executeInAutoCommitMode(ctx, conn, commands, opts)
-	}
-	return d.executeInTransactionMode(ctx, conn, commands, opts)
-}
-
-func buildExecuteCommands(statement string) ([]base.Statement, error) {
-	commands, err := plsqlparser.SplitSQL(statement)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to split sql")
-	}
-	return base.FilterEmptyStatements(commands), nil
-}
-
-// executeInTransactionMode executes statements within a single transaction
-func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, opts db.ExecuteOptions) (int64, error) {
-	tx, err := conn.BeginTx(ctx, nil)
-	if err != nil {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
-		return 0, errors.Wrapf(err, "failed to begin transaction")
-	}
-	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
-
-	committed := false
-	defer func() {
-		err := tx.Rollback()
-		if committed {
-			return
-		}
-		var rerr string
-		if err != nil {
-			rerr = err.Error()
-		}
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
-	}()
-
-	totalRowsAffected := int64(0)
+	blanked := []byte(script)
 	for _, command := range commands {
-		opts.LogCommandExecute(command.Range, command.Text)
-
-		sqlResult, err := tx.ExecContext(ctx, command.Text)
-		if err != nil {
-			opts.LogCommandResponse(0, nil, err.Error())
-			return 0, err
+		end := command.ByteEnd
+		// The command's line break goes with it, so the statement after it starts
+		// at its own first character rather than at a blank line.
+		for end < len(blanked) && (blanked[end] == '\r' || blanked[end] == '\n') {
+			end++
 		}
-		rowsAffected, err := sqlResult.RowsAffected()
-		if err != nil {
-			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			slog.Debug("rowsAffected returns error", log.BBError(err))
-			rowsAffected = 0
+		for i := command.ByteStart; i < end; i++ {
+			blanked[i] = ' '
 		}
-		opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
-		totalRowsAffected += rowsAffected
 	}
-
-	if err := tx.Commit(); err != nil {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
-		return 0, errors.Wrapf(err, "failed to commit transaction")
-	}
-	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
-	committed = true
-	return totalRowsAffected, nil
+	return string(blanked)
 }
 
-// executeInAutoCommitMode executes statements sequentially in auto-commit mode
-func (*Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, opts db.ExecuteOptions) (int64, error) {
-	totalRowsAffected := int64(0)
-	for _, command := range commands {
-		opts.LogCommandExecute(command.Range, command.Text)
-
-		sqlResult, err := conn.ExecContext(ctx, command.Text)
-		if err != nil {
-			opts.LogCommandResponse(0, nil, err.Error())
-			// In auto-commit mode, we stop at the first error
-			// The database is left in a partially migrated state
-			return totalRowsAffected, err
-		}
-		rowsAffected, err := sqlResult.RowsAffected()
-		if err != nil {
-			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			slog.Debug("rowsAffected returns error", log.BBError(err))
-			rowsAffected = 0
-		}
-		opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
-		totalRowsAffected += rowsAffected
-	}
-	return totalRowsAffected, nil
+// CountAffectedRows returns the optimizer's estimate of the rows a DML
+// statement changes.
+func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
+	return d.impl.CountAffectedRows(ctx, statement)
 }
 
-// OwnsPrivateDatabaseLink reports whether the session's account owns a private database link.
-// SYS.USER_DB_LINKS lists the links owned by the current user; the SYS qualifier keeps a
-// same-named local object from standing in for the dictionary view.
-func (*Driver) OwnsPrivateDatabaseLink(ctx context.Context, conn *sql.Conn) (bool, error) {
-	var count int
-	if err := conn.QueryRowContext(ctx, "SELECT COUNT(*) FROM SYS.USER_DB_LINKS").Scan(&count); err != nil {
-		return false, errors.Wrap(err, "failed to count private database links")
-	}
-	return count > 0, nil
+// OwnsPrivateDatabaseLink reports whether the driver's account owns a private
+// database link. The driver asks with its own session; the old signature took
+// the caller's *sql.Conn, which the cutover makes nil, and every linked read was
+// refused because of it.
+func (d *Driver) OwnsPrivateDatabaseLink(ctx context.Context) (bool, error) {
+	return d.impl.OwnsPrivateDatabaseLink(ctx)
 }
 
-// QueryConn queries a SQL statement in a given connection.
-func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := plsqlparser.SplitSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-	singleSQLs = base.FilterEmptyStatements(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return nil, nil
-	}
-
-	var results []*v1pb.QueryResult
-	for _, singleSQL := range singleSQLs {
-		statement := singleSQL.Text
-		planAsJSON := false
-		if queryContext.Explain {
-			startTime := time.Now()
-			randNum, err := rand.Int(rand.Reader, big.NewInt(999))
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to generate random statement ID")
-			}
-			randomID := fmt.Sprintf("%d%d", startTime.UnixMilli(), randNum.Int64())
-
-			if _, err := conn.ExecContext(ctx, fmt.Sprintf("EXPLAIN PLAN SET STATEMENT_ID = '%s' FOR %s", randomID, statement)); err != nil {
-				return nil, err
-			}
-			planAsJSON = db.ExplainFormat(queryContext.Option.GetExplainFormat()) == base.ExplainFormatJSON
-			if planAsJSON {
-				statement = fmt.Sprintf(planStepsQuery, randomID)
-			} else {
-				statement = fmt.Sprintf(`SELECT LPAD(' ', LEVEL-1) || OPERATION || ' (' || OPTIONS || ')' "Operation", OBJECT_NAME "Object", OPTIMIZER "Optimizer", COST "Cost", CARDINALITY "Cardinality", BYTES "Bytes", PARTITION_START "Partition Start", PARTITION_ID "Partition ID", ACCESS_PREDICATES "Access Predicates" FROM PLAN_TABLE START WITH ID = 0 AND statement_id = '%s' CONNECT BY PRIOR ID=PARENT_ID AND statement_id = '%s' ORDER BY id`, randomID, randomID)
-			}
-		}
-
-		if !queryContext.Explain && queryContext.Limit > 0 {
-			statement = base.StatementWithResultLimit(storepb.Engine_ORACLE, statement, queryContext.Limit, d.connectionCtx.EngineVersion)
-		}
-
-		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_ORACLE, statement)
-		if err != nil {
-			return nil, err
-		}
-		startTime := time.Now()
-		queryResult, err := func() (*v1pb.QueryResult, error) {
-			if planAsJSON {
-				return queryPlanSteps(ctx, conn, statement)
-			}
-			if allQuery {
-				rows, err := conn.QueryContext(ctx, statement)
-				if err != nil {
-					return nil, err
-				}
-				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
-				if err != nil {
-					return nil, err
-				}
-				if err := rows.Err(); err != nil {
-					return nil, err
-				}
-				return r, nil
-			}
-
-			sqlResult, err := conn.ExecContext(ctx, statement)
-			if err != nil {
-				return nil, err
-			}
-			affectedRows, err := sqlResult.RowsAffected()
-			if err != nil {
-				slog.Info("rowsAffected returns error", log.BBError(err))
-			}
-			return util.BuildAffectedRowsResult(affectedRows, nil), nil
-		}()
-		stop := false
-		if err != nil {
-			queryResult = &v1pb.QueryResult{
-				Error: err.Error(),
-			}
-			stop = true
-		}
-		queryResult.Statement = statement
-		queryResult.Latency = durationpb.New(time.Since(startTime))
-		queryResult.RowsCount = int64(len(queryResult.Rows))
-		results = append(results, queryResult)
-		if stop {
-			break
-		}
-	}
-
-	return results, nil
+// executeLogger reports the driver contract's execute steps to the task run's
+// log, which is how a task run shows what ran and what Oracle answered.
+type executeLogger struct {
+	opts db.ExecuteOptions
 }
 
-// planStepsQuery reads the plan Oracle recorded for one EXPLAIN PLAN: a row per
-// operator, each naming its parent, which is how Oracle states a plan. The
-// columns are what the query-plan viewer reads — the tree's shape, what each
-// step does, the object it reads, and what the optimizer expects it to cost.
-const planStepsQuery = `SELECT id, parent_id, position, operation, options, object_owner, object_name, object_type, optimizer, cost, cardinality, bytes, partition_start, partition_stop, access_predicates, filter_predicates FROM plan_table WHERE statement_id = '%s' ORDER BY id`
-
-// queryPlanSteps returns those rows as one JSON array, which is the form the
-// query-plan viewer parses; the viewer rebuilds the tree from the parent links.
-//
-// Oracle renders a plan as rows rather than as a document, and no EXPLAIN option
-// renders it as one, so this is where the rendering happens. It is built here
-// rather than with Oracle's own JSON_ARRAYAGG so that it works on releases older
-// than 12.2, which do not have those functions. A tab-separated grid would not
-// do: a predicate can hold a tab or a newline, and nothing downstream could tell
-// that apart from the next column or the next row.
-func queryPlanSteps(ctx context.Context, conn *sql.Conn, query string) (*v1pb.QueryResult, error) {
-	rows, err := conn.QueryContext(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	columns, err := rows.Columns()
-	if err != nil {
-		return nil, err
-	}
-	var steps [][]any
-	for rows.Next() {
-		values := make([]any, len(columns))
-		scan := make([]any, len(columns))
-		for i := range values {
-			scan[i] = &values[i]
-		}
-		if err := rows.Scan(scan...); err != nil {
-			return nil, err
-		}
-		steps = append(steps, values)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	payload, err := renderPlanSteps(columns, steps)
-	if err != nil {
-		return nil, err
-	}
-	return &v1pb.QueryResult{
-		ColumnNames:     []string{"PLAN"},
-		ColumnTypeNames: []string{"CLOB"},
-		Rows: []*v1pb.QueryRow{{Values: []*v1pb.RowValue{
-			{Kind: &v1pb.RowValue_StringValue{StringValue: payload}},
-		}}},
-	}, nil
+func (l executeLogger) CommandExecute(command omnidriver.Command) {
+	l.opts.LogCommandExecute(&storepb.Range{
+		Start: int32(command.ByteStart),
+		End:   int32(command.ByteEnd),
+	}, command.Text)
 }
 
-// renderPlanSteps writes the scanned plan rows as a JSON array, one object per
-// operator keyed by the lower-cased column names.
-//
-// A column the optimizer had nothing to say about is left out rather than
-// carried as a null, so a reader of the plan sees only what Oracle stated.
-func renderPlanSteps(columns []string, rows [][]any) (string, error) {
-	steps := make([]map[string]any, 0, len(rows))
-	for _, row := range rows {
-		step := make(map[string]any, len(columns))
-		for i, column := range columns {
-			if i >= len(row) {
-				break
-			}
-			if value := jsonValue(row[i]); value != nil {
-				step[strings.ToLower(column)] = value
-			}
-		}
-		steps = append(steps, step)
-	}
-	payload, err := json.Marshal(steps)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to render the query plan")
-	}
-	return string(payload), nil
+func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
+	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
 }
 
-// jsonValue renders one scanned column, or nil where the row has no value for
-// it. The driver hands back text as bytes, which JSON would otherwise encode as
-// base64.
-func jsonValue(value any) any {
-	switch typed := value.(type) {
-	case nil:
-		return nil
-	case []byte:
-		return string(typed)
+func (l executeLogger) TransactionControl(op omnidriver.TransactionOp, err error) {
+	var control storepb.TaskRunLog_TransactionControl_Type
+	switch op {
+	case omnidriver.Begin:
+		control = storepb.TaskRunLog_TransactionControl_BEGIN
+	case omnidriver.Commit:
+		control = storepb.TaskRunLog_TransactionControl_COMMIT
+	case omnidriver.Rollback:
+		control = storepb.TaskRunLog_TransactionControl_ROLLBACK
 	default:
-		return typed
+		return
 	}
+	l.opts.LogTransactionControl(control, errorString(err))
+}
+
+func (l executeLogger) Retry(err error, attempt, _ int) {
+	l.opts.LogRetryInfo(err, attempt)
+}
+
+func errorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }

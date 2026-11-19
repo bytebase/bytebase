@@ -443,7 +443,7 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 }
 
 // marshalReviewResults checks that every result is a current root comment
-// that names the reviewer that found it, with no event, no creator, and a
+// with review metadata, no event, no creator, and a
 // fingerprint no other result repeats, and returns the payloads to insert,
 // stamped with the run's attempt, and their fingerprints. The fingerprints
 // are never nil: <> ALL(NULL) is NULL, which would keep every current root
@@ -465,8 +465,8 @@ func marshalReviewResults(claimed *ClaimedReviewRun, results []*IssueCommentMess
 			return nil, nil, errors.New("a review result cannot carry an event")
 		}
 		metadata := result.Payload.GetReviewMetadata()
-		if runType := metadata.GetRunType(); runType != storepb.ReviewRun_RULE && runType != storepb.ReviewRun_AI {
-			return nil, nil, errors.New("a review result names the reviewer that found it")
+		if metadata == nil {
+			return nil, nil, errors.New("a review result carries review metadata")
 		}
 		if metadata.GetSuperseded() {
 			return nil, nil, errors.New("a review result cannot start superseded")

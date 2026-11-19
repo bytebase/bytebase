@@ -109,8 +109,7 @@ func TestAIReviewComments(t *testing.T) {
 	require.Equal(t, int32(4), anchor.StartPosition.Line, "the line most of the findings start on")
 	require.Equal(t, int32(4), anchor.EndPosition.Line)
 	metadata := merged.Payload.ReviewMetadata
-	require.Equal(t, storepb.ReviewRun_AI, metadata.RunType)
-	require.Equal(t, storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED, metadata.RuleType)
+	require.Equal(t, storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED, metadata.RuleType, "a result of the AI review names no rule")
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P0, metadata.Priority)
 	require.Equal(t, []string{"instances/prod-1/databases/db", "instances/prod-2/databases/db", "instances/staging/databases/app"}, metadata.Targets)
 	require.Equal(t, "Drop orders_summary and orders_report before legacy_status", metadata.Title)
@@ -243,6 +242,7 @@ func titles(problems []*aiReviewProblem) [][]string {
 type recordingMerge struct {
 	requests []*aireview.MergeRequest
 	groups   [][]int
+	same     []int
 	err      error
 }
 
@@ -251,7 +251,414 @@ func (m *recordingMerge) merge(_ context.Context, request *aireview.MergeRequest
 	if m.err != nil {
 		return nil, m.err
 	}
-	return &aireview.MergeResult{Groups: m.groups}, nil
+	return &aireview.MergeResult{Groups: m.groups, Same: m.same}, nil
+}
+
+// dropRule is the standard rules' result on the drop of mergeStatement, which
+// starts on line 1 and names the column on line 2. It applies to db1.
+func dropRule() *ruleResult {
+	return &ruleResult{specID: "spec-1", sheetSha256: "sha", members: []*ruleFinding{{
+		rule:        storepb.ReviewRuleType_DISALLOW_DROP_OBJECT,
+		targets:     []string{"instances/prod/databases/db1"},
+		codes:       []string{"DO101"},
+		message:     "Drops column `legacy_status`.",
+		fingerprint: "drop",
+		anchor: &storepb.IssueCommentPayload_StatementAnchor{
+			SpecId:        "spec-1",
+			SheetSha256:   "sha",
+			StartPosition: &storepb.Position{Line: 2, Column: 3},
+			EndPosition:   &storepb.Position{Line: 2, Column: 28},
+		},
+	}}}
+}
+
+const (
+	// dropRuleSentence is how a finding cites the rule of dropRule.
+	dropRuleSentence = "DISALLOW_DROP_OBJECT: Dropping an object, such as a table, column, view, index, sequence, schema, function, user, or role, loses the data, definition, or access it held."
+	breakageSentence = "A view, function, trigger, or foreign key depends on what it changes."
+)
+
+func TestMergeAIReviewFindingsPutsProblemsOnRuleFindings(t *testing.T) {
+	t.Parallel()
+
+	finding := func(title string, severity aireview.Severity, line int, rule string) aireview.Finding {
+		return aireview.Finding{Title: title, Severity: severity, Line: line, Rule: rule}
+	}
+	view := finding("view", aireview.SeverityP0, 1, breakageSentence)
+	index := finding("index", aireview.SeverityP1, 3, "r")
+	// One database, so only a rule finding gives the merge a second source.
+	results := func(findings ...aireview.Finding) []*aiReviewResult {
+		return []*aiReviewResult{mergeResult("instances/prod/databases/db1", storepb.Engine_POSTGRES, findings...)}
+	}
+	standard := aireview.MergeCandidate{Block: 0, Standard: true, Finding: aireview.Finding{
+		Title: "DISALLOW_DROP_OBJECT (DO101)", Severity: aireview.SeverityP1, Line: 2, Evidence: "Drops column `legacy_status`.",
+	}}
+
+	t.Run("puts a problem with the rule finding the merge groups it with", func(t *testing.T) {
+		t.Parallel()
+
+		rule := dropRule()
+		merge := &recordingMerge{groups: [][]int{{0, 1}}}
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(view, index), nil, []*ruleResult{rule})
+		require.NoError(t, err)
+		require.Equal(t, [][]string{{"view"}, {"index"}}, titles(problems))
+		require.Equal(t, &ruleMember{result: rule, finding: rule.members[0]}, problems[0].Rule)
+		require.Nil(t, problems[1].Rule)
+		require.Len(t, merge.requests, 1)
+		require.Equal(t, []aireview.MergeCandidate{
+			{Block: 0, Database: "instances/prod/databases/db1", Finding: view},
+			standard,
+		}, merge.requests[0].Candidates, "the statement of the index has one finding and no rule finding, so it is not offered")
+		require.Empty(t, merge.requests[0].Threads)
+	})
+
+	t.Run("leaves a problem the merge keeps apart", func(t *testing.T) {
+		t.Parallel()
+
+		merge := &recordingMerge{groups: [][]int{{0}}}
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(view), nil, []*ruleResult{dropRule()})
+		require.NoError(t, err)
+		require.Nil(t, problems[0].Rule)
+	})
+
+	t.Run("leaves a problem of a database the rule finding is not on", func(t *testing.T) {
+		t.Parallel()
+
+		// db2 reports the view too, and the rule finding is on db1 alone.
+		both := append(results(view), mergeResult("instances/prod/databases/db2", storepb.Engine_POSTGRES, view))
+		merge := &recordingMerge{groups: [][]int{{0, 1, 2}}}
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, both, nil, []*ruleResult{dropRule()})
+		require.NoError(t, err)
+		require.Len(t, problems, 1)
+		require.Nil(t, problems[0].Rule, "the result names db1 alone, so the problem posts on its own")
+
+		everywhere := dropRule()
+		everywhere.members[0].targets = []string{"instances/prod/databases/db1", "instances/prod/databases/db2"}
+		problems, err = mergeAIReviewFindings(context.Background(), merge.merge, both, nil, []*ruleResult{everywhere})
+		require.NoError(t, err)
+		require.NotNil(t, problems[0].Rule)
+	})
+
+	t.Run("offers no rule finding alone on its statement", func(t *testing.T) {
+		t.Parallel()
+
+		merge := &recordingMerge{}
+		other := dropRule()
+		other.specID = "spec-2"
+		whole := dropRule()
+		whole.members[0].anchor = nil
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(index), nil, []*ruleResult{dropRule(), other, whole})
+		require.NoError(t, err)
+		require.Equal(t, [][]string{{"index"}}, titles(problems))
+		require.Empty(t, merge.requests, "nor one on another spec, or on the whole change")
+	})
+
+	t.Run("a problem on a rule finding keeps no earlier result", func(t *testing.T) {
+		t.Parallel()
+
+		segments := sheetStatements(context.Background(), storepb.Engine_POSTGRES, "spec-1", mergeStatement).Segments
+		earlier := map[aiReviewSheet][]*aiReviewEarlier{{specID: "spec-1", sheetSha256: "sha"}: {{
+			Fingerprint: segments[0] + "/posted", Priority: storepb.IssueCommentPayload_ReviewMetadata_P0, Title: "view", Sheet: mergeStatement, SheetSha256: "sha", Line: 1,
+		}}}
+		merge := &recordingMerge{groups: [][]int{{0, 1, 2}}}
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(view), earlier, []*ruleResult{dropRule()})
+		require.NoError(t, err)
+		require.NotNil(t, problems[0].Rule)
+		require.Nil(t, problems[0].Earlier, "its text joins the rule result, so the earlier thread is superseded")
+
+		merge = &recordingMerge{groups: [][]int{{0, 1}}}
+		problems, err = mergeAIReviewFindings(context.Background(), merge.merge, results(view), earlier, []*ruleResult{dropRule()})
+		require.NoError(t, err)
+		require.Nil(t, problems[0].Rule)
+		require.NotNil(t, problems[0].Earlier)
+	})
+
+	t.Run("posts a problem on its own when the merge fails or groups two rule findings", func(t *testing.T) {
+		t.Parallel()
+
+		merge := &recordingMerge{err: errors.New("provider down")}
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(view), nil, []*ruleResult{dropRule()})
+		require.NoError(t, err)
+		require.Equal(t, [][]string{{"view"}}, titles(problems))
+		require.Nil(t, problems[0].Rule)
+
+		merge = &recordingMerge{groups: [][]int{{0, 1, 2}}}
+		problems, err = mergeAIReviewFindings(context.Background(), merge.merge, results(view), nil, []*ruleResult{dropRule(), dropRule()})
+		require.NoError(t, err)
+		require.Nil(t, problems[0].Rule)
+	})
+
+	t.Run("keeps the comment an earlier run left when the merge says it is the same", func(t *testing.T) {
+		t.Parallel()
+
+		p0, p1 := storepb.IssueCommentPayload_ReviewMetadata_P0, storepb.IssueCommentPayload_ReviewMetadata_P1
+		unchanged := func(earlier *ruleThread, same []int, findings ...aireview.Finding) (bool, *recordingMerge) {
+			t.Helper()
+			rule := dropRule()
+			rule.earlier = earlier
+			merge := &recordingMerge{groups: [][]int{{0, 1}}, same: same}
+			problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(findings...), nil, []*ruleResult{rule})
+			require.NoError(t, err)
+			require.NotNil(t, problems[0].Rule)
+			return problems[0].Unchanged, merge
+		}
+		const added = "Drops column `legacy_status`.\n\nv_orders reads it.\n\nSuggested fix: Drop v_orders first."
+
+		kept, merge := unchanged(&ruleThread{Comment: added, Priority: p0}, []int{0}, view)
+		require.True(t, kept)
+		require.Equal(t, []aireview.MergeThread{{Comment: added, Candidates: []int{1}}}, merge.requests[0].Threads)
+
+		kept, _ = unchanged(&ruleThread{Comment: added, Priority: p0}, nil, view)
+		require.False(t, kept, "the merge did not say so")
+
+		kept, merge = unchanged(&ruleThread{Comment: "Drops column `legacy_status`.", Priority: p1}, nil, view)
+		require.False(t, kept)
+		require.Empty(t, merge.requests[0].Threads, "a comment that holds the rules' text alone has nothing to keep")
+
+		kept, merge = unchanged(nil, nil, view)
+		require.False(t, kept)
+		require.Empty(t, merge.requests[0].Threads)
+
+		kept, _ = unchanged(&ruleThread{Comment: added, Priority: p1}, []int{0}, view)
+		require.False(t, kept, "nobody read the comment at P0, so it is written again")
+
+		restated := finding("drop", aireview.SeverityP0, 2, dropRuleSentence)
+		kept, _ = unchanged(&ruleThread{Comment: added, Priority: p1}, []int{0}, restated)
+		require.True(t, kept, "a problem that restates the rule's condition does not raise the rule's priority")
+
+		const reworded = "Drops the column `legacy_status`.\n\nv_orders reads it.\n\nSuggested fix: Drop v_orders first."
+		kept, merge = unchanged(&ruleThread{Comment: reworded, Priority: p0}, []int{0}, view)
+		require.False(t, kept, "the comment lacks the rule's text as it is now, so it is written again")
+		require.Empty(t, merge.requests[0].Threads)
+
+		// The rule finding is on db1 and db2, and this run's problem on db1
+		// alone: the comment was written for both, so it cannot stay.
+		everywhere := dropRule()
+		everywhere.members[0].targets = []string{"instances/prod/databases/db1", "instances/prod/databases/db2"}
+		everywhere.earlier = &ruleThread{Comment: added, Priority: p0}
+		partial := &recordingMerge{groups: [][]int{{0, 1}}, same: []int{0}}
+		problems, err := mergeAIReviewFindings(context.Background(), partial.merge, results(view), nil, []*ruleResult{everywhere})
+		require.NoError(t, err)
+		require.NotNil(t, problems[0].Rule)
+		require.False(t, problems[0].Unchanged, "the problem is on part of the rule finding's databases now")
+
+		// A comment of facts that names no database states them for every
+		// database, so it can stay whichever ones the problem is on.
+		const facts = "Drops column `legacy_status`.\n\nv_orders reads it."
+		low := finding("view", aireview.SeverityP1, 1, breakageSentence)
+		everywhere.earlier, everywhere.keepsEarlier = &ruleThread{Comment: facts, Priority: p1}, false
+		stated := &recordingMerge{groups: [][]int{{0, 1}}, same: []int{0}}
+		problems, err = mergeAIReviewFindings(context.Background(), stated.merge, results(low), nil, []*ruleResult{everywhere})
+		require.NoError(t, err)
+		require.Equal(t, []aireview.MergeThread{{Comment: facts, Candidates: []int{1}}}, stated.requests[0].Threads)
+		require.True(t, problems[0].Unchanged, "the facts already state the problem, and it is no higher than the rule")
+
+		// Facts that name a database are about that database, and the merge
+		// cannot tell whether they state a problem on another one.
+		for _, scoped := range []string{"db2: v_orders reads it.", "db1, db2: v_orders reads it.", "Views differ.\n\n- db2: v_orders reads it.\n- db1"} {
+			everywhere.earlier, everywhere.keepsEarlier = &ruleThread{Comment: "Drops column `legacy_status`.\n\n" + scoped, Priority: p1}, false
+			named := &recordingMerge{groups: [][]int{{0, 1}}, same: []int{0}}
+			problems, err = mergeAIReviewFindings(context.Background(), named.merge, results(low), nil, []*ruleResult{everywhere})
+			require.NoError(t, err)
+			require.Empty(t, named.requests[0].Threads, scoped)
+			require.False(t, problems[0].Unchanged, scoped)
+		}
+
+		kept, _ = unchanged(&ruleThread{Comment: facts, Priority: p1}, nil, low)
+		require.False(t, kept, "the merge did not say the facts state it")
+		kept, _ = unchanged(&ruleThread{Comment: facts, Priority: p1}, []int{0}, view)
+		require.False(t, kept, "nobody read the facts at P0, so the problem is written")
+	})
+}
+
+func TestCanKeepEarlier(t *testing.T) {
+	t.Parallel()
+
+	const rules = "Drops column `legacy_status`."
+	const added = rules + "\n\nv_orders reads it.\n\n- db1, db2: orders holds 5k to 9k rows.\n\nSuggested fix: Drop v_orders first."
+	keeps := func(comment string) bool {
+		rule := dropRule()
+		rule.members[0].targets = []string{"instances/prod/databases/db1", "instances/prod/databases/db2"}
+		rule.earlier = &ruleThread{Comment: comment}
+		return canKeepEarlier(rule)
+	}
+	require.True(t, keeps(added), "a comment for every database of the result, whatever facts it lists them with")
+	require.False(t, keeps(rules), "the rules' text alone holds nothing to keep")
+	require.False(t, keeps(strings.Replace(added, "Drops column", "Drops the column", 1)), "the rules' text changed")
+	require.False(t, keeps(rules+"\n\ndb2: v_orders reads it.\n\nSuggested fix: Drop v_orders first."), "written for one database")
+	require.False(t, keeps(rules+"\n\nprod/db2: v_orders reads it."), "one database, named with its instance")
+	require.False(t, keeps(rules+"\n\nv_orders reads it.\n\n- db1\n- Not flagged on db2\n\nSuggested fix: Drop v_orders first."), "written for part of the databases")
+	require.False(t, keeps(rules+"\n\nv_orders reads it.\n\n- db1\n- Flagged differently on db2"))
+	require.True(t, keeps(rules+"\n\n  v_orders reads it."))
+	require.False(t, keeps(rules+"\n\n  v_orders reads it.\n\n  - db1\n  - Not flagged on db2"), "indented under the item of a merged result too")
+
+	none := dropRule()
+	require.False(t, canKeepEarlier(none), "no earlier thread")
+}
+
+func TestHoldsLines(t *testing.T) {
+	t.Parallel()
+
+	const rules = "3 statements, on lines 1 to 3.\n\n- Line 1: Drops table `a`.\n- Line 2: Drops table `b`.\n- Line 3: Drops table `c`."
+	const posted = "3 statements, on lines 1 to 3.\n\n- Line 1: Drops table `a`.\n- Line 2: Drops table `b`.\n\n  v reads b.\n\n  Suggested fix: Drop v first.\n- Line 3: Drops table `c`."
+	require.True(t, holdsLines(posted, rules), "what the AI review added sits between the rules' lines")
+	require.True(t, holdsLines(rules, rules))
+	moved := strings.NewReplacer("lines 1 to 3", "lines 2 to 4", "Line 1", "Line 2", "Line 2", "Line 3", "Line 3", "Line 4").Replace(rules)
+	require.False(t, holdsLines(posted, moved), "the statements moved, so the posted line numbers are stale")
+	require.False(t, holdsLines("- Line 2: Drops table `b`.\n- Line 1: Drops table `a`.", "- Line 1: Drops table `a`.\n- Line 2: Drops table `b`."), "in order")
+}
+
+func TestFoldAIReviewProblems(t *testing.T) {
+	t.Parallel()
+
+	p0, p1 := storepb.IssueCommentPayload_ReviewMetadata_P0, storepb.IssueCommentPayload_ReviewMetadata_P1
+	// problemOn is a problem db1 reports on a rule finding, in a review under
+	// the policies.
+	problemOn := func(member *ruleMember, finding aireview.Finding, policies ...string) *aiReviewProblem {
+		unit := &aiReviewUnit{Check: &plancheck.CheckTarget{SpecID: "spec-1", SheetSha256: "sha", Target: "instances/prod/databases/db1"}, Statement: mergeStatement, Policies: policies}
+		return &aiReviewProblem{Findings: []*aiReviewFinding{{Unit: unit, Finding: finding}}, Block: aireview.LineRange{Start: 1, End: 2}, BlockIsStatement: true, Rule: member, Segment: "segment"}
+	}
+	restated := aireview.Finding{Title: "Dropping legacy_status loses its data", Severity: aireview.SeverityP0, Line: 2, Rule: dropRuleSentence, Evidence: "orders.legacy_status holds 12,000 values.", Fix: "Archive the column first."}
+	view := aireview.Finding{Title: "DROP COLUMN legacy_status fails: v_orders reads it", Severity: aireview.SeverityP0, Line: 2, Rule: breakageSentence, Evidence: "v_orders reads legacy_status.", Fix: "Drop v_orders first."}
+	index := aireview.Finding{Title: "index", Severity: aireview.SeverityP1, Line: 3, Rule: "r", Evidence: "e", Fix: "f"}
+
+	t.Run("adds a problem that restates the rule as its evidence and fix", func(t *testing.T) {
+		t.Parallel()
+
+		rule := dropRule()
+		problems := []*aiReviewProblem{problemOn(&ruleMember{result: rule, finding: rule.members[0]}, restated), problemOn(nil, index)}
+		foldAIReviewProblems(problems)
+		payload := rule.payload()
+		require.Equal(t, "Drops column `legacy_status`.\n\norders.legacy_status holds 12,000 values.\n\nSuggested fix: Archive the column first.", payload.Comment)
+		require.Equal(t, p1, payload.ReviewMetadata.Priority, "the rule sets the priority of its own condition")
+		require.Equal(t, storepb.ReviewRuleType_DISALLOW_DROP_OBJECT, payload.ReviewMetadata.RuleType)
+		require.Equal(t, []string{"DO101"}, payload.ReviewMetadata.Codes)
+		require.Equal(t, "drop", payload.ReviewMetadata.Fingerprint)
+
+		comments := aiReviewComments("p", 1, problems)
+		require.Len(t, comments, 1, "a problem on a rule finding posts no comment of its own")
+		require.Equal(t, "index", comments[0].Payload.ReviewMetadata.Title)
+	})
+
+	t.Run("adds any other problem as plain text too, and takes its priority when higher", func(t *testing.T) {
+		t.Parallel()
+
+		rule := dropRule()
+		member := &ruleMember{result: rule, finding: rule.members[0]}
+		foldAIReviewProblems([]*aiReviewProblem{problemOn(member, restated), problemOn(member, view)})
+		payload := rule.payload()
+		require.Equal(t, "Drops column `legacy_status`.\n\n"+
+			"orders.legacy_status holds 12,000 values.\n\nSuggested fix: Archive the column first.\n\n"+
+			"v_orders reads legacy_status.\n\nSuggested fix: Drop v_orders first.", payload.Comment, "no title, and no sentence of the review's own prompt")
+		require.Equal(t, p0, payload.ReviewMetadata.Priority)
+
+		lower := dropRule()
+		advisory := view
+		advisory.Severity = aireview.SeverityP2
+		foldAIReviewProblems([]*aiReviewProblem{problemOn(&ruleMember{result: lower, finding: lower.members[0]}, advisory)})
+		require.Equal(t, p1, lower.payload().ReviewMetadata.Priority, "a lower priority leaves the rule's")
+	})
+
+	t.Run("cites the rule of a problem only when the review's prompt does not hold it", func(t *testing.T) {
+		t.Parallel()
+
+		// folded returns what a problem that cites rule adds to a rule finding,
+		// in a review with the policies.
+		folded := func(rule string, policies ...string) string {
+			result := dropRule()
+			finding := view
+			finding.Rule = rule
+			foldAIReviewProblems([]*aiReviewProblem{problemOn(&ruleMember{result: result, finding: result.members[0]}, finding, policies...)})
+			return strings.TrimPrefix(result.payload().Comment, "Drops column `legacy_status`.\n\n")
+		}
+		const evidence, fix = "v_orders reads legacy_status.", "\n\nSuggested fix: Drop v_orders first."
+		const policy = "No column is dropped while a view reads it."
+		// The standard rules section of the prompt gives this sentence as an
+		// example of a policy sentence.
+		const example = "Every UPDATE needs a WHERE clause."
+
+		require.Equal(t, evidence+fix, folded(breakageSentence))
+		require.Equal(t, evidence+fix, folded(dropRuleSentence))
+		require.Equal(t, evidence+"\n\nRule: "+policy+fix, folded(policy, "", policy), "a policy sentence says why the problem is one")
+		require.Equal(t, evidence+"\n\nRule: "+policy+fix, folded(policy), "a sentence the review does not know stays too")
+		require.Equal(t, evidence+fix, folded(example))
+		require.Equal(t, evidence+"\n\nRule: "+example+fix, folded(example, example, ""), "the policy decides over the prompt")
+	})
+
+	t.Run("takes the priority of a policy sentence that names the rule", func(t *testing.T) {
+		t.Parallel()
+
+		const policy = "A change that DISALLOW_DROP_OBJECT flags is P0 in this project."
+		priorityOf := func(rule string, policies ...string) storepb.IssueCommentPayload_ReviewMetadata_Priority {
+			result := dropRule()
+			finding := restated
+			finding.Rule = rule
+			foldAIReviewProblems([]*aiReviewProblem{problemOn(&ruleMember{result: result, finding: result.members[0]}, finding, policies...)})
+			return result.payload().ReviewMetadata.Priority
+		}
+		require.Equal(t, p1, priorityOf(dropRuleSentence, policy), "the rule itself, whatever the policy says elsewhere")
+		require.Equal(t, p0, priorityOf(policy, policy), "the policy's sentence is not a restatement of the rule")
+		require.Equal(t, p1, priorityOf(policy), "the same words with no such policy name the rule alone")
+	})
+
+	t.Run("takes the priority and the rule of the finding that quotes the policy, whichever leads", func(t *testing.T) {
+		t.Parallel()
+
+		const policy = "No column that holds values is dropped."
+		result := dropRule()
+		result.members[0].targets = []string{"instances/prod/databases/db1", "instances/prod/databases/db2"}
+		// db1 leads by name and cites the rule itself, and db2 quotes the policy.
+		problem := problemOn(&ruleMember{result: result, finding: result.members[0]}, restated, policy)
+		quoting := restated
+		quoting.Rule = policy
+		problem.Findings = append(problem.Findings, &aiReviewFinding{
+			Unit:    &aiReviewUnit{Check: &plancheck.CheckTarget{SpecID: "spec-1", SheetSha256: "sha", Target: "instances/prod/databases/db2"}, Statement: mergeStatement, Policies: []string{policy}},
+			Finding: quoting,
+		})
+		foldAIReviewProblems([]*aiReviewProblem{problem})
+		payload := result.payload()
+		require.Equal(t, p0, payload.ReviewMetadata.Priority)
+		require.Contains(t, payload.Comment, "\n\nRule: "+policy+"\n\nSuggested fix: ")
+	})
+
+	t.Run("names the databases of a problem only when they are not the rule finding's", func(t *testing.T) {
+		t.Parallel()
+
+		db1, db2, db3 := "instances/prod/databases/db1", "instances/prod/databases/db2", "instances/prod/databases/db3"
+		// folded returns what a problem that targets report adds to a rule
+		// finding on ruleTargets, after three databases reviewed the sheet.
+		folded := func(ruleTargets []string, targets ...string) string {
+			rule := dropRule()
+			rule.members[0].targets = ruleTargets
+			problem := &aiReviewProblem{Block: aireview.LineRange{Start: 1, End: 2}, BlockIsStatement: true, Rule: &ruleMember{result: rule, finding: rule.members[0]}, Reviewed: []string{db1, db2, db3}}
+			for _, target := range targets {
+				unit := &aiReviewUnit{Check: &plancheck.CheckTarget{SpecID: "spec-1", SheetSha256: "sha", Target: target}, Statement: mergeStatement}
+				problem.Findings = append(problem.Findings, &aiReviewFinding{Unit: unit, Finding: restated})
+			}
+			foldAIReviewProblems([]*aiReviewProblem{problem})
+			return strings.TrimPrefix(rule.payload().Comment, "Drops column `legacy_status`.\n\n")
+		}
+		const fix = "\n\nSuggested fix: Archive the column first."
+
+		require.Equal(t, "db1: orders.legacy_status holds 12,000 values."+fix, folded([]string{db1, db2, db3}, db1, db2, db3), "the thread already names the rule finding's databases")
+		require.Equal(t, "db1: orders.legacy_status holds 12,000 values.\n\n- db1, db2\n- Not flagged on db3"+fix, folded([]string{db1, db2, db3}, db1, db2))
+		require.Equal(t, "db2: orders.legacy_status holds 12,000 values."+fix, folded([]string{db1, db2, db3}, db2), "one database of several is named")
+		require.Equal(t, "orders.legacy_status holds 12,000 values."+fix, folded([]string{db2}, db2))
+	})
+
+	t.Run("keeps the earlier comment of a result whose problems are unchanged", func(t *testing.T) {
+		t.Parallel()
+
+		rule := dropRule()
+		rule.earlier = &ruleThread{Comment: "the comment an earlier run left", Priority: p0}
+		problem := problemOn(&ruleMember{result: rule, finding: rule.members[0]}, view)
+		problem.Unchanged = true
+		foldAIReviewProblems([]*aiReviewProblem{problem})
+		payload := rule.payload()
+		require.Equal(t, "the comment an earlier run left", payload.Comment)
+		require.Equal(t, p0, payload.ReviewMetadata.Priority)
+		require.Equal(t, "drop", payload.ReviewMetadata.Fingerprint)
+	})
 }
 
 func TestMergeAIReviewFindings(t *testing.T) {
@@ -274,7 +681,7 @@ func TestMergeAIReviewFindings(t *testing.T) {
 		t.Parallel()
 
 		merge := &recordingMerge{groups: [][]int{{0, 1}, {2}}}
-		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES), nil)
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES), nil, nil)
 		require.NoError(t, err)
 		require.Equal(t, [][]string{{"drop on db1", "drop on db2"}, {"index on db1"}, {"view on db3"}}, titles(problems))
 		require.Equal(t, aireview.LineRange{Start: 1, End: 2}, problems[0].Block)
@@ -300,7 +707,7 @@ func TestMergeAIReviewFindings(t *testing.T) {
 		t.Parallel()
 
 		merge := &recordingMerge{err: errors.New("provider down")}
-		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES), nil)
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES), nil, nil)
 		require.NoError(t, err)
 		require.Equal(t, [][]string{{"drop on db1"}, {"index on db1"}, {"drop on db2"}, {"view on db3"}}, titles(problems))
 	})
@@ -313,7 +720,7 @@ func TestMergeAIReviewFindings(t *testing.T) {
 			cancel()
 			return nil, context.Canceled
 		}
-		_, err := mergeAIReviewFindings(ctx, merge, results(storepb.Engine_POSTGRES), nil)
+		_, err := mergeAIReviewFindings(ctx, merge, results(storepb.Engine_POSTGRES), nil, nil)
 		require.ErrorIs(t, err, context.Canceled)
 	})
 
@@ -323,7 +730,7 @@ func TestMergeAIReviewFindings(t *testing.T) {
 		mixed := results(storepb.Engine_POSTGRES)
 		mixed[3].Unit.Engine = storepb.Engine_MYSQL
 		merge := &recordingMerge{groups: [][]int{{0, 2}, {1}, {3}}}
-		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, mixed, nil)
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, mixed, nil, nil)
 		require.NoError(t, err)
 		require.Equal(t, [][]string{{"drop on db1", "drop on db2"}, {"index on db1"}, {"view on db3"}}, titles(problems))
 		require.Equal(t, []aireview.LineRange{{Start: 1, End: 4}}, merge.requests[0].Blocks)
@@ -337,7 +744,7 @@ func TestMergeAIReviewFindings(t *testing.T) {
 		t.Parallel()
 
 		merge := &recordingMerge{}
-		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES)[:1], nil)
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES)[:1], nil, nil)
 		require.NoError(t, err)
 		require.Equal(t, [][]string{{"drop on db1"}, {"index on db1"}}, titles(problems))
 		require.Empty(t, merge.requests)
@@ -396,7 +803,7 @@ func TestMergeAIReviewFindingsKeepsEarlierResults(t *testing.T) {
 		merge := &recordingMerge{groups: [][]int{{0, 2}, {1}, {3}}}
 		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(), map[aiReviewSheet][]*aiReviewEarlier{
 			sheet: {earlier("open", 0, 2, false, p1), earlier("gone", 1, 3, true, p1), changed},
-		})
+		}, nil)
 		require.NoError(t, err)
 		require.Equal(t, [][]string{{"drop"}, {"index"}}, titles(problems))
 		require.Equal(t, []string{"open", ""}, kept(problems), "an earlier result left alone keeps nothing")
@@ -418,7 +825,7 @@ func TestMergeAIReviewFindingsKeepsEarlierResults(t *testing.T) {
 		moved := earlier("moved", 0, 3, false, p1)
 		moved.Sheet, moved.SheetSha256 = "-- archive\n\n"+mergeStatement, "before"
 		merge := &recordingMerge{groups: [][]int{{0, 1}}}
-		_, err := mergeAIReviewFindings(context.Background(), merge.merge, results(), map[aiReviewSheet][]*aiReviewEarlier{sheet: {moved}})
+		_, err := mergeAIReviewFindings(context.Background(), merge.merge, results(), map[aiReviewSheet][]*aiReviewEarlier{sheet: {moved}}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 1, merge.requests[0].Candidates[1].Finding.Line, "the statement's first line, where its body starts now")
 	})
@@ -429,11 +836,11 @@ func TestMergeAIReviewFindingsKeepsEarlierResults(t *testing.T) {
 		const gap = "SELECT 1;\n\nSELECT 2;\n"
 		result := mergeResult("instances/prod/databases/db1", storepb.Engine_POSTGRES, finding("between", aireview.SeverityP2, 2))
 		result.Unit.Statement = gap
-		first, err := mergeAIReviewFindings(context.Background(), (&recordingMerge{}).merge, []*aiReviewResult{result}, nil)
+		first, err := mergeAIReviewFindings(context.Background(), (&recordingMerge{}).merge, []*aiReviewResult{result}, nil, nil)
 		require.NoError(t, err)
 		posted := &aiReviewEarlier{Fingerprint: first[0].Segment + "/between", Priority: p2, Title: "between", Sheet: gap, SheetSha256: "sha", Line: 2}
 		merge := &recordingMerge{groups: [][]int{{0, 1}}}
-		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, []*aiReviewResult{result}, map[aiReviewSheet][]*aiReviewEarlier{sheet: {posted}})
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, []*aiReviewResult{result}, map[aiReviewSheet][]*aiReviewEarlier{sheet: {posted}}, nil)
 		require.NoError(t, err)
 		require.Equal(t, []string{"between"}, kept(problems))
 	})
@@ -446,7 +853,7 @@ func TestMergeAIReviewFindingsKeepsEarlierResults(t *testing.T) {
 			t.Helper()
 			result := mergeResult("instances/prod/databases/db1", storepb.Engine_POSTGRES, findings...)
 			result.Unit.Statement = gaps
-			problems, err := mergeAIReviewFindings(context.Background(), merge.merge, []*aiReviewResult{result}, map[aiReviewSheet][]*aiReviewEarlier{sheet: earlierResults})
+			problems, err := mergeAIReviewFindings(context.Background(), merge.merge, []*aiReviewResult{result}, map[aiReviewSheet][]*aiReviewEarlier{sheet: earlierResults}, nil)
 			require.NoError(t, err)
 			return problems
 		}
@@ -475,14 +882,14 @@ func TestMergeAIReviewFindingsKeepsEarlierResults(t *testing.T) {
 		merge := &recordingMerge{groups: [][]int{{0, 2}, {1, 3}}}
 		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(), map[aiReviewSheet][]*aiReviewEarlier{
 			sheet: {earlier("accepted as P2", 0, 1, true, p2), earlier("open as P2", 1, 3, false, p2)},
-		})
+		}, nil)
 		require.NoError(t, err)
 		require.Equal(t, []string{"", "open as P2"}, kept(problems), "a P1 problem does not keep a P2 a person resolved, but keeps an open one")
 
 		merge = &recordingMerge{groups: [][]int{{0, 1}}}
 		problems, err = mergeAIReviewFindings(context.Background(), merge.merge, results(), map[aiReviewSheet][]*aiReviewEarlier{
 			sheet: {earlier("accepted as P1", 0, 1, true, p1)},
-		})
+		}, nil)
 		require.NoError(t, err)
 		require.Equal(t, []string{"accepted as P1", ""}, kept(problems))
 	})
@@ -492,12 +899,12 @@ func TestMergeAIReviewFindingsKeepsEarlierResults(t *testing.T) {
 
 		earlierResults := map[aiReviewSheet][]*aiReviewEarlier{sheet: {earlier("a", 0, 1, false, p1), earlier("b", 0, 2, false, p1)}}
 		merge := &recordingMerge{err: errors.New("provider down")}
-		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(), earlierResults)
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(), earlierResults, nil)
 		require.NoError(t, err)
 		require.Equal(t, []string{"", ""}, kept(problems))
 
 		merge = &recordingMerge{groups: [][]int{{0, 1, 2}}}
-		problems, err = mergeAIReviewFindings(context.Background(), merge.merge, results(), earlierResults)
+		problems, err = mergeAIReviewFindings(context.Background(), merge.merge, results(), earlierResults, nil)
 		require.NoError(t, err)
 		require.Equal(t, []string{"", ""}, kept(problems))
 	})
@@ -636,6 +1043,17 @@ func TestLimitAIReviewProblems(t *testing.T) {
 		want := append([]string{"accepted", "reported again"}, names(onLines(1, 9))...)
 		require.Equal(t, append(want, "open below the limit"), posted(problems), "a resolved thread takes no place, and an open one takes a place but posts below the limit too")
 	})
+
+	t.Run("gives a problem on a rule finding no place", func(t *testing.T) {
+		t.Parallel()
+
+		rule := dropRule()
+		onRule := problem("on the rule's operation", aireview.SeverityP2, "spec-1", 40)
+		onRule.Rule = &ruleMember{result: rule, finding: rule.members[0]}
+		problems := append([]*aiReviewProblem{onRule}, onLines(1, 10)...)
+		require.Zero(t, limitAIReviewProblems(specs, problems), "it posts no thread of its own, so it is never held")
+		require.False(t, onRule.Held)
+	})
 }
 
 // recordingSummary records the summary requests and answers each with a
@@ -679,6 +1097,7 @@ func TestSummarizeAIReviewProblems(t *testing.T) {
 			{Findings: []*aiReviewFinding{finding("instances/i/databases/a", "panicking"), finding("instances/i/databases/b", "panicking")}},
 			{Findings: []*aiReviewFinding{finding("instances/i/databases/a", "kept"), finding("instances/i/databases/b", "kept")}, Earlier: &aiReviewEarlier{Fingerprint: "kept"}},
 			{Findings: []*aiReviewFinding{finding("instances/i/databases/a", "held"), finding("instances/i/databases/b", "held")}, Held: true},
+			{Findings: []*aiReviewFinding{finding("instances/i/databases/a", "unchanged"), finding("instances/i/databases/b", "unchanged")}, Unchanged: true},
 		}
 	}
 
@@ -694,6 +1113,7 @@ func TestSummarizeAIReviewProblems(t *testing.T) {
 		require.Nil(t, problems[3].Summary, "a panic is that problem's failure")
 		require.Nil(t, problems[4].Summary, "a problem that keeps an earlier result keeps its text")
 		require.Nil(t, problems[5].Summary, "a held problem posts no comment to summarize")
+		require.Nil(t, problems[6].Summary, "a problem its rule result's earlier comment already states is not written again")
 
 		require.Len(t, summary.requests, 3)
 		var request *aireview.SummaryRequest

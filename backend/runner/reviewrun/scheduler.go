@@ -29,7 +29,7 @@ import (
 
 const reviewRunSchedulerInterval = 5 * time.Second
 
-// Executor executes a review run, or one reviewer's part of it.
+// Executor executes a review run.
 type Executor interface {
 	// RunOnce evaluates every (spec, target) unit of the issue's plan in
 	// scope (collect-all, no fail-fast) and returns the results to post as

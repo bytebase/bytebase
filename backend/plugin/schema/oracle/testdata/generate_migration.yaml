@@ -496,14 +496,13 @@
       ],
       "serviceName": "FREEPDB1"
     }
-  expected: |+
+  expected: |
     ALTER TABLE "COMMENTS" DROP CONSTRAINT "FK_COMMENT_USER";
     ALTER TABLE "COMMENTS" DROP CONSTRAINT "FK_POST";
     DROP TABLE "COMMENTS";
     ALTER TABLE "POSTS" DROP CONSTRAINT "CHECK_TITLE_LENGTH";
     DROP INDEX "IDX_USERS_EMAIL";
     ALTER TABLE "USERS" DROP COLUMN "IS_ACTIVE";
-
 - description: Views, functions, and materialized views
   oldMetadata: |
     {
@@ -1901,14 +1900,13 @@
       ],
       "serviceName": "FREEPDB1"
     }
-  expected: |+
+  expected: |
     CREATE SEQUENCE "TRANSACTION_SEQ";
     CREATE TABLE "SIMPLE_LOG" (
         "ID" NUMBER DEFAULT "TRANSACTION_SEQ".NEXTVAL NOT NULL,
         "MESSAGE" CLOB NOT NULL
     );
     ALTER TABLE "SIMPLE_LOG" ADD CONSTRAINT "SYS_C0000001" PRIMARY KEY (ID);
-
 - description: Complex view dependencies with multiple levels and materialized views
   oldMetadata: |
     {
@@ -2547,12 +2545,11 @@
       ],
       "serviceName": "FREEPDB1"
     }
-  expected: |+
+  expected: |
     ALTER TABLE "CUSTOMERS" DROP CONSTRAINT "FK_PREFERRED_ORDER";
     ALTER TABLE "ORDERS" DROP CONSTRAINT "FK_CUSTOMER";
     ALTER TABLE "ORDER_ITEMS" DROP CONSTRAINT "FK_ORDER_ITEM";
     DROP TABLE "ORDER_ITEMS";
-
 - description: Advanced Oracle-specific indexes and complex constraints
   oldMetadata: |
     {
@@ -2698,13 +2695,12 @@
       ],
       "serviceName": "FREEPDB1"
     }
-  expected: |+
+  expected: |
     ALTER TABLE "SALES_DATA" DROP CONSTRAINT "CHK_AMOUNT_RANGE";
     ALTER TABLE "SALES_DATA" DROP CONSTRAINT "CHK_REGION_VALID";
     DROP INDEX "IDX_SALES_MONTH_YEAR";
     DROP INDEX "IDX_SALES_REGION_AMOUNT";
     ALTER TABLE "SALES_DATA" DROP CONSTRAINT "UK_SALES_DATE_CUSTOMER";
-
 - description: Stored procedures and functions with dependencies
   oldMetadata: |
     {
@@ -4150,13 +4146,12 @@
       ],
       "serviceName": "FREEPDB1"
     }
-  expected: |+
+  expected: |
     ALTER TABLE "PRODUCTS" DROP CONSTRAINT "CHECK_NAME_LENGTH";
     ALTER TABLE "PRODUCTS" DROP CONSTRAINT "CHECK_PRICE_POSITIVE";
     DROP INDEX "IDX_PRODUCTS_CATEGORY";
     DROP INDEX "IDX_PRODUCTS_NAME";
     DROP INDEX "IDX_PRODUCTS_PRICE";
-
 - description: 'Reverse: Create views and functions that depend on tables'
   oldMetadata: |
     {
@@ -5965,7 +5960,7 @@
       ],
       "serviceName": "FREEPDB1"
     }
-  expected: |+
+  expected: |
     CREATE OR REPLACE FUNCTION CALCULATE_BUSINESS_DAYS(
         P_START_DATE DATE,
         P_END_DATE DATE
@@ -6012,7 +6007,6 @@
             ROLLBACK;
             RAISE;
     END;
-
 - description: 'Reverse: Revert edge case column operations'
   oldMetadata: |
     {

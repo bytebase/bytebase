@@ -77,9 +77,6 @@ func (x *IssueCommentPayload_ReviewRunCompletion) Equal(y *IssueCommentPayload_R
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.RunType != y.RunType {
-		return false
-	}
 	if x.Attempt != y.Attempt {
 		return false
 	}
@@ -127,9 +124,6 @@ func (x *IssueCommentPayload_ReviewMetadata) Equal(y *IssueCommentPayload_Review
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
-	}
-	if x.RunType != y.RunType {
-		return false
 	}
 	if x.RuleType != y.RuleType {
 		return false

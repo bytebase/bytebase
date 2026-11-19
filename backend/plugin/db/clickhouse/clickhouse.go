@@ -1,221 +1,310 @@
-// Package clickhouse is the plugin for ClickHouse driver.
+// Package clickhouse is Bytebase's ClickHouse driver: an adapter over
+// github.com/bytebase/omni/clickhouse/driver that maps Bytebase's connection
+// config onto the driver contract and the contract's results back into the
+// product's protos.
+//
+// Every db.Driver method delegates:
+//
+//   - Open maps the data source onto driver.Config: the native endpoint, the
+//     database the editor opened, the login, TLS material, the caller's extra
+//     parameters as ClickHouse settings, and an SSH Dial for a tunnelled data
+//     source. It does not reach the server; Ping does.
+//   - Ping, Close, Execute, SyncInstance, SyncDBSchema and Dump delegate.
+//   - QueryConn asks the driver for one session and holds it, so statements a
+//     caller runs through one driver share a session.
+//   - GetDB returns nil: the omni driver owns its pool and hands out sessions
+//     instead of a *sql.DB. Every Bytebase caller already tolerates nil there,
+//     and no ClickHouse feature read the handle.
+//   - Execute reports each statement's range and the transaction control steps
+//     to the task run's log.
+//
+// These are the contracts a caller can rely on, stated because a stored dump
+// and the editor's results depend on them:
+//
+//   - Dump writes the server's own SHOW CREATE statement for every object,
+//     database-qualified and ordered so a restore replays: tables and
+//     dictionaries, then views, then materialized views and Dictionary-engine
+//     tables after what they read, with the ".inner_id." storage tables left
+//     out. The metadata it is given is not rendered and does not narrow the
+//     dump, so a dump restores and round-trips byte-identically.
+//   - A statement that returns no rows answers with an empty result. Execute
+//     answers 0 because clickhouse-go states no affected count.
+//   - Date, DateTime and DateTime64 are typed timestamps carrying the precision
+//     their type names, and a zoned one keeps its zone and offset; Time and
+//     Time64 are clock strings; IPv4, IPv6 and FixedString are their values.
+//   - SHOW, DESCRIBE, DESC, EXISTS and CHECK run as queries, and EXPLAIN
+//     ANALYZE keeps the rows the server returns beside a typed QueryPlan.
+//   - The result-size cap is byte-accurate and MaximumSQLResultSize 0 is no
+//     cap. A limit rewrite wraps only a statement that can stand in a CTE and
+//     drops trailing comments a CTE cannot hold.
+//   - SyncInstance lists databases and users in name order. A sorting key,
+//     primary key or index expression is split at top-level commas only, so a
+//     function or tuple keeps its own.
+//   - A connection the server refuses because the database is gone is
+//     driver.ErrNotFound. A sync on a session already open on a dropped
+//     database answers an empty schema.
+//
+// Extra connection parameters reach ClickHouse as settings, and an SSH data
+// source connects through Config.Dial.
 package clickhouse
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
-	"fmt"
+	"io"
 	"log/slog"
-	"strings"
-	"time"
+	"net"
+	"sync"
 
-	clickhouse "github.com/ClickHouse/clickhouse-go/v2"
+	omnich "github.com/bytebase/omni/clickhouse/driver"
+	omnidriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
+	"golang.org/x/crypto/ssh"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
 )
 
 var (
-	systemDatabases = map[string]bool{
-		"system":             true,
-		"information_schema": true,
-		"INFORMATION_SCHEMA": true,
-	}
-	systemDatabaseClause = func() string {
-		var l []string
-		for k := range systemDatabases {
-			l = append(l, fmt.Sprintf("'%s'", k))
-		}
-		return strings.Join(l, ", ")
-	}()
-
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver         = (*Driver)(nil)
+	_ db.SessionQuerier = (*Driver)(nil)
 )
 
 func init() {
 	db.Register(storepb.Engine_CLICKHOUSE, newDriver)
 }
 
-// Driver is the ClickHouse driver.
+// Driver is Bytebase's ClickHouse driver.
 type Driver struct {
-	connectionCtx db.ConnectionContext
-	dbType        storepb.Engine
-	databaseName  string
+	impl      *omnich.Driver
+	sshClient *ssh.Client
 
-	db *sql.DB
+	// session is the one server session QueryConn runs on, held for the
+	// driver's lifetime so statements a caller runs through one driver share
+	// it.
+	sessionMu sync.Mutex
+	session   omnidriver.Session
 }
 
 func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open opens a ClickHouse driver.
-func (d *Driver) Open(_ context.Context, dbType storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	addr := fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port)
-	tlsConfig, err := util.GetTLSConfig(config.DataSource)
+// Open opens a ClickHouse driver. It does not reach the server: Ping does.
+func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	cfg, err := clickhouseConfig(config.DataSource, config.Password, config.ConnectionContext.DatabaseName)
 	if err != nil {
-		return nil, errors.Wrap(err, "sql: tls config error")
+		return nil, err
 	}
-	// Default user name is "default".
-	conn := clickhouse.OpenDB(&clickhouse.Options{
-		Addr: []string{addr},
-		Auth: clickhouse.Auth{
-			Database: config.ConnectionContext.DatabaseName,
-			Username: config.DataSource.GetUsername(),
-			Password: config.Password,
-		},
-		TLS: tlsConfig,
-		Settings: clickhouse.Settings{
-			// Use a relative long value to avoid timeout on resource-intenstive query. Example failure:
-			// failed: code: 160, message: Estimated query execution time (xxx seconds) is too long. Maximum: yyy. Estimated rows to process: zzzzzzzzz
-			"max_execution_time": 300,
-		},
-		DialTimeout: 10 * time.Second,
-	})
+	d := &Driver{}
+	if config.DataSource.GetSshHost() != "" {
+		sshClient, err := util.GetSSHClient(config.DataSource)
+		if err != nil {
+			return nil, err
+		}
+		d.sshClient = sshClient
+		cfg.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
+			return util.DialSSHTunnel(ctx, sshClient, network, address)
+		}
+	}
 
 	slog.Debug("Opening ClickHouse driver",
-		slog.String("addr", addr),
+		slog.String("addr", config.DataSource.GetHost()+":"+config.DataSource.GetPort()),
 		slog.String("environment", config.ConnectionContext.EnvironmentID),
 		slog.String("database", config.ConnectionContext.InstanceID),
 	)
 
-	d.dbType = dbType
-	d.db = conn
-	d.databaseName = config.ConnectionContext.DatabaseName
-	d.connectionCtx = config.ConnectionContext
+	impl, err := omnich.Open(ctx, cfg)
+	if err != nil {
+		d.closeSSHClient()
+		return nil, err
+	}
+	d.impl = impl
 	return d, nil
 }
 
-// Close closes the driver.
-func (d *Driver) Close(context.Context) error {
-	return d.db.Close()
-}
-
-// Ping pings the database.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.db.PingContext(ctx)
-}
-
-// GetDB gets the database.
-func (d *Driver) GetDB() *sql.DB {
-	return d.db
-}
-
-// getVersion gets the version.
-func (d *Driver) getVersion(ctx context.Context) (string, error) {
-	query := "SELECT VERSION()"
-	var version string
-	if err := d.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
-		if err == sql.ErrNoRows {
-			return "", common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return "", util.FormatErrorWithQuery(err, query)
+// clickhouseConfig resolves everything Bytebase knows about reaching the server
+// into the plain values clickhouse/driver takes.
+func clickhouseConfig(dataSource *storepb.DataSource, password, database string) (omnidriver.Config, error) {
+	tlsConfig, err := util.GetTLSConfig(dataSource)
+	if err != nil {
+		return omnidriver.Config{}, errors.Wrap(err, "sql: tls config error")
 	}
-	return version, nil
+	cfg := omnidriver.Config{
+		Host:     dataSource.GetHost(),
+		Port:     dataSource.GetPort(),
+		Database: database,
+		User:     dataSource.GetUsername(),
+		Password: password,
+		// A data source's extra parameters are ClickHouse settings, which is
+		// what the contract carries them as.
+		Params: dataSource.GetExtraConnectionParameters(),
+	}
+	if tlsConfig != nil {
+		cfg.TLS = func(string) (*tls.Config, error) { return tlsConfig, nil }
+	}
+	return cfg, nil
 }
 
-// Execute executes a SQL statement.
-func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	// Parse transaction mode from the script
-	config, cleanedStatement := base.ParseTransactionConfig(statement)
-	statement = cleanedStatement
-	transactionMode := config.Mode
+func (d *Driver) closeSSHClient() {
+	if d.sshClient != nil {
+		_ = d.sshClient.Close()
+		d.sshClient = nil
+	}
+}
 
-	// Apply default when transaction mode is not specified
+// Close closes the session, the pool and the SSH tunnel, if any.
+func (d *Driver) Close(context.Context) error {
+	var err error
+	d.sessionMu.Lock()
+	session := d.session
+	d.session = nil
+	d.sessionMu.Unlock()
+	if session != nil {
+		err = multierr.Append(err, session.Close())
+	}
+	if d.impl != nil {
+		err = multierr.Append(err, d.impl.Close())
+	}
+	if d.sshClient != nil {
+		err = multierr.Append(err, d.sshClient.Close())
+		d.sshClient = nil
+	}
+	return err
+}
+
+// Ping pings the server.
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.impl.Ping(ctx)
+}
+
+// GetDB returns nil: the omni driver owns its pool and hands out sessions
+// instead. Every caller already branches on the handle being absent, and no
+// ClickHouse feature read it.
+func (*Driver) GetDB() *sql.DB {
+	return nil
+}
+
+// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
+// rather than on the *sql.Conn a caller passes, which is unused.
+func (*Driver) OwnsQuerySession() {}
+
+// Execute runs the script's statements, reporting each to the task run's log.
+// ClickHouse cannot roll back, so a script still logs the BEGIN and ROLLBACK
+// its transaction wrapper issues.
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	config, cleaned := base.ParseTransactionConfig(statement)
+	transactionMode := config.Mode
 	if transactionMode == transaction.ModeUnspecified {
 		transactionMode = transaction.DefaultMode()
 	}
 
-	singleSQLs, err := standard.SplitSQL(statement)
-	if err != nil {
-		return 0, err
+	executeOptions := omnidriver.ExecuteOptions{
+		Transaction: omnidriver.Transactional,
+		Log:         executeLogger{opts: opts},
 	}
-	singleSQLs = base.FilterEmptyStatements(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return 0, nil
-	}
-
-	// Execute based on transaction mode
 	if transactionMode == transaction.ModeOff {
-		return d.executeInAutoCommitMode(ctx, singleSQLs, opts)
+		executeOptions.Transaction = omnidriver.AutoCommit
 	}
-	return d.executeInTransactionMode(ctx, singleSQLs, opts)
+	return d.impl.Execute(ctx, cleaned, executeOptions)
 }
 
-func (d *Driver) executeInTransactionMode(ctx context.Context, singleSQLs []base.Statement, opts db.ExecuteOptions) (int64, error) {
-	tx, err := d.db.BeginTx(ctx, nil)
+// executeLogger reports the driver contract's execute steps to the task run's
+// log.
+type executeLogger struct {
+	opts db.ExecuteOptions
+}
+
+func (l executeLogger) CommandExecute(command omnidriver.Command) {
+	l.opts.LogCommandExecute(&storepb.Range{
+		Start: int32(command.ByteStart),
+		End:   int32(command.ByteEnd),
+	}, command.Text)
+}
+
+func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
+	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
+}
+
+func (l executeLogger) TransactionControl(op omnidriver.TransactionOp, err error) {
+	var t storepb.TaskRunLog_TransactionControl_Type
+	switch op {
+	case omnidriver.Begin:
+		t = storepb.TaskRunLog_TransactionControl_BEGIN
+	case omnidriver.Commit:
+		t = storepb.TaskRunLog_TransactionControl_COMMIT
+	case omnidriver.Rollback:
+		t = storepb.TaskRunLog_TransactionControl_ROLLBACK
+	default:
+		return
+	}
+	l.opts.LogTransactionControl(t, errorString(err))
+}
+
+// Retry logs nothing: this driver never retries.
+func (executeLogger) Retry(error, int, int) {}
+
+func errorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}
+
+// SyncInstance syncs the server's version, databases and users.
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	instance, err := d.impl.SyncInstance(ctx)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-
-	committed := false
-	defer func() {
-		if !committed {
-			err := tx.Rollback()
-			var rerr string
-			if err != nil && !errors.Is(err, sql.ErrTxDone) {
-				rerr = err.Error()
-				slog.Debug("failed to rollback transaction", log.BBError(err))
-			}
-			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
-		}
-	}()
-
-	// Log transaction start
-	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
-
-	totalRowsAffected := int64(0)
-	for _, singleSQL := range singleSQLs {
-		opts.LogCommandExecute(singleSQL.Range, singleSQL.Text)
-		sqlResult, err := tx.ExecContext(ctx, singleSQL.Text)
-		if err != nil {
-			opts.LogCommandResponse(0, nil, err.Error())
-			return 0, err
-		}
-		rowsAffected, err := sqlResult.RowsAffected()
-		if err != nil {
-			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			slog.Debug("rowsAffected returns error", log.BBError(err))
-		}
-		opts.LogCommandResponse(rowsAffected, nil, "")
-		totalRowsAffected += rowsAffected
+	var roles []*storepb.InstanceRole
+	for _, role := range instance.Roles {
+		roles = append(roles, &storepb.InstanceRole{Name: role.Name})
 	}
-
-	if err := tx.Commit(); err != nil {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
-		return 0, err
-	}
-
-	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
-	committed = true
-	return totalRowsAffected, nil
+	return &db.InstanceMetadata{
+		Version:   instance.Version,
+		Databases: instance.Databases,
+		Metadata:  &storepb.Instance{Roles: roles},
+	}, nil
 }
 
-func (d *Driver) executeInAutoCommitMode(ctx context.Context, singleSQLs []base.Statement, opts db.ExecuteOptions) (int64, error) {
-	totalRowsAffected := int64(0)
-	for _, singleSQL := range singleSQLs {
-		opts.LogCommandExecute(singleSQL.Range, singleSQL.Text)
-		sqlResult, err := d.db.ExecContext(ctx, singleSQL.Text)
-		if err != nil {
-			opts.LogCommandResponse(0, nil, err.Error())
-			return totalRowsAffected, err
-		}
-		rowsAffected, err := sqlResult.RowsAffected()
-		if err != nil {
-			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			slog.Debug("rowsAffected returns error", log.BBError(err))
-		} else {
-			totalRowsAffected += rowsAffected
-		}
-		opts.LogCommandResponse(rowsAffected, nil, "")
+// SyncDBSchema syncs a single database schema. A database the server no longer
+// has is the driver's ErrNotFound.
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return d.impl.SyncDatabase(ctx)
+}
+
+// Dump writes the database's DDL as the server states it.
+func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
+	return d.impl.Dump(ctx, out, dbMetadata)
+}
+
+// discardSessionLocked closes a session a statement took with it, so the
+// stream's next statement opens a new one instead of reusing the dead one. The
+// caller holds sessionMu.
+func (d *Driver) discardSessionLocked(session omnidriver.Session) {
+	_ = session.Close()
+	if d.session == session {
+		d.session = nil
 	}
-	return totalRowsAffected, nil
+}
+
+// querySessionLocked returns the driver's one session, opening it on the first
+// query so Open still does not reach the server. The caller holds sessionMu.
+func (d *Driver) querySessionLocked(ctx context.Context) (omnidriver.Session, error) {
+	if d.session != nil {
+		return d.session, nil
+	}
+	session, err := d.impl.Session(ctx)
+	if err != nil {
+		return nil, err
+	}
+	d.session = session
+	return session, nil
 }

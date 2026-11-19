@@ -1,179 +1,63 @@
 package redshift
 
 import (
+	"context"
 	"database/sql"
-	"fmt"
-	"strings"
-	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	omndriver "github.com/bytebase/omni/driver"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
-	switch typeName {
-	case "VARCHAR", "TEXT", "UUID":
-		return new(sql.NullString)
-	case "BOOL":
-		return new(sql.NullBool)
-	case "INT", "INTEGER", "TINYINT", "SMALLINT", "MEDIUMINT", "BIGINT", "INT2", "INT4", "INT8":
-		return new(sql.NullInt64)
-	case "FLOAT", "DOUBLE", "FLOAT4", "FLOAT8":
-		return new(sql.NullFloat64)
-	case "DATE":
-		return new(pgtype.Date)
-	case "TIMESTAMP", "TIMESTAMPTZ":
-		return new(pgtype.Timestamptz)
-	case "BIT", "VARBIT":
-		return new([]byte)
-	default:
-		return new(sql.NullString)
+// QueryConn runs the script on the driver's session, one result per statement.
+// The caller's *sql.Conn is unused: the contract's session is the driver's, and
+// it is the one a statement's settings hold on. Calls are serialized, as the
+// stream's one connection was.
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	d.sessionMu.Lock()
+	defer d.sessionMu.Unlock()
+	session, err := d.querySession(ctx)
+	if err != nil {
+		return nil, err
 	}
+
+	results, err := session.Query(ctx, statement, omndriver.QueryOptions{
+		Schema:         queryContext.Schema,
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		MaxResultBytes: queryContext.MaximumSQLResultSize,
+		MaskingEnabled: queryContext.MaskingEnabled,
+	})
+	if err != nil {
+		// The script could not be run at all; the session is not one to keep.
+		_ = session.Close()
+		d.session = nil
+		return nil, err
+	}
+	if ctx.Err() != nil {
+		_ = session.Close()
+		d.session = nil
+	}
+
+	converted := make([]*v1pb.QueryResult, 0, len(results))
+	for _, result := range results {
+		converted = append(converted, util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize))
+	}
+	return converted, nil
 }
 
-var timeTzOID = fmt.Sprintf("%d", pgtype.TimetzOID)
-
-// convertValueIn binds the row value converter to the location timestamptz values
-// render in, which the caller reads from the session once per statement.
-func convertValueIn(location *time.Location) func(string, *sql.ColumnType, any) *v1pb.RowValue {
-	return func(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
-		return convertValue(typeName, columnType, value, location)
+// querySession returns the driver's session, opening it on first use. The caller
+// holds sessionMu.
+func (d *Driver) querySession(ctx context.Context) (omndriver.Session, error) {
+	if d.session != nil {
+		return d.session, nil
 	}
-}
-
-func convertValue(typeName string, columnType *sql.ColumnType, value any, location *time.Location) *v1pb.RowValue {
-	switch raw := value.(type) {
-	case *sql.NullString:
-		if raw.Valid {
-			// TODO: Fix DatabaseTypeName for 1266, Object ID for TIME WITHOUT TIME ZONE
-			if columnType.DatabaseTypeName() == "TIME" || columnType.DatabaseTypeName() == timeTzOID || columnType.DatabaseTypeName() == "INTERVAL" {
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_StringValue{
-						StringValue: padZeroes(raw.String, 6),
-					},
-				}
-			}
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_StringValue{
-					StringValue: raw.String,
-				},
-			}
-		}
-	case *sql.NullInt64:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_Int64Value{
-					Int64Value: raw.Int64,
-				},
-			}
-		}
-	case *[]byte:
-		if len(*raw) > 0 {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_BytesValue{
-					BytesValue: *raw,
-				},
-			}
-		}
-	case *sql.NullBool:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_BoolValue{
-					BoolValue: raw.Bool,
-				},
-			}
-		}
-	case *sql.NullFloat64:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_DoubleValue{
-					DoubleValue: raw.Float64,
-				},
-			}
-		}
-	case *pgtype.Date:
-		if raw.Valid {
-			if raw.InfinityModifier != pgtype.Finite {
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_StringValue{
-						StringValue: raw.InfinityModifier.String(),
-					},
-				}
-			}
-			if typeName == "DATE" {
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_StringValue{
-						StringValue: raw.Time.Format(time.DateOnly),
-					},
-				}
-			}
-		}
-	case *pgtype.Timestamptz:
-		if raw.Valid {
-			if raw.InfinityModifier != pgtype.Finite {
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_StringValue{
-						StringValue: raw.InfinityModifier.String(),
-					},
-				}
-			}
-			// pgx v5.13+ reports a temporal column's fractional-seconds precision as its
-			// scale, an unspecified precision already normalized to PostgreSQL's default
-			// of 6 (jackc/pgx#2704).
-			_, scale, ok := columnType.DecimalSize()
-			if !ok {
-				scale = 6
-			}
-			if typeName == "TIMESTAMP" {
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_TimestampValue{
-						TimestampValue: &v1pb.RowValue_Timestamp{
-							GoogleTimestamp: timestamppb.New(raw.Time),
-							Accuracy:        int32(scale),
-						},
-					},
-				}
-			}
-			zone, offset := raw.Time.In(location).Zone()
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_TimestampTzValue{
-					TimestampTzValue: &v1pb.RowValue_TimestampTZ{
-						GoogleTimestamp: timestamppb.New(raw.Time),
-						Zone:            zone,
-						Offset:          int32(offset),
-						Accuracy:        int32(scale),
-					},
-				},
-			}
-		}
-	default:
+	session, err := d.impl.Session(ctx)
+	if err != nil {
+		return nil, err
 	}
-	return util.NullRowValue
-}
-
-// Padding 0's to nanosecond precision to make sure it's always 6 digits.
-// Since the data cannot be formatted into a time.Time, we need to pad it here.
-// The value arrives as trimmed text (PostgreSQL drops trailing fractional zeros), so the
-// accuracy to pad to is supplied by the caller rather than derived from the value.
-func padZeroes(rawStr string, acc int) string {
-	dotIndex := strings.Index(rawStr, ".")
-	if dotIndex < 0 {
-		return rawStr
-	}
-	// End index is used to cut off the time zone information.
-	endIndex := len(rawStr)
-	if plusIndex := strings.Index(rawStr, "+"); plusIndex >= 0 {
-		endIndex = plusIndex
-	} else if minusIndex := strings.Index(rawStr, "-"); minusIndex >= 0 {
-		endIndex = minusIndex
-	}
-	decimalPart := rawStr[dotIndex+1 : endIndex]
-	if len(decimalPart) < acc {
-		rawStr = rawStr[:endIndex] + strings.Repeat("0", acc-len(decimalPart)) + rawStr[endIndex:]
-	}
-	return rawStr
+	d.session = session
+	return session, nil
 }

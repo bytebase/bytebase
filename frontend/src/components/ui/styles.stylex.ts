@@ -619,6 +619,14 @@ const denseFormStyles = stylex.create({
     rowGap: 8,
     width: "100%",
   },
+  headingRowHorizontal: {
+    alignItems: "center",
+    columnGap: 16,
+    display: "grid",
+    gridTemplateColumns: "224px minmax(0, 1fr)",
+    rowGap: 8,
+    width: "100%",
+  },
   content: { minWidth: 0 },
   title: {
     color: "rgb(var(--color-main))",
@@ -632,6 +640,9 @@ export function denseFormSectionStyle() {
 }
 export function denseFormHeaderStyle() {
   return denseFormStyles.header;
+}
+export function denseFormHeadingRowHorizontalStyle() {
+  return denseFormStyles.headingRowHorizontal;
 }
 export function denseFormContentStyle() {
   return denseFormStyles.content;

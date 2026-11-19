@@ -1617,6 +1617,25 @@
         "title": "データベースエンジンのサポートを確認"
       }
     },
+    "connection-string": {
+      "filled": "URL から入力しました",
+      "filled-missing-password": "URL から入力しました。データベースのパスワードを入力してください。",
+      "help": {
+        "mssql": "SQL Server の接続 URL または接続文字列を貼り付けると、ホスト、ポート、認証情報、データベース、TLS を自動入力します。",
+        "mysql": "MySQL の接続 URL を貼り付けると、ホスト、ポート、認証情報、TLS を自動入力します。",
+        "oracle": "Oracle の接続 URL または Easy Connect 文字列を貼り付けると、ホスト、ポート、認証情報、サービス名または SID、TLS を自動入力します。",
+        "postgres": "PostgreSQL の接続 URL または接続文字列を貼り付けると、ホスト、ポート、認証情報、データベース、TLS を自動入力します。"
+      },
+      "invalid": {
+        "engine-mismatch": "{{detected}} の接続文字列のようです。上でエンジンを {{detected}} に切り替えるか、{{selected}} の接続文字列を入力してください。",
+        "mssql": "有効な sqlserver:// URL または Server=…; 接続文字列を入力してください。",
+        "mysql": "有効な mysql:// 接続 URL を入力してください。",
+        "oracle": "サービス名または SID を含む有効な oracle:// URL または Easy Connect 文字列を入力してください。",
+        "postgres": "有効な postgresql:// URL または key=value 接続文字列を入力してください。"
+      },
+      "label": "接続 URL",
+      "trigger": "URL からインポート"
+    },
     "create-failed": "インスタンスの作成に失敗しました",
     "create-gcp-credentials": "認証情報の作成方法については、を参照してください",
     "database-region": "データベース領域",
@@ -4482,7 +4501,7 @@
     "access-type-export": "クエリ結果をエクスポート",
     "access-type-unmask": "マスク解除された機密データを表示",
     "activate-access": "有効化",
-    "activate-confirm": "このアクセス付与を有効化してもよろしいですか？",
+    "activate-confirm": "有効化すると、このアクセス付与で承認済みのクエリを実行できるようになります。",
     "add-a-new-instance": "新しいインスタンスを追加",
     "admin-mode": {
       "exit": "管理者モードを終了する",
@@ -4791,7 +4810,7 @@
     },
     "result-view-mode": "結果表示モード",
     "revoke-access": "取り消し",
-    "revoke-confirm": "このアクセス付与を取り消してもよろしいですか？",
+    "revoke-confirm": "取り消すと、このアクセス付与では承認済みのクエリを実行できなくなります。",
     "rows": {
       "self": "行"
     },

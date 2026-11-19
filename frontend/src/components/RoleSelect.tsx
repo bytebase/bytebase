@@ -119,7 +119,6 @@ export function RoleSelect({
         options={groups}
         placeholder={placeholder || defaultPlaceholder}
         disabled={disabled}
-        portal
       />
     );
   }
@@ -132,7 +131,6 @@ export function RoleSelect({
       placeholder={placeholder || defaultPlaceholder}
       disabled={disabled}
       clearable={clearable}
-      portal
     />
   );
 }

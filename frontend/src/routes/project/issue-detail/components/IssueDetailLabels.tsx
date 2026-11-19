@@ -4,7 +4,6 @@ import {
   type MouseEvent as ReactMouseEvent,
   useCallback,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
@@ -14,8 +13,11 @@ import { PROJECT_V1_ROUTE_SETTINGS } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
-import { useClickOutside } from "@/hooks/useClickOutside";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
@@ -37,7 +39,6 @@ type IssueLabelOption = {
 export function IssueDetailLabels() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const projectName = `${projectNamePrefix}${page.projectId}`;
@@ -45,8 +46,6 @@ export function IssueDetailLabels() {
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
   const project = useProjectByName(projectName);
-
-  useClickOutside(containerRef, open, () => setOpen(false));
 
   const options = useMemo<IssueLabelOption[]>(() => {
     return (project?.issueLabels ?? []).map((label) => ({
@@ -137,10 +136,9 @@ export function IssueDetailLabels() {
         <span>{t("issue.labels")}</span>
         {project?.forceIssueLabels && <span className="text-error">*</span>}
       </div>
-      <div ref={containerRef} className="relative">
-        <Button
-          appearance="secondary"
-          size="md"
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          render={<Button appearance="secondary" size="md" type="button" />}
           className={cn(
             "flex min-h-9 w-full items-center justify-between gap-2 rounded-sm border border-control-border bg-background px-3 py-1.5 text-left text-sm transition-colors",
             allowChange && !isUpdating && "hover:bg-control-bg",
@@ -148,8 +146,6 @@ export function IssueDetailLabels() {
             (!allowChange || isUpdating) && "cursor-not-allowed opacity-60"
           )}
           disabled={!allowChange || isUpdating}
-          onClick={() => setOpen((current) => !current)}
-          type="button"
         >
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
             {selected.length > 0 ? (
@@ -193,69 +189,65 @@ export function IssueDetailLabels() {
               open && "rotate-180"
             )}
           />
-        </Button>
+        </PopoverTrigger>
 
-        {open && (
-          <div
-            className={cn(
-              "absolute mt-1 w-full overflow-hidden rounded-sm border border-control-border bg-background shadow-lg",
-              LAYER_SURFACE_CLASS
-            )}
-          >
-            <div className="max-h-60 overflow-y-auto">
-              {options.length === 0 ? (
-                <div className="flex flex-col items-center gap-y-3 px-3 py-6 text-sm text-control-placeholder">
-                  <span>{t("common.no-data")}</span>
-                  {settingsHref &&
-                    project &&
-                    hasProjectPermissionV2(project, "bb.projects.update") && (
-                      <RouterLink
-                        to={settingsHref}
-                        className="flex items-center gap-x-2 textinfolabel normal-link"
-                      >
-                        <span>
-                          {t(
-                            "project.settings.issue-related.labels.configure-labels"
-                          )}
-                        </span>
-                        <ExternalLink className="h-4 w-4" />
-                      </RouterLink>
-                    )}
-                </div>
-              ) : (
-                options.map((option) => {
-                  const isSelected = selected.includes(option.value);
-                  return (
-                    <Button
-                      appearance="secondary"
-                      size="md"
-                      key={option.value}
-                      className="flex w-full min-w-0 justify-start gap-x-2 px-3 py-2 text-left text-sm transition-colors hover:bg-control-bg"
-                      disabled={isUpdating}
-                      onClick={() => {
-                        void toggleLabel(option.value);
-                      }}
-                      type="button"
+        <PopoverContent
+          align="start"
+          className="w-(--anchor-width) overflow-hidden p-0 shadow-lg"
+        >
+          <div className="max-h-60 overflow-y-auto">
+            {options.length === 0 ? (
+              <div className="flex flex-col items-center gap-y-3 px-3 py-6 text-sm text-control-placeholder">
+                <span>{t("common.no-data")}</span>
+                {settingsHref &&
+                  project &&
+                  hasProjectPermissionV2(project, "bb.projects.update") && (
+                    <RouterLink
+                      to={settingsHref}
+                      className="flex items-center gap-x-2 textinfolabel normal-link"
                     >
-                      <Checkbox checked={isSelected} />
-                      <span
-                        className="size-4 shrink-0 rounded-sm"
-                        style={{ backgroundColor: option.color }}
-                      />
-                      <span
-                        className="min-w-0 flex-1 truncate"
-                        title={option.value}
-                      >
-                        {option.value}
+                      <span>
+                        {t(
+                          "project.settings.issue-related.labels.configure-labels"
+                        )}
                       </span>
-                    </Button>
-                  );
-                })
-              )}
-            </div>
+                      <ExternalLink className="h-4 w-4" />
+                    </RouterLink>
+                  )}
+              </div>
+            ) : (
+              options.map((option) => {
+                const isSelected = selected.includes(option.value);
+                return (
+                  <Button
+                    appearance="secondary"
+                    size="md"
+                    key={option.value}
+                    className="flex w-full min-w-0 justify-start gap-x-2 px-3 py-2 text-left text-sm transition-colors hover:bg-control-bg"
+                    disabled={isUpdating}
+                    onClick={() => {
+                      void toggleLabel(option.value);
+                    }}
+                    type="button"
+                  >
+                    <Checkbox checked={isSelected} />
+                    <span
+                      className="size-4 shrink-0 rounded-sm"
+                      style={{ backgroundColor: option.color }}
+                    />
+                    <span
+                      className="min-w-0 flex-1 truncate"
+                      title={option.value}
+                    >
+                      {option.value}
+                    </span>
+                  </Button>
+                );
+              })
+            )}
           </div>
-        )}
-      </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

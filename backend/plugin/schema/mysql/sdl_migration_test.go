@@ -27,6 +27,7 @@ import (
 	mysqldb "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/schema/internal/omnicatalog"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -146,11 +147,11 @@ func metadataFromProto(proto *metadatapb.DatabaseSchemaMetadata) *model.Database
 	return model.NewDatabaseMetadata(proto, nil, nil, storepb.Engine_MYSQL, true)
 }
 
-// TestDiffMigrationRouting proves which generator each engine's metadata diff
-// reaches: MySQL's goes to omni's catalog, and MariaDB's and OceanBase's keep
-// Bytebase's MySQL generator, which ends each statement with ";\n\n". The view
-// body does not parse, and the SDL path, which loads it as text, would fail.
-func TestDiffMigrationRouting(t *testing.T) {
+// TestDiffMigrationLoadsMetadataNotSDL proves MySQL's metadata diff loads the
+// snapshots into the catalog rather than round-tripping them through SDL text: the
+// view body does not parse, so the SDL path fails on it and the metadata path does
+// not. MariaDB's and OceanBase's routing is proven in their own packages.
+func TestDiffMigrationLoadsMetadataNotSDL(t *testing.T) {
 	brokenView := &metadatapb.ViewMetadata{Name: "v_broken", Definition: "select ((broken from"}
 	id := &metadatapb.ColumnMetadata{Name: "id", Type: "int"}
 	extra := &metadatapb.ColumnMetadata{Name: "extra", Type: "varchar(10)", Nullable: true, Default: "NULL"}
@@ -161,74 +162,10 @@ func TestDiffMigrationRouting(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "ALTER TABLE `t` ADD COLUMN `extra` varchar(10) DEFAULT NULL", sql)
 
-	for _, engine := range []storepb.Engine{storepb.Engine_MARIADB, storepb.Engine_OCEANBASE} {
-		sql, err := schema.DiffMigration(engine, metadataFromProto(oldProto), metadataFromProto(newProto))
-		require.NoError(t, err)
-		require.Equal(t, "ALTER TABLE `t` ADD COLUMN `extra` varchar(10) DEFAULT NULL;\n\n", sql, engine)
-	}
-
 	sdl, err := schema.MetadataToSDL(storepb.Engine_MYSQL, metadataFromProto(oldProto))
 	require.NoError(t, err)
 	_, err = schema.DiffSDLMigration(storepb.Engine_MYSQL, sdl, sdl, "")
 	require.Error(t, err, "the SDL path must reject the view body")
-}
-
-// legacyColumnChangeSQL diffs two single-column tables through Bytebase's MySQL
-// generator, which OceanBase keeps, and returns the migration SQL.
-func legacyColumnChangeSQL(t *testing.T, oldCol, newCol *metadatapb.ColumnMetadata) string {
-	t.Helper()
-	mk := func(col *metadatapb.ColumnMetadata) *model.DatabaseMetadata {
-		return metadataFromProto(&metadatapb.DatabaseSchemaMetadata{
-			Name: "d",
-			Schemas: []*metadatapb.SchemaMetadata{{
-				Name:   "",
-				Tables: []*metadatapb.TableMetadata{{Name: "t", Columns: []*metadatapb.ColumnMetadata{col}}},
-			}},
-		})
-	}
-	sql, err := schema.DiffMigration(storepb.Engine_OCEANBASE, mk(oldCol), mk(newCol))
-	require.NoError(t, err)
-	return sql
-}
-
-// TestLegacyDiffSRIDAndInvisible: Bytebase's MySQL generator knows the SRID and
-// INVISIBLE column fields, so an SRID-only or INVISIBLE-only change produces a MODIFY
-// COLUMN rendering the dumper-canonical attribute comments.
-func TestLegacyDiffSRIDAndInvisible(t *testing.T) {
-	srid := func(v uint32) *uint32 { return &v }
-
-	t.Run("srid_only_change_modifies", func(t *testing.T) {
-		sql := legacyColumnChangeSQL(t,
-			&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false},
-			&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)},
-		)
-		require.Contains(t, sql, "MODIFY COLUMN `pt` point NOT NULL /*!80003 SRID 4326 */")
-	})
-
-	t.Run("explicit_srid_zero_differs_from_unset", func(t *testing.T) {
-		sql := legacyColumnChangeSQL(t,
-			&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false},
-			&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(0)},
-		)
-		require.Contains(t, sql, "MODIFY COLUMN `pt` point NOT NULL /*!80003 SRID 0 */")
-	})
-
-	t.Run("equal_srid_no_change", func(t *testing.T) {
-		sql := legacyColumnChangeSQL(t,
-			&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)},
-			&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)},
-		)
-		require.Empty(t, sql)
-	})
-
-	t.Run("invisible_only_change_modifies", func(t *testing.T) {
-		sql := legacyColumnChangeSQL(t,
-			&metadatapb.ColumnMetadata{Name: "c", Type: "int", Nullable: true, Default: "NULL"},
-			&metadatapb.ColumnMetadata{Name: "c", Type: "int", Nullable: true, Default: "NULL", IsInvisible: true},
-		)
-		require.Contains(t, sql, "MODIFY COLUMN `c` int")
-		require.Contains(t, sql, " /*!80023 INVISIBLE */")
-	})
 }
 
 // TestStripDatabaseContext pins the literal-aware synthetic-qualifier strip (X13): a
@@ -286,7 +223,7 @@ func TestStripDatabaseContext(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, stripDatabaseContext(tc.in))
+			require.Equal(t, tc.want, omnicatalog.StripDatabaseContext(tc.in))
 		})
 	}
 }

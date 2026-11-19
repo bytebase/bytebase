@@ -6,8 +6,6 @@ interface SchemaSelectorProps {
   schemas: SchemaMetadata[];
   value: string[];
   onChange: (value: string[]) => void;
-  /** Render the dropdown via portal — needed inside the Sheet body. */
-  portal?: boolean;
 }
 
 /**
@@ -18,7 +16,6 @@ export function SchemaSelector({
   schemas,
   value,
   onChange,
-  portal,
 }: SchemaSelectorProps) {
   const { t } = useTranslation();
   const options = schemas.map((schema) => ({
@@ -33,7 +30,6 @@ export function SchemaSelector({
       onChange={onChange}
       options={options}
       placeholder={t("schema-editor.schema.select")}
-      portal={portal}
       clearable
     />
   );

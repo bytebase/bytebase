@@ -178,7 +178,8 @@ Use semantic utilities backed by CSS custom properties:
 | --- | --- |
 | Resource creation or editing with multiple fields while retaining list context | `Sheet` |
 | Multi-section settings or editing with a durable route | Full page form |
-| Confirmation, destructive acknowledgment, single-field prompt, or read-only result | `Dialog` or `AlertDialog` |
+| Reversible state transition affecting one existing row, with concise consequences | Anchored confirmation `Popover`, subject to the requirements below |
+| Other confirmation, destructive acknowledgment, single-field prompt, or read-only result | `Dialog` or `AlertDialog` |
 | Long or route-worthy multi-step workflow | Full page wizard |
 | Short multi-step workflow that benefits from parent context | Wide sheet wizard |
 
@@ -446,13 +447,32 @@ needs a new reusable size.
 ### Dialogs And Destructive Actions
 
 - Use `Dialog` for short blocking work, not multi-section resource forms.
-- Use `AlertDialog` for destructive confirmation that requires explicit
-  acknowledgment.
+- Use `AlertDialog` for irreversible or high-impact destructive confirmation
+  and destructive bulk acknowledgment.
 - Dialog content has 24px padding by default. Do not add an inner padding shell.
 - The primary action is last in reading order. A destructive action uses the
   destructive variant and names the operation precisely.
 - Dialog and alert-dialog content MUST have an accessible title and a concise
   description when consequences are not obvious.
+
+### Contextual Confirmation Popovers
+
+- A reversible state transition affecting one existing resource, such as
+  activating or revoking one access grant, MAY use a non-modal shared `Popover`.
+  This exception does not cover resource deletion, bulk operations, or actions
+  requiring high-risk acknowledgment; use a dialog for those.
+- The popover MUST name the action and its consequence, offer Cancel and an
+  explicitly named confirmation action, and use the destructive variant when
+  appropriate. It MUST have an accessible title and description.
+- Anchor to a persistent row control. When opened from a dropdown, close the
+  menu, transfer focus to the popover without returning it to the menu trigger,
+  and return focus to the persistent control when the popover closes. Use the
+  shared semantic overlay family so table clipping does not hide the popover.
+- Do not dim or block the page. Escape and clicking outside MUST cancel before
+  submission; dismissing a pending confirmation MUST NOT imply cancellation of
+  an operation already submitted.
+- Prevent duplicate submissions, show the pending state, and keep failures in
+  the popover with a retry path rather than silently closing it.
 
 ### Wizards
 

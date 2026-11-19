@@ -130,13 +130,13 @@ func TestReviewResultComments(t *testing.T) {
 		},
 	}
 
-	comments := reviewResultComments("p", 101, unit, sql, result)
+	comments := ruleResultComments("p", 101, reviewResults(unit, sql, result))
 	require.Len(t, comments, 4, "the unknown rule's finding is dropped")
 	for _, c := range comments {
 		require.Equal(t, "p", c.ProjectID)
 		require.Equal(t, int64(101), c.IssueUID)
 		require.Empty(t, c.CreatorEmail)
-		require.Equal(t, storepb.ReviewRun_RULE, c.Payload.ReviewMetadata.RunType)
+		require.NotEqual(t, storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED, c.Payload.ReviewMetadata.RuleType, "a rule's result names its rule")
 	}
 
 	whole := comments[0]
@@ -193,7 +193,7 @@ func TestReviewResultFingerprints(t *testing.T) {
 	}
 	fingerprintsOf := func(unit *reviewUnit, sql string, result *review.Result) []string {
 		var out []string
-		for _, comment := range reviewResultComments("p", 101, unit, sql, result) {
+		for _, comment := range ruleResultComments("p", 101, reviewResults(unit, sql, result)) {
 			out = append(out, comment.Payload.ReviewMetadata.Fingerprint)
 		}
 		return out
@@ -280,7 +280,7 @@ func TestReviewResultCommentsMergesARepeatedRule(t *testing.T) {
 		{Rule: review.PriorBackup, Statement: -1, Message: "Nothing to back up.", Targets: []int{0}, Codes: []review.FindingCode{review.NothingToBackUp}},
 	}
 
-	comments := reviewResultComments("p", 101, unit, sql, result)
+	comments := ruleResultComments("p", 101, reviewResults(unit, sql, result))
 	var messages []string
 	for _, c := range comments {
 		messages = append(messages, c.Payload.Comment)
@@ -311,7 +311,7 @@ func TestMergedComment(t *testing.T) {
 	commentOf := func(sql string, findings []review.Finding) string {
 		result := lineStatements(sql)
 		result.Findings = findings
-		comments := reviewResultComments("p", 101, unit, sql, result)
+		comments := ruleResultComments("p", 101, reviewResults(unit, sql, result))
 		require.Len(t, comments, 1)
 		return comments[0].Payload.Comment
 	}
@@ -329,7 +329,7 @@ func TestMergedComment(t *testing.T) {
 	for i, name := range []string{"a", "b", "c"} {
 		oneLine.Findings = append(oneLine.Findings, review.Finding{Rule: review.DisallowDropObject, Statement: i, Message: fmt.Sprintf("Drops table `%s`.", name), Targets: []int{0}})
 	}
-	comments := reviewResultComments("p", 101, unit, "DROP TABLE a; DROP TABLE b; DROP TABLE c;", oneLine)
+	comments := ruleResultComments("p", 101, reviewResults(unit, "DROP TABLE a; DROP TABLE b; DROP TABLE c;", oneLine))
 	require.Len(t, comments, 1)
 	require.True(t, strings.HasPrefix(comments[0].Payload.Comment, "3 statements, on line 1.\n\n"), comments[0].Payload.Comment)
 
@@ -345,6 +345,59 @@ func TestMergedComment(t *testing.T) {
 	require.True(t, strings.HasPrefix(long, "60 statements, on lines 1 to 60.\n\n"))
 }
 
+func TestRuleResultCarriesTheAIReviewProblems(t *testing.T) {
+	t.Parallel()
+	unit := groupReviewUnits(nil, []*reviewTarget{target("spec-1", "instances/pg/databases/a", storepb.Engine_POSTGRES, false)})[0]
+	resultsOf := func(statements int) []*ruleResult {
+		var lines []string
+		var findings []review.Finding
+		for i := range statements {
+			lines = append(lines, "x;")
+			findings = append(findings, review.Finding{Rule: review.DisallowDropObject, Statement: i, Message: fmt.Sprintf("Drops table `t%d`.", i), Targets: []int{0}})
+		}
+		sql := strings.Join(lines, "\n")
+		result := lineStatements(sql)
+		result.Findings = findings
+		return reviewResults(unit, sql, result)
+	}
+	p0, p1 := storepb.IssueCommentPayload_ReviewMetadata_P0, storepb.IssueCommentPayload_ReviewMetadata_P1
+
+	alone := resultsOf(2)
+	require.Len(t, alone, 2)
+	alone[1].members[0].folded = []string{"t1 holds 12,000 rows.", "v reads t1.\n\nSuggested fix: Drop v first."}
+	alone[1].members[0].raised = p0
+	comments := ruleResultComments("p", 101, alone)
+	require.Equal(t, "Drops table `t0`.", comments[0].Payload.Comment)
+	require.Equal(t, p1, comments[0].Payload.ReviewMetadata.Priority)
+	require.Equal(t, "Drops table `t1`.\n\nt1 holds 12,000 rows.\n\nv reads t1.\n\nSuggested fix: Drop v first.", comments[1].Payload.Comment)
+	require.Equal(t, p0, comments[1].Payload.ReviewMetadata.Priority)
+
+	merged := resultsOf(3)
+	require.Len(t, merged, 1)
+	fingerprint := merged[0].payload().ReviewMetadata.Fingerprint
+	merged[0].members[1].folded = []string{"v reads t1.\n\nSuggested fix: Drop v first."}
+	merged[0].members[1].raised = p0
+	payload := merged[0].payload()
+	require.Equal(t, "3 statements, on lines 1 to 3.\n\n- Line 1: Drops table `t0`.\n- Line 2: Drops table `t1`.\n\n  v reads t1.\n\n  Suggested fix: Drop v first.\n- Line 3: Drops table `t2`.", payload.Comment, "under the item of its finding")
+	require.Equal(t, p0, payload.ReviewMetadata.Priority, "the highest priority among the findings")
+	require.Equal(t, fingerprint, payload.ReviewMetadata.Fingerprint, "what the AI review adds leaves the fingerprint alone")
+
+	long := resultsOf(maxMergedItems + 2)
+	require.Len(t, long, 1)
+	long[0].members[maxMergedItems+1].folded = []string{"past the limit"}
+	comment := long[0].payload().Comment
+	require.Equal(t, maxMergedItems+1, strings.Count(comment, "\n- Line "))
+	require.Contains(t, comment, fmt.Sprintf("- Line %d: Drops table `t%d`.\n\n  past the limit\n\nAnd 1 more.", maxMergedItems+2, maxMergedItems+1), "a finding with a problem is listed past the limit")
+
+	kept := resultsOf(1)
+	kept[0].members[0].folded = []string{"written again"}
+	kept[0].earlier = &ruleThread{Comment: "the comment an earlier run left", Priority: p0}
+	require.Equal(t, "Drops table `t0`.\n\nwritten again", kept[0].payload().Comment, "an earlier comment stays only when the result keeps it")
+	kept[0].keepsEarlier = true
+	require.Equal(t, "the comment an earlier run left", kept[0].payload().Comment)
+	require.Equal(t, p0, kept[0].payload().ReviewMetadata.Priority)
+}
+
 func TestMergedResultNamesTargets(t *testing.T) {
 	t.Parallel()
 	var targets []*reviewTarget
@@ -358,7 +411,7 @@ func TestMergedResultNamesTargets(t *testing.T) {
 	const sql = "CREATE INDEX ON t1 (a);\nCREATE INDEX ON t2 (a);\nCREATE INDEX ON t3 (a);\nCREATE INDEX ON t4 (a);"
 	result := lineStatements(sql)
 	result.Findings = []review.Finding{missing(0, "t1", 1), missing(1, "t2", 1, 2), missing(2, "t3", 1, 2), missing(3, "t4", 2, 9)}
-	comments := reviewResultComments("p", 101, unit, sql, result)
+	comments := ruleResultComments("p", 101, reviewResults(unit, sql, result))
 	require.Len(t, comments, 1, "findings on different databases still merge")
 	require.Equal(t, []string{"instances/prod/databases/tenant_7", "instances/prod/databases/tenant_9"}, comments[0].Payload.ReviewMetadata.Targets)
 	require.Equal(t,
@@ -366,7 +419,7 @@ func TestMergedResultNamesTargets(t *testing.T) {
 		comments[0].Payload.Comment, "a finding on every database of the result names none")
 
 	result.Findings = []review.Finding{missing(0, "t1", 1), missing(1, "t2", 1), missing(2, "t3", 9)}
-	require.NotContains(t, reviewResultComments("p", 101, unit, sql, result)[0].Payload.Comment, "Line 3: Table `t3` does not exist. Only", "a finding with no database names none")
+	require.NotContains(t, ruleResultComments("p", 101, reviewResults(unit, sql, result))[0].Payload.Comment, "Line 3: Table `t3` does not exist. Only", "a finding with no database names none")
 }
 
 // TestMergedResultFingerprints pins what keeps a merged result's thread
@@ -387,7 +440,7 @@ func TestMergedResultFingerprints(t *testing.T) {
 		result, err := reviewFuncs[storepb.Engine_POSTGRES](context.Background(), sql, review.Options{Rules: []review.Rule{review.DisallowDropObject}}, make([]review.Target, len(unit.Targets)))
 		require.NoError(t, err)
 		var out []*storepb.IssueCommentPayload
-		for _, c := range reviewResultComments("p", 101, unit, sql, result) {
+		for _, c := range ruleResultComments("p", 101, reviewResults(unit, sql, result)) {
 			out = append(out, c.Payload)
 		}
 		return out

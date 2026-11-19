@@ -684,9 +684,10 @@ func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, 
 }
 
 // privateDatabaseLinkOwner is implemented by a driver whose session account can own
-// private database links (Oracle).
+// private database links (Oracle). It takes no connection: the driver asks with a session
+// of its own, because a driver over omni's contract has no *sql.DB to hand out one from.
 type privateDatabaseLinkOwner interface {
-	OwnsPrivateDatabaseLink(ctx context.Context, conn *sql.Conn) (bool, error)
+	OwnsPrivateDatabaseLink(ctx context.Context) (bool, error)
 }
 
 // refuseLinkedReadsShadowedByPrivateLinks refuses a linked read when the executing account
@@ -695,10 +696,10 @@ type privateDatabaseLinkOwner interface {
 // private link on another account can shadow the synced definition. No link name is
 // compared: Oracle expands a bare name with the database domain and accepts connection
 // qualifiers, and the synced list cannot settle either. The admin data source is the synced
-// account and is exempt. Runs on the executing connection right before execution, so a link
-// created by an earlier statement of the same request is seen. A failed check refuses.
+// account and is exempt. Runs right before execution, so a link created by an earlier
+// statement of the same request is seen. A failed check refuses.
 // BYT-10239 replaces this with resolution from the executing session's own links.
-func refuseLinkedReadsShadowedByPrivateLinks(ctx context.Context, driver db.Driver, conn *sql.Conn, instance *store.InstanceMessage, queryContext db.QueryContext, spans []*parserbase.QuerySpan) error {
+func refuseLinkedReadsShadowedByPrivateLinks(ctx context.Context, driver db.Driver, instance *store.InstanceMessage, queryContext db.QueryContext, spans []*parserbase.QuerySpan) error {
 	if instance.Metadata.GetEngine() != storepb.Engine_ORACLE || queryContext.DataSourceType == storepb.DataSourceType_ADMIN {
 		return nil
 	}
@@ -707,10 +708,10 @@ func refuseLinkedReadsShadowedByPrivateLinks(ctx context.Context, driver db.Driv
 		return nil
 	}
 	owner, ok := driver.(privateDatabaseLinkOwner)
-	if !ok || conn == nil {
-		return privateLinkRefusal(ctx, linked, false, errors.New("the driver exposes no session connection"))
+	if !ok {
+		return privateLinkRefusal(ctx, linked, false, errors.New("the driver cannot report the executing account's private database links"))
 	}
-	owns, err := owner.OwnsPrivateDatabaseLink(ctx, conn)
+	owns, err := owner.OwnsPrivateDatabaseLink(ctx)
 	return privateLinkRefusal(ctx, linked, owns, err)
 }
 
@@ -901,7 +902,7 @@ func queryRetry(
 			return nil, nil, time.Duration(0), err
 		}
 	}
-	if err := refuseLinkedReadsShadowedByPrivateLinks(ctx, driver, conn, instance, queryContext, spans); err != nil {
+	if err := refuseLinkedReadsShadowedByPrivateLinks(ctx, driver, instance, queryContext, spans); err != nil {
 		return nil, nil, time.Duration(0), err
 	}
 

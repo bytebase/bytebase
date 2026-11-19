@@ -305,34 +305,6 @@ func (o *ExecuteOptions) LogDatabaseSyncEnd(e string) {
 	}
 }
 
-func (o *ExecuteOptions) LogSchemaDumpStart() {
-	if o == nil || o.CreateTaskRunLog == nil {
-		return
-	}
-	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
-		Type:            storepb.TaskRunLog_SCHEMA_DUMP_START,
-		SchemaDumpStart: &storepb.TaskRunLog_SchemaDumpStart{},
-	})
-	if err != nil {
-		slog.Warn("failed to log schema dump start", log.BBError(err))
-	}
-}
-
-func (o *ExecuteOptions) LogSchemaDumpEnd(derr string) {
-	if o == nil || o.CreateTaskRunLog == nil {
-		return
-	}
-	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
-		Type: storepb.TaskRunLog_SCHEMA_DUMP_END,
-		SchemaDumpEnd: &storepb.TaskRunLog_SchemaDumpEnd{
-			Error: derr,
-		},
-	})
-	if err != nil {
-		slog.Warn("failed to log schema dump end", log.BBError(err))
-	}
-}
-
 // LogCommandExecute logs the execution of a command.
 func (o *ExecuteOptions) LogCommandExecute(commandRange *storepb.Range, commandText string) {
 	if o == nil || o.CreateTaskRunLog == nil {

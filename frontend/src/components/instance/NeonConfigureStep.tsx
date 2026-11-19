@@ -213,7 +213,6 @@ export function NeonConfigureStep({
         <div className="grid grid-cols-1 gap-x-6 gap-y-4 rounded-sm border border-block-border p-4 sm:grid-cols-2 xl:grid-cols-4">
           <FormField layout="vertical" title={t("common.environment")}>
             <EnvironmentSelect
-              portal
               className="w-full"
               placeholder={t("instance.neon.configure.no-environment")}
               value={shared.environment}

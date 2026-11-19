@@ -16,7 +16,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 // newSyncTarget returns a driver opened on a fresh schema the way Bytebase
@@ -38,9 +37,9 @@ func newSyncTarget(ctx context.Context, t *testing.T) (*Driver, *sql.DB, string)
 	t.Cleanup(func() { _ = opened.Close(context.Background()) })
 	driver, ok := opened.(*Driver)
 	require.True(t, ok)
-	instance, err := driver.SyncInstance(ctx)
-	require.NoError(t, err)
-	driver.connectionCtx.EngineVersion = instance.Version
+	// The driver reads the server's version itself, so nothing here sets it: it
+	// is the engine version Open was given in production, and the sync asks the
+	// server for version_full first.
 	return driver, container.GetDB(), schemaName
 }
 
@@ -169,15 +168,6 @@ func TestSyncListsInvisibleColumns(t *testing.T) {
 		{Name: "A", Position: 1, Nullable: true},
 		{Name: "B", Position: 2, Invisible: true, Nullable: true},
 	}, syncedColumns(synced.Views[0].Columns))
-
-	// Before 12.2 the columns come from ALL_TAB_COLUMNS and the virtual ones
-	// from a query of their own.
-	txn, err := driver.db.BeginTx(ctx, nil)
-	require.NoError(t, err)
-	defer txn.Rollback()
-	columnMap, err := getTableColumns(txn, s, &plsql.Version{First: 12, Second: 1})
-	require.NoError(t, err)
-	require.Equal(t, want, syncedColumns(columnMap[db.TableKey{Schema: s, Table: "T"}]))
 }
 
 func TestSyncAttachesMaterializedViewIndexesAndTriggers(t *testing.T) {

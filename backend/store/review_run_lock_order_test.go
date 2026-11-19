@@ -24,7 +24,7 @@ const reviewRunLockOrderSeed = `
 // completion posts a rule's.
 const reviewRunPriorResultSeed = `
 	INSERT INTO issue_comment (project, issue_id, payload, thread_state)
-	VALUES ('%[1]s', 301, '{"comment":"prior","reviewMetadata":{"runType":"AI","priority":"P0","title":"Prior"}}', 'OPEN');
+	VALUES ('%[1]s', 301, '{"comment":"prior","reviewMetadata":{"priority":"P0","title":"Prior"}}', 'OPEN');
 `
 
 func reviewRunLockOrderCompletion(fixture *storePostgresFixture, projectID string) (bool, error) {

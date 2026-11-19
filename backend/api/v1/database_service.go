@@ -990,8 +990,8 @@ func (s *DatabaseService) getDiffSchemaDatabase(ctx context.Context, name string
 }
 
 // metadataDiffEngine is the engine a metadata diff registers under. MariaDB and
-// OceanBase parse as MySQL but keep Bytebase's MySQL generator, registered under
-// their own engines; MySQL's diff runs on omni's catalog.
+// OceanBase parse as MySQL but register their diff under their own engines, where
+// each engine's own omni catalog renders it; MySQL's runs on omni's MySQL catalog.
 func metadataDiffEngine(rawEngine, parserEngine storepb.Engine) storepb.Engine {
 	if rawEngine == storepb.Engine_MARIADB || rawEngine == storepb.Engine_OCEANBASE {
 		return rawEngine

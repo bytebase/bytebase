@@ -42,57 +42,9 @@ func TestGenerateMigration(t *testing.T) {
 
 	for i, test := range tests {
 		t.Run(test.Description, func(t *testing.T) {
-			// Parse old schema
-			var oldMetadata *metadatapb.DatabaseSchemaMetadata
-			if test.OldSchema != "" {
-				oldMetadata, err = GetDatabaseMetadata(test.OldSchema)
-				require.NoErrorf(t, err, "Failed to parse old schema for test case [%02d]: %s", i+1, test.Description)
-			}
+			oldDBSchema, newDBSchema := parseMigrationSides(t, i, test.Description, test.OldSchema, test.NewSchema)
 
-			// Parse new schema
-			newMetadata, err := GetDatabaseMetadata(test.NewSchema)
-			require.NoErrorf(t, err, "Failed to parse new schema for test case [%02d]: %s", i+1, test.Description)
-
-			// Convert to model.DatabaseSchema
-			var oldDBSchema *model.DatabaseMetadata
-			if oldMetadata != nil {
-				oldDBSchema = model.NewDatabaseMetadata(oldMetadata, nil, nil, storepb.Engine_MSSQL, false)
-			}
-			newDBSchema := model.NewDatabaseMetadata(newMetadata, nil, nil, storepb.Engine_MSSQL, false)
-
-			// Get diff
-			var diff *schema.MetadataDiff
-
-			// Handle case where old schema is empty (creating from scratch)
-			if test.OldSchema == "" && oldDBSchema == nil {
-				// Create empty database schema for comparison
-				emptyMetadata := &metadatapb.DatabaseSchemaMetadata{
-					Name:    "",
-					Schemas: []*metadatapb.SchemaMetadata{},
-				}
-				oldDBSchema = model.NewDatabaseMetadata(emptyMetadata, nil, nil, storepb.Engine_MSSQL, false)
-			}
-
-			// Handle case where new schema is empty (dropping everything)
-			if test.NewSchema == "" {
-				// Create empty metadata with dbo schema to match the structure
-				emptyMetadata := &metadatapb.DatabaseSchemaMetadata{
-					Name: "",
-					Schemas: []*metadatapb.SchemaMetadata{
-						{
-							Name:   "dbo",
-							Tables: []*metadatapb.TableMetadata{},
-						},
-					},
-				}
-				newDBSchema = model.NewDatabaseMetadata(emptyMetadata, nil, nil, storepb.Engine_MSSQL, false)
-			}
-
-			diff, err = schema.GetDatabaseSchemaDiff(storepb.Engine_MSSQL, oldDBSchema, newDBSchema)
-			require.NoErrorf(t, err, "Failed to get schema diff for test case [%02d]: %s", i+1, test.Description)
-
-			// Generate migration
-			migration, err := generateMigration(diff)
+			migration, err := schema.DiffMigration(storepb.Engine_MSSQL, oldDBSchema, newDBSchema)
 			require.NoErrorf(t, err, "Failed to generate migration for test case [%02d]: %s", i+1, test.Description)
 
 			if record {
@@ -108,54 +60,31 @@ func TestGenerateMigration(t *testing.T) {
 	}
 }
 
-func TestGetViewDependencies(t *testing.T) {
-	cases := []struct {
-		name     string
-		viewDef  string
-		schema   string
-		expected []string
-	}{
-		{
-			name:     "simple",
-			viewDef:  "CREATE VIEW [dbo].[v] AS SELECT id FROM [dbo].[a]",
-			schema:   "dbo",
-			expected: []string{"dbo.a"},
-		},
-		{
-			name: "union two tables",
-			viewDef: "CREATE VIEW [dbo].[v] AS " +
-				"SELECT id FROM [dbo].[a] UNION SELECT id FROM [dbo].[b]",
-			schema:   "dbo",
-			expected: []string{"dbo.a", "dbo.b"},
-		},
-		{
-			name: "union all three tables",
-			viewDef: "CREATE VIEW [dbo].[v] AS " +
-				"SELECT id FROM [dbo].[a] UNION ALL " +
-				"SELECT id FROM [dbo].[b] UNION ALL " +
-				"SELECT id FROM [dbo].[c]",
-			schema:   "dbo",
-			expected: []string{"dbo.a", "dbo.b", "dbo.c"},
-		},
-		{
-			// GetQuerySpan with empty mock metadata cannot distinguish CTE
-			// references from real table references, so cte names appear in
-			// the dependency set. This is pre-existing behavior carried over
-			// from the ANTLR implementation; the test pins it down.
-			name: "cte",
-			viewDef: "CREATE VIEW [dbo].[v] AS " +
-				"WITH cte AS (SELECT id FROM [dbo].[a]) " +
-				"SELECT id FROM cte",
-			schema:   "dbo",
-			expected: []string{"dbo.a"},
-		},
+// parseMigrationSides turns the fixture's schema texts into the two sides the
+// migration diff takes, keeping the empty-side shape the old differ used.
+func parseMigrationSides(t *testing.T, i int, description, oldSchema, newSchema string) (*model.DatabaseMetadata, *model.DatabaseMetadata) {
+	t.Helper()
+	var oldMetadata *metadatapb.DatabaseSchemaMetadata
+	var err error
+	if oldSchema != "" {
+		oldMetadata, err = GetDatabaseMetadata(oldSchema)
+		require.NoErrorf(t, err, "Failed to parse old schema for test case [%02d]: %s", i+1, description)
 	}
+	newMetadata, err := GetDatabaseMetadata(newSchema)
+	require.NoErrorf(t, err, "Failed to parse new schema for test case [%02d]: %s", i+1, description)
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := getViewDependencies(tc.viewDef, tc.schema)
-			require.NoError(t, err)
-			require.ElementsMatch(t, tc.expected, got)
-		})
+	var oldDBSchema *model.DatabaseMetadata
+	if oldMetadata != nil {
+		oldDBSchema = model.NewDatabaseMetadata(oldMetadata, nil, nil, storepb.Engine_MSSQL, false)
 	}
+	newDBSchema := model.NewDatabaseMetadata(newMetadata, nil, nil, storepb.Engine_MSSQL, false)
+	if oldSchema == "" && oldDBSchema == nil {
+		oldDBSchema = model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{}, nil, nil, storepb.Engine_MSSQL, false)
+	}
+	if newSchema == "" {
+		newDBSchema = model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			Schemas: []*metadatapb.SchemaMetadata{{Name: "dbo", Tables: []*metadatapb.TableMetadata{}}},
+		}, nil, nil, storepb.Engine_MSSQL, false)
+	}
+	return oldDBSchema, newDBSchema
 }

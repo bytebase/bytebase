@@ -3,8 +3,11 @@ package aireview
 import (
 	_ "embed"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
@@ -42,6 +45,117 @@ var standardRuleSentences = []struct {
 	{storepb.ReviewRuleType_DISALLOW_DROP_CONSTRAINT, "Dropping a primary key, foreign key, unique, or check constraint stops the database from enforcing it."},
 	{storepb.ReviewRuleType_DISALLOW_RENAME, "Renaming a table, view, or column breaks the application queries that use the old name."},
 	{storepb.ReviewRuleType_REQUIRE_PRIMARY_KEY, "A table created without a primary key, or whose primary key is dropped and not added back, has nothing that identifies its rows."},
+}
+
+// CitesStandardRule reports whether rule, the rule a finding cites, is the
+// standard rule ruleType: the prompt asks for the rule's name and then its
+// sentence, and either one names it.
+func CitesStandardRule(rule string, ruleType storepb.ReviewRuleType) bool {
+	if ruleType == storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED {
+		return false
+	}
+	if strings.Contains(rule, ruleType.String()) {
+		return true
+	}
+	for _, s := range standardRuleSentences {
+		if s.rule == ruleType {
+			return strings.Contains(rule, s.sentence)
+		}
+	}
+	return false
+}
+
+// CitesPolicy reports whether rule, the rule a finding cites, quotes one of
+// policies, the AI review policy texts of the review.
+func CitesPolicy(rule string, policies ...string) bool {
+	return quotes(rule, strings.Join(policies, "\n"))
+}
+
+// CitesPrompt reports whether rule, the rule a finding cites, is the review's
+// own: it quotes the prompt or a standard rule, or it opens with the label of
+// a prompt bullet, such as "Breakage:", or with a standard rule's name, as a
+// model that rewords the sentence still does. The prompt gives example policy
+// sentences, so a citation can quote both it and the policy: ask CitesPolicy
+// first.
+func CitesPrompt(rule string) bool {
+	opening := strings.ToLower(strings.TrimLeft(rule, " `\"'*"))
+	for _, label := range promptLabels.FindAllStringSubmatch(basePrompt, -1) {
+		if strings.HasPrefix(opening, strings.ToLower(label[1])+":") {
+			return true
+		}
+	}
+	var b strings.Builder
+	_, _ = b.WriteString(basePrompt + "\n" + standardRulesPrompt)
+	for _, s := range standardRuleSentences {
+		_, _ = fmt.Fprintf(&b, "\n%s: %s", s.rule, s.sentence)
+	}
+	for _, name := range storepb.ReviewRuleType_name {
+		if strings.HasPrefix(opening, strings.ToLower(name)) {
+			return true
+		}
+		_, _ = b.WriteString("\n" + name)
+	}
+	return quotes(rule, b.String())
+}
+
+// promptLabels finds the label of each bullet of the prompt that names
+// something to look for, such as "Breakage" and "Data loss".
+var promptLabels = regexp.MustCompile(`(?m)^- ([A-Z][a-z]+(?: [a-z]+)?): `)
+
+// citationEnd ends a sentence of a citation.
+var citationEnd = regexp.MustCompile(`[.!?;]+(\s+|$)`)
+
+// quotes reports whether every sentence of citation is in text as whole
+// words, whatever its case, spacing, and quote marks. A sentence can open with
+// a label of text, such as "Breakage:", that text does not put right before
+// it.
+func quotes(citation, text string) bool {
+	normalize := func(s string) string {
+		s = strings.Map(func(r rune) rune {
+			if strings.ContainsRune("`\"'“”‘’*", r) {
+				return -1
+			}
+			return r
+		}, strings.ToLower(s))
+		return strings.Join(strings.Fields(s), " ")
+	}
+	text = normalize(text)
+	found := false
+	for _, sentence := range citationEnd.Split(normalize(citation), -1) {
+		sentence = strings.Trim(sentence, " .,:;")
+		if sentence == "" {
+			continue
+		}
+		if !containsWords(text, sentence) {
+			label, rest, ok := strings.Cut(sentence, ": ")
+			if !ok || !containsWords(text, label+":") || !containsWords(text, rest) {
+				return false
+			}
+		}
+		found = true
+	}
+	return found
+}
+
+// containsWords reports whether phrase is in text and neither starts nor ends
+// inside a word there.
+func containsWords(text, phrase string) bool {
+	inWord := func(r rune) bool { return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r) }
+	for from := 0; ; {
+		i := strings.Index(text[from:], phrase)
+		if i < 0 {
+			return false
+		}
+		start, end := from+i, from+i+len(phrase)
+		before, _ := utf8.DecodeLastRuneInString(text[:start])
+		after, _ := utf8.DecodeRuneInString(text[end:])
+		first, _ := utf8.DecodeRuneInString(phrase)
+		last, _ := utf8.DecodeLastRuneInString(phrase)
+		if (start <= 0 || !inWord(before) || !inWord(first)) && (end >= len(text) || !inWord(after) || !inWord(last)) {
+			return true
+		}
+		from = start + 1
+	}
 }
 
 // writeStandardRules states the standard rules section and then every rule

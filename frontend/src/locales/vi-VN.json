@@ -1617,6 +1617,25 @@
         "title": "Kiểm tra hỗ trợ engine cơ sở dữ liệu"
       }
     },
+    "connection-string": {
+      "filled": "Đã điền từ URL",
+      "filled-missing-password": "Đã điền từ URL. Hãy nhập mật khẩu cơ sở dữ liệu.",
+      "help": {
+        "mssql": "Dán URL hoặc chuỗi kết nối SQL Server để tự động điền máy chủ, cổng, thông tin xác thực, cơ sở dữ liệu và TLS.",
+        "mysql": "Dán URL kết nối MySQL để tự động điền máy chủ, cổng, thông tin xác thực và TLS.",
+        "oracle": "Dán URL kết nối hoặc chuỗi Easy Connect của Oracle để tự động điền máy chủ, cổng, thông tin xác thực, tên dịch vụ hoặc SID và TLS.",
+        "postgres": "Dán URL hoặc chuỗi kết nối PostgreSQL để tự động điền máy chủ, cổng, thông tin xác thực, cơ sở dữ liệu và TLS."
+      },
+      "invalid": {
+        "engine-mismatch": "Đây có vẻ là chuỗi kết nối {{detected}}. Hãy chuyển Engine sang {{detected}} ở trên hoặc nhập chuỗi {{selected}}.",
+        "mssql": "Hãy nhập URL sqlserver:// hoặc chuỗi kết nối Server=…; hợp lệ.",
+        "mysql": "Hãy nhập URL kết nối mysql:// hợp lệ.",
+        "oracle": "Hãy nhập URL oracle:// hoặc chuỗi Easy Connect hợp lệ có tên dịch vụ hoặc SID.",
+        "postgres": "Hãy nhập URL postgresql:// hoặc chuỗi kết nối key=value hợp lệ."
+      },
+      "label": "URL kết nối",
+      "trigger": "Nhập từ URL"
+    },
     "create-failed": "Tạo instance thất bại",
     "create-gcp-credentials": "Để tạo thông tin xác thực, xem",
     "database-region": "Khu vực cơ sở dữ liệu",
@@ -4482,7 +4501,7 @@
     "access-type-export": "Xuất kết quả truy vấn",
     "access-type-unmask": "Xem dữ liệu nhạy cảm chưa che",
     "activate-access": "Kích hoạt",
-    "activate-confirm": "Bạn có chắc chắn muốn kích hoạt cấp quyền truy cập này không?",
+    "activate-confirm": "Khi được kích hoạt, quyền truy cập này sẽ cho phép chạy truy vấn đã được phê duyệt.",
     "add-a-new-instance": "Thêm phiên bản mới",
     "admin-mode": {
       "exit": "Thoát chế độ quản trị",
@@ -4791,7 +4810,7 @@
     },
     "result-view-mode": "Chế độ xem kết quả",
     "revoke-access": "Thu hồi",
-    "revoke-confirm": "Bạn có chắc chắn muốn thu hồi cấp quyền truy cập này không?",
+    "revoke-confirm": "Quyền truy cập này sẽ không còn cho phép chạy truy vấn đã được phê duyệt.",
     "rows": {
       "self": "dòng"
     },

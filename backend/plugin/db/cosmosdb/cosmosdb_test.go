@@ -3,8 +3,8 @@ package cosmosdb
 
 // Two suites cover the cross-partition query path: the gateway cannot serve an
 // aggregate, DISTINCT, ORDER BY, TOP, OFFSET/LIMIT or GROUP BY that spans
-// partitions, so QueryEveryPartition pivots to the pure-Go query engine in
-// queryengine/gonative, which merges the per-partition streams itself.
+// partitions, so the omni driver pivots to the pure-Go query engine it carries,
+// which merges the per-partition streams itself.
 //
 // TestCrossPartition* run on the emulator SharedCosmosContainer starts, against
 // a fixture whose contents are known, and so assert exact answers. Both suites
@@ -29,17 +29,26 @@ package cosmosdb
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
+	omnicosmosdb "github.com/bytebase/omni/cosmosdb/driver"
+	omnidriver "github.com/bytebase/omni/driver"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -73,26 +82,26 @@ func envOrDefault(key, def string) string {
 	return def
 }
 
-// newTestDriver constructs a Driver directly with a master-key-authenticated
-// client, bypassing Open's Azure-AD path (which requires OAuth credentials).
-// Exercises QueryConn — the exact entry point the Bytebase SQL viewer uses.
-func newTestDriver(t *testing.T, endpoint, key, dbName string) *Driver {
+// newLiveDriver opens the omni driver against a live account with its master
+// key and wraps it in Bytebase's adapter, so the live suite exercises QueryConn
+// and the result conversion. The key reaches the contract directly because
+// Bytebase's data source config authenticates an account with an app
+// registration, not an account key, and the live fixtures hold only a key.
+func newLiveDriver(t *testing.T, endpoint, key, dbName string) *Driver {
 	t.Helper()
-	cred, err := azcosmos.NewKeyCredential(key)
-	require.NoError(t, err, "NewKeyCredential")
-	client, err := azcosmos.NewClientWithKey(endpoint, cred, nil)
-	require.NoError(t, err, "NewClientWithKey")
-	return &Driver{
-		client:       client,
-		databaseName: dbName,
-		connCfg: db.ConnectionConfig{
-			ConnectionContext: db.ConnectionContext{DatabaseName: dbName},
-		},
-	}
+	inner, err := omnicosmosdb.Open(context.Background(), omnidriver.Config{
+		Host:     endpoint,
+		Database: dbName,
+		Password: key,
+		Params:   map[string]string{omnicosmosdb.ParamAuth: omnicosmosdb.AuthMasterKey},
+	})
+	require.NoError(t, err, "Open")
+	return &Driver{inner: inner}
 }
 
-// runQuery runs a single query through the driver and returns its emitted
-// rows as a slice of JSON documents (one per Row in the QueryResult).
+// runQuery runs a single query against container through Bytebase's adapter
+// and returns its emitted rows as a slice of JSON documents (one per Row in the
+// QueryResult).
 func runQuery(t *testing.T, driver *Driver, container, sql string) [][]byte {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -115,7 +124,7 @@ func runQuery(t *testing.T, driver *Driver, container, sql string) [][]byte {
 
 func TestIntegration_BYT9239_Stage1Aggregates(t *testing.T) {
 	endpoint, key, dbName, container := skipIfNoAzure(t)
-	driver := newTestDriver(t, endpoint, key, dbName)
+	driver := newLiveDriver(t, endpoint, key, dbName)
 
 	cases := []struct {
 		id    string
@@ -165,7 +174,7 @@ func TestIntegration_BYT9239_Stage1Aggregates(t *testing.T) {
 
 func TestIntegration_BYT9239_Stage2Distinct(t *testing.T) {
 	endpoint, key, dbName, container := skipIfNoAzure(t)
-	driver := newTestDriver(t, endpoint, key, dbName)
+	driver := newLiveDriver(t, endpoint, key, dbName)
 
 	t.Run("10.1_ObjectDistinct", func(t *testing.T) {
 		rows := runQuery(t, driver, container, `SELECT DISTINCT c.country FROM c`)
@@ -198,7 +207,7 @@ func TestIntegration_BYT9239_Stage2Distinct(t *testing.T) {
 
 func TestIntegration_BYT9239_Stage3OrderBy(t *testing.T) {
 	endpoint, key, dbName, container := skipIfNoAzure(t)
-	driver := newTestDriver(t, endpoint, key, dbName)
+	driver := newLiveDriver(t, endpoint, key, dbName)
 
 	t.Run("4.1_Ascending", func(t *testing.T) {
 		rows := runQuery(t, driver, container, `SELECT c.name, c.population FROM c ORDER BY c.population ASC`)
@@ -217,7 +226,7 @@ func TestIntegration_BYT9239_Stage3OrderBy(t *testing.T) {
 
 func TestIntegration_BYT9239_Stage4Top(t *testing.T) {
 	endpoint, key, dbName, container := skipIfNoAzure(t)
-	driver := newTestDriver(t, endpoint, key, dbName)
+	driver := newLiveDriver(t, endpoint, key, dbName)
 
 	rows := runQuery(t, driver, container, `SELECT TOP 10 * FROM c`)
 	assert.Len(t, rows, 10, "TOP 10 must return exactly 10 rows")
@@ -233,7 +242,7 @@ func TestIntegration_BYT9239_Stage4Top(t *testing.T) {
 
 func TestIntegration_BYT9239_Stage5OffsetLimit(t *testing.T) {
 	endpoint, key, dbName, container := skipIfNoAzure(t)
-	driver := newTestDriver(t, endpoint, key, dbName)
+	driver := newLiveDriver(t, endpoint, key, dbName)
 
 	t.Run("12.1_OffsetZeroLimitTen", func(t *testing.T) {
 		rows := runQuery(t, driver, container, `SELECT * FROM c ORDER BY c.name OFFSET 0 LIMIT 10`)
@@ -262,7 +271,7 @@ func TestIntegration_BYT9239_Stage5OffsetLimit(t *testing.T) {
 
 func TestIntegration_BYT9239_Stage6GroupBy(t *testing.T) {
 	endpoint, key, dbName, container := skipIfNoAzure(t)
-	driver := newTestDriver(t, endpoint, key, dbName)
+	driver := newLiveDriver(t, endpoint, key, dbName)
 
 	totalRows := runQuery(t, driver, container, `SELECT VALUE COUNT(1) FROM c`)
 	require.Len(t, totalRows, 1)
@@ -457,10 +466,11 @@ type crossPartitionCity struct {
 }
 
 var (
-	crossPartitionOnce   sync.Once
-	crossPartitionDriver *Driver
-	crossPartitionRanges int
-	crossPartitionErr    error
+	crossPartitionOnce     sync.Once
+	crossPartitionDriver   *Driver
+	crossPartitionRanges   int
+	crossPartitionErr      error
+	crossPartitionEndpoint string
 )
 
 // crossPartitionEnv opts into the cross-partition suite. Gating it here rather
@@ -479,6 +489,7 @@ func emulatorFixture(t *testing.T) *Driver {
 	}
 	container := testcontainer.SharedCosmosContainer(t)
 	endpoint := fmt.Sprintf("https://%s:%s", container.GetHost(), container.GetPort())
+	crossPartitionEndpoint = endpoint
 	crossPartitionOnce.Do(func() {
 		crossPartitionDriver, crossPartitionRanges, crossPartitionErr = seedCrossPartition(endpoint)
 	})
@@ -507,10 +518,25 @@ func seedCrossPartition(endpoint string) (*Driver, int, error) {
 		return nil, 0, errors.Wrap(err, "ping the emulator")
 	}
 
-	if _, err := driver.client.CreateDatabase(ctx, azcosmos.DatabaseProperties{ID: crossPartitionDatabase}, nil); err != nil && !alreadyExists(err) {
+	credential, err := azcosmos.NewKeyCredential(cosmosDBEmulatorKey)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "build the emulator key credential")
+	}
+	client, err := azcosmos.NewClientWithKey(endpoint, credential, &azcosmos.ClientOptions{
+		ClientOptions: azcore.ClientOptions{Transport: &http.Client{Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				MinVersion:         tls.VersionTLS12,
+				InsecureSkipVerify: true, //nolint:gosec // the emulator signs its certificate itself
+			},
+		}}},
+	})
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "build the emulator client")
+	}
+	if _, err := client.CreateDatabase(ctx, azcosmos.DatabaseProperties{ID: crossPartitionDatabase}, nil); err != nil && !alreadyExists(err) {
 		return nil, 0, errors.Wrap(err, "create the fixture database")
 	}
-	database, err := driver.client.NewDatabase(crossPartitionDatabase)
+	database, err := client.NewDatabase(crossPartitionDatabase)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "open the fixture database")
 	}
@@ -554,12 +580,8 @@ func seedCrossPartition(endpoint string) (*Driver, int, error) {
 // container spans. It reads the REST endpoint because the SDK keeps the range
 // list to itself, inside the query path under test.
 func countContainerRanges(endpoint, container string) (int, error) {
-	client, err := newEmulatorRESTClient(endpoint)
-	if err != nil {
-		return 0, errors.Wrap(err, "build the emulator REST client")
-	}
 	link := fmt.Sprintf("dbs/%s/colls/%s", crossPartitionDatabase, container)
-	body, err := client.get(link+"/pkranges", "pkranges", link)
+	body, err := emulatorRESTGet(endpoint, link+"/pkranges", "pkranges", link)
 	if err != nil {
 		return 0, errors.Wrap(err, "read the container's partition key ranges")
 	}
@@ -572,6 +594,46 @@ func countContainerRanges(endpoint, container string) (int, error) {
 		return 0, errors.Wrap(err, "parse the partition key range list")
 	}
 	return len(resp.PartitionKeyRanges), nil
+}
+
+// emulatorRESTGet reads the emulator's REST API with the emulator's account
+// key. The partition key range list is the one fact the SDK keeps private,
+// inside the query path the fixture is checking.
+func emulatorRESTGet(endpoint, path, resourceType, resourceLink string) ([]byte, error) {
+	key, err := base64.StdEncoding.DecodeString(cosmosDBEmulatorKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "decode the emulator key")
+	}
+	date := time.Now().UTC().Format(http.TimeFormat)
+	stringToSign := "get\n" + strings.ToLower(resourceType) + "\n" + resourceLink + "\n" + strings.ToLower(date) + "\n" + "\n"
+	signature := hmac.New(sha256.New, key)
+	signature.Write([]byte(stringToSign))
+	authorization := url.QueryEscape("type=master&ver=1.0&sig=" + base64.StdEncoding.EncodeToString(signature.Sum(nil)))
+
+	request, err := http.NewRequest(http.MethodGet, strings.TrimRight(endpoint, "/")+"/"+path, nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Authorization", authorization)
+	request.Header.Set("x-ms-date", date)
+	request.Header.Set("x-ms-version", "2018-12-31")
+	client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{
+		MinVersion:         tls.VersionTLS12,
+		InsecureSkipVerify: true, //nolint:gosec // the emulator signs its certificate itself
+	}}}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+	if response.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("HTTP %d: %s", response.StatusCode, string(body))
+	}
+	return body, nil
 }
 
 // seedItem writes one fixture item, retrying what a loaded emulator does to a
@@ -680,32 +742,47 @@ func pagedShapeOf(seq int) string {
 }
 
 var (
-	pagedOnce            sync.Once
-	pagedContainerClient *azcosmos.ContainerClient
-	pagedRanges          int
-	pagedErr             error
+	pagedOnce   sync.Once
+	pagedDriver *Driver
+	pagedRanges int
+	pagedErr    error
 )
 
 // pagedFixture returns the seeded multi-page container, building it on first
 // use. It refuses a fixture confined to one physical partition for the same
 // reason emulatorFixture does: the gateway serves those queries itself.
-func pagedFixture(t *testing.T) *azcosmos.ContainerClient {
+func pagedFixture(t *testing.T) *Driver {
 	t.Helper()
 	driver := emulatorFixture(t)
 	pagedOnce.Do(func() {
-		pagedContainerClient, pagedRanges, pagedErr = seedPaged(driver)
+		pagedDriver, pagedRanges, pagedErr = seedPaged(driver, crossPartitionEndpoint)
 	})
 	require.NoError(t, pagedErr)
 	require.Greater(t, pagedRanges, 1,
 		"fixture spans %d physical partition(s); cross-partition queries need more than one", pagedRanges)
-	return pagedContainerClient
+	return pagedDriver
 }
 
-func seedPaged(driver *Driver) (*azcosmos.ContainerClient, int, error) {
+func seedPaged(driver *Driver, endpoint string) (*Driver, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	database, err := driver.client.NewDatabase(crossPartitionDatabase)
+	credential, err := azcosmos.NewKeyCredential(cosmosDBEmulatorKey)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "build the emulator key credential")
+	}
+	client, err := azcosmos.NewClientWithKey(endpoint, credential, &azcosmos.ClientOptions{
+		ClientOptions: azcore.ClientOptions{Transport: &http.Client{Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				MinVersion:         tls.VersionTLS12,
+				InsecureSkipVerify: true, //nolint:gosec // the emulator signs its certificate itself
+			},
+		}}},
+	})
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "build the emulator client")
+	}
+	database, err := client.NewDatabase(crossPartitionDatabase)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "open the fixture database")
 	}
@@ -778,11 +855,11 @@ func seedPaged(driver *Driver) (*azcosmos.ContainerClient, int, error) {
 	default:
 	}
 
-	ranges, err := countContainerRanges(driver.connCfg.DataSource.GetHost(), pagedContainer)
+	ranges, err := countContainerRanges(endpoint, pagedContainer)
 	if err != nil {
 		return nil, 0, err
 	}
-	return container, ranges, nil
+	return driver, ranges, nil
 }
 
 type pagedRow struct {
@@ -797,18 +874,15 @@ type pagedRow struct {
 
 // pagedSeqs runs a query against the multi-page fixture and returns the seq of
 // every row it emitted, in the order the engine emitted them.
-func pagedSeqs(t *testing.T, container *azcosmos.ContainerClient, sql string) []int {
+func pagedSeqs(t *testing.T, driver *Driver, sql string) []int {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	items, err := QueryEveryPartition(ctx, container, sql, nil, 0)
-	require.NoError(t, err, "QueryEveryPartition: %s", sql)
+	items := pagedQuery(t, driver, sql)
 	seqs := make([]int, 0, len(items))
 	for _, item := range items {
 		var row struct {
 			Seq *int `json:"seq"`
 		}
-		require.NoError(t, json.Unmarshal(item, &row), "row: %s", item)
+		require.NoError(t, json.Unmarshal([]byte(item), &row), "row: %s", item)
 		require.NotNil(t, row.Seq, "row missing seq: %s", item)
 		seqs = append(seqs, *row.Seq)
 	}
@@ -862,18 +936,15 @@ func TestCrossPartitionMultiPage(t *testing.T) {
 	})
 
 	t.Run("group_by_many_groups", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-		items, err := QueryEveryPartition(ctx, container,
-			`SELECT c.seq, COUNT(1) AS n FROM c GROUP BY c.seq`, nil, 0)
-		require.NoError(t, err)
+		items := pagedQuery(t, container,
+			`SELECT c.seq, COUNT(1) AS n FROM c GROUP BY c.seq`)
 		seqs := make([]int, 0, len(items))
 		for _, item := range items {
 			var group struct {
 				Seq int `json:"seq"`
 				N   int `json:"n"`
 			}
-			require.NoError(t, json.Unmarshal(item, &group))
+			require.NoError(t, json.Unmarshal([]byte(item), &group))
 			assert.Equal(t, 1, group.N, "seq %d", group.Seq)
 			seqs = append(seqs, group.Seq)
 		}
@@ -890,17 +961,14 @@ func TestCrossPartitionMultiPage(t *testing.T) {
 	// rows that range holds, which is why aggregates were the one class this
 	// fixture's size never broke. Kept as the control case.
 	t.Run("aggregate_over_the_whole_fixture", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-		items, err := QueryEveryPartition(ctx, container,
-			`SELECT COUNT(1) AS n, SUM(c.seq) AS total FROM c`, nil, 0)
-		require.NoError(t, err)
+		items := pagedQuery(t, container,
+			`SELECT COUNT(1) AS n, SUM(c.seq) AS total FROM c`)
 		require.Len(t, items, 1)
 		want := 0
 		for _, seq := range ascendingSeqs(0, rows) {
 			want += seq
 		}
-		assert.JSONEq(t, fmt.Sprintf(`{"n":%d,"total":%d}`, rows, want), string(items[0]))
+		assert.JSONEq(t, fmt.Sprintf(`{"n":%d,"total":%d}`, rows, want), items[0])
 	})
 }
 
@@ -1054,15 +1122,18 @@ func TestCrossPartitionQueryLimit(t *testing.T) {
 
 // pagedQuery runs a query against the multi-page fixture and returns its rows
 // as raw JSON, in the order the engine emitted them.
-func pagedQuery(t *testing.T, container *azcosmos.ContainerClient, sql string) []string {
+func pagedQuery(t *testing.T, driver *Driver, sql string) []string {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	items, err := QueryEveryPartition(ctx, container, sql, nil, 0)
-	require.NoError(t, err, "QueryEveryPartition: %s", sql)
-	rows := make([]string, 0, len(items))
-	for _, item := range items {
-		rows = append(rows, string(item))
+	results, err := driver.QueryConn(ctx, nil, sql, db.QueryContext{Container: pagedContainer})
+	require.NoError(t, err, "QueryConn: %s", sql)
+	require.Len(t, results, 1, "driver returns exactly one QueryResult per query")
+	rows := make([]string, 0, len(results[0].Rows))
+	for _, row := range results[0].Rows {
+		values := row.GetValues()
+		require.Len(t, values, 1, "each row has exactly one column of JSON text")
+		rows = append(rows, values[0].GetStringValue())
 	}
 	return rows
 }

@@ -207,7 +207,7 @@ func TestPackMergeSections(t *testing.T) {
 		return &mergeSection{block: strings.Repeat("b", size/2), findings: strings.Repeat("f", size-size/2)}
 	}
 	a, b, c, huge, d := section(40), section(50), section(10), section(101), section(60)
-	batches, alone := packMergeSections([]*mergeSection{a, b, c, huge, d}, 100)
+	batches, alone := packMergeSections([]*mergeSection{a, b, c, huge, d}, nil, 100)
 	require.Equal(t, [][]*mergeSection{{a, b, c}, {d}}, batches)
 	require.Equal(t, []*mergeSection{huge}, alone)
 }
@@ -217,8 +217,7 @@ func TestParseMergeReply(t *testing.T) {
 
 	// Candidates 0 and 1 are on block 0, candidate 2 on block 1.
 	members := []int{0, 1, 2}
-	blockOf := []int{0, 0, 1}
-	earlier := []bool{false, false, false}
+	call := &mergeCall{blockOf: []int{0, 0, 1}, earlier: make([]bool, 3), standard: make([]bool, 3)}
 	for _, tc := range []struct {
 		name     string
 		reply    string
@@ -239,7 +238,8 @@ func TestParseMergeReply(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			groups, problems := parseMergeReply(tc.reply, members, blockOf, earlier)
+			groups, same, problems := parseMergeReply(tc.reply, members, nil, call)
+			require.Empty(t, same)
 			if tc.problems != nil {
 				require.Len(t, problems, len(tc.problems))
 				for i, problem := range tc.problems {
@@ -252,17 +252,144 @@ func TestParseMergeReply(t *testing.T) {
 		})
 	}
 
-	_, problems := parseMergeReply(`{"groups": [["1"]]}`, members, blockOf, earlier)
+	_, _, problems := parseMergeReply(`{"groups": [["1"]]}`, members, nil, call)
 	require.Len(t, problems, 1)
 	require.Contains(t, problems[0], "the reply is not a valid JSON object")
 
 	// The subtests run after this, so these are new variables. Candidates 0 and
 	// 1 are earlier findings.
-	twoEarlier := []bool{true, true, false}
-	oneBlock := []int{0, 0, 0}
-	groups, problems := parseMergeReply(`{"groups": [[1, 3], [2]]}`, members, oneBlock, twoEarlier)
+	twoEarlier := &mergeCall{blockOf: []int{0, 0, 0}, earlier: []bool{true, true, false}, standard: make([]bool, 3)}
+	groups, _, problems := parseMergeReply(`{"groups": [[1, 3], [2]]}`, members, nil, twoEarlier)
 	require.Empty(t, problems)
 	require.Equal(t, [][]int{{0, 2}, {1}}, groups)
-	_, problems = parseMergeReply(`{"groups": [[1, 2, 3]]}`, members, oneBlock, twoEarlier)
+	_, _, problems = parseMergeReply(`{"groups": [[1, 2, 3]]}`, members, nil, twoEarlier)
 	require.Equal(t, []string{"groups[0] holds 2 earlier findings"}, problems)
+}
+
+func TestParseMergeReplyWithStandardFindings(t *testing.T) {
+	t.Parallel()
+
+	// Candidates 0 and 1 are findings of a review, 2 and 3 standard findings,
+	// all on one block. Thread 0 is shown in the call, thread 1 is not.
+	members := []int{0, 1, 2, 3}
+	call := &mergeCall{blockOf: make([]int, 4), earlier: make([]bool, 4), standard: []bool{false, false, true, true}}
+	for _, tc := range []struct {
+		name     string
+		reply    string
+		want     [][]int
+		same     []int
+		problems []string
+	}{
+		{name: "one problem on the operation", reply: `{"groups": [[3, 1], [2]]}`, want: [][]int{{0, 2}, {1}}},
+		{name: "two problems on one operation", reply: `{"groups": [[3, 1], [3, 2]]}`, want: [][]int{{0, 2}, {1, 2}}},
+		{name: "in no list", reply: `{"groups": [[1], [2]]}`, want: [][]int{{0}, {1}}},
+		{name: "alone, which says nothing", reply: `{"groups": [[1], [2], [3], [4]]}`, want: [][]int{{0}, {1}}},
+		{name: "named twice in one list", reply: `{"groups": [[3, 1, 3], [2]]}`, want: [][]int{{0, 2}, {1}}},
+		{name: "two standard findings", reply: `{"groups": [[3, 4, 1], [2]]}`, problems: []string{"groups[0] holds 2 standard findings"}},
+		{name: "a finding of a review still goes in one list", reply: `{"groups": [[3, 1], [4, 1], [2]]}`, problems: []string{"finding 1 is in more than one list"}},
+		{name: "a thread keeps its comment", reply: `{"groups": [[3, 1], [2]], "same": [1, 1]}`, want: [][]int{{0, 2}, {1}}, same: []int{0}},
+		{name: "no thread named", reply: `{"groups": [[3, 1], [2]], "same": []}`, want: [][]int{{0, 2}, {1}}},
+		{name: "a thread the call does not show", reply: `{"groups": [[3, 1], [2]], "same": [2]}`, problems: []string{"same holds 2, which is not a thread id"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			groups, same, problems := parseMergeReply(tc.reply, members, []int{0}, call)
+			if tc.problems != nil {
+				require.Equal(t, tc.problems, problems)
+				return
+			}
+			require.Empty(t, problems)
+			require.Equal(t, tc.want, groups)
+			require.Equal(t, tc.same, same)
+		})
+	}
+}
+
+// standardRequest holds a review's finding that repeats a standard finding on
+// the drop, another problem of the drop on a second database, and an index
+// finding on a block with no standard finding.
+func standardRequest() *MergeRequest {
+	return &MergeRequest{
+		Statement: mergeStatement,
+		Blocks:    []LineRange{{Start: 1, End: 2}, {Start: 3, End: 3}},
+		Candidates: []MergeCandidate{
+			{Block: 0, Database: "instances/prod/databases/db1", Finding: dropFinding(2, "Dropping full_name loses its data")},
+			{Block: 0, Database: "instances/prod/databases/db2", Finding: dropFinding(2, "DROP COLUMN full_name fails: v_user_directory reads it")},
+			{Block: 1, Database: "instances/prod/databases/db1", Finding: dropFinding(3, "Create the index CONCURRENTLY")},
+			{Block: 0, Standard: true, Finding: Finding{Title: "DISALLOW_DROP_OBJECT (DO101)", Severity: SeverityP1, Line: 2, Evidence: "Dropping column `full_name` loses its data."}},
+		},
+		Threads: []MergeThread{{Comment: "Dropping column `full_name` loses its data.\n\nusers holds 30,000 rows.", Candidates: []int{3}}},
+	}
+}
+
+func TestMergeFindingsPutsFindingsWithAStandardFinding(t *testing.T) {
+	t.Parallel()
+
+	model := &scriptedModel{steps: []modelStep{finalReply(`{"groups": [[4, 1], [4, 2], [3]], "same": [1]}`)}}
+	result, err := NewReviewer(model).MergeFindings(context.Background(), standardRequest())
+	require.NoError(t, err)
+	require.Equal(t, [][]int{{0, 3}, {1, 3}, {2}}, result.Groups, "the standard finding is in the list of each problem on its operation")
+	require.Equal(t, []int{0}, result.Same)
+
+	request := model.requests[0]
+	require.Equal(t, strings.TrimSpace(mergePrompt)+"\n\n"+strings.TrimSpace(mergeStandardPrompt), request.Messages[0].GetContent())
+	user := request.Messages[1].GetContent()
+	require.Contains(t, user, `{"id":4,"block":1,"standard":true,"thread":1,"line":2,"severity":"P1","title":"DISALLOW_DROP_OBJECT (DO101)","rule":"","evidence":"Dropping column `+"`full_name`"+` loses its data.","fix":""}`, "a standard finding has no database")
+	require.Contains(t, user, `{"id":2,"block":1,"database":2,`, "the databases are counted without it")
+	require.Contains(t, user, "<threads-")
+	require.Contains(t, user, `{"thread":1,"comment":"Dropping column `+"`full_name`"+` loses its data.\n\nusers holds 30,000 rows."}`)
+}
+
+func TestMergeFindingsShowsNoThreadTooLongToRead(t *testing.T) {
+	t.Parallel()
+
+	request := standardRequest()
+	request.Threads[0].Comment = strings.Repeat("x", maxMergeThreadBytes+1)
+	model := &scriptedModel{steps: []modelStep{
+		finalReply(`{"groups": [[4, 1], [4, 2], [3]], "same": [1]}`),
+		finalReply(`{"groups": [[4, 1], [4, 2], [3]]}`),
+	}}
+	result, err := NewReviewer(model).MergeFindings(context.Background(), request)
+	require.NoError(t, err)
+	require.Empty(t, result.Same)
+	require.Equal(t, 2, result.Calls, "a thread that is not shown cannot be named")
+	user := model.requests[0].Messages[1].GetContent()
+	require.NotContains(t, user, "<threads-")
+	require.NotContains(t, user, `"thread":`)
+}
+
+func TestMergeFindingsKeepsACommentOnlyWhenEveryCallSaysSo(t *testing.T) {
+	t.Parallel()
+
+	// The thread's two standard findings are on two blocks, and each block
+	// fills a call of its own.
+	request := standardRequest()
+	request.Candidates = append(request.Candidates, MergeCandidate{Block: 1, Standard: true, Finding: Finding{Title: "DISALLOW_DROP_OBJECT (DO101)", Severity: SeverityP1, Line: 3}})
+	request.Threads[0].Candidates = []int{3, 4}
+	merge := func(replies ...string) *MergeResult {
+		t.Helper()
+		model := &scriptedModel{}
+		for _, reply := range replies {
+			model.steps = append(model.steps, finalReply(reply))
+		}
+		reviewer := NewReviewer(model)
+		reviewer.mergePromptBytes = 1100
+		result, err := reviewer.MergeFindings(context.Background(), request)
+		require.NoError(t, err)
+		require.Len(t, model.requests, 2)
+		return result
+	}
+
+	require.Equal(t, []int{0}, merge(`{"groups": [[4, 1], [2]], "same": [1]}`, `{"groups": [[5, 3]], "same": [1]}`).Same)
+	require.Empty(t, merge(`{"groups": [[4, 1], [2]], "same": [1]}`, `{"groups": [[5, 3]]}`).Same)
+}
+
+func TestMergeFindingsRejectsAThreadOfOtherCandidates(t *testing.T) {
+	t.Parallel()
+
+	request := standardRequest()
+	request.Threads[0].Candidates = []int{0}
+	_, err := NewReviewer(&scriptedModel{}).MergeFindings(context.Background(), request)
+	require.ErrorContains(t, err, "thread 0 holds candidate 0, which is not a standard candidate")
 }

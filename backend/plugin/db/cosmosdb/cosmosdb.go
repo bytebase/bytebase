@@ -1,4 +1,34 @@
-// Package cosmosdb is the plugin for CosmosDB driver.
+// Package cosmosdb is Bytebase's Cosmos DB driver: a thin adapter over
+// github.com/bytebase/omni/cosmosdb/driver. It maps a db.ConnectionConfig onto
+// the contract's Config and back; the client, the sync queries, the emulator's
+// REST listings and the cross-partition query path belong to the omni driver.
+//
+// Constraints the adapter owns:
+//
+//   - A development build pointed at a local endpoint (localhost, 127.0.0.1 or
+//     host.docker.internal) is the emulator: it authenticates with the
+//     well-known account key and accepts the certificate it signs itself, and
+//     the adapter says so through Params["emulator"].
+//   - Otherwise an app registration becomes a client-secret credential, and a
+//     data source without one falls back to azidentity's default chain. Config
+//     carries no account key, application name, read-only flag or engine
+//     version, and there is no SSH tunnel: Cosmos DB has no such session knob.
+//   - GetDB returns nil: Cosmos DB has no database/sql handle.
+//   - Execute is connect.CodeUnimplemented. The query language has no statement
+//     that writes, and the omni driver has no Executor for this engine.
+//   - Dump writes nothing: the synced metadata does not carry the partition
+//     key, indexing policy, unique keys or default TTL that recreate a
+//     container.
+//   - QueryOptions.MaxResultBytes enforces MaximumSQLResultSize: reading stops
+//     at the first row that passes the cap and the result reports Truncated.
+//   - A statement's failure is the call's connect.CodeInternal error rather than
+//     a result, because the API reads one result per query here.
+//   - QueryConn runs one statement scoped to QueryContext.Container, which is the
+//     query's scope, not a schema, and the query language cannot open another.
+//   - An explain request never reaches QueryConn: db.SupportedExplainFormats(COSMOSDB)
+//     is empty, so the API refuses it first. The flag is carried to the driver
+//     for the contract's sake, since the driver answers an explain with the plan
+//     the query engine would run.
 package cosmosdb
 
 import (
@@ -6,20 +36,13 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"io"
-	"net/http"
 	"net/url"
-	"strings"
-	"time"
 
 	"connectrpc.com/connect"
+	omnicosmosdb "github.com/bytebase/omni/cosmosdb/driver"
+	omnidriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
-	"google.golang.org/protobuf/types/known/durationpb"
-
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/pkg/errors"
-
-	"github.com/bytebase/bytebase/backend/plugin/db/cosmosdb/queryengine/gonative"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -35,62 +58,68 @@ func init() {
 	db.Register(storepb.Engine_COSMOSDB, newDriver)
 }
 
-// Driver is the CosmosDB driver.
+// cosmosDBEmulatorKey is the well-known master key for the CosmosDB emulator.
+// https://learn.microsoft.com/en-us/azure/cosmos-db/emulator
+const cosmosDBEmulatorKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+
+// Driver is Bytebase's Cosmos DB driver.
 type Driver struct {
-	client       *azcosmos.Client
-	connCfg      db.ConnectionConfig
-	databaseName string
+	inner *omnicosmosdb.Driver
 }
 
 func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// cosmosDBEmulatorKey is the well-known master key for the CosmosDB emulator.
-// https://learn.microsoft.com/en-us/azure/cosmos-db/emulator
-const cosmosDBEmulatorKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
-
-// Open opens a CosmosDB driver.
-func (d *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
-	endpoint := connCfg.DataSource.Host
-
-	var client *azcosmos.Client
-	var err error
-
-	if common.IsDev() && isLocalhostEndpoint(endpoint) {
-		cred, credErr := azcosmos.NewKeyCredential(cosmosDBEmulatorKey)
-		if credErr != nil {
-			return nil, errors.Wrapf(credErr, "failed to create emulator key credential")
-		}
-		// The emulator uses a self-signed certificate, skip TLS verification in dev mode.
-		options := &azcosmos.ClientOptions{
-			ClientOptions: azcore.ClientOptions{
-				Transport: &http.Client{
-					Transport: &http.Transport{
-						TLSClientConfig: &tls.Config{
-							MinVersion:         tls.VersionTLS12,
-							InsecureSkipVerify: true, //nolint:gosec
-						},
-					},
-				},
-			},
-		}
-		client, err = azcosmos.NewClientWithKey(endpoint, cred, options)
-	} else {
-		credential, credErr := util.GetAzureConnectionConfig(connCfg)
-		if credErr != nil {
-			return nil, credErr
-		}
-		client, err = azcosmos.NewClient(endpoint, credential, nil)
-	}
-
+// Open maps the connection config onto the contract's Config. It does not reach
+// the account: Ping does.
+func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	driverConfig, err := connectionConfig(config.DataSource, config.ConnectionContext.DatabaseName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create CosmosDB client")
+		return nil, err
 	}
-	d.client = client
-	d.databaseName = connCfg.ConnectionContext.DatabaseName
-	d.connCfg = connCfg
-	return d, nil
+	inner, err := omnicosmosdb.Open(ctx, driverConfig)
+	if err != nil {
+		return nil, err
+	}
+	return &Driver{inner: inner}, nil
+}
+
+// connectionConfig maps a data source onto the contract's Config: the emulator
+// path in a development build, an app registration as a client secret, or
+// azidentity's default chain.
+func connectionConfig(dataSource *storepb.DataSource, database string) (omnidriver.Config, error) {
+	if dataSource == nil {
+		return omnidriver.Config{}, errors.New("cosmosdb: a data source is required")
+	}
+	driverConfig := omnidriver.Config{
+		Host:     dataSource.Host,
+		Database: database,
+		Params:   map[string]string{},
+	}
+	switch credential := dataSource.GetAzureCredential(); {
+	case common.IsDev() && isLocalhostEndpoint(dataSource.Host):
+		// The old driver took this path ahead of the app registration, and the
+		// emulator's metadata listings go over its REST API rather than the
+		// client's query path.
+		driverConfig.Params[omnicosmosdb.ParamAuth] = omnicosmosdb.AuthMasterKey
+		driverConfig.Params[omnicosmosdb.ParamEmulator] = "true"
+		driverConfig.Password = cosmosDBEmulatorKey
+		driverConfig.TLS = func(string) (*tls.Config, error) {
+			return &tls.Config{
+				MinVersion:         tls.VersionTLS12,
+				InsecureSkipVerify: true, //nolint:gosec // the emulator signs its certificate itself
+			}, nil
+		}
+	case credential != nil:
+		driverConfig.Params[omnicosmosdb.ParamAuth] = omnicosmosdb.AuthClientSecret
+		driverConfig.Params[omnicosmosdb.ParamTenantID] = credential.TenantId
+		driverConfig.User = credential.ClientId
+		driverConfig.Password = credential.ClientSecret
+	default:
+		driverConfig.Params[omnicosmosdb.ParamAuth] = omnicosmosdb.AuthDefault
+	}
+	return driverConfig, nil
 }
 
 func isLocalhostEndpoint(endpoint string) bool {
@@ -102,155 +131,95 @@ func isLocalhostEndpoint(endpoint string) bool {
 	return host == "localhost" || host == "127.0.0.1" || host == "host.docker.internal"
 }
 
-// Close closes the CosmosDB driver.
-func (*Driver) Close(_ context.Context) error {
-	return nil
-}
-
-// Ping pings the database.
-func (d *Driver) Ping(ctx context.Context) error {
-	endpoint := d.connCfg.DataSource.Host
-	if common.IsDev() && isLocalhostEndpoint(endpoint) {
-		client, err := newEmulatorRESTClient(endpoint)
-		if err != nil {
-			return errors.Wrap(err, "failed to create emulator REST client")
-		}
-		// List databases as a connectivity check.
-		if _, err := client.listDatabases(); err != nil {
-			return errors.Wrap(err, "failed to ping CosmosDB emulator")
-		}
+func (d *Driver) Close(context.Context) error {
+	if d.inner == nil {
 		return nil
 	}
-
-	queryPager := d.client.NewQueryDatabasesPager("select 1", nil)
-	for queryPager.More() {
-		_, err := queryPager.NextPage(ctx)
-		if err != nil {
-			return errors.Wrapf(err, "failed to ping CosmosDB")
-		}
-	}
-	return nil
+	return d.inner.Close()
 }
 
-// GetDB gets the database.
+// Ping reads the account's database list as a connectivity check.
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.inner.Ping(ctx)
+}
+
+// GetDB returns nil: Cosmos DB has no database/sql handle.
 func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-func (*Driver) Execute(_ context.Context, _ string, _ db.ExecuteOptions) (int64, error) {
+// Execute is unimplemented: the query language has no statement that changes
+// data, and the omni driver has no Executor for this engine.
+func (*Driver) Execute(context.Context, string, db.ExecuteOptions) (int64, error) {
 	return 0, connect.NewError(connect.CodeUnimplemented, errors.New("method Execute unimplemented"))
 }
 
-// Dump dumps the database.
-func (*Driver) Dump(_ context.Context, _ io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
-	return nil
+// Dump writes nothing and returns nil; the package doc says what a synced
+// container lacks that a restore would need.
+func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
+	return d.inner.Dump(ctx, out, dbMetadata)
 }
 
-// QueryConn queries a SQL statement in a given connection.
+// QueryConn runs statement in the container QueryContext.Container names.
+// conn is unused: the API pools no *sql.Conn for an engine whose GetDB is nil,
+// and the contract's session is not one.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if queryContext.Container == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("container argument is required for CosmosDB"))
 	}
-
 	// Allow `SELECT * FROM {container} [alias]` only.
-	_, _, err := base.ValidateSQLForEditor(storepb.Engine_COSMOSDB, statement)
-	if err != nil {
+	if _, _, err := base.ValidateSQLForEditor(storepb.Engine_COSMOSDB, statement); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("support simple SELECT statement for Cosmos DB engine only, err: %s", err.Error()))
 	}
 
-	startTime := time.Now()
-	container, err := d.client.NewContainer(d.databaseName, queryContext.Container)
+	session, err := d.inner.Session(ctx)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create container"))
+		return nil, err
 	}
+	defer session.Close()
 
-	var queryOption *azcosmos.QueryOptions
-	// TODO(zp): Rewrite limit while parser supported.
-	if queryContext.Limit > 0 && queryContext.Limit < 1000 {
-		// Set the page size to limit to avoid large page size.
-		queryOption = &azcosmos.QueryOptions{
-			PageSizeHint: int32(queryContext.Limit),
-		}
-	}
-
-	items, err := QueryEveryPartition(ctx, container, statement, queryOption, queryContext.Limit)
+	results, err := session.Query(ctx, statement, queryOptions(queryContext))
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to read more items"))
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-
-	result := &v1pb.QueryResult{
-		ColumnNames:     []string{"result"},
-		ColumnTypeNames: []string{"TEXT"},
-		Statement:       statement,
-	}
-	for _, item := range items {
-		result.Rows = append(result.Rows, &v1pb.QueryRow{
-			Values: []*v1pb.RowValue{
-				{Kind: &v1pb.RowValue_StringValue{StringValue: string(item)}},
-			},
-		})
-	}
-
-	result.Latency = durationpb.New(time.Since(startTime))
-	result.RowsCount = int64(len(result.Rows))
-
-	return []*v1pb.QueryResult{result}, nil
-}
-
-// QueryEveryPartition runs statement across every partition of the container.
-// The gateway serves what it can on its own; an aggregate, DISTINCT, ORDER BY,
-// TOP, OFFSET/LIMIT or GROUP BY that spans partitions it refuses with a
-// BadRequest instead, and the query then runs again through the pure-Go engine,
-// which merges the per-partition streams itself.
-//
-// Only a query that has returned nothing yet can switch: once the gateway has
-// handed back a continuation token, the engine cannot resume from it.
-func QueryEveryPartition(ctx context.Context, container *azcosmos.ContainerClient, statement string, o *azcosmos.QueryOptions, limit int) ([][]byte, error) {
-	items, pages, err := drainQuery(ctx, container, statement, o, limit)
-	if err == nil || pages > 0 || !isCrossPartitionUnsupported(err) {
-		return items, err
-	}
-
-	withEngine := azcosmos.QueryOptions{}
-	if o != nil {
-		withEngine = *o
-	}
-	withEngine.QueryEngine = gonative.Default()
-	items, _, err = drainQuery(ctx, container, statement, &withEngine, limit)
-	return items, err
-}
-
-// drainQuery pages a query to exhaustion or to limit, reporting how many pages
-// it read so the caller can tell a query that failed outright from one that
-// failed partway through.
-func drainQuery(ctx context.Context, container *azcosmos.ContainerClient, statement string, o *azcosmos.QueryOptions, limit int) ([][]byte, int, error) {
-	pager := container.NewQueryItemsPager(statement, azcosmos.NewPartitionKey(), o)
-	var items [][]byte
-	pages := 0
-	for pager.More() {
-		response, err := pager.NextPage(ctx)
-		if err != nil {
-			return nil, pages, err
+	converted := make([]*v1pb.QueryResult, 0, len(results))
+	for _, result := range results {
+		if result.Err != nil {
+			// Known difference: a failed statement is the call's error, not a
+			// result, which is the shape the previous driver answered with.
+			return nil, connect.NewError(connect.CodeInternal, result.Err)
 		}
-		pages++
-		for _, item := range response.Items {
-			items = append(items, item)
-			if limit > 0 && len(items) >= limit {
-				return items, pages, nil
-			}
-		}
+		converted = append(converted, util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize))
 	}
-	return items, pages, nil
+	return converted, nil
 }
 
-// isCrossPartitionUnsupported reports whether err is the gateway saying it
-// cannot serve this query across partitions by itself.
-func isCrossPartitionUnsupported(err error) bool {
-	var responseErr *azcore.ResponseError
-	if !errors.As(err, &responseErr) || responseErr.StatusCode != http.StatusBadRequest {
-		return false
+// queryOptions maps the product's query context onto the driver's. The
+// container is the query's scope, not a schema: a statement reads the container
+// the caller already opened, and the query language has no form that opens
+// another one.
+func queryOptions(queryContext db.QueryContext) omnidriver.QueryOptions {
+	return omnidriver.QueryOptions{
+		Schema:         queryContext.Container,
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		MaxResultBytes: queryContext.MaximumSQLResultSize,
 	}
-	msg := err.Error()
-	return strings.Contains(msg, "cross partition query can not be directly served by the gateway") ||
-		strings.Contains(msg, "Cross partition query only supports")
+}
+
+// SyncInstance reads the account's databases, without their containers.
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	instance, err := d.inner.SyncInstance(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &db.InstanceMetadata{
+		Version:   instance.Version,
+		Databases: instance.Databases,
+	}, nil
+}
+
+// SyncDBSchema reads the connected database's containers as tables.
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return d.inner.SyncDatabase(ctx)
 }

@@ -170,6 +170,58 @@ func TestStandardRuleSentencesCoverEveryRule(t *testing.T) {
 	}
 }
 
+func TestCitesStandardRule(t *testing.T) {
+	t.Parallel()
+
+	where := storepb.ReviewRuleType_REQUIRE_WHERE
+	require.True(t, CitesStandardRule("REQUIRE_WHERE: An UPDATE or DELETE with no WHERE clause changes every row of its table.", where))
+	require.True(t, CitesStandardRule("Standard rule REQUIRE_WHERE", where), "the name alone")
+	require.True(t, CitesStandardRule("An UPDATE or DELETE with no WHERE clause changes every row of its table.", where), "the sentence alone")
+	require.False(t, CitesStandardRule("Every UPDATE needs a WHERE clause.", where), "a policy sentence on the same condition is not the rule")
+	require.False(t, CitesStandardRule("DISALLOW_TRUNCATE: A TRUNCATE removes every row of its table.", where))
+	require.False(t, CitesStandardRule("REVIEW_RULE_TYPE_UNSPECIFIED", storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED))
+	require.True(t, CitesStandardRule("ONLINE_MIGRATION", storepb.ReviewRuleType_ONLINE_MIGRATION), "a rule the prompt states no sentence for")
+}
+
+func TestCitesPolicyAndPrompt(t *testing.T) {
+	t.Parallel()
+
+	const policy = "Each new table requires an `id` column.\nEvery UPDATE needs a WHERE clause. Treat it as P0."
+	for _, tc := range []struct {
+		description string
+		rule        string
+		policy      bool
+		prompt      bool
+	}{
+		{"a policy sentence", "Every UPDATE needs a WHERE clause. Treat it as P0.", true, false},
+		{"one sentence of the policy, which the prompt gives as an example", "Every UPDATE needs a WHERE clause.", true, true},
+		{"a policy sentence without its code marks", "\"Each new table requires an id column\"", true, false},
+		{"sentences of the prompt", "Breakage: a statement fails on this database for a reason no standard rule names, on or off, or makes later code fail. A view, function, trigger, or foreign key depends on what it changes.", false, true},
+		{"a later sentence of a bullet under the bullet's label", "Breakage: A view, function, trigger, or foreign key depends on what it changes.", false, true},
+		{"a standard rule by name and sentence", "`REQUIRE_WHERE`: An UPDATE or DELETE with no WHERE clause changes every row of its table.", false, true},
+		{"a standard rule by name", "WALK_THROUGH", false, true},
+		{"a reworded prompt sentence under its label", "Breakage: a statement fails on this database or makes later code fail when a view depends on what it changes.", false, true},
+		{"a reworded standard rule under its name", "`REQUIRE_WHERE`: an UPDATE without WHERE touches every row.", false, true},
+		{"a policy sentence under a label of the prompt", "Data loss: never touch the ledger tables.", false, true},
+		{"a sentence of neither", "Never touch the ledger tables.", false, false},
+		{"a prompt sentence with one of neither", "A long lock, a table rewrite, or a full scan on a large table. Never touch the ledger tables.", false, false},
+		{"letters inside a word of the prompt and of the policy", "r", false, false},
+		{"part of a policy word", "Each new tab", false, false},
+		{"nothing", " . ", false, false},
+	} {
+		require.Equal(t, tc.policy, CitesPolicy(tc.rule, "", policy), tc.description)
+		require.Equal(t, tc.prompt, CitesPrompt(tc.rule), tc.description)
+	}
+	require.False(t, CitesPolicy("Every UPDATE needs a WHERE clause."), "no policy")
+	require.True(t, CitesPolicy("Data loss: never touch the ledger tables.", "Data loss: never touch the ledger tables."), "the policy is asked first, so its own sentence under such a label stays")
+
+	var labels []string
+	for _, label := range promptLabels.FindAllStringSubmatch(basePrompt, -1) {
+		labels = append(labels, label[1])
+	}
+	require.Equal(t, []string{"Breakage", "Operational risk", "Data loss"}, labels)
+}
+
 func TestBuildMessagesKeepsTargetFactsOnOneLine(t *testing.T) {
 	t.Parallel()
 

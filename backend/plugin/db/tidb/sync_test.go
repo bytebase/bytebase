@@ -2,7 +2,6 @@ package tidb
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"testing"
 
@@ -12,367 +11,106 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
-	"github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-func TestSetColumnMetadataDefault(t *testing.T) {
-	/*
-		CREATE TABLE hello (
-			id INT AUTO_INCREMENT PRIMARY KEY,
-			name0 varchar(20),
-			name1 varchar(20) DEFAULT '0',
-			name2 varchar(20) DEFAULT 'hello',
-			age0 int NOT NULL,
-			age1 tinyint(4) NOT NULL DEFAULT '0',
-			age2 tinyint(4) NOT NULL DEFAULT 0,
-			age3 tinyint NOT NULL DEFAULT '0',
-			age4 tinyint NOT NULL DEFAULT 0,
-			price double(16,2) DEFAULT '0.00',
-			time0 datetime,
-			time1 datetime NOT NULL,
-			time2 datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			time3 datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			time4 datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			time5 datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
-			time6 datetime(6) DEFAULT NOW(6),
-			time7 datetime DEFAULT CURRENT_TIMESTAMP()
-		);
-
-		// 8.0.11-TiDB-v7.6.0 created format.
-		// 5.7.28-TiDB-v7.1.1-serverless created format.
-		// 5.7.25-TiDB-v6.5.8 created format.
-		CREATE TABLE `hello` (
-			`id` int(11) NOT NULL AUTO_INCREMENT,
-			`name0` varchar(20) DEFAULT NULL,
-			`name1` varchar(20) DEFAULT '0',
-			`name2` varchar(20) DEFAULT 'hello',
-			`age0` int(11) NOT NULL,
-			`age1` tinyint(4) NOT NULL DEFAULT '0',
-			`age2` tinyint(4) NOT NULL DEFAULT '0',
-			`age3` tinyint(4) NOT NULL DEFAULT '0',
-			`age4` tinyint(4) NOT NULL DEFAULT '0',
-			`price` double(16,2) DEFAULT '0',
-			`time0` datetime DEFAULT NULL,
-			`time1` datetime NOT NULL,
-			`time2` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			`time3` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			`time4` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			`time5` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
-			`time6` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
-			`time7` datetime DEFAULT CURRENT_TIMESTAMP,
-			PRIMARY KEY (`id`) ... // T![clustered_index] CLUSTERED
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
-	*/
-	tests := []struct {
-		name         string
-		defaultStr   sql.NullString
-		nullableBool bool
-		extra        string
-		want         *metadatapb.ColumnMetadata
-	}{
-		// 8.0.11-TiDB-v7.6.0.
-		// 5.7.28-TiDB-v7.1.1-serverless.
-		// 5.7.25-TiDB-v6.5.8.
-		{
-			name:         "id",
-			defaultStr:   sql.NullString{},
-			nullableBool: false,
-			extra:        "auto_increment",
-			want: &metadatapb.ColumnMetadata{
-				Default: "AUTO_INCREMENT",
-			},
-		},
-		{
-			name:         "name0",
-			defaultStr:   sql.NullString{},
-			nullableBool: true,
-			extra:        "",
-			want: &metadatapb.ColumnMetadata{
-				Default: "NULL",
-			},
-		},
-		{
-			name:         "name1",
-			defaultStr:   sql.NullString{Valid: true, String: "0"},
-			nullableBool: true,
-			extra:        "",
-			want: &metadatapb.ColumnMetadata{
-				Default: "0",
-			},
-		},
-		{
-			name:         "name2",
-			defaultStr:   sql.NullString{Valid: true, String: "hello"},
-			nullableBool: true,
-			extra:        "",
-			want: &metadatapb.ColumnMetadata{
-				Default: "hello",
-			},
-		},
-		{
-			name:         "age0",
-			defaultStr:   sql.NullString{},
-			nullableBool: false,
-			extra:        "",
-			want:         &metadatapb.ColumnMetadata{},
-		},
-		{
-			name:         "age1",
-			defaultStr:   sql.NullString{Valid: true, String: "0"},
-			nullableBool: false,
-			extra:        "",
-			want: &metadatapb.ColumnMetadata{
-				Default: "0",
-			},
-		},
-		{
-			name:         "age2",
-			defaultStr:   sql.NullString{Valid: true, String: "0"},
-			nullableBool: false,
-			extra:        "",
-			want: &metadatapb.ColumnMetadata{
-				Default: "0",
-			},
-		},
-		{
-			name:         "age3",
-			defaultStr:   sql.NullString{Valid: true, String: "0"},
-			nullableBool: false,
-			extra:        "",
-			want: &metadatapb.ColumnMetadata{
-				Default: "0",
-			},
-		},
-		{
-			name:         "age4",
-			defaultStr:   sql.NullString{Valid: true, String: "0"},
-			nullableBool: false,
-			extra:        "",
-			want: &metadatapb.ColumnMetadata{
-				Default: "0",
-			},
-		},
-		{
-			name: "price",
-			// This is strange, not "0.00".
-			defaultStr:   sql.NullString{Valid: true, String: "0"},
-			nullableBool: true,
-			extra:        "",
-			want: &metadatapb.ColumnMetadata{
-				Default: "0",
-			},
-		},
-		{
-			name:         "time0",
-			defaultStr:   sql.NullString{},
-			nullableBool: true,
-			extra:        "",
-			want: &metadatapb.ColumnMetadata{
-				Default: "NULL",
-			},
-		},
-		{
-			name:         "time1",
-			defaultStr:   sql.NullString{},
-			nullableBool: false,
-			extra:        "",
-			want:         &metadatapb.ColumnMetadata{},
-		},
-		{
-			name:         "time2",
-			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP"},
-			nullableBool: false,
-			extra:        "",
-			want: &metadatapb.ColumnMetadata{
-				Default: "CURRENT_TIMESTAMP",
-			},
-		},
-		{
-			name:         "time3",
-			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP"},
-			nullableBool: false,
-			extra:        "DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
-			want: &metadatapb.ColumnMetadata{
-				Default:  "CURRENT_TIMESTAMP",
-				OnUpdate: "CURRENT_TIMESTAMP",
-			},
-		},
-		{
-			name:         "time4",
-			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP"},
-			nullableBool: true,
-			extra:        "DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
-			want: &metadatapb.ColumnMetadata{
-				Default:  "CURRENT_TIMESTAMP",
-				OnUpdate: "CURRENT_TIMESTAMP",
-			},
-		},
-		{
-			name:         "time5",
-			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP(6)"},
-			nullableBool: true,
-			extra:        "",
-			want: &metadatapb.ColumnMetadata{
-				Default: "CURRENT_TIMESTAMP(6)",
-			},
-		},
-		{
-			name:         "time6",
-			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP(6)"},
-			nullableBool: true,
-			extra:        "",
-			want: &metadatapb.ColumnMetadata{
-				Default: "CURRENT_TIMESTAMP(6)",
-			},
-		},
-		{
-			name:         "time7",
-			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP"},
-			nullableBool: true,
-			extra:        "",
-			want: &metadatapb.ColumnMetadata{
-				Default: "CURRENT_TIMESTAMP",
-			},
-		},
-	}
-
-	a := require.New(t)
-	for _, tc := range tests {
-		column := &metadatapb.ColumnMetadata{}
-		setColumnMetadataDefault(column, tc.defaultStr, tc.nullableBool, tc.extra)
-		a.Equal(tc.want, column, tc.name)
-	}
-}
-
-func TestConvertCollationToCharset(t *testing.T) {
-	tests := []struct {
-		collation string
-		want      string
-	}{
-		{
-			collation: "ascii_bin",
-			want:      "ascii",
-		},
-		{
-			collation: "binary",
-			want:      "binary",
-		},
-		{
-			collation: "gbk_chinese_ci",
-			want:      "gbk",
-		},
-		{
-			collation: "latin1_bin",
-			want:      "latin1",
-		},
-		{
-			collation: "utf8_bin",
-			want:      "utf8",
-		},
-		{
-			collation: "utf8mb4_bin",
-			want:      "utf8mb4",
-		},
-	}
-
-	a := require.New(t)
-	for _, tc := range tests {
-		got := convertCollationToCharset(tc.collation)
-		a.Equal(tc.want, got, tc.collation)
-	}
-}
-
-func TestStripSingleQuote(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"'quoted'", "quoted"},
-		{"''", ""},
-		{"'single'", "single"},
-		{"no quotes", "no quotes"},
-		{"'partial", "'partial"},
-		{"partial'", "partial'"},
-	}
-
-	for _, test := range tests {
-		t.Run(fmt.Sprintf("input: %s", test.input), func(t *testing.T) {
-			result := stripSingleQuote(test.input)
-			require.Equal(t, test.expected, result)
-		})
-	}
-}
-
-func TestSupportsCheckConstraintTable(t *testing.T) {
-	tests := []struct {
-		version string
-		want    bool
-	}{
-		// information_schema.CHECK_CONSTRAINTS landed in TiDB v7.4.0, the same release
-		// that moved the reported MySQL prefix from 5.7.25 to 8.0.11. The TiDB version
-		// decides whenever it is readable.
-		{version: "5.7.25-TiDB-v7.1.1", want: false},
-		{version: "5.7.25-TiDB-v7.2.0", want: false},
-		{version: "5.7.25-TiDB-v7.3.0", want: false},
-		{version: "8.0.11-TiDB-v7.4.0", want: true},
-		{version: "8.0.11-TiDB-v8.5.0", want: true},
-		{version: "8.0.11-TiDB-v7.5.2-serverless", want: true},
-		// No readable TiDB version, so the MySQL prefix decides. TiDB Cloud reports a
-		// calendar version; a custom server-version can drop the TiDB half entirely.
-		{version: "8.0.11-TiDB-CLOUD.202603.4", want: true},
-		{version: "5.7.25-TiDB-CLOUD.202603.4", want: false},
-		{version: "8.0.11", want: true},
-		{version: "5.7.25", want: false},
-		// A future prefix bump must not regress.
-		{version: "8.4.0-TiDB-CLOUD.202701.1", want: true},
-		// The TiDB version wins over the prefix when both are readable.
-		{version: "8.0.11-TiDB-v7.3.0", want: false},
-		// MySQL added the table in 8.0.16; comparing the prefix against that would
-		// answer false for every TiDB build, all of which report 8.0.11.
-		{version: "8.0.11-TiDB-CLOUD.202512.1", want: true},
-		{version: "", want: false},
-		{version: "not-a-version", want: false},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.version, func(t *testing.T) {
-			require.Equal(t, tc.want, supportsCheckConstraintTable(tc.version))
-		})
-	}
-}
-
-func TestSyncForeignKeyReferencedDatabase(t *testing.T) {
+// TestSyncDBSchemaPassesTheDriversMetadataThrough proves the adapter answers the
+// contract's schema unchanged. What TiDB reports for a table — its columns,
+// defaults, generated columns, indexes, partitions, foreign keys and views — is
+// tidb/driver's corpus and golden, not this repository's.
+func TestSyncDBSchemaPassesTheDriversMetadataThrough(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	container, database := testcontainer.NewTiDBDatabase(t)
-	other := database + "_other"
+	_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf("CREATE TABLE %s.orders (id INT PRIMARY KEY, note VARCHAR(64))", database))
+	require.NoError(t, err)
+
+	driver := openTestDriverOn(ctx, t, container, database)
+	t.Cleanup(func() { require.NoError(t, driver.Close(ctx)) })
+
+	got, err := driver.SyncDBSchema(ctx)
+	require.NoError(t, err)
+	want, err := driver.impl.SyncDatabase(ctx)
+	require.NoError(t, err)
+	require.Empty(t, cmp.Diff(want, got, protocmp.Transform()))
+}
+
+// TestSyncDBSchemaReportsAMissingDatabase pins the one thing the adapter adds to
+// a failed sync: the contract's ErrNotFound becomes the product's not-found
+// error, which the sync runner reports as a failed sync.
+func TestSyncDBSchemaReportsAMissingDatabase(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	container, database := testcontainer.NewTiDBDatabase(t)
+	driver := openTestDriverOn(ctx, t, container, database+"_missing")
+	t.Cleanup(func() { require.NoError(t, driver.Close(ctx)) })
+
+	_, err := driver.SyncDBSchema(ctx)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), fmt.Sprintf("database %q not found", database+"_missing"))
+}
+
+// TestSyncInstanceMapsTheDriversInstance pins the adapter's mapping of the
+// contract's instance onto the product's types: the version and the databases
+// pass through, a role becomes a storepb.InstanceRole, and the server's
+// lower_case_table_names reaches storepb.Instance.
+func TestSyncInstanceMapsTheDriversInstance(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	container, database := testcontainer.NewTiDBDatabase(t)
 	_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf(`
-CREATE DATABASE %[2]s;
-CREATE TABLE %[2]s.parent (id INT PRIMARY KEY);
-CREATE TABLE %[1]s.parent (id INT PRIMARY KEY);
-CREATE TABLE %[1]s.child (
-	id INT PRIMARY KEY,
-	local_id INT,
-	qualified_id INT,
-	remote_id INT,
-	CONSTRAINT fk_local FOREIGN KEY (local_id) REFERENCES %[1]s.parent (id) ON DELETE RESTRICT ON UPDATE RESTRICT,
-	CONSTRAINT fk_qualified FOREIGN KEY (qualified_id) REFERENCES %[1]s.parent (id) ON DELETE SET NULL ON UPDATE RESTRICT,
-	CONSTRAINT fk_remote FOREIGN KEY (remote_id) REFERENCES %[2]s.parent (id) ON DELETE CASCADE ON UPDATE RESTRICT
-);
-`, database, other))
+		CREATE USER 'bb_sync_probe'@'%%' IDENTIFIED BY 'probe-pass';
+		GRANT SELECT ON %s.* TO 'bb_sync_probe'@'%%';`, database))
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		_, err := container.GetDB().ExecContext(context.Background(), fmt.Sprintf("DROP TABLE %s.child; DROP DATABASE %s", database, other))
+		_, err := container.GetDB().ExecContext(context.Background(), "DROP USER IF EXISTS 'bb_sync_probe'@'%'")
 		require.NoError(t, err)
 	})
 
 	driver := openTestDriver(ctx, t, container)
 	t.Cleanup(func() { require.NoError(t, driver.Close(ctx)) })
-	foreignKeys, err := driver.getForeignKeyList(ctx, database)
+
+	instance, err := driver.SyncInstance(ctx)
 	require.NoError(t, err)
-	require.Empty(t, cmp.Diff([]*metadatapb.ForeignKeyMetadata{
-		{Name: "fk_local", Columns: []string{"local_id"}, ReferencedTable: "parent", ReferencedColumns: []string{"id"}, OnDelete: "RESTRICT", OnUpdate: "RESTRICT", MatchType: "NONE"},
-		{Name: "fk_qualified", Columns: []string{"qualified_id"}, ReferencedTable: "parent", ReferencedColumns: []string{"id"}, OnDelete: "SET NULL", OnUpdate: "RESTRICT", MatchType: "NONE"},
-		{Name: "fk_remote", Columns: []string{"remote_id"}, ReferencedSchema: other, ReferencedTable: "parent", ReferencedColumns: []string{"id"}, OnDelete: "CASCADE", OnUpdate: "RESTRICT", MatchType: "NONE"},
-	}, foreignKeys[db.TableKey{Table: "child"}], protocmp.Transform()))
+	contract, err := driver.impl.SyncInstance(ctx)
+	require.NoError(t, err)
+
+	require.Equal(t, contract.Version, instance.Version)
+	require.NotNil(t, instance.Metadata)
+	require.Equal(t, contract.LowerCaseTableNames, instance.Metadata.GetMysqlLowerCaseTableNames())
+
+	// A parallel test of this package may create a database between the two
+	// reads, so compare the databases both reads saw.
+	require.NotEmpty(t, instance.Databases)
+	fromContract := map[string]*metadatapb.DatabaseSchemaMetadata{}
+	for _, database := range contract.Databases {
+		fromContract[database.GetName()] = database
+	}
+	mapped := 0
+	for _, database := range instance.Databases {
+		require.Empty(t, database.GetSchemas(), "an instance sync lists databases without their schemas")
+		if want, ok := fromContract[database.GetName()]; ok {
+			require.Empty(t, cmp.Diff(want, database, protocmp.Transform()), database.GetName())
+			mapped++
+		}
+	}
+	require.Positive(t, mapped)
+
+	// The role this test made is the contract's role, in the product's shape.
+	var role *storepb.InstanceRole
+	for _, candidate := range instance.Metadata.GetRoles() {
+		if candidate.GetName() == "'bb_sync_probe'@'%'" {
+			role = candidate
+		}
+	}
+	require.NotNil(t, role)
+	var contractAttribute *string
+	for _, candidate := range contract.Roles {
+		if candidate.Name == "'bb_sync_probe'@'%'" {
+			contractAttribute = candidate.Attribute
+		}
+	}
+	require.NotNil(t, contractAttribute)
+	require.Equal(t, *contractAttribute, role.GetAttribute())
+	require.Contains(t, role.GetAttribute(), "GRANT SELECT")
 }

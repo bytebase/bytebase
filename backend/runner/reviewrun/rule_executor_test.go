@@ -74,12 +74,12 @@ func TestRuleExecutorSkipsAnEmptyPolicy(t *testing.T) {
 	executor := NewRuleExecutor(stores)
 
 	setRules()
-	comments, err := executor.RunOnce(ctx, "p", issue.UID)
+	results, err := executor.review(ctx, "p", issue.UID)
 	require.NoError(t, err)
-	require.Empty(t, comments)
+	require.Empty(t, results)
 
 	setRules(storepb.ReviewRuleType_SYNTAX)
-	_, err = executor.RunOnce(ctx, "p", issue.UID)
+	_, err = executor.review(ctx, "p", issue.UID)
 	require.Error(t, err)
 }
 
@@ -154,8 +154,8 @@ func TestRuleExecutorSkipsAnEngineWithoutAReviewer(t *testing.T) {
 			PlanUID:      &plan.UID,
 		})
 		require.NoError(t, err)
-		comments, err := NewRuleExecutor(stores).RunOnce(ctx, "p", issue.UID)
-		require.Empty(t, comments)
+		results, err := NewRuleExecutor(stores).review(ctx, "p", issue.UID)
+		require.Empty(t, results)
 		return err
 	}
 
@@ -243,10 +243,10 @@ func TestRuleExecutorPassesTheSyncedDefaultSchema(t *testing.T) {
 			PlanUID:      &plan.UID,
 		})
 		require.NoError(t, err)
-		comments, err := NewRuleExecutor(stores).RunOnce(ctx, "p", issue.UID)
+		results, err := NewRuleExecutor(stores).review(ctx, "p", issue.UID)
 		require.NoError(t, err)
 		var messages []string
-		for _, comment := range comments {
+		for _, comment := range ruleResultComments("p", issue.UID, results) {
 			messages = append(messages, comment.Payload.GetComment())
 		}
 		return messages
@@ -256,7 +256,7 @@ func TestRuleExecutorPassesTheSyncedDefaultSchema(t *testing.T) {
 	require.Empty(t, review("unsynced", ""))
 }
 
-func TestRuleExecutorSortsItsResults(t *testing.T) {
+func TestReviewExecutorSortsTheRulesResults(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	db, stores, _ := testcontainer.NewMetadataDB(t)
@@ -337,7 +337,8 @@ func TestRuleExecutorSortsItsResults(t *testing.T) {
 			},
 		}, nil
 	}
-	executor := &RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{storepb.Engine_POSTGRES: secondFirst}}
+	// No AI setting is stored, so the review is the rules alone.
+	executor := NewReviewExecutor(stores, licenseStub{}, &RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{storepb.Engine_POSTGRES: secondFirst}}, nil)
 	comments, err := executor.RunOnce(ctx, "p", issue.UID)
 	require.NoError(t, err)
 	var messages []string
