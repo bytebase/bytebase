@@ -1960,6 +1960,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "setof type on the next line",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "rs",
+				Signature:  "rs()",
+				Definition: "CREATE FUNCTION public.rs() RETURNS SETOF\npublic.v LANGUAGE sql AS $$ SELECT $$",
+			}},
+			refused: true,
+		},
+		{
 			name: "quoted parameter before an out parameter",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "q",
@@ -3831,4 +3840,28 @@ func TestViewDependencyQualificationKeepsQuotedTypedConstant(t *testing.T) {
 	paths := []string{"$user", "public"}
 	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
 	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."e"`)
+}
+
+// TestBackupViewIsExcludedFromAmbiguityValidation covers an unchanged backup view
+// whose unqualified reference would otherwise block a managed migration.
+func TestBackupViewIsExcludedFromAmbiguityValidation(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name:   "public",
+				Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			},
+			{
+				Name: "bbdataarchive",
+				Views: []*metadatapb.ViewMetadata{{
+					Name:              "v",
+					Definition:        "SELECT * FROM t",
+					DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+				}},
+			},
+		},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }

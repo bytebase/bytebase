@@ -726,9 +726,6 @@ func routineReturnClause(definition string) string {
 			end = i
 		}
 	}
-	if i := indexOutsideQuotes(rest, "\n"); i >= 0 && i < end {
-		end = i
-	}
 	return rest[:end]
 }
 
@@ -1195,6 +1192,9 @@ func rejectAmbiguousViewReferences(meta *metadatapb.DatabaseSchemaMetadata, sear
 	}
 	objects := viewDependencyObjects(meta)
 	for _, schema := range meta.GetSchemas() {
+		if schema.GetName() == "bbdataarchive" {
+			continue
+		}
 		for _, view := range schema.GetViews() {
 			if err := ambiguousViewDependencies(schema.GetName(), view.GetName(), view.GetDefinition(), view.GetDependencyColumns(), objects, searchPath); err != nil {
 				return err
