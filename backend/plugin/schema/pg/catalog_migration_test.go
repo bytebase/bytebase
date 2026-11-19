@@ -2574,3 +2574,178 @@ func TestObjectKeyIsUnambiguous(t *testing.T) {
 	require.Equal(t, "a.b", schemaName)
 	require.Equal(t, "c", objectName)
 }
+
+// TestViewDependencyQualificationIgnoresLiterals covers a view whose text merely
+// contains "alice.v" in a string literal while the actual unqualified reference
+// resolves to public.v. The literal is not a qualified reference, so the
+// unresolved $user path is still ambiguous.
+func TestViewDependencyQualificationIgnoresLiterals(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{
+			{Name: "alice", Views: []*metadatapb.ViewMetadata{{Name: "v", Definition: "SELECT 1"}}},
+			{Name: "public", Views: []*metadatapb.ViewMetadata{
+				{Name: "v", Definition: "SELECT 1"},
+				{Name: "w", Definition: "SELECT 'alice.v', * FROM v", DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "alice", Table: "v"}}},
+			}},
+		},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "alice"."v"`)
+
+	meta.Schemas[1].Views[1].Definition = "SELECT * FROM alice.v"
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), "a parsed qualified reference is safe")
+}
+
+// TestSequenceDoesNotShadowARoutineType covers a sequence with the same name as a
+// later relation: a sequence has no named row type, so the routine type resolves
+// to the restored view and must refuse the view drop.
+func TestSequenceDoesNotShadowARoutineType(t *testing.T) {
+	snapshot := func(columnType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			SearchPath: "earlier, later",
+			Schemas: []*metadatapb.SchemaMetadata{
+				{Name: "earlier", Sequences: []*metadatapb.SequenceMetadata{{Name: "v", DataType: "bigint", Start: "1", Increment: "1"}}},
+				{
+					Name:   "later",
+					Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+					Views: []*metadatapb.ViewMetadata{{
+						Name:       "v",
+						Definition: "SELECT FROM",
+						DependencyColumns: []*metadatapb.DependencyColumn{{
+							Schema: "later", Table: "t", Column: "id",
+						}},
+					}},
+					Functions: []*metadatapb.FunctionMetadata{{
+						Name:       "f",
+						Signature:  "f(v)",
+						Definition: "CREATE FUNCTION later.f(x v) RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$",
+					}},
+				},
+			},
+		}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
+	require.ErrorContains(t, err, `routine "later"."f" uses the row type of view "later"."v"`)
+}
+
+// TestRoutineChangeRestoresUnloadableView covers a routine replacement with no
+// column change: the catalog has no edge from the unloadable view to the routine,
+// so the view must still be restored around the routine operation.
+func TestRoutineChangeRestoresUnloadableView(t *testing.T) {
+	snapshot := func(body string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:  "public",
+			Views: []*metadatapb.ViewMetadata{{Name: "v", Definition: "SELECT FROM"}},
+			Functions: []*metadatapb.FunctionMetadata{{
+				Name:       "f",
+				Signature:  "f()",
+				Definition: "CREATE FUNCTION public.f() RETURNS integer LANGUAGE sql AS $$ SELECT " + body + " $$",
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("1"), snapshot("2"))
+	require.NoError(t, err)
+	require.Contains(t, sql, `DROP VIEW IF EXISTS "public"."v"`)
+	require.Contains(t, sql, `CREATE VIEW "public"."v"`)
+}
+
+// TestPartitionColumnChangeRestoresUnloadableView covers a view that names a
+// partition directly: the parent's column change is inherited, and the partition
+// key must be in the affected set so the view is restored around the ALTER.
+func TestPartitionColumnChangeRestoresUnloadableView(t *testing.T) {
+	snapshot := func(columnType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+			{Name: "main", Tables: []*metadatapb.TableMetadata{{
+				Name:    "t",
+				Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: columnType}},
+				Partitions: []*metadatapb.TablePartitionMetadata{{
+					Name: "p", Schema: "parted",
+				}},
+			}}},
+			{Name: "parted"},
+			{Name: "public", Views: []*metadatapb.ViewMetadata{{
+				Name:       "v",
+				Definition: "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "parted", Table: "p", Column: "id",
+				}},
+			}}},
+		}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
+	require.NoError(t, err)
+	drop := strings.Index(sql, `DROP VIEW IF EXISTS "public"."v"`)
+	alter := strings.Index(sql, `ALTER TABLE main.t ALTER COLUMN id TYPE bigint`)
+	create := strings.Index(sql, `CREATE VIEW "public"."v"`)
+	require.GreaterOrEqual(t, drop, 0, sql)
+	require.GreaterOrEqual(t, alter, 0, sql)
+	require.GreaterOrEqual(t, create, 0, sql)
+	require.Less(t, drop, alter, sql)
+	require.Less(t, alter, create, sql)
+}
+
+// TestAffectedTableColumnsIncludesRemovedTable covers a table removed in the
+// target: every column, and every partition's effective key, is affected so a
+// retained unloadable view is restored before the drop.
+func TestAffectedTableColumnsIncludesRemovedTable(t *testing.T) {
+	oldMeta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+		{Name: "main", Tables: []*metadatapb.TableMetadata{{
+			Name:       "t",
+			Columns:    []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}},
+			Partitions: []*metadatapb.TablePartitionMetadata{{Name: "p", Schema: "parted"}},
+		}}},
+		{Name: "parted"},
+	}}
+	newMeta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+		{Name: "main"},
+		{Name: "parted"},
+	}}
+
+	affected := affectedTableColumns(oldMeta, newMeta)
+	require.True(t, affected[objectKey("main", "t")]["id"])
+	require.True(t, affected[objectKey("parted", "p")]["id"])
+}
+
+// TestObsoleteRoutineDropsBeforeRestoredView covers a source routine that holds a
+// restored view's row type but is removed from the target: its drop is moved
+// before the synthesized view drop, so the migration is valid and need not be
+// refused.
+func TestObsoleteRoutineDropsBeforeRestoredView(t *testing.T) {
+	snapshot := func(columnType string, withFunction bool) *model.DatabaseMetadata {
+		schemas := []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:       "v",
+				Definition: "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "public", Table: "t", Column: "id",
+				}},
+			}},
+		}}
+		if withFunction {
+			schemas[0].Functions = []*metadatapb.FunctionMetadata{{
+				Name:       "f",
+				Signature:  "f(v)",
+				Definition: "CREATE FUNCTION public.f(x v) RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$",
+			}}
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: schemas}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer", true), snapshot("bigint", false))
+	require.NoError(t, err)
+	dropFunction := strings.Index(sql, `DROP FUNCTION`)
+	dropView := strings.Index(sql, `DROP VIEW IF EXISTS "public"."v"`)
+	createView := strings.Index(sql, `CREATE VIEW "public"."v"`)
+	require.GreaterOrEqual(t, dropFunction, 0, sql)
+	require.GreaterOrEqual(t, dropView, 0, sql)
+	require.GreaterOrEqual(t, createView, 0, sql)
+	require.Less(t, dropFunction, dropView, sql)
+	require.Less(t, dropView, createView, sql)
+}

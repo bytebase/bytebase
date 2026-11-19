@@ -40,6 +40,9 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	if err := unloadableChanges(oldSchema.GetProto(), newSchema.GetProto(), sourceDrops, fromReport, toReport); err != nil {
 		return "", err
 	}
+	if err := refuseUnsupportedCompositeReordering(oldSchema.GetProto(), newSchema.GetProto()); err != nil {
+		return "", err
+	}
 	diff := catalog.Diff(from, to)
 	if diff.IsEmpty() && len(sourceDrops) == 0 {
 		return "", nil
@@ -50,11 +53,11 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	plan := catalog.GenerateMigration(from, to, diff)
 	orderTypeAndTableCreates(plan, newSchema.GetProto(), targetSearchPath)
 	restoreIndexDefinitions(plan, newSchema.GetProto())
-	restored, err := restoreUnloadableDependentViews(plan, from, oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
+	restored, releasedRoutines, err := restoreUnloadableDependentViews(plan, from, oldSchema.GetProto(), newSchema.GetProto(), sourceSearchPath, sourceDrops, fromReport, toReport)
 	if err != nil {
 		return "", err
 	}
-	if err := releaseCompositeBeforeTableDrop(plan, oldSchema.GetProto(), newSchema.GetProto(), restored, sourceSearchPath, targetSearchPath); err != nil {
+	if err := releaseCompositeBeforeTableDrop(plan, oldSchema.GetProto(), newSchema.GetProto(), restored, releasedRoutines, sourceSearchPath, targetSearchPath); err != nil {
 		return "", err
 	}
 	restoreRecreatedViewComments(plan, newSchema.GetProto())
@@ -254,7 +257,7 @@ type typeReference struct {
 // recreated or added by the target. A table column or a composite type that holds
 // one of their row types cannot be ordered around that, so the migration is
 // refused instead.
-func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool, sourceSearchPath, targetSearchPath []string) error {
+func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool, releasedRoutines map[string]bool, sourceSearchPath, targetSearchPath []string) error {
 	dropped := relationSet(oldMeta, newMeta)
 	if len(dropped) == 0 && len(restored) == 0 {
 		return nil
@@ -265,7 +268,7 @@ func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMe
 	if err := refuseRestoredViewRowTypeDependents(oldMeta, newMeta, restored, sourceSearchPath, targetSearchPath); err != nil {
 		return err
 	}
-	if err := refuseRestoredViewRoutines(oldMeta, newMeta, restored, sourceSearchPath, targetSearchPath); err != nil {
+	if err := refuseRestoredViewRoutines(oldMeta, newMeta, restored, releasedRoutines, sourceSearchPath, targetSearchPath); err != nil {
 		return err
 	}
 	created := relationSet(newMeta, oldMeta)
@@ -477,32 +480,46 @@ func refuseRestoredViewRowTypeDependents(oldMeta, newMeta *metadatapb.DatabaseSc
 // refuseRestoredViewRoutines rejects a routine whose parameter or return type is a
 // restored view's row type: the view cannot be dropped while the routine holds it,
 // and the routine's body mentioning the view is not such a dependency.
-func refuseRestoredViewRoutines(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool, sourceSearchPath, targetSearchPath []string) error {
-	for _, meta := range []*metadatapb.DatabaseSchemaMetadata{oldMeta, newMeta} {
-		searchPath := sourceSearchPath
-		if meta == newMeta {
-			searchPath = targetSearchPath
-		}
-		objects := typeObjects(meta)
-		for _, schema := range meta.GetSchemas() {
-			for _, function := range schema.GetFunctions() {
-				if err := refuseRoutine(schema.GetName(), function.GetName(), function.GetSignature(), function.GetDefinition(), restored, objects, searchPath); err != nil {
-					return err
-				}
+func refuseRestoredViewRoutines(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored, releasedRoutines map[string]bool, sourceSearchPath, targetSearchPath []string) error {
+	oldObjects := typeObjects(oldMeta)
+	for _, schema := range oldMeta.GetSchemas() {
+		for _, function := range schema.GetFunctions() {
+			if releasedRoutines[objectKey(schema.GetName(), function.GetName())] {
+				continue
 			}
-			for _, procedure := range schema.GetProcedures() {
-				if err := refuseRoutine(schema.GetName(), procedure.GetName(), procedure.GetSignature(), procedure.GetDefinition(), restored, objects, searchPath); err != nil {
-					return err
-				}
+			if err := refuseRoutine(schema.GetName(), function.GetName(), function.GetSignature(), function.GetDefinition(), restored, oldObjects, sourceSearchPath); err != nil {
+				return err
+			}
+		}
+		for _, procedure := range schema.GetProcedures() {
+			if releasedRoutines[objectKey(schema.GetName(), procedure.GetName())] {
+				continue
+			}
+			if err := refuseRoutine(schema.GetName(), procedure.GetName(), procedure.GetSignature(), procedure.GetDefinition(), restored, oldObjects, sourceSearchPath); err != nil {
+				return err
+			}
+		}
+	}
+	newObjects := typeObjects(newMeta)
+	for _, schema := range newMeta.GetSchemas() {
+		for _, function := range schema.GetFunctions() {
+			if err := refuseRoutine(schema.GetName(), function.GetName(), function.GetSignature(), function.GetDefinition(), restored, newObjects, targetSearchPath); err != nil {
+				return err
+			}
+		}
+		for _, procedure := range schema.GetProcedures() {
+			if err := refuseRoutine(schema.GetName(), procedure.GetName(), procedure.GetSignature(), procedure.GetDefinition(), restored, newObjects, targetSearchPath); err != nil {
+				return err
 			}
 		}
 	}
 	return nil
 }
 
-// typeObjects is every object a type name can resolve to, including a sequence's
-// row type. An unqualified routine type follows search_path, so a same-named
-// earlier object shadows a restored view instead of standing in for it.
+// typeObjects is every object a type name can resolve to. A sequence does not
+// provide a named row type, so it is not here: an unqualified routine type
+// follows search_path, and a same-named earlier object shadows a restored view
+// instead of standing in for it.
 func typeObjects(meta *metadatapb.DatabaseSchemaMetadata) map[string]bool {
 	objects := make(map[string]bool)
 	for _, schema := range meta.GetSchemas() {
@@ -524,23 +541,26 @@ func typeObjects(meta *metadatapb.DatabaseSchemaMetadata) map[string]bool {
 		for _, composite := range schema.GetCompositeTypes() {
 			objects[objectKey(schema.GetName(), composite.GetName())] = true
 		}
-		for _, sequence := range schema.GetSequences() {
-			objects[objectKey(schema.GetName(), sequence.GetName())] = true
-		}
 	}
 	return objects
 }
 
 func refuseRoutine(schemaName, name, signature, definition string, restored, objects map[string]bool, searchPath []string) error {
-	for key := range restored {
-		if !parametersNameType(routineArgumentList(signature), key, objects, searchPath) &&
-			!parametersNameType(routineArgumentList(definition), key, objects, searchPath) &&
-			!routineResultNamesType(definition, key, objects, searchPath) {
-			continue
-		}
+	if key, ok := routineUsesType(signature, definition, restored, objects, searchPath); ok {
 		return errors.Errorf("cannot generate a migration: routine %s uses the row type of view %s, which this migration must create", quoteQualified(schemaName, name), quoteRestoredView(key))
 	}
 	return nil
+}
+
+func routineUsesType(signature, definition string, restored, objects map[string]bool, searchPath []string) (string, bool) {
+	for key := range restored {
+		if parametersNameType(routineArgumentList(signature), key, objects, searchPath) ||
+			parametersNameType(routineArgumentList(definition), key, objects, searchPath) ||
+			routineResultNamesType(definition, key, objects, searchPath) {
+			return key, true
+		}
+	}
+	return "", false
 }
 
 // parametersNameType reports whether an argument list declares the type as a
@@ -1203,19 +1223,78 @@ func firstRelationNamed(objectName string, relations map[string]bool, searchPath
 }
 
 // definitionQualifies reports whether the view text names the dependency with its
-// schema, so the match cannot have depended on the unresolved user schema.
+// schema, so the match cannot have depended on the unresolved user schema. Only
+// parsed identifiers outside literals and comments count; a string that merely
+// contains "schema.object" is not a reference.
 func definitionQualifies(definition, schemaName, objectName string) bool {
-	for _, qualified := range []string{
-		quoteQualified(schemaName, objectName),
-		schemaName + "." + objectName,
-		quoteIdentifier(schemaName) + "." + objectName,
-		schemaName + "." + quoteIdentifier(objectName),
-	} {
-		if strings.Contains(definition, qualified) {
-			return true
+	for i := 0; i < len(definition); {
+		switch {
+		case definition[i] == '\'':
+			i = closingQuote(definition, i, '\'') + 1
+		case definition[i] == '$':
+			if end, ok := dollarQuoteEnd(definition, i); ok {
+				i = end + 1
+			} else {
+				i++
+			}
+		case strings.HasPrefix(definition[i:], "--"):
+			end := strings.IndexByte(definition[i+2:], '\n')
+			if end < 0 {
+				return false
+			}
+			i += 2 + end + 1
+		case strings.HasPrefix(definition[i:], "/*"):
+			end := strings.Index(definition[i+2:], "*/")
+			if end < 0 {
+				return false
+			}
+			i += 2 + end + 2
+		case definition[i] == '"' || (isIdentifierByte(definition[i]) && identifierBoundary(definition, i)):
+			next, matched, ok := qualifiedIdentifierAt(definition, i, schemaName, objectName)
+			if matched {
+				return true
+			}
+			if !ok {
+				i++
+				continue
+			}
+			i = next
+		default:
+			i++
 		}
 	}
 	return false
+}
+
+func identifierBoundary(text string, index int) bool {
+	if index == 0 {
+		return true
+	}
+	previous := text[index-1]
+	return !isIdentifierByte(previous) && previous != '.' && previous != '$' && previous != '"'
+}
+
+// qualifiedIdentifierAt parses one dotted identifier pair at start and reports
+// whether it names schemaName.objectName.
+func qualifiedIdentifierAt(text string, start int, schemaName, objectName string) (int, bool, bool) {
+	first, next, firstQuoted, ok := scanIdentifier(text, start)
+	if !ok {
+		return start, false, false
+	}
+	if next >= len(text) || text[next] != '.' {
+		return next, false, true
+	}
+	second, next, secondQuoted, ok := scanIdentifier(text, next+1)
+	if !ok {
+		return next, false, true
+	}
+	if next < len(text) && text[next] == '.' {
+		return next, false, true
+	}
+	if (identifier{name: first, quoted: firstQuoted}).matches(schemaName) && (identifier{name: second, quoted: secondQuoted}).matches(objectName) {
+		return next, true, true
+	}
+	return next, false, true
 }
 
 func ambiguousRoutineTypes(signature, definition string, objects map[string]bool, searchPath []string) bool {
@@ -1406,6 +1485,112 @@ func compositeByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb
 	return nil
 }
 
+// refuseUnsupportedCompositeReordering rejects a middle insert or reorder of a
+// composite's attributes. ADD ATTRIBUTE appends, so the catalog cannot place a
+// new attribute before an existing one, and PostgreSQL cannot reorder fields.
+func refuseUnsupportedCompositeReordering(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) error {
+	for _, schema := range newMeta.GetSchemas() {
+		oldSchema := schemaByName(oldMeta, schema.GetName())
+		if oldSchema == nil {
+			continue
+		}
+		for _, composite := range schema.GetCompositeTypes() {
+			oldComposite := compositeByName(oldSchema, composite.GetName())
+			if oldComposite == nil {
+				continue
+			}
+			positions := make(map[string]int, len(oldComposite.GetAttributes()))
+			for i, attribute := range oldComposite.GetAttributes() {
+				positions[attribute.GetName()] = i
+			}
+			lastPosition := -1
+			insertedAttribute := ""
+			for _, attribute := range composite.GetAttributes() {
+				position, existed := positions[attribute.GetName()]
+				if !existed {
+					if insertedAttribute == "" {
+						insertedAttribute = attribute.GetName()
+					}
+					continue
+				}
+				if insertedAttribute != "" {
+					return errors.Errorf("cannot generate a migration: composite type %s inserts attribute %s before existing attribute %s", quoteQualified(schema.GetName(), composite.GetName()), quoteIdentifier(insertedAttribute), quoteIdentifier(attribute.GetName()))
+				}
+				if position <= lastPosition {
+					return errors.Errorf("cannot generate a migration: composite type %s reorders its attributes", quoteQualified(schema.GetName(), composite.GetName()))
+				}
+				lastPosition = position
+			}
+		}
+	}
+	return nil
+}
+
+// planChangesRoutines reports whether the plan drops or replaces a routine. An
+// unloadable view may depend on it without a catalog edge, so every such view is
+// restored around the routine change.
+func planChangesRoutines(plan *catalog.MigrationPlan) bool {
+	for _, op := range plan.Ops {
+		switch op.Type {
+		case catalog.OpDropFunction, catalog.OpAlterFunction:
+			return true
+		default:
+		}
+	}
+	return false
+}
+
+// releaseRoutineOps moves routine drops and replacements that hold a dropped
+// view's row type ahead of the view drops. Target routines that still hold the
+// type are refused elsewhere; a source-only or changed-away routine can be
+// dropped first.
+func releaseRoutineOps(plan *catalog.MigrationPlan, oldMeta *metadatapb.DatabaseSchemaMetadata, views map[string]bool, searchPath []string, sourceDrops map[string]catalog.MigrationOp) ([]catalog.MigrationOp, map[string]bool) {
+	objects := typeObjects(oldMeta)
+	released := make(map[string]bool)
+	for _, schema := range oldMeta.GetSchemas() {
+		for _, function := range schema.GetFunctions() {
+			if _, ok := routineUsesType(function.GetSignature(), function.GetDefinition(), views, objects, searchPath); ok {
+				released[objectKey(schema.GetName(), function.GetName())] = true
+			}
+		}
+		for _, procedure := range schema.GetProcedures() {
+			if _, ok := routineUsesType(procedure.GetSignature(), procedure.GetDefinition(), views, objects, searchPath); ok {
+				released[objectKey(schema.GetName(), procedure.GetName())] = true
+			}
+		}
+	}
+	if len(released) == 0 {
+		return nil, nil
+	}
+	var ops []catalog.MigrationOp
+	moved := make(map[string]bool)
+	plan.Ops = slices.DeleteFunc(plan.Ops, func(op catalog.MigrationOp) bool {
+		if op.Type != catalog.OpDropFunction && op.Type != catalog.OpAlterFunction {
+			return false
+		}
+		key := objectKey(op.SchemaName, op.ObjectName)
+		if !released[key] {
+			return false
+		}
+		ops = append(ops, op)
+		moved[key] = true
+		return true
+	})
+	for dropKey, op := range sourceDrops {
+		if op.Type != catalog.OpDropFunction {
+			continue
+		}
+		key := objectKey(op.SchemaName, op.ObjectName)
+		if !released[key] {
+			continue
+		}
+		ops = append(ops, op)
+		moved[key] = true
+		delete(sourceDrops, dropKey)
+	}
+	return ops, moved
+}
+
 // restoreUnloadableDependentViews recreates a view the catalog could not parse
 // when a column it depends on is dropped or retyped. The unparsed view is a
 // stand-in on both sides, so the catalog has no dependency edge and would alter
@@ -1413,10 +1598,11 @@ func compositeByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb
 // DependencyColumns is the only record of that edge. It returns the views whose
 // creation the plan defers, which releaseCompositeBeforeTableDrop treats as
 // recreated relations; a view the target adds is one of them.
-func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.Catalog, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, reports ...*catalog.LoadMetadataReport) (map[string]bool, error) {
+func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.Catalog, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, sourceSearchPath []string, sourceDrops map[string]catalog.MigrationOp, reports ...*catalog.LoadMetadataReport) (map[string]bool, map[string]bool, error) {
+	forced := planChangesRoutines(plan)
 	affected := affectedTableColumns(oldMeta, newMeta)
-	if len(affected) == 0 {
-		return nil, nil
+	if len(affected) == 0 && !forced {
+		return nil, nil, nil
 	}
 	unloadable := make(map[string]bool)
 	for _, report := range reports {
@@ -1453,7 +1639,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 			if oldView != nil {
 				entry.oldDeps = dependencyKeys(oldView.GetDependencyColumns())
 				entry.drop = true
-				entry.direct = dependsOnAffectedColumn(view.GetDependencyColumns(), affected) || dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected)
+				entry.direct = forced || dependsOnAffectedColumn(view.GetDependencyColumns(), affected) || dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected)
 			}
 			candidates = append(candidates, entry)
 		}
@@ -1475,7 +1661,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 			if oldView != nil {
 				entry.oldDeps = dependencyKeys(oldView.GetDependencyColumns())
 				entry.drop = true
-				entry.direct = dependsOnAffectedColumn(view.GetDependencyColumns(), affected) || dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected)
+				entry.direct = forced || dependsOnAffectedColumn(view.GetDependencyColumns(), affected) || dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected)
 			}
 			candidates = append(candidates, entry)
 		}
@@ -1487,10 +1673,12 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 				continue
 			}
 			candidates = append(candidates, candidate{
-				key:     objectKey(oldSchema.GetName(), view.GetName()),
-				dropSQL: "DROP VIEW IF EXISTS " + quoteQualified(oldSchema.GetName(), view.GetName()),
-				oldDeps: dependencyKeys(view.GetDependencyColumns()),
-				drop:    true,
+				key:        objectKey(oldSchema.GetName(), view.GetName()),
+				dropSQL:    "DROP VIEW IF EXISTS " + quoteQualified(oldSchema.GetName(), view.GetName()),
+				oldDeps:    dependencyKeys(view.GetDependencyColumns()),
+				unloadable: forced,
+				direct:     forced,
+				drop:       true,
 			})
 		}
 		for _, view := range oldSchema.GetMaterializedViews() {
@@ -1498,10 +1686,12 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 				continue
 			}
 			candidates = append(candidates, candidate{
-				key:     objectKey(oldSchema.GetName(), view.GetName()),
-				dropSQL: "DROP MATERIALIZED VIEW IF EXISTS " + quoteQualified(oldSchema.GetName(), view.GetName()),
-				oldDeps: dependencyKeys(view.GetDependencyColumns()),
-				drop:    true,
+				key:        objectKey(oldSchema.GetName(), view.GetName()),
+				dropSQL:    "DROP MATERIALIZED VIEW IF EXISTS " + quoteQualified(oldSchema.GetName(), view.GetName()),
+				oldDeps:    dependencyKeys(view.GetDependencyColumns()),
+				unloadable: forced,
+				direct:     forced,
+				drop:       true,
 			})
 		}
 	}
@@ -1561,11 +1751,11 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 	}
 	for key := range selected {
 		if schemaName, _ := splitObjectKey(key); schemaName == "bbdataarchive" {
-			return nil, errors.Errorf("cannot generate a migration: backup-schema view %s depends on an object that must be recreated", key)
+			return nil, nil, errors.Errorf("cannot generate a migration: backup-schema view %s depends on an object that must be recreated", key)
 		}
 	}
 	if err := refuseAmbiguousIndexComments(plan.Ops, selected, oldMeta, newMeta); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var items []restoreItem
 	for _, candidate := range candidates {
@@ -1574,7 +1764,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 		}
 	}
 	if len(items) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 	dropOrder := restoreOrder(items, func(item restoreItem) []string { return item.oldDeps })
 	createOrder := restoreOrder(items, func(item restoreItem) []string { return item.newDeps })
@@ -1586,10 +1776,12 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 			restored[item.key] = true
 		}
 	}
+	releasedRoutineOps, releasedRoutines := releaseRoutineOps(plan, oldMeta, dropped, sourceSearchPath, sourceDrops)
 	plan.Ops = slices.DeleteFunc(plan.Ops, func(op catalog.MigrationOp) bool {
 		return opTargetsSelected(op, dropped, oldMeta, newMeta, from)
 	})
-	ops := make([]catalog.MigrationOp, 0, len(plan.Ops)+len(items)*2)
+	ops := make([]catalog.MigrationOp, 0, len(plan.Ops)+len(items)*2+len(releasedRoutineOps))
+	ops = append(ops, releasedRoutineOps...)
 	for i := len(dropOrder) - 1; i >= 0; i-- {
 		item := items[dropOrder[i]]
 		if !item.drop {
@@ -1622,7 +1814,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 		})
 	}
 	plan.Ops = ops
-	return restored, nil
+	return restored, releasedRoutines, nil
 }
 
 // refuseAmbiguousIndexComments rejects a comment on an index name that several of
@@ -2011,12 +2203,19 @@ func affectedTableColumns(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) a
 	affected := make(affectedColumnSet)
 	for _, schema := range oldMeta.GetSchemas() {
 		newSchema := schemaByName(newMeta, schema.GetName())
-		if newSchema == nil {
-			continue
-		}
 		for _, table := range schema.GetTables() {
 			newTable := tableByName(newSchema, table.GetName())
-			if newTable == nil {
+			if newSchema == nil || newTable == nil {
+				// A removed table drops every column, so every dependency on it is
+				// affected. Partitions inherit the parent's columns.
+				markAffected(affected, objectKey(schema.GetName(), table.GetName()))
+				forEachPartitionWithSchema(table.GetPartitions(), schema.GetName(), func(partition *metadatapb.TablePartitionMetadata, partitionSchema string) {
+					markAffected(affected, objectKey(partitionSchema, partition.GetName()))
+				})
+				for _, column := range table.GetColumns() {
+					markAffectedColumn(affected, schema.GetName(), table.GetName(), column.GetName())
+					markAffectedPartitionColumn(affected, schema.GetName(), table.GetPartitions(), column.GetName())
+				}
 				continue
 			}
 			for _, column := range table.GetColumns() {
@@ -2030,15 +2229,32 @@ func affectedTableColumns(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) a
 					newColumn.GetCollationSchema() == column.GetCollationSchema() {
 					continue
 				}
-				tableKey := objectKey(schema.GetName(), table.GetName())
-				if affected[tableKey] == nil {
-					affected[tableKey] = make(map[string]bool)
-				}
-				affected[tableKey][column.GetName()] = true
+				markAffectedColumn(affected, schema.GetName(), table.GetName(), column.GetName())
+				markAffectedPartitionColumn(affected, schema.GetName(), table.GetPartitions(), column.GetName())
 			}
 		}
 	}
 	return affected
+}
+
+func markAffected(affected affectedColumnSet, key string) {
+	if affected[key] == nil {
+		affected[key] = make(map[string]bool)
+	}
+}
+
+func markAffectedColumn(affected affectedColumnSet, schemaName, tableName, columnName string) {
+	key := objectKey(schemaName, tableName)
+	markAffected(affected, key)
+	affected[key][columnName] = true
+}
+
+// markAffectedPartitionColumn records an inherited column change on each
+// partition's own relation key, which is what DependencyColumns may name.
+func markAffectedPartitionColumn(affected affectedColumnSet, parentSchema string, partitions []*metadatapb.TablePartitionMetadata, columnName string) {
+	forEachPartitionWithSchema(partitions, parentSchema, func(partition *metadatapb.TablePartitionMetadata, partitionSchema string) {
+		markAffectedColumn(affected, partitionSchema, partition.GetName(), columnName)
+	})
 }
 
 func dependsOnAffectedColumn(dependencies []*metadatapb.DependencyColumn, affected affectedColumnSet) bool {

@@ -2701,7 +2701,7 @@
     ALTER TYPE "public"."addr" ADD ATTRIBUTE "zip" text COLLATE "C";
     ALTER TYPE "public"."addr" ALTER ATTRIBUTE "city" TYPE character varying(100)
 - description: TestCockroachMetadataDiffCompositeTypeReorderOnlyWarns
-  difference: the legacy reorder warning comment is not emitted. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
+  difference: the catalog now refuses a composite reorder PostgreSQL cannot apply; the legacy generator only warned.
   oldMetadata: |-
     {
       "schemas": [
@@ -2752,6 +2752,7 @@
     -- WARNING: PostgreSQL does not support reordering the attributes of "public"."addr"
 
   catalogExpected: ''
+  catalogError: 'cannot generate a migration: composite type "public"."addr" reorders its attributes'
 - description: TestCockroachMetadataDiffCompositeTypeCommentChanges
   difference: object and attribute comments are emitted in dependency order. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
   oldMetadata: |-
@@ -2906,7 +2907,7 @@
     DROP TYPE "s"."addr";
     DROP SCHEMA s CASCADE
 - description: TestCockroachMetadataDiffCompositeTypeMiddleInsertWarns
-  difference: the legacy reorder warning comment is not emitted. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
+  difference: the catalog now refuses a middle insert, which ADD ATTRIBUTE cannot place; the legacy generator only warned.
   oldMetadata: |-
     {
       "schemas": [
@@ -2962,7 +2963,8 @@
 
     -- WARNING: PostgreSQL does not support reordering the attributes of "public"."addr"
 
-  catalogExpected: ALTER TYPE "public"."addr" ADD ATTRIBUTE "x" text
+  catalogExpected: ''
+  catalogError: 'cannot generate a migration: composite type "public"."addr" inserts attribute "x" before existing attribute "b"'
 - description: TestCockroachMetadataDiffDeferredCompositeDefersReferencedEnumDrop
   difference: catalog uses canonical PostgreSQL identifier quoting, statement terminators and line layout.
   oldMetadata: |-
