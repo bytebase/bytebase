@@ -1223,7 +1223,7 @@ func ambiguousViewDependencies(viewSchema, viewName, definition string, dependen
 		if index := slices.Index(searchPath, actualSchema); index >= 0 && index < userIndex {
 			continue
 		}
-		if definitionQualifies(definition, actualSchema, actualTable) {
+		if definitionQualifies(definition, actualSchema, actualTable, objects, searchPath) {
 			continue
 		}
 		return errors.Errorf("cannot generate a migration: view %s has an unqualified reference to %s, whose $user search-path resolution is ambiguous", quoteQualified(viewSchema, viewName), quoteQualified(actualSchema, actualTable))
@@ -1234,7 +1234,7 @@ func ambiguousViewDependencies(viewSchema, viewName, definition string, dependen
 // definitionQualifies reports whether every relation reference to the object is
 // schema-qualified. It scans FROM/JOIN relation lists, skipping aliases and
 // literals, so `FROM public.t AS t` is safe while `FROM public.t JOIN t` is not.
-func definitionQualifies(definition, schemaName, objectName string) bool {
+func definitionQualifies(definition, schemaName, objectName string, objects map[string]bool, searchPath []string) bool {
 	tokens := definitionTokens(definition)
 	ctes := definitionCTEs(tokens)
 	qualified := false
@@ -1278,7 +1278,7 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 							return false
 						}
 					}
-				} else if matched, unqualified := typeReferenceAfter(tokens, asIndex+1, schemaName, objectName); matched {
+				} else if _, matched, unqualified := typeReferenceAt(tokens, asIndex+1, schemaName, objectName, objects, searchPath); matched {
 					qualified = true
 				} else if unqualified {
 					return false
@@ -1288,16 +1288,13 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 		if token.punct == ':' && i+1 < len(tokens) && tokens[i+1].punct == ':' {
 			i += 2
 			if i < len(tokens) && tokens[i].punct == 0 {
-				first := identifier{name: tokens[i].text, quoted: tokens[i].quoted}
-				if i+2 < len(tokens) && tokens[i+1].punct == '.' && tokens[i+2].punct == 0 {
-					second := identifier{name: tokens[i+2].text, quoted: tokens[i+2].quoted}
-					if first.matches(schemaName) && second.matches(objectName) {
-						qualified = true
-					}
-					i += 2
-				} else if first.matches(objectName) {
+				end, matched, unqualified := typeReferenceAt(tokens, i, schemaName, objectName, objects, searchPath)
+				if matched {
+					qualified = true
+				} else if unqualified {
 					return false
 				}
+				i = end
 			}
 			continue
 		}
@@ -1352,11 +1349,13 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 					if tokens[k].punct != 0 {
 						continue
 					}
-					if matched, unqualified := typeReferenceAfter(tokens, k, schemaName, objectName); matched {
+					end, matched, unqualified := typeReferenceAt(tokens, k, schemaName, objectName, objects, searchPath)
+					if matched {
 						qualified = true
 					} else if unqualified {
 						return false
 					}
+					k = end
 					for k < ofEnd && tokens[k].punct != ',' {
 						k++
 					}
@@ -1370,12 +1369,13 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 				typeEnd = i + 2
 			}
 			if typeEnd+1 < len(tokens) && tokens[typeEnd+1].literal {
-				if matched, unqualified := typeReferenceAfter(tokens, i, schemaName, objectName); matched {
+				end, matched, unqualified := typeReferenceAt(tokens, i, schemaName, objectName, objects, searchPath)
+				if matched {
 					qualified = true
 				} else if unqualified {
 					return false
 				}
-				i = typeEnd
+				i = end
 				continue
 			}
 		}
@@ -1386,6 +1386,11 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 		if i+2 < len(tokens) && tokens[i+1].punct == '.' && tokens[i+2].punct == 0 {
 			secondIndex := i + 2
 			if secondIndex+2 < len(tokens) && tokens[secondIndex+1].punct == '.' && tokens[secondIndex+2].punct == 0 {
+				if secondIndex+3 < len(tokens) && tokens[secondIndex+3].punct == '(' {
+					i = skipParenthesized(tokens, secondIndex+3)
+					i = skipRelationAlias(tokens, i)
+					continue
+				}
 				schema := identifier{name: tokens[secondIndex].text, quoted: tokens[secondIndex].quoted}
 				object := identifier{name: tokens[secondIndex+2].text, quoted: tokens[secondIndex+2].quoted}
 				if schema.matches(schemaName) && object.matches(objectName) {
@@ -1394,11 +1399,21 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 				i = skipRelationAlias(tokens, secondIndex+2)
 				continue
 			}
+			if secondIndex+1 < len(tokens) && tokens[secondIndex+1].punct == '(' {
+				i = skipParenthesized(tokens, secondIndex+1)
+				i = skipRelationAlias(tokens, i)
+				continue
+			}
 			second := identifier{name: tokens[secondIndex].text, quoted: tokens[secondIndex].quoted}
 			if first.matches(schemaName) && second.matches(objectName) {
 				qualified = true
 			}
 			i = skipRelationAlias(tokens, secondIndex)
+			continue
+		}
+		if i+1 < len(tokens) && tokens[i+1].punct == '(' {
+			i = skipParenthesized(tokens, i+1)
+			i = skipRelationAlias(tokens, i)
 			continue
 		}
 		if first.matches(objectName) && !isCTEReference(ctes, first, i) {
@@ -1444,16 +1459,19 @@ func topLevelCastAS(tokens []definitionToken, start, end int) int {
 	return -1
 }
 
-func typeReferenceAfter(tokens []definitionToken, index int, schemaName, objectName string) (bool, bool) {
+func typeReferenceAt(tokens []definitionToken, index int, schemaName, objectName string, objects map[string]bool, searchPath []string) (int, bool, bool) {
 	if index >= len(tokens) || tokens[index].punct != 0 {
-		return false, false
+		return index, false, false
 	}
 	first := identifier{name: tokens[index].text, quoted: tokens[index].quoted}
 	if index+2 < len(tokens) && tokens[index+1].punct == '.' && tokens[index+2].punct == 0 {
 		second := identifier{name: tokens[index+2].text, quoted: tokens[index+2].quoted}
-		return first.matches(schemaName) && second.matches(objectName), false
+		return index + 2, first.matches(schemaName) && second.matches(objectName), false
 	}
-	return false, first.matches(objectName)
+	if builtinTypeWins(typeReference{object: first}, objects, searchPath) {
+		return index, false, false
+	}
+	return index, false, first.matches(objectName)
 }
 
 func identifierKey(identifier identifier) string {

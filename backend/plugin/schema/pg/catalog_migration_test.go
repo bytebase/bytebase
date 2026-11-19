@@ -3566,3 +3566,41 @@ func TestViewDependencyQualificationSeesTypedConstant(t *testing.T) {
 	meta.Schemas[0].Views[0].Definition = "SELECT NULL::public.t, public.t '(1)' FROM public.t"
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }
+
+// TestViewDependencyQualificationSkipsBuiltinCast covers a built-in type whose
+// name also matches the dependency relation.
+func TestViewDependencyQualificationSkipsBuiltinCast(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("text", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT NULL::text FROM public.text",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "text"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
+
+// TestViewDependencyQualificationSkipsFromFunctionCall covers a set-returning
+// function in FROM whose name matches the dependency relation.
+func TestViewDependencyQualificationSkipsFromFunctionCall(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("generate_series", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM public.generate_series, generate_series(1, 2)",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "generate_series"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
