@@ -2014,6 +2014,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "comment with parenthesis in out parameter",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "rcr",
+				Signature:  "rcr()",
+				Definition: "CREATE FUNCTION public.rcr(OUT x public.v /* ( */) RETURNS record LANGUAGE sql AS $$ SELECT $$",
+			}},
+			refused: true,
+		},
+		{
 			name: "quoted parameter before an out parameter",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "q",

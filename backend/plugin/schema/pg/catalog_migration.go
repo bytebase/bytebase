@@ -593,6 +593,20 @@ func parametersNameType(parameters, key string, objects map[string]bool, searchP
 					i = end
 				}
 				continue
+			case '/':
+				if strings.HasPrefix(parameters[i:], "/*") {
+					i = blockCommentEnd(parameters, i) - 1
+				}
+				continue
+			case '-':
+				if strings.HasPrefix(parameters[i:], "--") {
+					if end := strings.IndexByte(parameters[i+2:], '\n'); end >= 0 {
+						i += 2 + end
+					} else {
+						return false
+					}
+				}
+				continue
 			case '(':
 				depth++
 				continue
@@ -638,6 +652,18 @@ func routineArgumentList(definition string) string {
 		case '$':
 			if end, ok := dollarQuoteEnd(definition, i); ok {
 				i = end
+			}
+		case '/':
+			if strings.HasPrefix(definition[i:], "/*") {
+				i = blockCommentEnd(definition, i) - 1
+			}
+		case '-':
+			if strings.HasPrefix(definition[i:], "--") {
+				if end := strings.IndexByte(definition[i+2:], '\n'); end >= 0 {
+					i += 2 + end
+				} else {
+					return ""
+				}
 			}
 		case '(':
 			depth++
@@ -2291,6 +2317,20 @@ func ambiguousParameters(parameters string, objects map[string]bool, searchPath 
 			case '$':
 				if end, ok := dollarQuoteEnd(parameters, i); ok {
 					i = end
+				}
+				continue
+			case '/':
+				if strings.HasPrefix(parameters[i:], "/*") {
+					i = blockCommentEnd(parameters, i) - 1
+				}
+				continue
+			case '-':
+				if strings.HasPrefix(parameters[i:], "--") {
+					if end := strings.IndexByte(parameters[i+2:], '\n'); end >= 0 {
+						i += 2 + end
+					} else {
+						return false
+					}
 				}
 				continue
 			case '(':
