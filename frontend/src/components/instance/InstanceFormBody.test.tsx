@@ -307,8 +307,17 @@ test("places general Agent help beside the connection section heading", () => {
   const askAgentButton = screen.getByRole("button", {
     name: "instance.ask-agent",
   });
+  const importUrlButton = screen.getByRole("button", {
+    name: "instance.connection-string.trigger",
+  });
 
   expect(headingRow?.contains(askAgentButton)).toBe(true);
+  expect(headingRow?.contains(importUrlButton)).toBe(true);
+  expect(askAgentButton.parentElement).toHaveClass("ml-auto", "justify-end");
+  expect(
+    askAgentButton.compareDocumentPosition(importUrlButton) &
+      Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
   expect(connectionTitle).toHaveStyle({ width: "fit-content" });
   expect(askAgentButton.querySelector(".lucide-bot")).not.toBeNull();
   expect(askAgentButton).toHaveClass("h-7", "bg-transparent", "text-accent");

@@ -911,7 +911,7 @@ function ConnectionStringImportPopover({
         <span>{t("instance.connection-string.trigger")}</span>
       </PopoverTrigger>
       <PopoverContent
-        align="start"
+        align="end"
         sideOffset={6}
         initialFocus={() =>
           typeof window !== "undefined" &&
@@ -1910,32 +1910,7 @@ export function InstanceFormBody({
               !isNeon &&
               supportsConnectionString(basicInfo.engine)) ||
             showAskAgent ? (
-              <div className="flex flex-wrap items-center gap-2">
-                {isCreating &&
-                  !isNeon &&
-                  supportsConnectionString(basicInfo.engine) && (
-                    <ConnectionStringImportPopover
-                      key={basicInfo.engine}
-                      engine={basicInfo.engine}
-                      disabled={!allowEdit || disabled}
-                      describedById={
-                        activeConnectionUrlFill
-                          ? connectionUrlStatusId
-                          : undefined
-                      }
-                      resolvePasswordInput={resolvePasswordInput}
-                      onParsed={fillFromConnectionString}
-                    />
-                  )}
-                {showAskAgent && (
-                  <AgentHelpButton
-                    type="button"
-                    size="sm"
-                    onClick={() => onAskAgent()}
-                  >
-                    {t("instance.ask-agent")}
-                  </AgentHelpButton>
-                )}
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                 {activeConnectionUrlFill && (
                   <p
                     id={connectionUrlStatusId}
@@ -1955,6 +1930,31 @@ export function InstanceFormBody({
                     </span>
                   </p>
                 )}
+                {showAskAgent && (
+                  <AgentHelpButton
+                    type="button"
+                    size="sm"
+                    onClick={() => onAskAgent()}
+                  >
+                    {t("instance.ask-agent")}
+                  </AgentHelpButton>
+                )}
+                {isCreating &&
+                  !isNeon &&
+                  supportsConnectionString(basicInfo.engine) && (
+                    <ConnectionStringImportPopover
+                      key={basicInfo.engine}
+                      engine={basicInfo.engine}
+                      disabled={!allowEdit || disabled}
+                      describedById={
+                        activeConnectionUrlFill
+                          ? connectionUrlStatusId
+                          : undefined
+                      }
+                      resolvePasswordInput={resolvePasswordInput}
+                      onParsed={fillFromConnectionString}
+                    />
+                  )}
               </div>
             ) : undefined
           }
