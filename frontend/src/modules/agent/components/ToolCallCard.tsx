@@ -11,6 +11,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Separator } from "@/components/ui/separator";
 import { getPlainValue } from "@/modules/sql-editor/components/ResultView/cell-value";
 import { QueryResultTableGrid } from "@/modules/sql-editor/components/ResultView/QueryResultTableGrid";
 import type {
@@ -355,6 +356,40 @@ export function ToolCallCard({ toolCall, result, hasRecoveryDraft }: Props) {
         : undefined;
   const hasErrorResult =
     errorMessage !== undefined || resultRecord?.kind === "error";
+  const unmaskMethodExplanation = useMemo(() => {
+    if (
+      toolCall.name !== "ask_unmask_method" ||
+      hasErrorResult ||
+      resultRecord?.needsScope !== false ||
+      (resultRecord.method !== "just-in-time" &&
+        resultRecord.method !== "masking-exemption")
+    ) {
+      return undefined;
+    }
+    const explanation = resultRecord.methodExplanation;
+    if (
+      typeof explanation !== "object" ||
+      explanation === null ||
+      Array.isArray(explanation)
+    ) {
+      return undefined;
+    }
+    const { label, description, alternativeReason } = explanation as Record<
+      string,
+      unknown
+    >;
+    if (
+      typeof label !== "string" ||
+      !label.trim() ||
+      typeof description !== "string" ||
+      !description.trim() ||
+      typeof alternativeReason !== "string" ||
+      !alternativeReason.trim()
+    ) {
+      return undefined;
+    }
+    return { label, description, alternativeReason };
+  }, [hasErrorResult, resultRecord, toolCall.name]);
   const operationId =
     typeof parsedArguments === "object" &&
     parsedArguments !== null &&
@@ -732,6 +767,26 @@ export function ToolCallCard({ toolCall, result, hasRecoveryDraft }: Props) {
       )}
 
       {queryPreview && <QueryResultPreview preview={queryPreview} />}
+
+      {unmaskMethodExplanation && (
+        <>
+          <Separator />
+          <div
+            className="flex flex-col gap-1 px-2 py-1.5 break-words"
+            data-agent-unmask-method-explanation
+          >
+            <p className="font-medium text-main">
+              {unmaskMethodExplanation.label}
+            </p>
+            <p className="text-control">
+              {unmaskMethodExplanation.description}
+            </p>
+            <p className="text-control-light">
+              {unmaskMethodExplanation.alternativeReason}
+            </p>
+          </div>
+        </>
+      )}
 
       <CollapsiblePanel className="flex flex-col gap-1 border-t border-block-border px-2 py-1.5">
         {renderExpandedContent()}

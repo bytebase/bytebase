@@ -68,7 +68,105 @@ const renderCard = (operationId: string, result: string) => {
   };
 };
 
+const renderUnmaskMethod = (result: unknown, name = "ask_unmask_method") => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  act(() => {
+    root.render(
+      <ToolCallCard
+        toolCall={{ id: "unmask-method", name, arguments: "{}" }}
+        result={JSON.stringify(result)}
+      />
+    );
+  });
+  return {
+    container,
+    unmount: () => act(() => root.unmount()),
+  };
+};
+
+const unmaskExplanation = {
+  label: "Access Grant",
+  description: "Request temporary access for yourself to one exact query.",
+  alternativeReason: "A masking exemption cannot grant missing query access.",
+};
+
 describe("ToolCallCard", () => {
+  test.each(["just-in-time", "masking-exemption"])(
+    "shows the sole %s method explanation without expanding or adding an action",
+    (method) => {
+      const explanation =
+        method === "just-in-time"
+          ? unmaskExplanation
+          : {
+              label: "Masking exemption",
+              description: "Unmask selected data across different queries.",
+              alternativeReason: "Access Grants are disabled in this project.",
+            };
+      const { container, unmount } = renderUnmaskMethod({
+        method,
+        needsScope: false,
+        methodExplanation: explanation,
+      });
+      try {
+        const summary = container.querySelector(
+          "[data-agent-unmask-method-explanation]"
+        );
+        expect(summary).not.toBeNull();
+        expect(summary).toHaveTextContent(explanation.label);
+        expect(summary).toHaveTextContent(explanation.description);
+        expect(summary).toHaveTextContent(explanation.alternativeReason);
+        expect(container.querySelectorAll("button")).toHaveLength(1);
+        expect(container.querySelector("button")).toHaveAttribute(
+          "aria-expanded",
+          "false"
+        );
+        expect(container.querySelector("pre")).toBeNull();
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test.each([
+    { method: "just-in-time", needsScope: false },
+    { method: "just-in-time", methodExplanation: unmaskExplanation },
+    { method: null, needsScope: false, methodExplanation: unmaskExplanation },
+    { method: "other", needsScope: false, methodExplanation: unmaskExplanation },
+    { method: "just-in-time", needsScope: true, methodExplanation: unmaskExplanation },
+    { method: "just-in-time", needsScope: false, methodExplanation: null },
+    { method: "just-in-time", needsScope: false, methodExplanation: [] },
+    { method: "just-in-time", needsScope: false, methodExplanation: { ...unmaskExplanation, label: " " } },
+    { method: "just-in-time", needsScope: false, methodExplanation: { ...unmaskExplanation, description: " " } },
+    { method: "just-in-time", needsScope: false, methodExplanation: { ...unmaskExplanation, alternativeReason: 1 } },
+    { method: "just-in-time", needsScope: false, methodExplanation: { ...unmaskExplanation, alternativeReason: " " } },
+    { method: "just-in-time", needsScope: false, methodExplanation: unmaskExplanation, error: "Unavailable" },
+    { method: "just-in-time", needsScope: false, methodExplanation: unmaskExplanation, kind: "error", message: "Unavailable" },
+  ])("omits an incomplete or unsuccessful unmask explanation: %j", (result) => {
+    const { container, unmount } = renderUnmaskMethod(result);
+    try {
+      expect(
+        container.querySelector("[data-agent-unmask-method-explanation]")
+      ).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
+  test("does not show unmask explanations supplied by another tool", () => {
+    const { container, unmount } = renderUnmaskMethod(
+      { method: "just-in-time", needsScope: false, methodExplanation: unmaskExplanation },
+      "get_skill"
+    );
+    try {
+      expect(
+        container.querySelector("[data-agent-unmask-method-explanation]")
+      ).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
   test.each(["sampled", "omitted"])(
     "labels %s row previews without an empty-success message",
     (level) => {

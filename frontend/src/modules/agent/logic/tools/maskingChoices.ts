@@ -37,6 +37,44 @@ function contextGuard(context: Context): () => void {
   return check;
 }
 
+function unavailableUnmaskMethodReason(
+  availableMethod: string,
+  setup: Awaited<ReturnType<typeof getMaskingSetup>>,
+  context: { queryAccessMissing?: boolean; forCurrentUser?: boolean }
+): string {
+  if (availableMethod === "just-in-time") {
+    if (context.queryAccessMissing)
+      return i18n.t(
+        "agent.masking.unmask-method.exemption-query-access-required"
+      );
+    const exemption = setup.steps.find(
+      (step) => step.id === "masking-exemptions"
+    );
+    if (
+      [
+        setup.scopeAccess?.project,
+        exemption?.readAccess,
+        exemption?.configure,
+      ].some((access) => access?.status === "denied")
+    )
+      return i18n.t("agent.masking.unmask-method.exemption-permission-denied");
+    if (setup.features.masking === "unavailable")
+      return i18n.t(
+        "agent.masking.unmask-method.exemption-feature-unavailable"
+      );
+    return i18n.t("agent.masking.unmask-method.exemption-unverified");
+  }
+  if (context.forCurrentUser === false)
+    return i18n.t("agent.masking.unmask-method.jit-self-only");
+  if (setup.justInTime.enabled === false)
+    return i18n.t("agent.masking.unmask-method.jit-disabled");
+  if (setup.justInTime.create?.status === "denied")
+    return i18n.t("agent.masking.unmask-method.jit-permission-denied");
+  if (setup.justInTime.feature === "unavailable")
+    return i18n.t("agent.masking.unmask-method.jit-feature-unavailable");
+  return i18n.t("agent.masking.unmask-method.jit-unverified");
+}
+
 export async function getUnmaskMethodChoices(
   context: Context & {
     projectName?: string;
@@ -48,6 +86,11 @@ export async function getUnmaskMethodChoices(
   project?: string;
   database?: string;
   options: AgentAskUserOption[];
+  methodExplanation?: {
+    label: string;
+    description: string;
+    alternativeReason: string;
+  };
   needsScope: boolean;
   setup: Awaited<ReturnType<typeof getMaskingSetup>>;
 }> {
@@ -76,7 +119,7 @@ export async function getUnmaskMethodChoices(
     if (verified?.length !== 1 || verified[0].value !== context.database)
       throw new Error("The selected database is unavailable in this project.");
   }
-  const options: AgentAskUserOption[] = [];
+  const options: (AgentAskUserOption & { description: string })[] = [];
   const exemption = setup.steps.find(
     (step) => step.id === "masking-exemptions"
   );
@@ -110,6 +153,19 @@ export async function getUnmaskMethodChoices(
       ? { database: context.database }
       : {}),
     options,
+    ...(options.length === 1
+      ? {
+          methodExplanation: {
+            label: options[0].label,
+            description: options[0].description,
+            alternativeReason: unavailableUnmaskMethodReason(
+              options[0].value,
+              setup,
+              context
+            ),
+          },
+        }
+      : {}),
     needsScope: !context.projectName,
     setup,
   };
