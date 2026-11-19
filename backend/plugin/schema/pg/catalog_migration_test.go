@@ -2857,3 +2857,73 @@ func TestViewDependencyQualificationSkipsCTEs(t *testing.T) {
 	paths := []string{"$user", "public"}
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }
+
+// TestViewDependencyQualificationScopesCTEs covers a nested CTE: its name is not
+// visible after the subquery closes, so the final unqualified reference is still
+// ambiguous even though an earlier occurrence was qualified.
+func TestViewDependencyQualificationScopesCTEs(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM public.t WHERE EXISTS (WITH t AS (SELECT * FROM public.t) SELECT * FROM t) UNION ALL SELECT * FROM t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+}
+
+// TestSnapshotObjectsIncludesPartitionConstraints covers a partition CHECK
+// constraint reported under con:<schema>.<partition>.<name>.
+func TestSnapshotObjectsIncludesPartitionConstraints(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+		{Name: "main", Tables: []*metadatapb.TableMetadata{{
+			Name: "t",
+			Partitions: []*metadatapb.TablePartitionMetadata{{
+				Name:             "p",
+				Schema:           "parted",
+				CheckConstraints: []*metadatapb.CheckConstraintMetadata{{Name: "c", Expression: "missing <> ''"}},
+			}},
+		}}},
+		{Name: "parted"},
+	}}
+	objects := snapshotObjects(meta)
+	require.NotNil(t, objects["con:parted.p.c"])
+}
+
+// TestBuiltinMultiwordTypeIsCaseInsensitive covers SQL keywords in metadata
+// spelled in upper or mixed case; only quoted names remain case-sensitive.
+func TestBuiltinMultiwordTypeIsCaseInsensitive(t *testing.T) {
+	require.True(t, builtinMultiwordType("DOUBLE PRECISION"))
+	require.True(t, builtinMultiwordType("timestamp WITHOUT TIME ZONE"))
+	require.False(t, builtinMultiwordType("public.PRECISION"))
+}
+
+// TestReleasedSourceOnlyRoutineDropsAreSorted covers the map iteration order of
+// source-only routine drops that depend on a restored view.
+func TestReleasedSourceOnlyRoutineDropsAreSorted(t *testing.T) {
+	oldMeta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name:  "public",
+		Views: []*metadatapb.ViewMetadata{{Name: "v", Definition: "SELECT 1"}},
+		Functions: []*metadatapb.FunctionMetadata{
+			{Name: "b", Signature: "b(v)"},
+			{Name: "a", Signature: "a(v)"},
+		},
+	}}}
+	sourceDrops := map[string]catalog.MigrationOp{
+		"func:public.b|b(v)": {Type: catalog.OpDropFunction, SchemaName: "public", ObjectName: "b", SQL: `DROP FUNCTION "public"."b"(public.v)`},
+		"func:public.a|a(v)": {Type: catalog.OpDropFunction, SchemaName: "public", ObjectName: "a", SQL: `DROP FUNCTION "public"."a"(public.v)`},
+	}
+	ops, moved := releaseRoutineOps(&catalog.MigrationPlan{}, oldMeta, map[string]bool{objectKey("public", "v"): true}, []string{"public"}, sourceDrops)
+	require.Len(t, ops, 2)
+	require.Equal(t, "a", ops[0].ObjectName)
+	require.Equal(t, "b", ops[1].ObjectName)
+	require.True(t, moved[objectKey("public", "a")])
+	require.Empty(t, sourceDrops)
+}

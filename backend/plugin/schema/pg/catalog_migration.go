@@ -755,7 +755,8 @@ func namesType(text, key string, objects map[string]bool, searchPath []string) b
 // builtinMultiwordType reports whether text declares a built-in type spelled with
 // several words. Its last word is part of that type, not a reference of its own.
 func builtinMultiwordType(text string) bool {
-	for _, prefix := range []string{"SETOF ", "VARIADIC "} {
+	text = strings.ToLower(text)
+	for _, prefix := range []string{"setof ", "variadic "} {
 		text = strings.TrimSpace(strings.TrimPrefix(text, prefix))
 	}
 	for strings.HasSuffix(text, "[]") {
@@ -1259,7 +1260,7 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 			i = skipRelationAlias(tokens, i+2)
 			continue
 		}
-		if first.matches(objectName) && !ctes[identifierKey(first)] {
+		if first.matches(objectName) && !isCTEReference(ctes, first, i) {
 			return false
 		}
 		i = skipRelationAlias(tokens, i)
@@ -1274,13 +1275,58 @@ func identifierKey(identifier identifier) string {
 	return "u:" + strings.ToLower(identifier.name)
 }
 
-// definitionCTEs collects the names declared by WITH, so a CTE reference is not
-// mistaken for a reference to a same-named dependency relation.
-func definitionCTEs(tokens []definitionToken) map[string]bool {
-	ctes := make(map[string]bool)
+// cteScope is a CTE name and the token range its query owns. A nested WITH ends
+// at the parenthesis that closes its subquery.
+type cteScope struct {
+	name       identifier
+	start, end int
+}
+
+func isCTEReference(scopes []cteScope, name identifier, index int) bool {
+	for _, scope := range scopes {
+		if index >= scope.start && index < scope.end && identifierKey(scope.name) == identifierKey(name) {
+			return true
+		}
+	}
+	return false
+}
+
+// definitionCTEs collects the scoped names declared by WITH, so a CTE reference
+// is not mistaken for a reference to a same-named dependency relation.
+func definitionCTEs(tokens []definitionToken) []cteScope {
+	depthBefore := make([]int, len(tokens))
+	depth := 0
+	for i, token := range tokens {
+		depthBefore[i] = depth
+		switch token.punct {
+		case '(':
+			depth++
+		case ')':
+			depth--
+		default:
+		}
+	}
+	var scopes []cteScope
 	for i := 0; i < len(tokens); i++ {
 		if tokens[i].punct != 0 || tokens[i].quoted || !strings.EqualFold(tokens[i].text, "WITH") {
 			continue
+		}
+		start := i
+		baseDepth := depthBefore[i]
+		end := len(tokens)
+		scanDepth := baseDepth
+		for j := i; j < len(tokens); j++ {
+			switch tokens[j].punct {
+			case '(':
+				scanDepth++
+			case ')':
+				scanDepth--
+				if scanDepth < baseDepth {
+					end = j
+					j = len(tokens)
+				}
+			default:
+			}
 		}
 		i++
 		if i < len(tokens) && tokens[i].punct == 0 && !tokens[i].quoted && strings.EqualFold(tokens[i].text, "RECURSIVE") {
@@ -1309,7 +1355,7 @@ func definitionCTEs(tokens []definitionToken) map[string]bool {
 				break
 			}
 			i = skipParenthesized(tokens, i) + 1
-			ctes[identifierKey(name)] = true
+			scopes = append(scopes, cteScope{name: name, start: start, end: end})
 			if i < len(tokens) && tokens[i].punct == ',' {
 				i++
 				continue
@@ -1317,7 +1363,7 @@ func definitionCTEs(tokens []definitionToken) map[string]bool {
 			break
 		}
 	}
-	return ctes
+	return scopes
 }
 
 func skipParenthesized(tokens []definitionToken, index int) int {
@@ -1701,16 +1747,17 @@ func releaseRoutineOps(plan *catalog.MigrationPlan, oldMeta *metadatapb.Database
 		moved[key] = true
 		return true
 	})
+	var dropKeys []string
 	for dropKey, op := range sourceDrops {
-		if op.Type != catalog.OpDropFunction {
-			continue
+		if op.Type == catalog.OpDropFunction && released[objectKey(op.SchemaName, op.ObjectName)] {
+			dropKeys = append(dropKeys, dropKey)
 		}
-		key := objectKey(op.SchemaName, op.ObjectName)
-		if !released[key] {
-			continue
-		}
+	}
+	slices.Sort(dropKeys)
+	for _, dropKey := range dropKeys {
+		op := sourceDrops[dropKey]
 		ops = append(ops, op)
-		moved[key] = true
+		moved[objectKey(op.SchemaName, op.ObjectName)] = true
 		delete(sourceDrops, dropKey)
 	}
 	return ops, moved
@@ -2618,6 +2665,13 @@ func snapshotObjects(meta *metadatapb.DatabaseSchemaMetadata) map[string]proto.M
 				objects["rel:"+partition] = p
 				for _, idx := range p.GetIndexes() {
 					objects["idx:"+partition+"."+idx.GetName()] = idx
+					objects["con:"+partition+"."+idx.GetName()] = idx
+				}
+				for _, check := range p.GetCheckConstraints() {
+					objects["con:"+partition+"."+check.GetName()] = check
+				}
+				for _, exclude := range p.GetExcludeConstraints() {
+					objects["con:"+partition+"."+exclude.GetName()] = exclude
 				}
 			})
 		}
