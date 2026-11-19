@@ -1311,7 +1311,6 @@ func definitionCTEs(tokens []definitionToken) []cteScope {
 		if tokens[i].punct != 0 || tokens[i].quoted || !strings.EqualFold(tokens[i].text, "WITH") {
 			continue
 		}
-		start := i
 		baseDepth := depthBefore[i]
 		end := len(tokens)
 		scanDepth := baseDepth
@@ -1329,7 +1328,9 @@ func definitionCTEs(tokens []definitionToken) []cteScope {
 			}
 		}
 		i++
+		recursive := false
 		if i < len(tokens) && tokens[i].punct == 0 && !tokens[i].quoted && strings.EqualFold(tokens[i].text, "RECURSIVE") {
+			recursive = true
 			i++
 		}
 		for i < len(tokens) {
@@ -1354,8 +1355,14 @@ func definitionCTEs(tokens []definitionToken) []cteScope {
 			if i >= len(tokens) || tokens[i].punct != '(' {
 				break
 			}
-			i = skipParenthesized(tokens, i) + 1
-			scopes = append(scopes, cteScope{name: name, start: start, end: end})
+			bodyStart := i
+			bodyEnd := skipParenthesized(tokens, i)
+			i = bodyEnd + 1
+			visibleFrom := i
+			if recursive {
+				visibleFrom = bodyStart
+			}
+			scopes = append(scopes, cteScope{name: name, start: visibleFrom, end: end})
 			if i < len(tokens) && tokens[i].punct == ',' {
 				i++
 				continue
@@ -1772,6 +1779,14 @@ func releaseRoutineOps(plan *catalog.MigrationPlan, oldMeta *metadatapb.Database
 // recreated relations; a view the target adds is one of them.
 func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.Catalog, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, sourceSearchPath []string, sourceDrops map[string]catalog.MigrationOp, reports ...*catalog.LoadMetadataReport) (map[string]bool, map[string]bool, error) {
 	forced := planChangesRoutines(plan)
+	if !forced {
+		for _, op := range sourceDrops {
+			if op.Type == catalog.OpDropFunction {
+				forced = true
+				break
+			}
+		}
+	}
 	affected := affectedTableColumns(oldMeta, newMeta)
 	if len(affected) == 0 && !forced {
 		return nil, nil, nil

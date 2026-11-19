@@ -2877,6 +2877,9 @@ func TestViewDependencyQualificationScopesCTEs(t *testing.T) {
 	paths := []string{"$user", "public"}
 	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
 	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+
+	meta.Schemas[0].Views[0].Definition = "WITH RECURSIVE t AS (SELECT * FROM t) SELECT * FROM public.t"
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), "a recursive CTE may reference itself")
 }
 
 // TestSnapshotObjectsIncludesPartitionConstraints covers a partition CHECK
@@ -2926,4 +2929,51 @@ func TestReleasedSourceOnlyRoutineDropsAreSorted(t *testing.T) {
 	require.Equal(t, "b", ops[1].ObjectName)
 	require.True(t, moved[objectKey("public", "a")])
 	require.Empty(t, sourceDrops)
+}
+
+// TestSourceOnlyRoutineDropForcesViewRestoration covers a routine that exists only
+// in source and is reported missing: its synthesized drop must force the
+// unloadable view restoration even when no table column changed.
+func TestSourceOnlyRoutineDropForcesViewRestoration(t *testing.T) {
+	snapshot := func(withFunction bool) *model.DatabaseMetadata {
+		schemas := []*metadatapb.SchemaMetadata{{Name: "public", Views: []*metadatapb.ViewMetadata{{Name: "v", Definition: "SELECT FROM"}}}}
+		if withFunction {
+			schemas[0].Functions = []*metadatapb.FunctionMetadata{{
+				Name:       "f",
+				Signature:  "f(v)",
+				Definition: "CREATE FUNCTION public.f(x v) RETURNS integer LANGUAGE sql AS @@invalid@@",
+			}}
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: schemas}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot(true), snapshot(false))
+	require.NoError(t, err)
+	dropFunction := strings.Index(sql, `DROP FUNCTION`)
+	dropView := strings.Index(sql, `DROP VIEW IF EXISTS "public"."v"`)
+	createView := strings.Index(sql, `CREATE VIEW "public"."v"`)
+	require.GreaterOrEqual(t, dropFunction, 0, sql)
+	require.GreaterOrEqual(t, dropView, 0, sql)
+	require.GreaterOrEqual(t, createView, 0, sql)
+	require.Less(t, dropFunction, dropView, sql)
+}
+
+// TestCTEVisibilityFollowsDeclarationOrder covers a later CTE not being visible
+// to an earlier CTE body: the first `t` still names the dependency relation.
+func TestCTEVisibilityFollowsDeclarationOrder(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "WITH x AS (SELECT * FROM t), t AS (SELECT 1) SELECT * FROM public.t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
 }
