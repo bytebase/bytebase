@@ -721,7 +721,7 @@ func routineReturnClause(definition string) string {
 	}
 	rest := definition[skipSQLWhitespace(definition, index+len("RETURNS")):]
 	end := len(rest)
-	for _, keyword := range []string{"AS", "LANGUAGE", "IMMUTABLE", "STABLE", "VOLATILE", "STRICT", "SECURITY", "COST", "ROWS", "WINDOW", "PARALLEL", "LEAKPROOF", "SUPPORT", "TRANSFORM", "SET", "CALLED", "RETURNS"} {
+	for _, keyword := range []string{"AS", "LANGUAGE", "IMMUTABLE", "STABLE", "VOLATILE", "STRICT", "SECURITY", "COST", "ROWS", "WINDOW", "PARALLEL", "LEAKPROOF", "SUPPORT", "TRANSFORM", "SET", "CALLED", "RETURNS", "NOT"} {
 		if i := indexOutsideQuotesKeyword(rest, keyword); i >= 0 && i < end {
 			end = i
 		}
@@ -1154,6 +1154,9 @@ func rejectAmbiguousUserTypes(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadat
 		}
 		objects := typeObjects(meta)
 		for _, schema := range meta.GetSchemas() {
+			if schema.GetName() == "bbdataarchive" {
+				continue
+			}
 			for _, table := range schema.GetTables() {
 				for _, column := range table.GetColumns() {
 					if ambiguousTypeText(column.GetType(), objects, searchPath) {
@@ -1783,6 +1786,18 @@ func definitionTokens(text string) []definitionToken {
 			i = end + 1
 		case text[i] == '$':
 			if end, ok := dollarQuoteEnd(text, i); ok {
+				if isRegclassToken(text, end+1) {
+					openEnd := i + 1
+					for openEnd < len(text) && text[openEnd] != '$' {
+						openEnd++
+					}
+					openEnd++
+					tagLength := openEnd - i
+					contentEnd := end - tagLength + 1
+					if openEnd <= contentEnd {
+						tokens = append(tokens, definitionToken{text: text[openEnd:contentEnd], literal: true, regclass: true})
+					}
+				}
 				i = end + 1
 			} else if isIdentifierByte(text[i]) {
 				name, next, quoted, ok := scanIdentifier(text, i)

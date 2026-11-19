@@ -1969,6 +1969,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "returns followed by not leakproof",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "rnl",
+				Signature:  "rnl()",
+				Definition: "CREATE FUNCTION public.rnl() RETURNS public.v NOT LEAKPROOF LANGUAGE sql AS $$ SELECT $$",
+			}},
+			refused: true,
+		},
+		{
 			name: "quoted parameter before an out parameter",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "q",
@@ -3859,6 +3868,51 @@ func TestBackupViewIsExcludedFromAmbiguityValidation(t *testing.T) {
 					Definition:        "SELECT * FROM t",
 					DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
 				}},
+			},
+		},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
+
+// TestViewDependencyQualificationSeesDollarRegclass covers a dollar-quoted
+// regclass literal.
+func TestViewDependencyQualificationSeesDollarRegclass(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT $$t$$::regclass, 'public.t'::regclass FROM public.t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.ErrorContains(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), `view "public"."w" has an unqualified reference to "public"."t"`)
+
+	meta.Schemas[0].Views[0].Definition = "SELECT $$public.t$$::regclass, 'public.t'::regclass FROM public.t"
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
+
+// TestBackupTypeAmbiguityIsIgnored covers a backup column with an unqualified
+// user-defined type under an unresolved $user path.
+func TestBackupTypeAmbiguityIsIgnored(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name: "public",
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+					Name:       "shared",
+					Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "x", Type: "text"}},
+				}},
+			},
+			{
+				Name:   "bbdataarchive",
+				Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "c", Type: "shared"})},
 			},
 		},
 	}
