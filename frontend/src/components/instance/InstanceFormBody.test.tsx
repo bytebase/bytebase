@@ -313,9 +313,9 @@ test("places general Agent help beside the connection section heading", () => {
 
   expect(headingRow?.contains(askAgentButton)).toBe(true);
   expect(headingRow?.contains(importUrlButton)).toBe(true);
-  expect(askAgentButton.parentElement).toHaveClass("ml-auto", "justify-end");
+  expect(askAgentButton).toHaveClass("ml-auto");
   expect(
-    askAgentButton.compareDocumentPosition(importUrlButton) &
+    importUrlButton.compareDocumentPosition(askAgentButton) &
       Node.DOCUMENT_POSITION_FOLLOWING
   ).toBeTruthy();
   expect(connectionTitle).toHaveStyle({ width: "fit-content" });

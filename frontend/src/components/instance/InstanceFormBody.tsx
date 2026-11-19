@@ -911,7 +911,7 @@ function ConnectionStringImportPopover({
         <span>{t("instance.connection-string.trigger")}</span>
       </PopoverTrigger>
       <PopoverContent
-        align="end"
+        align="start"
         sideOffset={6}
         initialFocus={() =>
           typeof window !== "undefined" &&
@@ -1910,7 +1910,23 @@ export function InstanceFormBody({
               !isNeon &&
               supportsConnectionString(basicInfo.engine)) ||
             showAskAgent ? (
-              <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                {isCreating &&
+                  !isNeon &&
+                  supportsConnectionString(basicInfo.engine) && (
+                    <ConnectionStringImportPopover
+                      key={basicInfo.engine}
+                      engine={basicInfo.engine}
+                      disabled={!allowEdit || disabled}
+                      describedById={
+                        activeConnectionUrlFill
+                          ? connectionUrlStatusId
+                          : undefined
+                      }
+                      resolvePasswordInput={resolvePasswordInput}
+                      onParsed={fillFromConnectionString}
+                    />
+                  )}
                 {activeConnectionUrlFill && (
                   <p
                     id={connectionUrlStatusId}
@@ -1934,27 +1950,12 @@ export function InstanceFormBody({
                   <AgentHelpButton
                     type="button"
                     size="sm"
+                    className="ml-auto"
                     onClick={() => onAskAgent()}
                   >
                     {t("instance.ask-agent")}
                   </AgentHelpButton>
                 )}
-                {isCreating &&
-                  !isNeon &&
-                  supportsConnectionString(basicInfo.engine) && (
-                    <ConnectionStringImportPopover
-                      key={basicInfo.engine}
-                      engine={basicInfo.engine}
-                      disabled={!allowEdit || disabled}
-                      describedById={
-                        activeConnectionUrlFill
-                          ? connectionUrlStatusId
-                          : undefined
-                      }
-                      resolvePasswordInput={resolvePasswordInput}
-                      onParsed={fillFromConnectionString}
-                    />
-                  )}
               </div>
             ) : undefined
           }
