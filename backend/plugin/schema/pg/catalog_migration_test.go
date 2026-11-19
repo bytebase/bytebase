@@ -3406,3 +3406,45 @@ func TestUnloadableBackupChangeIsIgnored(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, sql)
 }
+
+// TestViewDependencyQualificationSeesSQLStandardCast covers CAST(NULL AS t):
+// the type position is a row-type dependency like a :: cast.
+func TestViewDependencyQualificationSeesSQLStandardCast(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT CAST(NULL AS t) FROM public.t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+
+	meta.Schemas[0].Views[0].Definition = "SELECT CAST(NULL AS public.t) FROM public.t"
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
+
+// TestBackupRoutineChangeDoesNotRestoreManagedMatview covers a backup-only
+// routine change: it must not force a managed unloadable materialized view to be
+// rebuilt WITHOUT DATA.
+func TestBackupRoutineChangeDoesNotRestoreManagedMatview(t *testing.T) {
+	snapshot := func(body string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+			{Name: "public", MaterializedViews: []*metadatapb.MaterializedViewMetadata{{Name: "mv", Definition: "SELECT FROM"}}},
+			{Name: "bbdataarchive", Functions: []*metadatapb.FunctionMetadata{{
+				Name:       "f",
+				Signature:  "f()",
+				Definition: "CREATE FUNCTION bbdataarchive.f() RETURNS integer LANGUAGE sql AS $$ SELECT " + body + " $$",
+			}}},
+		}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("1"), snapshot("2"))
+	require.NoError(t, err)
+	require.Empty(t, sql)
+}

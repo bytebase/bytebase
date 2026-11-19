@@ -1267,6 +1267,16 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 			}
 			continue
 		}
+		if !token.quoted && strings.EqualFold(token.text, "CAST") && i+1 < len(tokens) && tokens[i+1].punct == '(' {
+			castEnd := skipParenthesized(tokens, i+1)
+			if asIndex := topLevelCastAS(tokens, i+2, castEnd); asIndex >= 0 {
+				if matched, unqualified := typeReferenceAfter(tokens, asIndex+1, schemaName, objectName); matched {
+					qualified = true
+				} else if unqualified {
+					return false
+				}
+			}
+		}
 		if token.punct == ':' && i+1 < len(tokens) && tokens[i+1].punct == ':' {
 			i += 2
 			if i < len(tokens) && tokens[i].punct == 0 {
@@ -1341,6 +1351,35 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 		i = skipRelationAlias(tokens, i)
 	}
 	return qualified
+}
+
+func topLevelCastAS(tokens []definitionToken, start, end int) int {
+	depth := 0
+	for i := start; i < end; i++ {
+		switch tokens[i].punct {
+		case '(':
+			depth++
+		case ')':
+			depth--
+		default:
+			if depth == 0 && tokens[i].punct == 0 && !tokens[i].quoted && strings.EqualFold(tokens[i].text, "AS") {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+func typeReferenceAfter(tokens []definitionToken, index int, schemaName, objectName string) (bool, bool) {
+	if index >= len(tokens) || tokens[index].punct != 0 {
+		return false, false
+	}
+	first := identifier{name: tokens[index].text, quoted: tokens[index].quoted}
+	if index+2 < len(tokens) && tokens[index+1].punct == '.' && tokens[index+2].punct == 0 {
+		second := identifier{name: tokens[index+2].text, quoted: tokens[index+2].quoted}
+		return first.matches(schemaName) && second.matches(objectName), false
+	}
+	return false, first.matches(objectName)
 }
 
 func identifierKey(identifier identifier) string {
@@ -1972,6 +2011,9 @@ func refuseUnsupportedCompositeReordering(oldMeta, newMeta *metadatapb.DatabaseS
 // restored around the routine change.
 func planChangesRoutines(plan *catalog.MigrationPlan) bool {
 	for _, op := range plan.Ops {
+		if op.SchemaName == "bbdataarchive" {
+			continue
+		}
 		switch op.Type {
 		case catalog.OpDropFunction, catalog.OpAlterFunction:
 			return true
@@ -2044,7 +2086,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 	routineForced := planChangesRoutines(plan)
 	if !routineForced {
 		for _, op := range sourceDrops {
-			if op.Type == catalog.OpDropFunction {
+			if op.SchemaName != "bbdataarchive" && op.Type == catalog.OpDropFunction {
 				routineForced = true
 				break
 			}
