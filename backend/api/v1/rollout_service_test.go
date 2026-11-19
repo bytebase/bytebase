@@ -2,10 +2,13 @@ package v1
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -390,4 +393,46 @@ func TestGetSessionNeedsAHandleOrAReader(t *testing.T) {
 	t.Parallel()
 	_, err := getSession(context.Background(), storepb.Engine_POSTGRES, noHandleDriver{}, "bytebase-taskrun-1")
 	require.ErrorContains(t, err, "needs a direct database/sql connection")
+}
+
+// sqlDBDriver is a driver whose only session capability is the *sql.DB it
+// holds, which is the fallback getSession reads.
+type sqlDBDriver struct {
+	db.Driver
+	handle *sql.DB
+}
+
+func (d sqlDBDriver) GetDB() *sql.DB { return d.handle }
+
+// TestGetSessionCockroachFallback pins that the fallback does not send
+// PostgreSQL's pg_blocking_pids, which CockroachDB does not implement.
+func TestGetSessionCockroachFallback(t *testing.T) {
+	t.Parallel()
+	handle, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherFunc(func(_, actual string) error {
+		if strings.Contains(actual, "pg_blocking_pids") {
+			return errors.New("CockroachDB has no pg_blocking_pids")
+		}
+		return nil
+	})))
+	require.NoError(t, err)
+	defer handle.Close()
+
+	start := time.Now()
+	rows := sqlmock.NewRows([]string{
+		"pid", "blocked_by_pids", "query", "state", "wait_event_type", "wait_event",
+		"datname", "usename", "application_name", "client_addr", "client_port",
+		"backend_start", "xact_start", "query_start",
+	}).AddRow(42, "{}", "SELECT pg_sleep(20)", "active", nil, nil, "smoke", "root", "bytebase-taskrun-7", nil, nil, start, nil, nil)
+	mock.ExpectQuery("pg_stat_activity").WithArgs("bytebase-taskrun-7").WillReturnRows(rows)
+
+	got, err := getSession(context.Background(), storepb.Engine_COCKROACHDB, sqlDBDriver{handle: handle}, "bytebase-taskrun-7")
+	require.NoError(t, err)
+	postgres := got.GetPostgres()
+	require.NotNil(t, postgres)
+	require.NotNil(t, postgres.Session)
+	require.Equal(t, "42", postgres.Session.Pid)
+	require.Equal(t, "bytebase-taskrun-7", postgres.Session.ApplicationName)
+	require.Contains(t, postgres.Session.Query, "pg_sleep")
+	require.Empty(t, postgres.Session.BlockedByPids)
+	require.NoError(t, mock.ExpectationsWereMet())
 }

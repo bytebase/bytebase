@@ -681,19 +681,9 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Req
 	return connect.NewResponse(session), nil
 }
 
-func getSession(ctx context.Context, engine storepb.Engine, driver db.Driver, appName string) (*v1pb.TaskRunSession, error) {
-	// A driver whose engine package reads its own sessions answers here; the
-	// others are read through the pool they still hold.
-	if reader, ok := driver.(db.TaskRunSessionReader); ok {
-		return reader.TaskRunSession(ctx, appName)
-	}
-	sqlDB := db.SQLDB(driver)
-	switch engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB:
-		if sqlDB == nil {
-			return nil, errors.Errorf("session monitoring for engine %v needs a direct database/sql connection, but the driver does not expose one", engine.String())
-		}
-		query := `
+// postgresTaskRunSessionQuery reads one session by application name and the
+// sessions that block it or that it blocks.
+const postgresTaskRunSessionQuery = `
 			WITH target_session AS (
 				SELECT pid FROM pg_catalog.pg_stat_activity WHERE application_name = $1 LIMIT 1
 			)
@@ -719,76 +709,121 @@ func getSession(ctx context.Context, engine storepb.Engine, driver db.Driver, ap
 			   OR a.pid = ANY(pg_blocking_pids((SELECT pid FROM target_session)))
 			ORDER BY a.pid
 		`
-		rows, err := sqlDB.QueryContext(ctx, query, appName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to query rows")
-		}
-		defer rows.Close()
 
-		ss := &v1pb.TaskRunSession_Postgres{}
-		for rows.Next() {
-			var s v1pb.TaskRunSession_Postgres_Session
+// cockroachTaskRunSessionQuery reads the running session by application name
+// from CockroachDB's own catalog. CockroachDB's pg_stat_activity compatibility
+// view answers no rows and it has no pg_blocking_pids, so neither the
+// PostgreSQL query nor its blocking relationships apply.
+const cockroachTaskRunSessionQuery = `
+			SELECT
+				session_id,
+				CAST(ARRAY[] AS TEXT[]) AS blocked_by_pids,
+				query,
+				phase,
+				CAST(NULL AS TEXT) AS wait_event_type,
+				CAST(NULL AS TEXT) AS wait_event,
+				database,
+				user_name,
+				application_name,
+				client_address,
+				CAST(NULL AS TEXT) AS client_port,
+				start,
+				CAST(NULL AS TIMESTAMPTZ) AS xact_start,
+				start
+			FROM crdb_internal.cluster_queries
+			WHERE application_name = $1
+			ORDER BY session_id
+		`
 
-			var blockedByPids pgtype.TextArray
+func getSession(ctx context.Context, engine storepb.Engine, driver db.Driver, appName string) (*v1pb.TaskRunSession, error) {
+	// A driver whose engine package reads its own sessions answers here; the
+	// others are read through the pool they still hold.
+	if reader, ok := driver.(db.TaskRunSessionReader); ok {
+		return reader.TaskRunSession(ctx, appName)
+	}
+	sqlDB := db.SQLDB(driver)
 
-			var bs time.Time
-			var xs, qs *time.Time
-			if err := rows.Scan(
-				&s.Pid,
-				&blockedByPids,
-				&s.Query,
-				&s.State,
-				&s.WaitEventType,
-				&s.WaitEvent,
-				&s.Datname,
-				&s.Usename,
-				&s.ApplicationName,
-				&s.ClientAddr,
-				&s.ClientPort,
-				&bs,
-				&xs,
-				&qs,
-			); err != nil {
-				return nil, errors.Wrapf(err, "failed to scan")
-			}
-
-			if err := blockedByPids.AssignTo(&s.BlockedByPids); err != nil {
-				return nil, errors.Wrapf(err, "failed to assign blocking pids")
-			}
-
-			s.BackendStart = timestamppb.New(bs)
-			if xs != nil {
-				s.XactStart = timestamppb.New(*xs)
-			}
-			if qs != nil {
-				s.QueryStart = timestamppb.New(*qs)
-			}
-
-			if s.ApplicationName == appName {
-				ss.Session = &s
-			} else if ss.Session != nil {
-				// For blocking/blocked sessions, we need to check if they're related to our main session
-				// We stored the main session, so check relationships with it
-				if slices.Contains(s.BlockedByPids, ss.Session.Pid) {
-					ss.BlockedSessions = append(ss.BlockedSessions, &s)
-				} else if slices.Contains(ss.Session.BlockedByPids, s.Pid) {
-					ss.BlockingSessions = append(ss.BlockingSessions, &s)
-				}
-			}
-		}
-
-		if err := rows.Err(); err != nil {
-			return nil, errors.Wrapf(err, "failed to scan rows")
-		}
-
-		return &v1pb.TaskRunSession{
-			Session: &v1pb.TaskRunSession_Postgres_{
-				Postgres: ss,
-			},
-		}, nil
+	var query string
+	switch engine {
+	case storepb.Engine_POSTGRES:
+		query = postgresTaskRunSessionQuery
+	case storepb.Engine_COCKROACHDB:
+		// CockroachDB's pg_stat_activity answers no rows, so its session comes
+		// from the engine's own catalog.
+		query = cockroachTaskRunSessionQuery
 	default:
 		return nil, errors.Errorf("session monitoring is only supported for PostgreSQL and CockroachDB")
 	}
+	if sqlDB == nil {
+		return nil, errors.Errorf("session monitoring for engine %v needs a direct database/sql connection, but the driver does not expose one", engine.String())
+	}
+	rows, err := sqlDB.QueryContext(ctx, query, appName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query rows")
+	}
+	defer rows.Close()
+
+	ss := &v1pb.TaskRunSession_Postgres{}
+	for rows.Next() {
+		var s v1pb.TaskRunSession_Postgres_Session
+
+		var blockedByPids pgtype.TextArray
+
+		var bs time.Time
+		var xs, qs *time.Time
+		if err := rows.Scan(
+			&s.Pid,
+			&blockedByPids,
+			&s.Query,
+			&s.State,
+			&s.WaitEventType,
+			&s.WaitEvent,
+			&s.Datname,
+			&s.Usename,
+			&s.ApplicationName,
+			&s.ClientAddr,
+			&s.ClientPort,
+			&bs,
+			&xs,
+			&qs,
+		); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan")
+		}
+
+		if err := blockedByPids.AssignTo(&s.BlockedByPids); err != nil {
+			return nil, errors.Wrapf(err, "failed to assign blocking pids")
+		}
+
+		s.BackendStart = timestamppb.New(bs)
+		if xs != nil {
+			s.XactStart = timestamppb.New(*xs)
+		}
+		if qs != nil {
+			s.QueryStart = timestamppb.New(*qs)
+		}
+
+		if s.ApplicationName == appName {
+			ss.Session = &s
+		} else if ss.Session != nil {
+			// For blocking/blocked sessions, we need to check if they're related to our main session
+			// We stored the main session, so check relationships with it
+			if slices.Contains(s.BlockedByPids, ss.Session.Pid) {
+				ss.BlockedSessions = append(ss.BlockedSessions, &s)
+			} else if slices.Contains(ss.Session.BlockedByPids, s.Pid) {
+				ss.BlockingSessions = append(ss.BlockingSessions, &s)
+			}
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to scan rows")
+	}
+
+	return &v1pb.TaskRunSession{
+		Session: &v1pb.TaskRunSession_Postgres_{
+			Postgres: ss,
+		},
+	}, nil
 }
 
 // BatchRunTasks runs tasks in batch.
