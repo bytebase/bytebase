@@ -604,7 +604,13 @@ func routineArgumentList(definition string) string {
 // closingQuote returns the index of the quote closing the identifier or literal
 // that starts at start, where a doubled quote is an escape.
 func closingQuote(text string, start int, quote byte) int {
+	escaped := quote == '\'' && start > 0 && (text[start-1] == 'E' || text[start-1] == 'e') &&
+		(start-1 == 0 || !isIdentifierByte(text[start-2]))
 	for i := start + 1; i < len(text); i++ {
+		if escaped && text[i] == '\\' {
+			i++
+			continue
+		}
 		if text[i] != quote {
 			continue
 		}
@@ -833,13 +839,22 @@ func indexByName(meta *metadatapb.DatabaseSchemaMetadata, fallbackSchema, ownerS
 			if table.GetName() == ownerObject {
 				return indexInTable(table, name)
 			}
-			if index := partitionIndexByName(table.GetPartitions(), ownerObject, name); index != nil {
+			if index := partitionIndexByName(table.GetPartitions(), ownerObject, ownerObject, name); index != nil {
 				return index
 			}
 		}
 		for _, view := range schema.GetMaterializedViews() {
 			if view.GetName() == ownerObject {
 				return findIndex(view.GetIndexes(), name)
+			}
+		}
+		// A partition keeps its metadata under a table that can live in another
+		// schema, so the owner's schema alone does not find it.
+		for _, parent := range meta.GetSchemas() {
+			for _, table := range parent.GetTables() {
+				if index := partitionIndexByName(table.GetPartitions(), ownerObject, "", name); index != nil {
+					return index
+				}
 			}
 		}
 		return nil
@@ -856,6 +871,14 @@ func indexByName(meta *metadatapb.DatabaseSchemaMetadata, fallbackSchema, ownerS
 	for _, view := range schema.GetMaterializedViews() {
 		if index := findIndex(view.GetIndexes(), name); index != nil {
 			return index
+		}
+	}
+	// A partition lives under its parent table, which can be in any schema.
+	for _, parent := range meta.GetSchemas() {
+		for _, table := range parent.GetTables() {
+			if index := indexInTable(table, name); index != nil {
+				return index
+			}
 		}
 	}
 	return nil
@@ -876,13 +899,18 @@ func indexInTable(table *metadatapb.TableMetadata, name string) *metadatapb.Inde
 }
 
 // partitionIndexByName returns the index of that name on the partition named
-// partitionName or one of its subpartitions.
-func partitionIndexByName(partitions []*metadatapb.TablePartitionMetadata, partitionName, name string) *metadatapb.IndexMetadata {
+// partitionName or one of its subpartitions. An empty requiredSchema accepts a
+// partition in any schema.
+func partitionIndexByName(partitions []*metadatapb.TablePartitionMetadata, partitionName, requiredSchema, name string) *metadatapb.IndexMetadata {
 	var found *metadatapb.IndexMetadata
 	forEachPartition(partitions, func(partition *metadatapb.TablePartitionMetadata) {
-		if found == nil && partition.GetName() == partitionName {
-			found = findIndex(partition.GetIndexes(), name)
+		if found != nil || partition.GetName() != partitionName {
+			return
 		}
+		if requiredSchema != "" && partition.GetSchema() != "" && partition.GetSchema() != requiredSchema {
+			return
+		}
+		found = findIndex(partition.GetIndexes(), name)
 	})
 	return found
 }

@@ -280,6 +280,36 @@ func TestRestoreIndexDefinitionsFindsPartitionIndexes(t *testing.T) {
 	require.Equal(t, definition, plan.Ops[0].SQL)
 }
 
+// TestPartitionIndexInAnotherSchema covers a partition whose schema differs from
+// its parent table's: the metadata keeps it under the parent, so the owner's own
+// schema does not hold it.
+func TestPartitionIndexInAnotherSchema(t *testing.T) {
+	definition := `CREATE INDEX "idx_p" ON "parted"."t_p" USING btree ("id") WITH (fillfactor=70)`
+	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "main",
+		Tables: []*metadatapb.TableMetadata{{
+			Name: "t",
+			Partitions: []*metadatapb.TablePartitionMetadata{{
+				Name:    "t_p",
+				Schema:  "parted",
+				Indexes: []*metadatapb.IndexMetadata{{Name: "idx_p", Definition: definition}},
+			}},
+		}},
+	}, {Name: "parted"}}}
+	require.NotNil(t, indexByName(meta, "parted", "parted", "t_p", "idx_p"),
+		"the partition is held under its parent's schema")
+	require.NotNil(t, indexByName(meta, "parted", "", "", "idx_p"))
+
+	plan := &catalog.MigrationPlan{Ops: []catalog.MigrationOp{{
+		Type:       catalog.OpCreateIndex,
+		SchemaName: "parted",
+		ObjectName: "idx_p",
+		SQL:        `CREATE INDEX "idx_p" ON "parted"."t_p" USING btree ("id")`,
+	}}}
+	restoreIndexDefinitions(plan, meta)
+	require.Equal(t, definition, plan.Ops[0].SQL)
+}
+
 // TestIndexOwnerSkipsQuotedNames covers an index name that contains the owner
 // clause's text: the owner is read after the quoted identifier.
 func TestIndexOwnerSkipsQuotedNames(t *testing.T) {
@@ -1674,6 +1704,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 				Name:       "RETURNS decoy",
 				Signature:  "decoy()",
 				Definition: `CREATE FUNCTION public."RETURNS decoy"() RETURNS public.v LANGUAGE sql AS $$ SELECT $$`,
+			}},
+			refused: true,
+		},
+		{
+			name: "e-string default with an escaped quote",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "es",
+				Signature:  "es(text)",
+				Definition: `CREATE FUNCTION public.es(x text DEFAULT E'\')', OUT result public.v) RETURNS record LANGUAGE sql AS $$ SELECT $$`,
 			}},
 			refused: true,
 		},
