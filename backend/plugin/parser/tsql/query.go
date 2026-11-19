@@ -2,7 +2,6 @@ package tsql
 
 import (
 	"github.com/bytebase/omni/mssql/analysis"
-	"github.com/bytebase/omni/mssql/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -22,10 +21,4 @@ func ValidateSQLForEditor(statement string) (bool, bool, error) {
 	}
 	valid, allQuery := analysis.ValidateQuery(stmts)
 	return valid, allQuery, nil
-}
-
-// HasSelectInto reports whether sel (or any branch of its set operations)
-// carries an INTO clause.
-func HasSelectInto(sel *ast.SelectStmt) bool {
-	return analysis.HasSelectInto(sel)
 }

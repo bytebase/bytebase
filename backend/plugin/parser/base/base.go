@@ -14,17 +14,6 @@ func (e *SyntaxError) Error() string {
 	return e.Message
 }
 
-func GetOffsetLength(total int) int {
-	length := 1
-	for {
-		if total < 10 {
-			return length
-		}
-		total /= 10
-		length++
-	}
-}
-
 // GetLineOffset returns the 0-based line offset from a StartPosition.
 // This is useful for converting from the 1-based StartPosition to the 0-based offset
 // needed for some calculations.
