@@ -4273,3 +4273,23 @@ func TestViewDependencyQualificationIgnoresJoinModifiers(t *testing.T) {
 	paths := []string{"$user", "public"}
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }
+
+// TestViewDependencyQualificationScansFunctionColumnTypes covers
+// record_func() AS x(c t), where t is a column type.
+func TestViewDependencyQualificationScansFunctionColumnTypes(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT x.c, NULL::public.t FROM record_func() AS x(c t)",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+}

@@ -1409,13 +1409,16 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 	ctes := definitionCTEs(tokens)
 	qualified := false
 	inRelations := false
-	var relationState, derivedState []bool
+	var relationState, derivedState, functionArgsState []bool
 	afterDerivedTable := false
+	afterFunctionCall := false
 	pendingFunctionArgs := false
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
 		if afterDerivedTable {
 			afterDerivedTable = false
+			fromFunctionCall := afterFunctionCall
+			afterFunctionCall = false
 			if token.punct == 0 {
 				if !token.quoted && strings.EqualFold(token.text, "WITH") && i+1 < len(tokens) && tokens[i+1].punct == 0 && !tokens[i+1].quoted && strings.EqualFold(tokens[i+1].text, "ORDINALITY") {
 					i = skipRelationAlias(tokens, i+1)
@@ -1423,11 +1426,23 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 				}
 				if !token.quoted && strings.EqualFold(token.text, "AS") {
 					if i+1 < len(tokens) && tokens[i+1].punct == 0 {
-						i = skipAliasColumnList(tokens, i+1)
+						var matched, unqualified bool
+						i, matched, unqualified = consumeAliasColumnList(tokens, i+1, fromFunctionCall, schemaName, objectName, objects, searchPath)
+						if matched {
+							qualified = true
+						} else if unqualified {
+							return false
+						}
 						continue
 					}
 				} else if token.quoted || !relationClauseKeyword(strings.ToUpper(token.text)) {
-					i = skipAliasColumnList(tokens, i)
+					var matched, unqualified bool
+					i, matched, unqualified = consumeAliasColumnList(tokens, i, fromFunctionCall, schemaName, objectName, objects, searchPath)
+					if matched {
+						qualified = true
+					} else if unqualified {
+						return false
+					}
 					continue
 				}
 			}
@@ -1477,6 +1492,7 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 			switch token.punct {
 			case '(':
 				parenthesized := false
+				functionArgs := pendingFunctionArgs
 				if pendingFunctionArgs {
 					pendingFunctionArgs = false
 				} else {
@@ -1485,6 +1501,7 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 				derived := inRelations
 				relationState = append(relationState, inRelations)
 				derivedState = append(derivedState, derived)
+				functionArgsState = append(functionArgsState, functionArgs)
 				inRelations = inRelations && parenthesized
 			case ')':
 				if len(relationState) > 0 {
@@ -1493,6 +1510,10 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 					if len(derivedState) > 0 {
 						afterDerivedTable = derivedState[len(derivedState)-1]
 						derivedState = derivedState[:len(derivedState)-1]
+					}
+					if len(functionArgsState) > 0 {
+						afterFunctionCall = functionArgsState[len(functionArgsState)-1]
+						functionArgsState = functionArgsState[:len(functionArgsState)-1]
 					}
 				} else {
 					inRelations = false
@@ -2111,6 +2132,58 @@ func relationClauseKeyword(upper string) bool {
 	default:
 		return false
 	}
+}
+
+func consumeAliasColumnList(tokens []definitionToken, alias int, scan bool, schemaName, objectName string, objects map[string]bool, searchPath []string) (int, bool, bool) {
+	if alias+1 >= len(tokens) || tokens[alias+1].punct != '(' {
+		return alias, false, false
+	}
+	closeIndex := skipParenthesized(tokens, alias+1)
+	if !scan {
+		return closeIndex, false, false
+	}
+	qualified, unqualified := scanAliasColumnTypes(tokens, alias+1, closeIndex, schemaName, objectName, objects, searchPath)
+	return closeIndex, qualified, unqualified
+}
+
+func scanAliasColumnTypes(tokens []definitionToken, open, closeIndex int, schemaName, objectName string, objects map[string]bool, searchPath []string) (bool, bool) {
+	qualified := false
+	start := open + 1
+	depth := 0
+	for i := start; i <= closeIndex; i++ {
+		atEnd := i == closeIndex
+		if !atEnd {
+			switch tokens[i].punct {
+			case '(':
+				depth++
+				continue
+			case ')':
+				depth--
+				continue
+			case ',':
+				if depth != 0 {
+					continue
+				}
+			default:
+				continue
+			}
+		}
+		if start < i {
+			first := start
+			if tokens[first].punct == 0 {
+				typeIndex := first + 1
+				if typeIndex < i && tokens[typeIndex].punct == 0 {
+					if _, matched, unqualified := typeReferenceAt(tokens, typeIndex, schemaName, objectName, objects, searchPath); matched {
+						qualified = true
+					} else if unqualified {
+						return false, true
+					}
+				}
+			}
+		}
+		start = i + 1
+	}
+	return qualified, false
 }
 
 func skipAliasColumnList(tokens []definitionToken, alias int) int {
