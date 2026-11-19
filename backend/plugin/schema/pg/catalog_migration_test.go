@@ -2941,14 +2941,14 @@ func TestReleasedSourceOnlyRoutineDropsAreSorted(t *testing.T) {
 		},
 	}}}
 	sourceDrops := map[string]catalog.MigrationOp{
-		"func:public.b|b(v)": {Type: catalog.OpDropFunction, SchemaName: "public", ObjectName: "b", SQL: `DROP FUNCTION "public"."b"(public.v)`},
-		"func:public.a|a(v)": {Type: catalog.OpDropFunction, SchemaName: "public", ObjectName: "a", SQL: `DROP FUNCTION "public"."a"(public.v)`},
+		"func:public.b|b(v)": {Type: catalog.OpDropFunction, SchemaName: "public", ObjectName: "b", SQL: `DROP FUNCTION "public"."b"(v)`},
+		"func:public.a|a(v)": {Type: catalog.OpDropFunction, SchemaName: "public", ObjectName: "a", SQL: `DROP FUNCTION "public"."a"(v)`},
 	}
 	ops, moved := releaseRoutineOps(&catalog.MigrationPlan{}, oldMeta, map[string]bool{objectKey("public", "v"): true}, []string{"public"}, sourceDrops)
 	require.Len(t, ops, 2)
 	require.Equal(t, "a", ops[0].ObjectName)
 	require.Equal(t, "b", ops[1].ObjectName)
-	require.True(t, moved[objectKey("public", "a")])
+	require.True(t, moved[routineKey("public", "a", "v")])
 	require.Empty(t, sourceDrops)
 }
 
@@ -3695,4 +3695,46 @@ func TestViewDependencyQualificationSkipsUnicodeStringPrefix(t *testing.T) {
 	}
 	paths := []string{"$user", "public"}
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
+
+// TestViewDependencyQualificationSeesRegtype covers a regtype literal like a
+// regclass literal.
+func TestViewDependencyQualificationSeesRegtype(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT 't'::regtype, NULL::public.t FROM public.t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.ErrorContains(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), `view "public"."w" has an unqualified reference to "public"."t"`)
+
+	meta.Schemas[0].Views[0].Definition = "SELECT 'public.t'::regtype, NULL::public.t FROM public.t"
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
+
+// TestReleasedRoutineKeysIncludeSignature covers two overloads with one name:
+// only the overload that uses the view row type is released.
+func TestReleasedRoutineKeysIncludeSignature(t *testing.T) {
+	oldMeta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name:  "public",
+		Views: []*metadatapb.ViewMetadata{{Name: "v", Definition: "SELECT 1"}},
+		Functions: []*metadatapb.FunctionMetadata{
+			{Name: "f", Signature: "f(v)"},
+			{Name: "f", Signature: "f(integer)"},
+		},
+	}}}
+	sourceDrops := map[string]catalog.MigrationOp{
+		"func:public.f|f(integer)": {Type: catalog.OpDropFunction, SchemaName: "public", ObjectName: "f", SQL: `DROP FUNCTION "public"."f"(integer)`},
+	}
+	ops, moved := releaseRoutineOps(&catalog.MigrationPlan{}, oldMeta, map[string]bool{objectKey("public", "v"): true}, []string{"public"}, sourceDrops)
+	require.Empty(t, ops)
+	require.Empty(t, moved)
+	require.Contains(t, sourceDrops, "func:public.f|f(integer)", "the unrelated overload is not released")
 }

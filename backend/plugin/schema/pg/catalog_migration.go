@@ -486,7 +486,7 @@ func refuseRestoredViewRoutines(oldMeta, newMeta *metadatapb.DatabaseSchemaMetad
 	oldObjects := typeObjects(oldMeta)
 	for _, schema := range oldMeta.GetSchemas() {
 		for _, function := range schema.GetFunctions() {
-			if releasedRoutines[objectKey(schema.GetName(), function.GetName())] {
+			if releasedRoutines[routineKey(schema.GetName(), function.GetName(), routineArgs(function.GetSignature(), function.GetDefinition()))] {
 				continue
 			}
 			if err := refuseRoutine(schema.GetName(), function.GetName(), function.GetSignature(), function.GetDefinition(), restored, oldObjects, sourceSearchPath); err != nil {
@@ -494,7 +494,7 @@ func refuseRestoredViewRoutines(oldMeta, newMeta *metadatapb.DatabaseSchemaMetad
 			}
 		}
 		for _, procedure := range schema.GetProcedures() {
-			if releasedRoutines[objectKey(schema.GetName(), procedure.GetName())] {
+			if releasedRoutines[routineKey(schema.GetName(), procedure.GetName(), routineArgs(procedure.GetSignature(), procedure.GetDefinition()))] {
 				continue
 			}
 			if err := refuseRoutine(schema.GetName(), procedure.GetName(), procedure.GetSignature(), procedure.GetDefinition(), restored, oldObjects, sourceSearchPath); err != nil {
@@ -1453,10 +1453,7 @@ func isRegclassType(tokens []definitionToken, index int) bool {
 	if index+2 < len(tokens) && tokens[index+1].punct == '.' && tokens[index+2].punct == 0 {
 		last = identifier{name: tokens[index+2].text, quoted: tokens[index+2].quoted}
 	}
-	if last.quoted {
-		return last.name == "regclass"
-	}
-	return strings.EqualFold(last.name, "regclass")
+	return isRelationTypeName(last.name, last.quoted)
 }
 
 func topLevelCastAS(tokens []definitionToken, start, end int) int {
@@ -1705,10 +1702,14 @@ func isRegclassToken(text string, index int) bool {
 			return false
 		}
 	}
-	if lastQuoted {
-		return last == "regclass"
+	return isRelationTypeName(last, lastQuoted)
+}
+
+func isRelationTypeName(name string, quoted bool) bool {
+	if quoted {
+		return name == "regclass" || name == "regtype"
 	}
-	return strings.EqualFold(last, "regclass")
+	return strings.EqualFold(name, "regclass") || strings.EqualFold(name, "regtype")
 }
 
 func literalRelationReference(text, schemaName, objectName string) (bool, bool) {
@@ -2144,12 +2145,12 @@ func releaseRoutineOps(plan *catalog.MigrationPlan, oldMeta *metadatapb.Database
 	for _, schema := range oldMeta.GetSchemas() {
 		for _, function := range schema.GetFunctions() {
 			if _, ok := routineUsesType(function.GetSignature(), function.GetDefinition(), views, objects, searchPath); ok {
-				released[objectKey(schema.GetName(), function.GetName())] = true
+				released[routineKey(schema.GetName(), function.GetName(), routineArgs(function.GetSignature(), function.GetDefinition()))] = true
 			}
 		}
 		for _, procedure := range schema.GetProcedures() {
 			if _, ok := routineUsesType(procedure.GetSignature(), procedure.GetDefinition(), views, objects, searchPath); ok {
-				released[objectKey(schema.GetName(), procedure.GetName())] = true
+				released[routineKey(schema.GetName(), procedure.GetName(), routineArgs(procedure.GetSignature(), procedure.GetDefinition()))] = true
 			}
 		}
 	}
@@ -2162,7 +2163,7 @@ func releaseRoutineOps(plan *catalog.MigrationPlan, oldMeta *metadatapb.Database
 		if op.Type != catalog.OpDropFunction && op.Type != catalog.OpAlterFunction {
 			return false
 		}
-		key := objectKey(op.SchemaName, op.ObjectName)
+		key := routineKey(op.SchemaName, op.ObjectName, routineArgumentList(op.SQL))
 		if !released[key] {
 			return false
 		}
@@ -2172,7 +2173,7 @@ func releaseRoutineOps(plan *catalog.MigrationPlan, oldMeta *metadatapb.Database
 	})
 	var dropKeys []string
 	for dropKey, op := range sourceDrops {
-		if op.Type == catalog.OpDropFunction && released[objectKey(op.SchemaName, op.ObjectName)] {
+		if op.Type == catalog.OpDropFunction && released[routineKey(op.SchemaName, op.ObjectName, routineArgumentList(op.SQL))] {
 			dropKeys = append(dropKeys, dropKey)
 		}
 	}
@@ -2180,7 +2181,7 @@ func releaseRoutineOps(plan *catalog.MigrationPlan, oldMeta *metadatapb.Database
 	for _, dropKey := range dropKeys {
 		op := sourceDrops[dropKey]
 		ops = append(ops, op)
-		moved[objectKey(op.SchemaName, op.ObjectName)] = true
+		moved[routineKey(op.SchemaName, op.ObjectName, routineArgumentList(op.SQL))] = true
 		delete(sourceDrops, dropKey)
 	}
 	return ops, moved
@@ -3223,6 +3224,18 @@ func snapshotObjects(meta *metadatapb.DatabaseSchemaMetadata) map[string]proto.M
 		}
 	}
 	return objects
+}
+
+func routineArgs(signature, definition string) string {
+	args := routineArgumentList(signature)
+	if strings.TrimSpace(args) == "" {
+		args = routineArgumentList(definition)
+	}
+	return args
+}
+
+func routineKey(schemaName, name, args string) string {
+	return schemaName + "\x00" + name + "\x00" + strings.ToLower(strings.Join(strings.Fields(args), ""))
 }
 
 // routineIdentity distinguishes routine overloads, the way the load report does.
