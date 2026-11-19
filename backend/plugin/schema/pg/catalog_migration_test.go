@@ -3624,3 +3624,22 @@ func TestViewDependencyQualificationScansFunctionArguments(t *testing.T) {
 	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
 	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
 }
+
+// TestViewDependencyQualificationSkipsStringPrefix covers an escape-string
+// prefix that is also the dependency name.
+func TestViewDependencyQualificationSkipsStringPrefix(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("e", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        `SELECT E'\n' FROM public.e`,
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "e"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}

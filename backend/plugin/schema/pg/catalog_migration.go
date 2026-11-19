@@ -1374,7 +1374,7 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 			if i+2 < len(tokens) && tokens[i+1].punct == '.' && tokens[i+2].punct == 0 {
 				typeEnd = i + 2
 			}
-			if typeEnd+1 < len(tokens) && tokens[typeEnd+1].literal {
+			if typeEnd+1 < len(tokens) && tokens[typeEnd+1].literal && !isStringLiteralPrefix(token.text) {
 				end, matched, unqualified := typeReferenceAt(tokens, i, schemaName, objectName, objects, searchPath)
 				if matched {
 					qualified = true
@@ -1427,6 +1427,18 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 		i = skipRelationAlias(tokens, i)
 	}
 	return qualified
+}
+
+func isStringLiteralPrefix(text string) bool {
+	if len(text) != 1 {
+		return false
+	}
+	switch text[0] {
+	case 'e', 'E', 'b', 'B', 'x', 'X', 'n', 'N':
+		return true
+	default:
+		return false
+	}
 }
 
 func hasPrefixFold(text, prefix string) bool {
