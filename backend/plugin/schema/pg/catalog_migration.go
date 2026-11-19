@@ -831,7 +831,10 @@ func indexByName(meta *metadatapb.DatabaseSchemaMetadata, fallbackSchema, ownerS
 		}
 		for _, table := range schema.GetTables() {
 			if table.GetName() == ownerObject {
-				return findIndex(table.GetIndexes(), name)
+				return indexInTable(table, name)
+			}
+			if index := partitionIndexByName(table.GetPartitions(), ownerObject, name); index != nil {
+				return index
 			}
 		}
 		for _, view := range schema.GetMaterializedViews() {
@@ -846,7 +849,7 @@ func indexByName(meta *metadatapb.DatabaseSchemaMetadata, fallbackSchema, ownerS
 		return nil
 	}
 	for _, table := range schema.GetTables() {
-		if index := findIndex(table.GetIndexes(), name); index != nil {
+		if index := indexInTable(table, name); index != nil {
 			return index
 		}
 	}
@@ -856,6 +859,32 @@ func indexByName(meta *metadatapb.DatabaseSchemaMetadata, fallbackSchema, ownerS
 		}
 	}
 	return nil
+}
+
+// indexInTable returns the index of that name on a table or one of its partitions.
+func indexInTable(table *metadatapb.TableMetadata, name string) *metadatapb.IndexMetadata {
+	if index := findIndex(table.GetIndexes(), name); index != nil {
+		return index
+	}
+	var found *metadatapb.IndexMetadata
+	forEachPartition(table.GetPartitions(), func(partition *metadatapb.TablePartitionMetadata) {
+		if found == nil {
+			found = findIndex(partition.GetIndexes(), name)
+		}
+	})
+	return found
+}
+
+// partitionIndexByName returns the index of that name on the partition named
+// partitionName or one of its subpartitions.
+func partitionIndexByName(partitions []*metadatapb.TablePartitionMetadata, partitionName, name string) *metadatapb.IndexMetadata {
+	var found *metadatapb.IndexMetadata
+	forEachPartition(partitions, func(partition *metadatapb.TablePartitionMetadata) {
+		if found == nil && partition.GetName() == partitionName {
+			found = findIndex(partition.GetIndexes(), name)
+		}
+	})
+	return found
 }
 
 func findIndex(indexes []*metadatapb.IndexMetadata, name string) *metadatapb.IndexMetadata {

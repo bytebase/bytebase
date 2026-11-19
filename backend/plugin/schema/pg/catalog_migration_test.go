@@ -253,6 +253,33 @@ func TestChangedDegradedProcedureIsRefused(t *testing.T) {
 	require.ErrorContains(t, err, "func:public.p|p()")
 }
 
+// TestRestoreIndexDefinitionsFindsPartitionIndexes covers an index owned by a table
+// partition: its stored definition has to replace the generated one.
+func TestRestoreIndexDefinitionsFindsPartitionIndexes(t *testing.T) {
+	definition := `CREATE INDEX "idx_p1" ON "public"."t_p1" USING btree ("id") WITH (fillfactor=70)`
+	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "public",
+		Tables: []*metadatapb.TableMetadata{{
+			Name: "t",
+			Partitions: []*metadatapb.TablePartitionMetadata{{
+				Name:    "t_p1",
+				Indexes: []*metadatapb.IndexMetadata{{Name: "idx_p1", Definition: definition}},
+			}},
+		}},
+	}}}
+	require.NotNil(t, indexByName(meta, "public", "public", "t_p1", "idx_p1"), "a partition owns the index")
+	require.NotNil(t, indexByName(meta, "public", "", "", "idx_p1"), "the fallback finds a partition index")
+
+	plan := &catalog.MigrationPlan{Ops: []catalog.MigrationOp{{
+		Type:       catalog.OpCreateIndex,
+		SchemaName: "public",
+		ObjectName: "idx_p1",
+		SQL:        `CREATE INDEX "idx_p1" ON "public"."t_p1" USING btree ("id")`,
+	}}}
+	restoreIndexDefinitions(plan, meta)
+	require.Equal(t, definition, plan.Ops[0].SQL)
+}
+
 // TestIndexOwnerSkipsQuotedNames covers an index name that contains the owner
 // clause's text: the owner is read after the quoted identifier.
 func TestIndexOwnerSkipsQuotedNames(t *testing.T) {
