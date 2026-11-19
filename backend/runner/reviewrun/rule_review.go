@@ -140,6 +140,10 @@ type ruleFinding struct {
 	message     string
 	anchor      *storepb.IssueCommentPayload_StatementAnchor
 	fingerprint string
+	// facts is what the AI review adds to the finding about its statement on
+	// the databases, which the result's comment carries after the finding's
+	// own text. It is empty when folded is not.
+	facts string
 	// folded is the AI review's problems on the finding's operation, each as
 	// the text the result's comment carries after the finding's own.
 	folded []string
@@ -170,6 +174,7 @@ type ruleThread struct {
 type ruleResult struct {
 	specID      string
 	sheetSha256 string
+	engine      storepb.Engine
 	// members are the result's findings, in statement order when merged.
 	members []*ruleFinding
 	// statements is how many statements a merged result covers, and zero for
@@ -196,6 +201,17 @@ func (r *ruleResult) payload() *storepb.IssueCommentPayload {
 		payload.Comment, payload.ReviewMetadata.Priority = r.earlier.Comment, r.earlier.Priority
 	}
 	return payload
+}
+
+// ruleText is the result's comment with nothing the AI review adds to it.
+func (r *ruleResult) ruleText() string {
+	bare := &ruleResult{statements: r.statements}
+	for _, member := range r.members {
+		clone := *member
+		clone.facts, clone.folded = "", nil
+		bare.members = append(bare.members, &clone)
+	}
+	return bare.payload().Comment
 }
 
 // ruleResultComments converts results into the review result comments to
@@ -237,7 +253,7 @@ func reviewResults(unit *reviewUnit, sql string, result *review.Result) []*ruleR
 	results := make([]*ruleResult, 0, len(findings))
 	posted := make(map[storepb.ReviewRuleType]bool)
 	for _, f := range findings {
-		r := &ruleResult{specID: unit.SpecID, sheetSha256: unit.SheetSha256, members: []*ruleFinding{f}}
+		r := &ruleResult{specID: unit.SpecID, sheetSha256: unit.SheetSha256, engine: unit.Engine, members: []*ruleFinding{f}}
 		if f.statement >= 0 && len(statements[f.rule]) >= mergeAtStatements {
 			if posted[f.rule] {
 				continue
@@ -292,11 +308,20 @@ func ruleFindings(unit *reviewUnit, sql string, result *review.Result) []*ruleFi
 	return findings
 }
 
-// findingPayload posts one finding as a result: its message, and then each
-// problem the AI review found on its operation.
+// added is what the AI review adds to a finding's text: each problem it found
+// on the finding's operation, or else its facts.
+func (f *ruleFinding) added() []string {
+	if len(f.folded) > 0 || f.facts == "" {
+		return f.folded
+	}
+	return []string{f.facts}
+}
+
+// findingPayload posts one finding as a result: its message, and then what
+// the AI review adds to it.
 func findingPayload(f *ruleFinding) *storepb.IssueCommentPayload {
 	return &storepb.IssueCommentPayload{
-		Comment:         strings.Join(append([]string{f.message}, f.folded...), "\n\n"),
+		Comment:         strings.Join(append([]string{f.message}, f.added()...), "\n\n"),
 		StatementAnchor: f.anchor,
 		ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
 			RunType:     storepb.ReviewRun_RULE,
@@ -356,8 +381,8 @@ func mergedPayload(members []*ruleFinding, statements int) *storepb.IssueComment
 // summary line goes on its item, followed by the databases the finding is on
 // when that is only some of targets, the result's databases. The rest of a
 // message, when every finding shares it, is said once after the list, else
-// under its own item. The AI review's problems on a finding's operation go
-// under its item too, and such a finding is listed past maxMergedItems, so
+// under its own item. What the AI review adds to a finding goes under its
+// item too, and a finding with a problem is listed past maxMergedItems, so
 // that the limit never hides a problem.
 func mergedComment(members []*ruleFinding, statements int, targets []string) string {
 	lineOf := func(m *ruleFinding) int32 { return m.anchor.GetStartPosition().GetLine() }
@@ -391,7 +416,7 @@ func mergedComment(members []*ruleFinding, statements int, targets []string) str
 		if !shared && details[i] != "" {
 			item += "\n\n" + details[i]
 		}
-		for _, text := range m.folded {
+		for _, text := range m.added() {
 			item += "\n\n" + text
 		}
 		// Continuation lines are indented to stay inside the item.

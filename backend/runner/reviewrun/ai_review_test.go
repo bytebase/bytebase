@@ -442,6 +442,22 @@ func TestMergeAIReviewFindingsPutsProblemsOnRuleFindings(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, problems[0].Rule)
 		require.False(t, problems[0].Unchanged, "the problem is on part of the rule finding's databases now")
+
+		// A comment of facts alone states no problem on any database, so it can
+		// stay whichever databases the problem is on, and whichever one it names.
+		const facts = "Drops column `legacy_status`.\n\ndb2: v_orders reads it."
+		low := finding("view", aireview.SeverityP1, 1, breakageSentence)
+		everywhere.earlier, everywhere.keepsEarlier = &ruleThread{Comment: facts, Priority: p1}, false
+		stated := &recordingMerge{groups: [][]int{{0, 1}}, same: []int{0}}
+		problems, err = mergeAIReviewFindings(context.Background(), stated.merge, results(low), nil, []*ruleResult{everywhere})
+		require.NoError(t, err)
+		require.Equal(t, []aireview.MergeThread{{Comment: facts, Candidates: []int{1}}}, stated.requests[0].Threads)
+		require.True(t, problems[0].Unchanged, "the facts already state the problem, and it is no higher than the rule")
+
+		kept, _ = unchanged(&ruleThread{Comment: facts, Priority: p1}, nil, low)
+		require.False(t, kept, "the merge did not say the facts state it")
+		kept, _ = unchanged(&ruleThread{Comment: facts, Priority: p1}, []int{0}, view)
+		require.False(t, kept, "nobody read the facts at P0, so the problem is written")
 	})
 }
 
