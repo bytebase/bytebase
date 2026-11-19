@@ -52,6 +52,8 @@ type reviewSlots interface {
 type aiReviewUnit struct {
 	Check     *plancheck.CheckTarget
 	Statement string
+	// Policies are the AI review policy texts the unit is reviewed under.
+	Policies []string
 	// Engine is set by the review once it resolves the database.
 	Engine storepb.Engine
 }
@@ -91,6 +93,27 @@ type aiReviewProblem struct {
 	// Held is true when the run holds the problem back. It posts no comment,
 	// but its databases still flagged its statement.
 	Held bool
+	// Rule is the standard rule finding whose operation the merge put the
+	// problem on, or nil. Such a problem posts no comment of its own: its text
+	// joins the comment of the finding's result.
+	Rule *ruleMember
+	// Unchanged is true when the comment an earlier run left on the result of
+	// Rule already states the problem, so the result keeps that comment.
+	Unchanged bool
+}
+
+// ruleMember is one finding of a rule result, which the merge can put the AI
+// review's problems with.
+type ruleMember struct {
+	result  *ruleResult
+	finding *ruleFinding
+}
+
+// aiReviewBlock is a statement of a sheet under review.
+type aiReviewBlock struct {
+	specID      string
+	sheetSha256 string
+	block       aireview.LineRange
 }
 
 // aiReviewSheet is a spec's sheet under review.
@@ -191,15 +214,16 @@ func aiReviewStandardRules(policy *storepb.ReviewRulePolicy, engine storepb.Engi
 	return rules
 }
 
-// mergeAIReviewFindings groups the findings of the completed units into the
-// problems to post, one comment each. The findings that more than one
-// database reported on one statement of a sheet go to merge, which decides
-// which of them are the same problem, and so do the findings on a statement
-// an earlier result stands on, with that result. Every other finding, and
-// every finding of a merge that fails, is a problem of its own, so a failed
-// merge posts duplicates and never drops a finding. The error is ctx's, when
-// it ends.
-func mergeAIReviewFindings(ctx context.Context, merge mergeFunc, results []*aiReviewResult, earlier map[aiReviewSheet][]*aiReviewEarlier) ([]*aiReviewProblem, error) {
+// mergeAIReviewFindings groups the findings of the completed units into
+// problems. The findings that more than one database reported on one
+// statement of a sheet go to merge, which decides which of them are the same
+// problem, and so do the findings on a statement an earlier result or a
+// finding of rules stands on, with that result or finding. A problem the
+// merge puts with a rule finding joins that finding's result, and every other
+// problem posts a comment of its own. Every other finding, and every finding
+// of a merge that fails, is a problem of its own, so a failed merge posts
+// duplicates and never drops a finding. The error is ctx's, when it ends.
+func mergeAIReviewFindings(ctx context.Context, merge mergeFunc, results []*aiReviewResult, earlier map[aiReviewSheet][]*aiReviewEarlier, rules []*ruleResult) ([]*aiReviewProblem, error) {
 	var order []aiReviewSheet
 	bySheet := make(map[aiReviewSheet][]*aiReviewFinding)
 	reviewed := make(map[aiReviewSheet][]string)
@@ -218,9 +242,14 @@ func mergeAIReviewFindings(ctx context.Context, merge mergeFunc, results []*aiRe
 			bySheet[key] = append(bySheet[key], &aiReviewFinding{Unit: result.Unit, Finding: finding})
 		}
 	}
+	rulesOn := make(map[aiReviewSheet][]*ruleResult)
+	for _, rule := range rules {
+		key := aiReviewSheet{specID: rule.specID, sheetSha256: rule.sheetSha256}
+		rulesOn[key] = append(rulesOn[key], rule)
+	}
 	var problems []*aiReviewProblem
 	for _, key := range order {
-		sheetProblems, err := mergeSheetFindings(ctx, merge, bySheet[key], earlier[key])
+		sheetProblems, err := mergeSheetFindings(ctx, merge, bySheet[key], earlier[key], rulesOn[key])
 		if err != nil {
 			return nil, err
 		}
@@ -234,11 +263,12 @@ func mergeAIReviewFindings(ctx context.Context, merge mergeFunc, results []*aiRe
 }
 
 // mergeSheetFindings groups the findings of one sheet, ordered by the first
-// finding of each problem, and gives each problem the earlier result it keeps.
-// An earlier result is offered to the merge only while its statement, which
-// its fingerprint names, is unchanged and has findings; one left out is
-// superseded by the run.
-func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiReviewFinding, earlier []*aiReviewEarlier) ([]*aiReviewProblem, error) {
+// finding of each problem, and gives each problem the earlier result it keeps
+// or the rule finding it joins. An earlier result is offered to the merge
+// only while its statement, which its fingerprint names, is unchanged and has
+// findings; one left out is superseded by the run. A finding of rules, the
+// rule results on the sheet, is offered while its statement has findings.
+func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiReviewFinding, earlier []*aiReviewEarlier, rules []*ruleResult) ([]*aiReviewProblem, error) {
 	statement := findings[0].Unit.Statement
 	check := findings[0].Unit.Check
 	engine := sheetEngine(findings)
@@ -305,18 +335,42 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 			earlierLine[i] = min(max(earlierLine[i]+result.Line-old.BodyStart[from], block.Start), block.End)
 		}
 	}
-	// sources counts the databases with findings on a block, and one more when
-	// an earlier result stands on it.
-	sources := func(block int) int {
-		if earlierOn[block] {
-			return len(blockTargets[block]) + 1
+	// A rule finding stands on the statement its anchor starts in. Only a
+	// statement with findings has something to put with it.
+	var members []*ruleMember
+	var memberBlock []int
+	ruleOn := make(map[int]bool)
+	for _, rule := range rules {
+		for _, finding := range rule.members {
+			if finding.anchor == nil {
+				continue
+			}
+			line := int(finding.anchor.GetStartPosition().GetLine())
+			block := slices.IndexFunc(blocks, func(b aireview.LineRange) bool { return line >= b.Start && line <= b.End })
+			if block < 0 || len(blockTargets[block]) == 0 {
+				continue
+			}
+			members = append(members, &ruleMember{result: rule, finding: finding})
+			memberBlock = append(memberBlock, block)
+			ruleOn[block] = true
 		}
-		return len(blockTargets[block])
+	}
+	// sources counts the databases with findings on a block, one more when an
+	// earlier result stands on it, and one more when a rule finding does.
+	sources := func(block int) int {
+		n := len(blockTargets[block])
+		if earlierOn[block] {
+			n++
+		}
+		if ruleOn[block] {
+			n++
+		}
+		return n
 	}
 
 	request := &aireview.MergeRequest{Statement: statement, Blocks: blocks}
-	// offered maps a merge candidate to its finding, or to its earlier result
-	// at len(findings) and after.
+	// offered maps a merge candidate to its finding, to its earlier result at
+	// len(findings) and after, or to its rule finding after those.
 	var offered []int
 	for i, finding := range findings {
 		if sources(blockOf[i]) > 1 {
@@ -339,12 +393,37 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 		}
 	}
 
+	// The merge is shown the comment an earlier run left on a rule result when
+	// that comment can stay as it is.
+	var threads []*ruleResult
+	for i, member := range members {
+		offered = append(offered, len(findings)+len(earlier)+i)
+		request.Candidates = append(request.Candidates, aireview.MergeCandidate{
+			Block:    memberBlock[i],
+			Standard: true,
+			Finding:  ruleCandidate(member.finding),
+		})
+		rule := member.result
+		thread := slices.Index(threads, rule)
+		if thread < 0 {
+			if !canKeepEarlier(rule) {
+				continue
+			}
+			thread = len(threads)
+			threads = append(threads, rule)
+			request.Threads = append(request.Threads, aireview.MergeThread{Comment: rule.earlier.Comment})
+		}
+		request.Threads[thread].Candidates = append(request.Threads[thread].Candidates, len(request.Candidates)-1)
+	}
+
 	type group struct {
 		findings []int
 		earlier  []*aiReviewEarlier
+		rules    []*ruleMember
 	}
 	var groups []*group
 	merged := make([]bool, len(findings))
+	same := make(map[*ruleResult]bool)
 	if len(offered) > 0 {
 		result, err := merge(ctx, request)
 		switch {
@@ -359,15 +438,23 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 			for _, candidates := range result.Groups {
 				g := &group{}
 				for _, candidate := range candidates {
-					if i := offered[candidate]; i < len(findings) {
+					switch i := offered[candidate]; {
+					case i < len(findings):
 						g.findings = append(g.findings, i)
 						merged[i] = true
-					} else {
+					case i < len(findings)+len(earlier):
 						g.earlier = append(g.earlier, earlier[i-len(findings)])
+					default:
+						g.rules = append(g.rules, members[i-len(findings)-len(earlier)])
 					}
 				}
 				if len(g.findings) > 0 {
 					groups = append(groups, g)
+				}
+			}
+			for _, thread := range result.Same {
+				if thread >= 0 && thread < len(threads) {
+					same[threads[thread]] = true
 				}
 			}
 		}
@@ -388,9 +475,170 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 			problem.Findings = append(problem.Findings, findings[i])
 		}
 		problem.Earlier = keptEarlier(problem.Findings, g.earlier)
+		// The problem's text joins the rule finding's result, so it keeps no
+		// thread of its own. A rule finding is offered without its databases,
+		// so the merge can put a problem with one that is on other databases:
+		// such a problem stays on its own, since the result names the
+		// databases it applies to.
+		if len(g.rules) == 1 && !slices.ContainsFunc(problem.Findings, func(finding *aiReviewFinding) bool {
+			return !slices.Contains(g.rules[0].finding.targets, finding.Unit.Check.Target)
+		}) {
+			problem.Rule, problem.Earlier = g.rules[0], nil
+		}
 		problems = append(problems, problem)
 	}
+	markUnchanged(problems, same)
 	return problems, nil
+}
+
+// canKeepEarlier reports whether the comment an earlier run left on a rule
+// result can stay as it is. It holds more than the rules' own text, which is
+// what the AI review added then. It holds every line of the rules' text as it
+// is now, which the line numbers of a merged result's statements leave when an
+// edit moves them. And it names no part of the result's databases as the ones
+// a problem is on, since the model is shown no database name and cannot tell
+// whether that part is the same now.
+func canKeepEarlier(rule *ruleResult) bool {
+	if rule.earlier == nil {
+		return false
+	}
+	text := rule.payload().Comment
+	if rule.earlier.Comment == text || !holdsLines(rule.earlier.Comment, text) {
+		return false
+	}
+	var targets []string
+	for _, member := range rule.members {
+		targets = append(targets, member.targets...)
+	}
+	var labels []string
+	for target, label := range databaseLabels(targets) {
+		labels = append(labels, label+": ")
+		// A database is named with its instance where another shares its name.
+		if i := strings.Index(target, common.InstanceNamePrefix); i >= 0 {
+			if instance, database, err := common.GetInstanceDatabaseID(target[i:]); err == nil {
+				labels = append(labels, database+": ", instance+"/"+database+": ")
+			}
+		}
+	}
+	for _, line := range strings.Split(rule.earlier.Comment, "\n") {
+		line = strings.TrimLeft(line, " ")
+		if strings.HasPrefix(line, flaggedDifferentlyOn) || strings.HasPrefix(line, notFlaggedOn) ||
+			slices.ContainsFunc(labels, func(label string) bool { return strings.HasPrefix(line, label) }) {
+			return false
+		}
+	}
+	return true
+}
+
+// markUnchanged marks the problems on the rule results in same, whose earlier
+// comment the merge says already states them. Two kinds of result are left
+// out, and their comment is written again. One is a result its problems raise
+// above the priority that comment was posted with: nobody read the comment at
+// the higher priority. The other is a result with a problem that is not on
+// every database of its rule finding: canKeepEarlier offers only a comment
+// written for all of them.
+func markUnchanged(problems []*aiReviewProblem, same map[*ruleResult]bool) {
+	priority := make(map[*ruleResult]storepb.IssueCommentPayload_ReviewMetadata_Priority)
+	partial := make(map[*ruleResult]bool)
+	for _, problem := range problems {
+		if problem.Rule == nil || !same[problem.Rule.result] {
+			continue
+		}
+		rule := problem.Rule.result
+		if _, ok := priority[rule]; !ok {
+			priority[rule] = rulePriority(problem.Rule.finding.rule)
+		}
+		if raised := raisedPriority(problem); priorityRank(raised) < priorityRank(priority[rule]) {
+			priority[rule] = raised
+		}
+		// Without statement boundaries the comment cannot say which of the
+		// other databases flagged the statement, so it names no part either.
+		if !problem.BlockIsStatement || !slices.Equal(problemTargets(problem.Findings), problem.Rule.finding.targets) {
+			partial[rule] = true
+		}
+	}
+	for _, problem := range problems {
+		if problem.Rule == nil {
+			continue
+		}
+		rule := problem.Rule.result
+		if p, ok := priority[rule]; ok && !partial[rule] && priorityRank(p) >= priorityRank(rule.earlier.Priority) {
+			problem.Unchanged = true
+		}
+	}
+}
+
+// holdsLines reports whether comment holds every line of text, in order.
+func holdsLines(comment, text string) bool {
+	lines := strings.Split(comment, "\n")
+	for _, want := range strings.Split(text, "\n") {
+		i := slices.Index(lines, want)
+		if i < 0 {
+			return false
+		}
+		lines = lines[i+1:]
+	}
+	return true
+}
+
+// raisedPriority is the priority a problem raises the result of its rule
+// finding to: the highest among its findings that report more than the rule's
+// own condition, whose priority the rule sets, or unspecified when none does.
+func raisedPriority(problem *aiReviewProblem) storepb.IssueCommentPayload_ReviewMetadata_Priority {
+	raised := storepb.IssueCommentPayload_ReviewMetadata_PRIORITY_UNSPECIFIED
+	for _, finding := range problem.Findings {
+		if restatesRule(finding, problem.Rule.finding.rule) {
+			continue
+		}
+		if priority := aiReviewPriority(finding.Finding.Severity); priorityRank(priority) < priorityRank(raised) {
+			raised = priority
+		}
+	}
+	return raised
+}
+
+// restatesRule reports whether a finding cites the standard rule itself. A
+// policy sentence can name the rule, and a finding that cites it is the
+// policy's, not a restatement.
+func restatesRule(finding *aiReviewFinding, rule storepb.ReviewRuleType) bool {
+	return aireview.CitesStandardRule(finding.Finding.Rule, rule) && !aireview.CitesPolicy(finding.Finding.Rule, finding.Unit.Policies...)
+}
+
+// foldedRule is the rule a problem on a rule finding cites in that finding's
+// comment, or empty for none. A policy sentence says why the problem is one,
+// so the most severe finding that quotes the policy gives it. Otherwise the
+// lead finding does, unless it quotes the review's own prompt or a standard
+// rule, which tells the author nothing the thread does not.
+func foldedRule(findings []*aiReviewFinding, lead *aiReviewFinding) string {
+	var quoting []*aiReviewFinding
+	for _, finding := range findings {
+		if aireview.CitesPolicy(finding.Finding.Rule, finding.Unit.Policies...) {
+			quoting = append(quoting, finding)
+		}
+	}
+	if len(quoting) > 0 {
+		return leadFinding(quoting).Finding.Rule
+	}
+	if aireview.CitesPrompt(lead.Finding.Rule) {
+		return ""
+	}
+	return lead.Finding.Rule
+}
+
+// ruleCandidate is a rule finding as the merge shows it: its rule and codes
+// as the title, the rule's priority, the line it starts on, and its message
+// as the evidence.
+func ruleCandidate(finding *ruleFinding) aireview.Finding {
+	title := finding.rule.String()
+	if len(finding.codes) > 0 {
+		title += " (" + strings.Join(finding.codes, ", ") + ")"
+	}
+	return aireview.Finding{
+		Title:    title,
+		Severity: aiReviewSeverity(rulePriority(finding.rule)),
+		Line:     int(finding.anchor.GetStartPosition().GetLine()),
+		Evidence: finding.message,
+	}
 }
 
 // keptEarlier returns the earlier result a problem keeps: the one the merge
@@ -488,6 +736,7 @@ func statementSegment(specID, body string, ordinal int) string {
 // how many it marked. A problem that keeps an earlier result is never held,
 // since holding it would supersede the thread of a problem the run still
 // reports, and a resolved one takes no place, since nobody has to act on it.
+// Neither does a problem on a rule finding, which posts no thread of its own.
 func limitAIReviewProblems(specs []*storepb.PlanConfig_Spec, problems []*aiReviewProblem) int {
 	specIndex := make(map[string]int, len(specs))
 	for i, spec := range specs {
@@ -511,6 +760,7 @@ func limitAIReviewProblems(specs []*storepb.PlanConfig_Spec, problems []*aiRevie
 	places, held := 0, 0
 	for _, problem := range ranked {
 		switch {
+		case problem.Rule != nil:
 		case problem.Earlier != nil && problem.Earlier.Resolved:
 		case places < maxAIReviewProblems:
 			places++
@@ -524,8 +774,9 @@ func limitAIReviewProblems(specs []*storepb.PlanConfig_Spec, problems []*aiRevie
 }
 
 // summarizeAIReviewProblems sets the summary of each problem that is not held,
-// that more than one database reports, and that keeps no earlier result, whose
-// text it keeps instead, at most aiReviewRunConcurrency at a time. A problem
+// that more than one database reports, and that keeps no earlier text, its
+// own earlier result's or its rule result's, at most aiReviewRunConcurrency at
+// a time. A problem
 // whose summary fails keeps none, and its comment is built from its lead
 // finding. The error is ctx's, when it ends.
 func summarizeAIReviewProblems(ctx context.Context, summarize summarizeFunc, problems []*aiReviewProblem) error {
@@ -533,7 +784,7 @@ func summarizeAIReviewProblems(ctx context.Context, summarize summarizeFunc, pro
 	group.SetLimit(aiReviewRunConcurrency)
 	for _, problem := range problems {
 		findings := findingsByTarget(problem.Findings)
-		if problem.Held || problem.Earlier != nil || len(problemTargets(findings)) < 2 {
+		if problem.Held || problem.Earlier != nil || problem.Unchanged || len(problemTargets(findings)) < 2 {
 			continue
 		}
 		group.Go(func() error {
@@ -635,37 +886,39 @@ func findBlock(blocks *[]aireview.LineRange, line int) int {
 	return len(*blocks) - 1
 }
 
-// aiReviewComments converts the problems into the review result comments to
-// post: one OPEN root per problem not held, anchored to the line most of its
-// findings start on, with every database it applies to. The priority and rule
-// are those of its lead finding. A problem that keeps an earlier result carries
-// that result's fingerprint and text, so the run keeps its thread and moves it.
-// Any other problem gets a new fingerprint: its statement's segment, then a
-// random part, since nothing else about an AI finding holds across runs.
-func aiReviewComments(projectID string, issueUID int64, problems []*aiReviewProblem) []*store.IssueCommentMessage {
-	type blockKey struct {
-		specID      string
-		sheetSha256 string
-		block       aireview.LineRange
-	}
-	keyOf := func(problem *aiReviewProblem) blockKey {
-		check := problem.Findings[0].Unit.Check
-		return blockKey{specID: check.SpecID, sheetSha256: check.SheetSha256, block: problem.Block}
-	}
-	// onBlock holds the databases with any finding on a statement.
-	onBlock := make(map[blockKey][]string)
+// flaggedOnBlocks returns, for each statement, the databases with any finding
+// on it.
+func flaggedOnBlocks(problems []*aiReviewProblem) map[aiReviewBlock][]string {
+	onBlock := make(map[aiReviewBlock][]string)
 	for _, problem := range problems {
-		key := keyOf(problem)
+		key := problemBlock(problem)
 		for _, finding := range problem.Findings {
 			if !slices.Contains(onBlock[key], finding.Unit.Check.Target) {
 				onBlock[key] = append(onBlock[key], finding.Unit.Check.Target)
 			}
 		}
 	}
+	return onBlock
+}
 
+func problemBlock(problem *aiReviewProblem) aiReviewBlock {
+	check := problem.Findings[0].Unit.Check
+	return aiReviewBlock{specID: check.SpecID, sheetSha256: check.SheetSha256, block: problem.Block}
+}
+
+// aiReviewComments converts the problems into the review result comments to
+// post: one OPEN root per problem that is not held and joins no rule finding,
+// anchored to the line most of its findings start on, with every database it
+// applies to. The priority and rule are those of its lead finding. A problem
+// that keeps an earlier result carries that result's fingerprint and text, so
+// the run keeps its thread and moves it. Any other problem gets a new
+// fingerprint: its statement's segment, then a random part, since nothing else
+// about an AI finding holds across runs.
+func aiReviewComments(projectID string, issueUID int64, problems []*aiReviewProblem) []*store.IssueCommentMessage {
+	onBlock := flaggedOnBlocks(problems)
 	comments := make([]*store.IssueCommentMessage, 0, len(problems))
 	for _, problem := range problems {
-		if problem.Held {
+		if problem.Held || problem.Rule != nil {
 			continue
 		}
 		findings := findingsByTarget(problem.Findings)
@@ -676,7 +929,7 @@ func aiReviewComments(projectID string, issueUID int64, problems []*aiReviewProb
 		if problem.Earlier != nil {
 			title, comment, fingerprint = problem.Earlier.Title, problem.Earlier.Comment, problem.Earlier.Fingerprint
 		} else {
-			title, comment = aiReviewCommentText(problem, lead, findings, targets, onBlock[keyOf(problem)])
+			title, comment = aiReviewCommentText(problem, lead, findings, targets, onBlock[problemBlock(problem)], lead.Finding.Rule)
 			fingerprint = problem.Segment + "/" + uuid.NewString()
 		}
 		comments = append(comments, &store.IssueCommentMessage{
@@ -701,6 +954,34 @@ func aiReviewComments(projectID string, issueUID int64, problems []*aiReviewProb
 		})
 	}
 	return comments
+}
+
+// foldAIReviewProblems adds each problem on a rule finding to the result of
+// that finding: its text after the finding's own, and its priority when it is
+// the higher one and the problem reports more than the rule's condition. A
+// result whose problems are all unchanged keeps the comment an earlier run
+// left instead. A problem adds its evidence and its fix as plain text, with no
+// title of its own, so that the thread reads as one finding, and with the
+// rule foldedRule gives it.
+func foldAIReviewProblems(problems []*aiReviewProblem) {
+	onBlock := flaggedOnBlocks(problems)
+	for _, problem := range problems {
+		if problem.Rule == nil {
+			continue
+		}
+		rule, finding := problem.Rule.result, problem.Rule.finding
+		if problem.Unchanged {
+			rule.keepsEarlier = true
+			continue
+		}
+		findings := findingsByTarget(problem.Findings)
+		lead := leadFinding(findings)
+		_, text := aiReviewCommentText(problem, lead, findings, problemTargets(findings), onBlock[problemBlock(problem)], foldedRule(findings, lead))
+		finding.folded = append(finding.folded, text)
+		if raised := raisedPriority(problem); priorityRank(raised) < priorityRank(finding.raised) {
+			finding.raised = raised
+		}
+	}
 }
 
 // findingsByTarget orders findings by database, keeping the order of one
@@ -764,6 +1045,13 @@ const (
 	aiReviewFixLabel  = "\n\nSuggested fix: "
 )
 
+// The lines of a comment that name the reviewed databases a problem is not
+// on, which canKeepEarlier reads back.
+const (
+	flaggedDifferentlyOn = "- Flagged differently on "
+	notFlaggedOn         = "- Not flagged on "
+)
+
 // aiReviewGroup is databases of a problem that one line of its comment covers,
 // with the highest severity their findings carry.
 type aiReviewGroup struct {
@@ -778,16 +1066,36 @@ type aiReviewGroup struct {
 // apart, then the reviewed databases that reported a different problem on the
 // statement, onBlock, or nothing. Without a summary, the shared evidence is the
 // lead finding's, labeled with its database.
-func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findings []*aiReviewFinding, targets []string, onBlock []string) (title, text string) {
+//
+// The comment cites rule, or no rule when it is empty.
+//
+// A problem on a rule finding is read inside that finding's comment, beside
+// the databases the thread already names. So it leaves out the list of its
+// databases when they are the rule finding's, and it names its one database
+// when the rule finding is on others too.
+func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findings []*aiReviewFinding, targets []string, onBlock []string, rule string) (title, text string) {
+	var ruleTargets []string
+	if problem.Rule != nil {
+		ruleTargets = problem.Rule.finding.targets
+	}
 	var b strings.Builder
 	if len(targets) == 1 {
+		if len(ruleTargets) > 1 {
+			named := slices.Clone(ruleTargets)
+			if !slices.Contains(named, targets[0]) {
+				named = append(named, targets[0])
+			}
+			_, _ = b.WriteString(databaseLabels(named)[targets[0]] + ": ")
+		}
 		for i, finding := range findings {
 			if i > 0 {
 				_, _ = b.WriteString("\n\n")
 			}
 			_, _ = b.WriteString(finding.Finding.Evidence)
 		}
-		_, _ = b.WriteString(aiReviewRuleLabel + lead.Finding.Rule)
+		if rule != "" {
+			_, _ = b.WriteString(aiReviewRuleLabel + rule)
+		}
 		_, _ = b.WriteString(aiReviewFixLabel + lead.Finding.Fix)
 		return lead.Finding.Title, b.String()
 	}
@@ -829,12 +1137,16 @@ func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findin
 		return cmp.Compare(aiReviewPriority(x.highest), aiReviewPriority(y.highest))
 	})
 
-	_, _ = fmt.Fprintf(&b, "%s\n", evidence)
+	_, _ = b.WriteString(evidence)
+	var lines []string
 	for _, group := range groups {
-		_, _ = fmt.Fprintf(&b, "\n- %s", databaseList(group.targets, labels))
+		line := "- " + databaseList(group.targets, labels)
 		if group.facts != "" {
-			_, _ = fmt.Fprintf(&b, ": %s", group.facts)
+			line += ": " + group.facts
+		} else if len(groups) == 1 && len(group.targets) == len(ruleTargets) && !slices.ContainsFunc(group.targets, func(target string) bool { return !slices.Contains(ruleTargets, target) }) {
+			continue
 		}
+		lines = append(lines, line)
 	}
 	var differently, unflagged []string
 	for _, target := range problem.Reviewed {
@@ -851,12 +1163,17 @@ func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findin
 		}
 	}
 	if len(differently) > 0 {
-		_, _ = fmt.Fprintf(&b, "\n- Flagged differently on %s", databaseList(differently, labels))
+		lines = append(lines, flaggedDifferentlyOn+databaseList(differently, labels))
 	}
 	if len(unflagged) > 0 {
-		_, _ = fmt.Fprintf(&b, "\n- Not flagged on %s", databaseList(unflagged, labels))
+		lines = append(lines, notFlaggedOn+databaseList(unflagged, labels))
 	}
-	_, _ = b.WriteString(aiReviewRuleLabel + lead.Finding.Rule)
+	if len(lines) > 0 {
+		_, _ = b.WriteString("\n\n" + strings.Join(lines, "\n"))
+	}
+	if rule != "" {
+		_, _ = b.WriteString(aiReviewRuleLabel + rule)
+	}
 	_, _ = b.WriteString(aiReviewFixLabel + fix)
 	return title, b.String()
 }
