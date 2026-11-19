@@ -499,7 +499,7 @@ func TestReviewStartsWhenTheSQLIsSubmittedOrChanged(t *testing.T) {
 // starts when the issue is submitted for review and when the submitted SQL
 // changes, never on a draft, and only while the AI review is on or over an
 // earlier run.
-func TestAIReviewStartsOnceTheIssueIsSubmitted(t *testing.T) {
+func TestAIReviewStartsOnADraft(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
@@ -524,24 +524,34 @@ func TestAIReviewStartsOnceTheIssueIsSubmitted(t *testing.T) {
 		_, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
 		require.NoError(t, err)
 	}
+	createDraft := func(planUID int64) (string, int64) {
+		t.Helper()
+		created, err := issueService.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+			Parent: "projects/" + projectID,
+			Issue: &v1pb.Issue{
+				Type:  v1pb.Issue_DATABASE_CHANGE,
+				Plan:  common.FormatPlan(projectID, planUID),
+				Draft: true,
+			},
+		}))
+		require.NoError(t, err)
+		_, issueUID, err := common.GetProjectIDIssueUID(created.Msg.Name)
+		require.NoError(t, err)
+		return created.Msg.Name, issueUID
+	}
 
-	created, err := issueService.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
-		Parent: "projects/" + projectID,
-		Issue: &v1pb.Issue{
-			Type:  v1pb.Issue_DATABASE_CHANGE,
-			Plan:  common.FormatPlan(projectID, plan.UID),
-			Draft: true,
-		},
-	}))
-	require.NoError(t, err)
-	_, issueUID, err := common.GetProjectIDIssueUID(created.Msg.Name)
-	require.NoError(t, err)
-	require.Nil(t, getRun(issueUID), "a draft is not reviewed")
-	_, err = issueService.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: reviewRunName(projectID, issueUID)}))
-	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-	require.ErrorContains(t, err, "submitted for review")
+	issueName, issueUID := createDraft(plan.UID)
+	run := getRun(issueUID)
+	require.NotNil(t, run, "a draft is reviewed once it is created")
+	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status)
+	require.Equal(t, int64(0), run.Attempt)
+	claimAll()
+
 	updatePlanSheetForTest(ctx, t, planService, plan, sheets[1])
-	require.Nil(t, getRun(issueUID), "changing a draft's SQL does not review it")
+	run = getRun(issueUID)
+	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status, "changing a draft's SQL restarts the review")
+	require.Equal(t, int64(1), run.Attempt)
+	claimAll()
 
 	// A submission waits for the plan checks of the current SQL.
 	currentPlan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: projectID, UID: &plan.UID})
@@ -553,27 +563,23 @@ func TestAIReviewStartsOnceTheIssueIsSubmitted(t *testing.T) {
 		ApprovalInputVersion: currentPlan.Config.GetApprovalInputVersion(),
 	}, checkRun.UID))
 	_, err = issueService.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
-		Issue:      &v1pb.Issue{Name: created.Msg.Name, Draft: false},
+		Issue:      &v1pb.Issue{Name: issueName, Draft: false},
 		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"draft"}},
 	}))
 	require.NoError(t, err)
-	run := getRun(issueUID)
-	require.NotNil(t, run, "submitting the issue starts the review")
-	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status)
-	require.Equal(t, int64(0), run.Attempt)
-	claimAll()
+	require.Equal(t, int64(1), getRun(issueUID).Attempt, "submitting does not review the same SQL again")
 
 	updatePlanSheetForTest(ctx, t, planService, plan, sheets[0])
 	run = getRun(issueUID)
 	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status, "changing the submitted SQL restarts the review")
-	require.Equal(t, int64(1), run.Attempt)
+	require.Equal(t, int64(2), run.Attempt)
 	claimAll()
 
 	setAIReviewForTest(ctx, t, stores, false)
 	updatePlanSheetForTest(ctx, t, planService, plan, sheets[1])
 	run = getRun(issueUID)
 	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status, "a run over an earlier one resolves its findings on the old SQL")
-	require.Equal(t, int64(2), run.Attempt)
+	require.Equal(t, int64(3), run.Attempt)
 
 	otherPlan, err := stores.CreatePlan(ctx, &store.PlanMessage{
 		ProjectID: projectID,
@@ -581,43 +587,28 @@ func TestAIReviewStartsOnceTheIssueIsSubmitted(t *testing.T) {
 		Config:    plan.Config,
 	}, "creator@example.com")
 	require.NoError(t, err)
-	other, err := issueService.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
-		Parent: "projects/" + projectID,
-		Issue: &v1pb.Issue{
-			Type: v1pb.Issue_DATABASE_CHANGE,
-			Plan: common.FormatPlan(projectID, otherPlan.UID),
-		},
-	}))
-	require.NoError(t, err)
-	_, otherUID, err := common.GetProjectIDIssueUID(other.Msg.Name)
-	require.NoError(t, err)
+	_, otherUID := createDraft(otherPlan.UID)
 	require.Nil(t, getRun(otherUID), "no review starts while the AI review is off")
+	_, err = issueService.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: reviewRunName(projectID, otherUID)}))
+	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err), "nor by hand")
+
+	setAIReviewForTest(ctx, t, stores, true)
+	_, err = issueService.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: reviewRunName(projectID, otherUID)}))
+	require.NoError(t, err, "a draft can be reviewed by hand")
+	require.NotNil(t, getRun(otherUID))
 }
 
-func TestAIReviewFollowsTheProjectSwitch(t *testing.T) {
+func TestAIReviewNeedsTheEnterprisePlan(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	projectID := "project-a"
 	plan, _ := createReviewablePlan(ctx, t, stores, projectID)
+	setAIReviewForTest(ctx, t, stores, true)
 	issueService := newIssueServiceForTest(t, stores)
 	issueService.profile = &config.Profile{}
 	issueService.licenseService = newEnterpriseLicenseService(ctx, t, stores)
 
-	setProjectSwitch := func(enabled bool, enforce bool) {
-		t.Helper()
-		payload, err := protojson.Marshal(&storepb.ReviewAIPolicy{Enabled: &enabled})
-		require.NoError(t, err)
-		_, err = stores.CreatePolicy(ctx, &store.PolicyMessage{
-			Workspace:    "default",
-			ResourceType: storepb.Policy_PROJECT,
-			Resource:     common.FormatProject(projectID),
-			Type:         storepb.Policy_REVIEW_AI,
-			Payload:      string(payload),
-			Enforce:      enforce,
-		})
-		require.NoError(t, err)
-	}
 	// createIssue submits a new issue for review and reports whether its
 	// review started.
 	createIssue := func() (int64, bool) {
@@ -643,27 +634,13 @@ func TestAIReviewFollowsTheProjectSwitch(t *testing.T) {
 		return issueUID, run != nil
 	}
 
-	setAIReviewForTest(ctx, t, stores, false)
-	setProjectSwitch(true, true)
 	_, started := createIssue()
-	require.True(t, started, "a project switched on is reviewed while the workspace is off")
-
-	setAIReviewForTest(ctx, t, stores, true)
-	setProjectSwitch(false, true)
-	issueUID, started := createIssue()
-	require.False(t, started, "a project switched off is not reviewed while the workspace is on")
-	_, err := issueService.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: reviewRunName(projectID, issueUID)}))
-	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-	require.ErrorContains(t, err, "turned off for the project")
-
-	setProjectSwitch(false, false)
-	_, started = createIssue()
-	require.True(t, started, "a project policy that is not enforced follows the workspace")
+	require.True(t, started, "the Enterprise plan reviews an issue while the workspace switch is on")
 
 	freeLicenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)
 	issueService.licenseService = freeLicenseService
-	issueUID, started = createIssue()
+	issueUID, started := createIssue()
 	require.False(t, started, "a plan without the AI review reviews nothing")
 	_, err = issueService.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: reviewRunName(projectID, issueUID)}))
 	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
@@ -727,10 +704,12 @@ func TestResolvingAThreadRequestsARolloutCheck(t *testing.T) {
 		require.NoError(t, err)
 	}
 
+	// Beside V1's plan checks open threads hold the rollout too, so resolving
+	// one asks for the check as under SQL Review V2.
 	withoutV2 := newIssueServiceForTest(t, stores)
 	withoutV2.profile = &config.Profile{}
 	setThreadState(withoutV2, v1pb.IssueComment_RESOLVED)
-	require.Empty(t, withoutV2.bus.RolloutCreationChan)
+	require.Len(t, withoutV2.bus.RolloutCreationChan, 1)
 
 	service := newIssueServiceForTest(t, stores)
 	setThreadState(service, v1pb.IssueComment_OPEN)

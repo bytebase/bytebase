@@ -91,7 +91,7 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 	if err := checkReviewable(ctx, s.store, issue); err != nil {
 		return nil, err
 	}
-	if err := s.checkAReviewerRuns(ctx, issue); err != nil {
+	if err := s.checkAReviewerRuns(ctx); err != nil {
 		return nil, err
 	}
 
@@ -109,25 +109,22 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 }
 
 // checkAReviewerRuns refuses a review that no reviewer would run. A server
-// without SQL Review V2 has no standard rule review, so there the issue has to
-// be submitted for review, the workspace's plan has to include the AI review,
-// and the AI review has to be on; the error says which is missing.
-func (s *IssueService) checkAReviewerRuns(ctx context.Context, issue *store.IssueMessage) error {
+// without SQL Review V2 has no standard rule review, so there the workspace's
+// plan has to include the AI review, and the AI review has to be on; the error
+// says which is missing.
+func (s *IssueService) checkAReviewerRuns(ctx context.Context) error {
 	if s.profile.SQLReviewV2 {
 		return nil
-	}
-	if issue.Payload.GetDraft() {
-		return connect.NewError(connect.CodeFailedPrecondition, errors.New("the AI review runs once the issue is submitted for review"))
 	}
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AI_SQL_REVIEW); err != nil {
 		return connect.NewError(connect.CodePermissionDenied, err)
 	}
-	aiSetting, projectEnabled, err := s.store.GetAIReviewSwitches(ctx, workspaceID, issue.ProjectID)
+	aiSetting, err := s.store.GetAISettingUncached(ctx, workspaceID)
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, err)
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get AI setting"))
 	}
-	if err := aireview.CheckSetting(aiSetting, projectEnabled); err != nil {
+	if err := aireview.CheckSetting(aiSetting); err != nil {
 		return connect.NewError(connect.CodeFailedPrecondition, err)
 	}
 	return nil
@@ -211,21 +208,17 @@ func startReview(ctx context.Context, profile *config.Profile, stores *store.Sto
 
 // aiReviewStarts reports whether a server without SQL Review V2, where the
 // review is the AI review beside the plan checks' SQL review, starts the
-// issue's review. It waits until the issue is submitted for review, then
-// starts while the plan includes the AI review and it is on, or over an
-// earlier run even when it is not, so the new run resolves that run's findings
-// on the old SQL.
+// issue's review. Like SQL Review V2 it reviews a draft too. It starts while
+// the plan includes the AI review and it is on, or over an earlier run even
+// when it is not, so the new run resolves that run's findings on the old SQL.
 func aiReviewStarts(ctx context.Context, stores *store.Store, licenseService *enterprise.LicenseService, issue *store.IssueMessage) (bool, error) {
-	if issue.Payload.GetDraft() {
-		return false, nil
-	}
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	aiSetting, projectEnabled, err := stores.GetAIReviewSwitches(ctx, workspaceID, issue.ProjectID)
+	aiSetting, err := stores.GetAISettingUncached(ctx, workspaceID)
 	if err != nil {
-		return false, err
+		return false, errors.Wrapf(err, "failed to get AI setting")
 	}
 	if licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AI_SQL_REVIEW) == nil &&
-		aireview.CheckSetting(aiSetting, projectEnabled) == nil {
+		aireview.CheckSetting(aiSetting) == nil {
 		return true, nil
 	}
 	run, err := stores.GetReviewRun(ctx, issue.ProjectID, issue.UID)
@@ -236,8 +229,8 @@ func aiReviewStarts(ctx context.Context, stores *store.Store, licenseService *en
 }
 
 // requestRolloutCheck asks the rollout creator to look at the issue's plan
-// again. Under SQL Review V2 open threads hold the automatic rollout, so
-// resolving one can release it.
+// again. Open threads hold the automatic rollout, so resolving one can release
+// it.
 func requestRolloutCheck(ctx context.Context, stores *store.Store, b *bus.Bus, projectID string, issueUID int64) {
 	issue, err := stores.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{projectID}, UID: &issueUID})
 	if err != nil {

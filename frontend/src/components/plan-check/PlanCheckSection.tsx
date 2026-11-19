@@ -1,5 +1,4 @@
 import {
-  AlertCircle,
   CheckCircle,
   CircleQuestionMark,
   FileCode,
@@ -7,11 +6,11 @@ import {
   Play,
   SearchCode,
   Shield,
-  XCircle,
 } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
+import { LevelPriorityBadge } from "@/components/sql-review/LevelPriorityBadge";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -145,39 +144,43 @@ export function PlanCheckSection({
 
 type StatusEntry = {
   count: number;
-  icon: typeof XCircle;
-  label: string;
+  label: ReactNode;
   status: Advice_Level;
   textClass: string;
 };
 
+// Errors and warnings show as the review priorities they map to, then the
+// count; passed checks keep their icon and label.
 function getStatusEntries(
   summary: PlanCheckSummary,
   t: ReturnType<typeof useTranslation>["t"]
 ): StatusEntry[] {
-  return [
+  const entries: StatusEntry[] = [
     {
       count: summary.error,
-      icon: XCircle,
-      label: t("common.error"),
+      label: <LevelPriorityBadge level="error" />,
       status: Advice_Level.ERROR,
-      textClass: "text-error",
+      textClass: "text-control",
     },
     {
       count: summary.warning,
-      icon: AlertCircle,
-      label: t("common.warning"),
+      label: <LevelPriorityBadge level="warning" />,
       status: Advice_Level.WARNING,
-      textClass: "text-warning",
+      textClass: "text-control",
     },
     {
       count: summary.success,
-      icon: CheckCircle,
-      label: t("common.success"),
+      label: (
+        <>
+          <CheckCircle className="size-4" />
+          <span>{t("common.success")}</span>
+        </>
+      ),
       status: Advice_Level.SUCCESS,
       textClass: "text-success",
     },
-  ].filter((entry) => entry.count > 0);
+  ];
+  return entries.filter((entry) => entry.count > 0);
 }
 
 function PlanCheckSummaryRow({ summary }: { summary: PlanCheckSummary }) {
@@ -192,10 +195,9 @@ function PlanCheckSummaryRow({ summary }: { summary: PlanCheckSummary }) {
           <span>{summary.running}</span>
         </span>
       )}
-      {entries.map(({ count, icon: Icon, label, status, textClass }) => (
+      {entries.map(({ count, label, status, textClass }) => (
         <span className={cn("flex items-center gap-1", textClass)} key={status}>
-          <Icon className="size-4" />
-          <span>{label}</span>
+          {label}
           <span>{count}</span>
         </span>
       ))}
@@ -222,7 +224,7 @@ function PlanCheckFilterPills({
           <span>{t("common.running")}</span>
         </div>
       )}
-      {entries.map(({ count, icon: Icon, label, status, textClass }) => {
+      {entries.map(({ count, label, status, textClass }) => {
         const isSelected = selectedStatus === status;
         return (
           <Button
@@ -237,8 +239,7 @@ function PlanCheckFilterPills({
             onClick={() => onSelect(isSelected ? undefined : status)}
             type="button"
           >
-            <Icon className="h-5 w-5" />
-            <span>{label}</span>
+            {label}
             <span>{count}</span>
           </Button>
         );
@@ -534,10 +535,10 @@ function getCheckTypeDescription(
 
 function statusIcon(status: Advice_Level) {
   if (status === Advice_Level.ERROR) {
-    return <XCircle className="h-4 w-4 text-error" />;
+    return <LevelPriorityBadge level="error" />;
   }
   if (status === Advice_Level.WARNING) {
-    return <AlertCircle className="h-4 w-4 text-warning" />;
+    return <LevelPriorityBadge level="warning" />;
   }
   return <CheckCircle className="h-4 w-4 text-success" />;
 }

@@ -40,11 +40,10 @@ export function PlanReviewSection() {
   const comments = useAppStore((state) =>
     issueName ? state.getIssueComments(issueName) : EMPTY_COMMENTS
   );
-  // Under SQL Review V2 the machine reviews run from draft onward, so Review
-  // shows them, and Deploy lists what the rollout waits on.
+  // The machine reviews run from draft onward, so Review shows them; under
+  // SQL Review V2 Deploy also lists what the rollout waits on.
   const reviewState = usePlanReviewState();
-  // Beside V1's plan checks the AI review runs once the issue is submitted,
-  // and the checks join it here.
+  // Beside V1's plan checks the AI review, and the checks join it here.
   const aiReview = useAIReviewBesideV1();
   const automatedReview = reviewState ?? aiReview;
 
@@ -53,17 +52,15 @@ export function PlanReviewSection() {
   if (issue.draft) {
     return (
       <div className="flex flex-col">
-        {reviewState && (
-          <div className="flex flex-col gap-y-1 px-4 pt-3">
-            <h3 className="text-base font-medium text-main">
-              {t("issue.approval-flow.self")}
-            </h3>
-            <p className="text-sm text-control-light">
-              {t("plan.review.approval-after-submit")}
-            </p>
-          </div>
-        )}
-        {reviewState && <AutomatedReviewSection state={reviewState} />}
+        <div className="flex flex-col gap-y-1 px-4 pt-3">
+          <h3 className="text-base font-medium text-main">
+            {t("issue.approval-flow.self")}
+          </h3>
+          <p className="text-sm text-control-light">
+            {t("plan.review.approval-after-submit")}
+          </p>
+        </div>
+        {automatedReview && <AutomatedReviewSection state={automatedReview} />}
         <ReviewActivityTimeline
           comments={comments}
           issue={issue}

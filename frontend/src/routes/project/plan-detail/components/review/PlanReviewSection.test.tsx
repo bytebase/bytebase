@@ -470,7 +470,7 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("PlanReviewSection — five review states", () => {
-  test("draft review issue hides governance UI until it is submitted", () => {
+  test("draft review issue says approval starts on submit and hides the rest of the governance UI", () => {
     const issue = makeIssue({
       approvalStatus: ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED,
       draft: true,
@@ -483,7 +483,7 @@ describe("PlanReviewSection — five review states", () => {
 
     render();
 
-    expect(container.textContent).not.toContain("issue.approval-flow.self");
+    expect(container.textContent).toContain("plan.review.approval-after-submit");
     expect(container.textContent).not.toContain("plan.review.footer.");
     expect(container.textContent).not.toContain(
       "custom-approval.approval-flow.skip"
@@ -694,7 +694,7 @@ describe("PlanReviewSection — five review states", () => {
     unmount();
   });
 
-  test("shows the AI review and V1's checks together, once the issue is submitted", () => {
+  test("shows the AI review and V1's checks together on a submitted issue", () => {
     mocks.aiReview = { rows: [{ reviewer: "review" }, { reviewer: "policy" }] };
     const issue = makeIssue({ approvalStatus: ApprovalStatus.PENDING });
     const { container, render, unmount } = renderIntoContainer(
@@ -713,6 +713,31 @@ describe("PlanReviewSection — five review states", () => {
     expect(container.textContent).toContain(
       "plan.review.footer.waiting-on-review"
     );
+
+    unmount();
+  });
+
+  test("shows the AI review and V1's checks on a draft, before approval starts", () => {
+    mocks.aiReview = { rows: [{ reviewer: "review" }, { reviewer: "policy" }] };
+    const issue = makeIssue({
+      approvalStatus: ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED,
+      draft: true,
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <PlanDetailProvider value={makePageState(issue, makePlan())}>
+        <PlanReviewSection />
+      </PlanDetailProvider>
+    );
+
+    render();
+
+    expect(
+      container
+        .querySelector("[data-testid='automated-review']")
+        ?.getAttribute("data-reviewers")
+    ).toBe("review,policy");
+    expect(container.textContent).toContain("plan.review.approval-after-submit");
+    expect(container.textContent).not.toContain("plan.review.footer.");
 
     unmount();
   });

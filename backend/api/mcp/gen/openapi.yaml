@@ -20074,19 +20074,7 @@ components:
         content:
           type: string
           title: content
-          description: |-
-            The policy text, at most 64 KiB. Must not be blank unless `enabled` is
-             set.
-        enabled:
-          type:
-            - boolean
-            - "null"
-          title: enabled
-          description: |-
-            A project's own switch for the AI review, in place of the workspace's
-             `AISetting.sql_review_enabled`. Unset, the project follows the workspace.
-             Only a project policy may set it, and the review still needs AI on for
-             the workspace.
+          description: The policy text. Must not be blank, at most 64 KiB.
       title: ReviewAIPolicy
       additionalProperties: false
       description: |-

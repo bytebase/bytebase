@@ -24,7 +24,7 @@ export function computeReadinessFooterState(input: {
   issueStatus: IssueStatus | undefined;
   approvalStatus: ApprovalStatus;
   checks: PlanCheckSummary;
-  // Open threads hold the rollout under SQL Review V2; zero elsewhere.
+  // Open threads hold the rollout; zero before the plan has an issue.
   unresolvedThreads: number;
 }): ReadinessFooterState {
   const { checks } = input;

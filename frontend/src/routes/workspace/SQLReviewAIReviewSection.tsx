@@ -115,9 +115,8 @@ export function useWorkspaceReviewAIPolicy(): ReviewAIPolicyDraft {
 }
 
 // `standardRules` says whether the standard rules review beside the AI. Beside
-// V1's review policies they do not, and the AI review comments once an issue
-// is submitted for review, and its policy is named apart from the SQL review
-// policies.
+// V1's review policies they do not, the AI review's findings are comments, and
+// its policy is named apart from the SQL review policies.
 export function SQLReviewAIReviewSection({
   aiReview,
   policy,
@@ -153,7 +152,7 @@ export function SQLReviewAIReviewSection({
       }
     >
       {!licensed && (
-        <FeatureAttention feature={PlanFeature.FEATURE_AI_SQL_REVIEW} />
+        <FeatureAttention feature={PlanFeature.FEATURE_AI_SQL_REVIEW} compact />
       )}
       {licensed && !aiReview.aiEnabled && (
         <Alert

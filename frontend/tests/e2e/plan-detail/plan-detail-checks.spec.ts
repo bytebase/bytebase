@@ -240,8 +240,8 @@ test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () =>
       },
     ]);
 
-    // The ERROR check is surfaced in the CHANGES "Checks" summary as an Error entry.
-    await expect(planPage.checksSummary()).toContainText("Error", {
+    // The ERROR check is surfaced in the CHANGES "Checks" summary as a P0 entry.
+    await expect(planPage.checksSummary()).toContainText("P0", {
       timeout: 15_000,
     });
     // The blocking status moved from DEPLOY to the Review readiness footer (AIO
@@ -275,7 +275,7 @@ test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () =>
       },
     ]);
 
-    await expect(planPage.checksSummary()).toContainText("Error", {
+    await expect(planPage.checksSummary()).toContainText("P0", {
       timeout: 15_000,
     });
     // No approval rule (seedTestData clears WORKSPACE_APPROVAL) →

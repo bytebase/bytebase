@@ -28,16 +28,6 @@ func TestReviewAIPolicyConverterRoundTrip(t *testing.T) {
 	out, err := convertToV1PBReviewAIPolicy(string(payloadBytes))
 	require.NoError(t, err)
 	require.Equal(t, text, out.ReviewAiPolicy.Content)
-	require.Nil(t, out.ReviewAiPolicy.Enabled)
-
-	// A project switched off keeps the switch, which differs from no switch.
-	off := false
-	payloadBytes, err = protojson.Marshal(convertToStorePBReviewAIPolicy(&v1pb.ReviewAIPolicy{Enabled: &off}))
-	require.NoError(t, err)
-	out, err = convertToV1PBReviewAIPolicy(string(payloadBytes))
-	require.NoError(t, err)
-	require.NotNil(t, out.ReviewAiPolicy.Enabled)
-	require.False(t, *out.ReviewAiPolicy.Enabled)
 
 	require.Empty(t, convertToStorePBReviewAIPolicy(nil).Content)
 	_, err = convertToV1PBReviewAIPolicy("not json")
@@ -73,33 +63,23 @@ func TestValidateReviewAIPolicyPayload(t *testing.T) {
 			ReviewAiPolicy: &v1pb.ReviewAIPolicy{Content: content},
 		}}
 	}
-	switched := func(content string, enabled bool) *v1pb.Policy {
-		return &v1pb.Policy{Policy: &v1pb.Policy_ReviewAiPolicy{
-			ReviewAiPolicy: &v1pb.ReviewAIPolicy{Content: content, Enabled: &enabled},
-		}}
-	}
 	for _, tc := range []struct {
-		name     string
-		resource storepb.Policy_Resource
-		policy   *v1pb.Policy
-		ok       bool
+		name   string
+		policy *v1pb.Policy
+		ok     bool
 	}{
-		{"one sentence", storepb.Policy_WORKSPACE, reviewAI("Every table has a primary key."), true},
-		{"many lines", storepb.Policy_WORKSPACE, reviewAI("# Standards\n\n- Every table has a primary key.\n- No column is dropped in production.\n"), true},
-		{"at the limit", storepb.Policy_WORKSPACE, reviewAI(strings.Repeat("a", maxReviewAIPolicyBytes)), true},
-		{"empty", storepb.Policy_WORKSPACE, reviewAI(""), false},
-		{"whitespace only", storepb.Policy_PROJECT, reviewAI(" \n\t"), false},
-		{"over the limit", storepb.Policy_WORKSPACE, reviewAI(strings.Repeat("a", maxReviewAIPolicyBytes+1)), false},
-		{"a project switch with no text", storepb.Policy_PROJECT, switched("", true), true},
-		{"a project switch off with text", storepb.Policy_PROJECT, switched("No DROP.", false), true},
-		{"a project switch over the limit", storepb.Policy_PROJECT, switched(strings.Repeat("a", maxReviewAIPolicyBytes+1), true), false},
-		{"a workspace switch", storepb.Policy_WORKSPACE, switched("No DROP.", true), false},
-		{"other payload", storepb.Policy_WORKSPACE, &v1pb.Policy{Policy: &v1pb.Policy_QueryDataPolicy{QueryDataPolicy: &v1pb.QueryDataPolicy{}}}, false},
-		{"nil payload", storepb.Policy_WORKSPACE, &v1pb.Policy{Policy: &v1pb.Policy_ReviewAiPolicy{}}, false},
+		{"one sentence", reviewAI("Every table has a primary key."), true},
+		{"many lines", reviewAI("# Standards\n\n- Every table has a primary key.\n- No column is dropped in production.\n"), true},
+		{"at the limit", reviewAI(strings.Repeat("a", maxReviewAIPolicyBytes)), true},
+		{"empty", reviewAI(""), false},
+		{"whitespace only", reviewAI(" \n\t"), false},
+		{"over the limit", reviewAI(strings.Repeat("a", maxReviewAIPolicyBytes+1)), false},
+		{"other payload", &v1pb.Policy{Policy: &v1pb.Policy_QueryDataPolicy{QueryDataPolicy: &v1pb.QueryDataPolicy{}}}, false},
+		{"nil payload", &v1pb.Policy{Policy: &v1pb.Policy_ReviewAiPolicy{}}, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			err := validatePolicyPayload(storepb.Policy_REVIEW_AI, tc.resource, tc.policy)
+			err := validatePolicyPayload(storepb.Policy_REVIEW_AI, tc.policy)
 			if tc.ok {
 				require.NoError(t, err)
 			} else {

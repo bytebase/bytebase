@@ -211,33 +211,22 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
   // Beside SQL Review V1 the page is the AI review's project policy alone.
   const sqlReviewV2 = sqlReviewV2Enabled();
   const standardRules = useProjectStandardRules(projectName, sqlReviewV2);
-  // AI itself is on or off for the whole workspace. Within it, the project
-  // follows the workspace's AI review switch unless it has a switch of its
-  // own, which lives in the project's AI review policy.
-  // The AI review is an Enterprise feature: without it the review is off.
+  // The AI review is switched for the whole workspace, runs only while AI
+  // itself is on, and is an Enterprise feature.
   const licensed = usePlanFeature(PlanFeature.FEATURE_AI_SQL_REVIEW);
-  const aiEnabled = useAppStore(
-    (state) => state.serverInfo?.aiEnabled === true
-  );
   const workspaceAIReviewOn = useAppStore(
-    (state) => state.serverInfo?.aiSqlReviewEnabled === true
+    (state) =>
+      state.serverInfo?.aiEnabled === true &&
+      state.serverInfo?.aiSqlReviewEnabled === true
   );
+  const aiReviewOn = licensed && workspaceAIReviewOn;
   const canViewWorkspaceRules = hasWorkspacePermissionV2("bb.policies.get");
   const aiReviewPolicy = useReviewAIPolicyDraft({
     parentPath: projectName,
     resourceType: PolicyResourceType.PROJECT,
     can,
-    enabled: aiEnabled,
+    enabled: aiReviewOn,
   });
-  const aiReviewCustomized = aiReviewPolicy.enabled !== undefined;
-  const aiReviewOn =
-    licensed && aiEnabled && (aiReviewPolicy.enabled ?? workspaceAIReviewOn);
-  const aiReviewLocked =
-    !licensed ||
-    !aiEnabled ||
-    !aiReviewPolicy.loaded ||
-    !aiReviewPolicy.canEdit ||
-    aiReviewPolicy.saving;
   const parts = sqlReviewV2
     ? [standardRules, aiReviewPolicy]
     : [aiReviewPolicy];
@@ -255,8 +244,13 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
   const customizeLocked = standardRules.customized
     ? standardRules.storedCustomized && !can("bb.policies.delete")
     : !standardRules.storedCustomized && !canSave;
+  // Beside V1 the page is one section, centered at the width of the
+  // workspace's SQL Review page, and so is its footer.
+  const centered = sqlReviewV2 ? undefined : "mx-auto w-full max-w-6xl";
   return (
-    <ProjectPageLayout>
+    // The page fills the height so the footer sits at the bottom even when the
+    // content is short.
+    <ProjectPageLayout className="min-h-full">
       {sqlReviewV2 && (
         <FormSection
           layout="single-column"
@@ -328,27 +322,25 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
         </FormSection>
       )}
       <FormSection
+        className={centered}
         layout="single-column"
         padding="none"
         title={t("sql-review.ai-review.self")}
         description={t("sql-review.ai-review.project-description")}
       >
         {!licensed && (
-          <FeatureAttention feature={PlanFeature.FEATURE_AI_SQL_REVIEW} />
-        )}
-        {licensed && !aiEnabled && (
-          <Alert
-            variant="warning"
-            description={t("sql-review.ai-review.ai-off")}
+          <FeatureAttention
+            feature={PlanFeature.FEATURE_AI_SQL_REVIEW}
+            compact
           />
         )}
         <FormFieldGroup>
           <SwitchRow
             className="rounded-sm border border-block-border px-4 py-3"
-            title={t("sql-review.ai-review.customize.self")}
+            title={t("sql-review.ai-review.enable.self")}
             description={
               <>
-                {t("sql-review.ai-review.customize.description")}
+                {t("sql-review.ai-review.set-for-workspace")}
                 {canViewWorkspaceRules && (
                   <>
                     {" "}
@@ -362,23 +354,9 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
                 )}
               </>
             }
-            checked={aiReviewCustomized}
-            // The project's own switch starts as the workspace's.
-            onCheckedChange={(customize) =>
-              aiReviewPolicy.setEnabled(
-                customize ? workspaceAIReviewOn : undefined
-              )
-            }
-            disabled={aiReviewLocked}
-          />
-          <SwitchRow
-            className="rounded-sm border border-block-border px-4 py-3"
-            title={t("sql-review.ai-review.enable.self")}
-            description={t("sql-review.ai-review.enable.description")}
             checked={aiReviewOn}
-            onCheckedChange={aiReviewPolicy.setEnabled}
-            readOnly={!aiReviewCustomized || !licensed || !aiEnabled}
-            disabled={aiReviewLocked}
+            onCheckedChange={() => {}}
+            readOnly
           />
           {aiReviewOn && (
             <ReviewAIPolicyField
@@ -395,6 +373,8 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
 
       {isDirty && (
         <StickyActionFooter
+          className="-mb-4 mt-auto"
+          contentClassName={centered}
           contentPadding={false}
           left={
             <Button

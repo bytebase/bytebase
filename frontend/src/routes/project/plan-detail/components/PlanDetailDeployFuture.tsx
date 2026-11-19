@@ -8,14 +8,15 @@ import { Button } from "@/components/ui/button";
 import { pushNotification } from "@/stores";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { useSqlReviewV2 } from "../hooks/useSqlReviewV2";
+import { useReviewHold } from "../hooks/useSqlReviewV2";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { isReleaseBackedPlan } from "../utils/spec";
 
 export function PlanDetailDeployFuture() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  const sqlReview = useSqlReviewV2();
+  // Where the review holds the rollout, it waits for every thread too.
+  const reviewHold = useReviewHold();
   const [creatingRollout, setCreatingRollout] = useState(false);
 
   const isGitOpsPlan = useMemo(
@@ -62,7 +63,7 @@ export function PlanDetailDeployFuture() {
       <p className="text-sm text-control-placeholder">
         {isGitOpsPlan
           ? t("plan.phase.deploy-description-gitops")
-          : sqlReview
+          : reviewHold
             ? t("plan.phase.deploy-description-v2")
             : t("plan.phase.deploy-description")}
       </p>

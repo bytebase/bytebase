@@ -2830,7 +2830,6 @@ conflict.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | content | [string](#string) |  |  |
-| enabled | [bool](#bool) | optional | A project&#39;s own switch for the AI review; unset, the project follows the workspace&#39;s AISetting.sql_review_enabled. |
 
 
 

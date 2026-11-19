@@ -314,22 +314,11 @@ export declare const ReviewRulePolicySchema: GenMessage<ReviewRulePolicy>;
  */
 export declare type ReviewAIPolicy = Message<"bytebase.v1.ReviewAIPolicy"> & {
   /**
-   * The policy text, at most 64 KiB. Must not be blank unless `enabled` is
-   * set.
+   * The policy text. Must not be blank, at most 64 KiB.
    *
    * @generated from field: string content = 1;
    */
   content: string;
-
-  /**
-   * A project's own switch for the AI review, in place of the workspace's
-   * `AISetting.sql_review_enabled`. Unset, the project follows the workspace.
-   * Only a project policy may set it, and the review still needs AI on for
-   * the workspace.
-   *
-   * @generated from field: optional bool enabled = 2;
-   */
-  enabled?: boolean | undefined;
 };
 
 /**

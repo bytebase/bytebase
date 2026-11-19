@@ -433,7 +433,9 @@ describe("AutomatedReviewSection", () => {
     })];
     renderSection([row("policy", "open", findings({ open: 1, p0: 1 }), { warnings: 1 })]);
     expect(screen.queryByRole("button", { name: "agent.diagnostic-help.ask-agent" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: status === Advice_Level.ERROR ? "plan.automated-review.n-errors:1" : "plan.automated-review.n-warnings:1" }));
+    // The mocked t drops the priority, so the badge tells the two counts apart.
+    const priority = status === Advice_Level.ERROR ? "P0" : "P1";
+    fireEvent.click(screen.getAllByRole("button", { name: "plan.findings.n-priority:1" }).find((button) => button.textContent === `${priority}1`)!);
     fireEvent.click(screen.getByRole("button", { name: "agent.diagnostic-help.ask-agent" }));
     const snapshot = diagnosticSnapshot();
     expect(snapshot.kind).toBe("sql-check");
@@ -884,10 +886,10 @@ describe("AutomatedReviewSection", () => {
       }),
     ]);
     const policy = screen.getByTestId("automated-review-policy");
-    expect(policy).toHaveTextContent("common.error1");
-    expect(policy).toHaveTextContent("common.warning14");
+    expect(policy).toHaveTextContent("P01");
+    expect(policy).toHaveTextContent("P114");
     fireEvent.click(
-      screen.getByRole("button", { name: "plan.automated-review.n-warnings:14" })
+      screen.getByRole("button", { name: "plan.findings.n-priority:14" })
     );
     expect(screen.getByTestId("checks-drawer")).toBeDefined();
     expect(mocks.drawerStatus).toBe(Advice_Level.WARNING);

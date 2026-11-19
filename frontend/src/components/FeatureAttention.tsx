@@ -19,14 +19,18 @@ import {
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import { InstanceAssignmentSheet } from "./InstanceAssignmentSheet";
 
+// `compact` is one row for a section that already names and describes the
+// feature: what the plan requires, and a short action.
 export function FeatureAttention({
   feature,
   description: descriptionProp,
   instance,
+  compact = false,
 }: {
   feature: PlanFeature;
   description?: string;
   instance?: Instance | InstanceResource;
+  compact?: boolean;
 }) {
   const { t } = useTranslation();
   const { canStartTrial, isTrialing, startTrial, trialingDays } =
@@ -68,30 +72,30 @@ export function FeatureAttention({
   const featureDesc =
     descriptionProp || t(`dynamic.subscription.features.${featureKey}.desc`);
 
-  let descriptionText: string;
+  // What the plan or the instance license lacks, without the feature's own
+  // description.
+  let requirementText: string;
   if (!hasFeature) {
     const startTrial = isTrialing
       ? ""
       : t("subscription.trial-for-days", {
           days: trialingDays,
         });
-    if (requiredPlan === PlanType.FREE && featureIncludedInPlan) {
-      descriptionText = `${featureDesc}\n${startTrial}`;
-    } else {
-      const trialText = t("subscription.required-plan-with-trial", {
-        requiredPlan: t(
-          `subscription.plan.${PlanType[requiredPlan].toLowerCase()}.title`
-        ),
-        startTrial,
-      });
-      descriptionText = `${featureDesc}\n${trialText}`;
-    }
+    requirementText =
+      requiredPlan === PlanType.FREE && featureIncludedInPlan
+        ? startTrial
+        : t("subscription.required-plan-with-trial", {
+            requiredPlan: t(
+              `subscription.plan.${PlanType[requiredPlan].toLowerCase()}.title`
+            ),
+            startTrial,
+          });
   } else {
-    const attention = t(
+    requirementText = t(
       "subscription.instance-assignment.missing-license-attention"
     );
-    descriptionText = `${featureDesc}\n${attention}`;
   }
+  const descriptionText = `${featureDesc}\n${requirementText}`;
 
   const canManageSettings = hasWorkspacePermissionV2("bb.settings.set");
   const canManageSubscription = hasWorkspacePermissionV2(
@@ -109,9 +113,11 @@ export function FeatureAttention({
         ? t("subscription.plan.try")
         : trialRejected
           ? t("common.learn-more")
-          : t("subscription.request-n-days-trial", {
-              days: trialingDays,
-            });
+          : compact
+            ? t("subscription.try-for-free")
+            : t("subscription.request-n-days-trial", {
+                days: trialingDays,
+              });
     } else if (
       !hasUnifiedInstanceLicense &&
       hasWorkspacePermissionV2("bb.instances.update")
@@ -149,30 +155,43 @@ export function FeatureAttention({
     router.push(autoSubscriptionRoute());
   };
 
+  const actionButton = actionText && (
+    <Button
+      appearance={compact ? "outline" : "solid"}
+      size="sm"
+      className="shrink-0 whitespace-nowrap"
+      disabled={startingTrial}
+      onClick={() => void onAction()}
+    >
+      {startingTrial && <LoaderCircle className="animate-spin" />}
+      {actionText}
+    </Button>
+  );
+
   return (
     <>
-      <Alert
-        variant={isWarning ? "warning" : "info"}
-        title={title}
-        description={
-          <span className="whitespace-pre-line">{descriptionText}</span>
-        }
-      >
-        {actionText && (
-          <div className="mt-3 flex justify-end">
-            <Button
-              appearance="solid"
-              size="sm"
-              className="shrink-0 whitespace-nowrap"
-              disabled={startingTrial}
-              onClick={() => void onAction()}
-            >
-              {startingTrial && <LoaderCircle className="animate-spin" />}
-              {actionText}
-            </Button>
+      {compact ? (
+        // An upsell is not a warning: the info tone, with the body in the
+        // normal text color so the sentence reads first.
+        <Alert variant="info" className="items-center rounded-sm shadow-none">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <p className="min-w-0 flex-1 text-control">{requirementText}</p>
+            {actionButton}
           </div>
-        )}
-      </Alert>
+        </Alert>
+      ) : (
+        <Alert
+          variant={isWarning ? "warning" : "info"}
+          title={title}
+          description={
+            <span className="whitespace-pre-line">{descriptionText}</span>
+          }
+        >
+          {actionButton && (
+            <div className="mt-3 flex justify-end">{actionButton}</div>
+          )}
+        </Alert>
+      )}
       {!hasUnifiedInstanceLicense && (
         <InstanceAssignmentSheet
           open={showInstanceAssignment}

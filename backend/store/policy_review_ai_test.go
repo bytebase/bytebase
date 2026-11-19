@@ -18,8 +18,7 @@ import (
 // TestGetEffectiveReviewAIPolicy pins that both levels apply: the workspace
 // and the project policy come back side by side, a level without a policy
 // or with one that is not enforced is empty, and another workspace's rows
-// under the same resource names never leak in. The project's switch comes
-// and goes with its policy.
+// under the same resource names never leak in.
 func TestGetEffectiveReviewAIPolicy(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -30,8 +29,8 @@ func TestGetEffectiveReviewAIPolicy(t *testing.T) {
 	`)
 	require.NoError(t, err)
 
-	upsertPolicy := func(workspace string, resourceType storepb.Policy_Resource, resource string, enforce bool, policy *storepb.ReviewAIPolicy) {
-		payload, err := protojson.Marshal(policy)
+	upsert := func(workspace string, resourceType storepb.Policy_Resource, resource string, enforce bool, content string) {
+		payload, err := protojson.Marshal(&storepb.ReviewAIPolicy{Content: content})
 		require.NoError(t, err)
 		_, err = stores.CreatePolicy(ctx, &store.PolicyMessage{
 			Workspace:    workspace,
@@ -42,9 +41,6 @@ func TestGetEffectiveReviewAIPolicy(t *testing.T) {
 			Enforce:      enforce,
 		})
 		require.NoError(t, err)
-	}
-	upsert := func(workspace string, resourceType storepb.Policy_Resource, resource string, enforce bool, content string) {
-		upsertPolicy(workspace, resourceType, resource, enforce, &storepb.ReviewAIPolicy{Content: content})
 	}
 	effective := func(workspace string) *store.EffectiveReviewAIPolicy {
 		p, err := stores.GetEffectiveReviewAIPolicy(ctx, workspace, "p")
@@ -79,15 +75,4 @@ func TestGetEffectiveReviewAIPolicy(t *testing.T) {
 	upsert("other", storepb.Policy_PROJECT, common.FormatProject("p"), true, "OP")
 	require.Equal(t, &store.EffectiveReviewAIPolicy{Project: "P2"}, effective("ws"))
 	require.Equal(t, &store.EffectiveReviewAIPolicy{Workspace: "OW", Project: "OP"}, effective("other"))
-
-	// A project switched off keeps its switch, with or without text; a policy
-	// that is not enforced drops it. Another workspace's switch stays there.
-	off, on := false, true
-	upsertPolicy("ws", storepb.Policy_PROJECT, common.FormatProject("p"), true, &storepb.ReviewAIPolicy{Enabled: &off})
-	require.Equal(t, &store.EffectiveReviewAIPolicy{ProjectEnabled: &off}, effective("ws"))
-	upsertPolicy("ws", storepb.Policy_PROJECT, common.FormatProject("p"), false, &storepb.ReviewAIPolicy{Content: "P3", Enabled: &off})
-	require.Equal(t, &store.EffectiveReviewAIPolicy{}, effective("ws"))
-	upsertPolicy("other", storepb.Policy_PROJECT, common.FormatProject("p"), true, &storepb.ReviewAIPolicy{Content: "OP", Enabled: &on})
-	require.Equal(t, &store.EffectiveReviewAIPolicy{}, effective("ws"))
-	require.Equal(t, &store.EffectiveReviewAIPolicy{Workspace: "OW", Project: "OP", ProjectEnabled: &on}, effective("other"))
 }

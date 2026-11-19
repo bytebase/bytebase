@@ -355,7 +355,9 @@ export function SQLReviewPage() {
   );
 
   return (
-    <WorkspacePageLayout className="gap-y-4">
+    // The page fills the height so the footer sits at the bottom even when the
+    // content is short.
+    <WorkspacePageLayout className="min-h-full gap-y-4">
       {isDev() && <SQLReviewVersionSwitch />}
       {sqlReviewV2 ? (
         <>
@@ -420,6 +422,12 @@ export function SQLReviewPage() {
 
       {isDirty && (
         <StickyActionFooter
+          // Beside V1's policies the footer's actions line up with the
+          // centered content above them.
+          className="-mb-4 mt-auto"
+          contentClassName={
+            sqlReviewV2 ? undefined : "mx-auto w-full max-w-6xl"
+          }
           contentPadding={false}
           left={
             <Button

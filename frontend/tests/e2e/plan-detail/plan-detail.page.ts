@@ -309,8 +309,8 @@ export class PlanDetailPage {
   }
 
   // The plan-wide "Checks" summary button in the CHANGES section. Shows
-  // Success/Warning/Error entries (each rendered only when its count > 0)
-  // and opens the results drawer on click. Distinct from "Run checks".
+  // P0 (error), P1 (warning) and Success entries, each rendered only when its
+  // count > 0, and opens the results drawer on click. Distinct from "Run checks".
   checksSummary(): Locator {
     return this.page.getByRole("button", { name: "Checks", exact: true });
   }

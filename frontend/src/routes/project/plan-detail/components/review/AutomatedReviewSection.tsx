@@ -20,6 +20,10 @@ import { PROJECT_V1_ROUTE_SQL_REVIEW } from "@/app/router/handles";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { PlanCheckResultsDrawer } from "@/components/plan-check/PlanCheckSection";
 import {
+  LevelPriorityBadge,
+  levelPriority,
+} from "@/components/sql-review/LevelPriorityBadge";
+import {
   STANDARD_RULE_TYPES,
   standardRuleText,
 } from "@/components/sql-review/standardRules";
@@ -30,7 +34,6 @@ import {
   AlertDialogFooter,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -872,11 +875,10 @@ function ConclusionText({
   );
 }
 
-// The priority badge each finding carries, then how many are open. Only the
-// count underlines on hover: a link's underline would run through the badge.
-// A plan check's errors and warnings, drawn as the review's priorities are:
-// the level's badge in the color of the matching priority, then the count.
-// Each opens the check results at its level.
+// A plan check's errors and warnings as the priorities they show as, each a
+// badge then its count, drawn as the review's findings are. Only the count
+// underlines on hover: a link's underline would run through the badge. Each
+// opens the check results at its level.
 function AdviceCounts({
   errors,
   warnings,
@@ -888,36 +890,27 @@ function AdviceCounts({
 }) {
   const { t } = useTranslation();
   const levels = [
-    {
-      level: Advice_Level.ERROR,
-      count: errors,
-      badge: t("common.error"),
-      variant: "destructive",
-      label: t("plan.automated-review.n-errors", { count: errors }),
-    },
-    {
-      level: Advice_Level.WARNING,
-      count: warnings,
-      badge: t("common.warning"),
-      variant: "warning",
-      label: t("plan.automated-review.n-warnings", { count: warnings }),
-    },
+    { level: Advice_Level.ERROR, reviewLevel: "error", count: errors },
+    { level: Advice_Level.WARNING, reviewLevel: "warning", count: warnings },
   ] as const;
   return (
     <span className="flex items-center gap-x-3">
       {levels
         .filter(({ count }) => count > 0)
-        .map(({ level, count, badge, variant, label }) => (
+        .map(({ level, reviewLevel, count }) => (
           <Button
             appearance="link"
-            aria-label={label}
+            aria-label={t("plan.findings.n-priority", {
+              count,
+              priority: levelPriority(reviewLevel),
+            })}
             className="group h-auto p-0 font-normal hover:no-underline"
             key={level}
             onClick={() => onOpen(level)}
             size="xs"
           >
             <span className="inline-flex items-center gap-x-1">
-              <Badge variant={variant}>{badge}</Badge>
+              <LevelPriorityBadge level={reviewLevel} />
               <span className="text-sm text-control-light underline-offset-2 group-hover:text-main group-hover:underline">
                 {count}
               </span>
@@ -928,6 +921,7 @@ function AdviceCounts({
   );
 }
 
+// The priority badge each finding carries, then how many are open.
 function PriorityCountLink({
   priority,
   count,

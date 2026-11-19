@@ -1035,11 +1035,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			switch event.(type) {
 			case review.SubmittedEvent:
 				recordReviewSubmission(ctx, s.store, user.Email, issue)
-				// SQL Review V2 reviews a draft already, so only the AI review
-				// of a server without it starts here.
-				if !s.profile.SQLReviewV2 {
-					startReview(ctx, s.profile, s.store, s.licenseService, s.bus, issue)
-				}
 			case review.IssueCreatedEvent:
 				emitIssueCreated(ctx, s.webhookManager, submissionResult.Project, user.Name, user.Email, issue)
 			case review.ApprovalCheckEvent:
@@ -1422,7 +1417,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 	if err := s.store.UpdateIssueComment(ctx, update); err != nil {
 		return nil, issueCommentError(err)
 	}
-	if s.profile.SQLReviewV2 && update.ThreadState != nil && *update.ThreadState == store.ThreadStateResolved {
+	if update.ThreadState != nil && *update.ThreadState == store.ThreadStateResolved {
 		requestRolloutCheck(ctx, s.store, s.bus, parentProjectID, parentIssueUID)
 	}
 	issueComment, err = s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: parentProjectID, ResourceID: &issueCommentID})

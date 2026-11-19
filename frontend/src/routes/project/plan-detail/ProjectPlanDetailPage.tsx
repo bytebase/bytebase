@@ -332,9 +332,9 @@ function PlanPhaseRail({
   // release-backed plans, which bypass review entirely, hide it.
   const reviewVisible = !isGitOpsPlan;
   const selectPhase = page.expandPhase;
-  // The machine reviews run on drafts too, so under SQL Review V2 Review is
-  // open from the first save of an issue.
-  const reviewFromDraft = !!reviewState;
+  // The machine reviews run on drafts too, and people can comment on them, so
+  // Review is open from the first save of an issue.
+  const sqlReviewV2Rows = !!reviewState;
 
   const phaseConfigs = useMemo(() => {
     const hasIssue = !!page.issue;
@@ -356,7 +356,7 @@ function PlanPhaseRail({
       );
 
     let review: PhaseStatus = "future";
-    if (hasSubmittedIssue || (reviewFromDraft && hasIssue)) {
+    if (hasIssue) {
       if (page.issue?.status === IssueStatus.CANCELED) {
         review = "closed";
       } else {
@@ -396,7 +396,7 @@ function PlanPhaseRail({
     const reviewBadge =
       rawReviewBadge &&
       !(
-        reviewFromDraft && page.issue?.approvalStatus === ApprovalStatus.SKIPPED
+        sqlReviewV2Rows && page.issue?.approvalStatus === ApprovalStatus.SKIPPED
       )
         ? {
             label: t(rawReviewBadge.labelKey),
@@ -447,8 +447,8 @@ function PlanPhaseRail({
     page.isCreating,
     page.issue,
     page.rollout,
-    reviewFromDraft,
     reviewVisible,
+    sqlReviewV2Rows,
     t,
   ]);
 

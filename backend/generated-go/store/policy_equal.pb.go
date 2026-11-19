@@ -46,9 +46,6 @@ func (x *ReviewAIPolicy) Equal(y *ReviewAIPolicy) bool {
 	if x.Content != y.Content {
 		return false
 	}
-	if p, q := x.Enabled, y.Enabled; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
-		return false
-	}
 	return true
 }
 

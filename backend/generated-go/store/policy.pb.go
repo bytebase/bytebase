@@ -228,11 +228,8 @@ func (x *ReviewRulePolicy) GetRules() []ReviewRuleType {
 // policy both reach the reviewer, and the project policy wins where they
 // conflict.
 type ReviewAIPolicy struct {
-	state   protoimpl.MessageState `protogen:"open.v1"`
-	Content string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
-	// A project's own switch for the AI review; unset, the project follows the
-	// workspace's AISetting.sql_review_enabled.
-	Enabled       *bool `protobuf:"varint,2,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Content       string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -272,13 +269,6 @@ func (x *ReviewAIPolicy) GetContent() string {
 		return x.Content
 	}
 	return ""
-}
-
-func (x *ReviewAIPolicy) GetEnabled() bool {
-	if x != nil && x.Enabled != nil {
-		return *x.Enabled
-	}
-	return false
 }
 
 type RolloutPolicy struct {
@@ -837,12 +827,9 @@ const file_store_policy_proto_rawDesc = "" +
 	"\vENVIRONMENT\x10\x02\x12\v\n" +
 	"\aPROJECT\x10\x03\"H\n" +
 	"\x10ReviewRulePolicy\x124\n" +
-	"\x05rules\x18\x01 \x03(\x0e2\x1e.bytebase.store.ReviewRuleTypeR\x05rules\"U\n" +
+	"\x05rules\x18\x01 \x03(\x0e2\x1e.bytebase.store.ReviewRuleTypeR\x05rules\"*\n" +
 	"\x0eReviewAIPolicy\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\tR\acontent\x12\x1d\n" +
-	"\aenabled\x18\x02 \x01(\bH\x00R\aenabled\x88\x01\x01B\n" +
-	"\n" +
-	"\b_enabled\"C\n" +
+	"\acontent\x18\x01 \x01(\tR\acontent\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
 	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xc2\x01\n" +
@@ -935,7 +922,6 @@ func file_store_policy_proto_init() {
 		return
 	}
 	file_store_review_rule_proto_init()
-	file_store_policy_proto_msgTypes[2].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

@@ -3,11 +3,7 @@
   "add-rules": "添加规则",
   "ai-review": {
     "ai-off": "工作空间尚未启用 AI，因此不会运行 AI 审核。",
-    "comments-description": "工单提交审核后，AI 模型会审核其中的 SQL，并以评论指出发现的风险。这些评论不会阻塞发布。",
-    "customize": {
-      "description": "禁用后，此项目遵循工作空间的设置。",
-      "self": "为此项目自定义"
-    },
+    "comments-description": "AI 模型会审核工单中的 SQL（包括草稿），并以评论指出发现的风险。在所有评论解决之前，发布会被阻止。",
     "description": "由 AI 模型审核工单中的 SQL，发现标准规则无法识别的风险。",
     "enable": {
       "description": "每次审核会将语句原文发送给 AI 提供方，并可能发送目标数据库的 Schema 及其表的统计信息，但不会读取数据库中的任何数据行。",
@@ -30,8 +26,9 @@
       "standard-rules-hint": "AI 审核不会重复标准规则的检查，也会跳过已关闭的规则。如需让 AI 审核仍然检查某项，请在策略中写明，例如“每条 UPDATE 语句都必须带有 WHERE 子句”。",
       "too-large": "策略大小为 {{size}} 字节，超过了 {{limit}} 字节的上限。请缩短后再保存。"
     },
-    "project-description": "AI 模型审核此项目工单的 SQL。工作空间策略和下方的项目策略同时生效。",
+    "project-description": "AI 审核在工作空间中配置。请在下方添加可选的项目专属策略。",
     "self": "AI 审核",
+    "set-for-workspace": "由工作空间统一管理。",
     "turn-on-ai": "启用 AI",
     "view-workspace-setting": "查看工作空间 AI 设置"
   },
@@ -150,9 +147,7 @@
   "input-then-press-enter": "输入后按下回车来添加",
   "level": {
     "disabled": "禁用",
-    "error": "错误",
-    "name": "错误等级",
-    "warning": "警告"
+    "name": "优先级"
   },
   "no-permission": "仅管理员或 DBA 有权限创建或更新审核策略。",
   "policies": "SQL 审核策略",

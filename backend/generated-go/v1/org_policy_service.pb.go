@@ -766,14 +766,8 @@ func (x *ReviewRulePolicy) GetRules() []ReviewRuleType {
 // the reviewer, and the project policy wins where they conflict.
 type ReviewAIPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The policy text, at most 64 KiB. Must not be blank unless `enabled` is
-	// set.
-	Content string `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
-	// A project's own switch for the AI review, in place of the workspace's
-	// `AISetting.sql_review_enabled`. Unset, the project follows the workspace.
-	// Only a project policy may set it, and the review still needs AI on for
-	// the workspace.
-	Enabled       *bool `protobuf:"varint,2,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
+	// The policy text. Must not be blank, at most 64 KiB.
+	Content       string `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -813,13 +807,6 @@ func (x *ReviewAIPolicy) GetContent() string {
 		return x.Content
 	}
 	return ""
-}
-
-func (x *ReviewAIPolicy) GetEnabled() bool {
-	if x != nil && x.Enabled != nil {
-		return *x.Enabled
-	}
-	return false
 }
 
 // Rollout policy configuration.
@@ -1318,12 +1305,9 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x13bytebase.com/Policy\x12(workspaces/{workspace}/policies/{policy}\x12$projects/{project}/policies/{policy}\x12,environments/{environment}/policies/{policy}B\b\n" +
 	"\x06policyJ\x04\b\b\x10\t\"E\n" +
 	"\x10ReviewRulePolicy\x121\n" +
-	"\x05rules\x18\x01 \x03(\x0e2\x1b.bytebase.v1.ReviewRuleTypeR\x05rules\"U\n" +
+	"\x05rules\x18\x01 \x03(\x0e2\x1b.bytebase.v1.ReviewRuleTypeR\x05rules\"*\n" +
 	"\x0eReviewAIPolicy\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\tR\acontent\x12\x1d\n" +
-	"\aenabled\x18\x02 \x01(\bH\x00R\aenabled\x88\x01\x01B\n" +
-	"\n" +
-	"\b_enabled\"C\n" +
+	"\acontent\x18\x01 \x01(\tR\acontent\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
 	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xfa\x01\n" +
@@ -1471,7 +1455,6 @@ func file_v1_org_policy_service_proto_init() {
 		(*Policy_ReviewRulePolicy)(nil),
 		(*Policy_ReviewAiPolicy)(nil),
 	}
-	file_v1_org_policy_service_proto_msgTypes[8].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

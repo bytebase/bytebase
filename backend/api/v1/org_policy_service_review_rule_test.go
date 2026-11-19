@@ -139,7 +139,7 @@ func TestValidateReviewRulePolicyPayload(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			err := validatePolicyPayload(storepb.Policy_REVIEW_RULE, storepb.Policy_PROJECT, tc.policy)
+			err := validatePolicyPayload(storepb.Policy_REVIEW_RULE, tc.policy)
 			if tc.ok {
 				require.NoError(t, err)
 			} else {

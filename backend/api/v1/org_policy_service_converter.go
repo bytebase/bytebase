@@ -223,15 +223,12 @@ func convertToV1PBReviewAIPolicy(payloadStr string) (*v1pb.Policy_ReviewAiPolicy
 		return nil, errors.Wrapf(err, "failed to unmarshal AI review policy payload")
 	}
 	return &v1pb.Policy_ReviewAiPolicy{
-		ReviewAiPolicy: &v1pb.ReviewAIPolicy{Content: payload.Content, Enabled: payload.Enabled},
+		ReviewAiPolicy: &v1pb.ReviewAIPolicy{Content: payload.Content},
 	}, nil
 }
 
 func convertToStorePBReviewAIPolicy(policy *v1pb.ReviewAIPolicy) *storepb.ReviewAIPolicy {
-	if policy == nil {
-		return &storepb.ReviewAIPolicy{}
-	}
-	return &storepb.ReviewAIPolicy{Content: policy.Content, Enabled: policy.Enabled}
+	return &storepb.ReviewAIPolicy{Content: policy.GetContent()}
 }
 
 func convertToStorePBMskingRulePolicy(policy *v1pb.MaskingRulePolicy) *storepb.MaskingRulePolicy {

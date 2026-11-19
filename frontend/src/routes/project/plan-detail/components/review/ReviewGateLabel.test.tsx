@@ -40,7 +40,7 @@ describe("ReviewGateLabel", () => {
     ]);
   });
 
-  test("counts a plan check's errors in text", () => {
+  test("counts a plan check's errors as P0 in text", () => {
     const { container } = render(
       <ReviewGateLabel
         row={row({
@@ -49,7 +49,7 @@ describe("ReviewGateLabel", () => {
         })}
       />
     );
-    expect(container.textContent).toBe("Online migration dry run: 2 errors");
+    expect(container.textContent).toBe("Online migration dry run: 2 P0");
     expect(screen.queryByTestId("priority-counts")).toBeNull();
   });
 

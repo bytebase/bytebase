@@ -40,9 +40,6 @@ message ReviewRulePolicy {
 // conflict.
 message ReviewAIPolicy {
   string content = 1;
-  // A project's own switch for the AI review; unset, the project follows the
-  // workspace's AISetting.sql_review_enabled.
-  optional bool enabled = 2;
 }
 
 message RolloutPolicy {

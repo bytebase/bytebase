@@ -51,16 +51,10 @@ export const hasReviewableSQL = (
     return targets.length > 0;
   });
 
-// Whether a review run includes the AI review: the workspace has AI on, and
-// the project's own review switch, else the workspace's, is on. Such a run
-// makes model calls.
-export const aiReviewEnabled = (
-  serverInfo: ActuatorInfo | undefined,
-  projectSwitch?: boolean
-) =>
-  Boolean(
-    serverInfo?.aiEnabled && (projectSwitch ?? serverInfo.aiSqlReviewEnabled)
-  );
+// Whether a review run includes the AI review: the workspace has AI and its
+// review switch on. Such a run makes model calls.
+export const aiReviewEnabled = (serverInfo: ActuatorInfo | undefined) =>
+  Boolean(serverInfo?.aiEnabled && serverInfo.aiSqlReviewEnabled);
 
 // A queued or running execution; RunReview would replace it.
 export const isReviewRunActive = (run: ReviewRun | null | undefined) =>

@@ -27,8 +27,7 @@ vi.mock("@/hooks/useProjectByName", () => ({
   useProjectByName: () => ({ name: "projects/foo" }),
 }));
 
-// The project follows the workspace: these tests switch the AI review
-// through the server info.
+// The plan's AI review follows the server info, without the plan check.
 vi.mock("./useAIReviewOn", () => ({
   useAIReviewOn: () => {
     const info = mocks.serverInfo as
@@ -72,6 +71,7 @@ vi.mock("./useReviewRun", () => ({
 import {
   PlanReviewProvider,
   usePlanReviewRun,
+  useReviewHold,
   useSqlReviewV2,
   withReviewRun,
 } from "./useSqlReviewV2";
@@ -81,6 +81,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 );
 
 const useBoth = () => ({ v2: useSqlReviewV2(), review: usePlanReviewRun() });
+const useHold = () => useReviewHold();
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -136,8 +137,17 @@ describe("PlanReviewProvider", () => {
     expect(result.current?.threadsLoaded).toBe(false);
   });
 
-  test("beside V1's checks, provides the AI review's run once the issue is submitted", () => {
+  test.each([
+    ["a submitted issue", () => {}],
+    [
+      "a draft",
+      () => {
+        mocks.page.issue = { name: "projects/foo/issues/7", draft: true };
+      },
+    ],
+  ])("beside V1's checks, provides the AI review's run for %s", (_, arrange) => {
     mocks.gate = false;
+    arrange();
     const { result } = renderHook(useBoth, { wrapper });
     expect(result.current).toEqual({ v2: undefined, review: mocks.review });
     expect(mocks.useReviewRun).toHaveBeenCalledWith(
@@ -149,19 +159,47 @@ describe("PlanReviewProvider", () => {
     );
   });
 
+  test("under SQL Review V2 the review and the open threads hold the rollout", () => {
+    const { result } = renderHook(useHold, { wrapper });
+    expect(result.current).toEqual({
+      unresolvedThreads: 2,
+      threadsLoaded: true,
+      review: mocks.review,
+      reviewHolds: true,
+    });
+  });
+
+  test.each([
+    ["while the AI review applies", () => {}],
+    [
+      "with the AI review off",
+      () => {
+        mocks.serverInfo = { aiEnabled: true, aiSqlReviewEnabled: false };
+      },
+    ],
+    [
+      "on a draft",
+      () => {
+        mocks.page.issue = { name: "projects/foo/issues/7", draft: true };
+      },
+    ],
+  ])("beside V1's plan checks the open threads alone hold the rollout %s", (_, arrange) => {
+    mocks.gate = false;
+    arrange();
+    const { result } = renderHook(useHold, { wrapper });
+    expect(result.current).toEqual({
+      unresolvedThreads: 2,
+      threadsLoaded: true,
+      reviewHolds: false,
+    });
+  });
+
   test.each([
     [
       "SQL Review V2 and the AI review are off",
       () => {
         mocks.gate = false;
         mocks.serverInfo = { aiEnabled: true, aiSqlReviewEnabled: false };
-      },
-    ],
-    [
-      "the issue is a draft beside V1's checks",
-      () => {
-        mocks.gate = false;
-        mocks.page.issue = { name: "projects/foo/issues/7", draft: true };
       },
     ],
     [
@@ -182,6 +220,12 @@ describe("PlanReviewProvider", () => {
       false
     );
   });
+});
+
+test("nothing holds a plan without an issue", () => {
+  mocks.page.issue = undefined;
+  const { result } = renderHook(useHold, { wrapper });
+  expect(result.current).toBeUndefined();
 });
 
 describe("withReviewRun", () => {

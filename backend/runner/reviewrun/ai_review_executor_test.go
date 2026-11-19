@@ -421,7 +421,7 @@ func TestAIReviewNeedsTheEnterprisePlan(t *testing.T) {
 	require.NoError(t, err, "a plan without the AI review is the review switched off")
 	require.Empty(t, comments)
 	require.Zero(t, model.calls.Load())
-	require.ErrorContains(t, executor.checkAISetting(ctx, "ws", "p"), "ENTERPRISE", "a run in flight stops at its next model call")
+	require.ErrorContains(t, executor.checkAISetting(ctx, "ws"), "ENTERPRISE", "a run in flight stops at its next model call")
 }
 
 func TestAIReviewExecutorSortsItsResults(t *testing.T) {
