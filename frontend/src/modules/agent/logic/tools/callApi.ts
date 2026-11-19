@@ -9,7 +9,18 @@ import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_p
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { QueryRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  type AgentApiDispatchContext,
+  fingerprintPreparedApiCall,
+} from "../apiAttempt";
+import {
+  type AgentApiTransportObservation,
+  classifyAgentApiResponse,
+  isProtectedAgentApiCall,
+} from "../apiExecution";
+import { notSentApiResult } from "../callApiResult";
 import { boundAgentQueryResult } from "../queryResultRetention";
+import { withAgentApiActionLease } from "../runOwnership";
 import type { PropertyInfo, SchemaInfo } from "./gen/openapi-index";
 import { getEndpointPath, getRequestSchema, getSchema } from "./searchApi";
 
@@ -35,9 +46,14 @@ export type PrepareApiCallResult =
   | { kind: "error"; result: string };
 
 interface ParsedApiResponse {
-  status: number;
-  response: unknown;
+  status?: number;
+  response?: unknown;
   error?: string;
+}
+
+interface ObservedApiResponse {
+  parsed: ParsedApiResponse;
+  observation: AgentApiTransportObservation;
 }
 
 const textEncoder = new TextEncoder();
@@ -133,35 +149,44 @@ export const __testOnly = {
 
 const parseResponse = async (
   response: Response
-): Promise<ParsedApiResponse> => {
-  let respJSON: unknown = null;
-  try {
-    respJSON = await response.json();
-  } catch {
-    // Not valid JSON — leave as null.
-  }
-
-  if (response.status >= 400) {
-    let error = `HTTP ${response.status}`;
-    if (respJSON && typeof respJSON === "object") {
-      const errMap = respJSON as Record<string, unknown>;
-      if (typeof errMap.message === "string") {
-        error = errMap.message;
-      } else if (typeof errMap.code === "string") {
-        error = errMap.code;
-      }
-    }
+): Promise<ObservedApiResponse> => {
+  const status = response.status;
+  if (
+    response.redirected ||
+    response.type === "opaqueredirect" ||
+    (status >= 300 && status < 400)
+  ) {
     return {
-      status: response.status,
-      error,
-      response: respJSON,
+      parsed: { status, response: null },
+      observation: { kind: "unexpected-redirect", status },
     };
   }
 
-  return {
-    status: response.status,
-    response: respJSON,
-  };
+  let respJSON: unknown = null;
+  let observation: AgentApiTransportObservation;
+  try {
+    const body = await response.text();
+    respJSON = JSON.parse(body);
+    observation = {
+      kind: "response",
+      status,
+      body,
+      contentType: response.headers.get("Content-Type"),
+    };
+  } catch {
+    observation = { kind: "response-body-unreadable", status };
+  }
+
+  const parsed: ParsedApiResponse = { status, response: respJSON };
+  if (status >= 400) {
+    parsed.error = `HTTP ${status}`;
+    if (isPlainObject(respJSON)) {
+      if (typeof respJSON.message === "string") parsed.error = respJSON.message;
+      else if (typeof respJSON.code === "string") parsed.error = respJSON.code;
+    }
+  }
+
+  return { parsed, observation };
 };
 
 const fetchApi = async ({
@@ -180,6 +205,7 @@ const fetchApi = async ({
       "Connect-Protocol-Version": "1",
     },
     credentials: "include",
+    redirect: "manual",
     body,
     signal,
   });
@@ -262,10 +288,9 @@ export async function prepareApiCall(
   if (typeof operationId !== "string" || !operationId) {
     return {
       kind: "error",
-      result: JSON.stringify({
-        error:
-          "operationId is required. Use search_api to find valid operations.",
-      }),
+      result: notSentApiResult(
+        "operationId is required. Use search_api to find valid operations."
+      ),
     };
   }
 
@@ -273,9 +298,9 @@ export async function prepareApiCall(
   if (!path) {
     return {
       kind: "error",
-      result: JSON.stringify({
-        error: `Unknown operation: ${operationId}. Use search_api to find valid operations.`,
-      }),
+      result: notSentApiResult(
+        `Unknown operation: ${operationId}. Use search_api to find valid operations.`
+      ),
     };
   }
 
@@ -283,7 +308,7 @@ export async function prepareApiCall(
   if (!match) {
     return {
       kind: "error",
-      result: JSON.stringify({ error: `Invalid endpoint: ${path}` }),
+      result: notSentApiResult(`Invalid endpoint: ${path}`),
     };
   }
 
@@ -307,56 +332,210 @@ export async function prepareApiCall(
   } catch (err) {
     return {
       kind: "error",
-      result: JSON.stringify({
-        error: `Failed to prepare ${operationId}: ${err instanceof Error ? err.message : String(err)}`,
-      }),
+      result: notSentApiResult(
+        `Failed to prepare ${operationId}: ${err instanceof Error ? err.message : String(err)}`
+      ),
     };
   }
 }
 
-export async function dispatchPreparedApiCall(
-  call: PreparedApiCall
-): Promise<string> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+interface ApiDispatchOptions {
+  isScopeCurrent?: () => boolean;
+  signal?: AbortSignal;
+  attemptId?: string;
+  context?: AgentApiDispatchContext;
+}
 
+async function tryRefresh(signal: AbortSignal): Promise<boolean> {
+  let onAbort = () => {};
+  const aborted = new Promise<false>((resolve) => {
+    onAbort = () => resolve(false);
+  });
+  signal.addEventListener("abort", onAbort, { once: true });
   try {
-    let result = await fetchApi({
-      path: call.path,
-      body: call.body,
-      signal: controller.signal,
-    });
-
-    if (result.status === 401 && call.path !== REFRESH_PATH) {
-      try {
-        await refreshTokens();
-        result = await fetchApi({
-          path: call.path,
-          body: call.body,
-          signal: controller.signal,
-        });
-      } catch {
-        // Preserve the original API error shape when refresh fails.
-      }
-    }
-
-    const raw = JSON.stringify(result);
-    return call.operationId === "bytebase.v1.SQLService.Query" &&
-      call.path === "/bytebase.v1.SQLService/Query"
-      ? boundAgentQueryResult(raw)
-      : raw;
-  } catch (err) {
-    return JSON.stringify({
-      error: `Failed to call ${call.operationId}: ${err instanceof Error ? err.message : String(err)}`,
-    });
+    return await Promise.race([refreshTokens().then(() => true), aborted]);
+  } catch {
+    return false;
   } finally {
-    clearTimeout(timeoutId);
+    signal.removeEventListener("abort", onAbort);
   }
 }
 
-export async function callApi(args: CallApiArgs): Promise<string> {
+export async function dispatchPreparedApiCall(
+  call: PreparedApiCall,
+  options: ApiDispatchOptions = {}
+): Promise<string> {
+  if (isProtectedAgentApiCall(call))
+    return notSentApiResult(
+      "A one-time API permission is required.",
+      "admission-rejected"
+    );
+  return sendPreparedApiCall(call, options);
+}
+
+// Only the resolver of a consumed, revalidated permission dispatches a protected call.
+export async function dispatchApprovedApiCall(
+  call: PreparedApiCall,
+  options: ApiDispatchOptions = {}
+): Promise<string> {
+  const snapshot = Object.freeze({ ...call });
+  const { context, signal } = options;
+  const current = () =>
+    options.isScopeCurrent?.() !== false && context?.isCurrent() !== false;
+  const changed = () =>
+    notSentApiResult(
+      "Agent action ownership changed before dispatch.",
+      "admission-rejected"
+    );
+  if (!current()) return changed();
+  if (!context || signal?.aborted)
+    return sendPreparedApiCall(snapshot, options);
+  const fingerprint = await fingerprintPreparedApiCall(snapshot).catch(
+    () => undefined
+  );
+  const dispatch = async () => {
+    if (!current()) return changed();
+    let attemptId: string | undefined;
+    if (fingerprint && !signal?.aborted) {
+      try {
+        const {
+          scopeKey,
+          userName,
+          chatId,
+          runId,
+          rootUserMessageId,
+          toolCallId,
+          logicalActionId,
+        } = context;
+        const receipt = await context.beginAgentApiAttempt({
+          scopeKey,
+          userName,
+          chatId,
+          runId,
+          rootUserMessageId,
+          toolCallId,
+          logicalActionId,
+          fingerprint,
+          operationId: snapshot.operationId,
+          path: snapshot.path,
+        });
+        if (receipt.kind === "blocked")
+          return notSentApiResult(receipt.reason, "admission-rejected");
+        attemptId = receipt.attemptId;
+      } catch {
+        // Lack of local bookkeeping does not invalidate the consumed permission.
+      }
+    }
+    const result = current()
+      ? await sendPreparedApiCall(snapshot, { signal, attemptId })
+      : notSentApiResult(
+          "Agent action ownership changed before dispatch.",
+          "admission-rejected",
+          attemptId
+        );
+    if (!attemptId) return result;
+    try {
+      if (
+        await context.settleAgentApiAttempt(
+          attemptId,
+          JSON.parse(result).agentExecution,
+          result
+        )
+      )
+        return result;
+    } catch {
+      // The observed result remains authoritative even if the receipt cannot be saved.
+    }
+    return JSON.stringify({
+      ...JSON.parse(result),
+      agentSettlementSaved: false,
+    });
+  };
+  // The optional liveness lock must never cause a second POST, even if its promise rejects.
+  let execution: Promise<string> | undefined;
+  const once = () => (execution ??= dispatch());
+  try {
+    await withAgentApiActionLease(
+      context.scopeKey,
+      context.logicalActionId,
+      once
+    );
+  } catch {
+    // Some browsers do not provide usable Web Locks.
+  }
+  return once();
+}
+
+async function sendPreparedApiCall(
+  call: PreparedApiCall,
+  { signal, attemptId }: ApiDispatchOptions = {}
+): Promise<string> {
+  if (signal?.aborted) {
+    return notSentApiResult(
+      "The request was canceled before dispatch.",
+      "canceled-before-dispatch",
+      attemptId
+    );
+  }
+
+  const controller = new AbortController();
+  let abortKind: "canceled-after-dispatch" | "timed-out" | undefined;
+  const abort = (kind: NonNullable<typeof abortKind>) => {
+    if (controller.signal.aborted) return;
+    abortKind = kind;
+    controller.abort();
+  };
+  const onAbort = () => abort("canceled-after-dispatch");
+  signal?.addEventListener("abort", onAbort, { once: true });
+  const timeoutId = setTimeout(() => abort("timed-out"), 30_000);
+
+  const send = () =>
+    fetchApi({ path: call.path, body: call.body, signal: controller.signal });
+  let result: ObservedApiResponse;
+
+  try {
+    result = await send();
+    if (
+      result.parsed.status === 401 &&
+      call.path !== REFRESH_PATH &&
+      !isProtectedAgentApiCall(call) &&
+      !controller.signal.aborted &&
+      (await tryRefresh(controller.signal)) &&
+      !controller.signal.aborted
+    ) {
+      result = await send();
+    }
+  } catch (err) {
+    result = {
+      parsed: {
+        error: `Failed to call ${call.operationId}: ${err instanceof Error ? err.message : String(err)}`,
+      },
+      observation: { kind: abortKind ?? "fetch-failed" },
+    };
+  } finally {
+    clearTimeout(timeoutId);
+    signal?.removeEventListener("abort", onAbort);
+  }
+
+  const raw = JSON.stringify({
+    ...result.parsed,
+    agentExecution: classifyAgentApiResponse(call, {
+      ...result.observation,
+      attemptId,
+    }),
+  });
+  return call.operationId === "bytebase.v1.SQLService.Query" &&
+    call.path === "/bytebase.v1.SQLService/Query"
+    ? boundAgentQueryResult(raw)
+    : raw;
+}
+
+export async function callApi(
+  args: CallApiArgs,
+  options?: ApiDispatchOptions
+): Promise<string> {
   const result = await prepareApiCall(args);
   return result.kind === "error"
     ? result.result
-    : dispatchPreparedApiCall(result.call);
+    : dispatchPreparedApiCall(result.call, options);
 }

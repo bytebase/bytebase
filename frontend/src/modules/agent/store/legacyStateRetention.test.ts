@@ -1,10 +1,16 @@
 import { describe, expect, test } from "vitest";
+import type { AgentApiAttempt } from "../logic/apiAttempt";
+import { agentApiExecutionEvidence } from "../logic/apiExecution";
 import {
   boundAgentQueryResult,
   omitAgentQueryRows,
 } from "../logic/queryResultRetention";
 import type { PersistedAgentState } from "./agent";
-import { canRetireLegacyAgentState } from "./legacyStateRetention";
+import {
+  canDiscardStoredAgentHistory,
+  canRetireLegacyAgentState,
+  preservesLegacyApiDispatchEvidence,
+} from "./legacyStateRetention";
 import { omitAgentQuerySamples } from "./storageRetention";
 
 interface StoredState {
@@ -102,13 +108,213 @@ const withoutSamples = (value: StoredState): StoredState =>
     value as unknown as PersistedAgentState
   ) as unknown as StoredState;
 
+const receiptState = (scopeKey: string): StoredState => {
+  const value = state();
+  const receipt: AgentApiAttempt = {
+    version: 1,
+    id: "attempt",
+    logicalActionId: "action",
+    ordinal: 1,
+    scopeKey,
+    userName: "users/member@example.com",
+    chatId: "chat",
+    runId: "run",
+    rootUserMessageId: "user",
+    toolCallId: "call",
+    operationId: "bytebase.v1.DatabaseService.UpdateDatabase",
+    path: "/bytebase.v1.DatabaseService/UpdateDatabase",
+    fingerprint: "a".repeat(64),
+    startedAt: 1,
+    phase: "settled",
+    settledAt: 2,
+    execution: agentApiExecutionEvidence("rpc-success", {
+      attemptId: "attempt",
+      httpStatus: 200,
+    }),
+  };
+  value.chats[0].apiAttempts = [receipt];
+  value.messagesByChatId.chat.push({
+    id: "result",
+    role: "tool",
+    toolCallId: "call",
+    chatId: "chat",
+    content: JSON.stringify({ status: 200, agentExecution: receipt.execution }),
+    metadata: { apiAttemptId: "attempt", runId: "run" },
+  });
+  return value;
+};
+
+describe("canDiscardStoredAgentHistory", () => {
+  const key = "bb-agent-state-v3.4:peer.member@example.com";
+  test.each([
+    "missing result",
+    "different result",
+    "different scope",
+    "unowned result",
+  ])("preserves unreadable raw receipt evidence with %s", (damage) => {
+    const source = receiptState(key);
+    if (damage === "missing result") source.messagesByChatId.chat.pop();
+    else if (damage === "different result")
+      source.messagesByChatId.chat.at(-1)!.toolCallId = "different";
+    else if (damage === "different scope")
+      (source.chats[0].apiAttempts as AgentApiAttempt[])[0].scopeKey = "other";
+    else delete source.chats[0].apiAttempts;
+    expect(canDiscardStoredAgentHistory(source, key)).toBe(false);
+  });
+  test("accepts a recognized result with its implicit legacy chat owner", () => {
+    const source = receiptState(key);
+    delete source.messagesByChatId.chat.at(-1)!.chatId;
+    expect(canDiscardStoredAgentHistory(source, key)).toBe(true);
+  });
+});
+
 describe("canRetireLegacyAgentState", () => {
+  const migration = {
+    scopeKey: "bb-agent-state-v3.4:peer.member@example.com",
+    userEmail: "member@example.com",
+  };
+  const legacyKey = "bb-agent-state-v2.4:peer.member@example.com";
+  test("retires the same owner's remapped V2 receipt after V3 preserves it and appends another receipt", () => {
+    const source = receiptState(legacyKey);
+    const saved = structuredClone(source);
+    const receipts = saved.chats[0].apiAttempts as AgentApiAttempt[];
+    receipts[0].scopeKey = migration.scopeKey;
+    receipts.push({
+      ...receipts[0],
+      id: "later",
+      logicalActionId: "later-action",
+      toolCallId: "later-tool",
+      execution: agentApiExecutionEvidence("rpc-success", {
+        attemptId: "later",
+        httpStatus: 200,
+      }),
+    });
+    saved.messagesByChatId.chat.push({
+      id: "later-result",
+      role: "tool",
+      chatId: "chat",
+      toolCallId: "later-tool",
+      content: JSON.stringify({
+        status: 200,
+        agentExecution: receipts[1].execution,
+      }),
+      metadata: { apiAttemptId: "later", runId: "run" },
+    });
+    expect(canRetireLegacyAgentState(source, saved, migration)).toBe(true);
+    expect((source.chats[0].apiAttempts as AgentApiAttempt[])[0].scopeKey).toBe(
+      legacyKey
+    );
+  });
+  test.each([
+    "different member",
+    "different workspace",
+    "different version",
+    "changed evidence",
+    "changed source field",
+  ])("does not retire a remapped receipt with %s", (damage) => {
+    const source = receiptState(legacyKey);
+    const saved = structuredClone(source);
+    const retained = (saved.chats[0].apiAttempts as AgentApiAttempt[])[0];
+    retained.scopeKey = migration.scopeKey;
+    if (damage === "different member")
+      (source.chats[0].apiAttempts as AgentApiAttempt[])[0].userName =
+        "users/other@example.com";
+    else if (damage === "different workspace")
+      retained.scopeKey = "bb-agent-state-v3.5:other.member@example.com";
+    else if (damage === "different version")
+      retained.scopeKey = "bb-agent-state-v4.4:peer.member@example.com";
+    else if (damage === "changed evidence")
+      retained.execution = agentApiExecutionEvidence("fetch-failed", {
+        attemptId: "attempt",
+      });
+    else retained.fingerprint = "b".repeat(64);
+    expect(
+      canRetireLegacyAgentState(
+        source,
+        saved,
+        damage === "different version"
+          ? { ...migration, scopeKey: legacyKey }
+          : migration
+      )
+    ).toBe(false);
+  });
   test("accepts an exact recognized copy without modifying either state", () => {
     const source = state();
     const saved = structuredClone(source);
     expect(canRetireLegacyAgentState(source, saved)).toBe(true);
     expect(source).toEqual(state());
     expect(saved).toEqual(state());
+  });
+
+  test("retires a legacy dispatch gap only after the saved state preserves its evidence", () => {
+    const source = state();
+    source.chats[0].interrupted = true;
+    source.messagesByChatId.chat.push({
+      id: "request",
+      chatId: "chat",
+      role: "assistant",
+      toolCalls: [
+        {
+          id: "call",
+          name: "call_api",
+          arguments: '{"operationId":"SQLService/Query"}',
+        },
+      ],
+    });
+    const saved = structuredClone(source);
+    saved.chats[0].interrupted = false;
+    expect(canRetireLegacyAgentState(source, saved)).toBe(false);
+    expect(preservesLegacyApiDispatchEvidence(source, saved)).toBe(false);
+    saved.messagesByChatId.chat.push({
+      id: "next",
+      chatId: "chat",
+      role: "user",
+      content: "Another task",
+    });
+    expect(preservesLegacyApiDispatchEvidence(source, saved)).toBe(false);
+    saved.messagesByChatId.chat.pop();
+    expect(preservesLegacyApiDispatchEvidence(source, saved, "chat")).toBe(
+      true
+    );
+    const removed = state();
+    removed.currentChatId = null;
+    removed.chats = [];
+    removed.messagesByChatId = {};
+    removed.draftsByChatId = {};
+    expect(preservesLegacyApiDispatchEvidence(source, removed)).toBe(true);
+
+    saved.chats[0].interrupted = true;
+    expect(canRetireLegacyAgentState(source, saved)).toBe(true);
+    saved.chats[0].interrupted = false;
+    saved.messagesByChatId.chat.push({
+      id: "result",
+      chatId: "chat",
+      role: "tool",
+      toolCallId: "call",
+      content: '{"status":200}',
+    });
+    expect(canRetireLegacyAgentState(source, saved)).toBe(true);
+    saved.messagesByChatId.chat.pop();
+    saved.chats[0].apiAttempts = [
+      {
+        version: 1,
+        id: "attempt",
+        chatId: "chat",
+        logicalActionId: "action",
+        ordinal: 1,
+        scopeKey: "scope",
+        userName: "users/member@example.com",
+        runId: "run",
+        rootUserMessageId: "user",
+        toolCallId: "call",
+        operationId: "bytebase.v1.SQLService.Query",
+        path: "/bytebase.v1.SQLService/Query",
+        fingerprint: "a".repeat(64),
+        phase: "dispatching",
+        startedAt: 1,
+      },
+    ];
+    expect(canRetireLegacyAgentState(source, saved)).toBe(true);
   });
 
   test("accepts added normalized defaults and appended messages or chats", () => {

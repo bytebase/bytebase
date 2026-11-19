@@ -19,21 +19,25 @@ import type {
 } from "@/modules/sql-editor/components/ResultView/types";
 import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { extractSQLRowValuePlain } from "@/utils/v1/sql";
+import type { AgentApiAttempt } from "../logic/apiAttempt";
 import { parseCallApiResult } from "../logic/callApiResult";
 import {
   type AgentQueryResultPreview,
   type AgentQueryResultSetPreview,
   parseAgentQueryResult,
 } from "../logic/queryResult";
+import { apiCallNeedsConfirmation } from "../logic/tools/apiMethodClass";
 import type {
   AgentAskUserOption,
   AgentAskUserResponse,
   ToolCall,
 } from "../logic/types";
+import { AgentApiOutcome } from "./AgentApiOutcome";
 
 interface Props {
   toolCall: ToolCall;
   result?: string;
+  missingResultAttempt?: AgentApiAttempt;
   hasRecoveryDraft?: boolean;
 }
 
@@ -330,7 +334,12 @@ const parseAskUserOption = (value: unknown): AgentAskUserOption | null => {
   };
 };
 
-export function ToolCallCard({ toolCall, result, hasRecoveryDraft }: Props) {
+export function ToolCallCard({
+  toolCall,
+  result,
+  missingResultAttempt,
+  hasRecoveryDraft,
+}: Props) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
@@ -362,9 +371,9 @@ export function ToolCallCard({ toolCall, result, hasRecoveryDraft }: Props) {
     typeof (parsedArguments as Record<string, unknown>).operationId === "string"
       ? ((parsedArguments as Record<string, unknown>).operationId as string)
       : undefined;
-  const callApiError =
+  const callApi =
     toolCall.name === "call_api"
-      ? parseCallApiResult(resultText, operationId).error
+      ? parseCallApiResult(resultText, operationId)
       : undefined;
   const queryPreview = useMemo(() => {
     if (
@@ -550,7 +559,23 @@ export function ToolCallCard({ toolCall, result, hasRecoveryDraft }: Props) {
     resultRecord.text.trim().length > 0 &&
     resultRecord.skipped !== true;
   const renderStatus = () => {
-    if (hasErrorResult || callApiError || askError) {
+    if (!resultText && missingResultAttempt) {
+      return (
+        <span className="text-warning">
+          <AgentApiOutcome execution={missingResultAttempt.execution} />
+        </span>
+      );
+    }
+    if (callApi?.execution && apiCallNeedsConfirmation(operationId ?? "")) {
+      return (
+        <span
+          className={callApi.requiresRecovery ? "text-warning" : "text-control"}
+        >
+          <AgentApiOutcome execution={callApi.execution} />
+        </span>
+      );
+    }
+    if (hasErrorResult || callApi?.error || askError) {
       return <span className="text-error">{t("agent.tool-failed")}</span>;
     }
     if (isAskUser) {
@@ -701,6 +726,11 @@ export function ToolCallCard({ toolCall, result, hasRecoveryDraft }: Props) {
               {formatJson(resultText)}
             </pre>
           </>
+        )}
+        {!resultText && missingResultAttempt && (
+          <p className="text-control-light">
+            {t("agent.api-recovery.no-replay")}
+          </p>
         )}
       </>
     );

@@ -43,6 +43,7 @@ import {
   wasDeniedQueryRequestDraftDelivered,
 } from "@/modules/sql-editor/model/accessGrantDraft";
 import { useAppStore } from "@/stores/app";
+import { isAgentApiAttemptUncertain } from "../logic/apiAttempt";
 import {
   type AccessGrantDraft,
   type DeniedQueryRequestDraft,
@@ -99,6 +100,7 @@ import {
   useAgentStore,
 } from "../store/agent";
 import { AgentAIConfigurationRecovery } from "./AgentAIConfigurationRecovery";
+import { AgentApiRecovery } from "./AgentApiRecovery";
 import { AgentErrorDetails } from "./AgentErrorDetails";
 import {
   AgentPrimaryAction,
@@ -1088,6 +1090,23 @@ export function AgentChat({
     return duplicateIndex;
   }
 
+  function getMissingResultAttempt(message: AgentMessage, toolCallId: string) {
+    const index = allMessages.findIndex(
+      (candidate) => candidate.id === message.id
+    );
+    const root = allMessages
+      .slice(0, index + 1)
+      .findLast((candidate) => candidate.role === "user");
+    return currentChat?.apiAttempts?.find(
+      (attempt) =>
+        attempt.toolCallId === toolCallId &&
+        attempt.rootUserMessageId === root?.id &&
+        (attempt.phase === "settled" ||
+          attempt.runId !== currentChat.runId ||
+          (!loading && !hasActiveController))
+    );
+  }
+
   function hasAccessGrantDraftAfter(toolCallMessage: AgentMessage): boolean {
     const fullIndex = allMessages.findIndex(
       (message) => message.id === toolCallMessage.id
@@ -1513,6 +1532,11 @@ export function AgentChat({
                         toolCall.id,
                         getToolCallDuplicateIndex(toolCalls, index)
                       )}
+                      missingResultAttempt={
+                        toolCall.name === "call_api"
+                          ? getMissingResultAttempt(msg, toolCall.id)
+                          : undefined
+                      }
                       hasRecoveryDraft={
                         toolCall.name === "done" &&
                         hasAccessGrantDraftAfter(msg)
@@ -1611,6 +1635,37 @@ export function AgentChat({
             <span className="animate-pulse">&#9679;</span> {t("common.loading")}
           </div>
         )}
+
+      {!loading &&
+        !hasActiveController &&
+        currentChat?.apiAttempts
+          ?.filter(
+            (attempt) =>
+              attempt.rootUserMessageId === latestUserMessageId &&
+              isAgentApiAttemptUncertain(attempt) &&
+              !messages.some(
+                (message) =>
+                  message.role === "tool" &&
+                  message.metadata?.apiAttemptId === attempt.id
+              ) &&
+              !messages
+                .slice(
+                  messages.findIndex(
+                    (message) => message.id === latestUserMessageId
+                  )
+                )
+                .some((message) =>
+                  message.toolCalls?.some(
+                    (toolCall) => toolCall.id === attempt.toolCallId
+                  )
+                )
+          )
+          .map((attempt) => (
+            <AgentApiRecovery
+              key={`${storageStatusKey}:${attempt.id}`}
+              attempt={attempt}
+            />
+          ))}
 
       {showAIConfigurationRecovery ? (
         <AgentAIConfigurationRecovery onDismiss={dismiss} />

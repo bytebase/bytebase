@@ -204,6 +204,7 @@ export interface AgentDraft {
 }
 
 export interface AgentMessageMetadata {
+  apiAttemptId?: string;
   // Lookup provenance only; the source answer grants no authority for this turn.
   followUpSourceId?: string;
   queryResultRetention?: { version: 1; level: "omitted" };
@@ -245,6 +246,7 @@ export interface AgentMessage extends Message {
 }
 
 export interface AgentChat {
+  apiAttempts?: import("./apiAttempt").AgentApiAttempt[];
   id: string;
   title: string;
   context?: string;

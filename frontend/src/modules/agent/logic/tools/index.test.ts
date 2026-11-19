@@ -389,9 +389,11 @@ vi.mock("../skills", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../skills")>()),
   getSkill: vi.fn(async () => "skill"),
 }));
+const mockDispatch = vi.hoisted(() => vi.fn(async () => "call_api"));
 vi.mock("./callApi", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./callApi")>()),
-  dispatchPreparedApiCall: vi.fn(async () => "call_api"),
+  dispatchPreparedApiCall: mockDispatch,
+  dispatchApprovedApiCall: mockDispatch,
 }));
 vi.mock("./apiPermissionPreflight", () => ({
   checkPreparedApiPermission: vi.fn(async () => ({ kind: "allowed" })),
@@ -466,6 +468,13 @@ vi.mock("./searchApi", async (importOriginal) => ({
 }));
 
 import { createToolExecutor, getToolDefinitions } from ".";
+
+test("an obsolete recovery binding does not hide the normal tool menu", () => {
+  const legacy = { runMode: "default" as const, apiRecoveryOnly: true };
+  expect(getToolDefinitions(legacy)).toEqual(
+    getToolDefinitions({ runMode: "default" })
+  );
+});
 
 describe("unmask method choices", () => {
   const project = "projects/sample";
@@ -2030,6 +2039,12 @@ describe("diagnostic capability", () => {
 });
 
 describe("agent tools referenced project", () => {
+  const notSent = {
+    version: 1,
+    result: "not-sent",
+    effects: "none",
+    reason: "preflight-rejected",
+  };
   test("scopes bounded project reads to the reference for one executor only", async () => {
     const referencedExecutor = createToolExecutor({} as AppRouterInstance, {
       context: "projects/original",
@@ -2122,6 +2137,7 @@ describe("agent tools referenced project", () => {
       result: JSON.stringify({
         error:
           "The referenced project is unavailable or you do not have access.",
+        agentExecution: notSent,
       }),
     });
     expect(overview).not.toHaveBeenCalled();
@@ -2250,6 +2266,7 @@ describe("agent tools referenced project", () => {
         result: JSON.stringify({
           error:
             "The referenced project is unavailable or you do not have access.",
+          ...(name === "call_api" && { agentExecution: notSent }),
         }),
       });
     }
@@ -2518,6 +2535,7 @@ describe("agent tools referenced project", () => {
       result: JSON.stringify({
         error:
           "The referenced project is unavailable or you do not have access.",
+        agentExecution: notSent,
       }),
     });
     expect(issueApi.getIssue).not.toHaveBeenCalled();
@@ -2784,6 +2802,7 @@ describe("agent tools referenced project", () => {
       result: JSON.stringify({
         error:
           "The referenced project is unavailable or you do not have access.",
+        agentExecution: notSent,
       }),
     });
     expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
@@ -2991,6 +3010,7 @@ describe("agent tools referenced project", () => {
         status: 403,
         error:
           "Not called: bb.projects.update is not granted on projects/referenced.",
+        response: { requiredPermissions: ["bb.projects.update"] },
       }),
     });
     const executor = createToolExecutor({} as AppRouterInstance, {
@@ -3013,6 +3033,18 @@ describe("agent tools referenced project", () => {
       kind: "tool_result",
       result: expect.stringContaining("Not called: bb.projects.update"),
     });
+    if (result.kind !== "tool_result") throw new Error("Expected a denial");
+    const denial = JSON.parse(result.result);
+    expect(denial).toMatchObject({
+      preflightStatus: 403,
+      preflight: { requiredPermissions: ["bb.projects.update"] },
+      agentExecution: {
+        result: "not-sent",
+        effects: "none",
+        reason: "preflight-rejected",
+      },
+    });
+    expect(denial).not.toHaveProperty("status");
     expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
 
@@ -3112,6 +3144,7 @@ describe("agent tools referenced project", () => {
     expect(result.kind).toBe("tool_result");
     if (result.kind === "tool_result") {
       expect(JSON.parse(result.result).error).toMatch(/selected Issue/);
+      expect(JSON.parse(result.result).agentExecution).toEqual(notSent);
     }
     expect(issueApi.getIssue).not.toHaveBeenCalled();
     expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
@@ -3146,83 +3179,137 @@ describe("agent tools referenced project", () => {
     expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
 
-  test("previews and dispatches the target database's policy-limited query after approval", async () => {
-    useAppStore.setState({
-      subscription: create(SubscriptionSchema, { plan: PlanType.ENTERPRISE }),
-    });
-    databaseApi.getDatabase.mockResolvedValue(
-      create(DatabaseSchema$, {
-        name: "instances/example/databases/app",
-        project: "projects/target",
-      })
-    );
-    policyApi.getPolicy.mockImplementation(async ({ name }) => {
-      const maximumResultRows = {
-        "workspaces/example/policies/data_query": 1000,
-        "projects/target/policies/data_query": 30,
-      }[name as string];
-      if (!maximumResultRows) throw new Error("Unexpected policy scope");
-      return create(PolicySchema, {
-        name,
-        policy: { case: "queryDataPolicy", value: { maximumResultRows } },
-      });
-    });
+  test("an exact uncertain peer receipt is a warning on the ordinary approval", async () => {
     const identity = {
-      chatId: "chat-query-preview",
+      chatId: "new-chat",
       userName: "users/me@example.com",
-      toolCallId: "tool-query-preview",
+      toolCallId: "new-call",
     };
-    const executor = createToolExecutor({} as AppRouterInstance, identity);
-    const body: Record<string, unknown> = {
-      name: "instances/example/databases/app",
-      statement: "SELECT * FROM accounts",
-    };
-
-    const result = await executor(
-      "call_api",
-      { operationId: "SQLService/Query", body },
-      identity.toolCallId
-    );
-
-    expect(result.kind).toBe("ask_user");
-    if (result.kind !== "ask_user" || !result.ask.apiPermission) {
-      throw new Error("Expected API permission request");
-    }
-    const actionId = result.ask.apiPermission.actionId;
-    const preview = getPendingApiCallPreview({ ...identity, actionId });
-    expect(preview).toMatchObject({
-      operationId: "bytebase.v1.SQLService.Query",
-      body: JSON.stringify({ ...body, limit: 30 }),
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      ...identity,
+      priorAttemptIds: () => ["earlier"],
     });
-    expect(body).not.toHaveProperty("limit");
+    const args = {
+      operationId: "ProjectService/UpdateProject",
+      body: { project: { name: "projects/example", title: "New" } },
+    };
+    const fresh = await executor("call_api", args, identity.toolCallId);
+    if (fresh.kind !== "ask_user" || !fresh.ask.apiPermission)
+      throw new Error("Expected fresh permission");
+    expect(
+      getPendingApiCallPreview({
+        ...identity,
+        actionId: fresh.ask.apiPermission.actionId,
+      })
+    ).toMatchObject({
+      priorAttemptIds: ["earlier"],
+    });
     expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
-
-    body.limit = 500;
-    body.statement = "SELECT * FROM other_accounts";
-    await resolvePendingApiCall({ ...identity, actionId, approved: true });
-
-    expect(dispatchPreparedApiCall).toHaveBeenCalledExactlyOnceWith({
-      operationId: "bytebase.v1.SQLService.Query",
-      path: "/bytebase.v1.SQLService/Query",
-      body: preview?.body,
-    });
   });
+
+  test.each(["clean", "prior-unknown"])(
+    "previews and dispatches a database-referenced SELECT after ordinary approval: %s",
+    async (history) => {
+      useAppStore.setState({
+        subscription: create(SubscriptionSchema, { plan: PlanType.ENTERPRISE }),
+      });
+      databaseApi.getDatabase.mockResolvedValue(
+        create(DatabaseSchema$, {
+          name: "instances/example/databases/app",
+          project: "projects/target",
+        })
+      );
+      policyApi.getPolicy.mockImplementation(async ({ name }) => {
+        const maximumResultRows = {
+          "workspaces/example/policies/data_query": 1000,
+          "projects/target/policies/data_query": 30,
+        }[name as string];
+        if (!maximumResultRows) throw new Error("Unexpected policy scope");
+        return create(PolicySchema, {
+          name,
+          policy: { case: "queryDataPolicy", value: { maximumResultRows } },
+        });
+      });
+      const identity = {
+        chatId: "chat-query-preview",
+        userName: "users/me@example.com",
+        toolCallId: "tool-query-preview",
+      };
+      const options = {
+        ...identity,
+        referencedDatabase: "instances/example/databases/app",
+        priorAttemptIds: () => (history === "clean" ? [] : ["earlier"]),
+      };
+      const executor = createToolExecutor({} as AppRouterInstance, options);
+      const body: Record<string, unknown> = {
+        name: "instances/example/databases/app",
+        statement: "SELECT * FROM accounts",
+      };
+
+      const result = await executor(
+        "call_api",
+        { operationId: "SQLService/Query", body },
+        identity.toolCallId
+      );
+
+      expect(result.kind).toBe("ask_user");
+      if (result.kind !== "ask_user" || !result.ask.apiPermission) {
+        throw new Error("Expected API permission request");
+      }
+      const actionId = result.ask.apiPermission.actionId;
+      const preview = getPendingApiCallPreview({ ...identity, actionId });
+      expect(preview).toMatchObject({
+        operationId: "bytebase.v1.SQLService.Query",
+        body: JSON.stringify({ ...body, limit: 30 }),
+      });
+      expect(body).not.toHaveProperty("limit");
+      expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+
+      body.limit = 500;
+      body.statement = "SELECT * FROM other_accounts";
+      const context = {
+        ...identity,
+        scopeKey: "scope",
+        runId: "run",
+        logicalActionId: actionId,
+        rootUserMessageId: "root",
+        isCurrent: () => true,
+        beginAgentApiAttempt: vi.fn(),
+        settleAgentApiAttempt: vi.fn(),
+      };
+      await resolvePendingApiCall({
+        ...identity,
+        actionId,
+        approved: true,
+        context,
+      });
+
+      expect(dispatchPreparedApiCall).toHaveBeenCalledExactlyOnceWith(
+        {
+          operationId: "bytebase.v1.SQLService.Query",
+          path: "/bytebase.v1.SQLService/Query",
+          body: preview?.body,
+        },
+        { context, signal: undefined }
+      );
+    }
+  );
 
   test("refuses a write API when no signed-in chat can approve it", async () => {
     const executor = createToolExecutor({} as AppRouterInstance);
 
-    expect(
-      await executor(
-        "call_api",
-        {
-          operationId: "ProjectService/UpdateProject",
-          body: { project: { name: "projects/example", title: "Changed" } },
-        },
-        "tool-write"
-      )
-    ).toEqual({
-      kind: "tool_result",
-      result: expect.stringContaining("Cannot request API permission"),
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "ProjectService/UpdateProject",
+        body: { project: { name: "projects/example", title: "Changed" } },
+      },
+      "tool-write"
+    );
+    if (result.kind !== "tool_result") throw new Error("Expected a denial");
+    expect(JSON.parse(result.result)).toMatchObject({
+      error: expect.stringContaining("Cannot request API permission"),
+      agentExecution: { ...notSent, reason: "permission-rejected" },
     });
     expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
@@ -3359,6 +3446,35 @@ describe("agent tools dom_action", () => {
 });
 
 describe("agent tools read-only mode", () => {
+  test("rejects an off-list API with not-sent evidence and no permission ticket or target fetch", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "read-only-chat",
+      userName: "users/member@example.com",
+      runMode: "read-only",
+    });
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "ProjectService/UpdateProject",
+        body: { project: { name: "projects/example", title: "Changed" } },
+      },
+      "off-list-write"
+    );
+    expect(result.kind).toBe("tool_result");
+    if (result.kind !== "tool_result")
+      throw new Error("Expected no permission ticket");
+    expect(JSON.parse(result.result)).toEqual({
+      error: expect.stringContaining("read-only request"),
+      agentExecution: {
+        version: 1,
+        result: "not-sent",
+        effects: "none",
+        reason: "preflight-rejected",
+      },
+    });
+    expect(checkPreparedApiPermission).not.toHaveBeenCalled();
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
   test("describes database counts as bounded and partial", () => {
     const tool = getToolDefinitions({ runMode: "read-only" }).find(
       ({ name }) => name === "get_database_count"

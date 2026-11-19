@@ -5,6 +5,7 @@ export interface AgentRunLease {
 
 const requestedLeases = new Set<string>();
 const heldLeases = new Set<string>();
+const heldChatScopes = new Map<string, string>();
 const leaseListeners = new Set<() => void>();
 let persistenceDepth = 0;
 let storageBudgetDepth = 0;
@@ -66,11 +67,13 @@ export const withAgentRunLease = async <T>(
           },
         };
         heldLeases.add(key);
+        heldChatScopes.set(key, scopeKey);
         try {
           return { acquired: true, value: await action(lease) };
         } finally {
           active = false;
           heldLeases.delete(key);
+          heldChatScopes.delete(key);
         }
       }
     );
@@ -79,6 +82,57 @@ export const withAgentRunLease = async <T>(
     notifyLeaseListeners();
   }
 };
+
+const actionKey = (scopeKey: string, actionId: string) =>
+  `bb-agent-api-action:${JSON.stringify([scopeKey, actionId])}`;
+
+export async function withAgentApiActionLease<T>(
+  scopeKey: string,
+  actionId: string,
+  action: () => Promise<T>
+): Promise<{ acquired: boolean; value?: T }> {
+  if (
+    !supportsAgentRunRecovery() ||
+    persistenceDepth ||
+    storageBudgetDepth ||
+    ![...heldChatScopes.values()].includes(scopeKey)
+  )
+    return { acquired: false };
+  const key = actionKey(scopeKey, actionId);
+  return navigator.locks.request(
+    key,
+    { mode: "exclusive", ifAvailable: true },
+    async (lock) => {
+      if (!lock) return { acquired: false };
+      return { acquired: true, value: await action() };
+    }
+  );
+}
+
+export async function getAgentApiActionLiveness(
+  scopeKey: string,
+  actionId: string
+): Promise<"live" | "absent" | "unavailable"> {
+  if (!supportsAgentRunRecovery() || persistenceDepth || storageBudgetDepth)
+    return "unavailable";
+  try {
+    if (typeof navigator.locks.query === "function") {
+      const state = await navigator.locks.query();
+      return !state.held
+        ? "unavailable"
+        : state.held.some((lock) => lock.name === actionKey(scopeKey, actionId))
+          ? "live"
+          : "absent";
+    }
+    return await navigator.locks.request(
+      actionKey(scopeKey, actionId),
+      { mode: "exclusive", ifAvailable: true },
+      (lock) => (lock ? ("absent" as const) : ("live" as const))
+    );
+  } catch {
+    return "unavailable";
+  }
+}
 
 // These callbacks must stay short and must not acquire an execution lease.
 export const withAgentPersistenceLock = async <T>(

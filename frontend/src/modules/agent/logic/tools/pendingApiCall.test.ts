@@ -12,7 +12,7 @@ vi.mock("./apiPermissionPreflight", () => ({
 }));
 
 vi.mock("./callApi", () => ({
-  dispatchPreparedApiCall: mocks.dispatchPreparedApiCall,
+  dispatchApprovedApiCall: mocks.dispatchPreparedApiCall,
 }));
 vi.mock("./issueDecisionPermission", () => ({
   validateIssueDecisionPermission: mocks.validateIssueDecisionPermission,
@@ -21,8 +21,28 @@ vi.mock("./issueDecisionPermission", () => ({
 import {
   createPendingApiCall,
   getPendingApiCallPreview,
-  resolvePendingApiCall,
+  resolvePendingApiCall as resolveApproval,
 } from "./pendingApiCall";
+
+const resolvePendingApiCall = (args: Parameters<typeof resolveApproval>[0]) =>
+  resolveApproval({
+    ...args,
+    context: {
+      chatId: args.chatId,
+      scopeKey: "scope",
+      userName: args.userName,
+      toolCallId: args.toolCallId,
+      logicalActionId: args.actionId,
+      runId: "run",
+      rootUserMessageId: "root",
+      isCurrent: () => true,
+      beginAgentApiAttempt: async () => ({
+        kind: "admitted",
+        attemptId: "attempt",
+      }),
+      settleAgentApiAttempt: async () => true,
+    },
+  });
 
 const makeCall = (): PreparedApiCall => ({
   operationId: "bytebase.v1.ProjectService.UpdateProject",
@@ -31,6 +51,43 @@ const makeCall = (): PreparedApiCall => ({
 });
 
 describe("pendingApiCall", () => {
+  test("a normal single-use approval dispatches without a receipt context", async () => {
+    const owner = { chatId: "chat", toolCallId: "tool", userName: "users/1" };
+    const { actionId } = createPendingApiCall({ ...owner, call: makeCall() });
+    await resolveApproval({ ...owner, actionId, approved: true });
+    expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledTimes(1);
+    const replay = await resolveApproval({
+      ...owner,
+      actionId,
+      approved: true,
+    });
+    expect(JSON.parse(replay).error).toMatch(/already used/);
+    expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledTimes(1);
+  });
+  test("an unmanaged permission cannot follow an actor or workspace change during preflight", async () => {
+    const identity = {
+      chatId: "legacy",
+      toolCallId: "query",
+      userName: "users/member",
+    };
+    let current = true;
+    const permission = createPendingApiCall({
+      ...identity,
+      call: makeCall(),
+      isScopeCurrent: () => current,
+    });
+    mocks.checkPreparedApiPermission.mockImplementationOnce(async () => {
+      current = false;
+      return { kind: "allowed" };
+    });
+    const result = await resolveApproval({
+      ...identity,
+      ...permission,
+      approved: true,
+    });
+    expect(JSON.parse(result).agentExecution.result).toBe("not-sent");
+    expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
   test.each(["valid", "malformed"])(
     "consumes an approved %s diagnostic action without dispatch",
     async (kind) => {
@@ -104,7 +161,10 @@ describe("pendingApiCall", () => {
       userName: "users/1",
       approved: true,
     });
-    expect(JSON.parse(result)).toMatchObject({ status: 403 });
+    expect(JSON.parse(result)).toMatchObject({
+      error: "Not called: bb.projects.update is not granted.",
+      agentExecution: { result: "not-sent", reason: "preflight-rejected" },
+    });
     expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
 
@@ -142,7 +202,13 @@ describe("pendingApiCall", () => {
 
     expect(JSON.parse(result)).toEqual({ status: 200, response: {} });
     expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledExactlyOnceWith(
-      expected
+      expected,
+      expect.objectContaining({
+        context: expect.objectContaining({
+          chatId: "chat-1",
+          logicalActionId: actionId,
+        }),
+      })
     );
     await resolvePendingApiCall({
       actionId,
@@ -379,7 +445,12 @@ describe("pendingApiCall", () => {
       approved: true,
     });
     expect(mocks.validateIssueDecisionPermission).toHaveBeenCalledOnce();
-    expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledExactlyOnceWith(call);
+    expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledExactlyOnceWith(
+      call,
+      expect.objectContaining({
+        context: expect.objectContaining({ logicalActionId: allowed.actionId }),
+      })
+    );
   });
 
   test("does not dispatch when the approved request was stopped before execution", async () => {
