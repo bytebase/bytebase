@@ -715,11 +715,11 @@ func routineResultNamesType(definition, key string, objects map[string]bool, sea
 // routineReturnClause is the text between RETURNS and the first clause after it,
 // which is where a routine's result type is declared.
 func routineReturnClause(definition string) string {
-	index := indexOutsideQuotes(definition, "RETURNS ")
+	index := indexOutsideQuotesKeyword(definition, "RETURNS")
 	if index < 0 {
 		return ""
 	}
-	rest := definition[index+len("RETURNS "):]
+	rest := definition[skipSQLWhitespace(definition, index+len("RETURNS")):]
 	end := len(rest)
 	for _, marker := range []string{"\nAS ", "\n AS ", " LANGUAGE ", "\nLANGUAGE ", " IMMUTABLE", " STABLE", " VOLATILE", " STRICT", " SECURITY ", " COST ", " ROWS ", " WINDOW ", "\n"} {
 		if i := indexOutsideQuotes(rest, marker); i >= 0 && i < end {
@@ -1749,6 +1749,10 @@ func definitionTokens(text string) []definitionToken {
 			end := closingQuote(text, i, '\'')
 			tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+1:end], "''", "'"), literal: true, regclass: isRegclassToken(text, end+1)})
 			i = end + 1
+		case (text[i] == 'U' || text[i] == 'u') && i+2 < len(text) && text[i+1] == '&' && text[i+2] == '\'':
+			end := closingQuote(text, i+2, '\'')
+			tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+3:end], "''", "'"), literal: true})
+			i = end + 1
 		case text[i] == '$':
 			if end, ok := dollarQuoteEnd(text, i); ok {
 				i = end + 1
@@ -2202,6 +2206,9 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 	forced := routineForced
 	affected := affectedTableColumns(oldMeta, newMeta)
 	for _, op := range plan.Ops {
+		if op.SchemaName == "bbdataarchive" {
+			continue
+		}
 		switch op.Type {
 		case catalog.OpDropTable, catalog.OpDropView, catalog.OpDropSequence:
 			key := objectKey(op.SchemaName, op.ObjectName)
@@ -2632,6 +2639,13 @@ func indexOutsideQuotes(text, needle string) int {
 	return -1
 }
 
+func skipSQLWhitespace(text string, index int) int {
+	for index < len(text) && (text[index] == ' ' || text[index] == '\t' || text[index] == '\n' || text[index] == '\r') {
+		index++
+	}
+	return index
+}
+
 func indexOutsideQuotesKeyword(text, keyword string) int {
 	for i := 0; i < len(text); i++ {
 		switch text[i] {
@@ -2861,6 +2875,9 @@ type affectedColumnSet map[string]map[string]bool
 func affectedTableColumns(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) affectedColumnSet {
 	affected := make(affectedColumnSet)
 	for _, schema := range oldMeta.GetSchemas() {
+		if schema.GetName() == "bbdataarchive" {
+			continue
+		}
 		newSchema := schemaByName(newMeta, schema.GetName())
 		for _, table := range schema.GetTables() {
 			newTable := tableByName(newSchema, table.GetName())

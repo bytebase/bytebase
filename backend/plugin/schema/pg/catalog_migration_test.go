@@ -853,11 +853,10 @@ func TestUnloadableDependentViewsRestoreInDependencyOrder(t *testing.T) {
 	require.Less(t, createB, createA, "the dependency is created first")
 }
 
-// TestBackupSchemaDependentViewIsRejected keeps the backup-schema contract: a
-// bbdataarchive view that must be dropped for a restored object cannot be
-// emitted, so the migration is refused rather than producing a lower drop that
-// the remaining backup view blocks.
-func TestBackupSchemaDependentViewIsRejected(t *testing.T) {
+// TestBackupSchemaDependentViewIsIgnored covers backup-only drift: the plan
+// filters bbdataarchive, so a backup view that depends on a changed backup table
+// is not restored and emits no SQL.
+func TestBackupSchemaDependentViewIsIgnored(t *testing.T) {
 	snapshot := func(columnType string) *model.DatabaseMetadata {
 		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
 			Name:   "bbdataarchive",
@@ -872,8 +871,9 @@ func TestBackupSchemaDependentViewIsRejected(t *testing.T) {
 		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
 	}
 
-	_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
-	require.ErrorContains(t, err, "backup-schema view")
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
+	require.NoError(t, err)
+	require.Empty(t, sql)
 }
 
 // TestSplitCompositeRetypeAddsAttributeBeforeItsComment covers a split release
@@ -1911,6 +1911,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 				Name:       "od",
 				Signature:  "od()",
 				Definition: "CREATE FUNCTION public.od(OUT mydefault public.v) RETURNS record LANGUAGE sql AS $$ SELECT $$",
+			}},
+			refused: true,
+		},
+		{
+			name: "returns followed by a newline",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "rn",
+				Signature:  "rn()",
+				Definition: "CREATE FUNCTION public.rn() RETURNS\npublic.v LANGUAGE sql AS $$ SELECT $$",
 			}},
 			refused: true,
 		},
@@ -3637,6 +3646,50 @@ func TestViewDependencyQualificationSkipsStringPrefix(t *testing.T) {
 				Name:              "w",
 				Definition:        `SELECT E'\n' FROM public.e`,
 				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "e"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
+
+// TestUnloadableBackupColumnChangeIsIgnored covers a backup-only column change
+// that a managed unloadable view references.
+func TestUnloadableBackupColumnChangeIsIgnored(t *testing.T) {
+	snapshot := func(columnType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name: "public",
+				MaterializedViews: []*metadatapb.MaterializedViewMetadata{{
+					Name:       "mv",
+					Definition: "SELECT FROM",
+					DependencyColumns: []*metadatapb.DependencyColumn{{
+						Schema: "bbdataarchive", Table: "t", Column: "id",
+					}},
+				}},
+			},
+			{
+				Name:   "bbdataarchive",
+				Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			},
+		}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
+	require.NoError(t, err)
+	require.Empty(t, sql)
+}
+
+// TestViewDependencyQualificationSkipsUnicodeStringPrefix covers U&'...'.
+func TestViewDependencyQualificationSkipsUnicodeStringPrefix(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("u", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        `SELECT U&'d\0061t\+000061' FROM public.u`,
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "u"}},
 			}},
 		}},
 	}
