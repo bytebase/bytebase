@@ -706,7 +706,7 @@ func dollarQuoteEnd(text string, start int) (int, bool) {
 // type: its RETURNS clause, or the columns of RETURNS TABLE.
 func routineResultNamesType(definition, key string, objects map[string]bool, searchPath []string) bool {
 	clause := routineReturnClause(definition)
-	if hasPrefixFold(clause, "TABLE") {
+	if hasKeywordPrefix(clause, "TABLE") {
 		return parametersNameType(routineArgumentList(clause), key, objects, searchPath)
 	}
 	return namesType(clause, key, objects, searchPath)
@@ -721,7 +721,7 @@ func routineReturnClause(definition string) string {
 	}
 	rest := definition[skipSQLWhitespace(definition, index+len("RETURNS")):]
 	end := len(rest)
-	for _, keyword := range []string{"AS", "LANGUAGE", "IMMUTABLE", "STABLE", "VOLATILE", "STRICT", "SECURITY", "COST", "ROWS", "WINDOW", "PARALLEL", "LEAKPROOF", "SUPPORT", "TRANSFORM", "SET"} {
+	for _, keyword := range []string{"AS", "LANGUAGE", "IMMUTABLE", "STABLE", "VOLATILE", "STRICT", "SECURITY", "COST", "ROWS", "WINDOW", "PARALLEL", "LEAKPROOF", "SUPPORT", "TRANSFORM", "SET", "CALLED", "RETURNS"} {
 		if i := indexOutsideQuotesKeyword(rest, keyword); i >= 0 && i < end {
 			end = i
 		}
@@ -1437,8 +1437,15 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 	return qualified
 }
 
-func hasPrefixFold(text, prefix string) bool {
-	return len(text) >= len(prefix) && strings.EqualFold(text[:len(prefix)], prefix)
+func hasKeywordPrefix(text, keyword string) bool {
+	if len(text) < len(keyword) || !strings.EqualFold(text[:len(keyword)], keyword) {
+		return false
+	}
+	if len(text) == len(keyword) {
+		return true
+	}
+	next, _ := utf8.DecodeRuneInString(text[len(keyword):])
+	return !isIdentifierRune(next)
 }
 
 func isRegclassType(tokens []definitionToken, index int) bool {
@@ -1907,7 +1914,7 @@ func ambiguousRoutineTypes(signature, definition string, objects map[string]bool
 		return true
 	}
 	clause := routineReturnClause(definition)
-	if hasPrefixFold(clause, "TABLE") {
+	if hasKeywordPrefix(clause, "TABLE") {
 		return ambiguousParameters(routineArgumentList(clause), objects, searchPath)
 	}
 	return ambiguousTypeText(clause, objects, searchPath)

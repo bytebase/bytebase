@@ -1879,6 +1879,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "return type beginning with table",
+			world: world{viewName: "table_v", function: &metadatapb.FunctionMetadata{
+				Name:       "gt",
+				Signature:  "gt()",
+				Definition: "CREATE FUNCTION public.gt() RETURNS public.table_v LANGUAGE sql AS $$ SELECT $$",
+			}},
+			refused: true,
+		},
+		{
 			name: "procedure",
 			world: world{procedure: &metadatapb.ProcedureMetadata{
 				Name:       "p",
@@ -1938,6 +1947,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 				Name:       "rp",
 				Signature:  "rp()",
 				Definition: "CREATE FUNCTION public.rp() RETURNS public.v PARALLEL SAFE LANGUAGE sql AS $$ SELECT $$",
+			}},
+			refused: true,
+		},
+		{
+			name: "returns followed by called on null input",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "rc",
+				Signature:  "rc()",
+				Definition: "CREATE FUNCTION public.rc() RETURNS public.v CALLED ON NULL INPUT LANGUAGE sql AS $$ SELECT $$",
 			}},
 			refused: true,
 		},
