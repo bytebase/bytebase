@@ -463,6 +463,33 @@ func TestRelationSetIncludesPartitions(t *testing.T) {
 	require.False(t, relationSet(withPartition, withPartition)[objectKey("parted", "t_p")], "an unchanged partition is not")
 }
 
+// TestRelationSetNestedPartitionKeepsImmediateParentSchema covers a subpartition
+// without its own schema under a partition in another schema: the effective
+// schema is the immediate parent's, not the top-level table's.
+func TestRelationSetNestedPartitionKeepsImmediateParentSchema(t *testing.T) {
+	withNested := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+		{Name: "main", Tables: []*metadatapb.TableMetadata{{
+			Name: "t",
+			Partitions: []*metadatapb.TablePartitionMetadata{{
+				Name:   "p",
+				Schema: "parted",
+				Subpartitions: []*metadatapb.TablePartitionMetadata{{
+					Name: "sp",
+				}},
+			}},
+		}}},
+		{Name: "parted"},
+	}}
+	withoutNested := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+		{Name: "main", Tables: []*metadatapb.TableMetadata{{Name: "t"}}},
+		{Name: "parted"},
+	}}
+
+	set := relationSet(withNested, withoutNested)
+	require.True(t, set[objectKey("parted", "sp")], "the subpartition inherits parted from its immediate parent")
+	require.False(t, set[objectKey("main", "sp")], "the subpartition does not inherit the top-level table's schema")
+}
+
 // TestSourceOnlyUnloadableObjectsAreDropped covers removing an object whose stored
 // definition omni cannot parse: a drop needs no definition, so the plan emits it,
 // while adding such an object is still refused.

@@ -508,11 +508,7 @@ func typeObjects(meta *metadatapb.DatabaseSchemaMetadata) map[string]bool {
 	for _, schema := range meta.GetSchemas() {
 		for _, table := range schema.GetTables() {
 			objects[objectKey(schema.GetName(), table.GetName())] = true
-			forEachPartition(table.GetPartitions(), func(partition *metadatapb.TablePartitionMetadata) {
-				partitionSchema := partition.GetSchema()
-				if partitionSchema == "" {
-					partitionSchema = schema.GetName()
-				}
+			forEachPartitionWithSchema(table.GetPartitions(), schema.GetName(), func(partition *metadatapb.TablePartitionMetadata, partitionSchema string) {
 				objects[objectKey(partitionSchema, partition.GetName())] = true
 			})
 		}
@@ -956,11 +952,7 @@ func partitionExists(meta *metadatapb.DatabaseSchemaMetadata, schemaName, partit
 	found := false
 	for _, schema := range meta.GetSchemas() {
 		for _, table := range schema.GetTables() {
-			forEachPartition(table.GetPartitions(), func(partition *metadatapb.TablePartitionMetadata) {
-				partitionSchema := partition.GetSchema()
-				if partitionSchema == "" {
-					partitionSchema = schema.GetName()
-				}
+			forEachPartitionWithSchema(table.GetPartitions(), schema.GetName(), func(partition *metadatapb.TablePartitionMetadata, partitionSchema string) {
 				if partitionSchema == schemaName && partition.GetName() == partitionName {
 					found = true
 				}
@@ -975,13 +967,9 @@ func partitionExists(meta *metadatapb.DatabaseSchemaMetadata, schemaName, partit
 // keeps its parent's. An empty requiredSchema accepts any schema.
 func partitionIndexByName(partitions []*metadatapb.TablePartitionMetadata, parentSchema, partitionName, requiredSchema, name string) *metadatapb.IndexMetadata {
 	var found *metadatapb.IndexMetadata
-	forEachPartition(partitions, func(partition *metadatapb.TablePartitionMetadata) {
+	forEachPartitionWithSchema(partitions, parentSchema, func(partition *metadatapb.TablePartitionMetadata, partitionSchema string) {
 		if found != nil || partition.GetName() != partitionName {
 			return
-		}
-		partitionSchema := partition.GetSchema()
-		if partitionSchema == "" {
-			partitionSchema = parentSchema
 		}
 		if requiredSchema != "" && partitionSchema != requiredSchema {
 			return
@@ -1050,11 +1038,7 @@ func relationSet(left, right *metadatapb.DatabaseSchemaMetadata) map[string]bool
 			if other == nil || tableByName(other, table.GetName()) == nil {
 				result[objectKey(schema.GetName(), table.GetName())] = true
 			}
-			forEachPartition(table.GetPartitions(), func(partition *metadatapb.TablePartitionMetadata) {
-				partitionSchema := partition.GetSchema()
-				if partitionSchema == "" {
-					partitionSchema = schema.GetName()
-				}
+			forEachPartitionWithSchema(table.GetPartitions(), schema.GetName(), func(partition *metadatapb.TablePartitionMetadata, partitionSchema string) {
 				if !partitionExists(right, partitionSchema, partition.GetName()) {
 					result[objectKey(partitionSchema, partition.GetName())] = true
 				}
@@ -1905,11 +1889,7 @@ func indexNameOwners(meta *metadatapb.DatabaseSchemaMetadata, schemaName, indexN
 	// another schema.
 	for _, parent := range meta.GetSchemas() {
 		for _, table := range parent.GetTables() {
-			forEachPartition(table.GetPartitions(), func(partition *metadatapb.TablePartitionMetadata) {
-				partitionSchema := partition.GetSchema()
-				if partitionSchema == "" {
-					partitionSchema = parent.GetName()
-				}
+			forEachPartitionWithSchema(table.GetPartitions(), parent.GetName(), func(partition *metadatapb.TablePartitionMetadata, partitionSchema string) {
 				if partitionSchema != schemaName {
 					return
 				}
@@ -2292,10 +2272,11 @@ func snapshotObjects(meta *metadatapb.DatabaseSchemaMetadata) map[string]proto.M
 			def := tableDefinition(t)
 			objects["rel:"+qualified(t.GetName())] = def
 			addTableParts(objects, qualified(t.GetName()), def)
-			forEachPartition(t.GetPartitions(), func(p *metadatapb.TablePartitionMetadata) {
-				objects["rel:"+qualified(p.GetName())] = p
+			forEachPartitionWithSchema(t.GetPartitions(), schema, func(p *metadatapb.TablePartitionMetadata, partitionSchema string) {
+				partition := partitionSchema + "." + p.GetName()
+				objects["rel:"+partition] = p
 				for _, idx := range p.GetIndexes() {
-					objects["idx:"+qualified(p.GetName())+"."+idx.GetName()] = idx
+					objects["idx:"+partition+"."+idx.GetName()] = idx
 				}
 			})
 		}
@@ -2446,11 +2427,7 @@ func sourceOnlyMissingDrops(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata,
 		for _, table := range schema.GetTables() {
 			addMissingIndexDrops(schemaName, table.GetName(), table.GetIndexes())
 			addMissingConstraintDrops(schemaName, table.GetName(), table.GetCheckConstraints(), table.GetExcludeConstraints(), table.GetForeignKeys())
-			forEachPartition(table.GetPartitions(), func(partition *metadatapb.TablePartitionMetadata) {
-				partitionSchema := partition.GetSchema()
-				if partitionSchema == "" {
-					partitionSchema = schemaName
-				}
+			forEachPartitionWithSchema(table.GetPartitions(), schemaName, func(partition *metadatapb.TablePartitionMetadata, partitionSchema string) {
 				addMissingIndexDrops(partitionSchema, partition.GetName(), partition.GetIndexes())
 				addMissingConstraintDrops(partitionSchema, partition.GetName(), partition.GetCheckConstraints(), partition.GetExcludeConstraints(), nil)
 			})
@@ -2531,6 +2508,19 @@ func forEachPartition(partitions []*metadatapb.TablePartitionMetadata, f func(*m
 	for _, p := range partitions {
 		f(p)
 		forEachPartition(p.GetSubpartitions(), f)
+	}
+}
+
+// forEachPartitionWithSchema visits each partition and subpartition with its
+// effective schema: its own, or its immediate parent's when unset.
+func forEachPartitionWithSchema(partitions []*metadatapb.TablePartitionMetadata, parentSchema string, f func(*metadatapb.TablePartitionMetadata, string)) {
+	for _, partition := range partitions {
+		partitionSchema := partition.GetSchema()
+		if partitionSchema == "" {
+			partitionSchema = parentSchema
+		}
+		f(partition, partitionSchema)
+		forEachPartitionWithSchema(partition.GetSubpartitions(), partitionSchema, f)
 	}
 }
 
