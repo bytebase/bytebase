@@ -2065,6 +2065,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "comment between setof and type",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "rcs",
+				Signature:  "rcs()",
+				Definition: "CREATE FUNCTION public.rcs() RETURNS SETOF/* note */public.v LANGUAGE sql AS $$ SELECT $$",
+			}},
+			refused: true,
+		},
+		{
 			name: "quoted parameter before an out parameter",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "q",

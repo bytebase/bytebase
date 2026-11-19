@@ -2010,6 +2010,7 @@ func stripSQLComments(text string) string {
 			}
 		case '/':
 			if strings.HasPrefix(text[i:], "/*") {
+				result.WriteByte(' ')
 				i = blockCommentEnd(text, i)
 			} else {
 				result.WriteByte(text[i])
@@ -2017,6 +2018,7 @@ func stripSQLComments(text string) string {
 			}
 		case '-':
 			if strings.HasPrefix(text[i:], "--") {
+				result.WriteByte(' ')
 				if end := strings.IndexByte(text[i+2:], '\n'); end >= 0 {
 					i += 2 + end
 				} else {
