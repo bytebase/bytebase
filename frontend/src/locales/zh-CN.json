@@ -4488,7 +4488,7 @@
     "access-type-export": "导出查询结果",
     "access-type-unmask": "查看未脱敏的敏感数据",
     "activate-access": "激活",
-    "activate-confirm": "确定要激活此访问授权吗？",
+    "activate-confirm": "激活后，可通过此访问授权执行已批准的查询。",
     "add-a-new-instance": "添加新实例",
     "admin-mode": {
       "exit": "退出管理员模式",
@@ -4797,7 +4797,7 @@
     },
     "result-view-mode": "结果视图模式",
     "revoke-access": "撤销",
-    "revoke-confirm": "确定要撤销此访问授权吗？",
+    "revoke-confirm": "撤销后，此访问授权将不再允许执行已批准的查询。",
     "rows": {
       "self": "行"
     },
