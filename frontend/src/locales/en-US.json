@@ -3030,7 +3030,7 @@
         "n-replies-hidden_other": "{{count}} replies hidden",
         "priority": {
           "p1": "Dangerous but legitimate. A person must accept it.",
-          "p2": "Advisory only."
+          "p2": "A suggestion. Resolve it once read, whether or not you apply it."
         },
         "publish": "Publish",
         "reopen-thread": "Reopen thread",

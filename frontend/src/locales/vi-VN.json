@@ -3030,7 +3030,7 @@
         "n-replies-hidden_other": "{{count}} phản hồi bị ẩn",
         "priority": {
           "p1": "Nguy hiểm nhưng hợp lệ. Cần có người chấp nhận.",
-          "p2": "Chỉ mang tính tham khảo."
+          "p2": "Một gợi ý. Hãy giải quyết sau khi đọc, dù có áp dụng hay không."
         },
         "publish": "Đăng",
         "reopen-thread": "Mở lại luồng",

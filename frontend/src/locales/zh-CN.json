@@ -3030,7 +3030,7 @@
         "n-replies-hidden_other": "已隐藏 {{count}} 条回复",
         "priority": {
           "p1": "有风险但合理，需要有人确认接受。",
-          "p2": "仅供参考。"
+          "p2": "建议项。阅读后即可解决，不要求采纳。"
         },
         "publish": "发布",
         "reopen-thread": "重新打开线程",

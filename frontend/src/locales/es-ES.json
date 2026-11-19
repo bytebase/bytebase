@@ -3030,7 +3030,7 @@
         "n-replies-hidden_other": "{{count}} respuestas ocultas",
         "priority": {
           "p1": "Peligroso pero legítimo. Una persona debe aceptarlo.",
-          "p2": "Solo informativo."
+          "p2": "Una sugerencia. Se resuelve tras leerla, se aplique o no."
         },
         "publish": "Publicar",
         "reopen-thread": "Reabrir hilo",

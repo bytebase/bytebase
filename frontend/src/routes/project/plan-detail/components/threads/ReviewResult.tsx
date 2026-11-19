@@ -115,7 +115,8 @@ export function ReviewPriorityBadge({
   );
 }
 
-// A priority's badge color and, for P1 and P2, what it means.
+// A priority's badge color and, for P1 and P2, what resolving its thread
+// means. Any open thread holds the rollout, whatever its priority.
 export function priorityStyle(
   t: TFunction,
   priority: IssueComment_ReviewMetadata_Priority
