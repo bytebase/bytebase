@@ -3139,3 +3139,40 @@ func TestViewDependencyQualificationSkipsAliasColumnList(t *testing.T) {
 	paths := []string{"$user", "public"}
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }
+
+// TestViewDependencyQualificationHandlesNonASCIIIdentifiers covers PostgreSQL's
+// non-ASCII unquoted identifiers.
+func TestViewDependencyQualificationHandlesNonASCIIIdentifiers(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("名", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        `SELECT * FROM public."名" JOIN 名 ON true`,
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "名"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."名"`)
+}
+
+// TestMarkSchemaRelationsAffected covers a removed schema: its tables, views,
+// materialized views and sequences become affected dependencies.
+func TestMarkSchemaRelationsAffected(t *testing.T) {
+	schema := &metadatapb.SchemaMetadata{
+		Name:              "gone",
+		Tables:            []*metadatapb.TableMetadata{{Name: "t"}},
+		Views:             []*metadatapb.ViewMetadata{{Name: "v"}},
+		MaterializedViews: []*metadatapb.MaterializedViewMetadata{{Name: "mv"}},
+		Sequences:         []*metadatapb.SequenceMetadata{{Name: "s"}},
+	}
+	affected := make(affectedColumnSet)
+	markSchemaRelationsAffected(affected, schema)
+	for _, key := range []string{"gone.t", "gone.v", "gone.mv", "gone.s"} {
+		require.Contains(t, affected, objectKey("gone", strings.TrimPrefix(key, "gone.")), key)
+	}
+}

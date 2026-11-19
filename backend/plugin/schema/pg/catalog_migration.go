@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"unicode"
+	"unicode/utf8"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/catalog"
@@ -1113,6 +1115,18 @@ func enumByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb.Enum
 	return nil
 }
 
+func startsUnquotedIdentifier(text string, index int) bool {
+	if index >= len(text) {
+		return false
+	}
+	r, _ := utf8.DecodeRuneInString(text[index:])
+	return isIdentifierRune(r)
+}
+
+func isIdentifierRune(r rune) bool {
+	return r == '_' || r == '$' || unicode.IsLetter(r) || unicode.IsDigit(r) || unicode.IsMark(r)
+}
+
 func isIdentifierByte(b byte) bool {
 	return b == '_' || b == '$' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9'
 }
@@ -1443,7 +1457,7 @@ func definitionTokens(text string) []definitionToken {
 				return tokens
 			}
 			i += 2 + end + 2
-		case text[i] == '"' || isIdentifierByte(text[i]):
+		case text[i] == '"' || startsUnquotedIdentifier(text, i):
 			name, next, quoted, ok := scanIdentifier(text, i)
 			if !ok {
 				i++
@@ -1836,6 +1850,8 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 			if affected[key] == nil {
 				affected[key] = make(map[string]bool)
 			}
+		case catalog.OpDropSchema:
+			markSchemaRelationsAffected(affected, schemaByName(oldMeta, op.SchemaName))
 		default:
 		}
 	}
@@ -2279,8 +2295,15 @@ func quotedIdentifier(text string, start int) (string, int, bool) {
 		return "", start, false
 	}
 	end := start
-	for end < len(text) && (isIdentifierByte(text[end]) || text[end] == '$') {
-		end++
+	for end < len(text) {
+		r, size := utf8.DecodeRuneInString(text[end:])
+		if r == utf8.RuneError && size == 1 {
+			break
+		}
+		if !isIdentifierRune(r) {
+			break
+		}
+		end += size
 	}
 	if end == start {
 		return "", start, false
@@ -2493,6 +2516,30 @@ func markAffectedPartitionColumn(affected affectedColumnSet, parentSchema string
 	forEachPartitionWithSchema(partitions, parentSchema, func(partition *metadatapb.TablePartitionMetadata, partitionSchema string) {
 		markAffectedColumn(affected, partitionSchema, partition.GetName(), columnName)
 	})
+}
+
+// markSchemaRelationsAffected marks every relation in a removed schema, whose
+// DROP SCHEMA ... CASCADE can remove retained dependents without an individual
+// relation drop op.
+func markSchemaRelationsAffected(affected affectedColumnSet, schema *metadatapb.SchemaMetadata) {
+	if schema == nil {
+		return
+	}
+	for _, table := range schema.GetTables() {
+		markAffected(affected, objectKey(schema.GetName(), table.GetName()))
+		forEachPartitionWithSchema(table.GetPartitions(), schema.GetName(), func(partition *metadatapb.TablePartitionMetadata, partitionSchema string) {
+			markAffected(affected, objectKey(partitionSchema, partition.GetName()))
+		})
+	}
+	for _, view := range schema.GetViews() {
+		markAffected(affected, objectKey(schema.GetName(), view.GetName()))
+	}
+	for _, view := range schema.GetMaterializedViews() {
+		markAffected(affected, objectKey(schema.GetName(), view.GetName()))
+	}
+	for _, sequence := range schema.GetSequences() {
+		markAffected(affected, objectKey(schema.GetName(), sequence.GetName()))
+	}
 }
 
 func dependsOnAffectedColumn(dependencies []*metadatapb.DependencyColumn, affected affectedColumnSet) bool {
