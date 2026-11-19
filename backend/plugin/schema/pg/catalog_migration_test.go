@@ -4532,3 +4532,30 @@ func TestViewDependencyQualificationScansRowsFromColumnTypes(t *testing.T) {
 	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
 	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
 }
+
+func TestViewDependencyQualificationSeesParenthesizedRegclassCasts(t *testing.T) {
+	paths := []string{"$user", "public"}
+	for _, definition := range []string{
+		"SELECT CAST(('t') AS regclass), 'public.t'::regclass FROM public.t",
+		"SELECT (('t'))::regclass, 'public.t'::regclass FROM public.t",
+		"SELECT regclass(('t')), 'public.t'::regclass FROM public.t",
+		"SELECT ARRAY['t', 'public.t']::regclass[] FROM public.t",
+		"SELECT '{t,public.t}'::regclass[] FROM public.t",
+		"SELECT CAST(ARRAY['t'] AS regclass[]), 'public.t'::regclass FROM public.t",
+	} {
+		meta := &metadatapb.DatabaseSchemaMetadata{
+			SearchPath: `"$user", public`,
+			Schemas: []*metadatapb.SchemaMetadata{{
+				Name:   "public",
+				Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+				Views: []*metadatapb.ViewMetadata{{
+					Name:              "w",
+					Definition:        definition,
+					DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+				}},
+			}},
+		}
+		err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+		require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`, definition)
+	}
+}

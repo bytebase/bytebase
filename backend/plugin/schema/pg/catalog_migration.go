@@ -1520,10 +1520,12 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 		}
 		if token.literal {
 			if token.regclass && (token.regclassQualified || builtinTypeWins(typeReference{object: identifier{name: token.regclassName}}, objects, searchPath)) {
-				if matched, unqualified := literalRelationReference(token.text, schemaName, objectName); matched {
-					qualified = true
-				} else if unqualified {
+				matched, unqualified := literalRelationReference(token.text, schemaName, objectName)
+				if unqualified {
 					return false
+				}
+				if matched {
+					qualified = true
 				}
 			}
 			continue
@@ -1532,28 +1534,49 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 			castEnd := skipParenthesized(tokens, i+1)
 			if asIndex := topLevelCastAS(tokens, i+2, castEnd); asIndex >= 0 {
 				if name, relationType, isRelationType := relationTypeAt(tokens, asIndex+1); isRelationType && (relationType || builtinTypeWins(typeReference{object: identifier{name: name}}, objects, searchPath)) {
-					if asIndex > i+2 && tokens[asIndex-1].literal {
-						if matched, unqualified := literalRelationReference(tokens[asIndex-1].text, schemaName, objectName); matched {
-							qualified = true
-						} else if unqualified {
-							return false
-						}
+					matched, unqualified := castExprRelationReference(tokens[i+2:asIndex], schemaName, objectName)
+					if unqualified {
+						return false
 					}
-				} else if _, matched, unqualified := typeReferenceAt(tokens, asIndex+1, schemaName, objectName, objects, searchPath); matched {
-					qualified = true
-				} else if unqualified {
-					return false
+					if matched {
+						qualified = true
+					}
+				} else {
+					_, matched, unqualified := typeReferenceAt(tokens, asIndex+1, schemaName, objectName, objects, searchPath)
+					if unqualified {
+						return false
+					}
+					if matched {
+						qualified = true
+					}
 				}
 			}
 		}
 		if token.punct == ':' && i+1 < len(tokens) && tokens[i+1].punct == ':' {
+			exprEnd := i
 			i += 2
 			if i < len(tokens) && tokens[i].punct == 0 {
+				if name, relationType, isRelationType := relationTypeAt(tokens, i); isRelationType && (relationType || builtinTypeWins(typeReference{object: identifier{name: name}}, objects, searchPath)) {
+					if exprStart := castOperandStart(tokens, exprEnd); exprStart < exprEnd {
+						matched, unqualified := castExprRelationReference(tokens[exprStart:exprEnd], schemaName, objectName)
+						if unqualified {
+							return false
+						}
+						if matched {
+							qualified = true
+						}
+					}
+					if i+2 < len(tokens) && tokens[i+1].punct == '.' && tokens[i+2].punct == 0 {
+						i += 2
+					}
+					continue
+				}
 				end, matched, unqualified := typeReferenceAt(tokens, i, schemaName, objectName, objects, searchPath)
+				if unqualified {
+					return false
+				}
 				if matched {
 					qualified = true
-				} else if unqualified {
-					return false
 				}
 				i = end
 			}
@@ -1649,24 +1672,39 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 			if i+2 < len(tokens) && tokens[i+1].punct == '.' && tokens[i+2].punct == 0 {
 				typeEnd = i + 2
 			}
-			if typeEnd+1 < len(tokens) && tokens[typeEnd+1].literal {
+			if typeEnd+1 < len(tokens) && (tokens[typeEnd+1].literal || tokens[typeEnd+1].punct == '(') {
 				if name, relationType, isRelationType := relationTypeAt(tokens, i); isRelationType && (relationType || builtinTypeWins(typeReference{object: identifier{name: name}}, objects, searchPath)) {
-					if matched, unqualified := literalRelationReference(tokens[typeEnd+1].text, schemaName, objectName); matched {
+					argEnd := typeEnd + 1
+					var argTokens []definitionToken
+					if tokens[typeEnd+1].literal {
+						argTokens = tokens[typeEnd+1 : typeEnd+2]
+					} else {
+						argEnd = skipParenthesized(tokens, typeEnd+1)
+						if argEnd > typeEnd+1 {
+							argTokens = tokens[typeEnd+2 : argEnd]
+						}
+					}
+					matched, unqualified := castExprRelationReference(argTokens, schemaName, objectName)
+					if unqualified {
+						return false
+					}
+					if matched {
+						qualified = true
+					}
+					if tokens[typeEnd+1].literal {
+						i = argEnd
+						continue
+					}
+				} else if tokens[typeEnd+1].literal {
+					end, matched, unqualified := typeReferenceAt(tokens, i, schemaName, objectName, objects, searchPath)
+					if matched {
 						qualified = true
 					} else if unqualified {
 						return false
 					}
-					i = typeEnd + 1
+					i = end
 					continue
 				}
-				end, matched, unqualified := typeReferenceAt(tokens, i, schemaName, objectName, objects, searchPath)
-				if matched {
-					qualified = true
-				} else if unqualified {
-					return false
-				}
-				i = end
-				continue
 			}
 		}
 		if !token.quoted && strings.EqualFold(token.text, "ROWS") && i+2 < len(tokens) && tokens[i+1].punct == 0 && !tokens[i+1].quoted && strings.EqualFold(tokens[i+1].text, "FROM") && tokens[i+2].punct == '(' {
@@ -1761,6 +1799,117 @@ func topLevelCastAS(tokens []definitionToken, start, end int) int {
 		}
 	}
 	return -1
+}
+
+// castOperandStart finds the start of a parenthesized expression or ARRAY[...]
+// constructor immediately preceding `::` at castIndex; bare literals are
+// already handled on the literal token itself unless comments intervened.
+func castOperandStart(tokens []definitionToken, castIndex int) int {
+	if castIndex <= 0 {
+		return castIndex
+	}
+	if tokens[castIndex-1].literal {
+		return castIndex - 1
+	}
+	if tokens[castIndex-1].punct == ']' {
+		depth := 0
+		for i := castIndex - 1; i >= 0; i-- {
+			switch tokens[i].punct {
+			case ']':
+				depth++
+			case '[':
+				depth--
+				if depth == 0 {
+					if i > 0 && tokens[i-1].punct == 0 && !tokens[i-1].quoted && strings.EqualFold(tokens[i-1].text, "ARRAY") {
+						return i - 1
+					}
+					return castIndex
+				}
+			default:
+			}
+		}
+		return castIndex
+	}
+	if tokens[castIndex-1].punct != ')' {
+		return castIndex
+	}
+	depth := 0
+	for i := castIndex - 1; i >= 0; i-- {
+		switch tokens[i].punct {
+		case ')':
+			depth++
+		case '(':
+			depth--
+			if depth == 0 {
+				if i > 0 && tokens[i-1].punct == 0 && (tokens[i-1].quoted || !expressionPrefixKeyword(tokens[i-1].text)) {
+					return castIndex
+				}
+				return i
+			}
+		default:
+		}
+	}
+	return castIndex
+}
+
+func expressionPrefixKeyword(word string) bool {
+	switch strings.ToUpper(word) {
+	case "SELECT", "DISTINCT", "ON", "FROM", "WHERE", "AND", "OR", "NOT", "IN", "IS", "CASE", "WHEN", "THEN", "ELSE", "AS", "JOIN", "USING", "HAVING", "LIMIT", "OFFSET", "VALUES", "RETURN", "RETURNING", "ARRAY":
+		return true
+	default:
+		return false
+	}
+}
+
+// castExprRelationReference inspects a literal, parenthesized literal, or
+// ARRAY[...] literal list cast to regclass/regtype.
+func castExprRelationReference(tokens []definitionToken, schemaName, objectName string) (bool, bool) {
+	for len(tokens) >= 2 && tokens[0].punct == '(' && tokens[len(tokens)-1].punct == ')' && skipParenthesized(tokens, 0) == len(tokens)-1 {
+		tokens = tokens[1 : len(tokens)-1]
+	}
+	for len(tokens) >= 3 && tokens[len(tokens)-3].punct == ':' && tokens[len(tokens)-2].punct == ':' && tokens[len(tokens)-1].punct == 0 {
+		typeWord := tokens[len(tokens)-1]
+		if !typeWord.quoted && (strings.EqualFold(typeWord.text, "text") || strings.EqualFold(typeWord.text, "varchar") || strings.EqualFold(typeWord.text, "bpchar") || strings.EqualFold(typeWord.text, "char") || strings.EqualFold(typeWord.text, "character") || strings.EqualFold(typeWord.text, "name")) {
+			tokens = tokens[:len(tokens)-3]
+			for len(tokens) >= 2 && tokens[0].punct == '(' && tokens[len(tokens)-1].punct == ')' && skipParenthesized(tokens, 0) == len(tokens)-1 {
+				tokens = tokens[1 : len(tokens)-1]
+			}
+			continue
+		}
+		break
+	}
+	if len(tokens) == 1 && tokens[0].literal {
+		return literalRelationReference(tokens[0].text, schemaName, objectName)
+	}
+	if len(tokens) >= 3 && tokens[0].punct == 0 && !tokens[0].quoted && strings.EqualFold(tokens[0].text, "ARRAY") && tokens[1].punct == '[' && tokens[len(tokens)-1].punct == ']' {
+		qualified, unqualified := false, false
+		inner := tokens[2 : len(tokens)-1]
+		start, depth := 0, 0
+		for i := 0; i <= len(inner); i++ {
+			if i < len(inner) {
+				switch inner[i].punct {
+				case '(', '[':
+					depth++
+					continue
+				case ')', ']':
+					depth--
+					continue
+				case ',':
+					if depth != 0 {
+						continue
+					}
+				default:
+					continue
+				}
+			}
+			elemQualified, elemUnqualified := castExprRelationReference(inner[start:i], schemaName, objectName)
+			qualified = qualified || elemQualified
+			unqualified = unqualified || elemUnqualified
+			start = i + 1
+		}
+		return qualified, unqualified
+	}
+	return false, false
 }
 
 func typeReferenceAt(tokens []definitionToken, index int, schemaName, objectName string, objects map[string]bool, searchPath []string) (int, bool, bool) {
