@@ -215,7 +215,6 @@ export function EditColumnForeignKeySheet({
                   value={refSchemaName}
                   onChange={(val) => handleSchemaChange(val as string)}
                   options={schemaOptions}
-                  portal
                 />
               </FormField>
             )}
@@ -224,7 +223,6 @@ export function EditColumnForeignKeySheet({
                 value={refTableName ?? ""}
                 onChange={(val) => handleTableChange((val as string) || null)}
                 options={tableOptions}
-                portal
               />
             </FormField>
             <FormField title={t("schema-editor.foreign-key.referenced-column")}>
@@ -232,7 +230,6 @@ export function EditColumnForeignKeySheet({
                 value={refColumnName ?? ""}
                 onChange={(val) => setRefColumnName((val as string) || null)}
                 options={columnOptions}
-                portal
               />
             </FormField>
           </FormFieldGroup>

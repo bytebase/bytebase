@@ -56,8 +56,8 @@ describe("SelectionActionBar", () => {
         />
       );
     });
-    expect(container.textContent ?? "").not.toContain("0 selected");
-    expect(container.querySelector("[role='toolbar']")).toBeNull();
+    expect(document.body.textContent ?? "").not.toContain("0 selected");
+    expect(document.body.querySelector("[role='toolbar']")).toBeNull();
   });
 
   test("can render at 0 selected when forced visible", async () => {
@@ -73,9 +73,9 @@ describe("SelectionActionBar", () => {
         />
       );
     });
-    expect(container.textContent).toContain("0 selected");
-    expect(container.textContent).toContain("Cancel");
-    const checkbox = container.querySelector<HTMLButtonElement>(
+    expect(document.body.textContent).toContain("0 selected");
+    expect(document.body.textContent).toContain("Cancel");
+    const checkbox = document.body.querySelector<HTMLButtonElement>(
       '[role="checkbox"]'
     );
     expect(checkbox).not.toBeNull();
@@ -109,9 +109,9 @@ describe("SelectionActionBar", () => {
         />
       );
     });
-    expect(container.textContent).toContain("2 selected");
-    expect(container.textContent).toContain("Archive");
-    expect(container.textContent).toContain("Delete");
+    expect(document.body.textContent).toContain("2 selected");
+    expect(document.body.textContent).toContain("Archive");
+    expect(document.body.textContent).toContain("Delete");
   });
 
   test("pins to the viewport above the visible main content", async () => {
@@ -127,7 +127,9 @@ describe("SelectionActionBar", () => {
       );
     });
 
-    const bar = container.firstElementChild;
+    expect(container.firstElementChild).toBeNull();
+    const bar = document.getElementById("bb-react-layer-overlay")
+      ?.firstElementChild;
     expect(bar).toHaveClass("fixed", "bottom-6", "-translate-x-1/2");
   });
 
@@ -167,11 +169,11 @@ describe("SelectionActionBar", () => {
     });
 
 	    const bar = container.firstElementChild;
-	    const checkbox = container.querySelector<HTMLButtonElement>(
+	    const checkbox = document.body.querySelector<HTMLButtonElement>(
 	      '[role="checkbox"]'
 	    );
-	    expect(container.textContent).not.toContain("1 selected");
-	    expect(container.textContent).toContain("Delete");
+	    expect(document.body.textContent).not.toContain("1 selected");
+	    expect(document.body.textContent).toContain("Delete");
 	    expect(checkbox?.getAttribute("aria-label")).toBe("1 selected");
 	    expect(bar).toHaveClass("flex-wrap", "px-2", "py-1.5");
 	  });
@@ -197,9 +199,9 @@ describe("SelectionActionBar", () => {
         />
       );
     });
-    expect(container.textContent).toContain("AlphaAction");
-    expect(container.textContent).not.toContain("BetaAction");
-    const gamma = Array.from(container.querySelectorAll("button")).find((b) =>
+    expect(document.body.textContent).toContain("AlphaAction");
+    expect(document.body.textContent).not.toContain("BetaAction");
+    const gamma = Array.from(document.body.querySelectorAll("button")).find((b) =>
       b.textContent?.includes("GammaAction")
     );
     expect(gamma).toBeDefined();
@@ -219,7 +221,7 @@ describe("SelectionActionBar", () => {
         />
       );
     });
-    const btn = Array.from(container.querySelectorAll("button")).find((b) =>
+    const btn = Array.from(document.body.querySelectorAll("button")).find((b) =>
       b.textContent?.includes("ActionLabel")
     )!;
     await act(async () => {
@@ -242,7 +244,7 @@ describe("SelectionActionBar", () => {
       );
     });
     const checkbox =
-      container.querySelector<HTMLButtonElement>('[role="checkbox"]')!;
+      document.body.querySelector<HTMLButtonElement>('[role="checkbox"]')!;
     await act(async () => {
       checkbox.click();
     });
@@ -268,7 +270,7 @@ describe("SelectionActionBar", () => {
         />
       );
     });
-    const btn = Array.from(container.querySelectorAll("button")).find((b) =>
+    const btn = Array.from(document.body.querySelectorAll("button")).find((b) =>
       b.textContent?.includes("DestructiveAction")
     )!;
     expect(btn.className).toContain("text-error");
@@ -302,11 +304,11 @@ describe("SelectionActionBar", () => {
       "Action4",
       "Action5",
     ]) {
-      expect(container.textContent ?? "").toContain(label);
+      expect(document.body.textContent ?? "").toContain(label);
     }
-    expect(container.textContent ?? "").not.toContain("Action6");
-    expect(container.textContent ?? "").not.toContain("Action7");
-    const moreButton = container.querySelector("button[aria-label]");
+    expect(document.body.textContent ?? "").not.toContain("Action6");
+    expect(document.body.textContent ?? "").not.toContain("Action7");
+    const moreButton = document.body.querySelector("button[aria-label]");
     expect(moreButton).not.toBeNull();
   });
 
@@ -332,9 +334,9 @@ describe("SelectionActionBar", () => {
         />
       );
     });
-    expect(container.textContent ?? "").toContain("InlineOnly");
-    expect(container.textContent ?? "").not.toContain("Overflow1");
-    expect(container.textContent ?? "").not.toContain("Overflow2");
+    expect(document.body.textContent ?? "").toContain("InlineOnly");
+    expect(document.body.textContent ?? "").not.toContain("Overflow1");
+    expect(document.body.textContent ?? "").not.toContain("Overflow2");
   });
 
   test("hidden actions don't count toward maxVisible", async () => {
@@ -359,9 +361,9 @@ describe("SelectionActionBar", () => {
         />
       );
     });
-    expect(container.textContent ?? "").toContain("VisibleA");
-    expect(container.textContent ?? "").not.toContain("HiddenA");
-    const moreButton = container.querySelector("button[aria-label]");
+    expect(document.body.textContent ?? "").toContain("VisibleA");
+    expect(document.body.textContent ?? "").not.toContain("HiddenA");
+    const moreButton = document.body.querySelector("button[aria-label]");
     expect(moreButton).toBeNull();
   });
 
@@ -398,10 +400,10 @@ describe("SelectionActionBar", () => {
         />
       );
     });
-    expect(container.textContent ?? "").toContain("ActionAlpha");
-    expect(container.textContent ?? "").toContain("ActionBeta");
-    expect(container.textContent ?? "").toContain("ActionGamma");
-    const moreButton = container.querySelector("button[aria-label]");
+    expect(document.body.textContent ?? "").toContain("ActionAlpha");
+    expect(document.body.textContent ?? "").toContain("ActionBeta");
+    expect(document.body.textContent ?? "").toContain("ActionGamma");
+    const moreButton = document.body.querySelector("button[aria-label]");
     expect(moreButton).toBeNull();
   });
 
@@ -425,7 +427,7 @@ describe("SelectionActionBar", () => {
         />
       );
     });
-    const btn = Array.from(container.querySelectorAll("button")).find((b) =>
+    const btn = Array.from(document.body.querySelectorAll("button")).find((b) =>
       b.textContent?.includes("BlockedAction")
     );
     expect(btn).toBeDefined();

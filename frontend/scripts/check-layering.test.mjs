@@ -221,6 +221,47 @@ export function FeatureOverlay() {
     );
   });
 
+  test("flags layer classes on content rendered inline", () => {
+    const violations = scanSource(
+      [
+        'import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";',
+        "",
+        "export function Dropdown() {",
+        '  return <div className={cn("absolute mt-1", LAYER_SURFACE_CLASS)} />;',
+        "}",
+        "",
+      ].join("\n"),
+      FEATURE_FILE
+    );
+
+    expect(violations).toEqual([
+      expect.objectContaining({
+        lineNumber: 4,
+        reason: "layer stacking class used outside a getLayerRoot mount",
+      }),
+    ]);
+  });
+
+  test("allows layer classes on content mounted into a layer root", () => {
+    const violations = scanSource(
+      [
+        'import { createPortal } from "react-dom";',
+        'import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";',
+        "",
+        "export function Dropdown() {",
+        "  return createPortal(",
+        '    <div className={cn("fixed", LAYER_SURFACE_CLASS)} />,',
+        '    getLayerRoot("overlay")',
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+      FEATURE_FILE
+    );
+
+    expect(violations).toEqual([]);
+  });
+
   test("allows semantic layer owners to manage raw layers", () => {
     const violations = scanSource(
       `

@@ -294,7 +294,6 @@ function AccessGrantRequestDrawerInner({
           >
             <DatabaseSelect
               multiple
-              portal
               value={targets}
               onChange={setTargets}
               projectName={project as string}
@@ -374,7 +373,6 @@ function AccessGrantRequestDrawerInner({
             }
           >
             <Combobox
-              portal
               value={String(duration)}
               onChange={(val) => setDuration(Number(val))}
               options={durationOptions}

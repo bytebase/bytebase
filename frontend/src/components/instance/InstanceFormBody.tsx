@@ -1777,7 +1777,6 @@ export function InstanceFormBody({
             {/* Environment */}
             <FormField title={t("common.environment")}>
               <EnvironmentSelect
-                portal
                 className="w-full"
                 value={
                   isValidEnvironmentName(

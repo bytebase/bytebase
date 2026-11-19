@@ -69,7 +69,6 @@ export function DirectExecutionField({
           </span>
           <EnvironmentSelect
             multiple
-            portal
             value={environments}
             onChange={(next) => onChange({ enabled, environments: next })}
             placeholder={t(

@@ -93,6 +93,53 @@ describe("AdvancedSearch", () => {
     expect(screen.getByText("common.search-no-result")).toBeInTheDocument();
   });
 
+  test("renders the menu in the overlay layer and keeps it open while picking a value", () => {
+    const onParamsChange = vi.fn();
+    const view = render(
+      <AdvancedSearch
+        params={emptySearchParams()}
+        scopeOptions={[
+          {
+            id: "state",
+            title: "State",
+            options: [{ value: "OPEN", keywords: ["open"] }],
+          },
+        ]}
+        onParamsChange={onParamsChange}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("textbox"));
+    const scope = screen.getByText("state");
+    expect(view.container.contains(scope)).toBe(false);
+    fireEvent.mouseDown(scope);
+    fireEvent.click(scope);
+    const value = screen.getByText("OPEN");
+    fireEvent.mouseDown(value);
+    fireEvent.click(value);
+
+    expect(onParamsChange).toHaveBeenCalledWith({
+      query: "",
+      scopes: [{ id: "state", value: "OPEN" }],
+    });
+  });
+
+  test("closes the menu on a press outside the search and its menu", () => {
+    render(
+      <AdvancedSearch
+        params={emptySearchParams()}
+        scopeOptions={[{ id: "state", title: "State" }]}
+        onParamsChange={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("textbox"));
+    expect(screen.getByText("state")).toBeInTheDocument();
+    fireEvent.mouseDown(document.body);
+
+    expect(screen.queryByText("state")).not.toBeInTheDocument();
+  });
+
   test("scrolls the pending value option into view when navigating by keyboard", () => {
     const scrollIntoView = vi.fn();
     const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
