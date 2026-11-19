@@ -255,7 +255,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if profile.SQLReviewV2 {
 		ruleReviewExecutor = reviewrun.NewRuleExecutor(stores)
 	}
-	reviewExecutor := reviewrun.NewReviewExecutor(stores, ruleReviewExecutor, reviewrun.NewAIReviewExecutor(stores, ruleReviewCovers))
+	reviewExecutor := reviewrun.NewReviewExecutor(stores, s.licenseService, ruleReviewExecutor, reviewrun.NewAIReviewExecutor(stores, s.licenseService, ruleReviewCovers))
 	s.reviewRunScheduler = reviewrun.NewScheduler(stores, s.bus, profile, s.licenseService, productMetrics, reviewExecutor)
 	s.notifyListener = notifylistener.NewListener(stores.GetDB(), s.bus)
 

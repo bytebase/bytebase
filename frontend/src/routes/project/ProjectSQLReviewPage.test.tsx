@@ -19,6 +19,7 @@ import {
   ReviewRulePolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { formFieldSectionGapStyle } from "@/components/ui/styles.stylex";
 
 const WORKSPACE = "workspaces/ws";
@@ -37,6 +38,7 @@ const mocks = vi.hoisted(() => ({
   fetchPolicy: vi.fn(),
   pushNotification: vi.fn(),
   sqlReviewV2: true,
+  licensed: true,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -45,7 +47,14 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
+  usePlanFeature: () => mocks.licensed,
   useWorkspaceResourceName: () => "workspaces/ws",
+}));
+
+vi.mock("@/components/FeatureAttention", () => ({
+  FeatureAttention: ({ feature }: { feature: number }) => (
+    <div role="note">feature-attention-{feature}</div>
+  ),
 }));
 
 vi.mock("@/hooks/useProjectByName", () => ({
@@ -263,6 +272,7 @@ describe("ProjectSQLReviewPage", () => {
     mocks.fetchPolicy.mockReset();
     mocks.pushNotification.mockReset();
     mocks.sqlReviewV2 = true;
+    mocks.licensed = true;
     seedPolicies({ [WORKSPACE]: workspacePolicy() });
     seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: true });
   });
@@ -427,6 +437,27 @@ describe("ProjectSQLReviewPage", () => {
 
       expect(mocks.deletePolicy).toHaveBeenCalledWith(aiName(PROJECT));
       expect(mocks.upsertPolicy).not.toHaveBeenCalled();
+    });
+
+    test("without the Enterprise plan the review is off and asks for the plan", async () => {
+      mocks.licensed = false;
+      seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: true });
+      render(<ProjectSQLReviewPage projectId="p" />);
+
+      expect(
+        screen.getByText(
+          `feature-attention-${PlanFeature.FEATURE_AI_SQL_REVIEW}`
+        )
+      ).toBeInTheDocument();
+      expect(await aiCustomize()).toHaveAttribute("data-disabled");
+      expect(
+        aiReviewRow().getByText("sql-review.standard-rules.off")
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("textbox", {
+          name: "sql-review.ai-review.policy.project-self",
+        })
+      ).not.toBeInTheDocument();
     });
 
     test("cannot be customized while AI is off for the workspace", async () => {

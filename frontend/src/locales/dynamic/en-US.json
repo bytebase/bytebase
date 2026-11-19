@@ -33,6 +33,10 @@
         "desc": "Get AI-powered query suggestions and index recommendations.",
         "title": "AI query suggestions"
       },
+      "FEATURE_AI_SQL_REVIEW": {
+        "desc": "An AI model reviews the SQL of each issue against your policies and comments on the risks it finds.",
+        "title": "AI SQL review"
+      },
       "FEATURE_API_INTEGRATION_GUIDANCE": {
         "desc": "Documentation and guidance for API integrations.",
         "title": "API integration guidance"

@@ -26229,6 +26229,7 @@ components:
         - FEATURE_EMAIL_SUPPORT
         - FEATURE_DEDICATED_SUPPORT_WITH_SLA
         - FEATURE_SHAREPOINT_EXPORT
+        - FEATURE_AI_SQL_REVIEW
       description: PlanFeature represents the available features in Bytebase
     bytebase.v1.PlanLimitConfig:
       type: object

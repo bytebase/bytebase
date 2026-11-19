@@ -14,6 +14,11 @@ const mocks = vi.hoisted(() => ({
     | undefined,
   policies: {} as Record<string, Policy>,
   fetch: vi.fn(),
+  licensed: true,
+}));
+
+vi.mock("@/hooks/useAppState", () => ({
+  usePlanFeature: () => mocks.licensed,
 }));
 
 vi.mock("@/stores/app", () => {
@@ -62,6 +67,7 @@ beforeEach(() => {
   mocks.serverInfo = { aiEnabled: true, aiSqlReviewEnabled: false };
   mocks.policies = {};
   mocks.fetch.mockReset();
+  mocks.licensed = true;
 });
 
 describe("useAIReviewOn", () => {
@@ -91,6 +97,13 @@ describe("useAIReviewOn", () => {
     projectPolicy(true);
     expect(reviewOn()).toBe(false);
     expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  test("is off without the Enterprise plan, whatever the switches say", () => {
+    mocks.licensed = false;
+    mocks.serverInfo = { aiEnabled: true, aiSqlReviewEnabled: true };
+    projectPolicy(true);
+    expect(reviewOn()).toBe(false);
   });
 
   test("reads the project's AI review policy", () => {

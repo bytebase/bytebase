@@ -528,7 +528,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	// The review starts before the workflow, whose approval check can create
 	// the rollout: a slot already in place holds it until the review is done.
 	if created {
-		startReview(ctx, s.profile, s.store, s.bus, issue)
+		startReview(ctx, s.profile, s.store, s.licenseService, s.bus, issue)
 	}
 	if created && !issue.Payload.GetDraft() {
 		issue, err = startIssueWorkflow(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)
@@ -1038,7 +1038,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 				// SQL Review V2 reviews a draft already, so only the AI review
 				// of a server without it starts here.
 				if !s.profile.SQLReviewV2 {
-					startReview(ctx, s.profile, s.store, s.bus, issue)
+					startReview(ctx, s.profile, s.store, s.licenseService, s.bus, issue)
 				}
 			case review.IssueCreatedEvent:
 				emitIssueCreated(ctx, s.webhookManager, submissionResult.Project, user.Name, user.Email, issue)

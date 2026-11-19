@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/app/router/handles";
+import { FeatureAttention } from "@/components/FeatureAttention";
 import { ProjectPageLayout } from "@/components/ProjectPageLayout";
 import { RouterLink } from "@/components/RouterLink";
 import {
@@ -21,7 +22,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FormFieldGroup, FormSection } from "@/components/ui/form";
 import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
-import { useWorkspaceResourceName } from "@/hooks/useAppState";
+import { usePlanFeature, useWorkspaceResourceName } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/stores";
@@ -34,6 +35,7 @@ import {
   ReviewRulePolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
 
@@ -212,6 +214,8 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
   // AI itself is on or off for the whole workspace. Within it, the project
   // follows the workspace's AI review switch unless it has a switch of its
   // own, which lives in the project's AI review policy.
+  // The AI review is an Enterprise feature: without it the review is off.
+  const licensed = usePlanFeature(PlanFeature.FEATURE_AI_SQL_REVIEW);
   const aiEnabled = useAppStore(
     (state) => state.serverInfo?.aiEnabled === true
   );
@@ -227,8 +231,9 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
   });
   const aiReviewCustomized = aiReviewPolicy.enabled !== undefined;
   const aiReviewOn =
-    aiEnabled && (aiReviewPolicy.enabled ?? workspaceAIReviewOn);
+    licensed && aiEnabled && (aiReviewPolicy.enabled ?? workspaceAIReviewOn);
   const aiReviewLocked =
+    !licensed ||
     !aiEnabled ||
     !aiReviewPolicy.loaded ||
     !aiReviewPolicy.canEdit ||
@@ -328,7 +333,10 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
         title={t("sql-review.ai-review.self")}
         description={t("sql-review.ai-review.project-description")}
       >
-        {!aiEnabled && (
+        {!licensed && (
+          <FeatureAttention feature={PlanFeature.FEATURE_AI_SQL_REVIEW} />
+        )}
+        {licensed && !aiEnabled && (
           <Alert
             variant="warning"
             description={t("sql-review.ai-review.ai-off")}
@@ -369,7 +377,7 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
             description={t("sql-review.ai-review.enable.description")}
             checked={aiReviewOn}
             onCheckedChange={aiReviewPolicy.setEnabled}
-            readOnly={!aiReviewCustomized || !aiEnabled}
+            readOnly={!aiReviewCustomized || !licensed || !aiEnabled}
             disabled={aiReviewLocked}
           />
           {aiReviewOn && (

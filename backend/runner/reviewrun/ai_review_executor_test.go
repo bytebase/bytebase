@@ -40,6 +40,7 @@ func TestCISampleBoundsBothReviewers(t *testing.T) {
 	stores, issues := setupReviewFixture(ctx, t, 1)
 	model := &findingModel{}
 	executor := &AIReviewExecutor{
+		license:  licenseStub{},
 		store:    stores,
 		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
@@ -87,6 +88,7 @@ func TestAIReviewRunsShareTheServerLimit(t *testing.T) {
 	model := &blockingModel{entered: make(chan struct{}, total), release: make(chan struct{})}
 	slots := &observedSlots{Weighted: semaphore.NewWeighted(limit), waiting: make(chan struct{}, total)}
 	executor := &AIReviewExecutor{
+		license:  licenseStub{},
 		store:    stores,
 		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 		slots:    slots,
@@ -132,6 +134,7 @@ func TestAIReviewKeepsTheThreadOfAProblemReportedAgain(t *testing.T) {
 	stores, issues := setupReviewFixture(ctx, t, 1)
 	model := &findingModel{}
 	executor := &AIReviewExecutor{
+		license:  licenseStub{},
 		store:    stores,
 		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
@@ -357,6 +360,7 @@ func TestAIReviewStatesTheStandardRules(t *testing.T) {
 	} {
 		model := &systemPromptModel{}
 		executor := &AIReviewExecutor{
+			license:          licenseStub{},
 			store:            stores,
 			newModel:         func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 			slots:            semaphore.NewWeighted(aiReviewServerConcurrency),
@@ -390,6 +394,7 @@ func TestAIReviewStopsWhenSwitchedOffBeforeItPosts(t *testing.T) {
 		_, switchOffErr = stores.UpsertSetting(ctx, &store.SettingMessage{Name: storepb.SettingName_AI, Workspace: "ws", Value: &storepb.AISetting{Enabled: true}})
 	}}
 	executor := &AIReviewExecutor{
+		license:  licenseStub{},
 		store:    stores,
 		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
@@ -401,6 +406,24 @@ func TestAIReviewStopsWhenSwitchedOffBeforeItPosts(t *testing.T) {
 	require.Empty(t, comments)
 }
 
+func TestAIReviewNeedsTheEnterprisePlan(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	stores, issues := setupReviewFixture(ctx, t, 1)
+	model := &findingModel{}
+	executor := &AIReviewExecutor{
+		store:    stores,
+		license:  withoutEnterprise,
+		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
+		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+	}
+	comments, err := executor.RunOnce(ctx, "p", issues[0])
+	require.NoError(t, err, "a plan without the AI review is the review switched off")
+	require.Empty(t, comments)
+	require.Zero(t, model.calls.Load())
+	require.ErrorContains(t, executor.checkAISetting(ctx, "ws", "p"), "ENTERPRISE", "a run in flight stops at its next model call")
+}
+
 func TestAIReviewExecutorSortsItsResults(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -408,6 +431,7 @@ func TestAIReviewExecutorSortsItsResults(t *testing.T) {
 	// One database: no merge and no summary, so each finding is a result.
 	setCISamplingSize(ctx, t, stores, 1)
 	executor := &AIReviewExecutor{
+		license:  licenseStub{},
 		store:    stores,
 		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return advisoryFirstModel{} },
 		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
@@ -431,6 +455,7 @@ func TestAIReviewPostsTheMostImportantProblems(t *testing.T) {
 	setCISamplingSize(ctx, t, stores, 2)
 	model := &overLimitModel{}
 	executor := &AIReviewExecutor{
+		license:  licenseStub{},
 		store:    stores,
 		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
@@ -605,7 +630,7 @@ func TestAIReviewExecutorChecksTheSettingAgain(t *testing.T) {
 		})
 		require.NoError(t, err)
 	}
-	executor := NewAIReviewExecutor(stores, ReviewsEngine)
+	executor := NewAIReviewExecutor(stores, licenseStub{}, ReviewsEngine)
 
 	// Switched off, the run ends with no finding before it reaches the
 	// target, which does not exist in this fixture.

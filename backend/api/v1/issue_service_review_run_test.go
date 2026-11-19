@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/webhook"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
@@ -277,6 +278,7 @@ func TestRunReviewWithoutSQLReviewV2(t *testing.T) {
 	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
 	service := newIssueServiceForTest(t, stores)
 	service.profile = &config.Profile{}
+	service.licenseService = newEnterpriseLicenseService(ctx, t, stores)
 	runReview := func() (*connect.Response[v1pb.ReviewRun], error) {
 		return service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{
 			Name: reviewRunName("project-a", issue.UID),
@@ -329,13 +331,14 @@ func TestStartReview(t *testing.T) {
 		return attempts
 	}
 	sqlReviewV2 := &config.Profile{SQLReviewV2: true}
+	licenseService := newEnterpriseLicenseService(ctx, t, stores)
 
 	issue := createReviewRunIssue(ctx, t, stores, "project-a")
-	startReview(ctx, &config.Profile{}, stores, b, issue)
+	startReview(ctx, &config.Profile{}, stores, licenseService, b, issue)
 	require.Empty(t, claimedAttempts(), "without SQL Review V2 the review is the AI review, which is off")
 	require.Empty(t, b.ReviewRunTickleChan)
 
-	startReview(ctx, sqlReviewV2, stores, b, issue)
+	startReview(ctx, sqlReviewV2, stores, licenseService, b, issue)
 	require.Equal(t, []int64{0}, claimedAttempts())
 	require.Len(t, b.ReviewRunTickleChan, 1)
 
@@ -345,13 +348,13 @@ func TestStartReview(t *testing.T) {
 		Value:     &storepb.AISetting{Enabled: true, SqlReviewEnabled: true},
 	})
 	require.NoError(t, err)
-	startReview(ctx, sqlReviewV2, stores, b, issue)
+	startReview(ctx, sqlReviewV2, stores, licenseService, b, issue)
 	require.Equal(t, []int64{1}, claimedAttempts(), "the review is one run with the AI review on too")
 
 	issue.Status = storepb.Issue_DONE
-	startReview(ctx, sqlReviewV2, stores, b, issue)
+	startReview(ctx, sqlReviewV2, stores, licenseService, b, issue)
 	require.Empty(t, claimedAttempts(), "a closed issue is skipped")
-	startReview(ctx, sqlReviewV2, stores, b, nil)
+	startReview(ctx, sqlReviewV2, stores, licenseService, b, nil)
 	require.Empty(t, claimedAttempts(), "a plan with no issue is skipped")
 }
 
@@ -506,9 +509,10 @@ func TestAIReviewStartsOnceTheIssueIsSubmitted(t *testing.T) {
 
 	issueService := newIssueServiceForTest(t, stores)
 	issueService.profile = &config.Profile{}
+	issueService.licenseService = newEnterpriseLicenseService(ctx, t, stores)
 	iamManager, err := iam.NewManager(stores, nil, false)
 	require.NoError(t, err)
-	planService := NewPlanService(stores, issueService.bus, iamManager, webhook.NewManager(stores, nil), nil, &config.Profile{})
+	planService := NewPlanService(stores, issueService.bus, iamManager, webhook.NewManager(stores, nil), issueService.licenseService, &config.Profile{})
 	getRun := func(issueUID int64) *store.ReviewRunMessage {
 		t.Helper()
 		run, err := stores.GetReviewRun(ctx, projectID, issueUID)
@@ -598,6 +602,7 @@ func TestAIReviewFollowsTheProjectSwitch(t *testing.T) {
 	plan, _ := createReviewablePlan(ctx, t, stores, projectID)
 	issueService := newIssueServiceForTest(t, stores)
 	issueService.profile = &config.Profile{}
+	issueService.licenseService = newEnterpriseLicenseService(ctx, t, stores)
 
 	setProjectSwitch := func(enabled bool, enforce bool) {
 		t.Helper()
@@ -654,6 +659,15 @@ func TestAIReviewFollowsTheProjectSwitch(t *testing.T) {
 	setProjectSwitch(false, false)
 	_, started = createIssue()
 	require.True(t, started, "a project policy that is not enforced follows the workspace")
+
+	freeLicenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+	issueService.licenseService = freeLicenseService
+	issueUID, started = createIssue()
+	require.False(t, started, "a plan without the AI review reviews nothing")
+	_, err = issueService.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: reviewRunName(projectID, issueUID)}))
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+	require.ErrorContains(t, err, "FEATURE_AI_SQL_REVIEW")
 }
 
 func TestGetReviewRunReportsAnOutdatedRun(t *testing.T) {

@@ -491,6 +491,13 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 // save cannot restore a field outside its mask from a stale read, such as
 // turning AI or the AI SQL review back on after another admin turned it off.
 // Workspace creation does not seed this row, so a missing row starts empty.
+// turnsOnAIReview reports whether an AI setting update switches the AI SQL
+// review on, which the workspace's plan has to include. Switching it off needs
+// no plan.
+func turnsOnAIReview(payload *storepb.AISetting, paths []string) bool {
+	return slices.Contains(paths, "value.ai.sql_review_enabled") && payload.GetSqlReviewEnabled()
+}
+
 func (s *SettingService) updateAISetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string) (*connect.Response[v1pb.Setting], error) {
 	if request.Msg.UpdateMask == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
@@ -499,6 +506,11 @@ func (s *SettingService) updateAISetting(ctx context.Context, request *connect.R
 	paths := request.Msg.UpdateMask.Paths
 	if s.profile.SaaS && !canUpdateAISettingInSaaS(paths) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("only the AI SQL review can be changed in SaaS mode"))
+	}
+	if turnsOnAIReview(payload, paths) {
+		if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AI_SQL_REVIEW); err != nil {
+			return nil, connect.NewError(connect.CodePermissionDenied, err)
+		}
 	}
 
 	if request.Msg.ValidateOnly {

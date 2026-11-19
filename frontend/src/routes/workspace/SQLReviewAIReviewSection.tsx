@@ -3,6 +3,7 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/app/router/handles";
+import { FeatureAttention } from "@/components/FeatureAttention";
 import { RouterLink } from "@/components/RouterLink";
 import {
   type ReviewAIPolicyDraft,
@@ -12,7 +13,11 @@ import {
 import { SwitchRow } from "@/components/sql-review/SwitchRow";
 import { Alert } from "@/components/ui/alert";
 import { FormFieldGroup, FormSection } from "@/components/ui/form";
-import { useServerState, useWorkspaceResourceName } from "@/hooks/useAppState";
+import {
+  usePlanFeature,
+  useServerState,
+  useWorkspaceResourceName,
+} from "@/hooks/useAppState";
 import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
@@ -24,6 +29,7 @@ import {
   Setting_SettingName,
   SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export interface WorkspaceAIReview {
@@ -123,6 +129,10 @@ export function SQLReviewAIReviewSection({
 }) {
   const { t } = useTranslation();
   const { isSaaSMode } = useServerState();
+  // The AI review is an Enterprise feature: without it the review is off,
+  // whatever the switch says.
+  const licensed = usePlanFeature(PlanFeature.FEATURE_AI_SQL_REVIEW);
+  const reviewOn = licensed && aiReview.aiEnabled && aiReview.enabled;
   // AI is turned on in the general settings, whose AI section shows its
   // controls only to a user who can open that page and read the AI setting.
   const canTurnOnAI =
@@ -142,7 +152,10 @@ export function SQLReviewAIReviewSection({
           : t("sql-review.ai-review.comments-description")
       }
     >
-      {!aiReview.aiEnabled && (
+      {!licensed && (
+        <FeatureAttention feature={PlanFeature.FEATURE_AI_SQL_REVIEW} />
+      )}
+      {licensed && !aiReview.aiEnabled && (
         <Alert
           variant="warning"
           description={
@@ -174,12 +187,12 @@ export function SQLReviewAIReviewSection({
           className="rounded-sm border border-block-border px-4 py-3"
           title={t("sql-review.ai-review.enable.self")}
           description={t("sql-review.ai-review.enable.description")}
-          checked={aiReview.aiEnabled && aiReview.enabled}
+          checked={reviewOn}
           onCheckedChange={aiReview.setEnabled}
           disabled={aiReview.saving}
-          readOnly={!aiReview.canEdit}
+          readOnly={!licensed || !aiReview.canEdit}
         />
-        {aiReview.aiEnabled && aiReview.enabled && (
+        {reviewOn && (
           <ReviewAIPolicyField
             policy={policy}
             placeholder={t("sql-review.ai-review.policy.placeholder")}

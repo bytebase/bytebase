@@ -1048,6 +1048,13 @@ export enum PlanFeature {
    * @generated from enum value: FEATURE_SHAREPOINT_EXPORT = 72;
    */
   FEATURE_SHAREPOINT_EXPORT = 72,
+
+  /**
+   * An AI model reviews the SQL of an issue.
+   *
+   * @generated from enum value: FEATURE_AI_SQL_REVIEW = 73;
+   */
+  FEATURE_AI_SQL_REVIEW = 73,
 }
 
 /**

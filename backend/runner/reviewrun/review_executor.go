@@ -7,17 +7,25 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/rpc/code"
 
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/ai"
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+// LicenseChecker reports why a workspace's plan lacks a feature, or nil when
+// it has it. enterprise.LicenseService implements it.
+type LicenseChecker interface {
+	IsFeatureEnabled(ctx context.Context, workspaceID string, f v1pb.PlanFeature) error
+}
 
 // ReviewExecutor runs an issue's review as one job: the standard rules, then
 // the AI review while the workspace allows it. The results of both post
 // together, or on an error none does. The rules run first, so their failure
 // ends the job before any model call.
 type ReviewExecutor struct {
-	store *store.Store
+	store   *store.Store
+	license LicenseChecker
 	// rule is nil where SQL Review V2 is off: no standard rule review runs
 	// there, and the review is the AI review alone.
 	rule Executor
@@ -26,8 +34,8 @@ type ReviewExecutor struct {
 
 // NewReviewExecutor creates the executor of the review. rule is nil where SQL
 // Review V2 is off.
-func NewReviewExecutor(s *store.Store, rule, ai Executor) *ReviewExecutor {
-	return &ReviewExecutor{store: s, rule: rule, ai: ai}
+func NewReviewExecutor(s *store.Store, license LicenseChecker, rule, ai Executor) *ReviewExecutor {
+	return &ReviewExecutor{store: s, license: license, rule: rule, ai: ai}
 }
 
 // RunOnce implements Executor.
@@ -70,15 +78,16 @@ func (e *ReviewExecutor) RunOnce(ctx context.Context, projectID string, issueUID
 	return results, nil
 }
 
-// aiReviewOn reports whether the workspace AI setting and the project's own
-// switch allow the AI review. It reads past the setting cache, as the AI
-// review does.
+// aiReviewOn reports whether the workspace AI setting, the project's own
+// switch, and the workspace's plan allow the AI review. It reads past the
+// setting cache, as the AI review does.
 func (e *ReviewExecutor) aiReviewOn(ctx context.Context, workspace, projectID string) (bool, error) {
 	setting, projectEnabled, err := e.store.GetAIReviewSwitches(ctx, workspace, projectID)
 	if err != nil {
 		return false, err
 	}
-	return aireview.CheckSetting(setting, projectEnabled) == nil, nil
+	return aireview.CheckSetting(setting, projectEnabled) == nil &&
+		e.license.IsFeatureEnabled(ctx, workspace, v1pb.PlanFeature_FEATURE_AI_SQL_REVIEW) == nil, nil
 }
 
 // errorCode is the canonical code of the failure that ended a run, for a
