@@ -1232,7 +1232,7 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 			switch token.punct {
 			case '(':
 				relationState = append(relationState, inRelations)
-				inRelations = false
+				inRelations = inRelations && parenthesizedRelationGroup(tokens, i+1)
 			case ')':
 				if len(relationState) > 0 {
 					inRelations = relationState[len(relationState)-1]
@@ -1459,6 +1459,26 @@ func definitionTokens(text string) []definitionToken {
 		}
 	}
 	return tokens
+}
+
+// parenthesizedRelationGroup reports whether the parenthesis at index starts a
+// joined-table group rather than a derived subquery.
+func parenthesizedRelationGroup(tokens []definitionToken, index int) bool {
+	for index < len(tokens) && tokens[index].punct == '(' {
+		index++
+	}
+	if index >= len(tokens) || tokens[index].punct != 0 {
+		return false
+	}
+	if tokens[index].quoted {
+		return true
+	}
+	switch strings.ToUpper(tokens[index].text) {
+	case "SELECT", "WITH", "VALUES":
+		return false
+	default:
+		return true
+	}
 }
 
 // skipRelationAlias returns the last token index of a relation's alias, if one

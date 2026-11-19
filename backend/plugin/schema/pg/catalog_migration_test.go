@@ -3074,3 +3074,23 @@ func TestCTENameMatchesEquivalentQuotedSpelling(t *testing.T) {
 	meta.Schemas[0].Views[0].Definition = `WITH "T" AS (SELECT * FROM public.t) SELECT * FROM public.t UNION ALL SELECT * FROM t`
 	require.ErrorContains(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), `view "public"."w" has an unqualified reference to "public"."t"`)
 }
+
+// TestViewDependencyQualificationSeesParenthesizedJoin covers a parenthesized
+// joined-table group: the first relation inside it is still a relation reference.
+func TestViewDependencyQualificationSeesParenthesizedJoin(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM public.t a, (t JOIN public.u u ON true) AS j",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+}
