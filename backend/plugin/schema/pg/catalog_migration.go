@@ -685,6 +685,9 @@ func routineReturnClause(definition string) string {
 // visible, not every relation that shares its name.
 func namesType(text, key string, objects map[string]bool, searchPath []string) bool {
 	text = strings.TrimSpace(text)
+	if builtinMultiwordType(text) {
+		return false
+	}
 	for start := 0; start < len(text); start++ {
 		if start > 0 && !startsDeclaration(text[start-1]) {
 			continue
@@ -694,6 +697,31 @@ func namesType(text, key string, objects map[string]bool, searchPath []string) b
 			continue
 		}
 		if resolved, ok := resolveTypeReference(reference, objects, searchPath); ok && resolved == key {
+			return true
+		}
+	}
+	return false
+}
+
+// builtinMultiwordType reports whether text declares a built-in type spelled with
+// several words. Its last word is part of that type, not a reference of its own.
+func builtinMultiwordType(text string) bool {
+	for _, prefix := range []string{"SETOF ", "VARIADIC "} {
+		text = strings.TrimSpace(strings.TrimPrefix(text, prefix))
+	}
+	if index := strings.LastIndex(text, "("); index >= 0 && strings.HasSuffix(text, ")") {
+		text = strings.TrimSpace(text[:index])
+	}
+	for _, multiword := range []string{
+		"double precision",
+		"character varying",
+		"bit varying",
+		"time with time zone",
+		"time without time zone",
+		"timestamp with time zone",
+		"timestamp without time zone",
+	} {
+		if text == multiword || strings.HasSuffix(text, " "+multiword) {
 			return true
 		}
 	}

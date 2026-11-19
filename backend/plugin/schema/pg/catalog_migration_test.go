@@ -1752,6 +1752,14 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "multiword builtin ending in the view's name",
+			world: world{viewName: "precision", function: &metadatapb.FunctionMetadata{
+				Name:       "p",
+				Signature:  "p(double precision)",
+				Definition: "CREATE FUNCTION public.p(x double precision) RETURNS double precision LANGUAGE sql AS $$ SELECT 1 $$",
+			}},
+		},
+		{
 			name: "body reference",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "h",
