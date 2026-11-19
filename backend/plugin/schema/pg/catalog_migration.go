@@ -31,8 +31,10 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	if err != nil {
 		return "", errors.Wrap(err, "failed to load target schema")
 	}
-	sourceSearchPath := resolveSearchPathUser(getConfiguredSearchPath(oldSchema), databaseOwner(oldSchema))
-	targetSearchPath := resolveSearchPathUser(getConfiguredSearchPath(newSchema), databaseOwner(newSchema))
+	// $user expands to the session login, which this layer does not have, so it stays
+	// unresolved and rejectAmbiguousUserTypes refuses the migrations it would decide.
+	sourceSearchPath := getConfiguredSearchPath(oldSchema)
+	targetSearchPath := getConfiguredSearchPath(newSchema)
 	sourceDrops := sourceOnlyMissingDrops(oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
 	if err := unloadableChanges(oldSchema.GetProto(), newSchema.GetProto(), sourceDrops, fromReport, toReport); err != nil {
 		return "", err
@@ -60,15 +62,6 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 		return op.SchemaName != "bbdataarchive"
 	})
 	return plan.SQL(), nil
-}
-
-// databaseOwner is the role migrations run as, which a $user search-path entry
-// expands to.
-func databaseOwner(d *model.DatabaseMetadata) string {
-	if d == nil {
-		return ""
-	}
-	return d.GetProto().GetOwner()
 }
 
 // loadMetadataCatalog installs a snapshot under the search path its database is
@@ -926,6 +919,26 @@ func indexInTable(table *metadatapb.TableMetadata, name string) *metadatapb.Inde
 	return found
 }
 
+// partitionExists reports whether a snapshot holds a partition of that name in
+// that schema, wherever its parent table lives.
+func partitionExists(meta *metadatapb.DatabaseSchemaMetadata, schemaName, partitionName string) bool {
+	found := false
+	for _, schema := range meta.GetSchemas() {
+		for _, table := range schema.GetTables() {
+			forEachPartition(table.GetPartitions(), func(partition *metadatapb.TablePartitionMetadata) {
+				partitionSchema := partition.GetSchema()
+				if partitionSchema == "" {
+					partitionSchema = schema.GetName()
+				}
+				if partitionSchema == schemaName && partition.GetName() == partitionName {
+					found = true
+				}
+			})
+		}
+	}
+	return found
+}
+
 // partitionIndexByName returns the index of that name on the partition named
 // partitionName or one of its subpartitions. A partition without its own schema
 // keeps its parent's. An empty requiredSchema accepts any schema.
@@ -1006,6 +1019,15 @@ func relationSet(left, right *metadatapb.DatabaseSchemaMetadata) map[string]bool
 			if other == nil || tableByName(other, table.GetName()) == nil {
 				result[objectKey(schema.GetName(), table.GetName())] = true
 			}
+			forEachPartition(table.GetPartitions(), func(partition *metadatapb.TablePartitionMetadata) {
+				partitionSchema := partition.GetSchema()
+				if partitionSchema == "" {
+					partitionSchema = schema.GetName()
+				}
+				if !partitionExists(right, partitionSchema, partition.GetName()) {
+					result[objectKey(partitionSchema, partition.GetName())] = true
+				}
+			})
 		}
 		for _, view := range schema.GetViews() {
 			if other == nil || viewByName(other, view.GetName()) == nil {
@@ -1054,22 +1076,6 @@ func referencedRelation(typeName string, relations map[string]bool, searchPath [
 		return "", false
 	}
 	return resolveTypeReference(reference, relations, searchPath)
-}
-
-// resolveSearchPathUser replaces the $user placeholder with the database owner,
-// the role migrations run as, so an unqualified name can resolve.
-func resolveSearchPathUser(searchPath []string, user string) []string {
-	if len(searchPath) == 0 || user == "" || !slices.Contains(searchPath, "$user") {
-		return searchPath
-	}
-	resolved := make([]string, 0, len(searchPath))
-	for _, schema := range searchPath {
-		if schema == "$user" {
-			schema = user
-		}
-		resolved = append(resolved, schema)
-	}
-	return resolved
 }
 
 // rejectAmbiguousUserTypes refuses a migration whose unqualified type depends on

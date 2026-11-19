@@ -360,6 +360,27 @@ func TestIndexOwnerSkipsQuotedNames(t *testing.T) {
 	}
 }
 
+// TestRelationSetIncludesPartitions covers a removed partition as a relation of its
+// own: a composite attribute holding its row type has to be released before it.
+func TestRelationSetIncludesPartitions(t *testing.T) {
+	withPartition := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+		{Name: "main", Tables: []*metadatapb.TableMetadata{{
+			Name: "t",
+			Partitions: []*metadatapb.TablePartitionMetadata{{
+				Name:   "t_p",
+				Schema: "parted",
+			}},
+		}}},
+		{Name: "parted"},
+	}}
+	withoutPartition := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+		{Name: "main", Tables: []*metadatapb.TableMetadata{{Name: "t"}}},
+		{Name: "parted"},
+	}}
+	require.True(t, relationSet(withPartition, withoutPartition)[objectKey("parted", "t_p")], "the removed partition is a relation of its own")
+	require.False(t, relationSet(withPartition, withPartition)[objectKey("parted", "t_p")], "an unchanged partition is not")
+}
+
 // TestSourceOnlyUnloadableObjectsAreDropped covers removing an object whose stored
 // definition omni cannot parse: a drop needs no definition, so the plan emits it,
 // while adding such an object is still refused.
@@ -1038,8 +1059,6 @@ func TestUnqualifiedTypeFollowsTheSearchPath(t *testing.T) {
 	key, ok = referencedRelation("first."+name, relations, []string{"second"})
 	require.True(t, ok, "a qualified name ignores the search path")
 	require.Equal(t, objectKey("first", name), key)
-	require.Equal(t, []string{"alice", "public"}, resolveSearchPathUser([]string{"$user", "public"}, "alice"))
-	require.Equal(t, []string{"$user", "public"}, resolveSearchPathUser([]string{"$user", "public"}, ""), "an unknown owner leaves the placeholder unresolved")
 }
 
 // TestUnresolvedSearchPathUserRejectsAmbiguousType covers an unqualified type that
@@ -1077,7 +1096,8 @@ func TestUnresolvedSearchPathUserRejectsAmbiguousType(t *testing.T) {
 		return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_COCKROACHDB, true)
 	}
 	_, err = schema.DiffMigration(storepb.Engine_COCKROACHDB, owner(false), owner(true))
-	require.NoError(t, err, "the database owner resolves the placeholder")
+	require.ErrorContains(t, err, "whose $user search-path resolution is ambiguous",
+		"the session login decides $user, not the database owner, so this layer refuses")
 }
 
 // TestTypeNameMatchingKeepsIdentifierBoundaries pins quoted identifier parsing:
