@@ -3031,3 +3031,24 @@ func TestProviderRelationDropRestoresUnloadableView(t *testing.T) {
 	require.Less(t, dropView, dropProvider, sql)
 	require.Less(t, dropProvider, createView, sql)
 }
+
+// TestViewDependencyQualificationKeepsOuterRelationList covers a derived table:
+// the parentheses must not lose the outer FROM-list state, so the final `t` is
+// still an unqualified relation reference.
+func TestViewDependencyQualificationKeepsOuterRelationList(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM public.t, (SELECT 1) x, t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+}

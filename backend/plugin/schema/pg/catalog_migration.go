@@ -1225,10 +1225,23 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 	ctes := definitionCTEs(tokens)
 	qualified := false
 	inRelations := false
+	var relationState []bool
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
 		if token.punct != 0 {
-			if token.punct != ',' {
+			switch token.punct {
+			case '(':
+				relationState = append(relationState, inRelations)
+				inRelations = false
+			case ')':
+				if len(relationState) > 0 {
+					inRelations = relationState[len(relationState)-1]
+					relationState = relationState[:len(relationState)-1]
+				} else {
+					inRelations = false
+				}
+			case ',':
+			default:
 				inRelations = false
 			}
 			continue
