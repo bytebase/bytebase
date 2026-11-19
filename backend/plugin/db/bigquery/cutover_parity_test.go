@@ -235,20 +235,6 @@ func TestStatementParityKnownDifferences(t *testing.T) {
 		require.Equal(t, old.statements, got.statements)
 	})
 
-	t.Run("a pipe query the analysis cannot read is a command", func(t *testing.T) {
-		script := "SELECT 1 |> WHERE TRUE"
-		old, err := oldStatementDecision(script)
-		require.NoError(t, err)
-		require.Equal(t, []bool{true}, old.returnsRows)
-
-		got := newStatementDecision(script)
-		require.Equal(t, []bool{false}, got.returnsRows)
-		// A statement the analysis cannot classify runs as written, so the CTE
-		// wrap a classified query gets is not applied; the job's own answer keeps
-		// the rows the service returned.
-		require.Equal(t, []string{script}, got.statements)
-	})
-
 	t.Run("an unclosed literal is the statement's error", func(t *testing.T) {
 		script := "SELECT 1;\nSELECT 'unclosed"
 		_, err := oldStatementDecision(script)
@@ -260,6 +246,21 @@ func TestStatementParityKnownDifferences(t *testing.T) {
 		got := newStatementDecision(script)
 		require.Equal(t, []string{"SELECT 1", "SELECT 'unclosed"}, got.statements)
 	})
+}
+
+// TestPipeQueryStatementDecision pins the script the cutover recorded as a known
+// difference and the bump closed: omni #1444 reads the pipe syntax, so a pipe
+// query is a read on both sides.
+func TestPipeQueryStatementDecision(t *testing.T) {
+	script := "SELECT 1 |> WHERE TRUE"
+	old, err := oldStatementDecision(script)
+	require.NoError(t, err)
+	require.Equal(t, []bool{true}, old.returnsRows)
+
+	got := newStatementDecision(script)
+	require.Equal(t, []bool{true}, got.returnsRows)
+	require.Equal(t, old.statements, got.statements)
+	require.Equal(t, old.limited, got.limited)
 }
 
 // statementLimit is the row cap both sides rewrite with.

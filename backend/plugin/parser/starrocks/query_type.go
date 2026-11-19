@@ -23,8 +23,9 @@ import (
 // SelectInfoSchema to match the legacy ANTLR listener behaviour.
 //
 // EXPLAIN-prefixed statements defer to the inner statement's type — an
-// `EXPLAIN DROP TABLE t` classifies as DDL, not Select, so type-based ACL
-// checks see the inner operation rather than a downgrade-to-read-only.
+// `EXPLAIN INSERT INTO t VALUES (1)` classifies as DML, not Select, so type-based
+// ACL checks see the inner operation rather than a downgrade-to-read-only. DDL
+// cannot follow EXPLAIN at all: the plan grammar takes queries and DML only.
 func getQueryType(statement string, allSystems bool) base.QueryType {
 	qt := classifyByAST(statement)
 
@@ -64,7 +65,7 @@ func classifyByAST(statement string) analysis.QueryType {
 // Query); callers should fall back to Classify in that case.
 //
 // EXPLAIN recurses into its inner Query so the classification reflects the
-// real operation (e.g. `EXPLAIN DROP TABLE t` → DDL).
+// real operation (e.g. `EXPLAIN INSERT INTO t VALUES (1)` → DML).
 //
 // Anything we don't otherwise enumerate is treated as DDL — that's a safe
 // upper bound for ACL purposes (it won't accidentally label a write as

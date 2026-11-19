@@ -1175,7 +1175,10 @@ JSON_TABLE(product_info, '$' COLUMNS (
 		{Name: "variant_name", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "products", Column: "product_info"}}), IsPlainField: true},
 	}, span.Results)
 
-	_, err = resolveQuerySpan(
+	// A JSON_TABLE without an alias is one of the grammar's table factor
+	// alternatives; its columns carry the lineage of the expression the factor
+	// reads, so they resolve named as written.
+	span, err = resolveQuerySpan(
 		context.Background(),
 		newTestQuerySpanContext(),
 		`SELECT *
@@ -1186,7 +1189,11 @@ JSON_TABLE(product_info, '$' COLUMNS (
 		"db",
 		false,
 	)
-	require.Error(t, err)
+	require.NoError(t, err)
+	require.Equal(t, []base.QuerySpanResult{
+		{Name: "product_info", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "products", Column: "product_info"}}), IsPlainField: true},
+		{Name: "product_id", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "products", Column: "product_info"}}), IsPlainField: true},
+	}, span.Results)
 }
 
 func TestQuerySpanScenarioBatch4_AccessTableExpressions(t *testing.T) {

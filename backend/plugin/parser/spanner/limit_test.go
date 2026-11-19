@@ -69,8 +69,15 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		},
 		{
 			name:      "unparsable query is unchanged",
+			statement: "SELECT x FROM",
+			want:      "SELECT x FROM",
+		},
+		{
+			// The pipe syntax is part of the query the parser reads, so the
+			// limit lands after the pipeline's last operator.
+			name:      "a pipe query takes the limit after its pipeline",
 			statement: "WITH a AS (SELECT x FROM t) SELECT x FROM a |> WHERE x > 1",
-			want:      "WITH a AS (SELECT x FROM t) SELECT x FROM a |> WHERE x > 1",
+			want:      "WITH a AS (SELECT x FROM t) SELECT x FROM a |> WHERE x > 1 LIMIT 100",
 		},
 	}
 	for _, tc := range tests {

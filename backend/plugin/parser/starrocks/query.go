@@ -131,15 +131,15 @@ func isReadOnlyAST(node ast.Node) bool {
 
 // isExplainableInner reports whether `node` is a shape that EXPLAIN can
 // legitimately wrap (SELECT family or DML). DDL inside EXPLAIN is rejected:
-// StarRocks only supports EXPLAIN on query and DML statements. Queries are
+// StarRocks only supports EXPLAIN on query and DML statements, and its plan
+// grammar refuses TRUNCATE before this predicate sees it. Queries are
 // classified by isReadOnlyQuery, the one export gate.
 func isExplainableInner(node ast.Node) bool {
 	if isReadOnlyQuery(node) {
 		return true
 	}
 	switch node.(type) {
-	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt,
-		*ast.TruncateTableStmt:
+	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
 		return true
 	}
 	return false
@@ -154,33 +154,32 @@ func isExplainableInner(node ast.Node) bool {
 // the editor cannot accept by way of EXPLAIN what it refuses when asked
 // directly.
 func isReadOnlyQuery(node ast.Node) bool {
-	switch n := node.(type) {
-	case *ast.SelectStmt:
-		return n.Into == nil
-	case *ast.SetOpStmt:
-		// The parser attaches INTO to an arm rather than the set operation.
-		return !setOpWritesOutfile(n)
-	case *ast.ParenSelect:
-		// (SELECT ...) / ((SELECT ...)) — classify by the wrapped query so the
-		// gate still applies inside the parens. ParenSelect only ever wraps a
-		// SELECT, SetOpStmt or another ParenSelect, so no DML hides here.
-		return isReadOnlyQuery(n.Sel)
+	switch node.(type) {
+	// ParenSelect only ever wraps a SELECT, SetOpStmt or another ParenSelect,
+	// so no DML hides in the group.
+	case *ast.SelectStmt, *ast.SetOpStmt, *ast.ParenSelect:
+		return !writesOutfile(node)
 	}
 	return false
 }
 
-// setOpWritesOutfile walks the arms: the parser attaches INTO to an arm rather
-// than to the set operation, and arms nest.
-func setOpWritesOutfile(node ast.Node) bool {
+// writesOutfile reports whether a SELECT-family node carries an INTO OUTFILE
+// clause anywhere: on itself, on a set operation's or a parenthesized group's
+// outer clause, or on an arm inside either.
+//
+// The parser attaches the clause to the node it applies to, and where that is
+// depends on the spelling and on the wrapper: `SELECT 1 UNION SELECT a FROM t
+// INTO OUTFILE ...` keeps it on the right arm, while an EXPLAIN prefix hoists
+// it to the explained statement's outermost query. Reading every layer rather
+// than the arms alone is what keeps the gate true for both.
+func writesOutfile(node ast.Node) bool {
 	switch n := node.(type) {
 	case *ast.SelectStmt:
 		return n.Into != nil
 	case *ast.SetOpStmt:
-		return setOpWritesOutfile(n.Left) || setOpWritesOutfile(n.Right)
+		return n.Into != nil || writesOutfile(n.Left) || writesOutfile(n.Right)
 	case *ast.ParenSelect:
-		// A parenthesized arm — SELECT 1 UNION (SELECT ... INTO OUTFILE ...) —
-		// must not slip the export gate.
-		return setOpWritesOutfile(n.Sel)
+		return n.Into != nil || writesOutfile(n.Sel)
 	default:
 		return false
 	}
