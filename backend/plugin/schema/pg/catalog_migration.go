@@ -1385,6 +1385,11 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 				continue
 			}
 		}
+		if !token.quoted && strings.EqualFold(token.text, "ROWS") && i+2 < len(tokens) && tokens[i+1].punct == 0 && !tokens[i+1].quoted && strings.EqualFold(tokens[i+1].text, "FROM") && tokens[i+2].punct == '(' {
+			pendingFunctionArgs = true
+			i++
+			continue
+		}
 		if !inRelations {
 			continue
 		}
@@ -1732,6 +1737,26 @@ func literalRelationReference(text, schemaName, objectName string) (bool, bool) 
 	return false, (identifier{name: first, quoted: firstQuoted}).matches(objectName)
 }
 
+func blockCommentEnd(text string, start int) int {
+	depth := 0
+	for i := start; i < len(text); {
+		switch {
+		case strings.HasPrefix(text[i:], "/*"):
+			depth++
+			i += 2
+		case strings.HasPrefix(text[i:], "*/"):
+			depth--
+			i += 2
+			if depth == 0 {
+				return i
+			}
+		default:
+			i++
+		}
+	}
+	return len(text)
+}
+
 // definitionToken is an identifier or a punctuation byte outside literals and
 // comments.
 type definitionToken struct {
@@ -1775,11 +1800,10 @@ func definitionTokens(text string) []definitionToken {
 			}
 			i += 2 + end + 1
 		case strings.HasPrefix(text[i:], "/*"):
-			end := strings.Index(text[i+2:], "*/")
-			if end < 0 {
+			i = blockCommentEnd(text, i)
+			if i >= len(text) {
 				return tokens
 			}
-			i += 2 + end + 2
 		case text[i] == '"' || startsUnquotedIdentifier(text, i):
 			name, next, quoted, ok := scanIdentifier(text, i)
 			if !ok {

@@ -3738,3 +3738,41 @@ func TestReleasedRoutineKeysIncludeSignature(t *testing.T) {
 	require.Empty(t, moved)
 	require.Contains(t, sourceDrops, "func:public.f|f(integer)", "the unrelated overload is not released")
 }
+
+// TestViewDependencyQualificationSkipsRowsFrom covers ROWS FROM (...), whose
+// ROWS keyword is not a relation named rows.
+func TestViewDependencyQualificationSkipsRowsFrom(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("rows", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM public.rows r CROSS JOIN ROWS FROM (generate_series(1, 2)) f(n)",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "rows"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
+
+// TestViewDependencyQualificationSkipsNestedBlockComment covers PostgreSQL's
+// nested block comments.
+func TestViewDependencyQualificationSkipsNestedBlockComment(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM public.t /* outer /* inner */ FROM t */",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
