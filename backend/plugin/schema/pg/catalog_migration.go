@@ -1196,9 +1196,6 @@ func ambiguousViewDependencies(viewSchema, viewName, definition string, dependen
 		if index := slices.Index(searchPath, actualSchema); index >= 0 && index < userIndex {
 			continue
 		}
-		if visible, ok := firstRelationNamed(actualTable, objects, searchPath); ok && visible == actualKey {
-			continue
-		}
 		if definitionQualifies(definition, actualSchema, actualTable) {
 			continue
 		}
@@ -1207,26 +1204,12 @@ func ambiguousViewDependencies(viewSchema, viewName, definition string, dependen
 	return nil
 }
 
-func firstRelationNamed(objectName string, relations map[string]bool, searchPath []string) (string, bool) {
-	for _, searchSchema := range searchPath {
-		if searchSchema == "$user" {
-			continue
-		}
-		for key := range relations {
-			schemaName, name := splitObjectKey(key)
-			if schemaName == searchSchema && name == objectName {
-				return key, true
-			}
-		}
-	}
-	return "", false
-}
-
-// definitionQualifies reports whether the view text names the dependency with its
-// schema, so the match cannot have depended on the unresolved user schema. Only
-// parsed identifiers outside literals and comments count; a string that merely
-// contains "schema.object" is not a reference.
+// definitionQualifies reports whether every occurrence of the relation's name
+// outside literals and comments is schema-qualified. A single unqualified
+// occurrence can bind through the unresolved $user schema, so finding one
+// qualified reference is not enough.
 func definitionQualifies(definition, schemaName, objectName string) bool {
+	qualified := false
 	for i := 0; i < len(definition); {
 		switch {
 		case definition[i] == '\'':
@@ -1240,30 +1223,44 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 		case strings.HasPrefix(definition[i:], "--"):
 			end := strings.IndexByte(definition[i+2:], '\n')
 			if end < 0 {
-				return false
+				return qualified
 			}
 			i += 2 + end + 1
 		case strings.HasPrefix(definition[i:], "/*"):
 			end := strings.Index(definition[i+2:], "*/")
 			if end < 0 {
-				return false
+				return qualified
 			}
 			i += 2 + end + 2
 		case definition[i] == '"' || (isIdentifierByte(definition[i]) && identifierBoundary(definition, i)):
-			next, matched, ok := qualifiedIdentifierAt(definition, i, schemaName, objectName)
-			if matched {
-				return true
-			}
+			first, next, firstQuoted, ok := scanIdentifier(definition, i)
 			if !ok {
 				i++
 				continue
+			}
+			if next < len(definition) && definition[next] == '.' {
+				second, next, secondQuoted, ok := scanIdentifier(definition, next+1)
+				if !ok {
+					return false
+				}
+				if next < len(definition) && definition[next] == '.' {
+					return false
+				}
+				if (identifier{name: first, quoted: firstQuoted}).matches(schemaName) && (identifier{name: second, quoted: secondQuoted}).matches(objectName) {
+					qualified = true
+				}
+				i = next
+				continue
+			}
+			if (identifier{name: first, quoted: firstQuoted}).matches(objectName) {
+				return false
 			}
 			i = next
 		default:
 			i++
 		}
 	}
-	return false
+	return qualified
 }
 
 func identifierBoundary(text string, index int) bool {
@@ -1272,29 +1269,6 @@ func identifierBoundary(text string, index int) bool {
 	}
 	previous := text[index-1]
 	return !isIdentifierByte(previous) && previous != '.' && previous != '$' && previous != '"'
-}
-
-// qualifiedIdentifierAt parses one dotted identifier pair at start and reports
-// whether it names schemaName.objectName.
-func qualifiedIdentifierAt(text string, start int, schemaName, objectName string) (int, bool, bool) {
-	first, next, firstQuoted, ok := scanIdentifier(text, start)
-	if !ok {
-		return start, false, false
-	}
-	if next >= len(text) || text[next] != '.' {
-		return next, false, true
-	}
-	second, next, secondQuoted, ok := scanIdentifier(text, next+1)
-	if !ok {
-		return next, false, true
-	}
-	if next < len(text) && text[next] == '.' {
-		return next, false, true
-	}
-	if (identifier{name: first, quoted: firstQuoted}).matches(schemaName) && (identifier{name: second, quoted: secondQuoted}).matches(objectName) {
-		return next, true, true
-	}
-	return next, false, true
 }
 
 func ambiguousRoutineTypes(signature, definition string, objects map[string]bool, searchPath []string) bool {

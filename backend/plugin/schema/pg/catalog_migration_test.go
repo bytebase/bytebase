@@ -2749,3 +2749,45 @@ func TestObsoleteRoutineDropsBeforeRestoredView(t *testing.T) {
 	require.Less(t, dropFunction, dropView, sql)
 	require.Less(t, dropView, createView, sql)
 }
+
+// TestUnresolvedUserRejectsUnqualifiedRelation covers a dependency in a schema
+// after the unresolved $user entry: skipping $user to find public.t does not
+// make the unqualified reference safe, because the login's schema can shadow it.
+func TestUnresolvedUserRejectsUnqualifiedRelation(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+}
+
+// TestUnresolvedUserRejectsOneUnqualifiedOccurrence covers a view that uses the
+// dependency both qualified and unqualified: the second occurrence can bind
+// through $user, so the whole dependency is ambiguous.
+func TestUnresolvedUserRejectsOneUnqualifiedOccurrence(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM public.t a JOIN t b ON a.id = b.id",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+}
