@@ -3,38 +3,45 @@ package ghost
 import (
 	"context"
 	"database/sql"
-	"database/sql/driver"
 	"errors"
-	"io"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
-// fakeGhostDriver stands in for a driver that owns its pool. Only GetDB is
-// exercised by the validation path.
 type fakeGhostDriver struct {
 	db.Driver
-	sqlDB *sql.DB
+	responses map[string]func() ([]*v1pb.QueryResult, error)
 }
 
-func (d *fakeGhostDriver) GetDB() *sql.DB { return d.sqlDB }
+func (d *fakeGhostDriver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
+	fn, ok := d.responses[statement]
+	if !ok {
+		return nil, errors.New("unexpected query: " + statement)
+	}
+	return fn()
+}
 
-func TestValidateBinlogAccessWithoutDirectConnection(t *testing.T) {
-	driver := &fakeGhostDriver{}
+func singleStringQueryResult(val string) ([]*v1pb.QueryResult, error) {
+	return []*v1pb.QueryResult{
+		{
+			Rows: []*v1pb.QueryRow{
+				{Values: []*v1pb.RowValue{{Kind: &v1pb.RowValue_StringValue{StringValue: val}}}},
+			},
+		},
+	}, nil
+}
 
+func TestValidateBinlogAccessWithNilDriver(t *testing.T) {
 	require.NotPanics(t, func() {
-		result := ValidateBinlogAccess(context.Background(), driver, &storepb.DataSource{Host: "example.com", Username: "admin"})
+		result := ValidateBinlogAccess(context.Background(), nil, &storepb.DataSource{Host: "example.com", Username: "admin"})
 		require.False(t, result.Valid)
-		require.Equal(t, noDirectConnection, result.FailureReason)
-		require.ErrorIs(t, result.Error, errNoDirectConnection)
-
-		title, content := result.GetUserFriendlyError()
-		require.Equal(t, "gh-ost is not supported on this instance", title)
-		require.Contains(t, content, "direct database/sql connection")
+		require.Equal(t, validationQueryFailed, result.FailureReason)
+		require.ErrorContains(t, result.Error, "driver is nil")
 	})
 }
 
@@ -57,11 +64,27 @@ func TestSupportsEngine(t *testing.T) {
 	}
 }
 
-func TestValidateBinlogAccessWithDirectConnection(t *testing.T) {
-	sqlDB := sql.OpenDB(validationConnector{})
-	defer sqlDB.Close()
+func TestValidateBinlogAccess(t *testing.T) {
+	driver := &fakeGhostDriver{
+		responses: map[string]func() ([]*v1pb.QueryResult, error){
+			"SHOW MASTER STATUS": func() ([]*v1pb.QueryResult, error) {
+				return []*v1pb.QueryResult{{}}, nil
+			},
+			"SELECT @@log_bin": func() ([]*v1pb.QueryResult, error) {
+				return []*v1pb.QueryResult{
+					{Rows: []*v1pb.QueryRow{{Values: []*v1pb.RowValue{{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}}}}}},
+				}, nil
+			},
+			"SHOW GRANTS": func() ([]*v1pb.QueryResult, error) {
+				return singleStringQueryResult("GRANT REPLICATION SLAVE ON *.* TO `admin`@`%`")
+			},
+			"SELECT @@binlog_format": func() ([]*v1pb.QueryResult, error) {
+				return singleStringQueryResult("ROW")
+			},
+		},
+	}
 
-	result := ValidateBinlogAccess(context.Background(), &fakeGhostDriver{sqlDB: sqlDB}, &storepb.DataSource{Host: "example.com", Username: "admin"})
+	result := ValidateBinlogAccess(context.Background(), driver, &storepb.DataSource{Host: "example.com", Username: "admin"})
 	require.True(t, result.Valid)
 	require.NoError(t, result.Error)
 	require.Empty(t, result.FailureReason)
@@ -70,65 +93,32 @@ func TestValidateBinlogAccessWithDirectConnection(t *testing.T) {
 	require.Equal(t, "ROW", result.BinlogFormat)
 }
 
-// validationRowSets answers the queries ValidateBinlogAccess issues after the
-// binlog status probe, which runs through ExecContext.
-var validationRowSets = map[string][][]driver.Value{
-	"SELECT @@log_bin":       {{"1"}},
-	"SHOW GRANTS":            {{"GRANT REPLICATION SLAVE ON *.* TO `admin`@`%`"}},
-	"SELECT @@binlog_format": {{"ROW"}},
-}
-
-type validationConnector struct{}
-
-func (validationConnector) Connect(context.Context) (driver.Conn, error) {
-	return validationConn{}, nil
-}
-func (validationConnector) Driver() driver.Driver { return validationDriver{} }
-
-type validationDriver struct{}
-
-func (validationDriver) Open(string) (driver.Conn, error) { return validationConn{}, nil }
-
-type validationConn struct{}
-
-func (validationConn) Prepare(string) (driver.Stmt, error) {
-	return nil, errors.New("prepare is not supported")
-}
-func (validationConn) Close() error { return nil }
-func (validationConn) Begin() (driver.Tx, error) {
-	return nil, errors.New("transactions are not supported")
-}
-
-func (validationConn) ExecContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Result, error) {
-	if query == "SHOW MASTER STATUS" {
-		return driver.RowsAffected(0), nil
+func TestValidateBinlogAccessFallsBackToBinaryLogStatus(t *testing.T) {
+	driver := &fakeGhostDriver{
+		responses: map[string]func() ([]*v1pb.QueryResult, error){
+			"SHOW MASTER STATUS": func() ([]*v1pb.QueryResult, error) {
+				return []*v1pb.QueryResult{{Error: "syntax error"}}, nil
+			},
+			"SHOW BINARY LOG STATUS": func() ([]*v1pb.QueryResult, error) {
+				return []*v1pb.QueryResult{{}}, nil
+			},
+			"SELECT @@log_bin": func() ([]*v1pb.QueryResult, error) {
+				return singleStringQueryResult("ON")
+			},
+			"SHOW GRANTS": func() ([]*v1pb.QueryResult, error) {
+				return singleStringQueryResult("GRANT ALL PRIVILEGES ON *.* TO `admin`@`%`")
+			},
+			"SELECT @@binlog_format": func() ([]*v1pb.QueryResult, error) {
+				return singleStringQueryResult("MIXED")
+			},
+		},
 	}
-	return nil, errors.New("unexpected exec: " + query)
-}
 
-func (validationConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
-	values, ok := validationRowSets[query]
-	if !ok {
-		return nil, errors.New("unexpected query: " + query)
-	}
-	return &staticRows{values: values}, nil
-}
-
-type staticRows struct {
-	values [][]driver.Value
-	next   int
-}
-
-func (*staticRows) Columns() []string { return []string{"value"} }
-func (*staticRows) Close() error      { return nil }
-
-func (r *staticRows) Next(dest []driver.Value) error {
-	if r.next >= len(r.values) {
-		return io.EOF
-	}
-	copy(dest, r.values[r.next])
-	r.next++
-	return nil
+	result := ValidateBinlogAccess(context.Background(), driver, &storepb.DataSource{Host: "example.com", Username: "admin"})
+	require.True(t, result.Valid)
+	require.True(t, result.BinlogEnabled)
+	require.True(t, result.HasPrivilege)
+	require.Equal(t, "MIXED", result.BinlogFormat)
 }
 
 func TestBinlogValidationResultGetUserFriendlyError(t *testing.T) {
@@ -145,16 +135,6 @@ func TestBinlogValidationResultGetUserFriendlyError(t *testing.T) {
 			},
 			wantTitle:   "",
 			wantContent: "",
-		},
-		{
-			name: "no direct connection",
-			result: &BinlogValidationResult{
-				Valid:         false,
-				FailureReason: noDirectConnection,
-				Error:         errNoDirectConnection,
-			},
-			wantTitle:   "gh-ost is not supported on this instance",
-			wantContent: "gh-ost needs a direct database/sql connection, but the database driver for this instance does not expose one.",
 		},
 		{
 			name: "binlog status inaccessible",

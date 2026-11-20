@@ -185,11 +185,6 @@ func (d *Driver) Ping(ctx context.Context) error {
 	return d.impl.Ping(ctx)
 }
 
-// GetDB returns nil: Hive is driven through omni's session, not a *sql.DB.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
 // Execute runs the script's statements in order, reporting each to the task
 // run's log. Hive has no transaction the client controls — HiveServer2 4.0
 // refuses BEGIN, COMMIT and ROLLBACK — so every statement commits itself and

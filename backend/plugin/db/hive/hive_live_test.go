@@ -49,7 +49,6 @@ func TestHiveDriver(t *testing.T) {
 	admin := open("")
 	t.Run("open reaches the server", func(t *testing.T) {
 		require.NoError(t, admin.Ping(ctx))
-		require.Nil(t, admin.GetDB())
 	})
 	_, err := admin.Execute(ctx, "DROP DATABASE IF EXISTS "+database+" CASCADE;\nCREATE DATABASE "+database+";", db.ExecuteOptions{})
 	require.NoError(t, err)

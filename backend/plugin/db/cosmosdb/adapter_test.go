@@ -47,7 +47,6 @@ func TestConnectionConfigMapsTheCredential(t *testing.T) {
 // API depends on.
 func TestAdapterBoundaryWithoutAnAccount(t *testing.T) {
 	driver := &Driver{}
-	require.Nil(t, driver.GetDB(), "Cosmos DB has no database/sql handle")
 
 	_, err := driver.Execute(context.Background(), "SELECT * FROM c", db.ExecuteOptions{})
 	require.Equal(t, connect.CodeUnimplemented, connect.CodeOf(err))

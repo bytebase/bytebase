@@ -13,7 +13,6 @@ package doris
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"io"
 	"net"
 	"sync"
@@ -31,10 +30,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-var (
-	_ db.Driver         = (*Driver)(nil)
-	_ db.SessionQuerier = (*Driver)(nil)
-)
+var _ db.Driver = (*Driver)(nil)
 
 func init() {
 	db.Register(storepb.Engine_DORIS, newDriver)
@@ -147,15 +143,6 @@ func (d *Driver) Close(context.Context) error {
 func (d *Driver) Ping(ctx context.Context) error {
 	return d.impl.Ping(ctx)
 }
-
-// GetDB gets the database.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
-// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
-// rather than on the *sql.Conn a caller passes, which is unused.
-func (*Driver) OwnsQuerySession() {}
 
 // SyncInstance syncs the instance: its release, lower_case_table_names, and its
 // user databases.

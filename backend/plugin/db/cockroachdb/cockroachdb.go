@@ -17,11 +17,7 @@
 // QueryConn runs on one session held for the driver's lifetime and serializes
 // its calls, as the editor stream's one pooled connection did: what a statement
 // sets there (search_path, a temporary table) holds for the stream's next call.
-// The caller's *sql.Conn is unused, so the adapter reports OwnsQuerySession.
-//
-// GetDB, through db.SQLDBProvider, returns the pool the task-run session listing
-// asks for. It is not the query path, which is the driver's session; it is
-// opened on first use, so a driver that never asks holds only the driver's pool.
+// The caller's *sql.Conn is unused.
 //
 // Execute maps the script's transaction directive and passes neither the
 // isolation directive nor MaximumRetries: this engine ignored both, and honoring
@@ -31,7 +27,6 @@ package cockroachdb
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"errors"
 	"fmt"
 	"io"
@@ -42,22 +37,21 @@ import (
 	omnicockroach "github.com/bytebase/omni/cockroachdb/driver"
 	omnidriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 var (
-	_ db.Driver         = (*Driver)(nil)
-	_ db.RowEstimator   = (*Driver)(nil)
-	_ db.SQLDBProvider  = (*Driver)(nil)
-	_ db.SessionQuerier = (*Driver)(nil)
+	_ db.Driver               = (*Driver)(nil)
+	_ db.RowEstimator         = (*Driver)(nil)
+	_ db.TaskRunSessionReader = (*Driver)(nil)
 )
 
 func init() {
@@ -67,7 +61,6 @@ func init() {
 // Driver is Bytebase's CockroachDB driver.
 type Driver struct {
 	inner         *omnicockroach.Driver
-	config        omnidriver.Config
 	connectionCtx db.ConnectionContext
 
 	// sshClient is the tunnel the driver dials through, closed with it.
@@ -78,11 +71,6 @@ type Driver struct {
 	// at a time.
 	sessionMu sync.Mutex
 	session   omnidriver.Session
-
-	// poolMu guards the pool GetDB opens on first use.
-	poolMu  sync.Mutex
-	pool    *sql.DB
-	poolSet bool
 }
 
 func newDriver() db.Driver {
@@ -117,7 +105,6 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		return nil, err
 	}
 	d.inner = inner
-	d.config = cfg
 	d.connectionCtx = config.ConnectionContext
 	return d, nil
 }
@@ -180,17 +167,9 @@ func (d *Driver) Close(context.Context) error {
 	d.session = nil
 	d.sessionMu.Unlock()
 
-	d.poolMu.Lock()
-	pool := d.pool
-	d.pool = nil
-	d.poolMu.Unlock()
-
 	var err error
 	if session != nil {
 		err = multierr.Append(err, session.Close())
-	}
-	if pool != nil {
-		err = multierr.Append(err, pool.Close())
 	}
 	if d.inner != nil {
 		err = multierr.Append(err, d.inner.Close())
@@ -207,94 +186,103 @@ func (d *Driver) Ping(ctx context.Context) error {
 	return d.inner.Ping(ctx)
 }
 
-// GetDB returns the pool db.SQLDB callers ask for: the task-run session listing
-// reads a *sql.DB and has no driver method for CockroachDB's activity. It is not
-// the query path. A mapping error answers nil, which SQLDB callers tolerate.
-func (d *Driver) GetDB() *sql.DB {
-	d.poolMu.Lock()
-	defer d.poolMu.Unlock()
-	if !d.poolSet {
-		d.poolSet = true
-		pool, err := sqlPool(d.config)
-		if err != nil {
-			return nil
-		}
-		d.pool = pool
+// TaskRunSession reads the running session by application name from
+// CockroachDB's own catalog. CockroachDB's pg_stat_activity compatibility view
+// answers no rows and it has no pg_blocking_pids, so neither PostgreSQL's
+// query nor its blocking relationships apply.
+func (d *Driver) TaskRunSession(ctx context.Context, applicationName string) (*v1pb.TaskRunSession, error) {
+	if d.inner == nil {
+		return nil, errors.New("cockroachdb: driver is closed")
 	}
-	return d.pool
-}
-
-// OwnsQuerySession reports that QueryConn runs on the adapter's held session,
-// not on a connection a caller opens from GetDB.
-func (*Driver) OwnsQuerySession() {}
-
-// sqlPool opens the pool GetDB returns from the contract's Config. It is a
-// second pool beside the driver's, and only db.SQLDB callers use it.
-func sqlPool(cfg omnidriver.Config) (*sql.DB, error) {
-	dsn := make([]string, 0, 4+len(cfg.Params))
-	if cfg.Host != "" || cfg.Port != "" {
-		hostPort, err := util.PGHostPort(cfg.Host, cfg.Port)
-		if err != nil {
-			return nil, err
-		}
-		dsn = append(dsn, hostPort)
-	}
-	if cfg.TLS != nil {
-		dsn = append(dsn, "sslmode=require")
-	}
-	if routingID := getRoutingIDFromCockroachCloudURL(cfg.Host); routingID != "" {
-		dsn = append(dsn, "options="+util.QuotePGValue("--cluster="+routingID))
-	}
-	for key, value := range cfg.Params {
-		dsn = append(dsn, key+"="+value)
-	}
-	connConfig, err := pgx.ParseConfig(strings.Join(dsn, " "))
+	session, err := d.inner.Session(ctx)
 	if err != nil {
 		return nil, err
 	}
-	connConfig.User = cfg.User
-	connConfig.Password = cfg.Password
-	connConfig.Database = cfg.Database
-	if connConfig.Database == "" {
-		connConfig.Database = "postgres"
+	defer session.Close()
+
+	query := fmt.Sprintf(`
+		SELECT
+			q.session_id,
+			q.query,
+			q.phase,
+			q.database,
+			q.user_name,
+			q.application_name,
+			q.client_address,
+			s.session_start,
+			q.start
+		FROM crdb_internal.cluster_queries AS q
+		LEFT JOIN crdb_internal.cluster_sessions AS s
+			ON s.session_id = q.session_id
+		WHERE q.application_name = '%s'
+		ORDER BY q.session_id
+	`, strings.ReplaceAll(applicationName, "'", "''"))
+
+	results, err := session.Query(ctx, query, omnidriver.QueryOptions{})
+	if err != nil {
+		return nil, err
 	}
-	if cfg.TLS != nil {
-		if connConfig.TLSConfig, err = cfg.TLS(connConfig.Host); err != nil {
-			return nil, err
-		}
-		for _, fallback := range connConfig.Fallbacks {
-			if fallback.TLSConfig, err = cfg.TLS(fallback.Host); err != nil {
-				return nil, err
-			}
-		}
+	if len(results) == 0 {
+		return &v1pb.TaskRunSession{
+			Session: &v1pb.TaskRunSession_Postgres_{
+				Postgres: &v1pb.TaskRunSession_Postgres{},
+			},
+		}, nil
 	}
-	if cfg.Dial != nil {
-		connConfig.DialFunc = cfg.Dial
+	if results[0].Err != nil {
+		return nil, results[0].Err
 	}
-	if cfg.ApplicationName != "" {
-		connConfig.RuntimeParams["application_name"] = cfg.ApplicationName
-	}
-	if cfg.ReadOnly {
-		connConfig.RuntimeParams["default_transaction_read_only"] = "true"
-	}
-	return stdlib.OpenDB(*connConfig), nil
+	return taskRunSessionFromResult(results[0], applicationName), nil
 }
 
-// getRoutingIDFromCockroachCloudURL returns the routing ID a Cockroach Cloud
-// host names in its first label, or the empty string when the host is not one.
-// The server is reached through a shared gateway until the ID is passed as
-// --cluster, so the pool GetDB opens needs it as much as the driver does.
-func getRoutingIDFromCockroachCloudURL(host string) string {
-	host = strings.TrimSpace(host)
-	if !strings.HasSuffix(host, "cockroachlabs.cloud") {
+func taskRunSessionFromResult(result *omnidriver.Result, applicationName string) *v1pb.TaskRunSession {
+	ss := &v1pb.TaskRunSession_Postgres{}
+	for _, row := range result.Rows {
+		if len(row) < 9 {
+			continue
+		}
+		s := v1pb.TaskRunSession_Postgres_Session{
+			Pid:             valueString(row[0]),
+			Query:           valueString(row[1]),
+			State:           optionalValueString(row[2]),
+			Datname:         optionalValueString(row[3]),
+			Usename:         optionalValueString(row[4]),
+			ApplicationName: valueString(row[5]),
+			ClientAddr:      optionalValueString(row[6]),
+			BackendStart:    optionalValueTimestamp(row[7]),
+			QueryStart:      optionalValueTimestamp(row[8]),
+		}
+		if s.ApplicationName == applicationName {
+			ss.Session = &s
+		}
+	}
+	return &v1pb.TaskRunSession{
+		Session: &v1pb.TaskRunSession_Postgres_{
+			Postgres: ss,
+		},
+	}
+}
+
+func valueString(v omnidriver.Value) string {
+	if v.Kind == omnidriver.Null {
 		return ""
 	}
-	parts := strings.Split(host, ".")
-	// routing-id[.xxx].cockroachlabs.cloud
-	if len(parts) > 2 {
-		return parts[0]
+	return v.String
+}
+
+func optionalValueString(v omnidriver.Value) *string {
+	if v.Kind == omnidriver.Null {
+		return nil
 	}
-	return ""
+	s := v.String
+	return &s
+}
+
+func optionalValueTimestamp(v omnidriver.Value) *timestamppb.Timestamp {
+	if v.Kind != omnidriver.Timestamp && v.Kind != omnidriver.TimestampTZ {
+		return nil
+	}
+	return timestamppb.New(v.Time)
 }
 
 // SyncInstance reads the server version, its user databases and its roles.

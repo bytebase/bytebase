@@ -78,15 +78,9 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 		return connect.NewError(connect.CodePermissionDenied, err)
 	}
 	var driver db.Driver
-	var conn *sql.Conn
 	var connectionName string
 
 	clean := func() {
-		if conn != nil {
-			if err := conn.Close(); err != nil {
-				slog.Warn("failed to close connection", log.BBError(err))
-			}
-		}
 		if driver != nil {
 			driver.Close(ctx)
 		}
@@ -114,15 +108,6 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 			if err != nil {
 				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database driver: %v", err))
 			}
-			if !db.OwnsQuerySession(driver) {
-				sqlDB := db.SQLDB(driver)
-				if sqlDB != nil {
-					conn, err = sqlDB.Conn(ctx)
-					if err != nil {
-						return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database connection: %v", err))
-					}
-				}
-			}
 		}
 
 		queryRestriction := getEffectiveQueryDataPolicy(
@@ -148,7 +133,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 		result, duration, queryErr := executeWithTimeout(
 			ctx,
 			driver,
-			conn,
+			nil,
 			request.Statement,
 			queryContext,
 		)
@@ -403,18 +388,6 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	}
 	defer driver.Close(ctx)
 
-	var conn *sql.Conn
-	if !db.OwnsQuerySession(driver) {
-		sqlDB := db.SQLDB(driver)
-		if sqlDB != nil {
-			conn, err = sqlDB.Conn(ctx)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database connection: %v", err))
-			}
-			defer conn.Close()
-		}
-	}
-
 	startTime := time.Now()
 	queryContext := db.QueryContext{
 		Explain:              request.Explain,
@@ -446,7 +419,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		instance,
 		database,
 		driver,
-		conn,
+		nil,
 		statement,
 		queryContext,
 		s.licenseService,
@@ -1349,17 +1322,6 @@ func doExport(
 	}
 	defer driver.Close(ctx)
 
-	var conn *sql.Conn
-	if !db.OwnsQuerySession(driver) {
-		sqlDB := db.SQLDB(driver)
-		if sqlDB != nil {
-			conn, err = sqlDB.Conn(ctx)
-			if err != nil {
-				return nil, 0, err
-			}
-			defer conn.Close()
-		}
-	}
 	queryRestriction := getEffectiveQueryDataPolicy(
 		ctx,
 		stores,
@@ -1385,7 +1347,7 @@ func doExport(
 		instance,
 		database,
 		driver,
-		conn,
+		nil,
 		statements,
 		request.Statement,
 		queryContext,

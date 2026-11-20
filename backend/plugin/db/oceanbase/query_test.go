@@ -160,12 +160,3 @@ func TestQueryConnMapsTheRequest(t *testing.T) {
 		require.ErrorContains(t, err, "syntax error")
 	})
 }
-
-// TestGetDBReturnsNoHandle pins the contract: the editor's *sql.Conn is not the
-// driver's session, so there is no *sql.DB to hand out. The API already guards
-// a nil handle.
-func TestGetDBReturnsNoHandle(t *testing.T) {
-	server := newOceanBaseTestServer(t)
-	driver := server.open(context.Background(), t, "")
-	require.Nil(t, driver.GetDB())
-}

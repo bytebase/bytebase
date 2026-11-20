@@ -44,7 +44,6 @@ func TestClickHouseDriver(t *testing.T) {
 
 	server := open("")
 	require.NoError(t, server.Ping(ctx))
-	require.Nil(t, server.GetDB(), "the omni driver owns its pool and hands out sessions")
 	for _, statement := range []string{
 		"DROP DATABASE IF EXISTS " + testDatabase,
 		"CREATE DATABASE " + testDatabase,

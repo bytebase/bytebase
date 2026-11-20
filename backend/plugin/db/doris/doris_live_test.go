@@ -50,7 +50,6 @@ func TestDorisDriver(t *testing.T) {
 	const databaseName = "bb_doris_driver_test"
 	unbound := open("")
 	require.NoError(t, unbound.Ping(ctx))
-	require.Nil(t, unbound.GetDB())
 
 	const properties = `PROPERTIES("replication_num" = "1")`
 	setup := strings.Join([]string{

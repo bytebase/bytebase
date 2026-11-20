@@ -51,7 +51,6 @@ func TestCassandraDriver(t *testing.T) {
 	// and dropped.
 	unbound := open("")
 	require.NoError(t, unbound.Ping(ctx))
-	require.Nil(t, unbound.GetDB())
 
 	const keyspace = "bb_wave0_test"
 	_, err := unbound.Execute(ctx, "CREATE KEYSPACE IF NOT EXISTS bb_wave0_test WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}", db.ExecuteOptions{})

@@ -1,12 +1,10 @@
 package starrocks
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	omnidriver "github.com/bytebase/omni/driver"
-	starrocksdriver "github.com/bytebase/omni/starrocks/driver"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -289,14 +287,6 @@ func TestExecuteLogger(t *testing.T) {
 	require.Equal(t, "boom", logs[3].GetTransactionControl().GetError())
 }
 
-func TestGetDBIsNil(t *testing.T) {
-	// The driver owns its pool: a caller that needs a *sql.DB gets nil, as every
-	// reader of GetDB guards.
-	d := &Driver{impl: openedDriver(t)}
-	require.Nil(t, d.GetDB())
-	require.NoError(t, d.Close(context.Background()))
-}
-
 func TestSyncDatabaseError(t *testing.T) {
 	notFound := &notFoundError{}
 	require.Equal(t, "database \"analytics\" not found", syncDatabaseError(notFound, "analytics").Error())
@@ -315,21 +305,6 @@ type notFoundError struct{}
 func (*notFoundError) Error() string { return "not found: database" }
 func (*notFoundError) Is(target error) bool {
 	return target == omnidriver.ErrNotFound
-}
-
-// openedDriver opens a driver that never reaches a server, so Close and the
-// nil-GetDB contract can be exercised without one.
-func openedDriver(t *testing.T) *starrocksdriver.Driver {
-	t.Helper()
-	cfg, sshClient, err := driverConfig(db.ConnectionConfig{
-		DataSource:        &storepb.DataSource{Host: "127.0.0.1", Port: "1", Username: "root"},
-		ConnectionContext: db.ConnectionContext{DatabaseName: "analytics"},
-	})
-	require.NoError(t, err)
-	require.Nil(t, sshClient)
-	impl, err := starrocksdriver.Open(context.Background(), cfg)
-	require.NoError(t, err)
-	return impl
 }
 
 func nullRowValue() *v1pb.RowValue {

@@ -120,43 +120,6 @@ type Driver interface {
 	Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error
 }
 
-// SessionQuerier is implemented by a driver whose QueryConn runs on a session
-// the driver holds rather than on the *sql.Conn a caller passes. A caller that
-// opened a conn from SQLDB for such a driver would reserve a second server
-// connection no statement uses; it should leave conn nil. A driver can hold a
-// pool that is not the query path — MySQL's serves gh-ost's binlog probes — so
-// SQLDB's answer alone does not decide this.
-type SessionQuerier interface {
-	OwnsQuerySession()
-}
-
-// OwnsQuerySession reports whether driver's QueryConn ignores the caller's
-// *sql.Conn and runs on its own session.
-func OwnsQuerySession(driver Driver) bool {
-	_, ok := driver.(SessionQuerier)
-	return ok
-}
-
-// SQLDBProvider is the capability a driver offers when it still holds a
-// *sql.DB: the handle a caller that must run SQL of its own asks for through
-// SQLDB. A driver whose session is the engine package's is not one, and a
-// caller that needs a pool has to treat SQLDB's nil as the answer rather than
-// keep one of its own.
-type SQLDBProvider interface {
-	GetDB() *sql.DB
-}
-
-// SQLDB returns the driver's *sql.DB, or nil when the driver does not hold
-// one. It replaces the GetDB method db.Driver used to carry: a driver keeps its
-// handle where its engine package does, and the caller names the fallback once.
-func SQLDB(driver Driver) *sql.DB {
-	provider, ok := driver.(SQLDBProvider)
-	if !ok {
-		return nil
-	}
-	return provider.GetDB()
-}
-
 // Register makes a database driver available by the provided type.
 // If Register is called twice with the same name or if driver is nil,
 // it panics.

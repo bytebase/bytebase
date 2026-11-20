@@ -139,10 +139,6 @@ func (d *Driver) Ping(ctx context.Context) error {
 	return d.impl.Ping(ctx)
 }
 
-// OwnsQuerySession reports that QueryConn runs on the session the adapter
-// holds rather than on the *sql.Conn a caller passes, which is unused.
-func (*Driver) OwnsQuerySession() {}
-
 // Execute sends the whole script as one job. BigQuery's scripting runs a
 // multi-statement script as one job whose status states the script and carries
 // no per-statement row count, so the task run log holds one command spanning the

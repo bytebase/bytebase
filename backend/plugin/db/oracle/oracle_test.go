@@ -490,7 +490,6 @@ func TestOwnsPrivateDatabaseLinkAsksTheDriver(t *testing.T) {
 	require.NoError(t, err)
 	defer driver.Close(ctx)
 
-	require.Nil(t, db.SQLDB(driver))
 	owner, ok := driver.(interface {
 		OwnsPrivateDatabaseLink(context.Context) (bool, error)
 	})

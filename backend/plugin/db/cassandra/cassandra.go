@@ -58,6 +58,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	cassandraparser "github.com/bytebase/bytebase/backend/plugin/parser/cassandra"
 )
 
 var _ db.Driver = (*Driver)(nil)
@@ -140,11 +141,6 @@ func (d *Driver) Ping(ctx context.Context) error {
 	return d.inner.Ping(ctx)
 }
 
-// GetDB returns nil: Cassandra has no database/sql handle.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
 // Execute runs the script's statements in order, reporting each to the task
 // run's log.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
@@ -156,7 +152,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // QueryConn runs a read-only script, one result per statement, with the
 // editor's SELECT-only rule.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, rawStatement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	stmts, err := util.SanitizeSQL(rawStatement)
+	stmts, err := cassandraparser.SplitSQL(rawStatement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split sql")
 	}
@@ -169,23 +165,26 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, rawStatement string
 
 	var results []*v1pb.QueryResult
 	for _, stmt := range stmts {
+		if stmt.Empty {
+			continue
+		}
 		startTime := time.Now()
-		if _, _, err := base.ValidateSQLForEditor(storepb.Engine_CASSANDRA, stmt); err != nil {
+		if _, _, err := base.ValidateSQLForEditor(storepb.Engine_CASSANDRA, stmt.Text); err != nil {
 			results = append(results, &v1pb.QueryResult{
-				Statement: stmt,
+				Statement: stmt.Text,
 				Latency:   durationpb.New(time.Since(startTime)),
 				Error:     connect.NewError(connect.CodeInvalidArgument, errors.Errorf("support Cassandra SELECT statement only, err: %s", err.Error())).Error(),
 			})
 			break
 		}
 
-		stmtResults, err := session.Query(ctx, stmt, omnidriver.QueryOptions{
+		stmtResults, err := session.Query(ctx, stmt.Text, omnidriver.QueryOptions{
 			Limit:          queryContext.Limit,
 			MaxResultBytes: queryContext.MaximumSQLResultSize,
 		})
 		if err != nil {
 			results = append(results, &v1pb.QueryResult{
-				Statement: stmt,
+				Statement: stmt.Text,
 				Latency:   durationpb.New(time.Since(startTime)),
 				Error:     err.Error(),
 			})

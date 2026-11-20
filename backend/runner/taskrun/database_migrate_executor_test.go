@@ -2,7 +2,6 @@ package taskrun
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -13,35 +12,19 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// staticDriver stands in for an opened driver. Only GetDB is exercised here.
-type staticDriver struct {
-	db.Driver
-	sqlDB *sql.DB
-}
-
-func (d *staticDriver) GetDB() *sql.DB { return d.sqlDB }
-
-func TestRequireGhostConnection(t *testing.T) {
+func TestValidateGhostEngine(t *testing.T) {
 	tests := []struct {
 		name    string
 		engine  storepb.Engine
-		sqlDB   *sql.DB
 		wantErr string
 	}{
 		{
-			name:   "mysql with a connection",
+			name:   "mysql",
 			engine: storepb.Engine_MYSQL,
-			sqlDB:  &sql.DB{},
 		},
 		{
-			name:   "mariadb with a connection",
+			name:   "mariadb",
 			engine: storepb.Engine_MARIADB,
-			sqlDB:  &sql.DB{},
-		},
-		{
-			name:    "mysql without a connection",
-			engine:  storepb.Engine_MYSQL,
-			wantErr: "gh-ost needs a direct database/sql connection",
 		},
 		{
 			name:    "engine gh-ost does not drive",
@@ -49,17 +32,7 @@ func TestRequireGhostConnection(t *testing.T) {
 			wantErr: "gh-ost requires MySQL or MariaDB",
 		},
 		{
-			// TiDB is MySQL-compatible but has no MySQL replication for gh-ost
-			// to read, so the engine check refuses it before any pool is
-			// consulted. The TiDB driver exposes no *sql.DB after its cutover,
-			// so the pool-less case below is the one that ships.
-			name:    "tidb with a connection",
-			engine:  storepb.Engine_TIDB,
-			sqlDB:   &sql.DB{},
-			wantErr: "gh-ost requires MySQL or MariaDB",
-		},
-		{
-			name:    "tidb without a connection",
+			name:    "tidb",
 			engine:  storepb.Engine_TIDB,
 			wantErr: "gh-ost requires MySQL or MariaDB",
 		},
@@ -68,14 +41,12 @@ func TestRequireGhostConnection(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: tt.engine}}
-			sqlDB, err := requireGhostConnection(&staticDriver{sqlDB: tt.sqlDB}, instance)
+			err := validateGhostEngine(instance)
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
-				require.Nil(t, sqlDB)
 				return
 			}
 			require.NoError(t, err)
-			require.NotNil(t, sqlDB)
 		})
 	}
 }
