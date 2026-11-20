@@ -31,7 +31,7 @@
   defaultDatabase: testdb
   metadata: '{}'
   querySpan:
-    type: 1
+    type: 3
     results: []
     sourcecolumns:
         - server: ""

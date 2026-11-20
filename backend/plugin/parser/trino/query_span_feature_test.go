@@ -485,3 +485,43 @@ func TestQuerySpan_ThreePartNaming(t *testing.T) {
 	assert.True(t, hasUsers, "expected catalog1.public.users; got %v", sources)
 	assert.True(t, hasOrders, "expected catalog2.public.orders; got %v", sources)
 }
+
+func TestQuerySpan_WithFunctionStmt(t *testing.T) {
+	cat1 := &metadatapb.DatabaseSchemaMetadata{
+		Name:    "cat1",
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}},
+	}
+	cat2 := &metadatapb.DatabaseSchemaMetadata{
+		Name: "cat2",
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*metadatapb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*metadatapb.ColumnMetadata{
+							{Name: "id", Type: "bigint"},
+							{Name: "email", Type: "varchar"},
+						},
+					},
+				},
+			},
+		},
+	}
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{cat1, cat2})
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		Engine:                  storepb.Engine_TRINO,
+	}
+
+	sql := "WITH FUNCTION f(x bigint) RETURNS bigint RETURN x + 1 SELECT f(id) AS fid, email FROM cat2.public.users"
+	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: sql}, "cat1", "public", false)
+	require.NoError(t, err)
+	assert.Equal(t, base.Select, span.Type)
+	require.Len(t, span.Results, 2)
+	_, hasID := span.Results[0].SourceColumns[base.ColumnResource{Database: "cat2", Schema: "public", Table: "users", Column: "id"}]
+	_, hasEmail := span.Results[1].SourceColumns[base.ColumnResource{Database: "cat2", Schema: "public", Table: "users", Column: "email"}]
+	assert.True(t, hasID, "expected cat2.public.users.id in fid source columns; got %v", span.Results[0].SourceColumns)
+	assert.True(t, hasEmail, "expected cat2.public.users.email in email source columns; got %v", span.Results[1].SourceColumns)
+}

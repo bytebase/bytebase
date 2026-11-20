@@ -3,9 +3,12 @@ package trino
 import (
 	"context"
 	stderrors "errors"
+	"strings"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/trino/analysis"
+	"github.com/bytebase/omni/trino/ast"
+	"github.com/bytebase/omni/trino/parser"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -57,6 +60,18 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.
 		return nil, errors.Wrapf(err, "failed to get query span from statement: %s", stmt.Text)
 	}
 
+	// Work around omni's spanQueryType lacking a WithFunctionStmt case (returning DDL
+	// with empty Results): resolve the wrapped QueryStmt directly so ACLs and masking apply.
+	if resolved.Type == analysis.DDL && containsASCIIFold(stmt.Text, "function") {
+		if innerSQL, ok := withFunctionInnerQuery(stmt.Text); ok {
+			innerResolved, err := analysis.ResolveQuerySpan(innerSQL, opts)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get query span from statement: %s", stmt.Text)
+			}
+			resolved = innerResolved
+		}
+	}
+
 	results := make([]base.QuerySpanResult, 0, len(resolved.Results))
 	for _, r := range resolved.Results {
 		results = append(results, base.QuerySpanResult{
@@ -89,6 +104,46 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.
 		}
 	}
 	return span, nil
+}
+
+func withFunctionInnerQuery(statement string) (string, bool) {
+	file, err := parser.Parse(statement)
+	if err != nil || file == nil || len(file.Stmts) != 1 {
+		return "", false
+	}
+	wf := unwrapWithFunction(file.Stmts[0])
+	if wf == nil || wf.Query == nil {
+		return "", false
+	}
+	start := -1
+	if wf.Query.With != nil {
+		start = wf.Query.With.Loc.Start
+	} else if wf.Query.Body != nil {
+		start = wf.Query.Body.Span().Start
+	}
+	end := wf.Query.Loc.End
+	if start < 0 || end > len(statement) || start >= end {
+		return "", false
+	}
+	inner := strings.TrimSpace(statement[start:end])
+	if inner == "" {
+		return "", false
+	}
+	return inner, true
+}
+
+func unwrapWithFunction(node ast.Node) *parser.WithFunctionStmt {
+	switch n := node.(type) {
+	case *parser.WithFunctionStmt:
+		return n
+	case *parser.ExplainStmt:
+		if n.Analyze && n.Statement != nil {
+			return unwrapWithFunction(n.Statement)
+		}
+		return nil
+	default:
+		return nil
+	}
 }
 
 func mapQueryType(qt analysis.QueryType) base.QueryType {

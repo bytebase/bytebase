@@ -79,6 +79,20 @@ func TestValidateQuery(t *testing.T) {
 			wantErr:      false,
 		},
 		{
+			name:         "WITH FUNCTION SELECT is refused",
+			sql:          "WITH FUNCTION f(x bigint) RETURNS bigint RETURN x + 1 SELECT f(id), email FROM cat2.public.users",
+			wantReadOnly: false,
+			wantData:     false,
+			wantErr:      false,
+		},
+		{
+			name:         "EXPLAIN WITH FUNCTION SELECT is refused",
+			sql:          "EXPLAIN WITH FUNCTION f(x bigint) RETURNS bigint RETURN x + 1 SELECT f(1)",
+			wantReadOnly: false,
+			wantData:     false,
+			wantErr:      false,
+		},
+		{
 			name:         "Invalid SQL",
 			sql:          "SELECT * FFROM users",
 			wantReadOnly: false,

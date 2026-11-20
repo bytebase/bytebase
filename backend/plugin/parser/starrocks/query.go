@@ -1,6 +1,8 @@
 package starrocks
 
 import (
+	"strings"
+
 	"github.com/bytebase/omni/starrocks/analysis"
 	"github.com/bytebase/omni/starrocks/ast"
 
@@ -21,17 +23,34 @@ func validateQuery(statement string) (bool, bool, error) {
 		return false, returnsData, nil
 	}
 	// Work around omni/starrocks/analysis.ValidateQuery accepting EXPLAIN over
-	// queries with INTO OUTFILE so EXPLAIN cannot bypass the export gate.
-	parsed, err := parseStarRocksSQL(statement)
-	if err != nil {
-		return false, false, err
-	}
-	for _, p := range parsed {
-		if exp, ok := p.Node().(*ast.ExplainStmt); ok && writesOutfile(exp.Query) {
-			return false, false, nil
+	// queries with INTO OUTFILE; skip re-parsing unless both keywords appear.
+	if containsASCIIFold(statement, "explain") && containsASCIIFold(statement, "outfile") {
+		parsed, err := parseStarRocksSQL(statement)
+		if err != nil {
+			return false, false, err
+		}
+		for _, p := range parsed {
+			if exp, ok := p.Node().(*ast.ExplainStmt); ok && writesOutfile(exp.Query) {
+				return false, false, nil
+			}
 		}
 	}
 	return readOnly, returnsData, nil
+}
+
+func containsASCIIFold(s, substr string) bool {
+	if len(substr) == 0 {
+		return true
+	}
+	if len(s) < len(substr) {
+		return false
+	}
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if strings.EqualFold(s[i:i+len(substr)], substr) {
+			return true
+		}
+	}
+	return false
 }
 
 func writesOutfile(node ast.Node) bool {
