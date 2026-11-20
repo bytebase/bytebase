@@ -150,6 +150,29 @@ func TestDatabaseQualifiersInStatement(t *testing.T) {
 			statement: "SELECT * FROM users u ORDER BY u.id DESC",
 			defaultDB: "appdb",
 		},
+		{
+			name:      "truncate without TABLE keyword extracts db while TRUNCATE function call does not",
+			statement: "TRUNCATE otherdb.; SELECT TRUNCATE(a.amount, 2) FROM users a",
+			defaultDB: "appdb",
+			want:      []string{"otherdb"},
+		},
+		{
+			name:      "drop sequence comma list and tidb import into extract dbs",
+			statement: "DROP SEQUENCE IF EXISTS db1.s1, otherdb.; IMPORT INTO third_db.t1 FROM 's3://bucket/path'",
+			defaultDB: "appdb",
+			want:      []string{"db1", "otherdb", "third_db"},
+		},
+		{
+			name:      "cache index and load index into cache extract table lists",
+			statement: "CACHE INDEX db1.t1, db2. IN hot_cache; LOAD INDEX INTO CACHE db3.t1 INDEX (idx1), db4.",
+			defaultDB: "appdb",
+			want:      []string{"db1", "db2", "db3", "db4"},
+		},
+		{
+			name:      "function return expression does not treat qualifier as database",
+			statement: "CREATE FUNCTION fn() RETURNS INT RETURN a.x",
+			defaultDB: "appdb",
+		},
 	}
 
 	for _, tc := range tests {

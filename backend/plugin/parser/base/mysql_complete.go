@@ -441,7 +441,7 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 			sc.afterRename = false
 			sc.afterDDLOnObj = false
 		case "WHERE", "SET", "VALUES", "VALUE", "GROUP", "HAVING", "ORDER", "LIMIT",
-			"UNION", "INTERSECT", "EXCEPT", "FOR", "WINDOW", "RETURNING":
+			"UNION", "INTERSECT", "EXCEPT", "FOR", "WINDOW", "RETURNING", "RETURN":
 			sc.inTableClause = false
 			sc.inInsertReplaceTarget = false
 			sc.allowCommaTable = false
@@ -474,7 +474,7 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 			sc.inInsertReplaceTarget = true
 			sc.allowCommaTable = false
 		case "INTO":
-			if sc.inInsertReplaceTarget {
+			if sc.inInsertReplaceTarget || sc.stmtVerb == "IMPORT" {
 				sc.inTableClause = true
 				sc.allowCommaTable = false
 				sc.inInsertReplaceTarget = false
@@ -508,11 +508,23 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 			sc.allowCommaTable = false
 			sc.allowFromAsTable = false
 		case "INDEX", "TRIGGER":
-			sc.afterDDLOnObj = true
 			sc.inInsertReplaceTarget = false
-			if kw == "TRIGGER" {
+			if kw == "INDEX" && sc.stmtVerb == "CACHE" && prevKW == "CACHE" {
 				sc.inTableClause = true
-				sc.allowCommaTable = false
+				sc.allowCommaTable = true
+				sc.afterDDLOnObj = false
+			} else {
+				sc.afterDDLOnObj = true
+				if kw == "TRIGGER" {
+					sc.inTableClause = true
+					sc.allowCommaTable = false
+				}
+			}
+		case "CACHE":
+			if sc.stmtVerb == "LOAD" && prevKW == "INTO" {
+				sc.inTableClause = true
+				sc.allowCommaTable = true
+				sc.inInsertReplaceTarget = false
 			}
 		case "TABLE", "TABLES":
 			sc.inTableClause = true
@@ -522,6 +534,16 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 			sc.inTableClause = true
 			sc.inInsertReplaceTarget = false
 			sc.allowCommaTable = sc.stmtVerb == "DROP"
+		case "SEQUENCE":
+			sc.inTableClause = true
+			sc.inInsertReplaceTarget = false
+			sc.allowCommaTable = sc.stmtVerb == "DROP"
+		case "TRUNCATE":
+			if (wasStmtStart || prevKW == "BEGIN") && (i+1 >= len(toks) || toks[i+1].punct != '(') {
+				sc.inTableClause = true
+				sc.inInsertReplaceTarget = false
+				sc.allowCommaTable = false
+			}
 		case "EVENT", "FUNCTION", "PROCEDURE", "CALL", "HANDLER", "REFERENCES":
 			sc.inTableClause = true
 			sc.inInsertReplaceTarget = false
@@ -534,13 +556,19 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 		case "TO":
 			if sc.afterRename {
 				sc.inTableClause = true
+			} else {
+				sc.inTableClause = false
+				sc.allowCommaTable = false
 			}
 		case "LIKE":
 			if sc.afterCreate {
 				sc.inTableClause = true
 			}
 		case "IN":
-			if prevKW == "COLUMNS" || prevKW == "FIELDS" || prevKW == "INDEX" || prevKW == "INDEXES" || prevKW == "KEYS" {
+			if sc.stmtVerb == "CACHE" {
+				sc.inTableClause = false
+				sc.allowCommaTable = false
+			} else if prevKW == "COLUMNS" || prevKW == "FIELDS" || prevKW == "INDEX" || prevKW == "INDEXES" || prevKW == "KEYS" {
 				sc.inTableClause = true
 				sc.allowCommaTable = false
 			}

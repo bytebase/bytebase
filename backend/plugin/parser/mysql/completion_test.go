@@ -419,6 +419,14 @@ func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
 	require.True(t, hasCandidate(gotDropTemp, base.CandidateTypeTable, "t1"))
 	require.Zero(t, listCalls, "ListDatabaseNames must not be called for DROP TEMPORARY TABLE comma list")
 	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
+
+	metaCalls = nil
+	stmtTruncate := "TRUNCATE otherdb."
+	gotTruncate, err := Completion(context.Background(), cCtx, stmtTruncate, 1, len(stmtTruncate))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotTruncate, base.CandidateTypeTable, "t1"))
+	require.Zero(t, listCalls, "ListDatabaseNames must not be called for TRUNCATE without TABLE keyword")
+	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
 }
 
 func TestCompletion_TrailingSemicolonAndUTF16Caret(t *testing.T) {
