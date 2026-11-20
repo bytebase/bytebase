@@ -5,7 +5,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/trino/catalog"
 	"github.com/bytebase/omni/trino/completion"
 
@@ -99,21 +98,6 @@ func buildCompletionCatalog(ctx context.Context, cCtx base.CompletionContext, st
 		cat.SetCurrentSchema(catalog.Normalize(cCtx.DefaultSchema))
 	}
 	return cat
-}
-
-// viewDefinitions returns the defining query of every view in the snapshot.
-// Query span feeds them back as a corpus so it can tell which catalogs a view
-// reaches into; an empty definition leaves the view opaque.
-func viewDefinitions(meta *metadatapb.DatabaseSchemaMetadata) []string {
-	var definitions []string
-	for _, schema := range meta.GetSchemas() {
-		for _, view := range schema.GetViews() {
-			if def := view.GetDefinition(); def != "" {
-				definitions = append(definitions, def)
-			}
-		}
-	}
-	return definitions
 }
 
 // catalogNeeded reports whether the current completion statement needs this

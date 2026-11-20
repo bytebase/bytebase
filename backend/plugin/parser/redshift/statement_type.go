@@ -3,11 +3,10 @@ package redshift
 import (
 	"strings"
 
-	redshiftast "github.com/bytebase/omni/redshift/ast"
+	"github.com/bytebase/omni/redshift/analysis"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -36,7 +35,7 @@ func GetStatementTypesWithPosition(asts []base.AST) ([]StatementTypeWithPosition
 			continue
 		}
 
-		stmtType := classifyStatementType(wrapped.Node)
+		stmtType := convertStatementType(analysis.StatementTypeOf(wrapped.Node))
 		if stmtType == storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED {
 			continue
 		}
@@ -71,135 +70,66 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	return types, nil
 }
 
-func classifyStatementType(node redshiftast.Node) storepb.StatementType {
-	switch n := node.(type) {
-	case *redshiftast.CreateStmt:
-		return storepb.StatementType_CREATE_TABLE
-	case *redshiftast.CreateTableAsStmt:
-		if n.Objtype == redshiftast.OBJECT_MATVIEW {
-			return storepb.StatementType_CREATE_VIEW
-		}
-		return storepb.StatementType_CREATE_TABLE
-	case *redshiftast.ViewStmt:
-		return storepb.StatementType_CREATE_VIEW
-	case *redshiftast.IndexStmt:
-		return storepb.StatementType_CREATE_INDEX
-	case *redshiftast.CreateSeqStmt:
-		return storepb.StatementType_CREATE_SEQUENCE
-	case *redshiftast.CreateSchemaStmt:
-		return storepb.StatementType_CREATE_SCHEMA
-	case *redshiftast.CreateFunctionStmt:
-		return storepb.StatementType_CREATE_FUNCTION
-	case *redshiftast.CreatedbStmt:
+func convertStatementType(t analysis.StatementType) storepb.StatementType {
+	switch t {
+	case analysis.CreateDatabase:
 		return storepb.StatementType_CREATE_DATABASE
-	case *redshiftast.DropdbStmt:
+	case analysis.CreateTable:
+		return storepb.StatementType_CREATE_TABLE
+	case analysis.CreateView:
+		return storepb.StatementType_CREATE_VIEW
+	case analysis.CreateIndex:
+		return storepb.StatementType_CREATE_INDEX
+	case analysis.CreateSequence:
+		return storepb.StatementType_CREATE_SEQUENCE
+	case analysis.CreateSchema:
+		return storepb.StatementType_CREATE_SCHEMA
+	case analysis.CreateFunction:
+		return storepb.StatementType_CREATE_FUNCTION
+	case analysis.DropDatabase:
 		return storepb.StatementType_DROP_DATABASE
-	case *redshiftast.DropStmt:
-		return classifyDropStatementType(redshiftast.ObjectType(n.RemoveType))
-	case *redshiftast.AlterTableStmt:
-		if redshiftast.ObjectType(n.ObjType) == redshiftast.OBJECT_VIEW || redshiftast.ObjectType(n.ObjType) == redshiftast.OBJECT_MATVIEW {
-			return storepb.StatementType_ALTER_VIEW
-		}
-		return storepb.StatementType_ALTER_TABLE
-	case *redshiftast.AlterSeqStmt:
-		return storepb.StatementType_ALTER_SEQUENCE
-	case *redshiftast.RenameStmt:
-		return classifyRenameStatementType(n.RenameType)
-	case *redshiftast.CommentStmt:
-		return storepb.StatementType_COMMENT
-	case *redshiftast.TruncateStmt:
-		return storepb.StatementType_TRUNCATE
-	case *redshiftast.InsertStmt:
-		return storepb.StatementType_INSERT
-	case *redshiftast.UpdateStmt:
-		return storepb.StatementType_UPDATE
-	case *redshiftast.DeleteStmt:
-		return storepb.StatementType_DELETE
-	case *redshiftast.MergeStmt:
-		return storepb.StatementType_MERGE
-	// A procedure or prepared statement runs code this classifier does not look into. Redshift has no DO.
-	case *redshiftast.CallStmt, *redshiftast.ExecuteStmt:
-		return storepb.StatementType_EXECUTE
-	case *redshiftast.RedshiftObjectStmt:
-		return classifyRedshiftObjectStatementType(n.Command, n.ObjectType)
-	default:
-		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-	}
-}
-
-func classifyDropStatementType(objectType redshiftast.ObjectType) storepb.StatementType {
-	switch objectType {
-	case redshiftast.OBJECT_TABLE:
+	case analysis.DropTable:
 		return storepb.StatementType_DROP_TABLE
-	case redshiftast.OBJECT_VIEW:
+	case analysis.DropView:
 		return storepb.StatementType_DROP_VIEW
-	case redshiftast.OBJECT_MATVIEW:
-		return storepb.StatementType_DROP_TABLE
-	case redshiftast.OBJECT_SCHEMA:
+	case analysis.DropSchema:
 		return storepb.StatementType_DROP_SCHEMA
-	case redshiftast.OBJECT_INDEX:
+	case analysis.DropIndex:
 		return storepb.StatementType_DROP_INDEX
-	case redshiftast.OBJECT_SEQUENCE:
+	case analysis.DropSequence:
 		return storepb.StatementType_DROP_SEQUENCE
-	case redshiftast.OBJECT_FUNCTION:
+	case analysis.DropFunction:
 		return storepb.StatementType_DROP_FUNCTION
-	default:
-		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-	}
-}
-
-func classifyRenameStatementType(objectType redshiftast.ObjectType) storepb.StatementType {
-	switch objectType {
-	case redshiftast.OBJECT_INDEX:
-		return storepb.StatementType_RENAME_INDEX
-	case redshiftast.OBJECT_SCHEMA:
-		return storepb.StatementType_RENAME_SCHEMA
-	case redshiftast.OBJECT_SEQUENCE:
-		return storepb.StatementType_RENAME_SEQUENCE
-	case redshiftast.OBJECT_VIEW, redshiftast.OBJECT_MATVIEW:
-		return storepb.StatementType_ALTER_VIEW
-	case redshiftast.OBJECT_TABLE:
+	case analysis.AlterDatabase:
+		return storepb.StatementType_ALTER_DATABASE
+	case analysis.AlterTable:
 		return storepb.StatementType_ALTER_TABLE
-	default:
-		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-	}
-}
-
-func classifyRedshiftObjectStatementType(command, objectType string) storepb.StatementType {
-	switch strings.ToLower(command) {
-	case "create":
-		switch strings.ToLower(objectType) {
-		case "database":
-			return storepb.StatementType_CREATE_DATABASE
-		case "schema", "external schema":
-			return storepb.StatementType_CREATE_SCHEMA
-		default:
-			return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-		}
-	case "alter":
-		switch strings.ToLower(objectType) {
-		case "database":
-			return storepb.StatementType_ALTER_DATABASE
-		case "index":
-			return storepb.StatementType_ALTER_INDEX
-		case "sequence":
-			return storepb.StatementType_ALTER_SEQUENCE
-		case "table":
-			return storepb.StatementType_ALTER_TABLE
-		case "view", "external view", "materialized view":
-			return storepb.StatementType_ALTER_VIEW
-		default:
-			return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-		}
-	case "drop":
-		switch strings.ToLower(objectType) {
-		case "database":
-			return storepb.StatementType_DROP_DATABASE
-		case "schema", "external schema":
-			return storepb.StatementType_DROP_SCHEMA
-		default:
-			return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-		}
+	case analysis.AlterView:
+		return storepb.StatementType_ALTER_VIEW
+	case analysis.AlterIndex:
+		return storepb.StatementType_ALTER_INDEX
+	case analysis.AlterSequence:
+		return storepb.StatementType_ALTER_SEQUENCE
+	case analysis.RenameIndex:
+		return storepb.StatementType_RENAME_INDEX
+	case analysis.RenameSchema:
+		return storepb.StatementType_RENAME_SCHEMA
+	case analysis.RenameSequence:
+		return storepb.StatementType_RENAME_SEQUENCE
+	case analysis.Comment:
+		return storepb.StatementType_COMMENT
+	case analysis.Truncate:
+		return storepb.StatementType_TRUNCATE
+	case analysis.Insert:
+		return storepb.StatementType_INSERT
+	case analysis.Update:
+		return storepb.StatementType_UPDATE
+	case analysis.Delete:
+		return storepb.StatementType_DELETE
+	case analysis.Merge:
+		return storepb.StatementType_MERGE
+	case analysis.Execute:
+		return storepb.StatementType_EXECUTE
 	default:
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}
