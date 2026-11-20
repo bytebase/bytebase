@@ -52,17 +52,6 @@ func GetSSHClient(ds *storepb.DataSource) (*ssh.Client, error) {
 	return sshConn, nil
 }
 
-const sshPortSize = 100
-
-// PortFIFO is the fifo for SSH client port queue.
-var PortFIFO = make(chan int, sshPortSize)
-
-func init() {
-	for i := 0; i < sshPortSize; i++ {
-		PortFIFO <- i + 6113
-	}
-}
-
 // NoDeadlineConn ignores deadlines, so a read or write blocked on it cannot be
 // interrupted. A driver that relies on deadlines dials with DialSSHTunnel.
 type NoDeadlineConn struct{ net.Conn }

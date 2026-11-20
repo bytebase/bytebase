@@ -33,9 +33,6 @@ const (
 	BlockedFeatureDocvalueFields  = base.ElasticsearchBlockedFeatureDocvalueFields
 )
 
-// BlockedFeatureNames maps BlockedFeature to human-readable names for error messages.
-var BlockedFeatureNames = base.ElasticsearchBlockedFeatureNames
-
 // AnalyzeRequest combines URL classification with body analysis for an ES request.
 // Body analysis is only performed for search and explain APIs.
 func AnalyzeRequest(method, url, body string) *RequestAnalysis {
