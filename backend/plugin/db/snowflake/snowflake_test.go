@@ -1,20 +1,25 @@
 package snowflake
 
 import (
+	"bytes"
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"errors"
+	"io"
 	"testing"
 	"time"
 
 	odriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
 	snowflakedriver "github.com/bytebase/omni/snowflake/driver"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -284,20 +289,78 @@ func (s *fakeSession) Close() error {
 	return nil
 }
 
-func TestQueryConnForwardsOptionsAndConvertsResults(t *testing.T) {
-	session := &fakeSession{
+type fakeImpl struct {
+	sessions     []*fakeSession
+	sessionCalls int
+	closed       bool
+
+	executeScript string
+	executeOpts   odriver.ExecuteOptions
+	executeFn     func(script string, opts odriver.ExecuteOptions) (int64, error)
+
+	instance    *odriver.Instance
+	instanceErr error
+	schema      *metadatapb.DatabaseSchemaMetadata
+	schemaErr   error
+	dumpDDL     string
+}
+
+func (*fakeImpl) Ping(context.Context) error { return nil }
+
+func (f *fakeImpl) Close() error {
+	f.closed = true
+	return nil
+}
+
+func (f *fakeImpl) Session(context.Context) (odriver.Session, error) {
+	idx := f.sessionCalls
+	f.sessionCalls++
+	if idx < len(f.sessions) {
+		return f.sessions[idx], nil
+	}
+	return &fakeSession{}, nil
+}
+
+func (f *fakeImpl) Execute(_ context.Context, script string, opts odriver.ExecuteOptions) (int64, error) {
+	f.executeScript = script
+	f.executeOpts = opts
+	if f.executeFn != nil {
+		return f.executeFn(script, opts)
+	}
+	return 0, nil
+}
+
+func (f *fakeImpl) SyncInstance(context.Context) (*odriver.Instance, error) {
+	return f.instance, f.instanceErr
+}
+
+func (f *fakeImpl) SyncDatabase(context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return f.schema, f.schemaErr
+}
+
+func (f *fakeImpl) Dump(_ context.Context, w io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
+	_, err := io.WriteString(w, f.dumpDDL)
+	return err
+}
+
+func TestQueryConnLazySessionAndExplainOptions(t *testing.T) {
+	s1 := &fakeSession{
 		results: []*odriver.Result{
 			{
 				Statement: `EXPLAIN USING JSON SELECT 1`,
 				Columns:   []odriver.Column{{Name: "plan", TypeName: "TEXT"}},
 				Rows:      [][]odriver.Value{{{Kind: odriver.String, String: `{"GlobalStats":{}}`}}},
-				Plan:      &odriver.Plan{Format: "JSON", Executed: false},
+				// snowflake/analysis.DescribeExplain returns lowercase "json".
+				Plan: &odriver.Plan{Format: "json", Executed: false},
 			},
 		},
 	}
-	d := &Driver{session: session}
+	impl := &fakeImpl{sessions: []*fakeSession{s1}}
+	d := &Driver{impl: impl, databaseName: "SAMPLE_DB"}
+	require.Equal(t, 0, impl.sessionCalls, "session must not be opened before first QueryConn")
 
-	got, err := d.QueryConn(context.Background(), nil, "SELECT 1", db.QueryContext{
+	// Explain: true leaves QueryPlan nil so SQLService stamps the requested format.
+	gotExplain, err := d.QueryConn(context.Background(), nil, "SELECT 1", db.QueryContext{
 		Schema:               "ANALYTICS",
 		Limit:                100,
 		Explain:              true,
@@ -306,7 +369,7 @@ func TestQueryConnForwardsOptionsAndConvertsResults(t *testing.T) {
 		MaximumSQLResultSize: 1 << 20,
 	})
 	require.NoError(t, err)
-	require.Equal(t, "SELECT 1", session.gotScript)
+	require.Equal(t, 1, impl.sessionCalls)
 	require.Equal(t, odriver.QueryOptions{
 		Schema:         "ANALYTICS",
 		Limit:          100,
@@ -314,25 +377,142 @@ func TestQueryConnForwardsOptionsAndConvertsResults(t *testing.T) {
 		ExplainFormat:  "JSON",
 		MaskingEnabled: true,
 		MaxResultBytes: 1 << 20,
-	}, session.gotOpts)
-	require.Len(t, got, 1)
-	require.Equal(t, []string{"plan"}, got[0].ColumnNames)
-	require.NotNil(t, got[0].QueryPlan)
-	require.Equal(t, v1pb.QueryOption_JSON, got[0].QueryPlan.Format)
-	require.False(t, got[0].QueryPlan.Executed)
-	require.False(t, session.closed)
+	}, s1.gotOpts)
+	require.Len(t, gotExplain, 1)
+	require.Nil(t, gotExplain[0].QueryPlan)
+
+	// User-written EXPLAIN (Explain: false) reuses the held session and maps
+	// lowercase "json" onto QueryOption_JSON.
+	gotUserExplain, err := d.QueryConn(context.Background(), nil, "EXPLAIN USING JSON SELECT 1", db.QueryContext{
+		MaximumSQLResultSize: 1 << 20,
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, impl.sessionCalls, "subsequent QueryConn must reuse held session")
+	require.Len(t, gotUserExplain, 1)
+	require.Equal(t, &v1pb.QueryResult_QueryPlan{
+		Format:   v1pb.QueryOption_JSON,
+		Executed: false,
+	}, gotUserExplain[0].QueryPlan)
+
 	require.NoError(t, d.Close(context.Background()))
-	require.True(t, session.closed)
+	require.True(t, s1.closed)
+	require.True(t, impl.closed)
 }
 
-func TestQueryConnDropsTheSessionAScriptCouldNotRun(t *testing.T) {
-	session := &fakeSession{err: errors.New("connection lost")}
-	d := &Driver{session: session}
+func TestQueryConnNormalizesResults(t *testing.T) {
+	t.Run("columnless command with nil AffectedRows answers Affected Rows 0", func(t *testing.T) {
+		session := &fakeSession{
+			results: []*odriver.Result{
+				{
+					Statement: "CREATE TABLE t (id INT)",
+					Messages:  []odriver.Message{{Level: "INFO", Content: "created"}},
+				},
+			},
+		}
+		d := &Driver{session: session}
+		got, err := d.QueryConn(context.Background(), nil, "CREATE TABLE t (id INT)", db.QueryContext{})
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		require.Equal(t, []string{"Affected Rows"}, got[0].ColumnNames)
+		require.Equal(t, []string{"INT"}, got[0].ColumnTypeNames)
+		require.EqualValues(t, 1, got[0].RowsCount)
+		require.Len(t, got[0].Rows, 1)
+		require.EqualValues(t, 0, got[0].Rows[0].Values[0].GetInt64Value())
+		require.Len(t, got[0].Messages, 1)
+	})
 
-	_, err := d.QueryConn(context.Background(), nil, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
-	require.ErrorContains(t, err, "connection lost")
-	require.True(t, session.closed)
-	require.Nil(t, d.session)
+	t.Run("zero-row query with columns keeps empty rows", func(t *testing.T) {
+		session := &fakeSession{
+			results: []*odriver.Result{
+				{
+					Statement: "SELECT id FROM t WHERE 1 = 0",
+					Columns:   []odriver.Column{{Name: "ID", TypeName: "FIXED"}},
+				},
+			},
+		}
+		d := &Driver{session: session}
+		got, err := d.QueryConn(context.Background(), nil, "SELECT id FROM t WHERE 1 = 0", db.QueryContext{})
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		require.Equal(t, []string{"ID"}, got[0].ColumnNames)
+		require.Empty(t, got[0].Rows)
+		require.Zero(t, got[0].RowsCount)
+	})
+
+	t.Run("failed EXPLAIN clears QueryPlan", func(t *testing.T) {
+		session := &fakeSession{
+			results: []*odriver.Result{
+				{
+					Statement: "EXPLAIN SELECT * FROM missing",
+					Err:       errors.New("object does not exist"),
+					Plan:      &odriver.Plan{Format: "text"},
+				},
+			},
+		}
+		d := &Driver{session: session}
+		got, err := d.QueryConn(context.Background(), nil, "EXPLAIN SELECT * FROM missing", db.QueryContext{})
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		require.Equal(t, "object does not exist", got[0].Error)
+		require.Nil(t, got[0].QueryPlan)
+		require.Empty(t, got[0].ColumnNames)
+	})
+
+	t.Run("timestamps outside protobuf range convert to strings", func(t *testing.T) {
+		session := &fakeSession{
+			results: []*odriver.Result{
+				{
+					Statement: "SELECT ts_ntz, ts_tz, valid_ts",
+					Columns: []odriver.Column{
+						{Name: "TS_NTZ", TypeName: "TIMESTAMP_NTZ"},
+						{Name: "TS_TZ", TypeName: "TIMESTAMP_TZ"},
+						{Name: "VALID_TS", TypeName: "TIMESTAMP_NTZ"},
+					},
+					Rows: [][]odriver.Value{{
+						{Kind: odriver.Timestamp, Time: time.Date(0, 1, 1, 0, 0, 0, 7000000, time.UTC), Precision: 3},
+						{Kind: odriver.TimestampTZ, Time: time.Date(10000, 1, 2, 3, 4, 5, 0, time.UTC), Precision: 0},
+						{Kind: odriver.Timestamp, Time: time.Date(2026, 5, 11, 12, 34, 56, 0, time.UTC), Precision: 0},
+					}},
+				},
+			},
+		}
+		d := &Driver{session: session}
+		got, err := d.QueryConn(context.Background(), nil, "SELECT ts_ntz, ts_tz, valid_ts", db.QueryContext{})
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		_, err = protojson.Marshal(got[0])
+		require.NoError(t, err)
+		require.Equal(t, "0000-01-01 00:00:00.007", got[0].Rows[0].Values[0].GetStringValue())
+		require.Equal(t, "10000-01-02T03:04:05Z", got[0].Rows[0].Values[1].GetStringValue())
+		require.NotNil(t, got[0].Rows[0].Values[2].GetTimestampValue())
+	})
+}
+
+func TestQueryConnDropsSessionOnErrorOrCanceledContext(t *testing.T) {
+	t.Run("session error", func(t *testing.T) {
+		session := &fakeSession{err: errors.New("connection lost")}
+		d := &Driver{session: session}
+
+		_, err := d.QueryConn(context.Background(), nil, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
+		require.ErrorContains(t, err, "connection lost")
+		require.True(t, session.closed)
+		require.Nil(t, d.session)
+	})
+
+	t.Run("canceled context", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		session := &fakeSession{
+			results: []*odriver.Result{{Statement: "SELECT 1", Err: context.Canceled}},
+		}
+		d := &Driver{session: session}
+
+		got, err := d.QueryConn(ctx, nil, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		require.True(t, session.closed)
+		require.Nil(t, d.session)
+	})
 }
 
 func TestDirectiveShiftMapsEveryRemovedShape(t *testing.T) {
@@ -358,67 +538,116 @@ func TestDirectiveShiftMapsEveryRemovedShape(t *testing.T) {
 	}
 }
 
-func TestExecuteLoggerMapsRangesAndTransactionControl(t *testing.T) {
-	script := "-- txn-mode=on\nINSERT INTO t VALUES (1);\nINSERT INTO t VALUES (2);"
-	_, cleaned := base.ParseTransactionConfig(script)
+func TestExecuteModesAndLogging(t *testing.T) {
+	t.Run("default mode runs transactional and maps ranges back to caller script", func(t *testing.T) {
+		script := "-- txn-mode=on\nINSERT INTO t VALUES (1);\nINSERT INTO t VALUES (2);"
+		var logs []*storepb.TaskRunLog
+		impl := &fakeImpl{
+			executeFn: func(cleaned string, opts odriver.ExecuteOptions) (int64, error) {
+				firstEnd := len("INSERT INTO t VALUES (1);")
+				opts.Log.TransactionControl(odriver.Begin, nil)
+				opts.Log.CommandExecute(odriver.Command{Text: cleaned[:firstEnd], ByteStart: 0, ByteEnd: firstEnd})
+				opts.Log.CommandResponse(1, []int64{1}, nil)
+				opts.Log.Retry(errors.New("transient lock timeout"), 1, 3)
+				opts.Log.CommandExecute(odriver.Command{Text: cleaned[firstEnd+1:], ByteStart: firstEnd + 1, ByteEnd: len(cleaned)})
+				opts.Log.CommandResponse(2, []int64{2}, nil)
+				opts.Log.TransactionControl(odriver.Commit, nil)
+				return 3, nil
+			},
+		}
+		d := &Driver{impl: impl}
 
-	var logs []*storepb.TaskRunLog
-	opts := db.ExecuteOptions{
-		MaximumRetries: 3,
-		CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
-			logs = append(logs, entry)
-			return nil
+		affected, err := d.Execute(context.Background(), script, db.ExecuteOptions{
+			CreateDatabase: true,
+			MaximumRetries: 3,
+			CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
+				logs = append(logs, entry)
+				return nil
+			},
+		})
+		require.NoError(t, err)
+		require.EqualValues(t, 3, affected)
+		require.Equal(t, "INSERT INTO t VALUES (1);\nINSERT INTO t VALUES (2);", impl.executeScript)
+		require.Equal(t, odriver.Transactional, impl.executeOpts.Transaction)
+		require.True(t, impl.executeOpts.CreateDatabase)
+		require.Equal(t, 3, impl.executeOpts.MaxRetries)
+		require.Len(t, logs, 7)
+
+		require.Equal(t, storepb.TaskRunLog_TransactionControl_BEGIN, logs[0].GetTransactionControl().GetType())
+		r1 := logs[1].GetCommandExecute().GetRange()
+		require.Equal(t, "INSERT INTO t VALUES (1);", script[r1.GetStart():r1.GetEnd()])
+		require.EqualValues(t, 1, logs[2].GetCommandResponse().GetAffectedRows())
+		require.Equal(t, "transient lock timeout", logs[3].GetRetryInfo().GetError())
+		r2 := logs[4].GetCommandExecute().GetRange()
+		require.Equal(t, "INSERT INTO t VALUES (2);", script[r2.GetStart():r2.GetEnd()])
+		require.Equal(t, storepb.TaskRunLog_TransactionControl_COMMIT, logs[6].GetTransactionControl().GetType())
+	})
+
+	t.Run("txn-mode=off selects AutoCommit and logs errors and rollback", func(t *testing.T) {
+		script := "-- txn-mode=off\nALTER TABLE t ADD COLUMN c INT;"
+		var logs []*storepb.TaskRunLog
+		impl := &fakeImpl{
+			executeFn: func(cleaned string, opts odriver.ExecuteOptions) (int64, error) {
+				opts.Log.CommandExecute(odriver.Command{Text: cleaned, ByteStart: 0, ByteEnd: len(cleaned)})
+				opts.Log.CommandResponse(0, nil, errors.New("syntax error"))
+				opts.Log.TransactionControl(odriver.Rollback, errors.New("rollback failed"))
+				return 0, errors.New("syntax error")
+			},
+		}
+		d := &Driver{impl: impl}
+
+		_, err := d.Execute(context.Background(), script, db.ExecuteOptions{
+			CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
+				logs = append(logs, entry)
+				return nil
+			},
+		})
+		require.ErrorContains(t, err, "syntax error")
+		require.Equal(t, odriver.AutoCommit, impl.executeOpts.Transaction)
+		require.Len(t, logs, 3)
+		r := logs[0].GetCommandExecute().GetRange()
+		require.Equal(t, "ALTER TABLE t ADD COLUMN c INT;", script[r.GetStart():r.GetEnd()])
+		require.Equal(t, "syntax error", logs[1].GetCommandResponse().GetError())
+		require.Equal(t, storepb.TaskRunLog_TransactionControl_ROLLBACK, logs[2].GetTransactionControl().GetType())
+		require.Equal(t, "rollback failed", logs[2].GetTransactionControl().GetError())
+	})
+}
+
+func TestSyncAndDumpMapping(t *testing.T) {
+	attr := "ACCOUNTADMIN, SYSADMIN"
+	impl := &fakeImpl{
+		instance: &odriver.Instance{
+			Version:   "9.12.1",
+			Databases: []*metadatapb.DatabaseSchemaMetadata{{Name: "SAMPLE_DB"}},
+			Roles:     []*odriver.Role{{Name: "BYTEBASE", Attribute: &attr}},
 		},
+		schema:  &metadatapb.DatabaseSchemaMetadata{Name: "SAMPLE_DB"},
+		dumpDDL: "create table PUBLIC.T (ID NUMBER);\n",
 	}
-	logger := executeLogger{
-		opts:        opts,
-		sourceRange: directiveShift(script, cleaned),
-	}
+	d := &Driver{impl: impl, databaseName: "SAMPLE_DB"}
 
-	firstEnd := len("INSERT INTO t VALUES (1);")
-	logger.TransactionControl(odriver.Begin, nil)
-	logger.CommandExecute(odriver.Command{
-		Text:      cleaned[:firstEnd],
-		ByteStart: 0,
-		ByteEnd:   firstEnd,
-	})
-	logger.CommandResponse(1, []int64{1}, nil)
-	logger.Retry(errors.New("transient lock timeout"), 1, 3)
-	logger.CommandExecute(odriver.Command{
-		Text:      cleaned[firstEnd+1:],
-		ByteStart: firstEnd + 1,
-		ByteEnd:   len(cleaned),
-	})
-	logger.CommandResponse(0, nil, errors.New("constraint violation"))
-	logger.TransactionControl(odriver.Rollback, nil)
-	logger.TransactionControl(odriver.Commit, errors.New("commit failed"))
+	inst, err := d.SyncInstance(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, "9.12.1", inst.Version)
+	require.Len(t, inst.Databases, 1)
+	require.Equal(t, "SAMPLE_DB", inst.Databases[0].Name)
+	require.Len(t, inst.Metadata.GetRoles(), 1)
+	require.Equal(t, "BYTEBASE", inst.Metadata.GetRoles()[0].GetName())
+	require.Equal(t, attr, inst.Metadata.GetRoles()[0].GetAttribute())
 
-	require.Len(t, logs, 8)
+	schema, err := d.SyncDBSchema(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, "SAMPLE_DB", schema.Name)
 
-	require.Equal(t, storepb.TaskRunLog_TRANSACTION_CONTROL, logs[0].Type)
-	require.Equal(t, storepb.TaskRunLog_TransactionControl_BEGIN, logs[0].GetTransactionControl().GetType())
-	require.Empty(t, logs[0].GetTransactionControl().GetError())
+	impl.schemaErr = errors.Wrapf(odriver.ErrNotFound, "database %q", "SAMPLE_DB")
+	_, err = d.SyncDBSchema(context.Background())
+	require.Error(t, err)
+	var bbErr *common.Error
+	require.ErrorAs(t, err, &bbErr)
+	require.Equal(t, common.NotFound, bbErr.Code)
+	require.Contains(t, err.Error(), `database "SAMPLE_DB" not found`)
 
-	cmd1Range := logs[1].GetCommandExecute().GetRange()
-	require.Equal(t, "INSERT INTO t VALUES (1);", script[cmd1Range.GetStart():cmd1Range.GetEnd()])
-
-	require.EqualValues(t, 1, logs[2].GetCommandResponse().GetAffectedRows())
-	require.Equal(t, []int64{1}, logs[2].GetCommandResponse().GetAllAffectedRows())
-	require.Empty(t, logs[2].GetCommandResponse().GetError())
-
-	require.Equal(t, storepb.TaskRunLog_RETRY_INFO, logs[3].Type)
-	require.EqualValues(t, 1, logs[3].GetRetryInfo().GetRetryCount())
-	require.EqualValues(t, 3, logs[3].GetRetryInfo().GetMaximumRetries())
-	require.Equal(t, "transient lock timeout", logs[3].GetRetryInfo().GetError())
-
-	cmd2Range := logs[4].GetCommandExecute().GetRange()
-	require.Equal(t, "INSERT INTO t VALUES (2);", script[cmd2Range.GetStart():cmd2Range.GetEnd()])
-
-	require.Equal(t, "constraint violation", logs[5].GetCommandResponse().GetError())
-
-	require.Equal(t, storepb.TaskRunLog_TransactionControl_ROLLBACK, logs[6].GetTransactionControl().GetType())
-	require.Empty(t, logs[6].GetTransactionControl().GetError())
-
-	require.Equal(t, storepb.TaskRunLog_TransactionControl_COMMIT, logs[7].GetTransactionControl().GetType())
-	require.Equal(t, "commit failed", logs[7].GetTransactionControl().GetError())
+	var out bytes.Buffer
+	require.NoError(t, d.Dump(context.Background(), &out, schema))
+	require.Equal(t, "create table PUBLIC.T (ID NUMBER);\n", out.String())
 }

@@ -2,6 +2,20 @@
 // github.com/bytebase/omni/snowflake/driver that maps Bytebase's connection
 // config onto the driver contract and the contract's results back into the
 // product's protos.
+//
+// Adapter invariants:
+//   - Open validates the configuration through snowflakedriver.Open without
+//     dialing the account. QueryConn opens one odriver.Session lazily on first
+//     use, serializes calls on it with sessionMu, and discards it on Close or
+//     when a call fails or its context ends.
+//   - QueryConn normalizes successful columnless results with nil AffectedRows
+//     to one "Affected Rows: 0" row, maps lowercase plan formats from
+//     snowflake/analysis onto QueryOption_ExplainFormat for user-written EXPLAIN
+//     statements (leaving Explain-mode requests to SQLService), and formats
+//     timestamps outside google.protobuf.Timestamp's 0001..9999 range as text.
+//   - Execute parses leading `-- txn-mode` directives into Transactional or
+//     AutoCommit and maps logged command byte ranges back to the caller's script
+//     with directiveShift.
 package snowflake
 
 import (
@@ -11,11 +25,13 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 	"unicode"
 
 	odriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
 	snowflakedriver "github.com/bytebase/omni/snowflake/driver"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -26,9 +42,18 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+type snowflakeImpl interface {
+	odriver.Driver
+	odriver.Syncer
+	odriver.Dumper
+	odriver.Querier
+	odriver.Executor
+}
+
 var (
 	_ db.Driver         = (*Driver)(nil)
 	_ db.SessionQuerier = (*Driver)(nil)
+	_ snowflakeImpl     = (*snowflakedriver.Driver)(nil)
 )
 
 func init() {
@@ -38,7 +63,7 @@ func init() {
 // Driver is the Snowflake driver.
 type Driver struct {
 	databaseName string
-	impl         *snowflakedriver.Driver
+	impl         snowflakeImpl
 
 	// sessionMu guards session and serializes QueryConn calls on one held
 	// client connection from the first QueryConn until Close.
@@ -86,19 +111,18 @@ func snowflakeConfig(config db.ConnectionConfig) odriver.Config {
 // Close closes the held query session and the underlying driver.
 func (d *Driver) Close(context.Context) error {
 	d.sessionMu.Lock()
-	var err error
+	var sessionErr error
 	if d.session != nil {
-		err = d.session.Close()
+		sessionErr = d.session.Close()
 		d.session = nil
 	}
 	d.sessionMu.Unlock()
 
+	var implErr error
 	if d.impl != nil {
-		if closeErr := d.impl.Close(); err == nil {
-			err = closeErr
-		}
+		implErr = d.impl.Close()
 	}
-	return err
+	return errors.Join(sessionErr, implErr)
 }
 
 // Ping pings the database.
@@ -114,15 +138,12 @@ func (*Driver) OwnsQuerySession() {}
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	d.sessionMu.Lock()
 	defer d.sessionMu.Unlock()
-	if d.session == nil {
-		session, err := d.impl.Session(ctx)
-		if err != nil {
-			return nil, err
-		}
-		d.session = session
+
+	session, err := d.querySessionLocked(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	session := d.session
 	results, err := session.Query(ctx, statement, odriver.QueryOptions{
 		Schema:         queryContext.Schema,
 		Limit:          queryContext.Limit,
@@ -132,22 +153,101 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 	})
 	if err != nil {
-		_ = session.Close()
-		d.session = nil
+		d.discardSessionLocked(session)
 		return nil, err
 	}
 	if ctx.Err() != nil {
-		_ = session.Close()
-		d.session = nil
+		d.discardSessionLocked(session)
 	}
 	if len(results) == 0 {
 		return nil, nil
 	}
+
 	converted := make([]*v1pb.QueryResult, 0, len(results))
 	for _, result := range results {
-		converted = append(converted, util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize))
+		converted = append(converted, toQueryResult(result, queryContext))
 	}
 	return converted, nil
+}
+
+func (d *Driver) querySessionLocked(ctx context.Context) (odriver.Session, error) {
+	if d.session != nil {
+		return d.session, nil
+	}
+	session, err := d.impl.Session(ctx)
+	if err != nil {
+		return nil, err
+	}
+	d.session = session
+	return session, nil
+}
+
+func (d *Driver) discardSessionLocked(session odriver.Session) {
+	_ = session.Close()
+	if d.session == session {
+		d.session = nil
+	}
+}
+
+func toQueryResult(result *odriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
+	if result == nil {
+		return &v1pb.QueryResult{}
+	}
+	normalized := normalizeOutOfRangeTimestamps(result)
+	queryResult := util.OmniResultToQueryResult(normalized, queryContext.MaximumSQLResultSize)
+	if len(normalized.Columns) == 0 && normalized.AffectedRows == nil && normalized.Err == nil && !normalized.Truncated {
+		affected := util.BuildAffectedRowsResult(0, queryResult.Messages)
+		queryResult.ColumnNames = affected.ColumnNames
+		queryResult.ColumnTypeNames = affected.ColumnTypeNames
+		queryResult.Rows = affected.Rows
+		queryResult.RowsCount = 1
+	}
+	// Explain requests leave QueryPlan unset so SQLService stamps the requested
+	// format; user-written EXPLAIN statements map snowflake/analysis's lowercase
+	// format names ("text", "json") through db.TypedExplainPlan.
+	if queryContext.Explain || normalized.Err != nil {
+		queryResult.QueryPlan = nil
+	} else if normalized.Plan != nil {
+		queryResult.QueryPlan = db.TypedExplainPlan(normalized.Plan.Format, normalized.Plan.Executed, true)
+		queryResult.QueryPlan.Content = normalized.Plan.Content
+	}
+	return queryResult
+}
+
+// normalizeOutOfRangeTimestamps converts Timestamp/TimestampTZ cells outside
+// google.protobuf.Timestamp's [0001-01-01, 9999-12-31] range into strings so
+// protobuf serialization never fails on extreme Snowflake dates.
+func normalizeOutOfRangeTimestamps(result *odriver.Result) *odriver.Result {
+	var cloned *odriver.Result
+	for i, row := range result.Rows {
+		var clonedRow []odriver.Value
+		for j, cell := range row {
+			if cell.Kind != odriver.Timestamp && cell.Kind != odriver.TimestampTZ {
+				continue
+			}
+			if timestamppb.New(cell.Time).CheckValid() == nil {
+				continue
+			}
+			if cloned == nil {
+				copyResult := *result
+				copyResult.Rows = append([][]odriver.Value(nil), result.Rows...)
+				cloned = &copyResult
+			}
+			if clonedRow == nil {
+				clonedRow = append([]odriver.Value(nil), row...)
+				cloned.Rows[i] = clonedRow
+			}
+			text := cell.Time.Format(time.RFC3339Nano)
+			if cell.Kind == odriver.Timestamp {
+				text = cell.Time.UTC().Format("2006-01-02 15:04:05.999999999")
+			}
+			clonedRow[j] = odriver.Value{Kind: odriver.String, String: text}
+		}
+	}
+	if cloned != nil {
+		return cloned
+	}
+	return result
 }
 
 func explainFormat(queryContext db.QueryContext) string {
