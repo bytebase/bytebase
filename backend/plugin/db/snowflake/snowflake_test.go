@@ -7,6 +7,8 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"database/sql"
+	sqldriver "database/sql/driver"
 	"encoding/pem"
 	"io"
 	"testing"
@@ -15,6 +17,7 @@ import (
 	odriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
 	snowflakedriver "github.com/bytebase/omni/snowflake/driver"
+	snowflakeparser "github.com/bytebase/omni/snowflake/parser"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -486,20 +489,119 @@ func TestQueryConnNormalizesResults(t *testing.T) {
 		require.Equal(t, "10000-01-02T03:04:05Z", got[0].Rows[0].Values[1].GetStringValue())
 		require.NotNil(t, got[0].Rows[0].Values[2].GetTimestampValue())
 	})
+
+	t.Run("zero MaximumSQLResultSize clamps session cap to 1 byte instead of unbounded", func(t *testing.T) {
+		session := &fakeSession{
+			results: []*odriver.Result{
+				{
+					Statement: "SELECT 1",
+					Columns:   []odriver.Column{{Name: "1", TypeName: "FIXED"}},
+					Rows:      [][]odriver.Value{{{Kind: odriver.Int64, Int64: 1}}},
+					Truncated: true,
+				},
+			},
+		}
+		d := &Driver{session: session}
+		got, err := d.QueryConn(context.Background(), nil, "SELECT 1", db.QueryContext{})
+		require.NoError(t, err)
+		require.EqualValues(t, 1, session.gotOpts.MaxResultBytes)
+		require.Len(t, got, 1)
+		require.Contains(t, got[0].Error, "max allowed output size of 0MB")
+	})
 }
 
+type rawError string
+
+func (e rawError) Error() string { return string(e) }
+
 func TestQueryConnDropsSessionOnErrorOrCanceledContext(t *testing.T) {
-	t.Run("session error", func(t *testing.T) {
-		session := &fakeSession{err: errors.New("connection lost")}
+	t.Run("recoverable USE SCHEMA and pre-execution errors keep session for next request", func(t *testing.T) {
+		for _, recErr := range []error{
+			rawError("002043 (02000): SQL compilation error:\nObject does not exist, or operation cannot be performed."),
+			rawError("003001 (42501): SQL access control error:\nInsufficient privileges to operate on schema 'SECRET'."),
+			rawError("390201 (-1): Object does not exist, or operation cannot be performed."),
+			&snowflakeparser.ParseError{Message: "syntax error"},
+			rawError("EXPLAIN plans a single statement"),
+			rawError("EXPLAIN needs a statement to plan"),
+		} {
+			s1 := &fakeSession{err: recErr}
+			s2 := &fakeSession{}
+			impl := &fakeImpl{sessions: []*fakeSession{s1, s2}}
+			d := &Driver{impl: impl, databaseName: "SAMPLE_DB"}
+
+			_, err := d.QueryConn(context.Background(), nil, "SELECT * FROM temp_tbl", db.QueryContext{
+				Schema:               "MISSING_SCHEMA",
+				MaximumSQLResultSize: 1024,
+			})
+			require.ErrorIs(t, err, recErr)
+			require.False(t, s1.closed, "recoverable error %v must not close held session", recErr)
+			require.Same(t, s1, d.session)
+
+			s1.err = nil
+			s1.results = []*odriver.Result{{
+				Statement: "SELECT * FROM temp_tbl",
+				Columns:   []odriver.Column{{Name: "ID", TypeName: "FIXED"}},
+				Rows:      [][]odriver.Value{{{Kind: odriver.Int64, Int64: 42}}},
+			}}
+			got, err := d.QueryConn(context.Background(), nil, "SELECT * FROM temp_tbl", db.QueryContext{
+				Schema:               "PUBLIC",
+				MaximumSQLResultSize: 1024,
+			})
+			require.NoError(t, err)
+			require.Equal(t, 1, impl.sessionCalls, "next request must reuse the existing session")
+			require.Len(t, got, 1)
+			require.EqualValues(t, 42, got[0].Rows[0].Values[0].GetInt64Value())
+		}
+	})
+
+	t.Run("unrecoverable connection or session-gone errors discard session", func(t *testing.T) {
+		for _, fatalErr := range []error{
+			errors.New("connection lost"),
+			rawError("000604 (57014): SQL execution canceled"),
+			rawError("261000 (08006): failed to POST. HTTP: 503, URL: https://account.snowflakecomputing.com/queries/v1/query-request"),
+			rawError("390111 (-1): Session no longer exists. New login required to access the service."),
+			rawError("390112 (-1): Your session has expired. Please login again."),
+			sql.ErrConnDone,
+			sqldriver.ErrBadConn,
+		} {
+			s1 := &fakeSession{err: fatalErr}
+			s2 := &fakeSession{
+				results: []*odriver.Result{{
+					Statement: "SELECT 1",
+					Columns:   []odriver.Column{{Name: "1", TypeName: "FIXED"}},
+					Rows:      [][]odriver.Value{{{Kind: odriver.Int64, Int64: 1}}},
+				}},
+			}
+			impl := &fakeImpl{sessions: []*fakeSession{s1, s2}}
+			d := &Driver{impl: impl, databaseName: "SAMPLE_DB"}
+
+			_, err := d.QueryConn(context.Background(), nil, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
+			require.ErrorIs(t, err, fatalErr)
+			require.True(t, s1.closed, "fatal error %v must close dead session", fatalErr)
+			require.Nil(t, d.session)
+
+			got, err := d.QueryConn(context.Background(), nil, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
+			require.NoError(t, err)
+			require.Equal(t, 2, impl.sessionCalls)
+			require.Len(t, got, 1)
+		}
+	})
+
+	t.Run("canceled context discards session even on SQL-shaped error", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		session := &fakeSession{
+			err: rawError("002043 (02000): SQL compilation error"),
+		}
 		d := &Driver{session: session}
 
-		_, err := d.QueryConn(context.Background(), nil, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
-		require.ErrorContains(t, err, "connection lost")
+		_, err := d.QueryConn(ctx, nil, "SELECT 1", db.QueryContext{Schema: "MISSING", MaximumSQLResultSize: 1024})
+		require.Error(t, err)
 		require.True(t, session.closed)
 		require.Nil(t, d.session)
 	})
 
-	t.Run("canceled context", func(t *testing.T) {
+	t.Run("canceled context with partial results discards session", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 		session := &fakeSession{

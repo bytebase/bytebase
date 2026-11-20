@@ -6,8 +6,10 @@
 // Adapter invariants:
 //   - Open validates the configuration through snowflakedriver.Open without
 //     dialing the account. QueryConn opens one odriver.Session lazily on first
-//     use, serializes calls on it with sessionMu, and discards it on Close or
-//     when a call fails or its context ends.
+//     use, serializes calls on it with sessionMu, preserves it across
+//     recoverable SQL/parse errors (such as a failed USE SCHEMA), and discards
+//     it on Close, context cancellation, or unrecoverable connection/session
+//     errors.
 //   - QueryConn normalizes successful columnless results with nil AffectedRows
 //     to one "Affected Rows: 0" row, maps lowercase plan formats from
 //     snowflake/analysis onto QueryOption_ExplainFormat for user-written EXPLAIN
@@ -21,8 +23,10 @@ package snowflake
 import (
 	"context"
 	"database/sql"
+	sqldriver "database/sql/driver"
 	"errors"
 	"io"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -31,6 +35,7 @@ import (
 	odriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
 	snowflakedriver "github.com/bytebase/omni/snowflake/driver"
+	snowflakeparser "github.com/bytebase/omni/snowflake/parser"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -144,16 +149,24 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		return nil, err
 	}
 
+	// Bytebase treats a non-positive cap as zero allowed bytes, whereas the
+	// omni driver contract treats <= 0 as unbounded.
+	maxResultBytes := queryContext.MaximumSQLResultSize
+	if maxResultBytes <= 0 {
+		maxResultBytes = 1
+	}
 	results, err := session.Query(ctx, statement, odriver.QueryOptions{
 		Schema:         queryContext.Schema,
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
 		ExplainFormat:  explainFormat(queryContext),
 		MaskingEnabled: queryContext.MaskingEnabled,
-		MaxResultBytes: queryContext.MaximumSQLResultSize,
+		MaxResultBytes: maxResultBytes,
 	})
 	if err != nil {
-		d.discardSessionLocked(session)
+		if !isRecoverableQueryError(ctx, err) {
+			d.discardSessionLocked(session)
+		}
 		return nil, err
 	}
 	if ctx.Err() != nil {
@@ -168,6 +181,95 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		converted = append(converted, toQueryResult(result, queryContext))
 	}
 	return converted, nil
+}
+
+// isRecoverableQueryError reports whether err left the held Snowflake session
+// healthy so later calls on the same stream keep temporary tables and open
+// transactions. omni/snowflake/driver returns a top-level Session.Query error
+// only on pre-execution parse/explain checks (before touching the connection)
+// and on USE SCHEMA when QueryOptions.Schema is non-empty.
+func isRecoverableQueryError(ctx context.Context, err error) bool {
+	if err == nil {
+		return true
+	}
+	if ctx.Err() != nil ||
+		errors.Is(err, context.Canceled) ||
+		errors.Is(err, context.DeadlineExceeded) ||
+		errors.Is(err, sql.ErrConnDone) ||
+		errors.Is(err, sqldriver.ErrBadConn) {
+		return false
+	}
+	var parseErr *snowflakeparser.ParseError
+	if errors.As(err, &parseErr) {
+		return true
+	}
+	switch err.Error() {
+	case "EXPLAIN needs a statement to plan", "EXPLAIN plans a single statement":
+		return true
+	default:
+	}
+	return isRecoverableSnowflakeServerError(err)
+}
+
+func isRecoverableSnowflakeServerError(err error) bool {
+	queue := []error{err}
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+		if cur == nil {
+			continue
+		}
+		if code, sqlState, ok := parseSnowflakeErrorPrefix(cur.Error()); ok {
+			if strings.HasPrefix(sqlState, "08") || strings.HasPrefix(sqlState, "57") {
+				return false
+			}
+			// Snowflake server SQL compilation/execution/access-control codes
+			// sit below gosnowflake's 260000+ client/network range; 390201 is
+			// the GS object-not-found/unauthorized code (whereas 390111/390112/
+			// 3903xx indicate closed or expired sessions/tokens).
+			if (code > 0 && code < 260000) || code == 390201 {
+				return true
+			}
+			return false
+		}
+		switch u := cur.(type) {
+		case interface{ Unwrap() error }:
+			queue = append(queue, u.Unwrap())
+		case interface{ Unwrap() []error }:
+			queue = append(queue, u.Unwrap()...)
+		default:
+		}
+	}
+	return false
+}
+
+// parseSnowflakeErrorPrefix parses gosnowflake's "%06d (%s): ..." or
+// "%06d: ..." error prefix without importing gosnowflake directly.
+func parseSnowflakeErrorPrefix(msg string) (int, string, bool) {
+	if len(msg) < 8 {
+		return 0, "", false
+	}
+	for i := range 6 {
+		if msg[i] < '0' || msg[i] > '9' {
+			return 0, "", false
+		}
+	}
+	code, err := strconv.Atoi(msg[:6])
+	if err != nil {
+		return 0, "", false
+	}
+	rest := msg[6:]
+	if strings.HasPrefix(rest, " (") {
+		end := strings.Index(rest[2:], "): ")
+		if end <= 0 || end > 8 {
+			return 0, "", false
+		}
+		return code, rest[2 : 2+end], true
+	}
+	if strings.HasPrefix(rest, ": ") {
+		return code, "", true
+	}
+	return 0, "", false
 }
 
 func (d *Driver) querySessionLocked(ctx context.Context) (odriver.Session, error) {
