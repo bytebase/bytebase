@@ -231,10 +231,10 @@ func PopulateMySQLFamilyCatalog(
 					loadName = resolvedName
 				}
 				proto = dbMeta.GetProto()
-			} else if (defaultLoaded && !caseSensitive) || defaultName == "" {
+			} else if !defaultLoaded || !caseSensitive {
 				// Case-folding instances (lower_case_table_names) may store e.g.
 				// "db_b" while the query uses "DB_B"; resolve canonically on miss
-				// when defaultDB is case-folding or in instance-level editors.
+				// when defaultDB is case-folding or unavailable (including empty).
 				if exact, diffCase := findExactFolded(loadName); diffCase {
 					if resolvedName, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, exact); err == nil && dbMeta != nil && !dbMeta.GetIsObjectCaseSensitive() {
 						loadName = exact
@@ -396,6 +396,7 @@ func scanMySQLQualTokens(statement string) []mysqlQualToken {
 
 type mysqlQualScope struct {
 	aliasScopeID          int
+	cteName               string
 	stmtStart             bool
 	stmtVerb              string
 	inTableClause         bool
@@ -460,6 +461,14 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 	nextAliasScopeID := 1
 	aliasesByScope := map[int]*mysqlAliasMap{}
 	parentAliasScope := map[int]int{}
+	scopeFirstDB := map[int]string{}
+	cteDB := map[string]string{}
+	recordScopeDB := func(scopeID int, db string) {
+		if db == "" || scopeFirstDB[scopeID] != "" {
+			return
+		}
+		scopeFirstDB[scopeID] = db
+	}
 	recordAlias := func(scopeID int, name, db string, overwrite bool) {
 		if name == "" || db == "" {
 			return
@@ -502,12 +511,16 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 			aliasID := nextAliasScopeID
 			nextAliasScopeID++
 			scopes = []mysqlQualScope{{aliasScopeID: aliasID, stmtStart: true, allowFromAsTable: true}}
+			cteDB = map[string]string{}
 			if tok.end <= pos {
 				caretAliasScopeID = aliasID
 			}
 			continue
 		case '(':
 			child := mysqlQualScope{aliasScopeID: sc.aliasScopeID, stmtStart: true}
+			if sc.stmtVerb == "WITH" {
+				child.cteName = cteNameBeforeAS(toks, i)
+			}
 			// Parenthesized table-reference / join group, e.g. FROM (db1.t1 JOIN ...),
 			// JOIN (db1.t1), UPDATE [LOW_PRIORITY] [IGNORE] (db1.t1 JOIN ...),
 			// DELETE ... USING (db1.t1 JOIN ...), or nested ((db1.t1)) / , (db1.t1).
@@ -527,13 +540,30 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 			}
 			continue
 		case ')':
+			var closed mysqlQualScope
 			if len(scopes) > 1 {
+				closed = scopes[len(scopes)-1]
 				scopes = scopes[:len(scopes)-1]
 			}
-			cur().prevKeyword = ""
-			cur().stmtStart = false
+			parent := cur()
+			if subDB := scopeFirstDB[closed.aliasScopeID]; subDB != "" {
+				if closed.aliasScopeID != parent.aliasScopeID {
+					recordScopeDB(parent.aliasScopeID, subDB)
+				}
+				if closed.cteName != "" {
+					cteDB[closed.cteName] = subDB
+					recordAlias(parent.aliasScopeID, closed.cteName, subDB, true)
+				}
+				if parent.inTableClause {
+					if aliasTok, ok := scanTableAliasAfter(toks, i+1); ok {
+						recordAlias(parent.aliasScopeID, aliasTok, subDB, true)
+					}
+				}
+			}
+			parent.prevKeyword = ""
+			parent.stmtStart = false
 			if tok.end <= pos {
-				caretAliasScopeID = cur().aliasScopeID
+				caretAliasScopeID = parent.aliasScopeID
 			}
 			continue
 		case ',':
@@ -573,6 +603,7 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 			isDeleteStar := sc.stmtVerb == "DELETE" && i+2 < len(toks) && toks[i+2].punct == '*'
 			if isThreePart || (sc.inTableClause && !isDeleteStar) {
 				addDB(tok.text)
+				recordScopeDB(sc.aliasScopeID, tok.text)
 			}
 			if sc.inTableClause && !isDeleteStar && i+2 < len(toks) && toks[i+2].isWord && !isClauseBoundaryAfterDot(toks[i+2].upper) {
 				recordAlias(sc.aliasScopeID, toks[i+2].text, tok.text, true)
@@ -580,11 +611,18 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 					recordAlias(sc.aliasScopeID, aliasTok, tok.text, true)
 				}
 			}
-		} else if sc.inTableClause && defaultDB != "" && !precededByDot && (i+1 >= len(toks) || toks[i+1].punct != '.') &&
+		} else if sc.inTableClause && !precededByDot && (i+1 >= len(toks) || toks[i+1].punct != '.') &&
 			isTableStartPosition(sc.prevKeyword, prevPunct) && !isNonAliasClauseKeyword(tok.upper) {
-			recordAlias(sc.aliasScopeID, tok.text, defaultDB, false)
-			if aliasTok, ok := scanTableAliasAfter(toks, i+1); ok {
-				recordAlias(sc.aliasScopeID, aliasTok, defaultDB, false)
+			targetDB, fromCTE := cteDB[tok.text]
+			if !fromCTE {
+				targetDB = defaultDB
+			}
+			if targetDB != "" {
+				recordScopeDB(sc.aliasScopeID, targetDB)
+				recordAlias(sc.aliasScopeID, tok.text, targetDB, fromCTE)
+				if aliasTok, ok := scanTableAliasAfter(toks, i+1); ok {
+					recordAlias(sc.aliasScopeID, aliasTok, targetDB, fromCTE)
+				}
 			}
 		}
 
@@ -940,6 +978,31 @@ func scanTableAliasAfter(toks []mysqlQualToken, startIdx int) (string, bool) {
 		return "", false
 	}
 	return toks[idx].text, true
+}
+
+func cteNameBeforeAS(toks []mysqlQualToken, openParenIdx int) string {
+	if openParenIdx < 2 || toks[openParenIdx-1].upper != "AS" {
+		return ""
+	}
+	k := openParenIdx - 2
+	if toks[k].punct == ')' {
+		depth := 1
+		k--
+		for k >= 0 && depth > 0 {
+			switch toks[k].punct {
+			case ')':
+				depth++
+			case '(':
+				depth--
+			default:
+			}
+			k--
+		}
+	}
+	if k >= 0 && toks[k].isWord && toks[k].upper != "WITH" && toks[k].upper != "RECURSIVE" {
+		return toks[k].text
+	}
+	return ""
 }
 
 func isNonAliasClauseKeyword(upper string) bool {

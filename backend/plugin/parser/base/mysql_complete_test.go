@@ -452,6 +452,76 @@ func TestPopulateMySQLFamilyCatalog_SkipsEnumerationForQualifiers(t *testing.T) 
 	)
 	require.Equal(t, 1, instLevelListCalls)
 	require.Equal(t, []string{"db_b"}, instLevelLoaded)
+
+	// Selected default database with missing snapshot still resolves explicit folded qualifiers.
+	missingDefFoldedCalls := 0
+	var missingDefFoldedLoaded []string
+	PopulateMySQLFamilyCatalog(
+		context.Background(),
+		CompletionContext{
+			DefaultDatabase: "missing_db",
+			ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
+				missingDefFoldedCalls++
+				return []string{"missing_db", "db_b"}, nil
+			},
+			Metadata: func(_ context.Context, _, db string) (string, *model.DatabaseMetadata, error) {
+				if db != "db_b" {
+					return "", nil, nil
+				}
+				return db, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: db}, nil, nil, storepb.Engine_MYSQL, false), nil
+			},
+		},
+		"SELECT DB_B.orders. FROM DB_B.orders",
+		len("SELECT DB_B.orders."),
+		func(string, int) bool { return false },
+		func(string) {},
+		func(name string, _ *metadatapb.DatabaseSchemaMetadata) {
+			missingDefFoldedLoaded = append(missingDefFoldedLoaded, name)
+		},
+		func(string) {},
+	)
+	require.Equal(t, 1, missingDefFoldedCalls)
+	require.Equal(t, []string{"db_b"}, missingDefFoldedLoaded)
+
+	// Derived-table and CTE aliases prioritize the inner database on case-colliding instances.
+	for _, tc := range []struct {
+		name string
+		stmt string
+		pos  int
+	}{
+		{
+			name: "derived table alias",
+			stmt: "SELECT x. FROM (SELECT * FROM Foo.t) x",
+			pos:  len("SELECT x."),
+		},
+		{
+			name: "cte alias",
+			stmt: "WITH c AS (SELECT * FROM Foo.t) SELECT x. FROM c x",
+			pos:  len("WITH c AS (SELECT * FROM Foo.t) SELECT x."),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var loadedOrder []string
+			PopulateMySQLFamilyCatalog(
+				context.Background(),
+				CompletionContext{
+					DefaultDatabase: "foo",
+					Metadata: func(_ context.Context, _, db string) (string, *model.DatabaseMetadata, error) {
+						return db, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: db}, nil, nil, storepb.Engine_MYSQL, true), nil
+					},
+				},
+				tc.stmt,
+				tc.pos,
+				func(string, int) bool { return false },
+				func(string) {},
+				func(name string, _ *metadatapb.DatabaseSchemaMetadata) {
+					loadedOrder = append(loadedOrder, name)
+				},
+				func(string) {},
+			)
+			require.Equal(t, []string{"Foo", "foo"}, loadedOrder)
+		})
+	}
 }
 
 func TestCompleteMySQLFamily_PreservesDistinctDefinitionsAndUTF16Caret(t *testing.T) {

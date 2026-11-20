@@ -599,6 +599,17 @@ func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
 	require.True(t, hasCandidate(gotUnqualifiedDefault, base.CandidateTypeColumn, "lower_col"), "unqualified SELECT  FROM t should keep default foo first; got %v", gotUnqualifiedDefault)
 	require.False(t, hasCandidate(gotUnqualifiedDefault, base.CandidateTypeColumn, "upper_col"), "Foo.other must not shadow default foo table at unqualified caret; got %v", gotUnqualifiedDefault)
 
+	// Derived-table alias referencing case-colliding DB resolves to Foo's table columns.
+	stmtDerivedCase := "SELECT x. FROM (SELECT * FROM Foo.t) x"
+	gotDerivedUpper, err := Completion(context.Background(), base.CompletionContext{
+		Scene:           base.SceneTypeAll,
+		DefaultDatabase: "foo",
+		Metadata:        caseSensMeta,
+	}, stmtDerivedCase, 1, len("SELECT x."))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotDerivedUpper, base.CandidateTypeColumn, "upper_col"), "derived alias x for Foo.t should suggest upper_col; got %v", gotDerivedUpper)
+	require.False(t, hasCandidate(gotDerivedUpper, base.CandidateTypeColumn, "lower_col"), "derived alias x for Foo.t must not be shadowed by foo.t; got %v", gotDerivedUpper)
+
 	// Multi-table DELETE target before FROM loads qualifier DB without false-positive alias.* lookups.
 	metaCalls = nil
 	stmtDeleteTarget := "DELETE otherdb."
