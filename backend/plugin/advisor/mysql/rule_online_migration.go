@@ -6,7 +6,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -14,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -41,7 +41,6 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 	if err != nil {
 		return nil, err
 	}
-	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_MYSQL, checkCtx.IsObjectCaseSensitive)
 	title := checkCtx.Rule.Type.String()
 
 	// Check gh-ost database existence first if gh-ost is enabled.
@@ -60,21 +59,23 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 		}
 	}
 
-	rule := &onlineMigrationRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: title,
-		},
-		minRows:          minRows,
-		dbMetadata:       dbMetadata,
-		checkCtx:         checkCtx,
-		currentDatabase:  checkCtx.CurrentDatabase,
-		changedResources: make(map[string]base.SchemaResource),
+	nodes, stmts := mysqlNodes(checkCtx.ParsedStatements)
+	schema := v1review.Schema{Metadata: checkCtx.DBSchema, ObjectCaseSensitive: checkCtx.IsObjectCaseSensitive}
+
+	var adviceList []*storepb.Advice
+	for _, f := range mysqlv1review.OnlineMigration(nodes, schema, checkCtx.CurrentDatabase, minRows) {
+		stmt := stmts[f.Statement]
+		startLine := stmt.BaseLine() + int(findingLine(stmt.Text, f))
+		endLine := stmt.BaseLine() + int(contentEndLine(stmt.Text))
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          code.AdviseOnlineMigrationForStatement.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("Estimated table row count of %q is %s exceeding the set value %d. Consider using online migration for this statement", f.Table, f.Value, minRows),
+			StartPosition: base.ConvertANTLRLineToPosition(startLine),
+			EndPosition:   base.ConvertANTLRLineToPosition(endLine),
+		})
 	}
-
-	RunRules(checkCtx.ParsedStatements, []Rule{rule})
-
-	adviceList := rule.GetAdviceList()
 
 	// More than one statements need online migration.
 	// Advise running each statement in separate issues.
@@ -115,61 +116,4 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 
 	// Should never reach this.
 	return nil, nil
-}
-
-type onlineMigrationRule struct {
-	BaseRule
-	minRows          int64
-	dbMetadata       *model.DatabaseMetadata
-	checkCtx         advisor.Context
-	currentDatabase  string
-	changedResources map[string]base.SchemaResource
-}
-
-func (*onlineMigrationRule) Name() string {
-	return "OnlineMigrationRule"
-}
-
-func (r *onlineMigrationRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.AlterTableStmt)
-	if !ok {
-		return
-	}
-	if n.Table == nil {
-		return
-	}
-
-	resource := base.SchemaResource{
-		Database: r.currentDatabase,
-	}
-	if n.Table.Schema != "" {
-		resource.Database = n.Table.Schema
-	}
-	resource.Table = n.Table.Name
-
-	// Check if this ALTER TABLE has commands (ghost-compatible).
-	ghostCompatible := len(n.Commands) > 0
-	if !ghostCompatible {
-		return
-	}
-
-	startLine := r.BaseLine + int(r.LocToLine(n.Loc))
-	endLine := r.BaseLine + int(r.ContentEndLine())
-
-	for _, table := range r.dbMetadata.GetProto().GetSchemas()[0].GetTables() {
-		if table.GetName() == resource.Table {
-			tableRows := table.GetRowCount()
-			if tableRows >= r.minRows {
-				r.AddAdviceAbsolute(&storepb.Advice{
-					Status:        r.Level,
-					Code:          code.AdviseOnlineMigrationForStatement.Int32(),
-					Title:         r.Title,
-					Content:       fmt.Sprintf("Estimated table row count of %q is %d exceeding the set value %d. Consider using online migration for this statement", fmt.Sprintf("%s.%s", resource.Database, resource.Table), tableRows, r.minRows),
-					StartPosition: base.ConvertANTLRLineToPosition(startLine),
-					EndPosition:   base.ConvertANTLRLineToPosition(endLine),
-				})
-			}
-			break
-		}
-	}
 }

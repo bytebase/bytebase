@@ -43,19 +43,18 @@ func (*UseInnoDBAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		if !ok {
 			continue
 		}
-		text := &BaseRule{StmtText: stmt.Text}
 		for _, f := range mariadbv1review.EngineMySQLUseInnoDB([]ast.Node{node}) {
 			// A finding with search text is on the line where the statement
 			// first holds that text; any other is on the statement's first line.
-			line := text.ContentStartLine()
+			line := contentStartLine(stmt.Text)
 			if f.Search != "" {
-				line = text.FindLineByName(f.Search)
+				line = findLineByName(stmt.Text, f.Search)
 			}
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:        level,
 				Code:          code.NotInnoDBEngine.Int32(),
 				Title:         title,
-				Content:       fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", text.TrimmedStmtText()),
+				Content:       fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", trimmedStmtText(stmt.Text)),
 				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(line)),
 			})
 		}

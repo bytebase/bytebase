@@ -40,7 +40,6 @@ func (*StatementDisallowTruncateAdvisor) Check(_ context.Context, checkCtx advis
 		if !ok {
 			continue
 		}
-		rule := &BaseRule{StmtText: stmt.Text}
 		for _, f := range pgv1review.StatementDisallowTruncate([]ast.Node{node}) {
 			suffix := ""
 			for _, option := range strings.Split(f.Value, ",") {
@@ -64,7 +63,7 @@ func (*StatementDisallowTruncateAdvisor) Check(_ context.Context, checkCtx advis
 					`TRUNCATE TABLE %q is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.%s`,
 					f.Table, suffix,
 				),
-				StartPosition: &storepb.Position{Line: rule.LocToLine(loc) + int32(stmt.BaseLine())},
+				StartPosition: &storepb.Position{Line: locToLine(stmt.Text, loc) + int32(stmt.BaseLine())},
 			})
 		}
 	}

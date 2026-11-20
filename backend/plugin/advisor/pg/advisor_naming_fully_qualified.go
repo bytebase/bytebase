@@ -48,7 +48,7 @@ func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx adviso
 			continue
 		}
 		// V1 anchored every finding on the statement text's last line.
-		line := (&BaseRule{StmtText: stmt.Text}).ContentEndLine() + int32(stmt.BaseLine())
+		line := contentEndLine(stmt.Text) + int32(stmt.BaseLine())
 		for _, f := range pgv1review.NamingFullyQualified([]ast.Node{node}, schema) {
 			if f.Code != v1review.NameUnqualified {
 				continue

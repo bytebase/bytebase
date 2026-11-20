@@ -72,7 +72,7 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		// V1 anchored every finding on the statement text's first
 		// non-whitespace line, which can be a leading comment above the
 		// statement node the finding's range covers.
-		line := (&BaseRule{StmtText: stmt.Text}).ContentStartLine() + int32(stmt.BaseLine())
+		line := contentStartLine(stmt.Text) + int32(stmt.BaseLine())
 		for _, f := range pgv1review.NamingIndex([]ast.Node{node}, cfg, schema) {
 			advice := &storepb.Advice{
 				Status:        level,

@@ -47,7 +47,7 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		if !ok {
 			continue
 		}
-		line := stmt.BaseLine() + int((&BaseRule{StmtText: stmt.Text}).ContentStartLine())
+		line := stmt.BaseLine() + int(contentStartLine(stmt.Text))
 		for _, f := range pgv1review.SystemCollationAllowlist([]ast.Node{node}, allowList) {
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:        level,

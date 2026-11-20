@@ -63,8 +63,8 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 }
 
 // findingPositionBaseLineTwice is the position of a finding as the V1 rules
-// that passed an absolute line to BaseRule.AddAdvice reported it: the
-// finding's line within its statement, plus the statement's base line twice.
+// reported it: the finding's line within its statement, plus the statement's
+// base line twice.
 func findingPositionBaseLineTwice(stmt base.ParsedStatement, f v1review.Finding) *storepb.Position {
 	position := base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f)))
 	position.Line += int32(stmt.BaseLine())

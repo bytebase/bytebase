@@ -49,7 +49,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		stmt := stmts[f.Statement]
 		var line int32
 		if f.Start == 0 && f.End == 0 {
-			line = (&BaseRule{StmtText: stmt.Text}).ContentStartLine()
+			line = contentStartLine(stmt.Text)
 		} else {
 			line = int32(1 + strings.Count(stmt.Text[:f.Start], "\n"))
 		}

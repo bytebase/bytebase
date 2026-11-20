@@ -53,7 +53,7 @@ func (*CommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		if !ok {
 			continue
 		}
-		line := stmt.BaseLine() + int((&BaseRule{StmtText: stmt.Text}).ContentStartLine())
+		line := stmt.BaseLine() + int(contentStartLine(stmt.Text))
 		for range pgv1review.SystemCommentLength([]ast.Node{node}, maxLength) {
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:        level,

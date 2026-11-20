@@ -47,7 +47,6 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		}
 		// V1 anchored every finding on the statement text's first
 		// non-whitespace line and quoted the trimmed statement text.
-		text := &BaseRule{StmtText: stmt.Text}
 		for _, f := range pgv1review.TableNoForeignKey([]ast.Node{node}) {
 			if f.Code != v1review.TableForeignKey {
 				continue
@@ -56,8 +55,8 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 				Status:        level,
 				Code:          code.TableHasFK.Int32(),
 				Title:         title,
-				Content:       fmt.Sprintf("Foreign key is not allowed in the table %q.%q, related statement: \"%s\"", f.Value, f.Table, text.TrimmedStmtText()),
-				StartPosition: &storepb.Position{Line: text.ContentStartLine() + int32(stmt.BaseLine())},
+				Content:       fmt.Sprintf("Foreign key is not allowed in the table %q.%q, related statement: \"%s\"", f.Value, f.Table, trimmedStmtText(stmt.Text)),
+				StartPosition: &storepb.Position{Line: contentStartLine(stmt.Text) + int32(stmt.BaseLine())},
 			})
 		}
 	}
