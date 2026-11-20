@@ -33,7 +33,7 @@ CREATE SEQUENCE audit.EventSeq AS BIGINT;
 	}, metadata.Schemas)
 }
 
-func TestGetDatabaseMetadataColumnForeignKeyUsesTableSchemaFallback(t *testing.T) {
+func TestGetDatabaseMetadataColumnForeignKeyUsesDefaultSchemaFallback(t *testing.T) {
 	metadata, err := GetDatabaseMetadata(`
 CREATE SCHEMA sales;
 CREATE TABLE sales.customers (
@@ -55,7 +55,7 @@ CREATE TABLE sales.orders (
 	}
 	require.NotNil(t, orders)
 	require.Len(t, orders.ForeignKeys, 1)
-	require.Equal(t, "sales", orders.ForeignKeys[0].ReferencedSchema)
+	require.Equal(t, "dbo", orders.ForeignKeys[0].ReferencedSchema)
 	require.Equal(t, "customers", orders.ForeignKeys[0].ReferencedTable)
 	require.Equal(t, []string{"customer_id"}, orders.ForeignKeys[0].Columns)
 	require.Equal(t, []string{"id"}, orders.ForeignKeys[0].ReferencedColumns)
@@ -102,4 +102,48 @@ func TestGetDatabaseMetadata(t *testing.T) {
 	if record {
 		yamltest.Record(t, filepath, tests)
 	}
+}
+
+func TestGetDatabaseMetadataCaseSensitiveSchemasIndexedViewAndDefaults(t *testing.T) {
+	metadata, err := GetDatabaseMetadata(`
+CREATE TABLE [s].[t] ([a] INT NOT NULL DEFAULT 0);
+CREATE TABLE [S].[t] ([b] INT NOT NULL);
+GO
+CREATE VIEW [dbo].[v] WITH SCHEMABINDING AS SELECT 1 AS [id];
+GO
+CREATE UNIQUE CLUSTERED INDEX [ix_v] ON [dbo].[v] ([id]);
+GO
+CREATE TABLE [dbo].[a_b] ([c] INT NOT NULL DEFAULT 0);
+CREATE TABLE [dbo].[a] ([b_c] INT NOT NULL CONSTRAINT [DF_custom] DEFAULT 1);
+`)
+	require.NoError(t, err)
+
+	var schemaNames []string
+	var sLower, sUpper, dbo *metadatapb.SchemaMetadata
+	for _, s := range metadata.Schemas {
+		schemaNames = append(schemaNames, s.Name)
+		switch s.Name {
+		case "s":
+			sLower = s
+		case "S":
+			sUpper = s
+		case "dbo":
+			dbo = s
+		default:
+			t.Fatalf("unexpected schema %q", s.Name)
+		}
+	}
+	require.Equal(t, []string{"S", "dbo", "s"}, schemaNames)
+	require.Len(t, sLower.Tables, 1)
+	require.Equal(t, "a", sLower.Tables[0].Columns[0].Name)
+	require.Empty(t, sLower.Tables[0].Columns[0].DefaultConstraintName)
+	require.Len(t, sUpper.Tables, 1)
+	require.Equal(t, "b", sUpper.Tables[0].Columns[0].Name)
+
+	require.Len(t, dbo.Views, 1)
+	require.Len(t, dbo.Tables, 2)
+	require.Equal(t, "a_b", dbo.Tables[0].Name)
+	require.Empty(t, dbo.Tables[0].Columns[0].DefaultConstraintName)
+	require.Equal(t, "a", dbo.Tables[1].Name)
+	require.Equal(t, "DF_custom", dbo.Tables[1].Columns[0].DefaultConstraintName)
 }

@@ -24,7 +24,7 @@
     DROP TABLE [dbo].[orders];
     DROP TABLE [dbo].[users];
 - description: Cross-schema operations with new schema creation
-  difference: the catalog separates the column drop from the table drop with GO
+  difference: the catalog extracts ALTER TABLE ADD CONSTRAINT [fk_orders_product] and drops it before the column, and separates the column drop from the table drop with GO
   legacyExpected: |+
     ALTER TABLE [sales].[orders] DROP COLUMN [product_id];
     DROP TABLE [inventory].[products];
@@ -32,6 +32,8 @@
     GO
 
   catalogExpected: |+
+    ALTER TABLE [sales].[orders] DROP CONSTRAINT [fk_orders_product];
+    GO
     ALTER TABLE [sales].[orders] DROP COLUMN [product_id];
     GO
     DROP TABLE [inventory].[products];

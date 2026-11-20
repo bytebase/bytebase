@@ -3806,6 +3806,15 @@ func restoreRecreatedViewComments(plan *catalog.MigrationPlan, meta *metadatapb.
 	for _, op := range plan.Ops {
 		switch {
 		case op.Type == catalog.OpComment:
+			if target, ok := parseCommentTarget(op.SQL); ok {
+				if (target.kind == "VIEW" || target.kind == "MATERIALIZED VIEW") && len(target.parts) == 2 {
+					commented[objectKey(target.parts[0], target.parts[1])] = true
+				}
+				continue
+			}
+			if op.SchemaName != "" {
+				commented[objectKey(op.SchemaName, op.ObjectName)] = true
+			}
 			commented[op.ObjectName] = true
 		case op.Type == catalog.OpCreateView && strings.Contains(op.SQL, "COMMENT ON"):
 			commented[objectKey(op.SchemaName, op.ObjectName)] = true

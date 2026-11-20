@@ -1271,6 +1271,8 @@
         CONSTRAINT [fk_orders_customer] FOREIGN KEY ([customer_id]) REFERENCES [sales].[customers]([id])
     );
   expected: |+
+    ALTER TABLE [sales].[orders] DROP CONSTRAINT [fk_orders_product];
+    GO
     ALTER TABLE [sales].[orders] DROP COLUMN [product_id];
     GO
     DROP TABLE [inventory].[products];
@@ -2314,6 +2316,7 @@
     GO
     DROP TABLE [defaults].[orders];
 
+    ALTER TABLE [defaults].[employees] DROP CONSTRAINT [DF_employees_status_new];
     ALTER TABLE [defaults].[employees] ADD CONSTRAINT [DF_employees_status] DEFAULT 'active' FOR [status];
 
 - description: Complex default expressions using system functions, variables, and conditional logic
@@ -2413,6 +2416,7 @@
     GO
     DROP TABLE [edge].[flags];
 
+    ALTER TABLE [edge].[test_defaults] DROP CONSTRAINT [DF_test_defaults_nullable_new];
     ALTER TABLE [edge].[test_defaults] ADD CONSTRAINT [DF_test_defaults_nullable_with_default] DEFAULT 42 FOR [nullable_with_default];
 
 - description: Reverse of basic table operations - dropping column, table, index, and constraint
@@ -2542,7 +2546,7 @@
     );
 
     ALTER TABLE [sales].[orders] ADD CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [inventory].[products]([id]);
-  expected: |+
+  expected: |
     CREATE SCHEMA [inventory];
     GO
 
@@ -2556,6 +2560,7 @@
     );
     ALTER TABLE [sales].[orders] ADD [product_id] INT NULL;
 
+    ALTER TABLE [sales].[orders] ADD CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [inventory].[products] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
 - description: Reverse of view operations - dropping views in correct dependency order
   oldSchema: |
     CREATE SCHEMA [reporting];
@@ -2739,10 +2744,10 @@
 
     CREATE INDEX [idx_events_month] ON [perf].[events] ([event_month]);
   expected: |+
-    ALTER TABLE [perf].[events] ADD [event_month]  NULL;
+    ALTER TABLE [perf].[events] ADD [event_month] AS (DATEPART(MONTH, [timestamp]));
     CREATE INDEX [idx_events_month] ON [perf].[events] ([event_month]);
     CREATE UNIQUE INDEX [idx_events_name_timestamp] ON [perf].[events] ([event_name], [timestamp]);
-    CREATE INDEX [idx_events_recent] ON [perf].[events] ([event_name]);
+    CREATE INDEX [idx_events_recent] ON [perf].[events] ([event_name]) WHERE [timestamp] >= '2023-01-01';
     CREATE INDEX [idx_events_timestamp] ON [perf].[events] ([timestamp]);
     CREATE INDEX [idx_events_user_category] ON [perf].[events] ([user_id], [category]);
 
@@ -2995,11 +3000,17 @@
       [unit_price] DECIMAL(10,2) NOT NULL,
       [total] DECIMAL(15,2) NULL,
       [order_date] DATETIME2 NULL,
-      [computed_total]  NULL,
+      [computed_total] AS ([quantity] * [unit_price]),
       CONSTRAINT [PK_orders_2] PRIMARY KEY ([id])
     );
-    ALTER TABLE [ecommerce].[products] ADD [price_with_tax]  NULL;
-    ALTER TABLE [ecommerce].[products] ADD [price_category]  NULL;
+    ALTER TABLE [ecommerce].[products] ADD [price_with_tax] AS ([price] * (1 + [tax_rate]));
+    ALTER TABLE [ecommerce].[products] ADD [price_category] AS (
+            CASE
+                WHEN [price] < 10 THEN 'Budget'
+                WHEN [price] < 100 THEN 'Standard'
+                ELSE 'Premium'
+            END
+        );
     CREATE INDEX [idx_products_price_category] ON [ecommerce].[products] ([price_category]);
     CREATE INDEX [idx_products_price_with_tax] ON [ecommerce].[products] ([price_with_tax]);
 
@@ -3242,7 +3253,7 @@
     );
     ALTER TABLE [defaults].[employees] ADD [vacation_days] INT NOT NULL DEFAULT 15;
     ALTER TABLE [defaults].[employees] ADD [bonus_percentage] DECIMAL(5,2) NULL DEFAULT (CASE WHEN MONTH(GETDATE()) = 12 THEN 10.0 ELSE 5.0 END);
-    ALTER TABLE [defaults].[employees] ADD CONSTRAINT [DF_employees_status] DEFAULT 'pending' FOR [status];
+    ALTER TABLE [defaults].[employees] ADD CONSTRAINT [DF_employees_status_new] DEFAULT 'pending' FOR [status];
 
     ALTER TABLE [defaults].[products] ADD [cost] DECIMAL(10,2) NOT NULL;
 
@@ -3471,7 +3482,7 @@
         [decimal_precision] DECIMAL(18,6) DEFAULT 123.456789
     );
   newSchema: "CREATE SCHEMA [edge];\nGO\n\nCREATE TABLE [edge].[test_defaults] (\n    [id] INT IDENTITY(1,1) PRIMARY KEY,\n    [nullable_with_default] INT CONSTRAINT [DF_test_defaults_nullable_new] DEFAULT 84,\n    [string_default] NVARCHAR(50) DEFAULT N'Default''s value',\n    [empty_string] NVARCHAR(50) DEFAULT '',\n    [zero_default] INT DEFAULT 0,\n    [negative_default] INT DEFAULT -1,\n    [decimal_precision] DECIMAL(18,6) DEFAULT 123.456789,\n    [special_chars] NVARCHAR(100) DEFAULT N'Line1' + CHAR(13) + CHAR(10) + N'Line2',\n    [unicode_default] NVARCHAR(100) DEFAULT N'你好世界 \U0001F30D',\n    [max_int] BIGINT DEFAULT 9223372036854775807,\n    [min_int] BIGINT DEFAULT -9223372036854775808,\n    [json_config] NVARCHAR(MAX) DEFAULT N'{\"enabled\": true, \"count\": 0}'\n);\n\nCREATE TABLE [edge].[flags] (\n    [id] INT IDENTITY(1,1) PRIMARY KEY,\n    [is_enabled] BIT NOT NULL DEFAULT 1,\n    [is_deleted] BIT NOT NULL DEFAULT 0,\n    [is_visible] BIT DEFAULT 1,\n    [is_archived] BIT DEFAULT 0\n);\n"
-  expected: "CREATE TABLE [edge].[flags] (\n  [id] INT IDENTITY(1,1) NOT NULL,\n  [is_enabled] BIT NOT NULL DEFAULT 1,\n  [is_deleted] BIT NOT NULL DEFAULT 0,\n  [is_visible] BIT NULL DEFAULT 1,\n  [is_archived] BIT NULL DEFAULT 0,\n  CONSTRAINT [PK_flags_2] PRIMARY KEY ([id])\n);\nALTER TABLE [edge].[test_defaults] ADD [special_chars] NVARCHAR(100) NULL DEFAULT N'Line1' + CHAR(13) + CHAR(10) + N'Line2';\nALTER TABLE [edge].[test_defaults] ADD [unicode_default] NVARCHAR(100) NULL DEFAULT N'你好世界 \U0001F30D';\nALTER TABLE [edge].[test_defaults] ADD [max_int] BIGINT NULL DEFAULT 9223372036854775807;\nALTER TABLE [edge].[test_defaults] ADD [min_int] BIGINT NULL DEFAULT -9223372036854775808;\nALTER TABLE [edge].[test_defaults] ADD [json_config] NVARCHAR(MAX) NULL DEFAULT N'{\"enabled\": true, \"count\": 0}';\nALTER TABLE [edge].[test_defaults] ADD CONSTRAINT [DF_test_defaults_nullable_with_default] DEFAULT 84 FOR [nullable_with_default];\n\n"
+  expected: "CREATE TABLE [edge].[flags] (\n  [id] INT IDENTITY(1,1) NOT NULL,\n  [is_enabled] BIT NOT NULL DEFAULT 1,\n  [is_deleted] BIT NOT NULL DEFAULT 0,\n  [is_visible] BIT NULL DEFAULT 1,\n  [is_archived] BIT NULL DEFAULT 0,\n  CONSTRAINT [PK_flags_2] PRIMARY KEY ([id])\n);\nALTER TABLE [edge].[test_defaults] ADD [special_chars] NVARCHAR(100) NULL DEFAULT N'Line1' + CHAR(13) + CHAR(10) + N'Line2';\nALTER TABLE [edge].[test_defaults] ADD [unicode_default] NVARCHAR(100) NULL DEFAULT N'你好世界 \U0001F30D';\nALTER TABLE [edge].[test_defaults] ADD [max_int] BIGINT NULL DEFAULT 9223372036854775807;\nALTER TABLE [edge].[test_defaults] ADD [min_int] BIGINT NULL DEFAULT -9223372036854775808;\nALTER TABLE [edge].[test_defaults] ADD [json_config] NVARCHAR(MAX) NULL DEFAULT N'{\"enabled\": true, \"count\": 0}';\nALTER TABLE [edge].[test_defaults] ADD CONSTRAINT [DF_test_defaults_nullable_new] DEFAULT 84 FOR [nullable_with_default];\n\n"
 - description: Spatial index operations with various tessellation schemes and parameters
   oldSchema: |
     CREATE SCHEMA [geo];
