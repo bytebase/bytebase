@@ -376,6 +376,18 @@ func TestValidateQuery(t *testing.T) {
 			description: "EXPLAIN ANALYZE over a nested parenthesized export must be rejected",
 		},
 		{
+			statement:   `DESC SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			description: "DESC over an export must not bypass the export gate",
+		},
+		{
+			statement:   `DESCRIBE SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			description: "DESCRIBE over an export must not bypass the export gate",
+		},
+		{
+			statement:   `DESC VERBOSE SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			description: "DESC VERBOSE over an export must not bypass the export gate",
+		},
+		{
 			statement:   "SELECT a FROM t xx yy zz",
 			description: "Trailing junk after a valid prefix must be rejected",
 		},

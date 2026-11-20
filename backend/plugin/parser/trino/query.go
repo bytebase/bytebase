@@ -23,8 +23,10 @@ func validateQuery(statement string) (bool, bool, error) {
 	if !readOnly {
 		return false, returnsData, nil
 	}
-	// Work around omni classifying WithFunctionStmt as Select in ValidateQuery while
-	// spanQueryType classifies it as DDL and omni's Trino driver rowCap leaves it uncapped.
+	// Work around https://github.com/bytebase/omni/issues/1497: omni classifies
+	// WithFunctionStmt as Select in ValidateQuery while spanQueryType returns DDL
+	// and omni's Trino driver rowCap leaves it uncapped. Plain EXPLAIN does not run
+	// the query and its span already resolves the inner query, so only ANALYZE recurses.
 	if containsASCIIFold(statement, "function") {
 		parsed, err := parseTrinoSQL(statement)
 		if err != nil {
@@ -44,7 +46,7 @@ func hasWithFunction(node ast.Node) bool {
 	case *parser.WithFunctionStmt:
 		return true
 	case *parser.ExplainStmt:
-		return n.Statement != nil && hasWithFunction(n.Statement)
+		return n.Analyze && n.Statement != nil && hasWithFunction(n.Statement)
 	default:
 		return false
 	}

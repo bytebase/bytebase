@@ -22,9 +22,9 @@ func validateQuery(statement string) (bool, bool, error) {
 	if !readOnly {
 		return false, returnsData, nil
 	}
-	// Work around omni/starrocks/analysis.ValidateQuery accepting EXPLAIN over
-	// queries with INTO OUTFILE; skip re-parsing unless both keywords appear.
-	if containsASCIIFold(statement, "explain") && containsASCIIFold(statement, "outfile") {
+	// Work around https://github.com/bytebase/omni/issues/1497: omni/starrocks/analysis.ValidateQuery
+	// accepts EXPLAIN/DESC over queries with INTO OUTFILE; skip re-parsing unless "outfile" appears.
+	if containsASCIIFold(statement, "outfile") {
 		parsed, err := parseStarRocksSQL(statement)
 		if err != nil {
 			return false, false, err

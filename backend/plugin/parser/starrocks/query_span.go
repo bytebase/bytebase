@@ -62,7 +62,8 @@ func GetQuerySpan(
 }
 
 // resolveWithStatisticsSystemDB handles omni ErrMixUserSystemTables when _statistics_
-// (excluded from omni's StarRocks systemDatabases) is queried alongside information_schema or sys.
+// (excluded from omni's StarRocks systemDatabases; https://github.com/bytebase/omni/issues/1497)
+// is queried alongside information_schema or sys.
 func resolveWithStatisticsSystemDB(stmt base.Statement, database string, ignoreCaseSensitive bool) (*base.QuerySpan, error) {
 	stmts := analysis.SplitStatements(stmt.Text)
 	var single string
@@ -141,7 +142,7 @@ func classifySystemMix(resources base.SourceColumnSet, ignoreCaseSensitive bool)
 }
 
 // isSystemDatabase treats _statistics_ as a StarRocks system database in addition to
-// omni/starrocks/analysis.IsSystemDatabase (StatisticsMetaManager creates it ~60s after startup).
+// omni/starrocks/analysis.IsSystemDatabase (https://github.com/bytebase/omni/issues/1497).
 func isSystemDatabase(name string, ignoreCaseSensitive bool) bool {
 	if analysis.IsSystemDatabase(name, ignoreCaseSensitive) {
 		return true

@@ -60,8 +60,8 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.
 		return nil, errors.Wrapf(err, "failed to get query span from statement: %s", stmt.Text)
 	}
 
-	// Work around omni's spanQueryType lacking a WithFunctionStmt case (returning DDL
-	// with empty Results): resolve the wrapped QueryStmt directly so ACLs and masking apply.
+	// Work around https://github.com/bytebase/omni/issues/1497: omni's spanQueryType lacks
+	// a WithFunctionStmt case (returning DDL with empty Results), so resolve the wrapped query.
 	if resolved.Type == analysis.DDL && containsASCIIFold(stmt.Text, "function") {
 		if innerSQL, ok := withFunctionInnerQuery(stmt.Text); ok {
 			innerResolved, err := analysis.ResolveQuerySpan(innerSQL, opts)
