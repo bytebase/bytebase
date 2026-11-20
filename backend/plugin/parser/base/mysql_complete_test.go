@@ -14,10 +14,11 @@ import (
 
 func TestDatabaseQualifiersInStatement(t *testing.T) {
 	tests := []struct {
-		name      string
-		statement string
-		defaultDB string
-		want      []string
+		name          string
+		statement     string
+		defaultDB     string
+		caseSensitive bool
+		want          []string
 	}{
 		{
 			name:      "table alias column qualifier ignored",
@@ -185,11 +186,18 @@ func TestDatabaseQualifiersInStatement(t *testing.T) {
 			defaultDB: "appdb",
 			want:      []string{"otherdb", "db2", "db3", "db4", "db5"},
 		},
+		{
+			name:          "case-sensitive mode preserves case-distinct database qualifiers",
+			statement:     "SELECT Foo.t. FROM Foo.t",
+			defaultDB:     "foo",
+			caseSensitive: true,
+			want:          []string{"Foo"},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := databaseQualifiersInStatement(tc.statement, tc.defaultDB)
+			got := databaseQualifiersInStatement(tc.statement, tc.defaultDB, tc.caseSensitive)
 			require.Equal(t, tc.want, got)
 		})
 	}
@@ -259,6 +267,34 @@ func TestPopulateMySQLFamilyCatalog_SkipsEnumerationForQualifiers(t *testing.T) 
 	require.Equal(t, []string{"otherdb", "unuseddb"}, registered)
 	require.Equal(t, []string{"appdb"}, loaded)
 
+	// Case-sensitive mode preserves case-distinct database qualifiers (e.g. foo vs Foo).
+	caseSensListCalls := 0
+	var caseSensLoaded []string
+	PopulateMySQLFamilyCatalog(
+		context.Background(),
+		CompletionContext{
+			DefaultDatabase: "foo",
+			ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
+				caseSensListCalls++
+				return []string{"foo", "Foo"}, nil
+			},
+			Metadata: func(_ context.Context, _, db string) (string, *model.DatabaseMetadata, error) {
+				if db != "foo" && db != "Foo" {
+					return "", nil, nil
+				}
+				return db, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: db}, nil, nil, storepb.Engine_MYSQL, true), nil
+			},
+		},
+		"SELECT Foo.t. FROM Foo.t",
+		len("SELECT Foo.t."),
+		func(string, int) bool { return false },
+		func(string) {},
+		func(name string, _ *metadatapb.DatabaseSchemaMetadata) { caseSensLoaded = append(caseSensLoaded, name) },
+		func(string) {},
+	)
+	require.Zero(t, caseSensListCalls)
+	require.Equal(t, []string{"Foo", "foo"}, caseSensLoaded)
+
 	// Case-folded qualifier resolves to its canonical stored name via lazy enumeration on miss.
 	caseFoldListCalls := 0
 	var caseFoldLoaded []string
@@ -274,7 +310,7 @@ func TestPopulateMySQLFamilyCatalog_SkipsEnumerationForQualifiers(t *testing.T) 
 				if db != "appdb" && db != "db_b" {
 					return "", nil, nil
 				}
-				return db, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: db}, nil, nil, storepb.Engine_MYSQL, true), nil
+				return db, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: db}, nil, nil, storepb.Engine_MYSQL, false), nil
 			},
 		},
 		"SELECT DB_B.orders. FROM DB_B.orders",

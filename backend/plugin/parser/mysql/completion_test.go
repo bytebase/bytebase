@@ -480,7 +480,7 @@ func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
 	caseFoldMeta := func(_ context.Context, _, dbName string) (string, *model.DatabaseMetadata, error) {
 		switch dbName {
 		case "appdb":
-			return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "appdb"}, nil, nil, storepb.Engine_MYSQL, true), nil
+			return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "appdb"}, nil, nil, storepb.Engine_MYSQL, false), nil
 		case "db_b":
 			return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 				Name: "db_b",
@@ -503,6 +503,31 @@ func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
 	}, "SELECT DB_B.orders. FROM DB_B.orders", 1, len("SELECT DB_B.orders."))
 	require.NoError(t, err)
 	require.True(t, hasCandidate(gotFolded, base.CandidateTypeColumn, "id"), "case-folded qualifier DB_B.orders. should load db_b; got %v", gotFolded)
+
+	// On lower_case_table_names=0, foo and Foo remain distinct databases.
+	caseSensMeta := func(_ context.Context, _, dbName string) (string, *model.DatabaseMetadata, error) {
+		switch dbName {
+		case "foo":
+			return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+				Name:    "foo",
+				Schemas: []*metadatapb.SchemaMetadata{{Tables: []*metadatapb.TableMetadata{{Name: "t", Columns: []*metadatapb.ColumnMetadata{{Name: "lower_col", Type: "int"}}}}}},
+			}, nil, nil, storepb.Engine_MYSQL, true), nil
+		case "Foo":
+			return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+				Name:    "Foo",
+				Schemas: []*metadatapb.SchemaMetadata{{Tables: []*metadatapb.TableMetadata{{Name: "t", Columns: []*metadatapb.ColumnMetadata{{Name: "upper_col", Type: "int"}}}}}},
+			}, nil, nil, storepb.Engine_MYSQL, true), nil
+		default:
+			return "", nil, nil
+		}
+	}
+	gotDistinct, err := Completion(context.Background(), base.CompletionContext{
+		Scene:           base.SceneTypeAll,
+		DefaultDatabase: "foo",
+		Metadata:        caseSensMeta,
+	}, "SELECT Foo.t. FROM Foo.t", 1, len("SELECT Foo.t."))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotDistinct, base.CandidateTypeColumn, "upper_col"), "case-distinct qualifier Foo.t. should load Foo; got %v", gotDistinct)
 }
 
 func TestCompletion_TrailingSemicolonAndUTF16Caret(t *testing.T) {

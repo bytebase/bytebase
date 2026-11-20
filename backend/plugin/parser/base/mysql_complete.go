@@ -122,10 +122,8 @@ func PopulateMySQLFamilyCatalog(
 	setCurrentDB func(name string),
 ) {
 	suggestsDB := hasDatabaseRule != nil && suggestsMySQLDatabaseRef(statement, pos, hasDatabaseRule)
-	qualifiers := databaseQualifiersInStatement(statement, cCtx.DefaultDatabase)
 
 	var allNames []string
-	var exactName map[string]string
 	enumerated := false
 	ensureEnumerated := func() {
 		if enumerated || cCtx.ListDatabaseNames == nil {
@@ -134,92 +132,144 @@ func PopulateMySQLFamilyCatalog(
 		enumerated = true
 		if names, err := cCtx.ListDatabaseNames(ctx, cCtx.InstanceID); err == nil {
 			allNames = names
-			exactName = make(map[string]string, len(names))
-			for _, n := range names {
-				exactName[strings.ToLower(n)] = n
-			}
 		}
 	}
 	if suggestsDB {
 		ensureEnumerated()
 	}
 
+	findExactFolded := func(name string) (string, bool) {
+		ensureEnumerated()
+		lower := strings.ToLower(name)
+		for _, n := range allNames {
+			if strings.ToLower(n) == lower {
+				return n, n != name
+			}
+		}
+		return "", false
+	}
+
+	// Load the default database first so its metadata determines whether this
+	// instance treats database identifiers as case-sensitive or case-folding.
+	caseSensitive := true
+	defaultLoaded := false
 	seen := map[string]bool{}
-	var loadOrder []string
-	hasDefault := false
-	addLoad := func(name string) {
-		if name == "" {
+	keyFor := func(name string) string {
+		if caseSensitive {
+			return name
+		}
+		return strings.ToLower(name)
+	}
+
+	defaultName := cCtx.DefaultDatabase
+	var defaultProto *metadatapb.DatabaseSchemaMetadata
+	if cCtx.Metadata != nil && defaultName != "" {
+		if resolvedName, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, defaultName); err == nil && dbMeta != nil {
+			if resolvedName != "" {
+				defaultName = resolvedName
+			}
+			caseSensitive = dbMeta.GetIsObjectCaseSensitive()
+			defaultProto = dbMeta.GetProto()
+			defaultLoaded = true
+		} else if exact, diffCase := findExactFolded(defaultName); diffCase {
+			if resolvedName, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, exact); err == nil && dbMeta != nil && !dbMeta.GetIsObjectCaseSensitive() {
+				defaultName = exact
+				if resolvedName != "" {
+					defaultName = resolvedName
+				}
+				caseSensitive = false
+				defaultProto = dbMeta.GetProto()
+				defaultLoaded = true
+			}
+		}
+		seen[keyFor(defaultName)] = true
+	}
+
+	qualifiers := databaseQualifiersInStatement(statement, cCtx.DefaultDatabase, caseSensitive)
+
+	// Omni's catalog maps database names case-insensitively (`toLower(name)`).
+	// When a case-sensitive instance references an explicitly qualified DB whose
+	// name differs from defaultDB only by case (e.g. `Foo` when default is `foo`),
+	// load qualifiers before defaultDB so `Foo`'s tables take precedence over
+	// same-named tables in `foo`.
+	deferDefault := false
+	if caseSensitive && defaultName != "" {
+		for _, q := range qualifiers {
+			if q != defaultName && strings.EqualFold(q, defaultName) {
+				deferDefault = true
+				break
+			}
+		}
+	}
+	loadDefault := func() {
+		if cCtx.Metadata == nil || defaultName == "" {
 			return
 		}
-		key := strings.ToLower(name)
-		if seen[key] {
-			return
+		if defaultProto != nil {
+			loadDB(defaultName, defaultProto)
+		} else {
+			registerDB(defaultName)
 		}
-		seen[key] = true
-		loadOrder = append(loadOrder, name)
+	}
+	if !deferDefault {
+		loadDefault()
 	}
 
 	if cCtx.Metadata != nil {
-		if cCtx.DefaultDatabase != "" {
-			addLoad(cCtx.DefaultDatabase)
-			hasDefault = true
-		}
 		for _, q := range qualifiers {
-			if exact, ok := exactName[strings.ToLower(q)]; ok {
-				addLoad(exact)
-			} else {
-				addLoad(q)
+			loadName := q
+			if !caseSensitive && enumerated {
+				if exact, diffCase := findExactFolded(q); diffCase {
+					loadName = exact
+				}
+			}
+			if seen[keyFor(loadName)] {
+				continue
+			}
+			var proto *metadatapb.DatabaseSchemaMetadata
+			if resolvedName, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, loadName); err == nil && dbMeta != nil {
+				if resolvedName != "" {
+					loadName = resolvedName
+				}
+				proto = dbMeta.GetProto()
+			} else if !caseSensitive || !defaultLoaded {
+				// Case-folding instances (lower_case_table_names) may store e.g.
+				// "db_b" while the query uses "DB_B"; resolve canonically on miss.
+				if exact, diffCase := findExactFolded(loadName); diffCase {
+					if resolvedName, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, exact); err == nil && dbMeta != nil && !dbMeta.GetIsObjectCaseSensitive() {
+						loadName = exact
+						if resolvedName != "" {
+							loadName = resolvedName
+						}
+						proto = dbMeta.GetProto()
+					}
+				}
+			}
+			seen[keyFor(loadName)] = true
+			seen[keyFor(q)] = true
+			if proto != nil {
+				loadDB(loadName, proto)
+			} else if suggestsDB {
+				registerDB(loadName)
 			}
 		}
+	}
+	if deferDefault {
+		loadDefault()
 	}
 
 	// Register unreferenced database names (name only) only when the completion
 	// position can actually suggest database_ref candidates.
 	if suggestsDB {
 		for _, name := range allNames {
-			if !seen[strings.ToLower(name)] {
+			if !seen[keyFor(name)] {
+				seen[keyFor(name)] = true
 				registerDB(name)
 			}
 		}
 	}
 
-	currentDB := cCtx.DefaultDatabase
-	for i, name := range loadOrder {
-		loadName := name
-		var proto *metadatapb.DatabaseSchemaMetadata
-		if resolvedName, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, name); err == nil && dbMeta != nil {
-			if resolvedName != "" {
-				loadName = resolvedName
-			}
-			proto = dbMeta.GetProto()
-		} else if cCtx.ListDatabaseNames != nil {
-			// On case-folding instances (e.g. lower_case_table_names), the typed
-			// qualifier casing may differ from the stored db_name; resolve via
-			// ListDatabaseNames lazily only when exact lookup misses.
-			ensureEnumerated()
-			if exact, ok := exactName[strings.ToLower(name)]; ok && exact != name {
-				loadName = exact
-				if resolvedName, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, exact); err == nil && dbMeta != nil {
-					if resolvedName != "" {
-						loadName = resolvedName
-					}
-					proto = dbMeta.GetProto()
-				}
-			}
-		}
-		if i == 0 && hasDefault && loadName != "" {
-			currentDB = loadName
-		}
-		if proto == nil {
-			if (i == 0 && hasDefault) || suggestsDB {
-				registerDB(loadName)
-			}
-			continue
-		}
-		loadDB(loadName, proto)
-	}
-
-	setCurrentDB(currentDB)
+	setCurrentDB(defaultName)
 }
 
 // suggestsMySQLDatabaseRef reports whether the parser's C3 collector at pos
@@ -359,7 +409,7 @@ type mysqlQualScope struct {
 //   - Two-part chains (`db.obj` or `db.`) only identify `db` inside table/object
 //     positions (FROM, JOIN, UPDATE, INSERT/REPLACE [INTO], DELETE USING,
 //     DDL object headers, REFERENCES, CALL, CREATE ... LIKE, etc.).
-func databaseQualifiersInStatement(statement, defaultDB string) []string {
+func databaseQualifiersInStatement(statement, defaultDB string, caseSensitive bool) []string {
 	if !strings.Contains(statement, ".") {
 		return nil
 	}
@@ -368,18 +418,24 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 		return nil
 	}
 
-	defaultLower := strings.ToLower(defaultDB)
+	keyFor := func(name string) string {
+		if caseSensitive {
+			return name
+		}
+		return strings.ToLower(name)
+	}
+	defaultKey := keyFor(defaultDB)
 	seen := make(map[string]bool)
 	var out []string
 	addDB := func(name string) {
 		if name == "" {
 			return
 		}
-		lower := strings.ToLower(name)
-		if lower == defaultLower || seen[lower] {
+		key := keyFor(name)
+		if key == defaultKey || seen[key] {
 			return
 		}
-		seen[lower] = true
+		seen[key] = true
 		out = append(out, name)
 	}
 
