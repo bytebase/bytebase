@@ -184,22 +184,25 @@ func PopulateMySQLFamilyCatalog(
 		seen[keyFor(defaultName)] = true
 	}
 
-	qualifiers, caretDB := analyzeMySQLStatementQualifiers(statement, pos, cCtx.DefaultDatabase, caseSensitive)
+	qualifiers, caretDBs := analyzeMySQLStatementQualifiers(statement, pos, cCtx.DefaultDatabase, caseSensitive)
 
 	// Omni's catalog maps database names case-insensitively (`toLower(name)`).
 	// On a case-sensitive instance where multiple case-distinct DBs differ only
-	// by case (e.g. `Foo` vs `foo`), prioritize the qualifier active at the caret
-	// (including via table/alias resolution) over any case-colliding sibling, and
-	// defer defaultDB only when the caret actively refers to the colliding DB.
-	if caseSensitive && caretDB != "" {
-		for i, q := range qualifiers {
-			if q == caretDB && i > 0 {
-				qualifiers = append([]string{q}, append(qualifiers[:i:i], qualifiers[i+1:]...)...)
-				break
+	// by case (e.g. `Foo` vs `foo`), prioritize the databases active at the
+	// caret (with projected CTE/subquery DBs first) over colliding siblings, and
+	// defer defaultDB only when the caret's leading DB is the colliding sibling.
+	if caseSensitive && len(caretDBs) > 0 {
+		for idx := len(caretDBs) - 1; idx >= 0; idx-- {
+			target := caretDBs[idx]
+			for i, q := range qualifiers {
+				if q == target && i > 0 {
+					qualifiers = append([]string{q}, append(qualifiers[:i:i], qualifiers[i+1:]...)...)
+					break
+				}
 			}
 		}
 	}
-	deferDefault := caseSensitive && defaultName != "" && caretDB != "" && caretDB != defaultName && strings.EqualFold(caretDB, defaultName)
+	deferDefault := caseSensitive && defaultName != "" && len(caretDBs) > 0 && caretDBs[0] != defaultName && strings.EqualFold(caretDBs[0], defaultName)
 	loadDefault := func() {
 		if cCtx.Metadata == nil || defaultName == "" {
 			return
@@ -411,8 +414,8 @@ type mysqlQualScope struct {
 }
 
 type mysqlAliasMap struct {
-	exact map[string]string
-	lower map[string]string
+	exact map[string][]string
+	lower map[string][]string
 }
 
 func databaseQualifiersInStatement(statement, defaultDB string, caseSensitive bool) []string {
@@ -420,21 +423,31 @@ func databaseQualifiersInStatement(statement, defaultDB string, caseSensitive bo
 	return qualifiers
 }
 
+func appendUniqueDB(dst []string, dbs ...string) []string {
+	for _, db := range dbs {
+		if db == "" || slices.Contains(dst, db) {
+			continue
+		}
+		dst = append(dst, db)
+	}
+	return dst
+}
+
 // analyzeMySQLStatementQualifiers extracts database qualifiers referenced in
 // statement (excluding defaultDB), distinguishing them from ordinary
 // table/alias qualifiers such as `SELECT a. FROM users a`, and resolves the
-// database associated with any qualifier or table/alias active at pos:
+// databases associated with any qualifier or table/alias active at pos:
 //   - Three-part chains (`db.tbl.col` or `db.tbl.`) always identify `db`.
 //   - Two-part chains (`db.obj` or `db.`) only identify `db` inside table/object
 //     positions (FROM, JOIN, UPDATE, INSERT/REPLACE [INTO], DELETE, USING,
 //     DDL object headers, REFERENCES, CALL, CREATE ... LIKE, etc.).
-func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string, caseSensitive bool) ([]string, string) {
+func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string, caseSensitive bool) ([]string, []string) {
 	if !strings.Contains(statement, ".") {
-		return nil, ""
+		return nil, nil
 	}
 	toks := scanMySQLQualTokens(statement)
 	if len(toks) == 0 {
-		return nil, ""
+		return nil, nil
 	}
 
 	keyFor := func(name string) string {
@@ -461,58 +474,64 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 	nextAliasScopeID := 1
 	aliasesByScope := map[int]*mysqlAliasMap{}
 	parentAliasScope := map[int]int{}
-	scopeFirstDB := map[int]string{}
-	cteByScope := map[int]map[string]string{}
-	recordScopeDB := func(scopeID int, db string) {
-		if db == "" || scopeFirstDB[scopeID] != "" {
-			return
-		}
-		scopeFirstDB[scopeID] = db
+	scopeProjDBs := map[int][]string{}
+	scopeFromDBs := map[int][]string{}
+	cteByScope := map[int]map[string][]string{}
+	recordScopeProjDB := func(scopeID int, dbs ...string) {
+		scopeProjDBs[scopeID] = appendUniqueDB(scopeProjDBs[scopeID], dbs...)
 	}
-	recordCTE := func(scopeID int, name, db string) {
-		if name == "" || db == "" {
+	recordScopeFromDB := func(scopeID int, dbs ...string) {
+		scopeFromDBs[scopeID] = appendUniqueDB(scopeFromDBs[scopeID], dbs...)
+	}
+	allScopeDBs := func(scopeID int) []string {
+		return appendUniqueDB(slices.Clone(scopeProjDBs[scopeID]), scopeFromDBs[scopeID]...)
+	}
+	recordCTE := func(scopeID int, name string, dbs []string) {
+		if name == "" || len(dbs) == 0 {
 			return
 		}
 		m := cteByScope[scopeID]
 		if m == nil {
-			m = make(map[string]string)
+			m = make(map[string][]string)
 			cteByScope[scopeID] = m
 		}
-		m[strings.ToLower(name)] = db
+		lower := strings.ToLower(name)
+		m[lower] = appendUniqueDB(m[lower], dbs...)
 	}
-	lookupCTE := func(scopeID int, name string) (string, bool) {
+	lookupCTE := func(scopeID int, name string) ([]string, bool) {
 		lower := strings.ToLower(name)
 		for sid, ok := scopeID, true; ok; sid, ok = parentAliasScope[sid] {
 			if m := cteByScope[sid]; m != nil {
-				if db, hit := m[lower]; hit {
-					return db, true
+				if dbs, hit := m[lower]; hit {
+					return dbs, true
 				}
 			}
 		}
-		return "", false
+		return nil, false
 	}
-	recordAlias := func(scopeID int, name, db string, overwrite bool) {
-		if name == "" || db == "" {
+	recordAlias := func(scopeID int, name string, overwrite bool, dbs ...string) {
+		if name == "" || len(dbs) == 0 {
 			return
 		}
 		am := aliasesByScope[scopeID]
 		if am == nil {
 			am = &mysqlAliasMap{
-				exact: make(map[string]string),
-				lower: make(map[string]string),
+				exact: make(map[string][]string),
+				lower: make(map[string][]string),
 			}
 			aliasesByScope[scopeID] = am
 		}
+		lower := strings.ToLower(name)
 		if overwrite {
-			am.exact[name] = db
-			am.lower[strings.ToLower(name)] = db
+			am.exact[name] = appendUniqueDB(nil, dbs...)
+			am.lower[lower] = appendUniqueDB(nil, dbs...)
 			return
 		}
 		if _, ok := am.exact[name]; !ok {
-			am.exact[name] = db
+			am.exact[name] = appendUniqueDB(nil, dbs...)
 		}
-		if _, ok := am.lower[strings.ToLower(name)]; !ok {
-			am.lower[strings.ToLower(name)] = db
+		if _, ok := am.lower[lower]; !ok {
+			am.lower[lower] = appendUniqueDB(nil, dbs...)
 		}
 	}
 
@@ -567,17 +586,18 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 				scopes = scopes[:len(scopes)-1]
 			}
 			parent := cur()
-			if subDB := scopeFirstDB[closed.aliasScopeID]; subDB != "" {
+			if subDBs := allScopeDBs(closed.aliasScopeID); len(subDBs) > 0 {
 				if closed.aliasScopeID != parent.aliasScopeID {
-					recordScopeDB(parent.aliasScopeID, subDB)
+					recordScopeProjDB(parent.aliasScopeID, scopeProjDBs[closed.aliasScopeID]...)
+					recordScopeFromDB(parent.aliasScopeID, scopeFromDBs[closed.aliasScopeID]...)
 				}
 				if closed.cteName != "" {
-					recordCTE(parent.aliasScopeID, closed.cteName, subDB)
-					recordAlias(parent.aliasScopeID, closed.cteName, subDB, true)
+					recordCTE(parent.aliasScopeID, closed.cteName, subDBs)
+					recordAlias(parent.aliasScopeID, closed.cteName, true, subDBs...)
 				}
 				if parent.inTableClause {
 					if aliasTok, ok := scanTableAliasAfter(toks, i+1); ok {
-						recordAlias(parent.aliasScopeID, aliasTok, subDB, true)
+						recordAlias(parent.aliasScopeID, aliasTok, true, subDBs...)
 					}
 				}
 			}
@@ -624,25 +644,29 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 			isDeleteStar := sc.stmtVerb == "DELETE" && i+2 < len(toks) && toks[i+2].punct == '*'
 			if isThreePart || (sc.inTableClause && !isDeleteStar) {
 				addDB(tok.text)
-				recordScopeDB(sc.aliasScopeID, tok.text)
+				if sc.inTableClause {
+					recordScopeFromDB(sc.aliasScopeID, tok.text)
+				} else {
+					recordScopeProjDB(sc.aliasScopeID, tok.text)
+				}
 			}
 			if sc.inTableClause && !isDeleteStar && i+2 < len(toks) && toks[i+2].isWord && !isClauseBoundaryAfterDot(toks[i+2].upper) {
-				recordAlias(sc.aliasScopeID, toks[i+2].text, tok.text, true)
+				recordAlias(sc.aliasScopeID, toks[i+2].text, true, tok.text)
 				if aliasTok, ok := scanTableAliasAfter(toks, i+3); ok {
-					recordAlias(sc.aliasScopeID, aliasTok, tok.text, true)
+					recordAlias(sc.aliasScopeID, aliasTok, true, tok.text)
 				}
 			}
 		} else if sc.inTableClause && !precededByDot && (i+1 >= len(toks) || toks[i+1].punct != '.') &&
 			isTableStartPosition(sc.prevKeyword, prevPunct) && !isNonAliasClauseKeyword(tok.upper) {
-			targetDB, fromCTE := lookupCTE(sc.aliasScopeID, tok.text)
-			if !fromCTE {
-				targetDB = defaultDB
+			targetDBs, fromCTE := lookupCTE(sc.aliasScopeID, tok.text)
+			if !fromCTE && defaultDB != "" {
+				targetDBs = []string{defaultDB}
 			}
-			if targetDB != "" {
-				recordScopeDB(sc.aliasScopeID, targetDB)
-				recordAlias(sc.aliasScopeID, tok.text, targetDB, fromCTE)
+			if len(targetDBs) > 0 {
+				recordScopeFromDB(sc.aliasScopeID, targetDBs...)
+				recordAlias(sc.aliasScopeID, tok.text, fromCTE, targetDBs...)
 				if aliasTok, ok := scanTableAliasAfter(toks, i+1); ok {
-					recordAlias(sc.aliasScopeID, aliasTok, targetDB, fromCTE)
+					recordAlias(sc.aliasScopeID, aliasTok, fromCTE, targetDBs...)
 				}
 			}
 		}
@@ -850,34 +874,34 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 		}
 	}
 
-	caretDB := ""
+	var caretDBs []string
 	if caretIdent := databaseQualifierAtCaret(statement, pos); caretIdent != "" {
 		if caretIdent == defaultDB {
-			caretDB = defaultDB
+			caretDBs = []string{defaultDB}
 		} else {
 			for _, q := range out {
 				if q == caretIdent {
-					caretDB = q
+					caretDBs = []string{q}
 					break
 				}
 			}
 		}
-		if caretDB == "" {
+		if len(caretDBs) == 0 {
 			for sid, ok := caretAliasScopeID, true; ok; sid, ok = parentAliasScope[sid] {
 				if am := aliasesByScope[sid]; am != nil {
-					if db, hit := am.exact[caretIdent]; hit {
-						caretDB = db
+					if dbs, hit := am.exact[caretIdent]; hit {
+						caretDBs = dbs
 						break
 					}
-					if db, hit := am.lower[strings.ToLower(caretIdent)]; hit {
-						caretDB = db
+					if dbs, hit := am.lower[strings.ToLower(caretIdent)]; hit {
+						caretDBs = dbs
 						break
 					}
 				}
 			}
 		}
 	}
-	return out, caretDB
+	return out, caretDBs
 }
 
 // MySQLStatementReferencesDatabase reports whether dbName appears as a database

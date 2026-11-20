@@ -504,6 +504,16 @@ func TestPopulateMySQLFamilyCatalog_SkipsEnumerationForQualifiers(t *testing.T) 
 			stmt: "WITH C AS (SELECT * FROM Foo.t) SELECT x., (WITH c AS (SELECT * FROM foo.t) SELECT 1 FROM c) FROM c x",
 			pos:  len("WITH C AS (SELECT * FROM Foo.t) SELECT x."),
 		},
+		{
+			name: "multi-db CTE projects non-default case-colliding db",
+			stmt: "WITH c AS (SELECT Foo.t.remote FROM foo.local JOIN Foo.t) SELECT x. FROM c x",
+			pos:  len("WITH c AS (SELECT Foo.t.remote FROM foo.local JOIN Foo.t) SELECT x."),
+		},
+		{
+			name: "multi-db derived table projects non-default case-colliding db",
+			stmt: "SELECT x. FROM (SELECT Foo.t.remote FROM foo.local JOIN Foo.t) x",
+			pos:  len("SELECT x."),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var loadedOrder []string
