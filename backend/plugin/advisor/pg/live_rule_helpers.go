@@ -47,7 +47,7 @@ func (l liveStatements) probeText(i int) string {
 
 // startLine is statement i's first content line within its own text.
 func (l liveStatements) startLine(i int) int32 {
-	return (&BaseRule{StmtText: l.stmts[i].Text}).ContentStartLine()
+	return contentStartLine(l.stmts[i].Text)
 }
 
 // probeEach walks the statements in order, recording each one's session
@@ -60,7 +60,7 @@ func (l liveStatements) probeEach(want []int, probe func(i int, settings []strin
 	}
 	var settings sessionSettings
 	for i, node := range l.nodes {
-		settings.add(node, (&BaseRule{StmtText: l.stmts[i].Text}).TrimmedStmtText())
+		settings.add(node, trimmedStmtText(l.stmts[i].Text))
 		if wanted[i] {
 			probe(i, settings.statements())
 		}

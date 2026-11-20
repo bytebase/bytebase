@@ -70,7 +70,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 				Content: fmt.Sprintf("%s \"%s\" is owned by \"%s\", but the current role is \"%s\".", f.Name, f.Table, f.Value, currentRole),
 				Code:    code.StatementObjectOwnerCheck.Int32(),
 				StartPosition: &storepb.Position{
-					Line:   (&BaseRule{StmtText: stmt.Text}).ContentStartLine() + int32(stmt.BaseLine()),
+					Line:   contentStartLine(stmt.Text) + int32(stmt.BaseLine()),
 					Column: 0,
 				},
 			})

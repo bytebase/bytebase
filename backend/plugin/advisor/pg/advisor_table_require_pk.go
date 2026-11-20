@@ -56,7 +56,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		}
 		nodes = append(nodes, node)
 		stmts = append(stmts, stmt)
-		startLines = append(startLines, stmt.BaseLine()+int((&BaseRule{StmtText: stmt.Text}).ContentStartLine()))
+		startLines = append(startLines, stmt.BaseLine()+int(contentStartLine(stmt.Text)))
 	}
 
 	title := checkCtx.Rule.Type.String()

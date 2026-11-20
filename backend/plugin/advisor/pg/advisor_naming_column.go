@@ -84,7 +84,7 @@ func (*NamingColumnConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 				// V1 reports the line of the name's first occurrence in the
 				// statement text, which is not always the column itself.
 				StartPosition: &storepb.Position{
-					Line: (&BaseRule{StmtText: stmt.Text}).FindLineByName(f.Name) + int32(stmt.BaseLine()),
+					Line: findLineByName(stmt.Text, f.Name) + int32(stmt.BaseLine()),
 				},
 			})
 		}
