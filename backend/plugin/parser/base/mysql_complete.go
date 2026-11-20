@@ -462,12 +462,34 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 	aliasesByScope := map[int]*mysqlAliasMap{}
 	parentAliasScope := map[int]int{}
 	scopeFirstDB := map[int]string{}
-	cteDB := map[string]string{}
+	cteByScope := map[int]map[string]string{}
 	recordScopeDB := func(scopeID int, db string) {
 		if db == "" || scopeFirstDB[scopeID] != "" {
 			return
 		}
 		scopeFirstDB[scopeID] = db
+	}
+	recordCTE := func(scopeID int, name, db string) {
+		if name == "" || db == "" {
+			return
+		}
+		m := cteByScope[scopeID]
+		if m == nil {
+			m = make(map[string]string)
+			cteByScope[scopeID] = m
+		}
+		m[strings.ToLower(name)] = db
+	}
+	lookupCTE := func(scopeID int, name string) (string, bool) {
+		lower := strings.ToLower(name)
+		for sid, ok := scopeID, true; ok; sid, ok = parentAliasScope[sid] {
+			if m := cteByScope[sid]; m != nil {
+				if db, hit := m[lower]; hit {
+					return db, true
+				}
+			}
+		}
+		return "", false
 	}
 	recordAlias := func(scopeID int, name, db string, overwrite bool) {
 		if name == "" || db == "" {
@@ -511,7 +533,6 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 			aliasID := nextAliasScopeID
 			nextAliasScopeID++
 			scopes = []mysqlQualScope{{aliasScopeID: aliasID, stmtStart: true, allowFromAsTable: true}}
-			cteDB = map[string]string{}
 			if tok.end <= pos {
 				caretAliasScopeID = aliasID
 			}
@@ -551,7 +572,7 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 					recordScopeDB(parent.aliasScopeID, subDB)
 				}
 				if closed.cteName != "" {
-					cteDB[closed.cteName] = subDB
+					recordCTE(parent.aliasScopeID, closed.cteName, subDB)
 					recordAlias(parent.aliasScopeID, closed.cteName, subDB, true)
 				}
 				if parent.inTableClause {
@@ -613,7 +634,7 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 			}
 		} else if sc.inTableClause && !precededByDot && (i+1 >= len(toks) || toks[i+1].punct != '.') &&
 			isTableStartPosition(sc.prevKeyword, prevPunct) && !isNonAliasClauseKeyword(tok.upper) {
-			targetDB, fromCTE := cteDB[tok.text]
+			targetDB, fromCTE := lookupCTE(sc.aliasScopeID, tok.text)
 			if !fromCTE {
 				targetDB = defaultDB
 			}

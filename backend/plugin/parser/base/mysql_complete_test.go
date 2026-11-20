@@ -499,6 +499,11 @@ func TestPopulateMySQLFamilyCatalog_SkipsEnumerationForQualifiers(t *testing.T) 
 			stmt: "WITH c AS (SELECT * FROM Foo.t) SELECT x. FROM c x",
 			pos:  len("WITH c AS (SELECT * FROM Foo.t) SELECT x."),
 		},
+		{
+			name: "cte alias case-insensitive and nested CTE isolation",
+			stmt: "WITH C AS (SELECT * FROM Foo.t) SELECT x., (WITH c AS (SELECT * FROM foo.t) SELECT 1 FROM c) FROM c x",
+			pos:  len("WITH C AS (SELECT * FROM Foo.t) SELECT x."),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var loadedOrder []string
