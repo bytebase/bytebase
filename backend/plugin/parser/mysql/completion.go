@@ -72,7 +72,7 @@ func currentStatement(statement string, pos int) (string, int) {
 			return seg.Text, pos - seg.ByteStart
 		}
 	}
-	return statement, pos
+	return "", 0
 }
 
 func candidateTypeToBase(t omnicompletion.CandidateType) base.CandidateType {

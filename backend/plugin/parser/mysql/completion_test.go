@@ -421,6 +421,40 @@ func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
 	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
 }
 
+func TestCompletion_TrailingSemicolonAndUTF16Caret(t *testing.T) {
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "",
+			Tables: []*metadatapb.TableMetadata{
+				{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}}},
+			},
+		}},
+	})
+
+	// Cursor in an empty statement slot after semicolons isolates from earlier/later statements.
+	stmtGap := "SELECT * FROM t1; ; SELEC broken"
+	gotGap, err := Completion(context.Background(), base.CompletionContext{
+		Scene:           base.SceneTypeQuery,
+		DefaultDatabase: "db",
+		Metadata:        meta,
+	}, stmtGap, 1, len("SELECT * FROM t1; "))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotGap, base.CandidateTypeKeyword, "SELECT"), "got %v", gotGap)
+	require.False(t, hasCandidate(gotGap, base.CandidateTypeKeyword, "INSERT"), "empty slot in SceneTypeQuery must not offer write keywords")
+
+	// UTF-16 column offset accounts for surrogate-pair emoji before caret.
+	stmtEmoji := "SELECT '😀',  FROM t1"
+	utf16Col := len("SELECT '") + 2 + len("', ")
+	gotEmoji, err := Completion(context.Background(), base.CompletionContext{
+		Scene:           base.SceneTypeAll,
+		DefaultDatabase: "db",
+		Metadata:        meta,
+	}, stmtEmoji, 1, utf16Col)
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotEmoji, base.CandidateTypeColumn, "id"), "UTF-16 caret should resolve t1.id; got %v", gotEmoji)
+}
+
 // Completion cost must be bounded by the caret's statement, not the whole
 // sheet: a broken statement anywhere after the caret must not make completion
 // scale with the entire trailing document (BYT-9886).

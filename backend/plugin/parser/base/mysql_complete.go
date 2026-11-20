@@ -1,6 +1,7 @@
 package base
 
 import (
+	"cmp"
 	"context"
 	"slices"
 	"strings"
@@ -52,21 +53,27 @@ func CompleteMySQLFamily(
 	candidateMap := make(map[string]Candidate)
 	for _, c := range complete(stmt, pos) {
 		t := c.Type
+		if t == CandidateTypeNone {
+			continue
+		}
 		text := c.Text
 		switch {
 		case isObjectIdentifierCandidate(t):
 			text = QuoteMySQLIdentifierIfNeeded(c.Text, caretInBacktick, isReservedKeyword)
 		case t == CandidateTypeFunction:
-			text = c.Text + "()"
+			if !strings.HasSuffix(text, "()") {
+				text += "()"
+			}
 		default:
 			// Keywords and value-like candidates pass through unchanged.
 		}
-		candidateMap[string(t)+":"+text] = Candidate{
+		candidate := Candidate{
 			Type:       t,
 			Text:       text,
 			Definition: c.Definition,
 			Comment:    c.Comment,
 		}
+		candidateMap[candidate.String()] = candidate
 	}
 
 	// In the read-only query scene, drop keywords that *initiate* writes
@@ -87,19 +94,12 @@ func CompleteMySQLFamily(
 		result = append(result, c)
 	}
 	slices.SortFunc(result, func(a, b Candidate) int {
-		if a.Type != b.Type {
-			if a.Type < b.Type {
-				return -1
-			}
-			return 1
-		}
-		if a.Text < b.Text {
-			return -1
-		}
-		if a.Text > b.Text {
-			return 1
-		}
-		return 0
+		return cmp.Or(
+			cmp.Compare(a.Type, b.Type),
+			cmp.Compare(a.Text, b.Text),
+			cmp.Compare(a.Definition, b.Definition),
+			cmp.Compare(a.Comment, b.Comment),
+		)
 	})
 	return result
 }
@@ -196,9 +196,7 @@ func PopulateMySQLFamilyCatalog(
 // (including the placeholder fallback strategies omni uses) requests the
 // "database_ref" rule.
 func suggestsMySQLDatabaseRef(stmt string, pos int, hasDatabaseRule func(sql string, offset int) bool) bool {
-	if pos > len(stmt) {
-		pos = len(stmt)
-	}
+	pos = max(0, min(pos, len(stmt)))
 	collectOffset := pos - extractIdentPrefixLen(stmt, pos)
 	if hasDatabaseRule(stmt, collectOffset) {
 		return true
@@ -305,6 +303,7 @@ type mysqlQualScope struct {
 	stmtVerb              string
 	inTableClause         bool
 	inInsertReplaceTarget bool
+	inGrantPrivList       bool
 	allowCommaTable       bool
 	allowFromAsTable      bool
 	afterCreate           bool
@@ -419,6 +418,19 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 		sc.stmtStart = false
 		sc.prevKeyword = kw
 
+		// While scanning privilege names/clauses before ON in GRANT/REVOKE, keep
+		// privilege keywords (e.g. SELECT, INSERT, UPDATE, TRIGGER, REFERENCES)
+		// from opening a table clause until ON arrives.
+		if sc.inGrantPrivList {
+			if kw == "ON" {
+				sc.inGrantPrivList = false
+				sc.inTableClause = true
+				sc.allowCommaTable = false
+				sc.afterDDLOnObj = false
+			}
+			continue
+		}
+
 		switch kw {
 		case "SELECT", "WITH":
 			sc.inTableClause = false
@@ -439,7 +451,10 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 			sc.allowCommaTable = false
 			sc.afterDDLOnObj = false
 		case "FROM":
-			if sc.allowFromAsTable || prevKW == "DELETE" || prevKW == "SHOW" || prevKW == "COLUMNS" || prevKW == "INDEX" || prevKW == "INDEXES" || prevKW == "KEYS" {
+			if sc.stmtVerb == "REVOKE" {
+				sc.inTableClause = false
+				sc.allowCommaTable = false
+			} else if sc.allowFromAsTable || sc.stmtVerb == "SHOW" || sc.stmtVerb == "DELETE" || prevKW == "COLUMNS" || prevKW == "FIELDS" || prevKW == "INDEX" || prevKW == "INDEXES" || prevKW == "KEYS" {
 				sc.inTableClause = true
 				sc.allowCommaTable = true
 				sc.inInsertReplaceTarget = false
@@ -449,7 +464,7 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 			sc.allowCommaTable = true
 			sc.inInsertReplaceTarget = false
 		case "UPDATE":
-			if prevKW != "ON" {
+			if prevKW != "ON" && prevKW != "KEY" && prevKW != "FOR" && prevKW != "BEFORE" && prevKW != "AFTER" {
 				sc.inTableClause = true
 				sc.allowCommaTable = true
 				sc.inInsertReplaceTarget = false
@@ -486,7 +501,13 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 			sc.inTableClause = false
 			sc.inInsertReplaceTarget = false
 			sc.allowCommaTable = false
-		case "INDEX", "TRIGGER", "GRANT", "REVOKE":
+		case "GRANT", "REVOKE":
+			sc.inGrantPrivList = true
+			sc.inTableClause = false
+			sc.inInsertReplaceTarget = false
+			sc.allowCommaTable = false
+			sc.allowFromAsTable = false
+		case "INDEX", "TRIGGER":
 			sc.afterDDLOnObj = true
 			sc.inInsertReplaceTarget = false
 			if kw == "TRIGGER" {
@@ -519,7 +540,7 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 				sc.inTableClause = true
 			}
 		case "IN":
-			if prevKW == "COLUMNS" || prevKW == "INDEX" || prevKW == "INDEXES" || prevKW == "KEYS" {
+			if prevKW == "COLUMNS" || prevKW == "FIELDS" || prevKW == "INDEX" || prevKW == "INDEXES" || prevKW == "KEYS" {
 				sc.inTableClause = true
 				sc.allowCommaTable = false
 			}
@@ -640,9 +661,7 @@ func identifierNeedsQuoting(name string, isReservedKeyword func(string) bool) bo
 const identifierChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
 
 func caretAtStatementStart(statement string, pos int) bool {
-	if pos > len(statement) {
-		pos = len(statement)
-	}
+	pos = max(0, min(pos, len(statement)))
 	before := stripStringsAndComments(statement)[:pos]
 	before = strings.TrimRight(before, identifierChars)
 	before = strings.TrimRight(before, " \t\r\n")
@@ -652,9 +671,7 @@ func caretAtStatementStart(statement string, pos int) bool {
 // CaretInsideMySQLBacktickIdentifier reports whether the caret sits inside an
 // open backtick-quoted identifier (an odd number of backticks precede it).
 func CaretInsideMySQLBacktickIdentifier(statement string, pos int) bool {
-	if pos > len(statement) {
-		pos = len(statement)
-	}
+	pos = max(0, min(pos, len(statement)))
 	masked := stripStringsAndComments(statement)
 	count := 0
 	for i := 0; i < pos; i++ {
@@ -753,21 +770,28 @@ func isSpaceByte(b byte) bool {
 	return b == ' ' || b == '\t' || b == '\n' || b == '\r'
 }
 
+// lineOffsetToBytePos converts a 1-based line and 0-based UTF-16 code-unit
+// column offset into a byte offset into s, matching LSP/Monaco positions.
 func lineOffsetToBytePos(s string, line, offset int) int {
-	pos := 0
 	currentLine := 1
-	for pos < len(s) && currentLine < line {
-		if s[pos] == '\n' {
-			currentLine++
+	col := 0
+	for i := 0; i < len(s); {
+		if currentLine == line && col >= offset {
+			return i
 		}
-		pos++
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if r == '\n' {
+			if currentLine == line {
+				return i
+			}
+			currentLine++
+			col = 0
+		} else if r <= 0xFFFF {
+			col++
+		} else {
+			col += 2
+		}
+		i += size
 	}
-	for i := 0; i < offset && pos < len(s); i++ {
-		_, size := utf8.DecodeRuneInString(s[pos:])
-		pos += size
-	}
-	if pos > len(s) {
-		return len(s)
-	}
-	return pos
+	return len(s)
 }

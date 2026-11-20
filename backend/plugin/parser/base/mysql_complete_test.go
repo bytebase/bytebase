@@ -117,6 +117,23 @@ func TestDatabaseQualifiersInStatement(t *testing.T) {
 			want:      []string{"db2", "db3", "db4", "db5", "db6"},
 		},
 		{
+			name:      "on duplicate key update and for update do not treat qualifiers as databases",
+			statement: "INSERT INTO appdb.t1 (id) VALUES (1) ON DUPLICATE KEY UPDATE id = a.id; SELECT * FROM t1 u FOR UPDATE OF u.",
+			defaultDB: "appdb",
+		},
+		{
+			name:      "grant and revoke extract target db on ON and ignore role after FROM",
+			statement: "GRANT SELECT, INSERT ON otherdb.t1 TO u; REVOKE UPDATE ON third_db.t2 FROM r.user",
+			defaultDB: "appdb",
+			want:      []string{"otherdb", "third_db"},
+		},
+		{
+			name:      "show full columns and delete with modifiers extract db",
+			statement: "SHOW FULL COLUMNS FROM otherdb.; DELETE LOW_PRIORITY IGNORE FROM third_db.t1 WHERE id = u.id",
+			defaultDB: "appdb",
+			want:      []string{"otherdb", "third_db"},
+		},
+		{
 			name:      "ddl create trigger on cross-db table",
 			statement: "CREATE TRIGGER tr BEFORE INSERT ON otherdb.t2 FOR EACH ROW SET NEW.c1 = 1",
 			defaultDB: "appdb",
@@ -206,4 +223,33 @@ func TestPopulateMySQLFamilyCatalog_SkipsEnumerationForQualifiers(t *testing.T) 
 	require.Equal(t, 1, listCalls)
 	require.Equal(t, []string{"otherdb", "unuseddb"}, registered)
 	require.Equal(t, []string{"appdb"}, loaded)
+}
+
+func TestCompleteMySQLFamily_PreservesDistinctDefinitionsAndUTF16Caret(t *testing.T) {
+	got := CompleteMySQLFamily(
+		CompletionContext{Scene: SceneTypeAll},
+		"SELECT '😀', ",
+		1,
+		len("SELECT '")+2+len("', "), // UTF-16 code units for supplementary emoji 😀 = 2
+		func(statement string, pos int) (string, int) {
+			return statement, pos
+		},
+		func(string) bool { return false },
+		func(stmt string, pos int) []Candidate {
+			require.Equal(t, "SELECT '😀', ", stmt)
+			require.Equal(t, len("SELECT '😀', "), pos)
+			return []Candidate{
+				{Type: CandidateTypeColumn, Text: "id", Definition: "appdb.t2.id | int"},
+				{Type: CandidateTypeColumn, Text: "id", Definition: "appdb.t1.id | int"},
+				{Type: CandidateTypeFunction, Text: "COUNT()"},
+				{Type: CandidateTypeNone, Text: "ignored"},
+			}
+		},
+	)
+
+	require.Equal(t, []Candidate{
+		{Type: CandidateTypeColumn, Text: "id", Definition: "appdb.t1.id | int"},
+		{Type: CandidateTypeColumn, Text: "id", Definition: "appdb.t2.id | int"},
+		{Type: CandidateTypeFunction, Text: "COUNT()"},
+	}, got)
 }
