@@ -502,6 +502,7 @@
     "tool-completed-with-warnings": "已完成，但有警告",
     "tool-default-value": "默认",
     "tool-failed": "失败",
+    "tool-manual-required": "需要手动操作",
     "tool-options": "选项",
     "tool-prompt": "提示",
     "tool-request-canceled": "请求已取消",

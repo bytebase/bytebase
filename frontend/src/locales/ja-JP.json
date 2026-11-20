@@ -502,6 +502,7 @@
     "tool-completed-with-warnings": "警告ありで完了",
     "tool-default-value": "デフォルト",
     "tool-failed": "失敗",
+    "tool-manual-required": "手動操作が必要",
     "tool-options": "オプション",
     "tool-prompt": "プロンプト",
     "tool-request-canceled": "リクエストをキャンセルしました",

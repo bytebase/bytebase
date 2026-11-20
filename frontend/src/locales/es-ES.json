@@ -502,6 +502,7 @@
     "tool-completed-with-warnings": "Completado con advertencias",
     "tool-default-value": "Predeterminado",
     "tool-failed": "Fallido",
+    "tool-manual-required": "Se requiere una acción manual",
     "tool-options": "Opciones",
     "tool-prompt": "Indicación",
     "tool-request-canceled": "Solicitud cancelada",

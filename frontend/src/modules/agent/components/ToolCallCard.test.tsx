@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, test, vi } from "vitest";
+import { manualResult } from "../dom/interactionRegistry";
 import { agentApiExecutionEvidence } from "../logic/apiExecution";
 import { resolveSkill } from "../logic/skills";
 import { ToolCallCard } from "./ToolCallCard";
@@ -93,6 +94,30 @@ const unmaskExplanation = {
 };
 
 describe("ToolCallCard", () => {
+  test.each([
+    {
+      result: manualResult(),
+      status: "agent.tool-manual-required",
+      color: "text-warning",
+    },
+    {
+      result: { success: false, message: "The page has changed." },
+      status: "agent.tool-failed",
+      color: "text-error",
+    },
+  ])("shows $status instead of success for a refused DOM action", ({ result, status, color }) => {
+    const { container, unmount } = renderCard("", JSON.stringify(result), "dom_action");
+    try {
+      expect(container.querySelector(`button .${color}`)).toHaveTextContent(status);
+      expect(container.querySelector("button .text-success")).toBeNull();
+      expect(container.querySelector("button")).toHaveAttribute("aria-expanded", "false");
+      act(() => (container.querySelector("button") as HTMLElement).click());
+      expect(container.querySelectorAll("pre")[1]).toHaveTextContent(result.message);
+    } finally {
+      unmount();
+    }
+  });
+
   test.each([
     { success: true, effect: "local-draft" },
     { success: true, value: "draft", agentExecution: { result: "unknown" } },

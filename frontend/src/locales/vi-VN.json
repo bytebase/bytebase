@@ -502,6 +502,7 @@
     "tool-completed-with-warnings": "Đã hoàn thành với cảnh báo",
     "tool-default-value": "Mặc định",
     "tool-failed": "Thất bại",
+    "tool-manual-required": "Cần thao tác thủ công",
     "tool-options": "Tùy chọn",
     "tool-prompt": "Lời nhắc",
     "tool-request-canceled": "Yêu cầu đã được hủy",

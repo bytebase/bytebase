@@ -613,6 +613,14 @@ export function ToolCallCard({
         </span>
       );
     }
+    if (toolCall.name === "dom_action" && resultRecord?.success === false) {
+      const manual = resultRecord.code === "manual-required";
+      return (
+        <span className={manual ? "text-warning" : "text-error"}>
+          {manual ? t("agent.tool-manual-required") : t("agent.tool-failed")}
+        </span>
+      );
+    }
     if (hasErrorResult || callApi?.error || askError) {
       return <span className="text-error">{t("agent.tool-failed")}</span>;
     }
