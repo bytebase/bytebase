@@ -71,3 +71,14 @@ func explainedText(explain *parser.ExplainStmt, text string) (string, bool) {
 	}
 	return text[inner.Start:explain.Loc.End], true
 }
+
+// nodeSpan returns the source byte range of an omni statement node.
+func nodeSpan(n ast.Node) (ast.Loc, bool) {
+	if qs, ok := n.(*parser.QueryStmt); ok {
+		return qs.Loc, true
+	}
+	if sp, ok := n.(interface{ Span() ast.Loc }); ok {
+		return sp.Span(), true
+	}
+	return ast.Loc{}, false
+}

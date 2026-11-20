@@ -101,8 +101,7 @@ func TestGetQueryType(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.statement, func(t *testing.T) {
 			a := require.New(t)
-			extractor := newQuerySpanExtractor("testdb", base.GetQuerySpanContext{}, false)
-			result, err := extractor.getQuerySpan(context.Background(), tc.statement)
+			result, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: tc.statement}, "testdb", "", false)
 			a.NoError(err)
 			a.Equal(tc.want, result.Type, "statement: %s", tc.statement)
 		})

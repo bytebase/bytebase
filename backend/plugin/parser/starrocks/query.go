@@ -1,9 +1,7 @@
 package starrocks
 
 import (
-	"slices"
-	"strings"
-
+	"github.com/bytebase/omni/starrocks/analysis"
 	"github.com/bytebase/omni/starrocks/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -14,164 +12,28 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_STARROCKS, validateQuery)
 }
 
-// validateQuery reports whether the given statement is a read-only query
-// suitable for the SQL editor / data-query path.
-//
-// Decision is AST-based: each parsed top-level statement must be a SELECT,
-// SHOW, DESCRIBE, EXPLAIN, HELP, or a session SET. Relying on leading-keyword classification
-// alone would mis-accept CTE-prefixed DML such as `WITH x AS (...) UPDATE ...`,
-// which Classify would tag as SELECT because `WITH` is its first token.
-//
-// Syntax errors are surfaced up; that lets validateQueryRequest reject
-// malformed read-only SQL before execution.
-//
-// The (bool, bool, error) return shape matches the bytebase QueryValidator
-// contract: (isReadOnly, isExplicitReadOnly, syntaxError). isExplicitReadOnly is
-// false once a statement needs executing rather than reading, which is how the
-// driver decides between QueryContext and ExecContext.
 func validateQuery(statement string) (bool, bool, error) {
+	readOnly, returnsData, err := analysis.ValidateQuery(statement)
+	if err != nil {
+		return false, false, convertParseError(statement, err, nil)
+	}
+	if !readOnly {
+		return false, returnsData, nil
+	}
+	// Work around omni/starrocks/analysis.ValidateQuery accepting EXPLAIN over
+	// queries with INTO OUTFILE so EXPLAIN cannot bypass the export gate.
 	parsed, err := parseStarRocksSQL(statement)
 	if err != nil {
 		return false, false, err
 	}
-	var hasExecute bool
 	for _, p := range parsed {
-		switch {
-		case isReadOnlyAST(p.Node()):
-		case needsExecute(p.Node()):
-			hasExecute = true
-		default:
+		if exp, ok := p.Node().(*ast.ExplainStmt); ok && writesOutfile(exp.Query) {
 			return false, false, nil
 		}
 	}
-	return true, !hasExecute, nil
+	return readOnly, returnsData, nil
 }
 
-// needsExecute reports whether a statement is allowed in the editor but is not a
-// read. A session variable assignment returns no rows, so the driver has to run it
-// with ExecContext rather than read a result set; validateQuery signals that through
-// its second return value. MySQL and Postgres gate SET the same way.
-//
-// Only variable assignment qualifies. SET PASSWORD is a separate node and stays
-// refused, as it is for Postgres: it administers the server rather than preparing
-// the session for a read. Also refused: SET ... AS DEFAULT STORAGE VOLUME,
-// which sets the cluster's default volume; SET DEFAULT ROLE ... TO user, which
-// changes users' default roles; and SET LDAP_ADMIN_PASSWORD, which stores the
-// cluster's LDAP bind password. SET ROLE only activates roles for the session.
-func needsExecute(node ast.Node) bool {
-	switch n := node.(type) {
-	case *ast.SetStmt:
-		return n.Type != "DEFAULT STORAGE VOLUME" && !slices.ContainsFunc(n.Items, setsServerState)
-	case *ast.UnsetStmt:
-		return true
-	}
-	return false
-}
-
-// setsServerState reports whether a SET item is one of the server-changing forms
-// omni parses as an item: SET DEFAULT ROLE, and LDAP_ADMIN_PASSWORD, which StarRocks
-// lexes as a non-reserved word and so reads as a variable name.
-func setsServerState(item *ast.SetItem) bool {
-	if item.UserVariable {
-		return false
-	}
-	return item.Name == "default role" || strings.EqualFold(item.Name, "ldap_admin_password")
-}
-
-// isReadOnlyAST returns true when the given top-level AST node represents a
-// read-only Doris statement (SELECT family, SHOW, DESCRIBE, EXPLAIN, HELP).
-//
-// Omni's parser currently has stub-shaped acceptance for some shapes — bare
-// `SHOW`, `DESCRIBE`, `EXPLAIN` all produce a corresponding AST node with
-// empty content rather than a parse error. We reject those here so the
-// previous ANTLR helper's behaviour (rejecting incomplete forms) is
-// preserved; the database would only reject them at execution time
-// otherwise.
-//
-// Nil nodes are conservatively rejected — they indicate a parse path that
-// produced no concrete statement, which shouldn't happen for valid read-only
-// SQL after parseStarRocksSQL succeeds.
-func isReadOnlyAST(node ast.Node) bool {
-	switch n := node.(type) {
-	case *ast.SelectStmt, *ast.SetOpStmt, *ast.ParenSelect:
-		return isReadOnlyQuery(node)
-	case *ast.ShowStmt:
-		// Reject bare `SHOW` (Type is empty when the parser took the stub path
-		// without seeing a recognised variant keyword).
-		return n.Type != ""
-	case *ast.ShowRoutineLoadStmt, *ast.ShowRoutineLoadTaskStmt,
-		*ast.ShowJobStmt, *ast.ShowJobTaskStmt,
-		*ast.ShowConstraintsStmt, *ast.ShowAnalyzeStmt, *ast.ShowStatsStmt:
-		return true
-	case *ast.DescribeStmt:
-		// Reject bare `DESCRIBE` / `DESC` (Target nil means no table named).
-		return n.Target != nil
-	case *ast.ExplainStmt:
-		// EXPLAIN requires an inner query; the inner query must itself be a
-		// shape EXPLAIN is meaningful for (SELECT family or DML). This blocks
-		// inputs like `EXPLAIN`, `EXPLAIN DROP TABLE t`, etc.
-		if n.Query == nil || !isExplainableInner(n.Query) {
-			return false
-		}
-		// EXPLAIN ANALYZE runs the statement rather than only planning it, so
-		// over DML it writes. StarRocks aborts the INSERT transaction by
-		// default, but the run still creates any partitions the rows need and
-		// those outlive the abort. The plan-only modifiers never execute, so
-		// they stay readable over DML.
-		if n.Type == "ANALYZE" {
-			return isReadOnlyQuery(n.Query)
-		}
-		return true
-	case *ast.HelpStmt:
-		return true
-	default:
-		return false
-	}
-}
-
-// isExplainableInner reports whether `node` is a shape that EXPLAIN can
-// legitimately wrap (SELECT family or DML). DDL inside EXPLAIN is rejected:
-// StarRocks only supports EXPLAIN on query and DML statements, and its plan
-// grammar refuses TRUNCATE before this predicate sees it. Queries are
-// classified by isReadOnlyQuery, the one export gate.
-func isExplainableInner(node ast.Node) bool {
-	if isReadOnlyQuery(node) {
-		return true
-	}
-	switch node.(type) {
-	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
-		return true
-	}
-	return false
-}
-
-// isReadOnlyQuery reports whether `node` is a SELECT-family query that reads
-// and never writes. INTO OUTFILE exports to S3 or HDFS, past masking and past
-// the export gate, so a query carrying one is not a read.
-//
-// This is the single export gate for the SELECT family. Both the top level
-// (isReadOnlyAST) and the EXPLAIN path (isExplainableInner) go through it, so
-// the editor cannot accept by way of EXPLAIN what it refuses when asked
-// directly.
-func isReadOnlyQuery(node ast.Node) bool {
-	switch node.(type) {
-	// ParenSelect only ever wraps a SELECT, SetOpStmt or another ParenSelect,
-	// so no DML hides in the group.
-	case *ast.SelectStmt, *ast.SetOpStmt, *ast.ParenSelect:
-		return !writesOutfile(node)
-	}
-	return false
-}
-
-// writesOutfile reports whether a SELECT-family node carries an INTO OUTFILE
-// clause anywhere: on itself, on a set operation's or a parenthesized group's
-// outer clause, or on an arm inside either.
-//
-// The parser attaches the clause to the node it applies to, and where that is
-// depends on the spelling and on the wrapper: `SELECT 1 UNION SELECT a FROM t
-// INTO OUTFILE ...` keeps it on the right arm, while an EXPLAIN prefix hoists
-// it to the explained statement's outermost query. Reading every layer rather
-// than the arms alone is what keeps the gate true for both.
 func writesOutfile(node ast.Node) bool {
 	switch n := node.(type) {
 	case *ast.SelectStmt:

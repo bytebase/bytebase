@@ -12,8 +12,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// These tests exercise the omni-backed query-span extractor end-to-end through
-// the public extractor API (newQuerySpanExtractor + getQuerySpan). They replace
+// These tests exercise the omni-backed query-span entrypoint end-to-end through
+// GetQuerySpan. They replace
 // the legacy feature tests that poked at ANTLR-listener internals
 // (newTrinoQuerySpanListener, extractor.sourceColumns, addPredicateColumn,
 // extractor.tableSourcesFrom, …) which no longer exist after the cutover. The
@@ -25,8 +25,7 @@ import (
 // tables a query reads.
 func tablesFromSpan(t *testing.T, sql, defaultDatabase string) base.SourceColumnSet {
 	t.Helper()
-	extractor := newQuerySpanExtractor(defaultDatabase, "public", base.GetQuerySpanContext{}, false)
-	span, err := extractor.getQuerySpan(context.Background(), sql)
+	span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: sql}, defaultDatabase, "public", false)
 	require.NoError(t, err)
 	return span.SourceColumns
 }
@@ -57,8 +56,7 @@ func TestQuerySpan_PredicateExtraction(t *testing.T) {
 		ListDatabaseNamesFunc:   lister,
 		Engine:                  storepb.Engine_TRINO,
 	}
-	extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
-	span, err := extractor.getQuerySpan(context.Background(), "SELECT id, name FROM users WHERE id > 10 AND name LIKE 'A%'")
+	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id, name FROM users WHERE id > 10 AND name LIKE 'A%'"}, "catalog1", "public", false)
 	require.NoError(t, err)
 
 	var foundID, foundName bool
@@ -136,8 +134,7 @@ func TestQuerySpan_SelectStarColumnOrder(t *testing.T) {
 	// Repeat to catch nondeterministic map iteration: a single pass can pass by
 	// luck, so assert a stable order across many runs.
 	for i := 0; i < 50; i++ {
-		extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
-		span, err := extractor.getQuerySpan(context.Background(), "SELECT * FROM accounts")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT * FROM accounts"}, "catalog1", "public", false)
 		require.NoError(t, err)
 		var got []string
 		for _, r := range span.Results {
@@ -175,8 +172,7 @@ func TestQuerySpan_AliasedColumnSourceColumns(t *testing.T) {
 		ListDatabaseNamesFunc:   lister,
 		Engine:                  storepb.Engine_TRINO,
 	}
-	extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
-	span, err := extractor.getQuerySpan(context.Background(), "SELECT u.email FROM users u")
+	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT u.email FROM users u"}, "catalog1", "public", false)
 	require.NoError(t, err)
 
 	require.Len(t, span.Results, 1)
@@ -202,13 +198,11 @@ func TestQuerySpan_SystemSchemaNoNotFoundError(t *testing.T) {
 		ListDatabaseNamesFunc:   lister,
 		Engine:                  storepb.Engine_TRINO,
 	}
-	extractor := newQuerySpanExtractor("mydb", "public", gCtx, false)
-
 	for _, stmt := range []string{
 		"SELECT * FROM system.runtime.nodes",
 		"SELECT table_name FROM information_schema.tables",
 	} {
-		span, err := extractor.getQuerySpan(context.Background(), stmt)
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: stmt}, "mydb", "public", false)
 		require.NoError(t, err, "stmt: %s", stmt)
 		assert.Equal(t, base.SelectInfoSchema, span.Type, "stmt %q should classify as SelectInfoSchema", stmt)
 		assert.Nil(t, span.NotFoundError, "system query %q must not set NotFoundError", stmt)
@@ -243,8 +237,7 @@ func TestQuerySpan_SystemSubstringDoesNotBypassMasking(t *testing.T) {
 		ListDatabaseNamesFunc:   lister,
 		Engine:                  storepb.Engine_TRINO,
 	}
-	extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
-	span, err := extractor.getQuerySpan(context.Background(), "SELECT email FROM users WHERE 'system.' = 'system.'")
+	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT email FROM users WHERE 'system.' = 'system.'"}, "catalog1", "public", false)
 	require.NoError(t, err)
 
 	require.Len(t, span.Results, 1)
@@ -280,8 +273,7 @@ func TestQuerySpan_SelfJoinStarColumnCount(t *testing.T) {
 		ListDatabaseNamesFunc:   lister,
 		Engine:                  storepb.Engine_TRINO,
 	}
-	extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
-	span, err := extractor.getQuerySpan(context.Background(), "SELECT * FROM users u1 JOIN users u2 ON u1.id = u2.id")
+	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT * FROM users u1 JOIN users u2 ON u1.id = u2.id"}, "catalog1", "public", false)
 	require.NoError(t, err)
 
 	require.Len(t, span.Results, 4, "self-join SELECT * must yield 2N=4 result columns")
@@ -332,8 +324,7 @@ func TestQuerySpan_ShadowedAliasStillMasked(t *testing.T) {
 		ListDatabaseNamesFunc:   lister,
 		Engine:                  storepb.Engine_TRINO,
 	}
-	extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
-	span, err := extractor.getQuerySpan(context.Background(), "SELECT u.email FROM users u WHERE EXISTS (SELECT 1 FROM orders u)")
+	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT u.email FROM users u WHERE EXISTS (SELECT 1 FROM orders u)"}, "catalog1", "public", false)
 	require.NoError(t, err)
 
 	require.Len(t, span.Results, 1)
@@ -384,8 +375,7 @@ func TestQuerySpan_QualifiedStarSourceColumns(t *testing.T) {
 		"SELECT users.* FROM users JOIN orders o ON users.id = o.id",
 		"SELECT public.users.* FROM users JOIN orders o ON users.id = o.id",
 	} {
-		extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
-		span, err := extractor.getQuerySpan(context.Background(), stmt)
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: stmt}, "catalog1", "public", false)
 		require.NoError(t, err, "stmt: %s", stmt)
 
 		require.Lenf(t, span.Results, 2, "qualified star must yield exactly 2 result columns; stmt: %s", stmt)
@@ -431,8 +421,7 @@ func TestQuerySpan_QualifiedStarDistinguishesSameNamedTables(t *testing.T) {
 		ListDatabaseNamesFunc:   lister,
 		Engine:                  storepb.Engine_TRINO,
 	}
-	extractor := newQuerySpanExtractor("catalog1", "s1", gCtx, false)
-	span, err := extractor.getQuerySpan(context.Background(), "SELECT s1.users.* FROM s1.users JOIN s2.users ON s1.users.id = s2.users.id")
+	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT s1.users.* FROM s1.users JOIN s2.users ON s1.users.id = s2.users.id"}, "catalog1", "s1", false)
 	require.NoError(t, err)
 
 	require.Len(t, span.Results, 2, "s1.users.* must expand to exactly s1.users' two columns")
@@ -475,8 +464,7 @@ func TestQuerySpan_AliasEndingInStarIsNotExpanded(t *testing.T) {
 		ListDatabaseNamesFunc:   lister,
 		Engine:                  storepb.Engine_TRINO,
 	}
-	extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
-	span, err := extractor.getQuerySpan(context.Background(), `SELECT email AS "u.*" FROM users u`)
+	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: `SELECT email AS "u.*" FROM users u`}, "catalog1", "public", false)
 	require.NoError(t, err)
 
 	require.Len(t, span.Results, 1, `SELECT email AS "u.*" is one column, not a star expansion`)

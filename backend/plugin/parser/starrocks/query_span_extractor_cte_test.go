@@ -128,8 +128,7 @@ SELECT * FROM outer_cte`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			extractor := newQuerySpanExtractor(tt.defaultDatabase, base.GetQuerySpanContext{}, false)
-			querySpan, err := extractor.getQuerySpan(context.Background(), tt.sql)
+			querySpan, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: tt.sql}, tt.defaultDatabase, "", false)
 			require.NoError(t, err)
 
 			// Convert SourceColumnSet to slice for comparison

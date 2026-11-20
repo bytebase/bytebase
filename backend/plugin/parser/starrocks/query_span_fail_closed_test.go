@@ -17,18 +17,17 @@ import (
 // table-level ACL checks then saw nothing to protect.
 func TestQuerySpanFailClosed(t *testing.T) {
 	a := require.New(t)
-	q := newQuerySpanExtractor("db1", base.GetQuerySpanContext{}, false)
 
-	_, err := q.getQuerySpan(context.Background(), "SELECT a FROM secret xx yy zz")
+	_, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: "SELECT a FROM secret xx yy zz"}, "db1", "", false)
 	a.Error(err, "trailing junk must fail the span, not truncate silently")
 
 	// The newly accepted paren/grouped shapes still extract their reads.
-	span, err := q.getQuerySpan(context.Background(), "(SELECT a FROM secret) LIMIT 1")
+	span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: "(SELECT a FROM secret) LIMIT 1"}, "db1", "", false)
 	a.NoError(err)
 	a.True(span.SourceColumns[base.ColumnResource{Database: "db1", Table: "secret"}],
 		"paren query must report its table read")
 
-	span, err = q.getQuerySpan(context.Background(), "(SELECT a FROM secret ORDER BY 1) ORDER BY 1")
+	span, err = GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: "(SELECT a FROM secret ORDER BY 1) ORDER BY 1"}, "db1", "", false)
 	a.NoError(err)
 	a.True(span.SourceColumns[base.ColumnResource{Database: "db1", Table: "secret"}],
 		"grouped query must report its table read")

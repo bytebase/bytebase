@@ -1,6 +1,7 @@
 package googlesql
 
 import (
+	"github.com/bytebase/omni/googlesql/analysis"
 	"github.com/bytebase/omni/googlesql/ast"
 	"github.com/bytebase/omni/googlesql/parser"
 
@@ -62,144 +63,69 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 			types = append(types, storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED)
 			continue
 		}
-		types = append(types, statementType(node.Node))
+		types = append(types, convertStatementType(analysis.StatementTypeOf(node.Node)))
 	}
 	return types, nil
 }
 
-// statementType maps one omni GoogleSQL node to a storepb.StatementType.
-//
-// CALL and EXECUTE IMMEDIATE report EXECUTE: what they change is decided by
-// the procedure body or the run-time SQL string, which the statement does not
-// show.
-//
-// Deferral: every GoogleSQL statement the enum has no value for reports
-// UNSPECIFIED, so a rule selecting DML skips it. The gap includes statements
-// that do write rows — LOAD DATA INTO, CLONE DATA INTO, scripting bodies
-// (BEGIN…END, IF, FOR, WHILE, each of which parses as one statement, so a
-// CALL or EXECUTE IMMEDIATE nested in one is not seen either). It also
-// includes ALTER SCHEMA, row access policies, generic entities, and the
-// Spanner-only DDL set (change streams, roles, GRANT / REVOKE, proto bundles),
-// which do not write rows.
-//
-// A new row-writing statement needs its own enum value before it lands here.
-// analysis.ClassifySQL returns Unknown for these too, so it cannot gate the list.
-func statementType(node ast.Node) storepb.StatementType {
-	switch n := node.(type) {
-	case *ast.InsertStmt:
+func convertStatementType(t analysis.StatementType) storepb.StatementType {
+	switch t {
+	case analysis.Insert:
 		return storepb.StatementType_INSERT
-	case *ast.UpdateStmt:
+	case analysis.Update:
 		return storepb.StatementType_UPDATE
-	case *ast.DeleteStmt:
+	case analysis.Delete:
 		return storepb.StatementType_DELETE
-	case *ast.MergeStmt:
+	case analysis.Merge:
 		return storepb.StatementType_MERGE
-	case *ast.TruncateStmt:
+	case analysis.Truncate:
 		return storepb.StatementType_TRUNCATE
-
-	case *ast.CreateTableStmt:
+	case analysis.CreateTable:
 		return storepb.StatementType_CREATE_TABLE
-	case *ast.CreateViewStmt:
+	case analysis.CreateView:
 		return storepb.StatementType_CREATE_VIEW
-	case *ast.CreateMaterializedViewStmt:
-		return storepb.StatementType_CREATE_VIEW
-	case *ast.CreateIndexStmt:
+	case analysis.CreateIndex:
 		return storepb.StatementType_CREATE_INDEX
-	case *ast.SearchVectorIndexStmt:
-		return storepb.StatementType_CREATE_INDEX
-	case *ast.CreateSchemaStmt:
+	case analysis.CreateSchema:
 		return storepb.StatementType_CREATE_SCHEMA
-	case *ast.CreateDatabaseStmt:
+	case analysis.CreateDatabase:
 		return storepb.StatementType_CREATE_DATABASE
-	case *ast.CreateFunctionStmt:
+	case analysis.CreateFunction:
 		return storepb.StatementType_CREATE_FUNCTION
-	case *ast.CreateProcedureStmt:
+	case analysis.CreateProcedure:
 		return storepb.StatementType_CREATE_PROCEDURE
-	case *ast.CreateSequenceStmt:
+	case analysis.CreateSequence:
 		return storepb.StatementType_CREATE_SEQUENCE
-	case *ast.CreateSnapshotStmt:
-		return storepb.StatementType_CREATE_TABLE
-
-	case *ast.AlterStmt:
-		return alterStatementType(n.Object)
-	case *ast.DropStmt:
-		return dropStatementType(n.Object)
-	case *ast.AlterSequenceStmt:
-		return storepb.StatementType_ALTER_SEQUENCE
-	case *ast.DropSequenceStmt:
-		return storepb.StatementType_DROP_SEQUENCE
-	case *ast.BQAlterStmt:
-		return bqAlterStatementType(n.Object)
-	case *ast.BQDropStmt:
-		return bqDropStatementType(n.Object)
-
-	case *ast.RenameStmt:
-		return storepb.StatementType_RENAME
-
-	case *ast.CallStmt, *ast.ExecuteImmediateStmt:
-		return storepb.StatementType_EXECUTE
-
-	default:
-		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-	}
-}
-
-func alterStatementType(kind ast.AlterObjectKind) storepb.StatementType {
-	switch kind {
-	case ast.AlterTable:
+	case analysis.AlterTable:
 		return storepb.StatementType_ALTER_TABLE
-	case ast.AlterView:
+	case analysis.AlterView:
 		return storepb.StatementType_ALTER_VIEW
-	case ast.AlterIndex, ast.AlterSearchIndex:
+	case analysis.AlterIndex:
 		return storepb.StatementType_ALTER_INDEX
-	case ast.AlterDatabase:
+	case analysis.AlterDatabase:
 		return storepb.StatementType_ALTER_DATABASE
-	default:
-		// ALTER SCHEMA has no enum value; see the deferral on statementType.
-		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-	}
-}
-
-func dropStatementType(kind ast.DropObjectKind) storepb.StatementType {
-	switch kind {
-	case ast.DropTable:
+	case analysis.AlterSequence:
+		return storepb.StatementType_ALTER_SEQUENCE
+	case analysis.DropTable:
 		return storepb.StatementType_DROP_TABLE
-	case ast.DropView:
+	case analysis.DropView:
 		return storepb.StatementType_DROP_VIEW
-	case ast.DropIndex:
+	case analysis.DropIndex:
 		return storepb.StatementType_DROP_INDEX
-	case ast.DropSchema:
+	case analysis.DropSchema:
 		return storepb.StatementType_DROP_SCHEMA
-	case ast.DropDatabase:
+	case analysis.DropDatabase:
 		return storepb.StatementType_DROP_DATABASE
-	default:
-		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-	}
-}
-
-func bqAlterStatementType(kind ast.BQAlterObjectKind) storepb.StatementType {
-	switch kind {
-	case ast.BQAlterMaterializedView, ast.BQAlterApproxView:
-		return storepb.StatementType_ALTER_VIEW
-	case ast.BQAlterVectorIndex:
-		return storepb.StatementType_ALTER_INDEX
-	default:
-		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-	}
-}
-
-func bqDropStatementType(kind ast.BQDropObjectKind) storepb.StatementType {
-	switch kind {
-	case ast.BQDropFunction, ast.BQDropTableFunction:
+	case analysis.DropSequence:
+		return storepb.StatementType_DROP_SEQUENCE
+	case analysis.DropFunction:
 		return storepb.StatementType_DROP_FUNCTION
-	case ast.BQDropProcedure:
+	case analysis.DropProcedure:
 		return storepb.StatementType_DROP_PROCEDURE
-	case ast.BQDropMaterializedView, ast.BQDropApproxView:
-		return storepb.StatementType_DROP_VIEW
-	case ast.BQDropSnapshotTable:
-		return storepb.StatementType_DROP_TABLE
-	case ast.BQDropSearchIndex, ast.BQDropVectorIndex:
-		return storepb.StatementType_DROP_INDEX
+	case analysis.Rename:
+		return storepb.StatementType_RENAME
+	case analysis.Execute:
+		return storepb.StatementType_EXECUTE
 	default:
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}
