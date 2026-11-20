@@ -188,12 +188,23 @@ func PopulateMySQLFamilyCatalog(
 	qualifiers := databaseQualifiersInStatement(statement, cCtx.DefaultDatabase, caseSensitive)
 
 	// Omni's catalog maps database names case-insensitively (`toLower(name)`).
-	// When a case-sensitive instance references an explicitly qualified DB whose
-	// name differs from defaultDB only by case (e.g. `Foo` when default is `foo`),
-	// load qualifiers before defaultDB so `Foo`'s tables take precedence over
-	// same-named tables in `foo`.
+	// On a case-sensitive instance where multiple case-distinct DBs differ only
+	// by case (e.g. `Foo` vs `foo`), prioritize the qualifier at the caret (or
+	// explicit qualifiers over defaultDB) so omni's bucket holds the right DB.
+	caretDB := ""
+	if caseSensitive {
+		caretDB = databaseQualifierAtCaret(statement, pos)
+		if caretDB != "" {
+			for i, q := range qualifiers {
+				if q == caretDB && i > 0 {
+					qualifiers = append([]string{q}, append(qualifiers[:i:i], qualifiers[i+1:]...)...)
+					break
+				}
+			}
+		}
+	}
 	deferDefault := false
-	if caseSensitive && defaultName != "" {
+	if caseSensitive && defaultName != "" && caretDB != defaultName {
 		for _, q := range qualifiers {
 			if q != defaultName && strings.EqualFold(q, defaultName) {
 				deferDefault = true
@@ -318,7 +329,7 @@ func extractIdentPrefixLen(sql string, cursorOffset int) int {
 type mysqlQualToken struct {
 	text   string
 	upper  string // non-empty only for unquoted word tokens
-	punct  byte   // non-zero for '.', ',', '(', ')', ';'
+	punct  byte   // non-zero for '.', ',', '(', ')', ';', '*'
 	isWord bool
 }
 
@@ -333,7 +344,7 @@ func scanMySQLQualTokens(statement string) []mysqlQualToken {
 			continue
 		}
 		switch b {
-		case '.', ',', '(', ')', ';':
+		case '.', ',', '(', ')', ';', '*':
 			toks = append(toks, mysqlQualToken{punct: b})
 			i++
 		case '`':
@@ -488,11 +499,13 @@ func databaseQualifiersInStatement(statement, defaultDB string, caseSensitive bo
 		}
 
 		// Record database qualifiers only at the head of a dotted identifier
-		// chain (not when preceded by '.').
+		// chain (not when preceded by '.'). In DELETE target lists before FROM,
+		// ignore `alias.*` wildcards while keeping three-part `db.tbl.*` and `db.`.
 		precededByDot := i > 0 && toks[i-1].punct == '.'
 		if !precededByDot && i+1 < len(toks) && toks[i+1].punct == '.' {
 			isThreePart := i+3 < len(toks) && toks[i+2].isWord && !isClauseBoundaryAfterDot(toks[i+2].upper) && toks[i+3].punct == '.'
-			if isThreePart || sc.inTableClause {
+			isDeleteStar := sc.stmtVerb == "DELETE" && i+2 < len(toks) && toks[i+2].punct == '*'
+			if isThreePart || (sc.inTableClause && !isDeleteStar) {
 				addDB(tok.text)
 			}
 		}
@@ -569,6 +582,13 @@ func databaseQualifiersInStatement(statement, defaultDB string, caseSensitive bo
 		case "UPDATE":
 			if prevKW != "ON" && prevKW != "KEY" && prevKW != "FOR" && prevKW != "BEFORE" && prevKW != "AFTER" {
 				sc.stmtVerb = "UPDATE"
+				sc.inTableClause = true
+				sc.allowCommaTable = true
+				sc.inInsertReplaceTarget = false
+			}
+		case "DELETE":
+			if prevKW != "ON" && prevKW != "BEFORE" && prevKW != "AFTER" {
+				sc.stmtVerb = "DELETE"
 				sc.inTableClause = true
 				sc.allowCommaTable = true
 				sc.inInsertReplaceTarget = false
@@ -725,6 +745,37 @@ func isMultiTableStatementVerb(verb string) bool {
 	default:
 		return false
 	}
+}
+
+// databaseQualifierAtCaret returns the leading database identifier of a dotted
+// qualifier chain active at pos (e.g. `Foo` for `Foo.t.` or `Foo.`), or "".
+func databaseQualifierAtCaret(statement string, pos int) string {
+	pos = max(0, min(pos, len(statement)))
+	prefix := stripStringsAndComments(statement[:pos])
+	toks := scanMySQLQualTokens(prefix)
+	if len(toks) < 2 {
+		return ""
+	}
+	trimmed := strings.TrimRight(prefix, " \t\r\n")
+	if trimmed == "" {
+		return ""
+	}
+	lastIdx := len(toks) - 1
+	if trimmed[len(trimmed)-1] == '.' {
+		if toks[lastIdx].punct != '.' {
+			return ""
+		}
+		lastIdx--
+	} else if isSpaceByte(prefix[len(prefix)-1]) || !toks[lastIdx].isWord || toks[lastIdx-1].punct != '.' {
+		return ""
+	}
+	if lastIdx < 0 || !toks[lastIdx].isWord {
+		return ""
+	}
+	for steps := 0; steps < 2 && lastIdx >= 2 && toks[lastIdx-1].punct == '.' && toks[lastIdx-2].isWord; steps++ {
+		lastIdx -= 2
+	}
+	return toks[lastIdx].text
 }
 
 func isParenthesizedTablePrefix(toks []mysqlQualToken, parenIdx int, sc *mysqlQualScope) bool {

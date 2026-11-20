@@ -193,6 +193,18 @@ func TestDatabaseQualifiersInStatement(t *testing.T) {
 			caseSensitive: true,
 			want:          []string{"Foo"},
 		},
+		{
+			name:      "delete multi-table target before FROM extracts db while ignoring alias wildcard",
+			statement: "DELETE otherdb., db2.t1 FROM otherdb.t1 JOIN db2.t1; DELETE a.* FROM users a",
+			defaultDB: "appdb",
+			want:      []string{"otherdb", "db2"},
+		},
+		{
+			name:      "grant wildcard on database still extracts db",
+			statement: "GRANT SELECT ON otherdb.* TO 'u'@'%'",
+			defaultDB: "appdb",
+			want:      []string{"otherdb"},
+		},
 	}
 
 	for _, tc := range tests {
@@ -322,6 +334,28 @@ func TestPopulateMySQLFamilyCatalog_SkipsEnumerationForQualifiers(t *testing.T) 
 	)
 	require.Equal(t, 1, caseFoldListCalls)
 	require.Equal(t, []string{"appdb", "db_b"}, caseFoldLoaded)
+
+	// Multiple case-distinct qualifiers prioritize the one at the caret.
+	var multiCaseLoaded []string
+	stmtMultiCase := "SELECT * FROM Foo.t JOIN foo.t ON Foo.t.id = foo.t.id WHERE foo.t."
+	PopulateMySQLFamilyCatalog(
+		context.Background(),
+		CompletionContext{
+			DefaultDatabase: "appdb",
+			Metadata: func(_ context.Context, _, db string) (string, *model.DatabaseMetadata, error) {
+				return db, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: db}, nil, nil, storepb.Engine_MYSQL, true), nil
+			},
+		},
+		stmtMultiCase,
+		len(stmtMultiCase),
+		func(string, int) bool { return false },
+		func(string) {},
+		func(name string, _ *metadatapb.DatabaseSchemaMetadata) {
+			multiCaseLoaded = append(multiCaseLoaded, name)
+		},
+		func(string) {},
+	)
+	require.Equal(t, []string{"appdb", "foo", "Foo"}, multiCaseLoaded)
 }
 
 func TestCompleteMySQLFamily_PreservesDistinctDefinitionsAndUTF16Caret(t *testing.T) {

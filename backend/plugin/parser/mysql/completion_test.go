@@ -528,6 +528,26 @@ func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
 	}, "SELECT Foo.t. FROM Foo.t", 1, len("SELECT Foo.t."))
 	require.NoError(t, err)
 	require.True(t, hasCandidate(gotDistinct, base.CandidateTypeColumn, "upper_col"), "case-distinct qualifier Foo.t. should load Foo; got %v", gotDistinct)
+
+	// With both Foo and foo in one query, completion at foo.t. resolves against foo (lower_col), not Foo.
+	stmtMultiCase := "SELECT * FROM Foo.t JOIN foo.t ON Foo.t.lower_col = foo.t.lower_col WHERE foo.t."
+	gotMultiLower, err := Completion(context.Background(), base.CompletionContext{
+		Scene:           base.SceneTypeAll,
+		DefaultDatabase: "foo",
+		Metadata:        caseSensMeta,
+	}, stmtMultiCase, 1, len(stmtMultiCase))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotMultiLower, base.CandidateTypeColumn, "lower_col"), "caret at foo.t. should resolve against foo; got %v", gotMultiLower)
+	require.False(t, hasCandidate(gotMultiLower, base.CandidateTypeColumn, "upper_col"), "caret at foo.t. must not be shadowed by Foo; got %v", gotMultiLower)
+
+	// Multi-table DELETE target before FROM loads qualifier DB without false-positive alias.* lookups.
+	metaCalls = nil
+	stmtDeleteTarget := "DELETE otherdb."
+	gotDeleteTarget, err := Completion(context.Background(), cCtx, stmtDeleteTarget, 1, len(stmtDeleteTarget))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotDeleteTarget, base.CandidateTypeTable, "t1"))
+	require.Zero(t, listCalls)
+	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
 }
 
 func TestCompletion_TrailingSemicolonAndUTF16Caret(t *testing.T) {
