@@ -374,8 +374,13 @@ func TestCompletionCoverageMatrix(t *testing.T) {
 		},
 		{
 			name:  "quoted identifier context preserves candidate text",
-			input: `SELECT "t2".| FROM t2`,
+			input: `SELECT "T2".| FROM t2`,
 			want:  columns("C1", "C2"),
+		},
+		{
+			name:  "inside double-quoted identifier does not double-quote candidates",
+			input: `SELECT * FROM "T|`,
+			want:  tables("T1", "T2"),
 		},
 		{
 			name:  "select list uses t2 columns",
