@@ -133,3 +133,27 @@ test("a clean flush performs no write", async () => {
   expect(await writer.flush()).toBe(true);
   expect(writes).toBe(0);
 });
+
+test("save-only retry preserves the known API result and its linkage as one snapshot", async () => {
+  const saved: string[] = [];
+  let blocked = false;
+  let state: { phase: string; toolAttemptId?: string } = {
+    phase: "dispatching",
+  };
+  const writer = createAgentRunPersistence("scope", () => {
+    if (blocked) throw new Error("storage unavailable");
+    saved.push(JSON.stringify(state));
+  });
+  writer.schedule();
+  expect(await writer.flush()).toBe(true);
+  state = { phase: "settled", toolAttemptId: "attempt" };
+  blocked = true;
+  writer.schedule();
+  expect(await writer.flush()).toBe(false);
+  blocked = false;
+  expect(await writer.flush()).toBe(true);
+  expect(saved.map((raw) => JSON.parse(raw))).toEqual([
+    { phase: "dispatching" },
+    state,
+  ]);
+});

@@ -2314,6 +2314,10 @@ export function AgentWindow() {
           </AgentDialogTitle>
           <AgentDialogDescription>
             {t("agent.delete-chat-confirmation")}
+            {!!archivedChats.find((chat) => chat.id === pendingDeleteChatId)
+              ?.apiAttempts?.length && (
+              <> {t("agent.api-recovery.delete-warning")}</>
+            )}
           </AgentDialogDescription>
           <div className="mt-6 flex justify-end gap-x-2">
             <AgentDialogClose
@@ -2736,6 +2740,9 @@ export function AgentWindow() {
                                       showArchivedOnly ? "archived" : "active"
                                     }
                                     archived={showArchivedOnly}
+                                    hasRecoveryEvidence={archivedChats.some(
+                                      (chat) => chat.apiAttempts?.length
+                                    )}
                                     chatCount={
                                       showArchivedOnly
                                         ? archivedChats.length
@@ -2964,6 +2971,7 @@ function CompactDrawerModal({
 
 function ChatListMenu({
   archived,
+  hasRecoveryEvidence,
   chatCount,
   disabled,
   onArchiveAll,
@@ -2971,6 +2979,7 @@ function ChatListMenu({
   onDeleteAll,
 }: Readonly<{
   archived: boolean;
+  hasRecoveryEvidence: boolean;
   chatCount: number;
   disabled: boolean;
   onArchiveAll: () => void;
@@ -3063,6 +3072,9 @@ function ChatListMenu({
             {archived
               ? t("agent.delete-all-chats-confirmation", { count: chatCount })
               : t("agent.archive-all-chats-confirmation", { count: chatCount })}
+            {archived && hasRecoveryEvidence && (
+              <> {t("agent.api-recovery.delete-warning")}</>
+            )}
           </AgentPopoverTitle>
           <div className="flex justify-end gap-2">
             <Button

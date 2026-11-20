@@ -25,6 +25,8 @@ Keep agent-only UI and state inside this module. Shared application primitives s
 
 - `search_api` discovers endpoints and request/response shapes from the generated OpenAPI index.
 - `call_api` executes Bytebase API requests.
+- Protected API calls require their normal one-time permission. Never automatically repeat a protected POST after session refresh, cancellation, or response loss.
+- Local receipts describe observed outcomes and can warn about a repeated payload. Missing receipts and earlier uncertainty do not authorize or block new work.
 - `navigate` uses the React Router instance from `@/app/router` and can list registered route patterns.
 - `get_page_state` returns semantic application context or a DOM snapshot.
 - `dom_action` interacts with elements from the latest DOM snapshot.

@@ -30,6 +30,12 @@ test("composes permission-aware masking choices and custom type draft guidance",
 });
 
 describe("buildSystemPrompt", () => {
+  test("distinguishes a failed RPC from the effect of its earlier statements", () => {
+    const prompt = buildSystemPrompt({ path: "/", title: "Workspace" });
+    expect(prompt).toContain("does not prove rollback");
+    expect(prompt).toContain("original request");
+    expect(prompt).toContain("current tools and normal permissions");
+  });
   test.each(["issue", "database", "plan"] as const)(
     "diagnostic %s instructions override normal decision and draft guidance",
     (kind) => {

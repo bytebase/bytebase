@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, test, vi } from "vitest";
+import { agentApiExecutionEvidence } from "../logic/apiExecution";
 import { resolveSkill } from "../logic/skills";
 import { ToolCallCard } from "./ToolCallCard";
 
@@ -92,6 +93,24 @@ const unmaskExplanation = {
 };
 
 describe("ToolCallCard", () => {
+  test.each([
+    ["DeleteProject", "rpc-success", "acknowledged", 200, {}],
+    ["DeleteProject", "fetch-failed", "unknown", undefined, undefined],
+    ["DeleteProject", "permission-rejected", "not-sent", undefined, undefined],
+    ["DeleteProject", "rpc-error", "failed-possible", 500, {code:"internal"}],
+    ["ImportInstances", "rpc-rejected-before-effects", "rejected", 403, {code:"permission_denied"}],
+    ["ImportInstances", "import-partial", "partial", 200, {}],
+    ["ImportInstances", "import-none-created", "none-created", 200, {}],
+    ["Query", "query-result-error", "possible", 200, {results:[{error:"denied"}]}],
+  ] as const)("describes %s %s without implying rollback or completion", (method, reason, label, status, response) => {
+    const service = method === "Query" ? "SQL" : method === "DeleteProject" ? "Project" : "Instance";
+    const {container, unmount} = renderCard(`bytebase.v1.${service}Service.${method}`, JSON.stringify({status, response,
+      agentExecution:agentApiExecutionEvidence(reason, {httpStatus:status, connectCode:status === 500 ? 13 : status === 403 ? 7 : undefined})}));
+    expect(container.textContent).toContain(`agent.api-recovery.${label}`);
+    expect(container.textContent).not.toContain("agent.tool-failed");
+    unmount();
+  });
+
   test.each(["just-in-time", "masking-exemption"])(
     "shows the sole %s method explanation without expanding or adding an action",
     (method) => {

@@ -65,6 +65,8 @@ import type {
   ToolExecutor,
 } from "../types";
 import { apiCallNeedsConfirmation } from "./apiMethodClass";
+import { fingerprintPreparedApiCall } from "../apiAttempt";
+import { notSentApiResult, preflightRejectedApiResult } from "../callApiResult";
 import { checkPreparedApiPermission } from "./apiPermissionPreflight";
 import {
   DEFAULT_AGENT_QUERY_LIMIT,
@@ -1398,6 +1400,9 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
 }
 
 interface CreateToolExecutorOptions {
+  priorAttemptIds?: (fingerprint: string) => string[];
+  isApiScopeCurrent?: () => boolean;
+  signal?: AbortSignal;
   capability?: AgentDiagnosticCapability;
   onSkillLoaded?: (load: Extract<SkillLoadResult, { kind: "loaded" }>) => void;
   chatId?: string;
@@ -1680,7 +1685,11 @@ export function createToolExecutor(
           name === `get_${capability.resource.kind}_overview` &&
           args[`${capability.resource.kind}Name`] !== capability.resource.name)
       ) {
-        return toToolResult(JSON.stringify({ error: DIAGNOSTIC_TOOL_ERROR }));
+        return toToolResult(
+          name === "call_api"
+            ? notSentApiResult(DIAGNOSTIC_TOOL_ERROR, "preflight-rejected")
+            : JSON.stringify({ error: DIAGNOSTIC_TOOL_ERROR })
+        );
       }
     }
     if (
@@ -1696,12 +1705,13 @@ export function createToolExecutor(
       (options.runMode === "read-only" || referencedProject) &&
       !allowedTools.has(name)
     ) {
+      const error = referencedProject
+        ? REFERENCED_PROJECT_TOOL_ERROR
+        : READ_ONLY_TOOL_ERROR;
       return toToolResult(
-        JSON.stringify({
-          error: referencedProject
-            ? REFERENCED_PROJECT_TOOL_ERROR
-            : READ_ONLY_TOOL_ERROR,
-        })
+        name === "call_api"
+          ? notSentApiResult(error, "preflight-rejected")
+          : JSON.stringify({ error })
       );
     }
     if (name === "get_instance_overview" && !instanceName) {
@@ -1722,11 +1732,12 @@ export function createToolExecutor(
       !(canUseIssueAccess(name, args) && (await hasReferencedIssueAccess())) &&
       !(canUsePlanAccess(name, args) && (await hasReferencedPlanAccess()))
     ) {
+      const error =
+        "The referenced project is unavailable or you do not have access.";
       return toToolResult(
-        JSON.stringify({
-          error:
-            "The referenced project is unavailable or you do not have access.",
-        })
+        name === "call_api"
+          ? notSentApiResult(error, "preflight-rejected")
+          : JSON.stringify({ error })
       );
     }
 
@@ -1751,40 +1762,56 @@ export function createToolExecutor(
               ))))
         ) {
           return toToolResult(
-            JSON.stringify({
-              error: `This API request is outside the referenced project (${referencedProject}). Ask in a separate message to use another project.`,
-            })
+            notSentApiResult(
+              `This API request is outside the referenced project (${referencedProject}). Ask in a separate message to use another project.`,
+              "preflight-rejected"
+            )
           );
         }
         const access = await checkPreparedApiPermission(prepared.call);
         if (access.kind === "denied") {
-          return toToolResult(access.result);
+          return toToolResult(preflightRejectedApiResult(access.result));
         }
         const issueDecision = await prepareIssueDecisionPermission(
           prepared.call,
           options.referencedIssue
         );
         if (issueDecision.kind === "error") {
-          return toToolResult(issueDecision.result);
+          return toToolResult(preflightRejectedApiResult(issueDecision.result));
         }
         if (
           issueDecision.kind === "not-issue-decision" &&
           !apiCallNeedsConfirmation(prepared.call.operationId)
         ) {
-          return toToolResult(await dispatchPreparedApiCall(prepared.call));
+          return toToolResult(
+            await dispatchPreparedApiCall(
+              prepared.call,
+              ...(options.signal ? ([{ signal: options.signal }] as const) : [])
+            )
+          );
         }
         if (!options.chatId || !options.userName) {
           return toToolResult(
-            JSON.stringify({
-              error: "Cannot request API permission without a signed-in chat.",
-            })
+            notSentApiResult(
+              "Cannot request API permission without a signed-in chat.",
+              "permission-rejected"
+            )
           );
         }
+        const fingerprint = options.priorAttemptIds
+          ? await fingerprintPreparedApiCall(prepared.call).catch(
+              () => undefined
+            )
+          : undefined;
         const { actionId, expiresAt } = createPendingApiCall({
           chatId: options.chatId,
           toolCallId,
           userName: options.userName,
           call: prepared.call,
+          priorAttemptIds: fingerprint
+            ? options.priorAttemptIds?.(fingerprint)
+            : undefined,
+          isScopeCurrent: options.isApiScopeCurrent,
           issueDecision:
             issueDecision.kind === "issue-decision"
               ? issueDecision.decision

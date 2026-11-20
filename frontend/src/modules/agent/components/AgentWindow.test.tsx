@@ -4635,7 +4635,7 @@ describe("AgentWindow", () => {
     }
   });
 
-  test("keeps an unrelated active conversation selected when deleting all archived chats", async () => {
+  test("warns before deleting archived recovery evidence and keeps the active conversation selected", async () => {
     useAgentStore.setState({ size: { width: 750, height: 450 } });
     const activeChatId = useAgentStore.getState().currentChatId!;
     const archivedChat = useAgentStore.getState().createChat({
@@ -4643,6 +4643,9 @@ describe("AgentWindow", () => {
       archived: true,
       select: false,
     });
+    const { normalizeAgentApiAttempts } = await import("../logic/apiAttempt");
+    const [reviewed] = normalizeAgentApiAttempts([null], archivedChat.id)!;
+    useAgentStore.setState(s => {s.chats.find(c=>c.id===archivedChat.id)!.apiAttempts=[{...reviewed,reviewedExternallyAt:10}];});
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
     render();
 
@@ -4671,6 +4674,7 @@ describe("AgentWindow", () => {
       const confirmation = getLayerRoot("agent").querySelector(
         "[data-agent-delete-all-chats-confirmation]"
       ) as HTMLElement;
+      expect(confirmation).toHaveTextContent("agent.api-recovery.delete-warning");
       act(() => within(confirmation).getByRole("button", { name: "common.delete" }).click());
 
       expect(useAgentStore.getState().getChat(archivedChat.id)).toBeNull();

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import i18n from "@/lib/i18n";
 import { createAgentStore } from "../store/agent";
+import { normalizeAgentApiAttempts } from "./apiAttempt";
 import {
   buildOutboundHistory,
   getHistoricalMaskingDatabase,
@@ -18,6 +19,28 @@ const userMessage = (metadata?: AgentMessage["metadata"]): AgentMessage => ({
   content: "What changed?",
   metadata,
 });
+
+test.each([undefined, 42])(
+  "uncertain evidence keeps its model reminder despite legacy review metadata %s",
+  (reviewedExternallyAt) => {
+    const attempts = normalizeAgentApiAttempts([null], "chat-1")!.map(
+      (attempt) => ({ ...attempt, reviewedExternallyAt })
+    );
+    const result = buildOutboundHistory(
+      "Context",
+      [userMessage()],
+      undefined,
+      attempts
+    );
+    expect(result[0]).toMatchObject({
+      role: "system",
+      content: expect.stringContaining("may already have taken effect"),
+    });
+    expect(
+      buildOutboundHistory("Context", [userMessage()], undefined, [])
+    ).toHaveLength(2);
+  }
+);
 
 const clarification = (
   id: string,
