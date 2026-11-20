@@ -1694,20 +1694,46 @@ function parseHiveConnectionString(
   const { uri, params } = parsed;
   if (!uri.host || uri.path.includes("/")) return undefined;
 
-  const discoveryMode =
-    params.get("servicediscoverymode") ?? uri.query.get("servicediscoverymode");
-  if (discoveryMode?.trim().toLowerCase() === "zookeeper") {
+  const getHiveParam = (...keys: string[]): string | undefined => {
+    for (const key of keys) {
+      const value = params.get(key)?.trim();
+      if (value) return value;
+    }
+    for (const key of keys) {
+      const value = uri.query.get(key)?.trim();
+      if (value) return value;
+    }
+    return undefined;
+  };
+
+  if (getHiveParam("servicediscoverymode")?.toLowerCase() === "zookeeper") {
     return undefined;
   }
 
-  // The Hive instance form does not expose TLS controls yet (`instanceV1HasSSL`),
-  // so reject TLS-enabled Hive URLs instead of silently attempting plaintext.
-  const sslParam =
-    params.get("ssl") ??
-    uri.query.get("ssl") ??
-    params.get("tls") ??
-    uri.query.get("tls");
-  if (parseBooleanValue(sslParam) === true) {
+  // The Hive instance form exposes neither TLS (`instanceV1HasSSL`) nor extra
+  // connection parameters (`instanceV1HasExtraParameters`), and URL import
+  // configures password auth (gohive's default binary SASL PLAIN transport).
+  if (parseBooleanValue(getHiveParam("ssl", "tls")) === true) {
+    return undefined;
+  }
+
+  const transportMode = getHiveParam(
+    "transportmode",
+    "transport_mode",
+    "transport"
+  )?.toLowerCase();
+  if (transportMode && transportMode !== "binary") {
+    return undefined;
+  }
+  if (getHiveParam("httppath", "http_path")) {
+    return undefined;
+  }
+
+  if (getHiveParam("principal")) {
+    return undefined;
+  }
+  const auth = getHiveParam("auth")?.toLowerCase();
+  if (auth && !["none", "plain", "ldap", "custom"].includes(auth)) {
     return undefined;
   }
 

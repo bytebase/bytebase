@@ -1304,7 +1304,7 @@ describe("parseConnectionString - ClickHouse, Snowflake, Elasticsearch, Cassandr
     ).toBeUndefined();
   });
 
-  it("parses Hive JDBC URLs and beeline commands while rejecting ZooKeeper discovery and TLS URLs", () => {
+  it("parses Hive JDBC URLs and beeline commands while rejecting ZooKeeper discovery, TLS, HTTP transport, and unsupported auth URLs", () => {
     expect(
       parseConnectionString(
         Engine.HIVE,
@@ -1321,6 +1321,30 @@ describe("parseConnectionString - ClickHouse, Snowflake, Elasticsearch, Cassandr
       parseConnectionString(
         Engine.HIVE,
         "jdbc:hive2://hive.example.com:10000/default;ssl=false;user=hive;password=secret"
+      )
+    ).toEqual({
+      host: "hive.example.com",
+      port: "10000",
+      username: "hive",
+      password: "secret",
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.HIVE,
+        "jdbc:hive2://hive.example.com:10000/default;transportMode=binary;auth=NONE;user=hive;password=secret"
+      )
+    ).toEqual({
+      host: "hive.example.com",
+      port: "10000",
+      username: "hive",
+      password: "secret",
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.HIVE,
+        "jdbc:hive2://hive.example.com:10000/default;auth=LDAP;user=hive;password=secret"
       )
     ).toEqual({
       host: "hive.example.com",
@@ -1353,24 +1377,33 @@ describe("parseConnectionString - ClickHouse, Snowflake, Elasticsearch, Cassandr
       password: undefined,
     });
 
-    expect(
-      parseConnectionString(
-        Engine.HIVE,
-        "jdbc:hive2://zk1.example.com:2181,zk2.example.com:2181/;serviceDiscoveryMode=zooKeeper"
-      )
-    ).toBeUndefined();
+    for (const rejected of [
+      "jdbc:hive2://zk1.example.com:2181,zk2.example.com:2181/;serviceDiscoveryMode=zooKeeper",
+      "jdbc:hive2://hive.example.com:10000/default;ssl=true;user=hive;password=secret",
+      "jdbc:hive2://hive.example.com:10000/default?ssl=true",
+      "jdbc:hive2://hive.example.com:10001/default;transportMode=http;httpPath=cliservice;user=hive;password=secret",
+      "jdbc:hive2://hive.example.com:10001/default;transportMode=HTTP;user=hive;password=secret",
+      "jdbc:hive2://hive.example.com:10001/default?transportMode=http&httpPath=cliservice",
+      "jdbc:hive2://hive.example.com:10001/default;transport=http;http_path=cliservice",
+      "jdbc:hive2://hive.example.com:10001/default;httpPath=cliservice;user=hive;password=secret",
+      'beeline -u "jdbc:hive2://hive.example.com:10001/default;transportMode=http;httpPath=cliservice" -n hive -p secret',
+      "jdbc:hive2://hive.example.com:10000/default;auth=noSasl;user=hive;password=secret",
+      "jdbc:hive2://hive.example.com:10000/default;auth=kerberos;user=hive",
+      "jdbc:hive2://hive.example.com:10000/default;principal=hive/hive.example.com@EXAMPLE.COM",
+    ]) {
+      expect(parseConnectionString(Engine.HIVE, rejected)).toBeUndefined();
+    }
 
     expect(
-      parseConnectionString(
-        Engine.HIVE,
-        "jdbc:hive2://hive.example.com:10000/default;ssl=true;user=hive;password=secret"
+      detectConnectionStringEngine(
+        "jdbc:hive2://hive.example.com:10001/default;transportMode=http;httpPath=cliservice;user=hive;password=secret",
+        Engine.POSTGRES
       )
     ).toBeUndefined();
-
     expect(
-      parseConnectionString(
-        Engine.HIVE,
-        "jdbc:hive2://hive.example.com:10000/default?ssl=true"
+      detectConnectionStringEngine(
+        'beeline -u "jdbc:hive2://hive.example.com:10001/default;transportMode=http;httpPath=cliservice" -n hive -p secret',
+        Engine.POSTGRES
       )
     ).toBeUndefined();
   });
