@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	tidbparser "github.com/bytebase/omni/tidb/parser"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -496,8 +497,8 @@ func TestQuoteIdentifierIfNeeded(t *testing.T) {
 		{"order", true, "order"},        // caret already inside a backtick — no extra quotes
 	}
 	for _, tc := range cases {
-		require.Equal(t, tc.want, quoteIdentifierIfNeeded(tc.name, tc.caretInBacktick),
-			"quoteIdentifierIfNeeded(%q, %v)", tc.name, tc.caretInBacktick)
+		require.Equal(t, tc.want, base.QuoteMySQLIdentifierIfNeeded(tc.name, tc.caretInBacktick, tidbparser.IsReservedKeyword),
+			"QuoteMySQLIdentifierIfNeeded(%q, %v)", tc.name, tc.caretInBacktick)
 	}
 }
 
@@ -517,8 +518,8 @@ func TestCaretInsideBacktickIdentifier(t *testing.T) {
 		{"SELECT 1 -- `\nFROM ", 19, false},   // backtick inside a line comment ignored
 	}
 	for _, tc := range cases {
-		require.Equal(t, tc.want, caretInsideBacktickIdentifier(tc.statement, tc.pos),
-			"caretInsideBacktickIdentifier(%q, %d)", tc.statement, tc.pos)
+		require.Equal(t, tc.want, base.CaretInsideMySQLBacktickIdentifier(tc.statement, tc.pos),
+			"CaretInsideMySQLBacktickIdentifier(%q, %d)", tc.statement, tc.pos)
 	}
 }
 
@@ -540,8 +541,8 @@ func TestStatementReferencesDatabase(t *testing.T) {
 		{"SELECT * FROM `otherdb` . t2", "otherdb", true},    // backtick-quoted + whitespace
 	}
 	for _, tc := range cases {
-		require.Equal(t, tc.want, statementReferencesDatabase(tc.statement, tc.db),
-			"statementReferencesDatabase(%q, %q)", tc.statement, tc.db)
+		require.Equal(t, tc.want, base.MySQLStatementReferencesDatabase(tc.statement, tc.db),
+			"MySQLStatementReferencesDatabase(%q, %q)", tc.statement, tc.db)
 	}
 }
 
