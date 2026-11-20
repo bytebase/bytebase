@@ -356,6 +356,51 @@ func TestPopulateMySQLFamilyCatalog_SkipsEnumerationForQualifiers(t *testing.T) 
 		func(string) {},
 	)
 	require.Equal(t, []string{"appdb", "foo", "Foo"}, multiCaseLoaded)
+
+	// Missing default database metadata must NOT trigger ListDatabaseNames enumeration.
+	missingDefaultListCalls := 0
+	PopulateMySQLFamilyCatalog(
+		context.Background(),
+		CompletionContext{
+			DefaultDatabase: "missing_db",
+			ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
+				missingDefaultListCalls++
+				return []string{"missing_db", "otherdb"}, nil
+			},
+			Metadata: func(_ context.Context, _, _ string) (string, *model.DatabaseMetadata, error) {
+				return "", nil, nil
+			},
+		},
+		"SELECT a. FROM users a",
+		len("SELECT a."),
+		func(string, int) bool { return false },
+		func(string) {},
+		func(string, *metadatapb.DatabaseSchemaMetadata) {},
+		func(string) {},
+	)
+	require.Zero(t, missingDefaultListCalls)
+
+	// Alias at caret resolves through FROM/JOIN aliases before prioritizing case-colliding DBs.
+	var aliasCaseLoaded []string
+	stmtAliasCase := "SELECT x. FROM foo.t y JOIN Foo.t x"
+	PopulateMySQLFamilyCatalog(
+		context.Background(),
+		CompletionContext{
+			DefaultDatabase: "appdb",
+			Metadata: func(_ context.Context, _, db string) (string, *model.DatabaseMetadata, error) {
+				return db, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: db}, nil, nil, storepb.Engine_MYSQL, true), nil
+			},
+		},
+		stmtAliasCase,
+		len("SELECT x."),
+		func(string, int) bool { return false },
+		func(string) {},
+		func(name string, _ *metadatapb.DatabaseSchemaMetadata) {
+			aliasCaseLoaded = append(aliasCaseLoaded, name)
+		},
+		func(string) {},
+	)
+	require.Equal(t, []string{"appdb", "Foo", "foo"}, aliasCaseLoaded)
 }
 
 func TestCompleteMySQLFamily_PreservesDistinctDefinitionsAndUTF16Caret(t *testing.T) {

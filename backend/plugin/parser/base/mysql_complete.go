@@ -171,35 +171,21 @@ func PopulateMySQLFamilyCatalog(
 			caseSensitive = dbMeta.GetIsObjectCaseSensitive()
 			defaultProto = dbMeta.GetProto()
 			defaultLoaded = true
-		} else if exact, diffCase := findExactFolded(defaultName); diffCase {
-			if resolvedName, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, exact); err == nil && dbMeta != nil && !dbMeta.GetIsObjectCaseSensitive() {
-				defaultName = exact
-				if resolvedName != "" {
-					defaultName = resolvedName
-				}
-				caseSensitive = false
-				defaultProto = dbMeta.GetProto()
-				defaultLoaded = true
-			}
 		}
 		seen[keyFor(defaultName)] = true
 	}
 
-	qualifiers := databaseQualifiersInStatement(statement, cCtx.DefaultDatabase, caseSensitive)
+	qualifiers, caretDB := analyzeMySQLStatementQualifiers(statement, pos, cCtx.DefaultDatabase, caseSensitive)
 
 	// Omni's catalog maps database names case-insensitively (`toLower(name)`).
 	// On a case-sensitive instance where multiple case-distinct DBs differ only
-	// by case (e.g. `Foo` vs `foo`), prioritize the qualifier at the caret (or
-	// explicit qualifiers over defaultDB) so omni's bucket holds the right DB.
-	caretDB := ""
-	if caseSensitive {
-		caretDB = databaseQualifierAtCaret(statement, pos)
-		if caretDB != "" {
-			for i, q := range qualifiers {
-				if q == caretDB && i > 0 {
-					qualifiers = append([]string{q}, append(qualifiers[:i:i], qualifiers[i+1:]...)...)
-					break
-				}
+	// by case (e.g. `Foo` vs `foo`), prioritize the qualifier active at the caret
+	// (including via table/alias resolution) or explicit qualifiers over defaultDB.
+	if caseSensitive && caretDB != "" {
+		for i, q := range qualifiers {
+			if q == caretDB && i > 0 {
+				qualifiers = append([]string{q}, append(qualifiers[:i:i], qualifiers[i+1:]...)...)
+				break
 			}
 		}
 	}
@@ -243,7 +229,7 @@ func PopulateMySQLFamilyCatalog(
 					loadName = resolvedName
 				}
 				proto = dbMeta.GetProto()
-			} else if !caseSensitive || !defaultLoaded {
+			} else if defaultLoaded && !caseSensitive {
 				// Case-folding instances (lower_case_table_names) may store e.g.
 				// "db_b" while the query uses "DB_B"; resolve canonically on miss.
 				if exact, diffCase := findExactFolded(loadName); diffCase {
@@ -331,6 +317,7 @@ type mysqlQualToken struct {
 	upper  string // non-empty only for unquoted word tokens
 	punct  byte   // non-zero for '.', ',', '(', ')', ';', '*'
 	isWord bool
+	end    int
 }
 
 func scanMySQLQualTokens(statement string) []mysqlQualToken {
@@ -345,8 +332,8 @@ func scanMySQLQualTokens(statement string) []mysqlQualToken {
 		}
 		switch b {
 		case '.', ',', '(', ')', ';', '*':
-			toks = append(toks, mysqlQualToken{punct: b})
 			i++
+			toks = append(toks, mysqlQualToken{punct: b, end: i})
 		case '`':
 			var buf strings.Builder
 			i++
@@ -366,7 +353,7 @@ func scanMySQLQualTokens(statement string) []mysqlQualToken {
 				i++
 			}
 			if closed && buf.Len() > 0 {
-				toks = append(toks, mysqlQualToken{text: buf.String(), isWord: true})
+				toks = append(toks, mysqlQualToken{text: buf.String(), isWord: true, end: i})
 			}
 		default:
 			if size, ok := nextIdentRune(s, i); ok {
@@ -384,15 +371,18 @@ func scanMySQLQualTokens(statement string) []mysqlQualToken {
 					text:   word,
 					upper:  strings.ToUpper(word),
 					isWord: true,
+					end:    i,
 				})
 			} else {
 				// Emit a neutral separator token for operators/symbols so adjacent
 				// dotted expressions (e.g. `ON a. = o.user_id`) never coalesce into
 				// a synthetic three-part chain (`a . o .`).
-				if len(toks) == 0 || toks[len(toks)-1].punct != ' ' {
-					toks = append(toks, mysqlQualToken{punct: ' '})
-				}
 				i += size
+				if len(toks) == 0 || toks[len(toks)-1].punct != ' ' {
+					toks = append(toks, mysqlQualToken{punct: ' ', end: i})
+				} else {
+					toks[len(toks)-1].end = i
+				}
 			}
 		}
 	}
@@ -400,6 +390,7 @@ func scanMySQLQualTokens(statement string) []mysqlQualToken {
 }
 
 type mysqlQualScope struct {
+	aliasScopeID          int
 	stmtStart             bool
 	stmtVerb              string
 	inTableClause         bool
@@ -413,20 +404,31 @@ type mysqlQualScope struct {
 	prevKeyword           string
 }
 
-// databaseQualifiersInStatement extracts database qualifiers referenced in
+type mysqlAliasMap struct {
+	exact map[string]string
+	lower map[string]string
+}
+
+func databaseQualifiersInStatement(statement, defaultDB string, caseSensitive bool) []string {
+	qualifiers, _ := analyzeMySQLStatementQualifiers(statement, 0, defaultDB, caseSensitive)
+	return qualifiers
+}
+
+// analyzeMySQLStatementQualifiers extracts database qualifiers referenced in
 // statement (excluding defaultDB), distinguishing them from ordinary
-// table/alias qualifiers such as `SELECT a. FROM users a`:
+// table/alias qualifiers such as `SELECT a. FROM users a`, and resolves the
+// database associated with any qualifier or table/alias active at pos:
 //   - Three-part chains (`db.tbl.col` or `db.tbl.`) always identify `db`.
 //   - Two-part chains (`db.obj` or `db.`) only identify `db` inside table/object
-//     positions (FROM, JOIN, UPDATE, INSERT/REPLACE [INTO], DELETE USING,
+//     positions (FROM, JOIN, UPDATE, INSERT/REPLACE [INTO], DELETE, USING,
 //     DDL object headers, REFERENCES, CALL, CREATE ... LIKE, etc.).
-func databaseQualifiersInStatement(statement, defaultDB string, caseSensitive bool) []string {
+func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string, caseSensitive bool) ([]string, string) {
 	if !strings.Contains(statement, ".") {
-		return nil
+		return nil, ""
 	}
 	toks := scanMySQLQualTokens(statement)
 	if len(toks) == 0 {
-		return nil
+		return nil, ""
 	}
 
 	keyFor := func(name string) string {
@@ -450,19 +452,57 @@ func databaseQualifiersInStatement(statement, defaultDB string, caseSensitive bo
 		out = append(out, name)
 	}
 
-	scopes := []mysqlQualScope{{stmtStart: true, allowFromAsTable: true}}
+	nextAliasScopeID := 1
+	aliasesByScope := map[int]*mysqlAliasMap{}
+	parentAliasScope := map[int]int{}
+	recordAlias := func(scopeID int, name, db string, overwrite bool) {
+		if name == "" || db == "" {
+			return
+		}
+		am := aliasesByScope[scopeID]
+		if am == nil {
+			am = &mysqlAliasMap{
+				exact: make(map[string]string),
+				lower: make(map[string]string),
+			}
+			aliasesByScope[scopeID] = am
+		}
+		if overwrite {
+			am.exact[name] = db
+			am.lower[strings.ToLower(name)] = db
+			return
+		}
+		if _, ok := am.exact[name]; !ok {
+			am.exact[name] = db
+		}
+		if _, ok := am.lower[strings.ToLower(name)]; !ok {
+			am.lower[strings.ToLower(name)] = db
+		}
+	}
+
+	scopes := []mysqlQualScope{{aliasScopeID: 0, stmtStart: true, allowFromAsTable: true}}
 	cur := func() *mysqlQualScope { return &scopes[len(scopes)-1] }
+	caretAliasScopeID := 0
 
 	for i := 0; i < len(toks); i++ {
 		tok := toks[i]
 		sc := cur()
+		prevPunct := byte(0)
+		if i > 0 {
+			prevPunct = toks[i-1].punct
+		}
 
 		switch tok.punct {
 		case ';':
-			scopes = []mysqlQualScope{{stmtStart: true, allowFromAsTable: true}}
+			aliasID := nextAliasScopeID
+			nextAliasScopeID++
+			scopes = []mysqlQualScope{{aliasScopeID: aliasID, stmtStart: true, allowFromAsTable: true}}
+			if tok.end <= pos {
+				caretAliasScopeID = aliasID
+			}
 			continue
 		case '(':
-			child := mysqlQualScope{stmtStart: true}
+			child := mysqlQualScope{aliasScopeID: sc.aliasScopeID, stmtStart: true}
 			// Parenthesized table-reference / join group, e.g. FROM (db1.t1 JOIN ...),
 			// JOIN (db1.t1), UPDATE [LOW_PRIORITY] [IGNORE] (db1.t1 JOIN ...),
 			// DELETE ... USING (db1.t1 JOIN ...), or nested ((db1.t1)) / , (db1.t1).
@@ -470,8 +510,16 @@ func databaseQualifiersInStatement(statement, defaultDB string, caseSensitive bo
 				child.inTableClause = true
 				child.allowCommaTable = true
 				child.allowFromAsTable = true
+			} else {
+				aliasID := nextAliasScopeID
+				nextAliasScopeID++
+				parentAliasScope[aliasID] = sc.aliasScopeID
+				child.aliasScopeID = aliasID
 			}
 			scopes = append(scopes, child)
+			if tok.end <= pos {
+				caretAliasScopeID = child.aliasScopeID
+			}
 			continue
 		case ')':
 			if len(scopes) > 1 {
@@ -479,19 +527,32 @@ func databaseQualifiersInStatement(statement, defaultDB string, caseSensitive bo
 			}
 			cur().prevKeyword = ""
 			cur().stmtStart = false
+			if tok.end <= pos {
+				caretAliasScopeID = cur().aliasScopeID
+			}
 			continue
 		case ',':
 			sc.inTableClause = sc.allowCommaTable
 			sc.inInsertReplaceTarget = false
 			sc.prevKeyword = ""
 			sc.stmtStart = false
+			if tok.end <= pos {
+				caretAliasScopeID = sc.aliasScopeID
+			}
 			continue
 		case '.':
 			sc.prevKeyword = ""
 			sc.stmtStart = false
+			if tok.end <= pos {
+				caretAliasScopeID = sc.aliasScopeID
+			}
 			continue
 		default:
 			// Neutral separator or zero punct falls through to word handling.
+		}
+
+		if tok.end <= pos {
+			caretAliasScopeID = sc.aliasScopeID
 		}
 
 		if !tok.isWord {
@@ -507,6 +568,18 @@ func databaseQualifiersInStatement(statement, defaultDB string, caseSensitive bo
 			isDeleteStar := sc.stmtVerb == "DELETE" && i+2 < len(toks) && toks[i+2].punct == '*'
 			if isThreePart || (sc.inTableClause && !isDeleteStar) {
 				addDB(tok.text)
+			}
+			if sc.inTableClause && !isDeleteStar && i+2 < len(toks) && toks[i+2].isWord && !isClauseBoundaryAfterDot(toks[i+2].upper) {
+				recordAlias(sc.aliasScopeID, toks[i+2].text, tok.text, true)
+				if aliasTok, ok := scanTableAliasAfter(toks, i+3); ok {
+					recordAlias(sc.aliasScopeID, aliasTok, tok.text, true)
+				}
+			}
+		} else if sc.inTableClause && defaultDB != "" && !precededByDot && (i+1 >= len(toks) || toks[i+1].punct != '.') &&
+			isTableStartPosition(sc.prevKeyword, prevPunct) && !isNonAliasClauseKeyword(tok.upper) {
+			recordAlias(sc.aliasScopeID, tok.text, defaultDB, false)
+			if aliasTok, ok := scanTableAliasAfter(toks, i+1); ok {
+				recordAlias(sc.aliasScopeID, aliasTok, defaultDB, false)
 			}
 		}
 
@@ -549,6 +622,18 @@ func databaseQualifiersInStatement(statement, defaultDB string, caseSensitive bo
 
 		switch kw {
 		case "SELECT", "WITH":
+			if len(scopes) > 1 {
+				// Derived tables / subqueries isolate their table aliases from outer scopes.
+				if _, ok := parentAliasScope[sc.aliasScopeID]; !ok && sc.aliasScopeID == scopes[len(scopes)-2].aliasScopeID {
+					aliasID := nextAliasScopeID
+					nextAliasScopeID++
+					parentAliasScope[aliasID] = sc.aliasScopeID
+					sc.aliasScopeID = aliasID
+					if tok.end <= pos {
+						caretAliasScopeID = aliasID
+					}
+				}
+			}
 			sc.inTableClause = false
 			sc.inInsertReplaceTarget = false
 			sc.allowCommaTable = false
@@ -700,7 +785,35 @@ func databaseQualifiersInStatement(statement, defaultDB string, caseSensitive bo
 			// Non-clause keywords leave table-clause state unchanged.
 		}
 	}
-	return out
+
+	caretDB := ""
+	if caretIdent := databaseQualifierAtCaret(statement, pos); caretIdent != "" {
+		if caretIdent == defaultDB {
+			caretDB = defaultDB
+		} else {
+			for _, q := range out {
+				if q == caretIdent {
+					caretDB = q
+					break
+				}
+			}
+		}
+		if caretDB == "" {
+			for sid, ok := caretAliasScopeID, true; ok; sid, ok = parentAliasScope[sid] {
+				if am := aliasesByScope[sid]; am != nil {
+					if db, hit := am.exact[caretIdent]; hit {
+						caretDB = db
+						break
+					}
+					if db, hit := am.lower[strings.ToLower(caretIdent)]; hit {
+						caretDB = db
+						break
+					}
+				}
+			}
+		}
+	}
+	return out, caretDB
 }
 
 // MySQLStatementReferencesDatabase reports whether dbName appears as a database
@@ -793,6 +906,47 @@ func isParenthesizedTablePrefix(toks []mysqlQualToken, parenIdx int, sc *mysqlQu
 		return sc.stmtVerb == "DELETE"
 	case "LOW_PRIORITY", "IGNORE":
 		return sc.stmtVerb == "UPDATE"
+	default:
+		return false
+	}
+}
+
+func isTableStartPosition(prevKW string, prevPunct byte) bool {
+	if prevPunct == ',' {
+		return true
+	}
+	switch prevKW {
+	case "FROM", "JOIN", "STRAIGHT_JOIN", "UPDATE", "INTO":
+		return true
+	default:
+		return false
+	}
+}
+
+func scanTableAliasAfter(toks []mysqlQualToken, startIdx int) (string, bool) {
+	if startIdx >= len(toks) {
+		return "", false
+	}
+	idx := startIdx
+	if toks[idx].upper == "AS" {
+		idx++
+	}
+	if idx >= len(toks) || !toks[idx].isWord || isNonAliasClauseKeyword(toks[idx].upper) {
+		return "", false
+	}
+	return toks[idx].text, true
+}
+
+func isNonAliasClauseKeyword(upper string) bool {
+	switch upper {
+	case "AS", "ON", "USING", "WHERE", "SET", "VALUES", "VALUE",
+		"GROUP", "HAVING", "ORDER", "LIMIT", "OFFSET", "FOR", "LOCK",
+		"UNION", "INTERSECT", "EXCEPT", "WINDOW", "PARTITION",
+		"USE", "IGNORE", "FORCE", "JOIN", "INNER", "LEFT", "RIGHT",
+		"FULL", "CROSS", "NATURAL", "STRAIGHT_JOIN", "SELECT", "FROM",
+		"INTO", "TO", "RETURNING", "RETURN", "LOW_PRIORITY", "DELAYED",
+		"HIGH_PRIORITY", "QUICK", "ALL", "DISTINCT", "WITH":
+		return true
 	default:
 		return false
 	}

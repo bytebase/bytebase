@@ -540,6 +540,17 @@ func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
 	require.True(t, hasCandidate(gotMultiLower, base.CandidateTypeColumn, "lower_col"), "caret at foo.t. should resolve against foo; got %v", gotMultiLower)
 	require.False(t, hasCandidate(gotMultiLower, base.CandidateTypeColumn, "upper_col"), "caret at foo.t. must not be shadowed by Foo; got %v", gotMultiLower)
 
+	// Alias referencing case-colliding DB resolves to that DB's table columns.
+	stmtAliasCase := "SELECT x. FROM foo.t y JOIN Foo.t x"
+	gotAliasUpper, err := Completion(context.Background(), base.CompletionContext{
+		Scene:           base.SceneTypeAll,
+		DefaultDatabase: "foo",
+		Metadata:        caseSensMeta,
+	}, stmtAliasCase, 1, len("SELECT x."))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotAliasUpper, base.CandidateTypeColumn, "upper_col"), "alias x for Foo.t should suggest upper_col; got %v", gotAliasUpper)
+	require.False(t, hasCandidate(gotAliasUpper, base.CandidateTypeColumn, "lower_col"), "alias x for Foo.t must not be shadowed by foo.t; got %v", gotAliasUpper)
+
 	// Multi-table DELETE target before FROM loads qualifier DB without false-positive alias.* lookups.
 	metaCalls = nil
 	stmtDeleteTarget := "DELETE otherdb."
