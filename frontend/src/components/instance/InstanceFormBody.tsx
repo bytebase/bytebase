@@ -94,7 +94,6 @@ import {
   type DataSourceEditState,
   type EditDataSource,
   extractDataSourceEditState,
-  updateDataSourceSecret,
 } from "./common";
 import {
   applyParsedConnectionString,
@@ -113,11 +112,7 @@ import { DataSourceForm, RedisSentinelFields } from "./DataSourceForm";
 import { DataSourceSection } from "./DataSourceSection";
 import { useInstanceFormContext } from "./InstanceFormContext";
 import { hasInfoContent, type InfoSection } from "./info-content";
-import {
-  isNeonPooledHost,
-  type NeonConnectionString,
-  parseNeonConnectionString,
-} from "./neon-import";
+import { isNeonPooledHost } from "./neon-import";
 import { ScanIntervalInput } from "./ScanIntervalInput";
 import {
   ValidationField as FormField,
@@ -697,104 +692,8 @@ export function SyncDatabases({
   );
 }
 
-// A string that parses fills the connection fields and is then dropped, so
-// the password it carries is never kept or submitted as text. It is read when
-// pasted or when the field is left, never per keystroke: a hand-typed string
-// already parses before its database name is complete.
-function NeonConnectionStringField({
-  disabled,
-  pooledHost,
-  onParsed,
-}: {
-  disabled: boolean;
-  // The host now in the form is a pooled endpoint.
-  pooledHost: boolean;
-  onParsed: (parsed: NeonConnectionString) => void;
-}) {
-  const { t } = useTranslation();
-  const id = useId();
-  const [value, setValue] = useState("");
-  const [filled, setFilled] = useState(false);
-  const [checked, setChecked] = useState(false);
-  const invalid = checked && value.trim() !== "";
-  const pooled = filled && pooledHost;
-  const noteId = `${id}-note`;
-
-  const read = (text: string) => {
-    const parsed = parseNeonConnectionString(text);
-    if (!parsed) return false;
-    onParsed(parsed);
-    setValue("");
-    setFilled(true);
-    setChecked(false);
-    return true;
-  };
-
-  return (
-    <FormField
-      title={
-        <FormLabel htmlFor={id} className="flex-wrap">
-          {t("instance.neon.manual.connection-string")}{" "}
-          <span className="font-normal text-control-light">
-            {t("instance.neon.optional")}
-          </span>
-        </FormLabel>
-      }
-      description={t("instance.neon.manual.connection-string-help")}
-    >
-      <Input
-        id={id}
-        data-agent-sensitive
-        value={value}
-        disabled={disabled}
-        autoComplete="off"
-        spellCheck={false}
-        aria-invalid={invalid || pooled || undefined}
-        aria-describedby={invalid || pooled || filled ? noteId : undefined}
-        placeholder="postgresql://role:password@ep-example.us-east-2.aws.neon.tech/neondb"
-        onChange={(event) => {
-          setValue(event.target.value);
-          setFilled(false);
-          setChecked(false);
-        }}
-        onPaste={(event) => {
-          if (read(event.clipboardData.getData("text"))) {
-            event.preventDefault();
-          } else {
-            setChecked(true);
-          }
-        }}
-        onBlur={() => {
-          if (value.trim() && !read(value)) setChecked(true);
-        }}
-        onKeyDown={(event) => {
-          if (event.key !== "Enter" || !value.trim()) return;
-          event.preventDefault();
-          if (!read(value)) setChecked(true);
-        }}
-      />
-      {invalid ? (
-        <FormError id={noteId}>
-          {t("instance.neon.manual.connection-string-invalid")}
-        </FormError>
-      ) : pooled ? (
-        <FormError id={noteId}>
-          {t("instance.neon.manual.connection-string-pooled")}
-        </FormError>
-      ) : (
-        filled && (
-          <p
-            id={noteId}
-            role="status"
-            className="text-xs leading-4 text-control-light"
-          >
-            {t("instance.neon.manual.connection-string-filled")}
-          </p>
-        )
-      )}
-    </FormField>
-  );
-}
+const NEON_CONNECTION_STRING_PLACEHOLDER =
+  "postgresql://role:password@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
 const CONNECTION_STRING_PLACEHOLDERS: Record<ConnectionStringEngine, string> = {
   [Engine.MYSQL]:
@@ -832,17 +731,26 @@ const CONNECTION_STRING_PLACEHOLDERS: Record<ConnectionStringEngine, string> = {
     "jdbc:databricks://dbc.example.com:443/default;httpPath=/sql/1.0/warehouses/…;PWD=…",
 };
 
-type ConnectionUrlFillState = "complete" | "missing-password" | "missing-token";
+type ConnectionUrlFillState =
+  | "complete"
+  | "missing-password"
+  | "missing-token"
+  | "neon-pooled";
+type ConnectionUrlFocusTarget = "password" | "host";
 
 function ConnectionStringImportPopover({
   engine,
+  vendor = Vendor.VENDOR_UNSPECIFIED,
   disabled,
   resolvePasswordInput,
+  resolveHostInput,
   onParsed,
 }: {
   engine: ConnectionStringEngine;
+  vendor?: Vendor;
   disabled: boolean;
   resolvePasswordInput: () => HTMLInputElement | null;
+  resolveHostInput: () => HTMLInputElement | null;
   onParsed: (
     parsed: ParsedConnectionString,
     fillState: ConnectionUrlFillState
@@ -854,20 +762,28 @@ function ConnectionStringImportPopover({
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
   const [checked, setChecked] = useState(false);
-  const [pendingPasswordFocus, setPendingPasswordFocus] = useState(false);
+  const [pendingFocusTarget, setPendingFocusTarget] =
+    useState<ConnectionUrlFocusTarget | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const focusPasswordOnCloseRef = useRef(false);
+  const focusOnCloseRef = useRef<ConnectionUrlFocusTarget | null>(null);
   const invalid = checked && value.trim() !== "";
+  const isNeon = engine === Engine.POSTGRES && vendor === Vendor.NEON;
+
+  const resolveFocusElement = useCallback(
+    (target: ConnectionUrlFocusTarget) =>
+      target === "host" ? resolveHostInput() : resolvePasswordInput(),
+    [resolveHostInput, resolvePasswordInput]
+  );
 
   useEffect(() => {
-    if (open || !pendingPasswordFocus) return;
-    setPendingPasswordFocus(false);
-    const passwordEl = resolvePasswordInput();
-    if (passwordEl && !passwordEl.disabled) {
-      passwordEl.focus();
+    if (open || !pendingFocusTarget) return;
+    setPendingFocusTarget(null);
+    const targetEl = resolveFocusElement(pendingFocusTarget);
+    if (targetEl && !targetEl.disabled) {
+      targetEl.focus();
     }
-  }, [open, pendingPasswordFocus, resolvePasswordInput]);
+  }, [open, pendingFocusTarget, resolveFocusElement]);
 
   const helpTextByEngine: Record<ConnectionStringEngine, string> = {
     [Engine.MYSQL]: t("instance.connection-string.help.mysql"),
@@ -891,7 +807,9 @@ function ConnectionStringImportPopover({
     [Engine.HIVE]: t("instance.connection-string.help.hive"),
     [Engine.DATABRICKS]: t("instance.connection-string.help.databricks"),
   };
-  const helpText = helpTextByEngine[engine];
+  const helpText = isNeon
+    ? t("instance.connection-string.help.neon")
+    : helpTextByEngine[engine];
 
   const invalidTextByEngine: Record<ConnectionStringEngine, string> = {
     [Engine.MYSQL]: t("instance.connection-string.invalid.mysql"),
@@ -917,7 +835,9 @@ function ConnectionStringImportPopover({
     [Engine.HIVE]: t("instance.connection-string.invalid.hive"),
     [Engine.DATABRICKS]: t("instance.connection-string.invalid.databricks"),
   };
-  const invalidText = invalidTextByEngine[engine];
+  const invalidText = isNeon
+    ? t("instance.connection-string.invalid.neon")
+    : invalidTextByEngine[engine];
 
   const detectedEngine = invalid
     ? detectConnectionStringEngine(value, engine)
@@ -938,20 +858,28 @@ function ConnectionStringImportPopover({
   };
 
   const tryImport = (text: string): boolean => {
-    const parsed = parseConnectionString(engine, text);
+    const parsed = parseConnectionString(engine, text, vendor);
     if (!parsed) return false;
     const fillState: ConnectionUrlFillState =
-      engine === Engine.DATABRICKS
-        ? parsed.token !== undefined
-          ? "complete"
-          : "missing-token"
-        : parsed.password !== undefined
-          ? "complete"
-          : "missing-password";
+      isNeon && isNeonPooledHost(parsed.host)
+        ? "neon-pooled"
+        : engine === Engine.DATABRICKS
+          ? parsed.token !== undefined
+            ? "complete"
+            : "missing-token"
+          : parsed.password !== undefined
+            ? "complete"
+            : "missing-password";
     onParsed(parsed, fillState);
-    if (fillState !== "complete") {
-      focusPasswordOnCloseRef.current = true;
-      setPendingPasswordFocus(true);
+    const focusTarget: ConnectionUrlFocusTarget | null =
+      fillState === "neon-pooled"
+        ? "host"
+        : fillState !== "complete"
+          ? "password"
+          : null;
+    if (focusTarget) {
+      focusOnCloseRef.current = focusTarget;
+      setPendingFocusTarget(focusTarget);
     }
     handleOpenChange(false);
     return true;
@@ -987,11 +915,12 @@ function ConnectionStringImportPopover({
             : inputRef.current
         }
         finalFocus={() => {
-          if (focusPasswordOnCloseRef.current) {
-            focusPasswordOnCloseRef.current = false;
-            const passwordEl = resolvePasswordInput();
-            if (passwordEl && !passwordEl.disabled) {
-              return passwordEl;
+          if (focusOnCloseRef.current) {
+            const target = focusOnCloseRef.current;
+            focusOnCloseRef.current = null;
+            const targetEl = resolveFocusElement(target);
+            if (targetEl && !targetEl.disabled) {
+              return targetEl;
             }
           }
           return triggerRef.current;
@@ -1030,14 +959,18 @@ function ConnectionStringImportPopover({
               spellCheck={false}
               aria-invalid={invalid || undefined}
               aria-describedby={invalid ? errorId : undefined}
-              placeholder={CONNECTION_STRING_PLACEHOLDERS[engine]}
+              placeholder={
+                isNeon
+                  ? NEON_CONNECTION_STRING_PLACEHOLDER
+                  : CONNECTION_STRING_PLACEHOLDERS[engine]
+              }
               className="font-mono"
               onChange={(event) => {
                 const next = event.target.value;
                 setValue(next);
                 if (
                   checked &&
-                  (!next.trim() || parseConnectionString(engine, next))
+                  (!next.trim() || parseConnectionString(engine, next, vendor))
                 ) {
                   setChecked(false);
                 }
@@ -1600,25 +1533,6 @@ export function InstanceFormBody({
   const isNeon =
     basicInfo.engine === Engine.POSTGRES && basicInfo.vendor === Vendor.NEON;
 
-  const fillFromNeonConnectionString = (parsed: NeonConnectionString) => {
-    setDataSourceEditState((prev) => ({
-      ...prev,
-      dataSources: prev.dataSources.map((ds) => {
-        if (ds.id !== prev.editingDataSourceId) return ds;
-        const filled = {
-          ...ds,
-          host: parsed.host,
-          port: parsed.port,
-          username: parsed.role,
-          database: parsed.database,
-        };
-        return parsed.password
-          ? updateDataSourceSecret(filled, "password", parsed.password)
-          : filled;
-      }),
-    }));
-  };
-
   const connectionSectionRef = useRef<HTMLElement>(null);
 
   const resolvePasswordInput = useCallback(
@@ -1633,31 +1547,46 @@ export function InstanceFormBody({
     []
   );
 
+  const resolveHostInput = useCallback(
+    () =>
+      connectionSectionRef.current?.querySelector<HTMLInputElement>("#host") ??
+      null,
+    []
+  );
+
   const fillFromConnectionString = useCallback(
     (parsed: ParsedConnectionString, fillState: ConnectionUrlFillState) => {
       if (!supportsConnectionString(basicInfo.engine)) return;
       const currentEngine = basicInfo.engine;
+      const currentVendor = basicInfo.vendor;
       setDataSourceEditState((prev) => ({
         ...prev,
         dataSources: prev.dataSources.map((ds) =>
           ds.id === prev.editingDataSourceId
-            ? applyParsedConnectionString(ds, currentEngine, parsed)
+            ? applyParsedConnectionString(
+                ds,
+                currentEngine,
+                parsed,
+                currentVendor
+              )
             : ds
         ),
       }));
       const toastTitle =
-        fillState === "missing-token"
-          ? t("instance.connection-string.filled-missing-token")
-          : fillState === "missing-password"
-            ? t("instance.connection-string.filled-missing-password")
-            : t("instance.connection-string.filled");
+        fillState === "neon-pooled"
+          ? t("instance.connection-string.filled-neon-pooled")
+          : fillState === "missing-token"
+            ? t("instance.connection-string.filled-missing-token")
+            : fillState === "missing-password"
+              ? t("instance.connection-string.filled-missing-password")
+              : t("instance.connection-string.filled");
       pushNotification({
         module: "bytebase",
-        style: "SUCCESS",
+        style: fillState === "neon-pooled" ? "WARN" : "SUCCESS",
         title: toastTitle,
       });
     },
-    [basicInfo.engine, setDataSourceEditState, t]
+    [basicInfo.engine, basicInfo.vendor, setDataSourceEditState, t]
   );
 
   const showAskAgent = isCreating && !!onAskAgent;
@@ -1970,22 +1899,20 @@ export function InstanceFormBody({
           layout="stacked"
           title={t("instance.section.connection")}
           action={
-            (isCreating &&
-              !isNeon &&
-              supportsConnectionString(basicInfo.engine)) ||
+            (isCreating && supportsConnectionString(basicInfo.engine)) ||
             showAskAgent ? (
               <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                {isCreating &&
-                  !isNeon &&
-                  supportsConnectionString(basicInfo.engine) && (
-                    <ConnectionStringImportPopover
-                      key={basicInfo.engine}
-                      engine={basicInfo.engine}
-                      disabled={!allowEdit || disabled}
-                      resolvePasswordInput={resolvePasswordInput}
-                      onParsed={fillFromConnectionString}
-                    />
-                  )}
+                {isCreating && supportsConnectionString(basicInfo.engine) && (
+                  <ConnectionStringImportPopover
+                    key={`${basicInfo.engine}-${basicInfo.vendor}`}
+                    engine={basicInfo.engine}
+                    vendor={basicInfo.vendor}
+                    disabled={!allowEdit || disabled}
+                    resolvePasswordInput={resolvePasswordInput}
+                    resolveHostInput={resolveHostInput}
+                    onParsed={fillFromConnectionString}
+                  />
+                )}
                 {showAskAgent && (
                   <AgentHelpButton
                     type="button"
@@ -2014,13 +1941,6 @@ export function InstanceFormBody({
                       <LearnMoreLink href="https://docs.bytebase.com/get-started/cloud#prerequisites" />
                     </div>
                   </Alert>
-                )}
-                {isNeon && isCreating && (
-                  <NeonConnectionStringField
-                    disabled={!allowEdit}
-                    pooledHost={isNeonPooledHost(connectionDataSource.host)}
-                    onParsed={fillFromNeonConnectionString}
-                  />
                 )}
                 {editingDataSource && (
                   <DataSourceForm

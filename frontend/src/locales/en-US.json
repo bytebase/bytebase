@@ -1646,6 +1646,7 @@
       "filled": "Filled from URL",
       "filled-missing-password": "Filled from URL. Enter the database password.",
       "filled-missing-token": "Filled from URL. Enter the access token.",
+      "filled-neon-pooled": "Filled from URL. Use the direct endpoint host, without -pooler.",
       "help": {
         "cassandra": "Paste a Cassandra connection URL to autofill hosts, ports, credentials, and TLS.",
         "clickhouse": "Paste a ClickHouse connection URL to autofill host, port, credentials, and TLS.",
@@ -1658,6 +1659,7 @@
         "mongodb": "Paste a MongoDB connection URL or mongosh command to autofill host, port, credentials, replica set, authentication database, and TLS.",
         "mssql": "Paste a SQL Server connection URL or string to autofill host, port, credentials, database, and TLS.",
         "mysql": "Paste a MySQL connection URL to autofill host, port, credentials, and TLS.",
+        "neon": "Paste a Neon direct connection URL or string to autofill host, port, credentials, and database.",
         "oceanbase": "Paste an OceanBase connection URL to autofill host, port, credentials, and TLS.",
         "oracle": "Paste an Oracle connection URL or Easy Connect string to autofill host, port, credentials, service name or SID, and TLS.",
         "postgres": "Paste a PostgreSQL connection URL or string to autofill host, port, credentials, database, and TLS.",
@@ -1681,6 +1683,7 @@
         "mongodb": "Enter a valid mongodb://, mongodb+srv://, or mongosh command.",
         "mssql": "Enter a valid sqlserver:// URL or Server=…; connection string.",
         "mysql": "Enter a valid mysql:// connection URL.",
+        "neon": "Enter a valid postgresql:// URL or key=value connection string with TLS enabled.",
         "oceanbase": "Enter a valid mysql:// or oceanbase:// connection URL.",
         "oracle": "Enter a valid oracle:// URL or Easy Connect string with a service name or SID.",
         "postgres": "Enter a valid postgresql:// URL or key=value connection string.",
@@ -2133,13 +2136,6 @@
       "limit-reached": {
         "body": "Your plan cannot add more instances. Remove instances you no longer need, or raise the limit in Settings, Subscription.",
         "title": "Workspace instance limit reached"
-      },
-      "manual": {
-        "connection-string": "Neon connection string",
-        "connection-string-filled": "Filled host, role, password, and database.",
-        "connection-string-help": "Paste from the Neon console to autofill host, role, password, and database.",
-        "connection-string-invalid": "Enter a valid postgresql:// connection string with host, role, and database.",
-        "connection-string-pooled": "Fields filled, but this is a pooled endpoint (-pooler). Paste the direct connection string or remove -pooler from the host below."
       },
       "method": {
         "discover": "Discover branches with a Neon API key",

@@ -814,10 +814,16 @@ const NEON_STRING =
 const paste = (field: HTMLElement, text: string) =>
   fireEvent.paste(field, { clipboardData: { getData: () => text } });
 
-test("a pasted Neon connection string fills the connection fields and is not kept", () => {
+test("Import from URL popover autofills Neon connection strings without keeping secrets and preserves verified TLS", () => {
   mountCreate(Engine.POSTGRES);
   selectHosting(/^instance.vendor.neon/);
-  const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
+  expect(
+    screen.queryByLabelText(/instance\.neon\.manual\.connection-string/)
+  ).not.toBeInTheDocument();
+
+  const { field } = openImportUrlPopover();
+  expect(field).toHaveAttribute("data-agent-sensitive");
+  expect(field).toHaveAttribute("data-1p-ignore");
   paste(field, NEON_STRING);
   expect(context.adminDataSource).toMatchObject({
     host: "ep-example-123456.us-east-2.aws.neon.tech",
@@ -828,76 +834,74 @@ test("a pasted Neon connection string fills the connection fields and is not kep
     useSsl: true,
     verifyTlsCertificate: true,
   });
-  expect(field).toHaveValue("");
-  expect(field).toHaveAccessibleDescription(
-    "instance.neon.manual.connection-string-filled"
-  );
+  expect(
+    screen.queryByLabelText("instance.connection-string.label")
+  ).not.toBeInTheDocument();
+  expect(document.body.textContent).not.toContain("example-password");
+  expect(mocks.pushNotification).toHaveBeenLastCalledWith({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: "instance.connection-string.filled",
+  });
 });
 
-test("a connection string typed by hand is read when the field is left, not per keystroke", () => {
+test("Neon Import from URL submits typed strings, rejects plaintext TLS or invalid input, and resets when switching hosting", () => {
   mountCreate(Engine.POSTGRES);
   selectHosting(/^instance.vendor.neon/);
-  const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
-  // This prefix already parses, with a one-letter database name.
+  const { field } = openImportUrlPopover();
+  // Typing does not autofill prematurely before submission.
   const partial = NEON_STRING.slice(0, NEON_STRING.indexOf("/storefront") + 2);
   fireEvent.change(field, { target: { value: partial } });
   expect(field).toHaveValue(partial);
   expect(context.adminDataSource.database).not.toBe("s");
-  expect(
-    screen.queryByText("instance.neon.manual.connection-string-invalid")
-  ).toBeNull();
+
+  fireEvent.change(field, {
+    target: {
+      value: NEON_STRING.replace("sslmode=require", "sslmode=disable"),
+    },
+  });
+  fireEvent.submit(field.closest("form") as HTMLFormElement);
+  expect(field).toHaveAccessibleDescription(
+    "instance.connection-string.invalid.neon"
+  );
+
   fireEvent.change(field, { target: { value: NEON_STRING } });
-  expect(field).toHaveValue(NEON_STRING);
-  fireEvent.blur(field);
-  expect(field).toHaveValue("");
+  expect(field).not.toHaveAttribute("aria-invalid");
+  fireEvent.click(screen.getByRole("button", { name: "common.import" }));
   expect(context.adminDataSource).toMatchObject({
     username: "app_owner",
     database: "storefront",
   });
-});
 
-test("text that is not a connection string is reported once the field is left and stays to be corrected", () => {
-  mountCreate(Engine.POSTGRES);
-  selectHosting(/^instance.vendor.neon/);
-  const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
-  expect(field).toHaveAttribute("data-agent-sensitive");
-  fireEvent.change(field, { target: { value: "not a connection string" } });
+  openImportUrlPopover();
+  selectHosting(/^instance.vendor.generic/);
   expect(
-    screen.queryByText("instance.neon.manual.connection-string-invalid")
-  ).toBeNull();
-  fireEvent.blur(field);
-  expect(field).toHaveAccessibleDescription(
-    "instance.neon.manual.connection-string-invalid"
-  );
-  expect(field).toHaveValue("not a connection string");
+    screen.queryByLabelText("instance.connection-string.label")
+  ).not.toBeInTheDocument();
 });
 
-test("a pasted pooled connection string says so beside the field until the host is corrected", () => {
+test("importing a pooled Neon connection string warns, surfaces the host error, and focuses the host field", async () => {
   mountCreate(Engine.POSTGRES);
   selectHosting(/^instance.vendor.neon/);
-  const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
+  const { field } = openImportUrlPopover();
   paste(
     field,
     NEON_STRING.replace("ep-example-123456", "ep-example-123456-pooler")
   );
-  expect(field).toHaveAccessibleDescription(
-    "instance.neon.manual.connection-string-pooled"
-  );
+  expect(
+    screen.queryByLabelText("instance.connection-string.label")
+  ).not.toBeInTheDocument();
   expect(
     screen.getByText("instance.validation.neon-pooled-host")
   ).toBeVisible();
-  act(() =>
-    context.setDataSourceEditState((previous) => ({
-      ...previous,
-      dataSources: previous.dataSources.map((source) => ({
-        ...source,
-        host: "ep-example-123456.us-east-2.aws.neon.tech",
-      })),
-    }))
-  );
-  expect(field).toHaveAccessibleDescription(
-    "instance.neon.manual.connection-string-filled"
-  );
+  expect(mocks.pushNotification).toHaveBeenLastCalledWith({
+    module: "bytebase",
+    style: "WARN",
+    title: "instance.connection-string.filled-neon-pooled",
+  });
+  await waitFor(() => {
+    expect(screen.getByLabelText(/instance.hostname/)).toHaveFocus();
+  });
 });
 
 test("rejects a pooled Neon host and asks for the direct endpoint", () => {
@@ -920,7 +924,7 @@ test("rejects a pooled Neon host and asks for the direct endpoint", () => {
   );
 });
 
-test("editing a Neon instance shows its connection settings without the hosting or setup choices", () => {
+test("editing a Neon instance shows its connection settings without the hosting choices or URL import", () => {
   render(
     <InstanceFormProvider
       instance={create(InstanceSchema, {
@@ -952,7 +956,9 @@ test("editing a Neon instance shows its connection settings without the hosting 
     screen.queryByRole("radiogroup", { name: "instance.vendor.self" })
   ).not.toBeInTheDocument();
   expect(
-    screen.queryByLabelText(/instance.neon.manual.connection-string/)
+    screen.queryByRole("button", {
+      name: "instance.connection-string.trigger",
+    })
   ).not.toBeInTheDocument();
   expect(screen.getByLabelText(/instance.hostname/)).toHaveValue(
     "ep-example-123456.us-east-2.aws.neon.tech"
@@ -1184,7 +1190,7 @@ test("Import from URL flags engine mismatches, clears errors on fix, and resets 
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
 });
 
-test("Import from URL trigger is hidden for unsupported engines, Neon vendor, and edit mode", () => {
+test("Import from URL trigger is hidden for unsupported engines and edit mode", () => {
   for (const engine of [
     Engine.DYNAMODB,
     Engine.BIGQUERY,
@@ -1200,15 +1206,6 @@ test("Import from URL trigger is hidden for unsupported engines, Neon vendor, an
     cleanup();
   }
 
-  mountCreate(Engine.POSTGRES);
-  selectHosting(/^instance.vendor.neon/);
-  expect(
-    screen.queryByRole("button", {
-      name: "instance.connection-string.trigger",
-    })
-  ).not.toBeInTheDocument();
-
-  cleanup();
   render(
     <InstanceFormProvider
       instance={create(InstanceSchema, {
