@@ -16,9 +16,9 @@ import (
 // in the read-only query scene, leaving only read statements (SELECT, WITH,
 // EXPLAIN, DESC/DESCRIBE, SHOW, HELP, TABLE, VALUES) and clause keywords.
 var writeStatementKeywords = map[string]bool{
-	// DML.
+	// DML / data loading.
 	"INSERT": true, "UPDATE": true, "DELETE": true, "REPLACE": true,
-	"LOAD": true, "BATCH": true,
+	"LOAD": true, "IMPORT": true, "BATCH": true,
 	// DDL.
 	"CREATE": true, "ALTER": true, "DROP": true, "TRUNCATE": true, "RENAME": true,
 	// Privileges / session.
@@ -26,9 +26,18 @@ var writeStatementKeywords = map[string]bool{
 	// Transaction control.
 	"BEGIN": true, "START": true, "COMMIT": true, "ROLLBACK": true,
 	"SAVEPOINT": true, "RELEASE": true, "XA": true,
-	// Admin / maintenance.
+	// Admin / maintenance / replication.
 	"ANALYZE": true, "OPTIMIZE": true, "FLUSH": true, "REPAIR": true,
-	"CHECK": true, "RESET": true, "KILL": true, "LOCK": true, "UNLOCK": true,
+	"CHECK": true, "CHECKSUM": true, "RESET": true, "KILL": true,
+	"LOCK": true, "UNLOCK": true, "CACHE": true,
+	"SHUTDOWN": true, "RESTART": true, "CLONE": true,
+	"INSTALL": true, "UNINSTALL": true, "CHANGE": true, "STOP": true,
+	"PURGE": true, "BINLOG": true, "HANDLER": true,
+	"SIGNAL": true, "RESIGNAL": true,
+	// TiDB maintenance / backup / resource / region statements.
+	"ADMIN": true, "SPLIT": true, "DISTRIBUTE": true, "CALIBRATE": true,
+	"QUERY": true, "BACKUP": true, "RESTORE": true, "RECOVER": true,
+	"FLASHBACK": true, "PLAN": true,
 	// Prepared statements / routines.
 	"PREPARE": true, "EXECUTE": true, "DEALLOCATE": true, "CALL": true, "DO": true,
 }
@@ -222,9 +231,10 @@ func PopulateMySQLFamilyCatalog(
 					loadName = resolvedName
 				}
 				proto = dbMeta.GetProto()
-			} else if defaultLoaded && !caseSensitive {
+			} else if (defaultLoaded && !caseSensitive) || defaultName == "" {
 				// Case-folding instances (lower_case_table_names) may store e.g.
-				// "db_b" while the query uses "DB_B"; resolve canonically on miss.
+				// "db_b" while the query uses "DB_B"; resolve canonically on miss
+				// when defaultDB is case-folding or in instance-level editors.
 				if exact, diffCase := findExactFolded(loadName); diffCase {
 					if resolvedName, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, exact); err == nil && dbMeta != nil && !dbMeta.GetIsObjectCaseSensitive() {
 						loadName = exact
@@ -259,7 +269,9 @@ func PopulateMySQLFamilyCatalog(
 		}
 	}
 
-	setCurrentDB(defaultName)
+	if defaultName != "" {
+		setCurrentDB(defaultName)
+	}
 }
 
 // suggestsMySQLDatabaseRef reports whether the parser's C3 collector at pos
@@ -1029,7 +1041,73 @@ func caretAtStatementStart(statement string, pos int) bool {
 	before := stripStringsAndComments(statement)[:pos]
 	before = strings.TrimRightFunc(before, isIdentRune)
 	before = strings.TrimRight(before, " \t\r\n")
-	return before == "" || before[len(before)-1] == ';'
+	if before == "" || before[len(before)-1] == ';' {
+		return true
+	}
+	return caretAfterWithClause(before)
+}
+
+func caretAfterWithClause(before string) bool {
+	toks := scanMySQLQualTokens(before)
+	if len(toks) == 0 || toks[len(toks)-1].punct != ')' {
+		return false
+	}
+	depth := 0
+	startIdx := 0
+	withIdx := -1
+	withDepth := -1
+	for i, tok := range toks {
+		switch tok.punct {
+		case ';':
+			startIdx = i + 1
+			depth = 0
+			withIdx = -1
+			withDepth = -1
+		case '(':
+			depth++
+		case ')':
+			if depth > 0 {
+				depth--
+			}
+			if depth < withDepth {
+				withIdx = -1
+				withDepth = -1
+			}
+		default:
+			if tok.upper == "WITH" && (i == startIdx || (i > 0 && toks[i-1].punct == '(')) {
+				withIdx = i
+				withDepth = depth
+			}
+		}
+	}
+	if withIdx < 0 || depth != withDepth {
+		return false
+	}
+	d := withDepth
+	sawCTEBody := false
+	for i := withIdx + 1; i < len(toks); i++ {
+		tok := toks[i]
+		switch tok.punct {
+		case '(':
+			if d == withDepth && i > 0 && toks[i-1].upper == "AS" {
+				sawCTEBody = true
+			}
+			d++
+		case ')':
+			if d > withDepth {
+				d--
+			}
+		case ',':
+			if d == withDepth {
+				sawCTEBody = false
+			}
+		default:
+			if d == withDepth && sawCTEBody && tok.isWord {
+				return false
+			}
+		}
+	}
+	return sawCTEBody
 }
 
 // CaretInsideMySQLBacktickIdentifier reports whether the caret sits inside an

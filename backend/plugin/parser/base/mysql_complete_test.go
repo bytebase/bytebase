@@ -422,6 +422,36 @@ func TestPopulateMySQLFamilyCatalog_SkipsEnumerationForQualifiers(t *testing.T) 
 		func(string) {},
 	)
 	require.Equal(t, []string{"foo", "Foo"}, unqualifiedLoaded)
+
+	// Instance-level editor (DefaultDatabase == "") resolves case-folded qualifiers lazily on miss.
+	instLevelListCalls := 0
+	var instLevelLoaded []string
+	PopulateMySQLFamilyCatalog(
+		context.Background(),
+		CompletionContext{
+			DefaultDatabase: "",
+			ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
+				instLevelListCalls++
+				return []string{"appdb", "db_b"}, nil
+			},
+			Metadata: func(_ context.Context, _, db string) (string, *model.DatabaseMetadata, error) {
+				if db != "db_b" {
+					return "", nil, nil
+				}
+				return db, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: db}, nil, nil, storepb.Engine_MYSQL, false), nil
+			},
+		},
+		"SELECT DB_B.orders. FROM DB_B.orders",
+		len("SELECT DB_B.orders."),
+		func(string, int) bool { return false },
+		func(string) {},
+		func(name string, _ *metadatapb.DatabaseSchemaMetadata) {
+			instLevelLoaded = append(instLevelLoaded, name)
+		},
+		func(string) {},
+	)
+	require.Equal(t, 1, instLevelListCalls)
+	require.Equal(t, []string{"db_b"}, instLevelLoaded)
 }
 
 func TestCompleteMySQLFamily_PreservesDistinctDefinitionsAndUTF16Caret(t *testing.T) {
@@ -465,4 +495,11 @@ func TestDollarAndUnicodeIdentifiersConsistentAcrossHelpers(t *testing.T) {
 
 	require.False(t, identifierNeedsQuoting("sales$archive", nil))
 	require.True(t, identifierNeedsQuoting("1$bad", nil))
+
+	// Post-CTE main statement starts filter write verbs while mid-query clauses do not.
+	require.True(t, caretAtStatementStart("WITH c AS (SELECT 1) ", len("WITH c AS (SELECT 1) ")))
+	require.True(t, caretAtStatementStart("WITH RECURSIVE c1(a) AS (SELECT 1), c2 AS (SELECT 2) UP", len("WITH RECURSIVE c1(a) AS (SELECT 1), c2 AS (SELECT 2) UP")))
+	require.False(t, caretAtStatementStart("WITH c AS (SELECT 1), ", len("WITH c AS (SELECT 1), ")))
+	require.False(t, caretAtStatementStart("WITH c AS (SELECT 1) SELECT * FROM c WHERE a = 1 FOR ", len("WITH c AS (SELECT 1) SELECT * FROM c WHERE a = 1 FOR ")))
+	require.False(t, caretAtStatementStart("WITH c AS (SELECT 1) SELECT (1) ", len("WITH c AS (SELECT 1) SELECT (1) ")))
 }

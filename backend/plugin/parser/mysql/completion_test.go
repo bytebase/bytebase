@@ -197,6 +197,19 @@ func TestCompletion_QuerySceneFiltersWriteKeywordPrefix(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, hasKeyword(got, "CREATE"),
 		"CREATE must be kept after SHOW even with a prefix; got %v", got)
+
+	// Empty slot in SceneTypeQuery must filter SHUTDOWN and other admin starters.
+	gotEmpty, err := Completion(context.Background(), q, "", 1, 0)
+	require.NoError(t, err)
+	require.False(t, hasKeyword(gotEmpty, "SHUTDOWN"), "SHUTDOWN must be filtered in SceneTypeQuery; got %v", gotEmpty)
+
+	// Main-statement position after a CTE in SceneTypeQuery must filter write verbs like UPDATE/DELETE.
+	for _, postCTE := range []string{"WITH c AS (SELECT 1) ", "WITH c AS (SELECT 1) UP", "WITH c AS (SELECT 1) DEL"} {
+		gotPostCTE, err := Completion(context.Background(), q, postCTE, 1, len(postCTE))
+		require.NoError(t, err)
+		require.False(t, hasKeyword(gotPostCTE, "UPDATE"), "UPDATE must be filtered after %q; got %v", postCTE, gotPostCTE)
+		require.False(t, hasKeyword(gotPostCTE, "DELETE"), "DELETE must be filtered after %q; got %v", postCTE, gotPostCTE)
+	}
 }
 
 func TestCompletion_InstanceLevelDatabaseCandidates(t *testing.T) {
@@ -220,6 +233,31 @@ func TestCompletion_InstanceLevelDatabaseCandidates(t *testing.T) {
 		"instance-level db candidate 'appdb' should surface without a default database; got %v", got)
 	require.True(t, hasCandidate(got, base.CandidateTypeDatabase, "otherdb"),
 		"instance-level db candidate 'otherdb' should surface without a default database; got %v", got)
+
+	// Instance-level editor (DefaultDatabase == "") also resolves case-folded qualifiers cleanly.
+	caseFoldInstMeta := func(_ context.Context, _, dbName string) (string, *model.DatabaseMetadata, error) {
+		if dbName != "db_b" {
+			return "", nil, nil
+		}
+		return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			Name: "db_b",
+			Schemas: []*metadatapb.SchemaMetadata{{
+				Tables: []*metadatapb.TableMetadata{{
+					Name:    "orders",
+					Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}},
+				}},
+			}},
+		}, nil, nil, storepb.Engine_MYSQL, false), nil
+	}
+	gotFoldedInst, err := Completion(context.Background(), base.CompletionContext{
+		Scene:             base.SceneTypeAll,
+		DefaultDatabase:   "",
+		Metadata:          caseFoldInstMeta,
+		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) { return []string{"appdb", "db_b"}, nil },
+	}, "SELECT DB_B.orders. FROM DB_B.orders", 1, len("SELECT DB_B.orders."))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotFoldedInst, base.CandidateTypeColumn, "id"),
+		"instance-level folded qualifier DB_B.orders. should resolve db_b; got %v", gotFoldedInst)
 }
 
 func TestCompletion_LimitsToStatementAtCaret(t *testing.T) {
