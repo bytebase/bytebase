@@ -549,6 +549,21 @@ func TestPopulateMySQLFamilyCatalog_SkipsEnumerationForQualifiers(t *testing.T) 
 			stmt: "INSERT INTO Foo.t (",
 			pos:  len("INSERT INTO Foo.t ("),
 		},
+		{
+			name: "constant CTE without backing DB before colliding explicit source",
+			stmt: "WITH c AS (SELECT 1 AS n) SELECT  FROM c JOIN Foo.t",
+			pos:  len("WITH c AS (SELECT 1 AS n) SELECT "),
+		},
+		{
+			name: "recursive constant CTE without backing DB before colliding explicit source",
+			stmt: "WITH RECURSIVE c AS (SELECT 1 AS n UNION ALL SELECT n+1 FROM c WHERE n < 2) SELECT  FROM c JOIN Foo.t",
+			pos:  len("WITH RECURSIVE c AS (SELECT 1 AS n UNION ALL SELECT n+1 FROM c WHERE n < 2) SELECT "),
+		},
+		{
+			name: "lateral derived table on colliding explicit source",
+			stmt: "SELECT  FROM LATERAL (SELECT * FROM Foo.t) x",
+			pos:  len("SELECT "),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var loadedOrder []string

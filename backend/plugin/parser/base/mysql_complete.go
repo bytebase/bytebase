@@ -540,7 +540,7 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 		return projDBs, allDBs
 	}
 	recordCTE := func(scopeID int, name string, dbs []string) {
-		if name == "" || len(dbs) == 0 {
+		if name == "" {
 			return
 		}
 		m := cteByScope[scopeID]
@@ -619,6 +619,9 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 			}
 			if sc.stmtVerb == "WITH" {
 				child.cteName = cteNameBeforeAS(toks, i)
+				if child.cteName != "" {
+					recordCTE(sc.aliasScopeID, child.cteName, nil)
+				}
 			}
 			// Parenthesized table-reference / join group, e.g. FROM (db1.t1 JOIN ...),
 			// JOIN (db1.t1), UPDATE [LOW_PRIORITY] [IGNORE] (db1.t1 JOIN ...),
@@ -654,30 +657,33 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 						recordProjRef(parent.aliasScopeID, ref)
 					}
 				}
-			} else if subProjDBs, subDBs := finalizeScopeDBs(closed.aliasScopeID); len(subDBs) > 0 {
-				if closed.aliasScopeID != parent.aliasScopeID {
-					if parent.inSelectList {
-						for _, db := range subDBs {
-							recordProjRef(parent.aliasScopeID, mysqlProjRef{db: db})
-						}
-						recordScopeFromDB(parent.aliasScopeID, scopeFromDBs[closed.aliasScopeID]...)
-					} else if !parent.inTableClause && !parent.pastFromOrWhere && len(scopeProjRefs[parent.aliasScopeID]) == 0 && len(scopeFromDBs[parent.aliasScopeID]) == 0 {
-						for _, db := range subProjDBs {
-							recordProjRef(parent.aliasScopeID, mysqlProjRef{db: db})
-						}
-						recordScopeFromDB(parent.aliasScopeID, scopeFromDBs[closed.aliasScopeID]...)
-						parent.isSubquery = parent.isSubquery || closed.isSubquery
-					} else {
-						recordScopeFromDB(parent.aliasScopeID, subDBs...)
-					}
-				}
+			} else {
+				subProjDBs, subDBs := finalizeScopeDBs(closed.aliasScopeID)
 				if closed.cteName != "" {
 					recordCTE(parent.aliasScopeID, closed.cteName, subDBs)
 					recordAlias(parent.aliasScopeID, closed.cteName, true, subDBs...)
 				}
-				if parent.inTableClause {
-					if aliasTok, ok := scanTableAliasAfter(toks, i+1); ok {
-						recordAlias(parent.aliasScopeID, aliasTok, true, subDBs...)
+				if len(subDBs) > 0 {
+					if closed.aliasScopeID != parent.aliasScopeID {
+						if parent.inSelectList {
+							for _, db := range subDBs {
+								recordProjRef(parent.aliasScopeID, mysqlProjRef{db: db})
+							}
+							recordScopeFromDB(parent.aliasScopeID, scopeFromDBs[closed.aliasScopeID]...)
+						} else if !parent.inTableClause && !parent.pastFromOrWhere && len(scopeProjRefs[parent.aliasScopeID]) == 0 && len(scopeFromDBs[parent.aliasScopeID]) == 0 {
+							for _, db := range subProjDBs {
+								recordProjRef(parent.aliasScopeID, mysqlProjRef{db: db})
+							}
+							recordScopeFromDB(parent.aliasScopeID, scopeFromDBs[closed.aliasScopeID]...)
+							parent.isSubquery = parent.isSubquery || closed.isSubquery
+						} else {
+							recordScopeFromDB(parent.aliasScopeID, subDBs...)
+						}
+					}
+					if parent.inTableClause {
+						if aliasTok, ok := scanTableAliasAfter(toks, i+1); ok {
+							recordAlias(parent.aliasScopeID, aliasTok, true, subDBs...)
+						}
 					}
 				}
 			}
@@ -740,7 +746,7 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 					recordAlias(sc.aliasScopeID, aliasTok, true, tok.text)
 				}
 			}
-		} else if sc.inTableClause && !precededByDot && (i+1 >= len(toks) || toks[i+1].punct != '.') &&
+		} else if sc.inTableClause && !precededByDot && (i+1 >= len(toks) || (toks[i+1].punct != '.' && toks[i+1].punct != '(')) &&
 			isTableStartPosition(sc.prevKeyword, prevPunct) && !isNonAliasClauseKeyword(tok.upper) {
 			targetDBs, fromCTE := lookupCTE(sc.aliasScopeID, tok.text)
 			if !fromCTE && defaultDB != "" {
@@ -1166,7 +1172,7 @@ func isNonAliasClauseKeyword(upper string) bool {
 		"USE", "IGNORE", "FORCE", "JOIN", "INNER", "LEFT", "RIGHT",
 		"FULL", "CROSS", "NATURAL", "STRAIGHT_JOIN", "SELECT", "FROM",
 		"INTO", "TO", "RETURNING", "RETURN", "LOW_PRIORITY", "DELAYED",
-		"HIGH_PRIORITY", "QUICK", "ALL", "DISTINCT", "WITH":
+		"HIGH_PRIORITY", "QUICK", "ALL", "DISTINCT", "WITH", "LATERAL":
 		return true
 	default:
 		return false
