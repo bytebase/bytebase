@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	tidbparser "github.com/bytebase/omni/tidb/parser"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -496,8 +497,8 @@ func TestQuoteIdentifierIfNeeded(t *testing.T) {
 		{"order", true, "order"},        // caret already inside a backtick — no extra quotes
 	}
 	for _, tc := range cases {
-		require.Equal(t, tc.want, quoteIdentifierIfNeeded(tc.name, tc.caretInBacktick),
-			"quoteIdentifierIfNeeded(%q, %v)", tc.name, tc.caretInBacktick)
+		require.Equal(t, tc.want, base.QuoteMySQLIdentifierIfNeeded(tc.name, tc.caretInBacktick, tidbparser.IsReservedKeyword),
+			"QuoteMySQLIdentifierIfNeeded(%q, %v)", tc.name, tc.caretInBacktick)
 	}
 }
 
@@ -517,8 +518,8 @@ func TestCaretInsideBacktickIdentifier(t *testing.T) {
 		{"SELECT 1 -- `\nFROM ", 19, false},   // backtick inside a line comment ignored
 	}
 	for _, tc := range cases {
-		require.Equal(t, tc.want, caretInsideBacktickIdentifier(tc.statement, tc.pos),
-			"caretInsideBacktickIdentifier(%q, %d)", tc.statement, tc.pos)
+		require.Equal(t, tc.want, base.CaretInsideMySQLBacktickIdentifier(tc.statement, tc.pos),
+			"CaretInsideMySQLBacktickIdentifier(%q, %d)", tc.statement, tc.pos)
 	}
 }
 
@@ -540,8 +541,8 @@ func TestStatementReferencesDatabase(t *testing.T) {
 		{"SELECT * FROM `otherdb` . t2", "otherdb", true},    // backtick-quoted + whitespace
 	}
 	for _, tc := range cases {
-		require.Equal(t, tc.want, statementReferencesDatabase(tc.statement, tc.db),
-			"statementReferencesDatabase(%q, %q)", tc.statement, tc.db)
+		require.Equal(t, tc.want, base.MySQLStatementReferencesDatabase(tc.statement, tc.db),
+			"MySQLStatementReferencesDatabase(%q, %q)", tc.statement, tc.db)
 	}
 }
 
@@ -589,14 +590,18 @@ func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
 		}
 		return databaseName, model.NewDatabaseMetadata(m, nil, nil, storepb.Engine_TIDB, true), nil
 	}
+	listCalls := 0
 	cCtx := base.CompletionContext{
-		Scene:             base.SceneTypeAll,
-		DefaultDatabase:   "appdb",
-		Metadata:          metaFn,
-		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) { return []string{"appdb", "otherdb"}, nil },
+		Scene:           base.SceneTypeAll,
+		DefaultDatabase: "appdb",
+		Metadata:        metaFn,
+		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
+			listCalls++
+			return []string{"appdb", "otherdb"}, nil
+		},
 	}
 
-	// Qualified column from a non-default database resolves.
+	// Qualified column from a non-default database resolves without enumerating databases.
 	stmt := "SELECT otherdb.t2. FROM otherdb.t2"
 	got, err := Completion(context.Background(), cCtx, stmt, 1, len("SELECT otherdb.t2."))
 	require.NoError(t, err)
@@ -604,6 +609,7 @@ func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
 		"cross-db column 'c2' should surface; got %v", got)
 	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "c3"),
 		"cross-db column 'c3' should surface; got %v", got)
+	require.Zero(t, listCalls, "qualified cross-db completion must not enumerate databases")
 
 	// Every known database name surfaces as a DATABASE candidate.
 	stmt2 := "SELECT * FROM "
@@ -611,4 +617,5 @@ func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, hasCandidate(got2, base.CandidateTypeDatabase, "otherdb"),
 		"non-default database 'otherdb' should surface as a DATABASE candidate; got %v", got2)
+	require.Equal(t, 1, listCalls)
 }

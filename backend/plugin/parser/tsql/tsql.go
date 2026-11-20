@@ -93,10 +93,10 @@ func NormalizeTSQLIdentifierText(text string) (original string, lowercase string
 	return text, s
 }
 
-// IsTSQLReservedKeyword returns true if the given keyword is a TSQL keywords.
+// IsTSQLReservedKeyword returns true if the given keyword is a T-SQL reserved keyword.
 func IsTSQLReservedKeyword(keyword string, caseSensitive bool) bool {
-	if !caseSensitive {
-		keyword = strings.ToUpper(keyword)
+	if caseSensitive && strings.ToUpper(keyword) != keyword {
+		return false
 	}
-	return tsqlReservedKeywordsMap[keyword]
+	return mssqlparser.IsReservedKeyword(keyword)
 }

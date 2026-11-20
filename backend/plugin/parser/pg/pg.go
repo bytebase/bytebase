@@ -3,7 +3,6 @@ package pg
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	omniparser "github.com/bytebase/omni/pg/parser"
 
@@ -69,12 +68,4 @@ func convertError(err error, _ string, stmt base.Statement) error {
 		Message:    fmt.Sprintf("Syntax error at line %d: %s", pos.Line, parseErr.Message),
 		RawMessage: parseErr.Message,
 	}
-}
-
-// normalizePostgreSQLQuotedIdentifier removes surrounding double quotes and unescapes internal ones.
-func normalizePostgreSQLQuotedIdentifier(s string) string {
-	if len(s) < 2 {
-		return s
-	}
-	return strings.ReplaceAll(s[1:len(s)-1], `""`, `"`)
 }

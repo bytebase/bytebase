@@ -5,6 +5,7 @@ import {
   DataSource_AuthenticationType,
   DataSource_RedisType,
   DataSourceType,
+  Vendor,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { type EditDataSource, updateDataSourceSecret } from "./common";
 import { defaultPortForEngine } from "./constants";
@@ -423,17 +424,19 @@ function parseSchemeOrQueryTls(
 
 function parsePostgresTls(
   sslMode: string | undefined,
-  ssl?: string
+  ssl?: string,
+  verifiedByDefault = false
 ): ParsedTls | undefined {
   if (sslMode !== undefined) {
     switch (sslMode.trim().toLowerCase()) {
       case "disable":
         return { useSsl: false };
+      case "no-verify":
+        return { useSsl: true, verifyTlsCertificate: false };
       case "allow":
       case "prefer":
       case "require":
-      case "no-verify":
-        return { useSsl: true, verifyTlsCertificate: false };
+        return { useSsl: true, verifyTlsCertificate: verifiedByDefault };
       case "verify-ca":
       case "verify-full":
         return { useSsl: true, verifyTlsCertificate: true };
@@ -448,7 +451,7 @@ function parsePostgresTls(
         return { useSsl: false };
       case "true":
       case "1":
-        return { useSsl: true, verifyTlsCertificate: false };
+        return { useSsl: true, verifyTlsCertificate: verifiedByDefault };
     }
   }
   return undefined;
@@ -535,12 +538,16 @@ function parsePostgresFamilyConnectionString(
     schemes,
     defaultPort,
     includeTls,
+    requireTls = false,
+    verifiedTlsByDefault = false,
     allowJdbc = false,
     allowCockroachCli = false,
   }: {
     schemes: string[];
     defaultPort: string;
     includeTls: boolean;
+    requireTls?: boolean;
+    verifiedTlsByDefault?: boolean;
     allowJdbc?: boolean;
     allowCockroachCli?: boolean;
   }
@@ -592,8 +599,13 @@ function parsePostgresFamilyConnectionString(
         (allowJdbc ? uri.query.get("pwd") : undefined)
     );
     const tls = includeTls
-      ? parsePostgresTls(uri.query.get("sslmode"), uri.query.get("ssl"))
+      ? parsePostgresTls(
+          uri.query.get("sslmode"),
+          uri.query.get("ssl"),
+          verifiedTlsByDefault
+        )
       : undefined;
+    if (requireTls && tls?.useSsl === false) return undefined;
     return {
       host,
       port: port ?? defaultPort,
@@ -618,15 +630,17 @@ function parsePostgresFamilyConnectionString(
     if (!validated) return undefined;
     port = validated;
   }
+  const tls = includeTls
+    ? parsePostgresTls(kv.get("sslmode"), kv.get("ssl"), verifiedTlsByDefault)
+    : undefined;
+  if (requireTls && tls?.useSsl === false) return undefined;
   return {
     host,
     port,
     username: kv.get("user") || undefined,
     password: normalizePassword(kv.get("password")),
     database: kv.get("dbname") || undefined,
-    tls: includeTls
-      ? parsePostgresTls(kv.get("sslmode"), kv.get("ssl"))
-      : undefined,
+    tls,
   };
 }
 
@@ -1841,7 +1855,8 @@ function parseDatabricksConnectionString(
 
 export function parseConnectionString(
   engine: Engine,
-  value: string
+  value: string,
+  vendor: Vendor = Vendor.VENDOR_UNSPECIFIED
 ): ParsedConnectionString | undefined {
   switch (engine) {
     case Engine.MYSQL:
@@ -1874,12 +1889,19 @@ export function parseConnectionString(
         schemes: ["doris", "mysql"],
         defaultPort: "9030",
       });
-    case Engine.POSTGRES:
+    case Engine.POSTGRES: {
+      const isNeon = vendor === Vendor.NEON;
       return parsePostgresFamilyConnectionString(value, {
         schemes: ["postgres", "postgresql"],
         defaultPort: "5432",
         includeTls: true,
+        // Neon requires TLS and its console copies `sslmode=require` against
+        // publicly trusted endpoints, so keep certificate verification enabled
+        // unless `sslmode=no-verify` explicitly opts out.
+        requireTls: isNeon,
+        verifiedTlsByDefault: isNeon,
       });
+    }
     case Engine.COCKROACHDB:
       return parsePostgresFamilyConnectionString(value, {
         schemes: ["postgres", "postgresql", "cockroachdb"],
@@ -2072,8 +2094,10 @@ function clearMasterPasswordField(ds: EditDataSource): EditDataSource {
 export function applyParsedConnectionString(
   ds: EditDataSource,
   engine: Engine,
-  parsed: ParsedConnectionString
+  parsed: ParsedConnectionString,
+  vendor: Vendor = Vendor.VENDOR_UNSPECIFIED
 ): EditDataSource {
+  const requireTls = engine === Engine.POSTGRES && vendor === Vendor.NEON;
   let next: EditDataSource = {
     ...ds,
     authenticationType: DataSource_AuthenticationType.PASSWORD,
@@ -2146,9 +2170,9 @@ export function applyParsedConnectionString(
   }
 
   if (parsed.tls !== undefined) {
-    if (!parsed.tls.useSsl) {
+    if (!parsed.tls.useSsl && !requireTls) {
       next = { ...next, ...disableLocalTls(next), updateSsl: undefined };
-    } else {
+    } else if (parsed.tls.useSsl || requireTls) {
       const withTls = next.useSsl
         ? next
         : applyLocalTlsPosture(next, LOCAL_TLS_POSTURE_TLS);
@@ -2156,10 +2180,20 @@ export function applyParsedConnectionString(
         ...next,
         ...withTls,
         useSsl: true,
-        verifyTlsCertificate: parsed.tls.verifyTlsCertificate,
+        verifyTlsCertificate: parsed.tls.useSsl
+          ? parsed.tls.verifyTlsCertificate
+          : true,
         updateSsl: undefined,
       };
     }
+  } else if (requireTls && !next.useSsl) {
+    next = {
+      ...next,
+      ...applyLocalTlsPosture(next, LOCAL_TLS_POSTURE_TLS),
+      useSsl: true,
+      verifyTlsCertificate: true,
+      updateSsl: undefined,
+    };
   }
 
   return next;
