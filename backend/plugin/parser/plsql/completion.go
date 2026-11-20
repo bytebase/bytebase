@@ -187,6 +187,34 @@ func caretInsideDoubleQuotes(sql string, byteOffset int) bool {
 	i := 0
 	for i < byteOffset {
 		switch {
+		case isQQuoteStart(sql, i, byteOffset):
+			prefixLen := 2
+			if sql[i] == 'n' || sql[i] == 'N' {
+				prefixLen = 3
+			}
+			delimPos := i + prefixLen
+			if delimPos >= byteOffset {
+				return false
+			}
+			openDelim := sql[delimPos]
+			if openDelim == ' ' || openDelim == '\t' || openDelim == '\n' || openDelim == '\r' || openDelim == '\f' {
+				i = byteOffset
+				continue
+			}
+			closeDelim := qQuoteCloseDelim(openDelim)
+			j := delimPos + 1
+			closed := false
+			for j+1 < byteOffset {
+				if sql[j] == closeDelim && sql[j+1] == '\'' {
+					i = j + 2
+					closed = true
+					break
+				}
+				j++
+			}
+			if !closed {
+				return false
+			}
 		case sql[i] == '\'':
 			i++
 			for i < byteOffset {
@@ -237,6 +265,34 @@ func caretInsideDoubleQuotes(sql string, byteOffset int) bool {
 		}
 	}
 	return false
+}
+
+func isQQuoteStart(sql string, i, limit int) bool {
+	if i > 0 && isOracleIdentByte(sql[i-1]) {
+		return false
+	}
+	if (sql[i] == 'q' || sql[i] == 'Q') && i+1 < limit && sql[i+1] == '\'' {
+		return true
+	}
+	if (sql[i] == 'n' || sql[i] == 'N') && i+2 < limit && (sql[i+1] == 'q' || sql[i+1] == 'Q') && sql[i+2] == '\'' {
+		return true
+	}
+	return false
+}
+
+func qQuoteCloseDelim(openDelim byte) byte {
+	switch openDelim {
+	case '[':
+		return ']'
+	case '{':
+		return '}'
+	case '(':
+		return ')'
+	case '<':
+		return '>'
+	default:
+		return openDelim
+	}
 }
 
 func compareCandidates(i, j base.Candidate) int {

@@ -112,6 +112,36 @@ func TestCompletionByteOffsetUsesUTF16Columns(t *testing.T) {
 	require.Equal(t, strings.Index(input, "|"), byteOffset)
 }
 
+func TestCompletionQQuoteDoesNotTriggerInsideDoubleQuotes(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{
+			name:  "q-quote with apostrophe and double quote",
+			input: `SELECT q'[a'b"c]' FROM |`,
+			want:  false,
+		},
+		{
+			name:  "nq-quote with apostrophe and double quote",
+			input: `SELECT nq'{a'b"c}' FROM |`,
+			want:  false,
+		},
+		{
+			name:  "q-quote followed by open quoted identifier",
+			input: `SELECT q'[a'b"c]' FROM "my|`,
+			want:  true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sql, line, col := catchCaret(tc.input)
+			_, offset := computeSQLAndByteOffset(sql, line, col, false)
+			require.Equal(t, tc.want, caretInsideDoubleQuotes(sql, offset))
+		})
+	}
+}
+
 func TestCompletionLongTailTableSources(t *testing.T) {
 	tests := []struct {
 		name        string
