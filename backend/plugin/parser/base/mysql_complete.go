@@ -301,14 +301,15 @@ func scanMySQLQualTokens(statement string) []mysqlQualToken {
 }
 
 type mysqlQualScope struct {
-	stmtStart        bool
-	inTableClause    bool
-	allowCommaTable  bool
-	allowFromAsTable bool
-	afterCreate      bool
-	afterRename      bool
-	afterDDLOnObj    bool
-	prevKeyword      string
+	stmtStart             bool
+	inTableClause         bool
+	inInsertReplaceTarget bool
+	allowCommaTable       bool
+	allowFromAsTable      bool
+	afterCreate           bool
+	afterRename           bool
+	afterDDLOnObj         bool
+	prevKeyword           string
 }
 
 // databaseQualifiersInStatement extracts database qualifiers referenced in
@@ -373,6 +374,7 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 			continue
 		case ',':
 			sc.inTableClause = sc.allowCommaTable
+			sc.inInsertReplaceTarget = false
 			sc.prevKeyword = ""
 			sc.stmtStart = false
 			continue
@@ -416,6 +418,7 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 		switch kw {
 		case "SELECT", "WITH":
 			sc.inTableClause = false
+			sc.inInsertReplaceTarget = false
 			sc.allowCommaTable = false
 			sc.allowFromAsTable = true
 			sc.afterCreate = false
@@ -424,36 +427,44 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 		case "WHERE", "SET", "VALUES", "VALUE", "GROUP", "HAVING", "ORDER", "LIMIT",
 			"UNION", "INTERSECT", "EXCEPT", "FOR", "WINDOW", "RETURNING":
 			sc.inTableClause = false
+			sc.inInsertReplaceTarget = false
 			sc.allowCommaTable = false
 		case "ON":
 			sc.inTableClause = sc.afterDDLOnObj
+			sc.inInsertReplaceTarget = false
 			sc.allowCommaTable = false
 			sc.afterDDLOnObj = false
 		case "FROM":
 			if sc.allowFromAsTable || prevKW == "DELETE" || prevKW == "SHOW" || prevKW == "COLUMNS" || prevKW == "INDEX" || prevKW == "INDEXES" || prevKW == "KEYS" {
 				sc.inTableClause = true
 				sc.allowCommaTable = true
+				sc.inInsertReplaceTarget = false
 			}
 		case "JOIN", "STRAIGHT_JOIN":
 			sc.inTableClause = true
 			sc.allowCommaTable = true
+			sc.inInsertReplaceTarget = false
 		case "UPDATE":
 			if prevKW != "ON" {
 				sc.inTableClause = true
 				sc.allowCommaTable = true
+				sc.inInsertReplaceTarget = false
 			}
 		case "INSERT", "REPLACE":
 			sc.inTableClause = true
+			sc.inInsertReplaceTarget = true
 			sc.allowCommaTable = false
 		case "INTO":
-			if prevKW == "INSERT" || prevKW == "IGNORE" || prevKW == "REPLACE" {
+			if sc.inInsertReplaceTarget {
 				sc.inTableClause = true
 				sc.allowCommaTable = false
+				sc.inInsertReplaceTarget = false
 			} else {
 				sc.inTableClause = false
 				sc.allowCommaTable = false
 			}
 		case "USING":
+			sc.inInsertReplaceTarget = false
 			if i+1 < len(toks) && toks[i+1].punct == '(' {
 				sc.inTableClause = false
 				sc.allowCommaTable = false
@@ -464,22 +475,27 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 		case "CREATE":
 			sc.afterCreate = true
 			sc.inTableClause = false
+			sc.inInsertReplaceTarget = false
 			sc.allowCommaTable = false
 		case "RENAME":
 			sc.afterRename = true
 			sc.inTableClause = false
+			sc.inInsertReplaceTarget = false
 			sc.allowCommaTable = false
 		case "INDEX", "TRIGGER", "GRANT", "REVOKE":
 			sc.afterDDLOnObj = true
+			sc.inInsertReplaceTarget = false
 			if kw == "TRIGGER" {
 				sc.inTableClause = true
 				sc.allowCommaTable = false
 			}
 		case "TABLE", "TABLES":
 			sc.inTableClause = true
+			sc.inInsertReplaceTarget = false
 			sc.allowCommaTable = prevKW == "DROP" || prevKW == "RENAME" || prevKW == "LOCK" || prevKW == "TRUNCATE"
 		case "VIEW", "EVENT", "FUNCTION", "PROCEDURE", "CALL", "HANDLER", "REFERENCES":
 			sc.inTableClause = true
+			sc.inInsertReplaceTarget = false
 			sc.allowCommaTable = false
 		case "DESC", "DESCRIBE", "EXPLAIN":
 			if wasStmtStart {

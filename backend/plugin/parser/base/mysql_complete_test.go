@@ -81,6 +81,18 @@ func TestDatabaseQualifiersInStatement(t *testing.T) {
 			want:      []string{"otherdb"},
 		},
 		{
+			name:      "insert with priority/ignore modifiers keeps target state before INTO",
+			statement: "INSERT LOW_PRIORITY IGNORE INTO otherdb.",
+			defaultDB: "appdb",
+			want:      []string{"otherdb"},
+		},
+		{
+			name:      "replace with delayed modifier keeps target state before INTO",
+			statement: "REPLACE DELAYED INTO otherdb.",
+			defaultDB: "appdb",
+			want:      []string{"otherdb"},
+		},
+		{
 			name:      "ddl create trigger on cross-db table",
 			statement: "CREATE TRIGGER tr BEFORE INSERT ON otherdb.t2 FOR EACH ROW SET NEW.c1 = 1",
 			defaultDB: "appdb",

@@ -394,6 +394,14 @@ func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
 	require.True(t, hasCandidate(gotAlias, base.CandidateTypeColumn, "c1"))
 	require.Zero(t, listCalls, "ListDatabaseNames must not be called for table/alias column qualifiers")
 	require.Equal(t, []string{"appdb"}, metaCalls, "table/alias qualifiers must not trigger Metadata lookups for non-db names")
+
+	metaCalls = nil
+	stmtInsertMod := "INSERT LOW_PRIORITY INTO otherdb."
+	gotInsertMod, err := Completion(context.Background(), cCtx, stmtInsertMod, 1, len(stmtInsertMod))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotInsertMod, base.CandidateTypeTable, "t1"))
+	require.Zero(t, listCalls, "ListDatabaseNames must not be called for INSERT with modifiers before INTO")
+	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
 }
 
 // Completion cost must be bounded by the caret's statement, not the whole
