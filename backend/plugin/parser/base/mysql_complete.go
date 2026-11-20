@@ -180,7 +180,8 @@ func PopulateMySQLFamilyCatalog(
 	// Omni's catalog maps database names case-insensitively (`toLower(name)`).
 	// On a case-sensitive instance where multiple case-distinct DBs differ only
 	// by case (e.g. `Foo` vs `foo`), prioritize the qualifier active at the caret
-	// (including via table/alias resolution) or explicit qualifiers over defaultDB.
+	// (including via table/alias resolution) over any case-colliding sibling, and
+	// defer defaultDB only when the caret actively refers to the colliding DB.
 	if caseSensitive && caretDB != "" {
 		for i, q := range qualifiers {
 			if q == caretDB && i > 0 {
@@ -189,15 +190,7 @@ func PopulateMySQLFamilyCatalog(
 			}
 		}
 	}
-	deferDefault := false
-	if caseSensitive && defaultName != "" && caretDB != defaultName {
-		for _, q := range qualifiers {
-			if q != defaultName && strings.EqualFold(q, defaultName) {
-				deferDefault = true
-				break
-			}
-		}
-	}
+	deferDefault := caseSensitive && defaultName != "" && caretDB != "" && caretDB != defaultName && strings.EqualFold(caretDB, defaultName)
 	loadDefault := func() {
 		if cCtx.Metadata == nil || defaultName == "" {
 			return

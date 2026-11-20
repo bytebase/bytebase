@@ -551,6 +551,16 @@ func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
 	require.True(t, hasCandidate(gotAliasUpper, base.CandidateTypeColumn, "upper_col"), "alias x for Foo.t should suggest upper_col; got %v", gotAliasUpper)
 	require.False(t, hasCandidate(gotAliasUpper, base.CandidateTypeColumn, "lower_col"), "alias x for Foo.t must not be shadowed by foo.t; got %v", gotAliasUpper)
 
+	// Unqualified caret keeps defaultDB (foo) first so Foo referenced elsewhere does not shadow foo tables.
+	gotUnqualifiedDefault, err := Completion(context.Background(), base.CompletionContext{
+		Scene:           base.SceneTypeAll,
+		DefaultDatabase: "foo",
+		Metadata:        caseSensMeta,
+	}, "SELECT  FROM t JOIN Foo.other", 1, len("SELECT "))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotUnqualifiedDefault, base.CandidateTypeColumn, "lower_col"), "unqualified SELECT  FROM t should keep default foo first; got %v", gotUnqualifiedDefault)
+	require.False(t, hasCandidate(gotUnqualifiedDefault, base.CandidateTypeColumn, "upper_col"), "Foo.other must not shadow default foo table at unqualified caret; got %v", gotUnqualifiedDefault)
+
 	// Multi-table DELETE target before FROM loads qualifier DB without false-positive alias.* lookups.
 	metaCalls = nil
 	stmtDeleteTarget := "DELETE otherdb."

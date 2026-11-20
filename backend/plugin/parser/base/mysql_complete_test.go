@@ -401,6 +401,27 @@ func TestPopulateMySQLFamilyCatalog_SkipsEnumerationForQualifiers(t *testing.T) 
 		func(string) {},
 	)
 	require.Equal(t, []string{"appdb", "Foo", "foo"}, aliasCaseLoaded)
+
+	// Unqualified caret keeps defaultDB (foo) loaded first even when Foo appears later in the statement.
+	var unqualifiedLoaded []string
+	PopulateMySQLFamilyCatalog(
+		context.Background(),
+		CompletionContext{
+			DefaultDatabase: "foo",
+			Metadata: func(_ context.Context, _, db string) (string, *model.DatabaseMetadata, error) {
+				return db, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: db}, nil, nil, storepb.Engine_MYSQL, true), nil
+			},
+		},
+		"SELECT  FROM local JOIN Foo.remote",
+		len("SELECT "),
+		func(string, int) bool { return false },
+		func(string) {},
+		func(name string, _ *metadatapb.DatabaseSchemaMetadata) {
+			unqualifiedLoaded = append(unqualifiedLoaded, name)
+		},
+		func(string) {},
+	)
+	require.Equal(t, []string{"foo", "Foo"}, unqualifiedLoaded)
 }
 
 func TestCompleteMySQLFamily_PreservesDistinctDefinitionsAndUTF16Caret(t *testing.T) {
