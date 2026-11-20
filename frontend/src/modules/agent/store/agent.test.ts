@@ -8641,6 +8641,95 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).currentChatId).toBe(firstChatId);
   });
 
+  test.each(["archive", "archive-all"] as const)(
+    "%s retires fallback API permission after restoring the same chat",
+    (operation) => {
+      vi.stubGlobal("navigator", {});
+      const store = createAgentStore();
+      s(store).setWorkspaceName("workspaces/alpha");
+      const chatId = s(store).currentChatId!;
+      const page = { path: "/projects/example", title: "Project" };
+      s(store).startChatRun(chatId, page, { runId: "fallback-run" });
+      const controller = new AbortController();
+      s(store).setAbortController(chatId, controller);
+      s(store).awaitUser(chatId, {
+        toolCallId: "approval",
+        kind: "confirm",
+        prompt: "Allow this update?",
+        apiPermission: {
+          actionId: "action-1",
+          operationId: "ProjectService/UpdateProject",
+        },
+      });
+      expect(s(store).getChat(chatId)?.runId).toBe("fallback-run");
+      expect(s(store).getChat(chatId)?.runBudget).toBeUndefined();
+
+      if (operation === "archive") s(store).archiveChat(chatId);
+      else s(store).archiveAllActiveChats();
+      if (operation === "archive") s(store).unarchiveChat(chatId);
+      else s(store).unarchiveAllArchivedChats();
+      s(store).setCurrentChat(chatId);
+
+      expect(s(store).getChat(chatId)).toMatchObject({
+        archived: false,
+        status: "idle",
+        interrupted: true,
+        runId: null,
+        page,
+      });
+      expect(s(store).getChat(chatId)?.runCheckpoint).toBeUndefined();
+      expect(controller.signal.aborted).toBe(true);
+      expect(s(store).getPendingAsk(chatId)).toBeNull();
+      expect(
+        s(store).answerPendingAsk(chatId, {
+          kind: "confirm",
+          answer: "Allow once",
+          confirmed: true,
+        })
+      ).toBeNull();
+      expect(s(store).getMessages(chatId)).toEqual([]);
+    }
+  );
+
+  test.each(["archive", "archive-all"] as const)(
+    "%s preserves an ordinary fallback ask after restoring the chat",
+    (operation) => {
+      vi.stubGlobal("navigator", {});
+      const store = createAgentStore();
+      s(store).setWorkspaceName("workspaces/alpha");
+      const chatId = s(store).currentChatId!;
+      s(store).startChatRun(chatId, undefined, { runId: "fallback-run" });
+      const controller = new AbortController();
+      s(store).setAbortController(chatId, controller);
+      s(store).awaitUser(chatId, {
+        toolCallId: "question",
+        kind: "input",
+        prompt: "Which database?",
+      });
+
+      if (operation === "archive") s(store).archiveChat(chatId);
+      else s(store).archiveAllActiveChats();
+      if (operation === "archive") s(store).unarchiveChat(chatId);
+      else s(store).unarchiveAllArchivedChats();
+      s(store).setCurrentChat(chatId);
+
+      expect(s(store).getChat(chatId)).toMatchObject({
+        archived: false,
+        status: "awaiting_user",
+        runId: "fallback-run",
+      });
+      expect(s(store).getChat(chatId)?.runBudget).toBeUndefined();
+      expect(controller.signal.aborted).toBe(false);
+      expect(s(store).getPendingAsk(chatId)?.toolCallId).toBe("question");
+      expect(
+        s(store).answerPendingAsk(chatId, {
+          kind: "input",
+          answer: "orders",
+        })
+      ).toMatchObject({ role: "tool", toolCallId: "question" });
+    }
+  );
+
   test("archives all active chats and clears the current selection", () => {
     const store = createAgentStore();
     const firstChatId = s(store).currentChatId!;

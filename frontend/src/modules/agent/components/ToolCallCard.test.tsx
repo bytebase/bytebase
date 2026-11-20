@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, test, vi } from "vitest";
+import { manualResult } from "../dom/interactionRegistry";
 import { agentApiExecutionEvidence } from "../logic/apiExecution";
 import { resolveSkill } from "../logic/skills";
 import { ToolCallCard } from "./ToolCallCard";
@@ -48,7 +49,7 @@ Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
   value: () => ({ measureText: (text: string) => ({ width: text.length * 8 }) }),
 });
 
-const renderCard = (operationId: string, result: string) => {
+const renderCard = (operationId: string, result: string, name = "call_api") => {
   const container = document.createElement("div");
   const root = createRoot(container);
   act(() => {
@@ -56,7 +57,7 @@ const renderCard = (operationId: string, result: string) => {
       <ToolCallCard
         toolCall={{
           id: "query-1",
-          name: "call_api",
+          name,
           arguments: JSON.stringify({ operationId }),
         }}
         result={result}
@@ -93,6 +94,89 @@ const unmaskExplanation = {
 };
 
 describe("ToolCallCard", () => {
+  test.each([
+    {
+      result: manualResult(),
+      status: "agent.tool-manual-required",
+      color: "text-warning",
+    },
+    {
+      result: { success: false, message: "The page has changed." },
+      status: "agent.tool-failed",
+      color: "text-error",
+    },
+  ])("shows $status instead of success for a refused DOM action", ({ result, status, color }) => {
+    const { container, unmount } = renderCard("", JSON.stringify(result), "dom_action");
+    try {
+      expect(container.querySelector(`button .${color}`)).toHaveTextContent(status);
+      expect(container.querySelector("button .text-success")).toBeNull();
+      expect(container.querySelector("button")).toHaveAttribute("aria-expanded", "false");
+      act(() => (container.querySelector("button") as HTMLElement).click());
+      expect(container.querySelectorAll("pre")[1]).toHaveTextContent(result.message);
+    } finally {
+      unmount();
+    }
+  });
+
+  test.each([
+    { success: true, effect: "local-draft" },
+    { success: true, value: "draft", agentExecution: { result: "unknown" } },
+  ])("preserves ordinary local DOM results: %j", (result) => {
+    const { container, unmount } = renderCard("", JSON.stringify(result), "dom_action");
+    try {
+      expect(container.querySelector(".text-success")).not.toBeNull();
+      expect(container).not.toHaveTextContent("agent.api-recovery.");
+    } finally {
+      unmount();
+    }
+  });
+
+  test.each([
+    ["fetch-failed", "unknown", undefined],
+    ["unverified-response", "unknown", 200],
+    ["permission-rejected", "not-sent", undefined],
+    ["rpc-success", "acknowledged", 200],
+  ] as const)("reports a DOM write's %s outcome without trusting model operation hints", (reason, label, status) => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => root.render(
+      <ToolCallCard
+        toolCall={{
+          id: "dom-write",
+          name: "dom_action",
+          arguments: JSON.stringify({ type: "click", ref: "e1", operationId: "bytebase.v1.ProjectService.GetProject" }),
+        }}
+        result={JSON.stringify({ status, response: status === 200 ? {} : undefined,
+          agentExecution: agentApiExecutionEvidence(reason, { httpStatus: status }) })}
+      />
+    ));
+    try {
+      expect(container.textContent).toContain(`agent.api-recovery.${label}`);
+      expect(container.querySelector("button .text-success")).toBeNull();
+    } finally {
+      act(() => root.unmount());
+    }
+  });
+
+  test("keeps a local DOM result outside API outcome reporting", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => root.render(
+      <ToolCallCard
+        toolCall={{ id: "dom-local", name: "dom_action", arguments: JSON.stringify({
+          type: "input", ref: "e1", agentExecution: agentApiExecutionEvidence("fetch-failed"),
+        }) }}
+        result={JSON.stringify({ success: true, message: "Local draft updated." })}
+      />
+    ));
+    try {
+      expect(container.querySelector("button .text-success")).toHaveTextContent("\u2713");
+      expect(container.textContent).not.toContain("agent.api-recovery.");
+    } finally {
+      act(() => root.unmount());
+    }
+  });
+
   test.each([
     ["DeleteProject", "rpc-success", "acknowledged", 200, {}],
     ["DeleteProject", "fetch-failed", "unknown", undefined, undefined],

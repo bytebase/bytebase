@@ -27,16 +27,16 @@ describe("extractDomTree", () => {
     const { tree, count } = extractDomTree();
 
     expect(count).toBe(3);
-    expect(tree).toContain("[e1]<button>Run query</button>");
-    expect(tree).toContain(
-      '[e2]<input value="Test Project">Project name</input>'
+    expect(tree).toContain("<button>Run query</button>");
+    expect(tree).toContain('<input value="Test Project">Project name</input>');
+    expect(tree).toContain("<editor>SQL: SELECT *\nFROM projects;</editor>");
+    expect(getElementByRef(tree.match(/\[(e\d+)\]<button>/)![1])?.tag).toBe(
+      "button"
     );
-    expect(tree).toContain(
-      "[e3]<editor>SQL: SELECT *\nFROM projects;</editor>"
+    expect(getElementByRef(tree.match(/\[(e\d+)\]<editor>/)![1])?.tag).toBe(
+      "editor"
     );
-    expect(getElementByRef("e1")?.tag).toBe("button");
-    expect(getElementByRef("e3")?.tag).toBe("editor");
-    expect(getElementByRef("e9")).toBeUndefined();
+    expect(getElementByRef("not-a-ref")).toBeUndefined();
   });
 
   test("preserves visible non-interactive text nodes with normalized whitespace", () => {
@@ -63,7 +63,7 @@ describe("extractDomTree", () => {
     expect(tree).toContain("Instances");
     expect(tree).toContain("Primary");
     expect(tree).toContain("US East");
-    expect(tree).toContain("[e1]<button>Create instance</button>");
+    expect(tree).toContain("<button>Create instance</button>");
     expect(tree).not.toContain("Hidden text");
     expect(tree).not.toContain("Also hidden");
   });
@@ -81,10 +81,10 @@ describe("extractDomTree", () => {
     const { tree, count } = extractDomTree();
 
     expect(count).toBe(1);
-    expect(tree).toContain("[e1]<div>Prod Primary us-east-1</div>");
+    expect(tree).toContain("<div>Prod Primary us-east-1</div>");
     expect(tree).toContain("  Prod Primary");
     expect(tree).toContain("  us-east-1");
-    expect(getElementByRef("e1")?.tag).toBe("div");
+    expect(getElementByRef(tree.match(/\[(e\d+)\]/)![1])?.tag).toBe("div");
   });
 
   test("does not promote inherited pointer-cursor wrappers beneath clickable containers", () => {
@@ -103,11 +103,11 @@ describe("extractDomTree", () => {
     const suggestions = extractDomRefSuggestions();
 
     expect(count).toBe(1);
-    expect(tree).toContain("[e1]<div>Prod Primary Healthy</div>");
-    expect(tree).not.toContain("[e2]");
+    expect(tree).toContain("<div>Prod Primary Healthy</div>");
     expect(suggestions).toEqual([
       {
-        ref: "e1",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "div",
         role: undefined,
         label: "Prod Primary Healthy",
@@ -131,14 +131,15 @@ describe("extractDomTree", () => {
     const suggestions = extractDomRefSuggestions();
 
     expect(count).toBe(1);
-    expect(tree).toContain("[e1]<div>Active row</div>");
+    expect(tree).toContain("<div>Active row</div>");
     expect(tree).toContain("Disabled row");
     expect(tree).toContain("Aria disabled row");
     expect(tree).not.toContain("Inert row");
     expect(tree).not.toContain("Aria hidden row");
     expect(suggestions).toEqual([
       {
-        ref: "e1",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "div",
         role: undefined,
         label: "Active row",
@@ -157,7 +158,7 @@ describe("extractDomTree", () => {
     const { tree, count } = extractDomTree();
 
     expect(count).toBe(1);
-    expect(tree).toContain("[e1]<div>Editable SQL</div>");
+    expect(tree).toContain("<div>Editable SQL</div>");
     expect(tree.match(/Editable SQL/g)).toHaveLength(1);
   });
 
@@ -173,7 +174,7 @@ describe("extractDomTree", () => {
     const { tree, count } = extractDomTree();
 
     expect(count).toBe(1);
-    expect(tree).toContain("[e1]<div>Prod Primary us-east-1</div>");
+    expect(tree).toContain("<div>Prod Primary us-east-1</div>");
     expect(tree.match(/Prod Primary us-east-1/g)).toHaveLength(1);
   });
 
@@ -194,35 +195,39 @@ describe("extractDomTree", () => {
     const suggestions = extractDomRefSuggestions();
 
     expect(count).toBe(4);
-    expect(tree).toContain("[e1]<button>Refresh</button>");
-    expect(tree).toContain('[e2]<input value="unchecked">checkbox</input>');
-    expect(tree).toContain("[e3]<input>textbox</input>");
-    expect(tree).toContain('[e4]<select value="Prod">Prod</select>');
+    expect(tree).toContain("<button>Refresh</button>");
+    expect(tree).toContain('<input value="unchecked">checkbox</input>');
+    expect(tree).toContain("<input>textbox</input>");
+    expect(tree).toContain('<select value="Prod">Prod</select>');
     expect(tree).not.toContain("<button></button>");
     expect(suggestions).toEqual([
       {
-        ref: "e1",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "button",
         role: undefined,
         label: "Refresh",
         value: undefined,
       },
       {
-        ref: "e2",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "input",
         role: undefined,
         label: "checkbox",
         value: "unchecked",
       },
       {
-        ref: "e3",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "input",
         role: undefined,
         label: "textbox",
         value: undefined,
       },
       {
-        ref: "e4",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "select",
         role: undefined,
         label: "Prod",
@@ -265,8 +270,8 @@ describe("extractDomTree", () => {
     expect(tree).toContain("<thead>Instance | Environment | Status</thead>");
     expect(tree).toContain("<tr>Prod Primary | us-east-1 | Healthy</tr>");
     expect(tree).toContain("<tr>Staging | us-west-2 | Actions</tr>");
-    expect(tree).toContain("[e1]<a>Staging</a>");
-    expect(tree).toContain("[e2]<button>Open action menu</button>");
+    expect(tree).toContain("<a>Staging</a>");
+    expect(tree).toContain("<button>Open action menu</button>");
     expect(tree).not.toContain("<div>Prod Primary");
     expect(tree).not.toContain("<span>Healthy");
   });
@@ -304,28 +309,31 @@ describe("extractDomTree", () => {
 
     expect(count).toBe(3);
     expect(tree).toContain("<thead>Name | Enabled | Actions</thead>");
-    expect(tree).toContain("[e1]<tr>Prod Primary | switch</tr>");
-    expect(tree).toContain("[e2]<button>switch</button>");
-    expect(tree).toContain("[e3]<button>Actions</button>");
+    expect(tree).toContain("<tr>Prod Primary | switch</tr>");
+    expect(tree).toContain("<button>switch</button>");
+    expect(tree).toContain("<button>Actions</button>");
     expect(tree).not.toContain("More actions");
     expect(tree).not.toContain("Prod PrimaryProd Primary");
     expect(suggestions).toEqual([
       {
-        ref: "e1",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "tr",
         role: undefined,
         label: "Prod Primary | switch",
         value: undefined,
       },
       {
-        ref: "e2",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "button",
         role: "switch",
         label: "switch",
         value: undefined,
       },
       {
-        ref: "e3",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "button",
         role: undefined,
         label: "Actions",
@@ -360,19 +368,21 @@ describe("extractDomTree", () => {
     const suggestions = extractDomRefSuggestions();
 
     expect(count).toBe(2);
-    expect(tree).toContain("[e1]<tr>Prod Primary | Healthy</tr>");
-    expect(tree).toContain('[e2]<input value="checked">checkbox</input>');
+    expect(tree).toContain("<tr>Prod Primary | Healthy</tr>");
+    expect(tree).toContain('<input value="checked">checkbox</input>');
     expect(tree).not.toContain("checkbox | Prod Primary");
     expect(suggestions).toEqual([
       {
-        ref: "e1",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "tr",
         role: undefined,
         label: "Prod Primary | Healthy",
         value: undefined,
       },
       {
-        ref: "e2",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "input",
         role: undefined,
         label: "checkbox",
@@ -398,12 +408,12 @@ describe("extractDomTree", () => {
     const suggestions = extractDomRefSuggestions();
 
     expect(count).toBe(1);
-    expect(tree).toContain("[e1]<li>Prod Primary</li>");
-    expect(tree).not.toContain("[e2]");
+    expect(tree).toContain("<li>Prod Primary</li>");
     expect(tree.match(/Prod Primary/g)).toHaveLength(1);
     expect(suggestions).toEqual([
       {
-        ref: "e1",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "li",
         role: undefined,
         label: "Prod Primary",
@@ -434,12 +444,13 @@ describe("extractDomTree", () => {
     const suggestions = extractDomRefSuggestions();
 
     expect(count).toBe(1);
-    expect(tree).toContain("[e1]<tr>Prod Primary | Healthy</tr>");
-    expect(tree).not.toContain("[e2]<div>Prod Primary</div>");
+    expect(tree).toContain("<tr>Prod Primary | Healthy</tr>");
+    expect(tree).not.toContain("<div>Prod Primary</div>");
     expect(tree.match(/Prod Primary/g)).toHaveLength(1);
     expect(suggestions).toEqual([
       {
-        ref: "e1",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "tr",
         role: undefined,
         label: "Prod Primary | Healthy",
@@ -486,7 +497,7 @@ describe("extractDomTree", () => {
     const { tree, count } = extractDomTree();
 
     expect(count).toBe(1);
-    expect(tree).toContain("[e1]<button>Launch workflow</button>");
+    expect(tree).toContain("<button>Launch workflow</button>");
     expect(tree).not.toContain("Context line 139");
     expect(tree.split("\n").length).toBeLessThanOrEqual(120);
   });
@@ -610,30 +621,35 @@ describe("extractDomTree", () => {
       </main>
     `;
 
-    expect(extractDomRefSuggestions()).toEqual([
+    const suggestions = extractDomRefSuggestions();
+    expect(suggestions).toEqual([
       {
-        ref: "e1",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "button",
         role: undefined,
         label: "Run query",
         value: undefined,
       },
       {
-        ref: "e2",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "div",
         role: "button",
         label: "Publish",
         value: undefined,
       },
       {
-        ref: "e3",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "input",
         role: undefined,
         label: "Project name",
         value: "Test Project",
       },
       {
-        ref: "e4",
+        ref: expect.stringMatching(/^e\d+$/),
+        actions: "manual-required",
         tag: "editor",
         role: undefined,
         label: "SQL: SELECT *\nFROM projects;",
@@ -641,18 +657,20 @@ describe("extractDomTree", () => {
       },
     ]);
 
-    expect(getElementByRef("e2")?.label).toBe("Publish");
+    expect(getElementByRef(suggestions[1].ref)?.label).toBe("Publish");
   });
 
-  test("resets refs on each extraction", () => {
-    document.body.innerHTML = `<button>First</button>`;
-    expect(extractDomTree().tree).toContain("[e1]<button>First</button>");
-
-    document.body.innerHTML = `<button>Second</button>`;
-    const { tree, count } = extractDomTree();
-
-    expect(count).toBe(1);
-    expect(tree).toContain("[e1]<button>Second</button>");
-    expect(tree).not.toContain("[e2]");
+  test("never aliases refs across snapshots", () => {
+    document.body.innerHTML = "<button>First</button>";
+    const [first] = extractDomRefSuggestions();
+    document.body.innerHTML = "<button>Second</button>";
+    const [second] = extractDomRefSuggestions();
+    expect(Number(second.ref.slice(1))).toBeGreaterThan(
+      Number(first.ref.slice(1))
+    );
+    expect(getElementByRef(first.ref)).toBeUndefined();
+    expect(getElementByRef(second.ref)?.element).toBe(
+      document.querySelector("button")
+    );
   });
 });

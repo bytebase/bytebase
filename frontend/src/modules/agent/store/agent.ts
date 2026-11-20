@@ -3200,7 +3200,10 @@ export const createAgentStore = () => {
           )
             return null;
           if (!_getChat(chatId)) return null;
-          if (_getChat(chatId)?.runBudget)
+          if (
+            _getChat(chatId)?.runBudget ||
+            get().pendingAskByChatId[chatId]?.apiPermission
+          )
             get().getAbortController(chatId)?.abort();
           set((state) => {
             const chat = state.chats.find((c) => c.id === chatId);
@@ -3208,7 +3211,10 @@ export const createAgentStore = () => {
               chat.archived = true;
               delete state.followUpQueuesByChatId[chatId];
               clearSqlFixDrafts(state, chatId);
-              if (chat.runBudget) {
+              if (
+                chat.runBudget ||
+                state.pendingAskByChatId[chatId]?.apiPermission
+              ) {
                 chat.runCheckpoint = undefined;
                 chat.runId = null;
                 delete state.pendingAskByChatId[chatId];
@@ -3239,7 +3245,11 @@ export const createAgentStore = () => {
             );
           let archivedCount = 0;
           for (const chat of get().chats)
-            if (canArchive(get(), chat) && chat.runBudget)
+            if (
+              canArchive(get(), chat) &&
+              (chat.runBudget ||
+                get().pendingAskByChatId[chat.id]?.apiPermission)
+            )
               get().getAbortController(chat.id)?.abort();
           set((state) => {
             const activeChats = state.chats.filter((chat) =>
@@ -3252,7 +3262,10 @@ export const createAgentStore = () => {
               chat.archived = true;
               delete state.followUpQueuesByChatId[chat.id];
               clearSqlFixDrafts(state, chat.id);
-              if (chat.runBudget) {
+              if (
+                chat.runBudget ||
+                state.pendingAskByChatId[chat.id]?.apiPermission
+              ) {
                 chat.runCheckpoint = undefined;
                 chat.runId = null;
                 delete state.pendingAskByChatId[chat.id];

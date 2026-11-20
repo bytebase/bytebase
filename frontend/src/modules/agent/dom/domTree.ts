@@ -1,13 +1,36 @@
+import {
+  hasDisabledState,
+  isDisclosedChild,
+  isExcluded,
+  isPerceivable,
+  visibleText,
+} from "./guards";
+import {
+  type AgentDomBindingSnapshot,
+  type AgentDomContext,
+  captureAgentDomBinding,
+  captureDomScope,
+  hasAgentDomOwners,
+  isDomContextCurrent,
+} from "./interactionRegistry";
+import { publishDomSnapshot } from "./snapshotIndex";
+
+export { getElementByRef } from "./snapshotIndex";
+
 export interface DomRefSuggestion {
   ref: string;
   tag: string;
   role?: string;
   label: string;
   value?: string;
+  actions: string;
 }
 
 export interface IndexedElement extends DomRefSuggestion {
   element: Element;
+  generation: number;
+  binding?: AgentDomBindingSnapshot;
+  scope?: ReturnType<typeof captureDomScope>;
 }
 
 const INTERACTIVE_TAGS = new Set([
@@ -92,11 +115,7 @@ const ACTION_LIKE_HEADERS = new Set([
 ]);
 
 function shouldSkipAgentDomNode(node: Element): boolean {
-  return (
-    SKIP_TAGS.has(node.tagName) ||
-    node.hasAttribute("data-agent-window") ||
-    node.hasAttribute("data-agent-sensitive")
-  );
+  return SKIP_TAGS.has(node.tagName) || isExcluded(node);
 }
 
 const MAIN_CONTENT_SELECTOR = [
@@ -188,8 +207,32 @@ function getLineRegion(line: DomLine): LineRegion {
   return getElementRegion(line.sourceElement);
 }
 
-const elementRegistry = new Map<string, IndexedElement>();
 let nextElementRef = 1;
+let generation = 0;
+let snapshotScope: ReturnType<typeof captureDomScope> | undefined;
+let observedBindings = new WeakMap<
+  Element,
+  AgentDomBindingSnapshot | undefined
+>();
+function observedBinding(element: Element) {
+  if (!snapshotScope || !hasAgentDomOwners()) return undefined;
+  if (!observedBindings.has(element)) {
+    const binding = captureAgentDomBinding(element);
+    observedBindings.set(
+      element,
+      binding &&
+        snapshotScope &&
+        binding.actor === snapshotScope.actor &&
+        binding.workspace === snapshotScope.workspace &&
+        binding.pageKey === snapshotScope.pageKey &&
+        (!snapshotScope.projectName ||
+          snapshotScope.projectName === binding.projectName)
+        ? binding
+        : undefined
+    );
+  }
+  return observedBindings.get(element);
+}
 
 type LineRegion = "main" | "default" | "overlay" | "shell";
 
@@ -203,7 +246,12 @@ interface DomLine {
   semanticTag?: string;
 }
 
-type InteractiveReason = "native" | "role" | "editable" | "pointer";
+type InteractiveReason =
+  | "native"
+  | "role"
+  | "editable"
+  | "pointer"
+  | "registered";
 
 interface WalkContext {
   lines: DomLine[];
@@ -218,35 +266,20 @@ function createElementRef(): string {
 }
 
 function createIndexedElement(
-  entry: Omit<IndexedElement, "ref">
+  entry: Omit<IndexedElement, "ref" | "generation" | "actions">
 ): IndexedElement {
-  return { ref: createElementRef(), ...entry };
-}
-
-export function getElementByRef(ref: string): IndexedElement | undefined {
-  return elementRegistry.get(ref);
-}
-
-function isVisible(el: Element): boolean {
-  const style = window.getComputedStyle(el);
-  return (
-    style.display !== "none" &&
-    style.visibility !== "hidden" &&
-    style.opacity !== "0"
-  );
-}
-
-function hasHiddenAncestor(el: Element): boolean {
-  return el.closest('[hidden], [aria-hidden="true"], [inert]') !== null;
-}
-
-function isPerceivable(el: Element): boolean {
-  return isVisible(el) && !hasHiddenAncestor(el);
-}
-
-function hasDisabledState(el: Element): boolean {
-  if (el.matches(":disabled") || el.hasAttribute("disabled")) return true;
-  return el.closest('[aria-disabled="true"], [disabled]') !== null;
+  const binding = observedBinding(entry.element);
+  const actions =
+    binding?.bindings.map((b) => `${b.verb}:${b.effect}`).join(",") ??
+    "manual-required";
+  return {
+    ref: createElementRef(),
+    generation,
+    scope: snapshotScope,
+    binding,
+    actions,
+    ...entry,
+  };
 }
 
 function isContentEditableElement(el: Element): boolean {
@@ -284,7 +317,7 @@ function getMonacoContent(el: Element): string | undefined {
   if (!viewLines) return undefined;
   const lines: string[] = [];
   for (const line of Array.from(viewLines.querySelectorAll(".view-line"))) {
-    lines.push(line.textContent ?? "");
+    lines.push(visibleText(line));
   }
   const content = lines.join("\n").trim();
   return content || undefined;
@@ -293,6 +326,7 @@ function getMonacoContent(el: Element): string | undefined {
 function getInteractiveReason(el: Element): InteractiveReason | undefined {
   if (!isPerceivable(el) || hasDisabledState(el) || isHiddenInput(el))
     return undefined;
+  if (observedBinding(el)) return "registered";
   if (INTERACTIVE_TAGS.has(el.tagName)) return "native";
 
   const role = el.getAttribute("role");
@@ -335,7 +369,7 @@ function getSiblingControlLabel(el: Element): string | undefined {
     sibling = sibling.previousElementSibling
   ) {
     if (!isPerceivable(sibling) || isInteractive(sibling)) continue;
-    const text = normalizeTextContent(sibling.textContent ?? "");
+    const text = normalizeTextContent(visibleText(sibling));
     if (text) return truncateText(text, MAX_LABEL_LENGTH);
   }
 
@@ -346,7 +380,7 @@ function getSiblingControlLabel(el: Element): string | undefined {
       sibling = sibling.previousElementSibling
     ) {
       if (!isPerceivable(sibling) || isInteractive(sibling)) continue;
-      const text = normalizeTextContent(sibling.textContent ?? "");
+      const text = normalizeTextContent(visibleText(sibling));
       if (text) return truncateText(text, MAX_LABEL_LENGTH);
     }
   }
@@ -376,12 +410,13 @@ function getTableColumnHeaderLabel(el: Element): string | undefined {
       child instanceof Element && TABLE_CELL_TAGS.has(child.tagName)
   );
   const headerText = normalizeTextContent(
-    headerCells[columnIndex]?.textContent ?? ""
+    visibleText(headerCells[columnIndex])
   );
   return headerText ? truncateText(headerText, MAX_LABEL_LENGTH) : undefined;
 }
 
 function extractLabel(el: Element): string {
+  if (!isPerceivable(el)) return "";
   // aria-label
   const ariaLabel = normalizeTextContent(el.getAttribute("aria-label") ?? "");
   if (ariaLabel) return truncateText(ariaLabel, MAX_LABEL_LENGTH);
@@ -392,7 +427,7 @@ function extractLabel(el: Element): string {
     const parts = labelledBy
       .split(/\s+/)
       .map((id) =>
-        normalizeTextContent(document.getElementById(id)?.textContent ?? "")
+        normalizeTextContent(visibleText(document.getElementById(id)))
       )
       .filter((part): part is string => Boolean(part));
     if (parts.length > 0) {
@@ -433,7 +468,7 @@ function extractLabel(el: Element): string {
   }
 
   // text content (truncated)
-  const text = normalizeTextContent(el.textContent ?? "");
+  const text = normalizeTextContent(visibleText(el));
   return text ? truncateText(text, MAX_LABEL_LENGTH) : "";
 }
 
@@ -452,7 +487,7 @@ function extractValue(el: Element): string | undefined {
   }
   if (el instanceof HTMLSelectElement) {
     const value = normalizeTextContent(
-      el.options[el.selectedIndex]?.text || el.value || ""
+      visibleText(el.options[el.selectedIndex])
     );
     return value ? truncateText(value, MAX_LABEL_LENGTH) : undefined;
   }
@@ -491,6 +526,7 @@ function shouldIndexInteractiveNode(
   value: string | undefined,
   context: WalkContext
 ): boolean {
+  if (reason === "registered") return true;
   if (reason === "pointer" && context.hasInteractiveAncestor) return false;
 
   const hasDescriptor = Boolean(label || value || hasInteractiveState(el));
@@ -544,6 +580,7 @@ function toDomRefSuggestion({
   role,
   label,
   value,
+  actions,
 }: IndexedElement): DomRefSuggestion {
   return {
     ref,
@@ -551,6 +588,7 @@ function toDomRefSuggestion({
     role,
     label,
     value,
+    actions,
   };
 }
 
@@ -577,7 +615,12 @@ function classifyTextLine(
 }
 
 function pushTextLine(node: Text, depth: number, context: WalkContext): void {
-  if (!node.parentElement || !isPerceivable(node.parentElement)) return;
+  if (
+    !node.parentElement ||
+    !isDisclosedChild(node) ||
+    !isPerceivable(node.parentElement)
+  )
+    return;
   const text = normalizeTextContent(node.textContent ?? "");
   if (!text) return;
   if (context.interactiveLabels.includes(text)) return;
@@ -608,7 +651,7 @@ function pushInteractiveLine(
   const indent = "  ".repeat(depth);
   const valueAttr = value ? ` value="${value}"` : "";
   context.lines.push({
-    text: `${indent}[${entry.ref}]<${entry.tag}${valueAttr}>${entry.label}</${entry.tag}>`,
+    text: `${indent}[${entry.ref}]<${entry.tag}${valueAttr}>${entry.label}</${entry.tag}> ${entry.actions}`,
     kind: "interactive",
     entry,
     sourceElement: entry.element,
@@ -639,6 +682,7 @@ function pushContextLine(
 
 function collectSemanticTextSegments(node: Node, segments: string[]): void {
   if (node instanceof Text) {
+    if (!isDisclosedChild(node)) return;
     const text = normalizeTextContent(node.textContent ?? "");
     if (text) segments.push(text);
     return;
@@ -693,6 +737,7 @@ function collectNonInteractiveTextSegments(
   isRoot = false
 ): void {
   if (node instanceof Text) {
+    if (!isDisclosedChild(node)) return;
     const text = normalizeTextContent(node.textContent ?? "");
     if (text) segments.push(text);
     return;
@@ -1088,6 +1133,7 @@ function getLineValueScore(line: DomLine): number {
 }
 
 function canDropEquivalentLine(line: DomLine): boolean {
+  if (line.entry?.binding) return false;
   if (line.kind !== "interactive") return true;
   return WRAPPER_TAGS.has(line.semanticTag ?? "") && !line.entry?.value;
 }
@@ -1160,6 +1206,9 @@ function getBudgetSelectionOrder(lines: DomLine[]): number[] {
     .sort((leftIndex, rightIndex) => {
       const left = lines[leftIndex];
       const right = lines[rightIndex];
+      const boundDiff =
+        Number(!!right.entry?.binding) - Number(!!left.entry?.binding);
+      if (boundDiff) return boundDiff;
 
       const kindPriorityDiff =
         LINE_KIND_PRIORITY[left.kind] - LINE_KIND_PRIORITY[right.kind];
@@ -1241,13 +1290,19 @@ function selectBudgetedLines(lines: DomLine[]): DomLine[] {
   return lines.filter((_, index) => selected.has(index));
 }
 
-function extractDomState(root?: Element): {
+function extractDomState(
+  root?: Element,
+  scope?: AgentDomContext
+): {
   tree: string;
   count: number;
   refs: DomRefSuggestion[];
 } {
-  elementRegistry.clear();
-  nextElementRef = 1;
+  if (scope && !isDomContextCurrent(scope))
+    return { tree: "", count: 0, refs: [] };
+  generation++;
+  observedBindings = new WeakMap();
+  snapshotScope = scope && captureDomScope(scope);
   const rootEl = root ?? document.body;
   const lines: DomLine[] = [];
   const context: WalkContext = {
@@ -1262,32 +1317,57 @@ function extractDomState(root?: Element): {
     walkDomNode(child, 0, context, `root[${index}]`);
   });
 
+  // Terminal controls, editors and compact table summaries normally omit their
+  // descendants. An explicitly bound target still needs its own distinct ref.
+  if (scope && hasAgentDomOwners()) {
+    const indexed = new Set(
+      lines.flatMap(({ entry }) => (entry ? [entry.element] : []))
+    );
+    for (const element of rootEl.querySelectorAll("*")) {
+      if (indexed.has(element) || !observedBinding(element)) continue;
+      const value = extractValue(element);
+      const entry = createIndexedElement({
+        element,
+        tag: element.tagName.toLowerCase(),
+        role: element.getAttribute("role") ?? undefined,
+        label: extractLabel(element) || getFallbackLabel(element),
+        value,
+      });
+      pushInteractiveLine(0, entry, value, context);
+    }
+  }
+
   const keptLines = selectBudgetedLines(
     dedupeEquivalentAncestorLines(dedupeAdjacentLines(lines))
   );
-  const keptEntries = keptLines
-    .flatMap((line) => (line.entry ? [line.entry] : []))
-    .map((entry) => [entry.ref, entry] as const);
-  elementRegistry.clear();
-  keptEntries.forEach(([ref, entry]) => {
-    elementRegistry.set(ref, entry);
-  });
+  const keptEntries = keptLines.flatMap((line) =>
+    line.entry ? [line.entry] : []
+  );
+  if (scope && !isDomContextCurrent(scope))
+    return { tree: "", count: 0, refs: [] };
+  publishDomSnapshot(keptEntries);
 
   return {
     tree: keptLines.map((line) => line.text).join("\n"),
-    count: elementRegistry.size,
-    refs: Array.from(elementRegistry.values(), toDomRefSuggestion),
+    count: keptEntries.length,
+    refs: keptEntries.map(toDomRefSuggestion),
   };
 }
 
-export function extractDomTree(root?: Element): {
+export function extractDomTree(
+  root?: Element,
+  scope?: AgentDomContext
+): {
   tree: string;
   count: number;
 } {
-  const { tree, count } = extractDomState(root);
+  const { tree, count } = extractDomState(root, scope);
   return { tree, count };
 }
 
-export function extractDomRefSuggestions(root?: Element): DomRefSuggestion[] {
-  return extractDomState(root).refs;
+export function extractDomRefSuggestions(
+  root?: Element,
+  scope?: AgentDomContext
+): DomRefSuggestion[] {
+  return extractDomState(root, scope).refs;
 }

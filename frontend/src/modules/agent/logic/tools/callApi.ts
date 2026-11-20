@@ -19,6 +19,10 @@ import {
   isProtectedAgentApiCall,
 } from "../apiExecution";
 import { notSentApiResult } from "../callApiResult";
+import {
+  type AgentExecutionContext,
+  isAgentExecutionContextCurrent,
+} from "../executionContext";
 import { boundAgentQueryResult } from "../queryResultRetention";
 import { withAgentApiActionLease } from "../runOwnership";
 import type { PropertyInfo, SchemaInfo } from "./gen/openapi-index";
@@ -344,6 +348,7 @@ interface ApiDispatchOptions {
   signal?: AbortSignal;
   attemptId?: string;
   context?: AgentApiDispatchContext;
+  dom?: { expectedContext: AgentExecutionContext; beforeSend: () => boolean };
 }
 
 async function tryRefresh(signal: AbortSignal): Promise<boolean> {
@@ -370,7 +375,7 @@ export async function dispatchPreparedApiCall(
       "A one-time API permission is required.",
       "admission-rejected"
     );
-  return sendPreparedApiCall(call, options);
+  return sendPreparedApiCall(Object.freeze({ ...call }), options);
 }
 
 // Only the resolver of a consumed, revalidated permission dispatches a protected call.
@@ -427,7 +432,7 @@ export async function dispatchApprovedApiCall(
       }
     }
     const result = current()
-      ? await sendPreparedApiCall(snapshot, { signal, attemptId })
+      ? await sendPreparedApiCall(snapshot, { ...options, attemptId })
       : notSentApiResult(
           "Agent action ownership changed before dispatch.",
           "admission-rejected",
@@ -468,7 +473,7 @@ export async function dispatchApprovedApiCall(
 
 async function sendPreparedApiCall(
   call: PreparedApiCall,
-  { signal, attemptId }: ApiDispatchOptions = {}
+  { signal, attemptId, context, isScopeCurrent, dom }: ApiDispatchOptions = {}
 ): Promise<string> {
   if (signal?.aborted) {
     return notSentApiResult(
@@ -477,6 +482,27 @@ async function sendPreparedApiCall(
       attemptId
     );
   }
+  if (isScopeCurrent?.() === false || context?.isCurrent() === false)
+    return notSentApiResult(
+      "Agent action ownership changed before dispatch.",
+      "admission-rejected",
+      attemptId
+    );
+  if (
+    dom &&
+    (!isAgentExecutionContextCurrent(dom.expectedContext, signal) ||
+      !dom.beforeSend())
+  )
+    return JSON.stringify({
+      called: false,
+      ...JSON.parse(
+        notSentApiResult(
+          "Not called: The page action changed or expired.",
+          "admission-rejected",
+          attemptId
+        )
+      ),
+    });
 
   const controller = new AbortController();
   let abortKind: "canceled-after-dispatch" | "timed-out" | undefined;
@@ -498,6 +524,7 @@ async function sendPreparedApiCall(
     if (
       result.parsed.status === 401 &&
       call.path !== REFRESH_PATH &&
+      !dom &&
       !isProtectedAgentApiCall(call) &&
       !controller.signal.aborted &&
       (await tryRefresh(controller.signal)) &&

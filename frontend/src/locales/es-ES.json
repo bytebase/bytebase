@@ -305,12 +305,18 @@
     "pending-confirm-hint": "Confirme o cancele arriba",
     "pending-input-hint": "Proporcione la entrada arriba",
     "permission": {
+      "after": "Después",
+      "before": "Antes",
+      "database-environment": "Actualizar el entorno de la base de datos",
+      "database-labels": "Actualizar las etiquetas de la base de datos",
+      "exact-request": "Solicitud API exacta",
       "issue-approval": "Esta aprobación lleva la incidencia al siguiente paso de revisión. Aún no crea un despliegue.",
       "issue-approval-access-grant": "Este es el último paso de aprobación. La aprobación puede activar de inmediato el acceso solicitado, sin un despliegue.",
       "issue-approval-final": "Esto completa la decisión de aprobación, pero no garantiza por sí solo la creación de un despliegue ni la ejecución de las tareas.",
       "issue-approval-role-grant": "Este es el último paso de aprobación. La aprobación puede conceder de inmediato el rol de proyecto solicitado, sin un despliegue.",
       "issue-approval-rollout": "Este es el último paso de aprobación. La aprobación puede crear un despliegue después de las comprobaciones y revisiones necesarias; no garantiza la ejecución de las tareas.",
-      "issue-rejection": "Rechazar esta incidencia detiene su flujo de aprobación actual. Hay que resolver el rechazo antes de continuar con la aprobación."
+      "issue-rejection": "Rechazar esta incidencia detiene su flujo de aprobación actual. Hay que resolver el rechazo antes de continuar con la aprobación.",
+      "not-set": "Sin establecer"
     },
     "plan-assistance": {
       "ask-draft-sql": "Pedir al agente que redacte SQL"
@@ -324,6 +330,7 @@
       "existing-sql-title": "Este Plan ya contiene SQL",
       "open": "Abrir borrador del plan",
       "replace-sql": "Reemplazar SQL",
+      "statement-source-changed": "Esta sentencia ha cambiado. Cancela este borrador y vuelve a abrir la sentencia para editar la versión más reciente.",
       "unavailable": "No se pudo abrir el borrador del plan. Es posible que la base de datos o el SQL hayan cambiado. Pide al agente que lo genere de nuevo."
     },
     "plan-reference-unavailable": "Este plan ya no está disponible o no tienes acceso a él.",
@@ -495,6 +502,7 @@
     "tool-completed-with-warnings": "Completado con advertencias",
     "tool-default-value": "Predeterminado",
     "tool-failed": "Fallido",
+    "tool-manual-required": "Se requiere una acción manual",
     "tool-options": "Opciones",
     "tool-prompt": "Indicación",
     "tool-request-canceled": "Solicitud cancelada",

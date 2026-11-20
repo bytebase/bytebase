@@ -400,6 +400,7 @@ export function ToolCallCard({
     return { label, description, alternativeReason };
   }, [hasErrorResult, resultRecord, toolCall.name]);
   const operationId =
+    toolCall.name === "call_api" &&
     typeof parsedArguments === "object" &&
     parsedArguments !== null &&
     !Array.isArray(parsedArguments) &&
@@ -407,7 +408,9 @@ export function ToolCallCard({
       ? ((parsedArguments as Record<string, unknown>).operationId as string)
       : undefined;
   const callApi =
-    toolCall.name === "call_api"
+    toolCall.name === "call_api" ||
+    (toolCall.name === "dom_action" &&
+      resultRecord?.agentExecution !== undefined)
       ? parseCallApiResult(resultText, operationId)
       : undefined;
   const queryPreview = useMemo(() => {
@@ -607,6 +610,14 @@ export function ToolCallCard({
           className={callApi.requiresRecovery ? "text-warning" : "text-control"}
         >
           <AgentApiOutcome execution={callApi.execution} />
+        </span>
+      );
+    }
+    if (toolCall.name === "dom_action" && resultRecord?.success === false) {
+      const manual = resultRecord.code === "manual-required";
+      return (
+        <span className={manual ? "text-warning" : "text-error"}>
+          {manual ? t("agent.tool-manual-required") : t("agent.tool-failed")}
         </span>
       );
     }

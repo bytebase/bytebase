@@ -1,3 +1,12 @@
+import { getElementByRef } from "./domTree";
+import { containsExcluded, isPerceivable, visibleText } from "./guards";
+import {
+  type AgentDomContext,
+  type AgentDomPreparation,
+  matchesDomScope,
+  prepareCapturedInteraction,
+} from "./interactionRegistry";
+
 export type { DomRefSuggestion } from "./domTree";
 export {
   extractDomRefSuggestions,
@@ -6,265 +15,101 @@ export {
 } from "./domTree";
 
 export type DomActionType = "click" | "input" | "select" | "scroll" | "read";
-
 export interface DomActionParams {
   type: DomActionType;
   ref: string;
   value?: string;
 }
-
 export interface DomActionResult {
   success: boolean;
   message: string;
+  code?: "manual-required";
 }
-
 export const BACKGROUND_PAGE_ACTION_RESULT: DomActionResult = {
   success: false,
   message:
-    "This chat is not selected. Return to it before using the current page.",
+    "This chat is not selected or the page has changed. Return to it before using the current page.",
 };
-const PASSWORD_FIELD_ACTION_RESULT: DomActionResult = {
+const unavailable: DomActionResult = {
   success: false,
-  message: "Password fields are hidden from the agent.",
-};
-const SENSITIVE_FIELD_ACTION_RESULT: DomActionResult = {
-  success: false,
-  message: "Sensitive content is hidden from the agent.",
+  message: "This target is unavailable or contains sensitive content.",
 };
 
-const isAgentSensitive = (element: Element): boolean =>
-  element.closest("[data-agent-sensitive]") !== null;
-
-function getCenter(el: Element): { x: number; y: number } {
-  const rect = el.getBoundingClientRect();
-  return {
-    x: rect.left + rect.width / 2,
-    y: rect.top + rect.height / 2,
-  };
-}
-
-function dispatchClick(el: Element): void {
-  const { x, y } = getCenter(el);
-  const shared: MouseEventInit = {
-    bubbles: true,
-    cancelable: true,
-    clientX: x,
-    clientY: y,
-    view: window,
-  };
-  el.dispatchEvent(new MouseEvent("mousedown", shared));
-  el.dispatchEvent(new MouseEvent("mouseup", shared));
-  el.dispatchEvent(new MouseEvent("click", shared));
-}
-
-function setNativeValue(
-  el: HTMLInputElement | HTMLTextAreaElement,
-  value: string
-): void {
-  const proto =
-    el instanceof HTMLTextAreaElement
-      ? HTMLTextAreaElement.prototype
-      : HTMLInputElement.prototype;
-  const setter = Object.getOwnPropertyDescriptor(proto, "value")?.set;
-  if (setter) {
-    setter.call(el, value);
-  } else {
-    el.value = value;
-  }
-  el.dispatchEvent(new Event("input", { bubbles: true }));
-  el.dispatchEvent(new Event("change", { bubbles: true }));
-}
-
-function normalizeMultilineValue(value: string): string {
-  if (!value.includes("\\")) {
-    return value;
-  }
-
-  return value
-    .replace(/\\r\\n/g, "\n")
-    .replace(/\\n/g, "\n")
-    .replace(/\\r/g, "\r")
-    .replace(/\\t/g, "\t");
-}
-
-function findInnerInput(
-  el: Element
-): HTMLInputElement | HTMLTextAreaElement | null {
-  return el.querySelector<HTMLInputElement | HTMLTextAreaElement>(
-    "input, textarea"
-  );
-}
-
-function isMonacoCandidate(el: Element): boolean {
-  return (
-    el.classList.contains("monaco-editor") ||
-    el.closest(".monaco-editor") !== null
-  );
-}
-
-async function findMonacoEditor(
-  el: Element
-): Promise<{ getValue(): string; setValue(v: string): void } | null> {
-  if (!isMonacoCandidate(el)) {
-    return null;
-  }
-
+async function readEditor(
+  element: Element,
+  canRead: () => boolean
+): Promise<DomActionResult | undefined> {
+  if (!element.matches(".monaco-editor")) return;
   try {
     const { isMonacoLoaded, getMonacoEditor } = await import(
       "@/components/monaco/core"
     );
-    if (!isMonacoLoaded()) return null;
+    if (!isMonacoLoaded() || !canRead()) return;
     const monaco = await getMonacoEditor();
-    const monacoRoot = el.closest(".monaco-editor");
-    for (const editor of monaco.editor.getEditors()) {
-      const domNode = editor.getDomNode();
-      if (!domNode) {
-        continue;
-      }
-      if (
-        el === domNode ||
-        el.contains(domNode) ||
-        domNode.contains(el) ||
-        monacoRoot === domNode
-      ) {
-        return editor;
-      }
-    }
+    if (!canRead()) return unavailable;
+    const editor = monaco.editor
+      .getEditors()
+      .find((editor) => editor.getDomNode() === element);
+    if (editor) return { success: true, message: editor.getValue() };
   } catch {
-    // Monaco not available
+    /* Rendered text remains available without the editor model. */
   }
-  return null;
 }
 
-async function handleClick(el: Element): Promise<DomActionResult> {
-  dispatchClick(el);
-  return { success: true, message: `Clicked ${el.tagName.toLowerCase()}` };
-}
-
-async function handleInput(
-  el: Element,
-  value: string,
-  canUseCurrentPage?: () => boolean
+async function inspectDomElement(
+  type: "read" | "scroll",
+  element: Element,
+  canUseCurrentPage: () => boolean
 ): Promise<DomActionResult> {
-  // Monaco editor
-  const monacoEditor = await findMonacoEditor(el);
-  if (canUseCurrentPage?.() === false) return BACKGROUND_PAGE_ACTION_RESULT;
-  if (isAgentSensitive(el)) return SENSITIVE_FIELD_ACTION_RESULT;
-  if (monacoEditor) {
-    const normalizedValue = normalizeMultilineValue(value);
-    monacoEditor.setValue(normalizedValue);
-    return {
-      success: true,
-      message: `Set editor content (${normalizedValue.length} chars)`,
-    };
+  if (!canUseCurrentPage()) return BACKGROUND_PAGE_ACTION_RESULT;
+  if (!isPerceivable(element) || containsExcluded(element)) return unavailable;
+  if (type === "scroll") {
+    element.scrollIntoView({ behavior: "smooth", block: "center" });
+    return { success: true, message: "Scrolled element into view" };
   }
-
-  let target: HTMLInputElement | HTMLTextAreaElement | null = null;
-
-  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
-    target = el;
-  } else {
-    target = findInnerInput(el);
+  const canRead = () =>
+    canUseCurrentPage() && isPerceivable(element) && !containsExcluded(element);
+  if (element.matches(".monaco-editor")) {
+    const result = await readEditor(element, canRead);
+    if (!canRead()) return unavailable;
+    if (result) return result;
   }
-
-  if (!target) {
-    return {
-      success: false,
-      message: `No input element found within [${el.tagName.toLowerCase()}]`,
-    };
-  }
-  if (isAgentSensitive(target)) return SENSITIVE_FIELD_ACTION_RESULT;
-  if (target instanceof HTMLInputElement && target.type === "password") {
-    return PASSWORD_FIELD_ACTION_RESULT;
-  }
-
-  target.focus();
-  const normalizedValue =
-    target instanceof HTMLTextAreaElement
-      ? normalizeMultilineValue(value)
-      : value;
-  setNativeValue(target, normalizedValue);
-  return { success: true, message: `Set value to "${normalizedValue}"` };
+  const input =
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement
+      ? element
+      : element.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+          "input,textarea"
+        );
+  if (input)
+    return isPerceivable(input)
+      ? { success: true, message: input.value }
+      : unavailable;
+  return { success: true, message: visibleText(element).trim() };
 }
 
-async function handleSelect(
-  el: Element,
-  value: string
-): Promise<DomActionResult> {
-  // Native <select>
-  if (el instanceof HTMLSelectElement) {
-    el.value = value;
-    el.dispatchEvent(new Event("change", { bubbles: true }));
-    return { success: true, message: `Selected "${value}"` };
-  }
-
-  return {
-    success: false,
-    message: `[${el.tagName.toLowerCase()}] is not a native <select>; click it to open the options, then click the option`,
-  };
-}
-
-async function handleRead(
-  el: Element,
-  canUseCurrentPage?: () => boolean
-): Promise<DomActionResult> {
-  // Monaco editor — read full content via API
-  const monacoEditor = await findMonacoEditor(el);
-  if (canUseCurrentPage?.() === false) return BACKGROUND_PAGE_ACTION_RESULT;
-  if (isAgentSensitive(el) || el.querySelector("[data-agent-sensitive]")) {
-    return SENSITIVE_FIELD_ACTION_RESULT;
-  }
-  if (monacoEditor) {
-    return { success: true, message: monacoEditor.getValue() };
-  }
-
-  // Standard inputs
-  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
-    if (el instanceof HTMLInputElement && el.type === "password") {
-      return PASSWORD_FIELD_ACTION_RESULT;
-    }
-    return { success: true, message: el.value };
-  }
-
-  const inner = findInnerInput(el);
-  if (inner) {
-    if (inner instanceof HTMLInputElement && inner.type === "password") {
-      return PASSWORD_FIELD_ACTION_RESULT;
-    }
-    return { success: true, message: inner.value };
-  }
-
-  // Fallback: text content
-  return { success: true, message: el.textContent?.trim() ?? "" };
-}
-
-async function handleScroll(el: Element): Promise<DomActionResult> {
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
-  return { success: true, message: "Scrolled element into view" };
-}
-
-export async function executeDomAction(
+export async function prepareAgentDomInteraction(
   params: DomActionParams,
   element: Element,
-  canUseCurrentPage?: () => boolean
-): Promise<DomActionResult> {
-  if (canUseCurrentPage?.() === false) return BACKGROUND_PAGE_ACTION_RESULT;
-  if (isAgentSensitive(element)) return SENSITIVE_FIELD_ACTION_RESULT;
-  switch (params.type) {
-    case "click":
-      return handleClick(element);
-    case "input":
-      return handleInput(element, params.value ?? "", canUseCurrentPage);
-    case "select":
-      return handleSelect(element, params.value ?? "");
-    case "read":
-      return handleRead(element, canUseCurrentPage);
-    case "scroll":
-      return handleScroll(element);
-    default:
-      return {
-        success: false,
-        message: `Unknown action type: ${params.type}`,
-      };
-  }
+  context: AgentDomContext
+): Promise<AgentDomPreparation> {
+  const entry = getElementByRef(params.ref);
+  if (
+    context.runMode !== "default" ||
+    !entry ||
+    entry.element !== element ||
+    !matchesDomScope(entry.scope, context)
+  )
+    return { kind: "result", result: BACKGROUND_PAGE_ACTION_RESULT };
+  const isCurrentRef = () => getElementByRef(params.ref) === entry;
+  if (params.type === "read" || params.type === "scroll")
+    return {
+      kind: "result",
+      result: await inspectDomElement(
+        params.type,
+        element,
+        () => isCurrentRef() && matchesDomScope(entry.scope, context)
+      ),
+    };
+  return prepareCapturedInteraction(params, entry, context);
 }

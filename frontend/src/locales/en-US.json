@@ -305,12 +305,18 @@
     "pending-confirm-hint": "Please confirm or cancel above",
     "pending-input-hint": "Please provide input above",
     "permission": {
+      "after": "After",
+      "before": "Before",
+      "database-environment": "Update database environment",
+      "database-labels": "Update database labels",
+      "exact-request": "Exact API request",
       "issue-approval": "This approval advances the issue to the next review step. It does not create a rollout yet.",
       "issue-approval-access-grant": "This is the final approval step. Approval may immediately activate the requested access grant, without a rollout.",
       "issue-approval-final": "This completes the approval decision, but does not itself guarantee rollout creation or task execution.",
       "issue-approval-role-grant": "This is the final approval step. Approval may immediately grant the requested project role, without a rollout.",
       "issue-approval-rollout": "This is the final approval step. Approval may create a rollout after required checks and reviews pass; it does not guarantee task execution.",
-      "issue-rejection": "Rejecting this issue stops its current approval flow. The rejection must be addressed before approval can continue."
+      "issue-rejection": "Rejecting this issue stops its current approval flow. The rejection must be addressed before approval can continue.",
+      "not-set": "Not set"
     },
     "plan-assistance": {
       "ask-draft-sql": "Ask Agent to draft SQL"
@@ -324,6 +330,7 @@
       "existing-sql-title": "This Plan already contains SQL",
       "open": "Open Plan draft",
       "replace-sql": "Replace SQL",
+      "statement-source-changed": "This statement changed. Cancel this draft and reopen the statement to edit the latest version.",
       "unavailable": "Couldn't open the Plan draft. The database or SQL may have changed. Ask the Agent to generate it again."
     },
     "plan-reference-unavailable": "This plan is no longer available or you do not have access to it.",
@@ -495,6 +502,7 @@
     "tool-completed-with-warnings": "Completed with warnings",
     "tool-default-value": "Default",
     "tool-failed": "Failed",
+    "tool-manual-required": "Manual action required",
     "tool-options": "Options",
     "tool-prompt": "Prompt",
     "tool-request-canceled": "Request canceled",

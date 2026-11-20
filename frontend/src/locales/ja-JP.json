@@ -305,12 +305,18 @@
     "pending-confirm-hint": "上で確認またはキャンセルしてください",
     "pending-input-hint": "上に入力してください",
     "permission": {
+      "after": "変更後",
+      "before": "変更前",
+      "database-environment": "データベース環境を更新",
+      "database-labels": "データベースラベルを更新",
+      "exact-request": "実行する API リクエスト",
       "issue-approval": "この承認でイシューは次のレビュー段階に進みます。ロールアウトはまだ作成されません。",
       "issue-approval-access-grant": "これは最終承認です。承認によって、ロールアウトなしで申請されたアクセス権が直ちに有効になる場合があります。",
       "issue-approval-final": "これで承認判断は完了しますが、それだけでロールアウトの作成やタスクの実行が保証されるわけではありません。",
       "issue-approval-role-grant": "これは最終承認です。承認によって、ロールアウトなしで申請されたプロジェクトロールが直ちに付与される場合があります。",
       "issue-approval-rollout": "これは最終承認です。必要なチェックとレビューを通過するとロールアウトが作成される場合がありますが、タスクの実行は保証されません。",
-      "issue-rejection": "このイシューを却下すると、現在の承認フローは停止します。承認を再開するには却下理由への対応が必要です。"
+      "issue-rejection": "このイシューを却下すると、現在の承認フローは停止します。承認を再開するには却下理由への対応が必要です。",
+      "not-set": "未設定"
     },
     "plan-assistance": {
       "ask-draft-sql": "Agent に SQL の作成を依頼"
@@ -324,6 +330,7 @@
       "existing-sql-title": "この Plan には SQL が既にあります",
       "open": "プランの下書きを開く",
       "replace-sql": "SQL を置き換え",
+      "statement-source-changed": "このステートメントは変更されました。この下書きをキャンセルしてステートメントを開き直し、最新の内容を編集してください。",
       "unavailable": "プランの下書きを開けませんでした。データベースまたは SQL が変更された可能性があります。エージェントに再生成を依頼してください。"
     },
     "plan-reference-unavailable": "このプランは利用できないか、アクセス権がありません。",
@@ -495,6 +502,7 @@
     "tool-completed-with-warnings": "警告ありで完了",
     "tool-default-value": "デフォルト",
     "tool-failed": "失敗",
+    "tool-manual-required": "手動操作が必要",
     "tool-options": "オプション",
     "tool-prompt": "プロンプト",
     "tool-request-canceled": "リクエストをキャンセルしました",

@@ -798,6 +798,8 @@ describe("buildSystemPrompt", () => {
     );
     expect(prompt).not.toContain("read element indices");
     expect(prompt).not.toContain("dom_action(type, index, value)");
+    expect(prompt).toContain("manual-required");
+    expect(prompt).toContain("exact API permission");
   });
 
   test("keeps a read-only landing starter on its current page", () => {

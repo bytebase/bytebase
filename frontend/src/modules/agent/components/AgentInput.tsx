@@ -49,6 +49,7 @@ import {
   resolveDeniedQueryAccessDraft,
 } from "../logic/deniedQueryAccess";
 import { normalizeAgentDiagnosticCapability } from "../logic/diagnosticCapability";
+import { captureAgentDomContext } from "../logic/domContext";
 import { acceptAgentHandoff, collectAgentHandoffs } from "../logic/handoff";
 import type { IssueDecisionImpact } from "../logic/issueDecisionImpact";
 import {
@@ -100,6 +101,7 @@ import {
 import { getAgentRunFeedback } from "../logic/runFeedback";
 import {
   type AgentRunLease,
+  hasAgentRunLease,
   isAgentRunLeasePending,
   subscribeAgentRunLeases,
   supportsAgentRunRecovery,
@@ -223,6 +225,57 @@ const isCurrentChatScope = (
     current.userEmail === scope.userEmail &&
     current.getChat(chatId) !== null
   );
+};
+
+const permissionDomContext = (
+  scope: Pick<AgentState, "workspaceName" | "userEmail">,
+  chatId: string,
+  runId: string | null | undefined,
+  actionId: string,
+  controller?: AbortController
+) => {
+  const chat = useAgentStore.getState().getChat(chatId);
+  if (!runId || !chat) return;
+  const runMode = chat.runMode ?? "default";
+  const project = chat.runCheckpoint?.bindings.context ?? chat.context;
+  const scopeKey =
+    scope.workspaceName &&
+    scope.userEmail &&
+    getAgentStateKey(scope.workspaceName, scope.userEmail);
+  return captureAgentDomContext(router, {
+    chatId,
+    runId,
+    runMode,
+    projectName: project?.startsWith("projects/") ? project : undefined,
+    signal: controller?.signal,
+    isCurrent: () => {
+      const store = useAgentStore.getState(),
+        live = store.getChat(chatId);
+      if (
+        !isCurrentChatScope(scope, chatId) ||
+        store.currentChatId !== chatId ||
+        !live ||
+        live.archived ||
+        live.runId !== runId ||
+        live.capability !== undefined ||
+        (live.runMode ?? "default") !== runMode ||
+        (live.runCheckpoint?.bindings.context ?? live.context) !== project
+      )
+        return false;
+      if (!controller)
+        return (
+          live.status === "awaiting_user" &&
+          store.getPendingAsk(chatId)?.apiPermission?.actionId === actionId
+        );
+      return (
+        store.canUseAgentExecution() &&
+        live.status === "running" &&
+        store.getAbortController(chatId) === controller &&
+        (!supportsAgentRunRecovery() ||
+          (!!scopeKey && hasAgentRunLease(scopeKey, chatId)))
+      );
+    },
+  });
 };
 
 const getRunUpdateError = (fallback: string, error?: unknown): string => {
@@ -780,6 +833,12 @@ export function AgentInput({
           chatId: currentChat.id,
           toolCallId: currentPendingAsk.toolCallId,
           userName: currentUserName,
+          domContext: permissionDomContext(
+            { workspaceName, userEmail },
+            currentChat.id,
+            currentChat.runId,
+            apiPermission.actionId
+          ),
         })
       : undefined;
   const canRestorePendingAsk = Boolean(
@@ -833,6 +892,12 @@ export function AgentInput({
                   chatId,
                   toolCallId: ask.toolCallId,
                   userName: currentUserName,
+                  domContext: permissionDomContext(
+                    scope,
+                    chatId,
+                    runId,
+                    ask.apiPermission.actionId
+                  ),
                 }))
             ) {
               if (runId) await store.recoverPendingAsk(chatId, runId);
@@ -1595,6 +1660,38 @@ export function AgentInput({
         (frozenPageContext ? page.path : undefined);
       const executor = createToolExecutor(router, {
         chatId,
+        runId,
+        getDomContext: () =>
+          captureAgentDomContext(
+            router,
+            {
+              chatId,
+              runId,
+              runMode,
+              signal: controller.signal,
+              projectName:
+                referencedProject ??
+                (runContext?.startsWith("projects/") ? runContext : undefined),
+              isCurrent: () => {
+                const live = useAgentStore.getState(),
+                  chat = live.getChat(chatId);
+                return (
+                  ownsInvocation() &&
+                  live.canUseAgentExecution() &&
+                  !!chat &&
+                  !chat.archived &&
+                  chat.capability === undefined &&
+                  live.currentChatId === chatId &&
+                  (chat.runMode ?? "default") === runMode &&
+                  (chat.runCheckpoint?.bindings.context ?? chat.context) ===
+                    runContext &&
+                  (pageToolPath === undefined ||
+                    router.currentRoute.value.fullPath === pageToolPath)
+                );
+              },
+            },
+            true
+          ),
         priorAttemptIds: (fingerprint) =>
           priorUncertainApiAttemptIds(
             useAgentStore.getState().chats,
@@ -3857,38 +3954,54 @@ export function AgentInput({
             toolCallId: pendingAsk.toolCallId,
             userName: useAppStore.getState().currentUser?.name ?? "",
           };
-          const requestAvailable = Boolean(
-            getPendingApiCallPreview(permissionArgs)
-          );
+          const preview = () =>
+            getPendingApiCallPreview({
+              ...permissionArgs,
+              domContext: permissionDomContext(
+                store,
+                chatId,
+                chat.runId,
+                permission.actionId
+              ),
+            });
+          const initialPreview = preview();
+          let requestAvailable = Boolean(initialPreview);
+          const recheckPage = () => {
+            if (initialPreview?.dom && requestAvailable)
+              requestAvailable = Boolean(preview());
+          };
           if (requestAvailable && (await blockWhenAIIsNotConfigured(chatId))) {
             return;
           }
+          recheckPage();
 
           await withChatRunSegment(chatId, async (lease) => {
             const currentStore = useAgentStore.getState();
-            if (
-              currentStore.getChat(chatId)?.archived ||
-              currentStore.getPendingAsk(chatId)?.apiPermission?.actionId !==
-                permission.actionId ||
-              currentStore.isChatRunning(chatId)
-            ) {
-              return;
-            }
+            const sameAsk = () =>
+              isCurrentChatScope(store, chatId) &&
+              !currentStore.getChat(chatId)?.archived &&
+              currentStore.getChat(chatId)?.runId === chat.runId &&
+              currentStore.getPendingAsk(chatId)?.apiPermission?.actionId ===
+                permission.actionId &&
+              !currentStore.isChatRunning(chatId);
+            if (!sameAsk()) return;
+            recheckPage();
             if (confirmed && requestAvailable && !canContinueChatRun(chatId))
               return;
             if (
               supportsAgentRunRecovery() &&
-              !(await currentStore.flushRunPersistence())
+              (!(await currentStore.flushRunPersistence()) || !sameAsk())
             )
               return;
+            recheckPage();
             if (
               confirmed &&
               requestAvailable &&
-              (!(await currentStore.checkAgentStorageAdmission()) ||
-                !isCurrentChatScope(store, chatId))
+              (!(await currentStore.checkAgentStorageAdmission()) || !sameAsk())
             )
               return;
 
+            recheckPage();
             const runMode = currentStore.getChat(chatId)?.runMode ?? "default";
             const capability = currentStore.getChat(chatId)?.capability;
             const active = currentStore.getChat(chatId);
@@ -3908,8 +4021,18 @@ export function AgentInput({
             currentStore.setChatStatus(chatId, "running");
             approvalController = new AbortController();
             currentStore.setAbortController(chatId, approvalController);
+            const domContext =
+              initialPreview?.dom &&
+              permissionDomContext(
+                store,
+                chatId,
+                chat.runId,
+                permission.actionId,
+                approvalController
+              );
             const result = await resolvePendingApiCall({
               ...permissionArgs,
+              ...(domContext ? { domContext } : {}),
               approved: confirmed && requestAvailable,
               signal: approvalController.signal,
               ...(context && { context }),
@@ -4506,45 +4629,119 @@ export function AgentInput({
                   )}
                 </div>
                 {apiPermissionPreview ? (
-                  <>
-                    <div className="mt-1">
-                      {t("agent.api-permission-request")}
-                    </div>
-                    <div className="mt-2 font-mono break-all">
-                      {apiPermissionPreview.operationId}
-                    </div>
-                    {Boolean(apiPermissionPreview.priorAttemptIds?.length) && (
-                      <Alert
-                        variant="warning"
-                        appearance="caption"
-                        className="mt-2"
-                      >
-                        {t("agent.api-recovery.repeat-risk")}
-                      </Alert>
-                    )}
-                    {apiPermissionPreview.issueDecision && (
-                      <div className="mt-2 border-l-2 border-warning pl-2">
-                        <div className="font-medium">
-                          {apiPermissionPreview.issueDecision.issueTitle}
-                        </div>
-                        <div className="font-mono break-all text-control-light">
-                          {apiPermissionPreview.issueDecision.issueName}
-                        </div>
-                        <div className="mt-1">
-                          {issueDecisionPermissionText(
-                            apiPermissionPreview.issueDecision.impact
-                          )}
-                        </div>
+                  apiPermissionPreview.dom ? (
+                    <div className="mt-2 flex min-w-0 flex-col gap-2 text-control">
+                      <div className="font-medium">
+                        {apiPermissionPreview.dom.kind === "database-labels"
+                          ? t("agent.permission.database-labels")
+                          : t("agent.permission.database-environment")}
                       </div>
-                    )}
-                    <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-xs border bg-background p-2 font-mono text-control">
-                      {JSON.stringify(
-                        JSON.parse(apiPermissionPreview.body),
-                        null,
-                        2
+                      <div className="min-w-0 font-mono wrap-anywhere">
+                        {apiPermissionPreview.dom.resourceName}
+                      </div>
+                      {Boolean(
+                        apiPermissionPreview.priorAttemptIds?.length
+                      ) && (
+                        <Alert variant="warning" appearance="caption">
+                          {t("agent.api-recovery.repeat-risk")}
+                        </Alert>
                       )}
-                    </pre>
-                  </>
+                      <ul
+                        className="flex min-w-0 flex-col gap-3"
+                        aria-label={
+                          apiPermissionPreview.dom.kind === "database-labels"
+                            ? t("agent.permission.database-labels")
+                            : t("agent.permission.database-environment")
+                        }
+                      >
+                        {apiPermissionPreview.dom.changes.map((change) => (
+                          <li key={change.field} className="min-w-0">
+                            <div className="font-mono font-medium wrap-anywhere">
+                              {apiPermissionPreview.dom?.kind ===
+                              "database-environment"
+                                ? t("common.environment")
+                                : change.field}
+                            </div>
+                            <dl className="mt-1 grid min-w-0 grid-cols-2 gap-2">
+                              {(["before", "after"] as const).map((side) => (
+                                <div key={side} className="min-w-0">
+                                  <dt className="text-control-light">
+                                    {side === "before"
+                                      ? t("agent.permission.before")
+                                      : t("agent.permission.after")}
+                                  </dt>
+                                  <dd className="whitespace-pre-wrap font-mono wrap-anywhere">
+                                    {change[side] === null
+                                      ? t("agent.permission.not-set")
+                                      : change[side] === ""
+                                        ? t("common.empty")
+                                        : change[side]}
+                                  </dd>
+                                </div>
+                              ))}
+                            </dl>
+                          </li>
+                        ))}
+                      </ul>
+                      <details className="min-w-0">
+                        <summary className="cursor-pointer rounded-xs focus-visible:outline-2 focus-visible:outline-accent">
+                          {t("agent.permission.exact-request")}
+                        </summary>
+                        <div className="mt-2 font-mono wrap-anywhere">
+                          {apiPermissionPreview.operationId}
+                        </div>
+                        <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap font-mono wrap-anywhere">
+                          {JSON.stringify(
+                            JSON.parse(apiPermissionPreview.body),
+                            null,
+                            2
+                          )}
+                        </pre>
+                      </details>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mt-1">
+                        {t("agent.api-permission-request")}
+                      </div>
+                      <div className="mt-2 font-mono break-all">
+                        {apiPermissionPreview.operationId}
+                      </div>
+                      {Boolean(
+                        apiPermissionPreview.priorAttemptIds?.length
+                      ) && (
+                        <Alert
+                          variant="warning"
+                          appearance="caption"
+                          className="mt-2"
+                        >
+                          {t("agent.api-recovery.repeat-risk")}
+                        </Alert>
+                      )}
+                      {apiPermissionPreview.issueDecision && (
+                        <div className="mt-2 border-l-2 border-warning pl-2">
+                          <div className="font-medium">
+                            {apiPermissionPreview.issueDecision.issueTitle}
+                          </div>
+                          <div className="font-mono break-all text-control-light">
+                            {apiPermissionPreview.issueDecision.issueName}
+                          </div>
+                          <div className="mt-1">
+                            {issueDecisionPermissionText(
+                              apiPermissionPreview.issueDecision.impact
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-xs border bg-background p-2 font-mono text-control">
+                        {JSON.stringify(
+                          JSON.parse(apiPermissionPreview.body),
+                          null,
+                          2
+                        )}
+                      </pre>
+                    </>
+                  )
                 ) : (
                   <div className="mt-1">
                     {t("agent.api-permission-expired")}

@@ -305,12 +305,18 @@
     "pending-confirm-hint": "Vui lòng xác nhận hoặc hủy ở trên",
     "pending-input-hint": "Vui lòng cung cấp đầu vào ở trên",
     "permission": {
+      "after": "Sau",
+      "before": "Trước",
+      "database-environment": "Cập nhật môi trường cơ sở dữ liệu",
+      "database-labels": "Cập nhật nhãn cơ sở dữ liệu",
+      "exact-request": "Yêu cầu API chính xác",
       "issue-approval": "Phê duyệt này chuyển vấn đề sang bước xem xét tiếp theo. Chưa tạo đợt triển khai.",
       "issue-approval-access-grant": "Đây là bước phê duyệt cuối cùng. Việc phê duyệt có thể kích hoạt quyền truy cập được yêu cầu ngay lập tức, không cần đợt triển khai.",
       "issue-approval-final": "Quyết định phê duyệt được hoàn tất, nhưng riêng quyết định này không đảm bảo tạo đợt triển khai hoặc thực thi tác vụ.",
       "issue-approval-role-grant": "Đây là bước phê duyệt cuối cùng. Việc phê duyệt có thể cấp vai trò dự án được yêu cầu ngay lập tức, không cần đợt triển khai.",
       "issue-approval-rollout": "Đây là bước phê duyệt cuối cùng. Việc phê duyệt có thể tạo đợt triển khai sau khi các kiểm tra và đánh giá bắt buộc đạt yêu cầu; không đảm bảo các tác vụ sẽ được thực thi.",
-      "issue-rejection": "Từ chối vấn đề này sẽ dừng quy trình phê duyệt hiện tại. Cần xử lý lý do từ chối trước khi tiếp tục phê duyệt."
+      "issue-rejection": "Từ chối vấn đề này sẽ dừng quy trình phê duyệt hiện tại. Cần xử lý lý do từ chối trước khi tiếp tục phê duyệt.",
+      "not-set": "Chưa đặt"
     },
     "plan-assistance": {
       "ask-draft-sql": "Nhờ Agent soạn SQL"
@@ -324,6 +330,7 @@
       "existing-sql-title": "Plan này đã có SQL",
       "open": "Mở bản nháp Plan",
       "replace-sql": "Thay thế SQL",
+      "statement-source-changed": "Câu lệnh này đã thay đổi. Hãy hủy bản nháp này rồi mở lại câu lệnh để chỉnh sửa phiên bản mới nhất.",
       "unavailable": "Không thể mở bản nháp Plan. Cơ sở dữ liệu hoặc SQL có thể đã thay đổi. Hãy yêu cầu Agent tạo lại."
     },
     "plan-reference-unavailable": "Kế hoạch này không còn khả dụng hoặc bạn không có quyền truy cập.",
@@ -495,6 +502,7 @@
     "tool-completed-with-warnings": "Đã hoàn thành với cảnh báo",
     "tool-default-value": "Mặc định",
     "tool-failed": "Thất bại",
+    "tool-manual-required": "Cần thao tác thủ công",
     "tool-options": "Tùy chọn",
     "tool-prompt": "Lời nhắc",
     "tool-request-canceled": "Yêu cầu đã được hủy",

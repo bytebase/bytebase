@@ -11,6 +11,7 @@ import zhCN from "@/locales/zh-CN.json";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { AIChatResponse_StopReason } from "@/types/proto-es/v1/ai_service_pb";
 import type { DomRefSuggestion } from "../dom";
+import type { AgentDomContext } from "../dom/interactionRegistry";
 import type { AgentMaskingPageResource } from "../logic/chatContext";
 import type { AgentCallbacks, AgentLoopOptions } from "../logic/agentLoop";
 import type { createToolExecutor } from "../logic/tools";
@@ -46,6 +47,7 @@ const mocks = vi.hoisted(() => ({
     i18n: { language: "en-US" },
   })),
   routerPush: vi.fn(),
+  routeChanged: () => {},
   lazyExtractDomRefSuggestions: vi.fn<() => Promise<DomRefSuggestion[]>>(
     async () => []
   ),
@@ -94,6 +96,7 @@ const mocks = vi.hoisted(() => ({
   projectPoliciesByName: {} as Record<string, object>,
   availableProjects: [] as { name: string; title: string }[],
   workspace: { name: "workspaces/demo", title: "Demo workspace" },
+  currentUserEmail: "agent@example.com",
   aiEnabled: undefined as boolean | undefined,
   currentContext: "projects/orders" as string | undefined,
   currentPath: "/demo",
@@ -171,13 +174,21 @@ vi.mock("@/app/router", async (importOriginal) => ({
       },
     },
     push: mocks.routerPush,
+    afterEach: (listener: () => void) => {
+      mocks.routeChanged = listener;
+      return () => {};
+    },
     resolve: () => ({ href: "/settings/general", fullPath: "/settings/general" }),
   },
 }));
 
 vi.mock("@/stores/app", () => {
   const state = {
-    currentUser: { name: "users/me@example.com", email: "me@example.com", get workspace() { return mocks.workspace?.name; } },
+    currentUser: {
+      name: "users/me@example.com",
+      get email() { return mocks.currentUserEmail; },
+      get workspace() { return mocks.workspace?.name; },
+    },
     get serverInfo() {
       return { aiEnabled: mocks.aiEnabled };
     },
@@ -211,7 +222,7 @@ vi.mock("@/stores/app", () => {
   const useAppStore = <T,>(selector: (value: typeof state) => T) =>
     selector(state);
   useAppStore.getState = () => state;
-  useAppStore.subscribe = () => () => {};
+  useAppStore.subscribe = (_listener: () => void) => () => {};
   return { useAppStore };
 });
 
@@ -340,6 +351,7 @@ const getQueuedUserMessage = (chatId: string) =>
 
 beforeEach(async () => {
   vi.stubGlobal("localStorage", createMockStorage());
+  mocks.currentUserEmail = "agent@example.com";
   const initialState = createAgentStore().getState();
   useAgentStore.setState({
     workspaceName: "workspaces/demo",
@@ -2220,25 +2232,54 @@ describe("AgentInput", () => {
     }
   });
 
-  test.each([true, false])("keeps a below-limit API permission interactive after asynchronous persistence and focus with approved=%s", async (approved) => {
+  test.each([
+    [true, "api"], [false, "api"], [true, "dom"], [true, "dom-navigation"],
+  ] as const)("keeps a below-limit API permission interactive after asynchronous persistence and focus with approved=%s and origin %s", async (approved, origin) => {
     enableAsynchronousRunRecovery();
+    const toolName = origin === "api" ? "call_api" : "dom_action";
+    const operationId = origin === "api" ? "bytebase.v1.SQLService.Query" : "bytebase.v1.DatabaseService.UpdateDatabase";
     const ask: AgentPendingAsk = {
       kind: "confirm", toolCallId: "query-permission", prompt: "Run this query?",
-      apiPermission: { actionId: "query-action", operationId: "bytebase.v1.SQLService.Query" },
+      apiPermission: { actionId: "query-action", operationId },
     };
     mocks.getPendingApiCallPreview.mockReturnValue({
       operationId: "bytebase.v1.SQLService.Query", body: '{"name":"instances/example/databases/orders","statement":"SELECT 1","limit":100}', expiresAt: Date.now() + 300_000,
     });
     const runIds: string[] = [];
+    let activeDom: AgentDomContext | undefined;
+    if (origin !== "api") {
+      mocks.getPendingApiCallPreview.mockImplementation(({ domContext }) =>
+        domContext?.isCurrent() && domContext.pageGeneration === activeDom?.pageGeneration
+          ? { operationId, body: "{}", dom: { kind: "database-labels", changes: [], resourceName: "instances/i/databases/db" }, expiresAt: Date.now() + 300_000 }
+          : undefined
+      );
+      mocks.resolvePendingApiCall.mockImplementation(async ({ domContext, approved: allowed, signal, context }) => {
+        expect(activeDom?.isCurrent()).toBe(false);
+        expect(domContext?.runId).toBe(runIds[0]);
+        expect(domContext?.signal).toBe(signal);
+        expect(domContext?.isCurrent()).toBe(true);
+        expect(context).toMatchObject({ runId: runIds[0], toolCallId: ask.toolCallId, logicalActionId: ask.apiPermission!.actionId });
+        expect(context?.isCurrent()).toBe(true);
+        expect(allowed).toBe(origin === "dom");
+        return allowed ? '{"status":200,"response":{}}' : '{"called":false}';
+      });
+    }
     mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks, _signal, options) => {
       runIds.push(options.runId);
       if (runIds.length === 1) {
+        if (origin !== "api") {
+          const [, executorOptions] = mocks.createToolExecutor.mock.lastCall as unknown as Parameters<typeof createToolExecutor>;
+          activeDom = executorOptions?.getDomContext?.();
+          expect(activeDom?.isCurrent()).toBe(true);
+          expect(executorOptions?.priorAttemptIds?.("f".repeat(64))).toEqual([]);
+          expect(executorOptions?.isApiScopeCurrent?.()).toBe(true);
+        }
         const reservation = await options.reserveProviderAttempt();
         await options.onAttemptSettled({
           attemptId: reservation.attemptId, ordinal: reservation.ordinal, runId: options.runId, outcome: "response",
-          usage: { purpose: "agent", toolNames: ["call_api"], totalTokens: 24_338 },
+          usage: { purpose: "agent", toolNames: [toolName], totalTokens: 24_338 },
         });
-        callbacks.onAssistantMessage({ role: "assistant", toolCalls: [{ id: ask.toolCallId, name: "call_api", arguments: "{}" }] });
+        callbacks.onAssistantMessage({ role: "assistant", toolCalls: [{ id: ask.toolCallId, name: toolName, arguments: "{}" }] });
         await options.onCheckpoint({ phase: "working" });
         return { kind: "awaiting_user", ask, totalTokensUsed: 24_338 };
       }
@@ -2282,12 +2323,25 @@ describe("AgentInput", () => {
       expect(allow).toBeEnabled();
       expect(deny).toBeEnabled();
       expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+      if (origin === "dom-navigation") {
+        const admit = useAgentStore.getState().checkAgentStorageAdmission;
+        useAgentStore.setState({
+          checkAgentStorageAdmission: async (...args) => {
+            const previous = mocks.currentPath;
+            mocks.currentPath = "/another-page";
+            mocks.routeChanged();
+            mocks.currentPath = previous;
+            mocks.routeChanged();
+            return admit(...args);
+          },
+        });
+      }
       await act(async () => {
         (approved ? allow : deny).click();
         (approved ? allow : deny).click();
         await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle"));
       });
-      expect(mocks.resolvePendingApiCall).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ actionId: "query-action", approved }));
+      expect(mocks.resolvePendingApiCall).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ actionId: "query-action", approved: approved && origin !== "dom-navigation" }));
       expect(store.getMessages(chat.id).filter(message => message.role === "tool" && message.toolCallId === ask.toolCallId)).toHaveLength(1);
       expect(store.getPendingAsk(chat.id)).toBeNull();
       expect(new Set(runIds).size).toBe(1);
@@ -5258,6 +5312,7 @@ describe("AgentInput", () => {
     test("approval response loss continues the explanation and ordinary queued follow-up without replaying the request", async () => {
       enableAsynchronousRunRecovery();
       const state = useAgentStore.getState();
+      mocks.currentUserEmail = "me@example.com";
       state.setWorkspaceName("workspaces/demo", "me@example.com");
       const call = { operationId: "bytebase.v1.ProjectService.UpdateProject", path: "/bytebase.v1.ProjectService/UpdateProject", body: '{"project":{"name":"projects/orders","title":"Changed"}}' };
       const ask: AgentPendingAsk = { kind:"confirm", toolCallId:"write", prompt:call.operationId,
@@ -5296,6 +5351,7 @@ describe("AgentInput", () => {
     test("keeps and observes a later READ result with a settled write's provider ID", async () => {
       enableAsynchronousRunRecovery();
       const state = useAgentStore.getState();
+      mocks.currentUserEmail = "me@example.com";
       state.setWorkspaceName("workspaces/demo", "me@example.com");
       const observe = vi.spyOn(
         await import("../logic/handoff"),
@@ -11832,6 +11888,7 @@ describe("AgentInput", () => {
     const suggestions: DomRefSuggestion[] = [
       {
         ref: "button.submit",
+        actions: "manual-required",
         tag: "BUTTON",
         role: "button",
         label: "Submit",
@@ -13825,8 +13882,12 @@ describe("AgentInput", () => {
       expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
       expect(store.getMessages(chatId)).toEqual(messages);
       expect(store.getDraft(chatId)).toEqual(draft);
-      expect(store.getPendingAsk(chatId)).toEqual(pendingAsk);
-      expect(store.getChat(chatId)?.status).toBe("awaiting_user");
+      expect(store.getPendingAsk(chatId)).toEqual(
+        action === "api permission" ? null : pendingAsk
+      );
+      expect(store.getChat(chatId)?.status).toBe(
+        action === "api permission" ? "idle" : "awaiting_user"
+      );
       expect(mocks.runAgentLoop).not.toHaveBeenCalled();
     }
   );
@@ -14136,6 +14197,120 @@ describe("AgentInput", () => {
       ])
     );
     expect(useAgentStore.getState().getPendingAsk(chatId)).toBeNull();
+    view.unmount();
+  });
+
+  test.each([
+    ["database-labels", "agent.permission.database-labels"],
+    ["database-environment", "agent.permission.database-environment"],
+  ] as const)("shows the runtime-owned %s diff in the existing API permission", (kind, title) => {
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    store.awaitUser(chatId, {
+      toolCallId: "dom-write",
+      prompt: "Untrusted model description",
+      kind: "confirm",
+      apiPermission: {
+        actionId: "dom-permission",
+        operationId: "bytebase.v1.DatabaseService.UpdateDatabase",
+      },
+    });
+    const resourceName = "instances/example/databases/app";
+    const longField = `label-${"x".repeat(160)}`;
+    mocks.getPendingApiCallPreview.mockReturnValue({
+      operationId: "bytebase.v1.DatabaseService.UpdateDatabase",
+      body: '{"database":{"name":"instances/example/databases/app"},"updateMask":"labels"}',
+      priorAttemptIds: ["uncertain-dom-attempt"],
+      expiresAt: Date.now() + 60_000,
+      dom: {
+        kind,
+        resourceName,
+        changes: kind === "database-labels" ? [
+          { field: longField, before: null, after: "<script>new value</script>" },
+          { field: "removed-label", before: "old value", after: null },
+          { field: "empty-label", before: "", after: "filled value" },
+        ] : [{ field: "environment", before: "environments/dev", after: "environments/prod" }],
+      },
+    });
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const focusTarget = document.createElement("button");
+    document.body.appendChild(focusTarget);
+    focusTarget.focus();
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    expect(screen.getByText(title)).toBeInTheDocument();
+    expect(screen.getByText(resourceName)).toBeInTheDocument();
+    const changes = screen.getByRole("list", { name: title });
+    const rows = within(changes).getAllByRole("listitem");
+    expect(rows).toHaveLength(kind === "database-labels" ? 3 : 1);
+    if (kind === "database-labels") {
+      expect(within(rows[0]).getByText(longField)).toBeInTheDocument();
+      expect(within(rows[0]).getByText("agent.permission.not-set")).toBeInTheDocument();
+      expect(within(rows[0]).getByText("<script>new value</script>")).toBeInTheDocument();
+      expect(within(rows[1]).getByText("old value")).toBeInTheDocument();
+      expect(within(rows[1]).getByText("agent.permission.not-set")).toBeInTheDocument();
+      expect(within(rows[2]).getByText("common.empty")).toBeInTheDocument();
+    } else {
+      expect(within(rows[0]).getByText("common.environment")).toBeInTheDocument();
+      expect(within(rows[0]).getByText("environments/dev")).toBeInTheDocument();
+      expect(within(rows[0]).getByText("environments/prod")).toBeInTheDocument();
+    }
+    for (const row of rows) {
+      expect(within(row).getByText("agent.permission.before")).toBeInTheDocument();
+      expect(within(row).getByText("agent.permission.after")).toBeInTheDocument();
+    }
+    expect(view.container.querySelector("script")).toBeNull();
+    expect(view.container.textContent).not.toContain("Untrusted model description");
+    const details = view.container.querySelector("details");
+    expect(details).not.toHaveAttribute("open");
+    expect(details?.querySelector("summary")?.textContent).toBe("agent.permission.exact-request");
+    expect(details?.textContent).toContain('"updateMask": "labels"');
+    expect(screen.getAllByRole("button", { name: "agent.api-permission-allow" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "agent.api-permission-deny" })).toHaveLength(1);
+    expect(view.container).toHaveTextContent("agent.api-recovery.repeat-risk");
+    expect(screen.getByRole("timer")).toBeInTheDocument();
+    expect(document.activeElement).toBe(focusTarget);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(mocks.executeTool).not.toHaveBeenCalled();
+    expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+    view.unmount();
+    focusTarget.remove();
+  });
+
+  test("removes a stale DOM preview instead of retaining its diff or offering approval", () => {
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    store.awaitUser(chatId, {
+      toolCallId: "dom-write",
+      prompt: "Untrusted stale change",
+      kind: "confirm",
+      apiPermission: {
+        actionId: "dom-permission",
+        operationId: "bytebase.v1.DatabaseService.UpdateDatabase",
+      },
+    });
+    mocks.getPendingApiCallPreview.mockReturnValue({
+      operationId: "bytebase.v1.DatabaseService.UpdateDatabase",
+      body: "{}",
+      expiresAt: Date.now() + 60_000,
+      dom: {
+        kind: "database-environment",
+        resourceName: "instances/example/databases/app",
+        changes: [{ field: "environment", before: "environments/dev", after: "environments/prod" }],
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    expect(screen.getByText("environments/prod")).toBeInTheDocument();
+
+    mocks.getPendingApiCallPreview.mockReturnValue(undefined);
+    view.render(<AgentInput />);
+    expect(screen.queryByText("environments/prod")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "agent.api-permission-allow" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "agent.api-permission-dismiss" })).toBeEnabled();
+    expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
     view.unmount();
   });
 

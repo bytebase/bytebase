@@ -34,6 +34,31 @@ Keep agent-only UI and state inside this module. Shared application primitives s
 
 DOM refs such as `e1` are local to one `get_page_state(mode="dom")` snapshot. Refresh the snapshot after navigation or any DOM-changing action; never describe refs as durable identifiers.
 
+### Registered DOM actions
+
+`dom_action` has no raw click, input, select, keyboard, or event-dispatch fallback.
+Only an exact element-and-verb binding registered by its mounted route owner is
+eligible. Shared control types and ancestor elements do not grant authority.
+Bindings remain scoped to the current actor, Workspace, Project, chat, run,
+route generation, resource, and owner revision.
+
+Inspect and local-draft bindings explicitly declare their effect. A local setter
+must not trigger persistence, autosave, focus changes, or delayed side effects.
+Persistent bindings prepare exactly one API request without executing it. That
+exact request uses the common scope, IAM, and existing Allow once/Deny permission
+path, with fresh owner checks at approval and the final dispatch boundary. These
+guards use local execution identity and do not depend on a subscription preflight
+service. Deny keeps the unsaved draft; a known successful write synchronizes the
+matching owner without replaying the action.
+
+Database labels and environment are the supported persistent route bindings.
+Their permission preview uses the runtime-owned canonical resource and field
+diff, never the model's description. Local Plan statement editing uses an
+isolated, unsaved draft. Unsupported controls remain manual, including autosave
+surfaces, SQL Editor, Plan Save/Create, multi-request workflows, and destructive
+actions. Registration is explicit, not automatic support for the whole console.
+Native human interactions are unchanged.
+
 ## OpenAPI index
 
 Run:

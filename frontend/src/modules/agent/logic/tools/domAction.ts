@@ -1,18 +1,23 @@
-import type { AppRouterInstance } from "@/app/router";
-import { lazyExecuteDomAction } from "../../dom";
+import { type DomActionParams, lazyPrepareDomAction } from "../../dom";
+import type {
+  AgentDomContext,
+  AgentDomPreparation,
+} from "../../dom/interactionRegistry";
 
-export interface DomActionArgs {
-  type: "click" | "input" | "select" | "read" | "scroll";
-  ref: string;
-  value?: string;
-}
+export type DomActionArgs = DomActionParams;
 
-export function createDomActionTool(
-  router: AppRouterInstance,
-  canUseCurrentPage?: () => boolean
-) {
-  return async (args: DomActionArgs): Promise<string> => {
-    const result = await lazyExecuteDomAction(args, router, canUseCurrentPage);
-    return JSON.stringify(result);
-  };
+export function createDomActionTool() {
+  return async (
+    args: DomActionArgs,
+    context?: AgentDomContext
+  ): Promise<AgentDomPreparation> =>
+    context
+      ? lazyPrepareDomAction(args, context)
+      : {
+          kind: "result",
+          result: {
+            success: false,
+            message: "The current page and run could not be verified.",
+          },
+        };
 }

@@ -20,6 +20,20 @@ vi.mock("@/components/EnvironmentLabel", () => ({
 }));
 
 describe("EnvironmentSelect", () => {
+  test("forwards the selectable trigger, not its container or portal", () => {
+    const ref = vi.fn();
+    const { container, unmount } = render(
+      <EnvironmentSelect
+        className="picker"
+        triggerRef={ref}
+        value=""
+        onChange={() => {}}
+      />
+    );
+    expect(ref).toHaveBeenCalledWith(container.querySelector(".picker > div"));
+    unmount();
+    expect(ref.mock.lastCall?.[0]).toBeNull();
+  });
   test("multiple: each option row is an option in a listbox and carries its suffix", () => {
     const { container } = render(
       <EnvironmentSelect
@@ -35,9 +49,9 @@ describe("EnvironmentSelect", () => {
       />
     );
     act(() => {
-      (container.querySelector(".env-select > div") as HTMLElement).dispatchEvent(
-        new MouseEvent("click", { bubbles: true })
-      );
+      (
+        container.querySelector(".env-select > div") as HTMLElement
+      ).dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     expect(screen.getByRole("listbox")).toBeTruthy();
     expect(screen.getAllByRole("option")).toHaveLength(2);
