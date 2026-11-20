@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/pkg/errors"
@@ -150,6 +151,24 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	// - This pattern allows proper verification even when servers send certificates out of order
 	cfg.InsecureSkipVerify = true
 	cfg.VerifyPeerCertificate = CreateCertificateVerifier(rootCertPool, ds.GetHost())
+	return cfg, nil
+}
+
+// GetTLSConfigForHost returns the TLS config for ds with SNI and certificate
+// hostname verification bound to host when non-empty, so SRV and multi-host
+// drivers verify each dialed server against its own hostname rather than ds.GetHost().
+func GetTLSConfigForHost(ds *storepb.DataSource, host string) (*tls.Config, error) {
+	cfg, err := GetTLSConfig(ds)
+	if err != nil || cfg == nil {
+		return nil, err
+	}
+	bare := strings.TrimPrefix(strings.TrimSuffix(host, "]"), "[")
+	if bare != "" {
+		cfg.ServerName = bare
+		if cfg.VerifyPeerCertificate != nil {
+			cfg.VerifyPeerCertificate = CreateCertificateVerifier(cfg.RootCAs, bare)
+		}
+	}
 	return cfg, nil
 }
 

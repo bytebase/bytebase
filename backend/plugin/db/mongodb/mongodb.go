@@ -38,6 +38,7 @@ import (
 	"database/sql"
 	"io"
 	"net"
+	"strings"
 
 	omnidriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -111,8 +112,8 @@ func toDriverConfig(config db.ConnectionConfig) (omnidriver.Config, omnimongo.Op
 		Params:   connectionParams(dataSource),
 	}
 	if dataSource.GetUseSsl() {
-		driverConfig.TLS = func(string) (*tls.Config, error) {
-			return util.GetTLSConfig(dataSource)
+		driverConfig.TLS = func(host string) (*tls.Config, error) {
+			return util.GetTLSConfigForHost(dataSource, host)
 		}
 	}
 	return driverConfig, omnimongo.Options{SRV: dataSource.GetSrv()}, nil
@@ -123,15 +124,20 @@ func toDriverConfig(config db.ConnectionConfig) (omnidriver.Config, omnimongo.Op
 // appended to a single host that has none, so a host list carries each
 // address's port itself.
 func connectionHost(dataSource *storepb.DataSource) string {
-	host := dataSource.GetHost()
-	if port := dataSource.GetPort(); port != "" {
-		host += ":" + port
-	}
+	host := formatHostPort(dataSource.GetHost(), dataSource.GetPort())
 	for _, address := range dataSource.GetAdditionalAddresses() {
-		host += "," + address.GetHost()
-		if port := address.GetPort(); port != "" {
-			host += ":" + port
-		}
+		host += "," + formatHostPort(address.GetHost(), address.GetPort())
+	}
+	return host
+}
+
+func formatHostPort(host, port string) string {
+	bare := strings.TrimPrefix(strings.TrimSuffix(host, "]"), "[")
+	if port != "" {
+		return net.JoinHostPort(bare, port)
+	}
+	if strings.Count(bare, ":") >= 2 {
+		return "[" + bare + "]"
 	}
 	return host
 }

@@ -804,9 +804,35 @@ const CONNECTION_STRING_PLACEHOLDERS: Record<ConnectionStringEngine, string> = {
   [Engine.MSSQL]:
     "Server=tcp:db.example.com,1433;Initial Catalog=mydb;User ID=sa;Password=…;Encrypt=True;",
   [Engine.ORACLE]: "tcps://user:password@db.example.com:1522/orclpdb1",
+  [Engine.MARIADB]:
+    "mariadb://user:password@db.example.com:3306/mydb?ssl-mode=REQUIRED",
+  [Engine.TIDB]:
+    "mysql://user:password@db.example.com:4000/mydb?ssl-mode=VERIFY_IDENTITY",
+  [Engine.OCEANBASE]:
+    "mysql://user@tenant#cluster:password@db.example.com:2883/mydb",
+  [Engine.STARROCKS]: "mysql://user:password@db.example.com:9030/mydb",
+  [Engine.DORIS]: "mysql://user:password@db.example.com:9030/mydb",
+  [Engine.COCKROACHDB]:
+    "postgresql://user:password@db.example.com:26257/defaultdb?sslmode=verify-full",
+  [Engine.REDSHIFT]: "redshift://user:password@cluster.example.com:5439/dev",
+  [Engine.MONGODB]: "mongodb+srv://user:password@cluster.example.com/mydb",
+  [Engine.REDIS]: "rediss://default:password@db.example.com:6379",
+  [Engine.CASSANDRA]:
+    "cassandra://user:password@node1.example.com:9042,node2.example.com:9042",
+  [Engine.ELASTICSEARCH]: "https://user:password@search.example.com:9200",
+  [Engine.CLICKHOUSE]:
+    "clickhouses://user:password@db.example.com:9440/default",
+  [Engine.SNOWFLAKE]:
+    "snowflake://user:password@account.snowflakecomputing.com",
+  [Engine.TRINO]:
+    "trino://user:password@trino.example.com:8080/catalog?SSL=true",
+  [Engine.HIVE]:
+    "jdbc:hive2://hive.example.com:10000/default;user=hive;password=…",
+  [Engine.DATABRICKS]:
+    "jdbc:databricks://dbc.example.com:443/default;httpPath=/sql/1.0/warehouses/…;PWD=…",
 };
 
-type ConnectionUrlFillState = "complete" | "missing-password";
+type ConnectionUrlFillState = "complete" | "missing-password" | "missing-token";
 
 function ConnectionStringImportPopover({
   engine,
@@ -843,19 +869,55 @@ function ConnectionStringImportPopover({
     }
   }, [open, pendingPasswordFocus, resolvePasswordInput]);
 
-  const helpText = {
+  const helpTextByEngine: Record<ConnectionStringEngine, string> = {
     [Engine.MYSQL]: t("instance.connection-string.help.mysql"),
     [Engine.POSTGRES]: t("instance.connection-string.help.postgres"),
     [Engine.MSSQL]: t("instance.connection-string.help.mssql"),
     [Engine.ORACLE]: t("instance.connection-string.help.oracle"),
-  }[engine];
+    [Engine.MARIADB]: t("instance.connection-string.help.mariadb"),
+    [Engine.TIDB]: t("instance.connection-string.help.tidb"),
+    [Engine.OCEANBASE]: t("instance.connection-string.help.oceanbase"),
+    [Engine.STARROCKS]: t("instance.connection-string.help.starrocks"),
+    [Engine.DORIS]: t("instance.connection-string.help.doris"),
+    [Engine.COCKROACHDB]: t("instance.connection-string.help.cockroachdb"),
+    [Engine.REDSHIFT]: t("instance.connection-string.help.redshift"),
+    [Engine.MONGODB]: t("instance.connection-string.help.mongodb"),
+    [Engine.REDIS]: t("instance.connection-string.help.redis"),
+    [Engine.CASSANDRA]: t("instance.connection-string.help.cassandra"),
+    [Engine.ELASTICSEARCH]: t("instance.connection-string.help.elasticsearch"),
+    [Engine.CLICKHOUSE]: t("instance.connection-string.help.clickhouse"),
+    [Engine.SNOWFLAKE]: t("instance.connection-string.help.snowflake"),
+    [Engine.TRINO]: t("instance.connection-string.help.trino"),
+    [Engine.HIVE]: t("instance.connection-string.help.hive"),
+    [Engine.DATABRICKS]: t("instance.connection-string.help.databricks"),
+  };
+  const helpText = helpTextByEngine[engine];
 
-  const invalidText = {
+  const invalidTextByEngine: Record<ConnectionStringEngine, string> = {
     [Engine.MYSQL]: t("instance.connection-string.invalid.mysql"),
     [Engine.POSTGRES]: t("instance.connection-string.invalid.postgres"),
     [Engine.MSSQL]: t("instance.connection-string.invalid.mssql"),
     [Engine.ORACLE]: t("instance.connection-string.invalid.oracle"),
-  }[engine];
+    [Engine.MARIADB]: t("instance.connection-string.invalid.mariadb"),
+    [Engine.TIDB]: t("instance.connection-string.invalid.tidb"),
+    [Engine.OCEANBASE]: t("instance.connection-string.invalid.oceanbase"),
+    [Engine.STARROCKS]: t("instance.connection-string.invalid.starrocks"),
+    [Engine.DORIS]: t("instance.connection-string.invalid.doris"),
+    [Engine.COCKROACHDB]: t("instance.connection-string.invalid.cockroachdb"),
+    [Engine.REDSHIFT]: t("instance.connection-string.invalid.redshift"),
+    [Engine.MONGODB]: t("instance.connection-string.invalid.mongodb"),
+    [Engine.REDIS]: t("instance.connection-string.invalid.redis"),
+    [Engine.CASSANDRA]: t("instance.connection-string.invalid.cassandra"),
+    [Engine.ELASTICSEARCH]: t(
+      "instance.connection-string.invalid.elasticsearch"
+    ),
+    [Engine.CLICKHOUSE]: t("instance.connection-string.invalid.clickhouse"),
+    [Engine.SNOWFLAKE]: t("instance.connection-string.invalid.snowflake"),
+    [Engine.TRINO]: t("instance.connection-string.invalid.trino"),
+    [Engine.HIVE]: t("instance.connection-string.invalid.hive"),
+    [Engine.DATABRICKS]: t("instance.connection-string.invalid.databricks"),
+  };
+  const invalidText = invalidTextByEngine[engine];
 
   const detectedEngine = invalid
     ? detectConnectionStringEngine(value, engine)
@@ -879,9 +941,15 @@ function ConnectionStringImportPopover({
     const parsed = parseConnectionString(engine, text);
     if (!parsed) return false;
     const fillState: ConnectionUrlFillState =
-      parsed.password !== undefined ? "complete" : "missing-password";
+      engine === Engine.DATABRICKS
+        ? parsed.token !== undefined
+          ? "complete"
+          : "missing-token"
+        : parsed.password !== undefined
+          ? "complete"
+          : "missing-password";
     onParsed(parsed, fillState);
-    if (fillState === "missing-password") {
+    if (fillState !== "complete") {
       focusPasswordOnCloseRef.current = true;
       setPendingPasswordFocus(true);
     }
@@ -1556,8 +1624,12 @@ export function InstanceFormBody({
   const resolvePasswordInput = useCallback(
     () =>
       connectionSectionRef.current?.querySelector<HTMLInputElement>(
+        '[data-connection-primary-secret] input[type="password"]'
+      ) ??
+      connectionSectionRef.current?.querySelector<HTMLInputElement>(
         '[data-agent-sensitive] input[type="password"]'
-      ) ?? null,
+      ) ??
+      null,
     []
   );
 
@@ -1573,13 +1645,16 @@ export function InstanceFormBody({
             : ds
         ),
       }));
+      const toastTitle =
+        fillState === "missing-token"
+          ? t("instance.connection-string.filled-missing-token")
+          : fillState === "missing-password"
+            ? t("instance.connection-string.filled-missing-password")
+            : t("instance.connection-string.filled");
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
-        title:
-          fillState === "missing-password"
-            ? t("instance.connection-string.filled-missing-password")
-            : t("instance.connection-string.filled"),
+        title: toastTitle,
       });
     },
     [basicInfo.engine, setDataSourceEditState, t]

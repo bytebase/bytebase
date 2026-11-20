@@ -41,44 +41,46 @@ describe("instance validation", () => {
     ).toBeUndefined();
   });
 
-  test.each([
-    [Engine.SNOWFLAKE, "authenticationPrivateKey"],
-    [Engine.DATABRICKS, "updatedToken"],
-  ] as const)(
-    "validates required secret drafts independently of mounted inputs for %s",
-    (engine, field) => {
-      const stored = draft({ pendingCreate: false, warehouseId: "warehouse" });
-      expect(validate(stored, engine)).toEqual({});
-      const replacement = updateDataSourceSecret(
-        stored,
-        "authenticationPrivateKey",
-        "replacement"
-      );
-      expect(validate(replacement, engine)).toEqual({});
-      const cleared = updateDataSourceSecret(
-        replacement,
-        "authenticationPrivateKey",
-        ""
-      );
-      expect(validate(cleared, engine)[field]).toBe("required");
-      expect(
-        validate(
-          updateDataSourceSecret(
-            cleared,
-            "authenticationPrivateKey",
-            "new value"
-          ),
-          engine
-        )
-      ).toEqual({});
-      expect(validate({ ...stored, pendingCreate: true }, engine)[field]).toBe(
-        "required"
-      );
-    }
-  );
+  test("validates required Databricks token draft independently of mounted inputs", () => {
+    const stored = draft({ pendingCreate: false, warehouseId: "warehouse" });
+    expect(validate(stored, Engine.DATABRICKS)).toEqual({});
+    const replacement = updateDataSourceSecret(
+      stored,
+      "authenticationPrivateKey",
+      "replacement"
+    );
+    expect(validate(replacement, Engine.DATABRICKS)).toEqual({});
+    const cleared = updateDataSourceSecret(
+      replacement,
+      "authenticationPrivateKey",
+      ""
+    );
+    expect(validate(cleared, Engine.DATABRICKS).updatedToken).toBe("required");
+    expect(
+      validate(
+        updateDataSourceSecret(
+          cleared,
+          "authenticationPrivateKey",
+          "new value"
+        ),
+        Engine.DATABRICKS
+      )
+    ).toEqual({});
+    expect(
+      validate({ ...stored, pendingCreate: true }, Engine.DATABRICKS)
+        .updatedToken
+    ).toBe("required");
+  });
   test("allows optional secrets to be explicitly cleared", () => {
     const ds = draft({ pendingCreate: false });
     expect(validate(updateDataSourceSecret(ds, "password", ""))).toEqual({});
+    expect(
+      validate(
+        updateDataSourceSecret(ds, "authenticationPrivateKey", ""),
+        Engine.SNOWFLAKE
+      )
+    ).toEqual({});
+    expect(validate(draft(), Engine.SNOWFLAKE)).toEqual({});
     expect(
       validate(
         updateDataSourceSecret(ds, "authenticationPrivateKeyPassphrase", ""),

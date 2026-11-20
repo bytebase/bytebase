@@ -1,6 +1,13 @@
 package cassandra
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
 	"testing"
 	"time"
 
@@ -195,4 +202,64 @@ func TestExecuteLoggerIsSilentWithoutACallback(t *testing.T) {
 		logger.TransactionControl(omnidriver.Commit, nil)
 		logger.Retry(nil, 1, 1)
 	})
+}
+
+func TestFormatAddress(t *testing.T) {
+	require.Equal(t, "node1.example.com:9042", formatAddress("node1.example.com", "9042"))
+	require.Equal(t, "node1.example.com", formatAddress("node1.example.com", ""))
+	require.Equal(t, "[2001:db8::1]:9042", formatAddress("2001:db8::1", "9042"))
+	require.Equal(t, "[2001:db8::1]:9042", formatAddress("[2001:db8::1]", "9042"))
+}
+
+func TestTLSConfigFuncVerifiesDialedHost(t *testing.T) {
+	require.Nil(t, tlsConfigFunc(&storepb.DataSource{Host: "node1.example.com"}))
+
+	caKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	caTemplate := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "test-ca"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		KeyUsage:              x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}
+	caDER, err := x509.CreateCertificate(rand.Reader, caTemplate, caTemplate, &caKey.PublicKey, caKey)
+	require.NoError(t, err)
+	caPEM := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER}))
+
+	signLeaf := func(serial int64, host string) []byte {
+		leafKey, genErr := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		require.NoError(t, genErr)
+		tmpl := &x509.Certificate{
+			SerialNumber: big.NewInt(serial),
+			Subject:      pkix.Name{CommonName: host},
+			DNSNames:     []string{host},
+			NotBefore:    time.Now().Add(-time.Hour),
+			NotAfter:     time.Now().Add(time.Hour),
+			KeyUsage:     x509.KeyUsageDigitalSignature,
+			ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		}
+		der, createErr := x509.CreateCertificate(rand.Reader, tmpl, caTemplate, &leafKey.PublicKey, caKey)
+		require.NoError(t, createErr)
+		return der
+	}
+
+	node1Cert := signLeaf(2, "node1.example.com")
+	node2Cert := signLeaf(3, "node2.example.com")
+
+	fn := tlsConfigFunc(&storepb.DataSource{
+		Host:                 "node1.example.com",
+		UseSsl:               true,
+		VerifyTlsCertificate: true,
+		SslCa:                caPEM,
+	})
+	require.NotNil(t, fn)
+
+	tlsCfg, err := fn("node2.example.com")
+	require.NoError(t, err)
+	require.Equal(t, "node2.example.com", tlsCfg.ServerName)
+	require.NoError(t, tlsCfg.VerifyPeerCertificate([][]byte{node2Cert}, nil))
+	require.Error(t, tlsCfg.VerifyPeerCertificate([][]byte{node1Cert}, nil))
 }

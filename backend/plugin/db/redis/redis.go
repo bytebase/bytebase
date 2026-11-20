@@ -168,7 +168,8 @@ func addressList(dataSource *storepb.DataSource) string {
 }
 
 func joinAddress(host, port string) string {
-	return fmt.Sprintf("%s:%s", host, port)
+	bare := strings.TrimPrefix(strings.TrimSuffix(host, "]"), "[")
+	return net.JoinHostPort(bare, port)
 }
 
 func (d *Driver) closeSSHClient() {

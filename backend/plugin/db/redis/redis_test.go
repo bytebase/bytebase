@@ -241,3 +241,20 @@ func TestToRowValue(t *testing.T) {
 	require.Equal(t, int32(2), toRowValue(omnidriver.Value{Kind: omnidriver.Int32, Int64: 2}).GetInt32Value())
 	require.Equal(t, "value", toRowValue(omnidriver.Value{Kind: omnidriver.String, String: "value"}).GetStringValue())
 }
+
+func TestAddressList(t *testing.T) {
+	require.Equal(t, "127.0.0.1:6379", joinAddress("127.0.0.1", "6379"))
+	require.Equal(t, "redis.example.com:6379", joinAddress("redis.example.com", "6379"))
+	require.Equal(t, "[2001:db8::1]:6379", joinAddress("2001:db8::1", "6379"))
+	require.Equal(t, "[2001:db8::1]:6379", joinAddress("[2001:db8::1]", "6379"))
+
+	ds := &storepb.DataSource{
+		Host: "2001:db8::1",
+		Port: "6379",
+		AdditionalAddresses: []*storepb.DataSource_Address{
+			{Host: "[2001:db8::2]", Port: "6380"},
+			{Host: "node3.example.com", Port: "6381"},
+		},
+	}
+	require.Equal(t, "[2001:db8::1]:6379,[2001:db8::2]:6380,node3.example.com:6381", addressList(ds))
+}
