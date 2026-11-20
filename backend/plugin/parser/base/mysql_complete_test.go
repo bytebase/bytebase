@@ -529,6 +529,26 @@ func TestPopulateMySQLFamilyCatalog_SkipsEnumerationForQualifiers(t *testing.T) 
 			stmt: "WITH c AS ((SELECT y.* FROM foo.t z JOIN Foo.t y)) SELECT x. FROM c x",
 			pos:  len("WITH c AS ((SELECT y.* FROM foo.t z JOIN Foo.t y)) SELECT x."),
 		},
+		{
+			name: "unqualified caret with sole colliding explicit source",
+			stmt: "SELECT  FROM Foo.t",
+			pos:  len("SELECT "),
+		},
+		{
+			name: "unqualified caret inside subquery ignores outer unqualified table",
+			stmt: "SELECT (SELECT  FROM Foo.t) FROM local",
+			pos:  len("SELECT (SELECT "),
+		},
+		{
+			name: "unqualified caret with sole CTE backed by colliding source",
+			stmt: "WITH c AS (SELECT * FROM Foo.t) SELECT  FROM c",
+			pos:  len("WITH c AS (SELECT * FROM Foo.t) SELECT "),
+		},
+		{
+			name: "unqualified caret in INSERT column list of colliding source",
+			stmt: "INSERT INTO Foo.t (",
+			pos:  len("INSERT INTO Foo.t ("),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var loadedOrder []string

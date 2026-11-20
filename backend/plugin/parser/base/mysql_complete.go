@@ -202,7 +202,7 @@ func PopulateMySQLFamilyCatalog(
 			}
 		}
 	}
-	deferDefault := caseSensitive && defaultName != "" && len(caretDBs) > 0 && caretDBs[0] != defaultName && strings.EqualFold(caretDBs[0], defaultName)
+	deferDefault := caseSensitive && shouldDeferDefaultDB(defaultName, caretDBs)
 	loadDefault := func() {
 		if cCtx.Metadata == nil || defaultName == "" {
 			return
@@ -431,6 +431,21 @@ func databaseQualifiersInStatement(statement, defaultDB string, caseSensitive bo
 	return qualifiers
 }
 
+func shouldDeferDefaultDB(defaultName string, prioritizedDBs []string) bool {
+	if defaultName == "" {
+		return false
+	}
+	for _, db := range prioritizedDBs {
+		if db == defaultName {
+			return false
+		}
+		if strings.EqualFold(db, defaultName) {
+			return true
+		}
+	}
+	return false
+}
+
 func appendUniqueDB(dst []string, dbs ...string) []string {
 	for _, db := range dbs {
 		if db == "" || slices.Contains(dst, db) {
@@ -482,6 +497,8 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 	nextAliasScopeID := 1
 	aliasesByScope := map[int]*mysqlAliasMap{}
 	parentAliasScope := map[int]int{}
+	scopeIsQueryBlock := map[int]bool{0: true}
+	scopeUsesDefaultUnqualified := map[int]bool{}
 	scopeProjRefs := map[int][]mysqlProjRef{}
 	scopeFromDBs := map[int][]string{}
 	cteByScope := map[int]map[string][]string{}
@@ -587,6 +604,7 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 		case ';':
 			aliasID := nextAliasScopeID
 			nextAliasScopeID++
+			scopeIsQueryBlock[aliasID] = true
 			scopes = []mysqlQualScope{{aliasScopeID: aliasID, stmtStart: true, allowFromAsTable: true}}
 			if tok.end <= pos {
 				caretAliasScopeID = aliasID
@@ -726,6 +744,7 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 			isTableStartPosition(sc.prevKeyword, prevPunct) && !isNonAliasClauseKeyword(tok.upper) {
 			targetDBs, fromCTE := lookupCTE(sc.aliasScopeID, tok.text)
 			if !fromCTE && defaultDB != "" {
+				scopeUsesDefaultUnqualified[sc.aliasScopeID] = true
 				targetDBs = []string{defaultDB}
 			}
 			if len(targetDBs) > 0 {
@@ -788,6 +807,7 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 					}
 				}
 			}
+			scopeIsQueryBlock[sc.aliasScopeID] = true
 			sc.inSelectList = kw == "SELECT"
 			sc.pastFromOrWhere = false
 			if kw == "SELECT" {
@@ -972,6 +992,20 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 		if len(caretDBs) == 0 {
 			if dbs, hit := resolveAliasDBs(caretAliasScopeID, caretIdent); hit {
 				caretDBs = dbs
+			}
+		}
+	} else {
+		scopeID := caretAliasScopeID
+		for scopeID != 0 && !scopeIsQueryBlock[scopeID] {
+			parentID, ok := parentAliasScope[scopeID]
+			if !ok {
+				break
+			}
+			scopeID = parentID
+		}
+		if !scopeUsesDefaultUnqualified[scopeID] {
+			if _, subDBs := finalizeScopeDBs(scopeID); len(subDBs) > 0 {
+				caretDBs = subDBs
 			}
 		}
 	}
