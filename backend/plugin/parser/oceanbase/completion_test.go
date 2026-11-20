@@ -293,11 +293,15 @@ func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
 		}
 		return databaseName, model.NewDatabaseMetadata(m, nil, nil, storepb.Engine_OCEANBASE, true), nil
 	}
+	listCalls := 0
 	cCtx := base.CompletionContext{
-		Scene:             base.SceneTypeAll,
-		DefaultDatabase:   "appdb",
-		Metadata:          metaFn,
-		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) { return []string{"appdb", "otherdb"}, nil },
+		Scene:           base.SceneTypeAll,
+		DefaultDatabase: "appdb",
+		Metadata:        metaFn,
+		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
+			listCalls++
+			return []string{"appdb", "otherdb"}, nil
+		},
 	}
 
 	stmt := "SELECT otherdb.t2. FROM otherdb.t2"
@@ -307,12 +311,14 @@ func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
 		"cross-db column 'c2' should surface; got %v", got)
 	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "c3"),
 		"cross-db column 'c3' should surface; got %v", got)
+	require.Zero(t, listCalls, "qualified cross-db completion must not enumerate databases")
 
 	stmt2 := "SELECT * FROM "
 	got2, err := Completion(context.Background(), cCtx, stmt2, 1, len(stmt2))
 	require.NoError(t, err)
 	require.True(t, hasCandidate(got2, base.CandidateTypeDatabase, "otherdb"),
 		"non-default database 'otherdb' should surface as a DATABASE candidate; got %v", got2)
+	require.Equal(t, 1, listCalls)
 }
 
 // Completion cost must be bounded by the caret's statement, not the whole

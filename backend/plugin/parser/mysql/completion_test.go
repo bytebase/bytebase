@@ -326,11 +326,13 @@ func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
 			return "", nil, nil
 		}
 	}
+	listCalls := 0
 	cCtx := base.CompletionContext{
 		Scene:           base.SceneTypeAll,
 		DefaultDatabase: "appdb",
 		Metadata:        metaFn,
 		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
+			listCalls++
 			return []string{"appdb", "otherdb", "unuseddb"}, nil
 		},
 	}
@@ -343,6 +345,7 @@ func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
 	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "c3"),
 		"cross-db column 'c3' should surface; got %v", got)
 	require.Zero(t, loads["unuseddb"], "unreferenced database must not be loaded")
+	require.Zero(t, listCalls, "qualified cross-db completion must resolve the qualifier directly without ListDatabaseNames")
 
 	stmt2 := "SELECT * FROM "
 	got2, err := Completion(context.Background(), cCtx, stmt2, 1, len(stmt2))
@@ -351,6 +354,7 @@ func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
 		"non-default database 'otherdb' should surface as a DATABASE candidate; got %v", got2)
 	require.True(t, hasCandidate(got2, base.CandidateTypeDatabase, "unuseddb"),
 		"non-default database 'unuseddb' should surface as a DATABASE candidate; got %v", got2)
+	require.Equal(t, 1, listCalls, "database_ref position should enumerate databases once")
 }
 
 func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
@@ -360,11 +364,16 @@ func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
 			{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "c1"}}},
 		}}},
 	})
+	var metaCalls []string
+	trackedMeta := func(ctx context.Context, inst, db string) (string, *model.DatabaseMetadata, error) {
+		metaCalls = append(metaCalls, db)
+		return meta(ctx, inst, db)
+	}
 	listCalls := 0
 	cCtx := base.CompletionContext{
 		Scene:           base.SceneTypeAll,
 		DefaultDatabase: "appdb",
-		Metadata:        meta,
+		Metadata:        trackedMeta,
 		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
 			listCalls++
 			return []string{"appdb", "otherdb"}, nil
@@ -376,6 +385,15 @@ func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "c1"))
 	require.Zero(t, listCalls, "ListDatabaseNames must not be called when neither database_ref nor cross-db qualifiers apply")
+	require.Equal(t, []string{"appdb"}, metaCalls)
+
+	metaCalls = nil
+	stmtAlias := "SELECT a. FROM t1 a WHERE a.c1 = 1"
+	gotAlias, err := Completion(context.Background(), cCtx, stmtAlias, 1, len("SELECT a."))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotAlias, base.CandidateTypeColumn, "c1"))
+	require.Zero(t, listCalls, "ListDatabaseNames must not be called for table/alias column qualifiers")
+	require.Equal(t, []string{"appdb"}, metaCalls, "table/alias qualifiers must not trigger Metadata lookups for non-db names")
 }
 
 // Completion cost must be bounded by the caret's statement, not the whole

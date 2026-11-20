@@ -106,9 +106,11 @@ func CompleteMySQLFamily(
 
 // PopulateMySQLFamilyCatalog populates an omni MySQL-family catalog from
 // Bytebase metadata. It loads the default database plus any database referenced
-// as a qualifier in the statement (so cross-database qualified completion like
-// `other_db.tbl.col` resolves). Unreferenced database names are enumerated and
-// registered only when the cursor position can suggest database-name candidates.
+// as a database qualifier in the statement (so cross-database qualified
+// completion like `other_db.tbl.col` resolves without enumerating all
+// instance databases). Unreferenced database names are enumerated via
+// ListDatabaseNames and registered only when the cursor position can suggest
+// database-name candidates.
 func PopulateMySQLFamilyCatalog(
 	ctx context.Context,
 	cCtx CompletionContext,
@@ -123,25 +125,42 @@ func PopulateMySQLFamilyCatalog(
 	qualifiers := databaseQualifiersInStatement(statement, cCtx.DefaultDatabase)
 
 	var allNames []string
-	if (suggestsDB || len(qualifiers) > 0) && cCtx.ListDatabaseNames != nil {
+	var exactName map[string]string
+	if suggestsDB && cCtx.ListDatabaseNames != nil {
 		if names, err := cCtx.ListDatabaseNames(ctx, cCtx.InstanceID); err == nil {
 			allNames = names
+			exactName = make(map[string]string, len(names))
+			for _, n := range names {
+				exactName[strings.ToLower(n)] = n
+			}
 		}
 	}
 
 	seen := map[string]bool{}
 	var loadOrder []string
+	hasDefault := false
+	addLoad := func(name string) {
+		if name == "" {
+			return
+		}
+		key := strings.ToLower(name)
+		if seen[key] {
+			return
+		}
+		seen[key] = true
+		loadOrder = append(loadOrder, name)
+	}
+
 	if cCtx.Metadata != nil {
 		if cCtx.DefaultDatabase != "" {
-			loadOrder = append(loadOrder, cCtx.DefaultDatabase)
-			seen[cCtx.DefaultDatabase] = true
+			addLoad(cCtx.DefaultDatabase)
+			hasDefault = true
 		}
-		if len(qualifiers) > 0 {
-			for _, name := range allNames {
-				if !seen[name] && qualifiers[strings.ToLower(name)] {
-					loadOrder = append(loadOrder, name)
-					seen[name] = true
-				}
+		for _, q := range qualifiers {
+			if exact, ok := exactName[strings.ToLower(q)]; ok {
+				addLoad(exact)
+			} else {
+				addLoad(q)
 			}
 		}
 	}
@@ -150,19 +169,21 @@ func PopulateMySQLFamilyCatalog(
 	// position can actually suggest database_ref candidates.
 	if suggestsDB {
 		for _, name := range allNames {
-			if !seen[name] {
+			if !seen[strings.ToLower(name)] {
 				registerDB(name)
 			}
 		}
 	}
 
-	for _, name := range loadOrder {
+	for i, name := range loadOrder {
 		var proto *metadatapb.DatabaseSchemaMetadata
 		if _, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, name); err == nil && dbMeta != nil {
 			proto = dbMeta.GetProto()
 		}
 		if proto == nil {
-			registerDB(name)
+			if (i == 0 && hasDefault) || suggestsDB {
+				registerDB(name)
+			}
 			continue
 		}
 		loadDB(name, proto)
@@ -210,62 +231,277 @@ func extractIdentPrefixLen(sql string, cursorOffset int) int {
 	return cursorOffset - i
 }
 
-// databaseQualifiersInStatement returns the lower-cased identifiers that appear
-// immediately before a '.' qualifier in statement (excluding defaultDB).
-func databaseQualifiersInStatement(statement, defaultDB string) map[string]bool {
+type mysqlQualToken struct {
+	text   string
+	upper  string // non-empty only for unquoted word tokens
+	punct  byte   // non-zero for '.', ',', '(', ')', ';'
+	isWord bool
+}
+
+func scanMySQLQualTokens(statement string) []mysqlQualToken {
 	s := stripStringsAndComments(statement)
-	if !strings.Contains(s, ".") {
-		return nil
-	}
-	defaultLower := strings.ToLower(defaultDB)
-	var out map[string]bool
-	for i := 0; i < len(s); i++ {
-		if s[i] != '.' {
+	var toks []mysqlQualToken
+	n := len(s)
+	for i := 0; i < n; {
+		b := s[i]
+		if isSpaceByte(b) {
+			i++
 			continue
 		}
-		j := i
-		for j > 0 && isSpaceByte(s[j-1]) {
-			j--
-		}
-		if j == 0 {
-			continue
-		}
-		var name string
-		if s[j-1] == '`' {
-			end := j - 1
-			k := end - 1
-			for k >= 0 {
-				if s[k] == '`' {
-					if k > 0 && s[k-1] == '`' {
-						k -= 2
+		switch b {
+		case '.', ',', '(', ')', ';':
+			toks = append(toks, mysqlQualToken{punct: b})
+			i++
+		case '`':
+			var buf strings.Builder
+			i++
+			closed := false
+			for i < n {
+				if s[i] == '`' {
+					if i+1 < n && s[i+1] == '`' {
+						buf.WriteByte('`')
+						i += 2
 						continue
 					}
+					closed = true
+					i++
 					break
 				}
-				k--
+				buf.WriteByte(s[i])
+				i++
 			}
-			if k >= 0 {
-				name = strings.ReplaceAll(s[k+1:end], "``", "`")
+			if closed && buf.Len() > 0 {
+				toks = append(toks, mysqlQualToken{text: buf.String(), isWord: true})
 			}
-		} else if isIdentByte(s[j-1]) {
-			end := j
-			k := end - 1
-			for k > 0 && isIdentByte(s[k-1]) {
-				k--
+		default:
+			if isIdentByte(b) || b >= 0x80 {
+				start := i
+				i++
+				for i < n && (isIdentByte(s[i]) || s[i] >= 0x80) {
+					i++
+				}
+				word := s[start:i]
+				toks = append(toks, mysqlQualToken{
+					text:   word,
+					upper:  strings.ToUpper(word),
+					isWord: true,
+				})
+			} else {
+				// Emit a neutral separator token for operators/symbols so adjacent
+				// dotted expressions (e.g. `ON a. = o.user_id`) never coalesce into
+				// a synthetic three-part chain (`a . o .`).
+				if len(toks) == 0 || toks[len(toks)-1].punct != ' ' {
+					toks = append(toks, mysqlQualToken{punct: ' '})
+				}
+				i++
 			}
-			name = s[k:end]
 		}
+	}
+	return toks
+}
+
+type mysqlQualScope struct {
+	stmtStart        bool
+	inTableClause    bool
+	allowCommaTable  bool
+	allowFromAsTable bool
+	afterCreate      bool
+	afterRename      bool
+	afterDDLOnObj    bool
+	prevKeyword      string
+}
+
+// databaseQualifiersInStatement extracts database qualifiers referenced in
+// statement (excluding defaultDB), distinguishing them from ordinary
+// table/alias qualifiers such as `SELECT a. FROM users a`:
+//   - Three-part chains (`db.tbl.col` or `db.tbl.`) always identify `db`.
+//   - Two-part chains (`db.obj` or `db.`) only identify `db` inside table/object
+//     positions (FROM, JOIN, UPDATE, INSERT/REPLACE [INTO], DELETE USING,
+//     DDL object headers, REFERENCES, CALL, CREATE ... LIKE, etc.).
+func databaseQualifiersInStatement(statement, defaultDB string) []string {
+	if !strings.Contains(statement, ".") {
+		return nil
+	}
+	toks := scanMySQLQualTokens(statement)
+	if len(toks) == 0 {
+		return nil
+	}
+
+	defaultLower := strings.ToLower(defaultDB)
+	seen := make(map[string]bool)
+	var out []string
+	addDB := func(name string) {
 		if name == "" {
-			continue
+			return
 		}
 		lower := strings.ToLower(name)
-		if lower == defaultLower {
+		if lower == defaultLower || seen[lower] {
+			return
+		}
+		seen[lower] = true
+		out = append(out, name)
+	}
+
+	scopes := []mysqlQualScope{{stmtStart: true, allowFromAsTable: true}}
+	cur := func() *mysqlQualScope { return &scopes[len(scopes)-1] }
+
+	for i := 0; i < len(toks); i++ {
+		tok := toks[i]
+		sc := cur()
+
+		switch tok.punct {
+		case ';':
+			scopes = []mysqlQualScope{{stmtStart: true, allowFromAsTable: true}}
+			continue
+		case '(':
+			child := mysqlQualScope{stmtStart: true}
+			// Parenthesized join group, e.g. FROM (db1.t1 JOIN db2.t2) or (db1.t1).
+			if sc.inTableClause && (i == 0 || toks[i-1].punct == '(' || toks[i-1].punct == ',' ||
+				toks[i-1].upper == "FROM" || toks[i-1].upper == "JOIN" || toks[i-1].upper == "STRAIGHT_JOIN") {
+				child.inTableClause = true
+				child.allowCommaTable = true
+				child.allowFromAsTable = true
+			}
+			scopes = append(scopes, child)
+			continue
+		case ')':
+			if len(scopes) > 1 {
+				scopes = scopes[:len(scopes)-1]
+			}
+			cur().prevKeyword = ""
+			cur().stmtStart = false
+			continue
+		case ',':
+			sc.inTableClause = sc.allowCommaTable
+			sc.prevKeyword = ""
+			sc.stmtStart = false
+			continue
+		case '.':
+			sc.prevKeyword = ""
+			sc.stmtStart = false
+			continue
+		default:
+			// Neutral separator or zero punct falls through to word handling.
+		}
+
+		if !tok.isWord {
 			continue
 		}
-		if out == nil {
-			out = make(map[string]bool)
+
+		// Record database qualifiers only at the head of a dotted identifier
+		// chain (not when preceded by '.').
+		precededByDot := i > 0 && toks[i-1].punct == '.'
+		if !precededByDot && i+1 < len(toks) && toks[i+1].punct == '.' {
+			isThreePart := i+3 < len(toks) && toks[i+2].isWord && !isClauseBoundaryAfterDot(toks[i+2].upper) && toks[i+3].punct == '.'
+			if isThreePart || sc.inTableClause {
+				addDB(tok.text)
+			}
 		}
-		out[lower] = true
+
+		// Keyword-driven clause tracking. Backtick-quoted words have tok.upper == "".
+		// An unquoted member after '.' (e.g. SELECT u. FROM otherdb.users u) only
+		// triggers clause transitions when it is a reserved clause boundary.
+		if tok.upper == "" || (precededByDot && !isClauseBoundaryAfterDot(tok.upper)) {
+			sc.prevKeyword = ""
+			sc.stmtStart = false
+			continue
+		}
+
+		kw := tok.upper
+		wasStmtStart := sc.stmtStart
+		prevKW := sc.prevKeyword
+		sc.stmtStart = false
+		sc.prevKeyword = kw
+
+		switch kw {
+		case "SELECT", "WITH":
+			sc.inTableClause = false
+			sc.allowCommaTable = false
+			sc.allowFromAsTable = true
+			sc.afterCreate = false
+			sc.afterRename = false
+			sc.afterDDLOnObj = false
+		case "WHERE", "SET", "VALUES", "VALUE", "GROUP", "HAVING", "ORDER", "LIMIT",
+			"UNION", "INTERSECT", "EXCEPT", "FOR", "WINDOW", "RETURNING":
+			sc.inTableClause = false
+			sc.allowCommaTable = false
+		case "ON":
+			sc.inTableClause = sc.afterDDLOnObj
+			sc.allowCommaTable = false
+			sc.afterDDLOnObj = false
+		case "FROM":
+			if sc.allowFromAsTable || prevKW == "DELETE" || prevKW == "SHOW" || prevKW == "COLUMNS" || prevKW == "INDEX" || prevKW == "INDEXES" || prevKW == "KEYS" {
+				sc.inTableClause = true
+				sc.allowCommaTable = true
+			}
+		case "JOIN", "STRAIGHT_JOIN":
+			sc.inTableClause = true
+			sc.allowCommaTable = true
+		case "UPDATE":
+			if prevKW != "ON" {
+				sc.inTableClause = true
+				sc.allowCommaTable = true
+			}
+		case "INSERT", "REPLACE":
+			sc.inTableClause = true
+			sc.allowCommaTable = false
+		case "INTO":
+			if prevKW == "INSERT" || prevKW == "IGNORE" || prevKW == "REPLACE" {
+				sc.inTableClause = true
+				sc.allowCommaTable = false
+			} else {
+				sc.inTableClause = false
+				sc.allowCommaTable = false
+			}
+		case "USING":
+			if i+1 < len(toks) && toks[i+1].punct == '(' {
+				sc.inTableClause = false
+				sc.allowCommaTable = false
+			} else {
+				sc.inTableClause = true
+				sc.allowCommaTable = true
+			}
+		case "CREATE":
+			sc.afterCreate = true
+			sc.inTableClause = false
+			sc.allowCommaTable = false
+		case "RENAME":
+			sc.afterRename = true
+			sc.inTableClause = false
+			sc.allowCommaTable = false
+		case "INDEX", "TRIGGER", "GRANT", "REVOKE":
+			sc.afterDDLOnObj = true
+			if kw == "TRIGGER" {
+				sc.inTableClause = true
+				sc.allowCommaTable = false
+			}
+		case "TABLE", "TABLES":
+			sc.inTableClause = true
+			sc.allowCommaTable = prevKW == "DROP" || prevKW == "RENAME" || prevKW == "LOCK" || prevKW == "TRUNCATE"
+		case "VIEW", "EVENT", "FUNCTION", "PROCEDURE", "CALL", "HANDLER", "REFERENCES":
+			sc.inTableClause = true
+			sc.allowCommaTable = false
+		case "DESC", "DESCRIBE", "EXPLAIN":
+			if wasStmtStart {
+				sc.inTableClause = true
+				sc.allowCommaTable = false
+			}
+		case "TO":
+			if sc.afterRename {
+				sc.inTableClause = true
+			}
+		case "LIKE":
+			if sc.afterCreate {
+				sc.inTableClause = true
+			}
+		case "IN":
+			if prevKW == "COLUMNS" || prevKW == "INDEX" || prevKW == "INDEXES" || prevKW == "KEYS" {
+				sc.inTableClause = true
+				sc.allowCommaTable = false
+			}
+		default:
+			// Non-clause keywords leave table-clause state unchanged.
+		}
 	}
 	return out
 }
@@ -300,6 +536,19 @@ func MySQLStatementReferencesDatabase(statement, dbName string) bool {
 		}
 	}
 	return false
+}
+
+func isClauseBoundaryAfterDot(upper string) bool {
+	switch upper {
+	case "SELECT", "WITH", "FROM", "JOIN", "STRAIGHT_JOIN",
+		"LEFT", "RIGHT", "INNER", "CROSS", "NATURAL",
+		"WHERE", "SET", "VALUES", "GROUP", "HAVING", "ORDER", "LIMIT",
+		"UNION", "INTERSECT", "EXCEPT", "ON", "USING", "INTO", "FOR",
+		"WINDOW", "RETURNING":
+		return true
+	default:
+		return false
+	}
 }
 
 func isIdentByte(b byte) bool {
