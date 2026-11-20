@@ -397,11 +397,19 @@ func scanMySQLQualTokens(statement string) []mysqlQualToken {
 	return toks
 }
 
+type mysqlProjRef struct {
+	db    string
+	alias string
+}
+
 type mysqlQualScope struct {
 	aliasScopeID          int
 	cteName               string
 	stmtStart             bool
 	stmtVerb              string
+	inSelectList          bool
+	pastFromOrWhere       bool
+	isSubquery            bool
 	inTableClause         bool
 	inInsertReplaceTarget bool
 	inGrantPrivList       bool
@@ -474,17 +482,45 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 	nextAliasScopeID := 1
 	aliasesByScope := map[int]*mysqlAliasMap{}
 	parentAliasScope := map[int]int{}
-	scopeProjDBs := map[int][]string{}
+	scopeProjRefs := map[int][]mysqlProjRef{}
 	scopeFromDBs := map[int][]string{}
 	cteByScope := map[int]map[string][]string{}
-	recordScopeProjDB := func(scopeID int, dbs ...string) {
-		scopeProjDBs[scopeID] = appendUniqueDB(scopeProjDBs[scopeID], dbs...)
+	recordProjRef := func(scopeID int, ref mysqlProjRef) {
+		if ref.db == "" && ref.alias == "" {
+			return
+		}
+		scopeProjRefs[scopeID] = append(scopeProjRefs[scopeID], ref)
 	}
 	recordScopeFromDB := func(scopeID int, dbs ...string) {
 		scopeFromDBs[scopeID] = appendUniqueDB(scopeFromDBs[scopeID], dbs...)
 	}
-	allScopeDBs := func(scopeID int) []string {
-		return appendUniqueDB(slices.Clone(scopeProjDBs[scopeID]), scopeFromDBs[scopeID]...)
+	resolveAliasDBs := func(scopeID int, ident string) ([]string, bool) {
+		lower := strings.ToLower(ident)
+		for sid, ok := scopeID, true; ok; sid, ok = parentAliasScope[sid] {
+			if am := aliasesByScope[sid]; am != nil {
+				if dbs, hit := am.exact[ident]; hit {
+					return dbs, true
+				}
+				if dbs, hit := am.lower[lower]; hit {
+					return dbs, true
+				}
+			}
+		}
+		return nil, false
+	}
+	finalizeScopeDBs := func(scopeID int) ([]string, []string) {
+		var projDBs []string
+		for _, ref := range scopeProjRefs[scopeID] {
+			if ref.db != "" {
+				projDBs = appendUniqueDB(projDBs, ref.db)
+				continue
+			}
+			if dbs, ok := resolveAliasDBs(scopeID, ref.alias); ok {
+				projDBs = appendUniqueDB(projDBs, dbs...)
+			}
+		}
+		allDBs := appendUniqueDB(slices.Clone(projDBs), scopeFromDBs[scopeID]...)
+		return projDBs, allDBs
 	}
 	recordCTE := func(scopeID int, name string, dbs []string) {
 		if name == "" || len(dbs) == 0 {
@@ -557,7 +593,12 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 			}
 			continue
 		case '(':
-			child := mysqlQualScope{aliasScopeID: sc.aliasScopeID, stmtStart: true}
+			child := mysqlQualScope{
+				aliasScopeID:    sc.aliasScopeID,
+				stmtStart:       true,
+				inSelectList:    sc.inSelectList,
+				pastFromOrWhere: sc.pastFromOrWhere,
+			}
 			if sc.stmtVerb == "WITH" {
 				child.cteName = cteNameBeforeAS(toks, i)
 			}
@@ -568,6 +609,7 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 				child.inTableClause = true
 				child.allowCommaTable = true
 				child.allowFromAsTable = true
+				child.inSelectList = false
 			} else {
 				aliasID := nextAliasScopeID
 				nextAliasScopeID++
@@ -586,10 +628,30 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 				scopes = scopes[:len(scopes)-1]
 			}
 			parent := cur()
-			if subDBs := allScopeDBs(closed.aliasScopeID); len(subDBs) > 0 {
+			if closed.aliasScopeID != parent.aliasScopeID && !closed.isSubquery && len(scopeFromDBs[closed.aliasScopeID]) == 0 {
+				// Expression parentheses inside SELECT (e.g. COALESCE(y.col, 0))
+				// defer alias resolution to the enclosing query block's FROM/JOINs.
+				if parent.inSelectList {
+					for _, ref := range scopeProjRefs[closed.aliasScopeID] {
+						recordProjRef(parent.aliasScopeID, ref)
+					}
+				}
+			} else if subProjDBs, subDBs := finalizeScopeDBs(closed.aliasScopeID); len(subDBs) > 0 {
 				if closed.aliasScopeID != parent.aliasScopeID {
-					recordScopeProjDB(parent.aliasScopeID, scopeProjDBs[closed.aliasScopeID]...)
-					recordScopeFromDB(parent.aliasScopeID, scopeFromDBs[closed.aliasScopeID]...)
+					if parent.inSelectList {
+						for _, db := range subDBs {
+							recordProjRef(parent.aliasScopeID, mysqlProjRef{db: db})
+						}
+						recordScopeFromDB(parent.aliasScopeID, scopeFromDBs[closed.aliasScopeID]...)
+					} else if !parent.inTableClause && !parent.pastFromOrWhere && len(scopeProjRefs[parent.aliasScopeID]) == 0 && len(scopeFromDBs[parent.aliasScopeID]) == 0 {
+						for _, db := range subProjDBs {
+							recordProjRef(parent.aliasScopeID, mysqlProjRef{db: db})
+						}
+						recordScopeFromDB(parent.aliasScopeID, scopeFromDBs[closed.aliasScopeID]...)
+						parent.isSubquery = parent.isSubquery || closed.isSubquery
+					} else {
+						recordScopeFromDB(parent.aliasScopeID, subDBs...)
+					}
 				}
 				if closed.cteName != "" {
 					recordCTE(parent.aliasScopeID, closed.cteName, subDBs)
@@ -646,9 +708,13 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 				addDB(tok.text)
 				if sc.inTableClause {
 					recordScopeFromDB(sc.aliasScopeID, tok.text)
+				} else if sc.inSelectList {
+					recordProjRef(sc.aliasScopeID, mysqlProjRef{db: tok.text})
 				} else {
-					recordScopeProjDB(sc.aliasScopeID, tok.text)
+					recordScopeFromDB(sc.aliasScopeID, tok.text)
 				}
+			} else if sc.inSelectList && !isDeleteStar {
+				recordProjRef(sc.aliasScopeID, mysqlProjRef{alias: tok.text})
 			}
 			if sc.inTableClause && !isDeleteStar && i+2 < len(toks) && toks[i+2].isWord && !isClauseBoundaryAfterDot(toks[i+2].upper) {
 				recordAlias(sc.aliasScopeID, toks[i+2].text, true, tok.text)
@@ -722,6 +788,11 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 					}
 				}
 			}
+			sc.inSelectList = kw == "SELECT"
+			sc.pastFromOrWhere = false
+			if kw == "SELECT" {
+				sc.isSubquery = true
+			}
 			sc.inTableClause = false
 			sc.inInsertReplaceTarget = false
 			sc.allowCommaTable = false
@@ -731,6 +802,10 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 			sc.afterDDLOnObj = false
 		case "WHERE", "SET", "VALUES", "VALUE", "GROUP", "HAVING", "ORDER", "LIMIT",
 			"UNION", "INTERSECT", "EXCEPT", "FOR", "WINDOW", "RETURNING", "RETURN":
+			if sc.isSubquery || len(scopes) == 1 {
+				sc.inSelectList = false
+				sc.pastFromOrWhere = true
+			}
 			sc.inTableClause = false
 			sc.inInsertReplaceTarget = false
 			sc.allowCommaTable = false
@@ -740,6 +815,10 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 			sc.allowCommaTable = false
 			sc.afterDDLOnObj = false
 		case "FROM":
+			if sc.isSubquery || len(scopes) == 1 {
+				sc.inSelectList = false
+				sc.pastFromOrWhere = true
+			}
 			if sc.stmtVerb == "REVOKE" {
 				sc.inTableClause = false
 				sc.allowCommaTable = false
@@ -776,6 +855,10 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 				sc.allowCommaTable = false
 				sc.inInsertReplaceTarget = false
 			} else {
+				if sc.isSubquery || len(scopes) == 1 {
+					sc.inSelectList = false
+					sc.pastFromOrWhere = true
+				}
 				sc.inTableClause = false
 				sc.allowCommaTable = false
 			}
@@ -887,17 +970,8 @@ func analyzeMySQLStatementQualifiers(statement string, pos int, defaultDB string
 			}
 		}
 		if len(caretDBs) == 0 {
-			for sid, ok := caretAliasScopeID, true; ok; sid, ok = parentAliasScope[sid] {
-				if am := aliasesByScope[sid]; am != nil {
-					if dbs, hit := am.exact[caretIdent]; hit {
-						caretDBs = dbs
-						break
-					}
-					if dbs, hit := am.lower[strings.ToLower(caretIdent)]; hit {
-						caretDBs = dbs
-						break
-					}
-				}
+			if dbs, hit := resolveAliasDBs(caretAliasScopeID, caretIdent); hit {
+				caretDBs = dbs
 			}
 		}
 	}

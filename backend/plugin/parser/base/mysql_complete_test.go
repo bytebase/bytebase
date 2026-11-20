@@ -514,6 +514,21 @@ func TestPopulateMySQLFamilyCatalog_SkipsEnumerationForQualifiers(t *testing.T) 
 			stmt: "SELECT x. FROM (SELECT Foo.t.remote FROM foo.local JOIN Foo.t) x",
 			pos:  len("SELECT x."),
 		},
+		{
+			name: "multi-db derived table projects aliased star",
+			stmt: "SELECT x. FROM (SELECT y.* FROM foo.t z JOIN Foo.t y) x",
+			pos:  len("SELECT x."),
+		},
+		{
+			name: "multi-db CTE projects aliased column inside expression and ignores WHERE",
+			stmt: "WITH c AS (SELECT COALESCE(y.remote, 0) FROM foo.local z JOIN Foo.t y WHERE foo.local.id = 1) SELECT x. FROM c x",
+			pos:  len("WITH c AS (SELECT COALESCE(y.remote, 0) FROM foo.local z JOIN Foo.t y WHERE foo.local.id = 1) SELECT x."),
+		},
+		{
+			name: "multi-db double-parenthesized CTE projects aliased star",
+			stmt: "WITH c AS ((SELECT y.* FROM foo.t z JOIN Foo.t y)) SELECT x. FROM c x",
+			pos:  len("WITH c AS ((SELECT y.* FROM foo.t z JOIN Foo.t y)) SELECT x."),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var loadedOrder []string
