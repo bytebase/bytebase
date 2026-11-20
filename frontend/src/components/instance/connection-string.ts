@@ -1296,15 +1296,21 @@ function parseMongoConnectionString(
       (uri.path ? decodePercent(uri.path) : undefined)
     )?.trim() || undefined;
 
-  // Leave `tls` unset for `mongodb+srv://` unless `?tls`/`?ssl` is explicit,
-  // since the MongoDB driver already enables TLS by default for SRV URIs.
+  // Leave `tls` unset for `mongodb+srv://` unless `?tls`/`?ssl` or an explicit
+  // verification override is present, since the MongoDB driver already enables
+  // verified TLS by default for SRV URIs.
   const allowInvalid =
     parseBooleanValue(uri.query.get("tlsallowinvalidcertificates")) === true ||
+    parseBooleanValue(uri.query.get("tlsallowinvalidhostnames")) === true ||
     parseBooleanValue(uri.query.get("tlsinsecure")) === true ||
     parseBooleanValue(uri.query.get("sslinsecure")) === true;
-  const tls = parseSchemeOrQueryTls(uri.scheme, uri.query, {
-    skipVerify: allowInvalid,
-  });
+  const tls =
+    parseSchemeOrQueryTls(uri.scheme, uri.query, {
+      skipVerify: allowInvalid,
+    }) ??
+    (isSrv && allowInvalid
+      ? { useSsl: true, verifyTlsCertificate: false }
+      : undefined);
 
   if (isSrv) {
     return {
@@ -1686,6 +1692,17 @@ function parseHiveConnectionString(
   const discoveryMode =
     params.get("servicediscoverymode") ?? uri.query.get("servicediscoverymode");
   if (discoveryMode?.trim().toLowerCase() === "zookeeper") {
+    return undefined;
+  }
+
+  // The Hive instance form does not expose TLS controls yet (`instanceV1HasSSL`),
+  // so reject TLS-enabled Hive URLs instead of silently attempting plaintext.
+  const sslParam =
+    params.get("ssl") ??
+    uri.query.get("ssl") ??
+    params.get("tls") ??
+    uri.query.get("tls");
+  if (parseBooleanValue(sslParam) === true) {
     return undefined;
   }
 

@@ -833,6 +833,92 @@ describe("parseConnectionString - MongoDB", () => {
     expect(
       parseConnectionString(
         Engine.MONGODB,
+        "mongodb+srv://app:pass@cluster0.example.mongodb.net/?tlsInsecure=true"
+      )
+    ).toEqual({
+      host: "cluster0.example.mongodb.net",
+      port: "",
+      username: "app",
+      password: "pass",
+      srv: true,
+      additionalAddresses: [],
+      directConnection: false,
+      authenticationDatabase: undefined,
+      tls: { useSsl: true, verifyTlsCertificate: false },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb+srv://app:pass@cluster0.example.mongodb.net/?tlsAllowInvalidCertificates=true"
+      )
+    ).toEqual({
+      host: "cluster0.example.mongodb.net",
+      port: "",
+      username: "app",
+      password: "pass",
+      srv: true,
+      additionalAddresses: [],
+      directConnection: false,
+      authenticationDatabase: undefined,
+      tls: { useSsl: true, verifyTlsCertificate: false },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb+srv://app:pass@cluster0.example.mongodb.net/?tlsAllowInvalidHostnames=true"
+      )
+    ).toEqual({
+      host: "cluster0.example.mongodb.net",
+      port: "",
+      username: "app",
+      password: "pass",
+      srv: true,
+      additionalAddresses: [],
+      directConnection: false,
+      authenticationDatabase: undefined,
+      tls: { useSsl: true, verifyTlsCertificate: false },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb+srv://app:pass@cluster0.example.mongodb.net/?tls=false&tlsInsecure=true"
+      )
+    ).toEqual({
+      host: "cluster0.example.mongodb.net",
+      port: "",
+      username: "app",
+      password: "pass",
+      srv: true,
+      additionalAddresses: [],
+      directConnection: false,
+      authenticationDatabase: undefined,
+      tls: { useSsl: false },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb://app:pass@db.example.com/?tlsInsecure=true"
+      )
+    ).toEqual({
+      host: "db.example.com",
+      port: "27017",
+      username: "app",
+      password: "pass",
+      srv: false,
+      additionalAddresses: [],
+      replicaSet: undefined,
+      directConnection: false,
+      authenticationDatabase: undefined,
+      tls: undefined,
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
         "mongodb://app:secret@db.example.com/my%20authdb"
       )
     ).toEqual({
@@ -1196,11 +1282,23 @@ describe("parseConnectionString - ClickHouse, Snowflake, Elasticsearch, Cassandr
     ).toBeUndefined();
   });
 
-  it("parses Hive JDBC URLs and beeline commands while rejecting ZooKeeper discovery", () => {
+  it("parses Hive JDBC URLs and beeline commands while rejecting ZooKeeper discovery and TLS URLs", () => {
     expect(
       parseConnectionString(
         Engine.HIVE,
         "jdbc:hive2://hive.example.com:10000/default;user=hive;password=secret"
+      )
+    ).toEqual({
+      host: "hive.example.com",
+      port: "10000",
+      username: "hive",
+      password: "secret",
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.HIVE,
+        "jdbc:hive2://hive.example.com:10000/default;ssl=false;user=hive;password=secret"
       )
     ).toEqual({
       host: "hive.example.com",
@@ -1237,6 +1335,20 @@ describe("parseConnectionString - ClickHouse, Snowflake, Elasticsearch, Cassandr
       parseConnectionString(
         Engine.HIVE,
         "jdbc:hive2://zk1.example.com:2181,zk2.example.com:2181/;serviceDiscoveryMode=zooKeeper"
+      )
+    ).toBeUndefined();
+
+    expect(
+      parseConnectionString(
+        Engine.HIVE,
+        "jdbc:hive2://hive.example.com:10000/default;ssl=true;user=hive;password=secret"
+      )
+    ).toBeUndefined();
+
+    expect(
+      parseConnectionString(
+        Engine.HIVE,
+        "jdbc:hive2://hive.example.com:10000/default?ssl=true"
       )
     ).toBeUndefined();
   });
