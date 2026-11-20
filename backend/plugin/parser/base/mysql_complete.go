@@ -105,19 +105,25 @@ func CompleteMySQLFamily(
 }
 
 // PopulateMySQLFamilyCatalog populates an omni MySQL-family catalog from
-// Bytebase metadata. It fully loads the default database plus any database
-// referenced as a qualifier in the statement (so cross-database qualified
-// completion like `other_db.tbl.col` resolves), and registers every other known
-// database name so database-name candidates still surface.
+// Bytebase metadata. It loads the default database plus any database referenced
+// as a qualifier in the statement (so cross-database qualified completion like
+// `other_db.tbl.col` resolves). Unreferenced database names are enumerated and
+// registered only when the cursor position can suggest database-name candidates.
 func PopulateMySQLFamilyCatalog(
 	ctx context.Context,
 	cCtx CompletionContext,
 	statement string,
+	pos int,
+	hasDatabaseRule func(sql string, offset int) bool,
+	registerDB func(name string),
 	loadDB func(name string, meta *metadatapb.DatabaseSchemaMetadata),
 	setCurrentDB func(name string),
 ) {
+	suggestsDB := hasDatabaseRule != nil && suggestsMySQLDatabaseRef(statement, pos, hasDatabaseRule)
+	qualifiers := databaseQualifiersInStatement(statement, cCtx.DefaultDatabase)
+
 	var allNames []string
-	if cCtx.ListDatabaseNames != nil {
+	if (suggestsDB || len(qualifiers) > 0) && cCtx.ListDatabaseNames != nil {
 		if names, err := cCtx.ListDatabaseNames(ctx, cCtx.InstanceID); err == nil {
 			allNames = names
 		}
@@ -130,20 +136,23 @@ func PopulateMySQLFamilyCatalog(
 			loadOrder = append(loadOrder, cCtx.DefaultDatabase)
 			seen[cCtx.DefaultDatabase] = true
 		}
-		for _, name := range allNames {
-			if !seen[name] && MySQLStatementReferencesDatabase(statement, name) {
-				loadOrder = append(loadOrder, name)
-				seen[name] = true
+		if len(qualifiers) > 0 {
+			for _, name := range allNames {
+				if !seen[name] && qualifiers[strings.ToLower(name)] {
+					loadOrder = append(loadOrder, name)
+					seen[name] = true
+				}
 			}
 		}
 	}
 
-	// Register every other known database name (name only) so database-name
-	// candidates surface — this works at the instance level even when no database
-	// is selected (DefaultDatabase empty).
-	for _, name := range allNames {
-		if !seen[name] {
-			loadDB(name, nil)
+	// Register unreferenced database names (name only) only when the completion
+	// position can actually suggest database_ref candidates.
+	if suggestsDB {
+		for _, name := range allNames {
+			if !seen[name] {
+				registerDB(name)
+			}
 		}
 	}
 
@@ -152,10 +161,113 @@ func PopulateMySQLFamilyCatalog(
 		if _, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, name); err == nil && dbMeta != nil {
 			proto = dbMeta.GetProto()
 		}
+		if proto == nil {
+			registerDB(name)
+			continue
+		}
 		loadDB(name, proto)
 	}
 
 	setCurrentDB(cCtx.DefaultDatabase)
+}
+
+// suggestsMySQLDatabaseRef reports whether the parser's C3 collector at pos
+// (including the placeholder fallback strategies omni uses) requests the
+// "database_ref" rule.
+func suggestsMySQLDatabaseRef(stmt string, pos int, hasDatabaseRule func(sql string, offset int) bool) bool {
+	if pos > len(stmt) {
+		pos = len(stmt)
+	}
+	collectOffset := pos - extractIdentPrefixLen(stmt, pos)
+	if hasDatabaseRule(stmt, collectOffset) {
+		return true
+	}
+	prefix := stmt[:collectOffset]
+	suffix := stmt[collectOffset:]
+	for _, patched := range []string{
+		prefix + " __placeholder__" + suffix,
+		prefix + " __placeholder__ " + suffix,
+		prefix + " 1" + suffix,
+	} {
+		if hasDatabaseRule(patched, collectOffset) {
+			return true
+		}
+	}
+	return false
+}
+
+func extractIdentPrefixLen(sql string, cursorOffset int) int {
+	i := cursorOffset
+	for i > 0 {
+		c := sql[i-1]
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+			(c >= '0' && c <= '9') || c == '_' {
+			i--
+		} else {
+			break
+		}
+	}
+	return cursorOffset - i
+}
+
+// databaseQualifiersInStatement returns the lower-cased identifiers that appear
+// immediately before a '.' qualifier in statement (excluding defaultDB).
+func databaseQualifiersInStatement(statement, defaultDB string) map[string]bool {
+	s := stripStringsAndComments(statement)
+	if !strings.Contains(s, ".") {
+		return nil
+	}
+	defaultLower := strings.ToLower(defaultDB)
+	var out map[string]bool
+	for i := 0; i < len(s); i++ {
+		if s[i] != '.' {
+			continue
+		}
+		j := i
+		for j > 0 && isSpaceByte(s[j-1]) {
+			j--
+		}
+		if j == 0 {
+			continue
+		}
+		var name string
+		if s[j-1] == '`' {
+			end := j - 1
+			k := end - 1
+			for k >= 0 {
+				if s[k] == '`' {
+					if k > 0 && s[k-1] == '`' {
+						k -= 2
+						continue
+					}
+					break
+				}
+				k--
+			}
+			if k >= 0 {
+				name = strings.ReplaceAll(s[k+1:end], "``", "`")
+			}
+		} else if isIdentByte(s[j-1]) {
+			end := j
+			k := end - 1
+			for k > 0 && isIdentByte(s[k-1]) {
+				k--
+			}
+			name = s[k:end]
+		}
+		if name == "" {
+			continue
+		}
+		lower := strings.ToLower(name)
+		if lower == defaultLower {
+			continue
+		}
+		if out == nil {
+			out = make(map[string]bool)
+		}
+		out[lower] = true
+	}
+	return out
 }
 
 // MySQLStatementReferencesDatabase reports whether dbName appears as a database

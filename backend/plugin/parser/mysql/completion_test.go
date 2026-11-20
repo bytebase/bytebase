@@ -353,6 +353,31 @@ func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
 		"non-default database 'unuseddb' should surface as a DATABASE candidate; got %v", got2)
 }
 
+func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
+		Name: "appdb",
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
+			{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "c1"}}},
+		}}},
+	})
+	listCalls := 0
+	cCtx := base.CompletionContext{
+		Scene:           base.SceneTypeAll,
+		DefaultDatabase: "appdb",
+		Metadata:        meta,
+		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
+			listCalls++
+			return []string{"appdb", "otherdb"}, nil
+		},
+	}
+
+	stmt := "SELECT  FROM t1"
+	got, err := Completion(context.Background(), cCtx, stmt, 1, len("SELECT "))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "c1"))
+	require.Zero(t, listCalls, "ListDatabaseNames must not be called when neither database_ref nor cross-db qualifiers apply")
+}
+
 // Completion cost must be bounded by the caret's statement, not the whole
 // sheet: a broken statement anywhere after the caret must not make completion
 // scale with the entire trailing document (BYT-9886).

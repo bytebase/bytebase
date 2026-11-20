@@ -4,6 +4,7 @@ import (
 	"context"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/bytebase/omni/tidb/ast"
 	"github.com/bytebase/omni/tidb/catalog"
 	omnicompletion "github.com/bytebase/omni/tidb/completion"
 	tidbparser "github.com/bytebase/omni/tidb/parser"
@@ -28,9 +29,20 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 		tidbparser.IsReservedKeyword,
 		func(stmt string, pos int) []base.Candidate {
 			cat := catalog.New()
-			base.PopulateMySQLFamilyCatalog(ctx, cCtx, stmt, func(name string, meta *metadatapb.DatabaseSchemaMetadata) {
-				_, _ = cat.LoadMetadataInto(ctx, meta, name)
-			}, cat.SetCurrentDatabase)
+			base.PopulateMySQLFamilyCatalog(
+				ctx,
+				cCtx,
+				stmt,
+				pos,
+				hasDatabaseRule,
+				func(name string) {
+					_ = cat.DefineDatabase(&ast.CreateDatabaseStmt{Name: name, IfNotExists: true})
+				},
+				func(name string, meta *metadatapb.DatabaseSchemaMetadata) {
+					_, _ = cat.LoadMetadataInto(ctx, meta, name)
+				},
+				cat.SetCurrentDatabase,
+			)
 			raw := omnicompletion.Complete(stmt, pos, cat)
 			out := make([]base.Candidate, len(raw))
 			for i, c := range raw {
@@ -44,6 +56,11 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 			return out
 		},
 	), nil
+}
+
+func hasDatabaseRule(sql string, offset int) bool {
+	cs := tidbparser.Collect(sql, offset)
+	return cs != nil && cs.HasRule("database_ref")
 }
 
 func currentStatement(statement string, pos int) (string, int) {
