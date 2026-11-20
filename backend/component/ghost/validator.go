@@ -81,26 +81,7 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 		return results[0], nil
 	}
 
-	// Test 1: Check if we can access binary log status
-	// Try both old and new MySQL commands for compatibility
-	canAccessBinlog := false
-	if _, err := query("SHOW MASTER STATUS"); err == nil {
-		canAccessBinlog = true
-	} else if _, err := query("SHOW BINARY LOG STATUS"); err == nil {
-		canAccessBinlog = true
-	}
-
-	if !canAccessBinlog {
-		result.Valid = false
-		result.FailureReason = binlogStatusInaccessible
-		result.Error = errors.New("cannot access binary logs - ensure user has REPLICATION CLIENT privilege")
-		slog.Error("binlog access validation failed: cannot access binary logs",
-			slog.String("host", adminDataSource.GetHost()),
-			slog.String("user", adminDataSource.GetUsername()))
-		return result
-	}
-
-	// Test 2: Check if binary logging is enabled
+	// Test 1: Check if binary logging is enabled before SHOW BINARY LOGS, which errors when log_bin is OFF.
 	logBinRes, err := query("SELECT @@log_bin")
 	if err != nil {
 		result.Valid = false
@@ -121,6 +102,18 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 		result.Valid = false
 		result.FailureReason = binlogDisabled
 		result.Error = errors.New("binary logging is not enabled on this MySQL instance")
+		return result
+	}
+
+	// Test 2: Check if we can access binary logs.
+	// SHOW BINARY LOGS parses under omni's MySQL 8.0 grammar and requires REPLICATION CLIENT on MySQL 8.0, 8.4+, and MariaDB.
+	if _, err := query("SHOW BINARY LOGS"); err != nil {
+		result.Valid = false
+		result.FailureReason = binlogStatusInaccessible
+		result.Error = errors.New("cannot access binary logs - ensure user has REPLICATION CLIENT privilege")
+		slog.Error("binlog access validation failed: cannot access binary logs",
+			slog.String("host", adminDataSource.GetHost()),
+			slog.String("user", adminDataSource.GetUsername()))
 		return result
 	}
 

@@ -12,6 +12,7 @@ import (
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mysql/ast"
+	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
@@ -221,11 +222,15 @@ func explainJSON(ctx context.Context, db *sql.DB, statement string) (string, err
 	defer conn.Close()
 
 	if _, err := conn.ExecContext(ctx, "SET SESSION explain_json_format_version = 1"); err != nil {
-		return "", errors.Wrap(err, "failed to set explain_json_format_version")
+		var mysqlErr *gomysql.MySQLError
+		if !errors.As(err, &mysqlErr) || mysqlErr.Number != 1193 {
+			return "", errors.Wrap(err, "failed to set explain_json_format_version")
+		}
+	} else {
+		defer func() {
+			_, _ = conn.ExecContext(ctx, "SET SESSION explain_json_format_version = DEFAULT")
+		}()
 	}
-	defer func() {
-		_, _ = conn.ExecContext(ctx, "SET SESSION explain_json_format_version = DEFAULT")
-	}()
 
 	rows, err := conn.QueryContext(ctx, "EXPLAIN FORMAT=JSON "+statement)
 	if err != nil {
@@ -455,6 +460,16 @@ func TestMySQLRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
 			engine:      storepb.Engine_MYSQL,
 			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
 			plan:        testMySQLInsertTablePlan,
+			statement:   "INSERT INTO t2 TABLE t;",
+			wantContent: `"INSERT INTO t2 TABLE t;" inserts 1000 rows. The count exceeds 5.`,
+			wantCode:    code.InsertTooManyRows,
+		},
+		{
+			name:        "insert table without explain_json_format_version",
+			engine:      storepb.Engine_MYSQL,
+			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
+			plan:        testMySQLInsertTablePlan,
+			setErr:      &gomysql.MySQLError{Number: 1193, Message: "Unknown system variable 'explain_json_format_version'"},
 			statement:   "INSERT INTO t2 TABLE t;",
 			wantContent: `"INSERT INTO t2 TABLE t;" inserts 1000 rows. The count exceeds 5.`,
 			wantCode:    code.InsertTooManyRows,

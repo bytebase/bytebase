@@ -6,6 +6,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/bytebase/omni/mysql/analysis"
+	omnimysqlparser "github.com/bytebase/omni/mysql/parser"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -15,10 +17,23 @@ import (
 
 type fakeGhostDriver struct {
 	db.Driver
+	queries   []string
 	responses map[string]func() ([]*v1pb.QueryResult, error)
 }
 
 func (d *fakeGhostDriver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
+	// Enforce omni's MySQL parser/read-only gate so queries rejected before reaching MySQL 8.4+ fail in tests.
+	parsed, err := omnimysqlparser.Parse(statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(parsed.Items) != 1 {
+		return nil, errors.New("expected single statement")
+	}
+	if readOnly, returnsData := analysis.ValidateQuery(parsed.Items); !readOnly || !returnsData {
+		return nil, errors.New("statement does not pass read-only query validation: " + statement)
+	}
+	d.queries = append(d.queries, statement)
 	fn, ok := d.responses[statement]
 	if !ok {
 		return nil, errors.New("unexpected query: " + statement)
@@ -67,13 +82,13 @@ func TestSupportsEngine(t *testing.T) {
 func TestValidateBinlogAccess(t *testing.T) {
 	driver := &fakeGhostDriver{
 		responses: map[string]func() ([]*v1pb.QueryResult, error){
-			"SHOW MASTER STATUS": func() ([]*v1pb.QueryResult, error) {
-				return []*v1pb.QueryResult{{}}, nil
-			},
 			"SELECT @@log_bin": func() ([]*v1pb.QueryResult, error) {
 				return []*v1pb.QueryResult{
 					{Rows: []*v1pb.QueryRow{{Values: []*v1pb.RowValue{{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}}}}}},
 				}, nil
+			},
+			"SHOW BINARY LOGS": func() ([]*v1pb.QueryResult, error) {
+				return []*v1pb.QueryResult{{}}, nil
 			},
 			"SHOW GRANTS": func() ([]*v1pb.QueryResult, error) {
 				return singleStringQueryResult("GRANT REPLICATION SLAVE ON *.* TO `admin`@`%`")
@@ -91,34 +106,47 @@ func TestValidateBinlogAccess(t *testing.T) {
 	require.True(t, result.BinlogEnabled)
 	require.True(t, result.HasPrivilege)
 	require.Equal(t, "ROW", result.BinlogFormat)
+	require.Equal(t, []string{
+		"SELECT @@log_bin",
+		"SHOW BINARY LOGS",
+		"SHOW GRANTS",
+		"SELECT @@binlog_format",
+	}, driver.queries)
 }
 
-func TestValidateBinlogAccessFallsBackToBinaryLogStatus(t *testing.T) {
+func TestValidateBinlogAccessDisabledStopsBeforeShowBinaryLogs(t *testing.T) {
 	driver := &fakeGhostDriver{
 		responses: map[string]func() ([]*v1pb.QueryResult, error){
-			"SHOW MASTER STATUS": func() ([]*v1pb.QueryResult, error) {
-				return []*v1pb.QueryResult{{Error: "syntax error"}}, nil
-			},
-			"SHOW BINARY LOG STATUS": func() ([]*v1pb.QueryResult, error) {
-				return []*v1pb.QueryResult{{}}, nil
-			},
 			"SELECT @@log_bin": func() ([]*v1pb.QueryResult, error) {
-				return singleStringQueryResult("ON")
-			},
-			"SHOW GRANTS": func() ([]*v1pb.QueryResult, error) {
-				return singleStringQueryResult("GRANT ALL PRIVILEGES ON *.* TO `admin`@`%`")
-			},
-			"SELECT @@binlog_format": func() ([]*v1pb.QueryResult, error) {
-				return singleStringQueryResult("MIXED")
+				return singleStringQueryResult("OFF")
 			},
 		},
 	}
 
 	result := ValidateBinlogAccess(context.Background(), driver, &storepb.DataSource{Host: "example.com", Username: "admin"})
-	require.True(t, result.Valid)
+	require.False(t, result.Valid)
+	require.Equal(t, binlogDisabled, result.FailureReason)
+	require.False(t, result.BinlogEnabled)
+	require.Equal(t, []string{"SELECT @@log_bin"}, driver.queries)
+}
+
+func TestValidateBinlogAccessMissingBinaryLogPrivilege(t *testing.T) {
+	driver := &fakeGhostDriver{
+		responses: map[string]func() ([]*v1pb.QueryResult, error){
+			"SELECT @@log_bin": func() ([]*v1pb.QueryResult, error) {
+				return singleStringQueryResult("ON")
+			},
+			"SHOW BINARY LOGS": func() ([]*v1pb.QueryResult, error) {
+				return []*v1pb.QueryResult{{Error: "Access denied; you need (at least one of) the SUPER, REPLICATION CLIENT privilege(s) for this operation"}}, nil
+			},
+		},
+	}
+
+	result := ValidateBinlogAccess(context.Background(), driver, &storepb.DataSource{Host: "example.com", Username: "admin"})
+	require.False(t, result.Valid)
+	require.Equal(t, binlogStatusInaccessible, result.FailureReason)
 	require.True(t, result.BinlogEnabled)
-	require.True(t, result.HasPrivilege)
-	require.Equal(t, "MIXED", result.BinlogFormat)
+	require.Equal(t, []string{"SELECT @@log_bin", "SHOW BINARY LOGS"}, driver.queries)
 }
 
 func TestBinlogValidationResultGetUserFriendlyError(t *testing.T) {
