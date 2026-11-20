@@ -401,10 +401,10 @@ func instanceForm(ctx context.Context, c *instanceCreation, maskingSkips bool, l
 	})
 }
 
-// tlsMode names the TLS mode the PostgreSQL driver uses: sslmode verify-full or
-// require when use_ssl is set (util.GetPGSSLMode, with no CA or SSH tunnel,
-// which the entry refuses), and pgx's default, prefer, otherwise, which tries
-// TLS and accepts plain text.
+// tlsMode names the TLS mode the PostgreSQL driver uses: sslmode=require with
+// the verification the data source's TLS settings carry when use_ssl is set
+// (with no CA or SSH tunnel, which the entry refuses), and pgx's default,
+// prefer, otherwise, which tries TLS and accepts plain text.
 func tlsMode(ds *v1pb.DataSource) string {
 	switch {
 	case !ds.GetUseSsl():

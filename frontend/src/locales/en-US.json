@@ -251,9 +251,18 @@
       },
       "unmask-method": {
         "exemption": "Masking exemption",
-        "exemption-description": "Unmask selected resources. Existing query access is required.",
+        "exemption-description": "For access to selected data across different queries, for yourself or selected members. Choose an expiration or no expiration. Existing query access is still required.",
+        "exemption-feature-unavailable": "Data masking is not available under the current subscription.",
+        "exemption-permission-denied": "You do not have all permissions required to prepare a masking exemption.",
+        "exemption-query-access-required": "A masking exemption cannot grant the query access you are missing.",
+        "exemption-unverified": "Masking exemption availability could not be verified.",
         "jit": "Access Grant",
-        "jit-description": "Request temporary access to one exact read-only query with Unmask enabled, for yourself.",
+        "jit-description": "For a short task or investigation. Request access for yourself to one exact read-only query until expiration, under the project's approval policy. Unmask covers its entire result.",
+        "jit-disabled": "Access Grants are disabled in this project.",
+        "jit-feature-unavailable": "Access Grants are not available under the current subscription.",
+        "jit-permission-denied": "You do not have permission to request an Access Grant in this project.",
+        "jit-self-only": "Access Grants can only be requested for yourself.",
+        "jit-unverified": "Access Grant availability could not be verified.",
         "question": "How would you like to access unmasked data?"
       }
     },
@@ -3037,7 +3046,7 @@
         "n-replies-hidden_other": "{{count}} replies hidden",
         "priority": {
           "p1": "Dangerous but legitimate. A person must accept it.",
-          "p2": "Advisory only."
+          "p2": "A suggestion. Resolve it once read, whether or not you apply it."
         },
         "publish": "Publish",
         "reopen-thread": "Reopen thread",

@@ -25,7 +25,6 @@ var (
 	getProcedureDefinitions         = make(map[storepb.Engine]getProcedureDefinition)
 	getSequenceDefinitions          = make(map[storepb.Engine]getSequenceDefinition)
 	getDatabaseMetadataMap          = make(map[storepb.Engine]getDatabaseMetadata)
-	generateMigrations              = make(map[storepb.Engine]generateMigration)
 	sdlDropAdvicesFns               = make(map[storepb.Engine]sdlDropAdvices)
 	diffSDLMigrations               = make(map[storepb.Engine]diffSDLMigration)
 	diffMetadataMigrations          = make(map[storepb.Engine]diffMetadataMigration)
@@ -44,7 +43,6 @@ type getFunctionDefinition func(string, *metadatapb.FunctionMetadata) (string, e
 type getProcedureDefinition func(string, *metadatapb.ProcedureMetadata) (string, error)
 type getSequenceDefinition func(string, *metadatapb.SequenceMetadata) (string, error)
 type getDatabaseMetadata func(string) (*metadatapb.DatabaseSchemaMetadata, error)
-type generateMigration func(*MetadataDiff) (string, error)
 type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error)
 
 // diffSDLMigration computes migration SQL between two SDL texts. engineVersion is the
@@ -245,23 +243,6 @@ func GetDatabaseMetadata(engine storepb.Engine, schemaText string) (*metadatapb.
 	return f(schemaText)
 }
 
-func RegisterGenerateMigration(engine storepb.Engine, f generateMigration) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := generateMigrations[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	generateMigrations[engine] = f
-}
-
-func GenerateMigration(engine storepb.Engine, diff *MetadataDiff) (string, error) {
-	f, ok := generateMigrations[engine]
-	if !ok {
-		return "", errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(diff)
-}
-
 // SDLSessionContext is the session state a routine/trigger/event was created under, as
 // stored in the synced metadata: sql_mode, character_set_client, collation_connection,
 // and — events only — the session time_zone. It is the engine-neutral mirror of omni's
@@ -393,8 +374,8 @@ func SDLDropAdvices(engine storepb.Engine, userSDLText string, currentSchema *mo
 // Engines may register a metadata migration to avoid round-tripping synced
 // metadata through SDL text. Otherwise, engines with DiffSDLMigration registered
 // convert both sides to SDL and diff (no server version is available here, so the
-// engine's default stored form applies). The legacy MetadataDiff + GenerateMigration
-// path remains the fallback for engines that haven't migrated yet.
+// engine's default stored form applies). An engine with neither registered cannot
+// produce a migration.
 //
 // MySQL diffs every server version as 8.0, the one stored form omni's catalog keeps.
 func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
@@ -412,12 +393,7 @@ func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMe
 		}
 		return DiffSDLMigration(engine, sourceSDL, targetSDL, "")
 	}
-	// Fallback to legacy path for engines that haven't migrated yet.
-	diff, err := GetDatabaseSchemaDiff(engine, oldSchema, newSchema)
-	if err != nil {
-		return "", err
-	}
-	return GenerateMigration(engine, diff)
+	return "", errors.Errorf("engine %s is not supported", engine)
 }
 
 func RegisterDiffMetadataMigration(engine storepb.Engine, f diffMetadataMigration) {

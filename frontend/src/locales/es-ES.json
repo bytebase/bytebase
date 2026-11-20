@@ -251,9 +251,18 @@
       },
       "unmask-method": {
         "exemption": "Exención de enmascaramiento",
-        "exemption-description": "Desenmascarar los recursos seleccionados. Se requiere acceso de consulta existente.",
+        "exemption-description": "Para acceder a los datos seleccionados mediante distintas consultas, para ti o para miembros seleccionados. Elige una fecha de vencimiento o acceso sin vencimiento. Sigue siendo necesario contar con acceso de consulta.",
+        "exemption-feature-unavailable": "El enmascaramiento de datos no está disponible con la suscripción actual.",
+        "exemption-permission-denied": "No tienes todos los permisos necesarios para preparar una exención de enmascaramiento.",
+        "exemption-query-access-required": "Una exención de enmascaramiento no puede otorgarte el acceso de consulta que te falta.",
+        "exemption-unverified": "No se pudo verificar la disponibilidad de las exenciones de enmascaramiento.",
         "jit": "Concesión de acceso",
-        "jit-description": "Solicita acceso temporal para ti a una consulta exacta de solo lectura con el desenmascaramiento habilitado.",
+        "jit-description": "Para una tarea breve o una investigación. Solicita acceso para ti a una consulta exacta de solo lectura hasta su vencimiento, conforme a la política de aprobación del proyecto. El desenmascaramiento abarca todo su resultado.",
+        "jit-disabled": "Las concesiones de acceso están deshabilitadas en este proyecto.",
+        "jit-feature-unavailable": "Las concesiones de acceso no están disponibles con la suscripción actual.",
+        "jit-permission-denied": "No tienes permiso para solicitar una concesión de acceso en este proyecto.",
+        "jit-self-only": "Solo puedes solicitar concesiones de acceso para ti.",
+        "jit-unverified": "No se pudo verificar la disponibilidad de las concesiones de acceso.",
         "question": "¿Cómo deseas acceder a los datos sin enmascarar?"
       }
     },
@@ -3037,7 +3046,7 @@
         "n-replies-hidden_other": "{{count}} respuestas ocultas",
         "priority": {
           "p1": "Peligroso pero legítimo. Una persona debe aceptarlo.",
-          "p2": "Solo informativo."
+          "p2": "Una sugerencia. Se resuelve tras leerla, se aplique o no."
         },
         "publish": "Publicar",
         "reopen-thread": "Reabrir hilo",

@@ -35,22 +35,8 @@ var (
 	MixUserSystemTablesError = errors.Errorf("cannot access user and system tables at the same time")
 )
 
+// SourceColumnSet is the set of source columns contributing to a query span.
 type SourceColumnSet map[ColumnResource]bool
-
-// MergeSourceColumnSet merges two source column maps, returns true if there is difference.
-func MergeSourceColumnSet(m, n SourceColumnSet) (SourceColumnSet, bool) {
-	r := make(SourceColumnSet)
-	for k := range m {
-		r[k] = true
-	}
-	for k := range n {
-		if _, ok := r[k]; !ok {
-			r[k] = true
-		}
-	}
-
-	return r, len(r) != len(m)
-}
 
 // QuerySpan is the span for a query.
 type QuerySpan struct {
@@ -192,81 +178,6 @@ type baseTableSource struct {
 
 // isTableSource implements the TableSource interface.
 func (baseTableSource) isTableSource() {}
-
-// PseudoTable is the resource of table, it's useful for some pseudo/temporary tables likes CTE, AS.
-type PseudoTable struct {
-	baseTableSource
-
-	// Name is the normalized table name.
-	Name string
-
-	// Columns are the columns of the table.
-	Columns []QuerySpanResult
-}
-
-func NewPseudoTable(name string, columns []QuerySpanResult) *PseudoTable {
-	return &PseudoTable{
-		Name:    name,
-		Columns: columns,
-	}
-}
-
-func (p *PseudoTable) GetTableName() string {
-	return p.Name
-}
-
-func (*PseudoTable) GetSchemaName() string {
-	return ""
-}
-
-func (*PseudoTable) GetDatabaseName() string {
-	return ""
-}
-
-func (*PseudoTable) GetServerName() string {
-	return ""
-}
-
-func (p *PseudoTable) GetQuerySpanResult() []QuerySpanResult {
-	return p.Columns
-}
-
-// PhysicalView is the resource of a physical view, which can be refer with schema name,
-// and its columns can refer to the columns of the underlying tables.
-type PhysicalView struct {
-	baseTableSource
-
-	// Server is the normalized server name, it's empty if the column comes from the connected server.
-	Server string
-	// Database is the normalized database name, it should not be empty.
-	Database string
-	// Schema is the normalized schema name, it should not be empty for the engines that support schema, and should be empty for the engines that don't support schema.
-	Schema string
-	// Name is the normalized table name, it should not be empty.
-	Name string
-	// Columns are the columns of the table.
-	Columns []QuerySpanResult
-}
-
-func (p *PhysicalView) GetTableName() string {
-	return p.Name
-}
-
-func (p *PhysicalView) GetSchemaName() string {
-	return p.Schema
-}
-
-func (p *PhysicalView) GetDatabaseName() string {
-	return p.Database
-}
-
-func (p *PhysicalView) GetServerName() string {
-	return p.Server
-}
-
-func (p *PhysicalView) GetQuerySpanResult() []QuerySpanResult {
-	return p.Columns
-}
 
 // PhysicalTable is the resource of a physical table.
 type PhysicalTable struct {

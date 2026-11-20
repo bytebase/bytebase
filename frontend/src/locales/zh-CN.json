@@ -251,9 +251,18 @@
       },
       "unmask-method": {
         "exemption": "脱敏豁免",
-        "exemption-description": "对所选资源解除脱敏。需要已有查询权限。",
+        "exemption-description": "适合你本人或指定成员通过不同查询访问所选数据。可设置到期时间或选择永不过期。仍需已有查询权限。",
+        "exemption-feature-unavailable": "当前订阅不支持数据脱敏。",
+        "exemption-permission-denied": "你尚未具备准备脱敏豁免所需的全部权限。",
+        "exemption-query-access-required": "脱敏豁免无法授予你缺少的查询权限。",
+        "exemption-unverified": "无法确认脱敏豁免是否可用。",
         "jit": "访问授权",
-        "jit-description": "仅限你本人，为一条确定的只读查询申请临时访问权限，并启用查看未脱敏数据。",
+        "jit-description": "适合短期任务或调查。按照项目的审批策略，为你本人申请一条确定的只读查询的访问权限，直至到期。解除脱敏会应用于该查询的全部结果。",
+        "jit-disabled": "此项目未启用访问授权。",
+        "jit-feature-unavailable": "当前订阅不支持访问授权。",
+        "jit-permission-denied": "你没有在此项目中申请访问授权的权限。",
+        "jit-self-only": "访问授权仅支持为你本人申请。",
+        "jit-unverified": "无法确认访问授权是否可用。",
         "question": "你希望通过哪种方式访问未脱敏数据？"
       }
     },
@@ -3037,7 +3046,7 @@
         "n-replies-hidden_other": "已隐藏 {{count}} 条回复",
         "priority": {
           "p1": "有风险但合理，需要有人确认接受。",
-          "p2": "仅供参考。"
+          "p2": "建议项。阅读后即可解决，不要求采纳。"
         },
         "publish": "发布",
         "reopen-thread": "重新打开线程",

@@ -1,28 +1,12 @@
 package schema
 
 import (
+	"strings"
 	"sync"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-)
-
-// FunctionChange represents a type of change detected in a function.
-type FunctionChange struct {
-	Type                FunctionChangeType
-	Description         string
-	RequiresRecreation  bool
-	CanUseAlterFunction bool
-}
-
-// FunctionChangeType represents specific types of function changes.
-type FunctionChangeType string
-
-const (
-	FunctionChangeDefinition FunctionChangeType = "definition"
-	FunctionChangeComment    FunctionChangeType = "comment"
-	FunctionChangeAttribute  FunctionChangeType = "attribute"
 )
 
 // FunctionComparisonResult contains detailed information about function changes.
@@ -75,6 +59,8 @@ func (*DefaultFunctionComparer) CompareDetailed(oldFunc, newFunc *metadatapb.Fun
 	}, nil
 }
 
+// The registry is no longer read by a migration path: every engine diffs functions
+// through its omni catalog, so only a test registering a comparer reads it.
 var (
 	functionComparerRegistryMux sync.RWMutex
 	functionComparerRegistry    = make(map[storepb.Engine]FunctionComparer)
@@ -99,6 +85,77 @@ func GetFunctionComparer(engine storepb.Engine) FunctionComparer {
 
 	// Return default comparer if no engine-specific one is registered
 	return &DefaultFunctionComparer{}
+}
+
+// functionsEqual checks if two functions are equal.
+func functionsEqual(fn1, fn2 *metadatapb.FunctionMetadata) bool {
+	if fn1.Definition != fn2.Definition {
+		// Try normalized comparison for PostgreSQL functions
+		norm1 := normalizePostgreSQLFunction(fn1.Definition)
+		norm2 := normalizePostgreSQLFunction(fn2.Definition)
+		if norm1 != norm2 {
+			return false
+		}
+	}
+	if fn1.CharacterSetClient != fn2.CharacterSetClient {
+		return false
+	}
+	if fn1.CollationConnection != fn2.CollationConnection {
+		return false
+	}
+	if fn1.DatabaseCollation != fn2.DatabaseCollation {
+		return false
+	}
+	if fn1.SqlMode != fn2.SqlMode {
+		return false
+	}
+	if fn1.Comment != fn2.Comment {
+		return false
+	}
+	return true
+}
+
+// normalizePostgreSQLFunction normalizes PostgreSQL function definitions for comparison
+func normalizePostgreSQLFunction(definition string) string {
+	if definition == "" {
+		return ""
+	}
+
+	normalized := strings.ToLower(definition)
+
+	// Normalize whitespace
+	normalized = strings.ReplaceAll(normalized, "\n", " ")
+	normalized = strings.ReplaceAll(normalized, "\t", " ")
+
+	// Remove extra spaces
+	for strings.Contains(normalized, "  ") {
+		normalized = strings.ReplaceAll(normalized, "  ", " ")
+	}
+
+	// Normalize CREATE vs CREATE OR REPLACE
+	normalized = strings.ReplaceAll(normalized, "create or replace function", "create function")
+	normalized = strings.ReplaceAll(normalized, "create or replace procedure", "create procedure")
+
+	// Remove public schema prefix from function and procedure names
+	normalized = strings.ReplaceAll(normalized, "function public.", "function ")
+	normalized = strings.ReplaceAll(normalized, "procedure public.", "procedure ")
+
+	// Normalize parameter types
+	normalized = strings.ReplaceAll(normalized, "character varying", "varchar")
+	normalized = strings.ReplaceAll(normalized, "returns numeric", "returns decimal")
+
+	// Normalize dollar quoting - handle various dollar quote formats
+	normalized = strings.ReplaceAll(normalized, "$function$", "$$")
+	normalized = strings.ReplaceAll(normalized, "$procedure$", "$$")
+
+	// Normalize language position - move to end
+	if strings.Contains(normalized, "language plpgsql") && !strings.HasSuffix(strings.TrimSpace(normalized), "language plpgsql") {
+		withoutLanguage := strings.ReplaceAll(normalized, " language plpgsql", "")
+		withoutLanguage = strings.ReplaceAll(withoutLanguage, "language plpgsql ", "")
+		normalized = strings.TrimSpace(withoutLanguage) + " language plpgsql"
+	}
+
+	return strings.TrimSpace(normalized)
 }
 
 func init() {
