@@ -427,6 +427,46 @@ func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
 	require.True(t, hasCandidate(gotTruncate, base.CandidateTypeTable, "t1"))
 	require.Zero(t, listCalls, "ListDatabaseNames must not be called for TRUNCATE without TABLE keyword")
 	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
+
+	// Unquoted identifiers containing '$' are treated as single database qualifiers.
+	dollarMeta := func(_ context.Context, _, dbName string) (string, *model.DatabaseMetadata, error) {
+		metaCalls = append(metaCalls, dbName)
+		if dbName == "sales$archive" {
+			return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+				Name: dbName,
+				Schemas: []*metadatapb.SchemaMetadata{{
+					Tables: []*metadatapb.TableMetadata{{
+						Name:    "orders",
+						Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}},
+					}},
+				}},
+			}, nil, nil, storepb.Engine_MYSQL, true), nil
+		}
+		return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: dbName}, nil, nil, storepb.Engine_MYSQL, true), nil
+	}
+	metaCalls = nil
+	stmtDollarCol := "SELECT sales$archive.orders. FROM sales$archive.orders"
+	dollarCtx := base.CompletionContext{
+		Scene:           base.SceneTypeAll,
+		DefaultDatabase: "appdb",
+		Metadata:        dollarMeta,
+		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
+			listCalls++
+			return []string{"appdb", "sales$archive"}, nil
+		},
+	}
+	gotDollarCol, err := Completion(context.Background(), dollarCtx, stmtDollarCol, 1, len("SELECT sales$archive.orders."))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotDollarCol, base.CandidateTypeColumn, "id"), "got %v", gotDollarCol)
+	require.Zero(t, listCalls, "ListDatabaseNames must not be called for sales$archive.orders.")
+	require.Equal(t, []string{"appdb", "sales$archive"}, metaCalls)
+
+	metaCalls = nil
+	stmtDollarTbl := "SELECT * FROM sales$archive."
+	_, err = Completion(context.Background(), dollarCtx, stmtDollarTbl, 1, len(stmtDollarTbl))
+	require.NoError(t, err)
+	require.Zero(t, listCalls, "ListDatabaseNames must not be called for sales$archive.")
+	require.Equal(t, []string{"appdb", "sales$archive"}, metaCalls)
 }
 
 func TestCompletion_TrailingSemicolonAndUTF16Caret(t *testing.T) {

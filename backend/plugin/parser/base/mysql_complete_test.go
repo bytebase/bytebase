@@ -173,6 +173,12 @@ func TestDatabaseQualifiersInStatement(t *testing.T) {
 			statement: "CREATE FUNCTION fn() RETURNS INT RETURN a.x",
 			defaultDB: "appdb",
 		},
+		{
+			name:      "dollar and unicode identifiers preserved as single database qualifiers",
+			statement: "SELECT sales$archive.t1., café$2. FROM café$2.users u JOIN users a$1 ON a$1.id = u.id",
+			defaultDB: "appdb",
+			want:      []string{"sales$archive", "café$2"},
+		},
 	}
 
 	for _, tc := range tests {
@@ -275,4 +281,18 @@ func TestCompleteMySQLFamily_PreservesDistinctDefinitionsAndUTF16Caret(t *testin
 		{Type: CandidateTypeColumn, Text: "id", Definition: "appdb.t2.id | int"},
 		{Type: CandidateTypeFunction, Text: "COUNT()"},
 	}, got)
+}
+
+func TestDollarAndUnicodeIdentifiersConsistentAcrossHelpers(t *testing.T) {
+	require.Equal(t, len("sales$archive"), extractIdentPrefixLen("USE sales$archive", len("USE sales$archive")))
+	require.Equal(t, len("sales$"), extractIdentPrefixLen("SELECT * FROM sales$", len("SELECT * FROM sales$")))
+	require.Equal(t, len("café$2"), extractIdentPrefixLen("USE café$2", len("USE café$2")))
+	require.Equal(t, 1, extractIdentPrefixLen("sales$archive.t", len("sales$archive.t")))
+
+	require.True(t, MySQLStatementReferencesDatabase("SELECT * FROM sales$archive.t1", "sales$archive"))
+	require.False(t, MySQLStatementReferencesDatabase("SELECT * FROM sales$archive.t1", "archive"))
+	require.False(t, MySQLStatementReferencesDatabase("SELECT * FROM café.t1", "fé"))
+
+	require.False(t, identifierNeedsQuoting("sales$archive", nil))
+	require.True(t, identifierNeedsQuoting("1$bad", nil))
 }

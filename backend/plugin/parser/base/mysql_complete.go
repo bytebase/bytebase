@@ -216,17 +216,23 @@ func suggestsMySQLDatabaseRef(stmt string, pos int, hasDatabaseRule func(sql str
 }
 
 func extractIdentPrefixLen(sql string, cursorOffset int) int {
-	i := cursorOffset
+	end := max(0, min(cursorOffset, len(sql)))
+	i := end
 	for i > 0 {
-		c := sql[i-1]
-		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-			(c >= '0' && c <= '9') || c == '_' {
+		if c := sql[i-1]; c < utf8.RuneSelf {
+			if !isIdentByte(c) {
+				break
+			}
 			i--
-		} else {
+			continue
+		}
+		r, size := utf8.DecodeLastRuneInString(sql[:i])
+		if r == utf8.RuneError || !isIdentRune(r) {
 			break
 		}
+		i -= size
 	}
-	return cursorOffset - i
+	return end - i
 }
 
 type mysqlQualToken struct {
@@ -272,11 +278,15 @@ func scanMySQLQualTokens(statement string) []mysqlQualToken {
 				toks = append(toks, mysqlQualToken{text: buf.String(), isWord: true})
 			}
 		default:
-			if isIdentByte(b) || b >= 0x80 {
+			if size, ok := nextIdentRune(s, i); ok {
 				start := i
-				i++
-				for i < n && (isIdentByte(s[i]) || s[i] >= 0x80) {
-					i++
+				i += size
+				for i < n {
+					sz, isIdent := nextIdentRune(s, i)
+					if !isIdent {
+						break
+					}
+					i += sz
 				}
 				word := s[start:i]
 				toks = append(toks, mysqlQualToken{
@@ -291,7 +301,7 @@ func scanMySQLQualTokens(statement string) []mysqlQualToken {
 				if len(toks) == 0 || toks[len(toks)-1].punct != ' ' {
 					toks = append(toks, mysqlQualToken{punct: ' '})
 				}
-				i++
+				i += size
 			}
 		}
 	}
@@ -596,8 +606,11 @@ func MySQLStatementReferencesDatabase(statement, dbName string) bool {
 			}
 			at := from + i
 			from = at + 1
-			if q[0] != '`' && at > 0 && isIdentByte(s[at-1]) {
-				continue
+			if q[0] != '`' && at > 0 {
+				prev, _ := utf8.DecodeLastRuneInString(s[:at])
+				if isIdentRune(prev) {
+					continue
+				}
 			}
 			j := at + len(q)
 			for j < len(s) && isSpaceByte(s[j]) {
@@ -634,10 +647,22 @@ func isClauseBoundaryAfterDot(upper string) bool {
 }
 
 func isIdentByte(b byte) bool {
-	return b == '_' ||
+	return b == '_' || b == '$' ||
 		(b >= 'a' && b <= 'z') ||
 		(b >= 'A' && b <= 'Z') ||
 		(b >= '0' && b <= '9')
+}
+
+func isIdentRune(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '$'
+}
+
+func nextIdentRune(s string, i int) (int, bool) {
+	if s[i] < utf8.RuneSelf {
+		return 1, isIdentByte(s[i])
+	}
+	r, size := utf8.DecodeRuneInString(s[i:])
+	return size, r != utf8.RuneError && isIdentRune(r)
 }
 
 func backtickIdentifier(name string) string {
@@ -676,22 +701,21 @@ func identifierNeedsQuoting(name string, isReservedKeyword func(string) bool) bo
 		return true
 	}
 	for _, r := range name {
-		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' && r != '$' {
+		if !isIdentRune(r) {
 			return true
 		}
 	}
-	if unicode.IsDigit(rune(name[0])) {
+	firstRune, _ := utf8.DecodeRuneInString(name)
+	if unicode.IsDigit(firstRune) {
 		return true
 	}
 	return isReservedKeyword != nil && isReservedKeyword(name)
 }
 
-const identifierChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
-
 func caretAtStatementStart(statement string, pos int) bool {
 	pos = max(0, min(pos, len(statement)))
 	before := stripStringsAndComments(statement)[:pos]
-	before = strings.TrimRight(before, identifierChars)
+	before = strings.TrimRightFunc(before, isIdentRune)
 	before = strings.TrimRight(before, " \t\r\n")
 	return before == "" || before[len(before)-1] == ';'
 }
