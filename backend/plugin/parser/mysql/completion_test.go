@@ -402,6 +402,23 @@ func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
 	require.True(t, hasCandidate(gotInsertMod, base.CandidateTypeTable, "t1"))
 	require.Zero(t, listCalls, "ListDatabaseNames must not be called for INSERT with modifiers before INTO")
 	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
+
+	// Comma-separated multi-target statements load later qualified databases cleanly.
+	metaCalls = nil
+	stmtAnalyze := "ANALYZE TABLE appdb.t1, otherdb."
+	gotAnalyze, err := Completion(context.Background(), cCtx, stmtAnalyze, 1, len(stmtAnalyze))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotAnalyze, base.CandidateTypeTable, "t1"))
+	require.Zero(t, listCalls, "ListDatabaseNames must not be called for ANALYZE TABLE comma list")
+	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
+
+	metaCalls = nil
+	stmtDropTemp := "DROP TEMPORARY TABLE appdb.t1, otherdb."
+	gotDropTemp, err := Completion(context.Background(), cCtx, stmtDropTemp, 1, len(stmtDropTemp))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotDropTemp, base.CandidateTypeTable, "t1"))
+	require.Zero(t, listCalls, "ListDatabaseNames must not be called for DROP TEMPORARY TABLE comma list")
+	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
 }
 
 // Completion cost must be bounded by the caret's statement, not the whole

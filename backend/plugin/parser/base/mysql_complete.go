@@ -302,6 +302,7 @@ func scanMySQLQualTokens(statement string) []mysqlQualToken {
 
 type mysqlQualScope struct {
 	stmtStart             bool
+	stmtVerb              string
 	inTableClause         bool
 	inInsertReplaceTarget bool
 	allowCommaTable       bool
@@ -411,6 +412,9 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 
 		kw := tok.upper
 		wasStmtStart := sc.stmtStart
+		if wasStmtStart {
+			sc.stmtVerb = kw
+		}
 		prevKW := sc.prevKeyword
 		sc.stmtStart = false
 		sc.prevKeyword = kw
@@ -492,8 +496,12 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 		case "TABLE", "TABLES":
 			sc.inTableClause = true
 			sc.inInsertReplaceTarget = false
-			sc.allowCommaTable = prevKW == "DROP" || prevKW == "RENAME" || prevKW == "LOCK" || prevKW == "TRUNCATE"
-		case "VIEW", "EVENT", "FUNCTION", "PROCEDURE", "CALL", "HANDLER", "REFERENCES":
+			sc.allowCommaTable = isMultiTableStatementVerb(sc.stmtVerb)
+		case "VIEW":
+			sc.inTableClause = true
+			sc.inInsertReplaceTarget = false
+			sc.allowCommaTable = sc.stmtVerb == "DROP"
+		case "EVENT", "FUNCTION", "PROCEDURE", "CALL", "HANDLER", "REFERENCES":
 			sc.inTableClause = true
 			sc.inInsertReplaceTarget = false
 			sc.allowCommaTable = false
@@ -552,6 +560,15 @@ func MySQLStatementReferencesDatabase(statement, dbName string) bool {
 		}
 	}
 	return false
+}
+
+func isMultiTableStatementVerb(verb string) bool {
+	switch verb {
+	case "DROP", "RENAME", "LOCK", "TRUNCATE", "ANALYZE", "CHECK", "CHECKSUM", "OPTIMIZE", "REPAIR", "FLUSH":
+		return true
+	default:
+		return false
+	}
 }
 
 func isClauseBoundaryAfterDot(upper string) bool {

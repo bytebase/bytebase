@@ -93,6 +93,30 @@ func TestDatabaseQualifiersInStatement(t *testing.T) {
 			want:      []string{"otherdb"},
 		},
 		{
+			name:      "drop view preserves object list across comma",
+			statement: "DROP VIEW appdb.v1, otherdb.",
+			defaultDB: "appdb",
+			want:      []string{"otherdb"},
+		},
+		{
+			name:      "drop temporary table preserves object list across comma",
+			statement: "DROP TEMPORARY TABLE IF EXISTS appdb.t1, otherdb.",
+			defaultDB: "appdb",
+			want:      []string{"otherdb"},
+		},
+		{
+			name:      "analyze table maintenance statement preserves list across comma and modifier",
+			statement: "ANALYZE NO_WRITE_TO_BINLOG TABLE appdb.t1, otherdb.",
+			defaultDB: "appdb",
+			want:      []string{"otherdb"},
+		},
+		{
+			name:      "check optimize repair checksum flush preserve list across comma",
+			statement: "CHECK TABLE appdb.t1, db2.; OPTIMIZE LOCAL TABLE appdb.t1, db3.; REPAIR TABLE appdb.t1, db4.; CHECKSUM TABLE appdb.t1, db5.; FLUSH TABLES appdb.t1, db6.",
+			defaultDB: "appdb",
+			want:      []string{"db2", "db3", "db4", "db5", "db6"},
+		},
+		{
 			name:      "ddl create trigger on cross-db table",
 			statement: "CREATE TRIGGER tr BEFORE INSERT ON otherdb.t2 FOR EACH ROW SET NEW.c1 = 1",
 			defaultDB: "appdb",
