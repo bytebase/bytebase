@@ -49,6 +49,7 @@ func NewMySQLFamily[N any](opt MySQLFamilyOptions[N]) *MySQLFamily[N] {
 		r: v1Runner[N]{
 			extract:             opt.Extract,
 			byteOffsetLine:      opt.ByteOffsetLine,
+			memoKey:             fmt.Sprintf("v1family:%d", v1RunnerMemoSeq.Add(1)),
 			tidbQuirks:          opt.TiDBQuirks,
 			isAlterTable:        opt.IsAlterTable,
 			createTableLocStart: opt.CreateTableLocStart,
@@ -64,15 +65,8 @@ type preparedStmts[N any] struct {
 	title  string
 }
 
-func (m *MySQLFamily[N]) prepare(checkCtx Context, withNodes bool) (preparedStmts[N], error) {
-	var stmts []V1Stmt[N]
-	var nodes []N
-	var err error
-	if withNodes {
-		stmts, nodes, err = m.r.extractNodes(checkCtx)
-	} else {
-		stmts, err = m.r.extract(checkCtx)
-	}
+func (m *MySQLFamily[N]) prepare(checkCtx Context) (preparedStmts[N], error) {
+	stmts, nodes, err := m.r.extractNodes(checkCtx)
 	if err != nil {
 		return preparedStmts[N]{}, err
 	}
@@ -92,13 +86,13 @@ func (m *MySQLFamily[N]) perStmt(
 	build func(V1Stmt[N], v1review.Finding, storepb.Advice_Status, string) *storepb.Advice,
 ) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, false)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
 		var adviceList []*storepb.Advice
-		for _, stmt := range p.stmts {
-			for _, f := range fn([]N{stmt.Node}) {
+		for i, stmt := range p.stmts {
+			for _, f := range fn(p.nodes[i : i+1 : i+1]) {
 				if a := build(stmt, f, p.status, p.title); a != nil {
 					adviceList = append(adviceList, a)
 				}
@@ -124,7 +118,7 @@ func (m *MySQLFamily[N]) batch(
 	build func([]V1Stmt[N], v1review.Finding, storepb.Advice_Status, string) *storepb.Advice,
 ) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, true)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -145,7 +139,7 @@ func (m *MySQLFamily[N]) numberStmtRule(
 	build func(V1Stmt[N], v1review.Finding, int, storepb.Advice_Status, string) *storepb.Advice,
 ) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, false)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -157,8 +151,8 @@ func (m *MySQLFamily[N]) numberStmtRule(
 			return nil, nil
 		}
 		var adviceList []*storepb.Advice
-		for _, stmt := range p.stmts {
-			for _, f := range fn([]N{stmt.Node}, limit) {
+		for i, stmt := range p.stmts {
+			for _, f := range fn(p.nodes[i:i+1:i+1], limit) {
 				adviceList = append(adviceList, build(stmt, f, limit, p.status, p.title))
 			}
 		}
@@ -173,14 +167,14 @@ func (m *MySQLFamily[N]) stringArrayStmtRule(
 	contentFn func(V1Stmt[N], v1review.Finding) string,
 ) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, false)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
 		list := checkCtx.Rule.GetStringArrayPayload().List
 		var adviceList []*storepb.Advice
-		for _, stmt := range p.stmts {
-			for _, f := range fn([]N{stmt.Node}, list) {
+		for i, stmt := range p.stmts {
+			for _, f := range fn(p.nodes[i:i+1:i+1], list) {
 				adviceList = append(adviceList, newAdvice(p.status, adviceCode, p.title, contentFn(stmt, f), posFn(stmt, f)))
 			}
 		}
@@ -200,7 +194,7 @@ func (m *MySQLFamily[N]) indexSchemaBatchRule(
 	contentFn func(v1review.Finding) string,
 ) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, true)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -309,21 +303,24 @@ func (m *MySQLFamily[N]) ColumnAutoIncrementMustUnsigned(fn func([]N) []v1review
 // ColumnComment builds COLUMN_COMMENT.
 func (m *MySQLFamily[N]) ColumnComment(fn func([]N, bool, int) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, false)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
 		payload := checkCtx.Rule.GetCommentConventionPayload()
 		required, maxLength := true, 0
 		if m.r.tidbQuirks {
-			maxLength = -1
+			required, maxLength = false, -1
 		}
 		if payload != nil {
 			required, maxLength = payload.Required, int(payload.MaxLength)
 		}
 		var adviceList []*storepb.Advice
-		for _, stmt := range p.stmts {
-			for _, f := range fn([]N{stmt.Node}, required, maxLength) {
+		for i, stmt := range p.stmts {
+			for _, f := range fn(p.nodes[i:i+1:i+1], required, maxLength) {
+				if payload == nil {
+					return nil, errors.New("comment_convention_payload is required for column comment rule")
+				}
 				var adviceCode code.Code
 				var content string
 				switch f.Code {
@@ -377,7 +374,7 @@ func (m *MySQLFamily[N]) ColumnDisallowChangingOrder(fn func([]N) []v1review.Fin
 // ColumnDisallowChangeType builds COLUMN_DISALLOW_CHANGE_TYPE.
 func (m *MySQLFamily[N]) ColumnDisallowChangeType(fn func([]N, v1review.Schema) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, true)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -386,8 +383,8 @@ func (m *MySQLFamily[N]) ColumnDisallowChangeType(fn func([]N, v1review.Schema) 
 		}
 		schema := v1SchemaOf(checkCtx.OriginalMetadata)
 		var adviceList []*storepb.Advice
-		for _, stmt := range p.stmts {
-			for _, f := range fn([]N{stmt.Node}, schema) {
+		for i, stmt := range p.stmts {
+			for _, f := range fn(p.nodes[i:i+1:i+1], schema) {
 				adviceList = append(adviceList, newAdvice(p.status, code.ChangeColumnType, p.title, fmt.Sprintf("\"%s\" changes column type", m.r.stmtText(stmt, false)), m.r.posAbsOrFinding(stmt, f)))
 			}
 		}
@@ -405,7 +402,7 @@ func (m *MySQLFamily[N]) ColumnDisallowDrop(fn func([]N) []v1review.Finding) Fun
 // ColumnDisallowDropInIndex builds COLUMN_DISALLOW_DROP_IN_INDEX.
 func (m *MySQLFamily[N]) ColumnDisallowDropInIndex(fn func([]N, v1review.Schema) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, true)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -456,7 +453,7 @@ func (m *MySQLFamily[N]) ColumnMaximumVarcharLength(fn func([]N, int) []v1review
 // ColumnNoNull builds COLUMN_NO_NULL.
 func (m *MySQLFamily[N]) ColumnNoNull(fn func([]N, v1review.Schema) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, true)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -512,7 +509,7 @@ func (m *MySQLFamily[N]) ColumnRequireDefault(fn func([]N) []v1review.Finding) F
 // ColumnRequired builds COLUMN_REQUIRED.
 func (m *MySQLFamily[N]) ColumnRequired(fn func([]N, []string) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, true)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -556,12 +553,12 @@ func (m *MySQLFamily[N]) ColumnTypeDisallowList(fn func([]N, []string) []v1revie
 // DatabaseDropEmptyDatabase builds DATABASE_DROP_EMPTY_DATABASE.
 func (m *MySQLFamily[N]) DatabaseDropEmptyDatabase(fn func([]N, v1review.Schema) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, false)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
 		var adviceList []*storepb.Advice
-		for _, stmt := range p.stmts {
+		for i, stmt := range p.stmts {
 			var schema v1review.Schema
 			if m.opt.IsDropDatabase != nil && m.opt.IsDropDatabase(stmt.Node) {
 				schema = v1review.Schema{
@@ -569,7 +566,7 @@ func (m *MySQLFamily[N]) DatabaseDropEmptyDatabase(fn func([]N, v1review.Schema)
 					ObjectCaseSensitive: checkCtx.OriginalMetadata.GetIsObjectCaseSensitive(),
 				}
 			}
-			for _, f := range fn([]N{stmt.Node}, schema) {
+			for _, f := range fn(p.nodes[i:i+1:i+1], schema) {
 				switch f.Code {
 				case v1review.DatabaseNotCurrent:
 					adviceList = append(adviceList, newAdvice(p.status, code.NotCurrentDatabase, p.title, fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", f.Name, checkCtx.OriginalMetadata.DatabaseName()), m.r.posBaseLineTwice(stmt, f)))
@@ -622,7 +619,7 @@ func (m *MySQLFamily[N]) IndexTypeNoBlob(fn func([]N, v1review.Schema) ([]v1revi
 // IndexPrimaryKeyTypeAllowlist builds INDEX_PRIMARY_KEY_TYPE_ALLOWLIST.
 func (m *MySQLFamily[N]) IndexPrimaryKeyTypeAllowlist(fn func([]N, []string, v1review.Schema) ([]v1review.Finding, error)) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, true)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -642,7 +639,7 @@ func (m *MySQLFamily[N]) IndexPrimaryKeyTypeAllowlist(fn func([]N, []string, v1r
 // IndexTotalNumberLimit builds INDEX_TOTAL_NUMBER_LIMIT.
 func (m *MySQLFamily[N]) IndexTotalNumberLimit(fn func([]N, int, v1review.Schema) ([]v1review.Finding, error)) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, true)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -679,7 +676,7 @@ func (m *MySQLFamily[N]) namingRule(
 	tooLongFmt func(v1review.Finding, int) string,
 ) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, false)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -692,8 +689,8 @@ func (m *MySQLFamily[N]) namingRule(
 			return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 		}
 		var adviceList []*storepb.Advice
-		for _, stmt := range p.stmts {
-			findings, err := fn([]N{stmt.Node}, cfg)
+		for i, stmt := range p.stmts {
+			findings, err := fn(p.nodes[i:i+1:i+1], cfg)
 			if err != nil {
 				return nil, err
 			}
@@ -771,10 +768,10 @@ func (m *MySQLFamily[N]) templateNamingRule(
 	adviceCode code.Code,
 	internalTitle string,
 	kindLabel string,
-	eval func(V1Stmt[N], v1review.TemplateConfig, *model.DatabaseMetadata) ([]v1review.Finding, error),
+	eval func([]N, v1review.TemplateConfig, *model.DatabaseMetadata) ([]v1review.Finding, error),
 ) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, false)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -790,8 +787,8 @@ func (m *MySQLFamily[N]) templateNamingRule(
 		}
 		cfg := v1review.TemplateConfig{Format: namingPayload.Format, MaxLength: maxLength}
 		var adviceList []*storepb.Advice
-		for _, stmt := range p.stmts {
-			findings, err := eval(stmt, cfg, checkCtx.OriginalMetadata)
+		for i, stmt := range p.stmts {
+			findings, err := eval(p.nodes[i:i+1:i+1], cfg, checkCtx.OriginalMetadata)
 			if err != nil {
 				return nil, err
 			}
@@ -821,8 +818,8 @@ func (m *MySQLFamily[N]) renameIndexSchema(node N, metadata *model.DatabaseMetad
 // NamingForeignKey builds NAMING_INDEX_FK.
 func (m *MySQLFamily[N]) NamingForeignKey(fn func([]N, v1review.TemplateConfig) ([]v1review.Finding, error)) Func {
 	return m.templateNamingRule(code.NamingFKConventionMismatch, "Internal error for foreign key naming convention rule", "Foreign key",
-		func(stmt V1Stmt[N], tc v1review.TemplateConfig, _ *model.DatabaseMetadata) ([]v1review.Finding, error) {
-			return fn([]N{stmt.Node}, tc)
+		func(nodes []N, tc v1review.TemplateConfig, _ *model.DatabaseMetadata) ([]v1review.Finding, error) {
+			return fn(nodes, tc)
 		},
 	)
 }
@@ -834,8 +831,8 @@ func (m *MySQLFamily[N]) NamingIndex(fn func([]N, v1review.TemplateConfig, v1rev
 		errTitle = "Internal error for index naming convention rule"
 	}
 	return m.templateNamingRule(code.NamingIndexConventionMismatch, errTitle, "Index",
-		func(stmt V1Stmt[N], tc v1review.TemplateConfig, orig *model.DatabaseMetadata) ([]v1review.Finding, error) {
-			return fn([]N{stmt.Node}, tc, m.renameIndexSchema(stmt.Node, orig)), nil
+		func(nodes []N, tc v1review.TemplateConfig, orig *model.DatabaseMetadata) ([]v1review.Finding, error) {
+			return fn(nodes, tc, m.renameIndexSchema(nodes[0], orig)), nil
 		},
 	)
 }
@@ -843,8 +840,8 @@ func (m *MySQLFamily[N]) NamingIndex(fn func([]N, v1review.TemplateConfig, v1rev
 // NamingUniqueKey builds NAMING_INDEX_UK.
 func (m *MySQLFamily[N]) NamingUniqueKey(fn func([]N, v1review.TemplateConfig, v1review.Schema) []v1review.Finding) Func {
 	return m.templateNamingRule(code.NamingUKConventionMismatch, "Internal error for unique key naming convention rule", "Unique key",
-		func(stmt V1Stmt[N], tc v1review.TemplateConfig, orig *model.DatabaseMetadata) ([]v1review.Finding, error) {
-			return fn([]N{stmt.Node}, tc, m.renameIndexSchema(stmt.Node, orig)), nil
+		func(nodes []N, tc v1review.TemplateConfig, orig *model.DatabaseMetadata) ([]v1review.Finding, error) {
+			return fn(nodes, tc, m.renameIndexSchema(nodes[0], orig)), nil
 		},
 	)
 }
@@ -1008,7 +1005,7 @@ func (m *MySQLFamily[N]) StatementWhereNoEqualNull(fn func([]N) []v1review.Findi
 // StatementWhereDisallowFunctionsAndCalc builds STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS.
 func (m *MySQLFamily[N]) StatementWhereDisallowFunctionsAndCalc(fn func([]N, v1review.Schema) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, false)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -1017,8 +1014,8 @@ func (m *MySQLFamily[N]) StatementWhereDisallowFunctionsAndCalc(fn func([]N, v1r
 			schema = v1review.Schema{Metadata: checkCtx.DBSchema, ObjectCaseSensitive: checkCtx.IsObjectCaseSensitive}
 		}
 		var adviceList []*storepb.Advice
-		for _, stmt := range p.stmts {
-			for _, f := range fn([]N{stmt.Node}, schema) {
+		for i, stmt := range p.stmts {
+			for _, f := range fn(p.nodes[i:i+1:i+1], schema) {
 				var content string
 				switch f.Code {
 				case v1review.FunctionOnIndexedColumn:
@@ -1106,7 +1103,7 @@ func (m *MySQLFamily[N]) SystemViewDisallowCreate(fn func([]N) []v1review.Findin
 // TableComment builds TABLE_COMMENT.
 func (m *MySQLFamily[N]) TableComment(fn func([]N, *v1review.TableCommentConfig) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, false)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -1115,9 +1112,9 @@ func (m *MySQLFamily[N]) TableComment(fn func([]N, *v1review.TableCommentConfig)
 			tableCfg = &v1review.TableCommentConfig{Required: payload.Required, MaxLength: int(payload.MaxLength)}
 		}
 		var adviceList []*storepb.Advice
-		for _, stmt := range p.stmts {
+		for i, stmt := range p.stmts {
 			pos := m.r.posStatement(stmt)
-			for _, f := range fn([]N{stmt.Node}, tableCfg) {
+			for _, f := range fn(p.nodes[i:i+1:i+1], tableCfg) {
 				switch f.Code {
 				case v1review.TableCommentMissing:
 					adviceList = append(adviceList, newAdvice(p.status, code.CommentEmpty, p.title, fmt.Sprintf("Table `%s` requires comments", f.Name), pos))
@@ -1157,7 +1154,7 @@ func (m *MySQLFamily[N]) TableDisallowTrigger(fn func([]N) []v1review.Finding) F
 // TableLimitSize builds TABLE_LIMIT_SIZE.
 func (m *MySQLFamily[N]) TableLimitSize(fn func([]N, *metadatapb.DatabaseSchemaMetadata, int) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, true)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -1215,7 +1212,7 @@ func (m *MySQLFamily[N]) TableRequireCollation(fn func([]N) []v1review.Finding) 
 // TableRequirePK builds TABLE_REQUIRE_PK.
 func (m *MySQLFamily[N]) TableRequirePK(fn func([]N, *v1review.Schema) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, true)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -1242,7 +1239,7 @@ func (m *MySQLFamily[N]) TableRequirePK(fn func([]N, *v1review.Schema) []v1revie
 // TableTextFieldsTotalLength builds TABLE_TEXT_FIELDS_TOTAL_LENGTH.
 func (m *MySQLFamily[N]) TableTextFieldsTotalLength(fn func([]N, *v1review.Schema, int) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx, false)
+		p, err := m.prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -1252,12 +1249,12 @@ func (m *MySQLFamily[N]) TableTextFieldsTotalLength(fn func([]N, *v1review.Schem
 		}
 		final := v1SchemaPtrOf(checkCtx.FinalMetadata)
 		var adviceList []*storepb.Advice
-		for _, stmt := range p.stmts {
+		for i, stmt := range p.stmts {
 			adviceCode := code.TotalTextLengthExceedsLimit
 			if m.opt.IsCreateTable != nil && m.opt.IsCreateTable(stmt.Node) {
 				adviceCode = code.IndexCountExceedsLimit
 			}
-			for _, f := range fn([]N{stmt.Node}, final, maximum) {
+			for _, f := range fn(p.nodes[i:i+1:i+1], final, maximum) {
 				if f.Code == v1review.TableTextTooLong {
 					adviceList = append(adviceList, newAdvice(p.status, adviceCode, p.title, fmt.Sprintf("Table %q total text column length (%s) exceeds the limit (%d).", f.Name, f.Value, maximum), &storepb.Position{Line: int32(stmt.BaseLine) + m.r.findingLine(stmt.Text, f)}))
 				}

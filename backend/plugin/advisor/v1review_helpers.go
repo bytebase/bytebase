@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"unicode"
 
 	"github.com/bytebase/omni/v1review"
@@ -28,7 +29,7 @@ type V1Stmt[N any] struct {
 
 // ExtractNodes unwraps parsed statements into V1Stmt values using getNode.
 func ExtractNodes[N any](parsed []base.ParsedStatement, getNode func(base.AST) (N, bool)) []V1Stmt[N] {
-	var stmts []V1Stmt[N]
+	stmts := make([]V1Stmt[N], 0, len(parsed))
 	for _, stmt := range parsed {
 		if stmt.AST == nil {
 			continue
@@ -46,14 +47,22 @@ func ExtractNodes[N any](parsed []base.ParsedStatement, getNode func(base.AST) (
 	return stmts
 }
 
+var v1RunnerMemoSeq atomic.Int64
+
 // v1Runner holds the engine-specific extraction and V1 position helpers shared
 // across the MySQL-family v1review rule adapters.
 type v1Runner[N any] struct {
 	extract             func(Context) ([]V1Stmt[N], error)
 	byteOffsetLine      func(sql string, byteOffset int) int32
+	memoKey             string
 	tidbQuirks          bool
 	isAlterTable        func(N) bool
 	createTableLocStart func(N) (int, bool)
+}
+
+type v1CachedStmts[N any] struct {
+	stmts []V1Stmt[N]
+	nodes []N
 }
 
 func v1Nodes[N any](stmts []V1Stmt[N]) []N {
@@ -65,11 +74,22 @@ func v1Nodes[N any](stmts []V1Stmt[N]) []N {
 }
 
 func (r v1Runner[N]) extractNodes(checkCtx Context) ([]V1Stmt[N], []N, error) {
+	if r.memoKey != "" {
+		if cached, ok := checkCtx.Memo(r.memoKey); ok {
+			if c, typeOK := cached.(v1CachedStmts[N]); typeOK {
+				return c.stmts, c.nodes, nil
+			}
+		}
+	}
 	stmts, err := r.extract(checkCtx)
 	if err != nil {
 		return nil, nil, err
 	}
-	return stmts, v1Nodes(stmts), nil
+	nodes := v1Nodes(stmts)
+	if r.memoKey != "" {
+		checkCtx.SetMemo(r.memoKey, v1CachedStmts[N]{stmts: stmts, nodes: nodes})
+	}
+	return stmts, nodes, nil
 }
 
 func contentStartIndex(text string) int {

@@ -113,7 +113,7 @@ func getTiDBNodes(checkCtx advisor.Context) ([]Stmt, error) {
 		return nil, errors.New("ParsedStatements is not provided in context")
 	}
 
-	var result []Stmt
+	result := make([]Stmt, 0, len(checkCtx.ParsedStatements))
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.Empty || stmt.AST == nil {
 			continue
