@@ -182,21 +182,6 @@ func TestValidateQuery(t *testing.T) {
 			description: "EXPLAIN ANALYZE over INSERT ... SELECT must be rejected",
 		},
 		{
-			statement:   "EXPLAIN ANALYZE UPDATE users SET name = 'test' WHERE id = 1",
-			valid:       false,
-			description: "EXPLAIN ANALYZE over UPDATE must be rejected",
-		},
-		{
-			statement:   "EXPLAIN ANALYZE DELETE FROM users WHERE id = 1",
-			valid:       false,
-			description: "EXPLAIN ANALYZE over DELETE must be rejected",
-		},
-		{
-			statement:   "EXPLAIN ANALYZE TRUNCATE TABLE users",
-			valid:       false,
-			description: "EXPLAIN ANALYZE over TRUNCATE must be rejected",
-		},
-		{
 			// Plain EXPLAIN does not execute, but the editor must refuse by way
 			// of EXPLAIN what it refuses when asked directly — and under ANALYZE,
 			// which does execute, the export would be live.
@@ -215,19 +200,21 @@ func TestValidateQuery(t *testing.T) {
 			description: "EXPLAIN ANALYZE over an export must be rejected",
 		},
 		{
-			statement:   `EXPLAIN ANALYZE (SELECT a FROM t INTO OUTFILE "s3://b/x")`,
-			valid:       false,
-			description: "EXPLAIN ANALYZE over a parenthesized export must be rejected",
-		},
-		{
-			statement:   `EXPLAIN ANALYZE ((SELECT a FROM t INTO OUTFILE "s3://b/x"))`,
-			valid:       false,
-			description: "EXPLAIN ANALYZE over a nested parenthesized export must be rejected",
-		},
-		{
 			statement:   `EXPLAIN ANALYZE SELECT 1 UNION SELECT a FROM t INTO OUTFILE "s3://b/x"`,
 			valid:       false,
 			description: "EXPLAIN ANALYZE over an export in a set-operation arm must be rejected",
+		},
+		{
+			// Under a plan prefix the clause is hoisted to the explained
+			// statement's outermost query, which is a parenthesized group here.
+			statement:   `EXPLAIN (SELECT a FROM t) INTO OUTFILE "s3://b/x"`,
+			valid:       false,
+			description: "EXPLAIN must not launder an export hoisted onto the group",
+		},
+		{
+			statement:   `EXPLAIN ANALYZE (SELECT 1) INTO OUTFILE "s3://b/x"`,
+			valid:       false,
+			description: "EXPLAIN ANALYZE over an export hoisted onto the group must be rejected",
 		},
 		{
 			statement:   "SELECT EXTRACT(YEAR FROM MONTHS_ADD(NOW(), -1))",
@@ -363,6 +350,30 @@ func TestValidateQuery(t *testing.T) {
 			// no grammar rule and fails to parse rather than reaching validation.
 			statement:   "SET DEFAULT STORAGE VAULT v",
 			description: "SET DEFAULT STORAGE VAULT must be rejected",
+		},
+		{
+			// StarRocks refuses EXPLAIN ANALYZE over UPDATE and DELETE, so the
+			// statement never reaches the read-only gate.
+			statement:   "EXPLAIN ANALYZE UPDATE users SET name = 'test' WHERE id = 1",
+			description: "EXPLAIN ANALYZE over UPDATE must be rejected",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE DELETE FROM users WHERE id = 1",
+			description: "EXPLAIN ANALYZE over DELETE must be rejected",
+		},
+		{
+			// The plan grammar takes the query and INSERT/UPDATE/DELETE shapes
+			// only, so TRUNCATE and a parenthesized body are syntax errors.
+			statement:   "EXPLAIN ANALYZE TRUNCATE TABLE users",
+			description: "EXPLAIN ANALYZE over TRUNCATE must be rejected",
+		},
+		{
+			statement:   `EXPLAIN ANALYZE (SELECT a FROM t INTO OUTFILE "s3://b/x")`,
+			description: "EXPLAIN ANALYZE over a parenthesized export must be rejected",
+		},
+		{
+			statement:   `EXPLAIN ANALYZE ((SELECT a FROM t INTO OUTFILE "s3://b/x"))`,
+			description: "EXPLAIN ANALYZE over a nested parenthesized export must be rejected",
 		},
 		{
 			statement:   "SELECT a FROM t xx yy zz",
