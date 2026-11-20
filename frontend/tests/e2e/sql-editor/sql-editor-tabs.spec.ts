@@ -219,9 +219,16 @@ test.describe("Tab strip scrolls when tabs overflow the viewport", () => {
     // (tabStore.openTabList), so subsequent navigations append to the
     // strip rather than replacing the active tab.
     const projectId = env.project.split("/").pop()!;
-    for (const name of createdSavedQueries) {
+    for (const [i, name] of createdSavedQueries.entries()) {
       const uuid = name.split("/").pop()!;
       await sqlEditor.gotoSheet(projectId, uuid);
+      // The tab is added only after the saved query is fetched; navigating
+      // on before that reloads the page and drops it.
+      await expect(
+        page.locator("[data-tab-id]", {
+          hasText: `${SAVED_QUERY_TITLE_PREFIX}${i}`,
+        }),
+      ).toHaveCount(1, { timeout: 15_000 });
     }
     await page.waitForTimeout(500);
 
