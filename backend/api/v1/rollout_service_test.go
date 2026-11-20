@@ -404,35 +404,77 @@ type sqlDBDriver struct {
 
 func (d sqlDBDriver) GetDB() *sql.DB { return d.handle }
 
-// TestGetSessionCockroachFallback pins that the fallback does not send
-// PostgreSQL's pg_blocking_pids, which CockroachDB does not implement.
 func TestGetSessionCockroachFallback(t *testing.T) {
 	t.Parallel()
-	handle, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherFunc(func(_, actual string) error {
+	handle, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherFunc(func(expected, actual string) error {
+		if !strings.Contains(actual, expected) {
+			return errors.Errorf("query %q does not contain %q", actual, expected)
+		}
+		if strings.Contains(actual, "pg_stat_activity") {
+			return errors.New("CockroachDB pg_stat_activity returns no rows")
+		}
 		if strings.Contains(actual, "pg_blocking_pids") {
 			return errors.New("CockroachDB has no pg_blocking_pids")
+		}
+		if !strings.Contains(actual, "crdb_internal.cluster_sessions") {
+			return errors.New("CockroachDB session start must read crdb_internal.cluster_sessions")
 		}
 		return nil
 	})))
 	require.NoError(t, err)
 	defer handle.Close()
 
-	start := time.Now()
-	rows := sqlmock.NewRows([]string{
-		"pid", "blocked_by_pids", "query", "state", "wait_event_type", "wait_event",
-		"datname", "usename", "application_name", "client_addr", "client_port",
-		"backend_start", "xact_start", "query_start",
-	}).AddRow(42, "{}", "SELECT pg_sleep(20)", "active", nil, nil, "smoke", "root", "bytebase-taskrun-7", nil, nil, start, nil, nil)
-	mock.ExpectQuery("pg_stat_activity").WithArgs("bytebase-taskrun-7").WillReturnRows(rows)
+	columns := []string{
+		"session_id", "blocked_by_pids", "query", "phase", "wait_event_type", "wait_event",
+		"database", "user_name", "application_name", "client_address", "client_port",
+		"session_start", "xact_start", "start",
+	}
+	sessionStart := time.Date(2026, 11, 20, 2, 0, 0, 0, time.UTC)
+	queryStart := sessionStart.Add(5 * time.Minute)
+	sessionID := "18e9a1f97a49d2ca0000000000000001"
+
+	rows := sqlmock.NewRows(columns).AddRow(
+		sessionID, "{}", "SELECT pg_sleep(20)", "executing", nil, nil,
+		"smoke", "root", "bytebase-taskrun-7", "[::1]:44768", nil,
+		sessionStart, nil, queryStart,
+	)
+	mock.ExpectQuery("crdb_internal.cluster_queries").WithArgs("bytebase-taskrun-7").WillReturnRows(rows)
 
 	got, err := getSession(context.Background(), storepb.Engine_COCKROACHDB, sqlDBDriver{handle: handle}, "bytebase-taskrun-7")
 	require.NoError(t, err)
 	postgres := got.GetPostgres()
 	require.NotNil(t, postgres)
 	require.NotNil(t, postgres.Session)
-	require.Equal(t, "42", postgres.Session.Pid)
+	require.Equal(t, sessionID, postgres.Session.Pid)
 	require.Equal(t, "bytebase-taskrun-7", postgres.Session.ApplicationName)
-	require.Contains(t, postgres.Session.Query, "pg_sleep")
+	require.Equal(t, "SELECT pg_sleep(20)", postgres.Session.Query)
+	require.Equal(t, "executing", postgres.Session.GetState())
+	require.Nil(t, postgres.Session.WaitEventType)
+	require.Nil(t, postgres.Session.WaitEvent)
+	require.Equal(t, "smoke", postgres.Session.GetDatname())
+	require.Equal(t, "root", postgres.Session.GetUsename())
+	require.Equal(t, "[::1]:44768", postgres.Session.GetClientAddr())
+	require.Nil(t, postgres.Session.ClientPort)
 	require.Empty(t, postgres.Session.BlockedByPids)
+	require.Equal(t, timestamppb.New(sessionStart), postgres.Session.BackendStart)
+	require.Nil(t, postgres.Session.XactStart)
+	require.Equal(t, timestamppb.New(queryStart), postgres.Session.QueryStart)
+
+	missingSessionStartID := "18e9a1f97a49d2ca0000000000000002"
+	rowsWithoutSessionStart := sqlmock.NewRows(columns).AddRow(
+		missingSessionStartID, "{}", "SELECT pg_sleep(20)", "executing", nil, nil,
+		"smoke", "root", "bytebase-taskrun-8", nil, nil,
+		nil, nil, queryStart,
+	)
+	mock.ExpectQuery("crdb_internal.cluster_queries").WithArgs("bytebase-taskrun-8").WillReturnRows(rowsWithoutSessionStart)
+
+	gotWithoutSessionStart, err := getSession(context.Background(), storepb.Engine_COCKROACHDB, sqlDBDriver{handle: handle}, "bytebase-taskrun-8")
+	require.NoError(t, err)
+	withoutSessionStart := gotWithoutSessionStart.GetPostgres().GetSession()
+	require.NotNil(t, withoutSessionStart)
+	require.Equal(t, missingSessionStartID, withoutSessionStart.Pid)
+	require.Nil(t, withoutSessionStart.BackendStart)
+	require.Equal(t, timestamppb.New(queryStart), withoutSessionStart.QueryStart)
+
 	require.NoError(t, mock.ExpectationsWereMet())
 }

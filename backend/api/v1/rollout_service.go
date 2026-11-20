@@ -716,23 +716,25 @@ const postgresTaskRunSessionQuery = `
 // PostgreSQL query nor its blocking relationships apply.
 const cockroachTaskRunSessionQuery = `
 			SELECT
-				session_id,
+				q.session_id,
 				CAST(ARRAY[] AS TEXT[]) AS blocked_by_pids,
-				query,
-				phase,
+				q.query,
+				q.phase,
 				CAST(NULL AS TEXT) AS wait_event_type,
 				CAST(NULL AS TEXT) AS wait_event,
-				database,
-				user_name,
-				application_name,
-				client_address,
+				q.database,
+				q.user_name,
+				q.application_name,
+				q.client_address,
 				CAST(NULL AS TEXT) AS client_port,
-				start,
+				s.session_start,
 				CAST(NULL AS TIMESTAMPTZ) AS xact_start,
-				start
-			FROM crdb_internal.cluster_queries
-			WHERE application_name = $1
-			ORDER BY session_id
+				q.start
+			FROM crdb_internal.cluster_queries AS q
+			LEFT JOIN crdb_internal.cluster_sessions AS s
+				ON s.session_id = q.session_id
+			WHERE q.application_name = $1
+			ORDER BY q.session_id
 		`
 
 func getSession(ctx context.Context, engine storepb.Engine, driver db.Driver, appName string) (*v1pb.TaskRunSession, error) {
@@ -748,8 +750,6 @@ func getSession(ctx context.Context, engine storepb.Engine, driver db.Driver, ap
 	case storepb.Engine_POSTGRES:
 		query = postgresTaskRunSessionQuery
 	case storepb.Engine_COCKROACHDB:
-		// CockroachDB's pg_stat_activity answers no rows, so its session comes
-		// from the engine's own catalog.
 		query = cockroachTaskRunSessionQuery
 	default:
 		return nil, errors.Errorf("session monitoring is only supported for PostgreSQL and CockroachDB")
@@ -769,8 +769,7 @@ func getSession(ctx context.Context, engine storepb.Engine, driver db.Driver, ap
 
 		var blockedByPids pgtype.TextArray
 
-		var bs time.Time
-		var xs, qs *time.Time
+		var bs, xs, qs *time.Time
 		if err := rows.Scan(
 			&s.Pid,
 			&blockedByPids,
@@ -794,7 +793,9 @@ func getSession(ctx context.Context, engine storepb.Engine, driver db.Driver, ap
 			return nil, errors.Wrapf(err, "failed to assign blocking pids")
 		}
 
-		s.BackendStart = timestamppb.New(bs)
+		if bs != nil {
+			s.BackendStart = timestamppb.New(*bs)
+		}
 		if xs != nil {
 			s.XactStart = timestamppb.New(*xs)
 		}
