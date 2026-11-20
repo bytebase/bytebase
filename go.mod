@@ -350,4 +350,4 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )
 
-replace github.com/github/gh-ost => github.com/bytebase/gh-ost2 v1.1.7-0.20261120013736-268c77f2c0ca
+replace github.com/github/gh-ost => github.com/bytebase/gh-ost2 v0.0.0-20261120013736-268c77f2c0ca
