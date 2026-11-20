@@ -319,6 +319,14 @@ export class BytebaseApiClient {
     );
   }
 
+  async getDatabase(name: string) {
+    return this.request<{ name: string; labels?: Record<string, string> }>("GET", `/v1/${name}`);
+  }
+
+  async updateDatabaseLabels(name: string, labels: Record<string, string>) {
+    return this.request<unknown>("PATCH", `/v1/${name}?updateMask=labels`, { name, labels });
+  }
+
   async updateDatabaseEnvironment(
     databaseFullName: string,
     environment: string,

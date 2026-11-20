@@ -36,6 +36,8 @@ import {
   getAgentAIConfigurationEnabled,
   isAgentAIConfigurationError,
 } from "../logic/aiConfiguration";
+import { priorUncertainApiAttemptIds } from "../logic/apiAttempt";
+import { parseCallApiResult } from "../logic/callApiResult";
 import {
   type AgentMaskingPageResource,
   getCurrentAgentPageResource,
@@ -201,6 +203,7 @@ const withChatRunSegment = async (
   if (!scopeKey) return;
   await withAgentRunLease(scopeKey, chatId, async (owner) => {
     if (!isCurrentChatScope(store, chatId)) return;
+    await store.recoverLegacyApiAttempts(chatId, owner);
     await action(owner);
   });
 };
@@ -1410,10 +1413,12 @@ export function AgentInput({
 
   const buildChatHistory = useCallback(
     (chatId: string, systemPrompt: string): Message[] => {
+      const chat = useAgentStore.getState().getChat(chatId);
       return buildOutboundHistory(
         systemPrompt,
         useAgentStore.getState().getMessages(chatId),
-        useAgentStore.getState().getChat(chatId)?.context
+        chat?.context,
+        ...(chat?.apiAttempts?.length ? ([chat.apiAttempts] as const) : [])
       );
     },
     []
@@ -1687,6 +1692,12 @@ export function AgentInput({
             },
             true
           ),
+        priorAttemptIds: (fingerprint) =>
+          priorUncertainApiAttemptIds(
+            useAgentStore.getState().chats,
+            fingerprint
+          ),
+        isApiScopeCurrent: store.captureApiScope(),
         signal: controller.signal,
         userName: useAppStore.getState().currentUser?.name,
         context: runContext,
@@ -2328,6 +2339,25 @@ export function AgentInput({
                     )))
               )
                 return;
+              const current = useAgentStore.getState();
+              const attempt =
+                toolNamesByCallId.get(toolCallId) === "call_api"
+                  ? current
+                      .getChat(chatId)
+                      ?.apiAttempts?.find(
+                        (a) =>
+                          a.runId === runId &&
+                          a.toolCallId === toolCallId &&
+                          parseCallApiResult(result, a.operationId).execution
+                            ?.attemptId === a.id
+                      )
+                  : undefined;
+              if (
+                attempt &&
+                current.getApiAttemptToolResult(chatId, attempt.id)
+              ) {
+                return;
+              }
               if (managed && controller.signal.aborted) {
                 useAgentStore.getState().addMessage({
                   chatId,
@@ -3974,6 +4004,20 @@ export function AgentInput({
             recheckPage();
             const runMode = currentStore.getChat(chatId)?.runMode ?? "default";
             const capability = currentStore.getChat(chatId)?.capability;
+            const active = currentStore.getChat(chatId);
+            const root = currentStore
+              .getMessages(chatId)
+              .findLast((m) => m.role === "user");
+            const context =
+              root && active?.runId
+                ? currentStore.createApiDispatchContext({
+                    chatId,
+                    runId: active.runId,
+                    rootUserMessageId: root.id,
+                    toolCallId: pendingAsk.toolCallId,
+                    logicalActionId: permission.actionId,
+                  })
+                : null;
             currentStore.setChatStatus(chatId, "running");
             approvalController = new AbortController();
             currentStore.setAbortController(chatId, approvalController);
@@ -3991,6 +4035,7 @@ export function AgentInput({
               ...(domContext ? { domContext } : {}),
               approved: confirmed && requestAvailable,
               signal: approvalController.signal,
+              ...(context && { context }),
               ...(capability !== undefined ? { capability } : {}),
             });
             const currentChat = currentStore.getChat(chatId);
@@ -4008,16 +4053,22 @@ export function AgentInput({
             ) {
               return;
             }
-            currentStore.addMessage({
-              chatId,
-              role: "tool",
-              toolCallId: pendingAsk.toolCallId,
-              content: result,
-              metadata: {
-                route: currentPage.path,
-                runId: chat.runId ?? undefined,
-              },
-            });
+            const evidence = parseCallApiResult(result, permission.operationId);
+            const attemptId = evidence.execution?.attemptId;
+            if (
+              !attemptId ||
+              !currentStore.getApiAttemptToolResult(chatId, attemptId)
+            )
+              currentStore.addMessage({
+                chatId,
+                role: "tool",
+                toolCallId: pendingAsk.toolCallId,
+                content: result,
+                metadata: {
+                  route: currentPage.path,
+                  runId: chat.runId ?? undefined,
+                },
+              });
             if (supportsAgentRunRecovery()) {
               if (!(await currentStore.flushRunPersistence())) {
                 currentStore.setChatStatus(chatId, "error", {
@@ -4032,9 +4083,8 @@ export function AgentInput({
             }
             if (
               !requestAvailable ||
-              result === '{"error":"Permission request expired."}' ||
-              result ===
-                '{"error":"Permission request not found or already used."}'
+              evidence.error === "Permission request expired." ||
+              evidence.error === "Permission request not found or already used."
             ) {
               currentStore.addMessage({
                 chatId,
@@ -4589,6 +4639,13 @@ export function AgentInput({
                       <div className="min-w-0 font-mono wrap-anywhere">
                         {apiPermissionPreview.dom.resourceName}
                       </div>
+                      {Boolean(
+                        apiPermissionPreview.priorAttemptIds?.length
+                      ) && (
+                        <Alert variant="warning" appearance="caption">
+                          {t("agent.api-recovery.repeat-risk")}
+                        </Alert>
+                      )}
                       <ul
                         className="flex min-w-0 flex-col gap-3"
                         aria-label={
@@ -4650,6 +4707,17 @@ export function AgentInput({
                       <div className="mt-2 font-mono break-all">
                         {apiPermissionPreview.operationId}
                       </div>
+                      {Boolean(
+                        apiPermissionPreview.priorAttemptIds?.length
+                      ) && (
+                        <Alert
+                          variant="warning"
+                          appearance="caption"
+                          className="mt-2"
+                        >
+                          {t("agent.api-recovery.repeat-risk")}
+                        </Alert>
+                      )}
                       {apiPermissionPreview.issueDecision && (
                         <div className="mt-2 border-l-2 border-warning pl-2">
                           <div className="font-medium">

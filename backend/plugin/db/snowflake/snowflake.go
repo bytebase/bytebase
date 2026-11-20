@@ -1,37 +1,64 @@
-// Package snowflake is the plugin for Snowflake driver.
+// Package snowflake is Bytebase's Snowflake driver: an adapter over
+// github.com/bytebase/omni/snowflake/driver that maps Bytebase's connection
+// config onto the driver contract and the contract's results back into the
+// product's protos.
+//
+// Adapter invariants:
+//   - Open validates the configuration through snowflakedriver.Open without
+//     dialing the account. QueryConn opens one odriver.Session lazily on first
+//     use, serializes calls on it with sessionMu, preserves it across
+//     recoverable SQL/parse errors (such as a failed USE SCHEMA), and discards
+//     it on Close, context cancellation, or unrecoverable connection/session
+//     errors.
+//   - QueryConn normalizes successful columnless results with nil AffectedRows
+//     to one "Affected Rows: 0" row, maps lowercase plan formats from
+//     snowflake/analysis onto QueryOption_ExplainFormat for user-written EXPLAIN
+//     statements (leaving Explain-mode requests to SQLService), and formats
+//     timestamps outside google.protobuf.Timestamp's 0001..9999 range as text.
+//   - Execute parses leading `-- txn-mode` directives into Transactional or
+//     AutoCommit and maps logged command byte ranges back to the caller's script
+//     with directiveShift.
 package snowflake
 
 import (
 	"context"
-	"crypto/rsa"
-	"crypto/x509"
 	"database/sql"
-	"encoding/pem"
-	"fmt"
-	"log/slog"
+	sqldriver "database/sql/driver"
+	"errors"
+	"io"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
+	"unicode"
 
-	"github.com/pkg/errors"
-	"github.com/youmark/pkcs8"
-	"google.golang.org/protobuf/types/known/durationpb"
+	odriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
+	snowflakedriver "github.com/bytebase/omni/snowflake/driver"
+	snowflakeparser "github.com/bytebase/omni/snowflake/parser"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	snowflakeparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
-
-	snow "github.com/snowflakedb/gosnowflake/v2"
 )
 
+type snowflakeImpl interface {
+	odriver.Driver
+	odriver.Syncer
+	odriver.Dumper
+	odriver.Querier
+	odriver.Executor
+}
+
 var (
-	_ db.Driver        = (*Driver)(nil)
-	_ db.SQLDBProvider = (*Driver)(nil)
+	_ db.Driver         = (*Driver)(nil)
+	_ db.SessionQuerier = (*Driver)(nil)
+	_ snowflakeImpl     = (*snowflakedriver.Driver)(nil)
 )
 
 func init() {
@@ -40,423 +67,487 @@ func init() {
 
 // Driver is the Snowflake driver.
 type Driver struct {
-	connectionCtx db.ConnectionContext
-	dbType        storepb.Engine
-	db            *sql.DB
-	databaseName  string
+	databaseName string
+	impl         snowflakeImpl
+
+	// sessionMu guards session and serializes QueryConn calls on one held
+	// client connection from the first QueryConn until Close.
+	sessionMu sync.Mutex
+	session   odriver.Session
 }
 
 func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open opens a Snowflake driver.
-func (d *Driver) Open(_ context.Context, dbType storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	dsn, loggedDSN, err := buildSnowflakeDSN(config)
+// Open opens a Snowflake driver. It does not dial the server; Ping does.
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	impl, err := snowflakedriver.Open(ctx, snowflakeConfig(config))
 	if err != nil {
 		return nil, err
 	}
-
-	slog.Debug("Opening Snowflake driver",
-		slog.String("dsn", loggedDSN),
-		slog.String("environment", config.ConnectionContext.EnvironmentID),
-		slog.String("database", config.ConnectionContext.InstanceID),
-	)
-	db, err := sql.Open("snowflake", dsn)
-	if err != nil {
-		panic(err)
-	}
-	d.dbType = dbType
-	d.db = db
-	d.connectionCtx = config.ConnectionContext
+	d.impl = impl
 	d.databaseName = config.ConnectionContext.DatabaseName
 	return d, nil
 }
 
-// buildSnowflakeDSN returns the Snowflake Golang DSN and a redacted version of the DSN.
-func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
-	snowConfig := &snow.Config{
-		User: config.DataSource.Username,
-		// gosnowflake v2.3.0 turned OCSP off unless a caller opts in; before it,
-		// DSN() always wrote ocspFailOpen=true. Leaving the field unset would
-		// silently drop certificate revocation checking, so set it explicitly to
-		// keep the fail-open checking this driver has always done.
-		OCSPFailOpen: snow.OCSPFailOpenTrue,
+// snowflakeConfig maps Bytebase's connection configuration onto the omni driver
+// contract's Config.
+func snowflakeConfig(config db.ConnectionConfig) odriver.Config {
+	ds := config.DataSource
+	cfg := odriver.Config{
+		Host:     ds.GetHost(),
+		Port:     ds.GetPort(),
+		Database: config.ConnectionContext.DatabaseName,
+		User:     ds.GetUsername(),
+		Password: config.Password,
 	}
-	if config.ConnectionContext.DatabaseName != "" {
-		snowConfig.Database = fmt.Sprintf(`"%s"`, config.ConnectionContext.DatabaseName)
-	}
-	if config.DataSource.GetAuthenticationPrivateKey() != "" {
-		// Use key-pair authentication (JWT) - password is not required
-		rsaPrivKey, err := decodeRSAPrivateKey(config.DataSource.GetAuthenticationPrivateKey(), config.DataSource.GetAuthenticationPrivateKeyPassphrase())
-		if err != nil {
-			return "", "", errors.Wrapf(err, "failed to decode rsa private key")
+	if key := ds.GetAuthenticationPrivateKey(); key != "" {
+		cfg.Params = map[string]string{
+			snowflakedriver.ParamPrivateKey: key,
 		}
-		snowConfig.PrivateKey = rsaPrivKey
-		snowConfig.Authenticator = snow.AuthTypeJwt
-	} else {
-		// Use password authentication
-		snowConfig.Password = config.Password
-	}
-
-	// Host can also be account e.g. xma12345, or xma12345@host_ip where host_ip is the proxy server IP.
-	if strings.Contains(config.DataSource.Host, "@") {
-		parts := strings.Split(config.DataSource.Host, "@")
-		if len(parts) != 2 {
-			return "", "", errors.Errorf("expected one @ in the host at most, got %q", config.DataSource.Host)
+		if passphrase := ds.GetAuthenticationPrivateKeyPassphrase(); passphrase != "" {
+			cfg.Params[snowflakedriver.ParamPrivateKeyPassphrase] = passphrase
 		}
-		snowConfig.Account = parts[0]
-		snowConfig.Host = parts[1]
-	} else {
-		snowConfig.Account = config.DataSource.Host
 	}
-	dsn, err := snow.DSN(snowConfig)
-	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to build Snowflake DSN")
-	}
-	snowConfig.Password = "xxxxxx"
-	if snowConfig.PrivateKey != nil {
-		snowConfig.PrivateKey = nil
-	}
-	redactedDSN, err := snow.DSN(snowConfig)
-	if err != nil {
-		// nolint
-		slog.Warn("failed to build redacted Snowflake DSN", log.BBError(err))
-		return dsn, "", nil
-	}
-	return dsn, redactedDSN, nil
+	return cfg
 }
 
-// Close closes the driver.
+// Close closes the held query session and the underlying driver.
 func (d *Driver) Close(context.Context) error {
-	return d.db.Close()
+	d.sessionMu.Lock()
+	var sessionErr error
+	if d.session != nil {
+		sessionErr = d.session.Close()
+		d.session = nil
+	}
+	d.sessionMu.Unlock()
+
+	var implErr error
+	if d.impl != nil {
+		implErr = d.impl.Close()
+	}
+	return errors.Join(sessionErr, implErr)
 }
 
 // Ping pings the database.
 func (d *Driver) Ping(ctx context.Context) error {
-	return d.db.PingContext(ctx)
+	return d.impl.Ping(ctx)
 }
 
-// GetDB gets the database.
-func (d *Driver) GetDB() *sql.DB {
-	return d.db
-}
+// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
+// rather than on the *sql.Conn a caller passes, which is unused.
+func (*Driver) OwnsQuerySession() {}
 
-// getVersion gets the version.
-func (d *Driver) getVersion(ctx context.Context) (string, error) {
-	query := "SELECT CURRENT_VERSION()"
-	var version string
-	if err := d.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
-		if err == sql.ErrNoRows {
-			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+// QueryConn queries a SQL statement on the driver's lazily opened session.
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	d.sessionMu.Lock()
+	defer d.sessionMu.Unlock()
+
+	session, err := d.querySessionLocked(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Bytebase treats a non-positive cap as zero allowed bytes, whereas the
+	// omni driver contract treats <= 0 as unbounded.
+	maxResultBytes := queryContext.MaximumSQLResultSize
+	if maxResultBytes <= 0 {
+		maxResultBytes = 1
+	}
+	results, err := session.Query(ctx, statement, odriver.QueryOptions{
+		Schema:         queryContext.Schema,
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		ExplainFormat:  explainFormat(queryContext),
+		MaskingEnabled: queryContext.MaskingEnabled,
+		MaxResultBytes: maxResultBytes,
+	})
+	if err != nil {
+		if !isRecoverableQueryError(ctx, err) {
+			d.discardSessionLocked(session)
 		}
-		return "", util.FormatErrorWithQuery(err, query)
-	}
-	return version, nil
-}
-
-func (d *Driver) getDatabases(ctx context.Context) ([]string, error) {
-	txn, err := d.db.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
 		return nil, err
 	}
-	defer txn.Rollback()
-
-	databases, err := getDatabasesTxn(ctx, txn)
-	if err != nil {
-		return nil, err
+	if ctx.Err() != nil {
+		d.discardSessionLocked(session)
 	}
-
-	if err := txn.Commit(); err != nil {
-		return nil, err
-	}
-
-	return databases, nil
-}
-
-func getDatabasesTxn(ctx context.Context, txn *sql.Tx) ([]string, error) {
-	// Filter inbound shared databases because they are immutable and we cannot get their DDLs.
-	inboundDatabases := make(map[string]bool)
-	shareQuery := "SHOW SHARES"
-	shareRows, err := txn.Query(shareQuery)
-	if err != nil {
-		return nil, err
-	}
-	defer shareRows.Close()
-
-	cols, err := shareRows.ColumnTypes()
-	if err != nil {
-		return nil, err
-	}
-	// created_on, kind, name, database_name, to, owner, comment, listing_global_name.
-	if len(cols) < 8 {
+	if len(results) == 0 {
 		return nil, nil
 	}
-	values := make([]*sql.NullString, len(cols))
-	refs := make([]any, len(cols))
-	for i := 0; i < len(cols); i++ {
-		refs[i] = &values[i]
-	}
-	for shareRows.Next() {
-		if err := shareRows.Scan(refs...); err != nil {
-			return nil, err
-		}
-		if values[1].String == "INBOUND" {
-			inboundDatabases[values[3].String] = true
-		}
-	}
-	if err := shareRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, shareQuery)
-	}
 
-	query := `
-		SELECT
-			DATABASE_NAME
-		FROM SNOWFLAKE.INFORMATION_SCHEMA.DATABASES`
-	rows, err := txn.QueryContext(ctx, query)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
+	converted := make([]*v1pb.QueryResult, 0, len(results))
+	for _, result := range results {
+		converted = append(converted, toQueryResult(result, queryContext))
 	}
-	defer rows.Close()
-
-	var databases []string
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(
-			&name,
-		); err != nil {
-			return nil, err
-		}
-
-		if _, ok := inboundDatabases[name]; !ok {
-			databases = append(databases, name)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
-	}
-	return databases, nil
+	return converted, nil
 }
 
-// Execute executes a SQL statement and returns the affected rows.
-func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	// Parse transaction mode from the script
-	config, cleanedStatement := base.ParseTransactionConfig(statement)
-	statement = cleanedStatement
-	transactionMode := config.Mode
-
-	// Apply default when transaction mode is not specified
-	if transactionMode == transaction.ModeUnspecified {
-		transactionMode = transaction.DefaultMode()
+// isRecoverableQueryError reports whether err left the held Snowflake session
+// healthy so later calls on the same stream keep temporary tables and open
+// transactions. omni/snowflake/driver returns a top-level Session.Query error
+// only on pre-execution parse/explain checks (before touching the connection)
+// and on USE SCHEMA when QueryOptions.Schema is non-empty.
+func isRecoverableQueryError(ctx context.Context, err error) bool {
+	if err == nil {
+		return true
 	}
-
-	// Execute based on transaction mode
-	if transactionMode == transaction.ModeOff {
-		return d.executeInAutoCommitMode(ctx, statement, opts)
+	if ctx.Err() != nil ||
+		errors.Is(err, context.Canceled) ||
+		errors.Is(err, context.DeadlineExceeded) ||
+		errors.Is(err, sql.ErrConnDone) ||
+		errors.Is(err, sqldriver.ErrBadConn) {
+		return false
 	}
-	return d.executeInTransactionMode(ctx, statement, opts)
+	var parseErr *snowflakeparser.ParseError
+	if errors.As(err, &parseErr) {
+		return true
+	}
+	switch err.Error() {
+	case "EXPLAIN needs a statement to plan", "EXPLAIN plans a single statement":
+		return true
+	default:
+	}
+	return isRecoverableSnowflakeServerError(err)
 }
 
-// executeInTransactionMode executes statements within a single transaction
-func (d *Driver) executeInTransactionMode(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	tx, err := d.db.BeginTx(ctx, nil)
-	if err != nil {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
-		return 0, err
-	}
-	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
-
-	committed := false
-	defer func() {
-		if !committed {
-			if err := tx.Rollback(); err != nil {
-				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, err.Error())
-			} else {
-				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, "")
+func isRecoverableSnowflakeServerError(err error) bool {
+	queue := []error{err}
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+		if cur == nil {
+			continue
+		}
+		if code, sqlState, ok := parseSnowflakeErrorPrefix(cur.Error()); ok {
+			if strings.HasPrefix(sqlState, "08") || strings.HasPrefix(sqlState, "57") {
+				return false
 			}
+			// Snowflake server SQL compilation/execution/access-control codes
+			// sit below gosnowflake's 260000+ client/network range; 390201 is
+			// the GS object-not-found/unauthorized code (whereas 390111/390112/
+			// 3903xx indicate closed or expired sessions/tokens).
+			if (code > 0 && code < 260000) || code == 390201 {
+				return true
+			}
+			return false
 		}
-	}()
-
-	// To submit a variable number of SQL statements in the statement field, set MULTI_STATEMENT_COUNT to 0."
-	// https://docs.snowflake.com/en/developer-guide/sql-api/submitting-multiple-statements
-	mctx := snow.WithMultiStatement(ctx, 0 /* MULTI_STATEMENT_COUNT */)
-
-	// Log the entire multi-statement execution
-	opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
-
-	result, err := tx.ExecContext(mctx, statement)
-	if err != nil {
-		opts.LogCommandResponse(0, nil, err.Error())
-		return 0, err
+		switch u := cur.(type) {
+		case interface{ Unwrap() error }:
+			queue = append(queue, u.Unwrap())
+		case interface{ Unwrap() []error }:
+			queue = append(queue, u.Unwrap()...)
+		default:
+		}
 	}
-
-	if err := tx.Commit(); err != nil {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
-		return 0, err
-	}
-	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
-	committed = true
-
-	rowsAffected, err := result.RowsAffected()
-	// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-	if err != nil {
-		slog.Debug("rowsAffected returns error", log.BBError(err))
-		opts.LogCommandResponse(0, nil, "")
-		return 0, nil
-	}
-	opts.LogCommandResponse(rowsAffected, nil, "")
-	return rowsAffected, nil
+	return false
 }
 
-// executeInAutoCommitMode executes statements with autocommit enabled (no explicit transaction)
-func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	// To submit a variable number of SQL statements in the statement field, set MULTI_STATEMENT_COUNT to 0."
-	// https://docs.snowflake.com/en/developer-guide/sql-api/submitting-multiple-statements
-	mctx := snow.WithMultiStatement(ctx, 0 /* MULTI_STATEMENT_COUNT */)
-
-	// Log the entire multi-statement execution
-	opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
-
-	result, err := d.db.ExecContext(mctx, statement)
-	if err != nil {
-		opts.LogCommandResponse(0, nil, err.Error())
-		return 0, err
+// parseSnowflakeErrorPrefix parses gosnowflake's "%06d (%s): ..." or
+// "%06d: ..." error prefix without importing gosnowflake directly.
+func parseSnowflakeErrorPrefix(msg string) (int, string, bool) {
+	if len(msg) < 8 {
+		return 0, "", false
 	}
-
-	rowsAffected, err := result.RowsAffected()
-	// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-	if err != nil {
-		slog.Debug("rowsAffected returns error", log.BBError(err))
-		opts.LogCommandResponse(0, nil, "")
-		return 0, nil
+	for i := range 6 {
+		if msg[i] < '0' || msg[i] > '9' {
+			return 0, "", false
+		}
 	}
-	opts.LogCommandResponse(rowsAffected, nil, "")
-	return rowsAffected, nil
+	code, err := strconv.Atoi(msg[:6])
+	if err != nil {
+		return 0, "", false
+	}
+	rest := msg[6:]
+	if strings.HasPrefix(rest, " (") {
+		end := strings.Index(rest[2:], "): ")
+		if end <= 0 || end > 8 {
+			return 0, "", false
+		}
+		return code, rest[2 : 2+end], true
+	}
+	if strings.HasPrefix(rest, ": ") {
+		return code, "", true
+	}
+	return 0, "", false
 }
 
-// QueryConn queries a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_SNOWFLAKE, statement)
+func (d *Driver) querySessionLocked(ctx context.Context) (odriver.Session, error) {
+	if d.session != nil {
+		return d.session, nil
+	}
+	session, err := d.impl.Session(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	var results []*v1pb.QueryResult
-	for _, singleSQL := range singleSQLs {
-		statement := singleSQL.Text
-		if queryContext.Explain {
-			explained, err := base.ExplainStatement(storepb.Engine_SNOWFLAKE, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
-			if err != nil {
-				return nil, err
-			}
-			statement = explained
-		} else if queryContext.Limit > 0 {
-			statement = base.StatementWithResultLimit(storepb.Engine_SNOWFLAKE, statement, queryContext.Limit, "")
-		}
-
-		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_SNOWFLAKE, statement)
-		if err != nil {
-			slog.Error("failed to validate sql", slog.String("statement", statement), log.BBError(err))
-			allQuery = true
-		}
-
-		// Sanitize the schema name by escaping any quotes.
-		safeSchemeName := strings.ReplaceAll(queryContext.Schema, "\"", "\"\"")
-
-		// If the queryContext.Schema is not empty, set the current schema to the given schema.
-		// Reference: https://docs.snowflake.com/en/sql-reference/sql/use-schema
-		if queryContext.Schema != "" {
-			if _, err := conn.ExecContext(ctx, fmt.Sprintf(`USE SCHEMA "%s";`, safeSchemeName)); err != nil { // NOSONAR(go:S2077) safeSchemeName is sanitized by escaping double quotes above
-				return nil, err
-			}
-		} else {
-			// If the queryContext.Schema is empty, we try to set the current schema to "PUBLIC" and ignore the error because
-			// the schema may not exist.
-			if _, err := conn.ExecContext(ctx, "USE SCHEMA PUBLIC;"); err != nil {
-				slog.Debug("failed to set schema to PUBLIC", log.BBError(err))
-			}
-		}
-
-		startTime := time.Now()
-		queryResult, err := func() (*v1pb.QueryResult, error) {
-			if allQuery {
-				rows, err := conn.QueryContext(ctx, statement)
-				if err != nil {
-					return nil, err
-				}
-				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, util.MakeCommonValueByTypeName, util.ConvertCommonValue, queryContext.MaximumSQLResultSize)
-				if err != nil {
-					return nil, err
-				}
-				if err := rows.Err(); err != nil {
-					return nil, err
-				}
-				if !queryContext.Explain {
-					r.QueryPlan = db.TypedExplainPlan(snowflakeparser.DescribeExplain(statement))
-				}
-				return r, nil
-			}
-
-			sqlResult, err := conn.ExecContext(ctx, statement)
-			if err != nil {
-				return nil, err
-			}
-			affectedRows, err := sqlResult.RowsAffected()
-			if err != nil {
-				slog.Info("rowsAffected returns error", log.BBError(err))
-			}
-			return util.BuildAffectedRowsResult(affectedRows, nil), nil
-		}()
-		stop := false
-		if err != nil {
-			queryResult = &v1pb.QueryResult{
-				Error: err.Error(),
-			}
-			stop = true
-		}
-		queryResult.Statement = statement
-		queryResult.Latency = durationpb.New(time.Since(startTime))
-		queryResult.RowsCount = int64(len(queryResult.Rows))
-		results = append(results, queryResult)
-		if stop {
-			break
-		}
-	}
-
-	return results, nil
+	d.session = session
+	return session, nil
 }
 
-func decodeRSAPrivateKey(key, passphrase string) (*rsa.PrivateKey, error) {
-	block, _ := pem.Decode([]byte(key))
-	if block == nil {
-		return nil, errors.Errorf("failed to get private key PEM block from key")
+func (d *Driver) discardSessionLocked(session odriver.Session) {
+	_ = session.Close()
+	if d.session == session {
+		d.session = nil
 	}
-	switch block.Type {
-	case "PRIVATE KEY":
-		privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse pkcs8 private key")
+}
+
+func toQueryResult(result *odriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
+	if result == nil {
+		return &v1pb.QueryResult{}
+	}
+	normalized := normalizeOutOfRangeTimestamps(result)
+	queryResult := util.OmniResultToQueryResult(normalized, queryContext.MaximumSQLResultSize)
+	if len(normalized.Columns) == 0 && normalized.AffectedRows == nil && normalized.Err == nil && !normalized.Truncated {
+		affected := util.BuildAffectedRowsResult(0, queryResult.Messages)
+		queryResult.ColumnNames = affected.ColumnNames
+		queryResult.ColumnTypeNames = affected.ColumnTypeNames
+		queryResult.Rows = affected.Rows
+		queryResult.RowsCount = 1
+	}
+	// Explain requests leave QueryPlan unset so SQLService stamps the requested
+	// format; user-written EXPLAIN statements map snowflake/analysis's lowercase
+	// format names ("text", "json") through db.TypedExplainPlan.
+	if queryContext.Explain || normalized.Err != nil {
+		queryResult.QueryPlan = nil
+	} else if normalized.Plan != nil {
+		queryResult.QueryPlan = db.TypedExplainPlan(normalized.Plan.Format, normalized.Plan.Executed, true)
+		queryResult.QueryPlan.Content = normalized.Plan.Content
+	}
+	return queryResult
+}
+
+// normalizeOutOfRangeTimestamps converts Timestamp/TimestampTZ cells outside
+// google.protobuf.Timestamp's [0001-01-01, 9999-12-31] range into strings so
+// protobuf serialization never fails on extreme Snowflake dates.
+func normalizeOutOfRangeTimestamps(result *odriver.Result) *odriver.Result {
+	var cloned *odriver.Result
+	for i, row := range result.Rows {
+		var clonedRow []odriver.Value
+		for j, cell := range row {
+			if cell.Kind != odriver.Timestamp && cell.Kind != odriver.TimestampTZ {
+				continue
+			}
+			if timestamppb.New(cell.Time).CheckValid() == nil {
+				continue
+			}
+			if cloned == nil {
+				copyResult := *result
+				copyResult.Rows = append([][]odriver.Value(nil), result.Rows...)
+				cloned = &copyResult
+			}
+			if clonedRow == nil {
+				clonedRow = append([]odriver.Value(nil), row...)
+				cloned.Rows[i] = clonedRow
+			}
+			text := cell.Time.Format(time.RFC3339Nano)
+			if cell.Kind == odriver.Timestamp {
+				text = cell.Time.UTC().Format("2006-01-02 15:04:05.999999999")
+			}
+			clonedRow[j] = odriver.Value{Kind: odriver.String, String: text}
 		}
-		rsaKey, ok := privateKey.(*rsa.PrivateKey)
-		if !ok {
-			return nil, errors.Errorf("expected RSA private key, got %T", privateKey)
-		}
-		return rsaKey, nil
-	case "ENCRYPTED PRIVATE KEY":
-		// crypto/x509 cannot decrypt PKCS#8 keys and gosnowflake does not either, so
-		// youmark/pkcs8 covers the PBES2 scheme. It reads an empty password as "the key
-		// is unencrypted" and would misparse the ciphertext, so reject a missing
-		// passphrase before calling it.
-		if passphrase == "" {
-			return nil, errors.Errorf("private key is encrypted, but no passphrase was provided")
-		}
-		pk, err := pkcs8.ParsePKCS8PrivateKeyRSA(block.Bytes, []byte(passphrase))
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse pkcs8 private key to rsa private key with passphrase")
-		}
-		return pk, nil
+	}
+	if cloned != nil {
+		return cloned
+	}
+	return result
+}
+
+func explainFormat(queryContext db.QueryContext) string {
+	switch db.ExplainFormat(queryContext.Option.GetExplainFormat()) {
+	case base.ExplainFormatJSON:
+		return "JSON"
+	case base.ExplainFormatText:
+		return "TEXT"
 	default:
-		return nil, errors.Errorf("unsupported pem block type: %s", block.Type)
+		return ""
 	}
+}
+
+// Execute executes a SQL script and returns the affected rows.
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	config, cleanedStatement := base.ParseTransactionConfig(statement)
+	mode := config.Mode
+	if mode == transaction.ModeUnspecified {
+		mode = transaction.DefaultMode()
+	}
+	transactionMode := odriver.Transactional
+	if mode == transaction.ModeOff {
+		transactionMode = odriver.AutoCommit
+	}
+	return d.impl.Execute(ctx, cleanedStatement, odriver.ExecuteOptions{
+		Transaction:    transactionMode,
+		CreateDatabase: opts.CreateDatabase,
+		MaxRetries:     opts.MaximumRetries,
+		Log:            executeLogger{opts: opts, sourceRange: directiveShift(statement, cleanedStatement)},
+	})
+}
+
+// directiveShift maps the range the driver reports on the cleaned script back to
+// the caller's script, which the task run log reads when LogCommandStatement is
+// off. The removed directive lines are dropped from the range as well: the parser
+// removes them from anywhere in the leading comment block, and a contiguous range
+// that spans one would show the directive as if it had been executed.
+func directiveShift(script, cleaned string) func(int, int) (int, int) {
+	identity := func(start, end int) (int, int) { return start, end }
+	if cleaned == script {
+		return identity
+	}
+	scriptLines := strings.Split(script, "\n")
+	scriptStarts := make([]int, len(scriptLines))
+	cursor := 0
+	for i, line := range scriptLines {
+		scriptStarts[i] = cursor
+		cursor += len(line) + 1
+	}
+	cleanedLines := strings.Split(cleaned, "\n")
+	cleanedStarts := make([]int, len(cleanedLines))
+	sourceStarts := make([]int, len(cleanedLines))
+	cursor = 0
+	for i, line := range cleanedLines {
+		cleanedStarts[i] = cursor
+		cursor += len(line) + 1
+	}
+	kept := make([]bool, len(scriptLines))
+	next := 0
+	for i, line := range cleanedLines {
+		first, last := i == 0, i == len(cleanedLines)-1
+		for next < len(scriptLines) && !sameLine(scriptLines[next], line, first, last) {
+			next++
+		}
+		if next == len(scriptLines) {
+			return identity
+		}
+		kept[next] = true
+		sourceStarts[i] = scriptStarts[next]
+		if i == 0 {
+			sourceStarts[i] += len(scriptLines[next]) - len(strings.TrimLeftFunc(scriptLines[next], unicode.IsSpace))
+		}
+		next++
+	}
+	var removed [][2]int
+	for i, line := range scriptLines {
+		if !kept[i] {
+			removed = append(removed, [2]int{scriptStarts[i], scriptStarts[i] + len(line) + 1})
+		}
+	}
+	sourceOffset := func(at int) int {
+		if at < 0 || at > len(cleaned) {
+			return at
+		}
+		i := 0
+		for i+1 < len(cleanedStarts) && cleanedStarts[i+1] <= at {
+			i++
+		}
+		return sourceStarts[i] + (at - cleanedStarts[i])
+	}
+	return func(start, end int) (int, int) {
+		sourceStart, sourceEnd := sourceOffset(start), sourceOffset(end)
+		for _, span := range removed {
+			if sourceStart < span[1] && sourceEnd > span[0] && span[1] > sourceStart {
+				sourceStart = span[1]
+			}
+		}
+		if sourceStart > sourceEnd {
+			sourceStart = sourceEnd
+		}
+		return sourceStart, sourceEnd
+	}
+}
+
+// sameLine reports whether a cleaned line is the caller's line. The parser trims
+// the whole text, so the first kept line may have lost its leading whitespace and
+// the last its trailing whitespace; anything else, including a last line's
+// indentation, is copied verbatim.
+func sameLine(scriptLine, cleanedLine string, first, last bool) bool {
+	candidate := scriptLine
+	if first {
+		candidate = strings.TrimLeftFunc(candidate, unicode.IsSpace)
+	}
+	if last {
+		candidate = strings.TrimRightFunc(candidate, unicode.IsSpace)
+	}
+	return candidate == cleanedLine
+}
+
+type executeLogger struct {
+	opts        db.ExecuteOptions
+	sourceRange func(int, int) (int, int)
+}
+
+func (l executeLogger) CommandExecute(command odriver.Command) {
+	start, end := command.ByteStart, command.ByteEnd
+	if l.sourceRange != nil {
+		start, end = l.sourceRange(start, end)
+	}
+	l.opts.LogCommandExecute(&storepb.Range{
+		Start: int32(start),
+		End:   int32(end),
+	}, command.Text)
+}
+
+func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
+	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
+}
+
+func (l executeLogger) TransactionControl(op odriver.TransactionOp, err error) {
+	var control storepb.TaskRunLog_TransactionControl_Type
+	switch op {
+	case odriver.Begin:
+		control = storepb.TaskRunLog_TransactionControl_BEGIN
+	case odriver.Commit:
+		control = storepb.TaskRunLog_TransactionControl_COMMIT
+	case odriver.Rollback:
+		control = storepb.TaskRunLog_TransactionControl_ROLLBACK
+	default:
+		return
+	}
+	l.opts.LogTransactionControl(control, errorString(err))
+}
+
+func (l executeLogger) Retry(err error, attempt, _ int) {
+	l.opts.LogRetryInfo(err, attempt)
+}
+
+func errorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}
+
+// SyncInstance syncs the Snowflake account's version, databases, and user roles.
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	instance, err := d.impl.SyncInstance(ctx)
+	if err != nil {
+		return nil, err
+	}
+	roles := make([]*storepb.InstanceRole, 0, len(instance.Roles))
+	for _, role := range instance.Roles {
+		roles = append(roles, &storepb.InstanceRole{
+			Name:      role.Name,
+			Attribute: role.Attribute,
+		})
+	}
+	return &db.InstanceMetadata{
+		Version:   instance.Version,
+		Databases: instance.Databases,
+		Metadata:  &storepb.Instance{Roles: roles},
+	}, nil
+}
+
+// SyncDBSchema syncs the schema of the database the driver was opened on.
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	metadata, err := d.impl.SyncDatabase(ctx)
+	if err != nil {
+		if errors.Is(err, odriver.ErrNotFound) {
+			return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
+		}
+		return nil, err
+	}
+	return metadata, nil
+}
+
+// Dump writes the database's server-rendered DDL.
+func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
+	return d.impl.Dump(ctx, out, dbMetadata)
 }

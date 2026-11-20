@@ -46,13 +46,12 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advis
 		if !ok {
 			continue
 		}
-		text := &BaseRule{StmtText: stmt.Text}
 		for _, f := range mysqlv1review.NamingIdentifierNoKeyword([]ast.Node{node}) {
 			// A finding with search text is on the line where the statement
 			// first holds that text; any other is on its range's first line.
 			line := findingLine(stmt.Text, f)
 			if f.Search != "" {
-				line = text.FindLineByName(f.Search)
+				line = findLineByName(stmt.Text, f.Search)
 			}
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:        level,

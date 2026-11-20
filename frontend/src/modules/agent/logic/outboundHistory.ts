@@ -1,4 +1,5 @@
 import i18n from "@/lib/i18n";
+import { type AgentApiAttempt, isAgentApiAttemptUncertain } from "./apiAttempt";
 import { parseCallApiResult } from "./callApiResult";
 import { isCanonicalQueryMaskingQuestion } from "./queryFollowUpQuestions";
 import {
@@ -801,15 +802,23 @@ const historicalDatabaseContext = (
 export const buildOutboundHistory = (
   systemPrompt: string,
   messages: AgentMessage[],
-  chatContext?: string
+  chatContext?: string,
+  attempts?: readonly AgentApiAttempt[]
 ): Message[] => {
   const identityContext = historicalDatabaseContext(messages, chatContext);
+  const unresolved = attempts?.filter(isAgentApiAttemptUncertain);
   return [
     {
       role: "system",
-      content: identityContext
-        ? `${systemPrompt}\n\n${identityContext}`
-        : systemPrompt,
+      content: [
+        systemPrompt,
+        identityContext,
+        unresolved?.length
+          ? "An earlier API request may already have taken effect. Do not claim its outcome is known or repeat it automatically. Handle the current member request normally; an intentional repeat needs fresh permission."
+          : undefined,
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
     },
     ...sanitizeOutboundHistory(messages, chatContext),
   ];

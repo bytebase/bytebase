@@ -27,60 +27,12 @@ type InstanceMetadata struct {
 	Metadata  *storepb.Instance
 }
 
-// TableKey is the map key for table metadata.
-type TableKey struct {
-	Schema string
-	Table  string
-}
-
-type TableKeyWithColumns struct {
-	Schema  string
-	Table   string
-	Columns []*metadatapb.ColumnMetadata
-}
-
-// ColumnKey is the map key for table metadata.
-type ColumnKey struct {
-	Schema string
-	Table  string
-	Column string
-}
-
-// IndexKey is the map key for table metadata.
-type IndexKey struct {
-	Schema string
-	Table  string
-	Index  string
-}
-
-type ConstraintKey struct {
-	Schema     string
-	Constraint string
-}
-
-type SequenceKey struct {
-	Schema   string
-	Sequence string
-}
-
 var (
 	driversMu sync.RWMutex
 	drivers   = make(map[storepb.Engine]driverFunc)
 )
 
 type driverFunc func() Driver
-
-// MigrationStatus is the status of migration.
-type MigrationStatus string
-
-const (
-	// Pending is the migration status for PENDING.
-	Pending MigrationStatus = "PENDING"
-	// Done is the migration status for DONE.
-	Done MigrationStatus = "DONE"
-	// Failed is the migration status for FAILED.
-	Failed MigrationStatus = "FAILED"
-)
 
 // ConnectionConfig is the configuration for connections.
 type ConnectionConfig struct {

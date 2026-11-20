@@ -1,4 +1,10 @@
+import {
+  getLegacyApiOrphans,
+  normalizeAgentApiAttempts,
+} from "../logic/apiAttempt";
+import type { AgentChat, AgentMessage } from "../logic/types";
 import type { PersistedAgentState } from "./agent";
+import { hasUnreadableApiHistory } from "./historyRetention";
 import { omitAgentQuerySamples } from "./storageRetention";
 
 type RecordValue = Record<string, unknown>;
@@ -168,6 +174,12 @@ const containsValue = (source: unknown, saved: unknown): boolean => {
   return source === saved;
 };
 
+export const isRecognizedStoredAgentState = (
+  value: unknown
+): value is StoredState =>
+  isStoredState(value) &&
+  Object.keys(value).every((key) => envelopeKeys.has(key));
+
 const hasOnlyKeys = (value: unknown, keys: readonly string[]): boolean =>
   isRecord(value) && Object.keys(value).every((key) => keys.includes(key));
 
@@ -203,15 +215,152 @@ const omitQuerySamples = (state: StoredState): StoredState =>
     pendingAskByChatId: state.pendingAskByChatId ?? {},
   } as unknown as PersistedAgentState) as unknown as StoredState;
 
+const canonicalStoredState = (raw: unknown): StoredState | undefined => {
+  if (!isRecord(raw)) return undefined;
+  const canonical = { ...raw };
+  for (const [old, current] of [
+    ["threads", "chats"],
+    ["currentThreadId", "currentChatId"],
+    ["messagesByThreadId", "messagesByChatId"],
+    ["pendingAskByThreadId", "pendingAskByChatId"],
+  ]) {
+    if (!Object.hasOwn(raw, old)) continue;
+    if (Object.hasOwn(raw, current)) return undefined;
+    canonical[current] = raw[old];
+    delete canonical[old];
+  }
+  return isRecognizedStoredAgentState(canonical) ? canonical : undefined;
+};
+
+export function canDiscardStoredAgentHistory(
+  raw: unknown,
+  scopeKey: string
+): boolean {
+  const canonical = canonicalStoredState(raw);
+  if (!canonical) return false;
+  for (const [id, rows] of Object.entries(canonical.messagesByChatId)) {
+    if (
+      rows.some(
+        (m) =>
+          (m.threadId !== undefined && m.threadId !== id) ||
+          (isRecord(m.metadata) &&
+            m.metadata.apiAttemptId !== undefined &&
+            (m.role !== "tool" ||
+              typeof m.metadata.apiAttemptId !== "string" ||
+              !m.metadata.apiAttemptId)) ||
+          (m.toolCalls !== undefined &&
+            (!Array.isArray(m.toolCalls) ||
+              m.toolCalls.some(
+                (t) =>
+                  !isRecord(t) ||
+                  typeof t.id !== "string" ||
+                  typeof t.name !== "string" ||
+                  typeof t.arguments !== "string"
+              )))
+      )
+    )
+      return false;
+  }
+  const state = canonical as unknown as PersistedAgentState;
+  for (const ask of Object.values(state.pendingAskByChatId ?? {})) {
+    if (
+      typeof ask.toolCallId !== "string" ||
+      !ask.toolCallId ||
+      typeof ask.prompt !== "string" ||
+      !["confirm", "choose", "input"].includes(ask.kind)
+    )
+      return false;
+  }
+  return state.chats.every(
+    (chat) =>
+      !hasUnreadableApiHistory(
+        chat,
+        state.messagesByChatId[chat.id] ?? [],
+        scopeKey
+      )
+  );
+}
+
+export function preservesLegacyApiDispatchEvidence(
+  source: unknown,
+  saved: unknown,
+  resetChatId?: string
+): boolean {
+  const original = canonicalStoredState(source);
+  const retained = canonicalStoredState(saved);
+  if (!original || !retained) return false;
+  const retainedChats = new Map(retained.chats.map((chat) => [chat.id, chat]));
+  for (const chat of original.chats) {
+    const current = retainedChats.get(chat.id);
+    if (!current || chat.id === resetChatId) continue;
+    // An interruption flag can be the only evidence of a pre-receipt dispatch.
+    const sourceGaps = getLegacyApiOrphans(
+      {
+        ...chat,
+        apiAttempts: normalizeAgentApiAttempts(
+          chat.apiAttempts,
+          String(chat.id)
+        ),
+      } as unknown as AgentChat,
+      (original.messagesByChatId[String(chat.id)] ??
+        []) as unknown as AgentMessage[]
+    );
+    const attempts = normalizeAgentApiAttempts(
+      current.apiAttempts,
+      String(chat.id)
+    );
+    const messages = (retained.messagesByChatId[String(chat.id)] ??
+      []) as unknown as AgentMessage[];
+    const savedGaps = getLegacyApiOrphans(
+      { ...current, apiAttempts: attempts } as unknown as AgentChat,
+      messages
+    );
+    for (const gap of sourceGaps) {
+      if (
+        attempts?.some(
+          (attempt) =>
+            attempt.toolCallId === gap.toolCallId &&
+            attempt.rootUserMessageId === gap.rootUserMessageId
+        ) ||
+        savedGaps.some(
+          (savedGap) =>
+            gap.toolCallId === savedGap.toolCallId &&
+            gap.rootUserMessageId === savedGap.rootUserMessageId
+        )
+      )
+        continue;
+      const root = messages.findIndex(
+        (message) =>
+          message.role === "user" && message.id === gap.rootUserMessageId
+      );
+      const nextRoot = messages.findIndex(
+        (message, index) => index > root && message.role === "user"
+      );
+      if (
+        root < 0 ||
+        !messages
+          .slice(root + 1, nextRoot < 0 ? undefined : nextRoot)
+          .some(
+            (message) =>
+              message.role === "tool" && message.toolCallId === gap.toolCallId
+          )
+      )
+        return false;
+    }
+  }
+  return true;
+}
+
 // Compare decoded raw states before normalization can hide activity or unknown data.
 export function canRetireLegacyAgentState(
   source: unknown,
-  saved: unknown
+  saved: unknown,
+  migration?: { scopeKey: string; userEmail: string }
 ): boolean {
   if (
-    !isStoredState(source) ||
+    !isRecognizedStoredAgentState(source) ||
     !isStoredState(saved) ||
-    Object.keys(source).some((key) => !envelopeKeys.has(key)) ||
+    !preservesLegacyApiDispatchEvidence(source, saved) ||
     (Array.isArray(source.activeChatIds) && source.activeChatIds.length > 0) ||
     Object.keys(source.pendingAskByChatId ?? {}).length > 0 ||
     Object.keys(source.queuedUserMessagesByChatId ?? {}).length > 0 ||
@@ -248,6 +397,31 @@ export function canRetireLegacyAgentState(
             typeof retained[key] === "boolean" &&
             (!value || retained[key] === true)
           );
+        const receipts = retained[key];
+        if (
+          key === "apiAttempts" &&
+          migration &&
+          Array.isArray(value) &&
+          Array.isArray(receipts)
+        ) {
+          const target = migration.scopeKey;
+          const legacy = target.startsWith("bb-agent-state-v3.")
+            ? target.replace("bb-agent-state-v3", "bb-agent-state-v2")
+            : undefined;
+          return value.every((attempt) => {
+            if (!isRecord(attempt) || !isIdentity(attempt.id)) return false;
+            const mapped =
+              legacy &&
+              attempt.scopeKey === legacy &&
+              attempt.userName === `users/${migration.userEmail}`
+                ? { ...attempt, scopeKey: target }
+                : attempt;
+            const receipt = receipts.find(
+              (item) => isRecord(item) && item.id === attempt.id
+            );
+            return containsValue(mapped, receipt);
+          });
+        }
         return (
           Object.hasOwn(retained, key) && containsValue(value, retained[key])
         );

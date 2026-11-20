@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/pkg/errors"
@@ -153,6 +154,24 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	return cfg, nil
 }
 
+// GetTLSConfigForHost returns the TLS config for ds with SNI and certificate
+// hostname verification bound to host when non-empty, so SRV and multi-host
+// drivers verify each dialed server against its own hostname rather than ds.GetHost().
+func GetTLSConfigForHost(ds *storepb.DataSource, host string) (*tls.Config, error) {
+	cfg, err := GetTLSConfig(ds)
+	if err != nil || cfg == nil {
+		return nil, err
+	}
+	bare := strings.TrimPrefix(strings.TrimSuffix(host, "]"), "[")
+	if bare != "" {
+		cfg.ServerName = bare
+		if cfg.VerifyPeerCertificate != nil {
+			cfg.VerifyPeerCertificate = CreateCertificateVerifier(cfg.RootCAs, bare)
+		}
+	}
+	return cfg, nil
+}
+
 // CreateCertificateVerifier returns a verification function that properly handles intermediate certificates
 // and validates the hostname matches the certificate.
 // This is exported for use by database drivers that need custom certificate verification.
@@ -206,31 +225,6 @@ func configureClientCertificates(ds *storepb.DataSource, cfg *tls.Config) error 
 	}
 
 	return nil
-}
-
-// SSLMode is the PGSSLMode type.
-// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-SSLMODE
-type SSLMode string
-
-const (
-	sslModeRequire    SSLMode = "require"
-	sslModeVerifyCA   SSLMode = "verify-ca"
-	sslModeVerifyFull SSLMode = "verify-full"
-)
-
-// GetPGSSLMode is used only when SSL is enabled.
-// We should consider allowing user to override this default in the future even if SSL is enabled.
-func GetPGSSLMode(ds *storepb.DataSource) SSLMode {
-	if !ds.GetVerifyTlsCertificate() {
-		return sslModeRequire
-	}
-	sslMode := sslModeVerifyFull
-	if ds.GetSslCa() != "" {
-		if ds.GetSshHost() != "" {
-			sslMode = sslModeVerifyCA
-		}
-	}
-	return sslMode
 }
 
 // GetPGTLSConfigForHost returns Bytebase's TLS settings for one host the pg

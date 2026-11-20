@@ -61,7 +61,7 @@ func (*StatementMergeAlterTableAdvisor) Check(_ context.Context, checkCtx adviso
 			// V1 placed the finding on its last statement's last line
 			// relative to that statement, without the statement's base line,
 			// and ordered findings by that line.
-			StartPosition: &storepb.Position{Line: (&BaseRule{StmtText: stmts[f.Statement].Text}).ContentEndLine()},
+			StartPosition: &storepb.Position{Line: contentEndLine(stmts[f.Statement].Text)},
 		})
 	}
 	slices.SortStableFunc(adviceList, func(a, b *storepb.Advice) int {

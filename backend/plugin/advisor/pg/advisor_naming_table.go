@@ -70,7 +70,7 @@ func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		// V1 anchored every finding on the statement text's first
 		// non-whitespace line, which can be a leading comment above the
 		// statement node the finding's range covers.
-		line := stmt.BaseLine() + int((&BaseRule{StmtText: stmt.Text}).ContentStartLine())
+		line := stmt.BaseLine() + int(contentStartLine(stmt.Text))
 		for _, f := range findings {
 			var content string
 			switch f.Code {

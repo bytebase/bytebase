@@ -3,21 +3,15 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
-)
-
-const (
-	defaultSchema = "public"
 )
 
 var (
@@ -44,326 +38,75 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 	title := checkCtx.Rule.Type.String()
 
-	var adviceList []*storepb.Advice
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	schemaName := common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
+	facts := v1review.PriorBackupFacts{
+		TotalSize:      checkCtx.StatementsTotalSize,
+		MaxSize:        common.MaxSheetCheckSize,
+		Database:       schemaName,
+		DatabaseExists: checkCtx.OriginalMetadata.GetSchemaMetadata(schemaName) != nil,
+	}
 
-	// Check for DDL statements in DML context
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		node, ok := pgparser.GetNode(stmt.AST)
-		if !ok {
-			continue
-		}
-		baseLine := stmt.BaseLine()
-		if isDDLStatement(node) {
-			stmtText := trimmedStmtText(stmt.Text)
-			startLine := contentStartLine(stmt.Text)
+	var adviceList []*storepb.Advice
+	for _, f := range pgv1review.PriorBackupCheck(nodes, facts) {
+		switch f.Code {
+		case v1review.PriorBackupScriptTooLarge:
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Title:         title,
+				Content:       fmt.Sprintf("The size of the SQL statements exceeds the maximum limit of %s bytes for backup", f.Value),
+				Code:          code.BuiltinPriorBackupCheck.Int32(),
+				StartPosition: nil,
+			})
+		case v1review.PriorBackupMixedDDLAndDML:
+			stmt := stmts[f.Statement]
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:  level,
 				Title:   title,
-				Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", stmtText),
+				Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", statementTrimmedText(stmt)),
 				Code:    code.BuiltinPriorBackupCheck.Int32(),
 				StartPosition: &storepb.Position{
-					Line:   int32(baseLine) + startLine,
+					Line:   statementFindingLine(stmt),
 					Column: 0,
 				},
 			})
-		}
-		if content := dataModifyingCTEAdvice(node); content != "" {
+		case v1review.PriorBackupDataModifyingCTE:
+			stmt := stmts[f.Statement]
+			content := fmt.Sprintf("Prior backup does not cover rows changed by data-modifying WITH query %s", f.Value)
+			switch nodes[f.Statement].(type) {
+			case *ast.UpdateStmt, *ast.DeleteStmt:
+				content = fmt.Sprintf("Prior backup does not support data-modifying WITH query %s; the task will fail unless prior backup is disabled or skipped", f.Value)
+			default:
+			}
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:  level,
 				Title:   title,
 				Content: content,
 				Code:    code.BuiltinPriorBackupCheck.Int32(),
 				StartPosition: &storepb.Position{
-					Line:   int32(baseLine) + contentStartLine(stmt.Text),
+					Line:   statementFindingLine(stmt),
 					Column: 0,
 				},
 			})
-		}
-	}
-
-	// Check if backup schema exists
-	schemaName := common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
-	if checkCtx.OriginalMetadata.GetSchemaMetadata(schemaName) == nil {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:        level,
-			Title:         title,
-			Content:       fmt.Sprintf("Need schema %q to do prior backup but it does not exist", schemaName),
-			Code:          code.SchemaNotExists.Int32(),
-			StartPosition: nil,
-		})
-	}
-
-	// Check statement type consistency for each table
-	statementInfoList := prepareTransformation(checkCtx.ParsedStatements)
-
-	groupByTable := make(map[string][]statementInfo)
-	for _, item := range statementInfoList {
-		key := fmt.Sprintf("%s.%s", item.table.Schema, item.table.Table)
-		groupByTable[key] = append(groupByTable[key], item)
-	}
-
-	// Check if the statement type is the same for all statements on the same table.
-	for key, list := range groupByTable {
-		statementType := StatementTypeUnknown
-		for _, item := range list {
-			if statementType == StatementTypeUnknown {
-				statementType = item.table.StatementType
-			}
-			if statementType != item.table.StatementType {
-				adviceList = append(adviceList, &storepb.Advice{
-					Status:        level,
-					Title:         title,
-					Content:       fmt.Sprintf("The statement type is not the same for all statements on the same table %q", key),
-					Code:          code.BuiltinPriorBackupCheck.Int32(),
-					StartPosition: nil,
-				})
-				break
-			}
+		case v1review.PriorBackupDatabaseMissing:
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Title:         title,
+				Content:       fmt.Sprintf("Need schema %q to do prior backup but it does not exist", f.Name),
+				Code:          code.SchemaNotExists.Int32(),
+				StartPosition: nil,
+			})
+		case v1review.PriorBackupMixedDMLOnTable:
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Title:         title,
+				Content:       fmt.Sprintf("The statement type is not the same for all statements on the same table %q", f.Table),
+				Code:          code.BuiltinPriorBackupCheck.Int32(),
+				StartPosition: nil,
+			})
+		default:
 		}
 	}
 
 	return adviceList, nil
-}
-
-// dataModifyingCTEAdvice reports a statement whose WITH clause changes data.
-// The backup task rejects such an UPDATE or DELETE; any other statement runs,
-// but nothing backs up the rows its CTE changes.
-func dataModifyingCTEAdvice(node ast.Node) string {
-	names := pganalysis.DataModifyingCTENames(node)
-	if len(names) == 0 {
-		return ""
-	}
-	quoted := make([]string, 0, len(names))
-	for _, name := range names {
-		quoted = append(quoted, fmt.Sprintf("%q", name))
-	}
-	cteList := strings.Join(quoted, ", ")
-	switch node.(type) {
-	case *ast.UpdateStmt, *ast.DeleteStmt:
-		return fmt.Sprintf("Prior backup does not support data-modifying WITH query %s; the task will fail unless prior backup is disabled or skipped", cteList)
-	default:
-		return fmt.Sprintf("Prior backup does not cover rows changed by data-modifying WITH query %s", cteList)
-	}
-}
-
-// isDDLStatement checks if a node is a DDL statement.
-func isDDLStatement(node ast.Node) bool {
-	switch node.(type) {
-	// CREATE statements
-	case *ast.CreateStmt,
-		*ast.CreateTableAsStmt,
-		*ast.CreateDomainStmt,
-		*ast.CreateExtensionStmt,
-		*ast.CreateFdwStmt,
-		*ast.CreateForeignServerStmt,
-		*ast.CreateForeignTableStmt,
-		*ast.CreateFunctionStmt,
-		*ast.CreateRoleStmt,
-		*ast.CreatePolicyStmt,
-		*ast.CreatePLangStmt,
-		*ast.CreateSchemaStmt,
-		*ast.CreateSeqStmt,
-		*ast.CreateSubscriptionStmt,
-		*ast.CreateStatsStmt,
-		*ast.CreateTableSpaceStmt,
-		*ast.CreateTransformStmt,
-		*ast.CreateTrigStmt,
-		*ast.CreateEventTrigStmt,
-		*ast.CreateUserMappingStmt,
-		*ast.CreatedbStmt,
-		*ast.CreateAmStmt,
-		*ast.CreatePublicationStmt,
-		*ast.CreateOpClassStmt,
-		*ast.CreateOpFamilyStmt,
-		*ast.CreateCastStmt,
-		*ast.CreateConversionStmt,
-		*ast.CreateRangeStmt,
-		*ast.CompositeTypeStmt,
-		*ast.CreateEnumStmt,
-		*ast.IndexStmt,
-		*ast.ViewStmt,
-		// ALTER statements
-		*ast.AlterEventTrigStmt,
-		*ast.AlterCollationStmt,
-		*ast.AlterDatabaseStmt,
-		*ast.AlterDatabaseSetStmt,
-		*ast.AlterDefaultPrivilegesStmt,
-		*ast.AlterDomainStmt,
-		*ast.AlterEnumStmt,
-		*ast.AlterExtensionStmt,
-		*ast.AlterExtensionContentsStmt,
-		*ast.AlterFdwStmt,
-		*ast.AlterForeignServerStmt,
-		*ast.AlterFunctionStmt,
-		*ast.AlterObjectDependsStmt,
-		*ast.AlterObjectSchemaStmt,
-		*ast.AlterOwnerStmt,
-		*ast.AlterOperatorStmt,
-		*ast.AlterTypeStmt,
-		*ast.AlterPolicyStmt,
-		*ast.AlterSeqStmt,
-		*ast.AlterSystemStmt,
-		*ast.AlterTableStmt,
-		*ast.AlterTableSpaceOptionsStmt,
-		*ast.AlterPublicationStmt,
-		*ast.AlterRoleSetStmt,
-		*ast.AlterRoleStmt,
-		*ast.AlterSubscriptionStmt,
-		*ast.AlterStatsStmt,
-		*ast.AlterTSConfigurationStmt,
-		*ast.AlterTSDictionaryStmt,
-		*ast.AlterUserMappingStmt,
-		*ast.AlterOpFamilyStmt,
-		// DROP statements
-		*ast.DropStmt,
-		*ast.DropOwnedStmt,
-		*ast.DropSubscriptionStmt,
-		*ast.DropTableSpaceStmt,
-		*ast.DropRoleStmt,
-		*ast.DropUserMappingStmt,
-		*ast.DropdbStmt,
-		// Other DDL statements
-		*ast.TruncateStmt,
-		*ast.RenameStmt,
-		*ast.CommentStmt,
-		*ast.DefineStmt,
-		*ast.ReindexStmt,
-		*ast.ClusterStmt,
-		*ast.RefreshMatViewStmt,
-		*ast.RuleStmt,
-		*ast.SecLabelStmt,
-		*ast.ReassignOwnedStmt:
-		return true
-	default:
-		return false
-	}
-}
-
-// StatementType represents the type of DML statement
-type StatementType int
-
-const (
-	StatementTypeUnknown StatementType = iota
-	StatementTypeUpdate
-	StatementTypeInsert
-	StatementTypeDelete
-)
-
-type TableReference struct {
-	Database      string
-	Schema        string
-	Table         string
-	Alias         string
-	StatementType StatementType
-}
-
-type statementInfo struct {
-	offset    int
-	statement string
-	table     *TableReference
-}
-
-func prepareTransformation(parsedStatements []base.ParsedStatement) []statementInfo {
-	var dmls []statementInfo
-	offset := 0
-	for _, stmt := range parsedStatements {
-		if stmt.AST == nil {
-			offset++
-			continue
-		}
-		node, ok := pgparser.GetNode(stmt.AST)
-		if !ok {
-			offset++
-			continue
-		}
-
-		switch n := node.(type) {
-		case *ast.UpdateStmt:
-			table := extractTableReferenceFromRangeVar(n.Relation)
-			if table != nil {
-				table.StatementType = StatementTypeUpdate
-				dmls = append(dmls, statementInfo{
-					offset:    offset,
-					statement: stmt.Text,
-					table:     table,
-				})
-			}
-		case *ast.DeleteStmt:
-			// DeleteStmt uses UsingClause for FROM but Relation for the target table
-			table := extractTableReferenceFromRangeVar(n.Relation)
-			if table != nil {
-				table.StatementType = StatementTypeDelete
-				dmls = append(dmls, statementInfo{
-					offset:    offset,
-					statement: stmt.Text,
-					table:     table,
-				})
-			}
-		default:
-		}
-
-		offset++
-	}
-	return dmls
-}
-
-func extractTableReferenceFromRangeVar(rv *ast.RangeVar) *TableReference {
-	if rv == nil {
-		return nil
-	}
-
-	table := TableReference{}
-	if rv.Catalogname != "" {
-		table.Database = rv.Catalogname
-	}
-	if rv.Schemaname != "" {
-		table.Schema = rv.Schemaname
-	} else {
-		table.Schema = defaultSchema
-	}
-	table.Table = rv.Relname
-	if rv.Alias != nil {
-		table.Alias = rv.Alias.Aliasname
-	}
-
-	if table.Table == "" {
-		return nil
-	}
-	return &table
-}
-
-// trimmedStmtText returns the statement text with leading/trailing whitespace
-// and trailing semicolons removed.
-func trimmedStmtText(text string) string {
-	result := text
-	// Trim leading/trailing whitespace
-	for len(result) > 0 && (result[0] == ' ' || result[0] == '\t' || result[0] == '\n' || result[0] == '\r') {
-		result = result[1:]
-	}
-	for len(result) > 0 {
-		last := result[len(result)-1]
-		if last == ' ' || last == '\t' || last == '\n' || last == '\r' || last == ';' {
-			result = result[:len(result)-1]
-		} else {
-			break
-		}
-	}
-	return result
-}
-
-// contentStartLine returns the 1-based line number of the first non-whitespace
-// character in the text.
-func contentStartLine(text string) int32 {
-	line := int32(1)
-	for _, c := range text {
-		if c == '\n' {
-			line++
-		} else if c != ' ' && c != '\t' && c != '\r' {
-			break
-		}
-	}
-	return line
 }

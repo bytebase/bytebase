@@ -483,7 +483,7 @@ export const getDefaultTransactionMode = (): boolean => {
 };
 
 // Engines that support schema diff rollback (generate reverse DDL via schema comparison)
-// These engines have RegisterGenerateMigration implemented in backend
+// These engines compute a metadata diff in backend via schema.DiffMigration
 export const instanceV1SupportsSchemaRollback = (engine: Engine): boolean => {
   return [
     Engine.MYSQL,

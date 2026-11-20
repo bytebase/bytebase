@@ -58,7 +58,7 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 			Title:   title,
 			Content: fmt.Sprintf("The count of index in table %q.%q should be no more than %d, but found %s", f.Schema, f.Table, limit, f.Value),
 			StartPosition: &storepb.Position{
-				Line: (&BaseRule{StmtText: stmt.Text}).ContentEndLine() + int32(stmt.BaseLine()),
+				Line: contentEndLine(stmt.Text) + int32(stmt.BaseLine()),
 			},
 		})
 	}

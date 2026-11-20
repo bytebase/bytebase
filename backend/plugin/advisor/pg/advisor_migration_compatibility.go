@@ -75,13 +75,12 @@ func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 			continue
 		}
 		stmt := stmts[f.Statement]
-		rule := &BaseRule{StmtText: stmt.Text}
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:        level,
 			Code:          adviceCode.Int32(),
 			Title:         title,
-			Content:       fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, rule.TrimmedStmtText()),
-			StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(rule.ContentStartLine())),
+			Content:       fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, trimmedStmtText(stmt.Text)),
+			StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(contentStartLine(stmt.Text))),
 		})
 	}
 	return adviceList, nil

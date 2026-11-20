@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import type { AgentApiAttempt } from "../logic/apiAttempt";
+import { agentApiExecutionEvidence } from "../logic/apiExecution";
 import type { AgentChat, AgentDraft, AgentRunCheckpoint } from "../logic/types";
 import type { PersistedAgentState } from "./agent";
 import {
@@ -56,6 +58,145 @@ const checkpoint: AgentRunCheckpoint = {
 };
 
 describe("Agent history eviction candidates", () => {
+  it.each(["rpc-success", "fetch-failed", "import-partial"] as const)(
+    "legacy review metadata does not determine cleanup eligibility for %s",
+    (reason) => {
+      const execution = agentApiExecutionEvidence(reason, {
+        attemptId: "attempt",
+        ...(reason !== "fetch-failed" && { httpStatus: 200 }),
+      });
+      const receipt: AgentApiAttempt = {
+        version: 1,
+        id: "attempt",
+        logicalActionId: "action",
+        ordinal: 1,
+        scopeKey: "scope",
+        userName: "users/member@example.com",
+        chatId: "history",
+        runId: "run",
+        toolCallId: "tool",
+        rootUserMessageId: "root",
+        operationId:
+          reason === "import-partial"
+            ? "bytebase.v1.InstanceService.ImportInstances"
+            : "bytebase.v1.DatabaseService.UpdateDatabase",
+        path:
+          reason === "import-partial"
+            ? "/bytebase.v1.InstanceService/ImportInstances"
+            : "/bytebase.v1.DatabaseService/UpdateDatabase",
+        fingerprint: "a".repeat(64),
+        phase: "settled",
+        startedAt: 1,
+        settledAt: 2,
+        execution,
+        reviewedExternallyAt: 42,
+      };
+      const state = stateWith([chat("history", { apiAttempts: [receipt] })]);
+      state.messagesByChatId.history = [
+        {
+          id: "result",
+          chatId: "history",
+          role: "tool",
+          createdTs: 2,
+          toolCallId: "tool",
+          metadata: { runId: "run", apiAttemptId: "attempt" },
+          content: JSON.stringify({
+            ...(reason !== "fetch-failed" && { status: 200 }),
+            agentExecution: execution,
+          }),
+        },
+      ];
+      expect(getAgentHistoryEvictionCandidates(state, new Set())).toEqual([
+        "history",
+      ]);
+      expect(
+        removeAgentHistoryChats(state, new Set(["history"])).chats
+      ).toHaveLength(0);
+      state.messagesByChatId.history = [];
+      expect(getAgentHistoryEvictionCandidates(state, new Set())).toEqual([]);
+      expect(
+        removeAgentHistoryChats(state, new Set(["history"])).chats
+      ).toHaveLength(1);
+      state.chats[0].apiAttempts = [
+        {
+          ...receipt,
+          phase: "dispatching",
+          execution: undefined,
+          settledAt: undefined,
+        },
+      ];
+      expect(getAgentHistoryEvictionCandidates(state, new Set())).toEqual([
+        "history",
+      ]);
+    }
+  );
+
+  it("does not indefinitely retain an interrupted call after its run is no longer active", () => {
+    const state = stateWith([chat("old", { interrupted: true })]);
+    state.messagesByChatId.old = [
+      { id: "root", role: "user", chatId: "old", createdTs: 1 },
+      {
+        id: "assistant",
+        role: "assistant",
+        chatId: "old",
+        createdTs: 2,
+        toolCalls: [
+          {
+            id: "tool",
+            name: "call_api",
+            arguments: '{"operationId":"DatabaseService/UpdateDatabase"}',
+          },
+        ],
+      },
+    ];
+    expect(getAgentHistoryEvictionCandidates(state, new Set())).toEqual([
+      "old",
+    ]);
+    expect(removeAgentHistoryChats(state, new Set(["old"])).chats).toEqual([]);
+    state.messagesByChatId.old.push({
+      id: "new",
+      chatId: "old",
+      createdTs: 3,
+      role: "user",
+    });
+    expect(getAgentHistoryEvictionCandidates(state, new Set())).toEqual([
+      "old",
+    ]);
+    state.messagesByChatId.old.pop();
+    state.pendingAskByChatId.old = {
+      kind: "confirm",
+      prompt: "Permit?",
+      toolCallId: "tool",
+    };
+    expect(removeAgentHistoryChats(state, new Set(["old"])).chats).toEqual([]);
+    delete state.pendingAskByChatId.old;
+    state.messagesByChatId.old.push({
+      id: "result",
+      role: "tool",
+      chatId: "old",
+      toolCallId: "tool",
+      content: '{"status":200}',
+      createdTs: 3,
+    });
+    expect(getAgentHistoryEvictionCandidates(state, new Set())).toEqual([
+      "old",
+    ]);
+  });
+  it("unknown journal formats survive automatic and bulk reclamation", () => {
+    const state = stateWith([
+      chat("protected", { archived: true }),
+      chat("done"),
+    ]);
+    Object.assign(state.chats[0], { apiAttempts: { version: 9 } });
+    expect(getAgentHistoryEvictionCandidates(state, new Set())).toEqual([
+      "done",
+    ]);
+    expect(
+      removeAgentHistoryChats(state, new Set(["protected", "done"])).chats.map(
+        (c) => c.id
+      )
+    ).toEqual(["protected"]);
+  });
   it("includes completed and archived chats without reading tool results", () => {
     const state = stateWith([
       chat("completed"),

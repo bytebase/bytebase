@@ -1,7 +1,22 @@
+import { create } from "@bufbuild/protobuf";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { StoreApi } from "zustand";
-import { withAgentRunLease } from "../logic/runOwnership";
+import { useAppStore } from "@/stores/app";
+import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
+import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
+import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
+import {
+  fingerprintPreparedApiCall,
+  getAgentApiAttemptStatus,
+  priorUncertainApiAttemptIds,
+} from "../logic/apiAttempt";
+import { agentApiExecutionEvidence } from "../logic/apiExecution";
+import {
+  withAgentApiActionLease,
+  withAgentRunLease,
+} from "../logic/runOwnership";
 import type { AgentSqlFixSource } from "../logic/sqlFix";
+import { dispatchApprovedApiCall as dispatchPreparedApiCall } from "../logic/tools/callApi";
 import type {
   AgentChat,
   AgentDiagnosticCapability,
@@ -25,18 +40,22 @@ import { getAgentPreferencesKey } from "./preferences";
 import * as stateStorage from "./stateStorage";
 import { estimateAgentStorageBytes } from "./storageBudget";
 
-const sqlFixIdentity = vi.hoisted(() => ({
-  workspace: "workspaces/alpha",
-  user: "users/member@example.com",
-}));
-vi.mock("@/stores/app", () => ({
-  useAppStore: {
-    getState: () => ({
-      workspaceResourceName: () => sqlFixIdentity.workspace,
-      currentUser: { name: sqlFixIdentity.user },
+const appIdentity = () => ({
+  workspace: useAppStore.getState().workspace?.name ?? "",
+  user: useAppStore.getState().currentUser?.name ?? "",
+});
+function setAppIdentity(patch: Partial<ReturnType<typeof appIdentity>>) {
+  const { workspace, user } = { ...appIdentity(), ...patch };
+  useAppStore.setState({
+    serverInfo: create(ActuatorInfoSchema, { workspace }),
+    workspace: create(WorkspaceSchema, { name: workspace }),
+    currentUser: create(UserSchema, {
+      name: user,
+      email: user.slice("users/".length),
+      workspace,
     }),
-  },
-}));
+  });
+}
 
 function createMockStorage(): Storage {
   let store: Record<string, string> = {};
@@ -78,8 +97,10 @@ function setViewportSize(width: number, height: number) {
 let mockStorage: Storage;
 
 beforeEach(() => {
-  sqlFixIdentity.workspace = "workspaces/alpha";
-  sqlFixIdentity.user = "users/member@example.com";
+  setAppIdentity({
+    workspace: "workspaces/alpha",
+    user: "users/member@example.com",
+  });
   mockStorage = createMockStorage();
   vi.stubGlobal("localStorage", mockStorage);
   setViewportSize(1280, 800);
@@ -768,7 +789,7 @@ describe("runtime SQL fix drafts", () => {
     label: "projects/example/plans/7",
   };
   const source = (): AgentSqlFixSource => ({
-    identity: JSON.stringify([sqlFixIdentity.workspace, sqlFixIdentity.user]),
+    identity: JSON.stringify([appIdentity().workspace, appIdentity().user]),
     pageKey: "/projects/example/plans/7",
     resource,
     sourceId: "projects/example/plans/7/planCheckRun",
@@ -781,9 +802,9 @@ describe("runtime SQL fix drafts", () => {
   });
   const setup = () => {
     const store = createAgentStore();
-    s(store).setWorkspaceName(sqlFixIdentity.workspace);
+    s(store).setWorkspaceName(appIdentity().workspace);
     const chat = s(store).createChat({
-      workspaceName: sqlFixIdentity.workspace,
+      workspaceName: appIdentity().workspace,
       capability: { kind: "diagnostic", resource },
     });
     return { store, chat };
@@ -871,13 +892,13 @@ describe("runtime SQL fix drafts", () => {
     });
     s(store).saveState();
     const saved = mockStorage.getItem(
-      getAgentStateKey(sqlFixIdentity.workspace)
+      getAgentStateKey(appIdentity().workspace)
     )!;
     expect(saved).toContain(action.draftId);
     expect(saved).not.toContain(source().sql);
     expect(saved).not.toContain("UPDATE books SET price = 2;");
     const reloaded = createAgentStore();
-    s(reloaded).setWorkspaceName(sqlFixIdentity.workspace);
+    s(reloaded).setWorkspaceName(appIdentity().workspace);
     expect(s(reloaded).sqlFixSourcesByChatId).toEqual({});
     expect(s(reloaded).sqlFixDraftsById).toEqual({});
     expect(s(reloaded).getMessages(chat.id)[0].metadata?.actions).toEqual([
@@ -913,7 +934,7 @@ describe("runtime SQL fix drafts", () => {
     expect(
       s(store).prepareSqlFixDraft(chat.id, `\`\`\`sql\n${source().sql}\n\`\`\``)
     ).toBeUndefined();
-    sqlFixIdentity.user = "users/another@example.com";
+    setAppIdentity({ user: "users/another@example.com" });
     expect(
       s(store).prepareSqlFixDraft(chat.id, "```sql\nSELECT 2;\n```")
     ).toBeUndefined();
@@ -933,10 +954,7 @@ describe("runtime SQL fix drafts", () => {
       if (operation === "workspace")
         s(store).setWorkspaceName("workspaces/other");
       if (operation === "user")
-        s(store).setWorkspaceName(
-          sqlFixIdentity.workspace,
-          "other@example.com"
-        );
+        s(store).setWorkspaceName(appIdentity().workspace, "other@example.com");
       expect(s(store).sqlFixSourcesByChatId).toEqual({});
       expect(s(store).sqlFixDraftsById).toEqual({});
     }
@@ -1283,9 +1301,9 @@ describe("durable run recovery", () => {
       },
     });
   });
-  const create = async () => {
+  const create = async (scope = workspaceName) => {
     const store = createAgentStore();
-    s(store).setWorkspaceName(workspaceName);
+    s(store).setWorkspaceName(scope);
     const chat = s(store).createChat();
     const root = s(store).addMessage({
       chatId: chat.id,
@@ -1295,6 +1313,901 @@ describe("durable run recovery", () => {
     expect(await s(store).flushRunPersistence()).toBe(true);
     return { store, chat, root };
   };
+  const call = {
+    operationId: "bytebase.v1.DatabaseService.UpdateDatabase",
+    path: "/bytebase.v1.DatabaseService/UpdateDatabase",
+    body: '{"database":{"name":"instances/demo/databases/test"}}',
+  };
+  const response = () =>
+    new Response('{"name":"instances/demo/databases/test"}', {
+      headers: { "Content-Type": "application/json" },
+    });
+  const labelCall = {
+    ...call,
+    body: JSON.stringify({
+      database: {
+        name: "instances/demo/databases/test",
+        project: "projects/claimed",
+        labels: { tier: "target" },
+      },
+      updateMask: "labels",
+    }),
+  };
+  const createDispatch = async (
+    store: StoreApi<AgentState>,
+    chatId: string,
+    rootUserMessageId: string,
+    logicalActionId = "permission"
+  ) => {
+    setAppIdentity({
+      workspace: s(store).workspaceName!,
+      user: "users/" + TEST_USER_EMAIL,
+    });
+    const runId = (await s(store).beginChatRun(
+      chatId,
+      rootUserMessageId,
+      bindings
+    ))!;
+    s(store).addMessage({
+      chatId,
+      role: "assistant",
+      metadata: { runId },
+      toolCalls: [
+        {
+          id: "tool",
+          name: "call_api",
+          arguments: JSON.stringify({ operationId: call.operationId }),
+        },
+      ],
+    });
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    return s(store).createApiDispatchContext({
+      chatId,
+      runId,
+      rootUserMessageId,
+      toolCallId: "tool",
+      logicalActionId,
+    })!;
+  };
+  const bounceWorkspaceWithoutLoading = (store: StoreApi<AgentState>) => {
+    const initial = appIdentity().workspace;
+    setAppIdentity({ workspace: "workspaces/observation-elsewhere" });
+    expect(s(store).setWorkspaceName(appIdentity().workspace)).toBe(false);
+    expect(s(store).workspaceName).toBe(initial);
+    setAppIdentity({ workspace: initial });
+    expect(s(store).setWorkspaceName(initial)).toBe(true);
+  };
+
+  test.each(["workspace", "actor"])(
+    "a %s round trip without an Agent reload stops fingerprinting before the marker",
+    async (owner) => {
+      const scope = `workspaces/observation-${owner}-round-trip`;
+      const { store, chat, root } = await create(scope);
+      const started = Promise.withResolvers<void>();
+      const pendingFingerprint = Promise.withResolvers<ArrayBuffer>();
+      const fingerprint = vi
+        .spyOn(crypto.subtle, "digest")
+        .mockImplementationOnce(() => {
+          started.resolve();
+          return pendingFingerprint.promise;
+        });
+      const methods: string[] = [];
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url: string) => {
+          const method = new URL(url).pathname;
+          methods.push(method);
+          return response();
+        })
+      );
+      const key = getAgentStateKey(scope);
+      await withAgentRunLease(key, chat.id, async () => {
+        const context = await createDispatch(store, chat.id, root!.id);
+        const dispatched = dispatchPreparedApiCall(labelCall, { context });
+        await started.promise;
+        expect(s(store).getChat(chat.id)?.status).toBe("running");
+        if (owner === "workspace") bounceWorkspaceWithoutLoading(store);
+        else {
+          const initial = appIdentity().user;
+          setAppIdentity({ user: "users/other@example.com" });
+          setAppIdentity({ user: initial });
+          expect(s(store).userEmail).toBe(TEST_USER_EMAIL);
+        }
+        pendingFingerprint.resolve(new ArrayBuffer(32));
+        const result = JSON.parse(await dispatched);
+        expect(result.agentExecution).toMatchObject({
+          result: "not-sent",
+          effects: "none",
+        });
+        expect(s(store).getChat(chat.id)).toMatchObject({
+          status: "running",
+          runId: context.runId,
+        });
+        expect(s(store).getChat(chat.id)?.apiAttempts).toBeUndefined();
+        const saved = stateStorage.parseAgentStoredState(
+          mockStorage.getItem(key)!
+        ) as PersistedAgentState;
+        expect(
+          saved.chats.find((c) => c.id === chat.id)?.apiAttempts
+        ).toBeUndefined();
+        expect(methods).toEqual([]);
+      });
+      fingerprint.mockRestore();
+    }
+  );
+
+  test("a workspace switch while saving an optional marker still prevents dispatch", async () => {
+    const scope = "workspaces/observation-lock-round-trip";
+    const { store, chat, root } = await create(scope);
+    const key = getAgentStateKey(scope);
+    const lockName = `bb-agent-persistence:${JSON.stringify(key)}`;
+    const lockHeld = Promise.withResolvers<void>();
+    const releaseLock = Promise.withResolvers<void>();
+    const waitingToSave = Promise.withResolvers<void>();
+    const network = vi.fn(async () => response());
+    vi.stubGlobal("fetch", network);
+    await withAgentRunLease(key, chat.id, async () => {
+      const context = await createDispatch(store, chat.id, root!.id);
+      const original = navigator.locks.request.bind(navigator.locks);
+      const blocker = original(lockName, { mode: "exclusive" }, () => {
+        lockHeld.resolve();
+        return releaseLock.promise;
+      });
+      await lockHeld.promise;
+      const locks = vi
+        .spyOn(navigator.locks, "request")
+        .mockImplementation((name, options, callback) => {
+          if (name === lockName) waitingToSave.resolve();
+          return original(name, options, callback);
+        });
+      const pending = dispatchPreparedApiCall(labelCall, { context });
+      try {
+        await waitingToSave.promise;
+        bounceWorkspaceWithoutLoading(store);
+      } finally {
+        releaseLock.resolve();
+        await blocker;
+        locks.mockRestore();
+      }
+      const { agentExecution } = JSON.parse(await pending);
+      expect(agentExecution).toMatchObject({
+        result: "not-sent",
+        effects: "none",
+      });
+      expect(agentExecution.attemptId).toBeDefined();
+      expect(network).not.toHaveBeenCalled();
+    });
+  });
+
+  test("external review is no longer a store action", () => {
+    expect(createAgentStore().getState()).not.toHaveProperty(
+      "acknowledgeAgentApiExternalReview"
+    );
+  });
+
+  test("API observation is no longer a store action", () => {
+    expect(createAgentStore().getState()).not.toHaveProperty(
+      "createApiObservationContext"
+    );
+  });
+
+  test.each(["one", "all"])(
+    "archiving %s discards the queued follow-ups regardless of old outcome uncertainty",
+    async (mode) => {
+      const { store, chat, root } = await create();
+      const key = getAgentStateKey(workspaceName);
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockRejectedValue(new Error("response lost"))
+      );
+      await withAgentRunLease(key, chat.id, async () => {
+        const context = await createDispatch(store, chat.id, root!.id);
+        await dispatchPreparedApiCall(call, { context });
+        s(store).finishChatRun(chat.id);
+      });
+      const queued = s(store).enqueueFollowUp({
+        chatId: chat.id,
+        text: "Keep this follow-up",
+        page: bindings.page,
+        runMode: "default",
+      });
+      expect(queued).toBeTruthy();
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      const raw = stateStorage.parseAgentStoredState(
+        mockStorage.getItem(key)!
+      ) as PersistedAgentState;
+      raw.chats.find((c) => c.id === chat.id)!
+        .apiAttempts![0].reviewedExternallyAt = 42;
+      mockStorage.setItem(key, JSON.stringify(raw));
+      const restored = createAgentStore();
+      s(restored).setWorkspaceName(workspaceName);
+      expect(
+        s(restored).getChat(chat.id)?.apiAttempts?.[0].reviewedExternallyAt
+      ).toBe(42);
+      if (mode === "one") s(restored).archiveChat(chat.id);
+      else s(restored).archiveAllActiveChats();
+      expect(s(restored).followUpQueuesByChatId[chat.id]).toBeUndefined();
+      expect(await s(restored).flushRunPersistence()).toBe(true);
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName(workspaceName);
+      expect(s(reloaded).followUpQueuesByChatId[chat.id]).toBeUndefined();
+    }
+  );
+
+  test("a known late response after a refused workspace switch does not settle through the stale context", async () => {
+    const scope = "workspaces/observation-response-round-trip";
+    const { store, chat, root } = await create(scope);
+    const key = getAgentStateKey(scope);
+    const started = Promise.withResolvers<void>();
+    const reply = Promise.withResolvers<Response>();
+    const network = vi.fn(async () => {
+      started.resolve();
+      return reply.promise;
+    });
+    vi.stubGlobal("fetch", network);
+    await withAgentRunLease(key, chat.id, async () => {
+      const context = await createDispatch(store, chat.id, root!.id);
+      const pending = dispatchPreparedApiCall(call, { context });
+      await started.promise;
+      const marker = s(store).getChat(chat.id)?.apiAttempts?.[0];
+      expect(marker?.phase).toBe("dispatching");
+      bounceWorkspaceWithoutLoading(store);
+      reply.resolve(response());
+      expect(JSON.parse(await pending)).toMatchObject({
+        agentExecution: {
+          attemptId: marker!.id,
+          result: "succeeded",
+          effects: "acknowledged",
+        },
+        agentSettlementSaved: false,
+      });
+      expect(s(store).getChat(chat.id)?.apiAttempts).toEqual([marker]);
+      expect(
+        s(store).getApiAttemptToolResult(chat.id, marker!.id)
+      ).toBeUndefined();
+      expect(network).toHaveBeenCalledOnce();
+    });
+  });
+
+  test.each(["succeeded", "unknown"])(
+    "a label update sends once and preserves its %s outcome after reload",
+    async (outcome) => {
+      const { store, chat, root } = await create();
+      const key = getAgentStateKey(workspaceName);
+      const durableAttempts = () =>
+        (
+          stateStorage.parseAgentStoredState(
+            mockStorage.getItem(key)!
+          ) as PersistedAgentState
+        ).chats.find((c) => c.id === chat.id)?.apiAttempts;
+      const methods: string[] = [];
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url: string) => {
+          const method = new URL(url).pathname;
+          methods.push(method);
+          expect(method).toBe(labelCall.path);
+          expect(durableAttempts()?.[0]).toMatchObject({
+            phase: "dispatching",
+          });
+          expect(durableAttempts()?.[0]).not.toHaveProperty(
+            "observationTarget"
+          );
+          if (outcome === "unknown") throw new Error("response dropped");
+          return response();
+        })
+      );
+      const evidence = (
+        await withAgentRunLease(key, chat.id, async () => {
+          const context = await createDispatch(store, chat.id, root!.id);
+          const result = JSON.parse(
+            await dispatchPreparedApiCall(labelCall, { context })
+          );
+          expect(result.agentExecution).toMatchObject({
+            result: outcome,
+            effects: outcome === "succeeded" ? "acknowledged" : "possible",
+          });
+          s(store).finishChatRun(chat.id);
+          await s(store).flushRunPersistence();
+          return result.agentExecution;
+        })
+      ).value!;
+
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName(workspaceName);
+      const baseline = durableAttempts();
+      expect(s(reloaded).getChat(chat.id)?.apiAttempts).toEqual(baseline);
+      expect(baseline?.[0].execution).toEqual(evidence);
+      expect(durableAttempts()).toEqual(baseline);
+      expect(methods).toEqual([labelCall.path]);
+    }
+  );
+
+  test("canceling before dispatch creates no marker or target request", async () => {
+    const scope = "workspaces/canceled-before-dispatch";
+    const { store, chat, root } = await create(scope);
+    const controller = new AbortController();
+    const fetch = vi.fn(async () => response());
+    vi.stubGlobal("fetch", fetch);
+    await withAgentRunLease(getAgentStateKey(scope), chat.id, async () => {
+      const context = await createDispatch(store, chat.id, root!.id);
+      controller.abort();
+      const raw = await dispatchPreparedApiCall(labelCall, {
+        context,
+        signal: controller.signal,
+      });
+      expect(JSON.parse(raw).agentExecution.result).toBe("not-sent");
+      expect(s(store).getChat(chat.id)?.apiAttempts).toBeUndefined();
+      expect(fetch).not.toHaveBeenCalled();
+    });
+  });
+  test("an unresolved action does not prevent explicitly resuming its queued follow-up", async () => {
+    const { store, chat, root } = await create();
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("reply lost")));
+    await withAgentRunLease(
+      getAgentStateKey(workspaceName),
+      chat.id,
+      async () => {
+        const context = await createDispatch(store, chat.id, root!.id);
+        const head = s(store).enqueueFollowUp({
+          chatId: chat.id,
+          text: "dependent",
+          page: bindings.page,
+        })!;
+        s(store).setDraft(chat.id, { text: "unsent" });
+        await dispatchPreparedApiCall(call, { context });
+        s(store).setFollowUpQueuePaused(chat.id, true);
+        s(store).finishChatRun(chat.id);
+        expect(s(store).setFollowUpQueuePaused(chat.id, false)).toBe(true);
+        expect(s(store).promoteFollowUp(chat.id, head)?.id).toBe(head);
+        expect(s(store).getDraft(chat.id).text).toBe("unsent");
+        expect(
+          s(store).getChat(chat.id)?.apiAttempts?.[0].execution?.result
+        ).toBe("unknown");
+      }
+    );
+  });
+
+  test("an uncertain receipt does not disable a valid restored continuation", async () => {
+    const scope = "workspaces/blocked-checkpoint";
+    const { store, chat, root } = await create(scope);
+    const key = getAgentStateKey(scope);
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("lost")));
+    let runId = "";
+    await withAgentRunLease(key, chat.id, async () => {
+      const context = await createDispatch(store, chat.id, root!.id);
+      runId = context.runId;
+      expect(
+        JSON.parse(await dispatchPreparedApiCall(call, { context }))
+          .agentExecution.effects
+      ).toBe("possible");
+
+      expect(
+        await s(store).saveChatRunCheckpoint(chat.id, {
+          ...s(store).getChat(chat.id)!.runCheckpoint!,
+          startupComplete: true,
+          throughMessageId: s(store).getMessages(chat.id).at(-1)!.id,
+        })
+      ).toBe(true);
+      s(store).interruptChatRun(chat.id);
+      expect(await s(store).flushRunPersistence()).toBe(true);
+    });
+    const restored = createAgentStore();
+    s(restored).setWorkspaceName(scope);
+    expect(
+      (
+        await withAgentRunLease(key, chat.id, async () => {
+          const { getAgentRunContinuation } = await import(
+            "../logic/runCheckpoint"
+          );
+          expect(
+            getAgentRunContinuation(
+              s(restored).getChat(chat.id),
+              s(restored).getMessages(chat.id)
+            )
+          ).toBeDefined();
+          expect(await s(restored).continueChatRun(chat.id, runId)).toBe(true);
+          expect(
+            s(restored).getChat(chat.id)?.apiAttempts?.[0].execution?.effects
+          ).toBe("possible");
+          expect(await s(restored).flushRunPersistence()).toBe(true);
+        })
+      ).acquired
+    ).toBe(true);
+  });
+  test("a synchronized unresolved marker allows a valid explicit startup retry", async () => {
+    const scope = "workspaces/blocked-startup";
+    const { store, chat, root } = await create(scope);
+    const { getAgentRunStartup } = await import("../logic/runCheckpoint");
+    const { normalizeAgentApiAttempts } = await import("../logic/apiAttempt");
+    expect(
+      (
+        await withAgentRunLease(getAgentStateKey(scope), chat.id, async () => {
+          const id = await s(store).beginChatRun(chat.id, root!.id, bindings);
+          s(store).interruptChatRun(chat.id);
+          store.setState((state) => {
+            state.chats.find((c) => c.id === chat.id)!.apiAttempts =
+              normalizeAgentApiAttempts([null], chat.id);
+          });
+          expect(await s(store).flushRunPersistence()).toBe(true);
+          expect(
+            getAgentRunStartup(
+              s(store).getChat(chat.id),
+              s(store).getMessages(chat.id)
+            )?.runId
+          ).toBe(id);
+          expect(await s(store).retryChatRunStartup(chat.id, id!)).toBe(true);
+        })
+      ).acquired
+    ).toBe(true);
+  });
+  test("an exact request in another chat executes with a fresh approval and warns without external review", async () => {
+    const { store, chat, root } = await create();
+    const key = getAgentStateKey(workspaceName);
+    const fetch = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("lost"))
+      .mockResolvedValueOnce(response());
+    vi.stubGlobal("fetch", fetch);
+    let earlier = "";
+    await withAgentRunLease(key, chat.id, async () => {
+      const context = await createDispatch(store, chat.id, root!.id);
+      earlier = JSON.parse(await dispatchPreparedApiCall(call, { context }))
+        .agentExecution.attemptId;
+      s(store).finishChatRun(chat.id);
+    });
+    const second = s(store).createChat();
+    const next = s(store).addMessage({
+      chatId: second.id,
+      role: "user",
+      content: "Make the change now",
+    })!;
+    expect(
+      priorUncertainApiAttemptIds(
+        s(store).chats,
+        await fingerprintPreparedApiCall(call)
+      )
+    ).toEqual([earlier]);
+    await withAgentRunLease(key, second.id, async () => {
+      const context = await createDispatch(
+        store,
+        second.id,
+        next.id,
+        "new-permission"
+      );
+      expect(
+        JSON.parse(await dispatchPreparedApiCall(call, { context }))
+          .agentExecution.result
+      ).toBe("succeeded");
+      expect(
+        JSON.parse(await dispatchPreparedApiCall(call, { context }))
+          .agentExecution.result
+      ).toBe("not-sent");
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+  });
+  test("saves and verifies the marker before fetch; late settlement never restores a stopped run", async () => {
+    const { store, chat, root } = await create();
+    const key = getAgentStateKey(workspaceName);
+    const fetch = vi.fn(async () => {
+      const saved = stateStorage.parseAgentStoredState(
+        mockStorage.getItem(key)!
+      ) as PersistedAgentState;
+      const marker = saved.chats.find((c) => c.id === chat.id)!.apiAttempts![0];
+      expect(marker.phase).toBe("dispatching");
+      expect(marker.userName).toBe(appIdentity().user);
+      expect(await getAgentApiAttemptStatus(marker)).toBe("in-flight");
+      store.setState((state) => {
+        const c = state.chats.find((c) => c.id === chat.id)!;
+        c.runId = "replacement";
+        c.runCheckpoint = undefined;
+      });
+      return response();
+    });
+    vi.stubGlobal("fetch", fetch);
+    await withAgentRunLease(key, chat.id, async () => {
+      const context = await createDispatch(store, chat.id, root!.id);
+      const result = JSON.parse(
+        await dispatchPreparedApiCall(call, { context })
+      );
+      expect(result.agentExecution.result).toBe("succeeded");
+      expect(fetch).toHaveBeenCalledOnce();
+      expect(s(store).getChat(chat.id)?.runId).toBe("replacement");
+      const linked = s(store)
+        .getMessages(chat.id)
+        .filter(
+          (m) => m.metadata?.apiAttemptId === result.agentExecution.attemptId
+        );
+      expect(linked).toHaveLength(1);
+      expect(linked[0].metadata?.runId).toBe(context.runId);
+    });
+  });
+  test.each(["marker", "settlement"])(
+    "storage failure at %s never sends again on save-only retry",
+    async (phase) => {
+      const { store, chat, root } = await create();
+      const key = getAgentStateKey(workspaceName);
+      const fetch = vi.fn(async () => response());
+      vi.stubGlobal("fetch", fetch);
+      await withAgentRunLease(key, chat.id, async () => {
+        const context = await createDispatch(store, chat.id, root!.id);
+        const write = mockStorage.setItem.bind(mockStorage);
+        mockStorage.setItem = (k, v) => {
+          if (
+            k === key &&
+            v.includes(
+              phase === "marker" ? '"phase":"dispatching"' : '"phase":"settled"'
+            )
+          )
+            throw new Error("unavailable");
+          write(k, v);
+        };
+        const result = JSON.parse(
+          await dispatchPreparedApiCall(call, { context })
+        );
+        expect(result.agentExecution.result).toBe("succeeded");
+        expect(fetch).toHaveBeenCalledTimes(1);
+        if (phase === "settlement") {
+          expect(result.agentSettlementSaved).toBe(false);
+          expect(s(store).getChat(chat.id)?.apiAttempts?.[0].phase).toBe(
+            "settled"
+          );
+          expect(
+            s(store).getMessages(chat.id).at(-1)?.metadata?.apiAttemptId
+          ).toBe(result.agentExecution.attemptId);
+        }
+        mockStorage.setItem = write;
+        expect(await s(store).flushRunPersistence()).toBe(true);
+        expect(fetch).toHaveBeenCalledTimes(1);
+      });
+    }
+  );
+  test("a dispatch gap survives reload, End Run and archive, but the owner can explicitly delete it", async () => {
+    const { store, chat, root } = await create();
+    const key = getAgentStateKey(workspaceName);
+    const fingerprint = await fingerprintPreparedApiCall(call);
+    const fetch = vi.fn(async () => response());
+    vi.stubGlobal("fetch", fetch);
+    await withAgentRunLease(key, chat.id, async () => {
+      const context = await createDispatch(store, chat.id, root!.id);
+      await withAgentApiActionLease(key, context.logicalActionId, async () => {
+        expect(
+          await context.beginAgentApiAttempt({
+            ...context,
+            fingerprint,
+            operationId: call.operationId,
+            path: call.path,
+          })
+        ).toMatchObject({ kind: "admitted" });
+        const remote = createAgentStore();
+        s(remote).setWorkspaceName(workspaceName);
+        expect(
+          await getAgentApiAttemptStatus(
+            s(remote).getChat(chat.id)!.apiAttempts![0]
+          )
+        ).toBe("in-flight");
+      });
+    });
+    const reload = createAgentStore();
+    s(reload).setWorkspaceName(workspaceName);
+    expect(
+      await getAgentApiAttemptStatus(
+        s(reload).getChat(chat.id)!.apiAttempts![0]
+      )
+    ).toBe("unknown");
+    await withAgentRunLease(key, chat.id, async () => {
+      expect(await s(reload).endPausedRun(chat.id)).toBe(true);
+    });
+    s(reload).archiveChat(chat.id);
+    expect(s(reload).getChat(chat.id)?.apiAttempts?.[0].phase).toBe(
+      "dispatching"
+    );
+    expect(s(reload).deleteChat(chat.id)).toBe(true);
+    expect(await s(reload).flushRunPersistence()).toBe(true);
+    const third = createAgentStore();
+    s(third).setWorkspaceName(workspaceName);
+    expect(s(third).getChat(chat.id)).toBeNull();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  test.each(["account", "workspace"])(
+    "a response after %s changes cannot settle in another scope",
+    async (change) => {
+      const { store, chat, root } = await create();
+      const key = getAgentStateKey(workspaceName);
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => {
+          if (change === "account")
+            setAppIdentity({ user: "users/other@example.com" });
+          else setAppIdentity({ workspace: "workspaces/elsewhere" });
+          return response();
+        })
+      );
+      await withAgentRunLease(key, chat.id, async () => {
+        const context = await createDispatch(store, chat.id, root!.id);
+        await dispatchPreparedApiCall(call, { context });
+      });
+      expect(s(store).getChat(chat.id)?.apiAttempts).toMatchObject([
+        { phase: "dispatching" },
+      ]);
+      expect(
+        s(store)
+          .getMessages(chat.id)
+          .some((m) => m.metadata?.apiAttemptId)
+      ).toBe(false);
+    }
+  );
+  test("settled evidence and its original tool row survive a stale busy writer", async () => {
+    const { store, chat, root } = await create();
+    const key = getAgentStateKey(workspaceName);
+    const stale = createAgentStore();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        s(stale).setWorkspaceName(workspaceName);
+        expect(s(stale).getChat(chat.id)?.apiAttempts?.[0].phase).toBe(
+          "dispatching"
+        );
+        return response();
+      })
+    );
+    await withAgentRunLease(key, chat.id, async () => {
+      const context = await createDispatch(store, chat.id, root!.id);
+      await dispatchPreparedApiCall(call, { context });
+    });
+    s(stale).setAbortController(chat.id, new AbortController());
+    s(stale).renameChat(chat.id, "Stale edit");
+    expect(await s(stale).flushRunPersistence()).toBe(true);
+    const reload = createAgentStore();
+    s(reload).setWorkspaceName(workspaceName);
+    expect(s(reload).getChat(chat.id)?.apiAttempts).toMatchObject([
+      { phase: "settled", execution: { result: "succeeded" } },
+    ]);
+    expect(
+      s(reload)
+        .getMessages(chat.id)
+        .filter((m) => m.metadata?.apiAttemptId)
+    ).toHaveLength(1);
+    expect(await s(reload).flushRunPersistence()).toBe(true);
+  });
+  test.each(["succeeded", "unknown"])(
+    "a later tool occurrence retains its own result after a %s receipt reused its ID",
+    async (outcome) => {
+      const scope = `workspaces/reused-tool-id-${outcome}`;
+      const { store, chat, root } = await create(scope);
+      const key = getAgentStateKey(scope);
+      const fetch = vi.fn(async () => {
+        if (outcome === "unknown") throw new Error("Response lost");
+        return response();
+      });
+      vi.stubGlobal("fetch", fetch);
+      const readResult = JSON.stringify({
+        status: 200,
+        response: {
+          name: "instances/demo/databases/test",
+          labels: { owner: "updated" },
+        },
+        agentExecution: agentApiExecutionEvidence("rpc-success", {
+          httpStatus: 200,
+        }),
+      });
+      await withAgentRunLease(key, chat.id, async () => {
+        const context = await createDispatch(store, chat.id, root!.id);
+        const result = await dispatchPreparedApiCall(call, { context });
+        const execution = JSON.parse(result).agentExecution;
+        expect(execution.result).toBe(outcome);
+        const original = s(store).getApiAttemptToolResult(
+          chat.id,
+          execution.attemptId
+        )!;
+        expect(
+          s(store).addMessage({
+            chatId: chat.id,
+            role: "tool",
+            toolCallId: "tool",
+            content: result,
+            metadata: { runId: context.runId },
+          })?.id
+        ).toBe(original.id);
+        s(store).addMessage({
+          chatId: chat.id,
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "tool",
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "bytebase.v1.DatabaseService.GetDatabase",
+              }),
+            },
+          ],
+          metadata: { runId: context.runId },
+        });
+        const read = s(store).addMessage({
+          chatId: chat.id,
+          role: "tool",
+          toolCallId: "tool",
+          content: readResult,
+          metadata: { runId: context.runId },
+        });
+        expect(read?.id).not.toBe(original.id);
+        expect(read?.content).toBe(readResult);
+        expect(
+          s(store)
+            .getMessages(chat.id)
+            .filter((m) => m.role === "tool")
+        ).toHaveLength(2);
+        s(store).finishChatRun(chat.id);
+        expect(await s(store).flushRunPersistence()).toBe(true);
+      });
+      const reload = createAgentStore();
+      s(reload).setWorkspaceName(scope);
+      const results = s(reload)
+        .getMessages(chat.id)
+        .filter((m) => m.role === "tool");
+      expect(results).toHaveLength(2);
+      expect(results.at(-1)?.content).toBe(readResult);
+      expect(s(reload).getChat(chat.id)?.apiAttempts).toHaveLength(1);
+      expect(fetch).toHaveBeenCalledOnce();
+    }
+  );
+  test("a normal save keeps an unreadable owned receipt intact while a separately approved action runs", async () => {
+    const { store, chat, root } = await create();
+    const key = getAgentStateKey(workspaceName);
+    const opaque = {
+      version: 99,
+      id: "future",
+      details: { opaque: ["original", 123] },
+    };
+    const raw = JSON.parse(mockStorage.getItem(key)!);
+    raw.chats.find((c: AgentChat) => c.id === chat.id).apiAttempts = [opaque];
+    mockStorage.setItem(key, JSON.stringify(raw));
+    s(store).loadState();
+    expect(s(store).getChat(chat.id)?.apiAttempts?.[0].execution?.reason).toBe(
+      "journal-unreadable"
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => response())
+    );
+    await withAgentRunLease(key, chat.id, async () => {
+      const context = await createDispatch(store, chat.id, root!.id);
+      expect(
+        JSON.parse(await dispatchPreparedApiCall(call, { context }))
+          .agentExecution.result
+      ).toBe("succeeded");
+    });
+    const saved = stateStorage.parseAgentStoredState(
+      mockStorage.getItem(key)!
+    ) as PersistedAgentState;
+    expect(
+      saved.chats.find((c) => c.id === chat.id)!.apiAttempts
+    ).toContainEqual(opaque);
+  });
+
+  test.each(["same", "same-large", "foreign-workspace", "foreign-member"])(
+    "V3 migration preserves only the same owner's V2 receipt (%s)",
+    async (owner) => {
+      const withLocks = navigator;
+      vi.stubGlobal("navigator", {});
+      const key = getAgentStateKey(workspaceName);
+      const store = createAgentStore();
+      setAppIdentity({
+        workspace: workspaceName,
+        user: "users/" + TEST_USER_EMAIL,
+      });
+      s(store).setWorkspaceName(workspaceName);
+      const chat = s(store).createChat();
+      const root = s(store).addMessage({
+        chatId: chat.id,
+        role: "user",
+        content: "Update",
+      })!;
+      s(store).startChatRun(chat.id, bindings.page, { runId: "legacy-run" });
+      const context = s(store).createApiDispatchContext({
+        chatId: chat.id,
+        runId: "legacy-run",
+        rootUserMessageId: root.id,
+        toolCallId: "write",
+        logicalActionId: "legacy-approval",
+      })!;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => response())
+      );
+      const result = JSON.parse(
+        await dispatchPreparedApiCall(call, { context })
+      );
+      expect(result.agentExecution.result).toBe("succeeded");
+      s(store).finishChatRun(chat.id);
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      const raw = JSON.parse(mockStorage.getItem(key)!);
+      const a = raw.chats.find((c: AgentChat) => c.id === chat.id)
+        .apiAttempts[0];
+      expect(a.scopeKey).toBe(key);
+      if (owner === "same-large") {
+        raw.messagesByChatId[chat.id].find(
+          (m: AgentMessage) => m.id === root.id
+        ).content = "x".repeat(1_600_000);
+      }
+      if (owner === "foreign-workspace")
+        a.scopeKey = getAgentStateKey("workspaces/other");
+      if (owner === "foreign-member") a.userName = "users/other@example.com";
+      mockStorage.setItem(key, JSON.stringify(raw));
+      vi.stubGlobal("navigator", withLocks);
+      const migrated = createAgentStore();
+      s(migrated).setWorkspaceName(workspaceName);
+      expect(await s(migrated).flushRunPersistence()).toBe(true);
+      const reload = createAgentStore();
+      s(reload).setWorkspaceName(workspaceName);
+      const receipt = s(reload).getChat(chat.id)?.apiAttempts?.[0];
+      if (owner === "same" || owner === "same-large") {
+        expect(receipt).toMatchObject({
+          id: a.id,
+          scopeKey: getAgentStateKey(workspaceName),
+          fingerprint: a.fingerprint,
+          execution: result.agentExecution,
+        });
+        if (owner === "same-large") expect(mockStorage.getItem(key)).toBeNull();
+        expect(await s(reload).checkAgentStorageAdmission()).toBe(true);
+      } else {
+        expect(receipt?.execution?.reason).toBe("journal-unreadable");
+      }
+    }
+  );
+
+  test("legacy orphan recovery waits for a free chat and never upgrades completed old calls or verified reads", async () => {
+    const { store, chat, root } = await create();
+    const key = getAgentStateKey(workspaceName);
+    let follower: ReturnType<typeof createAgentStore>;
+    await withAgentRunLease(key, chat.id, async () => {
+      await createDispatch(store, chat.id, root!.id);
+      const raw = JSON.parse(mockStorage.getItem(key)!);
+      const message = raw.messagesByChatId[chat.id].at(-1);
+      message.toolCalls.push(
+        {
+          id: "read",
+          name: "call_api",
+          arguments: JSON.stringify({
+            operationId: "ProjectService/GetProject",
+          }),
+        },
+        {
+          id: "completed",
+          name: "call_api",
+          arguments: JSON.stringify({ operationId: call.operationId }),
+        }
+      );
+      raw.messagesByChatId[chat.id].push({
+        id: "old-result",
+        chatId: chat.id,
+        role: "tool",
+        toolCallId: "completed",
+        createdTs: message.createdTs + 1,
+        content: '{"status":200,"response":{}}',
+        metadata: { runId: message.metadata.runId },
+      });
+      mockStorage.setItem(key, JSON.stringify(raw));
+      follower = createAgentStore();
+      s(follower).setWorkspaceName(workspaceName);
+      expect(await s(follower).recoverLegacyApiAttempts(chat.id)).toBe(false);
+      expect(s(follower).getChat(chat.id)?.apiAttempts).toBeUndefined();
+    });
+    expect(await s(follower!).recoverLegacyApiAttempts(chat.id)).toBe(true);
+    const attempts = s(follower!).getChat(chat.id)?.apiAttempts;
+    expect(attempts).toHaveLength(1);
+    expect(attempts![0]).toMatchObject({
+      toolCallId: "tool",
+      rootUserMessageId: root!.id,
+      fingerprintKind: "legacy-orphan",
+      ordinal: 0,
+      execution: { reason: "legacy-interrupted", effects: "possible" },
+    });
+    expect(
+      s(follower!).getApiAttemptToolResult(chat.id, attempts![0].id)?.content
+    ).toContain("legacy-interrupted");
+    expect(await s(follower!).flushRunPersistence()).toBe(true);
+  });
   test("copies scoped v2 once without modifying it and preserves an unknown legacy baseline", async () => {
     const key = getAgentStateKey(workspaceName);
     const oldKey = key.replace("bb-agent-state-v3", "bb-agent-state-v2");
@@ -1780,9 +2693,10 @@ describe("durable run recovery", () => {
     expect(await s(store).flushRunPersistence()).toBe(true);
   });
   test("retries a failed ownerless staging write without installing an empty v3 cache", async () => {
+    const workspaceName = "workspaces/staging-retry";
     const stateKey = getAgentStateKey(workspaceName);
     const v2Key = stateKey.replace("bb-agent-state-v3", AGENT_STATE_KEY);
-    const sourceKey = `${AGENT_STATE_KEY}.recovery`;
+    const sourceKey = `${AGENT_STATE_KEY}.staging-retry`;
     const source = JSON.stringify({
       currentChatId: "earlier",
       chats: [{ id: "earlier", totalTokensUsed: 25 }],
@@ -1800,7 +2714,9 @@ describe("durable run recovery", () => {
     });
 
     const store = createAgentStore();
+    expect(mockStorage.getItem(stateKey)).toBeNull();
     const initialized = s(store).setWorkspaceName(workspaceName);
+    expect(failNextStagingWrite).toBe(false);
     const initialScope = s(store).workspaceName;
     const firstFlush = await s(store).flushRunPersistence();
     const initialV3 = mockStorage.getItem(stateKey);
@@ -1826,6 +2742,7 @@ describe("durable run recovery", () => {
     expect(initialV3).toBeNull();
   });
   test("clears the previous member when ownerless staging fails during an account switch", async () => {
+    const workspaceName = "workspaces/staging-account-switch";
     const store = createAgentStore();
     s(store).setWorkspaceName(workspaceName, "first@example.com");
     const privateChatId = s(store).currentChatId!;
@@ -1835,7 +2752,7 @@ describe("durable run recovery", () => {
       content: "Private first-member history",
     });
     expect(await s(store).flushRunPersistence()).toBe(true);
-    const sourceKey = `${AGENT_STATE_KEY}.recovery`;
+    const sourceKey = `${AGENT_STATE_KEY}.staging-account-switch`;
     mockStorage.setItem(
       sourceKey,
       JSON.stringify({
@@ -1854,6 +2771,7 @@ describe("durable run recovery", () => {
       originalSetItem(key, value);
     });
 
+    expect(mockStorage.getItem(getAgentStateKey(workspaceName))).toBeNull();
     const initialized = s(store).setWorkspaceName(workspaceName);
 
     expect(s(store).getChat(privateChatId)).toBeNull();
@@ -2860,6 +3778,142 @@ describe("durable run recovery", () => {
       write.mockRestore();
     }
   });
+  test.each(["missing chat", "shadowed legacy bucket", "mismatched row owner"])(
+    "orphaned journal-linked tool buckets (%s) preserve unreadable bytes without refusing a separately approved dispatch",
+    async (damage) => {
+      const { store, chat, root } = await create();
+      const key = getAgentStateKey(workspaceName);
+      const fetch = vi.fn(async () => response());
+      vi.stubGlobal("fetch", fetch);
+      await withAgentRunLease(key, chat.id, async () => {
+        const context = await createDispatch(store, chat.id, root!.id);
+        const saved = JSON.parse(mockStorage.getItem(key)!);
+        const row = {
+          id: "receipt",
+          chatId: "missing",
+          createdTs: 5,
+          role: "tool",
+          toolCallId: "tool",
+          metadata: { apiAttemptId: "unowned" },
+        };
+        if (damage === "shadowed legacy bucket")
+          saved.messagesByThreadId = { missing: [row] };
+        else if (damage === "mismatched row owner")
+          saved.messagesByChatId[chat.id].push(row);
+        else saved.messagesByChatId.missing = [row];
+        const bytes = JSON.stringify(saved);
+        mockStorage.setItem(key, bytes);
+        const reloaded = createAgentStore();
+        s(reloaded).setWorkspaceName(workspaceName);
+        s(reloaded).loadState();
+        expect(s(reloaded).syncState()).toBe(false);
+        expect(s(store).syncState()).toBe(false);
+        expect(
+          JSON.parse(await dispatchPreparedApiCall(call, { context }))
+            .agentExecution.result
+        ).toBe("succeeded");
+        expect(fetch).toHaveBeenCalledOnce();
+        expect(mockStorage.getItem(key)).toBe(bytes);
+      });
+    }
+  );
+  test.each([
+    { staging: false, unreadable: "compression" },
+    { staging: true, unreadable: "compression" },
+    { staging: false, unreadable: "owner" },
+  ])(
+    "unreadable V2 evidence survives hydration and legacy staging (staging=$staging, $unreadable)",
+    async ({ staging, unreadable }) => {
+      const scope = "workspaces/unreadable";
+      const key = getAgentStateKey(scope);
+      const legacy = key.replace("bb-agent-state-v3", AGENT_STATE_KEY);
+      const bytes = JSON.stringify(
+        unreadable === "owner"
+          ? { chats: [{ id: 42, apiAttempts: [{}] }] }
+          : {
+              chats: [{ id: "owner", interrupted: true }],
+              messagesByChatId: {
+                owner: [
+                  {
+                    id: "write",
+                    role: "assistant",
+                    toolCalls: [
+                      {
+                        id: "tool",
+                        name: "call_api",
+                        arguments: '{"operationId":"SQLService/Query"}',
+                      },
+                    ],
+                  },
+                  {
+                    id: "broken",
+                    role: "assistant",
+                    content: "[bb-agent-compressed-content-v1]",
+                    metadata: {
+                      agentCompressedContent: { version: 1, value: "" },
+                    },
+                  },
+                ],
+              },
+            }
+      );
+      mockStorage.setItem(legacy, bytes);
+      const incoming = JSON.stringify({
+        chats: [{ id: "incoming" }],
+        messagesByChatId: { incoming: [] },
+      });
+      if (staging) mockStorage.setItem(AGENT_STATE_KEY, incoming);
+      const reader = createAgentStore();
+      expect(s(reader).setWorkspaceName(scope)).toBe(false);
+      expect(s(reader).canUseAgentExecution()).toBe(false);
+      s(reader).createChat();
+      s(reader).saveState();
+      await s(reader).flushRunPersistence();
+      expect(mockStorage.getItem(legacy)).toBe(bytes);
+      expect(mockStorage.getItem(key)).toBeNull();
+      expect(s(reader).syncState()).toBe(false);
+      if (staging) expect(mockStorage.getItem(AGENT_STATE_KEY)).toBe(incoming);
+    }
+  );
+  test.each([false, true])(
+    "a changed V2 alias before the first V3 save cannot be overwritten (existing source=%s)",
+    async (existing) => {
+      const scope = "workspaces/racing-alias";
+      const key = getAgentStateKey(scope);
+      const legacy = key.replace("bb-agent-state-v3", AGENT_STATE_KEY);
+      const reconciled = JSON.stringify({
+        chats: [{ id: "old-chat" }],
+        messagesByChatId: {
+          "old-chat": [
+            { id: "old", role: "user", content: "Existing conversation" },
+          ],
+        },
+      });
+      if (existing) mockStorage.setItem(legacy, reconciled);
+      const reader = createAgentStore();
+      expect(s(reader).setWorkspaceName(scope)).toBe(true);
+      expect(mockStorage.getItem(key)).toBeNull();
+      s(reader).loadState();
+      if (existing)
+        expect(s(reader).getMessages("old-chat")[0]?.content).toBe(
+          "Existing conversation"
+        );
+      const bytes = '{"chats":[{"apiAttempts":[{}]}]}';
+      mockStorage.setItem(legacy, bytes);
+      s(reader).createChat();
+      expect(await s(reader).flushRunPersistence()).toBe(false);
+      expect(s(reader).syncState()).toBe(false);
+      expect(mockStorage.getItem(key)).toBeNull();
+      expect(mockStorage.getItem(legacy)).toBe(bytes);
+      mockStorage.setItem(legacy, reconciled);
+      const reloaded = createAgentStore();
+      expect(s(reloaded).setWorkspaceName(scope)).toBe(true);
+      expect(await s(reloaded).flushRunPersistence()).toBe(true);
+      expect(s(reloaded).getMessages("old-chat")[0]?.content).toBe(
+        "Existing conversation"
+      );
+    }
+  );
   test.each(["initial", "reload"])(
     "does not overwrite unreadable history after %s hydration",
     async (hydrate) => {
@@ -3245,6 +4299,34 @@ describe("durable run recovery", () => {
         expect(s(restored).getChat(chat.id)?.interrupted).toBe(true);
     }
   );
+  test("a stale user submission cannot replace a peer's token-paused checkpoint", async () => {
+    const { store, chat, root } = await create();
+    const follower = createAgentStore();
+    s(follower).setWorkspaceName(workspaceName);
+    await withAgentRunLease(
+      getAgentStateKey(workspaceName),
+      chat.id,
+      async () => {
+        await s(store).beginChatRun(chat.id, root!.id, bindings);
+        expect(
+          await s(store).pauseChatRun(chat.id, {
+            ...s(store).getChat(chat.id)!.runCheckpoint!,
+            suspension: "token-limit",
+          })
+        ).toBe(true);
+      }
+    );
+    expect(s(follower).getChat(chat.id)?.status).toBe("idle");
+    expect(
+      s(follower).addMessage({ chatId: chat.id, role: "user", content: "Next" })
+    ).toBeNull();
+    expect(s(follower).getChat(chat.id)).toMatchObject({
+      status: "paused",
+      runCheckpoint: { suspension: "token-limit", rootUserMessageId: root!.id },
+    });
+    expect(s(follower).getMessages(chat.id)).toHaveLength(1);
+  });
+
   test("an observed paused run cannot be increased or ended without ownership", async () => {
     const { store, chat, root } = await create();
     await withAgentRunLease(
@@ -8389,6 +9471,34 @@ describe("cross-tab Agent history", () => {
   const persistedState = () =>
     JSON.parse(mockStorage.getItem(getAgentStateKey(workspaceName))!);
 
+  test("a stale user submission preserves the peer's completed answer and usage", () => {
+    const { writer, follower, chatId } = setupTabs();
+    finishAnswer(writer, chatId);
+    expect(s(follower).getMessages(chatId)).toHaveLength(1);
+    const next = s(follower).addMessage({
+      chatId,
+      role: "user",
+      content: "Next question",
+    });
+    expect(next).not.toBeNull();
+    expect(
+      persistedState().messagesByChatId[chatId].map(
+        (m: { content: string }) => m.content
+      )
+    ).toEqual(["Initial question", "Latest answer", "Next question"]);
+    expect(s(follower).getChat(chatId)?.totalTokensUsed).toBe(17);
+  });
+
+  test("a failed best-effort sync does not refuse a new user message", () => {
+    const { follower, chatId } = setupTabs();
+    const syncState = vi.fn(() => false);
+    follower.setState({ syncState });
+    expect(
+      s(follower).addMessage({ chatId, role: "user", content: "New task" })
+    ).not.toBeNull();
+    expect(syncState).toHaveBeenCalledOnce();
+  });
+
   test("imports completed messages and token usage without changing selection", () => {
     const { writer, follower, chatId, otherChatId } = setupTabs();
     s(follower).setCurrentChat(otherChatId);
@@ -11285,6 +12395,87 @@ describe("automatic history cleanup integration", () => {
       }
     );
 
+    test.each(["succeeded", "unknown"])(
+      "a confirmed reset removes %s API history with its tool results without fencing new work",
+      async (result) => {
+        setAppIdentity({
+          workspace: workspaceName,
+          user: "users/" + TEST_USER_EMAIL,
+        });
+        const op = "bytebase.v1.DatabaseService.UpdateDatabase";
+        const fetch = vi.fn(async (_url: string, options: RequestInit) => {
+          if (result === "unknown") throw new Error("Response lost");
+          return new Response(
+            JSON.stringify(JSON.parse(String(options.body)).database),
+            { headers: { "Content-Type": "application/json" } }
+          );
+        });
+        vi.stubGlobal("fetch", fetch);
+        const execute = async (store: StoreApi<AgentState>, name: string) => {
+          const chat = s(store).createChat();
+          const root = s(store).addMessage({
+            chatId: chat.id,
+            role: "user",
+            content: "Update database",
+          })!;
+          await withAgentRunLease(
+            getAgentStateKey(workspaceName),
+            chat.id,
+            async () => {
+              const runId = (await s(store).beginChatRun(chat.id, root.id, {
+                runMode: "default",
+                references: [],
+                page: { path: "/", title: "Workspace" },
+              }))!;
+              s(store).addMessage({
+                chatId: chat.id,
+                role: "assistant",
+                metadata: { runId },
+                toolCalls: [
+                  {
+                    name: "call_api",
+                    id: "call",
+                    arguments: JSON.stringify({ operationId: op }),
+                  },
+                ],
+              });
+              expect(await s(store).flushRunPersistence()).toBe(true);
+              const context = s(store).createApiDispatchContext({
+                chatId: chat.id,
+                toolCallId: "call",
+                runId,
+                rootUserMessageId: root.id,
+                logicalActionId: "approval",
+              })!;
+              const raw = await dispatchPreparedApiCall(
+                {
+                  operationId: op,
+                  path: "/bytebase.v1.DatabaseService/UpdateDatabase",
+                  body: JSON.stringify({ database: { name } }),
+                },
+                { context }
+              );
+              expect(JSON.parse(raw).agentExecution.result).toBe(result);
+              s(store).finishChatRun(chat.id);
+              await s(store).flushRunPersistence();
+            }
+          );
+          return chat.id;
+        };
+        const first = create();
+        const chatId = await execute(first, "instances/demo/databases/one");
+        expect(
+          await s(first).freeAgentStorage({ resetCurrentChat: true })
+        ).toBe(true);
+        const next = create();
+        expect(s(next).getChat(chatId)!.apiAttempts).toBeUndefined();
+        expect(s(next).getMessages(chatId)).toMatchObject([
+          { role: "user", content: "Update database" },
+        ]);
+        await execute(next, "instances/demo/databases/two");
+        expect(fetch).toHaveBeenCalledTimes(2);
+      }
+    );
     test("resets only an oversized current run to its original question after explicit consent", async () => {
       const { store, chat, root, draft, capability } =
         await createOversizedPausedChat();
@@ -11308,6 +12499,37 @@ describe("automatic history cleanup integration", () => {
       expect(await s(store).checkAgentStorageAdmission()).toBe(true);
     });
 
+    test("confirmed current cleanup retains the v2-only interrupted dispatch gap beside existing v3 history", async () => {
+      const owner = create();
+      const chat = s(owner).createChat();
+      s(owner).addMessage({
+        chatId: chat.id,
+        role: "user",
+        content: "Apply the change",
+      });
+      s(owner).addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        toolCalls: [
+          {
+            id: "call",
+            name: "call_api",
+            arguments: '{"operationId":"SQLService/Query"}',
+          },
+        ],
+      });
+      expect(await s(owner).flushRunPersistence()).toBe(true);
+      const key = getAgentStateKey(workspaceName);
+      const legacy = key.replace("bb-agent-state-v3", AGENT_STATE_KEY);
+      const raw = stateStorage.parseAgentStoredState(
+        mockStorage.getItem(key)!
+      ) as PersistedAgentState;
+      raw.chats.find((c) => c.id === chat.id)!.interrupted = true;
+      const stored = JSON.stringify(raw);
+      mockStorage.setItem(legacy, stored);
+      expect(await s(owner).freeAgentStorage()).toBe(true);
+      expect(mockStorage.getItem(legacy)).toBe(stored);
+    });
     test("retires the current scoped legacy backup after an explicitly reset replacement is durable", async () => {
       const { store, chat, root, draft } = await createOversizedPausedChat();
       const key = getAgentStateKey(workspaceName);

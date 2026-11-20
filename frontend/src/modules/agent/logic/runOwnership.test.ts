@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
+  getAgentApiActionLiveness,
   hasAgentRunLease,
   isAgentRunLeasePending,
   subscribeAgentRunLeases,
   supportsAgentRunRecovery,
+  withAgentApiActionLease,
   withAgentPersistenceLock,
   withAgentRunLease,
   withAgentStorageBudgetLock,
@@ -51,6 +53,30 @@ beforeEach(() => vi.stubGlobal("navigator", { locks: fakeLocks() }));
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Agent execution leases", () => {
+  test("same request in two chats has one live dispatch owner, never acquired from persistence", async () => {
+    const release = deferred();
+    const first = withAgentRunLease("scope", "one", () =>
+      withAgentApiActionLease("scope", "fingerprint", () => release.promise)
+    );
+    expect(await getAgentApiActionLiveness("scope", "fingerprint")).toBe(
+      "live"
+    );
+    await withAgentRunLease("scope", "two", async () => {
+      expect(
+        await withAgentApiActionLease("scope", "fingerprint", async () => 1)
+      ).toEqual({ acquired: false });
+      await withAgentPersistenceLock("scope", async () => {
+        expect(
+          await withAgentApiActionLease("scope", "another", async () => 1)
+        ).toEqual({ acquired: false });
+      });
+    });
+    release.resolve();
+    await first;
+    expect(await getAgentApiActionLiveness("scope", "fingerprint")).toBe(
+      "absent"
+    );
+  });
   test("notifies controls until the entire same-chat lease request settles", async () => {
     const release = deferred();
     const snapshots: boolean[] = [];

@@ -62,7 +62,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		// V1 anchored a finding on the first non-whitespace line of the
 		// statement it came from.
 		stmt := stmts[f.Statement]
-		line := (&BaseRule{StmtText: stmt.Text}).ContentStartLine() + int32(stmt.BaseLine())
+		line := contentStartLine(stmt.Text) + int32(stmt.BaseLine())
 		advice := &storepb.Advice{
 			Status:        level,
 			Title:         title,

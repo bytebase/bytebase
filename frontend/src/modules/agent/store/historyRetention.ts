@@ -1,4 +1,42 @@
+import {
+  normalizeAgentApiAttempts,
+  reconcileApiResultLinks,
+} from "../logic/apiAttempt";
+import type { AgentChat, AgentMessage } from "../logic/types";
 import type { PersistedAgentState } from "./agent";
+
+export const hasUnreadableApiHistory = (
+  chat: Pick<AgentChat, "id"> & {
+    apiAttempts?: unknown;
+  },
+  messages: readonly AgentMessage[],
+  scopeKey?: string
+) => {
+  const attempts = normalizeAgentApiAttempts(chat.apiAttempts, chat.id);
+  const reconciled = reconcileApiResultLinks(
+    chat.id,
+    scopeKey,
+    attempts,
+    messages.map((message) => ({
+      ...message,
+      chatId: message.chatId ?? chat.id,
+    }))
+  );
+  return !!reconciled?.some(
+    (attempt) => attempt.execution?.reason === "journal-unreadable"
+  );
+};
+
+export const protectsAgentChatFromDeletion = (
+  state: Pick<PersistedAgentState, "messagesByChatId" | "pendingAskByChatId">,
+  chat: AgentChat,
+  scopeKey?: string
+) =>
+  hasUnreadableApiHistory(
+    chat,
+    state.messagesByChatId[chat.id] ?? [],
+    scopeKey
+  );
 
 export function getAgentHistoryEvictionCandidates(
   state: PersistedAgentState,
@@ -14,6 +52,7 @@ export function getAgentHistoryEvictionCandidates(
         !protectedChatIds.has(chat.id) &&
         !activeChatIds.has(chat.id) &&
         !chat.runId &&
+        !protectsAgentChatFromDeletion(state, chat) &&
         !chat.runCheckpoint &&
         !state.pendingAskByChatId[chat.id] &&
         !state.queuedUserMessagesByChatId[chat.id] &&
@@ -40,8 +79,19 @@ export function getAgentHistoryEvictionCandidates(
 
 export function removeAgentHistoryChats(
   state: PersistedAgentState,
-  chatIds: ReadonlySet<string>
+  chatIds: ReadonlySet<string>,
+  scopeKey?: string
 ): PersistedAgentState {
+  if (chatIds.size) {
+    const removable = new Set(chatIds);
+    for (const chat of state.chats)
+      if (
+        chatIds.has(chat.id) &&
+        protectsAgentChatFromDeletion(state, chat, scopeKey)
+      )
+        removable.delete(chat.id);
+    chatIds = removable;
+  }
   if (!chatIds.size) return state;
   const withoutChats = <T>(records: Record<string, T>): Record<string, T> => {
     let retained = records;

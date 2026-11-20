@@ -6,7 +6,9 @@ import {
   AIChatResponse_StopReason,
 } from "@/types/proto-es/v1/ai_service_pb";
 import { runAgentLoop } from "./agentLoop";
-import { dispatchPreparedApiCall } from "./tools/callApi";
+import { agentApiExecutionEvidence } from "./apiExecution";
+import { withAgentRunLease } from "./runOwnership";
+import { dispatchApprovedApiCall as dispatchPreparedApiCall } from "./tools/callApi";
 import type {
   AgentModelAttempt,
   ToolExecutionResult,
@@ -40,7 +42,90 @@ describe("runAgentLoop", () => {
     preferenceDefaults.tokenLimitPerRun = 100_000;
   });
 
+  test.each(["fetch-failed", "rpc-error"] as const)(
+    "continues read-only diagnosis and explanation after %s without repeating the write",
+    async (reason) => {
+      vi.mocked(aiServiceClientConnect.chat)
+        .mockResolvedValueOnce({
+          content: "",
+          toolCalls: [
+            {
+              id: "write",
+              name: "call_api",
+              arguments:
+                '{"operationId":"bytebase.v1.ProjectService.UpdateProject"}',
+            },
+            {
+              id: "read",
+              name: "call_api",
+              arguments:
+                '{"operationId":"bytebase.v1.ProjectService.GetProject"}',
+            },
+          ],
+        } as never)
+        .mockResolvedValueOnce({
+          content: "",
+          toolCalls: [{ id: "explain", name: "done", arguments: "{}" }],
+        } as never);
+      const result = JSON.stringify({
+        error: "network lost",
+        ...(reason === "rpc-error" && {
+          status: 500,
+          response: { code: "internal" },
+        }),
+        agentExecution: agentApiExecutionEvidence(reason, {
+          attemptId: "attempt",
+          ...(reason === "rpc-error" && { httpStatus: 500, connectCode: 13 }),
+        }),
+      });
+      const execute = vi.fn<ToolExecutor>(async (name, _args, id) =>
+        name === "done"
+          ? {
+              kind: "done",
+              text: "The write outcome is unknown.",
+              success: false,
+            }
+          : {
+              kind: "tool_result",
+              result:
+                id === "write"
+                  ? result
+                  : '{"status":200,"response":{"name":"projects/example"}}',
+            }
+      );
+      const rows: string[][] = [];
+      const outcome = await runAgentLoop([], [], execute, {
+        onToolResult: (id, content) => {
+          rows.push([id, content]);
+        },
+      });
+      expect(execute.mock.calls.map(([, , id]) => id)).toEqual([
+        "write",
+        "read",
+        "explain",
+      ]);
+      expect(vi.mocked(aiServiceClientConnect.chat)).toHaveBeenCalledTimes(2);
+      expect(rows[0]).toEqual(["write", result]);
+      expect(rows[1][0]).toBe("read");
+      expect(JSON.parse(rows[1][1])).toMatchObject({ status: 200 });
+      expect(outcome).toMatchObject({
+        kind: "completed",
+        success: false,
+        text: "The write outcome is unknown.",
+      });
+    }
+  );
+
   test("passes the bounded Query envelope to both saved tool messages and active model history", async () => {
+    vi.stubGlobal("navigator", {
+      locks: {
+        request: (
+          name: string,
+          _: LockOptions,
+          callback: (lock: Lock) => unknown
+        ) => callback({ name, mode: "exclusive" }),
+      },
+    });
     const args = JSON.stringify({
       operationId: "bytebase.v1.SQLService.Query",
       body: {
@@ -68,17 +153,19 @@ describe("runAgentLoop", () => {
       } as never);
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        status: 200,
-        json: async () => ({
-          results: [
-            {
-              columnNames: ["payload"],
-              rows: [{ values: [{ stringValue: "x".repeat(70_000) }] }],
-            },
-          ],
-        }),
-      })
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            results: [
+              {
+                columnNames: ["payload"],
+                rows: [{ values: [{ stringValue: "x".repeat(70_000) }] }],
+              },
+            ],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+      )
     );
     const saved: { toolCallId: string; result: string }[] = [];
     try {
@@ -97,11 +184,34 @@ describe("runAgentLoop", () => {
               }
             : {
                 kind: "tool_result",
-                result: await dispatchPreparedApiCall({
-                  operationId: "bytebase.v1.SQLService.Query",
-                  path: "/bytebase.v1.SQLService/Query",
-                  body: JSON.stringify(JSON.parse(args).body),
-                }),
+                result: (
+                  await withAgentRunLease("scope", "chat", () =>
+                    dispatchPreparedApiCall(
+                      {
+                        operationId: "bytebase.v1.SQLService.Query",
+                        path: "/bytebase.v1.SQLService/Query",
+                        body: JSON.stringify(JSON.parse(args).body),
+                      },
+                      {
+                        context: {
+                          scopeKey: "scope",
+                          chatId: "chat",
+                          runId: "run",
+                          userName: "users/test",
+                          toolCallId: "query-bounded",
+                          rootUserMessageId: "root",
+                          logicalActionId: "permission",
+                          isCurrent: () => true,
+                          beginAgentApiAttempt: async () => ({
+                            kind: "admitted",
+                            attemptId: "query-attempt",
+                          }),
+                          settleAgentApiAttempt: async () => true,
+                        },
+                      }
+                    )
+                  )
+                ).value!,
               },
         {
           onToolResult: (toolCallId, result) => {

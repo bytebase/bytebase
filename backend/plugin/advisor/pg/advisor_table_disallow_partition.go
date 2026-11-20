@@ -47,7 +47,6 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 		}
 		// V1 anchored every finding on the statement text's first
 		// non-whitespace line and quoted the trimmed statement text.
-		text := &BaseRule{StmtText: stmt.Text}
 		for _, f := range pgv1review.TableDisallowPartition([]ast.Node{node}) {
 			if f.Code != v1review.TablePartitioned {
 				continue
@@ -56,8 +55,8 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 				Status:        level,
 				Code:          code.CreateTablePartition.Int32(),
 				Title:         title,
-				Content:       fmt.Sprintf("Table partition is forbidden, but %q creates", text.TrimmedStmtText()),
-				StartPosition: &storepb.Position{Line: text.ContentStartLine() + int32(stmt.BaseLine())},
+				Content:       fmt.Sprintf("Table partition is forbidden, but %q creates", trimmedStmtText(stmt.Text)),
+				StartPosition: &storepb.Position{Line: contentStartLine(stmt.Text) + int32(stmt.BaseLine())},
 			})
 		}
 	}

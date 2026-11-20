@@ -21,6 +21,9 @@ test("normalizes the optional page-tool binding on a checkpoint", () => {
     pageToolPath: "/approved-navigation",
   };
   expect(normalizeRunBindings(bindings)).toEqual(bindings);
+  expect(normalizeRunBindings({ ...bindings, apiRecoveryOnly: true })).toEqual(
+    bindings
+  );
   expect(
     normalizeRunBindings({ ...bindings, pageToolPath: 42 })
   ).toBeUndefined();

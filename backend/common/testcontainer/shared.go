@@ -17,19 +17,17 @@ import (
 // is per package. Starting lazily is what keeps `go test -run` over the tests
 // that need no engine from paying for a container they never open.
 var (
-	sharedPg       = startOnce(GetPgContainer)
-	sharedTargetPg = startOnce(GetPgContainer)
-	sharedPg17     = startOnce(getPg17Container)
-	sharedTLSPg    = startOnce(getTLSPgContainer)
-	sharedMSSQL    = startOnce(getMSSQLContainer)
-	sharedTiDB     = startOnce(getTiDBContainer)
-	sharedMongo    = startOnce(getMongoDBContainer)
-	sharedOracle   = startOnce(getOracleContainer)
-	sharedMySQL    = startOnce(GetMySQLContainer)
-	sharedTrino    = startOnce(getTrinoContainer)
-	sharedMariaDB  = startOnce(mariaDBStarter("mariadb:11.8.8"))
-	// 10.7 is the oldest MariaDB release Bytebase supports.
-	sharedMariaDB107   = startOnce(mariaDBStarter("mariadb:10.7.8"))
+	sharedPg           = startOnce(GetPgContainer)
+	sharedTargetPg     = startOnce(GetPgContainer)
+	sharedPg17         = startOnce(getPg17Container)
+	sharedTLSPg        = startOnce(getTLSPgContainer)
+	sharedMSSQL        = startOnce(getMSSQLContainer)
+	sharedTiDB         = startOnce(getTiDBContainer)
+	sharedMongo        = startOnce(getMongoDBContainer)
+	sharedOracle       = startOnce(getOracleContainer)
+	sharedMySQL        = startOnce(GetMySQLContainer)
+	sharedTrino        = startOnce(getTrinoContainer)
+	sharedMariaDB      = startOnce(mariaDBStarter("mariadb:11.8.8"))
 	sharedRedisCluster = startOnce(getRedisClusterContainer)
 	sharedCassandra    = startOnce(getCassandraContainer)
 	sharedHive         = startOnce(getHiveContainer)
@@ -132,10 +130,6 @@ func SharedMySQLContainer(t testing.TB) *Container { return shared(t, sharedMySQ
 // database each with NewMariaDBDatabase.
 func SharedMariaDBContainer(t testing.TB) *Container { return shared(t, sharedMariaDB) }
 
-// SharedMariaDB107Container is SharedMariaDBContainer for MariaDB 10.7, the
-// oldest supported release; tests take a database each with NewMariaDB107Database.
-func SharedMariaDB107Container(t testing.TB) *Container { return shared(t, sharedMariaDB107) }
-
 // SharedRedisClusterContainer is a one-node Redis cluster that owns every hash
 // slot, for the driver paths that need a *redis.ClusterClient.
 func SharedRedisClusterContainer(t testing.TB) *Container { return shared(t, sharedRedisCluster) }
@@ -212,12 +206,6 @@ func NewMySQLDatabase(t testing.TB) (*Container, string) {
 func NewMariaDBDatabase(t testing.TB) (*Container, string) {
 	t.Helper()
 	return createMySQLProtocolDatabase(t, SharedMariaDBContainer(t))
-}
-
-// NewMariaDB107Database is NewMariaDBDatabase on the shared MariaDB 10.7 container.
-func NewMariaDB107Database(t testing.TB) (*Container, string) {
-	t.Helper()
-	return createMySQLProtocolDatabase(t, SharedMariaDB107Container(t))
 }
 
 func createMySQLProtocolDatabase(t testing.TB, container *Container) (*Container, string) {

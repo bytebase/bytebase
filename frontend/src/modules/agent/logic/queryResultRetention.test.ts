@@ -104,15 +104,26 @@ describe("boundAgentQueryResult", () => {
   test("shares one row budget across result sets and preserves later result errors", () => {
     const first = row("first");
     const second = row("second");
-    const raw = envelope([
-      { columnNames: ["value"], rows: [first] },
-      { columnNames: ["value"], rows: [second] },
-      {
-        error: "permission denied",
-        statement: "SELECT private_value",
-        rows: [],
-      },
-    ]);
+    const agentExecution = {
+      version: 1,
+      attemptId: "attempt-1",
+      result: "succeeded",
+      effects: "possible",
+      reason: "query-result-error",
+      httpStatus: 200,
+    };
+    const raw = envelope(
+      [
+        { columnNames: ["value"], rows: [first] },
+        { columnNames: ["value"], rows: [second] },
+        {
+          error: "permission denied",
+          statement: "SELECT private_value",
+          rows: [],
+        },
+      ],
+      { agentExecution }
+    );
     const bounded = JSON.parse(
       boundAgentQueryResult(raw, sampleBytes([{ rows: [first] }]))
     );
@@ -130,6 +141,10 @@ describe("boundAgentQueryResult", () => {
       { receivedRows: 1, retainedRows: 0 },
       { receivedRows: 0, retainedRows: 0 },
     ]);
+    expect(bounded.agentExecution).toEqual(agentExecution);
+    expect(
+      JSON.parse(omitAgentQueryRows(JSON.stringify(bounded))).agentExecution
+    ).toEqual(agentExecution);
   });
 
   test.each([

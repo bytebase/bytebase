@@ -9,7 +9,10 @@ import {
 } from "../logic/runOwnership";
 import type { PersistedAgentState } from "./agent";
 import { removeAgentHistoryChats } from "./historyRetention";
-import { canRetireLegacyAgentState } from "./legacyStateRetention";
+import {
+  canDiscardStoredAgentHistory,
+  canRetireLegacyAgentState,
+} from "./legacyStateRetention";
 import { encodeAgentStoredState, parseAgentStoredState } from "./stateStorage";
 import {
   AGENT_STORAGE_CLEANUP_TARGET_BYTES,
@@ -191,11 +194,19 @@ const readPeer = (storage: Storage, key: string): PeerHistory | undefined => {
   if (hasDrafts(complete)) return undefined;
   const legacyKey = aliases(key).find((alias) => alias !== key)!;
   const legacyValue = storage.getItem(legacyKey);
-  if (
-    legacyValue !== null &&
-    !canRetireLegacyAgentState(decode(legacyValue), raw)
-  )
-    return undefined;
+  if (legacyValue !== null) {
+    const source = decode(legacyValue);
+    const identity = scopedIdentity(key);
+    if (
+      !canDiscardStoredAgentHistory(source, legacyKey) ||
+      !canRetireLegacyAgentState(
+        source,
+        raw,
+        identity ? { scopeKey: key, userEmail: identity.userEmail } : undefined
+      )
+    )
+      return undefined;
+  }
   return { key, value, state: complete, legacyKey, legacyValue };
 };
 
@@ -229,7 +240,11 @@ const rewritePeer = async (
           peer.legacyValue = null;
         }
         let candidate = removeChatId
-          ? removeAgentHistoryChats(peer.state, new Set([removeChatId]))
+          ? removeAgentHistoryChats(
+              peer.state,
+              new Set([removeChatId]),
+              peer.key
+            )
           : omitAgentQuerySamples(peer.state);
         if (!removeChatId && !canRetireLegacyAgentState(peer.state, candidate))
           candidate = peer.state;
@@ -280,10 +295,11 @@ export async function reclaimOtherAgentHistory(
         if (source === null) continue;
         let raw: unknown;
         try {
-          raw = JSON.parse(source);
+          raw = decode(source);
         } catch {
-          raw = undefined;
+          continue;
         }
+        if (!canDiscardStoredAgentHistory(raw, key)) continue;
         freed += await withAgentHistoryReclamationLocks(
           key,
           chatIds(raw),

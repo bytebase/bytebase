@@ -65,7 +65,7 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		// V1 anchored every finding on the statement text's first
 		// non-whitespace line, which can be a leading comment above the
 		// statement node the finding's range covers.
-		line := (&BaseRule{StmtText: stmt.Text}).ContentStartLine() + int32(stmt.BaseLine())
+		line := contentStartLine(stmt.Text) + int32(stmt.BaseLine())
 		for _, f := range findings {
 			if f.Code != v1review.NameMismatch {
 				continue

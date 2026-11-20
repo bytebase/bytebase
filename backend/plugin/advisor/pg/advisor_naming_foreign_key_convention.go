@@ -80,7 +80,7 @@ func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 				// V1 reports the line of the name's first occurrence in the
 				// statement text, which is not always the constraint itself.
 				StartPosition: &storepb.Position{
-					Line: (&BaseRule{StmtText: stmt.Text}).FindLineByName(f.Name) + int32(stmt.BaseLine()),
+					Line: findLineByName(stmt.Text, f.Name) + int32(stmt.BaseLine()),
 				},
 			}
 			switch f.Code {

@@ -9,10 +9,16 @@ import {
   refreshCommittedDomMutation,
   validateCapturedDomMutation,
 } from "../../dom/interactionRegistry";
+import type { AgentApiDispatchContext } from "../apiAttempt";
+import {
+  notSentApiResult,
+  parseCallApiResult,
+  preflightRejectedApiResult,
+} from "../callApiResult";
 import { isAgentExecutionContextCurrent } from "../executionContext";
 import type { AgentDiagnosticCapability } from "../types";
 import { checkPreparedApiPermission } from "./apiPermissionPreflight";
-import { dispatchPreparedApiCall, type PreparedApiCall } from "./callApi";
+import { dispatchApprovedApiCall, type PreparedApiCall } from "./callApi";
 import {
   type IssueDecisionPermission,
   validateIssueDecisionPermission,
@@ -28,14 +34,20 @@ interface PendingApiCall {
   issueDecision?: IssueDecisionPermission;
   domOrigin?: CapturedDomMutation;
   expiresAt: number;
+  priorAttemptIds?: readonly string[];
+  isScopeCurrent?: () => boolean;
 }
 
 const pendingApiCalls = new Map<string, PendingApiCall>();
 
 export const staleDomPermission = JSON.stringify({
   called: false,
-  error:
-    "Not called: The page action changed, expired, or could not be verified. Inspect the page again.",
+  ...JSON.parse(
+    notSentApiResult(
+      "Not called: The page action changed, expired, or could not be verified. Inspect the page again.",
+      "admission-rejected"
+    )
+  ),
 });
 
 export function isCurrentDomApiCall(
@@ -94,6 +106,8 @@ export function createPendingApiCall({
   issueDecision,
   domOrigin,
   domContext,
+  priorAttemptIds,
+  isScopeCurrent,
 }: {
   chatId: string;
   toolCallId: string;
@@ -102,6 +116,8 @@ export function createPendingApiCall({
   issueDecision?: IssueDecisionPermission;
   domOrigin?: CapturedDomMutation;
   domContext?: AgentDomContext;
+  priorAttemptIds?: readonly string[];
+  isScopeCurrent?: () => boolean;
 }): { actionId: string; expiresAt: number } {
   if (!userName) {
     throw new Error("A signed-in user is required to request permission.");
@@ -142,6 +158,8 @@ export function createPendingApiCall({
       ? Object.freeze({ ...issueDecision })
       : undefined,
     expiresAt,
+    isScopeCurrent,
+    ...(priorAttemptIds?.length && { priorAttemptIds: [...priorAttemptIds] }),
   });
   return { actionId, expiresAt };
 }
@@ -162,6 +180,7 @@ export function getPendingApiCallPreview({
   | {
       operationId: string;
       body: string;
+      priorAttemptIds?: readonly string[];
       expiresAt: number;
       dom?: AgentDomMutationPreview & { resourceName: string };
       issueDecision?: {
@@ -194,6 +213,9 @@ export function getPendingApiCallPreview({
           },
         }
       : {}),
+    ...(pending.priorAttemptIds && {
+      priorAttemptIds: [...pending.priorAttemptIds],
+    }),
     expiresAt: pending.expiresAt,
     ...(pending.issueDecision
       ? {
@@ -216,6 +238,7 @@ export async function resolvePendingApiCall({
   signal,
   capability,
   domContext,
+  context,
 }: {
   actionId: string;
   chatId: string;
@@ -225,32 +248,39 @@ export async function resolvePendingApiCall({
   signal?: AbortSignal;
   capability?: AgentDiagnosticCapability;
   domContext?: AgentDomContext;
+  context?: AgentApiDispatchContext;
 }): Promise<string> {
   const pending = pendingApiCalls.get(actionId);
   if (!pending) {
-    return JSON.stringify({
-      error: "Permission request not found or already used.",
-    });
+    return notSentApiResult(
+      "Permission request not found or already used.",
+      "permission-rejected"
+    );
   }
   if (pending.expiresAt <= Date.now()) {
     pendingApiCalls.delete(actionId);
-    return JSON.stringify({ error: "Permission request expired." });
+    return notSentApiResult(
+      "Permission request expired.",
+      "permission-rejected"
+    );
   }
   if (
     pending.chatId !== chatId ||
     pending.toolCallId !== toolCallId ||
     pending.userName !== userName
   ) {
-    return JSON.stringify({
-      error: "Permission request does not match this user, chat, or action.",
-    });
+    return notSentApiResult(
+      "Permission request does not match this user, chat, or action.",
+      "permission-rejected"
+    );
   }
 
   pendingApiCalls.delete(actionId);
   if (capability !== undefined) {
-    return JSON.stringify({
-      error: "API permission requests cannot execute in a diagnostic chat.",
-    });
+    return notSentApiResult(
+      "API permission requests cannot execute in a diagnostic chat.",
+      "permission-rejected"
+    );
   }
   const origin = pending.domOrigin;
   const domCurrent = () =>
@@ -260,13 +290,14 @@ export async function resolvePendingApiCall({
   if (!approved) {
     return origin && !domCurrent()
       ? staleDomPermission
-      : JSON.stringify({ error: "Permission request denied." });
+      : notSentApiResult("Permission request denied.", "permission-rejected");
   }
   const checkContext = () => {
     if (signal?.aborted)
-      return JSON.stringify({
-        error: "Request stopped before the API call was sent.",
-      });
+      return notSentApiResult(
+        "Request stopped before the API call was sent.",
+        "canceled-before-dispatch"
+      );
     if (origin && !domCurrent()) return staleDomPermission;
   };
   let failure = checkContext();
@@ -275,38 +306,53 @@ export async function resolvePendingApiCall({
   failure = checkContext();
   if (failure) return failure;
   if (access.kind === "denied") {
-    return access.result;
+    return preflightRejectedApiResult(access.result);
   }
   if (pending.issueDecision) {
     const valid = await validateIssueDecisionPermission(pending.issueDecision);
     failure = checkContext();
     if (failure) return failure;
     if (!valid) {
-      return JSON.stringify({
-        error:
-          "The Issue changed or became unavailable since permission was requested. Refresh and retry the decision.",
-      });
+      return notSentApiResult(
+        "The Issue changed or became unavailable since permission was requested. Refresh and retry the decision.",
+        "preflight-rejected"
+      );
     }
   }
-  if (!origin) return dispatchPreparedApiCall(pending.call);
-  if (!domContext || !(await validateCapturedDomMutation(origin, domContext)))
-    return staleDomPermission;
-  failure = checkContext();
-  if (failure) return failure;
-  const result = await dispatchPreparedApiCall(pending.call, signal, {
-    expectedContext: origin,
-    beforeSend: domCurrent,
-  });
-  const envelope = JSON.parse(result);
+  if (origin) {
+    if (!domContext || !(await validateCapturedDomMutation(origin, domContext)))
+      return staleDomPermission;
+    failure = checkContext();
+    if (failure) return failure;
+  }
   if (
-    typeof envelope?.status === "number" &&
-    envelope.status >= 200 &&
-    envelope.status < 300
+    pending.isScopeCurrent?.() === false ||
+    (context &&
+      (context.userName !== userName ||
+        context.chatId !== chatId ||
+        context.toolCallId !== toolCallId ||
+        context.logicalActionId !== actionId))
+  )
+    return notSentApiResult(
+      "Permission has no matching execution context.",
+      "admission-rejected"
+    );
+  const result = await dispatchApprovedApiCall(pending.call, {
+    context,
+    signal,
+    ...(pending.isScopeCurrent && { isScopeCurrent: pending.isScopeCurrent }),
+    ...(origin && { dom: { expectedContext: origin, beforeSend: domCurrent } }),
+  });
+  if (
+    origin &&
+    domContext &&
+    parseCallApiResult(result, pending.call.operationId).execution?.reason ===
+      "rpc-success"
   ) {
     try {
       await refreshCommittedDomMutation(origin, domContext);
     } catch {
-      return JSON.stringify({ ...envelope, domRefresh: "failed" });
+      return JSON.stringify({ ...JSON.parse(result), domRefresh: "failed" });
     }
   }
   return result;

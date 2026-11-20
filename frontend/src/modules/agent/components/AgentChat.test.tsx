@@ -15,6 +15,8 @@ import {
 import enUS from "@/locales/en-US.json";
 import type { AccessGrantDraft } from "@/modules/sql-editor/model/accessGrantDraft";
 import { reactI18nextStub } from "@/test-utils/i18n";
+import type { AgentApiAttempt } from "../logic/apiAttempt";
+import { agentApiExecutionEvidence } from "../logic/apiExecution";
 import type { RequestRoleDraft } from "../logic/deniedQueryAccess";
 import { registerAgentExpressionTarget } from "../logic/expressionDraft";
 import { buildOutboundHistory } from "../logic/outboundHistory";
@@ -192,6 +194,7 @@ vi.mock("@/stores/app", () => {
   const useAppStore = <T,>(selector: (value: typeof state) => T) =>
     selector(state);
   useAppStore.getState = () => state;
+  useAppStore.subscribe = () => () => {};
   return { useAppStore };
 });
 
@@ -809,6 +812,9 @@ describe("AgentChat", () => {
     store.addMessage({ chatId: chat.id, role: "user", content: "Keep this question" });
     const retrySaving = vi.fn(async () => true);
     const onRetry = vi.fn();
+    const {normalizeAgentApiAttempts} = await import("../logic/apiAttempt");
+    const [attempt] = normalizeAgentApiAttempts([null], chat.id)!;
+    useAgentStore.setState(s => {s.chats.find(c => c.id === chat.id)!.apiAttempts=[attempt];});
     useAgentStore.setState({ flushRunPersistence: retrySaving, storagePressure: { reason: "unavailable", phase: "saving", bytes: 1024, limitBytes: 3 * 1024 * 1024 } });
     const { container, render, unmount } = renderIntoContainer(<AgentChat onRetry={onRetry} />);
     render();
@@ -817,10 +823,265 @@ describe("AgentChat", () => {
       expect(retrySaving).toHaveBeenCalledOnce();
       expect(onRetry).not.toHaveBeenCalled();
       expect(container).toHaveTextContent("Keep this question");
+      expect(container.querySelector("[data-agent-api-recovery]")).toBeNull();
+      expect(container.querySelector("[data-agent-retry]")).toBeNull();
+      expect(store.getChat(chat.id)?.apiAttempts).toEqual([attempt]);
     } finally {
       unmount();
       useAgentStore.setState({ flushRunPersistence: store.flushRunPersistence, storagePressure: undefined });
     }
+  });
+
+  test("keeps an uncertain result inline instead of repeating a chat-wide warning", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    const root = store.addMessage({ chatId: chat.id, role: "user", content: "Update the project" })!;
+    const operationId = "bytebase.v1.ProjectService.UpdateProject";
+    const execution = agentApiExecutionEvidence("fetch-failed", { attemptId: "lost-response" });
+    const attempt: AgentApiAttempt = {
+      version: 1, id: "lost-response", ordinal: 1, startedAt: Date.now(),
+      scopeKey: "workspaces/demo", userName: "me@example.com", chatId: chat.id,
+      runId: "update-run", rootUserMessageId: root.id, toolCallId: "update-project",
+      logicalActionId: "update-approval", operationId,
+      path: "/bytebase.v1.ProjectService/UpdateProject", fingerprint: "a".repeat(64),
+      phase: "settled", settledAt: Date.now(), execution,
+    };
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: attempt.toolCallId, name: "call_api", arguments: JSON.stringify({ operationId }) }] });
+    useAgentStore.setState(s => {
+      s.messagesByChatId[chat.id].push({ id: "lost-result", createdTs: Date.now(), chatId: chat.id, role: "tool", toolCallId: attempt.toolCallId, content: JSON.stringify({ error: "Response lost", agentExecution: execution }), metadata: { apiAttemptId: attempt.id, runId: attempt.runId } });
+      s.chats.find(c => c.id === chat.id)!.apiAttempts = [attempt];
+    });
+    expect(store.getMessages(chat.id)).toEqual(expect.arrayContaining([expect.objectContaining({ role: "tool", metadata: expect.objectContaining({ apiAttemptId: attempt.id }) })]));
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      expect(container).toHaveTextContent("agent.api-recovery.unknown");
+      expect(container.querySelector("[data-agent-api-recovery]")).toBeNull();
+      act(() => { store.addMessage({ chatId: chat.id, role: "user", content: "List databases" }); });
+      expect(container).toHaveTextContent("agent.api-recovery.unknown");
+      expect(container.querySelector("[data-agent-api-recovery]")).toBeNull();
+    } finally { unmount(); }
+  });
+
+  test("warns for a missing current result but not after a new user turn", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    const root = store.addMessage({ chatId: chat.id, role: "user", content: "Update the project" })!;
+    const attempt: AgentApiAttempt = {
+      version: 1, id: "unfinished", ordinal: 1, startedAt: Date.now(),
+      scopeKey: "workspaces/demo", userName: "me@example.com", chatId: chat.id,
+      runId: "update-run", rootUserMessageId: root.id, toolCallId: "update-project",
+      logicalActionId: "update-approval", operationId: "bytebase.v1.ProjectService.UpdateProject",
+      path: "/bytebase.v1.ProjectService/UpdateProject", fingerprint: "b".repeat(64),
+      phase: "dispatching",
+    };
+    useAgentStore.setState(s => { s.chats.find(c => c.id === chat.id)!.apiAttempts = [attempt]; });
+    store.setChatStatus(chat.id, "running");
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    await act(async () => render());
+    try {
+      expect(container.querySelector("[data-agent-api-recovery]")).toBeNull();
+      act(() => store.setChatStatus(chat.id, "idle"));
+      expect(container.querySelector("[data-agent-api-recovery]")).not.toBeNull();
+      act(() => { store.addMessage({ chatId: chat.id, role: "user", content: "List databases" }); });
+      expect(container.querySelector("[data-agent-api-recovery]")).toBeNull();
+      expect(store.getChat(chat.id)?.apiAttempts).toEqual([attempt]);
+    } finally { unmount(); }
+  });
+
+  test("keeps a receipt-backed missing result inline after a later user turn", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    const root = store.addMessage({ chatId: chat.id, role: "user", content: "Update the project" })!;
+    const operationId = "bytebase.v1.ProjectService.UpdateProject";
+    const attempt: AgentApiAttempt = {
+      version: 1, id: "unfinished", ordinal: 1, startedAt: Date.now(),
+      scopeKey: "workspaces/demo", userName: "member@example.com", chatId: chat.id,
+      runId: "update-run", rootUserMessageId: root.id, toolCallId: "update-project",
+      logicalActionId: "update-approval", operationId,
+      path: "/bytebase.v1.ProjectService/UpdateProject", fingerprint: "b".repeat(64),
+      phase: "dispatching",
+    };
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: attempt.toolCallId, name: "call_api", arguments: JSON.stringify({ operationId }) }], metadata: { runId: attempt.runId } });
+    store.addMessage({ chatId: chat.id, role: "user", content: "List databases" });
+    useAgentStore.setState(s => { s.chats.find(c => c.id === chat.id)!.apiAttempts = [attempt]; });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      const card = within(container).getByRole("button", { name: /call_api/ });
+      expect(card).toHaveTextContent("agent.api-recovery.unknown");
+      expect(card.querySelector(".animate-pulse")).toBeNull();
+      expect(container.querySelector("[data-agent-api-recovery]")).toBeNull();
+      act(() => card.click());
+      expect(container).toHaveTextContent("agent.api-recovery.no-replay");
+      expect(store.getMessages(chat.id).filter(m => m.role === "tool")).toHaveLength(0);
+    } finally { unmount(); }
+  });
+
+  test.each(["bytebase.v1.ProjectService.UpdateProject", "ProjectService/UpdateProject"])("does not reuse an earlier acknowledged receipt for a repeated tool call id: %s", (callOperationId) => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    const root = store.addMessage({ chatId: chat.id, role: "user", content: "Update both projects" })!;
+    const operationId = "bytebase.v1.ProjectService.UpdateProject";
+    const execution = agentApiExecutionEvidence("rpc-success", { attemptId: "first-write", httpStatus: 200 });
+    const first: AgentApiAttempt = {
+      version: 1, id: "first-write", ordinal: 1, startedAt: 1,
+      scopeKey: "workspaces/demo", userName: "member@example.com", chatId: chat.id,
+      runId: "update-run", rootUserMessageId: root.id, toolCallId: "reused-id",
+      logicalActionId: "first-approval", operationId,
+      path: "/bytebase.v1.ProjectService/UpdateProject", fingerprint: "a".repeat(64),
+      phase: "settled", settledAt: 2, execution,
+    };
+    const second: AgentApiAttempt = {
+      ...first, id: "second-write", logicalActionId: "second-approval", startedAt: 3,
+      fingerprint: "b".repeat(64), phase: "dispatching", settledAt: undefined, execution: undefined,
+    };
+    const call = { id: first.toolCallId, name: "call_api", arguments: JSON.stringify({ operationId: callOperationId }) };
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [call], metadata: { runId: first.runId } });
+    useAgentStore.setState(s => {
+      s.chats.find(c => c.id === chat.id)!.apiAttempts = [first];
+      s.messagesByChatId[chat.id].push({ id: "first-result", createdTs: Date.now(), chatId: chat.id, role: "tool", toolCallId: call.id, content: JSON.stringify({ status: 200, response: {}, agentExecution: execution }), metadata: { runId: first.runId, apiAttemptId: first.id } });
+    });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [call], metadata: { runId: second.runId } });
+    useAgentStore.setState(s => { s.chats.find(c => c.id === chat.id)!.apiAttempts = [first, second]; });
+    expect(store.getMessages(chat.id).map(message => [message.role, message.metadata?.apiAttemptId])).toEqual([["user", undefined], ["assistant", undefined], ["tool", first.id], ["assistant", undefined]]);
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      const cards = within(container).getAllByRole("button", { name: /call_api/ });
+      expect(cards[0]).toHaveTextContent("agent.api-recovery.acknowledged");
+      expect(cards[1]).toHaveTextContent("agent.api-recovery.unknown");
+      expect(cards[1]).not.toHaveTextContent("agent.api-recovery.acknowledged");
+      expect(container.querySelector("[data-agent-api-recovery]")).toBeNull();
+      act(() => cards[1].click());
+      expect(container).toHaveTextContent("agent.api-recovery.no-replay");
+      expect(store.getChat(chat.id)?.apiAttempts).toEqual([first, second]);
+      expect(store.getMessages(chat.id).filter(m => m.role === "tool")).toHaveLength(1);
+    } finally { unmount(); }
+  });
+
+  test("does not reuse a receipt linked outside the current result span", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    const root = store.addMessage({ chatId: chat.id, role: "user", content: "Update the projects" })!;
+    const operationId = "bytebase.v1.ProjectService.UpdateProject";
+    const execution = agentApiExecutionEvidence("fetch-failed", { attemptId: "earlier-write" });
+    const attempt: AgentApiAttempt = {
+      version: 1, id: "earlier-write", ordinal: 1, startedAt: 1,
+      scopeKey: "workspaces/demo", userName: "member@example.com", chatId: chat.id,
+      runId: "write-run", rootUserMessageId: root.id, toolCallId: "reused-id",
+      logicalActionId: "old-approval", operationId,
+      path: "/bytebase.v1.ProjectService/UpdateProject", fingerprint: "a".repeat(64),
+      phase: "settled", settledAt: 2, execution,
+    };
+    const call = { id: attempt.toolCallId, name: "call_api", arguments: JSON.stringify({ operationId }) };
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [call], metadata: { runId: attempt.runId } });
+    useAgentStore.setState(s => {
+      s.chats.find(c => c.id === chat.id)!.apiAttempts = [attempt];
+      s.messagesByChatId[chat.id].push({ id: "earlier-result", createdTs: Date.now(), chatId: chat.id, role: "tool", toolCallId: call.id, content: JSON.stringify({ error: "Response lost", agentExecution: execution }), metadata: { runId: attempt.runId, apiAttemptId: attempt.id } });
+    });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [call], metadata: { runId: attempt.runId } });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      const cards = within(container).getAllByRole("button", { name: /call_api/ });
+      expect(cards[0]).toHaveTextContent("agent.api-recovery.unknown");
+      expect(cards[1]).not.toHaveTextContent("agent.api-recovery.unknown");
+      expect(cards[1].querySelector(".text-warning")).toBeNull();
+      expect(container.querySelector("[data-agent-api-recovery]")).toBeNull();
+    } finally { unmount(); }
+  });
+
+  test.each(["assistant", "user"] as const)("does not borrow a later read result across a %s boundary", (boundary) => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    const root = store.addMessage({ chatId: chat.id, role: "user", content: "Update the project" })!;
+    const operationId = "bytebase.v1.ProjectService.UpdateProject";
+    const attempt: AgentApiAttempt = {
+      version: 1, id: "missing-write", ordinal: 1, startedAt: 1,
+      scopeKey: "workspaces/demo", userName: "member@example.com", chatId: chat.id,
+      runId: "write-run", rootUserMessageId: root.id, toolCallId: "reused-id",
+      logicalActionId: "write-approval", operationId,
+      path: "/bytebase.v1.ProjectService/UpdateProject", fingerprint: "a".repeat(64),
+      phase: "dispatching",
+    };
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: attempt.toolCallId, name: "call_api", arguments: JSON.stringify({ operationId }) }], metadata: { runId: attempt.runId } });
+    if (boundary === "user") store.addMessage({ chatId: chat.id, role: "user", content: "List the projects" });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: attempt.toolCallId, name: "call_api", arguments: JSON.stringify({ operationId: "bytebase.v1.ProjectService.ListProjects" }) }], metadata: { runId: "read-run" } });
+    store.addMessage({ chatId: chat.id, role: "tool", toolCallId: attempt.toolCallId, content: JSON.stringify({ status: 200, response: { projects: [] } }), metadata: { runId: "read-run" } });
+    useAgentStore.setState(s => { s.chats.find(c => c.id === chat.id)!.apiAttempts = [attempt]; });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      const cards = within(container).getAllByRole("button", { name: /call_api/ });
+      expect(cards[0]).toHaveTextContent("agent.api-recovery.unknown");
+      expect(cards[1]).not.toHaveTextContent("agent.api-recovery.unknown");
+      act(() => cards[0].click());
+      expect(container).not.toHaveTextContent('"projects": []');
+      act(() => cards[1].click());
+      expect(container).toHaveTextContent('"projects": []');
+      expect(container.querySelector("[data-agent-api-recovery]")).toBeNull();
+    } finally { unmount(); }
+  });
+
+  test.each(["run", "operation", "multiple receipts", "legacy duplicate", "batch duplicate"] as const)("keeps %s receipt matches out of unrelated or ambiguous tool cards", (mismatch) => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    const root = store.addMessage({ chatId: chat.id, role: "user", content: "Update the project" })!;
+    const operationId = "bytebase.v1.ProjectService.UpdateProject";
+    const attempt: AgentApiAttempt = {
+      version: 1, id: "missing-write", ordinal: 1, startedAt: 1,
+      scopeKey: "workspaces/demo", userName: "member@example.com", chatId: chat.id,
+      runId: "write-run", rootUserMessageId: root.id, toolCallId: "reused-id",
+      logicalActionId: "write-approval", operationId,
+      path: "/bytebase.v1.ProjectService/UpdateProject", fingerprint: "a".repeat(64),
+      phase: "dispatching",
+    };
+    const call = { id: attempt.toolCallId, name: "call_api", arguments: JSON.stringify({ operationId: mismatch === "operation" ? "bytebase.v1.ProjectService.ListProjects" : operationId }) };
+    const metadata = mismatch === "legacy duplicate" ? undefined : { runId: mismatch === "run" ? "another-run" : attempt.runId };
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: mismatch === "batch duplicate" ? [call, call] : [call], metadata });
+    if (mismatch === "legacy duplicate") store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [call] });
+    const attempts = mismatch === "multiple receipts" ? [attempt, { ...attempt, id: "another-write", logicalActionId: "another-approval" }] : [attempt];
+    useAgentStore.setState(s => { s.chats.find(c => c.id === chat.id)!.apiAttempts = attempts; });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      for (const card of within(container).getAllByRole("button", { name: /call_api/ })) {
+        expect(card).not.toHaveTextContent("agent.api-recovery.unknown");
+        expect(card).not.toHaveTextContent("agent.api-recovery.acknowledged");
+      }
+      expect(container.querySelectorAll("[data-agent-api-recovery]")).toHaveLength(attempts.length);
+      expect(store.getChat(chat.id)?.apiAttempts).toEqual(attempts);
+    } finally { unmount(); }
+  });
+
+  test("does not give a new pending permission the receipt of an earlier missing call", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    const root = store.addMessage({ chatId: chat.id, role: "user", content: "Update both projects" })!;
+    const operationId = "bytebase.v1.ProjectService.UpdateProject";
+    const attempt: AgentApiAttempt = {
+      version: 1, id: "missing-write", ordinal: 1, startedAt: 1,
+      scopeKey: "workspaces/demo", userName: "member@example.com", chatId: chat.id,
+      runId: "write-run", rootUserMessageId: root.id, toolCallId: "reused-id",
+      logicalActionId: "old-approval", operationId,
+      path: "/bytebase.v1.ProjectService/UpdateProject", fingerprint: "a".repeat(64),
+      phase: "dispatching",
+    };
+    const call = { id: attempt.toolCallId, name: "call_api", arguments: JSON.stringify({ operationId }) };
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [call], metadata: { runId: attempt.runId } });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [call], metadata: { runId: attempt.runId } });
+    store.awaitUser(chat.id, { kind: "confirm", toolCallId: call.id, prompt: operationId, apiPermission: { actionId: "new-approval", operationId } });
+    useAgentStore.setState(s => { s.chats.find(c => c.id === chat.id)!.apiAttempts = [attempt]; });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      const cards = within(container).getAllByRole("button", { name: /call_api/ });
+      expect(cards[0]).toHaveTextContent("agent.api-recovery.unknown");
+      expect(cards[1]).not.toHaveTextContent("agent.api-recovery.unknown");
+      expect(cards[1].querySelector(".text-warning")).toBeNull();
+      expect(container.querySelector("[data-agent-api-recovery]")).toBeNull();
+    } finally { unmount(); }
   });
 
   test("reveals a new transcript storage failure without forcing scroll for pressure updates", () => {

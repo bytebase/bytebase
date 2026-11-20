@@ -96,6 +96,7 @@ const mocks = vi.hoisted(() => ({
   projectPoliciesByName: {} as Record<string, object>,
   availableProjects: [] as { name: string; title: string }[],
   workspace: { name: "workspaces/demo", title: "Demo workspace" },
+  currentUserEmail: "agent@example.com",
   aiEnabled: undefined as boolean | undefined,
   currentContext: "projects/orders" as string | undefined,
   currentPath: "/demo",
@@ -183,7 +184,11 @@ vi.mock("@/app/router", async (importOriginal) => ({
 
 vi.mock("@/stores/app", () => {
   const state = {
-    currentUser: { name: "users/me@example.com", email: "agent@example.com" },
+    currentUser: {
+      name: "users/me@example.com",
+      get email() { return mocks.currentUserEmail; },
+      get workspace() { return mocks.workspace?.name; },
+    },
     get serverInfo() {
       return { aiEnabled: mocks.aiEnabled };
     },
@@ -346,6 +351,7 @@ const getQueuedUserMessage = (chatId: string) =>
 
 beforeEach(async () => {
   vi.stubGlobal("localStorage", createMockStorage());
+  mocks.currentUserEmail = "agent@example.com";
   const initialState = createAgentStore().getState();
   useAgentStore.setState({
     workspaceName: "workspaces/demo",
@@ -2247,11 +2253,13 @@ describe("AgentInput", () => {
           ? { operationId, body: "{}", dom: { kind: "database-labels", changes: [], resourceName: "instances/i/databases/db" }, expiresAt: Date.now() + 300_000 }
           : undefined
       );
-      mocks.resolvePendingApiCall.mockImplementation(async ({ domContext, approved: allowed, signal }) => {
+      mocks.resolvePendingApiCall.mockImplementation(async ({ domContext, approved: allowed, signal, context }) => {
         expect(activeDom?.isCurrent()).toBe(false);
         expect(domContext?.runId).toBe(runIds[0]);
         expect(domContext?.signal).toBe(signal);
         expect(domContext?.isCurrent()).toBe(true);
+        expect(context).toMatchObject({ runId: runIds[0], toolCallId: ask.toolCallId, logicalActionId: ask.apiPermission!.actionId });
+        expect(context?.isCurrent()).toBe(true);
         expect(allowed).toBe(origin === "dom");
         return allowed ? '{"status":200,"response":{}}' : '{"called":false}';
       });
@@ -2260,9 +2268,11 @@ describe("AgentInput", () => {
       runIds.push(options.runId);
       if (runIds.length === 1) {
         if (origin !== "api") {
-          const [, executorOptions] = mocks.createToolExecutor.mock.lastCall as unknown as [unknown, { getDomContext(): AgentDomContext | undefined }];
-          activeDom = executorOptions.getDomContext();
+          const [, executorOptions] = mocks.createToolExecutor.mock.lastCall as unknown as Parameters<typeof createToolExecutor>;
+          activeDom = executorOptions?.getDomContext?.();
           expect(activeDom?.isCurrent()).toBe(true);
+          expect(executorOptions?.priorAttemptIds?.("f".repeat(64))).toEqual([]);
+          expect(executorOptions?.isApiScopeCurrent?.()).toBe(true);
         }
         const reservation = await options.reserveProviderAttempt();
         await options.onAttemptSettled({
@@ -5260,6 +5270,191 @@ describe("AgentInput", () => {
       }
     });
 
+    test.each(["same", "peer"])("a new request runs with its normal tools after unresolved history in the %s chat", async (owner) => {
+      enableAsynchronousRunRecovery();
+      const store = useAgentStore.getState();
+      const view = mountInput();
+      try {
+        const { normalizeAgentApiAttempts } = await import("../logic/apiAttempt");
+        const chatId = owner === "same" ? view.chatId : store.createChat({ select: false }).id;
+        act(() => useAgentStore.setState(s => {
+          s.chats.find(c => c.id === chatId)!.apiAttempts = normalizeAgentApiAttempts([null], chatId);
+        }));
+        await store.flushRunPersistence();
+        mocks.runAgentLoop.mockResolvedValue(success);
+        await submit(view, "Query the referenced database");
+        await waitForRuns(1);
+        await waitForLeaseRelease(view.chatId);
+        expect(view.userMessages()).toHaveLength(1);
+        expect(mocks.getToolDefinitions).not.toHaveBeenCalledWith(expect.objectContaining({ apiRecoveryOnly: true }));
+      } finally { view.unmount(); }
+    });
+
+    test("optional history sync failure does not create a repeat warning or restrict execution", async () => {
+      enableAsynchronousRunRecovery();
+      const view = mountInput();
+      const finish = deferRun();
+      const syncState = useAgentStore.getState().syncState;
+      try {
+        await submit(view, "Change the project title");
+        await waitForRuns(1);
+        const calls = mocks.createToolExecutor.mock.calls as unknown as Parameters<typeof createToolExecutor>[];
+        act(() => useAgentStore.setState({ syncState: () => false }));
+        expect(calls.at(-1)?.[1]?.priorAttemptIds?.("f".repeat(64))).toEqual([]);
+        expect(calls.at(-1)?.[1]?.isApiScopeCurrent?.()).toBe(true);
+      } finally {
+        act(() => useAgentStore.setState({ syncState }));
+        await act(async () => finish(success));
+        await waitForLeaseRelease(view.chatId);
+        view.unmount();
+      }
+    });
+    test("approval response loss continues the explanation and ordinary queued follow-up without replaying the request", async () => {
+      enableAsynchronousRunRecovery();
+      const state = useAgentStore.getState();
+      mocks.currentUserEmail = "me@example.com";
+      state.setWorkspaceName("workspaces/demo", "me@example.com");
+      const call = { operationId: "bytebase.v1.ProjectService.UpdateProject", path: "/bytebase.v1.ProjectService/UpdateProject", body: '{"project":{"name":"projects/orders","title":"Changed"}}' };
+      const ask: AgentPendingAsk = { kind:"confirm", toolCallId:"write", prompt:call.operationId,
+        apiPermission: { actionId:"exact-ticket", operationId:call.operationId } };
+      mocks.getPendingApiCallPreview.mockReturnValue({ ...call, expiresAt: Date.now() + 300_000 });
+      const { dispatchApprovedApiCall } = await import("../logic/tools/callApi");
+      const fetch = vi.fn().mockRejectedValue(new Error("response lost"));
+      vi.stubGlobal("fetch", fetch);
+      mocks.resolvePendingApiCall.mockImplementation(({context, signal}) => dispatchApprovedApiCall(call, { context, signal }));
+      const first = deferRun(callbacks => callbacks.onAssistantMessage?.({ toolCalls:[{id:"write", name:"call_api", arguments:JSON.stringify({operationId:call.operationId})}] }));
+      const continuation = deferRun();
+      mocks.runAgentLoop.mockResolvedValue(success);
+      const view = mountInput();
+      try {
+        await submit(view, "Change title"); await waitForRuns(1);
+        await submit(view, "dependent follow-up");
+        await act(async () => { first({kind:"awaiting_user", ask}); });
+        await waitForLeaseRelease(view.chatId);
+        await act(async () => within(view.container).getByRole("button", {name:"agent.api-permission-allow"}).click());
+        await waitForRuns(2);
+        expect(fetch).toHaveBeenCalledTimes(1);
+        const [attempt] = state.getChat(view.chatId)!.apiAttempts!;
+        expect(attempt).toMatchObject({ phase:"settled", toolCallId:"write", logicalActionId:"exact-ticket", execution:{result:"unknown", effects:"possible"} });
+        expect(state.getMessages(view.chatId).filter(m => m.toolCallId === "write")).toHaveLength(1);
+        expect(state.getMessages(view.chatId)).toEqual(expect.arrayContaining([expect.objectContaining({ role: "tool", content: expect.stringContaining('"result":"unknown"') })]));
+        expect(state.getChat(view.chatId)?.status).toBe("running");
+        expect(useAgentStore.getState().followUpQueuesByChatId[view.chatId]?.messages.map(m => m.text)).toEqual(["dependent follow-up"]);
+        await act(async () => continuation(success));
+        await waitForRuns(3);
+        await waitForLeaseRelease(view.chatId);
+        expect(view.userMessages().map(m => m.content)).toEqual(["Change title", "dependent follow-up"]);
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(state.getChat(view.chatId)?.status).toBe("idle");
+      } finally { view.unmount(); }
+    });
+    test("keeps and observes a later READ result with a settled write's provider ID", async () => {
+      enableAsynchronousRunRecovery();
+      const state = useAgentStore.getState();
+      mocks.currentUserEmail = "me@example.com";
+      state.setWorkspaceName("workspaces/demo", "me@example.com");
+      const observe = vi.spyOn(
+        await import("../logic/handoff"),
+        "collectAgentHandoffs"
+      );
+      const call = {
+        operationId: "bytebase.v1.ProjectService.UpdateProject",
+        path: "/bytebase.v1.ProjectService/UpdateProject",
+        body: '{"project":{"name":"projects/orders","title":"Changed"}}',
+      };
+      const { agentApiExecutionEvidence } = await import("../logic/apiExecution");
+      const readResult = JSON.stringify({
+        status: 200,
+        response: { name: "projects/orders", title: "Changed" },
+        agentExecution: agentApiExecutionEvidence("rpc-success", {
+          httpStatus: 200,
+        }),
+      });
+      const fetch = vi.fn(
+        async () =>
+          new Response('{"name":"projects/orders","title":"Changed"}', {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          })
+      );
+      vi.stubGlobal("fetch", fetch);
+      const { dispatchApprovedApiCall } = await import("../logic/tools/callApi");
+      let writeResult = "";
+      const view = mountInput();
+      mocks.runAgentLoop.mockImplementationOnce(
+        async (_history, _tools, _executor, callbacks, signal, options) => {
+          const toolCallId = "reused-api-id";
+          callbacks.onAssistantMessage({
+            toolCalls: [{
+              id: toolCallId,
+              name: "call_api",
+              arguments: JSON.stringify({ operationId: call.operationId }),
+            }],
+          });
+          const context = state.createApiDispatchContext({
+            chatId: view.chatId,
+            runId: options.runId!,
+            rootUserMessageId: view.userMessages()[0].id,
+            toolCallId,
+            logicalActionId: "approved-title-change",
+          });
+          writeResult = await dispatchApprovedApiCall(call, {
+            context: context!,
+            signal,
+          });
+          await callbacks.onToolResult(toolCallId, writeResult);
+          await callbacks.onToolResult(toolCallId, writeResult);
+          callbacks.onAssistantMessage({
+            toolCalls: [{
+              id: toolCallId,
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "bytebase.v1.ProjectService.GetProject",
+              }),
+            }],
+          });
+          await callbacks.onToolResult(toolCallId, readResult);
+          callbacks.onText("The project title was changed and verified.");
+          return success;
+        }
+      );
+      try {
+        await submit(view, "Change and verify the project title");
+        await waitForRuns(1);
+        await waitForLeaseRelease(view.chatId);
+        const [attempt] = state.getChat(view.chatId)!.apiAttempts!;
+        expect(attempt).toMatchObject({
+          phase: "settled",
+          toolCallId: "reused-api-id",
+        });
+        expect(
+          state.getApiAttemptToolResult(view.chatId, attempt.id)?.content
+        ).toBe(writeResult);
+        const results = state.getMessages(view.chatId).filter(
+          (message) =>
+            message.role === "tool" &&
+            message.toolCallId === "reused-api-id"
+        );
+        expect(results.map((message) => message.content)).toEqual([
+          writeResult,
+          readResult,
+        ]);
+        expect(observe).not.toHaveBeenCalledWith(
+          "call_api",
+          writeResult,
+          expect.anything()
+        );
+        expect(observe).toHaveBeenCalledWith(
+          "call_api",
+          readResult,
+          expect.objectContaining({ projectName: "projects/orders" })
+        );
+        expect(fetch).toHaveBeenCalledOnce();
+      } finally {
+        view.unmount();
+      }
+    });
+
     test("holds follow-ups for an API approval until its own turn finishes", async () => {
       enableAsynchronousRunRecovery();
       const ask: AgentPendingAsk = {
@@ -5274,6 +5469,7 @@ describe("AgentInput", () => {
       mocks.getPendingApiCallPreview.mockReturnValue({
         ...ask.apiPermission,
         body: '{"project":{"name":"projects/orders","title":"Orders"}}',
+        priorAttemptIds: ["externally-reviewed-attempt"],
         expiresAt: Date.now() + 300_000,
       });
       const finishFirst = deferRun((callbacks) => {
@@ -5310,6 +5506,7 @@ describe("AgentInput", () => {
         const approve = within(view.container).getByRole("button", {
           name: "agent.api-permission-allow",
         });
+        expect(view.container).toHaveTextContent("agent.api-recovery.repeat-risk");
         await act(async () => approve.click());
         await waitForRuns(2);
         expect(mocks.resolvePendingApiCall).toHaveBeenCalledOnce();
@@ -10575,12 +10772,16 @@ describe("AgentInput", () => {
       }
     });
 
-    test("keeps no-run Retry and subsequent Resend free of stale continuation warnings", async () => {
+    test.each([false, true])("keeps explicit Retry and Resend usable, prior unknown=%s", async (priorUnknown) => {
       enableRunRecovery();
       mocks.runAgentLoop.mockResolvedValue({ kind: "completed", success: true, totalTokensUsed: 0 });
       const store = useAgentStore.getState();
       const chat = store.ensureCurrentChat();
       const original = store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" })!;
+      if (priorUnknown) {
+        const { normalizeAgentApiAttempts } = await import("../logic/apiAttempt");
+        useAgentStore.setState(s => { s.chats.find(c => c.id === chat.id)!.apiAttempts = normalizeAgentApiAttempts([null], chat.id); });
+      }
       store.setChatStatus(chat.id, "error", { lastError: "Previous request failed" });
       store.setDraft(chat.id, { text: "Keep my next question" });
       await store.flushRunPersistence();
@@ -14019,6 +14220,7 @@ describe("AgentInput", () => {
     mocks.getPendingApiCallPreview.mockReturnValue({
       operationId: "bytebase.v1.DatabaseService.UpdateDatabase",
       body: '{"database":{"name":"instances/example/databases/app"},"updateMask":"labels"}',
+      priorAttemptIds: ["uncertain-dom-attempt"],
       expiresAt: Date.now() + 60_000,
       dom: {
         kind,
@@ -14067,6 +14269,7 @@ describe("AgentInput", () => {
     expect(details?.textContent).toContain('"updateMask": "labels"');
     expect(screen.getAllByRole("button", { name: "agent.api-permission-allow" })).toHaveLength(1);
     expect(screen.getAllByRole("button", { name: "agent.api-permission-deny" })).toHaveLength(1);
+    expect(view.container).toHaveTextContent("agent.api-recovery.repeat-risk");
     expect(screen.getByRole("timer")).toBeInTheDocument();
     expect(document.activeElement).toBe(focusTarget);
     expect(fetch).not.toHaveBeenCalled();

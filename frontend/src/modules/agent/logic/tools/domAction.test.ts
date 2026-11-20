@@ -8,8 +8,9 @@ import {
   type AgentDomContext,
   registerAgentDomOwner,
 } from "../../dom/interactionRegistry";
+import * as apiAttempt from "../apiAttempt";
 import { checkPreparedApiPermission } from "./apiPermissionPreflight";
-import { dispatchPreparedApiCall } from "./callApi";
+import { dispatchApprovedApiCall, dispatchPreparedApiCall } from "./callApi";
 import { createDomActionTool } from "./domAction";
 import { createToolExecutor } from "./index";
 import {
@@ -19,6 +20,7 @@ import {
 
 vi.mock("./callApi", async (original) => ({
   ...(await original<typeof import("./callApi")>()),
+  dispatchApprovedApiCall: vi.fn(),
   dispatchPreparedApiCall: vi.fn(),
 }));
 vi.mock("./apiMethodClass", async (original) => ({
@@ -86,6 +88,7 @@ test.each([
   "preparation denied",
   "IAM changed",
   "revision changed during IAM",
+  "revision changed during fingerprint",
   "other project",
 ])(
   "a registered persistence action classified READ requires a fresh exact API permission: %s",
@@ -114,6 +117,13 @@ test.each([
         revision = "2";
         return { kind: "allowed" };
       });
+    if (state === "revision changed during fingerprint")
+      vi.spyOn(apiAttempt, "fingerprintPreparedApiCall").mockImplementationOnce(
+        async () => {
+          revision = "2";
+          return "fingerprint";
+        }
+      );
     const dispose = registerAgentDomOwner({
       ownerId: "labels",
       actor: ctx.actor,
@@ -166,6 +176,8 @@ test.each([
         workspaceName: ctx.workspace,
         context: context.projectName,
         getDomContext: () => context,
+        priorAttemptIds: () => ["earlier-unknown-attempt"],
+        isApiScopeCurrent: () => true,
       });
       const result = await execute(
         "dom_action",
@@ -173,8 +185,16 @@ test.each([
         "original-dom"
       );
       expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+      expect(dispatchApprovedApiCall).not.toHaveBeenCalled();
       if (state !== "fresh") {
         expect(result.kind).toBe("tool_result");
+        if (state === "IAM changed" && result.kind === "tool_result")
+          expect(JSON.parse(result.result)).toMatchObject({
+            agentExecution: {
+              result: "not-sent",
+              reason: "preflight-rejected",
+            },
+          });
         if (state === "other project")
           expect(validateFresh).not.toHaveBeenCalled();
         return;
@@ -201,11 +221,12 @@ test.each([
       ).toMatchObject({
         body: call.body,
         dom: { resourceName, kind: "database-labels" },
+        priorAttemptIds: ["earlier-unknown-attempt"],
       });
       expect(validateFresh).not.toHaveBeenCalled();
       expect(checkPreparedApiPermission).toHaveBeenCalledOnce();
       expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
-      vi.mocked(dispatchPreparedApiCall).mockResolvedValueOnce(
+      vi.mocked(dispatchApprovedApiCall).mockResolvedValueOnce(
         JSON.stringify({ status: 200, response: {} })
       );
       const approved = await resolvePendingApiCall({
@@ -216,10 +237,12 @@ test.each([
       expect(JSON.parse(approved)).toMatchObject({ status: 200 });
       expect(validateFresh).toHaveBeenCalledOnce();
       expect(checkPreparedApiPermission).toHaveBeenCalledTimes(2);
-      expect(dispatchPreparedApiCall).toHaveBeenCalledExactlyOnceWith(
+      expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+      expect(dispatchApprovedApiCall).toHaveBeenCalledExactlyOnceWith(
         call,
-        undefined,
-        expect.objectContaining({ beforeSend: expect.any(Function) })
+        expect.objectContaining({
+          dom: expect.objectContaining({ beforeSend: expect.any(Function) }),
+        })
       );
     } finally {
       dispose();

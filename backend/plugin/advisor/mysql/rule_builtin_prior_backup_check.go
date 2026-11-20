@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -31,23 +32,14 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, nil
 	}
 
-	var adviceList []*storepb.Advice
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 	title := checkCtx.Rule.Type.String()
 
-	if checkCtx.StatementsTotalSize > common.MaxSheetCheckSize {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:        level,
-			Title:         title,
-			Content:       fmt.Sprintf("The size of the SQL statements exceeds the maximum limit of %d bytes for backup", common.MaxSheetCheckSize),
-			Code:          code.BuiltinPriorBackupCheck.Int32(),
-			StartPosition: nil,
-		})
-	}
-
+	var stmts []mysqlv1review.PriorBackupStatement
+	var parsedStmts []base.ParsedStatement
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.AST == nil {
 			continue
@@ -56,102 +48,62 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		if !ok {
 			continue
 		}
+		stmts = append(stmts, mysqlv1review.PriorBackupStatement{Node: node, Text: stmt.Text})
+		parsedStmts = append(parsedStmts, stmt)
+	}
 
-		if isDDL(node) {
+	databaseName := common.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
+	schema := v1review.Schema{Metadata: checkCtx.DBSchema, ObjectCaseSensitive: checkCtx.IsObjectCaseSensitive}
+	facts := v1review.PriorBackupFacts{
+		TotalSize:      checkCtx.StatementsTotalSize,
+		MaxSize:        common.MaxSheetCheckSize,
+		Database:       databaseName,
+		DatabaseExists: advisor.DatabaseExists(ctx, checkCtx, databaseName),
+	}
+
+	findings, err := mysqlv1review.PriorBackupCheck(stmts, schema, facts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare transformation")
+	}
+
+	var adviceList []*storepb.Advice
+	for _, f := range findings {
+		switch f.Code {
+		case v1review.PriorBackupScriptTooLarge:
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Title:         title,
+				Content:       fmt.Sprintf("The size of the SQL statements exceeds the maximum limit of %s bytes for backup", f.Value),
+				Code:          code.BuiltinPriorBackupCheck.Int32(),
+				StartPosition: nil,
+			})
+		case v1review.PriorBackupMixedDDLAndDML:
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:        level,
 				Title:         title,
 				Content:       "Prior backup cannot deal with mixed DDL and DML statements",
 				Code:          code.BuiltinPriorBackupCheck.Int32(),
-				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine()),
+				StartPosition: base.ConvertANTLRLineToPosition(parsedStmts[f.Statement].BaseLine()),
 			})
-		}
-	}
-
-	databaseName := common.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
-	if !advisor.DatabaseExists(ctx, checkCtx, databaseName) {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:        level,
-			Title:         title,
-			Content:       fmt.Sprintf("Need database %q to do prior backup but it does not exist", databaseName),
-			Code:          code.DatabaseNotExists.Int32(),
-			StartPosition: nil,
-		})
-	}
-
-	tableReferences, err := prepareTransformation(checkCtx.DBSchema.Name, checkCtx.ParsedStatements)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to prepare transformation")
-	}
-	groupByTable := make(map[string][]*mysqlparser.TableReference)
-	for _, table := range tableReferences {
-		key := fmt.Sprintf("%s.%s", table.Database, table.Table)
-		groupByTable[key] = append(groupByTable[key], table)
-	}
-
-	for key, list := range groupByTable {
-		stmtType := mysqlparser.StatementTypeUnknown
-		for _, item := range list {
-			if stmtType == mysqlparser.StatementTypeUnknown {
-				stmtType = item.StatementType
-			}
-			if stmtType != item.StatementType {
-				adviceList = append(adviceList, &storepb.Advice{
-					Status:        level,
-					Title:         title,
-					Content:       fmt.Sprintf("Prior backup cannot handle mixed DML statements on the same table %q", key),
-					Code:          code.BuiltinPriorBackupCheck.Int32(),
-					StartPosition: nil,
-				})
-				break
-			}
+		case v1review.PriorBackupDatabaseMissing:
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Title:         title,
+				Content:       fmt.Sprintf("Need database %q to do prior backup but it does not exist", f.Name),
+				Code:          code.DatabaseNotExists.Int32(),
+				StartPosition: nil,
+			})
+		case v1review.PriorBackupMixedDMLOnTable:
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Title:         title,
+				Content:       fmt.Sprintf("Prior backup cannot handle mixed DML statements on the same table %q", f.Table),
+				Code:          code.BuiltinPriorBackupCheck.Int32(),
+				StartPosition: nil,
+			})
+		default:
 		}
 	}
 
 	return adviceList, nil
-}
-
-func prepareTransformation(databaseName string, parsedStatements []base.ParsedStatement) ([]*mysqlparser.TableReference, error) {
-	var result []*mysqlparser.TableReference
-	for i, stmt := range parsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		node, ok := mysqlparser.GetNode(stmt.AST)
-		if !ok {
-			continue
-		}
-		tables, err := mysqlparser.ExtractTables(databaseName, node, stmt.Text, i, nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to extract tables")
-		}
-		for _, table := range tables {
-			result = append(result, &mysqlparser.TableReference{
-				Database:      table.Table.Database,
-				Table:         table.Table.Table,
-				Alias:         table.Table.Alias,
-				StatementType: table.Table.StatementType,
-			})
-		}
-	}
-
-	return result, nil
-}
-
-// isDDL returns true if the omni AST node represents a DDL statement.
-func isDDL(node ast.Node) bool {
-	switch node.(type) {
-	case *ast.CreateTableStmt, *ast.CreateDatabaseStmt, *ast.CreateIndexStmt,
-		*ast.CreateViewStmt, *ast.CreateTriggerStmt, *ast.CreateEventStmt,
-		*ast.CreateFunctionStmt,
-		*ast.AlterTableStmt, *ast.AlterDatabaseStmt, *ast.AlterViewStmt,
-		*ast.AlterEventStmt,
-		*ast.DropTableStmt, *ast.DropDatabaseStmt, *ast.DropIndexStmt,
-		*ast.DropViewStmt, *ast.DropTriggerStmt, *ast.DropEventStmt,
-		*ast.DropRoutineStmt,
-		*ast.RenameTableStmt, *ast.TruncateStmt:
-		return true
-	default:
-		return false
-	}
 }

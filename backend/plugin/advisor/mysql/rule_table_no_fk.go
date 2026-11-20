@@ -46,7 +46,7 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		}
 		for _, f := range mysqlv1review.TableNoForeignKey([]ast.Node{node}) {
 			// V1 added the statement's base line twice: once itself and
-			// once more in BaseRule.AddAdvice.
+			// once more when it adjusted the advice position.
 			position := base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f)))
 			position.Line += int32(stmt.BaseLine())
 			adviceList = append(adviceList, &storepb.Advice{

@@ -4,12 +4,14 @@ import {
   type AgentDomContext,
   registerAgentDomOwner,
 } from "../../dom/interactionRegistry";
+import { agentApiExecutionEvidence } from "../apiExecution";
 import type { PreparedApiCall } from "./callApi";
 
 const mocks = vi.hoisted(() => ({
   checkPreparedApiPermission: vi.fn(),
   dispatchPreparedApiCall: vi.fn(),
   validateIssueDecisionPermission: vi.fn(),
+  refreshTokens: vi.fn(),
   workspace: "workspaces/example",
 }));
 
@@ -26,8 +28,12 @@ vi.mock("./apiPermissionPreflight", () => ({
   checkPreparedApiPermission: mocks.checkPreparedApiPermission,
 }));
 
+vi.mock("@/api/refreshToken", () => ({
+  refreshTokens: mocks.refreshTokens,
+}));
+
 vi.mock("./callApi", () => ({
-  dispatchPreparedApiCall: mocks.dispatchPreparedApiCall,
+  dispatchApprovedApiCall: mocks.dispatchPreparedApiCall,
 }));
 vi.mock("./issueDecisionPermission", () => ({
   validateIssueDecisionPermission: mocks.validateIssueDecisionPermission,
@@ -36,8 +42,28 @@ vi.mock("./issueDecisionPermission", () => ({
 import {
   createPendingApiCall,
   getPendingApiCallPreview,
-  resolvePendingApiCall,
+  resolvePendingApiCall as resolveApproval,
 } from "./pendingApiCall";
+
+const resolvePendingApiCall = (args: Parameters<typeof resolveApproval>[0]) =>
+  resolveApproval({
+    ...args,
+    context: args.context ?? {
+      chatId: args.chatId,
+      scopeKey: "scope",
+      userName: args.userName,
+      toolCallId: args.toolCallId,
+      logicalActionId: args.actionId,
+      runId: "run",
+      rootUserMessageId: "root",
+      isCurrent: () => true,
+      beginAgentApiAttempt: async () => ({
+        kind: "admitted",
+        attemptId: "attempt",
+      }),
+      settleAgentApiAttempt: async () => true,
+    },
+  });
 
 const makeCall = (): PreparedApiCall => ({
   operationId: "bytebase.v1.ProjectService.UpdateProject",
@@ -116,8 +142,9 @@ async function domFixture(body?: Record<string, unknown>) {
     toolCallId: "original-dom",
     userName: ctx.actor,
   };
-  const mint = () =>
+  const mint = (options?: { priorAttemptIds: readonly string[] }) =>
     createPendingApiCall({
+      ...options,
       ...identity,
       call: prepared.call,
       domOrigin: prepared.origin,
@@ -137,6 +164,23 @@ async function domFixture(body?: Record<string, unknown>) {
 }
 
 describe("pendingApiCall", () => {
+  test("a DOM permission retains the canonical preview and prior outcome warning", async () => {
+    const f = await domFixture();
+    const priorAttemptIds = ["prior-attempt"];
+    const { actionId } = f.mint({ priorAttemptIds });
+    priorAttemptIds.push("later-attempt");
+    expect(
+      getPendingApiCallPreview({
+        ...f.identity,
+        actionId,
+        domContext: f.ctx,
+      })
+    ).toMatchObject({
+      body: f.prepared.call.body,
+      priorAttemptIds: ["prior-attempt"],
+      dom: { kind: "database-labels", resourceName: f.snapshot.resourceName },
+    });
+  });
   test("a dismissed stale preview reports not called rather than user denial", async () => {
     const f = await domFixture(),
       { actionId } = f.mint();
@@ -167,13 +211,13 @@ describe("pendingApiCall", () => {
       const fetch = vi.fn(async () => new Response("{}", { status: 200 }));
       vi.stubGlobal("fetch", fetch);
       mocks.dispatchPreparedApiCall.mockImplementationOnce(
-        (...args: Parameters<typeof sender.dispatchPreparedApiCall>) => {
+        (...args: Parameters<typeof sender.dispatchApprovedApiCall>) => {
           if (change === "expiry")
             vi.spyOn(Date, "now").mockReturnValue(expiresAt);
           if (change === "revision") f.snapshot.revision = "new";
           if (change === "unchanged")
             f.button.setAttribute("title", "unrelated");
-          return sender.dispatchPreparedApiCall(...args);
+          return sender.dispatchApprovedApiCall(...args);
         }
       );
       try {
@@ -200,6 +244,184 @@ describe("pendingApiCall", () => {
       }
     }
   );
+  test.each(["revision", "expiry", "workspace", "canceled"])(
+    "a DOM approval rechecks %s after receipt admission and settles without a POST",
+    async (change) => {
+      const f = await domFixture();
+      const { actionId, expiresAt } = f.mint();
+      const sender =
+        await vi.importActual<typeof import("./callApi")>("./callApi");
+      const fetch = vi.fn();
+      vi.stubGlobal("fetch", fetch);
+      mocks.dispatchPreparedApiCall.mockImplementationOnce(
+        sender.dispatchApprovedApiCall
+      );
+      const controller = new AbortController();
+      const settle = vi.fn(async () => true);
+      try {
+        const result = JSON.parse(
+          await resolveApproval({
+            ...f.identity,
+            actionId,
+            approved: true,
+            domContext: f.ctx,
+            signal: controller.signal,
+            context: {
+              scopeKey: "scope",
+              userName: f.identity.userName,
+              chatId: f.identity.chatId,
+              toolCallId: f.identity.toolCallId,
+              logicalActionId: actionId,
+              runId: "run",
+              rootUserMessageId: "root",
+              isCurrent: () => true,
+              beginAgentApiAttempt: async () => {
+                if (change === "revision") f.snapshot.revision = "new";
+                if (change === "expiry")
+                  vi.spyOn(Date, "now").mockReturnValue(expiresAt);
+                if (change === "workspace")
+                  mocks.workspace = "workspaces/other";
+                if (change === "canceled") controller.abort();
+                return { kind: "admitted", attemptId: "dom-attempt" };
+              },
+              settleAgentApiAttempt: settle,
+            },
+          })
+        );
+        expect(result.agentExecution).toMatchObject({
+          result: "not-sent",
+          effects: "none",
+          attemptId: "dom-attempt",
+        });
+        expect(settle).toHaveBeenCalledExactlyOnceWith(
+          "dom-attempt",
+          result.agentExecution,
+          expect.any(String)
+        );
+        expect(fetch).not.toHaveBeenCalled();
+        expect(f.refresh).not.toHaveBeenCalled();
+        expect(
+          JSON.parse(
+            await resolveApproval({
+              ...f.identity,
+              actionId,
+              approved: true,
+              domContext: f.ctx,
+            })
+          ).agentExecution.result
+        ).toBe("not-sent");
+        expect(fetch).not.toHaveBeenCalled();
+      } finally {
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+      }
+    }
+  );
+  test.each([
+    "rpc-success",
+    "unverified-response",
+    "fetch-failed",
+    "canceled-after-dispatch",
+    "protected-401",
+    "receipt-start-failed",
+    "receipt-settlement-failed",
+  ])("a DOM approval preserves %s without replaying", async (mode) => {
+    const f = await domFixture();
+    const { actionId } = f.mint();
+    const sender =
+      await vi.importActual<typeof import("./callApi")>("./callApi");
+    mocks.dispatchPreparedApiCall.mockImplementationOnce(
+      sender.dispatchApprovedApiCall
+    );
+    const controller = new AbortController();
+    const fetch = vi.fn(async () => {
+      if (mode === "fetch-failed") throw new TypeError("Response lost");
+      if (mode === "canceled-after-dispatch") {
+        controller.abort();
+        throw new DOMException("Request aborted", "AbortError");
+      }
+      return new Response(
+        JSON.stringify(
+          mode === "protected-401"
+            ? { code: "unauthenticated", message: "Session expired" }
+            : { name: f.snapshot.resourceName }
+        ),
+        {
+          status: mode === "protected-401" ? 401 : 200,
+          headers: {
+            "Content-Type":
+              mode === "unverified-response"
+                ? "text/plain"
+                : "application/json",
+          },
+        }
+      );
+    });
+    vi.stubGlobal("fetch", fetch);
+    const settle = vi.fn(async () => mode !== "receipt-settlement-failed");
+    const context = {
+      scopeKey: "scope",
+      userName: f.identity.userName,
+      chatId: f.identity.chatId,
+      toolCallId: f.identity.toolCallId,
+      logicalActionId: actionId,
+      runId: "run",
+      rootUserMessageId: "root",
+      isCurrent: () => true,
+      beginAgentApiAttempt: async () => {
+        if (mode === "receipt-start-failed")
+          throw new Error("Receipt unavailable");
+        return { kind: "admitted" as const, attemptId: "dom-attempt" };
+      },
+      settleAgentApiAttempt: settle,
+    };
+    const args = {
+      ...f.identity,
+      actionId,
+      approved: true,
+      domContext: f.ctx,
+      signal: controller.signal,
+      context,
+    };
+    try {
+      const result = JSON.parse(await resolveApproval(args));
+      const succeeded = [
+        "rpc-success",
+        "receipt-start-failed",
+        "receipt-settlement-failed",
+      ].includes(mode);
+      expect(result.agentExecution).toMatchObject({
+        result: succeeded
+          ? "succeeded"
+          : mode === "protected-401"
+            ? "failed"
+            : "unknown",
+        reason: succeeded
+          ? "rpc-success"
+          : mode === "protected-401"
+            ? "rpc-error"
+            : mode,
+      });
+      expect(f.refresh).toHaveBeenCalledTimes(succeeded ? 1 : 0);
+      expect(fetch).toHaveBeenCalledExactlyOnceWith(
+        expect.stringContaining(f.prepared.call.path),
+        expect.objectContaining({ body: f.prepared.call.body })
+      );
+      expect(settle).toHaveBeenCalledTimes(
+        mode === "receipt-start-failed" ? 0 : 1
+      );
+      expect(result.agentSettlementSaved).toBe(
+        mode === "receipt-settlement-failed" ? false : undefined
+      );
+      expect(mocks.refreshTokens).not.toHaveBeenCalled();
+      expect(
+        JSON.parse(await resolveApproval(args)).agentExecution.result
+      ).toBe("not-sent");
+      expect(fetch).toHaveBeenCalledOnce();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   test.each(["owner gone", "new account", "response failed"])(
     "skips owner refresh when %s without discarding the known response",
     async (change) => {
@@ -210,7 +432,15 @@ describe("pendingApiCall", () => {
       mocks.dispatchPreparedApiCall.mockImplementationOnce(async () => {
         if (change === "owner gone") f.dispose();
         if (change === "new account") current = false;
-        return JSON.stringify({ status, response: { known: true } });
+        return JSON.stringify({
+          status,
+          response: { known: true },
+          ...(status === 200 && {
+            agentExecution: agentApiExecutionEvidence("rpc-success", {
+              httpStatus: status,
+            }),
+          }),
+        });
       });
       const args = {
         ...f.identity,
@@ -221,6 +451,11 @@ describe("pendingApiCall", () => {
       expect(JSON.parse(await resolvePendingApiCall(args))).toEqual({
         status,
         response: { known: true },
+        ...(status === 200 && {
+          agentExecution: agentApiExecutionEvidence("rpc-success", {
+            httpStatus: status,
+          }),
+        }),
       });
       expect(f.refresh).not.toHaveBeenCalled();
       expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledTimes(1);
@@ -334,7 +569,13 @@ describe("pendingApiCall", () => {
     const { actionId } = f.mint();
     mocks.dispatchPreparedApiCall.mockImplementationOnce(async () => {
       f.snapshot.revision = "newer draft";
-      return '{"status":200,"response":{"known":true}}';
+      return JSON.stringify({
+        status: 200,
+        response: { known: true },
+        agentExecution: agentApiExecutionEvidence("rpc-success", {
+          httpStatus: 200,
+        }),
+      });
     });
     f.refresh.mockRejectedValue(new Error("private data"));
     const args = {
@@ -346,11 +587,51 @@ describe("pendingApiCall", () => {
     expect(JSON.parse(await resolvePendingApiCall(args))).toEqual({
       status: 200,
       response: { known: true },
+      agentExecution: agentApiExecutionEvidence("rpc-success", {
+        httpStatus: 200,
+      }),
       domRefresh: "failed",
     });
     expect(JSON.parse(await resolvePendingApiCall(args)).error).toMatch(/used/);
     expect(f.refresh).toHaveBeenCalledOnce();
     expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledTimes(1);
+  });
+  test("a normal single-use approval dispatches without a receipt context", async () => {
+    const owner = { chatId: "chat", toolCallId: "tool", userName: "users/1" };
+    const { actionId } = createPendingApiCall({ ...owner, call: makeCall() });
+    await resolveApproval({ ...owner, actionId, approved: true });
+    expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledTimes(1);
+    const replay = await resolveApproval({
+      ...owner,
+      actionId,
+      approved: true,
+    });
+    expect(JSON.parse(replay).error).toMatch(/already used/);
+    expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledTimes(1);
+  });
+  test("an unmanaged permission cannot follow an actor or workspace change during preflight", async () => {
+    const identity = {
+      chatId: "legacy",
+      toolCallId: "query",
+      userName: "users/member",
+    };
+    let current = true;
+    const permission = createPendingApiCall({
+      ...identity,
+      call: makeCall(),
+      isScopeCurrent: () => current,
+    });
+    mocks.checkPreparedApiPermission.mockImplementationOnce(async () => {
+      current = false;
+      return { kind: "allowed" };
+    });
+    const result = await resolveApproval({
+      ...identity,
+      ...permission,
+      approved: true,
+    });
+    expect(JSON.parse(result).agentExecution.result).toBe("not-sent");
+    expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
   test.each(["valid", "malformed"])(
     "consumes an approved %s diagnostic action without dispatch",
@@ -395,6 +676,7 @@ describe("pendingApiCall", () => {
   beforeEach(() => {
     vi.useRealTimers();
     mocks.workspace = "workspaces/example";
+    mocks.refreshTokens.mockReset();
     mocks.checkPreparedApiPermission.mockReset();
     mocks.checkPreparedApiPermission.mockResolvedValue({ kind: "allowed" });
     mocks.dispatchPreparedApiCall.mockReset();
@@ -444,7 +726,10 @@ describe("pendingApiCall", () => {
       userName: "users/1",
       approved: true,
     });
-    expect(JSON.parse(result)).toMatchObject({ status: 403 });
+    expect(JSON.parse(result)).toMatchObject({
+      error: "Not called: bb.projects.update is not granted.",
+      agentExecution: { result: "not-sent", reason: "preflight-rejected" },
+    });
     expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
 
@@ -482,7 +767,13 @@ describe("pendingApiCall", () => {
 
     expect(JSON.parse(result)).toEqual({ status: 200, response: {} });
     expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledExactlyOnceWith(
-      expected
+      expected,
+      expect.objectContaining({
+        context: expect.objectContaining({
+          chatId: "chat-1",
+          logicalActionId: actionId,
+        }),
+      })
     );
     await resolvePendingApiCall({
       actionId,
@@ -719,7 +1010,12 @@ describe("pendingApiCall", () => {
       approved: true,
     });
     expect(mocks.validateIssueDecisionPermission).toHaveBeenCalledOnce();
-    expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledExactlyOnceWith(call);
+    expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledExactlyOnceWith(
+      call,
+      expect.objectContaining({
+        context: expect.objectContaining({ logicalActionId: allowed.actionId }),
+      })
+    );
   });
 
   test("does not dispatch when the approved request was stopped before execution", async () => {

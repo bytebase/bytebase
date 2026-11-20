@@ -84,6 +84,6 @@ func scriptNodes(parsed []base.ParsedStatement) ([]base.ParsedStatement, []ast.N
 // first non-blank line when the finding has no Search or the text lacks it.
 func findingPosition(stmt base.ParsedStatement, f v1review.Finding) *storepb.Position {
 	return &storepb.Position{
-		Line: (&BaseRule{StmtText: stmt.Text}).FindLineByName(f.Search) + int32(stmt.BaseLine()),
+		Line: findLineByName(stmt.Text, f.Search) + int32(stmt.BaseLine()),
 	}
 }

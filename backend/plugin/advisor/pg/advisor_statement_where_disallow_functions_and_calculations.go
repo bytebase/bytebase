@@ -63,7 +63,6 @@ func (*StatementWhereDisallowFunctionsAndCalculationsAdvisor) Check(_ context.Co
 		if !ok {
 			continue
 		}
-		rule := &BaseRule{StmtText: stmt.Text}
 		for _, f := range pgv1review.StatementWhereDisallowFunctionsAndCalculations([]ast.Node{node}, schema, searchPath) {
 			var content string
 			switch f.Code {
@@ -83,7 +82,7 @@ func (*StatementWhereDisallowFunctionsAndCalculationsAdvisor) Check(_ context.Co
 				Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
 				Title:         title,
 				Content:       content,
-				StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + rule.LocToLine(loc)},
+				StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + locToLine(stmt.Text, loc)},
 			})
 		}
 	}

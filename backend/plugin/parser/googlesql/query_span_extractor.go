@@ -344,8 +344,7 @@ func (q *QuerySpanExtractor) expandColumnInfos(ctx context.Context, infos []anal
 				// IsPlainField is carried from omni: a `SELECT *` / `rel.*` expansion
 				// column over a base table is plain; an explicit select-list item, a
 				// set-op merge, and a join-left column are not (omni already applied
-				// these rules), matching base.PhysicalTable.GetQuerySpanResult vs the
-				// rewrapped PseudoTable columns.
+				// these rules).
 				IsPlainField: r.IsPlain,
 			})
 		}
