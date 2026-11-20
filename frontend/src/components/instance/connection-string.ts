@@ -1313,6 +1313,11 @@ function parseMongoConnectionString(
       : undefined);
 
   if (isSrv) {
+    // `DataSource.useSsl = false` on SRV preserves the MongoDB driver's native
+    // SRV TLS default rather than forcing plaintext, so reject explicit opt-out.
+    if (tls?.useSsl === false) {
+      return undefined;
+    }
     return {
       host: uri.hosts[0].host,
       port: "",

@@ -886,13 +886,35 @@ describe("parseConnectionString - MongoDB", () => {
         Engine.MONGODB,
         "mongodb+srv://app:pass@cluster0.example.mongodb.net/?tls=false&tlsInsecure=true"
       )
+    ).toBeUndefined();
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb+srv://app:pass@cluster0.example.mongodb.net/?tls=false"
+      )
+    ).toBeUndefined();
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb+srv://app:pass@cluster0.example.mongodb.net/?ssl=false"
+      )
+    ).toBeUndefined();
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb://app:pass@db.example.com/?tls=false"
+      )
     ).toEqual({
-      host: "cluster0.example.mongodb.net",
-      port: "",
+      host: "db.example.com",
+      port: "27017",
       username: "app",
       password: "pass",
-      srv: true,
+      srv: false,
       additionalAddresses: [],
+      replicaSet: undefined,
       directConnection: false,
       authenticationDatabase: undefined,
       tls: { useSsl: false },
