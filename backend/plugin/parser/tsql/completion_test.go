@@ -60,6 +60,35 @@ func TestCompletionDoesNotDependOnANTLR(t *testing.T) {
 	require.NotContains(t, source, "github.com/bytebase/parser/tsql")
 }
 
+func TestCompletionReviewRegressions(t *testing.T) {
+	getter, lister := buildMockDatabaseMetadataGetterLister()
+	cCtx := base.CompletionContext{
+		Scene:             base.SceneTypeAll,
+		DefaultDatabase:   "Company",
+		Metadata:          getter,
+		ListDatabaseNames: lister,
+	}
+
+	// Canonical built-in function name COUNT() is offered for COU|
+	stmt, line, col := getCaretPosition("SELECT COU| FROM Employees")
+	results, err := Completion(context.Background(), cCtx, stmt, line, col)
+	require.NoError(t, err)
+	require.Contains(t, results, base.Candidate{Text: "COUNT()", Type: base.CandidateTypeFunction})
+
+	// Following statements after cursor are isolated away
+	stmt, line, col = getCaretPosition("SELECT a.|; SELECT * FROM Address AS a")
+	results, err = Completion(context.Background(), cCtx, stmt, line, col)
+	require.NoError(t, err)
+	require.NotContains(t, results, base.Candidate{Text: "Street", Type: base.CandidateTypeColumn})
+
+	// ALTER TABLE column completion scopes to target table only
+	stmt, line, col = getCaretPosition("ALTER TABLE Employees ADD CONSTRAINT pk PRIMARY KEY (|")
+	results, err = Completion(context.Background(), cCtx, stmt, line, col)
+	require.NoError(t, err)
+	require.Contains(t, results, base.Candidate{Text: "Name", Type: base.CandidateTypeColumn, Definition: "Company.dbo.Employees | varchar, NOT NULL"})
+	require.NotContains(t, results, base.Candidate{Text: "Street", Type: base.CandidateTypeColumn, Definition: "Company.dbo.Address | varchar, NOT NULL"})
+}
+
 func getCaretPosition(statement string) (string, int, int) {
 	lines := strings.Split(statement, "\n")
 	for i, line := range lines {

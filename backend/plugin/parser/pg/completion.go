@@ -172,25 +172,20 @@ func isValidUnquotedIdentifier(s string) bool {
 }
 
 func caretInsideDoubleQuotes(sql string, byteOffset int) bool {
+	if byteOffset <= 0 {
+		return false
+	}
 	if byteOffset > len(sql) {
 		byteOffset = len(sql)
 	}
-	inSingle := false
-	inDouble := false
-	for i := 0; i < byteOffset; i++ {
-		switch sql[i] {
-		case '\'':
-			if !inDouble {
-				inSingle = !inSingle
-			}
-		case '"':
-			if !inSingle {
-				inDouble = !inDouble
-			}
-		default:
+	lex := pgparser.NewLexerRange(sql, 0, byteOffset)
+	for {
+		tok := lex.NextToken()
+		if tok.Type == 0 {
+			break
 		}
 	}
-	return inDouble
+	return lex.Err != nil && lex.Err.Error() == "unterminated quoted identifier"
 }
 
 func convertCandidateType(t pgcompletion.CandidateType) base.CandidateType {

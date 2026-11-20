@@ -114,6 +114,14 @@ func TestCompletionMetadataCoverageMatrix(t *testing.T) {
 			absentText: []string{"event_id"},
 		},
 		{
+			name:  "dollar-signed qualifier columns",
+			input: "SELECT t$1.| FROM orders AS t$1",
+			want: []completionWant{
+				{"id", base.CandidateTypeColumn},
+				{"amount", base.CandidateTypeColumn},
+			},
+		},
+		{
 			name:  "schema table-qualified columns",
 			input: "SELECT events.| FROM analytics.events",
 			want: []completionWant{
@@ -165,6 +173,14 @@ func TestCompletionMetadataCoverageMatrix(t *testing.T) {
 			},
 		},
 		{
+			name:  "set-operation CTE infers output columns from left branch",
+			input: "WITH combined AS (SELECT id, amount FROM orders UNION SELECT event_id, event_id FROM analytics.events) SELECT combined.| FROM combined",
+			want: []completionWant{
+				{"id", base.CandidateTypeColumn},
+				{"amount", base.CandidateTypeColumn},
+			},
+		},
+		{
 			name:  "INSERT INTO offers tables",
 			input: "INSERT INTO |",
 			want: []completionWant{
@@ -200,6 +216,20 @@ func TestCompletionMetadataCoverageMatrix(t *testing.T) {
 			want: []completionWant{
 				{"order", base.CandidateTypeTable},
 				{"orders", base.CandidateTypeTable},
+			},
+		},
+		{
+			name:  "quote inside comment does not suppress outer quotes",
+			input: `SELECT * FROM /* " */ |`,
+			want: []completionWant{
+				{`"Order Items"`, base.CandidateTypeTable},
+			},
+		},
+		{
+			name:  "quote inside dollar-quoted string does not suppress outer quotes",
+			input: `SELECT $tag$"$tag$, | FROM "Order Items"`,
+			want: []completionWant{
+				{`"Item ID"`, base.CandidateTypeColumn},
 			},
 		},
 		{
