@@ -467,6 +467,42 @@ func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
 	require.NoError(t, err)
 	require.Zero(t, listCalls, "ListDatabaseNames must not be called for sales$archive.")
 	require.Equal(t, []string{"appdb", "sales$archive"}, metaCalls)
+
+	// Parenthesized UPDATE join and case-folded qualifier resolve cross-db objects end-to-end.
+	metaCalls = nil
+	stmtParenUpdate := "UPDATE (otherdb."
+	gotParenUpdate, err := Completion(context.Background(), cCtx, stmtParenUpdate, 1, len(stmtParenUpdate))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotParenUpdate, base.CandidateTypeTable, "t1"))
+	require.Zero(t, listCalls, "ListDatabaseNames must not be called for UPDATE (otherdb.")
+	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
+
+	caseFoldMeta := func(_ context.Context, _, dbName string) (string, *model.DatabaseMetadata, error) {
+		switch dbName {
+		case "appdb":
+			return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "appdb"}, nil, nil, storepb.Engine_MYSQL, true), nil
+		case "db_b":
+			return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+				Name: "db_b",
+				Schemas: []*metadatapb.SchemaMetadata{{
+					Tables: []*metadatapb.TableMetadata{{
+						Name:    "orders",
+						Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}},
+					}},
+				}},
+			}, nil, nil, storepb.Engine_MYSQL, false), nil
+		default:
+			return "", nil, nil
+		}
+	}
+	gotFolded, err := Completion(context.Background(), base.CompletionContext{
+		Scene:             base.SceneTypeAll,
+		DefaultDatabase:   "appdb",
+		Metadata:          caseFoldMeta,
+		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) { return []string{"appdb", "db_b"}, nil },
+	}, "SELECT DB_B.orders. FROM DB_B.orders", 1, len("SELECT DB_B.orders."))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotFolded, base.CandidateTypeColumn, "id"), "case-folded qualifier DB_B.orders. should load db_b; got %v", gotFolded)
 }
 
 func TestCompletion_TrailingSemicolonAndUTF16Caret(t *testing.T) {

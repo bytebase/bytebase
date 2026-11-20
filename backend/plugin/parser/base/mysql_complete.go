@@ -126,7 +126,12 @@ func PopulateMySQLFamilyCatalog(
 
 	var allNames []string
 	var exactName map[string]string
-	if suggestsDB && cCtx.ListDatabaseNames != nil {
+	enumerated := false
+	ensureEnumerated := func() {
+		if enumerated || cCtx.ListDatabaseNames == nil {
+			return
+		}
+		enumerated = true
 		if names, err := cCtx.ListDatabaseNames(ctx, cCtx.InstanceID); err == nil {
 			allNames = names
 			exactName = make(map[string]string, len(names))
@@ -134,6 +139,9 @@ func PopulateMySQLFamilyCatalog(
 				exactName[strings.ToLower(n)] = n
 			}
 		}
+	}
+	if suggestsDB {
+		ensureEnumerated()
 	}
 
 	seen := map[string]bool{}
@@ -175,21 +183,43 @@ func PopulateMySQLFamilyCatalog(
 		}
 	}
 
+	currentDB := cCtx.DefaultDatabase
 	for i, name := range loadOrder {
+		loadName := name
 		var proto *metadatapb.DatabaseSchemaMetadata
-		if _, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, name); err == nil && dbMeta != nil {
+		if resolvedName, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, name); err == nil && dbMeta != nil {
+			if resolvedName != "" {
+				loadName = resolvedName
+			}
 			proto = dbMeta.GetProto()
+		} else if cCtx.ListDatabaseNames != nil {
+			// On case-folding instances (e.g. lower_case_table_names), the typed
+			// qualifier casing may differ from the stored db_name; resolve via
+			// ListDatabaseNames lazily only when exact lookup misses.
+			ensureEnumerated()
+			if exact, ok := exactName[strings.ToLower(name)]; ok && exact != name {
+				loadName = exact
+				if resolvedName, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, exact); err == nil && dbMeta != nil {
+					if resolvedName != "" {
+						loadName = resolvedName
+					}
+					proto = dbMeta.GetProto()
+				}
+			}
+		}
+		if i == 0 && hasDefault && loadName != "" {
+			currentDB = loadName
 		}
 		if proto == nil {
 			if (i == 0 && hasDefault) || suggestsDB {
-				registerDB(name)
+				registerDB(loadName)
 			}
 			continue
 		}
-		loadDB(name, proto)
+		loadDB(loadName, proto)
 	}
 
-	setCurrentDB(cCtx.DefaultDatabase)
+	setCurrentDB(currentDB)
 }
 
 // suggestsMySQLDatabaseRef reports whether the parser's C3 collector at pos
@@ -366,9 +396,10 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 			continue
 		case '(':
 			child := mysqlQualScope{stmtStart: true}
-			// Parenthesized join group, e.g. FROM (db1.t1 JOIN db2.t2) or (db1.t1).
-			if sc.inTableClause && (i == 0 || toks[i-1].punct == '(' || toks[i-1].punct == ',' ||
-				toks[i-1].upper == "FROM" || toks[i-1].upper == "JOIN" || toks[i-1].upper == "STRAIGHT_JOIN") {
+			// Parenthesized table-reference / join group, e.g. FROM (db1.t1 JOIN ...),
+			// JOIN (db1.t1), UPDATE [LOW_PRIORITY] [IGNORE] (db1.t1 JOIN ...),
+			// DELETE ... USING (db1.t1 JOIN ...), or nested ((db1.t1)) / , (db1.t1).
+			if sc.inTableClause && isParenthesizedTablePrefix(toks, i, sc) {
 				child.inTableClause = true
 				child.allowCommaTable = true
 				child.allowFromAsTable = true
@@ -423,6 +454,12 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 		wasStmtStart := sc.stmtStart
 		if wasStmtStart {
 			sc.stmtVerb = kw
+		} else if sc.stmtVerb == "EXPLAIN" {
+			switch kw {
+			case "SELECT", "UPDATE", "DELETE", "INSERT", "REPLACE", "TABLE":
+				sc.stmtVerb = kw
+			default:
+			}
 		}
 		prevKW := sc.prevKeyword
 		sc.stmtStart = false
@@ -475,6 +512,7 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 			sc.inInsertReplaceTarget = false
 		case "UPDATE":
 			if prevKW != "ON" && prevKW != "KEY" && prevKW != "FOR" && prevKW != "BEFORE" && prevKW != "AFTER" {
+				sc.stmtVerb = "UPDATE"
 				sc.inTableClause = true
 				sc.allowCommaTable = true
 				sc.inInsertReplaceTarget = false
@@ -494,7 +532,7 @@ func databaseQualifiersInStatement(statement, defaultDB string) []string {
 			}
 		case "USING":
 			sc.inInsertReplaceTarget = false
-			if i+1 < len(toks) && toks[i+1].punct == '(' {
+			if sc.stmtVerb != "DELETE" && i+1 < len(toks) && toks[i+1].punct == '(' {
 				sc.inTableClause = false
 				sc.allowCommaTable = false
 			} else {
@@ -628,6 +666,26 @@ func isMultiTableStatementVerb(verb string) bool {
 	switch verb {
 	case "DROP", "RENAME", "LOCK", "TRUNCATE", "ANALYZE", "CHECK", "CHECKSUM", "OPTIMIZE", "REPAIR", "FLUSH":
 		return true
+	default:
+		return false
+	}
+}
+
+func isParenthesizedTablePrefix(toks []mysqlQualToken, parenIdx int, sc *mysqlQualScope) bool {
+	if parenIdx == 0 {
+		return true
+	}
+	prev := toks[parenIdx-1]
+	if prev.punct == '(' || prev.punct == ',' {
+		return true
+	}
+	switch prev.upper {
+	case "FROM", "JOIN", "STRAIGHT_JOIN", "UPDATE":
+		return true
+	case "USING":
+		return sc.stmtVerb == "DELETE"
+	case "LOW_PRIORITY", "IGNORE":
+		return sc.stmtVerb == "UPDATE"
 	default:
 		return false
 	}

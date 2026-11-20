@@ -179,6 +179,12 @@ func TestDatabaseQualifiersInStatement(t *testing.T) {
 			defaultDB: "appdb",
 			want:      []string{"sales$archive", "café$2"},
 		},
+		{
+			name:      "parenthesized table references in UPDATE and DELETE USING extract dbs",
+			statement: "UPDATE LOW_PRIORITY (otherdb.t1 JOIN db2.t2 ON t1.id = t2.id) SET t1.c = a.c; DELETE FROM db3.t1 USING (db4.t1 JOIN db5.t2 ON t1.id = t2.id) WHERE a.id = 1",
+			defaultDB: "appdb",
+			want:      []string{"otherdb", "db2", "db3", "db4", "db5"},
+		},
 	}
 
 	for _, tc := range tests {
@@ -252,6 +258,34 @@ func TestPopulateMySQLFamilyCatalog_SkipsEnumerationForQualifiers(t *testing.T) 
 	require.Equal(t, 1, listCalls)
 	require.Equal(t, []string{"otherdb", "unuseddb"}, registered)
 	require.Equal(t, []string{"appdb"}, loaded)
+
+	// Case-folded qualifier resolves to its canonical stored name via lazy enumeration on miss.
+	caseFoldListCalls := 0
+	var caseFoldLoaded []string
+	PopulateMySQLFamilyCatalog(
+		context.Background(),
+		CompletionContext{
+			DefaultDatabase: "appdb",
+			ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
+				caseFoldListCalls++
+				return []string{"appdb", "db_b"}, nil
+			},
+			Metadata: func(_ context.Context, _, db string) (string, *model.DatabaseMetadata, error) {
+				if db != "appdb" && db != "db_b" {
+					return "", nil, nil
+				}
+				return db, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: db}, nil, nil, storepb.Engine_MYSQL, true), nil
+			},
+		},
+		"SELECT DB_B.orders. FROM DB_B.orders",
+		len("SELECT DB_B.orders."),
+		func(string, int) bool { return false },
+		func(string) {},
+		func(name string, _ *metadatapb.DatabaseSchemaMetadata) { caseFoldLoaded = append(caseFoldLoaded, name) },
+		func(string) {},
+	)
+	require.Equal(t, 1, caseFoldListCalls)
+	require.Equal(t, []string{"appdb", "db_b"}, caseFoldLoaded)
 }
 
 func TestCompleteMySQLFamily_PreservesDistinctDefinitionsAndUTF16Caret(t *testing.T) {
