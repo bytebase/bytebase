@@ -1620,9 +1620,11 @@
     "connection-string": {
       "filled": "Rellenado desde URL",
       "filled-missing-password": "Rellenado desde URL. Introduce la contraseña de la base de datos.",
+      "filled-neon-pooled": "Rellenado desde URL. Usa el host del endpoint directo, sin -pooler.",
       "help": {
         "mssql": "Pega una URL o cadena de conexión de SQL Server para rellenar el host, el puerto, las credenciales, la base de datos y TLS.",
         "mysql": "Pega una URL de conexión de MySQL para rellenar el host, el puerto, las credenciales y TLS.",
+        "neon": "Pega una URL o cadena de conexión directa de Neon para rellenar el host, el puerto, las credenciales y la base de datos.",
         "oracle": "Pega una URL de conexión o cadena Easy Connect de Oracle para rellenar el host, el puerto, las credenciales, el nombre de servicio o SID y TLS.",
         "postgres": "Pega una URL o cadena de conexión de PostgreSQL para rellenar el host, el puerto, las credenciales, la base de datos y TLS."
       },
@@ -1630,6 +1632,7 @@
         "engine-mismatch": "Parece una cadena de conexión de {{detected}}. Cambia el motor a {{detected}} arriba o introduce una cadena de {{selected}}.",
         "mssql": "Introduce una URL sqlserver:// o cadena de conexión Server=…; válida.",
         "mysql": "Introduce una URL de conexión mysql:// válida.",
+        "neon": "Introduce una URL postgresql:// o cadena de conexión key=value válida con TLS habilitado.",
         "oracle": "Introduce una URL oracle:// o cadena Easy Connect válida con nombre de servicio o SID.",
         "postgres": "Introduce una URL postgresql:// o cadena de conexión key=value válida."
       },
@@ -2075,13 +2078,6 @@
       "limit-reached": {
         "body": "Tu plan no permite añadir más instancias. Quita las instancias que ya no necesites o aumenta el límite en Ajustes, Suscripción.",
         "title": "Se alcanzó el límite de instancias del espacio de trabajo"
-      },
-      "manual": {
-        "connection-string": "Cadena de conexión de Neon",
-        "connection-string-filled": "Se rellenaron el host, el rol, la contraseña y la base de datos.",
-        "connection-string-help": "Pégala desde la consola de Neon para rellenar el host, el rol, la contraseña y la base de datos.",
-        "connection-string-invalid": "Introduce una cadena de conexión postgresql:// válida con host, rol y base de datos.",
-        "connection-string-pooled": "Los campos se rellenaron, pero este es un endpoint con pool (-pooler). Pega la cadena de conexión directa o quita -pooler del host de abajo."
       },
       "method": {
         "discover": "Descubrir ramas con una clave de API de Neon",
