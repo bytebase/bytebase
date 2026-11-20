@@ -1289,11 +1289,15 @@ function parseMongoConnectionString(
 
   const username = (cliUsername ?? uri.username)?.trim() || undefined;
   const password = normalizePassword(cliPassword ?? uri.password);
+  // Standard `mongodb://` URIs default `authSource` to the URI path database,
+  // whereas `mongodb+srv://` URIs let DNS TXT records (e.g. Atlas's
+  // `authSource=admin`) take precedence over the path; only forward explicit
+  // CLI/query `authSource` on SRV URIs.
   const authenticationDatabase =
     (
       cliAuthDb ??
       uri.query.get("authsource") ??
-      (uri.path ? decodePercent(uri.path) : undefined)
+      (!isSrv && uri.path ? decodePercent(uri.path) : undefined)
     )?.trim() || undefined;
 
   // Leave `tls` unset for `mongodb+srv://` unless `?tls`/`?ssl` or an explicit

@@ -778,7 +778,7 @@ describe("parseConnectionString - CockroachDB and Redshift", () => {
 });
 
 describe("parseConnectionString - MongoDB", () => {
-  it("parses mongodb+srv:// without forcing useSsl and falls back to path auth database", () => {
+  it("parses mongodb+srv:// without forcing useSsl or promoting the path to authSource", () => {
     expect(
       parseConnectionString(
         Engine.MONGODB,
@@ -792,7 +792,7 @@ describe("parseConnectionString - MongoDB", () => {
       srv: true,
       additionalAddresses: [],
       directConnection: false,
-      authenticationDatabase: "storefront",
+      authenticationDatabase: undefined,
       tls: undefined,
     });
 
@@ -828,6 +828,23 @@ describe("parseConnectionString - MongoDB", () => {
       directConnection: false,
       authenticationDatabase: "admin",
       tls: { useSsl: true, verifyTlsCertificate: false },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        'mongosh "mongodb+srv://cluster0.example.mongodb.net/storefront" --authenticationDatabase custom -u app -p pass'
+      )
+    ).toEqual({
+      host: "cluster0.example.mongodb.net",
+      port: "",
+      username: "app",
+      password: "pass",
+      srv: true,
+      additionalAddresses: [],
+      directConnection: false,
+      authenticationDatabase: "custom",
+      tls: undefined,
     });
 
     expect(
