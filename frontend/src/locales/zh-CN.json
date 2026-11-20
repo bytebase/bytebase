@@ -289,12 +289,18 @@
     "pending-confirm-hint": "请在上方确认或取消",
     "pending-input-hint": "请在上方提供输入",
     "permission": {
+      "after": "变更后",
+      "before": "变更前",
+      "database-environment": "更新数据库环境",
+      "database-labels": "更新数据库标签",
+      "exact-request": "确切的 API 请求",
       "issue-approval": "此次审批将工单推进到下一审核步骤，尚不会创建部署。",
       "issue-approval-access-grant": "这是最后一步审批。批准后可能立即激活所请求的访问权限，无需部署。",
       "issue-approval-final": "这将完成审批决定，但仅凭此次审批并不能保证创建部署或执行任务。",
       "issue-approval-role-grant": "这是最后一步审批。批准后可能立即授予所请求的项目角色，无需部署。",
       "issue-approval-rollout": "这是最后一步审批。通过所需检查和审核后，此次审批可能创建部署，但不保证任务会执行。",
-      "issue-rejection": "拒绝此工单会停止当前审批流程。处理拒绝原因后才能继续审批。"
+      "issue-rejection": "拒绝此工单会停止当前审批流程。处理拒绝原因后才能继续审批。",
+      "not-set": "未设置"
     },
     "plan-assistance": {
       "ask-draft-sql": "让 Agent 起草 SQL"
@@ -308,6 +314,7 @@
       "existing-sql-title": "此 Plan 已包含 SQL",
       "open": "打开计划草稿",
       "replace-sql": "替换 SQL",
+      "statement-source-changed": "此语句已更改。请取消此草稿并重新打开语句，以编辑最新版本。",
       "unavailable": "无法打开计划草稿。数据库或 SQL 可能已更改。请让 Agent 重新生成。"
     },
     "plan-reference-unavailable": "此计划已不可用，或你没有访问权限。",

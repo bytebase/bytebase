@@ -4,6 +4,8 @@ import { afterEach, expect, test, vi } from "vitest";
 import { AGENT_PLAN_DRAFT_EVENT } from "@/lib/plan/agentDraftHandoff";
 import type { AgentPlanDraftEventDetail } from "@/lib/plan/agentDraftHandoff";
 import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
+import { lazyExtractDomRefSuggestions, lazyPrepareDomAction } from "@/modules/agent/dom";
+import { getElementByRef } from "@/modules/agent/dom/snapshotIndex";
 import {
   Plan_ChangeDatabaseConfigSchema,
   Plan_SpecSchema,
@@ -24,6 +26,9 @@ import { PlanDetailStatementSection } from "./PlanDetailStatementSection";
 const mocks = vi.hoisted(() => ({
   page: undefined as unknown,
   sheets: new Map<string, Sheet>(),
+  groups: {} as Record<string, {matchedDatabases: {name: string}[]}>,
+  actor: "users/test",
+  workspace: "workspaces/demo",
   threadFocus: undefined as
     | { commentName: string; specId: string; lineNumber: number; nonce: number }
     | undefined,
@@ -31,6 +36,7 @@ const mocks = vi.hoisted(() => ({
   revealLineInCenter: vi.fn(),
   focus: vi.fn(),
   scrollIntoView: vi.fn(),
+  reader: undefined as {model: {isDisposed: () => boolean} | null; events: EventTarget} | undefined,
   setSelection: vi.fn(),
   setScrollTop: vi.fn(),
   minimizeAgent: vi.fn(),
@@ -42,13 +48,22 @@ const mocks = vi.hoisted(() => ({
   sqlFixSnapshot: undefined as PlanSqlFixEditorSnapshot | undefined,
   applySqlFix: undefined as PlanSqlFixEditor["apply"] | undefined,
   checkRelease: vi.fn(),
+  createSheet: vi.fn(),
+  fetchTargets: vi.fn(),
+  query: vi.fn(),
+  approveIssue: vi.fn(),
   updatePlan: vi.fn(),
 }));
 
 vi.mock("@/api", () => ({
+  sqlServiceClientConnect: { query: mocks.query },
+  issueServiceClientConnect: { approveIssue: mocks.approveIssue },
   planServiceClientConnect: { updatePlan: mocks.updatePlan },
   sheetServiceClientConnect: {},
   releaseServiceClientConnect: { getRelease: mocks.getRelease, checkRelease: mocks.checkRelease },
+}));
+vi.mock("@/hooks/useReactiveRoute", () => ({
+  useReactiveRoute: () => ({ fullPath: "/projects/p/plans/42" }),
 }));
 vi.mock("../hooks/usePlanSqlFixTarget", () => ({
   useRegisterPlanSqlFixEditor: (snapshot: PlanSqlFixEditorSnapshot, apply: PlanSqlFixEditor["apply"]) => { mocks.sqlFixSnapshot = snapshot; mocks.applySqlFix = apply; },
@@ -116,9 +131,19 @@ vi.mock("@/components/monaco", async () => ({
         {content.slice(0, 24)}
       </div>
       <button
-        onClick={() =>
+        onClick={(event) => {
+          const node = event.currentTarget.previousElementSibling;
+          const reader = {model: {isDisposed: () => false}, events: new EventTarget()};
+          mocks.reader = reader;
+          const listen = (name: string, fn: () => void) => {
+            reader.events.addEventListener(name, fn);
+            return {dispose: () => reader.events.removeEventListener(name, fn)};
+          };
           onReady?.({}, {
-            getModel: () => ({}),
+            getDomNode: () => node,
+            getModel: () => reader.model,
+            onDidDispose: (fn: () => void) => listen("dispose", fn),
+            onDidChangeModel: (fn: () => void) => listen("model", fn),
             getVisibleRanges: () => [{ startLineNumber: 2, endLineNumber: 3 }],
             getSelection: () => ({
               selectionStartLineNumber: 3,
@@ -126,8 +151,8 @@ vi.mock("@/components/monaco", async () => ({
               positionLineNumber: 3,
               positionColumn: 5,
             }),
-          })
-        }
+          });
+        }}
       >
         Readonly editor ready
       </button>
@@ -138,19 +163,22 @@ vi.mock("@/stores", () => ({
   environmentNamePrefix: "environments/",
   pushNotification: vi.fn(),
 }));
-vi.mock("@/stores/app", () => ({
-  useAppStore: Object.assign(
-    (selector: (state: { databasesByName: object; dbGroupsByName: object }) => unknown) =>
-      selector({ databasesByName: {}, dbGroupsByName: {} }),
-    {
-      getState: () => ({
-        getSheetByName: (name: string) => mocks.sheets.get(name),
-        getOrFetchSheetByName: vi.fn(),
-      batchGetOrFetchDatabases: vi.fn(),
-      }),
-    }
-  ),
-}));
+vi.mock("@/stores/app", () => {
+  const getState = () => ({
+    databasesByName: {},
+    dbGroupsByName: mocks.groups,
+    currentUser: {name: mocks.actor},
+    workspaceResourceName: () => mocks.workspace,
+    createSheet: mocks.createSheet,
+    getSheetByName: (name: string) => mocks.sheets.get(name),
+    getOrFetchSheetByName: vi.fn(),
+    batchGetOrFetchDatabases: mocks.fetchTargets,
+  });
+  return {useAppStore: Object.assign(
+    (selector: (state: ReturnType<typeof getState>) => unknown) => selector(getState()),
+    {getState},
+  )};
+});
 vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
   openAgentWithPrompt: mocks.openAgentWithPrompt,
 }));
@@ -182,15 +210,19 @@ vi.mock("../utils/localSheet", async (importOriginal) => {
 });
 vi.mock("./SchemaEditorSheet", () => ({ SchemaEditorSheet: () => null }));
 vi.mock("./threads/StatementThreadsLayer", () => ({
-  StatementThreadsLayer: () => null,
+  StatementThreadsLayer: () => <span data-testid="thread-layer" />,
 }));
 
 afterEach(() => {
   cleanup();
   for (const name of mocks.localSheetNames) removeLocalSheet(name);
   mocks.localSheetNames = [];
+  mocks.actor = "users/test";
+  mocks.workspace = "workspaces/demo";
+  mocks.groups = {};
   mocks.sheets.clear();
   mocks.threadFocus = undefined;
+  mocks.reader = undefined;
   mocks.failLocalWrite = false;
   mocks.sqlFixSnapshot = undefined;
   mocks.applySqlFix = undefined;
@@ -245,13 +277,13 @@ test("shows the large-sheet warning as soon as the saved sheet changes", async (
   expect(getByTestId("statement").textContent).toContain("SELECT 2;");
 });
 
-const renderEditableSpec = (statement: string) => {
+const renderEditableSpec = (statement: string, targets = ["instances/main/databases/books"]) => {
   const sheetName = `projects/p/sheets/${"c".repeat(64)}`;
   const spec = create(Plan_SpecSchema, {
     id: "spec",
     config: {
       case: "changeDatabaseConfig",
-      value: create(Plan_ChangeDatabaseConfigSchema, { sheet: sheetName }),
+      value: create(Plan_ChangeDatabaseConfigSchema, { sheet: sheetName, targets }),
     },
   });
   const content = new TextEncoder().encode(statement);
@@ -263,6 +295,9 @@ const renderEditableSpec = (statement: string) => {
     currentUser: { name: "users/test" },
     isCreating: false,
     pageKey: "p/42",
+    ready: true,
+    patchState: vi.fn(),
+    refreshState: vi.fn(),
     plan: create(PlanSchema, { name: "projects/p/plans/42", creator: "users/test", specs: [spec] }),
     project: { name: "projects/p" },
     readonly: false,
@@ -272,9 +307,389 @@ const renderEditableSpec = (statement: string) => {
   return {
     ...view,
     spec,
-    rerender: () => view.rerender(<PlanDetailStatementSection spec={spec} />),
+    rerender: (statementVersion = 0, selected = spec) => view.rerender(<PlanDetailStatementSection spec={selected} statementVersion={statementVersion} />),
   };
 };
+
+const domContext = {
+  actor: "users/test",
+  workspace: "workspaces/demo",
+  chatId: "chat",
+  runId: "run",
+  runMode: "default" as const,
+  pageKey: "/projects/p/plans/42",
+  pageGeneration: 1,
+  projectName: "projects/p",
+  isCurrent: () => true,
+};
+async function observe(el: Element) {
+  const refs = await lazyExtractDomRefSuggestions(domContext);
+  const ref = refs.find(
+    (candidate) => getElementByRef(candidate.ref)?.element === el
+  );
+  expect(ref).toBeDefined();
+  return ref!.ref;
+}
+const runDom = (ref: string, value?: string) =>
+  act(async () =>
+    lazyPrepareDomAction(
+      { ref, type: value === undefined ? "click" : "input", value },
+      domContext
+    )
+  );
+
+test("Agent edits and cancels only the local SQL without losing dirty title focus or changing the reader", async () => {
+  const view = renderEditableSpec("SELECT 1;");
+  const reader = view.getByTestId("statement");
+  mocks.page = {...mocks.page as object, issue: {name:"projects/p/issues/42"}};
+  view.rerender();
+  fireEvent.click(view.getByText("Readonly editor ready"));
+  const threads = view.getByTestId("thread-layer");
+  mocks.fetchTargets.mockClear();
+  const title = document.createElement("input");
+  title.dataset.planTitleInput = "projects/p/plans/42";
+  const saveTitle = vi.fn();
+  title.addEventListener("blur", saveTitle);
+  document.body.append(title);
+  try {
+    vi.useFakeTimers();
+    title.focus();
+    fireEvent.input(title, { target: { value: "Unsaved title" } });
+    const edit = await observe(
+      view.getByText("common.edit").closest("button")!
+    );
+    expect(await runDom(edit)).toMatchObject({ result: { success: true } });
+    const input = view.getByRole("textbox", { name: "common.sql" });
+    expect(input).toHaveValue("SELECT 1;");
+    expect(await runDom(await observe(input), "SELECT 2;")).toMatchObject({
+      result: { success: true },
+    });
+    expect(input).toHaveValue("SELECT 2;");
+    expect(view.getByTestId("statement")).toBe(reader);
+    expect(view.getByTestId("thread-layer")).toBe(threads);
+    expect(reader).toHaveTextContent("SELECT 1;");
+    expect(view.queryByTestId("editing-statement")).toBeNull();
+    expect(view.queryByText("agent.sql-fix.unsaved-checks")).toBeNull();
+    expect(
+      await runDom(
+        await observe(view.getByRole("button", { name: "common.save" }))
+      )
+    ).toMatchObject({ result: { success: false } });
+    expect(
+      await runDom(
+        await observe(view.getByRole("button", { name: "common.cancel" }))
+      )
+    ).toMatchObject({ result: { success: true } });
+    expect(view.queryByRole("textbox", { name: "common.sql" })).toBeNull();
+    expect(view.getByTestId("statement")).toBe(reader);
+    await act(() => vi.advanceTimersByTimeAsync(2400));
+    expect(title).toHaveFocus();
+    expect(saveTitle).not.toHaveBeenCalled();
+    expect(mocks.fetchTargets).not.toHaveBeenCalled();
+    for (const call of [
+      mocks.createSheet,
+      mocks.updatePlan,
+      mocks.checkRelease,
+      mocks.query,
+      mocks.approveIssue,
+      mocks.focus,
+    ])
+      expect(call).not.toHaveBeenCalled();
+  } finally {
+    vi.useRealTimers();
+    title.remove();
+  }
+});
+
+test("version ABA preserves the Agent buffer but never reauthorizes SQL input or member Save", async () => {
+  const view = renderEditableSpec("SELECT 1;");
+  fireEvent.click(view.getByText("Readonly editor ready"));
+  expect(
+    await runDom(
+      await observe(view.getByRole("button", { name: "common.edit" }))
+    )
+  ).toMatchObject({ result: { success: true } });
+  const input = view.getByRole("textbox", { name: "common.sql" });
+  await runDom(await observe(input), "SELECT 2;");
+  const stale = await observe(input);
+  view.rerender(1);
+  view.rerender(0);
+  expect(input).toHaveValue("SELECT 2;");
+  expect(
+    view.getByText("agent.plan-draft.statement-source-changed")
+  ).toBeInTheDocument();
+  expect(await runDom(stale, "SELECT 3;")).toMatchObject({
+    result: { success: false },
+  });
+  const save = view.getByRole("button", { name: "common.save" });
+  expect(save).toBeDisabled();
+  fireEvent.click(save);
+  expect(mocks.createSheet).not.toHaveBeenCalled();
+  fireEvent.click(view.getByRole("button", { name: "common.cancel" }));
+  expect(view.getByTestId("statement")).toHaveTextContent("SELECT 1;");
+});
+
+test.each(["detached", "model removed", "editor disposed"] as const)(
+  "reader teardown (%s) disables old and freshly observed Edit until the next onReady",
+  async (reason) => {
+    const view = renderEditableSpec("SELECT 1;");
+    const ready = view.getByText("Readonly editor ready");
+    fireEvent.click(ready);
+    const edit = view.getByRole("button", { name: "common.edit" });
+    const old = await observe(edit);
+    const node = view.getByTestId("statement");
+    const parent = node.parentElement!;
+    const reader = mocks.reader!;
+    const model = reader.model;
+    if (reason === "detached") node.remove();
+    if (reason === "model removed") reader.model = null;
+    if (reason === "editor disposed")
+      reader.events.dispatchEvent(new Event("dispose"));
+    expect(await runDom(old)).toMatchObject({ result: { success: false } });
+    const suggestions = await lazyExtractDomRefSuggestions(domContext);
+    const fresh = suggestions.find(
+      (candidate) => getElementByRef(candidate.ref)?.element === edit
+    );
+    expect(fresh?.actions).toBe("manual-required");
+    if (reason === "detached") parent.insertBefore(node, ready);
+    reader.model = model;
+    expect(await runDom(await observe(edit))).toMatchObject({
+      result: { success: false },
+    });
+    fireEvent.click(ready);
+    expect(await runDom(await observe(edit))).toMatchObject({
+      result: { success: true },
+    });
+    expect(view.getByRole("textbox", { name: "common.sql" })).toHaveValue(
+      "SELECT 1;"
+    );
+  }
+);
+
+const startLocal = async (targets?: string[]) => {
+  const view = renderEditableSpec("SELECT 1;", targets);
+  fireEvent.click(view.getByText("Readonly editor ready"));
+  expect(
+    await runDom(
+      await observe(view.getByRole("button", { name: "common.edit" }))
+    )
+  ).toMatchObject({ result: { success: true } });
+  const input = view.getByRole("textbox", { name: "common.sql" });
+  expect(await runDom(await observe(input), "SELECT 2;")).toMatchObject({
+    result: { success: true },
+  });
+  return { view, input };
+};
+
+test.each([
+  "target",
+  "expanded",
+  "sheet",
+  "spec",
+  "project",
+  "actor",
+  "workspace",
+] as const)(
+  "rejects %s changes even when the original source is restored",
+  async (changed) => {
+    const group = "projects/p/databaseGroups/core";
+    mocks.groups = {
+      [group]: { matchedDatabases: [{ name: "instances/i/databases/a" }] },
+    };
+    const { view, input } = await startLocal([group]);
+    const old = await observe(input);
+    const page = mocks.page as {
+      plan: ReturnType<typeof create<typeof PlanSchema>>;
+    };
+    const next = create(Plan_SpecSchema, { ...view.spec });
+    if (next.config.case !== "changeDatabaseConfig")
+      throw Error("expected change");
+    if (changed === "target")
+      next.config.value = {
+        ...next.config.value,
+        targets: ["instances/i/databases/b"],
+      };
+    if (changed === "sheet")
+      next.config.value = {
+        ...next.config.value,
+        sheet: "projects/p/sheets/" + "a".repeat(64),
+      };
+    if (changed === "spec") next.id = "next";
+    const groups = mocks.groups;
+    if (changed === "expanded")
+      mocks.groups = {
+        [group]: { matchedDatabases: [{ name: "instances/i/databases/b" }] },
+      };
+    if (changed === "actor") mocks.actor = "users/other";
+    if (changed === "workspace") mocks.workspace = "workspaces/other";
+    mocks.page = {
+      ...page,
+      plan: { ...page.plan, specs: [next] },
+      ...(changed === "project" && { project: { name: "projects/other" } }),
+    };
+    view.rerender(0, next);
+    mocks.page = page;
+    mocks.groups = groups;
+    mocks.actor = "users/test";
+    mocks.workspace = "workspaces/demo";
+    view.rerender();
+    expect(await runDom(old, "SELECT 4;")).toMatchObject({
+      result: { success: false },
+    });
+    expect(input).toHaveValue("SELECT 2;");
+    expect(view.getByRole("button", { name: "common.save" })).toBeDisabled();
+  }
+);
+
+test("equivalent refresh retains an observed local input; replacing the reader does not", async () => {
+  const { view, input } = await startLocal();
+  const current = await observe(input);
+  view.rerender(0, create(Plan_SpecSchema, { ...view.spec }));
+  expect(await runDom(current, "SELECT 3;")).toMatchObject({
+    result: { success: true },
+  });
+  const beforeReplacement = await observe(input);
+  fireEvent.click(view.getByText("Readonly editor ready"));
+  expect(await runDom(beforeReplacement, "SELECT 4;")).toMatchObject({
+    result: { success: false },
+  });
+  expect(input).toHaveValue("SELECT 3;");
+});
+
+test.each(["edit", "sql-fix", "activity"] as const)(
+  "member %s promotes a local draft to the native SQL editor and applies its anchor",
+  async (action) => {
+    const { view } = await startLocal();
+    if (action === "edit")
+      fireEvent.click(view.getByRole("button", { name: "common.edit" }));
+    if (action === "sql-fix")
+      act(() => {
+        expect(mocks.applySqlFix?.("SELECT 2;", "SELECT 3;")).toBe(true);
+      });
+    if (action === "activity") {
+      mocks.threadFocus = {
+        specId: "spec",
+        lineNumber: 2,
+        commentName: "comments/1",
+        nonce: 1,
+      };
+      view.rerender();
+    }
+    expect(view.queryByRole("textbox", { name: "common.sql" })).toBeNull();
+    expect(view.getByTestId("editing-statement")).toHaveTextContent(
+      action === "sql-fix" ? "SELECT 3;" : "SELECT 2;"
+    );
+    fireEvent.click(view.getByText("Editor ready"));
+    expect(mocks.focus).toHaveBeenCalledOnce();
+    if (action === "activity")
+      expect(mocks.revealLineInCenter).toHaveBeenCalledWith(2);
+    if (action === "sql-fix")
+      expect(mocks.revealLineInCenter).toHaveBeenCalledWith(1);
+  }
+);
+
+test("only an explicit member Save persists the local draft, and failure keeps it retryable", async () => {
+  const { view, input } = await startLocal();
+  const save = view.getByRole("button", { name: "common.save" });
+  mocks.createSheet.mockRejectedValueOnce(new Error("unavailable"));
+  await act(async () => {
+    fireEvent.click(save);
+  });
+  expect(input).toHaveValue("SELECT 2;");
+  expect(save).toBeEnabled();
+  expect(mocks.updatePlan).not.toHaveBeenCalled();
+  const nextSheet = "projects/p/sheets/" + "f".repeat(64);
+  mocks.createSheet.mockResolvedValueOnce({ name: nextSheet });
+  mocks.updatePlan.mockResolvedValueOnce(
+    (mocks.page as { plan: unknown }).plan
+  );
+  await act(async () => {
+    fireEvent.click(save);
+  });
+  expect(getSheetStatement(mocks.createSheet.mock.lastCall?.[1])).toBe(
+    "SELECT 2;"
+  );
+  expect(mocks.updatePlan).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({
+      plan: expect.objectContaining({
+        name: "projects/p/plans/42",
+        specs: [
+          expect.objectContaining({
+            config: expect.objectContaining({
+              value: expect.objectContaining({ sheet: nextSheet }),
+            }),
+          }),
+        ],
+      }),
+    })
+  );
+  expect(view.queryByRole("textbox", { name: "common.sql" })).toBeNull();
+});
+
+test("does not submit a stale Agent-origin Plan update if the source changed during member Save", async () => {
+  const { view } = await startLocal();
+  const sheet = Promise.withResolvers<{ name: string }>();
+  mocks.createSheet.mockReturnValueOnce(sheet.promise);
+  fireEvent.click(view.getByRole("button", { name: "common.save" }));
+  expect(mocks.createSheet).toHaveBeenCalledOnce();
+  view.rerender(1);
+  await act(async () => {
+    sheet.resolve({ name: "projects/p/sheets/new" });
+  });
+  expect(mocks.updatePlan).not.toHaveBeenCalled();
+  expect(view.getByRole("textbox", { name: "common.sql" })).toHaveValue(
+    "SELECT 2;"
+  );
+});
+
+test.each([
+  "ready",
+  "readonly",
+  "create",
+  "pending",
+  "activity",
+  "edit focus",
+  "other button",
+  "native",
+  "unmounted",
+] as const)("does not allow Agent Edit across %s", async (condition) => {
+  const view = renderEditableSpec("SELECT 1;");
+  fireEvent.click(view.getByText("Readonly editor ready"));
+  const edit = view.getByRole("button", { name: "common.edit" });
+  const ref = await observe(edit);
+  if (condition === "ready")
+    mocks.page = { ...(mocks.page as object), ready: false };
+  if (condition === "readonly")
+    mocks.page = { ...(mocks.page as object), readonly: true };
+  if (condition === "create")
+    mocks.page = { ...(mocks.page as object), isCreating: true };
+  if (condition === "pending")
+    mocks.page = {
+      ...(mocks.page as object),
+      plan: create(PlanSchema, { specs: [] }),
+    };
+  if (condition === "activity")
+    mocks.threadFocus = {
+      specId: "spec",
+      lineNumber: 1,
+      commentName: "comments/1",
+      nonce: 1,
+    };
+  if (condition === "edit focus") edit.focus();
+  const other = document.createElement("button");
+  if (condition === "other button") {
+    document.body.append(other);
+    other.focus();
+  }
+  if (condition === "native") fireEvent.click(edit);
+  view.rerender();
+  if (condition === "unmounted") view.unmount();
+  expect(await runDom(ref)).toMatchObject({ result: { success: false } });
+  if (condition === "edit focus") expect(edit).toHaveFocus();
+  if (condition === "other button") expect(other).toHaveFocus();
+  other.remove();
+  expect(mocks.createSheet).not.toHaveBeenCalled();
+});
 
 test("applies an exact-source fix only to the unsaved saved-Plan editor and focuses it", () => {
   const view = renderEditableSpec("SELECT 1;");

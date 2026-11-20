@@ -1,106 +1,58 @@
-import type { AppRouterInstance } from "@/app/router";
 import type {
   DomActionParams,
   DomActionResult,
   DomRefSuggestion,
 } from "./actions";
-
-// Single dynamic import path. actions.ts re-exports extractDomTree and
-// getElementByRef from domTree.ts, ensuring one module instance so the
-// element registry populated by extractDomTree is readable by getElementByRef.
-let module: typeof import("./actions") | undefined;
-
-async function ensureLoaded(): Promise<typeof import("./actions")> {
-  if (module) return module;
-  module = await import("./actions");
-  return module;
-}
-
-export async function lazyExtractDomTree(): Promise<{
-  tree: string;
-  count: number;
-}> {
-  const m = await ensureLoaded();
-  return m.extractDomTree();
-}
-
-export async function lazyExtractDomRefSuggestions(): Promise<
-  import("./actions").DomRefSuggestion[]
-> {
-  const m = await ensureLoaded();
-  return m.extractDomRefSuggestions();
-}
-
-function isSameOriginLink(el: Element): string | undefined {
-  if (!(el instanceof HTMLAnchorElement)) return undefined;
-  const href = el.getAttribute("href");
-  if (!href) return undefined;
-  // Relative paths or same-origin absolute URLs
-  if (href.startsWith("/")) return href;
-  try {
-    const url = new URL(href);
-    if (url.origin === window.location.origin) {
-      return url.pathname + url.search + url.hash;
-    }
-  } catch {
-    // Not a valid URL
-  }
-  return undefined;
-}
-
-function formatRefreshError(message: string): DomActionResult {
-  return {
-    success: false,
-    message: `${message} Run get_page_state(mode="dom") to refresh the DOM tree.`,
-  };
-}
-
-function getElementRef(params: DomActionParams): string | undefined {
-  return typeof params.ref === "string" ? params.ref.trim() : undefined;
-}
-
-export async function lazyExecuteDomAction(
-  params: DomActionParams,
-  router?: AppRouterInstance,
-  canUseCurrentPage?: () => boolean
-): Promise<DomActionResult> {
-  const elementRef = getElementRef(params);
-  if (!elementRef) {
-    return formatRefreshError(
-      `Invalid element ref: ${JSON.stringify(params.ref)}. Use refs like [e1] from the DOM tree.`
-    );
-  }
-  if (!/^e\d+$/.test(elementRef)) {
-    return formatRefreshError(
-      `Malformed element ref [${elementRef}]. Use refs like [e1] from the DOM tree.`
-    );
-  }
-
-  const m = await ensureLoaded();
-  if (canUseCurrentPage?.() === false) {
-    return m.BACKGROUND_PAGE_ACTION_RESULT;
-  }
-  const entry = m.getElementByRef(elementRef);
-  if (!entry) {
-    return formatRefreshError(`Element [${elementRef}] was not found.`);
-  }
-  if (!entry.element.isConnected) {
-    return formatRefreshError(`Element [${elementRef}] is stale.`);
-  }
-
-  // Route same-origin links through React Router to avoid a full-page reload.
-  if (params.type === "click" && router) {
-    const path = isSameOriginLink(entry.element);
-    if (path) {
-      await router.push(path);
-      return {
-        success: true,
-        message: `Navigated to ${path}`,
-      };
-    }
-  }
-
-  return m.executeDomAction(params, entry.element, canUseCurrentPage);
-}
+import type {
+  AgentDomContext,
+  AgentDomPreparation,
+} from "./interactionRegistry";
 
 export type { DomActionParams, DomActionResult, DomRefSuggestion };
+
+export async function lazyExtractDomTree(
+  context?: AgentDomContext
+): Promise<{ tree: string; count: number }> {
+  const m = await import("./actions");
+  return m.extractDomTree(undefined, context);
+}
+export async function lazyExtractDomRefSuggestions(
+  context?: AgentDomContext
+): Promise<DomRefSuggestion[]> {
+  const m = await import("./actions");
+  return m.extractDomRefSuggestions(undefined, context);
+}
+function refreshError(message: string): AgentDomPreparation {
+  return {
+    kind: "result",
+    result: {
+      success: false,
+      message: `${message} Run get_page_state(mode="dom") to refresh the DOM tree.`,
+    },
+  };
+}
+export async function lazyPrepareDomAction(
+  params: DomActionParams,
+  context: AgentDomContext
+): Promise<AgentDomPreparation> {
+  const ref = typeof params.ref === "string" ? params.ref.trim() : "";
+  if (!ref)
+    return refreshError(
+      "Invalid element ref. Use refs like [e1] from the DOM tree."
+    );
+  if (!/^e\d+$/.test(ref))
+    return refreshError(
+      "Malformed element ref. Use refs like [e1] from the DOM tree."
+    );
+  const m = await import("./actions");
+  if (!context || !context.isCurrent() || context.signal?.aborted)
+    return { kind: "result", result: m.BACKGROUND_PAGE_ACTION_RESULT };
+  const entry = m.getElementByRef(ref);
+  if (!entry || !entry.element.isConnected)
+    return refreshError(`Element [${ref}] is stale or was not found.`);
+  return m.prepareAgentDomInteraction(
+    { ...params, ref },
+    entry.element,
+    context
+  );
+}

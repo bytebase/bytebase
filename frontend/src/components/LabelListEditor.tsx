@@ -17,7 +17,15 @@ export interface LabelListEditorFlattenedError {
   errors: string[];
 }
 
+export type LabelEditorControl =
+  | { kind: "key" | "value" | "remove"; row: number }
+  | { kind: "add" };
+
 export interface LabelListEditorProps {
+  controlRef?: (
+    control: LabelEditorControl,
+    element: HTMLInputElement | HTMLButtonElement | null
+  ) => void;
   kvList: LabelListEditorItem[];
   onChange: (list: LabelListEditorItem[]) => void;
   readonly: boolean;
@@ -27,6 +35,7 @@ export interface LabelListEditorProps {
 }
 
 export function LabelListEditor({
+  controlRef,
   kvList,
   onChange,
   readonly,
@@ -35,6 +44,26 @@ export function LabelListEditor({
   onFlattenErrorsChange,
 }: LabelListEditorProps) {
   const { t } = useTranslation();
+  const rowRefs = useMemo(
+    () =>
+      controlRef &&
+      Array.from({ length: kvList.length }, (_, row) => ({
+        key: (element: HTMLInputElement | null) =>
+          controlRef({ kind: "key", row }, element),
+        value: (element: HTMLInputElement | null) =>
+          controlRef({ kind: "value", row }, element),
+        remove: (element: HTMLButtonElement | null) =>
+          controlRef({ kind: "remove", row }, element),
+      })),
+    [controlRef, kvList.length]
+  );
+  const addRef = useMemo(
+    () =>
+      controlRef &&
+      ((element: HTMLButtonElement | null) =>
+        controlRef({ kind: "add" }, element)),
+    [controlRef]
+  );
 
   const errorList = useMemo(() => {
     return kvList.map((kv) => {
@@ -127,6 +156,7 @@ export function LabelListEditor({
                     <span className="flex h-9 items-center">{kv.key}</span>
                   ) : (
                     <Input
+                      ref={rowRefs?.[index].key}
                       value={kv.key}
                       placeholder={t("setting.label.key-placeholder")}
                       aria-invalid={errors.key.length > 0 || undefined}
@@ -149,6 +179,7 @@ export function LabelListEditor({
                       </span>
                     ) : (
                       <Input
+                        ref={rowRefs?.[index].value}
                         value={kv.value}
                         placeholder={t("setting.label.value-placeholder")}
                         aria-invalid={errors.value.length > 0 || undefined}
@@ -158,6 +189,7 @@ export function LabelListEditor({
                       />
                     )}
                     <Button
+                      ref={rowRefs?.[index].remove}
                       type="button"
                       appearance="secondary"
                       size="xs"
@@ -186,6 +218,7 @@ export function LabelListEditor({
       </div>
       <div>
         <Button
+          ref={addRef}
           appearance="outline"
           size="sm"
           disabled={readonly || !allowAddLabel}

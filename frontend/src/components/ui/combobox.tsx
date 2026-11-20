@@ -59,6 +59,7 @@ interface ComboboxMultiProps {
 }
 
 type ComboboxBaseProps = {
+  triggerRef?: React.Ref<HTMLDivElement>;
   /** Flat options list OR grouped options. */
   options: ComboboxOption[] | ComboboxGroup[];
   placeholder?: string;
@@ -462,6 +463,7 @@ export function Combobox(props: ComboboxProps) {
     <div ref={containerRef} className={cn("relative", className)}>
       {/* Trigger */}
       <div
+        ref={props.triggerRef}
         className={cn(
           // `flex-wrap` only matters for multi-select where chips can spill
           // onto a new line; in single-select mode it lets the X/chevron

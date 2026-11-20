@@ -1,57 +1,84 @@
-import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { cloneDeep, isEqual } from "lodash-es";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentSelect } from "@/components/EnvironmentSelect";
-import { LabelListEditor } from "@/components/LabelListEditor";
+import {
+  LabelListEditor,
+  type LabelListEditorItem,
+} from "@/components/LabelListEditor";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { UpdateDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import {
-  convertKVListToLabels,
   convertLabelsToKVList,
   getDatabaseProject,
   getInstanceResource,
   hasProjectPermissionV2,
 } from "@/utils";
-
-const EMPTY_LABELS: Record<string, string> = {};
+import {
+  buildDatabaseEnvironmentUpdate,
+  buildDatabaseLabelsUpdate,
+  labelMap,
+  labelsChanged,
+  labelsFingerprint,
+  validRows,
+} from "./databaseSettingsActions";
+import { useDatabaseSettingsDom } from "./useDatabaseSettingsDom";
 
 export function DatabaseSettingsPanel({ database }: { database: Database }) {
+  const actor = useAppStore((s) => s.currentUser?.name ?? "");
+  const workspace = useAppStore((s) => s.workspaceResourceName());
+  return (
+    <SettingsForm
+      key={JSON.stringify([actor, workspace, database.name, database.project])}
+      database={database}
+      actor={actor}
+      workspace={workspace}
+    />
+  );
+}
+
+function SettingsForm({
+  database,
+  actor,
+  workspace,
+}: {
+  database: Database;
+  actor: string;
+  workspace: string;
+}) {
   const { t } = useTranslation();
-  const labels = database.labels ?? EMPTY_LABELS;
+  const labels = database.labels;
   const instanceEnvironment = getInstanceResource(database).environment ?? "";
   const allowClearEnvironment = !instanceEnvironment;
-  const [kvList, setKVList] = useState(() =>
-    convertLabelsToKVList(labels, true)
+  const [savedLabels, setSavedLabels] = useState(labels);
+  const [kvList, setKVList] = useState<LabelListEditorItem[]>(() =>
+    convertLabelsToKVList(labels)
   );
-  const [labelErrors, setLabelErrors] = useState<string[]>([]);
   const [isUpdatingLabels, setIsUpdatingLabels] = useState(false);
-
-  useEffect(() => {
-    setKVList(convertLabelsToKVList(labels, true));
-  }, [labels]);
-
-  const allowUpdateDatabase = useMemo(() => {
-    const project = getDatabaseProject(database);
-    return project
-      ? hasProjectPermissionV2(project, "bb.databases.update")
-      : false;
-  }, [database]);
-
-  const originalKVList = useMemo(
-    () => convertLabelsToKVList(labels, true),
-    [labels]
-  );
-  const dirty = useMemo(() => {
-    return !isEqual(originalKVList, kvList);
-  }, [kvList, originalKVList]);
-  const allowSave = dirty && labelErrors.length === 0 && !isUpdatingLabels;
+  if (
+    savedLabels !== labels &&
+    labelsFingerprint(savedLabels) !== labelsFingerprint(labels)
+  ) {
+    setSavedLabels(labels);
+    if (!labelsChanged(savedLabels, kvList))
+      setKVList(convertLabelsToKVList(labels));
+  }
+  const project = getDatabaseProject(database);
+  const allowUpdateDatabase =
+    !!project && hasProjectPermissionV2(project, "bb.databases.update");
+  const dirty = labelsChanged(labels, kvList);
+  const allowSave = dirty && validRows(kvList) && !isUpdatingLabels;
+  const dom = useDatabaseSettingsDom({
+    database,
+    actor,
+    workspace,
+    rows: kvList,
+    setRows: setKVList,
+    allowed: allowUpdateDatabase,
+  });
 
   const handleSelectEnvironment = async (name?: string) => {
     const nextEnvironment = name || "";
@@ -63,26 +90,25 @@ export function DatabaseSettingsPanel({ database }: { database: Database }) {
       return;
     }
 
-    const databasePatch = cloneDeep(database);
-    databasePatch.environment = nextEnvironment;
-
-    await useAppStore.getState().updateDatabase(
-      create(UpdateDatabaseRequestSchema, {
-        database: databasePatch,
-        updateMask: create(FieldMaskSchema, {
-          paths: ["environment"],
-        }),
-      })
-    );
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
+    const finish = dom.startNative("environment");
+    try {
+      await useAppStore
+        .getState()
+        .updateDatabase(
+          buildDatabaseEnvironmentUpdate(database.name, nextEnvironment)
+        );
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    } finally {
+      finish();
+    }
   };
 
   const handleCancel = () => {
-    setKVList(originalKVList);
+    dom.edit(convertLabelsToKVList(labels));
   };
 
   const handleSave = async () => {
@@ -91,25 +117,20 @@ export function DatabaseSettingsPanel({ database }: { database: Database }) {
     }
 
     setIsUpdatingLabels(true);
+    const finish = dom.startNative("labels");
     try {
-      const labels = convertKVListToLabels(kvList, false);
-      await useAppStore.getState().updateDatabase(
-        create(UpdateDatabaseRequestSchema, {
-          database: {
-            ...database,
-            labels,
-          },
-          updateMask: create(FieldMaskSchema, {
-            paths: ["labels"],
-          }),
-        })
-      );
+      await useAppStore
+        .getState()
+        .updateDatabase(
+          buildDatabaseLabelsUpdate(database.name, labelMap(kvList))
+        );
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("common.updated"),
       });
     } finally {
+      finish();
       setIsUpdatingLabels(false);
     }
   };
@@ -123,6 +144,7 @@ export function DatabaseSettingsPanel({ database }: { database: Database }) {
             project={getDatabaseProject(database)}
           >
             <EnvironmentSelect
+              triggerRef={dom.environment}
               className="max-w-md"
               value={database.effectiveEnvironment || ""}
               clearable={allowClearEnvironment}
@@ -151,23 +173,31 @@ export function DatabaseSettingsPanel({ database }: { database: Database }) {
         </div>
         <div className="max-w-120">
           <LabelListEditor
+            controlRef={dom.controlRef}
             kvList={kvList}
-            onChange={setKVList}
+            onChange={dom.edit}
             readonly={!allowUpdateDatabase}
             showErrors={dirty}
-            onErrorsChange={setLabelErrors}
           />
         </div>
         {dirty && (
           <div className="flex items-center justify-end gap-x-2">
-            <Button appearance="outline" onClick={handleCancel}>
+            <Button
+              ref={dom.revert}
+              appearance="outline"
+              onClick={handleCancel}
+            >
               {t("common.revert")}
             </Button>
             <PermissionGuard
               permissions={["bb.databases.update"]}
               project={getDatabaseProject(database)}
             >
-              <Button disabled={!allowSave} onClick={() => void handleSave()}>
+              <Button
+                ref={dom.save}
+                disabled={!allowSave}
+                onClick={() => void handleSave()}
+              >
                 {t("common.save")}
               </Button>
             </PermissionGuard>

@@ -20,6 +20,7 @@ interface MultiProps {
 }
 
 export type EnvironmentSelectProps = (SingleProps | MultiProps) & {
+  triggerRef?: React.Ref<HTMLDivElement>;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -64,6 +65,7 @@ export function EnvironmentSelect(props: EnvironmentSelectProps) {
   if (props.multiple) {
     return (
       <Combobox
+        triggerRef={props.triggerRef}
         multiple
         value={props.value}
         onChange={props.onChange}
@@ -79,6 +81,7 @@ export function EnvironmentSelect(props: EnvironmentSelectProps) {
 
   return (
     <Combobox
+      triggerRef={props.triggerRef}
       value={props.value}
       onChange={props.onChange}
       placeholder={placeholder}

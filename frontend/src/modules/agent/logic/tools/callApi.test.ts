@@ -16,6 +16,8 @@ const mocks = vi.hoisted(() => ({
   loadSubscription: vi.fn(),
   hasFeature: vi.fn(),
   fetchPolicyByParentAndType: vi.fn(),
+  actor: "users/member@example.com",
+  workspace: "workspaces/example",
 }));
 
 vi.mock("@/api", () => ({
@@ -25,7 +27,8 @@ vi.mock("@/api", () => ({
 vi.mock("@/stores/app", () => ({
   useAppStore: {
     getState: () => ({
-      workspaceResourceName: () => "workspaces/example",
+      currentUser: { name: mocks.actor },
+      workspaceResourceName: () => mocks.workspace,
       loadSubscription: mocks.loadSubscription,
       hasFeature: mocks.hasFeature,
       fetchPolicyByParentAndType: mocks.fetchPolicyByParentAndType,
@@ -92,6 +95,33 @@ describe("callApi", () => {
     mocks.getRequestSchema.mockReturnValue(undefined);
     mocks.getSchema.mockReturnValue(undefined);
   });
+
+  test.each(["scope changed", "still current"])(
+    "a DOM send checks its guard and never replays a READ on 401: %s",
+    async (state) => {
+      const current = state === "still current";
+      mocks.fetch.mockResolvedValue(createResponse({ status: 401, body: {} }));
+      const result = JSON.parse(
+        await dispatchPreparedApiCall(
+          {
+            operationId: "bytebase.v1.ProjectService.GetProject",
+            path: "/bytebase.v1.ProjectService/GetProject",
+            body: '{"name":"projects/test"}',
+          },
+          undefined,
+          {
+            expectedContext: { actor: mocks.actor, workspace: mocks.workspace },
+            beforeSend: () => current,
+          }
+        )
+      );
+      expect(mocks.fetch).toHaveBeenCalledTimes(current ? 1 : 0);
+      expect(result).toMatchObject(
+        current ? { status: 401 } : { called: false }
+      );
+      expect(mocks.refreshTokens).not.toHaveBeenCalled();
+    }
+  );
 
   test("prepares an exact canonical request without sending it", async () => {
     mocks.getEndpointPath.mockReturnValue(

@@ -16,7 +16,21 @@ vi.mock("../context", () => ({
   })),
 }));
 
+import { lazyExtractDomTree } from "../../dom";
+import type { AgentDomContext } from "../../dom/interactionRegistry";
+import { extractRouteContext } from "../context";
 import { createPageStateTool } from "./pageState";
+
+const context: AgentDomContext = {
+  actor: "users/1",
+  workspace: "workspaces/demo",
+  chatId: "chat",
+  runId: "run",
+  runMode: "default",
+  pageKey: "/projects/demo",
+  pageGeneration: 1,
+  isCurrent: () => true,
+};
 
 describe("createPageStateTool", () => {
   test("returns semantic state by default", async () => {
@@ -33,7 +47,7 @@ describe("createPageStateTool", () => {
 
     document.title = "Project Demo";
 
-    const tool = createPageStateTool(router);
+    const tool = createPageStateTool(router, () => context);
     const result = JSON.parse(await tool());
 
     expect(result).toEqual({
@@ -66,7 +80,10 @@ describe("createPageStateTool", () => {
 
     document.title = "Issue 123";
 
-    const tool = createPageStateTool(router);
+    const tool = createPageStateTool(router, () => ({
+      ...context,
+      pageKey: router.currentRoute.value.fullPath,
+    }));
     const result = JSON.parse(await tool({ mode: "dom" }));
 
     expect(result).toEqual({
@@ -83,5 +100,39 @@ describe("createPageStateTool", () => {
       interactiveElements: 2,
       domTree: ['[e1] button "Create"', '[e2] textbox "Name"'],
     });
+  });
+  test("does not extract DOM on a page replaced during route enrichment", async () => {
+    const router = {
+      currentRoute: { value: { fullPath: context.pageKey } },
+    } as AppRouterInstance;
+    let current = true;
+    vi.mocked(lazyExtractDomTree).mockClear();
+    vi.mocked(extractRouteContext).mockImplementationOnce(async () => {
+      current = false;
+      return {};
+    });
+    const tool = createPageStateTool(router, () => ({
+      ...context,
+      isCurrent: () => current,
+    }));
+    expect(JSON.parse(await tool({ mode: "dom" }))).toHaveProperty("error");
+    expect(lazyExtractDomTree).not.toHaveBeenCalled();
+  });
+  test("discards an extraction that loses the run before it returns", async () => {
+    const router = {
+      currentRoute: { value: { fullPath: context.pageKey } },
+    } as AppRouterInstance;
+    let current = true;
+    const scope = { ...context, isCurrent: () => current };
+    vi.mocked(lazyExtractDomTree).mockImplementationOnce(async (received) => {
+      expect(received).toBe(scope);
+      current = false;
+      return { tree: "stale", count: 1 };
+    });
+    expect(
+      JSON.parse(
+        await createPageStateTool(router, () => scope)({ mode: "dom" })
+      )
+    ).toHaveProperty("error");
   });
 });

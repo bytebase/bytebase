@@ -104,9 +104,9 @@ Rules:
   const toolSelectionInstructions = !canUsePageActions
     ? ""
     : `\nTool selection — choose based on context, not a fixed preference:
-- DOM-first when the user is on a form, preview, editor, or creation page. These pages have unsaved/in-progress state that only exists in the UI — APIs cannot access it. Read from and write to visible elements directly.
+- Inspect the page for unsaved form or editor state. Use only registered actions advertised on the exact ref; inspection and local draft editing are automatic.
 - API-first when fetching data not visible on the current page, querying across resources, or performing bulk operations on persisted resources.
-- Either works for mutations on persisted resources. Use DOM if the user is already on the relevant page and would benefit from seeing the interaction. Use API for speed or when the relevant page is not open.
+- A registered persistent page action pauses for the runtime's exact API permission. Do not add an ask_user confirmation. For a manual-required action, leave the control to the user or use a supported API; do not try another click or replay an event.
 
 Before interacting with the page, call get_page_state(mode="dom") for fresh element refs; do not reuse refs after navigation or a page change.
 DOM interaction workflow: get_page_state(mode="dom") → read element refs like [e1] in the DOM tree → dom_action(type, ref, value).

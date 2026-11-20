@@ -415,7 +415,12 @@ vi.mock("./maskingOverview", () => ({
   createMaskingOverviewTool: maskingOverviewApi.create,
 }));
 vi.mock("./domAction", () => ({
-  createDomActionTool: vi.fn(() => vi.fn(async () => "dom_action")),
+  createDomActionTool: vi.fn(() =>
+    vi.fn(async () => ({
+      kind: "result",
+      result: { success: false, message: "manual required" },
+    }))
+  ),
 }));
 vi.mock("./navigate", () => ({
   createNavigateTool: vi.fn(() => vi.fn(async () => "navigate")),
@@ -5751,7 +5756,10 @@ describe("agent tools concurrency guard", () => {
     async (name) => {
       const pageState = vi.fn(async () => "page_state");
       const navigate = vi.fn(async () => "navigate");
-      const domAction = vi.fn(async () => "dom_action");
+      const domAction = vi.fn(async () => ({
+        kind: "result" as const,
+        result: { success: false, message: "manual required" },
+      }));
       vi.mocked(createPageStateTool).mockReturnValue(pageState);
       vi.mocked(createNavigateTool).mockReturnValue(navigate);
       vi.mocked(createDomActionTool).mockReturnValue(domAction);
@@ -5779,10 +5787,7 @@ describe("agent tools concurrency guard", () => {
       chatId: "background-chat",
       canUseCurrentPage,
     });
-    expect(createDomActionTool).toHaveBeenLastCalledWith(
-      expect.anything(),
-      canUseCurrentPage
-    );
+    expect(createDomActionTool).toHaveBeenLastCalledWith();
 
     expect(
       await executeTool("get_project_overview", {}, "tool-overview")

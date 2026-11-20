@@ -586,6 +586,7 @@ export function PlanDetailHeader() {
           <Input
             size="md"
             ref={titleInputRef}
+            data-plan-title-input={page.plan.name}
             className={cn(
               "h-9 min-w-0 flex-1 bg-transparent text-xl! font-bold text-main outline-hidden",
               editingTitle

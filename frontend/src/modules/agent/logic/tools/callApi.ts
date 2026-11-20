@@ -9,6 +9,10 @@ import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_p
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { QueryRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  type AgentExecutionContext,
+  isAgentExecutionContextCurrent,
+} from "../executionContext";
 import { boundAgentQueryResult } from "../queryResultRetention";
 import type { PropertyInfo, SchemaInfo } from "./gen/openapi-index";
 import { getEndpointPath, getRequestSchema, getSchema } from "./searchApi";
@@ -315,26 +319,34 @@ export async function prepareApiCall(
 }
 
 export async function dispatchPreparedApiCall(
-  call: PreparedApiCall
+  prepared: PreparedApiCall,
+  runSignal?: AbortSignal,
+  dom?: { expectedContext: AgentExecutionContext; beforeSend: () => boolean }
 ): Promise<string> {
+  const call = Object.freeze({ ...prepared });
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+  const abort = () => controller.abort();
+  if (runSignal?.aborted) abort();
+  else runSignal?.addEventListener("abort", abort, { once: true });
+  const timeoutId = setTimeout(abort, 30_000);
+  const signal = controller.signal;
 
   try {
-    let result = await fetchApi({
-      path: call.path,
-      body: call.body,
-      signal: controller.signal,
-    });
+    if (
+      dom &&
+      (!isAgentExecutionContextCurrent(dom.expectedContext, signal) ||
+        !dom.beforeSend())
+    )
+      return JSON.stringify({
+        called: false,
+        error: "Not called: The page action changed or expired.",
+      });
+    let result = await fetchApi({ ...call, signal });
 
-    if (result.status === 401 && call.path !== REFRESH_PATH) {
+    if (!dom && result.status === 401 && call.path !== REFRESH_PATH) {
       try {
         await refreshTokens();
-        result = await fetchApi({
-          path: call.path,
-          body: call.body,
-          signal: controller.signal,
-        });
+        result = await fetchApi({ ...call, signal });
       } catch {
         // Preserve the original API error shape when refresh fails.
       }
@@ -350,6 +362,7 @@ export async function dispatchPreparedApiCall(
       error: `Failed to call ${call.operationId}: ${err instanceof Error ? err.message : String(err)}`,
     });
   } finally {
+    runSignal?.removeEventListener("abort", abort);
     clearTimeout(timeoutId);
   }
 }

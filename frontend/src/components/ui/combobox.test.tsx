@@ -27,6 +27,7 @@ describe("Combobox", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
+    const triggerRef = vi.fn();
 
     act(() => {
       root.render(
@@ -35,6 +36,7 @@ describe("Combobox", () => {
             <div>Dialog body</div>
             <Combobox
               className="test-combobox"
+              triggerRef={triggerRef}
               value=""
               onChange={() => {}}
               options={[{ value: "alpha", label: "Alpha" }]}
@@ -50,6 +52,7 @@ describe("Combobox", () => {
 
     const trigger = overlayRoot?.querySelector(".test-combobox > div");
     expect(trigger).toBeInstanceOf(HTMLDivElement);
+    expect(triggerRef).toHaveBeenCalledWith(trigger);
 
     act(() => {
       trigger?.dispatchEvent(new MouseEvent("click", { bubbles: true }));

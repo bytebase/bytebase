@@ -21,6 +21,10 @@ import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { GetPlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import {
+  type AgentDomContext,
+  type CapturedDomMutation,
+} from "../../dom/interactionRegistry";
+import {
   resolveSkill,
   type GetSkillArgs,
   type MaskingSkillSection,
@@ -84,7 +88,12 @@ import { createIssueOverviewTool } from "./issueOverview";
 import { prepareIssueDecisionPermission } from "./issueDecisionPermission";
 import { createNavigateTool } from "./navigate";
 import { createPageStateTool, type PageStateArgs } from "./pageState";
-import { createPendingApiCall } from "./pendingApiCall";
+import {
+  createPendingApiCall,
+  isCurrentDomApiCall,
+  isSupportedDomApiCall,
+  staleDomPermission,
+} from "./pendingApiCall";
 import { createPlanOverviewTool } from "./planOverview";
 import { createProjectOpenIssuesTool } from "./projectOpenIssues";
 import { createProjectGovernanceOverviewTool } from "./projectGovernanceOverview";
@@ -718,13 +727,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
       description: `Last-resort DOM interaction — use only when no API endpoint covers the action.
 **Always call get_page_state(mode="dom") first** to get the element ref, such as [e1].
 
-| Action | When to use | value param |
-|--------|-------------|-------------|
-| click  | Buttons, links, tabs, checkboxes | not needed |
-| input  | Text fields, textareas, code editors | required — the text to enter |
-| select | Dropdowns | required — the option text to select |
-| read   | Get full content of an element (editor, input) | not needed |
-| scroll | Bring element into viewport | not needed |`,
+Read nonsensitive content or scroll. Use click/input/select only for the exact registered action advertised on the ref. Inspection and local drafts do not require confirmation. A persistent action pauses for runtime permission on its exact API request; never use ask_user to authorize activation. A manual-required control is not actionable: leave it to the user or use a supported API.`,
       parametersSchema: {
         type: "object",
         properties: {
@@ -1398,6 +1401,9 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
 }
 
 interface CreateToolExecutorOptions {
+  runId?: string;
+  getDomContext?: () => AgentDomContext | undefined;
+  signal?: AbortSignal;
   capability?: AgentDiagnosticCapability;
   onSkillLoaded?: (load: Extract<SkillLoadResult, { kind: "loaded" }>) => void;
   chatId?: string;
@@ -1522,8 +1528,20 @@ export function createToolExecutor(
       ? options.databaseChoiceProject
       : undefined;
   const navigateTool = createNavigateTool(router);
-  const pageStateTool = createPageStateTool(router);
-  const domActionTool = createDomActionTool(router, options.canUseCurrentPage);
+  const getDomContext = () => {
+    const ctx = options.getDomContext?.();
+    return ctx &&
+      ctx.chatId === options.chatId &&
+      ctx.runId === options.runId &&
+      ctx.actor === options.userName &&
+      ctx.workspace === options.workspaceName &&
+      ctx.runMode === (options.runMode ?? "default") &&
+      (!isCanonicalProjectName(projectName) || ctx.projectName === projectName)
+      ? ctx
+      : undefined;
+  };
+  const pageStateTool = createPageStateTool(router, getDomContext);
+  const domActionTool = createDomActionTool();
   const projectOpenIssuesTool = createProjectOpenIssuesTool({
     projectName,
   });
@@ -1639,6 +1657,85 @@ export function createToolExecutor(
     return referencedPlanAccess;
   };
 
+  const admitPreparedCall = async (
+    call: PreparedApiCall,
+    toolCallId: string,
+    dom?: { origin: CapturedDomMutation; context: AgentDomContext }
+  ): Promise<ToolExecutionResult> => {
+    const current = () =>
+      !dom ||
+      (!options.signal?.aborted &&
+        isCurrentDomApiCall(dom.origin, call, dom.context));
+    if (dom && (!current() || !isSupportedDomApiCall(dom.origin, call)))
+      return toToolResult(staleDomPermission);
+    if (
+      referencedProject &&
+      ((await apiTargetsAnotherProject(call, referencedProject)) ||
+        (isDiagnostic &&
+          call.operationId === "bytebase.v1.DatabaseService.ListDatabases" &&
+          !(await databaseListIsProjectConstrained(call, referencedProject))))
+    ) {
+      return toToolResult(
+        JSON.stringify({
+          error: `This API request is outside the referenced project (${referencedProject}). Ask in a separate message to use another project.`,
+        })
+      );
+    }
+    if (!current()) return toToolResult(staleDomPermission);
+    const access = await checkPreparedApiPermission(call);
+    if (!current()) return toToolResult(staleDomPermission);
+    if (access.kind === "denied") {
+      return toToolResult(access.result);
+    }
+    const issueDecision = await prepareIssueDecisionPermission(
+      call,
+      options.referencedIssue
+    );
+    if (!current()) return toToolResult(staleDomPermission);
+    if (issueDecision.kind === "error") {
+      return toToolResult(issueDecision.result);
+    }
+    if (
+      !dom &&
+      issueDecision.kind === "not-issue-decision" &&
+      !apiCallNeedsConfirmation(call.operationId)
+    ) {
+      return toToolResult(await dispatchPreparedApiCall(call));
+    }
+    if (!options.chatId || !options.userName) {
+      return toToolResult(
+        JSON.stringify({
+          error: "Cannot request API permission without a signed-in chat.",
+        })
+      );
+    }
+    const { actionId, expiresAt } = createPendingApiCall({
+      chatId: options.chatId,
+      toolCallId,
+      userName: options.userName,
+      call,
+      domOrigin: dom?.origin,
+      domContext: dom?.context,
+      issueDecision:
+        issueDecision.kind === "issue-decision"
+          ? issueDecision.decision
+          : undefined,
+    });
+    return {
+      kind: "ask_user",
+      ask: {
+        kind: "confirm",
+        toolCallId,
+        prompt: call.operationId,
+        apiPermission: {
+          actionId,
+          operationId: call.operationId,
+          expiresAt,
+        },
+      },
+    };
+  };
+
   const canUseIssueAccess = (
     name: string,
     args: Record<string, unknown>
@@ -1739,70 +1836,7 @@ export function createToolExecutor(
         if (prepared.kind === "error") {
           return toToolResult(prepared.result);
         }
-        if (
-          referencedProject &&
-          ((await apiTargetsAnotherProject(prepared.call, referencedProject)) ||
-            (isDiagnostic &&
-              prepared.call.operationId ===
-                "bytebase.v1.DatabaseService.ListDatabases" &&
-              !(await databaseListIsProjectConstrained(
-                prepared.call,
-                referencedProject
-              ))))
-        ) {
-          return toToolResult(
-            JSON.stringify({
-              error: `This API request is outside the referenced project (${referencedProject}). Ask in a separate message to use another project.`,
-            })
-          );
-        }
-        const access = await checkPreparedApiPermission(prepared.call);
-        if (access.kind === "denied") {
-          return toToolResult(access.result);
-        }
-        const issueDecision = await prepareIssueDecisionPermission(
-          prepared.call,
-          options.referencedIssue
-        );
-        if (issueDecision.kind === "error") {
-          return toToolResult(issueDecision.result);
-        }
-        if (
-          issueDecision.kind === "not-issue-decision" &&
-          !apiCallNeedsConfirmation(prepared.call.operationId)
-        ) {
-          return toToolResult(await dispatchPreparedApiCall(prepared.call));
-        }
-        if (!options.chatId || !options.userName) {
-          return toToolResult(
-            JSON.stringify({
-              error: "Cannot request API permission without a signed-in chat.",
-            })
-          );
-        }
-        const { actionId, expiresAt } = createPendingApiCall({
-          chatId: options.chatId,
-          toolCallId,
-          userName: options.userName,
-          call: prepared.call,
-          issueDecision:
-            issueDecision.kind === "issue-decision"
-              ? issueDecision.decision
-              : undefined,
-        });
-        return {
-          kind: "ask_user",
-          ask: {
-            kind: "confirm",
-            toolCallId,
-            prompt: prepared.call.operationId,
-            apiPermission: {
-              actionId,
-              operationId: prepared.call.operationId,
-              expiresAt,
-            },
-          },
-        };
+        return admitPreparedCall(prepared.call, toolCallId);
       }
       case "navigate": {
         const result = await withPageMutationLock(
@@ -2036,11 +2070,20 @@ export function createToolExecutor(
       case "get_workspace_recent_activity":
         return toToolResult(await workspaceRecentActivityTool());
       case "dom_action":
-        return toToolResult(
-          await withPageMutationLock(options.chatId, name, async () => {
-            return await domActionTool(args as unknown as DomActionArgs);
-          })
-        );
+        return withPageMutationLock(options.chatId, name, async () => {
+          const context = getDomContext();
+          const prepared = await domActionTool(
+            args as unknown as DomActionArgs,
+            context
+          );
+          if (prepared.kind === "result")
+            return toToolResult(JSON.stringify(prepared.result));
+          if (!context) return toToolResult(staleDomPermission);
+          return admitPreparedCall(prepared.call, toolCallId, {
+            context,
+            origin: prepared.origin,
+          });
+        });
       case "get_skill": {
         const load = resolveSkill(args as GetSkillArgs);
         if (load.kind === "error") {
