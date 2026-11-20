@@ -933,44 +933,6 @@ export function instanceResourceName(
 
 // ---- Manual entry ----
 
-export type NeonConnectionString = {
-  host: string;
-  port: string;
-  role: string;
-  password: string;
-  database: string;
-};
-
-const decode = (value: string) => {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
-};
-
-// Reads the connection string the Neon console shows, with or without the
-// "psql" prefix and quotes it copies along.
-export function parseNeonConnectionString(
-  value: string
-): NeonConnectionString | undefined {
-  const match = value
-    .trim()
-    .replace(/^psql\s+/, "")
-    .replace(/^['"]|['"]$/g, "")
-    .match(
-      /^postgres(?:ql)?:\/\/([^:@/]+)(?::([^@/]*))?@([^/:?#]+)(?::(\d+))?\/([^?#]+)/
-    );
-  if (!match) return undefined;
-  return {
-    role: decode(match[1]),
-    password: decode(match[2] ?? ""),
-    host: match[3],
-    port: match[4] ?? "5432",
-    database: decode(match[5]),
-  };
-}
-
 // Neon's pooled endpoints run PgBouncer, which schema sync and migrations
 // cannot use.
 export function isNeonPooledHost(host: string): boolean {

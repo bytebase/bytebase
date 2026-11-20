@@ -1646,6 +1646,7 @@
       "filled": "已从 URL 填充",
       "filled-missing-password": "已从 URL 填充，请输入数据库密码。",
       "filled-missing-token": "已从 URL 填充，请输入访问令牌。",
+      "filled-neon-pooled": "已从 URL 填充。请使用不含 -pooler 的直连端点主机。",
       "help": {
         "cassandra": "粘贴 Cassandra 连接 URL 以自动填充主机、端口、凭据和 TLS。",
         "clickhouse": "粘贴 ClickHouse 连接 URL 以自动填充主机、端口、凭据和 TLS。",
@@ -1658,6 +1659,7 @@
         "mongodb": "粘贴 MongoDB 连接 URL 或 mongosh 命令以自动填充主机、端口、凭据、副本集、认证数据库和 TLS。",
         "mssql": "粘贴 SQL Server 连接 URL 或连接字符串以自动填充主机、端口、凭据、数据库和 TLS。",
         "mysql": "粘贴 MySQL 连接 URL 以自动填充主机、端口、凭据和 TLS。",
+        "neon": "粘贴 Neon 直连 URL 或连接字符串以自动填充主机、端口、凭据和数据库。",
         "oceanbase": "粘贴 OceanBase 连接 URL 以自动填充主机、端口、凭据和 TLS。",
         "oracle": "粘贴 Oracle 连接 URL 或 Easy Connect 字符串以自动填充主机、端口、凭据、服务名或 SID 以及 TLS。",
         "postgres": "粘贴 PostgreSQL 连接 URL 或连接字符串以自动填充主机、端口、凭据、数据库和 TLS。",
@@ -1681,6 +1683,7 @@
         "mongodb": "请输入有效的 mongodb://、mongodb+srv:// 或 mongosh 命令。",
         "mssql": "请输入有效的 sqlserver:// URL 或 Server=…; 连接字符串。",
         "mysql": "请输入有效的 mysql:// 连接 URL。",
+        "neon": "请输入启用了 TLS 的有效 postgresql:// URL 或 key=value 连接字符串。",
         "oceanbase": "请输入有效的 mysql:// 或 oceanbase:// 连接 URL。",
         "oracle": "请输入包含服务名或 SID 的有效 oracle:// URL 或 Easy Connect 字符串。",
         "postgres": "请输入有效的 postgresql:// URL 或 key=value 连接字符串。",
@@ -2133,13 +2136,6 @@
       "limit-reached": {
         "body": "当前订阅方案无法再添加实例。请移除不再需要的实例，或在“设置”>“订阅”中提高上限。",
         "title": "工作空间已达到实例上限"
-      },
-      "manual": {
-        "connection-string": "Neon 连接字符串",
-        "connection-string-filled": "已填充主机、角色、密码和数据库。",
-        "connection-string-help": "粘贴即可自动填充主机、角色、密码和数据库。",
-        "connection-string-invalid": "请输入包含主机、角色和数据库的 postgresql:// 连接字符串。",
-        "connection-string-pooled": "字段已填充，但这是连接池端点（-pooler）。请粘贴直连连接字符串，或删掉下方主机中的 -pooler。"
       },
       "method": {
         "discover": "使用 Neon API 密钥发现分支",

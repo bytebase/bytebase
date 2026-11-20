@@ -10,6 +10,7 @@ import {
   DataSourceType,
   KerberosConfigSchema,
   SASLConfigSchema,
+  Vendor,
 } from "@/types/proto-es/v1/instance_service_pb";
 import type { EditDataSource } from "./common";
 import {
@@ -177,6 +178,65 @@ describe("parseConnectionString - PostgreSQL", () => {
         "host=db.example.com;port=5432;dbname=app"
       )
     ).toBeUndefined();
+  });
+
+  it("keeps verified TLS for Neon sslmode=require, honors no-verify, and rejects plaintext TLS modes", () => {
+    expect(
+      parseConnectionString(
+        Engine.POSTGRES,
+        "psql 'postgresql://app_owner:p%40ss@ep-example-123456.us-east-2.aws.neon.tech/storefront?sslmode=require&channel_binding=require'",
+        Vendor.NEON
+      )
+    ).toEqual({
+      host: "ep-example-123456.us-east-2.aws.neon.tech",
+      port: "5432",
+      username: "app_owner",
+      password: "p@ss",
+      database: "storefront",
+      tls: { useSsl: true, verifyTlsCertificate: true },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.POSTGRES,
+        "postgresql://app_owner:secret@ep-example-123456.us-east-2.aws.neon.tech/storefront?sslmode=no-verify",
+        Vendor.NEON
+      )
+    ).toMatchObject({
+      tls: { useSsl: true, verifyTlsCertificate: false },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.POSTGRES,
+        "postgresql://app_owner:secret@ep-example-123456.us-east-2.aws.neon.tech/storefront?sslmode=disable",
+        Vendor.NEON
+      )
+    ).toBeUndefined();
+
+    expect(
+      parseConnectionString(
+        Engine.POSTGRES,
+        "host=ep-example-123456.us-east-2.aws.neon.tech dbname=storefront user=app_owner sslmode=disable",
+        Vendor.NEON
+      )
+    ).toBeUndefined();
+
+    const applied = applyParsedConnectionString(
+      makeDraft({ useSsl: false, verifyTlsCertificate: false }),
+      Engine.POSTGRES,
+      {
+        host: "ep-example-123456.us-east-2.aws.neon.tech",
+        port: "5432",
+        username: "app_owner",
+        database: "storefront",
+      },
+      Vendor.NEON
+    );
+    expect(applied).toMatchObject({
+      useSsl: true,
+      verifyTlsCertificate: true,
+    });
   });
 });
 

@@ -1646,6 +1646,7 @@
       "filled": "URL から入力しました",
       "filled-missing-password": "URL から入力しました。データベースのパスワードを入力してください。",
       "filled-missing-token": "URL から入力しました。アクセストークンを入力してください。",
+      "filled-neon-pooled": "URL から入力しました。-pooler を含まない直接エンドポイントのホストを使用してください。",
       "help": {
         "cassandra": "Cassandra の接続 URL を貼り付けると、ホスト、ポート、認証情報、TLS を自動入力します。",
         "clickhouse": "ClickHouse の接続 URL を貼り付けると、ホスト、ポート、認証情報、TLS を自動入力します。",
@@ -1658,6 +1659,7 @@
         "mongodb": "MongoDB の接続 URL または mongosh コマンドを貼り付けると、ホスト、ポート、認証情報、レプリカセット、認証データベース、TLS を自動入力します。",
         "mssql": "SQL Server の接続 URL または接続文字列を貼り付けると、ホスト、ポート、認証情報、データベース、TLS を自動入力します。",
         "mysql": "MySQL の接続 URL を貼り付けると、ホスト、ポート、認証情報、TLS を自動入力します。",
+        "neon": "Neon の直接接続 URL または接続文字列を貼り付けると、ホスト、ポート、認証情報、データベースを自動入力します。",
         "oceanbase": "OceanBase の接続 URL を貼り付けると、ホスト、ポート、認証情報、TLS を自動入力します。",
         "oracle": "Oracle の接続 URL または Easy Connect 文字列を貼り付けると、ホスト、ポート、認証情報、サービス名または SID、TLS を自動入力します。",
         "postgres": "PostgreSQL の接続 URL または接続文字列を貼り付けると、ホスト、ポート、認証情報、データベース、TLS を自動入力します。",
@@ -1681,6 +1683,7 @@
         "mongodb": "有効な mongodb://、mongodb+srv:// URL、または mongosh コマンドを入力してください。",
         "mssql": "有効な sqlserver:// URL または Server=…; 接続文字列を入力してください。",
         "mysql": "有効な mysql:// 接続 URL を入力してください。",
+        "neon": "TLS が有効な postgresql:// URL または key=value 接続文字列を入力してください。",
         "oceanbase": "有効な mysql:// または oceanbase:// 接続 URL を入力してください。",
         "oracle": "サービス名または SID を含む有効な oracle:// URL または Easy Connect 文字列を入力してください。",
         "postgres": "有効な postgresql:// URL または key=value 接続文字列を入力してください。",
@@ -2133,13 +2136,6 @@
       "limit-reached": {
         "body": "現在のプランではこれ以上インスタンスを追加できません。不要なインスタンスを削除するか、設定 > サブスクリプションで上限を引き上げてください。",
         "title": "ワークスペースのインスタンス上限に達しました"
-      },
-      "manual": {
-        "connection-string": "Neon 接続文字列",
-        "connection-string-filled": "ホスト、ロール、パスワード、データベースを入力しました。",
-        "connection-string-help": "Neon コンソールから貼り付けると、ホスト、ロール、パスワード、データベースを自動入力します。",
-        "connection-string-invalid": "ホスト、ロール、データベースを含む有効な postgresql:// 接続文字列を入力してください。",
-        "connection-string-pooled": "各項目は入力されましたが、プール接続のエンドポイント（-pooler）です。直接接続の文字列を貼り付けるか、下のホストから -pooler を削除してください。"
       },
       "method": {
         "discover": "Neon API キーでブランチを検出",

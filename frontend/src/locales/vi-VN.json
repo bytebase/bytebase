@@ -1646,6 +1646,7 @@
       "filled": "Đã điền từ URL",
       "filled-missing-password": "Đã điền từ URL. Hãy nhập mật khẩu cơ sở dữ liệu.",
       "filled-missing-token": "Đã điền từ URL. Hãy nhập mã token truy cập.",
+      "filled-neon-pooled": "Đã điền từ URL. Hãy dùng máy chủ endpoint trực tiếp, không có -pooler.",
       "help": {
         "cassandra": "Dán URL kết nối Cassandra để tự động điền máy chủ, cổng, thông tin xác thực và TLS.",
         "clickhouse": "Dán URL kết nối ClickHouse để tự động điền máy chủ, cổng, thông tin xác thực và TLS.",
@@ -1658,6 +1659,7 @@
         "mongodb": "Dán URL kết nối MongoDB hoặc lệnh mongosh để tự động điền máy chủ, cổng, thông tin xác thực, replica set, cơ sở dữ liệu xác thực và TLS.",
         "mssql": "Dán URL hoặc chuỗi kết nối SQL Server để tự động điền máy chủ, cổng, thông tin xác thực, cơ sở dữ liệu và TLS.",
         "mysql": "Dán URL kết nối MySQL để tự động điền máy chủ, cổng, thông tin xác thực và TLS.",
+        "neon": "Dán URL hoặc chuỗi kết nối trực tiếp của Neon để tự động điền máy chủ, cổng, thông tin xác thực và cơ sở dữ liệu.",
         "oceanbase": "Dán URL kết nối OceanBase để tự động điền máy chủ, cổng, thông tin xác thực và TLS.",
         "oracle": "Dán URL kết nối hoặc chuỗi Easy Connect của Oracle để tự động điền máy chủ, cổng, thông tin xác thực, tên dịch vụ hoặc SID và TLS.",
         "postgres": "Dán URL hoặc chuỗi kết nối PostgreSQL để tự động điền máy chủ, cổng, thông tin xác thực, cơ sở dữ liệu và TLS.",
@@ -1681,6 +1683,7 @@
         "mongodb": "Hãy nhập URL mongodb://, mongodb+srv:// hoặc lệnh mongosh hợp lệ.",
         "mssql": "Hãy nhập URL sqlserver:// hoặc chuỗi kết nối Server=…; hợp lệ.",
         "mysql": "Hãy nhập URL kết nối mysql:// hợp lệ.",
+        "neon": "Hãy nhập URL postgresql:// hoặc chuỗi kết nối key=value hợp lệ có bật TLS.",
         "oceanbase": "Hãy nhập URL kết nối mysql:// hoặc oceanbase:// hợp lệ.",
         "oracle": "Hãy nhập URL oracle:// hoặc chuỗi Easy Connect hợp lệ có tên dịch vụ hoặc SID.",
         "postgres": "Hãy nhập URL postgresql:// hoặc chuỗi kết nối key=value hợp lệ.",
@@ -2133,13 +2136,6 @@
       "limit-reached": {
         "body": "Gói của bạn không thể thêm phiên bản nào nữa. Hãy xóa các phiên bản không còn cần, hoặc tăng giới hạn trong Cài đặt, Gói đăng ký.",
         "title": "Không gian làm việc đã đạt giới hạn phiên bản"
-      },
-      "manual": {
-        "connection-string": "Chuỗi kết nối Neon",
-        "connection-string-filled": "Đã điền máy chủ, vai trò, mật khẩu và cơ sở dữ liệu.",
-        "connection-string-help": "Dán từ bảng điều khiển Neon để tự động điền máy chủ, vai trò, mật khẩu và cơ sở dữ liệu.",
-        "connection-string-invalid": "Hãy nhập chuỗi kết nối postgresql:// hợp lệ gồm máy chủ, vai trò và cơ sở dữ liệu.",
-        "connection-string-pooled": "Các trường đã được điền, nhưng đây là endpoint dùng pool (-pooler). Hãy dán chuỗi kết nối trực tiếp hoặc xóa -pooler khỏi máy chủ bên dưới."
       },
       "method": {
         "discover": "Tìm nhánh bằng khóa API Neon",
