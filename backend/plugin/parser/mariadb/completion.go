@@ -3,11 +3,7 @@ package mariadb
 import (
 	"context"
 
-	"github.com/bytebase/omni/mariadb/ast"
-	"github.com/bytebase/omni/mariadb/catalog"
 	omnicompletion "github.com/bytebase/omni/mariadb/completion"
-	mariadbparser "github.com/bytebase/omni/mariadb/parser"
-	metadatapb "github.com/bytebase/omni/metadata"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -20,56 +16,23 @@ func init() {
 // Completion provides auto-complete candidates for MariaDB statements using the
 // omni MariaDB completion engine.
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	return base.CompleteMySQLFamily(
-		cCtx,
-		statement,
-		caretLine,
-		caretOffset,
-		currentStatement,
-		mariadbparser.IsReservedKeyword,
-		func(stmt string, pos int) []base.Candidate {
-			cat := catalog.New()
-			base.PopulateMySQLFamilyCatalog(
-				ctx,
-				cCtx,
-				stmt,
-				pos,
-				hasDatabaseRule,
-				func(name string) {
-					_ = cat.DefineDatabase(&ast.CreateDatabaseStmt{Name: name, IfNotExists: true})
-				},
-				func(name string, meta *metadatapb.DatabaseSchemaMetadata) {
-					_, _ = cat.LoadMetadataInto(ctx, meta, name)
-				},
-				cat.SetCurrentDatabase,
-			)
-			raw := omnicompletion.Complete(stmt, pos, cat)
-			out := make([]base.Candidate, len(raw))
-			for i, c := range raw {
-				out[i] = base.Candidate{
-					Type:       candidateTypeToBase(c.Type),
-					Text:       c.Text,
-					Definition: c.Definition,
-					Comment:    c.Comment,
-				}
-			}
-			return out
-		},
-	), nil
+	loadDB, listDBs := base.MySQLFamilyDatabaseLoaders(cCtx)
+	raw := omnicompletion.CompleteSession(ctx, omnicompletion.SessionConfig{
+		ReadOnly:          cCtx.Scene == base.SceneTypeQuery,
+		DefaultDatabase:   cCtx.DefaultDatabase,
+		LoadDatabase:      loadDB,
+		ListDatabaseNames: listDBs,
+	}, statement, caretLine, caretOffset)
+	return base.MapMySQLFamilyCandidates(raw, candidateToBase), nil
 }
 
-func hasDatabaseRule(sql string, offset int) bool {
-	cs := mariadbparser.Collect(sql, offset)
-	return cs != nil && cs.HasRule("database_ref")
-}
-
-func currentStatement(statement string, pos int) (string, int) {
-	for _, seg := range mariadbparser.Split(statement) {
-		if pos >= seg.ByteStart && pos <= seg.ByteEnd {
-			return seg.Text, pos - seg.ByteStart
-		}
+func candidateToBase(c omnicompletion.Candidate) base.Candidate {
+	return base.Candidate{
+		Type:       candidateTypeToBase(c.Type),
+		Text:       c.Text,
+		Definition: c.Definition,
+		Comment:    c.Comment,
 	}
-	return "", 0
 }
 
 func candidateTypeToBase(t omnicompletion.CandidateType) base.CandidateType {

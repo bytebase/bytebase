@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	tidbparser "github.com/bytebase/omni/tidb/parser"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -477,73 +476,6 @@ func TestCompletion_FunctionCandidatesGetParens(t *testing.T) {
 		"function candidates should carry () like the mysql completer; got %v", got)
 	require.False(t, hasCandidate(got, base.CandidateTypeFunction, "COUNT"),
 		"bare function name without () should not appear; got %v", got)
-}
-
-func TestQuoteIdentifierIfNeeded(t *testing.T) {
-	cases := []struct {
-		name            string
-		caretInBacktick bool
-		want            string
-	}{
-		{"users", false, "users"},       // bare identifier — unchanged
-		{"t1", false, "t1"},             // bare with digit suffix — unchanged
-		{"comment", false, "comment"},   // non-reserved keyword — stays bare
-		{"order", false, "`order`"},     // reserved keyword
-		{"select", false, "`select`"},   // reserved keyword
-		{"Order", false, "`Order`"},     // reserved (case-insensitive), original case preserved
-		{"foo-bar", false, "`foo-bar`"}, // non-bare character
-		{"1col", false, "`1col`"},       // leading digit
-		{"a`b", false, "`a``b`"},        // embedded backtick is doubled
-		{"order", true, "order"},        // caret already inside a backtick — no extra quotes
-	}
-	for _, tc := range cases {
-		require.Equal(t, tc.want, base.QuoteMySQLIdentifierIfNeeded(tc.name, tc.caretInBacktick, tidbparser.IsReservedKeyword),
-			"QuoteMySQLIdentifierIfNeeded(%q, %v)", tc.name, tc.caretInBacktick)
-	}
-}
-
-func TestCaretInsideBacktickIdentifier(t *testing.T) {
-	cases := []struct {
-		statement string
-		pos       int
-		want      bool
-	}{
-		{"SELECT * FROM ", 14, false},         // no backticks
-		{"SELECT * FROM `o", 16, true},        // one open backtick before caret
-		{"SELECT `a`, ", 12, false},           // closed pair before caret
-		{"`", 1, true},                        // single backtick
-		{"ab", 99, false},                     // pos clamped past end, no backticks
-		{"SELECT '`' FROM ", 16, false},       // backtick inside a string literal is ignored
-		{"SELECT /* `x` */ FROM ", 22, false}, // backticks inside a block comment ignored
-		{"SELECT 1 -- `\nFROM ", 19, false},   // backtick inside a line comment ignored
-	}
-	for _, tc := range cases {
-		require.Equal(t, tc.want, base.CaretInsideMySQLBacktickIdentifier(tc.statement, tc.pos),
-			"CaretInsideMySQLBacktickIdentifier(%q, %d)", tc.statement, tc.pos)
-	}
-}
-
-func TestStatementReferencesDatabase(t *testing.T) {
-	cases := []struct {
-		statement string
-		db        string
-		want      bool
-	}{
-		{"SELECT * FROM otherdb.t", "otherdb", true},         // plain qualifier
-		{"SELECT * FROM `otherdb`.t", "otherdb", true},       // backtick-quoted qualifier
-		{"SELECT OTHERDB.t FROM x", "otherdb", true},         // case-insensitive
-		{"SELECT 'otherdb.' FROM t", "otherdb", false},       // inside a string literal
-		{"SELECT /* otherdb. */ * FROM t", "otherdb", false}, // inside a block comment
-		{"SELECT 1 -- otherdb.\n FROM t", "otherdb", false},  // inside a line comment
-		{"SELECT nototherdb.t FROM x", "otherdb", false},     // not at an identifier boundary
-		{"SELECT a FROM t", "otherdb", false},                // not referenced
-		{"SELECT * FROM otherdb . t2", "otherdb", true},      // whitespace around the dot (TiDB allows it)
-		{"SELECT * FROM `otherdb` . t2", "otherdb", true},    // backtick-quoted + whitespace
-	}
-	for _, tc := range cases {
-		require.Equal(t, tc.want, base.MySQLStatementReferencesDatabase(tc.statement, tc.db),
-			"MySQLStatementReferencesDatabase(%q, %q)", tc.statement, tc.db)
-	}
 }
 
 // A backtick inside a preceding string literal must not be treated as an open

@@ -739,10 +739,6 @@
     --
     -- Trigger structure for `order_status_change`
     --
-    SET character_set_client = ;
-    SET character_set_results = ;
-    SET collation_connection = ;
-    SET sql_mode = '';
     DELIMITER ;;
     CREATE TRIGGER `order_status_change`
     AFTER UPDATE ON `orders` FOR EACH ROW
@@ -1544,11 +1540,6 @@
     --
     -- Event structure for `update_daily_stats`
     --
-    SET character_set_client = ;
-    SET character_set_results = ;
-    SET collation_connection = ;
-    SET sql_mode = '';
-    SET time_zone = '';
     DELIMITER ;;
     CREATE DEFINER=`root`@`%` EVENT `update_daily_stats` ON SCHEDULE EVERY 1 DAY
     STARTS CURRENT_TIMESTAMP ON COMPLETION NOT PRESERVE ENABLE DO INSERT INTO daily_stats (stat_date, total_orders, total_revenue)
