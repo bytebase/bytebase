@@ -53,7 +53,8 @@ describe("createProjectRecentActivityTool", () => {
         parent: "projects/orders",
         orderBy: "create_time desc",
         pageSize: 500,
-      })
+      }),
+      expect.objectContaining({ contextValues: expect.anything() })
     );
     expect(result).toEqual({
       project: "projects/orders",
@@ -169,7 +170,8 @@ describe("createProjectRecentActivityTool", () => {
       expect.objectContaining({
         filter: "create_time >= '2026-10-17T12:00:00.000Z'",
         pageSize: 500,
-      })
+      }),
+      expect.objectContaining({ contextValues: expect.anything() })
     );
     expect(result.events).toEqual([
       expect.objectContaining({ action: "approved an Issue" }),
@@ -188,6 +190,8 @@ describe("createProjectRecentActivityTool", () => {
 
     expect(result).toEqual({
       error: "Unable to load recent activity.",
+      apiError: { source: "client" },
+      apiRecovery: { kind: "api-error", source: "api-client" },
     });
   });
 });

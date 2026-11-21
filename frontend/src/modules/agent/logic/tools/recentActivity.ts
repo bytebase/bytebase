@@ -1,10 +1,13 @@
 import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { auditLogServiceClientConnect } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import {
   type AuditLog,
   SearchAuditLogsRequestSchema,
 } from "@/types/proto-es/v1/audit_log_service_pb";
+import { agentApiErrorResult } from "../apiResponse";
 
 const PAGE_SIZE = 500;
 const MAX_EVENTS = 5;
@@ -81,7 +84,8 @@ export async function getRecentActivity(parent: string): Promise<string> {
         ).toISOString()}'`,
         orderBy: "create_time desc",
         pageSize: PAGE_SIZE,
-      })
+      }),
+      { contextValues: createContextValues().set(silentContextKey, true) }
     );
     const auditLogs = response.auditLogs ?? [];
     const meaningfulAuditLogs = auditLogs.filter(isMeaningfulAuditLog);
@@ -91,7 +95,11 @@ export async function getRecentActivity(parent: string): Promise<string> {
         Boolean(response.nextPageToken) ||
         meaningfulAuditLogs.length > MAX_EVENTS,
     });
-  } catch {
-    return JSON.stringify({ error: "Unable to load recent activity." });
+  } catch (error) {
+    return agentApiErrorResult(
+      "bytebase.v1.AuditLogService.SearchAuditLogs",
+      error,
+      "Unable to load recent activity."
+    );
   }
 }

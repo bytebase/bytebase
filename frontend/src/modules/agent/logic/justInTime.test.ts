@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { AccessGrantDraft } from "@/modules/sql-editor/model/accessGrantDraft";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -104,6 +105,23 @@ beforeEach(() => {
 });
 
 describe("JIT overview", () => {
+  test("preserves typed failure evidence without establishing eligibility", async () => {
+    api.database.mockRejectedValueOnce(
+      new ConnectError("private connection diagnostic", Code.Unavailable)
+    );
+    const result = JSON.parse(await tools().overview({ database }));
+    expect(result).toMatchObject({
+      error: "Unable to verify current Just-in-Time access eligibility.",
+      apiError: { source: "connect", code: "unavailable" },
+    });
+    expect(result).not.toHaveProperty("status");
+    expect(result).not.toHaveProperty("justInTime");
+    expect(JSON.stringify(result)).not.toContain(
+      "private connection diagnostic"
+    );
+    expect(api.setup).not.toHaveBeenCalled();
+  });
+
   test("uses fresh database ownership and independent JIT evidence", async () => {
     const result = JSON.parse(await tools().overview({ database }));
     expect(result).toMatchObject({

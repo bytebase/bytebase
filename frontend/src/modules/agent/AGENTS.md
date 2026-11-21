@@ -32,6 +32,30 @@ Keep agent-only UI and state inside this module. Shared application primitives s
 - `dom_action` interacts with elements from the latest DOM snapshot.
 - `get_skill` loads workflow guidance from `logic/skills/`.
 
+### API response recovery
+
+`logic/apiResponse.ts` interprets observed failures, not entitlement preflight.
+Generic API dispatch and typed API error adapters use the same classifier.
+Paid-feature advice requires an explicit recognized backend error; a 403 or
+unavailable overview alone is not subscription evidence. Typed readers that need
+recovery guidance should use `agentApiErrorResult` before losing their Connect
+error details. Keep intentional unavailable facets local.
+
+Typed failures keep fallback text and protocol code in `apiError`, not fabricated
+HTTP status, raw diagnostic prose, or unrelated details. Client errors do not prove
+that a server responded or a request was dispatched. Local validation and target
+clarification stay domain-owned. `apiResponseGuidance.ts` supplies a common fallback
+plus protocol-specific advice only for API failures or validated uncertain execution.
+Execution metadata must satisfy the shared envelope validator before specialized
+advice. A later matching request cannot resolve an earlier attempt's possible or
+partial effects. Shared safety rules cover all prompt modes; diagnostic advice stays
+explanation-only and never starts query access, drafts, retries, or operational
+approval workflows.
+
+Current-turn recovery guidance reuses the existing query Access Grant workflow,
+including fresh eligibility and member consent. Recovery metadata never authorizes
+an action, changes execution evidence, proves rollback, or permits automatic retry.
+
 DOM refs such as `e1` are local to one `get_page_state(mode="dom")` snapshot. Refresh the snapshot after navigation or any DOM-changing action; never describe refs as durable identifiers.
 
 ### Registered DOM actions

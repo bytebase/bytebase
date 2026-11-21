@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { AppRouterInstance } from "@/app/router";
 import i18n from "@/lib/i18n";
@@ -976,6 +977,94 @@ test("prepares semantic type drafts without exposing private algorithm fields", 
     workspaceName: "workspaces/example",
     userName: "users/member@example.com",
     chatId: "chat",
+  });
+});
+
+describe("typed skill read failures", () => {
+  test.each([
+    ["prepare_masking_rule_draft", maskingDraftApi.prepare],
+    ["prepare_masking_rule_drafts", maskingDraftApi.prepareMany],
+    ["prepare_masking_exemption_draft", maskingDraftApi.prepareExemption],
+    ["prepare_semantic_type_draft", semanticApi.prepare],
+    ["ask_masking_semantic_type", semanticApi.setup],
+    ["ask_masking_rule_scope", semanticApi.setup],
+    ["ask_unmask_method", semanticApi.setup],
+    ["ask_masking_exemption_scope", semanticApi.setup],
+  ] as const)(
+    "normalizes %s without exposing diagnostic prose",
+    async (name, read) => {
+      read.mockRejectedValueOnce(
+        new ConnectError("private connection diagnostic", Code.Unavailable)
+      );
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        context: "projects/sample",
+        workspaceName: "workspaces/example",
+        userName: "users/member@example.com",
+        chatId: "chat",
+      });
+      const result = await execute(
+        name,
+        name === "prepare_masking_exemption_draft"
+          ? { project: "projects/sample" }
+          : {},
+        "read-failed"
+      );
+      expect(result.kind).toBe("tool_result");
+      if (result.kind !== "tool_result")
+        throw new Error("Expected tool result");
+      expect(JSON.parse(result.result)).toMatchObject({
+        apiError: { source: "connect", code: "unavailable" },
+      });
+      expect(JSON.parse(result.result)).not.toHaveProperty("status");
+      expect(result.result).not.toContain("private connection diagnostic");
+      expect(result.result).not.toContain("draftId");
+    }
+  );
+
+  test("preserves explicit paid-feature evidence from semantic type settings", async () => {
+    semanticApi.setting.mockRejectedValueOnce(
+      new ConnectError(
+        "feature FEATURE_DATA_CLASSIFICATION is a ENTERPRISE feature, please upgrade to access it",
+        Code.PermissionDenied
+      )
+    );
+    const execute = createToolExecutor({} as AppRouterInstance, {
+      workspaceName: "workspaces/example",
+      userName: "users/member@example.com",
+      chatId: "chat",
+    });
+    const result = await execute(
+      "ask_masking_semantic_type",
+      {},
+      "feature-denied"
+    );
+    expect(result.kind).toBe("tool_result");
+    if (result.kind !== "tool_result") throw new Error("Expected tool result");
+    expect(JSON.parse(result.result)).toMatchObject({
+      apiRecovery: {
+        kind: "feature-required",
+        feature: "FEATURE_DATA_CLASSIFICATION",
+        requiredPlan: "ENTERPRISE",
+      },
+    });
+    expect(JSON.parse(result.result)).not.toHaveProperty("draftId");
+  });
+
+  test("preserves local validation rather than inventing API evidence", async () => {
+    semanticApi.prepare.mockRejectedValueOnce(
+      new Error("Choose an algorithm.")
+    );
+    const execute = createToolExecutor({} as AppRouterInstance, {
+      workspaceName: "workspaces/example",
+      userName: "users/member@example.com",
+      chatId: "chat",
+    });
+    expect(await execute("prepare_semantic_type_draft", {}, "invalid")).toEqual(
+      {
+        kind: "tool_result",
+        result: JSON.stringify({ error: "Choose an algorithm." }),
+      }
+    );
   });
 });
 

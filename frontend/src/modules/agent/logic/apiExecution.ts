@@ -1,15 +1,8 @@
-import {
-  type DescMethod,
-  fromJsonString,
-  isMessage,
-  type JsonValue,
-} from "@bufbuild/protobuf";
-import { StructSchema } from "@bufbuild/protobuf/wkt";
-import { Code, ConnectError } from "@connectrpc/connect";
+import { type DescMethod, fromJsonString, isMessage } from "@bufbuild/protobuf";
+import { Code } from "@connectrpc/connect";
 import {
   codeFromString,
   codeToHttpStatus,
-  errorFromJson,
   parseContentType,
 } from "@connectrpc/connect/protocol-connect";
 import {
@@ -24,6 +17,7 @@ import {
   SQLService,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { protobufJsonRegistry } from "@/types/protobufJsonRegistry";
+import { parseAgentRpcError } from "./apiRpcError";
 import {
   apiCallNeedsConfirmation,
   getApiMethodDescriptor,
@@ -164,27 +158,6 @@ export const isProtectedAgentApiCall = (
   call: Pick<PreparedApiCall, "operationId" | "path">
 ) => !getCallMethod(call) || apiCallNeedsConfirmation(call.operationId);
 
-const getRpcErrorCode = (body: string, status: number): Code | undefined => {
-  try {
-    // A duplicate code must not be accepted as a pre-effect rejection.
-    const codeField = fromJsonString(StructSchema, body).fields.code?.kind;
-    if (codeField?.case !== "stringValue") return undefined;
-    const code = codeFromString(codeField.value);
-    if (!isConnectCode(code) || codeToHttpStatus(code) !== status)
-      return undefined;
-    const json = JSON.parse(body) as Record<string, JsonValue>;
-    if (json.details !== undefined && !Array.isArray(json.details))
-      return undefined;
-    return errorFromJson(
-      json,
-      undefined,
-      new ConnectError("Invalid RPC error", code)
-    ).code;
-  } catch {
-    return undefined;
-  }
-};
-
 const importPreCreationCodes = new Set([
   Code.InvalidArgument,
   Code.Unauthenticated,
@@ -318,7 +291,7 @@ export function classifyAgentApiResponse(
   }
   const method = getCallMethod(call);
   if (status >= 400) {
-    const code = getRpcErrorCode(body, status);
+    const code = parseAgentRpcError(body, status)?.code;
     if (code === undefined)
       return agentApiExecutionEvidence("unverified-response", metadata);
     metadata.connectCode = code;

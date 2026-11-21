@@ -27,7 +27,11 @@ import {
   type Project,
 } from "@/types/proto-es/v1/project_service_pb";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
-import { parseStringToResource } from "@/utils/v1/databaseResource";
+import {
+  databaseFromResource,
+  extractDeniedQueryAccessRequest,
+  MAX_STATEMENT_LENGTH,
+} from "./apiResponse";
 import { getMaskingSetup } from "./tools/maskingSetup";
 
 export type {
@@ -35,130 +39,10 @@ export type {
   DeniedQueryRequestDraft,
   RequestRoleDraft,
 } from "@/modules/sql-editor/model/accessGrantDraft";
-
-const MAX_STATEMENT_LENGTH = 100_000;
-const DATABASE_NAME =
-  /^(?:projects\/[^/]+\/)?instances\/[^/]+\/databases\/[^/]+$/;
-
-export type DeniedQueryAccessRequest = {
-  sourceDatabase: string;
-  targets: string[];
-  resources: string[];
-  statement: string;
-  requiredPermissions: string[];
-  schema?: string;
-  container?: string;
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-const databaseFromResource = (resource: unknown): string | undefined => {
-  if (typeof resource !== "string") return undefined;
-  const database = parseStringToResource(resource)?.databaseFullName;
-  return database &&
-    DATABASE_NAME.test(database) &&
-    !database.split("/").includes("-")
-    ? database
-    : undefined;
-};
-
-export function extractDeniedQueryAccessRequest(
-  args: unknown,
-  result: string
-): DeniedQueryAccessRequest | undefined {
-  if (!isRecord(args)) return undefined;
-  if (
-    args.operationId !== "SQLService/Query" &&
-    args.operationId !== "bytebase.v1.SQLService.Query"
-  ) {
-    return undefined;
-  }
-  if (!isRecord(args.body)) return undefined;
-  const sourceDatabase = databaseFromResource(args.body.name);
-  const statement = args.body.statement;
-  if (
-    !sourceDatabase ||
-    sourceDatabase !== args.body.name ||
-    typeof statement !== "string" ||
-    !statement.trim() ||
-    statement.length > MAX_STATEMENT_LENGTH
-  ) {
-    return undefined;
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(result);
-  } catch {
-    return undefined;
-  }
-  if (!isRecord(parsed) || !isRecord(parsed.response)) {
-    return undefined;
-  }
-  const details: unknown[] = [];
-  if (parsed.status === 200) {
-    const results = parsed.response.results;
-    if (!Array.isArray(results) || !results.length) return undefined;
-    for (const entry of results) {
-      if (
-        !isRecord(entry) ||
-        typeof entry.error !== "string" ||
-        !entry.error.trim() ||
-        !isRecord(entry.permissionDenied)
-      )
-        return undefined;
-      details.push(entry.permissionDenied);
-    }
-  } else if (
-    parsed.status === 403 &&
-    parsed.response.code === "permission_denied"
-  ) {
-    details.push(parsed.response);
-  } else {
-    return undefined;
-  }
-  const requiredPermissions = new Set<string>();
-  const resources = new Set<string>();
-  const targets = new Set<string>();
-  for (const detail of details) {
-    if (!isRecord(detail)) return undefined;
-    const permissions = detail.requiredPermissions;
-    const deniedResources = detail.resources;
-    if (
-      !Array.isArray(permissions) ||
-      permissions.length === 0 ||
-      !permissions.every(
-        (permission) =>
-          typeof permission === "string" &&
-          isQueryAccessGrantPermission(permission)
-      ) ||
-      !Array.isArray(deniedResources) ||
-      !deniedResources.length
-    )
-      return undefined;
-    for (const resource of deniedResources) {
-      const target = databaseFromResource(resource);
-      if (!target) return undefined;
-      targets.add(target);
-      resources.add(resource);
-    }
-    for (const permission of permissions) requiredPermissions.add(permission);
-  }
-  return {
-    sourceDatabase,
-    targets: [...targets],
-    resources: [...resources],
-    statement,
-    requiredPermissions: [...requiredPermissions],
-    ...(typeof args.body.schema === "string" && args.body.schema
-      ? { schema: args.body.schema }
-      : {}),
-    ...(typeof args.body.container === "string" && args.body.container
-      ? { container: args.body.container }
-      : {}),
-  };
-}
+export {
+  type DeniedQueryAccessRequest,
+  extractDeniedQueryAccessRequest,
+} from "./apiResponse";
 
 async function checkDeniedQueryRequestDraft(
   draft: DeniedQueryRequestDraft,

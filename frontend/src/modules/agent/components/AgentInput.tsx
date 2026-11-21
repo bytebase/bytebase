@@ -37,6 +37,7 @@ import {
   isAgentAIConfigurationError,
 } from "../logic/aiConfiguration";
 import { priorUncertainApiAttemptIds } from "../logic/apiAttempt";
+import { getAgentApiRecoveryGuidance } from "../logic/apiResponseGuidance";
 import { parseCallApiResult } from "../logic/callApiResult";
 import {
   type AgentMaskingPageResource,
@@ -44,10 +45,7 @@ import {
   getCurrentChatContext,
   isAgentMaskingPageResource,
 } from "../logic/chatContext";
-import {
-  extractDeniedQueryAccessRequest,
-  resolveDeniedQueryAccessDraft,
-} from "../logic/deniedQueryAccess";
+import { resolveDeniedQueryAccessDraft } from "../logic/deniedQueryAccess";
 import { normalizeAgentDiagnosticCapability } from "../logic/diagnosticCapability";
 import { captureAgentDomContext } from "../logic/domContext";
 import { acceptAgentHandoff, collectAgentHandoffs } from "../logic/handoff";
@@ -112,7 +110,6 @@ import {
   getMaskingSkillGuidance,
   type MaskingSkillSection,
 } from "../logic/skills";
-import { queryAccessRecoveryInstruction } from "../logic/skills/query";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
 import { apiCallNeedsConfirmation } from "../logic/tools/apiMethodClass";
 import { extractDatabaseOverviewEvidence } from "../logic/tools/databaseOverview";
@@ -1636,22 +1633,15 @@ export function AgentInput({
           ...toolOptions,
           maskingSections: [...maskingSections],
         }),
-        systemGuidance: capability
-          ? ""
-          : [
-              getMaskingSkillGuidance([...maskingSections]),
-              getCurrentTurnQueryCalls(
-                useAgentStore.getState().getMessages(chatId)
-              ).some(
-                ({ args, result }) =>
-                  result !== undefined &&
-                  extractDeniedQueryAccessRequest(args, result)
-              )
-                ? queryAccessRecoveryInstruction
-                : "",
-            ]
-              .filter(Boolean)
-              .join("\n\n"),
+        systemGuidance: [
+          capability ? "" : getMaskingSkillGuidance([...maskingSections]),
+          getAgentApiRecoveryGuidance(
+            useAgentStore.getState().getMessages(chatId),
+            { diagnostic: Boolean(capability) }
+          ),
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
       });
       const tools = resolveRequestContext().tools;
       let pageToolPath =

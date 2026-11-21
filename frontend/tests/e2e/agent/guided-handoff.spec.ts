@@ -67,7 +67,7 @@ async function seedChat(
       sessionStorage.setItem(marker, "1");
     },
     {
-      key: `bb-agent-state-v2.${workspaceId.length}:${workspaceId}.${env.adminEmail}`,
+      key: `bb-agent-state-v3.${workspaceId.length}:${workspaceId}.${env.adminEmail}`,
       options,
       now,
       workspace,
@@ -75,9 +75,16 @@ async function seedChat(
   );
 }
 
-async function openAgent(page: Page, env: TestEnv) {
+async function openAgent(page: Page, env: TestEnv, title: string) {
   await page.goto(`${env.baseURL}/landing`);
   await page.getByRole("button", { name: "Agent", exact: true }).click();
+  const agent = page.locator("[data-agent-window]");
+  await expect(agent).toBeVisible();
+  const savedChat = agent.getByRole("button", { name: title, exact: true });
+  if (!(await savedChat.isVisible())) {
+    await agent.getByRole("button", { name: "Chats", exact: true }).first().click();
+  }
+  await savedChat.click();
 }
 
 function trackEffectfulAgentCalls(page: Page) {
@@ -111,7 +118,7 @@ test("a saved Agent handoff opens the matching filtered Issue queue only after c
       handoff: { kind: "review-database-changes", project: env.project },
     },
   });
-  await openAgent(page, env);
+  await openAgent(page, env, "Review changes");
 
   const handoff = page.locator("[data-agent-handoff]");
   await expect(handoff).toHaveText(/Review database changes/);
@@ -153,7 +160,7 @@ test.describe("project setup handoffs", () => {
         },
       });
       const effectfulCalls = trackEffectfulAgentCalls(page);
-      await openAgent(page, env);
+      await openAgent(page, env, "Set up this project");
 
       const handoff = page.locator("[data-agent-handoff]");
       await expect(handoff).toBeVisible();
@@ -199,7 +206,7 @@ test("a Plan draft opens populated and unsaved after a member click", async ({
     },
   });
   const effectfulCalls = trackEffectfulAgentCalls(page);
-  await openAgent(page, env);
+  await openAgent(page, env, "Draft a database change");
 
   const draftPlan = page.locator("[data-agent-action-draft-plan]");
   await expect(draftPlan).toBeVisible();
@@ -265,7 +272,7 @@ test("an Issue comment handoff opens an unsent draft on the exact Issue", async 
         postedComment = true;
       }
     });
-    await openAgent(page, env);
+    await openAgent(page, env, "Review issue security");
 
     const draftAction = page.locator("[data-agent-action-draft-issue-comment]");
     await expect(draftAction).toBeVisible();
