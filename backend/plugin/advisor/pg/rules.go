@@ -21,9 +21,7 @@ import (
 )
 
 func init() {
-	extract := func(checkCtx advisor.Context) ([]advisor.V1Stmt[ast.Node], error) {
-		return advisor.ExtractNodes(checkCtx.ParsedStatements, pgparser.GetNode), nil
-	}
+	extract := advisor.NodeExtractor(pgparser.GetNode)
 	byteOffsetLine := func(sql string, offset int) int32 {
 		return pgparser.ByteOffsetToRunePosition(sql, offset).Line
 	}
@@ -559,7 +557,7 @@ func pgIndexTotalNumberLimit(e *advisor.V1Engine[ast.Node]) advisor.Func {
 		if err != nil {
 			return nil, err
 		}
-		findings, err := pgv1review.IndexTotalNumberLimit(nodes, limit, modelSchema(checkCtx.FinalMetadata))
+		findings, err := pgv1review.IndexTotalNumberLimit(nodes, limit, advisor.V1SchemaOf(checkCtx.FinalMetadata))
 		if err != nil {
 			advisor.ReadMissingSchema(checkCtx.FinalMetadata, err)
 			return nil, err
@@ -615,7 +613,7 @@ func pgTableRequirePK(e *advisor.V1Engine[ast.Node]) advisor.Func {
 			startLines[i] = stmt.BaseLine + int(e.ContentStartLine(stmt.Text))
 		}
 		var adviceList []*storepb.Advice
-		for _, f := range pgv1review.TableRequirePK(nodes, startLines, modelSchemaPtr(checkCtx.OriginalMetadata), modelSchemaPtr(checkCtx.FinalMetadata)) {
+		for _, f := range pgv1review.TableRequirePK(nodes, startLines, advisor.V1SchemaPtrOf(checkCtx.OriginalMetadata), advisor.V1SchemaPtrOf(checkCtx.FinalMetadata)) {
 			if f.Code != v1review.TablePrimaryKeyMissing {
 				continue
 			}
@@ -637,19 +635,4 @@ func pgTableRequirePK(e *advisor.V1Engine[ast.Node]) advisor.Func {
 		}
 		return adviceList, nil
 	}
-}
-
-func modelSchema(m *model.DatabaseMetadata) v1review.Schema {
-	if m == nil {
-		return v1review.Schema{}
-	}
-	return v1review.Schema{Metadata: m.GetProto(), ObjectCaseSensitive: m.GetIsObjectCaseSensitive()}
-}
-
-func modelSchemaPtr(m *model.DatabaseMetadata) *v1review.Schema {
-	if m == nil {
-		return nil
-	}
-	s := modelSchema(m)
-	return &s
 }

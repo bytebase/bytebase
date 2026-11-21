@@ -13,7 +13,6 @@ import (
 	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -55,111 +54,37 @@ func pgRowLimit(
 	exceededCode code.Code,
 	exceededContent func(text, count string, maxRow int) string,
 ) advisor.Func {
-	return func(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-		level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
-		if err != nil {
-			return nil, err
-		}
-		maxRow, err := advisor.RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
-		if err != nil {
-			return nil, err
-		}
-		if maxRow <= 0 {
-			return nil, nil
-		}
-		stmts, nodes, err := e.Nodes(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		title := checkCtx.Rule.Type.String()
-		var explains advisor.ExplainBudget
-		probes := make(map[int]v1review.Probe)
-		var probeErr error
-		probeEach(stmts, nodes, probesFn(nodes), func(i int, settings []string) {
-			if !explains.Spend(e.PosContentStart(stmts[i], v1review.Finding{})) {
-				return
-			}
-			probe, err := explainRows(ctx, checkCtx, settings, probeText(e, stmts[i], nodes[i]), countFn)
-			if err != nil {
-				probeErr = err
-				return
-			}
-			probes[i] = probe
-		})
-		if probeErr != nil {
-			return nil, probeErr
-		}
-		var adviceList []*storepb.Advice
-		for _, f := range judgeFn(nodes, probes, maxRow) {
-			text := probeText(e, stmts[f.Statement], nodes[f.Statement])
-			adviceCode, content := exceededCode, ""
-			switch f.Code {
-			case v1review.DryRunFailed:
-				content = fmt.Sprintf("\"%s\" dry runs failed: %s", text, f.Value)
-			case v1review.RowCountFailed:
-				adviceCode, content = code.Internal, fmt.Sprintf("failed to get row count for \"%s\": %s", text, f.Value)
-			case v1review.RowLimitExceeded:
-				content = exceededContent(text, f.Value, maxRow)
-			default:
-				continue
-			}
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:        level,
-				Code:          adviceCode.Int32(),
-				Title:         title,
-				Content:       content,
-				StartPosition: e.PosContentStart(stmts[f.Statement], f),
-			})
-		}
-		return explains.AppendSkippedAdvice(adviceList, title, exceededCode), nil
-	}
+	return e.RowLimit(advisor.V1RowLimitConfig[ast.Node]{
+		Probes:          probesFn,
+		Judge:           judgeFn,
+		ExceededCode:    exceededCode,
+		ExceededContent: exceededContent,
+		PositiveOnly:    true,
+		StatementText: func(stmt advisor.V1Stmt[ast.Node], node ast.Node) string {
+			return probeText(e, stmt, node)
+		},
+		Estimate: func(ctx context.Context, checkCtx advisor.Context, stmt advisor.V1Stmt[ast.Node], node ast.Node, settings []string) (v1review.Probe, error) {
+			return explainRows(ctx, checkCtx, settings, probeText(e, stmt, node), countFn)
+		},
+		PreExecutions: probeEach,
+	})
 }
 
 func pgDMLDryRun(e *advisor.V1Engine[ast.Node]) advisor.Func {
-	return func(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-		level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
-		if err != nil {
-			return nil, err
-		}
-		prober, err := advisor.ProbeFor(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		// BYT-8855: Skip DML dry run if there are DDL statements mixed in, because DML
-		// statements often reference objects created by DDL statements, causing false positives.
-		if advisor.ContainsDDL(checkCtx.DBType, checkCtx.ParsedStatements) {
-			return nil, nil
-		}
-		stmts, nodes, err := e.Nodes(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		probes := make(map[int]v1review.Probe)
-		explained := 0
-		probeEach(stmts, nodes, pgv1review.StatementDMLDryRunProbes(nodes), func(i int, settings []string) {
-			if explained >= common.MaximumLintExplainSize {
-				return
+	return e.DMLDryRun(advisor.V1DMLDryRunConfig[ast.Node]{
+		Probes: pgv1review.StatementDMLDryRunProbes,
+		Judge:  pgv1review.StatementDMLDryRun,
+		Probe: func(ctx context.Context, prober db.Prober, stmt advisor.V1Stmt[ast.Node], settings []string) v1review.Probe {
+			if _, err := prober.Probe(ctx, db.ProbeContext{PreExecutions: settings}, fmt.Sprintf("EXPLAIN %s", probeText(e, stmt, stmt.Node))); err != nil {
+				return v1review.Probe{Error: err.Error()}
 			}
-			explained++
-			if _, err := prober.Probe(ctx, db.ProbeContext{PreExecutions: settings}, fmt.Sprintf("EXPLAIN %s", probeText(e, stmts[i], nodes[i]))); err != nil {
-				probes[i] = v1review.Probe{Error: err.Error()}
-			} else {
-				probes[i] = v1review.Probe{}
-			}
-		})
-		title := checkCtx.Rule.Type.String()
-		var adviceList []*storepb.Advice
-		for _, f := range pgv1review.StatementDMLDryRun(nodes, probes) {
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:        level,
-				Code:          code.StatementDMLDryRunFailed.Int32(),
-				Title:         title,
-				Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", probeText(e, stmts[f.Statement], nodes[f.Statement]), f.Value),
-				StartPosition: e.PosContentStart(stmts[f.Statement], f),
-			})
-		}
-		return adviceList, nil
-	}
+			return v1review.Probe{}
+		},
+		FormatContent: func(stmt advisor.V1Stmt[ast.Node], f v1review.Finding) string {
+			return fmt.Sprintf("\"%s\" dry runs failed: %s", probeText(e, stmt, stmt.Node), f.Value)
+		},
+		PreExecutions: probeEach,
+	})
 }
 
 func pgObjectOwnerCheck(e *advisor.V1Engine[ast.Node]) advisor.Func {

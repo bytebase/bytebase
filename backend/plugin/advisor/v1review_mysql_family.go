@@ -37,183 +37,629 @@ type MySQLFamilyOptions[N any] struct {
 	CreateTableLocStart func(N) (int, bool)
 }
 
-// MySQLFamily builds Advisor implementations for MySQL-family v1review rules.
-type MySQLFamily[N any] struct {
-	r   v1Runner[N]
-	opt MySQLFamilyOptions[N]
+// MySQLFamilyRuleSet declares the omni v1review rule implementations for one
+// MySQL-family engine. Nil fields are omitted from registration.
+type MySQLFamilyRuleSet[N any] struct {
+	OnlineMigration            func([]N, v1review.Schema, string, int64) []v1review.Finding
+	MaxStatementsInTransaction bool
+	InsertRowLimitProbes       func([]N) []int
+	InsertRowLimit             func([]N, map[int]v1review.Probe, int) []v1review.Finding
+	AffectedRowLimitProbes     func([]N) []int
+	AffectedRowLimit           func([]N, map[int]v1review.Probe, int) []v1review.Finding
+	DMLDryRunProbes            func([]N) []int
+	DMLDryRun                  func([]N, map[int]v1review.Probe) []v1review.Finding
+
+	ColumnAutoIncrementInitialValue           func([]N, int) []v1review.Finding
+	ColumnAutoIncrementMustInteger            func([]N) []v1review.Finding
+	ColumnAutoIncrementMustUnsigned           func([]N) []v1review.Finding
+	ColumnComment                             func([]N, bool, int) []v1review.Finding
+	ColumnCurrentTimeCountLimit               func([]N) []v1review.Finding
+	ColumnDisallowChange                      func([]N) []v1review.Finding
+	ColumnDisallowChangeType                  func([]N, v1review.Schema) []v1review.Finding
+	ColumnDisallowChangingOrder               func([]N) []v1review.Finding
+	ColumnDisallowDrop                        func([]N) []v1review.Finding
+	ColumnDisallowDropInIndex                 func([]N, v1review.Schema) []v1review.Finding
+	ColumnDisallowSetCharset                  func([]N) []v1review.Finding
+	ColumnMaximumCharacterLength              func([]N, int) []v1review.Finding
+	ColumnMaximumVarcharLength                func([]N, int) []v1review.Finding
+	ColumnNoNull                              func([]N, v1review.Schema) []v1review.Finding
+	ColumnRequireCharset                      func([]N) []v1review.Finding
+	ColumnRequireCollation                    func([]N) []v1review.Finding
+	ColumnRequireDefault                      func([]N) []v1review.Finding
+	ColumnRequired                            func([]N, []string) []v1review.Finding
+	ColumnSetDefaultForNotNull                func([]N) []v1review.Finding
+	ColumnTypeDisallowList                    func([]N, []string) []v1review.Finding
+	DatabaseDropEmptyDatabase                 func([]N, v1review.Schema) []v1review.Finding
+	EngineMySQLUseInnoDB                      func([]N) []v1review.Finding
+	IndexKeyNumberLimit                       func([]N, int) []v1review.Finding
+	IndexNoDuplicateColumn                    func([]N) []v1review.Finding
+	IndexPKTypeLimit                          func([]N, v1review.Schema) ([]v1review.Finding, error)
+	IndexPrimaryKeyTypeAllowlist              func([]N, []string, v1review.Schema) ([]v1review.Finding, error)
+	IndexTotalNumberLimit                     func([]N, int, v1review.Schema) ([]v1review.Finding, error)
+	IndexTypeAllowList                        func([]N, []string) []v1review.Finding
+	IndexTypeNoBlob                           func([]N, v1review.Schema) ([]v1review.Finding, error)
+	NamingAutoIncrementColumn                 func([]N, v1review.NamingConfig) ([]v1review.Finding, error)
+	NamingColumn                              func([]N, v1review.NamingConfig) ([]v1review.Finding, error)
+	NamingForeignKey                          func([]N, v1review.TemplateConfig) ([]v1review.Finding, error)
+	NamingIdentifierNoKeyword                 func([]N) []v1review.Finding
+	NamingIndex                               func([]N, v1review.TemplateConfig, v1review.Schema) []v1review.Finding
+	NamingTable                               func([]N, v1review.NamingConfig) ([]v1review.Finding, error)
+	NamingUniqueKey                           func([]N, v1review.TemplateConfig, v1review.Schema) []v1review.Finding
+	SchemaBackwardCompatibility               func([]N) []v1review.Finding
+	StatementAddColumnWithoutPosition         func([]N) []v1review.Finding
+	StatementDisallowCommit                   func([]N) []v1review.Finding
+	StatementDisallowLimit                    func([]N) []v1review.Finding
+	StatementDisallowOrderBy                  func([]N) []v1review.Finding
+	StatementDisallowTruncate                 func([]N) []v1review.Finding
+	StatementInsertDisallowOrderByRand        func([]N) []v1review.Finding
+	StatementInsertMustSpecifyColumn          func([]N) []v1review.Finding
+	StatementMaxExecutionTime                 func([]N) []v1review.Finding
+	StatementMergeAlterTable                  func([]N) []v1review.Finding
+	StatementRequireAlgorithmOption           func([]N) []v1review.Finding
+	StatementRequireLockOption                func([]N) []v1review.Finding
+	StatementSelectNoSelectAll                func([]N) []v1review.Finding
+	StatementWhereDisallowFunctionsAndCalc    func([]N, v1review.Schema) []v1review.Finding
+	StatementWhereMaximumLogicalOperatorCount func([]N, int) []v1review.Finding
+	StatementWhereNoEqualNull                 func([]N) []v1review.Finding
+	StatementWhereNoLeadingWildcardLike       func([]N) []v1review.Finding
+	StatementWhereRequireSelect               func([]N) []v1review.Finding
+	StatementWhereRequireUpdateDelete         func([]N) []v1review.Finding
+	SystemCharsetAllowlist                    func([]N, []string) []v1review.Finding
+	SystemCollationAllowlist                  func([]N, []string) []v1review.Finding
+	SystemEventDisallowCreate                 func([]N) []v1review.Finding
+	SystemFunctionDisallowCreate              func([]N) []v1review.Finding
+	SystemFunctionDisallowedList              func([]N, []string) []v1review.Finding
+	SystemProcedureDisallowCreate             func([]N) []v1review.Finding
+	SystemViewDisallowCreate                  func([]N) []v1review.Finding
+	TableComment                              func([]N, *v1review.TableCommentConfig) []v1review.Finding
+	TableDisallowDDL                          func([]N, []string) []v1review.Finding
+	TableDisallowDML                          func([]N, []string) []v1review.Finding
+	TableDisallowPartition                    func([]N) []v1review.Finding
+	TableDisallowSetCharset                   func([]N) []v1review.Finding
+	TableDisallowTrigger                      func([]N) []v1review.Finding
+	TableDropNaming                           func([]N, v1review.NamingConfig) ([]v1review.Finding, error)
+	TableLimitSize                            func([]N, *metadatapb.DatabaseSchemaMetadata, int) []v1review.Finding
+	TableNoDuplicateIndex                     func([]N) []v1review.Finding
+	TableNoForeignKey                         func([]N) []v1review.Finding
+	TableRequireCharset                       func([]N) []v1review.Finding
+	TableRequireCollation                     func([]N) []v1review.Finding
+	TableRequirePK                            func([]N, *v1review.Schema) []v1review.Finding
+	TableTextFieldsTotalLength                func([]N, *v1review.Schema, int) []v1review.Finding
 }
 
-// NewMySQLFamily returns a rule builder for the given engine options.
-func NewMySQLFamily[N any](opt MySQLFamilyOptions[N]) *MySQLFamily[N] {
-	return &MySQLFamily[N]{
-		r: v1Runner[N]{
-			extract:             opt.Extract,
-			byteOffsetLine:      opt.ByteOffsetLine,
-			memoKey:             fmt.Sprintf("v1family:%d", v1RunnerMemoSeq.Add(1)),
-			tidbQuirks:          opt.TiDBQuirks,
-			isAlterTable:        opt.IsAlterTable,
-			createTableLocStart: opt.CreateTableLocStart,
+// RegisterMySQLFamily registers BUILTIN_WALK_THROUGH_CHECK and every non-nil rule
+// in rules for engine, returning the underlying V1Engine for any engine-specific rules.
+func RegisterMySQLFamily[N any](engine storepb.Engine, opt MySQLFamilyOptions[N], rules MySQLFamilyRuleSet[N]) *V1Engine[N] {
+	e := NewV1EngineWithOptions(V1EngineOptions[N]{
+		Extract:             opt.Extract,
+		ByteOffsetLine:      opt.ByteOffsetLine,
+		PosMode:             V1PosContentStart,
+		TiDBQuirks:          opt.TiDBQuirks,
+		IsAlterTable:        opt.IsAlterTable,
+		CreateTableLocStart: opt.CreateTableLocStart,
+	})
+	Register(engine, storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK, &BuiltinWalkThroughCheckAdvisor{})
+	for ruleType, fn := range buildMySQLFamilyAdvisors(engine, e, opt, rules) {
+		Register(engine, ruleType, fn)
+	}
+	return e
+}
+
+var (
+	mysqlCompatEntries = map[v1review.Code]V1CompatEntry{
+		v1review.IncompatibleDropDatabase:  {Code: code.CompatibilityDropDatabase},
+		v1review.IncompatibleRenameTable:   {Code: code.CompatibilityRenameTable},
+		v1review.IncompatibleDropTable:     {Code: code.CompatibilityDropTable},
+		v1review.IncompatibleRenameColumn:  {Code: code.CompatibilityRenameColumn},
+		v1review.IncompatibleDropColumn:    {Code: code.CompatibilityDropColumn},
+		v1review.IncompatibleAddPrimaryKey: {Code: code.CompatibilityAddPrimaryKey},
+		v1review.IncompatibleAddUniqueKey:  {Code: code.CompatibilityAddUniqueKey},
+		v1review.IncompatibleAddForeignKey: {Code: code.CompatibilityAddForeignKey},
+		v1review.IncompatibleAddCheck:      {Code: code.CompatibilityAddCheck},
+		v1review.IncompatibleAlterCheck:    {Code: code.CompatibilityAlterCheck},
+		v1review.IncompatibleAlterColumn:   {Code: code.CompatibilityAlterColumn},
+	}
+	dmlLimitCodes   = map[string]code.Code{"INSERT": code.InsertUseLimit, "UPDATE": code.UpdateUseLimit, "DELETE": code.DeleteUseLimit}
+	dmlOrderByCodes = map[string]code.Code{"UPDATE": code.UpdateUseOrderBy, "DELETE": code.DeleteUseOrderBy}
+)
+
+func buildMySQLFamilyAdvisors[N any](
+	engine storepb.Engine,
+	e *V1Engine[N],
+	opt MySQLFamilyOptions[N],
+	rules MySQLFamilyRuleSet[N],
+) map[storepb.SQLReviewRule_Type]Func {
+	advisors := make(map[storepb.SQLReviewRule_Type]Func)
+
+	addSimple := func(ruleType storepb.SQLReviewRule_Type, fn func([]N) []v1review.Finding, c code.Code, pos V1PosFunc[N], content func(V1Stmt[N], v1review.Finding) string) {
+		if fn != nil {
+			advisors[ruleType] = e.SimpleStmt(fn, c, content, pos)
+		}
+	}
+	addDisallowCreate := func(ruleType storepb.SQLReviewRule_Type, fn func([]N) []v1review.Finding, c code.Code, object string) {
+		addSimple(ruleType, fn, c, e.posBaseLineTwice, func(stmt V1Stmt[N], _ v1review.Finding) string {
+			return fmt.Sprintf("%s is forbidden, but \"%s\" creates", object, strings.TrimSpace(stmt.Text))
+		})
+	}
+	addNumber := func(ruleType storepb.SQLReviewRule_Type, fn func([]N, int) []v1review.Finding, missingMsg string, positiveOnly bool, c code.Code, pos V1PosFunc[N], content func(V1Stmt[N], v1review.Finding, int) string) {
+		if fn != nil {
+			advisors[ruleType] = e.NumberStmtWithMsg(fn, missingMsg, positiveOnly, c, content, pos)
+		}
+	}
+	addStringArray := func(ruleType storepb.SQLReviewRule_Type, fn func([]N, []string) []v1review.Finding, c code.Code, pos V1PosFunc[N], content func(V1Stmt[N], v1review.Finding) string) {
+		if fn != nil {
+			advisors[ruleType] = e.StringArrayStmt(fn, "", c, "", content, pos)
+		}
+	}
+	addNaming := func(ruleType storepb.SQLReviewRule_Type, fn func([]N, v1review.NamingConfig) ([]v1review.Finding, error), c code.Code, missingMsg string, pos V1PosFunc[N], mismatch func(v1review.Finding, string) string, tooLong func(v1review.Finding, int) string) {
+		if fn != nil {
+			advisors[ruleType] = e.NamingRegex(fn, c, missingMsg, mismatch, tooLong, pos)
+		}
+	}
+
+	// Simple per-statement rules.
+	addSimple(storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_INTEGER, rules.ColumnAutoIncrementMustInteger, code.AutoIncrementColumnNotInteger, e.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("Auto-increment column `%s`.`%s` requires integer type", f.Table, f.Name)
+	})
+	addSimple(storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_UNSIGNED, rules.ColumnAutoIncrementMustUnsigned, code.AutoIncrementColumnSigned, e.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", f.Table, f.Name)
+	})
+	addSimple(storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGE, rules.ColumnDisallowChange, code.UseChangeColumnStatement, e.posStatementAbsOrStmt, func(stmt V1Stmt[N], _ v1review.Finding) string {
+		return fmt.Sprintf("\"%s\" contains CHANGE COLUMN statement", e.stmtText(stmt, false))
+	})
+	addSimple(storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGING_ORDER, rules.ColumnDisallowChangingOrder, code.ChangeColumnOrder, e.posStatementAbsOrStmt, func(stmt V1Stmt[N], _ v1review.Finding) string {
+		return fmt.Sprintf("\"%s\" changes column order", e.stmtText(stmt, false))
+	})
+	addSimple(storepb.SQLReviewRule_COLUMN_DISALLOW_DROP, rules.ColumnDisallowDrop, code.DropColumn, e.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("drops column \"%s\" of table \"%s\"", f.Name, f.Table)
+	})
+	addSimple(storepb.SQLReviewRule_COLUMN_DISALLOW_SET_CHARSET, rules.ColumnDisallowSetCharset, code.SetColumnCharset, e.posStatementFinding, func(stmt V1Stmt[N], _ v1review.Finding) string {
+		return fmt.Sprintf("Disallow set column charset but \"%s\" does", e.stmtText(stmt, false))
+	})
+	addSimple(storepb.SQLReviewRule_COLUMN_REQUIRE_CHARSET, rules.ColumnRequireCharset, code.NoCharset, e.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("Column %s does not have a character set specified", f.Name)
+	})
+	addSimple(storepb.SQLReviewRule_COLUMN_REQUIRE_COLLATION, rules.ColumnRequireCollation, code.NoCollation, e.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("Column %s does not have a collation specified", f.Name)
+	})
+	addSimple(storepb.SQLReviewRule_COLUMN_REQUIRE_DEFAULT, rules.ColumnRequireDefault, code.NoDefault, e.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("Column `%s`.`%s` doesn't have DEFAULT.", f.Table, f.Name)
+	})
+	addSimple(storepb.SQLReviewRule_COLUMN_SET_DEFAULT_FOR_NOT_NULL, rules.ColumnSetDefaultForNotNull, code.NotNullColumnWithNoDefault, e.posAlterFirstToken, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", f.Table, f.Name)
+	})
+	addSimple(storepb.SQLReviewRule_ENGINE_MYSQL_USE_INNODB, rules.EngineMySQLUseInnoDB, code.NotInnoDBEngine, e.PosSearchOrStart, func(stmt V1Stmt[N], _ v1review.Finding) string {
+		return fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", trimmedStmtText(stmt.Text))
+	})
+	addSimple(storepb.SQLReviewRule_INDEX_NO_DUPLICATE_COLUMN, rules.IndexNoDuplicateColumn, code.DuplicateColumnInIndex, e.PosFinding, func(stmt V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("%s `%s` has duplicate column `%s`.`%s`", f.Value, keyName(stmt.Text, f, e.tidbQuirks), f.Table, f.Other)
+	})
+	addSimple(storepb.SQLReviewRule_NAMING_IDENTIFIER_NO_KEYWORD, rules.NamingIdentifierNoKeyword, code.NameIsKeywordIdentifier, e.posSearchOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("Identifier %q is a keyword and should be avoided", f.Name)
+	})
+	addSimple(storepb.SQLReviewRule_STATEMENT_ADD_COLUMN_WITHOUT_POSITION, rules.StatementAddColumnWithoutPosition, code.StatementAddColumnWithPosition, e.PosFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("add column with position \"%s\"", f.Name)
+	})
+	addSimple(storepb.SQLReviewRule_STATEMENT_DISALLOW_COMMIT, rules.StatementDisallowCommit, code.StatementDisallowCommit, e.posFindingOrTiDBFirstToken, func(stmt V1Stmt[N], _ v1review.Finding) string {
+		return fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", e.stmtText(stmt, false))
+	})
+	addSimple(storepb.SQLReviewRule_STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND, rules.StatementInsertDisallowOrderByRand, code.InsertUseOrderByRand, e.posFindingOrTiDBFirstToken, func(stmt V1Stmt[N], _ v1review.Finding) string {
+		return fmt.Sprintf("\"%s\" uses ORDER BY RAND in the INSERT statement", e.stmtText(stmt, false))
+	})
+	addSimple(storepb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN, rules.StatementInsertMustSpecifyColumn, code.InsertNotSpecifyColumn, e.posAbsOrFinding, func(stmt V1Stmt[N], _ v1review.Finding) string {
+		return fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", e.stmtText(stmt, true))
+	})
+	addSimple(storepb.SQLReviewRule_STATEMENT_REQUIRE_ALGORITHM_OPTION, rules.StatementRequireAlgorithmOption, code.StatementNoAlgorithmOption, e.PosFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return "ALTER TABLE statement should include " + f.Name + " option"
+	})
+	addSimple(storepb.SQLReviewRule_STATEMENT_REQUIRE_LOCK_OPTION, rules.StatementRequireLockOption, code.StatementNoLockOption, e.PosFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return "ALTER TABLE statement should include " + f.Name + " option"
+	})
+	addSimple(storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL, rules.StatementSelectNoSelectAll, code.StatementSelectAll, e.posFindingOrTiDBFirstToken, func(stmt V1Stmt[N], _ v1review.Finding) string {
+		return fmt.Sprintf("\"%s\" uses SELECT all", e.stmtText(stmt, false))
+	})
+	addSimple(storepb.SQLReviewRule_STATEMENT_WHERE_NO_EQUAL_NULL, rules.StatementWhereNoEqualNull, code.StatementWhereNoEqualNull, e.PosFinding, func(stmt V1Stmt[N], _ v1review.Finding) string {
+		return fmt.Sprintf("WHERE clause contains equal null: %s", e.stmtText(stmt, false))
+	})
+	addSimple(storepb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE, rules.StatementWhereNoLeadingWildcardLike, code.StatementLeadingWildcardLike, e.posFindingOrTiDBFirstToken, func(stmt V1Stmt[N], _ v1review.Finding) string {
+		return fmt.Sprintf("\"%s\" uses leading wildcard LIKE", e.stmtText(stmt, false))
+	})
+	addSimple(storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT, rules.StatementWhereRequireSelect, code.StatementNoWhere, e.posFindingOrTiDBFirstToken, func(stmt V1Stmt[N], _ v1review.Finding) string {
+		return fmt.Sprintf("\"%s\" requires WHERE clause", e.stmtText(stmt, false))
+	})
+	addSimple(storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE, rules.StatementWhereRequireUpdateDelete, code.StatementNoWhere, e.posFindingOrTiDBFirstToken, func(stmt V1Stmt[N], _ v1review.Finding) string {
+		return fmt.Sprintf("\"%s\" requires WHERE clause", e.stmtText(stmt, false))
+	})
+	addSimple(storepb.SQLReviewRule_TABLE_DISALLOW_SET_CHARSET, rules.TableDisallowSetCharset, code.DisallowSetCharset, e.posStatementFinding, func(stmt V1Stmt[N], _ v1review.Finding) string {
+		return fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", strings.TrimSpace(stmt.Text))
+	})
+	addSimple(storepb.SQLReviewRule_TABLE_REQUIRE_CHARSET, rules.TableRequireCharset, code.NoCharset, e.posStatementFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("Table %s does not have a character set specified", f.Name)
+	})
+	addSimple(storepb.SQLReviewRule_TABLE_REQUIRE_COLLATION, rules.TableRequireCollation, code.NoCollation, e.posStatementFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("Table %s does not have a collation specified", f.Name)
+	})
+
+	// Disallow create rules.
+	addDisallowCreate(storepb.SQLReviewRule_SYSTEM_EVENT_DISALLOW_CREATE, rules.SystemEventDisallowCreate, code.DisallowCreateEvent, "Event")
+	addDisallowCreate(storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOW_CREATE, rules.SystemFunctionDisallowCreate, code.DisallowCreateFunction, "Function")
+	addDisallowCreate(storepb.SQLReviewRule_SYSTEM_PROCEDURE_DISALLOW_CREATE, rules.SystemProcedureDisallowCreate, code.DisallowCreateProcedure, "Procedure")
+	addDisallowCreate(storepb.SQLReviewRule_SYSTEM_VIEW_DISALLOW_CREATE, rules.SystemViewDisallowCreate, code.DisallowCreateView, "View")
+	addDisallowCreate(storepb.SQLReviewRule_TABLE_DISALLOW_TRIGGER, rules.TableDisallowTrigger, code.CreateTableTrigger, "Trigger")
+
+	// Number-payload per-statement rules.
+	addNumber(storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE, rules.ColumnAutoIncrementInitialValue, "number_payload is required for column auto increment initial value rule", false, code.AutoIncrementColumnInitialValueNotMatch, e.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding, value int) string {
+		return fmt.Sprintf("The initial auto-increment value in table `%s` is %s, which doesn't equal %v", f.Table, f.Value, value)
+	})
+	addNumber(storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH, rules.ColumnMaximumCharacterLength, "number_payload is required for column maximum character length rule", true, code.CharLengthExceedsLimit, e.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding, maximum int) string {
+		if e.tidbQuirks {
+			return fmt.Sprintf("The length of the CHAR column `%s` is %s, bigger than %d, please use VARCHAR instead", f.Name, f.Value, maximum)
+		}
+		return fmt.Sprintf("The length of the CHAR column `%s.%s` is bigger than %d, please use VARCHAR instead", f.Table, f.Name, maximum)
+	})
+	addNumber(storepb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH, rules.ColumnMaximumVarcharLength, "number_payload is required for column maximum varchar length rule", true, code.VarcharLengthExceedsLimit, e.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding, maximum int) string {
+		return fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", f.Table, f.Name, maximum)
+	})
+	addNumber(storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, rules.IndexKeyNumberLimit, "", false, code.IndexKeyNumberExceedsLimit, e.PosFinding, func(stmt V1Stmt[N], f v1review.Finding, limit int) string {
+		return fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", keyName(stmt.Text, f, e.tidbQuirks), f.Table, limit)
+	})
+	addNumber(storepb.SQLReviewRule_STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT, rules.StatementWhereMaximumLogicalOperatorCount, "", false, code.StatementWhereMaximumLogicalOperatorCount, e.PosFinding, func(stmt V1Stmt[N], f v1review.Finding, maximum int) string {
+		op := "the OR predicate"
+		if f.Name == "IN" {
+			op = "IN predicate"
+		}
+		return fmt.Sprintf("Number of tokens (%s) in %s operation exceeds limit (%d) in statement %q.", f.Value, op, maximum, strings.TrimSpace(stmt.Text))
+	})
+
+	// String-array per-statement rules.
+	addStringArray(storepb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST, rules.ColumnTypeDisallowList, code.DisabledColumnType, e.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("Disallow column type %s but column `%s`.`%s` is", f.Value, f.Table, f.Name)
+	})
+	addStringArray(storepb.SQLReviewRule_INDEX_TYPE_ALLOW_LIST, rules.IndexTypeAllowList, code.IndexTypeNotAllowed, e.PosFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("Index type `%s` is not allowed", f.Value)
+	})
+	addStringArray(storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST, rules.SystemCharsetAllowlist, code.DisabledCharset, e.posAllowlist, func(stmt V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("\"%s\" used disabled charset '%s'", strings.TrimSpace(stmt.Text), f.Name)
+	})
+	addStringArray(storepb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST, rules.SystemCollationAllowlist, code.DisabledCollation, e.posAllowlist, func(stmt V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("\"%s\" used disabled collation '%s'", strings.TrimSpace(stmt.Text), f.Name)
+	})
+	addStringArray(storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOWED_LIST, rules.SystemFunctionDisallowedList, code.DisabledFunction, e.posBaseLineTwice, func(stmt V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("Function \"%s\" is disallowed, but \"%s\" uses", f.Name, strings.TrimSpace(stmt.Text))
+	})
+	addStringArray(storepb.SQLReviewRule_TABLE_DISALLOW_DDL, rules.TableDisallowDDL, code.TableDisallowDDL, e.PosFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("DDL is disallowed on table %s.", f.Name)
+	})
+	addStringArray(storepb.SQLReviewRule_TABLE_DISALLOW_DML, rules.TableDisallowDML, code.TableDisallowDML, e.PosFinding, func(_ V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("DML is disallowed on table %s.", f.Name)
+	})
+
+	// Regex naming rules.
+	addNaming(storepb.SQLReviewRule_NAMING_TABLE, rules.NamingTable, code.NamingTableConventionMismatch, "naming_payload is required for naming table rule", e.PosFinding,
+		func(f v1review.Finding, format string) string {
+			return fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", f.Name, format)
 		},
-		opt: opt,
+		func(f v1review.Finding, maxLength int) string {
+			return fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", f.Name, maxLength)
+		},
+	)
+	addNaming(storepb.SQLReviewRule_NAMING_COLUMN, rules.NamingColumn, code.NamingColumnConventionMismatch, "naming_payload is required for naming column rule", e.posAbsOrFinding,
+		func(f v1review.Finding, format string) string {
+			return fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", f.Table, f.Name, format)
+		},
+		func(f v1review.Finding, maxLength int) string {
+			return fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", f.Table, f.Name, maxLength)
+		},
+	)
+	addNaming(storepb.SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT, rules.NamingAutoIncrementColumn, code.NamingAutoIncrementColumnConventionMismatch, "naming_payload is required for this rule", e.posAbsOrFinding,
+		func(f v1review.Finding, format string) string {
+			return fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", f.Table, f.Name, format)
+		},
+		func(f v1review.Finding, maxLength int) string {
+			return fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", f.Table, f.Name, maxLength)
+		},
+	)
+	addNaming(storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, rules.TableDropNaming, code.TableDropNamingConventionMismatch, "naming_payload is required for table drop naming convention rule", e.posAbsOrFinding,
+		func(f v1review.Finding, format string) string {
+			return fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", f.Name, format)
+		},
+		nil,
+	)
+
+	// Template naming rules.
+	templateInvalidContent := func(stmt V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("%q meet internal error %q", trimmedStmtText(stmt.Text), f.Detail)
 	}
-}
-
-type preparedStmts[N any] struct {
-	stmts  []V1Stmt[N]
-	nodes  []N
-	status storepb.Advice_Status
-	title  string
-}
-
-func (m *MySQLFamily[N]) prepare(checkCtx Context) (preparedStmts[N], error) {
-	stmts, nodes, err := m.r.extractNodes(checkCtx)
-	if err != nil {
-		return preparedStmts[N]{}, err
-	}
-	level, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
-	if err != nil {
-		return preparedStmts[N]{}, err
-	}
-	return preparedStmts[N]{stmts: stmts, nodes: nodes, status: level, title: checkCtx.Rule.Type.String()}, nil
-}
-
-func newAdvice(status storepb.Advice_Status, c code.Code, title, content string, pos *storepb.Position) *storepb.Advice {
-	return &storepb.Advice{Status: status, Code: c.Int32(), Title: title, Content: content, StartPosition: pos}
-}
-
-func (m *MySQLFamily[N]) perStmt(
-	fn func([]N) []v1review.Finding,
-	build func(V1Stmt[N], v1review.Finding, storepb.Advice_Status, string) *storepb.Advice,
-) Func {
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
-		if err != nil {
-			return nil, err
+	renameIndexSchema := func(node N, metadata *model.DatabaseMetadata) v1review.Schema {
+		if opt.IsRenameIndex != nil && opt.IsRenameIndex(node) {
+			return V1SchemaOf(metadata)
 		}
-		var adviceList []*storepb.Advice
-		for i, stmt := range p.stmts {
-			for _, f := range fn(p.nodes[i : i+1 : i+1]) {
-				if a := build(stmt, f, p.status, p.title); a != nil {
-					adviceList = append(adviceList, a)
+		return v1review.Schema{}
+	}
+	if rules.NamingForeignKey != nil {
+		fn := rules.NamingForeignKey
+		advisors[storepb.SQLReviewRule_NAMING_INDEX_FK] = e.TemplateNamingWithOptions(
+			func(nodes []N, cfg v1review.TemplateConfig, _ v1review.Schema) ([]v1review.Finding, error) {
+				return fn(nodes, cfg)
+			},
+			code.NamingFKConventionMismatch,
+			"Internal error for foreign key naming convention rule",
+			"Foreign key",
+			"",
+			true,
+			V1TemplateNamingOptions[N]{BacktickQuote: true, InvalidContent: templateInvalidContent},
+			e.PosFinding,
+		)
+	}
+	if rules.NamingIndex != nil {
+		fn := rules.NamingIndex
+		errTitle := "Internal error for unique key naming convention rule"
+		if e.tidbQuirks {
+			errTitle = "Internal error for index naming convention rule"
+		}
+		advisors[storepb.SQLReviewRule_NAMING_INDEX_IDX] = e.TemplateNamingWithOptions(
+			func(nodes []N, cfg v1review.TemplateConfig, schema v1review.Schema) ([]v1review.Finding, error) {
+				return fn(nodes, cfg, schema), nil
+			},
+			code.NamingIndexConventionMismatch,
+			errTitle,
+			"Index",
+			"",
+			true,
+			V1TemplateNamingOptions[N]{BacktickQuote: true, InvalidContent: templateInvalidContent, SchemaFor: renameIndexSchema},
+			e.PosFinding,
+		)
+	}
+	if rules.NamingUniqueKey != nil {
+		fn := rules.NamingUniqueKey
+		advisors[storepb.SQLReviewRule_NAMING_INDEX_UK] = e.TemplateNamingWithOptions(
+			func(nodes []N, cfg v1review.TemplateConfig, schema v1review.Schema) ([]v1review.Finding, error) {
+				return fn(nodes, cfg, schema), nil
+			},
+			code.NamingUKConventionMismatch,
+			"Internal error for unique key naming convention rule",
+			"Unique key",
+			"",
+			true,
+			V1TemplateNamingOptions[N]{BacktickQuote: true, InvalidContent: templateInvalidContent, SchemaFor: renameIndexSchema},
+			e.PosFinding,
+		)
+	}
+
+	// Custom per-statement rules using V1Engine.StmtNodes.
+	if rules.StatementDisallowLimit != nil {
+		advisors[storepb.SQLReviewRule_STATEMENT_DISALLOW_LIMIT] = e.StmtNodes(rules.StatementDisallowLimit,
+			func(stmt V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
+				return dmlLimitCodes[f.Name], fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", e.stmtText(stmt, false)), true
+			}, e.posFindingOrTiDBFirstToken)
+	}
+	if rules.StatementDisallowOrderBy != nil {
+		advisors[storepb.SQLReviewRule_STATEMENT_DISALLOW_ORDER_BY] = e.StmtNodes(rules.StatementDisallowOrderBy,
+			func(stmt V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
+				return dmlOrderByCodes[f.Name], fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", e.stmtText(stmt, false)), true
+			}, e.posFindingOrTiDBFirstToken)
+	}
+	if rules.StatementDisallowTruncate != nil {
+		advisors[storepb.SQLReviewRule_STATEMENT_DISALLOW_TRUNCATE] = e.StmtNodes(rules.StatementDisallowTruncate,
+			func(_ V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
+				switch f.Code {
+				case v1review.Truncate:
+					return code.StatementDisallowTruncate, fmt.Sprintf(`TRUNCATE TABLE %q is not allowed: TRUNCATE auto-commits (breaking surrounding transactional work), bypasses triggers, and resets AUTO_INCREMENT. Prior-backup treats this as DDL and does not produce row-level snapshots.`, f.Table), true
+				case v1review.TruncatePartition:
+					return code.StatementDisallowTruncate, fmt.Sprintf(`ALTER TABLE %q TRUNCATE PARTITION %q is not allowed: partition truncate shares the auto-commit and prior-backup gaps of TRUNCATE TABLE on MySQL.`, f.Table, f.Name), true
+				default:
+					return 0, "", false
 				}
-			}
-		}
-		return adviceList, nil
+			}, e.PosFinding)
+	}
+	if rules.TableDisallowPartition != nil {
+		advisors[storepb.SQLReviewRule_TABLE_DISALLOW_PARTITION] = e.StmtNodes(rules.TableDisallowPartition,
+			func(stmt V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
+				if f.Code != "" && f.Code != v1review.TablePartitioned {
+					return 0, "", false
+				}
+				return code.CreateTablePartition, fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", e.stmtText(stmt, false)), true
+			}, e.posStatementFinding)
+	}
+	if rules.TableNoForeignKey != nil {
+		advisors[storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY] = e.StmtNodes(rules.TableNoForeignKey,
+			func(_ V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
+				if f.Code != "" && f.Code != v1review.TableForeignKey {
+					return 0, "", false
+				}
+				table := f.Table
+				if table == "" {
+					table = f.Name
+				}
+				return code.TableHasFK, fmt.Sprintf("Foreign key is not allowed in the table `%s`", table), true
+			}, e.posBaseLineTwice)
+	}
+
+	// Batch rules using V1Engine.Batch / BackwardCompatibility.
+	if rules.ColumnCurrentTimeCountLimit != nil {
+		fn := rules.ColumnCurrentTimeCountLimit
+		advisors[storepb.SQLReviewRule_COLUMN_CURRENT_TIME_COUNT_LIMIT] = e.Batch(func(_ Context, nodes []N) []v1review.Finding { return fn(nodes) },
+			func(stmts []V1Stmt[N], f v1review.Finding) (code.Code, string, *storepb.Position, bool) {
+				switch f.Code {
+				case v1review.ColumnDefaultCurrentTimeCount:
+					return code.DefaultCurrentTimeColumnCountExceedsLimit, fmt.Sprintf("Table `%s` has %s DEFAULT CURRENT_TIMESTAMP() columns. The count greater than %d.", f.Table, f.Value, 2), e.posAbsOrFinding(stmts[f.Statement], f), true
+				case v1review.ColumnOnUpdateCurrentTimeCount:
+					return code.OnUpdateCurrentTimeColumnCountExceedsLimit, fmt.Sprintf("Table `%s` has %s ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than %d.", f.Table, f.Value, 1), e.posAbsOrFinding(stmts[f.Statement], f), true
+				default:
+					return 0, "", nil, false
+				}
+			})
+	}
+	if rules.SchemaBackwardCompatibility != nil {
+		fn := rules.SchemaBackwardCompatibility
+		advisors[storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY] = e.BackwardCompatibility(
+			func(_ Context, nodes []N) []v1review.Finding { return fn(nodes) },
+			mysqlCompatEntries,
+			func(stmt V1Stmt[N], _ v1review.Finding, _ string) string {
+				return fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", e.stmtText(stmt, true))
+			},
+			e.posBaseLineTwice,
+		)
+	}
+	if rules.StatementMaxExecutionTime != nil {
+		fn := rules.StatementMaxExecutionTime
+		advisors[storepb.SQLReviewRule_STATEMENT_MAX_EXECUTION_TIME] = e.Batch(func(_ Context, nodes []N) []v1review.Finding { return fn(nodes) },
+			func(_ []V1Stmt[N], f v1review.Finding) (code.Code, string, *storepb.Position, bool) {
+				return code.StatementNoMaxExecutionTime, fmt.Sprintf("The %s is not set", f.Name), nil, true
+			})
+	}
+	if rules.StatementMergeAlterTable != nil {
+		fn := rules.StatementMergeAlterTable
+		advisors[storepb.SQLReviewRule_STATEMENT_MERGE_ALTER_TABLE] = e.Batch(func(_ Context, nodes []N) []v1review.Finding { return fn(nodes) },
+			func(stmts []V1Stmt[N], f v1review.Finding) (code.Code, string, *storepb.Position, bool) {
+				return code.StatementRedundantAlterTable, fmt.Sprintf("There are %s statements to modify table `%s`", f.Value, f.Table), e.posFindingOrTiDBFirstToken(stmts[f.Statement], f), true
+			})
+	}
+	if rules.TableNoDuplicateIndex != nil {
+		fn := rules.TableNoDuplicateIndex
+		advisors[storepb.SQLReviewRule_TABLE_NO_DUPLICATE_INDEX] = e.Batch(func(_ Context, nodes []N) []v1review.Finding { return fn(nodes) },
+			func(stmts []V1Stmt[N], f v1review.Finding) (code.Code, string, *storepb.Position, bool) {
+				return code.DuplicateIndexInTable, fmt.Sprintf("`%s` has duplicate index `%s`", f.Table, f.Name), e.PosFinding(stmts[f.Statement], f), true
+			})
+	}
+
+	// Shared WHERE / index-schema rules.
+	if rules.StatementWhereDisallowFunctionsAndCalc != nil {
+		fn := rules.StatementWhereDisallowFunctionsAndCalc
+		advisors[storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS] = e.WhereDisallowFuncAndCalc(
+			func(checkCtx Context) func([]N) []v1review.Finding {
+				schema := e.SchemaOf(checkCtx)
+				return func(nodes []N) []v1review.Finding { return fn(nodes, schema) }
+			},
+			false,
+			e.PosFinding,
+		)
+	}
+	if rules.IndexPKTypeLimit != nil {
+		advisors[storepb.SQLReviewRule_INDEX_PK_TYPE_LIMIT] = mysqlIndexSchemaBatch(e, rules.IndexPKTypeLimit, code.IndexPKType, func(f v1review.Finding) string {
+			return fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", f.Table, f.Name, f.Value)
+		})
+	}
+	if rules.IndexTypeNoBlob != nil {
+		advisors[storepb.SQLReviewRule_INDEX_TYPE_NO_BLOB] = mysqlIndexSchemaBatch(e, rules.IndexTypeNoBlob, code.IndexTypeNoBlob, func(f v1review.Finding) string {
+			return fmt.Sprintf("Columns in index must not be BLOB but `%s`.`%s` is %s", f.Table, f.Name, f.Value)
+		})
+	}
+
+	// Specialized and live rules.
+	if rules.MaxStatementsInTransaction {
+		advisors[storepb.SQLReviewRule_STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION] = mysqlMaxStatementsInTransaction()
+	}
+	if rules.OnlineMigration != nil {
+		advisors[storepb.SQLReviewRule_ADVICE_ONLINE_MIGRATION] = mysqlOnlineMigration(e, engine, rules.OnlineMigration)
+	}
+	if rules.InsertRowLimit != nil && rules.InsertRowLimitProbes != nil {
+		advisors[storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT] = e.RowLimit(V1RowLimitConfig[N]{
+			Probes:       rules.InsertRowLimitProbes,
+			Judge:        rules.InsertRowLimit,
+			ExceededCode: code.InsertTooManyRows,
+			ExceededVerb: "inserts",
+			TrimEstimate: true,
+		})
+	}
+	if rules.AffectedRowLimit != nil && rules.AffectedRowLimitProbes != nil {
+		advisors[storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT] = e.RowLimit(V1RowLimitConfig[N]{
+			Probes:       rules.AffectedRowLimitProbes,
+			Judge:        rules.AffectedRowLimit,
+			ExceededCode: code.StatementAffectedRowExceedsLimit,
+			ExceededVerb: "affected",
+		})
+	}
+	if rules.DMLDryRun != nil && rules.DMLDryRunProbes != nil {
+		advisors[storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN] = e.DMLDryRun(V1DMLDryRunConfig[N]{
+			Probes: rules.DMLDryRunProbes,
+			Judge:  rules.DMLDryRun,
+		})
+	}
+	if rules.ColumnComment != nil {
+		advisors[storepb.SQLReviewRule_COLUMN_COMMENT] = mysqlColumnComment(e, rules.ColumnComment)
+	}
+	if rules.ColumnDisallowChangeType != nil {
+		advisors[storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGE_TYPE] = mysqlColumnDisallowChangeType(e, opt.ReadsColumnType, rules.ColumnDisallowChangeType)
+	}
+	if rules.ColumnDisallowDropInIndex != nil {
+		advisors[storepb.SQLReviewRule_COLUMN_DISALLOW_DROP_IN_INDEX] = mysqlColumnDisallowDropInIndex(e, opt.DropsColumn, rules.ColumnDisallowDropInIndex)
+	}
+	if rules.ColumnNoNull != nil {
+		advisors[storepb.SQLReviewRule_COLUMN_NO_NULL] = mysqlColumnNoNull(e, opt.DefinesColumn, rules.ColumnNoNull)
+	}
+	if rules.ColumnRequired != nil {
+		advisors[storepb.SQLReviewRule_COLUMN_REQUIRED] = mysqlColumnRequired(e, rules.ColumnRequired)
+	}
+	if rules.DatabaseDropEmptyDatabase != nil {
+		advisors[storepb.SQLReviewRule_DATABASE_DROP_EMPTY_DATABASE] = mysqlDatabaseDropEmptyDatabase(e, opt.IsDropDatabase, rules.DatabaseDropEmptyDatabase)
+	}
+	if rules.IndexPrimaryKeyTypeAllowlist != nil {
+		advisors[storepb.SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST] = mysqlIndexPrimaryKeyTypeAllowlist(e, rules.IndexPrimaryKeyTypeAllowlist)
+	}
+	if rules.IndexTotalNumberLimit != nil {
+		advisors[storepb.SQLReviewRule_INDEX_TOTAL_NUMBER_LIMIT] = mysqlIndexTotalNumberLimit(e, rules.IndexTotalNumberLimit)
+	}
+	if rules.TableComment != nil {
+		advisors[storepb.SQLReviewRule_TABLE_COMMENT] = mysqlTableComment(e, rules.TableComment)
+	}
+	if rules.TableLimitSize != nil {
+		advisors[storepb.SQLReviewRule_TABLE_LIMIT_SIZE] = mysqlTableLimitSize(e, rules.TableLimitSize)
+	}
+	if rules.TableRequirePK != nil {
+		advisors[storepb.SQLReviewRule_TABLE_REQUIRE_PK] = mysqlTableRequirePK(e, rules.TableRequirePK)
+	}
+	if rules.TableTextFieldsTotalLength != nil {
+		advisors[storepb.SQLReviewRule_TABLE_TEXT_FIELDS_TOTAL_LENGTH] = mysqlTableTextFieldsTotalLength(e, opt.IsCreateTable, rules.TableTextFieldsTotalLength)
+	}
+
+	return advisors
+}
+
+func guardNilMetadata[N any](md *model.DatabaseMetadata, nodes []N, pred func(N) bool) {
+	// Preserves V1 panic parity when a statement inspects schema metadata with nil metadata.
+	if md == nil && pred != nil && slices.ContainsFunc(nodes, pred) {
+		md.GetSchemaMetadata("")
 	}
 }
 
-func (m *MySQLFamily[N]) simpleStmt(
-	fn func([]N) []v1review.Finding,
-	adviceCode code.Code,
-	posFn func(V1Stmt[N], v1review.Finding) *storepb.Position,
-	contentFn func(V1Stmt[N], v1review.Finding) string,
-) Func {
-	return m.perStmt(fn, func(stmt V1Stmt[N], f v1review.Finding, status storepb.Advice_Status, title string) *storepb.Advice {
-		return newAdvice(status, adviceCode, title, contentFn(stmt, f), posFn(stmt, f))
-	})
-}
-
-func (m *MySQLFamily[N]) batch(
-	fn func([]N) []v1review.Finding,
-	build func([]V1Stmt[N], v1review.Finding, storepb.Advice_Status, string) *storepb.Advice,
-) Func {
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		var adviceList []*storepb.Advice
-		for _, f := range fn(p.nodes) {
-			if a := build(p.stmts, f, p.status, p.title); a != nil {
-				adviceList = append(adviceList, a)
-			}
-		}
-		return adviceList, nil
-	}
-}
-
-func (m *MySQLFamily[N]) numberStmtRule(
-	fn func([]N, int) []v1review.Finding,
-	missingMsg string,
-	positiveOnly bool,
-	build func(V1Stmt[N], v1review.Finding, int, storepb.Advice_Status, string) *storepb.Advice,
-) Func {
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		limit, err := RequireNumberPayload(checkCtx.Rule, missingMsg)
-		if err != nil {
-			return nil, err
-		}
-		if positiveOnly && limit <= 0 {
-			return nil, nil
-		}
-		var adviceList []*storepb.Advice
-		for i, stmt := range p.stmts {
-			for _, f := range fn(p.nodes[i:i+1:i+1], limit) {
-				adviceList = append(adviceList, build(stmt, f, limit, p.status, p.title))
-			}
-		}
-		return adviceList, nil
-	}
-}
-
-func (m *MySQLFamily[N]) stringArrayStmtRule(
-	fn func([]N, []string) []v1review.Finding,
-	adviceCode code.Code,
-	posFn func(V1Stmt[N], v1review.Finding) *storepb.Position,
-	contentFn func(V1Stmt[N], v1review.Finding) string,
-) Func {
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		list := checkCtx.Rule.GetStringArrayPayload().List
-		var adviceList []*storepb.Advice
-		for i, stmt := range p.stmts {
-			for _, f := range fn(p.nodes[i:i+1:i+1], list) {
-				adviceList = append(adviceList, newAdvice(p.status, adviceCode, p.title, contentFn(stmt, f), posFn(stmt, f)))
-			}
-		}
-		return adviceList, nil
-	}
-}
-
-func (m *MySQLFamily[N]) disallowCreateRule(fn func([]N) []v1review.Finding, c code.Code, object string) Func {
-	return m.simpleStmt(fn, c, m.r.posBaseLineTwice, func(stmt V1Stmt[N], _ v1review.Finding) string {
-		return fmt.Sprintf("%s is forbidden, but \"%s\" creates", object, strings.TrimSpace(stmt.Text))
-	})
-}
-
-func (m *MySQLFamily[N]) indexSchemaBatchRule(
-	fn func([]N, v1review.Schema) ([]v1review.Finding, error),
+func mysqlSchemaBatch[N any](
+	e *V1Engine[N],
 	adviceCode code.Code,
 	contentFn func(v1review.Finding) string,
+	eval func(Context, []N) ([]v1review.Finding, *model.DatabaseMetadata, error),
 ) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
+		stmts, nodes, status, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
-		findings, err := fn(p.nodes, v1SchemaOf(checkCtx.OriginalMetadata))
+		findings, missingMD, err := eval(checkCtx, nodes)
 		if err != nil {
-			ReadMissingSchema(checkCtx.OriginalMetadata, err)
+			ReadMissingSchema(missingMD, err)
 			return nil, err
 		}
 		var adviceList []*storepb.Advice
 		for _, f := range findings {
-			adviceList = append(adviceList, newAdvice(p.status, adviceCode, p.title, contentFn(f), m.r.posFinding(p.stmts[f.Statement], f)))
+			adviceList = append(adviceList, newAdvice(status, adviceCode, title, contentFn(f), e.PosFinding(stmts[f.Statement], f)))
 		}
 		return adviceList, nil
 	}
 }
 
-// MaxStatementsInTransaction validates the rule level and number payload and
-// reports no advice, preserving the MySQL no-op rule behavior.
-func (*MySQLFamily[N]) MaxStatementsInTransaction() Func {
+func mysqlIndexSchemaBatch[N any](
+	e *V1Engine[N],
+	fn func([]N, v1review.Schema) ([]v1review.Finding, error),
+	adviceCode code.Code,
+	contentFn func(v1review.Finding) string,
+) Func {
+	return mysqlSchemaBatch(e, adviceCode, contentFn, func(checkCtx Context, nodes []N) ([]v1review.Finding, *model.DatabaseMetadata, error) {
+		findings, err := fn(nodes, V1SchemaOf(checkCtx.OriginalMetadata))
+		return findings, checkCtx.OriginalMetadata, err
+	})
+}
+
+func mysqlMaxStatementsInTransaction() Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
 		if _, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level); err != nil {
 			return nil, err
@@ -225,8 +671,7 @@ func (*MySQLFamily[N]) MaxStatementsInTransaction() Func {
 	}
 }
 
-// OnlineMigration returns an Func for ADVICE_ONLINE_MIGRATION.
-func (m *MySQLFamily[N]) OnlineMigration(engine storepb.Engine, fn func([]N, v1review.Schema, string, int64) []v1review.Finding) Func {
+func mysqlOnlineMigration[N any](e *V1Engine[N], engine storepb.Engine, fn func([]N, v1review.Schema, string, int64) []v1review.Finding) Func {
 	return func(ctx context.Context, checkCtx Context) ([]*storepb.Advice, error) {
 		n, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
 		if err != nil {
@@ -244,11 +689,11 @@ func (m *MySQLFamily[N]) OnlineMigration(engine storepb.Engine, fn func([]N, v1r
 				return []*storepb.Advice{newAdvice(level, code.DatabaseNotExists, title, fmt.Sprintf("Needs database %q to save temporary data for online migration but it does not exist", ghostDB), nil)}, nil
 			}
 		}
-		stmts, nodes, err := m.r.extractNodes(checkCtx)
+		stmts, nodes, err := e.Nodes(checkCtx)
 		if err != nil {
 			return nil, err
 		}
-		schema := v1review.Schema{Metadata: checkCtx.DBSchema, ObjectCaseSensitive: checkCtx.IsObjectCaseSensitive}
+		schema := e.SchemaOf(checkCtx)
 		var adviceList []*storepb.Advice
 		for _, f := range fn(nodes, schema, checkCtx.CurrentDatabase, minRows) {
 			stmt := stmts[f.Statement]
@@ -257,8 +702,8 @@ func (m *MySQLFamily[N]) OnlineMigration(engine storepb.Engine, fn func([]N, v1r
 				Code:          code.AdviseOnlineMigrationForStatement.Int32(),
 				Title:         title,
 				Content:       fmt.Sprintf("Estimated table row count of %q is %s exceeding the set value %d. Consider using online migration for this statement", f.Table, f.Value, minRows),
-				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine + int(m.r.findingLine(stmt.Text, f))),
-				EndPosition:   base.ConvertANTLRLineToPosition(stmt.BaseLine + int(m.r.contentEndLine(stmt.Text))),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine + int(e.findingLine(stmt.Text, f))),
+				EndPosition:   base.ConvertANTLRLineToPosition(stmt.BaseLine + int(e.ContentEndLine(stmt.Text))),
 			})
 		}
 		if len(adviceList) > 1 || (len(adviceList) == 1 && len(checkCtx.ParsedStatements) > 1) {
@@ -278,46 +723,23 @@ func (m *MySQLFamily[N]) OnlineMigration(engine storepb.Engine, fn func([]N, v1r
 	}
 }
 
-// ColumnAutoIncrementInitialValue builds COLUMN_AUTO_INCREMENT_INITIAL_VALUE.
-func (m *MySQLFamily[N]) ColumnAutoIncrementInitialValue(fn func([]N, int) []v1review.Finding) Func {
-	return m.numberStmtRule(fn, "number_payload is required for column auto increment initial value rule", false,
-		func(stmt V1Stmt[N], f v1review.Finding, value int, status storepb.Advice_Status, title string) *storepb.Advice {
-			return newAdvice(status, code.AutoIncrementColumnInitialValueNotMatch, title, fmt.Sprintf("The initial auto-increment value in table `%s` is %s, which doesn't equal %v", f.Table, f.Value, value), m.r.posAbsOrFinding(stmt, f))
-		})
-}
-
-// ColumnAutoIncrementMustInteger builds COLUMN_AUTO_INCREMENT_MUST_INTEGER.
-func (m *MySQLFamily[N]) ColumnAutoIncrementMustInteger(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.AutoIncrementColumnNotInteger, m.r.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("Auto-increment column `%s`.`%s` requires integer type", f.Table, f.Name)
-	})
-}
-
-// ColumnAutoIncrementMustUnsigned builds COLUMN_AUTO_INCREMENT_MUST_UNSIGNED.
-func (m *MySQLFamily[N]) ColumnAutoIncrementMustUnsigned(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.AutoIncrementColumnSigned, m.r.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", f.Table, f.Name)
-	})
-}
-
-// ColumnComment builds COLUMN_COMMENT.
-func (m *MySQLFamily[N]) ColumnComment(fn func([]N, bool, int) []v1review.Finding) Func {
+func mysqlColumnComment[N any](e *V1Engine[N], fn func([]N, bool, int) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
+		stmts, nodes, status, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
 		payload := checkCtx.Rule.GetCommentConventionPayload()
 		required, maxLength := true, 0
-		if m.r.tidbQuirks {
+		if e.tidbQuirks {
 			required, maxLength = false, -1
 		}
 		if payload != nil {
 			required, maxLength = payload.Required, int(payload.MaxLength)
 		}
 		var adviceList []*storepb.Advice
-		for i, stmt := range p.stmts {
-			for _, f := range fn(p.nodes[i:i+1:i+1], required, maxLength) {
+		for i, stmt := range stmts {
+			for _, f := range fn(nodes[i:i+1:i+1], required, maxLength) {
 				if payload == nil {
 					return nil, errors.New("comment_convention_payload is required for column comment rule")
 				}
@@ -325,7 +747,7 @@ func (m *MySQLFamily[N]) ColumnComment(fn func([]N, bool, int) []v1review.Findin
 				var content string
 				switch f.Code {
 				case v1review.ColumnCommentTooLong:
-					if m.r.tidbQuirks && payload.MaxLength < 0 {
+					if e.tidbQuirks && payload.MaxLength < 0 {
 						continue
 					}
 					adviceCode = code.CommentTooLong
@@ -336,141 +758,65 @@ func (m *MySQLFamily[N]) ColumnComment(fn func([]N, bool, int) []v1review.Findin
 				default:
 					continue
 				}
-				adviceList = append(adviceList, newAdvice(p.status, adviceCode, p.title, content, m.r.posAlterFirstToken(stmt, f)))
+				adviceList = append(adviceList, newAdvice(status, adviceCode, title, content, e.posAlterFirstToken(stmt, f)))
 			}
 		}
 		return adviceList, nil
 	}
 }
 
-// ColumnCurrentTimeCountLimit builds COLUMN_CURRENT_TIME_COUNT_LIMIT.
-func (m *MySQLFamily[N]) ColumnCurrentTimeCountLimit(fn func([]N) []v1review.Finding) Func {
-	return m.batch(fn, func(stmts []V1Stmt[N], f v1review.Finding, status storepb.Advice_Status, title string) *storepb.Advice {
-		switch f.Code {
-		case v1review.ColumnDefaultCurrentTimeCount:
-			return newAdvice(status, code.DefaultCurrentTimeColumnCountExceedsLimit, title, fmt.Sprintf("Table `%s` has %s DEFAULT CURRENT_TIMESTAMP() columns. The count greater than %d.", f.Table, f.Value, 2), m.r.posAbsOrFinding(stmts[f.Statement], f))
-		case v1review.ColumnOnUpdateCurrentTimeCount:
-			return newAdvice(status, code.OnUpdateCurrentTimeColumnCountExceedsLimit, title, fmt.Sprintf("Table `%s` has %s ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than %d.", f.Table, f.Value, 1), m.r.posAbsOrFinding(stmts[f.Statement], f))
-		default:
-			return nil
-		}
-	})
-}
-
-// ColumnDisallowChange builds COLUMN_DISALLOW_CHANGE.
-func (m *MySQLFamily[N]) ColumnDisallowChange(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.UseChangeColumnStatement, m.r.posStatementAbsOrStmt, func(stmt V1Stmt[N], _ v1review.Finding) string {
-		return fmt.Sprintf("\"%s\" contains CHANGE COLUMN statement", m.r.stmtText(stmt, false))
-	})
-}
-
-// ColumnDisallowChangingOrder builds COLUMN_DISALLOW_CHANGING_ORDER.
-func (m *MySQLFamily[N]) ColumnDisallowChangingOrder(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.ChangeColumnOrder, m.r.posStatementAbsOrStmt, func(stmt V1Stmt[N], _ v1review.Finding) string {
-		return fmt.Sprintf("\"%s\" changes column order", m.r.stmtText(stmt, false))
-	})
-}
-
-// ColumnDisallowChangeType builds COLUMN_DISALLOW_CHANGE_TYPE.
-func (m *MySQLFamily[N]) ColumnDisallowChangeType(fn func([]N, v1review.Schema) []v1review.Finding) Func {
+func mysqlColumnDisallowChangeType[N any](e *V1Engine[N], readsColumnType func(N) bool, fn func([]N, v1review.Schema) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
+		stmts, nodes, status, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
-		if checkCtx.OriginalMetadata == nil && m.opt.ReadsColumnType != nil && slices.ContainsFunc(p.nodes, m.opt.ReadsColumnType) {
-			checkCtx.OriginalMetadata.GetSchemaMetadata("")
-		}
-		schema := v1SchemaOf(checkCtx.OriginalMetadata)
+		guardNilMetadata(checkCtx.OriginalMetadata, nodes, readsColumnType)
+		schema := V1SchemaOf(checkCtx.OriginalMetadata)
 		var adviceList []*storepb.Advice
-		for i, stmt := range p.stmts {
-			for _, f := range fn(p.nodes[i:i+1:i+1], schema) {
-				adviceList = append(adviceList, newAdvice(p.status, code.ChangeColumnType, p.title, fmt.Sprintf("\"%s\" changes column type", m.r.stmtText(stmt, false)), m.r.posAbsOrFinding(stmt, f)))
+		for i, stmt := range stmts {
+			for _, f := range fn(nodes[i:i+1:i+1], schema) {
+				adviceList = append(adviceList, newAdvice(status, code.ChangeColumnType, title, fmt.Sprintf("\"%s\" changes column type", e.stmtText(stmt, false)), e.posAbsOrFinding(stmt, f)))
 			}
 		}
 		return adviceList, nil
 	}
 }
 
-// ColumnDisallowDrop builds COLUMN_DISALLOW_DROP.
-func (m *MySQLFamily[N]) ColumnDisallowDrop(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.DropColumn, m.r.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("drops column \"%s\" of table \"%s\"", f.Name, f.Table)
-	})
-}
-
-// ColumnDisallowDropInIndex builds COLUMN_DISALLOW_DROP_IN_INDEX.
-func (m *MySQLFamily[N]) ColumnDisallowDropInIndex(fn func([]N, v1review.Schema) []v1review.Finding) Func {
+func mysqlColumnDisallowDropInIndex[N any](e *V1Engine[N], dropsColumn func(N) bool, fn func([]N, v1review.Schema) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
+		stmts, nodes, status, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
-		if checkCtx.OriginalMetadata == nil && m.opt.DropsColumn != nil && slices.ContainsFunc(p.nodes, m.opt.DropsColumn) {
-			checkCtx.OriginalMetadata.GetSchemaMetadata("")
-		}
+		guardNilMetadata(checkCtx.OriginalMetadata, nodes, dropsColumn)
 		var adviceList []*storepb.Advice
-		for _, f := range fn(p.nodes, v1SchemaOf(checkCtx.OriginalMetadata)) {
-			stmt := p.stmts[f.Statement]
-			pos := m.r.posFinding(stmt, f)
-			if m.r.tidbQuirks {
-				pos = m.r.posStatement(stmt)
-			}
-			adviceList = append(adviceList, newAdvice(p.status, code.DropIndexColumn, p.title, fmt.Sprintf("`%s`.`%s` cannot drop index column", f.Table, f.Name), pos))
+		for _, f := range fn(nodes, V1SchemaOf(checkCtx.OriginalMetadata)) {
+			stmt := stmts[f.Statement]
+			adviceList = append(adviceList, newAdvice(status, code.DropIndexColumn, title, fmt.Sprintf("`%s`.`%s` cannot drop index column", f.Table, f.Name), e.posFindingOrTiDBFirstToken(stmt, f)))
 		}
 		return adviceList, nil
 	}
 }
 
-// ColumnDisallowSetCharset builds COLUMN_DISALLOW_SET_CHARSET.
-func (m *MySQLFamily[N]) ColumnDisallowSetCharset(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.SetColumnCharset, func(stmt V1Stmt[N], _ v1review.Finding) *storepb.Position { return m.r.posStatement(stmt) },
-		func(stmt V1Stmt[N], _ v1review.Finding) string {
-			return fmt.Sprintf("Disallow set column charset but \"%s\" does", m.r.stmtText(stmt, false))
-		})
-}
-
-// ColumnMaximumCharacterLength builds COLUMN_MAXIMUM_CHARACTER_LENGTH.
-func (m *MySQLFamily[N]) ColumnMaximumCharacterLength(fn func([]N, int) []v1review.Finding) Func {
-	return m.numberStmtRule(fn, "number_payload is required for column maximum character length rule", true,
-		func(stmt V1Stmt[N], f v1review.Finding, maximum int, status storepb.Advice_Status, title string) *storepb.Advice {
-			content := fmt.Sprintf("The length of the CHAR column `%s.%s` is bigger than %d, please use VARCHAR instead", f.Table, f.Name, maximum)
-			if m.r.tidbQuirks {
-				content = fmt.Sprintf("The length of the CHAR column `%s` is %s, bigger than %d, please use VARCHAR instead", f.Name, f.Value, maximum)
-			}
-			return newAdvice(status, code.CharLengthExceedsLimit, title, content, m.r.posAbsOrFinding(stmt, f))
-		})
-}
-
-// ColumnMaximumVarcharLength builds COLUMN_MAXIMUM_VARCHAR_LENGTH.
-func (m *MySQLFamily[N]) ColumnMaximumVarcharLength(fn func([]N, int) []v1review.Finding) Func {
-	return m.numberStmtRule(fn, "number_payload is required for column maximum varchar length rule", true,
-		func(stmt V1Stmt[N], f v1review.Finding, maximum int, status storepb.Advice_Status, title string) *storepb.Advice {
-			return newAdvice(status, code.VarcharLengthExceedsLimit, title, fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", f.Table, f.Name, maximum), m.r.posAbsOrFinding(stmt, f))
-		})
-}
-
-// ColumnNoNull builds COLUMN_NO_NULL.
-func (m *MySQLFamily[N]) ColumnNoNull(fn func([]N, v1review.Schema) []v1review.Finding) Func {
+func mysqlColumnNoNull[N any](e *V1Engine[N], definesColumn func(N) bool, fn func([]N, v1review.Schema) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
+		stmts, nodes, status, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
-		if checkCtx.FinalMetadata == nil && m.opt.DefinesColumn != nil && slices.ContainsFunc(p.nodes, m.opt.DefinesColumn) {
-			checkCtx.FinalMetadata.GetSchemaMetadata("")
-		}
+		guardNilMetadata(checkCtx.FinalMetadata, nodes, definesColumn)
 		type placed struct {
 			line   int
 			column string
 			table  string
 		}
 		var columns []placed
-		for _, f := range fn(p.nodes, v1SchemaOf(checkCtx.FinalMetadata)) {
-			stmt := p.stmts[f.Statement]
-			line := stmt.BaseLine + int(m.r.findingLine(stmt.Text, f))
-			if m.r.tidbQuirks {
-				line = m.r.absLine(stmt, f.Start)
+		for _, f := range fn(nodes, V1SchemaOf(checkCtx.FinalMetadata)) {
+			stmt := stmts[f.Statement]
+			line := stmt.BaseLine + int(e.findingLine(stmt.Text, f))
+			if e.tidbQuirks {
+				line = e.absLine(stmt, f.Start)
 			}
 			columns = append(columns, placed{line: line, column: f.Name, table: f.Table})
 		}
@@ -479,45 +825,23 @@ func (m *MySQLFamily[N]) ColumnNoNull(fn func([]N, v1review.Schema) []v1review.F
 		})
 		var adviceList []*storepb.Advice
 		for _, c := range columns {
-			adviceList = append(adviceList, newAdvice(p.status, code.ColumnCannotNull, p.title, fmt.Sprintf("`%s`.`%s` cannot have NULL value", c.table, c.column), base.ConvertANTLRLineToPosition(c.line)))
+			adviceList = append(adviceList, newAdvice(status, code.ColumnCannotNull, title, fmt.Sprintf("`%s`.`%s` cannot have NULL value", c.table, c.column), base.ConvertANTLRLineToPosition(c.line)))
 		}
 		return adviceList, nil
 	}
 }
 
-// ColumnRequireCharset builds COLUMN_REQUIRE_CHARSET.
-func (m *MySQLFamily[N]) ColumnRequireCharset(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.NoCharset, m.r.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("Column %s does not have a character set specified", f.Name)
-	})
-}
-
-// ColumnRequireCollation builds COLUMN_REQUIRE_COLLATION.
-func (m *MySQLFamily[N]) ColumnRequireCollation(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.NoCollation, m.r.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("Column %s does not have a collation specified", f.Name)
-	})
-}
-
-// ColumnRequireDefault builds COLUMN_REQUIRE_DEFAULT.
-func (m *MySQLFamily[N]) ColumnRequireDefault(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.NoDefault, m.r.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("Column `%s`.`%s` doesn't have DEFAULT.", f.Table, f.Name)
-	})
-}
-
-// ColumnRequired builds COLUMN_REQUIRED.
-func (m *MySQLFamily[N]) ColumnRequired(fn func([]N, []string) []v1review.Finding) Func {
+func mysqlColumnRequired[N any](e *V1Engine[N], fn func([]N, []string) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
+		stmts, nodes, status, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
-		payload := checkCtx.Rule.GetStringArrayPayload()
-		if payload == nil {
-			return nil, errors.New("string_array_payload is required for column required rule")
+		list, err := RequireStringArrayPayload(checkCtx.Rule, "string_array_payload is required for column required rule")
+		if err != nil {
+			return nil, err
 		}
-		findings := fn(p.nodes, payload.List)
+		findings := fn(nodes, list)
 		var adviceList []*storepb.Advice
 		for i := 0; i < len(findings); {
 			f := findings[i]
@@ -525,53 +849,35 @@ func (m *MySQLFamily[N]) ColumnRequired(fn func([]N, []string) []v1review.Findin
 			for ; i < len(findings) && findings[i].Table == f.Table; i++ {
 				missing = append(missing, findings[i].Name)
 			}
-			stmt := p.stmts[f.Statement]
-			pos := m.r.posStatement(stmt)
-			if !m.r.tidbQuirks {
-				pos = &storepb.Position{Line: int32(stmt.BaseLine + int(m.r.findingLine(stmt.Text, f)))}
+			stmt := stmts[f.Statement]
+			pos := e.posStatement(stmt)
+			if !e.tidbQuirks {
+				pos = &storepb.Position{Line: int32(stmt.BaseLine + int(e.findingLine(stmt.Text, f)))}
 			}
-			adviceList = append(adviceList, newAdvice(p.status, code.NoRequiredColumn, p.title, fmt.Sprintf("Table `%s` requires columns: %s", f.Table, strings.Join(missing, ", ")), pos))
+			adviceList = append(adviceList, newAdvice(status, code.NoRequiredColumn, title, fmt.Sprintf("Table `%s` requires columns: %s", f.Table, strings.Join(missing, ", ")), pos))
 		}
 		return adviceList, nil
 	}
 }
 
-// ColumnSetDefaultForNotNull builds COLUMN_SET_DEFAULT_FOR_NOT_NULL.
-func (m *MySQLFamily[N]) ColumnSetDefaultForNotNull(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.NotNullColumnWithNoDefault, m.r.posAlterFirstToken, func(_ V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", f.Table, f.Name)
-	})
-}
-
-// ColumnTypeDisallowList builds COLUMN_TYPE_DISALLOW_LIST.
-func (m *MySQLFamily[N]) ColumnTypeDisallowList(fn func([]N, []string) []v1review.Finding) Func {
-	return m.stringArrayStmtRule(fn, code.DisabledColumnType, m.r.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("Disallow column type %s but column `%s`.`%s` is", f.Value, f.Table, f.Name)
-	})
-}
-
-// DatabaseDropEmptyDatabase builds DATABASE_DROP_EMPTY_DATABASE.
-func (m *MySQLFamily[N]) DatabaseDropEmptyDatabase(fn func([]N, v1review.Schema) []v1review.Finding) Func {
+func mysqlDatabaseDropEmptyDatabase[N any](e *V1Engine[N], isDropDatabase func(N) bool, fn func([]N, v1review.Schema) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
+		stmts, nodes, status, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
 		var adviceList []*storepb.Advice
-		for i, stmt := range p.stmts {
+		for i, stmt := range stmts {
 			var schema v1review.Schema
-			if m.opt.IsDropDatabase != nil && m.opt.IsDropDatabase(stmt.Node) {
-				schema = v1review.Schema{
-					Metadata:            checkCtx.OriginalMetadata.GetProto(),
-					ObjectCaseSensitive: checkCtx.OriginalMetadata.GetIsObjectCaseSensitive(),
-				}
+			if isDropDatabase != nil && isDropDatabase(stmt.Node) {
+				schema = V1SchemaOf(checkCtx.OriginalMetadata)
 			}
-			for _, f := range fn(p.nodes[i:i+1:i+1], schema) {
+			for _, f := range fn(nodes[i:i+1:i+1], schema) {
 				switch f.Code {
 				case v1review.DatabaseNotCurrent:
-					adviceList = append(adviceList, newAdvice(p.status, code.NotCurrentDatabase, p.title, fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", f.Name, checkCtx.OriginalMetadata.DatabaseName()), m.r.posBaseLineTwice(stmt, f)))
+					adviceList = append(adviceList, newAdvice(status, code.NotCurrentDatabase, title, fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", f.Name, checkCtx.OriginalMetadata.DatabaseName()), e.posBaseLineTwice(stmt, f)))
 				case v1review.DatabaseNotEmpty:
-					adviceList = append(adviceList, newAdvice(p.status, code.DatabaseNotEmpty, p.title, fmt.Sprintf("Database `%s` is not allowed to drop if not empty", f.Name), m.r.posBaseLineTwice(stmt, f)))
+					adviceList = append(adviceList, newAdvice(status, code.DatabaseNotEmpty, title, fmt.Sprintf("Database `%s` is not allowed to drop if not empty", f.Name), e.posBaseLineTwice(stmt, f)))
 				default:
 				}
 			}
@@ -580,530 +886,37 @@ func (m *MySQLFamily[N]) DatabaseDropEmptyDatabase(fn func([]N, v1review.Schema)
 	}
 }
 
-// EngineMySQLUseInnoDB builds ENGINE_MYSQL_USE_INNODB.
-func (m *MySQLFamily[N]) EngineMySQLUseInnoDB(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.NotInnoDBEngine, m.r.posSearchOrStart, func(stmt V1Stmt[N], _ v1review.Finding) string {
-		return fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", trimmedStmtText(stmt.Text))
+func mysqlIndexPrimaryKeyTypeAllowlist[N any](e *V1Engine[N], fn func([]N, []string, v1review.Schema) ([]v1review.Finding, error)) Func {
+	return mysqlSchemaBatch(e, code.IndexPKType, func(f v1review.Finding) string {
+		return fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", f.Name, f.Table, f.Value)
+	}, func(checkCtx Context, nodes []N) ([]v1review.Finding, *model.DatabaseMetadata, error) {
+		list, err := RequireStringArrayPayload(checkCtx.Rule, "string_array_payload is required for this rule")
+		if err != nil {
+			return nil, nil, err
+		}
+		findings, err := fn(nodes, list, V1SchemaOf(checkCtx.OriginalMetadata))
+		return findings, checkCtx.OriginalMetadata, err
 	})
 }
 
-// IndexKeyNumberLimit builds INDEX_KEY_NUMBER_LIMIT.
-func (m *MySQLFamily[N]) IndexKeyNumberLimit(fn func([]N, int) []v1review.Finding) Func {
-	return m.numberStmtRule(fn, "number_payload is required for this rule", false,
-		func(stmt V1Stmt[N], f v1review.Finding, limit int, status storepb.Advice_Status, title string) *storepb.Advice {
-			return newAdvice(status, code.IndexKeyNumberExceedsLimit, title, fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", keyName(stmt.Text, f, m.r.tidbQuirks), f.Table, limit), m.r.posFinding(stmt, f))
-		})
-}
-
-// IndexNoDuplicateColumn builds INDEX_NO_DUPLICATE_COLUMN.
-func (m *MySQLFamily[N]) IndexNoDuplicateColumn(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.DuplicateColumnInIndex, m.r.posFinding, func(stmt V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("%s `%s` has duplicate column `%s`.`%s`", f.Value, keyName(stmt.Text, f, m.r.tidbQuirks), f.Table, f.Other)
-	})
-}
-
-// IndexPKTypeLimit builds INDEX_PK_TYPE_LIMIT.
-func (m *MySQLFamily[N]) IndexPKTypeLimit(fn func([]N, v1review.Schema) ([]v1review.Finding, error)) Func {
-	return m.indexSchemaBatchRule(fn, code.IndexPKType, func(f v1review.Finding) string {
-		return fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", f.Table, f.Name, f.Value)
-	})
-}
-
-// IndexTypeNoBlob builds INDEX_TYPE_NO_BLOB.
-func (m *MySQLFamily[N]) IndexTypeNoBlob(fn func([]N, v1review.Schema) ([]v1review.Finding, error)) Func {
-	return m.indexSchemaBatchRule(fn, code.IndexTypeNoBlob, func(f v1review.Finding) string {
-		return fmt.Sprintf("Columns in index must not be BLOB but `%s`.`%s` is %s", f.Table, f.Name, f.Value)
-	})
-}
-
-// IndexPrimaryKeyTypeAllowlist builds INDEX_PRIMARY_KEY_TYPE_ALLOWLIST.
-func (m *MySQLFamily[N]) IndexPrimaryKeyTypeAllowlist(fn func([]N, []string, v1review.Schema) ([]v1review.Finding, error)) Func {
+func mysqlIndexTotalNumberLimit[N any](e *V1Engine[N], fn func([]N, int, v1review.Schema) ([]v1review.Finding, error)) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		findings, err := fn(p.nodes, checkCtx.Rule.GetStringArrayPayload().List, v1SchemaOf(checkCtx.OriginalMetadata))
-		if err != nil {
-			ReadMissingSchema(checkCtx.OriginalMetadata, err)
-			return nil, err
-		}
-		var adviceList []*storepb.Advice
-		for _, f := range findings {
-			adviceList = append(adviceList, newAdvice(p.status, code.IndexPKType, p.title, fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", f.Name, f.Table, f.Value), m.r.posFinding(p.stmts[f.Statement], f)))
-		}
-		return adviceList, nil
-	}
-}
-
-// IndexTotalNumberLimit builds INDEX_TOTAL_NUMBER_LIMIT.
-func (m *MySQLFamily[N]) IndexTotalNumberLimit(fn func([]N, int, v1review.Schema) ([]v1review.Finding, error)) Func {
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
-		if err != nil {
-			return nil, err
-		}
 		limit, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
 		if err != nil {
 			return nil, err
 		}
-		findings, err := fn(p.nodes, limit, v1SchemaOf(checkCtx.FinalMetadata))
-		if err != nil {
-			ReadMissingSchema(checkCtx.FinalMetadata, err)
-			return nil, err
-		}
-		var adviceList []*storepb.Advice
-		for _, f := range findings {
-			adviceList = append(adviceList, newAdvice(p.status, code.IndexCountExceedsLimit, p.title, fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %s", f.Table, limit, f.Value), m.r.posFinding(p.stmts[f.Statement], f)))
-		}
-		return adviceList, nil
+		return mysqlSchemaBatch(e, code.IndexCountExceedsLimit, func(f v1review.Finding) string {
+			return fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %s", f.Table, limit, f.Value)
+		}, func(checkCtx Context, nodes []N) ([]v1review.Finding, *model.DatabaseMetadata, error) {
+			findings, err := fn(nodes, limit, V1SchemaOf(checkCtx.FinalMetadata))
+			return findings, checkCtx.FinalMetadata, err
+		})(context.Background(), checkCtx)
 	}
 }
 
-// IndexTypeAllowList builds INDEX_TYPE_ALLOW_LIST.
-func (m *MySQLFamily[N]) IndexTypeAllowList(fn func([]N, []string) []v1review.Finding) Func {
-	return m.stringArrayStmtRule(fn, code.IndexTypeNotAllowed, m.r.posFinding, func(_ V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("Index type `%s` is not allowed", f.Value)
-	})
-}
-
-func (m *MySQLFamily[N]) namingRule(
-	fn func([]N, v1review.NamingConfig) ([]v1review.Finding, error),
-	adviceCode code.Code,
-	missingMsg string,
-	useFindingPos bool,
-	mismatchFmt func(v1review.Finding, string) string,
-	tooLongFmt func(v1review.Finding, int) string,
-) Func {
+func mysqlTableComment[N any](e *V1Engine[N], fn func([]N, *v1review.TableCommentConfig) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		namingPayload, maxLength, err := requireNamingPayload(checkCtx.Rule, missingMsg)
-		if err != nil {
-			return nil, err
-		}
-		cfg := v1review.NamingConfig{Pattern: namingPayload.Format, MaxLength: maxLength}
-		if _, err := cfg.Compile(); err != nil {
-			return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
-		}
-		var adviceList []*storepb.Advice
-		for i, stmt := range p.stmts {
-			findings, err := fn(p.nodes[i:i+1:i+1], cfg)
-			if err != nil {
-				return nil, err
-			}
-			for _, f := range findings {
-				var content string
-				switch f.Code {
-				case v1review.NameMismatch:
-					content = mismatchFmt(f, namingPayload.Format)
-				case v1review.NameTooLong:
-					if tooLongFmt == nil {
-						continue
-					}
-					content = tooLongFmt(f, maxLength)
-				default:
-					continue
-				}
-				pos := m.r.posAbsOrFinding(stmt, f)
-				if useFindingPos {
-					pos = m.r.posFinding(stmt, f)
-				}
-				adviceList = append(adviceList, newAdvice(p.status, adviceCode, p.title, content, pos))
-			}
-		}
-		return adviceList, nil
-	}
-}
-
-// NamingTable builds NAMING_TABLE.
-func (m *MySQLFamily[N]) NamingTable(fn func([]N, v1review.NamingConfig) ([]v1review.Finding, error)) Func {
-	return m.namingRule(fn, code.NamingTableConventionMismatch, "naming_payload is required for naming table rule", true,
-		func(f v1review.Finding, format string) string {
-			return fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", f.Name, format)
-		},
-		func(f v1review.Finding, maxLength int) string {
-			return fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", f.Name, maxLength)
-		},
-	)
-}
-
-// NamingColumn builds NAMING_COLUMN.
-func (m *MySQLFamily[N]) NamingColumn(fn func([]N, v1review.NamingConfig) ([]v1review.Finding, error)) Func {
-	return m.namingRule(fn, code.NamingColumnConventionMismatch, "naming_payload is required for naming column rule", false,
-		func(f v1review.Finding, format string) string {
-			return fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", f.Table, f.Name, format)
-		},
-		func(f v1review.Finding, maxLength int) string {
-			return fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", f.Table, f.Name, maxLength)
-		},
-	)
-}
-
-// NamingAutoIncrementColumn builds NAMING_COLUMN_AUTO_INCREMENT.
-func (m *MySQLFamily[N]) NamingAutoIncrementColumn(fn func([]N, v1review.NamingConfig) ([]v1review.Finding, error)) Func {
-	return m.namingRule(fn, code.NamingAutoIncrementColumnConventionMismatch, "naming_payload is required for this rule", false,
-		func(f v1review.Finding, format string) string {
-			return fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", f.Table, f.Name, format)
-		},
-		func(f v1review.Finding, maxLength int) string {
-			return fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", f.Table, f.Name, maxLength)
-		},
-	)
-}
-
-// TableDropNaming builds TABLE_DROP_NAMING_CONVENTION.
-func (m *MySQLFamily[N]) TableDropNaming(fn func([]N, v1review.NamingConfig) ([]v1review.Finding, error)) Func {
-	return m.namingRule(fn, code.TableDropNamingConventionMismatch, "naming_payload is required for table drop naming convention rule", false,
-		func(f v1review.Finding, format string) string {
-			return fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", f.Name, format)
-		},
-		nil,
-	)
-}
-
-func (m *MySQLFamily[N]) templateNamingRule(
-	adviceCode code.Code,
-	internalTitle string,
-	kindLabel string,
-	eval func([]N, v1review.TemplateConfig, *model.DatabaseMetadata) ([]v1review.Finding, error),
-) Func {
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		namingPayload, maxLength, err := requireNamingPayload(checkCtx.Rule, "naming_payload is required for this rule")
-		if err != nil {
-			return nil, err
-		}
-		templateList, _ := ParseTemplateTokens(namingPayload.Format)
-		for _, key := range templateList {
-			if _, ok := TemplateNamingTokens[checkCtx.Rule.Type][key]; !ok {
-				return nil, errors.Errorf("invalid template %s for rule %s", key, checkCtx.Rule.Type)
-			}
-		}
-		cfg := v1review.TemplateConfig{Format: namingPayload.Format, MaxLength: maxLength}
-		var adviceList []*storepb.Advice
-		for i, stmt := range p.stmts {
-			findings, err := eval(p.nodes[i:i+1:i+1], cfg, checkCtx.OriginalMetadata)
-			if err != nil {
-				return nil, err
-			}
-			for _, f := range findings {
-				switch f.Code {
-				case v1review.PatternInvalid:
-					adviceList = append(adviceList, newAdvice(p.status, code.Internal, internalTitle, fmt.Sprintf("%q meet internal error %q", trimmedStmtText(stmt.Text), f.Detail), nil))
-				case v1review.NameMismatch:
-					adviceList = append(adviceList, newAdvice(p.status, adviceCode, p.title, fmt.Sprintf("%s in table `%s` mismatches the naming convention, expect %q but found `%s`", kindLabel, f.Table, f.Pattern, f.Name), m.r.posFinding(stmt, f)))
-				case v1review.NameTooLong:
-					adviceList = append(adviceList, newAdvice(p.status, adviceCode, p.title, fmt.Sprintf("%s `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", kindLabel, f.Name, f.Table, maxLength), m.r.posFinding(stmt, f)))
-				default:
-				}
-			}
-		}
-		return adviceList, nil
-	}
-}
-
-func (m *MySQLFamily[N]) renameIndexSchema(node N, metadata *model.DatabaseMetadata) v1review.Schema {
-	if m.opt.IsRenameIndex != nil && m.opt.IsRenameIndex(node) {
-		return v1review.Schema{Metadata: metadata.GetProto(), ObjectCaseSensitive: metadata.GetIsObjectCaseSensitive()}
-	}
-	return v1review.Schema{}
-}
-
-// NamingForeignKey builds NAMING_INDEX_FK.
-func (m *MySQLFamily[N]) NamingForeignKey(fn func([]N, v1review.TemplateConfig) ([]v1review.Finding, error)) Func {
-	return m.templateNamingRule(code.NamingFKConventionMismatch, "Internal error for foreign key naming convention rule", "Foreign key",
-		func(nodes []N, tc v1review.TemplateConfig, _ *model.DatabaseMetadata) ([]v1review.Finding, error) {
-			return fn(nodes, tc)
-		},
-	)
-}
-
-// NamingIndex builds NAMING_INDEX_IDX.
-func (m *MySQLFamily[N]) NamingIndex(fn func([]N, v1review.TemplateConfig, v1review.Schema) []v1review.Finding) Func {
-	errTitle := "Internal error for unique key naming convention rule"
-	if m.r.tidbQuirks {
-		errTitle = "Internal error for index naming convention rule"
-	}
-	return m.templateNamingRule(code.NamingIndexConventionMismatch, errTitle, "Index",
-		func(nodes []N, tc v1review.TemplateConfig, orig *model.DatabaseMetadata) ([]v1review.Finding, error) {
-			return fn(nodes, tc, m.renameIndexSchema(nodes[0], orig)), nil
-		},
-	)
-}
-
-// NamingUniqueKey builds NAMING_INDEX_UK.
-func (m *MySQLFamily[N]) NamingUniqueKey(fn func([]N, v1review.TemplateConfig, v1review.Schema) []v1review.Finding) Func {
-	return m.templateNamingRule(code.NamingUKConventionMismatch, "Internal error for unique key naming convention rule", "Unique key",
-		func(nodes []N, tc v1review.TemplateConfig, orig *model.DatabaseMetadata) ([]v1review.Finding, error) {
-			return fn(nodes, tc, m.renameIndexSchema(nodes[0], orig)), nil
-		},
-	)
-}
-
-// NamingIdentifierNoKeyword builds NAMING_IDENTIFIER_NO_KEYWORD.
-func (m *MySQLFamily[N]) NamingIdentifierNoKeyword(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.NameIsKeywordIdentifier, m.r.posSearchOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("Identifier %q is a keyword and should be avoided", f.Name)
-	})
-}
-
-var (
-	compatibilityCodes = map[v1review.Code]code.Code{
-		v1review.IncompatibleDropDatabase:  code.CompatibilityDropDatabase,
-		v1review.IncompatibleRenameTable:   code.CompatibilityRenameTable,
-		v1review.IncompatibleDropTable:     code.CompatibilityDropTable,
-		v1review.IncompatibleRenameColumn:  code.CompatibilityRenameColumn,
-		v1review.IncompatibleDropColumn:    code.CompatibilityDropColumn,
-		v1review.IncompatibleAddPrimaryKey: code.CompatibilityAddPrimaryKey,
-		v1review.IncompatibleAddUniqueKey:  code.CompatibilityAddUniqueKey,
-		v1review.IncompatibleAddForeignKey: code.CompatibilityAddForeignKey,
-		v1review.IncompatibleAddCheck:      code.CompatibilityAddCheck,
-		v1review.IncompatibleAlterCheck:    code.CompatibilityAlterCheck,
-		v1review.IncompatibleAlterColumn:   code.CompatibilityAlterColumn,
-	}
-	dmlLimitCodes   = map[string]code.Code{"INSERT": code.InsertUseLimit, "UPDATE": code.UpdateUseLimit, "DELETE": code.DeleteUseLimit}
-	dmlOrderByCodes = map[string]code.Code{"UPDATE": code.UpdateUseOrderBy, "DELETE": code.DeleteUseOrderBy}
-)
-
-// SchemaBackwardCompatibility builds SCHEMA_BACKWARD_COMPATIBILITY.
-func (m *MySQLFamily[N]) SchemaBackwardCompatibility(fn func([]N) []v1review.Finding) Func {
-	return m.batch(fn, func(stmts []V1Stmt[N], f v1review.Finding, status storepb.Advice_Status, title string) *storepb.Advice {
-		adviceCode, ok := compatibilityCodes[f.Code]
-		if !ok {
-			return nil
-		}
-		stmt := stmts[f.Statement]
-		return newAdvice(status, adviceCode, title, fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", m.r.stmtText(stmt, true)), m.r.posBaseLineTwice(stmt, f))
-	})
-}
-
-// StatementAddColumnWithoutPosition builds STATEMENT_ADD_COLUMN_WITHOUT_POSITION.
-func (m *MySQLFamily[N]) StatementAddColumnWithoutPosition(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.StatementAddColumnWithPosition, m.r.posFinding, func(_ V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("add column with position \"%s\"", f.Name)
-	})
-}
-
-// StatementDisallowCommit builds STATEMENT_DISALLOW_COMMIT.
-func (m *MySQLFamily[N]) StatementDisallowCommit(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.StatementDisallowCommit, m.r.posFindingOrTiDBFirstToken, func(stmt V1Stmt[N], _ v1review.Finding) string {
-		return fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", m.r.stmtText(stmt, false))
-	})
-}
-
-// StatementDisallowLimit builds STATEMENT_DISALLOW_LIMIT.
-func (m *MySQLFamily[N]) StatementDisallowLimit(fn func([]N) []v1review.Finding) Func {
-	return m.perStmt(fn, func(stmt V1Stmt[N], f v1review.Finding, status storepb.Advice_Status, title string) *storepb.Advice {
-		return newAdvice(status, dmlLimitCodes[f.Name], title, fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", m.r.stmtText(stmt, false)), m.r.posFindingOrTiDBFirstToken(stmt, f))
-	})
-}
-
-// StatementDisallowOrderBy builds STATEMENT_DISALLOW_ORDER_BY.
-func (m *MySQLFamily[N]) StatementDisallowOrderBy(fn func([]N) []v1review.Finding) Func {
-	return m.perStmt(fn, func(stmt V1Stmt[N], f v1review.Finding, status storepb.Advice_Status, title string) *storepb.Advice {
-		return newAdvice(status, dmlOrderByCodes[f.Name], title, fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", m.r.stmtText(stmt, false)), m.r.posFindingOrTiDBFirstToken(stmt, f))
-	})
-}
-
-// StatementDisallowTruncate builds STATEMENT_DISALLOW_TRUNCATE.
-func (m *MySQLFamily[N]) StatementDisallowTruncate(fn func([]N) []v1review.Finding) Func {
-	return m.perStmt(fn, func(stmt V1Stmt[N], f v1review.Finding, status storepb.Advice_Status, title string) *storepb.Advice {
-		var content string
-		switch f.Code {
-		case v1review.Truncate:
-			content = fmt.Sprintf(`TRUNCATE TABLE %q is not allowed: TRUNCATE auto-commits (breaking surrounding transactional work), bypasses triggers, and resets AUTO_INCREMENT. Prior-backup treats this as DDL and does not produce row-level snapshots.`, f.Table)
-		case v1review.TruncatePartition:
-			content = fmt.Sprintf(`ALTER TABLE %q TRUNCATE PARTITION %q is not allowed: partition truncate shares the auto-commit and prior-backup gaps of TRUNCATE TABLE on MySQL.`, f.Table, f.Name)
-		default:
-			return nil
-		}
-		return newAdvice(status, code.StatementDisallowTruncate, title, content, m.r.posFinding(stmt, f))
-	})
-}
-
-// StatementInsertDisallowOrderByRand builds STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND.
-func (m *MySQLFamily[N]) StatementInsertDisallowOrderByRand(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.InsertUseOrderByRand, m.r.posFindingOrTiDBFirstToken, func(stmt V1Stmt[N], _ v1review.Finding) string {
-		return fmt.Sprintf("\"%s\" uses ORDER BY RAND in the INSERT statement", m.r.stmtText(stmt, false))
-	})
-}
-
-// StatementInsertMustSpecifyColumn builds STATEMENT_INSERT_MUST_SPECIFY_COLUMN.
-func (m *MySQLFamily[N]) StatementInsertMustSpecifyColumn(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.InsertNotSpecifyColumn, m.r.posAbsOrFinding, func(stmt V1Stmt[N], _ v1review.Finding) string {
-		return fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", m.r.stmtText(stmt, true))
-	})
-}
-
-// StatementMaxExecutionTime builds STATEMENT_MAX_EXECUTION_TIME.
-func (m *MySQLFamily[N]) StatementMaxExecutionTime(fn func([]N) []v1review.Finding) Func {
-	return m.batch(fn, func(_ []V1Stmt[N], f v1review.Finding, status storepb.Advice_Status, title string) *storepb.Advice {
-		return newAdvice(status, code.StatementNoMaxExecutionTime, title, fmt.Sprintf("The %s is not set", f.Name), nil)
-	})
-}
-
-// StatementMergeAlterTable builds STATEMENT_MERGE_ALTER_TABLE.
-func (m *MySQLFamily[N]) StatementMergeAlterTable(fn func([]N) []v1review.Finding) Func {
-	return m.batch(fn, func(stmts []V1Stmt[N], f v1review.Finding, status storepb.Advice_Status, title string) *storepb.Advice {
-		return newAdvice(status, code.StatementRedundantAlterTable, title, fmt.Sprintf("There are %s statements to modify table `%s`", f.Value, f.Table), m.r.posFindingOrTiDBFirstToken(stmts[f.Statement], f))
-	})
-}
-
-// StatementRequireAlgorithmOption builds STATEMENT_REQUIRE_ALGORITHM_OPTION.
-func (m *MySQLFamily[N]) StatementRequireAlgorithmOption(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.StatementNoAlgorithmOption, m.r.posFinding, func(_ V1Stmt[N], f v1review.Finding) string {
-		return "ALTER TABLE statement should include " + f.Name + " option"
-	})
-}
-
-// StatementRequireLockOption builds STATEMENT_REQUIRE_LOCK_OPTION.
-func (m *MySQLFamily[N]) StatementRequireLockOption(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.StatementNoLockOption, m.r.posFinding, func(_ V1Stmt[N], f v1review.Finding) string {
-		return "ALTER TABLE statement should include " + f.Name + " option"
-	})
-}
-
-// StatementSelectNoSelectAll builds STATEMENT_SELECT_NO_SELECT_ALL.
-func (m *MySQLFamily[N]) StatementSelectNoSelectAll(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.StatementSelectAll, m.r.posFindingOrTiDBFirstToken, func(stmt V1Stmt[N], _ v1review.Finding) string {
-		return fmt.Sprintf("\"%s\" uses SELECT all", m.r.stmtText(stmt, false))
-	})
-}
-
-// StatementWhereNoLeadingWildcardLike builds STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE.
-func (m *MySQLFamily[N]) StatementWhereNoLeadingWildcardLike(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.StatementLeadingWildcardLike, m.r.posFindingOrTiDBFirstToken, func(stmt V1Stmt[N], _ v1review.Finding) string {
-		return fmt.Sprintf("\"%s\" uses leading wildcard LIKE", m.r.stmtText(stmt, false))
-	})
-}
-
-// StatementWhereRequireSelect builds STATEMENT_WHERE_REQUIRE_SELECT.
-func (m *MySQLFamily[N]) StatementWhereRequireSelect(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.StatementNoWhere, m.r.posFindingOrTiDBFirstToken, func(stmt V1Stmt[N], _ v1review.Finding) string {
-		return fmt.Sprintf("\"%s\" requires WHERE clause", m.r.stmtText(stmt, false))
-	})
-}
-
-// StatementWhereRequireUpdateDelete builds STATEMENT_WHERE_REQUIRE_UPDATE_DELETE.
-func (m *MySQLFamily[N]) StatementWhereRequireUpdateDelete(fn func([]N) []v1review.Finding) Func {
-	return m.StatementWhereRequireSelect(fn)
-}
-
-// StatementWhereNoEqualNull builds STATEMENT_WHERE_NO_EQUAL_NULL.
-func (m *MySQLFamily[N]) StatementWhereNoEqualNull(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.StatementWhereNoEqualNull, m.r.posFinding, func(stmt V1Stmt[N], _ v1review.Finding) string {
-		return fmt.Sprintf("WHERE clause contains equal null: %s", m.r.stmtText(stmt, false))
-	})
-}
-
-// StatementWhereDisallowFunctionsAndCalc builds STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS.
-func (m *MySQLFamily[N]) StatementWhereDisallowFunctionsAndCalc(fn func([]N, v1review.Schema) []v1review.Finding) Func {
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		var schema v1review.Schema
-		if checkCtx.DBSchema != nil {
-			schema = v1review.Schema{Metadata: checkCtx.DBSchema, ObjectCaseSensitive: checkCtx.IsObjectCaseSensitive}
-		}
-		var adviceList []*storepb.Advice
-		for i, stmt := range p.stmts {
-			for _, f := range fn(p.nodes[i:i+1:i+1], schema) {
-				var content string
-				switch f.Code {
-				case v1review.FunctionOnIndexedColumn:
-					content = fmt.Sprintf("Function %q is applied to indexed column %q in the WHERE clause, which prevents index usage", f.Value, f.Name)
-				case v1review.CalculationOnIndexedColumn:
-					content = fmt.Sprintf("Calculation is applied to indexed column %q in the WHERE clause, which prevents index usage", f.Name)
-				default:
-					continue
-				}
-				adviceList = append(adviceList, newAdvice(p.status, code.StatementDisallowFunctionsAndCalculations, p.title, content, m.r.posFinding(stmt, f)))
-			}
-		}
-		return adviceList, nil
-	}
-}
-
-// StatementWhereMaximumLogicalOperatorCount builds STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT.
-func (m *MySQLFamily[N]) StatementWhereMaximumLogicalOperatorCount(fn func([]N, int) []v1review.Finding) Func {
-	return m.numberStmtRule(fn, "number_payload is required for this rule", false,
-		func(stmt V1Stmt[N], f v1review.Finding, maximum int, status storepb.Advice_Status, title string) *storepb.Advice {
-			op := "the OR predicate"
-			if f.Name == "IN" {
-				op = "IN predicate"
-			}
-			content := fmt.Sprintf("Number of tokens (%s) in %s operation exceeds limit (%d) in statement %q.", f.Value, op, maximum, strings.TrimSpace(stmt.Text))
-			return newAdvice(status, code.StatementWhereMaximumLogicalOperatorCount, title, content, m.r.posFinding(stmt, f))
-		})
-}
-
-// SystemCharsetAllowlist builds SYSTEM_CHARSET_ALLOWLIST.
-func (m *MySQLFamily[N]) SystemCharsetAllowlist(fn func([]N, []string) []v1review.Finding) Func {
-	return m.stringArrayStmtRule(fn, code.DisabledCharset, m.r.posAllowlist, func(stmt V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("\"%s\" used disabled charset '%s'", strings.TrimSpace(stmt.Text), f.Name)
-	})
-}
-
-// SystemCollationAllowlist builds SYSTEM_COLLATION_ALLOWLIST.
-func (m *MySQLFamily[N]) SystemCollationAllowlist(fn func([]N, []string) []v1review.Finding) Func {
-	return m.stringArrayStmtRule(fn, code.DisabledCollation, m.r.posAllowlist, func(stmt V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("\"%s\" used disabled collation '%s'", strings.TrimSpace(stmt.Text), f.Name)
-	})
-}
-
-// SystemFunctionDisallowedList builds SYSTEM_FUNCTION_DISALLOWED_LIST.
-func (m *MySQLFamily[N]) SystemFunctionDisallowedList(fn func([]N, []string) []v1review.Finding) Func {
-	return m.stringArrayStmtRule(fn, code.DisabledFunction, m.r.posBaseLineTwice, func(stmt V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("Function \"%s\" is disallowed, but \"%s\" uses", f.Name, strings.TrimSpace(stmt.Text))
-	})
-}
-
-// TableDisallowDDL builds TABLE_DISALLOW_DDL.
-func (m *MySQLFamily[N]) TableDisallowDDL(fn func([]N, []string) []v1review.Finding) Func {
-	return m.stringArrayStmtRule(fn, code.TableDisallowDDL, m.r.posFinding, func(_ V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("DDL is disallowed on table %s.", f.Name)
-	})
-}
-
-// TableDisallowDML builds TABLE_DISALLOW_DML.
-func (m *MySQLFamily[N]) TableDisallowDML(fn func([]N, []string) []v1review.Finding) Func {
-	return m.stringArrayStmtRule(fn, code.TableDisallowDML, m.r.posFinding, func(_ V1Stmt[N], f v1review.Finding) string {
-		return fmt.Sprintf("DML is disallowed on table %s.", f.Name)
-	})
-}
-
-// SystemProcedureDisallowCreate builds SYSTEM_PROCEDURE_DISALLOW_CREATE.
-func (m *MySQLFamily[N]) SystemProcedureDisallowCreate(fn func([]N) []v1review.Finding) Func {
-	return m.disallowCreateRule(fn, code.DisallowCreateProcedure, "Procedure")
-}
-
-// SystemEventDisallowCreate builds SYSTEM_EVENT_DISALLOW_CREATE.
-func (m *MySQLFamily[N]) SystemEventDisallowCreate(fn func([]N) []v1review.Finding) Func {
-	return m.disallowCreateRule(fn, code.DisallowCreateEvent, "Event")
-}
-
-// SystemFunctionDisallowCreate builds SYSTEM_FUNCTION_DISALLOW_CREATE.
-func (m *MySQLFamily[N]) SystemFunctionDisallowCreate(fn func([]N) []v1review.Finding) Func {
-	return m.disallowCreateRule(fn, code.DisallowCreateFunction, "Function")
-}
-
-// SystemViewDisallowCreate builds SYSTEM_VIEW_DISALLOW_CREATE.
-func (m *MySQLFamily[N]) SystemViewDisallowCreate(fn func([]N) []v1review.Finding) Func {
-	return m.disallowCreateRule(fn, code.DisallowCreateView, "View")
-}
-
-// TableComment builds TABLE_COMMENT.
-func (m *MySQLFamily[N]) TableComment(fn func([]N, *v1review.TableCommentConfig) []v1review.Finding) Func {
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
+		stmts, nodes, status, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -1112,14 +925,14 @@ func (m *MySQLFamily[N]) TableComment(fn func([]N, *v1review.TableCommentConfig)
 			tableCfg = &v1review.TableCommentConfig{Required: payload.Required, MaxLength: int(payload.MaxLength)}
 		}
 		var adviceList []*storepb.Advice
-		for i, stmt := range p.stmts {
-			pos := m.r.posStatement(stmt)
-			for _, f := range fn(p.nodes[i:i+1:i+1], tableCfg) {
+		for i, stmt := range stmts {
+			pos := e.posStatement(stmt)
+			for _, f := range fn(nodes[i:i+1:i+1], tableCfg) {
 				switch f.Code {
 				case v1review.TableCommentMissing:
-					adviceList = append(adviceList, newAdvice(p.status, code.CommentEmpty, p.title, fmt.Sprintf("Table `%s` requires comments", f.Name), pos))
+					adviceList = append(adviceList, newAdvice(status, code.CommentEmpty, title, fmt.Sprintf("Table `%s` requires comments", f.Name), pos))
 				case v1review.TableCommentTooLong:
-					adviceList = append(adviceList, newAdvice(p.status, code.CommentTooLong, p.title, fmt.Sprintf("The length of table `%s` comment should be within %d characters", f.Name, tableCfg.MaxLength), pos))
+					adviceList = append(adviceList, newAdvice(status, code.CommentTooLong, title, fmt.Sprintf("The length of table `%s` comment should be within %d characters", f.Name, tableCfg.MaxLength), pos))
 				default:
 				}
 			}
@@ -1128,33 +941,9 @@ func (m *MySQLFamily[N]) TableComment(fn func([]N, *v1review.TableCommentConfig)
 	}
 }
 
-// TableDisallowPartition builds TABLE_DISALLOW_PARTITION.
-func (m *MySQLFamily[N]) TableDisallowPartition(fn func([]N) []v1review.Finding) Func {
-	return m.perStmt(fn, func(stmt V1Stmt[N], f v1review.Finding, status storepb.Advice_Status, title string) *storepb.Advice {
-		if f.Code != "" && f.Code != v1review.TablePartitioned {
-			return nil
-		}
-		return newAdvice(status, code.CreateTablePartition, title, fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", m.r.stmtText(stmt, false)), m.r.posStatement(stmt))
-	})
-}
-
-// TableDisallowSetCharset builds TABLE_DISALLOW_SET_CHARSET.
-func (m *MySQLFamily[N]) TableDisallowSetCharset(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.DisallowSetCharset, func(stmt V1Stmt[N], _ v1review.Finding) *storepb.Position { return m.r.posStatement(stmt) },
-		func(stmt V1Stmt[N], _ v1review.Finding) string {
-			return fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", strings.TrimSpace(stmt.Text))
-		})
-}
-
-// TableDisallowTrigger builds TABLE_DISALLOW_TRIGGER.
-func (m *MySQLFamily[N]) TableDisallowTrigger(fn func([]N) []v1review.Finding) Func {
-	return m.disallowCreateRule(fn, code.CreateTableTrigger, "Trigger")
-}
-
-// TableLimitSize builds TABLE_LIMIT_SIZE.
-func (m *MySQLFamily[N]) TableLimitSize(fn func([]N, *metadatapb.DatabaseSchemaMetadata, int) []v1review.Finding) Func {
+func mysqlTableLimitSize[N any](e *V1Engine[N], fn func([]N, *metadatapb.DatabaseSchemaMetadata, int) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
+		stmts, nodes, status, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -1163,83 +952,44 @@ func (m *MySQLFamily[N]) TableLimitSize(fn func([]N, *metadatapb.DatabaseSchemaM
 			return nil, err
 		}
 		var adviceList []*storepb.Advice
-		for _, f := range fn(p.nodes, checkCtx.DBSchema, limit) {
+		for _, f := range fn(nodes, checkCtx.DBSchema, limit) {
 			if f.Code == v1review.TableTooLarge {
-				adviceList = append(adviceList, newAdvice(p.status, code.TableExceedLimitSize, p.title, fmt.Sprintf("Apply DDL on large table '%s' ( %s rows ) will lock table for a long time", f.Name, f.Value), m.r.posStatement(p.stmts[f.Statement])))
+				adviceList = append(adviceList, newAdvice(status, code.TableExceedLimitSize, title, fmt.Sprintf("Apply DDL on large table '%s' ( %s rows ) will lock table for a long time", f.Name, f.Value), e.posStatement(stmts[f.Statement])))
 			}
 		}
 		return adviceList, nil
 	}
 }
 
-// TableNoDuplicateIndex builds TABLE_NO_DUPLICATE_INDEX.
-func (m *MySQLFamily[N]) TableNoDuplicateIndex(fn func([]N) []v1review.Finding) Func {
-	return m.batch(fn, func(stmts []V1Stmt[N], f v1review.Finding, status storepb.Advice_Status, title string) *storepb.Advice {
-		return newAdvice(status, code.DuplicateIndexInTable, title, fmt.Sprintf("`%s` has duplicate index `%s`", f.Table, f.Name), m.r.posFinding(stmts[f.Statement], f))
-	})
-}
-
-// TableNoForeignKey builds TABLE_NO_FOREIGN_KEY.
-func (m *MySQLFamily[N]) TableNoForeignKey(fn func([]N) []v1review.Finding) Func {
-	return m.perStmt(fn, func(stmt V1Stmt[N], f v1review.Finding, status storepb.Advice_Status, title string) *storepb.Advice {
-		if f.Code != "" && f.Code != v1review.TableForeignKey {
-			return nil
-		}
-		table := f.Table
-		if table == "" {
-			table = f.Name
-		}
-		return newAdvice(status, code.TableHasFK, title, fmt.Sprintf("Foreign key is not allowed in the table `%s`", table), m.r.posBaseLineTwice(stmt, f))
-	})
-}
-
-// TableRequireCharset builds TABLE_REQUIRE_CHARSET.
-func (m *MySQLFamily[N]) TableRequireCharset(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.NoCharset, func(stmt V1Stmt[N], _ v1review.Finding) *storepb.Position { return m.r.posStatement(stmt) },
-		func(_ V1Stmt[N], f v1review.Finding) string {
-			return fmt.Sprintf("Table %s does not have a character set specified", f.Name)
-		})
-}
-
-// TableRequireCollation builds TABLE_REQUIRE_COLLATION.
-func (m *MySQLFamily[N]) TableRequireCollation(fn func([]N) []v1review.Finding) Func {
-	return m.simpleStmt(fn, code.NoCollation, func(stmt V1Stmt[N], _ v1review.Finding) *storepb.Position { return m.r.posStatement(stmt) },
-		func(_ V1Stmt[N], f v1review.Finding) string {
-			return fmt.Sprintf("Table %s does not have a collation specified", f.Name)
-		})
-}
-
-// TableRequirePK builds TABLE_REQUIRE_PK.
-func (m *MySQLFamily[N]) TableRequirePK(fn func([]N, *v1review.Schema) []v1review.Finding) Func {
+func mysqlTableRequirePK[N any](e *V1Engine[N], fn func([]N, *v1review.Schema) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
+		stmts, nodes, status, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
 		var adviceList []*storepb.Advice
-		for _, f := range fn(p.nodes, v1SchemaPtrOf(checkCtx.OriginalMetadata)) {
+		for _, f := range fn(nodes, V1SchemaPtrOf(checkCtx.OriginalMetadata)) {
 			if f.Code != v1review.TablePrimaryKeyMissing {
 				continue
 			}
 			line := 0
 			if f.Statement >= 0 {
-				stmt := p.stmts[f.Statement]
-				if m.r.tidbQuirks {
-					line = m.r.absLine(stmt, f.Start)
+				stmt := stmts[f.Statement]
+				if e.tidbQuirks {
+					line = e.absLine(stmt, f.Start)
 				} else {
-					line = stmt.BaseLine + int(m.r.findingLine(stmt.Text, f))
+					line = stmt.BaseLine + int(e.findingLine(stmt.Text, f))
 				}
 			}
-			adviceList = append(adviceList, newAdvice(p.status, code.TableNoPK, p.title, fmt.Sprintf("Table `%s` requires PRIMARY KEY", f.Name), base.ConvertANTLRLineToPosition(line)))
+			adviceList = append(adviceList, newAdvice(status, code.TableNoPK, title, fmt.Sprintf("Table `%s` requires PRIMARY KEY", f.Name), base.ConvertANTLRLineToPosition(line)))
 		}
 		return adviceList, nil
 	}
 }
 
-// TableTextFieldsTotalLength builds TABLE_TEXT_FIELDS_TOTAL_LENGTH.
-func (m *MySQLFamily[N]) TableTextFieldsTotalLength(fn func([]N, *v1review.Schema, int) []v1review.Finding) Func {
+func mysqlTableTextFieldsTotalLength[N any](e *V1Engine[N], isCreateTable func(N) bool, fn func([]N, *v1review.Schema, int) []v1review.Finding) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		p, err := m.prepare(checkCtx)
+		stmts, nodes, status, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -1247,16 +997,16 @@ func (m *MySQLFamily[N]) TableTextFieldsTotalLength(fn func([]N, *v1review.Schem
 		if err != nil {
 			return nil, err
 		}
-		final := v1SchemaPtrOf(checkCtx.FinalMetadata)
+		final := V1SchemaPtrOf(checkCtx.FinalMetadata)
 		var adviceList []*storepb.Advice
-		for i, stmt := range p.stmts {
+		for i, stmt := range stmts {
 			adviceCode := code.TotalTextLengthExceedsLimit
-			if m.opt.IsCreateTable != nil && m.opt.IsCreateTable(stmt.Node) {
+			if isCreateTable != nil && isCreateTable(stmt.Node) {
 				adviceCode = code.IndexCountExceedsLimit
 			}
-			for _, f := range fn(p.nodes[i:i+1:i+1], final, maximum) {
+			for _, f := range fn(nodes[i:i+1:i+1], final, maximum) {
 				if f.Code == v1review.TableTextTooLong {
-					adviceList = append(adviceList, newAdvice(p.status, adviceCode, p.title, fmt.Sprintf("Table %q total text column length (%s) exceeds the limit (%d).", f.Name, f.Value, maximum), &storepb.Position{Line: int32(stmt.BaseLine) + m.r.findingLine(stmt.Text, f)}))
+					adviceList = append(adviceList, newAdvice(status, adviceCode, title, fmt.Sprintf("Table %q total text column length (%s) exceeds the limit (%d).", f.Name, f.Value, maximum), &storepb.Position{Line: int32(stmt.BaseLine) + e.findingLine(stmt.Text, f)}))
 				}
 			}
 		}
