@@ -3,7 +3,6 @@ package tidb
 import (
 	"errors"
 	"fmt"
-	"unicode/utf8"
 
 	"github.com/bytebase/omni/tidb/ast"
 	omniparser "github.com/bytebase/omni/tidb/parser"
@@ -125,43 +124,7 @@ func GetNode(a base.AST) (ast.Node, bool) {
 	return wrapped.Node, true
 }
 
-// ByteOffsetToRunePosition converts a byte offset in sql to a 1-based
-// line:column position, where column is measured in Unicode code points
-// (runes), matching storepb.Position semantics.
-//
-// byteOffset values past len(sql) are clamped to len(sql). Offsets that land
-// inside a multi-byte UTF-8 sequence are treated as if they pointed at the
-// start of the enclosing rune (they advance 0 runes past the last complete
-// rune). Offsets before 0 are treated as 0.
+// ByteOffsetToRunePosition converts a byte offset in sql to a 1-based line:column position.
 func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
-	if byteOffset < 0 {
-		byteOffset = 0
-	}
-	if byteOffset > len(sql) {
-		byteOffset = len(sql)
-	}
-
-	line := int32(1)
-	runeCol := int32(0) // 0-based rune count on current line
-	i := 0
-	for i < byteOffset {
-		r, size := utf8.DecodeRuneInString(sql[i:])
-		if i+size > byteOffset {
-			// Offset lands inside a multi-byte rune. Treat it as pointing at
-			// the start of the enclosing rune — don't count it.
-			break
-		}
-		if r == '\n' {
-			line++
-			runeCol = 0
-		} else {
-			runeCol++
-		}
-		i += size
-	}
-
-	return &storepb.Position{
-		Line:   line,
-		Column: runeCol + 1, // convert to 1-based
-	}
+	return base.ByteOffsetToRunePosition(sql, byteOffset)
 }

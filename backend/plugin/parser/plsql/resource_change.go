@@ -15,9 +15,6 @@ func init() {
 // extractChangedResources treats currentDatabase as the current schema, as
 // Oracle does.
 func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
-	summary := &base.ChangeSummary{
-		ChangedResources: model.NewChangedResources(dbMetadata),
-	}
 	var indexTable analysis.IndexTableFunc
 	if dbMetadata != nil {
 		indexTable = func(schema, index string) (string, bool) {
@@ -28,25 +25,19 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 			return foundIndex.GetTableProto().GetName(), true
 		}
 	}
-	for _, a := range asts {
+	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, false, func(a base.AST) (base.StatementChanges, bool, error) {
 		wrapped, ok := a.(*AST)
 		if !ok || wrapped == nil {
-			continue
+			return base.StatementChanges{}, false, nil
 		}
-		addStatementChanges(summary, analysis.ExtractChangedResources(wrapped.Node, currentDatabase, wrapped.Text, indexTable))
-	}
-	return summary, nil
-}
-
-func addStatementChanges(summary *base.ChangeSummary, changes analysis.StatementChanges) {
-	for _, resource := range changes.Resources {
-		if resource.DatabaseOnly {
-			summary.ChangedResources.AddDatabase(resource.Database)
-			continue
-		}
-		summary.ChangedResources.AddTable(resource.Database, "", &storepb.ChangedResourceTable{Name: resource.Table}, resource.AffectsData)
-	}
-	summary.DMLStatements = append(summary.DMLStatements, changes.DMLStatements...)
-	summary.DMLCount += changes.DMLCount
-	summary.InsertCount += changes.InsertCount
+		changes := analysis.ExtractChangedResources(wrapped.Node, currentDatabase, wrapped.Text, indexTable)
+		return base.StatementChanges{
+			Resources: base.MapChangedResources(changes.Resources, func(r analysis.ChangedResource) base.ChangedResource {
+				return base.ChangedResource{Database: r.Database, Table: r.Table, AffectsData: r.AffectsData, DatabaseOnly: r.DatabaseOnly}
+			}),
+			DMLStatements: changes.DMLStatements,
+			DMLCount:      changes.DMLCount,
+			InsertCount:   changes.InsertCount,
+		}, true, nil
+	})
 }

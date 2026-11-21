@@ -66,51 +66,23 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.
 }
 
 func convertQueryType(t analysis.QueryType) base.QueryType {
-	switch t {
-	case analysis.Select:
-		return base.Select
-	case analysis.Explain:
-		return base.Explain
-	case analysis.SelectInfoSchema:
-		return base.SelectInfoSchema
-	case analysis.DDL:
-		return base.DDL
-	case analysis.DML:
-		return base.DML
-	default:
-		return base.QueryTypeUnknown
-	}
+	return base.ConvertQueryType(t, analysis.Select, analysis.Explain, analysis.SelectInfoSchema, analysis.DDL, analysis.DML)
 }
 
 func convertColumnSet(set analysis.ColumnSet) base.SourceColumnSet {
-	if set == nil {
-		return nil
-	}
-	result := make(base.SourceColumnSet, len(set))
-	for column := range set {
-		result[base.ColumnResource{
-			Database: column.Database,
-			Schema:   column.Schema,
-			Table:    column.Table,
-			Column:   column.Column,
-		}] = true
-	}
-	return result
+	return base.ConvertColumnSet(set, func(c analysis.ColumnResource) base.ColumnResource {
+		return base.ColumnResource{Database: c.Database, Schema: c.Schema, Table: c.Table, Column: c.Column}
+	})
 }
 
 func convertResults(results []analysis.ResolvedQuerySpanResult) []base.QuerySpanResult {
-	if results == nil {
-		return nil
-	}
-	converted := make([]base.QuerySpanResult, 0, len(results))
-	for _, result := range results {
-		converted = append(converted, base.QuerySpanResult{
-			Name:          result.Name,
-			SourceColumns: convertColumnSet(result.SourceColumns),
-			IsPlainField:  result.IsPlainField,
-		})
-	}
-	return converted
+	return base.ConvertQuerySpanResults(results, func(r analysis.ResolvedQuerySpanResult) base.QuerySpanResult {
+		return base.QuerySpanResult{
+			Name:          r.Name,
+			SourceColumns: convertColumnSet(r.SourceColumns),
+			IsPlainField:  r.IsPlainField,
+		}
+	})
 }
 
 func convertNotFoundError(err error) error {

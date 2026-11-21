@@ -53,28 +53,16 @@ func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, state
 // convertBackupStatements gives each backup the positions SplitSQL gives the
 // first and last segment it covers.
 func convertBackupStatements(statement string, backups []analysis.BackupStatement) ([]base.BackupStatement, error) {
-	segments := mariadbparser.Split(statement)
-	list, err := SplitSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-	starts := make(map[int]*storepb.Position, len(segments))
-	ends := make(map[int]*storepb.Position, len(segments))
-	for i, segment := range segments {
-		starts[segment.ByteStart] = list[i].Start
-		ends[segment.ByteEnd] = list[i].End
-	}
-	result := make([]base.BackupStatement, 0, len(backups))
-	for _, backup := range backups {
-		result = append(result, base.BackupStatement{
-			Statement:       backup.Statement,
-			SourceTableName: backup.SourceTable,
-			TargetTableName: backup.BackupTable,
-			StartPosition:   starts[backup.ByteStart],
-			EndPosition:     ends[backup.ByteEnd],
-		})
-	}
-	return result, nil
+	return base.ConvertBackupStatements(
+		statement,
+		SplitSQL,
+		mariadbparser.Split(statement),
+		func(s mariadbparser.Segment) (int, int) { return s.ByteStart, s.ByteEnd },
+		backups,
+		func(b analysis.BackupStatement) (string, string, string, int, int) {
+			return b.Statement, b.SourceTable, b.BackupTable, b.ByteStart, b.ByteEnd
+		},
+	)
 }
 
 // ExtractTables extracts table references from a DML statement. dbMetadata,
@@ -86,7 +74,7 @@ func ExtractTables(databaseName string, node ast.Node, fullSQL string, offset in
 			if name != databaseName {
 				return nil, nil
 			}
-			return &catalogDatabase{database: dbMetadata}, nil
+			return &base.UnnamedSchemaDatabase{Database: dbMetadata}, nil
 		}
 	}
 	return analysis.ExtractTables(databaseName, node, fullSQL, offset, catalog)
@@ -110,7 +98,7 @@ func newBackupCatalog(ctx context.Context, instanceID string, getDatabaseMetadat
 			if database == nil {
 				return nil, nil
 			}
-			return &catalogDatabase{database: database}, nil
+			return &base.UnnamedSchemaDatabase{Database: database}, nil
 		}
 	}
 	return catalog

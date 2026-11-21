@@ -1,8 +1,6 @@
 package mysql
 
 import (
-	"strings"
-
 	"github.com/bytebase/omni/mysql/analysis"
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
@@ -12,75 +10,32 @@ import (
 )
 
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
-	sqlTypeSet := make(map[storepb.StatementType]bool)
-	for _, a := range asts {
+	return base.CollectUniqueStatementTypes(asts, func(a base.AST) (storepb.StatementType, error) {
 		node, ok := GetNode(a)
 		if !ok {
-			return nil, errors.New("expected AST for MySQL")
+			return 0, errors.New("expected AST for MySQL")
 		}
-		t := classifyStatementType(node)
-		sqlTypeSet[t] = true
-	}
-	var sqlTypes []storepb.StatementType
-	for sqlType := range sqlTypeSet {
-		sqlTypes = append(sqlTypes, sqlType)
-	}
-	return sqlTypes, nil
+		return classifyStatementType(node), nil
+	})
 }
 
 // StatementTypeWithPosition contains a statement type and its position information.
-// It mirrors the PostgreSQL equivalent so the SDL statement-type gating in the release
-// service can report disallowed statements with line numbers.
-type StatementTypeWithPosition struct {
-	Type storepb.StatementType
-	// Line is the one-based line number where the statement ends.
-	Line int
-	Text string
-}
+type StatementTypeWithPosition = base.StatementTypeWithPosition
 
 // GetStatementTypesWithPositions returns statement types with position information,
-// preserving statement order. Line numbers are one-based. It mirrors
-// pg.GetStatementTypes so the declarative-release gating can surface disallowed SDL
-// statements with positions for MySQL.
+// preserving statement order. Line numbers are one-based.
 func GetStatementTypesWithPositions(asts []base.AST) ([]StatementTypeWithPosition, error) {
-	if len(asts) == 0 {
-		return []StatementTypeWithPosition{}, nil
-	}
-
-	var results []StatementTypeWithPosition
-	for _, a := range asts {
+	return base.CollectStatementTypesWithPosition(asts, func(a base.AST) ([]storepb.StatementType, string, bool, error) {
 		node, ok := a.(*AST)
 		if !ok {
-			return nil, errors.New("expected AST for MySQL")
+			return nil, "", false, errors.New("expected AST for MySQL")
 		}
 		if node.Node == nil {
-			continue
+			return nil, "", false, nil
 		}
-
-		// STATEMENT_TYPE_UNSPECIFIED entries (statements omni parses but the classifier
-		// does not know — GRANT, SET, PREPARE, …) are INCLUDED, with their positions and
-		// text, so the SDL statement-type gate fails closed: dropping them here would
-		// let an unclassified statement bypass the release-check allowlist entirely.
-		stmtType := classifyStatementType(node.Node)
-
-		line := 0
-		if node.StartPosition != nil {
-			line = int(node.StartPosition.Line)
-		}
-		// End line = start line + embedded newlines in the statement text.
-		endLine := line
-		if node.Text != "" {
-			endLine += strings.Count(node.Text, "\n")
-		}
-
-		results = append(results, StatementTypeWithPosition{
-			Type: stmtType,
-			Line: endLine,
-			Text: node.Text,
-		})
-	}
-
-	return results, nil
+		// STATEMENT_TYPE_UNSPECIFIED entries are INCLUDED so the SDL gate fails closed.
+		return []storepb.StatementType{classifyStatementType(node.Node)}, node.Text, true, nil
+	})
 }
 
 func classifyStatementType(node ast.Node) storepb.StatementType {

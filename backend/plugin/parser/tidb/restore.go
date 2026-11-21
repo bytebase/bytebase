@@ -93,21 +93,7 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 		return "", errors.Wrap(err, "failed to split sql")
 	}
 
-	start := 0
-	end := len(list) - 1
-	for i, item := range list {
-		if equalOrLess(item.Start, backupItem.StartPosition) {
-			start = i
-		}
-	}
-
-	for i := len(list) - 1; i >= 0; i-- {
-		// EndPosition is the exclusive end of the range, so a statement
-		// starting at or after it belongs to the next backup item.
-		if equalOrGreater(list[i].Start, backupItem.EndPosition) {
-			end = i - 1
-		}
-	}
+	start, end := base.StatementRangeIndices(list, backupItem.StartPosition, backupItem.EndPosition, true)
 
 	var result []string
 	for i := start; i <= end; i++ {
@@ -120,24 +106,4 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 		}
 	}
 	return strings.Join(result, ""), nil
-}
-
-func equalOrLess(a, b *storepb.Position) bool {
-	if a.Line < b.Line {
-		return true
-	}
-	if a.Line == b.Line && a.Column <= b.Column {
-		return true
-	}
-	return false
-}
-
-func equalOrGreater(a, b *storepb.Position) bool {
-	if a.Line > b.Line {
-		return true
-	}
-	if a.Line == b.Line && a.Column >= b.Column {
-		return true
-	}
-	return false
 }

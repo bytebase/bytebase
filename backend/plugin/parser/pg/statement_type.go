@@ -1,8 +1,6 @@
 package pg
 
 import (
-	"strings"
-
 	"github.com/bytebase/omni/pg/analysis"
 	"github.com/pkg/errors"
 
@@ -11,56 +9,21 @@ import (
 )
 
 // StatementTypeWithPosition contains statement type and its position information.
-type StatementTypeWithPosition struct {
-	Type storepb.StatementType
-	// Line is the one-based line number where the statement ends.
-	Line int
-	Text string
-}
+type StatementTypeWithPosition = base.StatementTypeWithPosition
 
 // GetStatementTypes returns statement types with position information.
 // The line numbers are one-based.
 func GetStatementTypes(asts []base.AST) ([]StatementTypeWithPosition, error) {
-	if len(asts) == 0 {
-		return []StatementTypeWithPosition{}, nil
-	}
-
-	var allResults []StatementTypeWithPosition
-	for _, unifiedAST := range asts {
+	return base.CollectStatementTypesWithPosition(asts, func(unifiedAST base.AST) ([]storepb.StatementType, string, bool, error) {
 		wrapped, ok := unifiedAST.(*AST)
 		if !ok {
-			return nil, errors.New("expected AST for PostgreSQL")
+			return nil, "", false, errors.New("expected AST for PostgreSQL")
 		}
 		if wrapped.Node == nil {
-			continue
+			return nil, "", false, nil
 		}
-
-		stmtTypes := convertStatementTypes(analysis.StatementTypes(wrapped.Node))
-		if len(stmtTypes) == 0 {
-			continue
-		}
-
-		line := 0
-		if wrapped.StartPosition != nil {
-			line = int(wrapped.StartPosition.Line)
-		}
-
-		// Compute end line from text
-		endLine := line
-		if wrapped.Text != "" {
-			endLine += strings.Count(wrapped.Text, "\n")
-		}
-
-		for _, stmtType := range stmtTypes {
-			allResults = append(allResults, StatementTypeWithPosition{
-				Type: stmtType,
-				Line: endLine,
-				Text: wrapped.Text,
-			})
-		}
-	}
-
-	return allResults, nil
+		return convertStatementTypes(analysis.StatementTypes(wrapped.Node)), wrapped.Text, true, nil
+	})
 }
 
 // GetStatementTypesForRegistry returns only the statement types.
@@ -70,11 +33,7 @@ func GetStatementTypesForRegistry(asts []base.AST) ([]storepb.StatementType, err
 	if err != nil {
 		return nil, err
 	}
-	types := make([]storepb.StatementType, len(results))
-	for i, r := range results {
-		types[i] = r.Type
-	}
-	return types, nil
+	return base.ExtractTypesFromPositions(results), nil
 }
 
 // convertStatementTypes maps omni's statement types to storepb's by name and

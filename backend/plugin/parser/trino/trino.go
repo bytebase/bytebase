@@ -129,19 +129,8 @@ func convertParseError(statement string, err error, basePos *storepb.Position) e
 	if !errors.As(err, &pe) {
 		return err
 	}
-	pos := base.NewByteOffsetPositionMapper(statement).Position(pe.Position)
-	line, col := int(pos.Line), int(pos.Column)
-	if basePos != nil {
-		if line == 1 {
-			col = int(basePos.Column) + col - 1
-		}
-		line = int(basePos.Line) + line - 1
-	}
 	return &base.SyntaxError{
-		Position: &storepb.Position{
-			Line:   int32(line),
-			Column: int32(col),
-		},
+		Position:   base.ShiftPosition(base.ByteOffsetToRunePosition(statement, pe.Position), basePos),
 		Message:    pe.Error(),
 		RawMessage: pe.Message,
 	}

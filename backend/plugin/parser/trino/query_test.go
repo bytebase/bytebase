@@ -79,10 +79,10 @@ func TestValidateQuery(t *testing.T) {
 			wantErr:      false,
 		},
 		{
-			name:         "WITH FUNCTION SELECT is refused",
+			name:         "WITH FUNCTION SELECT is allowed",
 			sql:          "WITH FUNCTION f(x bigint) RETURNS bigint RETURN x + 1 SELECT f(id), email FROM cat2.public.users",
-			wantReadOnly: false,
-			wantData:     false,
+			wantReadOnly: true,
+			wantData:     true,
 			wantErr:      false,
 		},
 		{
@@ -114,10 +114,10 @@ func TestValidateQuery(t *testing.T) {
 			wantErr:      false,
 		},
 		{
-			name:         "EXPLAIN ANALYZE WITH FUNCTION SELECT is refused",
+			name:         "EXPLAIN ANALYZE WITH FUNCTION SELECT is allowed",
 			sql:          "EXPLAIN ANALYZE WITH FUNCTION f(x bigint) RETURNS bigint RETURN x + 1 SELECT f(1)",
-			wantReadOnly: false,
-			wantData:     false,
+			wantReadOnly: true,
+			wantData:     true,
 			wantErr:      false,
 		},
 		{

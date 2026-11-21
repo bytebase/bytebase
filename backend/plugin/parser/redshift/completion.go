@@ -2,10 +2,8 @@ package redshift
 
 import (
 	"context"
-	"slices"
 	"strings"
 	"unicode"
-	"unicode/utf8"
 
 	redshiftcatalog "github.com/bytebase/omni/redshift/catalog"
 	redshiftcompletion "github.com/bytebase/omni/redshift/completion"
@@ -26,67 +24,29 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	cat := buildCompletionCatalog(ctx, cCtx)
 
 	sql, line, offset := completionStatementAtCaret(statement, caretLine, caretOffset)
-	byteOffset := caretToByteOffset(sql, line, offset)
+	byteOffset := base.CaretToByteOffset(sql, line, offset)
 	candidates := redshiftcompletion.Complete(sql, byteOffset, cat)
 
-	result := make([]base.Candidate, 0, len(candidates))
-	seen := make(map[string]bool, len(candidates))
-	for _, c := range candidates {
-		candidate := base.Candidate{
+	return base.DeduplicateCandidates(candidates, func(c redshiftcompletion.Candidate) (base.Candidate, bool) {
+		return base.Candidate{
 			Text:       completionCandidateText(c),
 			Type:       convertCandidateType(c.Type),
 			Definition: c.Definition,
 			Comment:    c.Comment,
-		}
-		key := candidate.String()
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
-		result = append(result, candidate)
-	}
-	slices.SortFunc(result, func(a, b base.Candidate) int {
+		}, true
+	}, func(a, b base.Candidate) int {
 		return strings.Compare(a.String(), b.String())
-	})
-	return result, nil
+	}), nil
 }
 
 // completionStatementAtCaret drops statements before the caret so table refs
 // from earlier statements in the same editor buffer cannot leak into completion.
 func completionStatementAtCaret(statement string, caretLine int, caretOffset int) (string, int, int) {
 	list, err := SplitSQL(statement)
-	if err != nil || len(base.FilterEmptyStatements(list)) <= 1 {
+	if err != nil {
 		return statement, caretLine, caretOffset
 	}
-
-	caretLineZeroBased := caretLine - 1
-	start := 0
-	newCaretLine, newCaretOffset := caretLine, caretOffset
-	for i, sql := range list {
-		sqlEndLine := int(sql.End.GetLine()) - 1
-		sqlEndColumn := int(sql.End.GetColumn())
-		if sqlEndLine > caretLineZeroBased || (sqlEndLine == caretLineZeroBased && sqlEndColumn >= caretOffset) {
-			start = i
-			if i == 0 {
-				break
-			}
-			previousEndLine := int(list[i-1].End.GetLine()) - 1
-			previousEndColumn := int(list[i-1].End.GetColumn())
-			newCaretLine = caretLineZeroBased - previousEndLine + 1
-			if caretLineZeroBased == previousEndLine {
-				newCaretOffset = caretOffset - previousEndColumn + 1
-			}
-			break
-		}
-	}
-
-	var buf strings.Builder
-	for i := start; i < len(list); i++ {
-		if _, err := buf.WriteString(list[i].Text); err != nil {
-			return statement, caretLine, caretOffset
-		}
-	}
-	return buf.String(), newCaretLine, newCaretOffset
+	return base.StatementAtCaret(list, statement, caretLine, caretOffset, true)
 }
 
 func buildCompletionCatalog(ctx context.Context, cCtx base.CompletionContext) *redshiftcatalog.Catalog {
@@ -173,31 +133,4 @@ func convertCandidateType(t redshiftcompletion.CandidateType) base.CandidateType
 	default:
 		return base.CandidateTypeNone
 	}
-}
-
-// caretToByteOffset converts a (1-based line, 0-based column) caret position
-// into a byte offset into statement. The column is interpreted as a UTF-16
-// code-unit offset, matching Monaco/LSP completion positions.
-func caretToByteOffset(statement string, caretLine, caretColumn int) int {
-	line := 1
-	col := 0
-	for i := 0; i < len(statement); {
-		if line == caretLine && col >= caretColumn {
-			return i
-		}
-		r, size := utf8.DecodeRuneInString(statement[i:])
-		if r == '\n' {
-			if line == caretLine {
-				return i
-			}
-			line++
-			col = 0
-		} else if r <= 0xFFFF {
-			col++
-		} else {
-			col += 2
-		}
-		i += size
-	}
-	return len(statement)
 }

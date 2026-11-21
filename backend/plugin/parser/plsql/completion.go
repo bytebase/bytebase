@@ -6,7 +6,6 @@ import (
 	"slices"
 	"strings"
 	"unicode"
-	"unicode/utf8"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	oraclecompletion "github.com/bytebase/omni/oracle/completion"
@@ -416,83 +415,13 @@ func currentStatementMainTokenIndex(tokens []oracleparser.Token, byteOffset int)
 
 func computeSQLAndByteOffset(statement string, caretLine int, caretOffset int, _ bool) (string, int) {
 	sql, newLine, newOffset := skipHeadingSQLs(statement, caretLine, caretOffset)
-	return sql, lineColumnToByteOffset(sql, newLine, newOffset)
+	return sql, base.CaretToByteOffset(sql, newLine, newOffset)
 }
 
 func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
-	newCaretLine, newCaretOffset := caretLine, caretOffset
 	list, err := SplitSQLForCompletion(statement)
-	if err != nil || notEmptySQLCount(list) <= 1 {
+	if err != nil {
 		return statement, caretLine, caretOffset
 	}
-
-	caretLine--
-	start := 0
-	for i, sql := range list {
-		sqlEndLine := int(sql.End.GetLine()) - 1
-		sqlEndColumn := int(sql.End.GetColumn())
-		if sqlEndLine > caretLine || (sqlEndLine == caretLine && sqlEndColumn >= caretOffset) {
-			start = i
-			if i == 0 {
-				break
-			}
-			previousSQLEndLine := int(list[i-1].End.GetLine()) - 1
-			previousSQLEndColumn := int(list[i-1].End.GetColumn())
-			newCaretLine = caretLine - previousSQLEndLine + 1
-			if caretLine == previousSQLEndLine {
-				newCaretOffset = caretOffset - previousSQLEndColumn + 1
-			}
-			break
-		}
-	}
-
-	var buf strings.Builder
-	for i := start; i < len(list); i++ {
-		if _, err := buf.WriteString(list[i].Text); err != nil {
-			return statement, caretLine + 1, caretOffset
-		}
-	}
-	return buf.String(), newCaretLine, newCaretOffset
-}
-
-func notEmptySQLCount(list []base.Statement) int {
-	count := 0
-	for _, sql := range list {
-		if !sql.Empty {
-			count++
-		}
-	}
-	return count
-}
-
-func lineColumnToByteOffset(sql string, line, column int) int {
-	currentLine := 1
-	for i := 0; i < len(sql); i++ {
-		if currentLine == line {
-			pos := i
-			for c := 0; c < column && pos < len(sql); {
-				r, size := utf8.DecodeRuneInString(sql[pos:])
-				if r == '\n' {
-					return pos
-				}
-				unitCount := 1
-				if r > 0xFFFF {
-					unitCount = 2
-				}
-				if c+unitCount > column {
-					return pos
-				}
-				pos += size
-				c += unitCount
-			}
-			if pos > len(sql) {
-				return len(sql)
-			}
-			return pos
-		}
-		if sql[i] == '\n' {
-			currentLine++
-		}
-	}
-	return len(sql)
+	return base.StatementAtCaret(list, statement, caretLine, caretOffset, true)
 }

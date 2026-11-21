@@ -10,31 +10,17 @@ import (
 )
 
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
-	sqlTypeSet := make(map[storepb.StatementType]bool)
-	for _, a := range asts {
+	return base.CollectUniqueStatementTypes(asts, func(a base.AST) (storepb.StatementType, error) {
 		node, ok := GetNode(a)
 		if !ok {
-			return nil, errors.New("expected AST for OceanBase")
+			return 0, errors.New("expected AST for OceanBase")
 		}
-		t := classifyStatementType(node)
-		sqlTypeSet[t] = true
-	}
-	var sqlTypes []storepb.StatementType
-	for sqlType := range sqlTypeSet {
-		sqlTypes = append(sqlTypes, sqlType)
-	}
-	return sqlTypes, nil
+		return classifyStatementType(node), nil
+	})
 }
 
 // StatementTypeWithPosition contains a statement type and its position information.
-// It mirrors the PostgreSQL equivalent so the SDL statement-type gating in the release
-// service can report disallowed statements with line numbers.
-type StatementTypeWithPosition struct {
-	Type storepb.StatementType
-	// Line is the one-based line number where the statement ends.
-	Line int
-	Text string
-}
+type StatementTypeWithPosition = base.StatementTypeWithPosition
 
 func classifyStatementType(node ast.Node) storepb.StatementType {
 	switch analysis.StatementTypeOf(node) {

@@ -1,8 +1,6 @@
 package tsql
 
 import (
-	"unicode/utf8"
-
 	omnimssql "github.com/bytebase/omni/mssql"
 	"github.com/bytebase/omni/mssql/ast"
 
@@ -25,48 +23,24 @@ func (a *AST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
-// ParseTSQL parses SQL using omni's parser and returns omni Statement objects directly.
-// This is the recommended entry point for new code that needs omni AST nodes.
+// ParseTSQL parses SQL using omni's parser.
 func ParseTSQL(sql string) ([]omnimssql.Statement, error) {
 	return omnimssql.Parse(sql)
 }
 
 // GetNode extracts the omni AST node from a base.AST interface.
-// Returns the node and true if it is an AST, nil and false otherwise.
 func GetNode(a base.AST) (ast.Node, bool) {
 	if a == nil {
 		return nil, false
 	}
-	node, ok := a.(*AST)
+	wrapped, ok := a.(*AST)
 	if !ok {
 		return nil, false
 	}
-	return node.Node, true
+	return wrapped.Node, true
 }
 
-// ByteOffsetToRunePosition converts a byte offset in sql to a 1-based line:column
-// where column is measured in Unicode code points (runes), matching storepb.Position semantics.
+// ByteOffsetToRunePosition converts a byte offset in sql to a 1-based line:column position.
 func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
-	if byteOffset > len(sql) {
-		byteOffset = len(sql)
-	}
-
-	line := int32(1)
-	runeCol := int32(0) // 0-based rune count on current line
-	i := 0
-	for i < byteOffset {
-		r, size := utf8.DecodeRuneInString(sql[i:])
-		if r == '\n' {
-			line++
-			runeCol = 0
-		} else {
-			runeCol++
-		}
-		i += size
-	}
-
-	return &storepb.Position{
-		Line:   line,
-		Column: runeCol + 1, // convert to 1-based
-	}
+	return base.ByteOffsetToRunePosition(sql, byteOffset)
 }
