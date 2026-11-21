@@ -116,6 +116,95 @@ const getRequestBody = (): unknown => {
 };
 
 describe("callApi", () => {
+  test("classifies a paid-feature response on direct READ dispatch without retrying", async () => {
+    mocks.getEndpointPath.mockReturnValue(
+      "/bytebase.v1.DatabaseGroupService/ListDatabaseGroups"
+    );
+    mocks.fetch.mockResolvedValue(
+      createResponse({
+        status: 403,
+        body: {
+          code: "permission_denied",
+          message:
+            "feature FEATURE_DATABASE_GROUPS is a ENTERPRISE feature, please upgrade to access it",
+        },
+      })
+    );
+    const result = JSON.parse(
+      await directCall({
+        operationId: "DatabaseGroupService/ListDatabaseGroups",
+        body: { parent: "projects/example" },
+      })
+    );
+    expect(result.apiRecovery).toEqual({
+      kind: "feature-required",
+      feature: "FEATURE_DATABASE_GROUPS",
+      requiredPlan: "ENTERPRISE",
+    });
+    expect(result.agentExecution).toMatchObject({
+      result: "failed",
+      effects: "possible",
+      reason: "rpc-error",
+    });
+    expect(mocks.fetch).toHaveBeenCalledOnce();
+    expect(mocks.refreshTokens).not.toHaveBeenCalled();
+  });
+
+  test("uses the same recovery handler for an approved protected call", async () => {
+    mocks.fetch.mockResolvedValue(
+      createResponse({
+        status: 403,
+        body: {
+          code: "permission_denied",
+          message:
+            "feature FEATURE_DATA_CLASSIFICATION is a ENTERPRISE feature, please upgrade to access it",
+        },
+      })
+    );
+    const result = JSON.parse(
+      await dispatchPreparedApiCall({
+        operationId: "bytebase.v1.SettingService.UpdateSetting",
+        path: "/bytebase.v1.SettingService/UpdateSetting",
+        body: '{"setting":{"name":"settings/DATA_CLASSIFICATION"}}',
+      })
+    );
+    expect(result.apiRecovery).toEqual({
+      kind: "feature-required",
+      feature: "FEATURE_DATA_CLASSIFICATION",
+      requiredPlan: "ENTERPRISE",
+    });
+    expect(result.agentExecution).toMatchObject({
+      result: "failed",
+      effects: "possible",
+      reason: "rpc-error",
+      attemptId: "test-attempt",
+    });
+    expect(mocks.fetch).toHaveBeenCalledOnce();
+    expect(mocks.refreshTokens).not.toHaveBeenCalled();
+  });
+
+  test("retains an observed failure when the request context cannot be decoded", async () => {
+    mocks.fetch.mockResolvedValue(
+      createResponse({
+        status: 400,
+        body: { code: "invalid_argument", message: "Invalid request body" },
+      })
+    );
+    const result = JSON.parse(
+      await directDispatch({
+        operationId: "bytebase.v1.SettingService.UpdateSetting",
+        path: "/bytebase.v1.SettingService/UpdateSetting",
+        body: "not JSON",
+      })
+    );
+    expect(result).toMatchObject({
+      status: 400,
+      error: "Invalid request body",
+      agentExecution: { reason: "rpc-error", result: "failed" },
+    });
+    expect(mocks.fetch).toHaveBeenCalledOnce();
+  });
+
   beforeEach(() => {
     vi.stubGlobal("navigator", {
       language: "en-US",

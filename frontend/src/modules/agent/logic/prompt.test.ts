@@ -30,12 +30,36 @@ test("composes permission-aware masking choices and custom type draft guidance",
 });
 
 describe("buildSystemPrompt", () => {
-  test("distinguishes a failed RPC from the effect of its earlier statements", () => {
-    const prompt = buildSystemPrompt({ path: "/", title: "Workspace" });
-    expect(prompt).toContain("does not prove rollback");
-    expect(prompt).toContain("original request");
-    expect(prompt).toContain("current tools and normal permissions");
-  });
+  test.each([
+    { name: "normal", options: {} },
+    { name: "read-only", options: { runMode: "read-only" as const } },
+    {
+      name: "diagnostic",
+      options: {
+        capability: {
+          kind: "diagnostic" as const,
+          resource: {
+            kind: "plan" as const,
+            name: "projects/orders/plans/7",
+            project: "projects/orders",
+            label: "Plan 7",
+          },
+        },
+      },
+    },
+  ])(
+    "distinguishes a failed RPC from earlier effects in the $name prompt",
+    ({ options }) => {
+      const prompt = buildSystemPrompt({
+        path: "/",
+        title: "Workspace",
+        ...options,
+      });
+      expect(prompt.match(/does not prove rollback/g) ?? []).toHaveLength(1);
+      expect(prompt).toContain("original request");
+      expect(prompt).toContain("current tools and normal permissions");
+    }
+  );
   test.each(["issue", "database", "plan"] as const)(
     "diagnostic %s instructions override normal decision and draft guidance",
     (kind) => {
@@ -93,6 +117,7 @@ describe("buildSystemPrompt", () => {
       },
     });
     expect(prompt).toMatch(/diagnostic.*unavailable/i);
+    expect(prompt).not.toContain("does not prove rollback");
     expect(prompt).not.toContain("IssueService/ApproveIssue");
     expect(prompt).not.toContain("call_api(");
   });

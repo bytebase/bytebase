@@ -447,7 +447,9 @@ test.describe("L7 — masked-cell popover offers Request unmask", () => {
 
     const drawer = adminEditor.accessGrantDrawer;
     await expect(drawer).toBeVisible({ timeout: 10_000 });
-    await expect(drawer.getByText(STATEMENT)).toBeVisible();
+    await expect(
+      drawer.getByRole("code").getByText(STATEMENT, { exact: true }),
+    ).toBeVisible();
 
     // The masked-cell entry point requests exactly the Unmask capability
     // (MaskingReasonPopover passes unmask={true}; export stays opt-in —
@@ -591,7 +593,6 @@ test.describe("access-grant drawer picker finds a database beyond the first page
 
     // Open the ACCESS pane → Request access grant → drawer.
     await viewerEditor.gutterAccessTab.click();
-    await viewerPage.waitForTimeout(500);
     await viewerEditor.requestAccessGrantButton.first().click({ force: true });
     await expect(viewerEditor.accessGrantDrawer).toBeVisible({
       timeout: 10_000,
@@ -606,38 +607,44 @@ test.describe("access-grant drawer picker finds a database beyond the first page
       .filter({ has: viewerPage.getByText(/^Databases\s*\*?$/) })
       .first();
     await dbSection.locator("div.cursor-pointer").first().click();
+    const options = viewerPage.getByRole("listbox", {
+      name: "Select database",
+      exact: true,
+    });
 
     // Prove the first page actually loaded (a known first-page database is
     // present) before asserting the target's absence — otherwise "absent"
     // could just mean "nothing has loaded yet".
     await expect(
-      dbSection.getByText(controlShort, { exact: true }).first(),
+      options.getByText(controlShort, { exact: true }).first(),
     ).toBeVisible({ timeout: 10_000 });
 
     // The target sorts past the picker's first (only) fetch → not in the DOM.
     await expect(
-      dbSection.getByText(targetShort, { exact: true }),
+      options.getByText(targetShort, { exact: true }),
     ).toHaveCount(0);
 
     // Type the target's name — the fix re-queries the server (onSearch).
-    await dbSection.locator("input").first().fill(targetShort);
+    await viewerPage
+      .getByPlaceholder("Type to search", { exact: true })
+      .fill(targetShort);
 
     // Server-side search surfaces the database that the first page omitted.
     await expect(
-      dbSection.getByText(targetShort, { exact: true }).first(),
+      options.getByText(targetShort, { exact: true }).first(),
     ).toBeVisible({ timeout: 15_000 });
 
     // Select it, then close the dropdown by clicking the drawer title (outside
     // the combobox) so the option row disappears. The target text remaining
     // proves a selected CHIP was rendered — not merely the still-open row.
-    await dbSection.getByText(targetShort, { exact: true }).first().click();
+    await options.getByText(targetShort, { exact: true }).first().click();
     await viewerEditor.accessGrantDrawerTitle.click();
-    await viewerPage.waitForTimeout(300);
+    await expect(options).toBeHidden();
     await expect(
       dbSection.getByText(targetShort, { exact: true }).first(),
     ).toBeVisible();
 
     await viewerPage.keyboard.press("Escape");
-    await viewerPage.waitForTimeout(300);
+    await expect(viewerEditor.accessGrantDrawer).toBeHidden();
   });
 });

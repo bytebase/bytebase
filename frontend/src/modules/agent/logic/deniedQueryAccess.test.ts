@@ -1,11 +1,16 @@
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
+import { errorToJson } from "@connectrpc/connect/protocol-connect";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/app/router/handles";
 import {
   consumeAccessGrantDraft,
   type RequestRoleDraft,
 } from "@/modules/sql-editor/model/accessGrantDraft";
-import { State } from "@/types/proto-es/v1/common_pb";
+import {
+  PermissionDeniedDetailSchema,
+  State,
+} from "@/types/proto-es/v1/common_pb";
 import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import {
@@ -237,6 +242,39 @@ describe("prepareAgentAccessGrantDraftRoute", () => {
 });
 
 describe("extractDeniedQueryAccessRequest", () => {
+  test("uses actual Connect wire permission details for the exact denied query", () => {
+    const error = new ConnectError(
+      "Query access denied",
+      Code.PermissionDenied,
+      undefined,
+      [
+        {
+          desc: PermissionDeniedDetailSchema,
+          value: create(PermissionDeniedDetailSchema, {
+            requiredPermissions: ["bb.sql.select"],
+            resources: [database],
+          }),
+        },
+      ]
+    );
+    expect(
+      extractDeniedQueryAccessRequest(
+        query,
+        JSON.stringify({
+          status: 403,
+          response: errorToJson(error, undefined),
+        })
+      )
+    ).toEqual({
+      sourceDatabase: database,
+      targets: [database],
+      resources: [database],
+      statement: query.body.statement,
+      requiredPermissions: ["bb.sql.select"],
+      schema: "public",
+    });
+  });
+
   test("accepts a structured read-permission preflight denial without executing SQL", () => {
     const result = JSON.stringify({
       status: 403,

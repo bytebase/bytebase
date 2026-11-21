@@ -9,6 +9,7 @@ import type {
 } from "@/modules/sql-editor/model/accessGrantDraft";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import { agentApiErrorResult } from "./apiResponse";
 import { validateAccessGrantDraft } from "./deniedQueryAccess";
 import { getMaskingSetup } from "./tools/maskingSetup";
 
@@ -205,8 +206,10 @@ export function createJustInTimeTools(options: {
           subscription: setup.subscription,
           databasePicker: setup.scopeAccess?.databasePicker,
         });
-      } catch {
-        return error(
+      } catch (caught) {
+        return agentApiErrorResult(
+          undefined,
+          caught,
           "Unable to verify current Just-in-Time access eligibility."
         );
       }

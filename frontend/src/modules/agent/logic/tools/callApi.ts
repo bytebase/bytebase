@@ -18,6 +18,7 @@ import {
   classifyAgentApiResponse,
   isProtectedAgentApiCall,
 } from "../apiExecution";
+import { handleAgentApiResponse } from "../apiResponse";
 import { notSentApiResult } from "../callApiResult";
 import {
   type AgentExecutionContext,
@@ -544,13 +545,22 @@ async function sendPreparedApiCall(
     signal?.removeEventListener("abort", onAbort);
   }
 
-  const raw = JSON.stringify({
-    ...result.parsed,
-    agentExecution: classifyAgentApiResponse(call, {
-      ...result.observation,
-      attemptId,
-    }),
-  });
+  let body: unknown;
+  try {
+    body = JSON.parse(call.body);
+  } catch {
+    // Missing request context must not discard an observed API outcome.
+  }
+  const raw = handleAgentApiResponse(
+    { operationId: call.operationId, body },
+    JSON.stringify({
+      ...result.parsed,
+      agentExecution: classifyAgentApiResponse(call, {
+        ...result.observation,
+        attemptId,
+      }),
+    })
+  );
   return call.operationId === "bytebase.v1.SQLService.Query" &&
     call.path === "/bytebase.v1.SQLService/Query"
     ? boundAgentQueryResult(raw)

@@ -9,7 +9,10 @@ import jaJP from "@/locales/ja-JP.json";
 import viVN from "@/locales/vi-VN.json";
 import zhCN from "@/locales/zh-CN.json";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
-import { AIChatResponse_StopReason } from "@/types/proto-es/v1/ai_service_pb";
+import {
+  type AIChatRequest,
+  AIChatResponse_StopReason,
+} from "@/types/proto-es/v1/ai_service_pb";
 import type { DomRefSuggestion } from "../dom";
 import type { AgentDomContext } from "../dom/interactionRegistry";
 import type { AgentMaskingPageResource } from "../logic/chatContext";
@@ -54,10 +57,14 @@ const mocks = vi.hoisted(() => ({
   runAgentLoop: vi.fn(),
   isAgentAIConfigurationError: vi.fn(() => false),
   buildOutboundHistory: vi.fn<typeof import("../logic/outboundHistory").buildOutboundHistory>(() => []),
-  buildSystemPrompt: vi.fn(() => "system"),
+  buildSystemPrompt: vi.fn<typeof import("../logic/prompt").buildSystemPrompt>(
+    () => "system"
+  ),
   executeTool: vi.fn(),
   createToolExecutor: vi.fn(() => mocks.executeTool),
-  getToolDefinitions: vi.fn(() => []),
+  getToolDefinitions: vi.fn<typeof import("../logic/tools").getToolDefinitions>(
+    () => []
+  ),
   getPendingApiCallPreview: vi.fn(),
   resolvePendingApiCall: vi.fn(),
   resolveDeniedQueryAccessDraft: vi.fn(),
@@ -8354,6 +8361,38 @@ describe("AgentInput", () => {
     }
   });
 
+  test("supplies common paid-feature recovery guidance without replaying the API", async () => {
+    const args = { operationId: "SettingService/UpdateSetting", body: { setting: { name: "settings/DATA_CLASSIFICATION" } } };
+    const result = JSON.stringify({ status: 403, response: { code: "permission_denied", message: "feature FEATURE_DATA_CLASSIFICATION is a ENTERPRISE feature, please upgrade to access it" } });
+    mocks.executeTool.mockResolvedValue({ kind: "tool_result", result });
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, execute, callbacks, _signal, options) => {
+      callbacks.onAssistantMessage({ toolCalls: [{ id: "paid-api", name: "call_api", arguments: JSON.stringify(args) }] });
+      const execution = await execute("call_api", args, "paid-api");
+      if (execution.kind !== "tool_result") throw new Error("Expected API result");
+      await callbacks.onToolResult("paid-api", execution.result);
+      expect(options.resolveRequestContext().systemGuidance).toContain("required plan");
+      expect(options.resolveRequestContext().systemGuidance).not.toContain("Request temporary access");
+      callbacks.onText("The backend requires Enterprise for data classification.");
+      return { kind: "completed", success: false, actions: [], totalTokensUsed: 0 };
+    });
+    const store = useAgentStore.getState();
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.queueUserMessage({ chatId: chat.id, text: "Update data classification", page });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      await act(async () => {
+        await vi.waitFor(() => expect(store.getMessages(chat.id).some((message) => message.content === "The backend requires Enterprise for data classification.")).toBe(true));
+      });
+      expect(mocks.executeTool.mock.calls.filter(([name]) => name === "call_api")).toHaveLength(1);
+      expect(store.getPendingAsk(chat.id)).toBeNull();
+      expect(store.getMessages(chat.id).some((message) => message.metadata?.accessRequestDraft)).toBe(false);
+    } finally {
+      view.unmount();
+    }
+  });
+
   test.each([false, true].flatMap((managed) => [false, true].map((confirmed) => ({ managed, confirmed }))))(
     "waits for denied-query confirmation before the normal JIT skill, managed=$managed confirmed=$confirmed",
     async ({ managed, confirmed }) => {
@@ -10153,6 +10192,160 @@ describe("AgentInput", () => {
     expect(store.getChat(chat.id)?.capability?.resource.name).toBe(resource.name);
     view.unmount();
   });
+
+  test.each([
+    { outcome: "a failed", failed: true },
+    { outcome: "a successful", failed: false },
+  ])(
+    "sends explanation-only guidance only after $outcome diagnostic READ",
+    async ({ failed }) => {
+      const { runAgentLoop } = await vi.importActual<
+        typeof import("../logic/agentLoop")
+      >("../logic/agentLoop");
+      const { buildSystemPrompt } = await vi.importActual<
+        typeof import("../logic/prompt")
+      >("../logic/prompt");
+      const { buildOutboundHistory } = await vi.importActual<
+        typeof import("../logic/outboundHistory")
+      >("../logic/outboundHistory");
+      const { getToolDefinitions } = await vi.importActual<
+        typeof import("../logic/tools")
+      >("../logic/tools");
+      mocks.runAgentLoop.mockImplementation(runAgentLoop);
+      mocks.buildSystemPrompt.mockImplementation(buildSystemPrompt);
+      mocks.buildOutboundHistory.mockImplementation(buildOutboundHistory);
+      mocks.getToolDefinitions.mockImplementation(getToolDefinitions);
+
+      const resource = {
+        kind: "plan" as const,
+        name: "projects/orders/plans/7",
+        project: "projects/orders",
+        label: "Plan 7",
+      };
+      const plan = { status: "available", name: resource.name, state: "ACTIVE" };
+      const args = {
+        operationId: "PlanService/GetPlan",
+        body: { name: resource.name },
+      };
+      const result = failed
+        ? { status: 409, response: { code: "aborted" } }
+        : { status: 200, response: plan };
+      const answer = failed ? "The Plan read failed." : "The Plan is active.";
+      mocks.executeTool.mockImplementation(async (name) => {
+        if (name === "get_plan_overview")
+          return {
+            kind: "tool_result",
+            result: JSON.stringify({ project: resource.project, plan }),
+          };
+        if (name === "call_api")
+          return { kind: "tool_result", result: JSON.stringify(result) };
+        if (name === "done")
+          return { kind: "done", text: answer, success: !failed };
+        throw new Error(`Unexpected tool: ${name}`);
+      });
+      mocks.aiChat
+        .mockResolvedValueOnce({
+          content: "",
+          toolCalls: [
+            {
+              id: "diagnostic-read",
+              name: "call_api",
+              arguments: JSON.stringify(args),
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          content: "",
+          toolCalls: [
+            {
+              id: "diagnostic-done",
+              name: "done",
+              arguments: JSON.stringify({
+                text: answer,
+                success: !failed,
+                actions: [],
+              }),
+            },
+          ],
+          stopReason: AIChatResponse_StopReason.TURN_COMPLETED,
+        });
+      mocks.currentPageResource = {
+        kind: "masking-exemption",
+        project: "projects/other",
+      };
+      const page = { path: "/projects/other/masking", title: "Other project" };
+      const store = useAgentStore.getState();
+      const capability = { kind: "diagnostic" as const, resource };
+      const chat = store.createChat({
+        context: resource.project,
+        page,
+        capability,
+      });
+      store.queueUserMessage({
+        chatId: chat.id,
+        text: "Explain this Plan.",
+        page,
+      });
+
+      const view = renderIntoContainer(<AgentInput />);
+      try {
+        view.render();
+        await act(async () => {
+          await vi.waitFor(() => {
+            expect(store.getMessages(chat.id)).toContainEqual(
+              expect.objectContaining({ role: "assistant", content: answer })
+            );
+          });
+        });
+        expect(mocks.aiChat).toHaveBeenCalledTimes(2);
+        const [first, followUp] = mocks.aiChat.mock.calls.map(
+          ([request]) => request as AIChatRequest
+        );
+        const initialPrompt = first.messages[0].content;
+        const prompt = followUp.messages[0].content;
+        expect(initialPrompt).not.toContain("Explain the observed failure");
+        if (failed) {
+          expect(prompt).toContain("Explain the observed failure");
+          expect(prompt).toContain("resource conflict");
+          expect(prompt).toContain(
+            "diagnostic restrictions override recovery suggestions"
+          );
+        } else {
+          expect(prompt).toBe(initialPrompt);
+        }
+        expect(prompt).toContain(`Diagnostic resource: plan ${resource.name}`);
+        expect(prompt).not.toContain("projects/other");
+        expect(prompt).not.toMatch(
+          /# Data Masking|Request temporary access|prepare_access_grant_draft/
+        );
+        expect(followUp.toolDefinitions).toEqual(first.toolDefinitions);
+        expect(
+          followUp.toolDefinitions.find(({ name }) => name === "call_api")
+            ?.description
+        ).toContain(`Read authorized diagnostic evidence in ${resource.project}`);
+        expect(
+          followUp.toolDefinitions.filter(({ name }) =>
+            /^(navigate|dom_action|get_page_state|get_just_in_time_overview|prepare_)/.test(
+              name
+            )
+          )
+        ).toEqual([]);
+        expect(
+          mocks.executeTool.mock.calls.filter(([name]) => name === "call_api")
+        ).toEqual([["call_api", args, "diagnostic-read"]]);
+        const message = store
+          .getMessages(chat.id)
+          .find(
+            (message) => message.role === "assistant" && message.content === answer
+          );
+        expect(message?.metadata?.actions).toBeUndefined();
+        expect(message?.metadata?.accessRequestDraft).toBeUndefined();
+        expect(mocks.resolveDeniedQueryAccessDraft).not.toHaveBeenCalled();
+      } finally {
+        view.unmount();
+      }
+    }
+  );
 
   test.each([false, true])(
     "diagnostic DDL answers cannot synthesize Plan drafts with Continue=%s",

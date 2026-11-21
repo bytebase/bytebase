@@ -267,7 +267,7 @@ async function assertFits(page: Page, target: Locator) {
 async function persistedAgent(page: Page) {
   return page.evaluate(() => {
     const key = Object.keys(localStorage).find((key) =>
-      key.startsWith("bb-agent-state-v2.")
+      key.startsWith("bb-agent-state-v3.")
     );
     if (!key) return null;
     return JSON.parse(localStorage.getItem(key)!) as {

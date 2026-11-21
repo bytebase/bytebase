@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
+import { ConnectError, createContextValues } from "@connectrpc/connect";
 import {
   databaseServiceClientConnect,
   issueServiceClientConnect,
@@ -37,6 +37,7 @@ import {
 import { normalizeAgentHandoff } from "../handoff";
 import { normalizeAgentDiagnosticCapability } from "../diagnosticCapability";
 import { normalizeAgentResponseActions } from "../responseActions";
+import { agentApiErrorResult } from "../apiResponse";
 import {
   prepareMaskingRuleDraft,
   prepareMaskingRuleDrafts,
@@ -124,6 +125,17 @@ const toToolResult = (result: string): ToolExecutionResult => ({
   kind: "tool_result",
   result,
 });
+
+function skillReadErrorResult(error: unknown, fallback: string): string {
+  if (error instanceof ConnectError)
+    return agentApiErrorResult(undefined, error, fallback);
+  return JSON.stringify({
+    error: error instanceof Error ? error.message : fallback,
+    ...(error instanceof MaskingRuleTargetClarificationError
+      ? { needsClarification: true, targetEvidence: error.targetEvidence }
+      : {}),
+  });
+}
 
 const parseAskUserOption = (value: unknown): AgentAskUserOption | null => {
   if (!value || typeof value !== "object") {
@@ -1996,18 +2008,10 @@ export function createToolExecutor(
           );
         } catch (error) {
           return toToolResult(
-            JSON.stringify({
-              error:
-                error instanceof Error
-                  ? error.message
-                  : "Unable to verify the masking rule draft.",
-              ...(error instanceof MaskingRuleTargetClarificationError
-                ? {
-                    needsClarification: true,
-                    targetEvidence: error.targetEvidence,
-                  }
-                : {}),
-            })
+            skillReadErrorResult(
+              error,
+              "Unable to verify the masking rule draft."
+            )
           );
         }
       }
@@ -2069,18 +2073,10 @@ export function createToolExecutor(
           );
         } catch (error) {
           return toToolResult(
-            JSON.stringify({
-              error:
-                error instanceof Error
-                  ? error.message
-                  : "Unable to verify the masking exemption draft.",
-              ...(error instanceof MaskingRuleTargetClarificationError
-                ? {
-                    needsClarification: true,
-                    targetEvidence: error.targetEvidence,
-                  }
-                : {}),
-            })
+            skillReadErrorResult(
+              error,
+              "Unable to verify the masking exemption draft."
+            )
           );
         }
       }
@@ -2147,12 +2143,10 @@ export function createToolExecutor(
           );
         } catch (error) {
           return toToolResult(
-            JSON.stringify({
-              error:
-                error instanceof Error
-                  ? error.message
-                  : "Unable to verify the semantic type draft.",
-            })
+            skillReadErrorResult(
+              error,
+              "Unable to verify the semantic type draft."
+            )
           );
         }
       }
@@ -2179,12 +2173,10 @@ export function createToolExecutor(
           );
         } catch (error) {
           return toToolResult(
-            JSON.stringify({
-              error:
-                error instanceof Error
-                  ? error.message
-                  : "Semantic type choices could not be verified.",
-            })
+            skillReadErrorResult(
+              error,
+              "Semantic type choices could not be verified."
+            )
           );
         }
       }
@@ -2241,12 +2233,10 @@ export function createToolExecutor(
           );
         } catch (error) {
           return toToolResult(
-            JSON.stringify({
-              error:
-                error instanceof Error
-                  ? error.message
-                  : "Masking scope choices could not be verified.",
-            })
+            skillReadErrorResult(
+              error,
+              "Masking scope choices could not be verified."
+            )
           );
         }
       }
@@ -2326,12 +2316,7 @@ export function createToolExecutor(
           );
         } catch (error) {
           return toToolResult(
-            JSON.stringify({
-              error:
-                error instanceof Error
-                  ? error.message
-                  : "Unmask methods could not be verified.",
-            })
+            skillReadErrorResult(error, "Unmask methods could not be verified.")
           );
         }
       }
@@ -2386,12 +2371,10 @@ export function createToolExecutor(
           });
         } catch (error) {
           return toToolResult(
-            JSON.stringify({
-              error:
-                error instanceof Error
-                  ? error.message
-                  : "Exemption scope choices could not be verified.",
-            })
+            skillReadErrorResult(
+              error,
+              "Exemption scope choices could not be verified."
+            )
           );
         }
         return parseAskUserArgs(

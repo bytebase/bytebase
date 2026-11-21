@@ -1,17 +1,15 @@
 import { isCanonicalQueryMaskingQuestion } from "./queryFollowUpQuestions";
 import { normalizeAgentResponseActions } from "./responseActions";
+import {
+  getCurrentTurnToolCalls,
+  type ToolObservation,
+} from "./toolObservations";
 import type {
   AgentQueryMaskingEligibility,
   AgentResourceReference,
   AgentResponseAction,
   Message,
 } from "./types";
-
-interface ToolObservation {
-  name: string;
-  args: Record<string, unknown>;
-  result?: string;
-}
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
@@ -69,28 +67,6 @@ function isMaskingQuestion(prompt: string): boolean {
   );
 }
 
-function getTurnTools(messages: readonly Message[]): ToolObservation[] {
-  const lastUser = messages.findLastIndex((message) => message.role === "user");
-  if (lastUser < 0) return [];
-  const observations: ToolObservation[] = [];
-  const calls = new Map<string, ToolObservation>();
-  for (const message of messages.slice(lastUser + 1)) {
-    if (message.role === "assistant") {
-      for (const call of message.toolCalls ?? []) {
-        const args = parseRecord(call.arguments);
-        if (!args) continue;
-        const observation = { name: call.name, args };
-        observations.push(observation);
-        calls.set(call.id, observation);
-      }
-    } else if (message.role === "tool" && message.toolCallId) {
-      const call = calls.get(message.toolCallId);
-      if (call) call.result = message.content;
-    }
-  }
-  return observations;
-}
-
 const isQuery = (call: ToolObservation) =>
   call.name === "call_api" &&
   (call.args.operationId === "SQLService/Query" ||
@@ -99,7 +75,7 @@ const isQuery = (call: ToolObservation) =>
 export function getCurrentTurnQueryCalls(
   messages: readonly Message[]
 ): { args: Record<string, unknown>; result?: string }[] {
-  return getTurnTools(messages)
+  return getCurrentTurnToolCalls(messages)
     .filter(isQuery)
     .map(({ args, result }) => ({
       args,
@@ -259,7 +235,10 @@ export function getQueryMaskingSetupTarget(
     ).length >= 3
   )
     return undefined;
-  const context = getDataQueryContext(getTurnTools(turnMessages), references);
+  const context = getDataQueryContext(
+    getCurrentTurnToolCalls(turnMessages),
+    references
+  );
   return context && !context.masked ? context.database : undefined;
 }
 
@@ -341,7 +320,7 @@ export function getQueryResponseActions(
   maskingEligibility?: AgentQueryMaskingEligibility
 ): AgentResponseAction[] {
   if (!supportsQueryFollowUps(actions)) return actions;
-  const tools = getTurnTools(turnMessages);
+  const tools = getCurrentTurnToolCalls(turnMessages);
   if (!tools.some(isQuery)) return actions;
   const retained = actions.filter(
     (action) => action.kind !== "continue" || !isMaskingQuestion(action.prompt)
