@@ -10,11 +10,9 @@
 // parameters), the QueryContext/ExecuteOptions mapping, the transaction-mode
 // directive, GetDB-shaped callers, the v1pb conversion and the task-run logger.
 //
-// Known differences from the driver this replaced; each is either pinned by a
-// test in cutover_parity_test.go or named here as the cutover proof measured it:
+// Adapter invariants and engine behaviors:
 //   - The private-link guard takes no connection: OwnsPrivateDatabaseLink asks
-//     the driver, which opens its own session. Every linked read used to be
-//     refused once GetDB returned nil, so this is the fix the cutover owed.
+//     the driver, which opens its own session.
 //   - A SELECT that declares PL/SQL returns its rows. The old driver asked
 //     ValidateSQLForEditor and ran anything it did not call a query through Exec,
 //     dropping the rows; the contract decides by the statement's shape.
@@ -239,9 +237,7 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 }
 
 // OwnsPrivateDatabaseLink reports whether the driver's account owns a private
-// database link. The driver asks with its own session; the old signature took
-// the caller's *sql.Conn, which the cutover makes nil, and every linked read was
-// refused because of it.
+// database link, querying on a session managed by the underlying omni driver.
 func (d *Driver) OwnsPrivateDatabaseLink(ctx context.Context) (bool, error) {
 	return d.Driver.(omnidriver.PrivateDatabaseLinkOwner).OwnsPrivateDatabaseLink(ctx)
 }
