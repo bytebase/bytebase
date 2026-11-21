@@ -385,6 +385,14 @@ func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
 	require.Zero(t, loads["unuseddb"], "unreferenced database must not be loaded")
 	require.Zero(t, listCalls, "qualified cross-db completion must resolve the qualifier directly without ListDatabaseNames")
 
+	gotTbl, err := Completion(context.Background(), cCtx, "SELECT * FROM otherdb.", 1, len("SELECT * FROM otherdb."))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotTbl, base.CandidateTypeTable, "t2"),
+		"cross-db table 't2' should surface; got %v", gotTbl)
+	require.False(t, hasCandidate(gotTbl, base.CandidateTypeTable, "t1"),
+		"default-db table 't1' must not leak into otherdb.; got %v", gotTbl)
+	require.Zero(t, listCalls, "qualified table completion must not enumerate databases")
+
 	stmt2 := "SELECT * FROM "
 	got2, err := Completion(context.Background(), cCtx, stmt2, 1, len(stmt2))
 	require.NoError(t, err)
