@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync"
 
+	omnianalysis "github.com/bytebase/omni/analysis"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -89,9 +90,9 @@ func HasExplainStatement(engine storepb.Engine) bool {
 // question the caller did not ask.
 var ErrExplainAnalyzeExecutes = errors.New("EXPLAIN ANALYZE executes the statement it plans, which an explain request never does: run it as a query, or drop ANALYZE to plan the statement")
 
-// ConvertExplainAnalyzeError translates an engine's EXPLAIN ANALYZE sentinel error to ErrExplainAnalyzeExecutes.
-func ConvertExplainAnalyzeError(err, engineSentinel error) error {
-	if errors.Is(err, engineSentinel) {
+// OmniExplainAnalyzeError translates omni's ErrExplainAnalyzeExecutes sentinel error to ErrExplainAnalyzeExecutes.
+func OmniExplainAnalyzeError(err error) error {
+	if errors.Is(err, omnianalysis.ErrExplainAnalyzeExecutes) {
 		return ErrExplainAnalyzeExecutes
 	}
 	return err

@@ -172,7 +172,7 @@ func TestQueryTypeClassification(t *testing.T) {
 			node := parsed[0].Node()
 
 			rawQueryType, isAnalyze := analysis.QueryTypeOf(node)
-			queryType := mapQueryType(rawQueryType)
+			queryType := base.OmniQueryType(rawQueryType)
 			assert.Equal(t, tt.wantQueryType, queryType, "Query type mismatch")
 			assert.Equal(t, tt.wantIsAnalyze, isAnalyze, "isAnalyze mismatch")
 

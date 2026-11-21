@@ -1,6 +1,8 @@
 package base
 
 import (
+	omnianalysis "github.com/bytebase/omni/analysis"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -88,6 +90,13 @@ func BuildStatements[T any](sql string, segs []T, bounds func(T) (start, end int
 		}
 	}
 	return result
+}
+
+// OmniStatements converts omni split statements into []Statement with 1-based line and rune column positions.
+func OmniStatements(sql string, stmts []omnianalysis.Statement) []Statement {
+	return BuildStatements(sql, stmts, func(s omnianalysis.Statement) (int, int, bool) {
+		return s.Start, s.End, s.Empty
+	}, false)
 }
 
 // ParsedStatement is the result of parsing SQL (Statement + AST).

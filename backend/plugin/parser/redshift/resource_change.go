@@ -20,13 +20,6 @@ func extractChangedResources(database string, schema string, dbMetadata *model.D
 	summary := &base.ChangeSummary{
 		ChangedResources: model.NewChangedResources(dbMetadata),
 	}
-	base.AppendStatementChanges(summary, base.StatementChanges{
-		Resources: base.MapChangedResources(changes.Resources, func(r analysis.ChangedResource) base.ChangedResource {
-			return base.ChangedResource{Database: r.Database, Schema: r.Schema, Table: r.Table, AffectsData: r.AffectsData}
-		}),
-		DMLStatements: changes.DMLStatements,
-		DMLCount:      changes.DMLCount,
-		InsertCount:   changes.InsertCount,
-	}, false)
+	base.AppendStatementChanges(summary, *changes, false)
 	return summary, nil
 }

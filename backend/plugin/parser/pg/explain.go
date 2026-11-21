@@ -35,7 +35,7 @@ func cockroachExplainStatement(statement string, format base.ExplainFormat) (str
 }
 
 func convertExplainError(explain string, err error) (string, error) {
-	return explain, base.ConvertExplainAnalyzeError(err, analysis.ErrExplainAnalyzeExecutes)
+	return explain, base.OmniExplainAnalyzeError(err)
 }
 
 // DescribeExplain returns the output format of an EXPLAIN statement and

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	oraclecompletion "github.com/bytebase/omni/oracle/completion"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -107,7 +108,7 @@ func TestCompletionByteOffsetUsesUTF16Columns(t *testing.T) {
 	input := "SELECT '😀' FROM t1 WHERE | AND c1 = 1"
 	statement, caretLine, caretOffset := catchCaretUTF16(input)
 
-	_, byteOffset := computeSQLAndByteOffset(statement, caretLine, caretOffset, false /* tricky */)
+	byteOffset := oraclecompletion.LineOffsetToBytePos(statement, caretLine, caretOffset)
 
 	require.Equal(t, strings.Index(input, "|"), byteOffset)
 }
@@ -136,8 +137,8 @@ func TestCompletionQQuoteDoesNotTriggerInsideDoubleQuotes(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			sql, line, col := catchCaret(tc.input)
-			_, offset := computeSQLAndByteOffset(sql, line, col, false)
-			require.Equal(t, tc.want, caretInsideDoubleQuotes(sql, offset))
+			offset := oraclecompletion.LineOffsetToBytePos(sql, line, col)
+			require.Equal(t, tc.want, oraclecompletion.CaretInsideDoubleQuotes(sql, offset))
 		})
 	}
 }

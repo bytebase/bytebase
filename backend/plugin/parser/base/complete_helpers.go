@@ -1,76 +1,36 @@
 package base
 
 import (
+	"cmp"
+	"context"
 	"slices"
 	"strings"
-	"unicode/utf8"
+
+	metadatapb "github.com/bytebase/omni/metadata"
 )
 
-// CaretToByteOffset converts a (1-based line, 0-based UTF-16 code-unit column) caret
-// position into a byte offset within statement.
-func CaretToByteOffset(statement string, caretLine, caretColumn int) int {
-	line := 1
-	col := 0
-	for i := 0; i < len(statement); {
-		if line == caretLine && col >= caretColumn {
-			return i
-		}
-		r, size := utf8.DecodeRuneInString(statement[i:])
-		if r == '\n' {
-			if line == caretLine {
-				return i
+// CompletionMetadataLoaders adapts CompletionContext's Metadata and
+// ListDatabaseNames callbacks into the plain callbacks expected by omni's
+// session completion APIs.
+func CompletionMetadataLoaders(cCtx CompletionContext) (
+	loadMetadata func(ctx context.Context, name string) (*metadatapb.DatabaseSchemaMetadata, error),
+	listNames func(ctx context.Context) ([]string, error),
+) {
+	if cCtx.Metadata != nil {
+		loadMetadata = func(ctx context.Context, name string) (*metadatapb.DatabaseSchemaMetadata, error) {
+			_, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, name)
+			if err != nil || dbMeta == nil {
+				return nil, err
 			}
-			line++
-			col = 0
-		} else if r <= 0xFFFF {
-			col++
-		} else {
-			col += 2
-		}
-		i += size
-	}
-	return len(statement)
-}
-
-// StatementAtCaret isolates the SQL slice around the caret from pre-split statements.
-// When includeFollowing is false, only the single statement containing the caret is returned;
-// otherwise that statement and all following statements are concatenated.
-func StatementAtCaret(list []Statement, statement string, caretLine, caretOffset int, includeFollowing bool) (string, int, int) {
-	if len(FilterEmptyStatements(list)) <= 1 {
-		return statement, caretLine, caretOffset
-	}
-
-	caretLineZeroBased := caretLine - 1
-	start := 0
-	newCaretLine, newCaretOffset := caretLine, caretOffset
-	for i, sql := range list {
-		sqlEndLine := int(sql.End.GetLine()) - 1
-		sqlEndColumn := int(sql.End.GetColumn())
-		if sqlEndLine > caretLineZeroBased || (sqlEndLine == caretLineZeroBased && sqlEndColumn >= caretOffset) {
-			start = i
-			if i == 0 {
-				break
-			}
-			previousEndLine := int(list[i-1].End.GetLine()) - 1
-			previousEndColumn := int(list[i-1].End.GetColumn())
-			newCaretLine = caretLineZeroBased - previousEndLine + 1
-			if caretLineZeroBased == previousEndLine {
-				newCaretOffset = caretOffset - previousEndColumn + 1
-			}
-			break
+			return dbMeta.GetProto(), nil
 		}
 	}
-
-	if !includeFollowing {
-		return list[start].Text, newCaretLine, newCaretOffset
-	}
-	var buf strings.Builder
-	for i := start; i < len(list); i++ {
-		if _, err := buf.WriteString(list[i].Text); err != nil {
-			return statement, caretLine, caretOffset
+	if cCtx.ListDatabaseNames != nil {
+		listNames = func(ctx context.Context) ([]string, error) {
+			return cCtx.ListDatabaseNames(ctx, cCtx.InstanceID)
 		}
 	}
-	return buf.String(), newCaretLine, newCaretOffset
+	return loadMetadata, listNames
 }
 
 // DeduplicateCandidates removes duplicate candidates keyed by Candidate.String()
@@ -102,4 +62,14 @@ func CompareCandidateByTypeText(a, b Candidate) int {
 		return strings.Compare(string(a.Type), string(b.Type))
 	}
 	return strings.Compare(a.Text, b.Text)
+}
+
+// CompareCandidate compares candidates deterministically by Type, Text, Definition, and Comment.
+func CompareCandidate(a, b Candidate) int {
+	return cmp.Or(
+		cmp.Compare(a.Type, b.Type),
+		cmp.Compare(a.Text, b.Text),
+		cmp.Compare(a.Definition, b.Definition),
+		cmp.Compare(a.Comment, b.Comment),
+	)
 }

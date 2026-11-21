@@ -18,7 +18,5 @@ func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, stateme
 	if len(rawRanges) == 0 {
 		return nil, nil
 	}
-	return base.MapByteRangesToLSP(statement, rawRanges, func(r analysis.Range) (int, int) {
-		return r.Start, r.End
-	}), nil
+	return base.MapByteRangesToLSP(statement, rawRanges), nil
 }
