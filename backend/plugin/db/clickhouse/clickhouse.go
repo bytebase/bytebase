@@ -51,7 +51,6 @@ package clickhouse
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"io"
 	"log/slog"
 	"net"
@@ -71,10 +70,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-var (
-	_ db.Driver         = (*Driver)(nil)
-	_ db.SessionQuerier = (*Driver)(nil)
-)
+var _ db.Driver = (*Driver)(nil)
 
 func init() {
 	db.Register(storepb.Engine_CLICKHOUSE, newDriver)
@@ -183,17 +179,6 @@ func (d *Driver) Close(context.Context) error {
 func (d *Driver) Ping(ctx context.Context) error {
 	return d.impl.Ping(ctx)
 }
-
-// GetDB returns nil: the omni driver owns its pool and hands out sessions
-// instead. Every caller already branches on the handle being absent, and no
-// ClickHouse feature read it.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
-// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
-// rather than on the *sql.Conn a caller passes, which is unused.
-func (*Driver) OwnsQuerySession() {}
 
 // Execute runs the script's statements, reporting each to the task run's log.
 // ClickHouse cannot roll back, so a script still logs the BEGIN and ROLLBACK

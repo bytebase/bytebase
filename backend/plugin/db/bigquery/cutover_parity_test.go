@@ -15,11 +15,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-
-	// Registers the BigQuery limit function the pre-cutover driver called, which
-	// the previous db/bigquery pulled in for its own call.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"
 )
 
 func TestBigQueryConfig(t *testing.T) {
@@ -190,22 +185,11 @@ func TestQueryResultConversion(t *testing.T) {
 	})
 }
 
-// TestStatementParityKnownDifferences pins each case the two sides read
-// differently, both answers included, so the difference stays the one the cutover
-// decided rather than a later drift. The cases where both sides agree are not
-// re-asserted here: those are bigquery/driver's own dialect tests (its statement,
-// returns-rows and limit suites), and the adapter passes the script through, so a
-// second copy of them in this package would test the dependency rather than the
-// seam.
-func TestStatementParityKnownDifferences(t *testing.T) {
+// TestStatementDecisions pins the statement splitter, read/write
+// classifier, and LIMIT rewrite that GoogleSQL's parser and analyzer provide.
+func TestStatementDecisions(t *testing.T) {
 	t.Run("a comment stays in the statement", func(t *testing.T) {
-		script := "SELECT 1 -- trailing\n"
-		old, err := oldStatementDecision(script)
-		require.NoError(t, err)
-		require.Equal(t, []string{"SELECT 1"}, old.statements)
-		require.Equal(t, []string{"WITH result AS (SELECT 1) SELECT * FROM result LIMIT 10;"}, old.limited)
-
-		got := newStatementDecision(script)
+		got := newStatementDecision("SELECT 1 -- trailing\n")
 		require.Equal(t, []string{"SELECT 1 -- trailing"}, got.statements)
 		// The wrapper starts its closing parenthesis on a new line, because a
 		// line comment would otherwise swallow it.
@@ -213,57 +197,34 @@ func TestStatementParityKnownDifferences(t *testing.T) {
 	})
 
 	t.Run("a parenthesized query returns rows", func(t *testing.T) {
-		script := "(SELECT 1)"
-		old, err := oldStatementDecision(script)
-		require.NoError(t, err)
-		require.Equal(t, []bool{false}, old.returnsRows)
-
-		got := newStatementDecision(script)
+		got := newStatementDecision("(SELECT 1)")
 		require.Equal(t, []bool{true}, got.returnsRows)
-		require.Equal(t, old.statements, got.statements)
-		require.Equal(t, old.limited, got.limited)
+		require.Equal(t, []string{"(SELECT 1)"}, got.statements)
+		require.Equal(t, []string{"WITH result AS ((SELECT 1)) SELECT * FROM result LIMIT 10;"}, got.limited)
 	})
 
 	t.Run("a CTE-prefixed INSERT is a command", func(t *testing.T) {
-		script := "WITH x AS (SELECT 1) INSERT INTO t SELECT * FROM x"
-		old, err := oldStatementDecision(script)
-		require.NoError(t, err)
-		require.Equal(t, []bool{true}, old.returnsRows)
-
-		got := newStatementDecision(script)
+		got := newStatementDecision("WITH x AS (SELECT 1) INSERT INTO t SELECT * FROM x")
 		require.Equal(t, []bool{false}, got.returnsRows)
-		require.Equal(t, old.statements, got.statements)
+		require.Equal(t, []string{"WITH x AS (SELECT 1) INSERT INTO t SELECT * FROM x"}, got.statements)
 	})
 
 	t.Run("an unclosed literal is the statement's error", func(t *testing.T) {
-		script := "SELECT 1;\nSELECT 'unclosed"
-		_, err := oldStatementDecision(script)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "unclosed literal")
-
 		// The splitter never fails, so both statements reach the service and the
 		// second answers its own error.
-		got := newStatementDecision(script)
+		got := newStatementDecision("SELECT 1;\nSELECT 'unclosed")
 		require.Equal(t, []string{"SELECT 1", "SELECT 'unclosed"}, got.statements)
+	})
+
+	t.Run("a pipe query returns rows", func(t *testing.T) {
+		got := newStatementDecision("SELECT 1 |> WHERE TRUE")
+		require.Equal(t, []bool{true}, got.returnsRows)
+		require.Equal(t, []string{"SELECT 1 |> WHERE TRUE"}, got.statements)
+		require.Equal(t, []string{"WITH result AS (SELECT 1 |> WHERE TRUE) SELECT * FROM result LIMIT 10;"}, got.limited)
 	})
 }
 
-// TestPipeQueryStatementDecision pins the script the cutover recorded as a known
-// difference and the bump closed: omni #1444 reads the pipe syntax, so a pipe
-// query is a read on both sides.
-func TestPipeQueryStatementDecision(t *testing.T) {
-	script := "SELECT 1 |> WHERE TRUE"
-	old, err := oldStatementDecision(script)
-	require.NoError(t, err)
-	require.Equal(t, []bool{true}, old.returnsRows)
-
-	got := newStatementDecision(script)
-	require.Equal(t, []bool{true}, got.returnsRows)
-	require.Equal(t, old.statements, got.statements)
-	require.Equal(t, old.limited, got.limited)
-}
-
-// statementLimit is the row cap both sides rewrite with.
+// statementLimit is the row cap the LIMIT rewrite uses.
 const statementLimit = 10
 
 // statementDecision is one script's statement-level decisions: the statements the
@@ -273,20 +234,6 @@ type statementDecision struct {
 	statements  []string
 	returnsRows []bool
 	limited     []string
-}
-
-func oldStatementDecision(script string) (statementDecision, error) {
-	statements, err := util.SanitizeSQL(script)
-	if err != nil {
-		return statementDecision{}, err
-	}
-	var decision statementDecision
-	for _, statement := range statements {
-		decision.statements = append(decision.statements, statement)
-		decision.returnsRows = append(decision.returnsRows, util.IsSelect(statement))
-		decision.limited = append(decision.limited, base.StatementWithResultLimit(storepb.Engine_BIGQUERY, statement, statementLimit, ""))
-	}
-	return decision, nil
 }
 
 func newStatementDecision(script string) statementDecision {

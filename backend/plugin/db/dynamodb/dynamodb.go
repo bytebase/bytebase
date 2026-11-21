@@ -157,11 +157,6 @@ func (d *Driver) Ping(ctx context.Context) error {
 	return d.inner.Ping(ctx)
 }
 
-// GetDB returns nil: DynamoDB has no database/sql handle.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
 // Execute runs each statement of script as its own ExecuteTransaction and
 // reports each to the task run's log. The count is always 0 because PartiQL
 // writes report no affected rows.

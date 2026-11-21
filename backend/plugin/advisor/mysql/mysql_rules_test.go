@@ -5,10 +5,14 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"io"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/bytebase/omni/mysql/ast"
+	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
@@ -18,7 +22,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -148,11 +151,105 @@ func (e *testRowEstimator) CountAffectedRows(ctx context.Context, statement stri
 		return 0, errors.New("expected exactly one statement")
 	}
 	query := mysqlparser.AffectedRowsQuery(list.Items[0], statement)
-	plan, err := mysqldriver.ExplainJSON(ctx, e.db, query)
+	plan, err := explainJSON(ctx, e.db, query)
 	if err != nil {
 		return 0, err
 	}
-	return mysqldriver.EstimateAffectedRows(ctx, e.db, list.Items[0], query, plan)
+	return estimateAffectedRows(ctx, e.db, list.Items[0], query, plan)
+}
+
+func estimateAffectedRows(ctx context.Context, db *sql.DB, stmt ast.Node, query, plan string) (int64, error) {
+	count, err := mysqlparser.EstimateAffectedRowsFromExplainJSON(stmt, plan)
+	if err == nil {
+		return count, nil
+	}
+	rows, tables, ok := explainTabularEstimate(ctx, db, query)
+	if !ok {
+		return 0, err
+	}
+	return mysqlparser.CapAffectedRowsByLimit(stmt, rows*float64(mysqlparser.DMLTargetCount(stmt, tables))), nil
+}
+
+func explainTabularEstimate(ctx context.Context, db *sql.DB, query string) (float64, int, bool) {
+	rows, err := db.QueryContext(ctx, "EXPLAIN FORMAT=TRADITIONAL "+query)
+	if err != nil {
+		return 0, 0, false
+	}
+	defer rows.Close()
+	columns, err := rows.Columns()
+	if err != nil {
+		return 0, 0, false
+	}
+	column := func(name string) int {
+		return slices.IndexFunc(columns, func(column string) bool { return strings.EqualFold(column, name) })
+	}
+	idIndex, rowsIndex, filteredIndex := column("id"), column("rows"), column("filtered")
+	if idIndex < 0 || rowsIndex < 0 {
+		return 0, 0, false
+	}
+	values := make([]sql.NullString, len(columns))
+	dest := make([]any, len(columns))
+	for i := range values {
+		dest[i] = &values[i]
+	}
+	var blockID string
+	estimate, tables := 1.0, 0
+	for rows.Next() {
+		if err := rows.Scan(dest...); err != nil {
+			return 0, 0, false
+		}
+		tableRows, err := strconv.ParseFloat(values[rowsIndex].String, 64)
+		if !values[rowsIndex].Valid || err != nil || (tables > 0 && values[idIndex].String != blockID) {
+			continue
+		}
+		blockID = values[idIndex].String
+		tables++
+		estimate *= tableRows
+		if filteredIndex >= 0 && values[filteredIndex].Valid {
+			if filtered, err := strconv.ParseFloat(values[filteredIndex].String, 64); err == nil {
+				estimate *= filtered / 100
+			}
+		}
+	}
+	return estimate, tables, tables > 0 && rows.Err() == nil
+}
+
+func explainJSON(ctx context.Context, db *sql.DB, statement string) (string, error) {
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+
+	if _, err := conn.ExecContext(ctx, "SET SESSION explain_json_format_version = 1"); err != nil {
+		var mysqlErr *gomysql.MySQLError
+		if !errors.As(err, &mysqlErr) || mysqlErr.Number != 1193 {
+			return "", errors.Wrap(err, "failed to set explain_json_format_version")
+		}
+	} else {
+		defer func() {
+			_, _ = conn.ExecContext(ctx, "SET SESSION explain_json_format_version = DEFAULT")
+		}()
+	}
+
+	rows, err := conn.QueryContext(ctx, "EXPLAIN FORMAT=JSON "+statement)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	var plan strings.Builder
+	for rows.Next() {
+		var line sql.NullString
+		if err := rows.Scan(&line); err != nil {
+			return "", err
+		}
+		plan.WriteString(line.String)
+	}
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+	return plan.String(), nil
 }
 
 func TestMySQLRules(t *testing.T) {
@@ -363,6 +460,16 @@ func TestMySQLRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
 			engine:      storepb.Engine_MYSQL,
 			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
 			plan:        testMySQLInsertTablePlan,
+			statement:   "INSERT INTO t2 TABLE t;",
+			wantContent: `"INSERT INTO t2 TABLE t;" inserts 1000 rows. The count exceeds 5.`,
+			wantCode:    code.InsertTooManyRows,
+		},
+		{
+			name:        "insert table without explain_json_format_version",
+			engine:      storepb.Engine_MYSQL,
+			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
+			plan:        testMySQLInsertTablePlan,
+			setErr:      &gomysql.MySQLError{Number: 1193, Message: "Unknown system variable 'explain_json_format_version'"},
 			statement:   "INSERT INTO t2 TABLE t;",
 			wantContent: `"INSERT INTO t2 TABLE t;" inserts 1000 rows. The count exceeds 5.`,
 			wantCode:    code.InsertTooManyRows,

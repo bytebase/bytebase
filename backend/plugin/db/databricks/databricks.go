@@ -20,10 +20,6 @@
 //     and an SSH tunnel, and the SDK's own transport verifies the workspace's
 //     certificate against the system roots. The caller's extra connection
 //     parameters are not read, as before.
-//   - GetDB is not implemented. The previous driver returned nil for it, every
-//     caller reaches the handle through db.SQLDB and branches on its absence, and
-//     no Databricks feature read it. OwnsQuerySession is declared instead,
-//     because QueryConn ignores the caller's *sql.Conn.
 //   - Execute sends the script's statements in order and reports each to the
 //     task run log, with the rows the warehouse states in a num_affected_rows
 //     column. The `-- txn-mode` directive is parsed and removed from the script
@@ -131,10 +127,6 @@ func (d *Driver) Close(context.Context) error {
 func (d *Driver) Ping(ctx context.Context) error {
 	return d.impl.Ping(ctx)
 }
-
-// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
-// rather than on the *sql.Conn a caller passes, which is unused.
-func (*Driver) OwnsQuerySession() {}
 
 // Execute runs the script's statements in order and returns the rows they
 // affected. Databricks has no transaction control a script can issue, so the

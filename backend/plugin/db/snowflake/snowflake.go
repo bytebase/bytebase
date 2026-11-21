@@ -56,9 +56,8 @@ type snowflakeImpl interface {
 }
 
 var (
-	_ db.Driver         = (*Driver)(nil)
-	_ db.SessionQuerier = (*Driver)(nil)
-	_ snowflakeImpl     = (*snowflakedriver.Driver)(nil)
+	_ db.Driver     = (*Driver)(nil)
+	_ snowflakeImpl = (*snowflakedriver.Driver)(nil)
 )
 
 func init() {
@@ -134,10 +133,6 @@ func (d *Driver) Close(context.Context) error {
 func (d *Driver) Ping(ctx context.Context) error {
 	return d.impl.Ping(ctx)
 }
-
-// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
-// rather than on the *sql.Conn a caller passes, which is unused.
-func (*Driver) OwnsQuerySession() {}
 
 // QueryConn queries a SQL statement on the driver's lazily opened session.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {

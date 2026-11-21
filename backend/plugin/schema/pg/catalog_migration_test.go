@@ -45,17 +45,6 @@ func newCockroachDatabaseMetadata(tables []*metadatapb.TableMetadata, views []*m
 	}, nil, nil, storepb.Engine_COCKROACHDB, true)
 }
 
-func newCockroachDatabaseMetadataWithFunctions(functions []*metadatapb.FunctionMetadata) *model.DatabaseMetadata {
-	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-		Schemas: []*metadatapb.SchemaMetadata{
-			{
-				Name:      "public",
-				Functions: functions,
-			},
-		},
-	}, nil, nil, storepb.Engine_COCKROACHDB, true)
-}
-
 // TestDiffMigrationRouting proves both engines' metadata diffs reach omni's
 // catalog. CockroachDB shares the PostgreSQL catalog; its legacy generator is
 // gone.
@@ -663,48 +652,6 @@ func newCockroachDatabaseMetadataWithCompositeTypes(compositeTypes []*metadatapb
 			},
 		},
 	}, nil, nil, storepb.Engine_COCKROACHDB, true)
-}
-
-// TestCockroachMetadataMigrationIgnoresLegacyFunctionComparer records that the
-// schema.FunctionComparer registry no longer governs CockroachDB: the catalog
-// compares the stored definitions itself, so a comparer that declares two
-// different bodies equal cannot suppress the replace.
-func TestCockroachMetadataMigrationIgnoresLegacyFunctionComparer(t *testing.T) {
-	schema.RegisterFunctionComparer(storepb.Engine_COCKROACHDB, &alwaysEqualFunctionComparer{})
-	t.Cleanup(func() {
-		schema.RegisterFunctionComparer(storepb.Engine_COCKROACHDB, &schema.DefaultFunctionComparer{})
-	})
-	source := newCockroachDatabaseMetadataWithFunctions([]*metadatapb.FunctionMetadata{
-		newPGFunctionMetadata("SELECT 1"),
-	})
-	target := newCockroachDatabaseMetadataWithFunctions([]*metadatapb.FunctionMetadata{
-		newPGFunctionMetadata("SELECT 2"),
-	})
-
-	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, source, target)
-
-	require.NoError(t, err)
-	require.Contains(t, sql, "CREATE OR REPLACE FUNCTION")
-	require.Contains(t, sql, "SELECT 2")
-}
-
-func newPGFunctionMetadata(body string) *metadatapb.FunctionMetadata {
-	return &metadatapb.FunctionMetadata{
-		Name:      "calculate_area",
-		Signature: "calculate_area()",
-		Definition: "CREATE FUNCTION public.calculate_area() RETURNS integer LANGUAGE sql AS $$ " +
-			body + " $$",
-	}
-}
-
-type alwaysEqualFunctionComparer struct{}
-
-func (*alwaysEqualFunctionComparer) Equal(*metadatapb.FunctionMetadata, *metadatapb.FunctionMetadata) bool {
-	return true
-}
-
-func (*alwaysEqualFunctionComparer) CompareDetailed(*metadatapb.FunctionMetadata, *metadatapb.FunctionMetadata) (*schema.FunctionComparisonResult, error) {
-	return nil, nil
 }
 
 func TestOmniDiffMetadataMigrationDiffsAroundAnUnchangedUnloadableView(t *testing.T) {

@@ -60,7 +60,6 @@ package pg
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"fmt"
 	"io"
 	"net"
@@ -86,7 +85,6 @@ var (
 	_ db.Driver               = (*Driver)(nil)
 	_ db.Prober               = (*Driver)(nil)
 	_ db.RowEstimator         = (*Driver)(nil)
-	_ db.SessionQuerier       = (*Driver)(nil)
 	_ db.TaskRunSessionReader = (*Driver)(nil)
 )
 
@@ -353,13 +351,3 @@ func withoutBackupSchema(metadata *metadatapb.DatabaseSchemaMetadata) *metadatap
 	filtered.Schemas = schemas
 	return filtered
 }
-
-// GetDB returns nil: the driver's session is pg/driver's pool, not a *sql.DB this
-// adapter holds.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
-// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
-// rather than on the *sql.Conn a caller passes, which is unused.
-func (*Driver) OwnsQuerySession() {}

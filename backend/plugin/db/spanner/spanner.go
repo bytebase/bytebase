@@ -233,11 +233,6 @@ func (d *Driver) Ping(ctx context.Context) error {
 	return d.impl.Ping(ctx)
 }
 
-// GetDB gets the database.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
 // Execute executes a SQL statement. spanner/driver splits the script by the
 // database's dialect, applies a script that holds any DDL statement through the
 // admin API whole, and runs the rest as DML.

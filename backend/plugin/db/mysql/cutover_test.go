@@ -178,19 +178,6 @@ func TestAdapterDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
 	require.Len(t, results[0].Rows, 1)
 }
 
-// TestAdapterGetDBReturnsADirectConnection keeps gh-ost working: it runs its
-// binlog probes through GetDB, and the contract's pool is not reachable.
-func TestAdapterGetDBReturnsADirectConnection(t *testing.T) {
-	ctx := context.Background()
-	container, database := newTestDatabase(t)
-	opened := openTestDatabaseDriver(t, container, database)
-	require.NotNil(t, opened.GetDB())
-	require.NoError(t, opened.GetDB().PingContext(ctx))
-	var one int
-	require.NoError(t, opened.GetDB().QueryRowContext(ctx, "SELECT 1").Scan(&one))
-	require.Equal(t, 1, one)
-}
-
 // TestAdapterExecuteAppliesTxnIsolation proves the directive still reaches the
 // server: the script opens with SET TRANSACTION ISOLATION LEVEL before START
 // TRANSACTION, as the old driver did through go-sql-driver's BeginTx.

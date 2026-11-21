@@ -2,7 +2,6 @@ package taskrun
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -307,23 +306,17 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 	}, nil
 }
 
-// requireGhostConnection returns the connection gh-ost queries through, and
-// refuses engines gh-ost cannot drive and drivers that expose no pool.
-func requireGhostConnection(driver db.Driver, instance *store.InstanceMessage) (*sql.DB, error) {
+// validateGhostEngine refuses engines gh-ost cannot drive.
+func validateGhostEngine(instance *store.InstanceMessage) error {
 	engine := instance.Metadata.GetEngine()
 	if !ghost.SupportsEngine(engine) {
-		return nil, errors.Errorf("gh-ost migration is not supported for engine %v; gh-ost requires MySQL or MariaDB", engine.String())
+		return errors.Errorf("gh-ost migration is not supported for engine %v; gh-ost requires MySQL or MariaDB", engine.String())
 	}
-	sqlDB, err := ghost.RequireDirectConnection(driver)
-	if err != nil {
-		return nil, errors.Wrapf(err, "gh-ost migration is not supported for engine %v", engine.String())
-	}
-	return sqlDB, nil
+	return nil
 }
 
 func executeGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, driver db.Driver, opts *db.ExecuteOptions) error {
-	sqlDB, err := requireGhostConnection(driver, instance)
-	if err != nil {
+	if err := validateGhostEngine(instance); err != nil {
 		return err
 	}
 
@@ -386,7 +379,7 @@ func executeGhostMigration(ctx context.Context, driverCtx context.Context, task 
 			migrationContext.GetChangelogTableName(),
 		)
 
-		if _, err := sqlDB.ExecContext(cleanupCtx, sql); err != nil {
+		if _, err := driver.Execute(cleanupCtx, sql, db.ExecuteOptions{}); err != nil {
 			slog.WarnContext(ctx, "failed to cleanup gh-ost temp tables", log.BBError(err))
 		}
 	}()
@@ -432,8 +425,8 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 	defer driver.Close(ctx)
 
 	// Refuse before the pending changelog is created, so a ghost directive on an
-	// engine without a database/sql pool leaves no partial run behind.
-	if _, err := requireGhostConnection(driver, instance); err != nil {
+	// unsupported engine leaves no partial run behind.
+	if err := validateGhostEngine(instance); err != nil {
 		return nil, err
 	}
 

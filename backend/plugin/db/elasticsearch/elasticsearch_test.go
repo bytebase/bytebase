@@ -562,10 +562,6 @@ func TestDumpWritesNothing(t *testing.T) {
 	require.Empty(t, server.requests)
 }
 
-func TestGetDB(t *testing.T) {
-	require.Nil(t, (&Driver{}).GetDB())
-}
-
 func TestToRowValue(t *testing.T) {
 	require.Equal(t, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "alpha"}},
 		toRowValue(omnidriver.Value{Kind: omnidriver.String, String: "alpha"}))

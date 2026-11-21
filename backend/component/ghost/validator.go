@@ -2,41 +2,28 @@ package ghost
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 type binlogValidationFailureReason string
 
 const (
-	noDirectConnection          binlogValidationFailureReason = "no_direct_connection"
 	binlogStatusInaccessible    binlogValidationFailureReason = "binlog_status_inaccessible"
 	binlogDisabled              binlogValidationFailureReason = "binlog_disabled"
 	missingReplicationPrivilege binlogValidationFailureReason = "missing_replication_privilege"
 	unsupportedBinlogFormat     binlogValidationFailureReason = "unsupported_binlog_format"
 	validationQueryFailed       binlogValidationFailureReason = "validation_query_failed"
 )
-
-// errNoDirectConnection explains why a driver cannot run gh-ost's own queries.
-var errNoDirectConnection = errors.New("gh-ost needs a direct database/sql connection, but this driver does not expose one")
-
-// RequireDirectConnection returns the driver's database/sql pool, or an error
-// when db.SQLDB finds none. gh-ost queries the database itself, so a driver
-// whose session is the engine package's cannot run a gh-ost migration.
-func RequireDirectConnection(driver db.Driver) (*sql.DB, error) {
-	sqlDB := db.SQLDB(driver)
-	if sqlDB == nil {
-		return nil, errNoDirectConnection
-	}
-	return sqlDB, nil
-}
 
 // SupportsEngine reports whether gh-ost can drive the engine. gh-ost needs MySQL
 // replication, which only MySQL and MariaDB provide; the frontend offers the
@@ -71,43 +58,42 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 		CurrentGrants:     []string{},
 	}
 
-	sqlDB, err := RequireDirectConnection(driver)
+	if driver == nil {
+		result.Valid = false
+		result.FailureReason = validationQueryFailed
+		result.Error = errors.New("database driver is nil")
+		return result
+	}
+
+	query := func(statement string) (*v1pb.QueryResult, error) {
+		results, err := driver.QueryConn(ctx, nil, statement, db.QueryContext{
+			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if len(results) == 0 {
+			return nil, errors.New("query returned no result")
+		}
+		if results[0].Error != "" {
+			return nil, errors.New(results[0].Error)
+		}
+		return results[0], nil
+	}
+
+	// Test 1: Check if binary logging is enabled before SHOW BINARY LOGS, which errors when log_bin is OFF.
+	logBinRes, err := query("SELECT @@log_bin")
 	if err != nil {
-		result.Valid = false
-		result.FailureReason = noDirectConnection
-		result.Error = err
-		slog.Error("binlog access validation failed: driver exposes no database/sql connection",
-			slog.String("host", adminDataSource.GetHost()),
-			slog.String("user", adminDataSource.GetUsername()))
-		return result
-	}
-
-	// Test 1: Check if we can access binary log status
-	// Try both old and new MySQL commands for compatibility
-	canAccessBinlog := false
-	if _, err := sqlDB.ExecContext(ctx, "SHOW MASTER STATUS"); err == nil {
-		canAccessBinlog = true
-	} else if _, err := sqlDB.ExecContext(ctx, "SHOW BINARY LOG STATUS"); err == nil {
-		canAccessBinlog = true
-	}
-
-	if !canAccessBinlog {
-		result.Valid = false
-		result.FailureReason = binlogStatusInaccessible
-		result.Error = errors.New("cannot access binary logs - ensure user has REPLICATION CLIENT privilege")
-		slog.Error("binlog access validation failed: cannot access binary logs",
-			slog.String("host", adminDataSource.GetHost()),
-			slog.String("user", adminDataSource.GetUsername()))
-		return result
-	}
-
-	// Test 2: Check if binary logging is enabled
-	var logBin string
-	row := sqlDB.QueryRowContext(ctx, "SELECT @@log_bin")
-	if err := row.Scan(&logBin); err != nil {
 		result.Valid = false
 		result.FailureReason = validationQueryFailed
 		result.Error = errors.Wrap(err, "failed to check if binary logging is enabled")
+		return result
+	}
+	logBin, ok := singleCellString(logBinRes)
+	if !ok {
+		result.Valid = false
+		result.FailureReason = validationQueryFailed
+		result.Error = errors.New("failed to check if binary logging is enabled: empty result")
 		return result
 	}
 
@@ -119,23 +105,33 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 		return result
 	}
 
+	// Test 2: Check if we can access binary logs.
+	// SHOW BINARY LOGS parses under omni's MySQL 8.0 grammar and requires REPLICATION CLIENT on MySQL 8.0, 8.4+, and MariaDB.
+	if _, err := query("SHOW BINARY LOGS"); err != nil {
+		result.Valid = false
+		result.FailureReason = binlogStatusInaccessible
+		result.Error = errors.New("cannot access binary logs - ensure user has REPLICATION CLIENT privilege")
+		slog.Error("binlog access validation failed: cannot access binary logs",
+			slog.String("host", adminDataSource.GetHost()),
+			slog.String("user", adminDataSource.GetUsername()))
+		return result
+	}
+
 	// Test 3: Check user privileges
-	rows, err := sqlDB.QueryContext(ctx, "SHOW GRANTS")
+	grantsRes, err := query("SHOW GRANTS")
 	if err != nil {
 		result.Valid = false
 		result.FailureReason = validationQueryFailed
 		result.Error = errors.Wrap(err, "failed to check user grants")
 		return result
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var grant string
-		if err := rows.Scan(&grant); err != nil {
-			slog.Warn("failed to scan grant",
-				slog.String("host", adminDataSource.GetHost()),
-				slog.String("user", adminDataSource.GetUsername()),
-				slog.String("error", err.Error()))
+	for _, row := range grantsRes.GetRows() {
+		if len(row.GetValues()) == 0 {
+			continue
+		}
+		grant, ok := rowValueString(row.Values[0])
+		if !ok {
 			continue
 		}
 		result.CurrentGrants = append(result.CurrentGrants, grant)
@@ -145,13 +141,6 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 			strings.Contains(upperGrant, "ALL PRIVILEGES") {
 			result.HasPrivilege = true
 		}
-	}
-
-	if err := rows.Err(); err != nil {
-		result.Valid = false
-		result.FailureReason = validationQueryFailed
-		result.Error = errors.Wrap(err, "error reading grants")
-		return result
 	}
 
 	if !result.HasPrivilege {
@@ -167,13 +156,21 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 	}
 
 	// Test 4: Check binlog format (must be ROW or MIXED, not STATEMENT)
-	row = sqlDB.QueryRowContext(ctx, "SELECT @@binlog_format")
-	if err := row.Scan(&result.BinlogFormat); err != nil {
+	formatRes, err := query("SELECT @@binlog_format")
+	if err != nil {
 		result.Valid = false
 		result.FailureReason = validationQueryFailed
 		result.Error = errors.Wrap(err, "failed to check binlog format")
 		return result
 	}
+	binlogFormat, ok := singleCellString(formatRes)
+	if !ok {
+		result.Valid = false
+		result.FailureReason = validationQueryFailed
+		result.Error = errors.New("failed to check binlog format: empty result")
+		return result
+	}
+	result.BinlogFormat = binlogFormat
 
 	if strings.ToUpper(result.BinlogFormat) == "STATEMENT" {
 		result.Valid = false
@@ -191,15 +188,41 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 	return result
 }
 
+func singleCellString(res *v1pb.QueryResult) (string, bool) {
+	if res == nil || len(res.Rows) == 0 || len(res.Rows[0].GetValues()) == 0 {
+		return "", false
+	}
+	return rowValueString(res.Rows[0].Values[0])
+}
+
+func rowValueString(v *v1pb.RowValue) (string, bool) {
+	if v == nil {
+		return "", false
+	}
+	switch kind := v.Kind.(type) {
+	case *v1pb.RowValue_StringValue:
+		return kind.StringValue, true
+	case *v1pb.RowValue_Int64Value:
+		return strconv.FormatInt(kind.Int64Value, 10), true
+	case *v1pb.RowValue_Uint64Value:
+		return strconv.FormatUint(kind.Uint64Value, 10), true
+	case *v1pb.RowValue_Int32Value:
+		return strconv.FormatInt(int64(kind.Int32Value), 10), true
+	case *v1pb.RowValue_Uint32Value:
+		return strconv.FormatUint(uint64(kind.Uint32Value), 10), true
+	case *v1pb.RowValue_BoolValue:
+		return strconv.FormatBool(kind.BoolValue), true
+	case *v1pb.RowValue_BytesValue:
+		return string(kind.BytesValue), true
+	default:
+		return "", false
+	}
+}
+
 // GetUserFriendlyError returns a user-friendly error message based on validation results
 func (r *BinlogValidationResult) GetUserFriendlyError() (title, content string) {
 	if r.Valid {
 		return "", ""
-	}
-
-	if r.FailureReason == noDirectConnection {
-		return "gh-ost is not supported on this instance",
-			"gh-ost needs a direct database/sql connection, but the database driver for this instance does not expose one."
 	}
 
 	title = "gh-ost migration prerequisites not met"

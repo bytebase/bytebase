@@ -27,10 +27,9 @@
 //
 // Constraints of the engine and the contract, here rather than at each call:
 //
-//   - db.SQLDB returns nil for this driver, which holds no *sql.DB. The editor's
-//     *sql.Conn is not the contract's session, so the adapter holds one session
-//     from the first QueryConn call until Close, under a mutex: a request's
-//     statements share a session.
+//   - The editor's *sql.Conn is not the contract's session, so the adapter
+//     holds one session from the first QueryConn call until Close, under a
+//     mutex: a request's statements share a session.
 //   - Config.ReadOnly and Config.TokenProvider are not mapped: OceanBase's MySQL
 //     handshake has no read-only session parameter, and its login is a password.
 //   - ExecuteOptions.CreateDatabase and MaximumRetries are not mapped, because the
@@ -80,10 +79,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-var (
-	_ db.Driver         = (*Driver)(nil)
-	_ db.SessionQuerier = (*Driver)(nil)
-)
+var _ db.Driver = (*Driver)(nil)
 
 func init() {
 	db.Register(storepb.Engine_OCEANBASE, newDriver)
@@ -376,17 +372,6 @@ func (d *Driver) Close(context.Context) error {
 func (d *Driver) Ping(ctx context.Context) error {
 	return d.impl.Ping(ctx)
 }
-
-// GetDB returns nil: OceanBase is driven through omni's session, not a
-// *sql.DB. The editor's *sql.Conn is unused, and a request's statements share
-// one session.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
-// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
-// rather than on the *sql.Conn a caller passes, which is unused.
-func (*Driver) OwnsQuerySession() {}
 
 // SyncInstance reads the server version, lower_case_table_names, accounts with
 // their global grants, and the non-system databases.

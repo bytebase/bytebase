@@ -2,7 +2,6 @@ package redshift
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -298,25 +297,13 @@ func (e *parityEnv) openParityDriver(ctx context.Context, t *testing.T, datashar
 	return opened
 }
 
-// parityDriver holds the connection the pre-cutover QueryConn needed from
-// GetDB. The adapter ignores it; keeping it here lets one corpus drive both
-// paths without knowing which one it is running.
 type parityDriver struct {
 	driver db.Driver
-	conn   *sql.Conn
 }
 
 func (p *parityDriver) queryConn(ctx context.Context, t *testing.T, script string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	t.Helper()
-	if p.conn == nil && !db.OwnsQuerySession(p.driver) {
-		if sqlDB := db.SQLDB(p.driver); sqlDB != nil {
-			conn, err := sqlDB.Conn(ctx)
-			require.NoError(t, err)
-			p.conn = conn
-			t.Cleanup(func() { _ = conn.Close() })
-		}
-	}
-	return p.driver.QueryConn(ctx, p.conn, script, queryContext)
+	return p.driver.QueryConn(ctx, nil, script, queryContext)
 }
 
 // assertKnownQueryDifference pins what the new path does for a case whose result
