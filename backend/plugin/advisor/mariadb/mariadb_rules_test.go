@@ -5,9 +5,12 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"io"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
+	mariadbast "github.com/bytebase/omni/mariadb/ast"
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
@@ -18,7 +21,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
 	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -164,11 +166,105 @@ func (e *testRowEstimator) CountAffectedRows(ctx context.Context, statement stri
 		return 0, errors.New("expected exactly one statement")
 	}
 	query := mariadbparser.AffectedRowsQuery(list.Items[0], statement)
-	plan, err := mysqldriver.ExplainJSON(ctx, e.db, query)
+	plan, err := explainJSON(ctx, e.db, query)
 	if err != nil {
 		return 0, err
 	}
-	return mysqldriver.EstimateAffectedRowsMariaDB(ctx, e.db, list.Items[0], query, plan)
+	return estimateAffectedRows(ctx, e.db, list.Items[0], query, plan)
+}
+
+func estimateAffectedRows(ctx context.Context, db *sql.DB, stmt mariadbast.Node, query, plan string) (int64, error) {
+	count, err := mariadbparser.EstimateAffectedRowsFromExplainJSON(stmt, plan)
+	if err == nil {
+		return count, nil
+	}
+	rows, tables, ok := explainTabularEstimate(ctx, db, query)
+	if !ok {
+		return 0, err
+	}
+	return mariadbparser.CapAffectedRowsByLimit(stmt, rows*float64(mariadbparser.DMLTargetCount(stmt, tables))), nil
+}
+
+func explainTabularEstimate(ctx context.Context, db *sql.DB, query string) (float64, int, bool) {
+	rows, err := db.QueryContext(ctx, "EXPLAIN FORMAT=TRADITIONAL "+query)
+	if err != nil {
+		return 0, 0, false
+	}
+	defer rows.Close()
+	columns, err := rows.Columns()
+	if err != nil {
+		return 0, 0, false
+	}
+	column := func(name string) int {
+		return slices.IndexFunc(columns, func(column string) bool { return strings.EqualFold(column, name) })
+	}
+	idIndex, rowsIndex, filteredIndex := column("id"), column("rows"), column("filtered")
+	if idIndex < 0 || rowsIndex < 0 {
+		return 0, 0, false
+	}
+	values := make([]sql.NullString, len(columns))
+	dest := make([]any, len(columns))
+	for i := range values {
+		dest[i] = &values[i]
+	}
+	var blockID string
+	estimate, tables := 1.0, 0
+	for rows.Next() {
+		if err := rows.Scan(dest...); err != nil {
+			return 0, 0, false
+		}
+		tableRows, err := strconv.ParseFloat(values[rowsIndex].String, 64)
+		if !values[rowsIndex].Valid || err != nil || (tables > 0 && values[idIndex].String != blockID) {
+			continue
+		}
+		blockID = values[idIndex].String
+		tables++
+		estimate *= tableRows
+		if filteredIndex >= 0 && values[filteredIndex].Valid {
+			if filtered, err := strconv.ParseFloat(values[filteredIndex].String, 64); err == nil {
+				estimate *= filtered / 100
+			}
+		}
+	}
+	return estimate, tables, tables > 0 && rows.Err() == nil
+}
+
+func explainJSON(ctx context.Context, db *sql.DB, statement string) (string, error) {
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+
+	if _, err := conn.ExecContext(ctx, "SET SESSION explain_json_format_version = 1"); err != nil {
+		var mysqlErr *mysql.MySQLError
+		if !errors.As(err, &mysqlErr) || mysqlErr.Number != 1193 {
+			return "", errors.Wrap(err, "failed to set explain_json_format_version")
+		}
+	} else {
+		defer func() {
+			_, _ = conn.ExecContext(ctx, "SET SESSION explain_json_format_version = DEFAULT")
+		}()
+	}
+
+	rows, err := conn.QueryContext(ctx, "EXPLAIN FORMAT=JSON "+statement)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	var plan strings.Builder
+	for rows.Next() {
+		var line sql.NullString
+		if err := rows.Scan(&line); err != nil {
+			return "", err
+		}
+		plan.WriteString(line.String)
+	}
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+	return plan.String(), nil
 }
 
 func checkTestRowLimitRule(t *testing.T, db *sql.DB, engine storepb.Engine, ruleType storepb.SQLReviewRule_Type, level storepb.SQLReviewRule_Level, statement string) []*storepb.Advice {

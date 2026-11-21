@@ -7,6 +7,7 @@ import (
 
 	omnidriver "github.com/bytebase/omni/driver"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -89,33 +90,69 @@ func TestCockroachConfigRefusesHalfAClientCertificate(t *testing.T) {
 	}
 }
 
-func TestGetRoutingIDFromCockroachCloudURL(t *testing.T) {
-	for _, tc := range []struct {
-		host string
-		want string
-	}{
-		{host: "routing-id.cockroachlabs.cloud", want: "routing-id"},
-		{host: "bytebase-cluster-7749.6xw.aws-ap-southeast-1.cockroachlabs.cloud", want: "bytebase-cluster-7749"},
-		{host: "subdomain.routing-id.cockroachlabs.cloud", want: "subdomain"},
-		{host: "cockroachlabs.cloud", want: ""},
-		{host: "example.com", want: ""},
-	} {
-		require.Equal(t, tc.want, getRoutingIDFromCockroachCloudURL(tc.host), "host: %s", tc.host)
-	}
-}
+func TestTaskRunSessionFromResult(t *testing.T) {
+	t.Parallel()
+	sessionStart := time.Date(2026, 11, 20, 2, 0, 0, 0, time.UTC)
+	queryStart := sessionStart.Add(5 * time.Minute)
+	sessionID := "18e9a1f97a49d2ca0000000000000001"
 
-// GetDB hands back a pool for db.SQLDB callers, and OwnsQuerySession keeps the
-// editor from opening a second connection no statement uses.
-func TestGetDBReturnsPool(t *testing.T) {
-	driver, err := (&Driver{}).Open(context.Background(), storepb.Engine_COCKROACHDB, db.ConnectionConfig{
-		DataSource: &storepb.DataSource{Username: "dba", Host: "127.0.0.1", Port: "26257", Database: "app"},
-	})
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = driver.Close(context.Background()) })
+	got := taskRunSessionFromResult(&omnidriver.Result{
+		Rows: [][]omnidriver.Value{
+			{
+				{Kind: omnidriver.String, String: sessionID},
+				{Kind: omnidriver.String, String: "SELECT pg_sleep(20)"},
+				{Kind: omnidriver.String, String: "executing"},
+				{Kind: omnidriver.String, String: "smoke"},
+				{Kind: omnidriver.String, String: "root"},
+				{Kind: omnidriver.String, String: "bytebase-taskrun-7"},
+				{Kind: omnidriver.String, String: "[::1]:44768"},
+				{Kind: omnidriver.TimestampTZ, Time: sessionStart},
+				{Kind: omnidriver.TimestampTZ, Time: queryStart},
+			},
+		},
+	}, "bytebase-taskrun-7")
 
-	require.NotNil(t, db.SQLDB(driver))
-	require.Same(t, db.SQLDB(driver), db.SQLDB(driver))
-	require.True(t, db.OwnsQuerySession(driver))
+	postgres := got.GetPostgres()
+	require.NotNil(t, postgres)
+	require.NotNil(t, postgres.Session)
+	require.Equal(t, sessionID, postgres.Session.Pid)
+	require.Equal(t, "bytebase-taskrun-7", postgres.Session.ApplicationName)
+	require.Equal(t, "SELECT pg_sleep(20)", postgres.Session.Query)
+	require.Equal(t, "executing", postgres.Session.GetState())
+	require.Equal(t, "smoke", postgres.Session.GetDatname())
+	require.Equal(t, "root", postgres.Session.GetUsename())
+	require.Equal(t, "[::1]:44768", postgres.Session.GetClientAddr())
+	require.Nil(t, postgres.Session.WaitEventType)
+	require.Nil(t, postgres.Session.WaitEvent)
+	require.Nil(t, postgres.Session.ClientPort)
+	require.Empty(t, postgres.Session.BlockedByPids)
+	require.Equal(t, timestamppb.New(sessionStart), postgres.Session.BackendStart)
+	require.Nil(t, postgres.Session.XactStart)
+	require.Equal(t, timestamppb.New(queryStart), postgres.Session.QueryStart)
+
+	missingSessionStartID := "18e9a1f97a49d2ca0000000000000002"
+	gotWithoutSessionStart := taskRunSessionFromResult(&omnidriver.Result{
+		Rows: [][]omnidriver.Value{
+			{
+				{Kind: omnidriver.String, String: missingSessionStartID},
+				{Kind: omnidriver.String, String: "SELECT pg_sleep(20)"},
+				{Kind: omnidriver.String, String: "executing"},
+				{Kind: omnidriver.String, String: "smoke"},
+				{Kind: omnidriver.String, String: "root"},
+				{Kind: omnidriver.String, String: "bytebase-taskrun-8"},
+				{Kind: omnidriver.Null},
+				{Kind: omnidriver.Null},
+				{Kind: omnidriver.TimestampTZ, Time: queryStart},
+			},
+		},
+	}, "bytebase-taskrun-8")
+
+	withoutSessionStart := gotWithoutSessionStart.GetPostgres().GetSession()
+	require.NotNil(t, withoutSessionStart)
+	require.Equal(t, missingSessionStartID, withoutSessionStart.Pid)
+	require.Nil(t, withoutSessionStart.ClientAddr)
+	require.Nil(t, withoutSessionStart.BackendStart)
+	require.Equal(t, timestamppb.New(queryStart), withoutSessionStart.QueryStart)
 }
 
 func TestExplainFormat(t *testing.T) {

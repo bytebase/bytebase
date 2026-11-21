@@ -143,11 +143,6 @@ func (d *Driver) Ping(ctx context.Context) error {
 	return d.inner.Ping(ctx)
 }
 
-// GetDB returns nil: Cosmos DB has no database/sql handle.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
 // Execute is unimplemented: the query language has no statement that changes
 // data, and the omni driver has no Executor for this engine.
 func (*Driver) Execute(context.Context, string, db.ExecuteOptions) (int64, error) {

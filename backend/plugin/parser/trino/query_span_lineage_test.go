@@ -50,8 +50,7 @@ func lineageAuditSpan(t *testing.T, sql string) *base.QuerySpan {
 		ListDatabaseNamesFunc:   lister,
 		Engine:                  storepb.Engine_TRINO,
 	}
-	extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
-	span, err := extractor.getQuerySpan(context.Background(), sql)
+	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: sql}, "catalog1", "public", false)
 	require.NoError(t, err)
 	return span
 }

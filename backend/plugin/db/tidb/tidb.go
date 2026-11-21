@@ -62,8 +62,7 @@ import (
 )
 
 var (
-	_ db.Driver         = (*Driver)(nil)
-	_ db.SessionQuerier = (*Driver)(nil)
+	_ db.Driver = (*Driver)(nil)
 
 	// applicationName renders the /*app=bytebase*/ comment the old driver
 	// prepended to a query and to a change script's commands.
@@ -178,17 +177,6 @@ func (d *Driver) Close(context.Context) error {
 func (d *Driver) Ping(ctx context.Context) error {
 	return d.impl.Ping(ctx)
 }
-
-// GetDB returns no *sql.DB: the contract's session is not one. Every caller
-// already tolerates nil, and gh-ost refuses an engine that is not MySQL or
-// MariaDB before it asks for a pool.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
-// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
-// rather than on the *sql.Conn a caller passes, which is unused.
-func (*Driver) OwnsQuerySession() {}
 
 // Execute runs the script's statements under the transaction directive it
 // carries, reporting each step to the task run log.

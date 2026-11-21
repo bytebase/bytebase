@@ -10,11 +10,9 @@ import (
 	"github.com/pkg/errors"
 
 	omniast "github.com/bytebase/omni/tidb/ast"
-	"github.com/bytebase/omni/v1review"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // Stmt bundles an omni/tidb AST node with the source text and base line of
@@ -115,7 +113,7 @@ func getTiDBNodes(checkCtx advisor.Context) ([]Stmt, error) {
 		return nil, errors.New("ParsedStatements is not provided in context")
 	}
 
-	var result []Stmt
+	result := make([]Stmt, 0, len(checkCtx.ParsedStatements))
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.Empty || stmt.AST == nil {
 			continue
@@ -145,13 +143,4 @@ func stmtNodes(stmts []Stmt) []omniast.Node {
 		nodes[i] = stmt.Node
 	}
 	return nodes
-}
-
-// v1reviewSchema returns the snapshot md holds for an omni rule, an empty
-// one when md is nil.
-func v1reviewSchema(md *model.DatabaseMetadata) v1review.Schema {
-	if md == nil {
-		return v1review.Schema{}
-	}
-	return v1review.Schema{Metadata: md.GetProto(), ObjectCaseSensitive: md.GetIsObjectCaseSensitive()}
 }

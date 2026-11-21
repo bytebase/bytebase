@@ -294,11 +294,6 @@ func (d *Driver) connectionError(err error) error {
 	}
 }
 
-// GetDB returns nil: Elasticsearch has no database/sql handle.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
 // Execute runs the script's requests in order, reporting each to the task run's
 // log, and returns 0 affected rows.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {

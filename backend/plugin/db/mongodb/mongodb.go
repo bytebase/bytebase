@@ -187,11 +187,6 @@ func (d *Driver) Ping(ctx context.Context) error {
 	return d.inner.Ping(ctx)
 }
 
-// GetDB returns no *sql.DB: the contract's session is not one.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
 // Execute runs the script's statements in order, reporting each step to the
 // task run log. Any transaction option is irrelevant: MongoDB runs one
 // statement at a time here.

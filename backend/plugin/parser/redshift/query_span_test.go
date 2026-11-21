@@ -15,7 +15,7 @@ import (
 )
 
 func TestRedshiftQuerySpanSupportedShapes(t *testing.T) {
-	q := newQuerySpanExtractor("db", []string{"analytics", "public"}, redshiftQuerySpanContext(t))
+	gCtx := redshiftQuerySpanContext(t)
 
 	tests := []struct {
 		name             string
@@ -81,7 +81,7 @@ func TestRedshiftQuerySpanSupportedShapes(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := q.getQuerySpan(context.Background(), test.statement)
+			span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: test.statement}, "db", "", false)
 			require.NoError(t, err)
 			require.NotNil(t, span)
 			require.Equal(t, base.Select, span.Type)
@@ -99,25 +99,15 @@ func TestRedshiftQuerySpanSupportedShapes(t *testing.T) {
 }
 
 func TestRedshiftQuerySpanEntrypointDoesNotDependOnANTLR(t *testing.T) {
-	for _, path := range []string{"query_span.go", "query_span_extractor.go"} {
-		content, err := os.ReadFile(path)
-		require.NoError(t, err)
-		source := string(content)
-		require.NotContains(t, source, "github.com/antlr4-go/antlr/v4", path)
-		require.NotContains(t, source, "github.com/bytebase/parser/redshift", path)
-	}
-}
-
-// Query span must resolve relations lazily through UseMetadata rather than
-// installing the whole snapshot up front.
-func TestRedshiftQuerySpanUsesUseMetadata(t *testing.T) {
-	content, err := os.ReadFile("query_span_extractor.go")
+	content, err := os.ReadFile("query_span.go")
 	require.NoError(t, err)
-	require.Contains(t, string(content), "UseMetadata")
+	source := string(content)
+	require.NotContains(t, source, "github.com/antlr4-go/antlr/v4")
+	require.NotContains(t, source, "github.com/bytebase/parser/redshift")
 }
 
 func TestRedshiftQuerySpanNonSelectTypes(t *testing.T) {
-	q := newQuerySpanExtractor("db", []string{"public"}, redshiftQuerySpanContext(t))
+	gCtx := redshiftQuerySpanContext(t)
 
 	tests := []struct {
 		name      string
@@ -203,7 +193,7 @@ func TestRedshiftQuerySpanNonSelectTypes(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := q.getQuerySpan(context.Background(), test.statement)
+			span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: test.statement}, "db", "", false)
 			require.NoError(t, err)
 			require.NotNil(t, span)
 			require.Equal(t, test.want, span.Type)
@@ -217,7 +207,7 @@ func TestRedshiftQuerySpanNonSelectTypes(t *testing.T) {
 	}
 
 	t.Run("unload is dml export with inner sources", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "UNLOAD ('SELECT id FROM orders WHERE status = ''open''') TO 's3://bucket/out' IAM_ROLE DEFAULT;")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "UNLOAD ('SELECT id FROM orders WHERE status = ''open''') TO 's3://bucket/out' IAM_ROLE DEFAULT;"}, "db", "public", false)
 		require.NoError(t, err)
 		require.NotNil(t, span)
 		require.Equal(t, base.DML, span.Type)
@@ -249,7 +239,14 @@ func TestRedshiftQuerySpanUnsyncedDatabase(t *testing.T) {
 }
 
 func TestRedshiftQuerySpanDefaultSearchPath(t *testing.T) {
-	span, err := newQuerySpanExtractor("db", nil, redshiftQuerySpanContext(t)).getQuerySpan(context.Background(), "SELECT id FROM orders")
+	meta := redshiftQuerySpanMetadata()
+	meta.SearchPath = ""
+	getter, lister := redshiftMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{meta})
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+	}
+	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id FROM orders"}, "db", "", false)
 	require.NoError(t, err)
 	require.Equal(t, []base.QuerySpanResult{
 		{Name: "id", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
@@ -258,10 +255,10 @@ func TestRedshiftQuerySpanDefaultSearchPath(t *testing.T) {
 }
 
 func TestRedshiftQuerySpanRootAndQueryTypeCoverage(t *testing.T) {
-	q := newQuerySpanExtractor("db", []string{"public"}, redshiftQuerySpanContext(t))
+	gCtx := redshiftQuerySpanContext(t)
 
 	t.Run("empty statement returns empty select span", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: ""}, "db", "public", false)
 		require.NoError(t, err)
 		require.Equal(t, base.Select, span.Type)
 		require.Empty(t, span.Results)
@@ -269,7 +266,7 @@ func TestRedshiftQuerySpanRootAndQueryTypeCoverage(t *testing.T) {
 	})
 
 	t.Run("multiple statements are rejected", func(t *testing.T) {
-		_, err := q.getQuerySpan(context.Background(), "SELECT 1; SELECT 2;")
+		_, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT 1; SELECT 2;"}, "db", "public", false)
 		require.ErrorContains(t, err, "expected exactly 1 statement")
 	})
 
@@ -292,7 +289,7 @@ func TestRedshiftQuerySpanRootAndQueryTypeCoverage(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := q.getQuerySpan(context.Background(), test.statement)
+			span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: test.statement}, "db", "", false)
 			require.NoError(t, err)
 			require.Equal(t, test.want, span.Type)
 			require.Empty(t, span.Results)
@@ -301,7 +298,7 @@ func TestRedshiftQuerySpanRootAndQueryTypeCoverage(t *testing.T) {
 }
 
 func TestRedshiftQuerySpanExpressionCoverage(t *testing.T) {
-	q := newQuerySpanExtractor("db", []string{"public"}, redshiftQuerySpanContext(t))
+	gCtx := redshiftQuerySpanContext(t)
 
 	tests := []struct {
 		name      string
@@ -374,7 +371,7 @@ func TestRedshiftQuerySpanExpressionCoverage(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := q.getQuerySpan(context.Background(), test.statement)
+			span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: test.statement}, "db", "", false)
 			require.NoError(t, err)
 			require.Equal(t, test.want, span.Results)
 		})
@@ -382,7 +379,7 @@ func TestRedshiftQuerySpanExpressionCoverage(t *testing.T) {
 }
 
 func TestRedshiftQuerySpanJoinAndScopeCoverage(t *testing.T) {
-	q := newQuerySpanExtractor("db", []string{"analytics", "public"}, redshiftQuerySpanContext(t))
+	gCtx := redshiftQuerySpanContext(t)
 
 	tests := []struct {
 		name          string
@@ -448,7 +445,7 @@ func TestRedshiftQuerySpanJoinAndScopeCoverage(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := q.getQuerySpan(context.Background(), test.statement)
+			span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: test.statement}, "db", "", false)
 			require.NoError(t, err)
 			require.Equal(t, test.wantResults, span.Results)
 			require.Equal(t, redshiftSourceColumnSetFromList(test.wantSource), span.SourceColumns)
@@ -458,7 +455,7 @@ func TestRedshiftQuerySpanJoinAndScopeCoverage(t *testing.T) {
 }
 
 func TestRedshiftQuerySpanSubqueryAndCTECoverage(t *testing.T) {
-	q := newQuerySpanExtractor("db", []string{"public"}, redshiftQuerySpanContext(t))
+	gCtx := redshiftQuerySpanContext(t)
 
 	tests := []struct {
 		name       string
@@ -520,7 +517,7 @@ func TestRedshiftQuerySpanSubqueryAndCTECoverage(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := q.getQuerySpan(context.Background(), test.statement)
+			span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: test.statement}, "db", "", false)
 			require.NoError(t, err)
 			require.Equal(t, test.want, span.Results)
 			require.Equal(t, redshiftSourceColumnSetFromList(test.wantSource), span.SourceColumns)
@@ -529,10 +526,10 @@ func TestRedshiftQuerySpanSubqueryAndCTECoverage(t *testing.T) {
 }
 
 func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
-	q := newQuerySpanExtractor("db", []string{"public"}, redshiftQuerySpanContext(t))
+	gCtx := redshiftQuerySpanContext(t)
 
 	t.Run("materialized view definition lineage", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "SELECT customer_id, total_amount FROM order_totals_mv")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT customer_id, total_amount FROM order_totals_mv"}, "db", "public", false)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "customer_id", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "customer_id"}}), IsPlainField: true},
@@ -542,7 +539,7 @@ func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 	})
 
 	t.Run("view definition waits for later dependency", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "SELECT id FROM a_view")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id FROM a_view"}, "db", "public", false)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "id", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
@@ -586,11 +583,10 @@ func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 			},
 		}
 		getter, lister := redshiftMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
-		localQ := newQuerySpanExtractor("db", []string{"analytics", "public"}, base.GetQuerySpanContext{
+		span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{
 			GetDatabaseMetadataFunc: getter,
 			ListDatabaseNamesFunc:   lister,
-		})
-		span, err := localQ.getQuerySpan(context.Background(), "SELECT id FROM unqualified_orders_view")
+		}, base.Statement{Text: "SELECT id FROM unqualified_orders_view"}, "db", "", false)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "id", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
@@ -599,7 +595,7 @@ func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 	})
 
 	t.Run("full create view definition applies column aliases", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "SELECT order_id FROM aliased_orders")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT order_id FROM aliased_orders"}, "db", "public", false)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "order_id", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
@@ -608,7 +604,7 @@ func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 	})
 
 	t.Run("full create materialized view definition applies column aliases", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "SELECT order_id FROM aliased_orders_mv")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT order_id FROM aliased_orders_mv"}, "db", "public", false)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "order_id", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
@@ -617,7 +613,7 @@ func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 	})
 
 	t.Run("sql udf body contributes source columns", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "SELECT reporting_fn()")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT reporting_fn()"}, "db", "public", false)
 		require.NoError(t, err)
 		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders"}}), span.SourceColumns)
 		require.Equal(t, []base.QuerySpanResult{
@@ -626,7 +622,7 @@ func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 	})
 
 	t.Run("schema qualified sql udf body contributes source columns", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "SELECT analytics.reporting_fn()")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT analytics.reporting_fn()"}, "db", "public", false)
 		require.NoError(t, err)
 		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "analytics", Table: "events"}}), span.SourceColumns)
 		require.Equal(t, []base.QuerySpanResult{
@@ -635,7 +631,7 @@ func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 	})
 
 	t.Run("sql udf body result sources propagate through cte", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "WITH c AS (SELECT reporting_fn() AS x) SELECT x FROM c")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "WITH c AS (SELECT reporting_fn() AS x) SELECT x FROM c"}, "db", "public", false)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "x", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
@@ -643,7 +639,7 @@ func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 	})
 
 	t.Run("sql udf body result sources propagate through subquery", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "SELECT c.x FROM (SELECT reporting_fn() AS x) AS c")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT c.x FROM (SELECT reporting_fn() AS x) AS c"}, "db", "public", false)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "x", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
@@ -651,7 +647,7 @@ func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 	})
 
 	t.Run("sql udf body missing relation returns not found span", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "SELECT stale_reporting_fn()")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT stale_reporting_fn()"}, "db", "public", false)
 		require.NoError(t, err)
 		require.Error(t, span.NotFoundError)
 		require.ErrorContains(t, span.NotFoundError, "missing_orders")
@@ -660,7 +656,7 @@ func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 	})
 
 	t.Run("unsupported sql udf body returns function not supported span", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "SELECT unsupported_reporting_fn()")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT unsupported_reporting_fn()"}, "db", "public", false)
 		require.NoError(t, err)
 		require.Error(t, span.FunctionNotSupportedError)
 		require.ErrorContains(t, span.FunctionNotSupportedError, "public.unsupported_reporting_fn")
@@ -669,7 +665,7 @@ func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 	})
 
 	t.Run("sequence read uses default sequence columns", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "SELECT last_value, log_cnt, is_called FROM order_id_seq")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT last_value, log_cnt, is_called FROM order_id_seq"}, "db", "public", false)
 		require.NoError(t, err)
 		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "order_id_seq"}}), span.SourceColumns)
 		require.Equal(t, []base.QuerySpanResult{
@@ -680,7 +676,7 @@ func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 	})
 
 	t.Run("view fallback uses declared columns when definition is missing", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "SELECT id, amount FROM fallback_view")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id, amount FROM fallback_view"}, "db", "public", false)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "id", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "fallback_view", Column: "id"}}), IsPlainField: true},
@@ -689,7 +685,7 @@ func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 	})
 
 	t.Run("missing relation inside subquery returns not found span", func(t *testing.T) {
-		span, err := q.getQuerySpan(context.Background(), "SELECT id FROM orders WHERE EXISTS (SELECT 1 FROM missing_orders)")
+		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id FROM orders WHERE EXISTS (SELECT 1 FROM missing_orders)"}, "db", "public", false)
 		require.NoError(t, err)
 		require.Error(t, span.NotFoundError)
 		require.ErrorContains(t, span.NotFoundError, "missing_orders")
@@ -698,7 +694,7 @@ func TestRedshiftQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 	})
 
 	t.Run("mixed system and user tables are rejected", func(t *testing.T) {
-		_, err := q.getQuerySpan(context.Background(), "SELECT orders.id FROM orders, pg_class")
+		_, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT orders.id FROM orders, pg_class"}, "db", "public", false)
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 	})
 

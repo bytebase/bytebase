@@ -8,8 +8,7 @@
 // does not add an SSH tunnel or connection parameters: the old driver mapped
 // neither, and the contract's Config.Dial and Config.Params stay unset.
 //
-// GetDB returns nil, as it does for every engine whose session is not a
-// *sql.DB. QueryConn takes a *sql.Conn the caller pooled, but the omni driver
+// QueryConn takes a *sql.Conn the caller pooled, but the omni driver
 // hands out its own Session; the driver keeps that session until Close, so the
 // statements of one editor request share it as they shared the caller's
 // connection before.
@@ -18,7 +17,6 @@ package trino
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"sync"
 
 	omnidriver "github.com/bytebase/omni/driver"
@@ -29,8 +27,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
-
-var _ db.SessionQuerier = (*Driver)(nil)
 
 func init() {
 	db.Register(storepb.Engine_TRINO, newDriver)
@@ -95,16 +91,6 @@ func (d *Driver) Close(context.Context) error {
 func (d *Driver) Ping(ctx context.Context) error {
 	return d.driver.Ping(ctx)
 }
-
-// GetDB returns no *sql.DB: the contract's session is not one, and a caller that
-// holds a *sql.Conn of its own has none to hold.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
-// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
-// rather than on the *sql.Conn a caller passes, which is unused.
-func (*Driver) OwnsQuerySession() {}
 
 // Execute runs the script's statements, reporting each step to the task run log.
 // Trino commits DDL on its own and supports transactions for only some

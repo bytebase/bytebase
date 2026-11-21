@@ -12,11 +12,9 @@
 //
 // Constraints of the engine and the contract, here rather than at each call:
 //   - QueryConn takes the caller's *sql.Conn but runs on the driver's own
-//     session: the contract's Querier hands out Sessions, and a driver cannot put
-//     one on a *sql.Conn. The adapter holds that session from the first call
-//     until Close and serializes the calls, so what a statement sets there (the
-//     search_path, a temporary table) holds for the next one. It reports
-//     OwnsQuerySession, so no caller opens a second connection for it.
+//     session, held from the first call until Close with calls serialized, so
+//     what a statement sets there (search_path, a temporary table) holds for
+//     the next one.
 //   - The data source's extra connection parameters reach no connection: the
 //     only parameter the contract takes here is ParamDatashare, the datashare
 //     flag.
@@ -57,9 +55,8 @@ import (
 )
 
 var (
-	_ db.Driver         = (*Driver)(nil)
-	_ db.RowEstimator   = (*Driver)(nil)
-	_ db.SessionQuerier = (*Driver)(nil)
+	_ db.Driver       = (*Driver)(nil)
+	_ db.RowEstimator = (*Driver)(nil)
 )
 
 func init() {
@@ -190,10 +187,6 @@ func (d *Driver) Close(context.Context) error {
 func (d *Driver) Ping(ctx context.Context) error {
 	return d.impl.Ping(ctx)
 }
-
-// OwnsQuerySession reports that QueryConn runs on the adapter's held session,
-// not on a connection a caller opens for it.
-func (*Driver) OwnsQuerySession() {}
 
 // SyncInstance reads the server version, its user databases and its users.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {

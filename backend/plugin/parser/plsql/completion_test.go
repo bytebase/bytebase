@@ -112,6 +112,36 @@ func TestCompletionByteOffsetUsesUTF16Columns(t *testing.T) {
 	require.Equal(t, strings.Index(input, "|"), byteOffset)
 }
 
+func TestCompletionQQuoteDoesNotTriggerInsideDoubleQuotes(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{
+			name:  "q-quote with apostrophe and double quote",
+			input: `SELECT q'[a'b"c]' FROM |`,
+			want:  false,
+		},
+		{
+			name:  "nq-quote with apostrophe and double quote",
+			input: `SELECT nq'{a'b"c}' FROM |`,
+			want:  false,
+		},
+		{
+			name:  "q-quote followed by open quoted identifier",
+			input: `SELECT q'[a'b"c]' FROM "my|`,
+			want:  true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sql, line, col := catchCaret(tc.input)
+			_, offset := computeSQLAndByteOffset(sql, line, col, false)
+			require.Equal(t, tc.want, caretInsideDoubleQuotes(sql, offset))
+		})
+	}
+}
+
 func TestCompletionLongTailTableSources(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -374,8 +404,13 @@ func TestCompletionCoverageMatrix(t *testing.T) {
 		},
 		{
 			name:  "quoted identifier context preserves candidate text",
-			input: `SELECT "t2".| FROM t2`,
+			input: `SELECT "T2".| FROM t2`,
 			want:  columns("C1", "C2"),
+		},
+		{
+			name:  "inside double-quoted identifier does not double-quote candidates",
+			input: `SELECT * FROM "T|`,
+			want:  tables("T1", "T2"),
 		},
 		{
 			name:  "select list uses t2 columns",

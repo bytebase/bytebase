@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -124,15 +123,13 @@ func TestLinkedColumns(t *testing.T) {
 	require.Empty(t, linkedColumns([]*parserbase.QuerySpan{{SourceColumns: parserbase.SourceColumnSet{local: true, unresolved: true}}}))
 }
 
-// privateLinkDriver is the shape a driver over omni's contract has: no *sql.DB
-// to hand out, and a private-link probe that asks with a session of its own.
+// privateLinkDriver is the shape a driver over omni's contract has: a
+// private-link probe that asks with a session of its own.
 type privateLinkDriver struct {
 	db.Driver
 	owns bool
 	err  error
 }
-
-func (*privateLinkDriver) GetDB() *sql.DB { return nil }
 
 func (d *privateLinkDriver) OwnsPrivateDatabaseLink(context.Context) (bool, error) {
 	return d.owns, d.err
@@ -142,8 +139,6 @@ func (d *privateLinkDriver) OwnsPrivateDatabaseLink(context.Context) (bool, erro
 type plainDriver struct {
 	db.Driver
 }
-
-func (*plainDriver) GetDB() *sql.DB { return nil }
 
 // TestLinkedReadReachesTheStatementAfterTheCutover is the trap this cutover had
 // to disarm: the guard used to take the caller's *sql.Conn and refuse every

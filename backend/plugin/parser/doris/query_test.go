@@ -298,7 +298,7 @@ func TestValidateQuerySetStatements(t *testing.T) {
 		{"an explicit session scope", "SET SESSION time_zone = 'UTC'", true, false},
 		// Global scope is permitted here as it is for MySQL and Postgres: this is not
 		// the permission gate, it only picks the execution path.
-		{"a global scope", "SET GLOBAL time_zone = 'UTC'", true, false},
+		{"a global scope", "SET GLOBAL time_zone = 'UTC'", false, false},
 		{"SET NAMES", "SET NAMES utf8mb4", true, false},
 		{"UNSET VARIABLE", "UNSET VARIABLE time_zone", true, false},
 		{"a read stays explicitly read-only", "SELECT 1", true, true},

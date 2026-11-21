@@ -57,7 +57,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			count: 10,
 			// SetOpStmt.Limit is unreliable in the Doris grammar (see limit.go),
 			// so a set operation always takes the CTE-wrap fallback.
-			want: "SELECT * FROM (SELECT firstName, lastName FROM employees UNION SELECT contactFirstName, contactLastName FROM customers) result LIMIT 10;",
+			want: "SELECT * FROM (\nSELECT firstName, lastName FROM employees UNION SELECT contactFirstName, contactLastName FROM customers\n) result LIMIT 10;",
 		},
 		{
 			stmt:  "SELECT customerNumber, checkNumber, amount FROM payments WHERE amount = (SELECT MAX(amount) FROM payments);",
@@ -67,7 +67,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		{
 			stmt:  "SELECT firstName, lastName FROM employees UNION SELECT contactFirstName, contactLastName FROM customers LIMIT 10;",
 			count: 10,
-			want:  "SELECT * FROM (SELECT firstName, lastName FROM employees UNION SELECT contactFirstName, contactLastName FROM customers LIMIT 10) result LIMIT 10;",
+			want:  "SELECT * FROM (\nSELECT firstName, lastName FROM employees UNION SELECT contactFirstName, contactLastName FROM customers LIMIT 10\n) result LIMIT 10;",
 		},
 		{
 			// The outer statement is a SelectStmt (its WITH clause), so it still
@@ -79,7 +79,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		{
 			stmt:  "SELECT firstName FROM employees EXCEPT SELECT contactFirstName FROM customers;",
 			count: 10,
-			want:  "SELECT * FROM (SELECT firstName FROM employees EXCEPT SELECT contactFirstName FROM customers) result LIMIT 10;",
+			want:  "SELECT * FROM (\nSELECT firstName FROM employees EXCEPT SELECT contactFirstName FROM customers\n) result LIMIT 10;",
 		},
 		{
 			stmt:  "SELECT col1, col2 FROM table1 ORDER BY col1;",
@@ -146,7 +146,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		{
 			stmt:  "SELECT * FROM t # hash comment",
 			count: 10,
-			want:  "SELECT * FROM (SELECT * FROM t # hash comment) result LIMIT 10;",
+			want:  "SELECT * FROM (\nSELECT * FROM t # hash comment\n) result LIMIT 10;",
 		},
 		{
 			stmt:  "SELECT * FROM t;\n",
@@ -159,12 +159,12 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		{
 			stmt:  "SELECT a FROM t1 UNION SELECT b FROM t2 LIMIT 100;",
 			count: 10,
-			want:  "SELECT * FROM (SELECT a FROM t1 UNION SELECT b FROM t2 LIMIT 100) result LIMIT 10;",
+			want:  "SELECT * FROM (\nSELECT a FROM t1 UNION SELECT b FROM t2 LIMIT 100\n) result LIMIT 10;",
 		},
 		{
 			stmt:  "SELECT a FROM t1 INTERSECT SELECT b FROM t2;",
 			count: 10,
-			want:  "SELECT * FROM (SELECT a FROM t1 INTERSECT SELECT b FROM t2) result LIMIT 10;",
+			want:  "SELECT * FROM (\nSELECT a FROM t1 INTERSECT SELECT b FROM t2\n) result LIMIT 10;",
 		},
 		// Doris has no dedicated node for a parenthesized top-level query: the
 		// grammar strips the parens transparently and produces a plain

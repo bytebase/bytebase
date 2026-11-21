@@ -138,9 +138,6 @@ func TestOpenAndCapabilities(t *testing.T) {
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, driver.Close(context.Background())) })
-
-	require.True(t, db.OwnsQuerySession(driver))
-	require.Nil(t, db.SQLDB(driver))
 }
 
 func TestOpenRefusesInvalidConfigsWithoutDialing(t *testing.T) {

@@ -1,25 +1,23 @@
 // Package mssql implements Bytebase's schema contracts for SQL Server on top of
-// omni's SQL Server catalog. The catalog owns the database definition, the diff
-// and the migration; this package keeps the registry wiring, the metadata
-// extractor in get_database_metadata.go, and the single-table renderer in
-// table_definition.go.
+// omni's SQL Server catalog. The catalog owns metadata extraction, table and
+// database definitions, the diff, and the migration; this package keeps the
+// registry wiring and the legacy dump-compatibility shims.
 //
-// Two facts keep the cutover partial at the pinned omni version:
+// Two shims preserve the pre-cutover dump output at the pinned omni version:
 //
-//   - catalog exports no single-table definition. GetTableDefinition therefore
-//     still runs Bytebase's renderer; only the database and per-module
-//     definition entry points moved.
 //   - the old dump omitted sequences, synonyms, triggers, comments and named
-//     default constraints. stripUnrenderedFacts keeps those omissions so the
-//     dump stays byte-identical until each fix can ship with its own release
-//     note.
+//     default constraints. stripUnrenderedFacts and stripTableUnrenderedFacts
+//     keep those omissions so the dump stays byte-identical until each fix can
+//     ship with its own release note.
+//   - restoreLegacyModuleText and GetViewDefinition/GetFunctionDefinition/
+//     GetProcedureDefinition keep the stored module text (including an ALTER
+//     header or a trailing semicolon) instead of the catalog's normalized header.
 //
 // The one text difference the strip does not remove is module ordering: the
 // catalog creates a function after any function its body names, and before a
 // table default or view body that references it, where the old renderer wrote
 // functions and procedures last in metadata order. The text of each module is
-// unchanged (restoreLegacyModuleText rewrites the catalog's normalized module
-// headers back to the stored text), only its position.
+// unchanged, only its position.
 package mssql
 
 import (
@@ -37,12 +35,24 @@ import (
 )
 
 func init() {
+	schema.RegisterGetDatabaseMetadata(storepb.Engine_MSSQL, GetDatabaseMetadata)
 	schema.RegisterGetDatabaseDefinition(storepb.Engine_MSSQL, GetDatabaseDefinition)
 	schema.RegisterGetTableDefinition(storepb.Engine_MSSQL, GetTableDefinition)
 	schema.RegisterGetViewDefinition(storepb.Engine_MSSQL, GetViewDefinition)
 	schema.RegisterGetFunctionDefinition(storepb.Engine_MSSQL, GetFunctionDefinition)
 	schema.RegisterGetProcedureDefinition(storepb.Engine_MSSQL, GetProcedureDefinition)
 	schema.RegisterDiffMetadataMigration(storepb.Engine_MSSQL, diffMetadataMigration)
+}
+
+// GetDatabaseMetadata parses SQL Server DDL text and returns database metadata
+// using omni's SQL Server catalog.
+func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return catalog.GetDatabaseMetadata(schemaText)
+}
+
+// GetTableDefinition renders one table as the T-SQL that recreates it.
+func GetTableDefinition(schemaName string, table *metadatapb.TableMetadata, sequences []*metadatapb.SequenceMetadata) (string, error) {
+	return catalog.GetTableDefinition(schemaName, stripTableUnrenderedFacts(table), sequences)
 }
 
 // GetDatabaseDefinition renders a synced SQL Server snapshot as the T-SQL that
@@ -104,13 +114,7 @@ func stripUnrenderedFacts(metadata *metadatapb.DatabaseSchemaMetadata) *metadata
 		schema.Sequences = nil
 		schema.Synonyms = nil
 		for _, table := range schema.GetTables() {
-			table.SkipDump = false
-			table.Comment = ""
-			table.Triggers = nil
-			for _, column := range table.GetColumns() {
-				column.Comment = ""
-				column.DefaultConstraintName = ""
-			}
+			stripTableFacts(table)
 		}
 		for _, view := range schema.GetViews() {
 			view.SkipDump = false
@@ -127,6 +131,25 @@ func stripUnrenderedFacts(metadata *metadatapb.DatabaseSchemaMetadata) *metadata
 		}
 	}
 	return out
+}
+
+func stripTableUnrenderedFacts(table *metadatapb.TableMetadata) *metadatapb.TableMetadata {
+	if table == nil {
+		return nil
+	}
+	out := proto.CloneOf(table)
+	stripTableFacts(out)
+	return out
+}
+
+func stripTableFacts(table *metadatapb.TableMetadata) {
+	table.SkipDump = false
+	table.Comment = ""
+	table.Triggers = nil
+	for _, column := range table.GetColumns() {
+		column.Comment = ""
+		column.DefaultConstraintName = ""
+	}
 }
 
 // restoreLegacyModuleText rewrites the catalog's module sections back to the

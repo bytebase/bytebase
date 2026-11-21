@@ -128,6 +128,19 @@ type Advisor interface {
 	Check(ctx context.Context, checkCtx Context) ([]*storepb.Advice, error)
 }
 
+// Func is an adapter to allow the use of ordinary functions as Advisors.
+type Func func(ctx context.Context, checkCtx Context) ([]*storepb.Advice, error)
+
+// Check calls f(ctx, checkCtx).
+func (f Func) Check(ctx context.Context, checkCtx Context) ([]*storepb.Advice, error) {
+	return f(ctx, checkCtx)
+}
+
+// RegisterFunc registers fn as the advisor for dbType and ruleType.
+func RegisterFunc(dbType storepb.Engine, ruleType storepb.SQLReviewRule_Type, fn Func) {
+	Register(dbType, ruleType, fn)
+}
+
 var (
 	advisorMu sync.RWMutex
 	advisors  = make(map[storepb.Engine]map[storepb.SQLReviewRule_Type]Advisor)

@@ -11,12 +11,6 @@
 // logger, the QueryContext mapping, the v1pb conversion, and the live-review
 // capabilities db.Prober and db.RowEstimator.
 //
-// GetDB keeps returning a *sql.DB, because db.Driver still requires it and
-// gh-ost runs its five binlog probes through it. The contract's pool is the
-// driver's, so the adapter owns a second pool built from the same resolved
-// config; GetDB hands out that pool and Close closes it. Every caller of
-// GetDB compiles and behaves as before.
-//
 // QueryConn holds one contract session from the first call until Close. The
 // editor asks one statement at a time on a driver it keeps, so a session
 // variable, a temporary table or an open transaction survives between calls,
@@ -54,15 +48,12 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"slices"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"cloud.google.com/go/cloudsqlconn"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
-	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
@@ -84,11 +75,9 @@ import (
 )
 
 var (
-	_ db.Driver         = (*Driver)(nil)
-	_ db.Prober         = (*Driver)(nil)
-	_ db.RowEstimator   = (*Driver)(nil)
-	_ db.SessionQuerier = (*Driver)(nil)
-	_ db.SQLDBProvider  = (*Driver)(nil)
+	_ db.Driver       = (*Driver)(nil)
+	_ db.Prober       = (*Driver)(nil)
+	_ db.RowEstimator = (*Driver)(nil)
 )
 
 func init() {
@@ -113,11 +102,6 @@ type omniDriver interface {
 type Driver struct {
 	dbType storepb.Engine
 	driver omniDriver
-	// sqlDB is the direct-connection pool GetDB hands out. The contract's
-	// pool is the driver's own and is not reachable, so this adapter owns a
-	// second one built from the same resolved config. gh-ost runs its binlog
-	// probes through it.
-	sqlDB *sql.DB
 
 	sshClient *ssh.Client
 	// cloudSQLDialer owns the background certificate refresh; it lives and
@@ -211,82 +195,8 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 		return nil, err
 	}
 	d.driver = opened
-
-	// The direct-connection pool GetDB hands out uses the same resolved values,
-	// including the tunnel and TLS config, so gh-ost reaches the same server.
-	sqlDB, err := newSQLDB(cfg)
-	if err != nil {
-		return nil, err
-	}
-	d.sqlDB = sqlDB
 	success = true
 	return d, nil
-}
-
-// newSQLDB builds the direct-connection pool GetDB returns from the contract
-// config Open already resolved. It never replaces the driver's own pool; it is
-// the one a caller that needs database/sql (gh-ost's binlog probes) uses.
-func newSQLDB(cfg odriver.Config) (*sql.DB, error) {
-	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
-	keys := make([]string, 0, len(cfg.Params))
-	for key := range cfg.Params {
-		keys = append(keys, key)
-	}
-	slices.Sort(keys)
-	for _, key := range keys {
-		if strings.EqualFold(strings.TrimSpace(key), "allowallfiles") {
-			return nil, errors.Errorf("connection parameter %q is not allowed for security reasons", key)
-		}
-		params = append(params, fmt.Sprintf("%s=%s", key, cfg.Params[key]))
-	}
-	mc, err := gomysql.ParseDSN("u@tcp(placeholder:3306)/?" + strings.Join(params, "&"))
-	if err != nil {
-		return nil, err
-	}
-	if mc.AllowAllFiles {
-		return nil, errors.New("connection parameter \"allowAllFiles\" is not allowed for security reasons")
-	}
-	mc.User = cfg.User
-	mc.Passwd = cfg.Password
-	mc.DBName = cfg.Database
-
-	switch {
-	case cfg.Dial != nil:
-		mc.Net = "tcp"
-		switch {
-		case cfg.Host != "" && cfg.Port != "":
-			mc.Addr = net.JoinHostPort(cfg.Host, cfg.Port)
-		case cfg.Host != "":
-			mc.Addr = cfg.Host
-		default:
-			mc.Addr = "dial"
-		}
-		mc.DialFunc = cfg.Dial
-	case strings.HasPrefix(cfg.Host, "/"):
-		mc.Net = "unix"
-		mc.Addr = cfg.Host
-	default:
-		mc.Net = "tcp"
-		mc.Addr = net.JoinHostPort(cfg.Host, cfg.Port)
-	}
-	if cfg.TLS != nil {
-		tlsConfig, err := cfg.TLS(cfg.Host)
-		if err != nil {
-			return nil, err
-		}
-		mc.TLS = tlsConfig
-		mc.TLSConfig = ""
-		mc.AllowFallbackToPlaintext = false
-	}
-	connector, err := gomysql.NewConnector(mc)
-	if err != nil {
-		return nil, err
-	}
-	sqlDB := sql.OpenDB(connector)
-	sqlDB.SetConnMaxLifetime(2 * time.Hour)
-	sqlDB.SetMaxOpenConns(50)
-	sqlDB.SetMaxIdleConns(15)
-	return sqlDB, nil
 }
 
 func (*Driver) openRDS(ctx context.Context, connCfg db.ConnectionConfig, cfg *odriver.Config) error {
@@ -329,9 +239,6 @@ func (d *Driver) Close(context.Context) error {
 	if d.driver != nil {
 		err = multierr.Append(err, d.driver.Close())
 	}
-	if d.sqlDB != nil {
-		err = multierr.Append(err, d.sqlDB.Close())
-	}
 	if d.sshClient != nil {
 		err = multierr.Append(err, d.sshClient.Close())
 	}
@@ -344,16 +251,6 @@ func (d *Driver) Close(context.Context) error {
 func (d *Driver) Ping(ctx context.Context) error {
 	return d.driver.Ping(ctx)
 }
-
-// GetDB returns the direct-connection pool gh-ost's binlog probes use. It is
-// not the contract's pool, which the driver keeps private.
-func (d *Driver) GetDB() *sql.DB {
-	return d.sqlDB
-}
-
-// OwnsQuerySession reports that QueryConn runs on the adapter's held session,
-// not on a connection a caller opens from GetDB.
-func (*Driver) OwnsQuerySession() {}
 
 // SyncInstance converts the contract's instance into the API's metadata.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {

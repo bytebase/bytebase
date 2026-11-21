@@ -47,7 +47,6 @@ func TestStarRocksDriver(t *testing.T) {
 	const databaseName = "bb_starrocks_driver_test"
 	unbound := open("")
 	require.NoError(t, unbound.Ping(ctx))
-	require.Nil(t, unbound.GetDB())
 
 	setup := strings.Join([]string{
 		"DROP DATABASE IF EXISTS " + databaseName,

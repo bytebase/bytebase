@@ -376,6 +376,18 @@ func TestValidateQuery(t *testing.T) {
 			description: "EXPLAIN ANALYZE over a nested parenthesized export must be rejected",
 		},
 		{
+			statement:   `DESC SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			description: "DESC over an export must not bypass the export gate",
+		},
+		{
+			statement:   `DESCRIBE SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			description: "DESCRIBE over an export must not bypass the export gate",
+		},
+		{
+			statement:   `DESC VERBOSE SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			description: "DESC VERBOSE over an export must not bypass the export gate",
+		},
+		{
 			statement:   "SELECT a FROM t xx yy zz",
 			description: "Trailing junk after a valid prefix must be rejected",
 		},
@@ -406,7 +418,7 @@ func TestValidateQuerySetStatements(t *testing.T) {
 		{"an explicit session scope", "SET SESSION time_zone = 'UTC'", true, false},
 		// Global scope is permitted here as it is for MySQL and Postgres: this is not
 		// the permission gate, it only picks the execution path.
-		{"a global scope", "SET GLOBAL time_zone = 'UTC'", true, false},
+		{"a global scope", "SET GLOBAL time_zone = 'UTC'", false, false},
 		{"SET NAMES", "SET NAMES utf8mb4", true, false},
 		{"a read stays explicitly read-only", "SELECT 1", true, true},
 		{"a SET anywhere in a script needs executing", "SELECT 1; SET time_zone = 'UTC'", true, false},

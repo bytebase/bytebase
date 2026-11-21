@@ -40,7 +40,6 @@ package mssql
 
 import (
 	"context"
-	"database/sql"
 	"log/slog"
 	"maps"
 	"os"
@@ -65,9 +64,8 @@ import (
 )
 
 var (
-	_ db.Driver         = (*Driver)(nil)
-	_ db.RowEstimator   = (*Driver)(nil)
-	_ db.SessionQuerier = (*Driver)(nil)
+	_ db.Driver       = (*Driver)(nil)
+	_ db.RowEstimator = (*Driver)(nil)
 )
 
 func init() {
@@ -280,16 +278,6 @@ func (d *Driver) Close(context.Context) error {
 func (d *Driver) Ping(ctx context.Context) error {
 	return d.impl.Ping(ctx)
 }
-
-// GetDB returns nil: SQL Server is driven through omni's sessions, not a
-// *sql.DB, and every production caller guards a nil handle.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
-// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
-// rather than on the *sql.Conn a caller passes, which is unused.
-func (*Driver) OwnsQuerySession() {}
 
 // Execute runs the script's batches, in one transaction unless the `-- txn-mode`
 // directive turns it off, reporting each step to the task run's log.

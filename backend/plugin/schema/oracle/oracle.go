@@ -1,7 +1,7 @@
 // Package oracle implements Bytebase's schema contracts for Oracle on top of
-// omni's Oracle catalog. The catalog owns deparse, diff, and migration; this
-// package keeps the registry wiring and the metadata extractor that
-// get_database_metadata.go holds.
+// omni's Oracle catalog. The catalog owns metadata extraction, deparse, diff,
+// and migration; this package keeps the registry wiring and the unrendered-fact
+// strip until those clauses are enabled.
 package oracle
 
 import (
@@ -30,6 +30,7 @@ import (
 // A sequence's Start, Increment, MaxValue, Cache and Cycle do reach this package
 // through the sync, so registering the object type is a change of its own.
 func init() {
+	schema.RegisterGetDatabaseMetadata(storepb.Engine_ORACLE, GetDatabaseMetadata)
 	schema.RegisterGetDatabaseDefinition(storepb.Engine_ORACLE, GetDatabaseDefinition)
 	schema.RegisterGetTableDefinition(storepb.Engine_ORACLE, GetTableDefinition)
 	schema.RegisterGetViewDefinition(storepb.Engine_ORACLE, GetViewDefinition)
@@ -37,6 +38,12 @@ func init() {
 	schema.RegisterGetFunctionDefinition(storepb.Engine_ORACLE, GetFunctionDefinition)
 	schema.RegisterGetProcedureDefinition(storepb.Engine_ORACLE, GetProcedureDefinition)
 	schema.RegisterDiffMetadataMigration(storepb.Engine_ORACLE, diffMetadataMigration)
+}
+
+// GetDatabaseMetadata parses Oracle DDL text and returns database metadata
+// using omni's Oracle catalog.
+func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return catalog.GetDatabaseMetadata(schemaText)
 }
 
 // GetDatabaseDefinition renders a synced Oracle snapshot as the DDL that

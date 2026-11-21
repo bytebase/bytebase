@@ -8,6 +8,7 @@ import (
 	"github.com/bytebase/omni/mssql/catalog"
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -188,13 +189,11 @@ func TestGetObjectDefinitionKeepsLegacyText(t *testing.T) {
 	require.Equal(t, "CREATE PROCEDURE [dbo].[p] AS SELECT 1\n\nGO\n\n", procedure)
 }
 
-// TestExtendedPropertyConstraintCommentKeepsBytebaseExtraction pins the metadata
-// extractor's handling of an extended property on a constraint. For a named
-// @level2type = 'CONSTRAINT' argument Bytebase attaches the value to the table,
-// while omni's LoadSQL finds no constraint to attach it to and drops it. The
-// shim keeps Bytebase's extractor, so the value still reaches the migration as a
-// table comment; this is the known difference the cutover does not change.
-func TestExtendedPropertyConstraintCommentKeepsBytebaseExtraction(t *testing.T) {
+// TestExtendedPropertyConstraintCommentDoesNotPolluteTableComment pins the
+// catalog's handling of an extended property on a constraint. For a named
+// @level2type = 'CONSTRAINT' argument omni's catalog does not attach the value
+// to the table comment.
+func TestExtendedPropertyConstraintCommentDoesNotPolluteTableComment(t *testing.T) {
 	sql := `CREATE TABLE [dbo].[t] ([id] int NOT NULL, CONSTRAINT [CK_t] CHECK ([id] > 0));
 EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'ck comment',
   @level0type = N'SCHEMA', @level0name = N'dbo',
@@ -203,7 +202,24 @@ EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'ck comment',
 
 	metadata, err := GetDatabaseMetadata(sql)
 	require.NoError(t, err)
-	require.Equal(t, "ck comment", metadata.Schemas[0].Tables[0].Comment)
+	require.Empty(t, metadata.Schemas[0].Tables[0].Comment)
+}
+
+// TestTableDefinitionPreservesUnrenderedFacts pins GetTableDefinition to the
+// same strip contract as GetDatabaseDefinition: SkipDump, comments, triggers,
+// and DefaultConstraintName are stripped before delegating to omni's catalog.
+func TestTableDefinitionPreservesUnrenderedFacts(t *testing.T) {
+	withFacts, bare := factsMetadata()
+
+	got, err := schema.GetTableDefinition(storepb.Engine_MSSQL, "dbo", withFacts.Schemas[0].Tables[0], nil)
+	require.NoError(t, err)
+	want, err := GetTableDefinition("dbo", bare.Schemas[0].Tables[0], nil)
+	require.NoError(t, err)
+	require.Equal(t, want, got)
+	require.Contains(t, got, "CREATE TABLE [dbo].[t]")
+	require.NotContains(t, got, "sp_addextendedproperty")
+	require.NotContains(t, got, "DF_t_v")
+	require.NotContains(t, got, "CREATE TRIGGER")
 }
 
 // TestDefinitionRewritesEachModuleAtItsOwnSection pins replacement to the

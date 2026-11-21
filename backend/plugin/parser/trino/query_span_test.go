@@ -218,7 +218,7 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*metadatapb.DatabaseSche
 				return "", databaseMetadata, nil
 			}
 
-			return "", nil, errors.Errorf("database %q not found", databaseName)
+			return "", nil, nil
 		}, func(_ context.Context, _ string) ([]string, error) {
 			var names []string
 			for _, metadata := range databaseMetadata {

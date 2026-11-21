@@ -196,11 +196,6 @@ func (d *Driver) Ping(ctx context.Context) error {
 	return d.inner.Ping(ctx)
 }
 
-// GetDB returns nil: Redis has no database/sql handle.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
 // Execute runs the script's commands in order, reporting each to the task run's
 // log.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
