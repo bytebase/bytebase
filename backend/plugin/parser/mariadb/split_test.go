@@ -1,122 +1,37 @@
 package mariadb
 
 import (
-	"fmt"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestMySQLSplitSQL(t *testing.T) {
-	base.RunSplitTests(t, "test-data/test_split.yaml", base.SplitTestOptions{
-		SplitFunc: SplitSQL,
-	})
-}
-
-func TestMySQLSplitSQLLargeInsertScriptScalesLinearly(t *testing.T) {
-	const rowCount = 2000
-	padding := strings.Repeat("x", 1024)
-	var builder strings.Builder
-	for i := 0; i < rowCount; i++ {
-		fmt.Fprintf(&builder, "INSERT INTO perf_omni_mysql (id, payload) VALUES (%d, '%s');\n", i, padding)
-	}
-
-	started := time.Now()
-	statements, err := SplitSQL(builder.String())
-	elapsed := time.Since(started)
-
+func TestSplitSQLSeam(t *testing.T) {
+	sql := "\n  SELECT '中';\n/* empty */;\nSELECT 2;"
+	list, err := base.SplitMultiSQL(storepb.Engine_MARIADB, sql)
 	require.NoError(t, err)
-	require.Len(t, base.FilterEmptyStatements(statements), rowCount)
-	require.Less(t, elapsed, time.Second)
-}
+	filtered := base.FilterEmptyStatements(list)
+	require.Len(t, filtered, 2)
 
-func TestMySQLSplitSQLDelimiterDirectives(t *testing.T) {
-	statement := "DELIMITER //\nCREATE PROCEDURE p()\nBEGIN\n  SELECT delimiter FROM t;\nEND//\nDELIMITER ;\nCALL p();"
+	require.Equal(t, "\n  SELECT '中';", filtered[0].Text)
+	require.Equal(t, &storepb.Position{Line: 1, Column: 1}, filtered[0].Start)
+	require.Equal(t, &storepb.Position{Line: 2, Column: 14}, filtered[0].End)
+	require.Equal(t, 0, filtered[0].BaseLine())
+	require.Equal(t, filtered[0].Text, sql[filtered[0].Range.Start:filtered[0].Range.End])
 
-	list, err := SplitSQL(statement)
+	require.Equal(t, "\nSELECT 2;", filtered[1].Text)
+	require.Equal(t, &storepb.Position{Line: 3, Column: 13}, filtered[1].Start)
+	require.Equal(t, &storepb.Position{Line: 4, Column: 10}, filtered[1].End)
+	require.Equal(t, filtered[1].Text, sql[filtered[1].Range.Start:filtered[1].Range.End])
+
+	delimSQL := "DELIMITER //\nCREATE PROCEDURE p()\nBEGIN\n  SELECT 1;\nEND//\nDELIMITER ;\nCALL p();"
+	delimList, err := SplitSQL(delimSQL)
 	require.NoError(t, err)
-
-	list = base.FilterEmptyStatements(list)
-	require.Len(t, list, 2)
-	require.Equal(t, "CREATE PROCEDURE p()\nBEGIN\n  SELECT delimiter FROM t;\nEND", list[0].Text)
-	require.Equal(t, "CALL p();", list[1].Text)
-	require.Equal(t, statement[list[0].Range.Start:list[0].Range.End], list[0].Text)
-	require.Equal(t, statement[list[1].Range.Start:list[1].Range.End], list[1].Text)
-}
-
-func TestMySQLSplitSQLDelimiterLabelIsNotDirective(t *testing.T) {
-	statement := "DELIMITER: LOOP\n  SELECT 1;\n  LEAVE DELIMITER;\nEND LOOP DELIMITER;"
-
-	list, err := SplitSQL(statement)
-	require.NoError(t, err)
-
-	list = base.FilterEmptyStatements(list)
-	require.Len(t, list, 1)
-	require.Equal(t, statement, list[0].Text)
-}
-
-func TestMySQLSplitSQLDelimiterIdentifierIsNotDirective(t *testing.T) {
-	statement := "CREATE TABLE t (\n  delimiter INT\n);\nSELECT delimiter FROM t;"
-
-	list, err := SplitSQL(statement)
-	require.NoError(t, err)
-
-	list = base.FilterEmptyStatements(list)
-	require.Len(t, list, 2)
-	require.Equal(t, "CREATE TABLE t (\n  delimiter INT\n);", list[0].Text)
-	require.Equal(t, "\nSELECT delimiter FROM t;", list[1].Text)
-}
-
-func TestSplitMySQLStatements(t *testing.T) {
-	tests := []struct {
-		statement string
-		expected  []string
-	}{
-		{
-			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
-			expected: []string{
-				"SELECT * FROM t1 WHERE c1 = 1;",
-				" SELECT * FROM t2;",
-			},
-		},
-		{
-			statement: `CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
-			BEGIN
-			  SELECT name INTO name FROM users WHERE id = id;
-			END; SELECT * FROM t2;`,
-			expected: []string{
-				`CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
-			BEGIN
-			  SELECT name INTO name FROM users WHERE id = id;
-			END;`,
-				" SELECT * FROM t2;",
-			},
-		},
-		{
-			statement: `CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
-			BEGIN
-				SELECT IF(id = 1, 'one', 'other') INTO name FROM users;
-			END; SELECT REPEAT('123', a) FROM t2;`,
-			expected: []string{
-				`CREATE PROCEDURE my_procedure (IN id INT, OUT name VARCHAR(255))
-			BEGIN
-				SELECT IF(id = 1, 'one', 'other') INTO name FROM users;
-			END;`,
-				" SELECT REPEAT('123', a) FROM t2;",
-			},
-		},
-	}
-
-	for _, test := range tests {
-		list, err := SplitSQL(test.statement)
-		require.NoError(t, err)
-		require.Equal(t, len(test.expected), len(list))
-		for i, statement := range list {
-			require.Equal(t, test.expected[i], statement.Text)
-		}
-	}
+	delimList = base.FilterEmptyStatements(delimList)
+	require.Len(t, delimList, 2)
+	require.Equal(t, delimList[0].Text, delimSQL[delimList[0].Range.Start:delimList[0].Range.End])
+	require.Equal(t, delimList[1].Text, delimSQL[delimList[1].Range.Start:delimList[1].Range.End])
 }

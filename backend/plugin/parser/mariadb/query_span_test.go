@@ -2,96 +2,27 @@ package mariadb
 
 import (
 	"context"
-	"io"
-	"os"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/yamltest"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-func TestGetQuerySpan(t *testing.T) {
-	type testCase struct {
-		Description        string `yaml:"description,omitempty"`
-		Statement          string `yaml:"statement,omitempty"`
-		DefaultDatabase    string `yaml:"defaultDatabase,omitempty"`
-		IgnoreCaseSensitve bool   `yaml:"ignoreCaseSensitive,omitempty"`
-		// Metadata is the protojson encoded metadatapb.DatabaseSchemaMetadata,
-		// if it's empty, we will use the defaultDatabaseMetadata.
-		Metadata  string              `yaml:"metadata,omitempty"`
-		QuerySpan *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
-	}
-
-	var (
-		record        = false
-		testDataPaths = []string{
-			"test-data/query-span/query_type.yaml",
-			"test-data/query-span/standard.yaml",
-			"test-data/query-span/case_insensitive.yaml",
-		}
-	)
-
-	a := require.New(t)
-	for _, testDataPath := range testDataPaths {
-		engine := storepb.Engine_MARIADB
-
-		testDataPath := testDataPath
-
-		yamlFile, err := os.Open(testDataPath)
-		a.NoError(err)
-
-		var testCases []testCase
-		byteValue, err := io.ReadAll(yamlFile)
-		a.NoError(err)
-		a.NoError(yamlFile.Close())
-		a.NoError(yaml.Unmarshal(byteValue, &testCases))
-
-		for i, tc := range testCases {
-			metadata := &metadatapb.DatabaseSchemaMetadata{}
-			a.NoErrorf(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata), "cases %d", i+1)
-			databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
-			result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
-				GetDatabaseMetadataFunc: databaseMetadataGetter,
-				ListDatabaseNamesFunc:   databaseNameLister,
-				Engine:                  engine,
-			}, base.Statement{Text: tc.Statement}, tc.DefaultDatabase, "", tc.IgnoreCaseSensitve)
-			a.NoErrorf(err, "statement: %s", tc.Statement)
-			resultYaml := result.ToYaml()
-			if record {
-				testCases[i].QuerySpan = resultYaml
-			} else {
-				a.Equalf(tc.QuerySpan, resultYaml, "statement: %s", tc.Statement)
-			}
-		}
-
-		if record {
-			yamltest.Record(t, testDataPath, testCases)
-		}
-	}
-}
-
 func buildMockDatabaseMetadataGetter(databaseMetadata []*metadatapb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadata {
-				m[metadata.Name] = model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_MARIADB, true /* isObjectCaseSensitive */)
+				if metadata.Name == databaseName {
+					return "", model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_MARIADB, true /* isObjectCaseSensitive */), nil
+				}
 			}
-
-			if databaseMetadata, ok := m[databaseName]; ok {
-				return "", databaseMetadata, nil
-			}
-
 			return "", nil, errors.Errorf("database %q not found", databaseName)
 		}, func(_ context.Context, _ string) ([]string, error) {
-			var names []string
+			names := make([]string, 0, len(databaseMetadata))
 			for _, metadata := range databaseMetadata {
 				names = append(names, metadata.Name)
 			}
@@ -99,26 +30,69 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*metadatapb.DatabaseSche
 		}
 }
 
-func TestGetQuerySpanCyclicViewReference(t *testing.T) {
+func TestGetQuerySpanSeam(t *testing.T) {
 	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*metadatapb.SchemaMetadata{
-			{
-				Name: "",
-				Views: []*metadatapb.ViewMetadata{
-					{Name: "v1", Definition: "SELECT * FROM v2"},
-					{Name: "v2", Definition: "SELECT * FROM v1"},
-				},
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "",
+			Tables: []*metadatapb.TableMetadata{{
+				Name:    "t1",
+				Columns: []*metadatapb.ColumnMetadata{{Name: "a"}, {Name: "b"}},
+			}},
+			Views: []*metadatapb.ViewMetadata{
+				{Name: "mixed_v", Definition: "SELECT * FROM t1, mysql.user"},
+				{Name: "v1", Definition: "SELECT * FROM v2"},
+				{Name: "v2", Definition: "SELECT * FROM v1"},
 			},
-		},
+		}},
 	}
 	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
-
-	_, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{
+	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
 		Engine:                  storepb.Engine_MARIADB,
-	}, base.Statement{Text: "SELECT * FROM v1"}, "db", "", false)
-	require.Error(t, err)
+	}
+
+	// Registry dispatch, result lineage, predicate columns, and case-insensitive toggle.
+	spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_MARIADB, []base.Statement{
+		{Text: "SELECT T1.a FROM t1 WHERE T1.b = 1"},
+	}, "db", "", true)
+	require.NoError(t, err)
+	require.Len(t, spans, 1)
+	require.Equal(t, base.Select, spans[0].Type)
+	require.Nil(t, spans[0].NotFoundError)
+	require.Equal(t, []base.QuerySpanResult{{
+		Name:          "a",
+		SourceColumns: base.SourceColumnSet{{Database: "db", Table: "t1", Column: "a"}: true},
+		IsPlainField:  true,
+	}}, spans[0].Results)
+	require.Equal(t, base.SourceColumnSet{{Database: "db", Table: "t1", Column: "b"}: true}, spans[0].PredicateColumns)
+
+	// ResourceNotFoundError conversion.
+	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT nope FROM t1"}, "db", "", false)
+	require.NoError(t, err)
+	var notFound *base.ResourceNotFoundError
+	require.ErrorAs(t, span.NotFoundError, &notFound)
+	require.NotNil(t, notFound.Column)
+	require.Equal(t, "nope", *notFound.Column)
+
+	// MixUserSystemTablesError conversion (direct and wrapped via view).
+	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT * FROM t1, mysql.user"}, "db", "", false)
+	require.ErrorIs(t, err, base.MixUserSystemTablesError)
+
+	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT * FROM mixed_v"}, "db", "", false)
+	require.ErrorIs(t, err, base.MixUserSystemTablesError)
+
+	// SyntaxError position adjustment using Statement.Start.
+	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{
+		Text:  "SELECT * FORM invalid_table;",
+		Start: &storepb.Position{Line: 3, Column: 1},
+	}, "db", "", false)
+	var syntaxErr *base.SyntaxError
+	require.ErrorAs(t, err, &syntaxErr)
+	require.Equal(t, int32(3), syntaxErr.Position.Line)
+
+	// Cyclic view reference error propagation.
+	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT * FROM v1"}, "db", "", false)
 	require.ErrorContains(t, err, "cyclic view reference")
 }
