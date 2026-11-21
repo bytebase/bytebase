@@ -2,7 +2,6 @@ package oracle
 
 import (
 	"context"
-	"database/sql"
 
 	omnidriver "github.com/bytebase/omni/driver"
 	"github.com/pkg/errors"
@@ -14,9 +13,8 @@ import (
 
 // QueryConn runs a script for the editor, one result per statement, on the
 // session the driver keeps until Close so an editor request's statements share
-// it. conn is unused: the caller's *sql.Conn, if it had one, is not the
-// contract's Session.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+// it.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	d.sessionMu.Lock()
 	defer d.sessionMu.Unlock()
 	if d.session == nil {
@@ -39,14 +37,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		// next statement must open a new session.
 		d.discardSessionLocked(session)
 	}
-	if len(results) == 0 {
-		return nil, nil
-	}
-	converted := make([]*v1pb.QueryResult, 0, len(results))
-	for _, result := range results {
-		converted = append(converted, util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize))
-	}
-	return converted, nil
+	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, false), nil
 }
 
 // discardSessionLocked closes a session a statement took with it, so the next
@@ -67,20 +58,10 @@ func queryOptions(queryContext db.QueryContext) omnidriver.QueryOptions {
 		Schema:         queryContext.Schema,
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
-		ExplainFormat:  explainFormat(queryContext.Option.GetExplainFormat()),
+		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "TEXT", v1pb.QueryOption_JSON),
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 		MaskingEnabled: queryContext.MaskingEnabled,
 	}
-}
-
-// explainFormat is the plan format in oracledriver's vocabulary: only JSON
-// renders the plan as one document, and every other request reads the plan's
-// rows, as SQL*Plus prints them.
-func explainFormat(format v1pb.QueryOption_ExplainFormat) string {
-	if format == v1pb.QueryOption_JSON {
-		return "JSON"
-	}
-	return "TEXT"
 }
 
 // Probe runs a live review rule's probe on a session of its own. The Oracle

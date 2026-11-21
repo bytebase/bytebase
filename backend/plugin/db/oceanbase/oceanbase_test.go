@@ -9,6 +9,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 // TestDriverConfig maps a data source onto the driver contract: the login, the
@@ -100,14 +101,14 @@ func TestRDSTLSConfig(t *testing.T) {
 		VerifyTlsCertificate: true,
 		SslCa:                testCACertPEM,
 	}
-	tlsConfig, err := rdsTLSConfig(context.Background(), dataSource)
+	tlsConfig, err := util.RDSTLSConfig(context.Background(), dataSource)
 	require.NoError(t, err)
 	require.NotNil(t, tlsConfig.RootCAs)
 	require.NotNil(t, tlsConfig.VerifyPeerCertificate)
 
 	// Verification off still encrypts, and consults no root pool.
 	dataSource.VerifyTlsCertificate = false
-	tlsConfig, err = rdsTLSConfig(context.Background(), dataSource)
+	tlsConfig, err = util.RDSTLSConfig(context.Background(), dataSource)
 	require.NoError(t, err)
 	require.True(t, tlsConfig.InsecureSkipVerify)
 	require.Nil(t, tlsConfig.RootCAs)
@@ -117,7 +118,7 @@ func TestRDSTLSConfig(t *testing.T) {
 	// than a silent fallback to the downloaded bundle.
 	dataSource.VerifyTlsCertificate = true
 	dataSource.SslCa = "not a certificate"
-	_, err = rdsRootCAs(context.Background(), dataSource)
+	_, err = util.RDSRootCAs(context.Background(), dataSource)
 	require.ErrorContains(t, err, "failed to parse ssl_ca certificates")
 }
 
@@ -137,7 +138,7 @@ Wf86aX6PepsntZv2GYlA5UpabfT2EZICICpJ5h/iI+i341gBmLiAFQOyTDT+/wQc
 
 // TestExplainFormat maps the API's plan format onto the driver's.
 func TestExplainFormat(t *testing.T) {
-	require.Equal(t, "JSON", explainFormat(v1pb.QueryOption_JSON))
-	require.Equal(t, "", explainFormat(v1pb.QueryOption_TEXT))
-	require.Equal(t, "", explainFormat(v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED))
+	require.Equal(t, "JSON", util.OmniExplainFormat(v1pb.QueryOption_JSON, "", v1pb.QueryOption_JSON))
+	require.Equal(t, "", util.OmniExplainFormat(v1pb.QueryOption_TEXT, "", v1pb.QueryOption_JSON))
+	require.Equal(t, "", util.OmniExplainFormat(v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, "", v1pb.QueryOption_JSON))
 }

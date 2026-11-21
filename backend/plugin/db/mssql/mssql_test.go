@@ -23,6 +23,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 // TestMSSQLConfigDefaults maps a data source with nothing set onto the contract
@@ -318,7 +319,7 @@ func TestExplainFormat(t *testing.T) {
 		{name: "xml", option: &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_XML}, want: "XML"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, explainFormat(tc.option))
+			require.Equal(t, tc.want, util.OmniExplainFormat(tc.option.GetExplainFormat(), "TEXT", v1pb.QueryOption_XML))
 		})
 	}
 }
@@ -364,7 +365,7 @@ func TestOpenAppliesTLSSettings(t *testing.T) {
 			defer driver.Close(ctx)
 
 			// The adapter holds its session, so the probe runs through QueryConn.
-			results, err := driver.QueryConn(ctx, nil, "SELECT encrypt_option FROM sys.dm_exec_connections WHERE session_id = @@SPID", db.QueryContext{MaximumSQLResultSize: 1 << 30})
+			results, err := driver.QueryConn(ctx, "SELECT encrypt_option FROM sys.dm_exec_connections WHERE session_id = @@SPID", db.QueryContext{MaximumSQLResultSize: 1 << 30})
 			if tc.wantErr != "" {
 				require.ErrorContains(t, err, tc.wantErr)
 				return
@@ -403,7 +404,7 @@ func TestQueryConnRecordsLimitedStatement(t *testing.T) {
 	executeBatches(ctx, t, driver, "CREATE TABLE dbo.t (id INT PRIMARY KEY);\nINSERT INTO dbo.t VALUES (1), (2), (3);")
 
 	// SET returns nothing, so the driver pads an empty result in for it.
-	results, err := driver.QueryConn(ctx, nil, "SET NOCOUNT OFF;\nSELECT TOP 3 id FROM dbo.t ORDER BY id;", db.QueryContext{
+	results, err := driver.QueryConn(ctx, "SET NOCOUNT OFF;\nSELECT TOP 3 id FROM dbo.t ORDER BY id;", db.QueryContext{
 		Limit:                2,
 		MaximumSQLResultSize: 1 << 30,
 	})
@@ -443,7 +444,7 @@ END`)
 
 	// Statements that return nothing keep their places across GO, and the
 	// procedure's second result set comes after every statement's result.
-	results, err := driver.QueryConn(ctx, nil, `EXEC dbo.two_sets;
+	results, err := driver.QueryConn(ctx, `EXEC dbo.two_sets;
 DECLARE @x INT;
 SELECT @x = id FROM dbo.t;
 GO
@@ -461,19 +462,19 @@ SELECT id FROM dbo.t WHERE id = 3;`, queryContext)
 		"EXEC dbo.two_sets; [s] 1",
 	}, describe(results))
 
-	results, err = driver.QueryConn(ctx, nil, "EXEC dbo.two_sets;", db.QueryContext{Limit: 2, MaximumSQLResultSize: 1 << 30})
+	results, err = driver.QueryConn(ctx, "EXEC dbo.two_sets;", db.QueryContext{Limit: 2, MaximumSQLResultSize: 1 << 30})
 	require.NoError(t, err)
 	require.Equal(t, []string{"EXEC dbo.two_sets; [id] 2", "EXEC dbo.two_sets; [s] 1"}, describe(results))
 
 	// The size limit covers the rows kept, not the ones the row limit cuts.
-	results, err = driver.QueryConn(ctx, nil, "EXEC('SELECT TOP 200 name FROM sys.all_objects');", db.QueryContext{Limit: 2, MaximumSQLResultSize: 2000})
+	results, err = driver.QueryConn(ctx, "EXEC('SELECT TOP 200 name FROM sys.all_objects');", db.QueryContext{Limit: 2, MaximumSQLResultSize: 2000})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Empty(t, results[0].GetError())
 	require.Len(t, results[0].GetRows(), 2)
 
 	// Masking cannot trace the rows of a procedure call or an OUTPUT clause.
-	results, err = driver.QueryConn(ctx, nil, "EXEC dbo.two_sets;\nGO\nUPDATE dbo.t SET id = id OUTPUT inserted.id;\nSELECT id FROM dbo.t WHERE id = 1;", db.QueryContext{MaskingEnabled: true, MaximumSQLResultSize: 1 << 30})
+	results, err = driver.QueryConn(ctx, "EXEC dbo.two_sets;\nGO\nUPDATE dbo.t SET id = id OUTPUT inserted.id;\nSELECT id FROM dbo.t WHERE id = 1;", db.QueryContext{MaskingEnabled: true, MaximumSQLResultSize: 1 << 30})
 	require.NoError(t, err)
 	require.Equal(t, []string{
 		"EXEC dbo.two_sets; [id] 0 error",
@@ -483,21 +484,21 @@ SELECT id FROM dbo.t WHERE id = 3;`, queryContext)
 	}, describe(results))
 	require.Contains(t, results[0].GetError(), "data masking")
 
-	_, err = driver.QueryConn(ctx, nil, "EXEC dbo.two_sets;\nSELECT 1 AS one;", queryContext)
+	_, err = driver.QueryConn(ctx, "EXEC dbo.two_sets;\nSELECT 1 AS one;", queryContext)
 	require.ErrorContains(t, err, "cannot match the batch's result sets to its statements")
 
-	_, err = driver.QueryConn(ctx, nil, "SET NOEXEC ON;\nSELECT 1 AS one;", queryContext)
+	_, err = driver.QueryConn(ctx, "SET NOEXEC ON;\nSELECT 1 AS one;", queryContext)
 	require.EqualError(t, err, "SET NOEXEC is not supported")
-	_, err = driver.QueryConn(ctx, nil, "SET ANSI_NULLS, NOEXEC ON;\nDELETE FROM dbo.t;", queryContext)
+	_, err = driver.QueryConn(ctx, "SET ANSI_NULLS, NOEXEC ON;\nDELETE FROM dbo.t;", queryContext)
 	require.EqualError(t, err, "SET NOEXEC is not supported")
 
-	_, err = driver.QueryConn(ctx, nil, "SELECT 1 AS one;\nSELECT 1/0 AS x;", queryContext)
+	_, err = driver.QueryConn(ctx, "SELECT 1 AS one;\nSELECT 1/0 AS x;", queryContext)
 	require.ErrorContains(t, err, "Divide by zero error encountered")
 
 	// A result set cut off at the size limit must not stall the rest of the batch.
 	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	results, err = driver.QueryConn(timeoutCtx, nil, "SELECT TOP 100 name FROM sys.all_objects;\nSELECT 1 AS one;", db.QueryContext{MaximumSQLResultSize: 1})
+	results, err = driver.QueryConn(timeoutCtx, "SELECT TOP 100 name FROM sys.all_objects;\nSELECT 1 AS one;", db.QueryContext{MaximumSQLResultSize: 1})
 	require.NoError(t, err)
 	require.Len(t, results, 2)
 	require.Contains(t, results[0].GetError(), "exceeds max allowed output size")
@@ -512,7 +513,7 @@ func TestQueryConnValueShapes(t *testing.T) {
 	ctx := context.Background()
 	driver, _ := newSyncTestDatabase(ctx, t, testcontainer.SharedMSSQLContainer(t))
 
-	results, err := driver.QueryConn(ctx, nil, `SELECT
+	results, err := driver.QueryConn(ctx, `SELECT
 	CAST(0x AS VARBINARY(10)) AS empty_bin,
 	CAST(0x01 AS VARBINARY(10)) AS bin,
 	CAST(1.25 AS DECIMAL(18,2)) AS dec,
@@ -546,7 +547,7 @@ func TestQueryConnReportsAffectedRows(t *testing.T) {
 	driver, _ := newSyncTestDatabase(ctx, t, testcontainer.SharedMSSQLContainer(t))
 	executeBatches(ctx, t, driver, "CREATE TABLE dbo.counted (id INT PRIMARY KEY);")
 
-	results, err := driver.QueryConn(ctx, nil, "INSERT INTO dbo.counted (id) VALUES (1);", db.QueryContext{MaximumSQLResultSize: 1 << 30})
+	results, err := driver.QueryConn(ctx, "INSERT INTO dbo.counted (id) VALUES (1);", db.QueryContext{MaximumSQLResultSize: 1 << 30})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Equal(t, []string{"Affected Rows"}, results[0].GetColumnNames())
@@ -566,11 +567,11 @@ func TestQueryConnKeepsOneSession(t *testing.T) {
 	driver, database := newSyncTestDatabase(ctx, t, container)
 
 	// The first request leaves session state behind.
-	_, err := driver.QueryConn(ctx, nil, "CREATE TABLE #session (id INT);\nINSERT INTO #session VALUES (7);\nSET CONTEXT_INFO 0x0102;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
+	_, err := driver.QueryConn(ctx, "CREATE TABLE #session (id INT);\nINSERT INTO #session VALUES (7);\nSET CONTEXT_INFO 0x0102;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
 	require.NoError(t, err)
 
 	// The next request sees the temporary table and the context info.
-	results, err := driver.QueryConn(ctx, nil, "SELECT id FROM #session;\nSELECT CONTEXT_INFO() AS context;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
+	results, err := driver.QueryConn(ctx, "SELECT id FROM #session;\nSELECT CONTEXT_INFO() AS context;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
 	require.NoError(t, err)
 	require.Len(t, results, 2)
 	require.Equal(t, int64(7), results[0].GetRows()[0].GetValues()[0].GetInt64Value())
@@ -580,7 +581,7 @@ func TestQueryConnKeepsOneSession(t *testing.T) {
 
 	// Another driver is another session, even on the same database.
 	otherOpened := openMSSQL(ctx, t, container.GetHost(), container.GetPort(), database)
-	results, err = otherOpened.QueryConn(ctx, nil, "SELECT COUNT(*) AS n FROM #session;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
+	results, err = otherOpened.QueryConn(ctx, "SELECT COUNT(*) AS n FROM #session;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Contains(t, results[0].GetError(), "#session")

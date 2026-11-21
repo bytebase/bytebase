@@ -12,7 +12,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
@@ -139,18 +138,18 @@ func TestDriverConfig(t *testing.T) {
 
 func TestExecuteOptions(t *testing.T) {
 	tests := []struct {
-		name string
-		opts db.ExecuteOptions
-		mode transaction.Mode
-		want omnidriver.TransactionMode
+		name      string
+		statement string
+		opts      db.ExecuteOptions
+		want      omnidriver.TransactionMode
 	}{
-		{name: "the default mode is transactional", mode: transaction.ModeOn, want: omnidriver.Transactional},
-		{name: "the directive turns transactions off", mode: transaction.ModeOff, want: omnidriver.AutoCommit},
-		{name: "creating a database runs outside a transaction", opts: db.ExecuteOptions{CreateDatabase: true}, mode: transaction.ModeOn, want: omnidriver.Transactional},
+		{name: "the default mode is transactional", statement: "SELECT 1;", want: omnidriver.Transactional},
+		{name: "the directive turns transactions off", statement: "-- txn-mode=off\nSELECT 1;", want: omnidriver.AutoCommit},
+		{name: "creating a database runs outside a transaction", statement: "-- txn-mode=on\n-- txn-isolation=serializable\nCREATE DATABASE app;", opts: db.ExecuteOptions{CreateDatabase: true}, want: omnidriver.Transactional},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := executeOptions(tc.opts, tc.mode)
+			_, got := executeOptions(tc.statement, tc.opts)
 			require.Equal(t, tc.want, got.Transaction)
 			require.Equal(t, tc.opts.CreateDatabase, got.CreateDatabase)
 			require.Equal(t, tc.opts.MaximumRetries, got.MaxRetries)
@@ -272,7 +271,7 @@ func TestExecuteLogger(t *testing.T) {
 			return nil
 		},
 	}
-	logger := executeLogger{opts: opts}
+	logger := util.NewExecuteLogger(opts)
 	logger.TransactionControl(omnidriver.Begin, nil)
 	logger.CommandExecute(omnidriver.Command{Text: "INSERT INTO t VALUES (1);", ByteStart: 4, ByteEnd: 30})
 	logger.CommandResponse(1, []int64{1}, nil)

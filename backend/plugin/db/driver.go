@@ -3,7 +3,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"log/slog"
@@ -108,7 +107,7 @@ type Driver interface {
 	// Execute will execute the statement.
 	Execute(ctx context.Context, statement string, opts ExecuteOptions) (int64, error)
 	// Used for execute readonly SELECT statement
-	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext QueryContext) ([]*v1pb.QueryResult, error)
+	QueryConn(ctx context.Context, statement string, queryContext QueryContext) ([]*v1pb.QueryResult, error)
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.

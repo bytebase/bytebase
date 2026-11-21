@@ -2,7 +2,6 @@ package bigquery
 
 import (
 	"context"
-	"database/sql"
 
 	odriver "github.com/bytebase/omni/driver"
 
@@ -12,15 +11,13 @@ import (
 )
 
 // QueryConn runs each statement of the script as its own job, in order, and
-// returns one result per statement run. The caller's *sql.Conn is unused: GetDB
-// returns nil, so there is no handle to open one from, and bigquery/driver's
-// session plays that part.
+// returns one result per statement run.
 //
 // An explain request is a dry run, which is what BigQuery offers in place of
 // EXPLAIN: each statement's result is one STRING column named "Validation
 // Result" stating whether the statement is valid and how many bytes it would
 // process.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	results, err := d.session.Query(ctx, statement, odriver.QueryOptions{
 		// BigQuery has no session state and no schema below the dataset, so
 		// QueryContext.Schema has nothing to set.
@@ -38,12 +35,5 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	if err != nil {
 		return nil, err
 	}
-	if len(results) == 0 {
-		return nil, nil
-	}
-	converted := make([]*v1pb.QueryResult, 0, len(results))
-	for _, result := range results {
-		converted = append(converted, util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize))
-	}
-	return converted, nil
+	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, false), nil
 }

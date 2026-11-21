@@ -82,7 +82,7 @@ func TestQueryConnStopsServerQueryWhenContextEnds(t *testing.T) {
 
 			done := make(chan []*v1pb.QueryResult, 1)
 			go func() {
-				results, err := driver.QueryConn(ctx, nil, "SELECT pg_sleep(30);", db.QueryContext{MaximumSQLResultSize: 1 << 30})
+				results, err := driver.QueryConn(ctx, "SELECT pg_sleep(30);", db.QueryContext{MaximumSQLResultSize: 1 << 30})
 				if err != nil {
 					results = []*v1pb.QueryResult{{Error: err.Error()}}
 				}

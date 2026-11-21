@@ -2,15 +2,20 @@
 package util
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -267,4 +272,121 @@ func applyPGTLSConfigForHost(dst *tls.Config, host string, src *tls.Config) {
 		dst.InsecureSkipVerify = src.InsecureSkipVerify
 		dst.VerifyPeerCertificate = CreateCertificateVerifier(src.RootCAs, host)
 	}
+}
+
+// rdsCertBundleURL is a variable so tests can point it at a local server.
+var rdsCertBundleURL = "https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem"
+
+// rdsCertFetchTimeout bounds the download so a stalled fetch cannot hold a
+// connection attempt open indefinitely.
+const rdsCertFetchTimeout = 30 * time.Second
+
+// maxRDSCertBundleSize bounds the downloaded bundle so a misbehaving endpoint
+// cannot stream unbounded data into memory (the real global bundle is ~165 KB).
+const maxRDSCertBundleSize int64 = 4 << 20
+
+var (
+	rdsCertPool  atomic.Pointer[x509.CertPool]
+	rdsCertGroup singleflight.Group
+)
+
+func getRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rdsCertBundleURL, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build request for rds cert")
+	}
+
+	client := &http.Client{Timeout: rdsCertFetchTimeout}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Without this an error page would reach AppendCertsFromPEM and surface as
+	// "failed to parse RDS CA certificates", hiding the real cause.
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("failed to download RDS CA certificates: %s", resp.Status)
+	}
+
+	pem, err := io.ReadAll(io.LimitReader(resp.Body, maxRDSCertBundleSize+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(pem)) > maxRDSCertBundleSize {
+		return nil, errors.Errorf("RDS CA bundle exceeds %d bytes", maxRDSCertBundleSize)
+	}
+
+	rootCertPool := x509.NewCertPool()
+	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+		return nil, errors.Errorf("failed to parse RDS CA certificates")
+	}
+	return rootCertPool, nil
+}
+
+// cachedRDSCertPool returns the AWS RDS CA bundle, downloading it once per
+// process. Only successes are cached, so a transient failure can still recover.
+func cachedRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
+	if pool := rdsCertPool.Load(); pool != nil {
+		return pool, nil
+	}
+	// The shared fetch does not inherit any caller's context, so the caller
+	// that starts it cannot cancel it for others; each caller waits on its own.
+	ch := rdsCertGroup.DoChan("", func() (any, error) {
+		if pool := rdsCertPool.Load(); pool != nil {
+			return pool, nil
+		}
+		fetchCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rdsCertFetchTimeout)
+		defer cancel()
+		pool, err := getRDSCertPool(fetchCtx)
+		if err != nil {
+			return nil, err
+		}
+		rdsCertPool.Store(pool)
+		return pool, nil
+	})
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case res := <-ch:
+		if res.Err != nil {
+			return nil, res.Err
+		}
+		pool, ok := res.Val.(*x509.CertPool)
+		if !ok {
+			return nil, errors.Errorf("unexpected RDS cert pool type %T", res.Val)
+		}
+		return pool, nil
+	}
+}
+
+// RDSRootCAs returns the root CA pool for an RDS IAM connection, preferring
+// an operator-supplied SslCa so deployments without outbound network access work.
+func RDSRootCAs(ctx context.Context, dataSource *storepb.DataSource) (*x509.CertPool, error) {
+	if ca := dataSource.GetSslCa(); ca != "" {
+		pool := x509.NewCertPool()
+		if !pool.AppendCertsFromPEM([]byte(ca)) {
+			return nil, errors.Errorf("failed to parse ssl_ca certificates")
+		}
+		return pool, nil
+	}
+	return cachedRDSCertPool(ctx)
+}
+
+// RDSTLSConfig builds the TLS config for an RDS IAM connection. IAM auth always
+// requires TLS, so this always returns a config.
+func RDSTLSConfig(ctx context.Context, dataSource *storepb.DataSource) (*tls.Config, error) {
+	if !dataSource.GetVerifyTlsCertificate() {
+		// No verifier runs in this mode, so a root pool would never be consulted.
+		return &tls.Config{InsecureSkipVerify: true}, nil // NOSONAR(go:S4830,go:S5527) operator disabled verification
+	}
+	rootCertPool, err := RDSRootCAs(ctx, dataSource)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get RDS cert pool")
+	}
+	return &tls.Config{ // NOSONAR(go:S4830) VerifyPeerCertificate below verifies chain and hostname
+		RootCAs:               rootCertPool,
+		InsecureSkipVerify:    true, // superseded by VerifyPeerCertificate below
+		VerifyPeerCertificate: CreateCertificateVerifier(rootCertPool, dataSource.GetHost()),
+	}, nil
 }

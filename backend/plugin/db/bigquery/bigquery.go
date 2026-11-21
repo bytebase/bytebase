@@ -28,8 +28,7 @@
 //     has no multi-statement transaction, and the comment reaches the job as
 //     part of the script, as it did before.
 //   - QueryConn runs on one session the adapter holds from Open to Close. The
-//     session carries no state — every statement is a job of its own — and the
-//     caller's *sql.Conn is unused because GetDB returns nil.
+//     session carries no state — every statement is a job of its own.
 //   - Dump writes nothing: googlesql has no catalog that renders a synced
 //     dataset back into DDL, and the previous driver wrote nothing either.
 //   - SyncInstance reports the project's datasets and no version and no roles:
@@ -55,6 +54,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 var (
@@ -148,42 +148,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		// BigQuery has no transaction that a script's statements share, and no
 		// isolation level to set; the driver ignores both.
 		MaxRetries: opts.MaximumRetries,
-		Log:        executeLogger{opts: opts},
+		Log:        util.NewExecuteLogger(opts),
 	})
-}
-
-// executeLogger reports a script's command and its response into the task run
-// log.
-type executeLogger struct {
-	opts db.ExecuteOptions
-}
-
-func (l executeLogger) CommandExecute(command odriver.Command) {
-	l.opts.LogCommandExecute(&storepb.Range{
-		Start: int32(command.ByteStart),
-		End:   int32(command.ByteEnd),
-	}, command.Text)
-}
-
-func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
-	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
-}
-
-// TransactionControl logs nothing: BigQuery has no transaction control step and
-// the previous driver logged none.
-func (executeLogger) TransactionControl(odriver.TransactionOp, error) {}
-
-// Retry records a retried script. BigQuery's driver retries nothing today, so
-// this only fires if it starts to.
-func (l executeLogger) Retry(err error, attempt, _ int) {
-	l.opts.LogRetryInfo(err, attempt)
-}
-
-func errorString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
 }
 
 // SyncInstance syncs the project's datasets. No version and no roles are

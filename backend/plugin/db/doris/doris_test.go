@@ -14,7 +14,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
@@ -112,25 +111,25 @@ func TestDriverConfigTLSWithoutVerification(t *testing.T) {
 func TestExecuteOptions(t *testing.T) {
 	tests := []struct {
 		name        string
-		mode        transaction.Mode
+		statement   string
 		opts        db.ExecuteOptions
 		wantMode    omnidriver.TransactionMode
 		wantCreate  bool
 		wantRetries int
 	}{
 		{
-			name:     "the default wraps the script in a transaction",
-			mode:     transaction.DefaultMode(),
-			wantMode: omnidriver.Transactional,
+			name:      "the default wraps the script in a transaction",
+			statement: "SELECT 1;",
+			wantMode:  omnidriver.Transactional,
 		},
 		{
-			name:     "-- txn-mode=off runs each statement on its own",
-			mode:     transaction.ModeOff,
-			wantMode: omnidriver.AutoCommit,
+			name:      "-- txn-mode=off runs each statement on its own",
+			statement: "-- txn-mode=off\nSELECT 1;",
+			wantMode:  omnidriver.AutoCommit,
 		},
 		{
 			name:        "create database runs outside a transaction",
-			mode:        transaction.ModeOn,
+			statement:   "-- txn-mode=on\n-- txn-isolation=serializable\nCREATE DATABASE app;",
 			opts:        db.ExecuteOptions{CreateDatabase: true, MaximumRetries: 3},
 			wantMode:    omnidriver.Transactional,
 			wantCreate:  true,
@@ -140,7 +139,7 @@ func TestExecuteOptions(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := executeOptions(tc.opts, tc.mode)
+			_, got := executeOptions(tc.statement, tc.opts)
 			require.Equal(t, tc.wantMode, got.Transaction)
 			require.Empty(t, got.Isolation)
 			require.Equal(t, tc.wantCreate, got.CreateDatabase)
@@ -162,7 +161,7 @@ func TestExecuteLogger(t *testing.T) {
 			return nil
 		},
 	}
-	l := executeLogger{opts: opts}
+	l := util.NewExecuteLogger(opts)
 
 	l.CommandExecute(omnidriver.Command{Text: "SELECT 1", ByteStart: 2, ByteEnd: 12})
 	l.CommandResponse(1, []int64{1}, nil)

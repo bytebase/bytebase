@@ -102,17 +102,17 @@ func runDifferentialCorpus(t *testing.T, sts stsMode) observation {
 		t.Fatalf("Ping() = %v", err)
 	}
 
-	results, err := driver.QueryConn(ctx, nil, `SELECT * FROM "users"; SELECT * FROM "empty";`, db.QueryContext{})
+	results, err := driver.QueryConn(ctx, `SELECT * FROM "users"; SELECT * FROM "empty";`, db.QueryContext{})
 	if err != nil {
 		obs.QueryErrors = append(obs.QueryErrors, err.Error())
 	}
 	obs.Queries = append(obs.Queries, marshalResults(t, results)...)
 
-	if _, err := driver.QueryConn(ctx, nil, `SELECT * FROM "users"`, db.QueryContext{Explain: true}); err != nil {
+	if _, err := driver.QueryConn(ctx, `SELECT * FROM "users"`, db.QueryContext{Explain: true}); err != nil {
 		obs.QueryErrors = append(obs.QueryErrors, err.Error())
 	}
 
-	results, err = driver.QueryConn(ctx, nil, `SELECT * FROM "fail"`, db.QueryContext{})
+	results, err = driver.QueryConn(ctx, `SELECT * FROM "fail"`, db.QueryContext{})
 	if err != nil {
 		obs.QueryErrors = append(obs.QueryErrors, err.Error())
 	}

@@ -435,7 +435,7 @@ func recordParityQueries(ctx context.Context, t *testing.T, opened db.Driver) []
 	var out []parityQuery
 	for _, each := range cases {
 		entry := parityQuery{Name: each.name, Script: each.script}
-		results, err := opened.QueryConn(ctx, nil, each.script, each.context)
+		results, err := opened.QueryConn(ctx, each.script, each.context)
 		if err != nil {
 			entry.CallError = err.Error()
 		}

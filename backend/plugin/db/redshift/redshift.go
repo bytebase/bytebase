@@ -11,10 +11,9 @@
 // task-run logger.
 //
 // Constraints of the engine and the contract, here rather than at each call:
-//   - QueryConn takes the caller's *sql.Conn but runs on the driver's own
-//     session, held from the first call until Close with calls serialized, so
-//     what a statement sets there (search_path, a temporary table) holds for
-//     the next one.
+//   - QueryConn runs on the driver's own session, held from the first call
+//     until Close with calls serialized, so what a statement sets there
+//     (search_path, a temporary table) holds for the next one.
 //   - The data source's extra connection parameters reach no connection: the
 //     only parameter the contract takes here is ParamDatashare, the datashare
 //     flag.
@@ -194,18 +193,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	roles := make([]*storepb.InstanceRole, 0, len(instance.Roles))
-	for _, role := range instance.Roles {
-		roles = append(roles, &storepb.InstanceRole{
-			Name:      role.Name,
-			Attribute: role.Attribute,
-		})
-	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-		Metadata:  &storepb.Instance{Roles: roles},
-	}, nil
+	return util.OmniInstanceToMetadata(instance, true), nil
 }
 
 // SyncDBSchema reads the schema of the database the driver is open on.

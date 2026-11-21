@@ -34,7 +34,6 @@ package cosmosdb
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"io"
 	"net/url"
 
@@ -156,9 +155,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb
 }
 
 // QueryConn runs statement in the container QueryContext.Container names.
-// conn is unused: the API pools no *sql.Conn for an engine whose GetDB is nil,
-// and the contract's session is not one.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if queryContext.Container == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("container argument is required for CosmosDB"))
 	}
@@ -208,10 +205,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-	}, nil
+	return util.OmniInstanceToMetadata(instance, false), nil
 }
 
 // SyncDBSchema reads the connected database's containers as tables.

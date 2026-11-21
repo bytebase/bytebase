@@ -17,11 +17,9 @@
 //     An RDS IAM login is resolved here, once per Open, as before, and its extra
 //     connection parameters now reach the session where the old RDS path
 //     dropped them.
-//   - QueryConn takes the caller's *sql.Conn but runs on the driver's own
-//     session: the contract's Querier hands out Sessions, and a driver cannot
-//     put one on a *sql.Conn. The driver holds that session from the first call
-//     until Close and serializes the calls, as the stream's one pooled
-//     connection was: what a statement sets there (a SET, a temporary table, the
+//   - QueryConn runs on the driver's own session, held from the first call
+//     until Close with calls serialized, as the stream's one pooled connection
+//     was: what a statement sets there (a SET, a temporary table, the
 //     search_path) holds for the next call.
 //   - The probe wraps BEGIN, the tenant-mode prelude, the statement and
 //     ROLLBACK on one session: the database owner is read on the connection the
@@ -66,7 +64,6 @@ import (
 	"sync"
 
 	"cloud.google.com/go/cloudsqlconn"
-	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	omndriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
 	pgdriver "github.com/bytebase/omni/pg/driver"
@@ -147,7 +144,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 			return dialer.Dial(ctx, instance)
 		}
 	case storepb.DataSource_AWS_RDS_IAM:
-		password, err := getRDSConnectionPassword(ctx, config)
+		password, err := util.RDSAuthToken(ctx, config)
 		if err != nil {
 			return nil, err
 		}
@@ -233,31 +230,6 @@ func pgConfig(config db.ConnectionConfig) (omndriver.Config, error) {
 	return cfg, nil
 }
 
-// getRDSConnectionPassword returns an AWS RDS IAM authentication token for the
-// data source's login.
-//
-// https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.Connecting.Go.html
-func getRDSConnectionPassword(ctx context.Context, config db.ConnectionConfig) (string, error) {
-	cfg, err := util.GetAWSConnectionConfig(ctx, config)
-	if err != nil {
-		return "", errors.Wrap(err, "load aws config failed")
-	}
-
-	// Handle cross-account role assumption if configured
-	if err := util.AssumeRoleIfNeeded(ctx, &cfg, config.ConnectionContext, config.DataSource.GetAwsCredential()); err != nil {
-		return "", err
-	}
-
-	dbEndpoint := fmt.Sprintf("%s:%s", config.DataSource.GetHost(), config.DataSource.GetPort())
-	authenticationToken, err := auth.BuildAuthToken(
-		ctx, dbEndpoint, config.DataSource.GetRegion(), config.DataSource.GetUsername(), cfg.Credentials)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to create authentication token")
-	}
-
-	return authenticationToken, nil
-}
-
 // Close closes the driver and what Open acquired beside it.
 func (d *Driver) Close(context.Context) error {
 	d.sessionMu.Lock()
@@ -292,27 +264,20 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	roles := make([]*storepb.InstanceRole, 0, len(instance.Roles))
-	for _, role := range instance.Roles {
-		roles = append(roles, &storepb.InstanceRole{
-			Name:      role.Name,
-			Attribute: role.Attribute,
-		})
-	}
-	databases := make([]*metadatapb.DatabaseSchemaMetadata, 0, len(instance.Databases))
-	for _, database := range instance.Databases {
-		// Neon reserves "postgres" as a service-managed system database, whereas
-		// other PostgreSQL instances commonly use it for application schemas.
-		if d.connectionCtx.Vendor == storepb.Vendor_NEON && database.Name == "postgres" {
-			continue
+	meta := util.OmniInstanceToMetadata(instance, true)
+	if d.connectionCtx.Vendor == storepb.Vendor_NEON {
+		databases := make([]*metadatapb.DatabaseSchemaMetadata, 0, len(meta.Databases))
+		for _, database := range meta.Databases {
+			// Neon reserves "postgres" as a service-managed system database, whereas
+			// other PostgreSQL instances commonly use it for application schemas.
+			if database.Name == "postgres" {
+				continue
+			}
+			databases = append(databases, database)
 		}
-		databases = append(databases, database)
+		meta.Databases = databases
 	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: databases,
-		Metadata:  &storepb.Instance{Roles: roles},
-	}, nil
+	return meta, nil
 }
 
 // SyncDBSchema reads the schema of the database the driver is open on.

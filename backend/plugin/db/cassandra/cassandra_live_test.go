@@ -143,14 +143,14 @@ func TestCassandraDriver(t *testing.T) {
 		instance, err := driver.SyncInstance(ctx)
 		require.NoError(t, err)
 		require.NotEmpty(t, instance.Version)
-		results, err := driver.QueryConn(ctx, nil, "SELECT id FROM t WHERE id = 1;", db.QueryContext{})
+		results, err := driver.QueryConn(ctx, "SELECT id FROM t WHERE id = 1;", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, int64(1), results[0].RowsCount)
 	})
 
 	t.Run("query", func(t *testing.T) {
-		results, err := database.QueryConn(ctx, nil, "SELECT id, name, score, at FROM t WHERE id = 1;", db.QueryContext{})
+		results, err := database.QueryConn(ctx, "SELECT id, name, score, at FROM t WHERE id = 1;", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		result := results[0]
@@ -172,14 +172,14 @@ func TestCassandraDriver(t *testing.T) {
 	})
 
 	t.Run("query limit", func(t *testing.T) {
-		results, err := database.QueryConn(ctx, nil, "SELECT id FROM t;", db.QueryContext{Limit: 1})
+		results, err := database.QueryConn(ctx, "SELECT id FROM t;", db.QueryContext{Limit: 1})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, int64(1), results[0].RowsCount)
 	})
 
 	t.Run("query result size cap", func(t *testing.T) {
-		results, err := database.QueryConn(ctx, nil, "SELECT id, name, score, at FROM t;", db.QueryContext{MaximumSQLResultSize: 1})
+		results, err := database.QueryConn(ctx, "SELECT id, name, score, at FROM t;", db.QueryContext{MaximumSQLResultSize: 1})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, util.FormatMaximumSQLResultSizeMessage(1), results[0].Error)
@@ -188,7 +188,7 @@ func TestCassandraDriver(t *testing.T) {
 	t.Run("query path keeps the inherited SELECT-only rule", func(t *testing.T) {
 		// Cassandra registers no editor validator, so the rule the driver has
 		// always applied is a no-op and a write goes through the query path.
-		results, err := database.QueryConn(ctx, nil, "INSERT INTO t (id, name) VALUES (3, 'c');", db.QueryContext{})
+		results, err := database.QueryConn(ctx, "INSERT INTO t (id, name) VALUES (3, 'c');", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Empty(t, results[0].Error)

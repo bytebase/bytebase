@@ -325,7 +325,7 @@ type parityDriver struct {
 
 func (p *parityDriver) queryConn(ctx context.Context, t *testing.T, script string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	t.Helper()
-	results, err := p.driver.QueryConn(ctx, nil, script, queryContext)
+	results, err := p.driver.QueryConn(ctx, script, queryContext)
 	if err != nil || !queryContext.Explain {
 		return results, err
 	}

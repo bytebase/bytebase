@@ -51,7 +51,7 @@ func TestAdapterBoundaryWithoutAnAccount(t *testing.T) {
 	_, err := driver.Execute(context.Background(), "SELECT * FROM c", db.ExecuteOptions{})
 	require.Equal(t, connect.CodeUnimplemented, connect.CodeOf(err))
 
-	_, err = driver.QueryConn(context.Background(), nil, "SELECT * FROM c", db.QueryContext{})
+	_, err = driver.QueryConn(context.Background(), "SELECT * FROM c", db.QueryContext{})
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err), "a container is required")
 }
 

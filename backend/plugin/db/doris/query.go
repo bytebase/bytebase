@@ -2,7 +2,6 @@ package doris
 
 import (
 	"context"
-	"database/sql"
 
 	omnidriver "github.com/bytebase/omni/driver"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -13,12 +12,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-// QueryConn queries a SQL statement in a given connection. The caller's
-// connection is unused: the driver holds one server session for the driver's
-// life and runs every call of the editor stream on it, so a user variable, a
-// SET value or a temporary table a statement establishes is still there for the
-// next one. Calls are serialized the way they were on the caller's *sql.Conn.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement on the driver's session.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	d.sessionMu.Lock()
 	defer d.sessionMu.Unlock()
 	if d.session == nil {

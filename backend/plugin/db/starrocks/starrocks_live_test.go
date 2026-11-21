@@ -116,7 +116,7 @@ func TestStarRocksDriver(t *testing.T) {
 	})
 
 	t.Run("query decodes the server's types", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT * FROM types ORDER BY id", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := driver.QueryConn(ctx, "SELECT * FROM types ORDER BY id", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		result := results[0]
@@ -142,20 +142,20 @@ func TestStarRocksDriver(t *testing.T) {
 	})
 
 	t.Run("limit and explain are rewritten before the statement runs", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT id FROM types ORDER BY id", db.QueryContext{Limit: 1, MaximumSQLResultSize: 1 << 20})
+		results, err := driver.QueryConn(ctx, "SELECT id FROM types ORDER BY id", db.QueryContext{Limit: 1, MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, "SELECT id FROM types ORDER BY id LIMIT 1", results[0].Statement)
 		require.Equal(t, int64(1), results[0].RowsCount)
 
 		// An existing, larger LIMIT is capped; a smaller one is kept.
-		results, err = driver.QueryConn(ctx, nil, "SELECT id FROM types ORDER BY id LIMIT 100", db.QueryContext{Limit: 1})
+		results, err = driver.QueryConn(ctx, "SELECT id FROM types ORDER BY id LIMIT 100", db.QueryContext{Limit: 1})
 		require.NoError(t, err)
 		require.Equal(t, "SELECT id FROM types ORDER BY id LIMIT 1", results[0].Statement)
 
 		// The driver offers StarRocks one plan format, so the request's format
 		// does not reach the statement.
-		results, err = driver.QueryConn(ctx, nil, "SELECT id FROM types", db.QueryContext{
+		results, err = driver.QueryConn(ctx, "SELECT id FROM types", db.QueryContext{
 			Explain: true,
 			Option:  &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
 		})
@@ -166,7 +166,7 @@ func TestStarRocksDriver(t *testing.T) {
 	})
 
 	t.Run("a statement's error stops the script", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT 1; SELECT * FROM missing_table; SELECT 2", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := driver.QueryConn(ctx, "SELECT 1; SELECT * FROM missing_table; SELECT 2", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 2)
 		require.Empty(t, results[0].GetError())
@@ -176,9 +176,9 @@ func TestStarRocksDriver(t *testing.T) {
 	t.Run("a session variable reaches the next call", func(t *testing.T) {
 		// The editor asks for one statement per QueryConn call, so the session
 		// has to outlive the call.
-		_, err := driver.QueryConn(ctx, nil, "SET @bb_session = 42", db.QueryContext{})
+		_, err := driver.QueryConn(ctx, "SET @bb_session = 42", db.QueryContext{})
 		require.NoError(t, err)
-		results, err := driver.QueryConn(ctx, nil, "SELECT @bb_session", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := driver.QueryConn(ctx, "SELECT @bb_session", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, []string{"@bb_session"}, results[0].ColumnNames)
@@ -186,7 +186,7 @@ func TestStarRocksDriver(t *testing.T) {
 	})
 
 	t.Run("a write through the query path reports its affected rows", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "INSERT INTO types (id) VALUES (3)", db.QueryContext{})
+		results, err := driver.QueryConn(ctx, "INSERT INTO types (id) VALUES (3)", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, []string{"Affected Rows"}, results[0].ColumnNames)
@@ -194,7 +194,7 @@ func TestStarRocksDriver(t *testing.T) {
 	})
 
 	t.Run("an ADMIN SHOW answers with rows", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "ADMIN SHOW FRONTEND CONFIG", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := driver.QueryConn(ctx, "ADMIN SHOW FRONTEND CONFIG", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.NotEmpty(t, results[0].ColumnNames)
@@ -202,7 +202,7 @@ func TestStarRocksDriver(t *testing.T) {
 	})
 
 	t.Run("the size cap truncates and the script continues", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT id, repeat('x', 80) FROM types ORDER BY id;\nSELECT 7", db.QueryContext{MaximumSQLResultSize: 200})
+		results, err := driver.QueryConn(ctx, "SELECT id, repeat('x', 80) FROM types ORDER BY id;\nSELECT 7", db.QueryContext{MaximumSQLResultSize: 200})
 		require.NoError(t, err)
 		require.Len(t, results, 2)
 		require.Equal(t, "Output of query exceeds max allowed output size of 0MB", results[0].GetError())
@@ -210,7 +210,7 @@ func TestStarRocksDriver(t *testing.T) {
 	})
 
 	t.Run("a zero-byte cap is no cap", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT id FROM types ORDER BY id", db.QueryContext{})
+		results, err := driver.QueryConn(ctx, "SELECT id FROM types ORDER BY id", db.QueryContext{})
 		require.NoError(t, err)
 		require.Empty(t, results[0].GetError())
 		require.Equal(t, int64(3), results[0].RowsCount)

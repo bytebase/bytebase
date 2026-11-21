@@ -17,7 +17,6 @@
 // QueryConn runs on one session held for the driver's lifetime and serializes
 // its calls, as the editor stream's one pooled connection did: what a statement
 // sets there (search_path, a temporary table) holds for the stream's next call.
-// The caller's *sql.Conn is unused.
 //
 // Execute maps the script's transaction directive and passes neither the
 // isolation directive nor MaximumRetries: this engine ignored both, and honoring
@@ -291,15 +290,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	roles := make([]*storepb.InstanceRole, 0, len(instance.Roles))
-	for _, role := range instance.Roles {
-		roles = append(roles, &storepb.InstanceRole{Name: role.Name, Attribute: role.Attribute})
-	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-		Metadata:  &storepb.Instance{Roles: roles},
-	}, nil
+	return util.OmniInstanceToMetadata(instance, true), nil
 }
 
 // SyncDBSchema reads the schema of the database the driver was opened on. A

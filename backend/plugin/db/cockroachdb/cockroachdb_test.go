@@ -12,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 func TestCockroachConfig(t *testing.T) {
@@ -156,10 +157,10 @@ func TestTaskRunSessionFromResult(t *testing.T) {
 }
 
 func TestExplainFormat(t *testing.T) {
-	require.Equal(t, "JSON", explainFormat(v1pb.QueryOption_JSON))
-	require.Equal(t, "TEXT", explainFormat(v1pb.QueryOption_TEXT))
-	require.Equal(t, "TEXT", explainFormat(v1pb.QueryOption_XML))
-	require.Equal(t, "TEXT", explainFormat(v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED))
+	require.Equal(t, "JSON", util.OmniExplainFormat(v1pb.QueryOption_JSON, "TEXT", v1pb.QueryOption_JSON))
+	require.Equal(t, "TEXT", util.OmniExplainFormat(v1pb.QueryOption_TEXT, "TEXT", v1pb.QueryOption_JSON))
+	require.Equal(t, "TEXT", util.OmniExplainFormat(v1pb.QueryOption_XML, "TEXT", v1pb.QueryOption_JSON))
+	require.Equal(t, "TEXT", util.OmniExplainFormat(v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, "TEXT", v1pb.QueryOption_JSON))
 }
 
 func TestExecuteOptions(t *testing.T) {
@@ -206,8 +207,8 @@ func TestExecuteOptions(t *testing.T) {
 	}
 }
 
-// executeLogger bridges the contract's steps onto the task run log in the shape
-// the product reads.
+// TestExecuteLogger verifies ExecuteLogger bridges the contract's steps onto the
+// task run log in the shape the product reads.
 func TestExecuteLogger(t *testing.T) {
 	var logs []*storepb.TaskRunLog
 	opts := db.ExecuteOptions{
@@ -217,7 +218,7 @@ func TestExecuteLogger(t *testing.T) {
 			return nil
 		},
 	}
-	logger := executeLogger{opts: opts}
+	logger := util.NewExecuteLogger(opts)
 	logger.CommandExecute(omnidriver.Command{Text: "SELECT 1;", ByteStart: 14, ByteEnd: 23})
 	logger.CommandResponse(2, []int64{1, 1}, nil)
 	logger.TransactionControl(omnidriver.Begin, nil)
@@ -237,10 +238,10 @@ func TestExecuteLogger(t *testing.T) {
 	// Without the statement flag the log carries the command's range instead,
 	// which is what the task run view highlights.
 	logs = nil
-	logger = executeLogger{opts: db.ExecuteOptions{CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
+	logger = util.NewExecuteLogger(db.ExecuteOptions{CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
 		logs = append(logs, entry)
 		return nil
-	}}}
+	}})
 	logger.CommandExecute(omnidriver.Command{Text: "SELECT 1;", ByteStart: 14, ByteEnd: 23})
 	require.Len(t, logs, 1)
 	require.Empty(t, logs[0].GetCommandExecute().GetStatement())

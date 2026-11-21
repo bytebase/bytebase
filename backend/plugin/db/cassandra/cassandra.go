@@ -35,7 +35,6 @@ package cassandra
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -145,13 +144,13 @@ func (d *Driver) Ping(ctx context.Context) error {
 // run's log.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	return d.inner.Execute(ctx, statement, omnidriver.ExecuteOptions{
-		Log: executeLogger{opts: opts},
+		Log: util.NewExecuteLogger(opts),
 	})
 }
 
 // QueryConn runs a read-only script, one result per statement, with the
 // editor's SELECT-only rule.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, rawStatement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, rawStatement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	stmts, err := cassandraparser.SplitSQL(rawStatement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split sql")
@@ -213,10 +212,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-	}, nil
+	return util.OmniInstanceToMetadata(instance, false), nil
 }
 
 // SyncDBSchema reads the attached keyspace's tables. A keyspace the server no
@@ -305,51 +301,6 @@ func convertValue(value omnidriver.Value) *v1pb.RowValue {
 	default:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: fmt.Sprintf("%v", value)}}
 	}
-}
-
-// executeLogger reports the driver contract's execute steps to the task run's
-// log.
-type executeLogger struct {
-	opts db.ExecuteOptions
-}
-
-func (l executeLogger) CommandExecute(command omnidriver.Command) {
-	l.opts.LogCommandExecute(&storepb.Range{
-		Start: int32(command.ByteStart),
-		End:   int32(command.ByteEnd),
-	}, command.Text)
-}
-
-func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
-	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
-}
-
-func (l executeLogger) TransactionControl(op omnidriver.TransactionOp, err error) {
-	l.opts.LogTransactionControl(transactionControlType(op), errorString(err))
-}
-
-func (l executeLogger) Retry(err error, attempt, _ int) {
-	l.opts.LogRetryInfo(err, attempt)
-}
-
-func transactionControlType(op omnidriver.TransactionOp) storepb.TaskRunLog_TransactionControl_Type {
-	switch op {
-	case omnidriver.Begin:
-		return storepb.TaskRunLog_TransactionControl_BEGIN
-	case omnidriver.Commit:
-		return storepb.TaskRunLog_TransactionControl_COMMIT
-	case omnidriver.Rollback:
-		return storepb.TaskRunLog_TransactionControl_ROLLBACK
-	default:
-		return storepb.TaskRunLog_TransactionControl_TYPE_UNSPECIFIED
-	}
-}
-
-func errorString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
 }
 
 // tunnelConn reports the address the tunnel dialled. gocql reads the remote

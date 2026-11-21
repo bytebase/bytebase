@@ -330,7 +330,7 @@ func TestQueryWithBracketNotation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			results, err := openedDriver.QueryConn(ctx, nil, tc.statement, db.QueryContext{
+			results, err := openedDriver.QueryConn(ctx, tc.statement, db.QueryContext{
 				Limit:                50,
 				MaximumSQLResultSize: 10 * 1024 * 1024, // 10MB
 			})
@@ -413,7 +413,7 @@ func TestQueryWithBracketNotationStructure(t *testing.T) {
 
 	// Query with bracket notation
 	statement := `db['` + collectionName + `'].find().limit(1)`
-	results, err := openedDriver.QueryConn(ctx, nil, statement, db.QueryContext{
+	results, err := openedDriver.QueryConn(ctx, statement, db.QueryContext{
 		Limit:                50,
 		MaximumSQLResultSize: 10 * 1024 * 1024,
 	})
@@ -502,7 +502,7 @@ func TestQueryDoubleNotation(t *testing.T) {
 	})
 	require.NoError(t, err, "Failed to insert test data")
 
-	results, err := openedDriver.QueryConn(ctx, nil, `db.users.find()`, db.QueryContext{
+	results, err := openedDriver.QueryConn(ctx, `db.users.find()`, db.QueryContext{
 		Limit:                50,
 		MaximumSQLResultSize: 10 * 1024 * 1024,
 	})
@@ -546,7 +546,7 @@ func TestQueryConnExplain(t *testing.T) {
 
 	explain := func(statement string, asExplain bool) *v1pb.QueryResult {
 		t.Helper()
-		results, err := opened.QueryConn(ctx, nil, statement, db.QueryContext{
+		results, err := opened.QueryConn(ctx, statement, db.QueryContext{
 			Explain:              asExplain,
 			Limit:                5000,
 			MaximumSQLResultSize: 1 << 30,
@@ -582,7 +582,7 @@ func TestQueryConnExplain(t *testing.T) {
 	// statement, so a script is planned a statement at a time rather than
 	// refused for holding two.
 	const second = `db.orders.find({total: {$lt: 500}})`
-	scripted, err := opened.QueryConn(ctx, nil, statement+"; "+second, db.QueryContext{
+	scripted, err := opened.QueryConn(ctx, statement+"; "+second, db.QueryContext{
 		Explain: true, MaximumSQLResultSize: 1 << 30,
 		Option: &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
 	})
@@ -607,7 +607,7 @@ func TestQueryConnExplain(t *testing.T) {
 
 	// A write has no plan, and planning it would mean running it. The refusal
 	// is the statement's own result error, as a statement's failure is.
-	refused, err := opened.QueryConn(ctx, nil, `db.orders.insertOne({a: 1})`, db.QueryContext{
+	refused, err := opened.QueryConn(ctx, `db.orders.insertOne({a: 1})`, db.QueryContext{
 		Explain: true, MaximumSQLResultSize: 1 << 30,
 		Option: &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
 	})

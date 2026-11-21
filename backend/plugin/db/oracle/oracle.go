@@ -70,9 +70,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -226,19 +224,11 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	if opts.CreateDatabase {
 		return 0, errors.New("create database is not supported for Oracle")
 	}
-	config, cleanedStatement := base.ParseTransactionConfig(statement)
-	mode := config.Mode
-	if mode == transaction.ModeUnspecified {
-		mode = transaction.DefaultMode()
-	}
-	transactionMode := omnidriver.Transactional
-	if mode == transaction.ModeOff {
-		transactionMode = omnidriver.AutoCommit
-	}
+	transactionMode, _, cleanedStatement := util.ParseTransactionMode(statement)
 	return d.impl.Execute(ctx, withoutSQLPlusCommands(cleanedStatement), omnidriver.ExecuteOptions{
 		Transaction: transactionMode,
 		MaxRetries:  opts.MaximumRetries,
-		Log:         executeLogger{opts: opts},
+		Log:         util.NewExecuteLogger(opts),
 	})
 }
 
@@ -287,47 +277,4 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 // refused because of it.
 func (d *Driver) OwnsPrivateDatabaseLink(ctx context.Context) (bool, error) {
 	return d.impl.OwnsPrivateDatabaseLink(ctx)
-}
-
-// executeLogger reports the driver contract's execute steps to the task run's
-// log, which is how a task run shows what ran and what Oracle answered.
-type executeLogger struct {
-	opts db.ExecuteOptions
-}
-
-func (l executeLogger) CommandExecute(command omnidriver.Command) {
-	l.opts.LogCommandExecute(&storepb.Range{
-		Start: int32(command.ByteStart),
-		End:   int32(command.ByteEnd),
-	}, command.Text)
-}
-
-func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
-	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
-}
-
-func (l executeLogger) TransactionControl(op omnidriver.TransactionOp, err error) {
-	var control storepb.TaskRunLog_TransactionControl_Type
-	switch op {
-	case omnidriver.Begin:
-		control = storepb.TaskRunLog_TransactionControl_BEGIN
-	case omnidriver.Commit:
-		control = storepb.TaskRunLog_TransactionControl_COMMIT
-	case omnidriver.Rollback:
-		control = storepb.TaskRunLog_TransactionControl_ROLLBACK
-	default:
-		return
-	}
-	l.opts.LogTransactionControl(control, errorString(err))
-}
-
-func (l executeLogger) Retry(err error, attempt, _ int) {
-	l.opts.LogRetryInfo(err, attempt)
-}
-
-func errorString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
 }

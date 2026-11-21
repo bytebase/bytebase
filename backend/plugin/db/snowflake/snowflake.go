@@ -30,7 +30,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unicode"
 
 	odriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -42,9 +41,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type snowflakeImpl interface {
@@ -135,7 +132,7 @@ func (d *Driver) Ping(ctx context.Context) error {
 }
 
 // QueryConn queries a SQL statement on the driver's lazily opened session.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	d.sessionMu.Lock()
 	defer d.sessionMu.Unlock()
 
@@ -154,7 +151,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		Schema:         queryContext.Schema,
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
-		ExplainFormat:  explainFormat(queryContext),
+		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON),
 		MaskingEnabled: queryContext.MaskingEnabled,
 		MaxResultBytes: maxResultBytes,
 	})
@@ -292,13 +289,7 @@ func toQueryResult(result *odriver.Result, queryContext db.QueryContext) *v1pb.Q
 	}
 	normalized := normalizeOutOfRangeTimestamps(result)
 	queryResult := util.OmniResultToQueryResult(normalized, queryContext.MaximumSQLResultSize)
-	if len(normalized.Columns) == 0 && normalized.AffectedRows == nil && normalized.Err == nil && !normalized.Truncated {
-		affected := util.BuildAffectedRowsResult(0, queryResult.Messages)
-		queryResult.ColumnNames = affected.ColumnNames
-		queryResult.ColumnTypeNames = affected.ColumnTypeNames
-		queryResult.Rows = affected.Rows
-		queryResult.RowsCount = 1
-	}
+	util.FillZeroAffectedRows(normalized, queryResult)
 	// Explain requests leave QueryPlan unset so SQLService stamps the requested
 	// format; user-written EXPLAIN statements map snowflake/analysis's lowercase
 	// format names ("text", "json") through db.TypedExplainPlan.
@@ -347,167 +338,19 @@ func normalizeOutOfRangeTimestamps(result *odriver.Result) *odriver.Result {
 	return result
 }
 
-func explainFormat(queryContext db.QueryContext) string {
-	switch db.ExplainFormat(queryContext.Option.GetExplainFormat()) {
-	case base.ExplainFormatJSON:
-		return "JSON"
-	case base.ExplainFormatText:
-		return "TEXT"
-	default:
-		return ""
-	}
-}
-
 // Execute executes a SQL script and returns the affected rows.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	config, cleanedStatement := base.ParseTransactionConfig(statement)
-	mode := config.Mode
-	if mode == transaction.ModeUnspecified {
-		mode = transaction.DefaultMode()
-	}
-	transactionMode := odriver.Transactional
-	if mode == transaction.ModeOff {
-		transactionMode = odriver.AutoCommit
-	}
+	transactionMode, _, cleanedStatement := util.ParseTransactionMode(statement)
+	shift := util.DirectiveShift(statement, cleanedStatement)
 	return d.impl.Execute(ctx, cleanedStatement, odriver.ExecuteOptions{
 		Transaction:    transactionMode,
 		CreateDatabase: opts.CreateDatabase,
 		MaxRetries:     opts.MaximumRetries,
-		Log:            executeLogger{opts: opts, sourceRange: directiveShift(statement, cleanedStatement)},
+		Log: util.NewExecuteLogger(opts, util.WithCommandRange(func(command odriver.Command) *storepb.Range {
+			start, end := shift(command.ByteStart, command.ByteEnd)
+			return &storepb.Range{Start: int32(start), End: int32(end)}
+		})),
 	})
-}
-
-// directiveShift maps the range the driver reports on the cleaned script back to
-// the caller's script, which the task run log reads when LogCommandStatement is
-// off. The removed directive lines are dropped from the range as well: the parser
-// removes them from anywhere in the leading comment block, and a contiguous range
-// that spans one would show the directive as if it had been executed.
-func directiveShift(script, cleaned string) func(int, int) (int, int) {
-	identity := func(start, end int) (int, int) { return start, end }
-	if cleaned == script {
-		return identity
-	}
-	scriptLines := strings.Split(script, "\n")
-	scriptStarts := make([]int, len(scriptLines))
-	cursor := 0
-	for i, line := range scriptLines {
-		scriptStarts[i] = cursor
-		cursor += len(line) + 1
-	}
-	cleanedLines := strings.Split(cleaned, "\n")
-	cleanedStarts := make([]int, len(cleanedLines))
-	sourceStarts := make([]int, len(cleanedLines))
-	cursor = 0
-	for i, line := range cleanedLines {
-		cleanedStarts[i] = cursor
-		cursor += len(line) + 1
-	}
-	kept := make([]bool, len(scriptLines))
-	next := 0
-	for i, line := range cleanedLines {
-		first, last := i == 0, i == len(cleanedLines)-1
-		for next < len(scriptLines) && !sameLine(scriptLines[next], line, first, last) {
-			next++
-		}
-		if next == len(scriptLines) {
-			return identity
-		}
-		kept[next] = true
-		sourceStarts[i] = scriptStarts[next]
-		if i == 0 {
-			sourceStarts[i] += len(scriptLines[next]) - len(strings.TrimLeftFunc(scriptLines[next], unicode.IsSpace))
-		}
-		next++
-	}
-	var removed [][2]int
-	for i, line := range scriptLines {
-		if !kept[i] {
-			removed = append(removed, [2]int{scriptStarts[i], scriptStarts[i] + len(line) + 1})
-		}
-	}
-	sourceOffset := func(at int) int {
-		if at < 0 || at > len(cleaned) {
-			return at
-		}
-		i := 0
-		for i+1 < len(cleanedStarts) && cleanedStarts[i+1] <= at {
-			i++
-		}
-		return sourceStarts[i] + (at - cleanedStarts[i])
-	}
-	return func(start, end int) (int, int) {
-		sourceStart, sourceEnd := sourceOffset(start), sourceOffset(end)
-		for _, span := range removed {
-			if sourceStart < span[1] && sourceEnd > span[0] && span[1] > sourceStart {
-				sourceStart = span[1]
-			}
-		}
-		if sourceStart > sourceEnd {
-			sourceStart = sourceEnd
-		}
-		return sourceStart, sourceEnd
-	}
-}
-
-// sameLine reports whether a cleaned line is the caller's line. The parser trims
-// the whole text, so the first kept line may have lost its leading whitespace and
-// the last its trailing whitespace; anything else, including a last line's
-// indentation, is copied verbatim.
-func sameLine(scriptLine, cleanedLine string, first, last bool) bool {
-	candidate := scriptLine
-	if first {
-		candidate = strings.TrimLeftFunc(candidate, unicode.IsSpace)
-	}
-	if last {
-		candidate = strings.TrimRightFunc(candidate, unicode.IsSpace)
-	}
-	return candidate == cleanedLine
-}
-
-type executeLogger struct {
-	opts        db.ExecuteOptions
-	sourceRange func(int, int) (int, int)
-}
-
-func (l executeLogger) CommandExecute(command odriver.Command) {
-	start, end := command.ByteStart, command.ByteEnd
-	if l.sourceRange != nil {
-		start, end = l.sourceRange(start, end)
-	}
-	l.opts.LogCommandExecute(&storepb.Range{
-		Start: int32(start),
-		End:   int32(end),
-	}, command.Text)
-}
-
-func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
-	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
-}
-
-func (l executeLogger) TransactionControl(op odriver.TransactionOp, err error) {
-	var control storepb.TaskRunLog_TransactionControl_Type
-	switch op {
-	case odriver.Begin:
-		control = storepb.TaskRunLog_TransactionControl_BEGIN
-	case odriver.Commit:
-		control = storepb.TaskRunLog_TransactionControl_COMMIT
-	case odriver.Rollback:
-		control = storepb.TaskRunLog_TransactionControl_ROLLBACK
-	default:
-		return
-	}
-	l.opts.LogTransactionControl(control, errorString(err))
-}
-
-func (l executeLogger) Retry(err error, attempt, _ int) {
-	l.opts.LogRetryInfo(err, attempt)
-}
-
-func errorString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
 }
 
 // SyncInstance syncs the Snowflake account's version, databases, and user roles.
@@ -516,18 +359,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	roles := make([]*storepb.InstanceRole, 0, len(instance.Roles))
-	for _, role := range instance.Roles {
-		roles = append(roles, &storepb.InstanceRole{
-			Name:      role.Name,
-			Attribute: role.Attribute,
-		})
-	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-		Metadata:  &storepb.Instance{Roles: roles},
-	}, nil
+	return util.OmniInstanceToMetadata(instance, true), nil
 }
 
 // SyncDBSchema syncs the schema of the database the driver was opened on.

@@ -3,6 +3,8 @@ package util
 
 import (
 	"fmt"
+	"strings"
+	"unicode"
 
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -10,8 +12,281 @@ import (
 
 	omnidriver "github.com/bytebase/omni/driver"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
+
+// OmniResultsToQueryResults converts a slice of omni driver results into API
+// QueryResults. When clearExplainPlan is true, QueryPlan is cleared so the API
+// layer stamps the plan format for explain requests.
+func OmniResultsToQueryResults(results []*omnidriver.Result, maxResultBytes int64, clearExplainPlan bool) []*v1pb.QueryResult {
+	if len(results) == 0 {
+		return nil
+	}
+	converted := make([]*v1pb.QueryResult, 0, len(results))
+	for _, result := range results {
+		queryResult := OmniResultToQueryResult(result, maxResultBytes)
+		if clearExplainPlan {
+			queryResult.QueryPlan = nil
+		}
+		converted = append(converted, queryResult)
+	}
+	return converted
+}
+
+// FillZeroAffectedRows populates one "Affected Rows: 0" row when the contract
+// returned a columnless, error-free result with nil AffectedRows.
+func FillZeroAffectedRows(result *omnidriver.Result, queryResult *v1pb.QueryResult) {
+	if result == nil || queryResult == nil {
+		return
+	}
+	if len(result.Columns) == 0 && result.AffectedRows == nil && result.Err == nil && !result.Truncated {
+		affected := BuildAffectedRowsResult(0, queryResult.Messages)
+		queryResult.ColumnNames = affected.ColumnNames
+		queryResult.ColumnTypeNames = affected.ColumnTypeNames
+		queryResult.Rows = affected.Rows
+		queryResult.RowsCount = 1
+	}
+}
+
+// OmniExplainFormat maps an API ExplainFormat enum onto the contract's
+// uppercase format name when it is in supported, or returns fallback.
+func OmniExplainFormat(format v1pb.QueryOption_ExplainFormat, fallback string, supported ...v1pb.QueryOption_ExplainFormat) string {
+	for _, s := range supported {
+		if format == s {
+			return format.String()
+		}
+	}
+	return fallback
+}
+
+// OmniInstanceToMetadata converts an omni/driver.Instance into db.InstanceMetadata.
+// When withInstanceMetadata is true, Metadata is populated with LowerCaseTableNames
+// and Roles.
+func OmniInstanceToMetadata(instance *omnidriver.Instance, withInstanceMetadata bool) *db.InstanceMetadata {
+	if instance == nil {
+		return nil
+	}
+	meta := &db.InstanceMetadata{
+		Version:   instance.Version,
+		Databases: instance.Databases,
+	}
+	if !withInstanceMetadata {
+		return meta
+	}
+	var roles []*storepb.InstanceRole
+	if len(instance.Roles) > 0 {
+		roles = make([]*storepb.InstanceRole, 0, len(instance.Roles))
+		for _, role := range instance.Roles {
+			roles = append(roles, &storepb.InstanceRole{
+				Name:            role.Name,
+				ConnectionLimit: role.ConnectionLimit,
+				ValidUntil:      role.ValidUntil,
+				Attribute:       role.Attribute,
+			})
+		}
+	}
+	meta.Metadata = &storepb.Instance{
+		MysqlLowerCaseTableNames: instance.LowerCaseTableNames,
+		Roles:                    roles,
+	}
+	return meta
+}
+
+// ParseTransactionMode strips any leading transaction directive from script and
+// returns the resolved omni transaction mode, isolation level, and cleaned script.
+func ParseTransactionMode(script string) (omnidriver.TransactionMode, omnidriver.IsolationLevel, string) {
+	config, cleaned := base.ParseTransactionConfig(script)
+	mode := config.Mode
+	if mode == transaction.ModeUnspecified {
+		mode = transaction.DefaultMode()
+	}
+	txMode := omnidriver.Transactional
+	if mode == transaction.ModeOff {
+		txMode = omnidriver.AutoCommit
+	}
+	return txMode, omnidriver.IsolationLevel(config.Isolation), cleaned
+}
+
+// ExecuteLoggerOption configures an ExecuteLogger.
+type ExecuteLoggerOption func(*ExecuteLogger)
+
+// WithCommandRange customizes how a command's byte range is mapped into a
+// TaskRunLog Range.
+func WithCommandRange(fn func(omnidriver.Command) *storepb.Range) ExecuteLoggerOption {
+	return func(l *ExecuteLogger) {
+		l.commandRange = fn
+	}
+}
+
+// WithOmitPerResultAffectedRows omits per-statement affected-row counts from
+// CommandResponse log entries while keeping total affectedRows.
+func WithOmitPerResultAffectedRows() ExecuteLoggerOption {
+	return func(l *ExecuteLogger) {
+		l.omitPerResultAffectedRows = true
+	}
+}
+
+// WithSkipCommandLogs suppresses CommandExecute and CommandResponse log entries
+// so only transaction control and retry events are recorded.
+func WithSkipCommandLogs() ExecuteLoggerOption {
+	return func(l *ExecuteLogger) {
+		l.skipCommandLogs = true
+	}
+}
+
+// ExecuteLogger bridges omni/driver.ExecuteLogger onto Bytebase's task run log.
+type ExecuteLogger struct {
+	opts                      db.ExecuteOptions
+	commandRange              func(omnidriver.Command) *storepb.Range
+	omitPerResultAffectedRows bool
+	skipCommandLogs           bool
+}
+
+// NewExecuteLogger creates an ExecuteLogger that reports execution steps to opts.
+func NewExecuteLogger(opts db.ExecuteOptions, options ...ExecuteLoggerOption) *ExecuteLogger {
+	l := &ExecuteLogger{opts: opts}
+	for _, option := range options {
+		option(l)
+	}
+	return l
+}
+
+func (l *ExecuteLogger) CommandExecute(command omnidriver.Command) {
+	if l.skipCommandLogs {
+		return
+	}
+	var commandRange *storepb.Range
+	if l.commandRange != nil {
+		commandRange = l.commandRange(command)
+	} else {
+		commandRange = &storepb.Range{
+			Start: int32(command.ByteStart),
+			End:   int32(command.ByteEnd),
+		}
+	}
+	l.opts.LogCommandExecute(commandRange, command.Text)
+}
+
+func (l *ExecuteLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
+	if l.skipCommandLogs {
+		return
+	}
+	if l.omitPerResultAffectedRows {
+		perResult = nil
+	}
+	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
+}
+
+func (l *ExecuteLogger) TransactionControl(op omnidriver.TransactionOp, err error) {
+	var control storepb.TaskRunLog_TransactionControl_Type
+	switch op {
+	case omnidriver.Begin:
+		control = storepb.TaskRunLog_TransactionControl_BEGIN
+	case omnidriver.Commit:
+		control = storepb.TaskRunLog_TransactionControl_COMMIT
+	case omnidriver.Rollback:
+		control = storepb.TaskRunLog_TransactionControl_ROLLBACK
+	default:
+		return
+	}
+	l.opts.LogTransactionControl(control, errorString(err))
+}
+
+func (l *ExecuteLogger) Retry(err error, attempt, _ int) {
+	l.opts.LogRetryInfo(err, attempt)
+}
+
+func errorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}
+
+// DirectiveShift maps the byte range a driver reports on cleaned back to the
+// caller's script, dropping directive lines removed by ParseTransactionConfig.
+func DirectiveShift(script, cleaned string) func(int, int) (int, int) {
+	identity := func(start, end int) (int, int) { return start, end }
+	if cleaned == script {
+		return identity
+	}
+	scriptLines := strings.Split(script, "\n")
+	scriptStarts := make([]int, len(scriptLines))
+	cursor := 0
+	for i, line := range scriptLines {
+		scriptStarts[i] = cursor
+		cursor += len(line) + 1
+	}
+	cleanedLines := strings.Split(cleaned, "\n")
+	cleanedStarts := make([]int, len(cleanedLines))
+	sourceStarts := make([]int, len(cleanedLines))
+	cursor = 0
+	for i, line := range cleanedLines {
+		cleanedStarts[i] = cursor
+		cursor += len(line) + 1
+	}
+	kept := make([]bool, len(scriptLines))
+	next := 0
+	for i, line := range cleanedLines {
+		first, last := i == 0, i == len(cleanedLines)-1
+		for next < len(scriptLines) && !sameLine(scriptLines[next], line, first, last) {
+			next++
+		}
+		if next == len(scriptLines) {
+			return identity
+		}
+		kept[next] = true
+		sourceStarts[i] = scriptStarts[next]
+		if i == 0 {
+			sourceStarts[i] += len(scriptLines[next]) - len(strings.TrimLeftFunc(scriptLines[next], unicode.IsSpace))
+		}
+		next++
+	}
+	var removed [][2]int
+	for i, line := range scriptLines {
+		if !kept[i] {
+			removed = append(removed, [2]int{scriptStarts[i], scriptStarts[i] + len(line) + 1})
+		}
+	}
+	sourceOffset := func(at int) int {
+		if at < 0 || at > len(cleaned) {
+			return at
+		}
+		i := 0
+		for i+1 < len(cleanedStarts) && cleanedStarts[i+1] <= at {
+			i++
+		}
+		return sourceStarts[i] + (at - cleanedStarts[i])
+	}
+	return func(start, end int) (int, int) {
+		sourceStart, sourceEnd := sourceOffset(start), sourceOffset(end)
+		for _, span := range removed {
+			if sourceStart < span[1] && sourceEnd > span[0] && span[1] > sourceStart {
+				sourceStart = span[1]
+			}
+		}
+		if sourceStart > sourceEnd {
+			sourceStart = sourceEnd
+		}
+		return sourceStart, sourceEnd
+	}
+}
+
+// sameLine reports whether a cleaned line matches the caller's line.
+func sameLine(scriptLine, cleanedLine string, first, last bool) bool {
+	candidate := scriptLine
+	if first {
+		candidate = strings.TrimLeftFunc(candidate, unicode.IsSpace)
+	}
+	if last {
+		candidate = strings.TrimRightFunc(candidate, unicode.IsSpace)
+	}
+	return candidate == cleanedLine
+}
 
 // OmniResultToQueryResult converts one result of the driver contract
 // (github.com/bytebase/omni/driver) into the API's QueryResult. Every adapter

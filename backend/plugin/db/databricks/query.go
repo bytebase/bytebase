@@ -2,7 +2,6 @@ package databricks
 
 import (
 	"context"
-	"database/sql"
 
 	odbdriver "github.com/bytebase/omni/driver"
 
@@ -12,12 +11,11 @@ import (
 )
 
 // QueryConn runs each statement of the script in order on the driver's session
-// and converts the results into the API's. The caller's *sql.Conn is unused:
-// GetDB returns nil, so there is no handle to open one from.
+// and converts the results into the API's.
 //
 // An explain request runs each statement in its FORMATTED form, which is what a
 // Databricks plan is; a statement the caller wrote as EXPLAIN runs as written.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	results, err := d.session.Query(ctx, statement, odbdriver.QueryOptions{
 		// Known difference: the schema reaches the statement. The previous driver
 		// sent only the catalog, so the editor's schema selection had no effect.
@@ -35,12 +33,5 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	if err != nil {
 		return nil, err
 	}
-	if len(results) == 0 {
-		return nil, nil
-	}
-	converted := make([]*v1pb.QueryResult, 0, len(results))
-	for _, result := range results {
-		converted = append(converted, util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize))
-	}
-	return converted, nil
+	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, false), nil
 }

@@ -65,9 +65,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var _ db.Driver = (*Driver)(nil)
@@ -184,62 +182,11 @@ func (d *Driver) Ping(ctx context.Context) error {
 // ClickHouse cannot roll back, so a script still logs the BEGIN and ROLLBACK
 // its transaction wrapper issues.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	config, cleaned := base.ParseTransactionConfig(statement)
-	transactionMode := config.Mode
-	if transactionMode == transaction.ModeUnspecified {
-		transactionMode = transaction.DefaultMode()
-	}
-
-	executeOptions := omnidriver.ExecuteOptions{
-		Transaction: omnidriver.Transactional,
-		Log:         executeLogger{opts: opts},
-	}
-	if transactionMode == transaction.ModeOff {
-		executeOptions.Transaction = omnidriver.AutoCommit
-	}
-	return d.impl.Execute(ctx, cleaned, executeOptions)
-}
-
-// executeLogger reports the driver contract's execute steps to the task run's
-// log.
-type executeLogger struct {
-	opts db.ExecuteOptions
-}
-
-func (l executeLogger) CommandExecute(command omnidriver.Command) {
-	l.opts.LogCommandExecute(&storepb.Range{
-		Start: int32(command.ByteStart),
-		End:   int32(command.ByteEnd),
-	}, command.Text)
-}
-
-func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
-	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
-}
-
-func (l executeLogger) TransactionControl(op omnidriver.TransactionOp, err error) {
-	var t storepb.TaskRunLog_TransactionControl_Type
-	switch op {
-	case omnidriver.Begin:
-		t = storepb.TaskRunLog_TransactionControl_BEGIN
-	case omnidriver.Commit:
-		t = storepb.TaskRunLog_TransactionControl_COMMIT
-	case omnidriver.Rollback:
-		t = storepb.TaskRunLog_TransactionControl_ROLLBACK
-	default:
-		return
-	}
-	l.opts.LogTransactionControl(t, errorString(err))
-}
-
-// Retry logs nothing: this driver never retries.
-func (executeLogger) Retry(error, int, int) {}
-
-func errorString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
+	txMode, _, cleaned := util.ParseTransactionMode(statement)
+	return d.impl.Execute(ctx, cleaned, omnidriver.ExecuteOptions{
+		Transaction: txMode,
+		Log:         util.NewExecuteLogger(opts),
+	})
 }
 
 // SyncInstance syncs the server's version, databases and users.
@@ -248,15 +195,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	var roles []*storepb.InstanceRole
-	for _, role := range instance.Roles {
-		roles = append(roles, &storepb.InstanceRole{Name: role.Name})
-	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-		Metadata:  &storepb.Instance{Roles: roles},
-	}, nil
+	return util.OmniInstanceToMetadata(instance, true), nil
 }
 
 // SyncDBSchema syncs a single database schema. A database the server no longer

@@ -2,8 +2,8 @@ package pg
 
 import (
 	"context"
-	"database/sql"
 	"errors"
+	"strings"
 
 	omndriver "github.com/bytebase/omni/driver"
 	pgdriver "github.com/bytebase/omni/pg/driver"
@@ -16,10 +16,8 @@ import (
 )
 
 // QueryConn runs the script on the driver's session, one result per statement.
-// The caller's *sql.Conn is unused: the contract's session is the driver's, not a
-// *sql.DB's, and it is the one a statement's settings hold on. Calls are
-// serialized, as the stream's one pooled connection was.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+// Calls are serialized, as the stream's one pooled connection was.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	d.sessionMu.Lock()
 	defer d.sessionMu.Unlock()
 	session, err := d.querySession(ctx)
@@ -31,7 +29,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		Schema:         queryContext.Schema,
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
-		ExplainFormat:  explainFormatName(queryContext.Option.GetExplainFormat()),
+		ExplainFormat:  strings.ToLower(util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML, v1pb.QueryOption_YAML)),
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 		MaskingEnabled: queryContext.MaskingEnabled,
 	})
@@ -47,29 +45,15 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	}
 
 	timestampsBeyondProtoRangeToText(results)
-	converted := make([]*v1pb.QueryResult, 0, len(results))
-	for _, result := range results {
-		queryResult := util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize)
+	converted := util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, queryContext.Explain)
+	for i, result := range results {
 		// The editor's result shape is the product's: a statement that reports no
 		// count (ALTER TABLE, CREATE TABLE, SET) answers one "Affected Rows 0"
 		// row, and the contract leaves the count nil for it.
-		if len(result.Columns) == 0 && result.AffectedRows == nil && result.Err == nil {
-			affected := util.BuildAffectedRowsResult(0, queryResult.Messages)
-			queryResult.ColumnNames = affected.ColumnNames
-			queryResult.ColumnTypeNames = affected.ColumnTypeNames
-			queryResult.Rows = affected.Rows
-			queryResult.RowsCount = 1
-		}
+		util.FillZeroAffectedRows(result, converted[i])
 		if result.Err != nil {
-			queryResult.DetailedError = postgresErrorDetail(result.Err)
+			converted[i].DetailedError = postgresErrorDetail(result.Err)
 		}
-		// An explain request asked for one plan, in the format it named; the
-		// driver describes the statement it rewrote, which the caller already
-		// knows, and the request's format replaces the caller's own EXPLAIN.
-		if queryContext.Explain {
-			queryResult.QueryPlan = nil
-		}
-		converted = append(converted, queryResult)
 	}
 	return converted, nil
 }
@@ -86,22 +70,6 @@ func (d *Driver) querySession(ctx context.Context) (omndriver.Session, error) {
 	}
 	d.session = session
 	return session, nil
-}
-
-// explainFormatName is the plan format the contract's QueryOptions names.
-func explainFormatName(format v1pb.QueryOption_ExplainFormat) string {
-	switch format {
-	case v1pb.QueryOption_TEXT:
-		return "text"
-	case v1pb.QueryOption_JSON:
-		return "json"
-	case v1pb.QueryOption_XML:
-		return "xml"
-	case v1pb.QueryOption_YAML:
-		return "yaml"
-	default:
-		return ""
-	}
 }
 
 // timestampsBeyondProtoRangeToText rewrites a timestamp cell PostgreSQL allows

@@ -97,7 +97,7 @@ func TestAdapterQueryConnExecuteAndMasking(t *testing.T) {
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, rows, int64(2))
 
-	results, err := opened.QueryConn(ctx, nil, "SELECT id, note FROM qitems ORDER BY id", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	results, err := opened.QueryConn(ctx, "SELECT id, note FROM qitems ORDER BY id", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Empty(t, results[0].Error)
@@ -110,11 +110,11 @@ func TestAdapterQueryConnExecuteAndMasking(t *testing.T) {
 	// masked query withholds its rows.
 	_, err = opened.Execute(ctx, "CREATE PROCEDURE p() BEGIN SELECT 1 AS n; END", db.ExecuteOptions{})
 	require.NoError(t, err)
-	unmasked, err := opened.QueryConn(ctx, nil, "CALL p()", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	unmasked, err := opened.QueryConn(ctx, "CALL p()", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, unmasked, 1)
 	require.Len(t, unmasked[0].Rows, 1)
-	masked, err := opened.QueryConn(ctx, nil, "CALL p()", db.QueryContext{MaximumSQLResultSize: 1 << 20, MaskingEnabled: true})
+	masked, err := opened.QueryConn(ctx, "CALL p()", db.QueryContext{MaximumSQLResultSize: 1 << 20, MaskingEnabled: true})
 	require.NoError(t, err)
 	require.Len(t, masked, 1)
 	// The masking split withholds the procedure's rows; the contract reports the
@@ -131,19 +131,19 @@ func TestAdapterHoldsOneSessionAcrossQueryConnCalls(t *testing.T) {
 	container, database := newTestDatabase(t)
 	opened := openTestDatabaseDriver(t, container, database)
 
-	_, err := opened.QueryConn(ctx, nil, "SET @cutover_marker = 41", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	_, err := opened.QueryConn(ctx, "SET @cutover_marker = 41", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
-	results, err := opened.QueryConn(ctx, nil, "SELECT @cutover_marker + 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	results, err := opened.QueryConn(ctx, "SELECT @cutover_marker + 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Len(t, results[0].Rows, 1)
 	require.Equal(t, int64(42), results[0].Rows[0].Values[0].GetInt64Value())
 
-	_, err = opened.QueryConn(ctx, nil, "CREATE TEMPORARY TABLE cutover_temp (id INT)", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	_, err = opened.QueryConn(ctx, "CREATE TEMPORARY TABLE cutover_temp (id INT)", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
-	_, err = opened.QueryConn(ctx, nil, "INSERT INTO cutover_temp VALUES (7)", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	_, err = opened.QueryConn(ctx, "INSERT INTO cutover_temp VALUES (7)", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
-	results, err = opened.QueryConn(ctx, nil, "SELECT id FROM cutover_temp", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	results, err = opened.QueryConn(ctx, "SELECT id FROM cutover_temp", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Len(t, results[0].Rows, 1)
@@ -159,7 +159,7 @@ func TestAdapterDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
 	opened := openTestDatabaseDriver(t, container, database)
 	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 20}
 
-	_, err := opened.QueryConn(ctx, nil, "SET @cutover_marker = 41", queryContext)
+	_, err := opened.QueryConn(ctx, "SET @cutover_marker = 41", queryContext)
 	require.NoError(t, err)
 
 	canceledCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
@@ -167,12 +167,12 @@ func TestAdapterDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
 	// The statement runs past its context; the failure itself reaches the caller
 	// on the result, so this test pins only what the session does. It took the
 	// connection with it.
-	_, _ = opened.QueryConn(canceledCtx, nil, "SELECT SLEEP(10)", queryContext)
+	_, _ = opened.QueryConn(canceledCtx, "SELECT SLEEP(10)", queryContext)
 	require.NotNil(t, canceledCtx.Err(), "the statement must have run past its context")
 	require.Nil(t, opened.session, "a canceled statement's session is not one to keep")
 
 	// The stream continues on a new session rather than the dead one.
-	results, err := opened.QueryConn(ctx, nil, "SELECT 1", queryContext)
+	results, err := opened.QueryConn(ctx, "SELECT 1", queryContext)
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Len(t, results[0].Rows, 1)
@@ -353,7 +353,7 @@ func TestAdapterQueryConnResultShapeMatchesRecordedOldDriver(t *testing.T) {
 	require.NoError(t, err)
 	opened := openTestDatabaseDriver(t, container, database)
 
-	results, err := opened.QueryConn(ctx, nil, "SELECT id, note, n, b FROM r", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	results, err := opened.QueryConn(ctx, "SELECT id, note, n, b FROM r", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	result := results[0]
@@ -368,7 +368,7 @@ func TestAdapterQueryConnResultShapeMatchesRecordedOldDriver(t *testing.T) {
 	require.Equal(t, uint64(18446744073709551615), result.Rows[0].Values[2].GetUint64Value())
 	require.Equal(t, []byte{0x00, 0xff}, result.Rows[0].Values[3].GetBytesValue())
 
-	writeResults, err := opened.QueryConn(ctx, nil, "UPDATE r SET note = 'changed' WHERE id = 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	writeResults, err := opened.QueryConn(ctx, "UPDATE r SET note = 'changed' WHERE id = 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, writeResults, 1)
 	require.Equal(t, []string{"Affected Rows"}, writeResults[0].ColumnNames)
@@ -399,7 +399,7 @@ func TestAdapterServesMariaDBThroughItsOwnDriver(t *testing.T) {
 
 	_, err = opened.Execute(ctx, "INSERT INTO m VALUES (1, 'one')", db.ExecuteOptions{})
 	require.NoError(t, err)
-	results, err := opened.QueryConn(ctx, nil, "SELECT note FROM m WHERE id = 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	results, err := opened.QueryConn(ctx, "SELECT note FROM m WHERE id = 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Equal(t, "one", results[0].Rows[0].Values[0].GetStringValue())

@@ -106,7 +106,7 @@ func runQuery(t *testing.T, driver *Driver, container, sql string) [][]byte {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	results, err := driver.QueryConn(ctx, nil, sql, db.QueryContext{Container: container})
+	results, err := driver.QueryConn(ctx, sql, db.QueryContext{Container: container})
 	require.NoError(t, err, "QueryConn: %s", sql)
 	require.Len(t, results, 1, "driver returns exactly one QueryResult per query")
 	require.Equal(t, sql, results[0].Statement)
@@ -1102,7 +1102,7 @@ func TestCrossPartitionQueryLimit(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	results, err := driver.QueryConn(ctx, nil, `SELECT * FROM c`, db.QueryContext{
+	results, err := driver.QueryConn(ctx, `SELECT * FROM c`, db.QueryContext{
 		Container: crossPartitionContainer,
 		Limit:     7,
 	})
@@ -1126,7 +1126,7 @@ func pagedQuery(t *testing.T, driver *Driver, sql string) []string {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	results, err := driver.QueryConn(ctx, nil, sql, db.QueryContext{Container: pagedContainer})
+	results, err := driver.QueryConn(ctx, sql, db.QueryContext{Container: pagedContainer})
 	require.NoError(t, err, "QueryConn: %s", sql)
 	require.Len(t, results, 1, "driver returns exactly one QueryResult per query")
 	rows := make([]string, 0, len(results[0].Rows))

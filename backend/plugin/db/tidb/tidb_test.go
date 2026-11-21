@@ -314,7 +314,7 @@ func TestQueryConnExplainJSON(t *testing.T) {
 
 	statement := fmt.Sprintf("SELECT note FROM %s.plan_target WHERE id > 100", database)
 	explain := func(s string, option *v1pb.QueryOption, asExplain bool) *v1pb.QueryResult {
-		results, err := driver.QueryConn(ctx, nil, s, db.QueryContext{
+		results, err := driver.QueryConn(ctx, s, db.QueryContext{
 			Explain:              asExplain,
 			Limit:                5000,
 			MaximumSQLResultSize: 1 << 30,
@@ -380,7 +380,7 @@ func TestQueryConnRefusesAZeroResultCap(t *testing.T) {
 	driver := openTestDriver(ctx, t, container)
 	defer func() { require.NoError(t, driver.Close(ctx)) }()
 
-	_, err := driver.QueryConn(ctx, nil, fmt.Sprintf("SELECT 1 FROM %s.zero_cap", database), db.QueryContext{})
+	_, err := driver.QueryConn(ctx, fmt.Sprintf("SELECT 1 FROM %s.zero_cap", database), db.QueryContext{})
 	require.Error(t, err)
 	require.Equal(t, "maximum SQL result size must be positive", err.Error())
 }
@@ -397,7 +397,7 @@ func TestQueryConnKeepsOneSession(t *testing.T) {
 
 	query := func(statement string) *v1pb.QueryResult {
 		t.Helper()
-		results, err := driver.QueryConn(ctx, nil, statement, db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := driver.QueryConn(ctx, statement, db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Empty(t, results[0].GetError())
@@ -421,14 +421,14 @@ func TestQueryConnDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
 	defer func() { require.NoError(t, driver.Close(ctx)) }()
 	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 20}
 
-	_, err := driver.QueryConn(ctx, nil, "SELECT 1", queryContext)
+	_, err := driver.QueryConn(ctx, "SELECT 1", queryContext)
 	require.NoError(t, err)
 	held := driver.session
 	require.NotNil(t, held, "a statement of its own leaves the session in place")
 
 	canceledCtx, cancel := context.WithCancel(ctx)
 	cancel()
-	_, _ = driver.QueryConn(canceledCtx, nil, "SELECT 1", queryContext)
+	_, _ = driver.QueryConn(canceledCtx, "SELECT 1", queryContext)
 	require.Nil(t, driver.session, "a statement whose context ended is not one to keep")
 	require.NotNil(t, held)
 }
@@ -443,7 +443,7 @@ func TestQueryConnReportsTheParsersError(t *testing.T) {
 	driver := openTestDriver(ctx, t, container)
 	defer func() { require.NoError(t, driver.Close(ctx)) }()
 
-	_, err := driver.QueryConn(ctx, nil, "SELECT FROM WHERE", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	_, err := driver.QueryConn(ctx, "SELECT FROM WHERE", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), `syntax error at or near "FROM" (line 1, column 8)`)
 	require.Contains(t, err.Error(), "related text: SELECT FROM WHERE")

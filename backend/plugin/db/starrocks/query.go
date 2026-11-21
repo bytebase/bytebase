@@ -2,7 +2,6 @@ package starrocks
 
 import (
 	"context"
-	"database/sql"
 
 	omnidriver "github.com/bytebase/omni/driver"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -13,12 +12,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-// QueryConn queries a SQL statement in a given connection. The caller's
-// connection is unused: the driver's session stands in for it, opened on the
-// first call and held until Close so that a session variable one statement sets
-// reaches the statements after it. Calls are serialized, as they were on one
-// database connection.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement on the driver's session.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	session, err := d.querySession(ctx)

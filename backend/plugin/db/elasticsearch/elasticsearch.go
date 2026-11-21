@@ -57,7 +57,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"database/sql"
 	"fmt"
 	"io"
 	"net"
@@ -298,14 +297,14 @@ func (d *Driver) connectionError(err error) error {
 // log, and returns 0 affected rows.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	return d.inner.Execute(ctx, statement, omnidriver.ExecuteOptions{
-		Log: executeLogger{opts: opts},
+		Log: util.NewExecuteLogger(opts),
 	})
 }
 
 // QueryConn runs each request of a read-only script and answers one result per
 // request. A request that fails fails the call, so the results before it in the
 // same script are not answered either.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	session, err := d.inner.Session(ctx)
 	if err != nil {
 		return nil, err
@@ -335,15 +334,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	var roles []*storepb.InstanceRole
-	for _, role := range instance.Roles {
-		roles = append(roles, &storepb.InstanceRole{Name: role.Name, Attribute: role.Attribute})
-	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-		Metadata:  &storepb.Instance{Roles: roles},
-	}, nil
+	return util.OmniInstanceToMetadata(instance, true), nil
 }
 
 // SyncDBSchema reads the cluster's indices as one database.
@@ -418,49 +409,4 @@ func toQueryPlan(plan *omnidriver.Plan) *v1pb.QueryResult_QueryPlan {
 		Executed: plan.Executed,
 		Content:  plan.Content,
 	}
-}
-
-// executeLogger reports the driver contract's execute steps to the task run's
-// log.
-type executeLogger struct {
-	opts db.ExecuteOptions
-}
-
-func (l executeLogger) CommandExecute(command omnidriver.Command) {
-	l.opts.LogCommandExecute(&storepb.Range{
-		Start: int32(command.ByteStart),
-		End:   int32(command.ByteEnd),
-	}, command.Text)
-}
-
-func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
-	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
-}
-
-func (l executeLogger) TransactionControl(op omnidriver.TransactionOp, err error) {
-	l.opts.LogTransactionControl(transactionControlType(op), errorString(err))
-}
-
-func (l executeLogger) Retry(err error, attempt, _ int) {
-	l.opts.LogRetryInfo(err, attempt)
-}
-
-func transactionControlType(op omnidriver.TransactionOp) storepb.TaskRunLog_TransactionControl_Type {
-	switch op {
-	case omnidriver.Begin:
-		return storepb.TaskRunLog_TransactionControl_BEGIN
-	case omnidriver.Commit:
-		return storepb.TaskRunLog_TransactionControl_COMMIT
-	case omnidriver.Rollback:
-		return storepb.TaskRunLog_TransactionControl_ROLLBACK
-	default:
-		return storepb.TaskRunLog_TransactionControl_TYPE_UNSPECIFIED
-	}
-}
-
-func errorString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
 }

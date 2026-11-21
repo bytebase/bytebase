@@ -271,7 +271,7 @@ func TestCutoverParityAgainstRecordedOldPath(t *testing.T) {
 			require.Equal(t, want.Name, query.name)
 			require.Equal(t, want.Script, query.script)
 
-			results, callErr := opened.QueryConn(ctx, nil, query.script, query.context)
+			results, callErr := opened.QueryConn(ctx, query.script, query.context)
 			got := parityQuery{Name: query.name, Script: query.script}
 			if callErr != nil {
 				got.CallError = callErr.Error()

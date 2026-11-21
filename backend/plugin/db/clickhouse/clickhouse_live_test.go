@@ -170,7 +170,7 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 	})
 
 	t.Run("typed values", func(t *testing.T) {
-		results, err := database.QueryConn(ctx, nil, "SELECT i8, u32, f32, dt64, dtz, tm, ip4, ip6, tup, n FROM t WHERE id = 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := database.QueryConn(ctx, "SELECT i8, u32, f32, dt64, dtz, tm, ip4, ip6, tup, n FROM t WHERE id = 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Empty(t, results[0].Error)
@@ -194,7 +194,7 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 
 	t.Run("a row set that answers with rows is a query", func(t *testing.T) {
 		for _, statement := range []string{"SHOW TABLES", "DESCRIBE t", "EXISTS TABLE t"} {
-			results, err := database.QueryConn(ctx, nil, statement, db.QueryContext{MaximumSQLResultSize: 1 << 20})
+			results, err := database.QueryConn(ctx, statement, db.QueryContext{MaximumSQLResultSize: 1 << 20})
 			require.NoError(t, err)
 			require.Len(t, results, 1)
 			require.Empty(t, results[0].Error)
@@ -204,7 +204,7 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 	})
 
 	t.Run("explain analyze keeps its plan", func(t *testing.T) {
-		results, err := database.QueryConn(ctx, nil, "EXPLAIN ANALYZE SELECT count() FROM t", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := database.QueryConn(ctx, "EXPLAIN ANALYZE SELECT count() FROM t", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Empty(t, results[0].Error)
@@ -215,7 +215,7 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 	})
 
 	t.Run("an explain request runs the rewritten statement", func(t *testing.T) {
-		results, err := database.QueryConn(ctx, nil, "SELECT id FROM t", db.QueryContext{Explain: true, MaximumSQLResultSize: 1 << 20})
+		results, err := database.QueryConn(ctx, "SELECT id FROM t", db.QueryContext{Explain: true, MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, "EXPLAIN SELECT id FROM t", results[0].Statement)
@@ -226,7 +226,7 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 		// A write answers with no rows: clickhouse-go states no affected count,
 		// so the result carries neither columns nor an "Affected Rows" row, and
 		// Execute answers 0.
-		results, err := database.QueryConn(ctx, nil, "INSERT INTO t (id) VALUES (5)", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := database.QueryConn(ctx, "INSERT INTO t (id) VALUES (5)", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Empty(t, results[0].Error)
@@ -236,9 +236,9 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 	})
 
 	t.Run("a driver holds one session", func(t *testing.T) {
-		_, err := database.QueryConn(ctx, nil, "SET max_threads = 3", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		_, err := database.QueryConn(ctx, "SET max_threads = 3", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
-		results, err := database.QueryConn(ctx, nil, "SELECT toString(getSetting('max_threads'))", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := database.QueryConn(ctx, "SELECT toString(getSetting('max_threads'))", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, "3", results[0].Rows[0].Values[0].GetStringValue())
@@ -248,7 +248,7 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 		// The pinned omni driver sets max_execution_time = 300 before applying a
 		// data source's own parameters, so a restrictive server profile does not
 		// fail a resource-intensive sync or query with code 160.
-		results, err := database.QueryConn(ctx, nil, "SELECT toString(getSetting('max_execution_time'))", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := database.QueryConn(ctx, "SELECT toString(getSetting('max_execution_time'))", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, "300", results[0].Rows[0].Values[0].GetStringValue())
@@ -256,26 +256,26 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 
 	t.Run("the result-size cap", func(t *testing.T) {
 		// 0 is no cap in the contract.
-		results, err := database.QueryConn(ctx, nil, "SELECT id FROM t", db.QueryContext{})
+		results, err := database.QueryConn(ctx, "SELECT id FROM t", db.QueryContext{})
 		require.NoError(t, err)
 		require.Empty(t, results[0].Error)
 		require.Greater(t, len(results[0].Rows), 1)
 
-		results, err = database.QueryConn(ctx, nil, "SELECT id FROM t", db.QueryContext{MaximumSQLResultSize: 1})
+		results, err = database.QueryConn(ctx, "SELECT id FROM t", db.QueryContext{MaximumSQLResultSize: 1})
 		require.NoError(t, err)
 		require.Contains(t, results[0].Error, "exceeds max allowed output size")
 		require.Len(t, results[0].Rows, 1)
 	})
 
 	t.Run("a limit rewrites a query only", func(t *testing.T) {
-		results, err := database.QueryConn(ctx, nil, "SELECT id FROM t", db.QueryContext{Limit: 1, MaximumSQLResultSize: 1 << 20})
+		results, err := database.QueryConn(ctx, "SELECT id FROM t", db.QueryContext{Limit: 1, MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results[0].Rows, 1)
 		require.Contains(t, results[0].Statement, "LIMIT 1")
 
 		// A statement that cannot stand in the CTE still answers with rows when
 		// a limit is set; the driver issues it as written.
-		results, err = database.QueryConn(ctx, nil, "SHOW TABLES", db.QueryContext{Limit: 1, MaximumSQLResultSize: 1 << 20})
+		results, err = database.QueryConn(ctx, "SHOW TABLES", db.QueryContext{Limit: 1, MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Empty(t, results[0].Error)
 		require.NotEmpty(t, results[0].Rows)
@@ -283,7 +283,7 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 
 	t.Run("a statement that fails ends the script", func(t *testing.T) {
 		fresh := open(testDatabase)
-		results, err := fresh.QueryConn(ctx, nil, "SELECT 1;\nSELECT nope FROM t;\nSELECT 2", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := fresh.QueryConn(ctx, "SELECT 1;\nSELECT nope FROM t;\nSELECT 2", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 2)
 		require.Empty(t, results[0].Error)
@@ -292,7 +292,7 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 
 	t.Run("an aggregate function column explains itself", func(t *testing.T) {
 		fresh := open(testDatabase)
-		results, err := fresh.QueryConn(ctx, nil, "SELECT * FROM agg", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := fresh.QueryConn(ctx, "SELECT * FROM agg", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Contains(t, results[0].Error, "finalizeAggregation(col)")
@@ -303,11 +303,11 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 		// sync: the adapter drops that session, so the next statement opens a
 		// new one instead of failing with "driver: bad connection".
 		fresh := open(testDatabase)
-		results, err := fresh.QueryConn(ctx, nil, "SELECT * FROM agg", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := fresh.QueryConn(ctx, "SELECT * FROM agg", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Contains(t, results[0].Error, "AggregateFunction")
 
-		results, err = fresh.QueryConn(ctx, nil, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err = fresh.QueryConn(ctx, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Empty(t, results[0].Error)
 	})
@@ -316,13 +316,13 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 		// A statement the server answers with an error leaves its connection in
 		// sync, so the session and what it set survive.
 		fresh := open(testDatabase)
-		_, err := fresh.QueryConn(ctx, nil, "SET max_threads = 4", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		_, err := fresh.QueryConn(ctx, "SET max_threads = 4", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
-		results, err := fresh.QueryConn(ctx, nil, "SELECT nope FROM t", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := fresh.QueryConn(ctx, "SELECT nope FROM t", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Contains(t, results[0].Error, "Unknown expression identifier")
 
-		results, err = fresh.QueryConn(ctx, nil, "SELECT toString(getSetting('max_threads'))", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err = fresh.QueryConn(ctx, "SELECT toString(getSetting('max_threads'))", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Empty(t, results[0].Error)
 		require.Equal(t, "4", results[0].Rows[0].Values[0].GetStringValue())
@@ -370,12 +370,12 @@ func TestQueryConnDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
 	require.True(t, ok)
 
 	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 20}
-	_, err = driver.QueryConn(ctx, nil, "SELECT 1", queryContext)
+	_, err = driver.QueryConn(ctx, "SELECT 1", queryContext)
 	require.NoError(t, err)
 	require.NotNil(t, driver.session, "a statement of its own leaves the session in place")
 
 	canceledCtx, cancel := context.WithCancel(ctx)
 	cancel()
-	_, _ = driver.QueryConn(canceledCtx, nil, "SELECT 1", queryContext)
+	_, _ = driver.QueryConn(canceledCtx, "SELECT 1", queryContext)
 	require.Nil(t, driver.session, "a canceled statement's session is not one to keep")
 }

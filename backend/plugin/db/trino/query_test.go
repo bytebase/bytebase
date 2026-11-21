@@ -89,7 +89,7 @@ func TestQueryResultRendersTrinoTypes(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			results, err := driver.QueryConn(ctx, nil, "SELECT "+tc.expr, db.QueryContext{
+			results, err := driver.QueryConn(ctx, "SELECT "+tc.expr, db.QueryContext{
 				MaximumSQLResultSize: 1 << 20,
 			})
 			require.NoError(t, err)
