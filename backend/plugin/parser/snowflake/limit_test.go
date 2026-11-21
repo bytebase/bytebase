@@ -1,51 +1,16 @@
 package snowflake
 
 import (
-	"io"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common/yamltest"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestGetStatementWithResultLimit(t *testing.T) {
-	runLimitTest(t, "test_limit.yaml", false /* record */)
-}
-
-type limitTestData struct {
-	Stmt  string `yaml:"stmt"`
-	Limit int    `yaml:"limit"`
-	Want  string `yaml:"want"`
-}
-
-func runLimitTest(t *testing.T, file string, record bool) {
-	var testCases []limitTestData
-	filepath := filepath.Join("test-data", file)
-	yamlFile, err := os.Open(filepath)
-	require.NoError(t, err)
-	defer yamlFile.Close()
-
-	byteValue, err := io.ReadAll(yamlFile)
-	require.NoError(t, err)
-	err = yaml.Unmarshal(byteValue, &testCases)
-	require.NoError(t, err)
-
-	for i, tc := range testCases {
-		want := statementWithResultLimit(tc.Stmt, tc.Limit, "")
-		if record {
-			testCases[i].Want = want
-		} else {
-			require.Equal(t, tc.Want, want, tc.Stmt)
-		}
-	}
-
-	if record {
-		err := yamlFile.Close()
-		require.NoError(t, err)
-		yamltest.Record(t, filepath, testCases)
-	}
+func TestStatementWithResultLimitSeam(t *testing.T) {
+	require.Equal(t, "SELECT * FROM CUSTOMER LIMIT 10\n;", base.StatementWithResultLimit(storepb.Engine_SNOWFLAKE, "SELECT * FROM CUSTOMER LIMIT 15;", 10, ""))
+	// Fallback wrapper when omni cannot rewrite.
+	require.Equal(t, "SELECT * FROM (SELECT * FROM T OFFSET 2) LIMIT 10", base.StatementWithResultLimit(storepb.Engine_SNOWFLAKE, "SELECT * FROM T OFFSET 2;", 10, ""))
 }

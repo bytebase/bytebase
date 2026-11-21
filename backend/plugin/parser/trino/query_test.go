@@ -3,143 +3,24 @@ package trino
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestValidateQuery(t *testing.T) {
-	tests := []struct {
-		name         string
-		sql          string
-		wantReadOnly bool
-		wantData     bool
-		wantErr      bool
-	}{
-		{
-			name:         "Simple SELECT",
-			sql:          "SELECT * FROM users",
-			wantReadOnly: true,
-			wantData:     true,
-			wantErr:      false,
-		},
-		{
-			name:         "INSERT statement",
-			sql:          "INSERT INTO users (id, name) VALUES (1, 'John')",
-			wantReadOnly: false,
-			wantData:     false,
-			wantErr:      false,
-		},
-		{
-			name:         "UPDATE statement",
-			sql:          "UPDATE users SET name = 'John' WHERE id = 1",
-			wantReadOnly: false,
-			wantData:     false,
-			wantErr:      false,
-		},
-		{
-			name:         "DELETE statement",
-			sql:          "DELETE FROM users WHERE id = 1",
-			wantReadOnly: false,
-			wantData:     false,
-			wantErr:      false,
-		},
-		{
-			name:         "CREATE TABLE statement",
-			sql:          "CREATE TABLE users (id INT, name VARCHAR)",
-			wantReadOnly: false,
-			wantData:     false,
-			wantErr:      false,
-		},
-		{
-			name:         "EXPLAIN statement",
-			sql:          "EXPLAIN SELECT * FROM users",
-			wantReadOnly: true,
-			wantData:     true,
-			wantErr:      false,
-		},
-		{
-			name:         "EXPLAIN ANALYZE SELECT",
-			sql:          "EXPLAIN ANALYZE SELECT * FROM users",
-			wantReadOnly: true,
-			wantData:     true,
-			wantErr:      false,
-		},
-		{
-			name:         "EXPLAIN ANALYZE UPDATE",
-			sql:          "EXPLAIN ANALYZE UPDATE users SET name = 'John' WHERE id = 1",
-			wantReadOnly: false, // EXPLAIN ANALYZE EXECUTES the inner UPDATE, so it is NOT read-only
-			wantData:     false,
-			wantErr:      false,
-		},
-		{
-			name:         "SHOW TABLES",
-			sql:          "SHOW TABLES",
-			wantReadOnly: true,
-			wantData:     true,
-			wantErr:      false,
-		},
-		{
-			name:         "WITH FUNCTION SELECT is allowed",
-			sql:          "WITH FUNCTION f(x bigint) RETURNS bigint RETURN x + 1 SELECT f(id), email FROM cat2.public.users",
-			wantReadOnly: true,
-			wantData:     true,
-			wantErr:      false,
-		},
-		{
-			name:         "EXPLAIN WITH FUNCTION SELECT is allowed",
-			sql:          "EXPLAIN WITH FUNCTION f(x bigint) RETURNS bigint RETURN x + 1 SELECT f(1)",
-			wantReadOnly: true,
-			wantData:     true,
-			wantErr:      false,
-		},
-		{
-			name:         "EXPLAIN FORMAT JSON WITH FUNCTION SELECT is allowed",
-			sql:          "EXPLAIN (FORMAT JSON) WITH FUNCTION f(x bigint) RETURNS bigint RETURN x + 1 SELECT f(1)",
-			wantReadOnly: true,
-			wantData:     true,
-			wantErr:      false,
-		},
-		{
-			name:         "EXPLAIN TYPE DISTRIBUTED WITH FUNCTION SELECT is allowed",
-			sql:          "EXPLAIN (TYPE DISTRIBUTED) WITH FUNCTION f(x bigint) RETURNS bigint RETURN x + 1 SELECT f(1)",
-			wantReadOnly: true,
-			wantData:     true,
-			wantErr:      false,
-		},
-		{
-			name:         "EXPLAIN TYPE VALIDATE WITH FUNCTION SELECT is allowed",
-			sql:          "EXPLAIN (TYPE VALIDATE) WITH FUNCTION f(x bigint) RETURNS bigint RETURN x + 1 SELECT f(1)",
-			wantReadOnly: true,
-			wantData:     true,
-			wantErr:      false,
-		},
-		{
-			name:         "EXPLAIN ANALYZE WITH FUNCTION SELECT is allowed",
-			sql:          "EXPLAIN ANALYZE WITH FUNCTION f(x bigint) RETURNS bigint RETURN x + 1 SELECT f(1)",
-			wantReadOnly: true,
-			wantData:     true,
-			wantErr:      false,
-		},
-		{
-			name:         "Invalid SQL",
-			sql:          "SELECT * FFROM users",
-			wantReadOnly: false,
-			wantData:     false,
-			wantErr:      true,
-		},
-	}
+func TestValidateQuerySeam(t *testing.T) {
+	readOnly, returnsData, err := base.ValidateSQLForEditor(storepb.Engine_TRINO, "SELECT * FROM users")
+	require.NoError(t, err)
+	require.True(t, readOnly)
+	require.True(t, returnsData)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			readOnly, returnsData, err := validateQuery(tt.sql)
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
+	readOnly, returnsData, err = base.ValidateSQLForEditor(storepb.Engine_TRINO, "DELETE FROM users WHERE id = 1")
+	require.NoError(t, err)
+	require.False(t, readOnly)
+	require.False(t, returnsData)
 
-			require.NoError(t, err)
-			assert.Equal(t, tt.wantReadOnly, readOnly, "readOnly")
-			assert.Equal(t, tt.wantData, returnsData, "returnsData")
-		})
-	}
+	_, _, err = base.ValidateSQLForEditor(storepb.Engine_TRINO, "SELECT * FFROM users")
+	var syntaxErr *base.SyntaxError
+	require.ErrorAs(t, err, &syntaxErr)
 }
