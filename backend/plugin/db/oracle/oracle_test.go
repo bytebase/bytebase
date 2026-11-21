@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	omnidriver "github.com/bytebase/omni/driver"
 	goora "github.com/sijms/go-ora/v2"
 	"github.com/sijms/go-ora/v2/converters"
 	"github.com/stretchr/testify/require"
@@ -26,6 +27,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
@@ -471,9 +473,8 @@ func TestProbeRunsTheDryRunAutocommit(t *testing.T) {
 	require.ErrorContains(t, err, "runs alone")
 }
 
-// TestOwnsPrivateDatabaseLinkAsksTheDriver pins the guard's capability on the
-// shape the cutover forces: no *sql.DB, so the driver asks with a session of its
-// own.
+// TestOwnsPrivateDatabaseLinkAsksTheDriver pins the guard's capability: with no
+// *sql.DB handle, the driver asks with a session of its own.
 func TestOwnsPrivateDatabaseLinkAsksTheDriver(t *testing.T) {
 	ctx := context.Background()
 	container, schema := testcontainer.NewOracleSchema(t)
@@ -497,6 +498,69 @@ func TestOwnsPrivateDatabaseLinkAsksTheDriver(t *testing.T) {
 	owns, err := owner.OwnsPrivateDatabaseLink(ctx)
 	require.NoError(t, err)
 	require.False(t, owns)
+}
+
+func TestWithoutSQLPlusCommands(t *testing.T) {
+	script := "SET DEFINE OFF\nSELECT 1 AS A FROM DUAL"
+	blanked := withoutSQLPlusCommands(script)
+	require.Len(t, blanked, len(script), "byte offsets of subsequent statements must be preserved")
+	require.Equal(t, "SELECT 1 AS A FROM DUAL", strings.TrimLeft(blanked, " "))
+	require.Equal(t, strings.Index(script, "SELECT"), strings.Index(blanked, "SELECT"))
+
+	plain := "SELECT 1 FROM DUAL"
+	require.Equal(t, plain, withoutSQLPlusCommands(plain))
+}
+
+type fakeOracleDriver struct {
+	execScript string
+	execOpts   omnidriver.ExecuteOptions
+}
+
+func (*fakeOracleDriver) Ping(context.Context) error { return nil }
+func (*fakeOracleDriver) Close() error               { return nil }
+
+func (f *fakeOracleDriver) Execute(_ context.Context, script string, opts omnidriver.ExecuteOptions) (int64, error) {
+	f.execScript = script
+	f.execOpts = opts
+	return 1, nil
+}
+
+type captureOracleSession struct {
+	gotStatement string
+	gotOpts      omnidriver.QueryOptions
+}
+
+func (s *captureOracleSession) Query(_ context.Context, stmt string, opts omnidriver.QueryOptions) ([]*omnidriver.Result, error) {
+	s.gotStatement = stmt
+	s.gotOpts = opts
+	return []*omnidriver.Result{{Statement: stmt}}, nil
+}
+
+func (*captureOracleSession) Close() error { return nil }
+
+func TestExecuteAndQueryConnSQLPlusSeam(t *testing.T) {
+	ctx := context.Background()
+	fake := &fakeOracleDriver{}
+	session := &captureOracleSession{}
+	d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
+	d.SetSession(session)
+
+	_, err := d.Execute(ctx, "CREATE TABLE T (ID NUMBER)", db.ExecuteOptions{CreateDatabase: true})
+	require.ErrorContains(t, err, "create database is not supported for Oracle")
+
+	rows, err := d.Execute(ctx, "-- txn-mode = off\nSET DEFINE OFF\nINSERT INTO T VALUES (1)", db.ExecuteOptions{MaximumRetries: 2})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), rows)
+	require.Equal(t, omnidriver.AutoCommit, fake.execOpts.Transaction)
+	require.Empty(t, fake.execOpts.Isolation)
+	require.Equal(t, 2, fake.execOpts.MaxRetries)
+	require.NotContains(t, fake.execScript, "SET DEFINE OFF")
+	require.Contains(t, fake.execScript, "INSERT INTO T VALUES (1)")
+
+	_, err = d.QueryConn(ctx, "SET DEFINE OFF\nSELECT 1 FROM DUAL", db.QueryContext{MaximumSQLResultSize: 1024})
+	require.NoError(t, err)
+	require.NotContains(t, session.gotStatement, "SET DEFINE OFF")
+	require.Contains(t, session.gotStatement, "SELECT 1 FROM DUAL")
 }
 
 func closedPort(t *testing.T) string {

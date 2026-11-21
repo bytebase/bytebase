@@ -33,9 +33,6 @@
 //     result's error.
 //   - A count-only statement's result carries one "Affected Rows" row, and
 //     RowsCount counts it.
-//
-// cutover_parity_test.go replays a recording of the driver this replaced over
-// the same corpus and names the cases whose behavior moved.
 package mssql
 
 import (

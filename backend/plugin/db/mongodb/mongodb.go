@@ -27,9 +27,6 @@
 //   - ReadOnly, QueryOptions.Schema and QueryOptions.MaskingEnabled do nothing:
 //     MongoDB has no read-only session, no schema per session and no masking to
 //     withhold.
-//
-// Where the driver's answer differs from the driver this replaced is named case
-// by case in the parity test's known-difference tables (cutover_parity_test.go).
 package mongodb
 
 import (
