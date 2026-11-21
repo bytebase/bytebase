@@ -317,7 +317,6 @@
                 {
                   "name": "order_id",
                   "position": 1,
-                  "nullable": true,
                   "type": "INT"
                 },
                 {
@@ -445,7 +444,9 @@
           "sequences": [
             {
               "name": "OrderNumberSeq",
-              "data_type": "INT"
+              "data_type": "INT",
+              "start": "1000",
+              "increment": "1"
             }
           ]
         }
@@ -961,7 +962,8 @@
                   "descending": [
                     false
                   ],
-                  "type": "NONCLUSTERED"
+                  "type": "NONCLUSTERED",
+                  "definition": "WHERE email IS NOT NULL"
                 }
               ],
               "check_constraints": [
@@ -1297,7 +1299,8 @@
                 {
                   "name": "level",
                   "position": 5,
-                  "nullable": true
+                  "nullable": true,
+                  "type": "AS (node_path.GetLevel())"
                 }
               ],
               "indexes": [
