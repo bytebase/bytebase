@@ -2,55 +2,57 @@ package cosmosdb
 
 import (
 	"context"
-	"io"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common/yamltest"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestGetQuerySpan(t *testing.T) {
-	type testCase struct {
-		Description string              `yaml:"description,omitempty"`
-		Statement   string              `yaml:"statement,omitempty"`
-		QuerySpan   *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
-	}
+func TestGetQuerySpanSeam(t *testing.T) {
+	ctx := context.Background()
 
-	var (
-		record        = false
-		testDataPaths = []string{
-			"test-data/query-span/standard.yaml",
-		}
+	// Registry dispatch, projection SourceFieldPaths, bracket string access,
+	// and mergeSelectors folding (ItemSelector + ArraySelector) into base.ArraySelector.
+	spans, err := base.GetQuerySpan(
+		ctx,
+		base.GetQuerySpanContext{},
+		storepb.Engine_COSMOSDB,
+		[]base.Statement{{Text: `SELECT c.category, c.salary["value"] FROM container c WHERE c.addresses[1].country = 'Canada'`}},
+		"",
+		"",
+		false,
 	)
+	require.NoError(t, err)
+	require.Len(t, spans, 1)
+	span := spans[0]
+	require.Len(t, span.Results, 1)
+	require.False(t, span.Results[0].SelectAsterisk)
+	require.Len(t, span.Results[0].SourceFieldPaths["category"], 1)
+	catStr, err := span.Results[0].SourceFieldPaths["category"][0].String()
+	require.NoError(t, err)
+	require.Equal(t, "container.category", catStr)
+	require.Len(t, span.Results[0].SourceFieldPaths["value"], 1)
+	valStr, err := span.Results[0].SourceFieldPaths["value"][0].String()
+	require.NoError(t, err)
+	require.Equal(t, "container.salary.value", valStr)
+	require.Contains(t, span.PredicatePaths, "container.addresses[1].country")
 
-	a := require.New(t)
-	for _, testDataPath := range testDataPaths {
-		yamlFile, err := os.Open(testDataPath)
-		a.NoError(err)
+	// SelectStar case.
+	starSpans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{}, storepb.Engine_COSMOSDB, []base.Statement{{Text: "SELECT TOP 5 * FROM c"}}, "", "", false)
+	require.NoError(t, err)
+	require.Len(t, starSpans, 1)
+	require.Len(t, starSpans[0].Results, 1)
+	require.True(t, starSpans[0].Results[0].SelectAsterisk)
+	require.Empty(t, starSpans[0].Results[0].SourceFieldPaths)
 
-		var testCases []testCase
-		byteValue, err := io.ReadAll(yamlFile)
-		a.NoError(err)
-		a.NoError(yamlFile.Close())
-		a.NoError(yaml.Unmarshal(byteValue, &testCases))
+	// Empty statement returns empty results; invalid syntax returns error.
+	emptySpans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{}, storepb.Engine_COSMOSDB, []base.Statement{{Text: "  "}}, "", "", false)
+	require.NoError(t, err)
+	require.Len(t, emptySpans, 1)
+	require.Empty(t, emptySpans[0].Results)
 
-		for i, tc := range testCases {
-			result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{}, base.Statement{Text: tc.Statement}, "", "", false)
-			a.NoErrorf(err, "statement: %s", tc.Statement)
-			resultYaml := result.ToYaml()
-			if record {
-				testCases[i].QuerySpan = resultYaml
-			} else {
-				a.Equalf(tc.QuerySpan, resultYaml, "statement: %s", tc.Statement)
-			}
-		}
-
-		if record {
-			yamltest.Record(t, testDataPath, testCases)
-		}
-	}
+	_, err = base.GetQuerySpan(ctx, base.GetQuerySpanContext{}, storepb.Engine_COSMOSDB, []base.Statement{{Text: "SELCT * FRM c"}}, "", "", false)
+	require.Error(t, err)
 }
