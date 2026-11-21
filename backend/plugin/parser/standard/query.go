@@ -2,13 +2,12 @@ package standard
 
 import (
 	"log/slog"
-	"regexp"
-	"strings"
+
+	chanalysis "github.com/bytebase/omni/clickhouse/analysis"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
 
 func init() {
@@ -20,55 +19,17 @@ func init() {
 }
 
 // ValidateSQLForEditor validates the SQL statement for SQL editor.
-// We validate the statement by following steps:
-// 1. Remove all quoted text(quoted identifier, string literal) and comments from the statement.
-// 2. Use regexp to check if the statement is a normal SELECT statement and EXPLAIN statement.
-// 3. For CTE, use regexp to check if the statement has UPDATE, DELETE and INSERT statements.
 func ValidateSQLForEditor(statement string) (bool, bool, error) {
-	textWithoutQuotedAndComment, err := tokenizer.StandardRemoveQuotedTextAndComment(statement)
+	readOnly, returnsData, err := chanalysis.ValidateQuery(statement)
 	if err != nil {
 		slog.Debug("Failed to remove quoted text and comment", slog.String("statement", statement), log.BBError(err))
 		return false, false, err
 	}
-
-	ok := CheckStatementWithoutQuotedTextAndComment(textWithoutQuotedAndComment)
-	return ok, ok, nil
+	return readOnly, returnsData, nil
 }
 
+// CheckStatementWithoutQuotedTextAndComment classifies a single statement whose
+// quoted text and comments have already been removed.
 func CheckStatementWithoutQuotedTextAndComment(statement string) bool {
-	formattedStr := strings.ToUpper(strings.TrimSpace(statement))
-	// Leading-keyword classification speaks for one statement only, and the
-	// ClickHouse and Hive splitters break on newlines rather than terminators,
-	// so a one-line batch arrives whole: "SELECT 1; DROP TABLE t" would pass
-	// on its SELECT.
-	if strings.Contains(strings.TrimSuffix(formattedStr, ";"), ";") {
-		return false
-	}
-	if isSelect, _ := regexp.MatchString(`^SELECT\s+?`, formattedStr); isSelect {
-		return true
-	}
-
-	if isSelect, _ := regexp.MatchString(`^SELECT\*\s+?`, formattedStr); isSelect {
-		return true
-	}
-
-	if isExplain, _ := regexp.MatchString(`^EXPLAIN\s+?`, formattedStr); isExplain {
-		if isExplainAnalyze, _ := regexp.MatchString(`^EXPLAIN\s+ANALYZE\s+?`, formattedStr); isExplainAnalyze {
-			return false
-		}
-		return true
-	}
-
-	cteRegex := regexp.MustCompile(`^WITH\s+?`)
-	if matchResult := cteRegex.MatchString(formattedStr); matchResult {
-		dmlRegs := []string{`\bINSERT\b`, `\bUPDATE\b`, `\bDELETE\b`}
-		for _, reg := range dmlRegs {
-			if matchResult, _ := regexp.MatchString(reg, formattedStr); matchResult {
-				return false
-			}
-		}
-		return true
-	}
-
-	return false
+	return chanalysis.CheckStatementWithoutQuotedTextAndComment(statement)
 }
