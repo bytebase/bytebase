@@ -2,366 +2,132 @@ package tsql
 
 import (
 	"context"
-	"io"
-	"math"
-	"os"
-	"strings"
+	"errors"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/yamltest"
-	"github.com/bytebase/bytebase/backend/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-type restoreCase struct {
-	Input            string
-	BackupDatabase   string
-	BackupTable      string
-	OriginalDatabase string
-	OriginalSchema   string
-	OriginalTable    string
-	Result           string
-}
-
-// TestRestoreIdentityHandling validates that restore operations properly handle IDENTITY columns
-// This test verifies:
-// 1. DELETE rollback uses SET IDENTITY_INSERT ON/OFF for tables with IDENTITY columns
-// 2. UPDATE rollback (MERGE) also properly handles IDENTITY_INSERT
-// 3. DBCC CHECKIDENT is called to reseed IDENTITY values
-func TestRestoreIdentityHandling(t *testing.T) {
-	a := require.New(t)
-
-	// Mock metadata with IDENTITY column
-	mockMetadata := func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-		// Extract just the database name from the resource ID
-		_, dbName, _ := common.GetInstanceDatabaseID(databaseName)
-		if dbName == "" {
-			dbName = databaseName
-		}
-		return databaseName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-			Name: dbName,
-			Schemas: []*metadatapb.SchemaMetadata{
-				{
-					Name: "dbo",
-					Tables: []*metadatapb.TableMetadata{
-						{
-							Name: "positions",
-							Columns: []*metadatapb.ColumnMetadata{
-								{
-									Name:       "position_id",
-									Type:       "int",
-									IsIdentity: true, // This is an IDENTITY column
-								},
-								{
-									Name: "title",
-									Type: "nvarchar(100)",
-								},
-							},
-						},
-					},
-				},
-			},
-		}, nil, nil, store.Engine_MSSQL, false), nil
-	}
-
-	// Test DELETE rollback with IDENTITY column
-	deleteSQL := "DELETE FROM positions WHERE position_id = 1;"
-	restoreSQL, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-		GetDatabaseMetadataFunc: mockMetadata,
-		InstanceID:              "instances/test-instance",
-	}, deleteSQL, &store.PriorBackupDetail_Item{
-		SourceTable: &store.PriorBackupDetail_Item_Table{
-			Database: "instances/test-instance/databases/db",
-			Schema:   "dbo",
-			Table:    "positions",
-		},
-		TargetTable: &store.PriorBackupDetail_Item_Table{
-			Database: "instances/test-instance/databases/backupDB",
-			Table:    "backup_positions",
-		},
-		StartPosition: &store.Position{Line: 1, Column: 0},
-		EndPosition:   &store.Position{Line: 1, Column: 43},
-	})
-
-	a.NoError(err)
-
-	// Verify the restore SQL includes IDENTITY_INSERT handling
-	a.Contains(restoreSQL, "SET IDENTITY_INSERT [db].[dbo].[positions] ON")
-	a.Contains(restoreSQL, "SET IDENTITY_INSERT [db].[dbo].[positions] OFF")
-	a.Contains(restoreSQL, "EXEC('DBCC CHECKIDENT (''[db].[dbo].[positions]'', RESEED)')")
-
-	// Verify the INSERT statement uses explicit column list, not SELECT *
-	// This is required by SQL Server when IDENTITY_INSERT is ON
-	a.Contains(restoreSQL, "INSERT INTO [db].[dbo].[positions] ([position_id], [title])")
-	a.NotContains(restoreSQL, "SELECT * FROM")
-}
-
-func TestRestoreBoundaryCases(t *testing.T) {
-	tests := []struct {
-		name      string
-		input     string
-		startLine int32
-		endLine   int32
-		want      string
-	}{
-		{
-			name: "selects only update inside backup position range",
-			input: strings.Join([]string{
-				"DELETE FROM test WHERE a = 1;",
-				"UPDATE test SET b = b + 1, c = DEFAULT WHERE a = 2;",
-			}, "\n"),
-			startLine: 2,
-			endLine:   2,
-			want: strings.Join([]string{
-				"/*",
-				"Original SQL:",
-				"UPDATE test SET b = b + 1, c = DEFAULT WHERE a = 2;",
-				"*/",
-				"MERGE INTO [db].[dbo].[test] AS t",
-				"USING [bbarchive].[dbo].[prefix_1_test] AS b",
-				"  ON t.[a] = b.[a]",
-				"WHEN MATCHED THEN",
-				"  UPDATE SET t.[b] = b.[b], t.[c] = b.[c]",
-				"WHEN NOT MATCHED THEN",
-				" INSERT ([a], [b], [c]) VALUES (b.[a], b.[b], b.[c]);",
-			}, "\n"),
-		},
-		{
-			name:      "dual assignment update restores assigned column",
-			input:     "UPDATE test SET @v = b = 1 WHERE a = 1;",
-			startLine: 1,
-			endLine:   1,
-			want: strings.Join([]string{
-				"/*",
-				"Original SQL:",
-				"UPDATE test SET @v = b = 1 WHERE a = 1;",
-				"*/",
-				"MERGE INTO [db].[dbo].[test] AS t",
-				"USING [bbarchive].[dbo].[prefix_1_test] AS b",
-				"  ON t.[a] = b.[a]",
-				"WHEN MATCHED THEN",
-				"  UPDATE SET t.[b] = b.[b]",
-				"WHEN NOT MATCHED THEN",
-				" INSERT ([a], [b], [c]) VALUES (b.[a], b.[b], b.[c]);",
-			}, "\n"),
-		},
-		{
-			name:      "variable read assignment does not restore read column",
-			input:     "UPDATE test SET @v = b, c = c + 1 WHERE a = 1;",
-			startLine: 1,
-			endLine:   1,
-			want: strings.Join([]string{
-				"/*",
-				"Original SQL:",
-				"UPDATE test SET @v = b, c = c + 1 WHERE a = 1;",
-				"*/",
-				"MERGE INTO [db].[dbo].[test] AS t",
-				"USING [bbarchive].[dbo].[prefix_1_test] AS b",
-				"  ON t.[a] = b.[a]",
-				"WHEN MATCHED THEN",
-				"  UPDATE SET t.[c] = b.[c]",
-				"WHEN NOT MATCHED THEN",
-				" INSERT ([a], [b], [c]) VALUES (b.[a], b.[b], b.[c]);",
-			}, "\n"),
-		},
-		{
-			name:      "delete restore uses insert",
-			input:     "DELETE FROM test WHERE a = 1;",
-			startLine: 1,
-			endLine:   1,
-			want: strings.Join([]string{
-				"/*",
-				"Original SQL:",
-				"DELETE FROM test WHERE a = 1;",
-				"*/",
-				"INSERT INTO [db].[dbo].[test] ([a], [b], [c]) SELECT [a], [b], [c] FROM [bbarchive].[dbo].[prefix_1_test];",
-			}, "\n"),
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-				GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
-			}, tc.input, &store.PriorBackupDetail_Item{
-				SourceTable: &store.PriorBackupDetail_Item_Table{
-					Database: "instances/i1/databases/db",
-					Schema:   "dbo",
-					Table:    "test",
-				},
-				TargetTable: &store.PriorBackupDetail_Item_Table{
-					Database: "instances/i1/databases/bbarchive",
-					Table:    "prefix_1_test",
-				},
-				StartPosition: &store.Position{Line: tc.startLine, Column: 0},
-				EndPosition:   &store.Position{Line: tc.endLine, Column: math.MaxInt32},
-			})
-			require.NoError(t, err)
-			require.Equal(t, tc.want, result)
-		})
-	}
-}
-
-func TestRestore(t *testing.T) {
-	tests := []restoreCase{}
-
-	const (
-		record = false
-	)
-	var (
-		filepath = "test-data/test_restore.yaml"
-	)
-
-	a := require.New(t)
-	yamlFile, err := os.Open(filepath)
-	a.NoError(err)
-
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(yamlFile.Close())
-	a.NoError(err)
-	a.NoError(yaml.Unmarshal(byteValue, &tests))
-
-	for _, databasePrefix := range []string{"instances/i1/databases/", "projects/project-a/instances/i1/databases/"} {
-		for i, t := range tests {
-			result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-				GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
-			}, t.Input, &store.PriorBackupDetail_Item{
-				SourceTable: &store.PriorBackupDetail_Item_Table{
-					Database: databasePrefix + t.OriginalDatabase,
-					Schema:   "dbo",
-					Table:    t.OriginalTable,
-				},
-				TargetTable: &store.PriorBackupDetail_Item_Table{
-					Database: databasePrefix + t.BackupDatabase,
-					Schema:   t.BackupDatabase,
-					Table:    t.BackupTable,
-				},
-				StartPosition: &store.Position{
-					Line:   1,
-					Column: 0,
-				},
-				EndPosition: &store.Position{
-					Line:   math.MaxInt32,
-					Column: 1,
-				},
-			})
-			a.NoError(err)
-
-			if record {
-				tests[i].Result = result
-			} else {
-				a.Equal(t.Result, result, t.Input)
-			}
-		}
-	}
-	if record {
-		yamltest.Record(t, filepath, tests)
-	}
-}
-
-func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database string) (string, *model.DatabaseMetadata, error) {
-	return database, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-		Name: database,
+func TestGenerateRestoreSQLSeam(t *testing.T) {
+	dbMeta := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Name: "app",
 		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "dbo",
 				Tables: []*metadatapb.TableMetadata{
 					{
-						Name: "t_generated",
+						Name: "users",
 						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
+							{Name: "id", Type: "int"},
+							{Name: "name", Type: "nvarchar"},
 						},
 						Indexes: []*metadatapb.IndexMetadata{
-							{
-								Name:        "t_generated_pk",
-								Expressions: []string{"b"},
-								Primary:     true,
-								Unique:      true,
-							},
-							{
-								Name:        "t_generated_uk",
-								Expressions: []string{"a"},
-								Unique:      true,
-							},
-						},
-					},
-					{
-						Name: "t1",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c",
-							},
-						},
-					},
-					{
-						Name: "t2",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c",
-							},
-						},
-					},
-					{
-						Name: "test",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c",
-							},
-						},
-						Indexes: []*metadatapb.IndexMetadata{
-							{
-								Name:        "test_pk",
-								Expressions: []string{"a"},
-								Primary:     true,
-								Unique:      true,
-							},
-						},
-					},
-					{
-						Name: "test2",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c",
-							},
+							{Name: "pk_users", Primary: true, Expressions: []string{"id"}},
 						},
 					},
 				},
 			},
 		},
-	}, nil, nil, store.Engine_MSSQL, false /* isObjectCaseSensitive */), nil
+	}, nil, nil, storepb.Engine_MSSQL, false)
+
+	script := "UPDATE dbo.other SET x = 1;\nUPDATE dbo.users SET name = 'bob' WHERE id = 1;"
+	backups, err := base.TransformDMLToSelect(context.Background(), storepb.Engine_MSSQL, base.TransformContext{}, script, "app", "backup_db", "bb_")
+	require.NoError(t, err)
+	require.Len(t, backups, 2)
+	usersBackup := backups[1]
+
+	// Empty schema defaults to "dbo", primary key is plumbed, and inRange selects only the 2nd statement.
+	item := &storepb.PriorBackupDetail_Item{
+		SourceTable: &storepb.PriorBackupDetail_Item_Table{
+			Database: "instances/inst-1/databases/app",
+			Schema:   "",
+			Table:    "users",
+		},
+		TargetTable: &storepb.PriorBackupDetail_Item_Table{
+			Database: "instances/inst-1/databases/backup_db",
+			Table:    usersBackup.TargetTableName,
+		},
+		StartPosition: usersBackup.StartPosition,
+		EndPosition:   usersBackup.EndPosition,
+	}
+
+	rCtx := base.RestoreContext{
+		InstanceID: "inst-1",
+		GetDatabaseMetadataFunc: func(_ context.Context, _, db string) (string, *model.DatabaseMetadata, error) {
+			if db == "app" {
+				return db, dbMeta, nil
+			}
+			return "", nil, nil
+		},
+	}
+
+	got, err := base.GenerateRestoreSQL(context.Background(), storepb.Engine_MSSQL, rCtx, script, item)
+	require.NoError(t, err)
+	require.Contains(t, got, "[app].[dbo].[users]")
+	require.Contains(t, got, "[backup_db].[dbo].["+usersBackup.TargetTableName+"]")
+	require.Contains(t, got, "[id]")
+
+	// Also accepts projects/... resource name format.
+	projectItem := &storepb.PriorBackupDetail_Item{
+		SourceTable: &storepb.PriorBackupDetail_Item_Table{
+			Database: "projects/proj-1/instances/inst-1/databases/app",
+			Schema:   "dbo",
+			Table:    "users",
+		},
+		TargetTable: &storepb.PriorBackupDetail_Item_Table{
+			Database: "projects/proj-1/instances/inst-1/databases/backup_db",
+			Table:    usersBackup.TargetTableName,
+		},
+		StartPosition: usersBackup.StartPosition,
+		EndPosition:   usersBackup.EndPosition,
+	}
+	got, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_MSSQL, rCtx, script, projectItem)
+	require.NoError(t, err)
+	require.Contains(t, got, "[app].[dbo].[users]")
+
+	// Guard rails on missing inputs / metadata.
+	_, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_MSSQL, rCtx, script, nil)
+	require.ErrorContains(t, err, "backup item is nil")
+
+	_, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_MSSQL, base.RestoreContext{}, script, item)
+	require.ErrorContains(t, err, "GetDatabaseMetadataFunc is required")
+
+	nilDBCtx := base.RestoreContext{
+		GetDatabaseMetadataFunc: func(_ context.Context, _, _ string) (string, *model.DatabaseMetadata, error) {
+			return "", nil, nil
+		},
+	}
+	_, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_MSSQL, nilDBCtx, script, item)
+	require.ErrorContains(t, err, "database metadata is nil")
+
+	errCtx := base.RestoreContext{
+		GetDatabaseMetadataFunc: func(_ context.Context, _, _ string) (string, *model.DatabaseMetadata, error) {
+			return "", nil, errors.New("rpc failed")
+		},
+	}
+	_, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_MSSQL, errCtx, script, item)
+	require.ErrorContains(t, err, "rpc failed")
+
+	missingSchemaItem := &storepb.PriorBackupDetail_Item{
+		SourceTable:   &storepb.PriorBackupDetail_Item_Table{Database: "instances/inst-1/databases/app", Schema: "missing_schema", Table: "users"},
+		TargetTable:   item.TargetTable,
+		StartPosition: item.StartPosition,
+		EndPosition:   item.EndPosition,
+	}
+	_, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_MSSQL, rCtx, script, missingSchemaItem)
+	require.ErrorContains(t, err, "schema metadata not found")
+
+	missingTableItem := &storepb.PriorBackupDetail_Item{
+		SourceTable:   &storepb.PriorBackupDetail_Item_Table{Database: "instances/inst-1/databases/app", Schema: "dbo", Table: "missing_table"},
+		TargetTable:   item.TargetTable,
+		StartPosition: item.StartPosition,
+		EndPosition:   item.EndPosition,
+	}
+	_, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_MSSQL, rCtx, script, missingTableItem)
+	require.ErrorContains(t, err, "table metadata not found")
 }

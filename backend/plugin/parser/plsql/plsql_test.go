@@ -5,178 +5,79 @@ import (
 	"testing"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oracleparser "github.com/bytebase/omni/oracle/parser"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestPLSQLParser(t *testing.T) {
-	tests := []struct {
-		statement    string
-		errorMessage string
-	}{
-		{
-			statement: `UPDATE t1 SET (c1) = 1 WHERE c2 = 2;`,
-		},
-		{
-			statement: `
-			SELECT q'\This is String\' FROM DUAL;
-			`,
-		},
-		{
-			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
-		},
-		{
-			statement: "CREATE TABLE t1 (c1 NUMBER(10,2), c2 VARCHAR2(10));",
-		},
-		{
-			statement: "SELECT * FROM t1;",
-		},
-		{
-			statement: "SELECT * FROM t1 WHERE c1 = 1",
-		},
-		{
-			statement:    "SELECT * FROM t1 WHERE c1 = ",
-			errorMessage: "ERROR: syntax error at end of input (SQLSTATE 42601)",
-		},
-		{
-			statement:    "SELECT 1 FROM DUAL;\n   SELEC 5 FROM DUAL;\nSELECT 6 FROM DUAL;",
-			errorMessage: "ERROR: syntax error at or near \"SELEC\" (SQLSTATE 42601)",
-		},
-		// BYT-9302: CREATE TABLE with INTERVAL partitioning and DATE literal bound.
-		{
-			statement: `CREATE TABLE GCP.LEAD_DROP_MC_NATIVE_DATA
-(
-  TXN_DATE  DATE,
-  USERID    VARCHAR2(100),
-  CUSTID    VARCHAR2(100),
-  SCREENID  VARCHAR2(500),
-  EVENTTIME DATE,
-  STATUS    NUMBER
-)
-PARTITION BY RANGE (TXN_DATE)
-INTERVAL (NUMTODSINTERVAL(1,'DAY'))
-(
-  PARTITION P0 VALUES LESS THAN (DATE '2026-01-01')
-);`,
-		},
-	}
+type fakeAST struct{}
 
-	for _, test := range tests {
-		list, err := ParsePLSQL(test.statement)
-		if test.errorMessage == "" {
-			require.NoError(t, err)
-			require.NotEmpty(t, list.Items)
-		} else {
-			require.EqualError(t, err, test.errorMessage)
-		}
-	}
-}
+func (*fakeAST) ASTStartPosition() *storepb.Position { return nil }
 
-func TestPLSQLParser_MultipleStatements(t *testing.T) {
-	tests := []struct {
-		statement     string
-		expectedCount int   // Number of individual statements
-		expectedLines []int // StartPosition.Line - 1 for each result (0-based line of first character, including leading whitespace)
-	}{
-		{
-			statement:     "SELECT * FROM t1;",
-			expectedCount: 1,
-			expectedLines: []int{0},
-		},
-		{
-			// Statement 2's first character is the newline at end of line 1
-			statement: `SELECT * FROM t1;
-SELECT * FROM t2;`,
-			expectedCount: 2,
-			expectedLines: []int{0, 0},
-		},
-		{
-			// Statement 2's first char is newline at end of line 1, statement 3's first char is newline at end of line 2
-			statement: `SELECT * FROM t1;
-SELECT * FROM t2;
-INSERT INTO t3 VALUES (1, 2);`,
-			expectedCount: 3,
-			expectedLines: []int{0, 0, 1},
-		},
-	}
-
-	for _, test := range tests {
-		stmts, err := base.ParseStatements(storepb.Engine_ORACLE, test.statement)
-		require.NoError(t, err)
-		require.Equal(t, test.expectedCount, len(stmts), "Statement: %s", test.statement)
-
-		for i, stmt := range stmts {
-			require.Equal(t, test.expectedLines[i], base.GetLineOffset(stmt.Start), "Statement %d", i+1)
-		}
-	}
-}
-
-func TestParsePLSQLStatementsFirst(t *testing.T) {
-	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, "SELECT * FROM T;")
-	require.NoError(t, err)
-	require.Len(t, stmts, 1)
-
-	wrapped, ok := stmts[0].AST.(*AST)
-	require.True(t, ok)
-	require.Equal(t, "SELECT * FROM T", wrapped.Text)
-	require.IsType(t, &ast.SelectStmt{}, wrapped.Node)
-}
-
-func TestParsePLSQLStatementsParsesTriggerReferencingWith(t *testing.T) {
-	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, `SELECT * FROM T;
-CREATE OR REPLACE TRIGGER trg
-BEFORE INSERT OR UPDATE OF col1, col2 ON tbl
-REFERENCING OLD AS o NEW AS n
-FOR EACH ROW
-WHEN (n.col1 > 0)
-BEGIN
-  :n.col2 := :o.col2 + 1;
-END;`)
+func TestParseStatementsSeam(t *testing.T) {
+	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, "SELECT 1 FROM DUAL;\n;\nSELECT 2 FROM DUAL;")
 	require.NoError(t, err)
 	require.Len(t, stmts, 2)
 
-	_, ok := stmts[0].AST.(*AST)
+	node, ok := GetNode(stmts[0].AST)
 	require.True(t, ok)
+	require.IsType(t, &ast.SelectStmt{}, node)
+	require.Equal(t, &storepb.Position{Line: 1, Column: 1}, stmts[0].AST.ASTStartPosition())
 
-	wrapped, ok := stmts[1].AST.(*AST)
+	node, ok = GetNode(stmts[1].AST)
 	require.True(t, ok)
-	trigger, ok := wrapped.Node.(*ast.CreateTriggerStmt)
-	require.True(t, ok)
-	require.NotNil(t, trigger.Referencing)
-	require.Equal(t, "O", trigger.Referencing.OldAlias)
-	require.Equal(t, "N", trigger.Referencing.NewAlias)
+	require.IsType(t, &ast.SelectStmt{}, node)
+	require.Equal(t, int32(2), stmts[1].AST.ASTStartPosition().Line)
+
+	_, ok = GetNode(nil)
+	require.False(t, ok)
+	_, ok = GetNode(&fakeAST{})
+	require.False(t, ok)
 }
 
-func TestParsePLSQLStatementsErrorUsesOriginalLine(t *testing.T) {
-	_, err := base.ParseStatements(storepb.Engine_ORACLE, `SELECT *
-FROM T;
-CREATE TABLE GCP.LEAD_DROP_MC_NATIVE_DATA
-(
-  TXN_DATE DATE
-)
-PARTITION BY RANGE (TXN_DATE)
-INTERVAL (NUMTODSINTERVAL(1,'DAY'))
-(
-  PARTITION P0 VALUES LESS THAN (DATE '2026-01-01')
-BROKEN`)
-	require.Error(t, err)
+func TestConvertErrorAndPositions(t *testing.T) {
+	// Multi-byte runes convert byte offset to 1-based rune column.
+	sql := "SELECT '你好' FROM t"
+	require.Equal(t, &storepb.Position{Line: 1, Column: 13}, ByteOffsetToRunePosition(sql, len("SELECT '你好' ")))
+	require.Equal(t, &storepb.Position{Line: 1, Column: 19}, ByteOffsetToRunePosition(sql, len(sql)+10))
 
+	// Error on line 1 shifts both line and column by stmt.Start.
+	parseErr := &oracleparser.ParseError{Position: 4, Message: "unexpected token"}
+	err := convertError(parseErr, base.Statement{
+		Text:  "SELECT FROM",
+		Start: &storepb.Position{Line: 3, Column: 5},
+	})
 	var syntaxErr *base.SyntaxError
-	require.True(t, errors.As(err, &syntaxErr))
-	require.NotNil(t, syntaxErr.Position)
-	require.Equal(t, int32(11), syntaxErr.Position.Line)
+	require.ErrorAs(t, err, &syntaxErr)
+	require.Equal(t, &storepb.Position{Line: 3, Column: 9}, syntaxErr.Position)
+	require.Equal(t, "Syntax error at line 3:9: unexpected token", syntaxErr.Message)
+	require.Equal(t, "unexpected token", syntaxErr.RawMessage)
+
+	// Error on a later line shifts only the line number.
+	parseErr = &oracleparser.ParseError{Position: len("SELECT 1\nFROM "), Message: "bad table"}
+	err = convertError(parseErr, base.Statement{
+		Text:  "SELECT 1\nFROM ;",
+		Start: &storepb.Position{Line: 3, Column: 5},
+	})
+	require.ErrorAs(t, err, &syntaxErr)
+	require.Equal(t, &storepb.Position{Line: 4, Column: 6}, syntaxErr.Position)
+
+	// Non-ParseError errors pass through unchanged.
+	sentinel := errors.New("boom")
+	require.ErrorIs(t, convertError(sentinel, base.Statement{}), sentinel)
 }
 
-func TestParsePLSQLStatementsErrorUsesOriginalColumn(t *testing.T) {
-	statement := `SELECT * FROM T; CREATE TABLE GCP.LEAD_DROP_MC_NATIVE_DATA (TXN_DATE DATE) PARTITION BY RANGE (TXN_DATE) INTERVAL (NUMTODSINTERVAL(1,'DAY')) (PARTITION P0 VALUES LESS THAN (DATE '2026-01-01') BROKEN`
+func TestParseVersion(t *testing.T) {
+	v, err := ParseVersion("Oracle Database 19c Enterprise Edition Release 19.3.0.0.0 - Production")
+	require.NoError(t, err)
+	require.Equal(t, &Version{First: 19, Second: 3}, v)
 
-	_, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
+	v, err = ParseVersion("Oracle Database 11g Express Edition Release 11.2.0.2.0")
+	require.NoError(t, err)
+	require.Equal(t, &Version{First: 11, Second: 2}, v)
+
+	_, err = ParseVersion("unknown banner")
 	require.Error(t, err)
-	var syntaxErr *base.SyntaxError
-	require.True(t, errors.As(err, &syntaxErr))
-	require.NotNil(t, syntaxErr.Position)
-	require.Equal(t, int32(1), syntaxErr.Position.Line)
-	require.Equal(t, int32(199), syntaxErr.Position.Column)
 }

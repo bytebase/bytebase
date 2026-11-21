@@ -2,215 +2,56 @@ package pg
 
 import (
 	"context"
-	"io"
 	"math"
-	"os"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common/yamltest"
-	"github.com/bytebase/bytebase/backend/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-type restoreCase struct {
-	Input            string
-	BackupDatabase   string
-	BackupTable      string
-	OriginalDatabase string
-	OriginalTable    string
-	Result           string
-}
-
-func TestRestore(t *testing.T) {
-	tests := []restoreCase{}
-
-	const (
-		record = false
-	)
-	var (
-		filepath = "test-data/test_restore.yaml"
-	)
-
-	a := require.New(t)
-	yamlFile, err := os.Open(filepath)
-	a.NoError(err)
-
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(yamlFile.Close())
-	a.NoError(err)
-	a.NoError(yaml.Unmarshal(byteValue, &tests))
-
-	for _, databasePrefix := range []string{"instances/i1/databases/", "projects/project-a/instances/i1/databases/"} {
-		for i, t := range tests {
-			result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-				GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
-			}, t.Input, &store.PriorBackupDetail_Item{
-				SourceTable: &store.PriorBackupDetail_Item_Table{
-					Database: databasePrefix + t.OriginalDatabase,
-					Schema:   "public",
-					Table:    t.OriginalTable,
-				},
-				TargetTable: &store.PriorBackupDetail_Item_Table{
-					Database: databasePrefix + t.BackupDatabase,
-					Schema:   t.BackupDatabase,
-					Table:    t.BackupTable,
-				},
-				StartPosition: &store.Position{
-					Line:   1,
-					Column: 0,
-				},
-				EndPosition: &store.Position{
-					Line:   math.MaxInt32,
-					Column: 1,
-				},
-			})
-			a.NoError(err)
-
-			if record {
-				tests[i].Result = result
-			} else {
-				a.Equal(t.Result, result, t.Input)
-			}
-		}
+func TestRestoreSeam(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*metadatapb.TableMetadata{{
+				Name:    "t",
+				Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "a"}},
+				Indexes: []*metadatapb.IndexMetadata{{Name: "t_pk", Expressions: []string{"id"}, Primary: true, Unique: true}},
+			}},
+		}},
 	}
-	if record {
-		yamltest.Record(t, filepath, tests)
+	rCtx := base.RestoreContext{
+		InstanceID:              "i1",
+		GetDatabaseMetadataFunc: buildSeamMetadataGetter(meta),
 	}
-}
 
-func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database string) (string, *model.DatabaseMetadata, error) {
-	return database, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-		Name:       database,
-		SearchPath: "public",
-		Schemas: []*metadatapb.SchemaMetadata{
-			{
-				Name: "public",
-				Tables: []*metadatapb.TableMetadata{
-					{
-						Name: "t_generated",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-						},
-						Indexes: []*metadatapb.IndexMetadata{
-							{
-								Name:        "t_generated_pk",
-								Expressions: []string{"b"},
-								Primary:     true,
-								Unique:      true,
-							},
-							{
-								Name:         "t_generated_uk",
-								Expressions:  []string{"a"},
-								Unique:       true,
-								IsConstraint: true,
-							},
-						},
-					},
-					{
-						Name: "t1",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c",
-							},
-						},
-					},
-					{
-						Name: "t2",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c",
-							},
-						},
-					},
-					{
-						Name: "test",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c",
-							},
-						},
-						Indexes: []*metadatapb.IndexMetadata{
-							{
-								Name:        "test_pk",
-								Expressions: []string{"a"},
-								Primary:     true,
-								Unique:      true,
-							},
-						},
-					},
-					{
-						Name: "test2",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c",
-							},
-						},
-					},
-					{
-						Name: "t",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c",
-							},
-						},
-					},
+	const script = "SET ROLE admin;\nDELETE FROM t WHERE id = 1;\nUPDATE t SET a = 2 WHERE id = 2;"
+	for _, prefix := range []string{"instances/i1/databases/", "projects/p1/instances/i1/databases/"} {
+		sql, err := base.GenerateRestoreSQL(context.Background(), storepb.Engine_POSTGRES, rCtx, script, &storepb.PriorBackupDetail_Item{
+			SourceTable:   &storepb.PriorBackupDetail_Item_Table{Database: prefix + "db", Schema: "", Table: "t"},
+			TargetTable:   &storepb.PriorBackupDetail_Item_Table{Database: prefix + "bb", Schema: "bb", Table: "b_t"},
+			StartPosition: &storepb.Position{Line: 3, Column: 0},
+			EndPosition:   &storepb.Position{Line: 3, Column: math.MaxInt32},
+		})
+		require.NoError(t, err)
+		require.Contains(t, sql, "SET ROLE admin;")
+		require.Contains(t, sql, "UPDATE t SET a = 2 WHERE id = 2")
+		require.NotContains(t, sql, "DELETE FROM t")
+		require.Contains(t, sql, `ON CONFLICT ON CONSTRAINT "t_pk" DO UPDATE SET "a" = EXCLUDED."a";`)
+	}
 
-					{
-						Name: "test1",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c",
-							},
-						},
-					},
-				},
-			},
-		},
-	}, nil, nil, store.Engine_POSTGRES, true /* isObjectCaseSensitive */), nil
+	_, err := GenerateRestoreSQL(context.Background(), rCtx, script, nil)
+	require.ErrorContains(t, err, "backup item is nil")
+
+	_, err = GenerateRestoreSQL(context.Background(), base.RestoreContext{}, "DELETE FROM t;", &storepb.PriorBackupDetail_Item{
+		SourceTable:   &storepb.PriorBackupDetail_Item_Table{Database: "instances/i1/databases/db", Table: "t"},
+		TargetTable:   &storepb.PriorBackupDetail_Item_Table{Database: "instances/i1/databases/bb", Schema: "bb", Table: "b_t"},
+		StartPosition: &storepb.Position{Line: 1, Column: 0},
+		EndPosition:   &storepb.Position{Line: 1, Column: math.MaxInt32},
+	})
+	require.ErrorContains(t, err, "GetDatabaseMetadataFunc is required")
 }

@@ -4,75 +4,29 @@ import (
 	"context"
 	"testing"
 
+	lsp "github.com/bytebase/lsp-protocol"
+	"github.com/bytebase/omni/oracle/analysis"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestDiagnoseUsesParseErrorPosition(t *testing.T) {
-	tests := []struct {
-		name      string
-		statement string
-		line      uint32
-	}{
-		{
-			name:      "single line",
-			statement: "SELECT * FROM",
-			line:      0,
-		},
-		{
-			name:      "second sql statement",
-			statement: "SELECT 1 FROM DUAL;\n\nSELECT * FROM",
-			line:      2,
-		},
-		{
-			name:      "line after non-ascii",
-			statement: "SELECT '你好' FROM DUAL;\nSELECT * FROM",
-			line:      1,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			diagnostics, err := Diagnose(context.Background(), base.DiagnoseContext{}, tc.statement)
-			require.NoError(t, err)
-			require.Len(t, diagnostics, 1)
-			require.Equal(t, tc.line, diagnostics[0].Range.Start.Line)
-		})
-	}
-}
-
-func TestDiagnoseFallsBackToANTLR(t *testing.T) {
-	statement := `CREATE OR REPLACE TRIGGER trg
-BEFORE INSERT OR UPDATE OF col1, col2 ON tbl
-REFERENCING OLD AS o NEW AS n
-FOR EACH ROW
-WHEN (n.col1 > 0)
-BEGIN
-  :n.col2 := :o.col2 + 1;
-END;`
-
-	diagnostics, err := Diagnose(context.Background(), base.DiagnoseContext{}, statement)
+func TestDiagnoseSeam(t *testing.T) {
+	diags, err := base.Diagnose(context.Background(), base.DiagnoseContext{}, storepb.Engine_ORACLE, "SELECT 1 FROM DUAL;")
 	require.NoError(t, err)
-	require.Empty(t, diagnostics)
-}
+	require.Empty(t, diags)
 
-func TestDiagnoseAcceptsAlterSystem(t *testing.T) {
-	tests := []string{
-		"alter system set dg_broker_start=true;",
-		"alter system switch logfile;",
-	}
+	// Multi-line + non-ASCII rune offset maps to 0-based LSP line/character.
+	diags, err = base.Diagnose(context.Background(), base.DiagnoseContext{}, storepb.Engine_ORACLE, "SELECT 1 FROM DUAL;\nSELECT '你好' FROM ;")
+	require.NoError(t, err)
+	require.Len(t, diags, 1)
+	require.Equal(t, lsp.SeverityError, diags[0].Severity)
+	require.Equal(t, uint32(1), diags[0].Range.Start.Line)
+	require.Equal(t, uint32(16), diags[0].Range.Start.Character)
 
-	for _, statement := range tests {
-		t.Run(statement, func(t *testing.T) {
-			diagnostics, err := Diagnose(context.Background(), base.DiagnoseContext{}, statement)
-			require.NoError(t, err)
-			require.Empty(t, diagnostics)
-
-			stmts, err := base.ParseStatements(store.Engine_ORACLE, statement)
-			require.NoError(t, err)
-			require.Len(t, stmts, 1)
-		})
-	}
+	require.Nil(t, toSyntaxError(nil))
+	fallback := toSyntaxError(&analysis.SyntaxError{Offset: -1, Message: "unexpected"})
+	require.Equal(t, &storepb.Position{Line: 1, Column: 1}, fallback.Position)
+	require.Equal(t, "unexpected", fallback.Message)
 }

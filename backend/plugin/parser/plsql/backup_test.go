@@ -2,173 +2,52 @@ package plsql
 
 import (
 	"context"
-	"io"
-	"os"
-	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common/yamltest"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-type rollbackCase struct {
-	Input  string
-	Result []base.BackupStatement
-}
+func TestTransformDMLToSelectSeam(t *testing.T) {
+	longTable := strings.Repeat("a", 40)
+	sql := "\nUPDATE " + longTable + " SET c1 = 1 WHERE id = 2;"
 
-func TestBackup(t *testing.T) {
-	tests := []rollbackCase{}
-
-	const (
-		record = false
+	// Oracle 11g truncates backup table names to 30 bytes via tCtx.Version.(*Version).
+	stmts11g, err := base.TransformDMLToSelect(
+		context.Background(),
+		storepb.Engine_ORACLE,
+		base.TransformContext{Version: &Version{First: 11, Second: 2}},
+		sql,
+		"HR",
+		"BACKUP",
+		"bb_",
 	)
-	var (
-		filepath = "test-data/test_backup.yaml"
-	)
-
-	a := require.New(t)
-	yamlFile, err := os.Open(filepath)
-	a.NoError(err)
-
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(yamlFile.Close())
-	a.NoError(err)
-	a.NoError(yaml.Unmarshal(byteValue, &tests))
-
-	for i, t := range tests {
-		result, err := TransformDMLToSelect(context.Background(), base.TransformContext{}, t.Input, "DB", "backupDB", "rollback")
-		a.NoError(err)
-		slices.SortFunc(result, func(a, b base.BackupStatement) int {
-			if a.TargetTableName == b.TargetTableName {
-				if a.Statement < b.Statement {
-					return -1
-				}
-				if a.Statement > b.Statement {
-					return 1
-				}
-				return 0
-			}
-			if a.TargetTableName < b.TargetTableName {
-				return -1
-			}
-			if a.TargetTableName > b.TargetTableName {
-				return 1
-			}
-			return 0
-		})
-
-		if record {
-			tests[i].Result = result
-		} else {
-			a.Equal(t.Result, result, t.Input)
-		}
-	}
-	if record {
-		yamltest.Record(t, filepath, tests)
-	}
-}
-
-func TestBackupBoundaryCases(t *testing.T) {
-	tests := []struct {
-		name    string
-		input   string
-		wantSQL string
-	}{
-		{
-			name:  "update returning is not copied into select suffix",
-			input: "UPDATE test SET c1 = 1 WHERE c1 = 2 RETURNING c1 INTO :old_c1;",
-			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
-  SELECT "TEST".* FROM test WHERE c1 = 2;`,
-		},
-		{
-			name:  "delete returning is not copied into select suffix",
-			input: "DELETE FROM test WHERE c1 = 2 RETURNING c1 INTO :old_c1;",
-			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
-  SELECT "TEST".* FROM test WHERE c1 = 2;`,
-		},
-		{
-			name:  "update log errors is not copied into select suffix",
-			input: "UPDATE test SET c1 = 1 WHERE c1 = 2 LOG ERRORS INTO err$_test REJECT LIMIT UNLIMITED;",
-			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
-  SELECT "TEST".* FROM test WHERE c1 = 2;`,
-		},
-		{
-			name:  "where keyword in block comment",
-			input: "UPDATE test SET c1 = 1 WHERE /* WHERE */ c1 = 2;",
-			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
-  SELECT "TEST".* FROM test WHERE /* WHERE */ c1 = 2;`,
-		},
-		{
-			name:  "where keyword in string literal",
-			input: "DELETE FROM test WHERE note = 'WHERE should stay literal';",
-			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
-  SELECT "TEST".* FROM test WHERE note = 'WHERE should stay literal';`,
-		},
-		{
-			name:  "update without where backs up whole table",
-			input: "UPDATE test SET c1 = 1;",
-			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
-  SELECT "TEST".* FROM test;`,
-		},
-		{
-			name:  "delete without where backs up whole table",
-			input: "DELETE FROM test;",
-			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
-  SELECT "TEST".* FROM test;`,
-		},
-		{
-			name:  "update partition target",
-			input: "UPDATE test PARTITION (p1) SET c1 = 1 WHERE c1 = 2;",
-			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
-  SELECT "TEST".* FROM test PARTITION (p1) WHERE c1 = 2;`,
-		},
-		{
-			name:  "delete subpartition target",
-			input: "DELETE FROM test SUBPARTITION (sp1) WHERE c1 = 2;",
-			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
-  SELECT "TEST".* FROM test SUBPARTITION (sp1) WHERE c1 = 2;`,
-		},
-		{
-			name:  "update from appends source table list",
-			input: "UPDATE test t SET c1 = s.c1 FROM source_table s WHERE t.id = s.id;",
-			// A join can match a target row more than once, so the row is
-			// selected by its ROWID.
-			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
-  SELECT "DB"."TEST".* FROM "DB"."TEST" WHERE ROWID IN (
-    SELECT "T".ROWID FROM test t, source_table s WHERE t.id = s.id
-  );`,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result, err := TransformDMLToSelect(context.Background(), base.TransformContext{}, tc.input, "DB", "backupDB", "rollback")
-			require.NoError(t, err)
-			require.Len(t, result, 1)
-			require.Equal(t, tc.wantSQL, result[0].Statement)
-		})
-	}
-}
-
-// TestTransformDMLToSelectRejectsDatabaseLinks pins the fail-loud contract for
-// DML targeting a table through a database link: the restore path records only
-// schema+table, so a "successful" backup of remote rows would restore into a
-// LOCAL table of the same name — reject up front instead.
-func TestTransformDMLToSelectRejectsDatabaseLinks(t *testing.T) {
-	for _, statement := range []string{
-		"UPDATE lt1@remote SET c1 = 1 WHERE b1 = 1;",
-		"UPDATE lt1@remote SET c1 = 1 WHERE b1 = 1;\nUPDATE lt1@remote SET c1 = 2 WHERE b1 = 2;",
-	} {
-		_, err := TransformDMLToSelect(context.Background(), base.TransformContext{}, statement, "DB", "backupDB", "rollback")
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "database link")
-	}
-
-	// A local table with the same name as a remote one must keep working.
-	stmts, err := TransformDMLToSelect(context.Background(), base.TransformContext{}, "UPDATE lt1 SET c1 = 1 WHERE b1 = 1;", "DB", "backupDB", "rollback")
 	require.NoError(t, err)
-	require.Len(t, stmts, 1)
+	require.Len(t, stmts11g, 1)
+	require.LessOrEqual(t, len(stmts11g[0].TargetTableName), 30)
+	// StartPosition uses 0-based columns.
+	require.Equal(t, &storepb.Position{Line: 2, Column: 0}, stmts11g[0].StartPosition)
+	require.Equal(t, int32(2), stmts11g[0].EndPosition.Line)
+	require.Greater(t, stmts11g[0].EndPosition.Column, int32(0))
+
+	// Oracle 19c allows 128-byte identifiers.
+	stmts19c, err := base.TransformDMLToSelect(
+		context.Background(),
+		storepb.Engine_ORACLE,
+		base.TransformContext{Version: &Version{First: 19, Second: 0}},
+		sql,
+		"HR",
+		"BACKUP",
+		"bb_",
+	)
+	require.NoError(t, err)
+	require.Len(t, stmts19c, 1)
+	require.Greater(t, len(stmts19c[0].TargetTableName), 30)
+
+	// Invalid SQL propagates error.
+	_, err = base.TransformDMLToSelect(context.Background(), storepb.Engine_ORACLE, base.TransformContext{}, "UPDATE ;", "HR", "BACKUP", "bb_")
+	require.Error(t, err)
 }

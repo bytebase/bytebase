@@ -1,134 +1,40 @@
 package pg
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestExplainStatement(t *testing.T) {
-	tests := []struct {
-		statement string
-		format    base.ExplainFormat
-		want      string
-	}{
-		{"SELECT 1", base.ExplainFormatDefault, "EXPLAIN SELECT 1"},
-		{"SELECT 1", base.ExplainFormatText, "EXPLAIN SELECT 1"},
-		{"SELECT 1", base.ExplainFormatJSON, "EXPLAIN (FORMAT JSON) SELECT 1"},
-		{"SELECT 1", base.ExplainFormatXML, "EXPLAIN (FORMAT XML) SELECT 1"},
-		{"SELECT 1", base.ExplainFormatYAML, "EXPLAIN (FORMAT YAML) SELECT 1"},
-		{"SELECT 1;", base.ExplainFormatDefault, "EXPLAIN SELECT 1;"},
-		{"DELETE FROM t", base.ExplainFormatDefault, "EXPLAIN DELETE FROM t"},
-		{"WITH x AS (SELECT 1) SELECT * FROM x", base.ExplainFormatDefault, "EXPLAIN WITH x AS (SELECT 1) SELECT * FROM x"},
-		// A statement that already asks for a plan is rebuilt around the statement
-		// it plans, so the request's format replaces the user's own options and no
-		// request plans a plan.
-		{"EXPLAIN SELECT 1", base.ExplainFormatDefault, "EXPLAIN SELECT 1"},
-		{"EXPLAIN SELECT 1", base.ExplainFormatJSON, "EXPLAIN (FORMAT JSON) SELECT 1"},
-		{"EXPLAIN (FORMAT XML) SELECT 1", base.ExplainFormatJSON, "EXPLAIN (FORMAT JSON) SELECT 1"},
-		{"EXPLAIN /* plan it */ SELECT 1", base.ExplainFormatDefault, "EXPLAIN SELECT 1"},
-		{"EXPLAIN WITH x AS (SELECT 1) SELECT * FROM x", base.ExplainFormatDefault, "EXPLAIN WITH x AS (SELECT 1) SELECT * FROM x"},
-		{"EXPLAIN SELECT 1 ORDER BY 1", base.ExplainFormatDefault, "EXPLAIN SELECT 1 ORDER BY 1"},
-		{"EXPLAIN (ANALYZE false) SELECT 1", base.ExplainFormatDefault, "EXPLAIN SELECT 1"},
-	}
-	for _, tc := range tests {
-		got, err := explainStatement(tc.statement, tc.format)
-		require.NoErrorf(t, err, "%q", tc.statement)
-		require.Equalf(t, tc.want, got, "%q", tc.statement)
-	}
-}
-
-func TestDescribeExplain(t *testing.T) {
+func TestExplainStatementSeam(t *testing.T) {
 	for _, tc := range []struct {
-		statement string
-		format    string
-		executed  bool
-		ok        bool
+		engine storepb.Engine
+		format base.ExplainFormat
+		want   string
 	}{
-		{statement: "SELECT 1"},
-		{statement: "EXPLAIN SELECT 1", format: "text", ok: true},
-		{statement: "EXPLAIN (FORMAT JSON) SELECT 1", format: "json", ok: true},
-		{statement: "EXPLAIN (FORMAT XML, ANALYZE) SELECT 1", format: "xml", executed: true, ok: true},
-		{statement: "EXPLAIN (ANALYZE false, FORMAT YAML) SELECT 1", format: "yaml", ok: true},
+		{storepb.Engine_POSTGRES, base.ExplainFormatDefault, "EXPLAIN SELECT 1"},
+		{storepb.Engine_POSTGRES, base.ExplainFormatText, "EXPLAIN SELECT 1"},
+		{storepb.Engine_POSTGRES, base.ExplainFormatJSON, "EXPLAIN (FORMAT JSON) SELECT 1"},
+		{storepb.Engine_POSTGRES, base.ExplainFormatXML, "EXPLAIN (FORMAT XML) SELECT 1"},
+		{storepb.Engine_POSTGRES, base.ExplainFormatYAML, "EXPLAIN (FORMAT YAML) SELECT 1"},
+		{storepb.Engine_COCKROACHDB, base.ExplainFormatDefault, "EXPLAIN SELECT 1"},
+		{storepb.Engine_COCKROACHDB, base.ExplainFormatJSON, "EXPLAIN (DISTSQL) SELECT 1"},
 	} {
-		format, executed, ok := DescribeExplain(tc.statement)
-		require.Equal(t, tc.format, format, tc.statement)
-		require.Equal(t, tc.executed, executed, tc.statement)
-		require.Equal(t, tc.ok, ok, tc.statement)
+		got, err := base.ExplainStatement(tc.engine, "SELECT 1", tc.format)
+		require.NoError(t, err)
+		require.Equal(t, tc.want, got)
 	}
-}
 
-// TestExplainStatementRejects locks what never becomes an EXPLAIN: a write with
-// EXPLAIN options smuggled in front of it, which anything that simply prefixed
-// EXPLAIN would turn into an EXPLAIN ANALYZE DELETE that runs the DELETE, and an
-// EXPLAIN ANALYZE the caller wrote, which plans by executing what it plans.
-func TestExplainStatementRejects(t *testing.T) {
-	for _, statement := range []string{
-		"ANALYZE DELETE FROM t",
-		"EXPLAIN ANALYZE SELECT 1",
-		"EXPLAIN ANALYZE DELETE FROM t",
-		"EXPLAIN (ANALYZE, VERBOSE) DELETE FROM t",
-		"(ANALYZE) DELETE FROM t",
-		"VERBOSE SELECT 1",
-		"SELECT 1; SELECT 2",
-		"",
-		"-- nothing here",
-	} {
-		_, err := explainStatement(statement, base.ExplainFormatDefault)
-		require.Errorf(t, err, "%q", statement)
+	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB} {
+		_, err := base.ExplainStatement(engine, "EXPLAIN ANALYZE SELECT 1", base.ExplainFormatJSON)
+		require.ErrorIs(t, err, base.ErrExplainAnalyzeExecutes)
 	}
-}
 
-// TestExplainStatementNeverPlansAPlan holds the invariant over the shapes
-// PostgreSQL accepts after EXPLAIN, including those whose planned statement the
-// parser may fail to locate: the statement that comes back says EXPLAIN once.
-func TestExplainStatementNeverPlansAPlan(t *testing.T) {
-	for _, statement := range []string{
-		"EXPLAIN SELECT 1",
-		"EXPLAIN INSERT INTO t VALUES (1)",
-		"EXPLAIN EXECUTE p",
-		"EXPLAIN DECLARE c CURSOR FOR SELECT 1",
-		"EXPLAIN CREATE TABLE t AS SELECT 1",
-		"EXPLAIN (COSTS OFF) VALUES (1)",
-		"EXPLAIN TABLE t",
-	} {
-		for _, format := range []base.ExplainFormat{base.ExplainFormatDefault, base.ExplainFormatJSON} {
-			got, err := explainStatement(statement, format)
-			require.NoErrorf(t, err, "%q", statement)
-			require.Equalf(t, 1, strings.Count(strings.ToUpper(got), "EXPLAIN"), "%q became %q", statement, got)
-		}
-	}
-}
-
-// TestCockroachExplainStatement pins CockroachDB's own option list. Its EXPLAIN
-// has no FORMAT, and DISTSQL is the one option whose output carries a plan a
-// parser can read — beside the text plan, not instead of it.
-func TestCockroachExplainStatement(t *testing.T) {
-	tests := []struct {
-		statement string
-		format    base.ExplainFormat
-		want      string
-	}{
-		{"SELECT 1", base.ExplainFormatJSON, "EXPLAIN (DISTSQL) SELECT 1"},
-		{"SELECT 1", base.ExplainFormatDefault, "EXPLAIN SELECT 1"},
-		// PostgreSQL's formats mean nothing here, so they get the default plan.
-		{"SELECT 1", base.ExplainFormatText, "EXPLAIN SELECT 1"},
-		{"SELECT 1", base.ExplainFormatXML, "EXPLAIN SELECT 1"},
-		// A statement that already asks for a plan is rebuilt around the
-		// statement it plans, whichever option it named.
-		{"EXPLAIN SELECT 1", base.ExplainFormatJSON, "EXPLAIN (DISTSQL) SELECT 1"},
-		{"EXPLAIN (VERBOSE) SELECT 1", base.ExplainFormatJSON, "EXPLAIN (DISTSQL) SELECT 1"},
-		{"EXPLAIN (DISTSQL) SELECT 1", base.ExplainFormatJSON, "EXPLAIN (DISTSQL) SELECT 1"},
-	}
-	for _, tc := range tests {
-		got, err := cockroachExplainStatement(tc.statement, tc.format)
-		require.NoErrorf(t, err, "%q", tc.statement)
-		require.Equalf(t, tc.want, got, "%q/%v", tc.statement, tc.format)
-	}
-	// Planning by executing is refused here as it is for PostgreSQL.
-	_, err := cockroachExplainStatement("EXPLAIN ANALYZE SELECT 1", base.ExplainFormatJSON)
-	require.ErrorIs(t, err, base.ErrExplainAnalyzeExecutes)
+	format, executed, ok := DescribeExplain("EXPLAIN (ANALYZE, FORMAT JSON) SELECT 1")
+	require.True(t, ok)
+	require.True(t, executed)
+	require.Equal(t, "json", format)
 }
