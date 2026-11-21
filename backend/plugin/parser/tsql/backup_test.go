@@ -44,7 +44,7 @@ func TestBackupBoundaryCases(t *testing.T) {
 			input: "UPDATE TOP (3) test SET c1 = 1 WHERE c2 = 2 OPTION (RECOMPILE);",
 			wantSQL: strings.Join([]string{
 				"SELECT * INTO [backupDB].[dbo].[rollback_test_db] FROM (",
-				"  SELECT [db].[dbo].[test].* TOP (3) FROM test WHERE c2 = 2 OPTION (RECOMPILE)) AS backup_table;",
+				"  SELECT TOP (3) [db].[dbo].[test].* FROM test WHERE c2 = 2) AS backup_table OPTION (RECOMPILE);",
 			}, "\n"),
 		},
 		{
@@ -60,7 +60,7 @@ func TestBackupBoundaryCases(t *testing.T) {
 			input: "UPDATE test SET c1 = 1 /* OPTION */ OPTION (RECOMPILE);",
 			wantSQL: strings.Join([]string{
 				"SELECT * INTO [backupDB].[dbo].[rollback_test_db] FROM (",
-				"  SELECT [db].[dbo].[test].* FROM test OPTION (RECOMPILE)) AS backup_table;",
+				"  SELECT [db].[dbo].[test].* FROM test) AS backup_table OPTION (RECOMPILE);",
 			}, "\n"),
 		},
 		{
@@ -68,7 +68,7 @@ func TestBackupBoundaryCases(t *testing.T) {
 			input: "UPDATE test SET c1 = 1 /* outer /* inner */ OPTION in outer */ OPTION (RECOMPILE);",
 			wantSQL: strings.Join([]string{
 				"SELECT * INTO [backupDB].[dbo].[rollback_test_db] FROM (",
-				"  SELECT [db].[dbo].[test].* FROM test OPTION (RECOMPILE)) AS backup_table;",
+				"  SELECT [db].[dbo].[test].* FROM test) AS backup_table OPTION (RECOMPILE);",
 			}, "\n"),
 		},
 		{
