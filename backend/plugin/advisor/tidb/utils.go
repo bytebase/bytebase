@@ -134,13 +134,3 @@ func getTiDBNodes(checkCtx advisor.Context) ([]Stmt, error) {
 	checkCtx.SetMemo(stmtsCacheKey, result)
 	return result, nil
 }
-
-// stmtNodes returns the nodes of stmts, index for index, for a rule that
-// judges the statements together.
-func stmtNodes(stmts []Stmt) []omniast.Node {
-	nodes := make([]omniast.Node, len(stmts))
-	for i, stmt := range stmts {
-		nodes[i] = stmt.Node
-	}
-	return nodes
-}

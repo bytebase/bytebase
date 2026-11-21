@@ -10,7 +10,6 @@ import (
 	mssqlv1review "github.com/bytebase/omni/mssql/v1review"
 	"github.com/bytebase/omni/v1review"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
@@ -202,13 +201,7 @@ func mssqlPriorBackup(e *advisor.V1Engine[ast.Node]) advisor.Func {
 		if err != nil {
 			return nil, err
 		}
-		databaseName := common.BackupDatabaseNameOfEngine(storepb.Engine_MSSQL)
-		facts := v1review.PriorBackupFacts{
-			TotalSize:      checkCtx.StatementsTotalSize,
-			MaxSize:        common.MaxSheetCheckSize,
-			Database:       databaseName,
-			DatabaseExists: advisor.DatabaseExists(ctx, checkCtx, databaseName),
-		}
+		facts := advisor.NewPriorBackupFacts(ctx, checkCtx, storepb.Engine_MSSQL)
 		var adviceList []*storepb.Advice
 		for _, f := range mssqlv1review.PriorBackupCheck(nodes, e.SchemaOf(checkCtx), facts) {
 			var adviceCode code.Code

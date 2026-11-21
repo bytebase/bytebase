@@ -17,9 +17,7 @@ import (
 )
 
 func init() {
-	extract := func(checkCtx advisor.Context) ([]advisor.V1Stmt[ast.Node], error) {
-		return advisor.ExtractNodes(checkCtx.ParsedStatements, snowsqlparser.GetNode), nil
-	}
+	extract := advisor.NodeExtractor(snowsqlparser.GetNode)
 	byteOffsetLine := func(sql string, offset int) int32 {
 		if offset <= 0 {
 			return 1
