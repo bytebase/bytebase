@@ -191,7 +191,7 @@
                 {
                   "name":  "a",
                   "position":  1,
-                  "default":  "1",
+                  "default":  "'1'",
                   "type":  "int"
                 },
                 {
@@ -212,6 +212,7 @@
                 {
                   "name":  "d",
                   "position":  4,
+                  "default":  "NULL",
                   "nullable":  true,
                   "type":  "varchar(10)",
                   "characterSet":  "utf8mb4",
@@ -304,6 +305,7 @@
                 }
               ],
               "engine":  "InnoDB",
+              "charset":  "utf8mb4",
               "collation":  "utf8mb4_bin"
             },
             {
@@ -312,7 +314,7 @@
                 {
                   "name":  "a",
                   "position":  1,
-                  "default":  "1",
+                  "default":  "'1'",
                   "type":  "int"
                 },
                 {
@@ -333,6 +335,7 @@
                 {
                   "name":  "d",
                   "position":  4,
+                  "default":  "NULL",
                   "nullable":  true,
                   "type":  "varchar(10)",
                   "characterSet":  "utf8mb4",
@@ -425,6 +428,7 @@
                 }
               ],
               "engine":  "InnoDB",
+              "charset":  "utf8mb4",
               "collation":  "utf8mb4_bin"
             }
           ]
@@ -458,7 +462,7 @@
                 {
                   "name":  "a",
                   "position":  1,
-                  "default":  "1",
+                  "default":  "'1'",
                   "type":  "int"
                 },
                 {
@@ -479,6 +483,7 @@
                 {
                   "name":  "d",
                   "position":  4,
+                  "default":  "NULL",
                   "nullable":  true,
                   "type":  "varchar(10)",
                   "characterSet":  "utf8mb4",
@@ -571,6 +576,7 @@
                 }
               ],
               "engine":  "InnoDB",
+              "charset":  "utf8mb4",
               "collation":  "utf8mb4_bin"
             }
           ]
@@ -629,6 +635,7 @@
                 }
               ],
               "engine":  "InnoDB",
+              "charset":  "utf8mb4",
               "collation":  "utf8mb4_bin"
             }
           ]
@@ -693,11 +700,13 @@
                 {
                   "name":  "a",
                   "position":  1,
+                  "default":  "NULL",
                   "nullable":  true,
                   "type":  "int"
                 }
               ],
               "engine":  "InnoDB",
+              "charset":  "utf8mb4",
               "collation":  "utf8mb4_bin"
             }
           ]
@@ -793,7 +802,7 @@
                 {
                   "name":  "a",
                   "position":  1,
-                  "default":  "1",
+                  "default":  "'1'",
                   "type":  "int"
                 },
                 {
@@ -838,6 +847,7 @@
                 }
               ],
               "engine":  "InnoDB",
+              "charset":  "utf8mb4",
               "collation":  "utf8mb4_bin"
             }
           ]
@@ -881,7 +891,7 @@
                 {
                   "name":  "a",
                   "position":  1,
-                  "default":  "1",
+                  "default":  "'1'",
                   "type":  "int"
                 },
                 {
@@ -911,6 +921,7 @@
                 }
               ],
               "engine":  "InnoDB",
+              "charset":  "utf8mb4",
               "collation":  "utf8mb4_bin"
             }
           ]
@@ -936,11 +947,13 @@
                 {
                   "name":  "a",
                   "position":  1,
+                  "default":  "NULL",
                   "nullable":  true,
                   "type":  "int"
                 }
               ],
               "engine":  "InnoDB",
+              "charset":  "utf8mb4",
               "collation":  "utf8mb4_bin"
             }
           ]
@@ -978,11 +991,13 @@
                 {
                   "name":  "a",
                   "position":  1,
+                  "default":  "NULL",
                   "nullable":  true,
                   "type":  "int"
                 }
               ],
               "engine":  "InnoDB",
+              "charset":  "utf8mb4",
               "collation":  "utf8mb4_bin"
             }
           ]
@@ -1008,11 +1023,13 @@
                 {
                   "name":  "a",
                   "position":  1,
+                  "default":  "NULL",
                   "nullable":  true,
                   "type":  "int"
                 }
               ],
               "engine":  "InnoDB",
+              "charset":  "utf8mb4",
               "collation":  "utf8mb4_bin"
             }
           ]
@@ -1039,6 +1056,7 @@
                 {
                   "name":  "a",
                   "position":  1,
+                  "default":  "NULL",
                   "nullable":  true,
                   "type":  "int"
                 }
@@ -1060,6 +1078,7 @@
                 }
               ],
               "engine":  "InnoDB",
+              "charset":  "utf8mb4",
               "collation":  "utf8mb4_bin"
             }
           ]
@@ -1099,6 +1118,7 @@
                 {
                   "name":  "a",
                   "position":  1,
+                  "default":  "NULL",
                   "nullable":  true,
                   "type":  "int"
                 }
@@ -1120,6 +1140,7 @@
                 }
               ],
               "engine":  "InnoDB",
+              "charset":  "utf8mb4",
               "collation":  "utf8mb4_bin"
             }
           ]
@@ -1145,11 +1166,13 @@
                 {
                   "name":  "a",
                   "position":  1,
+                  "default":  "NULL",
                   "nullable":  true,
                   "type":  "int"
                 }
               ],
               "engine":  "InnoDB",
+              "charset":  "utf8mb4",
               "collation":  "utf8mb4_bin"
             }
           ]
