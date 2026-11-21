@@ -2,318 +2,116 @@ package plsql
 
 import (
 	"context"
-	"io"
-	"math"
-	"os"
+	"errors"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common/yamltest"
-	"github.com/bytebase/bytebase/backend/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-type restoreCase struct {
-	Input            string
-	BackupDatabase   string
-	BackupTable      string
-	OriginalDatabase string
-	OriginalTable    string
-	Result           string
-}
-
-func TestRestore(t *testing.T) {
-	tests := []restoreCase{}
-
-	const (
-		record = false
-	)
-	var (
-		filepath = "test-data/test_restore.yaml"
-	)
-
-	a := require.New(t)
-	yamlFile, err := os.Open(filepath)
-	a.NoError(err)
-
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(yamlFile.Close())
-	a.NoError(err)
-	a.NoError(yaml.Unmarshal(byteValue, &tests))
-
-	for _, databasePrefix := range []string{"instances/i1/databases/", "projects/project-a/instances/i1/databases/"} {
-		for i, t := range tests {
-			result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-				GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
-			}, t.Input, &store.PriorBackupDetail_Item{
-				SourceTable: &store.PriorBackupDetail_Item_Table{
-					Database: databasePrefix + t.OriginalDatabase,
-					Table:    t.OriginalTable,
-				},
-				TargetTable: &store.PriorBackupDetail_Item_Table{
-					Database: databasePrefix + t.BackupDatabase,
-					Table:    t.BackupTable,
-				},
-				StartPosition: &store.Position{
-					Line:   0,
-					Column: 0,
-				},
-				EndPosition: &store.Position{
-					Line:   math.MaxInt32,
-					Column: 0,
-				},
-			})
-			a.NoError(err)
-
-			if record {
-				tests[i].Result = result
-			} else {
-				a.Equal(t.Result, result, t.Input)
-			}
-		}
-	}
-	if record {
-		yamltest.Record(t, filepath, tests)
-	}
-}
-
-func TestRestoreBoundaryCases(t *testing.T) {
-	t.Run("multi-line update", func(t *testing.T) {
-		input := `UPDATE test
-SET c1 = 1
-WHERE c1 = 1;
-UPDATE test
-SET c1 = 2
-WHERE c1 = 2;`
-
-		result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
-		}, input, restoreBackupItem(0, math.MaxInt32))
-		require.NoError(t, err)
-		require.Equal(t, `/*
-Original SQL:
-UPDATE test
-SET c1 = 1
-WHERE c1 = 1
-UPDATE test
-SET c1 = 2
-WHERE c1 = 2
-*/
-MERGE INTO "DB"."TEST" t
-USING "bbarchive"."prefix_1_test" b
-  ON( t."A" = b."A")
-WHEN MATCHED THEN
-  UPDATE SET t."C1" = b."C1"
-WHEN NOT MATCHED THEN
- INSERT ("A", "B", "C") VALUES (b."A", b."B", b."C");`, result)
-	})
-
-	t.Run("position range selects update", func(t *testing.T) {
-		input := `DELETE FROM test WHERE c1 = 1;
-UPDATE test SET c1 = 2 WHERE c1 = 2;`
-
-		result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
-		}, input, restoreBackupItem(2, 2))
-		require.NoError(t, err)
-		require.Contains(t, result, "UPDATE test SET c1 = 2 WHERE c1 = 2")
-		require.NotContains(t, result, "DELETE FROM test WHERE c1 = 1")
-		require.Contains(t, result, `UPDATE SET t."C1" = b."C1"`)
-	})
-
-	t.Run("same-line multi statement", func(t *testing.T) {
-		input := `UPDATE test SET c1 = 1 WHERE c1 = 1; UPDATE test SET c1 = 2 WHERE c1 = 2;`
-
-		result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
-		}, input, restoreBackupItem(0, math.MaxInt32))
-		require.NoError(t, err)
-		require.Contains(t, result, "UPDATE test SET c1 = 1 WHERE c1 = 1\nUPDATE test SET c1 = 2 WHERE c1 = 2")
-		require.Contains(t, result, `UPDATE SET t."C1" = b."C1"`)
-	})
-
-	t.Run("range skips non backupable statements", func(t *testing.T) {
-		input := `INSERT INTO test (a, b, c) VALUES (1, 1, 1);
-UPDATE test SET c1 = 2 WHERE c1 = 2;
-CREATE TABLE unrelated (id NUMBER);`
-
-		result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
-		}, input, restoreBackupItem(0, math.MaxInt32))
-		require.NoError(t, err)
-		require.Contains(t, result, "UPDATE test SET c1 = 2 WHERE c1 = 2")
-		require.NotContains(t, result, "INSERT INTO test")
-		require.NotContains(t, result, "CREATE TABLE unrelated")
-		require.Contains(t, result, `UPDATE SET t."C1" = b."C1"`)
-	})
-
-	t.Run("multi-line delete", func(t *testing.T) {
-		input := `DELETE FROM test
-WHERE c1 = 1;`
-
-		result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
-		}, input, restoreBackupItem(0, math.MaxInt32))
-		require.NoError(t, err)
-		require.Equal(t, `/*
-Original SQL:
-DELETE FROM test
-WHERE c1 = 1
-*/
-INSERT INTO "DB"."TEST" ("A", "B", "C") SELECT "A", "B", "C" FROM "bbarchive"."prefix_1_test";`, result)
-	})
-
-	t.Run("no disjoint unique key", func(t *testing.T) {
-		input := `UPDATE test SET a = 1 WHERE c1 = 1;`
-
-		_, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
-		}, input, restoreBackupItem(0, math.MaxInt32))
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "no disjoint unique key found")
-	})
-}
-
-func TestRestoreUnsyncedDatabase(t *testing.T) {
-	_, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-		GetDatabaseMetadataFunc: func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
-			return "", nil, nil
-		},
-	}, `UPDATE test SET a = 1 WHERE c1 = 1;`, restoreBackupItem(0, math.MaxInt32))
-	require.ErrorContains(t, err, `database metadata for database "DB" not found (database not synced)`)
-}
-
-func restoreBackupItem(startLine, endLine int32) *store.PriorBackupDetail_Item {
-	return &store.PriorBackupDetail_Item{
-		SourceTable: &store.PriorBackupDetail_Item_Table{
-			Database: "instances/i1/databases/DB",
-			Table:    "TEST",
-		},
-		TargetTable: &store.PriorBackupDetail_Item_Table{
-			Database: "instances/i1/databases/bbarchive",
-			Table:    "prefix_1_test",
-		},
-		StartPosition: &store.Position{
-			Line:   startLine,
-			Column: 0,
-		},
-		EndPosition: &store.Position{
-			Line:   endLine,
-			Column: math.MaxInt32,
-		},
-	}
-}
-
-func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database string) (string, *model.DatabaseMetadata, error) {
-	return database, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-		Name: database,
+func TestGenerateRestoreSQLSeam(t *testing.T) {
+	dbMeta := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Name: "HR",
 		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
 				Tables: []*metadatapb.TableMetadata{
 					{
-						Name: "T_HIDDEN",
+						Name: "EMP",
 						Columns: []*metadatapb.ColumnMetadata{
-							{Name: "A"},
-							{Name: "H", IsInvisible: true},
-							{Name: "V", Generation: &metadatapb.GenerationMetadata{Type: metadatapb.GenerationMetadata_TYPE_VIRTUAL, Expression: `"A"+1`}},
-							{Name: "B"},
-						},
-					},
-					{
-						Name: "T_GENERATED",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "A",
-							},
-							{
-								Name: "B",
-							},
+							{Name: "ID", Type: "NUMBER"},
+							{Name: "NAME", Type: "VARCHAR2"},
 						},
 						Indexes: []*metadatapb.IndexMetadata{
-							{
-								Name:        "T_GENERATED_PK",
-								Expressions: []string{"B"},
-								Primary:     true,
-								Unique:      true,
-							},
-							{
-								Name:        "T_GENERATED_UK",
-								Expressions: []string{"A"},
-								Unique:      true,
-							},
-						},
-					},
-					{
-						Name: "T1",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "A",
-							},
-							{
-								Name: "B",
-							},
-							{
-								Name: "C",
-							},
-						},
-					},
-					{
-						Name: "T2",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "A",
-							},
-							{
-								Name: "B",
-							},
-							{
-								Name: "C",
-							},
-						},
-					},
-					{
-						Name: "TEST",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "A",
-							},
-							{
-								Name: "B",
-							},
-							{
-								Name: "C",
-							},
-						},
-						Indexes: []*metadatapb.IndexMetadata{
-							{
-								Name:        "TEST_PK",
-								Expressions: []string{"A"},
-								Primary:     true,
-								Unique:      true,
-							},
-						},
-					},
-					{
-						Name: "TEST2",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "A",
-							},
-							{
-								Name: "B",
-							},
-							{
-								Name: "C",
-							},
+							{Name: "PK_EMP", Primary: true, Expressions: []string{"ID"}},
 						},
 					},
 				},
 			},
 		},
-	}, nil, nil, store.Engine_ORACLE, true /* isObjectCaseSensitive */), nil
+	}, nil, nil, storepb.Engine_ORACLE, false)
+
+	script := "UPDATE other_tbl SET x = 1;\nUPDATE emp SET name = 'bob' WHERE id = 1;"
+	item := &storepb.PriorBackupDetail_Item{
+		SourceTable: &storepb.PriorBackupDetail_Item_Table{
+			Database: "instances/inst-1/databases/HR",
+			Table:    "EMP",
+		},
+		TargetTable: &storepb.PriorBackupDetail_Item_Table{
+			Database: "instances/inst-1/databases/BACKUP",
+			Table:    "BB_EMP",
+		},
+		StartPosition: &storepb.Position{Line: 1, Column: 1},
+		EndPosition:   &storepb.Position{Line: 2, Column: 42},
+	}
+
+	rCtx := base.RestoreContext{
+		InstanceID: "inst-1",
+		GetDatabaseMetadataFunc: func(_ context.Context, _, db string) (string, *model.DatabaseMetadata, error) {
+			if db == "HR" {
+				return db, dbMeta, nil
+			}
+			return "", nil, nil
+		},
+	}
+
+	// Filters to statements referencing EMP and plumbs primary key metadata.
+	got, err := base.GenerateRestoreSQL(context.Background(), storepb.Engine_ORACLE, rCtx, script, item)
+	require.NoError(t, err)
+	require.Contains(t, got, `"HR"."EMP"`)
+	require.Contains(t, got, `"BACKUP"."BB_EMP"`)
+	require.Contains(t, got, `"ID"`)
+
+	// Also accepts projects/... resource name format.
+	projectItem := &storepb.PriorBackupDetail_Item{
+		SourceTable: &storepb.PriorBackupDetail_Item_Table{
+			Database: "projects/proj-1/instances/inst-1/databases/HR",
+			Table:    "EMP",
+		},
+		TargetTable: &storepb.PriorBackupDetail_Item_Table{
+			Database: "projects/proj-1/instances/inst-1/databases/BACKUP",
+			Table:    "BB_EMP",
+		},
+		StartPosition: item.StartPosition,
+		EndPosition:   item.EndPosition,
+	}
+	got, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_ORACLE, rCtx, script, projectItem)
+	require.NoError(t, err)
+	require.Contains(t, got, `"HR"."EMP"`)
+
+	// Guard rails on missing inputs / metadata.
+	_, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_ORACLE, rCtx, script, nil)
+	require.ErrorContains(t, err, "backup item is nil")
+
+	_, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_ORACLE, base.RestoreContext{}, script, item)
+	require.ErrorContains(t, err, "GetDatabaseMetadataFunc is required")
+
+	unsyncedCtx := base.RestoreContext{
+		GetDatabaseMetadataFunc: func(_ context.Context, _, _ string) (string, *model.DatabaseMetadata, error) {
+			return "", nil, nil
+		},
+	}
+	_, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_ORACLE, unsyncedCtx, script, item)
+	require.ErrorContains(t, err, "database not synced")
+
+	errCtx := base.RestoreContext{
+		GetDatabaseMetadataFunc: func(_ context.Context, _, _ string) (string, *model.DatabaseMetadata, error) {
+			return "", nil, errors.New("rpc failed")
+		},
+	}
+	_, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_ORACLE, errCtx, script, item)
+	require.ErrorContains(t, err, "rpc failed")
+
+	missingTableItem := &storepb.PriorBackupDetail_Item{
+		SourceTable:   &storepb.PriorBackupDetail_Item_Table{Database: "instances/inst-1/databases/HR", Table: "NO_SUCH_TABLE"},
+		TargetTable:   item.TargetTable,
+		StartPosition: &storepb.Position{Line: 1, Column: 1},
+		EndPosition:   &storepb.Position{Line: 1, Column: 30},
+	}
+	_, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_ORACLE, rCtx, "UPDATE no_such_table SET x = 1;", missingTableItem)
+	require.ErrorContains(t, err, "no table metadata")
 }

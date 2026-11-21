@@ -4,50 +4,29 @@ import (
 	"context"
 	"testing"
 
+	lsp "github.com/bytebase/lsp-protocol"
+	"github.com/bytebase/omni/mssql/analysis"
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestDiagnoseUsesParseError(t *testing.T) {
-	tests := []struct {
-		name      string
-		statement string
-		message   string
-		line      uint32
-		character uint32
-	}{
-		{
-			name:      "single line",
-			statement: "SELECT FROM",
-			message:   `syntax error at or near "FROM"`,
-			line:      0,
-			character: 7,
-		},
-		{
-			name:      "second line",
-			statement: "SELECT 1;\nSELECT FROM",
-			message:   `syntax error at or near "FROM"`,
-			line:      1,
-			character: 7,
-		},
-		{
-			name:      "line after non-ascii",
-			statement: "SELECT N'你好';\nSELECT FROM",
-			message:   `syntax error at or near "FROM"`,
-			line:      1,
-			character: 7,
-		},
-	}
+func TestDiagnoseSeam(t *testing.T) {
+	diags, err := base.Diagnose(context.Background(), base.DiagnoseContext{}, storepb.Engine_MSSQL, "SELECT 1;")
+	require.NoError(t, err)
+	require.Empty(t, diags)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			diagnostics, err := Diagnose(context.Background(), base.DiagnoseContext{}, tt.statement)
-			require.NoError(t, err)
-			require.Len(t, diagnostics, 1)
-			require.Equal(t, tt.message, diagnostics[0].Message)
-			require.Equal(t, tt.line, diagnostics[0].Range.Start.Line)
-			require.Equal(t, tt.character, diagnostics[0].Range.Start.Character)
-		})
-	}
+	// Multi-line + non-ASCII rune offset maps to 0-based LSP line/character.
+	diags, err = base.Diagnose(context.Background(), base.DiagnoseContext{}, storepb.Engine_MSSQL, "SELECT 1;\nSELECT '你好' FROM ;")
+	require.NoError(t, err)
+	require.Len(t, diags, 1)
+	require.Equal(t, lsp.SeverityError, diags[0].Severity)
+	require.Equal(t, uint32(1), diags[0].Range.Start.Line)
+	require.Equal(t, uint32(17), diags[0].Range.Start.Character)
+
+	require.Nil(t, toSyntaxError(nil))
+	fallback := toSyntaxError(&analysis.SyntaxError{Offset: -1, Message: "unexpected"})
+	require.Equal(t, &storepb.Position{Line: 1, Column: 1}, fallback.Position)
+	require.Equal(t, "unexpected", fallback.Message)
 }

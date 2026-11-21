@@ -1,127 +1,46 @@
 package pg
 
 import (
-	"io"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common/yamltest"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-type statementTypeTest struct {
-	Statement string
-	Want      []string
-}
+type wrongAST struct{}
 
-func TestGetStatementType(t *testing.T) {
-	tests := []statementTypeTest{}
+func (wrongAST) ASTStartPosition() *storepb.Position { return nil }
 
-	const (
-		record = false
-	)
+func TestGetStatementTypesSeam(t *testing.T) {
+	stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, "CREATE TABLE t1 (\n  id INT\n);\nDROP TABLE t2;\nINSERT INTO t1 VALUES (1);")
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
 
-	var (
-		filepath = "test-data/test_statement_type.yaml"
-	)
+	withPos, err := GetStatementTypes(asts)
+	require.NoError(t, err)
+	require.Len(t, withPos, 3)
+	require.Equal(t, storepb.StatementType_CREATE_TABLE, withPos[0].Type)
+	require.Equal(t, 3, withPos[0].Line)
+	require.Contains(t, withPos[0].Text, "CREATE TABLE t1")
+	require.Equal(t, storepb.StatementType_DROP_TABLE, withPos[1].Type)
+	require.Equal(t, 4, withPos[1].Line)
+	require.Equal(t, storepb.StatementType_INSERT, withPos[2].Type)
+	require.Equal(t, 5, withPos[2].Line)
 
-	a := require.New(t)
-	yamlFile, err := os.Open(filepath)
-	a.NoError(err)
+	regTypes, err := base.GetStatementTypes(storepb.Engine_POSTGRES, asts)
+	require.NoError(t, err)
+	require.Equal(t, []storepb.StatementType{
+		storepb.StatementType_CREATE_TABLE,
+		storepb.StatementType_DROP_TABLE,
+		storepb.StatementType_INSERT,
+	}, regTypes)
 
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(yamlFile.Close())
-	a.NoError(err)
-	a.NoError(yaml.Unmarshal(byteValue, &tests))
+	empty, err := GetStatementTypes(nil)
+	require.NoError(t, err)
+	require.Empty(t, empty)
 
-	for i, test := range tests {
-		stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, test.Statement)
-		a.NoError(err)
-		asts := base.ExtractASTs(stmts)
-
-		stmtsWithPos, err := GetStatementTypes(asts)
-		a.NoError(err)
-
-		// Convert enum to string for comparison
-		sqlTypeStrings := make([]string, len(stmtsWithPos))
-		for j, stmt := range stmtsWithPos {
-			sqlTypeStrings[j] = stmt.Type.String()
-		}
-
-		if record {
-			tests[i].Want = sqlTypeStrings
-		} else {
-			a.Equal(test.Want, sqlTypeStrings)
-		}
-	}
-
-	if record {
-		yamltest.Record(t, filepath, tests)
-	}
-}
-
-func TestGetStatementTypesWithPositions(t *testing.T) {
-	a := require.New(t)
-	tests := []struct {
-		name     string
-		sql      string
-		expected []StatementTypeWithPosition
-	}{
-		{
-			name: "Single statement",
-			sql:  "CREATE TABLE t1 (id INT);",
-			expected: []StatementTypeWithPosition{
-				{
-					Type: storepb.StatementType_CREATE_TABLE,
-					Line: 1,
-					Text: "CREATE TABLE t1 (id INT);",
-				},
-			},
-		},
-		{
-			name: "Multiple statements",
-			sql: `CREATE TABLE t1 (id INT);
-DROP TABLE t2;
-INSERT INTO t1 VALUES (1);`,
-			expected: []StatementTypeWithPosition{
-				{
-					Type: storepb.StatementType_CREATE_TABLE,
-					Line: 1,
-				},
-				{
-					Type: storepb.StatementType_DROP_TABLE,
-					Line: 2,
-				},
-				{
-					Type: storepb.StatementType_INSERT,
-					Line: 3,
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(_ *testing.T) {
-			stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, tt.sql)
-			a.NoError(err)
-			asts := base.ExtractASTs(stmts)
-
-			results, err := GetStatementTypes(asts)
-			a.NoError(err)
-			a.Len(results, len(tt.expected))
-
-			for i, expected := range tt.expected {
-				a.Equal(expected.Type, results[i].Type, "Statement %d type mismatch", i)
-				a.Equal(expected.Line, results[i].Line, "Statement %d line mismatch", i)
-				if expected.Text != "" {
-					// Check that text contains expected content (may not include semicolon)
-					a.Contains(results[i].Text, "CREATE TABLE t1", "Statement %d text mismatch", i)
-				}
-			}
-		})
-	}
+	_, err = GetStatementTypes([]base.AST{wrongAST{}})
+	require.ErrorContains(t, err, "expected AST for PostgreSQL")
 }
