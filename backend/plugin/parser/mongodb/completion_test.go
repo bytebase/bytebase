@@ -2,120 +2,58 @@ package mongodb
 
 import (
 	"context"
-	"io"
-	"os"
-	"slices"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common/yamltest"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-type candidatesTest struct {
-	Input string
-	Want  []base.Candidate
-}
-
-func TestCompletion(t *testing.T) {
-	tests := []candidatesTest{}
-
-	const (
-		record = false
-	)
-	var (
-		filepath = "test-data/test_completion.yaml"
-	)
-
-	a := require.New(t)
-	yamlFile, err := os.Open(filepath)
-	a.NoError(err)
-
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(yamlFile.Close())
-	a.NoError(err)
-	a.NoError(yaml.Unmarshal(byteValue, &tests))
-
-	for i, tc := range tests {
-		text, caretLine, caretOffset := catchCaret(tc.Input)
-		result, err := base.Completion(context.Background(), storepb.Engine_MONGODB, base.CompletionContext{
-			Scene:           base.SceneTypeAll,
-			DefaultDatabase: "test",
-			Metadata:        getMetadataForTest,
-		}, text, caretLine, caretOffset)
-		a.NoError(err)
-
-		// Sort results for consistent comparison
-		slices.SortFunc(result, func(x, y base.Candidate) int {
-			if x.Type != y.Type {
-				if x.Type < y.Type {
-					return -1
-				}
-				return 1
-			}
-			if x.Text != y.Text {
-				if x.Text < y.Text {
-					return -1
-				}
-				return 1
-			}
-			return 0
-		})
-
-		if record {
-			tests[i].Want = result
-		} else {
-			a.Equal(tc.Want, result, tc.Input)
+func TestCompletionSeam(t *testing.T) {
+	getMeta := func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
+		if databaseName != "test" {
+			return "", nil, nil
 		}
-	}
-
-	if record {
-		yamltest.Record(t, filepath, tests)
-	}
-}
-
-func getMetadataForTest(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-	if databaseName != "test" {
-		return "", nil, nil
-	}
-
-	return "test", model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-		Name: databaseName,
-		Schemas: []*metadatapb.SchemaMetadata{
-			{
-				Name: "",
-				Tables: []*metadatapb.TableMetadata{
-					{Name: "users"},
-					{Name: "orders"},
-					{Name: "my-collection"}, // special char - needs bracket notation
+		return "test", model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			Name: databaseName,
+			Schemas: []*metadatapb.SchemaMetadata{
+				{
+					Tables: []*metadatapb.TableMetadata{
+						{Name: "users"},
+						{Name: "my-collection"},
+					},
 				},
 			},
-		},
-	}, nil, nil, storepb.Engine_MONGODB, true /* isObjectCaseSensitive */), nil
-}
-
-// catchCaret finds the | marker in the input and returns:
-// - the text with the marker removed
-// - the 1-based line number where the marker was
-// - the 0-based column offset on that line
-func catchCaret(s string) (string, int, int) {
-	line := 1
-	col := 0
-	for i, c := range s {
-		if c == '|' {
-			return s[:i] + s[i+1:], line, col
-		}
-		if c == '\n' {
-			line++
-			col = 0
-		} else {
-			col++
-		}
+		}, nil, nil, storepb.Engine_MONGODB, true), nil
 	}
-	return s, -1, -1
+
+	// Registry dispatch, Metadata callback, candidateTypeToBase (Collection->Table, DbMethod->Function),
+	// and special collection name formatting via omni CompleteSession.
+	dotCands, err := base.Completion(context.Background(), storepb.Engine_MONGODB, base.CompletionContext{
+		Scene:           base.SceneTypeAll,
+		DefaultDatabase: "test",
+		Metadata:        getMeta,
+	}, "db.", 1, 3)
+	require.NoError(t, err)
+	require.Contains(t, dotCands, base.Candidate{Type: base.CandidateTypeTable, Text: "users"})
+	require.Contains(t, dotCands, base.Candidate{Type: base.CandidateTypeTable, Text: `getCollection("my-collection")`})
+	require.Contains(t, dotCands, base.Candidate{Type: base.CandidateTypeFunction, Text: "runCommand"})
+
+	// Bracket access + keyword/show target type mapping.
+	bracketCands, err := base.Completion(context.Background(), storepb.Engine_MONGODB, base.CompletionContext{
+		Scene:           base.SceneTypeAll,
+		DefaultDatabase: "test",
+		Metadata:        getMeta,
+	}, "db[", 1, 3)
+	require.NoError(t, err)
+	require.Contains(t, bracketCands, base.Candidate{Type: base.CandidateTypeTable, Text: `"my-collection"]`})
+
+	topCands, err := base.Completion(context.Background(), storepb.Engine_MONGODB, base.CompletionContext{
+		Scene: base.SceneTypeAll,
+	}, "", 1, 0)
+	require.NoError(t, err)
+	require.Contains(t, topCands, base.Candidate{Type: base.CandidateTypeKeyword, Text: "show"})
 }
