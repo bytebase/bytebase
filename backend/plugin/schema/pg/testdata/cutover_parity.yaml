@@ -490,7 +490,7 @@
     COMMENT ON TRIGGER "users_touch_updated_at" ON "public"."users" IS 'maintain updated_at';
 
   catalogExpected: ''
-  catalogError: 'cannot generate a migration for objects whose definitions could not be loaded: con:public.users.users_account_id_fkey: ERROR: there is no unique constraint matching given keys for referenced table "accounts" (SQLSTATE 42830)'
+  catalogError: 'cannot generate a migration for objects whose definitions could not be loaded: con:public.users.users_account_id_fkey: ERROR: there is no unique constraint matching given keys for referenced table "accounts" (SQLSTATE 42830); trg:public.users.users_touch_updated_at: ERROR: function "touch_updated_at" does not exist (SQLSTATE 42883)'
 - description: TestCockroachMetadataDiffCreateIndexUsesFullDefinitionFromMetadata
   difference: the index is rendered from its stored definition, including USING btree and the WITH (fillfactor) storage parameter; the text is otherwise unchanged.
   oldMetadata: |-
@@ -617,7 +617,7 @@
   catalogExpected: ''
   catalogError: 'cannot generate a migration for objects whose definitions could not be loaded: con:public.child.child_parent_id_fkey: ERROR: there is no unique constraint matching given keys for referenced table "parent" (SQLSTATE 42830)'
 - description: TestCockroachMetadataDiffDropTablesInForeignKeyDependencyOrder
-  difference: catalog refuses a changed foreign key whose referenced key is not unique; the legacy generator rendered it without checking.
+  difference: table drops use CASCADE instead of dropping constraints separately when the owning tables are also dropped. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
   oldMetadata: |-
     {
       "schemas": [
@@ -678,8 +678,9 @@
 
     DROP TABLE "public"."parent";
 
-  catalogExpected: ''
-  catalogError: 'cannot generate a migration for objects whose definitions could not be loaded: con:public.child.child_parent_id_fkey: ERROR: there is no unique constraint matching given keys for referenced table "parent" (SQLSTATE 42830)'
+  catalogExpected: |-
+    DROP TABLE "public"."child" CASCADE;
+    DROP TABLE "public"."parent" CASCADE
 - description: TestCockroachMetadataDiffDropTableSkipsOwnedSequenceDrop
   difference: the table drop uses CASCADE. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
   oldMetadata: |-
@@ -727,7 +728,7 @@
 
   catalogExpected: DROP TABLE "public"."orders" CASCADE
 - description: TestCockroachMetadataDiffDropCyclicForeignKeyTablesDropsForeignKeysFirst
-  difference: catalog refuses a changed foreign key whose referenced key is not unique; the legacy generator rendered it without checking.
+  difference: table drops use CASCADE instead of dropping cyclic foreign keys separately when the owning tables are also dropped. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
   oldMetadata: |-
     {
       "schemas": [
@@ -807,8 +808,9 @@
 
     DROP TABLE "public"."b";
 
-  catalogExpected: ''
-  catalogError: 'cannot generate a migration for objects whose definitions could not be loaded: con:public.a.a_b_id_fkey: ERROR: there is no unique constraint matching given keys for referenced table "b" (SQLSTATE 42830); con:public.b.b_a_id_fkey: ERROR: there is no unique constraint matching given keys for referenced table "a" (SQLSTATE 42830)'
+  catalogExpected: |-
+    DROP TABLE "public"."a" CASCADE;
+    DROP TABLE "public"."b" CASCADE
 - description: TestCockroachMetadataDiffDropSchemaDropsViewsBeforeTablesWithoutDependencyMetadata
   difference: table and schema drops use CASCADE, and schema drop omits IF EXISTS. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
   oldMetadata: |-
@@ -2378,7 +2380,7 @@
 
   catalogExpected: ALTER EXTENSION "pg_trgm" UPDATE TO '1.6'
 - description: TestCockroachMetadataDiffEventTriggerObjectChanges/create event trigger
-  difference: event triggers are not diffed by the catalog; CockroachDB has no event triggers. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
+  difference: catalog refuses an event trigger whose handler function does not exist; the legacy generator emitted it without checking.
   oldMetadata: |-
     {
       "schemas": [
@@ -2408,8 +2410,9 @@
     CREATE EVENT TRIGGER "audit_ddl" ON ddl_command_end
       EXECUTE FUNCTION "public"."audit_ddl"();\n\n
   catalogExpected: ''
+  catalogError: 'cannot generate a migration for objects whose definitions could not be loaded: evtrig:audit_ddl: ERROR: function audit_ddl() does not exist (SQLSTATE 42883)'
 - description: TestCockroachMetadataDiffEventTriggerObjectChanges/drop event trigger
-  difference: event triggers are not diffed by the catalog; CockroachDB has no event triggers. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
+  difference: catalog omits the trailing statement semicolon.
   oldMetadata: |-
     {
       "schemas": [
@@ -2438,9 +2441,9 @@
   legacyExpected: |+
     DROP EVENT TRIGGER "audit_ddl";
 
-  catalogExpected: ''
+  catalogExpected: DROP EVENT TRIGGER "audit_ddl"
 - description: TestCockroachMetadataDiffEventTriggerObjectChanges/recreate changed event trigger
-  difference: event triggers are not diffed by the catalog; CockroachDB has no event triggers. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
+  difference: catalog refuses an event trigger whose handler function does not exist; the legacy generator emitted it without checking.
   oldMetadata: |-
     {
       "schemas": [
@@ -2481,6 +2484,7 @@
     CREATE EVENT TRIGGER "audit_ddl" ON ddl_command_end
       EXECUTE FUNCTION "public"."audit_ddl"();\n\n
   catalogExpected: ''
+  catalogError: 'cannot generate a migration for objects whose definitions could not be loaded: evtrig:audit_ddl: ERROR: function audit_ddl() does not exist (SQLSTATE 42883)'
 - description: TestCockroachMetadataDiffCreateCompositeTypesInDependencyOrder
   difference: composite types and their comments are ordered by dependency and written with canonical layout. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
   oldMetadata: |-
