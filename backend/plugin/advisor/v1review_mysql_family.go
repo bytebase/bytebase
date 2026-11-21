@@ -143,7 +143,7 @@ func (m *MySQLFamily[N]) numberStmtRule(
 		if err != nil {
 			return nil, err
 		}
-		limit, err := requireNumberPayload(checkCtx.Rule, missingMsg)
+		limit, err := RequireNumberPayload(checkCtx.Rule, missingMsg)
 		if err != nil {
 			return nil, err
 		}
@@ -200,7 +200,7 @@ func (m *MySQLFamily[N]) indexSchemaBatchRule(
 		}
 		findings, err := fn(p.nodes, v1SchemaOf(checkCtx.OriginalMetadata))
 		if err != nil {
-			readMissingSchema(checkCtx.OriginalMetadata, err)
+			ReadMissingSchema(checkCtx.OriginalMetadata, err)
 			return nil, err
 		}
 		var adviceList []*storepb.Advice
@@ -218,7 +218,7 @@ func (*MySQLFamily[N]) MaxStatementsInTransaction() Func {
 		if _, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level); err != nil {
 			return nil, err
 		}
-		if _, err := requireNumberPayload(checkCtx.Rule, "number_payload is required for this rule"); err != nil {
+		if _, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule"); err != nil {
 			return nil, err
 		}
 		return nil, nil
@@ -228,7 +228,7 @@ func (*MySQLFamily[N]) MaxStatementsInTransaction() Func {
 // OnlineMigration returns an Func for ADVICE_ONLINE_MIGRATION.
 func (m *MySQLFamily[N]) OnlineMigration(engine storepb.Engine, fn func([]N, v1review.Schema, string, int64) []v1review.Finding) Func {
 	return func(ctx context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		n, err := requireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
+		n, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
 		if err != nil {
 			return nil, err
 		}
@@ -625,7 +625,7 @@ func (m *MySQLFamily[N]) IndexPrimaryKeyTypeAllowlist(fn func([]N, []string, v1r
 		}
 		findings, err := fn(p.nodes, checkCtx.Rule.GetStringArrayPayload().List, v1SchemaOf(checkCtx.OriginalMetadata))
 		if err != nil {
-			readMissingSchema(checkCtx.OriginalMetadata, err)
+			ReadMissingSchema(checkCtx.OriginalMetadata, err)
 			return nil, err
 		}
 		var adviceList []*storepb.Advice
@@ -643,13 +643,13 @@ func (m *MySQLFamily[N]) IndexTotalNumberLimit(fn func([]N, int, v1review.Schema
 		if err != nil {
 			return nil, err
 		}
-		limit, err := requireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
+		limit, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
 		if err != nil {
 			return nil, err
 		}
 		findings, err := fn(p.nodes, limit, v1SchemaOf(checkCtx.FinalMetadata))
 		if err != nil {
-			readMissingSchema(checkCtx.FinalMetadata, err)
+			ReadMissingSchema(checkCtx.FinalMetadata, err)
 			return nil, err
 		}
 		var adviceList []*storepb.Advice
@@ -1158,7 +1158,7 @@ func (m *MySQLFamily[N]) TableLimitSize(fn func([]N, *metadatapb.DatabaseSchemaM
 		if err != nil {
 			return nil, err
 		}
-		limit, err := requireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
+		limit, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
 		if err != nil {
 			return nil, err
 		}
@@ -1243,7 +1243,7 @@ func (m *MySQLFamily[N]) TableTextFieldsTotalLength(fn func([]N, *v1review.Schem
 		if err != nil {
 			return nil, err
 		}
-		maximum, err := requireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
+		maximum, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
 		if err != nil {
 			return nil, err
 		}

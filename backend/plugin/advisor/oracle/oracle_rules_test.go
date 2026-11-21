@@ -49,7 +49,6 @@ func TestOracleAdvisorUsesWithoutANTLRFallback(t *testing.T) {
 		name      string
 		statement string
 		rule      *storepb.SQLReviewRule
-		advisor   advisor.Advisor
 		wantCount int
 	}{
 		{
@@ -59,7 +58,6 @@ func TestOracleAdvisorUsesWithoutANTLRFallback(t *testing.T) {
 				Type:  storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL,
 				Level: storepb.SQLReviewRule_WARNING,
 			},
-			advisor:   &SelectNoSelectAllAdvisor{},
 			wantCount: 1,
 		},
 		{
@@ -69,7 +67,6 @@ func TestOracleAdvisorUsesWithoutANTLRFallback(t *testing.T) {
 				Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
 				Level: storepb.SQLReviewRule_WARNING,
 			},
-			advisor:   &StatementWhereDisallowFunctionsAndCalculationsAdvisor{},
 			wantCount: 1,
 		},
 		{
@@ -79,7 +76,6 @@ func TestOracleAdvisorUsesWithoutANTLRFallback(t *testing.T) {
 				Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
 				Level: storepb.SQLReviewRule_WARNING,
 			},
-			advisor:   &StatementWhereDisallowFunctionsAndCalculationsAdvisor{},
 			wantCount: 1,
 		},
 		{
@@ -93,7 +89,6 @@ END;`,
 				Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
 				Level: storepb.SQLReviewRule_WARNING,
 			},
-			advisor:   &StatementWhereDisallowFunctionsAndCalculationsAdvisor{},
 			wantCount: 1,
 		},
 		{
@@ -108,7 +103,6 @@ END;`,
 				Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
 				Level: storepb.SQLReviewRule_WARNING,
 			},
-			advisor:   &StatementWhereDisallowFunctionsAndCalculationsAdvisor{},
 			wantCount: 1,
 		},
 		{
@@ -123,7 +117,6 @@ END;`,
 					},
 				},
 			},
-			advisor:   &ColumnTypeDisallowListAdvisor{},
 			wantCount: 1,
 		},
 	}
@@ -135,7 +128,7 @@ END;`,
 				t.Fatal(err)
 			}
 
-			adviceList, err := test.advisor.Check(context.Background(), advisor.Context{
+			adviceList, err := advisor.Check(context.Background(), storepb.Engine_ORACLE, test.rule.Type, advisor.Context{
 				Rule:                  test.rule,
 				DBType:                storepb.Engine_ORACLE,
 				CurrentDatabase:       "TEST_DB",
