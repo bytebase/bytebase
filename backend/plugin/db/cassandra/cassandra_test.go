@@ -112,6 +112,15 @@ func TestConvertValue(t *testing.T) {
 	}
 }
 
+func toQueryResult(result *omnidriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
+	return util.OmniResultToQueryResultWith(result, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
+		SkipPlan:      true,
+		SkipMessages:  true,
+		TruncatedWins: true,
+		ConvertValue:  convertValue,
+	})
+}
+
 func TestToQueryResult(t *testing.T) {
 	result := toQueryResult(&omnidriver.Result{
 		Statement: "SELECT * FROM t",
@@ -212,7 +221,7 @@ func TestFormatAddress(t *testing.T) {
 }
 
 func TestTLSConfigFuncVerifiesDialedHost(t *testing.T) {
-	require.Nil(t, tlsConfigFunc(&storepb.DataSource{Host: "node1.example.com"}))
+	require.Nil(t, util.HostTLSFunc(&storepb.DataSource{Host: "node1.example.com"}))
 
 	caKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	require.NoError(t, err)
@@ -249,7 +258,7 @@ func TestTLSConfigFuncVerifiesDialedHost(t *testing.T) {
 	node1Cert := signLeaf(2, "node1.example.com")
 	node2Cert := signLeaf(3, "node2.example.com")
 
-	fn := tlsConfigFunc(&storepb.DataSource{
+	fn := util.HostTLSFunc(&storepb.DataSource{
 		Host:                 "node1.example.com",
 		UseSsl:               true,
 		VerifyTlsCertificate: true,

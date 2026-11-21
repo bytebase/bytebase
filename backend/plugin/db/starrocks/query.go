@@ -4,58 +4,35 @@ import (
 	"context"
 
 	omnidriver "github.com/bytebase/omni/driver"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
+func toQueryResults(results []*omnidriver.Result, maxResultBytes int64) []*v1pb.QueryResult {
+	return util.OmniResultsToQueryResultsWith(results, maxResultBytes, util.QueryResultOptions{
+		SkipPlan:     true,
+		SkipMessages: true,
+		ConvertValue: toRowValue,
+	})
+}
+
+func toQueryResult(result *omnidriver.Result, maxResultBytes int64) *v1pb.QueryResult {
+	return util.OmniResultToQueryResultWith(result, maxResultBytes, util.QueryResultOptions{
+		SkipPlan:     true,
+		SkipMessages: true,
+		ConvertValue: toRowValue,
+	})
+}
+
 // QueryConn queries a SQL statement on the driver's session.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	session, err := d.querySession(ctx)
+	results, err := d.QueryHeldSession(ctx, statement, queryOptions(queryContext), util.SessionQueryOptions{})
 	if err != nil {
 		return nil, err
-	}
-
-	results, err := session.Query(ctx, statement, queryOptions(queryContext))
-	if err != nil {
-		// The script could not be run at all; the session is not one to keep.
-		d.discardSessionLocked(session)
-		return nil, err
-	}
-	if ctx.Err() != nil {
-		// The client closes the connection when a statement's context ends, so the
-		// stream's next statement must open a new session.
-		d.discardSessionLocked(session)
 	}
 	return toQueryResults(results, queryContext.MaximumSQLResultSize), nil
-}
-
-// discardSessionLocked closes a session a statement took with it, so the next
-// statement opens a new one instead of reusing a dead one. The caller holds mu.
-func (d *Driver) discardSessionLocked(session omnidriver.Session) {
-	_ = session.Close()
-	if d.session == session {
-		d.session = nil
-	}
-}
-
-// querySession returns the session QueryConn runs on, opening it on first use.
-// The caller holds mu.
-func (d *Driver) querySession(ctx context.Context) (omnidriver.Session, error) {
-	if d.session != nil {
-		return d.session, nil
-	}
-	session, err := d.impl.Session(ctx)
-	if err != nil {
-		return nil, err
-	}
-	d.session = session
-	return session, nil
 }
 
 // queryOptions maps the product's query context onto the driver's.
@@ -74,62 +51,8 @@ func queryOptions(queryContext db.QueryContext) omnidriver.QueryOptions {
 	}
 }
 
-// toQueryResults converts the driver's results into the API's, keeping each
-// statement's error, text and latency. The driver's plan description is not
-// carried into QueryResult.QueryPlan: an explain request already answers with
-// the plan's rows, which is what the editor shows for this engine.
-func toQueryResults(results []*omnidriver.Result, maxResultBytes int64) []*v1pb.QueryResult {
-	if len(results) == 0 {
-		return nil
-	}
-	queryResults := make([]*v1pb.QueryResult, 0, len(results))
-	for _, result := range results {
-		queryResults = append(queryResults, toQueryResult(result, maxResultBytes))
-	}
-	return queryResults
-}
-
-func toQueryResult(result *omnidriver.Result, maxResultBytes int64) *v1pb.QueryResult {
-	latency := durationpb.New(result.Latency)
-	if result.AffectedRows != nil {
-		affected := util.BuildAffectedRowsResult(*result.AffectedRows, nil)
-		affected.Statement = result.Statement
-		affected.Latency = latency
-		affected.RowsCount = int64(len(affected.Rows))
-		return affected
-	}
-
-	queryResult := &v1pb.QueryResult{
-		Statement: result.Statement,
-		Latency:   latency,
-	}
-	for _, column := range result.Columns {
-		queryResult.ColumnNames = append(queryResult.ColumnNames, column.Name)
-		queryResult.ColumnTypeNames = append(queryResult.ColumnTypeNames, column.TypeName)
-	}
-	for _, row := range result.Rows {
-		values := make([]*v1pb.RowValue, 0, len(row))
-		for _, value := range row {
-			values = append(values, toRowValue(value))
-		}
-		queryResult.Rows = append(queryResult.Rows, &v1pb.QueryRow{Values: values})
-	}
-	queryResult.RowsCount = int64(len(queryResult.Rows))
-	if result.Truncated {
-		queryResult.Error = util.FormatMaximumSQLResultSizeMessage(maxResultBytes)
-	}
-	if result.Err != nil {
-		queryResult.Error = result.Err.Error()
-	}
-	return queryResult
-}
-
 func toRowValue(value omnidriver.Value) *v1pb.RowValue {
 	switch value.Kind {
-	case omnidriver.Null:
-		return util.NullRowValue
-	case omnidriver.Bool:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value.Bool}}
 	case omnidriver.Bytes:
 		// StarRocks reports BIT and VARBIT as bytes, and a zero-byte value is a
 		// NULL cell: the length is what decides, not whether the driver sent an
@@ -138,19 +61,12 @@ func toRowValue(value omnidriver.Value) *v1pb.RowValue {
 			return util.NullRowValue
 		}
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.Bytes}}
-	case omnidriver.Float32, omnidriver.Float64:
+	case omnidriver.Float32:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: value.Float64}}
-	case omnidriver.Int32, omnidriver.Int64:
+	case omnidriver.Int32:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: value.Int64}}
-	case omnidriver.String:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String}}
-	case omnidriver.Timestamp:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampValue{
-			TimestampValue: &v1pb.RowValue_Timestamp{
-				GoogleTimestamp: timestamppb.New(value.Time),
-				Accuracy:        value.Precision,
-			},
-		}}
+	case omnidriver.Bool, omnidriver.Float64, omnidriver.Int64, omnidriver.String, omnidriver.Timestamp:
+		return util.OmniRowValue(value)
 	default:
 		// StarRocks has no other kind: the driver's unsigneds, zone-aware
 		// timestamps and structured documents are other engines' shapes.

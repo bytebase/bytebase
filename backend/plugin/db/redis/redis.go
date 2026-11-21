@@ -38,20 +38,14 @@ package redis
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"io"
 	"net"
 	"strconv"
 	"strings"
 
 	omnidriver "github.com/bytebase/omni/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 	omniredis "github.com/bytebase/omni/redis/driver"
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
-	"golang.org/x/crypto/ssh"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -67,8 +61,7 @@ func init() {
 
 // Driver is Bytebase's Redis driver.
 type Driver struct {
-	inner     *omniredis.Driver
-	sshClient *ssh.Client
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -79,17 +72,20 @@ func newDriver() db.Driver {
 // the server: Ping does.
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	d := &Driver{}
+	opened := false
+	defer func() {
+		if !opened {
+			_ = d.Close(ctx)
+		}
+	}()
+
 	dataSource := config.DataSource
 
 	// Old Open built the TLS config once, so invalid TLS material still fails
 	// here rather than on the first connection.
-	tlsConfig, err := util.GetTLSConfig(dataSource)
+	tlsFunc, err := util.StaticTLSFunc(dataSource)
 	if err != nil {
 		return nil, errors.Wrap(err, "redis: failed to get tls config")
-	}
-	var tlsFunc func(host string) (*tls.Config, error)
-	if tlsConfig != nil {
-		tlsFunc = func(string) (*tls.Config, error) { return tlsConfig, nil }
 	}
 
 	// Old Open read the database index before opening the tunnel, so a name that
@@ -136,7 +132,7 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 		if err != nil {
 			return nil, err
 		}
-		d.sshClient = sshClient
+		d.AddCloser(sshClient)
 		cfg.Dial = func(_ context.Context, network, address string) (net.Conn, error) {
 			conn, err := sshClient.Dial(network, address)
 			if err != nil {
@@ -148,10 +144,10 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 
 	inner, err := omniredis.Open(ctx, cfg, options)
 	if err != nil {
-		d.closeSSHClient()
 		return nil, err
 	}
-	d.inner = inner
+	d.Driver = inner
+	opened = true
 	return d, nil
 }
 
@@ -171,36 +167,11 @@ func joinAddress(host, port string) string {
 	return net.JoinHostPort(bare, port)
 }
 
-func (d *Driver) closeSSHClient() {
-	if d.sshClient != nil {
-		_ = d.sshClient.Close()
-		d.sshClient = nil
-	}
-}
-
-// Close closes the client and the SSH tunnel, if any.
-func (d *Driver) Close(context.Context) error {
-	var err error
-	if d.inner != nil {
-		err = multierr.Append(err, d.inner.Close())
-	}
-	if d.sshClient != nil {
-		err = multierr.Append(err, d.sshClient.Close())
-	}
-	return err
-}
-
-// Ping pings the server.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.inner.Ping(ctx)
-}
-
 // Execute runs the script's commands in order, reporting each to the task run's
 // log.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	return d.inner.Execute(ctx, statement, omnidriver.ExecuteOptions{
-		CreateDatabase: opts.CreateDatabase,
-		Log:            util.NewExecuteLogger(opts),
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		PassCreateDatabase: true,
 	})
 }
 
@@ -216,77 +187,31 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 		return nil, errors.Errorf("unknown RedisRunCommandOn enum %v", queryContext.Option.GetRedisRunCommandsOn())
 	}
 
-	session, err := d.inner.Session(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = session.Close() }()
-
-	options := omnidriver.QueryOptions{MaxResultBytes: queryContext.MaximumSQLResultSize}
 	var innerResults []*omnidriver.Result
-	if queryContext.Option.GetRedisRunCommandsOn() == v1pb.QueryOption_ALL_NODES {
-		probe, ok := session.(omnidriver.AllNodesQuerier)
-		if !ok {
-			return nil, errors.Errorf("expect *redis.ClusterClient, but get %T", d.inner)
+	err := d.QueryEphemeral(ctx, func(session omnidriver.Session) error {
+		options := omnidriver.QueryOptions{MaxResultBytes: queryContext.MaximumSQLResultSize}
+		if queryContext.Option.GetRedisRunCommandsOn() == v1pb.QueryOption_ALL_NODES {
+			probe, ok := session.(omnidriver.AllNodesQuerier)
+			if !ok {
+				return errors.Errorf("expect *redis.ClusterClient, but get %T", d.Driver)
+			}
+			var queryErr error
+			innerResults, queryErr = probe.QueryAllNodes(ctx, statement, options)
+			return queryErr
 		}
-		innerResults, err = probe.QueryAllNodes(ctx, statement, options)
-	} else {
-		innerResults, err = session.Query(ctx, statement, options)
-	}
+		var queryErr error
+		innerResults, queryErr = session.Query(ctx, statement, options)
+		return queryErr
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	results := make([]*v1pb.QueryResult, 0, len(innerResults))
-	for _, result := range innerResults {
-		results = append(results, toQueryResult(result, queryContext.MaximumSQLResultSize))
-	}
-	return results, nil
-}
-
-// SyncInstance reads the server version and its database numbers.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.inner.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, false), nil
-}
-
-// SyncDBSchema answers the database number: Redis keys are not a schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return d.inner.SyncDatabase(ctx)
-}
-
-// Dump writes nothing, as before: Redis has no schema to render.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.inner.Dump(ctx, out, dbMetadata)
-}
-
-// toQueryResult maps one contract result onto the product's result.
-func toQueryResult(result *omnidriver.Result, maxResultBytes int64) *v1pb.QueryResult {
-	converted := &v1pb.QueryResult{
-		Statement: result.Statement,
-		Latency:   durationpb.New(result.Latency),
-	}
-	for _, column := range result.Columns {
-		converted.ColumnNames = append(converted.ColumnNames, column.Name)
-		converted.ColumnTypeNames = append(converted.ColumnTypeNames, column.TypeName)
-	}
-	for _, row := range result.Rows {
-		convertedRow := &v1pb.QueryRow{}
-		for _, value := range row {
-			convertedRow.Values = append(convertedRow.Values, toRowValue(value))
-		}
-		converted.Rows = append(converted.Rows, convertedRow)
-	}
-	converted.RowsCount = int64(len(converted.Rows))
-	if result.Truncated {
-		converted.Error = util.FormatMaximumSQLResultSizeMessage(maxResultBytes)
-	} else if result.Err != nil {
-		converted.Error = result.Err.Error()
-	}
-	return converted
+	return util.OmniResultsToQueryResultsWith(innerResults, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
+		SkipPlan:      true,
+		SkipMessages:  true,
+		TruncatedWins: true,
+		ConvertValue:  toRowValue,
+	}), nil
 }
 
 // toRowValue maps one contract value onto the product's row value. Redis

@@ -344,6 +344,23 @@ func (f *fakeImpl) Dump(_ context.Context, w io.Writer, _ *metadatapb.DatabaseSc
 	return err
 }
 
+func newFakeDriver(impl *fakeImpl, databaseName string) *Driver {
+	return &Driver{
+		OmniAdapter: util.OmniAdapter{
+			Driver:               impl,
+			WithInstanceMetadata: true,
+			NotFoundResource:     "database",
+			DatabaseName:         databaseName,
+		},
+	}
+}
+
+func newFakeSessionDriver(session odriver.Session) *Driver {
+	d := &Driver{}
+	d.SetSession(session)
+	return d
+}
+
 func TestQueryConnLazySessionAndExplainOptions(t *testing.T) {
 	s1 := &fakeSession{
 		results: []*odriver.Result{
@@ -357,7 +374,7 @@ func TestQueryConnLazySessionAndExplainOptions(t *testing.T) {
 		},
 	}
 	impl := &fakeImpl{sessions: []*fakeSession{s1}}
-	d := &Driver{impl: impl, databaseName: "SAMPLE_DB"}
+	d := newFakeDriver(impl, "SAMPLE_DB")
 	require.Equal(t, 0, impl.sessionCalls, "session must not be opened before first QueryConn")
 
 	// Explain: true leaves QueryPlan nil so SQLService stamps the requested format.
@@ -410,7 +427,7 @@ func TestQueryConnNormalizesResults(t *testing.T) {
 				},
 			},
 		}
-		d := &Driver{session: session}
+		d := newFakeSessionDriver(session)
 		got, err := d.QueryConn(context.Background(), "CREATE TABLE t (id INT)", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, got, 1)
@@ -431,7 +448,7 @@ func TestQueryConnNormalizesResults(t *testing.T) {
 				},
 			},
 		}
-		d := &Driver{session: session}
+		d := newFakeSessionDriver(session)
 		got, err := d.QueryConn(context.Background(), "SELECT id FROM t WHERE 1 = 0", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, got, 1)
@@ -450,7 +467,7 @@ func TestQueryConnNormalizesResults(t *testing.T) {
 				},
 			},
 		}
-		d := &Driver{session: session}
+		d := newFakeSessionDriver(session)
 		got, err := d.QueryConn(context.Background(), "EXPLAIN SELECT * FROM missing", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, got, 1)
@@ -477,7 +494,7 @@ func TestQueryConnNormalizesResults(t *testing.T) {
 				},
 			},
 		}
-		d := &Driver{session: session}
+		d := newFakeSessionDriver(session)
 		got, err := d.QueryConn(context.Background(), "SELECT ts_ntz, ts_tz, valid_ts", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, got, 1)
@@ -499,7 +516,7 @@ func TestQueryConnNormalizesResults(t *testing.T) {
 				},
 			},
 		}
-		d := &Driver{session: session}
+		d := newFakeSessionDriver(session)
 		got, err := d.QueryConn(context.Background(), "SELECT 1", db.QueryContext{})
 		require.NoError(t, err)
 		require.EqualValues(t, 1, session.gotOpts.MaxResultBytes)
@@ -525,7 +542,7 @@ func TestQueryConnDropsSessionOnErrorOrCanceledContext(t *testing.T) {
 			s1 := &fakeSession{err: recErr}
 			s2 := &fakeSession{}
 			impl := &fakeImpl{sessions: []*fakeSession{s1, s2}}
-			d := &Driver{impl: impl, databaseName: "SAMPLE_DB"}
+			d := newFakeDriver(impl, "SAMPLE_DB")
 
 			_, err := d.QueryConn(context.Background(), "SELECT * FROM temp_tbl", db.QueryContext{
 				Schema:               "MISSING_SCHEMA",
@@ -533,7 +550,7 @@ func TestQueryConnDropsSessionOnErrorOrCanceledContext(t *testing.T) {
 			})
 			require.ErrorIs(t, err, recErr)
 			require.False(t, s1.closed, "recoverable error %v must not close held session", recErr)
-			require.Same(t, s1, d.session)
+			require.Same(t, s1, d.Session())
 
 			s1.err = nil
 			s1.results = []*odriver.Result{{
@@ -571,12 +588,12 @@ func TestQueryConnDropsSessionOnErrorOrCanceledContext(t *testing.T) {
 				}},
 			}
 			impl := &fakeImpl{sessions: []*fakeSession{s1, s2}}
-			d := &Driver{impl: impl, databaseName: "SAMPLE_DB"}
+			d := newFakeDriver(impl, "SAMPLE_DB")
 
 			_, err := d.QueryConn(context.Background(), "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
 			require.ErrorIs(t, err, fatalErr)
 			require.True(t, s1.closed, "fatal error %v must close dead session", fatalErr)
-			require.Nil(t, d.session)
+			require.Nil(t, d.Session())
 
 			got, err := d.QueryConn(context.Background(), "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
 			require.NoError(t, err)
@@ -591,12 +608,12 @@ func TestQueryConnDropsSessionOnErrorOrCanceledContext(t *testing.T) {
 		session := &fakeSession{
 			err: rawError("002043 (02000): SQL compilation error"),
 		}
-		d := &Driver{session: session}
+		d := newFakeSessionDriver(session)
 
 		_, err := d.QueryConn(ctx, "SELECT 1", db.QueryContext{Schema: "MISSING", MaximumSQLResultSize: 1024})
 		require.Error(t, err)
 		require.True(t, session.closed)
-		require.Nil(t, d.session)
+		require.Nil(t, d.Session())
 	})
 
 	t.Run("canceled context with partial results discards session", func(t *testing.T) {
@@ -605,13 +622,13 @@ func TestQueryConnDropsSessionOnErrorOrCanceledContext(t *testing.T) {
 		session := &fakeSession{
 			results: []*odriver.Result{{Statement: "SELECT 1", Err: context.Canceled}},
 		}
-		d := &Driver{session: session}
+		d := newFakeSessionDriver(session)
 
 		got, err := d.QueryConn(ctx, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
 		require.NoError(t, err)
 		require.Len(t, got, 1)
 		require.True(t, session.closed)
-		require.Nil(t, d.session)
+		require.Nil(t, d.Session())
 	})
 }
 
@@ -655,7 +672,7 @@ func TestExecuteModesAndLogging(t *testing.T) {
 				return 3, nil
 			},
 		}
-		d := &Driver{impl: impl}
+		d := newFakeDriver(impl, "")
 
 		affected, err := d.Execute(context.Background(), script, db.ExecuteOptions{
 			CreateDatabase: true,
@@ -694,7 +711,7 @@ func TestExecuteModesAndLogging(t *testing.T) {
 				return 0, errors.New("syntax error")
 			},
 		}
-		d := &Driver{impl: impl}
+		d := newFakeDriver(impl, "")
 
 		_, err := d.Execute(context.Background(), script, db.ExecuteOptions{
 			CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
@@ -724,7 +741,7 @@ func TestSyncAndDumpMapping(t *testing.T) {
 		schema:  &metadatapb.DatabaseSchemaMetadata{Name: "SAMPLE_DB"},
 		dumpDDL: "create table PUBLIC.T (ID NUMBER);\n",
 	}
-	d := &Driver{impl: impl, databaseName: "SAMPLE_DB"}
+	d := newFakeDriver(impl, "SAMPLE_DB")
 
 	inst, err := d.SyncInstance(context.Background())
 	require.NoError(t, err)

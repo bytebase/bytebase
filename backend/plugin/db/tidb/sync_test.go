@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	omnidriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
@@ -30,7 +31,7 @@ func TestSyncDBSchemaPassesTheDriversMetadataThrough(t *testing.T) {
 
 	got, err := driver.SyncDBSchema(ctx)
 	require.NoError(t, err)
-	want, err := driver.impl.SyncDatabase(ctx)
+	want, err := driver.Driver.(omnidriver.Syncer).SyncDatabase(ctx)
 	require.NoError(t, err)
 	require.Empty(t, cmp.Diff(want, got, protocmp.Transform()))
 }
@@ -72,7 +73,7 @@ func TestSyncInstanceMapsTheDriversInstance(t *testing.T) {
 
 	instance, err := driver.SyncInstance(ctx)
 	require.NoError(t, err)
-	contract, err := driver.impl.SyncInstance(ctx)
+	contract, err := driver.Driver.(omnidriver.Syncer).SyncInstance(ctx)
 	require.NoError(t, err)
 
 	require.Equal(t, contract.Version, instance.Version)

@@ -372,10 +372,10 @@ func TestQueryConnDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
 	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 20}
 	_, err = driver.QueryConn(ctx, "SELECT 1", queryContext)
 	require.NoError(t, err)
-	require.NotNil(t, driver.session, "a statement of its own leaves the session in place")
+	require.NotNil(t, driver.Session(), "a statement of its own leaves the session in place")
 
 	canceledCtx, cancel := context.WithCancel(ctx)
 	cancel()
 	_, _ = driver.QueryConn(canceledCtx, "SELECT 1", queryContext)
-	require.Nil(t, driver.session, "a canceled statement's session is not one to keep")
+	require.Nil(t, driver.Session(), "a canceled statement's session is not one to keep")
 }

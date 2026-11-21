@@ -14,6 +14,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -21,7 +22,7 @@ import (
 // data source carries reaching the contract's Params, where the omni driver
 // appends them to the DSN beside multiStatements and maxAllowedPacket.
 func TestBuildConfigMapsExtraConnectionParameters(t *testing.T) {
-	config, sshClient, err := buildConfig(db.ConnectionConfig{
+	config, err := buildConfig(db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
 			Host:     "127.0.0.1",
 			Port:     "4000",
@@ -36,9 +37,8 @@ func TestBuildConfigMapsExtraConnectionParameters(t *testing.T) {
 			DatabaseName:  "test",
 			EngineVersion: "8.0.11-TiDB-v8.5.5",
 		},
-	})
+	}, &util.OmniAdapter{})
 	require.NoError(t, err)
-	require.Nil(t, sshClient)
 	require.Equal(t, map[string]string{"readTimeout": "30s", "writeTimeout": "45s"}, config.Params)
 	require.Equal(t, "test", config.Database)
 	require.Equal(t, "secret", config.Password)
@@ -423,13 +423,13 @@ func TestQueryConnDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
 
 	_, err := driver.QueryConn(ctx, "SELECT 1", queryContext)
 	require.NoError(t, err)
-	held := driver.session
+	held := driver.Session()
 	require.NotNil(t, held, "a statement of its own leaves the session in place")
 
 	canceledCtx, cancel := context.WithCancel(ctx)
 	cancel()
 	_, _ = driver.QueryConn(canceledCtx, "SELECT 1", queryContext)
-	require.Nil(t, driver.session, "a statement whose context ended is not one to keep")
+	require.Nil(t, driver.Session(), "a statement whose context ended is not one to keep")
 	require.NotNil(t, held)
 }
 

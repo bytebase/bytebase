@@ -19,20 +19,51 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+// QueryResultOptions customizes how OmniResultToQueryResultWith converts an
+// omni/driver.Result into an API QueryResult.
+type QueryResultOptions struct {
+	// ClearExplainPlan clears QueryPlan so the API layer stamps the requested
+	// format for explain requests.
+	ClearExplainPlan bool
+	// TypedExplainPlan builds QueryPlan using db.TypedExplainPlan instead of
+	// exact uppercase enum lookup.
+	TypedExplainPlan bool
+	// IncludePlanContent preserves result.Plan.Content when TypedExplainPlan is true.
+	IncludePlanContent bool
+	// SkipPlan omits QueryPlan completely.
+	SkipPlan bool
+	// SkipMessages omits result.Messages.
+	SkipMessages bool
+	// UppercaseColumnTypes uppercases each ColumnTypeName.
+	UppercaseColumnTypes bool
+	// SkipColumnTypes leaves ColumnTypeNames empty.
+	SkipColumnTypes bool
+	// TruncatedWins checks result.Truncated before result.Err when setting Error.
+	TruncatedWins bool
+	// Limit, when > 0, caps the number of converted rows.
+	Limit int
+	// ConvertValue optionally overrides cell conversion; when nil, OmniRowValue is used.
+	ConvertValue func(omnidriver.Value) *v1pb.RowValue
+}
+
 // OmniResultsToQueryResults converts a slice of omni driver results into API
 // QueryResults. When clearExplainPlan is true, QueryPlan is cleared so the API
 // layer stamps the plan format for explain requests.
 func OmniResultsToQueryResults(results []*omnidriver.Result, maxResultBytes int64, clearExplainPlan bool) []*v1pb.QueryResult {
+	return OmniResultsToQueryResultsWith(results, maxResultBytes, QueryResultOptions{
+		ClearExplainPlan: clearExplainPlan,
+	})
+}
+
+// OmniResultsToQueryResultsWith converts a slice of omni driver results into API
+// QueryResults according to opts.
+func OmniResultsToQueryResultsWith(results []*omnidriver.Result, maxResultBytes int64, opts QueryResultOptions) []*v1pb.QueryResult {
 	if len(results) == 0 {
 		return nil
 	}
 	converted := make([]*v1pb.QueryResult, 0, len(results))
 	for _, result := range results {
-		queryResult := OmniResultToQueryResult(result, maxResultBytes)
-		if clearExplainPlan {
-			queryResult.QueryPlan = nil
-		}
-		converted = append(converted, queryResult)
+		converted = append(converted, OmniResultToQueryResultWith(result, maxResultBytes, opts))
 	}
 	return converted
 }
@@ -297,6 +328,12 @@ func sameLine(scriptLine, cleanedLine string, first, last bool) bool {
 // the contract stops reading at it and sets Truncated, and the message the API
 // shows for that cap is the caller's to format.
 func OmniResultToQueryResult(result *omnidriver.Result, maxResultBytes int64) *v1pb.QueryResult {
+	return OmniResultToQueryResultWith(result, maxResultBytes, QueryResultOptions{})
+}
+
+// OmniResultToQueryResultWith converts one omni driver result into an API
+// QueryResult according to opts.
+func OmniResultToQueryResultWith(result *omnidriver.Result, maxResultBytes int64, opts QueryResultOptions) *v1pb.QueryResult {
 	if result == nil {
 		return &v1pb.QueryResult{}
 	}
@@ -306,16 +343,32 @@ func OmniResultToQueryResult(result *omnidriver.Result, maxResultBytes int64) *v
 	}
 	if len(result.Columns) > 0 {
 		out.ColumnNames = make([]string, len(result.Columns))
-		out.ColumnTypeNames = make([]string, len(result.Columns))
+		if !opts.SkipColumnTypes {
+			out.ColumnTypeNames = make([]string, len(result.Columns))
+		}
 		for i, column := range result.Columns {
 			out.ColumnNames[i] = column.Name
-			out.ColumnTypeNames[i] = column.TypeName
+			if !opts.SkipColumnTypes {
+				typeName := column.TypeName
+				if opts.UppercaseColumnTypes {
+					typeName = strings.ToUpper(typeName)
+				}
+				out.ColumnTypeNames[i] = typeName
+			}
 		}
 	}
-	for _, row := range result.Rows {
+	rows := result.Rows
+	if opts.Limit > 0 && len(rows) > opts.Limit {
+		rows = rows[:opts.Limit]
+	}
+	convertValue := opts.ConvertValue
+	if convertValue == nil {
+		convertValue = OmniRowValue
+	}
+	for _, row := range rows {
 		values := make([]*v1pb.RowValue, len(row))
 		for i, value := range row {
-			values[i] = omniRowValue(value)
+			values[i] = convertValue(value)
 		}
 		out.Rows = append(out.Rows, &v1pb.QueryRow{Values: values})
 	}
@@ -328,30 +381,47 @@ func OmniResultToQueryResult(result *omnidriver.Result, maxResultBytes int64) *v
 		affected.Latency = out.Latency
 		out = affected
 	}
-	for _, message := range result.Messages {
-		out.Messages = append(out.Messages, &v1pb.QueryResult_Message{
-			Level:   v1pb.QueryResult_Message_Level(v1pb.QueryResult_Message_Level_value[message.Level]),
-			Content: message.Content,
-		})
-	}
-	if result.Plan != nil {
-		out.QueryPlan = &v1pb.QueryResult_QueryPlan{
-			Format:   v1pb.QueryOption_ExplainFormat(v1pb.QueryOption_ExplainFormat_value[result.Plan.Format]),
-			Executed: result.Plan.Executed,
-			Content:  result.Plan.Content,
+	if !opts.SkipMessages {
+		for _, message := range result.Messages {
+			out.Messages = append(out.Messages, &v1pb.QueryResult_Message{
+				Level:   v1pb.QueryResult_Message_Level(v1pb.QueryResult_Message_Level_value[message.Level]),
+				Content: message.Content,
+			})
 		}
 	}
-	if result.Err != nil {
-		out.Error = result.Err.Error()
-	} else if result.Truncated {
-		out.Error = FormatMaximumSQLResultSizeMessage(maxResultBytes)
+	if !opts.SkipPlan && !opts.ClearExplainPlan && result.Plan != nil {
+		if opts.TypedExplainPlan {
+			out.QueryPlan = db.TypedExplainPlan(result.Plan.Format, result.Plan.Executed, true)
+			if opts.IncludePlanContent {
+				out.QueryPlan.Content = result.Plan.Content
+			}
+		} else {
+			out.QueryPlan = &v1pb.QueryResult_QueryPlan{
+				Format:   v1pb.QueryOption_ExplainFormat(v1pb.QueryOption_ExplainFormat_value[result.Plan.Format]),
+				Executed: result.Plan.Executed,
+				Content:  result.Plan.Content,
+			}
+		}
+	}
+	if opts.TruncatedWins {
+		if result.Truncated {
+			out.Error = FormatMaximumSQLResultSizeMessage(maxResultBytes)
+		} else if result.Err != nil {
+			out.Error = result.Err.Error()
+		}
+	} else {
+		if result.Err != nil {
+			out.Error = result.Err.Error()
+		} else if result.Truncated {
+			out.Error = FormatMaximumSQLResultSizeMessage(maxResultBytes)
+		}
 	}
 	out.RowsCount = int64(len(out.Rows))
 	return out
 }
 
-// omniRowValue converts one cell of a contract result into the API's RowValue.
-func omniRowValue(value omnidriver.Value) *v1pb.RowValue {
+// OmniRowValue converts one cell of a contract result into the API's RowValue.
+func OmniRowValue(value omnidriver.Value) *v1pb.RowValue {
 	switch value.Kind {
 	case omnidriver.Bool:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value.Bool}}

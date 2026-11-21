@@ -16,7 +16,7 @@ import (
 // An explain request runs each statement in its FORMATTED form, which is what a
 // Databricks plan is; a statement the caller wrote as EXPLAIN runs as written.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	results, err := d.session.Query(ctx, statement, odbdriver.QueryOptions{
+	results, err := d.Session().Query(ctx, statement, odbdriver.QueryOptions{
 		// Known difference: the schema reaches the statement. The previous driver
 		// sent only the catalog, so the editor's schema selection had no effect.
 		Schema:        queryContext.Schema,

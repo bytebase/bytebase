@@ -38,14 +38,11 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io"
 	"strings"
 
 	omnidriver "github.com/bytebase/omni/driver"
 	omnidynamodb "github.com/bytebase/omni/dynamodb/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -63,7 +60,7 @@ func init() {
 
 // Driver is Bytebase's DynamoDB driver.
 type Driver struct {
-	inner *omnidynamodb.Driver
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -126,7 +123,7 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 	if err != nil {
 		return nil, err
 	}
-	return &Driver{inner: inner}, nil
+	return &Driver{OmniAdapter: util.OmniAdapter{Driver: inner}}, nil
 }
 
 // endpointTLS returns the TLS settings that make the omni driver reach a bare
@@ -143,109 +140,42 @@ func endpointTLS(dataSource *storepb.DataSource) func(string) (*tls.Config, erro
 	}
 }
 
-// Close closes the driver.
-func (d *Driver) Close(context.Context) error {
-	if d.inner == nil {
-		return nil
-	}
-	return d.inner.Close()
-}
-
-// Ping lists one table as a connectivity check, as DynamoDB has no ping.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.inner.Ping(ctx)
-}
-
 // Execute runs each statement of script as its own ExecuteTransaction and
 // reports each to the task run's log. The count is always 0 because PartiQL
 // writes report no affected rows.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	return d.inner.Execute(ctx, statement, omnidriver.ExecuteOptions{
-		Log: util.NewExecuteLogger(opts),
-	})
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{})
 }
 
 // QueryConn runs a read-only PartiQL script, one result per statement.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	session, err := d.inner.Session(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer session.Close()
-
-	results, err := session.Query(ctx, statement, omnidriver.QueryOptions{
-		Limit:          queryContext.Limit,
-		Explain:        queryContext.Explain,
-		MaxResultBytes: queryContext.MaximumSQLResultSize,
+	var results []*omnidriver.Result
+	err := d.QueryEphemeral(ctx, func(session omnidriver.Session) error {
+		var queryErr error
+		results, queryErr = session.Query(ctx, statement, omnidriver.QueryOptions{
+			Limit:          queryContext.Limit,
+			Explain:        queryContext.Explain,
+			MaxResultBytes: queryContext.MaximumSQLResultSize,
+		})
+		return queryErr
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	converted := make([]*v1pb.QueryResult, 0, len(results))
-	for _, result := range results {
-		converted = append(converted, toQueryResult(result, queryContext))
-	}
-	return converted, nil
-}
-
-// SyncInstance reads the account and region that name DynamoDB's pseudo
-// database. The account comes from STS unless accountId was configured.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.inner.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, false), nil
-}
-
-// SyncDBSchema reads every table of the region.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return d.inner.SyncDatabase(ctx)
-}
-
-// Dump writes nothing: a synced table does not carry the attribute types,
-// billing mode or throughput a create needs, so the metadata could not recreate
-// the table it describes.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.inner.Dump(ctx, out, dbMetadata)
-}
-
-func toQueryResult(result *omnidriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
-	converted := &v1pb.QueryResult{
-		Statement: result.Statement,
-		Latency:   durationpb.New(result.Latency),
-	}
-	for _, column := range result.Columns {
-		converted.ColumnNames = append(converted.ColumnNames, column.Name)
-		converted.ColumnTypeNames = append(converted.ColumnTypeNames, column.TypeName)
-	}
-	for _, row := range result.Rows {
-		convertedRow := &v1pb.QueryRow{}
-		for _, value := range row {
-			convertedRow.Values = append(convertedRow.Values, convertValue(value))
-		}
-		converted.Rows = append(converted.Rows, convertedRow)
-	}
-	converted.RowsCount = int64(len(converted.Rows))
-	if result.Truncated {
-		converted.Error = util.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
-	} else if result.Err != nil {
-		converted.Error = result.Err.Error()
-	}
-	return converted
+	return util.OmniResultsToQueryResultsWith(results, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
+		SkipPlan:      true,
+		SkipMessages:  true,
+		TruncatedWins: true,
+		ConvertValue:  convertValue,
+	}), nil
 }
 
 func convertValue(value omnidriver.Value) *v1pb.RowValue {
 	switch value.Kind {
 	case omnidriver.Null:
 		return util.NullRowValue
-	case omnidriver.Bool:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value.Bool}}
-	case omnidriver.Bytes:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.Bytes}}
-	case omnidriver.String:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String}}
+	case omnidriver.Bool, omnidriver.Bytes, omnidriver.String:
+		return util.OmniRowValue(value)
 	case omnidriver.Structured:
 		encoded, err := json.Marshal(value.Structured)
 		if err != nil {

@@ -13,8 +13,11 @@ import (
 // and commits each data change, so a transactional script that fails part way
 // leaves the rows it already ran.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	cleanedStatement, options := executeOptions(statement, opts)
-	return d.impl.Execute(ctx, cleanedStatement, options)
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		ParseTransactionDirective: true,
+		PassCreateDatabase:        true,
+		PassMaxRetries:            true,
+	})
 }
 
 // executeOptions maps the product's options onto the driver's.

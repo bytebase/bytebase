@@ -18,30 +18,16 @@ import (
 // QueryConn runs the script on the driver's session, one result per statement.
 // Calls are serialized, as the stream's one pooled connection was.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	d.sessionMu.Lock()
-	defer d.sessionMu.Unlock()
-	session, err := d.querySession(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	results, err := session.Query(ctx, statement, omndriver.QueryOptions{
+	results, err := d.QueryHeldSession(ctx, statement, omndriver.QueryOptions{
 		Schema:         queryContext.Schema,
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
 		ExplainFormat:  strings.ToLower(util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML, v1pb.QueryOption_YAML)),
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 		MaskingEnabled: queryContext.MaskingEnabled,
-	})
+	}, util.SessionQueryOptions{})
 	if err != nil {
-		// The script could not be run at all; the session is not one to keep.
-		_ = session.Close()
-		d.session = nil
 		return nil, err
-	}
-	if ctx.Err() != nil {
-		_ = session.Close()
-		d.session = nil
 	}
 
 	timestampsBeyondProtoRangeToText(results)
@@ -56,20 +42,6 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 		}
 	}
 	return converted, nil
-}
-
-// querySession returns the driver's session, opening it on first use. The caller
-// holds sessionMu.
-func (d *Driver) querySession(ctx context.Context) (omndriver.Session, error) {
-	if d.session != nil {
-		return d.session, nil
-	}
-	session, err := d.impl.Session(ctx)
-	if err != nil {
-		return nil, err
-	}
-	d.session = session
-	return session, nil
 }
 
 // timestampsBeyondProtoRangeToText rewrites a timestamp cell PostgreSQL allows

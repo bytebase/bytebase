@@ -58,18 +58,13 @@ package pg
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"io"
-	"net"
-	"sync"
 
 	"cloud.google.com/go/cloudsqlconn"
 	omndriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
 	pgdriver "github.com/bytebase/omni/pg/driver"
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
-	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -91,18 +86,12 @@ func init() {
 
 // Driver is Bytebase's PostgreSQL driver.
 type Driver struct {
+	util.OmniAdapter
 	impl *pgdriver.Driver
 
-	sshClient *ssh.Client
 	// cloudSQLDialer refreshes its ephemeral certificate in the background until
 	// closed, so it lives and dies with the driver.
 	cloudSQLDialer *cloudsqlconn.Dialer
-
-	// sessionMu guards session and serializes QueryConn: the editor keeps one
-	// driver for a whole stream, and one pooled connection served those
-	// statements one at a time.
-	sessionMu sync.Mutex
-	session   omndriver.Session
 
 	connectionCtx db.ConnectionContext
 }
@@ -124,6 +113,12 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		}
 	}()
 
+	d.OmniAdapter = util.OmniAdapter{
+		WithInstanceMetadata: true,
+		NotFoundResource:     "database",
+		DatabaseName:         config.ConnectionContext.DatabaseName,
+	}
+
 	cfg, err := pgConfig(config)
 	if err != nil {
 		return nil, err
@@ -132,17 +127,13 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
 		// The connector names the instance itself, so the contract's host and
 		// port stay empty and Config.Dial reaches the instance.
-		dialer, err := util.GetGCPConnectionConfig(ctx, config)
+		dialer, err := util.SetupCloudSQLDial(ctx, config, &cfg, &d.OmniAdapter)
 		if err != nil {
-			return nil, errors.Wrap(err, "load gcp config failed")
+			return nil, err
 		}
 		d.cloudSQLDialer = dialer
-		instance := config.DataSource.GetHost()
 		cfg.Host = ""
 		cfg.Port = ""
-		cfg.Dial = func(ctx context.Context, _, _ string) (net.Conn, error) {
-			return dialer.Dial(ctx, instance)
-		}
 	case storepb.DataSource_AWS_RDS_IAM:
 		password, err := util.RDSAuthToken(ctx, config)
 		if err != nil {
@@ -153,21 +144,15 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		// The data source's password authenticates, and Config.Password holds it.
 	}
 
-	if config.DataSource.GetSshHost() != "" {
-		sshClient, err := util.GetSSHClient(config.DataSource)
-		if err != nil {
-			return nil, err
-		}
-		d.sshClient = sshClient
-		cfg.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
-			return util.DialSSHTunnel(ctx, sshClient, network, address)
-		}
+	if err := util.SetupSSHDial(config.DataSource, &cfg, &d.OmniAdapter, true); err != nil {
+		return nil, err
 	}
 
 	impl, err := pgdriver.Open(ctx, cfg, pgdriver.Options{TenantMode: config.ConnectionContext.TenantMode})
 	if err != nil {
 		return nil, err
 	}
+	d.Driver = impl
 	d.impl = impl
 	d.connectionCtx = config.ConnectionContext
 	opened = true
@@ -184,36 +169,21 @@ func pgConfig(config db.ConnectionConfig) (omndriver.Config, error) {
 	if dataSource.GetUsername() == "" {
 		return omndriver.Config{}, errors.New("user must be set")
 	}
-	if (dataSource.GetSslCert() == "" && dataSource.GetSslKey() != "") ||
-		(dataSource.GetSslCert() != "" && dataSource.GetSslKey() == "") {
-		return omndriver.Config{}, errors.New("ssl-cert and ssl-key must be both set or unset")
+	if err := util.ValidateTLSCertKeyPair(dataSource); err != nil {
+		return omndriver.Config{}, err
 	}
 
 	// An empty Database leaves the contract's own default, postgres. pgx alone
 	// would resolve an omitted database to the login role's name, which an
 	// administrative role with no same-named database cannot open.
-	database := config.ConnectionContext.DatabaseName
-	if database == "" {
-		database = dataSource.GetDatabase()
-	}
-	applicationName := "bytebase"
-	if config.ConnectionContext.TaskRunUID != nil {
-		applicationName = fmt.Sprintf("bytebase-taskrun-%d", *config.ConnectionContext.TaskRunUID)
-	}
-
-	params := make(map[string]string, len(dataSource.GetExtraConnectionParameters()))
-	for key, value := range dataSource.GetExtraConnectionParameters() {
-		params[key] = value
-	}
-
 	cfg := omndriver.Config{
 		Host:            dataSource.GetHost(),
 		Port:            dataSource.GetPort(),
-		Database:        database,
+		Database:        util.ResolveDatabaseName(config),
 		User:            dataSource.GetUsername(),
 		Password:        config.Password,
-		Params:          params,
-		ApplicationName: applicationName,
+		Params:          util.CloneParams(dataSource.GetExtraConnectionParameters()),
+		ApplicationName: util.ApplicationName(config.ConnectionContext),
 		ReadOnly:        config.ConnectionContext.ReadOnly,
 		EngineVersion:   config.ConnectionContext.EngineVersion,
 	}
@@ -230,41 +200,12 @@ func pgConfig(config db.ConnectionConfig) (omndriver.Config, error) {
 	return cfg, nil
 }
 
-// Close closes the driver and what Open acquired beside it.
-func (d *Driver) Close(context.Context) error {
-	d.sessionMu.Lock()
-	if d.session != nil {
-		_ = d.session.Close()
-		d.session = nil
-	}
-	d.sessionMu.Unlock()
-
-	var err error
-	if d.impl != nil {
-		err = multierr.Append(err, d.impl.Close())
-	}
-	if d.sshClient != nil {
-		err = multierr.Append(err, d.sshClient.Close())
-	}
-	if d.cloudSQLDialer != nil {
-		err = multierr.Append(err, d.cloudSQLDialer.Close())
-	}
-	return err
-}
-
-// Ping reaches the database, and fails before any statement when the server does
-// not have it.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.impl.Ping(ctx)
-}
-
 // SyncInstance reads the server version, its user databases and its roles.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.impl.SyncInstance(ctx)
+	meta, err := d.OmniAdapter.SyncInstance(ctx)
 	if err != nil {
 		return nil, err
 	}
-	meta := util.OmniInstanceToMetadata(instance, true)
 	if d.connectionCtx.Vendor == storepb.Vendor_NEON {
 		databases := make([]*metadatapb.DatabaseSchemaMetadata, 0, len(meta.Databases))
 		for _, database := range meta.Databases {
@@ -280,22 +221,10 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	return meta, nil
 }
 
-// SyncDBSchema reads the schema of the database the driver is open on.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	metadata, err := d.impl.SyncDatabase(ctx)
-	if err != nil {
-		if errors.Is(err, omndriver.ErrNotFound) {
-			return nil, common.Errorf(common.NotFound, "database %q not found", d.connectionCtx.DatabaseName)
-		}
-		return nil, err
-	}
-	return metadata, nil
-}
-
 // Dump writes the database's schema, without the backup schema the product keeps
 // its archived rows in: a dump restores the user's database, not the archive.
 func (d *Driver) Dump(ctx context.Context, out io.Writer, metadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.impl.Dump(ctx, out, withoutBackupSchema(metadata))
+	return d.OmniAdapter.Dump(ctx, out, withoutBackupSchema(metadata))
 }
 
 // withoutBackupSchema returns metadata without the backup schema, which the

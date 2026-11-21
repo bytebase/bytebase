@@ -35,19 +35,13 @@ package redshift
 
 import (
 	"context"
-	"crypto/tls"
 	"io"
-	"net"
-	"sync"
 
 	omndriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
 	redshiftdriver "github.com/bytebase/omni/redshift/driver"
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
-	"golang.org/x/crypto/ssh"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -64,17 +58,7 @@ func init() {
 
 // Driver is Bytebase's Redshift driver.
 type Driver struct {
-	impl *redshiftdriver.Driver
-
-	sshClient *ssh.Client
-
-	// sessionMu guards session and serializes QueryConn: the editor keeps one
-	// driver for a whole stream, and one connection served those statements one
-	// at a time.
-	sessionMu sync.Mutex
-	session   omndriver.Session
-
-	connectionCtx db.ConnectionContext
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -93,27 +77,25 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		}
 	}()
 
+	d.OmniAdapter = util.OmniAdapter{
+		WithInstanceMetadata: true,
+		NotFoundResource:     "database",
+		DatabaseName:         config.ConnectionContext.DatabaseName,
+	}
+
 	cfg, err := redshiftConfig(config)
 	if err != nil {
 		return nil, err
 	}
-	if config.DataSource.GetSshHost() != "" {
-		sshClient, err := util.GetSSHClient(config.DataSource)
-		if err != nil {
-			return nil, err
-		}
-		d.sshClient = sshClient
-		cfg.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
-			return util.DialSSHTunnel(ctx, sshClient, network, address)
-		}
+	if err := util.SetupSSHDial(config.DataSource, &cfg, &d.OmniAdapter, true); err != nil {
+		return nil, err
 	}
 
 	impl, err := redshiftdriver.Open(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
-	d.impl = impl
-	d.connectionCtx = config.ConnectionContext
+	d.Driver = impl
 	opened = true
 	return d, nil
 }
@@ -128,21 +110,15 @@ func redshiftConfig(config db.ConnectionConfig) (omndriver.Config, error) {
 	if dataSource.GetUsername() == "" {
 		return omndriver.Config{}, errors.New("user must be set")
 	}
-	if (dataSource.GetSslCert() == "" && dataSource.GetSslKey() != "") ||
-		(dataSource.GetSslCert() != "" && dataSource.GetSslKey() == "") {
-		return omndriver.Config{}, errors.New("ssl-cert and ssl-key must be both set or unset")
+	if err := util.ValidateTLSCertKeyPair(dataSource); err != nil {
+		return omndriver.Config{}, err
 	}
 
 	// An empty Database leaves the contract's own default, dev.
-	database := config.ConnectionContext.DatabaseName
-	if database == "" {
-		database = dataSource.GetDatabase()
-	}
-
 	cfg := omndriver.Config{
 		Host:          dataSource.GetHost(),
 		Port:          dataSource.GetPort(),
-		Database:      database,
+		Database:      util.ResolveDatabaseName(config),
 		User:          dataSource.GetUsername(),
 		Password:      config.Password,
 		ReadOnly:      config.ConnectionContext.ReadOnly,
@@ -152,60 +128,13 @@ func redshiftConfig(config db.ConnectionConfig) (omndriver.Config, error) {
 		cfg.Params = map[string]string{redshiftdriver.ParamDatashare: "true"}
 	}
 	if dataSource.GetSslCert() != "" {
-		tlsConfig, err := util.GetTLSConfig(dataSource)
+		tlsFn, err := util.StaticTLSFunc(dataSource)
 		if err != nil {
 			return omndriver.Config{}, err
 		}
-		if tlsConfig != nil {
-			cfg.TLS = func(string) (*tls.Config, error) { return tlsConfig, nil }
-		}
+		cfg.TLS = tlsFn
 	}
 	return cfg, nil
-}
-
-// Close closes the driver's session and what Open acquired beside it.
-func (d *Driver) Close(context.Context) error {
-	d.sessionMu.Lock()
-	if d.session != nil {
-		_ = d.session.Close()
-		d.session = nil
-	}
-	d.sessionMu.Unlock()
-
-	var err error
-	if d.impl != nil {
-		err = multierr.Append(err, d.impl.Close())
-	}
-	if d.sshClient != nil {
-		err = multierr.Append(err, d.sshClient.Close())
-	}
-	return err
-}
-
-// Ping reaches the server.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.impl.Ping(ctx)
-}
-
-// SyncInstance reads the server version, its user databases and its users.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.impl.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, true), nil
-}
-
-// SyncDBSchema reads the schema of the database the driver is open on.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	metadata, err := d.impl.SyncDatabase(ctx)
-	if err != nil {
-		if errors.Is(err, omndriver.ErrNotFound) {
-			return nil, common.Errorf(common.NotFound, "database %q not found", d.connectionCtx.DatabaseName)
-		}
-		return nil, err
-	}
-	return metadata, nil
 }
 
 // Dump writes nothing: the contract has no renderer for a Redshift snapshot, and
@@ -217,5 +146,5 @@ func (*Driver) Dump(context.Context, io.Writer, *metadatapb.DatabaseSchemaMetada
 // CountAffectedRows returns the planner's estimate of the rows the statement
 // modifies, which plancheck's affected-row limit reads.
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
-	return d.impl.CountAffectedRows(ctx, statement)
+	return d.Driver.(db.RowEstimator).CountAffectedRows(ctx, statement)
 }

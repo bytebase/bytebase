@@ -28,19 +28,12 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"io"
-	"net"
 	"strings"
-	"sync"
 
 	omnicockroach "github.com/bytebase/omni/cockroachdb/driver"
 	omnidriver "github.com/bytebase/omni/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
-	"go.uber.org/multierr"
-	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -59,17 +52,7 @@ func init() {
 
 // Driver is Bytebase's CockroachDB driver.
 type Driver struct {
-	inner         *omnicockroach.Driver
-	connectionCtx db.ConnectionContext
-
-	// sshClient is the tunnel the driver dials through, closed with it.
-	sshClient *ssh.Client
-
-	// sessionMu serializes QueryConn and guards session: the editor keeps one
-	// driver for a stream, and one pooled connection served its statements one
-	// at a time.
-	sessionMu sync.Mutex
-	session   omnidriver.Session
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -79,32 +62,34 @@ func newDriver() db.Driver {
 // Open maps the connection config onto the driver contract. It does not reach
 // the server: Ping does.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	opened := false
+	defer func() {
+		if !opened {
+			_ = d.Close(ctx)
+		}
+	}()
+
+	d.OmniAdapter = util.OmniAdapter{
+		WithInstanceMetadata: true,
+		NotFoundResource:     "database",
+		DatabaseName:         config.ConnectionContext.DatabaseName,
+	}
+
 	cfg, err := cockroachConfig(config)
 	if err != nil {
 		return nil, err
 	}
 
-	if config.DataSource.GetSshHost() != "" {
-		sshClient, err := util.GetSSHClient(config.DataSource)
-		if err != nil {
-			return nil, err
-		}
-		d.sshClient = sshClient
-		cfg.Dial = func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return util.DialSSHTunnel(ctx, sshClient, network, addr)
-		}
+	if err := util.SetupSSHDial(config.DataSource, &cfg, &d.OmniAdapter, true); err != nil {
+		return nil, err
 	}
 
 	inner, err := omnicockroach.Open(ctx, cfg)
 	if err != nil {
-		if d.sshClient != nil {
-			_ = d.sshClient.Close()
-			d.sshClient = nil
-		}
 		return nil, err
 	}
-	d.inner = inner
-	d.connectionCtx = config.ConnectionContext
+	d.Driver = inner
+	opened = true
 	return d, nil
 }
 
@@ -115,20 +100,16 @@ func cockroachConfig(config db.ConnectionConfig) (omnidriver.Config, error) {
 	// The old driver refused half a client certificate whether or not TLS was
 	// asked for, so the mistake is reported here rather than left to a
 	// connection that never presents it.
-	if (dataSource.GetSslCert() == "") != (dataSource.GetSslKey() == "") {
-		return omnidriver.Config{}, errors.New("ssl-cert and ssl-key must be both set or unset")
-	}
-	database := config.ConnectionContext.DatabaseName
-	if database == "" {
-		database = dataSource.GetDatabase()
+	if err := util.ValidateTLSCertKeyPair(dataSource); err != nil {
+		return omnidriver.Config{}, err
 	}
 	cfg := omnidriver.Config{
 		Host:            dataSource.GetHost(),
 		Port:            dataSource.GetPort(),
-		Database:        database,
+		Database:        util.ResolveDatabaseName(config),
 		User:            dataSource.GetUsername(),
 		Password:        config.Password,
-		ApplicationName: applicationName(config.ConnectionContext),
+		ApplicationName: util.ApplicationName(config.ConnectionContext),
 		ReadOnly:        config.ConnectionContext.ReadOnly,
 		EngineVersion:   config.ConnectionContext.EngineVersion,
 	}
@@ -151,49 +132,15 @@ func cockroachConfig(config db.ConnectionConfig) (omnidriver.Config, error) {
 	return cfg, nil
 }
 
-// applicationName identifies the connection to the server. A task run names
-// itself so the server's activity views can find it.
-func applicationName(connectionContext db.ConnectionContext) string {
-	if connectionContext.TaskRunUID != nil {
-		return fmt.Sprintf("bytebase-taskrun-%d", *connectionContext.TaskRunUID)
-	}
-	return "bytebase"
-}
-
-func (d *Driver) Close(context.Context) error {
-	d.sessionMu.Lock()
-	session := d.session
-	d.session = nil
-	d.sessionMu.Unlock()
-
-	var err error
-	if session != nil {
-		err = multierr.Append(err, session.Close())
-	}
-	if d.inner != nil {
-		err = multierr.Append(err, d.inner.Close())
-	}
-	if d.sshClient != nil {
-		err = multierr.Append(err, d.sshClient.Close())
-		d.sshClient = nil
-	}
-	return err
-}
-
-// Ping reaches the server.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.inner.Ping(ctx)
-}
-
 // TaskRunSession reads the running session by application name from
 // CockroachDB's own catalog. CockroachDB's pg_stat_activity compatibility view
 // answers no rows and it has no pg_blocking_pids, so neither PostgreSQL's
 // query nor its blocking relationships apply.
 func (d *Driver) TaskRunSession(ctx context.Context, applicationName string) (*v1pb.TaskRunSession, error) {
-	if d.inner == nil {
+	if d.Driver == nil {
 		return nil, errors.New("cockroachdb: driver is closed")
 	}
-	session, err := d.inner.Session(ctx)
+	session, err := d.OpenSession(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -284,36 +231,8 @@ func optionalValueTimestamp(v omnidriver.Value) *timestamppb.Timestamp {
 	return timestamppb.New(v.Time)
 }
 
-// SyncInstance reads the server version, its user databases and its roles.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.inner.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, true), nil
-}
-
-// SyncDBSchema reads the schema of the database the driver was opened on. A
-// database the server no longer has is reported as not found.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	metadata, err := d.inner.SyncDatabase(ctx)
-	if err != nil {
-		if errors.Is(err, omnidriver.ErrNotFound) {
-			return nil, common.Errorf(common.NotFound, "database %q not found", d.connectionCtx.DatabaseName)
-		}
-		return nil, err
-	}
-	return metadata, nil
-}
-
-// Dump writes the server's own DDL for the database. The synced metadata is not
-// rendered and does not narrow what the server states.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.inner.Dump(ctx, out, dbMetadata)
-}
-
 // CountAffectedRows returns the planner's estimate of the rows a statement
 // modifies. plancheck reads it through db.RowEstimator.
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
-	return d.inner.CountAffectedRows(ctx, statement)
+	return d.Driver.(db.RowEstimator).CountAffectedRows(ctx, statement)
 }

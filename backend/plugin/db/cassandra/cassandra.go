@@ -34,10 +34,8 @@ package cassandra
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -46,11 +44,8 @@ import (
 	"connectrpc.com/connect"
 	omnicassandra "github.com/bytebase/omni/cassandra/driver"
 	omnidriver "github.com/bytebase/omni/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -68,8 +63,7 @@ func init() {
 
 // Driver is Bytebase's Cassandra driver.
 type Driver struct {
-	inner     *omnicassandra.Driver
-	sshClient *ssh.Client
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -80,6 +74,12 @@ func newDriver() db.Driver {
 // the cluster: Ping does.
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	d := &Driver{}
+	opened := false
+	defer func() {
+		if !opened {
+			_ = d.Close(ctx)
+		}
+	}()
 
 	dataSource := config.DataSource
 	var dial func(ctx context.Context, network, address string) (net.Conn, error)
@@ -88,7 +88,7 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 		if err != nil {
 			return nil, err
 		}
-		d.sshClient = sshClient
+		d.AddCloser(sshClient)
 		dial = func(ctx context.Context, network, address string) (net.Conn, error) {
 			conn, err := util.DialSSHTunnel(ctx, sshClient, network, address)
 			if err != nil {
@@ -108,44 +108,22 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 		Database:      config.ConnectionContext.DatabaseName,
 		User:          dataSource.Username,
 		Password:      config.Password,
-		TLS:           tlsConfigFunc(dataSource),
+		TLS:           util.HostTLSFunc(dataSource),
 		Dial:          dial,
 		EngineVersion: config.ConnectionContext.EngineVersion,
 	})
 	if err != nil {
-		d.closeSSHClient()
 		return nil, err
 	}
-	d.inner = inner
+	d.Driver = inner
+	opened = true
 	return d, nil
-}
-
-func (d *Driver) Close(context.Context) error {
-	d.closeSSHClient()
-	if d.inner != nil {
-		return d.inner.Close()
-	}
-	return nil
-}
-
-func (d *Driver) closeSSHClient() {
-	if d.sshClient != nil {
-		_ = d.sshClient.Close()
-		d.sshClient = nil
-	}
-}
-
-// Ping asks the cluster for its release version.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.inner.Ping(ctx)
 }
 
 // Execute runs the script's statements in order, reporting each to the task
 // run's log.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	return d.inner.Execute(ctx, statement, omnidriver.ExecuteOptions{
-		Log: util.NewExecuteLogger(opts),
-	})
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{})
 }
 
 // QueryConn runs a read-only script, one result per statement, with the
@@ -156,101 +134,59 @@ func (d *Driver) QueryConn(ctx context.Context, rawStatement string, queryContex
 		return nil, errors.Wrapf(err, "failed to split sql")
 	}
 
-	session, err := d.inner.Session(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer session.Close()
-
 	var results []*v1pb.QueryResult
-	for _, stmt := range stmts {
-		if stmt.Empty {
-			continue
-		}
-		startTime := time.Now()
-		if _, _, err := base.ValidateSQLForEditor(storepb.Engine_CASSANDRA, stmt.Text); err != nil {
-			results = append(results, &v1pb.QueryResult{
-				Statement: stmt.Text,
-				Latency:   durationpb.New(time.Since(startTime)),
-				Error:     connect.NewError(connect.CodeInvalidArgument, errors.Errorf("support Cassandra SELECT statement only, err: %s", err.Error())).Error(),
-			})
-			break
-		}
+	err = d.QueryEphemeral(ctx, func(session omnidriver.Session) error {
+		for _, stmt := range stmts {
+			if stmt.Empty {
+				continue
+			}
+			startTime := time.Now()
+			if _, _, err := base.ValidateSQLForEditor(storepb.Engine_CASSANDRA, stmt.Text); err != nil {
+				results = append(results, &v1pb.QueryResult{
+					Statement: stmt.Text,
+					Latency:   durationpb.New(time.Since(startTime)),
+					Error:     connect.NewError(connect.CodeInvalidArgument, errors.Errorf("support Cassandra SELECT statement only, err: %s", err.Error())).Error(),
+				})
+				break
+			}
 
-		stmtResults, err := session.Query(ctx, stmt.Text, omnidriver.QueryOptions{
-			Limit:          queryContext.Limit,
-			MaxResultBytes: queryContext.MaximumSQLResultSize,
-		})
-		if err != nil {
-			results = append(results, &v1pb.QueryResult{
-				Statement: stmt.Text,
-				Latency:   durationpb.New(time.Since(startTime)),
-				Error:     err.Error(),
+			stmtResults, err := session.Query(ctx, stmt.Text, omnidriver.QueryOptions{
+				Limit:          queryContext.Limit,
+				MaxResultBytes: queryContext.MaximumSQLResultSize,
 			})
-			break
-		}
+			if err != nil {
+				results = append(results, &v1pb.QueryResult{
+					Statement: stmt.Text,
+					Latency:   durationpb.New(time.Since(startTime)),
+					Error:     err.Error(),
+				})
+				break
+			}
 
-		stop := false
-		for _, stmtResult := range stmtResults {
-			result := toQueryResult(stmtResult, queryContext)
-			results = append(results, result)
-			if result.Error != "" {
-				stop = true
+			stop := false
+			for _, stmtResult := range stmtResults {
+				result := util.OmniResultToQueryResultWith(stmtResult, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
+					SkipPlan:      true,
+					SkipMessages:  true,
+					TruncatedWins: true,
+					ConvertValue:  convertValue,
+				})
+				results = append(results, result)
+				if result.Error != "" {
+					stop = true
+					break
+				}
+			}
+			if stop {
 				break
 			}
 		}
-		if stop {
-			break
-		}
-	}
-	return results, nil
-}
-
-// SyncInstance reads the cluster version and its user keyspaces.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.inner.SyncInstance(ctx)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	return util.OmniInstanceToMetadata(instance, false), nil
-}
-
-// SyncDBSchema reads the attached keyspace's tables. A keyspace the server no
-// longer has is driver.ErrNotFound.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return d.inner.SyncDatabase(ctx)
-}
-
-// Dump writes nothing: a synced keyspace does not carry its replication
-// strategy, so the metadata could not create the keyspace it describes.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.inner.Dump(ctx, out, dbMetadata)
-}
-
-// toQueryResult maps one contract result onto the product's result.
-func toQueryResult(result *omnidriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
-	converted := &v1pb.QueryResult{
-		Statement: result.Statement,
-		Latency:   durationpb.New(result.Latency),
-	}
-	for _, column := range result.Columns {
-		converted.ColumnNames = append(converted.ColumnNames, column.Name)
-		converted.ColumnTypeNames = append(converted.ColumnTypeNames, column.TypeName)
-	}
-	for _, row := range result.Rows {
-		convertedRow := &v1pb.QueryRow{}
-		for _, value := range row {
-			convertedRow.Values = append(convertedRow.Values, convertValue(value))
-		}
-		converted.Rows = append(converted.Rows, convertedRow)
-	}
-	converted.RowsCount = int64(len(converted.Rows))
-	if result.Truncated {
-		converted.Error = util.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
-	} else if result.Err != nil {
-		converted.Error = result.Err.Error()
-	}
-	return converted
+	return results, nil
 }
 
 // convertValue maps one contract value onto the product's row value, keeping
@@ -261,43 +197,16 @@ func convertValue(value omnidriver.Value) *v1pb.RowValue {
 	switch value.Kind {
 	case omnidriver.Null:
 		return util.NullRowValue
-	case omnidriver.Bool:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value.Bool}}
-	case omnidriver.Bytes:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.Bytes}}
-	case omnidriver.Float32:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_FloatValue{FloatValue: float32(value.Float64)}}
-	case omnidriver.Float64:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: value.Float64}}
-	case omnidriver.Int32:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(value.Int64)}}
-	case omnidriver.Int64:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: value.Int64}}
-	case omnidriver.Uint32:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_Uint32Value{Uint32Value: uint32(value.Uint64)}}
-	case omnidriver.Uint64:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_Uint64Value{Uint64Value: value.Uint64}}
-	case omnidriver.String:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String}}
 	case omnidriver.Structured:
 		encoded, err := json.Marshal(value.Structured)
 		if err != nil {
 			return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: fmt.Sprintf("%v", value.Structured)}}
 		}
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(encoded)}}
-	case omnidriver.Timestamp:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampValue{TimestampValue: &v1pb.RowValue_Timestamp{
-			GoogleTimestamp: timestamppb.New(value.Time),
-			Accuracy:        value.Precision,
-		}}}
-	case omnidriver.TimestampTZ:
-		zone, offset := value.Time.Zone()
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampTzValue{TimestampTzValue: &v1pb.RowValue_TimestampTZ{
-			GoogleTimestamp: timestamppb.New(value.Time),
-			Zone:            zone,
-			Offset:          int32(offset),
-			Accuracy:        value.Precision,
-		}}}
+	case omnidriver.Bool, omnidriver.Bytes, omnidriver.Float32, omnidriver.Float64,
+		omnidriver.Int32, omnidriver.Int64, omnidriver.Uint32, omnidriver.Uint64,
+		omnidriver.String, omnidriver.Timestamp, omnidriver.TimestampTZ:
+		return util.OmniRowValue(value)
 	default:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: fmt.Sprintf("%v", value)}}
 	}
@@ -323,15 +232,6 @@ func remoteTCPAddr(address string) *net.TCPAddr {
 		return &net.TCPAddr{}
 	}
 	return &net.TCPAddr{IP: net.ParseIP(host), Port: number}
-}
-
-func tlsConfigFunc(dataSource *storepb.DataSource) func(string) (*tls.Config, error) {
-	if !dataSource.GetUseSsl() {
-		return nil
-	}
-	return func(host string) (*tls.Config, error) {
-		return util.GetTLSConfigForHost(dataSource, host)
-	}
 }
 
 func formatAddress(host, port string) string {
