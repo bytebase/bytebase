@@ -26,7 +26,9 @@
                   "nullable": true,
                   "type": "varchar(220)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 }
               ],
               "indexes": [
@@ -149,7 +151,9 @@
                   "position": 3,
                   "type": "varchar(200)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "content",
@@ -158,7 +162,9 @@
                   "nullable": true,
                   "type": "text",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "published",
@@ -186,9 +192,9 @@
                   "visible": true
                 },
                 {
-                  "name": "idx_user_id",
+                  "name": "idx_published",
                   "expressions": [
-                    "user_id"
+                    "published"
                   ],
                   "key_length": [
                     -1
@@ -200,9 +206,9 @@
                   "visible": true
                 },
                 {
-                  "name": "idx_published",
+                  "name": "idx_user_id",
                   "expressions": [
-                    "published"
+                    "user_id"
                   ],
                   "key_length": [
                     -1
@@ -227,7 +233,8 @@
                     "id"
                   ],
                   "on_delete": "CASCADE",
-                  "on_update": "NO ACTION"
+                  "on_update": "NO ACTION",
+                  "match_type": "NONE"
                 }
               ]
             },
@@ -245,14 +252,18 @@
                   "position": 2,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "email",
                   "position": 3,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "created_at",
@@ -439,7 +450,9 @@
                   "nullable": true,
                   "type": "char(10)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "varchar_col",
@@ -448,7 +461,9 @@
                   "nullable": true,
                   "type": "varchar(255)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "binary_col",
@@ -499,7 +514,9 @@
                   "nullable": true,
                   "type": "tinytext",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "text_col",
@@ -508,7 +525,9 @@
                   "nullable": true,
                   "type": "text",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "mediumtext_col",
@@ -517,7 +536,9 @@
                   "nullable": true,
                   "type": "mediumtext",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "longtext_col",
@@ -526,7 +547,9 @@
                   "nullable": true,
                   "type": "longtext",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "enum_col",
@@ -535,7 +558,9 @@
                   "nullable": true,
                   "type": "enum('small','medium','large')",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "set_col",
@@ -544,7 +569,9 @@
                   "nullable": true,
                   "type": "set('red','green','blue')",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "date_col",
@@ -657,14 +684,18 @@
                   "position": 2,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "last_name",
                   "position": 3,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "full_name",
@@ -677,7 +708,9 @@
                   "generation": {
                     "type": 2,
                     "expression": "concat(`first_name`,_utf8mb4' ',`last_name`)"
-                  }
+                  },
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "email",
@@ -690,7 +723,9 @@
                   "generation": {
                     "type": 1,
                     "expression": "concat(lower(`first_name`),_utf8mb4'.',lower(`last_name`),_utf8mb4'@company.com')"
-                  }
+                  },
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "department",
@@ -699,7 +734,9 @@
                   "nullable": true,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "salary",
@@ -734,11 +771,73 @@
           "views": [
             {
               "name": "active_employees",
-              "definition": "select `employees`.`id` AS `id`,`employees`.`first_name` AS `first_name`,`employees`.`last_name` AS `last_name`,`employees`.`full_name` AS `full_name`,`employees`.`department` AS `department` from `employees` where (`employees`.`department` is not null)"
+              "definition": "select `employees`.`id` AS `id`,`employees`.`first_name` AS `first_name`,`employees`.`last_name` AS `last_name`,`employees`.`full_name` AS `full_name`,`employees`.`department` AS `department` from `employees` where (`employees`.`department` is not null)",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "first_name",
+                  "position": 2,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "last_name",
+                  "position": 3,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "full_name",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "varchar(101)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "department",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                }
+              ],
+              "algorithm": "UNDEFINED",
+              "sql_security": "DEFINER"
             },
             {
               "name": "high_earners",
-              "definition": "select `employees`.`id` AS `id`,`employees`.`full_name` AS `full_name`,`employees`.`salary` AS `salary` from `employees` where (`employees`.`salary` \u003e 100000)"
+              "definition": "select `employees`.`id` AS `id`,`employees`.`full_name` AS `full_name`,`employees`.`salary` AS `salary` from `employees` where (`employees`.`salary` \u003e 100000)",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "full_name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(101)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "salary",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "decimal(10,2)"
+                }
+              ],
+              "algorithm": "UNDEFINED",
+              "sql_security": "DEFINER"
             }
           ]
         }
@@ -781,13 +880,15 @@
           "functions": [
             {
               "name": "get_employee_count",
-              "definition": "BEGIN\n    DECLARE emp_count INT;\n    SELECT COUNT(*) INTO emp_count\n    FROM employees\n    WHERE department = dept;\n    RETURN emp_count;\nEND"
+              "definition": "CREATE FUNCTION `get_employee_count`(dept VARCHAR(50)) RETURNS int\n    DETERMINISTIC\n    READS SQL DATA\nBEGIN\n    DECLARE emp_count INT;\n    SELECT COUNT(*) INTO emp_count\n    FROM employees\n    WHERE department = dept;\n    RETURN emp_count;\nEND",
+              "database_collation": "utf8mb4_0900_ai_ci"
             }
           ],
           "procedures": [
             {
               "name": "update_employee_salary",
-              "definition": "BEGIN\n    UPDATE employees\n    SET salary = new_salary\n    WHERE id = emp_id;\nEND"
+              "definition": "CREATE PROCEDURE `update_employee_salary`(IN emp_id INT, IN new_salary DECIMAL(10,2))\nBEGIN\n    UPDATE employees\n    SET salary = new_salary\n    WHERE id = emp_id;\nEND",
+              "database_collation": "utf8mb4_0900_ai_ci"
             }
           ]
         }
@@ -856,7 +957,9 @@
                   "position": 2,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "name",
@@ -865,7 +968,9 @@
                   "nullable": true,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "price",
@@ -898,23 +1003,24 @@
               ],
               "collation": "utf8mb4_0900_ai_ci",
               "charset": "utf8mb4",
+              "create_options": "partitioned",
               "partitions": [
                 {
                   "name": "p_electronics",
                   "type": 4,
-                  "expression": "category",
+                  "expression": "`category`",
                   "value": "'laptop','phone','tablet'"
                 },
                 {
                   "name": "p_clothing",
                   "type": 4,
-                  "expression": "category",
+                  "expression": "`category`",
                   "value": "'shirt','pants','shoes'"
                 },
                 {
                   "name": "p_food",
                   "type": 4,
-                  "expression": "category",
+                  "expression": "`category`",
                   "value": "'fruit','vegetable','meat'"
                 }
               ]
@@ -933,7 +1039,9 @@
                   "position": 2,
                   "type": "varchar(10)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "region_name",
@@ -942,7 +1050,9 @@
                   "nullable": true,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 }
               ],
               "indexes": [
@@ -968,21 +1078,25 @@
               ],
               "collation": "utf8mb4_0900_ai_ci",
               "charset": "utf8mb4",
+              "create_options": "partitioned",
               "partitions": [
                 {
                   "name": "p0",
                   "type": 7,
-                  "expression": "region_code"
+                  "expression": "`region_code`",
+                  "use_default": "3"
                 },
                 {
                   "name": "p1",
                   "type": 7,
-                  "expression": "region_code"
+                  "expression": "`region_code`",
+                  "use_default": "3"
                 },
                 {
                   "name": "p2",
                   "type": 7,
-                  "expression": "region_code"
+                  "expression": "`region_code`",
+                  "use_default": "3"
                 }
               ]
             },
@@ -1010,7 +1124,9 @@
                   "position": 4,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 }
               ],
               "indexes": [
@@ -1036,6 +1152,7 @@
               ],
               "collation": "utf8mb4_0900_ai_ci",
               "charset": "utf8mb4",
+              "create_options": "partitioned",
               "partitions": [
                 {
                   "name": "p2021",
@@ -1089,7 +1206,9 @@
                   "nullable": true,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 }
               ],
               "indexes": [
@@ -1115,26 +1234,31 @@
               ],
               "collation": "utf8mb4_0900_ai_ci",
               "charset": "utf8mb4",
+              "create_options": "partitioned",
               "partitions": [
                 {
                   "name": "p0",
                   "type": 5,
-                  "expression": "`user_id`"
+                  "expression": "`user_id`",
+                  "use_default": "4"
                 },
                 {
                   "name": "p1",
                   "type": 5,
-                  "expression": "`user_id`"
+                  "expression": "`user_id`",
+                  "use_default": "4"
                 },
                 {
                   "name": "p2",
                   "type": 5,
-                  "expression": "`user_id`"
+                  "expression": "`user_id`",
+                  "use_default": "4"
                 },
                 {
                   "name": "p3",
                   "type": 5,
-                  "expression": "`user_id`"
+                  "expression": "`user_id`",
+                  "use_default": "4"
                 }
               ]
             }
@@ -1196,7 +1320,9 @@
                   "nullable": true,
                   "type": "varchar(20)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "notes",
@@ -1205,7 +1331,9 @@
                   "nullable": true,
                   "type": "text",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 }
               ],
               "indexes": [
@@ -1240,20 +1368,6 @@
                   "visible": true
                 },
                 {
-                  "name": "idx_date_desc",
-                  "expressions": [
-                    "order_date"
-                  ],
-                  "key_length": [
-                    -1
-                  ],
-                  "descending": [
-                    true
-                  ],
-                  "type": "BTREE",
-                  "visible": true
-                },
-                {
                   "name": "idx_customer_date",
                   "expressions": [
                     "customer_id",
@@ -1268,6 +1382,34 @@
                     true
                   ],
                   "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_date_desc",
+                  "expressions": [
+                    "order_date"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    true
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_fulltext_notes",
+                  "expressions": [
+                    "notes"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "FULLTEXT",
                   "visible": true
                 },
                 {
@@ -1286,20 +1428,6 @@
                   ],
                   "type": "BTREE",
                   "unique": true,
-                  "visible": true
-                },
-                {
-                  "name": "idx_fulltext_notes",
-                  "expressions": [
-                    "notes"
-                  ],
-                  "key_length": [
-                    -1
-                  ],
-                  "descending": [
-                    false
-                  ],
-                  "type": "FULLTEXT",
                   "visible": true
                 }
               ],
@@ -1344,7 +1472,9 @@
                   "position": 2,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "price",
@@ -1363,7 +1493,9 @@
                   "nullable": true,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 }
               ],
               "indexes": [
@@ -1388,16 +1520,16 @@
               "charset": "utf8mb4",
               "check_constraints": [
                 {
+                  "name": "chk_category",
+                  "expression": "(`category` in ('electronics','clothing','food','other'))"
+                },
+                {
                   "name": "chk_price",
                   "expression": "(`price` \u003e 0)"
                 },
                 {
                   "name": "chk_quantity",
                   "expression": "(`quantity` \u003e= 0)"
-                },
-                {
-                  "name": "chk_category",
-                  "expression": "(`category` in ('electronics','clothing','food','other'))"
                 }
               ]
             }
@@ -1464,7 +1596,9 @@
                   "nullable": true,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "action",
@@ -1473,7 +1607,9 @@
                   "nullable": true,
                   "type": "varchar(10)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "user",
@@ -1482,7 +1618,9 @@
                   "nullable": true,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "timestamp",
@@ -1527,14 +1665,18 @@
                   "position": 2,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "email",
                   "position": 3,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 }
               ],
               "indexes": [
@@ -1610,7 +1752,9 @@
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
                   "collation": "utf8mb4_0900_ai_ci",
-                  "comment": "The name of the item"
+                  "comment": "The name of the item",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "description",
@@ -1620,7 +1764,9 @@
                   "type": "text",
                   "character_set": "utf8mb4",
                   "collation": "utf8mb4_0900_ai_ci",
-                  "comment": "Detailed description"
+                  "comment": "Detailed description",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "price",
@@ -1716,7 +1862,9 @@
                   "position": 2,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 }
               ],
               "indexes": [
@@ -1753,7 +1901,9 @@
                   "position": 2,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "dept_id",
@@ -1829,7 +1979,8 @@
                     "dept_id"
                   ],
                   "on_delete": "SET NULL",
-                  "on_update": "CASCADE"
+                  "on_update": "CASCADE",
+                  "match_type": "NONE"
                 },
                 {
                   "name": "fk_manager",
@@ -1841,7 +1992,8 @@
                     "emp_id"
                   ],
                   "on_delete": "RESTRICT",
-                  "on_update": "RESTRICT"
+                  "on_update": "RESTRICT",
+                  "match_type": "NONE"
                 }
               ]
             }
@@ -1955,7 +2107,9 @@
                   "nullable": true,
                   "type": "char(10)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_bin"
+                  "collation": "utf8mb4_bin",
+                  "charset_inherited": false,
+                  "collation_inherited": false
                 },
                 {
                   "name": "varchar_binary",
@@ -1964,7 +2118,9 @@
                   "nullable": true,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_bin"
+                  "collation": "utf8mb4_bin",
+                  "charset_inherited": false,
+                  "collation_inherited": false
                 },
                 {
                   "name": "text_collate",
@@ -1973,7 +2129,9 @@
                   "nullable": true,
                   "type": "text",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_unicode_ci"
+                  "collation": "utf8mb4_unicode_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": false
                 },
                 {
                   "name": "varchar_collate",
@@ -1982,7 +2140,9 @@
                   "nullable": true,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_bin"
+                  "collation": "utf8mb4_bin",
+                  "charset_inherited": true,
+                  "collation_inherited": false
                 },
                 {
                   "name": "datetime_precision",
@@ -2192,7 +2352,9 @@
                   "position": 2,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "email",
@@ -2201,7 +2363,9 @@
                   "nullable": true,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "status",
@@ -2210,7 +2374,9 @@
                   "nullable": true,
                   "type": "varchar(20)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "created_at",
@@ -2238,18 +2404,20 @@
                   "visible": true
                 },
                 {
-                  "name": "idx_name",
+                  "name": "idx_composite",
                   "expressions": [
-                    "name"
+                    "name",
+                    "email"
                   ],
                   "key_length": [
+                    -1,
                     -1
                   ],
                   "descending": [
+                    false,
                     false
                   ],
-                  "type": "BTREE",
-                  "visible": true
+                  "type": "BTREE"
                 },
                 {
                   "name": "idx_email",
@@ -2265,6 +2433,20 @@
                   "type": "BTREE"
                 },
                 {
+                  "name": "idx_name",
+                  "expressions": [
+                    "name"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
                   "name": "idx_status_invisible",
                   "expressions": [
                     "status"
@@ -2273,22 +2455,6 @@
                     -1
                   ],
                   "descending": [
-                    false
-                  ],
-                  "type": "BTREE"
-                },
-                {
-                  "name": "idx_composite",
-                  "expressions": [
-                    "name",
-                    "email"
-                  ],
-                  "key_length": [
-                    -1,
-                    -1
-                  ],
-                  "descending": [
-                    false,
                     false
                   ],
                   "type": "BTREE"
@@ -2340,7 +2506,9 @@
                   "position": 2,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "description",
@@ -2349,7 +2517,9 @@
                   "nullable": true,
                   "type": "text",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "price",
@@ -2365,7 +2535,9 @@
                   "nullable": true,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "tags",
@@ -2400,6 +2572,51 @@
                   "visible": true
                 },
                 {
+                  "name": "idx_composite_mixed",
+                  "expressions": [
+                    "category",
+                    "price"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    true
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_expression",
+                  "expressions": [
+                    "(year(`created_at`))"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_fulltext_desc",
+                  "expressions": [
+                    "description"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "FULLTEXT",
+                  "visible": true
+                },
+                {
                   "name": "idx_name_prefix",
                   "expressions": [
                     "name"
@@ -2428,23 +2645,6 @@
                   "visible": true
                 },
                 {
-                  "name": "idx_composite_mixed",
-                  "expressions": [
-                    "category",
-                    "price"
-                  ],
-                  "key_length": [
-                    -1,
-                    -1
-                  ],
-                  "descending": [
-                    false,
-                    true
-                  ],
-                  "type": "BTREE",
-                  "visible": true
-                },
-                {
                   "name": "idx_unique_name_category",
                   "expressions": [
                     "name",
@@ -2460,34 +2660,6 @@
                   ],
                   "type": "BTREE",
                   "unique": true,
-                  "visible": true
-                },
-                {
-                  "name": "idx_fulltext_desc",
-                  "expressions": [
-                    "description"
-                  ],
-                  "key_length": [
-                    -1
-                  ],
-                  "descending": [
-                    false
-                  ],
-                  "type": "FULLTEXT",
-                  "visible": true
-                },
-                {
-                  "name": "idx_expression",
-                  "expressions": [
-                    "year(`created_at`)"
-                  ],
-                  "key_length": [
-                    -1
-                  ],
-                  "descending": [
-                    false
-                  ],
-                  "type": "BTREE",
                   "visible": true
                 }
               ],
@@ -2532,7 +2704,9 @@
                   "position": 2,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_unicode_ci"
+                  "collation": "utf8mb4_unicode_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "data",
@@ -2541,7 +2715,9 @@
                   "nullable": true,
                   "type": "text",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_unicode_ci"
+                  "collation": "utf8mb4_unicode_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 }
               ],
               "indexes": [
@@ -2565,6 +2741,7 @@
               "engine": "InnoDB",
               "collation": "utf8mb4_unicode_ci",
               "charset": "utf8mb4",
+              "create_options": "row_format=DYNAMIC",
               "comment": "Table with various options"
             }
           ]
@@ -2617,7 +2794,9 @@
                   "position": 4,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 }
               ],
               "indexes": [
@@ -2643,6 +2822,7 @@
               ],
               "collation": "utf8mb4_0900_ai_ci",
               "charset": "utf8mb4",
+              "create_options": "partitioned",
               "partitions": [
                 {
                   "name": "p2021",
@@ -2722,7 +2902,9 @@
                   "nullable": true,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 }
               ],
               "indexes": [
@@ -2751,29 +2933,30 @@
               ],
               "collation": "utf8mb4_0900_ai_ci",
               "charset": "utf8mb4",
+              "create_options": "partitioned",
               "partitions": [
                 {
                   "name": "p202101",
                   "type": 2,
-                  "expression": "year_col,month_col",
+                  "expression": "`year_col`,`month_col`",
                   "value": "2021,7"
                 },
                 {
                   "name": "p202107",
                   "type": 2,
-                  "expression": "year_col,month_col",
+                  "expression": "`year_col`,`month_col`",
                   "value": "2022,1"
                 },
                 {
                   "name": "p202201",
                   "type": 2,
-                  "expression": "year_col,month_col",
+                  "expression": "`year_col`,`month_col`",
                   "value": "2022,7"
                 },
                 {
                   "name": "p202207",
                   "type": 2,
-                  "expression": "year_col,month_col",
+                  "expression": "`year_col`,`month_col`",
                   "value": "2023,1"
                 }
               ]
@@ -2814,7 +2997,9 @@
                   "position": 2,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "parent_id",
@@ -2849,9 +3034,9 @@
                   "visible": true
                 },
                 {
-                  "name": "fk_parent",
+                  "name": "fk_manager",
                   "expressions": [
-                    "parent_id"
+                    "manager_id"
                   ],
                   "key_length": [
                     -1
@@ -2863,9 +3048,9 @@
                   "visible": true
                 },
                 {
-                  "name": "fk_manager",
+                  "name": "fk_parent",
                   "expressions": [
-                    "manager_id"
+                    "parent_id"
                   ],
                   "key_length": [
                     -1
@@ -2881,18 +3066,6 @@
               "charset": "utf8mb4",
               "foreign_keys": [
                 {
-                  "name": "fk_parent",
-                  "columns": [
-                    "parent_id"
-                  ],
-                  "referenced_table": "hierarchical_data",
-                  "referenced_columns": [
-                    "id"
-                  ],
-                  "on_delete": "CASCADE",
-                  "on_update": "NO ACTION"
-                },
-                {
                   "name": "fk_manager",
                   "columns": [
                     "manager_id"
@@ -2902,7 +3075,21 @@
                     "id"
                   ],
                   "on_delete": "SET NULL",
-                  "on_update": "NO ACTION"
+                  "on_update": "NO ACTION",
+                  "match_type": "NONE"
+                },
+                {
+                  "name": "fk_parent",
+                  "columns": [
+                    "parent_id"
+                  ],
+                  "referenced_table": "hierarchical_data",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "NO ACTION",
+                  "match_type": "NONE"
                 }
               ]
             }
@@ -2954,14 +3141,18 @@
                   "position": 2,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "last_name",
                   "position": 3,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "birth_date",
@@ -2986,7 +3177,9 @@
                   "generation": {
                     "type": 2,
                     "expression": "concat(`first_name`,_utf8mb4' ',`last_name`)"
-                  }
+                  },
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "email",
@@ -2999,7 +3192,9 @@
                   "generation": {
                     "type": 1,
                     "expression": "concat(lower(`first_name`),_utf8mb4'.',lower(`last_name`),_utf8mb4'@company.com')"
-                  }
+                  },
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "age_years",
@@ -3023,7 +3218,9 @@
                   "generation": {
                     "type": 2,
                     "expression": "(?)"
-                  }
+                  },
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 }
               ],
               "indexes": [
@@ -3044,9 +3241,9 @@
                   "visible": true
                 },
                 {
-                  "name": "idx_full_name",
+                  "name": "idx_age",
                   "expressions": [
-                    "full_name"
+                    "age_years"
                   ],
                   "key_length": [
                     -1
@@ -3058,9 +3255,9 @@
                   "visible": true
                 },
                 {
-                  "name": "idx_age",
+                  "name": "idx_full_name",
                   "expressions": [
-                    "age_years"
+                    "full_name"
                   ],
                   "key_length": [
                     -1
@@ -3126,7 +3323,9 @@
                   "position": 2,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "email@domain",
@@ -3135,7 +3334,9 @@
                   "nullable": true,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "order",
@@ -3153,7 +3354,9 @@
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
                   "collation": "utf8mb4_0900_ai_ci",
-                  "comment": "Another reserved keyword"
+                  "comment": "Another reserved keyword",
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 }
               ],
               "indexes": [
@@ -3174,20 +3377,6 @@
                   "visible": true
                 },
                 {
-                  "name": "idx-name",
-                  "expressions": [
-                    "first name"
-                  ],
-                  "key_length": [
-                    -1
-                  ],
-                  "descending": [
-                    false
-                  ],
-                  "type": "BTREE",
-                  "visible": true
-                },
-                {
                   "name": "idx-email",
                   "expressions": [
                     "email@domain"
@@ -3200,6 +3389,20 @@
                   ],
                   "type": "BTREE",
                   "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx-name",
+                  "expressions": [
+                    "first name"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
                   "visible": true
                 }
               ],
@@ -3274,7 +3477,9 @@
                   "generation": {
                     "type": 2,
                     "expression": "json_unquote(json_extract(`metadata`,_utf8mb4'$.name'))"
-                  }
+                  },
+                  "charset_inherited": true,
+                  "collation_inherited": true
                 },
                 {
                   "name": "tag_count",

@@ -47,6 +47,7 @@
                 {
                   "name": "content",
                   "position": 4,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "text",
                   "character_set": "utf8mb4",
@@ -55,16 +56,16 @@
                 {
                   "name": "published",
                   "position": 5,
-                  "default": "0",
+                  "default": "'0'",
                   "nullable": true,
                   "type": "tinyint(1)"
                 }
               ],
               "indexes": [
                 {
-                  "name": "idx_user_id",
+                  "name": "PRIMARY",
                   "expressions": [
-                    "user_id"
+                    "id"
                   ],
                   "key_length": [
                     -1
@@ -73,6 +74,8 @@
                     false
                   ],
                   "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
                   "visible": true
                 },
                 {
@@ -90,9 +93,9 @@
                   "visible": true
                 },
                 {
-                  "name": "PRIMARY",
+                  "name": "idx_user_id",
                   "expressions": [
-                    "id"
+                    "user_id"
                   ],
                   "key_length": [
                     -1
@@ -101,13 +104,12 @@
                     false
                   ],
                   "type": "BTREE",
-                  "unique": true,
-                  "primary": true,
                   "visible": true
                 }
               ],
               "engine": "InnoDB",
               "collation": "utf8mb4_bin",
+              "charset": "utf8mb4",
               "foreign_keys": [
                 {
                   "name": "fk_user",
@@ -118,7 +120,9 @@
                   "referenced_columns": [
                     "id"
                   ],
-                  "on_delete": "CASCADE"
+                  "on_delete": "CASCADE",
+                  "on_update": "NO ACTION",
+                  "match_type": "NONE"
                 }
               ]
             },
@@ -195,7 +199,8 @@
                 }
               ],
               "engine": "InnoDB",
-              "collation": "utf8mb4_bin"
+              "collation": "utf8mb4_bin",
+              "charset": "utf8mb4"
             }
           ]
         }
@@ -254,60 +259,70 @@
                 {
                   "name": "tiny_int_col",
                   "position": 2,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "tinyint"
                 },
                 {
                   "name": "small_int_col",
                   "position": 3,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "smallint"
                 },
                 {
                   "name": "medium_int_col",
                   "position": 4,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "mediumint"
                 },
                 {
                   "name": "int_col",
                   "position": 5,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "int"
                 },
                 {
                   "name": "big_int_col",
                   "position": 6,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "bigint"
                 },
                 {
                   "name": "decimal_col",
                   "position": 7,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "decimal(10,2)"
                 },
                 {
                   "name": "float_col",
                   "position": 8,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "float"
                 },
                 {
                   "name": "double_col",
                   "position": 9,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "double"
                 },
                 {
                   "name": "bit_col",
                   "position": 10,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "bit(8)"
                 },
                 {
                   "name": "char_col",
                   "position": 11,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "char(10)",
                   "character_set": "utf8mb4",
@@ -316,6 +331,7 @@
                 {
                   "name": "varchar_col",
                   "position": 12,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
@@ -324,18 +340,21 @@
                 {
                   "name": "binary_col",
                   "position": 13,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "binary(10)"
                 },
                 {
                   "name": "varbinary_col",
                   "position": 14,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "varbinary(100)"
                 },
                 {
                   "name": "tinytext_col",
                   "position": 15,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "tinytext",
                   "character_set": "utf8mb4",
@@ -344,6 +363,7 @@
                 {
                   "name": "text_col",
                   "position": 16,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "text",
                   "character_set": "utf8mb4",
@@ -352,6 +372,7 @@
                 {
                   "name": "mediumtext_col",
                   "position": 17,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "mediumtext",
                   "character_set": "utf8mb4",
@@ -360,6 +381,7 @@
                 {
                   "name": "longtext_col",
                   "position": 18,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "longtext",
                   "character_set": "utf8mb4",
@@ -368,66 +390,77 @@
                 {
                   "name": "tinyblob_col",
                   "position": 19,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "tinyblob"
                 },
                 {
                   "name": "blob_col",
                   "position": 20,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "blob"
                 },
                 {
                   "name": "mediumblob_col",
                   "position": 21,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "mediumblob"
                 },
                 {
                   "name": "longblob_col",
                   "position": 22,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "longblob"
                 },
                 {
                   "name": "date_col",
                   "position": 23,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "date"
                 },
                 {
                   "name": "time_col",
                   "position": 24,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "time"
                 },
                 {
                   "name": "datetime_col",
                   "position": 25,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "datetime"
                 },
                 {
                   "name": "timestamp_col",
                   "position": 26,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "timestamp"
                 },
                 {
                   "name": "year_col",
                   "position": 27,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "year(4)"
                 },
                 {
                   "name": "json_col",
                   "position": 28,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "json"
                 },
                 {
                   "name": "enum_col",
                   "position": 29,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "enum('small','medium','large')",
                   "character_set": "utf8mb4",
@@ -436,6 +469,7 @@
                 {
                   "name": "set_col",
                   "position": 30,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "set('a','b','c')",
                   "character_set": "utf8mb4",
@@ -461,7 +495,8 @@
                 }
               ],
               "engine": "InnoDB",
-              "collation": "utf8mb4_bin"
+              "collation": "utf8mb4_bin",
+              "charset": "utf8mb4"
             }
           ]
         }
@@ -525,7 +560,8 @@
                 }
               ],
               "engine": "InnoDB",
-              "collation": "utf8mb4_bin"
+              "collation": "utf8mb4_bin",
+              "charset": "utf8mb4"
             },
             {
               "name": "employees",
@@ -546,12 +582,14 @@
                 {
                   "name": "dept_id",
                   "position": 3,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "int"
                 },
                 {
                   "name": "manager_id",
                   "position": 4,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "int"
                 }
@@ -604,6 +642,7 @@
               ],
               "engine": "InnoDB",
               "collation": "utf8mb4_bin",
+              "charset": "utf8mb4",
               "foreign_keys": [
                 {
                   "name": "fk_dept",
@@ -615,7 +654,8 @@
                     "id"
                   ],
                   "on_delete": "CASCADE",
-                  "on_update": "RESTRICT"
+                  "on_update": "RESTRICT",
+                  "match_type": "NONE"
                 },
                 {
                   "name": "fk_manager",
@@ -626,7 +666,9 @@
                   "referenced_columns": [
                     "id"
                   ],
-                  "on_delete": "SET NULL"
+                  "on_delete": "SET NULL",
+                  "on_update": "NO ACTION",
+                  "match_type": "NONE"
                 }
               ]
             }
@@ -666,6 +708,7 @@
                 {
                   "name": "customer_name",
                   "position": 2,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
@@ -675,6 +718,7 @@
                 {
                   "name": "amount",
                   "position": 3,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "decimal(10,2)",
                   "comment": "Order amount in USD"
@@ -709,13 +753,36 @@
               ],
               "engine": "InnoDB",
               "collation": "utf8mb4_bin",
+              "charset": "utf8mb4",
               "comment": "Order management table"
             }
           ],
           "views": [
             {
               "name": "active_orders",
-              "definition": "SELECT `id` AS `id`,`customer_name` AS `customer_name`,`amount` AS `amount` FROM `orders` WHERE `status`=_UTF8MB4'active'"
+              "definition": "SELECT `id` AS `id`,`customer_name` AS `customer_name`,`amount` AS `amount` FROM `orders` WHERE `status`=_UTF8MB4'active'",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "customer_name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "amount",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "decimal(10,2)"
+                }
+              ],
+              "algorithm": "UNDEFINED",
+              "sql_security": "DEFINER"
             }
           ]
         }
@@ -762,6 +829,7 @@
                 {
                   "name": "description",
                   "position": 3,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "text",
                   "character_set": "utf8mb4",
@@ -775,6 +843,7 @@
                 {
                   "name": "category",
                   "position": 5,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "varchar(50)",
                   "character_set": "utf8mb4",
@@ -783,6 +852,7 @@
                 {
                   "name": "tags",
                   "position": 6,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "json"
                 },
@@ -795,6 +865,22 @@
                 }
               ],
               "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
                 {
                   "name": "idx_name",
                   "expressions": [
@@ -840,26 +926,11 @@
                   "type": "BTREE",
                   "unique": true,
                   "visible": true
-                },
-                {
-                  "name": "PRIMARY",
-                  "expressions": [
-                    "id"
-                  ],
-                  "key_length": [
-                    -1
-                  ],
-                  "descending": [
-                    false
-                  ],
-                  "type": "BTREE",
-                  "unique": true,
-                  "primary": true,
-                  "visible": true
                 }
               ],
               "engine": "InnoDB",
-              "collation": "utf8mb4_bin"
+              "collation": "utf8mb4_bin",
+              "charset": "utf8mb4"
             }
           ]
         }
@@ -891,6 +962,7 @@
                 {
                   "name": "name",
                   "position": 2,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
@@ -899,6 +971,7 @@
                 {
                   "name": "data",
                   "position": 3,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "json"
                 }
@@ -923,7 +996,9 @@
               ],
               "engine": "InnoDB",
               "collation": "utf8mb4_bin",
-              "comment": "PK_AUTO_RANDOM_BITS=5"
+              "charset": "utf8mb4",
+              "comment": "PK_AUTO_RANDOM_BITS=5",
+              "sharding_info": "PK_AUTO_RANDOM_BITS=5"
             }
           ]
         }
@@ -966,6 +1041,7 @@
                 {
                   "name": "data",
                   "position": 3,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "text",
                   "character_set": "utf8mb4",
@@ -992,6 +1068,7 @@
               ],
               "engine": "InnoDB",
               "collation": "utf8mb4_general_ci",
+              "charset": "utf8mb4",
               "comment": "Table with various TiDB options"
             }
           ]
@@ -1032,6 +1109,7 @@
                 {
                   "name": "parent_id",
                   "position": 3,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "int"
                 }
@@ -1070,6 +1148,7 @@
               ],
               "engine": "InnoDB",
               "collation": "utf8mb4_bin",
+              "charset": "utf8mb4",
               "foreign_keys": [
                 {
                   "name": "fk_parent",
@@ -1080,7 +1159,9 @@
                   "referenced_columns": [
                     "id"
                   ],
-                  "on_delete": "CASCADE"
+                  "on_delete": "CASCADE",
+                  "on_update": "NO ACTION",
+                  "match_type": "NONE"
                 }
               ]
             }
@@ -1126,6 +1207,7 @@
                 {
                   "name": "email",
                   "position": 3,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "varchar(100)",
                   "character_set": "utf8mb4",
@@ -1151,7 +1233,9 @@
                 }
               ],
               "engine": "InnoDB",
-              "collation": "utf8mb4_bin"
+              "collation": "utf8mb4_bin",
+              "charset": "utf8mb4",
+              "primary_key_type": "CLUSTERED"
             },
             {
               "name": "non_clustered_test",
@@ -1171,6 +1255,7 @@
                 {
                   "name": "data",
                   "position": 3,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "text",
                   "character_set": "utf8mb4",
@@ -1196,7 +1281,9 @@
                 }
               ],
               "engine": "InnoDB",
-              "collation": "utf8mb4_bin"
+              "collation": "utf8mb4_bin",
+              "charset": "utf8mb4",
+              "primary_key_type": "NONCLUSTERED"
             }
           ]
         }
@@ -1229,6 +1316,7 @@
                 {
                   "name": "qty",
                   "position": 2,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "int"
                 }
@@ -1252,7 +1340,9 @@
                 }
               ],
               "engine": "InnoDB",
-              "collation": "utf8mb4_bin"
+              "collation": "utf8mb4_bin",
+              "charset": "utf8mb4",
+              "sharding_info": "PK_AUTO_RANDOM_BITS=5, RANGE BITS=54"
             }
           ]
         }
@@ -1280,12 +1370,14 @@
                 {
                   "name": "a",
                   "position": 1,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "int"
                 }
               ],
               "engine": "InnoDB",
-              "collation": "utf8mb4_bin"
+              "collation": "utf8mb4_bin",
+              "charset": "utf8mb4"
             }
           ]
         }
@@ -1321,30 +1413,35 @@
                 {
                   "name": "doc",
                   "position": 2,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "json"
                 },
                 {
                   "name": "blob_col",
                   "position": 3,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "blob"
                 },
                 {
                   "name": "fixed",
                   "position": 4,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "binary(4)"
                 },
                 {
                   "name": "var_bytes",
                   "position": 5,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "varbinary(8)"
                 },
                 {
                   "name": "named",
                   "position": 6,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "varchar(10)",
                   "character_set": "latin1",
@@ -1353,6 +1450,7 @@
                 {
                   "name": "collated",
                   "position": 7,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "varchar(10)",
                   "character_set": "utf8mb4",
@@ -1361,6 +1459,7 @@
                 {
                   "name": "plain",
                   "position": 8,
+                  "default": "NULL",
                   "nullable": true,
                   "type": "text",
                   "character_set": "utf8mb4",
@@ -1386,7 +1485,8 @@
                 }
               ],
               "engine": "InnoDB",
-              "collation": "utf8mb4_bin"
+              "collation": "utf8mb4_bin",
+              "charset": "utf8mb4"
             }
           ]
         }
@@ -1444,7 +1544,9 @@
               ],
               "engine": "InnoDB",
               "collation": "utf8mb4_bin",
-              "comment": "PK_AUTO_RANDOM_BITS=5"
+              "charset": "utf8mb4",
+              "comment": "PK_AUTO_RANDOM_BITS=5",
+              "sharding_info": "PK_AUTO_RANDOM_BITS=5, RANGE BITS=54"
             }
           ]
         }

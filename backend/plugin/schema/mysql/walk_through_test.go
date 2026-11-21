@@ -126,7 +126,7 @@ func TestWalkThroughCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
 }
 
 // TestWalkThroughSRIDInvisible verifies the omni catalog -> metadatapb.ColumnMetadata
-// conversion (tableToProto) carries the spatial SRID (presence + value, including the
+// conversion (Catalog.DatabaseMetadata) carries the spatial SRID (presence + value, including the
 // valid explicit SRID 0) and the INVISIBLE flag. Without this the WalkThroughWithContext
 // simulation path — used to compute the schema a changeset would produce — would silently
 // drop these attributes, mirroring the v1-converter gap.

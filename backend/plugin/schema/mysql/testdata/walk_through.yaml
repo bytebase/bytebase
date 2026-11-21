@@ -161,7 +161,9 @@
                   "position": 2,
                   "type": "varchar(255)",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charsetInherited": true,
+                  "collationInherited": true
                 }
               ],
               "collation": "utf8mb4_0900_ai_ci",
@@ -214,7 +216,9 @@
                   "position": 3,
                   "type": "varchar(255)",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charsetInherited": true,
+                  "collationInherited": true
                 },
                 {
                   "name": "d",
@@ -602,12 +606,15 @@
                   "nullable": true,
                   "type": "text",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charsetInherited": true,
+                  "collationInherited": true
                 },
                 {
                   "name": "c",
                   "position": 3,
-                  "type": "int"
+                  "type": "int",
+                  "defaultDropped": true
                 }
               ],
               "collation": "utf8mb4_0900_ai_ci",
@@ -654,7 +661,9 @@
                   "nullable": true,
                   "type": "text",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charsetInherited": true,
+                  "collationInherited": true
                 },
                 {
                   "name": "c",
@@ -775,7 +784,9 @@
                   "nullable": true,
                   "type": "varchar(20)",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charsetInherited": true,
+                  "collationInherited": true
                 }
               ],
               "collation": "utf8mb4_0900_ai_ci",
@@ -879,7 +890,9 @@
                   "position": 4,
                   "type": "varchar(255)",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charsetInherited": true,
+                  "collationInherited": true
                 },
                 {
                   "name": "e",
@@ -888,7 +901,9 @@
                   "nullable": true,
                   "type": "varchar(255)",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charsetInherited": true,
+                  "collationInherited": true
                 }
               ],
               "indexes": [
@@ -1045,7 +1060,9 @@
                   "type": "varchar(255)",
                   "characterSet": "utf8mb4",
                   "collation": "utf8mb4_0900_ai_ci",
-                  "comment": "column c"
+                  "comment": "column c",
+                  "charsetInherited": true,
+                  "collationInherited": true
                 },
                 {
                   "name": "e",
@@ -1059,14 +1076,18 @@
                   "position": 5,
                   "type": "varchar(10)",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_polish_ci"
+                  "collation": "utf8mb4_polish_ci",
+                  "charsetInherited": true,
+                  "collationInherited": false
                 },
                 {
                   "name": "g",
                   "position": 6,
                   "type": "varchar(200)",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charsetInherited": false,
+                  "collationInherited": true
                 }
               ],
               "indexes": [
@@ -1148,7 +1169,9 @@
                   "nullable": true,
                   "type": "varchar(255)",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charsetInherited": true,
+                  "collationInherited": true
                 }
               ],
               "indexes": [
@@ -1187,7 +1210,9 @@
                   "nullable": true,
                   "type": "varchar(255)",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charsetInherited": true,
+                  "collationInherited": true
                 }
               ],
               "indexes": [
@@ -1264,28 +1289,36 @@
                   "position": 5,
                   "type": "tinytext",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charsetInherited": true,
+                  "collationInherited": true
                 },
                 {
                   "name": "c6",
                   "position": 6,
                   "type": "text",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charsetInherited": true,
+                  "collationInherited": true
                 },
                 {
                   "name": "c7",
                   "position": 7,
                   "type": "mediumtext",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charsetInherited": true,
+                  "collationInherited": true
                 },
                 {
                   "name": "c8",
                   "position": 8,
                   "type": "longtext",
                   "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_0900_ai_ci"
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "charsetInherited": true,
+                  "collationInherited": true
                 },
                 {
                   "name": "c9",
