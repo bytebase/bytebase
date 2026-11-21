@@ -14,25 +14,19 @@ func init() {
 }
 
 func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
-	summary := &base.ChangeSummary{
-		ChangedResources: model.NewChangedResources(dbMetadata),
-	}
-	for _, a := range asts {
+	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, false, func(a base.AST) (base.StatementChanges, bool, error) {
 		wrapped, ok := a.(*AST)
 		if !ok {
-			return nil, errors.New("expected TiDB AST")
+			return base.StatementChanges{}, false, errors.New("expected TiDB AST")
 		}
 		changes := analysis.ExtractChangedResources(wrapped.Node, database, wrapped.Text)
-		for _, resource := range changes.Resources {
-			if resource.DatabaseOnly {
-				summary.ChangedResources.AddDatabase(resource.Database)
-				continue
-			}
-			summary.ChangedResources.AddTable(resource.Database, "", &storepb.ChangedResourceTable{Name: resource.Table}, resource.AffectsData)
-		}
-		summary.DMLStatements = append(summary.DMLStatements, changes.DMLStatements...)
-		summary.DMLCount += changes.DMLCount
-		summary.InsertCount += changes.InsertCount
-	}
-	return summary, nil
+		return base.StatementChanges{
+			Resources: base.MapChangedResources(changes.Resources, func(r analysis.ChangedResource) base.ChangedResource {
+				return base.ChangedResource{Database: r.Database, Table: r.Table, AffectsData: r.AffectsData, DatabaseOnly: r.DatabaseOnly}
+			}),
+			DMLStatements: changes.DMLStatements,
+			DMLCount:      changes.DMLCount,
+			InsertCount:   changes.InsertCount,
+		}, true, nil
+	})
 }

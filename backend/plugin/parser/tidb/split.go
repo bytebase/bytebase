@@ -13,12 +13,7 @@ func init() {
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
 func SplitSQL(statement string) ([]base.Statement, error) {
-	segments := tidbparser.Split(statement)
-
-	result := make([]base.Statement, 0, len(segments))
-	positionMapper := base.NewByteOffsetPositionMapper(statement)
-	for _, seg := range segments {
-		result = append(result, base.NewStatementFromRange(statement, positionMapper, seg.ByteStart, seg.ByteEnd, seg.Empty()))
-	}
-	return result, nil
+	return base.BuildStatements(statement, tidbparser.Split(statement), func(s tidbparser.Segment) (int, int, bool) {
+		return s.ByteStart, s.ByteEnd, s.Empty()
+	}, true), nil
 }

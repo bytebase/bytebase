@@ -3,7 +3,6 @@ package redshift
 import (
 	"errors"
 	"fmt"
-	"unicode/utf8"
 
 	omniredshift "github.com/bytebase/omni/redshift"
 	"github.com/bytebase/omni/redshift/ast"
@@ -51,14 +50,7 @@ func convertError(err error, stmt base.Statement) error {
 		return err
 	}
 
-	position := ByteOffsetToRunePosition(stmt.Text, parseErr.Position)
-	if stmt.Start != nil {
-		localLine := position.Line
-		position.Line += stmt.Start.Line - 1
-		if localLine == 1 {
-			position.Column += stmt.Start.Column - 1
-		}
-	}
+	position := base.ShiftPosition(ByteOffsetToRunePosition(stmt.Text, parseErr.Position), stmt.Start)
 	return &base.SyntaxError{
 		Position:   position,
 		Message:    fmt.Sprintf("Syntax error at line %d: %s", position.Line, parseErr.Message),
@@ -67,28 +59,5 @@ func convertError(err error, stmt base.Statement) error {
 }
 
 func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
-	if byteOffset < 0 {
-		byteOffset = 0
-	}
-	if byteOffset > len(sql) {
-		byteOffset = len(sql)
-	}
-
-	line := int32(1)
-	runeCol := int32(0)
-	for i := 0; i < byteOffset; {
-		r, size := utf8.DecodeRuneInString(sql[i:])
-		if r == '\n' {
-			line++
-			runeCol = 0
-		} else {
-			runeCol++
-		}
-		i += size
-	}
-
-	return &storepb.Position{
-		Line:   line,
-		Column: runeCol + 1,
-	}
+	return base.ByteOffsetToRunePosition(sql, byteOffset)
 }

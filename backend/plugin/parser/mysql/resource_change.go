@@ -14,28 +14,22 @@ func init() {
 }
 
 func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
-	summary := &base.ChangeSummary{
-		ChangedResources: model.NewChangedResources(dbMetadata),
-	}
-	for _, unifiedAST := range asts {
-		node, ok := unifiedAST.(*AST)
+	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, false, func(a base.AST) (base.StatementChanges, bool, error) {
+		node, ok := a.(*AST)
 		if !ok {
-			return nil, errors.New("expected AST for MySQL")
+			return base.StatementChanges{}, false, errors.New("expected AST for MySQL")
 		}
-		addStatementChanges(summary, analysis.ExtractChangedResources(node.Node, currentDatabase, node.Text))
-	}
-	return summary, nil
+		return toBaseChanges(analysis.ExtractChangedResources(node.Node, currentDatabase, node.Text)), true, nil
+	})
 }
 
-func addStatementChanges(summary *base.ChangeSummary, changes analysis.StatementChanges) {
-	for _, resource := range changes.Resources {
-		if resource.DatabaseOnly {
-			summary.ChangedResources.AddDatabase(resource.Database)
-			continue
-		}
-		summary.ChangedResources.AddTable(resource.Database, "", &storepb.ChangedResourceTable{Name: resource.Table}, resource.AffectsData)
+func toBaseChanges(changes analysis.StatementChanges) base.StatementChanges {
+	return base.StatementChanges{
+		Resources: base.MapChangedResources(changes.Resources, func(r analysis.ChangedResource) base.ChangedResource {
+			return base.ChangedResource{Database: r.Database, Table: r.Table, AffectsData: r.AffectsData, DatabaseOnly: r.DatabaseOnly}
+		}),
+		DMLStatements: changes.DMLStatements,
+		DMLCount:      changes.DMLCount,
+		InsertCount:   changes.InsertCount,
 	}
-	summary.DMLStatements = append(summary.DMLStatements, changes.DMLStatements...)
-	summary.DMLCount += changes.DMLCount
-	summary.InsertCount += changes.InsertCount
 }

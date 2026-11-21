@@ -249,35 +249,8 @@ func lineColumnToByteOffset(sql string, line, column int) int {
 
 func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
 	list, err := SplitSQL(statement)
-	if err != nil || len(base.FilterEmptyStatements(list)) <= 1 {
+	if err != nil {
 		return statement, caretLine, caretOffset
 	}
-
-	caretLineZeroBased := caretLine - 1
-	start := 0
-	for i, s := range list {
-		endLine := int(s.End.GetLine()) - 1
-		endColumn := int(s.End.GetColumn())
-		if endLine > caretLineZeroBased || (endLine == caretLineZeroBased && endColumn >= caretOffset) {
-			start = i
-			break
-		}
-	}
-	if start == 0 {
-		return statement, caretLine, caretOffset
-	}
-
-	previousEndLine := int(list[start-1].End.GetLine()) - 1
-	previousEndColumn := int(list[start-1].End.GetColumn())
-	newCaretLine := caretLineZeroBased - previousEndLine + 1
-	newCaretOffset := caretOffset
-	if caretLineZeroBased == previousEndLine {
-		newCaretOffset = caretOffset - previousEndColumn + 1
-	}
-
-	var buf strings.Builder
-	for _, s := range list[start:] {
-		buf.WriteString(s.Text)
-	}
-	return buf.String(), newCaretLine, newCaretOffset
+	return base.StatementAtCaret(list, statement, caretLine, caretOffset, true)
 }

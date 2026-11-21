@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/bytebase/omni/starrocks/analysis"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -22,8 +23,8 @@ func TestIsSystemDatabase_StarRocks(t *testing.T) {
 		{"my_user_db", false},        // user database
 	}
 	for _, c := range cases {
-		if got := isSystemDatabase(c.database, true); got != c.want {
-			t.Errorf("isSystemDatabase(%q) = %v, want %v", c.database, got, c.want)
+		if got := analysis.IsSystemDatabase(c.database, true); got != c.want {
+			t.Errorf("analysis.IsSystemDatabase(%q) = %v, want %v", c.database, got, c.want)
 		}
 	}
 }

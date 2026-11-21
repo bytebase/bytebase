@@ -9,21 +9,13 @@ import (
 )
 
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
-	sqlTypeSet := make(map[storepb.StatementType]bool)
-	for _, ast := range asts {
+	return base.CollectUniqueStatementTypes(asts, func(ast base.AST) (storepb.StatementType, error) {
 		node, ok := GetNode(ast)
-		if ok {
-			sqlTypeSet[convertStatementType(analysis.StatementTypeOf(node))] = true
-			continue
+		if !ok {
+			return 0, errors.New("expected Oracle omni AST")
 		}
-
-		return nil, errors.New("expected Oracle omni AST")
-	}
-	var sqlTypes []storepb.StatementType
-	for sqlType := range sqlTypeSet {
-		sqlTypes = append(sqlTypes, sqlType)
-	}
-	return sqlTypes, nil
+		return convertStatementType(analysis.StatementTypeOf(node)), nil
+	})
 }
 
 func convertStatementType(t analysis.StatementType) storepb.StatementType {

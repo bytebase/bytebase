@@ -10,20 +10,13 @@ import (
 )
 
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
-	sqlTypeSet := make(map[storepb.StatementType]bool)
-	for _, ast := range asts {
-		node, ok := GetNode(ast)
+	return base.CollectUniqueStatementTypes(asts, func(a base.AST) (storepb.StatementType, error) {
+		node, ok := GetNode(a)
 		if !ok {
-			return nil, errors.New("expected TiDB AST")
+			return 0, errors.New("expected TiDB AST")
 		}
-		t := getStatementType(node)
-		sqlTypeSet[t] = true
-	}
-	var sqlTypes []storepb.StatementType
-	for sqlType := range sqlTypeSet {
-		sqlTypes = append(sqlTypes, sqlType)
-	}
-	return sqlTypes, nil
+		return getStatementType(node), nil
+	})
 }
 
 func getStatementType(node omniast.Node) storepb.StatementType {

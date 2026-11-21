@@ -1,8 +1,6 @@
 package redshift
 
 import (
-	"strings"
-
 	"github.com/bytebase/omni/redshift/analysis"
 	"github.com/pkg/errors"
 
@@ -11,49 +9,25 @@ import (
 )
 
 // StatementTypeWithPosition contains statement type and its position information.
-type StatementTypeWithPosition struct {
-	Type storepb.StatementType
-	// Line is the one-based line number where the statement ends.
-	Line int
-	Text string
-}
+type StatementTypeWithPosition = base.StatementTypeWithPosition
 
 // GetStatementTypesWithPosition returns statement types with position information.
 // The line numbers are one-based.
 func GetStatementTypesWithPosition(asts []base.AST) ([]StatementTypeWithPosition, error) {
-	if len(asts) == 0 {
-		return []StatementTypeWithPosition{}, nil
-	}
-
-	var allResults []StatementTypeWithPosition
-	for _, unifiedAST := range asts {
+	return base.CollectStatementTypesWithPosition(asts, func(unifiedAST base.AST) ([]storepb.StatementType, string, bool, error) {
 		wrapped, ok := unifiedAST.(*AST)
 		if !ok {
-			return nil, errors.New("expected Redshift omni AST")
+			return nil, "", false, errors.New("expected Redshift omni AST")
 		}
 		if wrapped.Node == nil {
-			continue
+			return nil, "", false, nil
 		}
-
 		stmtType := convertStatementType(analysis.StatementTypeOf(wrapped.Node))
 		if stmtType == storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED {
-			continue
+			return nil, "", false, nil
 		}
-
-		line := 0
-		if wrapped.StartPosition != nil {
-			line = int(wrapped.StartPosition.Line)
-		}
-		line += strings.Count(wrapped.Text, "\n")
-
-		allResults = append(allResults, StatementTypeWithPosition{
-			Type: stmtType,
-			Line: line,
-			Text: wrapped.Text,
-		})
-	}
-
-	return allResults, nil
+		return []storepb.StatementType{stmtType}, wrapped.Text, true, nil
+	})
 }
 
 // GetStatementTypes returns only the statement types as strings.
@@ -63,11 +37,7 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	if err != nil {
 		return nil, err
 	}
-	types := make([]storepb.StatementType, len(results))
-	for i, r := range results {
-		types[i] = r.Type
-	}
-	return types, nil
+	return base.ExtractTypesFromPositions(results), nil
 }
 
 func convertStatementType(t analysis.StatementType) storepb.StatementType {

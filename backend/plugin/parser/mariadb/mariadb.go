@@ -61,15 +61,7 @@ func convertError(err error, stmt base.Statement) error {
 		return err
 	}
 
-	pos := ByteOffsetToRunePosition(stmt.Text, parseErr.Position)
-
-	// Offset by the statement's 1-based start; its column applies only to the statement's first line.
-	if stmt.Start != nil {
-		if pos.Line == 1 {
-			pos.Column += stmt.Start.Column - 1
-		}
-		pos.Line += stmt.Start.Line - 1
-	}
+	pos := base.ShiftPosition(ByteOffsetToRunePosition(stmt.Text, parseErr.Position), stmt.Start)
 
 	msg := fmt.Sprintf("Syntax error at line %d:%d: %s", pos.Line, pos.Column, parseErr.Message)
 	if parseErr.RelatedText != "" {

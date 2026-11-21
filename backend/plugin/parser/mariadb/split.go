@@ -16,12 +16,7 @@ func init() {
 // statements (BEGIN...END, IF...END IF, etc.) and DELIMITER without
 // requiring valid SQL.
 func SplitSQL(statement string) ([]base.Statement, error) {
-	segments := mariadbparser.Split(statement)
-
-	result := make([]base.Statement, 0, len(segments))
-	positionMapper := base.NewByteOffsetPositionMapper(statement)
-	for _, seg := range segments {
-		result = append(result, base.NewStatementFromRange(statement, positionMapper, seg.ByteStart, seg.ByteEnd, seg.Empty()))
-	}
-	return result, nil
+	return base.BuildStatements(statement, mariadbparser.Split(statement), func(s mariadbparser.Segment) (int, int, bool) {
+		return s.ByteStart, s.ByteEnd, s.Empty()
+	}, true), nil
 }

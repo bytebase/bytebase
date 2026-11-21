@@ -4,13 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/oracle/analysis"
 	pkgerrors "github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
@@ -36,7 +34,7 @@ func resolveQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statem
 			return nil, base.MixUserSystemTablesError
 		}
 		if errors.Is(err, analysis.ErrMixUserSystemTables) {
-			return nil, mixedTablesError{err}
+			return nil, &base.MixedTablesError{Cause: err}
 		}
 		return nil, err
 	}
@@ -67,7 +65,7 @@ func newCatalog(ctx context.Context, gCtx base.GetQuerySpanContext) analysis.Cat
 			if database == nil {
 				return nil, nil
 			}
-			return &catalogDatabase{database: database}, nil
+			return &base.UnnamedSchemaDatabase{Database: database}, nil
 		}
 	}
 	if gCtx.GetLinkedDatabaseMetadataFunc != nil {
@@ -79,42 +77,10 @@ func newCatalog(ctx context.Context, gCtx base.GetQuerySpanContext) analysis.Cat
 			if database == nil {
 				return linkedInstance, name, nil, nil
 			}
-			return linkedInstance, name, &catalogDatabase{database: database}, nil
+			return linkedInstance, name, &base.UnnamedSchemaDatabase{Database: database}, nil
 		}
 	}
 	return catalog
-}
-
-// catalogDatabase is a database's unnamed schema, where Oracle metadata keeps
-// its objects.
-type catalogDatabase struct {
-	database *model.DatabaseMetadata
-}
-
-func (d *catalogDatabase) HasSchema() bool { return d.database.GetSchemaMetadata("") != nil }
-
-func (d *catalogDatabase) GetTable(name string) *metadata.TableMetadata {
-	table := d.database.GetSchemaMetadata("").GetTable(name)
-	if table == nil {
-		return nil
-	}
-	return table.GetProto()
-}
-
-func (d *catalogDatabase) GetView(name string) *metadata.ViewMetadata {
-	return d.database.GetSchemaMetadata("").GetView(name)
-}
-
-func (d *catalogDatabase) GetMaterializedView(name string) *metadata.MaterializedViewMetadata {
-	return d.database.GetSchemaMetadata("").GetMaterializedView(name)
-}
-
-func (d *catalogDatabase) GetExternalTable(name string) *metadata.ExternalTableMetadata {
-	table := d.database.GetSchemaMetadata("").GetExternalTable(name)
-	if table == nil {
-		return nil
-	}
-	return table.GetProto()
 }
 
 // omniNotFoundError carries a lookup error that holds a ResourceNotFoundError
@@ -157,17 +123,6 @@ func toOmniError(err error) error {
 	}
 }
 
-// mixedTablesError is a resolution error that wraps omni's
-// ErrMixUserSystemTables, as a view reading user and system tables does; it
-// still matches base.MixUserSystemTablesError.
-type mixedTablesError struct {
-	error
-}
-
-func (mixedTablesError) Is(target error) bool { return target == base.MixUserSystemTablesError }
-
-func (e mixedTablesError) Unwrap() error { return e.error }
-
 func convertNotFoundError(err *analysis.NotFoundError) *base.ResourceNotFoundError {
 	return &base.ResourceNotFoundError{
 		Err:          err.Err,
@@ -182,52 +137,22 @@ func convertNotFoundError(err *analysis.NotFoundError) *base.ResourceNotFoundErr
 }
 
 func convertQueryType(t analysis.QueryType) base.QueryType {
-	switch t {
-	case analysis.Select:
-		return base.Select
-	case analysis.Explain:
-		return base.Explain
-	case analysis.SelectInfoSchema:
-		return base.SelectInfoSchema
-	case analysis.DDL:
-		return base.DDL
-	case analysis.DML:
-		return base.DML
-	default:
-		return base.QueryTypeUnknown
-	}
+	return base.ConvertQueryType(t, analysis.Select, analysis.Explain, analysis.SelectInfoSchema, analysis.DDL, analysis.DML)
 }
 
 func convertColumnSet(set analysis.ColumnSet) base.SourceColumnSet {
-	if set == nil {
-		return nil
-	}
-	result := make(base.SourceColumnSet, len(set))
-	for column := range set {
-		result[base.ColumnResource{
-			Instance: column.Instance,
-			Server:   column.Server,
-			Database: column.Database,
-			Schema:   column.Schema,
-			Table:    column.Table,
-			Column:   column.Column,
-		}] = true
-	}
-	return result
+	return base.ConvertColumnSet(set, func(c analysis.ColumnResource) base.ColumnResource {
+		return base.ColumnResource{Instance: c.Instance, Server: c.Server, Database: c.Database, Schema: c.Schema, Table: c.Table, Column: c.Column}
+	})
 }
 
 func convertResults(results []analysis.QuerySpanResult) []base.QuerySpanResult {
-	if results == nil {
-		return nil
-	}
-	converted := make([]base.QuerySpanResult, 0, len(results))
-	for _, result := range results {
-		converted = append(converted, base.QuerySpanResult{
-			Name:          result.Name,
-			SourceColumns: convertColumnSet(result.SourceColumns),
-			IsPlainField:  result.IsPlainField,
-			Invisible:     result.Invisible,
-		})
-	}
-	return converted
+	return base.ConvertQuerySpanResults(results, func(r analysis.QuerySpanResult) base.QuerySpanResult {
+		return base.QuerySpanResult{
+			Name:          r.Name,
+			SourceColumns: convertColumnSet(r.SourceColumns),
+			IsPlainField:  r.IsPlainField,
+			Invisible:     r.Invisible,
+		}
+	})
 }

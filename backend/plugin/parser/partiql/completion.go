@@ -2,7 +2,6 @@ package partiql
 
 import (
 	"context"
-	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -34,13 +33,12 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	pos := lineOffsetToBytePos(statement, caretLine, caretOffset)
 	candidates := completion.CompleteWithMetadata(statement, pos, cat, protoMeta)
 
-	candidateMap := make(map[string]base.Candidate, len(candidates))
-	for _, c := range candidates {
+	return base.DeduplicateCandidates(candidates, func(c completion.Candidate) (base.Candidate, bool) {
 		var candidateType base.CandidateType
 		switch c.Kind {
 		case "keyword":
 			if cCtx.Scene == base.SceneTypeQuery && isDMLKeyword(c.Text) {
-				continue
+				return base.Candidate{}, false
 			}
 			candidateType = base.CandidateTypeKeyword
 		case "table":
@@ -50,27 +48,11 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 		default:
 			candidateType = base.CandidateTypeNone
 		}
-		key := string(candidateType) + ":" + c.Text
-		candidateMap[key] = base.Candidate{
+		return base.Candidate{
 			Type: candidateType,
 			Text: c.Text,
-		}
-	}
-
-	result := make([]base.Candidate, 0, len(candidateMap))
-	for _, c := range candidateMap {
-		result = append(result, c)
-	}
-	slices.SortFunc(result, func(a, b base.Candidate) int {
-		if a.Type != b.Type {
-			if a.Type < b.Type {
-				return -1
-			}
-			return 1
-		}
-		return strings.Compare(a.Text, b.Text)
-	})
-	return result, nil
+		}, true
+	}, base.CompareCandidateByTypeText), nil
 }
 
 // lineOffsetToBytePos converts a 1-based line number and 0-based

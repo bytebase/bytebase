@@ -11,20 +11,5 @@ import (
 // values mirror base.QueryType so this switch is total); an unexpected value
 // falls back to QueryTypeUnknown.
 func MapQueryType(t analysis.QueryType) base.QueryType {
-	switch t {
-	case analysis.Select:
-		return base.Select
-	case analysis.Explain:
-		return base.Explain
-	case analysis.SelectInfoSchema:
-		return base.SelectInfoSchema
-	case analysis.DDL:
-		return base.DDL
-	case analysis.DML:
-		return base.DML
-	case analysis.Unknown:
-		return base.QueryTypeUnknown
-	default:
-		return base.QueryTypeUnknown
-	}
+	return base.ConvertQueryType(t, analysis.Select, analysis.Explain, analysis.SelectInfoSchema, analysis.DDL, analysis.DML)
 }
