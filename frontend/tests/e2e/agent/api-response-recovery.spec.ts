@@ -8,6 +8,7 @@ import {
 import { GetSettingRequestSchema } from "../../../src/types/proto-es/v1/setting_service_pb";
 import { DeterministicProvider } from "../agent-token-budget/token-budget.fixture";
 import { loadTestEnv } from "../framework/env";
+import { loginBrowserContext } from "../framework/sign-in";
 
 test.setTimeout(90_000);
 
@@ -152,38 +153,52 @@ async function sendReferencedQuery(
   await button(page, "Send").click();
 }
 
-for (const confirmed of [false, true]) {
-  test(`all-denied Query recovery ${confirmed ? "prepares only a member-reviewed draft after consent" : "stops after declined consent without retry or draft"}`, async ({
-    page,
-    context,
-  }) => {
-    const env = loadTestEnv();
-    await env.api.login(env.adminEmail, env.adminPassword);
-    const previous = await env.api.getProject(env.project);
-    await env.api.updateProjectSettings(env.project, {
-      allowJustInTimeAccess: true,
-    });
-    const provider = new DeterministicProvider();
-    await provider.install(context);
-    const requests = observeChat(context);
-    const statement = "SELECT 1 AS value";
-    const body = { name: env.database, statement, limit: 1 };
-    const completed = confirmed
-      ? "The access request is ready for review, not submitted."
-      : "The denied query stopped without requesting access.";
-    let queries = 0;
-    const writes: string[] = [];
-    page.on("request", (request) => {
-      const path = new URL(request.url()).pathname;
-      if (
-        request.method() === "POST" &&
-        /\/(?:Create|Update|Delete|Approve|BatchRun)[A-Z]/.test(path)
-      )
-        writes.push(path);
-    });
-    await context.route("**/bytebase.v1.SQLService/Query", async (route) => {
+async function queryRecoveryJourney(
+  page: Page,
+  context: BrowserContext,
+  confirmed: boolean,
+  restricted = false
+) {
+  const env = loadTestEnv();
+  await env.api.login(env.adminEmail, env.adminPassword);
+  const previous = await env.api.getProject(env.project);
+  const { workspace } = await env.api.getActuatorInfo();
+  const memberEmail = restricted
+    ? `agent-query-viewer-${Date.now()}@example.com`
+    : undefined;
+  const originalWorkspacePolicy = restricted
+    ? await env.api.getWorkspaceIamPolicy(workspace)
+    : undefined;
+  const originalProjectPolicy = restricted
+    ? await env.api.getProjectIamPolicy(env.project)
+    : undefined;
+  const provider = new DeterministicProvider();
+  await provider.install(context);
+  const requests = observeChat(context);
+  const statement = "SELECT 1 AS value";
+  const body = { name: env.database, statement, limit: 1 };
+  const completed = confirmed
+    ? "The access request is ready for review, not submitted."
+    : "The denied query stopped without requesting access.";
+  let queries = 0;
+  const writes: string[] = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (
+      request.method() === "POST" &&
+      path === "/bytebase.v1.SQLService/Query"
+    ) {
       ++queries;
-      expect(route.request().postDataJSON()).toEqual(body);
+      expect(request.postDataJSON()).toEqual(body);
+    }
+    if (
+      request.method() === "POST" &&
+      /\/(?:Create|Update|Delete|Approve|BatchRun)[A-Z]/.test(path)
+    )
+      writes.push(path);
+  });
+  if (!restricted)
+    await context.route("**/bytebase.v1.SQLService/Query", async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -200,108 +215,193 @@ for (const confirmed of [false, true]) {
         }),
       });
     });
-    provider.respond(tool("query-skill", "get_skill", { name: "query" }));
+  provider.respond(tool("query-skill", "get_skill", { name: "query" }));
+  provider.respond(
+    tool("query-api", "search_api", { operationId: "SQLService/Query" })
+  );
+  provider.respond(
+    tool("query-call", "call_api", { operationId: "SQLService/Query", body })
+  );
+  provider.respond(
+    tool("eligibility", "get_just_in_time_overview", {
+      project: env.project,
+      database: env.database,
+    })
+  );
+  provider.respond(
+    tool("access-consent", "ask_user", {
+      kind: "confirm",
+      prompt:
+        "The query was denied because bb.sql.select is missing. Request temporary access for this exact query?",
+      confirmLabel: "Request temporary access",
+      cancelLabel: "Not now",
+    })
+  );
+  if (confirmed) {
+    provider.respond(tool("jit-skill", "get_skill", { name: "just-in-time" }));
     provider.respond(
-      tool("query-api", "search_api", { operationId: "SQLService/Query" })
-    );
-    provider.respond(
-      tool("query-call", "call_api", { operationId: "SQLService/Query", body })
-    );
-    provider.respond(
-      tool("eligibility", "get_just_in_time_overview", {
+      tool("access-draft", "prepare_access_grant_draft", {
         project: env.project,
         database: env.database,
+        statement,
+        unmask: false,
       })
     );
-    provider.respond(
-      tool("access-consent", "ask_user", {
-        kind: "confirm",
-        prompt:
-          "The query was denied because bb.sql.select is missing. Request temporary access for this exact query?",
-        confirmLabel: "Request temporary access",
-        cancelLabel: "Not now",
-      })
-    );
-    if (confirmed) {
-      provider.respond(
-        tool("jit-skill", "get_skill", { name: "just-in-time" })
+  }
+  provider.respond(done(completed, confirmed));
+  try {
+    if (memberEmail) {
+      const password = "e2e-agent-query-viewer-1!";
+      await env.api.createUser(memberEmail, password, "Agent Query Viewer");
+      await env.api.addWorkspaceRoleMember(
+        workspace,
+        memberEmail,
+        "roles/workspaceMember"
       );
-      provider.respond(
-        tool("access-draft", "prepare_access_grant_draft", {
+      await env.api.appendProjectBinding(env.project, "roles/projectViewer", [
+        `user:${memberEmail}`,
+      ]);
+      await loginBrowserContext(context, env.baseURL, memberEmail, password);
+      const currentUser = await context.request.get(
+        `${env.baseURL}/v1/users/me`
+      );
+      expect(currentUser.ok()).toBe(true);
+      expect(await currentUser.json()).toMatchObject({ email: memberEmail });
+    }
+    await env.api.updateProjectSettings(env.project, {
+      allowJustInTimeAccess: true,
+    });
+    await open(page, env.baseURL);
+    await sendReferencedQuery(page, env, statement);
+    await expect(button(page, "Allow once")).toBeEnabled();
+    expect(queries).toBe(0);
+    const queryResponse = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/bytebase.v1.SQLService/Query"
+    );
+    await button(page, "Allow once").click();
+    const response = await queryResponse;
+    expect(response.status()).toBe(200);
+    expect(await response.json()).toMatchObject({
+      results: [
+        {
+          error: expect.any(String),
+          permissionDenied: {
+            requiredPermissions: ["bb.sql.select"],
+            resources: [env.database],
+          },
+        },
+      ],
+    });
+    await expect(button(page, "Request temporary access")).toBeVisible();
+    expect(queries).toBe(1);
+    expect(writes).toEqual([]);
+    expect(resultOf(requests, "query-call")).toMatchObject({
+      status: 200,
+      apiRecovery: { kind: "query-access-denied" },
+      agentExecution: { reason: "query-result-error", effects: "possible" },
+    });
+    expect(guidanceOf(afterTool(requests, "query-call"))).toContain(
+      "Wait for response.confirmed"
+    );
+    expect(resultOf(requests, "eligibility")).toMatchObject({
+      justInTime: { eligible: true, create: { status: "allowed" } },
+    });
+    await expect(
+      windowOf(page).locator("[data-agent-action-request-access]")
+    ).toHaveCount(0);
+    await button(
+      page,
+      confirmed ? "Request temporary access" : "Not now"
+    ).click();
+    await expect(
+      windowOf(page).getByText(completed, { exact: true })
+    ).toBeVisible();
+    expect(resultOf(requests, "access-consent")).toMatchObject({ confirmed });
+    expect(queries).toBe(1);
+    expect(writes).toEqual([]);
+    const draft = windowOf(page).locator("[data-agent-action-request-access]");
+    if (confirmed) {
+      expect(resultOf(requests, "access-draft")).toMatchObject({
+        status: "unsaved",
+        draft: {
           project: env.project,
-          database: env.database,
+          sourceDatabase: env.database,
           statement,
           unmask: false,
-        })
-      );
-    }
-    provider.respond(done(completed, confirmed));
-    try {
-      await open(page, env.baseURL);
-      await sendReferencedQuery(page, env, statement);
-      await expect(button(page, "Allow once")).toBeEnabled();
-      expect(queries).toBe(0);
-      await button(page, "Allow once").click();
-      await expect(button(page, "Request temporary access")).toBeVisible();
-      expect(queries).toBe(1);
-      expect(writes).toEqual([]);
-      expect(resultOf(requests, "query-call")).toMatchObject({
-        status: 200,
-        apiRecovery: { kind: "query-access-denied" },
-        agentExecution: { reason: "query-result-error", effects: "possible" },
+        },
       });
-      expect(guidanceOf(afterTool(requests, "query-call"))).toContain(
-        "Wait for response.confirmed"
-      );
-      expect(resultOf(requests, "eligibility")).toMatchObject({
-        justInTime: { eligible: true },
-      });
-      await expect(
-        windowOf(page).locator("[data-agent-action-request-access]")
-      ).toHaveCount(0);
-      await button(
-        page,
-        confirmed ? "Request temporary access" : "Not now"
-      ).click();
-      await expect(
-        windowOf(page).getByText(completed, { exact: true })
-      ).toBeVisible();
-      expect(resultOf(requests, "access-consent")).toMatchObject({ confirmed });
-      expect(queries).toBe(1);
-      expect(writes).toEqual([]);
-      const draft = windowOf(page).locator(
-        "[data-agent-action-request-access]"
-      );
-      if (confirmed) {
-        expect(resultOf(requests, "access-draft")).toMatchObject({
-          status: "unsaved",
-          draft: {
-            project: env.project,
-            sourceDatabase: env.database,
-            statement,
-            unmask: false,
-          },
+      await expect(draft).toBeVisible();
+      if (restricted) {
+        await draft.click();
+        const drawer = page.getByRole("dialog", {
+          name: "Request access grant",
+          exact: true,
         });
-        await expect(draft).toBeVisible();
-      } else {
-        await expect(draft).toHaveCount(0);
-        expect(
-          requests
-            .flatMap((request) => request.messages)
-            .flatMap((message) => message.toolCalls)
-            .some((call) => call.name === "prepare_access_grant_draft")
-        ).toBe(false);
+        await expect(drawer).toBeVisible();
+        await expect(
+          drawer.getByRole("code").getByText(statement, { exact: true })
+        ).toBeVisible();
+        await expect(
+          drawer.getByRole("checkbox", { name: "See unmasked sensitive data" })
+        ).not.toBeChecked();
+        expect(queries).toBe(1);
+        expect(writes).toEqual([]);
       }
-      await expect(button(page, "Allow once")).toBeHidden();
-      expect(provider.unexpectedCalls).toBe(0);
-      expect(provider.calls).toBe(confirmed ? 8 : 6);
-    } finally {
-      await env.api.updateProjectSettings(env.project, {
-        allowJustInTimeAccess: !!previous.allowJustInTimeAccess,
+    } else {
+      await expect(draft).toHaveCount(0);
+      expect(
+        requests
+          .flatMap((request) => request.messages)
+          .flatMap((message) => message.toolCalls)
+          .some((call) => call.name === "prepare_access_grant_draft")
+      ).toBe(false);
+    }
+    await expect(button(page, "Allow once")).toBeHidden();
+    expect(provider.unexpectedCalls).toBe(0);
+    expect(provider.calls).toBe(confirmed ? 8 : 6);
+  } finally {
+    await env.api.updateProjectSettings(env.project, {
+      allowJustInTimeAccess: !!previous.allowJustInTimeAccess,
+    });
+    if (originalWorkspacePolicy) {
+      const latest = await env.api.getWorkspaceIamPolicy(workspace);
+      await env.api.setWorkspaceIamPolicy(workspace, {
+        ...originalWorkspacePolicy,
+        etag: latest.etag,
       });
     }
+    if (originalProjectPolicy) {
+      const latest = await env.api.getProjectIamPolicy(env.project);
+      await env.api.setProjectIamPolicy(env.project, {
+        ...originalProjectPolicy,
+        etag: latest.etag,
+      });
+    }
+    if (memberEmail) await env.api.deleteUser(memberEmail);
+  }
+}
+
+for (const confirmed of [false, true]) {
+  test(`all-denied Query recovery ${confirmed ? "prepares only a member-reviewed draft after consent" : "stops after declined consent without retry or draft"}`, async ({
+    page,
+    context,
+  }) => {
+    await queryRecoveryJourney(page, context, confirmed);
   });
 }
+
+test.describe("restricted-member query recovery", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  for (const confirmed of [false, true]) {
+    test(`real permission denial ${confirmed ? "opens an unsent Access Grant draft after consent" : "stops after declined consent"}`, async ({
+      page,
+      context,
+    }) => {
+      await queryRecoveryJourney(page, context, confirmed, true);
+    });
+  }
+});
 
 test("typed skill errors retain paid-feature guidance without leaking diagnostics or inventing HTTP", async ({
   page,
