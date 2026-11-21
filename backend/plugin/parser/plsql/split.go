@@ -16,15 +16,5 @@ func init() {
 // It uses omni's lexical Oracle splitter, which handles strings, comments,
 // SQL*Plus separators, and PL/SQL blocks without requiring valid SQL.
 func SplitSQL(statement string) ([]base.Statement, error) {
-	return convertStatements(statement, analysis.SplitStatements(statement)), nil
-}
-
-func SplitSQLForCompletion(statement string) ([]base.Statement, error) {
-	return convertStatements(statement, analysis.SplitStatementsForCompletion(statement)), nil
-}
-
-func convertStatements(statement string, statements []analysis.Statement) []base.Statement {
-	return base.BuildStatements(statement, statements, func(s analysis.Statement) (int, int, bool) {
-		return s.Start, s.End, s.Empty
-	}, false)
+	return base.OmniStatements(statement, analysis.SplitStatements(statement)), nil
 }

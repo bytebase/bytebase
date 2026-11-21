@@ -2,7 +2,6 @@ package doris
 
 import (
 	"context"
-	stderrors "errors"
 
 	"github.com/bytebase/omni/doris/analysis"
 
@@ -26,39 +25,21 @@ func GetQuerySpan(
 		IgnoreCaseSensitive: ignoreCaseSensitive,
 	})
 	if err != nil {
-		if stderrors.Is(err, analysis.ErrMixUserSystemTables) {
-			return nil, base.MixUserSystemTablesError
+		if mixErr := base.ConvertOmniMixTablesError(err); mixErr != nil {
+			return nil, mixErr
 		}
 		return nil, convertParseError(stmt.Text, err, stmt.Start)
 	}
 
-	sources := make(base.SourceColumnSet, len(resolved.SourceColumns))
-	for res := range resolved.SourceColumns {
-		sources[base.ColumnResource{
-			Database: res.Database,
-			Table:    res.Table,
-		}] = true
+	sources := base.OmniColumnSet(resolved.SourceColumns)
+	if sources == nil {
+		sources = base.SourceColumnSet{}
 	}
 
 	return &base.QuerySpan{
-		Type:             mapQueryType(resolved.Type),
+		Type:             base.OmniQueryType(resolved.Type),
 		SourceColumns:    sources,
 		PredicateColumns: base.SourceColumnSet{},
 		Results:          []base.QuerySpanResult{},
 	}, nil
-}
-
-func mapQueryType(qt analysis.QueryType) base.QueryType {
-	switch qt {
-	case analysis.QueryTypeSelect:
-		return base.Select
-	case analysis.QueryTypeSelectInfoSchema:
-		return base.SelectInfoSchema
-	case analysis.QueryTypeDML:
-		return base.DML
-	case analysis.QueryTypeDDL:
-		return base.DDL
-	default:
-		return base.QueryTypeUnknown
-	}
 }

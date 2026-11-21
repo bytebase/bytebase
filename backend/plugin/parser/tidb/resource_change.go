@@ -14,19 +14,11 @@ func init() {
 }
 
 func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
-	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, false, func(a base.AST) (base.StatementChanges, bool, error) {
+	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, false, func(a base.AST) (analysis.StatementChanges, bool, error) {
 		wrapped, ok := a.(*AST)
 		if !ok {
-			return base.StatementChanges{}, false, errors.New("expected TiDB AST")
+			return analysis.StatementChanges{}, false, errors.New("expected TiDB AST")
 		}
-		changes := analysis.ExtractChangedResources(wrapped.Node, database, wrapped.Text)
-		return base.StatementChanges{
-			Resources: base.MapChangedResources(changes.Resources, func(r analysis.ChangedResource) base.ChangedResource {
-				return base.ChangedResource{Database: r.Database, Table: r.Table, AffectsData: r.AffectsData, DatabaseOnly: r.DatabaseOnly}
-			}),
-			DMLStatements: changes.DMLStatements,
-			DMLCount:      changes.DMLCount,
-			InsertCount:   changes.InsertCount,
-		}, true, nil
+		return analysis.ExtractChangedResources(wrapped.Node, database, wrapped.Text), true, nil
 	})
 }

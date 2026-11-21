@@ -5,6 +5,7 @@ import (
 	"unicode/utf8"
 
 	lsp "github.com/bytebase/lsp-protocol"
+	omnianalysis "github.com/bytebase/omni/analysis"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
@@ -118,7 +119,7 @@ func ShiftPosition(pos, basePos *storepb.Position) *storepb.Position {
 
 // MapByteRangesToLSP converts 0-based byte-offset ranges into LSP ranges (0-based line, UTF-16 code-unit column)
 // using O(1) auxiliary memory via a streaming position cursor.
-func MapByteRangesToLSP[T any](sql string, byteRanges []T, bounds func(T) (start, end int)) []Range {
+func MapByteRangesToLSP(sql string, byteRanges []omnianalysis.ByteRange) []Range {
 	if byteRanges == nil {
 		return nil
 	}
@@ -126,13 +127,12 @@ func MapByteRangesToLSP[T any](sql string, byteRanges []T, bounds func(T) (start
 	mapper := &utf16PositionMapper{sql: sql}
 	ranges := make([]Range, 0, len(byteRanges))
 	for _, r := range byteRanges {
-		startOff, endOff := bounds(r)
-		if startOff < 0 || endOff > len(sql) || startOff > endOff {
+		if r.Start < 0 || r.End > len(sql) || r.Start > r.End {
 			continue
 		}
 		ranges = append(ranges, Range{
-			Start: mapper.position(startOff),
-			End:   mapper.position(endOff),
+			Start: mapper.position(r.Start),
+			End:   mapper.position(r.End),
 		})
 	}
 	return ranges
