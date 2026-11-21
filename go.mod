@@ -33,7 +33,6 @@ require (
 	github.com/bytebase/omni v0.0.0-20261121123411-fa2d8723db5c
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/cenkalti/backoff/v7 v7.0.3
-	github.com/cockroachdb/cockroachdb-parser v0.25.2
 	github.com/coreos/go-oidc v2.5.0+incompatible
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/github/gh-ost v1.1.11
@@ -172,6 +171,7 @@ require (
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.4.3 // indirect
+	github.com/cockroachdb/cockroachdb-parser v0.25.2 // indirect
 	github.com/cockroachdb/errors v1.11.3 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20241215232642-bb51bb14a506 // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect

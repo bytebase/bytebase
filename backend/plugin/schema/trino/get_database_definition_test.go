@@ -17,6 +17,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 		schema   string
 		table    *metadatapb.TableMetadata
 		expected string
+		wantErr  string
 	}{
 		{
 			name:    "Simple table",
@@ -54,13 +55,7 @@ CREATE TABLE IF NOT EXISTS "testschema"."testtable" (
 				Name:    "empty_table",
 				Columns: []*metadatapb.ColumnMetadata{},
 			},
-			expected: `CREATE SCHEMA IF NOT EXISTS "testschema";
-
-CREATE TABLE IF NOT EXISTS "testschema"."empty_table" (
-
-);
-
-`,
+			wantErr: "table testschema.empty_table has no columns",
 		},
 		{
 			name:    "Special characters in identifiers",
@@ -85,9 +80,8 @@ CREATE TABLE IF NOT EXISTS "test_schema"."test.table" (
 `,
 		},
 	}
-	a := require.New(t)
 	for _, tt := range tests {
-		t.Run(tt.name, func(_ *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			metadata := &metadatapb.DatabaseSchemaMetadata{
 				Name: tt.catalog,
 				Schemas: []*metadatapb.SchemaMetadata{
@@ -99,8 +93,12 @@ CREATE TABLE IF NOT EXISTS "test_schema"."test.table" (
 			}
 
 			result, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, metadata)
-			a.NoError(err)
-			a.Equal(tt.expected, result, tt.name)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr, tt.name)
+				return
+			}
+			require.NoError(t, err, tt.name)
+			require.Equal(t, tt.expected, result, tt.name)
 		})
 	}
 }
