@@ -65,6 +65,10 @@ type Server struct {
 	// API call. Zero means use the default (internalAPITimeout).
 	internalAPITimeoutOverride time.Duration
 
+	// formAnswerTimeoutOverride lets tests shorten the wait for a form's
+	// answer. Zero means use the default (formAnswerTimeout).
+	formAnswerTimeoutOverride time.Duration
+
 	// sessionIdleTimeout is the SessionTimeout the /mcp handler was built with,
 	// kept so a test can check the production value.
 	sessionIdleTimeout time.Duration
@@ -186,8 +190,11 @@ func newServerWithIdleTimeout(stores serverStore, profile *config.Profile, secre
 	// timeout the SDK keeps them until the process exits (BYT-10375). The
 	// abandoned sessions held at once are about the abandonment rate times this
 	// timeout. A client that returns after expiry gets 404 and must initialize
-	// again, as the spec requires. A call waiting on a form the client abandoned
-	// keeps its session open (BYT-10567).
+	// again, as the spec requires.
+	//
+	// The session closes only once its in-flight calls return. Until then the
+	// SDK keeps it, and a call that arrives gets 200 and an empty stream, not
+	// the 404.
 	streamable := mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
 		return s.mcpServer
 	}, &mcp.StreamableHTTPOptions{
@@ -207,6 +214,7 @@ func newServerWithIdleTimeout(stores serverStore, profile *config.Profile, secre
 	mcpServer.AddReceivingMiddleware(liveRequestMetadata)
 	mcpServer.AddReceivingMiddleware(nameSignedInAccount)
 	mcpServer.AddReceivingMiddleware(askInChatWithoutForm)
+	mcpServer.AddSendingMiddleware(s.expireUnansweredForms)
 
 	// Pin each session to the identity it was opened with. The SDK captures
 	// TokenInfo.UserID when a session is created and rejects later requests
@@ -237,6 +245,14 @@ const (
 
 	// mcpSessionIdleTimeout is documented at the handler that applies it.
 	mcpSessionIdleTimeout = time.Hour
+
+	// formAnswerTimeout bounds the wait for a form's answer. It is longer than
+	// confirmationLifetime, so a confirmation accepted after that still reaches
+	// the tool, which reports it stale, instead of failing with the SDK's raw
+	// error. It must stay below mcpSessionIdleTimeout, so that no wait for an
+	// abandoned form is left to hold a closing session (see SessionTimeout at
+	// the handler).
+	formAnswerTimeout = confirmationLifetime + time.Minute
 )
 
 // negotiateLegacyProtocol keeps a session's recorded revision equal to the one
@@ -293,6 +309,29 @@ func askInChatWithoutForm(next mcp.MethodHandler) mcp.MethodHandler {
 		}
 		return result, err
 	}
+}
+
+// expireUnansweredForms ends a tool call's wait for a form's answer at
+// formAnswerTimeout. Both forms, a write confirmation and a database choice,
+// reach the client as an elicitation the SDK sends through this middleware.
+func (s *Server) expireUnansweredForms(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		if _, isElicitation := req.GetParams().(*mcp.ElicitParams); !isElicitation {
+			return next(ctx, method, req)
+		}
+		ctx, cancel := context.WithTimeout(ctx, s.formTimeout())
+		defer cancel()
+		return next(ctx, method, req)
+	}
+}
+
+// formTimeout returns the effective wait for a form's answer, allowing tests
+// to override.
+func (s *Server) formTimeout() time.Duration {
+	if s.formAnswerTimeoutOverride > 0 {
+		return s.formAnswerTimeoutOverride
+	}
+	return formAnswerTimeout
 }
 
 // refuseSessionlessProtocol rejects requests announcing that revision or newer.
