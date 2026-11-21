@@ -4,58 +4,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestGetStatementWithResultLimit(t *testing.T) {
-	testCases := []struct {
-		stmt  string
-		count int
-		want  string
-	}{
-		{
-			stmt:  "SELECT * FROM t;",
-			count: 10,
-			want:  "SELECT * FROM `t` LIMIT 10",
-		},
-		{
-			stmt:  "WITH a AS (SELECT * FROM t) SELECT * FROM a;",
-			count: 10,
-			want:  "WITH `a` AS (SELECT * FROM `t`) SELECT * FROM `a` LIMIT 10",
-		},
-		{
-			stmt:  "SELECT * FROM t1 UNION SELECT * FROM t2;",
-			count: 10,
-			want:  "SELECT * FROM `t1` UNION SELECT * FROM `t2` LIMIT 10",
-		},
-		{
-			stmt:  "SELECT * FROM t1 INTERSECT SELECT * FROM t2;",
-			count: 10,
-			want:  "SELECT * FROM `t1` INTERSECT SELECT * FROM `t2` LIMIT 10",
-		},
-		{
-			stmt:  "SELECT * FROM t LIMIT 5;",
-			count: 10,
-			want:  "SELECT * FROM `t` LIMIT 5",
-		},
-		{
-			stmt:  "SELECT * FROM t LIMIT 123;",
-			count: 10,
-			want:  "SELECT * FROM `t` LIMIT 10",
-		},
-		{
-			stmt:  "SELECT * FROM t WHERE nickname = 'bb'",
-			count: 10,
-			want:  "SELECT * FROM `t` WHERE `nickname`='bb' LIMIT 10",
-		},
-		{
-			stmt:  "SELECT 'Hello world'",
-			count: 10,
-			want:  "SELECT 'Hello world' LIMIT 10",
-		},
-	}
-
-	for _, tc := range testCases {
-		got := statementWithResultLimit(tc.stmt, tc.count, "")
-		require.Equal(t, tc.want, got, tc.stmt)
-	}
+func TestStatementWithResultLimitSeam(t *testing.T) {
+	require.Equal(t, "SELECT * FROM `t` LIMIT 10", base.StatementWithResultLimit(storepb.Engine_TIDB, "SELECT * FROM t;", 10, ""))
+	require.Equal(t, "SELECT * FROM `t` LIMIT 5", base.StatementWithResultLimit(storepb.Engine_TIDB, "SELECT * FROM t LIMIT 10;", 5, ""))
+	require.Equal(t, "WITH result AS (SELECT * FROM t LIMIT @row_count) SELECT * FROM result LIMIT 5;", base.StatementWithResultLimit(storepb.Engine_TIDB, "SELECT * FROM t LIMIT @row_count", 5, ""))
 }

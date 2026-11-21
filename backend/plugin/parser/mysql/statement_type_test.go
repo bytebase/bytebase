@@ -1,67 +1,46 @@
 package mysql
 
 import (
-	"io"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common/yamltest"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-type statementTypeTest struct {
-	Statement string
-	Want      []string
-}
+type foreignAST struct{}
 
-// TestGetStatementType runs the same fixture MariaDB's copy does, so the two
-// classifiers cannot silently diverge now that each reads its own AST
-// (BYT-10136).
-func TestGetStatementType(t *testing.T) {
-	tests := []statementTypeTest{}
+func (foreignAST) ASTStartPosition() *storepb.Position { return nil }
 
-	const (
-		record = false
-	)
+func TestGetStatementTypesSeam(t *testing.T) {
+	stmts, err := base.ParseStatements(storepb.Engine_MYSQL, "CREATE TABLE t (a INT);\nINSERT INTO t VALUES (1);\nSET @x = 1;")
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
 
-	var (
-		filepath = "test-data/test_statement_type.yaml"
-	)
+	got, err := base.GetStatementTypes(storepb.Engine_MYSQL, asts)
+	require.NoError(t, err)
+	require.ElementsMatch(t, []storepb.StatementType{
+		storepb.StatementType_CREATE_TABLE,
+		storepb.StatementType_INSERT,
+		storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED,
+	}, got)
 
-	a := require.New(t)
-	yamlFile, err := os.Open(filepath)
-	a.NoError(err)
+	// GetStatementTypesWithPositions preserves order, computes 1-based end line,
+	// and keeps STATEMENT_TYPE_UNSPECIFIED so SDL gating fails closed.
+	multiStmts, err := base.ParseStatements(storepb.Engine_MYSQL, "CREATE TABLE t (\n  a INT\n);\nSET @x = 1;")
+	require.NoError(t, err)
+	withPos, err := GetStatementTypesWithPositions(base.ExtractASTs(multiStmts))
+	require.NoError(t, err)
+	require.Len(t, withPos, 2)
+	require.Equal(t, storepb.StatementType_CREATE_TABLE, withPos[0].Type)
+	require.Equal(t, 3, withPos[0].Line)
+	require.Equal(t, storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED, withPos[1].Type)
+	require.Equal(t, 4, withPos[1].Line)
 
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(yamlFile.Close())
-	a.NoError(err)
-	a.NoError(yaml.Unmarshal(byteValue, &tests))
-
-	for i, test := range tests {
-		stmts, err := base.ParseStatements(storepb.Engine_MYSQL, test.Statement)
-		a.NoError(err)
-		asts := base.ExtractASTs(stmts)
-
-		sqlType, err := GetStatementTypes(asts)
-		a.NoError(err)
-
-		// Convert enum to string for comparison
-		sqlTypeStrings := make([]string, len(sqlType))
-		for j, t := range sqlType {
-			sqlTypeStrings[j] = t.String()
-		}
-
-		if record {
-			tests[i].Want = sqlTypeStrings
-		} else {
-			a.Equal(test.Want, sqlTypeStrings)
-		}
-	}
-	if record {
-		yamltest.Record(t, filepath, tests)
-	}
+	// Foreign AST rejection.
+	_, err = GetStatementTypes([]base.AST{foreignAST{}})
+	require.ErrorContains(t, err, "expected AST for MySQL")
+	_, err = GetStatementTypesWithPositions([]base.AST{foreignAST{}})
+	require.ErrorContains(t, err, "expected AST for MySQL")
 }

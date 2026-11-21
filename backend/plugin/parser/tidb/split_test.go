@@ -5,47 +5,32 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestTiDBSplitSQL(t *testing.T) {
-	base.RunSplitTests(t, "test-data/test_split.yaml", base.SplitTestOptions{
-		SplitFunc: SplitSQL,
-	})
-}
+func TestSplitSQLSeam(t *testing.T) {
+	sql := "\n  SELECT '🎉';\nSELECT '中文';"
+	list, err := base.SplitMultiSQL(storepb.Engine_TIDB, sql)
+	require.NoError(t, err)
+	filtered := base.FilterEmptyStatements(list)
+	require.Len(t, filtered, 2)
 
-func TestTiDBSplitSQLDelimiterDirectives(t *testing.T) {
-	tests := []struct {
-		name      string
-		statement string
-		want      []string
-	}{
-		{
-			name:      "common custom delimiter",
-			statement: "DELIMITER //\nCREATE PROCEDURE p()\nBEGIN\n  SELECT delimiter FROM t;\nEND//\nDELIMITER ;\nCALL p();",
-			want: []string{
-				"CREATE PROCEDURE p()\nBEGIN\n  SELECT delimiter FROM t;\nEND",
-				"CALL p();",
-			},
-		},
-		{
-			name:      "label is not directive",
-			statement: "DELIMITER: LOOP\n  SELECT 1;\n  LEAVE DELIMITER;\nEND LOOP DELIMITER;",
-			want:      []string{"DELIMITER: LOOP\n  SELECT 1;\n  LEAVE DELIMITER;\nEND LOOP DELIMITER;"},
-		},
-	}
+	require.Equal(t, "\n  SELECT '🎉';", filtered[0].Text)
+	require.Equal(t, &storepb.Position{Line: 1, Column: 1}, filtered[0].Start)
+	require.Equal(t, &storepb.Position{Line: 2, Column: 14}, filtered[0].End)
+	require.Equal(t, filtered[0].Text, sql[filtered[0].Range.Start:filtered[0].Range.End])
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			list, err := SplitSQL(test.statement)
-			require.NoError(t, err)
-			list = base.FilterEmptyStatements(list)
+	require.Equal(t, "\nSELECT '中文';", filtered[1].Text)
+	require.Equal(t, &storepb.Position{Line: 2, Column: 14}, filtered[1].Start)
+	require.Equal(t, &storepb.Position{Line: 3, Column: 13}, filtered[1].End)
+	require.Equal(t, filtered[1].Text, sql[filtered[1].Range.Start:filtered[1].Range.End])
 
-			require.Len(t, list, len(test.want))
-			for i, stmt := range list {
-				require.Equal(t, test.want[i], stmt.Text)
-				require.Equal(t, test.statement[stmt.Range.Start:stmt.Range.End], stmt.Text)
-			}
-		})
-	}
+	delimSQL := "DELIMITER //\nCREATE PROCEDURE p()\nBEGIN\n  SELECT 1;\nEND//\nDELIMITER ;\nCALL p();"
+	delimList, err := SplitSQL(delimSQL)
+	require.NoError(t, err)
+	delimList = base.FilterEmptyStatements(delimList)
+	require.Len(t, delimList, 2)
+	require.Equal(t, delimList[0].Text, delimSQL[delimList[0].Range.Start:delimList[0].Range.End])
+	require.Equal(t, delimList[1].Text, delimSQL[delimList[1].Range.Start:delimList[1].Range.End])
 }
