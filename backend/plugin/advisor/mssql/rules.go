@@ -137,8 +137,11 @@ func init() {
 			)
 		}))
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
-		e.WhereDisallowFuncAndCalc(func(checkCtx advisor.Context, nodes []ast.Node) []v1review.Finding {
-			return mssqlv1review.StatementWhereDisallowFunctionsAndCalculations(nodes, e.SchemaOf(checkCtx))
+		e.WhereDisallowFuncAndCalc(func(checkCtx advisor.Context) func([]ast.Node) []v1review.Finding {
+			schema := e.SchemaOf(checkCtx)
+			return func(nodes []ast.Node) []v1review.Finding {
+				return mssqlv1review.StatementWhereDisallowFunctionsAndCalculations(nodes, schema)
+			}
 		}, false))
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT,
 		e.SimpleStmt(mssqlv1review.StatementWhereRequireSelect, code.StatementNoWhere, func(advisor.V1Stmt[ast.Node], v1review.Finding) string {

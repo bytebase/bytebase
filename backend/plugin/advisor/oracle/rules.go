@@ -137,9 +137,13 @@ func init() {
 		))
 	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN, oracleDMLDryRun(e))
 	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
-		e.WhereDisallowFuncAndCalc(func(checkCtx advisor.Context, nodes []ast.Node) []v1review.Finding {
+		e.WhereDisallowFuncAndCalc(func(checkCtx advisor.Context) func([]ast.Node) []v1review.Finding {
 			// Oracle sync stores only the connected owner's objects, under the anonymous schema "".
-			return oraclev1review.StatementWhereDisallowFunctionsAndCalculations(nodes, e.SchemaOf(checkCtx), "", checkCtx.CurrentDatabase)
+			schema := e.SchemaOf(checkCtx)
+			currentDB := checkCtx.CurrentDatabase
+			return func(nodes []ast.Node) []v1review.Finding {
+				return oraclev1review.StatementWhereDisallowFunctionsAndCalculations(nodes, schema, "", currentDB)
+			}
 		}, true))
 	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_TABLE_COMMENT,
 		e.TableComment(

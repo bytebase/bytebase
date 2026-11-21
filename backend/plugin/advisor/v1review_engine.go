@@ -476,8 +476,10 @@ func (e *V1Engine[N]) BackwardCompatibility(
 }
 
 // WhereDisallowFuncAndCalc builds STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS.
+// prepareFn resolves any per-review state (such as schema and search_path) once
+// before iterating over statements.
 func (e *V1Engine[N]) WhereDisallowFuncAndCalc(
-	fn func(Context, []N) []v1review.Finding,
+	prepareFn func(Context) func([]N) []v1review.Finding,
 	dedup bool,
 	posFn ...V1PosFunc[N],
 ) Func {
@@ -487,9 +489,10 @@ func (e *V1Engine[N]) WhereDisallowFuncAndCalc(
 		if err != nil {
 			return nil, err
 		}
+		fn := prepareFn(checkCtx)
 		var adviceList []*storepb.Advice
 		for i, stmt := range stmts {
-			for _, f := range fn(checkCtx, nodes[i:i+1:i+1]) {
+			for _, f := range fn(nodes[i : i+1 : i+1]) {
 				var content string
 				switch f.Code {
 				case v1review.FunctionOnIndexedColumn:

@@ -294,7 +294,8 @@ func init() {
 			},
 		))
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
-		e.WhereDisallowFuncAndCalc(func(checkCtx advisor.Context, nodes []ast.Node) []v1review.Finding {
+		e.WhereDisallowFuncAndCalc(func(checkCtx advisor.Context) func([]ast.Node) []v1review.Finding {
+			schema := e.SchemaOf(checkCtx)
 			var searchPath []string
 			if checkCtx.DBSchema != nil {
 				searchPath = model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil,
@@ -303,7 +304,9 @@ func init() {
 			if len(searchPath) == 0 {
 				searchPath = []string{"public"}
 			}
-			return pgv1review.StatementWhereDisallowFunctionsAndCalculations(nodes, e.SchemaOf(checkCtx), searchPath)
+			return func(nodes []ast.Node) []v1review.Finding {
+				return pgv1review.StatementWhereDisallowFunctionsAndCalculations(nodes, schema, searchPath)
+			}
 		}, false, e.PosFinding))
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT,
 		e.SimpleStmt(pgv1review.StatementWhereRequireSelect, code.StatementNoWhere, func(stmt advisor.V1Stmt[ast.Node], f v1review.Finding) string {
