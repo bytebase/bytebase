@@ -1,10 +1,8 @@
 package cockroachdb
 
 import (
-	"github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser/statements"
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/omni/cockroachdb/analysis"
+	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -24,7 +22,7 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 		return nil, err
 	}
 	var statementTypes []storepb.StatementType
-	for _, statementType := range analysis.StatementTypes(stmts) {
+	for _, statementType := range analysis.StatementTypesFromParsed(stmts) {
 		if value := storepb.StatementType(storepb.StatementType_value[string(statementType)]); value != storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED {
 			statementTypes = append(statementTypes, value)
 		}
@@ -49,7 +47,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		}
 	}
 
-	changes := analysis.ExtractChangedResources(stmts, database, searchPath, changeMetadata{dbMetadata: dbMetadata})
+	changes := analysis.ExtractChangedResourcesFromParsed(stmts, database, searchPath, changeMetadata{dbMetadata: dbMetadata})
 	summary := &base.ChangeSummary{
 		ChangedResources: model.NewChangedResources(dbMetadata),
 		DMLCount:         changes.DMLCount,
@@ -71,8 +69,8 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 	return summary, nil
 }
 
-func statementsFromASTs(asts []base.AST) (statements.Statements, error) {
-	stmts := make(statements.Statements, 0, len(asts))
+func statementsFromASTs(asts []base.AST) ([]analysis.ParsedStatement, error) {
+	stmts := make([]analysis.ParsedStatement, 0, len(asts))
 	for _, ast := range asts {
 		crdbAST, ok := ast.(*AST)
 		if !ok {
