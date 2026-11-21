@@ -2,7 +2,6 @@ package redshift
 
 import (
 	"context"
-	"database/sql"
 
 	omndriver "github.com/bytebase/omni/driver"
 
@@ -12,10 +11,8 @@ import (
 )
 
 // QueryConn runs the script on the driver's session, one result per statement.
-// The caller's *sql.Conn is unused: the contract's session is the driver's, and
-// it is the one a statement's settings hold on. Calls are serialized, as the
-// stream's one connection was.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+// Calls are serialized, as the stream's one connection was.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	d.sessionMu.Lock()
 	defer d.sessionMu.Unlock()
 	session, err := d.querySession(ctx)
@@ -41,11 +38,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		d.session = nil
 	}
 
-	converted := make([]*v1pb.QueryResult, 0, len(results))
-	for _, result := range results {
-		converted = append(converted, util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize))
-	}
-	return converted, nil
+	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, false), nil
 }
 
 // querySession returns the driver's session, opening it on first use. The caller

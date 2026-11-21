@@ -24,18 +24,18 @@ func TestQueryConnKeepsTheSession(t *testing.T) {
 	t.Cleanup(func() { exec(t, admin, "DROP DATABASE IF EXISTS "+database) })
 	driver := server.open(ctx, t, database)
 
-	results, err := driver.QueryConn(ctx, nil, "SET @bytebase_probe = 41", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	results, err := driver.QueryConn(ctx, "SET @bytebase_probe = 41", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Empty(t, results[0].Error)
 
-	results, err = driver.QueryConn(ctx, nil, "SELECT @bytebase_probe + 1 AS answer", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	results, err = driver.QueryConn(ctx, "SELECT @bytebase_probe + 1 AS answer", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Equal(t, []string{"answer"}, results[0].ColumnNames)
 	require.Equal(t, int64(42), results[0].Rows[0].Values[0].GetInt64Value())
 
-	results, err = driver.QueryConn(ctx, nil, "CREATE TEMPORARY TABLE tmp_state (a INT)", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	results, err = driver.QueryConn(ctx, "CREATE TEMPORARY TABLE tmp_state (a INT)", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Empty(t, results[0].Error)
@@ -44,7 +44,7 @@ func TestQueryConnKeepsTheSession(t *testing.T) {
 		"INSERT INTO tmp_state VALUES (7)",
 		"SELECT a FROM tmp_state",
 	} {
-		results, err = driver.QueryConn(ctx, nil, statement, db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err = driver.QueryConn(ctx, statement, db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err, statement)
 		require.Len(t, results, 1, statement)
 		require.Empty(t, results[0].Error, statement)
@@ -56,7 +56,7 @@ func TestQueryConnKeepsTheSession(t *testing.T) {
 	// A second session of the same server does not see the first one's
 	// temporary table: the state is the session's, not the pool's luck.
 	other := server.open(ctx, t, database)
-	results, err = other.QueryConn(ctx, nil, "SELECT a FROM tmp_state", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	results, err = other.QueryConn(ctx, "SELECT a FROM tmp_state", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Contains(t, results[0].Error, "doesn't exist")
@@ -75,12 +75,12 @@ func TestQueryConnDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
 	driver := server.open(ctx, t, database)
 
 	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 20}
-	_, err := driver.QueryConn(ctx, nil, "SET @bytebase_probe = 41", queryContext)
+	_, err := driver.QueryConn(ctx, "SET @bytebase_probe = 41", queryContext)
 	require.NoError(t, err)
 
 	canceledCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
 	defer cancel()
-	_, _ = driver.QueryConn(canceledCtx, nil, "SELECT SLEEP(10)", queryContext)
+	_, _ = driver.QueryConn(canceledCtx, "SELECT SLEEP(10)", queryContext)
 	require.NotNil(t, canceledCtx.Err(), "the statement must have run past its context")
 	// The adapter's contract is that the dead session is not kept; the next
 	// statement's connection is the pool's to pick, and the server may still be
@@ -107,7 +107,7 @@ func TestQueryConnMapsTheRequest(t *testing.T) {
 	)
 
 	t.Run("limit", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT id FROM t ORDER BY id", db.QueryContext{MaximumSQLResultSize: 1 << 20, Limit: 2})
+		results, err := driver.QueryConn(ctx, "SELECT id FROM t ORDER BY id", db.QueryContext{MaximumSQLResultSize: 1 << 20, Limit: 2})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, "SELECT id FROM t ORDER BY id LIMIT 2", results[0].Statement)
@@ -115,7 +115,7 @@ func TestQueryConnMapsTheRequest(t *testing.T) {
 	})
 
 	t.Run("explain json", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT * FROM t", db.QueryContext{
+		results, err := driver.QueryConn(ctx, "SELECT * FROM t", db.QueryContext{
 			MaximumSQLResultSize: 1 << 20,
 			Explain:              true,
 			Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
@@ -129,7 +129,7 @@ func TestQueryConnMapsTheRequest(t *testing.T) {
 	})
 
 	t.Run("affected rows", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "UPDATE t SET name = 'z' WHERE id = 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := driver.QueryConn(ctx, "UPDATE t SET name = 'z' WHERE id = 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, []string{"Affected Rows"}, results[0].ColumnNames)
@@ -137,14 +137,14 @@ func TestQueryConnMapsTheRequest(t *testing.T) {
 	})
 
 	t.Run("statement error", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT * FROM no_such_table", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := driver.QueryConn(ctx, "SELECT * FROM no_such_table", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Contains(t, results[0].Error, "doesn't exist")
 	})
 
 	t.Run("later results stand after an error", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT 1 AS a; SELECT * FROM no_such_table; SELECT 3 AS c", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := driver.QueryConn(ctx, "SELECT 1 AS a; SELECT * FROM no_such_table; SELECT 3 AS c", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 2)
 		require.Empty(t, results[0].Error)
@@ -156,7 +156,7 @@ func TestQueryConnMapsTheRequest(t *testing.T) {
 		// server's syntax error as that statement's result. The driver reads
 		// every statement of a script before it sends the first, so an
 		// unreadable script is the call's error and no statement runs.
-		_, err := driver.QueryConn(ctx, nil, "SELECT 1 AS a; SELECT FROM", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		_, err := driver.QueryConn(ctx, "SELECT 1 AS a; SELECT FROM", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.ErrorContains(t, err, "syntax error")
 	})
 }

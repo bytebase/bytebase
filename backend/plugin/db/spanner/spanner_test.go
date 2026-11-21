@@ -210,7 +210,7 @@ func TestAdapterAgainstTheEmulator(t *testing.T) {
 	require.Equal(t, "singers", postgresMetadata.Schemas[0].Tables[0].Name)
 
 	// A query's LIMIT is lowered into the statement the server runs.
-	results, err := driver.QueryConn(ctx, nil, `SELECT x FROM UNNEST([3, 1, 2]) AS x ORDER BY x`, db.QueryContext{
+	results, err := driver.QueryConn(ctx, `SELECT x FROM UNNEST([3, 1, 2]) AS x ORDER BY x`, db.QueryContext{
 		Limit:                2,
 		MaximumSQLResultSize: 100 * 1024 * 1024,
 	})
@@ -225,7 +225,7 @@ func TestAdapterAgainstTheEmulator(t *testing.T) {
 	require.Equal(t, []int64{1, 2}, values)
 
 	// A statement the server refuses rides on its result, and ends the script.
-	results, err = driver.QueryConn(ctx, nil, "SELECT * FROM NoSuchTable", db.QueryContext{
+	results, err = driver.QueryConn(ctx, "SELECT * FROM NoSuchTable", db.QueryContext{
 		MaximumSQLResultSize: 100 * 1024 * 1024,
 	})
 	require.NoError(t, err)
@@ -432,7 +432,7 @@ func TestExplainDMLWithoutRunningIt(t *testing.T) {
 	_, err = driver.Execute(ctx, fmt.Sprintf("INSERT INTO %s (Id, Total) VALUES (1, 10)", table), db.ExecuteOptions{})
 	require.NoError(t, err)
 
-	results, err := driver.QueryConn(ctx, nil, fmt.Sprintf(
+	results, err := driver.QueryConn(ctx, fmt.Sprintf(
 		"UPDATE %[1]s SET Total = Total + 1 WHERE Id = 1; SELECT Total FROM %[1]s", table,
 	), db.QueryContext{
 		Explain:              true,
@@ -446,7 +446,7 @@ func TestExplainDMLWithoutRunningIt(t *testing.T) {
 	}
 
 	// Analysing the DML wrote nothing.
-	results, err = driver.QueryConn(ctx, nil, fmt.Sprintf("SELECT Total FROM %s WHERE Id = 1", table), db.QueryContext{
+	results, err = driver.QueryConn(ctx, fmt.Sprintf("SELECT Total FROM %s WHERE Id = 1", table), db.QueryContext{
 		MaximumSQLResultSize: 100 * 1024 * 1024,
 	})
 	require.NoError(t, err)
@@ -467,7 +467,7 @@ func TestQueryConnLimitsQueryStartingWithWith(t *testing.T) {
 		// The rewrite keeps a non-literal LIMIT, so the driver caps the rows.
 		"WITH n AS (SELECT x FROM UNNEST([3, 1, 2]) AS x) SELECT x FROM n ORDER BY x LIMIT CAST(3 AS INT64)",
 	} {
-		results, err := driver.QueryConn(ctx, nil, statement, db.QueryContext{
+		results, err := driver.QueryConn(ctx, statement, db.QueryContext{
 			Limit:                2,
 			MaximumSQLResultSize: 100 * 1024 * 1024,
 		})
@@ -581,7 +581,7 @@ func TestQueryConnRunsEachStatementTheWayTheOldPathDid(t *testing.T) {
 	_, err = driver.Execute(ctx, fmt.Sprintf("INSERT INTO %s (Id, N) VALUES (1, 10)", table), db.ExecuteOptions{})
 	require.NoError(t, err)
 
-	results, err := driver.QueryConn(ctx, nil, fmt.Sprintf(
+	results, err := driver.QueryConn(ctx, fmt.Sprintf(
 		"UPDATE %[1]s SET N = N + 1 WHERE Id = 1; SELECT N FROM %[1]s WHERE Id = 1; CREATE TABLE %[1]sEmpty (Id INT64 NOT NULL) PRIMARY KEY (Id)",
 		table,
 	), db.QueryContext{MaximumSQLResultSize: 100 * 1024 * 1024})

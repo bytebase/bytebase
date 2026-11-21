@@ -2,7 +2,6 @@ package ghost
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"testing"
 
@@ -21,7 +20,7 @@ type fakeGhostDriver struct {
 	responses map[string]func() ([]*v1pb.QueryResult, error)
 }
 
-func (d *fakeGhostDriver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *fakeGhostDriver) QueryConn(_ context.Context, statement string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// Enforce omni's MySQL parser/read-only gate so queries rejected before reaching MySQL 8.4+ fail in tests.
 	parsed, err := omnimysqlparser.Parse(statement)
 	if err != nil {

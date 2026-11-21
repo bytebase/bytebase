@@ -134,7 +134,7 @@ func TestHiveDriver(t *testing.T) {
 	})
 
 	t.Run("query returns typed values", func(t *testing.T) {
-		results, err := session.QueryConn(ctx, nil, "SELECT 1 AS one, DOUBLE(1.5) AS d, CAST(1.5 AS FLOAT) AS f", db.QueryContext{})
+		results, err := session.QueryConn(ctx, "SELECT 1 AS one, DOUBLE(1.5) AS d, CAST(1.5 AS FLOAT) AS f", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		result := results[0]
@@ -150,7 +150,7 @@ func TestHiveDriver(t *testing.T) {
 	t.Run("the query schema is selected before the script", func(t *testing.T) {
 		// The driver is open on no database, so an unqualified name resolves
 		// only if QueryContext.Schema selected one.
-		results, err := admin.QueryConn(ctx, nil, "SELECT note FROM orders ORDER BY id", db.QueryContext{Schema: database})
+		results, err := admin.QueryConn(ctx, "SELECT note FROM orders ORDER BY id", db.QueryContext{Schema: database})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Len(t, results[0].Rows, 2)
@@ -158,7 +158,7 @@ func TestHiveDriver(t *testing.T) {
 	})
 
 	t.Run("a failing statement ends the script with its error", func(t *testing.T) {
-		results, err := session.QueryConn(ctx, nil, "SELECT 1;\nSELECT * FROM no_such_table;\nSELECT 3", db.QueryContext{})
+		results, err := session.QueryConn(ctx, "SELECT 1;\nSELECT * FROM no_such_table;\nSELECT 3", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, results, 2)
 		require.Empty(t, results[0].Error)
@@ -166,7 +166,7 @@ func TestHiveDriver(t *testing.T) {
 	})
 
 	t.Run("a cut result reports the cap", func(t *testing.T) {
-		results, err := session.QueryConn(ctx, nil, "SELECT * FROM orders ORDER BY id", db.QueryContext{MaximumSQLResultSize: 12})
+		results, err := session.QueryConn(ctx, "SELECT * FROM orders ORDER BY id", db.QueryContext{MaximumSQLResultSize: 12})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, util.FormatMaximumSQLResultSizeMessage(12), results[0].Error)
@@ -174,7 +174,7 @@ func TestHiveDriver(t *testing.T) {
 	})
 
 	t.Run("the row limit is applied even though the statement is not rewritten", func(t *testing.T) {
-		results, err := session.QueryConn(ctx, nil, "SELECT * FROM orders ORDER BY id", db.QueryContext{Limit: 1})
+		results, err := session.QueryConn(ctx, "SELECT * FROM orders ORDER BY id", db.QueryContext{Limit: 1})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, int64(1), results[0].RowsCount)
@@ -183,7 +183,7 @@ func TestHiveDriver(t *testing.T) {
 	})
 
 	t.Run("explain returns the plan as rows", func(t *testing.T) {
-		results, err := session.QueryConn(ctx, nil, "SELECT * FROM orders", db.QueryContext{Explain: true})
+		results, err := session.QueryConn(ctx, "SELECT * FROM orders", db.QueryContext{Explain: true})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, "EXPLAIN SELECT * FROM orders", results[0].Statement)

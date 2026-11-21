@@ -165,7 +165,7 @@ func TestExecuteLoggerReportsEachStep(t *testing.T) {
 			return nil
 		},
 	}
-	logger := executeLogger{opts: opts}
+	logger := util.NewExecuteLogger(opts)
 	logger.CommandExecute(omnidriver.Command{Text: "SELECT 1", ByteStart: 0, ByteEnd: 8})
 	logger.CommandResponse(0, nil, errTest)
 	logger.TransactionControl(omnidriver.Begin, nil)
@@ -188,7 +188,7 @@ func TestExecuteLoggerLogsTheCommandRange(t *testing.T) {
 		logs = append(logs, log)
 		return nil
 	}}
-	executeLogger{opts: opts}.CommandExecute(omnidriver.Command{Text: "SELECT 1", ByteStart: 3, ByteEnd: 11})
+	util.NewExecuteLogger(opts).CommandExecute(omnidriver.Command{Text: "SELECT 1", ByteStart: 3, ByteEnd: 11})
 
 	require.Len(t, logs, 1)
 	require.Equal(t, &storepb.Range{Start: 3, End: 11}, logs[0].GetCommandExecute().GetRange())
@@ -196,7 +196,7 @@ func TestExecuteLoggerLogsTheCommandRange(t *testing.T) {
 
 func TestExecuteLoggerIsSilentWithoutACallback(t *testing.T) {
 	require.NotPanics(t, func() {
-		logger := executeLogger{}
+		logger := util.NewExecuteLogger(db.ExecuteOptions{})
 		logger.CommandExecute(omnidriver.Command{Text: "SELECT 1"})
 		logger.CommandResponse(0, nil, nil)
 		logger.TransactionControl(omnidriver.Commit, nil)

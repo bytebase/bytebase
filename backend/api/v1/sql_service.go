@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"math"
@@ -133,7 +132,6 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 		result, duration, queryErr := executeWithTimeout(
 			ctx,
 			driver,
-			nil,
 			request.Statement,
 			queryContext,
 		)
@@ -419,7 +417,6 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		instance,
 		database,
 		driver,
-		nil,
 		statement,
 		queryContext,
 		s.licenseService,
@@ -824,7 +821,6 @@ func queryRetry(
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 	driver db.Driver,
-	conn *sql.Conn,
 	statements []parserbase.Statement,
 	originalStatement string,
 	queryContext db.QueryContext,
@@ -883,7 +879,6 @@ func queryRetry(
 	results, duration, queryErr := executeWithTimeout(
 		ctx,
 		driver,
-		conn,
 		originalStatement,
 		queryContext,
 	)
@@ -1062,7 +1057,6 @@ func queryRetryStopOnError(
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 	driver db.Driver,
-	conn *sql.Conn,
 	statement string,
 	queryContext db.QueryContext,
 	licenseService *enterprise.LicenseService,
@@ -1078,7 +1072,7 @@ func queryRetryStopOnError(
 		if err != nil {
 			return nil, nil, 0, err
 		}
-		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, statements, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, hasMultipleStatements(statements))
+		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, statements, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, hasMultipleStatements(statements))
 		if len(results) == 0 {
 			results = resultForTimeout(statement, err)
 		}
@@ -1093,7 +1087,7 @@ func queryRetryStopOnError(
 		// statement as a single unit. Where GetQuerySpan is supported (e.g. MongoDB),
 		// it re-parses the raw text and surfaces the parse error; otherwise
 		// queryRetry returns nil spans (old behavior).
-		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{{Text: statement}}, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, false)
+		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, []parserbase.Statement{{Text: statement}}, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, false)
 		if len(results) == 0 {
 			results = resultForTimeout(statement, err)
 		}
@@ -1115,7 +1109,7 @@ func queryRetryStopOnError(
 			continue
 		}
 
-		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{stmt}, stmt.Text, queryContext, licenseService, optionalAccessCheck, schemaSyncer, multiStatement)
+		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, []parserbase.Statement{stmt}, stmt.Text, queryContext, licenseService, optionalAccessCheck, schemaSyncer, multiStatement)
 		totalDuration += duration
 
 		if err != nil {
@@ -1176,7 +1170,6 @@ func resultForTimeout(statement string, err error) []*v1pb.QueryResult {
 func executeWithTimeout(
 	ctx context.Context,
 	driver db.Driver,
-	conn *sql.Conn,
 	statement string,
 	queryContext db.QueryContext,
 ) ([]*v1pb.QueryResult, time.Duration, error) {
@@ -1193,7 +1186,7 @@ func executeWithTimeout(
 	}
 
 	start := time.Now()
-	result, err := driver.QueryConn(queryCtx, conn, statement, queryContext)
+	result, err := driver.QueryConn(queryCtx, statement, queryContext)
 	if ctxErr := queryCtx.Err(); ctxErr != nil {
 		return nil, time.Since(start), interruptedQueryError(ctxErr, timeout)
 	}
@@ -1347,7 +1340,6 @@ func doExport(
 		instance,
 		database,
 		driver,
-		nil,
 		statements,
 		request.Statement,
 		queryContext,

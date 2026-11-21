@@ -30,7 +30,7 @@ func TestQueryConnCarriesMaskingMode(t *testing.T) {
 	session := &captureSession{}
 	d := &Driver{session: session}
 
-	_, err := d.QueryConn(context.Background(), nil, "SELECT 1", db.QueryContext{
+	_, err := d.QueryConn(context.Background(), "SELECT 1", db.QueryContext{
 		Limit:                5,
 		MaximumSQLResultSize: 1024,
 		MaskingEnabled:       true,

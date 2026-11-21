@@ -35,7 +35,6 @@ package mongodb
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"io"
 	"net"
 	"strings"
@@ -193,39 +192,13 @@ func (d *Driver) Ping(ctx context.Context) error {
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	return d.inner.Execute(ctx, statement, omnidriver.ExecuteOptions{
 		MaxRetries: opts.MaximumRetries,
-		Log:        &executeLogger{opts: opts},
+		Log:        util.NewExecuteLogger(opts),
 	})
 }
 
-// executeLogger bridges the contract's ExecuteLogger onto the task run log.
-type executeLogger struct {
-	opts db.ExecuteOptions
-}
-
-func (l *executeLogger) CommandExecute(command omnidriver.Command) {
-	l.opts.LogCommandExecute(&storepb.Range{Start: int32(command.ByteStart), End: int32(command.ByteEnd)}, command.Text)
-}
-
-func (l *executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
-	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
-}
-
-// TransactionControl and Retry are never called: MongoDB has no transaction
-// this path opens and the driver never retries a statement.
-func (*executeLogger) TransactionControl(omnidriver.TransactionOp, error) {}
-
-func (*executeLogger) Retry(error, int, int) {}
-
-func errorString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
-}
-
 // QueryConn runs the script's statements on a session of its own. MongoDB has
-// no session state, so nothing outlives the call, and conn is unused.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+// no session state, so nothing outlives the call.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	session, err := d.inner.Session(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open a session")
@@ -244,11 +217,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	if err != nil {
 		return nil, err
 	}
-	queryResults := make([]*v1pb.QueryResult, len(results))
-	for i, result := range results {
-		queryResults[i] = util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize)
-	}
-	return queryResults, nil
+	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, false), nil
 }
 
 // SyncInstance reads the server version, its non-system databases and its
@@ -258,15 +227,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	var roles []*storepb.InstanceRole
-	for _, role := range instance.Roles {
-		roles = append(roles, &storepb.InstanceRole{Name: role.Name})
-	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-		Metadata:  &storepb.Instance{Roles: roles},
-	}, nil
+	return util.OmniInstanceToMetadata(instance, true), nil
 }
 
 // SyncDBSchema reads the database's collections, their sizes and indexes, and

@@ -161,7 +161,7 @@ func TestContractBehavior(t *testing.T) {
 		t.Cleanup(fake.server.Close)
 		driver := openTestDriver(t, fake, nil)
 
-		results, err := driver.QueryConn(context.Background(), nil, `SELECT * FROM "limit"`, db.QueryContext{Limit: 1})
+		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "limit"`, db.QueryContext{Limit: 1})
 		if err != nil {
 			t.Fatalf("QueryConn() = %v", err)
 		}
@@ -180,7 +180,7 @@ func TestContractBehavior(t *testing.T) {
 		t.Cleanup(fake.server.Close)
 		driver := openTestDriver(t, fake, nil)
 
-		results, err := driver.QueryConn(context.Background(), nil, `SELECT * FROM "big"`, db.QueryContext{MaximumSQLResultSize: 1})
+		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "big"`, db.QueryContext{MaximumSQLResultSize: 1})
 		if err != nil {
 			t.Fatalf("QueryConn() = %v", err)
 		}
@@ -198,7 +198,7 @@ func TestContractBehavior(t *testing.T) {
 		t.Cleanup(fake.server.Close)
 		driver := openTestDriver(t, fake, nil)
 
-		results, err := driver.QueryConn(context.Background(), nil, `SELECT * FROM "binary"`, db.QueryContext{})
+		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "binary"`, db.QueryContext{})
 		if err != nil {
 			t.Fatalf("QueryConn() = %v", err)
 		}
@@ -214,7 +214,7 @@ func TestContractBehavior(t *testing.T) {
 		t.Cleanup(fake.server.Close)
 		driver := openTestDriver(t, fake, nil)
 
-		results, err := driver.QueryConn(context.Background(), nil, `SELECT * FROM "sparse"`, db.QueryContext{})
+		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "sparse"`, db.QueryContext{})
 		if err != nil {
 			t.Fatalf("QueryConn() = %v", err)
 		}
@@ -231,7 +231,7 @@ func TestContractBehavior(t *testing.T) {
 		t.Cleanup(fake.server.Close)
 		driver := openTestDriver(t, fake, nil)
 
-		results, err := driver.QueryConn(context.Background(), nil, `SELECT * FROM "document"`, db.QueryContext{})
+		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "document"`, db.QueryContext{})
 		if err != nil {
 			t.Fatalf("QueryConn() = %v", err)
 		}

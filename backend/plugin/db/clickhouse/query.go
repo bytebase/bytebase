@@ -2,7 +2,6 @@ package clickhouse
 
 import (
 	"context"
-	"database/sql"
 
 	omnidriver "github.com/bytebase/omni/driver"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -14,10 +13,8 @@ import (
 )
 
 // QueryConn runs each statement of the script in order on the driver's session.
-// The caller's *sql.Conn is unused: GetDB returns nil, so there is no handle to
-// open one from, and the session the adapter holds plays that part. Calls are
-// serialized on that one session, as they were on the editor's connection.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+// Calls are serialized on that one session, as they were on the editor's connection.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	d.sessionMu.Lock()
 	defer d.sessionMu.Unlock()
 

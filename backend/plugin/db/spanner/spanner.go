@@ -26,7 +26,6 @@ package spanner
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"fmt"
 	"io"
 	"net"
@@ -50,9 +49,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -237,64 +234,19 @@ func (d *Driver) Ping(ctx context.Context) error {
 // database's dialect, applies a script that holds any DDL statement through the
 // admin API whole, and runs the rest as DML.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	config, cleaned := base.ParseTransactionConfig(statement)
-	statement = cleaned
-	transactionMode := config.Mode
-	if transactionMode == transaction.ModeUnspecified {
-		transactionMode = transaction.DefaultMode()
-	}
-
-	executeOptions := odriver.ExecuteOptions{
-		Transaction:    odriver.Transactional,
+	transactionMode, _, cleaned := util.ParseTransactionMode(statement)
+	return d.impl.Execute(ctx, cleaned, odriver.ExecuteOptions{
+		Transaction:    transactionMode,
 		CreateDatabase: opts.CreateDatabase,
 		MaxRetries:     opts.MaximumRetries,
-		Log:            executeLogger{opts: opts},
-	}
-	if transactionMode == transaction.ModeOff {
-		executeOptions.Transaction = odriver.AutoCommit
-	}
-	return d.impl.Execute(ctx, statement, executeOptions)
+		// Spanner's driver logs only transaction control entries (no per-statement command logs).
+		Log: util.NewExecuteLogger(opts, util.WithSkipCommandLogs()),
+	})
 }
 
-// executeLogger reports a script's transaction control into the task run log.
-// Spanner's driver logs nothing else: it logged no per-statement command line
-// before the cutover either.
-type executeLogger struct {
-	opts db.ExecuteOptions
-}
-
-func (executeLogger) CommandExecute(odriver.Command) {}
-
-func (executeLogger) CommandResponse(int64, []int64, error) {}
-
-func (l executeLogger) TransactionControl(op odriver.TransactionOp, err error) {
-	var t storepb.TaskRunLog_TransactionControl_Type
-	switch op {
-	case odriver.Begin:
-		t = storepb.TaskRunLog_TransactionControl_BEGIN
-	case odriver.Commit:
-		t = storepb.TaskRunLog_TransactionControl_COMMIT
-	case odriver.Rollback:
-		t = storepb.TaskRunLog_TransactionControl_ROLLBACK
-	default:
-		return
-	}
-	l.opts.LogTransactionControl(t, errString(err))
-}
-
-func (executeLogger) Retry(error, int, int) {}
-
-func errString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
-}
-
-// QueryConn queries a SQL statement in a given connection. Spanner has no
-// session state a statement can set, so the connection the caller used to hold
-// is unused and each statement reads in a single-use transaction of its own.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement. Spanner has no session state a statement
+// can set, so each statement reads in a single-use transaction of its own.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	session, err := d.impl.Session(ctx)
 	if err != nil {
 		return nil, err

@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"database/sql"
 	"strings"
 	"testing"
 	"time"
@@ -771,7 +770,7 @@ type blockingQueryDriver struct {
 	started func()
 }
 
-func (d blockingQueryDriver) QueryConn(ctx context.Context, _ *sql.Conn, _ string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d blockingQueryDriver) QueryConn(ctx context.Context, _ string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if d.started != nil {
 		d.started()
 	}
@@ -787,7 +786,7 @@ func TestExecuteWithTimeoutTellsCancellationFromTimeout(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		driver := blockingQueryDriver{started: cancel}
-		_, _, err := executeWithTimeout(ctx, driver, nil, "SELECT 1", db.QueryContext{Timeout: durationpb.New(time.Hour)})
+		_, _, err := executeWithTimeout(ctx, driver, "SELECT 1", db.QueryContext{Timeout: durationpb.New(time.Hour)})
 		require.Equal(t, connect.CodeCanceled, connect.CodeOf(err))
 		require.Equal(t, "canceled: the request was canceled before the query finished", err.Error())
 		require.Nil(t, resultForTimeout("SELECT 1", err))
@@ -796,7 +795,7 @@ func TestExecuteWithTimeoutTellsCancellationFromTimeout(t *testing.T) {
 
 	t.Run("query policy timeout", func(t *testing.T) {
 		t.Parallel()
-		_, _, err := executeWithTimeout(context.Background(), blockingQueryDriver{}, nil, "SELECT 1", db.QueryContext{Timeout: durationpb.New(time.Millisecond)})
+		_, _, err := executeWithTimeout(context.Background(), blockingQueryDriver{}, "SELECT 1", db.QueryContext{Timeout: durationpb.New(time.Millisecond)})
 		require.Equal(t, "timeout reached: 1ms", err.Error())
 		require.Len(t, resultForTimeout("SELECT 1", err), 1)
 	})
@@ -805,7 +804,7 @@ func TestExecuteWithTimeoutTellsCancellationFromTimeout(t *testing.T) {
 		t.Parallel()
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 		defer cancel()
-		_, _, err := executeWithTimeout(ctx, blockingQueryDriver{}, nil, "SELECT 1", db.QueryContext{})
+		_, _, err := executeWithTimeout(ctx, blockingQueryDriver{}, "SELECT 1", db.QueryContext{})
 		var timedOut *queryTimeoutError
 		require.ErrorAs(t, err, &timedOut)
 	})

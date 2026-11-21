@@ -229,7 +229,7 @@ func TestQueryIgnoresTheSharedDriverCharset(t *testing.T) {
 	require.NoError(t, err)
 	defer driver.Close(ctx)
 
-	results, err := driver.QueryConn(ctx, nil, "SELECT C FROM CHARSET_PROBE", db.QueryContext{MaximumSQLResultSize: 1024})
+	results, err := driver.QueryConn(ctx, "SELECT C FROM CHARSET_PROBE", db.QueryContext{MaximumSQLResultSize: 1024})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Empty(t, results[0].Error)
@@ -378,7 +378,7 @@ func TestCurrentSchemaOnNewSessions(t *testing.T) {
 		driver, err := open(schema)
 		require.NoError(t, err)
 		defer driver.Close(ctx)
-		results, err := driver.QueryConn(ctx, nil, "SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') FROM DUAL", db.QueryContext{MaximumSQLResultSize: 1024})
+		results, err := driver.QueryConn(ctx, "SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') FROM DUAL", db.QueryContext{MaximumSQLResultSize: 1024})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Empty(t, results[0].Error)
@@ -425,12 +425,12 @@ func TestQueryConnKeepsTheSessionForTheDriver(t *testing.T) {
 	defer driver.Close(ctx)
 	queryContext := db.QueryContext{MaximumSQLResultSize: 1024}
 
-	results, err := driver.QueryConn(ctx, nil, "ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD'", queryContext)
+	results, err := driver.QueryConn(ctx, "ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD'", queryContext)
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Empty(t, results[0].Error)
 
-	results, err = driver.QueryConn(ctx, nil, "SELECT TO_CHAR(DATE '2026-01-02') AS D FROM DUAL", queryContext)
+	results, err = driver.QueryConn(ctx, "SELECT TO_CHAR(DATE '2026-01-02') AS D FROM DUAL", queryContext)
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Empty(t, results[0].Error)

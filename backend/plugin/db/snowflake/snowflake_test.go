@@ -26,6 +26,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -360,7 +361,7 @@ func TestQueryConnLazySessionAndExplainOptions(t *testing.T) {
 	require.Equal(t, 0, impl.sessionCalls, "session must not be opened before first QueryConn")
 
 	// Explain: true leaves QueryPlan nil so SQLService stamps the requested format.
-	gotExplain, err := d.QueryConn(context.Background(), nil, "SELECT 1", db.QueryContext{
+	gotExplain, err := d.QueryConn(context.Background(), "SELECT 1", db.QueryContext{
 		Schema:               "ANALYTICS",
 		Limit:                100,
 		Explain:              true,
@@ -383,7 +384,7 @@ func TestQueryConnLazySessionAndExplainOptions(t *testing.T) {
 
 	// User-written EXPLAIN (Explain: false) reuses the held session and maps
 	// lowercase "json" onto QueryOption_JSON.
-	gotUserExplain, err := d.QueryConn(context.Background(), nil, "EXPLAIN USING JSON SELECT 1", db.QueryContext{
+	gotUserExplain, err := d.QueryConn(context.Background(), "EXPLAIN USING JSON SELECT 1", db.QueryContext{
 		MaximumSQLResultSize: 1 << 20,
 	})
 	require.NoError(t, err)
@@ -410,7 +411,7 @@ func TestQueryConnNormalizesResults(t *testing.T) {
 			},
 		}
 		d := &Driver{session: session}
-		got, err := d.QueryConn(context.Background(), nil, "CREATE TABLE t (id INT)", db.QueryContext{})
+		got, err := d.QueryConn(context.Background(), "CREATE TABLE t (id INT)", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, got, 1)
 		require.Equal(t, []string{"Affected Rows"}, got[0].ColumnNames)
@@ -431,7 +432,7 @@ func TestQueryConnNormalizesResults(t *testing.T) {
 			},
 		}
 		d := &Driver{session: session}
-		got, err := d.QueryConn(context.Background(), nil, "SELECT id FROM t WHERE 1 = 0", db.QueryContext{})
+		got, err := d.QueryConn(context.Background(), "SELECT id FROM t WHERE 1 = 0", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, got, 1)
 		require.Equal(t, []string{"ID"}, got[0].ColumnNames)
@@ -450,7 +451,7 @@ func TestQueryConnNormalizesResults(t *testing.T) {
 			},
 		}
 		d := &Driver{session: session}
-		got, err := d.QueryConn(context.Background(), nil, "EXPLAIN SELECT * FROM missing", db.QueryContext{})
+		got, err := d.QueryConn(context.Background(), "EXPLAIN SELECT * FROM missing", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, got, 1)
 		require.Equal(t, "object does not exist", got[0].Error)
@@ -477,7 +478,7 @@ func TestQueryConnNormalizesResults(t *testing.T) {
 			},
 		}
 		d := &Driver{session: session}
-		got, err := d.QueryConn(context.Background(), nil, "SELECT ts_ntz, ts_tz, valid_ts", db.QueryContext{})
+		got, err := d.QueryConn(context.Background(), "SELECT ts_ntz, ts_tz, valid_ts", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, got, 1)
 		_, err = protojson.Marshal(got[0])
@@ -499,7 +500,7 @@ func TestQueryConnNormalizesResults(t *testing.T) {
 			},
 		}
 		d := &Driver{session: session}
-		got, err := d.QueryConn(context.Background(), nil, "SELECT 1", db.QueryContext{})
+		got, err := d.QueryConn(context.Background(), "SELECT 1", db.QueryContext{})
 		require.NoError(t, err)
 		require.EqualValues(t, 1, session.gotOpts.MaxResultBytes)
 		require.Len(t, got, 1)
@@ -526,7 +527,7 @@ func TestQueryConnDropsSessionOnErrorOrCanceledContext(t *testing.T) {
 			impl := &fakeImpl{sessions: []*fakeSession{s1, s2}}
 			d := &Driver{impl: impl, databaseName: "SAMPLE_DB"}
 
-			_, err := d.QueryConn(context.Background(), nil, "SELECT * FROM temp_tbl", db.QueryContext{
+			_, err := d.QueryConn(context.Background(), "SELECT * FROM temp_tbl", db.QueryContext{
 				Schema:               "MISSING_SCHEMA",
 				MaximumSQLResultSize: 1024,
 			})
@@ -540,7 +541,7 @@ func TestQueryConnDropsSessionOnErrorOrCanceledContext(t *testing.T) {
 				Columns:   []odriver.Column{{Name: "ID", TypeName: "FIXED"}},
 				Rows:      [][]odriver.Value{{{Kind: odriver.Int64, Int64: 42}}},
 			}}
-			got, err := d.QueryConn(context.Background(), nil, "SELECT * FROM temp_tbl", db.QueryContext{
+			got, err := d.QueryConn(context.Background(), "SELECT * FROM temp_tbl", db.QueryContext{
 				Schema:               "PUBLIC",
 				MaximumSQLResultSize: 1024,
 			})
@@ -572,12 +573,12 @@ func TestQueryConnDropsSessionOnErrorOrCanceledContext(t *testing.T) {
 			impl := &fakeImpl{sessions: []*fakeSession{s1, s2}}
 			d := &Driver{impl: impl, databaseName: "SAMPLE_DB"}
 
-			_, err := d.QueryConn(context.Background(), nil, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
+			_, err := d.QueryConn(context.Background(), "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
 			require.ErrorIs(t, err, fatalErr)
 			require.True(t, s1.closed, "fatal error %v must close dead session", fatalErr)
 			require.Nil(t, d.session)
 
-			got, err := d.QueryConn(context.Background(), nil, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
+			got, err := d.QueryConn(context.Background(), "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
 			require.NoError(t, err)
 			require.Equal(t, 2, impl.sessionCalls)
 			require.Len(t, got, 1)
@@ -592,7 +593,7 @@ func TestQueryConnDropsSessionOnErrorOrCanceledContext(t *testing.T) {
 		}
 		d := &Driver{session: session}
 
-		_, err := d.QueryConn(ctx, nil, "SELECT 1", db.QueryContext{Schema: "MISSING", MaximumSQLResultSize: 1024})
+		_, err := d.QueryConn(ctx, "SELECT 1", db.QueryContext{Schema: "MISSING", MaximumSQLResultSize: 1024})
 		require.Error(t, err)
 		require.True(t, session.closed)
 		require.Nil(t, d.session)
@@ -606,7 +607,7 @@ func TestQueryConnDropsSessionOnErrorOrCanceledContext(t *testing.T) {
 		}
 		d := &Driver{session: session}
 
-		got, err := d.QueryConn(ctx, nil, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
+		got, err := d.QueryConn(ctx, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
 		require.NoError(t, err)
 		require.Len(t, got, 1)
 		require.True(t, session.closed)
@@ -631,7 +632,7 @@ func TestDirectiveShiftMapsEveryRemovedShape(t *testing.T) {
 	} {
 		t.Run(tc.script, func(t *testing.T) {
 			_, cleaned := base.ParseTransactionConfig(tc.script)
-			start, end := directiveShift(tc.script, cleaned)(0, len(cleaned))
+			start, end := util.DirectiveShift(tc.script, cleaned)(0, len(cleaned))
 			require.Equal(t, tc.want, tc.script[start:end])
 		})
 	}

@@ -25,12 +25,12 @@ func TestQueryConnKeepsTheSessionForTheDriver(t *testing.T) {
 	})
 	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 20}
 
-	results, err := driver.QueryConn(ctx, nil, "SET SESSION query_max_run_time = '1m'", queryContext)
+	results, err := driver.QueryConn(ctx, "SET SESSION query_max_run_time = '1m'", queryContext)
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Empty(t, results[0].Error)
 
-	results, err = driver.QueryConn(ctx, nil, "SHOW SESSION LIKE 'query_max_run_time'", queryContext)
+	results, err = driver.QueryConn(ctx, "SHOW SESSION LIKE 'query_max_run_time'", queryContext)
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Empty(t, results[0].Error)

@@ -142,7 +142,7 @@ func TestDorisDriver(t *testing.T) {
 	})
 
 	t.Run("query decodes the server's types", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT * FROM types ORDER BY id", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := driver.QueryConn(ctx, "SELECT * FROM types ORDER BY id", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		result := results[0]
@@ -170,7 +170,7 @@ func TestDorisDriver(t *testing.T) {
 	})
 
 	t.Run("a timestamp keeps its fractional digits", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT CAST('2026-01-02 03:04:05.123' AS DATETIME(3))",
+		results, err := driver.QueryConn(ctx, "SELECT CAST('2026-01-02 03:04:05.123' AS DATETIME(3))",
 			db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		timestamp := results[0].Rows[0].Values[0].GetTimestampValue()
@@ -179,7 +179,7 @@ func TestDorisDriver(t *testing.T) {
 	})
 
 	t.Run("limit and explain are rewritten before the statement runs", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT id FROM types ORDER BY id",
+		results, err := driver.QueryConn(ctx, "SELECT id FROM types ORDER BY id",
 			db.QueryContext{Limit: 1, MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
@@ -187,7 +187,7 @@ func TestDorisDriver(t *testing.T) {
 		require.Equal(t, int64(1), results[0].RowsCount)
 
 		// An existing, larger LIMIT is capped.
-		results, err = driver.QueryConn(ctx, nil, "SELECT id FROM types ORDER BY id LIMIT 100",
+		results, err = driver.QueryConn(ctx, "SELECT id FROM types ORDER BY id LIMIT 100",
 			db.QueryContext{Limit: 1, MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Equal(t, "SELECT id FROM types ORDER BY id LIMIT 1", results[0].Statement)
@@ -195,7 +195,7 @@ func TestDorisDriver(t *testing.T) {
 		// Doris refuses `#`, so a limited statement that carries one is wrapped in
 		// a subquery instead of having the limit spliced before the comment, and
 		// the wrap spans three lines.
-		results, err = driver.QueryConn(ctx, nil, "SELECT id FROM types # hash comment",
+		results, err = driver.QueryConn(ctx, "SELECT id FROM types # hash comment",
 			db.QueryContext{Limit: 2, MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Equal(t, "SELECT * FROM (\nSELECT id FROM types # hash comment\n) result LIMIT 2;", results[0].Statement)
@@ -203,7 +203,7 @@ func TestDorisDriver(t *testing.T) {
 
 		// The driver offers Doris one plan format, so the request's format does not
 		// reach the statement, and the plan stays in the rows.
-		results, err = driver.QueryConn(ctx, nil, "SELECT id FROM types", db.QueryContext{
+		results, err = driver.QueryConn(ctx, "SELECT id FROM types", db.QueryContext{
 			Explain: true,
 			Option:  &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
 		})
@@ -215,7 +215,7 @@ func TestDorisDriver(t *testing.T) {
 	})
 
 	t.Run("a statement's error stops the script", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT 1; SELECT * FROM missing_table; SELECT 2",
+		results, err := driver.QueryConn(ctx, "SELECT 1; SELECT * FROM missing_table; SELECT 2",
 			db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 2)
@@ -224,7 +224,7 @@ func TestDorisDriver(t *testing.T) {
 	})
 
 	t.Run("a write through the query path reports its affected rows", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "INSERT INTO types (id) VALUES (3)", db.QueryContext{})
+		results, err := driver.QueryConn(ctx, "INSERT INTO types (id) VALUES (3)", db.QueryContext{})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Equal(t, []string{"Affected Rows"}, results[0].ColumnNames)
@@ -232,7 +232,7 @@ func TestDorisDriver(t *testing.T) {
 	})
 
 	t.Run("the size cap truncates and the script continues", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT id, repeat('x', 80) FROM types ORDER BY id;\nSELECT 7",
+		results, err := driver.QueryConn(ctx, "SELECT id, repeat('x', 80) FROM types ORDER BY id;\nSELECT 7",
 			db.QueryContext{MaximumSQLResultSize: 200})
 		require.NoError(t, err)
 		require.Len(t, results, 2)
@@ -241,7 +241,7 @@ func TestDorisDriver(t *testing.T) {
 	})
 
 	t.Run("a zero-byte cap is no cap", func(t *testing.T) {
-		results, err := driver.QueryConn(ctx, nil, "SELECT id FROM types ORDER BY id", db.QueryContext{})
+		results, err := driver.QueryConn(ctx, "SELECT id FROM types ORDER BY id", db.QueryContext{})
 		require.NoError(t, err)
 		require.Empty(t, results[0].GetError())
 		require.Equal(t, int64(3), results[0].RowsCount)
@@ -427,17 +427,17 @@ func TestQueryConnKeepsOneSessionAndDropsItWhenTheContextEnds(t *testing.T) {
 	require.True(t, ok, "the registered driver is Bytebase's Doris adapter")
 
 	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 20}
-	_, err = driver.QueryConn(ctx, nil, "SELECT 1", queryContext)
+	_, err = driver.QueryConn(ctx, "SELECT 1", queryContext)
 	require.NoError(t, err)
 	held := heldSession(driver)
 	require.NotNil(t, held, "the first statement opens the session")
 
-	_, err = driver.QueryConn(ctx, nil, "SELECT 1", queryContext)
+	_, err = driver.QueryConn(ctx, "SELECT 1", queryContext)
 	require.NoError(t, err)
 	require.True(t, held == heldSession(driver), "the stream's statements share one session")
 
 	canceledCtx, cancel := context.WithCancel(ctx)
 	cancel()
-	_, _ = driver.QueryConn(canceledCtx, nil, "SELECT 1", queryContext)
+	_, _ = driver.QueryConn(canceledCtx, "SELECT 1", queryContext)
 	require.Nil(t, heldSession(driver), "a canceled statement's session is not one to keep")
 }

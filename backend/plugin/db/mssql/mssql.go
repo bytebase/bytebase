@@ -58,9 +58,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -282,25 +280,15 @@ func (d *Driver) Ping(ctx context.Context) error {
 // Execute runs the script's batches, in one transaction unless the `-- txn-mode`
 // directive turns it off, reporting each step to the task run's log.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	config, cleanedStatement := base.ParseTransactionConfig(statement)
-	statement = cleanedStatement
 	// -- txn-isolation is parsed and dropped, as it was before: the old driver
 	// opened the transaction with the server's default.
-	transactionMode := config.Mode
-	if transactionMode == transaction.ModeUnspecified {
-		transactionMode = transaction.DefaultMode()
-	}
-
-	executeOptions := odriver.ExecuteOptions{
-		Transaction:    odriver.Transactional,
+	transactionMode, _, cleanedStatement := util.ParseTransactionMode(statement)
+	return d.impl.Execute(ctx, cleanedStatement, odriver.ExecuteOptions{
+		Transaction:    transactionMode,
 		CreateDatabase: opts.CreateDatabase,
 		MaxRetries:     opts.MaximumRetries,
-		Log:            executeLogger{opts: opts},
-	}
-	if transactionMode == transaction.ModeOff {
-		executeOptions.Transaction = odriver.AutoCommit
-	}
-	return d.impl.Execute(ctx, statement, executeOptions)
+		Log:            util.NewExecuteLogger(opts),
+	})
 }
 
 // CountAffectedRows returns the optimizer's estimate for one statement, read
@@ -315,10 +303,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-	}, nil
+	return util.OmniInstanceToMetadata(instance, false), nil
 }
 
 // SyncDBSchema reads the database the driver was opened on.

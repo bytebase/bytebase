@@ -36,6 +36,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -200,7 +201,7 @@ func TestCutoverParityQuery(t *testing.T) {
 
 	for _, recorded := range recording.Queries {
 		t.Run(recorded.Name, func(t *testing.T) {
-			got, err := driver.QueryConn(context.Background(), nil, recorded.Script, db.QueryContext{
+			got, err := driver.QueryConn(context.Background(), recorded.Script, db.QueryContext{
 				Schema:  recorded.Schema,
 				Limit:   recorded.Limit,
 				Explain: recorded.Explain,
@@ -397,7 +398,7 @@ func TestDirectiveShiftMapsEveryRemovedShape(t *testing.T) {
 	} {
 		t.Run(tc.script, func(t *testing.T) {
 			_, cleaned := base.ParseTransactionConfig(tc.script)
-			start, end := directiveShift(tc.script, cleaned)(0, len(cleaned))
+			start, end := util.DirectiveShift(tc.script, cleaned)(0, len(cleaned))
 			require.Equal(t, tc.want, tc.script[start:end])
 		})
 	}

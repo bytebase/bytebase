@@ -54,12 +54,12 @@ func TestLegacyParity(t *testing.T) {
 	schema, err := d.SyncDBSchema(ctx)
 	require.NoError(t, err)
 
-	single, err := d.QueryConn(ctx, nil, "GET greeting\n\nGET missing\nLRANGE queue 0 -1\nDBSIZE", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	single, err := d.QueryConn(ctx, "GET greeting\n\nGET missing\nLRANGE queue 0 -1\nDBSIZE", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	for _, result := range single {
 		result.Latency = nil
 	}
-	all, err := d.QueryConn(ctx, nil, "GET greeting\nDBSIZE", db.QueryContext{
+	all, err := d.QueryConn(ctx, "GET greeting\nDBSIZE", db.QueryContext{
 		MaximumSQLResultSize: 1 << 20,
 		Option:               &v1pb.QueryOption{RedisRunCommandsOn: v1pb.QueryOption_ALL_NODES},
 	})
@@ -99,7 +99,7 @@ func TestQueryConnScripts(t *testing.T) {
 	_, err := d.Execute(ctx, "FLUSHALL\nSET a \"two words\"\nSET b value", db.ExecuteOptions{})
 	require.NoError(t, err)
 
-	results, err := d.QueryConn(ctx, nil, "GET a\n\nGET b\n   ", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	results, err := d.QueryConn(ctx, "GET a\n\nGET b\n   ", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, results, 2)
 	for i, want := range []string{"GET a", "GET b"} {
@@ -111,12 +111,12 @@ func TestQueryConnScripts(t *testing.T) {
 	require.Equal(t, "two words", results[0].Rows[0].Values[1].GetStringValue())
 	require.Equal(t, "value", results[1].Rows[0].Values[1].GetStringValue())
 
-	_, err = d.QueryConn(ctx, nil, `SET a "unclosed`, db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	_, err = d.QueryConn(ctx, `SET a "unclosed`, db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.ErrorContains(t, err, "failed to split command")
 
 	// Known difference: the old shell lexer treated # as the start of a comment,
 	// so this line was GET with no key; Redis has no comment syntax.
-	results, err = d.QueryConn(ctx, nil, "GET #", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	results, err = d.QueryConn(ctx, "GET #", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Equal(t, "GET #", results[0].Statement)
@@ -127,12 +127,12 @@ func TestQueryConnScripts(t *testing.T) {
 // TestQueryConnExplainRefused holds the refusal in front of the session, as the
 // old driver had it: an explain never reaches the server.
 func TestQueryConnExplainRefused(t *testing.T) {
-	_, err := (&Driver{}).QueryConn(context.Background(), nil, "GET key", db.QueryContext{Explain: true})
+	_, err := (&Driver{}).QueryConn(context.Background(), "GET key", db.QueryContext{Explain: true})
 	require.ErrorContains(t, err, "Redis does not support EXPLAIN")
 }
 
 func TestQueryConnRejectsUnknownOption(t *testing.T) {
-	_, err := (&Driver{}).QueryConn(context.Background(), nil, "GET key", db.QueryContext{
+	_, err := (&Driver{}).QueryConn(context.Background(), "GET key", db.QueryContext{
 		Option: &v1pb.QueryOption{RedisRunCommandsOn: v1pb.QueryOption_RedisRunCommandsOn(99)},
 	})
 	require.ErrorContains(t, err, "unknown RedisRunCommandOn enum")
@@ -150,7 +150,7 @@ func TestExecuteRefusedStopsScript(t *testing.T) {
 	_, err = d.Execute(ctx, "INCR counter\nSET after value", db.ExecuteOptions{})
 	require.ErrorContains(t, err, "ERR value is not an integer or out of range")
 
-	results, err := d.QueryConn(ctx, nil, "GET after", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	results, err := d.QueryConn(ctx, "GET after", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Len(t, results[0].Rows, 1)

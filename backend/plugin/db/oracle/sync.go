@@ -6,6 +6,7 @@ import (
 	metadatapb "github.com/bytebase/omni/metadata"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 // SyncInstance reads the server version and its schemas. Oracle's instance
@@ -15,10 +16,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-	}, nil
+	return util.OmniInstanceToMetadata(instance, false), nil
 }
 
 // SyncDBSchema reads the schema the driver was opened on.

@@ -46,7 +46,6 @@ package hive
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"fmt"
 	"io"
 	"strings"
@@ -193,7 +192,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	return d.impl.Execute(ctx, statement, odriver.ExecuteOptions{
 		Transaction: odriver.AutoCommit,
 		MaxRetries:  opts.MaximumRetries,
-		Log:         executeLogger{opts: opts},
+		Log:         util.NewExecuteLogger(opts),
 	})
 }
 
@@ -202,7 +201,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // returns no rows with an operation that has none, so a DDL statement sent here
 // reports Hive's error on its result instead of failing the call, which is how
 // the driver this replaced behaved too.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	session, err := d.impl.Session(ctx)
 	if err != nil {
 		return nil, err
@@ -212,7 +211,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	results, err := session.Query(ctx, statement, odriver.QueryOptions{
 		Schema:         queryContext.Schema,
 		Explain:        queryContext.Explain,
-		ExplainFormat:  explainFormat(queryContext.Option.GetExplainFormat()),
+		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "TEXT", v1pb.QueryOption_JSON),
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 	})
 	if err != nil {
@@ -228,16 +227,6 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	return converted, nil
 }
 
-// explainFormat is the plan format in hive/driver's vocabulary: FORMATTED for
-// JSON, plain EXPLAIN for everything else. QueryContext.Limit is not passed on:
-// Hive has no parser here to place a LIMIT with, so the driver caps bytes only.
-func explainFormat(format v1pb.QueryOption_ExplainFormat) string {
-	if format == v1pb.QueryOption_JSON {
-		return "JSON"
-	}
-	return "TEXT"
-}
-
 // SyncInstance reads the server version and its databases. Hive has no role a
 // sync reads.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
@@ -245,10 +234,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-	}, nil
+	return util.OmniInstanceToMetadata(instance, false), nil
 }
 
 // SyncDBSchema reads the database the driver was opened on.
@@ -327,47 +313,4 @@ func toRowValue(value odriver.Value) *v1pb.RowValue {
 	default:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: fmt.Sprintf("%v", value)}}
 	}
-}
-
-// executeLogger reports the driver contract's execute steps to the task run's
-// log.
-type executeLogger struct {
-	opts db.ExecuteOptions
-}
-
-func (l executeLogger) CommandExecute(command odriver.Command) {
-	l.opts.LogCommandExecute(&storepb.Range{
-		Start: int32(command.ByteStart),
-		End:   int32(command.ByteEnd),
-	}, command.Text)
-}
-
-func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
-	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
-}
-
-func (l executeLogger) TransactionControl(op odriver.TransactionOp, err error) {
-	var t storepb.TaskRunLog_TransactionControl_Type
-	switch op {
-	case odriver.Begin:
-		t = storepb.TaskRunLog_TransactionControl_BEGIN
-	case odriver.Commit:
-		t = storepb.TaskRunLog_TransactionControl_COMMIT
-	case odriver.Rollback:
-		t = storepb.TaskRunLog_TransactionControl_ROLLBACK
-	default:
-		return
-	}
-	l.opts.LogTransactionControl(t, errorString(err))
-}
-
-func (l executeLogger) Retry(err error, attempt, _ int) {
-	l.opts.LogRetryInfo(err, attempt)
-}
-
-func errorString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
 }

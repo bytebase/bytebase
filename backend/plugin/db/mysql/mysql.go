@@ -14,8 +14,7 @@
 // QueryConn holds one contract session from the first call until Close. The
 // editor asks one statement at a time on a driver it keeps, so a session
 // variable, a temporary table or an open transaction survives between calls,
-// as it did on the caller's pooled *sql.Conn. The *sql.Conn argument is unused:
-// the contract's Session is not one.
+// as it did on the caller's pooled connection.
 //
 // Known differences from the driver this replaced:
 //   - A script's parse error arrives before any statement of it runs, because
@@ -42,22 +41,14 @@ package mysql
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
-	"database/sql"
-	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"sync"
-	"sync/atomic"
-	"time"
 
 	"cloud.google.com/go/cloudsqlconn"
-	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/sync/singleflight"
 
 	odriver "github.com/bytebase/omni/driver"
 	mariadbast "github.com/bytebase/omni/mariadb/ast"
@@ -69,9 +60,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -200,20 +189,11 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 }
 
 func (*Driver) openRDS(ctx context.Context, connCfg db.ConnectionConfig, cfg *odriver.Config) error {
-	dataSource := connCfg.DataSource
-	dbEndpoint := fmt.Sprintf("%s:%s", dataSource.Host, dataSource.Port)
-	awsConfig, err := util.GetAWSConnectionConfig(ctx, connCfg)
+	token, err := util.RDSAuthToken(ctx, connCfg)
 	if err != nil {
-		return errors.Wrap(err, "load aws config failed")
-	}
-	if err := util.AssumeRoleIfNeeded(ctx, &awsConfig, connCfg.ConnectionContext, dataSource.GetAwsCredential()); err != nil {
 		return err
 	}
-	token, err := auth.BuildAuthToken(ctx, dbEndpoint, dataSource.GetRegion(), dataSource.Username, awsConfig.Credentials)
-	if err != nil {
-		return errors.Wrap(err, "failed to create authentication token")
-	}
-	tlsConfig, err := rdsTLSConfig(ctx, dataSource)
+	tlsConfig, err := util.RDSTLSConfig(ctx, connCfg.DataSource)
 	if err != nil {
 		return err
 	}
@@ -258,23 +238,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	roles := make([]*storepb.InstanceRole, len(instance.Roles))
-	for i, role := range instance.Roles {
-		roles[i] = &storepb.InstanceRole{
-			Name:            role.Name,
-			ConnectionLimit: role.ConnectionLimit,
-			ValidUntil:      role.ValidUntil,
-			Attribute:       role.Attribute,
-		}
-	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-		Metadata: &storepb.Instance{
-			MysqlLowerCaseTableNames: instance.LowerCaseTableNames,
-			Roles:                    roles,
-		},
-	}, nil
+	return util.OmniInstanceToMetadata(instance, true), nil
 }
 
 func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
@@ -288,29 +252,21 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb
 // Execute runs the script's statements, reporting each step to the task run
 // log. The transaction directive is read here unless the caller already did.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	config, cleaned := base.ParseTransactionConfig(statement)
-	if config.Mode == transaction.ModeUnspecified {
-		config.Mode = transaction.DefaultMode()
-	}
-	mode := odriver.Transactional
-	if config.Mode == transaction.ModeOff {
-		mode = odriver.AutoCommit
-	}
+	mode, isolation, cleaned := util.ParseTransactionMode(statement)
 	// CreateDatabase and MaximumRetries are not mapped: the driver this
 	// replaced read neither, and mapping them would change a create-database
 	// script's transaction shape and retry a script the product did not retry.
 	return d.driver.Execute(ctx, cleaned, odriver.ExecuteOptions{
 		Transaction: mode,
-		Isolation:   odriver.IsolationLevel(config.Isolation),
-		Log:         &executeLogger{opts: opts},
+		Isolation:   isolation,
+		Log:         util.NewExecuteLogger(opts),
 	})
 }
 
-// QueryConn runs the script on the driver's session. The *sql.Conn argument is
-// the caller's pooled connection, which the contract cannot accept; the adapter
-// holds its own session instead, from the first call until Close, so a stream's
-// session state survives between calls.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn runs the script on the driver's session. The adapter holds its own
+// session from the first call until Close, so a stream's session state survives
+// between calls.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	d.sessionMu.Lock()
 	defer d.sessionMu.Unlock()
 	if d.session == nil {
@@ -332,7 +288,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	results, err := session.Query(ctx, statement, odriver.QueryOptions{
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
-		ExplainFormat:  explainFormat(queryContext),
+		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON),
 		MaxResultBytes: maxResultBytes,
 		MaskingEnabled: queryContext.MaskingEnabled,
 	})
@@ -348,17 +304,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		_ = session.Close()
 		d.session = nil
 	}
-	queryResults := make([]*v1pb.QueryResult, 0, len(results))
-	for _, result := range results {
-		queryResult := util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize)
-		if queryContext.Explain {
-			// An explain request's rows are the plan already; the old driver
-			// reported no typed plan for one.
-			queryResult.QueryPlan = nil
-		}
-		queryResults = append(queryResults, queryResult)
-	}
-	return queryResults, nil
+	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, queryContext.Explain), nil
 }
 
 // Probe runs a live review rule's probe on a fresh session. The contract has no
@@ -442,17 +388,6 @@ func probeValue(value odriver.Value) any {
 	}
 }
 
-func explainFormat(queryContext db.QueryContext) string {
-	switch db.ExplainFormat(queryContext.Option.GetExplainFormat()) {
-	case base.ExplainFormatJSON:
-		return "JSON"
-	case base.ExplainFormatText:
-		return "TEXT"
-	default:
-		return ""
-	}
-}
-
 // CountAffectedRows returns the planner's estimate for one DML statement.
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
 	return d.driver.CountAffectedRows(ctx, statement)
@@ -479,133 +414,4 @@ func (d *Driver) EstimateAffectedRowsMariaDB(ctx context.Context, stmt mariadbas
 		return 0, errors.New("mysql: EstimateAffectedRowsMariaDB needs the MariaDB driver")
 	}
 	return driver.EstimateAffectedRows(ctx, stmt, query, plan)
-}
-
-// executeLogger bridges the contract's ExecuteLogger onto the task run log.
-type executeLogger struct {
-	opts db.ExecuteOptions
-}
-
-func (l *executeLogger) CommandExecute(command odriver.Command) {
-	l.opts.LogCommandExecute(&storepb.Range{Start: int32(command.ByteStart), End: int32(command.ByteEnd)}, command.Text)
-}
-
-func (l *executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
-	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
-}
-
-func (l *executeLogger) TransactionControl(op odriver.TransactionOp, err error) {
-	l.opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_Type(storepb.TaskRunLog_TransactionControl_Type_value[string(op)]), errorString(err))
-}
-
-func (l *executeLogger) Retry(err error, attempt, _ int) {
-	l.opts.LogRetryInfo(err, attempt)
-}
-
-func errorString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
-}
-
-// rdsCertBundleURL is a variable so tests can point it at a local server.
-var rdsCertBundleURL = "https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem"
-
-const rdsCertFetchTimeout = 30 * time.Second
-
-const maxRDSCertBundleSize int64 = 4 << 20
-
-var (
-	rdsCertPool  atomic.Pointer[x509.CertPool]
-	rdsCertGroup singleflight.Group
-)
-
-// rdsRootCAs prefers an operator-supplied CA, so a deployment can serve RDS IAM
-// connections without any outbound network access.
-func rdsRootCAs(ctx context.Context, dataSource *storepb.DataSource) (*x509.CertPool, error) {
-	if ca := dataSource.GetSslCa(); ca != "" {
-		pool := x509.NewCertPool()
-		if !pool.AppendCertsFromPEM([]byte(ca)) {
-			return nil, errors.Errorf("failed to parse ssl_ca certificates")
-		}
-		return pool, nil
-	}
-	return cachedRDSCertPool(ctx)
-}
-
-func cachedRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
-	if pool := rdsCertPool.Load(); pool != nil {
-		return pool, nil
-	}
-	ch := rdsCertGroup.DoChan("", func() (any, error) {
-		if pool := rdsCertPool.Load(); pool != nil {
-			return pool, nil
-		}
-		fetchCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rdsCertFetchTimeout)
-		defer cancel()
-		pool, err := getRDSCertPool(fetchCtx)
-		if err != nil {
-			return nil, err
-		}
-		rdsCertPool.Store(pool)
-		return pool, nil
-	})
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case res := <-ch:
-		if res.Err != nil {
-			return nil, res.Err
-		}
-		pool, ok := res.Val.(*x509.CertPool)
-		if !ok {
-			return nil, errors.Errorf("unexpected RDS cert pool type %T", res.Val)
-		}
-		return pool, nil
-	}
-}
-
-func getRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rdsCertBundleURL, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build request for rds cert")
-	}
-	client := &http.Client{Timeout: rdsCertFetchTimeout}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("failed to download RDS CA certificates: %s", resp.Status)
-	}
-	pem, err := io.ReadAll(io.LimitReader(resp.Body, maxRDSCertBundleSize+1))
-	if err != nil {
-		return nil, err
-	}
-	if int64(len(pem)) > maxRDSCertBundleSize {
-		return nil, errors.Errorf("RDS CA bundle exceeds %d bytes", maxRDSCertBundleSize)
-	}
-	rootCertPool := x509.NewCertPool()
-	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
-		return nil, errors.Errorf("failed to parse RDS CA certificates")
-	}
-	return rootCertPool, nil
-}
-
-// rdsTLSConfig builds the TLS config for an RDS IAM connection.
-func rdsTLSConfig(ctx context.Context, dataSource *storepb.DataSource) (*tls.Config, error) {
-	if !dataSource.GetVerifyTlsCertificate() {
-		return &tls.Config{InsecureSkipVerify: true}, nil // NOSONAR(go:S4830,go:S5527) operator disabled verification
-	}
-	rootCertPool, err := rdsRootCAs(ctx, dataSource)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get RDS cert pool")
-	}
-	return &tls.Config{ // NOSONAR(go:S4830) VerifyPeerCertificate below verifies chain and hostname
-		RootCAs:               rootCertPool,
-		InsecureSkipVerify:    true,
-		VerifyPeerCertificate: util.CreateCertificateVerifier(rootCertPool, dataSource.GetHost()),
-	}, nil
 }

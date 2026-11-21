@@ -21,9 +21,8 @@
 //   - A probe runs on one session so its pre-executions and its statement share
 //     a transaction, opened with the "START TRANSACTION" go-sql-driver's
 //     BeginTx sends and ended with "ROLLBACK".
-//   - QueryConn takes a *sql.Conn the caller pooled and ignores it: the omni
-//     driver hands out its own Session, which the adapter keeps until Close, so
-//     the statements of one editor request share it.
+//   - QueryConn runs on the omni driver's Session, which the adapter keeps
+//     until Close, so the statements of one editor request share it.
 //   - Dump renders omni's catalog, whose partitions keep their ordinal order;
 //     that order is what makes a partitioned table's dump restorable.
 //   - Query results carry the contract's typed values: an unsigned integer is a
@@ -40,7 +39,6 @@ package tidb
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"io"
 	"net"
 	"sync"
@@ -56,9 +54,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -181,54 +177,16 @@ func (d *Driver) Ping(ctx context.Context) error {
 // Execute runs the script's statements under the transaction directive it
 // carries, reporting each step to the task run log.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	config, cleanedStatement := base.ParseTransactionConfig(statement)
-	mode := config.Mode
-	if mode == transaction.ModeUnspecified {
-		mode = transaction.DefaultMode()
-	}
-	options := omnidriver.ExecuteOptions{
-		Transaction: omnidriver.Transactional,
+	mode, _, cleanedStatement := util.ParseTransactionMode(statement)
+	return d.impl.Execute(ctx, cleanedStatement, omnidriver.ExecuteOptions{
+		Transaction: mode,
 		MaxRetries:  opts.MaximumRetries,
-		Log:         &executeLogger{opts: opts},
-	}
-	if mode == transaction.ModeOff {
-		options.Transaction = omnidriver.AutoCommit
-	}
-	return d.impl.Execute(ctx, cleanedStatement, options)
-}
-
-// executeLogger bridges the contract's ExecuteLogger onto the task run log.
-type executeLogger struct {
-	opts db.ExecuteOptions
-}
-
-func (l *executeLogger) CommandExecute(command omnidriver.Command) {
-	// The contract's command text and byte range both include the statement's
-	// terminating semicolon, which is the range Bytebase's splitter reported.
-	l.opts.LogCommandExecute(&storepb.Range{Start: int32(command.ByteStart), End: int32(command.ByteEnd)}, command.Text)
-}
-
-func (l *executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
-	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
-}
-
-func (l *executeLogger) TransactionControl(op omnidriver.TransactionOp, err error) {
-	l.opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_Type(storepb.TaskRunLog_TransactionControl_Type_value[string(op)]), errorString(err))
-}
-
-func (l *executeLogger) Retry(err error, attempt, _ int) {
-	l.opts.LogRetryInfo(err, attempt)
-}
-
-func errorString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
+		Log:         util.NewExecuteLogger(opts),
+	})
 }
 
 // QueryConn queries a SQL statement on the driver's session.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// A non-positive cap means "no rows" to the product and "no cap" to the
 	// contract, so refuse it rather than read every row a policy meant to
 	// bound.
@@ -245,7 +203,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		Schema:         queryContext.Schema,
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
-		ExplainFormat:  explainFormat(queryContext.Option.GetExplainFormat()),
+		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "TEXT", v1pb.QueryOption_JSON),
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 		MaskingEnabled: queryContext.MaskingEnabled,
 	})
@@ -260,27 +218,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		d.discardSessionLocked(session)
 	}
 
-	queryResults := make([]*v1pb.QueryResult, 0, len(results))
-	for _, result := range results {
-		queryResult := util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize)
-		// QueryPlan describes a plan the caller's own statement asked for. An
-		// explain request's rows are the plan already, and the old driver
-		// reported no typed plan for one.
-		if queryContext.Explain {
-			queryResult.QueryPlan = nil
-		}
-		queryResults = append(queryResults, queryResult)
-	}
-	return queryResults, nil
-}
-
-// explainFormat is the plan format in tidb/driver's vocabulary: only JSON has a
-// reader downstream, and every other format gets the engine's default plan.
-func explainFormat(format v1pb.QueryOption_ExplainFormat) string {
-	if format == v1pb.QueryOption_JSON {
-		return "JSON"
-	}
-	return "TEXT"
+	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, queryContext.Explain), nil
 }
 
 // discardSessionLocked closes a session a statement took with it, so the
@@ -313,21 +251,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	roles := make([]*storepb.InstanceRole, 0, len(instance.Roles))
-	for _, role := range instance.Roles {
-		roles = append(roles, &storepb.InstanceRole{
-			Name:      role.Name,
-			Attribute: role.Attribute,
-		})
-	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-		Metadata: &storepb.Instance{
-			MysqlLowerCaseTableNames: instance.LowerCaseTableNames,
-			Roles:                    roles,
-		},
-	}, nil
+	return util.OmniInstanceToMetadata(instance, true), nil
 }
 
 // SyncDBSchema syncs the connected database's schema. A database the server no

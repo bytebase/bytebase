@@ -24,6 +24,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 func TestPGConfigKeepsEachValueWhole(t *testing.T) {
@@ -151,7 +152,7 @@ func TestRDSIAMBuildsATokenForTheWholeUser(t *testing.T) {
 			},
 		},
 	}
-	token, err := getRDSConnectionPassword(context.Background(), config)
+	token, err := util.RDSAuthToken(context.Background(), config)
 	require.NoError(t, err)
 	require.Contains(t, token, "X-Amz-Signature")
 
@@ -417,11 +418,11 @@ func TestQueryConnSearchPathIncludesPublicAfterSelectedSchema(t *testing.T) {
 		Limit:                5000,
 		MaximumSQLResultSize: 1 << 30,
 	}
-	results, err := driver.QueryConn(ctx, nil, `SELECT public.polar_alter_relation_to_oss_with_indexes('content_messages_2025q1'::text);`, queryContext)
+	results, err := driver.QueryConn(ctx, `SELECT public.polar_alter_relation_to_oss_with_indexes('content_messages_2025q1'::text);`, queryContext)
 	require.NoError(t, err)
 	require.Equal(t, "content_messages_2025q1", firstStringValue(t, results))
 
-	results, err = driver.QueryConn(ctx, nil, `SELECT marker FROM lookup_precedence;`, queryContext)
+	results, err = driver.QueryConn(ctx, `SELECT marker FROM lookup_precedence;`, queryContext)
 	require.NoError(t, err)
 	require.Equal(t, "app", firstStringValue(t, results))
 }
@@ -441,7 +442,7 @@ func TestQueryConnSearchPathEscapesSelectedSchemaName(t *testing.T) {
 
 	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
 
-	results, err := driver.QueryConn(ctx, nil, `SELECT marker FROM lookup_precedence;`, db.QueryContext{
+	results, err := driver.QueryConn(ctx, `SELECT marker FROM lookup_precedence;`, db.QueryContext{
 		Schema:               `app"schema`,
 		Limit:                5000,
 		MaximumSQLResultSize: 1 << 30,
@@ -472,7 +473,7 @@ func TestQueryConnExplainFormat(t *testing.T) {
 
 	const statement = `SELECT note FROM plan_target WHERE id > 100;`
 
-	textResults, err := driver.QueryConn(ctx, nil, statement, db.QueryContext{
+	textResults, err := driver.QueryConn(ctx, statement, db.QueryContext{
 		Explain:              true,
 		Limit:                5000,
 		MaximumSQLResultSize: 1 << 30,
@@ -483,7 +484,7 @@ func TestQueryConnExplainFormat(t *testing.T) {
 	require.Nil(t, textResults[0].GetQueryPlan(), "an explain request's format is the request's, not the statement's")
 	require.Contains(t, firstStringValue(t, textResults), "(cost=")
 
-	jsonResults, err := driver.QueryConn(ctx, nil, statement, db.QueryContext{
+	jsonResults, err := driver.QueryConn(ctx, statement, db.QueryContext{
 		Explain:              true,
 		Limit:                5000,
 		MaximumSQLResultSize: 1 << 30,
@@ -513,7 +514,7 @@ func TestQueryConnExplainFormat(t *testing.T) {
 	// A statement that already asks for a plan is planned once: the request's
 	// format replaces the caller's EXPLAIN instead of wrapping it, which the
 	// server would reject as a syntax error.
-	planOfPlan, err := driver.QueryConn(ctx, nil, "EXPLAIN (FORMAT TEXT) "+statement, db.QueryContext{
+	planOfPlan, err := driver.QueryConn(ctx, "EXPLAIN (FORMAT TEXT) "+statement, db.QueryContext{
 		Explain:              true,
 		Limit:                5000,
 		MaximumSQLResultSize: 1 << 30,
@@ -538,7 +539,7 @@ func TestQueryConnReportsAnAffectedRowForAStatementWithoutACount(t *testing.T) {
 	dbName, _ := testcontainer.NewPgDatabase(t)
 	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
 
-	results, err := driver.QueryConn(ctx, nil, "CREATE TABLE counted (id int);", db.QueryContext{Limit: 5000, MaximumSQLResultSize: 1 << 20})
+	results, err := driver.QueryConn(ctx, "CREATE TABLE counted (id int);", db.QueryContext{Limit: 5000, MaximumSQLResultSize: 1 << 20})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Equal(t, []string{"Affected Rows"}, results[0].GetColumnNames())
@@ -559,10 +560,10 @@ func TestQueryConnHoldsOneSession(t *testing.T) {
 	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
 
 	queryContext := db.QueryContext{Limit: 5000, MaximumSQLResultSize: 1 << 20}
-	_, err := driver.QueryConn(ctx, nil, "SET bytebase.kept = 'yes'; CREATE TEMP TABLE kept (id int);", queryContext)
+	_, err := driver.QueryConn(ctx, "SET bytebase.kept = 'yes'; CREATE TEMP TABLE kept (id int);", queryContext)
 	require.NoError(t, err)
 
-	results, err := driver.QueryConn(ctx, nil, "SELECT current_setting('bytebase.kept'), (SELECT count(*) FROM kept);", queryContext)
+	results, err := driver.QueryConn(ctx, "SELECT current_setting('bytebase.kept'), (SELECT count(*) FROM kept);", queryContext)
 	require.NoError(t, err)
 	values := results[0].GetRows()[0].GetValues()
 	require.Equal(t, "yes", values[0].GetStringValue())
@@ -581,7 +582,7 @@ func TestQueryConnReportsAPlanOfItsOwn(t *testing.T) {
 	require.NoError(t, err)
 
 	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-	results, err := driver.QueryConn(ctx, nil, "EXPLAIN (FORMAT JSON) SELECT * FROM plan_target;", db.QueryContext{
+	results, err := driver.QueryConn(ctx, "EXPLAIN (FORMAT JSON) SELECT * FROM plan_target;", db.QueryContext{
 		Limit:                5000,
 		MaximumSQLResultSize: 1 << 30,
 	})
@@ -598,7 +599,7 @@ func TestQueryConnReportsTheServerError(t *testing.T) {
 	dbName, _ := testcontainer.NewPgDatabase(t)
 
 	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-	results, err := driver.QueryConn(ctx, nil, "SELECT * FROM missing_table;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
+	results, err := driver.QueryConn(ctx, "SELECT * FROM missing_table;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Contains(t, results[0].GetError(), `relation "missing_table" does not exist`)
@@ -618,8 +619,7 @@ func TestQueryConnWritesATimestampBeyondTheProtoRangeAsText(t *testing.T) {
 	dbName, _ := testcontainer.NewPgDatabase(t)
 
 	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-	results, err := driver.QueryConn(ctx, nil,
-		"SELECT '0001-01-01 BC'::timestamp AS ts, '2024-01-02 03:04:05'::timestamp AS ok;",
+	results, err := driver.QueryConn(ctx, "SELECT '0001-01-01 BC'::timestamp AS ts, '2024-01-02 03:04:05'::timestamp AS ok;",
 		db.QueryContext{MaximumSQLResultSize: 1 << 30})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
@@ -661,7 +661,7 @@ func TestQueryConnMergeCTEDoesNotLeakRows(t *testing.T) {
 
 	// Baseline: a plain SELECT returns the secret as a data row. This proves the
 	// harness actually surfaces row data, so the negative assertion below is meaningful.
-	selectResults, err := driver.QueryConn(ctx, nil, `SELECT secret FROM secret_doc`, db.QueryContext{Limit: 5000, MaximumSQLResultSize: 1 << 30})
+	selectResults, err := driver.QueryConn(ctx, `SELECT secret FROM secret_doc`, db.QueryContext{Limit: 5000, MaximumSQLResultSize: 1 << 30})
 	require.NoError(t, err)
 	require.True(t, resultsContainValue(selectResults, secret),
 		"baseline plain SELECT should return the secret as a data row")
@@ -674,7 +674,7 @@ func TestQueryConnMergeCTEDoesNotLeakRows(t *testing.T) {
 		WHEN MATCHED THEN UPDATE SET id = t.id
 		RETURNING t.secret AS secret
 	) SELECT secret FROM x`
-	mergeResults, err := driver.QueryConn(ctx, nil, mergeCTE, db.QueryContext{Limit: 5000, MaximumSQLResultSize: 1 << 30})
+	mergeResults, err := driver.QueryConn(ctx, mergeCTE, db.QueryContext{Limit: 5000, MaximumSQLResultSize: 1 << 30})
 	require.NoError(t, err)
 	require.False(t, resultsContainValue(mergeResults, secret),
 		"SECURITY: MERGE-in-CTE must not return the masked column as data rows; got %v", mergeResults)
@@ -855,7 +855,7 @@ func TestTaskRunSessionReadsTheRunSession(t *testing.T) {
 	reader := pgTestDriver(ctx, t, pgContainer, dbName, nil)
 
 	go func() {
-		_, _ = runDriver.QueryConn(ctx, nil, "SELECT pg_sleep(5);", db.QueryContext{MaximumSQLResultSize: 1 << 30})
+		_, _ = runDriver.QueryConn(ctx, "SELECT pg_sleep(5);", db.QueryContext{MaximumSQLResultSize: 1 << 30})
 	}()
 	t.Cleanup(func() {
 		_, _ = rawDB.Exec(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = 'bytebase-taskrun-42'`)

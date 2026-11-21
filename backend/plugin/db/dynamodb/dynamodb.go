@@ -36,7 +36,6 @@ package dynamodb
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -162,13 +161,12 @@ func (d *Driver) Ping(ctx context.Context) error {
 // writes report no affected rows.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	return d.inner.Execute(ctx, statement, omnidriver.ExecuteOptions{
-		Log: executeLogger{opts: opts},
+		Log: util.NewExecuteLogger(opts),
 	})
 }
 
-// QueryConn runs a read-only PartiQL script, one result per statement. The
-// *sql.Conn is ignored: DynamoDB has no session state.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+// QueryConn runs a read-only PartiQL script, one result per statement.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	session, err := d.inner.Session(ctx)
 	if err != nil {
 		return nil, err
@@ -198,10 +196,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-	}, nil
+	return util.OmniInstanceToMetadata(instance, false), nil
 }
 
 // SyncDBSchema reads every table of the region.
@@ -260,45 +255,4 @@ func convertValue(value omnidriver.Value) *v1pb.RowValue {
 	default:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: fmt.Sprintf("%v", value)}}
 	}
-}
-
-type executeLogger struct {
-	opts db.ExecuteOptions
-}
-
-func (l executeLogger) CommandExecute(command omnidriver.Command) {
-	l.opts.LogCommandExecute(&storepb.Range{
-		Start: int32(command.ByteStart),
-		End:   int32(command.ByteEnd),
-	}, command.Text)
-}
-
-func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
-	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
-}
-
-func (l executeLogger) TransactionControl(op omnidriver.TransactionOp, err error) {
-	var transactionType storepb.TaskRunLog_TransactionControl_Type
-	switch op {
-	case omnidriver.Begin:
-		transactionType = storepb.TaskRunLog_TransactionControl_BEGIN
-	case omnidriver.Commit:
-		transactionType = storepb.TaskRunLog_TransactionControl_COMMIT
-	case omnidriver.Rollback:
-		transactionType = storepb.TaskRunLog_TransactionControl_ROLLBACK
-	default:
-		// An operation the contract does not name is left unspecified.
-	}
-	l.opts.LogTransactionControl(transactionType, errorString(err))
-}
-
-func (l executeLogger) Retry(err error, attempt, _ int) {
-	l.opts.LogRetryInfo(err, attempt)
-}
-
-func errorString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
 }

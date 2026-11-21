@@ -307,7 +307,7 @@ func TestQueryConnReadsBothAnswerShapes(t *testing.T) {
 		"GET /_cat/indices?h=index":     "text:alpha",
 	})
 
-	results, err := server.open(t).QueryConn(context.Background(), nil, `
+	results, err := server.open(t).QueryConn(context.Background(), `
 POST /alpha/_search
 {"query": {"match_all": {}}}
 
@@ -355,7 +355,7 @@ func TestQueryConnFailsTheCall(t *testing.T) {
 		"GET /alpha/_doc/1": `{}`,
 		"*":                 `!{"error":{"type":"index_not_found_exception"}}`,
 	})
-	results, err := server.open(t).QueryConn(context.Background(), nil, `
+	results, err := server.open(t).QueryConn(context.Background(), `
 GET /alpha/_doc/1
 GET /nope/_search`, db.QueryContext{})
 	require.Nil(t, results)
@@ -365,7 +365,7 @@ GET /nope/_search`, db.QueryContext{})
 
 func TestQueryConnEmptyAnswer(t *testing.T) {
 	server := newTestServer(t, map[string]string{"HEAD /alpha": ""})
-	results, err := server.open(t).QueryConn(context.Background(), nil, "HEAD /alpha", db.QueryContext{})
+	results, err := server.open(t).QueryConn(context.Background(), "HEAD /alpha", db.QueryContext{})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Empty(t, results[0].ColumnNames)
@@ -375,7 +375,7 @@ func TestQueryConnEmptyAnswer(t *testing.T) {
 
 func TestQueryConnUnsupportedContentType(t *testing.T) {
 	server := newTestServer(t, map[string]string{"GET /": "png:not json"})
-	results, err := server.open(t).QueryConn(context.Background(), nil, "GET /", db.QueryContext{})
+	results, err := server.open(t).QueryConn(context.Background(), "GET /", db.QueryContext{})
 	require.Nil(t, results)
 	require.ErrorContains(t, err, "Content-Type not supported: image/png")
 }
@@ -384,7 +384,7 @@ func TestQueryConnTruncatesAtTheCap(t *testing.T) {
 	server := newTestServer(t, map[string]string{"GET /alpha/_search": `{"took": 1}`})
 	// One byte is smaller than any answer's columns, so the row crosses the cap.
 	const limit = int64(1)
-	results, err := server.open(t).QueryConn(context.Background(), nil, "GET /alpha/_search", db.QueryContext{MaximumSQLResultSize: limit})
+	results, err := server.open(t).QueryConn(context.Background(), "GET /alpha/_search", db.QueryContext{MaximumSQLResultSize: limit})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Len(t, results[0].Rows, 1, "the row that crossed the cap is kept")
@@ -402,7 +402,7 @@ func TestQueryConnBulkFailure(t *testing.T) {
 			]
 		}`,
 	})
-	results, err := server.open(t).QueryConn(context.Background(), nil, `
+	results, err := server.open(t).QueryConn(context.Background(), `
 POST /alpha/_bulk
 {"index":{"_id":"10"}}
 {"name":"row 10"}
@@ -420,7 +420,7 @@ func TestExplainProfilesTheSearch(t *testing.T) {
 			"profile": {"shards": [{"id": "[node][alpha][0]"}]}
 		}`,
 	})
-	results, err := server.open(t).QueryConn(context.Background(), nil, `
+	results, err := server.open(t).QueryConn(context.Background(), `
 POST /alpha/_search
 {"query": {"match_all": {}}}`, db.QueryContext{Explain: true})
 	require.NoError(t, err)
@@ -453,7 +453,7 @@ func TestExplainRefusesWhatIsNotASearch(t *testing.T) {
 		"POST /alpha/_msearch\n{}\n{\"query\":{\"match_all\":{}}}",
 		"POST /alpha/_doc/_search\n{\"id\":1}",
 	} {
-		results, err := server.open(t).QueryConn(context.Background(), nil, script, db.QueryContext{Explain: true})
+		results, err := server.open(t).QueryConn(context.Background(), script, db.QueryContext{Explain: true})
 		require.Nil(t, results, script)
 		require.ErrorContains(t, err, "is not a search to explain", script)
 	}
@@ -464,7 +464,7 @@ func TestExplainWithoutAProfile(t *testing.T) {
 	server := newTestServer(t, map[string]string{
 		"POST /alpha/_search": `{"took": 1, "hits": {"total": {"value": 0}}}`,
 	})
-	results, err := server.open(t).QueryConn(context.Background(), nil, "POST /alpha/_search\n{}", db.QueryContext{Explain: true})
+	results, err := server.open(t).QueryConn(context.Background(), "POST /alpha/_search\n{}", db.QueryContext{Explain: true})
 	require.Nil(t, results)
 	require.ErrorContains(t, err, "the search answered with no profile to explain")
 }

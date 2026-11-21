@@ -41,7 +41,7 @@ func TestQueryConnSerializesStatementsOnTheSession(t *testing.T) {
 	var wg sync.WaitGroup
 	for range 8 {
 		wg.Go(func() {
-			_, _ = d.QueryConn(context.Background(), nil, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
+			_, _ = d.QueryConn(context.Background(), "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
 		})
 	}
 	wg.Wait()

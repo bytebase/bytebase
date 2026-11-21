@@ -418,7 +418,7 @@ func runParityCorpus(t *testing.T, driver, missingDriver db.Driver, recorder *pa
 
 	for _, query := range parityCorpus {
 		recorder.reset()
-		results, err := driver.QueryConn(ctx, nil, query.script, db.QueryContext{Container: query.container, Limit: query.limit})
+		results, err := driver.QueryConn(ctx, query.script, db.QueryContext{Container: query.container, Limit: query.limit})
 		entry := parityQuery{
 			Name:      query.name,
 			Script:    query.script,

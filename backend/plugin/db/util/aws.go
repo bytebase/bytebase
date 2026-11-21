@@ -9,12 +9,31 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
+
+// RDSAuthToken builds an AWS RDS IAM authentication token for config.
+func RDSAuthToken(ctx context.Context, config db.ConnectionConfig) (string, error) {
+	ds := config.DataSource
+	awsConfig, err := GetAWSConnectionConfig(ctx, config)
+	if err != nil {
+		return "", errors.Wrap(err, "load aws config failed")
+	}
+	if err := AssumeRoleIfNeeded(ctx, &awsConfig, config.ConnectionContext, ds.GetAwsCredential()); err != nil {
+		return "", err
+	}
+	dbEndpoint := fmt.Sprintf("%s:%s", ds.GetHost(), ds.GetPort())
+	token, err := auth.BuildAuthToken(ctx, dbEndpoint, ds.GetRegion(), ds.GetUsername(), awsConfig.Credentials)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create authentication token")
+	}
+	return token, nil
+}
 
 // AssumeRoleIfNeeded checks if role assumption is configured and updates the AWS config with assumed role credentials.
 // This is a shared utility used by multiple AWS service drivers (Elasticsearch, RDS, etc.).

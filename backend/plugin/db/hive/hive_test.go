@@ -77,9 +77,9 @@ func TestHiveConfigTLS(t *testing.T) {
 }
 
 func TestExplainFormat(t *testing.T) {
-	require.Equal(t, "JSON", explainFormat(v1pb.QueryOption_JSON))
-	require.Equal(t, "TEXT", explainFormat(v1pb.QueryOption_TEXT))
-	require.Equal(t, "TEXT", explainFormat(v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED))
+	require.Equal(t, "JSON", util.OmniExplainFormat(v1pb.QueryOption_JSON, "TEXT", v1pb.QueryOption_JSON))
+	require.Equal(t, "TEXT", util.OmniExplainFormat(v1pb.QueryOption_TEXT, "TEXT", v1pb.QueryOption_JSON))
+	require.Equal(t, "TEXT", util.OmniExplainFormat(v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, "TEXT", v1pb.QueryOption_JSON))
 }
 
 // TestToRowValue keeps the product's shapes: a NULL is null, a 32-bit number is

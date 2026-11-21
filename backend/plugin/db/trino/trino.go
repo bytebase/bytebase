@@ -8,10 +8,8 @@
 // does not add an SSH tunnel or connection parameters: the old driver mapped
 // neither, and the contract's Config.Dial and Config.Params stay unset.
 //
-// QueryConn takes a *sql.Conn the caller pooled, but the omni driver
-// hands out its own Session; the driver keeps that session until Close, so the
-// statements of one editor request share it as they shared the caller's
-// connection before.
+// QueryConn runs on the omni driver's Session, which the adapter keeps until
+// Close so the statements of one editor request share it.
 package trino
 
 import (
@@ -99,37 +97,10 @@ func (d *Driver) Ping(ctx context.Context) error {
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	return d.driver.Execute(ctx, statement, omnidriver.ExecuteOptions{
 		MaxRetries: opts.MaximumRetries,
-		Log:        &executeLogger{script: statement, opts: opts},
+		Log: util.NewExecuteLogger(opts, util.WithCommandRange(func(command omnidriver.Command) *storepb.Range {
+			return commandRange(statement, command)
+		})),
 	})
-}
-
-// executeLogger bridges the contract's ExecuteLogger onto the task run log.
-type executeLogger struct {
-	script string
-	opts   db.ExecuteOptions
-}
-
-func (l *executeLogger) CommandExecute(command omnidriver.Command) {
-	l.opts.LogCommandExecute(commandRange(l.script, command), command.Text)
-}
-
-func (l *executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
-	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
-}
-
-func (l *executeLogger) TransactionControl(op omnidriver.TransactionOp, err error) {
-	l.opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_Type(storepb.TaskRunLog_TransactionControl_Type_value[string(op)]), errorString(err))
-}
-
-func (l *executeLogger) Retry(err error, attempt, _ int) {
-	l.opts.LogRetryInfo(err, attempt)
-}
-
-func errorString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
 }
 
 // commandRange returns the byte range the log highlights for command. The

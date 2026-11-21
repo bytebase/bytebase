@@ -50,22 +50,14 @@ package oceanbase
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
-	"database/sql"
-	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"strings"
 	"sync"
-	"sync/atomic"
-	"time"
 
-	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/sync/singleflight"
 
 	odriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -74,9 +66,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var _ db.Driver = (*Driver)(nil)
@@ -203,151 +193,15 @@ func connectionParams(extra map[string]string) (map[string]string, error) {
 // rdsLogin returns the IAM authentication token and the TLS config an AWS RDS
 // connection uses. IAM authentication always requires TLS.
 func rdsLogin(ctx context.Context, config db.ConnectionConfig) (string, *tls.Config, error) {
-	ds := config.DataSource
-	awsConfig, err := util.GetAWSConnectionConfig(ctx, config)
+	token, err := util.RDSAuthToken(ctx, config)
 	if err != nil {
-		return "", nil, errors.Wrap(err, "load aws config failed")
-	}
-	if err := util.AssumeRoleIfNeeded(ctx, &awsConfig, config.ConnectionContext, ds.GetAwsCredential()); err != nil {
 		return "", nil, err
 	}
-	token, err := auth.BuildAuthToken(
-		ctx, fmt.Sprintf("%s:%s", ds.GetHost(), ds.GetPort()), ds.GetRegion(), ds.GetUsername(), awsConfig.Credentials)
-	if err != nil {
-		return "", nil, errors.Wrap(err, "failed to create authentication token")
-	}
-	tlsConfig, err := rdsTLSConfig(ctx, ds)
+	tlsConfig, err := util.RDSTLSConfig(ctx, config.DataSource)
 	if err != nil {
 		return "", nil, err
 	}
 	return token, tlsConfig, nil
-}
-
-// rdsCertBundleURL is a variable so tests can point it at a local server.
-var rdsCertBundleURL = "https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem"
-
-// rdsCertFetchTimeout bounds the download so a stalled fetch cannot hold a
-// connection attempt open indefinitely.
-const rdsCertFetchTimeout = 30 * time.Second
-
-// maxRDSCertBundleSize bounds the downloaded bundle so a misbehaving endpoint
-// cannot stream unbounded data into memory (the real global bundle is ~165 KB).
-const maxRDSCertBundleSize int64 = 4 << 20
-
-// rdsCertPool caches the downloaded bundle for the process lifetime.
-var rdsCertPool atomic.Pointer[x509.CertPool]
-
-// rdsCertGroup collapses concurrent cold-start downloads into one request.
-var rdsCertGroup singleflight.Group
-
-// getRDSCertPool downloads and returns the RDS CA certificate pool.
-// AWS RDS connection with IAM require TLS connection.
-//
-// refs:
-// https://github.com/aws/aws-sdk-go/issues/1248
-// https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/mysql-ssl-connections.html
-func getRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rdsCertBundleURL, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build request for rds cert")
-	}
-
-	client := &http.Client{Timeout: rdsCertFetchTimeout}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	// Without this an error page would reach AppendCertsFromPEM and surface as
-	// "failed to parse RDS CA certificates", hiding the real cause.
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("failed to download RDS CA certificates: %s", resp.Status)
-	}
-
-	pem, err := io.ReadAll(io.LimitReader(resp.Body, maxRDSCertBundleSize+1))
-	if err != nil {
-		return nil, err
-	}
-	if int64(len(pem)) > maxRDSCertBundleSize {
-		return nil, errors.Errorf("RDS CA bundle exceeds %d bytes", maxRDSCertBundleSize)
-	}
-
-	rootCertPool := x509.NewCertPool()
-	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
-		return nil, errors.Errorf("failed to parse RDS CA certificates")
-	}
-
-	return rootCertPool, nil
-}
-
-// cachedRDSCertPool returns the AWS RDS CA bundle, downloading it once per
-// process. Only successes are cached, so a transient failure can still recover.
-func cachedRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
-	if pool := rdsCertPool.Load(); pool != nil {
-		return pool, nil
-	}
-	// Collapse a cold-start burst into one download. The shared fetch does not
-	// inherit any one caller's context, so the caller that starts it cannot
-	// cancel it for everybody else; each caller waits on its own context below.
-	ch := rdsCertGroup.DoChan("", func() (any, error) {
-		// Double check after entering singleflight.
-		if pool := rdsCertPool.Load(); pool != nil {
-			return pool, nil
-		}
-		fetchCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rdsCertFetchTimeout)
-		defer cancel()
-		pool, err := getRDSCertPool(fetchCtx)
-		if err != nil {
-			return nil, err
-		}
-		rdsCertPool.Store(pool)
-		return pool, nil
-	})
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case res := <-ch:
-		if res.Err != nil {
-			return nil, res.Err
-		}
-		pool, ok := res.Val.(*x509.CertPool)
-		if !ok {
-			return nil, errors.Errorf("unexpected RDS cert pool type %T", res.Val)
-		}
-		return pool, nil
-	}
-}
-
-// rdsRootCAs prefers an operator-supplied CA, so a deployment can serve RDS IAM
-// connections without any outbound network access.
-func rdsRootCAs(ctx context.Context, dataSource *storepb.DataSource) (*x509.CertPool, error) {
-	if ca := dataSource.GetSslCa(); ca != "" {
-		pool := x509.NewCertPool()
-		if !pool.AppendCertsFromPEM([]byte(ca)) {
-			return nil, errors.Errorf("failed to parse ssl_ca certificates")
-		}
-		return pool, nil
-	}
-	return cachedRDSCertPool(ctx)
-}
-
-// rdsTLSConfig builds the TLS config for an RDS IAM connection. IAM auth always
-// requires TLS, so this always returns a config.
-func rdsTLSConfig(ctx context.Context, dataSource *storepb.DataSource) (*tls.Config, error) {
-	if !dataSource.GetVerifyTlsCertificate() {
-		// No verifier runs in this mode, so a root pool would never be consulted.
-		return &tls.Config{InsecureSkipVerify: true}, nil // NOSONAR(go:S4830,go:S5527) operator disabled verification (verify_tls_certificate=false)
-	}
-	rootCertPool, err := rdsRootCAs(ctx, dataSource)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get RDS cert pool")
-	}
-	return &tls.Config{ // NOSONAR(go:S4830) VerifyPeerCertificate below verifies chain and hostname
-		RootCAs:               rootCertPool,
-		InsecureSkipVerify:    true, // superseded by VerifyPeerCertificate below
-		VerifyPeerCertificate: util.CreateCertificateVerifier(rootCertPool, dataSource.GetHost()),
-	}, nil
 }
 
 // Close closes the driver's session, its connections and the tunnel they used.
@@ -380,23 +234,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	roles := make([]*storepb.InstanceRole, 0, len(instance.Roles))
-	for _, role := range instance.Roles {
-		roles = append(roles, &storepb.InstanceRole{
-			Name:            role.Name,
-			ConnectionLimit: role.ConnectionLimit,
-			ValidUntil:      role.ValidUntil,
-			Attribute:       role.Attribute,
-		})
-	}
-	return &db.InstanceMetadata{
-		Version:   instance.Version,
-		Databases: instance.Databases,
-		Metadata: &storepb.Instance{
-			MysqlLowerCaseTableNames: instance.LowerCaseTableNames,
-			Roles:                    roles,
-		},
-	}, nil
+	return util.OmniInstanceToMetadata(instance, true), nil
 }
 
 // SyncDBSchema reads the database the driver was opened on.
@@ -414,27 +252,17 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb
 // CreateDatabase and MaximumRetries are not mapped: the driver this replaced
 // read neither.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	config, cleaned := base.ParseTransactionConfig(statement)
-	statement = cleaned
-	mode := config.Mode
-	if mode == transaction.ModeUnspecified {
-		mode = transaction.DefaultMode()
-	}
-	executeOptions := odriver.ExecuteOptions{
-		Transaction: odriver.Transactional,
-		Isolation:   odriver.IsolationLevel(config.Isolation),
-		Log:         executeLogger{opts: opts},
-	}
-	if mode == transaction.ModeOff {
-		executeOptions.Transaction = odriver.AutoCommit
-	}
-	return d.impl.Execute(ctx, statement, executeOptions)
+	transactionMode, isolation, cleaned := util.ParseTransactionMode(statement)
+	return d.impl.Execute(ctx, cleaned, odriver.ExecuteOptions{
+		Transaction: transactionMode,
+		Isolation:   isolation,
+		Log:         util.NewExecuteLogger(opts),
+	})
 }
 
 // QueryConn runs a script for the editor on the driver's session, one result
-// per statement, and stops at the first statement that fails. conn is unused:
-// the caller's *sql.Conn, if it had one, is not the contract's Session.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+// per statement, and stops at the first statement that fails.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	d.sessionMu.Lock()
 	defer d.sessionMu.Unlock()
 	if d.session == nil {
@@ -448,7 +276,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 	results, err := session.Query(ctx, statement, odriver.QueryOptions{
 		Explain:        queryContext.Explain,
-		ExplainFormat:  explainFormat(queryContext.Option.GetExplainFormat()),
+		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_JSON),
 		Limit:          queryContext.Limit,
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 		MaskingEnabled: queryContext.MaskingEnabled,
@@ -465,71 +293,5 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		_ = session.Close()
 		d.session = nil
 	}
-	if len(results) == 0 {
-		return nil, nil
-	}
-	converted := make([]*v1pb.QueryResult, 0, len(results))
-	for _, result := range results {
-		queryResult := util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize)
-		// An explain request named its own format, so the typed plan describes a
-		// plan the caller already asked for; the driver this replaced reported it
-		// only for an EXPLAIN statement the caller wrote.
-		if queryContext.Explain {
-			queryResult.QueryPlan = nil
-		}
-		converted = append(converted, queryResult)
-	}
-	return converted, nil
-}
-
-// explainFormat is the plan format in oceanbase/driver's vocabulary: JSON for
-// a JSON plan and the engine's default for everything else, as the parser
-// offers no other reader.
-func explainFormat(format v1pb.QueryOption_ExplainFormat) string {
-	if format == v1pb.QueryOption_JSON {
-		return "JSON"
-	}
-	return ""
-}
-
-// executeLogger reports a change script's steps to the task run's log.
-type executeLogger struct {
-	opts db.ExecuteOptions
-}
-
-func (l executeLogger) CommandExecute(command odriver.Command) {
-	l.opts.LogCommandExecute(&storepb.Range{
-		Start: int32(command.ByteStart),
-		End:   int32(command.ByteEnd),
-	}, command.Text)
-}
-
-func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
-	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
-}
-
-func (l executeLogger) TransactionControl(op odriver.TransactionOp, err error) {
-	var t storepb.TaskRunLog_TransactionControl_Type
-	switch op {
-	case odriver.Begin:
-		t = storepb.TaskRunLog_TransactionControl_BEGIN
-	case odriver.Commit:
-		t = storepb.TaskRunLog_TransactionControl_COMMIT
-	case odriver.Rollback:
-		t = storepb.TaskRunLog_TransactionControl_ROLLBACK
-	default:
-		return
-	}
-	l.opts.LogTransactionControl(t, errorString(err))
-}
-
-func (l executeLogger) Retry(err error, attempt, _ int) {
-	l.opts.LogRetryInfo(err, attempt)
-}
-
-func errorString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
+	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, queryContext.Explain), nil
 }

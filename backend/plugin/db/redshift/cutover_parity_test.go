@@ -303,7 +303,7 @@ type parityDriver struct {
 
 func (p *parityDriver) queryConn(ctx context.Context, t *testing.T, script string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	t.Helper()
-	return p.driver.QueryConn(ctx, nil, script, queryContext)
+	return p.driver.QueryConn(ctx, script, queryContext)
 }
 
 // assertKnownQueryDifference pins what the new path does for a case whose result

@@ -66,7 +66,7 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 	}
 
 	query := func(statement string) (*v1pb.QueryResult, error) {
-		results, err := driver.QueryConn(ctx, nil, statement, db.QueryContext{
+		results, err := driver.QueryConn(ctx, statement, db.QueryContext{
 			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		})
 		if err != nil {
