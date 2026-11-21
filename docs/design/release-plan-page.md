@@ -470,13 +470,23 @@ keeps only the last segment of `feature/x`. A run on a tag or on a merge queue's
 the queue. The SHA stays the checked-out commit, a merge commit in
 those builds, because the release's files came from it and D8 links them there.
 
-The file's path is the action's glob match, relative to the pipeline's working directory; a pipeline
-that runs in a subdirectory gets a link that misses, and an unknown platform gets none. A
+The file's path is relative to the repository root, so a pipeline that runs in a subdirectory or
+passes an absolute pattern still gets a working link, and the SQL review annotations, which GitHub,
+GitLab and Bitbucket resolve from the root, land on the file. The action finds the root at the
+nearest `.git` at or above the working directory, else at the platform's checkout directory
+(`GITHUB_WORKSPACE`, `CI_PROJECT_DIR`, `BITBUCKET_CLONE_DIR`, `BUILD_SOURCESDIRECTORY`). A `.git`
+whose git directory lies under `modules/` of the git directory of the next repository above it
+(`.git/modules/…`, or `.git/worktrees/<id>/modules/…` in a linked worktree) is a submodule's, and
+the search moves up to that repository, because the URL and SHA are the superproject's: a file in a
+submodule is named from the superproject and its link misses rather than opening an unrelated file.
+The check compares directories, never names, which users choose freely. With no root, or for a file
+outside it, the path stays the glob match and the link misses; an unknown platform gets none. A
 declarative rollout concatenates every match into one file and records the `--file-pattern` itself as
 its path (`getReleaseFiles` in `action/command/file.go`), so on a declarative release a path with a
 doublestar metacharacter (`*`, `?`, `[`, `{`) names no file and gets no link; a literal pattern is
-the file and keeps it. A versioned release's path is a real file name, which may contain `?` or
-`[`, so it always keeps its link. A marker
+the file and keeps it when written from the repository root, since the pattern is recorded as given.
+A versioned release's path is a real file name, which may contain `?` or `[`, so it keeps its link
+under the rule above. A marker
 miss is silent: the row shows the commit. When the title is the commit's first line and the PR
 number came from its marker, the marker is removed from the title, so a squash merge reads `<title>
 #N` once. The PR URL is the repository URL plus the platform's path and the number. On a platform
