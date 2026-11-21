@@ -74,3 +74,17 @@ func TestOmniDiffMetadataMigrationIgnoresStatisticsOfAnIncompleteTable(t *testin
 	require.NoError(t, err)
 	require.Equal(t, "ALTER TABLE `t` ADD COLUMN `b` int DEFAULT NULL", sql)
 }
+
+func TestOmniDiffMetadataMigrationRefusesCaseOnlyIdentities(t *testing.T) {
+	table := func(name string) *metadatapb.TableMetadata {
+		return &metadatapb.TableMetadata{Name: name, Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}}}
+	}
+	snapshot := func(tables ...*metadatapb.TableMetadata) *metadatapb.DatabaseSchemaMetadata {
+		return &metadatapb.DatabaseSchemaMetadata{Name: "d", Schemas: []*metadatapb.SchemaMetadata{{Tables: tables}}}
+	}
+	_, err := omniDiffMetadataMigration(metadataFromProto(snapshot(table("Foo"))), metadataFromProto(snapshot(table("foo"))))
+	require.ErrorContains(t, err, "case-only rename")
+
+	_, err = omniDiffMetadataMigration(metadataFromProto(snapshot(table("Foo"), table("foo"))), metadataFromProto(snapshot(table("Foo"))))
+	require.ErrorContains(t, err, "cannot distinguish")
+}

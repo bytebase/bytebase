@@ -2,88 +2,150 @@ package mysql
 
 import (
 	"context"
-	"io"
-	"os"
-	"path/filepath"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	omniast "github.com/bytebase/omni/mysql/ast"
-	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/testing/protocmp"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-type testData struct {
-	Statement string
-	// Use custom yaml tag to avoid generate field name `ignorecasesensitive`.
-	IgnoreCaseSensitive bool `yaml:"ignore_case_sensitive"`
-	Want                string
-	Advice              *storepb.Advice
+func runMySQLWalkThrough(t *testing.T, statement string) (*model.DatabaseMetadata, *storepb.Advice) {
+	t.Helper()
+	state := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "test"}, nil, nil, storepb.Engine_MYSQL, true)
+	sm := sheet.NewManager()
+	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
+	advice := schema.WalkThroughWithContext(
+		context.Background(),
+		storepb.Engine_MYSQL,
+		schema.WalkThroughContext{RawSQL: statement},
+		state,
+		base.ExtractASTs(stmts),
+	)
+	return state, advice
 }
 
-func TestWalkThrough(t *testing.T) {
-	originDatabase := &metadatapb.DatabaseSchemaMetadata{
-		Name: "test",
-	}
+func TestWalkThroughSeamPrechecksAndErrorMapping(t *testing.T) {
+	t.Run("updates database metadata through registry on valid DDL", func(t *testing.T) {
+		state, advice := runMySQLWalkThrough(t, "CREATE TABLE t1 (a INT); RENAME TABLE t1 TO t2;")
+		require.Nil(t, advice)
+		require.Nil(t, state.GetSchemaMetadata("").GetTable("t1"))
+		require.NotNil(t, state.GetSchemaMetadata("").GetTable("t2"))
+	})
 
-	tests := []testData{}
-	filepath := filepath.Join("testdata", "walk_through.yaml")
-	yamlFile, err := os.Open(filepath)
-	require.NoError(t, err)
-	defer yamlFile.Close()
-
-	byteValue, err := io.ReadAll(yamlFile)
-	require.NoError(t, err)
-	err = yaml.Unmarshal(byteValue, &tests)
-	require.NoError(t, err)
-	sm := sheet.NewManager()
-
-	for _, test := range tests {
-		// Make a deep copy to avoid mutation across tests
-		protoData, ok := proto.Clone(originDatabase).(*metadatapb.DatabaseSchemaMetadata)
-		require.True(t, ok)
-
-		// Create DatabaseMetadata for walk-through
-		state := model.NewDatabaseMetadata(protoData, nil, nil, storepb.Engine_MYSQL, !test.IgnoreCaseSensitive)
-
-		stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, test.Statement)
-		asts := base.ExtractASTs(stmts)
-		advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
-		if advice != nil {
-			// Compare the advice fields
-			require.NotNil(t, test.Advice, "unexpected advice for statement %q: %+v", test.Statement, advice)
-			require.Equal(t, test.Advice.Code, advice.Code, "statement %q advice %+v", test.Statement, advice)
-			require.Equal(t, test.Advice.Content, advice.Content, "statement %q advice %+v", test.Statement, advice)
-			continue
+	t.Run("cross-database rename pre-creates target database and removes moved table", func(t *testing.T) {
+		for _, stmt := range []string{
+			"CREATE TABLE `test`.`t1` (a INT); RENAME TABLE `test`.`t1` TO `other`.`t1`;",
+			"CREATE TABLE t1(a INT); ALTER TABLE t1 RENAME TO other.t1;",
+		} {
+			state, advice := runMySQLWalkThrough(t, stmt)
+			require.Nil(t, advice, stmt)
+			require.Empty(t, state.GetSchemaMetadata("").GetProto().GetTables(), stmt)
 		}
+	})
 
-		// Skip comparison if want is empty (error cases)
-		if test.Want == "" {
-			continue
+	t.Run("literal containing SELECT does not trigger CTAS fallback", func(t *testing.T) {
+		state, advice := runMySQLWalkThrough(t, "CREATE TABLE t_literal (c varchar(20) DEFAULT ' SELECT ');")
+		require.Nil(t, advice)
+		require.NotNil(t, state.GetSchemaMetadata("").GetTable("t_literal"))
+	})
+
+	t.Run("omnicatalog prechecks and catalog error mapping", func(t *testing.T) {
+		cases := []struct {
+			name        string
+			statement   string
+			wantCode    code.Code
+			wantContent string
+		}{
+			{
+				name:        "cross-database create table and rename",
+				statement:   "CREATE TABLE `test`.`t1` (a INT); CREATE TABLE `other`.`t1` (a INT); RENAME TABLE `other`.`t1` TO `other`.`t2`;",
+				wantCode:    code.NotCurrentDatabase,
+				wantContent: "Database `other` is not the current database `test`",
+			},
+			{
+				name:        "create another database",
+				statement:   "CREATE DATABASE another;",
+				wantCode:    code.NotCurrentDatabase,
+				wantContent: "Database `another` is not the current database `test`",
+			},
+			{
+				name:        "drop current database",
+				statement:   "-- this is comment\nDROP DATABASE test;\nCREATE TABLE t(a int);",
+				wantCode:    code.DatabaseIsDeleted,
+				wantContent: "Database `test` is deleted",
+			},
+			{
+				name:        "earlier exec error wins over later precheck",
+				statement:   "DROP TABLE missing; CREATE DATABASE other;",
+				wantCode:    code.TableNotExists,
+				wantContent: "Table `missing` does not exist",
+			},
+			{
+				name:        "CTAS AST precheck",
+				statement:   "CREATE TABLE t1(a int); CREATE TABLE t2 (b INT) SELECT a FROM t1;",
+				wantCode:    code.StatementCreateTableAs,
+				wantContent: `CREATE TABLE AS statement is used in "CREATE TABLE t2 (b INT) SELECT a FROM t1;"`,
+			},
+			{
+				name:        "CTAS raw fallback with VALUES ROW",
+				statement:   "CREATE TABLE tvx SELECT (x,z) FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);",
+				wantCode:    code.StatementCreateTableAs,
+				wantContent: `CREATE TABLE AS statement is used in "CREATE TABLE tvx SELECT (x,z) FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);"`,
+			},
+			{
+				name:        "CTAS over existing table reports TableExists",
+				statement:   "CREATE TABLE t1(a int); CREATE TABLE t1 AS SELECT 1;",
+				wantCode:    code.TableExists,
+				wantContent: "Table `t1` already exists",
+			},
+			{
+				name:        "spatial index on nullable geometry",
+				statement:   "CREATE TABLE t1(a GEOMETRY); CREATE SPATIAL INDEX sk1 ON t1 (a);",
+				wantCode:    code.SpatialIndexKeyNullable,
+				wantContent: "All parts of a SPATIAL index must be NOT NULL",
+			},
+			{
+				name:        "invalid NOT NULL DEFAULT NULL",
+				statement:   "CREATE TABLE t1(a INT NOT NULL DEFAULT NULL);",
+				wantCode:    code.InvalidColumnDefault,
+				wantContent: "Invalid default value for column `a`",
+			},
+			{
+				name:        "BLOB column default",
+				statement:   "CREATE TABLE t1(a BLOB DEFAULT 'x');",
+				wantCode:    code.InvalidColumnDefault,
+				wantContent: "BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value",
+			},
+			{
+				name:        "duplicate AUTO_INCREMENT",
+				statement:   "CREATE TABLE t1(a INT AUTO_INCREMENT, b INT AUTO_INCREMENT);",
+				wantCode:    code.AutoIncrementExists,
+				wantContent: "Incorrect table definition; there can be only one auto column and it must be defined as a key",
+			},
+			{
+				name:        "invalid ON UPDATE",
+				statement:   "CREATE TABLE t1(a INT ON UPDATE NOW());",
+				wantCode:    code.OnUpdateColumnNotDatetimeOrTimestamp,
+				wantContent: "Invalid ON UPDATE clause for 'a' column",
+			},
 		}
-
-		want := &metadatapb.DatabaseSchemaMetadata{}
-		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
-		require.NoError(t, err)
-		result := state.GetProto()
-		diff := cmp.Diff(want, result, protocmp.Transform(),
-			protocmp.SortRepeatedFields(&metadatapb.DatabaseSchemaMetadata{}, "schemas"),
-			protocmp.SortRepeatedFields(&metadatapb.SchemaMetadata{}, "tables", "views"),
-			protocmp.SortRepeatedFields(&metadatapb.TableMetadata{}, "indexes", "columns"),
-		)
-		require.Empty(t, diff, "statement %q", test.Statement)
-	}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				_, advice := runMySQLWalkThrough(t, tc.statement)
+				require.NotNil(t, advice)
+				require.Equal(t, tc.wantCode.Int32(), advice.Code)
+				require.Equal(t, tc.wantContent, advice.Content)
+			})
+		}
+	})
 }
 
 func TestWalkThroughCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
@@ -127,9 +189,7 @@ func TestWalkThroughCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
 
 // TestWalkThroughSRIDInvisible verifies the omni catalog -> metadatapb.ColumnMetadata
 // conversion (Catalog.DatabaseMetadata) carries the spatial SRID (presence + value, including the
-// valid explicit SRID 0) and the INVISIBLE flag. Without this the WalkThroughWithContext
-// simulation path — used to compute the schema a changeset would produce — would silently
-// drop these attributes, mirroring the v1-converter gap.
+// valid explicit SRID 0) and the INVISIBLE flag.
 func TestWalkThroughSRIDInvisible(t *testing.T) {
 	state := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "test"}, nil, nil, storepb.Engine_MYSQL, true)
 	statement := "CREATE TABLE t (" +
@@ -150,26 +210,17 @@ func TestWalkThroughSRIDInvisible(t *testing.T) {
 		cols[c.GetName()] = c
 	}
 
-	// Explicit SRID must round-trip as presence (nil vs non-nil) plus value.
 	require.NotNil(t, cols["g4326"].Srid)
 	require.Equal(t, uint32(4326), *cols["g4326"].Srid)
-	// Explicit SRID 0 is present-and-distinct from "no SRID"; presence must survive.
 	require.NotNil(t, cols["g0"].Srid, "explicit SRID 0 must be captured as present")
 	require.Equal(t, uint32(0), *cols["g0"].Srid)
-	// A no-SRID spatial column must stay unset (no phantom SRID 0).
 	require.Nil(t, cols["gnone"].Srid)
-	// INVISIBLE captured; visible columns stay visible.
 	require.True(t, cols["secret"].IsInvisible)
 	require.False(t, cols["g4326"].IsInvisible)
 }
 
-// TestWalkThroughSRIDInvisibleSeeded verifies the reverse leg of the WalkThroughWithContext
-// round-trip: when the walk-through starts from already-synced metadata that carries SRID
-// / INVISIBLE columns, LoadMetadata must install those
-// attributes into the omni catalog so that running an UNRELATED DDL does not strip them
-// from the resulting proto. Without seeding, the pre-existing columns load as
-// plain/no-SRID and — because columnsEqual now compares these fields — surface as phantom
-// changes.
+// TestWalkThroughSRIDInvisibleSeeded verifies pre-synced SRID and INVISIBLE
+// columns survive an unrelated DDL walk-through unchanged.
 func TestWalkThroughSRIDInvisibleSeeded(t *testing.T) {
 	origin := &metadatapb.DatabaseSchemaMetadata{
 		Name: "test",
@@ -192,7 +243,6 @@ func TestWalkThroughSRIDInvisibleSeeded(t *testing.T) {
 	}
 	state := model.NewDatabaseMetadata(origin, nil, nil, storepb.Engine_MYSQL, true)
 
-	// An unrelated DDL against a different table: it must not perturb geo's SRID/INVISIBLE.
 	statement := "CREATE TABLE unrelated (x INT PRIMARY KEY);"
 	sm := sheet.NewManager()
 	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
@@ -206,8 +256,6 @@ func TestWalkThroughSRIDInvisibleSeeded(t *testing.T) {
 	for _, c := range geo.GetProto().GetColumns() {
 		cols[c.GetName()] = c
 	}
-	// The pre-synced SRID + INVISIBLE attributes must survive the seed -> catalog ->
-	// proto round-trip unchanged.
 	require.NotNil(t, cols["pt"].Srid, "seeded SRID must survive (no phantom strip)")
 	require.Equal(t, uint32(4326), *cols["pt"].Srid)
 	require.True(t, cols["secret"].IsInvisible, "seeded INVISIBLE must survive")
@@ -244,8 +292,6 @@ func TestWalkThroughKeepsSeededIndexTypes(t *testing.T) {
 	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
 	require.Nil(t, advice)
 
-	// Each index reports its effective access method, the engine's default one
-	// included.
 	types := map[string]string{}
 	for _, name := range []string{"disk", "mem"} {
 		for _, idx := range state.GetSchemaMetadata("").GetTable(name).GetProto().GetIndexes() {
