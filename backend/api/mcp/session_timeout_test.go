@@ -35,7 +35,7 @@ func TestIdleSessionCloses(t *testing.T) {
 	_, client := newIdleTimeoutServer(t)
 	session := client.initialize(noCapabilities)
 
-	client.waitUntilClosed(session)
+	client.reopenGETsUntilClosed(session)
 	client.requireClosed(session, 5*time.Second)
 	status, _, err := client.post(context.Background(), session, listTools)
 	require.NoError(t, err)
@@ -60,19 +60,14 @@ func TestRequestInFlightKeepsItsSessionOpen(t *testing.T) {
 	hold.waitStarted(t)
 	time.Sleep(3 * testIdleTimeout)
 	hold.release()
-	select {
-	case got := <-result:
-		require.Contains(t, got, holdResult, "a call held past the timeout must still return its result")
-	case <-time.After(testRequestBound):
-		require.FailNow(t, "the held call never returned")
-	}
+	require.Contains(t, <-result, holdResult, "a call held past both timeouts must still return its result")
 
 	status, body, err := client.post(context.Background(), session, listTools)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, status)
 	require.Contains(t, body, holdToolName, "the session must outlive a call that outlasted the timeout")
 
-	client.waitUntilClosed(session)
+	client.holdGETUntilClosed(session)
 	client.requireClosed(session, 5*time.Second)
 }
 
@@ -100,7 +95,6 @@ func TestDroppedCallStillLetsItsSessionClose(t *testing.T) {
 
 func TestAbandonedFormLetsItsSessionClose(t *testing.T) {
 	server, client := newIdleTimeoutServer(t)
-	server.formAnswerTimeoutOverride = testFormTimeout
 	addFormTool(t, server)
 	session := client.initialize(formCapabilities)
 
@@ -117,7 +111,6 @@ func TestAbandonedFormLetsItsSessionClose(t *testing.T) {
 
 func TestUnansweredFormEndsItsCall(t *testing.T) {
 	server, client := newIdleTimeoutServer(t)
-	server.formAnswerTimeoutOverride = testFormTimeout
 	addFormTool(t, server)
 	session := client.initialize(formCapabilities)
 
@@ -133,16 +126,16 @@ func TestUnansweredFormEndsItsCall(t *testing.T) {
 	require.Contains(t, body, formToolName, "the session must outlive the form")
 }
 
-// TestProductionConstructionSetsAnIdleTimeout pins the production values,
-// which the other tests shorten.
-func TestProductionConstructionSetsAnIdleTimeout(t *testing.T) {
+// TestProductionTimeouts pins the production values, which the other tests
+// shorten.
+func TestProductionTimeouts(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 	s, err := newServerWithStore(newTestServerStore(), profile, revalidationSecret, nil)
 	require.NoError(t, err)
 	require.Equal(t, mcpSessionIdleTimeout, s.sessionIdleTimeout)
 	require.Positive(t, s.sessionIdleTimeout)
-	require.Greater(t, s.formTimeout(), confirmationLifetime)
-	require.Less(t, s.formTimeout(), s.sessionIdleTimeout)
+	require.Greater(t, s.formTimeout(), confirmationLifetime, "a confirmation accepted late must reach the tool and get STALE_CONFIRMATION")
+	require.Less(t, s.formTimeout(), s.sessionIdleTimeout, "no wait for an abandoned form may outlive the session's idle timer")
 }
 
 const (
@@ -161,12 +154,15 @@ const (
 	probeNotification = `{"jsonrpc":"2.0","method":"notifications/roots/list_changed"}`
 )
 
-// newIdleTimeoutServer serves the real /mcp route with testIdleTimeout.
+// newIdleTimeoutServer serves the real /mcp route with testIdleTimeout and
+// testFormTimeout. The hold tests' tools run past testFormTimeout, which pins
+// that the form limit bounds only the wait for an answer.
 func newIdleTimeoutServer(t *testing.T) (*Server, *rawMCPClient) {
 	t.Helper()
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 	s, err := newServerWithIdleTimeout(newTestServerStore(), profile, revalidationSecret, nil, testIdleTimeout)
 	require.NoError(t, err)
+	s.formAnswerTimeoutOverride = testFormTimeout
 	e := echo.New()
 	s.RegisterRoutes(e)
 	ts := httptest.NewServer(e)
@@ -321,11 +317,29 @@ func (c *rawMCPClient) openForm(ctx context.Context, session string) io.Reader {
 	}
 }
 
-// waitUntilClosed opens a new GET stream on the session every quarter of the
-// timeout, holding each until the next, and returns once the server ends one
-// or answers 404. Neither a new GET nor a held one resets the idle clock, so
-// the session must close anyway.
-func (c *rawMCPClient) waitUntilClosed(session string) {
+// holdGETUntilClosed holds one GET stream on the session until the server
+// ends it. The stream does not reset the idle clock, and the SDK ends it when
+// the session closes, so its end is the closing signal.
+func (c *rawMCPClient) holdGETUntilClosed(session string) {
+	c.t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*testIdleTimeout)
+	defer cancel()
+	req, err := c.request(ctx, http.MethodGet, session, "")
+	require.NoError(c.t, err)
+	resp, err := c.httpClient.Do(req)
+	require.NoError(c.t, err, "the GET stream must open")
+	defer resp.Body.Close()
+	require.Equal(c.t, http.StatusOK, resp.StatusCode, "the GET stream must open on a live session")
+	_, err = io.Copy(io.Discard, resp.Body)
+	require.NoError(c.t, err, "the server must end the GET stream when the session closes")
+}
+
+// reopenGETsUntilClosed opens a new GET stream on the session every quarter of
+// the timeout, holding each until the next, and returns once the server ends
+// one or answers 404. Neither a new GET nor a held one resets the idle clock,
+// so the session must close anyway. A 404 counts only after some GET opened:
+// a session that closes between two GETs shows only as a 404 on the next.
+func (c *rawMCPClient) reopenGETsUntilClosed(session string) {
 	c.t.Helper()
 	deadline := time.Now().Add(10 * testIdleTimeout)
 	opened := false
@@ -338,7 +352,9 @@ func (c *rawMCPClient) waitUntilClosed(session string) {
 		}
 		require.True(c.t, time.Now().Before(deadline), "a session must close while new GET streams keep arriving")
 		if status != http.StatusOK {
-			// 409: the server has not yet let go of the stream before.
+			// 0: the GET ran out before its headers. 409: the server has not
+			// yet let go of the stream before.
+			require.Contains(c.t, []int{0, http.StatusConflict}, status, "unexpected GET status")
 			time.Sleep(10 * time.Millisecond)
 		}
 	}

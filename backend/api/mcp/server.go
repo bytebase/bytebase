@@ -194,8 +194,7 @@ func newServerWithIdleTimeout(stores serverStore, profile *config.Profile, secre
 	//
 	// The session closes only once its in-flight calls return. Until then the
 	// SDK keeps it, and a call that arrives gets 200 and an empty stream, not
-	// the 404. A call waiting on a form the client abandoned would hold it that
-	// way, so expireUnansweredForms ends that wait first.
+	// the 404.
 	streamable := mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
 		return s.mcpServer
 	}, &mcp.StreamableHTTPOptions{
@@ -247,11 +246,12 @@ const (
 	// mcpSessionIdleTimeout is documented at the handler that applies it.
 	mcpSessionIdleTimeout = time.Hour
 
-	// formAnswerTimeout is longer than confirmationLifetime, so an answer that
-	// comes late still reaches the tool, which reports the confirmation stale;
-	// at the timeout the SDK fails the call with a raw error instead. It must
-	// stay well below mcpSessionIdleTimeout, so that no wait for an abandoned
-	// form is left when the session's timer fires.
+	// formAnswerTimeout bounds the wait for a form's answer. It is longer than
+	// confirmationLifetime, so a confirmation accepted after that still reaches
+	// the tool, which reports it stale, instead of failing with the SDK's raw
+	// error. It must stay below mcpSessionIdleTimeout, so that no wait for an
+	// abandoned form is left to hold a closing session (see SessionTimeout at
+	// the handler).
 	formAnswerTimeout = confirmationLifetime + time.Minute
 )
 
