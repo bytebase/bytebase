@@ -30,7 +30,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.10.4
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/omni v0.0.0-20261121123411-fa2d8723db5c
+	github.com/bytebase/omni v0.0.0-20261121144441-cacd1d43e4a4
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/cockroachdb/cockroachdb-parser v0.25.2

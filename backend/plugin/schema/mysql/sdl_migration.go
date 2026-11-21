@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -30,56 +29,13 @@ func init() {
 }
 
 // sdlDatabaseContext is the synthetic database both SDL inputs are loaded under,
-// the same one the metadata diff loads both snapshots under.
-// Bytebase declarative schema text is single-database and unqualified (no leading
-// CREATE DATABASE / USE), but the omni catalog resolves unqualified CREATE TABLE,
-// foreign-key, and view references against a current database and errors with
-// "No database selected" otherwise. Loading both the source (dumped) and target
-// (user) SDL under the SAME fixed database name keeps every table identity key
-// (database, name) aligned, so the database wrapper is invisible to the diff.
+// matching the metadata diff so unqualified DDL resolves consistently.
 const sdlDatabaseContext = omnicatalog.Database
 
-// withDatabaseContext prepends a CREATE DATABASE / USE preamble so unqualified
-// declarative DDL resolves. foreign_key_checks is left to LoadSDL, which disables
-// it for the whole load.
-func withDatabaseContext(text string) string {
-	return "CREATE DATABASE IF NOT EXISTS `" + sdlDatabaseContext + "`;\nUSE `" + sdlDatabaseContext + "`;\n" + text
-}
-
-// prologueLineCount is the number of lines withDatabaseContext prepends. Omni reports
-// parse positions against the wrapped text; errors surfaced to callers must subtract
-// the prologue so "(line N, column M)" points into the caller's schema text (the
-// user's SDL file), not the synthetic bbcatalog preamble.
-const prologueLineCount = 2
-
-var errorLinePattern = regexp.MustCompile(`\(line (\d+), column (\d+)\)`)
-
-// adjustPrologueError rewrites omni parse positions in err's message from
-// wrapped-text coordinates to caller-text coordinates. Positions inside the
-// prologue itself (line <= prologueLineCount) are left untouched — they cannot
-// originate from caller text and losing them would hide an internal bug.
-func adjustPrologueError(err error) error {
-	if err == nil {
-		return nil
-	}
-	msg := errorLinePattern.ReplaceAllStringFunc(err.Error(), func(m string) string {
-		sub := errorLinePattern.FindStringSubmatch(m)
-		line, convErr := strconv.Atoi(sub[1])
-		if convErr != nil || line <= prologueLineCount {
-			return m
-		}
-		return fmt.Sprintf("(line %d, column %s)", line-prologueLineCount, sub[2])
-	})
-	return errors.New(msg)
-}
-
 // unsupportedSDLVersion returns why the declarative path refuses a MySQL server, ""
-// when it does not: a server older than 8.0 is refused. omni's catalog canonicalizes
-// only against the 8.0 stored form, and diffing an older server as 8.0 emits DDL the
-// SDL never asked for: a bare TIMESTAMP column loses its automatic default and update,
-// a charset-only column is given utf8mb4_0900_ai_ci, which 5.7 rejects, and several
-// unchanged definitions are re-emitted on every rollout. A version that names no
-// major number is accepted: callers without an instance pass "".
+// when it does not: a server older than 8.0 is refused because omni's catalog
+// canonicalizes only against the 8.0 stored form. A version that names no major
+// number is accepted: callers without an instance pass "".
 func unsupportedSDLVersion(engineVersion string) string {
 	version := strings.TrimSpace(engineVersion)
 	major, _, _ := strings.Cut(version, ".")
@@ -89,57 +45,21 @@ func unsupportedSDLVersion(engineVersion string) string {
 	return ""
 }
 
-// loadCatalog parses a schema text and returns a catalog reflecting it. LoadSDL is the
-// canonical, dependency-aware path; every catalog canonicalizes against the one stored
-// form omni keeps (MySQL80). LoadSQL is tried only as a fallback for raw dumps containing non-SDL
-// statements (e.g. SET, SELECT, LOCK TABLES) that LoadSDL legitimately rejects; its
-// session defaults are already the 8.0 ones. When both fail, the LoadSDL error is
-// returned because it is far more diagnostic than LoadSQL's order-dependent failures.
-func loadCatalog(text string) (*catalog.Catalog, error) {
-	wrapped := withDatabaseContext(text)
-	c, sdlErr := catalog.LoadSDL(wrapped)
-	if sdlErr == nil {
-		return c, nil
-	}
-	if c, err := catalog.LoadSQL(wrapped); err == nil {
-		return c, nil
-	}
-	return nil, adjustPrologueError(sdlErr)
-}
-
-// buildMigrationPlan loads two schema texts into catalogs, diffs them, and returns the
-// migration plan. Returns nil if there are no changes.
-//
-// sessionCtx, when non-nil, carries the per-object session context (sql_mode/charset/
-// collation, and event time_zone) of the SOURCE schema. It is stamped onto the source
-// (from) catalog via ApplySessionContext AFTER load and BEFORE Diff — the source is where
-// the OLD/From objects live, and their original context is what a recreate must restore.
-// The context is deliberately not part of any object's declarative identity, so it never
-// causes a phantom diff; it is consumed only by the generator's recreate framing.
+// buildMigrationPlan delegates SDL loading, session-context stamping, diffing,
+// and migration generation to omni's catalog package under sdlDatabaseContext.
 func buildMigrationPlan(sourceText, targetText string, sessionCtx *schema.SDLSessionContextMap) (*catalog.MigrationPlan, error) {
-	from, err := loadCatalog(sourceText)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load source schema")
-	}
-	if sessionCtx != nil {
-		from.ApplySessionContext(toCatalogSessionContextMap(sessionCtx))
-	}
-	to, err := loadCatalog(targetText)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load target schema")
-	}
-	diff := catalog.Diff(from, to)
-	if diff.IsEmpty() {
-		return nil, nil
-	}
-	return catalog.GenerateMigration(from, to, diff), nil
+	return catalog.BuildSDLMigrationPlan(sourceText, targetText, catalog.SDLMigrationOptions{
+		Database:             sdlDatabaseContext,
+		SourceSessionContext: toCatalogSessionContextMap(sessionCtx),
+	})
 }
 
 // toCatalogSessionContextMap converts the engine-neutral schema.SDLSessionContextMap
-// (built by the generic SDL layer from synced metadata) into omni's
-// catalog.SessionContextMap. The two are field-for-field identical; this keeps the omni
-// dependency confined to the MySQL package.
-func toCatalogSessionContextMap(m *schema.SDLSessionContextMap) catalog.SessionContextMap {
+// into omni's catalog.SessionContextMap so the omni dependency stays in this package.
+func toCatalogSessionContextMap(m *schema.SDLSessionContextMap) *catalog.SessionContextMap {
+	if m == nil {
+		return nil
+	}
 	conv := func(src map[string]schema.SDLSessionContext) map[string]catalog.SessionContext {
 		if len(src) == 0 {
 			return nil
@@ -155,7 +75,7 @@ func toCatalogSessionContextMap(m *schema.SDLSessionContextMap) catalog.SessionC
 		}
 		return dst
 	}
-	return catalog.SessionContextMap{
+	return &catalog.SessionContextMap{
 		Functions:  conv(m.Functions),
 		Procedures: conv(m.Procedures),
 		Triggers:   conv(m.Triggers),
@@ -166,12 +86,6 @@ func toCatalogSessionContextMap(m *schema.SDLSessionContextMap) catalog.SessionC
 // mysqlDiffSDLMigrationWithContext is the registered SDL diff entry point: two schema
 // texts plus the target server version in, migration SQL out. A server older than
 // MySQL 8.0 is rejected (see unsupportedSDLVersion).
-//
-// sessionCtx carries the source schema's per-object session context so a routine/trigger/
-// event recreate is re-emitted under its ORIGINAL sql_mode/charset/collation (event
-// time_zone too). It is nil for the SDL↔SDL and metadata↔metadata callers that have no
-// synced metadata to source it from; only the live rollout (schema.SDLMigration) supplies
-// it.
 func mysqlDiffSDLMigrationWithContext(sourceSDL, targetSDL, engineVersion string, sessionCtx *schema.SDLSessionContextMap) (string, error) {
 	if reason := unsupportedSDLVersion(engineVersion); reason != "" {
 		return "", errors.New(reason)
@@ -183,7 +97,7 @@ func mysqlDiffSDLMigrationWithContext(sourceSDL, targetSDL, engineVersion string
 	if plan == nil {
 		return "", nil
 	}
-	return omnicatalog.StripDatabaseContext(plan.SQL()), nil
+	return catalog.StripDatabaseContext(plan.SQL(), sdlDatabaseContext), nil
 }
 
 // mysqlDiffSDLMigration is the bare (no session context) 3-arg form: two schema texts plus
@@ -265,17 +179,17 @@ func mysqlSDLDropAdvices(userSDLText string, currentSchema *model.DatabaseMetada
 		// and append the operation statement (with the synthetic bbcatalog qualifier stripped)
 		// rather than a (table-valued) ObjectName.
 		case catalog.OpDropColumn:
-			add(dropAdvice(fmt.Sprintf("Dropping a column from table '%s' will result in data loss. (%s)", op.ParentObject, omnicatalog.StripDatabaseContext(op.SQL))))
+			add(dropAdvice(fmt.Sprintf("Dropping a column from table '%s' will result in data loss. (%s)", op.ParentObject, catalog.StripDatabaseContext(op.SQL, sdlDatabaseContext))))
 		case catalog.OpModifyColumn:
-			add(dropAdvice(fmt.Sprintf("Modifying a column on table '%s' may result in data loss. (%s)", op.ParentObject, omnicatalog.StripDatabaseContext(op.SQL))))
+			add(dropAdvice(fmt.Sprintf("Modifying a column on table '%s' may result in data loss. (%s)", op.ParentObject, catalog.StripDatabaseContext(op.SQL, sdlDatabaseContext))))
 		case catalog.OpDropIndex:
-			add(dropAdvice(fmt.Sprintf("Dropping an index on table '%s'. (%s)", op.ParentObject, omnicatalog.StripDatabaseContext(op.SQL))))
+			add(dropAdvice(fmt.Sprintf("Dropping an index on table '%s'. (%s)", op.ParentObject, catalog.StripDatabaseContext(op.SQL, sdlDatabaseContext))))
 		case catalog.OpDropConstraint:
-			add(dropAdvice(fmt.Sprintf("Dropping a constraint on table '%s'. (%s)", op.ParentObject, omnicatalog.StripDatabaseContext(op.SQL))))
+			add(dropAdvice(fmt.Sprintf("Dropping a constraint on table '%s'. (%s)", op.ParentObject, catalog.StripDatabaseContext(op.SQL, sdlDatabaseContext))))
 		case catalog.OpDropForeignKey:
-			add(dropAdvice(fmt.Sprintf("Dropping a foreign key on table '%s'. (%s)", op.ParentObject, omnicatalog.StripDatabaseContext(op.SQL))))
+			add(dropAdvice(fmt.Sprintf("Dropping a foreign key on table '%s'. (%s)", op.ParentObject, catalog.StripDatabaseContext(op.SQL, sdlDatabaseContext))))
 		case catalog.OpDropCheck:
-			add(dropAdvice(fmt.Sprintf("Dropping a check constraint on table '%s'. (%s)", op.ParentObject, omnicatalog.StripDatabaseContext(op.SQL))))
+			add(dropAdvice(fmt.Sprintf("Dropping a check constraint on table '%s'. (%s)", op.ParentObject, catalog.StripDatabaseContext(op.SQL, sdlDatabaseContext))))
 
 		// Object DROP branches: warn unless this drop is the paired half of a redefinition
 		// (the create half emits the single REPLACE advice below).
