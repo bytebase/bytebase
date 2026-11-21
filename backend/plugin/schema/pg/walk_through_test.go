@@ -454,3 +454,37 @@ func TestClone_WalkThroughFunction(t *testing.T) {
 	require.NotNil(t, origTbl, "test table should still exist")
 	require.Equal(t, 2, len(origTbl.GetProto().Columns))
 }
+
+func TestWalkThroughOwnerChangeAndWrapperPreservation(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Name: "postgres",
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*metadatapb.TableMetadata{
+					{
+						Name:  "test",
+						Owner: "alice",
+						Columns: []*metadatapb.ColumnMetadata{
+							{Name: "id", Type: "integer", Position: 1},
+						},
+					},
+				},
+			},
+		},
+	}
+	cfg := &storepb.DatabaseConfig{Name: "postgres"}
+	state := model.NewDatabaseMetadata(meta, nil, cfg, storepb.Engine_POSTGRES, true)
+
+	advice := schema.WalkThroughWithContext(
+		context.Background(),
+		storepb.Engine_POSTGRES,
+		schema.WalkThroughContext{RawSQL: `ALTER TABLE public.test OWNER TO bob;`},
+		state,
+		nil,
+	)
+	require.Nil(t, advice)
+	require.Equal(t, "bob", state.GetSchemaMetadata("public").GetTable("test").GetProto().GetOwner())
+	require.Equal(t, cfg, state.GetConfig())
+	require.True(t, state.GetIsObjectCaseSensitive())
+}
