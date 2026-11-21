@@ -375,9 +375,7 @@ func TestDorisDriver(t *testing.T) {
 // heldSession returns the session QueryConn keeps, read under the lock that
 // guards it.
 func heldSession(d *Driver) omnidriver.Session {
-	d.sessionMu.Lock()
-	defer d.sessionMu.Unlock()
-	return d.session
+	return d.Session()
 }
 
 // schemaObjects returns a schema's tables, views and materialized views by name,

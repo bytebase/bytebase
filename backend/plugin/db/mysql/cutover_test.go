@@ -169,7 +169,7 @@ func TestAdapterDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
 	// connection with it.
 	_, _ = opened.QueryConn(canceledCtx, "SELECT SLEEP(10)", queryContext)
 	require.NotNil(t, canceledCtx.Err(), "the statement must have run past its context")
-	require.Nil(t, opened.session, "a canceled statement's session is not one to keep")
+	require.Nil(t, opened.Session(), "a canceled statement's session is not one to keep")
 
 	// The stream continues on a new session rather than the dead one.
 	results, err := opened.QueryConn(ctx, "SELECT 1", queryContext)

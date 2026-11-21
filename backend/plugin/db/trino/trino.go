@@ -14,8 +14,6 @@ package trino
 
 import (
 	"context"
-	"crypto/tls"
-	"sync"
 
 	omnidriver "github.com/bytebase/omni/driver"
 	omnitrino "github.com/bytebase/omni/trino/driver"
@@ -32,12 +30,7 @@ func init() {
 
 // Driver is Bytebase's Trino driver.
 type Driver struct {
-	driver *omnitrino.Driver
-	// sessionMu guards session. A driver is opened per request, and its
-	// QueryConn callers are sequential, but the adapter keeps the session for
-	// the driver's lifetime so it must not be shared by two calls at once.
-	sessionMu sync.Mutex
-	session   omnidriver.Session
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -52,42 +45,25 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 	if dataSource == nil {
 		return nil, errors.New("trino: a data source is required")
 	}
-	database := config.ConnectionContext.DatabaseName
-	if database == "" {
-		database = dataSource.Database
-	}
 	driverConfig := omnidriver.Config{
 		Host:            dataSource.Host,
 		Port:            dataSource.Port,
-		Database:        database,
+		Database:        util.ResolveDatabaseName(config),
 		User:            dataSource.Username,
 		Password:        config.Password,
 		ApplicationName: "bytebase",
-	}
-	if dataSource.UseSsl {
-		driverConfig.TLS = func(string) (*tls.Config, error) {
-			return util.GetTLSConfig(dataSource)
-		}
+		TLS:             util.LazyTLSFunc(dataSource),
 	}
 	driver, err := omnitrino.Open(ctx, driverConfig)
 	if err != nil {
 		return nil, err
 	}
-	return &Driver{driver: driver}, nil
-}
-
-func (d *Driver) Close(context.Context) error {
-	d.sessionMu.Lock()
-	if d.session != nil {
-		_ = d.session.Close()
-		d.session = nil
-	}
-	d.sessionMu.Unlock()
-	return d.driver.Close()
-}
-
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.driver.Ping(ctx)
+	return &Driver{
+		OmniAdapter: util.OmniAdapter{
+			Driver:               driver,
+			WithInstanceMetadata: true,
+		},
+	}, nil
 }
 
 // Execute runs the script's statements, reporting each step to the task run log.
@@ -95,11 +71,13 @@ func (d *Driver) Ping(ctx context.Context) error {
 // connectors' DML, so the omni driver runs each statement on its own and the
 // contract's Transaction and Isolation are left unset.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	return d.driver.Execute(ctx, statement, omnidriver.ExecuteOptions{
-		MaxRetries: opts.MaximumRetries,
-		Log: util.NewExecuteLogger(opts, util.WithCommandRange(func(command omnidriver.Command) *storepb.Range {
-			return commandRange(statement, command)
-		})),
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		PassMaxRetries: true,
+		LoggerOptions: []util.ExecuteLoggerOption{
+			util.WithCommandRange(func(command omnidriver.Command) *storepb.Range {
+				return commandRange(statement, command)
+			}),
+		},
 	})
 }
 

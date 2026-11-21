@@ -58,20 +58,15 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io"
-	"net"
 	"net/http"
 	"strings"
 	"time"
 
 	omnidriver "github.com/bytebase/omni/driver"
 	esdriver "github.com/bytebase/omni/elasticsearch/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/opensearch-project/opensearch-go/v5/signer"
 	"github.com/opensearch-project/opensearch-go/v5/signer/awsv2"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ssh"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -87,8 +82,7 @@ func init() {
 
 // Driver is Bytebase's Elasticsearch driver.
 type Driver struct {
-	inner     *esdriver.Driver
-	sshClient *ssh.Client
+	util.OmniAdapter
 	// aws reports that the endpoint is a managed OpenSearch domain reached
 	// with SigV4, and awsRoleARN the role that was assumed for it. Both are
 	// kept for the hints the connection test carries.
@@ -105,7 +99,16 @@ func newDriver() db.Driver {
 // login resolves its credentials here; Ping reaches the endpoint.
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	dataSource := config.DataSource
-	d := &Driver{}
+	d := &Driver{
+		OmniAdapter: util.OmniAdapter{WithInstanceMetadata: true},
+	}
+	opened := false
+	defer func() {
+		if !opened {
+			_ = d.Close(ctx)
+		}
+	}()
+
 	aws := dataSource.GetAuthenticationType() == storepb.DataSource_AWS_RDS_IAM
 
 	cfg := omnidriver.Config{
@@ -140,24 +143,17 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 	} else {
 		cfg.User = dataSource.GetUsername()
 		cfg.Password = config.Password
-		if dataSource.GetSshHost() != "" {
-			sshClient, err := util.GetSSHClient(dataSource)
-			if err != nil {
-				return nil, err
-			}
-			d.sshClient = sshClient
-			cfg.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
-				return util.DialSSHTunnel(ctx, sshClient, network, address)
-			}
+		if err := util.SetupSSHDial(dataSource, &cfg, &d.OmniAdapter, true); err != nil {
+			return nil, err
 		}
 	}
 
 	inner, err := esdriver.Open(ctx, cfg, opts)
 	if err != nil {
-		d.closeSSHClient()
 		return nil, err
 	}
-	d.inner = inner
+	d.Driver = inner
+	opened = true
 	return d, nil
 }
 
@@ -248,26 +244,11 @@ func (t *signedHTTP) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t.base.RoundTrip(req)
 }
 
-func (d *Driver) Close(context.Context) error {
-	d.closeSSHClient()
-	if d.inner != nil {
-		return d.inner.Close()
-	}
-	return nil
-}
-
-func (d *Driver) closeSSHClient() {
-	if d.sshClient != nil {
-		_ = d.sshClient.Close()
-		d.sshClient = nil
-	}
-}
-
 // Ping asks the endpoint for its root document. On a managed OpenSearch domain
 // a refusal carries hints a support case reads: the role that could not be
 // assumed, and where to look otherwise.
 func (d *Driver) Ping(ctx context.Context) error {
-	if err := d.inner.Ping(ctx); err != nil {
+	if err := d.OmniAdapter.Ping(ctx); err != nil {
 		return d.connectionError(err)
 	}
 	return nil
@@ -296,24 +277,21 @@ func (d *Driver) connectionError(err error) error {
 // Execute runs the script's requests in order, reporting each to the task run's
 // log, and returns 0 affected rows.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	return d.inner.Execute(ctx, statement, omnidriver.ExecuteOptions{
-		Log: util.NewExecuteLogger(opts),
-	})
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{})
 }
 
 // QueryConn runs each request of a read-only script and answers one result per
 // request. A request that fails fails the call, so the results before it in the
 // same script are not answered either.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	session, err := d.inner.Session(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = session.Close() }()
-
-	stmtResults, err := session.Query(ctx, statement, omnidriver.QueryOptions{
-		Explain:        queryContext.Explain,
-		MaxResultBytes: queryContext.MaximumSQLResultSize,
+	var stmtResults []*omnidriver.Result
+	err := d.QueryEphemeral(ctx, func(session omnidriver.Session) error {
+		var queryErr error
+		stmtResults, queryErr = session.Query(ctx, statement, omnidriver.QueryOptions{
+			Explain:        queryContext.Explain,
+			MaxResultBytes: queryContext.MaximumSQLResultSize,
+		})
+		return queryErr
 	})
 	if err != nil {
 		return nil, err
@@ -323,54 +301,16 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 		if stmtResult.Err != nil {
 			return nil, stmtResult.Err
 		}
-		results = append(results, toQueryResult(stmtResult, queryContext))
+		results = append(results, util.OmniResultToQueryResultWith(stmtResult, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
+			SkipColumnTypes:    true,
+			SkipMessages:       true,
+			TypedExplainPlan:   true,
+			IncludePlanContent: true,
+			TruncatedWins:      true,
+			ConvertValue:       toRowValue,
+		}))
 	}
 	return results, nil
-}
-
-// SyncInstance reads the server version, the cluster's indices and its users.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.inner.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, true), nil
-}
-
-// SyncDBSchema reads the cluster's indices as one database.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return d.inner.SyncDatabase(ctx)
-}
-
-// Dump writes nothing: a synced index does not carry what recreates it.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.inner.Dump(ctx, out, dbMetadata)
-}
-
-// toQueryResult maps one contract result onto the product's result.
-func toQueryResult(result *omnidriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
-	converted := &v1pb.QueryResult{
-		Statement: result.Statement,
-		Latency:   durationpb.New(result.Latency),
-	}
-	for _, column := range result.Columns {
-		// Elasticsearch states no column type, so ColumnTypeNames stays empty
-		// rather than holding empty names.
-		converted.ColumnNames = append(converted.ColumnNames, column.Name)
-	}
-	for _, row := range result.Rows {
-		convertedRow := &v1pb.QueryRow{}
-		for _, value := range row {
-			convertedRow.Values = append(convertedRow.Values, toRowValue(value))
-		}
-		converted.Rows = append(converted.Rows, convertedRow)
-	}
-	converted.RowsCount = int64(len(converted.Rows))
-	if result.Truncated {
-		converted.Error = util.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
-	}
-	converted.QueryPlan = toQueryPlan(result.Plan)
-	return converted
 }
 
 // toRowValue maps one cell. Every answer this driver reads is text: a JSON
@@ -383,30 +323,4 @@ func toRowValue(value omnidriver.Value) *v1pb.RowValue {
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: fmt.Sprintf("%v", value)}}
 	}
 	return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String}}
-}
-
-// toQueryPlan maps the plan an explain answers with. The format crosses the
-// contract as its enum name, and Elasticsearch states one plan format: JSON.
-func toQueryPlan(plan *omnidriver.Plan) *v1pb.QueryResult_QueryPlan {
-	if plan == nil {
-		return nil
-	}
-	format := v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED
-	switch strings.ToUpper(plan.Format) {
-	case "JSON":
-		format = v1pb.QueryOption_JSON
-	case "TEXT":
-		format = v1pb.QueryOption_TEXT
-	case "XML":
-		format = v1pb.QueryOption_XML
-	case "YAML":
-		format = v1pb.QueryOption_YAML
-	default:
-		// A format this product cannot name keeps the unspecified value.
-	}
-	return &v1pb.QueryResult_QueryPlan{
-		Format:   format,
-		Executed: plan.Executed,
-		Content:  plan.Content,
-	}
 }

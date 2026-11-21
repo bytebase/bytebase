@@ -56,6 +56,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 
 	// Registers the CosmosDB query validator that QueryConn calls.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/cosmosdb"
@@ -96,7 +97,7 @@ func newLiveDriver(t *testing.T, endpoint, key, dbName string) *Driver {
 		Params:   map[string]string{omnicosmosdb.ParamAuth: omnicosmosdb.AuthMasterKey},
 	})
 	require.NoError(t, err, "Open")
-	return &Driver{inner: inner}
+	return &Driver{OmniAdapter: util.OmniAdapter{Driver: inner}}
 }
 
 // runQuery runs a single query against container through Bytebase's adapter

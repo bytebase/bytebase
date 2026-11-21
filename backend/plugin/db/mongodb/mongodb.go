@@ -34,16 +34,12 @@ package mongodb
 
 import (
 	"context"
-	"crypto/tls"
-	"io"
 	"net"
 	"strings"
 
 	omnidriver "github.com/bytebase/omni/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 	omnimongo "github.com/bytebase/omni/mongo/driver"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ssh"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -59,8 +55,7 @@ func init() {
 
 // Driver is Bytebase's MongoDB driver.
 type Driver struct {
-	inner     *omnimongo.Driver
-	sshClient *ssh.Client
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -74,23 +69,25 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 	if err != nil {
 		return nil, err
 	}
-	d := &Driver{}
-	if dataSource := config.DataSource; dataSource.GetSshHost() != "" {
-		sshClient, err := util.GetSSHClient(dataSource)
-		if err != nil {
-			return nil, err
+	d := &Driver{
+		OmniAdapter: util.OmniAdapter{WithInstanceMetadata: true},
+	}
+	opened := false
+	defer func() {
+		if !opened {
+			_ = d.Close(ctx)
 		}
-		d.sshClient = sshClient
-		driverConfig.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
-			return util.DialSSHTunnel(ctx, sshClient, network, address)
-		}
+	}()
+
+	if err := util.SetupSSHDial(config.DataSource, &driverConfig, &d.OmniAdapter, true); err != nil {
+		return nil, err
 	}
 	inner, err := omnimongo.Open(ctx, driverConfig, options)
 	if err != nil {
-		d.closeSSHClient()
 		return nil, err
 	}
-	d.inner = inner
+	d.Driver = inner
+	opened = true
 	return d, nil
 }
 
@@ -109,11 +106,7 @@ func toDriverConfig(config db.ConnectionConfig) (omnidriver.Config, omnimongo.Op
 		User:     dataSource.GetUsername(),
 		Password: config.Password,
 		Params:   connectionParams(dataSource),
-	}
-	if dataSource.GetUseSsl() {
-		driverConfig.TLS = func(host string) (*tls.Config, error) {
-			return util.GetTLSConfigForHost(dataSource, host)
-		}
+		TLS:      util.HostTLSFunc(dataSource),
 	}
 	return driverConfig, omnimongo.Options{SRV: dataSource.GetSrv()}, nil
 }
@@ -167,39 +160,19 @@ func connectionParams(dataSource *storepb.DataSource) map[string]string {
 	return params
 }
 
-func (d *Driver) Close(context.Context) error {
-	d.closeSSHClient()
-	if d.inner == nil {
-		return nil
-	}
-	return d.inner.Close()
-}
-
-func (d *Driver) closeSSHClient() {
-	if d.sshClient != nil {
-		_ = d.sshClient.Close()
-		d.sshClient = nil
-	}
-}
-
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.inner.Ping(ctx)
-}
-
 // Execute runs the script's statements in order, reporting each step to the
 // task run log. Any transaction option is irrelevant: MongoDB runs one
 // statement at a time here.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	return d.inner.Execute(ctx, statement, omnidriver.ExecuteOptions{
-		MaxRetries: opts.MaximumRetries,
-		Log:        util.NewExecuteLogger(opts),
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		PassMaxRetries: true,
 	})
 }
 
 // QueryConn runs the script's statements on a session of its own. MongoDB has
 // no session state, so nothing outlives the call.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	session, err := d.inner.Session(ctx)
+	session, err := d.OpenSession(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open a session")
 	}
@@ -218,25 +191,4 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 		return nil, err
 	}
 	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, false), nil
-}
-
-// SyncInstance reads the server version, its non-system databases and its
-// users.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.inner.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, true), nil
-}
-
-// SyncDBSchema reads the database's collections, their sizes and indexes, and
-// its views.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return d.inner.SyncDatabase(ctx)
-}
-
-// Dump renders the synced database as a mongosh script.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.inner.Dump(ctx, out, dbMetadata)
 }

@@ -1,10 +1,12 @@
 package starrocks
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	omnidriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -124,13 +126,12 @@ func TestDriverConfig(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg, sshClient, err := driverConfig(tc.config)
+			cfg, err := driverConfig(tc.config, &util.OmniAdapter{})
 			if tc.wantErr != "" {
 				require.ErrorContains(t, err, tc.wantErr)
 				return
 			}
 			require.NoError(t, err)
-			require.Nil(t, sshClient)
 			tc.assert(t, cfg)
 		})
 	}
@@ -288,10 +289,30 @@ func TestExecuteLogger(t *testing.T) {
 
 func TestSyncDatabaseError(t *testing.T) {
 	notFound := &notFoundError{}
-	require.Equal(t, "database \"analytics\" not found", syncDatabaseError(notFound, "analytics").Error())
+	driver := &Driver{
+		OmniAdapter: util.OmniAdapter{
+			Driver:           &fakeSyncDriver{err: notFound},
+			NotFoundResource: "database",
+			DatabaseName:     "analytics",
+		},
+	}
+	_, err := driver.SyncDBSchema(t.Context())
+	require.Equal(t, "database \"analytics\" not found", err.Error())
 
 	other := errTest{"Error 1040: Too many connections"}
-	require.Equal(t, other, syncDatabaseError(other, "analytics"))
+	driver.Driver = &fakeSyncDriver{err: other}
+	_, err = driver.SyncDBSchema(t.Context())
+	require.Equal(t, other, err)
+}
+
+type fakeSyncDriver struct {
+	omnidriver.Driver
+	err error
+}
+
+func (*fakeSyncDriver) SyncInstance(context.Context) (*omnidriver.Instance, error) { return nil, nil }
+func (f *fakeSyncDriver) SyncDatabase(context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return nil, f.err
 }
 
 type errTest struct{ message string }

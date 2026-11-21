@@ -36,6 +36,32 @@ func TestOmniResultsToQueryResults(t *testing.T) {
 	withoutPlan := OmniResultsToQueryResults(results, 1024, true)
 	require.Len(t, withoutPlan, 1)
 	require.Nil(t, withoutPlan[0].QueryPlan)
+
+	typedWithContent := OmniResultsToQueryResultsWith([]*omnidriver.Result{
+		{
+			Statement: "EXPLAIN SELECT 1",
+			Columns:   []omnidriver.Column{{Name: "col", TypeName: "int"}},
+			Rows: [][]omnidriver.Value{
+				{{Kind: omnidriver.Int64, Int64: 1}},
+				{{Kind: omnidriver.Int64, Int64: 2}},
+			},
+			Plan:      &omnidriver.Plan{Format: "json", Executed: true, Content: `{"ok":true}`},
+			Truncated: true,
+			Err:       errors.New("query failed"),
+		},
+	}, 512, QueryResultOptions{
+		TypedExplainPlan:     true,
+		IncludePlanContent:   true,
+		UppercaseColumnTypes: true,
+		TruncatedWins:        true,
+		Limit:                1,
+	})
+	require.Len(t, typedWithContent, 1)
+	require.Equal(t, []string{"INT"}, typedWithContent[0].ColumnTypeNames)
+	require.Equal(t, int64(1), typedWithContent[0].RowsCount)
+	require.Equal(t, v1pb.QueryOption_JSON, typedWithContent[0].QueryPlan.Format)
+	require.Equal(t, `{"ok":true}`, typedWithContent[0].QueryPlan.Content)
+	require.Equal(t, FormatMaximumSQLResultSizeMessage(512), typedWithContent[0].Error)
 }
 
 func TestFillZeroAffectedRows(t *testing.T) {

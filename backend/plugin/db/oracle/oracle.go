@@ -58,15 +58,12 @@ package oracle
 import (
 	"context"
 	"crypto/tls"
-	"net"
 	"strings"
-	"sync"
 
 	omnidriver "github.com/bytebase/omni/driver"
 	oracledriver "github.com/bytebase/omni/oracle/driver"
 	oracleparser "github.com/bytebase/omni/oracle/parser"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ssh"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -85,12 +82,7 @@ func init() {
 
 // Driver is Bytebase's Oracle driver.
 type Driver struct {
-	impl      *oracledriver.Driver
-	sshClient *ssh.Client
-	// sessionMu guards session, which QueryConn keeps until Close so an editor
-	// request's statements share one session, as the caller's *sql.Conn did.
-	sessionMu sync.Mutex
-	session   omnidriver.Session
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -102,6 +94,15 @@ func newDriver() db.Driver {
 // schema the account cannot switch to fails here rather than at the first
 // statement, as it did before.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	opened := false
+	defer func() {
+		if !opened {
+			_ = d.Close(ctx)
+		}
+	}()
+
+	d.OmniAdapter = util.OmniAdapter{}
+
 	dataSource := config.DataSource
 	cfg := omnidriver.Config{
 		Host:          dataSource.GetHost(),
@@ -121,23 +122,16 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 			return getTLSConfig(dataSource)
 		}
 	}
-	if dataSource.GetSshHost() != "" {
-		sshClient, err := util.GetSSHClient(dataSource)
-		if err != nil {
-			return nil, err
-		}
-		d.sshClient = sshClient
-		cfg.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
-			return util.DialSSHTunnel(ctx, sshClient, network, address)
-		}
+	if err := util.SetupSSHDial(dataSource, &cfg, &d.OmniAdapter, true); err != nil {
+		return nil, err
 	}
 
 	impl, err := oracledriver.Open(ctx, cfg)
 	if err != nil {
-		d.closeSSHClient()
 		return nil, err
 	}
-	d.impl = impl
+	d.Driver = impl
+	opened = true
 	return d, nil
 }
 
@@ -190,32 +184,6 @@ func getTLSConfig(dataSource *storepb.DataSource) (*tls.Config, error) {
 	return config, nil
 }
 
-func (d *Driver) Close(context.Context) error {
-	d.sessionMu.Lock()
-	if d.session != nil {
-		_ = d.session.Close()
-		d.session = nil
-	}
-	d.sessionMu.Unlock()
-	d.closeSSHClient()
-	if d.impl != nil {
-		return d.impl.Close()
-	}
-	return nil
-}
-
-func (d *Driver) closeSSHClient() {
-	if d.sshClient != nil {
-		_ = d.sshClient.Close()
-		d.sshClient = nil
-	}
-}
-
-// Ping reaches the server.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.impl.Ping(ctx)
-}
-
 // Execute runs the script's statements, reporting each to the task run's log.
 // The script's transaction-mode directive is parsed here, because the product
 // sends it inside the statement text; the isolation directive is not applied,
@@ -224,11 +192,10 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	if opts.CreateDatabase {
 		return 0, errors.New("create database is not supported for Oracle")
 	}
-	transactionMode, _, cleanedStatement := util.ParseTransactionMode(statement)
-	return d.impl.Execute(ctx, withoutSQLPlusCommands(cleanedStatement), omnidriver.ExecuteOptions{
-		Transaction: transactionMode,
-		MaxRetries:  opts.MaximumRetries,
-		Log:         util.NewExecuteLogger(opts),
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		ParseTransactionDirective: true,
+		PassMaxRetries:            true,
+		Preprocess:                withoutSQLPlusCommands,
 	})
 }
 
@@ -268,7 +235,7 @@ func withoutSQLPlusCommands(script string) string {
 // CountAffectedRows returns the optimizer's estimate of the rows a DML
 // statement changes.
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
-	return d.impl.CountAffectedRows(ctx, statement)
+	return d.Driver.(db.RowEstimator).CountAffectedRows(ctx, statement)
 }
 
 // OwnsPrivateDatabaseLink reports whether the driver's account owns a private
@@ -276,5 +243,5 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 // the caller's *sql.Conn, which the cutover makes nil, and every linked read was
 // refused because of it.
 func (d *Driver) OwnsPrivateDatabaseLink(ctx context.Context) (bool, error) {
-	return d.impl.OwnsPrivateDatabaseLink(ctx)
+	return d.Driver.(omnidriver.PrivateDatabaseLinkOwner).OwnsPrivateDatabaseLink(ctx)
 }

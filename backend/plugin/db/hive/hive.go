@@ -45,16 +45,11 @@ package hive
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"io"
-	"strings"
 
 	odriver "github.com/bytebase/omni/driver"
 	hivedriver "github.com/bytebase/omni/hive/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -70,7 +65,7 @@ func init() {
 
 // Driver is Bytebase's Hive driver.
 type Driver struct {
-	impl *hivedriver.Driver
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -103,7 +98,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		_ = impl.Close()
 		return nil, errors.Wrap(err, "failed to ping hive server")
 	}
-	d.impl = impl
+	d.OmniAdapter = util.OmniAdapter{Driver: impl}
 	return d, nil
 }
 
@@ -154,14 +149,10 @@ func hiveConfig(config db.ConnectionConfig) (odriver.Config, error) {
 		User:     ds.GetUsername(),
 		Password: config.Password,
 		Params:   params,
-	}
-	if ds.GetUseSsl() {
 		// GetTLSConfig binds certificate verification to the data source's host,
 		// which is the host the driver dials: an SSH tunnel is refused above, so
 		// the two cannot differ.
-		cfg.TLS = func(string) (*tls.Config, error) {
-			return util.GetTLSConfig(ds)
-		}
+		TLS: util.LazyTLSFunc(ds),
 	}
 	return cfg, nil
 }
@@ -175,24 +166,14 @@ func serverAddress(ds *storepb.DataSource) string {
 	return ds.GetHost() + ":" + port
 }
 
-func (d *Driver) Close(context.Context) error {
-	return d.impl.Close()
-}
-
-// Ping reaches the server.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.impl.Ping(ctx)
-}
-
 // Execute runs the script's statements in order, reporting each to the task
 // run's log. Hive has no transaction the client controls — HiveServer2 4.0
 // refuses BEGIN, COMMIT and ROLLBACK — so every statement commits itself and
 // the script's transaction directive stays a comment, as it was before.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	return d.impl.Execute(ctx, statement, odriver.ExecuteOptions{
-		Transaction: odriver.AutoCommit,
-		MaxRetries:  opts.MaximumRetries,
-		Log:         util.NewExecuteLogger(opts),
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		DefaultTransaction: odriver.AutoCommit,
+		PassMaxRetries:     true,
 	})
 }
 
@@ -202,87 +183,47 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // reports Hive's error on its result instead of failing the call, which is how
 // the driver this replaced behaved too.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	session, err := d.impl.Session(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer session.Close()
-
-	results, err := session.Query(ctx, statement, odriver.QueryOptions{
-		Schema:         queryContext.Schema,
-		Explain:        queryContext.Explain,
-		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "TEXT", v1pb.QueryOption_JSON),
-		MaxResultBytes: queryContext.MaximumSQLResultSize,
+	var results []*odriver.Result
+	err := d.QueryEphemeral(ctx, func(session odriver.Session) error {
+		var queryErr error
+		results, queryErr = session.Query(ctx, statement, odriver.QueryOptions{
+			Schema:         queryContext.Schema,
+			Explain:        queryContext.Explain,
+			ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "TEXT", v1pb.QueryOption_JSON),
+			MaxResultBytes: queryContext.MaximumSQLResultSize,
+		})
+		return queryErr
 	})
 	if err != nil {
 		return nil, err
 	}
-	if len(results) == 0 {
-		return nil, nil
+	limit := 0
+	if !queryContext.Explain && queryContext.Limit > 0 {
+		limit = queryContext.Limit
 	}
-	converted := make([]*v1pb.QueryResult, 0, len(results))
-	for _, result := range results {
-		converted = append(converted, toQueryResult(result, queryContext))
-	}
-	return converted, nil
+	return util.OmniResultsToQueryResultsWith(results, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
+		SkipPlan:             true,
+		SkipMessages:         true,
+		UppercaseColumnTypes: true,
+		TruncatedWins:        true,
+		Limit:                limit,
+		ConvertValue:         toRowValue,
+	}), nil
 }
 
-// SyncInstance reads the server version and its databases. Hive has no role a
-// sync reads.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.impl.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, false), nil
-}
-
-// SyncDBSchema reads the database the driver was opened on.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return d.impl.SyncDatabase(ctx)
-}
-
-// Dump writes the database's DDL as the server states it. omni has no hive
-// catalog, so the metadata is not rendered and does not narrow the dump.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.impl.Dump(ctx, out, dbMetadata)
-}
-
-// toQueryResult maps one contract result onto the product's result. The plan a
-// caller asked for arrives as rows, and the API names its format; the driver
-// states no typed QueryPlan, as before.
-//
-// QueryContext.Limit is applied here because Hive has no parser to place a LIMIT
-// with, so the driver cannot cap rows at the server: the cap the policy asks for
-// is the one the engines that rewrite their statement get, and a plan is left
-// whole.
 func toQueryResult(result *odriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
-	rows := result.Rows
-	if !queryContext.Explain && queryContext.Limit > 0 && len(rows) > queryContext.Limit {
-		rows = rows[:queryContext.Limit]
+	limit := 0
+	if !queryContext.Explain && queryContext.Limit > 0 {
+		limit = queryContext.Limit
 	}
-	converted := &v1pb.QueryResult{
-		Statement: result.Statement,
-		Latency:   durationpb.New(result.Latency),
-	}
-	for _, column := range result.Columns {
-		converted.ColumnNames = append(converted.ColumnNames, column.Name)
-		converted.ColumnTypeNames = append(converted.ColumnTypeNames, strings.ToUpper(column.TypeName))
-	}
-	for _, row := range rows {
-		convertedRow := &v1pb.QueryRow{}
-		for _, value := range row {
-			convertedRow.Values = append(convertedRow.Values, toRowValue(value))
-		}
-		converted.Rows = append(converted.Rows, convertedRow)
-	}
-	converted.RowsCount = int64(len(converted.Rows))
-	if result.Truncated {
-		converted.Error = util.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
-	} else if result.Err != nil {
-		converted.Error = result.Err.Error()
-	}
-	return converted
+	return util.OmniResultToQueryResultWith(result, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
+		SkipPlan:             true,
+		SkipMessages:         true,
+		UppercaseColumnTypes: true,
+		TruncatedWins:        true,
+		Limit:                limit,
+		ConvertValue:         toRowValue,
+	})
 }
 
 // toRowValue maps one contract value onto the product's row value. A float is
@@ -292,24 +233,9 @@ func toRowValue(value odriver.Value) *v1pb.RowValue {
 	switch value.Kind {
 	case odriver.Null:
 		return util.NullRowValue
-	case odriver.Bool:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value.Bool}}
-	case odriver.Bytes:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.Bytes}}
-	case odriver.Float32:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_FloatValue{FloatValue: float32(value.Float64)}}
-	case odriver.Float64:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: value.Float64}}
-	case odriver.Int32:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(value.Int64)}}
-	case odriver.Int64:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: value.Int64}}
-	case odriver.Uint32:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_Uint32Value{Uint32Value: uint32(value.Uint64)}}
-	case odriver.Uint64:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_Uint64Value{Uint64Value: value.Uint64}}
-	case odriver.String:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String}}
+	case odriver.Bool, odriver.Bytes, odriver.Float32, odriver.Float64,
+		odriver.Int32, odriver.Int64, odriver.Uint32, odriver.Uint64, odriver.String:
+		return util.OmniRowValue(value)
 	default:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: fmt.Sprintf("%v", value)}}
 	}

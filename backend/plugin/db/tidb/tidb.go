@@ -38,19 +38,11 @@ package tidb
 
 import (
 	"context"
-	"crypto/tls"
-	"io"
-	"net"
-	"sync"
 
 	omnidriver "github.com/bytebase/omni/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 	tidbdriver "github.com/bytebase/omni/tidb/driver"
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
-	"golang.org/x/crypto/ssh"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -71,17 +63,7 @@ func init() {
 
 // Driver is Bytebase's TiDB driver.
 type Driver struct {
-	impl         *tidbdriver.Driver
-	databaseName string
-	// sshClient is the tunnel an SSH data source opened; Close closes it.
-	sshClient *ssh.Client
-
-	// sessionMu guards session. A driver is opened per request, and the editor
-	// asks for one statement at a time, but the session is one server
-	// connection: the lock covers acquisition, the query and teardown so two
-	// calls can never interleave their statements on it.
-	sessionMu sync.Mutex
-	session   omnidriver.Session
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -91,34 +73,38 @@ func newDriver() db.Driver {
 // Open maps the connection config onto the contract's Config. Like the driver
 // this replaced, Open does not reach the server; Ping does.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	driverConfig, sshClient, err := buildConfig(config)
+	opened := false
+	defer func() {
+		if !opened {
+			_ = d.Close(ctx)
+		}
+	}()
+
+	d.OmniAdapter = util.OmniAdapter{
+		WithInstanceMetadata: true,
+		NotFoundResource:     "database",
+		DatabaseName:         config.ConnectionContext.DatabaseName,
+	}
+
+	driverConfig, err := buildConfig(config, &d.OmniAdapter)
 	if err != nil {
 		return nil, err
 	}
 	impl, err := tidbdriver.Open(ctx, driverConfig)
 	if err != nil {
-		if sshClient != nil {
-			_ = sshClient.Close()
-		}
 		return nil, err
 	}
-	d.impl = impl
-	d.sshClient = sshClient
-	d.databaseName = config.ConnectionContext.DatabaseName
+	d.Driver = impl
+	opened = true
 	return d, nil
 }
 
 // buildConfig resolves what Bytebase knows about reaching a TiDB server into the
-// plain values tidb/driver takes. The returned SSH client, when not nil, is the
-// tunnel the driver dials through and belongs to the caller to close.
-func buildConfig(config db.ConnectionConfig) (omnidriver.Config, *ssh.Client, error) {
+// plain values tidb/driver takes.
+func buildConfig(config db.ConnectionConfig, adapter *util.OmniAdapter) (omnidriver.Config, error) {
 	dataSource := config.DataSource
 	if dataSource == nil {
-		return omnidriver.Config{}, nil, errors.New("a data source is required")
-	}
-	params := map[string]string{}
-	for key, value := range dataSource.GetExtraConnectionParameters() {
-		params[key] = value
+		return omnidriver.Config{}, errors.New("a data source is required")
 	}
 	driverConfig := omnidriver.Config{
 		Host:            dataSource.Host,
@@ -126,62 +112,23 @@ func buildConfig(config db.ConnectionConfig) (omnidriver.Config, *ssh.Client, er
 		Database:        config.ConnectionContext.DatabaseName,
 		User:            dataSource.Username,
 		Password:        config.Password,
-		Params:          params,
+		Params:          util.CloneParams(dataSource.GetExtraConnectionParameters()),
 		ApplicationName: applicationName,
 		EngineVersion:   config.ConnectionContext.EngineVersion,
+		TLS:             util.LazyTLSFunc(dataSource),
 	}
-
-	var sshClient *ssh.Client
-	if dataSource.GetSshHost() != "" {
-		client, err := util.GetSSHClient(dataSource)
-		if err != nil {
-			return omnidriver.Config{}, nil, err
-		}
-		sshClient = client
-		driverConfig.Dial = func(_ context.Context, network, address string) (net.Conn, error) {
-			return client.Dial(network, address)
-		}
+	if err := util.SetupSSHDial(dataSource, &driverConfig, adapter, false); err != nil {
+		return omnidriver.Config{}, err
 	}
-
-	if dataSource.GetUseSsl() {
-		// The contract asks for one host at a time so a caller can bind
-		// verification to the host it reaches; Bytebase's material does not
-		// depend on which one that is.
-		driverConfig.TLS = func(string) (*tls.Config, error) {
-			return util.GetTLSConfig(dataSource)
-		}
-	}
-	return driverConfig, sshClient, nil
-}
-
-func (d *Driver) Close(context.Context) error {
-	var err error
-	d.sessionMu.Lock()
-	if d.session != nil {
-		err = multierr.Append(err, d.session.Close())
-		d.session = nil
-	}
-	d.sessionMu.Unlock()
-	err = multierr.Append(err, d.impl.Close())
-	if d.sshClient != nil {
-		err = multierr.Append(err, d.sshClient.Close())
-	}
-	return err
-}
-
-// Ping reaches the server.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.impl.Ping(ctx)
+	return driverConfig, nil
 }
 
 // Execute runs the script's statements under the transaction directive it
 // carries, reporting each step to the task run log.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	mode, _, cleanedStatement := util.ParseTransactionMode(statement)
-	return d.impl.Execute(ctx, cleanedStatement, omnidriver.ExecuteOptions{
-		Transaction: mode,
-		MaxRetries:  opts.MaximumRetries,
-		Log:         util.NewExecuteLogger(opts),
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		ParseTransactionDirective: true,
+		PassMaxRetries:            true,
 	})
 }
 
@@ -193,89 +140,23 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 	if queryContext.MaximumSQLResultSize <= 0 {
 		return nil, errors.New("maximum SQL result size must be positive")
 	}
-	d.sessionMu.Lock()
-	defer d.sessionMu.Unlock()
-	session, err := d.querySessionLocked(ctx)
-	if err != nil {
-		return nil, err
-	}
-	results, err := session.Query(ctx, statement, omnidriver.QueryOptions{
+	results, err := d.QueryHeldSession(ctx, statement, omnidriver.QueryOptions{
 		Schema:         queryContext.Schema,
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
 		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "TEXT", v1pb.QueryOption_JSON),
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 		MaskingEnabled: queryContext.MaskingEnabled,
-	})
+	}, util.SessionQueryOptions{})
 	if err != nil {
-		// The script could not be run at all; the session is not one to keep.
-		d.discardSessionLocked(session)
 		return nil, err
 	}
-	if ctx.Err() != nil {
-		// The client closes the connection when a statement's context ends, so the
-		// stream's next statement must open a new session.
-		d.discardSessionLocked(session)
-	}
-
 	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, queryContext.Explain), nil
-}
-
-// discardSessionLocked closes a session a statement took with it, so the
-// stream's next statement opens a new one instead of reusing the dead one. The
-// caller holds sessionMu.
-func (d *Driver) discardSessionLocked(session omnidriver.Session) {
-	_ = session.Close()
-	if d.session == session {
-		d.session = nil
-	}
-}
-
-// querySessionLocked returns the session QueryConn runs on, opening it on first
-// use. The caller holds sessionMu.
-func (d *Driver) querySessionLocked(ctx context.Context) (omnidriver.Session, error) {
-	if d.session != nil {
-		return d.session, nil
-	}
-	session, err := d.impl.Session(ctx)
-	if err != nil {
-		return nil, err
-	}
-	d.session = session
-	return session, nil
-}
-
-// SyncInstance reads the server version, its user databases and its roles.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.impl.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, true), nil
-}
-
-// SyncDBSchema syncs the connected database's schema. A database the server no
-// longer has keeps answering the product's not-found error, as the old driver
-// did when the database row was missing.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	metadata, err := d.impl.SyncDatabase(ctx)
-	if err != nil {
-		if errors.Is(err, omnidriver.ErrNotFound) {
-			return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
-		}
-		return nil, err
-	}
-	return metadata, nil
-}
-
-// Dump writes the synced schema as TiDB's DDL.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.impl.Dump(ctx, out, dbMetadata)
 }
 
 // CountAffectedRows returns TiDB's planner estimate of the rows statement
 // modifies. The contract answers it for exactly one INSERT, UPDATE or DELETE and
 // refuses any other statement before it reaches the server.
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
-	return d.impl.CountAffectedRows(ctx, statement)
+	return d.Driver.(db.RowEstimator).CountAffectedRows(ctx, statement)
 }

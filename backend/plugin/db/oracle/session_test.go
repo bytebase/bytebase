@@ -25,8 +25,9 @@ func (brokenSession) Close() error { return nil }
 // call took with it does not outlive the call: the editor's next statement must
 // not run on a connection the server has closed.
 func TestQueryConnDropsTheSessionAScriptCouldNotRun(t *testing.T) {
-	d := &Driver{session: brokenSession{}}
+	d := &Driver{}
+	d.SetSession(brokenSession{})
 	_, err := d.QueryConn(context.Background(), "SELECT 1 FROM DUAL", db.QueryContext{MaximumSQLResultSize: 1024})
 	require.Error(t, err)
-	require.Nil(t, d.session, "the next statement opens a new session")
+	require.Nil(t, d.Session(), "the next statement opens a new session")
 }

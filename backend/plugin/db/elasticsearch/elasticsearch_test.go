@@ -569,9 +569,15 @@ func TestToRowValue(t *testing.T) {
 }
 
 func TestToQueryPlan(t *testing.T) {
-	require.Nil(t, toQueryPlan(nil))
+	convert := func(plan *omnidriver.Plan) *v1pb.QueryResult_QueryPlan {
+		return dbutil.OmniResultToQueryResultWith(&omnidriver.Result{Plan: plan}, 0, dbutil.QueryResultOptions{
+			TypedExplainPlan:   true,
+			IncludePlanContent: true,
+		}).QueryPlan
+	}
+	require.Nil(t, convert(nil))
 	require.Equal(t, &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_JSON, Executed: true},
-		toQueryPlan(&omnidriver.Plan{Format: "JSON", Executed: true}))
+		convert(&omnidriver.Plan{Format: "JSON", Executed: true}))
 	require.Equal(t, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED,
-		toQueryPlan(&omnidriver.Plan{Format: "not a format"}).GetFormat())
+		convert(&omnidriver.Plan{Format: "not a format"}).GetFormat())
 }

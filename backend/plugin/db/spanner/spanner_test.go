@@ -27,6 +27,7 @@ import (
 	spannerdriver "github.com/bytebase/omni/spanner/driver"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
@@ -510,6 +511,10 @@ func TestGetDatabaseFromResource(t *testing.T) {
 // these are its recorded expectations: a query's columns, rows and row count; a
 // DML statement's Affected Rows result, including the one row it reports; a DDL
 // statement's empty result; and a failed statement's error with no rows.
+func toQueryResult(result *odriver.Result, maxResultBytes int64) *v1pb.QueryResult {
+	return toQueryResults([]*odriver.Result{result}, maxResultBytes, false)[0]
+}
+
 func TestToQueryResultMatchesTheRecordedOldResults(t *testing.T) {
 	maxBytes := int64(1024 * 1024)
 	latency := time.Millisecond
@@ -519,7 +524,7 @@ func TestToQueryResultMatchesTheRecordedOldResults(t *testing.T) {
 		Columns:   []odriver.Column{{Name: "n", TypeName: "INT64"}},
 		Rows:      [][]odriver.Value{{{Kind: odriver.Int64, Int64: 1}}},
 		Latency:   latency,
-	}, maxBytes, false)
+	}, maxBytes)
 	require.Equal(t, "SELECT 1 AS n", query.Statement)
 	require.Equal(t, []string{"n"}, query.ColumnNames)
 	require.Equal(t, []string{"INT64"}, query.ColumnTypeNames)
@@ -530,18 +535,18 @@ func TestToQueryResultMatchesTheRecordedOldResults(t *testing.T) {
 		Statement:    "UPDATE Singers SET Rating = 5 WHERE Id = 1",
 		AffectedRows: func() *int64 { value := int64(1); return &value }(),
 		Latency:      latency,
-	}, maxBytes, false)
+	}, maxBytes)
 	require.Equal(t, []string{"Affected Rows"}, affected.ColumnNames)
 	require.Equal(t, []string{"INT"}, affected.ColumnTypeNames)
 	require.Equal(t, int64(1), affected.RowsCount, "the old driver counted the Affected Rows row")
 	require.Equal(t, int64(1), affected.Rows[0].Values[0].GetInt64Value())
 
-	ddl := toQueryResult(&odriver.Result{Statement: "CREATE TABLE T (Id INT64) PRIMARY KEY (Id)", Latency: latency}, maxBytes, false)
+	ddl := toQueryResult(&odriver.Result{Statement: "CREATE TABLE T (Id INT64) PRIMARY KEY (Id)", Latency: latency}, maxBytes)
 	require.Empty(t, ddl.ColumnNames)
 	require.Empty(t, ddl.Rows)
 	require.Equal(t, int64(0), ddl.RowsCount)
 
-	failed := toQueryResult(&odriver.Result{Statement: "SELECT * FROM Missing", Err: errors.New("Table not found"), Latency: latency}, maxBytes, false)
+	failed := toQueryResult(&odriver.Result{Statement: "SELECT * FROM Missing", Err: errors.New("Table not found"), Latency: latency}, maxBytes)
 	require.Equal(t, "Table not found", failed.Error)
 	require.Empty(t, failed.Rows)
 	require.Equal(t, int64(0), failed.RowsCount)
@@ -557,7 +562,7 @@ func TestMaxResultBytesCutIsTheDriversNotThePowerOfTwoCheck(t *testing.T) {
 		Columns:   []odriver.Column{{Name: "Id", TypeName: "INT64"}},
 		Rows:      [][]odriver.Value{{{Kind: odriver.Int64, Int64: 1}}},
 		Truncated: true,
-	}, 300, false)
+	}, 300)
 	require.Equal(t, util.FormatMaximumSQLResultSizeMessage(300), truncated.Error)
 	require.Equal(t, int64(1), truncated.RowsCount)
 }

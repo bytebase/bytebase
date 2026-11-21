@@ -40,20 +40,12 @@ package mysql
 
 import (
 	"context"
-	"crypto/tls"
-	"io"
-	"net"
-	"sync"
 
-	"cloud.google.com/go/cloudsqlconn"
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
-	"golang.org/x/crypto/ssh"
 
 	odriver "github.com/bytebase/omni/driver"
 	mariadbast "github.com/bytebase/omni/mariadb/ast"
 	mariadbd "github.com/bytebase/omni/mariadb/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 	mysqlast "github.com/bytebase/omni/mysql/ast"
 	mysqld "github.com/bytebase/omni/mysql/driver"
 
@@ -74,33 +66,10 @@ func init() {
 	db.Register(storepb.Engine_MARIADB, newDriver)
 }
 
-// omniDriver is the method set the MySQL and MariaDB contract drivers share.
-type omniDriver interface {
-	Ping(ctx context.Context) error
-	Close() error
-	SyncInstance(ctx context.Context) (*odriver.Instance, error)
-	SyncDatabase(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error)
-	Dump(ctx context.Context, w io.Writer, db *metadatapb.DatabaseSchemaMetadata) error
-	Session(ctx context.Context) (odriver.Session, error)
-	Execute(ctx context.Context, script string, opts odriver.ExecuteOptions) (int64, error)
-	CountAffectedRows(ctx context.Context, statement string) (int64, error)
-	ExplainJSON(ctx context.Context, statement string) (string, error)
-}
-
 // Driver is Bytebase's MySQL driver.
 type Driver struct {
+	util.OmniAdapter
 	dbType storepb.Engine
-	driver omniDriver
-
-	sshClient *ssh.Client
-	// cloudSQLDialer owns the background certificate refresh; it lives and
-	// dies with the driver.
-	cloudSQLDialer *cloudsqlconn.Dialer
-
-	// sessionMu guards session. The editor keeps one driver for a whole stream,
-	// so one contract session serves it from the first QueryConn until Close.
-	sessionMu sync.Mutex
-	session   odriver.Session
 }
 
 func newDriver() db.Driver {
@@ -123,6 +92,7 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 		return nil, errors.New("mysql: a data source is required")
 	}
 	d.dbType = dbType
+	d.OmniAdapter = util.OmniAdapter{WithInstanceMetadata: true}
 
 	cfg := odriver.Config{
 		Host:            dataSource.Host,
@@ -137,40 +107,25 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 
 	switch dataSource.GetAuthenticationType() {
 	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
-		dialer, err := util.GetGCPConnectionConfig(ctx, connCfg)
-		if err != nil {
-			return nil, errors.Wrap(err, "load gcp config failed")
-		}
-		d.cloudSQLDialer = dialer
-		instance := dataSource.Host
-		cfg.Dial = func(ctx context.Context, _, _ string) (net.Conn, error) {
-			return dialer.Dial(ctx, instance)
+		if _, err := util.SetupCloudSQLDial(ctx, connCfg, &cfg, &d.OmniAdapter); err != nil {
+			return nil, err
 		}
 	case storepb.DataSource_AWS_RDS_IAM:
-		if err := d.openRDS(ctx, connCfg, &cfg); err != nil {
+		if err := util.ConfigureRDSMySQLIAM(ctx, connCfg, &cfg); err != nil {
 			return nil, err
 		}
 	default:
-		if dataSource.GetSshHost() != "" {
-			sshClient, err := util.GetSSHClient(dataSource)
-			if err != nil {
-				return nil, err
-			}
-			d.sshClient = sshClient
-			cfg.Dial = func(_ context.Context, _, address string) (net.Conn, error) {
-				return sshClient.Dial("tcp", address)
-			}
+		if err := util.SetupSSHDial(dataSource, &cfg, &d.OmniAdapter, false); err != nil {
+			return nil, err
 		}
-		tlsConfig, err := util.GetTLSConfig(dataSource)
+		tlsFn, err := util.StaticTLSFunc(dataSource)
 		if err != nil {
 			return nil, errors.Wrap(err, "sql: tls config error")
 		}
-		if tlsConfig != nil {
-			cfg.TLS = func(string) (*tls.Config, error) { return tlsConfig, nil }
-		}
+		cfg.TLS = tlsFn
 	}
 
-	var opened omniDriver
+	var opened odriver.Driver
 	var err error
 	switch dbType {
 	case storepb.Engine_MYSQL:
@@ -183,83 +138,20 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 	if err != nil {
 		return nil, err
 	}
-	d.driver = opened
+	d.Driver = opened
 	success = true
 	return d, nil
-}
-
-func (*Driver) openRDS(ctx context.Context, connCfg db.ConnectionConfig, cfg *odriver.Config) error {
-	token, err := util.RDSAuthToken(ctx, connCfg)
-	if err != nil {
-		return err
-	}
-	tlsConfig, err := util.RDSTLSConfig(ctx, connCfg.DataSource)
-	if err != nil {
-		return err
-	}
-	cfg.Password = token
-	cfg.TLS = func(string) (*tls.Config, error) { return tlsConfig, nil }
-	// RDS IAM authenticates with the clear-password plugin, which the client
-	// only sends when it is allowed to.
-	if cfg.Params == nil {
-		cfg.Params = map[string]string{}
-	}
-	cfg.Params["allowCleartextPasswords"] = "true"
-	return nil
-}
-
-func (d *Driver) Close(context.Context) error {
-	var err error
-	d.sessionMu.Lock()
-	if d.session != nil {
-		err = multierr.Append(err, d.session.Close())
-		d.session = nil
-	}
-	d.sessionMu.Unlock()
-	if d.driver != nil {
-		err = multierr.Append(err, d.driver.Close())
-	}
-	if d.sshClient != nil {
-		err = multierr.Append(err, d.sshClient.Close())
-	}
-	if d.cloudSQLDialer != nil {
-		err = multierr.Append(err, d.cloudSQLDialer.Close())
-	}
-	return err
-}
-
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.driver.Ping(ctx)
-}
-
-// SyncInstance converts the contract's instance into the API's metadata.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.driver.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, true), nil
-}
-
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return d.driver.SyncDatabase(ctx)
-}
-
-func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.driver.Dump(ctx, out, dbMetadata)
 }
 
 // Execute runs the script's statements, reporting each step to the task run
 // log. The transaction directive is read here unless the caller already did.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	mode, isolation, cleaned := util.ParseTransactionMode(statement)
 	// CreateDatabase and MaximumRetries are not mapped: the driver this
 	// replaced read neither, and mapping them would change a create-database
 	// script's transaction shape and retry a script the product did not retry.
-	return d.driver.Execute(ctx, cleaned, odriver.ExecuteOptions{
-		Transaction: mode,
-		Isolation:   isolation,
-		Log:         util.NewExecuteLogger(opts),
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		ParseTransactionDirective: true,
+		PassIsolation:             true,
 	})
 }
 
@@ -267,42 +159,19 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // session from the first call until Close, so a stream's session state survives
 // between calls.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	d.sessionMu.Lock()
-	defer d.sessionMu.Unlock()
-	if d.session == nil {
-		session, err := d.driver.Session(ctx)
-		if err != nil {
-			return nil, err
-		}
-		d.session = session
-	}
-	session := d.session
-
 	// The product reads a zero cap as "no rows", and the contract reads it as
 	// "no cap". A one-byte cap keeps the old zero-byte behaviour without letting
 	// the query read every row a policy meant to bound.
-	maxResultBytes := queryContext.MaximumSQLResultSize
-	if maxResultBytes <= 0 {
-		maxResultBytes = 1
-	}
-	results, err := session.Query(ctx, statement, odriver.QueryOptions{
+	maxResultBytes := util.PositiveMaxResultBytes(queryContext.MaximumSQLResultSize)
+	results, err := d.QueryHeldSession(ctx, statement, odriver.QueryOptions{
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
 		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON),
 		MaxResultBytes: maxResultBytes,
 		MaskingEnabled: queryContext.MaskingEnabled,
-	})
+	}, util.SessionQueryOptions{})
 	if err != nil {
-		// The client closes the connection when a statement's context ends, and an
-		// errored statement leaves the session's state unknown; either way the next
-		// statement on this stream would find a session it cannot use.
-		_ = session.Close()
-		d.session = nil
 		return nil, err
-	}
-	if ctx.Err() != nil {
-		_ = session.Close()
-		d.session = nil
 	}
 	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, queryContext.Explain), nil
 }
@@ -313,94 +182,30 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 // pCtx.Autocommit runs the statement alone; a MySQL probe is an EXPLAIN, so
 // either shape answers the same.
 func (d *Driver) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
-	session, err := d.driver.Session(ctx)
-	if err != nil {
-		return db.ProbeResult{}, err
-	}
-	defer session.Close()
-
-	if !pCtx.Autocommit {
-		if _, err := session.Query(ctx, "START TRANSACTION", odriver.QueryOptions{}); err != nil {
-			return db.ProbeResult{}, errors.Wrap(err, "failed to start the probe transaction")
-		}
-		defer func() {
-			_, _ = session.Query(ctx, "ROLLBACK", odriver.QueryOptions{})
-		}()
-	}
-	for _, preExec := range pCtx.PreExecutions {
-		if preExec == "" {
-			continue
-		}
-		if _, err := session.Query(ctx, preExec, odriver.QueryOptions{}); err != nil {
-			return db.ProbeResult{}, errors.Wrapf(err, "failed to execute pre-execution: %s", preExec)
-		}
-	}
-	results, err := session.Query(ctx, statement, odriver.QueryOptions{})
-	if err != nil {
-		return db.ProbeResult{}, err
-	}
-	if len(results) == 0 {
-		return db.ProbeResult{}, nil
-	}
-	result := results[len(results)-1]
-	if result.Err != nil {
-		return db.ProbeResult{}, result.Err
-	}
-	probeResult := db.ProbeResult{
-		Columns:     make([]string, len(result.Columns)),
-		ColumnTypes: make([]string, len(result.Columns)),
-	}
-	for i, column := range result.Columns {
-		probeResult.Columns[i] = column.Name
-		probeResult.ColumnTypes[i] = column.TypeName
-	}
-	for _, row := range result.Rows {
-		values := make([]any, len(row))
-		for i, value := range row {
-			values[i] = probeValue(value)
-		}
-		probeResult.Rows = append(probeResult.Rows, values)
-	}
-	return probeResult, nil
-}
-
-// probeValue converts one contract cell to the untyped value a rule reads.
-func probeValue(value odriver.Value) any {
-	switch value.Kind {
-	case odriver.Bool:
-		return value.Bool
-	case odriver.Bytes:
-		return value.Bytes
-	case odriver.Float32, odriver.Float64:
-		return value.Float64
-	case odriver.Int32, odriver.Int64:
-		return value.Int64
-	case odriver.Uint32, odriver.Uint64:
-		return value.Uint64
-	case odriver.String:
-		return value.String
-	case odriver.Structured:
-		return value.Structured
-	case odriver.Timestamp, odriver.TimestampTZ:
-		return value.Time
-	default:
-		return nil
-	}
+	return util.ProbeOmni(ctx, d.Driver.(odriver.Querier), pCtx, statement, util.OmniProbeOptions{
+		BeginStatement:               "START TRANSACTION",
+		RollbackStatement:            "ROLLBACK",
+		AllowAutocommitPreExecutions: true,
+		SkipEmptyPreExecutions:       true,
+		TakeLastResult:               true,
+	})
 }
 
 // CountAffectedRows returns the planner's estimate for one DML statement.
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
-	return d.driver.CountAffectedRows(ctx, statement)
+	return d.Driver.(db.RowEstimator).CountAffectedRows(ctx, statement)
 }
 
 // ExplainJSON returns EXPLAIN FORMAT=JSON for one statement.
 func (d *Driver) ExplainJSON(ctx context.Context, statement string) (string, error) {
-	return d.driver.ExplainJSON(ctx, statement)
+	return d.Driver.(interface {
+		ExplainJSON(context.Context, string) (string, error)
+	}).ExplainJSON(ctx, statement)
 }
 
 // EstimateAffectedRows reads a MySQL node's estimate from plan.
 func (d *Driver) EstimateAffectedRows(ctx context.Context, stmt mysqlast.Node, query, plan string) (int64, error) {
-	driver, ok := d.driver.(*mysqld.Driver)
+	driver, ok := d.Driver.(*mysqld.Driver)
 	if !ok {
 		return 0, errors.New("mysql: EstimateAffectedRows needs the MySQL driver")
 	}
@@ -409,7 +214,7 @@ func (d *Driver) EstimateAffectedRows(ctx context.Context, stmt mysqlast.Node, q
 
 // EstimateAffectedRowsMariaDB reads a MariaDB node's estimate from plan.
 func (d *Driver) EstimateAffectedRowsMariaDB(ctx context.Context, stmt mariadbast.Node, query, plan string) (int64, error) {
-	driver, ok := d.driver.(*mariadbd.Driver)
+	driver, ok := d.Driver.(*mariadbd.Driver)
 	if !ok {
 		return 0, errors.New("mysql: EstimateAffectedRowsMariaDB needs the MariaDB driver")
 	}

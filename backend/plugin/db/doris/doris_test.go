@@ -38,9 +38,8 @@ func TestDriverConfig(t *testing.T) {
 		},
 	}
 
-	cfg, sshClient, err := driverConfig(config)
+	cfg, err := driverConfig(config, &util.OmniAdapter{})
 	require.NoError(t, err)
-	require.Nil(t, sshClient)
 	require.Equal(t, "doris.example.com", cfg.Host)
 	require.Equal(t, "9030", cfg.Port)
 	require.Equal(t, "analytics", cfg.Database)
@@ -70,7 +69,7 @@ func TestDriverConfigTLSPassesTheResolvedMaterial(t *testing.T) {
 		Password: "secret",
 	}
 
-	cfg, _, err := driverConfig(config)
+	cfg, err := driverConfig(config, &util.OmniAdapter{})
 	require.NoError(t, err)
 	require.NotNil(t, cfg.TLS)
 
@@ -96,7 +95,7 @@ func TestDriverConfigTLSWithoutVerification(t *testing.T) {
 		},
 	}
 
-	cfg, _, err := driverConfig(config)
+	cfg, err := driverConfig(config, &util.OmniAdapter{})
 	require.NoError(t, err)
 	require.NotNil(t, cfg.TLS)
 	tlscfg, err := cfg.TLS("doris.example.com")

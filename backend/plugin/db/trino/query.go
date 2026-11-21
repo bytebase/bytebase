@@ -14,34 +14,24 @@ import (
 // QueryConn runs the script's statements on the driver's session, which lives
 // until Close so an editor request's statements share it.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	d.sessionMu.Lock()
-	defer d.sessionMu.Unlock()
-	if d.session == nil {
-		session, err := d.driver.Session(ctx)
+	results, err := d.Query(ctx, func(ctx context.Context) (omnidriver.Session, error) {
+		session, err := d.OpenSession(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to open a session")
 		}
-		d.session = session
-	}
-
-	session := d.session
-	results, err := session.Query(ctx, statement, omnidriver.QueryOptions{
-		Schema:         queryContext.Schema,
-		Limit:          queryContext.Limit,
-		Explain:        queryContext.Explain,
-		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON),
-		MaxResultBytes: queryContext.MaximumSQLResultSize,
-		MaskingEnabled: queryContext.MaskingEnabled,
+		return session, nil
+	}, util.SessionQueryOptions{}, func(session omnidriver.Session) ([]*omnidriver.Result, error) {
+		return session.Query(ctx, statement, omnidriver.QueryOptions{
+			Schema:         queryContext.Schema,
+			Limit:          queryContext.Limit,
+			Explain:        queryContext.Explain,
+			ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON),
+			MaxResultBytes: queryContext.MaximumSQLResultSize,
+			MaskingEnabled: queryContext.MaskingEnabled,
+		})
 	})
 	if err != nil {
-		// The script could not be run at all; the session is not one to keep.
-		d.discardSessionLocked(session)
 		return nil, err
-	}
-	if ctx.Err() != nil {
-		// The client closes the connection when a statement's context ends, so the
-		// next statement must open a new session.
-		d.discardSessionLocked(session)
 	}
 	queryResults := util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, false)
 	for i, result := range results {
@@ -51,14 +41,4 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 		util.FillZeroAffectedRows(result, queryResults[i])
 	}
 	return queryResults, nil
-}
-
-// discardSessionLocked closes a session a statement took with it, so the next
-// statement opens a new one instead of reusing a dead one. The caller holds
-// sessionMu.
-func (d *Driver) discardSessionLocked(session omnidriver.Session) {
-	_ = session.Close()
-	if d.session == session {
-		d.session = nil
-	}
 }

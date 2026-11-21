@@ -36,7 +36,8 @@ func (*overlapSession) Close() error { return nil }
 // share one server session, and their statements must not interleave on it.
 func TestQueryConnSerializesStatementsOnTheSession(t *testing.T) {
 	session := &overlapSession{}
-	d := &Driver{session: session}
+	d := &Driver{}
+	d.SetSession(session)
 
 	var wg sync.WaitGroup
 	for range 8 {

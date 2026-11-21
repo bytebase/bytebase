@@ -18,7 +18,7 @@ import (
 // ignored both, and honoring them here would change what a script does.
 func (d *Driver) Execute(ctx context.Context, script string, opts db.ExecuteOptions) (int64, error) {
 	statement, driverOptions := executeOptions(script, opts)
-	return d.inner.Execute(ctx, statement, driverOptions)
+	return d.Driver.(omnidriver.Executor).Execute(ctx, statement, driverOptions)
 }
 
 // executeOptions strips the transaction directive from the script and maps what

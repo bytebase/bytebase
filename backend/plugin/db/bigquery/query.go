@@ -18,7 +18,7 @@ import (
 // Result" stating whether the statement is valid and how many bytes it would
 // process.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	results, err := d.session.Query(ctx, statement, odriver.QueryOptions{
+	results, err := d.Session().Query(ctx, statement, odriver.QueryOptions{
 		// BigQuery has no session state and no schema below the dataset, so
 		// QueryContext.Schema has nothing to set.
 		//
