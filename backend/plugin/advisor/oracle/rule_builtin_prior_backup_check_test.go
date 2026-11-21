@@ -58,8 +58,7 @@ func TestPriorBackupLongColumnWarning(t *testing.T) {
 				return []string{"BBDATAARCHIVE"}, nil
 			},
 		}
-		a := &StatementPriorBackupCheckAdvisor{}
-		advices, err := a.Check(context.Background(), checkCtx)
+		advices, err := advisor.Check(context.Background(), storepb.Engine_ORACLE, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK, checkCtx)
 		require.NoError(t, err)
 		return advices
 	}
@@ -162,8 +161,7 @@ func TestPriorBackupLongColumnWarning(t *testing.T) {
 					return []string{"BBDATAARCHIVE"}, nil
 				},
 			}
-			a := &StatementPriorBackupCheckAdvisor{}
-			advices, err := a.Check(context.Background(), checkCtx)
+			advices, err := advisor.Check(context.Background(), storepb.Engine_ORACLE, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK, checkCtx)
 			require.NoError(t, err)
 			return advices
 		}

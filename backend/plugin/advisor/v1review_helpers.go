@@ -274,13 +274,15 @@ func v1SchemaPtrOf(m *model.DatabaseMetadata) *v1review.Schema {
 	return &s
 }
 
-func readMissingSchema(m *model.DatabaseMetadata, err error) {
+// ReadMissingSchema repeats an unguarded read when omni reports ErrSchemaMissing.
+func ReadMissingSchema(m *model.DatabaseMetadata, err error) {
 	if err == v1review.ErrSchemaMissing {
 		m.GetSchemaMetadata("")
 	}
 }
 
-func requireNumberPayload(rule *storepb.SQLReviewRule, msg string) (int, error) {
+// RequireNumberPayload returns the integer number payload or an error with msg when absent.
+func RequireNumberPayload(rule *storepb.SQLReviewRule, msg string) (int, error) {
 	p := rule.GetNumberPayload()
 	if p == nil {
 		return 0, errors.New(msg)
@@ -328,7 +330,7 @@ func NewMySQLRowLimitAdvisor[N any](
 		if err != nil {
 			return nil, err
 		}
-		maxRow, err := requireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
+		maxRow, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
 		if err != nil {
 			return nil, err
 		}

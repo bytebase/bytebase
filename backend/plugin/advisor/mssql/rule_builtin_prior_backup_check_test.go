@@ -38,7 +38,7 @@ DELETE p FROM dbo.pokes AS p WHERE p.c1 = 1;`
 		})
 	}
 
-	advices, err := (&StatementPriorBackupCheckAdvisor{}).Check(context.Background(), advisor.Context{
+	advices, err := advisor.Check(context.Background(), storepb.Engine_MSSQL, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK, advisor.Context{
 		DBType:            storepb.Engine_MSSQL,
 		DBSchema:          &metadatapb.DatabaseSchemaMetadata{Name: "master"},
 		EnablePriorBackup: true,
