@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -32,35 +33,73 @@ func concatMultiFile(result *schema.MultiFileSchemaResult) string {
 }
 
 func TestGetMultiFileDatabaseDefinition(t *testing.T) {
-	const ddl = `
-CREATE TABLE audit_log (
-	id INT PRIMARY KEY AUTO_INCREMENT,
-	msg VARCHAR(200) NOT NULL,
-	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE VIEW recent_audit AS SELECT id, msg FROM audit_log;
-
-CREATE FUNCTION audit_count() RETURNS INT DETERMINISTIC
-BEGIN
-	RETURN 1;
-END;
-
-CREATE PROCEDURE touch_audit()
-BEGIN
-	SELECT 1;
-END;
-
-CREATE TRIGGER audit_log_bi BEFORE INSERT ON audit_log FOR EACH ROW
-SET NEW.msg = TRIM(NEW.msg);
-
-CREATE EVENT purge_audit
-	ON SCHEDULE EVERY 1 DAY
-	DO DELETE FROM audit_log WHERE created_at < (NOW() - INTERVAL 30 DAY);
-`
-
-	metaProto, err := schema.GetDatabaseMetadata(storepb.Engine_MYSQL, ddl)
-	require.NoError(t, err)
+	// Construct metadata directly rather than parsing DDL so generator branches
+	// are exercised independently of parser extraction.
+	metaProto := &metadatapb.DatabaseSchemaMetadata{
+		Name: "app",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
+				Name:      "audit_log",
+				Engine:    "InnoDB",
+				Charset:   "utf8mb4",
+				Collation: "utf8mb4_0900_ai_ci",
+				Columns: []*metadatapb.ColumnMetadata{
+					{
+						Name:     "id",
+						Position: 1,
+						Type:     "int",
+						Default:  "AUTO_INCREMENT",
+					},
+					{
+						Name:         "msg",
+						Position:     2,
+						Type:         "varchar(200)",
+						CharacterSet: "utf8mb4",
+						Collation:    "utf8mb4_0900_ai_ci",
+					},
+					{
+						Name:     "created_at",
+						Position: 3,
+						Type:     "timestamp",
+						Default:  "CURRENT_TIMESTAMP",
+					},
+				},
+				Indexes: []*metadatapb.IndexMetadata{{
+					Name:        "PRIMARY",
+					Expressions: []string{"id"},
+					KeyLength:   []int64{-1},
+					Descending:  []bool{false},
+					Type:        "BTREE",
+					Unique:      true,
+					Primary:     true,
+					Visible:     true,
+				}},
+				Triggers: []*metadatapb.TriggerMetadata{{
+					Name:   "audit_log_bi",
+					Timing: "BEFORE",
+					Event:  "INSERT",
+					Body:   "SET NEW.msg = TRIM(NEW.msg)",
+				}},
+			}},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:       "recent_audit",
+				Definition: "select `audit_log`.`id` AS `id`,`audit_log`.`msg` AS `msg` from `audit_log`",
+			}},
+			Functions: []*metadatapb.FunctionMetadata{{
+				Name:       "audit_count",
+				Definition: "CREATE FUNCTION `audit_count`() RETURNS int\n    DETERMINISTIC\nBEGIN\n\tRETURN 1;\nEND",
+			}},
+			Procedures: []*metadatapb.ProcedureMetadata{{
+				Name:       "touch_audit",
+				Definition: "CREATE PROCEDURE `touch_audit`()\nBEGIN\n\tSELECT 1;\nEND",
+			}},
+			Events: []*metadatapb.EventMetadata{{
+				Name:       "purge_audit",
+				Definition: "CREATE EVENT `purge_audit` ON SCHEDULE EVERY 1 DAY ON COMPLETION NOT PRESERVE ENABLE DO DELETE FROM audit_log WHERE created_at < (NOW() - INTERVAL 30 DAY)",
+				TimeZone:   "SYSTEM",
+			}},
+		}},
+	}
 
 	result, err := schema.GetMultiFileDatabaseDefinition(storepb.Engine_MYSQL, schema.GetDefinitionContext{
 		SkipBackupSchema: true,
