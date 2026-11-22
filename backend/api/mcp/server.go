@@ -40,6 +40,10 @@ type Server struct {
 	secret       string
 	openAPIIndex *OpenAPIIndex
 
+	// catalog is the document GET /mcp/catalog serves, built once from the
+	// registry.
+	catalog []byte
+
 	// internalClient carries tool API calls to the internal handler chain over
 	// the private in-memory transport, authenticated by the delegated
 	// credential minted in authMiddleware.
@@ -149,6 +153,9 @@ func newServerWithIdleTimeout(stores serverStore, profile *config.Profile, secre
 		sessionIdleTimeout:      idleTimeout,
 	}
 	s.registerTools()
+	if s.catalog, err = buildCatalog(mcpServer); err != nil {
+		return nil, err
+	}
 
 	// Create HTTP handler for streamable HTTP transport.
 	//
@@ -501,6 +508,7 @@ const mcpResourcePath = "/mcp"
 func (s *Server) RegisterRoutes(e *echo.Echo) {
 	// MCP Streamable HTTP endpoint with authentication
 	e.Any(mcpResourcePath, echo.WrapHandler(s.httpHandler), s.authMiddleware)
+	e.GET(catalogPath, s.serveCatalog)
 }
 
 // audienceAllowed reports whether a bearer token's audience admits it to /mcp.

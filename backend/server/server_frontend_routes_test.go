@@ -161,3 +161,37 @@ func TestRegisterFrontendRoutes_AssetGzip(t *testing.T) {
 		t.Errorf("Content-Encoding = %q, want gzip", got)
 	}
 }
+
+// The console's HTML5 fallback serves index.html for unknown paths; the MCP
+// catalog must still reach its route, with the method answers the design lists.
+func TestRegisterFrontendRoutes_MCPCatalogFallsThrough(t *testing.T) {
+	e := echo.New()
+	registerFrontendRoutes(e, newFrontendTestFS())
+	e.Any("/mcp", func(*echo.Context) error { return echo.NewHTTPError(http.StatusUnauthorized, "no token") })
+	e.GET("/mcp/catalog", func(c *echo.Context) error { return c.JSON(http.StatusOK, map[string]any{"tools": []any{}}) })
+
+	for _, row := range []struct {
+		method, path string
+		wantStatus   int
+		wantJSON     bool
+	}{
+		{method: http.MethodGet, path: "/mcp/catalog", wantStatus: http.StatusOK, wantJSON: true},
+		{method: http.MethodHead, path: "/mcp/catalog", wantStatus: http.StatusMethodNotAllowed},
+		{method: http.MethodPost, path: "/mcp/catalog", wantStatus: http.StatusMethodNotAllowed, wantJSON: true},
+		{method: http.MethodOptions, path: "/mcp/catalog", wantStatus: http.StatusNoContent},
+		{method: http.MethodGet, path: "/mcp/other", wantStatus: http.StatusOK},
+	} {
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, httptest.NewRequest(row.method, row.path, nil))
+		if rec.Code != row.wantStatus {
+			t.Fatalf("%s %s: status %d, want %d", row.method, row.path, rec.Code, row.wantStatus)
+		}
+		isJSON := strings.HasPrefix(rec.Header().Get("Content-Type"), "application/json")
+		if isJSON != row.wantJSON {
+			t.Fatalf("%s %s: content type %q", row.method, row.path, rec.Header().Get("Content-Type"))
+		}
+		if row.path == "/mcp/other" && !strings.Contains(rec.Body.String(), "APP") {
+			t.Fatalf("GET /mcp/other: want the console page, got %q", rec.Body.String())
+		}
+	}
+}

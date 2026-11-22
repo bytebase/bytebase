@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -21,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestMCPAuthMiddleware(t *testing.T) {
@@ -718,4 +720,131 @@ func TestToolGuidanceNamesOnlyServedToolsAndOperations(t *testing.T) {
 			require.False(t, auth.MCPClassIsRefused(class), "%s names operation %q, which is %v: no MCP session can call it", source, match[1], class)
 		}
 	}
+}
+
+// getCatalog reads GET /mcp/catalog from the probe server, with an optional
+// bearer, and returns the status, content type and body.
+func getCatalog(t *testing.T, endpoint, bearer string) (int, string, []byte) {
+	t.Helper()
+	req, err := http.NewRequest(http.MethodGet, endpoint+"/catalog", nil)
+	require.NoError(t, err)
+	if bearer != "" {
+		req.Header.Set("Authorization", "Bearer "+bearer)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	return resp.StatusCode, resp.Header.Get("Content-Type"), body
+}
+
+func TestCatalogServesWhatASignedInSessionLists(t *testing.T) {
+	endpoint, _, _ := newProbeServer(t)
+	status, contentType, body := getCatalog(t, endpoint, "")
+	require.Equal(t, http.StatusOK, status)
+	require.True(t, strings.HasPrefix(contentType, "application/json"), contentType)
+
+	var catalog struct {
+		Instructions            string      `json:"instructions"`
+		InstructionsWithoutForm string      `json:"instructionsWithoutForm"`
+		Tools                   []*mcp.Tool `json:"tools"`
+	}
+	require.NoError(t, json.Unmarshal(body, &catalog))
+	require.Equal(t, serverInstructions, catalog.Instructions)
+	require.Equal(t, askInChatInstructions, catalog.InstructionsWithoutForm)
+
+	listed := listToolsOverRoute(t)
+	want, err := json.Marshal(listed)
+	require.NoError(t, err)
+	got, err := json.Marshal(catalog.Tools)
+	require.NoError(t, err)
+	require.JSONEq(t, string(want), string(got))
+	require.NotEmpty(t, catalog.Tools)
+}
+
+// refusingStore fails every read, so a handler that reaches the store fails.
+type refusingStore struct{}
+
+func (refusingStore) GetWorkspaceID(context.Context) (string, error) {
+	return "", errors.New("refused")
+}
+
+func (refusingStore) GetWorkspaceProfileSetting(context.Context, string) (*storepb.WorkspaceProfileSetting, error) {
+	return nil, errors.New("refused")
+}
+
+func (refusingStore) GetMCPSettingsUncached(context.Context, string) (*storepb.MCPSetting, error) {
+	return nil, errors.New("refused")
+}
+
+func (refusingStore) DeleteOAuth2RefreshTokensByUserAndClient(context.Context, string, string) error {
+	return errors.New("refused")
+}
+
+func (refusingStore) CreateAuditLog(context.Context, string, *storepb.AuditLog) error {
+	return errors.New("refused")
+}
+
+func TestCatalogReadsNothingAboutTheInstance(t *testing.T) {
+	const version, externalURL = "9.87.6-catalog-probe", "https://catalog-probe.example.com"
+	serve := func(t *testing.T, stores serverStore, profile *config.Profile) string {
+		t.Helper()
+		s, err := newServerWithStore(stores, profile, revalidationSecret, http.NotFoundHandler())
+		require.NoError(t, err)
+		e := echo.New()
+		s.RegisterRoutes(e)
+		ts := httptest.NewServer(e)
+		t.Cleanup(ts.Close)
+		return ts.URL + mcpResourcePath
+	}
+
+	refused := serve(t, refusingStore{}, &config.Profile{Mode: common.ReleaseModeDev, Version: version})
+	status, _, withoutToken := getCatalog(t, refused, "")
+	require.Equal(t, http.StatusOK, status, "served with no external URL and a store that refuses every read")
+
+	configured := serve(t, newTestServerStore(), &config.Profile{Mode: common.ReleaseModeDev, Version: version, ExternalURL: externalURL})
+	_, _, configuredBody := getCatalog(t, configured, "")
+	token := mintMCPToken(t, "test@example.com", "client-A", "ws-test", "mcp:read-write", time.Hour)
+	_, _, withToken := getCatalog(t, configured, token)
+	_, _, withGarbage := getCatalog(t, configured, "not-a-token")
+
+	require.Equal(t, string(withoutToken), string(configuredBody), "the instance's store and profile do not change the document")
+	require.Equal(t, string(configuredBody), string(withToken), "a credential does not change the document")
+	require.Equal(t, string(configuredBody), string(withGarbage))
+	for _, secret := range []string{version, externalURL, "ws-test", "test@example.com"} {
+		require.NotContains(t, string(configuredBody), secret)
+	}
+}
+
+// TestOnlyTheCatalogAnswersWithoutAToken walks every route the MCP package
+// registers, so a route added later without auth fails here whatever its path.
+func TestOnlyTheCatalogAnswersWithoutAToken(t *testing.T) {
+	s, err := newServerWithStore(newTestServerStore(),
+		&config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}, revalidationSecret, http.NotFoundHandler())
+	require.NoError(t, err)
+	e := echo.New()
+	s.RegisterRoutes(e)
+
+	allMethods := []string{http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch,
+		http.MethodDelete, http.MethodOptions, http.MethodConnect, http.MethodTrace}
+	public := 0
+	for _, route := range e.Router().Routes() {
+		methods := []string{route.Method}
+		if route.Method == echo.RouteAny {
+			methods = allMethods
+		}
+		for _, method := range methods {
+			rec := httptest.NewRecorder()
+			e.ServeHTTP(rec, httptest.NewRequest(method, route.Path, nil))
+			if method == http.MethodGet && route.Path == catalogPath {
+				require.Equal(t, http.StatusOK, rec.Code)
+				public++
+				continue
+			}
+			require.Equal(t, http.StatusUnauthorized, rec.Code, "%s %s answered without a token", method, route.Path)
+			require.Contains(t, rec.Header().Get("WWW-Authenticate"), "resource_metadata=", "%s %s", method, route.Path)
+		}
+	}
+	require.Equal(t, 1, public, "exactly one route answers without a token")
 }
