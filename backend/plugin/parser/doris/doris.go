@@ -1,9 +1,6 @@
 package doris
 
 import (
-	"errors"
-	"strings"
-
 	"github.com/bytebase/omni/doris/ast"
 	"github.com/bytebase/omni/doris/parser"
 
@@ -15,119 +12,40 @@ func init() {
 	base.RegisterParseStatementsFunc(storepb.Engine_DORIS, parseDorisStatements)
 }
 
-// astNode wraps an omni AST node to implement the base.AST interface.
 type astNode struct {
 	node     ast.Node
 	text     string
 	startPos *storepb.Position
 }
 
-// ASTStartPosition implements base.AST.
-func (a *astNode) ASTStartPosition() *storepb.Position {
-	return a.startPos
-}
+func (a *astNode) ASTStartPosition() *storepb.Position { return a.startPos }
 
-// Node returns the underlying omni AST node. May be nil if the segment
-// failed to parse cleanly but errors were tolerated by the caller.
-func (a *astNode) Node() ast.Node {
-	return a.node
-}
+func (a *astNode) Node() ast.Node { return a.node }
 
-// parseDorisStatements is the ParseStatementsFunc for Doris.
-// Returns []ParsedStatement with both text and AST populated.
-//
-// For non-empty segments, the AST is an *astNode wrapping the omni AST node.
-// The first parse error encountered (per-segment) is returned to the caller,
-// matching the prior behaviour of bailing out on the first syntax error.
 func parseDorisStatements(statement string) ([]base.ParsedStatement, error) {
-	stmts, err := SplitSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]base.ParsedStatement, 0, len(stmts))
-	for _, stmt := range stmts {
-		ps := base.ParsedStatement{
-			Statement: stmt,
-		}
-		if stmt.Empty || strings.TrimSpace(stmt.Text) == "" {
-			result = append(result, ps)
-			continue
-		}
-		// Parse the segment text on its own so byte offsets in any ParseError
-		// align with stmt.Text; convertParseError then shifts them into the
-		// coordinates of the original multi-statement script.
-		file, err := parser.Parse(stmt.Text)
-		if err != nil {
-			return nil, convertParseError(stmt.Text, err, stmt.Start)
-		}
-		var node ast.Node
-		if file != nil && len(file.Stmts) > 0 {
-			node = file.Stmts[0]
-		}
-		ps.AST = &astNode{
-			node:     node,
-			text:     stmt.Text,
-			startPos: stmt.Start,
-		}
-		result = append(result, ps)
-	}
-
-	return result, nil
+	return base.ParseSegmentedStatements(statement, SplitSQL, parseSegment)
 }
 
-// parseDorisSQL parses the given SQL statement using the omni Doris parser.
-// Returns one *astNode per non-empty segment (empty / comment-only segments
-// are skipped).
-//
-// This retains the historical signature shape used by other doris package
-// files; on the first parse error it returns a *base.SyntaxError with the
-// position translated into the coordinates of the original input.
 func parseDorisSQL(statement string) ([]*astNode, error) {
-	stmts, err := SplitSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []*astNode
-	for _, stmt := range stmts {
-		if stmt.Empty || strings.TrimSpace(stmt.Text) == "" {
-			continue
-		}
-		file, err := parser.Parse(stmt.Text)
-		if err != nil {
-			return nil, convertParseError(stmt.Text, err, stmt.Start)
-		}
-		var node ast.Node
-		if file != nil && len(file.Stmts) > 0 {
-			node = file.Stmts[0]
-		}
-		result = append(result, &astNode{
-			node:     node,
-			text:     stmt.Text,
-			startPos: stmt.Start,
-		})
-	}
-	return result, nil
+	return base.ParseNonEmptySegments(statement, SplitSQL, parseSegment)
 }
 
-// convertParseError converts the first omni *parser.ParseError carried by err
-// to a *base.SyntaxError that sql_service.go recognises for structured
-// error diagnostics. It converts the byte offset in ParseError.Position
-// to 1-based line and 1-based column (rune-based) matching the
-// storepb.Position convention used across other omni parser adapters.
-//
-// If basePos is non-nil, the computed position is offset by it so that
-// errors from parsing an isolated statement segment are reported in the
-// coordinates of the original multi-statement script.
+func parseSegment(stmt base.Statement) (*astNode, error) {
+	// Parse each segment on its own so ParseError byte offsets align with stmt.Text
+	// before convertParseError shifts them into script coordinates.
+	file, err := parser.Parse(stmt.Text)
+	if err != nil {
+		return nil, convertParseError(stmt.Text, err, stmt.Start)
+	}
+	var node ast.Node
+	if file != nil && len(file.Stmts) > 0 {
+		node = file.Stmts[0]
+	}
+	return &astNode{node: node, text: stmt.Text, startPos: stmt.Start}, nil
+}
+
 func convertParseError(statement string, err error, basePos *storepb.Position) error {
-	var pe *parser.ParseError
-	if !errors.As(err, &pe) {
-		return err
-	}
-	return &base.SyntaxError{
-		Position:   base.ShiftPosition(base.ByteOffsetToRunePosition(statement, pe.Position), basePos),
-		Message:    pe.Error(),
-		RawMessage: pe.Message,
-	}
+	return base.ConvertParseError(statement, err, basePos, func(pe *parser.ParseError) (int, string, string) {
+		return pe.Position, pe.Error(), pe.Message
+	})
 }

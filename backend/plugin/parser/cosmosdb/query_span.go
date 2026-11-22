@@ -87,32 +87,13 @@ func getQuerySpanImpl(statement string) (*base.QuerySpan, error) {
 	}, nil
 }
 
-// fieldPathToPathAST converts an omni analysis.FieldPath to a base.PathAST.
-//
-// The omni analysis represents array access as a separate Selector with
-// Name=indexText and ArrayIndex>=0, following the preceding property selector.
-// The base.PathAST representation merges these: an ArraySelector carries the
-// property name AND the index. So we fold consecutive (ItemSelector, ArraySelector)
-// pairs into a single base.ArraySelector.
+// fieldPathToPathAST converts an omni analysis.FieldPath to a base.PathAST,
+// folding consecutive (property, array-index) selectors into one base.ArraySelector.
 func fieldPathToPathAST(fp analysis.FieldPath) *base.PathAST {
 	if len(fp) == 0 {
 		return nil
 	}
-
-	// Merge omni selectors into base nodes, folding array indices into the
-	// preceding item selector.
-	nodes := mergeSelectors(fp)
-	if len(nodes) == 0 {
-		return nil
-	}
-
-	pathAST := base.NewPathAST(nodes[0])
-	current := pathAST.Root
-	for i := 1; i < len(nodes); i++ {
-		current.SetNext(nodes[i])
-		current = nodes[i]
-	}
-	return pathAST
+	return base.BuildPathAST(mergeSelectors(fp))
 }
 
 // mergeSelectors converts omni selectors to base.SelectorNode values,

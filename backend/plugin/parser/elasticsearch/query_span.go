@@ -48,24 +48,17 @@ func GetQuerySpan(
 	return span, nil
 }
 
-// convertPathAST converts an omni PathAST to a bytebase base.PathAST.
 func convertPathAST(p *es.PathAST) *base.PathAST {
 	if p == nil || p.Root == nil {
 		return nil
 	}
-	root := base.NewItemSelector(p.Root.Name)
-	current := base.SelectorNode(root)
-	srcNode := p.Root.Next
-	for srcNode != nil {
-		next := base.NewItemSelector(srcNode.Name)
-		current.SetNext(next)
-		current = next
-		srcNode = srcNode.Next
+	var nodes []base.SelectorNode
+	for src := p.Root; src != nil; src = src.Next {
+		nodes = append(nodes, base.NewItemSelector(src.Name))
 	}
-	return base.NewPathAST(root)
+	return base.BuildPathAST(nodes)
 }
 
-// convertAnalysis converts an omni analysis.RequestAnalysis to a bytebase base.ElasticsearchAnalysis.
 func convertAnalysis(a *analysis.RequestAnalysis) *base.ElasticsearchAnalysis {
 	if a == nil {
 		return nil
@@ -85,49 +78,31 @@ func convertAnalysis(a *analysis.RequestAnalysis) *base.ElasticsearchAnalysis {
 	if len(a.BlockedFeatures) > 0 {
 		result.BlockedFeatures = make([]base.ElasticsearchBlockedFeature, len(a.BlockedFeatures))
 		for i, bf := range a.BlockedFeatures {
-			result.BlockedFeatures[i] = convertBlockedFeature(bf)
+			result.BlockedFeatures[i] = blockedFeatureMap[bf]
 		}
 	}
 
 	return result
 }
 
-// convertMaskableAPI maps an omni analysis.MaskableAPI to a bytebase base.ElasticsearchMaskableAPI.
-func convertMaskableAPI(api analysis.MaskableAPI) base.ElasticsearchMaskableAPI {
-	switch api {
-	case analysis.APIMaskSearch:
-		return base.ElasticsearchAPIMaskSearch
-	case analysis.APIMaskGetDoc:
-		return base.ElasticsearchAPIMaskGetDoc
-	case analysis.APIMaskGetSource:
-		return base.ElasticsearchAPIMaskGetSource
-	case analysis.APIMaskMGet:
-		return base.ElasticsearchAPIMaskMGet
-	case analysis.APIMaskExplain:
-		return base.ElasticsearchAPIMaskExplain
-	case analysis.APIBlocked:
-		return base.ElasticsearchAPIBlocked
-	default:
-		return base.ElasticsearchAPIUnsupported
-	}
+var maskableAPIMap = map[analysis.MaskableAPI]base.ElasticsearchMaskableAPI{
+	analysis.APIMaskSearch:    base.ElasticsearchAPIMaskSearch,
+	analysis.APIMaskGetDoc:    base.ElasticsearchAPIMaskGetDoc,
+	analysis.APIMaskGetSource: base.ElasticsearchAPIMaskGetSource,
+	analysis.APIMaskMGet:      base.ElasticsearchAPIMaskMGet,
+	analysis.APIMaskExplain:   base.ElasticsearchAPIMaskExplain,
+	analysis.APIBlocked:       base.ElasticsearchAPIBlocked,
 }
 
-// convertBlockedFeature maps an omni analysis.BlockedFeature to a bytebase base.ElasticsearchBlockedFeature.
-func convertBlockedFeature(bf analysis.BlockedFeature) base.ElasticsearchBlockedFeature {
-	switch bf {
-	case analysis.BlockedFeatureAggs:
-		return base.ElasticsearchBlockedFeatureAggs
-	case analysis.BlockedFeatureSuggest:
-		return base.ElasticsearchBlockedFeatureSuggest
-	case analysis.BlockedFeatureScriptFields:
-		return base.ElasticsearchBlockedFeatureScriptFields
-	case analysis.BlockedFeatureRuntimeMappings:
-		return base.ElasticsearchBlockedFeatureRuntimeMappings
-	case analysis.BlockedFeatureStoredFields:
-		return base.ElasticsearchBlockedFeatureStoredFields
-	case analysis.BlockedFeatureDocvalueFields:
-		return base.ElasticsearchBlockedFeatureDocvalueFields
-	default:
-		return base.ElasticsearchBlockedFeatureAggs // fallback
-	}
+var blockedFeatureMap = map[analysis.BlockedFeature]base.ElasticsearchBlockedFeature{
+	analysis.BlockedFeatureAggs:            base.ElasticsearchBlockedFeatureAggs,
+	analysis.BlockedFeatureSuggest:         base.ElasticsearchBlockedFeatureSuggest,
+	analysis.BlockedFeatureScriptFields:    base.ElasticsearchBlockedFeatureScriptFields,
+	analysis.BlockedFeatureRuntimeMappings: base.ElasticsearchBlockedFeatureRuntimeMappings,
+	analysis.BlockedFeatureStoredFields:    base.ElasticsearchBlockedFeatureStoredFields,
+	analysis.BlockedFeatureDocvalueFields:  base.ElasticsearchBlockedFeatureDocvalueFields,
+}
+
+func convertMaskableAPI(api analysis.MaskableAPI) base.ElasticsearchMaskableAPI {
+	return maskableAPIMap[api]
 }
