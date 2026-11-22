@@ -2,288 +2,20 @@ package mariadb
 
 import (
 	"context"
-	"database/sql"
-	"database/sql/driver"
-	"io"
-	"slices"
-	"strconv"
 	"strings"
 	"testing"
 
-	mariadbast "github.com/bytebase/omni/mariadb/ast"
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
-	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
-
-var (
-	// testMariaDBAdvisorExplainJSON is returned for `EXPLAIN FORMAT=JSON` queries.
-	testMariaDBAdvisorExplainJSON string
-
-	// testMariaDBAdvisorExplainErr, when set, fails every query, standing in for a
-	// statement the server refuses to EXPLAIN.
-	testMariaDBAdvisorExplainErr error
-
-	// testMariaDBAdvisorSetErr, when set, fails every SET statement.
-	testMariaDBAdvisorSetErr error
-
-	// testMariaDBAdvisorQueries records every statement the fake driver is asked to
-	// run, so a rule that sent raw DML instead of EXPLAIN is caught rather than
-	// silently succeeding. testMariaDBAdvisorQueryConns records the connection that ran each.
-	testMariaDBAdvisorQueries     []string
-	testMariaDBAdvisorQueryConns  []int
-	testMariaDBAdvisorConnections int
-)
-
-func init() {
-	sql.Register("test_mariadb_advisor_explain", testMariaDBAdvisorExplainDriver{})
-}
-
-type testMariaDBAdvisorExplainDriver struct{}
-
-func (testMariaDBAdvisorExplainDriver) Open(string) (driver.Conn, error) {
-	testMariaDBAdvisorConnections++
-	return &testMariaDBAdvisorExplainConn{id: testMariaDBAdvisorConnections}, nil
-}
-
-type testMariaDBAdvisorExplainConn struct {
-	id int
-}
-
-func (*testMariaDBAdvisorExplainConn) Prepare(string) (driver.Stmt, error) {
-	return nil, driver.ErrSkip
-}
-
-func (*testMariaDBAdvisorExplainConn) Close() error {
-	return nil
-}
-
-func (*testMariaDBAdvisorExplainConn) Begin() (driver.Tx, error) {
-	return testMariaDBAdvisorExplainTx{}, nil
-}
-
-func (c *testMariaDBAdvisorExplainConn) ExecContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Result, error) {
-	testMariaDBAdvisorQueries = append(testMariaDBAdvisorQueries, query)
-	testMariaDBAdvisorQueryConns = append(testMariaDBAdvisorQueryConns, c.id)
-	if !strings.HasPrefix(query, "SET ") {
-		return nil, errors.Errorf("unexpected exec %q", query)
-	}
-	if testMariaDBAdvisorSetErr != nil {
-		return nil, testMariaDBAdvisorSetErr
-	}
-	return driver.ResultNoRows, nil
-}
-
-func (c *testMariaDBAdvisorExplainConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
-	testMariaDBAdvisorQueries = append(testMariaDBAdvisorQueries, query)
-	testMariaDBAdvisorQueryConns = append(testMariaDBAdvisorQueryConns, c.id)
-	if testMariaDBAdvisorExplainErr != nil {
-		return nil, testMariaDBAdvisorExplainErr
-	}
-	if strings.HasPrefix(query, "EXPLAIN FORMAT=JSON ") {
-		return &testMariaDBAdvisorExplainResultRows{columns: []string{"EXPLAIN"}, rows: [][]driver.Value{{testMariaDBAdvisorExplainJSON}}}, nil
-	}
-	return &testMariaDBAdvisorExplainResultRows{columns: []string{"id", "select_type", "table", "type", "rows", "filtered"}}, nil
-}
-
-type testMariaDBAdvisorExplainTx struct{}
-
-func (testMariaDBAdvisorExplainTx) Commit() error {
-	return nil
-}
-
-func (testMariaDBAdvisorExplainTx) Rollback() error {
-	return nil
-}
-
-type testMariaDBAdvisorExplainResultRows struct {
-	columns []string
-	rows    [][]driver.Value
-	idx     int
-}
-
-func (r *testMariaDBAdvisorExplainResultRows) Columns() []string {
-	return r.columns
-}
-
-func (*testMariaDBAdvisorExplainResultRows) Close() error {
-	return nil
-}
-
-func (r *testMariaDBAdvisorExplainResultRows) Next(dest []driver.Value) error {
-	if r.idx >= len(r.rows) {
-		return io.EOF
-	}
-	copy(dest, r.rows[r.idx])
-	r.idx++
-	return nil
-}
-
-// openTestMariaDBAdvisorDB resets the fake server and opens a pool that keeps no idle
-// connections, so statements that do not share a pinned connection land on different ones.
-func openTestMariaDBAdvisorDB(t *testing.T, plan string) *sql.DB {
-	t.Helper()
-	testMariaDBAdvisorExplainJSON = plan
-	testMariaDBAdvisorExplainErr = nil
-	testMariaDBAdvisorSetErr = nil
-	testMariaDBAdvisorQueries = nil
-	testMariaDBAdvisorQueryConns = nil
-	db, err := sql.Open("test_mariadb_advisor_explain", "")
-	require.NoError(t, err)
-	db.SetMaxIdleConns(0)
-	t.Cleanup(func() { _ = db.Close() })
-	return db
-}
-
-// testRowEstimator is the seam's RowEstimator over the fake server: it answers
-// what db/mysql.Driver.CountAffectedRows answers for MariaDB, so a rule that
-// still issued its own EXPLAIN or a differently shaped query is caught.
-type testRowEstimator struct {
-	db     *sql.DB
-	prober db.Prober
-}
-
-func (e *testRowEstimator) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
-	return e.prober.Probe(ctx, pCtx, statement)
-}
-
-func (e *testRowEstimator) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
-	list, err := mariadbparser.ParseMariaDB(statement)
-	if err != nil {
-		return 0, errors.Wrap(err, "failed to parse statement")
-	}
-	if list == nil || len(list.Items) != 1 {
-		return 0, errors.New("expected exactly one statement")
-	}
-	query := mariadbparser.AffectedRowsQuery(list.Items[0], statement)
-	plan, err := explainJSON(ctx, e.db, query)
-	if err != nil {
-		return 0, err
-	}
-	return estimateAffectedRows(ctx, e.db, list.Items[0], query, plan)
-}
-
-func estimateAffectedRows(ctx context.Context, db *sql.DB, stmt mariadbast.Node, query, plan string) (int64, error) {
-	count, err := mariadbparser.EstimateAffectedRowsFromExplainJSON(stmt, plan)
-	if err == nil {
-		return count, nil
-	}
-	rows, tables, ok := explainTabularEstimate(ctx, db, query)
-	if !ok {
-		return 0, err
-	}
-	return mariadbparser.CapAffectedRowsByLimit(stmt, rows*float64(mariadbparser.DMLTargetCount(stmt, tables))), nil
-}
-
-func explainTabularEstimate(ctx context.Context, db *sql.DB, query string) (float64, int, bool) {
-	rows, err := db.QueryContext(ctx, "EXPLAIN FORMAT=TRADITIONAL "+query)
-	if err != nil {
-		return 0, 0, false
-	}
-	defer rows.Close()
-	columns, err := rows.Columns()
-	if err != nil {
-		return 0, 0, false
-	}
-	column := func(name string) int {
-		return slices.IndexFunc(columns, func(column string) bool { return strings.EqualFold(column, name) })
-	}
-	idIndex, rowsIndex, filteredIndex := column("id"), column("rows"), column("filtered")
-	if idIndex < 0 || rowsIndex < 0 {
-		return 0, 0, false
-	}
-	values := make([]sql.NullString, len(columns))
-	dest := make([]any, len(columns))
-	for i := range values {
-		dest[i] = &values[i]
-	}
-	var blockID string
-	estimate, tables := 1.0, 0
-	for rows.Next() {
-		if err := rows.Scan(dest...); err != nil {
-			return 0, 0, false
-		}
-		tableRows, err := strconv.ParseFloat(values[rowsIndex].String, 64)
-		if !values[rowsIndex].Valid || err != nil || (tables > 0 && values[idIndex].String != blockID) {
-			continue
-		}
-		blockID = values[idIndex].String
-		tables++
-		estimate *= tableRows
-		if filteredIndex >= 0 && values[filteredIndex].Valid {
-			if filtered, err := strconv.ParseFloat(values[filteredIndex].String, 64); err == nil {
-				estimate *= filtered / 100
-			}
-		}
-	}
-	return estimate, tables, tables > 0 && rows.Err() == nil
-}
-
-func explainJSON(ctx context.Context, db *sql.DB, statement string) (string, error) {
-	conn, err := db.Conn(ctx)
-	if err != nil {
-		return "", err
-	}
-	defer conn.Close()
-
-	if _, err := conn.ExecContext(ctx, "SET SESSION explain_json_format_version = 1"); err != nil {
-		var mysqlErr *mysql.MySQLError
-		if !errors.As(err, &mysqlErr) || mysqlErr.Number != 1193 {
-			return "", errors.Wrap(err, "failed to set explain_json_format_version")
-		}
-	} else {
-		defer func() {
-			_, _ = conn.ExecContext(ctx, "SET SESSION explain_json_format_version = DEFAULT")
-		}()
-	}
-
-	rows, err := conn.QueryContext(ctx, "EXPLAIN FORMAT=JSON "+statement)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
-	var plan strings.Builder
-	for rows.Next() {
-		var line sql.NullString
-		if err := rows.Scan(&line); err != nil {
-			return "", err
-		}
-		plan.WriteString(line.String)
-	}
-	if err := rows.Err(); err != nil {
-		return "", err
-	}
-	return plan.String(), nil
-}
-
-func checkTestRowLimitRule(t *testing.T, db *sql.DB, engine storepb.Engine, ruleType storepb.SQLReviewRule_Type, level storepb.SQLReviewRule_Level, statement string) []*storepb.Advice {
-	t.Helper()
-	adviceList, err := advisor.SQLReviewCheck(context.Background(), sheet.NewManager(), statement, []*storepb.SQLReviewRule{
-		{
-			Type:    ruleType,
-			Level:   level,
-			Engine:  engine,
-			Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 5}},
-		},
-	}, advisor.Context{
-		DBType:          engine,
-		Prober:          &testRowEstimator{db: db, prober: dbutil.NewSQLProber(db)},
-		NoAppendBuiltin: true,
-	})
-	require.NoError(t, err)
-	return adviceList
-}
 
 // TestMariaDBRules runs the rules this package registers for MariaDB over the
 // fixtures in test/, so a rule that stops firing on MariaDB's own AST is caught
@@ -360,154 +92,130 @@ func TestMariaDBRules(t *testing.T) {
 	}
 }
 
-const (
-	// A real MariaDB 11 EXPLAIN FORMAT=JSON plan: it marks no multi-table DELETE
-	// target, so the target is found by name.
-	testMariaDBDeleteJoinPlan = `{"query_block":{"select_id":1,"nested_loop":[
-		{"table":{"table_name":"s","access_type":"ALL","loops":1,"rows":100,"filtered":10}},
-		{"table":{"table_name":"big","access_type":"ref","loops":10,"rows":100,"filtered":100}}
-	]}}`
-	testMariaDBInsertSelectPlan = `{"query_block":{"select_id":1,
-		"table":{"insert":true,"table_name":"t2","access_type":"ALL"},
-		"insert_from":{"table":{"table_name":"t","access_type":"ALL","rows":1000,"loops":1,"filtered":10}}
-	}}`
-)
+func checkTestRowLimitRule(t *testing.T, prober *advisor.ProbeRecorder, ruleType storepb.SQLReviewRule_Type, level storepb.SQLReviewRule_Level, statement string) []*storepb.Advice {
+	t.Helper()
+	adviceList, err := advisor.SQLReviewCheck(context.Background(), sheet.NewManager(), statement, []*storepb.SQLReviewRule{{
+		Type:    ruleType,
+		Level:   level,
+		Engine:  storepb.Engine_MARIADB,
+		Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 5}},
+	}}, advisor.Context{
+		DBType:          storepb.Engine_MARIADB,
+		Prober:          prober,
+		NoAppendBuiltin: true,
+	})
+	require.NoError(t, err)
+	return adviceList
+}
 
-// TestMariaDBRowLimitAdvisorsEstimateFromJSONPlan covers this package's own
-// estimateAffectedRows: the driver's copy reads an omni MySQL node, so MariaDB
-// composes the driver's tabular EXPLAIN with its own plan reader.
-func TestMariaDBRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
+func TestMariaDBRowLimitAdvisorSeam(t *testing.T) {
 	for _, tc := range []struct {
-		name      string
-		ruleType  storepb.SQLReviewRule_Type
-		plan      string
-		setErr    error
-		statement string
-		// wantContent is empty when the statement stays within the limit of 5.
+		name        string
+		ruleType    storepb.SQLReviewRule_Type
+		prober      *advisor.ProbeRecorder
+		statement   string
 		wantContent string
 		wantCode    code.Code
 	}{
 		{
-			name:        "multi-table delete without explain_json_format_version",
+			name:      "affected row limit within limit",
+			ruleType:  storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
+			prober:    &advisor.ProbeRecorder{Rows: 3},
+			statement: "DELETE big FROM big JOIN s ON big.s_id = s.id WHERE s.flag = 1 LIMIT 3;",
+		},
+		{
+			name:        "affected row limit exceeded",
 			ruleType:    storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
-			plan:        testMariaDBDeleteJoinPlan,
-			setErr:      &mysql.MySQLError{Number: 1193, Message: "Unknown system variable 'explain_json_format_version'"},
+			prober:      &advisor.ProbeRecorder{Rows: 1000},
 			statement:   "DELETE big FROM big JOIN s ON big.s_id = s.id WHERE s.flag = 1;",
 			wantContent: `"DELETE big FROM big JOIN s ON big.s_id = s.id WHERE s.flag = 1;" affected 1000 rows (estimated). The count exceeds 5.`,
 			wantCode:    code.StatementAffectedRowExceedsLimit,
 		},
 		{
-			name:        "insert select",
+			name:        "insert row limit exceeded",
 			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
-			plan:        testMariaDBInsertSelectPlan,
-			setErr:      &mysql.MySQLError{Number: 1193, Message: "Unknown system variable 'explain_json_format_version'"},
+			prober:      &advisor.ProbeRecorder{Rows: 100},
 			statement:   "INSERT INTO t2 SELECT * FROM t WHERE d = 3;",
 			wantContent: `"INSERT INTO t2 SELECT * FROM t WHERE d = 3;" inserts 100 rows. The count exceeds 5.`,
 			wantCode:    code.InsertTooManyRows,
 		},
 		{
-			name:      "delete capped by LIMIT",
-			ruleType:  storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
-			plan:      testMariaDBDeleteJoinPlan,
-			setErr:    &mysql.MySQLError{Number: 1193, Message: "Unknown system variable 'explain_json_format_version'"},
-			statement: "DELETE big FROM big JOIN s ON big.s_id = s.id WHERE s.flag = 1 LIMIT 3;",
+			name:        "refused estimate reports internal count error",
+			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
+			prober:      &advisor.ProbeRecorder{EstimateErr: errors.New(`table "t2" in the plan has no row estimate`)},
+			statement:   "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER () FROM t;",
+			wantContent: `failed to get row count for "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER () FROM t;": table "t2" in the plan has no row estimate`,
+			wantCode:    code.Internal,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			db := openTestMariaDBAdvisorDB(t, tc.plan)
-			testMariaDBAdvisorSetErr = tc.setErr
-
-			adviceList := checkTestRowLimitRule(t, db, storepb.Engine_MARIADB, tc.ruleType, storepb.SQLReviewRule_WARNING, tc.statement)
+			adviceList := checkTestRowLimitRule(t, tc.prober, tc.ruleType, storepb.SQLReviewRule_WARNING, tc.statement)
 			if tc.wantContent == "" {
 				require.Empty(t, adviceList)
-			} else {
-				require.Len(t, adviceList, 1)
-				require.Equal(t, tc.wantCode.Int32(), adviceList[0].Code)
-				require.Equal(t, tc.wantContent, adviceList[0].Content)
+				return
 			}
+			require.Len(t, adviceList, 1)
+			require.Equal(t, tc.wantCode.Int32(), adviceList[0].Code)
+			require.Equal(t, tc.wantContent, adviceList[0].Content)
 		})
 	}
-}
 
-// TestMariaDBRowLimitAdvisorsEstimateFromTabularFallback drives the half of
-// estimateAffectedRows that reaches back into the shared driver: a plan with no
-// estimate to read falls through to the driver's tabular EXPLAIN.
-func TestMariaDBRowLimitAdvisorsEstimateFromTabularFallback(t *testing.T) {
-	const statement = "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER () FROM t;"
-	db := openTestMariaDBAdvisorDB(t, `{"query_block":{"select_id":1,"table":{"insert":true,"select_id":1,"table_name":"t2","access_type":"ALL"}}}`)
-	testMariaDBAdvisorSetErr = &mysql.MySQLError{Number: 1193, Message: "Unknown system variable 'explain_json_format_version'"}
-
-	adviceList := checkTestRowLimitRule(t, db, storepb.Engine_MARIADB, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_WARNING, statement)
-
-	require.Len(t, adviceList, 1)
-	require.Equal(t, code.Internal.Int32(), adviceList[0].Code)
-	require.Contains(t, testMariaDBAdvisorQueries, "EXPLAIN FORMAT=TRADITIONAL "+statement)
+	t.Run("statements beyond explain limit emit warning", func(t *testing.T) {
+		prober := &advisor.ProbeRecorder{Rows: 1000}
+		statement := strings.Repeat("UPDATE td SET c = 1;\n", common.MaximumLintExplainSize+2)
+		adviceList := checkTestRowLimitRule(t, prober, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT, storepb.SQLReviewRule_ERROR, statement)
+		require.Len(t, adviceList, common.MaximumLintExplainSize+1)
+		warning := adviceList[common.MaximumLintExplainSize]
+		require.Equal(t, storepb.Advice_WARNING, warning.Status)
+		require.Equal(t, code.StatementAffectedRowExceedsLimit.Int32(), warning.Code)
+		require.Equal(t, "Only the first 10 statements were estimated; 2 more were not checked against the row limit.", warning.Content)
+		require.Len(t, prober.Estimates, common.MaximumLintExplainSize)
+	})
 }
 
 func TestMariaDBPriorBackupCheckAdvisor(t *testing.T) {
 	sm := sheet.NewManager()
-
-	adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "CREATE TABLE t(id INT);\nUPDATE test SET c1 = 1 WHERE b1 = 1;", nil, advisor.Context{
-		DBType:            storepb.Engine_MARIADB,
-		DBSchema:          advisor.MockMySQLDatabase,
-		EnablePriorBackup: true,
-		InstanceID:        "instance",
-		ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
-			return []string{"bbdataarchive"}, nil
+	for _, tc := range []struct {
+		name        string
+		statement   string
+		wantSubstr  string
+		wantEmptyOK bool
+	}{
+		{
+			name:       "mixed DDL and DML",
+			statement:  "CREATE TABLE t(id INT);\nUPDATE test SET c1 = 1 WHERE b1 = 1;",
+			wantSubstr: "mixed DDL and DML",
 		},
-	})
-
-	require.NoError(t, err)
-	require.NotEmpty(t, adviceList)
-	require.Equal(t, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK.String(), adviceList[0].Title)
-	require.Contains(t, adviceList[0].Content, "mixed DDL and DML")
-}
-
-// TestMariaDBPriorBackupCheckAdvisorReadsMariaDBOnlyStatements pins a change this
-// package makes: the backup transform reads MariaDB-only DML, so the whole
-// statement list is backed up as asked rather than drawing "Prior backup cannot
-// handle MariaDB-specific syntax".
-func TestMariaDBPriorBackupCheckAdvisorReadsMariaDBOnlyStatements(t *testing.T) {
-	sm := sheet.NewManager()
-
-	adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "DELETE FROM test WHERE b1 = 2 RETURNING b1;", nil, advisor.Context{
-		DBType:            storepb.Engine_MARIADB,
-		DBSchema:          advisor.MockMySQLDatabase,
-		EnablePriorBackup: true,
-		InstanceID:        "instance",
-		ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
-			return []string{"bbdataarchive"}, nil
+		{
+			name:       "MariaDB sequence DDL mixed with DML",
+			statement:  "CREATE SEQUENCE s START WITH 1;\nDELETE FROM test WHERE b1 = 1;",
+			wantSubstr: "mixed DDL and DML",
 		},
-	})
-
-	require.NoError(t, err)
-	require.Empty(t, adviceList)
-}
-
-// TestMariaDBPriorBackupCheckAdvisorCountsSequenceDDL covers statements MySQL has
-// no grammar for, which a DDL list written for MySQL has to name explicitly.
-// Without them the script below passes a guard that promises to reject mixed DDL
-// and DML, and the backup covers only the DELETE.
-func TestMariaDBPriorBackupCheckAdvisorCountsSequenceDDL(t *testing.T) {
-	for _, ddl := range []string{
-		"CREATE SEQUENCE s START WITH 1",
-		"ALTER SEQUENCE s RESTART",
-		"DROP SEQUENCE s",
+		{
+			name:        "MariaDB-only DELETE RETURNING passes",
+			statement:   "DELETE FROM test WHERE b1 = 2 RETURNING b1;",
+			wantEmptyOK: true,
+		},
 	} {
-		sm := sheet.NewManager()
-		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, ddl+";\nDELETE FROM test WHERE b1 = 1;", nil, advisor.Context{
-			DBType:            storepb.Engine_MARIADB,
-			DBSchema:          advisor.MockMySQLDatabase,
-			EnablePriorBackup: true,
-			InstanceID:        "instance",
-			ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
-				return []string{"bbdataarchive"}, nil
-			},
+		t.Run(tc.name, func(t *testing.T) {
+			adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, tc.statement, nil, advisor.Context{
+				DBType:            storepb.Engine_MARIADB,
+				DBSchema:          advisor.MockMySQLDatabase,
+				EnablePriorBackup: true,
+				InstanceID:        "instance",
+				ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
+					return []string{"bbdataarchive"}, nil
+				},
+			})
+			require.NoError(t, err)
+			if tc.wantEmptyOK {
+				require.Empty(t, adviceList)
+				return
+			}
+			require.NotEmpty(t, adviceList)
+			require.Equal(t, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK.String(), adviceList[0].Title)
+			require.Contains(t, adviceList[0].Content, tc.wantSubstr)
 		})
-		require.NoError(t, err, ddl)
-		require.NotEmpty(t, adviceList, ddl)
-		require.Equal(t, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK.String(), adviceList[0].Title, ddl)
-		require.Contains(t, adviceList[0].Content, "mixed DDL and DML", ddl)
 	}
 }
 
