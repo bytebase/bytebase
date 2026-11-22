@@ -1,6 +1,6 @@
 # MCP public tool catalog
 
-Status: proposal · 2026-11-22 ·
+Status: implemented in this PR · 2026-11-22 ·
 [BYT-10055](https://linear.app/bytebase/issue/BYT-10055) · rationale:
 [`bytebase/bytebase-mcp` `docs/DESIGN.md`](https://github.com/bytebase/bytebase-mcp/blob/byt-10055-pure-proxy/docs/DESIGN.md)
 (on its branch until it merges; `main` still describes the bundled tool list it replaces)
@@ -43,7 +43,16 @@ route sits beside it. A reverse proxy that forwards `/mcp` by prefix forwards th
 an operator who exposed MCP exposes the catalog without a new rule. The MCP Server Card extension
 (SEP-2127, `modelcontextprotocol/ext-server-card`) reserves `<streamable-http-url>/server-card`
 for its document, so the ecosystem is already putting discovery documents under the endpoint
-path. Rejected:
+path. No standard covers a public tool list, and Server Cards leave tools out. Under Google's AIPs the
+document is a singleton resource ([AIP-156](https://google.aip.dev/156)) read with Get, so it takes
+a singular noun. It is not an AI Catalog, the domain-level list of Server Cards at
+`/.well-known/ai-catalog.json` in MCP's discovery draft. Rejected:
+- `/mcp/tools`: it reads as a List ([AIP-132](https://google.aip.dev/132)), which owes pagination
+  ([AIP-158](https://google.aip.dev/158)) and returns only the collection; this document also
+  carries instructions.
+- A `/v1` RPC marked `allow_without_credential`: MCP tool schemas would enter `openapi.yaml` and
+  `search_api`'s index and need an `mcp_method_class` annotation, for a document the proxy reads
+  once.
 - `/.well-known/…`: well-known names are meant to be registered, and an MCP name there is
   unsettled. The earlier Server Card draft (SEP-1649) used one and was superseded.
 - `GET /mcp` without a token: clients rely on that 401 to start OAuth (D5).
@@ -154,7 +163,7 @@ One pull request, which carries this doc.
 1. **Catalog route.** Delivers D1–D7 and the least-privilege rule. Files:
    `backend/api/mcp/catalog.go` (new: build and handler), `backend/api/mcp/server.go`
    (`newServerWithIdleTimeout` builds it, `RegisterRoutes` registers it),
-   `backend/api/mcp/catalog_test.go` (new). Tests:
+   `backend/api/mcp/server_test.go` and `backend/server/server_frontend_routes_test.go`. Tests:
    - the catalog's `tools` equal a signed-in session's `tools/list` (`listToolsOverRoute`), and its
      two instruction fields equal `serverInstructions` and `askInChatInstructions`;
    - D4: built over a store fake that fails every call, the catalog is still served; responses
