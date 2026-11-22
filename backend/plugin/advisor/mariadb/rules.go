@@ -13,25 +13,11 @@ import (
 )
 
 func init() {
-	extract := advisor.NodeExtractor(mariadbparser.GetNode)
-	byteOffsetLine := func(sql string, offset int) int32 {
-		return mariadbparser.ByteOffsetToRunePosition(sql, offset).Line
-	}
-	makePriorBackupStmt := func(node ast.Node, text string) mariadbv1review.PriorBackupStatement {
-		return mariadbv1review.PriorBackupStatement{Node: node, Text: text}
-	}
-
-	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
-		advisor.NewMySQLPriorBackupAdvisor(storepb.Engine_MARIADB, extract, makePriorBackupStmt, mariadbv1review.PriorBackupCheck))
-
-	advisor.RegisterMySQLFamily(storepb.Engine_MARIADB, advisor.MySQLFamilyOptions[ast.Node]{
-		Extract:         extract,
-		ByteOffsetLine:  byteOffsetLine,
+	e := advisor.RegisterMySQLFamily(storepb.Engine_MARIADB, advisor.MySQLFamilyOptions[ast.Node]{
+		Extract:         advisor.NodeExtractor(mariadbparser.GetNode),
 		DefinesColumn:   definesColumn,
 		ReadsColumnType: readsColumnType,
 		DropsColumn:     dropsColumn,
-		IsRenameIndex:   isRenameIndex,
-		IsDropDatabase:  isDropDatabase,
 	}, advisor.MySQLFamilyRuleSet[ast.Node]{
 		OnlineMigration:                     mariadbv1review.OnlineMigration,
 		InsertRowLimitProbes:                mariadbv1review.StatementInsertRowLimitProbes,
@@ -93,11 +79,16 @@ func init() {
 		TableNoForeignKey:                   mariadbv1review.TableNoForeignKey,
 		TableRequirePK:                      mariadbv1review.TableRequirePK,
 	})
+
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
+		advisor.NewMySQLPriorBackupAdvisor(e, storepb.Engine_MARIADB, func(node ast.Node, text string) mariadbv1review.PriorBackupStatement {
+			return mariadbv1review.PriorBackupStatement{Node: node, Text: text}
+		}, mariadbv1review.PriorBackupCheck))
 }
 
-func hasAlterCmd(node ast.Node, requireTable bool, match func(*ast.AlterTableCmd) bool) bool {
+func hasAlterCmd(node ast.Node, match func(*ast.AlterTableCmd) bool) bool {
 	alter, ok := node.(*ast.AlterTableStmt)
-	if !ok || (requireTable && alter.Table == nil) {
+	if !ok || alter.Table == nil {
 		return false
 	}
 	return slices.ContainsFunc(alter.Commands, func(cmd *ast.AlterTableCmd) bool {
@@ -109,33 +100,18 @@ func definesColumn(node ast.Node) bool {
 	if n, ok := node.(*ast.CreateTableStmt); ok {
 		return n.Table != nil && slices.ContainsFunc(n.Columns, func(col *ast.ColumnDef) bool { return col != nil })
 	}
-	return hasAlterCmd(node, true, func(cmd *ast.AlterTableCmd) bool {
-		switch cmd.Type {
-		case ast.ATAddColumn:
-			return cmd.Column != nil || len(cmd.Columns) > 0
-		case ast.ATChangeColumn:
-			return cmd.Column != nil
-		default:
-			return false
-		}
+	return hasAlterCmd(node, func(cmd *ast.AlterTableCmd) bool {
+		return (cmd.Type == ast.ATAddColumn && (cmd.Column != nil || len(cmd.Columns) > 0)) ||
+			(cmd.Type == ast.ATChangeColumn && cmd.Column != nil)
 	})
 }
 
 func readsColumnType(node ast.Node) bool {
-	return hasAlterCmd(node, true, func(cmd *ast.AlterTableCmd) bool {
+	return hasAlterCmd(node, func(cmd *ast.AlterTableCmd) bool {
 		return cmd.Column != nil && cmd.Column.TypeName != nil && (cmd.Type == ast.ATChangeColumn || cmd.Type == ast.ATModifyColumn)
 	})
 }
 
 func dropsColumn(node ast.Node) bool {
-	return hasAlterCmd(node, true, func(cmd *ast.AlterTableCmd) bool { return cmd.Type == ast.ATDropColumn })
-}
-
-func isRenameIndex(node ast.Node) bool {
-	return hasAlterCmd(node, false, func(cmd *ast.AlterTableCmd) bool { return cmd.Type == ast.ATRenameIndex })
-}
-
-func isDropDatabase(node ast.Node) bool {
-	_, ok := node.(*ast.DropDatabaseStmt)
-	return ok
+	return hasAlterCmd(node, func(cmd *ast.AlterTableCmd) bool { return cmd.Type == ast.ATDropColumn })
 }

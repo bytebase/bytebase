@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 var (
@@ -113,9 +114,27 @@ func checkTestRowLimitRule(t *testing.T, ruleType storepb.SQLReviewRule_Type, le
 	return adviceList
 }
 
+type staticPlanProber struct{ res db.ProbeResult }
+
+func (p staticPlanProber) Probe(context.Context, db.ProbeContext, string) (db.ProbeResult, error) {
+	return p.res, nil
+}
+
 func TestEstimatedRowsFromPlan(t *testing.T) {
 	// OceanBase splits the JSON plan across rows, and EST.ROWS may be fractional.
-	rows, err := estimatedRowsFromPlan(db.ProbeResult{
+	explain := func(res db.ProbeResult) (int64, string) {
+		probe, err := advisor.ExplainPlanRows(
+			context.Background(),
+			advisor.Context{DBType: storepb.Engine_OCEANBASE, Prober: staticPlanProber{res: res}},
+			nil,
+			"EXPLAIN format=json UPDATE t SET a = 1",
+			oceanbaseparser.EstimateAffectedRowsFromExplainJSON,
+		)
+		require.NoError(t, err)
+		return probe.Rows, probe.CountError
+	}
+
+	rows, countErr := explain(db.ProbeResult{
 		Columns:     []string{"Query Plan"},
 		ColumnTypes: []string{"VARCHAR"},
 		Rows: [][]any{
@@ -123,16 +142,16 @@ func TestEstimatedRowsFromPlan(t *testing.T) {
 			{`"NAME":"","EST.ROWS":41.6,"output":""}`},
 		},
 	})
-	require.NoError(t, err)
+	require.Empty(t, countErr)
 	require.Equal(t, int64(42), rows)
 
-	_, err = estimatedRowsFromPlan(db.ProbeResult{
+	_, countErr = explain(db.ProbeResult{
 		Columns:     []string{"Query Plan"},
 		ColumnTypes: []string{"VARCHAR"},
 		Rows:        [][]any{{`{"ID":0,"OPERATOR":"DISTRIBUTED UPDATE","NAME":""}`}},
 	})
-	require.ErrorContains(t, err, `operator "DISTRIBUTED UPDATE" has no EST.ROWS`)
+	require.Contains(t, countErr, `operator "DISTRIBUTED UPDATE" has no EST.ROWS`)
 
-	_, err = estimatedRowsFromPlan(db.ProbeResult{})
-	require.Error(t, err)
+	_, countErr = explain(db.ProbeResult{})
+	require.NotEmpty(t, countErr)
 }

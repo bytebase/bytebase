@@ -21,50 +21,34 @@ import (
 )
 
 func pgInsertRowLimit(e *advisor.V1Engine[ast.Node]) advisor.Func {
-	return pgRowLimit(
-		e,
-		pgv1review.StatementInsertRowLimitProbes,
-		getInsertedRows,
-		pgv1review.StatementInsertRowLimit,
-		code.InsertTooManyRows,
-		func(text, count string, maxRow int) string {
-			return fmt.Sprintf("The statement \"%s\" inserts %s rows. The count exceeds %d.", text, count, maxRow)
-		},
-	)
+	return pgRowLimit(e, pgv1review.StatementInsertRowLimitProbes, pganalysis.EstimatedInsertedRowsFromExplainJSON, pgv1review.StatementInsertRowLimit, code.InsertTooManyRows, "inserts", "")
 }
 
 func pgAffectedRowLimit(e *advisor.V1Engine[ast.Node]) advisor.Func {
-	return pgRowLimit(
-		e,
-		pgv1review.StatementAffectedRowLimitProbes,
-		getAffectedRows,
-		pgv1review.StatementAffectedRowLimit,
-		code.StatementAffectedRowExceedsLimit,
-		func(text, count string, maxRow int) string {
-			return fmt.Sprintf("The statement \"%s\" affected %s rows (estimated). The count exceeds %d.", text, count, maxRow)
-		},
-	)
+	return pgRowLimit(e, pgv1review.StatementAffectedRowLimitProbes, pganalysis.EstimatedAffectedRowsFromExplainJSON, pgv1review.StatementAffectedRowLimit, code.StatementAffectedRowExceedsLimit, "affected", " (estimated)")
 }
 
 func pgRowLimit(
 	e *advisor.V1Engine[ast.Node],
 	probesFn func([]ast.Node) []int,
-	countFn func(db.ProbeResult) (int64, error),
+	parsePlan func(string) (int64, error),
 	judgeFn func([]ast.Node, map[int]v1review.Probe, int) []v1review.Finding,
 	exceededCode code.Code,
-	exceededContent func(text, count string, maxRow int) string,
+	verb, suffix string,
 ) advisor.Func {
 	return e.RowLimit(advisor.V1RowLimitConfig[ast.Node]{
-		Probes:          probesFn,
-		Judge:           judgeFn,
-		ExceededCode:    exceededCode,
-		ExceededContent: exceededContent,
-		PositiveOnly:    true,
+		Probes:       probesFn,
+		Judge:        judgeFn,
+		ExceededCode: exceededCode,
+		ExceededContent: func(text, count string, maxRow int) string {
+			return fmt.Sprintf("The statement \"%s\" %s %s rows%s. The count exceeds %d.", text, verb, count, suffix, maxRow)
+		},
+		PositiveOnly: true,
 		StatementText: func(stmt advisor.V1Stmt[ast.Node], node ast.Node) string {
 			return probeText(e, stmt, node)
 		},
 		Estimate: func(ctx context.Context, checkCtx advisor.Context, stmt advisor.V1Stmt[ast.Node], node ast.Node, settings []string) (v1review.Probe, error) {
-			return explainRows(ctx, checkCtx, settings, probeText(e, stmt, node), countFn)
+			return advisor.ExplainPlanRows(ctx, checkCtx, settings, fmt.Sprintf("EXPLAIN (FORMAT JSON) %s", probeText(e, stmt, node)), parsePlan)
 		},
 		PreExecutions: probeEach,
 	})
@@ -159,40 +143,6 @@ func probeEach(stmts []advisor.V1Stmt[ast.Node], nodes []ast.Node, want []int, p
 			probe(i, settings.statements())
 		}
 	}
-}
-
-func explainRows(ctx context.Context, checkCtx advisor.Context, settings []string, text string, count func(db.ProbeResult) (int64, error)) (v1review.Probe, error) {
-	prober, err := advisor.ProbeFor(checkCtx)
-	if err != nil {
-		return v1review.Probe{}, err
-	}
-	res, err := prober.Probe(ctx, db.ProbeContext{PreExecutions: settings}, fmt.Sprintf("EXPLAIN (FORMAT JSON) %s", text))
-	if err != nil {
-		//nolint:nilerr // a refused statement is the probe finding, reported as advice.
-		return v1review.Probe{Error: err.Error()}, nil
-	}
-	rows, err := count(res)
-	if err != nil {
-		//nolint:nilerr // an unreadable plan is the probe finding, reported as advice.
-		return v1review.Probe{CountError: err.Error()}, nil
-	}
-	return v1review.Probe{Rows: rows}, nil
-}
-
-func getAffectedRows(res db.ProbeResult) (int64, error) {
-	plan, err := res.Plan()
-	if err != nil {
-		return 0, err
-	}
-	return pganalysis.EstimatedAffectedRowsFromExplainJSON(plan)
-}
-
-func getInsertedRows(res db.ProbeResult) (int64, error) {
-	plan, err := res.Plan()
-	if err != nil {
-		return 0, err
-	}
-	return pganalysis.EstimatedInsertedRowsFromExplainJSON(plan)
 }
 
 type sessionSettings struct {

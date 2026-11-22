@@ -83,8 +83,7 @@ type Context struct {
 	// (advisors run sequentially, no synchronization needed).
 	//
 	// Engine-specific helpers use this to amortize work that would otherwise
-	// repeat per advisor, e.g. omni re-parsing during the tidb advisor
-	// migration (advisor/tidb/utils.go).
+	// repeat per advisor, such as memoized AST extraction in V1Engine.
 	//
 	// Callers that bypass SQLReviewCheck and construct Context directly
 	// without initializing memo will see Memo/SetMemo silently no-op (cache
@@ -139,6 +138,13 @@ func (f Func) Check(ctx context.Context, checkCtx Context) ([]*storepb.Advice, e
 // RegisterFunc registers fn as the advisor for dbType and ruleType.
 func RegisterFunc(dbType storepb.Engine, ruleType storepb.SQLReviewRule_Type, fn Func) {
 	Register(dbType, ruleType, fn)
+}
+
+// RegisterRules registers every rule in rules for dbType.
+func RegisterRules(dbType storepb.Engine, rules map[storepb.SQLReviewRule_Type]Advisor) {
+	for ruleType, a := range rules {
+		Register(dbType, ruleType, a)
+	}
 }
 
 var (
