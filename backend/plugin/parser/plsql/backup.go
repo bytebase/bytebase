@@ -28,31 +28,7 @@ func TransformDMLToSelect(_ context.Context, tCtx base.TransformContext, stateme
 	if err != nil {
 		return nil, err
 	}
-	positionMapper := base.NewByteOffsetPositionMapper(statement)
-	var result []base.BackupStatement
-	for _, s := range statements {
-		result = append(result, base.BackupStatement{
-			Statement:       s.Statement,
-			SourceSchema:    s.SourceSchema,
-			SourceTableName: s.SourceTableName,
-			TargetTableName: s.TargetTableName,
-			StartPosition:   zeroBasedColumnPosition(positionMapper.Position(s.Start)),
-			EndPosition:     zeroBasedColumnPosition(positionMapper.Position(s.End)),
-		})
-	}
-	return result, nil
-}
-
-func zeroBasedColumnPosition(pos *store.Position) *store.Position {
-	if pos == nil {
-		return nil
-	}
-	column := pos.Column
-	if column > 0 {
-		column--
-	}
-	return &store.Position{
-		Line:   pos.Line,
-		Column: column,
-	}
+	return base.ConvertOffsetBackupStatements(statement, statements, func(s analysis.BackupStatement) (string, string, string, string, int, int) {
+		return s.Statement, s.SourceSchema, s.SourceTableName, s.TargetTableName, s.Start, s.End
+	}, true), nil
 }

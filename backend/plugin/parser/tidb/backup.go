@@ -2,9 +2,6 @@ package tidb
 
 import (
 	"context"
-	"log/slog"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/tidb/analysis"
 	omniparser "github.com/bytebase/omni/tidb/parser"
@@ -18,26 +15,19 @@ func init() {
 }
 
 func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+	catalog := newBackupCatalog(ctx, tCtx.InstanceID, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc)
 	backups, err := analysis.TransformDMLToSelect(statement, analysis.BackupOptions{
 		DefaultDatabase:      sourceDatabase,
 		BackupDatabase:       targetDatabase,
 		TablePrefix:          tablePrefix,
 		CaseSensitive:        tCtx.IsCaseSensitive,
-		Catalog:              newBackupCatalog(ctx, tCtx.InstanceID, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc),
+		Catalog:              catalog,
 		ReferencingDatabases: tCtx.ReferencingDatabases(ctx),
-		Columns: func(database, table string) (analysis.TableColumns, error) {
-			return classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IsCaseSensitive, tCtx.InstanceID, database, table)
-		},
+		Columns:              base.NewColumnClassifier(tCtx.GetDatabaseMetadataFunc, tCtx.InstanceID, catalog, tCtx.IsCaseSensitive, analysis.ClassifyColumns),
 	})
 	if err != nil || backups == nil {
 		return nil, err
 	}
-	return convertBackupStatements(statement, backups)
-}
-
-// convertBackupStatements gives each backup the positions SplitSQL gives the
-// first and last segment it covers.
-func convertBackupStatements(statement string, backups []analysis.BackupStatement) ([]base.BackupStatement, error) {
 	return base.ConvertBackupStatements(
 		statement,
 		SplitSQL,
@@ -50,41 +40,9 @@ func convertBackupStatements(statement string, backups []analysis.BackupStatemen
 	)
 }
 
-// newBackupCatalog reads the instance's metadata for prior backup. Unlike the
-// query span's catalog, it returns lookup errors unchanged.
-func newBackupCatalog(ctx context.Context, instanceID string, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, listDatabaseNamesFunc base.ListDatabaseNamesFunc) analysis.Catalog {
-	var catalog analysis.Catalog
-	if listDatabaseNamesFunc != nil {
-		catalog.ListDatabaseNames = func() ([]string, error) {
-			return listDatabaseNamesFunc(ctx, instanceID)
-		}
-	}
-	if getDatabaseMetadataFunc != nil {
-		catalog.GetDatabase = func(name string) (analysis.Database, error) {
-			_, database, err := getDatabaseMetadataFunc(ctx, instanceID, name)
-			if err != nil {
-				return nil, err
-			}
-			if database == nil {
-				return nil, nil
-			}
-			return &base.UnnamedSchemaDatabase{Database: database}, nil
-		}
-	}
-	return catalog
-}
+func wrapDatabase(d *base.UnnamedSchemaDatabase) analysis.Database { return d }
 
-// classifyColumns returns what prior backup needs of a table's columns and
-// keys, and reports a missing callback or database in Bytebase's words.
-func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, listDatabaseNamesFunc base.ListDatabaseNamesFunc, isCaseSensitive bool, instanceID string, database, table string) (analysis.TableColumns, error) {
-	if getDatabaseMetadataFunc == nil {
-		return analysis.TableColumns{}, errors.New("GetDatabaseMetadataFunc is not set")
-	}
-	columns, err := analysis.ClassifyColumns(newBackupCatalog(ctx, instanceID, getDatabaseMetadataFunc, listDatabaseNamesFunc), isCaseSensitive, database, table)
-	var notFound *analysis.NotFoundError
-	if errors.As(err, &notFound) {
-		slog.Debug("failed to get database metadata", slog.String("instanceID", instanceID), slog.String("database", database))
-		return analysis.TableColumns{}, errors.Errorf("failed to get database metadata for InstanceID %q, Database %q", instanceID, database)
-	}
-	return columns, err
+func newBackupCatalog(ctx context.Context, instanceID string, getDB base.GetDatabaseMetadataFunc, listDBs base.ListDatabaseNamesFunc) analysis.Catalog {
+	list, get := base.BackupCatalogFuncs(ctx, instanceID, getDB, listDBs, wrapDatabase)
+	return analysis.Catalog{ListDatabaseNames: list, GetDatabase: get}
 }
