@@ -9,10 +9,7 @@
 //     session on first use, so a bad contact point is reported by Ping, not by
 //     Open.
 //   - SSH tunnels work. The omni driver takes a Dial, so a data source with an
-//     SSH host dials through util.DialSSHTunnel, which this driver did not
-//     support before. The live test reaches the cluster through one; TLS is
-//     mapped the same way but not exercised, because the pinned container
-//     speaks plaintext.
+//     SSH host dials through util.DialSSHTunnel.
 //   - A dropped keyspace answers driver.ErrNotFound from SyncDBSchema instead
 //     of an empty schema: the omni driver asks the catalog whether the
 //     keyspace exists before reading it.

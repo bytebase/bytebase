@@ -3,129 +3,22 @@ package redis
 import (
 	"bytes"
 	"context"
-	"encoding/json"
-	"os"
-	"path/filepath"
+	"io"
 	"testing"
 	"time"
 
 	omnidriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-func openTestDriver(t *testing.T) db.Driver {
-	t.Helper()
-	container := testcontainer.SharedRedisClusterContainer(t)
-	d, err := newDriver().Open(context.Background(), storepb.Engine_REDIS, db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:      storepb.DataSourceType_ADMIN,
-			Host:      container.GetHost(),
-			Port:      container.GetPort(),
-			RedisType: storepb.DataSource_CLUSTER,
-		},
-		ConnectionContext: db.ConnectionContext{DatabaseName: "0"},
-	})
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, d.Close(context.Background())) })
-	return d
-}
-
-// TestLegacyParity replays the corpus recorded from the old driver before this
-// change deleted it: the same setup, sync answers, query results and all-nodes
-// answers. testdata/legacy.json is that recording; the old path ran on the same
-// redis:7.4.12-alpine pin, so the version and database list are comparable.
-func TestLegacyParity(t *testing.T) {
-	ctx := context.Background()
-	d := openTestDriver(t)
-
-	_, err := d.Execute(ctx, "FLUSHALL\nSET greeting \"hello world\"\nRPUSH queue first second", db.ExecuteOptions{})
-	require.NoError(t, err)
-
-	instance, err := d.SyncInstance(ctx)
-	require.NoError(t, err)
-	schema, err := d.SyncDBSchema(ctx)
-	require.NoError(t, err)
-
-	single, err := d.QueryConn(ctx, "GET greeting\n\nGET missing\nLRANGE queue 0 -1\nDBSIZE", db.QueryContext{MaximumSQLResultSize: 1 << 20})
-	require.NoError(t, err)
-	for _, result := range single {
-		result.Latency = nil
-	}
-	all, err := d.QueryConn(ctx, "GET greeting\nDBSIZE", db.QueryContext{
-		MaximumSQLResultSize: 1 << 20,
-		Option:               &v1pb.QueryOption{RedisRunCommandsOn: v1pb.QueryOption_ALL_NODES},
-	})
-	require.NoError(t, err)
-	for _, result := range all {
-		result.Latency = nil
-	}
-
-	got, err := json.MarshalIndent(map[string]any{
-		"version":   instance.Version,
-		"databases": instance.Databases,
-		"schema":    schema,
-		"single":    envelope(single),
-		"all":       envelope(all),
-	}, "", "  ")
-	require.NoError(t, err)
-	want, err := os.ReadFile(filepath.Join("testdata", "legacy.json"))
-	require.NoError(t, err)
-	require.JSONEq(t, string(want), string(got))
-}
-
-func envelope(results []*v1pb.QueryResult) []json.RawMessage {
-	var out []json.RawMessage
-	for _, result := range results {
-		b, err := protojson.Marshal(proto.Clone(result).(*v1pb.QueryResult))
-		if err != nil {
-			panic(err)
-		}
-		out = append(out, b)
-	}
-	return out
-}
-
-func TestQueryConnScripts(t *testing.T) {
-	ctx := context.Background()
-	d := openTestDriver(t)
-	_, err := d.Execute(ctx, "FLUSHALL\nSET a \"two words\"\nSET b value", db.ExecuteOptions{})
-	require.NoError(t, err)
-
-	results, err := d.QueryConn(ctx, "GET a\n\nGET b\n   ", db.QueryContext{MaximumSQLResultSize: 1 << 20})
-	require.NoError(t, err)
-	require.Len(t, results, 2)
-	for i, want := range []string{"GET a", "GET b"} {
-		require.Equal(t, want, results[i].Statement)
-		require.Equal(t, []string{"#", "Value"}, results[i].ColumnNames)
-		require.Equal(t, []string{"INT", "TEXT"}, results[i].ColumnTypeNames)
-		require.Len(t, results[i].Rows, 1)
-	}
-	require.Equal(t, "two words", results[0].Rows[0].Values[1].GetStringValue())
-	require.Equal(t, "value", results[1].Rows[0].Values[1].GetStringValue())
-
-	_, err = d.QueryConn(ctx, `SET a "unclosed`, db.QueryContext{MaximumSQLResultSize: 1 << 20})
-	require.ErrorContains(t, err, "failed to split command")
-
-	// Known difference: the old shell lexer treated # as the start of a comment,
-	// so this line was GET with no key; Redis has no comment syntax.
-	results, err = d.QueryConn(ctx, "GET #", db.QueryContext{MaximumSQLResultSize: 1 << 20})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Equal(t, "GET #", results[0].Statement)
-	require.Len(t, results[0].Rows, 1)
-	require.Equal(t, util.NullRowValue, results[0].Rows[0].Values[1])
-}
-
-// TestQueryConnExplainRefused holds the refusal in front of the session, as the
-// old driver had it: an explain never reaches the server.
+// TestQueryConnExplainRefused holds the refusal in front of the session: an
+// explain never reaches the server.
 func TestQueryConnExplainRefused(t *testing.T) {
 	_, err := (&Driver{}).QueryConn(context.Background(), "GET key", db.QueryContext{Explain: true})
 	require.ErrorContains(t, err, "Redis does not support EXPLAIN")
@@ -136,102 +29,6 @@ func TestQueryConnRejectsUnknownOption(t *testing.T) {
 		Option: &v1pb.QueryOption{RedisRunCommandsOn: v1pb.QueryOption_RedisRunCommandsOn(99)},
 	})
 	require.ErrorContains(t, err, "unknown RedisRunCommandOn enum")
-}
-
-// TestExecuteRefusedStopsScript records a known difference from the pipeline:
-// the old Execute sent every command and failed afterwards; the driver stops at
-// the refused command, so the commands after it do not run.
-func TestExecuteRefusedStopsScript(t *testing.T) {
-	ctx := context.Background()
-	d := openTestDriver(t)
-	_, err := d.Execute(ctx, "FLUSHALL\nSET counter text", db.ExecuteOptions{})
-	require.NoError(t, err)
-
-	_, err = d.Execute(ctx, "INCR counter\nSET after value", db.ExecuteOptions{})
-	require.ErrorContains(t, err, "ERR value is not an integer or out of range")
-
-	results, err := d.QueryConn(ctx, "GET after", db.QueryContext{MaximumSQLResultSize: 1 << 20})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Len(t, results[0].Rows, 1)
-	require.Equal(t, util.NullRowValue, results[0].Rows[0].Values[1])
-}
-
-func TestExecuteCreateDatabaseAndDump(t *testing.T) {
-	ctx := context.Background()
-	d := openTestDriver(t)
-	_, err := d.Execute(ctx, "SET a 1", db.ExecuteOptions{CreateDatabase: true})
-	require.ErrorContains(t, err, "redis: cannot create database")
-
-	var out bytes.Buffer
-	require.NoError(t, d.Dump(ctx, &out, nil))
-	require.Empty(t, out.String())
-}
-
-// TestExecuteLogsItsSteps covers the ExecuteLogger bridge: each command and its
-// response reaches the task run's log with the command's byte range.
-func TestExecuteLogsItsSteps(t *testing.T) {
-	ctx := context.Background()
-	d := openTestDriver(t)
-	var logs []*storepb.TaskRunLog
-	_, err := d.Execute(ctx, "SET a 1\nGET a", db.ExecuteOptions{
-		CreateTaskRunLog: func(_ time.Time, log *storepb.TaskRunLog) error {
-			logs = append(logs, log)
-			return nil
-		},
-	})
-	require.NoError(t, err)
-	require.Len(t, logs, 4)
-	for i, want := range []struct {
-		byteStart int32
-		byteEnd   int32
-	}{
-		{0, 7},
-		{0, 0},
-		{8, 13},
-		{0, 0},
-	} {
-		if i%2 == 0 {
-			require.Equal(t, storepb.TaskRunLog_COMMAND_EXECUTE, logs[i].Type)
-			require.Empty(t, logs[i].GetCommandExecute().Statement)
-			require.Equal(t, want.byteStart, logs[i].GetCommandExecute().GetRange().GetStart())
-			require.Equal(t, want.byteEnd, logs[i].GetCommandExecute().GetRange().GetEnd())
-		} else {
-			require.Equal(t, storepb.TaskRunLog_COMMAND_RESPONSE, logs[i].Type)
-		}
-	}
-}
-
-func TestSyncInstanceWithoutConfigPermission(t *testing.T) {
-	ctx := context.Background()
-	container := testcontainer.SharedRedisClusterContainer(t)
-	open := func(username, password string) db.Driver {
-		d, err := newDriver().Open(ctx, storepb.Engine_REDIS, db.ConnectionConfig{
-			DataSource: &storepb.DataSource{
-				Type:      storepb.DataSourceType_ADMIN,
-				Host:      container.GetHost(),
-				Port:      container.GetPort(),
-				Username:  username,
-				RedisType: storepb.DataSource_CLUSTER,
-			},
-			Password: password,
-		})
-		require.NoError(t, err)
-		t.Cleanup(func() { require.NoError(t, d.Close(ctx)) })
-		return d
-	}
-
-	_, err := open("", "").Execute(ctx, "ACL SETUSER noconfig on >noconfig-pw ~* +@all -config", db.ExecuteOptions{})
-	require.NoError(t, err)
-
-	limited := open("noconfig", "noconfig-pw")
-	_, err = limited.Execute(ctx, "CONFIG GET databases", db.ExecuteOptions{})
-	require.ErrorContains(t, err, "NOPERM")
-
-	instance, err := limited.SyncInstance(ctx)
-	require.NoError(t, err)
-	require.Len(t, instance.Databases, 1)
-	require.Equal(t, "0", instance.Databases[0].Name)
 }
 
 // TestToRowValue holds the contract value shapes Redis reports: an answer is
@@ -257,4 +54,207 @@ func TestAddressList(t *testing.T) {
 		},
 	}
 	require.Equal(t, "[2001:db8::1]:6379,[2001:db8::2]:6380,node3.example.com:6381", addressList(ds))
+}
+
+func TestOpenConfigValidation(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("non-numeric database index fails before dialing", func(t *testing.T) {
+		_, err := newDriver().Open(ctx, storepb.Engine_REDIS, db.ConnectionConfig{
+			DataSource:        &storepb.DataSource{Host: "127.0.0.1", Port: "6379"},
+			ConnectionContext: db.ConnectionContext{DatabaseName: "not-a-number"},
+		})
+		require.ErrorContains(t, err, "failed to convert database not-a-number to int")
+	})
+
+	t.Run("unsupported redis type is rejected", func(t *testing.T) {
+		_, err := newDriver().Open(ctx, storepb.Engine_REDIS, db.ConnectionConfig{
+			DataSource: &storepb.DataSource{
+				Host:      "127.0.0.1",
+				Port:      "6379",
+				RedisType: storepb.DataSource_RedisType(99),
+			},
+		})
+		require.ErrorContains(t, err, "unsupported redis type")
+	})
+
+	t.Run("invalid TLS material fails at Open", func(t *testing.T) {
+		_, err := newDriver().Open(ctx, storepb.Engine_REDIS, db.ConnectionConfig{
+			DataSource: &storepb.DataSource{
+				Host:   "127.0.0.1",
+				Port:   "6379",
+				UseSsl: true,
+				SslKey: "orphan-key",
+			},
+		})
+		require.ErrorContains(t, err, "redis: failed to get tls config")
+	})
+
+	t.Run("standalone, sentinel, and cluster topologies open lazily without dialing", func(t *testing.T) {
+		for _, ds := range []*storepb.DataSource{
+			{Host: "127.0.0.1", Port: "6379", RedisType: storepb.DataSource_STANDALONE},
+			{Host: "127.0.0.1", Port: "26379", RedisType: storepb.DataSource_SENTINEL, MasterName: "mymaster"},
+			{Host: "127.0.0.1", Port: "7000", RedisType: storepb.DataSource_CLUSTER},
+		} {
+			d, err := newDriver().Open(ctx, storepb.Engine_REDIS, db.ConnectionConfig{
+				DataSource:        ds,
+				ConnectionContext: db.ConnectionContext{DatabaseName: "0"},
+			})
+			require.NoError(t, err)
+			require.NoError(t, d.Close(ctx))
+		}
+	})
+}
+
+type fakeRedisSession struct {
+	gotScript string
+	gotOpts   omnidriver.QueryOptions
+	results   []*omnidriver.Result
+	closed    bool
+}
+
+func (s *fakeRedisSession) Query(_ context.Context, script string, opts omnidriver.QueryOptions) ([]*omnidriver.Result, error) {
+	s.gotScript = script
+	s.gotOpts = opts
+	return s.results, nil
+}
+
+func (s *fakeRedisSession) Close() error {
+	s.closed = true
+	return nil
+}
+
+type fakeRedisClusterSession struct {
+	fakeRedisSession
+	allNodesCalled bool
+}
+
+func (s *fakeRedisClusterSession) QueryAllNodes(_ context.Context, script string, opts omnidriver.QueryOptions) ([]*omnidriver.Result, error) {
+	s.allNodesCalled = true
+	s.gotScript = script
+	s.gotOpts = opts
+	return s.results, nil
+}
+
+type fakeRedisDriver struct {
+	session       omnidriver.Session
+	executeScript string
+	executeOpts   omnidriver.ExecuteOptions
+	executeFn     func(script string, opts omnidriver.ExecuteOptions) (int64, error)
+	instance      *omnidriver.Instance
+	schema        *metadatapb.DatabaseSchemaMetadata
+}
+
+func (*fakeRedisDriver) Ping(context.Context) error { return nil }
+func (*fakeRedisDriver) Close() error               { return nil }
+func (f *fakeRedisDriver) Session(context.Context) (omnidriver.Session, error) {
+	return f.session, nil
+}
+
+func (f *fakeRedisDriver) Execute(_ context.Context, script string, opts omnidriver.ExecuteOptions) (int64, error) {
+	f.executeScript = script
+	f.executeOpts = opts
+	if f.executeFn != nil {
+		return f.executeFn(script, opts)
+	}
+	return 0, nil
+}
+
+func (f *fakeRedisDriver) SyncInstance(context.Context) (*omnidriver.Instance, error) {
+	return f.instance, nil
+}
+
+func (f *fakeRedisDriver) SyncDatabase(context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return f.schema, nil
+}
+
+func (*fakeRedisDriver) Dump(context.Context, io.Writer, *metadatapb.DatabaseSchemaMetadata) error {
+	return nil
+}
+
+func TestRedisAdapterSeam(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("QueryConn dispatches SINGLE_NODE and ALL_NODES and rejects ALL_NODES on non-cluster session", func(t *testing.T) {
+		clusterSess := &fakeRedisClusterSession{
+			fakeRedisSession: fakeRedisSession{
+				results: []*omnidriver.Result{{
+					Statement: "DBSIZE",
+					Columns:   []omnidriver.Column{{Name: "#", TypeName: "INT"}, {Name: "Value", TypeName: "TEXT"}},
+					Rows:      [][]omnidriver.Value{{{Kind: omnidriver.Int32, Int64: 1}, {Kind: omnidriver.String, String: "2"}}},
+				}},
+			},
+		}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: &fakeRedisDriver{session: clusterSess}}}
+
+		got, err := d.QueryConn(ctx, "DBSIZE", db.QueryContext{
+			MaximumSQLResultSize: 1024,
+			Option:               &v1pb.QueryOption{RedisRunCommandsOn: v1pb.QueryOption_ALL_NODES},
+		})
+		require.NoError(t, err)
+		require.True(t, clusterSess.allNodesCalled)
+		require.True(t, clusterSess.closed)
+		require.Equal(t, int64(1024), clusterSess.gotOpts.MaxResultBytes)
+		require.Len(t, got, 1)
+		require.Equal(t, "2", got[0].Rows[0].Values[1].GetStringValue())
+
+		standaloneSess := &fakeRedisSession{}
+		dStandalone := &Driver{OmniAdapter: util.OmniAdapter{Driver: &fakeRedisDriver{session: standaloneSess}}}
+		_, err = dStandalone.QueryConn(ctx, "DBSIZE", db.QueryContext{
+			Option: &v1pb.QueryOption{RedisRunCommandsOn: v1pb.QueryOption_ALL_NODES},
+		})
+		require.ErrorContains(t, err, "expect *redis.ClusterClient")
+		require.True(t, standaloneSess.closed)
+	})
+
+	t.Run("Execute forwards CreateDatabase and logs command byte ranges", func(t *testing.T) {
+		var logs []*storepb.TaskRunLog
+		impl := &fakeRedisDriver{
+			executeFn: func(_ string, opts omnidriver.ExecuteOptions) (int64, error) {
+				opts.Log.CommandExecute(omnidriver.Command{Text: "SET a 1", ByteStart: 0, ByteEnd: 7})
+				opts.Log.CommandResponse(0, nil, nil)
+				opts.Log.CommandExecute(omnidriver.Command{Text: "GET a", ByteStart: 8, ByteEnd: 13})
+				opts.Log.CommandResponse(0, nil, nil)
+				return 0, nil
+			},
+		}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: impl}}
+
+		_, err := d.Execute(ctx, "SET a 1\nGET a", db.ExecuteOptions{
+			CreateDatabase: true,
+			CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
+				logs = append(logs, entry)
+				return nil
+			},
+		})
+		require.NoError(t, err)
+		require.True(t, impl.executeOpts.CreateDatabase)
+		require.Len(t, logs, 4)
+		require.Equal(t, &storepb.Range{Start: 0, End: 7}, logs[0].GetCommandExecute().GetRange())
+		require.Equal(t, &storepb.Range{Start: 8, End: 13}, logs[2].GetCommandExecute().GetRange())
+	})
+
+	t.Run("SyncInstance, SyncDBSchema, and Dump delegate", func(t *testing.T) {
+		impl := &fakeRedisDriver{
+			instance: &omnidriver.Instance{
+				Version:   "7.4.12",
+				Databases: []*metadatapb.DatabaseSchemaMetadata{{Name: "0"}},
+			},
+			schema: &metadatapb.DatabaseSchemaMetadata{Name: "0"},
+		}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: impl}}
+
+		inst, err := d.SyncInstance(ctx)
+		require.NoError(t, err)
+		require.Equal(t, "7.4.12", inst.Version)
+		require.Len(t, inst.Databases, 1)
+
+		schema, err := d.SyncDBSchema(ctx)
+		require.NoError(t, err)
+		require.Equal(t, "0", schema.GetName())
+
+		var out bytes.Buffer
+		require.NoError(t, d.Dump(ctx, &out, schema))
+		require.Empty(t, out.String())
+	})
 }

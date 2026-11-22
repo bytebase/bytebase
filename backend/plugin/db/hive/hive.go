@@ -31,16 +31,6 @@
 //   - Dump does not read the metadata it is given: omni has no hive catalog, so
 //     nothing renders a synced schema back to HiveQL, and the dump is the
 //     server's own SHOW CREATE statements.
-//
-// Known differences from the driver this replaced, which are the fix this
-// cutover is: Open now sends the data source's login, so every operation is
-// reachable; SyncDBSchema reads DESCRIBE FORMATTED's NULL cells, so tables,
-// external tables, views and materialized views sync; Dump restores; a query's
-// schema is selected with USE; extra connection parameters and SSL reach the
-// session; a DOUBLE or FLOAT cell is a number rather than 20-decimal text; a
-// failing statement ends its script with the error on its result instead of
-// failing the call; Execute logs each command; GetDB returns nil; and the dump
-// text is requalified and reordered.
 package hive
 
 import (

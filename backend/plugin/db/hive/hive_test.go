@@ -1,10 +1,15 @@
 package hive
 
 import (
+	"bytes"
+	"context"
 	"errors"
+	"io"
 	"testing"
+	"time"
 
 	odriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -162,4 +167,136 @@ func TestSSHDataSourceIsRefused(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "forward a local port")
+}
+
+type fakeHiveSession struct {
+	gotScript string
+	gotOpts   odriver.QueryOptions
+	results   []*odriver.Result
+	closed    bool
+}
+
+func (s *fakeHiveSession) Query(_ context.Context, script string, opts odriver.QueryOptions) ([]*odriver.Result, error) {
+	s.gotScript = script
+	s.gotOpts = opts
+	return s.results, nil
+}
+
+func (s *fakeHiveSession) Close() error {
+	s.closed = true
+	return nil
+}
+
+type fakeHiveDriver struct {
+	session       *fakeHiveSession
+	executeScript string
+	executeOpts   odriver.ExecuteOptions
+	executeFn     func(script string, opts odriver.ExecuteOptions) (int64, error)
+	instance      *odriver.Instance
+	schema        *metadatapb.DatabaseSchemaMetadata
+	dumpDDL       string
+}
+
+func (*fakeHiveDriver) Ping(context.Context) error { return nil }
+func (*fakeHiveDriver) Close() error               { return nil }
+func (f *fakeHiveDriver) Session(context.Context) (odriver.Session, error) {
+	return f.session, nil
+}
+
+func (f *fakeHiveDriver) Execute(_ context.Context, script string, opts odriver.ExecuteOptions) (int64, error) {
+	f.executeScript = script
+	f.executeOpts = opts
+	if f.executeFn != nil {
+		return f.executeFn(script, opts)
+	}
+	return 0, nil
+}
+
+func (f *fakeHiveDriver) SyncInstance(context.Context) (*odriver.Instance, error) {
+	return f.instance, nil
+}
+
+func (f *fakeHiveDriver) SyncDatabase(context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return f.schema, nil
+}
+
+func (f *fakeHiveDriver) Dump(_ context.Context, w io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
+	_, err := io.WriteString(w, f.dumpDDL)
+	return err
+}
+
+func TestHiveAdapterSeam(t *testing.T) {
+	ctx := context.Background()
+	sess := &fakeHiveSession{
+		results: []*odriver.Result{{
+			Statement: "SELECT id FROM orders",
+			Columns:   []odriver.Column{{Name: "id", TypeName: "int"}},
+			Rows: [][]odriver.Value{
+				{{Kind: odriver.Int32, Int64: 1}},
+				{{Kind: odriver.Int32, Int64: 2}},
+			},
+		}},
+	}
+	var logs []*storepb.TaskRunLog
+	impl := &fakeHiveDriver{
+		session: sess,
+		executeFn: func(script string, opts odriver.ExecuteOptions) (int64, error) {
+			opts.Log.CommandExecute(odriver.Command{Text: script, ByteStart: 0, ByteEnd: len(script)})
+			opts.Log.CommandResponse(0, nil, nil)
+			return 0, nil
+		},
+		instance: &odriver.Instance{
+			Version:   "4.0.1",
+			Databases: []*metadatapb.DatabaseSchemaMetadata{{Name: "app"}},
+		},
+		schema:  &metadatapb.DatabaseSchemaMetadata{Name: "app"},
+		dumpDDL: "CREATE TABLE `app`.`orders` (`id` INT);\n",
+	}
+	d := &Driver{OmniAdapter: util.OmniAdapter{Driver: impl}}
+
+	// QueryConn forwards schema, explain format, and max result bytes, applies Limit client-side, and closes its ephemeral session.
+	got, err := d.QueryConn(ctx, "SELECT id FROM orders", db.QueryContext{
+		Schema:               "app",
+		Limit:                1,
+		MaximumSQLResultSize: 1024,
+		Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+	})
+	require.NoError(t, err)
+	require.True(t, sess.closed)
+	require.Equal(t, odriver.QueryOptions{
+		Schema:         "app",
+		ExplainFormat:  "JSON",
+		MaxResultBytes: 1024,
+	}, sess.gotOpts)
+	require.Len(t, got, 1)
+	require.Equal(t, []string{"INT"}, got[0].ColumnTypeNames)
+	require.Equal(t, int64(1), got[0].RowsCount)
+
+	// Execute runs in AutoCommit mode without parsing transaction directives and logs each command.
+	_, err = d.Execute(ctx, "-- txn-mode=on\nCREATE TABLE t (id INT);", db.ExecuteOptions{
+		MaximumRetries: 2,
+		CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
+			logs = append(logs, entry)
+			return nil
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "-- txn-mode=on\nCREATE TABLE t (id INT);", impl.executeScript)
+	require.Equal(t, odriver.AutoCommit, impl.executeOpts.Transaction)
+	require.Equal(t, 2, impl.executeOpts.MaxRetries)
+	require.Len(t, logs, 2)
+	require.Equal(t, storepb.TaskRunLog_COMMAND_EXECUTE, logs[0].Type)
+	require.Equal(t, storepb.TaskRunLog_COMMAND_RESPONSE, logs[1].Type)
+
+	inst, err := d.SyncInstance(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "4.0.1", inst.Version)
+
+	schema, err := d.SyncDBSchema(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "app", schema.GetName())
+
+	var out bytes.Buffer
+	require.NoError(t, d.Dump(ctx, &out, schema))
+	require.Contains(t, out.String(), "CREATE TABLE `app`.`orders`")
 }

@@ -17,23 +17,7 @@
 //
 // Redis has no schema, DDL or SQL: SyncInstance reads INFO server, CONFIG GET
 // databases and INFO keyspace, SyncDBSchema answers the database number, and
-// Dump writes nothing, as before.
-//
-// Behaviour that moves with the driver, all measured in its cutover proof:
-// commands run one per request instead of as one pipeline, so a script pays a
-// round trip per command; the caller's context deadline interrupts a command;
-// a refused command ends the script and carries its error on its own Result
-// (earlier results stand, later commands are not sent) instead of failing the
-// whole call; a per-result latency is the command's own; the result-size cap is
-// byte-accurate rather than proto.Size at power-of-two row counts; an array
-// element that holds no value is a NULL cell rather than the text "<nil>"; a
-// Redis Cluster refuses a non-zero database and a negative index is refused
-// instead of silently running on database 0; a missing port defaults to 6379;
-// `#` is an argument's text rather than the comment the old shell lexer made it;
-// and MaximumSQLResultSize 0 means no cap rather than a zero-byte cap. A missing
-// key is still a NULL row, TLS material is still built once at Open and verified
-// against the data source host, and a refused Explain still answers "Redis does
-// not support EXPLAIN".
+// Dump writes nothing.
 package redis
 
 import (
