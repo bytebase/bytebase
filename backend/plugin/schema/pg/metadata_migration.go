@@ -3,11 +3,11 @@ package pg
 import (
 	"context"
 
-	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/catalog"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/schema/internal/omnicatalog"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -15,14 +15,7 @@ import (
 // with omni's catalog. PostgreSQL and CockroachDB share it: their metadata is
 // PostgreSQL-shaped and omni has no CockroachDB catalog.
 func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-	var oldProto, newProto *metadatapb.DatabaseSchemaMetadata
-	if oldSchema != nil {
-		oldProto = oldSchema.GetProto()
-	}
-	if newSchema != nil {
-		newProto = newSchema.GetProto()
-	}
-	return catalog.MetadataMigration(context.Background(), oldProto, newProto, catalog.MetadataMigrationOptions{
+	return catalog.MetadataMigration(context.Background(), omnicatalog.DatabaseProto(oldSchema), omnicatalog.DatabaseProto(newSchema), catalog.MetadataMigrationOptions{
 		SourceSearchPath: getMigrationSearchPath(oldSchema),
 		TargetSearchPath: getMigrationSearchPath(newSchema),
 		SkipSchemas:      []string{common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)},

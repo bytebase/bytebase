@@ -24,16 +24,16 @@ import (
 )
 
 func init() {
-	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB} {
-		schema.RegisterGetDatabaseDefinition(engine, GetDatabaseDefinition)
-		schema.RegisterGetSchemaDefinition(engine, catalog.SchemaDefinition)
-		schema.RegisterGetTableDefinition(engine, catalog.TableDefinition)
-		schema.RegisterGetViewDefinition(engine, catalog.ViewDefinition)
-		schema.RegisterGetMaterializedViewDefinition(engine, catalog.MaterializedViewDefinition)
-		schema.RegisterGetFunctionDefinition(engine, catalog.FunctionDefinition)
-		schema.RegisterGetSequenceDefinition(engine, catalog.SequenceDefinition)
-		schema.RegisterGetMultiFileDatabaseDefinition(engine, GetMultiFileDatabaseDefinition)
-	}
+	schema.RegisterDefinitions(schema.Definitions{
+		Database:          GetDatabaseDefinition,
+		Schema:            catalog.SchemaDefinition,
+		Table:             catalog.TableDefinition,
+		View:              catalog.ViewDefinition,
+		MaterializedView:  catalog.MaterializedViewDefinition,
+		Function:          catalog.FunctionDefinition,
+		Sequence:          catalog.SequenceDefinition,
+		MultiFileDatabase: GetMultiFileDatabaseDefinition,
+	}, storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB)
 }
 
 // GetDatabaseDefinition renders metadata through omni's catalog.DatabaseDefinition

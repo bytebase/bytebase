@@ -90,157 +90,166 @@ type MultiFileSchemaResult struct {
 	Files []File
 }
 
-func RegisterGetSequenceDefinition(engine storepb.Engine, f getSequenceDefinition) {
+// Definitions groups the schema definition handlers an engine registers.
+// Any nil field is skipped.
+type Definitions struct {
+	Database          func(GetDefinitionContext, *metadatapb.DatabaseSchemaMetadata) (string, error)
+	MultiFileDatabase func(GetDefinitionContext, *metadatapb.DatabaseSchemaMetadata) (*MultiFileSchemaResult, error)
+	Schema            func(*metadatapb.SchemaMetadata) (string, error)
+	Table             func(string, *metadatapb.TableMetadata, []*metadatapb.SequenceMetadata) (string, error)
+	View              func(string, *metadatapb.ViewMetadata) (string, error)
+	MaterializedView  func(string, *metadatapb.MaterializedViewMetadata) (string, error)
+	Function          func(string, *metadatapb.FunctionMetadata) (string, error)
+	Procedure         func(string, *metadatapb.ProcedureMetadata) (string, error)
+	Sequence          func(string, *metadatapb.SequenceMetadata) (string, error)
+}
+
+// RegisterDefinitions registers every non-nil handler in defs for each engine.
+func RegisterDefinitions(defs Definitions, engines ...storepb.Engine) {
+	for _, engine := range engines {
+		if defs.Database != nil {
+			RegisterGetDatabaseDefinition(engine, defs.Database)
+		}
+		if defs.MultiFileDatabase != nil {
+			RegisterGetMultiFileDatabaseDefinition(engine, defs.MultiFileDatabase)
+		}
+		if defs.Schema != nil {
+			RegisterGetSchemaDefinition(engine, defs.Schema)
+		}
+		if defs.Table != nil {
+			RegisterGetTableDefinition(engine, defs.Table)
+		}
+		if defs.View != nil {
+			RegisterGetViewDefinition(engine, defs.View)
+		}
+		if defs.MaterializedView != nil {
+			RegisterGetMaterializedViewDefinition(engine, defs.MaterializedView)
+		}
+		if defs.Function != nil {
+			RegisterGetFunctionDefinition(engine, defs.Function)
+		}
+		if defs.Procedure != nil {
+			RegisterGetProcedureDefinition(engine, defs.Procedure)
+		}
+		if defs.Sequence != nil {
+			RegisterGetSequenceDefinition(engine, defs.Sequence)
+		}
+	}
+}
+
+func register[T any](registry map[storepb.Engine]T, engine storepb.Engine, f T) {
 	mux.Lock()
 	defer mux.Unlock()
-	if _, dup := getSequenceDefinitions[engine]; dup {
+	if _, dup := registry[engine]; dup {
 		panic(fmt.Sprintf("Register called twice %s", engine))
 	}
-	getSequenceDefinitions[engine] = f
+	registry[engine] = f
+}
+
+func notSupportedError(engine storepb.Engine, feature string) error {
+	if feature == "" {
+		return errors.Errorf("engine %s is not supported", engine)
+	}
+	return errors.Errorf("engine %s is not supported for %s", engine, feature)
+}
+
+func call1[F ~func(A) (R, error), A, R any](registry map[storepb.Engine]F, engine storepb.Engine, a A) (R, error) {
+	f, ok := registry[engine]
+	if !ok {
+		var zero R
+		return zero, notSupportedError(engine, "")
+	}
+	return f(a)
+}
+
+func call2[F ~func(A, B) (R, error), A, B, R any](registry map[storepb.Engine]F, engine storepb.Engine, feature string, a A, b B) (R, error) {
+	f, ok := registry[engine]
+	if !ok {
+		var zero R
+		return zero, notSupportedError(engine, feature)
+	}
+	return f(a, b)
+}
+
+func call3[F ~func(A, B, C) (R, error), A, B, C, R any](registry map[storepb.Engine]F, engine storepb.Engine, feature string, a A, b B, c C) (R, error) {
+	f, ok := registry[engine]
+	if !ok {
+		var zero R
+		return zero, notSupportedError(engine, feature)
+	}
+	return f(a, b, c)
+}
+
+func RegisterGetSequenceDefinition(engine storepb.Engine, f getSequenceDefinition) {
+	register(getSequenceDefinitions, engine, f)
 }
 
 func GetSequenceDefinition(engine storepb.Engine, sequenceName string, sequence *metadatapb.SequenceMetadata) (string, error) {
-	f, ok := getSequenceDefinitions[engine]
-	if !ok {
-		return "", errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(sequenceName, sequence)
+	return call2(getSequenceDefinitions, engine, "", sequenceName, sequence)
 }
 
 func RegisterGetFunctionDefinition(engine storepb.Engine, f getFunctionDefinition) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := getFunctionDefinitions[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	getFunctionDefinitions[engine] = f
+	register(getFunctionDefinitions, engine, f)
 }
 
 func GetFunctionDefinition(engine storepb.Engine, functionName string, function *metadatapb.FunctionMetadata) (string, error) {
-	f, ok := getFunctionDefinitions[engine]
-	if !ok {
-		return "", errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(functionName, function)
+	return call2(getFunctionDefinitions, engine, "", functionName, function)
 }
 
 func RegisterGetProcedureDefinition(engine storepb.Engine, f getProcedureDefinition) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := getProcedureDefinitions[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	getProcedureDefinitions[engine] = f
+	register(getProcedureDefinitions, engine, f)
 }
 
 func GetProcedureDefinition(engine storepb.Engine, procedureName string, procedure *metadatapb.ProcedureMetadata) (string, error) {
-	f, ok := getProcedureDefinitions[engine]
-	if !ok {
-		return "", errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(procedureName, procedure)
+	return call2(getProcedureDefinitions, engine, "", procedureName, procedure)
 }
 
 func RegisterGetMaterializedViewDefinition(engine storepb.Engine, f getMaterializedViewDefinition) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := getMaterializedViewDefinitions[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	getMaterializedViewDefinitions[engine] = f
+	register(getMaterializedViewDefinitions, engine, f)
 }
 
 func GetMaterializedViewDefinition(engine storepb.Engine, viewName string, view *metadatapb.MaterializedViewMetadata) (string, error) {
-	f, ok := getMaterializedViewDefinitions[engine]
-	if !ok {
-		return "", errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(viewName, view)
+	return call2(getMaterializedViewDefinitions, engine, "", viewName, view)
 }
 
 func RegisterGetViewDefinition(engine storepb.Engine, f getViewDefinition) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := getViewDefinitions[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	getViewDefinitions[engine] = f
+	register(getViewDefinitions, engine, f)
 }
 
 func GetViewDefinition(engine storepb.Engine, viewName string, view *metadatapb.ViewMetadata) (string, error) {
-	f, ok := getViewDefinitions[engine]
-	if !ok {
-		return "", errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(viewName, view)
+	return call2(getViewDefinitions, engine, "", viewName, view)
 }
 
 func RegisterGetTableDefinition(engine storepb.Engine, f getTableDefinition) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := getTableDefinitions[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	getTableDefinitions[engine] = f
+	register(getTableDefinitions, engine, f)
 }
 
 func GetTableDefinition(engine storepb.Engine, tableName string, table *metadatapb.TableMetadata, sequences []*metadatapb.SequenceMetadata) (string, error) {
-	f, ok := getTableDefinitions[engine]
-	if !ok {
-		return "", errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(tableName, table, sequences)
+	return call3(getTableDefinitions, engine, "", tableName, table, sequences)
 }
 
 func RegisterGetSchemaDefinition(engine storepb.Engine, f getSchemaDefinition) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := getSchemaDefinitions[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	getSchemaDefinitions[engine] = f
+	register(getSchemaDefinitions, engine, f)
 }
 
 func GetSchemaDefinition(engine storepb.Engine, schema *metadatapb.SchemaMetadata) (string, error) {
-	f, ok := getSchemaDefinitions[engine]
-	if !ok {
-		return "", errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(schema)
+	return call1(getSchemaDefinitions, engine, schema)
 }
 
 func RegisterGetDatabaseDefinition(engine storepb.Engine, f getDatabaseDefinition) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := getDatabaseDefinitions[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	getDatabaseDefinitions[engine] = f
+	register(getDatabaseDefinitions, engine, f)
 }
 
 func GetDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (string, error) {
-	f, ok := getDatabaseDefinitions[engine]
-	if !ok {
-		return "", errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(ctx, metadata)
+	return call2(getDatabaseDefinitions, engine, "", ctx, metadata)
 }
 
 func RegisterGetDatabaseMetadata(engine storepb.Engine, f getDatabaseMetadata) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := getDatabaseMetadataMap[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	getDatabaseMetadataMap[engine] = f
+	register(getDatabaseMetadataMap, engine, f)
 }
 
 func GetDatabaseMetadata(engine storepb.Engine, schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
-	f, ok := getDatabaseMetadataMap[engine]
-	if !ok {
-		return nil, errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(schemaText)
+	return call1(getDatabaseMetadataMap, engine, schemaText)
 }
 
 // SDLSessionContext is the session state a routine/trigger/event was created under, as
@@ -351,23 +360,14 @@ func SDLMigration(engine storepb.Engine, userSDLText string, currentSchema *mode
 }
 
 func RegisterSDLDropAdvices(engine storepb.Engine, f sdlDropAdvices) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := sdlDropAdvicesFns[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	sdlDropAdvicesFns[engine] = f
+	register(sdlDropAdvicesFns, engine, f)
 }
 
 // SDLDropAdvices analyzes the SDL migration for destructive operations and returns warnings.
 // engineVersion is the target server's version string; MySQL reports a server older
 // than 8.0 as an error advice, and other engines ignore it.
 func SDLDropAdvices(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error) {
-	f, ok := sdlDropAdvicesFns[engine]
-	if !ok {
-		return nil, errors.Errorf("engine %s is not supported for SDL drop advices", engine)
-	}
-	return f(userSDLText, currentSchema, engineVersion)
+	return call3(sdlDropAdvicesFns, engine, "SDL drop advices", userSDLText, currentSchema, engineVersion)
 }
 
 // DiffMigration computes the migration SQL between two database metadata states.
@@ -393,16 +393,11 @@ func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMe
 		}
 		return DiffSDLMigration(engine, sourceSDL, targetSDL, "")
 	}
-	return "", errors.Errorf("engine %s is not supported", engine)
+	return "", notSupportedError(engine, "")
 }
 
 func RegisterDiffMetadataMigration(engine storepb.Engine, f diffMetadataMigration) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := diffMetadataMigrations[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	diffMetadataMigrations[engine] = f
+	register(diffMetadataMigrations, engine, f)
 }
 
 // MetadataToSDL converts database metadata to SDL text using the registered GetDatabaseDefinition.
@@ -421,12 +416,7 @@ func MetadataToSDL(engine storepb.Engine, meta *model.DatabaseMetadata) (string,
 }
 
 func RegisterDiffSDLMigration(engine storepb.Engine, f diffSDLMigration) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := diffSDLMigrations[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	diffSDLMigrations[engine] = f
+	register(diffSDLMigrations, engine, f)
 }
 
 // DiffSDLMigration computes migration SQL between two SDL texts. engineVersion is the
@@ -447,44 +437,25 @@ func DiffSDLMigration(engine storepb.Engine, sourceSDL, targetSDL, engineVersion
 func diffSDLMigrationWithContext(engine storepb.Engine, sourceSDL, targetSDL, engineVersion string, sessionCtx *SDLSessionContextMap) (string, error) {
 	f, ok := diffSDLMigrations[engine]
 	if !ok {
-		return "", errors.Errorf("engine %s is not supported for SDL diff migration", engine)
+		return "", notSupportedError(engine, "SDL diff migration")
 	}
 	return f(sourceSDL, targetSDL, engineVersion, sessionCtx)
 }
 
 func RegisterGetMultiFileDatabaseDefinition(engine storepb.Engine, f getMultiFileDatabaseDefinition) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := getMultiFileDatabaseDefinitions[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	getMultiFileDatabaseDefinitions[engine] = f
+	register(getMultiFileDatabaseDefinitions, engine, f)
 }
 
 func GetMultiFileDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (*MultiFileSchemaResult, error) {
-	f, ok := getMultiFileDatabaseDefinitions[engine]
-	if !ok {
-		return nil, errors.Errorf("engine %s is not supported for multi-file database definition", engine)
-	}
-	return f(ctx, metadata)
+	return call2(getMultiFileDatabaseDefinitions, engine, "multi-file database definition", ctx, metadata)
 }
 
 func RegisterWalkThrough(engine storepb.Engine, f walkThrough) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := walkThroughs[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	walkThroughs[engine] = f
+	register(walkThroughs, engine, f)
 }
 
 func RegisterWalkThroughWithContext(engine storepb.Engine, f walkThroughWithContext) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := walkThroughsWithContext[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	walkThroughsWithContext[engine] = f
+	register(walkThroughsWithContext, engine, f)
 }
 
 func WalkThroughWithContext(ctx context.Context, engine storepb.Engine, wtCtx WalkThroughContext, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
