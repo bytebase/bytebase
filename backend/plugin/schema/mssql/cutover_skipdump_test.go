@@ -152,4 +152,24 @@ func TestMetadataMigrationDropsSkippedObjectsWithTheirSchema(t *testing.T) {
 	sql, err := schema.DiffMigration(storepb.Engine_MSSQL, old, target)
 	require.NoError(t, err)
 	require.Contains(t, sql, "DROP TABLE")
+	require.True(t, old.GetProto().Schemas[0].Tables[0].SkipDump, "reconcileSkipDump must not mutate caller proto")
+}
+
+// TestMetadataMigrationMatchesSkippedNamesCaseSensitively covers case-sensitive
+// databases: a skipped source "T" does not suppress a distinct target "t".
+func TestMetadataMigrationMatchesSkippedNamesCaseSensitively(t *testing.T) {
+	meta := func(name string, skip bool) *metadatapb.DatabaseSchemaMetadata {
+		return &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "dbo",
+			Tables: []*metadatapb.TableMetadata{{
+				Name:     name,
+				SkipDump: skip,
+				Columns:  []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}},
+			}},
+		}}}
+	}
+	_, reconciled := reconcileSkipDump(meta("T", true), meta("t", false), true)
+	require.Len(t, reconciled.Schemas[0].Tables, 2)
+	require.Equal(t, "t", reconciled.Schemas[0].Tables[0].Name)
+	require.Equal(t, "T", reconciled.Schemas[0].Tables[1].Name)
 }

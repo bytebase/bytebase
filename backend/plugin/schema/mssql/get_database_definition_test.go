@@ -1,54 +1,67 @@
 package mssql
 
 import (
-	"os"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	_ "github.com/microsoft/go-mssqldb"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/yamltest"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
-type getDatabaseDefinitionCase struct {
-	Description string `yaml:"description"`
-	Metadata    string `yaml:"metadata"`
-	Expected    string `yaml:"expected"`
-}
+func TestDefinitionRegistry(t *testing.T) {
+	table := &metadatapb.TableMetadata{
+		Name: "t",
+		Columns: []*metadatapb.ColumnMetadata{
+			{Name: "id", Type: "int", Nullable: false},
+		},
+	}
+	view := &metadatapb.ViewMetadata{
+		Name:       "v",
+		Definition: "CREATE VIEW [dbo].[v] AS SELECT 1;",
+	}
+	function := &metadatapb.FunctionMetadata{
+		Name:       "f",
+		Definition: "ALTER FUNCTION [dbo].[f]() RETURNS int AS BEGIN RETURN 1 END",
+	}
+	procedure := &metadatapb.ProcedureMetadata{
+		Name:       "p",
+		Definition: "CREATE PROCEDURE [dbo].[p] AS SELECT 1",
+	}
+	dbMeta := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:       "dbo",
+			Tables:     []*metadatapb.TableMetadata{table},
+			Views:      []*metadatapb.ViewMetadata{view},
+			Functions:  []*metadatapb.FunctionMetadata{function},
+			Procedures: []*metadatapb.ProcedureMetadata{procedure},
+		}},
+	}
 
-// TestGetDatabaseDefinition pins the DDL generated for each metadata input.
-func TestGetDatabaseDefinition(t *testing.T) {
-	const (
-		record   = false
-		filepath = "testdata/get_database_definition.yaml"
-	)
-
-	var tests []getDatabaseDefinitionCase
-	content, err := os.ReadFile(filepath)
+	got, err := schema.GetDatabaseDefinition(storepb.Engine_MSSQL, schema.GetDefinitionContext{}, dbMeta)
 	require.NoError(t, err)
-	require.NoError(t, yaml.Unmarshal(content, &tests))
+	require.Contains(t, got, "CREATE TABLE [dbo].[t]")
+	require.Contains(t, got, "CREATE VIEW [dbo].[v] AS SELECT 1;;")
+	require.Contains(t, got, "ALTER FUNCTION [dbo].[f]")
+	require.Contains(t, got, "CREATE PROCEDURE [dbo].[p]")
 
-	for i, tc := range tests {
-		t.Run(tc.Description, func(t *testing.T) {
-			var metadata metadatapb.DatabaseSchemaMetadata
-			require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), &metadata))
+	tableDDL, err := schema.GetTableDefinition(storepb.Engine_MSSQL, "dbo", table, nil)
+	require.NoError(t, err)
+	require.Contains(t, tableDDL, "CREATE TABLE [dbo].[t]")
 
-			definition, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, &metadata)
-			require.NoError(t, err)
+	viewDDL, err := schema.GetViewDefinition(storepb.Engine_MSSQL, "dbo", view)
+	require.NoError(t, err)
+	require.Equal(t, "CREATE VIEW [dbo].[v] AS SELECT 1;;\n\nGO\n\n", viewDDL)
 
-			if record {
-				tests[i].Expected = definition
-				return
-			}
-			require.Equal(t, tc.Expected, definition)
-		})
-	}
+	fnDDL, err := schema.GetFunctionDefinition(storepb.Engine_MSSQL, "dbo", function)
+	require.NoError(t, err)
+	require.Equal(t, "ALTER FUNCTION [dbo].[f]() RETURNS int AS BEGIN RETURN 1 END\n\nGO\n\n", fnDDL)
 
-	if record {
-		yamltest.Record(t, filepath, tests)
-	}
+	procDDL, err := schema.GetProcedureDefinition(storepb.Engine_MSSQL, "dbo", procedure)
+	require.NoError(t, err)
+	require.Equal(t, "CREATE PROCEDURE [dbo].[p] AS SELECT 1\n\nGO\n\n", procDDL)
+
+	require.Nil(t, stripUnrenderedFacts(nil))
+	require.Nil(t, stripTableUnrenderedFacts(nil))
 }
