@@ -847,4 +847,12 @@ func TestOnlyTheCatalogAnswersWithoutAToken(t *testing.T) {
 		}
 	}
 	require.Equal(t, 1, public, "exactly one route answers without a token")
+
+	// Echo answers OPTIONS on a registered path itself; that reply is not a route.
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, httptest.NewRequest(http.MethodOptions, catalogPath, nil))
+	require.Equal(t, http.StatusNoContent, rec.Code)
+	require.Empty(t, rec.Body.String())
+	require.Contains(t, rec.Header().Get("Allow"), http.MethodGet)
+	require.NotContains(t, rec.Header().Get("Allow"), http.MethodPost)
 }

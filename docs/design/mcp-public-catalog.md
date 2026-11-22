@@ -17,9 +17,9 @@ path of the MCP package that answers without a token, and `/mcp` keeps its 401.*
 Verified on `main` at `47022b702e`:
 
 - **Nothing about MCP is readable before sign-in.** `RegisterRoutes` registers one route,
-  `e.Any("/mcp", …, s.authMiddleware)`, in `backend/api/mcp/server.go`. Every request without a
-  valid bearer gets 401 with a `WWW-Authenticate` header carrying `resource_metadata`
-  (`unauthorized`). The handler behind it is wrapped in `mcpauth.RequireBearerToken`.
+  `e.Any("/mcp", …, s.authMiddleware)`, in `backend/api/mcp/server.go`. With an external URL
+  configured, every request without a valid bearer gets 401 with a `WWW-Authenticate` header
+  carrying `resource_metadata`; without one it gets 503 (`unauthorized`). The handler behind it is wrapped in `mcpauth.RequireBearerToken`.
 - **The tool list is not private.** It is the same for every workspace and user: the comment on
   `registerTools` explains why it is not filtered by the workspace's policy (BOT-89). Tool
   registration reads no profile, setting or store. The source is public.
@@ -124,7 +124,9 @@ the same way. Its required `version` field would reopen D4's decision on disclos
 **Rule: of the routes the MCP package registers, exactly one answers without a bearer token,
 `GET /mcp/catalog`. This change adds that one and no other. Every other registered route gets 401
 with the `resource_metadata` pointer, or, as today, 503 when no external URL is configured
-(`unauthorized`; `TestMCPAuthFailsExplicitlyWithoutExternalURL`).**
+(`unauthorized`; `TestMCPAuthFailsExplicitlyWithoutExternalURL`). The one other answer without a
+token is Echo's automatic `OPTIONS` reply on `/mcp/catalog`: 204 with an `Allow` header and no
+body.**
 
 | Request | Before | After |
 | --- | --- | --- |
@@ -145,7 +147,8 @@ A test enforces the rule by enumeration rather than by a list of paths. It regis
 package's routes on a fresh Echo instance with an external URL configured, walks
 `e.Router().Routes()`, expands Echo's any-method entry (how `e.Any` is listed) into every HTTP
 method, sends each method and path without a token, and requires 401 with `resource_metadata`
-everywhere except `GET /mcp/catalog`. A route added later without auth fails the test whatever its path.
+everywhere except `GET /mcp/catalog`, then checks the `OPTIONS` reply directly, since Echo's
+automatic answer is not a registered route. A route added later without auth fails the test whatever its path.
 
 ## States
 
