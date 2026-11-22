@@ -131,7 +131,6 @@ export function UserSelect({
       placeholder={placeholder}
       disabled={disabled}
       className={className}
-      portal
     />
   );
 }

@@ -16,9 +16,10 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-// explainFake stands in for PostgreSQL behind advisor.Query. It answers `EXPLAIN (FORMAT JSON)` or
+// explainFake stands in for PostgreSQL behind the probe. It answers `EXPLAIN (FORMAT JSON)` or
 // `EXPLAIN` with the plan registered for the statement and fails to explain any other statement.
 type explainFake struct {
 	plans map[string]string
@@ -124,7 +125,7 @@ func runRowLimitRule(t *testing.T, db *sql.DB, ruleType storepb.SQLReviewRule_Ty
 		Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: limit}},
 	}}, advisor.Context{
 		DBType:          storepb.Engine_POSTGRES,
-		Driver:          db,
+		Prober:          dbutil.NewSQLProber(db),
 		NoAppendBuiltin: true,
 	})
 	require.NoError(t, err)

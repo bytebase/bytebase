@@ -44,3 +44,17 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t (a DATETIME DEFAULT NOW());
+    DROP TABLE t;
+    CREATE TABLE t (b TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+    ALTER TABLE t MODIFY a DATETIME DEFAULT LOCALTIME;
+  want:
+    - status: 2
+      code: 418
+      title: COLUMN_CURRENT_TIME_COUNT_LIMIT
+      content: Table `t` has 3 DEFAULT CURRENT_TIMESTAMP() columns. The count greater than 2.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null

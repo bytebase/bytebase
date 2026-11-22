@@ -24,3 +24,14 @@
   changeType: 1
 - statement: UPDATE t1 SET a = 1 WHERE a > 10
   changeType: 1
+- statement: DELETE FROM t1 WHERE CURRENT OF c
+- statement: UPDATE t1 SET a = 1 FROM t2
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: '"UPDATE t1 SET a = 1 FROM t2" requires WHERE clause'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

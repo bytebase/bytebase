@@ -98,3 +98,138 @@
   changeType: 1
 - statement: ALTER TABLE tech_book ALTER CHECK chk Not Enforced
   changeType: 1
+- statement: DROP TABLE tech_book
+  changeType: 1
+  want:
+    - status: 2
+      code: 103
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"DROP TABLE tech_book" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP SCHEMA test
+  changeType: 1
+  want:
+    - status: 2
+      code: 101
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"DROP SCHEMA test" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: RENAME TABLE tech_book TO book
+  changeType: 1
+  want:
+    - status: 2
+      code: 102
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"RENAME TABLE tech_book TO book" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book RENAME COLUMN name TO title
+  changeType: 1
+  want:
+    - status: 2
+      code: 104
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"ALTER TABLE tech_book RENAME COLUMN name TO title" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN name, MODIFY id bigint
+  changeType: 1
+  want:
+    - status: 2
+      code: 105
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN name, MODIFY id bigint" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD UNIQUE KEY (name)
+  changeType: 1
+  want:
+    - status: 2
+      code: 107
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"ALTER TABLE tech_book ADD UNIQUE KEY (name)" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE UNIQUE INDEX uk ON tech_book (name)
+  changeType: 1
+  want:
+    - status: 2
+      code: 107
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"CREATE UNIQUE INDEX uk ON tech_book (name)" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE INDEX idx ON tech_book (name)
+  changeType: 1
+- statement: DROP VIEW v
+  changeType: 1
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t DROP COLUMN a;
+    CREATE UNIQUE INDEX uk ON t (a);
+    DROP TABLE t
+  changeType: 1
+  want:
+    - status: 2
+      code: 103
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: |-
+        "
+        DROP TABLE t" may cause incompatibility with the existing data and code
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    CREATE TABLE u(a int);
+    ALTER TABLE t DROP COLUMN a
+  changeType: 1
+  want:
+    - status: 2
+      code: 105
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: |-
+        "
+        ALTER TABLE t DROP COLUMN a" may cause incompatibility with the existing data and code
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t LIKE tech_book;
+    ALTER TABLE t DROP COLUMN name
+  changeType: 1
+- statement: |-
+    CREATE TABLE t(a int);
+    -- drop it again
+    DROP TABLE t
+  changeType: 1
+  want:
+    - status: 2
+      code: 103
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: |-
+        "
+        -- drop it again
+        DROP TABLE t" may cause incompatibility with the existing data and code
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

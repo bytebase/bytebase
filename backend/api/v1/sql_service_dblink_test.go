@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/permission"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -119,4 +121,61 @@ func TestLinkedColumns(t *testing.T) {
 	require.Equal(t, []parserbase.ColumnResource{linkedA, linkedB}, linkedColumns(spans))
 	require.Empty(t, linkedColumns(nil))
 	require.Empty(t, linkedColumns([]*parserbase.QuerySpan{{SourceColumns: parserbase.SourceColumnSet{local: true, unresolved: true}}}))
+}
+
+// privateLinkDriver is the shape a driver over omni's contract has: a
+// private-link probe that asks with a session of its own.
+type privateLinkDriver struct {
+	db.Driver
+	owns bool
+	err  error
+}
+
+func (d *privateLinkDriver) OwnsPrivateDatabaseLink(context.Context) (bool, error) {
+	return d.owns, d.err
+}
+
+// plainDriver is a driver of the same shape without the private-link probe.
+type plainDriver struct {
+	db.Driver
+}
+
+// TestLinkedReadReachesTheStatementAfterTheCutover is the trap this cutover had
+// to disarm: the guard used to take the caller's *sql.Conn and refuse every
+// linked read when there was none, which a driver over omni's contract cannot
+// provide. The guard now asks the driver, so a linked read whose account owns no
+// private link reaches the statement.
+func TestLinkedReadReachesTheStatementAfterTheCutover(t *testing.T) {
+	instance := &store.InstanceMessage{ResourceID: "oracle-dblink", Metadata: &storepb.Instance{Engine: storepb.Engine_ORACLE}}
+	linked := []*parserbase.QuerySpan{{SourceColumns: parserbase.SourceColumnSet{
+		{Instance: "oracle-dblink", Server: "REMOTE", Database: "SECRET_SCHEMA", Table: "SECRET_T"}: true,
+	}}}
+	nonAdmin := db.QueryContext{DataSourceType: storepb.DataSourceType_READ_ONLY}
+
+	guard := func(driver db.Driver, queryContext db.QueryContext, spans []*parserbase.QuerySpan) (error, bool) {
+		marked := false
+		ctx := withSetPermissionDenied(context.Background(), func() { marked = true })
+		return refuseLinkedReadsShadowedByPrivateLinks(ctx, driver, instance, queryContext, spans), marked
+	}
+
+	got, marked := guard(&privateLinkDriver{}, nonAdmin, linked)
+	require.NoError(t, got, "the account owns no private link, so the linked read reaches the statement")
+	require.False(t, marked, "an allowed read must not be marked")
+
+	got, marked = guard(&privateLinkDriver{owns: true}, nonAdmin, linked)
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got))
+	require.True(t, marked)
+
+	got, _ = guard(&privateLinkDriver{err: errors.New("ORA-00942")}, nonAdmin, linked)
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(got))
+
+	got, _ = guard(&privateLinkDriver{owns: true}, db.QueryContext{DataSourceType: storepb.DataSourceType_ADMIN}, linked)
+	require.NoError(t, got, "the admin data source is the account the sync recorded")
+
+	got, _ = guard(&privateLinkDriver{owns: true}, nonAdmin, nil)
+	require.NoError(t, got, "a read that reaches no linked database is not the guard's to refuse")
+
+	got, _ = guard(&plainDriver{}, nonAdmin, linked)
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(got))
+	require.Contains(t, got.Error(), "cannot report the executing account's private database links")
 }

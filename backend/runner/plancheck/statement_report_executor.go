@@ -14,27 +14,17 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	cockroachdbdriver "github.com/bytebase/bytebase/backend/plugin/db/cockroachdb"
-	mssqldriver "github.com/bytebase/bytebase/backend/plugin/db/mssql"
-	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
-	oracledriver "github.com/bytebase/bytebase/backend/plugin/db/oracle"
-	pgdriver "github.com/bytebase/bytebase/backend/plugin/db/pg"
-	redshiftdriver "github.com/bytebase/bytebase/backend/plugin/db/redshift"
-	tidbdriver "github.com/bytebase/bytebase/backend/plugin/db/tidb"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+
+	// The report engines' classifiers live in the parser registry, and the
+	// driver type assertions that used to pull them in are gone. Keep these
+	// imports even though nothing names them.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/cockroachdb"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
-
-// NewStatementReportExecutor creates a statement report executor.
-func NewStatementReportExecutor(store *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory) Executor {
-	return &StatementReportExecutor{
-		store:        store,
-		sheetManager: sheetManager,
-		dbFactory:    dbFactory,
-	}
-}
 
 // StatementReportExecutor is the statement report executor.
 type StatementReportExecutor struct {
@@ -157,8 +147,6 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	}
 	asts := parserbase.ExtractASTs(stmts)
 
-	var explainCalculator getAffectedRowsFromExplain
-	var defaultSchema string
 	project, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: instance.Workspace, ResourceID: &database.ProjectID})
 	if err != nil {
 		return nil, "", err
@@ -171,63 +159,30 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	}
 	defer driver.Close(ctx)
 
+	// defaultSchema is the schema a statement's unqualified names resolve in when the extractor
+	// has no synced search_path to use.
+	var defaultSchema string
 	switch instance.Metadata.GetEngine() {
-	case storepb.Engine_POSTGRES:
-		pd, ok := driver.(*pgdriver.Driver)
-		if !ok {
-			return nil, "", errors.Errorf("invalid pg driver type")
-		}
-		explainCalculator = pd.CountAffectedRows
-		// Empty so pg's extractChangedResources falls back to the database's actual
-		// default search_path (Change-1 makes a non-empty value force [currentSchema]).
+	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB:
+		// Empty so the extractor resolves names with the database's synced search_path.
 		defaultSchema = ""
 	case storepb.Engine_REDSHIFT:
-		rd, ok := driver.(*redshiftdriver.Driver)
-		if !ok {
-			return nil, "", errors.Errorf("invalid redshift driver type")
-		}
-		explainCalculator = rd.CountAffectedRows
 		defaultSchema = "public"
-	case storepb.Engine_COCKROACHDB:
-		cd, ok := driver.(*cockroachdbdriver.Driver)
-		if !ok {
-			return nil, "", errors.Errorf("invalid cockroachdb driver type")
-		}
-		explainCalculator = cd.CountAffectedRows
-		// Empty so the extractor resolves names with the database's synced search_path, as for PostgreSQL.
-		defaultSchema = ""
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		md, ok := driver.(*mysqldriver.Driver)
-		if !ok {
-			return nil, "", errors.Errorf("invalid mysql driver type")
-		}
-		explainCalculator = md.CountAffectedRows
-		defaultSchema = ""
-	case storepb.Engine_TIDB:
-		md, ok := driver.(*tidbdriver.Driver)
-		if !ok {
-			return nil, "", errors.Errorf("invalid tidb driver type")
-		}
-		explainCalculator = md.CountAffectedRows
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_TIDB:
 		defaultSchema = ""
 	case storepb.Engine_ORACLE:
-		od, ok := driver.(*oracledriver.Driver)
-		if !ok {
-			return nil, "", errors.Errorf("invalid oracle driver type")
-		}
-		explainCalculator = od.CountAffectedRows
 		defaultSchema = database.DatabaseName
 	case storepb.Engine_MSSQL:
-		md, ok := driver.(*mssqldriver.Driver)
-		if !ok {
-			return nil, "", errors.Errorf("invalid mssql driver type")
-		}
-		explainCalculator = md.CountAffectedRows
 		defaultSchema = "dbo"
 	default:
 		// Already checked in the Run().
 		return nil, "", nil
 	}
+	estimator, ok := driver.(db.RowEstimator)
+	if !ok {
+		return nil, "", errors.Errorf("the %s driver cannot estimate affected rows", instance.Metadata.GetEngine())
+	}
+	explainCalculator := getAffectedRowsFromExplain(estimator.CountAffectedRows)
 
 	sqlTypes, err := SummaryStatementTypes(instance.Metadata.GetEngine(), asts)
 	if err != nil {
@@ -241,13 +196,23 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to extract changed resources")
 	}
-	totalAffectedRows, estimateWarning := calculateAffectedRows(ctx, instance.Metadata.GetEngine(), changeSummary, explainCalculator)
+	report, warning := buildSQLSummaryReport(ctx, instance.Metadata.GetEngine(), sqlTypes, changeSummary, explainCalculator)
+	return report, warning, nil
+}
 
+// buildSQLSummaryReport returns the report of changeSummary and a warning about what it could not
+// estimate. It returns no report when the extractor skipped a statement: that statement's rows and
+// resources are unknown, and approval rules would read the undercount as statement.affected_rows.
+func buildSQLSummaryReport(ctx context.Context, engine storepb.Engine, sqlTypes []storepb.StatementType, changeSummary *parserbase.ChangeSummary, explainCalculator getAffectedRowsFromExplain) (*storepb.PlanCheckRunResult_Result_SqlSummaryReport, string) {
+	if changeSummary.SkippedStatements > 0 {
+		return nil, fmt.Sprintf("Affected rows and changed resources are not reported because %d of the statements could not be read.", changeSummary.SkippedStatements)
+	}
+	totalAffectedRows, estimateWarning := calculateAffectedRows(ctx, engine, changeSummary, explainCalculator)
 	return &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 		StatementTypes:   sqlTypes,
 		AffectedRows:     totalAffectedRows,
 		ChangedResources: changeSummary.ChangedResources.Build(),
-	}, estimateWarning, nil
+	}, estimateWarning
 }
 
 // SummaryStatementTypes classifies a summary report's statements through the

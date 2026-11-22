@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { FormField, FormFieldGroup } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useSQLEditorEvent } from "@/hooks/useSQLEditorEvent";
 import { useSheetContextByView } from "@/modules/sql-editor/model/Sheet";
@@ -118,18 +119,19 @@ export function SaveSheetModal() {
     <Dialog open={open} onOpenChange={(next) => !next && close()}>
       <DialogContent className="w-[32rem] max-w-[calc(100vw-8rem)] 2xl:max-w-[calc(100vw-8rem)] p-4">
         <DialogTitle>{t("sql-editor.save-sheet")}</DialogTitle>
-        <div className="flex flex-col gap-y-3">
-          <div className="flex flex-col gap-y-1">
-            <p>{t("common.title")}</p>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t("common.untitled")}
-              maxLength={200}
-              autoComplete="off"
-            />
-          </div>
-          <FolderForm folder={folder} onFolderChange={setFolder} />
+        <div className="flex flex-col gap-y-4">
+          <FormFieldGroup density="compact">
+            <FormField title={t("common.title")}>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={t("common.untitled")}
+                maxLength={200}
+                autoComplete="off"
+              />
+            </FormField>
+            <FolderForm folder={folder} onFolderChange={setFolder} />
+          </FormFieldGroup>
           <div className="flex justify-end gap-x-2 mt-4">
             <Button appearance="outline" onClick={close}>
               {t("common.close")}

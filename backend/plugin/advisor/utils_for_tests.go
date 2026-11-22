@@ -2,7 +2,6 @@ package advisor
 
 import (
 	"context"
-	"database/sql"
 	"io"
 	"os"
 	"path/filepath"
@@ -18,13 +17,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common/yamltest"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	database "github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store/model"
-)
-
-var (
-	_ database.Driver = (*MockDriver)(nil)
 )
 
 const (
@@ -263,10 +257,10 @@ var (
 			},
 		},
 	}
-	// MockOracleDatabase is the mock Oracle database for test. Oracle sync
-	// (`backend/plugin/db/oracle/sync.go`) stores SchemaMetadata{Name: ""}
-	// — a single anonymous schema containing every object. The mock mirrors
-	// this so advisors resolve tables the same way in tests and production.
+	// MockOracleDatabase is the mock Oracle database for test. Oracle's sync
+	// (omni's oracle/driver) stores SchemaMetadata{Name: ""} — a single
+	// anonymous schema containing every object. The mock mirrors this so
+	// advisors resolve tables the same way in tests and production.
 	MockOracleDatabase = &metadatapb.DatabaseSchemaMetadata{
 		Name: "TEST_DB",
 		Schemas: []*metadatapb.SchemaMetadata{
@@ -417,7 +411,6 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 			DBType:                dbType,
 			OriginalMetadata:      originalMetadata,
 			FinalMetadata:         finalMetadata,
-			Driver:                nil,
 			CurrentDatabase:       curDB,
 			DBSchema:              schemaMetadata,
 			IsObjectCaseSensitive: isCaseSensitive,
@@ -466,51 +459,76 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 	}
 }
 
-// MockDriver is the driver for test only.
-type MockDriver struct {
+// ProbeCall records how a rule asked the connection to probe.
+type ProbeCall struct {
+	PreExecutions []string
+	Autocommit    bool
+	Statement     string
 }
 
-// Open implements the Driver interface.
-func (d *MockDriver) Open(_ context.Context, _ storepb.Engine, _ database.ConnectionConfig) (database.Driver, error) {
-	return d, nil
+// ColumnLookupCall records one catalogue lookup a rule asked for.
+type ColumnLookupCall struct {
+	Database string
+	Table    string
+	Column   string
 }
 
-// Close implements the Driver interface.
-func (*MockDriver) Close(_ context.Context) error {
-	return nil
+// ProbeRecorder is a db.Prober for tests. It records the probes, estimates and
+// catalogue lookups a rule asks for, so a rule's statements can be asserted
+// without a server, and answers from the fields a test sets.
+type ProbeRecorder struct {
+	Probes    []ProbeCall
+	Estimates []string
+	Lookups   []ColumnLookupCall
+
+	// ProbeErr makes every probe fail, as a refused statement does.
+	ProbeErr error
+	// Result is what a probe answers. Empty means no rows.
+	Result db.ProbeResult
+	// Rows is the row count an estimate answers.
+	Rows int64
+	// EstimateErr makes every estimate fail.
+	EstimateErr error
+	// Extras is what a catalogue lookup answers, by "database.table.column".
+	Extras map[string]string
+	// LookupErr makes every catalogue lookup fail.
+	LookupErr error
 }
 
-// Ping implements the Driver interface.
-func (*MockDriver) Ping(_ context.Context) error {
-	return nil
+// Probe runs the probe and records it.
+func (r *ProbeRecorder) Probe(_ context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
+	r.Probes = append(r.Probes, ProbeCall{PreExecutions: pCtx.PreExecutions, Autocommit: pCtx.Autocommit, Statement: statement})
+	if r.ProbeErr != nil {
+		return db.ProbeResult{}, r.ProbeErr
+	}
+	return r.Result, nil
 }
 
-// GetDB gets the database.
-func (*MockDriver) GetDB() *sql.DB {
-	return nil
+// CountAffectedRows records the statement and answers Rows.
+func (r *ProbeRecorder) CountAffectedRows(_ context.Context, statement string) (int64, error) {
+	r.Estimates = append(r.Estimates, statement)
+	if r.EstimateErr != nil {
+		return 0, r.EstimateErr
+	}
+	return r.Rows, nil
 }
 
-// Execute implements the Driver interface.
-func (*MockDriver) Execute(_ context.Context, _ string, _ database.ExecuteOptions) (int64, error) {
-	return 0, nil
+// ColumnExtra records the lookup and answers Extras.
+func (r *ProbeRecorder) ColumnExtra(_ context.Context, database, table, column string) (string, error) {
+	r.Lookups = append(r.Lookups, ColumnLookupCall{Database: database, Table: table, Column: column})
+	if r.LookupErr != nil {
+		return "", r.LookupErr
+	}
+	return r.Extras[database+"."+table+"."+column], nil
 }
 
-// QueryConn queries a SQL statement in a given connection.
-func (*MockDriver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ database.QueryContext) ([]*v1pb.QueryResult, error) {
-	return nil, nil
+// ProbeOnly is the seam with neither capability: a connection that can run a
+// statement but cannot answer what a driver must answer itself.
+type ProbeOnly struct {
+	Recorder *ProbeRecorder
 }
 
-// SyncInstance implements the Driver interface.
-func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMetadata, error) {
-	return nil, nil
-}
-
-// SyncDBSchema implements the Driver interface.
-func (*MockDriver) SyncDBSchema(_ context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return nil, nil
-}
-
-// Dump implements the Driver interface.
-func (*MockDriver) Dump(_ context.Context, _ io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
-	return nil
+// Probe runs the probe and records it.
+func (p ProbeOnly) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
+	return p.Recorder.Probe(ctx, pCtx, statement)
 }

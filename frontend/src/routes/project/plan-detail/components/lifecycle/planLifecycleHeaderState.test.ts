@@ -39,6 +39,7 @@ const base: PlanLifecycleResolverInput = {
   canCurrentUserApprove: false,
   isCurrentUserReviewCandidate: false,
   checks: checks(),
+  unresolvedThreads: 0,
   hasRollout: false,
   rollout: undefined,
 };
@@ -190,6 +191,29 @@ describe("resolvePlanLifecycleHeaderState — pre-deploy gates", () => {
     expect(state).toMatchObject({ kind: "plan-status", reason: "checking" });
   });
 
+  test("approved + checks passed + open threads -> threads-open", () => {
+    const state = resolve({
+      approvalStatus: ApprovalStatus.APPROVED,
+      unresolvedThreads: 2,
+    });
+    expect(state).toMatchObject({
+      kind: "plan-status",
+      reason: "threads-open",
+    });
+  });
+
+  test("approved + checks failing outranks open threads", () => {
+    const state = resolve({
+      approvalStatus: ApprovalStatus.APPROVED,
+      checks: checks(1),
+      unresolvedThreads: 2,
+    });
+    expect(state).toMatchObject({
+      kind: "plan-status",
+      reason: "checks-failing",
+    });
+  });
+
   test("approved + all gates passed, no rollout yet -> preparing-rollout", () => {
     expect(resolve({ approvalStatus: ApprovalStatus.APPROVED }).kind).toBe(
       "preparing-rollout"
@@ -247,6 +271,18 @@ describe("resolvePlanLifecycleHeaderState — deploy", () => {
         ),
       }).kind
     ).toBe("deployed");
+  });
+
+  test("a deployed rollout counts its skipped tasks", () => {
+    expect(
+      resolve({
+        ...deployBase,
+        rollout: rollout(
+          stage("stages/1", [Task_Status.DONE, Task_Status.SKIPPED]),
+          stage("stages/2", [Task_Status.DONE])
+        ),
+      })
+    ).toEqual({ kind: "deployed", skippedCount: 1 });
   });
 
   test("rollout exists but is empty -> none", () => {

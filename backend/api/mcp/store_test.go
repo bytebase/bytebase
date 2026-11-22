@@ -39,7 +39,12 @@ func (s *testServerStore) GetWorkspaceID(context.Context) (string, error) {
 	return s.workspaceID, nil
 }
 
-func (s *testServerStore) GetWorkspaceProfileSetting(context.Context, string) (*storepb.WorkspaceProfileSetting, error) {
+// GetWorkspaceProfileSetting answers for its own workspace alone, so a caller
+// that names another workspace reads an empty profile, as the real store would.
+func (s *testServerStore) GetWorkspaceProfileSetting(_ context.Context, workspaceID string) (*storepb.WorkspaceProfileSetting, error) {
+	if workspaceID != s.workspaceID {
+		return &storepb.WorkspaceProfileSetting{}, nil
+	}
 	return s.workspaceProfile, nil
 }
 

@@ -1,0 +1,288 @@
+{
+  "0": {
+    "id": "16",
+    "name": "Output",
+    "descriptor": {
+      "columnNames": "[name, _col1]"
+    },
+    "outputs": [
+      {
+        "type": "varchar(25)",
+        "name": "name"
+      },
+      {
+        "type": "double",
+        "name": "sum"
+      }
+    ],
+    "details": ["_col1 := sum"],
+    "estimates": [
+      {
+        "outputRowCount": "NaN",
+        "outputSizeInBytes": "NaN",
+        "cpuCost": 0.0,
+        "memoryCost": 0.0,
+        "networkCost": 0.0
+      }
+    ],
+    "children": [
+      {
+        "id": "11",
+        "name": "Aggregate",
+        "descriptor": {
+          "type": "FINAL",
+          "keys": "[name]"
+        },
+        "outputs": [
+          {
+            "type": "varchar(25)",
+            "name": "name"
+          },
+          {
+            "type": "double",
+            "name": "sum"
+          }
+        ],
+        "details": ["sum := sum(sum_3)"],
+        "estimates": [
+          {
+            "outputRowCount": "NaN",
+            "outputSizeInBytes": "NaN",
+            "cpuCost": "NaN",
+            "memoryCost": "NaN",
+            "networkCost": 0.0
+          }
+        ],
+        "children": [
+          {
+            "id": "355",
+            "name": "LocalExchange",
+            "descriptor": {
+              "partitioning": "HASH",
+              "isReplicateNullsAndAny": "",
+              "arguments": "[name::varchar(25)]"
+            },
+            "outputs": [
+              {
+                "type": "varchar(25)",
+                "name": "name"
+              },
+              {
+                "type": "double",
+                "name": "sum_3"
+              }
+            ],
+            "details": [],
+            "estimates": [
+              {
+                "outputRowCount": "NaN",
+                "outputSizeInBytes": "NaN",
+                "cpuCost": "NaN",
+                "memoryCost": 0.0,
+                "networkCost": 0.0
+              }
+            ],
+            "children": [
+              {
+                "id": "361",
+                "name": "RemoteSource",
+                "descriptor": {
+                  "sourceFragmentIds": "[1]"
+                },
+                "outputs": [
+                  {
+                    "type": "varchar(25)",
+                    "name": "name"
+                  },
+                  {
+                    "type": "double",
+                    "name": "sum_3"
+                  }
+                ],
+                "details": [],
+                "estimates": [],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "1": {
+    "id": "359",
+    "name": "Aggregate",
+    "descriptor": {
+      "type": "PARTIAL",
+      "keys": "[name]"
+    },
+    "outputs": [
+      {
+        "type": "varchar(25)",
+        "name": "name"
+      },
+      {
+        "type": "double",
+        "name": "sum_3"
+      }
+    ],
+    "details": ["sum_3 := sum(totalprice)"],
+    "estimates": [],
+    "children": [
+      {
+        "id": "6",
+        "name": "InnerJoin",
+        "descriptor": {
+          "criteria": "(custkey = custkey_1)",
+          "distribution": "REPLICATED"
+        },
+        "outputs": [
+          {
+            "type": "double",
+            "name": "totalprice"
+          },
+          {
+            "type": "varchar(25)",
+            "name": "name"
+          }
+        ],
+        "details": [
+          "Distribution: REPLICATED",
+          "dynamicFilterAssignments = {custkey_1 -> #df_291}"
+        ],
+        "estimates": [
+          {
+            "outputRowCount": "NaN",
+            "outputSizeInBytes": "NaN",
+            "cpuCost": "NaN",
+            "memoryCost": 4800000.0,
+            "networkCost": 0.0
+          }
+        ],
+        "children": [
+          {
+            "id": "292",
+            "name": "ScanFilter",
+            "descriptor": {
+              "table": "tpch:sf1:orders",
+              "filterPredicate": "",
+              "dynamicFilters": "{custkey = #df_291}"
+            },
+            "outputs": [
+              {
+                "type": "bigint",
+                "name": "custkey"
+              },
+              {
+                "type": "double",
+                "name": "totalprice"
+              }
+            ],
+            "details": [
+              "totalprice := tpch:totalprice",
+              "custkey := tpch:custkey",
+              "tpch:orderstatus",
+              "    :: [[O]]"
+            ],
+            "estimates": [
+              {
+                "outputRowCount": 732044.0,
+                "outputSizeInBytes": 1.3176792e7,
+                "cpuCost": 1.3176792e7,
+                "memoryCost": 0.0,
+                "networkCost": 0.0
+              },
+              {
+                "outputRowCount": 732044.0,
+                "outputSizeInBytes": 1.3176792e7,
+                "cpuCost": 1.3176792e7,
+                "memoryCost": 0.0,
+                "networkCost": 0.0
+              }
+            ],
+            "children": []
+          },
+          {
+            "id": "327",
+            "name": "LocalExchange",
+            "descriptor": {
+              "partitioning": "SINGLE",
+              "isReplicateNullsAndAny": "",
+              "arguments": "[]"
+            },
+            "outputs": [
+              {
+                "type": "bigint",
+                "name": "custkey_1"
+              },
+              {
+                "type": "varchar(25)",
+                "name": "name"
+              }
+            ],
+            "details": [],
+            "estimates": [
+              {
+                "outputRowCount": 150000.0,
+                "outputSizeInBytes": 4800000.0,
+                "cpuCost": 0.0,
+                "memoryCost": 0.0,
+                "networkCost": 0.0
+              }
+            ],
+            "children": [
+              {
+                "id": "265",
+                "name": "RemoteSource",
+                "descriptor": {
+                  "sourceFragmentIds": "[2]"
+                },
+                "outputs": [
+                  {
+                    "type": "bigint",
+                    "name": "custkey_1"
+                  },
+                  {
+                    "type": "varchar(25)",
+                    "name": "name"
+                  }
+                ],
+                "details": [],
+                "estimates": [],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "2": {
+    "id": "1",
+    "name": "TableScan",
+    "descriptor": {
+      "table": "tpch:sf1:customer"
+    },
+    "outputs": [
+      {
+        "type": "bigint",
+        "name": "custkey_1"
+      },
+      {
+        "type": "varchar(25)",
+        "name": "name"
+      }
+    ],
+    "details": ["custkey_1 := tpch:custkey", "name := tpch:name"],
+    "estimates": [
+      {
+        "outputRowCount": 150000.0,
+        "outputSizeInBytes": 4800000.0,
+        "cpuCost": 4800000.0,
+        "memoryCost": 0.0,
+        "networkCost": 0.0
+      }
+    ],
+    "children": []
+  }
+}

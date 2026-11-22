@@ -33,6 +33,10 @@
         "desc": "Obtenga sugerencias de consultas y recomendaciones de índices impulsadas por IA.",
         "title": "Sugerencias de consultas con IA"
       },
+      "FEATURE_AI_SQL_REVIEW": {
+        "desc": "Un modelo de IA revisa el SQL de cada incidencia según sus políticas y comenta los riesgos que encuentra.",
+        "title": "Revisión de SQL con IA"
+      },
       "FEATURE_API_INTEGRATION_GUIDANCE": {
         "desc": "Documentación y orientación para integraciones API.",
         "title": "Guía de integración API"
@@ -272,6 +276,10 @@
       "FEATURE_SCIM": {
         "desc": "Soporte para Sistema de Gestión de Identidad entre Dominios.",
         "title": "SCIM"
+      },
+      "FEATURE_SHAREPOINT_EXPORT": {
+        "desc": "Sube las exportaciones del Editor SQL a bibliotecas de documentos de SharePoint.",
+        "title": "Exportación a SharePoint"
       },
       "FEATURE_SQL_EDITOR_ADMIN_MODE": {
         "desc": "Acceda a funciones administrativas en el editor SQL.",

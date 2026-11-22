@@ -1,0 +1,296 @@
+import i18n from "@/lib/i18n";
+import { useAppStore } from "@/stores/app";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { getSemanticTypeListWithBuiltins } from "@/types/semanticTypes";
+import { readSemanticTypeSetting } from "../semanticTypeSetting";
+import type { AgentAskUserOption } from "../types";
+import { getMaskingSetup } from "./maskingSetup";
+import { validateResourceChoices } from "./resourceChoices";
+
+interface Context {
+  workspaceName: string;
+  userName?: string;
+}
+type Access =
+  | { status: string; scope?: string; missingPermissions?: string[] }
+  | undefined;
+
+function requireAccess(access: Access, step: string): void {
+  if (access?.status !== "allowed")
+    throw new Error(
+      `${step} access is ${access?.status ?? "unknown"} in ${access?.scope ?? "the selected scope"}. Missing permissions: ${access?.missingPermissions?.join(", ") || "unverified"}.`
+    );
+}
+
+function contextGuard(context: Context): () => void {
+  const userName = context.userName ?? useAppStore.getState().currentUser?.name;
+  const check = () => {
+    const state = useAppStore.getState();
+    if (
+      !userName ||
+      state.currentUser?.name !== userName ||
+      state.workspaceResourceName() !== context.workspaceName
+    )
+      throw new Error("The masking choice context has changed.");
+  };
+  check();
+  return check;
+}
+
+function unavailableUnmaskMethodReason(
+  availableMethod: string,
+  setup: Awaited<ReturnType<typeof getMaskingSetup>>,
+  context: { queryAccessMissing?: boolean; forCurrentUser?: boolean }
+): string {
+  if (availableMethod === "just-in-time") {
+    if (context.queryAccessMissing)
+      return i18n.t(
+        "agent.masking.unmask-method.exemption-query-access-required"
+      );
+    const exemption = setup.steps.find(
+      (step) => step.id === "masking-exemptions"
+    );
+    if (
+      [
+        setup.scopeAccess?.project,
+        exemption?.readAccess,
+        exemption?.configure,
+      ].some((access) => access?.status === "denied")
+    )
+      return i18n.t("agent.masking.unmask-method.exemption-permission-denied");
+    if (setup.features.masking === "unavailable")
+      return i18n.t(
+        "agent.masking.unmask-method.exemption-feature-unavailable"
+      );
+    return i18n.t("agent.masking.unmask-method.exemption-unverified");
+  }
+  if (context.forCurrentUser === false)
+    return i18n.t("agent.masking.unmask-method.jit-self-only");
+  if (setup.justInTime.enabled === false)
+    return i18n.t("agent.masking.unmask-method.jit-disabled");
+  if (setup.justInTime.create?.status === "denied")
+    return i18n.t("agent.masking.unmask-method.jit-permission-denied");
+  if (setup.justInTime.feature === "unavailable")
+    return i18n.t("agent.masking.unmask-method.jit-feature-unavailable");
+  return i18n.t("agent.masking.unmask-method.jit-unverified");
+}
+
+export async function getUnmaskMethodChoices(
+  context: Context & {
+    projectName?: string;
+    database?: string;
+    queryAccessMissing?: boolean;
+    forCurrentUser?: boolean;
+  }
+): Promise<{
+  project?: string;
+  database?: string;
+  options: AgentAskUserOption[];
+  methodExplanation?: {
+    label: string;
+    description: string;
+    alternativeReason: string;
+  };
+  needsScope: boolean;
+  setup: Awaited<ReturnType<typeof getMaskingSetup>>;
+}> {
+  const check = contextGuard(context);
+  if (
+    context.projectName !== undefined &&
+    (!/^projects\/[A-Za-z0-9_-]+$/.test(context.projectName) ||
+      context.projectName === "projects/-")
+  )
+    throw new Error(
+      "Select an exact project before choosing an unmask method."
+    );
+  const setup = await getMaskingSetup({
+    workspaceName: context.workspaceName,
+    projectName: context.projectName,
+  });
+  check();
+  if (context.database && context.projectName) {
+    const verified = await validateResourceChoices(
+      "database",
+      [context.database],
+      context.projectName,
+      context.workspaceName
+    );
+    check();
+    if (verified?.length !== 1 || verified[0].value !== context.database)
+      throw new Error("The selected database is unavailable in this project.");
+  }
+  const options: (AgentAskUserOption & { description: string })[] = [];
+  const exemption = setup.steps.find(
+    (step) => step.id === "masking-exemptions"
+  );
+  if (context.projectName) {
+    if (
+      setup.project?.name === context.projectName &&
+      setup.project.state === State.ACTIVE &&
+      setup.features.masking === "available" &&
+      setup.scopeAccess?.project.status === "allowed" &&
+      exemption?.readAccess.status === "allowed" &&
+      exemption.configure.status === "allowed" &&
+      !context.queryAccessMissing
+    )
+      options.push({
+        value: "masking-exemption",
+        label: i18n.t("agent.masking.unmask-method.exemption"),
+        description: i18n.t(
+          "agent.masking.unmask-method.exemption-description"
+        ),
+      });
+    if (setup.justInTime.eligible && context.forCurrentUser !== false)
+      options.push({
+        value: "just-in-time",
+        label: i18n.t("agent.masking.unmask-method.jit"),
+        description: i18n.t("agent.masking.unmask-method.jit-description"),
+      });
+  }
+  return {
+    ...(context.projectName ? { project: context.projectName } : {}),
+    ...(context.database && context.projectName
+      ? { database: context.database }
+      : {}),
+    options,
+    ...(options.length === 1
+      ? {
+          methodExplanation: {
+            label: options[0].label,
+            description: options[0].description,
+            alternativeReason: unavailableUnmaskMethodReason(
+              options[0].value,
+              setup,
+              context
+            ),
+          },
+        }
+      : {}),
+    needsScope: !context.projectName,
+    setup,
+  };
+}
+
+export async function getMaskingSemanticTypeChoices(
+  context: Context
+): Promise<AgentAskUserOption[]> {
+  const check = contextGuard(context);
+  const setup = await getMaskingSetup({ workspaceName: context.workspaceName });
+  check();
+  const step = setup.steps.find((item) => item.id === "semantic-types");
+  requireAccess(step?.readAccess, "semantic-types");
+  if (setup.features.masking !== "available")
+    throw new Error("The masking feature is unavailable or unverified.");
+  const { setting } = await readSemanticTypeSetting();
+  check();
+  if (setting.value?.value.case !== "semanticType")
+    throw new Error("The semantic types setting is unavailable.");
+  const types = getSemanticTypeListWithBuiltins(
+    setting.value.value.value.types
+  );
+  const seen = new Set<string>();
+  const choices: AgentAskUserOption[] = types.map((type) => {
+    if (!type.id || seen.has(type.id))
+      throw new Error("The semantic type IDs are invalid or ambiguous.");
+    seen.add(type.id);
+    return {
+      label: `${type.title || type.id} (${type.id})`,
+      value: `semantic-type:${type.id}`,
+      ...(type.description ? { description: type.description } : {}),
+    };
+  });
+  if (step?.configure.status === "allowed")
+    choices.push({
+      label: i18n.t("agent.masking.semantic-type-choice.create"),
+      value: "action:create-semantic-type",
+      kind: "custom-input",
+      placeholder: i18n.t(
+        "agent.masking.semantic-type-choice.create-placeholder"
+      ),
+      description: i18n.t(
+        "agent.masking.semantic-type-choice.create-description"
+      ),
+    });
+  return choices;
+}
+
+export async function getMaskingScopeChoices(
+  context: Context & {
+    kind: "rule" | "exemption";
+    projectName?: string;
+    database?: string;
+  }
+): Promise<AgentAskUserOption[]> {
+  const check = contextGuard(context);
+  const setup = await getMaskingSetup({
+    workspaceName: context.workspaceName,
+    projectName: context.projectName,
+  });
+  check();
+  const id = context.kind === "rule" ? "global-masking" : "masking-exemptions";
+  const step = setup.steps.find((item) => item.id === id);
+  requireAccess(step?.readAccess, id);
+  requireAccess(step?.configure, id);
+  if (setup.features.masking !== "available")
+    throw new Error("The masking feature is unavailable or unverified.");
+  const projectAllowed =
+    context.projectName && setup.scopeAccess?.project.status === "allowed";
+  if (context.kind === "exemption" && !projectAllowed)
+    throw new Error("Project scope access is unavailable or unverified.");
+  const verified =
+    context.database && projectAllowed
+      ? await validateResourceChoices(
+          "database",
+          [context.database],
+          context.projectName,
+          context.workspaceName
+        )
+      : undefined;
+  check();
+  const database =
+    verified?.length === 1 && verified[0].value === context.database
+      ? verified[0]
+      : undefined;
+  const choices: AgentAskUserOption[] = [];
+  if (database)
+    choices.push({
+      label: i18n.t("agent.masking.exemption-scope.only-database", {
+        database: database.label,
+      }),
+      value: database.value,
+    });
+  if (projectAllowed)
+    choices.push({
+      label: i18n.t("agent.masking.exemption-scope.project"),
+      value: context.projectName!,
+    });
+  if (
+    context.projectName &&
+    setup.scopeAccess?.databasePicker.status === "allowed"
+  )
+    choices.push({
+      label: i18n.t("agent.masking.exemption-scope.another-database"),
+      value: "another-database",
+      kind: "custom-input",
+      placeholder: i18n.t("agent.masking.exemption-scope.database-placeholder"),
+    });
+  if (context.kind === "rule") {
+    choices.push({
+      label: i18n.t("agent.masking.rule-scope.workspace"),
+      value: "workspace",
+    });
+    if (
+      !context.projectName &&
+      setup.scopeAccess?.projects.status === "allowed"
+    )
+      choices.push({
+        label: i18n.t("agent.masking.rule-scope.choose-project"),
+        value: "choose-project",
+        kind: "custom-input",
+        placeholder: i18n.t("agent.resource-picker.search-projects"),
+      });
+  }
+  if (!choices.length)
+    throw new Error("No verified masking scope choices are available.");
+  return choices;
+}

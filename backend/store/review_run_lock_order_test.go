@@ -11,23 +11,24 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// reviewRunLockOrderSeed seeds a RUNNING rule run claimed by replica-1.
+// reviewRunLockOrderSeed seeds a RUNNING review run claimed by replica-1.
 const reviewRunLockOrderSeed = `
 	INSERT INTO issue (id, creator, project, name, status, type)
 	VALUES (301, 'admin@example.com', '%[1]s', 'Issue', 'OPEN', 'DATABASE_CHANGE');
-	INSERT INTO review_run (project, issue_id, type, attempt, status, replica_id)
-	VALUES ('%[1]s', 301, 'RULE', 0, 'RUNNING', 'replica-1');
+	INSERT INTO review_run (project, issue_id, attempt, status, replica_id)
+	VALUES ('%[1]s', 301, 0, 'RUNNING', 'replica-1');
 `
 
-// reviewRunPriorResultSeed adds a prior OPEN rule result, which gives the
-// completion's resolve UPDATE a row to lock.
+// reviewRunPriorResultSeed adds a prior OPEN result, which gives the
+// completion's resolve UPDATE a row to lock. It is the AI review's, and the
+// completion posts a rule's.
 const reviewRunPriorResultSeed = `
 	INSERT INTO issue_comment (project, issue_id, payload, thread_state)
-	VALUES ('%[1]s', 301, '{"comment":"prior","reviewMetadata":{"runType":"RULE","ruleType":"SYNTAX","priority":"P0"}}', 'OPEN');
+	VALUES ('%[1]s', 301, '{"comment":"prior","reviewMetadata":{"priority":"P0","title":"Prior"}}', 'OPEN');
 `
 
 func reviewRunLockOrderCompletion(fixture *storePostgresFixture, projectID string) (bool, error) {
-	claimed := &store.ClaimedReviewRun{ProjectID: projectID, IssueUID: reviewResultIssue, Type: store.ReviewRunTypeRule, Attempt: 0}
+	claimed := &store.ClaimedReviewRun{ProjectID: projectID, IssueUID: reviewResultIssue, Attempt: 0}
 	return fixture.store.CompleteReviewRun(fixture.ctx, claimed, "replica-1", storepb.ReviewRun_DONE, nil,
 		[]*store.IssueCommentMessage{reviewResult(projectID, "new", storepb.ReviewRuleType_REQUIRE_WHERE)})
 }
@@ -60,7 +61,7 @@ func TestCompleteReviewRunLockOrder(t *testing.T) {
 
 		// The re-run touches only the slot, so it lands while the completion
 		// holds the comment locks.
-		run, err := fixture.store.CreateReviewRun(fixture.ctx, "default", reviewResultIssue, store.ReviewRunTypeRule)
+		run, err := fixture.store.CreateReviewRun(fixture.ctx, "default", reviewResultIssue)
 		require.NoError(t, err)
 		require.Equal(t, int64(1), run.Attempt)
 		barrier.release(t)
@@ -77,7 +78,7 @@ func TestCompleteReviewRunLockOrder(t *testing.T) {
 		var status string
 		var attempt int64
 		require.NoError(t, fixture.db.QueryRowContext(fixture.ctx,
-			`SELECT status, attempt FROM review_run WHERE project = 'default' AND issue_id = $1 AND type = 'RULE'`,
+			`SELECT status, attempt FROM review_run WHERE project = 'default' AND issue_id = $1`,
 			reviewResultIssue).Scan(&status, &attempt))
 		require.Equal(t, "AVAILABLE", status)
 		require.Equal(t, int64(1), attempt)
@@ -156,4 +157,85 @@ func TestCompleteReviewRunLockOrder(t *testing.T) {
 			require.Empty(t, listReviewComments(t, fixture, "project-a"))
 		})
 	}
+}
+
+// TestCompleteReviewRunOverlappingAttempts completes a superseded attempt and
+// the current one at once, each keeping a different earlier result whose
+// anchor moved. The superseded attempt is parked after its first comment
+// update; the current one must wait for it rather than deadlock, then commit.
+func TestCompleteReviewRunOverlappingAttempts(t *testing.T) {
+	t.Parallel()
+	fixture := newStorePostgresFixture(t, `
+		INSERT INTO issue (id, creator, project, name, status, type)
+		VALUES (301, 'admin@example.com', 'default', 'Issue', 'OPEN', 'DATABASE_CHANGE');
+	`)
+	ctx, s := fixture.ctx, fixture.store
+	finding := func(comment, fingerprint string, line int32) *store.IssueCommentMessage {
+		r := reviewResult("default", comment, storepb.ReviewRuleType_REQUIRE_WHERE)
+		r.Payload.ReviewMetadata.Fingerprint = fingerprint
+		r.Payload.StatementAnchor.StartPosition = &storepb.Position{Line: line}
+		r.Payload.StatementAnchor.EndPosition = &storepb.Position{Line: line}
+		return r
+	}
+	completeReviewRun(t, fixture, "default", storepb.ReviewRun_DONE,
+		finding("x", "x", 1), finding("y", "y", 2))
+
+	claim := func() *store.ClaimedReviewRun {
+		t.Helper()
+		_, err := s.CreateReviewRun(ctx, "default", reviewResultIssue)
+		require.NoError(t, err)
+		claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica-1")
+		require.NoError(t, err)
+		require.Len(t, claimed, 1)
+		return claimed[0]
+	}
+	// A re-run does not stop the execution it supersedes.
+	superseded, current := claim(), claim()
+
+	const barrierID = 9974
+	barrier := newMaintenanceLockBarrier(ctx, t, fixture.db, barrierID)
+	installMaintenanceLockBarrier(t, fixture.db, barrierID, "AFTER UPDATE ON issue_comment FOR EACH STATEMENT")
+
+	type completion struct {
+		updated bool
+		err     error
+	}
+	complete := func(claimed *store.ClaimedReviewRun, kept *store.IssueCommentMessage) <-chan completion {
+		done := make(chan completion, 1)
+		go func() {
+			updated, err := s.CompleteReviewRun(ctx, claimed, "replica-1", storepb.ReviewRun_DONE, nil, []*store.IssueCommentMessage{kept})
+			done <- completion{updated: updated, err: err}
+		}()
+		return done
+	}
+	// Each keeps one result, moved down a line, and supersedes the other.
+	supersededDone := complete(superseded, finding("x moved", "x", 3))
+	waitForMaintenanceBarrier(ctx, t, fixture.db, barrierID)
+	supersededPID := maintenanceBarrierWaitingPID(ctx, t, fixture.db, barrierID)
+	currentDone := complete(current, finding("y moved", "y", 4))
+	require.Eventually(t, func() bool {
+		var waiting bool
+		err := fixture.db.QueryRowContext(ctx, `SELECT EXISTS (
+			SELECT 1 FROM pg_stat_activity
+			WHERE datname = current_database() AND pid <> $1 AND cardinality(pg_blocking_pids(pid)) > 0
+		)`, supersededPID).Scan(&waiting)
+		return err == nil && waiting
+	}, maintenanceLockWait, 10*time.Millisecond, "the current attempt should be waiting")
+	barrier.release(t)
+
+	for name, done := range map[string]<-chan completion{"superseded": supersededDone, "current": currentDone} {
+		select {
+		case c := <-done:
+			require.NoError(t, c.err, name)
+			require.Equal(t, name == "current", c.updated, name)
+		case <-time.After(maintenanceLockWait):
+			t.Fatalf("timed out waiting for the %s attempt", name)
+		}
+	}
+	got, _ := listSupersession(t, fixture, "default")
+	require.Equal(t, []supersession{
+		{Comment: "x", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "y moved", ThreadState: "OPEN"},
+	}, got)
+	require.Equal(t, reviewResultSheet+"/4", reviewResultAnchors(t, fixture, "default")["y moved"])
 }

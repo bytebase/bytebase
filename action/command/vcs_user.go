@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -17,6 +18,20 @@ import (
 	"github.com/bytebase/bytebase/action/world"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
+
+// readGitHubEvent decodes the payload of the event that triggered the
+// workflow, which GitHub writes to the file GITHUB_EVENT_PATH names.
+func readGitHubEvent(event any) bool {
+	eventPath := os.Getenv("GITHUB_EVENT_PATH")
+	if eventPath == "" {
+		return false
+	}
+	data, err := os.ReadFile(eventPath)
+	if err != nil {
+		return false
+	}
+	return json.Unmarshal(data, event) == nil
+}
 
 var gitLabBotUserNameRE = regexp.MustCompile(`^(project|group)_\d+_bot_[a-z0-9]+$`)
 
@@ -40,15 +55,6 @@ func getGitHubVCSUser() *v1pb.VCSUser {
 	if eventName != "pull_request" && eventName != "pull_request_target" {
 		return nil
 	}
-	eventPath := os.Getenv("GITHUB_EVENT_PATH")
-	if eventPath == "" {
-		return nil
-	}
-	data, err := os.ReadFile(eventPath)
-	if err != nil {
-		return nil
-	}
-
 	var event struct {
 		PullRequest struct {
 			User struct {
@@ -59,7 +65,7 @@ func getGitHubVCSUser() *v1pb.VCSUser {
 			} `json:"user"`
 		} `json:"pull_request"`
 	}
-	if err := json.Unmarshal(data, &event); err != nil {
+	if !readGitHubEvent(&event) {
 		return nil
 	}
 
@@ -341,4 +347,234 @@ func isAzureDevOpsBotUser(descriptor, userName string) bool {
 
 func isBotUser(userType, userName string) bool {
 	return strings.EqualFold(userType, "bot") || strings.HasSuffix(strings.ToLower(userName), "[bot]")
+}
+
+// The markers a platform writes into the commit that merged a pull request.
+// A rebase merge writes none, so its source has no pull request.
+var (
+	gitHubSquashMergeRE  = regexp.MustCompile(`^(.*?)\s*\(#(\d+)\)$`)
+	gitHubMergeCommitRE  = regexp.MustCompile(`^Merge pull request #(\d+) from `)
+	gitLabMergeRequestRE = regexp.MustCompile(`(?m)^See merge request \S+!(\d+)\s*$`)
+	azureMergedPRRE      = regexp.MustCompile(`^Merged PR (\d+): (.*)$`)
+)
+
+// getVCSSource describes the commit the release was read from, from the CI
+// environment and the --source-* flags. A flag wins over the detected value.
+// It reads only environment variables and, on GitHub, the event payload: the
+// action image has no git binary.
+func getVCSSource(w *world.World) *v1pb.Release_VCSSource {
+	var source *v1pb.Release_VCSSource
+	switch w.Platform {
+	case world.GitHub:
+		source = getGitHubVCSSource()
+	case world.GitLab:
+		source = getGitLabVCSSource()
+	case world.Bitbucket:
+		source = getBitbucketVCSSource()
+	case world.AzureDevOps:
+		source = getAzureDevOpsVCSSource()
+	default:
+	}
+	if w.SourceTitle == "" && w.SourceURL == "" && w.SourceAuthor == "" && w.SourceRef == "" {
+		return source
+	}
+	if source == nil {
+		source = &v1pb.Release_VCSSource{}
+	}
+	// A flag URL names another change, so nothing detected about the change
+	// matches it; only the platform stays. The other flags then apply.
+	if w.SourceURL != "" {
+		source = &v1pb.Release_VCSSource{VcsType: source.VcsType, Url: w.SourceURL}
+	}
+	// The Source row shows a pull request's title and link over the commit's,
+	// so a title flag replaces both titles.
+	if w.SourceTitle != "" {
+		source.CommitTitle = w.SourceTitle
+		if source.PullRequest != nil {
+			source.PullRequest.Title = w.SourceTitle
+		}
+	}
+	if w.SourceAuthor != "" {
+		source.AuthorName = w.SourceAuthor
+	}
+	if w.SourceRef != "" {
+		source.Branch = w.SourceRef
+	}
+	return source
+}
+
+// githubBranch is the source branch, or empty when the run is on a tag or a
+// merge queue's temporary branch. GITHUB_REF_NAME is the synthetic
+// "<N>/merge" in a pull request run, so that run reads GITHUB_HEAD_REF.
+func githubBranch() string {
+	if head := os.Getenv("GITHUB_HEAD_REF"); head != "" {
+		return head
+	}
+	if os.Getenv("GITHUB_EVENT_NAME") == "merge_group" || os.Getenv("GITHUB_REF_TYPE") != "branch" {
+		return ""
+	}
+	return os.Getenv("GITHUB_REF_NAME")
+}
+
+func getGitHubVCSSource() *v1pb.Release_VCSSource {
+	repoURL := os.Getenv("GITHUB_SERVER_URL") + "/" + os.Getenv("GITHUB_REPOSITORY")
+	sha := os.Getenv("GITHUB_SHA")
+	source := &v1pb.Release_VCSSource{
+		VcsType:   v1pb.VCSType_GITHUB,
+		Url:       repoURL + "/commit/" + sha,
+		CommitSha: sha,
+		Branch:    githubBranch(),
+	}
+
+	var event struct {
+		PullRequest *struct {
+			Number  int64  `json:"number"`
+			Title   string `json:"title"`
+			HTMLURL string `json:"html_url"`
+			User    struct {
+				Login string `json:"login"`
+			} `json:"user"`
+		} `json:"pull_request"`
+		HeadCommit *struct {
+			Message string `json:"message"`
+			Author  struct {
+				Name     string `json:"name"`
+				Username string `json:"username"`
+			} `json:"author"`
+		} `json:"head_commit"`
+	}
+	if !readGitHubEvent(&event) {
+		return source
+	}
+	if pr := event.PullRequest; pr != nil && pr.Number > 0 {
+		source.AuthorLogin = pr.User.Login
+		source.PullRequest = &v1pb.Release_VCSSource_PullRequest{
+			Url:    firstNonEmpty(pr.HTMLURL, fmt.Sprintf("%s/pull/%d", repoURL, pr.Number)),
+			Number: pr.Number,
+			Title:  pr.Title,
+		}
+		return source
+	}
+	if commit := event.HeadCommit; commit != nil {
+		source.AuthorName = commit.Author.Name
+		source.AuthorLogin = commit.Author.Username
+		title, body := splitCommitMessage(commit.Message)
+		source.CommitTitle = title
+		if m := gitHubSquashMergeRE.FindStringSubmatch(title); m != nil {
+			source.CommitTitle = m[1]
+			source.PullRequest = gitHubPullRequest(repoURL, m[2], "")
+		} else if m := gitHubMergeCommitRE.FindStringSubmatch(title); m != nil {
+			// GitHub puts the pull request's title on the merge commit's body.
+			source.PullRequest = gitHubPullRequest(repoURL, m[1], firstLine(body))
+		}
+	}
+	return source
+}
+
+func gitHubPullRequest(repoURL, number, title string) *v1pb.Release_VCSSource_PullRequest {
+	n, err := strconv.ParseInt(number, 10, 64)
+	if err != nil {
+		return nil
+	}
+	return &v1pb.Release_VCSSource_PullRequest{Url: fmt.Sprintf("%s/pull/%d", repoURL, n), Number: n, Title: title}
+}
+
+func getGitLabVCSSource() *v1pb.Release_VCSSource {
+	repoURL := os.Getenv("CI_PROJECT_URL")
+	sha := os.Getenv("CI_COMMIT_SHA")
+	source := &v1pb.Release_VCSSource{
+		VcsType:     v1pb.VCSType_GITLAB,
+		Url:         repoURL + "/-/commit/" + sha,
+		CommitSha:   sha,
+		Branch:      firstNonEmpty(os.Getenv("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"), os.Getenv("CI_COMMIT_BRANCH")),
+		CommitTitle: os.Getenv("CI_COMMIT_TITLE"),
+		AuthorName:  authorNameOf(os.Getenv("CI_COMMIT_AUTHOR")),
+	}
+	number, title := os.Getenv("CI_MERGE_REQUEST_IID"), os.Getenv("CI_MERGE_REQUEST_TITLE")
+	if number == "" {
+		if m := gitLabMergeRequestRE.FindStringSubmatch(os.Getenv("CI_COMMIT_MESSAGE")); m != nil {
+			number = m[1]
+		}
+	}
+	if n, err := strconv.ParseInt(number, 10, 64); err == nil {
+		source.PullRequest = &v1pb.Release_VCSSource_PullRequest{
+			Url:    fmt.Sprintf("%s/-/merge_requests/%d", repoURL, n),
+			Number: n,
+			Title:  title,
+		}
+	}
+	return source
+}
+
+// Bitbucket Pipelines exposes neither the commit message nor its author.
+func getBitbucketVCSSource() *v1pb.Release_VCSSource {
+	repoURL := os.Getenv("BITBUCKET_GIT_HTTP_ORIGIN")
+	sha := os.Getenv("BITBUCKET_COMMIT")
+	source := &v1pb.Release_VCSSource{
+		VcsType:   v1pb.VCSType_BITBUCKET,
+		Url:       repoURL + "/commits/" + sha,
+		CommitSha: sha,
+		Branch:    os.Getenv("BITBUCKET_BRANCH"),
+	}
+	if n, err := strconv.ParseInt(os.Getenv("BITBUCKET_PR_ID"), 10, 64); err == nil {
+		source.PullRequest = &v1pb.Release_VCSSource_PullRequest{
+			Url:    fmt.Sprintf("%s/pull-requests/%d", repoURL, n),
+			Number: n,
+		}
+	}
+	return source
+}
+
+func getAzureDevOpsVCSSource() *v1pb.Release_VCSSource {
+	repoURL := os.Getenv("SYSTEM_COLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/_git/" + os.Getenv("BUILD_REPOSITORY_NAME")
+	sha := os.Getenv("BUILD_SOURCEVERSION")
+	// BUILD_SOURCEBRANCH is "refs/pull/<N>/merge" in a PR build and
+	// "refs/tags/<tag>" in a tag build, and BUILD_SOURCEBRANCHNAME keeps only
+	// the last segment of "feature/x". Only a refs/heads/ ref is a branch.
+	branch := firstNonEmpty(os.Getenv("SYSTEM_PULLREQUEST_SOURCEBRANCH"), os.Getenv("BUILD_SOURCEBRANCH"))
+	if name, ok := strings.CutPrefix(branch, "refs/heads/"); ok {
+		branch = name
+	} else if strings.HasPrefix(branch, "refs/") {
+		branch = ""
+	}
+	title, _ := splitCommitMessage(os.Getenv("BUILD_SOURCEVERSIONMESSAGE"))
+	source := &v1pb.Release_VCSSource{
+		VcsType:     v1pb.VCSType_AZURE_DEVOPS,
+		Url:         repoURL + "/commit/" + sha,
+		CommitSha:   sha,
+		Branch:      branch,
+		CommitTitle: title,
+		AuthorName:  os.Getenv("BUILD_REQUESTEDFOR"),
+	}
+	number := os.Getenv("SYSTEM_PULLREQUEST_PULLREQUESTID")
+	if number == "" {
+		if m := azureMergedPRRE.FindStringSubmatch(title); m != nil {
+			number = m[1]
+			source.CommitTitle = m[2]
+		}
+	}
+	if n, err := strconv.ParseInt(number, 10, 64); err == nil {
+		source.PullRequest = &v1pb.Release_VCSSource_PullRequest{
+			Url:    fmt.Sprintf("%s/pullrequest/%d", repoURL, n),
+			Number: n,
+		}
+	}
+	return source
+}
+
+// splitCommitMessage returns the message's first line and the rest.
+func splitCommitMessage(message string) (string, string) {
+	title, body, _ := strings.Cut(strings.TrimSpace(message), "\n")
+	return strings.TrimSpace(title), strings.TrimSpace(body)
+}
+
+func firstLine(text string) string {
+	line, _, _ := strings.Cut(strings.TrimSpace(text), "\n")
+	return strings.TrimSpace(line)
+}
+
+// authorNameOf drops the email from git's "Name <email>" form.
+func authorNameOf(author string) string {
+	name, _, _ := strings.Cut(author, " <")
+	return strings.TrimSpace(name)
 }

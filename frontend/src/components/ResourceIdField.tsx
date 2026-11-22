@@ -33,6 +33,9 @@ interface ResourceIdFieldProps {
   autoComplete?: ComponentProps<"input">["autoComplete"];
   suffix?: boolean;
   readonly?: boolean;
+  // Keep the value the field is mounted with until the title changes, for a
+  // caller that mounts it again with an ID the user has already settled on.
+  keepInitialValue?: boolean;
   validate?: (resourceId: string) => Promise<ValidatedMessage[]>;
   onChange?: (value: string) => void;
   onValidationChange?: (isValid: boolean) => void;
@@ -70,6 +73,7 @@ export const ResourceIdField = forwardRef<
     autoComplete,
     suffix = false,
     readonly = false,
+    keepInitialValue = false,
     validate,
     onChange,
     onValidationChange,
@@ -81,6 +85,9 @@ export const ResourceIdField = forwardRef<
   const [messages, setMessages] = useState<ValidatedMessage[]>([]);
   const randomSuffixRef = useRef(randomString(4).toLowerCase());
   const initializedRef = useRef(false);
+  const keptRef = useRef(
+    keepInitialValue && value ? { value, title: resourceTitle } : undefined
+  );
   // Use refs for callbacks to avoid re-triggering the auto-generate effect
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -136,6 +143,12 @@ export const ResourceIdField = forwardRef<
   // Auto-generate from title
   useEffect(() => {
     if (readonly || manualEdit) return;
+    if (keptRef.current && keptRef.current.title === resourceTitle) {
+      validateId(keptRef.current.value).then(updateMessages);
+      initializedRef.current = true;
+      return;
+    }
+    keptRef.current = undefined;
 
     const parts: string[] = [];
     if (resourceTitle) {

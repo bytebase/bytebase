@@ -10,6 +10,7 @@ import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "google/rpc/status.proto";
 import "google/type/expr.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
@@ -42,21 +43,11 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issues.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    // WRITE covers the DATABASE_CHANGE issue this method exists for. It does
-    // not cover a ROLE_GRANT issue, which completes on creation whenever the
-    // workspace rule produces no approval template and then writes the project
-    // IAM binding for a grantee the request names — which is
-    // ProjectService/SetIamPolicy, EXCLUDED for exactly that outcome. A class
-    // annotation cannot split by request field, so the MCP gate carries a
-    // request-shape refusal for this method: it admits DATABASE_CHANGE and
-    // refuses every other type (backend/api/v1/mcp_gate.go,
-    // mcpRequestShapeRefusals). UpdateIssue reaches the same creation through
-    // allow_missing and is refused with it.
-    //
-    // An ACCESS_GRANT issue is refused by the same allow-list and does not
-    // reach this handler in the first place: buildIssueMessage has no arm for
-    // it, so the type is an invalid argument here. Those issues are written by
-    // AccessGrantService/CreateAccessGrant, which is EXCLUDED.
+    // WRITE covers the DATABASE_CHANGE issue this method exists for. MCP
+    // sessions are refused every other type (grantIssueRefusal in
+    // backend/api/v1/mcp_gate.go): a ROLE_GRANT issue can complete on creation
+    // with no human step, and an access request goes through
+    // AccessGrantService/CreateAccessGrant instead.
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -93,12 +84,9 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issues.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    // WRITE, and editing an issue is an agent's job — including an edit that
-    // resets approval finding and sends the issue back for review. What this
-    // does not cover is creation: with allow_missing set on an issue that does
-    // not exist, the handler calls CreateIssue with the request's own issue, so
-    // the MCP gate applies CreateIssue's request-shape refusal here too
-    // whenever allow_missing is set.
+    // WRITE, and editing an issue is an agent's job, including an edit that
+    // sends the issue back for review. With allow_missing on a missing issue it
+    // creates one, which rejectMCPOriginatedGrantIssue guards as CreateIssue is.
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -162,8 +150,9 @@ service IssueService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
+    // An MCP session reaches it only through the decide_issue tool, after the
+    // user confirms the decision in the MCP client. RejectIssue is the same.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
@@ -175,8 +164,7 @@ service IssueService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
@@ -188,20 +176,12 @@ service IssueService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
-    // WRITE, not FORBIDDEN with its two siblings, because it is structurally
-    // the opposite of them. ApproveIssue and RejectIssue record the review
-    // decision — an approver role via canReview, the self-approval guard, an
-    // APPROVED or REJECTED approver appended. This action requires the issue to
-    // be ALREADY rejected, requires the actor to be the issue CREATOR, never
-    // calls canReview, and records no decision: it strips the REJECTED
-    // approvers and returns the issue to PENDING for a fresh human decision
-    // (component/review/workflow.go applyReviewAction, ActionRequest).
-    //
-    // It approves nothing, so refusing it protects nothing the other two do not
-    // already protect, and it costs the loop propose_database_change exists
-    // for: while a rejection stands Approve and Reject both hard-fail, so this
-    // is the ONLY exit from the rejected state. Forbidding it means an agent
-    // that fixes the SQL a human asked it to fix cannot resubmit.
+    // WRITE with no confirmation step: unlike ApproveIssue and RejectIssue, it
+    // records no decision. Only the issue's creator can call it, on a rejected
+    // issue, and it returns the issue to PENDING for a fresh decision
+    // (component/review/workflow.go applyReviewAction, ActionRequest). It is the
+    // only way out of the rejected state, so an agent that fixed the SQL
+    // resubmits through it.
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -225,17 +205,29 @@ service IssueService {
     option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 
-  // Triggers a review run. The slot is reset unconditionally: a RUNNING
-  // execution is superseded (its completion is fenced off), the attempt
-  // number is bumped, and the returned run is AVAILABLE.
-  // Review results are not returned by this RPC and have no read RPC yet:
-  // findings will surface as issue comments once the review comment
-  // integration lands. The returned run carries execution status only.
+  // Gets the review run of an issue. The run carries the execution state
+  // only; review results are issue comments. An issue the review has never
+  // run on is NOT_FOUND.
+  // Permissions required: bb.reviewRuns.get
+  rpc GetReviewRun(GetReviewRunRequest) returns (ReviewRun) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/issues/*/reviewRun}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.reviewRuns.get";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
+  }
+
+  // Starts the review of an issue. It replaces the current run
+  // unconditionally: an execution in flight is superseded (its completion is
+  // fenced off), and the returned run is RUNNING.
+  // Review results are not returned by this RPC: they are posted as issue
+  // comments. The returned run carries the execution state only, and
+  // GetReviewRun reads it back.
   // The audit log is the only record of who triggered a run.
   // Permissions required: bb.reviewRuns.run
   rpc RunReview(RunReviewRequest) returns (ReviewRun) {
     option (google.api.http) = {
-      post: "/v1/{name=projects/*/issues/*/reviewRuns/*}:run"
+      post: "/v1/{name=projects/*/issues/*/reviewRun}:run"
       body: "*"
     };
     option (google.api.method_signature) = "name";
@@ -562,7 +554,7 @@ message Issue {
 
 message RoleGrant {
   // The requested role.
-  // Format: roles/EXPORTER.
+  // Format: roles/{role}.
   string role = 1;
   // The user to be granted.
   // Format: users/{email}.
@@ -686,8 +678,10 @@ message IssueComment {
   optional ThreadState thread_state = 15;
 
   // Optional source context on a root or reply. A reply's anchor must share
-  // the root's spec and sheet_sha256; it may narrow the range.
-  // Cannot be set on events. Immutable after creation.
+  // the root's spec and sheet_sha256 when created; it may narrow the range.
+  // Cannot be set on events. Immutable after creation, except that a later
+  // review run reporting a review result again moves the result to its
+  // statement in the SQL that run reviewed.
   StatementAnchor statement_anchor = 16 [(google.api.field_behavior) = IMMUTABLE];
 
   // Present on review results, the comments the review executor posts.
@@ -708,14 +702,27 @@ message IssueComment {
       P2 = 3;
     }
 
-    // The reviewer that posted the result.
-    ReviewRun.Type run_type = 1;
-    // The rule judged against. Set if and only if run_type is RULE.
-    ReviewRuleType rule_type = 2;
-    Priority priority = 3;
+    // The standard rule judged against. Set on the result of a standard rule,
+    // and on no other result.
+    ReviewRuleType rule_type = 1;
+    Priority priority = 2;
     // Every database the result applies to, sorted.
     // Format: instances/{instance}/databases/{database}
-    repeated string targets = 4;
+    repeated string targets = 3;
+    // A later run has completed without reporting the result again, whatever
+    // its thread state.
+    bool superseded = 4;
+    // The ReviewRunCompletion.attempt of the run that posted the result. A
+    // result a later run reports again keeps its thread and its attempt.
+    int64 attempt = 5;
+    // The conditions the result of a standard rule reports, as finding codes
+    // such as "WT101", one per reason. A code names the same condition on
+    // every engine. Empty on any other result.
+    repeated string codes = 6;
+    // The name of the problem, on one line, for a result that no standard
+    // rule names; the comment holds the rest. Empty on the result of a
+    // standard rule, which rule_type names.
+    string title = 7;
   }
 
   enum ThreadState {
@@ -734,6 +741,8 @@ message IssueComment {
     PlanUpdate plan_update = 12;
     // Review submission event.
     ReviewSubmission review_submission = 13;
+    // Review run completion event.
+    ReviewRunCompletion review_run_completion = 18;
   }
 
   // Approval event information.
@@ -770,6 +779,20 @@ message IssueComment {
   // Review submission event information.
   message ReviewSubmission {}
 
+  // A review run completed, and what it did to the earlier results. Posted
+  // by the review, with no creator.
+  message ReviewRunCompletion {
+    // Identifies the run among the runs on the issue. The results it posted
+    // carry the same ReviewMetadata.attempt.
+    int64 attempt = 1;
+    // Results the run posted as new threads.
+    int32 posted_count = 2;
+    // Earlier results the run reported again, which kept their threads.
+    int32 kept_count = 3;
+    // Earlier results the run no longer reports, now superseded.
+    int32 superseded_count = 4;
+  }
+
   // Plan update event information (snapshot of plan.config.specs before
   // and after a PlanService.UpdatePlan call that mutated specs).
   message PlanUpdate {
@@ -796,56 +819,57 @@ message StatementAnchor {
 message ReviewRun {
   option (google.api.resource) = {
     type: "bytebase.com/ReviewRun"
-    pattern: "projects/{project}/issues/{issue}/reviewRuns/{reviewRun}"
+    pattern: "projects/{project}/issues/{issue}/reviewRun"
   };
 
-  // Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
-  // The {reviewRun} id is the reviewer: "rule" or "ai". The name
-  // addresses a slot, not an execution.
+  // Format: projects/{project}/issues/{issue}/reviewRun
+  // An issue has one review run. The name addresses the current run, which
+  // a re-run replaces.
   string name = 1;
 
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    // Review against the standard rules.
-    RULE = 1;
-    // Review against the natural-language AI review policy, performed by a
-    // model.
-    AI = 2;
-  }
-  // Derived from the name.
-  Type type = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // States follow task_run, minus PENDING (review needs no admission
-  // control) and minus CANCELED (runs are side-effect-free until the fenced
-  // completion transaction, so re-running supersedes instead of canceling).
-  enum Status {
-    STATUS_UNSPECIFIED = 0;
-    // Created and claimable by any replica.
-    AVAILABLE = 1;
-    RUNNING = 2;
-    // Every (spec, target) unit was evaluated. DONE does not mean the
-    // review passed: whether problems remain is judged from open comments.
-    DONE = 3;
+  // There is no canceled state: a run has no effect until its fenced
+  // completion transaction, so a re-run supersedes it instead.
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    // Queued or running.
+    RUNNING = 1;
+    // Every (spec, target) unit in scope was evaluated. SUCCEEDED does not
+    // mean the review passed: whether problems remain is judged from open
+    // comments.
+    SUCCEEDED = 2;
     // At least one unit was not evaluated; the cause is in `error`.
-    FAILED = 4;
+    FAILED = 3;
   }
-  Status status = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  State state = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // When the current run was triggered. Reset on every re-run.
-  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // When the run reached a terminal status. Unset while AVAILABLE or
-  // RUNNING.
-  google.protobuf.Timestamp end_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // When the run reached a terminal state. Unset while RUNNING.
+  google.protobuf.Timestamp end_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Fatal execution error, set if and only if status is FAILED: the review
+  // Fatal execution error, set if and only if state is FAILED: the review
   // failed to execute (a platform problem, never the SQL — SQL problems are
-  // review results on a DONE run).
-  string error = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // review results on a SUCCEEDED run).
+  google.rpc.Status error = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether the plan's SQL changed after this run started, so the run
+  // reviews an earlier version of it. The server starts a new run before it
+  // creates the rollout automatically.
+  bool outdated = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message GetReviewRunRequest {
+  // The name of the review run to retrieve.
+  // Format: projects/{project}/issues/{issue}/reviewRun
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/ReviewRun"}
+  ];
 }
 
 message RunReviewRequest {
-  // Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+  // Format: projects/{project}/issues/{issue}/reviewRun
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/ReviewRun"}

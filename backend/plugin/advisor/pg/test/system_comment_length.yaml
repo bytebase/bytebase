@@ -24,3 +24,27 @@
         line: 1
         column: 0
       endposition: null
+- statement: comment on table t is 'abcdefghijklmnopqrst'
+- statement: comment on table t is 'éééééééééééé'
+  want:
+    - status: 2
+      code: 1301
+      title: SYSTEM_COMMENT_LENGTH
+      content: The length of comment should be within 20 characters
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: comment on table t is null
+- statement: |-
+    comment on table t is 'short';
+    comment on index idx is 'a comment that is too long';
+  want:
+    - status: 2
+      code: 1301
+      title: SYSTEM_COMMENT_LENGTH
+      content: The length of comment should be within 20 characters
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

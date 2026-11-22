@@ -1296,17 +1296,17 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\x15v1/auth_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x13v1/annotation.proto\x1a\x14v1/idp_service.proto\x1a\x18v1/setting_service.proto\x1a\x15v1/user_service.proto\"Y\n" +
 	"\x1cGetAuthenticationInfoRequest\x129\n" +
 	"\tworkspace\x18\x01 \x01(\tB\x1b\xfaA\x18\n" +
-	"\x16bytebase.com/WorkspaceR\tworkspace\"\xd0\x01\n" +
-	"\x12AuthenticationInfo\x12!\n" +
-	"\tworkspace\x18\x01 \x01(\tB\x03\xe0A\x03R\tworkspace\x12?\n" +
-	"\vrestriction\x18\x02 \x01(\v2\x18.bytebase.v1.RestrictionB\x03\xe0A\x03R\vrestriction\x12V\n" +
-	"\x12identity_providers\x18\x03 \x03(\v2\".bytebase.v1.LoginIdentityProviderB\x03\xe0A\x03R\x11identityProviders\"\xe3\x02\n" +
-	"\vRestriction\x12,\n" +
-	"\x0fdisallow_signup\x18\x01 \x01(\bB\x03\xe0A\x03R\x0edisallowSignup\x12=\n" +
-	"\x18disallow_password_signin\x18\x02 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
-	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\x12:\n" +
-	"\x17allow_email_code_signin\x18\x04 \x01(\bB\x03\xe0A\x03R\x14allowEmailCodeSignin\x129\n" +
-	"\x16password_reset_enabled\x18\x05 \x01(\bB\x03\xe0A\x03R\x14passwordResetEnabled\"\xd0\x01\n" +
+	"\x16bytebase.com/WorkspaceR\tworkspace\"\xd3\x01\n" +
+	"\x12AuthenticationInfo\x12\"\n" +
+	"\tworkspace\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\tworkspace\x12@\n" +
+	"\vrestriction\x18\x02 \x01(\v2\x18.bytebase.v1.RestrictionB\x04\xe2A\x01\x03R\vrestriction\x12W\n" +
+	"\x12identity_providers\x18\x03 \x03(\v2\".bytebase.v1.LoginIdentityProviderB\x04\xe2A\x01\x03R\x11identityProviders\"\xe8\x02\n" +
+	"\vRestriction\x12-\n" +
+	"\x0fdisallow_signup\x18\x01 \x01(\bB\x04\xe2A\x01\x03R\x0edisallowSignup\x12>\n" +
+	"\x18disallow_password_signin\x18\x02 \x01(\bB\x04\xe2A\x01\x03R\x16disallowPasswordSignin\x12q\n" +
+	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x04\xe2A\x01\x03R\x13passwordRestriction\x12;\n" +
+	"\x17allow_email_code_signin\x18\x04 \x01(\bB\x04\xe2A\x01\x03R\x14allowEmailCodeSignin\x12:\n" +
+	"\x16password_reset_enabled\x18\x05 \x01(\bB\x04\xe2A\x01\x03R\x14passwordResetEnabled\"\xd0\x01\n" +
 	"\x15LoginIdentityProvider\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x125\n" +
 	"\x04type\x18\x02 \x01(\x0e2!.bytebase.v1.IdentityProviderTypeR\x04type\x12\x14\n" +

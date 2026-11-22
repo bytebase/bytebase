@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   },
   setHighlightAccessGrantName: vi.fn(),
   searchMyAccessGrants: vi.fn(),
+  batchGetOrFetchDatabases: vi.fn().mockResolvedValue([]),
   fetchDatabases: vi
     .fn()
     .mockResolvedValue({ databases: [], nextPageToken: "" }),
@@ -50,6 +51,7 @@ vi.mock("@/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({
       searchMyAccessGrants: mocks.searchMyAccessGrants,
+      batchGetOrFetchDatabases: mocks.batchGetOrFetchDatabases,
       fetchDatabases: mocks.fetchDatabases,
       getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
       fetchIssueByName: mocks.fetchIssueByName,
@@ -267,6 +269,7 @@ const setupDefaultMocks = () => {
   });
 
   mocks.fetchIssueByName.mockResolvedValue({});
+  mocks.batchGetOrFetchDatabases.mockResolvedValue([]);
 
   mocks.fetchDatabases.mockResolvedValue({ databases: [], nextPageToken: "" });
   mocks.getOrFetchDatabaseByName.mockResolvedValue({});
@@ -384,6 +387,59 @@ describe("AccessPane", () => {
       "[data-testid='access-grant-item']"
     );
     expect(items.length).toBe(2);
+    unmount();
+  });
+
+  test("hydrates visible grant targets without delaying the list", async () => {
+    let resolveHydration: (() => void) | undefined;
+    mocks.batchGetOrFetchDatabases.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveHydration = resolve;
+        })
+    );
+    const grants = [
+      {
+        ...makeGrant("grant1"),
+        targets: [
+          "instances/inst1/databases/db1",
+          "instances/inst1/databases/db2",
+          "instances/inst1/databases/db3",
+        ],
+      },
+      {
+        ...makeGrant("grant2"),
+        targets: [
+          "instances/inst2/databases/db4",
+          "instances/inst2/databases/db5",
+        ],
+      },
+    ];
+    mocks.searchMyAccessGrants.mockResolvedValue({
+      accessGrants: grants,
+      nextPageToken: "",
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AccessPane />);
+    render();
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(
+      container.querySelectorAll("[data-testid='access-grant-item']")
+    ).toHaveLength(2);
+    expect(mocks.batchGetOrFetchDatabases).toHaveBeenCalledWith(
+      [
+        "instances/inst1/databases/db1",
+        "instances/inst1/databases/db2",
+        "instances/inst2/databases/db4",
+        "instances/inst2/databases/db5",
+      ],
+      true
+    );
+    resolveHydration?.();
     unmount();
   });
 

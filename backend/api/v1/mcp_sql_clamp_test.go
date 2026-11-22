@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -26,6 +27,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mongodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
@@ -42,7 +44,7 @@ import (
 
 // unclassifiedEngineWrites are the engines with no registered read-only
 // classifier, each with a statement that writes on it. Every one fails closed
-// under the clamp rather than gaining a validator in this change.
+// under the clamp rather than gaining a validator.
 //
 // One map rather than a list beside a lookup table: two copies of this set
 // could disagree about which engines the test is even about.
@@ -167,6 +169,13 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			reason:    "rewrites the session it runs on",
 		},
 		{
+			name:      "a SQL Server session option ahead of a read is refused",
+			engine:    storepb.Engine_MSSQL,
+			statement: "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; SELECT 1",
+			refused:   true,
+			reason:    "statement 1 of 2 returns no data",
+		},
+		{
 			// A single well-formed statement the server executes as a
 			// server-side file write. The MySQL family has no read-only
 			// driver session, so the classifier is the whole guarantee here.
@@ -260,15 +269,18 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			reason:    "the statement is not a read",
 		},
 		{
-			// Doris nests block comments; the shared stripper stops at the
-			// first "*/", so stripping first would leave text between INTO
-			// and OUTFILE and lose a keyword-pair match. The guard reads the
-			// raw statement for that reason.
+			// Doris nests block comments and omni's Doris lexer does not: it
+			// ends one at the first "*/", so the tail leaks back into the
+			// token stream. What leaks is not a clause, so the statement does
+			// not parse and is refused as a syntax error rather than reaching
+			// the export gate. Doris, which nests, reads the same text as an
+			// export, so the two disagree about what this statement is and it
+			// is refused either way (BOT-93).
 			name:      "a nested comment cannot hide a Doris export",
 			engine:    storepb.Engine_DORIS,
 			statement: "SELECT * FROM employee\nINTO /* outer /* inner */ tail */ OUTFILE \"s3://bucket/export/\"\nFORMAT AS PARQUET",
 			refused:   true,
-			reason:    "the statement is not a read",
+			reason:    "the statement could not be parsed",
 		},
 		{
 			name:      "nor can a line comment",
@@ -278,11 +290,16 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			reason:    "the statement is not a read",
 		},
 		{
+			// An unterminated literal means there is no tree to classify, so
+			// the clamp refuses it as the syntax error it is. It was refused
+			// as "not a read" while a token scan stood in for the export
+			// gate, since that scan treated any lex error as a possible
+			// hidden keyword.
 			name:      "an unlexable Doris statement fails closed",
 			engine:    storepb.Engine_DORIS,
 			statement: "SELECT * FROM t WHERE a = 'unterminated",
 			refused:   true,
-			reason:    "the statement is not a read",
+			reason:    "the statement could not be parsed",
 		},
 		{
 			// USE rebinds the connection's catalog and schema, so an
@@ -340,16 +357,17 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 		},
 		{
 			// Not "inside a comment" for a NESTED one: omni's Doris lexer ends
-			// a comment at the first "*/", so the tail leaks back into the
-			// token stream and the keyword is seen. Doris itself nests, so
-			// this query is a plain SELECT 1 there and Bytebase refuses it
-			// anyway (BOT-93). Pinned as the cost of failing closed on a
-			// disagreement rather than guessing which lexer is right.
+			// a comment at the first "*/", so "OUTFILE */" leaks back into the
+			// token stream, where it parses as nothing and the statement is
+			// refused as a syntax error. Doris itself nests, so this query is
+			// a plain SELECT 1 there (BOT-93). Pinned as the cost of failing
+			// closed on a disagreement rather than guessing which lexer is
+			// right.
 			name:      "a nested comment holding the keyword refuses, though Doris would not",
 			engine:    storepb.Engine_DORIS,
 			statement: "SELECT 1 /* outer /* inner */ OUTFILE */",
 			refused:   true,
-			reason:    "the statement is not a read",
+			reason:    "the statement could not be parsed",
 		},
 		{
 			name:      "a read on an engine with no splitter is still classified",
@@ -378,7 +396,7 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			require.Contains(t, err.Error(), row.reason)
 			require.Contains(t, err.Error(), "READ_ONLY",
 				"the denial must name the ceiling that refused")
-			require.Contains(t, err.Error(), "raise the MCP ceiling",
+			require.Contains(t, err.Error(), "raise the MCP ceiling under "+auth.MCPCeilingLocation,
 				"the denial must name the way out")
 			require.Contains(t, err.Error(), "Bytebase console",
 				"the denial must name where the human can do it instead")

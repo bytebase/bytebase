@@ -5,6 +5,10 @@ import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { MonacoEditor } from "./MonacoEditor";
 
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
 const mocks = vi.hoisted(() => {
   const connectionSnapshot = {
     state: "ready",
@@ -189,7 +193,19 @@ const renderIntoContainer = async (
   act(() => {
     root.render(element);
   });
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  // The init effect awaits several times before it flips `ready`, which gates
+  // the LSP status corner. Wait for the editor to report it rather than for a
+  // fixed tick, which only usually outlasts that chain.
+  for (let tick = 0; tick < 50; tick++) {
+    if (
+      container
+        .querySelector("[data-testid='monaco-editor']")
+        ?.getAttribute("data-ready") === "true"
+    ) {
+      break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
 
   return {
     container,

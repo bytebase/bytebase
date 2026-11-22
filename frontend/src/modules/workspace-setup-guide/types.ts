@@ -12,9 +12,20 @@ export type GuideStepId =
 export type GuideScenarioId =
   | "query-data"
   | "create-database-change"
-  | "mark-sensitive-data";
+  | "mark-sensitive-data"
+  | "just-exploring";
 
 export type GuideWorkspaceUsage = "team" | "solo";
+
+export const GUIDE_TEAM_SIZES = [
+  "just-me",
+  "2-10",
+  "11-50",
+  "51-200",
+  "200+",
+] as const;
+
+export type GuideTeamSize = (typeof GUIDE_TEAM_SIZES)[number];
 
 export type GuideQueryTarget = {
   schema: string;

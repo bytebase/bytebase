@@ -6,6 +6,8 @@ import { PlanCheckSection } from "@/components/plan-check/PlanCheckSection";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { getPlanCheckSummaryWithFallback } from "@/lib/plan/check";
+import { AgentDiagnosticHelpButton } from "@/modules/agent/components/AgentDiagnosticHelpButton";
+import { getPlanCheckDiagnosticContext } from "@/modules/agent/logic/planCheckDiagnostics";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -109,6 +111,32 @@ export function IssueDetailChecks() {
       onRefreshOnOpen={refreshChecks}
       onRun={runChecks}
       planCheckRuns={page.planCheckRuns}
+      renderResultAction={(result) => {
+        const planName = page.plan?.name;
+        const sourceId = `${planName}/planCheckRun`;
+        if (
+          page.isCreating ||
+          !page.issue ||
+          !planName ||
+          page.issue.plan !== planName ||
+          planName.match(/^(.+)\/plans\/([1-9]\d*)$/)?.[1] !== projectName ||
+          page.planCheckRuns.length !== 1 ||
+          page.planCheckRuns[0].name !== sourceId
+        )
+          return null;
+        const context = getPlanCheckDiagnosticContext({
+          resource: {
+            kind: "issue",
+            name: page.issue.name,
+            project: projectName,
+            label: page.issue.name,
+          },
+          result,
+          sourceId,
+          facts: [{ label: "Plan", value: planName }],
+        });
+        return context ? <AgentDiagnosticHelpButton context={context} /> : null;
+      }}
       summaryOverride={summary}
     />
   );

@@ -1,0 +1,67 @@
+{
+  "_about": "Owner routing for the e2e routine. `areas` maps an e2e spec directory to the product source it exercises (used to find the culprit commit) and a default owner when no single commit explains a failure. `github_to_linear` maps git author names to Linear users by display name, the form the Linear connector's assignee field accepts; no email addresses live in this public file. Entries listed under `_confirm` are guesses that a human must confirm before the routine assigns to them.",
+  "_confirm": ["ecmadao -> Edward Lu", "boojack -> Steven Li", "rebelice -> (unknown)", "default owners per area"],
+  "framework_owner": "Peter Zhu",
+  "areas": {
+    "sql-editor": {
+      "sources": ["frontend/src/modules/sql-editor", "frontend/src/components/monaco", "frontend/src/components/SQLEditorButton.tsx", "frontend/src/components/DataExportButton.tsx", "backend/api/v1/sql_service.go", "backend/api/v1/sql_service_converter.go", "backend/api/v1/saved_query_service.go", "backend/api/v1/sheet_service.go", "backend/api/v1/database_catalog_service.go"],
+      "owner": "Edward Lu"
+    },
+    "schema-editor": {
+      "sources": ["frontend/src/modules/schema-editor", "frontend/src/modules/schema-diagram", "frontend/src/components/schema", "backend/plugin/schema"],
+      "owner": "Edward Lu"
+    },
+    "plan-detail": {
+      "sources": ["frontend/src/components/plan-check", "frontend/src/components/task-run-log", "frontend/src/components/issue-activity", "frontend/src/components/CustomApproval", "frontend/src/routes/project", "backend/api/v1/plan_service.go", "backend/api/v1/rollout_service.go", "backend/api/v1/rollout_service_task.go", "backend/api/v1/issue_service.go", "backend/api/v1/issue_review.go", "backend/runner"],
+      "owner": "Steven Li"
+    },
+    "issue-detail": {
+      "sources": ["frontend/src/components/issue-activity", "frontend/src/components/IssueTable.tsx", "frontend/src/components/IssueStatusIcon.tsx", "frontend/src/routes/project", "backend/api/v1/issue_service.go", "backend/api/v1/issue_comment.go", "backend/api/v1/issue_review.go"],
+      "owner": "Steven Li"
+    },
+    "masking-exemption": {
+      "sources": ["frontend/src/components/database", "frontend/src/components/SemanticTypeSelect.tsx", "frontend/src/components/ClassificationTree.tsx", "frontend/src/modules/access-control", "backend/component/masker", "backend/api/v1/sql_service.go", "backend/api/v1/org_policy_service.go"],
+      "owner": "Danny Xu"
+    },
+    "project-databases": {
+      "sources": ["frontend/src/components/database", "frontend/src/components/ProjectSidebar.tsx", "frontend/src/routes/project", "backend/api/v1/database_service.go", "backend/api/v1/project_service.go"],
+      "owner": null
+    },
+    "project-members": {
+      "sources": ["frontend/src/components/role-grant", "frontend/src/components/RoleSelect.tsx", "frontend/src/components/UserSelect.tsx", "frontend/src/routes/project", "backend/api/v1/project_service.go", "backend/api/v1/user_service.go"],
+      "owner": null
+    },
+    "workspace": {
+      "sources": ["frontend/src/components/mcp", "frontend/src/components/instance", "frontend/src/components/BannersWrapper.tsx", "frontend/src/components/ExternalUrlAlert.tsx", "frontend/src/routes/workspace", "backend/api/mcp", "backend/api/v1/setting_service.go", "backend/api/v1/instance_service.go"],
+      "owner": "Peter Zhu"
+    },
+    "oauth2-consent": {
+      "sources": ["frontend/src/components/mcp", "frontend/src/routes/auth", "backend/api/mcp", "backend/api/v1/auth_service.go"],
+      "owner": "Peter Zhu"
+    },
+    "workspace-setup": {
+      "sources": ["frontend/src/modules/workspace-setup-guide", "frontend/src/routes/auth", "frontend/src/routes/workspace", "backend/api/v1/auth_service.go", "backend/api/v1/setting_service.go"],
+      "owner": "Peter Zhu"
+    },
+    "scroll-restoration": {
+      "sources": ["frontend/src/routes", "frontend/src/components/DashboardBodyShell.tsx", "frontend/src/components/ProjectPageLayout.tsx"],
+      "owner": "Peter Zhu"
+    }
+  },
+  "github_to_linear": {
+    "zchpeter": "Peter Zhu",
+    "ecmadao": "Edward Lu",
+    "Danny Xu": "Danny Xu",
+    "Danny": "Danny Xu",
+    "d-bytebase": "Danny Xu",
+    "p0ny": "Xzavier Zane",
+    "boojack": "Steven Li",
+    "h3n4l": "Adrian Lam",
+    "Vincent Huang": "Vincent Huang",
+    "vsai12": "Vincent Huang",
+    "Tianzhou": "Tianzhou Chen",
+    "rebelice": null,
+    "renovate[bot]": null,
+    "dependabot[bot]": null
+  }
+}

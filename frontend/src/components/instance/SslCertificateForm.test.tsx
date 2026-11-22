@@ -61,6 +61,38 @@ describe("SslCertificateForm", () => {
     });
   });
 
+  test("renders the verification switch before its label in an inline row", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <SslCertificateForm
+          layout="vertical"
+          verifyControlLayout="inline"
+          verify={true}
+          onVerifyChange={() => {}}
+        />
+      );
+    });
+
+    const verifySwitch = screen.getByRole("switch", {
+      name: "data-source.ssl.verify-certificate",
+    });
+    expect(verifySwitch.parentElement).toHaveAttribute(
+      "data-slot",
+      "form-control-row"
+    );
+    expect(verifySwitch.parentElement?.lastElementChild?.textContent).toBe(
+      "data-source.ssl.verify-certificate"
+    );
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("renders posture-first connection security controls", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
@@ -497,6 +529,59 @@ describe("SslCertificateForm", () => {
       container.querySelectorAll('[data-testid="tls-configured-badge"]')
     ).toHaveLength(3);
     expect(container.textContent).toContain("data-source.ssl.configured");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("omits Disabled and keeps certificate verification toggleable when TLS is required", async () => {
+    const onVerifyChange = vi.fn();
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <SslCertificateForm
+          requireTls
+          posture="DISABLED"
+          onPostureChange={() => {}}
+          caSource="SYSTEM_TRUST"
+          onCaSourceChange={() => {}}
+          clientCertSource="NONE"
+          onClientCertSourceChange={() => {}}
+          useSsl={true}
+          verify={true}
+          onVerifyChange={onVerifyChange}
+          engineType={Engine.POSTGRES}
+        />
+      );
+    });
+
+    const posture = screen.getByRole("combobox", {
+      name: "data-source.ssl.posture.self",
+    });
+    expect(posture).toHaveTextContent("data-source.ssl.posture.tls");
+    fireEvent.click(posture);
+    expect(
+      await screen.findByRole("option", { name: "data-source.ssl.posture.tls" })
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("option", {
+        name: "data-source.ssl.posture.mutual-tls",
+      })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("option", { name: "data-source.ssl.posture.disabled" })
+    ).toBeNull();
+
+    const verifySwitch = screen.getByRole("switch", {
+      name: "data-source.ssl.verify-certificate",
+    });
+    expect(verifySwitch).not.toBeDisabled();
+    fireEvent.click(verifySwitch);
+    expect(onVerifyChange).toHaveBeenCalledWith(false);
 
     act(() => {
       root.unmount();

@@ -16,6 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -34,17 +35,19 @@ type PlanService struct {
 	iamManager     *iam.Manager
 	webhookManager *webhook.Manager
 	licenseService *enterprise.LicenseService
+	profile        *config.Profile
 	reviewWorkflow *review.Workflow
 }
 
 // NewPlanService returns a plan service instance.
-func NewPlanService(store *store.Store, bus *bus.Bus, iamManager *iam.Manager, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService) *PlanService {
+func NewPlanService(store *store.Store, bus *bus.Bus, iamManager *iam.Manager, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, profile *config.Profile) *PlanService {
 	return &PlanService{
 		store:          store,
 		bus:            bus,
 		iamManager:     iamManager,
 		webhookManager: webhookManager,
 		licenseService: licenseService,
+		profile:        profile,
 		reviewWorkflow: review.NewWorkflow(store),
 	}
 }
@@ -381,6 +384,13 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			}
 			planCheckRunCreated = created
 		}
+	}
+
+	// The review starts before the plan checks and the approval check are
+	// signaled, as either can create the rollout: a slot already reset holds
+	// it until the review of the new SQL is done.
+	if planCheckRunsTrigger {
+		startReview(ctx, s.profile, s.store, s.licenseService, s.bus, updateResult.Issue)
 	}
 
 	if updatedIssue := updateResult.Issue; updateResult.ApprovalReset && updatedIssue != nil {
@@ -1217,13 +1227,14 @@ func convertToPlanCheckRunResults(results []*storepb.PlanCheckRunResult_Result) 
 
 func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1pb.PlanCheckRun_Result {
 	resultV1 := &v1pb.PlanCheckRun_Result{
-		Status:  convertToPlanCheckRunResultStatus(result.Status),
-		Title:   result.Title,
-		Content: result.Content,
-		Code:    result.Code,
-		Target:  result.Target,
-		Type:    convertToV1ResultType(result.Type),
-		Report:  nil,
+		Status:      convertToPlanCheckRunResultStatus(result.Status),
+		Title:       result.Title,
+		Content:     result.Content,
+		Code:        result.Code,
+		Target:      result.Target,
+		Type:        convertToV1ResultType(result.Type),
+		SheetSha256: result.SheetSha256,
+		Report:      nil,
 	}
 	switch report := result.Report.(type) {
 	case *storepb.PlanCheckRunResult_Result_SqlSummaryReport_:

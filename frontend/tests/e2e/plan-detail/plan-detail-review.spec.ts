@@ -16,9 +16,12 @@
 //   - Comment composer: draft survives collapse, post appends + re-collapses (CUJ E)
 //   - Long-history timeline fold (torn separator + Show all) (CUJ J)
 //   - Non-candidate sees no Review action but can still comment (permission boundary)
+//   - A step whose role only a service account holds lists it as the reviewer,
+//     and names it once it approves through the API
 //   - BYT-9746 guard: "(edited)" marker shows in place after an inline edit
-//   - Inline comment threads: seeded thread in editor + timeline, gutter
-//     creation, reply / resolve / reopen, View in Statement (CUJ K)
+//   - Inline comment threads: seeded thread in editor + timeline, a wide
+//     excerpt's pinned gutter, gutter creation, reply / resolve / reopen,
+//     View in Statement (CUJ K)
 //
 //   Rollout-readiness footer + bypass (readinessFooterState.ts)
 //   - Approved/skipped + failed checks → "Bypass and deploy" → confirm sheet →
@@ -44,14 +47,24 @@
 import {
   test,
   expect,
+  type Locator,
   type Page,
   type BrowserContext,
 } from "@playwright/test";
+import enUS from "../../../src/locales/en-US.json";
 import { loadTestEnv, type TestEnv } from "../framework/env";
-import { BytebaseApiClient } from "../framework/api-client";
+import { BytebaseApiClient, type IamPolicy } from "../framework/api-client";
 import { signInBrowserAs } from "../framework/sign-in";
+import {
+  createDatabaseChangePlanViaUI,
+  submitDraftForReviewViaUI,
+} from "../framework/ui-create-plan";
 import { PlanDetailPage } from "./plan-detail.page";
-import { seedReviewPlan, waitForApprovalStatus } from "./plan-helpers";
+import {
+  authorMayApprove,
+  seedReviewPlan,
+  waitForApprovalStatus,
+} from "./plan-helpers";
 
 test.setTimeout(180_000);
 
@@ -66,6 +79,7 @@ let originalProjectSettings: {
   requireIssueApproval?: boolean;
   requirePlanCheckNoError?: boolean;
   allowSelfApproval?: boolean;
+  allowLastPlanEditorApproval?: boolean;
 } = {};
 let originalApproval: unknown = null;
 const createdReviewConfigs: string[] = [];
@@ -106,14 +120,14 @@ async function goReview(planId: string): Promise<void> {
 
 // Configure a mandatory single/multi-step approval flow (the common case for
 // the review-action + flow describes). Clears any review-config tag first so a
-// prior describe's ERROR rule can't leak in. allowSelfApproval=true lets demo@
-// (the issue creator) approve their own issue for single-admin tests.
+// prior describe's ERROR rule can't leak in. authorMayApprove lets demo@ (the
+// issue creator and last plan editor) approve their own issue.
 async function setupApproval(rule: object): Promise<void> {
   await env.api.deletePolicy(env.project, "tag").catch(() => {});
   await env.api.updateProjectSettings(env.project, {
     requireIssueApproval: true,
     requirePlanCheckNoError: false,
-    allowSelfApproval: true,
+    ...authorMayApprove(true),
   });
   await env.api.upsertSetting(
     "WORKSPACE_APPROVAL",
@@ -144,6 +158,7 @@ test.beforeAll(async ({ browser }) => {
     requireIssueApproval: !!project.requireIssueApproval,
     requirePlanCheckNoError: !!project.requirePlanCheckNoError,
     allowSelfApproval: !!project.allowSelfApproval,
+    allowLastPlanEditorApproval: !!project.allowLastPlanEditorApproval,
   };
   originalApproval = (await env.api.getSetting("WORKSPACE_APPROVAL"))?.value ?? null;
 
@@ -425,6 +440,237 @@ test.describe("Permission boundary: non-candidate cannot review but can comment"
   });
 });
 
+// A new project denies approval by the last person who changed the plan
+// (allow_last_plan_editor_approval=false). Every other describe turns the
+// option on through authorMayApprove so the single admin can approve its own
+// plans; this one keeps it off and checks the rule from both sides of the
+// boundary: the editor (a candidate of the step) sees Approve disabled with
+// the reason and is refused by the API, can still reject, and a second admin
+// who never touched the plan approves as usual.
+test.describe("Last plan editor cannot approve while the project option is off", () => {
+  test.describe.configure({ mode: "serial" });
+  // The second workspace admin provisioned at server startup; it never edits
+  // a plan, so it is the approver this rule leaves.
+  const APPROVER_EMAIL = "approver1@example.com";
+  const APPROVER_PASSWORD = "12345678"; // NOSONAR: e2e fixture
+  let planId: string;
+  let issueName: string;
+
+  test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
+    await env.api.updateProjectSettings(env.project, {
+      allowSelfApproval: true,
+      allowLastPlanEditorApproval: false,
+    });
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review LastEditor",
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_le_${Date.now()} TEXT;`,
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    planId = seeded.planId;
+    issueName = seeded.issueName;
+    await goReview(planId);
+  });
+
+  test("the editor is a candidate, but Approve is disabled with the reason and the API refuses", async () => {
+    await expect(planPage.reviewBadge("Under review")).toBeVisible({
+      timeout: 15_000,
+    });
+    // The approval flow names the blocked candidate under the step.
+    await expect(
+      page.getByText("Can't approve — last changed this plan", { exact: false }),
+    ).toBeVisible();
+    // The Review action is still offered: the editor can comment or reject.
+    await planPage.reviewButton.click();
+    await page.getByText("Submit feedback and request changes").waitFor();
+    const approve = page.getByRole("radio", { name: /^Approve/ });
+    await expect(approve).toBeDisabled();
+    await page.getByText("Approve", { exact: true }).hover();
+    await expect(
+      page.getByText(
+        "You can't approve this issue because you were the last person to change its plan",
+        { exact: false },
+      ),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+    // The server enforces the same rule.
+    await expect(env.api.approveIssue(issueName)).rejects.toThrow(
+      /last Plan editor/,
+    );
+  });
+
+  test("a second admin who never edited the plan approves it", async ({ browser }) => {
+    await signInBrowserAs(
+      browser,
+      env.baseURL,
+      APPROVER_EMAIL,
+      APPROVER_PASSWORD,
+      ".auth/approver-review.json",
+    );
+    const approverContext = await browser.newContext({
+      storageState: ".auth/approver-review.json",
+    });
+    try {
+      const approverPage = new PlanDetailPage(
+        await approverContext.newPage(),
+        env.baseURL,
+      );
+      await approverPage.goto(projectId, planId);
+      await approverPage.dismissModals();
+      await approverPage.expandSection("Review");
+      await expect(approverPage.reviewButton).toBeVisible({ timeout: 15_000 });
+      await approverPage.submitReview("Approve");
+      await expect(approverPage.reviewBadge("Approved")).toBeVisible({
+        timeout: 15_000,
+      });
+    } finally {
+      await approverContext.close();
+    }
+  });
+
+  test("the editor can still reject", async () => {
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review LastEditor Reject",
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_ler_${Date.now()} TEXT;`,
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    await goReview(seeded.planId);
+    await planPage.submitReview("Reject", "Add a default value before this can ship");
+    await expect(planPage.reviewBadge("Rejected")).toBeVisible({ timeout: 15_000 });
+    await expect(planPage.rejectionBanner).toBeVisible();
+  });
+});
+
+// An integration approves through the API as a service account that holds a
+// custom role (design doc: docs/design/approval-step-non-human-approvers.md).
+// The step used to read "No reviewers".
+test.describe("A step held only by a service account", () => {
+  test.describe.configure({ mode: "serial" });
+  const suffix = Date.now();
+  const role = `roles/e2e-integration-approver-${suffix}`;
+  const serviceAccountTitle = `E2E Integration ${suffix}`;
+  let serviceAccount: { email: string; serviceKey: string };
+  let originalProjectPolicy: IamPolicy;
+  let planId: string;
+  let issueName: string;
+
+  test.beforeAll(async () => {
+    await env.api.createRole(role.split("/")[1], "E2E Integration Approver", [
+      "bb.projects.get",
+      "bb.issues.get",
+      "bb.plans.get",
+    ]);
+    const { workspace } = await env.api.getActuatorInfo();
+    serviceAccount = await env.api.createServiceAccount(
+      workspace,
+      `e2e-integration-${suffix}`,
+      serviceAccountTitle,
+    );
+    originalProjectPolicy = await env.api.getProjectIamPolicy(env.project);
+    await env.api.appendProjectBinding(env.project, role, [
+      `serviceAccount:${serviceAccount.email}`,
+    ]);
+    await setupApproval({
+      source: "CHANGE_DATABASE",
+      condition: { expression: "true" },
+      template: {
+        flow: { roles: [role] },
+        title: "E2E Integration Approval",
+        description: "One step, held only by a service account",
+      },
+    });
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review SA",
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_sa_${suffix} TEXT;`,
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    planId = seeded.planId;
+    issueName = seeded.issueName;
+    await goReview(planId);
+  });
+
+  test.afterAll(async () => {
+    const current = await env.api.getProjectIamPolicy(env.project);
+    await env.api
+      .setProjectIamPolicy(env.project, {
+        ...originalProjectPolicy,
+        etag: current.etag,
+      })
+      .catch(() => {});
+    await env.api.deleteServiceAccount(serviceAccount.email);
+    await env.api.deleteRole(role);
+  });
+
+  test("the step lists the service account as its reviewer, marked as one", async () => {
+    await expect(planPage.reviewBadge("Under review")).toBeVisible({
+      timeout: 15_000,
+    });
+    const reviewers = page.getByText("1 reviewer", { exact: true });
+    await expect(reviewers).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("No reviewers")).toHaveCount(0);
+    // The signed-in admin does not hold the role, so there is nothing to review.
+    await expect(planPage.reviewButton).not.toBeVisible();
+
+    await reviewers.click();
+    await expect(page.getByText(serviceAccountTitle)).toBeVisible();
+    await expect(page.getByText(serviceAccount.email)).toBeVisible();
+    await expect(
+      page.getByText("Service Account", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: `Copy email for ${serviceAccountTitle}` }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByText(serviceAccount.email)).toBeHidden();
+    await expect(
+      page.getByRole("button", { name: /1 reviewer/ }),
+    ).toBeFocused();
+  });
+
+  test("the header status popover opens the reviewer list, and Escape closes only the list", async () => {
+    await planPage.headerStatusPill("Under review").click();
+    const statusPopover = page
+      .getByRole("dialog")
+      .filter({ hasText: "Review in progress" });
+    await expect(statusPopover).toBeVisible({ timeout: 10_000 });
+
+    await statusPopover.getByRole("button", { name: /1 reviewer/ }).click();
+    await expect(page.getByText(serviceAccount.email)).toBeVisible();
+
+    await page
+      .getByRole("button", { name: `Copy email for ${serviceAccountTitle}` })
+      .click();
+    await expect(page.getByText(serviceAccount.email)).toBeVisible();
+    await expect(statusPopover).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByText(serviceAccount.email)).toBeHidden();
+    await expect(statusPopover).toBeVisible();
+  });
+
+  test("once it approves through the API, the step and the activity name it", async () => {
+    const integration = new BytebaseApiClient({ baseURL: env.baseURL });
+    await integration.login(serviceAccount.email, serviceAccount.serviceKey);
+    await integration.approveIssue(issueName);
+    await waitForApprovalStatus(env.api, issueName, ["APPROVED"]);
+
+    await goReview(planId);
+    await expect(planPage.reviewBadge("Approved")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(
+      page.getByText(`Approved by ${serviceAccountTitle}`),
+    ).toBeVisible({ timeout: 15_000 });
+    // One mark beside the step, one beside the approval in the activity.
+    await expect(
+      page.getByText("Service Account", { exact: true }),
+    ).toHaveCount(2);
+    await expect(
+      page.getByText(serviceAccountTitle, { exact: true }),
+    ).toBeVisible();
+  });
+});
+
 // Inline comment threads (design doc: Plan Review Comment and Thread UI/UX).
 // A thread anchors to whole lines of the spec's saved sheet; it renders as a
 // gutter marker + expanded card in the statement editor and as a card with
@@ -436,6 +682,7 @@ test.describe("Inline comment threads (CUJ K)", () => {
   let specId: string;
   let sheetSha256: string;
   const seededRoot = `K seeded root ${Date.now()}`;
+  let seededRootName = "";
   const seededReply = `K seeded reply ${Date.now()}`;
   const createdRoot = `K gutter root ${Date.now()}`;
   const typedReply = `K typed reply ${Date.now()}`;
@@ -448,7 +695,8 @@ test.describe("Inline comment threads (CUJ K)", () => {
       sql: [
         `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_k1_${suffix} TEXT;`,
         `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_k2_${suffix} TEXT;`,
-        `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_k3_${suffix} TEXT;`,
+        // Wider than any card, so the timeline excerpt scrolls sideways.
+        `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_k3_${suffix} TEXT; -- ${"wide ".repeat(60).trimEnd()}`,
         `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_k4_${suffix} TEXT;`,
       ].join("\n"),
     });
@@ -465,6 +713,7 @@ test.describe("Inline comment threads (CUJ K)", () => {
     const root = await env.api.createIssueComment(issueName, seededRoot, {
       statementAnchor: { spec: specId, sheetSha256, startLine: 2, endLine: 3 },
     });
+    seededRootName = root.name;
     await env.api.createIssueComment(issueName, seededReply, { root: root.name });
     await goReview(planId);
     await planPage.expandSection("Changes");
@@ -483,15 +732,107 @@ test.describe("Inline comment threads (CUJ K)", () => {
     await expect(timelineCard).toContainText(seededReply);
     // The recorded statement downloads once the card nears the viewport.
     await timelineCard.scrollIntoViewIfNeeded();
-    const anchor = timelineCard.getByTestId("statement-anchor");
-    await expect(anchor).toHaveAttribute("data-anchor-state", "CURRENT", { timeout: 15_000 });
-    await expect(anchor).toContainText("Lines 2–3");
-    await expect(anchor).toContainText("e2e_rev_k2_");
-    await expect(anchor.getByRole("button", { name: "View in Statement" })).toBeVisible();
+    const bar = timelineCard.getByTestId("thread-bar");
+    await expect(bar).toHaveAttribute("data-anchor-state", "CURRENT", { timeout: 15_000 });
+    await expect(bar).toContainText("Lines 2–3");
+    await expect(bar.getByRole("button", { name: "View in Statement" })).toBeVisible();
+    // The excerpt is in the body, under the bar.
+    await expect(bar).not.toContainText("e2e_rev_k2_");
+    await expect(timelineCard).toContainText("e2e_rev_k2_");
     // The reply never renders as its own timeline row.
     await expect(
       page.locator("#plan-phase-review [data-testid='comment-thread']"),
     ).toHaveCount(1);
+  });
+
+  test("a wide excerpt scrolls its code under line numbers and a range bar that stay put, clear of the scrollbar", async () => {
+    const card = planPage.threadCardIn("review", seededRoot);
+    await card.scrollIntoViewIfNeeded();
+    const excerpt = card.locator("pre");
+    const lastRow = excerpt.locator("[data-line-number='3']");
+    await expect(lastRow).toContainText("e2e_rev_k3_", { timeout: 15_000 });
+    const measure = () =>
+      lastRow.evaluate((row) => {
+        const pre = row.closest("pre") as HTMLElement;
+        const gutter = row.querySelector("[data-testid='excerpt-gutter']") as HTMLElement;
+        const marker = row.querySelector("[data-testid='excerpt-range-marker']") as HTMLElement;
+        const code = row.querySelector("code") as HTMLElement;
+        const box = gutter.getBoundingClientRect();
+        const atGutter = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        const content = pre.getBoundingClientRect().top + pre.clientTop + pre.clientHeight;
+        return {
+          overflow: pre.scrollWidth - pre.clientWidth,
+          gutterLeft: box.left,
+          markerLeft: marker.getBoundingClientRect().left,
+          codeLeft: code.getBoundingClientRect().left,
+          gutterOnTop: atGutter !== null && gutter.contains(atGutter),
+          gutterBackground: getComputedStyle(gutter).backgroundColor,
+          excerptBackground: getComputedStyle(pre).backgroundColor,
+          edgeOpacity: getComputedStyle(gutter, "::after").opacity,
+          clearance: content - row.getBoundingClientRect().bottom,
+        };
+      });
+    // Two commented lines borrow the one line before them.
+    await expect(excerpt.locator("[data-line-number]")).toHaveCount(3);
+    await expect(excerpt.locator("[data-selected]")).toHaveCount(2);
+    const before = await measure();
+    expect(before.overflow).toBeGreaterThan(0);
+    expect(before.edgeOpacity).toBe("0");
+
+    await excerpt.evaluate((pre) => {
+      pre.scrollLeft = pre.scrollWidth;
+    });
+    const after = await measure();
+    expect(after.codeLeft).toBeLessThan(before.codeLeft);
+    expect(after.gutterLeft).toBeCloseTo(before.gutterLeft, 0);
+    expect(after.markerLeft).toBeCloseTo(before.markerLeft, 0);
+    // The gutter paints over the code on the excerpt's own ground, hiding it.
+    expect(after.gutterOnTop).toBe(true);
+    expect(after.gutterBackground).toBe(after.excerptBackground);
+    // A hairline beside the gutter fades in only while code is under it, and
+    // runs the full height of the excerpt, through its padding.
+    await expect.poll(async () => (await measure()).edgeOpacity).toBe("1");
+    const hairline = await excerpt.evaluate((pre) => {
+      const gutters = pre.querySelectorAll("[data-testid='excerpt-gutter']");
+      const first = gutters[0] as HTMLElement;
+      const last = gutters[gutters.length - 1] as HTMLElement;
+      const top = first.getBoundingClientRect().top + Number.parseFloat(getComputedStyle(first, "::after").top);
+      const bottom = last.getBoundingClientRect().bottom - Number.parseFloat(getComputedStyle(last, "::after").bottom);
+      const contentTop = pre.getBoundingClientRect().top + pre.clientTop;
+      return {
+        above: top - contentTop,
+        below: contentTop + pre.clientHeight - bottom,
+        width: getComputedStyle(first, "::after").width,
+      };
+    });
+    expect(hairline.above).toBeCloseTo(0, 0);
+    expect(hairline.below).toBeCloseTo(0, 0);
+    expect(hairline.width).toBe("1px");
+    // An overlay scrollbar reserves no space and covers the bottom 6px of the
+    // excerpt, so the last line must end above that band.
+    expect(after.clearance).toBeGreaterThanOrEqual(6);
+  });
+
+  test("an excerpt's line numbers start on the comment's text column, at desktop and phone widths", async () => {
+    const card = planPage.threadCardIn("review", seededRoot);
+    const gutter = card.locator("[data-line-number='3'] [data-testid='excerpt-gutter']");
+    const numberToTextOffset = async () => {
+      await card.scrollIntoViewIfNeeded();
+      await expect(gutter).toHaveText("3", { timeout: 15_000 });
+      const numberLeft = await gutter.evaluate(
+        (el) => el.getBoundingClientRect().left + Number.parseFloat(getComputedStyle(el).paddingLeft),
+      );
+      const textLeft = (await card.getByText(seededRoot).boundingBox())?.x ?? Number.NaN;
+      return numberLeft - textLeft;
+    };
+    expect(await numberToTextOffset()).toBeCloseTo(0, 0);
+    // Below the sm breakpoint the comment's inset shrinks, and the gutter's with it.
+    await page.setViewportSize({ width: 390, height: 844 });
+    try {
+      expect(await numberToTextOffset()).toBeCloseTo(0, 0);
+    } finally {
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
   });
 
   // One journey: create a thread from the gutter, then reply, resolve,
@@ -512,14 +853,12 @@ test.describe("Inline comment threads (CUJ K)", () => {
     await expect(planPage.inlineComposer).not.toBeVisible({ timeout: 15_000 });
     await expect(planPage.threadCardIn("changes", createdRoot)).toBeVisible();
     await expect(planPage.threadMarkers).toHaveCount(2);
-    const createdAnchor = planPage
-      .threadCardIn("review", createdRoot)
-      .getByTestId("statement-anchor");
-    await expect(createdAnchor).toBeVisible({ timeout: 15_000 });
-    await expect(createdAnchor).toContainText("Line 1");
+    const createdCard = planPage.threadCardIn("review", createdRoot);
+    await expect(createdCard).toBeVisible({ timeout: 15_000 });
+    await expect(createdCard.getByTestId("thread-bar")).toContainText("Line 1");
     // The recorded statement downloads once the card nears the viewport.
-    await createdAnchor.scrollIntoViewIfNeeded();
-    await expect(createdAnchor).toContainText("e2e_rev_k1_", { timeout: 15_000 });
+    await createdCard.scrollIntoViewIfNeeded();
+    await expect(createdCard).toContainText("e2e_rev_k1_", { timeout: 15_000 });
 
     const timelineCard = planPage.threadCardIn("review", seededRoot);
     await timelineCard.scrollIntoViewIfNeeded();
@@ -528,31 +867,41 @@ test.describe("Inline comment threads (CUJ K)", () => {
     await timelineCard.getByRole("button", { name: "Reply", exact: true }).click();
     await expect(timelineCard).toContainText(typedReply, { timeout: 15_000 });
 
-    // Resolving collapses the timeline card to its summary row.
+    // Resolving folds the timeline card to its title bar.
     await timelineCard.getByRole("button", { name: "Resolve", exact: true }).click();
-    const resolvedCard = planPage.threadCardIn("review", seededRoot);
+    const resolvedCard = planPage.threadCardOf("review", seededRootName);
+    const fold = planPage.cardFoldControl(resolvedCard);
     await expect(resolvedCard).toHaveAttribute("data-thread-state", "resolved", { timeout: 15_000 });
-    await expect(resolvedCard).toContainText("Resolved");
-    await expect(resolvedCard).toContainText("2 replies");
-    await expect(resolvedCard).toContainText(seededRoot);
+    await expect(fold).toHaveAttribute("aria-expanded", "false");
+    await expect(resolvedCard.getByTestId("thread-bar")).toContainText("Resolved");
+    await expect(resolvedCard.getByTestId("thread-bar")).toContainText("Lines 2–3");
+    await expect(resolvedCard).not.toContainText(seededRoot);
     await expect(resolvedCard.getByTestId("thread-comment")).toHaveCount(0);
 
-    // Expanding keeps it resolved and offers Reopen.
-    await resolvedCard.getByRole("button", { name: /Resolved/ }).click();
+    // Unfolding keeps it resolved and offers Reopen; reopening keeps it open.
+    await fold.click();
     await expect(resolvedCard).toContainText(seededRoot);
     await resolvedCard.getByRole("button", { name: "Reopen", exact: true }).click();
-    const reopened = planPage.threadCardIn("review", seededRoot);
+    const reopened = planPage.threadCardOf("review", seededRootName);
     await expect(reopened.getByRole("button", { name: "Resolve", exact: true })).toBeVisible({
       timeout: 15_000,
     });
+    await expect(fold).toHaveAttribute("aria-expanded", "true");
+
+    // An open thread folds too, and unfolds again.
+    await fold.click();
+    await expect(reopened.getByTestId("thread-comment")).toHaveCount(0);
+    await fold.click();
+    await expect(reopened).toContainText(seededRoot);
 
     // View in Statement lands on the anchored lines with the seeded thread
-    // expanded, collapsing the thread created above.
+    // expanded. Threads expand independently (#21543), so the thread created
+    // above stays open beside it.
     await reopened.getByRole("button", { name: "View in Statement" }).click();
     const editorCard = planPage.threadCardIn("changes", seededRoot);
     await expect(editorCard).toBeVisible({ timeout: 15_000 });
     await expect(editorCard).toContainText(typedReply);
-    await expect(planPage.threadCardIn("changes", createdRoot)).not.toBeVisible();
+    await expect(planPage.threadCardIn("changes", createdRoot)).toBeVisible();
   });
 });
 
@@ -610,7 +959,7 @@ test.describe("Bypass when approved but checks failed (CUJ F)", () => {
     await env.api.updateProjectSettings(env.project, {
       requireIssueApproval: false,
       requirePlanCheckNoError: false,
-      allowSelfApproval: true,
+      ...authorMayApprove(true),
     });
     await env.api.upsertSetting(
       "WORKSPACE_APPROVAL",
@@ -658,7 +1007,7 @@ test.describe("Waiting-review bypass link is gated by requireIssueApproval (CUJ 
     await env.api.updateProjectSettings(env.project, {
       requireIssueApproval: true,
       requirePlanCheckNoError: false,
-      allowSelfApproval: true,
+      ...authorMayApprove(true),
     });
     await env.api.upsertSetting(
       "WORKSPACE_APPROVAL",
@@ -703,7 +1052,7 @@ test.describe("A mandatory project gate hard-blocks the bypass confirm", () => {
     await env.api.updateProjectSettings(env.project, {
       requireIssueApproval: false,
       requirePlanCheckNoError: true,
-      allowSelfApproval: true,
+      ...authorMayApprove(true),
     });
     await env.api.upsertSetting(
       "WORKSPACE_APPROVAL",
@@ -752,7 +1101,7 @@ test.describe("confirm sheet shows the skipped state in its review box (BYT-9745
     await env.api.updateProjectSettings(env.project, {
       requireIssueApproval: false,
       requirePlanCheckNoError: false,
-      allowSelfApproval: true,
+      ...authorMayApprove(true),
     });
     await env.api.upsertSetting(
       "WORKSPACE_APPROVAL",
@@ -907,9 +1256,13 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
     await expect(planPage.specUnresolvedCounts).toHaveCount(1, { timeout: 15_000 });
     await expect(planPage.specUnresolvedCounts).toHaveText("2");
     await expectReviewSummary("3 unresolved threads");
-    await expect(planPage.threadWalker).toContainText("2");
-    await expect(planPage.threadWalker).toHaveAttribute(
-      "title",
+    // The walker reads "position/count" (#21543); its explanation is the
+    // aria-label of the count's tooltip trigger.
+    await expect(planPage.threadWalker).toContainText("/2");
+    await expect(
+      planPage.threadWalker.locator("[aria-label]").first(),
+    ).toHaveAttribute(
+      "aria-label",
       "2 unresolved threads on this version · 1 more not shown on this version",
     );
     // Markers: A, B, and the resolved one; the stale thread has none.
@@ -921,13 +1274,44 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
     await expect(planPage.threadCardIn("changes", rootA)).toBeVisible();
     await planPage.threadWalkerNext.click();
     await expect(planPage.threadCardIn("changes", rootB)).toBeVisible({ timeout: 10_000 });
-    await expect(planPage.threadCardIn("changes", rootA)).not.toBeVisible();
+    // Stepping opens the next thread without closing the previous one (#21543).
+    await expect(planPage.threadCardIn("changes", rootA)).toBeVisible();
     await planPage.threadWalkerNext.click();
     await expect(planPage.threadCardIn("changes", rootA)).toBeVisible({ timeout: 10_000 });
     await planPage.threadWalkerPrevious.click();
     await expect(planPage.threadCardIn("changes", rootB)).toBeVisible({ timeout: 10_000 });
     // The resolved thread is never a stop.
     await expect(planPage.threadCardIn("changes", rootResolved)).not.toBeVisible();
+  });
+
+  test("a card in the Changes section folds to its title bar, and the reader's Resolve folds it", async () => {
+    const foldA = planPage.threadFoldControl("Comment on line 2");
+    await expect(planPage.threadCardIn("changes", rootA)).toBeVisible();
+    await expect(foldA).toHaveAttribute("aria-expanded", "true");
+    await foldA.click();
+    // Folded, the card is its bar: the title stays, the comment goes.
+    await expect(foldA).toHaveAttribute("aria-expanded", "false");
+    await expect(planPage.threadCardIn("changes", rootA)).toHaveCount(0);
+    // A click on the bar's title unfolds it too.
+    await planPage.threadBar("Comment on line 2").getByText("Comment on line 2", { exact: true }).click();
+    await expect(planPage.threadCardIn("changes", rootA)).toBeVisible();
+
+    const foldB = planPage.threadFoldControl("Comment on lines 4–5");
+    if ((await foldB.getAttribute("aria-expanded")) === "false") await foldB.click();
+    const cardB = planPage.threadCardIn("changes", rootB);
+    await cardB.getByRole("button", { name: "Resolve", exact: true }).click();
+    await expect(foldB).toHaveAttribute("aria-expanded", "false", { timeout: 15_000 });
+    const barB = planPage.threadBar("Comment on lines 4–5");
+    await expect(barB).toContainText("Resolved");
+
+    // Leave B open but folded, as its Resolve left it, for the next journeys.
+    await foldB.click();
+    await cardB.getByRole("button", { name: "Reopen", exact: true }).click();
+    await expect(cardB).toHaveAttribute("data-thread-state", "open", { timeout: 15_000 });
+    await expect(barB).not.toContainText("Resolved");
+    await expect(planPage.specUnresolvedCounts).toHaveText("2");
+    await foldB.click();
+    await expect(foldB).toHaveAttribute("aria-expanded", "false");
   });
 
   test("several composers stay open with their own drafts, and each closes on its own", async () => {
@@ -976,26 +1360,28 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
     await editor.fill(replyResolving);
     await resolveBox.click();
     await expect(resolveBox).toHaveAttribute("aria-checked", "true");
+    const rootAName = (await card.getAttribute("id")) ?? "";
     await reply.click();
 
-    const resolvedCard = planPage.threadCardIn("review", rootA);
+    // Resolving folds the card to its title bar.
+    const resolvedCard = planPage.threadCardOf("review", rootAName);
     await expect(resolvedCard).toHaveAttribute("data-thread-state", "resolved", { timeout: 15_000 });
-    await expect(resolvedCard).toContainText("1 reply");
+    await expect(planPage.cardFoldControl(resolvedCard)).toHaveAttribute("aria-expanded", "false");
     // The counts follow: A left the placed-unresolved set.
     await expect(planPage.specUnresolvedCounts).toHaveText("2");
     await expect(planPage.threadWalker).toContainText("2");
     await expectReviewSummary("3 unresolved threads");
 
-    // Expand and reply again: a resolved thread offers Reopen thread,
+    // Unfold and reply again: a resolved thread offers Reopen thread,
     // checked by default, so an untouched reply reopens it.
-    await resolvedCard.getByRole("button", { name: /Resolved/ }).click();
+    await planPage.cardFoldControl(resolvedCard).click();
     await expect(resolvedCard).toContainText(replyResolving);
     await resolvedCard.getByRole("button", { name: "Reply..." }).click();
     const reopenBox = planPage.threadStateCheckbox(resolvedCard, "Reopen thread");
     await expect(reopenBox).toHaveAttribute("aria-checked", "true");
     await resolvedCard.locator("textarea[placeholder='Reply...']").fill(replyReopening);
     await resolvedCard.getByRole("button", { name: "Reply", exact: true }).click();
-    const reopenedCard = planPage.threadCardIn("review", rootA);
+    const reopenedCard = planPage.threadCardOf("review", rootAName);
     await expect(reopenedCard).toHaveAttribute("data-thread-state", "open", { timeout: 15_000 });
     await expect(reopenedCard).toContainText(replyReopening);
     await expect(planPage.specUnresolvedCounts).toHaveText("3");
@@ -1003,7 +1389,7 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
     // Unticking it keeps the thread resolved.
     await reopenedCard.getByRole("button", { name: "Resolve", exact: true }).click();
     await expect(reopenedCard).toHaveAttribute("data-thread-state", "resolved", { timeout: 15_000 });
-    await reopenedCard.getByRole("button", { name: /Resolved/ }).click();
+    await planPage.cardFoldControl(reopenedCard).click();
     await reopenedCard.getByRole("button", { name: "Reply..." }).click();
     await planPage.threadStateCheckbox(reopenedCard, "Reopen thread").click();
     await reopenedCard.locator("textarea[placeholder='Reply...']").fill(`${replyReopening} still`);
@@ -1014,26 +1400,51 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
 
     // Leave A open for the next journey.
     await reopenedCard.getByRole("button", { name: "Reopen", exact: true }).click();
-    await expect(planPage.threadCardIn("review", rootA)).toHaveAttribute("data-thread-state", "open", {
+    await expect(reopenedCard).toHaveAttribute("data-thread-state", "open", {
       timeout: 15_000,
     });
     await expect(planPage.specUnresolvedCounts).toHaveText("3");
   });
 
+  test("a reply sits in the first comment's text column, joined to it by a line", async () => {
+    const card = planPage.threadCardIn("review", rootA);
+    await card.scrollIntoViewIfNeeded();
+    const comments = card.getByTestId("thread-comment");
+    await expect(comments).toHaveCount(4);
+    const box = async (locator: Locator) => {
+      const found = await locator.boundingBox();
+      if (!found) throw new Error("no box");
+      return found;
+    };
+    const firstAvatar = await box(comments.first().getByTestId("comment-avatar"));
+    const firstText = await box(comments.first().getByTestId("comment-content"));
+    const replyAvatar = await box(comments.nth(1).getByTestId("comment-avatar"));
+    expect(firstText.x).toBeGreaterThanOrEqual(firstAvatar.x + firstAvatar.width);
+    expect(Math.abs(replyAvatar.x - firstText.x)).toBeLessThanOrEqual(1);
+    const rail = await box(card.getByTestId("thread-replies-rail"));
+    expect(rail.x).toBeGreaterThan(firstAvatar.x);
+    expect(rail.x).toBeLessThan(firstAvatar.x + firstAvatar.width);
+  });
+
   test("resolving every placed thread removes the walker and the tab count, and reopening restores them", async () => {
+    const names = new Map<string, string>();
     for (const rootText of [rootA, rootB, draftOne]) {
-      const card = planPage.threadCardIn("review", rootText);
-      await card.scrollIntoViewIfNeeded();
-      await card.getByRole("button", { name: "Resolve", exact: true }).click();
-      await expect(card).toHaveAttribute("data-thread-state", "resolved", { timeout: 15_000 });
+      const byText = planPage.threadCardIn("review", rootText);
+      await byText.scrollIntoViewIfNeeded();
+      const name = (await byText.getAttribute("id")) ?? "";
+      names.set(rootText, name);
+      await byText.getByRole("button", { name: "Resolve", exact: true }).click();
+      await expect(planPage.threadCardOf("review", name)).toHaveAttribute("data-thread-state", "resolved", {
+        timeout: 15_000,
+      });
     }
     await expect(planPage.threadWalker).toHaveCount(0);
     await expect(planPage.specUnresolvedCounts).toHaveCount(0);
     // Only the stale thread remains open.
     await expectReviewSummary(/1 unresolved thread(?!s)/);
 
-    const card = planPage.threadCardIn("review", rootB);
-    await card.getByRole("button", { name: /Resolved/ }).click();
+    const card = planPage.threadCardOf("review", names.get(rootB) ?? "");
+    await planPage.cardFoldControl(card).click();
     await card.getByRole("button", { name: "Reopen", exact: true }).click();
     await expect(planPage.threadWalker).toContainText("1", { timeout: 15_000 });
     await expect(planPage.specUnresolvedCounts).toHaveText("1");
@@ -1135,7 +1546,6 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
   let issueName: string;
   let specId: string;
   let sheetSha256: string;
-  let laterRootName = "";
   const stamp = Date.now();
   const earlierRoot = `M earlier root lines 4-5 ${stamp}`;
   const laterRoot = `M later root line 5 ${stamp}`;
@@ -1163,8 +1573,7 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
     });
     // Both end on line 5, so they share its marker.
     await env.api.createIssueComment(issueName, earlierRoot, anchor(4, 5));
-    const later = await env.api.createIssueComment(issueName, laterRoot, anchor(5, 5));
-    laterRootName = later.name;
+    await env.api.createIssueComment(issueName, laterRoot, anchor(5, 5));
     await goReview(planId);
     await planPage.expandSection("Changes");
   });
@@ -1175,6 +1584,12 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
 
   test("dragging across line numbers starts a thread on that range", async () => {
     await planPage.selectStatementLines(2, 3);
+    const selected = planPage.statementEditor.locator(".bb-thread-line--selecting").first();
+    await expect(selected).toBeVisible();
+    const gray = await page.evaluate(
+      () => `rgba(${getComputedStyle(document.documentElement).getPropertyValue("--color-control-bg-hover").trim().split(/\s+/).join(", ")}, 0.6)`,
+    );
+    await expect(selected).toHaveCSS("background-color", gray);
     await planPage.clickAddThreadGlyph();
     const composer = planPage.inlineComposer;
     await expect(composer).toBeVisible();
@@ -1185,24 +1600,75 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
     await expect(planPage.threadCardIn("changes", rangeRoot)).toBeVisible();
     // One marker on line 3 for the new thread, one shared marker on line 5.
     await expect(planPage.threadMarkers).toHaveCount(2);
-    const anchorContext = planPage.threadCardIn("review", rangeRoot).getByTestId("statement-anchor");
-    await anchorContext.scrollIntoViewIfNeeded();
-    await expect(anchorContext).toContainText("Lines 2–3", { timeout: 15_000 });
-    await expect(anchorContext).toContainText(`e2e_rev_m2_${stamp}`);
+    const rangeCard = planPage.threadCardIn("review", rangeRoot);
+    await rangeCard.scrollIntoViewIfNeeded();
+    await expect(rangeCard.getByTestId("thread-bar")).toContainText("Lines 2–3", { timeout: 15_000 });
+    await expect(rangeCard).toContainText(`e2e_rev_m2_${stamp}`);
+  });
+
+  test("the statement sits on its gray ground on every line, with or without a thread", async () => {
+    const ground = page.locator("#plan-phase-changes [data-testid='statement-ground']").first();
+    await expect(ground).toBeVisible();
+    // Tailwind computes the token's opacity in its own color space, so the
+    // expected value comes from a probe drawn with the same utility.
+    const groundColor = await page.evaluate(() => {
+      const probe = document.createElement("div");
+      probe.className = "bg-control-bg/50";
+      document.body.append(probe);
+      const color = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return color;
+    });
+    await expect(ground).toHaveCSS("background-color", groundColor);
+    // Monaco's own layers are transparent, so the ground shows behind every
+    // line: the commented ones and the rest alike.
+    await expect(planPage.statementEditor).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    for (const layer of [".monaco-editor-background", ".margin"]) {
+      await expect(planPage.statementEditor.locator(layer).first()).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    }
+    await expect(planPage.statementEditor.locator(".view-overlays [class*='bb-thread-line']:not(.bb-thread-line--selecting)")).toHaveCount(0);
+  });
+
+  test("an unfolded card is at most 768px wide and ends 16px or more before the editor's right edge", async () => {
+    const card = planPage.threadCardIn("changes", rangeRoot);
+    await expect(card).toBeVisible();
+    await expect(planPage.statementEditor.locator(".view-overlays [class*='bb-thread-line']:not(.bb-thread-line--selecting)")).toHaveCount(0);
+    const [cardBox, editorBox] = await Promise.all([card.boundingBox(), planPage.statementEditor.boundingBox()]);
+    if (!cardBox || !editorBox) throw new Error("no box");
+    expect(cardBox.width).toBeLessThanOrEqual(768);
+    expect(editorBox.x + editorBox.width - (cardBox.x + cardBox.width)).toBeGreaterThanOrEqual(16);
   });
 
   test("two threads ending on one line share a counted marker, and the stack expands either one", async () => {
     const shared = planPage.statementEditor.locator(".bb-thread-glyph--count-2");
     await expect(shared).toHaveCount(1);
-    await shared.click();
-    // The earliest unresolved thread expands; the other waits as a row.
+    // The marker toggles its own stack (#21543). The stack may already be open
+    // from the layer's mount, which expands the first unresolved thread, so
+    // open it only when it is not showing.
+    const stack = page
+      .locator("#plan-phase-changes [data-testid='thread-stack']")
+      .filter({ has: page.getByRole("button", { name: "Comment on line 5", exact: true }) });
+    if (!(await stack.isVisible().catch(() => false))) {
+      await shared.click();
+    }
+    await expect(stack).toBeVisible();
+    // Each folded card is titled by its own range. Each unfolds on its own,
+    // and unfolding one leaves the other open: both cards end up visible.
+    for (const [title, rootText] of [
+      ["Comment on lines 4–5", earlierRoot],
+      ["Comment on line 5", laterRoot],
+    ]) {
+      const fold = planPage.threadFoldControl(title);
+      await expect(fold).toHaveCount(1);
+      if ((await fold.getAttribute("aria-expanded")) === "false") {
+        await expect(planPage.threadCardIn("changes", rootText)).toHaveCount(0);
+        await fold.click();
+      }
+      await expect(fold).toHaveAttribute("aria-expanded", "true");
+      await expect(planPage.threadCardIn("changes", rootText)).toBeVisible();
+    }
     await expect(planPage.threadCardIn("changes", earlierRoot)).toBeVisible();
-    const laterRow = planPage.collapsedThreadRow(laterRootName);
-    await expect(laterRow).toBeVisible();
-    await expect(laterRow).toContainText(laterRoot);
-    await laterRow.click();
     await expect(planPage.threadCardIn("changes", laterRoot)).toBeVisible();
-    await expect(planPage.threadCardIn("changes", earlierRoot)).not.toBeVisible();
   });
 
   test("the walker announces its position and yields the corner to the find widget", async () => {
@@ -1222,18 +1688,89 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
   test("a narrow viewport keeps the walker inside the editor's top-right corner and composers usable", async () => {
     await page.setViewportSize({ width: 480, height: 1200 });
     await expect(planPage.threadWalker).toBeVisible({ timeout: 10_000 });
-    const editorBox = await planPage.statementEditor.boundingBox();
-    const walkerBox = await planPage.threadWalker.boundingBox();
-    expect(editorBox && walkerBox).toBeTruthy();
-    if (editorBox && walkerBox) {
-      expect(walkerBox.x + walkerBox.width).toBeLessThanOrEqual(editorBox.x + editorBox.width);
-      expect(walkerBox.y).toBeGreaterThanOrEqual(editorBox.y);
-      expect(walkerBox.y - editorBox.y).toBeLessThan(40);
-    }
+    // The walker is a Monaco overlay widget, placed by Monaco's own layout a
+    // frame or more after the viewport changes, so wait for the corner.
+    await expect
+      .poll(
+        async () => {
+          const editorBox = await planPage.statementEditor.boundingBox();
+          const walkerBox = await planPage.threadWalker.boundingBox();
+          if (!editorBox || !walkerBox) return "missing box";
+          return {
+            rightEdgeInside: walkerBox.x + walkerBox.width <= editorBox.x + editorBox.width,
+            belowEditorTop: walkerBox.y >= editorBox.y,
+            nearEditorTop: walkerBox.y - editorBox.y < 40,
+          };
+        },
+        { timeout: 5_000 },
+      )
+      .toEqual({ rightEdgeInside: true, belowEditorTop: true, nearEditorTop: true });
+    // The walker's last step may have scrolled line 1 above the editor's top.
+    await planPage.scrollStatementEditorToTop();
     const composer = await planPage.openInlineComposerOn(1);
     await expect(composer.getByRole("button", { name: "Publish", exact: true })).toBeDisabled();
     await composer.getByRole("button", { name: "Cancel" }).click();
     await expect(planPage.inlineComposer).toHaveCount(0);
+  });
+
+  test("on a phone, every part of an Activity card's bar stays inside the card, with nothing overlapping", async () => {
+    await page.setViewportSize({ width: 375, height: 1200 });
+    const card = planPage.threadCardIn("review", earlierRoot);
+    await card.scrollIntoViewIfNeeded();
+    const bar = card.getByTestId("thread-bar");
+    await expect(bar.getByTestId("thread-bar-lines")).toBeVisible();
+    await expect(bar.getByRole("button", { name: "View in Statement" })).toBeVisible();
+    await expect
+      .poll(
+        async () => {
+          const cardBox = await card.boundingBox();
+          if (!cardBox) return ["no card box"];
+          const boxes = [];
+          // The title, markers and state labels sit in a box-less wrapper, so measure them too.
+          for (const part of await bar.locator(":scope > *, [data-testid='thread-bar-lead'] > *").all()) {
+            const box = await part.boundingBox();
+            if (box && box.width > 0) boxes.push(box);
+          }
+          const problems: string[] = [];
+          for (const box of boxes) {
+            if (box.x + box.width > cardBox.x + cardBox.width + 0.5) problems.push("past the card's edge");
+          }
+          for (let i = 0; i < boxes.length; i++) {
+            for (let j = i + 1; j < boxes.length; j++) {
+              const [a, b] = [boxes[i], boxes[j]];
+              const sameRow = a.y < b.y + b.height && b.y < a.y + a.height;
+              const apart = a.x + a.width <= b.x + 0.5 || b.x + b.width <= a.x + 0.5;
+              if (sameRow && !apart) problems.push("parts overlap");
+            }
+          }
+          const barBox = await bar.boundingBox();
+          const linesBox = await bar.getByTestId("thread-bar-lines").boundingBox();
+          const linkBox = await bar.getByRole("button", { name: "View in Statement" }).boundingBox();
+          if (barBox && linesBox && linkBox) {
+            if (Math.abs(linesBox.y - linkBox.y) > 4) problems.push("lines and link on different rows");
+            if (barBox.x + barBox.width - (linkBox.x + linkBox.width) > 12) problems.push("link not at the right end");
+          }
+          return problems;
+        },
+        { timeout: 5_000 },
+      )
+      .toEqual([]);
+    // At desktop width the same bar is one row.
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await expect.poll(async () => (await bar.boundingBox())?.height ?? 0, { timeout: 5_000 }).toBeLessThanOrEqual(34);
+  });
+
+  test("at desktop width a long title truncates and keeps its bar on one row", async () => {
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    const changesBar = planPage.threadBar("Comment on lines 4–5");
+    await changesBar.scrollIntoViewIfNeeded();
+    const title = changesBar.locator("[data-testid='thread-bar-lead'] > *").first();
+    // No seeded title is long enough, so lengthen this one in the page.
+    await title.evaluate((node) => {
+      node.textContent = "Comment on lines 4–5 of a statement with a very long title ".repeat(6);
+    });
+    await expect.poll(async () => (await changesBar.boundingBox())?.height ?? 0, { timeout: 5_000 }).toBeLessThanOrEqual(34);
+    expect(await title.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
   });
 });
 
@@ -1312,5 +1849,506 @@ test.describe("Inline comment threads: walker scrolls the editor once (CUJ N)", 
     expect(await planPage.countStatementEditorScrolls(stepTo(longRoot))).toBe(1);
     await expectLineAtTop(4);
     expect(await planPage.countStatementEditorScrolls(stepTo(longRoot))).toBe(0);
+  });
+});
+
+// --- Approval by the person who last changed the plan (3.23, #21298/#21315) ---
+//
+// Last Plan Editor attribution follows accepted Plan.specs mutations; the
+// project setting allow_last_plan_editor_approval (false for an API-created
+// project such as project-sample) decides whether that user may approve. It is
+// separate from and cumulative with allow_self_approval
+// (docs/design/last-plan-change-approval.md). dba1 joins the workspaceAdmin
+// step for these blocks so the one-step flow has a second candidate; the
+// binding and the setting are restored in afterAll.
+
+const LAST_EDITOR_TOOLTIP = enUS.plan.review["last-plan-editor-cannot-approve"];
+const LAST_EDITOR_LINE = enUS.plan.review["candidate-last-changed-plan"];
+const LAST_EDITOR_SETTING =
+  enUS.project.settings["issue-related"]["allow-last-plan-editor-approval"].self;
+const DBA_EMAIL = "dba1@example.com";
+const DBA_PASSWORD = "12345678"; // NOSONAR: e2e fixture
+
+const approveOption = (p: Page) => p.getByRole("radio", { name: /^Approve/ });
+const rejectOption = (p: Page) => p.getByRole("radio", { name: /^Reject/ });
+
+async function openReviewPopover(p: Page, planDetail: PlanDetailPage): Promise<void> {
+  await planDetail.reviewButton.click();
+  await expect(approveOption(p)).toBeVisible({ timeout: 15_000 });
+}
+
+// The candidate line under the approval step, e.g. "Demo: Can't approve — …".
+function lastEditorLine(p: Page, displayName: string) {
+  return p.locator("#plan-phase-review").getByText(`${displayName}: ${LAST_EDITOR_LINE}`);
+}
+
+test.describe("The last plan editor cannot approve by default; another reviewer can (L1)", () => {
+  test.describe.configure({ mode: "serial" });
+  let workspace: string;
+  let originalAllowLastEditor: boolean;
+  let dbaContext: BrowserContext;
+  let dbaPage: Page;
+  let dbaPlanPage: PlanDetailPage;
+  let planId: string;
+  let issueName: string;
+
+  test.beforeAll(async ({ browser }) => {
+    await setupApproval(ONE_STEP_RULE);
+    originalAllowLastEditor = !!(await env.api.getProject(env.project)).allowLastPlanEditorApproval;
+    // The author may self-approve; only the last-editor rule is in force.
+    await env.api.updateProjectSettings(env.project, {
+      allowSelfApproval: true,
+      allowLastPlanEditorApproval: false,
+    });
+    workspace = (await env.api.getActuatorInfo()).workspace;
+    await env.api.addWorkspaceRoleMember(workspace, DBA_EMAIL, "roles/workspaceAdmin");
+
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review L1",
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_l1_${Date.now()} TEXT;`,
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    planId = seeded.planId;
+    issueName = seeded.issueName;
+
+    await signInBrowserAs(browser, env.baseURL, DBA_EMAIL, DBA_PASSWORD, ".auth/dba-last-editor.json");
+    dbaContext = await browser.newContext({ storageState: ".auth/dba-last-editor.json" });
+    dbaPage = await dbaContext.newPage();
+    dbaPlanPage = new PlanDetailPage(dbaPage, env.baseURL);
+  });
+
+  test.afterAll(async () => {
+    await dbaContext?.close();
+    await env.api
+      .removeWorkspaceRoleMember(workspace, DBA_EMAIL, "roles/workspaceAdmin")
+      .catch((e) => console.warn("cleanup failed: dba1 admin binding", e));
+    await env.api
+      .updateProjectSettings(env.project, { allowLastPlanEditorApproval: originalAllowLastEditor })
+      .catch((e) => console.warn("cleanup failed: allowLastPlanEditorApproval", e));
+  });
+
+  test("the creator, who last changed the plan, sees Approve disabled with the reason; Reject stays open", async () => {
+    await goReview(planId);
+    await expect(lastEditorLine(page, "Demo")).toBeVisible({ timeout: 15_000 });
+    await openReviewPopover(page, planPage);
+    await expect(approveOption(page)).toBeDisabled();
+    await expect(rejectOption(page)).toBeEnabled();
+    await approveOption(page).hover();
+    await expect(page.getByText(LAST_EDITOR_TOOLTIP)).toBeVisible();
+    await page.keyboard.press("Escape");
+  });
+
+  test("the other candidate approves", async () => {
+    await dbaPlanPage.goto(projectId, planId);
+    await dbaPlanPage.dismissModals();
+    await dbaPlanPage.expandSection("Review");
+    await openReviewPopover(dbaPage, dbaPlanPage);
+    await expect(approveOption(dbaPage)).toBeEnabled();
+    await dbaPage.keyboard.press("Escape");
+    await dbaPlanPage.submitReview("Approve");
+    await expect(dbaPlanPage.reviewBadge("Approved")).toBeVisible({ timeout: 15_000 });
+    expect((await env.api.getIssue(issueName)).approvalStatus).toBe("APPROVED");
+  });
+});
+
+test.describe("The project setting and plan edits move who may approve (L2/L3)", () => {
+  test.describe.configure({ mode: "serial" });
+  let workspace: string;
+  let originalAllowLastEditor: boolean;
+  let dbaApi: BytebaseApiClient;
+  let dbaContext: BrowserContext;
+  let dbaPage: Page;
+  let dbaPlanPage: PlanDetailPage;
+  let planId: string;
+  let planName: string;
+
+  test.beforeAll(async ({ browser }) => {
+    await setupApproval(ONE_STEP_RULE);
+    originalAllowLastEditor = !!(await env.api.getProject(env.project)).allowLastPlanEditorApproval;
+    await env.api.updateProjectSettings(env.project, {
+      allowSelfApproval: true,
+      allowLastPlanEditorApproval: false,
+    });
+    workspace = (await env.api.getActuatorInfo()).workspace;
+    await env.api.addWorkspaceRoleMember(workspace, DBA_EMAIL, "roles/workspaceAdmin");
+
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review L2",
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_l2_${Date.now()} TEXT;`,
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    planId = seeded.planId;
+    planName = seeded.planName;
+
+    dbaApi = await BytebaseApiClient.asUser(env.baseURL, DBA_EMAIL, DBA_PASSWORD);
+    await signInBrowserAs(browser, env.baseURL, DBA_EMAIL, DBA_PASSWORD, ".auth/dba-last-editor.json");
+    dbaContext = await browser.newContext({ storageState: ".auth/dba-last-editor.json" });
+    dbaPage = await dbaContext.newPage();
+    dbaPlanPage = new PlanDetailPage(dbaPage, env.baseURL);
+  });
+
+  test.afterAll(async () => {
+    await dbaContext?.close();
+    await env.api
+      .removeWorkspaceRoleMember(workspace, DBA_EMAIL, "roles/workspaceAdmin")
+      .catch((e) => console.warn("cleanup failed: dba1 admin binding", e));
+    await env.api
+      .updateProjectSettings(env.project, { allowLastPlanEditorApproval: originalAllowLastEditor })
+      .catch((e) => console.warn("cleanup failed: allowLastPlanEditorApproval", e));
+  });
+
+  test("turning the setting on in Project Settings lets the last editor approve (L2)", async () => {
+    await page.goto(`${env.baseURL}/projects/${projectId}/settings`);
+    // The switch carries no accessible name of its own; it sits beside its
+    // label in the same control row.
+    const toggle = page
+      .getByText(LAST_EDITOR_SETTING, { exact: true })
+      .locator("..")
+      .getByRole("switch");
+    await expect(toggle).toBeVisible({ timeout: 15_000 });
+    await expect(toggle).not.toBeChecked();
+    await toggle.click();
+    await expect(toggle).toBeChecked();
+    await page.getByRole("button", { name: enUS.common.update, exact: true }).click();
+    await expect
+      .poll(async () => !!(await env.api.getProject(env.project)).allowLastPlanEditorApproval, {
+        timeout: 10_000,
+      })
+      .toBe(true);
+
+    await goReview(planId);
+    await expect(lastEditorLine(page, "Demo")).toHaveCount(0);
+    await openReviewPopover(page, planPage);
+    await expect(approveOption(page)).toBeEnabled();
+    await page.keyboard.press("Escape");
+  });
+
+  test("turning it off again restores the block (L2, inverse)", async () => {
+    await env.api.updateProjectSettings(env.project, { allowLastPlanEditorApproval: false });
+    await goReview(planId);
+    await expect(lastEditorLine(page, "Demo")).toBeVisible({ timeout: 15_000 });
+    await openReviewPopover(page, planPage);
+    await expect(approveOption(page)).toBeDisabled();
+    await page.keyboard.press("Escape");
+  });
+
+  test("an accepted specs update by another user moves the block to that user (L3)", async () => {
+    await env.api.updateProjectSettings(env.project, { allowLastPlanEditorApproval: false });
+    const plan = await env.api.getPlan(planName);
+    const sheet = await env.api.createSheet(
+      env.project,
+      `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_l3_${Date.now()} TEXT;`,
+    );
+    const specs = (plan.specs ?? []).map((spec) => ({
+      ...spec,
+      changeDatabaseConfig: { ...spec.changeDatabaseConfig, sheet },
+    }));
+    const updated = await dbaApi.updatePlanSpecs(planName, specs);
+    expect(updated.lastPlanEditor).toBe(`users/${DBA_EMAIL}`);
+
+    // The creator is no longer the last editor and may approve; dba1 is.
+    await goReview(planId);
+    await expect(lastEditorLine(page, "DBA1")).toBeVisible({ timeout: 15_000 });
+    await expect(lastEditorLine(page, "Demo")).toHaveCount(0);
+    await openReviewPopover(page, planPage);
+    await expect(approveOption(page)).toBeEnabled();
+    await page.keyboard.press("Escape");
+
+    await dbaPlanPage.goto(projectId, planId);
+    await dbaPlanPage.dismissModals();
+    await dbaPlanPage.expandSection("Review");
+    await openReviewPopover(dbaPage, dbaPlanPage);
+    await expect(approveOption(dbaPage)).toBeDisabled();
+    await dbaPage.keyboard.press("Escape");
+  });
+});
+
+// --- Inline comments: creation gate, plain vs thread, placement across edits ---
+// (3.23: #21514 blocks creation before review submission; #21339 keeps general
+// comments plain; #21386's placement engine shifts or outdates an anchor when
+// the statement changes — the one flow that PR left unverified in a browser.)
+
+// A timeline card's title bar, which carries its anchor state and lines. The
+// recorded statement downloads only once the card nears the viewport
+// (StatementAnchorContext's useInViewOnce), so the card is scrolled in first;
+// until then the anchor reads PENDING.
+async function timelineAnchor(rootText: string) {
+  const card = planPage.threadCardIn("review", rootText);
+  await card.scrollIntoViewIfNeeded();
+  return card.getByTestId("thread-bar");
+}
+
+// The line the editor's single thread marker sits on, by matching its top edge
+// to a line-number cell (Monaco renders only the lines in view).
+async function markerLine(): Promise<string> {
+  return planPage.statementEditor.evaluate((editor) => {
+    const marker = editor.querySelector(".bb-thread-glyph");
+    if (!marker) return "";
+    const top = marker.getBoundingClientRect().top;
+    const cell = Array.from(editor.querySelectorAll(".margin-view-overlays .line-numbers")).find(
+      (candidate) => Math.abs(candidate.getBoundingClientRect().top - top) < 4,
+    );
+    return cell?.textContent?.trim() ?? "?";
+  });
+}
+
+test.describe("Inline comments open with review submission, plain comments stay plain, anchors follow edits (C1–C3)", () => {
+  const stamp = Date.now();
+  const lines = [1, 2, 3].map(
+    (n) => `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_c${n}_${stamp} TEXT;`,
+  );
+  const insertedLine = `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_c0_${stamp} TEXT;`;
+  const plainText = `C2 plain comment ${stamp}`;
+  const rootText = `C2 thread on line 3 ${stamp}`;
+  let planId: string;
+  let planName: string;
+
+  // Replace the statement through the API (a new sheet in Plan.specs), then
+  // reload so the placement engine re-anchors against the current sheet.
+  async function replaceStatement(sql: string): Promise<void> {
+    const plan = await env.api.getPlan(planName);
+    const sheet = await env.api.createSheet(env.project, sql);
+    await env.api.updatePlanSpecs(
+      planName,
+      (plan.specs ?? []).map((spec) => ({
+        ...spec,
+        changeDatabaseConfig: { ...spec.changeDatabaseConfig, sheet },
+      })),
+    );
+    await page.reload();
+    await planPage.dismissModals();
+    await planPage.expandSection("Changes");
+    await expect(planPage.statementEditor).toBeVisible({ timeout: 15_000 });
+  }
+
+  test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
+    const created = await createDatabaseChangePlanViaUI(page, {
+      baseURL: env.baseURL,
+      projectId,
+      database: env.database,
+      title: `E2E Review C ${stamp}`,
+      sql: lines.join("\n"),
+    });
+    planId = created.planId;
+    planName = `${env.project}/plans/${planId}`;
+    await planPage.dismissModals();
+  });
+
+  test("a thread opens with review submission, stays apart from plain comments, and follows statement edits", async () => {
+    test.setTimeout(300_000);
+    await test.step("a draft offers no way to start a thread; Ready for Review opens it (C1)", async () => {
+      await planPage.expandSection("Changes");
+      await expect(planPage.statementEditor).toBeVisible();
+      await expect(planPage.statementEditor).not.toHaveClass(/bb-thread-creatable/);
+      await planPage.hoverStatementLine(2);
+      await expect(planPage.addThreadGlyph).toHaveCount(0);
+      await expect(planPage.composerTrigger).toHaveCount(0);
+
+      await submitDraftForReviewViaUI(page);
+      await expect(planPage.statementEditor).toHaveClass(/bb-thread-creatable/, { timeout: 15_000 });
+      await expect(planPage.composerTrigger).toBeVisible();
+      await planPage.hoverStatementLine(2);
+      await expect(planPage.addThreadGlyph).toBeVisible();
+    });
+
+    await test.step("a general comment renders as a plain row; a gutter comment is a thread (C2)", async () => {
+      await planPage.composerTrigger.click();
+      await planPage.composerEditor.fill(plainText);
+      await planPage.composerSubmitButton.click();
+      const timeline = page.locator("#plan-phase-review");
+      const plain = timeline.getByText(plainText, { exact: true });
+      await expect(plain).toBeVisible({ timeout: 15_000 });
+      // Not a thread: no card, and no Reply / Resolve on its row.
+      await expect(timeline.getByTestId("comment-thread").filter({ hasText: plainText })).toHaveCount(0);
+      await expect(
+        plain.locator("xpath=ancestor::li[1]").getByRole("button", { name: /^(Reply|Resolve)/ }),
+      ).toHaveCount(0);
+
+      await planPage.openInlineComposerOn(3);
+      await planPage.inlineComposerEditor.fill(rootText);
+      await planPage.inlineComposerPublishButton.click();
+      await expect(planPage.threadMarkers).toHaveCount(1, { timeout: 15_000 });
+      expect(await markerLine()).toBe("3");
+      const card = planPage.threadCardIn("review", rootText);
+      await expect(card).toBeVisible();
+      await expect(card.getByRole("button", { name: "Resolve", exact: true })).toBeVisible();
+      await expect(card.getByRole("button", { name: /^Reply/ })).toBeVisible();
+      const anchor = await timelineAnchor(rootText);
+      await expect(anchor).toHaveAttribute("data-anchor-state", "CURRENT", { timeout: 15_000 });
+      await expect(anchor).toContainText("Line 3");
+    });
+
+    await test.step("an edit above the anchor shifts the marker and keeps the card current (C3)", async () => {
+      await replaceStatement([insertedLine, ...lines].join("\n"));
+      await expect(planPage.threadMarkers).toHaveCount(1, { timeout: 15_000 });
+      await expect.poll(markerLine).toBe("4");
+      const anchor = await timelineAnchor(rootText);
+      await expect(anchor).toHaveAttribute("data-anchor-state", "CURRENT", { timeout: 15_000 });
+      // The card keeps the lines as originally selected.
+      await expect(anchor).toContainText("Line 3");
+    });
+
+    await test.step("an edit on the anchored line outdates the thread and removes its marker (C3)", async () => {
+      await replaceStatement(
+        [
+          insertedLine,
+          lines[0],
+          lines[1],
+          `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_c3_changed_${stamp} TEXT;`,
+        ].join("\n"),
+      );
+      const anchor = await timelineAnchor(rootText);
+      await expect(anchor).toHaveAttribute("data-anchor-state", "OUTDATED", { timeout: 15_000 });
+      await expect(anchor).toContainText(enUS.plan.review.thread.anchor.outdated);
+      await expect(planPage.threadMarkers).toHaveCount(0);
+    });
+  });
+});
+
+// Editing a statement under review keeps the reader's place (3.24: #21547), and
+// a Review Activity link lands in the edit editor too (#21543). The read-only
+// editor shows thread view zones the edit editor lacks, so a place restored by
+// pixels would drift; the tall thread on line 5 makes that drift large.
+test.describe("Editing keeps the reading position; Activity links land in the edit editor (C4–C5)", () => {
+  test.describe.configure({ mode: "serial" });
+  const stamp = Date.now();
+  const LINE_COUNT = 60;
+  const ACTIVITY_LINE = 50;
+  const tallRoot = `C4 tall thread on line 5 ${stamp}`;
+  const tallBody = [tallRoot]
+    .concat(Array.from({ length: 12 }, (_, i) => `Note ${i + 1} on the column this line adds.`))
+    .join("\n\n");
+  const farRoot = `C5 thread on line ${ACTIVITY_LINE} ${stamp}`;
+  let planId: string;
+  let specId: string;
+
+  const changes = () => page.locator("#plan-phase-changes");
+  // The statement's own controls show their label; thread cards' are icon buttons.
+  const editButton = () =>
+    changes().getByRole("button", { name: enUS.common.edit, exact: true }).filter({ hasText: enUS.common.edit });
+  const cancelButton = () =>
+    changes().getByRole("button", { name: enUS.common.cancel, exact: true }).filter({ hasText: enUS.common.cancel });
+
+  // The first line whose number cell is at or below the editor's top edge.
+  async function topVisibleLine(): Promise<number> {
+    return planPage.statementEditor.evaluate((editor) => {
+      const top = editor.getBoundingClientRect().top;
+      const cells = Array.from(editor.querySelectorAll<HTMLElement>(".margin-view-overlays .line-numbers"))
+        .map((cell) => ({ line: Number(cell.textContent?.trim()), top: cell.getBoundingClientRect().top }))
+        .filter((cell) => cell.top >= top - 1)
+        .sort((a, b) => a.top - b.top);
+      return cells[0]?.line ?? 0;
+    });
+  }
+
+  // A line's text, by matching its view line to its number cell.
+  async function lineText(lineNumber: number): Promise<string> {
+    return planPage.statementEditor.evaluate((editor, wanted) => {
+      const cell = Array.from(editor.querySelectorAll(".margin-view-overlays .line-numbers")).find(
+        (candidate) => candidate.textContent?.trim() === String(wanted),
+      );
+      if (!cell) return "";
+      const top = cell.getBoundingClientRect().top;
+      const line = Array.from(editor.querySelectorAll(".view-lines .view-line")).find(
+        (candidate) => Math.abs(candidate.getBoundingClientRect().top - top) < 4,
+      );
+      return line?.textContent?.replace(/ /g, " ") ?? "";
+    }, lineNumber);
+  }
+
+  test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review C4",
+      sql: Array.from(
+        { length: LINE_COUNT },
+        (_, i) => `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_c4_${i + 1}_${stamp} TEXT;`,
+      ).join("\n"),
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    planId = seeded.planId;
+    const plan = await env.api.getPlan(seeded.planName);
+    const spec = plan.specs?.[0];
+    specId = spec?.id ?? "";
+    const sheetSha256 = spec?.changeDatabaseConfig?.sheet?.split("/").pop() ?? "";
+    expect(specId).not.toBe("");
+    const anchor = (line: number) => ({
+      statementAnchor: { spec: specId, sheetSha256, startLine: line, endLine: line },
+    });
+    await env.api.createIssueComment(seeded.issueName, tallBody, anchor(5));
+    await env.api.createIssueComment(seeded.issueName, farRoot, anchor(ACTIVITY_LINE));
+  });
+
+  test("Edit keeps the top line in view and the cursor where it was (C4)", async () => {
+    await goReview(planId);
+    await planPage.expandSection("Changes");
+    // The first unresolved thread opens by default, so its view zone is in place.
+    await expect(planPage.threadCardIn("changes", tallRoot)).toBeVisible({ timeout: 15_000 });
+    // Read to the end the way a reviewer can: a click on the anchored line (the
+    // thread's zone fills the rest of the view), then Ctrl+End, which scrolls to
+    // the last line and puts the cursor there.
+    await planPage.statementEditor
+      .locator(".view-lines .view-line")
+      // Monaco renders spaces as no-break spaces, which \s matches.
+      .filter({ hasText: new RegExp(`e2e_rev_c4_5_${stamp}\\s`) })
+      .click({ timeout: 10_000 });
+    await page.keyboard.press("Control+End");
+    await expect.poll(topVisibleLine).toBeGreaterThan(30);
+    const top = await topVisibleLine();
+
+    await editButton().click();
+    await expect(cancelButton()).toBeVisible();
+    await expect.poll(() => planPage.statementLineOffset(top)).toBeGreaterThanOrEqual(0);
+    expect(await planPage.statementLineOffset(top)).toBeLessThan(24);
+    // Focused with the cursor kept: typing lands at the end of the last line.
+    await expect(planPage.statementEditor).toHaveClass(/\bfocused\b/);
+    await page.keyboard.type("-- C4");
+    await expect.poll(() => lineText(LINE_COUNT)).toMatch(/TEXT;-- C4$/);
+
+    await cancelButton().click();
+    await expect(editButton()).toBeVisible();
+  });
+
+  // Edit, park the edit editor on line 1, then follow the far thread's link.
+  async function followActivityLinkWhileEditing(): Promise<void> {
+    await planPage.expandSection("Changes");
+    await editButton().click();
+    await expect(cancelButton()).toBeVisible();
+    await planPage.statementEditor.click({ position: { x: 300, y: 10 } });
+    await page.keyboard.press("Control+Home");
+    await expect(planPage.statementLineNumber(ACTIVITY_LINE)).toHaveCount(0);
+
+    await planPage.expandSection("Review");
+    const card = planPage.threadCardIn("review", farRoot);
+    await card.scrollIntoViewIfNeeded();
+    await card.getByRole("button", { name: enUS.plan.review.thread.anchor["view-in-statement"] }).click();
+  }
+
+  async function expectLineRevealedForTyping(): Promise<void> {
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+    await expect(planPage.statementLineNumber(ACTIVITY_LINE)).toBeInViewport({ timeout: 10_000 });
+    await expect(planPage.statementEditor).toHaveClass(/\bfocused\b/);
+    await page.keyboard.type("-- C5 ");
+    await expect.poll(() => lineText(ACTIVITY_LINE)).toMatch(/^-- C5 ALTER TABLE/);
+    await cancelButton().click();
+    await expect(editButton()).toBeVisible();
+  }
+
+  test("from the spec's URL, an Activity link while editing reveals its line in the edit editor (C5)", async () => {
+    await page.goto(`${env.baseURL}/projects/${projectId}/plans/${planId}/specs/${specId}`);
+    await planPage.dismissModals();
+    await followActivityLinkWhileEditing();
+    await expectLineRevealedForTyping();
+  });
+
+  test("from the plan's URL, an Activity link while editing does not ask to leave (C5)", async () => {
+    // The plan list links here. With no spec in the URL the link pushes the
+    // spec's route, and the plan's leave guard treats that in-page move as
+    // leaving while any editor is open (BYT-10360).
+    test.fail();
+    await goReview(planId);
+    await followActivityLinkWhileEditing();
+    await expectLineRevealedForTyping();
   });
 });

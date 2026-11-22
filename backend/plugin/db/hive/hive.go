@@ -1,331 +1,242 @@
+// Package hive is Bytebase's Hive driver: an adapter over
+// github.com/bytebase/omni/hive/driver that maps Bytebase's connection config
+// onto the driver contract, and the contract's results back into the product's.
+// The conversation with HiveServer2 — session setup, the sync, the server-DDL
+// dump, queries and change scripts — is the driver's.
+//
+// The adapter keeps what is product: the data source to contract conversion,
+// the Kerberos bootstrap (under util.Lock, held through the first connection
+// because the environment it writes is process-wide), TLS material,
+// QueryContext/ExecuteOptions mapping, the v1pb conversion and the task-run
+// logger.
+//
+// Constraints of the engine and the contract, here rather than at each call:
+//   - Config.Dial is unused: gohive v2 keeps its dialer in an unexported
+//     connect configuration, so no caller can hand the driver a tunnel. An SSH
+//     data source is refused with the local-forward instruction; a local
+//     forwarder in db/util would restore it.
+//   - Config.ReadOnly, ApplicationName and EngineVersion are unused: Hive has
+//     no read-only session setting, no application name, and its version comes
+//     from the sync.
+//   - Execute ignores the transaction directive: HiveServer2 4.0 refuses
+//     BEGIN, COMMIT and ROLLBACK, so every statement commits itself.
+//   - QueryContext.Limit is applied to the rows the adapter returns, not to the
+//     statement: there is no hive parser to place a LIMIT with, so the server
+//     computes every row and MaximumSQLResultSize bounds the transfer. An
+//     explain request's plan is never cut.
+//   - A plan arrives as rows with no typed QueryPlan, which the API names.
+//   - A failed statement's error is gohive's rendering of Hive's TStatus, whose
+//     fields gohive keeps as pointers it prints as addresses. That is the
+//     engine client's, and the adapter does not hide it.
+//   - Dump does not read the metadata it is given: omni has no hive catalog, so
+//     nothing renders a synced schema back to HiveQL, and the dump is the
+//     server's own SHOW CREATE statements.
+//
+// Known differences from the driver this replaced, which are the fix this
+// cutover is: Open now sends the data source's login, so every operation is
+// reachable; SyncDBSchema reads DESCRIBE FORMATTED's NULL cells, so tables,
+// external tables, views and materialized views sync; Dump restores; a query's
+// schema is selected with USE; extra connection parameters and SSL reach the
+// session; a DOUBLE or FLOAT cell is a number rather than 20-decimal text; a
+// failing statement ends its script with the error on its result instead of
+// failing the call; Execute logs each command; GetDB returns nil; and the dump
+// text is requalified and reordered.
 package hive
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"strconv"
-	"strings"
-	"time"
 
-	// Import gohive v2 driver for database/sql registration.
-	_ "github.com/beltran/gohive/v2"
+	odriver "github.com/bytebase/omni/driver"
+	hivedriver "github.com/bytebase/omni/hive/driver"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/structpb"
-
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-
-	// register splitter functions init().
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
+	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-func hiveDriverFunc() db.Driver {
+var _ db.Driver = (*Driver)(nil)
+
+func init() {
+	db.Register(storepb.Engine_HIVE, newDriver)
+}
+
+// Driver is Bytebase's Hive driver.
+type Driver struct {
+	util.OmniAdapter
+}
+
+func newDriver() db.Driver {
 	return &Driver{}
 }
 
-func init() {
-	db.Register(storepb.Engine_HIVE, hiveDriverFunc)
-}
-
-type Driver struct {
-	config     db.ConnectionConfig
-	ctx        db.ConnectionContext
-	db         *sql.DB
-	connString string
-}
-
-var (
-	_ db.Driver = (*Driver)(nil)
-)
-
-func buildHiveDSN(config db.ConnectionConfig) string {
-	port := config.DataSource.Port
-	if port == "" {
-		port = "10000" // default Hive port
-	}
-
-	// Basic DSN format: hive://host:port/database
-	dsn := fmt.Sprintf("hive://%s:%s", config.DataSource.Host, port)
-
-	// Add database if specified
-	if config.ConnectionContext.DatabaseName != "" {
-		dsn = fmt.Sprintf("%s/%s", dsn, config.ConnectionContext.DatabaseName)
-	}
-
-	// Add authentication parameters
-	auth := "NONE"
-	service := "hive"
-
-	if t, ok := config.DataSource.GetSaslConfig().GetMechanism().(*storepb.SASLConfig_KrbConfig); ok {
-		auth = "KERBEROS"
-		if t.KrbConfig.Primary != "" {
-			service = t.KrbConfig.Primary
-		}
-	}
-
-	dsn = fmt.Sprintf("%s?auth=%s&service=%s", dsn, auth, service)
-
-	return dsn
-}
-
+// Open maps the connection config onto the driver contract and reaches the
+// server, as the driver this replaced did: a HiveServer2 that cannot be reached
+// or will not accept the login fails here rather than at the first query.
+//
+// Kerberos needs the process-wide krb5.conf and keytab BootKerberosEnv writes,
+// so the lock that guards them is held through the connect and the ping: a
+// second opener that bootstrapped in between would leave this one
+// authenticating against its environment.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	if config.DataSource.Host == "" {
-		return nil, errors.Errorf("hostname not set")
-	}
-
-	// Build DSN connection string
-	connString := buildHiveDSN(config)
-
-	// Handle Kerberos authentication if needed
-	if t, ok := config.DataSource.GetSaslConfig().GetMechanism().(*storepb.SASLConfig_KrbConfig); ok {
-		// Kerberos environment mutex
+	kerberos := hasKerberos(config.DataSource)
+	if kerberos {
 		util.Lock.Lock()
 		defer util.Lock.Unlock()
-
-		if err := util.BootKerberosEnv(t); err != nil {
-			return nil, errors.Wrapf(err, "failed to init SASL environment")
-		}
 	}
-
-	// Open database connection using v2 driver
-	sqlDB, err := sql.Open("hive", connString)
+	cfg, err := hiveConfig(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to open hive connection")
+		return nil, err
 	}
-
-	// Configure connection pool (Hive doesn't support many concurrent connections well)
-	sqlDB.SetMaxOpenConns(5)
-	sqlDB.SetMaxIdleConns(2)
-	sqlDB.SetConnMaxLifetime(0) // connections don't expire
-
-	// Verify connection works
-	if err := sqlDB.PingContext(ctx); err != nil {
-		sqlDB.Close()
+	impl, err := hivedriver.Open(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	if err := impl.Ping(ctx); err != nil {
+		_ = impl.Close()
 		return nil, errors.Wrap(err, "failed to ping hive server")
 	}
-
-	d.config = config
-	d.ctx = config.ConnectionContext
-	d.db = sqlDB
-	d.connString = connString
-
+	d.OmniAdapter = util.OmniAdapter{Driver: impl}
 	return d, nil
 }
 
-func (d *Driver) Close(_ context.Context) error {
-	if d.db != nil {
-		return d.db.Close()
-	}
-	return nil
+// hasKerberos reports whether the data source authenticates with a Kerberos
+// principal.
+func hasKerberos(ds *storepb.DataSource) bool {
+	_, ok := ds.GetSaslConfig().GetMechanism().(*storepb.SASLConfig_KrbConfig)
+	return ok
 }
 
-func (d *Driver) Ping(ctx context.Context) error {
-	if d.db == nil {
-		return errors.New("connection not initialized")
+// hiveConfig resolves what Bytebase knows about reaching a HiveServer2 into the
+// plain values hive/driver's gohive connector takes.
+func hiveConfig(config db.ConnectionConfig) (odriver.Config, error) {
+	ds := config.DataSource
+	if ds.GetSshHost() != "" {
+		// gohive v2's connector keeps its dialer in an unexported field, so the
+		// driver cannot dial through a tunnel. Say what to do instead of dialling
+		// the direct host and silently ignoring the jump host, as the old driver
+		// did.
+		return odriver.Config{}, errors.Errorf("an SSH data source is not supported for Hive: forward a local port to %s and use the forwarded host and port instead", serverAddress(ds))
 	}
-	if err := d.db.PingContext(ctx); err != nil {
-		return errors.Wrapf(err, "bad connection")
+
+	params := map[string]string{}
+	if t, ok := ds.GetSaslConfig().GetMechanism().(*storepb.SASLConfig_KrbConfig); ok {
+		// Open holds util.Lock here: the krb5.conf and keytab this writes are
+		// process-wide, and the connection that reads them is established under
+		// the same lock.
+		if err := util.BootKerberosEnv(t); err != nil {
+			return odriver.Config{}, errors.Wrapf(err, "failed to init SASL environment")
+		}
+		params["auth"] = "KERBEROS"
+		service := "hive"
+		if t.KrbConfig.Primary != "" {
+			service = t.KrbConfig.Primary
+		}
+		params["service"] = service
 	}
-	return nil
+	// The caller's own parameters reach the session, and win over the SASL
+	// settings above.
+	for key, value := range ds.GetExtraConnectionParameters() {
+		params[key] = value
+	}
+
+	cfg := odriver.Config{
+		Host:     ds.GetHost(),
+		Port:     ds.GetPort(),
+		Database: config.ConnectionContext.DatabaseName,
+		User:     ds.GetUsername(),
+		Password: config.Password,
+		Params:   params,
+		// GetTLSConfig binds certificate verification to the data source's host,
+		// which is the host the driver dials: an SSH tunnel is refused above, so
+		// the two cannot differ.
+		TLS: util.LazyTLSFunc(ds),
+	}
+	return cfg, nil
 }
 
-func (d *Driver) GetDB() *sql.DB {
-	return d.db
+// serverAddress is the host and port a refusal names.
+func serverAddress(ds *storepb.DataSource) string {
+	port := ds.GetPort()
+	if port == "" {
+		port = "10000"
+	}
+	return ds.GetHost() + ":" + port
 }
 
-// Transaction statements [BEGIN, COMMIT, ROLLBACK] are not supported in Hive 4.0 temporarily.
-// Even in Hive's bucketed transaction table, all the statements are committed automatically by
-// the Hive server.
-func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.ExecuteOptions) (int64, error) {
-	// Hive has limited transaction support:
-	// - Only ACID tables support transactions, and even then it's limited
-	// - Transaction statements (BEGIN, COMMIT, ROLLBACK) are not supported in Hive 4.0
-	// - All statements are auto-committed by the Hive server
-	// Due to these limitations, we execute statements individually regardless of transaction mode
-	// but we still parse and respect the transaction mode directive for consistency
+// Execute runs the script's statements in order, reporting each to the task
+// run's log. Hive has no transaction the client controls — HiveServer2 4.0
+// refuses BEGIN, COMMIT and ROLLBACK — so every statement commits itself and
+// the script's transaction directive stays a comment, as it was before.
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		DefaultTransaction: odriver.AutoCommit,
+		PassMaxRetries:     true,
+	})
+}
 
-	if d.db == nil {
-		return 0, errors.New("connection not initialized")
-	}
-
-	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
+// QueryConn runs a script for the editor, one result per statement, with the
+// caller's row limit applied to each result. Hive answers a statement that
+// returns no rows with an operation that has none, so a DDL statement sent here
+// reports Hive's error on its result instead of failing the call, which is how
+// the driver this replaced behaved too.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	var results []*odriver.Result
+	err := d.QueryEphemeral(ctx, func(session odriver.Session) error {
+		var queryErr error
+		results, queryErr = session.Query(ctx, statement, odriver.QueryOptions{
+			Schema:         queryContext.Schema,
+			Explain:        queryContext.Explain,
+			ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "TEXT", v1pb.QueryOption_JSON),
+			MaxResultBytes: queryContext.MaximumSQLResultSize,
+		})
+		return queryErr
+	})
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to split statements")
+		return nil, err
 	}
-
-	var totalAffected int64
-	for _, statement := range statements {
-		query := strings.TrimRight(statement.Text, ";")
-
-		result, err := d.db.ExecContext(ctx, query)
-		if err != nil {
-			return totalAffected, errors.Wrapf(err, "failed to execute statement: %s", query)
-		}
-
-		// Hive may not always return accurate row counts
-		affected, _ := result.RowsAffected()
-		totalAffected += affected
+	limit := 0
+	if !queryContext.Explain && queryContext.Limit > 0 {
+		limit = queryContext.Limit
 	}
-
-	return totalAffected, nil
+	return util.OmniResultsToQueryResultsWith(results, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
+		SkipPlan:             true,
+		SkipMessages:         true,
+		UppercaseColumnTypes: true,
+		TruncatedWins:        true,
+		Limit:                limit,
+		ConvertValue:         toRowValue,
+	}), nil
 }
 
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryCtx db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if d.db == nil {
-		return nil, errors.New("connection not initialized")
+func toQueryResult(result *odriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
+	limit := 0
+	if !queryContext.Explain && queryContext.Limit > 0 {
+		limit = queryContext.Limit
 	}
-
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_HIVE, statement)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to split statements")
-	}
-
-	var results []*v1pb.QueryResult
-	for _, singleSQL := range singleSQLs {
-		statement := util.TrimStatement(singleSQL.Text)
-		if queryCtx.Explain {
-			explained, err := base.ExplainStatement(storepb.Engine_HIVE, statement, db.ExplainFormat(queryCtx.Option.GetExplainFormat()))
-			if err != nil {
-				return nil, err
-			}
-			statement = explained
-		}
-
-		result, err := d.queryStatementWithLimit(ctx, statement, queryCtx.MaximumSQLResultSize)
-		if err != nil {
-			return nil, err
-		}
-
-		results = append(results, result)
-	}
-	return results, nil
+	return util.OmniResultToQueryResultWith(result, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
+		SkipPlan:             true,
+		SkipMessages:         true,
+		UppercaseColumnTypes: true,
+		TruncatedWins:        true,
+		Limit:                limit,
+		ConvertValue:         toRowValue,
+	})
 }
 
-// This function converts basic types to types that have implemented isRowValue_Kind interface.
-func parseValueType(value any, gohiveType string) *v1pb.RowValue {
-	if value == nil {
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}}
-	}
-
-	// database/sql returns values as []byte or various Go types
-	// We need to handle both the type name and the actual Go type
-	switch gohiveType {
-	case "BOOLEAN_TYPE", "BOOLEAN":
-		if b, ok := value.(bool); ok {
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: b}}
-		}
-	case "TINYINT_TYPE", "TINYINT":
-		if i, ok := value.(int64); ok {
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(i)}}
-		}
-	case "SMALLINT_TYPE", "SMALLINT":
-		if i, ok := value.(int64); ok {
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(i)}}
-		}
-	case "INT_TYPE", "INT":
-		if i, ok := value.(int64); ok {
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(i)}}
-		}
-	case "BIGINT_TYPE", "BIGINT":
-		if i, ok := value.(int64); ok {
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: i}}
-		}
-	case "DOUBLE_TYPE", "DOUBLE", "FLOAT_TYPE", "FLOAT":
-		if f, ok := value.(float64); ok {
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: strconv.FormatFloat(f, 'f', 20, 64)}}
-		}
-	case "BINARY_TYPE", "BINARY":
-		if b, ok := value.([]byte); ok {
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: b}}
-		}
+// toRowValue maps one contract value onto the product's row value. A float is
+// the number Hive stored, where the old driver wrote it as text with twenty
+// fractional digits.
+func toRowValue(value odriver.Value) *v1pb.RowValue {
+	switch value.Kind {
+	case odriver.Null:
+		return util.NullRowValue
+	case odriver.Bool, odriver.Bytes, odriver.Float32, odriver.Float64,
+		odriver.Int32, odriver.Int64, odriver.Uint32, odriver.Uint64, odriver.String:
+		return util.OmniRowValue(value)
 	default:
-		// Fall through to default string conversion
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: fmt.Sprintf("%v", value)}}
 	}
-
-	// Default: convert to string
-	// database/sql often returns values as []byte for string types
-	switch v := value.(type) {
-	case []byte:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(v)}}
-	case string:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: v}}
-	case int64:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: strconv.FormatInt(v, 10)}}
-	case float64:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: strconv.FormatFloat(v, 'f', -1, 64)}}
-	case bool:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: strconv.FormatBool(v)}}
-	default:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: fmt.Sprintf("%v", v)}}
-	}
-}
-
-func (d *Driver) queryStatementWithLimit(ctx context.Context, statement string, limit int64) (*v1pb.QueryResult, error) {
-	startTime := time.Now()
-
-	rows, err := d.db.QueryContext(ctx, statement)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute query")
-	}
-	defer rows.Close()
-
-	result := &v1pb.QueryResult{
-		Statement: statement,
-	}
-
-	// Get column information
-	columnTypes, err := rows.ColumnTypes()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get column types")
-	}
-
-	for _, col := range columnTypes {
-		result.ColumnNames = append(result.ColumnNames, col.Name())
-		result.ColumnTypeNames = append(result.ColumnTypeNames, col.DatabaseTypeName())
-	}
-
-	// Prepare value holders for scanning
-	numColumns := len(columnTypes)
-	values := make([]any, numColumns)
-	valuePtrs := make([]any, numColumns)
-	for i := range values {
-		valuePtrs[i] = &values[i]
-	}
-
-	// Process query results
-	for rows.Next() {
-		if err := rows.Scan(valuePtrs...); err != nil {
-			return nil, errors.Wrap(err, "failed to scan row")
-		}
-
-		queryRow := &v1pb.QueryRow{}
-		for i, columnType := range result.ColumnTypeNames {
-			val := parseValueType(values[i], columnType)
-			queryRow.Values = append(queryRow.Values, val)
-		}
-
-		result.Rows = append(result.Rows, queryRow)
-
-		// Check size limit
-		n := len(result.Rows)
-		if (n&(n-1) == 0) && limit > 0 && int64(proto.Size(result)) > limit {
-			result.Error = util.FormatMaximumSQLResultSizeMessage(limit)
-			break
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "error iterating rows")
-	}
-
-	result.Latency = durationpb.New(time.Since(startTime))
-	result.RowsCount = int64(len(result.Rows))
-	return result, nil
 }

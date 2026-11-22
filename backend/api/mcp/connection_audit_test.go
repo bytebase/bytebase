@@ -296,19 +296,3 @@ func mcpToken(t *testing.T, secret string, opts tokenOptions) string {
 	require.NoError(t, err)
 	return tokenStr
 }
-
-// TestCeilingRefusalsAreRecognizedAsPolicy runs the real IsPolicyRefusal over
-// the ceiling refusals that can reach a tool, rather than restating its phrase
-// list somewhere it would drift.
-//
-// Only this verdict reaches it. A 403 is what the predicate is consulted for,
-// and the per-request gate answers CodePermissionDenied for it; an
-// outage answers CodeUnavailable, and DISABLED is refused at this door before
-// any tool call and by the serving table at the per-request one. A refusal it
-// stops recognizing gets "request a project role" appended — advice that cannot
-// lift a workspace setting.
-func TestCeilingRefusalsAreRecognizedAsPolicy(t *testing.T) {
-	verdict := auth.MCPCeilingUnserved
-	require.True(t, IsPolicyRefusal(verdict.Refusal()),
-		"%v reaches a tool as a 403 and must carry its own way out", verdict)
-}

@@ -707,6 +707,43 @@ beforeEach(async () => {
 });
 
 describe("DatabaseCatalogPanel", () => {
+  test("groups Agent help with catalog actions after search", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+
+    const helpButton = getButton(container, "agent.masking.ask-agent-short");
+    const searchInput = container.querySelector<HTMLInputElement>(
+      'input[placeholder="common.search"]'
+    );
+    const markSensitiveButton = getButton(
+      container,
+      "settings.sensitive-data.mark-sensitive-data"
+    );
+    expect(helpButton).toBeDefined();
+    expect(searchInput).toBeDefined();
+    expect(markSensitiveButton).toBeDefined();
+    expect(
+      Boolean(
+        searchInput!.compareDocumentPosition(helpButton!) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+    expect(
+      Boolean(
+        helpButton!.compareDocumentPosition(markSensitiveButton!) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true);
+
+    unmount();
+  });
+
   test("renders flattened relational and object-schema rows", async () => {
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseCatalogPanel, {

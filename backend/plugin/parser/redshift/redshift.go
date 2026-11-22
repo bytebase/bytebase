@@ -25,18 +25,18 @@ func parseRedshiftStatements(statement string) ([]base.ParsedStatement, error) {
 			continue
 		}
 
-		omniStmts, err := ParseRedshift(stmt.Text)
+		parsed, err := ParseRedshift(stmt.Text)
 		if err != nil {
-			return nil, convertOmniError(err, stmt)
+			return nil, convertError(err, stmt)
 		}
-		for _, omniStmt := range omniStmts {
-			if omniStmt.Empty() {
+		for _, parsedStmt := range parsed {
+			if parsedStmt.Empty() {
 				continue
 			}
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
-				AST: &OmniAST{
-					Node:          omniStmt.AST,
+				AST: &AST{
+					Node:          parsedStmt.AST,
 					Text:          stmt.Text,
 					StartPosition: stmt.Start,
 				},

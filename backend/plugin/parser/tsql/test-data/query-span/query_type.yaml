@@ -48,7 +48,12 @@
   querySpan:
     type: 5
     results: []
-    sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: dbo
+          table: t
+          column: ""
     predicatecolumns: []
 - description: DDL
   statement: ALTER TABLE dbo.doc_exa ADD column_b VARCHAR(20) NULL, column_c INT NULL;
@@ -74,5 +79,10 @@
   querySpan:
     type: 3
     results: []
-    sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: INFORMATION_SCHEMA
+          table: TABLES
+          column: ""
     predicatecolumns: []

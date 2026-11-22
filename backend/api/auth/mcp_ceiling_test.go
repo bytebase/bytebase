@@ -69,7 +69,7 @@ func TestEveryVerdictThatRefusesHasWording(t *testing.T) {
 
 		// Every refusal names the remedy, not only the fault. A denial an
 		// operator cannot act on is the failure this series exists to fix.
-		require.Contains(t, refusal, "workspace settings", "%v must name where the fix is", v)
+		require.Contains(t, refusal, MCPCeilingLocation, "%v must name where the fix is", v)
 	}
 
 	require.Empty(t, MCPCeilingServes.Refusal(), "serving refuses nothing")

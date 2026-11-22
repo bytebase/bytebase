@@ -307,16 +307,11 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 			},
 		},
 		{
-			// Cumulative #30 Codex-fix-1f: Tier-4-deferred DDL
-			// (CREATE/ALTER/DROP SEQUENCE) is omni-rejected at
-			// parse time. Pre-fix-1f used omniIsDDLStmt on
-			// omni-parsed stmts → soft-fail skipped the SEQUENCE
-			// stmt → DDL detection missed → no mixed-DDL advice
-			// despite the DML+DDL mixing. Post-fix-1f: DDL
-			// detection uses pingcap's DDLNode interface via
-			// `getTiDBNodes` → pingcap parses CreateSequenceStmt
-			// successfully → DDL detected → advice fires.
-			name:            "CREATE SEQUENCE + UPDATE fires mixed DDL+DML via pingcap path (Codex-fix-1f)",
+			// omni now parses CREATE/ALTER/DROP SEQUENCE, and
+			// ast.IsDDL classifies CreateSequenceStmt as DDL, so a
+			// SEQUENCE DDL mixed with a DML statement fires the
+			// mixed-DDL-and-DML advice.
+			name:            "CREATE SEQUENCE + UPDATE fires mixed DDL+DML",
 			statement:       "CREATE SEQUENCE seq1 START 1 INCREMENT BY 1;\nUPDATE tech_book SET id = 1 WHERE id = 2;",
 			backupDBPresent: true,
 			wantContentSubstr: []string{
@@ -393,7 +388,7 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 			// multi-target UPDATE with unqualified SET → skip → no
 			// UPDATE target recorded → following DELETE on orders
 			// would not fire as mixed-DML (false-negative).
-			// Post-fix-1e: omniResolveUnqualifiedSETColumn walks
+			// Post-fix-1e: resolveUnqualifiedSETColumn walks
 			// dbMetadata, finds customer_name on orders → UPDATE
 			// attributed to orders → DELETE on orders → mixed-DML
 			// fires.

@@ -150,6 +150,25 @@ export const isLocalTlsClientIdentitySupported = (engine: Engine): boolean => {
   return engine !== Engine.MSSQL;
 };
 
+export type OracleTlsParameterOverride = "setting" | "wallet";
+
+// With TLS on, the Oracle driver sends its own SSL option and its own TLS
+// configuration, so go-ora's SSL and SSL VERIFY keys and a wallet's
+// certificates don't apply. go-ora upper-cases keys.
+export const getOracleTlsParameterOverride = (
+  key: string
+): OracleTlsParameterOverride | undefined => {
+  switch (key.toUpperCase()) {
+    case "SSL":
+    case "SSL VERIFY":
+      return "setting";
+    case "WALLET":
+      return "wallet";
+    default:
+      return undefined;
+  }
+};
+
 export const applyLocalTlsCaSource = (
   ds: DataSource,
   source: LocalTlsCaSource

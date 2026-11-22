@@ -71,7 +71,7 @@ func TestBackup(t *testing.T) {
 	}
 }
 
-func TestBackupOmniBoundaryCases(t *testing.T) {
+func TestBackupBoundaryCases(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -134,8 +134,12 @@ func TestBackupOmniBoundaryCases(t *testing.T) {
 		{
 			name:  "update from appends source table list",
 			input: "UPDATE test t SET c1 = s.c1 FROM source_table s WHERE t.id = s.id;",
+			// A join can match a target row more than once, so the row is
+			// selected by its ROWID.
 			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
-  SELECT "T".* FROM test t, source_table s WHERE t.id = s.id;`,
+  SELECT "DB"."TEST".* FROM "DB"."TEST" WHERE ROWID IN (
+    SELECT "T".ROWID FROM test t, source_table s WHERE t.id = s.id
+  );`,
 		},
 	}
 

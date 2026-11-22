@@ -439,10 +439,6 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	request := req.Msg
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	policyMessage, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace iam policy"))
-	}
 	// The write targets the workspace the caller is authenticated to, so a
 	// request naming a different one is refused rather than silently applied to
 	// this one: getRequestResource audits the name the caller sent, and writing
@@ -460,7 +456,8 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		return nil, err
 	}
 
-	if err := validateIAMPolicy(ctx, s.store, !s.profile.SaaS, request, policyMessage); err != nil {
+	validateReplaced, err := validateIAMPolicy(ctx, s.store, !s.profile.SaaS, request)
+	if err != nil {
 		return nil, err
 	}
 
@@ -499,11 +496,14 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		Policy:       iamPolicy,
 		ExpectedEtag: expectedEtag,
 		// The seat count this change is measured against is the one it replaces,
-		// so it is taken under the same lock. Counting from the read above left
-		// two concurrent writes both passing the guard, and the later one growing
-		// an over-limit workspace -- for an etag-less caller, which the
+		// so it is taken under the same lock. Counted from an unlocked read, two
+		// concurrent writes could both pass the guard and the later one grow an
+		// over-limit workspace -- for an etag-less caller, which the
 		// compare-and-swap does not cover.
 		ValidateReplaced: func(previous *storepb.IamPolicy) error {
+			if err := validateReplaced(previous); err != nil {
+				return err
+			}
 			if newCount <= userLimit {
 				return nil
 			}

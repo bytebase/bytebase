@@ -35,31 +35,22 @@ var (
 	MixUserSystemTablesError = errors.Errorf("cannot access user and system tables at the same time")
 )
 
+// SourceColumnSet is the set of source columns contributing to a query span.
 type SourceColumnSet map[ColumnResource]bool
-
-// MergeSourceColumnSet merges two source column maps, returns true if there is difference.
-func MergeSourceColumnSet(m, n SourceColumnSet) (SourceColumnSet, bool) {
-	r := make(SourceColumnSet)
-	for k := range m {
-		r[k] = true
-	}
-	for k := range n {
-		if _, ok := r[k]; !ok {
-			r[k] = true
-		}
-	}
-
-	return r, len(r) != len(m)
-}
 
 // QuerySpan is the span for a query.
 type QuerySpan struct {
 	Type QueryType
+	// ExplainAnalyze marks a typed EXPLAIN ANALYZE: Type is the executed
+	// statement's, and the result is its plan, so the caller must hold the
+	// explain permission as well as Type's.
+	ExplainAnalyze bool
 	// Results are the result columns of a query span.
 	// Currently, SourceColumns in the QuerySpanResult are only for the fields in the Query.
 	Results []QuerySpanResult
 	// SourceColumns are the source columns contributing to the span.
 	// SourceColumns here are the source columns for the whole query span, containing fields, where conditions, join conditions, etc.
+	// A statement that is not a SELECT carries the tables it touches here, at the table level.
 	SourceColumns SourceColumnSet
 	// PredicateColumns are the source columns contributing to the span.
 	// PredicateColumns here are the source columns for the where conditions.
@@ -122,6 +113,9 @@ type QuerySpanResult struct {
 	SourceFieldPaths map[string][]*PathAST
 	// SelectAsterisk indicates whether the field is selected by asterisk, used by Cosmos DB.
 	SelectAsterisk bool
+	// Invisible marks a table column that SELECT * leaves out, such as an
+	// Oracle INVISIBLE column. A reference by name still resolves it.
+	Invisible bool
 }
 
 // ColumnResource is the resource key for a column.
@@ -185,81 +179,6 @@ type baseTableSource struct {
 // isTableSource implements the TableSource interface.
 func (baseTableSource) isTableSource() {}
 
-// PseudoTable is the resource of table, it's useful for some pseudo/temporary tables likes CTE, AS.
-type PseudoTable struct {
-	baseTableSource
-
-	// Name is the normalized table name.
-	Name string
-
-	// Columns are the columns of the table.
-	Columns []QuerySpanResult
-}
-
-func NewPseudoTable(name string, columns []QuerySpanResult) *PseudoTable {
-	return &PseudoTable{
-		Name:    name,
-		Columns: columns,
-	}
-}
-
-func (p *PseudoTable) GetTableName() string {
-	return p.Name
-}
-
-func (*PseudoTable) GetSchemaName() string {
-	return ""
-}
-
-func (*PseudoTable) GetDatabaseName() string {
-	return ""
-}
-
-func (*PseudoTable) GetServerName() string {
-	return ""
-}
-
-func (p *PseudoTable) GetQuerySpanResult() []QuerySpanResult {
-	return p.Columns
-}
-
-// PhysicalView is the resource of a physical view, which can be refer with schema name,
-// and its columns can refer to the columns of the underlying tables.
-type PhysicalView struct {
-	baseTableSource
-
-	// Server is the normalized server name, it's empty if the column comes from the connected server.
-	Server string
-	// Database is the normalized database name, it should not be empty.
-	Database string
-	// Schema is the normalized schema name, it should not be empty for the engines that support schema, and should be empty for the engines that don't support schema.
-	Schema string
-	// Name is the normalized table name, it should not be empty.
-	Name string
-	// Columns are the columns of the table.
-	Columns []QuerySpanResult
-}
-
-func (p *PhysicalView) GetTableName() string {
-	return p.Name
-}
-
-func (p *PhysicalView) GetSchemaName() string {
-	return p.Schema
-}
-
-func (p *PhysicalView) GetDatabaseName() string {
-	return p.Database
-}
-
-func (p *PhysicalView) GetServerName() string {
-	return p.Server
-}
-
-func (p *PhysicalView) GetQuerySpanResult() []QuerySpanResult {
-	return p.Columns
-}
-
 // PhysicalTable is the resource of a physical table.
 type PhysicalTable struct {
 	baseTableSource
@@ -274,6 +193,8 @@ type PhysicalTable struct {
 	Name string
 	// Columns are the columns of the table.
 	Columns []string
+	// InvisibleColumns are the Columns that SELECT * leaves out.
+	InvisibleColumns map[string]bool
 }
 
 func (p *PhysicalTable) GetTableName() string {
@@ -307,57 +228,7 @@ func (p *PhysicalTable) GetQuerySpanResult() []QuerySpanResult {
 			Name:          column,
 			SourceColumns: sourceColumnSet,
 			IsPlainField:  true,
-		})
-	}
-	return result
-}
-
-// Sequence is the resource of a sequence.
-type Sequence struct {
-	baseTableSource
-
-	// Server is the normalized server name, it's empty if the column comes from the connected server.
-	Server string
-	// Database is the normalized database name, it should not be empty.
-	Database string
-	// Schema is the normalized schema name, it should not be empty for the engines that support schema, and should be empty for the engines that don't support schema.
-	Schema string
-	// Name is the normalized sequence name, it should not be empty.
-	Name string
-	// Columns are the columns of the sequence.
-	Columns []string
-}
-
-func (p *Sequence) GetTableName() string {
-	return p.Name
-}
-
-func (p *Sequence) GetSchemaName() string {
-	return p.Schema
-}
-
-func (p *Sequence) GetDatabaseName() string {
-	return p.Database
-}
-
-func (p *Sequence) GetServerName() string {
-	return p.Server
-}
-
-func (p *Sequence) GetQuerySpanResult() []QuerySpanResult {
-	result := make([]QuerySpanResult, 0, len(p.Columns))
-	for _, column := range p.Columns {
-		sourceColumnSet := make(SourceColumnSet, 1)
-		sourceColumnSet[ColumnResource{
-			Server:   p.Server,
-			Database: p.Database,
-			Schema:   p.Schema,
-			Table:    p.Name,
-			Column:   column,
-		}] = true
-		result = append(result, QuerySpanResult{
-			Name:          column,
-			SourceColumns: sourceColumnSet,
+			Invisible:     p.InvisibleColumns[column],
 		})
 	}
 	return result
@@ -371,6 +242,9 @@ type GetQuerySpanContext struct {
 	// TempTables is the temporary tables created in the query span.
 	// It's used to store the temporary tables declared in one batch for SQL Server.
 	TempTables map[string]*PhysicalTable
+	// PlanOutput is the plan output a SQL Server batch has turned on, carried to
+	// its later statements like TempTables.
+	PlanOutput PlanOutput
 
 	// Adding the engine information here is a trade-off between the copy-pasted and shared code.
 	// For engines with more different, we implement the getQuerySpan separately.
@@ -381,7 +255,15 @@ type GetQuerySpanContext struct {
 	Engine storepb.Engine
 }
 
+// PlanOutput is the SQL Server plan options a batch has turned on, keyed by
+// option name as the parser writes it, such as "SHOWPLAN_XML" or "STATISTICS
+// XML". Each stays on until its own SET ... OFF.
+type PlanOutput map[string]bool
+
 // GetDatabaseMetadataFunc is the function to get database metadata.
+// It may return nil metadata and a nil error when Bytebase has not synced the
+// database's schema, as in the window after an instance is added; callers must
+// check for nil before use.
 type GetDatabaseMetadataFunc func(context.Context, string, string) (string, *model.DatabaseMetadata, error)
 
 // ListDatabaseNamesFunc is the function to list database names.

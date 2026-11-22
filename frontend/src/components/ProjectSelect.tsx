@@ -21,10 +21,6 @@ export interface ProjectSelectProps {
    *  of any projects" + "go to create" prompt). Falls back to the
    *  generic "no data" string when omitted. */
   emptyContent?: ReactNode;
-  /** Render the dropdown via a portal so it isn't clipped by an
-   *  `overflow:hidden` ancestor (e.g. inside a Sheet body that scopes
-   *  its own scroll region). */
-  portal?: boolean;
 }
 
 export function ProjectSelect({
@@ -35,7 +31,6 @@ export function ProjectSelect({
   className,
   excludeDefault = true,
   emptyContent,
-  portal,
 }: ProjectSelectProps) {
   const { t } = useTranslation();
   // Projects referenced by `value` that aren't in the paged fetch, so
@@ -55,17 +50,21 @@ export function ProjectSelect({
   const excludeDefaultRef = useRef(excludeDefault);
   excludeDefaultRef.current = excludeDefault;
 
-  const fetchPage = useCallback(async (query: string, pageToken: string) => {
-    const result = await useAppStore.getState().fetchProjectList({
-      filter: { query, excludeDefault: excludeDefaultRef.current },
-      pageSize: getDefaultPagination(),
-      pageToken,
-    });
-    return {
-      items: result.projects,
-      nextPageToken: result.nextPageToken,
-    };
-  }, []);
+  const fetchPage = useCallback(
+    async (query: string, pageToken: string, signal: AbortSignal) => {
+      const result = await useAppStore.getState().fetchProjectList({
+        signal,
+        filter: { query, excludeDefault: excludeDefaultRef.current },
+        pageSize: getDefaultPagination(),
+        pageToken,
+      });
+      return {
+        items: result.projects,
+        nextPageToken: result.nextPageToken,
+      };
+    },
+    []
+  );
   const {
     items: projects,
     search,
@@ -137,7 +136,6 @@ export function ProjectSelect({
       onLoadMore={loadMore}
       disabled={disabled}
       className={className}
-      portal={portal}
       options={allProjects.map((p) => ({
         value: p.name,
         label: p.title,

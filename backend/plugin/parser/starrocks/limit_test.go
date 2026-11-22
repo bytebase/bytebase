@@ -67,7 +67,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		}, {
 			stmt:  "WITH RECURSIVE cte_count (n) AS ( SELECT 1 UNION ALL SELECT n + 1 FROM cte_count WHERE n < 3 ) SELECT n FROM cte_count;",
 			count: 10,
-			want:  "WITH RECURSIVE cte_count (n) AS ( SELECT 1 UNION ALL SELECT n + 1 FROM cte_count WHERE n < 3 ) SELECT n FROM cte_count LIMIT 10;",
+			want:  "SELECT * FROM (\nWITH RECURSIVE cte_count (n) AS ( SELECT 1 UNION ALL SELECT n + 1 FROM cte_count WHERE n < 3 ) SELECT n FROM cte_count\n) result LIMIT 10;",
 		},
 		{
 			stmt:  "SELECT firstName FROM employees EXCEPT SELECT contactFirstName FROM customers;",
@@ -77,7 +77,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		{
 			stmt:  "SELECT col1, col2 FROM table1 PROCEDURE ANALYSE(10, 2000);",
 			count: 10,
-			want:  "SELECT * FROM (SELECT col1, col2 FROM table1 PROCEDURE ANALYSE(10, 2000)) result LIMIT 10;",
+			want:  "SELECT * FROM (\nSELECT col1, col2 FROM table1 PROCEDURE ANALYSE(10, 2000)\n) result LIMIT 10;",
 		},
 		{
 			stmt:  "SELECT col1, col2 FROM table1 ORDER BY col1;",
@@ -149,7 +149,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		{
 			stmt:  "SELECT * FROM person LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age;",
 			count: 10,
-			want:  "SELECT * FROM (SELECT * FROM person LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age) result LIMIT 10;",
+			want:  "SELECT * FROM (\nSELECT * FROM person LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age\n) result LIMIT 10;",
 		},
 		{
 			stmt:  "SELECT * FROM t -- note",
@@ -164,7 +164,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		{
 			stmt:  "SELECT * FROM t # hash comment",
 			count: 10,
-			want:  "SELECT * FROM t LIMIT 10 # hash comment",
+			want:  "SELECT * FROM (\nSELECT * FROM t # hash comment\n) result LIMIT 10;",
 		},
 		{
 			stmt:  "SELECT * FROM t;\n",
@@ -227,7 +227,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		{
 			stmt:  "SELECT * FROM person /* c */ LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age;",
 			count: 10,
-			want:  "SELECT * FROM (SELECT * FROM person /* c */ LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age) result LIMIT 10;",
+			want:  "SELECT * FROM (\nSELECT * FROM person /* c */ LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age\n) result LIMIT 10;",
 		},
 		// Parenthesized queries: the LIMIT lands on (or caps at) the wrapper,
 		// covering any nesting depth.

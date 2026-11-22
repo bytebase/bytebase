@@ -3,6 +3,73 @@
 
 package store
 
+func (x *Task_ReleaseState_Range) Equal(y *Task_ReleaseState_Range) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Start != y.Start {
+		return false
+	}
+	if x.End != y.End {
+		return false
+	}
+	return true
+}
+
+func (x *Task_ReleaseState_DeletedRevision) Equal(y *Task_ReleaseState_DeletedRevision) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Version != y.Version {
+		return false
+	}
+	if p, q := x.DeleteTime, y.DeleteTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if x.Deleter != y.Deleter {
+		return false
+	}
+	return true
+}
+
+func (x *Task_ReleaseState) Equal(y *Task_ReleaseState) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.PendingRanges) != len(y.PendingRanges) {
+		return false
+	}
+	for i := 0; i < len(x.PendingRanges); i++ {
+		if !x.PendingRanges[i].Equal(y.PendingRanges[i]) {
+			return false
+		}
+	}
+	if x.AppliedCount != y.AppliedCount {
+		return false
+	}
+	if p, q := x.ComputeTime, y.ComputeTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if len(x.DeletedRevisions) != len(y.DeletedRevisions) {
+		return false
+	}
+	for i := 0; i < len(x.DeletedRevisions); i++ {
+		if !x.DeletedRevisions[i].Equal(y.DeletedRevisions[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func (x *Task) Equal(y *Task) bool {
 	if x == y {
 		return true
@@ -26,6 +93,15 @@ func (x *Task) Equal(y *Task) bool {
 		return false
 	}
 	if x.EnablePriorBackup != y.EnablePriorBackup {
+		return false
+	}
+	if x.Skipper != y.Skipper {
+		return false
+	}
+	if p, q := x.SkipTime, y.SkipTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if !x.ReleaseState.Equal(y.ReleaseState) {
 		return false
 	}
 	return true

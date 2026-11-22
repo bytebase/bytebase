@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import {
   denseFormContentStyle,
   denseFormHeaderStyle,
+  denseFormHeadingRowHorizontalStyle,
   denseFormSectionStyle,
   denseFormTitleStyle,
   formControlGroupStyle,
@@ -24,26 +25,48 @@ import {
   formFieldGroupStyle,
   formFieldHeaderStyle,
   formFieldHorizontalStyle,
+  formFieldSectionGapStyle,
   formFieldStyle,
   formFieldTitleStyle,
   formLabelStyle,
   formSectionContentStyle,
+  formSectionDescriptionStyle,
   formSectionHeaderStyle,
+  formSectionHeadingRowStyle,
+  formSectionNoPaddingStyle,
   formSectionStyle,
   formSectionTitleStyle,
+  singleColumnFormContentStyle,
+  singleColumnFormHeaderStyle,
+  singleColumnFormSectionStyle,
 } from "./styles.stylex";
 
 type FormLayout = "vertical" | "horizontal";
+type FormDensity = "default" | "compact";
 
-const FormLayoutContext = createContext<FormLayout>("vertical");
+interface FormLayoutContextValue {
+  layout: FormLayout;
+  density: FormDensity;
+}
+
+const FormLayoutContext = createContext<FormLayoutContextValue>({
+  layout: "vertical",
+  density: "default",
+});
 
 interface ResponsiveFormLayoutProps extends Omit<ComponentProps<"div">, "ref"> {
   /**
    * Uses label/control rows when this layout region has enough room. This is
    * intentionally based on the region width, so a docked side panel does not
    * leave fields stranded in a viewport-sized two-column layout.
+   * Dependent groups use `inherit` to avoid making another breakpoint decision.
    */
-  layout?: "responsive" | FormLayout;
+  layout?: "responsive" | "inherit" | FormLayout;
+  /**
+   * Keeps dependent fields at label hierarchy when they stack inside a dense
+   * form control area.
+   */
+  density?: FormDensity;
   horizontalMinWidth?: number;
 }
 
@@ -51,13 +74,28 @@ const ResponsiveFormLayout = forwardRef<
   HTMLDivElement,
   ResponsiveFormLayoutProps
 >(function ResponsiveFormLayout(
-  { children, horizontalMinWidth = 560, layout = "responsive", ...props },
+  {
+    children,
+    density: densityOverride,
+    horizontalMinWidth = 560,
+    layout = "responsive",
+    ...props
+  },
   ref
 ) {
+  const inherited = useContext(FormLayoutContext);
+  const density = densityOverride ?? inherited.density;
   const layoutRef = useRef<HTMLDivElement>(null);
-  const [isHorizontal, setIsHorizontal] = useState(layout === "horizontal");
+  const [isHorizontal, setIsHorizontal] = useState(
+    layout === "horizontal" ||
+      (layout === "inherit" && inherited.layout === "horizontal")
+  );
 
   useEffect(() => {
+    if (layout === "inherit") {
+      setIsHorizontal(inherited.layout === "horizontal");
+      return;
+    }
     if (layout !== "responsive") {
       setIsHorizontal(layout === "horizontal");
       return;
@@ -72,11 +110,14 @@ const ResponsiveFormLayout = forwardRef<
     });
     observer.observe(element);
     return () => observer.disconnect();
-  }, [horizontalMinWidth, layout]);
+  }, [horizontalMinWidth, inherited.layout, layout]);
 
   return (
     <FormLayoutContext.Provider
-      value={isHorizontal ? "horizontal" : "vertical"}
+      value={{
+        layout: isHorizontal ? "horizontal" : "vertical",
+        density,
+      }}
     >
       <div
         ref={(element) => {
@@ -99,6 +140,8 @@ interface FormFieldProps extends Omit<ComponentProps<"div">, "title"> {
   title?: ReactNode;
   description?: ReactNode;
   layout?: FormLayout;
+  /** Uses section-level spacing between the field header and its control. */
+  spacing?: "default" | "section";
 }
 
 /**
@@ -121,12 +164,14 @@ function FormField({
   style,
   title,
   layout: layoutOverride,
+  spacing = "default",
   ...props
 }: FormFieldProps) {
-  const inheritedLayout = useContext(FormLayoutContext);
-  const layout = layoutOverride ?? inheritedLayout;
+  const inherited = useContext(FormLayoutContext);
+  const layout = layoutOverride ?? inherited.layout;
   const fieldStylexProps = stylex.props(
     formFieldStyle(),
+    spacing === "section" && formFieldSectionGapStyle(),
     (title !== undefined ||
       Children.toArray(children).some(
         (child) =>
@@ -187,7 +232,9 @@ function FormField({
           className={controlStylexProps.className}
           style={controlStylexProps.style}
         >
-          <FormLayoutContext.Provider value="vertical">
+          <FormLayoutContext.Provider
+            value={{ ...inherited, layout: "vertical" }}
+          >
             {controlChildren}
           </FormLayoutContext.Provider>
         </div>
@@ -212,9 +259,11 @@ function FormField({
  * ```
  */
 function FormTitle({ className, ref, style, ...props }: ComponentProps<"div">) {
-  const layout = useContext(FormLayoutContext);
+  const { density, layout } = useContext(FormLayoutContext);
   const stylexProps = stylex.props(
-    layout === "horizontal" ? formLabelStyle() : formFieldTitleStyle()
+    layout === "horizontal" || density === "compact"
+      ? formLabelStyle()
+      : formFieldTitleStyle()
   );
   return (
     <div
@@ -263,8 +312,41 @@ function FormFieldGroup({
 
 interface FormSectionProps extends Omit<ComponentProps<"section">, "title"> {
   title: ReactNode;
-  layout?: "default" | "stacked";
+  description?: ReactNode;
+  action?: ReactNode;
+  /** Removes the section's outer vertical padding when its page layout owns spacing. */
+  padding?: "default" | "none";
+  /**
+   * - `default`: on large screens the header takes a 25% column beside the
+   *   content; on smaller screens it stacks above.
+   * - `single-column`: the header stays above the content at every width,
+   *   with the same page section title, for a page that reads as one column.
+   * - `stacked`: the dense variant with a 16px title and 16px padding, for
+   *   sections inside a dense form such as the instance form.
+   */
+  layout?: "default" | "single-column" | "stacked";
 }
+
+const formSectionLayoutStyles = {
+  default: {
+    section: formSectionStyle,
+    header: formSectionHeaderStyle,
+    title: formSectionTitleStyle,
+    content: formSectionContentStyle,
+  },
+  "single-column": {
+    section: singleColumnFormSectionStyle,
+    header: singleColumnFormHeaderStyle,
+    title: formSectionTitleStyle,
+    content: singleColumnFormContentStyle,
+  },
+  stacked: {
+    section: denseFormSectionStyle,
+    header: denseFormHeaderStyle,
+    title: denseFormTitleStyle,
+    content: denseFormContentStyle,
+  },
+};
 
 /**
  * Wraps a settings page section with a consistent section heading and content
@@ -272,7 +354,7 @@ interface FormSectionProps extends Omit<ComponentProps<"section">, "title"> {
  *
  * @example
  * ```tsx
- * <FormSection id="general" title={sectionTitle}>
+ * <FormSection id="general" title={sectionTitle} description={summary}>
  *   <FormFieldGroup>
  *     <FormField title={fieldTitle}>
  *       <Input value={name} onChange={handleNameChange} />
@@ -287,21 +369,27 @@ function FormSection({
   ref,
   style,
   title,
+  description,
+  action,
   layout = "default",
+  padding = "default",
   ...props
 }: FormSectionProps) {
+  const { layout: fieldLayout } = useContext(FormLayoutContext);
+  const styles = formSectionLayoutStyles[layout];
   const sectionStylexProps = stylex.props(
-    layout === "stacked" ? denseFormSectionStyle() : formSectionStyle()
+    styles.section(),
+    padding === "none" && formSectionNoPaddingStyle()
   );
-  const headerStylexProps = stylex.props(
-    layout === "stacked" ? denseFormHeaderStyle() : formSectionHeaderStyle()
+  const headerStylexProps = stylex.props(styles.header());
+  const headingRowStylexProps = stylex.props(
+    layout === "stacked" && fieldLayout === "horizontal"
+      ? denseFormHeadingRowHorizontalStyle()
+      : formSectionHeadingRowStyle()
   );
-  const titleStylexProps = stylex.props(
-    layout === "stacked" ? denseFormTitleStyle() : formSectionTitleStyle()
-  );
-  const contentStylexProps = stylex.props(
-    layout === "stacked" ? denseFormContentStyle() : formSectionContentStyle()
-  );
+  const titleStylexProps = stylex.props(styles.title());
+  const descriptionStylexProps = stylex.props(formSectionDescriptionStyle());
+  const contentStylexProps = stylex.props(styles.content());
 
   return (
     <section
@@ -316,15 +404,43 @@ function FormSection({
         className={headerStylexProps.className}
         style={headerStylexProps.style}
       >
-        <div
-          role="heading"
-          aria-level={2}
-          data-slot="form-section-title"
-          className={titleStylexProps.className}
-          style={titleStylexProps.style}
-        >
-          {title}
-        </div>
+        {action !== undefined ? (
+          <div
+            data-slot="form-section-heading-row"
+            className={headingRowStylexProps.className}
+            style={headingRowStylexProps.style}
+          >
+            <div
+              role="heading"
+              aria-level={2}
+              data-slot="form-section-title"
+              className={titleStylexProps.className}
+              style={{ ...titleStylexProps.style, width: "fit-content" }}
+            >
+              {title}
+            </div>
+            {action}
+          </div>
+        ) : (
+          <div
+            role="heading"
+            aria-level={2}
+            data-slot="form-section-title"
+            className={titleStylexProps.className}
+            style={titleStylexProps.style}
+          >
+            {title}
+          </div>
+        )}
+        {description !== undefined && (
+          <div
+            data-slot="form-section-description"
+            className={descriptionStylexProps.className}
+            style={descriptionStylexProps.style}
+          >
+            {description}
+          </div>
+        )}
       </div>
       <div
         data-slot="form-section-content"

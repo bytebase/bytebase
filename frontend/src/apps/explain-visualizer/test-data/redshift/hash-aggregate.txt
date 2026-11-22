@@ -1,0 +1,2 @@
+XN HashAggregate  (cost=131.97..133.41 rows=576 width=17)
+  ->  XN Seq Scan on event  (cost=0.00..87.98 rows=8798 width=17)

@@ -62,3 +62,55 @@
         line: 2
         column: 0
       endposition: null
+- statement: CREATE TABLE "BadSel" AS SELECT 1
+  changeType: 1
+- statement: CREATE TABLE "BadAsTable" AS TABLE t
+  changeType: 1
+- statement: SELECT 1 INTO "BadInto"
+  changeType: 1
+- statement: EXPLAIN ANALYZE CREATE TABLE "BadExplain" AS SELECT 1
+  changeType: 1
+- statement: CREATE PROCEDURE p() LANGUAGE sql BEGIN ATOMIC ALTER TABLE t RENAME TO "BadInBody"; END
+  changeType: 1
+- statement: CREATE SCHEMA s CREATE TABLE "BadInSchema" (id int)
+  changeType: 1
+- statement: CREATE TABLE "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"(id int)
+  changeType: 1
+- statement: CREATE TABLE "数据表"(id int)
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"数据表" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    SELECT 1;
+    -- leading comment
+
+    CREATE TABLE
+      "BadMulti"
+      (id int);
+    ALTER TABLE t
+      RENAME TO "BadRename";
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"BadMulti" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"BadRename" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 7
+        column: 0
+      endposition: null

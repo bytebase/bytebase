@@ -35,3 +35,27 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t (
+      a nchar(225),
+      b char(225 byte),
+      c character(21)
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The maximum character length is 20.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The maximum character length is 20.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null

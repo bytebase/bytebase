@@ -24,3 +24,13 @@
       endposition: null
 - statement: SELECT 1
   changeType: 1
+- statement: SELECT a FROM t WHERE a IN (SELECT id FROM t1)
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_SELECT
+      content: '"(SELECT id FROM t1)" requires WHERE clause'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

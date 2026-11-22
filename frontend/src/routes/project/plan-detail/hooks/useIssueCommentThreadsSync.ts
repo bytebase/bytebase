@@ -9,10 +9,10 @@ const THREADS_REFRESH_INTERVAL_MS = 15_000;
 
 // Loads the issue's comments with thread replies when the issue changes
 // server-side (polling bumps updateTime) or after local actions refresh it,
-// and periodically in between for remote thread activity. Mounted once per
-// plan page: both the Review Activity timeline and the statement editor read
-// the same cache, so neither may depend on the other being expanded to have
-// it filled.
+// and periodically in between for remote thread activity. A review run that
+// finishes re-lists them itself, in useReviewRun. Mounted once per plan page:
+// both the Review Activity timeline and the statement editor read the same
+// cache, so neither may depend on the other being expanded to have it filled.
 export function useIssueCommentThreadsSync(issue: Issue | undefined) {
   const issueName = issue?.name;
   const updateKey = `${issue?.updateTime?.seconds ?? ""}:${issue?.updateTime?.nanos ?? ""}`;

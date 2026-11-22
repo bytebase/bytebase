@@ -2,6 +2,9 @@ package redshift
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/bytebase/omni/redshift/analysis"
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -13,29 +16,14 @@ func init() {
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
 	diagnostics := make([]base.Diagnostic, 0)
-	syntaxError := parseRedshiftStatement(statement)
-	if syntaxError != nil {
-		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError, statement))
-	}
-
-	return diagnostics, nil
-}
-
-// parseRedshiftStatement parses the given SQL and returns syntax errors if any.
-func parseRedshiftStatement(statement string) *base.SyntaxError {
-	stmt := base.Statement{
-		Text:  statement,
-		Start: &store.Position{Line: 1, Column: 1},
-	}
-	if _, err := ParseRedshift(statement); err != nil {
-		syntaxErr, ok := convertOmniError(err, stmt).(*base.SyntaxError)
-		if !ok {
-			return &base.SyntaxError{
-				Position: &store.Position{Line: 1, Column: 1},
-				Message:  err.Error(),
-			}
+	if diag := analysis.Diagnose(statement); diag != nil {
+		position := ByteOffsetToRunePosition(statement, diag.Offset)
+		syntaxErr := &base.SyntaxError{
+			Position:   position,
+			Message:    fmt.Sprintf("Syntax error at line %d: %s", position.Line, diag.Message),
+			RawMessage: diag.Message,
 		}
-		return syntaxErr
+		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxErr, statement))
 	}
-	return nil
+	return diagnostics, nil
 }

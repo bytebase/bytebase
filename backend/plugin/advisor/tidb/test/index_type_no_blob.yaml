@@ -266,3 +266,42 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE TABLE t(a BLOB PRIMARY KEY, b TEXT UNIQUE)
+  changeType: 1
+  want:
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`b` is text
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t MODIFY COLUMN a BLOB PRIMARY KEY
+  changeType: 1
+  want:
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`a` is blob
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a TEXT, b BLOB);
+    CREATE FULLTEXT INDEX ft ON t (a)
+  changeType: 1
+  want:
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`a` is text
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a BLOB, FOREIGN KEY (a) REFERENCES p(a))
+  changeType: 1

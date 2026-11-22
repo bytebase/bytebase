@@ -12,14 +12,14 @@ import (
 )
 
 // Chat sends a chat request to the configured AI provider.
-func Chat(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
+func Chat(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest, options ...ChatOption) (*v1pb.AIChatResponse, error) {
 	switch aiSetting.Provider {
 	case storepb.AISetting_OPEN_AI, storepb.AISetting_AZURE_OPENAI:
 		return chatOpenAI(ctx, aiSetting, request)
 	case storepb.AISetting_GEMINI:
 		return chatGemini(ctx, aiSetting, request)
 	case storepb.AISetting_CLAUDE:
-		return chatClaude(ctx, aiSetting, request)
+		return chatClaude(ctx, aiSetting, request, options...)
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported AI provider %s", aiSetting.Provider))
 	}

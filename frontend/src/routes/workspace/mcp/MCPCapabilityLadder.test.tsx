@@ -73,7 +73,7 @@ describe("MCPCapabilityLadder", () => {
       MCPSetting_Capability.READ_WRITE,
     ] as const) {
       const { container, unmount } = renderIntoContainer(ladder({ mode }));
-      // One list, so a row's position is announced as "n of 8". The dividers
+      // One list, so a row's position is announced as "n of N". The dividers
       // live in it too but are presentational, so they do not inflate that
       // count or shift a row's index.
       expect(container.querySelectorAll("ul")).toHaveLength(1);
@@ -95,6 +95,7 @@ describe("MCPCapabilityLadder", () => {
       "read-schemas",
       "read-data",
       "read-workflow",
+      "read-access",
     ]);
     // No "write" badge may appear under a mode that serves no write row.
     expect(readOnly.container.textContent).not.toContain(
@@ -168,7 +169,7 @@ describe("MCPCapabilityLadder", () => {
     unmount();
   });
 
-  // One second-level control rather than eight: the toggle reveals the
+  // One second-level control rather than one per row: the toggle reveals the
   // sub-item line on every row at once.
   test("the details toggle reveals sub-items on every row at once", () => {
     const { container, rerender, unmount } = renderIntoContainer(ladder({}));
@@ -252,7 +253,7 @@ describe("MCPCapabilityLadder", () => {
       );
       expect(divider).toBeDefined();
       // Its own item, and presentational: not content inside the row it closes,
-      // and not an item of the eight.
+      // and not one of the rows.
       expect(divider?.getAttribute("role")).toBe("presentation");
       expect(divider?.textContent).not.toContain("settings.mcp.ladder.row.");
     }
@@ -263,7 +264,7 @@ describe("MCPCapabilityLadder", () => {
     expect(writeStop).toBeGreaterThan(readStop);
     // The read divider sits between the last read row and the first write row.
     expect(readStop).toBeGreaterThan(
-      text.indexOf("settings.mcp.ladder.row.read-workflow.title")
+      text.indexOf("settings.mcp.ladder.row.read-access.title")
     );
     expect(readStop).toBeLessThan(
       text.indexOf("settings.mcp.ladder.row.propose.title")

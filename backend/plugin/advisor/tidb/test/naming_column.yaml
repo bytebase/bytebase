@@ -120,3 +120,135 @@
         line: 9
         column: 0
       endposition: null
+- statement: |-
+    ALTER TABLE tech_book
+      ADD COLUMN contentString varchar(255),
+      CHANGE COLUMN id creatorId int,
+      RENAME COLUMN name TO bookName
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`tech_book`.`bookName` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`tech_book`.`contentString` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`tech_book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD COLUMN (contentString varchar(255), content_size int, contentHash int)
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`tech_book`.`contentHash` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`tech_book`.`contentString` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book MODIFY COLUMN creatorId int
+  changeType: 1
+- statement: CREATE TABLE test.book(id int, `creator id` int, book.creatorId int)
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`creator id` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(id int, `数数数数数数数数数数数数数数数数数数数数数` int, `数数数数数数数数数数数数数数数数数数数数数数` int)
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`数数数数数数数数数数数数数数数数数数数数数` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`数数数数数数数数数数数数数数数数数数数数数数` mismatches column naming convention, its length should be within 64 characters'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`数数数数数数数数数数数数数数数数数数数数数数` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(id int, Zaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa int)
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`Zaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` mismatches column naming convention, its length should be within 64 characters'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`Zaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    -- add a column
+    ALTER TABLE tech_book ADD COLUMN contentString int
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`tech_book`.`contentString` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: EXPLAIN ALTER TABLE tech_book ADD COLUMN contentString int
+  changeType: 1

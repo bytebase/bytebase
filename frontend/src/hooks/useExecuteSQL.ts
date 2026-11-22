@@ -96,7 +96,7 @@ export const useExecuteSQL = () => {
   // Propagates the status change to the Zustand store via
   // `updateDatabaseQueryContext` (the path that drives React re-renders).
   // For ad-hoc contexts that aren't tracked under `(database, ctx.id)` —
-  // e.g. the ephemeral context in `getExplainTokenForMSSQL` — the store
+  // e.g. the ephemeral context of a plan request — the store
   // action returns `undefined`; we fall back to mutating the passed-in
   // `ctx` directly so the caller still sees the new fields after
   // `await runQuery(...)`.

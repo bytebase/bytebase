@@ -1,5 +1,4 @@
 import {
-  AlertCircle,
   CheckCircle,
   CircleQuestionMark,
   FileCode,
@@ -7,11 +6,11 @@ import {
   Play,
   SearchCode,
   Shield,
-  XCircle,
 } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
+import { LevelPriorityBadge } from "@/components/sql-review/LevelPriorityBadge";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -45,6 +44,7 @@ import { extractDatabaseResourceName } from "@/utils/v1/database";
 const PAGE_SIZE = 10;
 
 interface PlanCheckSectionProps {
+  title?: string;
   planCheckRuns: PlanCheckRun[];
   // When provided, the section uses this summary instead of computing one
   // from planCheckRuns. Issue-detail uses this to fall back to
@@ -60,6 +60,7 @@ interface PlanCheckSectionProps {
   // Optional trailing element rendered after status counts (e.g. affected rows).
   trailingSummary?: ReactNode;
   renderTarget?: (target: string) => ReactNode;
+  renderResultAction?: (result: PlanCheckRun_Result) => ReactNode;
   // If true, FAILED and CANCELED runs without error results render as a
   // synthetic error group. Used by plan-detail regular checks.
   includeRunFailure?: boolean;
@@ -68,6 +69,7 @@ interface PlanCheckSectionProps {
 }
 
 export function PlanCheckSection({
+  title,
   planCheckRuns,
   summaryOverride,
   canRun,
@@ -77,6 +79,7 @@ export function PlanCheckSection({
   onRefreshOnOpen,
   trailingSummary,
   renderTarget,
+  renderResultAction,
   includeRunFailure = false,
   headingClassName = "textlabel uppercase",
 }: PlanCheckSectionProps) {
@@ -92,7 +95,7 @@ export function PlanCheckSection({
   return (
     <div className="flex flex-col gap-y-1">
       <div className="flex items-center justify-between gap-2">
-        <h3 className={headingClassName}>{t("plan.checks.self")}</h3>
+        <h3 className={headingClassName}>{title ?? t("plan.checks.self")}</h3>
         {canRun && (
           <Button
             disabled={isRunning || runDisabled}
@@ -133,6 +136,7 @@ export function PlanCheckSection({
         open={drawerOpen}
         planCheckRuns={planCheckRuns}
         renderTarget={renderTarget}
+        renderResultAction={renderResultAction}
       />
     </div>
   );
@@ -140,39 +144,43 @@ export function PlanCheckSection({
 
 type StatusEntry = {
   count: number;
-  icon: typeof XCircle;
-  label: string;
+  label: ReactNode;
   status: Advice_Level;
   textClass: string;
 };
 
+// Errors and warnings show as the review priorities they map to, then the
+// count; passed checks keep their icon and label.
 function getStatusEntries(
   summary: PlanCheckSummary,
   t: ReturnType<typeof useTranslation>["t"]
 ): StatusEntry[] {
-  return [
+  const entries: StatusEntry[] = [
     {
       count: summary.error,
-      icon: XCircle,
-      label: t("common.error"),
+      label: <LevelPriorityBadge level="error" />,
       status: Advice_Level.ERROR,
-      textClass: "text-error",
+      textClass: "text-control",
     },
     {
       count: summary.warning,
-      icon: AlertCircle,
-      label: t("common.warning"),
+      label: <LevelPriorityBadge level="warning" />,
       status: Advice_Level.WARNING,
-      textClass: "text-warning",
+      textClass: "text-control",
     },
     {
       count: summary.success,
-      icon: CheckCircle,
-      label: t("common.success"),
+      label: (
+        <>
+          <CheckCircle className="size-4" />
+          <span>{t("common.success")}</span>
+        </>
+      ),
       status: Advice_Level.SUCCESS,
       textClass: "text-success",
     },
-  ].filter((entry) => entry.count > 0);
+  ];
+  return entries.filter((entry) => entry.count > 0);
 }
 
 function PlanCheckSummaryRow({ summary }: { summary: PlanCheckSummary }) {
@@ -187,10 +195,9 @@ function PlanCheckSummaryRow({ summary }: { summary: PlanCheckSummary }) {
           <span>{summary.running}</span>
         </span>
       )}
-      {entries.map(({ count, icon: Icon, label, status, textClass }) => (
+      {entries.map(({ count, label, status, textClass }) => (
         <span className={cn("flex items-center gap-1", textClass)} key={status}>
-          <Icon className="size-4" />
-          <span>{label}</span>
+          {label}
           <span>{count}</span>
         </span>
       ))}
@@ -217,7 +224,7 @@ function PlanCheckFilterPills({
           <span>{t("common.running")}</span>
         </div>
       )}
-      {entries.map(({ count, icon: Icon, label, status, textClass }) => {
+      {entries.map(({ count, label, status, textClass }) => {
         const isSelected = selectedStatus === status;
         return (
           <Button
@@ -232,8 +239,7 @@ function PlanCheckFilterPills({
             onClick={() => onSelect(isSelected ? undefined : status)}
             type="button"
           >
-            <Icon className="h-5 w-5" />
-            <span>{label}</span>
+            {label}
             <span>{count}</span>
           </Button>
         );
@@ -249,6 +255,9 @@ interface PlanCheckResultsDrawerProps {
   onRefreshOnOpen?: () => Promise<unknown>;
   includeRunFailure?: boolean;
   renderTarget?: (target: string) => ReactNode;
+  renderResultAction?: (result: PlanCheckRun_Result) => ReactNode;
+  // The level the drawer shows when it opens; every level when unset.
+  initialStatus?: Advice_Level;
 }
 
 export function PlanCheckResultsDrawer({
@@ -258,6 +267,8 @@ export function PlanCheckResultsDrawer({
   onRefreshOnOpen,
   includeRunFailure = false,
   renderTarget,
+  renderResultAction,
+  initialStatus,
 }: PlanCheckResultsDrawerProps) {
   const { t } = useTranslation();
   const [selectedStatus, setSelectedStatus] = useState<
@@ -268,7 +279,7 @@ export function PlanCheckResultsDrawer({
 
   useEffect(() => {
     if (!open) return;
-    setSelectedStatus(undefined);
+    setSelectedStatus(initialStatus);
     setDisplayCount(PAGE_SIZE);
     if (!onRefreshOnOpen) return;
     let canceled = false;
@@ -284,7 +295,7 @@ export function PlanCheckResultsDrawer({
     return () => {
       canceled = true;
     };
-  }, [open, onRefreshOnOpen]);
+  }, [open, onRefreshOnOpen, initialStatus]);
 
   useEffect(() => {
     setDisplayCount(PAGE_SIZE);
@@ -378,6 +389,12 @@ export function PlanCheckResultsDrawer({
                       <div className="flex flex-col gap-y-2 pl-8">
                         {group.results.map((result, index) => (
                           <PlanCheckResultCard
+                            action={
+                              result.status === Advice_Level.ERROR ||
+                              result.status === Advice_Level.WARNING
+                                ? renderResultAction?.(result)
+                                : undefined
+                            }
                             key={`${group.key}-${index}`}
                             result={result}
                           />
@@ -412,8 +429,10 @@ export function PlanCheckResultsDrawer({
 
 export function PlanCheckResultCard({
   result,
+  action,
 }: {
   result: PlanCheckRun_Result;
+  action?: ReactNode;
 }) {
   const { t } = useTranslation();
   const position =
@@ -433,7 +452,12 @@ export function PlanCheckResultCard({
     <div className="flex items-start gap-3 rounded-sm border border-control-border bg-control-bg px-3 py-2">
       <div className="mt-0.5 shrink-0">{statusIcon(result.status)}</div>
       <div className="flex min-w-0 flex-1 flex-col gap-y-1">
-        <div className="text-sm font-medium text-main">{displayTitle}</div>
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0 break-words text-sm font-medium text-main">
+            {displayTitle}
+          </div>
+          {action}
+        </div>
         {result.content && (
           <div className="text-sm text-control">{result.content}</div>
         )}
@@ -448,7 +472,7 @@ export function PlanCheckResultCard({
         )}
         {affectedRows !== undefined && (
           <div className="mt-1 flex items-center gap-1 text-sm">
-            <span className="inline-flex items-center rounded-full bg-background px-2 py-0.5 text-xs text-control">
+            <span className="inline-flex items-center rounded-xs border border-transparent bg-background px-1.5 py-0.5 text-xs text-control">
               {t("task.check-type.affected-rows.self")}
             </span>
             <span>{String(affectedRows)}</span>
@@ -511,10 +535,10 @@ function getCheckTypeDescription(
 
 function statusIcon(status: Advice_Level) {
   if (status === Advice_Level.ERROR) {
-    return <XCircle className="h-4 w-4 text-error" />;
+    return <LevelPriorityBadge level="error" />;
   }
   if (status === Advice_Level.WARNING) {
-    return <AlertCircle className="h-4 w-4 text-warning" />;
+    return <LevelPriorityBadge level="warning" />;
   }
   return <CheckCircle className="h-4 w-4 text-success" />;
 }

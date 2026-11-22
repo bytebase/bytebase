@@ -1,534 +1,326 @@
+// Package elasticsearch is Bytebase's Elasticsearch driver: an adapter over
+// github.com/bytebase/omni/elasticsearch/driver that maps Bytebase's
+// connection config onto the driver contract and the contract's results back
+// into the product's protos.
+//
+// Elasticsearch is not a SQL-shaped engine, so each db.Driver method answers in
+// its own way:
+//
+//   - Open builds the endpoint and the login without reaching the endpoint
+//     itself; Ping does. It does reach out for the connection path: a data
+//     source with an SSH host opens the jump host here and the endpoint's
+//     connections then dial through it (Config.Dial), while an AWS IAM login
+//     resolves the credentials it signs each request with, through a transport
+//     of the caller's that owns its connections. https is selected by use_ssl,
+//     by a host that names its own https, or by AWS IAM, which always requires
+//     it, and a host that names no port reaches 9200. TLS material is the data
+//     source's: verify_tls_certificate decides whether the endpoint's
+//     certificate is checked, and a data source asked for https with no
+//     material encrypts without verifying.
+//   - Ping asks the endpoint for its root document.
+//   - QueryConn runs each Kibana Dev Console request of the script and answers
+//     one result per request.
+//   - Execute runs the same requests through the driver's script path and
+//     reports 0 affected rows: an Elasticsearch answer states its counts in its
+//     own columns.
+//   - SyncInstance reads the version, the cluster's indices and its users;
+//     SyncDBSchema returns the indices as one database named "node".
+//   - Dump writes nothing. A synced index states its document count and data
+//     size, not the mappings and settings that would recreate it, so a dump of
+//     the metadata could not create the index it describes.
+//   - GetDB returns nil. Elasticsearch has no database/sql handle.
+//
+// An answer is text: one column per key of an object answer, in name order, or
+// one column holding an array answer, and a value keeps the digits the endpoint
+// wrote, so a long past 2^53 is not rounded. No column carries a type name,
+// because Elasticsearch states none. An answer with no body is a result with no
+// columns and no rows, a partly applied bulk request fails the statement, and a
+// result that passes MaximumSQLResultSize is kept and marked truncated with the
+// message every driver uses. A request that fails fails the call rather than
+// answering the results before it. Sync orders indices and users by name.
+//
+// `db.QueryContext.Schema`, `Limit` and `SkipMasking` are not mapped: a cluster
+// is one namespace, a REST answer has no statement to rewrite with a row limit,
+// and Elasticsearch answers with text the driver never relates to a column, so
+// there is nothing for masking to withhold. `QueryContext.Explain` profiles the
+// search, which is the only plan Elasticsearch states, and the result says it
+// ran; a request that is not a search is refused rather than run, so an explain
+// cannot carry out a write.
+//
+// The package also holds what Bytebase decides and omni must not: the SSH tunnel
+// (Config.Dial), the AWS IAM login (a SigV4 round tripper around the caller's
+// transport, plus the role-assumption hints the connection test carries), and the
+// task run's execute log.
 package elasticsearch
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
-	"database/sql"
-	"encoding/base64"
-	"encoding/json"
+	"crypto/x509"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v7"
-	opensearch "github.com/opensearch-project/opensearch-go/v4"
-	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
-	"github.com/opensearch-project/opensearch-go/v4/signer/awsv2"
+	omnidriver "github.com/bytebase/omni/driver"
+	esdriver "github.com/bytebase/omni/elasticsearch/driver"
+	"github.com/opensearch-project/opensearch-go/v5/signer"
+	"github.com/opensearch-project/opensearch-go/v5/signer/awsv2"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	parser "github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch"
 )
 
-func elasticsearchDriverFunc() db.Driver {
+var _ db.Driver = (*Driver)(nil)
+
+func init() {
+	db.Register(storepb.Engine_ELASTICSEARCH, newDriver)
+}
+
+// Driver is Bytebase's Elasticsearch driver.
+type Driver struct {
+	util.OmniAdapter
+	// aws reports that the endpoint is a managed OpenSearch domain reached
+	// with SigV4, and awsRoleARN the role that was assumed for it. Both are
+	// kept for the hints the connection test carries.
+	aws        bool
+	awsRoleARN string
+}
+
+func newDriver() db.Driver {
 	return &Driver{}
 }
 
-func init() {
-	db.Register(storepb.Engine_ELASTICSEARCH, elasticsearchDriverFunc)
-}
-
-var (
-	_ db.Driver = (*Driver)(nil)
-)
-
-type Driver struct {
-	// For Elasticsearch
-	typedClient *elasticsearch.Client
-	// For OpenSearch
-	opensearchClient *opensearch.Client
-	opensearchAPI    *opensearchapi.Client
-	// Common basic auth client for REST operations
-	basicAuthClient *BasicAuthClient
-	config          db.ConnectionConfig
-	isOpenSearch    bool
-}
-
-type BasicAuthClient struct {
-	httpClient      *http.Client
-	addrScheduler   *AddressScheduler
-	basicAuthString string
-}
-
-func (client *BasicAuthClient) Do(method string, route []byte, queryString []byte) (*http.Response, error) {
-	address := client.addrScheduler.GetNewAddress()
-
-	// Parse base URL and join with route path
-	baseURL, err := url.Parse(address)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse base URL")
-	}
-
-	// Split route into path and query parameters
-	// The route may contain query parameters (e.g., "/_mapping?pretty")
-	// We need to separate them to avoid URL-encoding the '?' character
-	routeStr := string(route)
-	pathPart, queryPart, hasQuery := strings.Cut(routeStr, "?")
-
-	// Join only the path part (without query parameters)
-	// This ensures JoinPath only processes the actual path
-	fullURL := baseURL.JoinPath(pathPart)
-
-	// Add query parameters if present in the route
-	// Assign directly to RawQuery to preserve the query string as-is
-	if hasQuery {
-		fullURL.RawQuery = queryPart
-	}
-
-	req, err := http.NewRequest(method, fullURL.String(), bytes.NewReader(queryString))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to init a HTTP request")
-	}
-
-	// Only add basic auth header if it exists (not for AWS IAM auth)
-	if client.basicAuthString != "" {
-		req.Header.Add("Authorization", client.basicAuthString)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	return client.httpClient.Do(req)
-}
-
-type AddressScheduler struct {
-	addresses []string
-	count     int
-}
-
-// Get a new address using round-robin. No failover mechanisms temporarily.
-func (scheduler *AddressScheduler) GetNewAddress() string {
-	address := scheduler.addresses[scheduler.count]
-	scheduler.count = (scheduler.count + 1) % len(scheduler.addresses)
-	return address
-}
-
+// Open maps the connection config onto the driver contract. It does not reach
+// the endpoint, though an SSH data source does dial its jump host and an AWS IAM
+// login resolves its credentials here; Ping reaches the endpoint.
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	address := fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port)
-
-	// Check if address already has a protocol
-	if !strings.HasPrefix(address, "http://") && !strings.HasPrefix(address, "https://") {
-		protocol := "http"
-		if config.DataSource.GetUseSsl() {
-			protocol = "https"
+	dataSource := config.DataSource
+	d := &Driver{
+		OmniAdapter: util.OmniAdapter{WithInstanceMetadata: true},
+	}
+	opened := false
+	defer func() {
+		if !opened {
+			_ = d.Close(ctx)
 		}
-		// AWS OpenSearch always requires HTTPS (port 443)
-		// Even if UseSsl is false, AWS managed services enforce HTTPS
-		if config.DataSource.GetAuthenticationType() == storepb.DataSource_AWS_RDS_IAM {
-			protocol = "https"
+	}()
+
+	aws := dataSource.GetAuthenticationType() == storepb.DataSource_AWS_RDS_IAM
+
+	cfg := omnidriver.Config{
+		Host: endpointHost(dataSource),
+		Port: dataSource.GetPort(),
+	}
+	var tlsConfig *tls.Config
+	if secure(dataSource) {
+		var err error
+		tlsConfig, err = tlsSettings(dataSource)
+		if err != nil {
+			return nil, err
 		}
-		address = fmt.Sprintf("%s://%s", protocol, address)
 	}
 
-	if _, err := url.Parse(address); err != nil {
-		return nil, errors.Wrapf(err, "failed to parse address: %v", address)
+	if tlsConfig != nil {
+		cfg.TLS = func(string) (*tls.Config, error) { return tlsConfig, nil }
 	}
 
-	if config.DataSource.GetAuthenticationType() == storepb.DataSource_AWS_RDS_IAM {
-		return openWithOpenSearchClient(ctx, config, address)
+	var opts esdriver.Options
+	if aws {
+		// A managed domain signs each request with SigV4 through a transport
+		// of the caller's, which then owns its own connections, so this login
+		// path cannot also take the tunnel.
+		d.aws = true
+		d.awsRoleARN = dataSource.GetAwsCredential().GetRoleArn()
+		transport, err := signedTransport(ctx, config, dataSource, tlsConfig)
+		if err != nil {
+			return nil, err
+		}
+		opts = esdriver.Options{OpenSearch: true, Transport: transport}
+	} else {
+		cfg.User = dataSource.GetUsername()
+		cfg.Password = config.Password
+		if err := util.SetupSSHDial(dataSource, &cfg, &d.OmniAdapter, true); err != nil {
+			return nil, err
+		}
 	}
 
-	return openWithBasicAuth(ctx, config, address)
+	inner, err := esdriver.Open(ctx, cfg, opts)
+	if err != nil {
+		return nil, err
+	}
+	d.Driver = inner
+	opened = true
+	return d, nil
 }
 
-func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address string) (db.Driver, error) {
-	// Get TLS config that respects verify_tls_certificate setting
-	tlsConfig, err := util.GetTLSConfig(config.DataSource)
+// endpointHost is the data source's host with its port glued on when the host
+// carries its own scheme: the contract's endpoint takes the port inside the host
+// it is given and ignores Config.Port for it.
+func endpointHost(dataSource *storepb.DataSource) string {
+	host := dataSource.GetHost()
+	if port := dataSource.GetPort(); port != "" && strings.Contains(host, "://") {
+		return host + ":" + port
+	}
+	return host
+}
+
+// secure reports whether the endpoint is reached over https: use_ssl asks for
+// it, a managed OpenSearch domain requires it, and so does a host that names
+// https in its own scheme.
+func secure(dataSource *storepb.DataSource) bool {
+	return dataSource.GetUseSsl() ||
+		dataSource.GetAuthenticationType() == storepb.DataSource_AWS_RDS_IAM ||
+		strings.HasPrefix(strings.ToLower(strings.TrimSpace(dataSource.GetHost())), "https://")
+}
+
+// tlsSettings returns the TLS settings the endpoint is verified with. A data
+// source with no TLS settings encrypts without verifying, and a CA certificate
+// becomes part of the endpoint's roots whether or not verification is on.
+func tlsSettings(dataSource *storepb.DataSource) (*tls.Config, error) {
+	tlsConfig, err := util.GetTLSConfig(dataSource)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get TLS config")
 	}
-
-	// Default to insecure if no SSL is configured
 	if tlsConfig == nil {
-		tlsConfig = &tls.Config{
-			MinVersion:         tls.VersionTLS12,
-			InsecureSkipVerify: true,
+		tlsConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+	tlsConfig.MinVersion = tls.VersionTLS12
+	if ca := dataSource.GetSslCa(); ca != "" {
+		if tlsConfig.RootCAs == nil {
+			tlsConfig.RootCAs = x509.NewCertPool()
 		}
-	} else {
-		// Ensure minimum TLS version
-		tlsConfig.MinVersion = tls.VersionTLS12
+		if ok := tlsConfig.RootCAs.AppendCertsFromPEM([]byte(ca)); !ok {
+			return nil, errors.New("failed to add CA certificate from PEM-encoded certificate")
+		}
 	}
-
-	esConfig := newElasticsearchConfig(config, address, tlsConfig)
-	// default http client.
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: tlsConfig,
-		},
-	}
-
-	// typed elasticsearch client.
-	typedClient, err := elasticsearch.NewClient(esConfig)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create elasticsearch client")
-	}
-
-	// generate basic authentication string for http client.
-	encodedUsrAndPasswd := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.DataSource.Username, config.Password)))
-	basicAuthString := fmt.Sprintf("Basic %s", string(encodedUsrAndPasswd))
-
-	return &Driver{
-		typedClient: typedClient,
-		basicAuthClient: &BasicAuthClient{
-			httpClient: httpClient,
-			addrScheduler: &AddressScheduler{
-				addresses: []string{address},
-				count:     0,
-			},
-			basicAuthString: basicAuthString,
-		},
-		config: config,
-	}, nil
+	return tlsConfig, nil
 }
 
-func newElasticsearchConfig(config db.ConnectionConfig, address string, tlsConfig *tls.Config) elasticsearch.Config {
-	esConfig := elasticsearch.Config{
-		Username:  config.DataSource.Username,
-		Password:  config.Password,
-		Addresses: []string{address},
-		Transport: &http.Transport{
+// signedTransport builds the AWS IAM login path: the credentials are resolved
+// here, and the transport signs every request the driver sends.
+func signedTransport(ctx context.Context, config db.ConnectionConfig, dataSource *storepb.DataSource, tlsConfig *tls.Config) (http.RoundTripper, error) {
+	if dataSource.GetRegion() == "" {
+		return nil, errors.New("region is required for AWS IAM authentication")
+	}
+	awsCfg, err := util.GetAWSConnectionConfig(ctx, config)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load AWS config")
+	}
+	if err := util.AssumeRoleIfNeeded(ctx, &awsCfg, config.ConnectionContext, dataSource.GetAwsCredential()); err != nil {
+		return nil, err
+	}
+	if _, err := awsCfg.Credentials.Retrieve(ctx); err != nil {
+		return nil, errors.Wrap(err, "failed to retrieve AWS credentials")
+	}
+	sig, err := awsv2.NewSigner(awsCfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create AWS signer")
+	}
+	return &signedHTTP{
+		base: &http.Transport{
 			MaxIdleConnsPerHost:   10,
 			ResponseHeaderTimeout: 5 * time.Second,
 			TLSClientConfig:       tlsConfig,
 		},
-	}
-	if config.DataSource.GetSslCa() != "" {
-		esConfig.CACert = []byte(config.DataSource.GetSslCa())
-	}
-	return esConfig
-}
-
-func openWithOpenSearchClient(ctx context.Context, config db.ConnectionConfig, address string) (db.Driver, error) {
-	// Keep debugInfo for error messages
-	debugInfo := fmt.Sprintf("OpenSearch config - address: %s, authType: %v", address, config.DataSource.GetAuthenticationType())
-
-	// Get TLS config that respects verify_tls_certificate setting
-	tlsConfig, err := util.GetTLSConfig(config.DataSource)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get TLS config")
-	}
-
-	// Default to insecure if no SSL is configured
-	if tlsConfig == nil {
-		tlsConfig = &tls.Config{
-			MinVersion:         tls.VersionTLS12,
-			InsecureSkipVerify: true,
-		}
-	} else {
-		// Ensure minimum TLS version
-		tlsConfig.MinVersion = tls.VersionTLS12
-	}
-
-	baseTransport := &http.Transport{
-		MaxIdleConnsPerHost:   10,
-		ResponseHeaderTimeout: 5 * time.Second, // Increase timeout for AWS
-		TLSClientConfig:       tlsConfig,
-	}
-
-	osConfig := opensearch.Config{
-		Addresses: []string{address},
-		Transport: baseTransport,
-	}
-
-	// Configure authentication
-	switch config.DataSource.GetAuthenticationType() {
-	case storepb.DataSource_AWS_RDS_IAM:
-		// Validate AWS-specific requirements
-		if config.DataSource.GetRegion() == "" {
-			return nil, errors.New("region is required for AWS IAM authentication")
-		}
-
-		// Load AWS configuration (uses specific credentials from UI if provided, otherwise default chain)
-		awsCfg, err := util.GetAWSConnectionConfig(ctx, config)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to load AWS config")
-		}
-
-		// Handle cross-account role assumption if configured
-		if err := util.AssumeRoleIfNeeded(ctx, &awsCfg, config.ConnectionContext, config.DataSource.GetAwsCredential()); err != nil {
-			return nil, err
-		}
-
-		// Verify credentials are available
-		_, err = awsCfg.Credentials.Retrieve(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to retrieve AWS credentials")
-		}
-
-		// Create AWS signer
-		signer, err := awsv2.NewSigner(awsCfg)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create AWS signer")
-		}
-
-		osConfig.Signer = signer
-
-	default:
-		// Basic auth
-		osConfig.Username = config.DataSource.Username
-		osConfig.Password = config.Password
-	}
-
-	// Note: util.GetTLSConfig already handles CA cert configuration,
-	// so we don't need to manually handle it here anymore
-
-	// Create OpenSearch client
-	osClient, err := opensearch.NewClient(osConfig)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create OpenSearch client; %s", debugInfo)
-	}
-
-	// Create OpenSearch API client
-	apiClient, err := opensearchapi.NewClient(opensearchapi.Config{
-		Client: osConfig,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create OpenSearch API client; %s", debugInfo)
-	}
-
-	// For consistency, still create a basic auth client for REST operations
-	httpClient := &http.Client{
-		Transport: osConfig.Transport,
-	}
-
-	basicAuthString := ""
-	// For AWS IAM, we don't use basic auth - the AWS signer handles authentication
-	if config.DataSource.GetAuthenticationType() != storepb.DataSource_AWS_RDS_IAM &&
-		config.DataSource.Username != "" && config.Password != "" {
-		encodedUsrAndPasswd := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.DataSource.Username, config.Password)))
-		basicAuthString = fmt.Sprintf("Basic %s", string(encodedUsrAndPasswd))
-	}
-
-	return &Driver{
-		opensearchClient: osClient,
-		opensearchAPI:    apiClient,
-		basicAuthClient: &BasicAuthClient{
-			httpClient: httpClient,
-			addrScheduler: &AddressScheduler{
-				addresses: []string{address},
-				count:     0,
-			},
-			basicAuthString: basicAuthString,
-		},
-		config:       config,
-		isOpenSearch: true,
+		signer: sig,
 	}, nil
 }
 
-// ElasticSearch doesn't keep a live connection as it uses stateless HTTP.
-func (*Driver) Close(_ context.Context) error {
+// signedHTTP signs each request before the transport under it sends it, which
+// is what a managed OpenSearch domain requires.
+type signedHTTP struct {
+	base   http.RoundTripper
+	signer signer.Signer
+}
+
+func (t *signedHTTP) RoundTrip(req *http.Request) (*http.Response, error) {
+	if err := t.signer.SignRequest(req); err != nil {
+		return nil, err
+	}
+	return t.base.RoundTrip(req)
+}
+
+// Ping asks the endpoint for its root document. On a managed OpenSearch domain
+// a refusal carries hints a support case reads: the role that could not be
+// assumed, and where to look otherwise.
+func (d *Driver) Ping(ctx context.Context) error {
+	if err := d.OmniAdapter.Ping(ctx); err != nil {
+		return d.connectionError(err)
+	}
 	return nil
 }
 
-func (d *Driver) Ping(_ context.Context) error {
-	if d.isOpenSearch && d.opensearchAPI != nil {
-		ctx := context.Background()
-		info, err := d.opensearchAPI.Info(ctx, &opensearchapi.InfoReq{})
-		if err != nil {
-			// Check if it's an authentication or connection issue
-			errStr := err.Error()
-			if strings.Contains(errStr, "401") || strings.Contains(errStr, "403") {
-				// Check if role assumption was attempted
-				if d.config.DataSource.GetAwsCredential() != nil &&
-					d.config.DataSource.GetAwsCredential().RoleArn != "" {
-					return errors.Errorf("authentication failed: unable to assume role %s: %v",
-						d.config.DataSource.GetAwsCredential().RoleArn, err)
-				}
-				return errors.Errorf("authentication failed (consider using cross-account role if accessing different AWS account): %v", err)
-			}
-			if strings.Contains(errStr, "404") {
-				return errors.Errorf("endpoint not found (check if path is correct): %v", err)
-			}
-			// For any other error, return the full error
-			return errors.Wrapf(err, "failed to connect to OpenSearch")
-		}
-		if info == nil || info.Version.Number == "" {
-			return errors.New("invalid response from server")
-		}
-		return nil
+// connectionError names what a managed OpenSearch domain's refusal means. The
+// status is in the driver's error text, which is what there is to match on.
+func (d *Driver) connectionError(err error) error {
+	if !d.aws {
+		return err
 	}
-
-	// Use Elasticsearch client
-	if d.typedClient != nil {
-		res, err := d.typedClient.Ping()
-		if err != nil {
-			return errors.Wrapf(err, "failed to ping db")
+	text := err.Error()
+	switch {
+	case strings.Contains(text, "401") || strings.Contains(text, "403"):
+		if d.awsRoleARN != "" {
+			return errors.Errorf("authentication failed: unable to assume role %s: %v", d.awsRoleARN, err)
 		}
-		defer res.Body.Close()
-		if res.IsError() {
-			return errors.Errorf("ping failed: %s", res.String())
-		}
-		return nil
+		return errors.Errorf("authentication failed (consider using cross-account role if accessing different AWS account): %v", err)
+	case strings.Contains(text, "404"):
+		return errors.Errorf("endpoint not found (check if path is correct): %v", err)
+	default:
+		return errors.Wrapf(err, "failed to connect to OpenSearch")
 	}
-
-	// Fallback to basic auth client
-	if d.basicAuthClient != nil {
-		resp, err := d.basicAuthClient.Do("GET", []byte("/"), nil)
-		if err != nil {
-			return errors.Wrapf(err, "failed to ping db")
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode >= 400 {
-			body, _ := io.ReadAll(resp.Body)
-			return errors.Errorf("ping failed with status %d: %s", resp.StatusCode, body)
-		}
-		return nil
-	}
-
-	return errors.New("no client available for ping")
 }
 
-func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	_, err := d.QueryConn(ctx, nil, statement, db.QueryContext{})
-	if err != nil {
-		return 0, err
-	}
-	return 0, nil
+// Execute runs the script's requests in order, reporting each to the task run's
+// log, and returns 0 affected rows.
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{})
 }
 
-func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
-	parseResult, err := parser.ParseElasticsearchREST(statement)
+// QueryConn runs each request of a read-only script and answers one result per
+// request. A request that fails fails the call, so the results before it in the
+// same script are not answered either.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	var stmtResults []*omnidriver.Result
+	err := d.QueryEphemeral(ctx, func(session omnidriver.Session) error {
+		var queryErr error
+		stmtResults, queryErr = session.Query(ctx, statement, omnidriver.QueryOptions{
+			Explain:        queryContext.Explain,
+			MaxResultBytes: queryContext.MaximumSQLResultSize,
+		})
+		return queryErr
+	})
 	if err != nil {
 		return nil, err
 	}
-	if len(parseResult.Errors) > 0 {
-		return nil, parseResult.Errors[0]
-	}
-	if parseResult.Requests == nil {
-		return nil, nil
-	}
-
 	var results []*v1pb.QueryResult
-	for _, request := range parseResult.Requests {
-		if err := func() error {
-			startTime := time.Now()
-			// send HTTP request.
-			// For NDJSON endpoints (_msearch, _bulk, etc.), each JSON object must
-			// be on a single line. Remove embedded newlines from each data item
-			// before joining with newline separators.
-			var data []byte
-			for _, item := range request.Data {
-				data = append(data, []byte(strings.ReplaceAll(item, "\n", ""))...)
-				data = append(data, '\n')
-			}
-			var resp *http.Response
-
-			// For AWS IAM auth, we need to use the OpenSearch client which has the signer
-			if d.isOpenSearch && d.opensearchClient != nil && d.config.DataSource.GetAuthenticationType() == storepb.DataSource_AWS_RDS_IAM {
-				// Create request for OpenSearch client
-				// Ensure the path starts with "/" for proper HTTP request
-				requestPath := strings.TrimSpace(request.URL)
-				if requestPath != "" && !strings.HasPrefix(requestPath, "/") {
-					requestPath = "/" + requestPath
-				}
-
-				req, err := http.NewRequest(request.Method, requestPath, bytes.NewReader(data))
-				if err != nil {
-					return errors.Wrapf(err, "failed to create HTTP request")
-				}
-				req.Header.Set("Content-Type", "application/json")
-
-				// Use OpenSearch client's Stream method which handles AWS signing
-				resp, err = d.opensearchClient.Stream(req)
-				if err != nil {
-					return errors.Wrapf(err, "failed to send HTTP request via OpenSearch client")
-				}
-			} else {
-				// For basic auth, use the basic auth client as before
-				resp, err = d.basicAuthClient.Do(request.Method, []byte(request.URL), data)
-				if err != nil {
-					return errors.Wrapf(err, "failed to send HTTP request")
-				}
-			}
-			defer resp.Body.Close()
-
-			respBytes, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return errors.Wrap(err, "failed to read response body")
-			}
-
-			// Check HTTP status code for errors (4xx, 5xx)
-			if resp.StatusCode >= 400 {
-				return errors.Errorf("request failed with status code %d: %s", resp.StatusCode, string(respBytes))
-			}
-
-			// structure results.
-			var result v1pb.QueryResult
-			var row v1pb.QueryRow
-
-			contentType := resp.Header.Get("Content-Type")
-
-			// Debug HTML responses
-			if strings.Contains(contentType, "text/html") && resp.StatusCode >= 400 {
-				return errors.Errorf("received HTML error response (status %d): %s", resp.StatusCode, string(respBytes))
-			}
-
-			switch {
-			case strings.Contains(contentType, "application/json"):
-				// ElasticSearch/OpenSearch REST APIs return two types of JSON responses:
-				// 1. Objects (most APIs): {"took":5,"hits":{...}}
-				// 2. Arrays (_cat APIs with format=json): [{"index":"test",...}]
-				// They never return primitive types (strings, numbers, booleans, null).
-
-				// First unmarshal into any to determine the JSON type
-				var data any
-				if err := json.Unmarshal(respBytes, &data); err != nil {
-					return errors.Wrapf(err, "failed to parse json body")
-				}
-
-				// Handle based on the actual type
-				switch v := data.(type) {
-				case map[string]any:
-					// Object response: create one column per key
-					for key, val := range v {
-						result.ColumnNames = append(result.ColumnNames, key)
-						bytes, err := json.Marshal(val)
-						if err != nil {
-							return err
-						}
-						row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
-					}
-				case []any:
-					// Array response (e.g., _cat APIs with format=json): create a single column with array data
-					result.ColumnNames = append(result.ColumnNames, "result")
-					bytes, err := json.Marshal(v)
-					if err != nil {
-						return err
-					}
-					row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
-				default:
-					// ElasticSearch/OpenSearch APIs only return objects or arrays, never primitives.
-					// If we get here, something unexpected happened.
-					return errors.Errorf("unexpected JSON type: %T (expected object or array)", v)
-				}
-			case strings.Contains(contentType, "text/plain"):
-				result.ColumnNames = append(result.ColumnNames, "text/plain")
-				row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(respBytes)}})
-			default:
-				return errors.Errorf("Content-Type not supported: %s", contentType)
-			}
-			result.Rows = append(result.Rows, &row)
-			result.Latency = durationpb.New(time.Since(startTime))
-			result.RowsCount = int64(len(result.Rows))
-			result.Statement = fmt.Sprintf("%s %s\n%s", request.Method, request.URL, string(data))
-			// TODO(d): handle max size.
-			results = append(results, &result)
-			return nil
-		}(); err != nil {
-			return nil, err
+	for _, stmtResult := range stmtResults {
+		if stmtResult.Err != nil {
+			return nil, stmtResult.Err
 		}
+		results = append(results, util.OmniResultToQueryResultWith(stmtResult, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
+			SkipColumnTypes:    true,
+			SkipMessages:       true,
+			TypedExplainPlan:   true,
+			IncludePlanContent: true,
+			TruncatedWins:      true,
+			ConvertValue:       toRowValue,
+		}))
 	}
-
 	return results, nil
 }
 
-func (*Driver) GetDB() *sql.DB {
-	return nil
+// toRowValue maps one cell. Every answer this driver reads is text: a JSON
+// value re-encoded, or the body as the endpoint wrote it.
+func toRowValue(value omnidriver.Value) *v1pb.RowValue {
+	if value.Kind == omnidriver.Null {
+		return util.NullRowValue
+	}
+	if value.Kind != omnidriver.String {
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: fmt.Sprintf("%v", value)}}
+	}
+	return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String}}
 }

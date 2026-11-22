@@ -1,12 +1,13 @@
 import {
   Check,
   ChevronDown,
-  ChevronUp,
-  CircleCheck,
+  ChevronRight,
+  ExternalLink,
   Loader2,
   RotateCcw,
 } from "lucide-react";
 import {
+  type MouseEvent,
   type ReactNode,
   type SetStateAction,
   useContext,
@@ -18,20 +19,43 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { HumanizeTs } from "@/components/HumanizeTs";
+import { EnvironmentBadge } from "@/components/EnvironmentLabel";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone";
 import { UserAvatar } from "@/components/UserAvatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCurrentUser, useUserByIdentifier } from "@/hooks/useAppState";
+import { Separator } from "@/components/ui/separator";
+import { Tooltip } from "@/components/ui/tooltip";
+import { useCurrentUser, usePlanFeature } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
-import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { AgentDiagnosticHelpButton } from "@/modules/agent/components/AgentDiagnosticHelpButton";
+import { normalizeAgentDiagnosticCapability } from "@/modules/agent/logic/diagnosticCapability";
+import type { AgentDiagnosticContext } from "@/modules/agent/logic/diagnosticHelp";
+import { useAppStore } from "@/stores/app";
+import {
+  type Issue,
+  IssueComment_ReviewMetadata_Priority,
+  IssueComment_ThreadState,
+} from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import "./CommentThreadCard.css";
+import {
+  productionEnvironmentsOf,
+  useTargetDatabases,
+} from "./productionTargets";
+import { ReviewPriorityBadge } from "./ReviewResult";
 import { ThreadComment } from "./ThreadComment";
-import type { CommentThread } from "./threadModel";
+import { ThreadStateBadge } from "./ThreadStateBadge";
+import {
+  type AnchorState,
+  type CommentThread,
+  type LineRange,
+  lineRangeLabel,
+} from "./threadModel";
 import {
   canReplyToThread,
   canSettleThread,
@@ -46,41 +70,38 @@ const FOLD_REPLIES_ABOVE = 4;
 // Activity timeline: root and replies in one card, Reply and Resolve or Reopen
 // in the footer. The reply composer carries a checkbox that mirrors the thread
 // state and, when toggled, settles the thread after the reply is posted.
-// Resolved threads collapse to a summary row.
+// Every card starts with a title bar that holds the fold control and the
+// state, and folding leaves the bar alone.
 export function CommentThreadCard({
+  bar,
   className,
-  collapsible = true,
-  context,
+  excerpt,
   issue,
-  label,
-  onClose,
   onThreadStateChanged,
   replyDraft: savedReplyDraft,
   onReplyDraftChange,
   project,
+  spec,
   thread,
 }: {
+  bar: ThreadBarProps;
   className?: string;
-  // Whether a resolved thread may collapse to its summary row.
-  collapsible?: boolean;
-  // Full-width statement context above the root author and discussion.
-  context?: ReactNode;
+  // The recorded SQL the thread is on, above the first comment.
+  excerpt?: ReactNode;
   issue: Issue;
-  // Extra header text after the timestamp (the anchored line range).
-  label?: ReactNode;
-  // Editor placement: closes the expanded thread back to its marker.
-  onClose?: () => void;
   // Fired only after this card successfully changes state, never on refresh.
   onThreadStateChanged?: (resolved: boolean) => void;
   replyDraft?: string;
   onReplyDraftChange?: (draft: SetStateAction<string>) => void;
   project: Project | undefined;
+  // The plan spec the thread sits on, when the owner knows it.
+  spec?: Plan_Spec;
   thread: CommentThread;
 }) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
   const actions = useThreadActions(issue.name);
-  const [collapsed, setCollapsed] = useState(collapsible && thread.resolved);
+  const [ownFolded, setOwnFolded] = useState(thread.resolved);
   const [showAllReplies, setShowAllReplies] = useState(
     () => thread.replies.length <= FOLD_REPLIES_ABOVE
   );
@@ -123,14 +144,18 @@ export function CommentThreadCard({
     if (updated && mounted.current) stateChanged.current?.(resolved);
   };
 
-  // Resolving collapses the thread; reopening expands it again.
+  // A card that keeps its own fold state folds when the thread becomes
+  // resolved and unfolds when it is reopened.
   useEffect(() => {
-    if (!collapsible) return;
-    setCollapsed(thread.resolved);
-  }, [collapsible, thread.resolved]);
+    setOwnFolded(thread.resolved);
+  }, [thread.resolved]);
+  const folded = bar.folded ?? ownFolded;
+  const toggleFold =
+    bar.onToggleFold ?? (() => setOwnFolded((current) => !current));
 
   const allowReply = canReplyToThread(project, issue);
   const allowSettle = canSettleThread(project);
+  const diagnostic = findingDiagnosticContext(thread, issue, project, spec);
   // The reply composer's checkbox names the action for the thread's current
   // state and, when checked, performs it after the reply is posted:
   //   open thread     -> "Resolve thread", unchecked; a reply keeps it open.
@@ -184,103 +209,81 @@ export function CommentThreadCard({
     }
   };
 
-  if (collapsed) {
-    return (
-      <div
-        className={cn(
-          "rounded-sm border border-block-border bg-background",
-          className
-        )}
-        data-testid="comment-thread"
-        data-thread-state="resolved"
-        id={thread.root.name}
-      >
-        <ThreadSummary thread={thread} onExpand={() => setCollapsed(false)} />
-      </div>
-    );
-  }
-
   return (
     <div
       className={cn(
-        "@container/thread flex min-w-0 flex-col rounded-sm border border-block-border bg-background",
+        "@container/thread flex min-w-0 flex-col rounded-lg border border-control-border bg-background",
         className
       )}
       data-testid="comment-thread"
       data-thread-state={thread.resolved ? "resolved" : "open"}
       id={thread.root.name}
     >
-      {context && (
-        <div className="min-w-0 overflow-hidden rounded-t-sm border-b border-block-border">
-          {context}
-        </div>
-      )}
-      <ThreadComment
-        actions={
-          <>
-            {thread.resolved && collapsible && (
-              <Button
-                aria-label={t("common.collapse")}
-                onClick={() => setCollapsed(true)}
-                size="xs"
-                appearance="secondary"
-              >
-                <ChevronUp className="size-3.5" />
-              </Button>
-            )}
-            {onClose && (
-              <Button
-                aria-label={t("common.close")}
-                onClick={onClose}
-                size="xs"
-                appearance="secondary"
-              >
-                <ChevronUp className="size-3.5" />
-              </Button>
-            )}
-          </>
-        }
-        comment={thread.root}
-        onEdit={actions.edit}
-        project={project}
-        status={
-          <>
-            {label}
-            {thread.resolved && (
-              <Badge className="gap-x-1 px-2 text-xs" variant="success">
-                <CircleCheck className="size-3" />
-                {t("plan.review.thread.resolved")}
-              </Badge>
-            )}
-          </>
-        }
+      <ThreadBar
+        {...bar}
+        folded={folded}
+        markers={<ThreadMarkers thread={thread} />}
+        onToggleFold={toggleFold}
+        resolved={thread.resolved}
       />
-      {hiddenCount > 0 && (
-        <div className="flex justify-center border-t border-block-border bg-control-bg/50 py-1">
-          <Button
-            onClick={() => setShowAllReplies(true)}
-            size="xs"
-            appearance="link"
-          >
-            <ChevronDown className="size-3.5" />
-            {t("plan.review.thread.n-replies-hidden", { count: hiddenCount })}
-            <span className="text-control-placeholder">·</span>
-            {t("plan.review.activity.show-all")}
-          </Button>
+      {!folded && excerpt && (
+        <div className="min-w-0 overflow-hidden border-b border-block-border">
+          {excerpt}
         </div>
       )}
-      {visibleReplies.map((reply) => (
-        <ThreadComment
-          className="border-t border-block-border"
-          comment={reply}
-          key={reply.name}
-          onEdit={actions.edit}
-          project={project}
-        />
-      ))}
-      {(allowReply || allowSettle) && (
+      {!folded && (
+        <div className="relative">
+          <ThreadComment
+            actions={
+              diagnostic && <AgentDiagnosticHelpButton context={diagnostic} />
+            }
+            comment={thread.root}
+            onEdit={actions.edit}
+            project={project}
+            spec={spec}
+          />
+          {(hiddenCount > 0 || visibleReplies.length > 0) && (
+            <div
+              className="bb-thread-replies ml-7"
+              data-testid="thread-replies"
+            >
+              {/* Joins the replies to the first comment, under its avatar. */}
+              <Separator
+                className="absolute top-9 bottom-2 left-4.5 h-auto sm:left-5.5"
+                data-testid="thread-replies-rail"
+                orientation="vertical"
+              />
+              {hiddenCount > 0 && (
+                <div className="flex justify-center py-1">
+                  <Button
+                    onClick={() => setShowAllReplies(true)}
+                    size="xs"
+                    appearance="link"
+                  >
+                    <ChevronDown className="size-3.5" />
+                    {t("plan.review.thread.n-replies-hidden", {
+                      count: hiddenCount,
+                    })}
+                    <span className="text-control-placeholder">·</span>
+                    {t("plan.review.activity.show-all")}
+                  </Button>
+                </div>
+              )}
+              {visibleReplies.map((reply) => (
+                <ThreadComment
+                  comment={reply}
+                  key={reply.name}
+                  onEdit={actions.edit}
+                  project={project}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {!folded && (allowReply || allowSettle) && (
         <div
-          className="flex flex-wrap items-center gap-2 border-t border-block-border bg-control-bg/50 px-2 py-2 sm:px-3"
+          className="flex flex-wrap items-center gap-2 rounded-b-lg border-t border-block-border bg-background px-2 py-2 sm:px-3"
           ref={replyFooterRef}
           data-testid="thread-reply-footer"
         >
@@ -383,50 +386,300 @@ export function CommentThreadCard({
   );
 }
 
-function ThreadSummary({
-  thread,
-  onExpand,
-}: {
-  thread: CommentThread;
-  onExpand: () => void;
+export type ThreadBarProps = {
+  // Where the card is drawn.
+  place: "changes" | "activity";
+  // Names what the thread is on.
+  title: ReactNode;
+  // The fold control's name: the title's text, then the lines when the bar
+  // shows them apart from the title.
+  foldLabel: string;
+  // Activity only: the lines on the right, the placement state, and the link.
+  lines?: LineRange;
+  anchorState?: AnchorState;
+  stateTooltip?: string;
+  onViewInStatement?: () => void;
+  // The Changes section keeps the fold state; Activity leaves both unset and
+  // the card keeps it.
+  folded?: boolean;
+  onToggleFold?: () => void;
+};
+
+// A click inside the bar folds unless it lands on a control, which keeps its
+// own meaning, or ends a drag that selected text.
+const shouldFoldFromBarClick = (event: MouseEvent<HTMLElement>): boolean => {
+  const target = event.target as Element;
+  if (target.closest("button, a, input, [role='button']")) return false;
+  return !window.getSelection()?.toString();
+};
+
+// What a folded thread must still say about how urgent it is: the badge of a
+// P0 or P1 finding, which needs someone to act, and the badge of each
+// production environment a finding applies to. A person's thread shows
+// neither.
+function ThreadMarkers({ thread }: { thread: CommentThread }) {
+  const review = thread.root.reviewMetadata;
+  const targets = review?.targets ?? EMPTY_TARGETS;
+  const databasesByName = useAppStore((state) => state.databasesByName);
+  const environmentList = useAppStore((state) => state.environmentList);
+  const hasEnvTierFeature = usePlanFeature(
+    PlanFeature.FEATURE_ENVIRONMENT_TIERS
+  );
+  // Until the databases load, the bar shows no environment badge.
+  useTargetDatabases(targets);
+  if (!review) return null;
+  const urgent =
+    review.priority === IssueComment_ReviewMetadata_Priority.P0 ||
+    review.priority === IssueComment_ReviewMetadata_Priority.P1;
+  const productionEnvironments = productionEnvironmentsOf(
+    targets,
+    { databasesByName, environmentList },
+    hasEnvTierFeature
+  );
+  return (
+    <>
+      {urgent && <ReviewPriorityBadge priority={review.priority} />}
+      {productionEnvironments.map((environment) => (
+        // The environment's own badge, unchanged; the bar only caps its width.
+        <span
+          className="inline-flex max-w-40 min-w-0 shrink-0"
+          data-testid="thread-production"
+          key={environment.name}
+          title={environment.title}
+        >
+          <EnvironmentBadge
+            className="max-w-full"
+            environment={environment}
+            hasEnvTierFeature={hasEnvTierFeature}
+          />
+        </span>
+      ))}
+    </>
+  );
+}
+
+const EMPTY_TARGETS: readonly string[] = [];
+
+// The bar's words and icons are text-control: text-control-light falls under
+// the 4.5:1 contrast minimum.
+function ThreadBar({
+  anchorState,
+  place,
+  folded,
+  foldLabel,
+  lines,
+  markers,
+  onToggleFold,
+  onViewInStatement,
+  resolved,
+  stateTooltip,
+  title,
+}: Omit<ThreadBarProps, "folded" | "onToggleFold"> & {
+  folded: boolean;
+  markers: ReactNode;
+  onToggleFold: () => void;
+  resolved: boolean;
 }) {
   const { t } = useTranslation();
-  const creator =
-    useUserByIdentifier(thread.root.creator) ??
-    unknownUser(thread.root.creator);
-  const summary = thread.root.comment.split("\n")[0] ?? "";
+  const labels = (
+    <>
+      {resolved && <ThreadStateBadge state="resolved" />}
+      {anchorState === "OUTDATED" &&
+        (stateTooltip ? (
+          <Tooltip
+            content={stateTooltip}
+            render={<span className="inline-flex" tabIndex={0} />}
+          >
+            <ThreadStateBadge state="outdated" />
+          </Tooltip>
+        ) : (
+          <ThreadStateBadge state="outdated" />
+        ))}
+      {anchorState === "UNAVAILABLE" && (
+        <ThreadStateBadge state="unavailable" />
+      )}
+    </>
+  );
   return (
-    <Button
-      appearance="secondary"
-      className="w-full min-w-0 justify-start text-left font-normal"
-      onClick={onExpand}
-      size="md"
+    // A click on the bar folds too: anywhere in the Changes section, and on the
+    // title, markers or state labels in Activity, whose right end holds the
+    // lines and a link. It is a pointer shortcut: the fold control stays the
+    // one focusable control, and the keyboard's path.
+    <div
+      className={cn(
+        "flex min-h-8 min-w-0 flex-wrap items-center gap-x-2 gap-y-1 bg-background px-2 py-1 text-xs text-control",
+        place === "changes" && "cursor-pointer",
+        folded ? "rounded-lg" : "rounded-t-lg border-b border-block-border"
+      )}
+      data-anchor-state={anchorState}
+      data-testid="thread-bar"
+      onClick={(event) => {
+        if (!shouldFoldFromBarClick(event)) return;
+        const target = event.target as Element;
+        if (place === "activity" && !target.closest("[data-bar-lead]")) return;
+        onToggleFold();
+      }}
     >
-      <UserAvatar
-        colorSeed={creator.email}
+      <Button
+        appearance="secondary"
+        aria-expanded={!folded}
+        aria-label={foldLabel}
+        className="shrink-0"
+        onClick={onToggleFold}
         size="xs"
-        title={creator.title || creator.email}
-      />
-      <span className="max-w-24 truncate font-medium text-main">
-        {creator.title || creator.email}
+      >
+        {folded ? (
+          <ChevronRight className="size-3.5" />
+        ) : (
+          <ChevronDown className="size-3.5" />
+        )}
+      </Button>
+      {/* The title is as wide as its text, at least 64px, so the labels stay
+          beside it; it shrinks to 64px before the bar wraps. */}
+      <span
+        className={cn("contents", place === "activity" && "cursor-pointer")}
+        data-bar-lead
+        data-testid="thread-bar-lead"
+      >
+        {typeof title === "string" ? (
+          <span
+            className="min-w-16 max-w-max flex-1 basis-0 truncate"
+            title={title}
+          >
+            {title}
+          </span>
+        ) : (
+          <span className="flex min-w-16 max-w-max flex-1 basis-0">
+            {title}
+          </span>
+        )}
+        {markers}
+        {labels}
       </span>
-      <span className="min-w-0 flex-1 truncate text-control" title={summary}>
-        {summary}
-      </span>
-      {thread.replies.length > 0 && (
-        <span className="shrink-0 text-xs text-control-light">
-          {t("plan.review.thread.n-replies", { count: thread.replies.length })}
+      {(lines || onViewInStatement) && (
+        <span
+          className="ml-auto flex shrink-0 items-center gap-x-2"
+          data-testid="thread-bar-end"
+        >
+          {lines && (
+            <span data-testid="thread-bar-lines">
+              {lineRangeLabel(t, lines)}
+            </span>
+          )}
+          {onViewInStatement && (
+            <Button
+              appearance="link"
+              className="h-auto p-0"
+              onClick={onViewInStatement}
+              size="xs"
+            >
+              {t("plan.review.thread.anchor.view-in-statement")}
+              <ExternalLink className="size-3" />
+            </Button>
+          )}
         </span>
       )}
-      <HumanizeTs
-        className="hidden shrink-0 text-xs text-control-light sm:inline"
-        tsMs={getTimeForPbTimestampProtoEs(thread.root.createTime)}
-      />
-      <Badge className="shrink-0 gap-x-1 px-2 text-xs" variant="success">
-        <CircleCheck className="size-3" />
-        {t("plan.review.thread.resolved")}
-      </Badge>
-      <ChevronDown className="size-4 shrink-0 text-control-light" />
-    </Button>
+    </div>
   );
+}
+
+function findingDiagnosticContext(
+  thread: CommentThread,
+  issue: Issue,
+  project: Project | undefined,
+  spec: Plan_Spec | undefined
+): AgentDiagnosticContext | undefined {
+  const { root } = thread;
+  const review = root.reviewMetadata;
+  if (
+    !review ||
+    thread.resolved ||
+    root.threadState !== IssueComment_ThreadState.OPEN
+  )
+    return undefined;
+  const projectName = issue.name.split("/").slice(0, 2).join("/");
+  const issueScope = normalizeAgentDiagnosticCapability({
+    kind: "diagnostic",
+    resource: {
+      kind: "issue",
+      name: issue.name,
+      project: projectName,
+      label: issue.name,
+    },
+  });
+  if (
+    !issueScope ||
+    (project && project.name !== projectName) ||
+    !root.name.startsWith(`${issue.name}/issueComments/`) ||
+    !/^[a-zA-Z0-9-]+$/.test(
+      root.name.slice(`${issue.name}/issueComments/`.length)
+    ) ||
+    (spec && root.statementAnchor && spec.id !== root.statementAnchor.spec)
+  )
+    return undefined;
+  const scope = issue.plan
+    ? normalizeAgentDiagnosticCapability({
+        kind: "diagnostic",
+        resource: {
+          kind: "plan",
+          name: issue.plan,
+          project: projectName,
+          label: issue.plan,
+        },
+      })
+    : issueScope;
+  if (!scope) return undefined;
+  const anchor = root.statementAnchor;
+  const facts = [
+    { label: "Issue", value: issue.name },
+    {
+      label: "Review run",
+      value: `${issue.name}/reviewRun, attempt ${review.attempt}`,
+    },
+    {
+      label: "Priority",
+      value: IssueComment_ReviewMetadata_Priority[review.priority],
+    },
+    { label: "Targets", value: review.targets.join(", ") },
+    { label: "Superseded", value: String(review.superseded) },
+    {
+      label: "Evidence",
+      value:
+        "Partial: original SQL snapshot unavailable; use the original revision identifiers, not current SQL.",
+    },
+  ];
+  if (review.ruleType !== ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED) {
+    facts.push({
+      label: "Rule",
+      value: [ReviewRuleType[review.ruleType], ...review.codes].join(": "),
+    });
+  }
+  if (anchor) {
+    facts.push(
+      { label: "Spec", value: anchor.spec },
+      { label: "Original sheet SHA256", value: anchor.sheetSha256 }
+    );
+    if (anchor.startPosition && anchor.endPosition)
+      facts.push({
+        label: "Original SQL range",
+        value: `${anchor.startPosition.line}:${anchor.startPosition.column}-${anchor.endPosition.line}:${anchor.endPosition.column}`,
+      });
+  }
+  return {
+    resource: scope.resource,
+    kind: "review-finding",
+    sourceId: root.name,
+    summary: review.title || "Automated review finding",
+    detail: root.comment,
+    ...(anchor?.spec.trim() && /^[a-f0-9]{64}$/i.test(anchor.sheetSha256)
+      ? {
+          sqlFixSource: {
+            specId: anchor.spec,
+            sha256: anchor.sheetSha256,
+            targets: [...review.targets],
+          },
+        }
+      : {}),
+    facts,
+  };
 }

@@ -24,3 +24,24 @@
       endposition: null
 - statement: DELETE FROM t WHERE a = 1;
   changeType: 1
+- statement: |-
+    UPDATE t SET a = s.b FROM s;
+    DELETE FROM t
+    USING s;
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for UPDATE statement.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for DELETE statement.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

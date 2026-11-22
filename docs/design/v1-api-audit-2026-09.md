@@ -13,7 +13,7 @@ relative to `backend/api/v1/` and proto paths to `proto/v1/v1/` unless they carr
 
 | | Problem | Severity |
 |---|---|---|
-| X1 | The "disable export" policy is enforced by the browser, not the server | HIGH |
+| X1 | The "disable export" policy is enforced by the browser, not the server. Resolved: `Export` requires `bb.sql.export`, enforced on the server, and `disable_export` is removed | HIGH |
 | X2 | `ListInstanceDatabase` with an inline instance skips every SaaS credential guard the create path has | HIGH |
 | X3 | `CreateRollout` with `target: ""` deploys every stage; the proto says none | HIGH |
 | U1 | `Instance` and `Project` are rewritten whole from a cached copy with no lock — a rotated password can silently revert | HIGH |
@@ -113,7 +113,7 @@ increase — is one workflow step and holds the line while the 211 are burned do
 
 ## Custom methods that do something other than what they say
 
-### X1 · `Export` ignores the export policy — HIGH
+### X1 · `Export` ignores the export policy — HIGH, resolved
 
 `QueryDataPolicy.disable_export` is documented as "Disable data export in the SQL editor"
 (`proto/v1/v1/org_policy_service.proto:272`). The backend never reads it: the only references are
@@ -124,6 +124,10 @@ hides the button (`frontend/src/modules/sql-editor/components/ResultView/ResultV
 Anyone holding `bb.databases.get` and `bb.sql.select` on a database exports it through the API
 with the policy on, and read-write MCP sessions get `Export` as a WRITE-class method. Bytebase's
 own principle is that governance is enforced, not displayed. One refusal in the handler closes it.
+
+**Resolved.** `Export` now requires `bb.sql.export` on the data it reads, held through a role or
+a matching export grant, and the server enforces it for every caller: console, API and MCP.
+`disable_export` is removed. See [sql-export-permission.md](sql-export-permission.md).
 
 ### X2 · `ListInstanceDatabase` is a connection probe that skips the create guards — HIGH
 
@@ -676,8 +680,9 @@ descriptor walk that pins A1 and A3 can require the line.
 - `Query`/`Export` beyond the interceptor: per-statement `bb.sql.select|dml|ddl|explain|info` on
   the new-ACL engines with CEL conditions, data-source selection by policy, masking unless
   explaining or under an unmasking grant, row/size/timeout caps (`sql_service.go:1466-1520`,
-  `:2068-2187`, `:733-750`). `Export` adds only the `export == true` narrowing on JIT grants and a
-  forced read-only session (`:1020-1033`, `:1097`); there is no `bb.sql.export`, and X1.
+  `:2068-2187`, `:733-750`). `Export` requires `bb.sql.export` where `Query` requires
+  `bb.sql.select` or `bb.sql.info`, which a JIT grant with `export == true` satisfies on its
+  targets, and forces a read-only session (`:1020-1033`, `:1097`).
 - Anonymous surface: eleven RPCs accept a call with no credential, and none serves per-caller
   data. `GetAuthenticationInfo` and `Login` resolve an explicit `workspace` regardless of
   membership (`auth_service.go:141`, `:152-154`), so a real workspace id answers 200 and a fake
@@ -749,8 +754,8 @@ follow.
 
 ## What I'd do, in order
 
-1. **The three HIGH handler fixes, one PR each.** `Export` refuses when `disable_export` is set
-   (X1). `ListInstanceDatabase`'s inline mode runs `validateAndSanitizeDataSourceTLS` and
+1. **The three HIGH handler fixes, one PR each.** X1 is resolved: `Export` requires
+   `bb.sql.export`. `ListInstanceDatabase`'s inline mode runs `validateAndSanitizeDataSourceTLS` and
    `checkInstanceDataSources` before it dials (X2). `CreateRollout` with `target: ""` creates
    nothing, or rejects the value (X3). Each is a few lines and a test.
 2. **Row locks under the three read-modify-write paths** (U1, U5): instance `metadata`, project

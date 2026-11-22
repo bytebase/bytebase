@@ -22,25 +22,25 @@ func GetQuerySpan(
 	_, _ string,
 	_ bool,
 ) (*base.QuerySpan, error) {
-	omniSpan, err := es.GetQuerySpan(stmt.Text)
+	rawSpan, err := es.GetQuerySpan(stmt.Text)
 	if err != nil {
 		return nil, err
 	}
-	if omniSpan == nil {
+	if rawSpan == nil {
 		return &base.QuerySpan{Type: base.QueryTypeUnknown}, nil
 	}
 
 	span := &base.QuerySpan{
-		Type: convertQueryType(omniSpan.Type),
+		Type: convertQueryType(rawSpan.Type),
 	}
 
-	if omniSpan.ElasticsearchAnalysis != nil {
-		span.ElasticsearchAnalysis = convertAnalysis(omniSpan.ElasticsearchAnalysis)
+	if rawSpan.ElasticsearchAnalysis != nil {
+		span.ElasticsearchAnalysis = convertAnalysis(rawSpan.ElasticsearchAnalysis)
 	}
 
-	if omniSpan.PredicatePaths != nil {
-		span.PredicatePaths = make(map[string]*base.PathAST, len(omniSpan.PredicatePaths))
-		for key, p := range omniSpan.PredicatePaths {
+	if rawSpan.PredicatePaths != nil {
+		span.PredicatePaths = make(map[string]*base.PathAST, len(rawSpan.PredicatePaths))
+		for key, p := range rawSpan.PredicatePaths {
 			span.PredicatePaths[key] = convertPathAST(p)
 		}
 	}
@@ -55,12 +55,12 @@ func convertPathAST(p *es.PathAST) *base.PathAST {
 	}
 	root := base.NewItemSelector(p.Root.Name)
 	current := base.SelectorNode(root)
-	omniCurrent := p.Root.Next
-	for omniCurrent != nil {
-		next := base.NewItemSelector(omniCurrent.Name)
+	srcNode := p.Root.Next
+	for srcNode != nil {
+		next := base.NewItemSelector(srcNode.Name)
 		current.SetNext(next)
 		current = next
-		omniCurrent = omniCurrent.Next
+		srcNode = srcNode.Next
 	}
 	return base.NewPathAST(root)
 }

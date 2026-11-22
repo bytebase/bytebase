@@ -24,12 +24,12 @@ type Store struct {
 
 	// Cache.
 	authSecret     atomic.Pointer[string]
-	userEmailCache *lru.Cache[string, *UserMessage]
+	userEmailCache *expirable.LRU[string, *UserMessage]
 	instanceCache  *lru.Cache[string, *InstanceMessage]
 	databaseCache  *lru.Cache[string, *DatabaseMessage]
 	projectCache   *lru.Cache[string, *ProjectMessage]
-	policyCache    *lru.Cache[string, *PolicyMessage]
-	settingCache   *lru.Cache[string, *SettingMessage]
+	policyCache    *expirable.LRU[string, *PolicyMessage]
+	settingCache   *expirable.LRU[string, *SettingMessage]
 
 	// projectPublishMu prevents a cache fill that read an old database snapshot
 	// from publishing after a concurrent project update invalidates the cache.
@@ -44,24 +44,35 @@ type Store struct {
 	// settingPublishHookForTest, when set, runs between commit and cache
 	// publish so tests can deterministically expose the ordering window.
 	settingPublishHookForTest func()
-	rolesCache                *expirable.LRU[string, *RoleMessage]
-	groupCache                *expirable.LRU[string, *GroupMessage]
-	groupMembersCache         *expirable.LRU[string, map[string]bool]
-	memberGroupsCache         *expirable.LRU[string, []string]
-	dbSchemaCache             *expirable.LRU[string, *model.DatabaseMetadata]
-	iamPolicyCache            *expirable.LRU[string, *IamPolicyMessage]
+	// settingMissHookForTest and settingFillHookForTest, when set, run after a
+	// setting read misses the cache and before it waits for the publish mutex,
+	// and right before a cache-miss fill reads the database.
+	settingMissHookForTest func()
+	settingFillHookForTest func()
+	rolesCache             *expirable.LRU[string, *RoleMessage]
+	groupCache             *expirable.LRU[string, *GroupMessage]
+	groupMembersCache      *expirable.LRU[string, map[string]bool]
+	memberGroupsCache      *expirable.LRU[string, []string]
+	dbSchemaCache          *expirable.LRU[string, *model.DatabaseMetadata]
+	iamPolicyCache         *expirable.LRU[string, *IamPolicyMessage]
 
 	// Large objects.
 	sheetFullCache *lru.Cache[string, *SheetMessage]
 }
 
+// OutOfBandCacheLifetime bounds how long a cached user, setting or policy
+// misses a change another process made to its row, such as `bytebase recovery`
+// running beside the server. An entry expires this long after it is stored; a
+// read must not extend it.
+const OutOfBandCacheLifetime = time.Minute
+
 // New creates a new instance of Store.
 // pgURL can be either a direct PostgreSQL URL or a file path containing the URL.
 func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
-	userEmailCache, err := lru.New[string, *UserMessage](32768)
-	if err != nil {
-		return nil, err
-	}
+	return newStore(ctx, pgURL, enableCache, OutOfBandCacheLifetime)
+}
+
+func newStore(ctx context.Context, pgURL string, enableCache bool, outOfBandCacheLifetime time.Duration) (*Store, error) {
 	instanceCache, err := lru.New[string, *InstanceMessage](32768)
 	if err != nil {
 		return nil, err
@@ -71,14 +82,6 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		return nil, err
 	}
 	projectCache, err := lru.New[string, *ProjectMessage](32768)
-	if err != nil {
-		return nil, err
-	}
-	policyCache, err := lru.New[string, *PolicyMessage](4096)
-	if err != nil {
-		return nil, err
-	}
-	settingCache, err := lru.New[string, *SettingMessage](1024)
 	if err != nil {
 		return nil, err
 	}
@@ -104,12 +107,9 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		enableCache:   enableCache,
 
 		// Cache.
-		userEmailCache:    userEmailCache,
 		instanceCache:     instanceCache,
 		databaseCache:     databaseCache,
 		projectCache:      projectCache,
-		policyCache:       policyCache,
-		settingCache:      settingCache,
 		rolesCache:        rolesCache,
 		sheetFullCache:    sheetFullCache,
 		groupCache:        groupCache,
@@ -117,6 +117,9 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		memberGroupsCache: memberGroupsCache,
 		dbSchemaCache:     dbSchemaCache,
 		iamPolicyCache:    iamPolicyCache,
+		userEmailCache:    expirable.NewLRU[string, *UserMessage](32768, nil, outOfBandCacheLifetime),
+		settingCache:      expirable.NewLRU[string, *SettingMessage](1024, nil, outOfBandCacheLifetime),
+		policyCache:       expirable.NewLRU[string, *PolicyMessage](4096, nil, outOfBandCacheLifetime),
 	}
 
 	return s, nil

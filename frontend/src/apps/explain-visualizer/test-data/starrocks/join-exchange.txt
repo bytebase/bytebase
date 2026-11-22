@@ -1,0 +1,85 @@
+PLAN FRAGMENT 0
+ OUTPUT EXPRS:7: country | 8: sum
+  PARTITION: UNPARTITIONED
+
+  RESULT SINK
+
+  9:EXCHANGE
+
+PLAN FRAGMENT 1
+ OUTPUT EXPRS:
+  PARTITION: HASH_PARTITIONED: 7: country
+
+  STREAM DATA SINK
+    EXCHANGE ID: 09
+    UNPARTITIONED
+
+  8:AGGREGATE (merge finalize)
+  |  output: sum(8: sum)
+  |  group by: 7: country
+  |  
+  7:EXCHANGE
+
+PLAN FRAGMENT 2
+ OUTPUT EXPRS:
+  PARTITION: HASH_PARTITIONED: 2: customer_id
+
+  STREAM DATA SINK
+    EXCHANGE ID: 07
+    HASH_PARTITIONED: 7: country
+
+  6:AGGREGATE (update serialize)
+  |  STREAMING
+  |  output: sum(3: total)
+  |  group by: 7: country
+  |  
+  5:Project
+  |  <slot 3> : 3: total
+  |  <slot 7> : 7: country
+  |  
+  4:HASH JOIN
+  |  join op: INNER JOIN (PARTITIONED)
+  |  colocate: false, reason: 
+  |  equal join conjunct: 2: customer_id = 5: id
+  |  
+  |----3:EXCHANGE
+  |    
+  1:EXCHANGE
+
+PLAN FRAGMENT 3
+ OUTPUT EXPRS:
+  PARTITION: RANDOM
+
+  STREAM DATA SINK
+    EXCHANGE ID: 03
+    HASH_PARTITIONED: 5: id
+
+  2:OlapScanNode
+     TABLE: customers
+     PREAGGREGATION: ON
+     PREDICATES: 5: id IS NOT NULL
+     partitions=1/1
+     rollup: customers
+     tabletRatio=2/2
+     tabletList=10007,10009
+     cardinality=450
+     avgRowSize=2.0
+
+PLAN FRAGMENT 4
+ OUTPUT EXPRS:
+  PARTITION: RANDOM
+
+  STREAM DATA SINK
+    EXCHANGE ID: 01
+    HASH_PARTITIONED: 2: customer_id
+
+  0:OlapScanNode
+     TABLE: orders
+     PREAGGREGATION: ON
+     PREDICATES: 3: total > 880
+     partitions=1/1
+     rollup: orders
+     tabletRatio=2/2
+     tabletList=10015,10017
+     cardinality=2500
+     avgRowSize=2.0

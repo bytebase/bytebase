@@ -3,6 +3,7 @@ import {
   type ReactNode,
   useContext,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { RequestRoleSheet } from "@/modules/access-control/RequestRoleSheet";
@@ -19,15 +20,18 @@ type RequestRoleArgs = {
 };
 
 type AccessGrantArgs = {
+  reason?: string;
   query?: string;
   targets: string[];
+  schema?: string;
+  container?: string;
   unmask?: boolean;
   export?: boolean;
 };
 
 type ContextValue = {
-  openRequestRoleSheet: (args: RequestRoleArgs) => void;
-  openAccessGrantDrawer: (args: AccessGrantArgs) => void;
+  openRequestRoleSheet: (args: RequestRoleArgs) => boolean;
+  openAccessGrantDrawer: (args: AccessGrantArgs) => boolean;
 };
 
 const RequestDrawerHostContext = createContext<ContextValue | null>(null);
@@ -49,11 +53,22 @@ export function useRequestDrawerHost(): ContextValue | null {
 export function RequestDrawerHost({ children }: { children: ReactNode }) {
   const [roleArgs, setRoleArgs] = useState<RequestRoleArgs | null>(null);
   const [grantArgs, setGrantArgs] = useState<AccessGrantArgs | null>(null);
+  const requestOpenRef = useRef(false);
 
   const value = useMemo<ContextValue>(
     () => ({
-      openRequestRoleSheet: setRoleArgs,
-      openAccessGrantDrawer: setGrantArgs,
+      openRequestRoleSheet: (args) => {
+        if (requestOpenRef.current) return false;
+        requestOpenRef.current = true;
+        setRoleArgs(args);
+        return true;
+      },
+      openAccessGrantDrawer: (args) => {
+        if (requestOpenRef.current) return false;
+        requestOpenRef.current = true;
+        setGrantArgs(args);
+        return true;
+      },
     }),
     []
   );
@@ -61,9 +76,8 @@ export function RequestDrawerHost({ children }: { children: ReactNode }) {
   // This host only renders inside the SQL Editor, so resolve the ACTIVE theme
   // (the dark admin fallback in admin mode) and hand it to RequestRoleSheet as
   // an explicit prop. RequestRoleSheet is shared with non-SQL-Editor pages, so
-  // it stays light unless a host passes a theme — this is the only caller that
-  // does. (AccessGrantRequestDrawer is SQL-Editor-only and reads the active
-  // theme itself.)
+  // it uses the app theme unless a host passes a theme. The SQL Editor grant
+  // drawer adapter resolves the active theme itself.
   const activeTheme = useActiveSQLEditorTheme();
 
   return (
@@ -77,16 +91,25 @@ export function RequestDrawerHost({ children }: { children: ReactNode }) {
           initialRole={roleArgs.initialRole}
           initialDatabaseResources={roleArgs.initialDatabaseResources}
           theme={activeTheme}
-          onClose={() => setRoleArgs(null)}
+          onClose={() => {
+            requestOpenRef.current = false;
+            setRoleArgs(null);
+          }}
         />
       )}
       {grantArgs && (
         <AccessGrantRequestDrawer
           query={grantArgs.query}
           targets={grantArgs.targets}
+          schema={grantArgs.schema}
+          container={grantArgs.container}
           unmask={grantArgs.unmask}
           export={grantArgs.export}
-          onClose={() => setGrantArgs(null)}
+          reason={grantArgs.reason}
+          onClose={() => {
+            requestOpenRef.current = false;
+            setGrantArgs(null);
+          }}
         />
       )}
     </RequestDrawerHostContext.Provider>

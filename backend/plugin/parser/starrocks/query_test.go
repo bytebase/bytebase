@@ -143,6 +143,80 @@ func TestValidateQuery(t *testing.T) {
 			description: "EXPLAIN over nested parens is read-only",
 		},
 		{
+			// Plain EXPLAIN only plans, so it stays read-only over DML (the
+			// cases above). EXPLAIN ANALYZE runs the statement instead, which
+			// over DML writes: StarRocks aborts the INSERT transaction but the
+			// run still creates any partitions the rows need.
+			statement:   "EXPLAIN ANALYZE SELECT a FROM t",
+			valid:       true,
+			description: "EXPLAIN ANALYZE over a SELECT is read-only",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE (SELECT 1)",
+			valid:       true,
+			description: "EXPLAIN ANALYZE over a parenthesized query is read-only",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE ((SELECT 1))",
+			valid:       true,
+			description: "EXPLAIN ANALYZE over nested parens is read-only",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE SELECT 1 UNION SELECT 2",
+			valid:       true,
+			description: "EXPLAIN ANALYZE over a set operation is read-only",
+		},
+		{
+			statement:   "EXPLAIN VERBOSE INSERT INTO users (id, name) VALUES (1, 'test')",
+			valid:       true,
+			description: "a plan-only modifier stays read-only over DML",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE INSERT INTO users (id, name) VALUES (1, 'test')",
+			valid:       false,
+			description: "EXPLAIN ANALYZE over INSERT must be rejected",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE INSERT INTO users SELECT id, name FROM other",
+			valid:       false,
+			description: "EXPLAIN ANALYZE over INSERT ... SELECT must be rejected",
+		},
+		{
+			// Plain EXPLAIN does not execute, but the editor must refuse by way
+			// of EXPLAIN what it refuses when asked directly — and under ANALYZE,
+			// which does execute, the export would be live.
+			statement:   `EXPLAIN SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			valid:       false,
+			description: "EXPLAIN must not launder an export past the gate",
+		},
+		{
+			statement:   `EXPLAIN VERBOSE SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			valid:       false,
+			description: "a plan-only modifier must not launder an export either",
+		},
+		{
+			statement:   `EXPLAIN ANALYZE SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			valid:       false,
+			description: "EXPLAIN ANALYZE over an export must be rejected",
+		},
+		{
+			statement:   `EXPLAIN ANALYZE SELECT 1 UNION SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			valid:       false,
+			description: "EXPLAIN ANALYZE over an export in a set-operation arm must be rejected",
+		},
+		{
+			// Under a plan prefix the clause is hoisted to the explained
+			// statement's outermost query, which is a parenthesized group here.
+			statement:   `EXPLAIN (SELECT a FROM t) INTO OUTFILE "s3://b/x"`,
+			valid:       false,
+			description: "EXPLAIN must not launder an export hoisted onto the group",
+		},
+		{
+			statement:   `EXPLAIN ANALYZE (SELECT 1) INTO OUTFILE "s3://b/x"`,
+			valid:       false,
+			description: "EXPLAIN ANALYZE over an export hoisted onto the group must be rejected",
+		},
+		{
 			statement:   "SELECT EXTRACT(YEAR FROM MONTHS_ADD(NOW(), -1))",
 			valid:       true,
 			description: "EXTRACT(unit FROM expr) is read-only",
@@ -272,6 +346,48 @@ func TestValidateQuery(t *testing.T) {
 			description: "EXPLAIN over DDL must be rejected",
 		},
 		{
+			// StarRocks.g4 has STORAGE VOLUME, not VAULT, so the statement has
+			// no grammar rule and fails to parse rather than reaching validation.
+			statement:   "SET DEFAULT STORAGE VAULT v",
+			description: "SET DEFAULT STORAGE VAULT must be rejected",
+		},
+		{
+			// StarRocks refuses EXPLAIN ANALYZE over UPDATE and DELETE, so the
+			// statement never reaches the read-only gate.
+			statement:   "EXPLAIN ANALYZE UPDATE users SET name = 'test' WHERE id = 1",
+			description: "EXPLAIN ANALYZE over UPDATE must be rejected",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE DELETE FROM users WHERE id = 1",
+			description: "EXPLAIN ANALYZE over DELETE must be rejected",
+		},
+		{
+			// The plan grammar takes the query and INSERT/UPDATE/DELETE shapes
+			// only, so TRUNCATE and a parenthesized body are syntax errors.
+			statement:   "EXPLAIN ANALYZE TRUNCATE TABLE users",
+			description: "EXPLAIN ANALYZE over TRUNCATE must be rejected",
+		},
+		{
+			statement:   `EXPLAIN ANALYZE (SELECT a FROM t INTO OUTFILE "s3://b/x")`,
+			description: "EXPLAIN ANALYZE over a parenthesized export must be rejected",
+		},
+		{
+			statement:   `EXPLAIN ANALYZE ((SELECT a FROM t INTO OUTFILE "s3://b/x"))`,
+			description: "EXPLAIN ANALYZE over a nested parenthesized export must be rejected",
+		},
+		{
+			statement:   `DESC SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			description: "DESC over an export must not bypass the export gate",
+		},
+		{
+			statement:   `DESCRIBE SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			description: "DESCRIBE over an export must not bypass the export gate",
+		},
+		{
+			statement:   `DESC VERBOSE SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			description: "DESC VERBOSE over an export must not bypass the export gate",
+		},
+		{
 			statement:   "SELECT a FROM t xx yy zz",
 			description: "Trailing junk after a valid prefix must be rejected",
 		},
@@ -281,6 +397,51 @@ func TestValidateQuery(t *testing.T) {
 			a := require.New(t)
 			valid, _, err := validateQuery(tc.statement)
 			a.False(valid && err == nil, "expected rejection, statement: %s", tc.statement)
+		})
+	}
+}
+
+// A session SET is permitted but is not a read: validateQuery accepts it while
+// reporting isExplicitReadOnly false, which is how the driver knows to run it with
+// ExecContext instead of reading a result set. StarRocks had no case for *ast.SetStmt, so
+// `SET time_zone = 'UTC'` was refused outright with "Support read-only command
+// statements only" while MySQL, Postgres and TiDB all allowed it.
+func TestValidateQuerySetStatements(t *testing.T) {
+	for _, tc := range []struct {
+		name             string
+		statement        string
+		wantValid        bool
+		wantExplicitRead bool
+	}{
+		{"a session variable", "SET time_zone = 'UTC'", true, false},
+		{"the @@ spelling", "SET @@time_zone = 'UTC'", true, false},
+		{"an explicit session scope", "SET SESSION time_zone = 'UTC'", true, false},
+		// Global scope is permitted here as it is for MySQL and Postgres: this is not
+		// the permission gate, it only picks the execution path.
+		{"a global scope", "SET GLOBAL time_zone = 'UTC'", false, false},
+		{"SET NAMES", "SET NAMES utf8mb4", true, false},
+		{"a read stays explicitly read-only", "SELECT 1", true, true},
+		{"a SET anywhere in a script needs executing", "SELECT 1; SET time_zone = 'UTC'", true, false},
+		{"a SET does not launder a DDL beside it", "SET time_zone = 'UTC'; DROP TABLE t", false, false},
+		{"SET PASSWORD administers the server", "SET PASSWORD FOR 'u' = 'x'", false, false},
+		{"SET DEFAULT STORAGE VOLUME administers the cluster", "SET v AS DEFAULT STORAGE VOLUME", false, false},
+		{"SET CATALOG switches the session", "SET CATALOG hive", true, false},
+		{"SET WAREHOUSE switches the session", "SET WAREHOUSE w", true, false},
+		{"SET ROLE activates roles for the session", "SET ROLE r1, r2", true, false},
+		{"SET ROLE ALL", "SET ROLE ALL EXCEPT r1", true, false},
+		{"SET DEFAULT ROLE changes a user's default roles", "SET DEFAULT ROLE r TO u", false, false},
+		{"SET DEFAULT ROLE ALL for several users", "SET DEFAULT ROLE ALL TO 'u1'@'%', u2", false, false},
+		{"SET LDAP_ADMIN_PASSWORD stores the LDAP bind password", "SET LDAP_ADMIN_PASSWORD = 'x'", false, false},
+		{"SET LDAP_ADMIN_PASSWORD in lowercase with PASSWORD()", "set ldap_admin_password = password('x')", false, false},
+		{"SET LDAP_ADMIN_PASSWORD beside a session variable", "SET time_zone = 'UTC', LDAP_ADMIN_PASSWORD = 'x'", false, false},
+		{"a user variable named ldap_admin_password", "SET @ldap_admin_password = 'x'", true, false},
+		{"SET TRANSACTION", "SET TRANSACTION READ ONLY", true, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			valid, explicitReadOnly, err := validateQuery(tc.statement)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantValid, valid)
+			require.Equal(t, tc.wantExplicitRead, explicitReadOnly)
 		})
 	}
 }

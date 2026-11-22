@@ -267,6 +267,12 @@ func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) (
 			user = loginResponse.GetUser().GetName()
 		}
 	}
+	// A successful exchange signs in as the identity it named, whatever
+	// credential the request also carried, so the actor matches the federated
+	// identity the handler recorded.
+	if exchangeRequest, ok := e.request.(*v1pb.ExchangeTokenRequest); ok && e.rerr == nil {
+		user = common.FormatWorkloadIdentityEmail(strings.ToLower(exchangeRequest.GetEmail()))
+	}
 
 	authContextAny := ctx.Value(common.AuthContextKey)
 	authContext, ok := authContextAny.(*common.AuthContext)
@@ -367,9 +373,10 @@ func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) (
 	// service_data holds a before-image Setting or an IAM policy delta, and
 	// status.details holds whatever a failing handler attached.
 	//
-	// The rest of the row is left alone deliberately. request_metadata and
-	// mcp_delegation are ordinary store messages with nothing annotated under
-	// them, and request and response are already redacted strings.
+	// The rest of the row is left alone deliberately. request_metadata,
+	// mcp_delegation and federated_identity are ordinary store messages with
+	// nothing annotated under them, and request and response are already
+	// redacted strings.
 	// TestAuditRowNeedsNoRedactionBeyondTheAnyPayloads fails if that stops
 	// being true.
 	//
@@ -412,18 +419,19 @@ func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) (
 		rows = append(rows, auditRow{
 			workspaceID: workspaceIDForAudit,
 			payload: &storepb.AuditLog{
-				Parent:          ap.parent,
-				Method:          e.method,
-				Resource:        resource,
-				Severity:        severity,
-				User:            user,
-				Request:         requestString,
-				Response:        responseString,
-				Status:          auditStatus,
-				Latency:         durationpb.New(e.latency),
-				ServiceData:     serviceData,
-				RequestMetadata: requestMetadata,
-				McpDelegation:   mcpDelegation,
+				Parent:            ap.parent,
+				Method:            e.method,
+				Resource:          resource,
+				Severity:          severity,
+				User:              user,
+				Request:           requestString,
+				Response:          responseString,
+				Status:            auditStatus,
+				Latency:           durationpb.New(e.latency),
+				ServiceData:       serviceData,
+				RequestMetadata:   requestMetadata,
+				McpDelegation:     mcpDelegation,
+				FederatedIdentity: federatedIdentityFromAuthContext(authContext),
 			},
 		})
 	}
@@ -448,6 +456,14 @@ func mcpDelegationFromAuthContext(authContext *common.AuthContext) *storepb.MCPD
 	}
 }
 
+func federatedIdentityFromAuthContext(authContext *common.AuthContext) *storepb.FederatedIdentity {
+	f := authContext.FederatedIdentity
+	if f == nil {
+		return nil
+	}
+	return &storepb.FederatedIdentity{Issuer: f.Issuer, Subject: f.Subject}
+}
+
 func getRequestResource(request any, method string) string {
 	if request == nil || reflect.ValueOf(request).IsNil() {
 		return ""
@@ -460,17 +476,17 @@ func getRequestResource(request any, method string) string {
 	case *v1pb.CreateUserRequest:
 		return r.GetUser().GetName()
 	case *v1pb.LoginRequest:
-		return normalizeEmail(r.GetEmail())
+		return common.NormalizeEmail(r.GetEmail())
 	case *v1pb.SignupRequest:
 		return r.GetEmail()
 	case *v1pb.ExchangeTokenRequest:
 		return r.GetEmail()
 	case *v1pb.RequestPasswordResetRequest:
-		return normalizeEmail(r.GetEmail())
+		return common.NormalizeEmail(r.GetEmail())
 	case *v1pb.ResetPasswordRequest:
-		return normalizeEmail(r.GetEmail())
+		return common.NormalizeEmail(r.GetEmail())
 	case *v1pb.SendEmailLoginCodeRequest:
-		return normalizeEmail(r.GetEmail())
+		return common.NormalizeEmail(r.GetEmail())
 	case *v1pb.CreateInstanceRequest:
 		if r.GetParent() == "" {
 			return common.FormatInstance(r.GetInstanceId())
@@ -479,6 +495,10 @@ func getRequestResource(request any, method string) string {
 			return common.FormatProjectInstance(projectID, r.GetInstanceId())
 		}
 		return ""
+	case *v1pb.DiscoverNeonBranchesRequest:
+		return r.GetParent()
+	case *v1pb.ImportInstancesRequest:
+		return r.GetParent()
 	case *v1pb.PrepareSampleProjectInstanceRequest:
 		return r.GetParent()
 	case *v1pb.CreateProjectRequest:

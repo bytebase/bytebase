@@ -231,6 +231,9 @@ func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 	if x.AllowAdminDataSource != y.AllowAdminDataSource {
 		return false
 	}
+	if x.DisableDownload != y.DisableDownload {
+		return false
+	}
 	return true
 }
 

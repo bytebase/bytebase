@@ -1,6 +1,6 @@
 import { orderBy } from "lodash-es";
 import { ChevronDown } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MaxRowCountSelect } from "@/components/MaxRowCountSelect";
 import { Button } from "@/components/ui/button";
@@ -31,21 +31,35 @@ import {
   DataSourceType,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
-import { getInstanceResource, readableDataSourceType } from "@/utils";
+import {
+  getInstanceResource,
+  keyboardShortcutStr,
+  readableDataSourceType,
+} from "@/utils";
 
 type Props = {
   readonly disabled?: boolean;
   readonly size?: "sm" | "md";
+  readonly explainDisabled?: boolean;
+  /** Why the user cannot explain here; disables Explain and says so. */
+  readonly explainDisabledReason?: string;
+  /** Plans what Run would run, without running it. */
+  readonly onExplain?: () => void;
 };
 
 /**
- * Popover for selecting query data source, Redis command mode, and max row count.
+ * Run's dropdown: Explain, then the query data source, Redis command mode, and
+ * max row count.
  */
 export function QueryContextSettingPopover({
   disabled = false,
   size = "sm",
+  explainDisabled = false,
+  explainDisabledReason,
+  onExplain,
 }: Props) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const { database, connection: connectionRef } =
     useConnectionOfCurrentSQLEditorTab();
   const project = useSQLEditorEditorState((s) => s.project);
@@ -117,7 +131,7 @@ export function QueryContextSettingPopover({
   if (!show) return null;
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         render={
           <Button
@@ -135,8 +149,32 @@ export function QueryContextSettingPopover({
       </PopoverTrigger>
       <PopoverContent side="bottom" align="end">
         <div className="flex flex-col gap-1">
+          {onExplain && (
+            <Tooltip
+              content={explainDisabledReason ?? t("sql-editor.explain-hint")}
+              side="right"
+              render={<div className="-mx-2 flex" />}
+            >
+              <Button
+                appearance="secondary"
+                size="md"
+                className="flex-1 justify-between gap-4 font-normal"
+                disabled={explainDisabled || !!explainDisabledReason}
+                onClick={() => {
+                  setOpen(false);
+                  onExplain();
+                }}
+              >
+                <span>{t("sql-editor.explain")}</span>
+                <span className="text-xs text-control-light">
+                  {keyboardShortcutStr("cmd_or_ctrl+E")}
+                </span>
+              </Button>
+            </Tooltip>
+          )}
+
           {/* Data source radio group */}
-          <div>
+          <div className={cn(onExplain && "border-t pt-1")}>
             <p className="mb-1 textinfolabel">
               {t("data-source.select-query-data-source")}
             </p>

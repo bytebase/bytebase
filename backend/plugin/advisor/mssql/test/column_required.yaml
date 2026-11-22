@@ -93,3 +93,50 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE TABLE db.dbo.t(ID INT, Created_TS INT);
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: Table db.dbo.t missing required column "creator_id"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: Table db.dbo.t missing required column "updated_ts"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: Table db.dbo.t missing required column "updater_id"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE dbo.t DROP COLUMN ID, creator_id;
+    ALTER TABLE t ADD id INT;
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: Table dbo.t missing required column "creator_id"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: Table dbo.t missing required column "id"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ALTER COLUMN id BIGINT;

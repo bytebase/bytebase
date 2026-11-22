@@ -35,3 +35,31 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE TABLE t(a char(30), b char(40));
+  changeType: 1
+  want:
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The length of the CHAR column "a" in table "t" is bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a bpchar(30));
+  changeType: 1
+- statement: |-
+    CREATE TABLE t(
+      b int,
+      a nchar(21)
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The length of the CHAR column "a" in table "t" is bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

@@ -5,6 +5,8 @@ import {
   CREATE_DATABASE_CHANGE_SCENARIO,
   GUIDE_SCENARIO_REGISTRY,
   getGuideJourney,
+  JUST_EXPLORING_SCENARIO,
+  leadsWithQuery,
   MARK_SENSITIVE_DATA_SCENARIO,
   QUERY_DATA_SCENARIO,
   WORKSPACE_SETUP_JOURNEY,
@@ -17,6 +19,7 @@ describe("workspace setup guide journeys", () => {
       "query-data",
       "create-database-change",
       "mark-sensitive-data",
+      "just-exploring",
     ]);
   });
 
@@ -116,6 +119,18 @@ describe("workspace setup guide journeys", () => {
     ]);
   });
 
+  test("guides just exploring through the Query Data steps", () => {
+    const journey = getGuideJourney("just-exploring");
+
+    expect(journey.id).toBe("just-exploring");
+    expect(journey.steps.map(({ stepId }) => stepId)).toEqual([
+      "create-project",
+      "connect-instance",
+      "explore-database",
+      "query-data",
+    ]);
+  });
+
   test("uses workspace setup as visible database-change prerequisites", () => {
     expect(CREATE_DATABASE_CHANGE_SCENARIO.steps).toEqual([
       { stepId: "create-project", kind: "prerequisite" },
@@ -199,9 +214,23 @@ describe("workspace setup guide journeys", () => {
     QUERY_DATA_SCENARIO,
     CREATE_DATABASE_CHANGE_SCENARIO,
     MARK_SENSITIVE_DATA_SCENARIO,
+    JUST_EXPLORING_SCENARIO,
   ])("validates $id", (journey) => {
     expect(() =>
       validateGuideJourney(journey, GUIDE_STEP_DEFINITIONS)
     ).not.toThrow();
   });
+
+  test.each([
+    ["query-data", true],
+    ["just-exploring", true],
+    ["create-database-change", false],
+    ["mark-sensitive-data", false],
+    [undefined, false],
+  ] as const)(
+    "says whether the goal %s leads with a query: %s",
+    (goal, leads) => {
+      expect(leadsWithQuery(goal)).toBe(leads);
+    }
+  );
 });

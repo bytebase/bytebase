@@ -17,10 +17,10 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// TestOracleOmniQuerySpanGoldenHarness is the strict cutover guard. It compares
+// TestOracleQuerySpanGoldenHarness is the strict cutover guard. It compares
 // the package-internal omni path against the existing YAML corpus instead of
 // comparing GetQuerySpan to itself after the production cutover.
-func TestOracleOmniQuerySpanGoldenHarness(t *testing.T) {
+func TestOracleQuerySpanGoldenHarness(t *testing.T) {
 	type testCase struct {
 		Description           string              `yaml:"description,omitempty"`
 		Statement             string              `yaml:"statement,omitempty"`
@@ -53,7 +53,7 @@ func TestOracleOmniQuerySpanGoldenHarness(t *testing.T) {
 			continue
 		}
 
-		omni, err := runOracleOmniGoldenCase(context.Background(), tc.Statement, tc.Metadata, tc.CrossDatabaseMetadata, tc.DefaultDatabase)
+		omni, err := runOracleGoldenCase(context.Background(), tc.Statement, tc.Metadata, tc.CrossDatabaseMetadata, tc.DefaultDatabase)
 		if err != nil {
 			diffs = append(diffs, diff{
 				index:       i,
@@ -79,12 +79,12 @@ func TestOracleOmniQuerySpanGoldenHarness(t *testing.T) {
 			t.Logf("... %d more diffs omitted", len(diffs)-i)
 			break
 		}
-		t.Logf("[case %d %q] %s\n  SQL: %s", d.index, d.description, d.details, firstOracleOmniProbeLine(d.statement))
+		t.Logf("[case %d %q] %s\n  SQL: %s", d.index, d.description, d.details, firstOracleProbeLine(d.statement))
 	}
 	require.Empty(t, diffs)
 }
 
-func runOracleOmniGoldenCase(
+func runOracleGoldenCase(
 	ctx context.Context,
 	statement string,
 	metadataText string,
@@ -112,14 +112,14 @@ func runOracleOmniGoldenCase(
 		GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataGetter,
 	}
 
-	omni, err := newOmniQuerySpanExtractor(defaultDatabase, gCtx).getOmniQuerySpan(ctx, statement)
+	omni, err := resolveQuerySpan(ctx, gCtx, statement, defaultDatabase)
 	if err != nil {
 		return nil, err
 	}
 	return omni.ToYaml(), nil
 }
 
-func TestOracleOmniLongTailTableSources(t *testing.T) {
+func TestOracleLongTailTableSources(t *testing.T) {
 	tests := []struct {
 		name              string
 		statement         string
@@ -159,7 +159,7 @@ func TestOracleOmniLongTailTableSources(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := newOmniQuerySpanExtractor("PUBLIC", oracleOmniLongTailTestContext(t)).getOmniQuerySpan(context.Background(), test.statement)
+			span, err := resolveQuerySpan(context.Background(), oracleLongTailTestContext(t), test.statement, "PUBLIC")
 			require.NoError(t, err)
 			require.NotNil(t, span)
 			require.Len(t, span.Results, 1)
@@ -170,10 +170,12 @@ func TestOracleOmniLongTailTableSources(t *testing.T) {
 	}
 }
 
-func TestOracleOmniAnalyticCountStarSources(t *testing.T) {
-	span, err := newOmniQuerySpanExtractor("PUBLIC", oracleOmniLongTailTestContext(t)).getOmniQuerySpan(
+func TestOracleAnalyticCountStarSources(t *testing.T) {
+	span, err := resolveQuerySpan(
 		context.Background(),
+		oracleLongTailTestContext(t),
 		"SELECT COUNT(*) OVER (PARTITION BY B ORDER BY A) AS C FROM T",
+		"PUBLIC",
 	)
 	require.NoError(t, err)
 	require.NotNil(t, span)
@@ -185,7 +187,7 @@ func TestOracleOmniAnalyticCountStarSources(t *testing.T) {
 	}), span.Results[0].SourceColumns)
 }
 
-func TestOracleOmniUnqualifiedStarExpandsAllCommaSources(t *testing.T) {
+func TestOracleUnqualifiedStarExpandsAllCommaSources(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
@@ -248,7 +250,7 @@ func TestOracleOmniUnqualifiedStarExpandsAllCommaSources(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := newOmniQuerySpanExtractor("PUBLIC", oracleOmniLongTailTestContext(t)).getOmniQuerySpan(context.Background(), test.statement)
+			span, err := resolveQuerySpan(context.Background(), oracleLongTailTestContext(t), test.statement, "PUBLIC")
 			require.NoError(t, err)
 			require.NotNil(t, span)
 			require.Len(t, span.Results, len(test.want))
@@ -260,7 +262,7 @@ func TestOracleOmniUnqualifiedStarExpandsAllCommaSources(t *testing.T) {
 	}
 }
 
-func TestOracleOmniCTEScopeAndSetOperations(t *testing.T) {
+func TestOracleCTEScopeAndSetOperations(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
@@ -332,7 +334,7 @@ func TestOracleOmniCTEScopeAndSetOperations(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := newOmniQuerySpanExtractor("PUBLIC", oracleOmniLongTailTestContext(t)).getOmniQuerySpan(context.Background(), test.statement)
+			span, err := resolveQuerySpan(context.Background(), oracleLongTailTestContext(t), test.statement, "PUBLIC")
 			require.NoError(t, err)
 			require.NotNil(t, span)
 			require.Equal(t, test.want, span.Results)
@@ -340,10 +342,11 @@ func TestOracleOmniCTEScopeAndSetOperations(t *testing.T) {
 	}
 }
 
-func TestOracleOmniExpressionAndAccessTableCoverage(t *testing.T) {
+func TestOracleExpressionAndAccessTableCoverage(t *testing.T) {
 	t.Run("expression nodes keep source columns", func(t *testing.T) {
-		span, err := newOmniQuerySpanExtractor("PUBLIC", oracleOmniLongTailTestContext(t)).getOmniQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			oracleLongTailTestContext(t),
 			`SELECT
   CASE WHEN A > 0 THEN B ELSE C END AS CASE_VALUE,
   DECODE(A, 1, B, C) AS DECODE_VALUE,
@@ -351,6 +354,7 @@ func TestOracleOmniExpressionAndAccessTableCoverage(t *testing.T) {
   B BETWEEN A AND C AS BETWEEN_VALUE,
   X LIKE J AS LIKE_VALUE
 FROM T`,
+			"PUBLIC",
 		)
 		require.NoError(t, err)
 		require.NotNil(t, span)
@@ -386,7 +390,7 @@ FROM T`,
 			"SELECT COALESCE((SELECT C FROM T2), A) FROM T",
 		}
 		for _, statement := range tests {
-			span, err := newOmniQuerySpanExtractor("PUBLIC", oracleOmniLongTailTestContext(t)).getOmniQuerySpan(context.Background(), statement)
+			span, err := resolveQuerySpan(context.Background(), oracleLongTailTestContext(t), statement, "PUBLIC")
 			require.NoError(t, err, statement)
 			require.NotNil(t, span, statement)
 			require.Equal(t, sourceColumnSetFromList([]base.ColumnResource{
@@ -397,9 +401,11 @@ FROM T`,
 	})
 
 	t.Run("cursor expression uses subquery scope", func(t *testing.T) {
-		span, err := newOmniQuerySpanExtractor("PUBLIC", oracleOmniLongTailTestContext(t)).getOmniQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			oracleLongTailTestContext(t),
 			"SELECT CURSOR(SELECT C FROM T2) AS CUR FROM T",
+			"PUBLIC",
 		)
 		require.NoError(t, err)
 		require.NotNil(t, span)
@@ -409,7 +415,7 @@ FROM T`,
 	})
 }
 
-func TestOracleOmniResourceNotFoundPropagation(t *testing.T) {
+func TestOracleResourceNotFoundPropagation(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
@@ -434,7 +440,7 @@ func TestOracleOmniResourceNotFoundPropagation(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := newOmniQuerySpanExtractor("PUBLIC", oracleOmniLongTailTestContext(t)).getOmniQuerySpan(context.Background(), test.statement)
+			span, err := resolveQuerySpan(context.Background(), oracleLongTailTestContext(t), test.statement, "PUBLIC")
 			require.NoError(t, err)
 			require.NotNil(t, span)
 			require.Empty(t, span.Results)
@@ -443,7 +449,7 @@ func TestOracleOmniResourceNotFoundPropagation(t *testing.T) {
 	}
 }
 
-func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
+func TestOracleTypedLongTailTableSources(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
@@ -692,7 +698,7 @@ func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := newOmniQuerySpanExtractor("PUBLIC", oracleOmniLongTailTestContext(t)).getOmniQuerySpan(context.Background(), test.statement)
+			span, err := resolveQuerySpan(context.Background(), oracleLongTailTestContext(t), test.statement, "PUBLIC")
 			require.NoError(t, err)
 			require.NotNil(t, span)
 			require.Equal(t, test.want, span.Results)
@@ -700,7 +706,7 @@ func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
 	}
 }
 
-func oracleOmniLongTailTestContext(t *testing.T) base.GetQuerySpanContext {
+func oracleLongTailTestContext(t *testing.T) base.GetQuerySpanContext {
 	t.Helper()
 
 	const metadataText = `{
@@ -744,7 +750,7 @@ func oracleOmniLongTailTestContext(t *testing.T) base.GetQuerySpanContext {
 	}
 }
 
-func firstOracleOmniProbeLine(statement string) string {
+func firstOracleProbeLine(statement string) string {
 	for _, line := range strings.Split(statement, "\n") {
 		if strings.TrimSpace(line) != "" {
 			return strings.TrimSpace(line)

@@ -1,0 +1,56 @@
+{
+  "explainVersion": "1",
+  "stages": [
+    {
+      "$cursor": {
+        "queryPlanner": {
+          "namespace": "test_1.orders",
+          "indexFilterSet": false,
+          "parsedQuery": { "status": { "$eq": "open" } },
+          "queryHash": "8C054E6F",
+          "planCacheKey": "B16D32BC",
+          "maxIndexedOrSolutionsReached": false,
+          "maxIndexedAndSolutionsReached": false,
+          "maxScansToExplodeReached": false,
+          "winningPlan": {
+            "stage": "PROJECTION_SIMPLE",
+            "transformBy": { "customer_id": 1, "total": 1, "_id": 0 },
+            "inputStage": {
+              "stage": "COLLSCAN",
+              "filter": { "status": { "$eq": "open" } },
+              "direction": "forward"
+            }
+          },
+          "rejectedPlans": []
+        }
+      }
+    },
+    { "$group": { "_id": "$customer_id", "total": { "$sum": "$total" } } }
+  ],
+  "serverInfo": {
+    "host": "9814f86922bc",
+    "port": 27017,
+    "version": "5.0.31",
+    "gitVersion": "973237567d45610d6976d5d489dfaaef6a52c2f9"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600
+  },
+  "command": {
+    "aggregate": "orders",
+    "pipeline": [
+      { "$match": { "status": "open" } },
+      { "$group": { "_id": "$customer_id", "total": { "$sum": "$total" } } }
+    ],
+    "cursor": {},
+    "$db": "test_1"
+  },
+  "ok": 1
+}

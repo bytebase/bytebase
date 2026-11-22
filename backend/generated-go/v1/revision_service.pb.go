@@ -603,9 +603,9 @@ var File_v1_revision_service_proto protoreflect.FileDescriptor
 
 const file_v1_revision_service_proto_rawDesc = "" +
 	"\n" +
-	"\x19v1/revision_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\xac\x01\n" +
-	"\x14ListRevisionsRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\x19v1/revision_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\xad\x01\n" +
+	"\x14ListRevisionsRequest\x126\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
@@ -613,37 +613,37 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\fshow_deleted\x18\x04 \x01(\bR\vshowDeleted\"t\n" +
 	"\x15ListRevisionsResponse\x123\n" +
 	"\trevisions\x18\x01 \x03(\v2\x15.bytebase.v1.RevisionR\trevisions\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x86\x01\n" +
-	"\x15CreateRevisionRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/DatabaseR\x06parent\x126\n" +
-	"\brevision\x18\x02 \x01(\v2\x15.bytebase.v1.RevisionB\x03\xe0A\x02R\brevision\"\x99\x01\n" +
-	"\x1bBatchCreateRevisionsRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/DatabaseR\x06parent\x12C\n" +
-	"\brequests\x18\x02 \x03(\v2\".bytebase.v1.CreateRevisionRequestB\x03\xe0A\x02R\brequests\"S\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x88\x01\n" +
+	"\x15CreateRevisionRequest\x126\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\x15bytebase.com/DatabaseR\x06parent\x127\n" +
+	"\brevision\x18\x02 \x01(\v2\x15.bytebase.v1.RevisionB\x04\xe2A\x01\x02R\brevision\"\x9b\x01\n" +
+	"\x1bBatchCreateRevisionsRequest\x126\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\x15bytebase.com/DatabaseR\x06parent\x12D\n" +
+	"\brequests\x18\x02 \x03(\v2\".bytebase.v1.CreateRevisionRequestB\x04\xe2A\x01\x02R\brequests\"S\n" +
 	"\x1cBatchCreateRevisionsResponse\x123\n" +
-	"\trevisions\x18\x01 \x03(\v2\x15.bytebase.v1.RevisionR\trevisions\"G\n" +
-	"\x12GetRevisionRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/RevisionR\x04name\"J\n" +
-	"\x15DeleteRevisionRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/RevisionR\x04name\"\xd6\x05\n" +
+	"\trevisions\x18\x01 \x03(\v2\x15.bytebase.v1.RevisionR\trevisions\"H\n" +
+	"\x12GetRevisionRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\x15bytebase.com/RevisionR\x04name\"K\n" +
+	"\x15DeleteRevisionRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\x15bytebase.com/RevisionR\x04name\"\xda\x05\n" +
 	"\bRevision\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x123\n" +
 	"\arelease\x18\x02 \x01(\tB\x19\xfaA\x16\n" +
-	"\x14bytebase.com/ReleaseR\arelease\x12@\n" +
-	"\vcreate_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x12\x1d\n" +
-	"\adeleter\x18\x04 \x01(\tB\x03\xe0A\x03R\adeleter\x12@\n" +
-	"\vdelete_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"\x14bytebase.com/ReleaseR\arelease\x12A\n" +
+	"\vcreate_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
+	"createTime\x12\x1e\n" +
+	"\adeleter\x18\x04 \x01(\tB\x04\xe2A\x01\x03R\adeleter\x12A\n" +
+	"\vdelete_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
 	"deleteTime\x12\x12\n" +
 	"\x04file\x18\x06 \x01(\tR\x04file\x12\x18\n" +
 	"\aversion\x18\a \x01(\tR\aversion\x12-\n" +
 	"\x05sheet\x18\b \x01(\tB\x17\xfaA\x14\n" +
-	"\x12bytebase.com/SheetR\x05sheet\x12&\n" +
-	"\fsheet_sha256\x18\t \x01(\tB\x03\xe0A\x03R\vsheetSha256\x124\n" +
+	"\x12bytebase.com/SheetR\x05sheet\x12'\n" +
+	"\fsheet_sha256\x18\t \x01(\tB\x04\xe2A\x01\x03R\vsheetSha256\x124\n" +
 	"\btask_run\x18\r \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/TaskRunR\ataskRun\x12.\n" +
 	"\x04type\x18\x0e \x01(\x0e2\x1a.bytebase.v1.Revision.TypeR\x04type\"<\n" +

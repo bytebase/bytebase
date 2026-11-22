@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -24,11 +25,13 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/sample"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/utils"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/plugin/sharepoint"
 	webhookplugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -36,10 +39,13 @@ import (
 // ProjectService implements the project service.
 type ProjectService struct {
 	v1connect.UnimplementedProjectServiceHandler
-	store         *store.Store
-	profile       *config.Profile
-	iamManager    *iam.Manager
-	sampleManager sample.Manager
+	store          *store.Store
+	profile        *config.Profile
+	iamManager     *iam.Manager
+	sampleManager  sample.Manager
+	licenseService *enterprise.LicenseService
+	// newSharePointClient is sharepoint.NewClient when nil.
+	newSharePointClient func(sharepoint.Config) (sharepoint.Client, error)
 }
 
 // NewProjectService creates a new ProjectService.
@@ -48,12 +54,14 @@ func NewProjectService(
 	profile *config.Profile,
 	iamManager *iam.Manager,
 	sampleManager sample.Manager,
+	licenseService *enterprise.LicenseService,
 ) *ProjectService {
 	return &ProjectService{
-		store:         store,
-		profile:       profile,
-		iamManager:    iamManager,
-		sampleManager: sampleManager,
+		store:          store,
+		profile:        profile,
+		iamManager:     iamManager,
+		sampleManager:  sampleManager,
+		licenseService: licenseService,
 	}
 }
 
@@ -208,7 +216,7 @@ func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Reques
 
 // CreateProject creates a project.
 func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request[v1pb.CreateProjectRequest]) (*connect.Response[v1pb.Project], error) {
-	if !isValidResourceID(req.Msg.ProjectId) {
+	if !common.IsValidResourceID(req.Msg.ProjectId) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid project ID %v", req.Msg.ProjectId))
 	}
 	if req.Msg.ProjectId == "default" || strings.HasPrefix(req.Msg.ProjectId, "default-") {
@@ -374,6 +382,20 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 			}
 			projectSettings.Labels = req.Msg.Project.Labels
 			patch.Setting = projectSettings
+		case "export_setting":
+			rawURL := strings.TrimSpace(req.Msg.Project.GetExportSetting().GetSharepoint().GetUrl())
+			if rawURL == "" {
+				projectSettings.ExportSetting = nil
+			} else {
+				canonicalURL, err := s.resolveSharePointDestination(ctx, project.Workspace, rawURL)
+				if err != nil {
+					return nil, err
+				}
+				projectSettings.ExportSetting = &storepb.Project_ExportSetting{
+					Sharepoint: &storepb.Project_SharePointDestination{Url: canonicalURL},
+				}
+			}
+			patch.Setting = projectSettings
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupport update_mask "%s"`, path))
 		}
@@ -387,6 +409,53 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(convertToProject(project)), nil
+}
+
+func (s *ProjectService) resolveSharePointDestination(ctx context.Context, workspaceID, rawURL string) (string, error) {
+	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_SHAREPOINT_EXPORT); err != nil {
+		return "", connect.NewError(connect.CodePermissionDenied, err)
+	}
+	setting, err := s.store.GetExportSetting(ctx, workspaceID)
+	if err != nil {
+		return "", connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get export setting"))
+	}
+	newClient := s.newSharePointClient
+	if newClient == nil {
+		newClient = sharepoint.NewClient
+	}
+	return resolveSharePointURL(ctx, rawURL, setting.GetSharepoint(), newClient)
+}
+
+// resolveSharePointURL normalizes rawURL and resolves it with the workspace's
+// SharePoint application, returning the canonical URL. Resolving proves only
+// that the destination is readable, not that exports can be written to it.
+func resolveSharePointURL(ctx context.Context, rawURL string, setting *storepb.SharePointSetting, newClient func(sharepoint.Config) (sharepoint.Client, error)) (string, error) {
+	canonicalURL, err := sharepoint.NormalizeURL(rawURL)
+	if err != nil {
+		return "", connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if setting.GetTenantId() == "" || setting.GetClientId() == "" || setting.GetClientSecret() == "" {
+		return "", connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("SharePoint is not configured for this workspace"))
+	}
+	client, err := newClient(sharepoint.Config{
+		TenantID:     setting.GetTenantId(),
+		ClientID:     setting.GetClientId(),
+		ClientSecret: setting.GetClientSecret(),
+	})
+	if err != nil {
+		return "", connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create SharePoint client"))
+	}
+	if _, err := client.Resolve(ctx, canonicalURL); err != nil {
+		switch {
+		case errors.Is(err, sharepoint.ErrNotFoundOrNoAccess):
+			return "", connect.NewError(connect.CodeFailedPrecondition, sharepoint.ErrNotFoundOrNoAccess)
+		case errors.Is(err, sharepoint.ErrCredential):
+			return "", connect.NewError(connect.CodeFailedPrecondition, sharepoint.ErrCredential)
+		default:
+			return "", connect.NewError(connect.CodeUnavailable, errors.Wrap(err, "failed to resolve the SharePoint destination"))
+		}
+	}
+	return canonicalURL, nil
 }
 
 // DeleteProject deletes a project.
@@ -603,11 +672,6 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Resource))
 	}
 
-	oldIamPolicyMsg, err := s.store.GetProjectIamPolicy(ctx, workspaceID, project.ResourceID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project iam policy with error"))
-	}
-
 	// The etag is compared only in the write below, against the locked row.
 	// Comparing it here too would add a second answer to the same question from
 	// a read the write does not hold, and only the locked one decides.
@@ -616,7 +680,8 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, err
 	}
 
-	if err := validateIAMPolicy(ctx, s.store, !s.profile.SaaS, req.Msg, oldIamPolicyMsg); err != nil {
+	validateReplaced, err := validateIAMPolicy(ctx, s.store, !s.profile.SaaS, req.Msg)
+	if err != nil {
 		return nil, err
 	}
 
@@ -626,15 +691,20 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 	}
 
 	replaced, iamPolicyMessage, err := s.store.SetIamPolicy(ctx, &store.SetIamPolicyMessage{
-		Workspace:    workspaceID,
-		ResourceType: storepb.Policy_PROJECT,
-		Resource:     common.FormatProject(project.ResourceID),
-		Policy:       policy,
-		ExpectedEtag: expectedEtag,
+		Workspace:        workspaceID,
+		ResourceType:     storepb.Policy_PROJECT,
+		Resource:         common.FormatProject(project.ResourceID),
+		Policy:           policy,
+		ExpectedEtag:     expectedEtag,
+		ValidateReplaced: validateReplaced,
 	})
 	if err != nil {
 		if errors.Is(err, store.ErrIamPolicyEtagMismatch) {
 			return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
+		}
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			return nil, connectErr
 		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -1117,19 +1187,23 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	return project, nil
 }
 
-func getBindingIdentifier(role string, condition *expr.Expr) string {
-	ids := []string{
-		fmt.Sprintf("[role] %s", role),
+// bindingKey identifies a binding by its role and condition. A missing
+// condition and an empty one are the same key, as the IAM policy converters
+// store and return them.
+type bindingKey struct {
+	role        string
+	title       string
+	description string
+	expression  string
+}
+
+func newBindingKey(role string, condition *expr.Expr) bindingKey {
+	return bindingKey{
+		role:        role,
+		title:       condition.GetTitle(),
+		description: condition.GetDescription(),
+		expression:  condition.GetExpression(),
 	}
-	if condition != nil {
-		ids = append(
-			ids,
-			fmt.Sprintf("[title] %s", condition.Title),
-			fmt.Sprintf("[description] %s", condition.Description),
-			fmt.Sprintf("[expression] %s", condition.Expression),
-		)
-	}
-	return strings.Join(ids, ";")
 }
 
 // requestedIamPolicyEtag reads the etag the caller presented. GetIamPolicy
@@ -1148,23 +1222,26 @@ func requestedIamPolicyEtag(msg *v1pb.SetIamPolicyRequest) (string, error) {
 	return policyEtag, nil
 }
 
+// validateIAMPolicy checks what a SetIamPolicy request can be checked against
+// before the write, and returns the check that compares it with the policy it
+// replaces. The write runs that check under its row lock, since a policy read
+// earlier can change before the write lands.
 func validateIAMPolicy(
 	ctx context.Context,
 	stores *store.Store,
 	allowAllUsers bool,
 	msg *v1pb.SetIamPolicyRequest,
-	oldPolicyMessage *store.IamPolicyMessage,
-) error {
+) (func(previous *storepb.IamPolicy) error, error) {
 	if msg.Policy == nil {
-		return connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Policy is required"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Policy is required"))
 	}
 	if len(msg.Policy.Bindings) == 0 {
-		return connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Binding is empty"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Binding is empty"))
 	}
 
 	workspaceProfileSetting, err := stores.GetWorkspaceProfileSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.New("failed to get workspace profile setting"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to get workspace profile setting"))
 	}
 	var maximumRoleExpiration *durationpb.Duration
 	if workspaceProfileSetting != nil {
@@ -1173,40 +1250,53 @@ func validateIAMPolicy(
 
 	roleMessages, err := stores.ListRoles(ctx, &store.FindRoleMessage{Workspace: common.GetWorkspaceIDFromContext(ctx)})
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list roles"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list roles"))
 	}
 
-	existingBindings := make(map[string]bool)
-	for _, oldBinding := range oldPolicyMessage.Policy.Bindings {
-		identifier := getBindingIdentifier(oldBinding.Role, oldBinding.Condition)
-		existingBindings[identifier] = true
-	}
-
-	bindings := []*v1pb.Binding{}
-	for _, binding := range msg.Policy.Bindings {
-		if len(binding.Members) == 0 {
-			continue
+	return func(previous *storepb.IamPolicy) error {
+		bindings, err := bindingsGainingMembers(msg.Policy.Bindings, previous, allowAllUsers)
+		if err != nil {
+			return err
 		}
+		return validateBindings(msg.Resource, bindings, roleMessages, maximumRoleExpiration)
+	}, nil
+}
 
-		identifier := getBindingIdentifier(binding.Role, binding.Condition)
-		if !existingBindings[identifier] {
-			bindings = append(bindings, binding)
+// bindingsGainingMembers returns the bindings in request that gain a member
+// over previous. A binding that gains none is not validated again, so a policy
+// sent back as it was stored still saves after the rules tighten, and allUsers
+// is refused only where it is added.
+func bindingsGainingMembers(request []*v1pb.Binding, previous *storepb.IamPolicy, allowAllUsers bool) ([]*v1pb.Binding, error) {
+	storedMembers := make(map[bindingKey]map[string]bool)
+	for _, binding := range previous.GetBindings() {
+		key := newBindingKey(binding.Role, binding.Condition)
+		if storedMembers[key] == nil {
+			storedMembers[key] = make(map[string]bool)
+		}
+		for _, member := range binding.Members {
+			storedMembers[key][convertToV1MemberInBinding(member)] = true
 		}
 	}
 
-	// If allUsers is not allowed in IAM policies, members must be explicitly added.
-	if !allowAllUsers {
-		for _, binding := range bindings {
-			for _, member := range binding.Members {
-				if member == common.AllUsers {
-					return connect.NewError(connect.CodeInvalidArgument,
-						errors.New("allUsers is not allowed in workspace IAM policy in SaaS mode, add members explicitly"))
-				}
+	var gaining []*v1pb.Binding
+	for _, binding := range request {
+		stored := storedMembers[newBindingKey(binding.Role, binding.Condition)]
+		var added []string
+		for _, member := range binding.Members {
+			if !stored[member] {
+				added = append(added, member)
 			}
 		}
+		if len(added) == 0 {
+			continue
+		}
+		if !allowAllUsers && slices.Contains(added, common.AllUsers) {
+			return nil, connect.NewError(connect.CodeInvalidArgument,
+				errors.New("allUsers is not allowed in workspace IAM policy in SaaS mode, add members explicitly"))
+		}
+		gaining = append(gaining, binding)
 	}
-
-	return validateBindings(msg.Resource, bindings, roleMessages, maximumRoleExpiration)
+	return gaining, nil
 }
 
 func validateBindings(

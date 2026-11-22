@@ -144,6 +144,27 @@ describe("Tooltip", () => {
     });
   });
 
+  test("mounts tooltip content into the requested agent layer", async () => {
+    vi.useFakeTimers();
+    const { container, root } = mount(
+      <Tooltip content="Agent tip" layer="agent">
+        <button type="button">Trigger</button>
+      </Tooltip>
+    );
+
+    await act(async () => {
+      container
+        .querySelector("button")
+        ?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+      vi.advanceTimersByTime(100);
+    });
+
+    expect(document.getElementById("bb-react-layer-agent")?.textContent).toContain(
+      "Agent tip"
+    );
+    act(() => root.unmount());
+  });
+
   test("does not mount providers for individual tooltips", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);

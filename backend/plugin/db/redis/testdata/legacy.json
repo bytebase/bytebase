@@ -1,0 +1,169 @@
+{
+  "all": [
+    {
+      "columnNames": [
+        "#",
+        "Value"
+      ],
+      "columnTypeNames": [
+        "INT",
+        "TEXT"
+      ],
+      "rows": [
+        {
+          "values": [
+            {
+              "int32Value": 1
+            },
+            {
+              "stringValue": "hello world"
+            }
+          ]
+        }
+      ],
+      "rowsCount": "1",
+      "statement": "GET greeting"
+    },
+    {
+      "columnNames": [
+        "#",
+        "Value"
+      ],
+      "columnTypeNames": [
+        "INT",
+        "TEXT"
+      ],
+      "rows": [
+        {
+          "values": [
+            {
+              "int32Value": 1
+            },
+            {
+              "stringValue": "2"
+            }
+          ]
+        }
+      ],
+      "rowsCount": "1",
+      "statement": "DBSIZE"
+    }
+  ],
+  "databases": [
+    {
+      "name": "0"
+    }
+  ],
+  "schema": {
+    "name": "0"
+  },
+  "single": [
+    {
+      "columnNames": [
+        "#",
+        "Value"
+      ],
+      "columnTypeNames": [
+        "INT",
+        "TEXT"
+      ],
+      "rows": [
+        {
+          "values": [
+            {
+              "int32Value": 1
+            },
+            {
+              "stringValue": "hello world"
+            }
+          ]
+        }
+      ],
+      "rowsCount": "1",
+      "statement": "GET greeting"
+    },
+    {
+      "columnNames": [
+        "#",
+        "Value"
+      ],
+      "columnTypeNames": [
+        "INT",
+        "TEXT"
+      ],
+      "rows": [
+        {
+          "values": [
+            {
+              "int32Value": 1
+            },
+            {
+              "nullValue": null
+            }
+          ]
+        }
+      ],
+      "rowsCount": "1",
+      "statement": "GET missing"
+    },
+    {
+      "columnNames": [
+        "#",
+        "Value"
+      ],
+      "columnTypeNames": [
+        "INT",
+        "TEXT"
+      ],
+      "rows": [
+        {
+          "values": [
+            {
+              "int32Value": 1
+            },
+            {
+              "stringValue": "first"
+            }
+          ]
+        },
+        {
+          "values": [
+            {
+              "int32Value": 2
+            },
+            {
+              "stringValue": "second"
+            }
+          ]
+        }
+      ],
+      "rowsCount": "2",
+      "statement": "LRANGE queue 0 -1"
+    },
+    {
+      "columnNames": [
+        "#",
+        "Value"
+      ],
+      "columnTypeNames": [
+        "INT",
+        "TEXT"
+      ],
+      "rows": [
+        {
+          "values": [
+            {
+              "int32Value": 1
+            },
+            {
+              "stringValue": "2"
+            }
+          ]
+        }
+      ],
+      "rowsCount": "1",
+      "statement": "DBSIZE"
+    }
+  ],
+  "version": "7.4.12"
+}

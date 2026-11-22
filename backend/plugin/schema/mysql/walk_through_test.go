@@ -114,9 +114,9 @@ func TestWalkThroughCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
 	sm := sheet.NewManager()
 	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
 	asts := base.ExtractASTs(stmts)
-	omniAST, ok := asts[0].(*mysqlparser.OmniAST)
+	node, ok := asts[0].(*mysqlparser.AST)
 	require.True(t, ok)
-	createTable, ok := omniAST.Node.(*omniast.CreateTableStmt)
+	createTable, ok := node.Node.(*omniast.CreateTableStmt)
 	require.True(t, ok)
 	require.True(t, createTable.IfNotExists)
 
@@ -126,7 +126,7 @@ func TestWalkThroughCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
 }
 
 // TestWalkThroughSRIDInvisible verifies the omni catalog -> metadatapb.ColumnMetadata
-// conversion (tableToProto) carries the spatial SRID (presence + value, including the
+// conversion (Catalog.DatabaseMetadata) carries the spatial SRID (presence + value, including the
 // valid explicit SRID 0) and the INVISIBLE flag. Without this the WalkThroughWithContext
 // simulation path — used to compute the schema a changeset would produce — would silently
 // drop these attributes, mirroring the v1-converter gap.

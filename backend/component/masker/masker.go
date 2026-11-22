@@ -35,6 +35,27 @@ type Masker interface {
 	Equal(other Masker) bool
 }
 
+// MasksValues reports whether m can change a value. A NoneMasker and a range
+// masker with no slice return every value unchanged. An inner or outer mask
+// replaces NULL and boolean values whatever its margins.
+func MasksValues(m Masker) bool {
+	switch m := m.(type) {
+	case *NoneMasker:
+		return false
+	case *RangeMasker:
+		return m.enableMask()
+	default:
+		return true
+	}
+}
+
+// MasksEveryValue reports whether m is a full mask, the only masker that hides
+// every value: it puts its substitution in place of each value, NULL included.
+func MasksEveryValue(m Masker) bool {
+	_, full := m.(*FullMasker)
+	return full
+}
+
 // NoneMasker is the masker that does not mask the data.
 type NoneMasker struct{}
 

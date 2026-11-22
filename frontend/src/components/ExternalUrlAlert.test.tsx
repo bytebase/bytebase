@@ -68,6 +68,7 @@ describe("ExternalUrlAlert", () => {
 
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: "setting.workspace.general",
+      hash: "#external-url",
       query: { intro: "external-url" },
     });
 

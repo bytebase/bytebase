@@ -54,6 +54,8 @@ const mocks = vi.hoisted(() => ({
     name: "users/me@example.com",
     title: "Me",
   },
+  reviewState: undefined as unknown,
+  aiReview: undefined as unknown,
 }));
 
 // ---------------------------------------------------------------------------
@@ -137,6 +139,15 @@ vi.mock("@/stores/modules/v1/common", () => ({
 
 vi.mock("@/hooks/useAppState", () => ({
   useCurrentUser: () => mocks.currentUser,
+}));
+
+// No record has arrived for anyone: a principal is named from its email.
+vi.mock("@/hooks/usePrincipal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/usePrincipal")>()),
+  usePrincipal: (identifier?: string) =>
+    identifier
+      ? { email: identifier.replace(/^users\//, ""), title: "" }
+      : undefined,
 }));
 
 vi.mock("@/hooks/useProjectByName", () => ({
@@ -300,6 +311,24 @@ vi.mock("./ReviewActivityTimeline", () => ({
   ReviewActivityTimeline: () => null,
 }));
 
+vi.mock("../../hooks/usePlanReviewState", () => ({
+  useAIReviewBesideV1: () => mocks.aiReview,
+  usePlanReviewState: () => mocks.reviewState,
+}));
+
+vi.mock("./AutomatedReviewSection", () => ({
+  AutomatedReviewSection: ({
+    state,
+  }: {
+    state: { rows?: { reviewer: string }[] };
+  }) => (
+    <div
+      data-reviewers={state.rows?.map((row) => row.reviewer).join(",")}
+      data-testid="automated-review"
+    />
+  ),
+}));
+
 // Import React for JSX — must come after vi.mock calls.
 import React from "react";
 
@@ -428,6 +457,8 @@ const renderIntoContainer = (element: ReactElement) => {
 // ---------------------------------------------------------------------------
 
 beforeEach(() => {
+  mocks.reviewState = undefined;
+  mocks.aiReview = undefined;
   mocks.comments = [];
   mocks.getIssueComments.mockImplementation(() => mocks.comments);
   vi.clearAllMocks();
@@ -439,7 +470,7 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("PlanReviewSection — five review states", () => {
-  test("draft review issue hides governance UI until it is submitted", () => {
+  test("draft review issue says approval starts on submit and hides the rest of the governance UI", () => {
     const issue = makeIssue({
       approvalStatus: ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED,
       draft: true,
@@ -452,7 +483,7 @@ describe("PlanReviewSection — five review states", () => {
 
     render();
 
-    expect(container.textContent).not.toContain("issue.approval-flow.self");
+    expect(container.textContent).toContain("plan.review.approval-after-submit");
     expect(container.textContent).not.toContain("plan.review.footer.");
     expect(container.textContent).not.toContain(
       "custom-approval.approval-flow.skip"
@@ -662,4 +693,79 @@ describe("PlanReviewSection — five review states", () => {
 
     unmount();
   });
+
+  test("shows the AI review and V1's checks together on a submitted issue", () => {
+    mocks.aiReview = { rows: [{ reviewer: "review" }, { reviewer: "policy" }] };
+    const issue = makeIssue({ approvalStatus: ApprovalStatus.PENDING });
+    const { container, render, unmount } = renderIntoContainer(
+      <PlanDetailProvider value={makePageState(issue, makePlan())}>
+        <PlanReviewSection />
+      </PlanDetailProvider>
+    );
+
+    render();
+
+    const section = container.querySelector(
+      "[data-testid='automated-review']"
+    );
+    expect(section?.getAttribute("data-reviewers")).toBe("review,policy");
+    // V1's footer still says what the rollout waits on.
+    expect(container.textContent).toContain(
+      "plan.review.footer.waiting-on-review"
+    );
+
+    unmount();
+  });
+
+  test("shows the AI review and V1's checks on a draft, before approval starts", () => {
+    mocks.aiReview = { rows: [{ reviewer: "review" }, { reviewer: "policy" }] };
+    const issue = makeIssue({
+      approvalStatus: ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED,
+      draft: true,
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <PlanDetailProvider value={makePageState(issue, makePlan())}>
+        <PlanReviewSection />
+      </PlanDetailProvider>
+    );
+
+    render();
+
+    expect(
+      container
+        .querySelector("[data-testid='automated-review']")
+        ?.getAttribute("data-reviewers")
+    ).toBe("review,policy");
+    expect(container.textContent).toContain("plan.review.approval-after-submit");
+    expect(container.textContent).not.toContain("plan.review.footer.");
+
+    unmount();
+  });
+
+  test.each([
+    ["keeps the automated reviewers below it under SQL Review V2", {}, true],
+    ["shows only that without SQL Review V2", undefined, false],
+  ])(
+    "while the approval flow is generated, %s",
+    (_, reviewState, showsReviewers) => {
+      mocks.reviewState = reviewState;
+      const issue = makeIssue({ approvalStatus: ApprovalStatus.CHECKING });
+      const { container, render, unmount } = renderIntoContainer(
+        <PlanDetailProvider value={makePageState(issue, makePlan())}>
+          <PlanReviewSection />
+        </PlanDetailProvider>
+      );
+
+      render();
+
+      expect(container.textContent).toContain(
+        "custom-approval.issue-review.generating-approval-flow"
+      );
+      expect(
+        container.querySelector("[data-testid='automated-review']") !== null
+      ).toBe(showsReviewers);
+
+      unmount();
+    }
+  );
 });

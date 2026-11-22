@@ -448,12 +448,12 @@ var File_v1_workspace_service_proto protoreflect.FileDescriptor
 
 const file_v1_workspace_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1av1/workspace_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x15v1/auth_service.proto\x1a\x13v1/iam_policy.proto\"U\n" +
-	"\x1fRotateDirectorySyncTokenRequest\x122\n" +
-	"\x04name\x18\x01 \x01(\tB\x1e\xe0A\x02\xfaA\x18\n" +
-	"\x16bytebase.com/WorkspaceR\x04name\"A\n" +
-	" RotateDirectorySyncTokenResponse\x12\x1d\n" +
-	"\x05token\x18\x01 \x01(\tB\a\xe0A\x03\xd0\xea0\x01R\x05token\"\x17\n" +
+	"\x1av1/workspace_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x15v1/auth_service.proto\x1a\x13v1/iam_policy.proto\"V\n" +
+	"\x1fRotateDirectorySyncTokenRequest\x123\n" +
+	"\x04name\x18\x01 \x01(\tB\x1f\xe2A\x01\x02\xfaA\x18\n" +
+	"\x16bytebase.com/WorkspaceR\x04name\"B\n" +
+	" RotateDirectorySyncTokenResponse\x12\x1e\n" +
+	"\x05token\x18\x01 \x01(\tB\b\xe2A\x01\x03\xd0\xea0\x01R\x05token\"\x17\n" +
 	"\x15ListWorkspacesRequest\"P\n" +
 	"\x16ListWorkspacesResponse\x126\n" +
 	"\n" +
@@ -464,21 +464,21 @@ const file_v1_workspace_service_proto_rawDesc = "" +
 	"\tWorkspace\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x12\n" +
-	"\x04logo\x18\x03 \x01(\tR\x04logo\"1\n" +
-	"\x16DeleteWorkspaceRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"\x90\x01\n" +
-	"\x16UpdateWorkspaceRequest\x129\n" +
-	"\tworkspace\x18\x01 \x01(\v2\x16.bytebase.v1.WorkspaceB\x03\xe0A\x02R\tworkspace\x12;\n" +
+	"\x04logo\x18\x03 \x01(\tR\x04logo\"2\n" +
+	"\x16DeleteWorkspaceRequest\x12\x18\n" +
+	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x02R\x04name\"\x91\x01\n" +
+	"\x16UpdateWorkspaceRequest\x12:\n" +
+	"\tworkspace\x18\x01 \x01(\v2\x16.bytebase.v1.WorkspaceB\x04\xe2A\x01\x02R\tworkspace\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"0\n" +
-	"\x15LeaveWorkspaceRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name2\x9f\n" +
+	"updateMask\"1\n" +
+	"\x15LeaveWorkspaceRequest\x12\x18\n" +
+	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x02R\x04name2\x9b\n" +
 	"\n" +
 	"\x10WorkspaceService\x12q\n" +
 	"\fGetWorkspace\x12 .bytebase.v1.GetWorkspaceRequest\x1a\x16.bytebase.v1.Workspace\"'\x80\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/{name=workspaces/*}\x12y\n" +
 	"\x0eListWorkspaces\x12\".bytebase.v1.ListWorkspacesRequest\x1a#.bytebase.v1.ListWorkspacesResponse\"\x1e\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x10\x12\x0e/v1/workspaces\x12\xa4\x01\n" +
-	"\x0fUpdateWorkspace\x12#.bytebase.v1.UpdateWorkspaceRequest\x1a\x16.bytebase.v1.Workspace\"T\x8a\xea0\x14bb.workspaces.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02&:\x01*2!/v1/{workspace.name=workspaces/*}\x12\xa4\x01\n" +
-	"\fGetIamPolicy\x12 .bytebase.v1.GetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"Z\x8a\xea0\x1abb.workspaces.getIamPolicy\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02*\x12(/v1/{resource=workspaces/*}:getIamPolicy\x12\x9b\x01\n" +
+	"\x0fUpdateWorkspace\x12#.bytebase.v1.UpdateWorkspaceRequest\x1a\x16.bytebase.v1.Workspace\"T\x8a\xea0\x14bb.workspaces.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02&:\x01*2!/v1/{workspace.name=workspaces/*}\x12\xa0\x01\n" +
+	"\fGetIamPolicy\x12 .bytebase.v1.GetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"V\x8a\xea0\x1abb.workspaces.getIamPolicy\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02*\x12(/v1/{resource=workspaces/*}:getIamPolicy\x12\x9b\x01\n" +
 	"\x0fDeleteWorkspace\x12#.bytebase.v1.DeleteWorkspaceRequest\x1a\x1a.bytebase.v1.LoginResponse\"G\x8a\xea0\x14bb.workspaces.delete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x05\x82\xd3\xe4\x93\x02\x19*\x17/v1/{name=workspaces/*}\x12\x8a\x01\n" +
 	"\x0eLeaveWorkspace\x12\".bytebase.v1.LeaveWorkspaceRequest\x1a\x1a.bytebase.v1.LoginResponse\"8\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x05\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/{name=workspaces/*}:leave\x12\xab\x01\n" +
 	"\fSetIamPolicy\x12 .bytebase.v1.SetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"a\x8a\xea0\x1abb.workspaces.setIamPolicy\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02-:\x01*\"(/v1/{resource=workspaces/*}:setIamPolicy\x12\xf5\x01\n" +

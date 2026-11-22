@@ -12,7 +12,7 @@ import (
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
-func TestOmniIsRoleOrSearchPathSet(t *testing.T) {
+func TestIsRoleOrSearchPathSet(t *testing.T) {
 	tests := []struct {
 		name string
 		sql  string
@@ -55,12 +55,12 @@ func TestOmniIsRoleOrSearchPathSet(t *testing.T) {
 				if stmt.AST == nil {
 					continue
 				}
-				node, ok := pgparser.GetOmniNode(stmt.AST)
+				node, ok := pgparser.GetNode(stmt.AST)
 				if !ok {
 					continue
 				}
 				if vs, ok := node.(*ast.VariableSetStmt); ok {
-					if omniIsRoleOrSearchPathSet(vs) {
+					if isRoleOrSearchPathSet(vs) {
 						preExecutions = append(preExecutions, strings.TrimRight(strings.TrimSpace(stmt.Text), ";"))
 					}
 				}
@@ -77,7 +77,7 @@ func TestSessionSettings(t *testing.T) {
 		statements, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
 		require.NoError(t, err)
 		for _, stmt := range statements {
-			node, ok := pgparser.GetOmniNode(stmt.AST)
+			node, ok := pgparser.GetNode(stmt.AST)
 			require.True(t, ok)
 			settings.add(node, strings.TrimRight(strings.TrimSpace(stmt.Text), ";"))
 		}

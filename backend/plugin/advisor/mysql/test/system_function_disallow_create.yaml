@@ -23,3 +23,14 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE AGGREGATE FUNCTION g RETURNS STRING SONAME 'g.so';
+  want:
+    - status: 2
+      code: 1701
+      title: SYSTEM_FUNCTION_DISALLOW_CREATE
+      content: Function is forbidden, but "CREATE AGGREGATE FUNCTION g RETURNS STRING SONAME 'g.so';" creates
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE p() SELECT 1;

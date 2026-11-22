@@ -33,3 +33,30 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    SELECT t.*, a
+    FROM t
+    WHERE a IN (SELECT *
+      FROM u);
+  want:
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: Avoid using SELECT *.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    WITH recent AS (SELECT * FROM t)
+    SELECT a
+    FROM recent
+  want:
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: Avoid using SELECT *.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

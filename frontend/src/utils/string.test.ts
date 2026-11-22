@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 
-import { normalizeTitle } from "./string";
+import { formatList, normalizeTitle } from "./string";
 
 describe("normalizeTitle", () => {
   it("trims plain ASCII whitespace", () => {
@@ -35,5 +35,33 @@ describe("normalizeTitle", () => {
     // U+FEFF to the regex, this test fails — preventing a frontend/backend
     // asymmetry in the opposite direction.
     expect(normalizeTitle("\uFEFF")).toBe("\uFEFF");
+  });
+});
+
+describe("formatList", () => {
+  it.each(["en-US", "zh-CN", "ja-JP", "es-ES", "vi-VN"])(
+    "keeps the names apart in %s",
+    (language) => {
+      const joined = formatList(["Staging", "Prod"], language);
+      expect(joined).toContain("Staging");
+      expect(joined).toContain("Prod");
+      expect(joined).not.toBe("StagingProd");
+    }
+  );
+
+  it("returns a single name unchanged", () => {
+    expect(formatList(["Prod"], "en-US")).toBe("Prod");
+  });
+
+  it("falls back to commas where the browser has no Intl.ListFormat", () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Intl, "ListFormat");
+    Reflect.deleteProperty(Intl, "ListFormat");
+    try {
+      expect(formatList(["Staging", "Prod"], "en-US")).toBe("Staging, Prod");
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(Intl, "ListFormat", descriptor);
+      }
+    }
   });
 });

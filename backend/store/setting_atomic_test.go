@@ -189,6 +189,83 @@ func TestUpdateSettingAtomicMissingRow(t *testing.T) {
 	require.Contains(t, err.Error(), "not found")
 }
 
+func TestUpsertSettingAtomicMergesConcurrentWritesOnAMissingRow(t *testing.T) {
+	t.Parallel()
+	ctx, db, s := newSettingAtomicFixture(t)
+
+	upsertAI := func(wantExisted bool, set func(*storepb.AISetting), before func()) error {
+		_, err := s.UpsertSettingAtomic(ctx, "default", storepb.SettingName_AI,
+			func(current proto.Message, existed bool) (proto.Message, error) {
+				setting, ok := current.(*storepb.AISetting)
+				if !ok {
+					return nil, errors.Errorf("unexpected type %T", current)
+				}
+				if existed != wantExisted {
+					return nil, errors.Errorf("existed is %t, want %t", existed, wantExisted)
+				}
+				set(setting)
+				before()
+				return setting, nil
+			}, nil)
+		return err
+	}
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	firstResult := make(chan error, 1)
+	go func() {
+		firstResult <- upsertAI(false, func(setting *storepb.AISetting) { setting.SqlReviewEnabled = true }, func() {
+			close(entered)
+			<-release
+		})
+	}()
+	select {
+	case <-entered:
+	case <-time.After(15 * time.Second):
+		t.Fatal("first upsert never reached its apply callback")
+	}
+
+	secondResult := make(chan error, 1)
+	go func() {
+		secondResult <- upsertAI(true, func(setting *storepb.AISetting) { setting.Model = "second" }, func() {})
+	}()
+	// The second insert waits on the first's uncommitted row.
+	require.Eventually(t, func() bool {
+		var waiting bool
+		err := db.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM pg_stat_activity
+				WHERE datname = current_database()
+					AND cardinality(pg_blocking_pids(pid)) > 0
+					AND query LIKE '%INSERT INTO setting%ON CONFLICT%'
+			)
+		`).Scan(&waiting)
+		return err == nil && waiting
+	}, 10*time.Second, 10*time.Millisecond)
+
+	close(release)
+	for _, result := range []chan error{firstResult, secondResult} {
+		select {
+		case err := <-result:
+			require.NoError(t, err)
+		case <-time.After(15 * time.Second):
+			t.Fatal("upsert did not complete; possible deadlock")
+		}
+	}
+
+	fresh, err := s.GetSettingUncached(ctx, "default", storepb.SettingName_AI)
+	require.NoError(t, err)
+	setting, ok := fresh.Value.(*storepb.AISetting)
+	require.True(t, ok)
+	require.True(t, setting.SqlReviewEnabled)
+	require.Equal(t, "second", setting.Model)
+	cached, err := s.GetAISetting(ctx, "default")
+	require.NoError(t, err)
+	require.True(t, cached.SqlReviewEnabled)
+	require.Equal(t, "second", cached.Model)
+}
+
 // TestUpdateSettingAtomicPublishOrder pins that the setting cache is published
 // in commit order: while one update is paused between its commit and its cache
 // publish (test hook), a later update must not be able to commit and publish —
@@ -545,4 +622,92 @@ func TestUpdateSettingAtomicRefusesAnUnparsedRow(t *testing.T) {
 	require.NoError(t, db.QueryRowContext(ctx,
 		`SELECT value::text FROM setting WHERE name = 'WORKSPACE_PROFILE' AND workspace = 'default'`).Scan(&stored))
 	require.Contains(t, stored, "externalUrl", "the refused write must leave the row as it found it")
+}
+
+// The first fill is held inside the lock until every other read has missed
+// the cache, so each of them waits for the lock and then looks again.
+func TestSimultaneousSettingMissesReadTheDatabaseOnce(t *testing.T) {
+	t.Parallel()
+	ctx, _, s := newSettingAtomicFixture(t)
+	s.DeleteCache()
+	var misses, fills atomic.Int32
+	firstFillStarted := make(chan struct{})
+	releaseFirstFill := make(chan struct{})
+	s.SetSettingMissHookForTest(func() { misses.Add(1) })
+	s.SetSettingFillHookForTest(func() {
+		if fills.Add(1) == 1 {
+			close(firstFillStarted)
+			<-releaseFirstFill
+		}
+	})
+	results := make(chan error, 5)
+	read := func() {
+		_, err := s.GetSetting(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
+		results <- err
+	}
+
+	go read()
+	<-firstFillStarted
+	for range 4 {
+		go read()
+	}
+	require.Eventually(t, func() bool { return misses.Load() == 5 }, 10*time.Second, time.Millisecond)
+	close(releaseFirstFill)
+	for range 5 {
+		require.NoError(t, <-results)
+	}
+
+	require.Equal(t, int32(1), fills.Load())
+}
+
+// Colliding keys: WORKSPACE_PROFILE in two workspaces, with the second read
+// waiting behind the first workspace's fill.
+func TestSettingFillWaitingBehindAnotherWorkspaceReadsItsOwnRow(t *testing.T) {
+	t.Parallel()
+	ctx, db, s := newSettingAtomicFixture(t)
+	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('other');`)
+	require.NoError(t, err)
+	_, err = s.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_WORKSPACE_PROFILE,
+		Workspace: "other",
+		Value:     &storepb.WorkspaceProfileSetting{DisallowPasswordSignin: true},
+	})
+	require.NoError(t, err)
+	s.DeleteCache()
+	var misses, fills atomic.Int32
+	firstFillStarted := make(chan struct{})
+	releaseFirstFill := make(chan struct{})
+	s.SetSettingMissHookForTest(func() { misses.Add(1) })
+	s.SetSettingFillHookForTest(func() {
+		if fills.Add(1) == 1 {
+			close(firstFillStarted)
+			<-releaseFirstFill
+		}
+	})
+	type readResult struct {
+		setting *store.SettingMessage
+		err     error
+	}
+	read := func(workspace string, results chan<- readResult) {
+		setting, err := s.GetSetting(ctx, workspace, storepb.SettingName_WORKSPACE_PROFILE)
+		results <- readResult{setting: setting, err: err}
+	}
+
+	defaultResult, otherResult := make(chan readResult, 1), make(chan readResult, 1)
+	go read("default", defaultResult)
+	<-firstFillStarted
+	go read("other", otherResult)
+	require.Eventually(t, func() bool { return misses.Load() == 2 }, 10*time.Second, time.Millisecond)
+	close(releaseFirstFill)
+
+	other := <-otherResult
+	require.NoError(t, other.err)
+	require.True(t, mustProfile(t, other.setting).DisallowPasswordSignin)
+	first := <-defaultResult
+	require.NoError(t, first.err)
+	require.False(t, mustProfile(t, first.setting).DisallowPasswordSignin)
+	require.Equal(t, int32(2), fills.Load())
+	cached, err := s.GetSetting(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
+	require.NoError(t, err)
+	require.False(t, mustProfile(t, cached).DisallowPasswordSignin)
 }

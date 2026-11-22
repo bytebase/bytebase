@@ -46,3 +46,25 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    SELECT
+      (SELECT * FROM u) AS x,
+      t.*
+    FROM t;
+  want:
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: Avoid using SELECT *.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: Avoid using SELECT *.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

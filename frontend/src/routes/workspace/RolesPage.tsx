@@ -87,7 +87,10 @@ function PermissionTransfer({
   const { t } = useTranslation();
   const [sourceFilter, setSourceFilter] = useState("");
 
-  const allPermissions = useMemo(() => [...PERMISSIONS].sort(), []);
+  const allPermissions = useMemo(
+    () => [...PERMISSIONS].sort((a, b) => a.localeCompare(b)),
+    []
+  );
 
   const valueSet = useMemo(() => new Set(value), [value]);
 
@@ -184,18 +187,20 @@ function PermissionTransfer({
           </span>
         </div>
         <div className="flex-1 overflow-auto">
-          {[...value].sort().map((p) => (
-            <div
-              key={p}
-              className={`group flex items-center justify-between px-3 py-1.5 text-sm hover:bg-control-bg/50 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-              onClick={() => removeItem(p)}
-            >
-              <span className="truncate">{p}</span>
-              {!disabled && (
-                <X className="h-3.5 w-3.5 shrink-0 text-control-light opacity-0 group-hover:opacity-100 group-hover:text-error" />
-              )}
-            </div>
-          ))}
+          {[...value]
+            .sort((a, b) => a.localeCompare(b))
+            .map((p) => (
+              <div
+                key={p}
+                className={`group flex items-center justify-between px-3 py-1.5 text-sm hover:bg-control-bg/50 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                onClick={() => removeItem(p)}
+              >
+                <span className="truncate">{p}</span>
+                {!disabled && (
+                  <X className="h-3.5 w-3.5 shrink-0 text-control-light opacity-0 group-hover:opacity-100 group-hover:text-error" />
+                )}
+              </div>
+            ))}
         </div>
       </div>
     </div>
@@ -787,10 +792,7 @@ export function RolesPage() {
         description={
           <>
             {t("role.setting.description")}{" "}
-            <LearnMoreLink
-              href="https://docs.bytebase.com/administration/roles?source=console"
-              className="text-accent"
-            />
+            <LearnMoreLink href="https://docs.bytebase.com/administration/roles?source=console" />
           </>
         }
       />

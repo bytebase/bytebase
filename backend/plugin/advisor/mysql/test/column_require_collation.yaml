@@ -1,0 +1,46 @@
+- statement: CREATE TABLE t(a VARCHAR(20) COLLATE utf8mb4_bin, b INT);
+- statement: |-
+    CREATE TABLE t(
+      a CHAR(1) CHARSET utf8mb4,
+      b MEDIUMTEXT
+    );
+  want:
+    - status: 2
+      code: 617
+      title: COLUMN_REQUIRE_COLLATION
+      content: Column a does not have a collation specified
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 617
+      title: COLUMN_REQUIRE_COLLATION
+      content: Column b does not have a collation specified
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE t
+      ADD COLUMN a VARCHAR(20),
+      CHANGE COLUMN b c VARCHAR(20);
+  want:
+    - status: 2
+      code: 617
+      title: COLUMN_REQUIRE_COLLATION
+      content: Column a does not have a collation specified
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a VARCHAR(20)) COLLATE = utf8mb4_bin;
+  want:
+    - status: 2
+      code: 617
+      title: COLUMN_REQUIRE_COLLATION
+      content: Column a does not have a collation specified
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

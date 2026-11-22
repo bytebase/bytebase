@@ -237,12 +237,15 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    COMMENT ON SCHEMA "public" IS 'standard public schema';
+
     CREATE SEQUENCE "public"."posts_id_seq"
         AS integer
     	START WITH 1
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     CREATE SEQUENCE "public"."users_id_seq"
@@ -251,6 +254,7 @@
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     SET default_tablespace = '';
@@ -264,6 +268,8 @@
     );
 
     ALTER SEQUENCE "public"."posts_id_seq" OWNED BY "public"."posts"."id";
+
+    ALTER TABLE "public"."posts" OWNER TO "postgres";
 
     ALTER TABLE ONLY "public"."posts" ADD CONSTRAINT "posts_pkey" PRIMARY KEY (id);
 
@@ -280,6 +286,8 @@
     );
 
     ALTER SEQUENCE "public"."users_id_seq" OWNED BY "public"."users"."id";
+
+    ALTER TABLE "public"."users" OWNER TO "postgres";
 
     ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_pkey" PRIMARY KEY (id);
 
@@ -402,6 +410,8 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    COMMENT ON SCHEMA "public" IS 'standard public schema';
+
     CREATE TYPE "public"."mood" AS ENUM (
         'happy',
         'sad',
@@ -421,6 +431,7 @@
     	INCREMENT BY 10
     	MINVALUE 1
     	MAXVALUE 9223372036854775807
+    	CACHE 1
     	NO CYCLE;
 
     SET default_tablespace = '';
@@ -431,6 +442,8 @@
         "status" public.status_enum DEFAULT 'pending'::public.status_enum,
         "user_mood" public.mood
     );
+
+    ALTER TABLE "public"."items" OWNER TO "postgres";
 
     ALTER TABLE ONLY "public"."items" ADD CONSTRAINT "items_pkey" PRIMARY KEY (id);
 
@@ -620,6 +633,10 @@
 
     CREATE SCHEMA IF NOT EXISTS "geo";
 
+    ALTER SCHEMA "geo" OWNER TO "postgres";
+
+    COMMENT ON SCHEMA "public" IS 'standard public schema';
+
     CREATE TYPE "public"."order_status" AS ENUM (
         'pending',
         'shipped'
@@ -664,6 +681,7 @@
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     SET default_tablespace = '';
@@ -676,6 +694,8 @@
     );
 
     ALTER SEQUENCE "public"."orders_id_seq" OWNED BY "public"."orders"."id";
+
+    ALTER TABLE "public"."orders" OWNER TO "postgres";
 
     ALTER TABLE ONLY "public"."orders" ADD CONSTRAINT "orders_pkey" PRIMARY KEY (id);
 
@@ -794,12 +814,15 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    COMMENT ON SCHEMA "public" IS 'standard public schema';
+
     CREATE SEQUENCE "public"."history_cost_changes_id_seq"
         AS bigint
     	START WITH 1
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 9223372036854775807
+    	CACHE 1
     	NO CYCLE;
 
     SET default_tablespace = '';
@@ -809,6 +832,8 @@
         "change_type" character varying(50)
     );
 
+    ALTER TABLE "public"."history_audit" OWNER TO "postgres";
+
     CREATE TABLE "public"."history_cost_changes" (
         "id" bigint DEFAULT nextval('public.history_cost_changes_id_seq'::regclass) NOT NULL,
         "amount" numeric(10,2),
@@ -817,6 +842,8 @@
     );
 
     ALTER SEQUENCE "public"."history_cost_changes_id_seq" OWNED BY "public"."history_cost_changes"."id";
+
+    ALTER TABLE "public"."history_cost_changes" OWNER TO "postgres";
 
     ALTER TABLE ONLY "public"."history_cost_changes" ADD CONSTRAINT "history_cost_changes_pkey" PRIMARY KEY (id);
 
@@ -957,7 +984,7 @@
       "owner": "postgres",
       "search_path": "\"$user\", public"
     }
-  expected: "SET statement_timeout = 0;\nSET lock_timeout = 0;\nSET idle_in_transaction_session_timeout = 0;\nSET client_encoding = 'UTF8';\nSET standard_conforming_strings = on;\nSELECT pg_catalog.set_config('search_path', '', false);\nSET check_function_bodies = false;\nSET xmloption = content;\nSET client_min_messages = warning;\nSET row_security = off;\n\nCREATE SEQUENCE \"public\".\"employees_id_seq\"\n    AS integer\n\tSTART WITH 1\n\tINCREMENT BY 1\n\tMINVALUE 1\n\tMAXVALUE 2147483647\n\tNO CYCLE;\n\nSET default_tablespace = '';\n\nCREATE OR REPLACE FUNCTION public.calculate_bonus(emp_id integer)\n RETURNS numeric\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    emp_salary DECIMAL;\nBEGIN\n    SELECT salary INTO emp_salary FROM employees WHERE id = emp_id;\n    RETURN emp_salary * 0.1;\nEND;\n$function$\n;\n\nCREATE TABLE \"public\".\"employees\" (\n    \"id\" integer DEFAULT nextval('public.employees_id_seq'::regclass) NOT NULL,\n    \"name\" character varying(100) NOT NULL,\n    \"department\" character varying(50),\n    \"salary\" numeric(10,2)\n);\n\nALTER SEQUENCE \"public\".\"employees_id_seq\" OWNED BY \"public\".\"employees\".\"id\";\n\nALTER TABLE ONLY \"public\".\"employees\" ADD CONSTRAINT \"employees_pkey\" PRIMARY KEY (id);\n\nCREATE OR REPLACE FUNCTION public.get_employee_count(dept character varying)\n RETURNS integer\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    RETURN (SELECT COUNT(*) FROM employees WHERE department = dept);\nEND;\n$function$\n;\n\nCREATE VIEW \"public\".\"active_employees\" AS \n SELECT id,\n    name,\n    department\n   FROM public.employees\n  WHERE (department IS NOT NULL);\n\n"
+  expected: "SET statement_timeout = 0;\nSET lock_timeout = 0;\nSET idle_in_transaction_session_timeout = 0;\nSET client_encoding = 'UTF8';\nSET standard_conforming_strings = on;\nSELECT pg_catalog.set_config('search_path', '', false);\nSET check_function_bodies = false;\nSET xmloption = content;\nSET client_min_messages = warning;\nSET row_security = off;\n\nCOMMENT ON SCHEMA \"public\" IS 'standard public schema';\n\nCREATE SEQUENCE \"public\".\"employees_id_seq\"\n    AS integer\n\tSTART WITH 1\n\tINCREMENT BY 1\n\tMINVALUE 1\n\tMAXVALUE 2147483647\n\tCACHE 1\n\tNO CYCLE;\n\nSET default_tablespace = '';\n\nCREATE OR REPLACE FUNCTION public.calculate_bonus(emp_id integer)\n RETURNS numeric\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    emp_salary DECIMAL;\nBEGIN\n    SELECT salary INTO emp_salary FROM employees WHERE id = emp_id;\n    RETURN emp_salary * 0.1;\nEND;\n$function$\n;\n\nCREATE TABLE \"public\".\"employees\" (\n    \"id\" integer DEFAULT nextval('public.employees_id_seq'::regclass) NOT NULL,\n    \"name\" character varying(100) NOT NULL,\n    \"department\" character varying(50),\n    \"salary\" numeric(10,2)\n);\n\nALTER SEQUENCE \"public\".\"employees_id_seq\" OWNED BY \"public\".\"employees\".\"id\";\n\nALTER TABLE \"public\".\"employees\" OWNER TO \"postgres\";\n\nALTER TABLE ONLY \"public\".\"employees\" ADD CONSTRAINT \"employees_pkey\" PRIMARY KEY (id);\n\nCREATE OR REPLACE FUNCTION public.get_employee_count(dept character varying)\n RETURNS integer\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    RETURN (SELECT COUNT(*) FROM employees WHERE department = dept);\nEND;\n$function$\n;\n\nCREATE VIEW \"public\".\"active_employees\" AS \n SELECT id,\n    name,\n    department\n   FROM public.employees\n  WHERE (department IS NOT NULL);\n\n"
 - description: partitioned_tables
   metadata: |
     {
@@ -1053,12 +1080,15 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    COMMENT ON SCHEMA "public" IS 'standard public schema';
+
     CREATE SEQUENCE "public"."sales_id_seq"
         AS integer
     	START WITH 1
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     SET default_tablespace = '';
@@ -1071,6 +1101,8 @@
     ) PARTITION BY RANGE (sale_date);
 
     ALTER SEQUENCE "public"."sales_id_seq" OWNED BY "public"."sales"."id";
+
+    ALTER TABLE "public"."sales" OWNER TO "postgres";
 
     CREATE TABLE "public"."sales_2023_q1" (
         "id" integer DEFAULT nextval('public.sales_id_seq'::regclass) NOT NULL,
@@ -1307,6 +1339,8 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    COMMENT ON SCHEMA "public" IS 'standard public schema';
+
     CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "public" VERSION '1.1';
 
     COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
@@ -1321,6 +1355,8 @@
         "metadata" jsonb,
         "created_at" timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP
     );
+
+    ALTER TABLE "public"."documents" OWNER TO "postgres";
 
     ALTER TABLE ONLY "public"."documents" ADD CONSTRAINT "documents_pkey" PRIMARY KEY (id);
 
@@ -1433,12 +1469,15 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    COMMENT ON SCHEMA "public" IS 'standard public schema';
+
     CREATE SEQUENCE "public"."products_id_seq"
         AS integer
     	START WITH 1
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     SET default_tablespace = '';
@@ -1453,6 +1492,8 @@
     );
 
     ALTER SEQUENCE "public"."products_id_seq" OWNED BY "public"."products"."id";
+
+    ALTER TABLE "public"."products" OWNER TO "postgres";
 
     COMMENT ON TABLE "public"."products" IS 'Product catalog table';
 
@@ -1582,7 +1623,7 @@
       "owner": "postgres",
       "search_path": "\"$user\", public"
     }
-  expected: "SET statement_timeout = 0;\nSET lock_timeout = 0;\nSET idle_in_transaction_session_timeout = 0;\nSET client_encoding = 'UTF8';\nSET standard_conforming_strings = on;\nSELECT pg_catalog.set_config('search_path', '', false);\nSET check_function_bodies = false;\nSET xmloption = content;\nSET client_min_messages = warning;\nSET row_security = off;\n\nCREATE SEQUENCE \"public\".\"raw_data_id_seq\"\n    AS integer\n\tSTART WITH 1\n\tINCREMENT BY 1\n\tMINVALUE 1\n\tMAXVALUE 2147483647\n\tNO CYCLE;\n\nSET default_tablespace = '';\n\nCREATE TABLE \"public\".\"raw_data\" (\n    \"id\" integer DEFAULT nextval('public.raw_data_id_seq'::regclass) NOT NULL,\n    \"data_value\" numeric NOT NULL,\n    \"category\" character varying(50) NOT NULL,\n    \"created_at\" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP\n);\n\nALTER SEQUENCE \"public\".\"raw_data_id_seq\" OWNED BY \"public\".\"raw_data\".\"id\";\n\nALTER TABLE ONLY \"public\".\"raw_data\" ADD CONSTRAINT \"raw_data_pkey\" PRIMARY KEY (id);\n\nCREATE MATERIALIZED VIEW \"public\".\"data_summary\" AS \n SELECT category,\n    count(*) AS count,\n    avg(data_value) AS avg_value,\n    max(data_value) AS max_value,\n    min(data_value) AS min_value\n   FROM public.raw_data\n  GROUP BY category\n  WITH NO DATA;\n\nCREATE INDEX \"idx_data_summary_category\" ON \"public\".\"data_summary\" (category);\n\n"
+  expected: "SET statement_timeout = 0;\nSET lock_timeout = 0;\nSET idle_in_transaction_session_timeout = 0;\nSET client_encoding = 'UTF8';\nSET standard_conforming_strings = on;\nSELECT pg_catalog.set_config('search_path', '', false);\nSET check_function_bodies = false;\nSET xmloption = content;\nSET client_min_messages = warning;\nSET row_security = off;\n\nCOMMENT ON SCHEMA \"public\" IS 'standard public schema';\n\nCREATE SEQUENCE \"public\".\"raw_data_id_seq\"\n    AS integer\n\tSTART WITH 1\n\tINCREMENT BY 1\n\tMINVALUE 1\n\tMAXVALUE 2147483647\n\tCACHE 1\n\tNO CYCLE;\n\nSET default_tablespace = '';\n\nCREATE TABLE \"public\".\"raw_data\" (\n    \"id\" integer DEFAULT nextval('public.raw_data_id_seq'::regclass) NOT NULL,\n    \"data_value\" numeric NOT NULL,\n    \"category\" character varying(50) NOT NULL,\n    \"created_at\" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP\n);\n\nALTER SEQUENCE \"public\".\"raw_data_id_seq\" OWNED BY \"public\".\"raw_data\".\"id\";\n\nALTER TABLE \"public\".\"raw_data\" OWNER TO \"postgres\";\n\nALTER TABLE ONLY \"public\".\"raw_data\" ADD CONSTRAINT \"raw_data_pkey\" PRIMARY KEY (id);\n\nCREATE MATERIALIZED VIEW \"public\".\"data_summary\" AS \n SELECT category,\n    count(*) AS count,\n    avg(data_value) AS avg_value,\n    max(data_value) AS max_value,\n    min(data_value) AS min_value\n   FROM public.raw_data\n  GROUP BY category\n  WITH NO DATA;\n\nCREATE INDEX \"idx_data_summary_category\" ON \"public\".\"data_summary\" (category);\n\n"
 - description: comprehensive_views
   metadata: |
     {
@@ -1975,7 +2016,7 @@
       "owner": "postgres",
       "search_path": "\"$user\", public"
     }
-  expected: "SET statement_timeout = 0;\nSET lock_timeout = 0;\nSET idle_in_transaction_session_timeout = 0;\nSET client_encoding = 'UTF8';\nSET standard_conforming_strings = on;\nSELECT pg_catalog.set_config('search_path', '', false);\nSET check_function_bodies = false;\nSET xmloption = content;\nSET client_min_messages = warning;\nSET row_security = off;\n\nCREATE SEQUENCE \"public\".\"customers_id_seq\"\n    AS integer\n\tSTART WITH 1\n\tINCREMENT BY 1\n\tMINVALUE 1\n\tMAXVALUE 2147483647\n\tNO CYCLE;\n\nCREATE SEQUENCE \"public\".\"orders_id_seq\"\n    AS integer\n\tSTART WITH 1\n\tINCREMENT BY 1\n\tMINVALUE 1\n\tMAXVALUE 2147483647\n\tNO CYCLE;\n\nSET default_tablespace = '';\n\nCREATE TABLE \"public\".\"customers\" (\n    \"id\" integer DEFAULT nextval('public.customers_id_seq'::regclass) NOT NULL,\n    \"name\" character varying(100) NOT NULL,\n    \"email\" character varying(100),\n    \"active\" boolean DEFAULT true,\n    \"created_at\" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP\n);\n\nALTER SEQUENCE \"public\".\"customers_id_seq\" OWNED BY \"public\".\"customers\".\"id\";\n\nALTER TABLE ONLY \"public\".\"customers\" ADD CONSTRAINT \"customers_pkey\" PRIMARY KEY (id);\n\nALTER TABLE ONLY \"public\".\"customers\" ADD CONSTRAINT \"customers_email_key\" UNIQUE (email);\n\nCREATE TABLE \"public\".\"orders\" (\n    \"id\" integer DEFAULT nextval('public.orders_id_seq'::regclass) NOT NULL,\n    \"customer_id\" integer,\n    \"total_amount\" numeric(10,2) NOT NULL,\n    \"order_date\" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP,\n    \"status\" character varying(20) DEFAULT 'pending'::character varying\n);\n\nALTER SEQUENCE \"public\".\"orders_id_seq\" OWNED BY \"public\".\"orders\".\"id\";\n\nALTER TABLE ONLY \"public\".\"orders\" ADD CONSTRAINT \"orders_pkey\" PRIMARY KEY (id);\n\nCREATE VIEW \"public\".\"active_customer_orders\" AS \n SELECT c.id AS customer_id,\n    c.name,\n    c.email,\n    o.id AS order_id,\n    o.total_amount,\n    o.order_date\n   FROM (public.customers c\n     JOIN public.orders o ON ((c.id = o.customer_id)))\n  WHERE ((c.active = true) AND ((o.status)::text = 'completed'::text));\n\nCREATE VIEW \"public\".\"customer_summary\" AS \n SELECT id,\n    name,\n    email,\n    ( SELECT count(*) AS count\n           FROM public.orders\n          WHERE (orders.customer_id = customers.id)) AS order_count\n   FROM public.customers\n  WHERE (active = true);\n\nCREATE MATERIALIZED VIEW \"public\".\"monthly_sales_summary\" AS \n SELECT date_trunc('month'::text, order_date) AS month,\n    count(*) AS order_count,\n    sum(total_amount) AS total_revenue,\n    avg(total_amount) AS avg_order_value,\n    count(DISTINCT customer_id) AS unique_customers\n   FROM public.orders\n  WHERE ((status)::text = 'completed'::text)\n  GROUP BY (date_trunc('month'::text, order_date))\n  ORDER BY (date_trunc('month'::text, order_date))\n  WITH NO DATA;\n\nCREATE UNIQUE INDEX \"idx_monthly_sales_month\" ON \"public\".\"monthly_sales_summary\" (month);\n\nALTER TABLE \"public\".\"orders\"\n    ADD CONSTRAINT \"orders_customer_id_fkey\" FOREIGN KEY (\"customer_id\")\n    REFERENCES \"public\".\"customers\" (\"id\");\n\n"
+  expected: "SET statement_timeout = 0;\nSET lock_timeout = 0;\nSET idle_in_transaction_session_timeout = 0;\nSET client_encoding = 'UTF8';\nSET standard_conforming_strings = on;\nSELECT pg_catalog.set_config('search_path', '', false);\nSET check_function_bodies = false;\nSET xmloption = content;\nSET client_min_messages = warning;\nSET row_security = off;\n\nCOMMENT ON SCHEMA \"public\" IS 'standard public schema';\n\nCREATE SEQUENCE \"public\".\"customers_id_seq\"\n    AS integer\n\tSTART WITH 1\n\tINCREMENT BY 1\n\tMINVALUE 1\n\tMAXVALUE 2147483647\n\tCACHE 1\n\tNO CYCLE;\n\nCREATE SEQUENCE \"public\".\"orders_id_seq\"\n    AS integer\n\tSTART WITH 1\n\tINCREMENT BY 1\n\tMINVALUE 1\n\tMAXVALUE 2147483647\n\tCACHE 1\n\tNO CYCLE;\n\nSET default_tablespace = '';\n\nCREATE TABLE \"public\".\"customers\" (\n    \"id\" integer DEFAULT nextval('public.customers_id_seq'::regclass) NOT NULL,\n    \"name\" character varying(100) NOT NULL,\n    \"email\" character varying(100),\n    \"active\" boolean DEFAULT true,\n    \"created_at\" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP\n);\n\nALTER SEQUENCE \"public\".\"customers_id_seq\" OWNED BY \"public\".\"customers\".\"id\";\n\nALTER TABLE \"public\".\"customers\" OWNER TO \"postgres\";\n\nALTER TABLE ONLY \"public\".\"customers\" ADD CONSTRAINT \"customers_pkey\" PRIMARY KEY (id);\n\nALTER TABLE ONLY \"public\".\"customers\" ADD CONSTRAINT \"customers_email_key\" UNIQUE (email);\n\nCREATE TABLE \"public\".\"orders\" (\n    \"id\" integer DEFAULT nextval('public.orders_id_seq'::regclass) NOT NULL,\n    \"customer_id\" integer,\n    \"total_amount\" numeric(10,2) NOT NULL,\n    \"order_date\" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP,\n    \"status\" character varying(20) DEFAULT 'pending'::character varying\n);\n\nALTER SEQUENCE \"public\".\"orders_id_seq\" OWNED BY \"public\".\"orders\".\"id\";\n\nALTER TABLE \"public\".\"orders\" OWNER TO \"postgres\";\n\nALTER TABLE ONLY \"public\".\"orders\" ADD CONSTRAINT \"orders_pkey\" PRIMARY KEY (id);\n\nCREATE VIEW \"public\".\"active_customer_orders\" AS \n SELECT c.id AS customer_id,\n    c.name,\n    c.email,\n    o.id AS order_id,\n    o.total_amount,\n    o.order_date\n   FROM (public.customers c\n     JOIN public.orders o ON ((c.id = o.customer_id)))\n  WHERE ((c.active = true) AND ((o.status)::text = 'completed'::text));\n\nCREATE VIEW \"public\".\"customer_summary\" AS \n SELECT id,\n    name,\n    email,\n    ( SELECT count(*) AS count\n           FROM public.orders\n          WHERE (orders.customer_id = customers.id)) AS order_count\n   FROM public.customers\n  WHERE (active = true);\n\nCREATE MATERIALIZED VIEW \"public\".\"monthly_sales_summary\" AS \n SELECT date_trunc('month'::text, order_date) AS month,\n    count(*) AS order_count,\n    sum(total_amount) AS total_revenue,\n    avg(total_amount) AS avg_order_value,\n    count(DISTINCT customer_id) AS unique_customers\n   FROM public.orders\n  WHERE ((status)::text = 'completed'::text)\n  GROUP BY (date_trunc('month'::text, order_date))\n  ORDER BY (date_trunc('month'::text, order_date))\n  WITH NO DATA;\n\nCREATE UNIQUE INDEX \"idx_monthly_sales_month\" ON \"public\".\"monthly_sales_summary\" (month);\n\nALTER TABLE \"public\".\"orders\"\n    ADD CONSTRAINT \"orders_customer_id_fkey\" FOREIGN KEY (\"customer_id\")\n    REFERENCES \"public\".\"customers\" (\"id\");\n\n"
 - description: triggers
   metadata: |
     {
@@ -2163,12 +2204,15 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    COMMENT ON SCHEMA "public" IS 'standard public schema';
+
     CREATE SEQUENCE "public"."accounts_id_seq"
         AS integer
     	START WITH 1
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     CREATE SEQUENCE "public"."audit_log_id_seq"
@@ -2177,6 +2221,7 @@
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     SET default_tablespace = '';
@@ -2190,6 +2235,8 @@
 
     ALTER SEQUENCE "public"."accounts_id_seq" OWNED BY "public"."accounts"."id";
 
+    ALTER TABLE "public"."accounts" OWNER TO "postgres";
+
     ALTER TABLE ONLY "public"."accounts" ADD CONSTRAINT "accounts_pkey" PRIMARY KEY (id);
 
     CREATE TABLE "public"."audit_log" (
@@ -2201,6 +2248,8 @@
     );
 
     ALTER SEQUENCE "public"."audit_log_id_seq" OWNED BY "public"."audit_log"."id";
+
+    ALTER TABLE "public"."audit_log" OWNER TO "postgres";
 
     ALTER TABLE ONLY "public"."audit_log" ADD CONSTRAINT "audit_log_pkey" PRIMARY KEY (id);
 
@@ -2461,12 +2510,15 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    COMMENT ON SCHEMA "public" IS 'standard public schema';
+
     CREATE SEQUENCE "public"."categories_id_seq"
         AS integer
     	START WITH 1
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     CREATE SEQUENCE "public"."orders_id_seq"
@@ -2475,6 +2527,7 @@
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     CREATE SEQUENCE "public"."products_id_seq"
@@ -2483,6 +2536,7 @@
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     SET default_tablespace = '';
@@ -2494,6 +2548,8 @@
 
     ALTER SEQUENCE "public"."categories_id_seq" OWNED BY "public"."categories"."id";
 
+    ALTER TABLE "public"."categories" OWNER TO "postgres";
+
     ALTER TABLE ONLY "public"."categories" ADD CONSTRAINT "categories_pkey" PRIMARY KEY (id);
 
     CREATE TABLE "public"."orders" (
@@ -2504,6 +2560,8 @@
 
     ALTER SEQUENCE "public"."orders_id_seq" OWNED BY "public"."orders"."id";
 
+    ALTER TABLE "public"."orders" OWNER TO "postgres";
+
     ALTER TABLE ONLY "public"."orders" ADD CONSTRAINT "orders_pkey" PRIMARY KEY (id);
 
     CREATE TABLE "public"."products" (
@@ -2513,6 +2571,8 @@
     );
 
     ALTER SEQUENCE "public"."products_id_seq" OWNED BY "public"."products"."id";
+
+    ALTER TABLE "public"."products" OWNER TO "postgres";
 
     ALTER TABLE ONLY "public"."products" ADD CONSTRAINT "products_pkey" PRIMARY KEY (id);
 
@@ -2782,12 +2842,15 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    COMMENT ON SCHEMA "public" IS 'standard public schema';
+
     CREATE SEQUENCE "public"."employees_id_seq"
         AS integer
     	START WITH 1
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     CREATE SEQUENCE "public"."projects_id_seq"
@@ -2796,6 +2859,7 @@
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     SET default_tablespace = '';
@@ -2804,6 +2868,8 @@
         "code" character varying(10) NOT NULL,
         "name" character varying(100) NOT NULL
     );
+
+    ALTER TABLE "public"."departments" OWNER TO "postgres";
 
     ALTER TABLE ONLY "public"."departments" ADD CONSTRAINT "departments_pkey" PRIMARY KEY (code);
 
@@ -2816,6 +2882,8 @@
 
     ALTER SEQUENCE "public"."employees_id_seq" OWNED BY "public"."employees"."id";
 
+    ALTER TABLE "public"."employees" OWNER TO "postgres";
+
     ALTER TABLE ONLY "public"."employees" ADD CONSTRAINT "employees_pkey" PRIMARY KEY (id);
 
     CREATE TABLE "public"."projects" (
@@ -2826,6 +2894,8 @@
     );
 
     ALTER SEQUENCE "public"."projects_id_seq" OWNED BY "public"."projects"."id";
+
+    ALTER TABLE "public"."projects" OWNER TO "postgres";
 
     ALTER TABLE ONLY "public"."projects" ADD CONSTRAINT "projects_pkey" PRIMARY KEY (id);
 
@@ -3105,12 +3175,15 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    COMMENT ON SCHEMA "public" IS 'standard public schema';
+
     CREATE SEQUENCE "public"."cities_id_seq"
         AS integer
     	START WITH 1
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     CREATE SEQUENCE "public"."countries_id_seq"
@@ -3119,6 +3192,7 @@
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     CREATE SEQUENCE "public"."states_id_seq"
@@ -3127,6 +3201,7 @@
     	INCREMENT BY 1
     	MINVALUE 1
     	MAXVALUE 2147483647
+    	CACHE 1
     	NO CYCLE;
 
     SET default_tablespace = '';
@@ -3139,6 +3214,8 @@
 
     ALTER SEQUENCE "public"."cities_id_seq" OWNED BY "public"."cities"."id";
 
+    ALTER TABLE "public"."cities" OWNER TO "postgres";
+
     ALTER TABLE ONLY "public"."cities" ADD CONSTRAINT "cities_pkey" PRIMARY KEY (id);
 
     CREATE TABLE "public"."countries" (
@@ -3148,6 +3225,8 @@
     );
 
     ALTER SEQUENCE "public"."countries_id_seq" OWNED BY "public"."countries"."id";
+
+    ALTER TABLE "public"."countries" OWNER TO "postgres";
 
     ALTER TABLE ONLY "public"."countries" ADD CONSTRAINT "countries_pkey" PRIMARY KEY (id);
 
@@ -3160,6 +3239,8 @@
     );
 
     ALTER SEQUENCE "public"."states_id_seq" OWNED BY "public"."states"."id";
+
+    ALTER TABLE "public"."states" OWNER TO "postgres";
 
     ALTER TABLE ONLY "public"."states" ADD CONSTRAINT "states_pkey" PRIMARY KEY (id);
 

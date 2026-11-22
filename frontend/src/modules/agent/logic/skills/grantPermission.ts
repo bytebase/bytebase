@@ -42,6 +42,7 @@ call_api(operationId="RoleService/ListRoles", body={})
 | \`roles/projectDeveloper\` | Development access (create issues, plans) |
 | \`roles/projectReleaser\` | Execute rollouts |
 | \`roles/sqlEditorUser\` | SQL Editor access only |
+| \`roles/sqlEditorExporter\` | Query and export results (\`bb.sql.export\`), without DDL or DML |
 | \`roles/projectViewer\` | Read-only access |
 | \`roles/gitopsServiceAgent\` | GitOps automation |
 
@@ -134,6 +135,8 @@ call_api(operationId="ProjectService/SetIamPolicy", body={
 
 Grant temporary access using CEL conditions.
 
+Replace \`{member-selected-future-instant}\` below with the future ISO 8601 instant, including timezone, explicitly selected by the member. If it is missing or ambiguous, ask the member before preparing the grant. Never invent a duration or expiration.
+
 \`\`\`
 call_api(operationId="ProjectService/SetIamPolicy", body={
   "resource": "projects/{project-id}",
@@ -143,23 +146,23 @@ call_api(operationId="ProjectService/SetIamPolicy", body={
       "role": "roles/projectDeveloper",
       "members": ["user:contractor@example.com"],
       "condition": {
-        "expression": "request.time < timestamp('2024-12-31T23:59:59Z')",
+        "expression": "request.time < timestamp('{member-selected-future-instant}')",
         "title": "Temporary access",
-        "description": "Access expires end of 2024"
+        "description": "Access expires at the member-selected future instant"
       }
     }]
   }
 })
 \`\`\`
 
-**CEL variables for sqlEditorUser:**
+**CEL variables for sqlEditorUser and sqlEditorExporter:**
 - \`resource.database\`: Canonical database name (\`instances/{id}/databases/{name}\` or \`projects/{project}/instances/{id}/databases/{name}\`)
 - \`resource.schema_name\`: Schema name
 - \`resource.table_name\`: Table name
 - \`request.time\`: For expiration
 
 **CEL examples:**
-- Expire at date: \`request.time < timestamp('2024-12-31T23:59:59Z')\`
+- Expire at date: \`request.time < timestamp('{member-selected-future-instant}')\`
 - Limit to database: \`resource.database == "instances/prod/databases/main"\`
 - Limit to project-instance database: \`resource.database == "projects/acme/instances/prod/databases/main"\`
 

@@ -36,7 +36,14 @@ type gcpMetadataDBDialer struct {
 }
 
 func newGCPMetadataDBDialer(ctx context.Context, ipType string) (*gcpMetadataDBDialer, error) {
-	opts := append([]cloudsqlconn.Option{cloudsqlconn.WithIAMAuthN()}, gcpDialIPOptions(ipType)...)
+	opts := append([]cloudsqlconn.Option{
+		cloudsqlconn.WithIAMAuthN(),
+		// cloudsqlconn v1.26.0 turned built-in metrics on by default, which exports
+		// to Cloud Monitoring with the operator's credentials every minute and needs
+		// IAM and billing they may not have granted. Opt out until it is an explicit
+		// choice.
+		cloudsqlconn.WithBuiltInMetrics(false),
+	}, gcpDialIPOptions(ipType)...)
 	dialer, err := cloudsqlconn.NewDialer(ctx, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create GCP Cloud SQL dialer")

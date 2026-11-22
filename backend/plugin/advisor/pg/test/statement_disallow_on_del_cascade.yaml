@@ -42,3 +42,13 @@
         line: 3
         column: 0
       endposition: null
+- statement: ALTER TABLE users ADD CONSTRAINT fk FOREIGN KEY (tenant_id) REFERENCES tenants ON DELETE CASCADE;
+  want:
+    - status: 2
+      code: 213
+      title: STATEMENT_DISALLOW_ON_DEL_CASCADE
+      content: The CASCADE option is not permitted for ON DELETE clauses
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

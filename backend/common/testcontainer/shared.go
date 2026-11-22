@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -16,13 +17,22 @@ import (
 // is per package. Starting lazily is what keeps `go test -run` over the tests
 // that need no engine from paying for a container they never open.
 var (
-	sharedPg       = startOnce(GetPgContainer)
-	sharedTargetPg = startOnce(GetPgContainer)
-	sharedPg17     = startOnce(getPg17Container)
-	sharedTLSPg    = startOnce(getTLSPgContainer)
-	sharedMSSQL    = startOnce(getMSSQLContainer)
-	sharedTiDB     = startOnce(getTiDBContainer)
-	sharedMongo    = startOnce(getMongoDBContainer)
+	sharedPg           = startOnce(GetPgContainer)
+	sharedTargetPg     = startOnce(GetPgContainer)
+	sharedPg17         = startOnce(getPg17Container)
+	sharedTLSPg        = startOnce(getTLSPgContainer)
+	sharedMSSQL        = startOnce(getMSSQLContainer)
+	sharedTiDB         = startOnce(getTiDBContainer)
+	sharedMongo        = startOnce(getMongoDBContainer)
+	sharedOracle       = startOnce(getOracleContainer)
+	sharedMySQL        = startOnce(GetMySQLContainer)
+	sharedTrino        = startOnce(getTrinoContainer)
+	sharedMariaDB      = startOnce(mariaDBStarter("mariadb:11.8.8"))
+	sharedRedisCluster = startOnce(getRedisClusterContainer)
+	sharedCassandra    = startOnce(getCassandraContainer)
+	sharedHive         = startOnce(getHiveContainer)
+	sharedCosmos       = startOnce(getCosmosContainer)
+	sharedClickHouse   = startOnce(getClickHouseContainer)
 
 	startedMu sync.Mutex
 	started   []*Container
@@ -91,7 +101,12 @@ func SharedPg17Container(t testing.TB) *Container { return shared(t, sharedPg17)
 // tests reach with sslmode=verify-full and GetTLSCAPath.
 func SharedTLSPgContainer(t testing.TB) *Container { return shared(t, sharedTLSPg) }
 
+// SharedTrinoContainer is SharedPgContainer for Trino. It carries no *sql.DB,
+// so a test builds its own DSN from GetHost, GetPort and GetUsername.
+func SharedTrinoContainer(t testing.TB) *Container { return shared(t, sharedTrino) }
+
 // SharedMSSQLContainer is SharedPgContainer for SQL Server; tests take a database each.
+// Its certificate is signed by the CA at GetTLSCAPath.
 func SharedMSSQLContainer(t testing.TB) *Container { return shared(t, sharedMSSQL) }
 
 // SharedTiDBContainer is SharedPgContainer for TiDB; tests take a database each
@@ -101,6 +116,44 @@ func SharedTiDBContainer(t testing.TB) *Container { return shared(t, sharedTiDB)
 // SharedMongoDBContainer is SharedPgContainer for MongoDB; tests take a database
 // each with NewMongoDatabase.
 func SharedMongoDBContainer(t testing.TB) *Container { return shared(t, sharedMongo) }
+
+// SharedOracleContainer is SharedPgContainer for Oracle, reached through
+// OracleServiceName; tests take a schema each with NewOracleSchema. Its admin
+// user is a DBA.
+func SharedOracleContainer(t testing.TB) *Container { return shared(t, sharedOracle) }
+
+// SharedMySQLContainer is SharedPgContainer for MySQL 8.0; tests take a
+// database each with NewMySQLDatabase.
+func SharedMySQLContainer(t testing.TB) *Container { return shared(t, sharedMySQL) }
+
+// SharedMariaDBContainer is SharedPgContainer for MariaDB 11.8; tests take a
+// database each with NewMariaDBDatabase.
+func SharedMariaDBContainer(t testing.TB) *Container { return shared(t, sharedMariaDB) }
+
+// SharedRedisClusterContainer is a one-node Redis cluster that owns every hash
+// slot, for the driver paths that need a *redis.ClusterClient.
+func SharedRedisClusterContainer(t testing.TB) *Container { return shared(t, sharedRedisCluster) }
+
+// SharedCassandraContainer is one Cassandra 5 cluster for the package's tests.
+func SharedCassandraContainer(t testing.TB) *Container { return shared(t, sharedCassandra) }
+
+// SharedClickHouseContainer is one ClickHouse server for the package's tests.
+// It carries no *sql.DB: the driver under test is the only client, and the
+// server's own account is "default" with no password.
+func SharedClickHouseContainer(t testing.TB) *Container { return shared(t, sharedClickHouse) }
+
+// SharedHiveContainer is one HiveServer2 for the package's tests, on the image
+// omni pins. Tests share its databases rather than taking one each, because the
+// image's metastore is a single embedded Derby.
+func SharedHiveContainer(t testing.TB) *Container { return shared(t, sharedHive) }
+
+// SharedCosmosContainer is SharedPgContainer for the Cosmos DB emulator. It
+// carries no *sql.DB, so a test builds its endpoint from GetHost and GetPort
+// and authenticates with the well-known emulator key. Tests share its
+// databases rather than taking one each: the emulator hands out a fixed budget
+// of physical partitions, and a container wide enough to span several of them
+// spends a large part of that budget.
+func SharedCosmosContainer(t testing.TB) *Container { return shared(t, sharedCosmos) }
 
 // NewPgDatabase creates an empty database for the test on the shared
 // PostgreSQL container and returns its name with a superuser handle to it.
@@ -115,6 +168,12 @@ func NewPgDatabase(t testing.TB) (string, *sql.DB) {
 func NewPg17Database(t testing.TB) (string, *sql.DB) {
 	t.Helper()
 	return createPgDatabase(t, SharedPg17Container(t))
+}
+
+// NewTLSPgDatabase is NewPgDatabase on the shared TLS PostgreSQL container.
+func NewTLSPgDatabase(t testing.TB) (string, *sql.DB) {
+	t.Helper()
+	return createPgDatabase(t, SharedTLSPgContainer(t))
 }
 
 func createPgDatabase(t testing.TB, container *Container) (string, *sql.DB) {
@@ -132,7 +191,25 @@ func createPgDatabase(t testing.TB, container *Container) (string, *sql.DB) {
 // container and returns the container with the database's name.
 func NewTiDBDatabase(t testing.TB) (*Container, string) {
 	t.Helper()
-	container := SharedTiDBContainer(t)
+	return createMySQLProtocolDatabase(t, SharedTiDBContainer(t))
+}
+
+// NewMySQLDatabase creates an empty database for the test on the shared MySQL
+// container and returns the container with the database's name.
+func NewMySQLDatabase(t testing.TB) (*Container, string) {
+	t.Helper()
+	return createMySQLProtocolDatabase(t, SharedMySQLContainer(t))
+}
+
+// NewMariaDBDatabase creates an empty database for the test on the shared
+// MariaDB container and returns the container with the database's name.
+func NewMariaDBDatabase(t testing.TB) (*Container, string) {
+	t.Helper()
+	return createMySQLProtocolDatabase(t, SharedMariaDBContainer(t))
+}
+
+func createMySQLProtocolDatabase(t testing.TB, container *Container) (*Container, string) {
+	t.Helper()
 	name := newDatabaseName()
 	_, err := container.GetDB().Exec("CREATE DATABASE " + name)
 	require.NoError(t, err)
@@ -145,6 +222,29 @@ func NewTiDBDatabase(t testing.TB) (*Container, string) {
 func NewMongoDatabase(t testing.TB) (*Container, string) {
 	t.Helper()
 	return SharedMongoDBContainer(t), newDatabaseName()
+}
+
+// NewOracleSchema creates an empty schema for the test on the shared Oracle
+// container and returns the container with the schema's name. The schema is a
+// user that cannot sign in, with quota for the objects the admin creates in it.
+//
+// It is granted what it must own rather than what it may do: Oracle checks the
+// schema owner's privileges for some of what the admin creates there, a
+// materialized view among them, which fails with ORA-01031 without this. The
+// grants a session would need are left out, since this user has no way to open
+// one.
+func NewOracleSchema(t testing.TB) (*Container, string) {
+	t.Helper()
+	container := SharedOracleContainer(t)
+	name := strings.ToUpper(newDatabaseName())
+	for _, statement := range []string{
+		fmt.Sprintf("CREATE USER %s NO AUTHENTICATION QUOTA UNLIMITED ON USERS", name),
+		fmt.Sprintf("GRANT CREATE TABLE, CREATE MATERIALIZED VIEW TO %s", name),
+	} {
+		_, err := container.GetDB().Exec(statement)
+		require.NoError(t, err)
+	}
+	return container, name
 }
 
 // newDatabaseName is unique across the test binary, so tests that run in

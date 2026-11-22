@@ -1,10 +1,10 @@
 import type { TFunction } from "i18next";
-import { ExternalLink, Loader2, Package } from "lucide-react";
+import { Loader2, Package } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
-import { RouterLink } from "@/components/RouterLink";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { State, VCSType } from "@/types/proto-es/v1/common_pb";
@@ -25,7 +25,6 @@ export function ReleaseInfoCard({
   release?: Release;
   releaseName: string;
 }>) {
-  const { t } = useTranslation();
   // Treat the release as missing when it's absent or its name doesn't parse
   // as a real release resource name.
   const effectiveRelease =
@@ -55,17 +54,6 @@ export function ReleaseInfoCard({
             {releaseTitle}
           </span>
         </div>
-        {effectiveRelease && (
-          <RouterLink
-            to={`/${effectiveRelease.name}`}
-            className="inline-flex items-center gap-x-1 text-sm text-accent hover:underline"
-            rel="noreferrer"
-            target="_blank"
-          >
-            <span>{t("common.view")}</span>
-            <ExternalLink className="h-4 w-4" />
-          </RouterLink>
-        )}
       </div>
       {body}
     </div>
@@ -95,7 +83,12 @@ function NotFoundBlock() {
 
 function ReleaseBlock({ release }: Readonly<{ release: Release }>) {
   const { t } = useTranslation();
-  const displayedFiles = release.files.slice(0, MAX_DISPLAYED_RELEASE_FILES);
+  const [showAllFiles, setShowAllFiles] = useState(false);
+  const isTruncated =
+    !showAllFiles && release.files.length > MAX_DISPLAYED_RELEASE_FILES;
+  const displayedFiles = isTruncated
+    ? release.files.slice(0, MAX_DISPLAYED_RELEASE_FILES)
+    : release.files;
 
   return (
     <div className="rounded-sm border border-control-border bg-control-bg/50 px-4 py-3">
@@ -106,15 +99,16 @@ function ReleaseBlock({ release }: Readonly<{ release: Release }>) {
               <div className="text-sm font-medium text-control">
                 {t("release.files")} ({release.files.length})
               </div>
-              {release.files.length > MAX_DISPLAYED_RELEASE_FILES && (
-                <RouterLink
-                  to={`/${release.name}`}
-                  className="text-sm text-accent hover:underline"
-                  rel="noreferrer"
-                  target="_blank"
+              {isTruncated && (
+                <Button
+                  type="button"
+                  appearance="link"
+                  size="sm"
+                  className="h-auto p-0 text-accent"
+                  onClick={() => setShowAllFiles(true)}
                 >
                   {t("release.view-all-files")}
-                </RouterLink>
+                </Button>
               )}
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
@@ -132,7 +126,7 @@ function ReleaseBlock({ release }: Readonly<{ release: Release }>) {
                   </div>
                 </div>
               ))}
-              {release.files.length > MAX_DISPLAYED_RELEASE_FILES && (
+              {isTruncated && (
                 <div className="flex items-center justify-center rounded-sm border border-dashed border-control-border bg-background p-2 text-xs text-control-light">
                   {t("release.and-n-more-files", {
                     count: release.files.length - MAX_DISPLAYED_RELEASE_FILES,

@@ -1,0 +1,461 @@
+package v1
+
+import (
+	"bytes"
+	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
+	"io"
+	"regexp"
+	"strings"
+	"testing"
+	"time"
+
+	"connectrpc.com/connect"
+	"github.com/alexmullins/zip"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/component/export"
+	"github.com/bytebase/bytebase/backend/enterprise"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/sharepoint"
+	"github.com/bytebase/bytebase/backend/store"
+)
+
+func TestDecideExportDestination(t *testing.T) {
+	t.Parallel()
+	configured := &storepb.SharePointSetting{TenantId: "tenant", ClientId: "client", ClientSecret: "secret"}
+	sharePointReady := func(in exportDestinationInput) exportDestinationInput {
+		in.destination = v1pb.ExportDestination_SHAREPOINT
+		in.sharePointFeatureEnabled = true
+		in.destinationURL = "https://contoso.sharepoint.com/sites/data/Exports"
+		in.sharePointSetting = configured
+		return in
+	}
+	for _, tc := range []struct {
+		name       string
+		in         exportDestinationInput
+		want       v1pb.ExportDestination
+		wantCode   connect.Code
+		wantReason string
+	}{
+		{name: "unspecified is download", in: exportDestinationInput{}, want: v1pb.ExportDestination_DOWNLOAD},
+		{name: "download", in: exportDestinationInput{destination: v1pb.ExportDestination_DOWNLOAD, password: "pw"}, want: v1pb.ExportDestination_DOWNLOAD},
+		{name: "sharepoint", in: sharePointReady(exportDestinationInput{}), want: v1pb.ExportDestination_SHAREPOINT},
+		{
+			name: "sharepoint without the feature",
+			in: func() exportDestinationInput {
+				in := sharePointReady(exportDestinationInput{})
+				in.sharePointFeatureEnabled = false
+				return in
+			}(),
+			wantCode: connect.CodePermissionDenied,
+		},
+		{
+			name: "sharepoint with password",
+			in: func() exportDestinationInput {
+				in := sharePointReady(exportDestinationInput{})
+				in.password = "pw"
+				return in
+			}(),
+			wantCode: connect.CodeInvalidArgument,
+		},
+		{
+			name: "sharepoint without destination",
+			in: func() exportDestinationInput {
+				in := sharePointReady(exportDestinationInput{})
+				in.destinationURL = ""
+				return in
+			}(),
+			wantCode:   connect.CodeFailedPrecondition,
+			wantReason: sharePointReasonNotConfigured,
+		},
+		{
+			name: "sharepoint without credentials",
+			in: func() exportDestinationInput {
+				in := sharePointReady(exportDestinationInput{})
+				in.sharePointSetting = nil
+				return in
+			}(),
+			wantCode:   connect.CodeFailedPrecondition,
+			wantReason: sharePointReasonNotConfigured,
+		},
+		{
+			name: "sharepoint without client secret",
+			in: func() exportDestinationInput {
+				in := sharePointReady(exportDestinationInput{})
+				in.sharePointSetting = &storepb.SharePointSetting{TenantId: "tenant", ClientId: "client"}
+				return in
+			}(),
+			wantCode:   connect.CodeFailedPrecondition,
+			wantReason: sharePointReasonNotConfigured,
+		},
+		{name: "unknown destination", in: exportDestinationInput{destination: v1pb.ExportDestination(99)}, wantCode: connect.CodeInvalidArgument},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := decideExportDestination(tc.in)
+			if tc.wantCode != 0 {
+				require.Equal(t, tc.wantCode, connect.CodeOf(err))
+				requireSharePointErrorInfo(t, err, tc.wantReason, "")
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestSanitizeSharePointName(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name      string
+		input     string
+		maxLength int
+		want      string
+	}{
+		{name: "plain", input: "alice@example.com", maxLength: 64, want: "alice@example.com"},
+		{name: "reserved characters", input: "a\"b*c:d<e>f?g/h\\i|j#k%l", maxLength: 64, want: "a_b_c_d_e_f_g_h_i_j_k_l"},
+		{name: "control characters", input: "a\tb\nc", maxLength: 64, want: "a_b_c"},
+		{name: "leading and trailing spaces and dots", input: " ..db.. ", maxLength: 64, want: "db"},
+		{name: "capped in runes", input: "数据库数据库", maxLength: 3, want: "数据库"},
+		{name: "cap exposes trailing dot", input: "abc.def", maxLength: 4, want: "abc"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tc.want, sanitizeSharePointName(tc.input, tc.maxLength))
+		})
+	}
+}
+
+func TestSharePointExportFolderName(t *testing.T) {
+	t.Parallel()
+	exportTime := time.Date(2026, 10, 22, 9, 5, 7, 0, time.FixedZone("CST", 8*60*60))
+	require.Equal(t,
+		"20261022T010507Z-alice@example.com-hr_prod-0a1b2c3d",
+		sharePointExportFolderName(exportTime, "alice@example.com", "hr/prod", "0a1b2c3d"),
+	)
+
+	long := sharePointExportFolderName(exportTime, strings.Repeat("e", 300)+"@example.com", strings.Repeat("d", 300), "0a1b2c3d")
+	require.LessOrEqual(t, len([]rune(long)), sharePointFolderNameMaxLength)
+	require.True(t, strings.HasSuffix(long, "-0a1b2c3d"), long)
+
+	id, err := newExportID()
+	require.NoError(t, err)
+	require.Regexp(t, regexp.MustCompile("^[0-9a-f]{8}$"), id)
+}
+
+// TestZipExportFilesMatchesStreamedZip compares the download zip with the one the
+// export wrote before files were built first: entries were streamed directly
+// into the zip under <instance>/<database>/.
+func TestZipExportFilesMatchesStreamedZip(t *testing.T) {
+	t.Parallel()
+	database := &store.DatabaseMessage{InstanceID: "prod-instance", DatabaseName: "hr"}
+	files := []sharepoint.File{
+		{Name: "statement-1.sql", Content: []byte("SELECT * FROM employee")},
+		{Name: "statement-1.result.csv", Content: []byte(strings.Repeat("1,alice\n2,bob\n", 5000))},
+		{Name: "statement-2.sql", Content: []byte("SELECT 1")},
+		{Name: "statement-2.result.csv", Content: []byte("1\n")},
+	}
+	for _, password := range []string{"", "secret"} {
+		t.Run("password="+password, func(t *testing.T) {
+			t.Parallel()
+			got, err := zipExportFiles(database, files, password)
+			require.NoError(t, err)
+			want := streamedZip(t, database, files, password)
+
+			gotEntries, wantEntries := readZip(t, got, password), readZip(t, want, password)
+			require.Equal(t, []string{
+				"prod-instance/hr/statement-1.sql",
+				"prod-instance/hr/statement-1.result.csv",
+				"prod-instance/hr/statement-2.sql",
+				"prod-instance/hr/statement-2.result.csv",
+			}, zipEntryNames(gotEntries))
+			require.Equal(t, wantEntries, gotEntries)
+			if password == "" {
+				require.Equal(t, len(want), len(got))
+			}
+		})
+	}
+}
+
+type zipEntry struct {
+	name             string
+	method           uint16
+	encrypted        bool
+	crc32            uint32
+	compressedSize   uint64
+	uncompressedSize uint64
+	content          []byte
+}
+
+func zipEntryNames(entries []zipEntry) []string {
+	var names []string
+	for _, e := range entries {
+		names = append(names, e.name)
+	}
+	return names
+}
+
+func streamedZip(t *testing.T, database *store.DatabaseMessage, files []sharepoint.File, password string) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	zipw := zip.NewWriter(&buf)
+	for i, file := range files {
+		name := database.InstanceID + "/" + database.DatabaseName + "/" + file.Name
+		if i%2 == 0 {
+			require.NoError(t, export.WriteZipEntry(zipw, name, file.Content, password))
+			continue
+		}
+		w, err := export.CreateZipWriter(zipw, name, password)
+		require.NoError(t, err)
+		for content := file.Content; len(content) > 0; {
+			n := min(len(content), 4096)
+			_, err := w.Write(content[:n])
+			require.NoError(t, err)
+			content = content[n:]
+		}
+	}
+	require.NoError(t, zipw.Close())
+	return buf.Bytes()
+}
+
+func readZip(t *testing.T, content []byte, password string) []zipEntry {
+	t.Helper()
+	r, err := zip.NewReader(bytes.NewReader(content), int64(len(content)))
+	require.NoError(t, err)
+	var entries []zipEntry
+	for _, f := range r.File {
+		if f.IsEncrypted() {
+			f.SetPassword(password)
+		}
+		rc, err := f.Open()
+		require.NoError(t, err)
+		data, err := io.ReadAll(rc)
+		require.NoError(t, err)
+		require.NoError(t, rc.Close())
+		entries = append(entries, zipEntry{
+			name:             f.Name,
+			method:           f.Method,
+			encrypted:        f.IsEncrypted(),
+			crc32:            f.CRC32,
+			compressedSize:   f.CompressedSize64,
+			uncompressedSize: f.UncompressedSize64,
+			content:          data,
+		})
+	}
+	return entries
+}
+
+type exportSharePointClient struct {
+	location   *sharepoint.Location
+	resolveErr error
+	uploadErr  error
+
+	resolvedURL    string
+	uploadedTo     *sharepoint.Location
+	uploadedFolder string
+	uploadedFiles  []sharepoint.File
+}
+
+func (c *exportSharePointClient) Resolve(_ context.Context, canonicalURL string) (*sharepoint.Location, error) {
+	c.resolvedURL = canonicalURL
+	if c.resolveErr != nil {
+		return nil, c.resolveErr
+	}
+	return c.location, nil
+}
+
+func (c *exportSharePointClient) ResolveRecent(ctx context.Context, canonicalURL string) (*sharepoint.Location, error) {
+	return c.Resolve(ctx, canonicalURL)
+}
+
+func (c *exportSharePointClient) Upload(_ context.Context, loc *sharepoint.Location, folderName string, files []sharepoint.File) (*sharepoint.Folder, error) {
+	c.uploadedTo, c.uploadedFolder, c.uploadedFiles = loc, folderName, files
+	if c.uploadErr != nil {
+		return nil, c.uploadErr
+	}
+	return &sharepoint.Folder{Name: folderName, WebURL: loc.WebURL + "/" + folderName}, nil
+}
+
+func TestSharePointExportUploadsToCapturedTarget(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := &exportSharePointClient{location: &sharepoint.Location{DriveID: "drive", ItemID: "item", WebURL: "https://contoso.sharepoint.com/sites/data/Exports"}}
+	var gotConfig sharepoint.Config
+	newClient := func(cfg sharepoint.Config) (sharepoint.Client, error) {
+		gotConfig = cfg
+		return client, nil
+	}
+	setting := &storepb.SharePointSetting{TenantId: "tenant", ClientId: "client", ClientSecret: "secret"}
+	target, err := resolveSharePointExportTarget(ctx, newClient, setting, "https://contoso.sharepoint.com/sites/data/Exports")
+	require.NoError(t, err)
+	require.Equal(t, sharepoint.Config{TenantID: "tenant", ClientID: "client", ClientSecret: "secret"}, gotConfig)
+	require.Equal(t, "https://contoso.sharepoint.com/sites/data/Exports", client.resolvedURL)
+
+	files := []sharepoint.File{
+		{Name: "statement-1.sql", Content: []byte("SELECT 1")},
+		{Name: "statement-1.result.csv", Content: []byte("1\n")},
+	}
+	user := &store.UserMessage{Email: "alice@example.com"}
+	database := &store.DatabaseMessage{InstanceID: "prod", DatabaseName: "hr"}
+	exportTime := time.Date(2026, 10, 22, 1, 5, 7, 0, time.UTC)
+	resp, err := sendExport(ctx, target, user, database, files, &v1pb.ExportRequest{Format: v1pb.ExportFormat_CSV}, exportTime)
+	require.NoError(t, err)
+	require.Empty(t, resp.Content)
+	require.Equal(t, "https://contoso.sharepoint.com/sites/data/Exports/"+client.uploadedFolder, resp.Uri)
+	require.Same(t, client.location, client.uploadedTo)
+	require.Regexp(t, regexp.MustCompile("^20261022T010507Z-alice@example.com-hr-[0-9a-f]{8}$"), client.uploadedFolder)
+	require.Equal(t, files, client.uploadedFiles)
+}
+
+// nothingUploadedError stands in for the SharePoint client's marking of an
+// upload that failed before any file was uploaded.
+type nothingUploadedError struct{ error }
+
+func (e nothingUploadedError) Unwrap() error      { return e.error }
+func (nothingUploadedError) Is(target error) bool { return target == sharepoint.ErrNothingUploaded }
+
+// requireSharePointErrorInfo asserts err's ErrorInfo reason and folder, or that
+// it has no ErrorInfo when wantReason is empty.
+func requireSharePointErrorInfo(t *testing.T, err error, wantReason, wantFolder string) {
+	t.Helper()
+	var connectErr *connect.Error
+	require.ErrorAs(t, err, &connectErr)
+	var infos []*errdetails.ErrorInfo
+	for _, detail := range connectErr.Details() {
+		value, valueErr := detail.Value()
+		require.NoError(t, valueErr)
+		if info, ok := value.(*errdetails.ErrorInfo); ok {
+			infos = append(infos, info)
+		}
+	}
+	if wantReason == "" {
+		require.Empty(t, infos)
+		return
+	}
+	require.Len(t, infos, 1)
+	require.Equal(t, sharePointErrorDomain, infos[0].GetDomain())
+	require.Equal(t, wantReason, infos[0].GetReason())
+	require.Equal(t, wantFolder, infos[0].GetMetadata()["folder"])
+}
+
+func TestSharePointExportErrors(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	setting := &storepb.SharePointSetting{TenantId: "tenant", ClientId: "client", ClientSecret: "secret"}
+	const folder = "20261022T010507Z-alice@example.com-hr-0a1b2c3d"
+	for _, tc := range []struct {
+		name         string
+		resolveErr   error
+		uploadErr    error
+		wantCode     connect.Code
+		wantReason   string
+		wantFolder   string
+		wantInMsg    []string
+		wantNotInMsg []string
+	}{
+		{name: "resolve not found", resolveErr: errors.Wrap(sharepoint.ErrNotFoundOrNoAccess, "graph"), wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonDestinationNotFound},
+		{name: "resolve credential", resolveErr: sharepoint.ErrCredential, wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonCredentialRejected},
+		{name: "resolve file", resolveErr: errors.Wrap(sharepoint.ErrNotFolder, "https://contoso.sharepoint.com/sites/data/Exports"), wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonDestinationNotFolder},
+		{name: "resolve other", resolveErr: errors.New("boom"), wantCode: connect.CodeInternal, wantReason: sharePointReasonRequestFailed},
+		{name: "upload not found", uploadErr: sharepoint.ErrNotFoundOrNoAccess, wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonDestinationNotFound, wantFolder: folder, wantInMsg: []string{"may already exist", folder}},
+		{name: "folder not created", uploadErr: nothingUploadedError{sharepoint.ErrNotFoundOrNoAccess}, wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonDestinationNotFound, wantInMsg: []string{"nothing was uploaded"}, wantNotInMsg: []string{"may already exist", folder}},
+		{name: "upload credential", uploadErr: errors.Wrap(sharepoint.ErrCredential, "token"), wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonCredentialRejected, wantFolder: folder, wantInMsg: []string{"may already exist", folder}},
+		{name: "upload unconfirmed", uploadErr: errors.Wrap(sharepoint.ErrUnconfirmed, "upload"), wantCode: connect.CodeUnavailable, wantReason: sharePointReasonUploadUnconfirmed, wantFolder: folder, wantInMsg: []string{"could not be confirmed", folder}},
+		{name: "storage full after some files", uploadErr: errors.Wrap(sharepoint.ErrStorageFull, "Microsoft Graph returned HTTP 507 quotaLimitReached"), wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonStorageFull, wantFolder: folder, wantInMsg: []string{"may already exist", "quotaLimitReached", folder}},
+		{name: "storage full before any file", uploadErr: nothingUploadedError{sharepoint.ErrStorageFull}, wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonStorageFull, wantInMsg: []string{"nothing was uploaded"}, wantNotInMsg: []string{folder}},
+		{name: "upload failed after some files", uploadErr: errors.New("upload statement-1.result.csv: 500 generalException"), wantCode: connect.CodeInternal, wantReason: sharePointReasonRequestFailed, wantFolder: folder, wantInMsg: []string{"the upload to SharePoint failed", "may already exist", "generalException", folder}},
+		{name: "canceled after some files", uploadErr: context.Canceled, wantCode: connect.CodeCanceled, wantInMsg: []string{"may already exist", folder}},
+		{name: "canceled before any file", uploadErr: nothingUploadedError{context.Canceled}, wantCode: connect.CodeCanceled, wantInMsg: []string{"nothing was uploaded"}, wantNotInMsg: []string{"may already exist"}},
+		{name: "canceled with a file unconfirmed", uploadErr: errors.Wrap(sharepoint.ErrUnconfirmed, "file \"a.sql\""), wantCode: connect.CodeUnavailable, wantReason: sharePointReasonUploadUnconfirmed, wantFolder: folder, wantInMsg: []string{"could not be confirmed"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			client := &exportSharePointClient{location: &sharepoint.Location{WebURL: "https://contoso.sharepoint.com/sites/data/Exports"}, resolveErr: tc.resolveErr, uploadErr: tc.uploadErr}
+			newClient := func(sharepoint.Config) (sharepoint.Client, error) { return client, nil }
+			target, err := resolveSharePointExportTarget(ctx, newClient, setting, "https://contoso.sharepoint.com/sites/data/Exports")
+			if tc.resolveErr != nil {
+				require.Equal(t, tc.wantCode, connect.CodeOf(err))
+				requireSharePointErrorInfo(t, err, tc.wantReason, "")
+				return
+			}
+			require.NoError(t, err)
+			_, err = uploadSharePointExport(ctx, target, folder, nil)
+			require.Equal(t, tc.wantCode, connect.CodeOf(err))
+			requireSharePointErrorInfo(t, err, tc.wantReason, tc.wantFolder)
+			for _, want := range tc.wantInMsg {
+				require.Contains(t, err.Error(), want)
+			}
+			for _, unwanted := range tc.wantNotInMsg {
+				require.NotContains(t, err.Error(), unwanted)
+			}
+		})
+	}
+}
+
+// newEnterpriseLicenseService returns a license service under which the
+// default workspace holds a valid ENTERPRISE license.
+func newEnterpriseLicenseService(ctx context.Context, t *testing.T, stores *store.Store) *enterprise.LicenseService {
+	t.Helper()
+	const workspaceID = "default"
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	privateKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, string(privateKeyPEM))
+	require.NoError(t, err)
+	setLicenseServicePublicKey(t, licenseService, &privateKey.PublicKey)
+	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{Name: storepb.SettingName_SYSTEM, Workspace: workspaceID, Value: &storepb.SystemSetting{}})
+	require.NoError(t, err)
+	license, err := licenseService.CreateLicense(&enterprise.LicenseParams{Plan: v1pb.PlanType_ENTERPRISE.String(), Seats: 10, Instances: 10, WorkspaceID: workspaceID})
+	require.NoError(t, err)
+	require.NoError(t, licenseService.StoreLicense(ctx, workspaceID, license))
+	require.NoError(t, licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_SHAREPOINT_EXPORT))
+	return licenseService
+}
+
+const exportFixtureSharePointURL = "https://contoso.sharepoint.com/sites/data/Exports"
+
+// newExportDestinationFixture seeds workspace SharePoint credentials and a
+// project whose SharePoint folder is exportFixtureSharePointURL.
+func newExportDestinationFixture(t *testing.T) (context.Context, *store.Store, *store.DatabaseMessage) {
+	t.Helper()
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	db, stores, _ := testcontainer.NewMetadataDB(t)
+	projectSetting := &storepb.Project{
+		ExportSetting: &storepb.Project_ExportSetting{Sharepoint: &storepb.Project_SharePointDestination{Url: exportFixtureSharePointURL}},
+	}
+	projectSettingJSON, err := protojson.Marshal(projectSetting)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, `
+    INSERT INTO workspace (resource_id) VALUES ('default');
+    INSERT INTO setting (name, workspace, value)
+    VALUES ('EXPORT', 'default', '{"sharepoint":{"tenantId":"tenant","clientId":"client","clientSecret":"secret"}}');`)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, `INSERT INTO project (resource_id, workspace, name, setting) VALUES ('export-project', 'default', 'Export Project', $1)`, string(projectSettingJSON))
+	require.NoError(t, err)
+	return ctx, stores, &store.DatabaseMessage{ProjectID: "export-project", InstanceID: "prod", DatabaseName: "hr"}
+}
+
+func TestPrepareExportDestinationResolvesSharePoint(t *testing.T) {
+	t.Parallel()
+	ctx, stores, database := newExportDestinationFixture(t)
+	licenseService := newEnterpriseLicenseService(ctx, t, stores)
+	client := &exportSharePointClient{location: &sharepoint.Location{DriveID: "drive", ItemID: "item"}}
+	service := &SQLService{store: stores, licenseService: licenseService, newSharePointClient: func(cfg sharepoint.Config) (sharepoint.Client, error) {
+		require.Equal(t, sharepoint.Config{TenantID: "tenant", ClientID: "client", ClientSecret: "secret"}, cfg)
+		return client, nil
+	}}
+	target, err := service.prepareExportDestination(ctx, &v1pb.ExportRequest{Destination: v1pb.ExportDestination_SHAREPOINT}, database)
+	require.NoError(t, err)
+	require.Same(t, client.location, target.location)
+	require.Equal(t, exportFixtureSharePointURL, client.resolvedURL)
+}

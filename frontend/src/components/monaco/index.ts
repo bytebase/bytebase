@@ -6,3 +6,4 @@ export * from "./ReadonlyDiffMonaco";
 export * from "./types";
 export * from "./utils";
 export * from "./MonacoViewZone";
+export * from "./viewAnchor";

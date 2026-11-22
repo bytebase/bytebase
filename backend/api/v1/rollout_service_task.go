@@ -3,12 +3,15 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -245,6 +248,165 @@ func getTaskCreatesFromChangeDatabaseConfig(
 	}
 
 	return tasks, nil
+}
+
+// releaseGetter is the store read that resolves a task's release.
+type releaseGetter interface {
+	GetRelease(ctx context.Context, find *store.FindReleaseMessage) (*store.ReleaseMessage, error)
+}
+
+// attachReleaseStates fills the stored release state (D4) of the
+// release-backed tasks about to be created, after the stage filter, so a
+// promotion reads only its stage's targets. A failed read is logged and leaves
+// those tasks without a state: the state is a preview, and rollout creation
+// does not fail for it.
+func attachReleaseStates(ctx context.Context, releases releaseGetter, lister pendingVersionLister, tasks []*store.TaskMessage) {
+	var names []string
+	tasksOf := map[string][]*store.TaskMessage{}
+	for _, task := range tasks {
+		name := task.Payload.GetRelease()
+		if name == "" || task.DatabaseName == nil {
+			continue
+		}
+		if _, ok := tasksOf[name]; !ok {
+			names = append(names, name)
+		}
+		tasksOf[name] = append(tasksOf[name], task)
+	}
+	for _, name := range names {
+		if err := attachReleaseState(ctx, releases, lister, name, tasksOf[name]); err != nil {
+			slog.WarnContext(ctx, "failed to compute the release state; creating the tasks without it",
+				slog.String("release", name), log.BBError(err))
+		}
+	}
+}
+
+func attachReleaseState(ctx context.Context, releases releaseGetter, lister pendingVersionLister, releaseName string, tasks []*store.TaskMessage) error {
+	release, err := getVersionedRelease(ctx, releases, releaseName)
+	if err != nil || release == nil {
+		return err
+	}
+	databases := make([]*store.DatabaseMessage, 0, len(tasks))
+	for _, task := range tasks {
+		databases = append(databases, &store.DatabaseMessage{InstanceID: task.InstanceID, DatabaseName: *task.DatabaseName})
+	}
+	states, err := computeReleaseStates(ctx, lister, release, databases)
+	if err != nil {
+		return err
+	}
+	for i, task := range tasks {
+		task.Payload.ReleaseState = states[releaseStateKey(databases[i])]
+	}
+	return nil
+}
+
+// getVersionedRelease returns the release, or nil when it has no state to
+// store: a declarative run computes its diff when it runs, and a deleted
+// release fails its run.
+func getVersionedRelease(ctx context.Context, s releaseGetter, releaseName string) (*store.ReleaseMessage, error) {
+	projectID, releaseID, err := common.GetProjectReleaseID(releaseName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse release name %q", releaseName)
+	}
+	release, err := s.GetRelease(ctx, &store.FindReleaseMessage{ProjectID: &projectID, ReleaseID: &releaseID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get release %q", releaseName)
+	}
+	if release == nil {
+		// Deleted: the task is still created and its run reports the release
+		// as missing.
+		return nil, nil
+	}
+	if release.Payload.GetType() != storepb.SchemaChangeType_VERSIONED {
+		return nil, nil
+	}
+	return release, nil
+}
+
+// pendingVersionLister is the one store read the release state needs.
+type pendingVersionLister interface {
+	ListPendingReleaseVersions(ctx context.Context, instanceID string, databaseNames, versions []string) ([]*store.PendingReleaseVersion, error)
+}
+
+func releaseStateKey(database *store.DatabaseMessage) string {
+	return database.InstanceID + "/" + database.DatabaseName
+}
+
+// computeReleaseStates applies the executor's rule (runVersionedRelease) to
+// every target: a version is applied when the database has a live VERSIONED
+// revision with it. One query per instance returns only the pending pairs, so
+// a large database group costs one round trip per instance and rows for what
+// each database lacks. The states are keyed by releaseStateKey.
+func computeReleaseStates(ctx context.Context, lister pendingVersionLister, release *store.ReleaseMessage, databases []*store.DatabaseMessage) (map[string]*storepb.Task_ReleaseState, error) {
+	versions := make([]string, 0, len(release.Payload.GetFiles()))
+	for _, file := range release.Payload.GetFiles() {
+		versions = append(versions, file.Version)
+	}
+
+	var instances []string
+	namesOf := map[string][]string{}
+	seen := map[string]bool{}
+	for _, database := range databases {
+		key := releaseStateKey(database)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		if _, ok := namesOf[database.InstanceID]; !ok {
+			instances = append(instances, database.InstanceID)
+		}
+		namesOf[database.InstanceID] = append(namesOf[database.InstanceID], database.DatabaseName)
+	}
+
+	pendingOf := map[string]map[string]*store.PendingReleaseVersion{}
+	for _, instanceID := range instances {
+		pending, err := lister.ListPendingReleaseVersions(ctx, instanceID, namesOf[instanceID], versions)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list pending release versions on instance %q", instanceID)
+		}
+		for _, p := range pending {
+			key := instanceID + "/" + p.DatabaseName
+			if pendingOf[key] == nil {
+				pendingOf[key] = map[string]*store.PendingReleaseVersion{}
+			}
+			pendingOf[key][p.Version] = p
+		}
+	}
+
+	computeTime := timestamppb.Now()
+	states := map[string]*storepb.Task_ReleaseState{}
+	for key := range seen {
+		states[key] = releaseStateOf(versions, pendingOf[key], computeTime)
+	}
+	return states, nil
+}
+
+// releaseStateOf builds a task's state from the versions its database lacks,
+// keyed by version.
+func releaseStateOf(versions []string, pending map[string]*store.PendingReleaseVersion, computeTime *timestamppb.Timestamp) *storepb.Task_ReleaseState {
+	state := &storepb.Task_ReleaseState{ComputeTime: computeTime}
+	var open *storepb.Task_ReleaseState_Range
+	for i, version := range versions {
+		p, ok := pending[version]
+		if !ok {
+			state.AppliedCount++
+			open = nil
+			continue
+		}
+		if open == nil {
+			open = &storepb.Task_ReleaseState_Range{Start: int32(i)}
+			state.PendingRanges = append(state.PendingRanges, open)
+		}
+		open.End = int32(i + 1)
+		if p.DeletedAt != nil {
+			state.DeletedRevisions = append(state.DeletedRevisions, &storepb.Task_ReleaseState_DeletedRevision{
+				Version:    version,
+				DeleteTime: timestamppb.New(*p.DeletedAt),
+				Deleter:    p.Deleter,
+			})
+		}
+	}
+	return state
 }
 
 func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets []string) ([]*store.DatabaseMessage, error) {

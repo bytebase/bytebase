@@ -1,0 +1,67 @@
+{
+  "query_block": {
+    "select_id": 1,
+    "cost_info": {
+      "query_cost": "5058.65"
+    },
+    "table": {
+      "table_name": "o",
+      "access_type": "ALL",
+      "rows_examined_per_scan": 50184,
+      "rows_produced_per_join": 50184,
+      "filtered": "100.00",
+      "cost_info": {
+        "read_cost": "40.25",
+        "eval_cost": "5018.40",
+        "prefix_cost": "5058.65",
+        "data_read_per_join": "2M"
+      },
+      "used_columns": ["id", "customer_id", "total", "status"],
+      "attached_condition": "<in_optimizer>(`qp`.`o`.`customer_id`,`qp`.`o`.`customer_id` in ( <materialize> (/* select#2 */ select `qp`.`c`.`id` from `qp`.`customers` `c` where (`qp`.`c`.`tier` = 'gold') group by `qp`.`c`.`id` having (count(0) > 0) ), <primary_index_lookup>(`qp`.`o`.`customer_id` in <temporary table> on <auto_distinct_key> where ((`qp`.`o`.`customer_id` = `<materialized_subquery>`.`id`)))))",
+      "attached_subqueries": [
+        {
+          "table": {
+            "table_name": "<materialized_subquery>",
+            "access_type": "eq_ref",
+            "key": "<auto_key>",
+            "key_length": "4",
+            "rows_examined_per_scan": 1,
+            "materialized_from_subquery": {
+              "using_temporary_table": true,
+              "dependent": true,
+              "cacheable": false,
+              "query_block": {
+                "select_id": 2,
+                "cost_info": {
+                  "query_cost": "503.25"
+                },
+                "grouping_operation": {
+                  "using_filesort": false,
+                  "table": {
+                    "table_name": "c",
+                    "access_type": "index",
+                    "possible_keys": ["PRIMARY"],
+                    "key": "PRIMARY",
+                    "used_key_parts": ["id"],
+                    "key_length": "4",
+                    "rows_examined_per_scan": 5000,
+                    "rows_produced_per_join": 500,
+                    "filtered": "10.00",
+                    "cost_info": {
+                      "read_cost": "453.25",
+                      "eval_cost": "50.00",
+                      "prefix_cost": "503.25",
+                      "data_read_per_join": "23K"
+                    },
+                    "used_columns": ["id", "tier"],
+                    "attached_condition": "(`qp`.`c`.`tier` = 'gold')"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

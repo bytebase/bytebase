@@ -558,12 +558,15 @@ describe("DetailPanel", () => {
   });
 
   test("shows every column and value for a relational table row", () => {
+    const expressionColumnName =
+      "JSON_SET(document, '$.name', 'sample_value_with_a_long_expression_derived_column_label_that_must_not_obscure_the_result')";
     const rowColumns: ResultTableColumn[] = [
       { id: "id", name: "id", columnType: "TEXT" },
       { id: "name-1", name: "name", columnType: "TEXT" },
       { id: "name-2", name: "name", columnType: "TEXT" },
       { id: "environment", name: "environment", columnType: "TEXT" },
       { id: "optional", name: "optional", columnType: "TEXT" },
+      { id: "expression", name: expressionColumnName, columnType: "JSON" },
     ];
     const rowRows: ResultTableRow[] = [
       {
@@ -577,6 +580,7 @@ describe("DetailPanel", () => {
               kind: { case: "nullValue", value: NullValue.NULL_VALUE },
             }),
             create(RowValueSchema),
+            textValue('{"name":"sample"}'),
           ],
         }),
       },
@@ -598,6 +602,8 @@ describe("DetailPanel", () => {
     expect(contentRegion.textContent).toContain("name: Lovelace");
     expect(contentRegion.textContent).toContain("environment: NULL");
     expect(contentRegion.textContent).toContain("optional: UNSET");
+    expect(contentRegion.querySelectorAll("dt")[5]).toHaveTextContent(expressionColumnName);
+    expect(contentRegion.querySelectorAll("dd")[5]).toHaveTextContent('{"name":"sample"}');
     const placeholders = Array.from(contentRegion.querySelectorAll("span"))
       .filter((element) => ["NULL", "UNSET"].includes(element.textContent ?? ""));
     expect(placeholders).toHaveLength(2);
@@ -613,8 +619,8 @@ describe("DetailPanel", () => {
     });
 
     let marks = Array.from(contentRegion.querySelectorAll("mark"));
-    expect(marks.map((mark) => mark.textContent)).toEqual(["name", "name"]);
-    expect(getDetailSearchControl(input).textContent).toContain("1 / 2");
+    expect(marks.map((mark) => mark.textContent)).toEqual(["name", "name", "name", "name"]);
+    expect(getDetailSearchControl(input).textContent).toContain("1 / 4");
 
     act(() => {
       input.dispatchEvent(

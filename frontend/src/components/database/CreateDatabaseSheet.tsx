@@ -490,7 +490,6 @@ function CreateDatabaseForm({
                 value={effectiveProjectName}
                 onChange={(name) => setProjectName(name)}
                 disabled={!!instanceProjectName}
-                portal
               />
             </FormField>
           )}
@@ -523,8 +522,8 @@ function CreateDatabaseForm({
               value={instanceName}
               onChange={handleInstanceChange}
               engines={enginesSupportCreateDatabase()}
+              project={effectiveProjectName}
               disabled={!!fixedInstanceName}
-              portal
             />
           </FormField>
 
@@ -618,7 +617,6 @@ function CreateDatabaseForm({
                   value: role.roleName,
                   label: role.roleName,
                 }))}
-                portal
               />
             </FormField>
           )}
@@ -642,7 +640,6 @@ function CreateDatabaseForm({
                   />
                 ),
               }))}
-              portal
             />
           </FormField>
 

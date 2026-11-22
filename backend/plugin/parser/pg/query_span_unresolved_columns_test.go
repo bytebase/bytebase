@@ -90,6 +90,7 @@ func TestUnresolvedColumnsSignalFiresOnDegradedSnapshot(t *testing.T) {
 		"SELECT email FROM public.t",
 		"SELECT t.email FROM public.t",
 		"SELECT * FROM public.t WHERE email = 'x'",
+		"EXPLAIN ANALYZE SELECT * FROM public.t WHERE email = 'x'",
 		"SELECT id, email FROM public.t ORDER BY ssn",
 		"WITH c AS (SELECT * FROM public.t) SELECT * FROM c",
 		// A non-recursive CTE cannot reference itself; the inner t is the physical table.

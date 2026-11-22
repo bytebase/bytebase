@@ -78,3 +78,47 @@
     CREATE TABLE book(id int NOT NULL);
     ALTER TABLE book CHANGE COLUMN id name varchar(255) NOT NULL;
   changeType: 1
+- statement: |-
+    CREATE TABLE t(
+      b INT,
+      a INT NOT NULL,
+      c INT
+    );
+    ALTER TABLE t ADD COLUMN d INT, ADD COLUMN e INT NOT NULL;
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: '`t`.`b` cannot have NULL value'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: '`t`.`c` cannot have NULL value'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: '`t`.`d` cannot have NULL value'
+      startposition:
+        line: 6
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book CHANGE COLUMN creator creator2 VARCHAR(255);
+    ALTER TABLE tech_book MODIFY name VARCHAR(255);
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: '`tech_book`.`creator2` cannot have NULL value'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

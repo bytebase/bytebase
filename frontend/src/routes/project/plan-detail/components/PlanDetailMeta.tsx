@@ -1,38 +1,150 @@
 import { create } from "@bufbuild/protobuf";
 import { Plus, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useReleaseByName } from "@/hooks/useAppState";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
-import { extractUserEmail, pushNotification } from "@/stores";
+import {
+  buildSourceRow,
+  SOURCE_TITLE_LIMIT,
+} from "@/routes/project/plan-detail/components/release/vcsSource";
+import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Color } from "@/types/proto-es/google/type/color_pb";
-import { IssueStatus } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
+  Issue_Approver_Status,
   IssueSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  type Release,
+  Release_Type,
+  type Release_VCSSource,
+} from "@/types/proto-es/v1/release_service_pb";
 import { colorToHex, hasProjectPermissionV2 } from "@/utils";
+import { displayRoleTitle } from "@/utils/role";
+import { extractReleaseUID } from "@/utils/v1/release";
+import { PlanStages } from "../../PlanTable";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
+import { isDatabaseGroupName } from "../utils/phaseSummary";
+import {
+  statementKindLabel,
+  statementKindOf,
+} from "./deploy/foldedTaskDescription";
+import { useUserDisplayName } from "./useUserDisplayName";
 
 export function PlanDetailMeta() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { patchState } = page;
   const project = page.project;
-  const creatorEmail = useMemo(
-    () => extractUserEmail(page.plan.creator),
-    [page.plan.creator]
-  );
+  const creatorName = useUserDisplayName(page.plan.creator || undefined);
   const createdTimeMs = getTimeForPbTimestampProtoEs(page.plan.createTime);
+  const [detailsOpen, setDetailsOpen] = useState(true);
+  const releaseName = page.plan.specs?.find(
+    (spec) => spec.config?.case === "changeDatabaseConfig"
+  )?.config;
+  const releaseResource =
+    releaseName?.case === "changeDatabaseConfig"
+      ? releaseName.value.release
+      : "";
+  const release = useReleaseByName(releaseResource);
+  // The spec names the release, so the rows are a release plan's from the
+  // first render, before the release is read or when it cannot be (D10).
+  const isReleasePlan = Boolean(releaseResource);
+  const fetchRelease = useAppStore((state) => state.fetchRelease);
+  useEffect(() => {
+    if (releaseResource) {
+      fetchRelease(releaseResource, true).catch(() => {});
+    }
+  }, [fetchRelease, releaseResource]);
+  const changesSummary = useMemo(() => {
+    const targets = [
+      ...new Set(
+        (page.plan.specs ?? []).flatMap((spec) =>
+          spec.config?.case === "changeDatabaseConfig"
+            ? spec.config.value.targets
+            : []
+        )
+      ),
+    ];
+    const groupCount = targets.filter(isDatabaseGroupName).length;
+    const databaseCount = targets.length - groupCount;
+    const types = (page.planCheckRuns ?? []).flatMap((run) =>
+      run.results.flatMap((result) =>
+        result.report.case === "sqlSummaryReport"
+          ? result.report.value.statementTypes
+          : []
+      )
+    );
+    const kind = statementKindOf(types);
+    // A kind of target the plan does not have is left out.
+    const parts = [
+      databaseCount > 0 || groupCount === 0
+        ? t("plan.details.databases", { count: databaseCount })
+        : "",
+      groupCount > 0
+        ? t("plan.details.database-groups", { count: groupCount })
+        : "",
+    ].filter(Boolean);
+    const targetsText = parts.join(" · ");
+    return kind
+      ? t("plan.details.changes-on-targets", {
+          kind: statementKindLabel(kind, t),
+          targets: targetsText,
+        })
+      : targetsText;
+  }, [page.plan.specs, page.planCheckRuns, t]);
+  // Approvers are recorded in the order of the approval flow's roles.
+  const flowRoles = page.issue?.approvalTemplate?.flow?.roles ?? [];
+  const approvedSteps = (page.issue?.approvers ?? []).filter(
+    (approver) => approver.status === Issue_Approver_Status.APPROVED
+  );
+  const lastApprover = approvedSteps.at(-1);
+  const lastApproverName = useUserDisplayName(lastApprover?.principal);
+  const reviewSummary = useMemo(() => {
+    const issue = page.issue;
+    if (!issue) return "";
+    switch (issue.approvalStatus) {
+      case ApprovalStatus.APPROVED: {
+        const role = flowRoles[approvedSteps.length - 1];
+        return lastApprover
+          ? t("plan.details.approved-by", {
+              user: role
+                ? `${lastApproverName} (${displayRoleTitle(role)})`
+                : lastApproverName,
+            })
+          : t("plan.details.approved");
+      }
+      case ApprovalStatus.REJECTED:
+        return t("plan.details.rejected");
+      case ApprovalStatus.SKIPPED:
+        return t("plan.details.no-approval");
+      default: {
+        const next = flowRoles[approvedSteps.length];
+        return next
+          ? t("plan.details.waiting-for", { role: displayRoleTitle(next) })
+          : t("plan.details.awaiting-approval");
+      }
+    }
+  }, [page.issue, t, flowRoles, approvedSteps, lastApprover, lastApproverName]);
   const allowChangeLabels = useMemo(() => {
     if (!project || !page.issue || page.issue.status !== IssueStatus.OPEN) {
       return false;
@@ -81,29 +193,204 @@ export function PlanDetailMeta() {
     }
   };
 
-  return (
-    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-control-placeholder">
-      <span>{t("plan.meta.created-by", { user: creatorEmail })}</span>
+  const createdLine = (
+    <span
+      className="flex flex-wrap items-center gap-x-1"
+      data-testid="plan-detail-created"
+    >
+      <span>{creatorName}</span>
       {createdTimeMs !== undefined && (
         <>
+          <span aria-hidden="true">·</span>
+          <HumanizeTs mode="datetime" tsMs={createdTimeMs} />
           <span aria-hidden="true">·</span>
           <HumanizeTs tsMs={createdTimeMs} />
         </>
       )}
+    </span>
+  );
 
-      {page.issue && (
-        <>
-          <span aria-hidden="true">·</span>
-          <InlineLabels
-            allowChange={allowChangeLabels}
-            issueLabels={project?.issueLabels ?? []}
-            labels={page.issue.labels || []}
-            onUpdate={handleLabelsUpdate}
-            required={page.issue.draft && (project?.forceIssueLabels ?? false)}
-          />
-        </>
+  // Folded, the block keeps one line: the source title on a release plan,
+  // then the progress. The fold lives only while the page is open (D10).
+  const toggle = (
+    <CollapsibleTrigger
+      className="w-auto shrink-0 text-accent hover:underline"
+      data-testid="plan-details-toggle"
+    >
+      {detailsOpen
+        ? t("plan.phase.hide-details")
+        : t("plan.phase.show-details")}
+    </CollapsibleTrigger>
+  );
+  return (
+    <Collapsible
+      open={detailsOpen}
+      onOpenChange={setDetailsOpen}
+      className="mt-1 flex flex-col gap-y-1 text-sm"
+      data-testid="plan-details"
+    >
+      {!detailsOpen && (
+        <div className="flex min-w-0 items-center gap-x-3">
+          {release && <SourceRowView source={release.vcsSource} titleOnly />}
+          <PlanStages plan={page.plan} />
+          <span className="flex-1" />
+          {toggle}
+        </div>
       )}
+      <CollapsiblePanel className="flex items-start gap-x-3">
+        <dl className="grid min-w-0 flex-1 grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1">
+          {isReleasePlan && (
+            <DetailRow label={t("plan.details.source")} row="source">
+              <SourceRowView source={release?.vcsSource} />
+            </DetailRow>
+          )}
+          <DetailRow
+            label={
+              isReleasePlan
+                ? t("plan.details.triggered")
+                : t("plan.details.created")
+            }
+            row="created"
+          >
+            {createdLine}
+          </DetailRow>
+          {page.issue && (
+            <DetailRow label={t("plan.details.labels")} row="labels">
+              <InlineLabels
+                allowChange={allowChangeLabels}
+                issueLabels={project?.issueLabels ?? []}
+                labels={page.issue.labels || []}
+                onUpdate={handleLabelsUpdate}
+                required={
+                  page.issue.draft && (project?.forceIssueLabels ?? false)
+                }
+              />
+            </DetailRow>
+          )}
+          {isReleasePlan ? (
+            <DetailRow label={t("plan.details.release")} row="release">
+              <span data-testid="plan-detail-release">
+                {!release
+                  ? extractReleaseUID(releaseResource)
+                  : release.type === Release_Type.DECLARATIVE
+                    ? t("plan.details.state-based", {
+                        version: release.files[0]?.version ?? "",
+                      })
+                    : t("plan.details.migration-based", {
+                        count: release.files.length,
+                        version: newestVersion(release),
+                      })}
+              </span>
+            </DetailRow>
+          ) : (
+            <DetailRow label={t("plan.details.changes")} row="changes">
+              {changesSummary}
+            </DetailRow>
+          )}
+          {page.issue && (
+            <DetailRow label={t("plan.details.review")} row="review">
+              {reviewSummary}
+            </DetailRow>
+          )}
+          <DetailRow label={t("plan.details.progress")} row="progress">
+            <PlanStages plan={page.plan} />
+          </DetailRow>
+        </dl>
+        {toggle}
+      </CollapsiblePanel>
+    </Collapsible>
+  );
+}
+
+function DetailRow({
+  label,
+  row,
+  children,
+}: {
+  label: string;
+  row: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="contents" data-testid="plan-detail-row" data-row={row}>
+      {/* One height for every row: the xs controls in the Labels row. */}
+      <dt className="flex min-h-6 items-center text-control-placeholder">
+        {label}
+      </dt>
+      <dd className="flex min-h-6 min-w-0 items-center text-control">
+        <div className="w-full min-w-0">{children}</div>
+      </dd>
     </div>
+  );
+}
+
+// The store keeps the files in the executor's order, newest last.
+const newestVersion = (release: Release) => release.files.at(-1)?.version ?? "";
+
+function SourceRowView({
+  source,
+  titleOnly = false,
+}: {
+  source?: Release_VCSSource;
+  // The folded block keeps only the title.
+  titleOnly?: boolean;
+}) {
+  const { t } = useTranslation();
+  const narrow = useMediaQuery("(max-width: 639px)");
+  const row = buildSourceRow(source);
+  if (!row) return <span className="text-control-placeholder">-</span>;
+  const text = row.title ?? row.repoAtSha ?? row.href;
+  const truncated =
+    text && text.length > SOURCE_TITLE_LIMIT
+      ? `${text.slice(0, SOURCE_TITLE_LIMIT)}…`
+      : text;
+  const head = truncated ? (
+    row.href ? (
+      <a
+        className="truncate text-accent hover:underline"
+        data-testid="source-part"
+        href={row.href}
+        rel="noopener noreferrer"
+        target="_blank"
+        title={text}
+      >
+        {truncated}
+      </a>
+    ) : (
+      <span className="truncate" data-testid="source-part" title={text}>
+        {truncated}
+      </span>
+    )
+  ) : null;
+  if (titleOnly) return head;
+  const rest = [
+    row.author
+      ? t("plan.details.by-author", { author: row.author })
+      : undefined,
+    row.title ? row.repoAtSha : undefined,
+    row.branch,
+  ].filter((part): part is string => Boolean(part));
+  return (
+    <span className="flex min-w-0 flex-wrap items-center gap-x-1">
+      {head}
+      {rest.length > 0 && (
+        <span
+          className={cn(
+            "flex flex-wrap items-center gap-x-1",
+            narrow && "basis-full text-control-light"
+          )}
+        >
+          {rest.map((part, index) => (
+            <span key={part} className="flex items-center gap-x-1">
+              {(!narrow || index > 0) && head !== null && (
+                <span aria-hidden="true">·</span>
+              )}
+              <span data-testid="source-part">{part}</span>
+            </span>
+          ))}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -142,7 +429,7 @@ function InlineLabels({
     return (
       <span
         key={value}
-        className="inline-flex items-center gap-1 rounded-xs bg-control-bg px-1.5 py-0.5 text-xs text-control"
+        className="inline-flex h-6 items-center gap-1 rounded-xs bg-control-bg px-1.5 text-xs text-control"
       >
         <span
           className="size-2.5 shrink-0 rounded-sm"

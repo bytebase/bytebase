@@ -1,0 +1,39 @@
+[
+  {
+    "bytes": "130",
+    "cardinality": "10",
+    "cost": "11",
+    "id": "0",
+    "operation": "SELECT STATEMENT",
+    "optimizer": "ALL_ROWS",
+    "position": "11"
+  },
+  {
+    "bytes": "130",
+    "cardinality": "10",
+    "cost": "11",
+    "id": "1",
+    "object_name": "ORDERS",
+    "object_owner": "SYSTEM",
+    "object_type": "TABLE",
+    "operation": "TABLE ACCESS",
+    "optimizer": "ANALYZED",
+    "options": "BY INDEX ROWID BATCHED",
+    "parent_id": "0",
+    "position": "1"
+  },
+  {
+    "access_predicates": "\"CUSTOMER_ID\"=42",
+    "cardinality": "10",
+    "cost": "1",
+    "id": "2",
+    "object_name": "ORDERS_CUSTOMER_ID_IDX",
+    "object_owner": "SYSTEM",
+    "object_type": "INDEX",
+    "operation": "INDEX",
+    "optimizer": "ANALYZED",
+    "options": "RANGE SCAN",
+    "parent_id": "1",
+    "position": "1"
+  }
+]

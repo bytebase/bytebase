@@ -34,3 +34,42 @@
         line: 2
         column: 0
       endposition: null
+- statement: CREATE TABLE t(a int) COMMENT '';
+- statement: CREATE TABLE t1 LIKE t;
+  want:
+    - status: 2
+      code: 1032
+      title: TABLE_COMMENT
+      content: Table `t1` requires comments
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t COMMENT 'a very long comment';
+- statement: CREATE TABLE t(a int) COMMENT 'éééééé';
+  want:
+    - status: 2
+      code: 1301
+      title: TABLE_COMMENT
+      content: The length of table `t` comment should be within 10 characters
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE a(b INT) COMMENT 'x';
+
+    /* c */
+    CREATE TABLE t(
+      a int
+    ) COMMENT 'a long comment' COMMENT 'ab';
+  want:
+    - status: 2
+      code: 1301
+      title: TABLE_COMMENT
+      content: The length of table `t` comment should be within 10 characters
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE p() BEGIN CREATE TABLE t(a int); END;

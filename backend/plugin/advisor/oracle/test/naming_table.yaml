@@ -89,3 +89,71 @@
         line: 1
         column: 0
       endposition: null
+- statement: RENAME "badOld" TO "newName"
+- statement: CREATE SCHEMA AUTHORIZATION shop CREATE TABLE "badNested" (id int) CREATE VIEW v AS SELECT 1 a FROM dual
+- statement: CREATE TABLE "badSel" AS SELECT 1 a FROM dual
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"badSel" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE "表表表表表表表表表表表表表表表表表表表表表" (id int)
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"表表表表表表表表表表表表表表表表表表表表表" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE "表表表表表表表表表表表表表表表表表表表表表表" (id int)
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"表表表表表表表表表表表表表表表表表表表表表表" mismatches table naming convention, its length should be within 64 characters'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"表表表表表表表表表表表表表表表表表表表表表表" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    SELECT 1 FROM dual;
+
+    CREATE TABLE
+      "multiLine"
+      (id int);
+    ALTER TABLE tech_book
+      ADD c int;
+    ALTER TABLE tech_book
+      RENAME TO
+      "renamedBook";
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"multiLine" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"renamedBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 9
+        column: 0
+      endposition: null

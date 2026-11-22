@@ -45,6 +45,7 @@ export function ExternalUrlAlert({
           <RouterLink
             to={{
               name: SETTING_ROUTE_WORKSPACE_GENERAL,
+              hash: "#external-url",
               query: {
                 [PRODUCT_INTRO_QUERY_KEY]: EXTERNAL_URL_PRODUCT_INTRO,
               },

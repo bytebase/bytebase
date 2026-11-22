@@ -418,6 +418,9 @@ func (x *PlanCheckRun_Result) Equal(y *PlanCheckRun_Result) bool {
 	if x.Type != y.Type {
 		return false
 	}
+	if x.SheetSha256 != y.SheetSha256 {
+		return false
+	}
 	if !x.GetSqlSummaryReport().Equal(y.GetSqlSummaryReport()) {
 		return false
 	}

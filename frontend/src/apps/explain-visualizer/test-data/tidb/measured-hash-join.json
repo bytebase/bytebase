@@ -1,0 +1,96 @@
+[
+  {
+    "id": "Projection_10",
+    "estRows": "4.00",
+    "actRows": "4",
+    "taskType": "root",
+    "executeInfo": "time:24.7ms, loops:5, RU:19.42, Concurrency:OFF",
+    "operatorInfo": "qp.customers.country, Column#9",
+    "memoryInfo": "1016 Bytes",
+    "diskInfo": "N/A",
+    "subOperators": [
+      {
+        "id": "HashAgg_11",
+        "estRows": "4.00",
+        "actRows": "4",
+        "taskType": "root",
+        "executeInfo": "time:24.7ms, loops:5, partial_worker:{wall_time:24.667086ms, concurrency:5, task_num:17, tot_wait:118.935759ms, tot_exec:3.893439ms, tot_time:123.157709ms, max:24.64161ms, p95:24.64161ms}, final_worker:{wall_time:24.720906ms, concurrency:5, task_num:21, tot_wait:8.187µs, tot_exec:9.928µs, tot_time:123.40608ms, max:24.700178ms, p95:24.700178ms}",
+        "operatorInfo": "group by:qp.customers.country, funcs:count(1)->Column#9, funcs:firstrow(qp.customers.country)->qp.customers.country",
+        "memoryInfo": "341.5 KB",
+        "diskInfo": "0 Bytes",
+        "subOperators": [
+          {
+            "id": "HashJoin_40",
+            "estRows": "16666.00",
+            "actRows": "16666",
+            "taskType": "root",
+            "executeInfo": "time:24.4ms, loops:18, build_hash_table:{total:2.38ms, fetch:1.54ms, build:836.7µs}, probe:{concurrency:5, total:121.6ms, max:24.4ms, probe:9.37ms, fetch and wait:112.2ms}",
+            "operatorInfo": "inner join, equal:[eq(qp.customers.id, qp.orders.customer_id)]",
+            "memoryInfo": "363.5 KB",
+            "diskInfo": "0 Bytes",
+            "subOperators": [
+              {
+                "id": "TableReader_49(Build)",
+                "estRows": "5000.00",
+                "actRows": "5000",
+                "taskType": "root",
+                "executeInfo": "time:1.92ms, loops:6, cop_task: {num: 6, max: 589.2µs, min: 126.8µs, avg: 285.4µs, p95: 589.2µs, copr_cache_hit_ratio: 0.00, build_task_duration: 14.8µs, max_distsql_concurrency: 1}, rpc_info:{Cop:{num_rpc:6, total_time:1.65ms}}",
+                "operatorInfo": "data:TableFullScan_48",
+                "memoryInfo": "58.2 KB",
+                "diskInfo": "N/A",
+                "subOperators": [
+                  {
+                    "id": "TableFullScan_48",
+                    "estRows": "5000.00",
+                    "actRows": "5000",
+                    "taskType": "cop[tikv]",
+                    "accessObject": "table:c",
+                    "executeInfo": "tikv_task:{proc max:536.1µs, min:107.1µs, avg: 247.4µs, p80:301.2µs, p95:536.1µs, iters:0, tasks:6}",
+                    "operatorInfo": "keep order:false",
+                    "memoryInfo": "N/A",
+                    "diskInfo": "N/A"
+                  }
+                ]
+              },
+              {
+                "id": "TableReader_52(Probe)",
+                "estRows": "16666.00",
+                "actRows": "16666",
+                "taskType": "root",
+                "executeInfo": "time:23.3ms, loops:18, cop_task: {num: 8, max: 11ms, min: 442.3µs, avg: 2.92ms, p95: 11ms, tot_proc: 18ms, copr_cache_hit_ratio: 0.00, build_task_duration: 2.12µs, max_distsql_concurrency: 1}, rpc_info:{Cop:{num_rpc:8, total_time:23.1ms}}",
+                "operatorInfo": "data:Selection_51",
+                "memoryInfo": "252.8 KB",
+                "diskInfo": "N/A",
+                "subOperators": [
+                  {
+                    "id": "Selection_51",
+                    "estRows": "16666.00",
+                    "actRows": "16666",
+                    "taskType": "cop[tikv]",
+                    "executeInfo": "tikv_task:{proc max:10.8ms, min:371.4µs, avg: 2.83ms, p80:5.43ms, p95:10.8ms, iters:0, tasks:8}, time_detail: {total_process_time: 18ms}",
+                    "operatorInfo": "eq(qp.orders.status, \"open\"), not(isnull(qp.orders.customer_id))",
+                    "memoryInfo": "N/A",
+                    "diskInfo": "N/A",
+                    "subOperators": [
+                      {
+                        "id": "TableFullScan_50",
+                        "estRows": "50000.00",
+                        "actRows": "50000",
+                        "taskType": "cop[tikv]",
+                        "accessObject": "table:o",
+                        "executeInfo": "tikv_task:{proc max:10.8ms, min:371.4µs, avg: 2.83ms, p80:5.43ms, p95:10.8ms, iters:0, tasks:8}",
+                        "operatorInfo": "keep order:false",
+                        "memoryInfo": "N/A",
+                        "diskInfo": "N/A"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

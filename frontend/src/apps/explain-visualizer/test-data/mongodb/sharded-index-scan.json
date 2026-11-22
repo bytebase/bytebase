@@ -1,0 +1,163 @@
+{
+  "queryPlanner": {
+    "mongosPlannerVersion": 1,
+    "winningPlan": {
+      "stage": "SHARD_MERGE",
+      "shards": [
+        {
+          "shardName": "sh1",
+          "connectionString": "sh1/qp-sh1:27018",
+          "serverInfo": {
+            "host": "fe4c19987c05",
+            "port": 27018,
+            "version": "7.0.45",
+            "gitVersion": "a52313e13ab55c9bddf7c3ff91dab286fa381796"
+          },
+          "namespace": "qp.orders",
+          "indexFilterSet": false,
+          "parsedQuery": {
+            "total": {
+              "$gt": 880
+            }
+          },
+          "queryHash": "CACA99B3",
+          "planCacheKey": "12DCEA8D",
+          "optimizationTimeMillis": 0,
+          "maxIndexedOrSolutionsReached": false,
+          "maxIndexedAndSolutionsReached": false,
+          "maxScansToExplodeReached": false,
+          "winningPlan": {
+            "stage": "SHARDING_FILTER",
+            "inputStage": {
+              "stage": "FETCH",
+              "inputStage": {
+                "stage": "IXSCAN",
+                "keyPattern": {
+                  "total": 1
+                },
+                "indexName": "total_1",
+                "isMultiKey": false,
+                "multiKeyPaths": {
+                  "total": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "total": ["(880, inf.0]"]
+                }
+              }
+            }
+          },
+          "rejectedPlans": []
+        },
+        {
+          "shardName": "sh2",
+          "connectionString": "sh2/qp-sh2:27018",
+          "serverInfo": {
+            "host": "b209ed3472e1",
+            "port": 27018,
+            "version": "7.0.45",
+            "gitVersion": "a52313e13ab55c9bddf7c3ff91dab286fa381796"
+          },
+          "namespace": "qp.orders",
+          "indexFilterSet": false,
+          "parsedQuery": {
+            "total": {
+              "$gt": 880
+            }
+          },
+          "queryHash": "CACA99B3",
+          "planCacheKey": "12DCEA8D",
+          "optimizationTimeMillis": 0,
+          "maxIndexedOrSolutionsReached": false,
+          "maxIndexedAndSolutionsReached": false,
+          "maxScansToExplodeReached": false,
+          "winningPlan": {
+            "stage": "SHARDING_FILTER",
+            "inputStage": {
+              "stage": "FETCH",
+              "inputStage": {
+                "stage": "IXSCAN",
+                "keyPattern": {
+                  "total": 1
+                },
+                "indexName": "total_1",
+                "isMultiKey": false,
+                "multiKeyPaths": {
+                  "total": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "total": ["(880, inf.0]"]
+                }
+              }
+            }
+          },
+          "rejectedPlans": []
+        }
+      ]
+    }
+  },
+  "serverInfo": {
+    "host": "25432bf7811b",
+    "port": 27017,
+    "version": "7.0.45",
+    "gitVersion": "a52313e13ab55c9bddf7c3ff91dab286fa381796"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+    "internalQueryFrameworkControl": "forceClassicEngine"
+  },
+  "command": {
+    "find": "orders",
+    "filter": {
+      "total": {
+        "$gt": 880
+      }
+    },
+    "lsid": {
+      "id": "ebc5de65-b950-49a6-9d67-04a838549069"
+    },
+    "$clusterTime": {
+      "clusterTime": {
+        "$timestamp": "7701197590922002433"
+      },
+      "signature": {
+        "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "keyId": 0
+      }
+    },
+    "$db": "qp"
+  },
+  "ok": 1,
+  "$clusterTime": {
+    "clusterTime": {
+      "$timestamp": "7701197590922002433"
+    },
+    "signature": {
+      "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "keyId": {
+        "high": 0,
+        "low": 0,
+        "unsigned": false
+      }
+    }
+  },
+  "operationTime": {
+    "$timestamp": "7701197543677362487"
+  }
+}

@@ -980,3 +980,45 @@
         line: 1
         column: 0
       endposition: null
+- statement: |
+    SELECT *
+    FROM public.orders
+    WHERE order_id = 1
+      AND customer_name || 'x' = 'y'
+      AND amount # 1 = 0;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: Calculation is applied to indexed column "amount" in the WHERE clause, which prevents index usage
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: SELECT * FROM public.tech_book t WHERE ~t.id = 1 OR t.id << 1 = 2 OR t.name::text = 'x' OR LOWER(t.name::varchar) = 'x';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: Calculation is applied to indexed column "id" in the WHERE clause, which prevents index usage
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: Calculation is applied to indexed column "id" in the WHERE clause, which prevents index usage
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: Function "LOWER" is applied to indexed column "name" in the WHERE clause, which prevents index usage
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT * FROM other.tech_book WHERE UPPER(name) = 'x';

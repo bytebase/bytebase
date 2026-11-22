@@ -10,7 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestDiagnoseUsesOmniParseErrorPosition(t *testing.T) {
+func TestDiagnoseUsesParseErrorPosition(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string

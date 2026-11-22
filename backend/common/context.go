@@ -89,6 +89,13 @@ type DelegatedGrant struct {
 	CorrelationID string
 }
 
+// FederatedIdentity is the issuer and subject of the verified OIDC token a
+// workload identity token was exchanged for.
+type FederatedIdentity struct {
+	Issuer  string
+	Subject string
+}
+
 type AuthContext struct {
 	Audit                  bool
 	AllowWithoutCredential bool
@@ -113,6 +120,10 @@ type AuthContext struct {
 	// on internal-chain requests; nil on the public chain. Presence, not any
 	// field value, marks a request as MCP-originated.
 	DelegatedGrant *DelegatedGrant
+	// FederatedIdentity is the external workload behind a workload identity;
+	// nil for every other caller. It is written to the audit row and never
+	// read for authorization.
+	FederatedIdentity *FederatedIdentity
 }
 
 func GetAuthContextFromContext(ctx context.Context) (*AuthContext, bool) {

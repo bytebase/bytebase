@@ -53,6 +53,13 @@ func TestGetSearchAuditLogsFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "federated subject filter",
+			filter:   `federated_subject == "repo:my-org/app:ref:refs/heads/main"`,
+			wantSQL:  "(payload->'federatedIdentity'->>'subject' = $1)",
+			wantArgs: []any{"repo:my-org/app:ref:refs/heads/main"},
+			wantErr:  false,
+		},
+		{
 			name:     "severity filter",
 			filter:   `severity == "INFO"`,
 			wantSQL:  "(payload->>'severity' = $1)",

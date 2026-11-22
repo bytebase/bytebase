@@ -18,7 +18,7 @@ import (
 // TestGetEffectiveReviewRulePolicy pins the nearest-wins resolution: the
 // project's own policy applies as is, a project without one uses the
 // workspace's, and with neither every rule is on. A policy that is not
-// enforced counts as absent.
+// enforced counts as absent, and one without SYNTAX leaves no rule on.
 func TestGetEffectiveReviewRulePolicy(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -61,8 +61,12 @@ func TestGetEffectiveReviewRulePolicy(t *testing.T) {
 	require.Equal(t, []storepb.ReviewRuleType{storepb.ReviewRuleType_SYNTAX, storepb.ReviewRuleType_REQUIRE_WHERE}, effective())
 
 	// The project's own policy replaces the workspace's, no union.
+	upsert(storepb.Policy_PROJECT, common.FormatProject("p"), true, storepb.ReviewRuleType_SYNTAX, storepb.ReviewRuleType_DISALLOW_TRUNCATE)
+	require.Equal(t, []storepb.ReviewRuleType{storepb.ReviewRuleType_SYNTAX, storepb.ReviewRuleType_DISALLOW_TRUNCATE}, effective())
+
+	// Without SYNTAX no rule is on, whatever else the list names.
 	upsert(storepb.Policy_PROJECT, common.FormatProject("p"), true, storepb.ReviewRuleType_DISALLOW_TRUNCATE)
-	require.Equal(t, []storepb.ReviewRuleType{storepb.ReviewRuleType_DISALLOW_TRUNCATE}, effective())
+	require.Empty(t, effective())
 
 	// An empty project list is a policy too: everything off.
 	upsert(storepb.Policy_PROJECT, common.FormatProject("p"), true)
@@ -71,6 +75,11 @@ func TestGetEffectiveReviewRulePolicy(t *testing.T) {
 	// A project policy that is not enforced counts as absent.
 	upsert(storepb.Policy_PROJECT, common.FormatProject("p"), false, storepb.ReviewRuleType_DISALLOW_TRUNCATE)
 	require.Equal(t, []storepb.ReviewRuleType{storepb.ReviewRuleType_SYNTAX, storepb.ReviewRuleType_REQUIRE_WHERE}, effective())
+
+	// A workspace policy without SYNTAX leaves no rule on for the projects
+	// that follow it.
+	upsert(storepb.Policy_WORKSPACE, common.FormatWorkspace("ws"), true, storepb.ReviewRuleType_REQUIRE_WHERE)
+	require.Empty(t, effective())
 
 	// Same for the workspace: back to every rule.
 	upsert(storepb.Policy_WORKSPACE, common.FormatWorkspace("ws"), false, storepb.ReviewRuleType_SYNTAX)
@@ -86,18 +95,18 @@ func TestGetEffectiveReviewRulePolicy(t *testing.T) {
 		ResourceType: storepb.Policy_PROJECT,
 		Resource:     common.FormatProject("p"),
 		Type:         storepb.Policy_REVIEW_RULE,
-		Payload:      payload(storepb.ReviewRuleType_REQUIRE_IS_NULL),
+		Payload:      payload(storepb.ReviewRuleType_SYNTAX, storepb.ReviewRuleType_REQUIRE_IS_NULL),
 		Enforce:      true,
 	})
 	require.NoError(t, err)
 	otherEffective, err := stores.GetEffectiveReviewRulePolicy(ctx, "other", "p")
 	require.NoError(t, err)
-	require.Equal(t, []storepb.ReviewRuleType{storepb.ReviewRuleType_REQUIRE_IS_NULL}, otherEffective.Rules)
+	require.Equal(t, []storepb.ReviewRuleType{storepb.ReviewRuleType_SYNTAX, storepb.ReviewRuleType_REQUIRE_IS_NULL}, otherEffective.Rules)
 	require.Equal(t, every, effective())
 
-	upsert(storepb.Policy_PROJECT, common.FormatProject("p"), true, storepb.ReviewRuleType_DISALLOW_RENAME)
-	require.Equal(t, []storepb.ReviewRuleType{storepb.ReviewRuleType_DISALLOW_RENAME}, effective())
+	upsert(storepb.Policy_PROJECT, common.FormatProject("p"), true, storepb.ReviewRuleType_SYNTAX, storepb.ReviewRuleType_DISALLOW_RENAME)
+	require.Equal(t, []storepb.ReviewRuleType{storepb.ReviewRuleType_SYNTAX, storepb.ReviewRuleType_DISALLOW_RENAME}, effective())
 	otherEffective, err = stores.GetEffectiveReviewRulePolicy(ctx, "other", "p")
 	require.NoError(t, err)
-	require.Equal(t, []storepb.ReviewRuleType{storepb.ReviewRuleType_REQUIRE_IS_NULL}, otherEffective.Rules)
+	require.Equal(t, []storepb.ReviewRuleType{storepb.ReviewRuleType_SYNTAX, storepb.ReviewRuleType_REQUIRE_IS_NULL}, otherEffective.Rules)
 }

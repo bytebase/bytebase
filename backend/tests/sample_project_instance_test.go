@@ -89,7 +89,8 @@ func TestPrepareSampleProjectInstanceLifecycle(t *testing.T) {
 	require.Equal(t, allocation.Database, record.database)
 	require.Equal(t, allocation.Role, record.role)
 	require.False(t, record.createdAt.IsZero())
-	require.Equal(t, now.Add(7*24*time.Hour), record.expiresAt)
+	// Compare instants: a timestamptz read carries the process's location, not UTC.
+	require.WithinDuration(t, now.Add(7*24*time.Hour), record.expiresAt, 0)
 	require.Nil(t, record.deletedAt)
 
 	database, err := fixture.store.GetDatabase(ctx, &store.FindDatabaseMessage{
@@ -420,7 +421,7 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time, works
 	profile := &config.Profile{SaaS: true}
 	return context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID), &sampleProjectInstanceFixture{
 		store:       stores,
-		service:     apiv1.NewInstanceService(stores, profile, licenseService, dbFactory, syncer, manager),
+		service:     apiv1.NewInstanceService(stores, "sample-test-secret", profile, licenseService, dbFactory, syncer, manager),
 		profile:     profile,
 		syncer:      syncer,
 		manager:     manager,

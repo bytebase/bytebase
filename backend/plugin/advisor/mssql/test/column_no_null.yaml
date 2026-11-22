@@ -78,3 +78,32 @@
       endposition: null
 - statement: ALTER TABLE MyTable ADD Age INT NOT NULL;
   changeType: 1
+- statement: |-
+    CREATE TABLE t(
+      Id INT,
+      CONSTRAINT pk PRIMARY KEY (ID),
+      Name INT CONSTRAINT nn NOT NULL,
+      Age INT UNIQUE
+    );
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column [age] is nullable, which is not allowed.
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE t ALTER COLUMN a INT;
+    ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY (a);
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column [a] is nullable, which is not allowed.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE p AS BEGIN CREATE TABLE t(a INT) END;

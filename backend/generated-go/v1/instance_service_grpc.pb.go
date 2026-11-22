@@ -23,6 +23,8 @@ const (
 	InstanceService_GetInstance_FullMethodName                  = "/bytebase.v1.InstanceService/GetInstance"
 	InstanceService_ListInstances_FullMethodName                = "/bytebase.v1.InstanceService/ListInstances"
 	InstanceService_CreateInstance_FullMethodName               = "/bytebase.v1.InstanceService/CreateInstance"
+	InstanceService_DiscoverNeonBranches_FullMethodName         = "/bytebase.v1.InstanceService/DiscoverNeonBranches"
+	InstanceService_ImportInstances_FullMethodName              = "/bytebase.v1.InstanceService/ImportInstances"
 	InstanceService_PrepareSampleProjectInstance_FullMethodName = "/bytebase.v1.InstanceService/PrepareSampleProjectInstance"
 	InstanceService_UpdateInstance_FullMethodName               = "/bytebase.v1.InstanceService/UpdateInstance"
 	InstanceService_DeleteInstance_FullMethodName               = "/bytebase.v1.InstanceService/DeleteInstance"
@@ -51,6 +53,14 @@ type InstanceServiceClient interface {
 	// Creates a new database instance.
 	// Permissions required: bb.instances.create
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
+	// Discovers Neon branches without persisting the management API key.
+	// Permissions required: bb.instances.create
+	DiscoverNeonBranches(ctx context.Context, in *DiscoverNeonBranchesRequest, opts ...grpc.CallOption) (*DiscoverNeonBranchesResponse, error)
+	// Registers instances resolved from a vendor's control plane. Synchronous;
+	// entries succeed or fail independently and successes are not rolled back.
+	// Registration does not wait for instance synchronization.
+	// Permissions required: bb.instances.create
+	ImportInstances(ctx context.Context, in *ImportInstancesRequest, opts ...grpc.CallOption) (*ImportInstancesResponse, error)
 	// Prepares a Sample Project Instance for a project.
 	// Permissions required: bb.instances.create
 	PrepareSampleProjectInstance(ctx context.Context, in *PrepareSampleProjectInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
@@ -122,6 +132,26 @@ func (c *instanceServiceClient) CreateInstance(ctx context.Context, in *CreateIn
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Instance)
 	err := c.cc.Invoke(ctx, InstanceService_CreateInstance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) DiscoverNeonBranches(ctx context.Context, in *DiscoverNeonBranchesRequest, opts ...grpc.CallOption) (*DiscoverNeonBranchesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DiscoverNeonBranchesResponse)
+	err := c.cc.Invoke(ctx, InstanceService_DiscoverNeonBranches_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) ImportInstances(ctx context.Context, in *ImportInstancesRequest, opts ...grpc.CallOption) (*ImportInstancesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ImportInstancesResponse)
+	err := c.cc.Invoke(ctx, InstanceService_ImportInstances_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -253,6 +283,14 @@ type InstanceServiceServer interface {
 	// Creates a new database instance.
 	// Permissions required: bb.instances.create
 	CreateInstance(context.Context, *CreateInstanceRequest) (*Instance, error)
+	// Discovers Neon branches without persisting the management API key.
+	// Permissions required: bb.instances.create
+	DiscoverNeonBranches(context.Context, *DiscoverNeonBranchesRequest) (*DiscoverNeonBranchesResponse, error)
+	// Registers instances resolved from a vendor's control plane. Synchronous;
+	// entries succeed or fail independently and successes are not rolled back.
+	// Registration does not wait for instance synchronization.
+	// Permissions required: bb.instances.create
+	ImportInstances(context.Context, *ImportInstancesRequest) (*ImportInstancesResponse, error)
 	// Prepares a Sample Project Instance for a project.
 	// Permissions required: bb.instances.create
 	PrepareSampleProjectInstance(context.Context, *PrepareSampleProjectInstanceRequest) (*Instance, error)
@@ -308,6 +346,12 @@ func (UnimplementedInstanceServiceServer) ListInstances(context.Context, *ListIn
 }
 func (UnimplementedInstanceServiceServer) CreateInstance(context.Context, *CreateInstanceRequest) (*Instance, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateInstance not implemented")
+}
+func (UnimplementedInstanceServiceServer) DiscoverNeonBranches(context.Context, *DiscoverNeonBranchesRequest) (*DiscoverNeonBranchesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DiscoverNeonBranches not implemented")
+}
+func (UnimplementedInstanceServiceServer) ImportInstances(context.Context, *ImportInstancesRequest) (*ImportInstancesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ImportInstances not implemented")
 }
 func (UnimplementedInstanceServiceServer) PrepareSampleProjectInstance(context.Context, *PrepareSampleProjectInstanceRequest) (*Instance, error) {
 	return nil, status.Error(codes.Unimplemented, "method PrepareSampleProjectInstance not implemented")
@@ -413,6 +457,42 @@ func _InstanceService_CreateInstance_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InstanceServiceServer).CreateInstance(ctx, req.(*CreateInstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_DiscoverNeonBranches_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DiscoverNeonBranchesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).DiscoverNeonBranches(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_DiscoverNeonBranches_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).DiscoverNeonBranches(ctx, req.(*DiscoverNeonBranchesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_ImportInstances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ImportInstancesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).ImportInstances(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_ImportInstances_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).ImportInstances(ctx, req.(*ImportInstancesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -633,6 +713,14 @@ var InstanceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateInstance",
 			Handler:    _InstanceService_CreateInstance_Handler,
+		},
+		{
+			MethodName: "DiscoverNeonBranches",
+			Handler:    _InstanceService_DiscoverNeonBranches_Handler,
+		},
+		{
+			MethodName: "ImportInstances",
+			Handler:    _InstanceService_ImportInstances_Handler,
 		},
 		{
 			MethodName: "PrepareSampleProjectInstance",

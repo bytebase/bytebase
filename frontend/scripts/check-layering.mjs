@@ -605,6 +605,56 @@ const scanPortalTargets = (sourceFile, rel, lines) => {
   return violations;
 };
 
+const LAYER_CLASS_NAMES = new Set(["LAYER_SURFACE_CLASS", "LAYER_BACKDROP_CLASS"]);
+
+const isIdentifierReference = (node) => {
+  const parent = node.parent;
+  return !(
+    ts.isImportSpecifier(parent) ||
+    (ts.isPropertyAssignment(parent) && parent.name === node) ||
+    (ts.isPropertyAccessExpression(parent) && parent.name === node)
+  );
+};
+
+// The layer classes only order surfaces inside a layer root. On an inline
+// element they are a bare z-10 that any later positioned sibling can cover.
+const scanLayerClassesOutsideLayerRoot = (sourceFile, rel, lines) => {
+  if (/\.test\.[jt]sx?$/.test(rel)) {
+    return [];
+  }
+
+  let firstLayerClass = null;
+  let mountsIntoLayerRoot = false;
+
+  const visit = (node) => {
+    if (ts.isIdentifier(node) && isIdentifierReference(node)) {
+      if (LAYER_CLASS_NAMES.has(node.text)) {
+        firstLayerClass ??= node;
+      } else if (node.text === "getLayerRoot") {
+        mountsIntoLayerRoot = true;
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  if (!firstLayerClass || mountsIntoLayerRoot) {
+    return [];
+  }
+
+  const lineNumber =
+    sourceFile.getLineAndCharacterOfPosition(firstLayerClass.getStart(sourceFile))
+      .line + 1;
+  return [
+    {
+      rel,
+      lineNumber,
+      reason: "layer stacking class used outside a getLayerRoot mount",
+      line: lines[lineNumber - 1] ?? "",
+    },
+  ];
+};
+
 const dedupeViolations = (violations) => {
   const seen = new Set();
   return violations.filter((violation) => {
@@ -644,7 +694,8 @@ export const scanSource = (source, rel) => {
     ...scanClassExpressions(source, rel, lines),
     ...scanStringLiterals(sourceFile, rel, lines),
     ...scanInlineZIndex(rel, lines),
-    ...scanPortalTargets(sourceFile, rel, lines)
+    ...scanPortalTargets(sourceFile, rel, lines),
+    ...scanLayerClassesOutsideLayerRoot(sourceFile, rel, lines)
   );
 
   return dedupeViolations(violations);

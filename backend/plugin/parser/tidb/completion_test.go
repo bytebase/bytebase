@@ -242,7 +242,7 @@ func TestCompletion_QuerySceneFiltersWriteKeywordPrefix(t *testing.T) {
 // BATCH is TiDB-only grammar (added to omni in #157); the mysql ANTLR grammar
 // cannot produce it. Its presence for Engine_TIDB and absence for Engine_MYSQL
 // proves Engine_TIDB now routes through the omni shim, not the mysql completer.
-func TestCompletion_TiDBRoutesThroughOmni(t *testing.T) {
+func TestCompletion_TiDBRoutesThrough(t *testing.T) {
 	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name:    "db",
 		Schemas: []*metadatapb.SchemaMetadata{{Name: ""}},
@@ -478,73 +478,6 @@ func TestCompletion_FunctionCandidatesGetParens(t *testing.T) {
 		"bare function name without () should not appear; got %v", got)
 }
 
-func TestQuoteIdentifierIfNeeded(t *testing.T) {
-	cases := []struct {
-		name            string
-		caretInBacktick bool
-		want            string
-	}{
-		{"users", false, "users"},       // bare identifier — unchanged
-		{"t1", false, "t1"},             // bare with digit suffix — unchanged
-		{"comment", false, "comment"},   // non-reserved keyword — stays bare
-		{"order", false, "`order`"},     // reserved keyword
-		{"select", false, "`select`"},   // reserved keyword
-		{"Order", false, "`Order`"},     // reserved (case-insensitive), original case preserved
-		{"foo-bar", false, "`foo-bar`"}, // non-bare character
-		{"1col", false, "`1col`"},       // leading digit
-		{"a`b", false, "`a``b`"},        // embedded backtick is doubled
-		{"order", true, "order"},        // caret already inside a backtick — no extra quotes
-	}
-	for _, tc := range cases {
-		require.Equal(t, tc.want, quoteIdentifierIfNeeded(tc.name, tc.caretInBacktick),
-			"quoteIdentifierIfNeeded(%q, %v)", tc.name, tc.caretInBacktick)
-	}
-}
-
-func TestCaretInsideBacktickIdentifier(t *testing.T) {
-	cases := []struct {
-		statement string
-		pos       int
-		want      bool
-	}{
-		{"SELECT * FROM ", 14, false},         // no backticks
-		{"SELECT * FROM `o", 16, true},        // one open backtick before caret
-		{"SELECT `a`, ", 12, false},           // closed pair before caret
-		{"`", 1, true},                        // single backtick
-		{"ab", 99, false},                     // pos clamped past end, no backticks
-		{"SELECT '`' FROM ", 16, false},       // backtick inside a string literal is ignored
-		{"SELECT /* `x` */ FROM ", 22, false}, // backticks inside a block comment ignored
-		{"SELECT 1 -- `\nFROM ", 19, false},   // backtick inside a line comment ignored
-	}
-	for _, tc := range cases {
-		require.Equal(t, tc.want, caretInsideBacktickIdentifier(tc.statement, tc.pos),
-			"caretInsideBacktickIdentifier(%q, %d)", tc.statement, tc.pos)
-	}
-}
-
-func TestStatementReferencesDatabase(t *testing.T) {
-	cases := []struct {
-		statement string
-		db        string
-		want      bool
-	}{
-		{"SELECT * FROM otherdb.t", "otherdb", true},         // plain qualifier
-		{"SELECT * FROM `otherdb`.t", "otherdb", true},       // backtick-quoted qualifier
-		{"SELECT OTHERDB.t FROM x", "otherdb", true},         // case-insensitive
-		{"SELECT 'otherdb.' FROM t", "otherdb", false},       // inside a string literal
-		{"SELECT /* otherdb. */ * FROM t", "otherdb", false}, // inside a block comment
-		{"SELECT 1 -- otherdb.\n FROM t", "otherdb", false},  // inside a line comment
-		{"SELECT nototherdb.t FROM x", "otherdb", false},     // not at an identifier boundary
-		{"SELECT a FROM t", "otherdb", false},                // not referenced
-		{"SELECT * FROM otherdb . t2", "otherdb", true},      // whitespace around the dot (TiDB allows it)
-		{"SELECT * FROM `otherdb` . t2", "otherdb", true},    // backtick-quoted + whitespace
-	}
-	for _, tc := range cases {
-		require.Equal(t, tc.want, statementReferencesDatabase(tc.statement, tc.db),
-			"statementReferencesDatabase(%q, %q)", tc.statement, tc.db)
-	}
-}
-
 // A backtick inside a preceding string literal must not be treated as an open
 // identifier quote: the reserved table name must still be quoted on the way out.
 func TestCompletion_QuotesReservedNameAfterStringLiteralWithBacktick(t *testing.T) {
@@ -589,14 +522,18 @@ func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
 		}
 		return databaseName, model.NewDatabaseMetadata(m, nil, nil, storepb.Engine_TIDB, true), nil
 	}
+	listCalls := 0
 	cCtx := base.CompletionContext{
-		Scene:             base.SceneTypeAll,
-		DefaultDatabase:   "appdb",
-		Metadata:          metaFn,
-		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) { return []string{"appdb", "otherdb"}, nil },
+		Scene:           base.SceneTypeAll,
+		DefaultDatabase: "appdb",
+		Metadata:        metaFn,
+		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
+			listCalls++
+			return []string{"appdb", "otherdb"}, nil
+		},
 	}
 
-	// Qualified column from a non-default database resolves.
+	// Qualified column from a non-default database resolves without enumerating databases.
 	stmt := "SELECT otherdb.t2. FROM otherdb.t2"
 	got, err := Completion(context.Background(), cCtx, stmt, 1, len("SELECT otherdb.t2."))
 	require.NoError(t, err)
@@ -604,6 +541,7 @@ func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
 		"cross-db column 'c2' should surface; got %v", got)
 	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "c3"),
 		"cross-db column 'c3' should surface; got %v", got)
+	require.Zero(t, listCalls, "qualified cross-db completion must not enumerate databases")
 
 	// Every known database name surfaces as a DATABASE candidate.
 	stmt2 := "SELECT * FROM "
@@ -611,4 +549,5 @@ func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, hasCandidate(got2, base.CandidateTypeDatabase, "otherdb"),
 		"non-default database 'otherdb' should surface as a DATABASE candidate; got %v", got2)
+	require.Equal(t, 1, listCalls)
 }

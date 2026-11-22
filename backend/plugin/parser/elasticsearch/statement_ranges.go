@@ -16,16 +16,16 @@ func init() {
 }
 
 func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
-	omniRanges, err := es.GetStatementRanges(statement)
+	rawRanges, err := es.GetStatementRanges(statement)
 	if err != nil {
 		return nil, err
 	}
-	if omniRanges == nil {
+	if rawRanges == nil {
 		return []base.Range{}, nil
 	}
 
-	ranges := make([]base.Range, 0, len(omniRanges))
-	for _, r := range omniRanges {
+	ranges := make([]base.Range, 0, len(rawRanges))
+	for _, r := range rawRanges {
 		ranges = append(ranges, base.Range{
 			Start: lsp.Position{
 				Line:      r.Start.Line,

@@ -21,12 +21,14 @@ const withLocale = (language: string, run: () => void) => {
 
 import {
   absoluteTimeReading,
+  calendarTimeReading,
   compactTimeReading,
   countdownReading,
   dateTimeSegments,
   daysLeftReading,
   displayableInstantMs,
   formatAbsoluteDateTime,
+  minuteQueueTimeReading,
   operationalTimeReading,
   passedReading,
   queueTimeReading,
@@ -145,6 +147,47 @@ describe("the work-queue reading", () => {
   });
 });
 
+describe("the minute-precision work-queue reading", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test("reads 'now' through the first minute instead of counting seconds", () => {
+    expect(minuteQueueTimeReading.read(Date.now() - 30 * SECOND_MS)).toBe(
+      "now"
+    );
+    expect(minuteQueueTimeReading.read(Date.now() - 59 * SECOND_MS)).toBe(
+      "now"
+    );
+    expect(minuteQueueTimeReading.read(Date.now() + 30 * SECOND_MS)).toBe(
+      "now"
+    );
+  });
+
+  test("holds 'now' until the timestamp is a minute old", () => {
+    const timestampMs = Date.now() - 30 * SECOND_MS;
+    expect(minuteQueueTimeReading.nextChangeAt(timestampMs)).toBe(
+      timestampMs + MINUTE_MS
+    );
+  });
+
+  test("reads minutes and beyond as the work-queue reading does", () => {
+    for (const ageMs of [MINUTE_MS, 5 * MINUTE_MS, 6 * DAY_MS]) {
+      expect(minuteQueueTimeReading.read(Date.now() - ageMs)).toBe(
+        queueTimeReading.read(Date.now() - ageMs)
+      );
+    }
+    expect(
+      minuteQueueTimeReading.read(Date.now() - RELATIVE_THRESHOLD_MS)
+    ).toBe("Jan 31");
+  });
+});
+
 describe("the compact reading", () => {
   const ts = new Date("2026-08-26T06:03:22Z").getTime();
 
@@ -155,6 +198,66 @@ describe("the compact reading", () => {
   test("renders in the active locale", () => {
     withLocale("zh-CN", () => {
       expect(compactTimeReading.read(ts)).toBe("2026年8月26日 14:03");
+    });
+  });
+});
+
+describe("the calendar reading", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-23T04:03:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test("shows today and yesterday with their local time, then the full date", () => {
+    expect(
+      calendarTimeReading.read(new Date("2026-10-23T03:03:00Z").getTime())
+    ).toBe("Today 11:03 AM");
+    expect(
+      calendarTimeReading.read(new Date("2026-10-22T04:53:00Z").getTime())
+    ).toBe("Yesterday 12:53 PM");
+    expect(
+      calendarTimeReading.read(new Date("2026-10-21T04:53:00Z").getTime())
+    ).toBe("Oct 21, 2026, 12:53 PM");
+  });
+
+  test("uses local calendar days rather than a rolling 24-hour age", () => {
+    vi.setSystemTime(new Date("2026-10-22T16:10:00Z"));
+    expect(
+      calendarTimeReading.read(new Date("2026-10-22T15:50:00Z").getTime())
+    ).toBe("Yesterday 11:50 PM");
+  });
+
+  test("changes at each local midnight and settles on the older date", () => {
+    const ts = new Date("2026-10-23T02:03:00Z").getTime();
+    vi.setSystemTime(new Date("2026-10-23T15:59:59Z"));
+    expect(calendarTimeReading.read(ts)).toBe("Today 10:03 AM");
+    expect(calendarTimeReading.nextChangeAt(ts)).toBe(
+      new Date("2026-10-23T16:00:00Z").getTime()
+    );
+
+    vi.setSystemTime(new Date("2026-10-23T16:00:00Z"));
+    expect(calendarTimeReading.read(ts)).toBe("Yesterday 10:03 AM");
+    expect(calendarTimeReading.nextChangeAt(ts)).toBe(
+      new Date("2026-10-24T16:00:00Z").getTime()
+    );
+
+    vi.setSystemTime(new Date("2026-10-24T16:00:00Z"));
+    expect(calendarTimeReading.read(ts)).toBe("Oct 23, 2026, 10:03 AM");
+    expect(calendarTimeReading.nextChangeAt(ts)).toBe(Number.POSITIVE_INFINITY);
+  });
+
+  test("localizes the calendar labels and time", () => {
+    withLocale("zh-CN", () => {
+      expect(
+        calendarTimeReading.read(new Date("2026-10-23T03:03:00Z").getTime())
+      ).toBe("今天 11:03");
+      expect(
+        calendarTimeReading.read(new Date("2026-10-22T04:53:00Z").getTime())
+      ).toBe("昨天 12:53");
     });
   });
 });
@@ -356,6 +459,7 @@ describe("reading boundaries", () => {
 
   describe.each([
     ["work-queue", queueTimeReading],
+    ["minute-precision work-queue", minuteQueueTimeReading],
     ["relative", relativeTimeReading],
   ])("%s", (_name, reading) => {
     test.each(boundaryCases(SAMPLED_AGES_MS))(

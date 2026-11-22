@@ -22,6 +22,7 @@ type LabeledOption = { value: string; label: string };
 
 export type OptionConfig = {
   search?: (params: {
+    signal?: AbortSignal;
     search: string;
     pageToken: string;
     pageSize: number;
@@ -51,10 +52,22 @@ const getProjectIdOption = (proj: Project): LabeledOption => {
   };
 };
 
-const getDatabaseFullNameOption = (database: Database): LabeledOption => ({
-  label: database.name,
-  value: database.name,
-});
+export const getDatabaseFullNameOption = (
+  database: Database
+): LabeledOption => {
+  const { instanceName, databaseName } = extractDatabaseResourceName(
+    database.name
+  );
+  const instanceTitle = database.instanceResource?.title;
+  const instanceLabel =
+    instanceTitle && instanceTitle !== instanceName
+      ? `${instanceTitle} (${instanceName})`
+      : instanceName;
+  return {
+    label: `${instanceLabel} / ${databaseName}`,
+    value: database.name,
+  };
+};
 
 const getInstanceIdOption = (ins: Instance): LabeledOption => {
   const instanceId = extractInstanceResourceName(ins.name);
@@ -85,6 +98,7 @@ export const getProjectIdOptionConfig = (): OptionConfig => {
     },
     search: async (params) => {
       return fetchProjectList({
+        signal: params.signal,
         pageSize: params.pageSize,
         pageToken: params.pageToken,
         filter: {
@@ -170,6 +184,16 @@ export const getDatabaseIdOptionConfig = (parent: string): OptionConfig => {
 export const getDatabaseNameOptionConfig = (parent: string): OptionConfig => {
   return {
     options: [],
+    fallback: (value: string) => {
+      if (!value) {
+        return { label: "", value };
+      }
+      const { instanceName, databaseName } = extractDatabaseResourceName(value);
+      return {
+        label: `${instanceName} / ${databaseName}`,
+        value,
+      };
+    },
     fetch: async (names: string[]) => {
       const databases = await batchGetOrFetchDatabases(names);
       return databases.map(getDatabaseFullNameOption);

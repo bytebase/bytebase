@@ -27,3 +27,308 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE Person (
+      Id INT,
+      [Exec] INT,
+      "Select" INT,
+      absolute INT
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [exec] is a keyword identifier and should be avoided.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [select] is a keyword identifier and should be avoided.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [absolute] is a keyword identifier and should be avoided.
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE Execution (
+      Id INT, -- Key
+      Memo VARCHAR(10) DEFAULT 'Order',
+      [Exec] INT,
+      [Key] INT,
+      [Order] INT
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [exec] is a keyword identifier and should be avoided.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [key] is a keyword identifier and should be avoided.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [order] is a keyword identifier and should be avoided.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE Person (
+      [KEY] INT,
+      [Key] INT,
+      [key] INT
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [key] is a keyword identifier and should be avoided.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [key] is a keyword identifier and should be avoided.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [key] is a keyword identifier and should be avoided.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE SCHEMA [Select];
+    CREATE DATABASE [From];
+    CREATE UNIQUE INDEX
+      [Where] ON Person(Id);
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [select] is a keyword identifier and should be avoided.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [from] is a keyword identifier and should be avoided.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [where] is a keyword identifier and should be avoided.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE Person (
+      Id INT
+        CONSTRAINT [Check] CHECK (Id > 0)
+        CONSTRAINT [Default] DEFAULT 1,
+      CONSTRAINT [Unique]
+        UNIQUE (Id)
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [check] is a keyword identifier and should be avoided.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [default] is a keyword identifier and should be avoided.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [unique] is a keyword identifier and should be avoided.
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE Person
+      ADD [Select] INT,
+      CONSTRAINT [From] UNIQUE (Id);
+    ALTER TABLE Person ALTER COLUMN [Where] INT;
+    ALTER TABLE Person DROP CONSTRAINT [Order];
+    ALTER TABLE Person DROP COLUMN [Group];
+    ALTER TABLE [By] ADD Age INT;
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [select] is a keyword identifier and should be avoided.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [from] is a keyword identifier and should be avoided.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [where] is a keyword identifier and should be avoided.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [order] is a keyword identifier and should be avoided.
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE PROCEDURE [Select] AS
+    BEGIN
+      CREATE TABLE [From] (
+        [Where] INT);
+    END
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [from] is a keyword identifier and should be avoided.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [where] is a keyword identifier and should be avoided.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    IF 1 = 1
+    BEGIN
+      CREATE TABLE Person (Id INT);
+      CREATE INDEX [Order] ON Person(Id);
+    END
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [order] is a keyword identifier and should be avoided.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    DECLARE @Select TABLE ([From] INT);
+    CREATE TYPE [Where] AS TABLE ([Order] INT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [from] is a keyword identifier and should be avoided.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [order] is a keyword identifier and should be avoided.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE [Select].[From].Person (Id INT, INDEX [Where] (Id));
+    CREATE VIEW [Order] AS SELECT 1 AS [Group];
+    CREATE TABLE [By] WITH (DISTRIBUTION = ROUND_ROBIN) AS SELECT 1 AS Id;
+    SELECT 1 AS [Having] INTO [Into];
+    EXEC sp_rename 'dbo.Person', 'Union';
+  changeType: 1
+- statement: |-
+    CREATE TABLE [Selects] ([Select ] INT, [Nvarchar] INT);
+    CREATE TABLE #Select (Id INT);
+  changeType: 1
+- statement: CREATE TABLE Person ([END-EXEC] INT, [Within Group] INT, [KEY] INT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [end-exec] is a keyword identifier and should be avoided.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [key] is a keyword identifier and should be avoided.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier [within group] is a keyword identifier and should be avoided.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

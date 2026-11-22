@@ -8,7 +8,7 @@ const textareaVariants = cva(
   cn(
     "flex min-h-25 w-full rounded-xs border border-control-border bg-transparent text-main transition-colors",
     "placeholder:text-control-placeholder",
-    "aria-invalid:border-error",
+    "aria-invalid:border-error aria-invalid:focus:border-error aria-invalid:focus:ring-1 aria-invalid:focus:ring-error/30 aria-invalid:focus:ring-inset",
     "focus:outline-hidden focus:ring-1 focus:ring-accent focus:border-accent",
     "disabled:cursor-not-allowed disabled:bg-control-bg disabled:opacity-50"
   )

@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   getRollout: vi.fn(),
   listTaskRuns: vi.fn(),
   setDocumentTitle: vi.fn(),
+  useUnsavedChangesGuard: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -55,6 +56,10 @@ vi.mock("@/hooks/useProjectByName", () => ({
       title: "Foo",
       state: State.ACTIVE,
     }),
+}));
+
+vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
+  useUnsavedChangesGuard: mocks.useUnsavedChangesGuard,
 }));
 
 vi.mock("@/app/router", () => ({
@@ -175,6 +180,17 @@ describe("useIssueDetailPage", () => {
     expect(result.current.rollout?.stages[0].tasks[0].status).toBe(
       Task_Status.SKIPPED
     );
+  });
+
+  test("uses the shared unsaved changes guard while editing", async () => {
+    const { result } = renderHook(() =>
+      useIssueDetailPage({ issueId: "1", pageHost: null, projectId: "foo" })
+    );
+    await waitFor(() => expect(result.current.ready).toBe(true));
+
+    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(false);
+    act(() => result.current.setEditing("issue", true));
+    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(true);
   });
 
   test("invalidates Issue and Plan lists when the linked Issue changes", async () => {

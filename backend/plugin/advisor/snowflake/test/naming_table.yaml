@@ -87,3 +87,86 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE TABLE lower_ctas AS SELECT 1 AS ID;
+  changeType: 1
+- statement: CREATE TABLE lower_like LIKE T;
+  changeType: 1
+- statement: CREATE TABLE lower_clone CLONE T;
+  changeType: 1
+- statement: |-
+    BEGIN
+      CREATE TABLE lower_in_block(ID INT);
+    END
+  changeType: 1
+- statement: CREATE TASK T WAREHOUSE = W SCHEDULE = '1 MINUTE' AS CREATE TABLE lower_in_task(ID INT);
+  changeType: 1
+- statement: EXPLAIN CREATE TABLE lower_under_explain(ID INT);
+  changeType: 1
+- statement: CREATE TABLE "A""B"(ID INT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"A""B" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE IDENTIFIER('ORDER_ITEM')(ID INT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"IDENTIFIER(''ORDER_ITEM'')" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE "数数数数数数数数数数数数数数数数数数数数数数"(ID INT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"数数数数数数数数数数数数数数数数数数数数数数" mismatches table naming convention, its length should be within 64 characters'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"数数数数数数数数数数数数数数数数数数数数数数" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    SELECT 1;
+
+
+    CREATE TABLE
+      lower_multi_line(ID INT);
+    ALTER
+    TABLE T
+    RENAME TO lower_renamed;
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"lower_multi_line" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '"lower_renamed" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
+      startposition:
+        line: 7
+        column: 0
+      endposition: null

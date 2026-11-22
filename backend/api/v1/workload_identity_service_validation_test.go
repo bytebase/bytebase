@@ -58,6 +58,12 @@ func TestWorkloadIdentityConfigValidation(t *testing.T) {
 	t.Run("create accepts a bindable config", func(t *testing.T) {
 		require.New(t).NoError(create("wi-valid", valid()))
 	})
+	t.Run("create rejects an ID that holds a slash", func(t *testing.T) {
+		a := require.New(t)
+		err := create("deploy/ci", valid())
+		a.Error(err)
+		a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	})
 	t.Run("create rejects a missing config", func(t *testing.T) {
 		a := require.New(t)
 		err := create("wi-none", nil)
@@ -93,4 +99,58 @@ func TestWorkloadIdentityConfigValidation(t *testing.T) {
 	t.Run("update accepts a title-only mask over a bindable config", func(t *testing.T) {
 		require.New(t).NoError(update(nil, "title"))
 	})
+}
+
+// TestCreateWorkloadIdentityChecksItsProject covers the projects the ACL lets
+// through: an archived one, and "projects/-", which it authorizes at workspace
+// scope.
+func TestCreateWorkloadIdentityChecksItsProject(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	db, stores, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('default')`)
+	a.NoError(err)
+	_, err = db.ExecContext(ctx, `INSERT INTO project (resource_id, workspace, name, deleted) VALUES
+		('hr', 'default', 'HR', FALSE), ('archived', 'default', 'Archived', TRUE)`)
+	a.NoError(err)
+	service := &WorkloadIdentityService{store: stores, profile: &config.Profile{}}
+
+	create := func(parent, id string) error {
+		_, err := service.CreateWorkloadIdentity(ctx, connect.NewRequest(&v1pb.CreateWorkloadIdentityRequest{
+			Parent:             parent,
+			WorkloadIdentityId: id,
+			WorkloadIdentity: &v1pb.WorkloadIdentity{Title: id, WorkloadIdentityConfig: &v1pb.WorkloadIdentityConfig{
+				ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
+				IssuerUrl:        "https://token.actions.githubusercontent.com",
+				AllowedAudiences: []string{"bytebase"},
+				SubjectPattern:   "repo:acme-corp/deploy:*",
+			}},
+		}))
+		return err
+	}
+	stored := func(t *testing.T, email string) bool {
+		var n int
+		require.NoError(t, db.QueryRowContext(ctx, `SELECT count(*) FROM workload_identity WHERE email = $1`, email).Scan(&n))
+		return n > 0
+	}
+
+	a.NoError(create("projects/hr", "ci"))
+	a.True(stored(t, "ci@hr.workload.bytebase.com"))
+
+	for _, tc := range []struct {
+		name, parent, email string
+	}{
+		{"an archived project", "projects/archived", "ci@archived.workload.bytebase.com"},
+		{"every project's placeholder", "projects/-", "ci@-.workload.bytebase.com"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			a := require.New(t)
+			err := create(tc.parent, "ci")
+			a.Error(err)
+			a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+			a.False(stored(t, tc.email))
+		})
+	}
 }

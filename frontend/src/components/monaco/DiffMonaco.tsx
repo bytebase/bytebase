@@ -56,11 +56,16 @@ export function DiffMonaco({
 
   useEffect(() => {
     let disposed = false;
+    let ownedEditor: IStandaloneDiffEditor | null = null;
+    let ownedModel: ReturnType<IStandaloneDiffEditor["getModel"]> = null;
     let contentSizeSubscription: { dispose(): void } | null = null;
+    const host = document.createElement("div");
+    host.className = "h-full w-full";
+    containerRef.current?.replaceChildren(host);
     (async () => {
       if (!containerRef.current) return;
       const editor = await createMonacoDiffEditor({
-        container: containerRef.current,
+        container: host,
         options: {
           readOnly,
           domReadOnly: readOnly,
@@ -71,8 +76,10 @@ export function DiffMonaco({
         editor.dispose();
         return;
       }
+      ownedEditor = editor;
       editorRef.current = editor;
       const monaco = await loadMonacoEditor();
+      if (disposed) return;
       const originalModel = monaco.editor.createModel(
         normalizedOriginal,
         language
@@ -81,12 +88,15 @@ export function DiffMonaco({
         normalizedModified,
         language
       );
-      editor.setModel({
+      ownedModel = {
         original: originalModel,
         modified: modifiedModel,
-      });
+      };
+      editor.setModel(ownedModel);
       await setMonacoModelLanguage(originalModel, language);
+      if (disposed) return;
       await setMonacoModelLanguage(modifiedModel, language);
+      if (disposed) return;
       const alignedEditor =
         autoHeightAlignment === "original"
           ? editor.getOriginalEditor()
@@ -109,11 +119,13 @@ export function DiffMonaco({
       disposed = true;
       setReady(false);
       contentSizeSubscription?.dispose();
-      const model = editorRef.current?.getModel();
-      model?.original?.dispose();
-      model?.modified?.dispose();
-      editorRef.current?.dispose();
-      editorRef.current = null;
+      // Monaco requires the diff widget to release models before disposal.
+      ownedEditor?.setModel(null);
+      ownedModel?.original.dispose();
+      ownedModel?.modified.dispose();
+      ownedEditor?.dispose();
+      if (editorRef.current === ownedEditor) editorRef.current = null;
+      host.remove();
     };
   }, [
     autoHeightAlignment,

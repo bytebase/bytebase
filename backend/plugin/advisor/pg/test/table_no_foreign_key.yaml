@@ -20,3 +20,29 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE TABLE s.t(a int REFERENCES u(id));
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: 'Foreign key is not allowed in the table "s"."t", related statement: "CREATE TABLE s.t(a int REFERENCES u(id))"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ADD COLUMN b int REFERENCES u(id);
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t
+      ADD CONSTRAINT fk FOREIGN KEY (a) REFERENCES u(id);
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: |-
+        Foreign key is not allowed in the table "public"."t", related statement: "ALTER TABLE t
+          ADD CONSTRAINT fk FOREIGN KEY (a) REFERENCES u(id)"
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

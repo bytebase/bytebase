@@ -307,6 +307,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.FederatedIdentity"><span class="badge">M</span>FederatedIdentity</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.MCPDelegation"><span class="badge">M</span>MCPDelegation</a>
                 </li>
               
@@ -589,6 +593,10 @@
                   <a href="#bytebase.store.DataSourceType"><span class="badge">E</span>DataSourceType</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.Vendor"><span class="badge">E</span>Vendor</a>
+                </li>
+              
               
               
             </ul>
@@ -665,33 +673,6 @@
         
           
           <li>
-            <a href="#store%2freview_run.proto">store/review_run.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.ReviewRun"><span class="badge">M</span>ReviewRun</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ReviewRunPayload"><span class="badge">M</span>ReviewRunPayload</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.store.ReviewRun.Status"><span class="badge">E</span>ReviewRun.Status</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ReviewRun.Type"><span class="badge">E</span>ReviewRun.Type</a>
-                </li>
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#store%2fissue_comment.proto">store/issue_comment.proto</a>
             <ul>
               
@@ -713,6 +694,10 @@
               
                 <li>
                   <a href="#bytebase.store.IssueCommentPayload.ReviewMetadata"><span class="badge">M</span>IssueCommentPayload.ReviewMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.IssueCommentPayload.ReviewRunCompletion"><span class="badge">M</span>IssueCommentPayload.ReviewRunCompletion</a>
                 </li>
               
                 <li>
@@ -892,7 +877,15 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.Project.ExportSetting"><span class="badge">M</span>Project.ExportSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.Project.LabelsEntry"><span class="badge">M</span>Project.LabelsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Project.SharePointDestination"><span class="badge">M</span>Project.SharePointDestination</a>
                 </li>
               
               
@@ -956,6 +949,10 @@
                   <a href="#bytebase.store.ReleasePayload.VCSSource"><span class="badge">M</span>ReleasePayload.VCSSource</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.ReleasePayload.VCSSource.PullRequest"><span class="badge">M</span>ReleasePayload.VCSSource.PullRequest</a>
+                </li>
+              
               
               
               
@@ -1006,6 +1003,29 @@
               
                 <li>
                   <a href="#bytebase.store.SQLReviewRule.Type"><span class="badge">E</span>SQLReviewRule.Type</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#store%2freview_run.proto">store/review_run.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRun"><span class="badge">M</span>ReviewRun</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRunPayload"><span class="badge">M</span>ReviewRunPayload</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRun.Status"><span class="badge">E</span>ReviewRun.Status</a>
                 </li>
               
               
@@ -1210,6 +1230,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.ExportSetting"><span class="badge">M</span>ExportSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.MCPSetting"><span class="badge">M</span>MCPSetting</a>
                 </li>
               
@@ -1227,6 +1251,10 @@
               
                 <li>
                   <a href="#bytebase.store.SemanticTypeSetting.SemanticType"><span class="badge">M</span>SemanticTypeSetting.SemanticType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SharePointSetting"><span class="badge">M</span>SharePointSetting</a>
                 </li>
               
                 <li>
@@ -1352,6 +1380,18 @@
               
                 <li>
                   <a href="#bytebase.store.Task"><span class="badge">M</span>Task</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Task.ReleaseState"><span class="badge">M</span>Task.ReleaseState</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Task.ReleaseState.DeletedRevision"><span class="badge">M</span>Task.ReleaseState.DeletedRevision</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Task.ReleaseState.Range"><span class="badge">M</span>Task.ReleaseState.Range</a>
                 </li>
               
               
@@ -1648,6 +1688,14 @@ The server computes expire_time from this value at activation time. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The container name to execute the query against, used for CosmosDB only. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>query_hash</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Lowercase hex SHA-256 of query after trimming boundary space, tab, LF, CR,
+vertical tab, and form feed. Derived by the store for grant matching. </p></td>
                 </tr>
               
             </tbody>
@@ -2345,6 +2393,15 @@ Examples:
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>EXECUTE</td>
+                <td>70</td>
+                <td><p>A statement that runs procedural or dynamic code: a procedure call (CALL,
+T-SQL EXEC), a prepared or dynamic statement (EXECUTE, EXECUTE IMMEDIATE,
+EXEC of a SQL string), or an anonymous block (PostgreSQL DO, Oracle
+BEGIN ... END).</p></td>
+              </tr>
+            
           </tbody>
         </table>
       
@@ -2867,6 +2924,45 @@ it is one of the two MCP doors that sit outside the API — the /mcp
 connection gate and the OAuth2 consent that mints the credential it checks.
 Never set for public API calls. Presence of this message is the MCP-origin
 marker. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>federated_identity</td>
+                  <td><a href="#bytebase.store.FederatedIdentity">FederatedIdentity</a></td>
+                  <td></td>
+                  <td><p>The external workload behind a workload identity. Set on a successful
+token exchange and on every call made with the token it issued. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.FederatedIdentity">FederatedIdentity</h3>
+        <p>The verified OIDC identity a workload identity token was exchanged for.</p><p>Recorded for audit and never read for authorization.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>issuer</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The token&#39;s &#34;iss&#34; claim, e.g. &#34;https://token.actions.githubusercontent.com&#34;. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>subject</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The token&#39;s &#34;sub&#34; claim, e.g. &#34;repo:my-org/app:ref:refs/heads/main&#34;. </p></td>
                 </tr>
               
             </tbody>
@@ -5228,6 +5324,13 @@ It is used to determine whether the table names and database names are case sens
 For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } </p></td>
                 </tr>
               
+                <tr>
+                  <td>vendor</td>
+                  <td><a href="#bytebase.store.Vendor">Vendor</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5705,6 +5808,29 @@ holds the token value.</p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.store.Vendor">Vendor</h3>
+        <p>Database service variant, independent of engine and registration method.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>VENDOR_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NEON</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
 
@@ -5792,7 +5918,7 @@ Missing from persisted payloads means false. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The role being requested for the user.
-Format: roles/EXPORTER. </p></td>
+Format: roles/{role}. </p></td>
                 </tr>
               
                 <tr>
@@ -6215,124 +6341,6 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
     
       
       <div class="file-heading">
-        <h2 id="store/review_run.proto">store/review_run.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.ReviewRun">ReviewRun</h3>
-        <p>ReviewRun is the status slot of one reviewer (rule engine or AI) on one</p><p>issue. Results live in issue comments; the run carries none.</p>
-
-        
-
-        
-      
-        <h3 id="bytebase.store.ReviewRunPayload">ReviewRunPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>error</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Fatal execution error for the FAILED status, e.g. &#34;metadata not synced:
-instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the
-executor or by the reaper. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.store.ReviewRun.Status">ReviewRun.Status</h3>
-        <p>Strictly 1:1 with the status CHECK constraint — no unpersisted values.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>AVAILABLE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>RUNNING</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DONE</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FAILED</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.ReviewRun.Type">ReviewRun.Type</h3>
-        <p>The reviewer. Stored by name in review_run.type, which has no CHECK:</p><p>like Issue.Type and Task.Type, the enum is the source of truth and a</p><p>new reviewer is a new value, not a migration.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>RULE</td>
-                <td>1</td>
-                <td><p>Review against the standard rules.</p></td>
-              </tr>
-            
-              <tr>
-                <td>AI</td>
-                <td>2</td>
-                <td><p>Review against the natural-language AI review policy, performed by a
-model.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
         <h2 id="store/issue_comment.proto">store/issue_comment.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -6384,11 +6392,20 @@ model.</p></td>
                 </tr>
               
                 <tr>
+                  <td>review_run_completion</td>
+                  <td><a href="#bytebase.store.IssueCommentPayload.ReviewRunCompletion">IssueCommentPayload.ReviewRunCompletion</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>statement_anchor</td>
                   <td><a href="#bytebase.store.IssueCommentPayload.StatementAnchor">IssueCommentPayload.StatementAnchor</a></td>
                   <td></td>
                   <td><p>The statement context an inline comment references. Set at creation and
-immutable afterward; never set together with an event. </p></td>
+immutable afterward, except that a later run reporting a review result
+again moves the result to its statement in the SQL that run reviewed.
+Never set together with an event. </p></td>
                 </tr>
               
                 <tr>
@@ -6537,7 +6554,7 @@ change. </p></td>
         
       
         <h3 id="bytebase.store.IssueCommentPayload.ReviewMetadata">IssueCommentPayload.ReviewMetadata</h3>
-        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. Results from the same reviewer are superseded</p><p>together: when a run completes, it resolves every OPEN root of its type</p><p>in the transaction that posts the new results.</p>
+        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer found it, what it was judged against, its priority, the</p><p>databases it applies to, and for an AI result, its title. When a run</p><p>completes, an earlier result whose fingerprint the run reports again</p><p>keeps its thread, and the run posts no new result for it; every other</p><p>earlier result on the issue is resolved and marked superseded, in the</p><p>transaction that posts the new results.</p>
 
         
           <table class="field-table">
@@ -6547,18 +6564,11 @@ change. </p></td>
             <tbody>
               
                 <tr>
-                  <td>run_type</td>
-                  <td><a href="#bytebase.store.ReviewRun.Type">ReviewRun.Type</a></td>
-                  <td></td>
-                  <td><p>The reviewer slot that posted the result; review_run.type stores the
-same enum by name. </p></td>
-                </tr>
-              
-                <tr>
                   <td>rule_type</td>
                   <td><a href="#bytebase.store.ReviewRuleType">ReviewRuleType</a></td>
                   <td></td>
-                  <td><p>The rule judged against. Set if and only if run_type is RULE. </p></td>
+                  <td><p>The rule judged against. Set on a result of a standard rule, and on no
+result that the AI review posts on its own. </p></td>
                 </tr>
               
                 <tr>
@@ -6576,6 +6586,97 @@ them. </p></td>
                   <td><p>Every database the result applies to, sorted. Always complete; the
 renderer collapses it when it equals the spec&#39;s target set.
 Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>superseded</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>A later run has completed without reporting the result again, so the
+latest review does not hold it. Set by that run whatever the thread
+state, and never cleared. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Identifies the finding across runs: equal fingerprints are the same
+finding on the same SQL. The rule review derives it from what it
+judged. The AI review starts it with a hash of its statement and ends
+it at random, and a later run carries it over to the finding its merge
+matches to the result. Unique among the results of one run. Empty on a
+result that predates it, and an empty fingerprint matches nothing. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>attempt</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The review_run.attempt of the run that posted the result. A result
+a later run reports again keeps its attempt. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>codes</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The conditions a RULE result reports, as omni finding codes such as
+&#34;WT101&#34;, one per reason. Empty for other reviewers. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the problem an AI result reports, on one line; the comment
+holds the rest. Empty for a RULE result, which rule_type names. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.IssueCommentPayload.ReviewRunCompletion">IssueCommentPayload.ReviewRunCompletion</h3>
+        <p>ReviewRunCompletion records that a review run completed DONE, and what</p><p>it did to the earlier results. Posted with no creator, in the</p><p>transaction that posts the run's results.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>attempt</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The run&#39;s review_run.attempt; its new results carry the same
+ReviewMetadata.attempt. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>posted_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Results the run posted as new threads. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kept_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Earlier results the run reported again, which kept their threads. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>superseded_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Earlier results the run no longer reports, which it superseded. </p></td>
                 </tr>
               
             </tbody>
@@ -7416,14 +7517,6 @@ resource.instance_id == &#34;local&#34; &amp;&amp; resource.database_name == &#3
             <tbody>
               
                 <tr>
-                  <td>disable_export</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>workspace-level policy
-Disable exporting data in the SQL editor. </p></td>
-                </tr>
-              
-                <tr>
                   <td>maximum_result_rows</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
@@ -7446,6 +7539,16 @@ Disable copying data. </p></td>
                   <td></td>
                   <td><p>workspace-level policy
 Allow using the admin data source to query in the SQL editor. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>disable_download</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>workspace-level policy
+Hide the Download export destination in the SQL Editor. Exports can still go
+to a configured storage destination such as SharePoint. The Export API does
+not check this setting. </p></td>
                 </tr>
               
                 <tr>
@@ -7815,8 +7918,9 @@ If enabled, the issue will be created with the prepend &#34;set role &lt;db_owne
                   <td>ci_sampling_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of databases to sample during CI data validation.
-If not specified, sampling is disabled, resulting in a full validation. </p></td>
+                  <td><p>The maximum number of databases to sample during CI data validation and
+SQL review. If not specified, sampling is disabled, resulting in a full
+validation. </p></td>
                 </tr>
               
                 <tr>
@@ -7884,6 +7988,13 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td><p>Whether to allow the last Plan editor to approve a database change issue. </p></td>
                 </tr>
               
+                <tr>
+                  <td>export_setting</td>
+                  <td><a href="#bytebase.store.Project.ExportSetting">Project.ExportSetting</a></td>
+                  <td></td>
+                  <td><p>Destinations offered for this project&#39;s exports. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7915,6 +8026,30 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
 
         
       
+        <h3 id="bytebase.store.Project.ExportSetting">Project.ExportSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sharepoint</td>
+                  <td><a href="#bytebase.store.Project.SharePointDestination">Project.SharePointDestination</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.Project.LabelsEntry">Project.LabelsEntry</h3>
         <p></p>
 
@@ -7937,6 +8072,30 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Project.SharePointDestination">Project.SharePointDestination</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The canonical URL of a SharePoint document library root or folder. </p></td>
                 </tr>
               
             </tbody>
@@ -8228,6 +8387,86 @@ IM integration setting should be set for this function to work. </p></td>
               
                 <tr>
                   <td>url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_sha</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>author_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>author_login</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pull_request</td>
+                  <td><a href="#bytebase.store.ReleasePayload.VCSSource.PullRequest">ReleasePayload.VCSSource.PullRequest</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ReleasePayload.VCSSource.PullRequest">ReleasePayload.VCSSource.PullRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>number</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -9201,6 +9440,110 @@ IM integration setting should be set for this function to work. </p></td>
     
       
       <div class="file-heading">
+        <h2 id="store/review_run.proto">store/review_run.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.ReviewRun">ReviewRun</h3>
+        <p>ReviewRun is the status slot of the review on one issue. Results live in</p><p>issue comments; the run carries none.</p>
+
+        
+
+        
+      
+        <h3 id="bytebase.store.ReviewRunPayload">ReviewRunPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Fatal execution error for the FAILED status, e.g. &#34;metadata not synced:
+instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the
+executor or by the reaper. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>approval_input_version</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The plan&#39;s PlanConfig.approval_input_version when the slot was reset: the
+version of the plan&#39;s SQL this run reviews. Completion keeps it. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>code</td>
+                  <td><a href="#google.rpc.Code">google.rpc.Code</a></td>
+                  <td></td>
+                  <td><p>The kind of failure behind `error`, for the FAILED status. Unset when
+the failure fits no more specific code. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.ReviewRun.Status">ReviewRun.Status</h3>
+        <p>Strictly 1:1 with the status CHECK constraint — no unpersisted values.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AVAILABLE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RUNNING</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DONE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FAILED</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="store/revision.proto">store/revision.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -9685,6 +10028,15 @@ is deleted or transferred, degrading to &#34;no database&#34; in the UI. </p></t
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_review_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the AI SQL review may run. It is a consent of its own beside
+`enabled`, because a review sends the statements of a change to the
+provider and can send the schema of its target databases. </p></td>
                 </tr>
               
             </tbody>
@@ -10573,6 +10925,30 @@ are /[a-z][0-9]-/. </p></td>
 
         
       
+        <h3 id="bytebase.store.ExportSetting">ExportSetting</h3>
+        <p>ExportSetting holds each export destination provider's credentials.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sharepoint</td>
+                  <td><a href="#bytebase.store.SharePointSetting">SharePointSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.MCPSetting">MCPSetting</h3>
         <p>MCPSetting is what an MCP (Model Context Protocol) session may do in this</p><p>workspace. It is its own setting rather than a field of the workspace profile</p><p>because the set grows, and because the /mcp kill switch reads it on every</p><p>request and should not share a row — or a parse failure — with branding and</p><p>sign-in configuration.</p>
 
@@ -10745,6 +11121,44 @@ it only reads. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>icon is the icon for semantic type, it can be emoji or base64 encoded image. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SharePointSetting">SharePointSetting</h3>
+        <p>SharePointSetting is the Microsoft Entra application that uploads exports to</p><p>SharePoint.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tenant_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -11118,49 +11532,49 @@ frontend-only concept that seeds these colors; the store only holds them. </p></
                   <td>min_length</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>min_length is the minimum length for password, should be no less than 8. </p></td>
+                  <td><p>min_length is the minimum password length. It must be at least 8. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_number</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_number requires the password must contain at least one number. </p></td>
+                  <td><p>require_number requires the password to contain at least one number. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_letter</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_letter requires the password must contain at least one letter, regardless of upper case or lower case </p></td>
+                  <td><p>require_letter requires the password to contain at least one letter, either uppercase or lowercase. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_uppercase_letter</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_uppercase_letter requires the password must contain at least one upper case letter. </p></td>
+                  <td><p>require_uppercase_letter requires the password to contain at least one uppercase letter. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_special_character</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_special_character requires the password must contain at least one special character. </p></td>
+                  <td><p>require_special_character requires the password to contain at least one special character. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_reset_password_for_first_login</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_reset_password_for_first_login requires users to reset their password after the 1st login. </p></td>
+                  <td><p>require_reset_password_for_first_login requires users to change their password after their first login. </p></td>
                 </tr>
               
                 <tr>
                   <td>password_rotation</td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
-                  <td><p>password_rotation requires users to reset their password after the duration. </p></td>
+                  <td><p>password_rotation requires users to change their password after the duration. </p></td>
                 </tr>
               
             </tbody>
@@ -11447,6 +11861,12 @@ frontend-only concept that seeds these colors; the store only holds them. </p></
               <tr>
                 <td>MCP</td>
                 <td>10</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EXPORT</td>
+                <td>11</td>
                 <td><p></p></td>
               </tr>
             
@@ -11869,6 +12289,144 @@ Used for GitOps release-based tasks that execute multiple files. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether to create an automatic backup before applying changes. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>skipper</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The email of the user who skipped the task. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>skip_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>When the task was skipped. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>release_state</td>
+                  <td><a href="#bytebase.store.Task.ReleaseState">Task.ReleaseState</a></td>
+                  <td></td>
+                  <td><p>The release&#39;s file state on the task&#39;s database when the task was
+created. Set only for tasks of a versioned release. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Task.ReleaseState">Task.ReleaseState</h3>
+        <p>A preview: the run reads the database's revisions again when it starts.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>pending_ranges</td>
+                  <td><a href="#bytebase.store.Task.ReleaseState.Range">Task.ReleaseState.Range</a></td>
+                  <td>repeated</td>
+                  <td><p>The release&#39;s files the task will apply, as half-open ranges of
+positions in the release&#39;s file list, ascending. Every other file&#39;s
+version was applied: the database had a live VERSIONED revision with it. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>applied_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The number of the release&#39;s versions already applied. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>compute_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>When the state was computed. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>deleted_revisions</td>
+                  <td><a href="#bytebase.store.Task.ReleaseState.DeletedRevision">Task.ReleaseState.DeletedRevision</a></td>
+                  <td>repeated</td>
+                  <td><p>The versions to apply that had a deleted revision, in release order. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Task.ReleaseState.DeletedRevision">Task.ReleaseState.DeletedRevision</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>delete_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The newest deletion&#39;s time and the deleter&#39;s email. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>deleter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Task.ReleaseState.Range">Task.ReleaseState.Range</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>

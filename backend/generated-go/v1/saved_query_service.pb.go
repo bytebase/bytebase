@@ -1208,17 +1208,17 @@ var File_v1_saved_query_service_proto protoreflect.FileDescriptor
 
 const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1cv1/saved_query_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x8e\x01\n" +
-	"\x17CreateSavedQueryRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x12=\n" +
-	"\vsaved_query\x18\x02 \x01(\v2\x17.bytebase.v1.SavedQueryB\x03\xe0A\x02R\n" +
-	"savedQuery\"K\n" +
-	"\x14GetSavedQueryRequest\x123\n" +
-	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
-	"\x17bytebase.com/SavedQueryR\x04name\"\xbe\x01\n" +
-	"\x17ListSavedQueriesRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x1cv1/saved_query_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x90\x01\n" +
+	"\x17CreateSavedQueryRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12>\n" +
+	"\vsaved_query\x18\x02 \x01(\v2\x17.bytebase.v1.SavedQueryB\x04\xe2A\x01\x02R\n" +
+	"savedQuery\"L\n" +
+	"\x14GetSavedQueryRequest\x124\n" +
+	"\x04name\x18\x01 \x01(\tB \xe2A\x01\x02\xfaA\x19\n" +
+	"\x17bytebase.com/SavedQueryR\x04name\"\xbf\x01\n" +
+	"\x17ListSavedQueriesRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x16\n" +
 	"\x06filter\x18\x02 \x01(\tR\x06filter\x12\x1b\n" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
@@ -1227,54 +1227,54 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\border_by\x18\x05 \x01(\tR\aorderBy\"\x80\x01\n" +
 	"\x18ListSavedQueriesResponse\x12<\n" +
 	"\rsaved_queries\x18\x01 \x03(\v2\x17.bytebase.v1.SavedQueryR\fsavedQueries\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"n\n" +
-	"\x1eSearchSavedQueryFoldersRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"o\n" +
+	"\x1eSearchSavedQueryFoldersRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x16\n" +
 	"\x06filter\x18\x02 \x01(\tR\x06filter\";\n" +
 	"\x1fSearchSavedQueryFoldersResponse\x12\x18\n" +
-	"\afolders\x18\x01 \x03(\tR\afolders\"\x95\x01\n" +
-	"\x17UpdateSavedQueryRequest\x12=\n" +
-	"\vsaved_query\x18\x01 \x01(\v2\x17.bytebase.v1.SavedQueryB\x03\xe0A\x02R\n" +
+	"\afolders\x18\x01 \x03(\tR\afolders\"\x96\x01\n" +
+	"\x17UpdateSavedQueryRequest\x12>\n" +
+	"\vsaved_query\x18\x01 \x01(\v2\x17.bytebase.v1.SavedQueryB\x04\xe2A\x01\x02R\n" +
 	"savedQuery\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"l\n" +
-	"\x1bUpdateSavedQueryStarRequest\x123\n" +
-	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
+	"updateMask\"m\n" +
+	"\x1bUpdateSavedQueryStarRequest\x124\n" +
+	"\x04name\x18\x01 \x01(\tB \xe2A\x01\x02\xfaA\x19\n" +
 	"\x17bytebase.com/SavedQueryR\x04name\x12\x18\n" +
-	"\astarred\x18\x02 \x01(\bR\astarred\"\xb4\x01\n" +
-	"\x19MoveMySavedQueriesRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x122\n" +
-	"\rsource_folder\x18\x02 \x01(\tB\r\xe0A\x02\xbaH\ar\x05\x10\x01\x18\x80\x02R\fsourceFolder\x12-\n" +
+	"\astarred\x18\x02 \x01(\bR\astarred\"\xb6\x01\n" +
+	"\x19MoveMySavedQueriesRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x123\n" +
+	"\rsource_folder\x18\x02 \x01(\tB\x0e\xe2A\x01\x02\xbaH\ar\x05\x10\x01\x18\x80\x02R\fsourceFolder\x12-\n" +
 	"\rtarget_folder\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\ftargetFolder\"=\n" +
 	"\x1aMoveMySavedQueriesResponse\x12\x1f\n" +
 	"\vmoved_count\x18\x01 \x01(\x05R\n" +
-	"movedCount\"Y\n" +
-	"\x1aGetSavedQueryPolicyRequest\x12;\n" +
-	"\bresource\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
-	"\x17bytebase.com/SavedQueryR\bresource\"\x95\x01\n" +
-	"\x1aSetSavedQueryPolicyRequest\x12;\n" +
-	"\bresource\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
-	"\x17bytebase.com/SavedQueryR\bresource\x12:\n" +
-	"\x06policy\x18\x02 \x01(\v2\x1d.bytebase.v1.SavedQueryPolicyB\x03\xe0A\x02R\x06policy\"b\n" +
+	"movedCount\"Z\n" +
+	"\x1aGetSavedQueryPolicyRequest\x12<\n" +
+	"\bresource\x18\x01 \x01(\tB \xe2A\x01\x02\xfaA\x19\n" +
+	"\x17bytebase.com/SavedQueryR\bresource\"\x97\x01\n" +
+	"\x1aSetSavedQueryPolicyRequest\x12<\n" +
+	"\bresource\x18\x01 \x01(\tB \xe2A\x01\x02\xfaA\x19\n" +
+	"\x17bytebase.com/SavedQueryR\bresource\x12;\n" +
+	"\x06policy\x18\x02 \x01(\v2\x1d.bytebase.v1.SavedQueryPolicyB\x04\xe2A\x01\x02R\x06policy\"b\n" +
 	"\x10SavedQueryPolicy\x12:\n" +
 	"\bbindings\x18\x01 \x03(\v2\x1e.bytebase.v1.SavedQueryBindingR\bbindings\x12\x12\n" +
-	"\x04etag\x18\x02 \x01(\tR\x04etag\"\xb3\x01\n" +
-	"\x11SavedQueryBinding\x12?\n" +
-	"\x05level\x18\x01 \x01(\x0e2$.bytebase.v1.SavedQueryBinding.LevelB\x03\xe0A\x02R\x05level\x12%\n" +
-	"\amembers\x18\x02 \x03(\tB\v\xe0A\x02\xbaH\x05\x92\x01\x02\b\x01R\amembers\"6\n" +
+	"\x04etag\x18\x02 \x01(\tR\x04etag\"\xb5\x01\n" +
+	"\x11SavedQueryBinding\x12@\n" +
+	"\x05level\x18\x01 \x01(\x0e2$.bytebase.v1.SavedQueryBinding.LevelB\x04\xe2A\x01\x02R\x05level\x12&\n" +
+	"\amembers\x18\x02 \x03(\tB\f\xe2A\x01\x02\xbaH\x05\x92\x01\x02\b\x01R\amembers\"6\n" +
 	"\x05Level\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
 	"\x06VIEWER\x10\x01\x12\n" +
 	"\n" +
-	"\x06EDITOR\x10\x02\"N\n" +
-	"\x17DeleteSavedQueryRequest\x123\n" +
-	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
-	"\x17bytebase.com/SavedQueryR\x04name\"\xa5\x01\n" +
-	"\x19SearchSavedQueriesRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x06EDITOR\x10\x02\"O\n" +
+	"\x17DeleteSavedQueryRequest\x124\n" +
+	"\x04name\x18\x01 \x01(\tB \xe2A\x01\x02\xfaA\x19\n" +
+	"\x17bytebase.com/SavedQueryR\x04name\"\xa6\x01\n" +
+	"\x19SearchSavedQueriesRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x16\n" +
 	"\x06filter\x18\x02 \x01(\tR\x06filter\x12\x1b\n" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
@@ -1282,21 +1282,21 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"page_token\x18\x04 \x01(\tR\tpageToken\"\x82\x01\n" +
 	"\x1aSearchSavedQueriesResponse\x12<\n" +
 	"\rsaved_queries\x18\x01 \x03(\v2\x17.bytebase.v1.SavedQueryR\fsavedQueries\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8e\x04\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x95\x04\n" +
 	"\n" +
-	"SavedQuery\x12\x1a\n" +
-	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x1d\n" +
-	"\aproject\x18\x02 \x01(\tB\x03\xe0A\x03R\aproject\x12\x1a\n" +
-	"\bdatabase\x18\x03 \x01(\tR\bdatabase\x12!\n" +
-	"\x05title\x18\x04 \x01(\tB\v\xe0A\x02\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x1d\n" +
-	"\acreator\x18\x05 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
-	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x12@\n" +
-	"\vupdate_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"updateTime\x12!\n" +
-	"\acontent\x18\b \x01(\fB\a\xe0A\x02\xd0\xea0\x02R\acontent\x12&\n" +
-	"\fcontent_size\x18\t \x01(\x03B\x03\xe0A\x03R\vcontentSize\x12\x1d\n" +
-	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\x12 \n" +
+	"SavedQuery\x12\x19\n" +
+	"\x04name\x18\x01 \x01(\tB\x05\xe2A\x02\x02\x05R\x04name\x12\x1e\n" +
+	"\aproject\x18\x02 \x01(\tB\x04\xe2A\x01\x03R\aproject\x12\x1a\n" +
+	"\bdatabase\x18\x03 \x01(\tR\bdatabase\x12\"\n" +
+	"\x05title\x18\x04 \x01(\tB\f\xe2A\x01\x02\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x1e\n" +
+	"\acreator\x18\x05 \x01(\tB\x04\xe2A\x01\x03R\acreator\x12A\n" +
+	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
+	"createTime\x12A\n" +
+	"\vupdate_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
+	"updateTime\x12\"\n" +
+	"\acontent\x18\b \x01(\fB\b\xe2A\x01\x02\xd0\xea0\x02R\acontent\x12'\n" +
+	"\fcontent_size\x18\t \x01(\x03B\x04\xe2A\x01\x03R\vcontentSize\x12\x1e\n" +
+	"\astarred\x18\v \x01(\bB\x04\xe2A\x01\x03R\astarred\x12 \n" +
 	"\x06folder\x18\r \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\x06folder:K\xeaAH\n" +
 	"\x17bytebase.com/SavedQuery\x12-projects/{project}/savedQueries/{saved_query}J\x04\b\n" +
 	"\x10\vJ\x04\b\f\x10\r2\xe6\x0f\n" +

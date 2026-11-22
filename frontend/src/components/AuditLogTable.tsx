@@ -59,6 +59,7 @@ import { getTimeForPbTimestampProtoEs } from "@/types";
 import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
 import type {
   AuditLog,
+  FederatedIdentity,
   MCPDelegation,
 } from "@/types/proto-es/v1/audit_log_service_pb";
 import {
@@ -73,7 +74,9 @@ import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
 import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { protobufJsonRegistry } from "@/types/protobufJsonRegistry";
+import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 import { getDefaultPagination, humanizeDurationV1 } from "@/utils";
+import { isValidEmail } from "@/utils/util";
 import { celString } from "@/utils/v1/celLiteral";
 
 dayjs.extend(utc);
@@ -94,26 +97,54 @@ function uniqueValueOptions(options: ValueOption[]): ValueOption[] {
   return [...new Map(options.map((option) => [option.value, option])).values()];
 }
 
+const ACTOR_NAME_PREFIXES = [
+  userNamePrefix,
+  serviceAccountNamePrefix,
+  workloadIdentityNamePrefix,
+];
+
+// Returns the resource name an actor value stands for, lowercased with the
+// canonical prefix: account emails are stored lowercase, and AdvancedSearch
+// lowercases the keyword. A bare email takes the account kind its domain names.
+function toActorName(value: string): string {
+  const lowered = value.toLowerCase();
+  const prefix = ACTOR_NAME_PREFIXES.find((candidate) =>
+    lowered.startsWith(candidate.toLowerCase())
+  );
+  if (prefix) {
+    return `${prefix}${lowered.slice(prefix.length)}`;
+  }
+  switch (getAccountTypeByEmail(lowered)) {
+    case AccountType.SERVICE_ACCOUNT:
+      return `${serviceAccountNamePrefix}${lowered}`;
+    case AccountType.WORKLOAD_IDENTITY:
+      return `${workloadIdentityNamePrefix}${lowered}`;
+    default:
+      return `${userNamePrefix}${lowered}`;
+  }
+}
+
+function toActorOptions(
+  accounts: Array<{ name: string; email: string; title: string }>
+): ValueOption[] {
+  return accounts.map((account) => ({
+    value: account.name,
+    keywords: [account.email, account.title],
+  }));
+}
+
 function buildFilterString(filter: AuditLogFilter): string {
   const parts: string[] = [];
   if (filter.method) parts.push(`method == ${celString(filter.method)}`);
   if (filter.level !== undefined)
     parts.push(`severity == ${celString(AuditLog_Severity[filter.level])}`);
   if (filter.actor) {
-    const legacyUser = `${userNamePrefix}${filter.actor.slice(
-      filter.actor.indexOf("/") + 1
-    )}`;
-    const matchesLegacyUser =
-      filter.actor.startsWith(serviceAccountNamePrefix) ||
-      filter.actor.startsWith(workloadIdentityNamePrefix);
+    const actor = toActorName(filter.actor);
+    const legacyUser = `${userNamePrefix}${actor.slice(actor.indexOf("/") + 1)}`;
     parts.push(
-      matchesLegacyUser
-        ? `(actor == ${celString(filter.actor)} || actor == ${celString(legacyUser)})`
-        : `actor == ${celString(
-            filter.actor.startsWith(userNamePrefix)
-              ? filter.actor
-              : `${userNamePrefix}${filter.actor}`
-          )}`
+      actor === legacyUser
+        ? `actor == ${celString(actor)}`
+        : `(actor == ${celString(actor)} || actor == ${celString(legacyUser)})`
     );
   }
   if (filter.createdTsAfter)
@@ -231,16 +262,16 @@ function getViewLink(auditLog: AuditLog): string | null {
 }
 
 // ============================================================
-// MCP provenance
+// Actor provenance
 // ============================================================
 
-// McpProvenanceField renders one label/value pair of the delegation grant.
-// Empty values are omitted rather than shown as a placeholder: these are the
-// grant's stored values copied verbatim, so empty means the grant recorded
-// nothing — a pre-grant legacy session, or a client that omitted `scope` at
-// consent. Inventing a stand-in would misreport stored state as unknown state.
+// ProvenanceField renders one label/value pair of an actor tooltip.
+// Empty values are omitted rather than shown as a placeholder: an MCP grant's
+// values are copied verbatim, so empty means the grant recorded nothing — a
+// pre-grant legacy session, or a client that omitted `scope` at consent.
+// Inventing a stand-in would misreport stored state as unknown state.
 // See DelegatedGrant in backend/common/context.go for the empty-state map.
-function McpProvenanceField({
+function ProvenanceField({
   label,
   value,
 }: Readonly<{ label: string; value: string }>) {
@@ -260,18 +291,39 @@ function McpProvenanceDetail({
   return (
     <div className="flex flex-col gap-y-1.5 text-xs">
       <span className="font-medium">{t("audit-log.mcp.origin")}</span>
-      <McpProvenanceField
+      <ProvenanceField
         label={t("audit-log.mcp.correlation-id")}
         value={delegation.correlationId}
       />
-      <McpProvenanceField label={t("common.scope")} value={delegation.scope} />
-      <McpProvenanceField
+      <ProvenanceField label={t("common.scope")} value={delegation.scope} />
+      <ProvenanceField
         label={t("common.resource")}
         value={delegation.resource}
       />
-      <McpProvenanceField
+      <ProvenanceField
         label={t("audit-log.mcp.client-id")}
         value={delegation.clientId}
+      />
+    </div>
+  );
+}
+
+function FederatedIdentityDetail({
+  identity,
+}: Readonly<{ identity: FederatedIdentity }>) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col gap-y-1.5 text-xs">
+      <span className="font-medium">
+        {t("audit-log.federated-identity.origin")}
+      </span>
+      <ProvenanceField
+        label={t("audit-log.federated-identity.subject")}
+        value={identity.subject}
+      />
+      <ProvenanceField
+        label={t("audit-log.federated-identity.issuer")}
+        value={identity.issuer}
       />
     </div>
   );
@@ -287,7 +339,7 @@ function McpProvenanceDetail({
 // none.
 function AuditLogActorCell({ log }: Readonly<{ log: AuditLog }>) {
   const { t } = useTranslation();
-  return (
+  const actor = (
     <div className="flex items-center gap-x-1.5">
       {log.actor ? (
         <BlockTooltip
@@ -310,6 +362,23 @@ function AuditLogActorCell({ log }: Readonly<{ log: AuditLog }>) {
           </Badge>
         </Tooltip>
       )}
+    </div>
+  );
+  if (!log.federatedIdentity) return actor;
+  // One workload identity can admit many external workloads, so on its rows
+  // the subject is what tells the callers apart.
+  return (
+    <div className="flex flex-col">
+      {actor}
+      <BlockTooltip
+        content={<FederatedIdentityDetail identity={log.federatedIdentity} />}
+        popupClassName="max-w-96"
+        render={<span className="min-w-0" />}
+      >
+        <span className="block truncate text-xs text-control-light">
+          {log.federatedIdentity.subject}
+        </span>
+      </BlockTooltip>
     </div>
   );
 }
@@ -400,23 +469,27 @@ function ExportDropdown({
   ];
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button disabled={disabled} title={tooltip}>
-            <Download className="size-4 mr-1" />
-            {t("common.export")}
-          </Button>
-        }
-      />
-      <DropdownMenuContent className="min-w-[100px]">
-        {formats.map(({ format, label }) => (
-          <DropdownMenuItem key={label} onClick={() => onExport(format)}>
-            {label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Tooltip content={tooltip}>
+      <span className="inline-flex">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button disabled={disabled}>
+                <Download className="size-4 mr-1" />
+                {t("common.export")}
+              </Button>
+            }
+          />
+          <DropdownMenuContent className="min-w-[100px]">
+            {formats.map(({ format, label }) => (
+              <DropdownMenuItem key={label} onClick={() => onExport(format)}>
+                {label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </span>
+    </Tooltip>
   );
 }
 
@@ -608,31 +681,6 @@ export function AuditLogTable({
     parent !== `${projectNamePrefix}-` && parent.startsWith(projectNamePrefix)
       ? parent
       : "";
-  const project = useAppStore((state) =>
-    projectAccountParent
-      ? state.projectsByName[projectAccountParent]
-      : undefined
-  );
-  const canListWorkspaceServiceAccounts = useAppStore((state) =>
-    workspaceResourceName
-      ? state.hasWorkspacePermission("bb.serviceAccounts.list")
-      : false
-  );
-  const canListWorkspaceWorkloadIdentities = useAppStore((state) =>
-    workspaceResourceName
-      ? state.hasWorkspacePermission("bb.workloadIdentities.list")
-      : false
-  );
-  const canListProjectServiceAccounts = useAppStore((state) =>
-    project
-      ? state.hasProjectPermission(project, "bb.serviceAccounts.list")
-      : false
-  );
-  const canListProjectWorkloadIdentities = useAppStore((state) =>
-    project
-      ? state.hasProjectPermission(project, "bb.workloadIdentities.list")
-      : false
-  );
   const columns = useColumnDefs();
   const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
 
@@ -811,80 +859,52 @@ export function AuditLogTable({
   );
   const searchActors = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const query = keyword.trim();
+      const actor = toActorName(keyword.trim());
+      // The account lists match display names and emails, not resource names.
+      const query = actor.slice(actor.indexOf("/") + 1);
       const pageSize = getDefaultPagination();
-      const accountParams = (parent: string, filter: string) => ({
+      // The server checks the list permissions; silent keeps a denied list
+      // from redirecting to /403, and allSettled then drops it.
+      const accountParams = (parent: string) => ({
         parent,
         pageSize,
         showDeleted: false,
-        filter: { query: filter },
+        filter: { query },
         skipCache: true,
+        silent: true,
       });
+      const accountParents = [
+        workspaceResourceName,
+        projectAccountParent,
+      ].filter(Boolean);
 
-      if (query.startsWith(serviceAccountNamePrefix)) {
-        const accountQuery = query.slice(serviceAccountNamePrefix.length);
-        const serviceAccounts = await Promise.all([
-          ...(workspaceResourceName && canListWorkspaceServiceAccounts
-            ? [
-                listServiceAccounts(
-                  accountParams(workspaceResourceName, accountQuery)
-                ),
-              ]
-            : []),
-          ...(projectAccountParent && canListProjectServiceAccounts
-            ? [
-                listServiceAccounts(
-                  accountParams(projectAccountParent, accountQuery)
-                ),
-              ]
-            : []),
-        ]);
-        return uniqueValueOptions(
-          serviceAccounts.flatMap((result) =>
-            result.serviceAccounts.map((account) => ({
-              value: account.name,
-              keywords: [account.email, account.title],
-            }))
+      const results = await Promise.allSettled([
+        listUsers({ pageSize, filter: { query } }).then(({ users }) =>
+          toActorOptions(users)
+        ),
+        ...accountParents.map((parent) =>
+          listServiceAccounts(accountParams(parent)).then(
+            ({ serviceAccounts }) => toActorOptions(serviceAccounts)
           )
-        );
-      }
-
-      if (query.startsWith(workloadIdentityNamePrefix)) {
-        const identityQuery = query.slice(workloadIdentityNamePrefix.length);
-        const workloadIdentities = await Promise.all([
-          ...(workspaceResourceName && canListWorkspaceWorkloadIdentities
-            ? [
-                listWorkloadIdentities(
-                  accountParams(workspaceResourceName, identityQuery)
-                ),
-              ]
-            : []),
-          ...(projectAccountParent && canListProjectWorkloadIdentities
-            ? [
-                listWorkloadIdentities(
-                  accountParams(projectAccountParent, identityQuery)
-                ),
-              ]
-            : []),
-        ]);
-        return uniqueValueOptions(
-          workloadIdentities.flatMap((result) =>
-            result.workloadIdentities.map((identity) => ({
-              value: identity.name,
-              keywords: [identity.email, identity.title],
-            }))
+        ),
+        ...accountParents.map((parent) =>
+          listWorkloadIdentities(accountParams(parent)).then(
+            ({ workloadIdentities }) => toActorOptions(workloadIdentities)
           )
-        );
-      }
-
-      const { users } = await listUsers({
-        pageSize,
-        filter: query ? { query } : undefined,
-      });
-      return users.map((user) => ({
-        value: user.name,
-        keywords: [user.email, user.title],
-      }));
+        ),
+      ]);
+      // The lists reach only this page's parents and skip deleted accounts, so
+      // a full service account or workload identity email is offered as typed.
+      const typedAccount =
+        isValidEmail(query) && !actor.startsWith(userNamePrefix)
+          ? [{ value: actor, keywords: [query] }]
+          : [];
+      return uniqueValueOptions([
+        ...typedAccount,
+        ...results.flatMap((result) =>
+          result.status === "fulfilled" ? result.value : []
+        ),
+      ]);
     },
     [
       listUsers,
@@ -892,10 +912,6 @@ export function AuditLogTable({
       listWorkloadIdentities,
       workspaceResourceName,
       projectAccountParent,
-      canListWorkspaceServiceAccounts,
-      canListWorkspaceWorkloadIdentities,
-      canListProjectServiceAccounts,
-      canListProjectWorkloadIdentities,
     ]
   );
 

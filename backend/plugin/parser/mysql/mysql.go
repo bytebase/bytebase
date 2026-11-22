@@ -12,16 +12,16 @@ import (
 
 func init() {
 	base.RegisterParseStatementsFunc(storepb.Engine_MYSQL, parseMySQLStatements)
-	base.RegisterParseStatementsFunc(storepb.Engine_MARIADB, parseMySQLStatements)
-	base.RegisterParseStatementsFunc(storepb.Engine_OCEANBASE, parseMySQLStatements)
 	base.RegisterGetStatementTypes(storepb.Engine_MYSQL, GetStatementTypes)
-	base.RegisterGetStatementTypes(storepb.Engine_MARIADB, GetStatementTypes)
-	base.RegisterGetStatementTypes(storepb.Engine_OCEANBASE, GetStatementTypes)
 }
 
-// parseMySQLStatements is the ParseStatementsFunc for MySQL, MariaDB, and OceanBase.
+// parseMySQLStatements is the ParseStatementsFunc for MySQL.
 // Returns []ParsedStatement with both text and AST populated.
 func parseMySQLStatements(statement string) ([]base.ParsedStatement, error) {
+	return parseStatements(statement)
+}
+
+func parseStatements(statement string) ([]base.ParsedStatement, error) {
 	// Split once to get Statement with text and positions
 	stmts, err := SplitSQL(statement)
 	if err != nil {
@@ -34,9 +34,9 @@ func parseMySQLStatements(statement string) ([]base.ParsedStatement, error) {
 			continue
 		}
 
-		list, omniErr := ParseMySQL(stmt.Text)
-		if omniErr != nil {
-			return nil, convertOmniError(omniErr, stmt)
+		list, err := ParseMySQL(stmt.Text)
+		if err != nil {
+			return nil, convertError(err, stmt)
 		}
 
 		if list == nil || len(list.Items) == 0 {
@@ -46,7 +46,7 @@ func parseMySQLStatements(statement string) ([]base.ParsedStatement, error) {
 		for _, node := range list.Items {
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
-				AST: &OmniAST{
+				AST: &AST{
 					Node:          node,
 					Text:          stmt.Text,
 					StartPosition: stmt.Start,
@@ -58,28 +58,24 @@ func parseMySQLStatements(statement string) ([]base.ParsedStatement, error) {
 	return result, nil
 }
 
-// convertOmniError converts an omni parser error to a base.SyntaxError with proper line:column position.
-func convertOmniError(err error, stmt base.Statement) error {
+// convertError converts an omni MySQL parser error to a base.SyntaxError with proper line:column position.
+func convertError(err error, stmt base.Statement) error {
 	var parseErr *mysqlomniparser.ParseError
 	if !errors.As(err, &parseErr) {
 		return err
 	}
+	message, position, relatedText := parseErr.Message, parseErr.Position, parseErr.RelatedText
 
-	pos := ByteOffsetToRunePosition(stmt.Text, parseErr.Position)
+	pos := base.ShiftPosition(ByteOffsetToRunePosition(stmt.Text, position), stmt.Start)
 
-	// Adjust line by the statement's base line (stmt.Start.Line is 1-based).
-	if stmt.Start != nil {
-		pos.Line += stmt.Start.Line - 1
-	}
-
-	msg := fmt.Sprintf("Syntax error at line %d:%d: %s", pos.Line, pos.Column, parseErr.Message)
-	if parseErr.RelatedText != "" {
-		msg += "\nrelated text: " + parseErr.RelatedText
+	msg := fmt.Sprintf("Syntax error at line %d:%d: %s", pos.Line, pos.Column, message)
+	if relatedText != "" {
+		msg += "\nrelated text: " + relatedText
 	}
 
 	return &base.SyntaxError{
 		Position:   pos,
 		Message:    msg,
-		RawMessage: parseErr.Message,
+		RawMessage: message,
 	}
 }

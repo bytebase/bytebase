@@ -1,0 +1,51 @@
+{
+  "sql": "EXPLAIN (DISTSQL) SELECT id, total FROM orders ORDER BY total DESC LIMIT 5",
+  "nodeNames": ["1"],
+  "processors": [
+    {
+      "nodeIdx": 0,
+      "inputs": [],
+      "core": {
+        "title": "TableReader/0",
+        "details": ["orders@orders_pkey", "Columns: id, total", "Spans: -"]
+      },
+      "outputs": [],
+      "stage": 1,
+      "processorID": 0
+    },
+    {
+      "nodeIdx": 0,
+      "inputs": [],
+      "core": { "title": "Sorter/1", "details": ["@2-", "TopK: 5"] },
+      "outputs": [],
+      "stage": 2,
+      "processorID": 1
+    },
+    {
+      "nodeIdx": 0,
+      "inputs": [],
+      "core": { "title": "Response", "details": [] },
+      "outputs": [],
+      "stage": 0,
+      "processorID": -1
+    }
+  ],
+  "edges": [
+    {
+      "sourceProc": 0,
+      "sourceOutput": 0,
+      "destProc": 1,
+      "destInput": 0,
+      "streamID": 0
+    },
+    {
+      "sourceProc": 1,
+      "sourceOutput": 0,
+      "destProc": 2,
+      "destInput": 0,
+      "streamID": 0
+    }
+  ],
+  "flow_id": "72d594d7-ec44-4a78-ac68-c57689169bec",
+  "flags": { "ShowInputTypes": false, "MakeDeterministic": false }
+}

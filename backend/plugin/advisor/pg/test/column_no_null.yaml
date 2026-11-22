@@ -87,3 +87,74 @@
       endposition: null
 - statement: /* this is a comment */
   changeType: 1
+- statement: |-
+    create table t (
+      e int,
+      a int
+    );
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column "a" in "public"."t" cannot have NULL value
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column "e" in "public"."t" cannot have NULL value
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE tbl (
+      x INT,
+      b INT
+    );
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column "x" in "public"."tbl" cannot have NULL value
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column "b" in "public"."tbl" cannot have NULL value
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE tech_book(id INT, name INT, creator INT);
+    ALTER TABLE tech_book ADD CONSTRAINT pk PRIMARY KEY USING INDEX old_pk;
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column "creator" in "public"."tech_book" cannot have NULL value
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a INT, b INT);
+    ALTER TABLE t
+      ALTER COLUMN a SET NOT NULL;
+    ALTER TABLE t
+      ALTER COLUMN b DROP NOT NULL;
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column "b" in "public"."t" cannot have NULL value
+      startposition:
+        line: 4
+        column: 0
+      endposition: null

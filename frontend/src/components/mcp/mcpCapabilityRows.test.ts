@@ -28,7 +28,7 @@ describe("mcpCapabilityRows", () => {
     expect(servedRows(MCPSetting_Capability.DISABLED)).toHaveLength(0);
     expect(
       servedRows(MCPSetting_Capability.READ_ONLY).map((row) => row.id)
-    ).toEqual(["read-schemas", "read-data", "read-workflow"]);
+    ).toEqual(["read-schemas", "read-data", "read-workflow", "read-access"]);
     expect(servedRows(MCPSetting_Capability.READ_WRITE)).toHaveLength(
       MCP_CAPABILITY_ROWS.length
     );

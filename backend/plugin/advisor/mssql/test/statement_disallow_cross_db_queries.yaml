@@ -27,3 +27,25 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    USE Other;
+    SELECT * FROM x.dbo.t;
+    SELECT * FROM OTHER.dbo.u JOIN
+      y.dbo.v ON u.id = v.id;
+  want:
+    - status: 2
+      code: 233
+      title: STATEMENT_DISALLOW_CROSS_DB_QUERIES
+      content: 'Cross database queries (target databse: ''x'', current database: ''other'') are prohibited'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 233
+      title: STATEMENT_DISALLOW_CROSS_DB_QUERIES
+      content: 'Cross database queries (target databse: ''y'', current database: ''other'') are prohibited'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null

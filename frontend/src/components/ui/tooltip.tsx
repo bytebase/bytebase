@@ -2,14 +2,16 @@ import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 import type { ComponentProps, ReactElement, ReactNode } from "react";
 import { cloneElement } from "react";
 import { cn } from "@/lib/utils";
-import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
+import { getLayerRoot, LAYER_SURFACE_CLASS, type LayerFamily } from "./layer";
 
 interface TooltipProps {
   readonly content: ReactNode;
   readonly children: ReactNode;
   readonly side?: "top" | "bottom" | "left" | "right";
   readonly delayDuration?: number;
+  readonly closeOnClick?: boolean;
   readonly popupClassName?: string;
+  readonly layer?: LayerFamily;
   readonly open?: boolean;
   readonly onOpenChange?: ComponentProps<
     typeof BaseTooltip.Root
@@ -28,7 +30,9 @@ export function Tooltip({
   children,
   side = "top",
   delayDuration = 100,
+  closeOnClick,
   popupClassName,
+  layer = "overlay",
   open,
   onOpenChange,
   render,
@@ -45,11 +49,12 @@ export function Tooltip({
     <BaseTooltip.Root open={open} onOpenChange={onOpenChange}>
       <BaseTooltip.Trigger
         delay={delayDuration}
+        closeOnClick={closeOnClick}
         render={render ?? <span className="inline-flex" />}
       >
         {children}
       </BaseTooltip.Trigger>
-      <BaseTooltip.Portal container={getLayerRoot("overlay")}>
+      <BaseTooltip.Portal container={getLayerRoot(layer)}>
         <BaseTooltip.Positioner
           side={side}
           sideOffset={4}

@@ -219,6 +219,7 @@ func TestProjectInstanceAccessGrant(t *testing.T) {
 		}
 		return resp.Msg, nil
 	}
+	a.NoError(ctl.allowJustInTimeAccess(ctx, ctl.project))
 
 	// A grant targeting the canonical project-scoped database works in the
 	// owning project and retains the target.

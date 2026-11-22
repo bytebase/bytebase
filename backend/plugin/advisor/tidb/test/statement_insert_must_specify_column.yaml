@@ -28,3 +28,14 @@
         line: 1
         column: 0
       endposition: null
+- statement: REPLACE INTO tech_book VALUES (1, 'a');
+  want:
+    - status: 2
+      code: 1107
+      title: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
+      content: The INSERT statement must specify columns but "REPLACE INTO tech_book VALUES (1, 'a');" does not
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: INSERT INTO tech_book SET id = 1;

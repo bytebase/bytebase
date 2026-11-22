@@ -7,7 +7,7 @@ export * from "./datetime";
 export * from "./label";
 export * from "./string";
 export * from "./sqlEditor";
-export * from "./explainToken";
+export * from "./queryPlanEngines";
 export * from "./web-storage";
 export * from "./dom";
 export * from "./schemaEditor";

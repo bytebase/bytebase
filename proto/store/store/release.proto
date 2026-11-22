@@ -26,5 +26,17 @@ message ReleasePayload {
   message VCSSource {
     VCSType vcs_type = 1;
     string url = 2;
+    string commit_sha = 3;
+    string branch = 4;
+    string commit_title = 5;
+    string author_name = 6;
+    string author_login = 7;
+    PullRequest pull_request = 8;
+
+    message PullRequest {
+      string url = 1;
+      int64 number = 2;
+      string title = 3;
+    }
   }
 }

@@ -1,0 +1,8 @@
+{
+  "ID": 0,
+  "OPERATOR": "TABLE RANGE SCAN",
+  "NAME": "orders(orders_customer_id_idx)",
+  "EST.ROWS": 10,
+  "EST.TIME(us)": 31,
+  "output": "output([orders.id], [orders.total])"
+}

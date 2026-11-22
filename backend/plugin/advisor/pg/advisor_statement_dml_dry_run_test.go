@@ -10,6 +10,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 func TestStatementDMLDryRun(t *testing.T) {
@@ -73,7 +74,7 @@ func TestStatementDMLDryRun(t *testing.T) {
 				Engine: storepb.Engine_POSTGRES,
 			}}, advisor.Context{
 				DBType:          storepb.Engine_POSTGRES,
-				Driver:          db,
+				Prober:          dbutil.NewSQLProber(db),
 				NoAppendBuiltin: true,
 			})
 			require.NoError(t, err)

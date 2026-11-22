@@ -32,6 +32,18 @@ export const getAccessGrantExpireTimeMs = (
     ? getTimeForPbTimestampProtoEs(grant.expiration.value)
     : undefined;
 
+// Authorization requires a strictly future deadline, including revoked grants.
+export const isAccessGrantExpired = (deadlineMs: number, nowMs = Date.now()) =>
+  deadlineMs <= nowMs;
+
+export const accessGrantExpirationReading: TimeReading<number, boolean> = {
+  read: isAccessGrantExpired,
+  nextChangeAt: (deadlineMs) =>
+    isAccessGrantExpired(deadlineMs)
+      ? Number.POSITIVE_INFINITY
+      : Math.ceil(deadlineMs),
+};
+
 export const getAccessGrantExpirationText = (
   grant: AccessGrant
 ):

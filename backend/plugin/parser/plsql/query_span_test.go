@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	oracleast "github.com/bytebase/omni/oracle/ast"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -219,190 +218,39 @@ func TestGetQuerySpanRefusesSystemTableWithLink(t *testing.T) {
 	require.Equal(t, base.Select, span.Type)
 }
 
-func TestGetAccessTables(t *testing.T) {
+func TestGetQuerySpanParenthesizedQuery(t *testing.T) {
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Name:    "PUBLIC",
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{{Name: "T", Columns: []*metadatapb.ColumnMetadata{{Name: "A"}, {Name: "B"}}}}}},
+	}
+	databaseMetadataGetter, databaseNamesLister, linkedDatabaseMetadataGetter := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
+	gCtx := base.GetQuerySpanContext{
+		InstanceID:                    instanceIDA,
+		GetDatabaseMetadataFunc:       databaseMetadataGetter,
+		ListDatabaseNamesFunc:         databaseNamesLister,
+		GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataGetter,
+	}
+	columnA := base.ColumnResource{Database: "PUBLIC", Table: "T", Column: "A"}
+	columnB := base.ColumnResource{Database: "PUBLIC", Table: "T", Column: "B"}
 	tests := []struct {
 		statement string
-		expected  []base.SchemaResource
-		linked    []base.SchemaResource
+		want      base.SourceColumnSet
 	}{
-		{
-			statement: "SELECT * FROM t1 WHERE c1 = 1",
-			expected: []base.SchemaResource{
-				{
-					Database: "DB",
-					Table:    "T1",
-				},
-			},
-		},
-		{
-			statement: "SELECT * FROM schema1.t1 JOIN schema2.t2 ON t1.c1 = t2.c1;",
-			expected: []base.SchemaResource{
-				{
-					Database: "SCHEMA1",
-					Table:    "T1",
-				},
-				{
-					Database: "SCHEMA2",
-					Table:    "T2",
-				},
-			},
-		},
-		{
-			statement: "SELECT a > (select max(a) from t1) FROM t2;",
-			expected: []base.SchemaResource{
-				{
-					Database: "DB",
-					Table:    "T1",
-				},
-				{
-					Database: "DB",
-					Table:    "T2",
-				},
-			},
-		},
-		{
-			statement: "SELECT * FROM schema1.t1@remote;",
-			linked: []base.SchemaResource{
-				{
-					Database:     "SCHEMA1",
-					Table:        "T1",
-					LinkedServer: "REMOTE",
-				},
-			},
-		},
-		{
-			statement: "SELECT * FROM t1@remote;",
-			linked: []base.SchemaResource{
-				{
-					Table:        "T1",
-					LinkedServer: "REMOTE",
-				},
-			},
-		},
-		{
-			statement: "SELECT * FROM t1, schema1.t2@remote WHERE EXISTS (SELECT 1 FROM t3@remote);",
-			expected: []base.SchemaResource{
-				{
-					Database: "DB",
-					Table:    "T1",
-				},
-			},
-			linked: []base.SchemaResource{
-				{
-					Database:     "SCHEMA1",
-					Table:        "T2",
-					LinkedServer: "REMOTE",
-				},
-				{
-					Table:        "T3",
-					LinkedServer: "REMOTE",
-				},
-			},
-		},
-		{
-			statement: "SELECT * FROM sys.dba_users@remote;",
-			linked: []base.SchemaResource{
-				{
-					Database:     "SYS",
-					Table:        "DBA_USERS",
-					LinkedServer: "REMOTE",
-				},
-			},
-		},
-		{
-			statement: "SELECT sysdate FROM dual;",
-		},
-		// Through a link an unqualified DUAL resolves in the link user's schema first.
-		{
-			statement: "SELECT sysdate FROM dual@remote;",
-			linked: []base.SchemaResource{
-				{
-					Table:        "DUAL",
-					LinkedServer: "REMOTE",
-				},
-			},
-		},
-		{
-			statement: "SELECT * FROM t1, sys.dual;",
-			expected: []base.SchemaResource{
-				{
-					Database: "DB",
-					Table:    "T1",
-				},
-			},
-		},
-		{
-			statement: "SELECT sysdate FROM sys.dual@remote;",
-		},
-		// Oracle accepts the public synonym's owner only quoted (ORA-00903 unquoted).
-		{
-			statement: `SELECT sysdate FROM "PUBLIC".dual;`,
-		},
-		// A schema-qualified DUAL is a table in that schema, local or remote.
-		{
-			statement: "SELECT * FROM s.dual@remote;",
-			linked: []base.SchemaResource{
-				{
-					Database:     "S",
-					Table:        "DUAL",
-					LinkedServer: "REMOTE",
-				},
-			},
-		},
-		{
-			statement: "SELECT * FROM app.dual;",
-			expected: []base.SchemaResource{
-				{
-					Database: "APP",
-					Table:    "DUAL",
-				},
-			},
-		},
-		// Oracle rejects a link after a partition clause (ORA-03048), so it names none.
-		{
-			statement: "SELECT * FROM t1 PARTITION (p1)@remote;",
-			expected: []base.SchemaResource{
-				{
-					Database: "DB",
-					Table:    "T1",
-				},
-			},
-		},
-		// `t@remote@q` names the link REMOTE@Q.
-		{
-			statement: "SELECT * FROM s.t@remote@q;",
-			linked: []base.SchemaResource{
-				{
-					Database:     "S",
-					Table:        "T",
-					LinkedServer: "REMOTE@Q",
-				},
-			},
-		},
-		{
-			statement: "SELECT * FROM t1@remote@q, t1@remote;",
-			linked: []base.SchemaResource{
-				{
-					Table:        "T1",
-					LinkedServer: "REMOTE@Q",
-				},
-				{
-					Table:        "T1",
-					LinkedServer: "REMOTE",
-				},
-			},
-		},
+		{statement: "(SELECT a FROM t)", want: base.SourceColumnSet{columnA: true}},
+		{statement: "(SELECT a FROM t) ORDER BY a", want: base.SourceColumnSet{columnA: true}},
+		{statement: "((SELECT a FROM t)) ORDER BY 1", want: base.SourceColumnSet{columnA: true}},
+		{statement: "(SELECT a FROM t) FETCH FIRST 5 ROWS ONLY", want: base.SourceColumnSet{columnA: true}},
+		{statement: "WITH w AS (SELECT a FROM t) (SELECT a FROM w)", want: base.SourceColumnSet{columnA: true}},
+		{statement: "(SELECT a FROM t) UNION (SELECT b FROM t) ORDER BY 1", want: base.SourceColumnSet{columnA: true, columnB: true}},
+		{statement: "SELECT a FROM t EXCEPT SELECT b FROM t", want: base.SourceColumnSet{columnA: true, columnB: true}},
 	}
-
-	for _, test := range tests {
-		results, err := ParsePLSQL(test.statement)
-		require.NoError(t, err)
-		require.NotEmpty(t, results)
-		require.NotEmpty(t, results.Items)
-		raw, ok := results.Items[0].(*oracleast.RawStmt)
-		require.True(t, ok)
-		local, linked := collectOmniAccessTables("DB", raw.Stmt)
-		require.Equal(t, test.expected, local, test.statement)
-		require.Equal(t, test.linked, linked, test.statement)
+	for _, tc := range tests {
+		t.Run(tc.statement, func(t *testing.T) {
+			span, err := GetQuerySpan(context.TODO(), gCtx, base.Statement{Text: tc.statement}, "PUBLIC", "", false)
+			require.NoError(t, err)
+			require.Len(t, span.Results, 1)
+			require.Equal(t, "A", span.Results[0].Name)
+			require.Equal(t, tc.want, span.Results[0].SourceColumns)
+		})
 	}
 }

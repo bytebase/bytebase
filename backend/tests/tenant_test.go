@@ -100,11 +100,10 @@ func TestTenantBackfill(t *testing.T) {
 	})
 	a.NoError(err)
 
-	baselineSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
-		Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Msg.Name, baselineDBName),
-	}))
+	baselineDBPath := fmt.Sprintf("%s/databases/%s", prodInstance.Msg.Name, baselineDBName)
+	baselineSchema, err := ctl.waitSchemaDump(ctx, baselineDBPath, `"book"`)
 	a.NoError(err)
-	a.Equal(wantBookSchema, baselineSchema.Msg.Schema)
+	a.Equal(wantBookSchema, baselineSchema)
 
 	// Create pending change (ALTER TABLE) - approved but not executed.
 	sheet2, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
@@ -153,9 +152,7 @@ func TestTenantBackfill(t *testing.T) {
 	// ==================== TENANT ONBOARDING WORKFLOW ====================
 
 	// Step 1: Get baseline's current schema.
-	baselineCurrentSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
-		Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Msg.Name, baselineDBName),
-	}))
+	baselineCurrentSchema, err := ctl.waitSchemaDump(ctx, baselineDBPath, `"book"`)
 	a.NoError(err)
 
 	// Step 2: Create new tenant database.
@@ -166,7 +163,7 @@ func TestTenantBackfill(t *testing.T) {
 	// Step 3: Initialize new tenant with baseline schema.
 	initSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: project.Msg.Name,
-		Sheet:  &v1pb.Sheet{Content: []byte(baselineCurrentSchema.Msg.Schema)},
+		Sheet:  &v1pb.Sheet{Content: []byte(baselineCurrentSchema)},
 	}))
 	a.NoError(err)
 
@@ -207,11 +204,9 @@ func TestTenantBackfill(t *testing.T) {
 	err = ctl.waitRollout(ctx, initIssue.Msg.Name, initRollout.Msg.Name)
 	a.NoError(err)
 
-	newTenantSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
-		Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Msg.Name, newTenantDBName),
-	}))
+	newTenantSchema, err := ctl.waitSchemaDump(ctx, newTenantDBPath, `"book"`)
 	a.NoError(err)
-	a.Equal(baselineCurrentSchema.Msg.Schema, newTenantSchema.Msg.Schema)
+	a.Equal(baselineCurrentSchema, newTenantSchema)
 
 	// Step 4: Find pending rollouts for baseline.
 	plans, err := ctl.planServiceClient.ListPlans(ctx, connect.NewRequest(&v1pb.ListPlansRequest{
@@ -276,18 +271,14 @@ func TestTenantBackfill(t *testing.T) {
 	err = ctl.waitRollout(ctx, pendingIssue.Msg.Name, pendingRollout.Msg.Name)
 	a.NoError(err)
 
-	finalBaselineSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
-		Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Msg.Name, baselineDBName),
-	}))
+	finalBaselineSchema, err := ctl.waitSchemaDump(ctx, baselineDBPath, "author")
 	a.NoError(err)
 
-	finalNewTenantSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
-		Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Msg.Name, newTenantDBName),
-	}))
+	finalNewTenantSchema, err := ctl.waitSchemaDump(ctx, newTenantDBPath, "author")
 	a.NoError(err)
 
-	a.Equal(finalBaselineSchema.Msg.Schema, finalNewTenantSchema.Msg.Schema)
-	a.Contains(finalNewTenantSchema.Msg.Schema, "author")
+	a.Equal(finalBaselineSchema, finalNewTenantSchema)
+	a.Contains(finalNewTenantSchema, "author")
 
 	completedRollout, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
 		Name: pendingRollout.Msg.Name,

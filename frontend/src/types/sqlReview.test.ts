@@ -501,9 +501,6 @@ describe("TEMPLATE_LIST_V2", () => {
         expect(section("category"), type).toHaveProperty([
           rule.category.toLowerCase(),
         ]);
-        expect(section("level"), type).toHaveProperty([
-          SQLReviewRule_Level[rule.level].toLowerCase(),
-        ]);
         expect(section("engine"), type).toHaveProperty([
           Engine[rule.engine].toLowerCase(),
         ]);

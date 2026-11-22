@@ -101,7 +101,7 @@ describe("PlanLifecycleSlot (right action area)", () => {
       "deployed",
       "none",
     ] as const) {
-      slot({ kind });
+      slot(kind === "deployed" ? { kind, skippedCount: 0 } : { kind });
       expect(container.textContent).toBe("");
     }
   });
@@ -112,8 +112,14 @@ describe("PlanLifecycleStamp (left of title)", () => {
     renderEl(<PlanLifecycleStamp state={{ kind: "closed" }} />);
     expect(container.textContent).toContain("common.closed");
 
-    renderEl(<PlanLifecycleStamp state={{ kind: "deployed" }} />);
+    renderEl(<PlanLifecycleStamp state={{ kind: "deployed", skippedCount: 0 }} />);
     expect(container.textContent).toContain("plan.lifecycle.deployed");
+    expect(container.textContent).not.toContain("skipped");
+  });
+
+  test("a deployed plan with a skipped task says so on the stamp", () => {
+    renderEl(<PlanLifecycleStamp state={{ kind: "deployed", skippedCount: 1 }} />);
+    expect(container.textContent).toContain("plan.lifecycle.deployed-with-skipped");
   });
 
   test("renders nothing for non-terminal states", () => {

@@ -63,6 +63,7 @@ import {
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
+import { Vendor } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { unknownInstance } from "@/types/v1/instance";
 import {
@@ -415,8 +416,9 @@ export function InstanceDetailView({
     [defaultProjectId, t]
   );
   const searchProjects = useCallback(
-    async (keyword: string): Promise<ValueOption[]> => {
+    async (keyword: string, signal?: AbortSignal): Promise<ValueOption[]> => {
       const { projects } = await useAppStore.getState().fetchProjectList({
+        signal,
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
       });
@@ -504,26 +506,27 @@ export function InstanceDetailView({
       return;
     }
 
-    let cancelled = false;
+    const controller = new AbortController();
     void (async () => {
       try {
         const { projects } = await useAppStore.getState().fetchProjectList({
+          signal: controller.signal,
           pageSize: getDefaultPagination(),
           silent: true,
         });
-        if (cancelled) {
+        if (controller.signal.aborted) {
           return;
         }
         setHasUserProject(projects.some(isUserProject));
       } catch {
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setHasUserProject(false);
         }
       }
     })();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [
     defaultProjectName,
@@ -604,6 +607,8 @@ export function InstanceDetailView({
             {cachedInstance && (
               <p className="text-sm text-control-light break-words">
                 {engineNameV1(instance.engine)}
+                {instance.vendor === Vendor.NEON &&
+                  ` (${t("instance.vendor.neon")})`}
                 {instance.engineVersion && ` · ${instance.engineVersion}`}
               </p>
             )}

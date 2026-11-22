@@ -47,3 +47,65 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t (a int, b int);
+    COMMENT ON COLUMN t.a IS 'longer than ten';
+    COMMENT ON COLUMN t.b IS '注释注释';
+  changeType: 1
+  want:
+    - status: 2
+      code: 1301
+      title: COLUMN_COMMENT
+      content: Column "TEST_DB"."T"."A" comment is too long. The length of comment should be within 10 characters
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1301
+      title: COLUMN_COMMENT
+      content: Column "TEST_DB"."T"."B" comment is too long. The length of comment should be within 10 characters
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    COMMENT ON COLUMN t.a IS 'before';
+    CREATE TABLE t (a int);
+  changeType: 1
+- statement: |-
+    CREATE TABLE t (a int);
+
+    ALTER TABLE t ADD a int;
+  changeType: 1
+  want:
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Comment is required for column "TEST_DB"."T"."A"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Comment is required for column "TEST_DB"."T"."A"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE s.t (a int);
+    CREATE TABLE t (a int);
+    COMMENT ON COLUMN TEST_DB.t.a IS 'ok';
+  changeType: 1
+  want:
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Comment is required for column "S"."T"."A"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

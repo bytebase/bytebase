@@ -7,49 +7,16 @@ import { Button } from "@/components/ui/button";
 import { useAppProject } from "@/hooks/useAppProject";
 import { cn } from "@/lib/utils";
 import { RequestRoleSheet } from "@/modules/access-control/RequestRoleSheet";
+import { getQueryAccessRequest } from "@/modules/sql-editor/model/queryAccessRequest";
+import { getDefaultQueryRole } from "@/modules/sql-editor/model/requestQueryRole";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useAppStore } from "@/stores/app";
 import type { DatabaseResource, Permission } from "@/types";
-import { PRESET_ROLES, PresetRoleType } from "@/types";
 import type { PermissionDeniedDetail } from "@/types/proto-es/v1/common_pb";
-import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { parseStringToResource } from "@/utils/v1/databaseResource";
 import { AccessGrantRequestDrawer } from "./AccessGrantRequestDrawer";
 import { useRequestDrawerHost } from "./RequestDrawerHost";
-
-const SQL_SELECT_PERMISSION = "bb.sql.select";
-
-const getDefaultQueryRole = (
-  roles: readonly Pick<Role, "name" | "permissions">[],
-  requiredPermissions: readonly string[],
-  hasCustomRoleFeature: boolean
-) => {
-  const permissions =
-    requiredPermissions.length > 0
-      ? requiredPermissions
-      : [SQL_SELECT_PERMISSION];
-  const candidates = [...roles]
-    .filter((role) => hasCustomRoleFeature || PRESET_ROLES.includes(role.name))
-    .filter((role) =>
-      permissions.every((permission) => role.permissions.includes(permission))
-    )
-    .sort((a, b) => {
-      const permissionCountDelta = a.permissions.length - b.permissions.length;
-      if (permissionCountDelta !== 0) {
-        return permissionCountDelta;
-      }
-      if (a.name === PresetRoleType.SQL_EDITOR_READ_USER) {
-        return -1;
-      }
-      if (b.name === PresetRoleType.SQL_EDITOR_READ_USER) {
-        return 1;
-      }
-      return a.name.localeCompare(b.name);
-    });
-
-  return candidates[0]?.name ?? PresetRoleType.SQL_EDITOR_USER;
-};
 
 interface Props {
   readonly size?: "sm" | "default";
@@ -99,24 +66,18 @@ export function RequestQueryButton({
     [roleList, permissionDeniedDetail.requiredPermissions, hasCustomRoleFeature]
   );
 
-  const useJIT = useMemo(
+  const request = useMemo(
     () =>
-      !!project?.allowJustInTimeAccess &&
-      permissionDeniedDetail.requiredPermissions.every(
-        (perm) => perm === "bb.sql.select" || perm === "bb.sql.info"
+      getQueryAccessRequest(
+        project,
+        permissionDeniedDetail.requiredPermissions
       ),
     [project, permissionDeniedDetail.requiredPermissions]
   );
-
-  const requiredPermission: Permission = useJIT
-    ? "bb.accessGrants.create"
-    : "bb.issues.create";
-
-  const requiredFeature = useJIT
-    ? PlanFeature.FEATURE_JIT
-    : PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW;
-
-  const hasRequestFeature = useAppStore((s) => s.hasFeature(requiredFeature));
+  const useJIT = request?.kind === "accessGrant";
+  const hasRequestFeature = useAppStore((s) =>
+    request ? s.hasFeature(request.requiredFeature) : false
+  );
 
   const missingResources = useMemo((): DatabaseResource[] => {
     const resources: DatabaseResource[] = [];
@@ -128,8 +89,6 @@ export function RequestQueryButton({
     }
     return resources;
   }, [permissionDeniedDetail.resources]);
-
-  const available = !!project?.allowRequestRole || useJIT;
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -157,9 +116,10 @@ export function RequestQueryButton({
     }
   };
 
-  if (!available) {
+  if (!request) {
     return null;
   }
+  const { requiredPermission, requiredFeature } = request;
 
   return (
     <div>

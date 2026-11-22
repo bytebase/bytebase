@@ -9,7 +9,7 @@ const inputVariants = cva(
   cn(
     "flex w-full rounded-xs border border-control-border bg-transparent text-main transition-colors",
     "placeholder:text-control-placeholder",
-    "aria-invalid:border-error",
+    "aria-invalid:border-error aria-invalid:focus:border-error aria-invalid:focus:ring-1 aria-invalid:focus:ring-error/30 aria-invalid:focus:ring-inset",
     "focus:outline-hidden",
     "disabled:cursor-not-allowed disabled:bg-control-bg disabled:opacity-50",
     "read-only:cursor-default read-only:bg-control-bg read-only:focus:ring-0 read-only:focus:border-control-border"

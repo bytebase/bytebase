@@ -78,7 +78,7 @@ func claim(t *testing.T, credential, name string) string {
 // which it answers on a stateful transport by opening a session the client is
 // never told about and can never delete. go-sdk v1.7.0 clients send exactly
 // that request on every connect, so without this refusal each connect strands
-// one session for the life of the process.
+// one session until the idle timeout closes it.
 func TestSessionlessProtocolRefused(t *testing.T) {
 	endpoint, _, _ := newProbeServer(t)
 	token := mintMCPToken(t, "test@example.com", "client-A", "ws-test", "mcp:read-only", time.Hour)

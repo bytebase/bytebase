@@ -239,6 +239,9 @@ func (x *QueryResult_QueryPlan) Equal(y *QueryResult_QueryPlan) bool {
 	if x.Executed != y.Executed {
 		return false
 	}
+	if x.Content != y.Content {
+		return false
+	}
 	return true
 }
 
@@ -522,6 +525,9 @@ func (x *ExportRequest) Equal(y *ExportRequest) bool {
 	if p, q := x.Container, y.Container; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}
+	if x.Destination != y.Destination {
+		return false
+	}
 	return true
 }
 
@@ -536,6 +542,9 @@ func (x *ExportResponse) Equal(y *ExportResponse) bool {
 		return false
 	}
 	if x.AppliedAccessGrant != y.AppliedAccessGrant {
+		return false
+	}
+	if x.Uri != y.Uri {
 		return false
 	}
 	return true

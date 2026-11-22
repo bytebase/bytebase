@@ -11,8 +11,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
 	"github.com/bytebase/bytebase/backend/component/audit"
@@ -51,7 +53,7 @@ func (s *Server) apiRequest(ctx context.Context, path string, body any) (*apiRes
 	// Per-request bound via the context (not http.Client.Timeout, whose cancel
 	// machinery only reaches the standard transport; the in-memory transport
 	// honors context cancellation).
-	ctx, cancel := context.WithTimeout(ctx, internalAPITimeout)
+	ctx, cancel := context.WithTimeout(ctx, s.internalAPICallTimeout())
 	defer cancel()
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, internalAPIBaseURL+path, bytes.NewReader(bodyBytes))
@@ -104,6 +106,14 @@ func (s *Server) apiRequest(ctx context.Context, path string, body any) (*apiRes
 // internalAPITimeout bounds one internal API call, matching the 30s
 // http.Client timeout of the retired loopback transport.
 const internalAPITimeout = 30 * time.Second
+
+// internalAPICallTimeout returns the effective bound, allowing tests to override.
+func (s *Server) internalAPICallTimeout() time.Duration {
+	if s.internalAPITimeoutOverride > 0 {
+		return s.internalAPITimeoutOverride
+	}
+	return internalAPITimeout
+}
 
 // newInternalAPIClient builds the HTTP client for the private transport. Its
 // RoundTripper dispatches directly to the internal handler chain in memory, so
@@ -199,6 +209,27 @@ func (r *responseRecorder) WriteHeader(status int) {
 	}
 	r.wroteHeader = true
 	r.status = status
+}
+
+// apiRefusal is an internal API read that answered with an error status.
+type apiRefusal struct {
+	status int
+	reason string
+}
+
+func (e *apiRefusal) Error() string { return e.reason }
+
+// readAPI calls a read and decodes its answer into message. A refused read is
+// an *apiRefusal.
+func (s *Server) readAPI(ctx context.Context, procedure string, body map[string]any, message proto.Message) error {
+	resp, err := s.apiRequest(ctx, procedure, body)
+	if err != nil {
+		return err
+	}
+	if why := refusal(resp, nil); why != "" {
+		return &apiRefusal{status: resp.Status, reason: why}
+	}
+	return common.ProtojsonUnmarshaler.Unmarshal(resp.Body, message)
 }
 
 // parseError extracts the error message from an API error response body.

@@ -61,3 +61,27 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t (
+      a json,
+      b binary_float,
+      c binary_double
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Disallow column type JSON but column "A" is
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Disallow column type BINARY_FLOAT but column "B" is
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

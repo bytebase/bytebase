@@ -1,0 +1,50 @@
+- statement: CREATE TABLE t(a int) CHARSET utf8mb4;
+- statement: CREATE TABLE t(a int) DEFAULT CHARACTER SET = utf8mb4;
+- statement: CREATE TABLE db.t(a int);
+  want:
+    - status: 2
+      code: 616
+      title: TABLE_REQUIRE_CHARSET
+      content: Table t does not have a character set specified
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a int) COLLATE utf8mb4_bin;
+  want:
+    - status: 2
+      code: 616
+      title: TABLE_REQUIRE_CHARSET
+      content: Table t does not have a character set specified
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t LIKE u;
+  want:
+    - status: 2
+      code: 616
+      title: TABLE_REQUIRE_CHARSET
+      content: Table t does not have a character set specified
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE a(b int) CHARSET utf8mb4;
+
+    /* c */
+    CREATE TABLE t(
+      a int
+    );
+  want:
+    - status: 2
+      code: 616
+      title: TABLE_REQUIRE_CHARSET
+      content: Table t does not have a character set specified
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ADD COLUMN b INT;
+- statement: CREATE PROCEDURE p() BEGIN CREATE TABLE t(a int); END;

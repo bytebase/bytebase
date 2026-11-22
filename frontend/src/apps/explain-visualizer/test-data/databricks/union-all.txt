@@ -1,0 +1,23 @@
+== Physical Plan ==
+* ColumnarToRow (4)
++- Union (3)
+   :- Scan parquet spark_catalog.default.customers (1)
+   +- Scan parquet spark_catalog.default.customers (2)
+
+
+(1) Scan parquet spark_catalog.default.customers
+Output [1]: [city#49]
+Batched: true
+Location: InMemoryFileIndex [file:/tmp/warehouse2/customers]
+ReadSchema: struct<city:string>
+
+(2) Scan parquet spark_catalog.default.customers
+Output [1]: [name#81]
+Batched: true
+Location: InMemoryFileIndex [file:/tmp/warehouse2/customers]
+ReadSchema: struct<name:string>
+
+(3) Union
+
+(4) ColumnarToRow [codegen id : 1]
+Input [1]: [city#49]

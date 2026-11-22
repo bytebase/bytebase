@@ -1474,7 +1474,10 @@ type ExportRequest struct {
 	Schema *string `protobuf:"bytes,8,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
 	// Container is the container name to execute the query against, used for
 	// CosmosDB only.
-	Container     *string `protobuf:"bytes,9,opt,name=container,proto3,oneof" json:"container,omitempty"`
+	Container *string `protobuf:"bytes,9,opt,name=container,proto3,oneof" json:"container,omitempty"`
+	// Where the export goes. A destination the workspace query data policy
+	// does not allow is rejected with FAILED_PRECONDITION.
+	Destination   ExportDestination `protobuf:"varint,10,opt,name=destination,proto3,enum=bytebase.v1.ExportDestination" json:"destination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1572,6 +1575,13 @@ func (x *ExportRequest) GetContainer() string {
 	return ""
 }
 
+func (x *ExportRequest) GetDestination() ExportDestination {
+	if x != nil {
+		return x.Destination
+	}
+	return ExportDestination_EXPORT_DESTINATION_UNSPECIFIED
+}
+
 type ExportResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The export file content.
@@ -1580,8 +1590,12 @@ type ExportResponse struct {
 	// Format: projects/{project}/accessGrants/{accessGrant}.
 	// Empty when the user was authorized through normal ACL rather than a grant.
 	AppliedAccessGrant string `protobuf:"bytes,2,opt,name=applied_access_grant,json=appliedAccessGrant,proto3" json:"applied_access_grant,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// Set when the export was sent to an export destination: the absolute
+	// location of the folder or key prefix created for this export, for example
+	// https://… for SharePoint or s3://bucket/prefix for S3. content is then empty.
+	Uri           string `protobuf:"bytes,3,opt,name=uri,proto3" json:"uri,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ExportResponse) Reset() {
@@ -1624,6 +1638,13 @@ func (x *ExportResponse) GetContent() []byte {
 func (x *ExportResponse) GetAppliedAccessGrant() string {
 	if x != nil {
 		return x.AppliedAccessGrant
+	}
+	return ""
+}
+
+func (x *ExportResponse) GetUri() string {
+	if x != nil {
+		return x.Uri
 	}
 	return ""
 }
@@ -1947,13 +1968,20 @@ func (x *QueryResult_Message) GetContent() string {
 	return ""
 }
 
-// A query plan held in the result's rows.
+// A query plan the result carries: in its rows, or beside them.
 type QueryResult_QueryPlan struct {
 	state  protoimpl.MessageState    `protogen:"open.v1"`
 	Format QueryOption_ExplainFormat `protobuf:"varint,1,opt,name=format,proto3,enum=bytebase.v1.QueryOption_ExplainFormat" json:"format,omitempty"`
 	// Whether producing the plan executed the statement, as EXPLAIN ANALYZE
 	// does.
-	Executed      bool `protobuf:"varint,2,opt,name=executed,proto3" json:"executed,omitempty"`
+	Executed bool `protobuf:"varint,2,opt,name=executed,proto3" json:"executed,omitempty"`
+	// The plan itself, where the engine states it beside the result rather
+	// than in the result's rows. BigQuery reports the stages its job ran in
+	// the job's own statistics, so one result carries the query's data and
+	// the plan of the run that produced it. Empty when the plan is the rows,
+	// which is every other engine. Omitted from the audit log, as the rows
+	// are: the statement is what an audit reads.
+	Content       string `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2000,6 +2028,13 @@ func (x *QueryResult_QueryPlan) GetExecuted() bool {
 		return x.Executed
 	}
 	return false
+}
+
+func (x *QueryResult_QueryPlan) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
 }
 
 type RowValue_Timestamp struct {
@@ -2134,9 +2169,9 @@ var File_v1_sql_service_proto protoreflect.FileDescriptor
 
 const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
-	"\x14v1/sql_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x1ev1/query_history_service.proto\"\xd5\x01\n" +
-	"\x13AdminExecuteRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\x14v1/sql_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x1ev1/query_history_service.proto\"\xd6\x01\n" +
+	"\x13AdminExecuteRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
 	"\tstatement\x18\x02 \x01(\tR\tstatement\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x1b\n" +
@@ -2146,9 +2181,9 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
 	"_container\"J\n" +
 	"\x14AdminExecuteResponse\x122\n" +
-	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xcb\x02\n" +
-	"\fQueryRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xcc\x02\n" +
+	"\fQueryRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
 	"\tstatement\x18\x02 \x01(\tR\tstatement\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12$\n" +
@@ -2175,7 +2210,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x04TEXT\x10\x01\x12\b\n" +
 	"\x04JSON\x10\x02\x12\a\n" +
 	"\x03XML\x10\x03\x12\b\n" +
-	"\x04YAML\x10\x04J\x04\b\x02\x10\x03R\x14mssql_explain_format\"\xc3\x0e\n" +
+	"\x04YAML\x10\x04J\x04\b\x02\x10\x03R\x14mssql_explain_format\"\xe4\x0e\n" +
 	"\vQueryResult\x12!\n" +
 	"\fcolumn_names\x18\x01 \x03(\tR\vcolumnNames\x12*\n" +
 	"\x11column_type_names\x18\x02 \x03(\tR\x0fcolumnTypeNames\x12/\n" +
@@ -2236,10 +2271,11 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x03LOG\x10\x04\x12\n" +
 	"\n" +
 	"\x06NOTICE\x10\x05\x12\r\n" +
-	"\tEXCEPTION\x10\x06\x1ag\n" +
+	"\tEXCEPTION\x10\x06\x1a\x87\x01\n" +
 	"\tQueryPlan\x12>\n" +
 	"\x06format\x18\x01 \x01(\x0e2&.bytebase.v1.QueryOption.ExplainFormatR\x06format\x12\x1a\n" +
-	"\bexecuted\x18\x02 \x01(\bR\bexecutedB\x10\n" +
+	"\bexecuted\x18\x02 \x01(\bR\bexecuted\x12\x1e\n" +
+	"\acontent\x18\x03 \x01(\tB\x04\xd0\xea0\x02R\acontentB\x10\n" +
 	"\x0edetailed_error\"\xb0\x02\n" +
 	"\rMaskingReason\x12(\n" +
 	"\x10semantic_type_id\x18\x01 \x01(\tR\x0esemanticTypeId\x12.\n" +
@@ -2299,9 +2335,9 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x15RULE_TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fPARSER_BASED\x10\x01\x12\x0e\n" +
 	"\n" +
-	"AI_POWERED\x10\x02\"\xe0\x02\n" +
-	"\rExportRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"AI_POWERED\x10\x02\"\xa3\x03\n" +
+	"\rExportRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
 	"\tstatement\x18\x02 \x01(\tR\tstatement\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x121\n" +
@@ -2310,13 +2346,16 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\bpassword\x18\x06 \x01(\tB\x04\xd0\xea0\x01R\bpassword\x12$\n" +
 	"\x0edata_source_id\x18\a \x01(\tR\fdataSourceId\x12\x1b\n" +
 	"\x06schema\x18\b \x01(\tH\x00R\x06schema\x88\x01\x01\x12!\n" +
-	"\tcontainer\x18\t \x01(\tH\x01R\tcontainer\x88\x01\x01B\t\n" +
+	"\tcontainer\x18\t \x01(\tH\x01R\tcontainer\x88\x01\x01\x12@\n" +
+	"\vdestination\x18\n" +
+	" \x01(\x0e2\x1e.bytebase.v1.ExportDestinationR\vdestinationB\t\n" +
 	"\a_schemaB\f\n" +
 	"\n" +
-	"_container\"b\n" +
+	"_container\"t\n" +
 	"\x0eExportResponse\x12\x1e\n" +
 	"\acontent\x18\x01 \x01(\fB\x04\xd0\xea0\x02R\acontent\x120\n" +
-	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant2\xb4\a\n" +
+	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant\x12\x10\n" +
+	"\x03uri\x18\x03 \x01(\tR\x03uri2\xb4\a\n" +
 	"\n" +
 	"SQLService\x12\xce\x01\n" +
 	"\x05Query\x12\x19.bytebase.v1.QueryRequest\x1a\x1a.bytebase.v1.QueryResponse\"\x8d\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02g:\x01*Z8:\x01*\"3/v1/{name=projects/*/instances/*/databases/*}:query\"(/v1/{name=instances/*/databases/*}:query\x12\x91\x01\n" +
@@ -2374,13 +2413,14 @@ var file_v1_sql_service_proto_goTypes = []any{
 	(*structpb.Value)(nil),               // 28: google.protobuf.Value
 	(*Position)(nil),                     // 29: bytebase.v1.Position
 	(ExportFormat)(0),                    // 30: bytebase.v1.ExportFormat
-	(*timestamppb.Timestamp)(nil),        // 31: google.protobuf.Timestamp
-	(*SearchQueryHistoriesRequest)(nil),  // 32: bytebase.v1.SearchQueryHistoriesRequest
-	(*ListQueryHistoriesRequest)(nil),    // 33: bytebase.v1.ListQueryHistoriesRequest
-	(*GetQueryHistoryRequest)(nil),       // 34: bytebase.v1.GetQueryHistoryRequest
-	(*SearchQueryHistoriesResponse)(nil), // 35: bytebase.v1.SearchQueryHistoriesResponse
-	(*ListQueryHistoriesResponse)(nil),   // 36: bytebase.v1.ListQueryHistoriesResponse
-	(*QueryHistory)(nil),                 // 37: bytebase.v1.QueryHistory
+	(ExportDestination)(0),               // 31: bytebase.v1.ExportDestination
+	(*timestamppb.Timestamp)(nil),        // 32: google.protobuf.Timestamp
+	(*SearchQueryHistoriesRequest)(nil),  // 33: bytebase.v1.SearchQueryHistoriesRequest
+	(*ListQueryHistoriesRequest)(nil),    // 34: bytebase.v1.ListQueryHistoriesRequest
+	(*GetQueryHistoryRequest)(nil),       // 35: bytebase.v1.GetQueryHistoryRequest
+	(*SearchQueryHistoriesResponse)(nil), // 36: bytebase.v1.SearchQueryHistoriesResponse
+	(*ListQueryHistoriesResponse)(nil),   // 37: bytebase.v1.ListQueryHistoriesResponse
+	(*QueryHistory)(nil),                 // 38: bytebase.v1.QueryHistory
 }
 var file_v1_sql_service_proto_depIdxs = []int32{
 	11, // 0: bytebase.v1.AdminExecuteResponse.results:type_name -> bytebase.v1.QueryResult
@@ -2407,29 +2447,30 @@ var file_v1_sql_service_proto_depIdxs = []int32{
 	29, // 21: bytebase.v1.Advice.end_position:type_name -> bytebase.v1.Position
 	5,  // 22: bytebase.v1.Advice.rule_type:type_name -> bytebase.v1.Advice.RuleType
 	30, // 23: bytebase.v1.ExportRequest.format:type_name -> bytebase.v1.ExportFormat
-	29, // 24: bytebase.v1.QueryResult.SyntaxError.start_position:type_name -> bytebase.v1.Position
-	2,  // 25: bytebase.v1.QueryResult.CommandError.command_type:type_name -> bytebase.v1.QueryResult.CommandError.Type
-	3,  // 26: bytebase.v1.QueryResult.Message.level:type_name -> bytebase.v1.QueryResult.Message.Level
-	1,  // 27: bytebase.v1.QueryResult.QueryPlan.format:type_name -> bytebase.v1.QueryOption.ExplainFormat
-	31, // 28: bytebase.v1.RowValue.Timestamp.google_timestamp:type_name -> google.protobuf.Timestamp
-	31, // 29: bytebase.v1.RowValue.TimestampTZ.google_timestamp:type_name -> google.protobuf.Timestamp
-	8,  // 30: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
-	6,  // 31: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
-	32, // 32: bytebase.v1.SQLService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
-	33, // 33: bytebase.v1.SQLService.ListQueryHistories:input_type -> bytebase.v1.ListQueryHistoriesRequest
-	34, // 34: bytebase.v1.SQLService.GetQueryHistory:input_type -> bytebase.v1.GetQueryHistoryRequest
-	16, // 35: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
-	9,  // 36: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
-	7,  // 37: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
-	35, // 38: bytebase.v1.SQLService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
-	36, // 39: bytebase.v1.SQLService.ListQueryHistories:output_type -> bytebase.v1.ListQueryHistoriesResponse
-	37, // 40: bytebase.v1.SQLService.GetQueryHistory:output_type -> bytebase.v1.QueryHistory
-	17, // 41: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
-	36, // [36:42] is the sub-list for method output_type
-	30, // [30:36] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	31, // 24: bytebase.v1.ExportRequest.destination:type_name -> bytebase.v1.ExportDestination
+	29, // 25: bytebase.v1.QueryResult.SyntaxError.start_position:type_name -> bytebase.v1.Position
+	2,  // 26: bytebase.v1.QueryResult.CommandError.command_type:type_name -> bytebase.v1.QueryResult.CommandError.Type
+	3,  // 27: bytebase.v1.QueryResult.Message.level:type_name -> bytebase.v1.QueryResult.Message.Level
+	1,  // 28: bytebase.v1.QueryResult.QueryPlan.format:type_name -> bytebase.v1.QueryOption.ExplainFormat
+	32, // 29: bytebase.v1.RowValue.Timestamp.google_timestamp:type_name -> google.protobuf.Timestamp
+	32, // 30: bytebase.v1.RowValue.TimestampTZ.google_timestamp:type_name -> google.protobuf.Timestamp
+	8,  // 31: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
+	6,  // 32: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
+	33, // 33: bytebase.v1.SQLService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
+	34, // 34: bytebase.v1.SQLService.ListQueryHistories:input_type -> bytebase.v1.ListQueryHistoriesRequest
+	35, // 35: bytebase.v1.SQLService.GetQueryHistory:input_type -> bytebase.v1.GetQueryHistoryRequest
+	16, // 36: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
+	9,  // 37: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
+	7,  // 38: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
+	36, // 39: bytebase.v1.SQLService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
+	37, // 40: bytebase.v1.SQLService.ListQueryHistories:output_type -> bytebase.v1.ListQueryHistoriesResponse
+	38, // 41: bytebase.v1.SQLService.GetQueryHistory:output_type -> bytebase.v1.QueryHistory
+	17, // 42: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
+	37, // [37:43] is the sub-list for method output_type
+	31, // [31:37] is the sub-list for method input_type
+	31, // [31:31] is the sub-list for extension type_name
+	31, // [31:31] is the sub-list for extension extendee
+	0,  // [0:31] is the sub-list for field type_name
 }
 
 func init() { file_v1_sql_service_proto_init() }

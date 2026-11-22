@@ -18,6 +18,12 @@ export type CloseTabAction =
  * local `onSelect` prop instead — keeping the channel single-consumer
  * avoids cross-listener fan-out when both strips are visible.
  */
-export const resultTabEvents = new Emittery<{
+export type ResultTabEvents = {
   "close-tab": { index: number; action: CloseTabAction };
-}>();
+};
+
+// Annotated rather than inferred: Emittery's default type argument names the
+// listenerAdded and listenerRemoved symbols, which it does not export, so tsc
+// cannot write the inferred type into a declaration file (TS4023).
+export const resultTabEvents: Emittery<ResultTabEvents> =
+  new Emittery<ResultTabEvents>();

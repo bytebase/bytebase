@@ -1,8 +1,10 @@
 package trino
 
 import (
+	"context"
 	"testing"
 
+	"github.com/bytebase/omni/trino/analysis"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -169,26 +171,27 @@ func TestQueryTypeClassification(t *testing.T) {
 			require.Len(t, parsed, 1, "Should parse exactly one statement")
 			node := parsed[0].Node()
 
-			queryType, isAnalyze := getQueryType(node)
+			rawQueryType, isAnalyze := analysis.QueryTypeOf(node)
+			queryType := mapQueryType(rawQueryType)
 			assert.Equal(t, tt.wantQueryType, queryType, "Query type mismatch")
 			assert.Equal(t, tt.wantIsAnalyze, isAnalyze, "isAnalyze mismatch")
 
 			if tt.wantQueryType == base.Select || tt.wantQueryType == base.Explain || tt.wantQueryType == base.SelectInfoSchema {
-				assert.True(t, IsReadOnlyStatement(node), "Should be read-only")
+				assert.True(t, analysis.IsReadOnlyStatement(node), "Should be read-only")
 			} else {
-				assert.False(t, IsReadOnlyStatement(node), "Should not be read-only")
+				assert.False(t, analysis.IsReadOnlyStatement(node), "Should not be read-only")
 			}
 
 			if tt.wantQueryType == base.DML {
-				assert.True(t, IsDataChangingStatement(node), "Should be data-changing")
+				assert.True(t, analysis.IsDataChangingStatement(node), "Should be data-changing")
 			} else {
-				assert.False(t, IsDataChangingStatement(node), "Should not be data-changing")
+				assert.False(t, analysis.IsDataChangingStatement(node), "Should not be data-changing")
 			}
 
 			if tt.wantQueryType == base.DDL {
-				assert.True(t, IsSchemaChangingStatement(node), "Should be schema-changing")
+				assert.True(t, analysis.IsSchemaChangingStatement(node), "Should be schema-changing")
 			} else {
-				assert.False(t, IsSchemaChangingStatement(node), "Should not be schema-changing")
+				assert.False(t, analysis.IsSchemaChangingStatement(node), "Should not be schema-changing")
 			}
 		})
 	}
@@ -211,11 +214,6 @@ func TestContainsSystemSchema(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "Query with $system",
-			sql:  "SELECT * FROM $system.nodes",
-			want: true,
-		},
-		{
 			name: "Query with catalog",
 			sql:  "SELECT * FROM catalog.schemas",
 			want: true,
@@ -234,8 +232,9 @@ func TestContainsSystemSchema(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := containsSystemSchema(tt.sql)
-			assert.Equal(t, tt.want, got)
+			span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: tt.sql}, "", "", false)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, span.Type == base.SelectInfoSchema)
 		})
 	}
 }

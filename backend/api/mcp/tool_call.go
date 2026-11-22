@@ -39,7 +39,7 @@ const callAPIDescription = `Execute a Bytebase API endpoint. **Use search_api fi
 | operationId | Yes | e.g., "SQLService/Query" |
 | body | No | JSON request body |
 
-**Resource names:** Preserve the exact canonical name returned by ListDatabases:
+**Resource names:** Preserve the exact canonical name returned by SearchDatabases or ListDatabases:
 instances/prod/databases/main for a workspace instance, or
 projects/my-project/instances/prod/databases/main for a project instance.
 

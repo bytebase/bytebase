@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"os"
-	"strings"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -37,16 +36,12 @@ func TestGetQuerySpan(t *testing.T) {
 			"test-data/query-span/query_type.yaml",
 			"test-data/query-span/standard.yaml",
 			"test-data/query-span/case_insensitive.yaml",
-			"test-data/query-span/starrocks.yaml",
 		}
 	)
 
 	a := require.New(t)
 	for _, testDataPath := range testDataPaths {
 		engine := storepb.Engine_MYSQL
-		if strings.Contains(testDataPath, "starrocks") {
-			engine = storepb.Engine_STARROCKS
-		}
 
 		testDataPath := testDataPath
 
@@ -126,64 +121,4 @@ func TestGetQuerySpanCyclicViewReference(t *testing.T) {
 	}, base.Statement{Text: "SELECT * FROM v1"}, "db", "", false)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "cyclic view reference")
-}
-
-func TestExtractTableRefs(t *testing.T) {
-	tests := []struct {
-		statement string
-		expected  []base.SchemaResource
-	}{
-		{
-			statement: "SELECT * FROM t1 WHERE c1 = 1;",
-			expected: []base.SchemaResource{
-				{
-					Database: "db",
-					Table:    "t1",
-				},
-			},
-		},
-		{
-			statement: "SELECT * FROM db1.t1 JOIN db2.t2 ON t1.c1 = t2.c1;",
-			expected: []base.SchemaResource{
-				{
-					Database: "db1",
-					Table:    "t1",
-				},
-				{
-					Database: "db2",
-					Table:    "t2",
-				},
-			},
-		},
-		{
-			statement: "SELECT a > (select max(a) from t1) FROM t2;",
-			expected: []base.SchemaResource{
-				{
-					Database: "db",
-					Table:    "t1",
-				},
-				{
-					Database: "db",
-					Table:    "t2",
-				},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		parseResult, err := ParseMySQL(test.statement)
-		require.NoError(t, err, "failed to parse statement: %s", test.statement)
-		require.Len(t, parseResult.Items, 1, "expected one parse result for statement: %s", test.statement)
-
-		sourceColumns := collectOmniAccessTables(parseResult.Items[0], "db", false)
-		var resources []base.SchemaResource
-		for resource := range sourceColumns {
-			resources = append(resources, base.SchemaResource{
-				Database: resource.Database,
-				Schema:   resource.Schema,
-				Table:    resource.Table,
-			})
-		}
-		require.ElementsMatch(t, test.expected, resources, test.statement)
-	}
 }

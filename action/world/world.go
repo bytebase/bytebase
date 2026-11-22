@@ -5,7 +5,18 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bytebase/bytebase/action/result"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+)
+
+// SignIn is how a run gets its Bytebase token.
+type SignIn int
+
+const (
+	SignInUnspecified SignIn = iota
+	SignInAccessToken
+	SignInServiceAccount
+	SignInWorkloadIdentity
 )
 
 // World is the world environment for bytebase-action.
@@ -27,13 +38,24 @@ type World struct {
 	ServiceAccount       string
 	ServiceAccountSecret string
 	AccessToken          string // Alternative to service account auth, e.g. from workload identity exchange
+	WorkloadIdentity     string // Workload identity email to sign in as with the CI job's ID token
 	CustomHeaders        http.Header
 	CustomHeaderError    error
 	Project              string // projects/{project}
 	Targets              []string
 	FilePattern          string
+	// The audience requested for a GitHub ID token.
+	WorkloadIdentityAudience string
+	// Chosen by flag validation from the credentials above.
+	SignIn SignIn
 	// Whether to use declarative mode.
 	Declarative bool
+	// What the pipeline knows about the commit, for a CI the action does not
+	// detect.
+	SourceTitle  string
+	SourceURL    string
+	SourceAuthor string
+	SourceRef    string
 
 	// bytebase-action check flags
 	// An enum to determine should we fail on warning or error.
@@ -63,6 +85,8 @@ type World struct {
 		CheckResults *v1pb.CheckReleaseResponse `json:"checkResults,omitempty"`
 	}
 	Rollout *v1pb.Rollout
+	// What the rollout command reports, built once the command stops waiting.
+	Result *result.Result
 }
 
 func NewWorld() *World {

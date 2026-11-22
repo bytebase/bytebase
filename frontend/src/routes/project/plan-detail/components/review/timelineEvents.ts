@@ -3,13 +3,28 @@
 // card or a one-line system row is decided at render time by body presence,
 // so no weight/tier is stored here. Plan check results are never entries.
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import { isThreadReply } from "@/stores/app/issueComment";
-import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
+import { isThreadReply, isThreadRoot } from "@/stores/app/issueComment";
+import type {
+  IssueComment,
+  IssueComment_ReviewRunCompletion,
+} from "@/types/proto-es/v1/issue_service_pb";
 
 export type TimelineSource =
   | { type: "plan-created"; creator: string; time?: Timestamp }
   | { type: "ready-for-review"; creator: string; time?: Timestamp }
-  | { type: "comment"; comment: IssueComment };
+  | { type: "comment"; comment: IssueComment }
+  // One line for a completed review run, the first line of the group that
+  // holds the findings it posted.
+  | {
+      type: "review-run";
+      // The name of the completion comment, which the run's line carries as
+      // its id, so the run can be asked for as a comment is.
+      completionName: string;
+      completion: IssueComment_ReviewRunCompletion;
+      time?: Timestamp;
+      findings: IssueComment[];
+      open: boolean;
+    };
 
 export interface TimelineEntry {
   id: string;
@@ -18,6 +33,11 @@ export interface TimelineEntry {
   // consecutive similar activities (e.g. repeated label edits). Drives the
   // "(N similar activities)" badge. Absent means a standalone row.
   similarCount?: number;
+  // An open run, which the long-history fold leaves in place.
+  pinned?: boolean;
+  // A run's group: the card of every finding it posted while open, none while
+  // hidden.
+  children?: TimelineEntry[];
 }
 
 export function buildTimelineEntries(input: {
@@ -27,6 +47,12 @@ export function buildTimelineEntries(input: {
   issueCreateTime?: Timestamp;
   issueDraft?: boolean;
   comments: IssueComment[];
+  // Where the page shows the review, a completed run is one line heading a
+  // group of the findings it posted.
+  groupReviewRuns?: boolean;
+  // Runs someone opened or folded, by entry id. The rest follow the default:
+  // only the runs with a finding still current are open.
+  runToggles?: ReadonlyMap<string, boolean>;
 }): TimelineEntry[] {
   const reviewSubmission = input.comments.find(
     (comment) => comment.event.case === "reviewSubmission"
@@ -52,6 +78,37 @@ export function buildTimelineEntries(input: {
       },
     });
   }
+  // A run's findings follow its completion. A finding a later run reports
+  // again keeps its thread, so stays with the run that posted it. A run posts
+  // its completion just before its findings, so a finding belongs to the
+  // latest completion before it that carries its attempt, else to the first
+  // one after it. The attempt alone does not name a run: each reviewer once
+  // ran as a job with its own count, and the review's one job began its own.
+  const findingsByRun = new Map<string, IssueComment[]>();
+  const runOfFinding = new Map<string, string>();
+  const completions: { name: string; attempt: bigint; index: number }[] = [];
+  input.comments.forEach((comment, index) => {
+    if (comment.event.case !== "reviewRunCompletion") return;
+    completions.push({
+      name: comment.name,
+      attempt: comment.event.value.attempt,
+      index,
+    });
+    findingsByRun.set(comment.name, []);
+  });
+  input.comments.forEach((comment, index) => {
+    const review = comment.reviewMetadata;
+    if (!review || !isThreadRoot(comment)) return;
+    const sameAttempt = completions.filter(
+      (completion) => completion.attempt === review.attempt
+    );
+    const run =
+      sameAttempt.findLast((completion) => completion.index < index) ??
+      sameAttempt[0];
+    if (!run) return;
+    runOfFinding.set(comment.name, run.name);
+    findingsByRun.get(run.name)?.push(comment);
+  });
   for (const comment of input.comments) {
     // Replies render inside their thread's entry, never as their own row.
     if (isThreadReply(comment)) continue;
@@ -68,6 +125,35 @@ export function buildTimelineEntries(input: {
       }
       continue;
     }
+    if (comment.event.case === "reviewRunCompletion") {
+      if (!input.groupReviewRuns) continue;
+      const completion = comment.event.value;
+      const findings = findingsByRun.get(comment.name) ?? [];
+      const id = `review-run:${comment.name}`;
+      const open =
+        input.runToggles?.get(id) ??
+        findings.some((finding) => !finding.reviewMetadata?.superseded);
+      entries.push({
+        id,
+        source: {
+          type: "review-run",
+          completionName: comment.name,
+          completion,
+          time: comment.createTime,
+          findings,
+          open,
+        },
+        pinned: open,
+        children: open
+          ? findings.map((finding) => ({
+              id: finding.name,
+              source: { type: "comment", comment: finding },
+            }))
+          : [],
+      });
+      continue;
+    }
+    if (input.groupReviewRuns && runOfFinding.has(comment.name)) continue;
     entries.push({ id: comment.name, source: { type: "comment", comment } });
   }
   return entries;

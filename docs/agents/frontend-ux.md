@@ -28,8 +28,21 @@ composition.
 - Make primary and destructive actions unambiguous.
 - Avoid decorative cards, oversized page headings, and visual effects that do
   not communicate state or hierarchy.
-- Do not put cards inside cards. A page section is an unframed layout region;
-  cards are for repeated items or genuinely framed tools.
+- Do not put cards inside cards, with one exception. A **group frame** MAY
+  hold the cards that belong to one parent entry in a list or timeline when
+  all of the following hold:
+  - The frame's first line names the parent and carries the control that
+    shows or hides the group.
+  - The frame is a border only: `border-block-border`, with the corners of the
+    cards it holds and with no shadow, no fill and no title bar. The cards
+    inside keep their own.
+  - Nesting stops there. A card inside a group frame MUST NOT contain another
+    framed box.
+  - Only a parent that has cards gets a frame. Hiding them folds the frame to
+    its first line. A parent with no cards is a plain line.
+
+  A page section is an unframed layout region; cards are for repeated items or
+  genuinely framed tools.
 
 ## Implementation Ownership
 
@@ -57,6 +70,8 @@ The product spacing vocabulary is 4, 6, 8, 12, 16, 24, and 32px.
 | --- | ---: |
 | Icon and adjacent label | 4-6px, according to control size |
 | Sibling controls and buttons | 8px |
+| Field title and its direct description | 0px |
+| Section title and its direct description | 8px |
 | Form label/title and its control | 6px |
 | Controls within one field | 8px |
 | Related content within a section | 16px |
@@ -138,10 +153,19 @@ Use semantic utilities backed by CSS custom properties:
 
 ### Borders, Corners, Focus, And Layers
 
-- Use `rounded-xs` for compact controls, `rounded-sm` for ordinary framed
-  surfaces, and `rounded-full` only for circular controls, avatars, and pills.
+- Use `rounded-xs` for compact controls and textual labels, including status
+  badges, tags, and selected tokens. Use `rounded-sm` for ordinary framed
+  surfaces, and `rounded-full` only for circular controls, avatars, and
+  lifecycle status stamps that must remain distinct from adjacent actions.
+  A comment card, and a group frame that holds comment cards, use
+  `rounded-lg`, so the card reads as laid on the statement rather than as a
+  panel of it. The scanner allows `rounded-lg` only in the files that draw
+  them; every other surface keeps the scale.
 - Use `border-control-border` for controls and `border-block-border` for region
-  boundaries.
+  boundaries. The frame of a comment card is the one region boundary that
+  takes `border-control-border`, in the Changes section and in Activity, so
+  its edge shows on the gray statement without a shadow. A group frame keeps
+  `border-block-border`.
 - Interactive elements MUST have a visible keyboard focus state. Prefer the
   focus behavior owned by the shared primitive.
 - Use the `overlay`, `agent`, and `critical` semantic layer families described
@@ -154,7 +178,8 @@ Use semantic utilities backed by CSS custom properties:
 | --- | --- |
 | Resource creation or editing with multiple fields while retaining list context | `Sheet` |
 | Multi-section settings or editing with a durable route | Full page form |
-| Confirmation, destructive acknowledgment, single-field prompt, or read-only result | `Dialog` or `AlertDialog` |
+| Reversible state transition affecting one existing row, with concise consequences | Anchored confirmation `Popover`, subject to the requirements below |
+| Other confirmation, destructive acknowledgment, single-field prompt, or read-only result | `Dialog` or `AlertDialog` |
 | Long or route-worthy multi-step workflow | Full page wizard |
 | Short multi-step workflow that benefits from parent context | Wide sheet wizard |
 
@@ -183,11 +208,30 @@ behavior:
 ```
 
 - A field has 6px between its label/title region and control.
+- A field title and its concise description have no added gap; the description
+  follows the title directly. With a description, the 6px field gap is between
+  the description and the control. Without one, it is between the title and
+  the control.
 - Controls belonging to one field have 8px between them.
 - A field group has 24px between fields.
 - A section has 24px vertical padding and 16px internal rhythm.
+- A section title and its description have 8px between them. When a section
+  header and content stack, they have 16px between them. The default section
+  layout puts them side by side on large screens, so that vertical separation
+  applies only while stacked; `single-column` always uses it.
+- `FormSection`, `FormFieldGroup`, and `FormField` own these measurements.
+  Consumers MUST NOT add `gap-*`, `space-*`, or margin spacers to change their
+  title/description/control rhythm. Use `FormField spacing="section"` for a
+  field whose substantial control region needs 16px separation, and
+  `FormFieldGroup density="compact"` for the documented 16px dense-form
+  rhythm.
 - On large screens, a section header uses 25% of the section width and content
   uses the remainder. On smaller screens, they stack with 16px separation.
+- A page that reads as one column uses `FormSection layout="single-column"`: the
+  same section title, the header above the content at every width, and the
+  content's children 16px apart. `layout="stacked"` is the dense variant for
+  sections inside a dense form. `FormSection description` renders a short
+  introduction under the title in the header.
 - `FormLabel` MUST reference its control with `htmlFor`.
 - Validation MUST be adjacent to the affected field. Do not rely only on a
   toast or a disabled button to explain invalid input.
@@ -238,11 +282,16 @@ third column for section titles.
 - Stack labels based on available form width, independently of the navigation
   sidebar breakpoint. Compound controls MAY wrap within the control column
   before the field itself stacks.
-- Keep concise descriptions and validation beside the control they explain.
-  Long secondary guidance that would make a dense form harder to scan MAY use
-  a focusable info tooltip beside the field title; validation and essential
-  status remain visible beside the control. Associate labels and choice controls
-  with accessible names in both layouts.
+- Decide responsive breakpoints once at the form root. A dependent
+  configuration group inside a field's control area MUST inherit the parent
+  field's resolved layout instead of measuring its own container or
+  introducing another label column. Render it as a vertical group within its
+  fieldset boundary, with compact label typography.
+- Keep concise operational descriptions directly below the field title.
+  Longer secondary guidance that would make a dense form harder to
+  scan MAY use a focusable info tooltip beside the field title; validation and
+  essential status remain visible beside the control. Associate labels and
+  choice controls with accessible names in both layouts.
 - Put choices that determine subsequent fields first. Use one `Select` dropdown
   combining authentication methods and password sources. Do not add a separate
   password-source selector. Use a `Switch` for binary choices such as syncing
@@ -251,7 +300,8 @@ third column for section titles.
   External sources reveal their configuration there. Preserve separate drafts
   while switching sources, and submit only the active source. Reveal dependent
   TLS, SSH, IAM, and external-source configuration below its controlling
-  choice, using nested flow rather than a framed surface inside another frame.
+  choice, using nested flow and at most one fieldset boundary rather than a
+  framed surface inside another frame.
 - Keep security modes visible; reveal their dependent fields when selected.
   Switches, select triggers, and radio groups align to the start of their
   control column. Keep ordinary connection rows on the 16px rhythm using
@@ -397,13 +447,32 @@ needs a new reusable size.
 ### Dialogs And Destructive Actions
 
 - Use `Dialog` for short blocking work, not multi-section resource forms.
-- Use `AlertDialog` for destructive confirmation that requires explicit
-  acknowledgment.
+- Use `AlertDialog` for irreversible or high-impact destructive confirmation
+  and destructive bulk acknowledgment.
 - Dialog content has 24px padding by default. Do not add an inner padding shell.
 - The primary action is last in reading order. A destructive action uses the
   destructive variant and names the operation precisely.
 - Dialog and alert-dialog content MUST have an accessible title and a concise
   description when consequences are not obvious.
+
+### Contextual Confirmation Popovers
+
+- A reversible state transition affecting one existing resource, such as
+  activating or revoking one access grant, MAY use a non-modal shared `Popover`.
+  This exception does not cover resource deletion, bulk operations, or actions
+  requiring high-risk acknowledgment; use a dialog for those.
+- The popover MUST name the action and its consequence, offer Cancel and an
+  explicitly named confirmation action, and use the destructive variant when
+  appropriate. It MUST have an accessible title and description.
+- Anchor to a persistent row control. When opened from a dropdown, close the
+  menu, transfer focus to the popover without returning it to the menu trigger,
+  and return focus to the persistent control when the popover closes. Use the
+  shared semantic overlay family so table clipping does not hide the popover.
+- Do not dim or block the page. Escape and clicking outside MUST cancel before
+  submission; dismissing a pending confirmation MUST NOT imply cancellation of
+  an operation already submitted.
+- Prevent duplicate submissions, show the pending state, and keep failures in
+  the popover with a retry path rather than silently closing it.
 
 ### Wizards
 

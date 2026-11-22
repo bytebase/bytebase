@@ -52,5 +52,8 @@ func (x *AccessGrantPayload) Equal(y *AccessGrantPayload) bool {
 	if x.Container != y.Container {
 		return false
 	}
+	if x.QueryHash != y.QueryHash {
+		return false
+	}
 	return true
 }

@@ -5,11 +5,14 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"io"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/go-sql-driver/mysql"
+	"github.com/bytebase/omni/mysql/ast"
+	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
@@ -18,6 +21,9 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/db"
+	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -124,6 +130,128 @@ func (r *testMySQLAdvisorExplainResultRows) Next(dest []driver.Value) error {
 	return nil
 }
 
+// testRowEstimator is the seam's RowEstimator over the fake server: it answers
+// what db/mysql.Driver.CountAffectedRows answers, so a rule that still issued
+// its own EXPLAIN or a differently shaped query is caught.
+type testRowEstimator struct {
+	db     *sql.DB
+	prober db.Prober
+}
+
+func (e *testRowEstimator) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
+	return e.prober.Probe(ctx, pCtx, statement)
+}
+
+func (e *testRowEstimator) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
+	list, err := mysqlparser.ParseMySQL(statement)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to parse statement")
+	}
+	if list == nil || len(list.Items) != 1 {
+		return 0, errors.New("expected exactly one statement")
+	}
+	query := mysqlparser.AffectedRowsQuery(list.Items[0], statement)
+	plan, err := explainJSON(ctx, e.db, query)
+	if err != nil {
+		return 0, err
+	}
+	return estimateAffectedRows(ctx, e.db, list.Items[0], query, plan)
+}
+
+func estimateAffectedRows(ctx context.Context, db *sql.DB, stmt ast.Node, query, plan string) (int64, error) {
+	count, err := mysqlparser.EstimateAffectedRowsFromExplainJSON(stmt, plan)
+	if err == nil {
+		return count, nil
+	}
+	rows, tables, ok := explainTabularEstimate(ctx, db, query)
+	if !ok {
+		return 0, err
+	}
+	return mysqlparser.CapAffectedRowsByLimit(stmt, rows*float64(mysqlparser.DMLTargetCount(stmt, tables))), nil
+}
+
+func explainTabularEstimate(ctx context.Context, db *sql.DB, query string) (float64, int, bool) {
+	rows, err := db.QueryContext(ctx, "EXPLAIN FORMAT=TRADITIONAL "+query)
+	if err != nil {
+		return 0, 0, false
+	}
+	defer rows.Close()
+	columns, err := rows.Columns()
+	if err != nil {
+		return 0, 0, false
+	}
+	column := func(name string) int {
+		return slices.IndexFunc(columns, func(column string) bool { return strings.EqualFold(column, name) })
+	}
+	idIndex, rowsIndex, filteredIndex := column("id"), column("rows"), column("filtered")
+	if idIndex < 0 || rowsIndex < 0 {
+		return 0, 0, false
+	}
+	values := make([]sql.NullString, len(columns))
+	dest := make([]any, len(columns))
+	for i := range values {
+		dest[i] = &values[i]
+	}
+	var blockID string
+	estimate, tables := 1.0, 0
+	for rows.Next() {
+		if err := rows.Scan(dest...); err != nil {
+			return 0, 0, false
+		}
+		tableRows, err := strconv.ParseFloat(values[rowsIndex].String, 64)
+		if !values[rowsIndex].Valid || err != nil || (tables > 0 && values[idIndex].String != blockID) {
+			continue
+		}
+		blockID = values[idIndex].String
+		tables++
+		estimate *= tableRows
+		if filteredIndex >= 0 && values[filteredIndex].Valid {
+			if filtered, err := strconv.ParseFloat(values[filteredIndex].String, 64); err == nil {
+				estimate *= filtered / 100
+			}
+		}
+	}
+	return estimate, tables, tables > 0 && rows.Err() == nil
+}
+
+func explainJSON(ctx context.Context, db *sql.DB, statement string) (string, error) {
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+
+	if _, err := conn.ExecContext(ctx, "SET SESSION explain_json_format_version = 1"); err != nil {
+		var mysqlErr *gomysql.MySQLError
+		if !errors.As(err, &mysqlErr) || mysqlErr.Number != 1193 {
+			return "", errors.Wrap(err, "failed to set explain_json_format_version")
+		}
+	} else {
+		defer func() {
+			_, _ = conn.ExecContext(ctx, "SET SESSION explain_json_format_version = DEFAULT")
+		}()
+	}
+
+	rows, err := conn.QueryContext(ctx, "EXPLAIN FORMAT=JSON "+statement)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	var plan strings.Builder
+	for rows.Next() {
+		var line sql.NullString
+		if err := rows.Scan(&line); err != nil {
+			return "", err
+		}
+		plan.WriteString(line.String)
+	}
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+	return plan.String(), nil
+}
+
 func TestMySQLRules(t *testing.T) {
 	rules := []*storepb.SQLReviewRule{
 		{Type: storepb.SQLReviewRule_ENGINE_MYSQL_USE_INNODB, Level: storepb.SQLReviewRule_WARNING},
@@ -163,7 +291,16 @@ func TestMySQLRules(t *testing.T) {
 		{Type: storepb.SQLReviewRule_TABLE_DISALLOW_TRIGGER, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_TABLE_NO_DUPLICATE_INDEX, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_TABLE_DISALLOW_SET_CHARSET, Level: storepb.SQLReviewRule_WARNING},
+		{Type: storepb.SQLReviewRule_TABLE_DISALLOW_DDL, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_StringArrayPayload{StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{List: []string{"t", "u"}}}},
+		{Type: storepb.SQLReviewRule_TABLE_DISALLOW_DML, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_StringArrayPayload{StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{List: []string{"t", "u"}}}},
+		{Type: storepb.SQLReviewRule_TABLE_REQUIRE_CHARSET, Level: storepb.SQLReviewRule_WARNING},
+		{Type: storepb.SQLReviewRule_TABLE_REQUIRE_COLLATION, Level: storepb.SQLReviewRule_WARNING},
+		// The mock tables report 0 rows, so a limit of 0 is the one that fires.
+		{Type: storepb.SQLReviewRule_TABLE_LIMIT_SIZE, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 0}}},
+		{Type: storepb.SQLReviewRule_TABLE_TEXT_FIELDS_TOTAL_LENGTH, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 1000}}},
 		{Type: storepb.SQLReviewRule_COLUMN_REQUIRED, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_StringArrayPayload{StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{List: []string{"id", "created_ts", "updated_ts", "creator_id", "updater_id"}}}},
+		// The same columns listed with duplicates must report the same advice.
+		{Type: storepb.SQLReviewRule_COLUMN_REQUIRED, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_StringArrayPayload{StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{List: []string{"id", "created_ts", "id", "updated_ts", "creator_id", "updater_id", "updater_id"}}}},
 		{Type: storepb.SQLReviewRule_COLUMN_NO_NULL, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGE_TYPE, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_SET_DEFAULT_FOR_NOT_NULL, Level: storepb.SQLReviewRule_WARNING},
@@ -179,6 +316,8 @@ func TestMySQLRules(t *testing.T) {
 		{Type: storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 20}}},
 		{Type: storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_UNSIGNED, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_REQUIRE_DEFAULT, Level: storepb.SQLReviewRule_WARNING},
+		{Type: storepb.SQLReviewRule_COLUMN_REQUIRE_CHARSET, Level: storepb.SQLReviewRule_WARNING},
+		{Type: storepb.SQLReviewRule_COLUMN_REQUIRE_COLLATION, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_INDEX_NO_DUPLICATE_COLUMN, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 5}}},
 		{Type: storepb.SQLReviewRule_INDEX_PK_TYPE_LIMIT, Level: storepb.SQLReviewRule_WARNING},
@@ -229,7 +368,7 @@ func checkTestRowLimitRule(t *testing.T, db *sql.DB, engine storepb.Engine, rule
 		},
 	}, advisor.Context{
 		DBType:          engine,
-		Driver:          db,
+		Prober:          &testRowEstimator{db: db, prober: dbutil.NewSQLProber(db)},
 		NoAppendBuiltin: true,
 	})
 	require.NoError(t, err)
@@ -241,11 +380,6 @@ const (
 	testMySQLUpdateTargetFirstPlan = `{"query_block":{"select_id":1,"nested_loop":[
 		{"table":{"update":true,"table_name":"big","access_type":"ALL","rows_examined_per_scan":11330,"rows_produced_per_join":11330,"filtered":"100.00"}},
 		{"table":{"table_name":"s","access_type":"eq_ref","rows_examined_per_scan":1,"rows_produced_per_join":1133,"filtered":"10.00"}}
-	]}}`
-	// MariaDB does not flag a multi-table DELETE target.
-	testMariaDBDeleteJoinPlan = `{"query_block":{"select_id":1,"nested_loop":[
-		{"table":{"table_name":"s","access_type":"ALL","loops":1,"rows":100,"filtered":10}},
-		{"table":{"table_name":"big","access_type":"ref","loops":10,"rows":100,"filtered":100}}
 	]}}`
 	// The plan of the SELECT that a single-table UPDATE of td is explained as.
 	testMySQLSingleTableUpdatePlan = `{"query_block":{"select_id":1,"table":{"table_name":"td","access_type":"ALL","rows_examined_per_scan":1000,"rows_produced_per_join":1000,"filtered":"100.00"}}}`
@@ -282,16 +416,6 @@ func TestMySQLRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
 			plan:        testMySQLUpdateTargetFirstPlan,
 			statement:   "UPDATE big STRAIGHT_JOIN s ON big.s_id = s.id SET big.v = big.v + 1 WHERE s.flag = 1;",
 			wantContent: `"UPDATE big STRAIGHT_JOIN s ON big.s_id = s.id SET big.v = big.v + 1 WHERE s.flag = 1;" affected 1133 rows (estimated). The count exceeds 5.`,
-			wantCode:    code.StatementAffectedRowExceedsLimit,
-		},
-		{
-			name:        "MariaDB multi-table delete without explain_json_format_version",
-			engine:      storepb.Engine_MARIADB,
-			ruleType:    storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
-			plan:        testMariaDBDeleteJoinPlan,
-			setErr:      &mysql.MySQLError{Number: 1193, Message: "Unknown system variable 'explain_json_format_version'"},
-			statement:   "DELETE big FROM big JOIN s ON big.s_id = s.id WHERE s.flag = 1;",
-			wantContent: `"DELETE big FROM big JOIN s ON big.s_id = s.id WHERE s.flag = 1;" affected 1000 rows (estimated). The count exceeds 5.`,
 			wantCode:    code.StatementAffectedRowExceedsLimit,
 		},
 		{
@@ -341,6 +465,16 @@ func TestMySQLRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
 			wantCode:    code.InsertTooManyRows,
 		},
 		{
+			name:        "insert table without explain_json_format_version",
+			engine:      storepb.Engine_MYSQL,
+			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
+			plan:        testMySQLInsertTablePlan,
+			setErr:      &gomysql.MySQLError{Number: 1193, Message: "Unknown system variable 'explain_json_format_version'"},
+			statement:   "INSERT INTO t2 TABLE t;",
+			wantContent: `"INSERT INTO t2 TABLE t;" inserts 1000 rows. The count exceeds 5.`,
+			wantCode:    code.InsertTooManyRows,
+		},
+		{
 			name:      "insert select capped by LIMIT",
 			engine:    storepb.Engine_MYSQL,
 			ruleType:  storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
@@ -381,6 +515,20 @@ func TestMySQLRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestMySQLRowLimitAdvisorReportsARefusedEstimate covers the seam's one
+// behaviour delta for this rule: the estimate is the driver's, so an EXPLAIN the
+// server refuses is a count error rather than a dry-run failure.
+func TestMySQLRowLimitAdvisorReportsARefusedEstimate(t *testing.T) {
+	db := openTestMySQLAdvisorDB(t, "")
+	testMySQLAdvisorExplainErr = errors.New("Table 'test.tech_book' doesn't exist")
+	defer func() { testMySQLAdvisorExplainErr = nil }()
+
+	adviceList := checkTestRowLimitRule(t, db, storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT, storepb.SQLReviewRule_WARNING, "UPDATE tech_book SET name = 'xz' WHERE id = 1;")
+	require.Len(t, adviceList, 1)
+	require.Equal(t, code.Internal.Int32(), adviceList[0].Code)
+	require.Contains(t, adviceList[0].Content, `failed to get row count for "UPDATE tech_book SET name = 'xz' WHERE id = 1;"`)
 }
 
 func TestMySQLRowLimitAdvisorsWarnAboutStatementsBeyondExplainLimit(t *testing.T) {
@@ -429,25 +577,6 @@ func countTestExplainQueries() int {
 		}
 	}
 	return count
-}
-
-func TestMariaDBPriorBackupCheckAdvisor(t *testing.T) {
-	sm := sheet.NewManager()
-
-	adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "CREATE TABLE t(id INT);\nUPDATE test SET c1 = 1 WHERE b1 = 1;", nil, advisor.Context{
-		DBType:            storepb.Engine_MARIADB,
-		DBSchema:          advisor.MockMySQLDatabase,
-		EnablePriorBackup: true,
-		InstanceID:        "instance",
-		ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
-			return []string{"bbdataarchive"}, nil
-		},
-	})
-
-	require.NoError(t, err)
-	require.NotEmpty(t, adviceList)
-	require.Equal(t, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK.String(), adviceList[0].Title)
-	require.Contains(t, adviceList[0].Content, "mixed DDL and DML")
 }
 
 func TestMySQLBuiltinWalkThroughCheckTableExists(t *testing.T) {
@@ -504,7 +633,7 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 		testMySQLAdvisorQueries = nil
 		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, stmt, rules, advisor.Context{
 			DBType:          storepb.Engine_MYSQL,
-			Driver:          db,
+			Prober:          dbutil.NewSQLProber(db),
 			NoAppendBuiltin: true,
 		})
 		require.NoError(t, err)
@@ -525,12 +654,46 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 
 		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, stmt, rules, advisor.Context{
 			DBType:          storepb.Engine_MYSQL,
-			Driver:          db,
+			Prober:          dbutil.NewSQLProber(db),
 			NoAppendBuiltin: true,
 		})
 		require.NoError(t, err)
 		require.Len(t, adviceList, 1)
 		require.Equal(t, code.StatementDMLDryRunFailed.Int32(), adviceList[0].Code)
 		require.Contains(t, adviceList[0].Content, "dry runs failed")
+	})
+
+	t.Run("a batch that mixes in DDL is not dry-run at all", func(t *testing.T) {
+		testMySQLAdvisorQueries = nil
+		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "CREATE TABLE t2 (id INT);\n"+stmt, rules, advisor.Context{
+			DBType:          storepb.Engine_MYSQL,
+			Prober:          dbutil.NewSQLProber(db),
+			NoAppendBuiltin: true,
+		})
+		require.NoError(t, err)
+		require.Empty(t, adviceList)
+		require.Empty(t, testMySQLAdvisorQueries)
+	})
+
+	t.Run("only INSERT, UPDATE and DELETE are dry-run, each once", func(t *testing.T) {
+		testMySQLAdvisorQueries = nil
+		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "SELECT 1;\nINSERT INTO tech_book VALUES (1, 'a');\n"+stmt+"\nDELETE FROM tech_book;", rules, advisor.Context{
+			DBType:          storepb.Engine_MYSQL,
+			Prober:          dbutil.NewSQLProber(db),
+			NoAppendBuiltin: true,
+		})
+		require.NoError(t, err)
+		require.Empty(t, adviceList)
+		var explains []string
+		for _, q := range testMySQLAdvisorQueries {
+			if strings.HasPrefix(q, "EXPLAIN ") {
+				explains = append(explains, q)
+			}
+		}
+		require.Equal(t, []string{
+			"EXPLAIN INSERT INTO tech_book VALUES (1, 'a');",
+			"EXPLAIN " + stmt,
+			"EXPLAIN DELETE FROM tech_book;",
+		}, explains)
 	})
 }

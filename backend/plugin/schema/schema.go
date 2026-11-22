@@ -25,8 +25,6 @@ var (
 	getProcedureDefinitions         = make(map[storepb.Engine]getProcedureDefinition)
 	getSequenceDefinitions          = make(map[storepb.Engine]getSequenceDefinition)
 	getDatabaseMetadataMap          = make(map[storepb.Engine]getDatabaseMetadata)
-	generateMigrations              = make(map[storepb.Engine]generateMigration)
-	getSDLDiffs                     = make(map[storepb.Engine]getSDLDiff)
 	sdlDropAdvicesFns               = make(map[storepb.Engine]sdlDropAdvices)
 	diffSDLMigrations               = make(map[storepb.Engine]diffSDLMigration)
 	diffMetadataMigrations          = make(map[storepb.Engine]diffMetadataMigration)
@@ -45,16 +43,12 @@ type getFunctionDefinition func(string, *metadatapb.FunctionMetadata) (string, e
 type getProcedureDefinition func(string, *metadatapb.ProcedureMetadata) (string, error)
 type getSequenceDefinition func(string, *metadatapb.SequenceMetadata) (string, error)
 type getDatabaseMetadata func(string) (*metadatapb.DatabaseSchemaMetadata, error)
-type generateMigration func(*MetadataDiff) (string, error)
-type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema *model.DatabaseMetadata) (*MetadataDiff, error)
 type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error)
 
 // diffSDLMigration computes migration SQL between two SDL texts. engineVersion is the
-// target server's version string (e.g. "5.7.25"); engines that canonicalize
-// differently per version (MySQL: utf8mb4 default collation, integer display widths)
-// use it to select the correct normalizer, and engines that do not (PostgreSQL) take
-// `_ string`. An empty/unparseable version must fall back to the engine's default
-// stored form.
+// target server's version string (e.g. "8.0.32"); an engine may reject a version it
+// does not support (MySQL below 8.0), and engines that do not look at it (PostgreSQL)
+// take `_ string`. An empty or unparseable version is accepted.
 //
 // sessionCtx is the per-object session context (sql_mode / charset / collation, and
 // time_zone for events) captured on the SOURCE (current) schema. The declarative SDL
@@ -249,40 +243,6 @@ func GetDatabaseMetadata(engine storepb.Engine, schemaText string) (*metadatapb.
 	return f(schemaText)
 }
 
-func RegisterGenerateMigration(engine storepb.Engine, f generateMigration) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := generateMigrations[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	generateMigrations[engine] = f
-}
-
-func GenerateMigration(engine storepb.Engine, diff *MetadataDiff) (string, error) {
-	f, ok := generateMigrations[engine]
-	if !ok {
-		return "", errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(diff)
-}
-
-func RegisterGetSDLDiff(engine storepb.Engine, f getSDLDiff) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := getSDLDiffs[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	getSDLDiffs[engine] = f
-}
-
-func GetSDLDiff(engine storepb.Engine, currentSDLText, previousUserSDLText string, currentSchema *model.DatabaseMetadata) (*MetadataDiff, error) {
-	f, ok := getSDLDiffs[engine]
-	if !ok {
-		return nil, errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(currentSDLText, previousUserSDLText, currentSchema)
-}
-
 // SDLSessionContext is the session state a routine/trigger/event was created under, as
 // stored in the synced metadata: sql_mode, character_set_client, collation_connection,
 // and — events only — the session time_zone. It is the engine-neutral mirror of omni's
@@ -375,9 +335,8 @@ func buildSDLSessionContextMap(currentSchema *model.DatabaseMetadata) *SDLSessio
 // SDLMigration computes the migration SQL from a user-provided SDL text and the
 // current database schema. It converts the current metadata to SDL, then diffs
 // against the user SDL. engineVersion is the target server's version string (e.g.
-// "5.7.25"); for engines that canonicalize per version (MySQL) it selects the
-// version-correct normalizer. An empty/unparseable version falls back to the
-// engine default, and engines without a version-aware path ignore it entirely.
+// "8.0.32"); MySQL returns an error for a server older than 8.0, and other engines
+// ignore it.
 //
 // The per-object session context (sql_mode/charset/collation, and event time_zone) is
 // extracted from currentSchema and threaded to the diff so MySQL re-creates a routine/
@@ -401,9 +360,8 @@ func RegisterSDLDropAdvices(engine storepb.Engine, f sdlDropAdvices) {
 }
 
 // SDLDropAdvices analyzes the SDL migration for destructive operations and returns warnings.
-// engineVersion is the target server's version string; engines that canonicalize per
-// version (MySQL) use it so the destructive-op detection runs against the version-correct
-// plan, while engines like PostgreSQL ignore it.
+// engineVersion is the target server's version string; MySQL reports a server older
+// than 8.0 as an error advice, and other engines ignore it.
 func SDLDropAdvices(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error) {
 	f, ok := sdlDropAdvicesFns[engine]
 	if !ok {
@@ -416,8 +374,10 @@ func SDLDropAdvices(engine storepb.Engine, userSDLText string, currentSchema *mo
 // Engines may register a metadata migration to avoid round-tripping synced
 // metadata through SDL text. Otherwise, engines with DiffSDLMigration registered
 // convert both sides to SDL and diff (no server version is available here, so the
-// engine's default stored form applies). The legacy MetadataDiff + GenerateMigration
-// path remains the fallback for engines that haven't migrated yet.
+// engine's default stored form applies). An engine with neither registered cannot
+// produce a migration.
+//
+// MySQL diffs every server version as 8.0, the one stored form omni's catalog keeps.
 func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
 	if f, ok := diffMetadataMigrations[engine]; ok {
 		return f(oldSchema, newSchema)
@@ -433,12 +393,7 @@ func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMe
 		}
 		return DiffSDLMigration(engine, sourceSDL, targetSDL, "")
 	}
-	// Fallback to legacy path for engines that haven't migrated yet.
-	diff, err := GetDatabaseSchemaDiff(engine, oldSchema, newSchema)
-	if err != nil {
-		return "", err
-	}
-	return GenerateMigration(engine, diff)
+	return "", errors.Errorf("engine %s is not supported", engine)
 }
 
 func RegisterDiffMetadataMigration(engine storepb.Engine, f diffMetadataMigration) {
@@ -475,9 +430,8 @@ func RegisterDiffSDLMigration(engine storepb.Engine, f diffSDLMigration) {
 }
 
 // DiffSDLMigration computes migration SQL between two SDL texts. engineVersion is the
-// target server's version string, threaded to engines that canonicalize per version
-// (MySQL) and ignored by the rest (PostgreSQL); pass "" when no version is known to get
-// the engine's default stored form.
+// target server's version string: MySQL returns an error for a server older than 8.0,
+// and other engines ignore it. Pass "" when no version is known.
 //
 // This SDL↔SDL entry point carries no per-object session context (there is no synced
 // metadata to source it from), so a MySQL recreate through this path is bare. The
@@ -531,10 +485,6 @@ func RegisterWalkThroughWithContext(engine storepb.Engine, f walkThroughWithCont
 		panic(fmt.Sprintf("Register called twice %s", engine))
 	}
 	walkThroughsWithContext[engine] = f
-}
-
-func WalkThrough(engine storepb.Engine, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
-	return WalkThroughWithContext(context.Background(), engine, WalkThroughContext{}, d, ast)
 }
 
 func WalkThroughWithContext(ctx context.Context, engine storepb.Engine, wtCtx WalkThroughContext, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {

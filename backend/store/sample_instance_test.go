@@ -88,7 +88,8 @@ func TestSampleInstanceSetupPermanentLifecycle(t *testing.T) {
 	require.True(t, activated)
 	active, err := stores.GetSampleInstanceSetup(ctx, "workspace-a")
 	require.NoError(t, err)
-	require.Equal(t, activatedAt, *active.ActivatedAt)
+	// Compare instants: a timestamptz read carries the process's location, not UTC.
+	require.WithinDuration(t, activatedAt, *active.ActivatedAt, 0)
 	require.Nil(t, active.ExpiresAt)
 
 	count, err := stores.CountSampleInstanceSetupsForCleanup(
@@ -184,7 +185,7 @@ func TestSampleInstanceSetupDeletedRowRemainsTombstone(t *testing.T) {
 
 	deleted, err := stores.GetSampleInstanceSetup(ctx, "workspace-a")
 	require.NoError(t, err)
-	require.Equal(t, cleanupAt, *deleted.DeletedAt)
+	require.WithinDuration(t, cleanupAt, *deleted.DeletedAt, 0)
 	again, created, err := stores.ReserveSampleInstanceSetup(ctx, setup)
 	require.NoError(t, err)
 	require.False(t, created)

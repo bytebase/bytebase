@@ -79,3 +79,58 @@
         column: 0
       endposition: null
 - statement: /* this is a comment */
+- statement: CREATE DATABASE d CHARSET latin1 CHARSET latin1;
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"CREATE DATABASE d CHARSET latin1 CHARSET latin1;" used disabled charset ''latin1'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER DATABASE d CHARSET latin1 CHARSET latin1;
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"ALTER DATABASE d CHARSET latin1 CHARSET latin1;" used disabled charset ''latin1'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"ALTER DATABASE d CHARSET latin1 CHARSET latin1;" used disabled charset ''latin1'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t MODIFY a TEXT CHARACTER SET Latin1, CHARSET = utf8mb4;
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"ALTER TABLE t MODIFY a TEXT CHARACTER SET Latin1, CHARSET = utf8mb4;" used disabled charset ''latin1'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t CONVERT TO CHARACTER SET latin1;
+- statement: |-
+    CREATE TABLE t(a int);
+
+    ALTER TABLE t
+      ADD COLUMN b TEXT CHARSET ascii;
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: |-
+        "ALTER TABLE t
+          ADD COLUMN b TEXT CHARSET ascii;" used disabled charset 'ascii'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

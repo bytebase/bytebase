@@ -107,6 +107,15 @@ func TestGetTableDefinition(t *testing.T) {
 
 `,
 		},
+		{
+			name: "object table has no definition",
+			table: &metadatapb.TableMetadata{
+				Name:     "OT",
+				SkipDump: true,
+				Columns:  []*metadatapb.ColumnMetadata{{Name: "X", Type: "NUMBER", Nullable: true}},
+			},
+			want: "",
+		},
 	}
 
 	for _, tt := range tests {

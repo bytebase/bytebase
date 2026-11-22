@@ -26,6 +26,7 @@ import {
   getMaskDataIdentifier,
   isCurrentColumnException,
 } from "@/lib/sensitive-data/utils";
+import { AgentPageHelpButton } from "@/modules/agent/components/AgentPageHelpButton";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type { Permission } from "@/types";
@@ -421,14 +422,17 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Input
-          value={searchText}
-          onChange={(event) => setSearchText(event.target.value)}
-          placeholder={t("common.search")}
-          className="w-full max-w-sm"
-        />
+        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+          <Input
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+            placeholder={t("common.search")}
+            className="w-full max-w-sm"
+          />
+        </div>
 
         <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row">
+          <AgentPageHelpButton className="w-full sm:w-auto" />
           {hasUpdateCatalogPermission && !isMaskingForNoSQL && (
             <Button
               type="button"

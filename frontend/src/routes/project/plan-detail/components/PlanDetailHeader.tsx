@@ -578,14 +578,15 @@ export function PlanDetailHeader() {
 
   return (
     <div className="px-2 py-2 sm:px-4">
-      <div className="flex flex-row items-center justify-between gap-2">
-        <div className="flex min-w-0 flex-1 items-center gap-x-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 basis-full flex-1 items-center gap-x-2 sm:basis-auto">
           {/* Terminal status (Closed / Deployed) sits at the far left, before
               the title — a state badge, not an action. */}
           <PlanLifecycleStamp state={lifecycle} />
           <Input
             size="md"
             ref={titleInputRef}
+            data-plan-title-input={page.plan.name}
             className={cn(
               "h-9 min-w-0 flex-1 bg-transparent text-xl! font-bold text-main outline-hidden",
               editingTitle
@@ -619,7 +620,7 @@ export function PlanDetailHeader() {
           />
         </div>
 
-        <div className="flex shrink-0 items-center gap-x-2">
+        <div className="ml-auto flex w-full min-w-0 max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-2 sm:w-auto">
           {/* Lifecycle slot: one primary advance/status per state. Create and
               ready-for-review stay here (coupled to the title/create flow); all
               other states render through PlanLifecycleSlot. */}

@@ -1,4 +1,8 @@
 import type { ReactRoute } from "@/app/router";
+import {
+  INSTANCE_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_INSTANCE_DETAIL,
+} from "@/app/router/handles";
 import { useAppStore } from "@/stores/app";
 import { isValidDatabaseName } from "@/types";
 import { Engine, IssueStatus, State } from "@/types/proto-es/v1/common_pb";
@@ -8,6 +12,14 @@ interface PageContext {
   user?: { name: string; email: string; title: string };
   project?: { name: string; title: string; state: string };
   database?: { name: string; engine: string; environment: string };
+  instance?: {
+    name: string;
+    title: string;
+    engine: string;
+    engineVersion: string;
+    state: string;
+    environment: string;
+  };
   issue?: { name: string; title: string; status: string; type: string };
   [key: string]: unknown;
 }
@@ -51,6 +63,37 @@ export async function extractRouteContext(
       }
     } catch {
       // Store not available
+    }
+  }
+
+  // Instance context deliberately excludes connection settings and credentials.
+  if (
+    instanceId &&
+    (route.name === INSTANCE_ROUTE_DETAIL ||
+      (projectId &&
+        projectId !== "-" &&
+        route.name === PROJECT_V1_ROUTE_INSTANCE_DETAIL))
+  ) {
+    try {
+      const name =
+        projectId && projectId !== "-"
+          ? `projects/${projectId}/instances/${instanceId}`
+          : `instances/${instanceId}`;
+      const instance = await useAppStore
+        .getState()
+        .getOrFetchInstanceByName(name, true);
+      if (instance.name === name) {
+        ctx.instance = {
+          name: instance.name,
+          title: instance.title,
+          engine: Engine[instance.engine] ?? "",
+          engineVersion: instance.engineVersion,
+          state: State[instance.state] ?? "",
+          environment: instance.environment ?? "",
+        };
+      }
+    } catch {
+      // Store not available or fetch failed
     }
   }
 

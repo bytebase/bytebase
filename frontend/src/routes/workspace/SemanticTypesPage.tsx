@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { FeatureAttention } from "@/components/FeatureAttention";
 import { Button } from "@/components/ui/button";
+import { FormError, FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import {
@@ -36,6 +37,18 @@ import {
   WorkspacePageToolbar,
 } from "@/components/WorkspacePageLayout";
 import { useSemanticTypes } from "@/hooks/useSemanticTypes";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import { AgentPageHelpButton } from "@/modules/agent/components/AgentPageHelpButton";
+import {
+  type SemanticTypeDraft,
+  validateSemanticTypeDraft,
+  validateSemanticTypeDraftForSave,
+} from "@/modules/agent/logic/semanticTypeDraft";
+import {
+  registerSemanticTypeDraftTarget,
+  type SemanticTypeDraftOrigin,
+} from "@/modules/agent/logic/semanticTypeDraftTarget";
+import { useAgentStore } from "@/modules/agent/store/agent";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type {
@@ -55,7 +68,10 @@ import {
   SettingValueSchema as SettingSettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { isBuiltinSemanticTypeId } from "@/types/semanticTypes";
+import {
+  getSemanticTypeListWithBuiltins,
+  isBuiltinSemanticTypeId,
+} from "@/types/semanticTypes";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
@@ -64,6 +80,11 @@ interface SemanticItem {
   mode: SemanticItemMode;
   dirty: boolean;
   item: SemanticTypeSetting_SemanticType;
+  draftOrigin?: SemanticTypeDraftOrigin;
+  draftContext?: Pick<
+    SemanticTypeDraftOrigin,
+    "workspaceName" | "userName" | "chatId"
+  >;
 }
 
 type MaskingType = "full-mask" | "range-mask" | "md5-mask" | "inner-outer-mask";
@@ -132,10 +153,116 @@ export function SemanticTypesPage() {
     toSemanticItems(semanticTypes)
   );
   const [loaded, setLoaded] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftSaveError, setDraftSaveError] = useState(false);
+  const savingDraftRef = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const [sessionId] = useState(() => uuidv4());
+  const workspaceName = useAppStore((s) => s.workspaceResourceName());
+  const userName = useAppStore((s) => s.currentUser?.name);
   const [algorithmDrawer, setAlgorithmDrawer] = useState<{
     index: number;
     algorithm?: Algorithm;
   } | null>(null);
+  const pageSignature = JSON.stringify([items, algorithmDrawer]);
+  const revision = useRef({ signature: pageSignature, value: 0 });
+  if (revision.current.signature !== pageSignature) {
+    revision.current = {
+      signature: pageSignature,
+      value: revision.current.value + 1,
+    };
+  }
+  const page = useRef({ items, loaded, algorithmDrawer });
+  page.current = { items, loaded, algorithmDrawer };
+
+  const hasCurrentOwner = useCallback(() => {
+    const app = useAppStore.getState();
+    return (
+      app.workspaceResourceName() === workspaceName &&
+      app.currentUser?.name === userName &&
+      hasWorkspacePermissionV2("bb.policies.update") &&
+      app.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
+    );
+  }, [workspaceName, userName]);
+
+  useEffect(() => {
+    if (!loaded || isReadonly || !workspaceName || !userName) return;
+    let active = true;
+    const busy = () =>
+      savingDraftRef.current ||
+      page.current.algorithmDrawer !== null ||
+      page.current.items.some(({ mode }) => mode !== "NORMAL");
+    const assertAvailable = () => {
+      if (!active || !hasCurrentOwner() || !page.current.loaded || busy()) {
+        throw new Error("The semantic type editor is no longer available.");
+      }
+    };
+    const unregister = registerSemanticTypeDraftTarget(
+      { workspaceName, userName },
+      {
+        getSnapshot: async () => {
+          if (!active || !hasCurrentOwner()) return undefined;
+          return {
+            sessionId,
+            revision: String(revision.current.value),
+            busy: busy(),
+          };
+        },
+        open: async (draft, chatId, origin) => {
+          assertAvailable();
+          const assertSource = () => {
+            const agent = useAgentStore.getState();
+            const chat = agent.chats.find((chat) => chat.id === chatId);
+            if (
+              agent.currentChatId !== chatId ||
+              !chat ||
+              chat.archived ||
+              chat.workspaceName !== workspaceName
+            ) {
+              throw new Error("The semantic type draft chat has changed.");
+            }
+          };
+          const expectedRevision = revision.current.value;
+          const context = origin ?? { workspaceName, userName, chatId };
+          if (
+            context.workspaceName !== workspaceName ||
+            context.userName !== userName ||
+            context.chatId !== chatId
+          ) {
+            throw new Error("The semantic type draft context has changed.");
+          }
+          assertSource();
+          const validated = await validateSemanticTypeDraft(draft, context);
+          assertAvailable();
+          assertSource();
+          if (revision.current.value !== expectedRevision) {
+            throw new Error("The semantic type editor has changed.");
+          }
+          setDraftSaveError(false);
+          setItems((current) => [
+            ...current,
+            {
+              mode: "CREATE",
+              dirty: false,
+              item: create(SemanticTypeSetting_SemanticTypeSchema, validated),
+              draftOrigin: origin,
+              draftContext: context,
+            },
+          ]);
+        },
+      }
+    );
+    return () => {
+      active = false;
+      unregister();
+    };
+  }, [loaded, isReadonly, workspaceName, userName, sessionId, hasCurrentOwner]);
 
   useEffect(() => {
     useAppStore
@@ -170,6 +297,7 @@ export function SemanticTypesPage() {
   );
 
   const onAdd = useCallback(() => {
+    if (savingDraftRef.current) return;
     setItems((prev) => [
       ...prev,
       {
@@ -183,6 +311,7 @@ export function SemanticTypesPage() {
   }, []);
 
   const onStartEdit = useCallback((index: number) => {
+    if (savingDraftRef.current) return;
     setItems((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], mode: "EDIT" };
@@ -192,6 +321,7 @@ export function SemanticTypesPage() {
 
   const onRemove = useCallback(
     (index: number) => {
+      if (savingDraftRef.current) return;
       const current = items[index];
       if (!current) return;
       const next = [...items];
@@ -205,10 +335,94 @@ export function SemanticTypesPage() {
     [upsertSetting, t, items]
   );
 
+  const saveAgentDraft = useCallback(
+    async (index: number, current: SemanticItem) => {
+      if (savingDraftRef.current || !current.draftContext) return;
+      savingDraftRef.current = true;
+      setSavingDraft(true);
+      setDraftSaveError(false);
+      const expectedRevision = revision.current.value;
+      const assertCurrent = () => {
+        if (
+          !mounted.current ||
+          !hasCurrentOwner() ||
+          current.draftContext?.workspaceName !== workspaceName ||
+          current.draftContext?.userName !== userName ||
+          revision.current.value !== expectedRevision ||
+          page.current.items[index] !== current
+        ) {
+          throw new Error("The semantic type draft is no longer current.");
+        }
+      };
+      try {
+        assertCurrent();
+        const draft: SemanticTypeDraft = {
+          id: current.item.id,
+          title: current.item.title,
+          description: current.item.description,
+          algorithm: current.item.algorithm!,
+        };
+        const { draft: validated, types: existing } =
+          await validateSemanticTypeDraftForSave(draft, current.draftContext);
+        assertCurrent();
+        const types = [
+          ...existing.filter(({ id }) => !isBuiltinSemanticTypeId(id)),
+          create(SemanticTypeSetting_SemanticTypeSchema, {
+            ...validated,
+            icon: current.item.icon,
+          }),
+        ];
+        await upsertSetting(types, t("common.created"));
+        if (current.draftOrigin) {
+          const origin = current.draftOrigin;
+          try {
+            useAgentStore
+              .getState()
+              .recordSemanticTypeDraftHandoff(
+                origin.chatId,
+                origin.messageId,
+                origin.draftId,
+                "created"
+              );
+          } catch {
+            // Local chat persistence cannot turn a saved type into a failed save.
+          }
+        }
+        if (mounted.current && hasCurrentOwner()) {
+          setItems((rows) => {
+            const pending = rows.filter(
+              (row) => row !== current && row.mode !== "NORMAL"
+            );
+            const pendingIds = new Set(pending.map(({ item }) => item.id));
+            return [
+              ...toSemanticItems(
+                getSemanticTypeListWithBuiltins(types, t).filter(
+                  ({ id }) => !pendingIds.has(id)
+                )
+              ),
+              ...pending,
+            ];
+          });
+        }
+      } catch {
+        if (mounted.current) setDraftSaveError(true);
+      } finally {
+        savingDraftRef.current = false;
+        if (mounted.current) setSavingDraft(false);
+      }
+    },
+    [hasCurrentOwner, workspaceName, userName, upsertSetting, t]
+  );
+
   const onConfirm = useCallback(
     (index: number) => {
+      if (savingDraftRef.current) return;
       const current = items[index];
       if (!current) return;
+      if (current.draftContext) {
+        void saveAgentDraft(index, current);
+        return;
+      }
       const msg = t(
         current.mode === "CREATE" ? "common.created" : "common.updated"
       );
@@ -218,11 +432,12 @@ export function SemanticTypesPage() {
       const types = getPersistedSemanticTypes(next);
       void upsertSetting(types, msg);
     },
-    [upsertSetting, t, items]
+    [upsertSetting, t, items, saveAgentDraft]
   );
 
   const onCancel = useCallback(
     (index: number) => {
+      if (savingDraftRef.current) return;
       setItems((prev) => {
         const next = [...prev];
         const item = next[index];
@@ -249,6 +464,7 @@ export function SemanticTypesPage() {
         item: SemanticTypeSetting_SemanticType
       ) => SemanticTypeSetting_SemanticType
     ) => {
+      if (savingDraftRef.current) return;
       setItems((prev) => {
         const next = [...prev];
         const current = next[index];
@@ -269,6 +485,7 @@ export function SemanticTypesPage() {
 
   const onAlgorithmApply = useCallback(
     (algorithm: Algorithm) => {
+      if (savingDraftRef.current) return;
       const drawer = algorithmDrawerRef.current;
       if (drawer === null) return;
       const { index } = drawer;
@@ -279,7 +496,7 @@ export function SemanticTypesPage() {
         dirty: true,
         item: { ...current.item, algorithm },
       };
-      if (updated.item.title) {
+      if (updated.item.title && !updated.draftContext) {
         updated.dirty = false;
         updated.mode = "NORMAL";
         const next = [...items];
@@ -302,12 +519,14 @@ export function SemanticTypesPage() {
 
   const onOpenAlgorithmDrawer = useCallback(
     (index: number, algorithm?: Algorithm) => {
+      if (savingDraftRef.current) return;
       setAlgorithmDrawer({ index, algorithm });
     },
     []
   );
 
   const getConfirmDisabledReason = (data: SemanticItem): string | undefined => {
+    if (savingDraft) return t("common.loading");
     if (!data.item.title.trim()) {
       return t("settings.sensitive-data.semantic-types.error.title-required");
     }
@@ -319,6 +538,11 @@ export function SemanticTypesPage() {
     return undefined;
   };
 
+  const hasUnsavedChanges = items.some(
+    ({ dirty, mode }) => mode === "CREATE" || (mode === "EDIT" && dirty)
+  );
+  useUnsavedChangesGuard(hasUnsavedChanges);
+
   return (
     <WorkspacePageLayout>
       <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
@@ -327,11 +551,18 @@ export function SemanticTypesPage() {
       />
 
       <WorkspacePageToolbar align="end">
-        <Button disabled={isReadonly} onClick={onAdd}>
-          <Plus />
-          {t("common.create")}
-        </Button>
+        <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
+          <AgentPageHelpButton />
+          <Button disabled={isReadonly || savingDraft} onClick={onAdd}>
+            <Plus />
+            {t("common.create")}
+          </Button>
+        </div>
       </WorkspacePageToolbar>
+
+      {draftSaveError && (
+        <FormError>{t("agent.semantic-type-draft.save-failed")}</FormError>
+      )}
 
       <div className="overflow-x-auto rounded-sm border">
         <Table className="min-w-5xl">
@@ -366,6 +597,7 @@ export function SemanticTypesPage() {
                 row={row}
                 index={index}
                 readonly={isReadonly}
+                saving={savingDraft}
                 getConfirmDisabledReason={getConfirmDisabledReason}
                 onInput={onInput}
                 onRemove={onRemove}
@@ -633,12 +865,17 @@ function MaskingAlgorithmDrawer({
 
         <SheetBody className="p-6">
           {/* Masking type selector */}
-          <div className="mb-6">
-            <label className="text-sm font-medium">
-              {t("settings.sensitive-data.algorithms.table.masking-type")}
-              <span className="text-error ml-0.5">*</span>
-            </label>
-            <div className="grid grid-cols-3 gap-2 mt-2">
+          <FormField
+            className="mb-6"
+            title={
+              <>
+                {t("settings.sensitive-data.algorithms.table.masking-type")}
+                <span className="text-error ml-0.5">*</span>
+              </>
+            }
+            spacing="section"
+          >
+            <div className="grid grid-cols-3 gap-2">
               {maskingTypeOptions.map((opt) => (
                 <Button
                   appearance="secondary"
@@ -655,31 +892,31 @@ function MaskingAlgorithmDrawer({
                 </Button>
               ))}
             </div>
-          </div>
+          </FormField>
 
           <div className="border-t border-control-border pt-6 flex flex-col gap-y-6">
             {maskingType === "full-mask" && (
-              <div>
-                <label className="text-sm font-medium">
-                  {t(
-                    "settings.sensitive-data.algorithms.full-mask.substitution"
-                  )}
-                  <span className="text-error ml-0.5">*</span>
-                </label>
-                <p className="text-sm text-control-placeholder mt-1">
-                  {t(
-                    "settings.sensitive-data.algorithms.full-mask.substitution-label"
-                  )}
-                </p>
+              <FormField
+                title={
+                  <>
+                    {t(
+                      "settings.sensitive-data.algorithms.full-mask.substitution"
+                    )}
+                    <span className="text-error ml-0.5">*</span>
+                  </>
+                }
+                description={t(
+                  "settings.sensitive-data.algorithms.full-mask.substitution-label"
+                )}
+              >
                 <Input
                   value={fullMaskSubstitution}
-                  className="mt-2"
                   placeholder={t(
                     "settings.sensitive-data.algorithms.full-mask.substitution"
                   )}
                   onChange={(e) => setFullMaskSubstitution(e.target.value)}
                 />
-              </div>
+              </FormField>
             )}
 
             {maskingType === "range-mask" && (
@@ -781,45 +1018,51 @@ function MaskingAlgorithmDrawer({
             )}
 
             {maskingType === "md5-mask" && (
-              <div>
-                <label className="text-sm font-medium">
-                  {t("settings.sensitive-data.algorithms.md5-mask.salt")}
-                  <span className="text-error ml-0.5">*</span>
-                </label>
-                <p className="text-sm text-control-placeholder mt-1">
-                  {t("settings.sensitive-data.algorithms.md5-mask.salt-label")}
-                </p>
+              <FormField
+                title={
+                  <>
+                    {t("settings.sensitive-data.algorithms.md5-mask.salt")}
+                    <span className="text-error ml-0.5">*</span>
+                  </>
+                }
+                description={t(
+                  "settings.sensitive-data.algorithms.md5-mask.salt-label"
+                )}
+              >
                 <Input
+                  data-agent-sensitive
                   value={md5Salt}
-                  className="mt-2"
                   placeholder={t(
                     "settings.sensitive-data.algorithms.md5-mask.salt"
                   )}
                   onChange={(e) => setMd5Salt(e.target.value)}
                 />
-              </div>
+              </FormField>
             )}
 
             {maskingType === "inner-outer-mask" && (
               <>
-                <div>
-                  <label className="text-sm font-medium">
-                    {t(
-                      "settings.sensitive-data.algorithms.inner-outer-mask.type"
-                    )}
-                    <span className="text-error ml-0.5">*</span>
-                  </label>
-                  <p className="text-sm text-control-placeholder mt-1">
-                    {innerOuterType === Algorithm_InnerOuterMask_MaskType.INNER
+                <FormField
+                  title={
+                    <>
+                      {t(
+                        "settings.sensitive-data.algorithms.inner-outer-mask.type"
+                      )}
+                      <span className="text-error ml-0.5">*</span>
+                    </>
+                  }
+                  description={
+                    innerOuterType === Algorithm_InnerOuterMask_MaskType.INNER
                       ? t(
                           "settings.sensitive-data.algorithms.inner-outer-mask.inner-label"
                         )
                       : t(
                           "settings.sensitive-data.algorithms.inner-outer-mask.outer-label"
-                        )}
-                  </p>
+                        )
+                  }
+                >
                   <RadioGroup
-                    className="mt-2 gap-x-4"
+                    className="gap-x-4"
                     value={String(innerOuterType)}
                     onValueChange={(value) =>
                       setInnerOuterType(
@@ -842,7 +1085,7 @@ function MaskingAlgorithmDrawer({
                       )}
                     </RadioGroupItem>
                   </RadioGroup>
-                </div>
+                </FormField>
                 <div className="flex gap-x-2 items-end">
                   <div className="flex flex-col gap-y-1">
                     <label className="text-sm font-medium">
@@ -917,6 +1160,7 @@ interface SemanticTypeRowProps {
   row: SemanticItem;
   index: number;
   readonly: boolean;
+  saving: boolean;
   getConfirmDisabledReason: (data: SemanticItem) => string | undefined;
   onInput: (
     index: number,
@@ -935,6 +1179,7 @@ function SemanticTypeRow({
   row,
   index,
   readonly,
+  saving,
   getConfirmDisabledReason,
   onInput,
   onRemove,
@@ -978,6 +1223,7 @@ function SemanticTypeRow({
           <Input
             value={row.item.title}
             size="sm"
+            disabled={saving}
             placeholder={t(
               "settings.sensitive-data.semantic-types.table.title"
             )}
@@ -994,6 +1240,7 @@ function SemanticTypeRow({
           <Input
             value={row.item.description}
             size="sm"
+            disabled={saving}
             placeholder={t(
               "settings.sensitive-data.semantic-types.table.description"
             )}
@@ -1044,6 +1291,7 @@ function SemanticTypeRow({
             <Button
               appearance="secondary"
               size="xs"
+              disabled={saving}
               className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
               onClick={() => {
                 const algo = getMaskingType(row.item.algorithm)
@@ -1066,6 +1314,7 @@ function SemanticTypeRow({
                   <Button
                     appearance="secondary"
                     size="xs"
+                    disabled={saving}
                     className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
                     onClick={() => onCancel(index)}
                   >
@@ -1091,7 +1340,7 @@ function SemanticTypeRow({
                         type="button"
                         aria-label={t("common.confirm")}
                         className="p-1 rounded-xs hover:bg-accent/10 text-accent disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={!!confirmDisabledReason}
+                        disabled={saving || !!confirmDisabledReason}
                         onClick={() => onConfirm(index)}
                       >
                         <Check className="w-4 h-4" />
@@ -1103,6 +1352,7 @@ function SemanticTypeRow({
                   <Button
                     appearance="secondary"
                     size="xs"
+                    disabled={saving}
                     className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
                     onClick={() => onStartEdit(index)}
                   >

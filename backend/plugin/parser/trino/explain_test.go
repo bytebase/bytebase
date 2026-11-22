@@ -49,3 +49,29 @@ func TestExplainStatementRejects(t *testing.T) {
 		require.Errorf(t, err, "%q", statement)
 	}
 }
+
+// TestExplainStatementJSON pins the statement that asks for the structured plan
+// the visualizer draws. The caller's own FORMAT is replaced, so the request
+// decides the format whatever the statement named.
+func TestExplainStatementJSON(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      string
+	}{
+		{"SELECT 1", "EXPLAIN (FORMAT JSON) SELECT 1"},
+		{"EXPLAIN SELECT 1", "EXPLAIN (FORMAT JSON) SELECT 1"},
+		{"EXPLAIN (FORMAT TEXT) SELECT 1", "EXPLAIN (FORMAT JSON) SELECT 1"},
+		{"EXPLAIN (FORMAT JSON) SELECT 1", "EXPLAIN (FORMAT JSON) SELECT 1"},
+	}
+	for _, tc := range tests {
+		got, err := explainStatement(tc.statement, base.ExplainFormatJSON)
+		require.NoErrorf(t, err, "%q", tc.statement)
+		require.Equalf(t, tc.want, got, "%q", tc.statement)
+	}
+	// Only JSON has a reader; the rest fall back to the engine's own plan.
+	for _, format := range []base.ExplainFormat{base.ExplainFormatText, base.ExplainFormatXML, base.ExplainFormatYAML} {
+		got, err := explainStatement("SELECT 1", format)
+		require.NoError(t, err)
+		require.Equal(t, "EXPLAIN SELECT 1", got)
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/textproto"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -32,11 +33,17 @@ func NewRootCommand(w *world.World) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&w.ServiceAccount, "service-account", "", "Bytebase Service account")
 	cmd.PersistentFlags().StringVar(&w.ServiceAccountSecret, "service-account-secret", "", "Bytebase Service account secret")
 	cmd.PersistentFlags().StringVar(&w.AccessToken, "access-token", "", "Bytebase access token (alternative to service account auth, e.g. from workload identity exchange)")
+	cmd.PersistentFlags().StringVar(&w.WorkloadIdentity, "workload-identity", "", "Bytebase workload identity email. The action signs in as it with the CI job's ID token")
+	cmd.PersistentFlags().StringVar(&w.WorkloadIdentityAudience, "workload-identity-audience", "", "Audience of the ID token requested from GitHub for --workload-identity (default \"bytebase\")")
 	cmd.PersistentFlags().Var(newCustomHeaderFlag(&w.CustomHeaders, &w.CustomHeaderError), "custom-header", "Custom HTTP header for Bytebase API requests, in 'Name: value' format. Can be specified multiple times")
 	cmd.PersistentFlags().StringVar(&w.Project, "project", "projects/hr", "Bytebase project")
 	cmd.PersistentFlags().StringSliceVar(&w.Targets, "targets", []string{"instances/test-sample-instance/databases/hr_test", "instances/prod-sample-instance/databases/hr_prod"}, "Bytebase targets: one or more workspace or project-instance databases, or a single project database group")
 	cmd.PersistentFlags().StringVar(&w.FilePattern, "file-pattern", "", "File pattern to glob migration files")
 	cmd.PersistentFlags().BoolVar(&w.Declarative, "declarative", false, "Whether to use declarative mode. (experimental)")
+	cmd.PersistentFlags().StringVar(&w.SourceTitle, "source-title", "", "Title of the change the release comes from, such as the pull request or commit title. Overrides the value detected from the CI environment")
+	cmd.PersistentFlags().StringVar(&w.SourceURL, "source-url", "", "Link to the commit or pull request the release comes from. Replaces the commit, pull request, title, author and branch detected from the CI environment")
+	cmd.PersistentFlags().StringVar(&w.SourceAuthor, "source-author", "", "Author of the change the release comes from. Overrides the value detected from the CI environment")
+	cmd.PersistentFlags().StringVar(&w.SourceRef, "source-ref", "", "Branch the release comes from. Overrides the value detected from the CI environment")
 
 	cmd.AddCommand(NewCheckCommand(w))
 	cmd.AddCommand(NewRolloutCommand(w))
@@ -45,6 +52,8 @@ func NewRootCommand(w *world.World) *cobra.Command {
 
 func rootPreRun(w *world.World) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
+		// The flags parsed, so a failure from here on is not a usage error.
+		cmd.SilenceUsage = true
 		w.Logger = slog.New(slog.NewTextHandler(cmd.ErrOrStderr(), nil))
 
 		if w.CustomHeaderError != nil {
@@ -60,7 +69,7 @@ func rootPreRun(w *world.World) func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-// newClientFromWorld creates a client using the authentication configured in World.
+// newClientFromWorld creates a client that signs in the way flag validation chose.
 func newClientFromWorld(w *world.World) (*client, error) {
 	options := defaultClientOptions()
 	if w.Timeout > 0 {
@@ -68,11 +77,19 @@ func newClientFromWorld(w *world.World) (*client, error) {
 	}
 	options.customHeaders = w.CustomHeaders
 
-	// Access tokens take precedence when both auth modes are populated.
-	if w.AccessToken != "" {
-		return newClient(w.URL, w.AccessToken, "", "", options)
+	switch w.SignIn {
+	case world.SignInAccessToken:
+		return newClient(w.URL, credential{accessToken: w.AccessToken}, options)
+	case world.SignInWorkloadIdentity:
+		return newClient(w.URL, credential{
+			workloadIdentity: w.WorkloadIdentity,
+			idToken:          newIDTokenSource(os.Getenv, w.Platform, w.WorkloadIdentityAudience, options.timeout),
+		}, options)
+	case world.SignInServiceAccount:
+		return newClient(w.URL, credential{serviceAccount: w.ServiceAccount, serviceAccountSecret: w.ServiceAccountSecret}, options)
+	default:
+		return nil, errors.Errorf("no sign-in is set")
 	}
-	return newClient(w.URL, "", w.ServiceAccount, w.ServiceAccountSecret, options)
 }
 
 type customHeaderFlag struct {
@@ -134,6 +151,11 @@ func checkVersionCompatibility(w *world.World, client *client, cliVersion string
 
 	actuatorInfo, err := client.getActuatorInfo(context.Background())
 	if err != nil {
+		// A rejected token fails every later request too, so stop here.
+		var signInErr *SignInError
+		if errors.As(err, &signInErr) {
+			return signInErr
+		}
 		w.Logger.Warn("Unable to get server version for compatibility check", "error", err)
 		return nil
 	}

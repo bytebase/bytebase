@@ -1,0 +1,1680 @@
+{
+  "ping_error": "",
+  "ping_requests": [
+    {
+      "method": "GET",
+      "route": "/api/2.0/workspace/list"
+    }
+  ],
+  "instance": {
+    "databases": [
+      {
+        "name": "system",
+        "schemas": [
+          {
+            "name": "information_schema",
+            "tables": [],
+            "external_tables": [],
+            "views": [],
+            "functions": [],
+            "procedures": [],
+            "streams": [],
+            "tasks": [],
+            "materialized_views": [],
+            "sequences": [],
+            "packages": [],
+            "owner": "",
+            "comment": "",
+            "events": [],
+            "enum_types": [],
+            "skip_dump": false,
+            "composite_types": [],
+            "synonyms": [],
+            "collations": [],
+            "range_types": []
+          }
+        ],
+        "character_set": "",
+        "collation": "",
+        "extensions": [],
+        "datashare": false,
+        "service_name": "",
+        "linked_databases": [],
+        "owner": "",
+        "search_path": "",
+        "event_triggers": [],
+        "public_synonyms": [],
+        "default_schema": "",
+        "foreign_servers": [],
+        "foreign_data_wrappers": []
+      },
+      {
+        "name": "workspace",
+        "schemas": [
+          {
+            "name": "default",
+            "tables": [],
+            "external_tables": [],
+            "views": [],
+            "functions": [],
+            "procedures": [],
+            "streams": [],
+            "tasks": [],
+            "materialized_views": [],
+            "sequences": [],
+            "packages": [],
+            "owner": "",
+            "comment": "",
+            "events": [],
+            "enum_types": [],
+            "skip_dump": false,
+            "composite_types": [],
+            "synonyms": [],
+            "collations": [],
+            "range_types": []
+          },
+          {
+            "name": "information_schema",
+            "tables": [],
+            "external_tables": [],
+            "views": [],
+            "functions": [],
+            "procedures": [],
+            "streams": [],
+            "tasks": [],
+            "materialized_views": [],
+            "sequences": [],
+            "packages": [],
+            "owner": "",
+            "comment": "",
+            "events": [],
+            "enum_types": [],
+            "skip_dump": false,
+            "composite_types": [],
+            "synonyms": [],
+            "collations": [],
+            "range_types": []
+          },
+          {
+            "name": "omni_record",
+            "tables": [
+              {
+                "name": "facts",
+                "columns": [
+                  {
+                    "name": "id",
+                    "position": 0,
+                    "default": "",
+                    "default_on_null": false,
+                    "on_update": "",
+                    "nullable": true,
+                    "type": "BIGINT",
+                    "character_set": "",
+                    "collation": "",
+                    "comment": "",
+                    "generation": null,
+                    "is_identity": false,
+                    "identity_generation": "IDENTITY_GENERATION_UNSPECIFIED",
+                    "identity_seed": "0",
+                    "identity_increment": "0",
+                    "options": [],
+                    "default_constraint_name": "",
+                    "is_invisible": false,
+                    "collation_schema": ""
+                  },
+                  {
+                    "name": "lookup_id",
+                    "position": 1,
+                    "default": "",
+                    "default_on_null": false,
+                    "on_update": "",
+                    "nullable": true,
+                    "type": "INT",
+                    "character_set": "",
+                    "collation": "",
+                    "comment": "",
+                    "generation": null,
+                    "is_identity": false,
+                    "identity_generation": "IDENTITY_GENERATION_UNSPECIFIED",
+                    "identity_seed": "0",
+                    "identity_increment": "0",
+                    "options": [],
+                    "default_constraint_name": "",
+                    "is_invisible": false,
+                    "collation_schema": ""
+                  }
+                ],
+                "indexes": [],
+                "engine": "",
+                "collation": "",
+                "charset": "",
+                "row_count": "0",
+                "data_size": "0",
+                "index_size": "0",
+                "data_free": "0",
+                "create_options": "",
+                "comment": "",
+                "foreign_keys": [],
+                "partitions": [],
+                "check_constraints": [],
+                "owner": "",
+                "sorting_keys": [],
+                "triggers": [],
+                "skip_dump": false,
+                "rules": [],
+                "sharding_info": "",
+                "primary_key_type": "",
+                "exclude_constraints": []
+              },
+              {
+                "name": "lookup",
+                "columns": [
+                  {
+                    "name": "id",
+                    "position": 0,
+                    "default": "",
+                    "default_on_null": false,
+                    "on_update": "",
+                    "nullable": true,
+                    "type": "INT",
+                    "character_set": "",
+                    "collation": "",
+                    "comment": "",
+                    "generation": null,
+                    "is_identity": false,
+                    "identity_generation": "IDENTITY_GENERATION_UNSPECIFIED",
+                    "identity_seed": "0",
+                    "identity_increment": "0",
+                    "options": [],
+                    "default_constraint_name": "",
+                    "is_invisible": false,
+                    "collation_schema": ""
+                  },
+                  {
+                    "name": "label",
+                    "position": 1,
+                    "default": "",
+                    "default_on_null": false,
+                    "on_update": "",
+                    "nullable": false,
+                    "type": "STRING",
+                    "character_set": "",
+                    "collation": "",
+                    "comment": "a column comment",
+                    "generation": null,
+                    "is_identity": false,
+                    "identity_generation": "IDENTITY_GENERATION_UNSPECIFIED",
+                    "identity_seed": "0",
+                    "identity_increment": "0",
+                    "options": [],
+                    "default_constraint_name": "",
+                    "is_invisible": false,
+                    "collation_schema": ""
+                  },
+                  {
+                    "name": "amount",
+                    "position": 2,
+                    "default": "",
+                    "default_on_null": false,
+                    "on_update": "",
+                    "nullable": true,
+                    "type": "DECIMAL",
+                    "character_set": "",
+                    "collation": "",
+                    "comment": "",
+                    "generation": null,
+                    "is_identity": false,
+                    "identity_generation": "IDENTITY_GENERATION_UNSPECIFIED",
+                    "identity_seed": "0",
+                    "identity_increment": "0",
+                    "options": [],
+                    "default_constraint_name": "",
+                    "is_invisible": false,
+                    "collation_schema": ""
+                  }
+                ],
+                "indexes": [],
+                "engine": "",
+                "collation": "",
+                "charset": "",
+                "row_count": "0",
+                "data_size": "0",
+                "index_size": "0",
+                "data_free": "0",
+                "create_options": "",
+                "comment": "a synced comment",
+                "foreign_keys": [],
+                "partitions": [],
+                "check_constraints": [],
+                "owner": "",
+                "sorting_keys": [],
+                "triggers": [],
+                "skip_dump": false,
+                "rules": [],
+                "sharding_info": "",
+                "primary_key_type": "",
+                "exclude_constraints": []
+              }
+            ],
+            "external_tables": [
+              {
+                "name": "ext",
+                "external_server_name": "",
+                "external_database_name": "",
+                "columns": [],
+                "options": [],
+                "location": "",
+                "format": "",
+                "skip_dump": false,
+                "check_constraints": [],
+                "pattern": "",
+                "triggers": [],
+                "auto_refresh": ""
+              }
+            ],
+            "views": [
+              {
+                "name": "recent",
+                "definition": "SELECT id, lookup_id FROM workspace.omni_record.facts WHERE id \u003e 0",
+                "comment": "",
+                "dependency_columns": [
+                  {
+                    "schema": "omni_record",
+                    "table": "recent",
+                    "column": "id"
+                  },
+                  {
+                    "schema": "omni_record",
+                    "table": "recent",
+                    "column": "lookup_id"
+                  }
+                ],
+                "columns": [],
+                "triggers": [],
+                "skip_dump": false,
+                "rules": []
+              }
+            ],
+            "functions": [],
+            "procedures": [],
+            "streams": [],
+            "tasks": [],
+            "materialized_views": [
+              {
+                "name": "totals",
+                "definition": "SELECT lookup_id, SUM(id) AS total FROM workspace.omni_record.facts GROUP BY lookup_id",
+                "comment": "",
+                "dependency_columns": [],
+                "triggers": [],
+                "indexes": [],
+                "skip_dump": false
+              }
+            ],
+            "sequences": [],
+            "packages": [],
+            "owner": "",
+            "comment": "",
+            "events": [],
+            "enum_types": [],
+            "skip_dump": false,
+            "composite_types": [],
+            "synonyms": [],
+            "collations": [],
+            "range_types": []
+          }
+        ],
+        "character_set": "",
+        "collation": "",
+        "extensions": [],
+        "datashare": false,
+        "service_name": "",
+        "linked_databases": [],
+        "owner": "",
+        "search_path": "",
+        "event_triggers": [],
+        "public_synonyms": [],
+        "default_schema": "",
+        "foreign_servers": [],
+        "foreign_data_wrappers": []
+      }
+    ],
+    "version": "4.2.0"
+  },
+  "instance_requests": [
+    {
+      "method": "POST",
+      "route": "/api/2.0/sql/statements",
+      "statement": "SELECT VERSION()",
+      "catalog": "workspace"
+    },
+    {
+      "method": "GET",
+      "route": "/api/2.1/unity-catalog/catalogs"
+    },
+    {
+      "method": "GET",
+      "route": "/api/2.1/unity-catalog/schemas"
+    },
+    {
+      "method": "GET",
+      "route": "/api/2.1/unity-catalog/tables"
+    },
+    {
+      "method": "GET",
+      "route": "/api/2.1/unity-catalog/schemas"
+    },
+    {
+      "method": "GET",
+      "route": "/api/2.1/unity-catalog/tables"
+    },
+    {
+      "method": "GET",
+      "route": "/api/2.1/unity-catalog/tables"
+    },
+    {
+      "method": "GET",
+      "route": "/api/2.1/unity-catalog/tables"
+    }
+  ],
+  "schema": {
+    "name": "workspace",
+    "schemas": [
+      {
+        "name": "default",
+        "tables": [],
+        "external_tables": [],
+        "views": [],
+        "functions": [],
+        "procedures": [],
+        "streams": [],
+        "tasks": [],
+        "materialized_views": [],
+        "sequences": [],
+        "packages": [],
+        "owner": "",
+        "comment": "",
+        "events": [],
+        "enum_types": [],
+        "skip_dump": false,
+        "composite_types": [],
+        "synonyms": [],
+        "collations": [],
+        "range_types": []
+      },
+      {
+        "name": "information_schema",
+        "tables": [],
+        "external_tables": [],
+        "views": [],
+        "functions": [],
+        "procedures": [],
+        "streams": [],
+        "tasks": [],
+        "materialized_views": [],
+        "sequences": [],
+        "packages": [],
+        "owner": "",
+        "comment": "",
+        "events": [],
+        "enum_types": [],
+        "skip_dump": false,
+        "composite_types": [],
+        "synonyms": [],
+        "collations": [],
+        "range_types": []
+      },
+      {
+        "name": "omni_record",
+        "tables": [
+          {
+            "name": "facts",
+            "columns": [
+              {
+                "name": "id",
+                "position": 0,
+                "default": "",
+                "default_on_null": false,
+                "on_update": "",
+                "nullable": true,
+                "type": "BIGINT",
+                "character_set": "",
+                "collation": "",
+                "comment": "",
+                "generation": null,
+                "is_identity": false,
+                "identity_generation": "IDENTITY_GENERATION_UNSPECIFIED",
+                "identity_seed": "0",
+                "identity_increment": "0",
+                "options": [],
+                "default_constraint_name": "",
+                "is_invisible": false,
+                "collation_schema": ""
+              },
+              {
+                "name": "lookup_id",
+                "position": 1,
+                "default": "",
+                "default_on_null": false,
+                "on_update": "",
+                "nullable": true,
+                "type": "INT",
+                "character_set": "",
+                "collation": "",
+                "comment": "",
+                "generation": null,
+                "is_identity": false,
+                "identity_generation": "IDENTITY_GENERATION_UNSPECIFIED",
+                "identity_seed": "0",
+                "identity_increment": "0",
+                "options": [],
+                "default_constraint_name": "",
+                "is_invisible": false,
+                "collation_schema": ""
+              }
+            ],
+            "indexes": [],
+            "engine": "",
+            "collation": "",
+            "charset": "",
+            "row_count": "0",
+            "data_size": "0",
+            "index_size": "0",
+            "data_free": "0",
+            "create_options": "",
+            "comment": "",
+            "foreign_keys": [],
+            "partitions": [],
+            "check_constraints": [],
+            "owner": "",
+            "sorting_keys": [],
+            "triggers": [],
+            "skip_dump": false,
+            "rules": [],
+            "sharding_info": "",
+            "primary_key_type": "",
+            "exclude_constraints": []
+          },
+          {
+            "name": "lookup",
+            "columns": [
+              {
+                "name": "id",
+                "position": 0,
+                "default": "",
+                "default_on_null": false,
+                "on_update": "",
+                "nullable": true,
+                "type": "INT",
+                "character_set": "",
+                "collation": "",
+                "comment": "",
+                "generation": null,
+                "is_identity": false,
+                "identity_generation": "IDENTITY_GENERATION_UNSPECIFIED",
+                "identity_seed": "0",
+                "identity_increment": "0",
+                "options": [],
+                "default_constraint_name": "",
+                "is_invisible": false,
+                "collation_schema": ""
+              },
+              {
+                "name": "label",
+                "position": 1,
+                "default": "",
+                "default_on_null": false,
+                "on_update": "",
+                "nullable": false,
+                "type": "STRING",
+                "character_set": "",
+                "collation": "",
+                "comment": "a column comment",
+                "generation": null,
+                "is_identity": false,
+                "identity_generation": "IDENTITY_GENERATION_UNSPECIFIED",
+                "identity_seed": "0",
+                "identity_increment": "0",
+                "options": [],
+                "default_constraint_name": "",
+                "is_invisible": false,
+                "collation_schema": ""
+              },
+              {
+                "name": "amount",
+                "position": 2,
+                "default": "",
+                "default_on_null": false,
+                "on_update": "",
+                "nullable": true,
+                "type": "DECIMAL",
+                "character_set": "",
+                "collation": "",
+                "comment": "",
+                "generation": null,
+                "is_identity": false,
+                "identity_generation": "IDENTITY_GENERATION_UNSPECIFIED",
+                "identity_seed": "0",
+                "identity_increment": "0",
+                "options": [],
+                "default_constraint_name": "",
+                "is_invisible": false,
+                "collation_schema": ""
+              }
+            ],
+            "indexes": [],
+            "engine": "",
+            "collation": "",
+            "charset": "",
+            "row_count": "0",
+            "data_size": "0",
+            "index_size": "0",
+            "data_free": "0",
+            "create_options": "",
+            "comment": "a synced comment",
+            "foreign_keys": [],
+            "partitions": [],
+            "check_constraints": [],
+            "owner": "",
+            "sorting_keys": [],
+            "triggers": [],
+            "skip_dump": false,
+            "rules": [],
+            "sharding_info": "",
+            "primary_key_type": "",
+            "exclude_constraints": []
+          }
+        ],
+        "external_tables": [
+          {
+            "name": "ext",
+            "external_server_name": "",
+            "external_database_name": "",
+            "columns": [],
+            "options": [],
+            "location": "",
+            "format": "",
+            "skip_dump": false,
+            "check_constraints": [],
+            "pattern": "",
+            "triggers": [],
+            "auto_refresh": ""
+          }
+        ],
+        "views": [
+          {
+            "name": "recent",
+            "definition": "SELECT id, lookup_id FROM workspace.omni_record.facts WHERE id \u003e 0",
+            "comment": "",
+            "dependency_columns": [
+              {
+                "schema": "omni_record",
+                "table": "recent",
+                "column": "id"
+              },
+              {
+                "schema": "omni_record",
+                "table": "recent",
+                "column": "lookup_id"
+              }
+            ],
+            "columns": [],
+            "triggers": [],
+            "skip_dump": false,
+            "rules": []
+          }
+        ],
+        "functions": [],
+        "procedures": [],
+        "streams": [],
+        "tasks": [],
+        "materialized_views": [
+          {
+            "name": "totals",
+            "definition": "SELECT lookup_id, SUM(id) AS total FROM workspace.omni_record.facts GROUP BY lookup_id",
+            "comment": "",
+            "dependency_columns": [],
+            "triggers": [],
+            "indexes": [],
+            "skip_dump": false
+          }
+        ],
+        "sequences": [],
+        "packages": [],
+        "owner": "",
+        "comment": "",
+        "events": [],
+        "enum_types": [],
+        "skip_dump": false,
+        "composite_types": [],
+        "synonyms": [],
+        "collations": [],
+        "range_types": []
+      }
+    ],
+    "character_set": "",
+    "collation": "",
+    "extensions": [],
+    "datashare": false,
+    "service_name": "",
+    "linked_databases": [],
+    "owner": "",
+    "search_path": "",
+    "event_triggers": [],
+    "public_synonyms": [],
+    "default_schema": "",
+    "foreign_servers": [],
+    "foreign_data_wrappers": []
+  },
+  "schema_requests": [
+    {
+      "method": "GET",
+      "route": "/api/2.1/unity-catalog/catalogs"
+    },
+    {
+      "method": "GET",
+      "route": "/api/2.1/unity-catalog/schemas"
+    },
+    {
+      "method": "GET",
+      "route": "/api/2.1/unity-catalog/tables"
+    },
+    {
+      "method": "GET",
+      "route": "/api/2.1/unity-catalog/tables"
+    },
+    {
+      "method": "GET",
+      "route": "/api/2.1/unity-catalog/tables"
+    }
+  ],
+  "queries": [
+    {
+      "name": "probe",
+      "script": "SELECT 1",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT 1",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "1"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "int32_value": 1
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.000603497s",
+          "statement": "SELECT 1",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "probe with a row limit",
+      "script": "SELECT 1",
+      "schema": "",
+      "limit": 100,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT 1",
+          "catalog": "workspace",
+          "row_limit": 100
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "1"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "int32_value": 1
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.048990558s",
+          "statement": "SELECT 1",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "probe in a schema",
+      "script": "SELECT 1",
+      "schema": "omni_record",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT 1",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "1"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "int32_value": 1
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.066067877s",
+          "statement": "SELECT 1",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "a null cell",
+      "script": "SELECT CAST(NULL AS INT) AS n",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT CAST(NULL AS INT) AS n",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "n"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "null_value": null
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.066252663s",
+          "statement": "SELECT CAST(NULL AS INT) AS n",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "a string cell",
+      "script": "SELECT 'x' AS s",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT 'x' AS s",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "s"
+          ],
+          "column_type_names": [
+            "STRING"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "string_value": "x"
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.066821114s",
+          "statement": "SELECT 'x' AS s",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "typed cells",
+      "script": "SELECT 321 AS a, 'b' AS s, CAST(NULL AS STRING) AS z",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT 321 AS a, 'b' AS s, CAST(NULL AS STRING) AS z",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "a",
+            "s",
+            "z"
+          ],
+          "column_type_names": [
+            "INT",
+            "STRING",
+            "STRING"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "int32_value": 321
+                },
+                {
+                  "string_value": "b"
+                },
+                {
+                  "string_value": ""
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.067802020s",
+          "statement": "SELECT 321 AS a, 'b' AS s, CAST(NULL AS STRING) AS z",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "rows",
+      "script": "SELECT id, label, amount FROM workspace.omni_record.lookup ORDER BY id",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT id, label, amount FROM workspace.omni_record.lookup ORDER BY id",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "id",
+            "label",
+            "amount"
+          ],
+          "column_type_names": [
+            "INT",
+            "STRING",
+            "DECIMAL"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "int32_value": 1
+                },
+                {
+                  "string_value": "first"
+                },
+                {
+                  "string_value": "1.50"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "int32_value": 2
+                },
+                {
+                  "string_value": "second"
+                },
+                {
+                  "string_value": "2.25"
+                }
+              ]
+            }
+          ],
+          "rows_count": "2",
+          "error": "",
+          "latency": "0.066218817s",
+          "statement": "SELECT id, label, amount FROM workspace.omni_record.lookup ORDER BY id",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "no rows",
+      "script": "SELECT * FROM workspace.omni_record.lookup WHERE 1 = 0",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT * FROM workspace.omni_record.lookup WHERE 1 = 0",
+          "catalog": "workspace"
+        }
+      ],
+      "results": null,
+      "call_error": ""
+    },
+    {
+      "name": "no rows before a statement",
+      "script": "SELECT * FROM workspace.omni_record.lookup WHERE 1 = 0;\nSELECT 1",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT * FROM workspace.omni_record.lookup WHERE 1 = 0;",
+          "catalog": "workspace"
+        }
+      ],
+      "results": null,
+      "call_error": ""
+    },
+    {
+      "name": "two statements",
+      "script": "SELECT 1;\nSELECT 2",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT 1;",
+          "catalog": "workspace"
+        },
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "\nSELECT 2",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "1"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "int32_value": 1
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.066362094s",
+          "statement": "SELECT 1;",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        },
+        {
+          "column_names": [
+            "1"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "int32_value": 1
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.066900680s",
+          "statement": "\nSELECT 2",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "two statements on one line",
+      "script": "SELECT 1; SELECT 2",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT 1; SELECT 2",
+          "catalog": "workspace"
+        }
+      ],
+      "results": null,
+      "call_error": "FAILED: BAD_REQUEST no canned answer for statement SELECT 1; SELECT 2"
+    },
+    {
+      "name": "a trailing semicolon",
+      "script": "SELECT 1;",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT 1;",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "1"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "int32_value": 1
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.067826449s",
+          "statement": "SELECT 1;",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "a leading comment",
+      "script": "-- lead\nSELECT 1",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "-- lead\nSELECT 1",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "1"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "int32_value": 1
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.065977889s",
+          "statement": "-- lead\nSELECT 1",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "a trailing comment",
+      "script": "SELECT 1 -- tail",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT 1 -- tail",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "1"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "int32_value": 1
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.066025228s",
+          "statement": "SELECT 1 -- tail",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "a lone terminator between two",
+      "script": "SELECT 1;\n;\nSELECT 2",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT 1;",
+          "catalog": "workspace"
+        },
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "\n;",
+          "catalog": "workspace"
+        }
+      ],
+      "results": null,
+      "call_error": "FAILED: BAD_REQUEST no canned answer for statement \n;"
+    },
+    {
+      "name": "a delimiter block",
+      "script": "DELIMITER ;;\nSELECT 1;;\nDELIMITER ;",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "DELIMITER ;;\nSELECT 1;;",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "1"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "int32_value": 1
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.064890671s",
+          "statement": "DELIMITER ;;\nSELECT 1;;",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "an insert",
+      "script": "INSERT INTO workspace.omni_record.lookup (id, label) VALUES (1, 'x'), (2, 'y')",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "INSERT INTO workspace.omni_record.lookup (id, label) VALUES (1, 'x'), (2, 'y')",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "num_affected_rows"
+          ],
+          "column_type_names": [
+            "LONG"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "int64_value": "2"
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.066062906s",
+          "statement": "INSERT INTO workspace.omni_record.lookup (id, label) VALUES (1, 'x'), (2, 'y')",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "an update",
+      "script": "UPDATE workspace.omni_record.lookup SET label = 'z' WHERE id = 1",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "UPDATE workspace.omni_record.lookup SET label = 'z' WHERE id = 1",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "num_affected_rows"
+          ],
+          "column_type_names": [
+            "LONG"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "int64_value": "1"
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.066388560s",
+          "statement": "UPDATE workspace.omni_record.lookup SET label = 'z' WHERE id = 1",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "a DDL statement",
+      "script": "CREATE TABLE workspace.omni_record.created (id INT)",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "CREATE TABLE workspace.omni_record.created (id INT)",
+          "catalog": "workspace"
+        }
+      ],
+      "results": null,
+      "call_error": ""
+    },
+    {
+      "name": "an explain request",
+      "script": "SELECT 1",
+      "schema": "",
+      "limit": 0,
+      "explain": true,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "EXPLAIN FORMATTED SELECT 1",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "plan"
+          ],
+          "column_type_names": [
+            "STRING"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "string_value": "== Physical Plan ==\nProject [1]\n"
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.066687762s",
+          "statement": "EXPLAIN FORMATTED SELECT 1",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "a statement the caller wrote as EXPLAIN",
+      "script": "EXPLAIN FORMATTED SELECT 1",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "EXPLAIN FORMATTED SELECT 1",
+          "catalog": "workspace"
+        }
+      ],
+      "results": [
+        {
+          "column_names": [
+            "plan"
+          ],
+          "column_type_names": [
+            "STRING"
+          ],
+          "rows": [
+            {
+              "values": [
+                {
+                  "string_value": "== Physical Plan ==\nProject [1]\n"
+                }
+              ]
+            }
+          ],
+          "rows_count": "1",
+          "error": "",
+          "latency": "0.067165754s",
+          "statement": "EXPLAIN FORMATTED SELECT 1",
+          "messages": [],
+          "masked": [],
+          "query_plan": null
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "a statement the workspace refuses",
+      "script": "SELECT broken",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT broken",
+          "catalog": "workspace"
+        }
+      ],
+      "results": null,
+      "call_error": "FAILED: BAD_REQUEST no canned answer for statement SELECT broken"
+    },
+    {
+      "name": "a failure between two statements",
+      "script": "SELECT 1;\nSELECT broken;\nSELECT 2",
+      "schema": "",
+      "limit": 0,
+      "explain": false,
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT 1;",
+          "catalog": "workspace"
+        },
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "\nSELECT broken;",
+          "catalog": "workspace"
+        }
+      ],
+      "results": null,
+      "call_error": "FAILED: BAD_REQUEST no canned answer for statement SELECT broken"
+    }
+  ],
+  "executes": [
+    {
+      "name": "an insert",
+      "script": "INSERT INTO workspace.omni_record.lookup (id, label) VALUES (1, 'x'), (2, 'y')",
+      "affected": 0,
+      "logs": null,
+      "error": "",
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "INSERT INTO workspace.omni_record.lookup (id, label) VALUES (1, 'x'), (2, 'y')",
+          "catalog": "workspace"
+        }
+      ]
+    },
+    {
+      "name": "an update",
+      "script": "UPDATE workspace.omni_record.lookup SET label = 'z' WHERE id = 1",
+      "affected": 0,
+      "logs": null,
+      "error": "",
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "UPDATE workspace.omni_record.lookup SET label = 'z' WHERE id = 1",
+          "catalog": "workspace"
+        }
+      ]
+    },
+    {
+      "name": "a DDL statement",
+      "script": "CREATE TABLE workspace.omni_record.created (id INT)",
+      "affected": 0,
+      "logs": null,
+      "error": "",
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "CREATE TABLE workspace.omni_record.created (id INT)",
+          "catalog": "workspace"
+        }
+      ]
+    },
+    {
+      "name": "a write after a read",
+      "script": "SELECT 1;\nINSERT INTO workspace.omni_record.lookup (id, label) VALUES (1, 'x'), (2, 'y')",
+      "affected": 0,
+      "logs": null,
+      "error": "",
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT 1;",
+          "catalog": "workspace"
+        },
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "\nINSERT INTO workspace.omni_record.lookup (id, label) VALUES (1, 'x'), (2, 'y')",
+          "catalog": "workspace"
+        }
+      ]
+    },
+    {
+      "name": "a transaction directive",
+      "script": "-- txn-mode=off\nINSERT INTO workspace.omni_record.lookup (id, label) VALUES (1, 'x'), (2, 'y')",
+      "affected": 0,
+      "logs": null,
+      "error": "",
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "INSERT INTO workspace.omni_record.lookup (id, label) VALUES (1, 'x'), (2, 'y')",
+          "catalog": "workspace"
+        }
+      ]
+    },
+    {
+      "name": "a statement the workspace refuses",
+      "script": "SELECT broken",
+      "affected": 0,
+      "logs": null,
+      "error": "FAILED: BAD_REQUEST no canned answer for statement SELECT broken",
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "SELECT broken",
+          "catalog": "workspace"
+        }
+      ]
+    },
+    {
+      "name": "a failure after a write",
+      "script": "INSERT INTO workspace.omni_record.lookup (id, label) VALUES (1, 'x'), (2, 'y');\nSELECT broken",
+      "affected": 0,
+      "logs": null,
+      "error": "FAILED: BAD_REQUEST no canned answer for statement SELECT broken",
+      "requests": [
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "INSERT INTO workspace.omni_record.lookup (id, label) VALUES (1, 'x'), (2, 'y');",
+          "catalog": "workspace"
+        },
+        {
+          "method": "POST",
+          "route": "/api/2.0/sql/statements",
+          "statement": "\nSELECT broken",
+          "catalog": "workspace"
+        }
+      ]
+    }
+  ],
+  "dump": "CREATE CATALOG workspace\nCREATE SCHEMA `workspace`.`omni_record`\n--\n-- MANAGED TABLE structure for `workspace`.`omni_record`.`facts`\n--\nCREATE TABLE workspace.omni_record.facts (\n  `id` BIGINT\n)\nUSING DELTA;\n--\n-- MANAGED TABLE structure for `workspace`.`omni_record`.`lookup`\n--\nCREATE TABLE workspace.omni_record.lookup (\n  `id` INT,\n  `label` STRING NOT NULL\n)\nUSING delta\nCOMMENT 'a synced comment';\n--\n-- EXTERNAL TABLE structure for `workspace`.`omni_record`.`ext`\n--\nCREATE EXTERNAL TABLE workspace.omni_record.ext (\n  `id` INT\n)\nLOCATION 's3://example-bucket/ext';\n--\n-- VIEW structure for `workspace`.`omni_record`.`recent`\n--\nCREATE VIEW omni_record.recent AS SELECT id FROM workspace.omni_record.facts;\nCREATE MATERIALIZED VIEW `workspace`.`omni_record`.`totals`\nCOMMENT \nTBLPROPERTIES serialization.format = 1,\ndelta.minReaderVersion = 1\n\n",
+  "dump_error": ""
+}

@@ -24,9 +24,6 @@ const renderSelection = (initialProps: RouteSelectionParams) =>
     (params: RouteSelectionParams) => {
       const route = useRouteSelection(params);
       const routePhase = usePlanDetailStore((state) => state.routePhase);
-      const selectedSpecId = usePlanDetailStore(
-        (state) => state.selectedSpecId
-      );
       const selectedStageId = usePlanDetailStore(
         (state) => state.selectedStageId
       );
@@ -37,7 +34,6 @@ const renderSelection = (initialProps: RouteSelectionParams) =>
         route,
         store: {
           routePhase,
-          selectedSpecId,
           selectedStageId,
           selectedTaskName,
         },
@@ -131,7 +127,6 @@ describe("useRouteSelection", () => {
       await waitFor(() =>
         expect(result.current.store).toEqual({
           routePhase: expected.phase,
-          selectedSpecId: expected.specId,
           selectedStageId: expected.stageId,
           selectedTaskName: expected.taskId,
         })
@@ -184,7 +179,6 @@ describe("useRouteSelection", () => {
     await waitFor(() =>
       expect(result.current.store).toEqual({
         routePhase: "changes",
-        selectedSpecId: "path-spec",
         selectedStageId: undefined,
         selectedTaskName: undefined,
       })
@@ -257,7 +251,6 @@ describe("useRouteSelection", () => {
       await waitFor(() =>
         expect(result.current.store).toEqual({
           routePhase: expected.phase,
-          selectedSpecId: expected.specId,
           selectedStageId: expected.stageId,
           selectedTaskName: expected.taskId,
         })
@@ -286,7 +279,6 @@ describe("useRouteSelection", () => {
     await waitFor(() =>
       expect(result.current.store).toEqual({
         routePhase: "deploy",
-        selectedSpecId: undefined,
         selectedStageId: "prod",
         selectedTaskName: "42",
       })
@@ -319,7 +311,6 @@ describe("useRouteSelection", () => {
     await waitFor(() =>
       expect(result.current.store).toEqual({
         routePhase: undefined,
-        selectedSpecId: undefined,
         selectedStageId: undefined,
         selectedTaskName: undefined,
       })

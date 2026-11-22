@@ -1,0 +1,25 @@
+[
+  {
+    "id": "TableReader_7",
+    "estRows": "1594.44",
+    "taskType": "root",
+    "operatorInfo": "data:Selection_6",
+    "subOperators": [
+      {
+        "id": "Selection_6",
+        "estRows": "1594.44",
+        "taskType": "cop[tikv]",
+        "operatorInfo": "gt(qp.orders.total, 880)",
+        "subOperators": [
+          {
+            "id": "TableFullScan_5",
+            "estRows": "50000.00",
+            "taskType": "cop[tikv]",
+            "accessObject": "table:orders",
+            "operatorInfo": "keep order:false"
+          }
+        ]
+      }
+    ]
+  }
+]

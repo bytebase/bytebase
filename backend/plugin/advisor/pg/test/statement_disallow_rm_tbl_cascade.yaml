@@ -50,3 +50,14 @@
         line: 2
         column: 0
       endposition: null
+- statement: TRUNCATE TABLE ONLY tech_book RESTART IDENTITY CASCADE;
+  want:
+    - status: 2
+      code: 213
+      title: STATEMENT_DISALLOW_RM_TBL_CASCADE
+      content: The use of CASCADE is not permitted when removing a table
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP VIEW v CASCADE;

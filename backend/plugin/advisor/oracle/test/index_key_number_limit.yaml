@@ -65,3 +65,63 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(a int, b int, c int, d int, e int, f int,
+      g int,
+      CONSTRAINT pk_t PRIMARY KEY (a, b, c, d, e, f),
+      CONSTRAINT fk_t FOREIGN KEY (a, b, c, d, e, f) REFERENCES p (a, b, c, d, e, f),
+      UNIQUE (a, b, c, d, e, f)
+    );
+  want:
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: Index key number should be less than or equal to 5
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: Index key number should be less than or equal to 5
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a int PRIMARY KEY, b int UNIQUE, c int);
+- statement: CREATE INDEX idx_fn ON t(a, UPPER(b), c + d, e, f, g);
+  want:
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: Index key number should be less than or equal to 5
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE INDEX idx_five ON t(a, b, c, d, e);
+- statement: |-
+    ALTER TABLE t ADD PRIMARY KEY (a, b, c, d, e, f);
+    ALTER TABLE t
+      ADD (CONSTRAINT uk_1 UNIQUE (a, b, c, d, e, f),
+           CONSTRAINT uk_2 UNIQUE (a, b));
+  want:
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: Index key number should be less than or equal to 5
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: Index key number should be less than or equal to 5
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ADD CONSTRAINT fk_t FOREIGN KEY (a, b, c, d, e, f) REFERENCES p (a, b, c, d, e, f);
+- statement: ALTER TABLE t MODIFY UNIQUE (a, b, c, d, e, f) DISABLE;

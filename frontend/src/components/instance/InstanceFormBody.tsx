@@ -1,12 +1,12 @@
 import { create } from "@bufbuild/protobuf";
 import type { Duration } from "@bufbuild/protobuf/wkt";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual, omit } from "lodash-es";
 import {
-  ChevronDown,
-  ChevronRight,
+  AlertCircle,
   ExternalLink,
   Info,
+  Link,
+  Server,
   Trash2,
 } from "lucide-react";
 import {
@@ -18,9 +18,9 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import neonIcon from "@/assets/db/neon.svg";
 import { EngineIcon } from "@/components/EngineIcon";
 import { EnvironmentSelect } from "@/components/EnvironmentSelect";
-import { FeatureBadge } from "@/components/FeatureBadge";
 import { LabelListEditor } from "@/components/LabelListEditor";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { ResourceIdField } from "@/components/ResourceIdField";
@@ -31,11 +31,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   FormControlGroup,
   FormControlRow,
+  FormError,
   FormFieldGroup,
   FormLabel,
   FormSection,
   ResponsiveFormLayout,
+  FormField as SharedFormField,
 } from "@/components/ui/form";
+import { Input as SharedInput } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -47,6 +55,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -67,11 +76,9 @@ import {
   DataSourceType,
   type SyncDatabases as SyncDatabasesMessage,
   SyncDatabasesSchema,
+  Vendor,
 } from "@/types/proto-es/v1/instance_service_pb";
-import {
-  PlanFeature,
-  PlanType,
-} from "@/types/proto-es/v1/subscription_service_pb";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   engineNameV1,
   extractInstanceResourceName,
@@ -82,7 +89,20 @@ import {
   urlfy,
 } from "@/utils";
 import { normalizeAuthenticationType } from "./authentication";
-import type { EditDataSource } from "./common";
+import { CollapsibleTilePicker, TileRadioItem } from "./CollapsibleTilePicker";
+import {
+  type DataSourceEditState,
+  type EditDataSource,
+  extractDataSourceEditState,
+} from "./common";
+import {
+  applyParsedConnectionString,
+  type ConnectionStringEngine,
+  detectConnectionStringEngine,
+  type ParsedConnectionString,
+  parseConnectionString,
+  supportsConnectionString,
+} from "./connection-string";
 import {
   MongoDBConnectionStringSchemaList,
   RedisConnectionType,
@@ -92,6 +112,8 @@ import { DataSourceForm, RedisSentinelFields } from "./DataSourceForm";
 import { DataSourceSection } from "./DataSourceSection";
 import { useInstanceFormContext } from "./InstanceFormContext";
 import { hasInfoContent, type InfoSection } from "./info-content";
+import { isNeonPooledHost } from "./neon-import";
+import { ScanIntervalInput } from "./ScanIntervalInput";
 import {
   ValidationField as FormField,
   ValidationInput as Input,
@@ -340,179 +362,27 @@ function BigQueryHostInput({
   );
 }
 
-function InstanceEngineRadioGrid({
-  engine,
-  engineList,
-  onEngineChange,
-  isEngineBeta,
+function VendorIcon({
+  vendor,
+  className,
 }: {
-  engine: Engine;
-  engineList: Engine[];
-  onEngineChange: (engine: Engine) => void;
-  isEngineBeta: (engine: Engine) => boolean;
+  vendor: Vendor;
+  className?: string;
 }) {
+  if (vendor === Vendor.NEON) {
+    return (
+      <img
+        src={neonIcon}
+        alt=""
+        className={cn("shrink-0 object-contain", className)}
+      />
+    );
+  }
   return (
-    <div className="w-full grid grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-2">
-      {engineList.map((eng) => (
-        <Button
-          key={eng}
-          type="button"
-          appearance="outline"
-          size="lg"
-          className={cn(
-            "h-auto justify-start rounded-sm px-3 py-2 text-left",
-            eng === engine
-              ? "border-accent bg-accent/5 ring-1 ring-accent"
-              : "hover:border-accent/50 hover:bg-control-bg"
-          )}
-          onClick={() => onEngineChange(eng)}
-        >
-          <EngineIcon engine={eng} className="size-5" />
-          <span className="truncate">{engineNameV1(eng)}</span>
-          {isEngineBeta(eng) && (
-            <span className="ml-auto shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
-              Beta
-            </span>
-          )}
-        </Button>
-      ))}
-    </div>
-  );
-}
-
-const MIN_SCAN_MINUTES = 30;
-
-function ScanIntervalInput({
-  scanInterval,
-  allowEdit,
-  onScanIntervalChange,
-}: {
-  scanInterval: Duration | undefined;
-  allowEdit: boolean;
-  onScanIntervalChange: (interval: Duration | undefined) => void;
-}) {
-  const { t } = useTranslation();
-  const ctx = useInstanceFormContext();
-  const { instance: _instance, hideAdvancedFeatures } = ctx;
-
-  const extractState = (
-    duration: Duration | undefined
-  ): { mode: "DEFAULT" | "CUSTOM"; minutes: number | undefined } => {
-    if (!duration || Number(duration.seconds) === 0) {
-      return { mode: "DEFAULT", minutes: undefined };
-    }
-    return {
-      mode: "CUSTOM",
-      minutes: Math.floor(Number(duration.seconds) / 60),
-    };
-  };
-
-  const [mode, setMode] = useState<"DEFAULT" | "CUSTOM">(
-    () => extractState(scanInterval).mode
-  );
-  const [minutes, setMinutes] = useState<number | undefined>(
-    () => extractState(scanInterval).minutes
-  );
-  const [isValid, setIsValid] = useState(true);
-
-  useEffect(() => {
-    const s = extractState(scanInterval);
-    setMode(s.mode);
-    setMinutes(s.minutes);
-    setIsValid(true);
-  }, [scanInterval]);
-
-  const handleModeChange = (targetMode: "DEFAULT" | "CUSTOM") => {
-    if (targetMode === mode) return;
-    setMode(targetMode);
-    if (targetMode === "DEFAULT") {
-      onScanIntervalChange(create(DurationSchema, { seconds: BigInt(0) }));
-    } else {
-      setMinutes(24 * 60);
-      onScanIntervalChange(
-        create(DurationSchema, { seconds: BigInt(24 * 60 * 60) })
-      );
-    }
-  };
-
-  const handleMinuteChange = (value: string) => {
-    const num = parseInt(value, 10);
-    if (Number.isNaN(num)) {
-      setMinutes(undefined);
-      setIsValid(false);
-      return;
-    }
-    setMinutes(num);
-    if (num < MIN_SCAN_MINUTES) {
-      setIsValid(false);
-      return;
-    }
-    setIsValid(true);
-    onScanIntervalChange(create(DurationSchema, { seconds: BigInt(num * 60) }));
-  };
-
-  if (hideAdvancedFeatures) return null;
-
-  return (
-    <FormField
-      title={
-        <span className="inline-flex items-center gap-x-2">
-          {t("instance.scan-interval.self")}
-          <FeatureBadge
-            feature={PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME}
-          />
-          <Tooltip
-            content={t("instance.scan-interval.description")}
-            popupClassName="max-w-96"
-          >
-            <Button
-              type="button"
-              appearance="link"
-              size="xs"
-              className="-ml-1 w-6 p-0"
-              aria-label={t("instance.scan-interval.self")}
-            >
-              <Info className="size-3.5" />
-            </Button>
-          </Tooltip>
-        </span>
-      }
-    >
-      <div className="flex items-center gap-x-3">
-        <Switch
-          id="customScanInterval"
-          checked={mode === "CUSTOM"}
-          disabled={!allowEdit}
-          onCheckedChange={(checked) =>
-            handleModeChange(checked ? "CUSTOM" : "DEFAULT")
-          }
-        />
-        <FormLabel htmlFor="customScanInterval" className="font-normal!">
-          {t("common.custom")}
-        </FormLabel>
-        {mode === "CUSTOM" && (
-          <>
-            <Input
-              type="number"
-              value={minutes ?? ""}
-              className={`w-16 ${!isValid ? "border-error" : ""}`}
-              placeholder={`>= ${MIN_SCAN_MINUTES}`}
-              disabled={!allowEdit}
-              onChange={(e) => handleMinuteChange(e.target.value)}
-            />
-            {!isValid ? (
-              <span className="text-error text-sm">
-                {t("instance.scan-interval.min-value", {
-                  value: MIN_SCAN_MINUTES,
-                })}
-              </span>
-            ) : (
-              <span className="text-sm">{t("common.minutes")}</span>
-            )}
-          </>
-        )}
-      </div>
-    </FormField>
+    <Server
+      aria-hidden="true"
+      className={cn("shrink-0 text-control-light", className)}
+    />
   );
 }
 
@@ -675,6 +545,7 @@ export function SyncDatabases({
   const visibleDatabases = filteredDatabases.slice(0, visibleDatabaseCount);
   const hasMore = filteredDatabases.length > visibleDatabaseCount;
   const hasProjectContext = !!projectName && isCreatingProp;
+  const showDisabledReason = !!disabledReason && !syncAll;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.nativeEvent.isComposing) return;
@@ -741,7 +612,7 @@ export function SyncDatabases({
                 ? t("instance.sync-databases.project-sync-all")
                 : t("instance.sync-databases.self")
             }
-            aria-describedby={disabledReason ? disabledReasonId : undefined}
+            aria-describedby={showDisabledReason ? disabledReasonId : undefined}
           />
           <span
             className={cn("text-sm", disabledReason && "text-control-light")}
@@ -751,7 +622,7 @@ export function SyncDatabases({
               : t("instance.sync-databases.selected-databases")}
           </span>
         </FormControlRow>
-        {disabledReason && (
+        {showDisabledReason && (
           <p
             id={disabledReasonId}
             className="text-xs leading-4 text-control-light"
@@ -818,6 +689,335 @@ export function SyncDatabases({
         )}
       </div>
     </FormField>
+  );
+}
+
+const NEON_CONNECTION_STRING_PLACEHOLDER =
+  "postgresql://role:password@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require";
+
+const CONNECTION_STRING_PLACEHOLDERS: Record<ConnectionStringEngine, string> = {
+  [Engine.MYSQL]:
+    "mysql://user:password@db.example.com:3306/mydb?ssl-mode=REQUIRED",
+  [Engine.POSTGRES]:
+    "postgresql://user:password@db.example.com:5432/mydb?sslmode=require",
+  [Engine.MSSQL]:
+    "Server=tcp:db.example.com,1433;Initial Catalog=mydb;User ID=sa;Password=…;Encrypt=True;",
+  [Engine.ORACLE]: "tcps://user:password@db.example.com:1522/orclpdb1",
+  [Engine.MARIADB]:
+    "mariadb://user:password@db.example.com:3306/mydb?ssl-mode=REQUIRED",
+  [Engine.TIDB]:
+    "mysql://user:password@db.example.com:4000/mydb?ssl-mode=VERIFY_IDENTITY",
+  [Engine.OCEANBASE]:
+    "mysql://user@tenant#cluster:password@db.example.com:2883/mydb",
+  [Engine.STARROCKS]: "mysql://user:password@db.example.com:9030/mydb",
+  [Engine.DORIS]: "mysql://user:password@db.example.com:9030/mydb",
+  [Engine.COCKROACHDB]:
+    "postgresql://user:password@db.example.com:26257/defaultdb?sslmode=verify-full",
+  [Engine.REDSHIFT]: "redshift://user:password@cluster.example.com:5439/dev",
+  [Engine.MONGODB]: "mongodb+srv://user:password@cluster.example.com/mydb",
+  [Engine.REDIS]: "rediss://default:password@db.example.com:6379",
+  [Engine.CASSANDRA]:
+    "cassandra://user:password@node1.example.com:9042,node2.example.com:9042",
+  [Engine.ELASTICSEARCH]: "https://user:password@search.example.com:9200",
+  [Engine.CLICKHOUSE]:
+    "clickhouses://user:password@db.example.com:9440/default",
+  [Engine.SNOWFLAKE]:
+    "snowflake://user:password@account.snowflakecomputing.com",
+  [Engine.TRINO]:
+    "trino://user:password@trino.example.com:8080/catalog?SSL=true",
+  [Engine.HIVE]:
+    "jdbc:hive2://hive.example.com:10000/default;user=hive;password=…",
+  [Engine.DATABRICKS]:
+    "jdbc:databricks://dbc.example.com:443/default;httpPath=/sql/1.0/warehouses/…;PWD=…",
+};
+
+type ConnectionUrlFillState =
+  | "complete"
+  | "missing-password"
+  | "missing-token"
+  | "neon-pooled";
+type ConnectionUrlFocusTarget = "password" | "host";
+
+function ConnectionStringImportPopover({
+  engine,
+  vendor = Vendor.VENDOR_UNSPECIFIED,
+  disabled,
+  resolvePasswordInput,
+  resolveHostInput,
+  onParsed,
+}: {
+  engine: ConnectionStringEngine;
+  vendor?: Vendor;
+  disabled: boolean;
+  resolvePasswordInput: () => HTMLInputElement | null;
+  resolveHostInput: () => HTMLInputElement | null;
+  onParsed: (
+    parsed: ParsedConnectionString,
+    fillState: ConnectionUrlFillState
+  ) => void;
+}) {
+  const { t } = useTranslation();
+  const inputId = useId();
+  const errorId = `${inputId}-error`;
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState("");
+  const [checked, setChecked] = useState(false);
+  const [pendingFocusTarget, setPendingFocusTarget] =
+    useState<ConnectionUrlFocusTarget | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const focusOnCloseRef = useRef<ConnectionUrlFocusTarget | null>(null);
+  const invalid = checked && value.trim() !== "";
+  const isNeon = engine === Engine.POSTGRES && vendor === Vendor.NEON;
+
+  const resolveFocusElement = useCallback(
+    (target: ConnectionUrlFocusTarget) =>
+      target === "host" ? resolveHostInput() : resolvePasswordInput(),
+    [resolveHostInput, resolvePasswordInput]
+  );
+
+  useEffect(() => {
+    if (open || !pendingFocusTarget) return;
+    setPendingFocusTarget(null);
+    const targetEl = resolveFocusElement(pendingFocusTarget);
+    if (targetEl && !targetEl.disabled) {
+      targetEl.focus();
+    }
+  }, [open, pendingFocusTarget, resolveFocusElement]);
+
+  const helpTextByEngine: Record<ConnectionStringEngine, string> = {
+    [Engine.MYSQL]: t("instance.connection-string.help.mysql"),
+    [Engine.POSTGRES]: t("instance.connection-string.help.postgres"),
+    [Engine.MSSQL]: t("instance.connection-string.help.mssql"),
+    [Engine.ORACLE]: t("instance.connection-string.help.oracle"),
+    [Engine.MARIADB]: t("instance.connection-string.help.mariadb"),
+    [Engine.TIDB]: t("instance.connection-string.help.tidb"),
+    [Engine.OCEANBASE]: t("instance.connection-string.help.oceanbase"),
+    [Engine.STARROCKS]: t("instance.connection-string.help.starrocks"),
+    [Engine.DORIS]: t("instance.connection-string.help.doris"),
+    [Engine.COCKROACHDB]: t("instance.connection-string.help.cockroachdb"),
+    [Engine.REDSHIFT]: t("instance.connection-string.help.redshift"),
+    [Engine.MONGODB]: t("instance.connection-string.help.mongodb"),
+    [Engine.REDIS]: t("instance.connection-string.help.redis"),
+    [Engine.CASSANDRA]: t("instance.connection-string.help.cassandra"),
+    [Engine.ELASTICSEARCH]: t("instance.connection-string.help.elasticsearch"),
+    [Engine.CLICKHOUSE]: t("instance.connection-string.help.clickhouse"),
+    [Engine.SNOWFLAKE]: t("instance.connection-string.help.snowflake"),
+    [Engine.TRINO]: t("instance.connection-string.help.trino"),
+    [Engine.HIVE]: t("instance.connection-string.help.hive"),
+    [Engine.DATABRICKS]: t("instance.connection-string.help.databricks"),
+  };
+  const helpText = isNeon
+    ? t("instance.connection-string.help.neon")
+    : helpTextByEngine[engine];
+
+  const invalidTextByEngine: Record<ConnectionStringEngine, string> = {
+    [Engine.MYSQL]: t("instance.connection-string.invalid.mysql"),
+    [Engine.POSTGRES]: t("instance.connection-string.invalid.postgres"),
+    [Engine.MSSQL]: t("instance.connection-string.invalid.mssql"),
+    [Engine.ORACLE]: t("instance.connection-string.invalid.oracle"),
+    [Engine.MARIADB]: t("instance.connection-string.invalid.mariadb"),
+    [Engine.TIDB]: t("instance.connection-string.invalid.tidb"),
+    [Engine.OCEANBASE]: t("instance.connection-string.invalid.oceanbase"),
+    [Engine.STARROCKS]: t("instance.connection-string.invalid.starrocks"),
+    [Engine.DORIS]: t("instance.connection-string.invalid.doris"),
+    [Engine.COCKROACHDB]: t("instance.connection-string.invalid.cockroachdb"),
+    [Engine.REDSHIFT]: t("instance.connection-string.invalid.redshift"),
+    [Engine.MONGODB]: t("instance.connection-string.invalid.mongodb"),
+    [Engine.REDIS]: t("instance.connection-string.invalid.redis"),
+    [Engine.CASSANDRA]: t("instance.connection-string.invalid.cassandra"),
+    [Engine.ELASTICSEARCH]: t(
+      "instance.connection-string.invalid.elasticsearch"
+    ),
+    [Engine.CLICKHOUSE]: t("instance.connection-string.invalid.clickhouse"),
+    [Engine.SNOWFLAKE]: t("instance.connection-string.invalid.snowflake"),
+    [Engine.TRINO]: t("instance.connection-string.invalid.trino"),
+    [Engine.HIVE]: t("instance.connection-string.invalid.hive"),
+    [Engine.DATABRICKS]: t("instance.connection-string.invalid.databricks"),
+  };
+  const invalidText = isNeon
+    ? t("instance.connection-string.invalid.neon")
+    : invalidTextByEngine[engine];
+
+  const detectedEngine = invalid
+    ? detectConnectionStringEngine(value, engine)
+    : undefined;
+  const errorMessage = detectedEngine
+    ? t("instance.connection-string.invalid.engine-mismatch", {
+        detected: engineNameV1(detectedEngine),
+        selected: engineNameV1(engine),
+      })
+    : invalidText;
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      setValue("");
+      setChecked(false);
+    }
+  };
+
+  const tryImport = (text: string): boolean => {
+    const parsed = parseConnectionString(engine, text, vendor);
+    if (!parsed) return false;
+    const fillState: ConnectionUrlFillState =
+      isNeon && isNeonPooledHost(parsed.host)
+        ? "neon-pooled"
+        : engine === Engine.DATABRICKS
+          ? parsed.token !== undefined
+            ? "complete"
+            : "missing-token"
+          : parsed.password !== undefined
+            ? "complete"
+            : "missing-password";
+    onParsed(parsed, fillState);
+    const focusTarget: ConnectionUrlFocusTarget | null =
+      fillState === "neon-pooled"
+        ? "host"
+        : fillState !== "complete"
+          ? "password"
+          : null;
+    if (focusTarget) {
+      focusOnCloseRef.current = focusTarget;
+      setPendingFocusTarget(focusTarget);
+    }
+    handleOpenChange(false);
+    return true;
+  };
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger
+        ref={triggerRef}
+        render={
+          <Button
+            type="button"
+            appearance="soft"
+            size="sm"
+            disabled={disabled}
+            className="group relative gap-1.5 pl-2 pr-2.5 transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] data-[popup-open]:bg-control-bg-hover data-[popup-open]:text-control-hover after:absolute after:-inset-y-2 after:inset-x-0 motion-reduce:transition-none"
+          />
+        }
+      >
+        <Link
+          className="size-3.5 shrink-0 text-control-light transition-colors duration-150 ease-out group-hover:text-control group-data-[popup-open]:text-control motion-reduce:transition-none"
+          aria-hidden="true"
+        />
+        <span>{t("instance.connection-string.trigger")}</span>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={6}
+        initialFocus={() =>
+          typeof window !== "undefined" &&
+          window.matchMedia?.("(hover: none) and (pointer: coarse)")?.matches
+            ? false
+            : inputRef.current
+        }
+        finalFocus={() => {
+          if (focusOnCloseRef.current) {
+            const target = focusOnCloseRef.current;
+            focusOnCloseRef.current = null;
+            const targetEl = resolveFocusElement(target);
+            if (targetEl && !targetEl.disabled) {
+              return targetEl;
+            }
+          }
+          return triggerRef.current;
+        }}
+        className="w-[min(28rem,calc(100vw-2rem))] origin-(--transform-origin) p-4 transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[ending-style]:duration-100 data-[ending-style]:ease-in data-[starting-style]:scale-95 data-[starting-style]:opacity-0 motion-reduce:transition-none"
+      >
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!value.trim() || !tryImport(value)) {
+              setChecked(true);
+            }
+          }}
+        >
+          <SharedFormField
+            layout="vertical"
+            title={
+              <FormLabel htmlFor={inputId}>
+                {t("instance.connection-string.label")}
+              </FormLabel>
+            }
+            description={helpText}
+          >
+            <SharedInput
+              ref={inputRef}
+              id={inputId}
+              type="text"
+              data-agent-sensitive
+              data-1p-ignore
+              data-lpignore="true"
+              value={value}
+              disabled={disabled}
+              autoComplete="off"
+              spellCheck={false}
+              aria-invalid={invalid || undefined}
+              aria-describedby={invalid ? errorId : undefined}
+              placeholder={
+                isNeon
+                  ? NEON_CONNECTION_STRING_PLACEHOLDER
+                  : CONNECTION_STRING_PLACEHOLDERS[engine]
+              }
+              className="font-mono"
+              onChange={(event) => {
+                const next = event.target.value;
+                setValue(next);
+                if (
+                  checked &&
+                  (!next.trim() || parseConnectionString(engine, next, vendor))
+                ) {
+                  setChecked(false);
+                }
+              }}
+              onPaste={(event) => {
+                const pasted = event.clipboardData.getData("text");
+                const target = event.currentTarget;
+                const start = target.selectionStart ?? value.length;
+                const end = target.selectionEnd ?? value.length;
+                const combined = `${value.slice(0, start)}${pasted}${value.slice(end)}`;
+                event.preventDefault();
+                if (!tryImport(combined)) {
+                  setValue(combined);
+                  setChecked(combined.trim() !== "");
+                }
+              }}
+            />
+            {invalid && (
+              <FormError id={errorId} className="flex items-start gap-1.5">
+                <AlertCircle
+                  className="mt-0.5 size-3.5 shrink-0"
+                  aria-hidden="true"
+                />
+                <span>{errorMessage}</span>
+              </FormError>
+            )}
+          </SharedFormField>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              appearance="secondary"
+              size="sm"
+              onClick={() => handleOpenChange(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={disabled || !value.trim()}
+            >
+              {t("common.import")}
+            </Button>
+          </div>
+        </form>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -916,6 +1116,10 @@ function AdditionalAddressesFields({
 
 interface InstanceFormBodyProps {
   onOpenInfoPanel?: (section: InfoSection) => void;
+  onAskAgent?: () => void;
+  disabled?: boolean;
+  engineOnly?: boolean;
+  hideEngine?: boolean;
 }
 
 // Engines without a host field (or with a non-local default) drop the local
@@ -926,7 +1130,13 @@ const clearLocalPlaceholderHost = (ds: EditDataSource) => {
   }
 };
 
-export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
+export function InstanceFormBody({
+  onOpenInfoPanel,
+  onAskAgent,
+  disabled = false,
+  engineOnly = false,
+  hideEngine = false,
+}: InstanceFormBodyProps) {
   const { t } = useTranslation();
   const ctx = useInstanceFormContext();
   const {
@@ -1131,17 +1341,13 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
         });
         return { ...prev, dataSources };
       });
-      setBasicInfo((prev) => ({ ...prev, engine }));
+      setBasicInfo((prev) => ({
+        ...prev,
+        engine,
+        vendor: Vendor.VENDOR_UNSPECIFIED,
+      }));
     },
     [resetDataSource, setDataSourceEditState, setBasicInfo]
-  );
-
-  const handleSelectInstanceEngine = useCallback(
-    (engine: Engine) => {
-      changeInstanceEngine(engine);
-      setIsEngineSelectorCollapsed(true);
-    },
-    [changeInstanceEngine]
   );
 
   const handleSelectEnvironment = useCallback(
@@ -1324,6 +1530,183 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
     [setDataSourceEditState]
   );
 
+  const isNeon =
+    basicInfo.engine === Engine.POSTGRES && basicInfo.vendor === Vendor.NEON;
+
+  const connectionSectionRef = useRef<HTMLElement>(null);
+
+  const resolvePasswordInput = useCallback(
+    () =>
+      connectionSectionRef.current?.querySelector<HTMLInputElement>(
+        '[data-connection-primary-secret] input[type="password"]'
+      ) ??
+      connectionSectionRef.current?.querySelector<HTMLInputElement>(
+        '[data-agent-sensitive] input[type="password"]'
+      ) ??
+      null,
+    []
+  );
+
+  const resolveHostInput = useCallback(
+    () =>
+      connectionSectionRef.current?.querySelector<HTMLInputElement>("#host") ??
+      null,
+    []
+  );
+
+  const fillFromConnectionString = useCallback(
+    (parsed: ParsedConnectionString, fillState: ConnectionUrlFillState) => {
+      if (!supportsConnectionString(basicInfo.engine)) return;
+      const currentEngine = basicInfo.engine;
+      const currentVendor = basicInfo.vendor;
+      setDataSourceEditState((prev) => ({
+        ...prev,
+        dataSources: prev.dataSources.map((ds) =>
+          ds.id === prev.editingDataSourceId
+            ? applyParsedConnectionString(
+                ds,
+                currentEngine,
+                parsed,
+                currentVendor
+              )
+            : ds
+        ),
+      }));
+      const toastTitle =
+        fillState === "neon-pooled"
+          ? t("instance.connection-string.filled-neon-pooled")
+          : fillState === "missing-token"
+            ? t("instance.connection-string.filled-missing-token")
+            : fillState === "missing-password"
+              ? t("instance.connection-string.filled-missing-password")
+              : t("instance.connection-string.filled");
+      pushNotification({
+        module: "bytebase",
+        style: fillState === "neon-pooled" ? "WARN" : "SUCCESS",
+        title: toastTitle,
+      });
+    },
+    [basicInfo.engine, basicInfo.vendor, setDataSourceEditState, t]
+  );
+
+  const showAskAgent = isCreating && !!onAskAgent;
+
+  const vendorDrafts = useRef(new Map<Vendor, DataSourceEditState>());
+  const changeVendor = (vendor: Vendor) => {
+    if (isCreating) {
+      vendorDrafts.current.set(basicInfo.vendor, ctx.dataSourceEditState);
+      let draft = vendorDrafts.current.get(vendor);
+      if (!draft && vendor === Vendor.NEON) {
+        draft = extractDataSourceEditState(undefined);
+        draft.dataSources = draft.dataSources.map((ds) => ({
+          ...ds,
+          host: "",
+          port: "5432",
+          useSsl: true,
+          verifyTlsCertificate: true,
+        }));
+      }
+      if (draft) setDataSourceEditState(draft);
+    }
+    if (vendor === Vendor.NEON) {
+      setIsEngineSelectorCollapsed(true);
+    }
+    updateBasicInfo({ vendor });
+  };
+
+  const engineSelection = (
+    <>
+      {isCreating && (
+        <FormField title={t("database.engine")}>
+          <CollapsibleTilePicker
+            label={t("database.engine")}
+            value={String(basicInfo.engine)}
+            summary={
+              <>
+                <EngineIcon engine={basicInfo.engine} className="size-4" />
+                <span className="truncate">
+                  {engineNameV1(basicInfo.engine)}
+                </span>
+              </>
+            }
+            collapsed={isEngineSelectorCollapsed}
+            onCollapsedChange={setIsEngineSelectorCollapsed}
+            disabled={disabled}
+            onValueChange={(value) =>
+              changeInstanceEngine(Number(value) as Engine)
+            }
+          >
+            {supportedEngineV1List().map((eng) => (
+              <TileRadioItem
+                key={eng}
+                value={String(eng)}
+                icon={<EngineIcon engine={eng} className="size-5" />}
+                badge={
+                  isEngineBeta(eng) ? (
+                    <span className="rounded-xs border border-transparent bg-accent/10 px-1.5 py-0.5 text-xs text-accent">
+                      Beta
+                    </span>
+                  ) : undefined
+                }
+              >
+                {engineNameV1(eng)}
+              </TileRadioItem>
+            ))}
+          </CollapsibleTilePicker>
+        </FormField>
+      )}
+      {isCreating && basicInfo.engine === Engine.POSTGRES && (
+        <FormField title={t("instance.vendor.self")}>
+          <CollapsibleTilePicker
+            label={t("instance.vendor.self")}
+            value={isNeon ? "neon" : "generic"}
+            summary={
+              <>
+                <VendorIcon vendor={basicInfo.vendor} className="size-4" />
+                <span className="truncate">
+                  {isNeon
+                    ? t("instance.vendor.neon")
+                    : t("instance.vendor.generic")}
+                </span>
+              </>
+            }
+            disabled={!allowEdit || disabled}
+            onValueChange={(value) =>
+              changeVendor(
+                value === "neon" ? Vendor.NEON : Vendor.VENDOR_UNSPECIFIED
+              )
+            }
+          >
+            <TileRadioItem
+              value="generic"
+              icon={
+                <VendorIcon
+                  vendor={Vendor.VENDOR_UNSPECIFIED}
+                  className="size-5"
+                />
+              }
+            >
+              {t("instance.vendor.generic")}
+            </TileRadioItem>
+            <TileRadioItem
+              value="neon"
+              icon={<VendorIcon vendor={Vendor.NEON} className="size-5" />}
+            >
+              {t("instance.vendor.neon")}
+            </TileRadioItem>
+          </CollapsibleTilePicker>
+        </FormField>
+      )}
+    </>
+  );
+  if (engineOnly) {
+    return (
+      <FormFieldGroup density="compact" className="w-full max-w-5xl">
+        {engineSelection}
+      </FormFieldGroup>
+    );
+  }
+
   return (
     <ValidationProvider
       className="flex flex-col pb-2"
@@ -1336,37 +1719,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
         {/* Basic Info Card */}
         <FormSection layout="stacked" title={t("instance.section.basic-info")}>
           <div className="flex flex-col gap-4">
-            {isCreating && (
-              <FormField title={t("database.engine")}>
-                <Button
-                  appearance="outline"
-                  className="w-full justify-between"
-                  aria-expanded={!isEngineSelectorCollapsed}
-                  onClick={() => setIsEngineSelectorCollapsed((prev) => !prev)}
-                >
-                  <span className="flex items-center gap-2">
-                    <EngineIcon engine={basicInfo.engine} className="size-4" />
-                    {engineNameV1(basicInfo.engine)}
-                  </span>
-                  {isEngineSelectorCollapsed ? (
-                    <ChevronRight />
-                  ) : (
-                    <ChevronDown />
-                  )}
-                </Button>
-                <div
-                  hidden={isEngineSelectorCollapsed}
-                  inert={isEngineSelectorCollapsed ? true : undefined}
-                >
-                  <InstanceEngineRadioGrid
-                    engine={basicInfo.engine}
-                    engineList={supportedEngineV1List()}
-                    onEngineChange={handleSelectInstanceEngine}
-                    isEngineBeta={isEngineBeta}
-                  />
-                </div>
-              </FormField>
-            )}
+            {!hideEngine && engineSelection}
 
             {/* Instance Name */}
             <FormField validationField="title">
@@ -1428,7 +1781,6 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
             {/* Environment */}
             <FormField title={t("common.environment")}>
               <EnvironmentSelect
-                portal
                 className="w-full"
                 value={
                   isValidEnvironmentName(
@@ -1531,7 +1883,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
             )}
 
             {/* Scan Interval (edit mode only) */}
-            {!isCreating && instance && (
+            {!isCreating && instance && !ctx.hideAdvancedFeatures && (
               <ScanIntervalInput
                 scanInterval={basicInfo.syncInterval}
                 allowEdit={allowEdit}
@@ -1542,7 +1894,39 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
         </FormSection>
 
         {/* Connection Card */}
-        <FormSection layout="stacked" title={t("instance.section.connection")}>
+        <FormSection
+          ref={connectionSectionRef}
+          layout="stacked"
+          title={t("instance.section.connection")}
+          action={
+            (isCreating && supportsConnectionString(basicInfo.engine)) ||
+            showAskAgent ? (
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                {isCreating && supportsConnectionString(basicInfo.engine) && (
+                  <ConnectionStringImportPopover
+                    key={`${basicInfo.engine}-${basicInfo.vendor}`}
+                    engine={basicInfo.engine}
+                    vendor={basicInfo.vendor}
+                    disabled={!allowEdit || disabled}
+                    resolvePasswordInput={resolvePasswordInput}
+                    resolveHostInput={resolveHostInput}
+                    onParsed={fillFromConnectionString}
+                  />
+                )}
+                {showAskAgent && (
+                  <AgentHelpButton
+                    type="button"
+                    size="sm"
+                    className="ml-auto"
+                    onClick={() => onAskAgent()}
+                  >
+                    {t("instance.ask-agent")}
+                  </AgentHelpButton>
+                )}
+              </div>
+            ) : undefined
+          }
+        >
           <FormFieldGroup density="compact">
             <DataSourceSection
               hideOptions
@@ -1587,6 +1971,9 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 ) : (
                   <FormField
                     validationField="host"
+                    showErrors={
+                      isNeon && isNeonPooledHost(connectionDataSource.host)
+                    }
                     title={
                       <span className="flex items-center gap-1">
                         <FormLabel htmlFor="host">
@@ -1669,10 +2056,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         <span className="text-control-light">
                           {t("instance.account-locator-description")}
                         </span>
-                        <LearnMoreLink
-                          href="https://docs.snowflake.com/en/user-guide/admin-account-identifier#using-an-account-locator-as-an-identifier"
-                          className="text-sm text-accent"
-                        />
+                        <LearnMoreLink href="https://docs.snowflake.com/en/user-guide/admin-account-identifier#using-an-account-locator-as-an-identifier" />
                       </div>
                     )}
                   </FormField>
@@ -1705,7 +2089,11 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                       ))}
                     </RadioGroup>
                     {!connectionDataSource.srv && (
-                      <ResponsiveFormLayout className="mt-2">
+                      <ResponsiveFormLayout
+                        layout="inherit"
+                        density="compact"
+                        className="mt-2"
+                      >
                         <fieldset
                           aria-label={t("data-source.connection-string-schema")}
                           className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
@@ -1805,7 +2193,11 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                       </SelectContent>
                     </Select>
                     {showAdditionalAddresses && (
-                      <ResponsiveFormLayout className="mt-2">
+                      <ResponsiveFormLayout
+                        layout="inherit"
+                        density="compact"
+                        className="mt-2"
+                      >
                         <fieldset
                           aria-label={currentRedisConnectionType}
                           className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
@@ -1825,7 +2217,11 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                     )}
                     {editingDataSource?.redisType ===
                       DataSource_RedisType.SENTINEL && (
-                      <ResponsiveFormLayout className="mt-2">
+                      <ResponsiveFormLayout
+                        layout="inherit"
+                        density="compact"
+                        className="mt-2"
+                      >
                         <RedisSentinelFields
                           dataSource={editingDataSource}
                           isCreating={isCreating}

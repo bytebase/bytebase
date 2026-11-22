@@ -301,25 +301,25 @@ var File_v1_sheet_service_proto protoreflect.FileDescriptor
 
 const file_v1_sheet_service_proto_rawDesc = "" +
 	"\n" +
-	"\x16v1/sheet_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x13v1/annotation.proto\"y\n" +
-	"\x12CreateSheetRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x12-\n" +
-	"\x05sheet\x18\x02 \x01(\v2\x12.bytebase.v1.SheetB\x03\xe0A\x02R\x05sheet\"\x92\x01\n" +
-	"\x18BatchCreateSheetsRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x12@\n" +
-	"\brequests\x18\x02 \x03(\v2\x1f.bytebase.v1.CreateSheetRequestB\x03\xe0A\x02R\brequests\"G\n" +
+	"\x16v1/sheet_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x13v1/annotation.proto\"{\n" +
+	"\x12CreateSheetRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12.\n" +
+	"\x05sheet\x18\x02 \x01(\v2\x12.bytebase.v1.SheetB\x04\xe2A\x01\x02R\x05sheet\"\x94\x01\n" +
+	"\x18BatchCreateSheetsRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12A\n" +
+	"\brequests\x18\x02 \x03(\v2\x1f.bytebase.v1.CreateSheetRequestB\x04\xe2A\x01\x02R\brequests\"G\n" +
 	"\x19BatchCreateSheetsResponse\x12*\n" +
-	"\x06sheets\x18\x01 \x03(\v2\x12.bytebase.v1.SheetR\x06sheets\"S\n" +
-	"\x0fGetSheetRequest\x12.\n" +
-	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
+	"\x06sheets\x18\x01 \x03(\v2\x12.bytebase.v1.SheetR\x06sheets\"T\n" +
+	"\x0fGetSheetRequest\x12/\n" +
+	"\x04name\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
 	"\x12bytebase.com/SheetR\x04name\x12\x10\n" +
-	"\x03raw\x18\x02 \x01(\bR\x03raw\"\xaa\x01\n" +
-	"\x05Sheet\x12\x1a\n" +
-	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12!\n" +
-	"\acontent\x18\x02 \x01(\fB\a\xe0A\x02\xd0\xea0\x02R\acontent\x12&\n" +
-	"\fcontent_size\x18\x03 \x01(\x03B\x03\xe0A\x03R\vcontentSize::\xeaA7\n" +
+	"\x03raw\x18\x02 \x01(\bR\x03raw\"\xab\x01\n" +
+	"\x05Sheet\x12\x19\n" +
+	"\x04name\x18\x01 \x01(\tB\x05\xe2A\x02\x02\x05R\x04name\x12\"\n" +
+	"\acontent\x18\x02 \x01(\fB\b\xe2A\x01\x02\xd0\xea0\x02R\acontent\x12'\n" +
+	"\fcontent_size\x18\x03 \x01(\x03B\x04\xe2A\x01\x03R\vcontentSize::\xeaA7\n" +
 	"\x12bytebase.com/Sheet\x12!projects/{project}/sheets/{sheet}2\xf4\x03\n" +
 	"\fSheetService\x12\xa0\x01\n" +
 	"\vCreateSheet\x12\x1f.bytebase.v1.CreateSheetRequest\x1a\x12.bytebase.v1.Sheet\"\\\xdaA\fparent,sheet\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02':\x05sheet\"\x1e/v1/{parent=projects/*}/sheets\x12\xb9\x01\n" +

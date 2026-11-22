@@ -126,6 +126,43 @@ func TestValidateSQLForEditor(t *testing.T) {
 			wantErr:            false,
 		},
 
+		// SELECT INTO creates a table.
+		{
+			name:               "SELECT INTO",
+			statement:          "SELECT * INTO t2 FROM t1",
+			wantCanRunReadOnly: false,
+			wantReturnsData:    false,
+			wantErr:            false,
+		},
+		{
+			name:               "SELECT INTO on the left arm of UNION",
+			statement:          "SELECT 1 INTO t UNION SELECT 2",
+			wantCanRunReadOnly: false,
+			wantReturnsData:    false,
+			wantErr:            false,
+		},
+		{
+			name:               "SELECT INTO in nested set operations",
+			statement:          "SELECT 1 INTO t UNION (SELECT 2 INTERSECT SELECT 2) EXCEPT SELECT 3",
+			wantCanRunReadOnly: false,
+			wantReturnsData:    false,
+			wantErr:            false,
+		},
+		{
+			name:               "EXPLAIN ANALYZE SELECT INTO on a UNION arm",
+			statement:          "EXPLAIN ANALYZE SELECT 1 INTO t UNION SELECT 2",
+			wantCanRunReadOnly: false,
+			wantReturnsData:    false,
+			wantErr:            false,
+		},
+		{
+			name:               "UNION without INTO",
+			statement:          "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 2) EXCEPT SELECT 3",
+			wantCanRunReadOnly: true,
+			wantReturnsData:    true,
+			wantErr:            false,
+		},
+
 		// EXPLAIN statements (from PG tests)
 		{
 			name:               "EXPLAIN SELECT",

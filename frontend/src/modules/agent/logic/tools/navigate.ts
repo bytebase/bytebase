@@ -1,5 +1,7 @@
 import type { AppRouterInstance } from "@/app/router";
 
+const MAX_ROUTE_RESULTS = 30;
+
 function getRouteMap(router: AppRouterInstance): string[] {
   const routes = router.getRoutes();
   const paths = new Set<string>();
@@ -21,14 +23,25 @@ function getRouteMap(router: AppRouterInstance): string[] {
     paths.add(path);
   }
 
-  return [...paths].sort();
+  return [...paths].sort((a, b) => a.localeCompare(b));
 }
 
 export function createNavigateTool(router: AppRouterInstance) {
-  return async (args: { path?: string; list?: boolean }): Promise<string> => {
+  return async (args: {
+    path?: string;
+    list?: boolean;
+    query?: string;
+  }): Promise<string> => {
     if (args.list) {
-      const routes = getRouteMap(router);
-      return JSON.stringify({ routes });
+      const query = args.query?.trim().toLowerCase();
+      const matchingRoutes = getRouteMap(router).filter(
+        (path) => !query || path.toLowerCase().includes(query)
+      );
+      return JSON.stringify({
+        routes: matchingRoutes.slice(0, MAX_ROUTE_RESULTS),
+        total: matchingRoutes.length,
+        truncated: matchingRoutes.length > MAX_ROUTE_RESULTS,
+      });
     }
 
     if (!args.path) {

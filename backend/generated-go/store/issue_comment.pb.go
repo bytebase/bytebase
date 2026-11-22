@@ -77,7 +77,7 @@ func (x IssueCommentPayload_ReviewMetadata_Priority) Number() protoreflect.EnumN
 
 // Deprecated: Use IssueCommentPayload_ReviewMetadata_Priority.Descriptor instead.
 func (IssueCommentPayload_ReviewMetadata_Priority) EnumDescriptor() ([]byte, []int) {
-	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 4, 0}
+	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 5, 0}
 }
 
 type IssueCommentPayload struct {
@@ -89,9 +89,12 @@ type IssueCommentPayload struct {
 	//	*IssueCommentPayload_IssueUpdate_
 	//	*IssueCommentPayload_PlanUpdate_
 	//	*IssueCommentPayload_ReviewSubmission_
+	//	*IssueCommentPayload_ReviewRunCompletion_
 	Event isIssueCommentPayload_Event `protobuf_oneof:"event"`
 	// The statement context an inline comment references. Set at creation and
-	// immutable afterward; never set together with an event.
+	// immutable afterward, except that a later run reporting a review result
+	// again moves the result to its statement in the SQL that run reviewed.
+	// Never set together with an event.
 	StatementAnchor *IssueCommentPayload_StatementAnchor `protobuf:"bytes,9,opt,name=statement_anchor,json=statementAnchor,proto3" json:"statement_anchor,omitempty"`
 	// Present on review results only, beside the text and never together with
 	// an event. Written by the review executor; CreateIssueComment rejects it.
@@ -182,6 +185,15 @@ func (x *IssueCommentPayload) GetReviewSubmission() *IssueCommentPayload_ReviewS
 	return nil
 }
 
+func (x *IssueCommentPayload) GetReviewRunCompletion() *IssueCommentPayload_ReviewRunCompletion {
+	if x != nil {
+		if x, ok := x.Event.(*IssueCommentPayload_ReviewRunCompletion_); ok {
+			return x.ReviewRunCompletion
+		}
+	}
+	return nil
+}
+
 func (x *IssueCommentPayload) GetStatementAnchor() *IssueCommentPayload_StatementAnchor {
 	if x != nil {
 		return x.StatementAnchor
@@ -216,6 +228,10 @@ type IssueCommentPayload_ReviewSubmission_ struct {
 	ReviewSubmission *IssueCommentPayload_ReviewSubmission `protobuf:"bytes,8,opt,name=review_submission,json=reviewSubmission,proto3,oneof"`
 }
 
+type IssueCommentPayload_ReviewRunCompletion_ struct {
+	ReviewRunCompletion *IssueCommentPayload_ReviewRunCompletion `protobuf:"bytes,11,opt,name=review_run_completion,json=reviewRunCompletion,proto3,oneof"`
+}
+
 func (*IssueCommentPayload_Approval_) isIssueCommentPayload_Event() {}
 
 func (*IssueCommentPayload_IssueUpdate_) isIssueCommentPayload_Event() {}
@@ -223,6 +239,8 @@ func (*IssueCommentPayload_IssueUpdate_) isIssueCommentPayload_Event() {}
 func (*IssueCommentPayload_PlanUpdate_) isIssueCommentPayload_Event() {}
 
 func (*IssueCommentPayload_ReviewSubmission_) isIssueCommentPayload_Event() {}
+
+func (*IssueCommentPayload_ReviewRunCompletion_) isIssueCommentPayload_Event() {}
 
 type IssueCommentPayload_Approval struct {
 	state         protoimpl.MessageState               `protogen:"open.v1"`
@@ -405,6 +423,82 @@ func (*IssueCommentPayload_ReviewSubmission) Descriptor() ([]byte, []int) {
 	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 2}
 }
 
+// ReviewRunCompletion records that a review run completed DONE, and what
+// it did to the earlier results. Posted with no creator, in the
+// transaction that posts the run's results.
+type IssueCommentPayload_ReviewRunCompletion struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The run's review_run.attempt; its new results carry the same
+	// ReviewMetadata.attempt.
+	Attempt int64 `protobuf:"varint,2,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	// Results the run posted as new threads.
+	PostedCount int32 `protobuf:"varint,3,opt,name=posted_count,json=postedCount,proto3" json:"posted_count,omitempty"`
+	// Earlier results the run reported again, which kept their threads.
+	KeptCount int32 `protobuf:"varint,4,opt,name=kept_count,json=keptCount,proto3" json:"kept_count,omitempty"`
+	// Earlier results the run no longer reports, which it superseded.
+	SupersededCount int32 `protobuf:"varint,5,opt,name=superseded_count,json=supersededCount,proto3" json:"superseded_count,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *IssueCommentPayload_ReviewRunCompletion) Reset() {
+	*x = IssueCommentPayload_ReviewRunCompletion{}
+	mi := &file_store_issue_comment_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IssueCommentPayload_ReviewRunCompletion) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IssueCommentPayload_ReviewRunCompletion) ProtoMessage() {}
+
+func (x *IssueCommentPayload_ReviewRunCompletion) ProtoReflect() protoreflect.Message {
+	mi := &file_store_issue_comment_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IssueCommentPayload_ReviewRunCompletion.ProtoReflect.Descriptor instead.
+func (*IssueCommentPayload_ReviewRunCompletion) Descriptor() ([]byte, []int) {
+	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 3}
+}
+
+func (x *IssueCommentPayload_ReviewRunCompletion) GetAttempt() int64 {
+	if x != nil {
+		return x.Attempt
+	}
+	return 0
+}
+
+func (x *IssueCommentPayload_ReviewRunCompletion) GetPostedCount() int32 {
+	if x != nil {
+		return x.PostedCount
+	}
+	return 0
+}
+
+func (x *IssueCommentPayload_ReviewRunCompletion) GetKeptCount() int32 {
+	if x != nil {
+		return x.KeptCount
+	}
+	return 0
+}
+
+func (x *IssueCommentPayload_ReviewRunCompletion) GetSupersededCount() int32 {
+	if x != nil {
+		return x.SupersededCount
+	}
+	return 0
+}
+
 // PlanUpdate carries before/after snapshots of plan.config.specs,
 // emitted once per PlanService.UpdatePlan call whose specs branch
 // produces a non-cosmetic diff. The renderer computes per-spec
@@ -419,7 +513,7 @@ type IssueCommentPayload_PlanUpdate struct {
 
 func (x *IssueCommentPayload_PlanUpdate) Reset() {
 	*x = IssueCommentPayload_PlanUpdate{}
-	mi := &file_store_issue_comment_proto_msgTypes[4]
+	mi := &file_store_issue_comment_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -431,7 +525,7 @@ func (x *IssueCommentPayload_PlanUpdate) String() string {
 func (*IssueCommentPayload_PlanUpdate) ProtoMessage() {}
 
 func (x *IssueCommentPayload_PlanUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_store_issue_comment_proto_msgTypes[4]
+	mi := &file_store_issue_comment_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -444,7 +538,7 @@ func (x *IssueCommentPayload_PlanUpdate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueCommentPayload_PlanUpdate.ProtoReflect.Descriptor instead.
 func (*IssueCommentPayload_PlanUpdate) Descriptor() ([]byte, []int) {
-	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 3}
+	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 4}
 }
 
 func (x *IssueCommentPayload_PlanUpdate) GetFromSpecs() []*PlanConfig_Spec {
@@ -462,16 +556,16 @@ func (x *IssueCommentPayload_PlanUpdate) GetToSpecs() []*PlanConfig_Spec {
 }
 
 // ReviewMetadata is what a review result carries beyond its text: which
-// reviewer posted it, what it was judged against, its priority, and the
-// databases it applies to. Results from the same reviewer are superseded
-// together: when a run completes, it resolves every OPEN root of its type
-// in the transaction that posts the new results.
+// reviewer found it, what it was judged against, its priority, the
+// databases it applies to, and for an AI result, its title. When a run
+// completes, an earlier result whose fingerprint the run reports again
+// keeps its thread, and the run posts no new result for it; every other
+// earlier result on the issue is resolved and marked superseded, in the
+// transaction that posts the new results.
 type IssueCommentPayload_ReviewMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The reviewer slot that posted the result; review_run.type stores the
-	// same enum by name.
-	RunType ReviewRun_Type `protobuf:"varint,1,opt,name=run_type,json=runType,proto3,enum=bytebase.store.ReviewRun_Type" json:"run_type,omitempty"`
-	// The rule judged against. Set if and only if run_type is RULE.
+	// The rule judged against. Set on a result of a standard rule, and on no
+	// result that the AI review posts on its own.
 	RuleType ReviewRuleType `protobuf:"varint,2,opt,name=rule_type,json=ruleType,proto3,enum=bytebase.store.ReviewRuleType" json:"rule_type,omitempty"`
 	// A result merged across databases carries the highest priority among
 	// them.
@@ -479,14 +573,34 @@ type IssueCommentPayload_ReviewMetadata struct {
 	// Every database the result applies to, sorted. Always complete; the
 	// renderer collapses it when it equals the spec's target set.
 	// Format: instances/{instance}/databases/{database}
-	Targets       []string `protobuf:"bytes,4,rep,name=targets,proto3" json:"targets,omitempty"`
+	Targets []string `protobuf:"bytes,4,rep,name=targets,proto3" json:"targets,omitempty"`
+	// A later run has completed without reporting the result again, so the
+	// latest review does not hold it. Set by that run whatever the thread
+	// state, and never cleared.
+	Superseded bool `protobuf:"varint,5,opt,name=superseded,proto3" json:"superseded,omitempty"`
+	// Identifies the finding across runs: equal fingerprints are the same
+	// finding on the same SQL. The rule review derives it from what it
+	// judged. The AI review starts it with a hash of its statement and ends
+	// it at random, and a later run carries it over to the finding its merge
+	// matches to the result. Unique among the results of one run. Empty on a
+	// result that predates it, and an empty fingerprint matches nothing.
+	Fingerprint string `protobuf:"bytes,6,opt,name=fingerprint,proto3" json:"fingerprint,omitempty"`
+	// The review_run.attempt of the run that posted the result. A result
+	// a later run reports again keeps its attempt.
+	Attempt int64 `protobuf:"varint,7,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	// The conditions a RULE result reports, as omni finding codes such as
+	// "WT101", one per reason. Empty for other reviewers.
+	Codes []string `protobuf:"bytes,8,rep,name=codes,proto3" json:"codes,omitempty"`
+	// The name of the problem an AI result reports, on one line; the comment
+	// holds the rest. Empty for a RULE result, which rule_type names.
+	Title         string `protobuf:"bytes,9,opt,name=title,proto3" json:"title,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *IssueCommentPayload_ReviewMetadata) Reset() {
 	*x = IssueCommentPayload_ReviewMetadata{}
-	mi := &file_store_issue_comment_proto_msgTypes[5]
+	mi := &file_store_issue_comment_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -498,7 +612,7 @@ func (x *IssueCommentPayload_ReviewMetadata) String() string {
 func (*IssueCommentPayload_ReviewMetadata) ProtoMessage() {}
 
 func (x *IssueCommentPayload_ReviewMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_issue_comment_proto_msgTypes[5]
+	mi := &file_store_issue_comment_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -511,14 +625,7 @@ func (x *IssueCommentPayload_ReviewMetadata) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use IssueCommentPayload_ReviewMetadata.ProtoReflect.Descriptor instead.
 func (*IssueCommentPayload_ReviewMetadata) Descriptor() ([]byte, []int) {
-	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 4}
-}
-
-func (x *IssueCommentPayload_ReviewMetadata) GetRunType() ReviewRun_Type {
-	if x != nil {
-		return x.RunType
-	}
-	return ReviewRun_TYPE_UNSPECIFIED
+	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 5}
 }
 
 func (x *IssueCommentPayload_ReviewMetadata) GetRuleType() ReviewRuleType {
@@ -540,6 +647,41 @@ func (x *IssueCommentPayload_ReviewMetadata) GetTargets() []string {
 		return x.Targets
 	}
 	return nil
+}
+
+func (x *IssueCommentPayload_ReviewMetadata) GetSuperseded() bool {
+	if x != nil {
+		return x.Superseded
+	}
+	return false
+}
+
+func (x *IssueCommentPayload_ReviewMetadata) GetFingerprint() string {
+	if x != nil {
+		return x.Fingerprint
+	}
+	return ""
+}
+
+func (x *IssueCommentPayload_ReviewMetadata) GetAttempt() int64 {
+	if x != nil {
+		return x.Attempt
+	}
+	return 0
+}
+
+func (x *IssueCommentPayload_ReviewMetadata) GetCodes() []string {
+	if x != nil {
+		return x.Codes
+	}
+	return nil
+}
+
+func (x *IssueCommentPayload_ReviewMetadata) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
 }
 
 // StatementAnchor records the anchored statement revision and range.
@@ -566,7 +708,7 @@ type IssueCommentPayload_StatementAnchor struct {
 
 func (x *IssueCommentPayload_StatementAnchor) Reset() {
 	*x = IssueCommentPayload_StatementAnchor{}
-	mi := &file_store_issue_comment_proto_msgTypes[6]
+	mi := &file_store_issue_comment_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -578,7 +720,7 @@ func (x *IssueCommentPayload_StatementAnchor) String() string {
 func (*IssueCommentPayload_StatementAnchor) ProtoMessage() {}
 
 func (x *IssueCommentPayload_StatementAnchor) ProtoReflect() protoreflect.Message {
-	mi := &file_store_issue_comment_proto_msgTypes[6]
+	mi := &file_store_issue_comment_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -591,7 +733,7 @@ func (x *IssueCommentPayload_StatementAnchor) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use IssueCommentPayload_StatementAnchor.ProtoReflect.Descriptor instead.
 func (*IssueCommentPayload_StatementAnchor) Descriptor() ([]byte, []int) {
-	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 5}
+	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 6}
 }
 
 func (x *IssueCommentPayload_StatementAnchor) GetSpecId() string {
@@ -626,14 +768,15 @@ var File_store_issue_comment_proto protoreflect.FileDescriptor
 
 const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\x1a\x17store/review_rule.proto\x1a\x16store/review_run.proto\"\xac\x0e\n" +
+	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\x1a\x17store/review_rule.proto\"\xa7\x11\n" +
 	"\x13IssueCommentPayload\x12\x18\n" +
 	"\acomment\x18\x01 \x01(\tR\acomment\x12J\n" +
 	"\bapproval\x18\x02 \x01(\v2,.bytebase.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12T\n" +
 	"\fissue_update\x18\x03 \x01(\v2/.bytebase.store.IssueCommentPayload.IssueUpdateH\x00R\vissueUpdate\x12Q\n" +
 	"\vplan_update\x18\a \x01(\v2..bytebase.store.IssueCommentPayload.PlanUpdateH\x00R\n" +
 	"planUpdate\x12c\n" +
-	"\x11review_submission\x18\b \x01(\v24.bytebase.store.IssueCommentPayload.ReviewSubmissionH\x00R\x10reviewSubmission\x12^\n" +
+	"\x11review_submission\x18\b \x01(\v24.bytebase.store.IssueCommentPayload.ReviewSubmissionH\x00R\x10reviewSubmission\x12m\n" +
+	"\x15review_run_completion\x18\v \x01(\v27.bytebase.store.IssueCommentPayload.ReviewRunCompletionH\x00R\x13reviewRunCompletion\x12^\n" +
 	"\x10statement_anchor\x18\t \x01(\v23.bytebase.store.IssueCommentPayload.StatementAnchorR\x0fstatementAnchor\x12[\n" +
 	"\x0freview_metadata\x18\n" +
 	" \x01(\v22.bytebase.store.IssueCommentPayload.ReviewMetadataR\x0ereviewMetadata\x1aX\n" +
@@ -658,22 +801,34 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\f_from_statusB\f\n" +
 	"\n" +
 	"_to_status\x1a\x12\n" +
-	"\x10ReviewSubmission\x1a\x88\x01\n" +
+	"\x10ReviewSubmission\x1a\xac\x01\n" +
+	"\x13ReviewRunCompletion\x12\x18\n" +
+	"\aattempt\x18\x02 \x01(\x03R\aattempt\x12!\n" +
+	"\fposted_count\x18\x03 \x01(\x05R\vpostedCount\x12\x1d\n" +
+	"\n" +
+	"kept_count\x18\x04 \x01(\x05R\tkeptCount\x12)\n" +
+	"\x10superseded_count\x18\x05 \x01(\x05R\x0fsupersededCountJ\x04\b\x01\x10\x02R\brun_type\x1a\x88\x01\n" +
 	"\n" +
 	"PlanUpdate\x12>\n" +
 	"\n" +
 	"from_specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\tfromSpecs\x12:\n" +
-	"\bto_specs\x18\x02 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\atoSpecs\x1a\xb9\x02\n" +
-	"\x0eReviewMetadata\x129\n" +
-	"\brun_type\x18\x01 \x01(\x0e2\x1e.bytebase.store.ReviewRun.TypeR\arunType\x12;\n" +
+	"\bto_specs\x18\x02 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\atoSpecs\x1a\x96\x03\n" +
+	"\x0eReviewMetadata\x12;\n" +
 	"\trule_type\x18\x02 \x01(\x0e2\x1e.bytebase.store.ReviewRuleTypeR\bruleType\x12W\n" +
 	"\bpriority\x18\x03 \x01(\x0e2;.bytebase.store.IssueCommentPayload.ReviewMetadata.PriorityR\bpriority\x12\x18\n" +
-	"\atargets\x18\x04 \x03(\tR\atargets\"<\n" +
+	"\atargets\x18\x04 \x03(\tR\atargets\x12\x1e\n" +
+	"\n" +
+	"superseded\x18\x05 \x01(\bR\n" +
+	"superseded\x12 \n" +
+	"\vfingerprint\x18\x06 \x01(\tR\vfingerprint\x12\x18\n" +
+	"\aattempt\x18\a \x01(\x03R\aattempt\x12\x14\n" +
+	"\x05codes\x18\b \x03(\tR\x05codes\x12\x14\n" +
+	"\x05title\x18\t \x01(\tR\x05title\"<\n" +
 	"\bPriority\x12\x18\n" +
 	"\x14PRIORITY_UNSPECIFIED\x10\x00\x12\x06\n" +
 	"\x02P0\x10\x01\x12\x06\n" +
 	"\x02P1\x10\x02\x12\x06\n" +
-	"\x02P2\x10\x03\x1a\xcb\x01\n" +
+	"\x02P2\x10\x03J\x04\b\x01\x10\x02R\brun_type\x1a\xcb\x01\n" +
 	"\x0fStatementAnchor\x12\x17\n" +
 	"\aspec_id\x18\x01 \x01(\tR\x06specId\x12!\n" +
 	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12?\n" +
@@ -695,36 +850,36 @@ func file_store_issue_comment_proto_rawDescGZIP() []byte {
 }
 
 var file_store_issue_comment_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_store_issue_comment_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_store_issue_comment_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_store_issue_comment_proto_goTypes = []any{
 	(IssueCommentPayload_ReviewMetadata_Priority)(0), // 0: bytebase.store.IssueCommentPayload.ReviewMetadata.Priority
 	(*IssueCommentPayload)(nil),                      // 1: bytebase.store.IssueCommentPayload
 	(*IssueCommentPayload_Approval)(nil),             // 2: bytebase.store.IssueCommentPayload.Approval
 	(*IssueCommentPayload_IssueUpdate)(nil),          // 3: bytebase.store.IssueCommentPayload.IssueUpdate
 	(*IssueCommentPayload_ReviewSubmission)(nil),     // 4: bytebase.store.IssueCommentPayload.ReviewSubmission
-	(*IssueCommentPayload_PlanUpdate)(nil),           // 5: bytebase.store.IssueCommentPayload.PlanUpdate
-	(*IssueCommentPayload_ReviewMetadata)(nil),       // 6: bytebase.store.IssueCommentPayload.ReviewMetadata
-	(*IssueCommentPayload_StatementAnchor)(nil),      // 7: bytebase.store.IssueCommentPayload.StatementAnchor
-	(IssuePayloadApproval_Approver_Status)(0),        // 8: bytebase.store.IssuePayloadApproval.Approver.Status
-	(Issue_Status)(0),                                // 9: bytebase.store.Issue.Status
-	(*PlanConfig_Spec)(nil),                          // 10: bytebase.store.PlanConfig.Spec
-	(ReviewRun_Type)(0),                              // 11: bytebase.store.ReviewRun.Type
+	(*IssueCommentPayload_ReviewRunCompletion)(nil),  // 5: bytebase.store.IssueCommentPayload.ReviewRunCompletion
+	(*IssueCommentPayload_PlanUpdate)(nil),           // 6: bytebase.store.IssueCommentPayload.PlanUpdate
+	(*IssueCommentPayload_ReviewMetadata)(nil),       // 7: bytebase.store.IssueCommentPayload.ReviewMetadata
+	(*IssueCommentPayload_StatementAnchor)(nil),      // 8: bytebase.store.IssueCommentPayload.StatementAnchor
+	(IssuePayloadApproval_Approver_Status)(0),        // 9: bytebase.store.IssuePayloadApproval.Approver.Status
+	(Issue_Status)(0),                                // 10: bytebase.store.Issue.Status
+	(*PlanConfig_Spec)(nil),                          // 11: bytebase.store.PlanConfig.Spec
 	(ReviewRuleType)(0),                              // 12: bytebase.store.ReviewRuleType
 	(*Position)(nil),                                 // 13: bytebase.store.Position
 }
 var file_store_issue_comment_proto_depIdxs = []int32{
 	2,  // 0: bytebase.store.IssueCommentPayload.approval:type_name -> bytebase.store.IssueCommentPayload.Approval
 	3,  // 1: bytebase.store.IssueCommentPayload.issue_update:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate
-	5,  // 2: bytebase.store.IssueCommentPayload.plan_update:type_name -> bytebase.store.IssueCommentPayload.PlanUpdate
+	6,  // 2: bytebase.store.IssueCommentPayload.plan_update:type_name -> bytebase.store.IssueCommentPayload.PlanUpdate
 	4,  // 3: bytebase.store.IssueCommentPayload.review_submission:type_name -> bytebase.store.IssueCommentPayload.ReviewSubmission
-	7,  // 4: bytebase.store.IssueCommentPayload.statement_anchor:type_name -> bytebase.store.IssueCommentPayload.StatementAnchor
-	6,  // 5: bytebase.store.IssueCommentPayload.review_metadata:type_name -> bytebase.store.IssueCommentPayload.ReviewMetadata
-	8,  // 6: bytebase.store.IssueCommentPayload.Approval.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
-	9,  // 7: bytebase.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.store.Issue.Status
-	9,  // 8: bytebase.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.store.Issue.Status
-	10, // 9: bytebase.store.IssueCommentPayload.PlanUpdate.from_specs:type_name -> bytebase.store.PlanConfig.Spec
-	10, // 10: bytebase.store.IssueCommentPayload.PlanUpdate.to_specs:type_name -> bytebase.store.PlanConfig.Spec
-	11, // 11: bytebase.store.IssueCommentPayload.ReviewMetadata.run_type:type_name -> bytebase.store.ReviewRun.Type
+	5,  // 4: bytebase.store.IssueCommentPayload.review_run_completion:type_name -> bytebase.store.IssueCommentPayload.ReviewRunCompletion
+	8,  // 5: bytebase.store.IssueCommentPayload.statement_anchor:type_name -> bytebase.store.IssueCommentPayload.StatementAnchor
+	7,  // 6: bytebase.store.IssueCommentPayload.review_metadata:type_name -> bytebase.store.IssueCommentPayload.ReviewMetadata
+	9,  // 7: bytebase.store.IssueCommentPayload.Approval.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
+	10, // 8: bytebase.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.store.Issue.Status
+	10, // 9: bytebase.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.store.Issue.Status
+	11, // 10: bytebase.store.IssueCommentPayload.PlanUpdate.from_specs:type_name -> bytebase.store.PlanConfig.Spec
+	11, // 11: bytebase.store.IssueCommentPayload.PlanUpdate.to_specs:type_name -> bytebase.store.PlanConfig.Spec
 	12, // 12: bytebase.store.IssueCommentPayload.ReviewMetadata.rule_type:type_name -> bytebase.store.ReviewRuleType
 	0,  // 13: bytebase.store.IssueCommentPayload.ReviewMetadata.priority:type_name -> bytebase.store.IssueCommentPayload.ReviewMetadata.Priority
 	13, // 14: bytebase.store.IssueCommentPayload.StatementAnchor.start_position:type_name -> bytebase.store.Position
@@ -746,12 +901,12 @@ func file_store_issue_comment_proto_init() {
 	file_store_issue_proto_init()
 	file_store_plan_proto_init()
 	file_store_review_rule_proto_init()
-	file_store_review_run_proto_init()
 	file_store_issue_comment_proto_msgTypes[0].OneofWrappers = []any{
 		(*IssueCommentPayload_Approval_)(nil),
 		(*IssueCommentPayload_IssueUpdate_)(nil),
 		(*IssueCommentPayload_PlanUpdate_)(nil),
 		(*IssueCommentPayload_ReviewSubmission_)(nil),
+		(*IssueCommentPayload_ReviewRunCompletion_)(nil),
 	}
 	file_store_issue_comment_proto_msgTypes[2].OneofWrappers = []any{}
 	type x struct{}
@@ -760,7 +915,7 @@ func file_store_issue_comment_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_issue_comment_proto_rawDesc), len(file_store_issue_comment_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

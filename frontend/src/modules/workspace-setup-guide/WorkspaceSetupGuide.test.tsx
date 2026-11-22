@@ -149,8 +149,8 @@ vi.mock("./selection", () => ({
   readSelectedGuideScenarioId: () => mocks.scenarioId,
 }));
 
-vi.mock("./useGuideContext", () => ({
-  useGuideContext: () => ({
+vi.mock("./GuideContextProvider", () => ({
+  useSharedGuideContext: () => ({
     context: mocks.guideContext,
     contextReady: mocks.contextReady,
   }),

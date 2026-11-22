@@ -10,6 +10,7 @@ import (
 
 	// Blank import registers the MySQL ParseStatements func used by base.ParseStatements.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 // TestEngineSupportsDeclarativeRelease asserts MySQL is admitted into the declarative

@@ -102,9 +102,8 @@ func refuseMaskedWriteQuery(ctx context.Context, msg any) string {
 }
 
 // refuseMaskedWriteExport guards the same door under another name. Export takes
-// a raw statement, and on MySQL it skips validateQueryRequest (sql_service.go)
-// and reaches a driver that ExecContexts anything not all-query — so an export
-// request writes.
+// a raw statement. Its handler refuses an MCP export Bytebase cannot show is a
+// read, so this adds the read that carries the placeholder.
 func refuseMaskedWriteExport(ctx context.Context, msg any) string {
 	request, ok := msg.(*v1pb.ExportRequest)
 	if !ok {

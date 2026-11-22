@@ -27,6 +27,7 @@ export type BehaviorMetricName =
   | "locked feature clicked"
   | "sample instance requested"
   | "workspace setup page entered"
+  | "workspace setup screen continued"
   | "workspace setup submitted"
   | "workspace setup guide opened"
   | "workspace setup guide progress observed"

@@ -2,6 +2,15 @@ package mongodb
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/json"
+	"encoding/pem"
+	"fmt"
+	"math/big"
 	"strings"
 	"testing"
 	"time"
@@ -9,7 +18,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"google.golang.org/protobuf/testing/protocmp"
+
+	omnidriver "github.com/bytebase/omni/driver"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -17,161 +30,194 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
-func TestGetMongoDBConnectionURL(t *testing.T) {
+// TestConnectionConfig pins the mapping from a data source onto the driver
+// contract. The connection string the contract builds from it is omni's own
+// TestConnectionURI, whose cases are these.
+func TestConnectionConfig(t *testing.T) {
 	tests := []struct {
+		name       string
 		connConfig db.ConnectionConfig
-		want       string
+		want       omnidriver.Config
+		wantSRV    bool
 	}{
 		{
+			name: "host and port",
 			connConfig: db.ConnectionConfig{
-				DataSource: &storepb.DataSource{
-					Host:     "localhost",
-					Port:     "27017",
-					Username: "",
-					Password: "",
-				},
+				DataSource: &storepb.DataSource{Host: "localhost", Port: "27017"},
 			},
-			want: "mongodb://localhost:27017/?appName=bytebase&authSource=admin",
+			want: omnidriver.Config{Host: "localhost:27017", Port: "27017"},
 		},
 		{
+			name: "direct connection",
 			connConfig: db.ConnectionConfig{
-				DataSource: &storepb.DataSource{
-					Host:             "localhost",
-					Port:             "27017",
-					Username:         "",
-					Password:         "",
-					DirectConnection: true,
-				},
-				Password: "",
+				DataSource: &storepb.DataSource{Host: "localhost", Port: "27017", DirectConnection: true},
 			},
-			want: "mongodb://localhost:27017/?appName=bytebase&authSource=admin&directConnection=true",
+			want: omnidriver.Config{
+				Host:   "localhost:27017",
+				Port:   "27017",
+				Params: map[string]string{"directConnection": "true"},
+			},
 		},
 		{
+			name: "database",
 			connConfig: db.ConnectionConfig{
-				DataSource: &storepb.DataSource{
-					Host:     "localhost",
-					Port:     "27017",
-					Username: "",
-					Password: "",
-				},
-				ConnectionContext: db.ConnectionContext{
-					DatabaseName: "sampleDB",
-				},
-				Password: "",
+				DataSource:        &storepb.DataSource{Host: "localhost", Port: "27017"},
+				ConnectionContext: db.ConnectionContext{DatabaseName: "sampleDB"},
 			},
-			want: "mongodb://localhost:27017/sampleDB?appName=bytebase&authSource=admin",
+			want: omnidriver.Config{Host: "localhost:27017", Port: "27017", Database: "sampleDB"},
 		},
 		{
+			name: "srv",
 			connConfig: db.ConnectionConfig{
 				DataSource: &storepb.DataSource{
 					Host:     "cluster0.sample.mongodb.net",
-					Port:     "",
 					Username: "bytebase",
-					Password: "passwd",
 					Srv:      true,
 				},
-				ConnectionContext: db.ConnectionContext{
-					DatabaseName: "sampleDB",
-				},
+				ConnectionContext: db.ConnectionContext{DatabaseName: "sampleDB"},
+				Password:          "passwd",
+			},
+			wantSRV: true,
+			want: omnidriver.Config{
+				Host:     "cluster0.sample.mongodb.net",
+				Database: "sampleDB",
+				User:     "bytebase",
 				Password: "passwd",
 			},
-			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin",
 		},
 		{
+			name: "connection string options",
 			connConfig: db.ConnectionConfig{
 				DataSource: &storepb.DataSource{
 					Host:     "cluster0.sample.mongodb.net",
-					Port:     "",
 					Username: "bytebase",
-					Password: "passwd",
 					Srv:      true,
 					ExtraConnectionParameters: map[string]string{
 						"readPreference":     "secondary",
 						"readPreferenceTags": "dc:ny",
 					},
 				},
-				ConnectionContext: db.ConnectionContext{
-					DatabaseName: "sampleDB",
-				},
-				Password: "passwd",
+				ConnectionContext: db.ConnectionContext{DatabaseName: "sampleDB"},
+				Password:          "passwd",
 			},
-			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin&readPreference=secondary&readPreferenceTags=dc%3Any",
+			wantSRV: true,
+			want: omnidriver.Config{
+				Host:     "cluster0.sample.mongodb.net",
+				Database: "sampleDB",
+				User:     "bytebase",
+				Password: "passwd",
+				Params: map[string]string{
+					"readPreference":     "secondary",
+					"readPreferenceTags": "dc:ny",
+				},
+			},
 		},
 		{
+			name: "authentication database",
 			connConfig: db.ConnectionConfig{
 				DataSource: &storepb.DataSource{
 					Host:                   "cluster0.sample.mongodb.net",
-					Port:                   "",
 					Username:               "bytebase",
-					Password:               "passwd",
-					AuthenticationDatabase: "admin",
+					AuthenticationDatabase: "bytebase",
 					Srv:                    true,
 				},
-				ConnectionContext: db.ConnectionContext{
-					DatabaseName: "sampleDB",
-				},
-				Password: "passwd",
+				ConnectionContext: db.ConnectionContext{DatabaseName: "sampleDB"},
+				Password:          "passwd",
 			},
-			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin",
+			wantSRV: true,
+			want: omnidriver.Config{
+				Host:     "cluster0.sample.mongodb.net",
+				Database: "sampleDB",
+				User:     "bytebase",
+				Password: "passwd",
+				Params:   map[string]string{"authSource": "bytebase"},
+			},
 		},
 		{
+			name: "additional addresses carry their own ports",
 			connConfig: db.ConnectionConfig{
 				DataSource: &storepb.DataSource{
 					Host:     "node1.cluster0.sample.mongodb.net",
 					Port:     "27017",
 					Username: "bytebase",
-					Password: "passwd",
 					AdditionalAddresses: []*storepb.DataSource_Address{
 						{Host: "node2.cluster0.sample.mongodb.net", Port: "27017"},
-						{Host: "node3.cluster0.sample.mongodb.net", Port: "27017"},
+						{Host: "node3.cluster0.sample.mongodb.net", Port: "27018"},
 					},
 					ReplicaSet:             "rs0",
 					AuthenticationDatabase: "admin",
 				},
-				ConnectionContext: db.ConnectionContext{
-					DatabaseName: "sampleDB",
-				},
-				Password: "passwd",
+				ConnectionContext: db.ConnectionContext{DatabaseName: "sampleDB"},
+				Password:          "passwd",
 			},
-			want: "mongodb://bytebase:passwd@node1.cluster0.sample.mongodb.net:27017,node2.cluster0.sample.mongodb.net:27017,node3.cluster0.sample.mongodb.net:27017/sampleDB?appName=bytebase&authSource=admin&replicaSet=rs0",
+			want: omnidriver.Config{
+				Host:     "node1.cluster0.sample.mongodb.net:27017,node2.cluster0.sample.mongodb.net:27017,node3.cluster0.sample.mongodb.net:27018",
+				Port:     "27017",
+				Database: "sampleDB",
+				User:     "bytebase",
+				Password: "passwd",
+				Params:   map[string]string{"authSource": "admin", "replicaSet": "rs0"},
+			},
+		},
+		{
+			name: "TLS follows use_ssl",
+			connConfig: db.ConnectionConfig{
+				DataSource: &storepb.DataSource{Host: "localhost", Port: "27017", UseSsl: true},
+			},
+			want: omnidriver.Config{Host: "localhost:27017", Port: "27017"},
+		},
+		{
+			name: "IPv6 host with port",
+			connConfig: db.ConnectionConfig{
+				DataSource: &storepb.DataSource{Host: "2001:db8::1", Port: "27017"},
+			},
+			want: omnidriver.Config{Host: "[2001:db8::1]:27017", Port: "27017"},
+		},
+		{
+			name: "already-bracketed IPv6 host with port",
+			connConfig: db.ConnectionConfig{
+				DataSource: &storepb.DataSource{Host: "[2001:db8::1]", Port: "27017"},
+			},
+			want: omnidriver.Config{Host: "[2001:db8::1]:27017", Port: "27017"},
+		},
+		{
+			name: "IPv6 host without port",
+			connConfig: db.ConnectionConfig{
+				DataSource: &storepb.DataSource{Host: "2001:db8::1"},
+			},
+			want: omnidriver.Config{Host: "[2001:db8::1]"},
+		},
+		{
+			name: "multi-host IPv6 addresses",
+			connConfig: db.ConnectionConfig{
+				DataSource: &storepb.DataSource{
+					Host: "2001:db8::1",
+					Port: "27017",
+					AdditionalAddresses: []*storepb.DataSource_Address{
+						{Host: "2001:db8::2", Port: "27018"},
+					},
+				},
+			},
+			want: omnidriver.Config{Host: "[2001:db8::1]:27017,[2001:db8::2]:27018", Port: "27017"},
 		},
 	}
 
 	a := require.New(t)
 	for _, tt := range tests {
-		got := getBasicMongoDBConnectionURI(tt.connConfig)
-		a.Equal(tt.want, got)
-	}
-}
-
-func TestIsSystemCollection(t *testing.T) {
-	tests := []struct {
-		name string
-		want bool
-	}{
-		{
-			name: "users",
-			want: false,
-		},
-		{
-			name: "system.namespaces",
-			want: true,
-		},
-		{
-			name: "system.users",
-			want: true,
-		},
-		{
-			name: "system.buckets.events",
-			want: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, isSystemCollection(tt.name))
+		t.Run(tt.name, func(*testing.T) {
+			got, options, err := toDriverConfig(tt.connConfig)
+			a.NoError(err)
+			if tt.connConfig.DataSource.GetUseSsl() {
+				a.NotNil(got.TLS)
+				got.TLS = nil
+			}
+			a.Equal(tt.want, got)
+			a.Equal(tt.wantSRV, options.SRV)
 		})
 	}
+
+	_, _, err := toDriverConfig(db.ConnectionConfig{})
+	a.ErrorContains(err, "a data source is required")
 }
 
 // TestExecuteLogsParseFailure pins BYT-9950: when the statement fails to
@@ -191,8 +237,13 @@ func TestExecuteLogsParseFailure(t *testing.T) {
 			LogCommandStatement: logStatement,
 		}
 
-		d := &Driver{}
-		_, err := d.Execute(context.Background(), statement, opts)
+		// Open does not reach the server, and the parse fails before a
+		// statement is sent, so this test needs none.
+		opened, err := (&Driver{}).Open(context.Background(), storepb.Engine_MONGODB, db.ConnectionConfig{
+			DataSource: &storepb.DataSource{Host: "localhost", Port: "27017"},
+		})
+		require.NoError(t, err)
+		_, err = opened.Execute(context.Background(), statement, opts)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "syntax error")
 
@@ -279,7 +330,7 @@ func TestQueryWithBracketNotation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			results, err := openedDriver.QueryConn(ctx, nil, tc.statement, db.QueryContext{
+			results, err := openedDriver.QueryConn(ctx, tc.statement, db.QueryContext{
 				Limit:                50,
 				MaximumSQLResultSize: 10 * 1024 * 1024, // 10MB
 			})
@@ -362,7 +413,7 @@ func TestQueryWithBracketNotationStructure(t *testing.T) {
 
 	// Query with bracket notation
 	statement := `db['` + collectionName + `'].find().limit(1)`
-	results, err := openedDriver.QueryConn(ctx, nil, statement, db.QueryContext{
+	results, err := openedDriver.QueryConn(ctx, statement, db.QueryContext{
 		Limit:                50,
 		MaximumSQLResultSize: 10 * 1024 * 1024,
 	})
@@ -433,11 +484,16 @@ func TestQueryDoubleNotation(t *testing.T) {
 	err = openedDriver.Ping(ctx)
 	require.NoError(t, err, "Failed to ping MongoDB")
 
-	// Insert through the official driver so the field types are guaranteed
-	// BSON doubles, matching the issue's data shape.
-	mongoDriver, ok := openedDriver.(*Driver)
-	require.True(t, ok)
-	_, err = mongoDriver.client.Database(database).Collection("users").InsertOne(ctx, bson.D{
+	// Insert through a client of the test's own so the field types are
+	// guaranteed BSON doubles, matching the issue's data shape: a mongosh
+	// literal writes an integer as int32 or int64.
+	client, err := mongo.Connect(options.Client().ApplyURI(fmt.Sprintf(
+		"mongodb://%s:%s@%s:%s/?authSource=admin",
+		container.GetUsername(), container.GetPassword(), container.GetHost(), container.GetPort(),
+	)))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = client.Disconnect(context.Background()) })
+	_, err = client.Database(database).Collection("users").InsertOne(ctx, bson.D{
 		{Key: "_id", Value: int32(1129063441)},
 		{Key: "name", Value: "repro user 1"},
 		{Key: "created_at", Value: float64(1779696815227)},
@@ -446,7 +502,7 @@ func TestQueryDoubleNotation(t *testing.T) {
 	})
 	require.NoError(t, err, "Failed to insert test data")
 
-	results, err := openedDriver.QueryConn(ctx, nil, `db.users.find()`, db.QueryContext{
+	results, err := openedDriver.QueryConn(ctx, `db.users.find()`, db.QueryContext{
 		Limit:                50,
 		MaximumSQLResultSize: 10 * 1024 * 1024,
 	})
@@ -459,4 +515,158 @@ func TestQueryDoubleNotation(t *testing.T) {
 	require.Equal(t,
 		`{"_id":1129063441,"name":"repro user 1","created_at":1779696815227,"updated_at":1779803079861,"current_workspace_id":585723378473606}`,
 		jsonStr)
+}
+
+// TestQueryConnExplain pins the plan the query-plan viewer draws. MongoDB asks
+// for a plan with a cursor method rather than a keyword, and only the
+// queryPlanner verbosity describes the query without running it.
+func TestQueryConnExplain(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	container, database := testcontainer.NewMongoDatabase(t)
+
+	driver := &Driver{}
+	opened, err := driver.Open(ctx, storepb.Engine_MONGODB, db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:     container.GetHost(),
+			Port:     container.GetPort(),
+			Username: container.GetUsername(),
+		},
+		ConnectionContext: db.ConnectionContext{DatabaseName: database},
+		Password:          container.GetPassword(),
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { opened.Close(ctx) })
+	require.NoError(t, opened.Ping(ctx))
+
+	_, err = opened.Execute(ctx, `db.orders.insertMany([
+		{"customer_id": 1, "total": 100}, {"customer_id": 2, "total": 900}
+	]);`, db.ExecuteOptions{})
+	require.NoError(t, err)
+
+	explain := func(statement string, asExplain bool) *v1pb.QueryResult {
+		t.Helper()
+		results, err := opened.QueryConn(ctx, statement, db.QueryContext{
+			Explain:              asExplain,
+			Limit:                5000,
+			MaximumSQLResultSize: 1 << 30,
+			Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+		})
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		require.Empty(t, results[0].GetError())
+		return results[0]
+	}
+	planner := func(result *v1pb.QueryResult) map[string]any {
+		t.Helper()
+		require.Len(t, result.GetRows(), 1)
+		var plan map[string]any
+		require.NoError(t, json.Unmarshal([]byte(result.GetRows()[0].GetValues()[0].GetStringValue()), &plan))
+		queryPlanner, ok := plan["queryPlanner"].(map[string]any)
+		require.True(t, ok, "no queryPlanner in %v", plan)
+		return queryPlanner
+	}
+
+	const statement = `db.orders.find({total: {$gt: 500}})`
+	plan := explain(statement, true)
+	require.Equal(t, statement+`.explain("queryPlanner")`, plan.GetStatement())
+	require.Contains(t, planner(plan), "winningPlan")
+
+	// A statement that already asks for a plan keeps its query and loses its
+	// verbosity, so an explain request never runs what it plans.
+	replanned := explain(statement+`.explain("executionStats")`, true)
+	require.Equal(t, statement+`.explain("queryPlanner")`, replanned.GetStatement())
+	require.NotContains(t, planner(replanned), "executionStats")
+
+	// The client runs a whole script in one call, but a plan covers one
+	// statement, so a script is planned a statement at a time rather than
+	// refused for holding two.
+	const second = `db.orders.find({total: {$lt: 500}})`
+	scripted, err := opened.QueryConn(ctx, statement+"; "+second, db.QueryContext{
+		Explain: true, MaximumSQLResultSize: 1 << 30,
+		Option: &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+	})
+	require.NoError(t, err)
+	require.Len(t, scripted, 2)
+	require.Equal(t, statement+`.explain("queryPlanner")`, scripted[0].GetStatement())
+	require.Equal(t, second+`.explain("queryPlanner")`, scripted[1].GetStatement())
+	require.Contains(t, planner(scripted[1]), "winningPlan")
+
+	// Run on a statement that explains itself reports the plan it returned.
+	ran := explain(statement+`.explain()`, false)
+	require.Equal(t, v1pb.QueryOption_JSON, ran.GetQueryPlan().GetFormat())
+	require.False(t, ran.GetQueryPlan().GetExecuted())
+
+	// A measured plan runs the query, which the result has to say.
+	measured := explain(statement+`.explain("executionStats")`, false)
+	require.Equal(t, v1pb.QueryOption_JSON, measured.GetQueryPlan().GetFormat())
+	require.True(t, measured.GetQueryPlan().GetExecuted())
+
+	// An ordinary query is no plan at all.
+	require.Nil(t, explain(statement, false).GetQueryPlan())
+
+	// A write has no plan, and planning it would mean running it. The refusal
+	// is the statement's own result error, as a statement's failure is.
+	refused, err := opened.QueryConn(ctx, `db.orders.insertOne({a: 1})`, db.QueryContext{
+		Explain: true, MaximumSQLResultSize: 1 << 30,
+		Option: &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+	})
+	require.NoError(t, err)
+	require.Len(t, refused, 1)
+	require.Contains(t, refused[0].GetError(), "insertOne")
+}
+
+func TestToDriverConfigTLSVerifiesDialedHost(t *testing.T) {
+	caKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	caTemplate := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "test-ca"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		KeyUsage:              x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}
+	caDER, err := x509.CreateCertificate(rand.Reader, caTemplate, caTemplate, &caKey.PublicKey, caKey)
+	require.NoError(t, err)
+	caPEM := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER}))
+
+	signLeaf := func(serial int64, host string) []byte {
+		leafKey, genErr := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		require.NoError(t, genErr)
+		tmpl := &x509.Certificate{
+			SerialNumber: big.NewInt(serial),
+			Subject:      pkix.Name{CommonName: host},
+			DNSNames:     []string{host},
+			NotBefore:    time.Now().Add(-time.Hour),
+			NotAfter:     time.Now().Add(time.Hour),
+			KeyUsage:     x509.KeyUsageDigitalSignature,
+			ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		}
+		der, createErr := x509.CreateCertificate(rand.Reader, tmpl, caTemplate, &leafKey.PublicKey, caKey)
+		require.NoError(t, createErr)
+		return der
+	}
+
+	seedCert := signLeaf(2, "cluster.example.com")
+	shardCert := signLeaf(3, "shard-01.cluster.example.com")
+
+	got, _, err := toDriverConfig(db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:                 "cluster.example.com",
+			Srv:                  true,
+			UseSsl:               true,
+			VerifyTlsCertificate: true,
+			SslCa:                caPEM,
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, got.TLS)
+
+	tlsCfg, err := got.TLS("shard-01.cluster.example.com")
+	require.NoError(t, err)
+	require.Equal(t, "shard-01.cluster.example.com", tlsCfg.ServerName)
+	require.NoError(t, tlsCfg.VerifyPeerCertificate([][]byte{shardCert}, nil))
+	require.Error(t, tlsCfg.VerifyPeerCertificate([][]byte{seedCert}, nil))
 }

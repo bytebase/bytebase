@@ -19,20 +19,25 @@ function stringifyExpr(expr: Expr): string {
     }
   } else if (expr.exprKind?.case === "callExpr") {
     const callExpr = expr.exprKind.value;
-    // Remove underscores from function name. e.g. "_&&_" -> "&&"
-    // Reference: https://github.com/google/cel-spec/blob/master/doc/langdef.md#list-of-standard-definitions
-    const functionName = callExpr.function.replace(/_/g, "");
+    const functionName = callExpr.function;
     if (callExpr.target) {
       const target = stringifyExpr(callExpr.target);
       const args = callExpr.args.map((arg) => stringifyExpr(arg)).join(", ");
       return `${target}.${functionName}(${args})`;
     } else {
       const args = callExpr.args.map((arg) => stringifyExpr(arg));
-      if (functionName === "&&" || functionName === "||") {
-        return `(${args.join(` ${functionName} `)})`;
-      } else {
-        return args.join(` ${functionName} `);
+      if (functionName === "!_" || functionName === "-_") {
+        return `${functionName[0]}(${args[0]})`;
       }
+      if (functionName === "@in") return args.join(" in ");
+      if (functionName.startsWith("_")) {
+        const operator = functionName.replace(/_/g, "");
+        const expression = args.join(` ${operator} `);
+        return operator === "&&" || operator === "||"
+          ? `(${expression})`
+          : expression;
+      }
+      return `${functionName}(${args.join(", ")})`;
     }
   } else if (expr.exprKind?.case === "listExpr") {
     const listExpr = expr.exprKind.value;

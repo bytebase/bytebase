@@ -14,7 +14,6 @@ import { TableSchemaViewer } from "@/components/TableSchemaViewer";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { SearchInput } from "@/components/ui/search-input";
 import { Tree, type TreeDataNode } from "@/components/ui/tree";
-import { countVisibleRows } from "@/components/ui/tree-utils";
 import { cn } from "@/lib/utils";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import {
@@ -38,7 +37,11 @@ import { useAvailableActions } from "./availableActions";
 import { useClickEvents } from "./click";
 import { FlatTableList } from "./FlatTableList";
 import { HoverPanel } from "./HoverPanel/HoverPanel";
-import { HoverStateProvider, useHoverState } from "./hover-state";
+import {
+  type HoverActions,
+  HoverStateProvider,
+  useHoverActions,
+} from "./hover-state";
 import {
   SchemaContextMenu,
   type SchemaContextMenuHandle,
@@ -75,7 +78,7 @@ function SchemaPaneInner() {
   const getOrFetchDatabaseMetadata = useAppStore(
     (s) => s.getOrFetchDatabaseMetadata
   );
-  const hoverState = useHoverState();
+  const hover = useHoverActions();
 
   const currentTabId = useSQLEditorTabState((s) => s.currentTabId);
   const currentTab = useSQLEditorTabState((s) =>
@@ -264,23 +267,9 @@ function SchemaPaneInner() {
     return tree.map(toTreeData);
   }, [tree]);
 
-  const expandedKeySet = useMemo(() => new Set(expandedKeys), [expandedKeys]);
   const searchKeyword = searchPattern.trim();
-  const visibleRowCount = useMemo(() => {
-    if (!tree) return 0;
-    return tree.reduce(
-      (sum, root) =>
-        sum +
-        countVisibleRows(
-          root,
-          expandedKeySet,
-          searchKeyword,
-          schemaNodeMatch,
-          true
-        ),
-      0
-    );
-  }, [tree, expandedKeySet, searchKeyword]);
+  const { ref: treeContainerRef, height: treeContainerHeight } =
+    useContainerHeight();
 
   // ---- Click discriminator (single vs double) -----------------------------
   const { selectAllFromTableOrView } = useSchemaActionsForClick();
@@ -412,7 +401,7 @@ function SchemaPaneInner() {
       // the cursor exits through whitespace where no row handler fires
       // — or crosses through the floating panel itself which keeps
       // itself alive on hover — the panel can otherwise linger.
-      onMouseLeave={() => hoverState.update(undefined, "after")}
+      onMouseLeave={() => hover.update(undefined, "after")}
     >
       <div className="px-1 flex flex-row gap-1">
         <div className="flex-1 overflow-hidden">
@@ -430,7 +419,10 @@ function SchemaPaneInner() {
         </div>
       </div>
 
-      <div className="schema-tree flex-1 px-1 pb-1 text-sm overflow-auto select-none">
+      <div
+        ref={treeContainerRef}
+        className="schema-tree min-h-0 flex-1 px-1 pb-1 text-sm overflow-hidden select-none"
+      >
         {isFetching ? (
           <div className="flex items-center justify-center mt-16 text-control-light">
             <Loader2 className="size-5 animate-spin" />
@@ -459,10 +451,7 @@ function SchemaPaneInner() {
                 else next.add(id);
                 setExpandedKeys([...next]);
               }}
-              height={
-                Math.max(visibleRowCount, 1) * ROW_HEIGHT ||
-                TREE_FALLBACK_HEIGHT
-              }
+              height={treeContainerHeight}
               rowHeight={ROW_HEIGHT}
               indent={10}
               renderNode={({ node, style }) => (
@@ -476,9 +465,7 @@ function SchemaPaneInner() {
                   }
                   keyword={searchKeyword}
                   selected={selectedKeys.includes(node.data.data.key)}
-                  hoverUpdate={hoverState.update}
-                  hoverHasState={hoverState.state !== undefined}
-                  hoverSetPosition={hoverState.setPosition}
+                  hover={hover}
                   databaseName={database.name}
                   onClickNode={handleClick}
                   onContextMenu={(n, e) => contextMenuRef.current?.show(n, e)}
@@ -549,11 +536,6 @@ const searchMatch = (
   return label.toLowerCase().includes(term.toLowerCase());
 };
 
-const schemaNodeMatch = (node: SchemaTreeNode, term: string): boolean => {
-  const label = node.label ?? "";
-  return label.toLowerCase().includes(term.toLowerCase());
-};
-
 function defaultExpandedKeys(tree: SchemaTreeNode[]): string[] {
   if (tree.length === 0) return [];
   const keys: string[] = [];
@@ -573,6 +555,24 @@ function defaultExpandedKeys(tree: SchemaTreeNode[]): string[] {
   };
   walk(tree[0]);
   return keys;
+}
+
+function useContainerHeight() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(TREE_FALLBACK_HEIGHT);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const next = Math.round(entry?.contentRect.height ?? 0);
+      if (next > 0) setHeight(next);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, height };
 }
 
 /**
@@ -621,9 +621,7 @@ function SchemaTreeRow({
   hasChildren,
   keyword,
   selected,
-  hoverUpdate,
-  hoverHasState,
-  hoverSetPosition,
+  hover,
   databaseName,
   onClickNode,
   onContextMenu,
@@ -634,9 +632,7 @@ function SchemaTreeRow({
   hasChildren: boolean;
   keyword: string;
   selected: boolean;
-  hoverUpdate: ReturnType<typeof useHoverState>["update"];
-  hoverHasState: boolean;
-  hoverSetPosition: ReturnType<typeof useHoverState>["setPosition"];
+  hover: HoverActions;
   databaseName: string;
   onClickNode: (node: SchemaTreeNode) => void;
   onContextMenu: (node: SchemaTreeNode, e: React.MouseEvent) => void;
@@ -678,8 +674,8 @@ function SchemaTreeRow({
     if ("column" in target) state.column = target.column as string;
     if ("partition" in target) state.partition = target.partition as string;
 
-    const delay = hoverHasState ? 150 : undefined;
-    hoverUpdate(state, "before", delay);
+    const delay = hover.isActive() ? 150 : undefined;
+    hover.update(state, "before", delay);
 
     // Compute position from the row's bounding rect.
     const wrapper = findAncestor(
@@ -687,15 +683,15 @@ function SchemaTreeRow({
       ".bb-schema-tree-row"
     );
     if (!wrapper) {
-      hoverUpdate(undefined, "after", 150);
+      hover.update(undefined, "after", 150);
       return;
     }
     const rect = wrapper.getBoundingClientRect();
-    hoverSetPosition({ x: e.clientX, y: rect.bottom });
+    hover.setPosition({ x: e.clientX, y: rect.bottom });
   };
 
   const handleMouseLeave = () => {
-    hoverUpdate(undefined, "after");
+    hover.update(undefined, "after");
   };
 
   return (

@@ -1,17 +1,19 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
+  storageKeyWorkspaceSetupDraft,
   storageKeyWorkspaceSetupFinished,
   storageKeyWorkspaceSetupGuideScenario,
+  storageKeyWorkspaceSetupGuideTeamSize,
   storageKeyWorkspaceSetupGuideWorkspaceUsage,
 } from "@/utils/storage-keys";
 import { isGuideScenarioId } from "./scenarios";
 import {
-  clearGuideWorkspaceUsage,
-  clearSelectedGuideScenarioId,
+  hasWorkspaceSetupDraft,
   isGuideWorkspaceUsage,
+  readGuideTeamSize,
   readGuideWorkspaceUsage,
   readSelectedGuideScenarioId,
-  saveGuideWorkspaceUsage,
+  saveGuideTeamSize,
   saveSelectedGuideScenarioId,
 } from "./selection";
 import {
@@ -109,11 +111,10 @@ describe("workspace setup guide scenario selection", () => {
     );
   });
 
-  test("clears a previous selection", () => {
-    expect(saveSelectedGuideScenarioId("query-data")).toBe(true);
+  test("stores just exploring as a goal of its own", () => {
+    expect(saveSelectedGuideScenarioId("just-exploring")).toBe(true);
 
-    expect(clearSelectedGuideScenarioId()).toBe(true);
-    expect(readSelectedGuideScenarioId()).toBeUndefined();
+    expect(readSelectedGuideScenarioId()).toBe("just-exploring");
   });
 
   test("isolates selections by workspace", () => {
@@ -155,14 +156,54 @@ describe("workspace setup guide workspace usage", () => {
     }
   );
 
-  test.each(["team", "solo"] as const)("stores %s workspace usage", (value) => {
-    expect(saveGuideWorkspaceUsage(value)).toBe(true);
-    expect(readGuideWorkspaceUsage()).toBe(value);
+  test.each(["team", "solo"] as const)(
+    "reads the %s answer an earlier setup stored",
+    (value) => {
+      seedWorkspaceUsage(value);
+
+      expect(readGuideWorkspaceUsage()).toBe(value);
+    }
+  );
+
+  test.each(["2-10", "11-50", "51-200", "200+"] as const)(
+    "reads a team of %s as team usage",
+    (size) => {
+      expect(saveGuideTeamSize(size)).toBe(true);
+
+      expect(readGuideTeamSize()).toBe(size);
+      expect(readGuideWorkspaceUsage()).toBe("team");
+    }
+  );
+
+  test("reads Just me as solo usage, over an earlier stored answer", () => {
+    seedWorkspaceUsage("team");
+    expect(saveGuideTeamSize("just-me")).toBe(true);
+
+    expect(readGuideWorkspaceUsage()).toBe("solo");
   });
 
-  test("clears a previous workspace usage", () => {
-    expect(saveGuideWorkspaceUsage("team")).toBe(true);
-    expect(clearGuideWorkspaceUsage()).toBe(true);
+  const teamSizeStorageKey = () =>
+    storageKeyWorkspaceSetupGuideTeamSize(
+      mocks.state.currentUser.workspace,
+      mocks.state.currentUser.email
+    );
+
+  test("keeps the team size under its own key, per workspace and user", () => {
+    expect(saveGuideTeamSize("11-50")).toBe(true);
+
+    expect(teamSizeStorageKey()).toBe(
+      "bb.workspace-setup-guide.team-size.workspaces/ws1.ed@example.com"
+    );
+    expect(localStorage.getItem(teamSizeStorageKey())).toBe('"11-50"');
+
+    mocks.state.currentUser.workspace = "workspaces/ws2";
+    expect(readGuideTeamSize()).toBeUndefined();
+  });
+
+  test("ignores a team size it does not know", () => {
+    localStorage.setItem(teamSizeStorageKey(), JSON.stringify("1000+"));
+
+    expect(readGuideTeamSize()).toBeUndefined();
     expect(readGuideWorkspaceUsage()).toBeUndefined();
   });
 });
@@ -197,5 +238,30 @@ describe("workspace setup completion", () => {
     );
 
     expect(readWorkspaceSetupFinished("workspaces/ws1")).toBeUndefined();
+  });
+});
+
+describe("workspace setup draft", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  test("is found only for this workspace and user", () => {
+    localStorage.setItem(
+      storageKeyWorkspaceSetupDraft("workspaces/ws2", "ed@example.com"),
+      "{}"
+    );
+    localStorage.setItem(
+      storageKeyWorkspaceSetupDraft("workspaces/ws1", "ann@example.com"),
+      "{}"
+    );
+    expect(hasWorkspaceSetupDraft()).toBe(false);
+
+    localStorage.setItem(
+      storageKeyWorkspaceSetupDraft("workspaces/ws1", "ed@example.com"),
+      "{}"
+    );
+
+    expect(hasWorkspaceSetupDraft()).toBe(true);
   });
 });

@@ -28,3 +28,61 @@
   changeType: 1
 - statement: ALTER TABLE MySchema.MyTable ADD CONSTRAINT PK_MyTable PRIMARY KEY (Id);
   changeType: 1
+- statement: |-
+    CREATE TABLE MySchema.MyTable (Id INT);
+    ALTER TABLE MySchema.MyTable ADD CONSTRAINT PK_MyTable PRIMARY KEY (Id);
+- statement: |-
+    CREATE TABLE MySchema.MyTable (Name VARCHAR(50));
+    ALTER TABLE MySchema.MyTable ADD Id INT PRIMARY KEY;
+- statement: |-
+    ALTER TABLE MyTable ADD CONSTRAINT PK_MyTable PRIMARY KEY (Id);
+    CREATE TABLE dbo.MyTable (Id INT);
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table dbo.MyTable requires PRIMARY KEY.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE MyTable (Id INT);
+    DROP TABLE MyTable;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table MyTable requires PRIMARY KEY.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE MyTable (Id INT PRIMARY KEY);
+    ALTER TABLE MyTable DROP CONSTRAINT PK_MyTable;
+- statement: |-
+    -- leading comment
+
+    CREATE TABLE
+      [MySchema].[MyTable] (Id INT);
+    CREATE TABLE Other (Id INT);
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table MySchema.MyTable requires PRIMARY KEY.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table Other requires PRIMARY KEY.
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: SELECT * INTO MySchema.MyTable FROM MySchema.Other;
+- statement: IF 1 = 1 CREATE TABLE MyTable (Id INT);

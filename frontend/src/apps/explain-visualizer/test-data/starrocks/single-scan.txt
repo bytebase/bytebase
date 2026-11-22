@@ -1,0 +1,26 @@
+PLAN FRAGMENT 0
+ OUTPUT EXPRS:1: id | 2: customer_id | 3: total | 4: status
+  PARTITION: UNPARTITIONED
+
+  RESULT SINK
+
+  1:EXCHANGE
+
+PLAN FRAGMENT 1
+ OUTPUT EXPRS:
+  PARTITION: RANDOM
+
+  STREAM DATA SINK
+    EXCHANGE ID: 01
+    UNPARTITIONED
+
+  0:OlapScanNode
+     TABLE: orders
+     PREAGGREGATION: ON
+     PREDICATES: 3: total > 880
+     partitions=1/1
+     rollup: orders
+     tabletRatio=2/2
+     tabletList=10015,10017
+     cardinality=2500
+     avgRowSize=4.0

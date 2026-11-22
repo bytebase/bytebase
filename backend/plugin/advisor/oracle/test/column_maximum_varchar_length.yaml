@@ -35,3 +35,27 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t (
+      a nvarchar2(3000),
+      b varchar2(3000 char),
+      c varchar(2561)
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 422
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
+      content: The maximum varchar length is 2560.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 422
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
+      content: The maximum varchar length is 2560.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null

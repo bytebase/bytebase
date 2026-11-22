@@ -97,7 +97,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
-        "explain-visualizer": resolve(__dirname, "explain-visualizer.html"),
       },
       output: {
         manualChunks: (id) => {
@@ -164,5 +163,15 @@ export default defineConfig({
   },
   worker: {
     format: "es",
+    rollupOptions: {
+      output: {
+        // Old and new app tabs must connect to the same refresh coordinator.
+        // Keep its URL stable and outside the immutable /assets/ cache.
+        entryFileNames: (chunk) =>
+          chunk.name === "refreshToken.worker"
+            ? "refreshToken.worker.js"
+            : "assets/[name]-[hash].js",
+      },
+    },
   },
 });

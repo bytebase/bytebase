@@ -526,37 +526,37 @@ var File_v1_query_history_service_proto protoreflect.FileDescriptor
 
 const file_v1_query_history_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1ev1/query_history_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x8e\x01\n" +
-	"\x1bSearchQueryHistoriesRequest\x12\x1b\n" +
-	"\x06parent\x18\x04 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x1b\n" +
+	"\x1ev1/query_history_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x8f\x01\n" +
+	"\x1bSearchQueryHistoriesRequest\x12\x1c\n" +
+	"\x06parent\x18\x04 \x01(\tB\x04\xe2A\x01\x02R\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\x12\x16\n" +
-	"\x06filter\x18\x03 \x01(\tR\x06filter\"\x8f\x01\n" +
-	"\x1cSearchQueryHistoriesResponse\x12G\n" +
-	"\x0fquery_histories\x18\x01 \x03(\v2\x19.bytebase.v1.QueryHistoryB\x03\xe0A\x03R\x0equeryHistories\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xa5\x01\n" +
-	"\x19ListQueryHistoriesRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x06filter\x18\x03 \x01(\tR\x06filter\"\x90\x01\n" +
+	"\x1cSearchQueryHistoriesResponse\x12H\n" +
+	"\x0fquery_histories\x18\x01 \x03(\v2\x19.bytebase.v1.QueryHistoryB\x04\xe2A\x01\x03R\x0equeryHistories\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xa6\x01\n" +
+	"\x19ListQueryHistoriesRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\x12\x16\n" +
-	"\x06filter\x18\x04 \x01(\tR\x06filter\"\x8d\x01\n" +
-	"\x1aListQueryHistoriesResponse\x12G\n" +
-	"\x0fquery_histories\x18\x01 \x03(\v2\x19.bytebase.v1.QueryHistoryB\x03\xe0A\x03R\x0equeryHistories\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"1\n" +
-	"\x16GetQueryHistoryRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"\x9b\x03\n" +
-	"\fQueryHistory\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1f\n" +
-	"\bdatabase\x18\x02 \x01(\tB\x03\xe0A\x03R\bdatabase\x12\x1d\n" +
-	"\acreator\x18\x03 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
-	"\vcreate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x12!\n" +
-	"\tstatement\x18\x05 \x01(\tB\x03\xe0A\x03R\tstatement\x12\x1e\n" +
-	"\x05error\x18\x06 \x01(\tB\x03\xe0A\x03H\x00R\x05error\x88\x01\x01\x12:\n" +
-	"\bduration\x18\a \x01(\v2\x19.google.protobuf.DurationB\x03\xe0A\x03R\bduration\x122\n" +
+	"\x06filter\x18\x04 \x01(\tR\x06filter\"\x8e\x01\n" +
+	"\x1aListQueryHistoriesResponse\x12H\n" +
+	"\x0fquery_histories\x18\x01 \x03(\v2\x19.bytebase.v1.QueryHistoryB\x04\xe2A\x01\x03R\x0equeryHistories\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"2\n" +
+	"\x16GetQueryHistoryRequest\x12\x18\n" +
+	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x02R\x04name\"\xa2\x03\n" +
+	"\fQueryHistory\x12\x18\n" +
+	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\x04name\x12 \n" +
+	"\bdatabase\x18\x02 \x01(\tB\x04\xe2A\x01\x03R\bdatabase\x12\x1e\n" +
+	"\acreator\x18\x03 \x01(\tB\x04\xe2A\x01\x03R\acreator\x12A\n" +
+	"\vcreate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
+	"createTime\x12\"\n" +
+	"\tstatement\x18\x05 \x01(\tB\x04\xe2A\x01\x03R\tstatement\x12\x1f\n" +
+	"\x05error\x18\x06 \x01(\tB\x04\xe2A\x01\x03H\x00R\x05error\x88\x01\x01\x12;\n" +
+	"\bduration\x18\a \x01(\v2\x19.google.protobuf.DurationB\x04\xe2A\x01\x03R\bduration\x122\n" +
 	"\x04type\x18\b \x01(\x0e2\x1e.bytebase.v1.QueryHistory.TypeR\x04type\"3\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\t\n" +

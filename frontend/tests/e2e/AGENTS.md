@@ -72,6 +72,8 @@ Use `ControlOrMeta+a` (portable), not `Meta+a` (Mac-only) or `Control+a` (Linux/
 
 Tailwind class substrings like `[class*='border border-gray']` break on any CSS refactor. If you need a new locator, add a `data-testid` attribute to the component. Existing class-based selectors are technical debt.
 
+Utility classes (`rounded-*`, `border-*`, `overflow-*`, `gap-*`) are presentation, and UI-guideline refactors rewrite them across the codebase at once. Before adding a `data-testid`, prefer role plus accessible name, or visible text scoped to fixture names the test owns. Product hook classes (`bb-*`) and third-party internals such as Monaco's `.view-lines` identify structure and may be used when no user-facing handle exists.
+
 ## Directory Layout
 
 ```
@@ -94,6 +96,7 @@ frontend/tests/e2e/
 | `framework/global-setup.ts` | Starts server before any test runs |
 | `framework/global-teardown.ts` | Stops server after all tests finish |
 | `framework/setup-project.ts` | Auth + instance/database discovery, writes env + auth state |
+| `framework/bare-server.ts` | A second server in first-run state, started and stopped by the one spec that needs it |
 
 ## Adding a New Feature Test Suite
 
@@ -124,12 +127,15 @@ Get the correct port from `getInstance(env.instance)` rather than hardcoding the
 ## Known Constraints
 
 - **Sample-data bootstrap**: `globalSetup` creates `project-sample` and calls `PrepareSampleProjectInstance`. The single project-scoped sample Postgres instance comes up on `PORT+3` with `hr_test`; the setup project adds `hr_prod` on that instance as an E2E-only multi-database fixture.
-- **License required**: the suite exercises enterprise-only features (masking, JIT, approval workflow, query-data-policy, database groups) and does NOT run on the free plan. Set `BYTEBASE_E2E_LICENSE` to a license JWT signed by Bytebase's license key (ask Bytebase ops for a dev/test license; not stored in this repo); `globalSetup` installs it via `PATCH /v1/subscription/license`. If the env var is absent the bootstrap throws and the whole run stops — there is no per-spec `test.skip` fallback.
+- **License required**: the suite exercises enterprise-only features (masking, JIT, approval workflow, query-data-policy, database groups) and does NOT run on the free plan. `globalSetup` installs a license via `PATCH /v1/subscription/license`: `BYTEBASE_E2E_LICENSE` when set, else the dev-signed `BB_DEV_ENTERPRISE_LICENSE` committed in `frontend/.env.dev` (valid only on a binary built without the `release` tag). With neither, the bootstrap throws and the whole run stops — there is no per-spec `test.skip` fallback. Never print the license.
 - **Serial execution**: `fullyParallel: false` + `workers: 1`. Tests within and across files are sequential.
 - **`psql` dependency**: must be on PATH for DDL/DML setup.
 - **Unix-like OS only**: the sample Postgres uses Unix sockets in `/tmp`.
 - **Admin credentials**: hardcoded `demo@example.com` / `12345678`. The first user created via `/v1/auth/signup` becomes workspace admin, so e2e signs up this fixture.
-- **DBA fixture**: `dba1@example.com` / `12345678` is created during `globalSetup` and granted `roles/workspaceDBA`. Used as the second approver by plan-detail approval specs. If a spec needs additional users (developer, QA, etc.), provision them the same way in `mode-start-new-bytebase.ts` — don't assume they exist.
+- **First-run state**: the shared server has several members and a used sample, so it never shows the setup wizard. A spec that needs a workspace with one member and an unused sample starts its own with `startBareServer()` and stops it in `afterAll` (see `workspace-setup/workspace-setup.spec.ts`). That server has no license, so it is for free-plan behavior only.
+- **DBA fixture**: `dba1@example.com` / `12345678` is created during `globalSetup` and granted `roles/workspaceDBA`. Used as the second approver by plan-detail approval specs.
+- **Approver fixture**: `approver1@example.com` / `12345678` is created during `globalSetup` and granted `roles/workspaceAdmin`. It never edits a plan, so it is the approver when the author may not approve (`allow_last_plan_editor_approval=false`). If a spec needs additional users (developer, QA, etc.), provision them the same way in `mode-start-new-bytebase.ts` — don't assume they exist.
+- **Approval by the plan author**: the admin creates, edits, and approves its own plans, so it is both the issue creator and the last plan editor. A new project denies approval to both, through two separate settings. Enable both with `authorMayApprove(true)` from `plan-detail/plan-helpers.ts`, and snapshot and restore both fields.
 
 ## Assertions and regression coverage
 

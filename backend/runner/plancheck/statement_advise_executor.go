@@ -20,19 +20,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// NewStatementAdviseExecutor creates a plan check statement advise executor.
-func NewStatementAdviseExecutor(
-	store *store.Store,
-	sheetManager *sheet.Manager,
-	dbFactory *dbfactory.DBFactory,
-) Executor {
-	return &StatementAdviseExecutor{
-		store:        store,
-		sheetManager: sheetManager,
-		dbFactory:    dbFactory,
-	}
-}
-
 // StatementAdviseExecutor is the plan check statement advise executor.
 type StatementAdviseExecutor struct {
 	store        *store.Store
@@ -138,14 +125,13 @@ func (e *StatementAdviseExecutor) runReview(
 		return nil, err
 	}
 	defer driver.Close(ctx)
-	connection := driver.GetDB()
 
 	adviceList, err := advisor.SQLReviewCheck(ctx, e.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.Context{
 		DBSchema:              dbMetadata.GetProto(),
 		DBType:                instance.Metadata.GetEngine(),
 		OriginalMetadata:      originMetadata,
 		FinalMetadata:         finalMetadata,
-		Driver:                connection,
+		Prober:                db.ProberOf(driver),
 		EnablePriorBackup:     enablePriorBackup,
 		EnableGhost:           enableGhost,
 		TenantMode:            project.Setting.GetPostgresDatabaseTenantMode(),

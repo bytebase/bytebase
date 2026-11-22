@@ -484,6 +484,8 @@ describe("distributeColumnWidths with a yield order", () => {
 describe("fillableWidth", () => {
   // jsdom lays nothing out, so each case states what a browser reports; it
   // does report the inline border and padding back as the computed style.
+  // The border has to carry a style: a width on its own computes to 0, in
+  // jsdom as in a browser, however wide the declaration sets it.
   const scroller = (
     rect: number,
     offset: number,
@@ -491,8 +493,8 @@ describe("fillableWidth", () => {
     { border = "0px", padding = "0px" } = {}
   ) => {
     const node = document.createElement("div");
-    node.style.borderLeftWidth = border;
-    node.style.borderRightWidth = border;
+    node.style.borderLeft = `${border} solid`;
+    node.style.borderRight = `${border} solid`;
     node.style.paddingLeft = padding;
     node.style.paddingRight = padding;
     document.body.appendChild(node);

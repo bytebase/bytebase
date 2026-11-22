@@ -11,6 +11,7 @@ import (
 	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -101,7 +102,7 @@ func (m *maskingLevelEvaluator) evaluateSemanticTypeOfColumn(
 				} else {
 					context = fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", databaseMessage.InstanceID, databaseMessage.DatabaseName, tableName, columnName)
 				}
-				algorithmName := getAlgorithmNameFromSemanticType(semanticType)
+				algorithmName := masker.AlgorithmName(semanticType.GetAlgorithm())
 				eval = &MaskingEvaluation{
 					SemanticTypeID:    semanticTypeID,
 					SemanticTypeTitle: semanticType.GetTitle(),
@@ -177,7 +178,7 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 			}
 
 			// Get algorithm name from semantic type
-			algorithmName := getAlgorithmNameFromSemanticType(semanticType)
+			algorithmName := masker.AlgorithmName(semanticType.GetAlgorithm())
 			return &MaskingEvaluation{
 				SemanticTypeID:      semanticTypeID,
 				SemanticTypeTitle:   semanticType.Title,
@@ -268,25 +269,6 @@ func evaluateMaskingExemptionPolicyCondition(expression *expr.Expr, attributes m
 		return false, errors.Wrap(err, "expect bool result for masking exemption policy")
 	}
 	return boolVar, nil
-}
-
-func getAlgorithmNameFromSemanticType(semanticType *storepb.SemanticTypeSetting_SemanticType) string {
-	if semanticType == nil || semanticType.Algorithm == nil {
-		return ""
-	}
-
-	switch semanticType.Algorithm.Mask.(type) {
-	case *storepb.Algorithm_FullMask_:
-		return "Full mask"
-	case *storepb.Algorithm_RangeMask_:
-		return "Partial mask"
-	case *storepb.Algorithm_Md5Mask:
-		return "Hash (MD5)"
-	case *storepb.Algorithm_InnerOuterMask_:
-		return "Inner/Outer mask"
-	default:
-		return "Unknown"
-	}
 }
 
 func evaluateMaskingRulePolicyCondition(expression string, attributes map[string]any) (bool, error) {

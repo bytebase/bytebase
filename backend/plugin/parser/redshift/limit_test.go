@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bytebase/omni/redshift/analysis"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -138,7 +139,7 @@ func TestGetStatementWithResultLimitInline(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := statementWithResultLimitInline(tt.statement, tt.limit)
+			got, err := analysis.RewriteResultLimit(tt.statement, tt.limit)
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -193,7 +194,7 @@ func TestGetStatementWithResultLimitInlineClauseOrder(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := statementWithResultLimitInline(tt.statement, tt.limit)
+			got, err := analysis.RewriteResultLimit(tt.statement, tt.limit)
 			require.NoError(t, err)
 			if tt.want != "" {
 				assert.Equal(t, tt.want, got)

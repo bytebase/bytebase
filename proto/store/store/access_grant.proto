@@ -44,4 +44,8 @@ message AccessGrantPayload {
 
   // The container name to execute the query against, used for CosmosDB only.
   string container = 9;
+
+  // Lowercase hex SHA-256 of query after trimming boundary space, tab, LF, CR,
+  // vertical tab, and form feed. Derived by the store for grant matching.
+  string query_hash = 10;
 }

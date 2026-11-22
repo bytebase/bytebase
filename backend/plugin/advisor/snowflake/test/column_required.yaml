@@ -86,3 +86,53 @@
   changeType: 1
 - statement: ALTER TABLE TARGET_TABLE ALTER COLUMN description DROP DEFAULT, COLUMN description DROP NOT NULL;
   changeType: 1
+- statement: |-
+    CREATE TABLE db."S".t(
+      ID INT,
+      CONSTRAINT pk PRIMARY KEY (ID)
+    );
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: Table db."S".t missing required column "created_ts"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: Table db."S".t missing required column "creator_id"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: Table db."S".t missing required column "id"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: Table db."S".t missing required column "updated_ts"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: Table db."S".t missing required column "updater_id"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE t DROP COLUMN a,
+      DROP COLUMN id;
+- statement: ALTER TABLE t DROP COLUMN x, ID, created_ts;

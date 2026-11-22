@@ -31,3 +31,14 @@
 - statement: |
     CREATE TABLE book(id INT);
     UPDATE book SET id = 1 WHERE id > 10;
+- statement: CREATE PROCEDURE p() BEGIN DELETE FROM tech_book; END;
+- statement: UPDATE tech_book SET name = 'a' LIMIT 1;
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: '"UPDATE tech_book SET name = ''a'' LIMIT 1;" requires WHERE clause'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import * as path from "node:path";
 import { saveTestEnv } from "./env";
 import { cleanupOrphans, startServer, stopServer } from "./mode-start-new-bytebase";
 
@@ -18,9 +19,11 @@ function ensureBrowser() {
   if (process.env.BYTEBASE_BROWSER_CHANNEL) {
     return;
   }
-  execFileSync("pnpm", ["exec", "playwright", "install", "chromium"], {
-    stdio: "inherit",
-  });
+  // Call the project's Playwright binary directly. `pnpm exec` would first run
+  // pnpm's dependency check, which in a non-interactive run (CI, the nightly
+  // routine) can try to purge node_modules and abort on the missing TTY.
+  const playwright = path.resolve(__dirname, "../../../node_modules/.bin/playwright");
+  execFileSync(playwright, ["install", "chromium"], { stdio: "inherit" });
 }
 
 async function globalSetup() {

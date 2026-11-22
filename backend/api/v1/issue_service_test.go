@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -335,7 +336,7 @@ func newIssueServiceForTest(t *testing.T, stores *store.Store) *IssueService {
 	require.NoError(t, err)
 	iamManager, err := iam.NewManager(stores, nil, false)
 	require.NoError(t, err)
-	return NewIssueService(stores, webhook.NewManager(stores, nil), b, nil, iamManager)
+	return NewIssueService(stores, webhook.NewManager(stores, nil), b, nil, iamManager, &config.Profile{SQLReviewV2: true})
 }
 
 func createIssueServiceApprovalIssue(ctx context.Context, t *testing.T, stores *store.Store) (*store.PlanMessage, *store.IssueMessage) {

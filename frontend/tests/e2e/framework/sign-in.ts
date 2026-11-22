@@ -1,7 +1,6 @@
-import type { Browser } from "@playwright/test";
+import type { Browser, BrowserContext } from "@playwright/test";
 
-// Sign a user into a fresh BrowserContext and persist its storageState to
-// `storagePath`.
+// Signs `context` in as a user of the server at `baseURL`.
 //
 // Why POST /v1/auth/login rather than filling the sign-in form: the React
 // auth form's inputs aren't reliably reachable via role/name selectors, so
@@ -10,6 +9,25 @@ import type { Browser } from "@playwright/test";
 // in the response body — without it the response is a well-formed 200 but
 // the context has no cookies, so the UI stays logged out and any subsequent
 // page.goto() bounces to /auth (see backend/api/v1/auth_service.go).
+export async function loginBrowserContext(
+  context: BrowserContext,
+  baseURL: string,
+  email: string,
+  password: string,
+): Promise<void> {
+  const resp = await context.request.post(`${baseURL}/v1/auth/login`, {
+    data: { email, password, web: true },
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!resp.ok()) {
+    throw new Error(
+      `login failed for ${email}: ${resp.status()} ${await resp.text()}`,
+    );
+  }
+}
+
+// Sign a user into a fresh BrowserContext and persist its storageState to
+// `storagePath`.
 //
 // Also pre-warms "/" to set the localStorage flag that suppresses the
 // "New version" modal before capturing storageState.
@@ -22,15 +40,7 @@ export async function signInBrowserAs(
 ): Promise<void> {
   const context = await browser.newContext();
   try {
-    const resp = await context.request.post(`${baseURL}/v1/auth/login`, {
-      data: { email, password, web: true },
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!resp.ok()) {
-      throw new Error(
-        `login failed for ${email}: ${resp.status()} ${await resp.text()}`,
-      );
-    }
+    await loginBrowserContext(context, baseURL, email, password);
     const page = await context.newPage();
     await page.goto(`${baseURL}/`);
     await page.evaluate(() => {

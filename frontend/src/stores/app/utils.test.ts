@@ -1,15 +1,22 @@
 // @vitest-environment node
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
-import { describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  type Expr,
+  ExprSchema,
+} from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import {
   BindingSchema,
   IamPolicySchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import {
+  bindingMatchesUser,
   buildDatabaseFilter,
   buildProjectFilter,
+  getBindingExpirationDate,
   getLabelFilter,
+  isBindingExpired,
   projectWideBindings,
 } from "./utils";
 
@@ -51,6 +58,136 @@ describe("getLabelFilter", () => {
     expect(getLabelFilter(["cost-center:eng,ops"])).toEqual([
       'labels["cost-center"] in ["eng", "ops"]',
     ]);
+  });
+});
+
+describe("binding expiration", () => {
+  const expired = "2000-01-01T00:00:00Z";
+  const live = "2099-01-01T00:00:00Z";
+  const timeBefore = (value: string) =>
+    create(ExprSchema, {
+      exprKind: {
+        case: "callExpr",
+        value: {
+          function: "_<_",
+          args: [
+            create(ExprSchema, {
+              exprKind: {
+                case: "selectExpr",
+                value: {
+                  operand: {
+                    exprKind: { case: "identExpr", value: { name: "request" } },
+                  },
+                  field: "time",
+                },
+              },
+            }),
+            create(ExprSchema, {
+              exprKind: {
+                case: "callExpr",
+                value: {
+                  function: "timestamp",
+                  args: [
+                    {
+                      exprKind: {
+                        case: "constExpr",
+                        value: {
+                          constantKind: { case: "stringValue", value },
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+            }),
+          ],
+        },
+      },
+    });
+  const group = (operator: "_&&_" | "_||_", ...args: Expr[]) =>
+    create(ExprSchema, {
+      exprKind: { case: "callExpr", value: { function: operator, args } },
+    });
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-12T00:00:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test.each([
+    {
+      name: "an unparsed canonical expired condition",
+      expression: `request.time < timestamp("${expired}")`,
+      expiration: expired,
+    },
+    {
+      name: "an unparsed canonical live condition",
+      expression: `request.time < timestamp("${live}")`,
+      expiration: live,
+    },
+    {
+      name: "a canonical condition with timestamp whitespace",
+      expression: ` request.time < timestamp( "${expired}" ) `,
+      expiration: expired,
+    },
+    {
+      name: "an expired OR live parsed condition",
+      expression: `request.time < timestamp("${expired}") || request.time < timestamp("${live}")`,
+      parsedExpr: group("_||_", timeBefore(expired), timeBefore(live)),
+    },
+    {
+      name: "an entirely expired OR condition deferred to the backend",
+      expression: `request.time < timestamp("${expired}") || request.time < timestamp("2001-01-01T00:00:00Z")`,
+      parsedExpr: group(
+        "_||_",
+        timeBefore(expired),
+        timeBefore("2001-01-01T00:00:00Z")
+      ),
+    },
+    {
+      name: "a guaranteed conjunctive deadline",
+      expression: `request.time < timestamp("${live}") && request.time < timestamp("${expired}")`,
+      parsedExpr: group("_&&_", timeBefore(live), timeBefore(expired)),
+      expiration: expired,
+    },
+    {
+      name: "an unparsed complex condition",
+      expression: `request.time < timestamp("${expired}") || true`,
+    },
+    {
+      name: "an invalid timestamp",
+      expression: 'request.time < timestamp("not-a-timestamp")',
+    },
+    {
+      name: "the parsed condition rather than a differing string",
+      expression: `request.time < timestamp("${expired}")`,
+      parsedExpr: timeBefore(live),
+      expiration: live,
+    },
+  ])("handles $name without inventing a denial", (testCase) => {
+    const binding = create(BindingSchema, {
+      role: "roles/test",
+      members: ["user:me@example.com"],
+      condition: { expression: testCase.expression },
+      parsedExpr: testCase.parsedExpr,
+    });
+    const expiration = testCase.expiration
+      ? new Date(testCase.expiration)
+      : undefined;
+    const isExpired = Boolean(expiration && expiration < new Date());
+
+    expect(getBindingExpirationDate(binding)).toEqual(expiration);
+    expect(isBindingExpired(binding)).toBe(isExpired);
+    expect(
+      bindingMatchesUser(
+        create(IamPolicySchema, { bindings: [binding] }),
+        create(UserSchema, { name: "users/me@example.com" })
+      )
+    ).toEqual(isExpired ? [] : [binding]);
   });
 });
 

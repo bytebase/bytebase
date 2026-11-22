@@ -30,8 +30,12 @@ type queryToolResult struct {
 // QueryToolOutput mirrors the tool's structured output. Only the fields these
 // tests assert on are named.
 type QueryToolOutput struct {
-	Rows     [][]any `json:"rows"`
-	RowCount int     `json:"rowCount"`
+	Rows          [][]any `json:"rows"`
+	RowCount      int     `json:"rowCount"`
+	MaskedColumns []struct {
+		Column string `json:"column"`
+	} `json:"maskedColumns"`
+	AppliedAccessGrant string `json:"appliedAccessGrant"`
 }
 
 // queryDatabaseOnSession runs the query_database tool the way a client would.
@@ -575,9 +579,8 @@ func TestMCPReadOnlyRoleDowngradeBitesTheNextRequest(t *testing.T) {
 	defer session.Close()
 
 	// call_api rather than query_database, so the only thing under test is the
-	// permission on the query itself: query_database resolves the database by
-	// listing workspace-wide first, and a listing denial would refuse this for
-	// a reason that is not the one this test is about.
+	// permission on the query itself: once the role is gone, query_database's
+	// lookup finds no database before the query runs.
 	query := map[string]any{"name": f.database, "statement": "SELECT id FROM employee"}
 	served := callAPIOnSession(f.ctx, t, session, "SQLService/Query", query)
 	a.Equal(http.StatusOK, served.Status, "the reader starts able to read: %s", served.Error)

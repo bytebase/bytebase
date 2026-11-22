@@ -456,7 +456,7 @@ export function IMPage() {
             </Select>
           )}
 
-          <FormFieldGroup className="mt-4 gap-y-4">
+          <FormFieldGroup density="compact" className="mt-4">
             {item.fields.map((field) => (
               <FormField key={field.key} title={<>{field.label}</>}>
                 <SecretInput
@@ -531,10 +531,7 @@ function Description() {
       description={
         <>
           {t("settings.im-integration.description")}{" "}
-          <LearnMoreLink
-            href="https://docs.bytebase.com/change-database/webhook?source=console"
-            className="text-accent"
-          />
+          <LearnMoreLink href="https://docs.bytebase.com/change-database/webhook?source=console" />
         </>
       }
     />

@@ -82,11 +82,6 @@ func TestGetQueryType(t *testing.T) {
 			want:      base.DML,
 		},
 		{
-			// EXPLAIN over DDL is DDL, not a read-only downgrade.
-			statement: "EXPLAIN DROP TABLE users",
-			want:      base.DDL,
-		},
-		{
 			// USE is intentionally Unknown so ACL rejects it as a hard
 			// deny rather than authorising it under bb.sql.ddl.
 			statement: "USE db1",
@@ -97,10 +92,19 @@ func TestGetQueryType(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.statement, func(t *testing.T) {
 			a := require.New(t)
-			extractor := newQuerySpanExtractor("testdb", base.GetQuerySpanContext{}, false)
-			result, err := extractor.getQuerySpan(context.Background(), tc.statement)
+			result, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: tc.statement}, "testdb", "", false)
 			a.NoError(err)
 			a.Equal(tc.want, result.Type, "statement: %s", tc.statement)
+		})
+	}
+
+	// StarRocks's plan grammar takes only the query and INSERT/UPDATE/DELETE
+	// shapes, so DDL after EXPLAIN is a syntax error rather than a DDL
+	// classification. The editor refuses it on the parse error.
+	for _, statement := range []string{"EXPLAIN DROP TABLE users", "EXPLAIN ANALYZE TRUNCATE TABLE users"} {
+		t.Run(statement, func(t *testing.T) {
+			_, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: statement}, "testdb", "", false)
+			require.Error(t, err)
 		})
 	}
 }

@@ -103,3 +103,30 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    SELECT id FROM (SELECT * FROM tech_book) t
+    UNION
+    SELECT * FROM tech_book;
+  want:
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: |-
+        "SELECT id FROM (SELECT * FROM tech_book) t
+        UNION
+        SELECT * FROM tech_book;" uses SELECT all
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: |-
+        "SELECT id FROM (SELECT * FROM tech_book) t
+        UNION
+        SELECT * FROM tech_book;" uses SELECT all
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

@@ -1,0 +1,1053 @@
+import type { TFunction } from "i18next";
+import {
+  CircleAlert,
+  CircleCheck,
+  CircleDashed,
+  CircleSlash,
+  CircleX,
+  EllipsisVertical,
+  Info,
+  Loader2,
+  Play,
+  RotateCw,
+  TriangleAlert,
+  UserCheck,
+} from "lucide-react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { router } from "@/app/router";
+import { PROJECT_V1_ROUTE_SQL_REVIEW } from "@/app/router/handles";
+import { HumanizeTs } from "@/components/HumanizeTs";
+import { PlanCheckResultsDrawer } from "@/components/plan-check/PlanCheckSection";
+import {
+  LevelPriorityBadge,
+  levelPriority,
+} from "@/components/sql-review/LevelPriorityBadge";
+import {
+  STANDARD_RULE_TYPES,
+  standardRuleText,
+} from "@/components/sql-review/standardRules";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tooltip } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { AgentDiagnosticHelpButton } from "@/modules/agent/components/AgentDiagnosticHelpButton";
+import { normalizeAgentDiagnosticCapability } from "@/modules/agent/logic/diagnosticCapability";
+import type { AgentDiagnosticContext } from "@/modules/agent/logic/diagnosticHelp";
+import { getPlanCheckDiagnosticContext } from "@/modules/agent/logic/planCheckDiagnostics";
+import { useAppStore } from "@/stores/app";
+import { getTimeForPbTimestampProtoEs } from "@/types";
+import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
+import {
+  type IssueComment,
+  ReviewRun_State,
+} from "@/types/proto-es/v1/issue_service_pb";
+import {
+  type PlanCheckRun_Result,
+  PlanCheckRun_Result_Type,
+  PlanCheckRun_Status,
+} from "@/types/proto-es/v1/plan_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
+import { extractDatabaseResourceName } from "@/utils";
+import { engineNameV1 } from "@/utils/v1/instance";
+import { useAIReviewOn } from "../../hooks/useAIReviewOn";
+import { useFocusThread } from "../../hooks/useFocusThread";
+import { usePlanCheckActions } from "../../hooks/usePlanCheckActions";
+import type { PlanReviewState } from "../../hooks/usePlanReviewState";
+import { useReviewRerun } from "../../hooks/useReviewRerun";
+import { usePlanReviewRun, useSqlReviewV2 } from "../../hooks/useSqlReviewV2";
+import {
+  usePlanDetailStore,
+  usePlanDetailStoreApi,
+} from "../../shared/stores/usePlanDetailStore";
+import { usePlanDetailContext } from "../../shell/PlanDetailContext";
+import { countByName, findingsInOrder } from "../../utils/findingIndex";
+import {
+  type AutomatedReviewRow,
+  type FindingGroup,
+  type FindingPriority,
+  findingTitle,
+} from "../../utils/planGates";
+import { reviewerLabel, reviewerName } from "../../utils/reviewLabels";
+import { reviewScope } from "../../utils/reviewScope";
+import {
+  FINDING_PRIORITIES,
+  findingPriorityStyle,
+  PriorityCount,
+} from "./PriorityCounts";
+
+// How many P0s resolved without a change a hover names before it counts the
+// rest.
+const NAMED_OVERRIDES = 3;
+// How many databases the scope names before it counts them.
+const NAMED_DATABASES = 3;
+const NO_COMMENTS: IssueComment[] = [];
+
+function diagnosticPlanResource(planName: string, projectId: string) {
+  return normalizeAgentDiagnosticCapability({
+    kind: "diagnostic",
+    resource: {
+      kind: "plan",
+      name: planName,
+      project: `projects/${projectId}`,
+      label: planName,
+    },
+  })?.resource;
+}
+
+// The review and the plan checks, one line each, between Approval and
+// Activity: the conclusion, the open findings by priority, what people
+// resolved, and what the review covered on hover. The findings themselves
+// live in the editor; every count opens it there.
+export function AutomatedReviewSection({
+  state,
+}: {
+  state: Pick<PlanReviewState, "rows">;
+}) {
+  const { t } = useTranslation();
+  const page = usePlanDetailContext();
+  const { allowRunChecks, isRunningChecks, runChecks } = usePlanCheckActions();
+  const rerun = useReviewRerun();
+  const { rows } = state;
+  const [checksDrawerOpen, setChecksDrawerOpen] = useState(false);
+  const [checksDrawerLevel, setChecksDrawerLevel] = useState<Advice_Level>();
+  const [confirmAllOpen, setConfirmAllOpen] = useState(false);
+  const requestRerunChecks = () => void runChecks();
+  // Running the checks does not start the review, so Re-run all starts both.
+  // It leaves the review alone where its own Rerun is not offered. The review
+  // starts first: the checks can finish at once, and the server would then
+  // create the rollout on the review that was about to be replaced.
+  const reviewReruns =
+    rerun.allowed &&
+    !rerun.disabled &&
+    rows.some((row) => row.reviewer === "review" && row.conclusion !== "off");
+  const rerunAll = async () => {
+    if (reviewReruns) await rerun.run();
+    await runChecks();
+  };
+  const requestRerunAll = () =>
+    reviewReruns && rerun.confirmFirst
+      ? setConfirmAllOpen(true)
+      : void rerunAll();
+  const renderCheckAction = (result: PlanCheckRun_Result) => {
+    const resource = diagnosticPlanResource(page.plan.name, page.projectId);
+    if (!resource || (page.issue && page.issue.plan !== page.plan.name))
+      return null;
+    const sourceId = `${page.plan.name}/planCheckRun`;
+    const matchingRuns = page.planCheckRuns.filter((run) => {
+      if (run.name !== sourceId) return false;
+      if (run.results.includes(result)) return true;
+      const stopped =
+        run.status === PlanCheckRun_Status.FAILED ||
+        run.status === PlanCheckRun_Status.CANCELED;
+      return (
+        stopped &&
+        !run.results.some((entry) => entry.status === Advice_Level.ERROR) &&
+        result.status === Advice_Level.ERROR &&
+        result.type === PlanCheckRun_Result_Type.TYPE_UNSPECIFIED &&
+        !result.target &&
+        result.content ===
+          (run.error ||
+            t(
+              run.status === PlanCheckRun_Status.CANCELED
+                ? "common.canceled"
+                : "common.failed"
+            ))
+      );
+    });
+    if (matchingRuns.length !== 1) return null;
+    const run = matchingRuns[0];
+    const context = getPlanCheckDiagnosticContext({
+      resource,
+      result,
+      sourceId,
+      facts: [
+        { label: "Plan", value: page.plan.name },
+        { label: "Status", value: PlanCheckRun_Status[run.status] },
+        ...(page.issue ? [{ label: "Issue", value: page.issue.name }] : []),
+        ...(run.createTime
+          ? [
+              {
+                label: "Started",
+                value: `${run.createTime.seconds}.${String(run.createTime.nanos).padStart(9, "0")}`,
+              },
+            ]
+          : []),
+      ],
+    });
+    return context ? <AgentDiagnosticHelpButton context={context} /> : null;
+  };
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div
+      className="flex flex-col gap-y-2 px-4 pt-4"
+      data-testid="automated-review"
+    >
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <h4 className="text-sm font-medium text-main">
+          {t("plan.automated-review.self")}
+        </h4>
+        <div className="flex-1" />
+        <Button
+          appearance="link"
+          className="text-control-light"
+          onClick={() =>
+            void router.push({
+              name: PROJECT_V1_ROUTE_SQL_REVIEW,
+              params: { projectId: page.projectId },
+            })
+          }
+          size="xs"
+        >
+          {t("common.configure")}
+        </Button>
+        {allowRunChecks && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  aria-label={t("common.more")}
+                  appearance="secondary"
+                  size="xs"
+                />
+              }
+            >
+              <EllipsisVertical className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem
+                disabled={isRunningChecks}
+                onClick={requestRerunAll}
+              >
+                {t("plan.automated-review.rerun-all")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+      <div className="flex flex-col divide-y rounded-sm border">
+        {rows.map((row) => (
+          <ReviewerRow
+            key={row.reviewer}
+            onRerunChecks={requestRerunChecks}
+            onViewChecks={(level) => {
+              setChecksDrawerLevel(level);
+              setChecksDrawerOpen(true);
+            }}
+            row={row}
+          />
+        ))}
+      </div>
+      <PlanCheckResultsDrawer
+        includeRunFailure
+        initialStatus={checksDrawerLevel}
+        onOpenChange={setChecksDrawerOpen}
+        open={checksDrawerOpen}
+        planCheckRuns={page.planCheckRuns}
+        renderResultAction={renderCheckAction}
+      />
+      <RerunConfirmDialog
+        confirmLabel={t("plan.automated-review.rerun-all")}
+        description={t("plan.automated-review.run-again-description")}
+        disabled={isRunningChecks || !reviewReruns}
+        onConfirm={() => void rerunAll()}
+        onOpenChange={setConfirmAllOpen}
+        open={confirmAllOpen}
+        title={t("plan.automated-review.run-again-title")}
+      />
+    </div>
+  );
+}
+
+function RerunConfirmDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmLabel,
+  onConfirm,
+  disabled = false,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+  disabled?: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <AlertDialog onOpenChange={onOpenChange} open={open}>
+      <AlertDialogContent>
+        <AlertDialogTitle>{title}</AlertDialogTitle>
+        <AlertDialogDescription>{description}</AlertDialogDescription>
+        <AlertDialogFooter>
+          <Button appearance="secondary" onClick={() => onOpenChange(false)}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            disabled={disabled}
+            onClick={() => {
+              onOpenChange(false);
+              onConfirm();
+            }}
+          >
+            {confirmLabel}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function ReviewerRow({
+  row,
+  onRerunChecks,
+  onViewChecks,
+}: {
+  row: AutomatedReviewRow;
+  onRerunChecks: () => void;
+  // Opens the check results, at a level when one is given.
+  onViewChecks: (level?: Advice_Level) => void;
+}) {
+  const { t } = useTranslation();
+  const page = usePlanDetailContext();
+  const storeApi = usePlanDetailStoreApi();
+  const { focusInStatement } = useFocusThread();
+  const review = usePlanReviewRun();
+  const { allowRunChecks, isRunningChecks } = usePlanCheckActions();
+  const rerun = useReviewRerun();
+  const isReview = row.reviewer === "review";
+  const comments = useAppStore((s) =>
+    page.issue ? s.getIssueComments(page.issue.name) : NO_COMMENTS
+  );
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  // Activity's "Show" brings this row into view.
+  const reviewRowRequest = usePlanDetailStore((s) => s.reviewRowRequest);
+  useEffect(() => {
+    if (reviewRowRequest?.reviewer !== row.reviewer) return;
+    rowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [reviewRowRequest, row.reviewer]);
+
+  // A count opens the editor on the first finding of its group and narrows
+  // the walker to that group.
+  const openGroup = (group: FindingGroup) => {
+    if (!isReview) return;
+    const first = findingsInOrder(comments, page.plan.specs, group)[0];
+    if (!first) return;
+    storeApi.getState().setWalkerFilter({ group });
+    focusInStatement(first);
+  };
+
+  const name = isReview ? reviewerName(t) : reviewerLabel(t, row.reviewer);
+
+  const actions: ReactNode[] = [];
+  const reviewRun = review?.run;
+  const reviewError = reviewRun?.error;
+  const resource = diagnosticPlanResource(page.plan.name, page.projectId);
+  let diagnosticHelp: ReactNode;
+  if (
+    row.conclusion === "failed" &&
+    isReview &&
+    resource &&
+    page.issue &&
+    page.issue.plan === page.plan.name &&
+    /^projects\/[^/]+\/issues\/[1-9]\d*$/.test(page.issue.name) &&
+    page.issue.name.startsWith(`${resource.project}/issues/`) &&
+    reviewRun?.name === `${page.issue.name}/reviewRun` &&
+    reviewRun.state === ReviewRun_State.FAILED &&
+    reviewError &&
+    (reviewError.message.trim() || reviewError.code !== 0) &&
+    !review?.loadFailed
+  ) {
+    const facts: NonNullable<AgentDiagnosticContext["facts"]>[number][] = [
+      { label: "Plan", value: page.plan.name },
+      { label: "Issue", value: page.issue.name },
+      { label: "Status", value: ReviewRun_State[reviewRun.state] },
+      { label: "Error code", value: String(reviewError.code) },
+      { label: "Earlier SQL revision", value: String(reviewRun.outdated) },
+    ];
+    for (const [label, time] of [
+      ["Started", reviewRun.createTime],
+      ["Ended", reviewRun.endTime],
+    ] as const) {
+      if (time)
+        facts.push({
+          label,
+          value: `${time.seconds}.${String(time.nanos).padStart(9, "0")}`,
+        });
+    }
+    diagnosticHelp = (
+      <AgentDiagnosticHelpButton
+        context={{
+          resource,
+          kind: "review-run",
+          sourceId: reviewRun.name,
+          summary: "SQL review execution failed",
+          detail: reviewError.message.trim()
+            ? reviewError.message
+            : `Review execution failed (code ${reviewError.code})`,
+          facts,
+        }}
+      />
+    );
+  }
+  if (isReview) {
+    if (review?.loadFailed) {
+      actions.push(
+        <Button
+          appearance="outline"
+          key="retry"
+          onClick={() => void review.reload()}
+          size="xs"
+        >
+          <RotateCw className="size-3.5" />
+          {t("plan.automated-review.retry")}
+        </Button>
+      );
+    } else if (
+      rerun.allowed &&
+      row.conclusion !== "running" &&
+      row.conclusion !== "loading" &&
+      row.conclusion !== "off"
+    ) {
+      actions.push(
+        <Tooltip
+          content={
+            rerun.editing ? t("plan.automated-review.save-first") : undefined
+          }
+          key="run"
+        >
+          <RunButton
+            conclusion={row.conclusion}
+            disabled={rerun.disabled}
+            onClick={() =>
+              rerun.confirmFirst ? setConfirmOpen(true) : void rerun.run()
+            }
+          />
+        </Tooltip>
+      );
+    }
+  }
+  // Details sits before Rerun on every row, so both line up down the rows:
+  // the review's latest run in Activity, which lists its findings, or the
+  // check results.
+  const latestRun = isReview
+    ? comments.findLast(
+        (comment) => comment.event.case === "reviewRunCompletion"
+      )
+    : undefined;
+  if (!isReview || latestRun) {
+    actions.unshift(
+      <Button
+        appearance="link"
+        className="text-control-light"
+        key="details"
+        onClick={() =>
+          latestRun
+            ? storeApi.getState().requestActivityFocus(latestRun.name)
+            : onViewChecks()
+        }
+        size="xs"
+      >
+        {t("plan.automated-review.details")}
+      </Button>
+    );
+  }
+  // Plan checks run together. The review has its own Rerun.
+  if (!isReview && allowRunChecks && row.conclusion !== "running") {
+    actions.push(
+      <RunButton
+        conclusion={row.conclusion}
+        disabled={isRunningChecks}
+        key="run"
+        onClick={onRerunChecks}
+      />
+    );
+  }
+
+  // A review without a result has covered nothing yet, and one that is off
+  // covers nothing at all.
+  const hasResult =
+    row.conclusion !== "not-run" &&
+    row.conclusion !== "loading" &&
+    row.conclusion !== "running" &&
+    row.conclusion !== "off";
+
+  return (
+    <div
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm"
+      data-testid={`automated-review-${row.reviewer}`}
+      ref={rowRef}
+    >
+      <ConclusionIcon row={row} />
+      <span className="flex flex-1 items-center gap-x-1.5 font-medium text-main sm:w-44 sm:flex-none">
+        {name}
+      </span>
+      {/* Below the name on a narrow screen, lined up with it. */}
+      <span className="order-last flex min-w-0 basis-full flex-wrap items-center gap-x-1.5 gap-y-1 pl-7 text-control sm:order-none sm:flex-1 sm:pl-0">
+        <ConclusionText
+          comments={comments}
+          onOpen={openGroup}
+          onOpenChecks={onViewChecks}
+          row={row}
+        >
+          {isReview && hasResult && <ScopeInfo />}
+          {diagnosticHelp}
+        </ConclusionText>
+      </span>
+      {actions.length > 0 && (
+        <span className="flex shrink-0 items-center gap-x-2">{actions}</span>
+      )}
+      {isReview && (
+        <RerunConfirmDialog
+          confirmLabel={t("plan.automated-review.rerun")}
+          description={t("plan.automated-review.run-again-description")}
+          disabled={rerun.disabled}
+          onConfirm={() => void rerun.run()}
+          onOpenChange={setConfirmOpen}
+          open={confirmOpen}
+          title={t("plan.automated-review.run-again-title")}
+        />
+      )}
+    </div>
+  );
+}
+
+// Run before a first result or after the SQL changed, Retry after a failed
+// run, Rerun once there is a result.
+function RunButton({
+  conclusion,
+  disabled,
+  onClick,
+}: {
+  conclusion: AutomatedReviewRow["conclusion"];
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const { t } = useTranslation();
+  const first = conclusion === "not-run" || conclusion === "outdated";
+  const text = first
+    ? t("common.run")
+    : conclusion === "failed"
+      ? t("plan.automated-review.retry")
+      : t("plan.automated-review.rerun");
+  return (
+    <Button
+      appearance="outline"
+      disabled={disabled}
+      onClick={onClick}
+      size="xs"
+    >
+      {first ? (
+        <Play className="size-3.5" />
+      ) : (
+        <RotateCw className="size-3.5" />
+      )}
+      {text}
+    </Button>
+  );
+}
+
+// Status color sits on the icon; the text stays readable. A P0 resolved
+// without a change keeps the row amber after everything is resolved.
+function ConclusionIcon({ row }: { row: AutomatedReviewRow }) {
+  const className = "size-4 shrink-0";
+  switch (row.conclusion) {
+    case "passed":
+      return <CircleCheck className={cn(className, "text-success")} />;
+    case "resolved":
+      return row.findings.overridden > 0 ? (
+        <TriangleAlert className={cn(className, "text-warning")} />
+      ) : (
+        <UserCheck className={cn(className, "text-control-light")} />
+      );
+    case "open":
+      return (
+        <CircleAlert
+          className={cn(
+            className,
+            row.findings.p0 > 0 ? "text-error" : "text-warning"
+          )}
+        />
+      );
+    case "failed":
+      return <CircleX className={cn(className, "text-error")} />;
+    case "running":
+    case "loading":
+      return (
+        <Loader2 className={cn(className, "animate-spin text-control-light")} />
+      );
+    case "off":
+      return <CircleSlash className={cn(className, "text-control-light")} />;
+    default:
+      return <CircleDashed className={cn(className, "text-control-light")} />;
+  }
+}
+
+// A count of findings that opens them in the statement editor, with what
+// they are and where the click goes on hover.
+function FindingCount({
+  label,
+  hint,
+  className,
+  onClick,
+  children,
+}: {
+  label: string;
+  hint: ReactNode;
+  className?: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Tooltip
+      content={
+        <span className="flex flex-col gap-y-1">
+          {hint}
+          <span className="text-main-text/70">
+            {t("plan.automated-review.opens-in-sql")}
+          </span>
+        </span>
+      }
+      popupClassName="max-w-72"
+      render={
+        <Button
+          appearance="link"
+          aria-label={label}
+          className={cn("h-auto p-0 font-normal", className)}
+          onClick={onClick}
+          size="xs"
+        />
+      }
+    >
+      {children}
+    </Tooltip>
+  );
+}
+
+// A finding's name: its standard rule, or else its title.
+const findingName = (t: TFunction, comment: IssueComment): string => {
+  const ruleType =
+    comment.reviewMetadata?.ruleType ??
+    ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED;
+  return ruleType === ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED
+    ? findingTitle(comment)
+    : standardRuleText(t, ruleType).title;
+};
+
+// The names of a group's findings for a hover: by line for the few P0s that
+// need a look, by count per rule for the rest.
+function useGroupNames(
+  comments: readonly IssueComment[],
+  isReview: boolean,
+  group: "overridden" | "resolved",
+  count: number
+): string {
+  const { t } = useTranslation();
+  const page = usePlanDetailContext();
+  return useMemo(() => {
+    if (!isReview || count === 0) return "";
+    const findings = findingsInOrder(comments, page.plan.specs, group);
+    if (group === "overridden") {
+      const named = findings.slice(0, NAMED_OVERRIDES).map((comment) => {
+        const line = comment.statementAnchor?.startPosition?.line;
+        return line
+          ? t("plan.findings.name-at-line", {
+              name: findingName(t, comment),
+              line,
+            })
+          : findingName(t, comment);
+      });
+      const rest = findings.length - named.length;
+      if (rest > 0) named.push(t("plan.findings.n-more", { count: rest }));
+      return named.join(t("plan.findings.separator"));
+    }
+    return countByName(findings, (comment) => findingName(t, comment))
+      .map(([name, times]) =>
+        times > 1 ? t("plan.findings.name-times", { name, count: times }) : name
+      )
+      .join(t("plan.findings.separator"));
+  }, [comments, count, group, isReview, page.plan.specs, t]);
+}
+
+function ConclusionText({
+  row,
+  comments,
+  onOpen,
+  onOpenChecks,
+  children,
+}: {
+  row: AutomatedReviewRow;
+  comments: readonly IssueComment[];
+  onOpen: (group: FindingGroup) => void;
+  onOpenChecks: (level: Advice_Level) => void;
+  children?: ReactNode;
+}) {
+  const { t } = useTranslation();
+  const { findings } = row;
+  const isReview = row.reviewer === "review";
+  const overriddenNames = useGroupNames(
+    comments,
+    isReview,
+    "overridden",
+    findings.overridden
+  );
+  const resolvedNames = useGroupNames(
+    comments,
+    isReview,
+    "resolved",
+    findings.resolved
+  );
+  // Reviewer rows finish seconds apart, so ages in seconds would tick out of
+  // step on adjacent lines.
+  const time = row.time && (
+    <HumanizeTs
+      className="text-control-light"
+      precision="minute"
+      tsMs={getTimeForPbTimestampProtoEs(row.time)}
+    />
+  );
+  // The review's findings: the open ones by priority, then what people
+  // resolved.
+  const findingParts = (): ReactNode[] => {
+    const counts: ReactNode[] = [];
+    if (findings.open > 0) {
+      counts.push(
+        <span className="flex items-center gap-x-3" key="open">
+          {FINDING_PRIORITIES.filter((priority) => findings[priority] > 0).map(
+            (priority) => (
+              <PriorityCountLink
+                count={findings[priority]}
+                key={priority}
+                onClick={() => onOpen(priority)}
+                priority={priority}
+              />
+            )
+          )}
+        </span>
+      );
+    }
+    if (findings.resolved > 0) {
+      counts.push(
+        <FindingCount
+          className="text-sm text-control underline decoration-control-border underline-offset-2 hover:text-main"
+          hint={resolvedNames}
+          key="resolved"
+          label={t("plan.findings.n-resolved", { count: findings.resolved })}
+          onClick={() => onOpen("resolved")}
+        >
+          {t("plan.findings.n-resolved", { count: findings.resolved })}
+        </FindingCount>
+      );
+    }
+    if (findings.overridden > 0) {
+      counts.push(
+        <FindingCount
+          className="text-sm text-main underline decoration-warning underline-offset-2"
+          hint={overriddenNames}
+          key="overridden"
+          label={t("plan.findings.n-overridden", {
+            count: findings.overridden,
+          })}
+          onClick={() => onOpen("overridden")}
+        >
+          <TriangleAlert className="size-3.5 shrink-0 text-warning" />
+          {t("plan.findings.n-overridden", { count: findings.overridden })}
+        </FindingCount>
+      );
+    }
+    return counts;
+  };
+  if (row.conclusion === "failed") {
+    // A failed run changes no finding, so the earlier ones still stand.
+    const metadata = isReview ? findingParts() : [];
+    if (time) metadata.push(time);
+    return (
+      <span className="flex min-w-0 flex-col gap-y-1">
+        <span className="wrap-anywhere whitespace-normal text-main">
+          {row.error || t("plan.automated-review.failed")}
+        </span>
+        <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+          {metadata.map((part, index) => (
+            <span
+              className="flex items-center gap-x-1.5 whitespace-nowrap"
+              key={index}
+            >
+              {index > 0 && <span className="text-control-light">·</span>}
+              {part}
+            </span>
+          ))}
+          {children}
+        </span>
+      </span>
+    );
+  }
+  const parts: ReactNode[] = [];
+  switch (row.conclusion) {
+    case "loading":
+      parts.push(t("common.loading"));
+      break;
+    case "not-run":
+      parts.push(t("plan.automated-review.not-run"));
+      break;
+    case "running":
+      parts.push(
+        isReview
+          ? t("plan.automated-review.reviewing")
+          : t("plan.automated-review.running")
+      );
+      break;
+    case "outdated":
+      parts.push(t("plan.automated-review.outdated"));
+      break;
+    case "off":
+      parts.push(t("plan.automated-review.off-for-project"));
+      break;
+    case "passed":
+      parts.push(
+        !isReview && row.targets
+          ? t("plan.automated-review.passed-on", { count: row.targets })
+          : t("plan.automated-review.no-findings")
+      );
+      if (row.warnings) {
+        parts.push(
+          <AdviceCounts
+            errors={0}
+            key="advice"
+            onOpen={onOpenChecks}
+            warnings={row.warnings}
+          />
+        );
+      }
+      break;
+    case "open":
+    case "resolved":
+      if (!isReview) {
+        parts.push(
+          <AdviceCounts
+            errors={row.findings.open}
+            key="advice"
+            onOpen={onOpenChecks}
+            warnings={row.warnings ?? 0}
+          />
+        );
+        break;
+      }
+      parts.push(...findingParts());
+      break;
+  }
+  if (time && row.conclusion !== "loading" && row.conclusion !== "not-run") {
+    parts.push(time);
+  }
+  return (
+    <>
+      {parts.map((part, index) => (
+        <span
+          className="flex items-center gap-x-1.5 whitespace-nowrap"
+          key={index}
+        >
+          {index > 0 && <span className="text-control-light">·</span>}
+          {part}
+        </span>
+      ))}
+      {children}
+    </>
+  );
+}
+
+// A plan check's errors and warnings as the priorities they show as, each a
+// badge then its count, drawn as the review's findings are. Only the count
+// underlines on hover: a link's underline would run through the badge. Each
+// opens the check results at its level.
+function AdviceCounts({
+  errors,
+  warnings,
+  onOpen,
+}: {
+  errors: number;
+  warnings: number;
+  onOpen: (level: Advice_Level) => void;
+}) {
+  const { t } = useTranslation();
+  const levels = [
+    { level: Advice_Level.ERROR, reviewLevel: "error", count: errors },
+    { level: Advice_Level.WARNING, reviewLevel: "warning", count: warnings },
+  ] as const;
+  return (
+    <span className="flex items-center gap-x-3">
+      {levels
+        .filter(({ count }) => count > 0)
+        .map(({ level, reviewLevel, count }) => (
+          <Button
+            appearance="link"
+            aria-label={t("plan.findings.n-priority", {
+              count,
+              priority: levelPriority(reviewLevel),
+            })}
+            className="group h-auto p-0 font-normal hover:no-underline"
+            key={level}
+            onClick={() => onOpen(level)}
+            size="xs"
+          >
+            <span className="inline-flex items-center gap-x-1">
+              <LevelPriorityBadge level={reviewLevel} />
+              <span className="text-sm text-control-light underline-offset-2 group-hover:text-main group-hover:underline">
+                {count}
+              </span>
+            </span>
+          </Button>
+        ))}
+    </span>
+  );
+}
+
+// The priority badge each finding carries, then how many are open.
+function PriorityCountLink({
+  priority,
+  count,
+  onClick,
+}: {
+  priority: FindingPriority;
+  count: number;
+  onClick: () => void;
+}) {
+  const { t } = useTranslation();
+  const style = findingPriorityStyle(t, priority);
+  return (
+    <FindingCount
+      className="group hover:no-underline"
+      hint={style?.description}
+      label={t("plan.findings.n-priority", {
+        count,
+        priority: priority.toUpperCase(),
+      })}
+      onClick={onClick}
+    >
+      <PriorityCount
+        count={count}
+        countClassName="text-sm text-control-light underline-offset-2 group-hover:text-main group-hover:underline"
+        priority={priority}
+      />
+    </FindingCount>
+  );
+}
+
+// What the review covered, on hover: a pass over three databases says very
+// little without it. The review reads a sample when the project sets a sample
+// size, and the AI review reads engines the standard rules do not. Beside
+// V1's plan checks no standard rule runs.
+function ScopeInfo() {
+  const { t } = useTranslation();
+  const page = usePlanDetailContext();
+  const sqlReviewV2 = useSqlReviewV2();
+  const rules = sqlReviewV2?.standardRules;
+  const aiReviewOn = useAIReviewOn();
+  const databasesByName = useAppStore((s) => s.databasesByName);
+  const dbGroupsByName = useAppStore((s) => s.dbGroupsByName);
+  const dbGroupViewByName = useAppStore((s) => s.dbGroupViewByName);
+  // Rules not known yet count as on.
+  const rulesOn = !!sqlReviewV2 && (!rules || rules.rules.length > 0);
+  const scope = useMemo(
+    () =>
+      reviewScope(page.plan, {
+        reviewers: { rules: rulesOn, ai: aiReviewOn },
+        sampleSize: page.project.ciSamplingSize ?? 0,
+        matchedDatabases: (group: string) =>
+          dbGroupViewByName[group] === DatabaseGroupView.FULL
+            ? (dbGroupsByName[group]?.matchedDatabases.map(
+                (database) => database.name
+              ) ?? [])
+            : undefined,
+        engineOf: (database: string) =>
+          databasesByName[database]?.instanceResource?.engine,
+      }),
+    [
+      aiReviewOn,
+      databasesByName,
+      dbGroupViewByName,
+      dbGroupsByName,
+      page.plan,
+      page.project.ciSamplingSize,
+      rulesOn,
+    ]
+  );
+  if (scope.databases.length === 0) return null;
+
+  const names =
+    scope.databases.length <= NAMED_DATABASES
+      ? scope.databases
+          .map((database) => extractDatabaseResourceName(database).databaseName)
+          .join(t("plan.findings.separator"))
+      : t("plan.automated-review.n-databases", {
+          count: scope.databases.length,
+        });
+  const lines = [
+    scope.engines.length > 0
+      ? t("plan.automated-review.scope-with-engines", {
+          databases: names,
+          engines: scope.engines.map(engineNameV1).join(", "),
+        })
+      : t("plan.automated-review.scope", { databases: names }),
+  ];
+  if (scope.total > scope.databases.length) {
+    lines.push(
+      t("plan.automated-review.sampled", {
+        count: scope.databases.length,
+        total: scope.total,
+      })
+    );
+  }
+  if (rules) {
+    const counts = {
+      on: rules.rules.length,
+      total: STANDARD_RULE_TYPES.length,
+    };
+    lines.push(
+      rules.source === "project"
+        ? t("plan.automated-review.project-rules", counts)
+        : t("plan.automated-review.workspace-rules", counts)
+    );
+  }
+  return (
+    <Tooltip
+      content={
+        <span className="flex flex-col gap-y-1" data-testid="review-scope">
+          {lines.map((line) => (
+            <span key={line}>{line}</span>
+          ))}
+        </span>
+      }
+      popupClassName="max-w-72"
+      render={
+        <Button
+          appearance="link"
+          aria-label={t("plan.automated-review.scope-label")}
+          className="h-auto cursor-help p-0 text-control-light hover:text-control"
+          size="xs"
+        />
+      }
+    >
+      <Info className="size-3.5" />
+    </Tooltip>
+  );
+}

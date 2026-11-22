@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import {
   type ReactNode,
+  type RefObject,
   useCallback,
   useEffect,
   useMemo,
@@ -23,10 +24,7 @@ import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
 } from "@/app/router/handles";
-import {
-  buildPlanDeployRouteFromRolloutName,
-  buildPlanRolloutRouteFromPlanName,
-} from "@/app/router/routeHelpers";
+import { buildPlanRolloutRouteFromPlanName } from "@/app/router/routeHelpers";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { RouterLink } from "@/components/RouterLink";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -37,7 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
+import { Popover, PopoverContent } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Sheet,
@@ -48,7 +46,6 @@ import {
 } from "@/components/ui/sheet";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useCurrentUser } from "@/hooks/useAppState";
-import { useClickOutside } from "@/hooks/useClickOutside";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
@@ -77,6 +74,7 @@ import {
 } from "../utils/actionRegistry";
 import { isApprovalCompleted } from "../utils/approval";
 import { refreshIssueDetailState } from "../utils/refreshIssueDetailState";
+import { routeAfterRolloutCreated } from "../utils/rollout";
 import { IssueDetailTaskRolloutActionPanel } from "./IssueDetailTaskRolloutActionPanel";
 
 export function IssueDetailActionBar() {
@@ -88,6 +86,7 @@ export function IssueDetailActionBar() {
   const [pendingConfirmAction, setPendingConfirmAction] =
     useState<ActionDefinition>();
   const [pendingReviewOpen, setPendingReviewOpen] = useState(false);
+  const reviewAnchorRef = useRef<HTMLDivElement>(null);
   const [pendingRolloutAction, setPendingRolloutAction] = useState<
     "ROLLOUT_START" | "ROLLOUT_CANCEL" | undefined
   >();
@@ -230,12 +229,13 @@ export function IssueDetailActionBar() {
 
   const handleCreateRollout = useCallback(
     async (options?: { runAllTasks?: boolean }) => {
-      if (!page.plan) {
+      const plan = page.plan;
+      if (!plan) {
         return;
       }
       const createdRollout = await rolloutServiceClientConnect.createRollout(
         create(CreateRolloutRequestSchema, {
-          parent: page.plan.name,
+          parent: plan.name,
         })
       );
 
@@ -252,10 +252,9 @@ export function IssueDetailActionBar() {
 
       await handleRefreshIssueDetailState();
 
-      if (createdRollout.stages.length > 0) {
-        void router.push(
-          buildPlanDeployRouteFromRolloutName(createdRollout.name)
-        );
+      const nextRoute = routeAfterRolloutCreated(plan, createdRollout);
+      if (nextRoute) {
+        void router.push(nextRoute);
       }
     },
     [handleRefreshIssueDetailState, page.plan]
@@ -367,7 +366,7 @@ export function IssueDetailActionBar() {
 
   return (
     <>
-      <div className="flex items-center gap-x-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
         {shouldShowPlanLink && planRoute && (
           <RouterLink
             to={planRoute}
@@ -386,6 +385,7 @@ export function IssueDetailActionBar() {
           (primaryAction.id === "ISSUE_REVIEW" ? (
             <IssueDetailReviewTrigger
               action={primaryAction}
+              anchorRef={reviewAnchorRef}
               context={context}
               disabled={isSubmitting || isActionDisabled(primaryAction)}
               disabledReason={getDisabledReason(primaryAction)}
@@ -393,6 +393,7 @@ export function IssueDetailActionBar() {
               onExecute={executeAction}
             >
               <IssueDetailReviewPopover
+                anchor={reviewAnchorRef}
                 canApprove={context.permissions.canApproveIssue}
                 context={context}
                 mobile={page.sidebarMode === "MOBILE"}
@@ -493,6 +494,7 @@ export function IssueDetailActionBar() {
 
 function IssueDetailReviewTrigger({
   action,
+  anchorRef,
   children,
   context,
   disabled,
@@ -501,6 +503,7 @@ function IssueDetailReviewTrigger({
   onExecute,
 }: {
   action: ActionDefinition;
+  anchorRef: RefObject<HTMLDivElement | null>;
   children: ReactNode;
   context: ActionContext;
   disabled: boolean;
@@ -524,7 +527,7 @@ function IssueDetailReviewTrigger({
   );
 
   return (
-    <div className="relative inline-flex">
+    <div ref={anchorRef} className="inline-flex">
       <Tooltip content={disabled ? disabledReason : undefined}>
         <span className="inline-flex">{button}</span>
       </Tooltip>
@@ -616,6 +619,7 @@ function IssueDetailConfirmDialog({
 type IssueReviewAction = "COMMENT" | "APPROVE" | "REJECT";
 
 function IssueDetailReviewPopover({
+  anchor,
   canApprove,
   context,
   mobile,
@@ -624,6 +628,7 @@ function IssueDetailReviewPopover({
   onRefreshState,
   open,
 }: {
+  anchor: RefObject<HTMLDivElement | null>;
   canApprove: boolean;
   context: ActionContext;
   mobile: boolean;
@@ -634,7 +639,6 @@ function IssueDetailReviewPopover({
 }) {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const popoverRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [comment, setComment] = useState("");
   const [selectedAction, setSelectedAction] =
@@ -651,8 +655,6 @@ function IssueDetailReviewPopover({
       setSelectedAction("COMMENT");
     }
   }, [open]);
-
-  useClickOutside(popoverRef, open && !mobile, () => onOpenChange(false));
 
   const handleSubmit = useCallback(async () => {
     if (!issue) {
@@ -817,15 +819,15 @@ function IssueDetailReviewPopover({
   }
 
   return (
-    <div
-      className={cn(
-        "absolute right-0 top-full mt-2 w-[min(34rem,calc(100vw-2rem))] rounded-sm border border-control-border bg-background px-4 py-4 shadow-lg",
-        LAYER_SURFACE_CLASS
-      )}
-      ref={popoverRef}
-    >
-      {content}
-    </div>
+    <Popover onOpenChange={onOpenChange} open={open}>
+      <PopoverContent
+        anchor={anchor}
+        className="w-[min(34rem,calc(100vw-2rem))] p-4 shadow-lg"
+        sideOffset={8}
+      >
+        {content}
+      </PopoverContent>
+    </Popover>
   );
 }
 

@@ -34,6 +34,8 @@ export const AllSearchScopeIdList = [
   "port",
   // rollout related search scopes.
   "stage",
+  // plan related search scopes.
+  "release",
 ] as const;
 
 export type SearchScopeId =

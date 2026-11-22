@@ -33,3 +33,27 @@
 - statement: DROP VIEW v1;
   want:
     - DROP_VIEW
+- statement: CALL citycount('JPN', @cities);
+  want:
+    - EXECUTE
+- statement: CALL db1.citycount();
+  want:
+    - EXECUTE
+- statement: CALL citycount;
+  want:
+    - EXECUTE
+- statement: PREPARE stmt1 FROM 'DELETE FROM t1 WHERE id = ?';
+  want:
+    - STATEMENT_TYPE_UNSPECIFIED
+- statement: EXECUTE stmt1;
+  want:
+    - EXECUTE
+- statement: EXECUTE stmt1 USING @id;
+  want:
+    - EXECUTE
+- statement: DEALLOCATE PREPARE stmt1;
+  want:
+    - STATEMENT_TYPE_UNSPECIFIED
+- statement: DO SLEEP(1);
+  want:
+    - STATEMENT_TYPE_UNSPECIFIED

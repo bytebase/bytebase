@@ -2,39 +2,65 @@ package ai
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/pkg/errors"
+	"time"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func newAIChatUsage(totalTokens int32) *v1pb.AIChatUsage {
-	if totalTokens <= 0 {
+func newAIChatUsage(totalTokens, inputTokens, outputTokens, cachedInputTokens *int32) *v1pb.AIChatUsage {
+	if totalTokens == nil {
 		return nil
 	}
 	return &v1pb.AIChatUsage{
-		TotalTokens: totalTokens,
+		TotalTokens:       *totalTokens,
+		InputTokens:       inputTokens,
+		OutputTokens:      outputTokens,
+		CachedInputTokens: cachedInputTokens,
 	}
 }
 
-// doHTTPRequest executes an HTTP request and returns the response body.
-func doHTTPRequest(_ context.Context, httpReq *http.Request, provider string) ([]byte, error) {
+func addOptionalTokenCounts(base *int32, counts ...*int32) *int32 {
+	if base == nil {
+		return nil
+	}
+	total := *base
+	for _, count := range counts {
+		if count != nil {
+			total += *count
+		}
+	}
+	return &total
+}
+
+// doHTTPRequest executes an HTTP request and returns the response body. A
+// status other than 200 is an *HTTPError, to which readFailure adds what the
+// vendor's body format says. A call with no complete reply is a *TransportError.
+func doHTTPRequest(_ context.Context, httpReq *http.Request, provider string, readFailure func(*HTTPError)) ([]byte, error) {
 	client := &http.Client{}
 	httpResp, err := client.Do(httpReq)
 	if err != nil {
-		return nil, errors.Errorf("failed to send HTTP request to %s: %s", provider, err)
+		return nil, &TransportError{message: fmt.Sprintf("failed to send HTTP request to %s: %s", provider, err)}
 	}
 	defer httpResp.Body.Close()
 
 	body, err := io.ReadAll(httpResp.Body)
 	if err != nil {
-		return nil, errors.Errorf("failed to read %s response body: %s", provider, err)
+		return nil, &TransportError{message: fmt.Sprintf("failed to read %s response body: %s", provider, err)}
 	}
 
 	if httpResp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("%s API returned status %d: %s", provider, httpResp.StatusCode, string(body))
+		httpErr := &HTTPError{
+			Provider:    provider,
+			StatusCode:  httpResp.StatusCode,
+			RetryAfter:  providerWait(httpResp.Header, time.Now()),
+			ShouldRetry: readShouldRetry(httpResp.Header),
+			Body:        string(body),
+		}
+		readFailure(httpErr)
+		return nil, httpErr
 	}
 
 	return body, nil

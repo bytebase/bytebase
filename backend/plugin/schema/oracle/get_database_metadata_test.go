@@ -64,6 +64,25 @@ func TestGetDatabaseMetadataObjectKinds(t *testing.T) {
 		verify func(*testing.T, *metadatapb.DatabaseSchemaMetadata)
 	}{
 		{
+			name: "invisible_and_virtual_columns",
+			ddl: `
+CREATE TABLE T (
+    A NUMBER,
+    H NUMBER INVISIBLE DEFAULT 7,
+    IHV INVISIBLE AS (A * 2) VIRTUAL
+);
+`,
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
+				table := requireTable(t, requireSingleSchema(t, metadata), "T")
+				require.Len(t, table.Columns, 3)
+				require.False(t, table.Columns[0].IsInvisible)
+				require.True(t, table.Columns[1].IsInvisible)
+				require.Equal(t, "7", table.Columns[1].Default)
+				require.True(t, table.Columns[2].IsInvisible)
+				require.Equal(t, "A * 2", table.Columns[2].GetGeneration().GetExpression())
+			},
+		},
+		{
 			name: "table_constraints_indexes_view_sequence",
 			ddl: `
 CREATE TABLE DEPARTMENTS (
@@ -103,7 +122,7 @@ CREATE SEQUENCE emp_seq START WITH 1 INCREMENT BY 1;
 				require.False(t, departments.Columns[1].Nullable)
 				requireIndex(t, departments, "PK_DEPARTMENTS", []string{"DEPT_ID"}, true, true)
 				requireIndex(t, departments, "UK_DEPARTMENTS_DEPT_NAME", []string{"DEPT_NAME"}, false, true)
-				requireCheckConstraint(t, departments, "CHK_DEPT_NAME", "DEPT_NAMEISNOTNULL")
+				requireCheckConstraint(t, departments, "CHK_DEPT_NAME", "DEPT_NAME IS NOT NULL")
 
 				employees := requireTable(t, schemaMetadata, "EMPLOYEES")
 				require.Len(t, employees.Columns, 4)
@@ -111,7 +130,7 @@ CREATE SEQUENCE emp_seq START WITH 1 INCREMENT BY 1;
 				requireIndex(t, employees, "PK_EMPLOYEES", []string{"EMP_ID"}, true, true)
 				requireIndex(t, employees, "UK_EMPLOYEES_EMAIL", []string{"EMAIL"}, false, true)
 				requireIndex(t, employees, "IDX_EMP_DEPT", []string{"DEPT_ID"}, false, false)
-				requireCheckConstraint(t, employees, "CHK_SALARY", "SALARY>=0")
+				requireCheckConstraint(t, employees, "CHK_SALARY", "SALARY >= 0")
 				requireForeignKey(t, employees, "FK_EMP_DEPT", []string{"DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"}, "SET NULL")
 
 				require.Len(t, schemaMetadata.Views, 1)
@@ -165,7 +184,7 @@ SELECT PRODUCT_ID, CATEGORY, SUM(SALES_AMOUNT) AS TOTAL_REVENUE
 FROM PRODUCT_SALES
 GROUP BY PRODUCT_ID, CATEGORY;
 
-COMMENT ON VIEW PRODUCT_SALES_VIEW IS 'Product sales view';
+COMMENT ON TABLE PRODUCT_SALES_VIEW IS 'Product sales view';
 COMMENT ON MATERIALIZED VIEW PRODUCT_SALES_MV IS 'Product sales materialized view';
 `,
 			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
@@ -314,8 +333,8 @@ CREATE TABLE EMPLOYEES (
 `,
 			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				employees := requireTable(t, requireSingleSchema(t, metadata), "EMPLOYEES")
-				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY", "SALARY>0")
-				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY_2", "SALARY<1000000")
+				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY", "SALARY > 0")
+				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY_2", "SALARY < 1000000")
 				requireForeignKey(t, employees, "FK_EMPLOYEES_DEPT_ID", []string{"DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"}, "")
 				requireForeignKey(t, employees, "FK_MANAGER_DEPT", []string{"MANAGER_DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"}, "")
 			},
@@ -333,8 +352,10 @@ CREATE TABLE ORDER_ITEMS (
 				orderItems := requireTable(t, requireSingleSchema(t, metadata), "ORDER_ITEMS")
 				require.Len(t, orderItems.Columns, 3)
 				require.Equal(t, "TOTAL", orderItems.Columns[2].Name)
-				require.Equal(t, "NUMBER", orderItems.Columns[2].Type)
-				require.Equal(t, "QTY*PRICE", orderItems.Columns[2].Default)
+				require.Empty(t, orderItems.Columns[2].Type)
+				require.Empty(t, orderItems.Columns[2].Default)
+				require.Equal(t, metadatapb.GenerationMetadata_TYPE_VIRTUAL, orderItems.Columns[2].GetGeneration().GetType())
+				require.Equal(t, "QTY * PRICE", orderItems.Columns[2].GetGeneration().GetExpression())
 			},
 		},
 		{
@@ -349,8 +370,8 @@ CREATE TABLE AUTHORS (
 			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				authors := requireTable(t, requireSingleSchema(t, metadata), "AUTHORS")
 				require.Len(t, authors.Columns, 2)
-				require.Equal(t, "CASEWHENNAME='O''Reilly'THEN1ELSE0END", authors.Columns[1].Default)
-				requireCheckConstraint(t, authors, "CHK_AUTHOR_NAME", "NAME<>'O''Reilly'")
+				require.Equal(t, "CASE WHEN NAME = 'O''Reilly' THEN 1 ELSE 0 END", authors.Columns[1].GetGeneration().GetExpression())
+				requireCheckConstraint(t, authors, "CHK_AUTHOR_NAME", "NAME <> 'O''Reilly'")
 			},
 		},
 		{
@@ -407,7 +428,7 @@ END financial_utils;
 	}
 }
 
-func TestGetDatabaseMetadataUsesOmni(t *testing.T) {
+func TestGetDatabaseMetadataUses(t *testing.T) {
 	metadata, err := schema.GetDatabaseMetadata(storepb.Engine_ORACLE, `
 CREATE TABLE T (
     ID NUMBER PRIMARY KEY
@@ -439,6 +460,49 @@ END;
 	table := requireTable(t, requireSingleSchema(t, metadata), "AUDIT_LOG")
 	require.Len(t, table.Columns, 1)
 	requireIndex(t, table, "PK_AUDIT_LOG", []string{"LOG_ID"}, true, true)
+}
+
+func TestGetDatabaseMetadataSQLPlusMVQueryAndUsingIndex(t *testing.T) {
+	metadata, err := GetDatabaseMetadata(`
+SET DEFINE OFF;
+PROMPT Creating schema objects
+REM Leading SQL*Plus comment
+
+CREATE TABLE "HR"."T" (
+    "ID" NUMBER,
+    "CODE" VARCHAR2(20)
+);
+CREATE UNIQUE INDEX "HR"."T_ID_UX" ON "HR"."T" ("ID");
+CREATE INDEX "HR"."T_CODE_IX" ON "HR"."T" ("CODE");
+ALTER TABLE "HR"."T" ADD CONSTRAINT "PK_T" PRIMARY KEY ("ID") USING INDEX "HR"."T_ID_UX";
+ALTER TABLE "HR"."T" ADD CONSTRAINT "UK_T_CODE" UNIQUE ("CODE") USING INDEX "T_CODE_IX";
+
+CREATE MATERIALIZED VIEW "HR"."MV_T"
+    BUILD IMMEDIATE
+    REFRESH COMPLETE ON DEMAND
+    AS SELECT "ID", "CODE" FROM "HR"."T";
+`)
+	require.NoError(t, err)
+
+	hr := requireSingleSchema(t, metadata)
+	require.Equal(t, "HR", hr.Name)
+
+	table := requireTable(t, hr, "T")
+	require.False(t, table.Columns[0].Nullable)
+	requireIndex(t, table, "T_ID_UX", []string{`"ID"`}, true, true)
+	idIdx := requireIndexMetadata(t, table, "T_ID_UX")
+	require.Len(t, idIdx.Constraints, 1)
+	require.Equal(t, "PK_T", idIdx.Constraints[0].Name)
+	require.True(t, idIdx.Constraints[0].Primary)
+
+	codeIdx := requireIndexMetadata(t, table, "T_CODE_IX")
+	require.True(t, codeIdx.IsConstraint)
+	require.Len(t, codeIdx.Constraints, 1)
+	require.Equal(t, "UK_T_CODE", codeIdx.Constraints[0].Name)
+	require.False(t, codeIdx.Constraints[0].Primary)
+
+	require.Len(t, hr.MaterializedViews, 1)
+	require.Equal(t, "SELECT \"ID\", \"CODE\" FROM \"HR\".\"T\"\n", hr.MaterializedViews[0].Definition)
 }
 
 func requireSingleSchema(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) *metadatapb.SchemaMetadata {
@@ -508,9 +572,7 @@ func requireMaterializedViewIndex(t *testing.T, materializedView *metadatapb.Mat
 }
 
 // requireCheckConstraint matches an expression as the extractor renders it,
-// which for most nodes means with every space removed: "SALARY > 0" arrives as
-// "SALARY>0". The assertions below spell out that form rather than the readable
-// one so they describe what the package returns today.
+// preserving source text when available.
 func requireCheckConstraint(t *testing.T, table *metadatapb.TableMetadata, name string, expression string) {
 	t.Helper()
 	for _, check := range table.CheckConstraints {

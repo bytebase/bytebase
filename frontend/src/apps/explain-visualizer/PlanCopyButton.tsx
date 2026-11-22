@@ -5,13 +5,7 @@ import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 import { useQueryPlanTranslation } from "./plan-i18n";
 
-/**
- * A copy control that reports the result on itself.
- *
- * The shared `CopyButton` confirms through `useTranslation` and the app store's
- * notifications; this entry initializes neither, so a local button is the whole
- * dependency rather than the app's stores.
- */
+/** A copy control that reports the result on itself. */
 interface Props {
   /** What to put on the clipboard. */
   readonly content: string;

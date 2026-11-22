@@ -1,0 +1,45 @@
+[
+  {
+    "Plan": {
+      "Node Type": "Expression",
+      "Description": "(Project names + (Projection + DROP unused columns after JOIN))",
+      "Plans": [
+        {
+          "Node Type": "Join",
+          "Description": "JOIN FillRightFirst",
+          "Plans": [
+            {
+              "Node Type": "Expression",
+              "Description": "(JOIN actions + Change column names to column identifiers)",
+              "Plans": [
+                {
+                  "Node Type": "ReadFromMergeTree",
+                  "Description": "default.orders",
+                  "Indexes": [
+                    {
+                      "Type": "PrimaryKey",
+                      "Condition": "true",
+                      "Initial Parts": 1,
+                      "Selected Parts": 1,
+                      "Initial Granules": 6,
+                      "Selected Granules": 6
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "Node Type": "Expression",
+              "Description": "(JOIN actions + (Change column names to column identifiers + (Project names + (Projection + Change column names to column identifiers))))",
+              "Plans": [
+                {
+                  "Node Type": "ReadFromSystemNumbers"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

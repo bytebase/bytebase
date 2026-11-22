@@ -1,886 +1,384 @@
-import { Check, ChevronDown, ChevronRight, XCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
-import { CreateWorkloadIdentitySheet } from "@/components/CreateWorkloadIdentitySheet";
-import { DatabaseSelect } from "@/components/DatabaseSelect";
+import { Trans, useTranslation } from "react-i18next";
+import {
+  PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_RELEASES,
+} from "@/app/router/handles";
 import { ExternalUrlAlert } from "@/components/ExternalUrlAlert";
-import { PermissionGuard } from "@/components/PermissionGuard";
 import { ProjectPageLayout } from "@/components/ProjectPageLayout";
+import { RouterLink } from "@/components/RouterLink";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import { CopyButton } from "@/components/ui/copy-button";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
+import { StepIndicator } from "@/components/ui/step-indicator";
+import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
+import { WorkloadIdentitySheet } from "@/components/WorkloadIdentityFlow/WorkloadIdentitySheet";
+import { useServerState } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
-import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
-import { extractWorkloadIdentityId } from "@/stores/app/workloadIdentity";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
-import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
-import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
-  GENERATED_WORKFLOW_AUDIENCE,
-  getWorkloadIdentityProviderText,
-  hasProjectPermissionV2,
-  parseWorkloadIdentitySubjectPattern,
-} from "@/utils";
-import { WorkloadIdentitySelect } from "./WorkloadIdentitySelect";
+  type DatabaseGroup,
+  DatabaseGroupView,
+} from "@/types/proto-es/v1/database_group_service_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
+import { getDefaultPagination, hasProjectPermissionV2 } from "@/utils";
+import { DatabasesStep, type TargetTab } from "./gitops-setup/DatabasesStep";
+import {
+  repositoriesOf,
+  repositoryUrlOf,
+  useIdentityRoles,
+  workflowProviderOf,
+} from "./gitops-setup/identity";
+import { useDeployTargets } from "./gitops-setup/useDeployTargets";
+import { WorkflowFilesStep } from "./gitops-setup/WorkflowFilesStep";
+import { WorkloadIdentityStep } from "./gitops-setup/WorkloadIdentityStep";
+import {
+  bytebaseActionImage,
+  DEFAULT_MIGRATION_FOLDER,
+  EXTERNAL_URL_PLACEHOLDER,
+  generateWorkflowFiles,
+} from "./gitopsWorkflowYaml";
 
+// The same guide the Releases page links to.
+const GITOPS_DOCS_URL =
+  "https://docs.bytebase.com/gitops/overview?source=console";
+
+const DATABASES = 0;
+const WORKLOAD_IDENTITY = 1;
+const WORKFLOW_FILES = 2;
+
+// What the page reads once when it opens: enough to know the preconditions and
+// to pick a lone group, database or identity. A list that fails to load is
+// undefined, and its precondition is not shown.
+interface SetupData {
+  groups: DatabaseGroup[];
+  // The first page of the project's databases.
+  databases: Database[] | undefined;
+  databasesComplete: boolean;
+  // The first page of the project's workload identities.
+  identities: WorkloadIdentity[] | undefined;
+  identitiesComplete: boolean;
+}
+
+// The GitOps page is the setup: three steps that end with the workflow files
+// the owner adds to the repository. Bytebase saves nothing.
 export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const serverInfo = useAppStore((s) => s.serverInfo);
-  const projectsByName = useAppStore((s) => s.projectsByName);
+  const projectName = `${projectNamePrefix}${projectId}`;
+  const project = useProjectByName(projectName);
+  const { serverInfo, externalUrl, needConfigureExternalUrl } =
+    useServerState();
   const fetchWorkloadIdentity = useAppStore(
     (state) => state.fetchWorkloadIdentity
   );
 
-  const projectName = `${projectNamePrefix}${projectId}`;
-  // subscribe to re-render on project cache change
-  void projectsByName;
-  const project = useProjectByName(projectName);
+  const [data, setData] = useState<SetupData>();
+  const [step, setStep] = useState(DATABASES);
+  const [tab, setTab] = useState<TargetTab>("group");
+  const [groupName, setGroupName] = useState("");
+  const [databaseNames, setDatabaseNames] = useState<string[]>([]);
+  const [identityName, setIdentityName] = useState("");
+  const [folder, setFolder] = useState(DEFAULT_MIGRATION_FOLDER);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  const [showCreateDrawer, setShowCreateDrawer] = useState(false);
-  const [selectedIdentityName, setSelectedIdentityName] = useState("");
-  const [selectedDatabaseNames, setSelectedDatabaseNames] = useState<string[]>(
-    []
-  );
-  const [selectedDatabaseGroupName, setSelectedDatabaseGroupName] =
-    useState("");
-  const [targetTab, setTargetTab] = useState<"GROUP" | "DATABASE">("GROUP");
-  const [activeTab, setActiveTab] = useState("github");
-  const [useSelfhostRunner, setUseSelfhostRunner] = useState(false);
-  const [showSqlReviewYaml, setShowSqlReviewYaml] = useState(true);
-  const [showReleaseYaml, setShowReleaseYaml] = useState(true);
-  const [showGitlabCiYaml, setShowGitlabCiYaml] = useState(true);
-
-  const selectedIdentity = useAppStore((state) =>
-    selectedIdentityName
-      ? state.getWorkloadIdentity(selectedIdentityName)
-      : undefined
-  );
-
-  // Database group options
-  const [dbGroupOptions, setDbGroupOptions] = useState<ComboboxOption[]>([]);
   useEffect(() => {
-    useAppStore
-      .getState()
-      .fetchDBGroupListByProjectName(projectName, DatabaseGroupView.BASIC)
-      .then((groups) => {
-        setDbGroupOptions(
-          groups.map((g) => ({
-            value: g.name,
-            label: g.title || g.name,
-          }))
-        );
-      })
-      .catch(() => {});
+    let cancelled = false;
+    const store = useAppStore.getState();
+    const pageSize = getDefaultPagination();
+    void Promise.all([
+      store
+        .fetchDBGroupListByProjectName(projectName, DatabaseGroupView.BASIC)
+        .catch(() => [] as DatabaseGroup[]),
+      store
+        .fetchDatabases({ parent: projectName, pageSize, silent: true })
+        .catch(() => undefined),
+      store
+        .listWorkloadIdentities({
+          parent: projectName,
+          pageSize,
+          showDeleted: false,
+          silent: true,
+        })
+        .catch(() => undefined),
+      store.loadProjectIamPolicy(projectName, true),
+    ]).then(([groups, databasePage, identityPage]) => {
+      if (cancelled) return;
+      const next: SetupData = {
+        groups,
+        databases: databasePage?.databases,
+        databasesComplete: databasePage?.nextPageToken === "",
+        identities: identityPage?.workloadIdentities,
+        identitiesComplete: identityPage?.nextPageToken === "",
+      };
+      setData(next);
+      // A lone group, database or identity is already picked.
+      if (groups.length > 0) {
+        setTab("group");
+        if (groups.length === 1) setGroupName(groups[0].name);
+      } else {
+        setTab("databases");
+        const lone = next.databasesComplete ? next.databases : undefined;
+        if (lone?.length === 1 && lone[0].effectiveEnvironment) {
+          setDatabaseNames([lone[0].name]);
+        }
+      }
+      const identities = next.identitiesComplete ? next.identities : undefined;
+      if (identities?.length === 1 && workflowProviderOf(identities[0])) {
+        setIdentityName(identities[0].name);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [projectName]);
 
-  // Fetch the selected identity into the store cache so getWorkloadIdentity
-  // returns the real object (with workloadIdentityConfig) instead of a stub.
+  // Load the picked identity into the store, so its config is known.
   useEffect(() => {
-    if (selectedIdentityName) {
-      fetchWorkloadIdentity(selectedIdentityName).catch(() => {});
-    }
-  }, [selectedIdentityName, fetchWorkloadIdentity]);
-
-  const selectedConfig = selectedIdentity?.workloadIdentityConfig;
-  const selectedProviderType =
-    selectedConfig?.providerType ??
-    WorkloadIdentityConfig_ProviderType.PROVIDER_TYPE_UNSPECIFIED;
-
-  // Sync active tab with selected identity provider
-  useEffect(() => {
-    if (selectedProviderType === WorkloadIdentityConfig_ProviderType.GITLAB) {
-      setActiveTab("gitlab");
-    } else if (
-      selectedProviderType === WorkloadIdentityConfig_ProviderType.GITHUB
-    ) {
-      setActiveTab("github");
-    }
-  }, [selectedProviderType]);
-
-  const parsedSubject = useMemo(() => {
-    if (!selectedIdentity) return undefined;
-    return parseWorkloadIdentitySubjectPattern(selectedIdentity);
-  }, [selectedIdentity]);
-
-  const repoUrl = useMemo(() => {
-    const parsed = parsedSubject;
-    if (!parsed?.owner || !parsed.repo) return "";
-    if (selectedProviderType === WorkloadIdentityConfig_ProviderType.GITHUB) {
-      return `https://github.com/${parsed.owner}/${parsed.repo}`;
-    }
-    if (selectedProviderType === WorkloadIdentityConfig_ProviderType.GITLAB) {
-      const issuer = selectedConfig?.issuerUrl ?? "https://gitlab.com";
-      const base = issuer.replace(/\/$/, "");
-      return `${base}/${parsed.owner}/${parsed.repo}`;
-    }
-    return "";
-  }, [parsedSubject, selectedConfig, selectedProviderType]);
-
-  const branch = parsedSubject?.branch || "main";
-
-  const bytebaseUrl = useMemo(
-    () => (serverInfo?.externalUrl ?? "").replace(/\/$/, ""),
-    [serverInfo]
+    if (identityName) void fetchWorkloadIdentity(identityName).catch(() => {});
+  }, [identityName, fetchWorkloadIdentity]);
+  const identity = useAppStore((state) =>
+    identityName ? state.getWorkloadIdentity(identityName) : undefined
   );
+  const provider = workflowProviderOf(identity);
+  const roles = useIdentityRoles(projectName, identity);
 
-  const workloadIdentityEmail = selectedIdentityName
-    ? extractWorkloadIdentityId(selectedIdentityName)
-    : "{WORKLOAD_IDENTITY_EMAIL}";
+  const pick = useMemo(
+    () =>
+      tab === "group"
+        ? { kind: "group" as const, name: groupName }
+        : { kind: "databases" as const, names: databaseNames },
+    [tab, groupName, databaseNames]
+  );
+  const targets = useDeployTargets(pick);
 
-  const hasTargetSelected =
-    targetTab === "GROUP"
-      ? !!selectedDatabaseGroupName
-      : selectedDatabaseNames.length > 0;
+  const canCreateIdentity = hasProjectPermissionV2(
+    project,
+    "bb.workloadIdentities.create"
+  );
+  const noDatabase = data?.databases?.length === 0;
+  const noIdentity =
+    data?.identities?.length === 0 && !identityName && !canCreateIdentity;
+  // On a project with more databases than one page, a database with an
+  // environment may be on a later page, so the picker stays.
+  const noPickableDatabase =
+    data?.databasesComplete === true &&
+    (data.databases ?? []).every((database) => !database.effectiveEnvironment);
 
-  const targetsString = useMemo(() => {
-    if (targetTab === "GROUP" && selectedDatabaseGroupName) {
-      return selectedDatabaseGroupName;
-    }
-    if (selectedDatabaseNames.length === 0) return "";
-    return selectedDatabaseNames.join(",");
-  }, [targetTab, selectedDatabaseGroupName, selectedDatabaseNames]);
+  const urlMissing = needConfigureExternalUrl || externalUrl === "";
+  const files = useMemo(() => {
+    if (!provider || !identity) return [];
+    return generateWorkflowFiles({
+      provider,
+      bytebaseUrl: urlMissing
+        ? EXTERNAL_URL_PLACEHOLDER
+        : externalUrl.replace(/\/$/, ""),
+      actionImage: bytebaseActionImage(serverInfo?.version ?? ""),
+      workloadIdentityEmail: identity.email,
+      projectId,
+      targets: pick.kind === "group" ? [pick.name] : pick.names,
+      environments: targets.stages.map((stage) => stage.id),
+      folder,
+    });
+  }, [
+    provider,
+    identity,
+    urlMissing,
+    externalUrl,
+    serverInfo,
+    projectId,
+    pick,
+    targets.stages,
+    folder,
+  ]);
 
-  const targetsPlaceholder =
-    targetsString ||
-    `projects/${projectId}/instances/{instance}/databases/{database}`;
-  const runsOn = useSelfhostRunner ? "self-hosted" : "ubuntu-latest";
-
-  const handleTargetTabChange = (tab: "GROUP" | "DATABASE") => {
-    setTargetTab(tab);
-    if (tab === "GROUP") {
-      setSelectedDatabaseNames([]);
-    } else {
-      setSelectedDatabaseGroupName("");
-    }
+  // A step can be opened once every step before it is complete.
+  const databasesDone =
+    (tab === "group" ? groupName !== "" : databaseNames.length > 0) &&
+    !targets.loading &&
+    targets.stages.length > 0;
+  const identityDone =
+    identity !== undefined &&
+    provider !== undefined &&
+    (roles === undefined || roles.length > 0);
+  const lastOpenable = !databasesDone
+    ? DATABASES
+    : !identityDone
+      ? WORKLOAD_IDENTITY
+      : WORKFLOW_FILES;
+  const canContinue = step < lastOpenable;
+  const goTo = (index: number) => {
+    if (index <= lastOpenable) setStep(index);
   };
 
-  const handleWorkloadIdentityCreated = (wi: WorkloadIdentity) => {
-    setSelectedIdentityName(wi.name);
+  const steps = [
+    { key: DATABASES, title: t("gitops.setup.steps.databases") },
+    {
+      key: WORKLOAD_IDENTITY,
+      title: t("gitops.setup.steps.workload-identity"),
+    },
+    { key: WORKFLOW_FILES, title: t("gitops.setup.steps.workflow-files") },
+  ];
+
+  const handleCreated = (wi: WorkloadIdentity) => {
+    setIdentityName(wi.name);
   };
 
-  const canCreateWorkloadIdentity = project
-    ? hasProjectPermissionV2(project, "bb.workloadIdentities.create")
-    : false;
-
-  // --- YAML generation ---
-  const githubSqlReviewYaml = useMemo(
-    () =>
-      generateGithubSqlReviewYaml({
-        branch,
-        runsOn,
-        bytebaseUrl,
-        workloadIdentityEmail,
-        projectId,
-        targetsPlaceholder,
-      }),
-    [
-      branch,
-      runsOn,
-      bytebaseUrl,
-      workloadIdentityEmail,
-      projectId,
-      targetsPlaceholder,
-    ]
-  );
-
-  const githubReleaseYaml = useMemo(
-    () =>
-      generateGithubReleaseYaml({
-        branch,
-        runsOn,
-        bytebaseUrl,
-        workloadIdentityEmail,
-        projectId,
-        targetsPlaceholder,
-      }),
-    [
-      branch,
-      runsOn,
-      bytebaseUrl,
-      workloadIdentityEmail,
-      projectId,
-      targetsPlaceholder,
-    ]
-  );
-
-  const gitlabCiYaml = useMemo(
-    () =>
-      generateGitlabCiYaml({
-        branch,
-        bytebaseUrl,
-        workloadIdentityEmail,
-        projectId,
-        targetsPlaceholder,
-      }),
-    [branch, bytebaseUrl, workloadIdentityEmail, projectId, targetsPlaceholder]
-  );
-
-  const providerMismatchGithub =
-    selectedConfig &&
-    activeTab === "github" &&
-    selectedProviderType !== WorkloadIdentityConfig_ProviderType.GITHUB;
-  const providerMismatchGitlab =
-    selectedConfig &&
-    activeTab === "gitlab" &&
-    selectedProviderType !== WorkloadIdentityConfig_ProviderType.GITLAB;
+  const repositories = identity ? repositoriesOf(identity) : undefined;
 
   return (
-    <ProjectPageLayout className="gap-y-1">
-      {/* Section 1: What is GitOps */}
-      <div className="flex flex-col gap-y-3 rounded-sm border border-block-border p-6">
+    <ProjectPageLayout>
+      <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-y-4 pb-4">
+        <RouterLink
+          to={{ name: PROJECT_V1_ROUTE_RELEASES, params: { projectId } }}
+          className="inline-flex items-center gap-x-1 self-start text-sm text-accent hover:underline"
+        >
+          <ArrowLeft className="size-4" />
+          {t("gitops.back-to-releases")}
+        </RouterLink>
+
         <div className="flex flex-col gap-y-1">
-          <h2 className="text-lg font-medium">{t("gitops.overview.title")}</h2>
-          <p className="textinfolabel">{t("gitops.overview.description")}</p>
-          <p className="textinfolabel">
-            {t("gitops.overview.description-git")}
+          <h1 className="text-lg font-semibold text-main">
+            {t("gitops.setup.title")}
+          </h1>
+          <p className="text-sm text-control-light">
+            {t("gitops.setup.outcome")}
+          </p>
+          <p className="text-sm text-control-light">
+            <Trans
+              i18nKey="gitops.setup.scope"
+              components={{ docs: <DocsLink /> }}
+            />
           </p>
         </div>
-        <img
-          src={gitopsWorkflowImage}
-          alt="GitOps Workflow"
-          className="w-full max-w-4xl object-contain my-2"
-        />
-        <div>
-          <a
-            href="https://docs.bytebase.com/gitops/overview?source=console"
-            target="_blank"
-            rel="noreferrer"
-            className="text-accent hover:underline"
+
+        <ExternalUrlAlert variant="warning">
+          <p className="text-sm">
+            {t("gitops.setup.external-url-description")}
+          </p>
+        </ExternalUrlAlert>
+
+        {noDatabase ? (
+          <Alert
+            variant="warning"
+            title={t("gitops.setup.no-database.title")}
+            description={t("gitops.setup.no-database.description")}
           >
-            {t("gitops.documentation")} {"\u2192"}
-          </a>
-        </div>
-      </div>
-
-      <span className="mx-auto w-0.5 h-8 bg-block-border" aria-hidden="true" />
-
-      {/* Section 2: Checks before we start */}
-      <div className="flex flex-col gap-y-3 rounded-sm border border-block-border p-6">
-        <h2 className="text-lg font-medium">{t("gitops.checklist.title")}</h2>
-
-        <Alert
-          variant="info"
-          description={
-            <span>
-              {t("gitops.checklist.wif-notice-text")}{" "}
-              <a
-                href="https://docs.bytebase.com/tutorials/gitops-bitbucket-workflow?source=console"
-                target="_blank"
-                rel="noreferrer"
-                className="text-accent hover:underline"
-              >
-                Bitbucket
-              </a>{" "}
-              /{" "}
-              <a
-                href="https://docs.bytebase.com/tutorials/gitops-azure-devops-workflow?source=console"
-                target="_blank"
-                rel="noreferrer"
-                className="text-accent hover:underline"
-              >
-                Azure DevOps
-              </a>{" "}
-              {t("gitops.checklist.wif-notice-suffix")}
-            </span>
-          }
-        />
-
-        {/* Check 1: External URL */}
-        <div className="flex items-start gap-x-3 py-3">
-          <CheckOrX ok={!!bytebaseUrl} />
-          <div className="flex flex-col flex-1 gap-y-1">
-            <span className="text-sm font-medium">
-              {t("gitops.checklist.external-url")}
-            </span>
-            {bytebaseUrl ? (
-              <span className="text-sm text-control-light">{bytebaseUrl}</span>
-            ) : (
-              <MissingExternalURLAttention />
-            )}
-          </div>
-        </div>
-
-        {/* Check 2: Workload Identity */}
-        <div className="flex items-start gap-x-3 py-3">
-          <CheckOrX ok={!!selectedIdentityName} />
-          <div className="flex flex-col gap-y-2 flex-1">
-            <span className="text-sm font-medium">
-              {t("gitops.checklist.workload-identity")}
-            </span>
-            <div className="flex items-center gap-x-3">
-              <WorkloadIdentitySelect
-                projectName={projectName}
-                value={selectedIdentityName}
-                placeholder={t("gitops.workload-identity.select-placeholder")}
-                onChange={(name) => setSelectedIdentityName(name)}
-                className="max-w-lg"
+            <RouterLink
+              to={{ name: PROJECT_V1_ROUTE_DATABASES, params: { projectId } }}
+              className="text-sm font-medium text-accent hover:underline"
+            >
+              {t("gitops.setup.databases.view-databases")}
+            </RouterLink>
+          </Alert>
+        ) : noIdentity ? (
+          <Alert
+            variant="warning"
+            title={t("gitops.setup.no-identity.title")}
+            description={t("gitops.setup.no-identity.description")}
+          />
+        ) : (
+          data && (
+            <>
+              <StepIndicator
+                steps={steps}
+                currentIndex={step}
+                fitOneRow
+                onStepClick={goTo}
               />
-              <PermissionGuard
-                permissions={["bb.workloadIdentities.create"]}
-                project={project}
-              >
-                <Button
-                  appearance="outline"
-                  disabled={!canCreateWorkloadIdentity}
-                  onClick={() => setShowCreateDrawer(true)}
-                >
-                  {t("common.create")}
-                </Button>
-              </PermissionGuard>
-            </div>
-            {repoUrl && (
-              <a
-                href={repoUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm text-accent hover:underline"
-              >
-                {repoUrl} {"\u2192"}
-              </a>
-            )}
-          </div>
-        </div>
-
-        {/* Check 3: Target Databases */}
-        <div className="flex items-start gap-x-3 py-3">
-          <CheckOrX ok={hasTargetSelected} />
-          <div className="flex flex-col gap-y-2 flex-1">
-            <span className="text-sm font-medium">
-              {t("gitops.checklist.target-databases")}
-            </span>
-            <div className="flex gap-x-0">
-              <Button
-                appearance={targetTab === "GROUP" ? "solid" : "outline"}
-                size="sm"
-                className="rounded-r-none"
-                onClick={() => handleTargetTabChange("GROUP")}
-              >
-                {t("common.database-group")}
-              </Button>
-              <Button
-                appearance={targetTab === "DATABASE" ? "solid" : "outline"}
-                size="sm"
-                className="rounded-l-none"
-                onClick={() => handleTargetTabChange("DATABASE")}
-              >
-                {t("common.databases")}
-              </Button>
-            </div>
-            <div className="max-w-lg">
-              {targetTab === "GROUP" ? (
-                <>
-                  <Combobox
-                    value={selectedDatabaseGroupName}
-                    options={dbGroupOptions}
-                    placeholder={t("database-group.select")}
-                    onChange={setSelectedDatabaseGroupName}
-                  />
-                  <p className="text-xs text-control-light mt-1">
-                    {t("gitops.checklist.database-group-recommendation")}
-                  </p>
-                </>
-              ) : (
-                <DatabaseSelect
-                  multiple
-                  value={selectedDatabaseNames}
-                  onChange={(names) => setSelectedDatabaseNames(names)}
+              {step === DATABASES && (
+                <DatabasesStep
+                  projectId={projectId}
                   projectName={projectName}
+                  groups={data.groups}
+                  noPickableDatabase={noPickableDatabase}
+                  tab={tab}
+                  onTabChange={setTab}
+                  groupName={groupName}
+                  onGroupChange={setGroupName}
+                  databaseNames={databaseNames}
+                  onDatabasesChange={setDatabaseNames}
+                  targets={targets}
                 />
               )}
-            </div>
-            {targetsString && (
-              <p className="text-sm text-control-light">
-                <span className="font-medium">targets:</span>{" "}
-                <code className="rounded-xs bg-control-bg px-1 py-0.5 text-xs">
-                  {targetsString}
-                </code>
-              </p>
-            )}
-          </div>
-        </div>
+              {step === WORKLOAD_IDENTITY && (
+                <WorkloadIdentityStep
+                  projectId={projectId}
+                  projectName={projectName}
+                  hasIdentities={(data.identities?.length ?? 1) > 0}
+                  canCreate={canCreateIdentity}
+                  identityName={identityName}
+                  identity={identity}
+                  roles={roles}
+                  onChange={setIdentityName}
+                  onCreate={() => setDialogOpen(true)}
+                />
+              )}
+              {step === WORKFLOW_FILES && provider && (
+                <WorkflowFilesStep
+                  provider={provider}
+                  folder={folder}
+                  onFolderChange={setFolder}
+                  repositoryName={
+                    repositories?.repo
+                      ? `${repositories.owner}/${repositories.repo}`
+                      : ""
+                  }
+                  repositoryUrl={identity ? repositoryUrlOf(identity) : ""}
+                  files={files}
+                  urlMissing={urlMissing}
+                />
+              )}
+            </>
+          )
+        )}
       </div>
 
-      <span className="mx-auto w-0.5 h-8 bg-block-border" aria-hidden="true" />
+      {data && !noDatabase && !noIdentity && (
+        <StickyActionFooter
+          contentPadding={false}
+          contentClassName="mx-auto w-full max-w-[1040px]"
+          left={
+            step > DATABASES && (
+              <Button appearance="outline" onClick={() => setStep(step - 1)}>
+                <ArrowLeft className="size-4" />
+                {t("common.back")}
+              </Button>
+            )
+          }
+          right={
+            step < WORKFLOW_FILES && (
+              <Button disabled={!canContinue} onClick={() => goTo(step + 1)}>
+                {t("gitops.setup.continue")}
+              </Button>
+            )
+          }
+        />
+      )}
 
-      {/* Section 3: Workflow file generation */}
-      <div className="flex flex-col gap-y-3 rounded-sm border border-block-border p-6">
-        <div className="flex flex-col gap-y-1">
-          <h2 className="text-lg font-medium">{t("gitops.workflow.title")}</h2>
-          <p className="text-sm text-control-light">
-            {t("gitops.workflow.description")}
-          </p>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="github" className="w-[140px] justify-center">
-              GitHub Actions
-            </TabsTrigger>
-            <TabsTrigger value="gitlab" className="w-[140px] justify-center">
-              GitLab CI
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsPanel value="github">
-            {providerMismatchGithub && (
-              <Alert
-                variant="error"
-                className="mb-3"
-                description={t("gitops.workflow.provider-not-match", {
-                  provider: getWorkloadIdentityProviderText(
-                    selectedProviderType,
-                    t("settings.members.workload-identity-generic-oidc")
-                  ),
-                })}
-              />
-            )}
-            <div className="flex items-center gap-x-2 my-3">
-              <span className="text-sm">
-                {t("gitops.workflow.self-hosted-runner")}
-              </span>
-              <Switch
-                checked={useSelfhostRunner}
-                onCheckedChange={setUseSelfhostRunner}
-              />
-            </div>
-
-            <CollapsibleCode
-              label={
-                <FileHintLabel
-                  filePath=".github/workflows/sql-review.yml"
-                  repository={parsedSubject?.repo}
-                />
-              }
-              code={githubSqlReviewYaml}
-              open={showSqlReviewYaml}
-              onToggle={() => setShowSqlReviewYaml(!showSqlReviewYaml)}
-            />
-
-            <CollapsibleCode
-              label={
-                <FileHintLabel
-                  filePath=".github/workflows/release.yml"
-                  repository={parsedSubject?.repo}
-                />
-              }
-              code={githubReleaseYaml}
-              open={showReleaseYaml}
-              onToggle={() => setShowReleaseYaml(!showReleaseYaml)}
-              className="mt-4"
-            />
-          </TabsPanel>
-
-          <TabsPanel value="gitlab">
-            {providerMismatchGitlab && (
-              <Alert
-                variant="error"
-                className="mb-3"
-                description={t("gitops.workflow.provider-not-match", {
-                  provider: getWorkloadIdentityProviderText(
-                    selectedProviderType,
-                    t("settings.members.workload-identity-generic-oidc")
-                  ),
-                })}
-              />
-            )}
-            <CollapsibleCode
-              label={
-                <FileHintLabel
-                  filePath=".gitlab-ci.yml"
-                  repository={parsedSubject?.repo}
-                />
-              }
-              code={gitlabCiYaml}
-              open={showGitlabCiYaml}
-              onToggle={() => setShowGitlabCiYaml(!showGitlabCiYaml)}
-            />
-          </TabsPanel>
-        </Tabs>
-      </div>
-
-      <span className="mx-auto w-0.5 h-8 bg-block-border" aria-hidden="true" />
-
-      {/* Section 4: Test your first GitOps migration */}
-      <div className="flex flex-col gap-y-3 rounded-sm border border-block-border p-6">
-        <div className="flex flex-col gap-y-1">
-          <h2 className="text-lg font-medium">
-            {t("gitops.test-setup.title")}
-          </h2>
-          <p className="text-sm text-control-light">
-            {t("gitops.test-setup.description")}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-y-2">
-          <div className="flex items-center gap-x-2">
-            <span className="text-sm text-control-light font-bold">
-              {SAMPLE_FILE_PATH}
-            </span>
-          </div>
-          <CodeBlock code={SAMPLE_SQL} />
-        </div>
-
-        <div className="flex flex-col gap-y-3">
-          <StepItem number={1}>
-            {t("gitops.test-setup.step-create-branch", { branch })}
-          </StepItem>
-          <StepItem number={2}>
-            {t("gitops.test-setup.step-sql-review")}
-          </StepItem>
-          <StepItem number={3}>{t("gitops.test-setup.step-merge")}</StepItem>
-        </div>
-
-        <p className="text-sm text-control-light">
-          {t("gitops.test-setup.naming-convention")}
-        </p>
-      </div>
-
-      <CreateWorkloadIdentitySheet
-        open={showCreateDrawer}
+      <WorkloadIdentitySheet
+        open={dialogOpen}
         project={projectName}
-        onClose={() => setShowCreateDrawer(false)}
-        onCreated={handleWorkloadIdentityCreated}
+        closeOnCreate
+        gitProvidersOnly
+        onClose={() => setDialogOpen(false)}
+        onCreated={handleCreated}
       />
     </ProjectPageLayout>
   );
 }
 
-// --- Helper components ---
-
-function FileHintLabel({
-  filePath,
-  repository,
-}: {
-  filePath: string;
-  repository?: string;
-}) {
-  const { t } = useTranslation();
-  // Split the translated template around placeholders to render bold spans.
-  const raw = t("gitops.workflow.file-hint", {
-    filePath: "\x00FP\x00",
-    repository: "\x00RP\x00",
-  });
-  const parts = raw.split("\x00");
+// The link in the scope line, filled in through <Trans components={{ docs }} />.
+function DocsLink({ children }: { readonly children?: React.ReactNode }) {
   return (
-    <span>
-      {parts.map((part, i) =>
-        part === "FP" ? (
-          <span key={i} className="font-bold mx-1">
-            {filePath}
-          </span>
-        ) : part === "RP" ? (
-          <span key={i} className="font-bold mx-1">
-            {repository}
-          </span>
-        ) : (
-          <span key={i}>{part}</span>
-        )
-      )}
-    </span>
+    <a
+      href={GITOPS_DOCS_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-medium text-accent hover:underline"
+    >
+      {children}
+    </a>
   );
-}
-
-function CheckOrX({ ok }: { ok: boolean }) {
-  return ok ? (
-    <Check className="w-5 h-5 text-success shrink-0" />
-  ) : (
-    <XCircle className="w-5 h-5 text-warning shrink-0" />
-  );
-}
-
-function MissingExternalURLAttention() {
-  return <ExternalUrlAlert className="mt-1" />;
-}
-
-function CodeBlock({ code }: { code: string }) {
-  return (
-    <div className="relative rounded-xs bg-control-bg/50 p-4">
-      <div className="absolute top-2 right-2 p-2">
-        <CopyButton content={code} size="sm" />
-      </div>
-      <div className="overflow-x-auto pr-12">
-        <pre className="text-sm font-mono whitespace-pre">{code}</pre>
-      </div>
-    </div>
-  );
-}
-
-function CollapsibleCode({
-  label,
-  code,
-  open,
-  onToggle,
-  className,
-}: {
-  label: React.ReactNode;
-  code: string;
-  open: boolean;
-  onToggle: () => void;
-  className?: string;
-}) {
-  return (
-    <div className={cn("flex flex-col gap-y-2", className)}>
-      <div>
-        <Button appearance="secondary" size="sm" onClick={onToggle}>
-          {open ? (
-            <ChevronDown className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
-          )}
-          {label}
-        </Button>
-      </div>
-      {open && <CodeBlock code={code} />}
-    </div>
-  );
-}
-
-function StepItem({
-  number,
-  children,
-}: {
-  number: number;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-x-3">
-      <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-control-bg-hover text-xs text-control">
-        {number}
-      </span>
-      <p className="text-sm text-control-light">{children}</p>
-    </div>
-  );
-}
-
-// --- YAML generators ---
-
-const SAMPLE_FILE_PATH = "migrations/20240101000000_create_sample_table.sql";
-const SAMPLE_SQL = `CREATE TABLE sample (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);`;
-
-interface YamlParams {
-  branch: string;
-  runsOn?: string;
-  bytebaseUrl: string;
-  workloadIdentityEmail: string;
-  projectId: string;
-  targetsPlaceholder: string;
-}
-
-const exchangeTokenStep = (indent: string) =>
-  `${indent}- name: Exchange token
-${indent}  id: bytebase-auth
-${indent}  run: |
-${indent}    OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \\
-${indent}      "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=${GENERATED_WORKFLOW_AUDIENCE}" | jq -r '.value')
-${indent}    ACCESS_TOKEN=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
-${indent}      -H "Content-Type: application/json" \\
-${indent}      -d "{\\"token\\":\\"$OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
-${indent}      | jq -r '.accessToken')
-${indent}    echo "access-token=$ACCESS_TOKEN" >> $GITHUB_OUTPUT`;
-
-const accessTokenFlag =
-  "--access-token=${{ steps.bytebase-auth.outputs.access-token }}";
-
-function generateGithubSqlReviewYaml(p: YamlParams): string {
-  return `name: SQL Review
-on:
-  pull_request:
-    branches: ["${p.branch}"]
-    paths: ["migrations/*.sql"]
-jobs:
-  sql-review:
-    permissions:
-      id-token: write
-      pull-requests: write
-    runs-on: ${p.runsOn}
-    container:
-      image: bytebase/bytebase-action
-    env:
-      BYTEBASE_URL: ${p.bytebaseUrl}
-      BYTEBASE_WORKLOAD_IDENTITY: ${p.workloadIdentityEmail}
-    steps:
-      - uses: actions/checkout@v4
-${exchangeTokenStep("      ")}
-      - name: SQL Review
-        env:
-          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
-        run: |
-          bytebase-action check \\
-            --url=$BYTEBASE_URL \\
-            ${accessTokenFlag} \\
-            --project=projects/${p.projectId} \\
-            --targets=${p.targetsPlaceholder} \\
-            --file-pattern=migrations/*.sql`;
-}
-
-function generateGithubReleaseYaml(p: YamlParams): string {
-  return `name: Rollout
-on:
-  push:
-    branches: ["${p.branch}"]
-    paths: ["migrations/*.sql"]
-env:
-  BYTEBASE_URL: ${p.bytebaseUrl}
-  BYTEBASE_WORKLOAD_IDENTITY: ${p.workloadIdentityEmail}
-  BYTEBASE_PROJECT: projects/${p.projectId}
-jobs:
-  build:
-    runs-on: ${p.runsOn}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build
-        run: echo "Building..."
-  create-rollout:
-    needs: build
-    permissions:
-      id-token: write
-    runs-on: ${p.runsOn}
-    container:
-      image: bytebase/bytebase-action
-    outputs:
-      bytebase-plan: \${{ steps.set-output.outputs.plan }}
-    steps:
-      - uses: actions/checkout@v4
-${exchangeTokenStep("      ")}
-      - name: Create rollout
-        run: |
-          bytebase-action rollout \\
-            --url=$BYTEBASE_URL \\
-            ${accessTokenFlag} \\
-            --project=$BYTEBASE_PROJECT \\
-            --targets=${p.targetsPlaceholder} \\
-            --file-pattern=migrations/*.sql \\
-            --output=\${{ runner.temp }}/bytebase-metadata.json
-      - name: Set output
-        id: set-output
-        run: |
-          PLAN=$(jq -r .plan \${{ runner.temp }}/bytebase-metadata.json)
-          echo "plan=$PLAN" >> $GITHUB_OUTPUT
-  deploy-to-test:
-    needs: create-rollout
-    permissions:
-      id-token: write
-    runs-on: ${p.runsOn}
-    environment: test
-    container:
-      image: bytebase/bytebase-action
-    steps:
-      - uses: actions/checkout@v4
-${exchangeTokenStep("      ")}
-      - name: Deploy to test
-        run: |
-          bytebase-action rollout \\
-            --url=$BYTEBASE_URL \\
-            ${accessTokenFlag} \\
-            --project=$BYTEBASE_PROJECT \\
-            --target-stage=environments/test \\
-            --plan=\${{ needs.create-rollout.outputs.bytebase-plan }}
-  deploy-to-prod:
-    needs: [deploy-to-test, create-rollout]
-    permissions:
-      id-token: write
-    runs-on: ${p.runsOn}
-    environment: prod
-    container:
-      image: bytebase/bytebase-action
-    steps:
-      - uses: actions/checkout@v4
-${exchangeTokenStep("      ")}
-      - name: Deploy to prod
-        run: |
-          bytebase-action rollout \\
-            --url=$BYTEBASE_URL \\
-            ${accessTokenFlag} \\
-            --project=$BYTEBASE_PROJECT \\
-            --target-stage=environments/prod \\
-            --plan=\${{ needs.create-rollout.outputs.bytebase-plan }}`;
-}
-
-const gitlabExchangeScript = `    - |
-      ACCESS_TOKEN=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
-        -H "Content-Type: application/json" \\
-        -d "{\\"token\\":\\"$GITLAB_OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
-        | jq -r '.accessToken')
-      export BYTEBASE_ACCESS_TOKEN=$ACCESS_TOKEN`;
-
-function generateGitlabCiYaml(p: YamlParams): string {
-  return `stages:
-  - sql-review
-  - create-rollout
-  - deploy-to-test
-  - deploy-to-prod
-
-variables:
-  BYTEBASE_URL: ${p.bytebaseUrl}
-  BYTEBASE_WORKLOAD_IDENTITY: ${p.workloadIdentityEmail}
-  BYTEBASE_PROJECT: projects/${p.projectId}
-  BYTEBASE_TARGETS: ${p.targetsPlaceholder}
-  FILE_PATTERN: "migrations/*.sql"
-
-sql-review:
-  stage: sql-review
-  image: bytebase/bytebase-action
-  id_tokens:
-    GITLAB_OIDC_TOKEN:
-      aud: ${GENERATED_WORKFLOW_AUDIENCE}
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  script:
-${gitlabExchangeScript}
-    - bytebase-action check --url=$BYTEBASE_URL --access-token=$BYTEBASE_ACCESS_TOKEN --project=$BYTEBASE_PROJECT --targets=$BYTEBASE_TARGETS --file-pattern=$FILE_PATTERN
-
-create-rollout:
-  stage: create-rollout
-  image: bytebase/bytebase-action
-  id_tokens:
-    GITLAB_OIDC_TOKEN:
-      aud: ${GENERATED_WORKFLOW_AUDIENCE}
-  rules:
-    - if: $CI_COMMIT_BRANCH == "${p.branch}"
-  script:
-${gitlabExchangeScript}
-    - bytebase-action rollout --url=$BYTEBASE_URL --access-token=$BYTEBASE_ACCESS_TOKEN --project=$BYTEBASE_PROJECT --targets=$BYTEBASE_TARGETS --file-pattern=$FILE_PATTERN --output=bytebase-metadata.json
-  artifacts:
-    paths: [bytebase-metadata.json]
-
-deploy-to-test:
-  stage: deploy-to-test
-  image: bytebase/bytebase-action
-  needs: [create-rollout]
-  id_tokens:
-    GITLAB_OIDC_TOKEN:
-      aud: ${GENERATED_WORKFLOW_AUDIENCE}
-  rules:
-    - if: $CI_COMMIT_BRANCH == "${p.branch}"
-  environment: test
-  script:
-${gitlabExchangeScript}
-    - PLAN=$(jq -r .plan bytebase-metadata.json)
-    - bytebase-action rollout --url=$BYTEBASE_URL --access-token=$BYTEBASE_ACCESS_TOKEN --project=$BYTEBASE_PROJECT --target-stage=environments/test --plan=$PLAN
-
-deploy-to-prod:
-  stage: deploy-to-prod
-  image: bytebase/bytebase-action
-  needs: [deploy-to-test]
-  id_tokens:
-    GITLAB_OIDC_TOKEN:
-      aud: ${GENERATED_WORKFLOW_AUDIENCE}
-  rules:
-    - if: $CI_COMMIT_BRANCH == "${p.branch}"
-  environment: prod
-  when: manual
-  script:
-${gitlabExchangeScript}
-    - PLAN=$(jq -r .plan bytebase-metadata.json)
-    - bytebase-action rollout --url=$BYTEBASE_URL --access-token=$BYTEBASE_ACCESS_TOKEN --project=$BYTEBASE_PROJECT --target-stage=environments/prod --plan=$PLAN`;
 }

@@ -201,7 +201,7 @@ func newActuatorInfoTestClient(t *testing.T, version string) *client {
 	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)
 
-	client, err := newClient(server.URL, "token", "", "", defaultClientOptions())
+	client, err := newClient(server.URL, credential{accessToken: "token"}, defaultClientOptions())
 	require.NoError(t, err)
 	t.Cleanup(client.close)
 	return client

@@ -1,0 +1,77 @@
+// Package oceanbase parses OceanBase's MySQL mode. OceanBase accepts distributed DDL
+// MySQL rejects, so it carries its own omni parser and AST rather than MySQL's.
+package oceanbase
+
+import (
+	"errors"
+	"fmt"
+
+	omniparser "github.com/bytebase/omni/oceanbase/parser"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+)
+
+func init() {
+	base.RegisterParseStatementsFunc(storepb.Engine_OCEANBASE, parseStatements)
+	base.RegisterGetStatementTypes(storepb.Engine_OCEANBASE, GetStatementTypes)
+}
+
+// parseStatements is the ParseStatementsFunc for OceanBase. Each returned statement
+// carries both its text and its AST.
+func parseStatements(statement string) ([]base.ParsedStatement, error) {
+	stmts, err := SplitSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []base.ParsedStatement
+	for _, stmt := range stmts {
+		if stmt.Empty {
+			continue
+		}
+
+		list, err := ParseOceanBase(stmt.Text)
+		if err != nil {
+			return nil, convertError(err, stmt)
+		}
+		if list == nil || len(list.Items) == 0 {
+			continue
+		}
+
+		for _, node := range list.Items {
+			result = append(result, base.ParsedStatement{
+				Statement: stmt,
+				AST: &AST{
+					Node:          node,
+					Text:          stmt.Text,
+					StartPosition: stmt.Start,
+				},
+			})
+		}
+	}
+
+	return result, nil
+}
+
+// convertError converts an omni parser error to a base.SyntaxError with proper line:column position.
+func convertError(err error, stmt base.Statement) error {
+	var parseErr *omniparser.ParseError
+	if !errors.As(err, &parseErr) {
+		return err
+	}
+	message, position, relatedText := parseErr.Message, parseErr.Position, parseErr.RelatedText
+
+	pos := base.ShiftPosition(ByteOffsetToRunePosition(stmt.Text, position), stmt.Start)
+
+	msg := fmt.Sprintf("Syntax error at line %d:%d: %s", pos.Line, pos.Column, message)
+	if relatedText != "" {
+		msg += "\nrelated text: " + relatedText
+	}
+
+	return &base.SyntaxError{
+		Position:   pos,
+		Message:    msg,
+		RawMessage: message,
+	}
+}

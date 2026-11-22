@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
     | "query-data"
     | "create-database-change"
     | "mark-sensitive-data"
+    | "just-exploring"
     | undefined,
   removeDatabaseMetadataCache: vi.fn(),
   fetchInstance: vi.fn(),
@@ -425,6 +426,24 @@ describe("ProjectDatabasesPage", () => {
     });
   });
 
+  test("opens the create database sheet from a Project Home shortcut", async () => {
+    mocks.routerCurrentQuery = { createDatabase: "1" };
+    mocks.fetchInstanceList.mockResolvedValueOnce({
+      instances: [{ name: "instances/prod", title: "Prod" }],
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector("[data-testid='create-database-sheet']")).not.toBeNull();
+
+    act(() => root.unmount());
+  });
+
   test("only checks workspace instances for the default project", async () => {
     mocks.fetchInstanceList.mockImplementation(async (params) => {
       if (params?.parent) {
@@ -808,8 +827,11 @@ describe("ProjectDatabasesPage", () => {
     });
   });
 
-  test("only offers SQL Editor for the query scenario", async () => {
-    mocks.scenarioId = "query-data";
+  test.each([
+    "query-data",
+    "just-exploring",
+  ] as const)("only offers SQL Editor for the %s scenario", async (scenarioId) => {
+    mocks.scenarioId = scenarioId;
     mocks.routerCurrentQuery = { intro: "project-instance-synced" };
     mocks.visibleDatabases = [
       {

@@ -196,3 +196,83 @@
     ALTER TABLE tech_book RENAME TO tb;
     ALTER TABLE tb ADD COLUMN note TEXT;
   changeType: 1
+- statement: |-
+    CREATE TABLE t (id INT);
+    ALTER TABLE t RENAME TO u;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."u" requires PRIMARY KEY, related statement: "ALTER TABLE t RENAME TO u"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book RENAME TO t2;
+    ALTER TABLE t2 DROP CONSTRAINT old_pk;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."t2" requires PRIMARY KEY, related statement: "ALTER TABLE t2 DROP CONSTRAINT old_pk"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE public.t (id INT);
+    ALTER TABLE t ADD COLUMN v INT;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."t" requires PRIMARY KEY, related statement: "ALTER TABLE t ADD COLUMN v INT"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE TABLE public.t (id INT); ALTER TABLE t ADD COLUMN v INT;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."t" requires PRIMARY KEY, related statement: "CREATE TABLE public.t (id INT)"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t (id INT);
+    DROP TABLE t;
+- statement: |-
+    CREATE TABLE a (x INT);
+    CREATE TABLE b (y INT);
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."a" requires PRIMARY KEY, related statement: "CREATE TABLE a (x INT)"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."b" requires PRIMARY KEY, related statement: "CREATE TABLE b (y INT)"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t (id INT) PARTITION BY RANGE (id);
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."t" requires PRIMARY KEY, related statement: "CREATE TABLE t (id INT) PARTITION BY RANGE (id)"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DO $$ BEGIN CREATE TABLE t (id INT); END $$;

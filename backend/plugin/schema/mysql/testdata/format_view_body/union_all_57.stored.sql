@@ -1,1 +1,0 @@
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `prettyfmt_edge`.`v_union_all` AS select `prettyfmt_edge`.`t1`.`a` AS `a` from `prettyfmt_edge`.`t1` union all select `prettyfmt_edge`.`t2`.`a` AS `a` from `prettyfmt_edge`.`t2`

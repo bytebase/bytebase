@@ -74,3 +74,28 @@
 # list with ColConstrPrimaryKey).
 - statement: ALTER TABLE tech_book ADD COLUMN new_pk int PRIMARY KEY
   changeType: 1
+- statement: |-
+    /* leading comment */
+    CREATE TABLE t(a int, b int, KEY k1 (a), KEY k2 (b), KEY k3 (a, b), KEY k4 (b, a), UNIQUE KEY u1 (a), UNIQUE KEY u2 (b))
+  want:
+    - status: 2
+      code: 813
+      title: INDEX_TOTAL_NUMBER_LIMIT
+      content: The count of index in table `t` should be no more than 5, but found 6
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int, b int, KEY k1 (a), KEY k2 (a), KEY k3 (a), KEY k4 (a), KEY k5 (a));
+
+    ALTER TABLE t ADD UNIQUE KEY uk (b)
+  want:
+    - status: 2
+      code: 813
+      title: INDEX_TOTAL_NUMBER_LIMIT
+      content: The count of index in table `t` should be no more than 5, but found 6
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

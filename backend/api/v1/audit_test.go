@@ -17,7 +17,9 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -484,6 +486,98 @@ func TestAuditRowCarriesMCPDelegationProvenance(t *testing.T) {
 	})
 }
 
+func TestAuditRowCarriesFederatedIdentity(t *testing.T) {
+	t.Parallel()
+	federated := &common.FederatedIdentity{
+		Issuer:  "https://token.actions.githubusercontent.com",
+		Subject: "repo:my-org/app:ref:refs/heads/main",
+	}
+	want := &storepb.FederatedIdentity{Issuer: federated.Issuer, Subject: federated.Subject}
+	in := NewAuditInterceptor(nil, "test-secret", &config.Profile{})
+
+	t.Run("a call made with an exchanged token", func(t *testing.T) {
+		t.Parallel()
+		ctx := newAuditTestContext(&common.AuthContext{
+			Audit:             true,
+			Resources:         []*common.Resource{{Type: common.ResourceTypeWorkspace, ID: auditTestWorkspace}},
+			FederatedIdentity: federated,
+		})
+		rows, err := in.buildAuditRows(ctx, &auditEntry{
+			request: &v1pb.QueryRequest{Name: "instances/i/databases/d"},
+			method:  "/bytebase.v1.SQLService/Query",
+		})
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
+		require.True(t, proto.Equal(want, rows[0].payload.GetFederatedIdentity()))
+	})
+
+	t.Run("any other call carries none", func(t *testing.T) {
+		t.Parallel()
+		ctx := newAuditTestContext(&common.AuthContext{
+			Audit:     true,
+			Resources: []*common.Resource{{Type: common.ResourceTypeWorkspace, ID: auditTestWorkspace}},
+		})
+		rows, err := in.buildAuditRows(ctx, &auditEntry{
+			request: &v1pb.QueryRequest{Name: "instances/i/databases/d"},
+			method:  "/bytebase.v1.SQLService/Query",
+		})
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
+		require.Nil(t, rows[0].payload.GetFederatedIdentity())
+	})
+
+	t.Run("a successful exchange names the identity and the workload behind it", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{
+			Audit:             true,
+			FederatedIdentity: federated,
+		})
+		rows, err := in.buildAuditRows(ctx, &auditEntry{
+			request:                 &v1pb.ExchangeTokenRequest{Email: "CI@workload.bytebase.com"},
+			response:                &v1pb.ExchangeTokenResponse{},
+			method:                  v1connect.AuthServiceExchangeTokenProcedure,
+			handlerAuditWorkspaceID: auditTestWorkspace,
+		})
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
+		require.Equal(t, "workloadIdentities/ci@workload.bytebase.com", rows[0].payload.GetUser())
+		require.True(t, proto.Equal(want, rows[0].payload.GetFederatedIdentity()))
+	})
+
+	t.Run("a successful exchange names the identity even when another credential is sent", func(t *testing.T) {
+		t.Parallel()
+		ctx := newAuditTestContext(&common.AuthContext{
+			Audit:             true,
+			FederatedIdentity: federated,
+		})
+		rows, err := in.buildAuditRows(ctx, &auditEntry{
+			request:                 &v1pb.ExchangeTokenRequest{Email: "ci@workload.bytebase.com"},
+			response:                &v1pb.ExchangeTokenResponse{},
+			method:                  v1connect.AuthServiceExchangeTokenProcedure,
+			handlerAuditWorkspaceID: auditTestWorkspace,
+		})
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
+		require.Equal(t, "workloadIdentities/ci@workload.bytebase.com", rows[0].payload.GetUser())
+		require.True(t, proto.Equal(want, rows[0].payload.GetFederatedIdentity()))
+	})
+
+	t.Run("a refused exchange names no actor", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
+		rows, err := in.buildAuditRows(ctx, &auditEntry{
+			request:                 &v1pb.ExchangeTokenRequest{Email: "ci@workload.bytebase.com"},
+			method:                  v1connect.AuthServiceExchangeTokenProcedure,
+			handlerAuditWorkspaceID: auditTestWorkspace,
+			rerr:                    connect.NewError(connect.CodeUnauthenticated, errors.New("token validation failed")),
+		})
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
+		require.Empty(t, rows[0].payload.GetUser())
+		require.Nil(t, rows[0].payload.GetFederatedIdentity())
+	})
+}
+
 // TestAuditParentsDeduplicated pins that an audited call writes ONE row per
 // distinct parent. Batch requests repeat the same project resource once per
 // item; without dedup, a single batch call naming N items would write N
@@ -625,6 +719,7 @@ func TestAuditSinks(t *testing.T) {
 						AuthMethod:     common.AuthMethodCustom,
 						MCPMethodClass: v1pb.MCPMethodClass_WRITE,
 					}
+					ctx := newAuditTestContext(authCtx)
 					var call connect.UnaryFunc
 					if chain == "public" {
 						call = in.WrapUnary(aclIn.WrapUnary(handler(tc.outcome)))
@@ -633,6 +728,8 @@ func TestAuditSinks(t *testing.T) {
 						if tc.outcome == outcomeRefusedByGate {
 							authCtx.MCPMethodClass = v1pb.MCPMethodClass_FORBIDDEN
 						}
+						// The gate serves an MCP setting update only with the user's confirmation.
+						ctx = auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{Procedure: procedure, Resource: settingName})
 						call = in.WrapUnary(gate.WrapUnary(aclIn.WrapUnary(handler(tc.outcome))))
 					}
 					request := &v1pb.UpdateSettingRequest{
@@ -640,7 +737,7 @@ func TestAuditSinks(t *testing.T) {
 						ValidateOnly: tc.validateOnly,
 					}
 					before := len(lines())
-					_, err := call(newAuditTestContext(authCtx), &specRequest{AnyRequest: connect.NewRequest(request), procedure: procedure})
+					_, err := call(ctx, &specRequest{AnyRequest: connect.NewRequest(request), procedure: procedure})
 					if tc.outcome == outcomeOK {
 						require.NoError(t, err)
 					} else {

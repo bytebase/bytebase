@@ -1,0 +1,170 @@
+// Package mysql implements the SQL advisor rules for MySQL.
+package mysql
+
+import (
+	"slices"
+
+	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+)
+
+func init() {
+	extract := advisor.NodeExtractor(mysqlparser.GetNode)
+	byteOffsetLine := func(sql string, offset int) int32 {
+		return mysqlparser.ByteOffsetToRunePosition(sql, offset).Line
+	}
+	makePriorBackupStmt := func(node ast.Node, text string) mysqlv1review.PriorBackupStatement {
+		return mysqlv1review.PriorBackupStatement{Node: node, Text: text}
+	}
+
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
+		advisor.NewMySQLPriorBackupAdvisor(storepb.Engine_MYSQL, extract, makePriorBackupStmt, mysqlv1review.PriorBackupCheck))
+
+	advisor.RegisterMySQLFamily(storepb.Engine_MYSQL, advisor.MySQLFamilyOptions[ast.Node]{
+		Extract:         extract,
+		ByteOffsetLine:  byteOffsetLine,
+		DefinesColumn:   definesColumn,
+		ReadsColumnType: readsColumnType,
+		DropsColumn:     dropsColumn,
+		IsRenameIndex:   isRenameIndex,
+		IsDropDatabase:  isDropDatabase,
+		IsCreateTable:   isCreateTable,
+	}, advisor.MySQLFamilyRuleSet[ast.Node]{
+		OnlineMigration:                           mysqlv1review.OnlineMigration,
+		MaxStatementsInTransaction:                true,
+		InsertRowLimitProbes:                      mysqlv1review.StatementInsertRowLimitProbes,
+		InsertRowLimit:                            mysqlv1review.StatementInsertRowLimit,
+		AffectedRowLimitProbes:                    mysqlv1review.StatementAffectedRowLimitProbes,
+		AffectedRowLimit:                          mysqlv1review.StatementAffectedRowLimit,
+		DMLDryRunProbes:                           mysqlv1review.StatementDMLDryRunProbes,
+		DMLDryRun:                                 mysqlv1review.StatementDMLDryRun,
+		ColumnAutoIncrementInitialValue:           mysqlv1review.ColumnAutoIncrementInitialValue,
+		ColumnAutoIncrementMustInteger:            mysqlv1review.ColumnAutoIncrementMustInteger,
+		ColumnAutoIncrementMustUnsigned:           mysqlv1review.ColumnAutoIncrementMustUnsigned,
+		ColumnComment:                             mysqlv1review.ColumnComment,
+		ColumnCurrentTimeCountLimit:               mysqlv1review.ColumnCurrentTimeCountLimit,
+		ColumnDisallowChange:                      mysqlv1review.ColumnDisallowChange,
+		ColumnDisallowChangeType:                  mysqlv1review.ColumnDisallowChangeType,
+		ColumnDisallowChangingOrder:               mysqlv1review.ColumnDisallowChangingOrder,
+		ColumnDisallowDropInIndex:                 mysqlv1review.ColumnDisallowDropInIndex,
+		ColumnDisallowSetCharset:                  mysqlv1review.ColumnDisallowSetCharset,
+		ColumnMaximumCharacterLength:              mysqlv1review.ColumnMaximumCharacterLength,
+		ColumnMaximumVarcharLength:                mysqlv1review.ColumnMaximumVarcharLength,
+		ColumnNoNull:                              mysqlv1review.ColumnNoNull,
+		ColumnRequireCharset:                      mysqlv1review.ColumnRequireCharset,
+		ColumnRequireCollation:                    mysqlv1review.ColumnRequireCollation,
+		ColumnRequireDefault:                      mysqlv1review.ColumnRequireDefault,
+		ColumnRequired:                            mysqlv1review.ColumnRequired,
+		ColumnSetDefaultForNotNull:                mysqlv1review.ColumnSetDefaultForNotNull,
+		ColumnTypeDisallowList:                    mysqlv1review.ColumnTypeDisallowList,
+		DatabaseDropEmptyDatabase:                 mysqlv1review.DatabaseDropEmptyDatabase,
+		EngineMySQLUseInnoDB:                      mysqlv1review.EngineMySQLUseInnoDB,
+		IndexKeyNumberLimit:                       mysqlv1review.IndexKeyNumberLimit,
+		IndexNoDuplicateColumn:                    mysqlv1review.IndexNoDuplicateColumn,
+		IndexPKTypeLimit:                          mysqlv1review.IndexPKTypeLimit,
+		IndexPrimaryKeyTypeAllowlist:              mysqlv1review.IndexPrimaryKeyTypeAllowlist,
+		IndexTotalNumberLimit:                     mysqlv1review.IndexTotalNumberLimit,
+		IndexTypeAllowList:                        mysqlv1review.IndexTypeAllowList,
+		IndexTypeNoBlob:                           mysqlv1review.IndexTypeNoBlob,
+		NamingAutoIncrementColumn:                 mysqlv1review.NamingAutoIncrementColumn,
+		NamingColumn:                              mysqlv1review.NamingColumn,
+		NamingForeignKey:                          mysqlv1review.NamingForeignKey,
+		NamingIdentifierNoKeyword:                 mysqlv1review.NamingIdentifierNoKeyword,
+		NamingIndex:                               mysqlv1review.NamingIndex,
+		NamingTable:                               mysqlv1review.NamingTable,
+		NamingUniqueKey:                           mysqlv1review.NamingUniqueKey,
+		SchemaBackwardCompatibility:               mysqlv1review.SchemaBackwardCompatibility,
+		StatementDisallowCommit:                   mysqlv1review.StatementDisallowCommit,
+		StatementDisallowLimit:                    mysqlv1review.StatementDisallowLimit,
+		StatementDisallowOrderBy:                  mysqlv1review.StatementDisallowOrderBy,
+		StatementDisallowTruncate:                 mysqlv1review.StatementDisallowTruncate,
+		StatementInsertDisallowOrderByRand:        mysqlv1review.StatementInsertDisallowOrderByRand,
+		StatementInsertMustSpecifyColumn:          mysqlv1review.StatementInsertMustSpecifyColumn,
+		StatementMaxExecutionTime:                 mysqlv1review.StatementMaxExecutionTime,
+		StatementMergeAlterTable:                  mysqlv1review.StatementMergeAlterTable,
+		StatementRequireAlgorithmOption:           mysqlv1review.StatementRequireAlgorithmOption,
+		StatementRequireLockOption:                mysqlv1review.StatementRequireLockOption,
+		StatementSelectNoSelectAll:                mysqlv1review.StatementSelectNoSelectAll,
+		StatementWhereDisallowFunctionsAndCalc:    mysqlv1review.StatementWhereDisallowFunctionsAndCalculations,
+		StatementWhereMaximumLogicalOperatorCount: mysqlv1review.StatementWhereMaximumLogicalOperatorCount,
+		StatementWhereNoEqualNull:                 mysqlv1review.StatementWhereNoEqualNull,
+		StatementWhereNoLeadingWildcardLike:       mysqlv1review.StatementWhereNoLeadingWildcardLike,
+		StatementWhereRequireSelect:               mysqlv1review.StatementWhereRequireSelect,
+		StatementWhereRequireUpdateDelete:         mysqlv1review.StatementWhereRequireUpdateDelete,
+		SystemCharsetAllowlist:                    mysqlv1review.SystemCharsetAllowlist,
+		SystemCollationAllowlist:                  mysqlv1review.SystemCollationAllowlist,
+		SystemEventDisallowCreate:                 mysqlv1review.SystemEventDisallowCreate,
+		SystemFunctionDisallowCreate:              mysqlv1review.SystemFunctionDisallowCreate,
+		SystemFunctionDisallowedList:              mysqlv1review.SystemFunctionDisallowedList,
+		SystemProcedureDisallowCreate:             mysqlv1review.SystemProcedureDisallowCreate,
+		SystemViewDisallowCreate:                  mysqlv1review.SystemViewDisallowCreate,
+		TableComment:                              mysqlv1review.TableComment,
+		TableDisallowDDL:                          mysqlv1review.TableDisallowDDL,
+		TableDisallowDML:                          mysqlv1review.TableDisallowDML,
+		TableDisallowPartition:                    mysqlv1review.TableDisallowPartition,
+		TableDisallowSetCharset:                   mysqlv1review.TableDisallowSetCharset,
+		TableDisallowTrigger:                      mysqlv1review.TableDisallowTrigger,
+		TableDropNaming:                           mysqlv1review.TableDropNaming,
+		TableLimitSize:                            mysqlv1review.TableLimitSize,
+		TableNoDuplicateIndex:                     mysqlv1review.TableNoDuplicateIndex,
+		TableNoForeignKey:                         mysqlv1review.TableNoForeignKey,
+		TableRequireCharset:                       mysqlv1review.TableRequireCharset,
+		TableRequireCollation:                     mysqlv1review.TableRequireCollation,
+		TableRequirePK:                            mysqlv1review.TableRequirePK,
+		TableTextFieldsTotalLength:                mysqlv1review.TableTextFieldsTotalLength,
+	})
+}
+
+func hasAlterCmd(node ast.Node, requireTable bool, match func(*ast.AlterTableCmd) bool) bool {
+	alter, ok := node.(*ast.AlterTableStmt)
+	if !ok || (requireTable && alter.Table == nil) {
+		return false
+	}
+	return slices.ContainsFunc(alter.Commands, func(cmd *ast.AlterTableCmd) bool {
+		return cmd != nil && match(cmd)
+	})
+}
+
+func definesColumn(node ast.Node) bool {
+	if n, ok := node.(*ast.CreateTableStmt); ok {
+		return n.Table != nil && slices.ContainsFunc(n.Columns, func(col *ast.ColumnDef) bool { return col != nil })
+	}
+	return hasAlterCmd(node, true, func(cmd *ast.AlterTableCmd) bool {
+		switch cmd.Type {
+		case ast.ATAddColumn:
+			return cmd.Column != nil || len(cmd.Columns) > 0
+		case ast.ATChangeColumn:
+			return cmd.Column != nil
+		default:
+			return false
+		}
+	})
+}
+
+func readsColumnType(node ast.Node) bool {
+	return hasAlterCmd(node, true, func(cmd *ast.AlterTableCmd) bool {
+		return cmd.Column != nil && cmd.Column.TypeName != nil && (cmd.Type == ast.ATChangeColumn || cmd.Type == ast.ATModifyColumn)
+	})
+}
+
+func dropsColumn(node ast.Node) bool {
+	return hasAlterCmd(node, true, func(cmd *ast.AlterTableCmd) bool { return cmd.Type == ast.ATDropColumn })
+}
+
+func isRenameIndex(node ast.Node) bool {
+	return hasAlterCmd(node, false, func(cmd *ast.AlterTableCmd) bool { return cmd.Type == ast.ATRenameIndex })
+}
+
+func isDropDatabase(node ast.Node) bool {
+	_, ok := node.(*ast.DropDatabaseStmt)
+	return ok
+}
+
+func isCreateTable(node ast.Node) bool {
+	_, ok := node.(*ast.CreateTableStmt)
+	return ok
+}

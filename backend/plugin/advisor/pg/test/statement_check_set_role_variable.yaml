@@ -9,3 +9,16 @@
       content: No SET ROLE statement found.
       startposition: null
       endposition: null
+- statement: |-
+    SET search_path = s;
+    SELECT 1;
+- statement: |-
+    SELECT 1;
+    SET ROLE joe;
+  want:
+    - status: 2
+      code: 217
+      title: STATEMENT_CHECK_SET_ROLE_VARIABLE
+      content: No SET ROLE statement found.
+      startposition: null
+      endposition: null

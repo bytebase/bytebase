@@ -1,4 +1,4 @@
-import { type Page, type Locator } from "@playwright/test";
+import { expect, type Page, type Locator } from "@playwright/test";
 
 // Page object for the React-migrated SQL Editor.
 // Replaces the helpers that previously lived alongside the Vue components.
@@ -112,6 +112,20 @@ export class SqlEditorPage {
     await this.page.goto(`${this.baseURL}/sql-editor`);
     await this.page.keyboard.press("Escape").catch(() => {});
     await this.page.waitForLoadState("networkidle").catch(() => {});
+  }
+
+  // Home with the Saved queries pane open. The aside remembers the last
+  // visited tab per project in localStorage, so a session that ends on the
+  // Schema pane reopens there; specs that read the saved-query tree must not
+  // depend on that history.
+  async gotoSavedQueries() {
+    await this.gotoHome();
+    // One tree per folder (Mine, Shared, Draft); any of them proves the pane.
+    const tree = this.page.getByTestId("saved-query-tree").first();
+    if (!(await tree.isVisible({ timeout: 2000 }).catch(() => false))) {
+      await this.gutterSavedQueryTab.click();
+    }
+    await expect(tree).toBeVisible({ timeout: 10_000 });
   }
 
   async gotoWithDb(projectId: string, instanceId: string, dbName: string) {

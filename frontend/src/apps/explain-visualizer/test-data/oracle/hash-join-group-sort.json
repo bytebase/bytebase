@@ -1,0 +1,113 @@
+[
+  {
+    "bytes": "88",
+    "cardinality": "4",
+    "cost": "58",
+    "id": "0",
+    "operation": "SELECT STATEMENT",
+    "optimizer": "ALL_ROWS",
+    "position": "58"
+  },
+  {
+    "bytes": "88",
+    "cardinality": "4",
+    "cost": "58",
+    "id": "1",
+    "operation": "SORT",
+    "options": "ORDER BY",
+    "parent_id": "0",
+    "position": "1"
+  },
+  {
+    "bytes": "88",
+    "cardinality": "4",
+    "cost": "58",
+    "id": "2",
+    "operation": "HASH",
+    "options": "GROUP BY",
+    "parent_id": "1",
+    "position": "1"
+  },
+  {
+    "access_predicates": "\"C\".\"ID\"=\"O\".\"CUSTOMER_ID\"",
+    "bytes": "366674",
+    "cardinality": "16667",
+    "cost": "55",
+    "id": "3",
+    "operation": "HASH JOIN",
+    "parent_id": "2",
+    "position": "1"
+  },
+  {
+    "bytes": "366674",
+    "cardinality": "16667",
+    "cost": "55",
+    "id": "4",
+    "operation": "NESTED LOOPS",
+    "parent_id": "3",
+    "position": "1"
+  },
+  { "id": "5", "operation": "NESTED LOOPS", "parent_id": "4", "position": "1" },
+  {
+    "id": "6",
+    "operation": "STATISTICS COLLECTOR",
+    "parent_id": "5",
+    "position": "1"
+  },
+  {
+    "bytes": "35000",
+    "cardinality": "5000",
+    "cost": "7",
+    "id": "7",
+    "object_name": "CUSTOMERS",
+    "object_owner": "SYSTEM",
+    "object_type": "TABLE",
+    "operation": "TABLE ACCESS",
+    "optimizer": "ANALYZED",
+    "options": "FULL",
+    "parent_id": "6",
+    "position": "1"
+  },
+  {
+    "access_predicates": "\"C\".\"ID\"=\"O\".\"CUSTOMER_ID\"",
+    "id": "8",
+    "object_name": "ORDERS_CUSTOMER_ID_IDX",
+    "object_owner": "SYSTEM",
+    "object_type": "INDEX",
+    "operation": "INDEX",
+    "optimizer": "ANALYZED",
+    "options": "RANGE SCAN",
+    "parent_id": "5",
+    "position": "2"
+  },
+  {
+    "bytes": "45",
+    "cardinality": "3",
+    "cost": "48",
+    "filter_predicates": "\"O\".\"STATUS\"='open'",
+    "id": "9",
+    "object_name": "ORDERS",
+    "object_owner": "SYSTEM",
+    "object_type": "TABLE",
+    "operation": "TABLE ACCESS",
+    "optimizer": "ANALYZED",
+    "options": "BY INDEX ROWID",
+    "parent_id": "4",
+    "position": "2"
+  },
+  {
+    "bytes": "250005",
+    "cardinality": "16667",
+    "cost": "48",
+    "filter_predicates": "\"O\".\"STATUS\"='open'",
+    "id": "10",
+    "object_name": "ORDERS",
+    "object_owner": "SYSTEM",
+    "object_type": "TABLE",
+    "operation": "TABLE ACCESS",
+    "optimizer": "ANALYZED",
+    "options": "FULL",
+    "parent_id": "3",
+    "position": "2"
+  }
+]

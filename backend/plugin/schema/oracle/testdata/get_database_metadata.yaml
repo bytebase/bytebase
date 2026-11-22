@@ -147,7 +147,13 @@
           "views": [
             {
               "name": "EXPENSIVE_PRODUCTS",
-              "definition": "SELECT ID, NAME, PRICE\nFROM PRODUCTS\nWHERE PRICE \u003e 100"
+              "definition": "SELECT ID, NAME, PRICE\nFROM PRODUCTS\nWHERE PRICE \u003e 100",
+              "dependency_columns": [
+                {
+                  "table": "PRODUCTS",
+                  "column": "*"
+                }
+              ]
             }
           ]
         }
@@ -246,7 +252,7 @@
                   "name": "NVARCHAR2_COL",
                   "position": 9,
                   "nullable": true,
-                  "type": "NVARCHAR2(4000)"
+                  "type": "NVARCHAR2(2000)"
                 },
                 {
                   "name": "CHAR_COL",
@@ -258,7 +264,7 @@
                   "name": "NCHAR_COL",
                   "position": 11,
                   "nullable": true,
-                  "type": "NCHAR(200)"
+                  "type": "NCHAR(100)"
                 },
                 {
                   "name": "DATE_COL",
@@ -483,19 +489,19 @@
               "check_constraints": [
                 {
                   "name": "CHK_STATUS",
-                  "expression": "STATUSIN('PENDING','PROCESSING','SHIPPED','DELIVERED','CANCELLED')"
+                  "expression": "STATUS IN ('PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED')"
                 },
                 {
                   "name": "CHK_TOTAL_POSITIVE",
-                  "expression": "TOTAL_AMOUNT\u003e0"
+                  "expression": "TOTAL_AMOUNT \u003e 0"
                 },
                 {
                   "name": "CHK_DISCOUNT_RANGE",
-                  "expression": "DISCOUNT_PERCENTBETWEEN0AND100"
+                  "expression": "DISCOUNT_PERCENT BETWEEN 0 AND 100"
                 },
                 {
                   "name": "CHK_SHIP_AFTER_ORDER",
-                  "expression": "SHIP_DATEISNULLORSHIP_DATE\u003e=ORDER_DATE"
+                  "expression": "SHIP_DATE IS NULL OR SHIP_DATE \u003e= ORDER_DATE"
                 }
               ]
             }
@@ -722,15 +728,15 @@
               "check_constraints": [
                 {
                   "name": "CHK_SALARY_POSITIVE",
-                  "expression": "SALARY\u003e0"
+                  "expression": "SALARY \u003e 0"
                 },
                 {
                   "name": "CHK_COMMISSION_RANGE",
-                  "expression": "COMMISSION_PCTBETWEEN0AND1"
+                  "expression": "COMMISSION_PCT BETWEEN 0 AND 1"
                 },
                 {
                   "name": "CHK_EMAIL_FORMAT",
-                  "expression": "EMAILLIKE'%@%.%'"
+                  "expression": "EMAIL LIKE '%@%.%'"
                 }
               ]
             }
@@ -1081,6 +1087,8 @@
               "triggers": [
                 {
                   "name": "AUDIT_LOG_TRIGGER",
+                  "event": "INSERT",
+                  "timing": "BEFORE EACH ROW",
                   "body": "CREATE OR REPLACE TRIGGER audit_log_trigger\n    BEFORE INSERT ON AUDIT_LOG\n    FOR EACH ROW\nBEGIN\n    IF :NEW.LOG_ID IS NULL THEN\n        SELECT audit_log_seq.NEXTVAL INTO :NEW.LOG_ID FROM DUAL;\n    END IF;\nEND;"
                 }
               ]
@@ -1151,6 +1159,8 @@
               "triggers": [
                 {
                   "name": "INVENTORY_AUDIT_TRIGGER",
+                  "event": "INSERT OR UPDATE OR DELETE",
+                  "timing": "AFTER EACH ROW",
                   "body": "CREATE OR REPLACE TRIGGER inventory_audit_trigger\n    AFTER INSERT OR UPDATE OR DELETE ON INVENTORY\n    FOR EACH ROW\nBEGIN\n    IF INSERTING THEN\n        INSERT INTO AUDIT_LOG (TABLE_NAME, OPERATION, NEW_VALUES)\n        VALUES ('INVENTORY', 'INSERT', 'ID=' || :NEW.ITEM_ID || ',CODE=' || :NEW.ITEM_CODE);\n    ELSIF UPDATING THEN\n        INSERT INTO AUDIT_LOG (TABLE_NAME, OPERATION, OLD_VALUES, NEW_VALUES)\n        VALUES ('INVENTORY', 'UPDATE',\n                'ID=' || :OLD.ITEM_ID || ',QTY=' || :OLD.QUANTITY_ON_HAND,\n                'ID=' || :NEW.ITEM_ID || ',QTY=' || :NEW.QUANTITY_ON_HAND);\n    ELSIF DELETING THEN\n        INSERT INTO AUDIT_LOG (TABLE_NAME, OPERATION, OLD_VALUES)\n        VALUES ('INVENTORY', 'DELETE', 'ID=' || :OLD.ITEM_ID || ',CODE=' || :OLD.ITEM_CODE);\n    END IF;\nEND;"
                 }
               ]
@@ -1159,7 +1169,10 @@
           "sequences": [
             {
               "name": "AUDIT_LOG_SEQ",
-              "start": "1000"
+              "start": "1000",
+              "min_value": "1",
+              "max_value": "999999999999999999",
+              "cache_size": "20"
             },
             {
               "name": "INVENTORY_SEQ",
@@ -1309,11 +1322,23 @@
           "views": [
             {
               "name": "CUSTOMER_SALES_ANALYSIS",
-              "definition": "SELECT\n    st.CUSTOMER_ID,\n    COUNT(DISTINCT st.TRANSACTION_ID) AS TOTAL_TRANSACTIONS,\n    COUNT(DISTINCT TO_CHAR(st.SALE_DATE, 'YYYY-MM')) AS ACTIVE_MONTHS,\n    SUM(st.TOTAL_AMOUNT) AS LIFETIME_VALUE,\n    AVG(st.TOTAL_AMOUNT) AS AVG_TRANSACTION_VALUE,\n    MAX(st.SALE_DATE) AS LAST_PURCHASE_DATE,\n    CASE\n        WHEN MAX(st.SALE_DATE) \u003e= SYSDATE - 30 THEN 'ACTIVE'\n        WHEN MAX(st.SALE_DATE) \u003e= SYSDATE - 90 THEN 'RECENT'\n        ELSE 'INACTIVE'\n    END AS CUSTOMER_STATUS,\n    ROUND(SUM(st.TOTAL_AMOUNT) / NULLIF(COUNT(DISTINCT TO_CHAR(st.SALE_DATE, 'YYYY-MM')), 0), 2) AS MONTHLY_SPEND_RATE\nFROM SALES_TRANSACTIONS st\nWHERE st.SALE_DATE \u003e= ADD_MONTHS(SYSDATE, -24)\nGROUP BY st.CUSTOMER_ID\nHAVING COUNT(*) \u003e= 3"
+              "definition": "SELECT\n    st.CUSTOMER_ID,\n    COUNT(DISTINCT st.TRANSACTION_ID) AS TOTAL_TRANSACTIONS,\n    COUNT(DISTINCT TO_CHAR(st.SALE_DATE, 'YYYY-MM')) AS ACTIVE_MONTHS,\n    SUM(st.TOTAL_AMOUNT) AS LIFETIME_VALUE,\n    AVG(st.TOTAL_AMOUNT) AS AVG_TRANSACTION_VALUE,\n    MAX(st.SALE_DATE) AS LAST_PURCHASE_DATE,\n    CASE\n        WHEN MAX(st.SALE_DATE) \u003e= SYSDATE - 30 THEN 'ACTIVE'\n        WHEN MAX(st.SALE_DATE) \u003e= SYSDATE - 90 THEN 'RECENT'\n        ELSE 'INACTIVE'\n    END AS CUSTOMER_STATUS,\n    ROUND(SUM(st.TOTAL_AMOUNT) / NULLIF(COUNT(DISTINCT TO_CHAR(st.SALE_DATE, 'YYYY-MM')), 0), 2) AS MONTHLY_SPEND_RATE\nFROM SALES_TRANSACTIONS st\nWHERE st.SALE_DATE \u003e= ADD_MONTHS(SYSDATE, -24)\nGROUP BY st.CUSTOMER_ID\nHAVING COUNT(*) \u003e= 3",
+              "dependency_columns": [
+                {
+                  "table": "SALES_TRANSACTIONS",
+                  "column": "*"
+                }
+              ]
             },
             {
               "name": "MONTHLY_SALES_SUMMARY",
-              "definition": "SELECT\n    TO_CHAR(SALE_DATE, 'YYYY-MM') AS SALES_MONTH,\n    REGION,\n    COUNT(*) AS TRANSACTION_COUNT,\n    SUM(QUANTITY) AS TOTAL_QUANTITY,\n    SUM(TOTAL_AMOUNT) AS TOTAL_REVENUE,\n    AVG(TOTAL_AMOUNT) AS AVG_TRANSACTION_VALUE,\n    MIN(SALE_DATE) AS FIRST_SALE_DATE,\n    MAX(SALE_DATE) AS LAST_SALE_DATE\nFROM SALES_TRANSACTIONS\nWHERE SALE_DATE \u003e= ADD_MONTHS(SYSDATE, -12)\nGROUP BY TO_CHAR(SALE_DATE, 'YYYY-MM'), REGION\nHAVING SUM(TOTAL_AMOUNT) \u003e 1000\nORDER BY SALES_MONTH DESC, REGION"
+              "definition": "SELECT\n    TO_CHAR(SALE_DATE, 'YYYY-MM') AS SALES_MONTH,\n    REGION,\n    COUNT(*) AS TRANSACTION_COUNT,\n    SUM(QUANTITY) AS TOTAL_QUANTITY,\n    SUM(TOTAL_AMOUNT) AS TOTAL_REVENUE,\n    AVG(TOTAL_AMOUNT) AS AVG_TRANSACTION_VALUE,\n    MIN(SALE_DATE) AS FIRST_SALE_DATE,\n    MAX(SALE_DATE) AS LAST_SALE_DATE\nFROM SALES_TRANSACTIONS\nWHERE SALE_DATE \u003e= ADD_MONTHS(SYSDATE, -12)\nGROUP BY TO_CHAR(SALE_DATE, 'YYYY-MM'), REGION\nHAVING SUM(TOTAL_AMOUNT) \u003e 1000\nORDER BY SALES_MONTH DESC, REGION",
+              "dependency_columns": [
+                {
+                  "table": "SALES_TRANSACTIONS",
+                  "column": "*"
+                }
+              ]
             }
           ]
         }
@@ -1398,6 +1423,12 @@
             {
               "name": "PRODUCT_PERFORMANCE_MV",
               "definition": "SELECT\n    PRODUCT_ID,\n    CATEGORY,\n    COUNT(*) AS SALES_DAYS,\n    SUM(SALES_AMOUNT) AS TOTAL_REVENUE,\n    SUM(UNITS_SOLD) AS TOTAL_UNITS,\n    SUM(COST_OF_GOODS) AS TOTAL_COST,\n    SUM(SALES_AMOUNT) - SUM(COST_OF_GOODS) AS TOTAL_PROFIT,\n    AVG(SALES_AMOUNT) AS AVG_DAILY_REVENUE,\n    MIN(SALE_DATE) AS FIRST_SALE_DATE,\n    MAX(SALE_DATE) AS LAST_SALE_DATE\nFROM PRODUCT_SALES_DAILY\nWHERE SALE_DATE \u003e= ADD_MONTHS(SYSDATE, -12)\nGROUP BY PRODUCT_ID, CATEGORY\n",
+              "dependency_columns": [
+                {
+                  "table": "PRODUCT_SALES_DAILY",
+                  "column": "*"
+                }
+              ],
               "indexes": [
                 {
                   "name": "IDX_MV_CATEGORY",

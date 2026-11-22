@@ -32,13 +32,16 @@ function AlertDialogOverlay({
 function AlertDialogContent({
   className,
   children,
+  layer = "overlay",
   ref,
   ...props
-}: ComponentProps<typeof BaseAlertDialog.Popup>) {
-  usePreserveHigherLayerAccess("overlay");
+}: ComponentProps<typeof BaseAlertDialog.Popup> & {
+  layer?: "overlay" | "agent";
+}) {
+  usePreserveHigherLayerAccess(layer);
 
   return (
-    <BaseAlertDialog.Portal container={getLayerRoot("overlay")}>
+    <BaseAlertDialog.Portal container={getLayerRoot(layer)}>
       <AlertDialogOverlay />
       <BaseAlertDialog.Popup
         ref={ref}

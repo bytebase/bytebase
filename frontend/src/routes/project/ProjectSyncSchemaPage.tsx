@@ -34,7 +34,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
+import { FormField } from "@/components/ui/form";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SearchInput } from "@/components/ui/search-input";
 import {
@@ -47,9 +52,9 @@ import {
 } from "@/components/ui/sheet";
 import { StepIndicator } from "@/components/ui/step-indicator";
 import { Table } from "@/components/ui/table";
-import { useClickOutside } from "@/hooks/useClickOutside";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { useProjectByName } from "@/hooks/useProjectByName";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { saveInitialSQL } from "@/lib/plan/initialSQLStorage";
 import { applyPlanTitleToQuery } from "@/lib/plan/title";
 import { cn } from "@/lib/utils";
@@ -175,35 +180,10 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     setSourceSchemaString("");
   }, [projectId]);
 
-  // Route change guard: warn when leaving with unsaved raw SQL
-  useEffect(() => {
-    const shouldGuard =
-      sourceSchemaType === SourceSchemaType.RAW_SQL &&
-      rawSQLState.statement !== "";
-    if (!shouldGuard) return;
-
-    // Guard browser/tab unload
-    const beforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", beforeUnload);
-
-    // Guard in-app router navigation
-    const removeRouterGuard = router.beforeEach((_to, _from, next) => {
-      const answer = window.confirm(t("common.leave-without-saving"));
-      if (answer) {
-        next();
-      } else {
-        next(false);
-      }
-    });
-
-    return () => {
-      window.removeEventListener("beforeunload", beforeUnload);
-      removeRouterGuard();
-    };
-  }, [sourceSchemaType, rawSQLState.statement, t]);
+  useUnsavedChangesGuard(
+    sourceSchemaType === SourceSchemaType.RAW_SQL &&
+      rawSQLState.statement !== ""
+  );
 
   // Target databases state (lifted up so we can access from step controls)
   const [selectedDatabaseNameList, setSelectedDatabaseNameList] = useState<
@@ -434,10 +414,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
         description={
           <>
             {t("database.sync-schema.description")}{" "}
-            <LearnMoreLink
-              href="https://docs.bytebase.com/change-database/synchronize-schema?source=console"
-              className="text-accent"
-            />
+            <LearnMoreLink href="https://docs.bytebase.com/change-database/synchronize-schema?source=console" />
           </>
         }
       />
@@ -671,11 +648,11 @@ function DatabaseSchemaSelector({
           allowedEngineTypeList={ALLOWED_ENGINES}
         />
       </div>
-      <div className="w-full flex flex-col gap-y-2">
-        <div className="text-sm">
-          {t("common.changelog")}
-          <div className="textinfolabel">{t("changelog.select")}</div>
-        </div>
+      <FormField
+        className="w-full"
+        title={t("common.changelog")}
+        description={t("changelog.select")}
+      >
         <div className="w-full flex flex-row justify-start items-center relative">
           <ChangelogSelector
             database={databaseName}
@@ -683,7 +660,7 @@ function DatabaseSchemaSelector({
             onChange={handleChangelogChange}
           />
         </div>
-      </div>
+      </FormField>
     </div>
   );
 }
@@ -713,11 +690,7 @@ function ChangelogSelector({
   const [nextPageToken, setNextPageToken] = useState("");
   const [loadingMore, setLoadingMore] = useState(false);
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
   const disabled = !isValidDatabaseName(database);
-
-  useClickOutside(containerRef, open, () => setOpen(false));
-  useEscapeKey(open, () => setOpen(false));
 
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -797,11 +770,9 @@ function ChangelogSelector({
   const selectedEntry = entries.find((e) => e.name === value);
 
   return (
-    <div ref={containerRef} className="relative w-full">
-      <Button
-        appearance="secondary"
-        size="md"
-        type="button"
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={<Button appearance="secondary" size="md" type="button" />}
         disabled={disabled}
         className={cn(
           "w-full flex items-center justify-between gap-2 border border-control-border rounded-xs text-sm bg-background text-left transition-colors",
@@ -809,7 +780,6 @@ function ChangelogSelector({
           "disabled:opacity-50 disabled:pointer-events-none",
           open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]"
         )}
-        onClick={() => !disabled && setOpen(!open)}
       >
         <span
           className={cn(
@@ -829,53 +799,49 @@ function ChangelogSelector({
             open && "rotate-180"
           )}
         />
-      </Button>
-      {open && (
-        <div
-          className={cn(
-            "absolute mt-1 min-w-full w-max bg-background border border-block-border rounded-sm shadow-lg overflow-hidden",
-            LAYER_SURFACE_CLASS
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-max min-w-(--anchor-width) overflow-hidden border-block-border p-0 shadow-lg"
+      >
+        <div className="max-h-60 overflow-y-auto">
+          {entries.map((entry) => (
+            <Button
+              appearance="secondary"
+              size="md"
+              key={entry.name}
+              type="button"
+              className={cn(
+                "h-auto w-full justify-start px-3 py-2 text-left text-sm transition-colors",
+                "hover:bg-control-bg",
+                entry.name === value && "bg-accent/5"
+              )}
+              onClick={() => {
+                onChange(entry.name);
+                setOpen(false);
+              }}
+            >
+              <ChangelogLabel entry={entry} />
+            </Button>
+          ))}
+          {nextPageToken && (
+            <Button
+              appearance="secondary"
+              size="md"
+              type="button"
+              className="h-auto w-full px-3 py-2 text-center text-sm text-accent hover:bg-control-bg transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                loadMore();
+              }}
+              disabled={loadingMore}
+            >
+              {loadingMore ? t("common.loading") : t("common.load-more")}
+            </Button>
           )}
-        >
-          <div className="max-h-60 overflow-y-auto">
-            {entries.map((entry) => (
-              <Button
-                appearance="secondary"
-                size="md"
-                key={entry.name}
-                type="button"
-                className={cn(
-                  "h-auto w-full justify-start px-3 py-2 text-left text-sm transition-colors",
-                  "hover:bg-control-bg",
-                  entry.name === value && "bg-accent/5"
-                )}
-                onClick={() => {
-                  onChange(entry.name);
-                  setOpen(false);
-                }}
-              >
-                <ChangelogLabel entry={entry} />
-              </Button>
-            ))}
-            {nextPageToken && (
-              <Button
-                appearance="secondary"
-                size="md"
-                type="button"
-                className="h-auto w-full px-3 py-2 text-center text-sm text-accent hover:bg-control-bg transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  loadMore();
-                }}
-                disabled={loadingMore}
-              >
-                {loadingMore ? t("common.loading") : t("common.load-more")}
-              </Button>
-            )}
-          </div>
         </div>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -890,7 +856,7 @@ function ChangelogLabel({ entry }: { entry: ChangelogEntry }) {
         )}
       </span>
       {entry.planTitle && (
-        <span className="inline-flex items-center px-1.5 py-0 rounded-full bg-control-bg text-xs">
+        <span className="inline-flex items-center rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs">
           {entry.planTitle}
         </span>
       )}
@@ -1076,7 +1042,7 @@ function SourceSchemaInfo({
           <Button
             appearance="secondary"
             size="md"
-            className="h-auto inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg text-sm transition-colors hover:bg-control-bg-hover"
+            className="h-auto inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-xs bg-control-bg text-sm transition-colors hover:bg-control-bg-hover"
             onClick={gotoDatabase}
           >
             <span className="opacity-60">{t("common.database")}</span>
@@ -1091,7 +1057,7 @@ function SourceSchemaInfo({
           <Button
             appearance="secondary"
             size="md"
-            className="h-auto inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg text-sm transition-colors hover:bg-control-bg-hover"
+            className="h-auto inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-xs bg-control-bg text-sm transition-colors hover:bg-control-bg-hover"
             onClick={gotoChangelog}
           >
             <span className="opacity-60 mr-1">{t("common.changelog")}</span>
@@ -1100,10 +1066,10 @@ function SourceSchemaInfo({
         </>
       ) : (
         <>
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-control-bg text-sm">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-xs bg-control-bg text-sm">
             {t("schema-editor.raw-sql")}
           </span>
-          <span className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg text-sm">
+          <span className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-xs bg-control-bg text-sm">
             <span className="opacity-60 mr-1">{t("database.engine")}</span>
             <EngineIcon engine={sourceEngine} className="w-4 h-4" />
             <span>{engineNameV1(sourceEngine)}</span>

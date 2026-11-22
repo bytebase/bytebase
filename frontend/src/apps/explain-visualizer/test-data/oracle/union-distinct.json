@@ -1,0 +1,60 @@
+[
+  {
+    "bytes": "13259",
+    "cardinality": "1751",
+    "cost": "57",
+    "id": "0",
+    "operation": "SELECT STATEMENT",
+    "optimizer": "ALL_ROWS",
+    "position": "57"
+  },
+  {
+    "bytes": "13259",
+    "cardinality": "1751",
+    "cost": "57",
+    "id": "1",
+    "operation": "HASH",
+    "options": "UNIQUE",
+    "parent_id": "0",
+    "position": "1"
+  },
+  {
+    "bytes": "13259",
+    "cardinality": "1751",
+    "cost": "57",
+    "id": "2",
+    "operation": "UNION-ALL",
+    "parent_id": "1",
+    "position": "1"
+  },
+  {
+    "bytes": "4509",
+    "cardinality": "501",
+    "cost": "48",
+    "filter_predicates": "\"TOTAL\"\u003e900",
+    "id": "3",
+    "object_name": "ORDERS",
+    "object_owner": "SYSTEM",
+    "object_type": "TABLE",
+    "operation": "TABLE ACCESS",
+    "optimizer": "ANALYZED",
+    "options": "FULL",
+    "parent_id": "2",
+    "position": "1"
+  },
+  {
+    "bytes": "8750",
+    "cardinality": "1250",
+    "cost": "7",
+    "filter_predicates": "\"COUNTRY\"='JP'",
+    "id": "4",
+    "object_name": "CUSTOMERS",
+    "object_owner": "SYSTEM",
+    "object_type": "TABLE",
+    "operation": "TABLE ACCESS",
+    "optimizer": "ANALYZED",
+    "options": "FULL",
+    "parent_id": "2",
+    "position": "2"
+  }
+]

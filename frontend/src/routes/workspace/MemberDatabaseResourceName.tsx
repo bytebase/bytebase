@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import { EngineIcon } from "@/components/EngineIcon";
+import { EllipsisText } from "@/components/ui/ellipsis-text";
 import { useAppStore } from "@/stores/app";
 import type { DatabaseResource } from "@/types";
 import {
@@ -57,9 +58,12 @@ export function MemberDatabaseResourceName({
       {display.engine !== undefined && (
         <EngineIcon engine={display.engine} className="mr-1 h-4 w-4" />
       )}
-      <span className="truncate text-control">{display.instanceTitle}</span>
+      <EllipsisText
+        text={display.instanceTitle}
+        className="min-w-0 text-control"
+      />
       <ChevronRight className="h-4 w-4 shrink-0 text-control-light opacity-60" />
-      <span className="truncate text-main">{display.databaseName}</span>
+      <EllipsisText text={display.databaseName} className="min-w-0 text-main" />
     </div>
   );
 }

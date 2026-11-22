@@ -64,7 +64,7 @@ func mustMongoSchema(t *testing.T, schemaName string) *storepb.ObjectSchema {
 							Kind: &storepb.ObjectSchema_StructKind_{
 								StructKind: &storepb.ObjectSchema_StructKind{
 									Properties: map[string]*storepb.ObjectSchema{
-										"phone": {Type: storepb.ObjectSchema_STRING, SemanticType: defaultSemanticTypeID},
+										"phone": {Type: storepb.ObjectSchema_STRING, SemanticType: masker.DefaultSemanticTypeID},
 										"city":  {Type: storepb.ObjectSchema_STRING},
 									},
 								},
@@ -84,7 +84,7 @@ func mustMongoSchema(t *testing.T, schemaName string) *storepb.ObjectSchema {
 							Type: storepb.ObjectSchema_ARRAY,
 							Kind: &storepb.ObjectSchema_ArrayKind_{
 								ArrayKind: &storepb.ObjectSchema_ArrayKind{
-									Kind: &storepb.ObjectSchema{Type: storepb.ObjectSchema_STRING, SemanticType: defaultSemanticTypeID},
+									Kind: &storepb.ObjectSchema{Type: storepb.ObjectSchema_STRING, SemanticType: masker.DefaultSemanticTypeID},
 								},
 							},
 						},
@@ -101,7 +101,7 @@ func mustMongoSchema(t *testing.T, schemaName string) *storepb.ObjectSchema {
 					Properties: map[string]*storepb.ObjectSchema{
 						"profile": {
 							Type:         storepb.ObjectSchema_OBJECT,
-							SemanticType: defaultSemanticTypeID,
+							SemanticType: masker.DefaultSemanticTypeID,
 							Kind: &storepb.ObjectSchema_StructKind_{
 								StructKind: &storepb.ObjectSchema_StructKind{
 									Properties: map[string]*storepb.ObjectSchema{
@@ -132,7 +132,7 @@ func mustMongoSchema(t *testing.T, schemaName string) *storepb.ObjectSchema {
 								},
 							},
 						},
-						"email": {Type: storepb.ObjectSchema_STRING, SemanticType: defaultSemanticTypeID},
+						"email": {Type: storepb.ObjectSchema_STRING, SemanticType: masker.DefaultSemanticTypeID},
 						"createdAt": {
 							Type: storepb.ObjectSchema_OBJECT,
 							Kind: &storepb.ObjectSchema_StructKind_{
@@ -156,7 +156,7 @@ func mustMongoSchema(t *testing.T, schemaName string) *storepb.ObjectSchema {
 					Properties: map[string]*storepb.ObjectSchema{
 						"tags": {
 							Type:         storepb.ObjectSchema_ARRAY,
-							SemanticType: defaultSemanticTypeID,
+							SemanticType: masker.DefaultSemanticTypeID,
 							Kind: &storepb.ObjectSchema_ArrayKind_{
 								ArrayKind: &storepb.ObjectSchema_ArrayKind{
 									Kind: &storepb.ObjectSchema{Type: storepb.ObjectSchema_STRING},
@@ -185,7 +185,7 @@ func mustMongoSchema(t *testing.T, schemaName string) *storepb.ObjectSchema {
 											StructKind: &storepb.ObjectSchema_StructKind{
 												Properties: map[string]*storepb.ObjectSchema{
 													"name":  {Type: storepb.ObjectSchema_STRING},
-													"phone": {Type: storepb.ObjectSchema_STRING, SemanticType: defaultSemanticTypeID},
+													"phone": {Type: storepb.ObjectSchema_STRING, SemanticType: masker.DefaultSemanticTypeID},
 												},
 											},
 										},
@@ -214,7 +214,7 @@ func mustMongoSchema(t *testing.T, schemaName string) *storepb.ObjectSchema {
 										Kind: &storepb.ObjectSchema_StructKind_{
 											StructKind: &storepb.ObjectSchema_StructKind{
 												Properties: map[string]*storepb.ObjectSchema{
-													"total":  {Type: storepb.ObjectSchema_NUMBER, SemanticType: defaultSemanticTypeID},
+													"total":  {Type: storepb.ObjectSchema_NUMBER, SemanticType: masker.DefaultSemanticTypeID},
 													"status": {Type: storepb.ObjectSchema_STRING},
 												},
 											},
@@ -263,7 +263,7 @@ func TestMaskMongoDBDocumentString(t *testing.T) {
 	t.Parallel()
 	td := loadMongoDBMaskingTestData(t)
 	maskers := map[string]masker.Masker{
-		defaultSemanticTypeID: masker.NewDefaultFullMasker(),
+		masker.DefaultSemanticTypeID: masker.NewDefaultFullMasker(),
 	}
 
 	for _, tc := range td.MaskDocument {

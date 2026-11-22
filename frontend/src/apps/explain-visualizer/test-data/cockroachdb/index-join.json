@@ -1,0 +1,64 @@
+{
+  "sql": "EXPLAIN (DISTSQL) SELECT o.id, c.country FROM orders AS o JOIN customers AS c ON c.id = o.customer_id WHERE o.customer_id \u003c 10",
+  "nodeNames": ["1"],
+  "processors": [
+    {
+      "nodeIdx": 0,
+      "inputs": [],
+      "core": {
+        "title": "TableReader/0",
+        "details": [
+          "orders@idx_customer",
+          "Columns: id, customer_id",
+          "Spans: /!NULL-/10"
+        ]
+      },
+      "outputs": [],
+      "stage": 1,
+      "processorID": 0
+    },
+    {
+      "nodeIdx": 0,
+      "inputs": [],
+      "core": {
+        "title": "JoinReader/1",
+        "details": [
+          "customers@customers_pkey",
+          "Lookup join on: @2",
+          "ON @3 \u003c 10:::INT8",
+          "Columns: id, country",
+          "Out: @1,@4"
+        ]
+      },
+      "outputs": [],
+      "stage": 2,
+      "processorID": 1
+    },
+    {
+      "nodeIdx": 0,
+      "inputs": [],
+      "core": { "title": "Response", "details": [] },
+      "outputs": [],
+      "stage": 0,
+      "processorID": -1
+    }
+  ],
+  "edges": [
+    {
+      "sourceProc": 0,
+      "sourceOutput": 0,
+      "destProc": 1,
+      "destInput": 0,
+      "streamID": 0
+    },
+    {
+      "sourceProc": 1,
+      "sourceOutput": 0,
+      "destProc": 2,
+      "destInput": 0,
+      "streamID": 0
+    }
+  ],
+  "flow_id": "5fc3c44f-5d74-4d53-9b4d-dcda13f0dadd",
+  "flags": { "ShowInputTypes": false, "MakeDeterministic": false }
+}

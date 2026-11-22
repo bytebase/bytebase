@@ -44,3 +44,18 @@ export function stageHasRunningTasks(stage: Stage): boolean {
       task.status === Task_Status.RUNNING || task.status === Task_Status.PENDING
   );
 }
+
+// The stage the Deploy section opens on when the URL names none: the one
+// holding the latest failed task, else the running one, else the last stage.
+export function getDefaultDeployStage(
+  rollout: Rollout | undefined
+): Stage | undefined {
+  const stages = rollout?.stages ?? [];
+  return (
+    stages.findLast((stage) =>
+      stage.tasks.some((task) => task.status === Task_Status.FAILED)
+    ) ??
+    stages.find(stageHasRunningTasks) ??
+    stages.at(-1)
+  );
+}

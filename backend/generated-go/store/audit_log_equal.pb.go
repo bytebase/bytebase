@@ -53,6 +53,9 @@ func (x *AuditLog) Equal(y *AuditLog) bool {
 	if !x.McpDelegation.Equal(y.McpDelegation) {
 		return false
 	}
+	if !x.FederatedIdentity.Equal(y.FederatedIdentity) {
+		return false
+	}
 	return true
 }
 
@@ -89,6 +92,22 @@ func (x *MCPDelegation) Equal(y *MCPDelegation) bool {
 		return false
 	}
 	if x.CorrelationId != y.CorrelationId {
+		return false
+	}
+	return true
+}
+
+func (x *FederatedIdentity) Equal(y *FederatedIdentity) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Issuer != y.Issuer {
+		return false
+	}
+	if x.Subject != y.Subject {
 		return false
 	}
 	return true

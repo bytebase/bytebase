@@ -1050,3 +1050,90 @@
         line: 1
         column: 0
       endposition: null
+- statement: SELECT * FROM tech_book WHERE ABS(id) = 1; SELECT * FROM tech_book WHERE ABS(id) = 1;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: Function "ABS" is applied to indexed column "ID" in the WHERE clause, which prevents index usage
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT * FROM tech_book WHERE ABS(ABS(id)) = 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: Function "ABS" is applied to indexed column "ID" in the WHERE clause, which prevents index usage
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    SELECT *
+    FROM tech_book
+    WHERE id = 1
+      AND UPPER(name) = 'A'
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: SELECT * FROM tech_book WHERE name || 'x' = 'y'
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: Calculation is applied to indexed column "NAME" in the WHERE clause, which prevents index usage
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT * FROM tech_book WHERE id ^= 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: Calculation is applied to indexed column "ID" in the WHERE clause, which prevents index usage
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT * FROM tech_book CONNECT BY ABS(PRIOR id) = 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: Function "ABS" is applied to indexed column "ID" in the WHERE clause, which prevents index usage
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT * FROM tech_book@remote WHERE ABS(id) = 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: Function "ABS" is applied to indexed column "ID" in the WHERE clause, which prevents index usage
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT * FROM "tech_book" WHERE ABS(id) = 1
+- statement: SELECT * FROM tech_book WHERE id IN (SELECT ABS(id) FROM no_index_table)
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: Function "ABS" is applied to indexed column "ID" in the WHERE clause, which prevents index usage
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE OR REPLACE PROCEDURE p AS BEGIN DELETE FROM tech_book WHERE ABS(id) = 1; END;
+- statement: EXPLAIN PLAN FOR SELECT * FROM tech_book WHERE ABS(id) = 1

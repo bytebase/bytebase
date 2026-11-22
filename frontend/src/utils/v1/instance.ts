@@ -236,9 +236,12 @@ export const instanceV1AllowsExplain = (
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [
     Engine.MYSQL,
+    Engine.MARIADB,
     Engine.TIDB,
     Engine.CLICKHOUSE,
     Engine.COCKROACHDB,
+    Engine.DATABRICKS,
+    Engine.ELASTICSEARCH,
     Engine.HIVE,
     Engine.MSSQL,
     Engine.ORACLE,
@@ -246,7 +249,11 @@ export const instanceV1AllowsExplain = (
     Engine.REDSHIFT,
     Engine.SNOWFLAKE,
     Engine.STARROCKS,
+    Engine.DORIS,
     Engine.SPANNER,
+    Engine.TRINO,
+    Engine.OCEANBASE,
+    Engine.MONGODB,
   ].includes(engine);
 };
 
@@ -476,7 +483,7 @@ export const getDefaultTransactionMode = (): boolean => {
 };
 
 // Engines that support schema diff rollback (generate reverse DDL via schema comparison)
-// These engines have RegisterGenerateMigration implemented in backend
+// These engines compute a metadata diff in backend via schema.DiffMigration
 export const instanceV1SupportsSchemaRollback = (engine: Engine): boolean => {
   return [
     Engine.MYSQL,

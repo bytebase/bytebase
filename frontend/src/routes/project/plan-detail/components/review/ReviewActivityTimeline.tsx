@@ -8,8 +8,6 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { router } from "@/app/router";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/app/router/handles";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import {
   ActivityRowFrame,
@@ -37,20 +35,22 @@ import {
   isThreadRoot,
 } from "@/stores/app/issueComment";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
+import { useFocusThread } from "../../hooks/useFocusThread";
 import { usePlanChangeReferenceData } from "../../hooks/usePlanChangeReferenceData";
+import { usePlanReviewRun } from "../../hooks/useSqlReviewV2";
 import { placementOf } from "../../shared/stores/placementSlice";
-import {
-  usePlanDetailStore,
-  usePlanDetailStoreApi,
-} from "../../shared/stores/usePlanDetailStore";
-import { focusPlanPhase } from "../../shell/focusPhase";
+import { usePlanDetailStore } from "../../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
+import type { PlanChangeReferenceResources } from "../../utils/changeReference";
+import { reviewerName } from "../../utils/reviewLabels";
 import { PlanSpecChangeReference } from "../PlanChangeReference";
 import { CommentThreadCard } from "../threads/CommentThreadCard";
+import { ReviewerIcon } from "../threads/ReviewResult";
 import { StatementAnchorContext } from "../threads/StatementAnchorContext";
 import {
   type CommentThread,
@@ -78,7 +78,17 @@ export function ReviewActivityTimeline({
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
+  // Beside V1's plan checks the page shows the AI review's runs only where
+  // it reads them.
+  const reviewRun = usePlanReviewRun();
+  const groupReviewRuns = sqlReviewV2Enabled() || reviewRun !== undefined;
   const [expanded, setExpanded] = useState(false);
+  const [runToggles, setRunToggles] = useState<ReadonlyMap<string, boolean>>(
+    new Map()
+  );
+  const toggleRun = useCallback((runId: string, open: boolean) => {
+    setRunToggles((prev) => new Map(prev).set(runId, open));
+  }, []);
   const planUpdateSpecs = useMemo(
     () => collectPlanUpdateSpecs(comments),
     [comments]
@@ -105,7 +115,16 @@ export function ReviewActivityTimeline({
 
   useEffect(() => {
     setExpanded(false);
+    setRunToggles(new Map());
   }, [page.pageKey]);
+
+  // A card asked for from elsewhere may sit in the folded middle, so the
+  // timeline unfolds first and scrolls once the card renders.
+  const activityFocus = usePlanDetailStore((s) => s.activityFocus);
+  const clearActivityFocus = usePlanDetailStore((s) => s.clearActivityFocus);
+  useEffect(() => {
+    if (activityFocus) setExpanded(true);
+  }, [activityFocus]);
 
   const entries = useMemo(
     () =>
@@ -116,14 +135,18 @@ export function ReviewActivityTimeline({
         issueCreateTime: issue.createTime,
         issueDraft: issue.draft,
         comments,
+        groupReviewRuns,
+        runToggles,
       }),
     [
       comments,
+      groupReviewRuns,
       issue.createTime,
       issue.creator,
       issue.draft,
       plan.createTime,
       plan.creator,
+      runToggles,
     ]
   );
   const items = useMemo(() => {
@@ -131,6 +154,32 @@ export function ReviewActivityTimeline({
     const consolidated = consolidateConsecutive(renderable);
     return foldTimeline(consolidated, expanded);
   }, [entries, expanded]);
+  // A card asked for from elsewhere may be a finding of a hidden run, which
+  // shows no cards, so its run opens first and the scroll waits for it.
+  const hiddenRunOfFocus = useMemo(
+    () =>
+      activityFocus
+        ? entries.find(
+            (entry) =>
+              entry.source.type === "review-run" &&
+              !entry.source.open &&
+              entry.source.findings.some(
+                (finding) => finding.name === activityFocus.commentName
+              )
+          )
+        : undefined,
+    [activityFocus, entries]
+  );
+  useEffect(() => {
+    if (hiddenRunOfFocus) toggleRun(hiddenRunOfFocus.id, true);
+  }, [hiddenRunOfFocus, toggleRun]);
+  useEffect(() => {
+    if (!activityFocus || !expanded || hiddenRunOfFocus) return;
+    document
+      .getElementById(activityFocus.commentName)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    clearActivityFocus(activityFocus.nonce);
+  }, [activityFocus, clearActivityFocus, expanded, hiddenRunOfFocus, items]);
   // Permission-gated only — comments are allowed regardless of issue status
   // (the backend and the issue-detail list allow commenting on done issues).
   const allowComment = Boolean(
@@ -158,10 +207,12 @@ export function ReviewActivityTimeline({
             .some((next) => next.type !== "fold");
           return (
             <ActivityRow
+              changeReferenceResources={changeReferenceResources}
               entry={item.entry}
               issue={issue}
               isLast={isLast}
               key={item.entry.id}
+              onToggleRun={toggleRun}
               plan={plan}
               renderPlanChangeReference={renderPlanChangeReference}
               threads={threads}
@@ -228,21 +279,56 @@ function TornSeparator({
 }
 
 function ActivityRow({
+  changeReferenceResources,
   entry,
   issue,
   isLast,
+  onToggleRun,
   plan,
   renderPlanChangeReference,
   threads,
 }: {
+  changeReferenceResources: PlanChangeReferenceResources;
   entry: TimelineEntry;
   issue: Issue;
   isLast: boolean;
+  onToggleRun: (runId: string, open: boolean) => void;
   plan: Plan;
   renderPlanChangeReference: PlanChangeReferenceRenderer;
   threads: CommentThread[];
 }) {
   const source = entry.source;
+  if (source.type === "review-run") {
+    const cards = (entry.children ?? []).flatMap((child) => {
+      const thread =
+        child.source.type === "comment"
+          ? threads.find(
+              (candidate) =>
+                child.source.type === "comment" &&
+                candidate.root.name === child.source.comment.name
+            )
+          : undefined;
+      return thread
+        ? [
+            <ThreadActivityCard
+              changeReferenceResources={changeReferenceResources}
+              issue={issue}
+              key={thread.root.name}
+              plan={plan}
+              thread={thread}
+            />,
+          ]
+        : [];
+    });
+    return (
+      <ReviewRunActivityRow
+        cards={cards}
+        isLast={isLast}
+        onToggle={() => onToggleRun(entry.id, !source.open)}
+        source={source}
+      />
+    );
+  }
   if (source.type === "comment" && isThreadRoot(source.comment)) {
     const thread = threads.find(
       (candidate) => candidate.root.name === source.comment.name
@@ -250,10 +336,10 @@ function ActivityRow({
     if (thread) {
       return (
         <ThreadActivityRow
+          changeReferenceResources={changeReferenceResources}
           isLast={isLast}
           issue={issue}
           plan={plan}
-          renderPlanChangeReference={renderPlanChangeReference}
           thread={thread}
         />
       );
@@ -279,6 +365,85 @@ function ActivityRow({
       icon={<SyntheticIcon type={source.type} />}
       isLast={isLast}
     />
+  );
+}
+
+// One line per completed run: how many findings it posted. A finding it
+// reports again keeps its earlier thread and is not counted. A run with
+// findings is a group, a border holding the line and, while open, the card of
+// every finding it posted; Show and Hide fold it to the line. A run with none
+// is a plain line.
+function ReviewRunActivityRow({
+  cards,
+  isLast,
+  onToggle,
+  source,
+}: {
+  cards: ReactNode[];
+  isLast: boolean;
+  onToggle: () => void;
+  source: Extract<TimelineSource, { type: "review-run" }>;
+}) {
+  const { t } = useTranslation();
+  const { postedCount } = source.completion;
+  const summary =
+    postedCount > 0
+      ? t("plan.review.activity.n-new-findings", { count: postedCount })
+      : t("plan.review.activity.no-new-findings");
+  const header = (
+    <>
+      <span className="font-medium text-main">{reviewerName(t)}</span>
+      <span className="wrap-break-word min-w-0 text-control-light">
+        {t("plan.review.activity.reviewed-the-sql")}
+      </span>
+      <span className="text-control-light">·</span>
+      <span className="text-control">{summary}</span>
+      <HumanizeTs
+        className="text-xs text-control-light"
+        tsMs={getTimeForPbTimestampProtoEs(source.time)}
+      />
+      {source.findings.length > 0 && (
+        <Button
+          aria-expanded={source.open}
+          appearance="link"
+          onClick={onToggle}
+          size="xs"
+        >
+          {source.open ? t("common.hide") : t("common.show")}
+        </Button>
+      )}
+    </>
+  );
+  const icon = (
+    <CommentIconBadge
+      className="bg-control-bg text-control"
+      icon={<ReviewerIcon className="size-4" />}
+    />
+  );
+  if (source.findings.length === 0) {
+    return (
+      <ActivityRowShell
+        header={header}
+        icon={icon}
+        id={source.completionName}
+        isLast={isLast}
+      />
+    );
+  }
+  return (
+    <ActivityRowFrame icon={icon} id={source.completionName} isLast={isLast}>
+      <div
+        className="ml-3 rounded-lg border border-block-border"
+        data-testid="review-group"
+      >
+        <div className="flex min-h-7 min-w-0 flex-wrap items-center gap-x-2 px-3 py-2 text-sm">
+          {header}
+        </div>
+        {cards.length > 0 && (
+          <div className="flex flex-col gap-y-2 px-3 pb-3">{cards}</div>
+        )}
+      </div>
+    </ActivityRowFrame>
   );
 }
 
@@ -309,7 +474,7 @@ function SyntheticHeader({
   const { t } = useTranslation();
   return (
     <>
-      <ActorName principal={source.creator} />
+      <CommentCreator creator={source.creator} />
       {source.type === "plan-created" ? (
         <span className="wrap-break-word min-w-0 text-control-light">
           {t("plan.review.activity.created-this-plan")}
@@ -323,11 +488,6 @@ function SyntheticHeader({
       />
     </>
   );
-}
-
-function ActorName({ principal }: { principal: string }) {
-  const user = useAppStore((state) => state.getUserByIdentifier(principal));
-  return <CommentCreator creator={user ?? unknownUser(principal)} />;
 }
 
 // A comment-backed timeline row: delegates layout/icon/header to the shared
@@ -483,57 +643,18 @@ function ReviewCommentRow({
 // A thread occupies one timeline entry at its root's position: the root with
 // its statement anchor, the replies, and the thread footer, in one card.
 function ThreadActivityRow({
+  changeReferenceResources,
   isLast,
   issue,
   plan,
-  renderPlanChangeReference,
   thread,
 }: {
+  changeReferenceResources: PlanChangeReferenceResources;
   isLast: boolean;
   issue: Issue;
   plan: Plan;
-  renderPlanChangeReference: PlanChangeReferenceRenderer;
   thread: CommentThread;
 }) {
-  const page = usePlanDetailContext();
-  const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
-  const storeApi = usePlanDetailStoreApi();
-  const selectedSpecId = usePlanDetailStore((s) => s.selectedSpecId);
-  const anchor = thread.root.statementAnchor;
-  const targetSha256 = useMemo(
-    () =>
-      targetSha256OfSpec(
-        plan.specs.find((candidate) => candidate.id === anchor?.spec)
-      ),
-    [anchor?.spec, plan.specs]
-  );
-  const placement = usePlanDetailStore((s) =>
-    anchor
-      ? placementOf(s, thread.root.name, anchor.spec, targetSha256)
-      : undefined
-  );
-
-  // Open the Changes phase on the anchored spec; the statement editor picks
-  // up the focus request once it shows that spec.
-  const viewInStatement = () => {
-    const specId = anchor?.spec;
-    if (!specId) return;
-    storeApi.getState().requestThreadFocus({
-      commentName: thread.root.name,
-      specId,
-    });
-    focusPlanPhase("changes", page.expandPhase);
-    if (selectedSpecId !== specId) {
-      void router.push(
-        {
-          name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-          params: { planId: page.planId, projectId: page.projectId, specId },
-        },
-        { preventScrollReset: true }
-      );
-    }
-  };
-
   return (
     <ActivityRowFrame
       icon={
@@ -545,24 +666,72 @@ function ThreadActivityRow({
       id={thread.root.name}
       isLast={isLast}
     >
-      <CommentThreadCard
+      <ThreadActivityCard
+        changeReferenceResources={changeReferenceResources}
         className="ml-3"
-        context={
-          anchor && (
-            <StatementAnchorContext
-              anchor={anchor}
-              onViewInStatement={viewInStatement}
-              placement={placement}
-              plan={plan}
-              renderPlanChangeReference={renderPlanChangeReference}
-              project={project}
-            />
-          )
-        }
         issue={issue}
-        project={project}
+        plan={plan}
         thread={thread}
       />
     </ActivityRowFrame>
+  );
+}
+
+// A thread's card in Activity, as its own entry or inside its review's group.
+function ThreadActivityCard({
+  changeReferenceResources,
+  className,
+  issue,
+  plan,
+  thread,
+}: {
+  changeReferenceResources: PlanChangeReferenceResources;
+  className?: string;
+  issue: Issue;
+  plan: Plan;
+  thread: CommentThread;
+}) {
+  const page = usePlanDetailContext();
+  const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
+  const { focusInStatement } = useFocusThread();
+  const anchor = thread.root.statementAnchor;
+  const spec = useMemo(
+    () => plan.specs.find((candidate) => candidate.id === anchor?.spec),
+    [anchor?.spec, plan.specs]
+  );
+  const targetSha256 = useMemo(() => targetSha256OfSpec(spec), [spec]);
+  const placement = usePlanDetailStore((s) =>
+    anchor
+      ? placementOf(s, thread.root.name, anchor.spec, targetSha256)
+      : undefined
+  );
+
+  const viewInStatement = () =>
+    focusInStatement(
+      thread.root,
+      placement?.state === "CURRENT" ? placement.range.startLine : undefined
+    );
+
+  return (
+    <StatementAnchorContext
+      anchor={anchor}
+      changeReferenceResources={changeReferenceResources}
+      onViewInStatement={viewInStatement}
+      placement={placement}
+      plan={plan}
+      project={project}
+    >
+      {({ bar, excerpt }) => (
+        <CommentThreadCard
+          bar={bar}
+          className={className}
+          excerpt={excerpt}
+          issue={issue}
+          project={project}
+          spec={spec}
+          thread={thread}
+        />
+      )}
+    </StatementAnchorContext>
   );
 }

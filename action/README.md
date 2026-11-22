@@ -33,9 +33,17 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
 -   **`--output`**: The output file location. The output file is a JSON file with the created resource names and check results.
     -   Default: `""` (empty string)
     -   For `check` command: outputs detailed check results including advices, affected rows, and risk levels
-    -   For `rollout` command: outputs created resource names (release, plan, rollout)
+    -   For `rollout` command: outputs created resource names (release, plan, rollout) and the rollout result. See [Rollout result](#rollout-result).
 
 -   **`--url`**: The Bytebase instance URL. Required.
+
+-   **`--workload-identity`**: The workload identity email. The action signs in as it with the CI job's ID token, so the job stores no secret. This is the recommended sign-in.
+    -   Default: `""` (empty string). If not provided via flag, reads from the `BYTEBASE_WORKLOAD_IDENTITY` environment variable.
+    -   See [Sign-in](#sign-in) for where the ID token comes from.
+
+-   **`--workload-identity-audience`**: The audience of the ID token requested from GitHub.
+    -   Default: `bytebase`. If not provided via flag, reads from the `BYTEBASE_WORKLOAD_IDENTITY_AUDIENCE` environment variable.
+    -   It must be one of the audiences the workload identity allows.
 
 -   **`--service-account`**: The service account email.
     -   Default: `""` (empty string). If not provided via flag, reads from the `BYTEBASE_SERVICE_ACCOUNT` environment variable.
@@ -44,11 +52,16 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
     -   Default: `""` (empty string). If not provided via flag, reads from the `BYTEBASE_SERVICE_ACCOUNT_SECRET` environment variable.
     -   *Note: Setting the environment variable `BYTEBASE_SERVICE_ACCOUNT_SECRET` is the recommended way to handle the secret.*
 
+-   **`--access-token`**: A Bytebase access token to use as given.
+    -   Default: `""` (empty string). If not provided via flag, reads from the `BYTEBASE_ACCESS_TOKEN` environment variable.
+    -   The action cannot renew it, so a run that outlasts the token fails.
+
 -   **`--custom-header`**: A custom HTTP header to include in Bytebase API requests.
     -   Format: `Name: value`
     -   Can be specified multiple times.
     -   This is useful when the Bytebase URL is protected by a header-based access proxy such as Cloudflare Access.
     -   Example: `--custom-header="Cookie: CF_Authorization=${CF_AUTHORIZATION_COOKIE}"`
+    -   The headers are sent to Bytebase only, not to GitHub's ID token endpoint.
 
 -   **`--project`**: The target Bytebase project name.
     -   Format: `projects/{project}`
@@ -110,7 +123,7 @@ These flags are specific to the `check` subcommand (`bytebase-action check`).
 
 These flags are specific to the `rollout` subcommand (`bytebase-action rollout`).
 
--   **`--target-stage`**: The target stage up to which the rollout should proceed. If not specified, the rollout will be created but will not wait for completion.
+-   **`--target-stage`**: The target stage up to which the rollout should proceed. If not specified, the rollout will be created but will not wait for completion. When the rollout has no stage for it, the command deploys nothing and passes, so that the jobs for later environments still run.
     -   Format: `environments/{environment}`
     -   Example: `environments/prod`
 
@@ -121,6 +134,143 @@ These flags are specific to the `rollout` subcommand (`bytebase-action rollout`)
     -   Defaults to the release ID (e.g. `release_20260628-RC00`) when not provided.
 
 -   **`--plan-description`**: Description of the created plan.
+
+## Rollout result
+
+When `rollout` stops waiting, it reports how the rollout stands. The report is written whether the command passes or fails, and it never changes the exit code.
+
+-   **Job log**: a block with one line per database, the files it ran, the statements that changed rows, and for a failure the statement and the database's error. A listed statement is cut to one line of 100 characters; a failed statement and its error are cut to 30 lines of 200 characters.
+-   **`--output` file**: the same result under the `result` key. Per file it keeps the first 100 commands and any that failed; `commandCount` says how many ran, and the counts and totals cover all of them.
+-   **GitHub**: the block as the step summary, an error annotation for each failed database, and a warning annotation when the rollout has no stage for `--target-stage`.
+-   **GitLab**: `bytebase_annotations.json`, an [annotations report](https://docs.gitlab.com/ci/yaml/artifacts_reports/#artifactsreportsannotations) that links the job page to the rollout.
+
+`result.outcome` says how the run ended:
+
+| Outcome | Meaning | Exit code |
+|---|---|---|
+| `DONE` | Every task in the target stage is done or skipped | 0 |
+| `FAILED` | A task failed | 1 |
+| `CANCELED` | A task was canceled | 1 |
+| `NOT_WAITED` | No `--target-stage` was given, so the rollout was created and nothing was awaited | 0 |
+| `STAGE_NOT_FOUND` | The rollout has no stage for `--target-stage`, so nothing was deployed. A rollout has a stage for each environment that holds a target database | 0 |
+| `INTERRUPTED` | The action stopped before the stage finished, so the state is not final | 1 |
+
+The result details one stage: the target stage, or an earlier stage when the rollout stopped there. Other stages carry task counts only.
+
+```json
+{
+  "plan": "projects/example/plans/101",
+  "rollout": "projects/example/plans/101/rollout",
+  "result": {
+    "outcome": "FAILED",
+    "url": "https://bytebase.example.com/projects/example/plans/101/rollout",
+    "targetStage": "environments/prod",
+    "stages": [
+      {
+        "environment": "environments/prod",
+        "taskCounts": { "FAILED": 1 },
+        "tasks": [
+          {
+            "target": "instances/prod/databases/crm",
+            "status": "FAILED",
+            "attempt": 1,
+            "affectedRows": 0,
+            "filesNotRun": 1,
+            "files": [
+              {
+                "version": "0004",
+                "path": "migrations/0004_add_risk_score.sql",
+                "status": "FAILED",
+                "rolledBack": true,
+                "affectedRows": 0,
+                "commandCount": 2,
+                "commands": [
+                  { "statement": "UPDATE account SET tier = 'basic' WHERE tier IS NULL", "affectedRows": 40, "rolledBack": true },
+                  { "statement": "ALTER TABLE account ADD COLUMN risk_score int", "error": "ERROR: column \"risk_score\" of relation \"account\" already exists (SQLSTATE 42701)" }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Reading the rows:
+
+-   `affectedRows` is the count the database returned. A file's count sums its commands, and a task's sums its files.
+-   A missing `affectedRows` means the database driver reported none, or a file or task has an unknown commit outcome. It does not mean zero.
+-   Commands in a transaction that rolled back keep their count, carry `rolledBack`, and are left out of the file and task totals.
+-   A rejected PostgreSQL commit also marks its commands `rolledBack`. An uncertain commit marks them `commitUnknown` and leaves the file and task totals absent.
+-   Each command's `index` is its one-based position within its file or sheet attempt. It keeps that position when other commands are omitted from the output.
+-   A command with `earlierAttempt` comes from an attempt Bytebase then retried. A committed command counts toward totals; one with `commitUnknown` keeps the totals absent. The same statement may appear again from the final attempt.
+-   A task's result is its latest run. `attempt` counts its runs, and `previousRuns` lists the earlier ones.
+-   A task with `unchanged` finished with nothing to apply: every version was already applied, or a declarative release found the schema already matched.
+
+Statement text comes from the migration files, because the server logs each command as a byte range of its file. The action reads a file from the job's checkout when it matches the release, so run `rollout` in a checkout of the repository. Without one it reads the file from Bytebase, which needs the `bb.sheets.get` permission. Some engines remove `-- txn-mode` and `-- txn-isolation` lines before counting byte ranges. When the ranges fit both the stored and stripped text, the action leaves the statement text unavailable. A command with unavailable text is named by its position, such as `statement 3`, and its count and error are still reported.
+
+To keep the file on GitLab when the job fails:
+
+```yaml
+deploy:
+  script:
+    - bytebase-action rollout --url=$BYTEBASE_URL --project=$BYTEBASE_PROJECT --plan=$PLAN --target-stage=environments/prod --output=bytebase-rollout.json
+  artifacts:
+    when: always
+    paths: [bytebase-rollout.json]
+    reports:
+      annotations: bytebase_annotations.json
+```
+
+## Sign-in
+
+The action signs in once, before any other request. It uses the first of these that is set:
+
+1.  An access token, from `--access-token` or `BYTEBASE_ACCESS_TOKEN`.
+2.  `--workload-identity`, the flag.
+3.  A service account, from `--service-account` and `--service-account-secret` or their environment variables.
+4.  `BYTEBASE_WORKLOAD_IDENTITY`, the environment variable.
+
+A workload identity needs the CI job's ID token:
+
+-   **GitHub Actions**: give the job `permissions: id-token: write`. The action requests the token itself.
+
+    ```yaml
+    jobs:
+      sql-review:
+        permissions:
+          id-token: write
+        runs-on: ubuntu-latest
+        container:
+          image: bytebase/bytebase-action
+        env:
+          BYTEBASE_WORKLOAD_IDENTITY: ci@workload.bytebase.com
+        steps:
+          - uses: actions/checkout@v7
+          - run: bytebase-action check --url=https://bytebase.example.com --project=projects/example --targets=instances/example/databases/example --file-pattern="migrations/*.sql"
+    ```
+
+-   **GitLab CI and other OIDC issuers**: put the ID token in `BYTEBASE_ID_TOKEN`. Its `aud` must be one of the audiences the workload identity allows.
+
+    ```yaml
+    sql-review:
+      image: bytebase/bytebase-action
+      id_tokens:
+        BYTEBASE_ID_TOKEN:
+          aud: bytebase
+      variables:
+        BYTEBASE_WORKLOAD_IDENTITY: ci@workload.bytebase.com
+      script:
+        - bytebase-action check --url=https://bytebase.example.com --project=projects/example --targets=instances/example/databases/example --file-pattern="migrations/*.sql"
+    ```
+
+`BYTEBASE_ID_TOKEN` is also read on GitHub, and wins over the token GitHub would issue.
+
+A failed sign-in ends the run with one line, `sign in as <identity>: <reason>`.
+
+When a request is rejected as unauthenticated, the action signs in again. A workload identity can do so only while the CI still has a valid ID token: GitLab's expires at the job timeout.
 
 ## Using Declarative Mode
 

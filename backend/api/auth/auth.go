@@ -107,7 +107,7 @@ func (in *APIAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 		}
 		ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
 
-		user, workspaceID, err := in.getUserConnect(ctx, accessTokenStr)
+		user, claims, err := in.getUserConnect(ctx, accessTokenStr)
 		if err != nil {
 			if IsAuthenticationSkipped(req.Spec().Procedure, authContext) {
 				return next(ctx, req)
@@ -115,8 +115,9 @@ func (in *APIAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 			return nil, err
 		}
 
+		authContext.FederatedIdentity = claims.federatedIdentity()
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
-		ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
+		ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, claims.WorkspaceID)
 		return next(ctx, req)
 	}
 }
@@ -151,6 +152,7 @@ func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandler
 		}
 
 		in.profile.LastActiveTS.Store(time.Now().Unix())
+		authContext.FederatedIdentity = claims.federatedIdentity()
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 		ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, claims.WorkspaceID)
 
@@ -348,16 +350,16 @@ func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTok
 }
 
 // getUserConnect is a ConnectRPC-specific version that returns ConnectRPC errors.
-// Returns the user and workspace ID from the token claims.
-func (in *APIAuthInterceptor) getUserConnect(ctx context.Context, accessTokenStr string) (*store.UserMessage, string, error) {
+// Returns the user and the token claims.
+func (in *APIAuthInterceptor) getUserConnect(ctx context.Context, accessTokenStr string) (*store.UserMessage, *claimsMessage, error) {
 	user, claims, err := in.authenticateConnect(ctx, accessTokenStr)
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 
 	// Only update for authorized request.
 	in.profile.LastActiveTS.Store(time.Now().Unix())
-	return user, claims.WorkspaceID, nil
+	return user, claims, nil
 }
 
 // GetUserEmailFromMFATempToken returns the user email from the MFA temp token.
@@ -534,29 +536,74 @@ func MCPClassIsRefused(class v1pb.MCPMethodClass) bool {
 // enforcement path must not — it reads the class off the AuthContext, which
 // fails the request outright when the annotation cannot be resolved.
 func MCPMethodClassOfProcedure(procedure string) (v1pb.MCPMethodClass, error) {
+	class, _, err := MCPAnnotationsOfProcedure(procedure)
+	return class, err
+}
+
+// MCPAnnotationsOfProcedure resolves both MCP annotations of a procedure, its
+// class and its recorded denial reason, under the same caveat as
+// MCPMethodClassOfProcedure.
+func MCPAnnotationsOfProcedure(procedure string) (v1pb.MCPMethodClass, v1pb.MCPDenialReason, error) {
+	unresolved := func(err error) (v1pb.MCPMethodClass, v1pb.MCPDenialReason, error) {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, v1pb.MCPDenialReason_MCP_DENIAL_REASON_UNSPECIFIED, err
+	}
 	tokens := strings.Split(procedure, "/")
 	if len(tokens) != 3 {
-		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid procedure name %q", procedure)
+		return unresolved(errs.Errorf("invalid procedure name %q", procedure))
 	}
 	rd, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(tokens[1]))
 	if err != nil {
-		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Wrapf(err, "invalid service descriptor for procedure %q", procedure)
+		return unresolved(errs.Wrapf(err, "invalid service descriptor for procedure %q", procedure))
 	}
 	sd, ok := rd.(protoreflect.ServiceDescriptor)
 	if !ok {
-		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid service descriptor for procedure %q", procedure)
+		return unresolved(errs.Errorf("invalid service descriptor for procedure %q", procedure))
 	}
 	method := sd.Methods().ByName(protoreflect.Name(tokens[2]))
 	if method == nil {
-		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("unknown method for procedure %q", procedure)
+		return unresolved(errs.Errorf("unknown method for procedure %q", procedure))
 	}
 	md, ok := method.Options().(*descriptorpb.MethodOptions)
 	if !ok {
-		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid method options for procedure %q", procedure)
+		return unresolved(errs.Errorf("invalid method options for procedure %q", procedure))
 	}
 	class, ok := proto.GetExtension(md, v1pb.E_McpMethodClass).(v1pb.MCPMethodClass)
 	if !ok {
-		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid MCP method class extension for procedure %q", procedure)
+		return unresolved(errs.Errorf("invalid MCP method class extension for procedure %q", procedure))
 	}
-	return class, nil
+	reason, ok := proto.GetExtension(md, v1pb.E_McpDenialReason).(v1pb.MCPDenialReason)
+	if !ok {
+		return unresolved(errs.Errorf("invalid MCP denial reason extension for procedure %q", procedure))
+	}
+	return class, reason, nil
+}
+
+// mcpReadableSettings are the settings an MCP session may read through
+// SettingService/GetSetting, which is READ for these alone: the MCP gate refuses
+// every other name, and MCP discovery names these. It lives here, like
+// MCPClassIsRefused, so the two cannot disagree.
+//
+// A setting joins only when its read returns nothing an agent must not hold.
+// SEMANTIC_TYPES qualifies because GetSetting strips the MD5 masking salt for MCP
+// sessions.
+var mcpReadableSettings = []v1pb.Setting_SettingName{
+	v1pb.Setting_WORKSPACE_APPROVAL,
+	v1pb.Setting_ENVIRONMENT,
+	v1pb.Setting_SEMANTIC_TYPES,
+	v1pb.Setting_DATA_CLASSIFICATION,
+}
+
+// MCPReadableSettingNames returns the settings an MCP session may read as
+// resource names, such as "settings/ENVIRONMENT", in a fixed order.
+func MCPReadableSettingNames() []string {
+	names := make([]string, 0, len(mcpReadableSettings))
+	for _, setting := range mcpReadableSettings {
+		names = append(names, common.SettingNamePrefix+setting.String())
+	}
+	return names
+}
+
+// MCPCanReadSetting reports whether an MCP session may read the setting.
+func MCPCanReadSetting(name v1pb.Setting_SettingName) bool {
+	return slices.Contains(mcpReadableSettings, name)
 }

@@ -1,7 +1,8 @@
 import { Loader2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { useElapsedSeconds } from "@/hooks/useElapsed";
 import { useExecuteSQL } from "@/hooks/useExecuteSQL";
 import type { ResultViewPresentation } from "@/modules/sql-editor/components/ResultView";
 import { ResultView } from "@/modules/sql-editor/components/ResultView";
@@ -49,7 +50,9 @@ export function DatabaseQueryContext({
     void runQuery(database, context);
   }, [database, context, runQuery, context.status]);
 
-  const elapsed = useElapsed(isExecuting, context.beginTimestampMS);
+  const elapsedSeconds = useElapsedSeconds(
+    isExecuting ? context.beginTimestampMS : undefined
+  );
 
   const cancelQuery = () => {
     context.abortController?.abort();
@@ -79,7 +82,9 @@ export function DatabaseQueryContext({
           <Loader2 className="size-5 animate-spin mr-1" />
           <span>{t("sql-editor.executing-query")}</span>
           <span>-</span>
-          <span className="font-mono">{elapsed}</span>
+          <span className="font-mono">
+            {elapsedSeconds !== undefined && `${elapsedSeconds}s`}
+          </span>
         </div>
         <div>
           <Button size="sm" appearance="outline" onClick={cancelQuery}>
@@ -112,21 +117,4 @@ export function DatabaseQueryContext({
       presentation={presentation}
     />
   );
-}
-
-/**
- * Returns a humanized elapsed-time string ("3.2s") that ticks once per
- * second while `running` is true. Stops/clears the interval on unmount
- * or when `running` flips to false.
- */
-function useElapsed(running: boolean, beginMS: number | undefined): string {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!running) return;
-    setNow(Date.now());
-    const handle = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(handle);
-  }, [running]);
-  if (!running || !beginMS) return "";
-  return `${((now - beginMS) / 1000).toFixed(1)}s`;
 }

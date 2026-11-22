@@ -131,13 +131,13 @@ func TestSyntaxErrorColumnOffset(t *testing.T) {
 	require.Equal(t, int32(3), syntaxErr.Position.Column)
 }
 
-func TestParseCassandraOmniAST(t *testing.T) {
+func TestParseCassandraAST(t *testing.T) {
 	results, err := parseCassandraStatements("SELECT id, name FROM users")
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 
-	node, ok := GetOmniNode(results[0].AST)
-	require.True(t, ok, "AST should be an OmniAST")
+	node, ok := GetNode(results[0].AST)
+	require.True(t, ok, "AST should be an *AST")
 	require.NotNil(t, node)
 }
 

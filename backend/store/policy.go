@@ -191,9 +191,9 @@ func writeIamPolicyImpl(ctx context.Context, tx *sql.Tx, workspace string, resou
 // evictIamPolicyCache drops this process's cached copies of one IAM policy. A
 // write evicts rather than publishing what it just wrote: the advisory lock ends
 // with the commit, so two writers can commit in one order and reach the cache in
-// the other, leaving the older policy cached with no expiry -- and permission
-// checks read this cache. Eviction is safe under every interleaving, because it
-// never installs a value; the next read repopulates it from the row.
+// the other, leaving the older policy cached until the entry expires -- and
+// permission checks read this cache. Eviction is safe under every interleaving,
+// because it never installs a value; the next read repopulates it from the row.
 func (s *Store) evictIamPolicyCache(workspace string, resourceType storepb.Policy_Resource, resource string) {
 	s.policyCache.Remove(getPolicyCacheKey(workspace, resourceType, resource, storepb.Policy_IAM))
 	s.iamPolicyCache.Remove(getIamPolicyCacheKey(workspace, resourceType, resource))
@@ -384,7 +384,6 @@ type EffectiveQueryDataPolicy struct {
 	MaximumResultSize        int64
 	MaximumResultRows        int32
 	DisableCopyData          bool
-	DisableExport            bool
 	MaxQueryTimeoutInSeconds int64
 	AllowAdminDataSource     bool
 }
@@ -398,7 +397,6 @@ func formatEffectiveQueryDataPolicy(policy *storepb.QueryDataPolicy) *EffectiveQ
 	return &EffectiveQueryDataPolicy{
 		MaximumResultRows:    maximumResultRows,
 		DisableCopyData:      policy.GetDisableCopyData(),
-		DisableExport:        policy.GetDisableExport(),
 		AllowAdminDataSource: policy.GetAllowAdminDataSource(),
 	}
 }
@@ -429,7 +427,6 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, workspaceID str
 
 	return &EffectiveQueryDataPolicy{
 		DisableCopyData:          formatWorkspacePolicy.DisableCopyData,
-		DisableExport:            formatWorkspacePolicy.DisableExport,
 		MaximumResultRows:        min(formatWorkspacePolicy.MaximumResultRows, formatProjectPolicy.MaximumResultRows),
 		MaximumResultSize:        maximumResultSize,
 		MaxQueryTimeoutInSeconds: queryTimeout,
@@ -462,9 +459,10 @@ func (s *Store) getQueryDataPolicy(ctx context.Context, workspaceID string, reso
 	return p, nil
 }
 
-// GetDefaultReviewRulePolicy returns the review rule policy in force when
-// neither the project nor the workspace has one: every standard rule on. A
-// rule added to ReviewRuleType is added here in the same release.
+// GetDefaultReviewRulePolicy returns the review rule policy a new workspace
+// starts with, and the one in force when neither the project nor the
+// workspace has one: every standard rule on. A rule added to ReviewRuleType
+// is added here in the same release.
 func GetDefaultReviewRulePolicy() *storepb.ReviewRulePolicy {
 	return &storepb.ReviewRulePolicy{Rules: []storepb.ReviewRuleType{
 		storepb.ReviewRuleType_SYNTAX,
@@ -484,7 +482,8 @@ func GetDefaultReviewRulePolicy() *storepb.ReviewRulePolicy {
 // GetEffectiveReviewRulePolicy returns the standard review rules on for a
 // project. The nearest policy wins: the project's own policy applies as is, a
 // project without one uses the workspace policy, and with neither every rule
-// is on. A policy that is not enforced counts as absent.
+// is on. A policy that is not enforced counts as absent. SYNTAX gates the
+// rest, so a policy without it leaves no rule on.
 func (s *Store) GetEffectiveReviewRulePolicy(ctx context.Context, workspaceID string, projectID string) (*storepb.ReviewRulePolicy, error) {
 	for _, level := range []struct {
 		resourceType storepb.Policy_Resource
@@ -498,6 +497,9 @@ func (s *Store) GetEffectiveReviewRulePolicy(ctx context.Context, workspaceID st
 			return nil, err
 		}
 		if policy != nil {
+			if !slices.Contains(policy.Rules, storepb.ReviewRuleType_SYNTAX) {
+				return &storepb.ReviewRulePolicy{}, nil
+			}
 			return policy, nil
 		}
 	}

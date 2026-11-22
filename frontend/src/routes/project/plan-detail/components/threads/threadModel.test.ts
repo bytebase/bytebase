@@ -3,6 +3,7 @@ import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { describe, expect, test } from "vitest";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
+  IssueComment_ReviewMetadataSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
   StatementAnchorSchema,
@@ -12,10 +13,11 @@ import {
   Plan_SpecSchema,
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { current, OUTDATED, UNAVAILABLE } from "./placement/place";
 import {
-  anchorLineRange,
   buildWholeLineAnchor,
+  completePreviewLineCount,
   countPlacedUnresolvedBySpec,
   countUnresolvedThreads,
   defaultExpandedThread,
@@ -94,6 +96,17 @@ describe("sheetSha256OfName", () => {
   });
 });
 
+describe("completePreviewLineCount", () => {
+  test("excludes the final line of a truncated preview, even after a newline", () => {
+    expect(completePreviewLineCount("first\nsecond", true)).toBe(1);
+    expect(completePreviewLineCount("first\nsecond\n", true)).toBe(2);
+    expect(completePreviewLineCount("first\r\nsecond\r\n", true)).toBe(2);
+    expect(completePreviewLineCount("first\rsecond", true)).toBe(1);
+    expect(completePreviewLineCount("first", true)).toBe(0);
+    expect(completePreviewLineCount("first\nsecond", false)).toBe(2);
+  });
+});
+
 describe("countUnresolvedThreads", () => {
   test("counts open roots, anchored or not, and never replies", () => {
     const threads = groupThreads([
@@ -123,6 +136,14 @@ describe("countUnresolvedThreads", () => {
     expect([
       ...countPlacedUnresolvedBySpec(threads, specs, () => placed),
     ]).toEqual([["spec-1", 2]]);
+    expect([
+      ...countPlacedUnresolvedBySpec(
+        threads,
+        specs,
+        () => placed,
+        () => 1
+      ),
+    ]).toEqual([["spec-1", 1]]);
     expect(countPlacedUnresolvedBySpec(threads, [], () => undefined).size).toBe(
       0
     );
@@ -180,28 +201,6 @@ describe("resolveAnchorState", () => {
         undefined
       )
     ).toBe("UNAVAILABLE");
-  });
-});
-
-describe("anchorLineRange", () => {
-  test("whole-line anchors include the end line", () => {
-    expect(anchorLineRange(anchor(8, 10))).toEqual({
-      startLine: 8,
-      endLine: 10,
-    });
-  });
-
-  test("code-point ranges ending at column 1 stop on the previous line", () => {
-    const precise = create(StatementAnchorSchema, {
-      startPosition: create(PositionSchema, { line: 3, column: 2 }),
-      endPosition: create(PositionSchema, { line: 5, column: 1 }),
-    });
-    expect(anchorLineRange(precise)).toEqual({ startLine: 3, endLine: 4 });
-  });
-
-  test("rejects malformed anchors", () => {
-    expect(anchorLineRange(create(StatementAnchorSchema))).toBeUndefined();
-    expect(anchorLineRange(anchor(5, 2))).toBeUndefined();
   });
 });
 
@@ -292,6 +291,59 @@ describe("editor placement", () => {
       "root open-early-old",
       "root open-early-new",
     ]);
+  });
+});
+
+describe("editor placement of review results", () => {
+  const result = (
+    id: string,
+    ruleType: ReviewRuleType,
+    opts: { superseded?: boolean; resolved?: boolean } = {}
+  ) => {
+    const comment = root(id, { anchor: anchor(2, 2), resolved: opts.resolved });
+    comment.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+      ruleType,
+      superseded: opts.superseded ?? false,
+    });
+    return comment;
+  };
+  const RULE = ReviewRuleType.REQUIRE_WHERE;
+  const NO_RULE = ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED;
+  const placedNames = (comments: ReturnType<typeof root>[]) =>
+    selectEditorThreads(groupThreads(comments), {
+      specId: "spec-1",
+      sheetSha256: SHA,
+    }).map((entry) => entry.thread.root.comment);
+
+  test("shows the latest results of the standard rules, resolved or not", () => {
+    expect(
+      placedNames([
+        result("latest-open", RULE),
+        result("latest-resolved", RULE, { resolved: true }),
+        result("earlier", RULE, {
+          superseded: true,
+          resolved: true,
+        }),
+      ])
+    ).toEqual(["root latest-open", "root latest-resolved"]);
+  });
+
+  test("keeps a superseded result someone reopened, since it holds the rollout", () => {
+    expect(
+      placedNames([result("reopened", RULE, { superseded: true })])
+    ).toEqual(["root reopened"]);
+  });
+
+  test("leaves results no rule names and human threads as they are", () => {
+    expect(
+      placedNames([
+        result("earlier-untitled", NO_RULE, {
+          superseded: true,
+          resolved: true,
+        }),
+        root("human", { anchor: anchor(2, 2), resolved: true }),
+      ])
+    ).toEqual(["root earlier-untitled", "root human"]);
   });
 });
 

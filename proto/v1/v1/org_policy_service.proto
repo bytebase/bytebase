@@ -28,8 +28,7 @@ service OrgPolicyService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.policies.get";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists policies at a specified resource level.
@@ -44,8 +43,7 @@ service OrgPolicyService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.policies.list";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Creates a new organizational policy.
@@ -92,8 +90,10 @@ service OrgPolicyService {
     option (bytebase.v1.permission) = "bb.policies.update";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    // An MCP session reaches it only through the grant_masking_exemption and
+    // revoke_masking_exemption tools, after the user confirms the change in the
+    // MCP client.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Deletes an organizational policy.
@@ -261,7 +261,12 @@ enum PolicyResourceType {
 
 // Standard review rule policy: the rules switched on. The nearest policy
 // wins: a project's own policy applies as is; a project without one uses
-// the workspace policy; with neither, every rule is on.
+// the workspace policy; with neither, every rule is on. Getting the policy
+// of a project without its own is NOT_FOUND; getting the workspace's when it
+// has none returns every rule on.
+//
+// SYNTAX gates the rest: the other rules judge only SQL that parses, so a
+// list without SYNTAX switches every rule off.
 //
 // A saved list is explicit, so a rule added to the standard set in a later
 // release is appended to every saved policy by a data migration in that
@@ -281,9 +286,10 @@ message ReviewAIPolicy {
 
 // Rollout policy configuration.
 message RolloutPolicy {
-  // Whether rollout is automatic without manual approval.
+  // Whether the environment's rollout tasks start on their own, with no one running them.
   bool automatic = 1;
-  // The roles that can approve rollout execution.
+  // Who can run, skip or cancel the environment's rollout tasks; WORKSPACE_APPROVAL sets approvers.
+  // Anyone with bb.taskRuns.create can too.
   repeated string roles = 2;
 }
 
@@ -294,9 +300,8 @@ message QueryDataPolicy {
   // The default value <= 0, means no limit.
   int32 maximum_result_rows = 1;
 
-  // workspace-level policy
-  // Disable data export in the SQL editor.
-  bool disable_export = 2;
+  // Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected.
+  bool disable_export = 2 [deprecated = true];
 
   // workspace-level policy
   // Disable copying query results in the SQL editor.
@@ -309,6 +314,12 @@ message QueryDataPolicy {
   // 1. when read-only data source is configured, users're force to use the read-only data source
   // 2. otherwise fallback to use the admin data source.
   bool allow_admin_data_source = 4;
+
+  // workspace-level policy
+  // Hide the Download export destination in the SQL Editor. Exports can still go
+  // to a configured storage destination such as SharePoint. The Export API does
+  // not check this setting.
+  bool disable_download = 5;
 }
 
 // MaskingExemptionPolicy is the allowlist of users who can access sensitive data.

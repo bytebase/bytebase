@@ -41,6 +41,73 @@ type FindRevisionMessage struct {
 	ShowDeleted bool
 }
 
+// PendingReleaseVersion is a release version a database has not applied: it
+// has no live VERSIONED revision with that version.
+type PendingReleaseVersion struct {
+	DatabaseName string
+	Version      string
+	// The newest deleted VERSIONED revision of this version, when one exists.
+	DeletedAt *time.Time
+	Deleter   string
+}
+
+// ListPendingReleaseVersions returns, for the given databases of one instance,
+// each of versions that the database has not applied, by the executor's rule
+// (runVersionedRelease): only a live VERSIONED revision counts. It returns
+// only the pending pairs, never one per applied revision.
+func (s *Store) ListPendingReleaseVersions(ctx context.Context, instanceID string, databaseNames, versions []string) ([]*PendingReleaseVersion, error) {
+	if len(databaseNames) == 0 || len(versions) == 0 {
+		return nil, nil
+	}
+	versioned := storepb.SchemaChangeType_VERSIONED.String()
+	q := qb.Q().Space(`
+		SELECT target.name, release_version.version, deleted.deleted_at, COALESCE(deleted.deleter, '')
+		FROM unnest(?::TEXT[]) AS target(name)
+		CROSS JOIN unnest(?::TEXT[]) AS release_version(version)
+		LEFT JOIN LATERAL (
+			SELECT revision.deleted_at, revision.deleter
+			FROM revision
+			WHERE revision.instance = ?
+				AND revision.db_name = target.name
+				AND revision.payload->>'type' = ?
+				AND revision.version = release_version.version
+				AND revision.deleted_at IS NOT NULL
+			ORDER BY revision.deleted_at DESC, revision.resource_id DESC
+			LIMIT 1
+		) AS deleted ON TRUE
+		WHERE NOT EXISTS (
+			SELECT 1
+			FROM revision
+			WHERE revision.instance = ?
+				AND revision.db_name = target.name
+				AND revision.payload->>'type' = ?
+				AND revision.version = release_version.version
+				AND revision.deleted_at IS NULL
+		)`, databaseNames, versions, instanceID, versioned, instanceID, versioned)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query pending release versions")
+	}
+	defer rows.Close()
+
+	var pending []*PendingReleaseVersion
+	for rows.Next() {
+		p := &PendingReleaseVersion{}
+		if err := rows.Scan(&p.DatabaseName, &p.Version, &p.DeletedAt, &p.Deleter); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan pending release version")
+		}
+		pending = append(pending, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to read pending release versions")
+	}
+	return pending, nil
+}
+
 // ListRevisions lists revisions.
 // The results are ordered by version desc.
 func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([]*RevisionMessage, error) {

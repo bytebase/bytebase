@@ -359,7 +359,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 // - Otherwise, creates a new workspace with the user as admin.
 func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.SignupRequest]) (*connect.Response[v1pb.LoginResponse], error) {
 	request := req.Msg
-	email := normalizeEmail(request.Email)
+	email := common.NormalizeEmail(request.Email)
 	if email == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email must be set"))
 	}
@@ -641,7 +641,7 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 }
 
 func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
-	email := normalizeEmail(request.Email)
+	email := common.NormalizeEmail(request.Email)
 	// An invalid-syntax email can never be an account; reject it before the
 	// claim with the same error a wrong password gets.
 	if !common.IsValidEmail(email) {
@@ -1218,16 +1218,23 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	}
 
 	// Validate OIDC token
-	if _, err = wif.ValidateToken(ctx, request.Token, wicConfig); err != nil {
+	claims, err := wif.ValidateToken(ctx, request.Token, wicConfig)
+	if err != nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated,
 			errors.Wrap(err, "token validation failed"))
 	}
 
 	// Generate Bytebase API token using workspace from the WI record.
-	token, err := auth.GenerateAPIToken(wi.Email, wi.Workspace, s.secret)
+	federated := common.FederatedIdentity{Issuer: claims.Issuer, Subject: claims.Subject}
+	token, err := auth.GenerateWorkloadIdentityToken(wi.Email, wi.Workspace, federated, s.secret)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal,
 			errors.Wrap(err, "failed to generate access token"))
+	}
+	// The exchange itself carries no Bytebase token, so its audit row takes the
+	// federated identity from here.
+	if authContext, ok := common.GetAuthContextFromContext(ctx); ok {
+		authContext.FederatedIdentity = &federated
 	}
 
 	return connect.NewResponse(&v1pb.ExchangeTokenResponse{
@@ -1318,11 +1325,12 @@ func (*AuthService) getAdditionalWorkspaceSettings() []store.AdditionalSetting {
 		settings = append(settings, store.AdditionalSetting{
 			Name: storepb.SettingName_AI,
 			Payload: &storepb.AISetting{
-				Enabled:  true,
-				Provider: storepb.AISetting_GEMINI,
-				ApiKey:   geminiAPIKey,
-				Endpoint: "https://generativelanguage.googleapis.com/v1beta",
-				Model:    "gemini-3.7-flash",
+				Enabled:          true,
+				Provider:         storepb.AISetting_GEMINI,
+				ApiKey:           geminiAPIKey,
+				Endpoint:         "https://generativelanguage.googleapis.com/v1beta",
+				Model:            "gemini-3.7-flash",
+				SqlReviewEnabled: true,
 			},
 		})
 	}

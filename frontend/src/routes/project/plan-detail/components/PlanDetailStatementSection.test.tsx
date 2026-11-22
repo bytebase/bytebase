@@ -1,0 +1,1198 @@
+import { create } from "@bufbuild/protobuf";
+import { act, cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
+import { afterEach, expect, test, vi } from "vitest";
+import { AGENT_PLAN_DRAFT_EVENT } from "@/lib/plan/agentDraftHandoff";
+import type { AgentPlanDraftEventDetail } from "@/lib/plan/agentDraftHandoff";
+import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
+import { lazyExtractDomRefSuggestions, lazyPrepareDomAction } from "@/modules/agent/dom";
+import { getElementByRef } from "@/modules/agent/dom/snapshotIndex";
+import {
+  Plan_ChangeDatabaseConfigSchema,
+  Plan_SpecSchema,
+  PlanSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
+import { type Sheet, SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
+import { CheckReleaseResponse_CheckResultSchema } from "@/types/proto-es/v1/release_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
+import { getSheetStatement } from "@/utils/v1/sheet";
+import {
+  getLocalSheetByName,
+  removeLocalSheet,
+  setLocalSheetStatement,
+} from "../utils/localSheet";
+import type { PlanSqlFixEditor, PlanSqlFixEditorSnapshot } from "../utils/sqlFixTarget";
+import { PlanDetailStatementSection } from "./PlanDetailStatementSection";
+
+const mocks = vi.hoisted(() => ({
+  page: undefined as unknown,
+  sheets: new Map<string, Sheet>(),
+  groups: {} as Record<string, {matchedDatabases: {name: string}[]}>,
+  actor: "users/test",
+  workspace: "workspaces/demo",
+  threadFocus: undefined as
+    | { commentName: string; specId: string; lineNumber: number; nonce: number }
+    | undefined,
+  clearThreadFocus: vi.fn(),
+  revealLineInCenter: vi.fn(),
+  focus: vi.fn(),
+  scrollIntoView: vi.fn(),
+  reader: undefined as {model: {isDisposed: () => boolean} | null; events: EventTarget} | undefined,
+  setSelection: vi.fn(),
+  setScrollTop: vi.fn(),
+  minimizeAgent: vi.fn(),
+  openAgentWithPrompt: vi.fn(),
+  localSheetNames: [] as string[],
+  failLocalWrite: false,
+  getRelease: vi.fn(),
+  openedFile: undefined as unknown,
+  sqlFixSnapshot: undefined as PlanSqlFixEditorSnapshot | undefined,
+  applySqlFix: undefined as PlanSqlFixEditor["apply"] | undefined,
+  checkRelease: vi.fn(),
+  createSheet: vi.fn(),
+  fetchTargets: vi.fn(),
+  query: vi.fn(),
+  approveIssue: vi.fn(),
+  updatePlan: vi.fn(),
+}));
+
+vi.mock("@/api", () => ({
+  sqlServiceClientConnect: { query: mocks.query },
+  issueServiceClientConnect: { approveIssue: mocks.approveIssue },
+  planServiceClientConnect: { updatePlan: mocks.updatePlan },
+  sheetServiceClientConnect: {},
+  releaseServiceClientConnect: { getRelease: mocks.getRelease, checkRelease: mocks.checkRelease },
+}));
+vi.mock("@/hooks/useReactiveRoute", () => ({
+  useReactiveRoute: () => ({ fullPath: "/projects/p/plans/42" }),
+}));
+vi.mock("../hooks/usePlanSqlFixTarget", () => ({
+  useRegisterPlanSqlFixEditor: (snapshot: PlanSqlFixEditorSnapshot, apply: PlanSqlFixEditor["apply"]) => { mocks.sqlFixSnapshot = snapshot; mocks.applySqlFix = apply; },
+}));
+vi.mock("./release/ReleaseFileViewer", () => ({
+  useOpenReleaseFile: () => (target: unknown) => {
+    mocks.openedFile = target;
+  },
+}));
+
+vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
+vi.mock("@/components/monaco", async () => ({
+  ...(await vi.importActual<typeof import("@/components/monaco/viewAnchor")>(
+    "@/components/monaco/viewAnchor"
+  )),
+  MonacoEditor: ({
+    content,
+    onChange,
+    onReady,
+  }: {
+    onChange: (value: string) => void;
+    onReady: (monaco: unknown, editor: unknown) => void;
+    content: string;
+  }) => (
+    <>
+      <div data-testid="editing-statement">{content}</div>
+      <button
+        onClick={() =>
+          onReady({}, {
+            getModel: () => ({ getLineCount: () => 3 }),
+            revealLineInCenter: mocks.revealLineInCenter,
+            focus: mocks.focus,
+            getDomNode: () => ({ scrollIntoView: mocks.scrollIntoView }),
+            setSelection: mocks.setSelection,
+            setScrollTop: mocks.setScrollTop,
+            getTopForLineNumber: (lineNumber: number) => lineNumber * 20,
+          })
+        }
+      >
+        Editor ready
+      </button>
+      <button onClick={() => onChange("SELECT 2;\n".repeat(220_000))}>
+        Make large draft
+      </button>
+      <button onClick={() => onChange("SELECT 2;")}>Make small draft</button>
+    </>
+  ),
+  ReadonlyMonaco: ({
+    content,
+    onReady,
+    options,
+  }: {
+    content: string;
+    onReady?: (monaco: unknown, editor: unknown) => void;
+    options?: { stickyScroll?: { enabled?: boolean } };
+  }) => (
+    <>
+      <div
+        data-sticky-scroll={String(options?.stickyScroll?.enabled)}
+        data-testid="statement"
+      >
+        {content.slice(0, 24)}
+      </div>
+      <button
+        onClick={(event) => {
+          const node = event.currentTarget.previousElementSibling;
+          const reader = {model: {isDisposed: () => false}, events: new EventTarget()};
+          mocks.reader = reader;
+          const listen = (name: string, fn: () => void) => {
+            reader.events.addEventListener(name, fn);
+            return {dispose: () => reader.events.removeEventListener(name, fn)};
+          };
+          onReady?.({}, {
+            getDomNode: () => node,
+            getModel: () => reader.model,
+            onDidDispose: (fn: () => void) => listen("dispose", fn),
+            onDidChangeModel: (fn: () => void) => listen("model", fn),
+            getVisibleRanges: () => [{ startLineNumber: 2, endLineNumber: 3 }],
+            getSelection: () => ({
+              selectionStartLineNumber: 3,
+              selectionStartColumn: 2,
+              positionLineNumber: 3,
+              positionColumn: 5,
+            }),
+          });
+        }}
+      >
+        Readonly editor ready
+      </button>
+    </>
+  ),
+}));
+vi.mock("@/stores", () => ({
+  environmentNamePrefix: "environments/",
+  pushNotification: vi.fn(),
+}));
+vi.mock("@/stores/app", () => {
+  const getState = () => ({
+    databasesByName: {},
+    dbGroupsByName: mocks.groups,
+    currentUser: {name: mocks.actor},
+    workspaceResourceName: () => mocks.workspace,
+    createSheet: mocks.createSheet,
+    getSheetByName: (name: string) => mocks.sheets.get(name),
+    getOrFetchSheetByName: vi.fn(),
+    batchGetOrFetchDatabases: mocks.fetchTargets,
+  });
+  return {useAppStore: Object.assign(
+    (selector: (state: ReturnType<typeof getState>) => unknown) => selector(getState()),
+    {getState},
+  )};
+});
+vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
+  openAgentWithPrompt: mocks.openAgentWithPrompt,
+}));
+vi.mock("@/modules/agent/store/agent", () => ({
+  useAgentStore: {
+    getState: () => ({ visible: true, minimize: mocks.minimizeAgent }),
+  },
+}));
+vi.mock("../shared/stores/usePlanDetailStore", () => ({
+  usePlanDetailStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      threadFocus: mocks.threadFocus,
+      clearThreadFocus: mocks.clearThreadFocus,
+    }),
+}));
+vi.mock("../shell/PlanDetailContext", () => ({
+  usePlanDetailContext: () => mocks.page,
+}));
+vi.mock("../utils/localSheet", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../utils/localSheet")>();
+  return {
+    ...actual,
+    setLocalSheetStatement: (...args: Parameters<typeof actual.setLocalSheetStatement>) => {
+      if (mocks.failLocalWrite) throw new Error("Local sheet unavailable");
+      return actual.setLocalSheetStatement(...args);
+    },
+  };
+});
+vi.mock("./SchemaEditorSheet", () => ({ SchemaEditorSheet: () => null }));
+vi.mock("./threads/StatementThreadsLayer", () => ({
+  StatementThreadsLayer: () => <span data-testid="thread-layer" />,
+}));
+
+afterEach(() => {
+  cleanup();
+  for (const name of mocks.localSheetNames) removeLocalSheet(name);
+  mocks.localSheetNames = [];
+  mocks.actor = "users/test";
+  mocks.workspace = "workspaces/demo";
+  mocks.groups = {};
+  mocks.sheets.clear();
+  mocks.threadFocus = undefined;
+  mocks.reader = undefined;
+  mocks.failLocalWrite = false;
+  mocks.sqlFixSnapshot = undefined;
+  mocks.applySqlFix = undefined;
+  vi.clearAllMocks();
+});
+
+test("shows the large-sheet warning as soon as the saved sheet changes", async () => {
+  const smallName = `projects/p/sheets/${"a".repeat(64)}`;
+  const largeName = `projects/p/sheets/${"b".repeat(64)}`;
+  const specOf = (sheet: string) =>
+    create(Plan_SpecSchema, {
+      id: "spec",
+      config: {
+        case: "changeDatabaseConfig",
+        value: create(Plan_ChangeDatabaseConfigSchema, { sheet }),
+      },
+    });
+  const smallSpec = specOf(smallName);
+  const largeSpec = specOf(largeName);
+  const addSheet = (name: string, statement: string) => {
+    const content = new TextEncoder().encode(statement);
+    mocks.sheets.set(
+      name,
+      create(SheetSchema, { name, content, contentSize: BigInt(content.length) })
+    );
+  };
+  addSheet(smallName, "SELECT 1;");
+  addSheet(largeName, "SELECT 2;\n".repeat(220_000));
+  const page = {
+    currentUser: { name: "users/test" },
+    isCreating: false,
+    plan: create(PlanSchema, { specs: [smallSpec] }),
+    project: undefined,
+    readonly: true,
+    setEditing: vi.fn(),
+  };
+  mocks.page = page;
+
+  const { queryByText, rerender, getByTestId } = render(
+    <PlanDetailStatementSection spec={smallSpec} />
+  );
+  expect(queryByText("issue.statement-from-sheet-warning")).toBeNull();
+
+  mocks.page = {
+    ...page,
+    plan: create(PlanSchema, { specs: [largeSpec] }),
+  };
+  rerender(<PlanDetailStatementSection spec={largeSpec} />);
+  await waitFor(() =>
+    expect(queryByText("issue.statement-from-sheet-warning")).not.toBeNull()
+  );
+  expect(getByTestId("statement").textContent).toContain("SELECT 2;");
+});
+
+const renderEditableSpec = (statement: string, targets = ["instances/main/databases/books"]) => {
+  const sheetName = `projects/p/sheets/${"c".repeat(64)}`;
+  const spec = create(Plan_SpecSchema, {
+    id: "spec",
+    config: {
+      case: "changeDatabaseConfig",
+      value: create(Plan_ChangeDatabaseConfigSchema, { sheet: sheetName, targets }),
+    },
+  });
+  const content = new TextEncoder().encode(statement);
+  mocks.sheets.set(
+    sheetName,
+    create(SheetSchema, { name: sheetName, content, contentSize: BigInt(content.length) })
+  );
+  mocks.page = {
+    currentUser: { name: "users/test" },
+    isCreating: false,
+    pageKey: "p/42",
+    ready: true,
+    patchState: vi.fn(),
+    refreshState: vi.fn(),
+    plan: create(PlanSchema, { name: "projects/p/plans/42", creator: "users/test", specs: [spec] }),
+    project: { name: "projects/p" },
+    readonly: false,
+    setEditing: vi.fn(),
+  };
+  const view = render(<PlanDetailStatementSection spec={spec} />);
+  return {
+    ...view,
+    spec,
+    rerender: (statementVersion = 0, selected = spec) => view.rerender(<PlanDetailStatementSection spec={selected} statementVersion={statementVersion} />),
+  };
+};
+
+const domContext = {
+  actor: "users/test",
+  workspace: "workspaces/demo",
+  chatId: "chat",
+  runId: "run",
+  runMode: "default" as const,
+  pageKey: "/projects/p/plans/42",
+  pageGeneration: 1,
+  projectName: "projects/p",
+  isCurrent: () => true,
+};
+async function observe(el: Element) {
+  const refs = await lazyExtractDomRefSuggestions(domContext);
+  const ref = refs.find(
+    (candidate) => getElementByRef(candidate.ref)?.element === el
+  );
+  expect(ref).toBeDefined();
+  return ref!.ref;
+}
+const runDom = (ref: string, value?: string) =>
+  act(async () =>
+    lazyPrepareDomAction(
+      { ref, type: value === undefined ? "click" : "input", value },
+      domContext
+    )
+  );
+
+test("Agent edits and cancels only the local SQL without losing dirty title focus or changing the reader", async () => {
+  const view = renderEditableSpec("SELECT 1;");
+  const reader = view.getByTestId("statement");
+  mocks.page = {...mocks.page as object, issue: {name:"projects/p/issues/42"}};
+  view.rerender();
+  fireEvent.click(view.getByText("Readonly editor ready"));
+  const threads = view.getByTestId("thread-layer");
+  mocks.fetchTargets.mockClear();
+  const title = document.createElement("input");
+  title.dataset.planTitleInput = "projects/p/plans/42";
+  const saveTitle = vi.fn();
+  title.addEventListener("blur", saveTitle);
+  document.body.append(title);
+  try {
+    vi.useFakeTimers();
+    title.focus();
+    fireEvent.input(title, { target: { value: "Unsaved title" } });
+    const edit = await observe(
+      view.getByText("common.edit").closest("button")!
+    );
+    expect(await runDom(edit)).toMatchObject({ result: { success: true } });
+    const input = view.getByRole("textbox", { name: "common.sql" });
+    expect(input).toHaveValue("SELECT 1;");
+    expect(await runDom(await observe(input), "SELECT 2;")).toMatchObject({
+      result: { success: true },
+    });
+    expect(input).toHaveValue("SELECT 2;");
+    expect(view.getByTestId("statement")).toBe(reader);
+    expect(view.getByTestId("thread-layer")).toBe(threads);
+    expect(reader).toHaveTextContent("SELECT 1;");
+    expect(view.queryByTestId("editing-statement")).toBeNull();
+    expect(view.queryByText("agent.sql-fix.unsaved-checks")).toBeNull();
+    expect(
+      await runDom(
+        await observe(view.getByRole("button", { name: "common.save" }))
+      )
+    ).toMatchObject({ result: { success: false } });
+    expect(
+      await runDom(
+        await observe(view.getByRole("button", { name: "common.cancel" }))
+      )
+    ).toMatchObject({ result: { success: true } });
+    expect(view.queryByRole("textbox", { name: "common.sql" })).toBeNull();
+    expect(view.getByTestId("statement")).toBe(reader);
+    await act(() => vi.advanceTimersByTimeAsync(2400));
+    expect(title).toHaveFocus();
+    expect(saveTitle).not.toHaveBeenCalled();
+    expect(mocks.fetchTargets).not.toHaveBeenCalled();
+    for (const call of [
+      mocks.createSheet,
+      mocks.updatePlan,
+      mocks.checkRelease,
+      mocks.query,
+      mocks.approveIssue,
+      mocks.focus,
+    ])
+      expect(call).not.toHaveBeenCalled();
+  } finally {
+    vi.useRealTimers();
+    title.remove();
+  }
+});
+
+test("version ABA preserves the Agent buffer but never reauthorizes SQL input or member Save", async () => {
+  const view = renderEditableSpec("SELECT 1;");
+  fireEvent.click(view.getByText("Readonly editor ready"));
+  expect(
+    await runDom(
+      await observe(view.getByRole("button", { name: "common.edit" }))
+    )
+  ).toMatchObject({ result: { success: true } });
+  const input = view.getByRole("textbox", { name: "common.sql" });
+  await runDom(await observe(input), "SELECT 2;");
+  const stale = await observe(input);
+  view.rerender(1);
+  view.rerender(0);
+  expect(input).toHaveValue("SELECT 2;");
+  expect(
+    view.getByText("agent.plan-draft.statement-source-changed")
+  ).toBeInTheDocument();
+  expect(await runDom(stale, "SELECT 3;")).toMatchObject({
+    result: { success: false },
+  });
+  const save = view.getByRole("button", { name: "common.save" });
+  expect(save).toBeDisabled();
+  fireEvent.click(save);
+  expect(mocks.createSheet).not.toHaveBeenCalled();
+  fireEvent.click(view.getByRole("button", { name: "common.cancel" }));
+  expect(view.getByTestId("statement")).toHaveTextContent("SELECT 1;");
+});
+
+test.each(["detached", "model removed", "editor disposed"] as const)(
+  "reader teardown (%s) disables old and freshly observed Edit until the next onReady",
+  async (reason) => {
+    const view = renderEditableSpec("SELECT 1;");
+    const ready = view.getByText("Readonly editor ready");
+    fireEvent.click(ready);
+    const edit = view.getByRole("button", { name: "common.edit" });
+    const old = await observe(edit);
+    const node = view.getByTestId("statement");
+    const parent = node.parentElement!;
+    const reader = mocks.reader!;
+    const model = reader.model;
+    if (reason === "detached") node.remove();
+    if (reason === "model removed") reader.model = null;
+    if (reason === "editor disposed")
+      reader.events.dispatchEvent(new Event("dispose"));
+    expect(await runDom(old)).toMatchObject({ result: { success: false } });
+    const suggestions = await lazyExtractDomRefSuggestions(domContext);
+    const fresh = suggestions.find(
+      (candidate) => getElementByRef(candidate.ref)?.element === edit
+    );
+    expect(fresh?.actions).toBe("manual-required");
+    if (reason === "detached") parent.insertBefore(node, ready);
+    reader.model = model;
+    expect(await runDom(await observe(edit))).toMatchObject({
+      result: { success: false },
+    });
+    fireEvent.click(ready);
+    expect(await runDom(await observe(edit))).toMatchObject({
+      result: { success: true },
+    });
+    expect(view.getByRole("textbox", { name: "common.sql" })).toHaveValue(
+      "SELECT 1;"
+    );
+  }
+);
+
+const startLocal = async (targets?: string[]) => {
+  const view = renderEditableSpec("SELECT 1;", targets);
+  fireEvent.click(view.getByText("Readonly editor ready"));
+  expect(
+    await runDom(
+      await observe(view.getByRole("button", { name: "common.edit" }))
+    )
+  ).toMatchObject({ result: { success: true } });
+  const input = view.getByRole("textbox", { name: "common.sql" });
+  expect(await runDom(await observe(input), "SELECT 2;")).toMatchObject({
+    result: { success: true },
+  });
+  return { view, input };
+};
+
+test.each([
+  "target",
+  "expanded",
+  "sheet",
+  "spec",
+  "project",
+  "actor",
+  "workspace",
+] as const)(
+  "rejects %s changes even when the original source is restored",
+  async (changed) => {
+    const group = "projects/p/databaseGroups/core";
+    mocks.groups = {
+      [group]: { matchedDatabases: [{ name: "instances/i/databases/a" }] },
+    };
+    const { view, input } = await startLocal([group]);
+    const old = await observe(input);
+    const page = mocks.page as {
+      plan: ReturnType<typeof create<typeof PlanSchema>>;
+    };
+    const next = create(Plan_SpecSchema, { ...view.spec });
+    if (next.config.case !== "changeDatabaseConfig")
+      throw Error("expected change");
+    if (changed === "target")
+      next.config.value = {
+        ...next.config.value,
+        targets: ["instances/i/databases/b"],
+      };
+    if (changed === "sheet")
+      next.config.value = {
+        ...next.config.value,
+        sheet: "projects/p/sheets/" + "a".repeat(64),
+      };
+    if (changed === "spec") next.id = "next";
+    const groups = mocks.groups;
+    if (changed === "expanded")
+      mocks.groups = {
+        [group]: { matchedDatabases: [{ name: "instances/i/databases/b" }] },
+      };
+    if (changed === "actor") mocks.actor = "users/other";
+    if (changed === "workspace") mocks.workspace = "workspaces/other";
+    mocks.page = {
+      ...page,
+      plan: { ...page.plan, specs: [next] },
+      ...(changed === "project" && { project: { name: "projects/other" } }),
+    };
+    view.rerender(0, next);
+    mocks.page = page;
+    mocks.groups = groups;
+    mocks.actor = "users/test";
+    mocks.workspace = "workspaces/demo";
+    view.rerender();
+    expect(await runDom(old, "SELECT 4;")).toMatchObject({
+      result: { success: false },
+    });
+    expect(input).toHaveValue("SELECT 2;");
+    expect(view.getByRole("button", { name: "common.save" })).toBeDisabled();
+  }
+);
+
+test("equivalent refresh retains an observed local input; replacing the reader does not", async () => {
+  const { view, input } = await startLocal();
+  const current = await observe(input);
+  view.rerender(0, create(Plan_SpecSchema, { ...view.spec }));
+  expect(await runDom(current, "SELECT 3;")).toMatchObject({
+    result: { success: true },
+  });
+  const beforeReplacement = await observe(input);
+  fireEvent.click(view.getByText("Readonly editor ready"));
+  expect(await runDom(beforeReplacement, "SELECT 4;")).toMatchObject({
+    result: { success: false },
+  });
+  expect(input).toHaveValue("SELECT 3;");
+});
+
+test.each(["edit", "sql-fix", "activity"] as const)(
+  "member %s promotes a local draft to the native SQL editor and applies its anchor",
+  async (action) => {
+    const { view } = await startLocal();
+    if (action === "edit")
+      fireEvent.click(view.getByRole("button", { name: "common.edit" }));
+    if (action === "sql-fix")
+      act(() => {
+        expect(mocks.applySqlFix?.("SELECT 2;", "SELECT 3;")).toBe(true);
+      });
+    if (action === "activity") {
+      mocks.threadFocus = {
+        specId: "spec",
+        lineNumber: 2,
+        commentName: "comments/1",
+        nonce: 1,
+      };
+      view.rerender();
+    }
+    expect(view.queryByRole("textbox", { name: "common.sql" })).toBeNull();
+    expect(view.getByTestId("editing-statement")).toHaveTextContent(
+      action === "sql-fix" ? "SELECT 3;" : "SELECT 2;"
+    );
+    fireEvent.click(view.getByText("Editor ready"));
+    expect(mocks.focus).toHaveBeenCalledOnce();
+    if (action === "activity")
+      expect(mocks.revealLineInCenter).toHaveBeenCalledWith(2);
+    if (action === "sql-fix")
+      expect(mocks.revealLineInCenter).toHaveBeenCalledWith(1);
+  }
+);
+
+test("only an explicit member Save persists the local draft, and failure keeps it retryable", async () => {
+  const { view, input } = await startLocal();
+  const save = view.getByRole("button", { name: "common.save" });
+  mocks.createSheet.mockRejectedValueOnce(new Error("unavailable"));
+  await act(async () => {
+    fireEvent.click(save);
+  });
+  expect(input).toHaveValue("SELECT 2;");
+  expect(save).toBeEnabled();
+  expect(mocks.updatePlan).not.toHaveBeenCalled();
+  const nextSheet = "projects/p/sheets/" + "f".repeat(64);
+  mocks.createSheet.mockResolvedValueOnce({ name: nextSheet });
+  mocks.updatePlan.mockResolvedValueOnce(
+    (mocks.page as { plan: unknown }).plan
+  );
+  await act(async () => {
+    fireEvent.click(save);
+  });
+  expect(getSheetStatement(mocks.createSheet.mock.lastCall?.[1])).toBe(
+    "SELECT 2;"
+  );
+  expect(mocks.updatePlan).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({
+      plan: expect.objectContaining({
+        name: "projects/p/plans/42",
+        specs: [
+          expect.objectContaining({
+            config: expect.objectContaining({
+              value: expect.objectContaining({ sheet: nextSheet }),
+            }),
+          }),
+        ],
+      }),
+    })
+  );
+  expect(view.queryByRole("textbox", { name: "common.sql" })).toBeNull();
+});
+
+test("does not submit a stale Agent-origin Plan update if the source changed during member Save", async () => {
+  const { view } = await startLocal();
+  const sheet = Promise.withResolvers<{ name: string }>();
+  mocks.createSheet.mockReturnValueOnce(sheet.promise);
+  fireEvent.click(view.getByRole("button", { name: "common.save" }));
+  expect(mocks.createSheet).toHaveBeenCalledOnce();
+  view.rerender(1);
+  await act(async () => {
+    sheet.resolve({ name: "projects/p/sheets/new" });
+  });
+  expect(mocks.updatePlan).not.toHaveBeenCalled();
+  expect(view.getByRole("textbox", { name: "common.sql" })).toHaveValue(
+    "SELECT 2;"
+  );
+});
+
+test.each([
+  "ready",
+  "readonly",
+  "create",
+  "pending",
+  "activity",
+  "edit focus",
+  "other button",
+  "native",
+  "unmounted",
+] as const)("does not allow Agent Edit across %s", async (condition) => {
+  const view = renderEditableSpec("SELECT 1;");
+  fireEvent.click(view.getByText("Readonly editor ready"));
+  const edit = view.getByRole("button", { name: "common.edit" });
+  const ref = await observe(edit);
+  if (condition === "ready")
+    mocks.page = { ...(mocks.page as object), ready: false };
+  if (condition === "readonly")
+    mocks.page = { ...(mocks.page as object), readonly: true };
+  if (condition === "create")
+    mocks.page = { ...(mocks.page as object), isCreating: true };
+  if (condition === "pending")
+    mocks.page = {
+      ...(mocks.page as object),
+      plan: create(PlanSchema, { specs: [] }),
+    };
+  if (condition === "activity")
+    mocks.threadFocus = {
+      specId: "spec",
+      lineNumber: 1,
+      commentName: "comments/1",
+      nonce: 1,
+    };
+  if (condition === "edit focus") edit.focus();
+  const other = document.createElement("button");
+  if (condition === "other button") {
+    document.body.append(other);
+    other.focus();
+  }
+  if (condition === "native") fireEvent.click(edit);
+  view.rerender();
+  if (condition === "unmounted") view.unmount();
+  expect(await runDom(ref)).toMatchObject({ result: { success: false } });
+  if (condition === "edit focus") expect(edit).toHaveFocus();
+  if (condition === "other button") expect(other).toHaveFocus();
+  other.remove();
+  expect(mocks.createSheet).not.toHaveBeenCalled();
+});
+
+test("applies an exact-source fix only to the unsaved saved-Plan editor and focuses it", () => {
+  const view = renderEditableSpec("SELECT 1;");
+  expect(mocks.sqlFixSnapshot?.currentSql).toBe("SELECT 1;");
+  act(() => { expect(mocks.applySqlFix?.("SELECT 1;", "SELECT 2;")).toBe(true); });
+  expect(view.getByTestId("editing-statement")).toHaveTextContent("SELECT 2;");
+  expect(view.getByRole("button", { name: "common.save" })).toBeEnabled();
+  expect(mocks.updatePlan).not.toHaveBeenCalled();
+  expect(mocks.checkRelease).not.toHaveBeenCalled();
+  fireEvent.click(view.getByRole("button", { name: "Editor ready" }));
+  expect(mocks.focus).toHaveBeenCalled();
+  expect(mocks.revealLineInCenter).toHaveBeenCalledWith(1);
+  expect(mocks.scrollIntoView).toHaveBeenCalled();
+});
+
+test("refuses a fix when current editor SQL or permissions changed", () => {
+  const view = renderEditableSpec("SELECT 1;");
+  fireEvent.click(view.getByRole("button", { name: "common.edit" }));
+  fireEvent.click(view.getByRole("button", { name: "Make small draft" }));
+  act(() => { expect(mocks.applySqlFix?.("SELECT 1;", "SELECT 3;")).toBe(false); });
+  expect(view.getByTestId("editing-statement")).toHaveTextContent("SELECT 2;");
+  mocks.page = { ...(mocks.page as object), readonly: true };
+  view.rerender();
+  expect(mocks.sqlFixSnapshot?.status).toBe("readonly");
+  act(() => { expect(mocks.applySqlFix?.("SELECT 2;", "SELECT 3;")).toBe(false); });
+  expect(view.getByTestId("editing-statement")).toHaveTextContent("SELECT 2;");
+});
+
+test("runs checks for unsaved saved-Plan SQL only after the member clicks", async () => {
+  const view = renderEditableSpec("SELECT 1;");
+  mocks.checkRelease.mockResolvedValue({ results: [] });
+  act(() => { mocks.applySqlFix?.("SELECT 1;", "SELECT 2;"); });
+  expect(view.getByText("agent.sql-fix.unsaved-checks")).toBeInTheDocument();
+  expect(mocks.checkRelease).not.toHaveBeenCalled();
+  fireEvent.click(view.getByRole("button", { name: "plan.run" }));
+  await waitFor(() => expect(mocks.checkRelease).toHaveBeenCalledTimes(1));
+  expect(mocks.checkRelease.mock.lastCall?.[0]).toMatchObject({
+    parent: "projects/p",
+    release: { files: [{ statement: new TextEncoder().encode("SELECT 2;") }] },
+  });
+  expect(mocks.updatePlan).not.toHaveBeenCalled();
+});
+
+test("hides unsaved check results once their exact SQL changes", async () => {
+  const view = renderEditableSpec("SELECT 1;");
+  mocks.checkRelease.mockResolvedValue({ results: [create(CheckReleaseResponse_CheckResultSchema, { advices: [{ status: Advice_Level.WARNING, title: "Warning", content: "Original SQL evidence" }] })] });
+  fireEvent.click(view.getByRole("button", { name: "common.edit" }));
+  fireEvent.click(view.getByRole("button", { name: "plan.run" }));
+  await waitFor(() => expect(view.queryByRole("button", { name: "plan.navigator.checks" })).toBeInTheDocument());
+  fireEvent.click(view.getByRole("button", { name: "Make small draft" }));
+  expect(view.queryByRole("button", { name: "plan.navigator.checks" })).toBeNull();
+  expect(view.getByText("plan.overview.no-checks")).toBeInTheDocument();
+});
+
+test("the statement being read pins no line over its gray ground", () => {
+  const { getByTestId } = renderEditableSpec("SELECT 1;");
+  expect(getByTestId("statement").getAttribute("data-sticky-scroll")).toBe("false");
+});
+
+const renderPlanCreationSpec = (
+  database: string,
+  initialSQL = "",
+  targets = [database]
+) => {
+  const sheetName = "projects/p/sheets/-agent-draft-test";
+  mocks.localSheetNames.push(sheetName);
+  const sheet = getLocalSheetByName(sheetName);
+  setLocalSheetStatement(sheet, initialSQL);
+  const spec = create(Plan_SpecSchema, {
+    id: "new-spec",
+    config: {
+      case: "changeDatabaseConfig",
+      value: create(Plan_ChangeDatabaseConfigSchema, {
+        sheet: sheetName,
+        targets,
+      }),
+    },
+  });
+  mocks.page = {
+    currentUser: { name: "users/test" },
+    isCreating: true,
+    plan: create(PlanSchema, { specs: [] }),
+    project: { name: "projects/p" },
+    readonly: false,
+    setEditing: vi.fn(),
+  };
+  return {
+    ...render(<PlanDetailStatementSection spec={spec} />),
+    sheet,
+  };
+};
+
+const dispatchPlanDraft = (
+  database: string,
+  sql: string,
+  onApplied?: () => void
+) => {
+  const detail: AgentPlanDraftEventDetail = {
+    project: "projects/p",
+    database,
+    sql,
+    handled: false,
+    onApplied,
+  };
+  act(() => {
+    window.dispatchEvent(
+      new CustomEvent<AgentPlanDraftEventDetail>(AGENT_PLAN_DRAFT_EVENT, {
+        detail,
+      })
+    );
+  });
+  return detail;
+};
+
+test("applies an exact-source fix to the new Plan's local sheet without saving or checks", () => {
+  const view = renderPlanCreationSpec("instances/main/databases/books", "SELECT 1;");
+  act(() => { expect(mocks.applySqlFix?.("SELECT 1;", "SELECT 2;")).toBe(true); });
+  expect(getSheetStatement(view.sheet)).toBe("SELECT 2;");
+  expect(view.getByTestId("editing-statement")).toHaveTextContent("SELECT 2;");
+  expect(mocks.updatePlan).not.toHaveBeenCalled();
+  expect(mocks.checkRelease).not.toHaveBeenCalled();
+});
+
+test("opens the Agent for the selected database and applies its DDL to this Plan", () => {
+  const database = "instances/mysql/databases/app";
+  const { sheet, getByRole, getByTestId } = renderPlanCreationSpec(database);
+  const trigger = getByRole("button", {
+    name: "agent.plan-assistance.ask-draft-sql",
+  });
+  expect(trigger.querySelector(".lucide-bot")).not.toBeNull();
+  expect(trigger).toHaveClass("h-6", "bg-transparent", "text-accent");
+  expect(trigger).not.toHaveClass("whitespace-normal", "h-auto");
+  expect(trigger.querySelector(".truncate")).toHaveTextContent(
+    "agent.plan-assistance.ask-draft-sql"
+  );
+  expect(trigger.parentElement).toHaveClass("w-full", "max-w-full", "flex-wrap");
+  expect(trigger.parentElement?.parentElement).toHaveClass("flex-wrap");
+
+  fireEvent.click(trigger);
+  expect(openAgentWithPrompt).toHaveBeenCalledWith(
+    expect.stringContaining("current Plan"),
+    [
+      expect.objectContaining({
+        kind: "database",
+        name: database,
+        project: "projects/p",
+      }),
+    ]
+  );
+
+  const onApplied = vi.fn();
+  const event = dispatchPlanDraft(
+    database,
+    "CREATE TABLE notes (id INT);",
+    onApplied
+  );
+  expect(event.handled).toBe(true);
+  expect(getSheetStatement(sheet)).toBe("CREATE TABLE notes (id INT);");
+  expect(getByTestId("editing-statement").textContent).toBe(
+    "CREATE TABLE notes (id INT);"
+  );
+  expect(onApplied).toHaveBeenCalledOnce();
+  expect(mocks.minimizeAgent).not.toHaveBeenCalled();
+});
+
+test("requires an explicit append or replace choice when the Plan already has SQL", () => {
+  const database = "instances/mysql/databases/app";
+  const { sheet, getByRole, queryByRole, getByTestId } =
+    renderPlanCreationSpec(database, "SELECT 1;");
+
+  const onApplied = vi.fn();
+  const request = dispatchPlanDraft(
+    database,
+    "CREATE TABLE notes (id INT);",
+    onApplied
+  );
+  expect(request.handled).toBe(true);
+  const dialog = getByRole("alertdialog");
+  expect(dialog.closest("[data-bb-layer-family]")).toHaveAttribute(
+    "data-bb-layer-family",
+    "agent"
+  );
+  expect(
+    getByRole("button", { name: "agent.plan-draft.replace-sql" }).parentElement
+  ).toHaveClass("flex-wrap", "gap-y-2");
+  expect(mocks.minimizeAgent).not.toHaveBeenCalled();
+  expect(onApplied).not.toHaveBeenCalled();
+  fireEvent.click(getByRole("button", { name: "agent.plan-draft.append-sql" }));
+  expect(getSheetStatement(sheet)).toBe(
+    "SELECT 1;\n\nCREATE TABLE notes (id INT);"
+  );
+  expect(queryByRole("alertdialog")).toBeNull();
+  expect(onApplied).toHaveBeenCalledOnce();
+
+  const onReplaced = vi.fn();
+  dispatchPlanDraft(
+    database,
+    "ALTER TABLE notes ADD COLUMN name text;",
+    onReplaced
+  );
+  expect(onReplaced).not.toHaveBeenCalled();
+  fireEvent.click(getByRole("button", { name: "agent.plan-draft.replace-sql" }));
+  expect(getSheetStatement(sheet)).toBe(
+    "ALTER TABLE notes ADD COLUMN name text;"
+  );
+  expect(getByTestId("editing-statement").textContent).toBe(
+    "ALTER TABLE notes ADD COLUMN name text;"
+  );
+  expect(onReplaced).toHaveBeenCalledOnce();
+});
+
+test("does not report an applied draft when confirmation is canceled", () => {
+  const database = "instances/mysql/databases/app";
+  const { sheet, getByRole, queryByRole } = renderPlanCreationSpec(
+    database,
+    "SELECT 1;"
+  );
+  const onApplied = vi.fn();
+  dispatchPlanDraft(database, "CREATE TABLE notes (id INT);", onApplied);
+
+  fireEvent.click(getByRole("button", { name: "common.cancel" }));
+  expect(queryByRole("alertdialog")).toBeNull();
+  expect(getSheetStatement(sheet)).toBe("SELECT 1;");
+  expect(onApplied).not.toHaveBeenCalled();
+  expect(mocks.minimizeAgent).not.toHaveBeenCalled();
+});
+
+test("does not report an invalid draft as applied", () => {
+  const database = "instances/mysql/databases/app";
+  const { sheet } = renderPlanCreationSpec(database);
+  const onApplied = vi.fn();
+  const request = dispatchPlanDraft(database, " ", onApplied);
+
+  expect(request.handled).toBe(true);
+  expect(getSheetStatement(sheet)).toBe("");
+  expect(onApplied).not.toHaveBeenCalled();
+  expect(mocks.minimizeAgent).not.toHaveBeenCalled();
+});
+
+test.each(["", "SELECT 1;"])(
+  "keeps the Agent open if applying SQL to %j fails",
+  (initialSQL) => {
+    const database = "instances/mysql/databases/app";
+    const { sheet, getByRole, queryByRole } = renderPlanCreationSpec(
+      database,
+      initialSQL
+    );
+    const onApplied = vi.fn();
+    mocks.failLocalWrite = true;
+
+    dispatchPlanDraft(database, "CREATE TABLE notes (id INT);", onApplied);
+    if (initialSQL) {
+      fireEvent.click(
+        getByRole("button", { name: "agent.plan-draft.replace-sql" })
+      );
+      expect(queryByRole("alertdialog")).not.toBeNull();
+    }
+
+    expect(getSheetStatement(sheet)).toBe(initialSQL);
+    expect(onApplied).not.toHaveBeenCalled();
+    expect(mocks.minimizeAgent).not.toHaveBeenCalled();
+  }
+);
+
+test("does not offer or apply a draft when the Plan has an invalid extra target", () => {
+  const database = "instances/mysql/databases/app";
+  const { sheet, queryByRole } = renderPlanCreationSpec(
+    database,
+    "",
+    [database, ""]
+  );
+
+  expect(
+    queryByRole("button", { name: "agent.plan-assistance.ask-draft-sql" })
+  ).toBeNull();
+  const event = dispatchPlanDraft(database, "CREATE TABLE notes (id INT);");
+  expect(event.handled).toBe(false);
+  expect(getSheetStatement(sheet)).toBe("");
+  expect(
+    queryByRole("button", { name: "agent.plan-draft.replace-sql" })
+  ).toBeNull();
+});
+
+const THREE_LINES = "SELECT 1;\nSELECT 2;\nSELECT 3;";
+
+test("shows a draft-specific warning before saving and removes it below the limit", () => {
+  const { getByText, queryByText } = renderEditableSpec("SELECT 1;");
+  fireEvent.click(getByText("common.edit"));
+  fireEvent.click(getByText("Make large draft"));
+  expect(getByText("issue.statement-exceeds-preview-limit")).toBeTruthy();
+  expect(queryByText("common.download")).toBeNull();
+
+  fireEvent.click(getByText("Make small draft"));
+  expect(queryByText("issue.statement-exceeds-preview-limit")).toBeNull();
+});
+
+test("reveals an Activity anchor after the edit editor is ready", () => {
+  const { getByText, rerender } = renderEditableSpec(THREE_LINES);
+  fireEvent.click(getByText("common.edit"));
+  mocks.threadFocus = {
+    commentName: "comments/1",
+    specId: "spec",
+    lineNumber: 3,
+    nonce: 7,
+  };
+  rerender();
+  expect(mocks.revealLineInCenter).not.toHaveBeenCalled();
+
+  fireEvent.click(getByText("Editor ready"));
+  expect(mocks.setSelection).toHaveBeenCalledWith({
+    selectionStartLineNumber: 3,
+    selectionStartColumn: 1,
+    positionLineNumber: 3,
+    positionColumn: 1,
+  });
+  expect(mocks.revealLineInCenter).toHaveBeenCalledWith(3);
+  expect(mocks.focus).toHaveBeenCalled();
+  expect(mocks.scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+  expect(mocks.clearThreadFocus).toHaveBeenCalledWith(7);
+
+  mocks.threadFocus = {
+    commentName: "comments/2",
+    specId: "spec",
+    lineNumber: 99,
+    nonce: 8,
+  };
+  rerender();
+  expect(mocks.revealLineInCenter).toHaveBeenLastCalledWith(3);
+  expect(mocks.clearThreadFocus).toHaveBeenCalledWith(8);
+});
+
+test("keeps the reading position and cursor when entering edit mode", () => {
+  const { getByText } = renderEditableSpec(THREE_LINES);
+  fireEvent.click(getByText("Readonly editor ready"));
+  fireEvent.click(getByText("common.edit"));
+  fireEvent.click(getByText("Editor ready"));
+
+  expect(mocks.setSelection).toHaveBeenCalledWith({
+    selectionStartLineNumber: 3,
+    selectionStartColumn: 2,
+    positionLineNumber: 3,
+    positionColumn: 5,
+  });
+  expect(mocks.setScrollTop).toHaveBeenCalledWith(40);
+  expect(mocks.revealLineInCenter).not.toHaveBeenCalled();
+  expect(mocks.focus).toHaveBeenCalled();
+  expect(mocks.scrollIntoView).not.toHaveBeenCalled();
+});
+
+test("an Activity anchor wins over the reading position captured by Edit", () => {
+  const { getByText, rerender } = renderEditableSpec(THREE_LINES);
+  fireEvent.click(getByText("Readonly editor ready"));
+  fireEvent.click(getByText("common.edit"));
+  mocks.threadFocus = {
+    commentName: "comments/1",
+    specId: "spec",
+    lineNumber: 1,
+    nonce: 3,
+  };
+  rerender();
+  fireEvent.click(getByText("Editor ready"));
+
+  expect(mocks.setSelection).toHaveBeenCalledTimes(1);
+  expect(mocks.revealLineInCenter).toHaveBeenCalledWith(1);
+  expect(mocks.setScrollTop).not.toHaveBeenCalled();
+  expect(mocks.clearThreadFocus).toHaveBeenCalledWith(3);
+});
+
+const releaseSpec = create(Plan_SpecSchema, {
+  id: "spec",
+  config: {
+    case: "changeDatabaseConfig",
+    value: create(Plan_ChangeDatabaseConfigSchema, {
+      release: "projects/p/releases/r1",
+    }),
+  },
+});
+const releasePage = {
+  currentUser: { name: "users/test" },
+  isCreating: false,
+  readonly: true,
+  project: { name: "projects/p" },
+  plan: create(PlanSchema, { name: "projects/p/plans/1", specs: [releaseSpec] }),
+  setEditing: vi.fn(),
+};
+const fileOf = (version: string, path = `migrations/${version}.sql`) => ({
+  version,
+  path,
+  sheet: `projects/p/sheets/${version}`,
+});
+const renderRail = async (files: ReturnType<typeof fileOf>[], type = 1) => {
+  mocks.page = releasePage;
+  mocks.getRelease.mockResolvedValue({ name: "projects/p/releases/r1", type, files });
+  const view = render(<PlanDetailStatementSection spec={releaseSpec} />);
+  await waitFor(() => expect(view.getByTestId("release-changes")).toBeDefined());
+  return view;
+};
+const rowVersions = (view: ReturnType<typeof render>) =>
+  view.queryAllByTestId("release-change-row").map((row) => row.getAttribute("data-version"));
+
+test("the Changes list puts the newest version on top whatever its shape", async () => {
+  for (const versions of [
+    ["202610051200", "202610051400", "202610051530"],
+    ["001", "002", "010"],
+    ["1.2.9", "1.10.0", "1.10.2"],
+    // The executor's order: equal leading segments, the shorter version first.
+    ["1", "1.0", "1.0.1"],
+  ]) {
+    const view = await renderRail(versions.map((v) => fileOf(v)));
+    expect(rowVersions(view)).toEqual([...versions].reverse());
+    cleanup();
+  }
+});
+
+test("timestamp versions group by day for the newest group and by month for the rest, newest open", async () => {
+  const view = await renderRail(
+    ["202608011200", "202609150900", "202609200900", "202610050900", "202610051530"].map((v) => fileOf(v))
+  );
+  const groups = view.getAllByTestId("release-change-group");
+  expect(groups.map((g) => [g.getAttribute("data-group"), g.getAttribute("aria-expanded")])).toEqual([
+    ["2026-10-05", "true"],
+    ["2026-09", "false"],
+    ["2026-08", "false"],
+  ]);
+  expect(groups[1].textContent).toContain("2");
+  expect(rowVersions(view)).toEqual(["202610051530", "202610050900"]);
+  fireEvent.click(groups[1]);
+  expect(rowVersions(view)).toContain("202609200900");
+});
+
+test("a group shows 12 rows, loads 12 more or all in place, and Show fewer returns to 12", async () => {
+  const versions = Array.from({ length: 30 }, (_, i) => String(i + 1).padStart(3, "0"));
+  const view = await renderRail(versions.map((v) => fileOf(v)));
+  const load = within(view.getByTestId("release-change-load"));
+  expect(rowVersions(view)).toHaveLength(12);
+  expect(view.queryByRole("button", { name: "release.changes.show-fewer" })).toBeNull();
+  fireEvent.click(load.getByRole("button", { name: "release.changes.load-more" }));
+  expect(rowVersions(view)).toHaveLength(24);
+  // Six left: "Load 6 more" covers them, so there is no Load all.
+  expect(view.queryByRole("button", { name: "release.changes.load-all" })).toBeNull();
+  fireEvent.click(view.getByRole("button", { name: "release.changes.show-fewer" }));
+  expect(rowVersions(view)).toHaveLength(12);
+  fireEvent.click(view.getByRole("button", { name: "release.changes.load-all" }));
+  expect(rowVersions(view)).toHaveLength(30);
+  expect(view.queryByRole("button", { name: "release.changes.load-more" })).toBeNull();
+});
+
+test("over a hundred counter or dotted versions are one flat list with no group headers", async () => {
+  for (const versions of [
+    Array.from({ length: 250 }, (_, i) => String(i + 1).padStart(4, "0")),
+    Array.from({ length: 119 }, (_, i) => `3.${Math.floor(i / 12)}.${String(i % 12).padStart(4, "0")}`),
+  ]) {
+    const view = await renderRail(versions.map((v) => fileOf(v)));
+    expect(view.queryAllByTestId("release-change-group")).toHaveLength(0);
+    expect(rowVersions(view)).toHaveLength(12);
+    expect(rowVersions(view)[0]).toBe(versions.at(-1));
+    fireEvent.click(view.getByRole("button", { name: "release.changes.load-all" }));
+    expect(rowVersions(view)).toHaveLength(versions.length);
+    cleanup();
+  }
+});
+
+test("a backfilled low version lands in its own old group, not on top", async () => {
+  const view = await renderRail(
+    ["202607010000", "202610051500", "202610051530"].map((v) => fileOf(v))
+  );
+  expect(rowVersions(view)).toEqual(["202610051530", "202610051500"]);
+  expect(view.getAllByTestId("release-change-group").map((g) => g.getAttribute("data-group"))).toEqual([
+    "2026-10-05",
+    "2026-07",
+  ]);
+});
+
+test("a row shows the file name, its folder muted and the version, and opens the viewer from anywhere on it", async () => {
+  const view = await renderRail([
+    fileOf("3.10.0007", "migrations/3.10/3.10.0007_remove_exporter_role.sql"),
+    fileOf("3.10.0008", "3.10.0008_top_level.sql"),
+  ]);
+  const [rootFile, nestedFile] = view.getAllByTestId("release-change-row");
+  const part = (row: HTMLElement, id: string) => within(row).queryByTestId(id)?.textContent;
+  expect(part(nestedFile, "release-change-name")).toBe("3.10.0007_remove_exporter_role.sql");
+  expect(part(nestedFile, "release-change-folder")).toBe("migrations/3.10");
+  expect(part(nestedFile, "release-change-version")).toBe("3.10.0007");
+  // A file at the repository root has no folder to show.
+  expect(part(rootFile, "release-change-name")).toBe("3.10.0008_top_level.sql");
+  expect(part(rootFile, "release-change-folder")).toBeUndefined();
+
+  fireEvent.click(within(nestedFile).getByTestId("release-change-version"));
+  expect((mocks.openedFile as { file: { path: string } }).file.path).toBe(
+    "migrations/3.10/3.10.0007_remove_exporter_role.sql"
+  );
+  expect((mocks.openedFile as { context?: unknown }).context).toBeUndefined();
+  expect((mocks.openedFile as { declarative?: boolean }).declarative).toBe(false);
+});
+
+test("a declarative release is one line: the schema at its version, with Open", async () => {
+  const view = await renderRail([fileOf("20261005", "schema/schema.sql")], 2);
+  expect(view.queryAllByTestId("release-change-row")).toHaveLength(0);
+  const line = view.getByTestId("release-changes");
+  expect(line.textContent).toContain("schema/schema.sql");
+  expect(line.textContent).toContain("20261005");
+  fireEvent.click(view.getByRole("button", { name: "common.open" }));
+  expect((mocks.openedFile as { file: { path: string } }).file.path).toBe("schema/schema.sql");
+  // Its path may be a pattern, which the viewer does not link.
+  expect((mocks.openedFile as { declarative?: boolean }).declarative).toBe(true);
+});

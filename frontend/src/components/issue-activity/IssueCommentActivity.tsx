@@ -9,6 +9,7 @@ import {
   buildPlanRolloutRouteFromPlanName,
   buildSpecDetailRouteFromPlanName,
 } from "@/app/router/routeHelpers";
+import { AccountTypeBadge } from "@/components/AccountTypeBadge";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import {
   type ActivityIconSpec,
@@ -23,19 +24,20 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { useUserByIdentifier } from "@/hooks/useAppState";
+import { principalLabel, usePrincipal } from "@/hooks/usePrincipal";
 import {
   diffEntryKey,
   diffPlanSpecsForEvent,
   type SpecDiffEntry,
 } from "@/lib/plan/diffPlanSpecs";
+import { shouldStayOnPlanDetailPage } from "@/lib/plan/workflow";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import {
   getIssueCommentType,
   IssueCommentType,
 } from "@/stores/app/issueComment";
-import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -43,7 +45,6 @@ import {
   IssueComment_Approval_Status,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { extractPlanUID, getSpecDisplayInfo } from "@/utils";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import {
@@ -96,12 +97,13 @@ function isDoneRolloutComment(
 
 // Whether the current user may edit a comment: only user comments and approval
 // decisions that carry a note are editable, and only with the update
-// permission. Shared so every activity surface gates edits alike.
+// permission. A review result's text is its reviewer's, which the server
+// refuses to edit. Shared so every activity surface gates edits alike.
 export function canEditIssueComment(
   comment: IssueComment,
   project: Parameters<typeof hasProjectPermissionV2>[0] | undefined
 ): boolean {
-  if (!project) {
+  if (!project || comment.reviewMetadata) {
     return false;
   }
   const type = getIssueCommentType(comment);
@@ -120,18 +122,20 @@ export function canEditIssueComment(
 // and the left icon gutter around an arbitrary body.
 export function ActivityRowFrame({
   children,
+  compact = false,
   icon,
   id,
   isLast,
 }: {
   children: ReactNode;
+  compact?: boolean;
   icon: ReactNode;
   id?: string;
   isLast: boolean;
 }) {
   return (
     <li>
-      <div className="relative pb-3" id={id}>
+      <div className="relative pb-4" id={id}>
         {!isLast && (
           <span
             aria-hidden="true"
@@ -139,7 +143,7 @@ export function ActivityRowFrame({
           />
         )}
         <div className="relative flex items-start">
-          <div className="pt-1.5">{icon}</div>
+          <div className={cn(!compact && "pt-1.5")}>{icon}</div>
           <div className="min-w-0 flex-1">{children}</div>
         </div>
       </div>
@@ -167,7 +171,7 @@ export function ActivityRowShell({
   subjectSuffix?: ReactNode;
 }) {
   return (
-    <ActivityRowFrame icon={icon} id={id} isLast={isLast}>
+    <ActivityRowFrame compact={!body} icon={icon} id={id} isLast={isLast}>
       <div
         className={cn(
           "overflow-hidden rounded-sm border",
@@ -176,7 +180,12 @@ export function ActivityRowShell({
             : "ml-1 border-transparent"
         )}
       >
-        <div className={cn("px-3 py-2", body && "flex flex-col gap-y-2")}>
+        <div
+          className={cn(
+            "px-3",
+            body ? "flex flex-col gap-y-2 py-2" : "flex min-h-7 items-center"
+          )}
+        >
           <div
             className={cn(
               "flex items-center justify-between gap-x-2",
@@ -197,11 +206,15 @@ export function ActivityRowShell({
   );
 }
 
-export function CommentCreator({ creator }: { creator: User }) {
+// Who acted, by `users/{email}`: a person, a service account, or a workload
+// identity, the last two marked as such.
+export function CommentCreator({ creator }: { creator: string }) {
+  const principal = usePrincipal(creator);
   return (
-    <span className="font-medium text-main">
-      {creator.title || creator.email}
-    </span>
+    <>
+      <span className="font-medium text-main">{principalLabel(principal)}</span>
+      <AccountTypeBadge compact email={principal?.email} />
+    </>
   );
 }
 
@@ -216,8 +229,6 @@ function IssueCommentHeader({
   similarCount,
 }: ActivityProps & { similarCount?: number }) {
   const { t } = useTranslation();
-  const creator =
-    useUserByIdentifier(comment.creator) ?? unknownUser(comment.creator);
   const createdTs = getTimeForPbTimestampProtoEs(comment.createTime);
   const updatedTs = getTimeForPbTimestampProtoEs(comment.updateTime);
   const isEdited =
@@ -226,7 +237,7 @@ function IssueCommentHeader({
 
   return (
     <>
-      <CommentCreator creator={creator} />
+      <CommentCreator creator={comment.creator} />
       <IssueCommentActionSentence
         comment={comment}
         issue={issue}
@@ -361,15 +372,15 @@ function IssueCommentActionIcon({ issue, plan, comment }: ActivityProps) {
 
 // The avatar badge of a user-authored activity row.
 export function ActivityUserIcon({ principal }: { principal: string }) {
-  const user = useUserByIdentifier(principal) ?? unknownUser(principal);
+  const actor = usePrincipal(principal);
   return (
     <div className="relative pl-0.5">
       <div className="flex size-7 items-center justify-center rounded-full bg-background ring-4 ring-background">
         <UserAvatar
-          colorSeed={user.email}
+          colorSeed={actor?.email}
           className="font-medium"
           size="sm"
-          title={user.title || user.email}
+          title={principalLabel(actor)}
         />
       </div>
     </div>
@@ -507,13 +518,17 @@ function IssueCommentActionSentence({
     if (fromStatus !== undefined && toStatus !== undefined) {
       if (toStatus === IssueStatus.DONE) {
         if (isDoneRolloutComment(issue, plan, comment)) {
-          // On the plan-detail timeline (linkless) the rollout is for the plan
-          // you're already viewing, so drop the "for plan #id" link entirely.
-          const planUID = linkless || !plan ? "" : extractPlanUID(plan.name);
-          const planRoute =
-            linkless || !plan
-              ? undefined
-              : buildPlanRolloutRouteFromPlanName(plan.name);
+          // Drop the "for plan #id" link on the plan-detail timeline (linkless),
+          // where the rollout is for the plan being viewed, and for a
+          // create-database plan, whose rollout lives on Issue Detail itself.
+          const linkedPlan =
+            !linkless && plan && shouldStayOnPlanDetailPage(plan)
+              ? plan
+              : undefined;
+          const planUID = linkedPlan ? extractPlanUID(linkedPlan.name) : "";
+          const planRoute = linkedPlan
+            ? buildPlanRolloutRouteFromPlanName(linkedPlan.name)
+            : undefined;
           const sentence =
             issue?.approvalStatus === ApprovalStatus.APPROVED
               ? planUID
@@ -809,14 +824,14 @@ function SpecChangeRow({
       );
     } else if (showIndex) {
       chipSuffix = (
-        <span className="rounded-full bg-control-bg px-1.5 py-0.5 text-xs text-main">
+        <span className="rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs text-main">
           {specInfo.displayIndex}
         </span>
       );
     }
   } else if (specIdShort !== "") {
     chipSuffix = (
-      <span className="rounded-full bg-control-bg px-1.5 py-0.5 text-xs text-main">
+      <span className="rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs text-main">
         {specIdShort}
       </span>
     );

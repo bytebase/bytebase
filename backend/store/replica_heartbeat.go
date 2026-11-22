@@ -68,3 +68,21 @@ func (s *Store) CountActiveReplicas(ctx context.Context, within time.Duration) (
 	}
 	return count, nil
 }
+
+// DeleteReplicaHeartbeat deletes the heartbeat row for the given replica.
+func (s *Store) DeleteReplicaHeartbeat(ctx context.Context, replicaID string) error {
+	q := qb.Q().Space(`
+		DELETE FROM replica_heartbeat
+		WHERE replica_id = ?
+	`, replicaID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+		return errors.Wrapf(err, "failed to delete replica heartbeat")
+	}
+	return nil
+}

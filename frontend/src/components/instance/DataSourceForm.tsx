@@ -1,6 +1,13 @@
 import { create } from "@bufbuild/protobuf";
-import { Info } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Info, Plus } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { Button } from "@/components/ui/button";
@@ -34,6 +41,7 @@ import {
   DataSourceExternalSecretSchema,
   KerberosConfigSchema,
   SASLConfigSchema,
+  Vendor,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { onlyAllowNumber } from "@/utils";
@@ -61,6 +69,7 @@ import {
   getLocalTlsCaSource,
   getLocalTlsClientCertSource,
   getLocalTlsPosture,
+  getOracleTlsParameterOverride,
   LOCAL_TLS_CLIENT_CERT_SOURCE_INLINE_PEM,
   LOCAL_TLS_CLIENT_CERT_SOURCE_NONE,
   LOCAL_TLS_POSTURE_DISABLED,
@@ -195,6 +204,9 @@ export function DataSourceForm({
     dataSourceResetEvent,
   } = ctx;
 
+  const isNeon =
+    basicInfo.engine === Engine.POSTGRES && basicInfo.vendor === Vendor.NEON;
+
   const {
     showDatabase,
     showSSL,
@@ -210,6 +222,7 @@ export function DataSourceForm({
   );
   const [newParamKey, setNewParamKey] = useState("");
   const [newParamValue, setNewParamValue] = useState("");
+  const extraParamNoticeId = useId();
   const [localTlsCaSource, setLocalTlsCaSource] = useState(
     getLocalTlsCaSource(dataSource)
   );
@@ -397,8 +410,17 @@ export function DataSourceForm({
 
   const extraConnectionParamsList = useMemo(() => {
     const params = dataSource.extraConnectionParameters || {};
-    return Object.entries(params).map(([key, value]) => ({ key, value }));
-  }, [dataSource.extraConnectionParameters]);
+    const oracleTls = basicInfo.engine === Engine.ORACLE && dataSource.useSsl;
+    return Object.entries(params).map(([key, value]) => ({
+      key,
+      value,
+      tlsOverride: oracleTls ? getOracleTlsParameterOverride(key) : undefined,
+    }));
+  }, [
+    basicInfo.engine,
+    dataSource.extraConnectionParameters,
+    dataSource.useSsl,
+  ]);
 
   const changeSecretType = (
     secretType: DataSourceExternalSecret_SecretType
@@ -636,13 +658,15 @@ export function DataSourceForm({
 
   const onLocalTlsPostureChange = useCallback(
     (posture: LocalTlsPosture) => {
-      setLocalTlsPosture(posture);
       if (posture === LOCAL_TLS_POSTURE_DISABLED) {
+        if (isNeon) return;
+        setLocalTlsPosture(posture);
         setLocalTlsCaSource("SYSTEM_TRUST");
         setLocalTlsClientCertSource(LOCAL_TLS_CLIENT_CERT_SOURCE_NONE);
         update({ ...disableLocalTls(dataSource), updateSsl: true });
         return;
       }
+      setLocalTlsPosture(posture);
 
       const next = applyLocalTlsPosture(dataSource, posture);
       const enablingTls = !dataSource.useSsl;
@@ -667,7 +691,7 @@ export function DataSourceForm({
         }),
       });
     },
-    [dataSource, localTlsClientCertSource, update]
+    [dataSource, isNeon, localTlsClientCertSource, update]
   );
 
   const passwordSourceOptions = [
@@ -704,7 +728,7 @@ export function DataSourceForm({
         {item.value !==
           DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED &&
           currentPlan === PlanType.FREE && (
-            <span className="rounded-full border border-current px-1.5 py-0.5 text-xs">
+            <span className="rounded-xs border border-current px-1.5 py-0.5 text-xs">
               Pro
             </span>
           )}
@@ -802,7 +826,10 @@ export function DataSourceForm({
                     {/* Kerberos config */}
                     {dataSource.saslConfig?.mechanism?.case === "krbConfig" && (
                       <FormField title="Kerberos">
-                        <ResponsiveFormLayout>
+                        <ResponsiveFormLayout
+                          layout="inherit"
+                          density="compact"
+                        >
                           <fieldset
                             aria-label="Kerberos"
                             className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
@@ -1101,7 +1128,10 @@ export function DataSourceForm({
                           )?.label
                         }
                       >
-                        <ResponsiveFormLayout>
+                        <ResponsiveFormLayout
+                          layout="inherit"
+                          density="compact"
+                        >
                           <fieldset
                             aria-label={t(
                               "instance.iam-extension.credential-source"
@@ -1145,7 +1175,10 @@ export function DataSourceForm({
                                   : undefined
                               }
                             >
-                              <div className="flex flex-col gap-2">
+                              <div
+                                className="flex flex-col gap-2"
+                                data-connection-primary-secret
+                              >
                                 <SecretInput
                                   resetKey={dataSource.id}
                                   aria-label={t("common.password")}
@@ -1184,13 +1217,14 @@ export function DataSourceForm({
                                     )?.label
                                   }
                                   description={
-                                    <LearnMoreLink
-                                      href="https://docs.bytebase.com/get-started/connect/overview#secret-manager-integration"
-                                      className="text-sm text-accent"
-                                    />
+                                    <LearnMoreLink href="https://docs.bytebase.com/get-started/connect/overview#secret-manager-integration" />
                                   }
                                 >
-                                  <ResponsiveFormLayout className="mt-2">
+                                  <ResponsiveFormLayout
+                                    layout="inherit"
+                                    density="compact"
+                                    className="mt-2"
+                                  >
                                     <fieldset
                                       className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
                                       aria-label={t(
@@ -1610,6 +1644,8 @@ export function DataSourceForm({
                                             }
                                           >
                                             <SslCertificateForm
+                                              layout="inherit"
+                                              verifyControlLayout="inline"
                                               verify={
                                                 !dataSource.externalSecret
                                                   .skipVaultTlsVerification
@@ -1883,10 +1919,7 @@ export function DataSourceForm({
                 {/* Snowflake keypair */}
                 {basicInfo.engine === Engine.SNOWFLAKE && (
                   <>
-                    <FormField
-                      validationField="authenticationPrivateKey"
-                      title={<>{t("data-source.ssh.private-key")}</>}
-                    >
+                    <FormField title={<>{t("data-source.ssh.private-key")}</>}>
                       <SecretInput
                         resetKey={dataSource.id}
                         aria-label={t("data-source.ssh.private-key")}
@@ -1897,7 +1930,6 @@ export function DataSourceForm({
                         isCreating={isCreating || dataSource.pendingCreate}
                         disabled={!allowEdit}
                         multiline
-                        allowEmpty={false}
                         onValueChange={(value) =>
                           onDataSourceChange(
                             updateDataSourceSecret(
@@ -1912,10 +1944,7 @@ export function DataSourceForm({
                         <span className="text-control-light">
                           {t("data-source.snowflake-keypair-tip")}
                         </span>
-                        <LearnMoreLink
-                          href="https://docs.snowflake.com/en/user-guide/key-pair-auth"
-                          className="text-sm text-accent"
-                        />
+                        <LearnMoreLink href="https://docs.snowflake.com/en/user-guide/key-pair-auth" />
                       </div>
                     </FormField>
                     <FormField
@@ -1968,6 +1997,7 @@ export function DataSourceForm({
                     </FormField>
                     <FormField
                       validationField="updatedToken"
+                      data-connection-primary-secret
                       title={
                         <>
                           {t("common.token")}{" "}
@@ -2162,6 +2192,7 @@ export function DataSourceForm({
                     })
                   }
                   engineType={basicInfo.engine}
+                  requireTls={isNeon}
                   disabled={!allowEdit}
                 />
               </FormField>
@@ -2216,7 +2247,7 @@ export function DataSourceForm({
               >
                 {showExtraParameters || extraConnectionParamsList.length > 0 ? (
                   <>
-                    <FormControlGroup className="mt-2">
+                    <FormControlGroup>
                       {allowEdit && (
                         <FormControlRow>
                           <Input
@@ -2263,6 +2294,11 @@ export function DataSourceForm({
                               className="min-w-0 flex-1"
                               value={param.key}
                               disabled={!allowEdit}
+                              aria-describedby={
+                                param.tlsOverride
+                                  ? `${extraParamNoticeId}-${index}`
+                                  : undefined
+                              }
                               aria-label={t(
                                 "instance.parameter-name-placeholder"
                               )}
@@ -2305,6 +2341,20 @@ export function DataSourceForm({
                               </Button>
                             )}
                           </FormControlRow>
+                          {param.tlsOverride && (
+                            <p
+                              id={`${extraParamNoticeId}-${index}`}
+                              className="text-xs leading-4 text-warning"
+                            >
+                              {param.tlsOverride === "wallet"
+                                ? t(
+                                    "data-source.extra-params.wallet-overridden-by-tls"
+                                  )
+                                : t(
+                                    "data-source.extra-params.overridden-by-tls"
+                                  )}
+                            </p>
+                          )}
                         </FormField>
                       ))}
                     </FormControlGroup>
@@ -2319,12 +2369,13 @@ export function DataSourceForm({
                   </>
                 ) : (
                   <Button
-                    appearance="link"
+                    appearance="outline"
                     size="sm"
                     className="self-start"
                     onClick={() => setShowExtraParameters(true)}
                     disabled={!allowEdit}
                   >
+                    <Plus className="h-4 w-4" />
                     {t("instance.add-parameter")}
                   </Button>
                 )}
@@ -2353,10 +2404,10 @@ function AwsRegionField({
     <FormField
       validationField="region"
       title={
-        <>
+        <span className="textlabel">
           {t("instance.database-region")}
           {required && <span className="text-error"> *</span>}
-        </>
+        </span>
       }
     >
       <Input

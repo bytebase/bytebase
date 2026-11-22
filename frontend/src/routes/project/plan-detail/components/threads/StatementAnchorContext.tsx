@@ -1,58 +1,66 @@
-import { Ban, ExternalLink, History } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { PlanChangeReferenceRenderer } from "@/components/issue-activity/IssueCommentActivity";
 import { colorizeStatement } from "@/components/monaco/core";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useInViewOnce } from "@/hooks/useInViewOnce";
 import { useSheetStatement } from "@/hooks/useSheetStatement";
 import { cn } from "@/lib/utils";
 import type { StatementAnchor } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import {
+  derivePlanChangeReference,
+  type PlanChangeReferenceResources,
+} from "../../utils/changeReference";
+import { PlanChangeReference } from "../PlanChangeReference";
+import type { ThreadBarProps } from "./CommentThreadCard";
 import { tokenizeLines } from "./placement/lineTokens";
-import type { Placement } from "./placement/place";
+import { anchorLineRange, type Placement } from "./placement/place";
 import {
   type AnchorState,
-  anchorLineRange,
+  completePreviewLineCount,
   excerptLines,
+  formatLineRange,
   type LineRange,
-  lineRangeLabel,
   resolveAnchorState,
   sheetNameOfSha256,
   targetSha256OfSpec,
 } from "./threadModel";
 
-// The recorded context of an anchored comment in the Review Activity
-// timeline: the change, the originally selected lines, the placement state,
-// and the SQL excerpt of the recorded sheet revision. The editor never
-// renders this block; there the anchor is a gutter marker and a line
-// highlight at the comment's current placement.
+// What an Activity card shows about where its thread is: the bar's title,
+// lines, placement state and link, and the SQL excerpt of the recorded sheet
+// revision for the body. The wrapper is observed so the recorded revision is
+// fetched only once the card nears the viewport, folded or not. The editor
+// never renders this; there the anchor is a gutter marker.
 export function StatementAnchorContext({
   anchor,
+  changeReferenceResources,
+  children,
   onViewInStatement,
   placement,
   plan,
   project,
-  renderPlanChangeReference,
 }: {
-  anchor: StatementAnchor;
+  anchor: StatementAnchor | undefined;
+  changeReferenceResources: PlanChangeReferenceResources;
+  children: (anchored: {
+    bar: ThreadBarProps;
+    excerpt?: ReactNode;
+  }) => ReactNode;
   onViewInStatement?: () => void;
   placement: Placement | undefined;
   plan: Plan;
   project: Project | undefined;
-  renderPlanChangeReference: PlanChangeReferenceRenderer;
 }) {
   const { t } = useTranslation();
-  const range = anchorLineRange(anchor);
-  const spec = plan.specs.find((candidate) => candidate.id === anchor.spec);
-  const sheetName = project
-    ? sheetNameOfSha256(project.name, anchor.sheetSha256)
-    : "";
-  // The recorded revision is downloaded only once the card nears the
-  // viewport, so a long timeline fetches sheets as the reader reaches them
-  // rather than all at once when the fold opens.
+  const range = anchor ? anchorLineRange(anchor) : undefined;
+  const specIndex = plan.specs.findIndex(
+    (candidate) => candidate.id === anchor?.spec
+  );
+  const spec = specIndex < 0 ? undefined : plan.specs[specIndex];
+  const sheetName =
+    project && anchor
+      ? sheetNameOfSha256(project.name, anchor.sheetSha256)
+      : "";
   const { ref, inView } = useInViewOnce<HTMLDivElement>();
   const enabled = sheetName !== "" && inView;
   const { statement, isLoading, isTruncated } = useSheetStatement({
@@ -60,103 +68,97 @@ export function StatementAnchorContext({
     sheetName,
   });
   const loaded = enabled && !isLoading;
-  // The editor mounts its thread layer only for a complete, non-empty
-  // statement. An anchor on the spec's current sheet is CURRENT by hash
-  // alone, so that sheet must be loaded and pass those checks before the
-  // card offers to show it; until then it is pending, and a truncated or
-  // empty sheet makes it unavailable rather than a dead "view" action. A
-  // diff-mapped CURRENT anchor needs none of this: its target is complete.
-  const resolved = resolveAnchorState(anchor, plan, placement);
-  const onCurrentSheet = anchor.sheetSha256 === targetSha256OfSpec(spec);
-  const state = ((): AnchorState => {
-    if (resolved !== "CURRENT" || !onCurrentSheet) return resolved;
-    if (!loaded) return "PENDING";
-    return isTruncated || statement === "" ? "UNAVAILABLE" : "CURRENT";
-  })();
+  const targetSha256 = targetSha256OfSpec(spec);
+  const previewEndLine = useMemo(
+    () => completePreviewLineCount(statement, isTruncated),
+    [isTruncated, statement]
+  );
+  const recordedLinesVisible = Boolean(
+    statement && range && range.endLine <= previewEndLine
+  );
+  let state: AnchorState | undefined;
+  if (anchor) {
+    const resolved = resolveAnchorState(anchor, plan, placement);
+    const onCurrentSheet = anchor.sheetSha256 === targetSha256;
+    state = resolved;
+    // A hash match is current only when its complete lines are in the preview.
+    if (resolved === "CURRENT" && onCurrentSheet) {
+      if (!loaded) state = "PENDING";
+      else if (!recordedLinesVisible) state = "UNAVAILABLE";
+    }
+    // A prior revision with visible original lines remains discoverable as
+    // Outdated when a comparison cannot establish a current position.
+    if (
+      resolved === "UNAVAILABLE" &&
+      project &&
+      targetSha256 &&
+      !onCurrentSheet
+    ) {
+      if (!loaded) state = "PENDING";
+      else if (recordedLinesVisible) state = "OUTDATED";
+    }
+  }
+  const stateTooltip =
+    state === "OUTDATED" &&
+    placement?.state === "UNAVAILABLE" &&
+    placement.reason === "SIZE_LIMIT"
+      ? t("plan.review.thread.anchor.comparison-size-limit")
+      : undefined;
+
+  const reference = spec
+    ? derivePlanChangeReference({
+        index: specIndex,
+        resources: changeReferenceResources,
+        siblings: plan.specs,
+        spec,
+        t,
+      })
+    : undefined;
+  const titleText = !anchor
+    ? t("plan.review.thread.comment-on-plan")
+    : (reference?.label ?? t("plan.review.thread.anchor.unavailable-change"));
+  // Two changes with the same label are told apart by their numbers.
+  const nameText = reference?.showIndex ? reference.accessibleLabel : titleText;
+  const bar: ThreadBarProps = {
+    place: "activity",
+    title: reference ? (
+      <PlanChangeReference reference={reference} tone="control" />
+    ) : (
+      titleText
+    ),
+    foldLabel: range
+      ? t("plan.review.thread.fold-label", {
+          title: nameText,
+          count: range.endLine - range.startLine + 1,
+          range: formatLineRange(range),
+        })
+      : nameText,
+    lines: range,
+    anchorState: state,
+    stateTooltip,
+    onViewInStatement: state === "CURRENT" ? onViewInStatement : undefined,
+  };
+  const excerpt =
+    !isLoading && statement && range ? (
+      <SqlExcerpt
+        sheetName={sheetName}
+        dimmed={state === "OUTDATED" || state === "UNAVAILABLE"}
+        statement={statement}
+        range={range}
+      />
+    ) : undefined;
 
   return (
-    <div
-      ref={ref}
-      className="@container/anchor flex min-w-0 flex-col"
-      data-anchor-state={state}
-      data-testid="statement-anchor"
-    >
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-block-border bg-control-bg/50 px-3 py-1.5 text-xs">
-        <div className="flex min-w-0 flex-1 basis-full @sm/anchor:basis-0">
-          {spec ? (
-            renderPlanChangeReference({ siblings: plan.specs, spec })
-          ) : (
-            <span className="truncate font-medium text-control-light">
-              {t("plan.review.thread.anchor.unavailable-change")}
-            </span>
-          )}
-        </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">
-          {range && (
-            <span className="shrink-0 text-control-light">
-              {lineRangeLabel(t, range)}
-            </span>
-          )}
-          <AnchorStatePill
-            onViewInStatement={onViewInStatement}
-            state={state}
-          />
-        </div>
-      </div>
-      {!isLoading && statement && range && (
-        <SqlExcerpt
-          sheetName={sheetName}
-          dimmed={state === "OUTDATED" || state === "UNAVAILABLE"}
-          statement={statement}
-          range={range}
-        />
-      )}
+    <div ref={ref} className="min-w-0">
+      {children({ bar, excerpt })}
     </div>
   );
 }
 
-function AnchorStatePill({
-  onViewInStatement,
-  state,
-}: {
-  onViewInStatement?: () => void;
-  state: AnchorState;
-}) {
-  const { t } = useTranslation();
-  if (state === "CURRENT") {
-    if (!onViewInStatement) return null;
-    return (
-      <Button
-        className="h-auto shrink-0 p-0 text-xs"
-        onClick={onViewInStatement}
-        size="xs"
-        appearance="link"
-      >
-        {t("plan.review.thread.anchor.view-in-statement")}
-        <ExternalLink className="size-3" />
-      </Button>
-    );
-  }
-  if (state === "OUTDATED") {
-    return (
-      <Badge className="gap-x-1 px-2 text-xs" variant="warning">
-        <History className="size-3" />
-        {t("plan.review.thread.anchor.outdated")}
-      </Badge>
-    );
-  }
-  // The diff has not settled the comment yet; show nothing rather than a
-  // state that may flip in a moment.
-  if (state === "PENDING") return null;
-  return (
-    <Badge className="gap-x-1 px-2 text-xs" variant="default">
-      <Ban className="size-3" />
-      {t("plan.review.thread.anchor.statement-unavailable")}
-    </Badge>
-  );
-}
-
-const CONTEXT_LINES_BEFORE = 2;
+// A range shorter than this borrows the lines before it, so a single
+// commented line still shows what it belongs to. Lines after the range are
+// never borrowed: the commented lines end the excerpt, right above the comment.
+const MIN_EXCERPT_LINES = 3;
 
 // Sheets are immutable and content-addressed, so each is tokenized once per
 // page however many cards excerpt it, and only through the deepest line a
@@ -200,7 +202,12 @@ function SqlExcerpt({
   statement: string;
   range: LineRange;
 }) {
-  const startLine = Math.max(1, range.startLine - CONTEXT_LINES_BEFORE);
+  const commentedLines = range.endLine - range.startLine + 1;
+  const startLine = Math.max(
+    1,
+    range.startLine - Math.max(0, MIN_EXCERPT_LINES - commentedLines)
+  );
+  const [scrolled, setScrolled] = useState(false);
   const lines = useMemo(
     () => excerptLines(statement, { startLine, endLine: range.endLine }),
     [range.endLine, startLine, statement]
@@ -210,6 +217,7 @@ function SqlExcerpt({
     lines: string[];
   }>();
   useEffect(() => {
+    if (dimmed) return;
     let cancelled = false;
     void colorizedLinesOf(sheetName, statement, range.endLine).then((html) => {
       if (!cancelled) setColorized({ sheetName, lines: html });
@@ -217,16 +225,19 @@ function SqlExcerpt({
     return () => {
       cancelled = true;
     };
-  }, [range.endLine, sheetName, statement]);
+  }, [dimmed, range.endLine, sheetName, statement]);
+  // An outdated or unavailable excerpt is plain text with no syntax colors;
+  // their absence is what says the lines are no longer current.
   const htmlLines =
-    colorized?.sheetName === sheetName ? colorized.lines : undefined;
+    !dimmed && colorized?.sheetName === sheetName ? colorized.lines : undefined;
   if (lines.length === 0) return null;
   return (
+    // An overlay scrollbar reserves no space, so the padding keeps it off the
+    // last line.
     <pre
-      className={cn(
-        "m-0 overflow-x-auto bg-background font-mono text-sm leading-6",
-        dimmed && "opacity-60"
-      )}
+      className="group/excerpt m-0 overflow-x-auto bg-control-bg py-2 font-mono text-sm leading-6"
+      data-scrolled={scrolled || undefined}
+      onScroll={(event) => setScrolled(event.currentTarget.scrollLeft > 0)}
     >
       <div className="w-max min-w-full">
         {lines.map((line, index) => {
@@ -236,24 +247,46 @@ function SqlExcerpt({
           const html = htmlLines?.[lineNumber - 1];
           return (
             <div
-              className={cn(
-                "flex items-start gap-x-3 px-3",
-                selected && "bg-accent/12"
-              )}
+              className="flex items-start pr-3"
               data-line-number={lineNumber}
               data-selected={selected || undefined}
               key={lineNumber}
             >
+              {/* The gutter stays in place while the code scrolls under it.
+                  Its inset starts the widest number on the comment's text
+                  column; a bar 8px left of it marks the commented lines. */}
               <span
-                className="shrink-0 select-none text-right text-control-placeholder"
-                style={{
-                  width: `${Math.max(2, String(range.endLine).length)}ch`,
-                }}
+                className={cn(
+                  "sticky left-0 box-content shrink-0 select-none bg-control-bg pr-3 pl-9 text-right text-control-placeholder sm:pl-10",
+                  // A hairline separates the gutter from the code, only
+                  // while code is scrolled under it.
+                  "after:pointer-events-none after:absolute after:left-full after:w-px after:bg-control-border after:opacity-0 after:transition-opacity after:duration-150 after:ease-out group-data-scrolled/excerpt:after:opacity-100 motion-reduce:after:transition-none",
+                  // The first and last rows carry the hairline through the
+                  // excerpt's py-2, so it spans the full height.
+                  index === 0 ? "after:-top-2" : "after:top-0",
+                  index === lines.length - 1
+                    ? "after:-bottom-2"
+                    : "after:bottom-0"
+                )}
+                data-testid="excerpt-gutter"
+                style={{ width: `${String(range.endLine).length}ch` }}
               >
+                {selected && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-y-0 left-6.25 w-0.75 bg-control sm:left-7.25"
+                    data-testid="excerpt-range-marker"
+                  />
+                )}
                 {lineNumber}
               </span>
               {html === undefined ? (
-                <code className="min-w-0 flex-1 whitespace-pre text-main">
+                <code
+                  className={cn(
+                    "min-w-0 flex-1 whitespace-pre",
+                    dimmed ? "text-control" : "text-main"
+                  )}
+                >
                   {line}
                 </code>
               ) : (

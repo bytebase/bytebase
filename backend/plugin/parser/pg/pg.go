@@ -3,7 +3,6 @@ package pg
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	omniparser "github.com/bytebase/omni/pg/parser"
 
@@ -30,15 +29,15 @@ func parsePgStatements(statement string) ([]base.ParsedStatement, error) {
 			continue
 		}
 
-		omniStmts, omniErr := ParsePg(stmt.Text)
-		if omniErr != nil {
-			return nil, convertOmniError(omniErr, statement, stmt)
+		stmts, err := ParsePg(stmt.Text)
+		if err != nil {
+			return nil, convertError(err, statement, stmt)
 		}
 
-		for _, os := range omniStmts {
+		for _, os := range stmts {
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
-				AST: &OmniAST{
+				AST: &AST{
 					Node:          os.AST,
 					Text:          stmt.Text,
 					StartPosition: stmt.Start,
@@ -49,8 +48,8 @@ func parsePgStatements(statement string) ([]base.ParsedStatement, error) {
 	return result, nil
 }
 
-// convertOmniError converts an omni parser error to a base.SyntaxError with proper line:column position.
-func convertOmniError(err error, _ string, stmt base.Statement) error {
+// convertError converts an omni parser error to a base.SyntaxError with proper line:column position.
+func convertError(err error, _ string, stmt base.Statement) error {
 	var parseErr *omniparser.ParseError
 	if !errors.As(err, &parseErr) {
 		return err
@@ -69,12 +68,4 @@ func convertOmniError(err error, _ string, stmt base.Statement) error {
 		Message:    fmt.Sprintf("Syntax error at line %d: %s", pos.Line, parseErr.Message),
 		RawMessage: parseErr.Message,
 	}
-}
-
-// normalizePostgreSQLQuotedIdentifier removes surrounding double quotes and unescapes internal ones.
-func normalizePostgreSQLQuotedIdentifier(s string) string {
-	if len(s) < 2 {
-		return s
-	}
-	return strings.ReplaceAll(s[1:len(s)-1], `""`, `"`)
 }

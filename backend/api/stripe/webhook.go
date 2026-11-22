@@ -12,9 +12,9 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/pkg/errors"
-	stripego "github.com/stripe/stripe-go/v86"
-	"github.com/stripe/stripe-go/v86/customer"
-	"github.com/stripe/stripe-go/v86/webhook"
+	stripego "github.com/stripe/stripe-go/v87"
+	"github.com/stripe/stripe-go/v87/customer"
+	"github.com/stripe/stripe-go/v87/webhook"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -54,11 +54,11 @@ func (h *WebhookHandler) handleCallback(c *echo.Context) error {
 	}
 
 	sig := c.Request().Header.Get("Stripe-Signature")
-	// Our Stripe account is pinned to the basil API version, but stripe-go v85
-	// targets dahlia. Existing webhook endpoints can't have their API version
+	// Our Stripe account is pinned to the basil API version, but stripe-go
+	// targets endive. Existing webhook endpoints can't have their API version
 	// changed in the Stripe Dashboard, so we accept the version mismatch — every
 	// Subscription/Invoice field this handler reads is schema-identical between
-	// basil and dahlia.
+	// basil and endive. Re-verify that on the next stripe-go major bump.
 	event, err := webhook.ConstructEventWithOptions(body, sig, h.webhookSecret, webhook.ConstructEventOptions{
 		IgnoreAPIVersionMismatch: true,
 	})

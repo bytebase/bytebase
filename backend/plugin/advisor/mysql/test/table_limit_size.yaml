@@ -1,0 +1,54 @@
+- statement: ALTER TABLE tech_book ADD COLUMN x INT;
+  want:
+    - status: 2
+      code: 615
+      title: TABLE_LIMIT_SIZE
+      content: Apply DDL on large table 'tech_book' ( 0 rows ) will lock table for a long time
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: TRUNCATE TABLE tech_book;
+  want:
+    - status: 2
+      code: 615
+      title: TABLE_LIMIT_SIZE
+      content: Apply DDL on large table 'tech_book' ( 0 rows ) will lock table for a long time
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP TABLE tech_book, missing;
+  want:
+    - status: 2
+      code: 615
+      title: TABLE_LIMIT_SIZE
+      content: Apply DDL on large table 'missing' ( 0 rows ) will lock table for a long time
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 615
+      title: TABLE_LIMIT_SIZE
+      content: Apply DDL on large table 'tech_book' ( 0 rows ) will lock table for a long time
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN x INT;
+    SELECT 1;
+
+    UPDATE tech_book SET id = 1;
+  want:
+    - status: 2
+      code: 615
+      title: TABLE_LIMIT_SIZE
+      content: Apply DDL on large table 'tech_book' ( 0 rows ) will lock table for a long time
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t (a INT);
+- statement: CREATE PROCEDURE p() BEGIN DROP TABLE tech_book; END;

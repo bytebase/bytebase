@@ -1,0 +1,104 @@
+{
+  "CBOPlan": "{\n  \"rels\": [\n    {\n      \"id\": \"0\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveTableScan\",\n      \"table\": [\n        \"default\",\n        \"customers\"\n      ],\n      \"table:alias\": \"customers\",\n      \"inputs\": [],\n      \"rowCount\": 1.0,\n      \"avgRowSize\": 100.0,\n      \"rowType\": [\n        {\n          \"type\": \"INTEGER\",\n          \"nullable\": true,\n          \"name\": \"id\"\n        },\n        {\n          \"type\": \"VARCHAR\",\n          \"nullable\": true,\n          \"precision\": 2147483647,\n          \"name\": \"name\"\n        },\n        {\n          \"type\": \"VARCHAR\",\n          \"nullable\": true,\n          \"precision\": 2147483647,\n          \"name\": \"city\"\n        },\n        {\n          \"type\": \"BIGINT\",\n          \"nullable\": true,\n          \"name\": \"BLOCK__OFFSET__INSIDE__FILE\"\n        },\n        {\n          \"type\": \"VARCHAR\",\n          \"nullable\": true,\n          \"precision\": 2147483647,\n          \"name\": \"INPUT__FILE__NAME\"\n        },\n        {\n          \"fields\": [\n            {\n              \"type\": \"BIGINT\",\n              \"nullable\": true,\n              \"name\": \"writeid\"\n            },\n            {\n              \"type\": \"INTEGER\",\n              \"nullable\": true,\n              \"name\": \"bucketid\"\n            },\n            {\n              \"type\": \"BIGINT\",\n              \"nullable\": true,\n              \"name\": \"rowid\"\n            }\n          ],\n          \"name\": \"ROW__ID\"\n        },\n        {\n          \"type\": \"BOOLEAN\",\n          \"nullable\": true,\n          \"name\": \"ROW__IS__DELETED\"\n        }\n      ],\n      \"colStats\": [\n        {\n          \"name\": \"name\",\n          \"ndv\": 1\n        },\n        {\n          \"name\": \"city\",\n          \"ndv\": 1\n        },\n        {\n          \"name\": \"id\",\n          \"ndv\": 1,\n          \"minValue\": -9223372036854775808,\n          \"maxValue\": 9223372036854775807\n        }\n      ]\n    },\n    {\n      \"id\": \"1\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveProject\",\n      \"fields\": [\n        \"city\"\n      ],\n      \"exprs\": [\n        {\n          \"input\": 2,\n          \"name\": \"$2\"\n        }\n      ],\n      \"rowCount\": 1.0\n    },\n    {\n      \"id\": \"2\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveTableScan\",\n      \"table\": [\n        \"default\",\n        \"customers\"\n      ],\n      \"table:alias\": \"customers\",\n      \"inputs\": [],\n      \"rowCount\": 1.0,\n      \"avgRowSize\": 100.0,\n      \"rowType\": [\n        {\n          \"type\": \"INTEGER\",\n          \"nullable\": true,\n          \"name\": \"id\"\n        },\n        {\n          \"type\": \"VARCHAR\",\n          \"nullable\": true,\n          \"precision\": 2147483647,\n          \"name\": \"name\"\n        },\n        {\n          \"type\": \"VARCHAR\",\n          \"nullable\": true,\n          \"precision\": 2147483647,\n          \"name\": \"city\"\n        },\n        {\n          \"type\": \"BIGINT\",\n          \"nullable\": true,\n          \"name\": \"BLOCK__OFFSET__INSIDE__FILE\"\n        },\n        {\n          \"type\": \"VARCHAR\",\n          \"nullable\": true,\n          \"precision\": 2147483647,\n          \"name\": \"INPUT__FILE__NAME\"\n        },\n        {\n          \"fields\": [\n            {\n              \"type\": \"BIGINT\",\n              \"nullable\": true,\n              \"name\": \"writeid\"\n            },\n            {\n              \"type\": \"INTEGER\",\n              \"nullable\": true,\n              \"name\": \"bucketid\"\n            },\n            {\n              \"type\": \"BIGINT\",\n              \"nullable\": true,\n              \"name\": \"rowid\"\n            }\n          ],\n          \"name\": \"ROW__ID\"\n        },\n        {\n          \"type\": \"BOOLEAN\",\n          \"nullable\": true,\n          \"name\": \"ROW__IS__DELETED\"\n        }\n      ],\n      \"colStats\": [\n        {\n          \"name\": \"id\",\n          \"ndv\": 1,\n          \"minValue\": -9223372036854775808,\n          \"maxValue\": 9223372036854775807\n        },\n        {\n          \"name\": \"name\",\n          \"ndv\": 1\n        },\n        {\n          \"name\": \"city\",\n          \"ndv\": 1\n        }\n      ]\n    },\n    {\n      \"id\": \"3\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveProject\",\n      \"fields\": [\n        \"name\"\n      ],\n      \"exprs\": [\n        {\n          \"input\": 1,\n          \"name\": \"$1\"\n        }\n      ],\n      \"rowCount\": 1.0\n    },\n    {\n      \"id\": \"4\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveUnion\",\n      \"all\": true,\n      \"inputs\": [\n        \"1\",\n        \"3\"\n      ],\n      \"rowCount\": 2.0\n    }\n  ]\n}",
+  "optimizedSQL": "SELECT `city`\nFROM `default`.`customers`\nUNION ALL\nSELECT `name`\nFROM `default`.`customers`",
+  "cboInfo": "Plan optimized by CBO.",
+  "STAGE DEPENDENCIES": {
+    "Stage-1": { "ROOT STAGE": "TRUE" },
+    "Stage-0": { "DEPENDENT STAGES": "Stage-1" }
+  },
+  "STAGE PLANS": {
+    "Stage-1": {
+      "Tez": {
+        "DagId:": "hive_20261027075646_79b9eb03-6563-40f0-b816-aa2a9bedb0b7:4",
+        "Edges:": {
+          "Map 1": { "parent": "Union 2", "type": "CONTAINS" },
+          "Map 3": { "parent": "Union 2", "type": "CONTAINS" }
+        },
+        "DagName:": "hive_20261027075646_79b9eb03-6563-40f0-b816-aa2a9bedb0b7:4",
+        "Vertices:": {
+          "Map 1": {
+            "Map Operator Tree:": [
+              {
+                "TableScan": {
+                  "alias:": "customers",
+                  "columns:": ["city"],
+                  "database:": "default",
+                  "Statistics:": "Num rows: 1 Data size: 184 Basic stats: COMPLETE Column stats: NONE",
+                  "table:": "customers",
+                  "isTempTable:": "false",
+                  "OperatorId:": "TS_7",
+                  "children": {
+                    "Select Operator": {
+                      "expressions:": "city (type: string)",
+                      "columnExprMap:": { "_col0": "city" },
+                      "outputColumnNames:": ["_col0"],
+                      "Statistics:": "Num rows: 1 Data size: 184 Basic stats: COMPLETE Column stats: NONE",
+                      "OperatorId:": "SEL_15",
+                      "children": {
+                        "File Output Operator": {
+                          "compressed:": "false",
+                          "Statistics:": "Num rows: 2 Data size: 368 Basic stats: COMPLETE Column stats: NONE",
+                          "table:": {
+                            "input format:": "org.apache.hadoop.mapred.SequenceFileInputFormat",
+                            "output format:": "org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat",
+                            "serde:": "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe"
+                          },
+                          "OperatorId:": "FS_16"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "Execution mode:": "vectorized"
+          },
+          "Map 3": {
+            "Map Operator Tree:": [
+              {
+                "TableScan": {
+                  "alias:": "customers",
+                  "columns:": ["name"],
+                  "database:": "default",
+                  "Statistics:": "Num rows: 1 Data size: 184 Basic stats: COMPLETE Column stats: NONE",
+                  "table:": "customers",
+                  "isTempTable:": "false",
+                  "OperatorId:": "TS_11",
+                  "children": {
+                    "Select Operator": {
+                      "expressions:": "name (type: string)",
+                      "columnExprMap:": { "_col0": "name" },
+                      "outputColumnNames:": ["_col0"],
+                      "Statistics:": "Num rows: 1 Data size: 184 Basic stats: COMPLETE Column stats: NONE",
+                      "OperatorId:": "SEL_17",
+                      "children": {
+                        "File Output Operator": {
+                          "compressed:": "false",
+                          "Statistics:": "Num rows: 2 Data size: 368 Basic stats: COMPLETE Column stats: NONE",
+                          "table:": {
+                            "input format:": "org.apache.hadoop.mapred.SequenceFileInputFormat",
+                            "output format:": "org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat",
+                            "serde:": "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe"
+                          },
+                          "OperatorId:": "FS_18"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "Execution mode:": "vectorized"
+          },
+          "Union 2": { "Vertex:": "Union 2" }
+        }
+      }
+    },
+    "Stage-0": {
+      "Fetch Operator": {
+        "limit:": "-1",
+        "Processor Tree:": { "ListSink": { "OperatorId:": "LIST_SINK_19" } }
+      }
+    }
+  }
+}

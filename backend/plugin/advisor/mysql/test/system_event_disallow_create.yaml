@@ -25,3 +25,4 @@
         line: 1
         column: 0
       endposition: null
+- statement: ALTER EVENT e DISABLE;

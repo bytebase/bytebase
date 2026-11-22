@@ -1,31 +1,50 @@
-// Package mongodb is the plugin for MongoDB driver.
+// Package mongodb is Bytebase's MongoDB driver: an adapter over
+// github.com/bytebase/omni/mongo/driver. The connection string, the sync
+// queries, the mongosh execution, the result rendering and the dump are the
+// driver's; this package maps a db.ConnectionConfig onto the contract's Config
+// and the contract's results back into the product's types.
+//
+// Bytebase registers this engine as MONGODB and dispatches through this
+// package, while omni's tree is mongo/driver. Neither name changes: the engine
+// value is the product's, and the package path is what the driver registry, the
+// parser registration and the completion registration already use.
+//
+// What stays product-side is the path to the server and the task run's log:
+// Open maps a data source onto driver.Config, including an SSH Dial, the TLS
+// material and the connection string options; Execute reports each statement to
+// the task run log; SyncInstance converts the contract's roles into the instance
+// metadata.
+//
+// Every db.Driver method:
+//
+//   - Ping, Close, SyncInstance, SyncDBSchema and Dump delegate.
+//   - GetDB returns nil: MongoDB has no database/sql handle.
+//   - QueryConn opens one session per call; MongoDB keeps no session state.
+//   - Execute runs each statement on its own. MongoDB has no transaction this
+//     path takes part in, so TransactionMode and IsolationLevel are unset, and
+//     no DDL, so a change script is mongosh; MaximumRetries reaches the contract
+//     unused.
+//   - ReadOnly, QueryOptions.Schema and QueryOptions.MaskingEnabled do nothing:
+//     MongoDB has no read-only session, no schema per session and no masking to
+//     withhold.
+//
+// Where the driver's answer differs from the driver this replaced is named case
+// by case in the parity test's known-difference tables (cutover_parity_test.go).
 package mongodb
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
-	"io"
-	"log/slog"
-	"net/url"
+	"net"
 	"strings"
-	"time"
 
-	"github.com/bytebase/gomongo"
-	metadatapb "github.com/bytebase/omni/metadata"
+	omnidriver "github.com/bytebase/omni/driver"
+	omnimongo "github.com/bytebase/omni/mongo/driver"
 	"github.com/pkg/errors"
-	"go.mongodb.org/mongo-driver/v2/bson"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mongodbparser "github.com/bytebase/bytebase/backend/plugin/parser/mongodb"
 )
 
 var _ db.Driver = (*Driver)(nil)
@@ -34,214 +53,142 @@ func init() {
 	db.Register(storepb.Engine_MONGODB, newDriver)
 }
 
-// Driver is the MongoDB driver.
+// Driver is Bytebase's MongoDB driver.
 type Driver struct {
-	connCfg      db.ConnectionConfig
-	client       *mongo.Client
-	databaseName string
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open opens a MongoDB driver.
-func (d *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
-	connectionURI := getBasicMongoDBConnectionURI(connCfg)
-	opts := options.Client().ApplyURI(connectionURI)
-	tlscfg, err := util.GetTLSConfig(connCfg.DataSource)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get SSL config")
-	}
-	if tlscfg != nil {
-		// Use the TLS config from util.GetTLSConfig which respects verify_tls_certificate setting
-		opts.SetTLSConfig(tlscfg)
-	}
-	client, err := mongo.Connect(opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create MongoDB client")
-	}
-	d.client = client
-	d.connCfg = connCfg
-	d.databaseName = connCfg.ConnectionContext.DatabaseName
-	return d, nil
-}
-
-// Close closes the MongoDB driver.
-func (d *Driver) Close(ctx context.Context) error {
-	if err := d.client.Disconnect(ctx); err != nil {
-		return errors.Wrap(err, "failed to disconnect MongoDB")
-	}
-	return nil
-}
-
-// Ping pings the database.
-func (d *Driver) Ping(ctx context.Context) error {
-	if err := d.client.Ping(ctx, nil); err != nil {
-		return errors.Wrap(err, "failed to ping MongoDB")
-	}
-	return nil
-}
-
-// GetDB gets the database.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
-// Execute executes MongoDB statements one by one via gomongo.
-func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	stmts, err := mongodbparser.SplitSQL(statement)
-	if err != nil {
-		// Log the unparseable input as a failed command so the parse error is
-		// visible in the task run log instead of the statement silently
-		// disappearing from it (BYT-9950).
-		opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
-		opts.LogCommandResponse(0, nil, err.Error())
-		return 0, errors.Wrap(err, "failed to split MongoDB statement")
-	}
-
-	stmts = base.FilterEmptyStatements(stmts)
-	if len(stmts) == 0 {
-		return 0, nil
-	}
-
-	gmClient := gomongo.NewClient(d.client)
-
-	for _, stmt := range stmts {
-		opts.LogCommandExecute(stmt.Range, stmt.Text)
-
-		if _, err := gmClient.Execute(ctx, d.databaseName, stmt.Text); err != nil {
-			opts.LogCommandResponse(0, nil, err.Error())
-			return 0, err
-		}
-		opts.LogCommandResponse(0, nil, "")
-	}
-
-	return 0, nil
-}
-
-// Dump dumps the database.
-func (*Driver) Dump(_ context.Context, _ io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
-	return nil
-}
-
-// getBasicMongoDBConnectionURI returns the basic MongoDB connection URI, the following fields are excluded:
-// - TLS related
-// https://www.mongodb.com/docs/manual/reference/connection-string/
-func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
-	u := &url.URL{
-		// In RFC, there can be no tailing slash('/') in the path if the path is empty and the query is not empty.
-		// The Go driver throws "error parsing uri: must have a / before the query ?" without it.
-		Scheme: "mongodb",
-		Path:   "/",
-	}
-	if connConfig.DataSource.GetSrv() {
-		u.Scheme = "mongodb+srv"
-	}
-	if connConfig.DataSource.Username != "" {
-		u.User = url.UserPassword(connConfig.DataSource.Username, connConfig.Password)
-	}
-	u.Host = connConfig.DataSource.Host
-	if connConfig.DataSource.Port != "" {
-		u.Host = fmt.Sprintf("%s:%s", u.Host, connConfig.DataSource.Port)
-	}
-	for _, additionalAddress := range connConfig.DataSource.GetAdditionalAddresses() {
-		address := additionalAddress.Host
-		if additionalAddress.Port != "" {
-			address = fmt.Sprintf("%s:%s", address, additionalAddress.Port)
-		}
-		u.Host = fmt.Sprintf("%s,%s", u.Host, address)
-	}
-	if connConfig.ConnectionContext.DatabaseName != "" {
-		u.Path = connConfig.ConnectionContext.DatabaseName
-	}
-	authDatabase := "admin"
-	if connConfig.DataSource.GetAuthenticationDatabase() != "" {
-		authDatabase = connConfig.DataSource.GetAuthenticationDatabase()
-	}
-
-	values := u.Query()
-	values.Add("authSource", authDatabase)
-	if connConfig.DataSource.GetReplicaSet() != "" {
-		values.Add("replicaSet", connConfig.DataSource.GetReplicaSet())
-	}
-	values.Add("appName", "bytebase")
-	if connConfig.DataSource.GetDirectConnection() {
-		values.Add("directConnection", "true")
-	}
-
-	for k, v := range connConfig.DataSource.GetExtraConnectionParameters() {
-		if k == "" {
-			continue
-		}
-		values.Add(k, v)
-	}
-	u.RawQuery = values.Encode()
-
-	return u.String()
-}
-
-// QueryConn queries a SQL statement in a given connection.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if queryContext.Explain {
-		return nil, errors.New("MongoDB does not support EXPLAIN")
-	}
-
-	statement = strings.Trim(statement, " \t\n\r\f;")
-	startTime := time.Now()
-
-	gmClient := gomongo.NewClient(d.client)
-	var gmOpts []gomongo.ExecuteOption
-	if queryContext.Limit > 0 {
-		gmOpts = append(gmOpts, gomongo.WithMaxRows(int64(queryContext.Limit)))
-	}
-	result, err := gmClient.Execute(ctx, d.databaseName, statement, gmOpts...)
+// Open maps the connection config onto the driver contract. It does not reach
+// the server: Ping does.
+func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	driverConfig, options, err := toDriverConfig(config)
 	if err != nil {
 		return nil, err
 	}
-	return d.convertGomongoResult(result, statement, startTime), nil
-}
-
-func (*Driver) convertGomongoResult(res *gomongo.Result, statement string, startTime time.Time) []*v1pb.QueryResult {
-	rows := []*v1pb.QueryRow{}
-	for _, v := range res.Value {
-		str, err := marshalValueToExtJSON(v)
-		if err != nil {
-			slog.Error("failed to marshal gomongo result value", log.BBError(err))
-			str = fmt.Sprintf("%v", v)
+	d := &Driver{
+		OmniAdapter: util.OmniAdapter{WithInstanceMetadata: true},
+	}
+	opened := false
+	defer func() {
+		if !opened {
+			_ = d.Close(ctx)
 		}
-		rows = append(rows, &v1pb.QueryRow{
-			Values: []*v1pb.RowValue{
-				{Kind: &v1pb.RowValue_StringValue{StringValue: str}},
-			},
-		})
-	}
+	}()
 
-	return []*v1pb.QueryResult{{
-		ColumnNames:     []string{"result"},
-		ColumnTypeNames: []string{"TEXT"},
-		Rows:            rows,
-		RowsCount:       int64(len(res.Value)),
-		Latency:         durationpb.New(time.Since(startTime)),
-		Statement:       statement,
-	}}
+	if err := util.SetupSSHDial(config.DataSource, &driverConfig, &d.OmniAdapter, true); err != nil {
+		return nil, err
+	}
+	inner, err := omnimongo.Open(ctx, driverConfig, options)
+	if err != nil {
+		return nil, err
+	}
+	d.Driver = inner
+	opened = true
+	return d, nil
 }
 
-// marshalValueToExtJSON marshals a value to Extended JSON (relaxed) format.
-// The frontend expects each row to be a JSON object with key-value pairs,
-// so primitive values are wrapped in an object with a "value" key.
-func marshalValueToExtJSON(v any) (string, error) {
-	var toMarshal any
-	switch val := v.(type) {
-	case string, int64, bool:
-		// For primitive results, wrap as JSON object
-		toMarshal = bson.M{"value": val}
-	default:
-		toMarshal = val
+// toDriverConfig maps a connection config onto the contract's config and
+// options. The SSH Dial is Open's, because the tunnel needs the client Open
+// would otherwise leave unclosed.
+func toDriverConfig(config db.ConnectionConfig) (omnidriver.Config, omnimongo.Options, error) {
+	dataSource := config.DataSource
+	if dataSource == nil {
+		return omnidriver.Config{}, omnimongo.Options{}, errors.New("mongodb: a data source is required")
 	}
-	jsonBytes, err := bson.MarshalExtJSON(toMarshal, false, false)
+	driverConfig := omnidriver.Config{
+		Host:     connectionHost(dataSource),
+		Port:     dataSource.GetPort(),
+		Database: config.ConnectionContext.DatabaseName,
+		User:     dataSource.GetUsername(),
+		Password: config.Password,
+		Params:   connectionParams(dataSource),
+		TLS:      util.HostTLSFunc(dataSource),
+	}
+	return driverConfig, omnimongo.Options{SRV: dataSource.GetSrv()}, nil
+}
+
+// connectionHost is the connection string's authority: the data source's host
+// with its port, then every additional address with its own. Config.Port is
+// appended to a single host that has none, so a host list carries each
+// address's port itself.
+func connectionHost(dataSource *storepb.DataSource) string {
+	host := formatHostPort(dataSource.GetHost(), dataSource.GetPort())
+	for _, address := range dataSource.GetAdditionalAddresses() {
+		host += "," + formatHostPort(address.GetHost(), address.GetPort())
+	}
+	return host
+}
+
+func formatHostPort(host, port string) string {
+	bare := strings.TrimPrefix(strings.TrimSuffix(host, "]"), "[")
+	if port != "" {
+		return net.JoinHostPort(bare, port)
+	}
+	if strings.Count(bare, ":") >= 2 {
+		return "[" + bare + "]"
+	}
+	return host
+}
+
+// connectionParams maps the data source's connection settings onto connection
+// string options. authSource defaults to admin in the driver, appName to
+// "bytebase".
+func connectionParams(dataSource *storepb.DataSource) map[string]string {
+	params := map[string]string{}
+	if authDatabase := dataSource.GetAuthenticationDatabase(); authDatabase != "" {
+		params["authSource"] = authDatabase
+	}
+	if replicaSet := dataSource.GetReplicaSet(); replicaSet != "" {
+		params["replicaSet"] = replicaSet
+	}
+	if dataSource.GetDirectConnection() {
+		params["directConnection"] = "true"
+	}
+	for key, value := range dataSource.GetExtraConnectionParameters() {
+		if key == "" {
+			continue
+		}
+		params[key] = value
+	}
+	if len(params) == 0 {
+		return nil
+	}
+	return params
+}
+
+// Execute runs the script's statements in order, reporting each step to the
+// task run log. Any transaction option is irrelevant: MongoDB runs one
+// statement at a time here.
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		PassMaxRetries: true,
+	})
+}
+
+// QueryConn runs the script's statements on a session of its own. MongoDB has
+// no session state, so nothing outlives the call.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	session, err := d.OpenSession(ctx)
 	if err != nil {
-		return "", err
+		return nil, errors.Wrap(err, "failed to open a session")
 	}
-	return string(normalizeExtJSONNumbers(jsonBytes)), nil
+	defer func() { _ = session.Close() }()
+
+	// MongoDB states a plan as one document and has no second format, so
+	// queryContext.Option's explain format has nowhere to go.
+	results, err := session.Query(ctx, statement, omnidriver.QueryOptions{
+		Schema:         queryContext.Schema,
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		MaxResultBytes: queryContext.MaximumSQLResultSize,
+		MaskingEnabled: queryContext.MaskingEnabled,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, false), nil
 }

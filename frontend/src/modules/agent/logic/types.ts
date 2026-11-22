@@ -1,3 +1,7 @@
+import type { DeniedQueryRequestDraft } from "@/modules/sql-editor/model/accessGrantDraft";
+import type { AgentMaskingPageResource } from "./chatContext";
+import type { MaskingSkillSection } from "./skills";
+
 export interface ToolDefinition {
   name: string;
   description: string;
@@ -18,19 +22,220 @@ export interface Message {
   toolCallId?: string;
 }
 
-export type AgentChatStatus = "idle" | "running" | "awaiting_user" | "error";
+export type AgentChatStatus =
+  | "idle"
+  | "running"
+  | "awaiting_user"
+  | "paused"
+  | "error";
+
+export type AgentInterruptionReason = "user" | "unexpected";
+
+export type AgentRunMode = "default" | "read-only";
+
+export interface AgentModelCallUsage {
+  attemptId?: string;
+  purpose: "agent" | "follow-up";
+  toolNames: string[];
+  totalTokens?: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  cachedInputTokens?: number;
+}
+
+export interface AgentRunBudget {
+  version: 1;
+  runId: string;
+  limit: number;
+  totalTokensUsed: number;
+  hasUnreportedUsage: boolean;
+  providerAttemptCount: number;
+  revision: number;
+}
+
+export interface AgentRunBindings {
+  page: AgentChatSnapshot;
+  pageToolPath?: string;
+  context?: string;
+  references: AgentResourceReference[];
+  runMode: AgentRunMode;
+  capability?: AgentDiagnosticCapability;
+  instanceName?: string;
+  maskingPage?: AgentMaskingPageResource;
+}
+
+export interface AgentRunCheckpoint {
+  version: 1;
+  runId: string;
+  suspension: "token-limit" | "awaiting-user" | "interrupted";
+  rootUserMessageId: string;
+  throughMessageId: string;
+  bindings: AgentRunBindings;
+  pageToolPath?: string;
+  maskingSections: MaskingSkillSection[];
+  phase: "working" | "finalizing";
+  startupComplete?: boolean;
+  referencePreflightPending?: boolean;
+  finalizationText?: string;
+}
+
+export interface AgentModelAttempt {
+  attemptId: string;
+  runId: string;
+  ordinal: number;
+  outcome: "response" | "error" | "aborted";
+  usage?: AgentModelCallUsage;
+}
+
+export type AgentAttemptReservation =
+  | { kind: "allowed"; attemptId: string; ordinal: number }
+  | { kind: "token-limit" }
+  | { kind: "attempt-limit" }
+  | { kind: "superseded" }
+  | { kind: "storage-unavailable" };
+
+export interface AgentStoragePressure {
+  reason: "budget" | "quota" | "unavailable";
+  phase: "admission" | "saving";
+  bytes: number;
+  limitBytes: number;
+  otherScopeBytes?: number;
+}
 
 export interface AgentChatSnapshot {
   path: string;
   title: string;
 }
 
+export type AgentEvidenceReference =
+  | {
+      kind: "issue";
+      name: string;
+      title: string;
+    }
+  | {
+      kind: "plan";
+      name: string;
+      title: string;
+    }
+  | {
+      kind: "database";
+      name: string;
+    };
+
+export interface AgentEvidence {
+  project?: string;
+  workspace?: string;
+  references: AgentEvidenceReference[];
+}
+
+export type AgentAnswerEvidence = AgentEvidence | AgentEvidence[];
+
+export type AgentHandoff =
+  | { kind: "open-global-masking" }
+  | { kind: "open-semantic-types" }
+  | { kind: "open-data-classification" }
+  | { kind: "open-project-masking-exemptions"; project: string }
+  | { kind: "open-database-catalog"; project: string; database: string }
+  | { kind: "review-workspace-issues"; workspace: string }
+  | {
+      kind:
+        | "review-project-issues"
+        | "review-database-changes"
+        | "open-project-instances"
+        | "transfer-project-databases"
+        | "connect-project-instance"
+        | "create-project-database";
+      project: string;
+    }
+  | { kind: "view-failed-tasks"; plan: string }
+  | { kind: "open-issue"; issue: string }
+  | { kind: "review-issue-plan"; plan: string }
+  | { kind: "view-failed-task"; task: string };
+
+export type AgentResponseAction =
+  | { kind: "open"; target: AgentHandoff }
+  | { kind: "draft-plan"; project: string; database: string }
+  | { kind: "draft-issue-comment"; issue: string; comment: string }
+  | { kind: "draft-masking-rule"; draftId: string }
+  | { kind: "draft-masking-exemption"; draftId: string }
+  | { kind: "draft-semantic-type"; draftId: string }
+  | { kind: "review-sql-fix"; draftId: string }
+  | { kind: "continue"; prompt: string };
+
+export interface AgentResourceReference {
+  kind: "project" | "database" | "issue" | "plan";
+  name: string;
+  project: string;
+  label: string;
+}
+
+// This snapshot permits a suggestion, not configuration; clicked workflows recheck access.
+export interface AgentQueryMaskingEligibility {
+  database: string;
+  allowed: boolean;
+}
+
+export type AgentDiagnosticCapability = {
+  kind: "diagnostic";
+  resource: AgentResourceReference;
+};
+
+export interface AgentMentionRange {
+  start: number;
+  end: number;
+}
+
+export interface AgentResourceMention {
+  resource: AgentResourceReference;
+  range: AgentMentionRange;
+}
+
+export interface AgentDraft {
+  text: string;
+  followUpSourceId?: string;
+  mentions?: AgentResourceMention[];
+  project?: {
+    name: string;
+    title: string;
+  };
+  resource?: AgentResourceReference;
+  mention?: AgentMentionRange;
+}
+
 export interface AgentMessageMetadata {
+  apiAttemptId?: string;
+  // Lookup provenance only; the source answer grants no authority for this turn.
+  followUpSourceId?: string;
+  queryResultRetention?: { version: 1; level: "omitted" };
+  runPreflight?: true;
   route?: string;
   pending?: boolean;
   hidden?: boolean;
   error?: string;
   runId?: string;
+  interruptionReason?: AgentInterruptionReason;
+  evidence?: AgentAnswerEvidence;
+  handoff?: AgentHandoff;
+  actions?: AgentResponseAction[];
+  queryMaskingEligibility?: AgentQueryMaskingEligibility;
+  maskingRuleDraftHandoff?: {
+    draftId: string;
+    outcome: "opened" | "applied";
+  };
+  maskingExemptionDraftHandoff?: {
+    draftId: string;
+    outcome: "opened" | "applied";
+    created?: true;
+  };
+  accessRequestDraft?: DeniedQueryRequestDraft;
+  semanticTypeDraftHandoff?: {
+    draftId: string;
+    outcome: "opened";
+    created?: true;
+  };
+  resourceReference?: AgentResourceReference;
+  resourceReferences?: AgentResourceReference[];
 }
 
 export interface AgentMessage extends Message {
@@ -41,18 +246,33 @@ export interface AgentMessage extends Message {
 }
 
 export interface AgentChat {
+  apiAttempts?: import("./apiAttempt").AgentApiAttempt[];
   id: string;
   title: string;
+  context?: string;
+  workspaceName?: string;
   createdTs: number;
   updatedTs: number;
   status: AgentChatStatus;
   totalTokensUsed: number;
+  runBudget?: AgentRunBudget;
+  runCheckpoint?: AgentRunCheckpoint;
+  modelAttempts?: AgentModelAttempt[];
+  legacyUsage?: { totalTokensUsed: number; hasUnreportedUsage: boolean };
+  lastRunUsage?: {
+    runId: string;
+    calls: AgentModelCallUsage[];
+  };
+  hasUnreportedUsage?: boolean;
   page?: AgentChatSnapshot;
   archived: boolean;
   lastError?: string | null;
   requiresAIConfiguration?: boolean;
   interrupted?: boolean;
+  interruptionReason?: AgentInterruptionReason;
   runId?: string | null;
+  runMode?: AgentRunMode;
+  capability?: AgentDiagnosticCapability;
 }
 
 export type AgentAskUserKind = "input" | "confirm" | "choose";
@@ -61,13 +281,22 @@ export interface AgentAskUserOption {
   label: string;
   value: string;
   description?: string;
+  kind?: "custom-input";
+  placeholder?: string;
 }
 
 export interface AgentPendingAsk {
   toolCallId: string;
   prompt: string;
   kind: AgentAskUserKind;
+  resourceProject?: string;
+  apiPermission?: {
+    actionId: string;
+    operationId: string;
+    expiresAt?: number;
+  };
   defaultValue?: string;
+  defaultResource?: AgentResourceReference;
   confirmLabel?: string;
   cancelLabel?: string;
   options?: AgentAskUserOption[];
@@ -87,6 +316,7 @@ export type AgentAskUserResponse =
       kind: "choose";
       answer: string;
       value: string;
+      input?: string;
     };
 
 export type ToolExecutionResult =
@@ -98,6 +328,8 @@ export type ToolExecutionResult =
       kind: "done";
       text: string;
       success: boolean;
+      handoff?: AgentHandoff;
+      actions?: AgentResponseAction[];
     }
   | {
       kind: "ask_user";
@@ -110,9 +342,21 @@ interface AgentLoopUsage {
 
 export type AgentLoopOutcome =
   | ({
+      kind: "stopped";
+      reason: "provider-attempt-limit";
+    } & AgentLoopUsage)
+  | ({
+      kind: "paused";
+      reason: "token-limit";
+      phase: "working" | "finalizing";
+      finalizationText?: string;
+    } & AgentLoopUsage)
+  | ({
       kind: "completed";
       text: string;
       success: boolean;
+      handoff?: AgentHandoff;
+      actions?: AgentResponseAction[];
     } & AgentLoopUsage)
   | ({
       kind: "awaiting_user";

@@ -17,7 +17,11 @@ interface WorkloadIdentitySelectProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  portal?: boolean;
+  // The line under each identity's name. Defaults to its email.
+  describe?: (workloadIdentity: WorkloadIdentity) => string;
+  // Why an identity cannot be picked, or undefined when it can. A disabled
+  // identity stays listed and shows the reason in place of its description.
+  disabledReason?: (workloadIdentity: WorkloadIdentity) => string | undefined;
 }
 
 export function WorkloadIdentitySelect({
@@ -27,7 +31,8 @@ export function WorkloadIdentitySelect({
   placeholder,
   disabled,
   className,
-  portal,
+  describe,
+  disabledReason,
 }: WorkloadIdentitySelectProps) {
   const { t } = useTranslation();
   const listWorkloadIdentities = useAppStore(
@@ -67,11 +72,15 @@ export function WorkloadIdentitySelect({
   }, [search]);
 
   const options = useMemo(() => {
-    const toOption = (identity: WorkloadIdentity): ComboboxOption => ({
-      value: identity.name,
-      label: identity.title || identity.email,
-      description: identity.email,
-    });
+    const toOption = (identity: WorkloadIdentity): ComboboxOption => {
+      const reason = disabledReason?.(identity);
+      return {
+        value: identity.name,
+        label: identity.title || identity.email,
+        description: reason ?? describe?.(identity) ?? identity.email,
+        disabled: reason !== undefined,
+      };
+    };
     const options = workloadIdentities.map(toOption);
     if (
       selectedWorkloadIdentity &&
@@ -82,7 +91,7 @@ export function WorkloadIdentitySelect({
       options.push(toOption(selectedWorkloadIdentity));
     }
     return options;
-  }, [selectedWorkloadIdentity, workloadIdentities]);
+  }, [selectedWorkloadIdentity, workloadIdentities, describe, disabledReason]);
 
   return (
     <Combobox
@@ -99,7 +108,6 @@ export function WorkloadIdentitySelect({
       onLoadMore={loadMore}
       disabled={disabled}
       className={cn("w-full", className)}
-      portal={portal}
     />
   );
 }

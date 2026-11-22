@@ -28,3 +28,28 @@ func TestParseMySQLStatements(t *testing.T) {
 	require.False(t, statements[1].Empty)
 	require.NotNil(t, statements[1].AST)
 }
+
+func TestParseStatementsSyntaxErrorColumnOnSharedLine(t *testing.T) {
+	for _, tc := range []struct {
+		engine    storepb.Engine
+		statement string
+		want      *storepb.Position
+	}{
+		// The error is at the ')' after DEFAULT, column 40 of the line.
+		{storepb.Engine_MYSQL, "SELECT 1; CREATE TABLE t (a INT DEFAULT);", &storepb.Position{Line: 1, Column: 40}},
+		{storepb.Engine_MYSQL, "SELECT 1;\nSELECT 2; CREATE TABLE t (a INT DEFAULT);", &storepb.Position{Line: 2, Column: 40}},
+	} {
+		_, err := base.ParseStatements(tc.engine, tc.statement)
+
+		var syntaxErr *base.SyntaxError
+		require.ErrorAs(t, err, &syntaxErr, tc.statement)
+		require.Equal(t, tc.want, syntaxErr.Position, tc.statement)
+	}
+}
+
+func TestParseMySQLStatementsRejectsMariaDBSyntax(t *testing.T) {
+	_, err := base.ParseStatements(storepb.Engine_MYSQL, "CREATE OR REPLACE TABLE t (a INT);")
+
+	var syntaxErr *base.SyntaxError
+	require.ErrorAs(t, err, &syntaxErr)
+}

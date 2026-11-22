@@ -45,6 +45,16 @@ func TestRegisterFrontendRoutes_AssetCacheHeaders(t *testing.T) {
 			bodyMustNotBe: "<!doctype html",
 		},
 		{
+			// echo v5.4 rejects a path with a dot or empty segment outright
+			// (GHSA-3pmx-cf9f-34xr). Deciding the header from the cleaned path
+			// instead of the response saw an existing file here and shipped a
+			// year-long immutable directive on the handler's 404.
+			name:          "escaped dot segment returns 404 with no immutable cache",
+			path:          "/assets/x/%2e%2e/app-1234.js",
+			wantStatus:    http.StatusNotFound,
+			wantCacheCtrl: "",
+		},
+		{
 			name:             "spa route falls back to index.html with no immutable",
 			path:             "/projects/foo",
 			wantStatus:       http.StatusOK,

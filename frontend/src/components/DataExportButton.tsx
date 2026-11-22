@@ -19,7 +19,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  FormControlGroup,
+  FormControlRow,
+  FormField,
+  FormFieldGroup,
+  FormLabel,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -36,11 +45,19 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useElapsedSeconds } from "@/hooks/useElapsed";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
-import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import { ExportDestination, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { MaxRowCountSelect } from "./MaxRowCountSelect";
+import {
+  formatSharePointUrl,
+  mergeSharePointResults,
+  type SharePointExportResult,
+  SharePointExportResultDialog,
+  toFailedSharePointExport,
+} from "./SharePointExportResultDialog";
 
 export type DownloadContent = {
   content: Uint8Array;
@@ -50,13 +67,29 @@ export type DownloadContent = {
 export interface ExportOption {
   limit: number;
   format: ExportFormat;
+  // Applies only to DOWNLOAD.
   password: string;
+  destination: ExportDestination;
 }
+
+// Downloads resolve with the files to save; SharePoint exports resolve with
+// each database's export result.
+export type ExportOutcome =
+  | DownloadContent[]
+  | { sharepoint: SharePointExportResult[] };
 
 export type DataExportRequest = {
   options: ExportOption;
-  resolve: (content: DownloadContent[]) => void;
+  // Database resource names to export instead of the caller's own selection.
+  // Set when retrying failed SharePoint exports.
+  databases?: string[];
+  resolve: (outcome: ExportOutcome) => void;
   reject: (reason?: unknown) => void;
+  // Aborted when the user cancels the export. A canceled SharePoint export
+  // still resolves, reporting what each database did.
+  signal: AbortSignal;
+  // Reports progress of an export that covers several databases.
+  onProgress?: (done: number, total: number) => void;
 };
 
 type Size = "tiny" | "sm" | "md" | "lg";
@@ -74,9 +107,15 @@ interface DataExportButtonProps {
   maximumExportCount?: number;
   /** Custom form content rendered above the row-count / format / password fields in DRAWER mode. */
   formContent?: ReactNode;
+  /** Offered destinations in DRAWER mode; the first is the default. Empty disables export. */
+  destinations?: ExportDestination[];
+  /** The project's SharePoint destination URL, shown beside that destination. */
+  sharepointUrl?: string;
   onExport: (req: DataExportRequest) => void;
   className?: string;
 }
+
+const DOWNLOAD_ONLY = [ExportDestination.DOWNLOAD];
 
 const SIZE_TO_BUTTON: Record<Size, ButtonProps["size"]> = {
   tiny: "xs",
@@ -90,6 +129,10 @@ const ROW_COUNT_PRESET = [1, 100, 500, 1000, 5000, 10000, 100000];
 const GENERATED_PASSWORD_LENGTH = 8;
 const GENERATED_PASSWORD_CHARSET =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+// A SharePoint export can wait minutes on server-side retries with no visible
+// change, so its progress shows the elapsed time and explains a long wait.
+const SLOW_HINT_AFTER_SECONDS = 60;
 
 const generateRandomPassword = (length = GENERATED_PASSWORD_LENGTH) => {
   const values = new Uint32Array(length);
@@ -150,26 +193,29 @@ const downloadSingle = (entry: DownloadContent, format: ExportFormat) => {
 
 const downloadZip = async (
   contents: DownloadContent[],
-  format: ExportFormat
+  format: ExportFormat,
+  signal: AbortSignal
 ) => {
   const zip = new JSZip();
   for (const entry of contents) {
     zip.file(entry.filename, toBlob(entry, format));
   }
   const zipFile = await zip.generateAsync({ type: "blob" });
+  if (signal.aborted) return;
   saveAs(zipFile, `download_${dayjs().format("YYYY-MM-DDTHH-mm-ss")}.zip`);
 };
 
 const downloadAll = async (
   contents: DownloadContent[],
-  format: ExportFormat
+  format: ExportFormat,
+  signal: AbortSignal
 ) => {
   if (contents.length === 0) return;
   if (contents.length === 1) {
     downloadSingle(contents[0], format);
     return;
   }
-  await downloadZip(contents, format);
+  await downloadZip(contents, format, signal);
 };
 
 /**
@@ -190,6 +236,8 @@ export function DataExportButton({
   validate,
   maximumExportCount = Number.MAX_VALUE,
   formContent,
+  destinations = DOWNLOAD_ONLY,
+  sharepointUrl,
   onExport,
   className,
 }: DataExportButtonProps) {
@@ -198,6 +246,23 @@ export function DataExportButton({
   const [isRequesting, setIsRequesting] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number }>();
+  const exportAbortRef = useRef<AbortController | undefined>(undefined);
+  const [sharePointStartedAt, setSharePointStartedAt] = useState<number>();
+  const sharePointElapsed = useElapsedSeconds(sharePointStartedAt);
+  const [sharePointResults, setSharePointResults] = useState<
+    SharePointExportResult[]
+  >([]);
+  // The options of the last SharePoint export, which a retry reuses.
+  const sharePointOptionsRef = useRef<ExportOption | undefined>(undefined);
+  const retryAbortRef = useRef<AbortController | undefined>(undefined);
+  const [retryingNames, setRetryingNames] = useState<ReadonlySet<string>>();
+  const [retryStartedAt, setRetryStartedAt] = useState<number>();
+  const retryElapsed = useElapsedSeconds(retryStartedAt);
+  const exportUnavailable = destinations.length === 0;
+  const triggerTooltip = exportUnavailable
+    ? t("export-data.no-destination")
+    : tooltip;
 
   const presetMax = useMemo(
     () => computeMaximumPreset(maximumExportCount),
@@ -208,12 +273,17 @@ export function DataExportButton({
   const [limit, setLimit] = useState<number>(defaultLimit);
   const [format, setFormat] = useState<ExportFormat>(supportFormats[0]);
   const [password, setPassword] = useState("");
+  const [destination, setDestination] = useState<ExportDestination>(
+    destinations[0] ?? ExportDestination.DOWNLOAD
+  );
+  const isDownload = destination !== ExportDestination.SHAREPOINT;
 
   const resetForm = useCallback(() => {
     setLimit(defaultLimit);
     setFormat(supportFormats[0]);
     setPassword("");
-  }, [defaultLimit, supportFormats]);
+    setDestination(destinations[0] ?? ExportDestination.DOWNLOAD);
+  }, [defaultLimit, supportFormats, destinations]);
 
   // Reset form whenever the drawer transitions to OPEN. Depending on
   // `resetForm` here would re-fire the reset on every parent re-render
@@ -241,23 +311,51 @@ export function DataExportButton({
   const buttonText = text ?? t("common.export");
 
   const currentOption: ExportOption = useMemo(
-    () => ({ limit, format, password }),
-    [limit, format, password]
+    () => ({
+      limit,
+      format,
+      password: isDownload ? password : "",
+      destination,
+    }),
+    [limit, format, password, destination, isDownload]
   );
 
   const validateOption = validate ?? (() => true);
-  const formIsValid = limit > 0 && validateOption(currentOption);
+  const formIsValid =
+    limit > 0 &&
+    destinations.includes(destination) &&
+    validateOption(currentOption);
 
   const doExport = useCallback(() => {
     if (isRequesting) return;
+    const controller = new AbortController();
+    exportAbortRef.current = controller;
     setIsRequesting(true);
+    setProgress(undefined);
     const options: ExportOption = { ...currentOption };
+    const toSharePoint = options.destination === ExportDestination.SHAREPOINT;
+    setSharePointStartedAt(toSharePoint ? Date.now() : undefined);
+    if (toSharePoint) {
+      sharePointOptionsRef.current = options;
+    }
 
-    new Promise<DownloadContent[]>((resolve, reject) => {
-      onExport({ options, resolve, reject });
+    new Promise<ExportOutcome>((resolve, reject) => {
+      onExport({
+        options,
+        resolve,
+        reject,
+        signal: controller.signal,
+        onProgress: (done, total) => setProgress({ done, total }),
+      });
     })
-      .then((contents) => downloadAll(contents, options.format))
-      .then(() => {
+      .then(async (outcome) => {
+        if (!Array.isArray(outcome)) {
+          setSharePointResults(outcome.sharepoint);
+          return;
+        }
+        if (controller.signal.aborted) return;
+        await downloadAll(outcome, options.format, controller.signal);
+        if (controller.signal.aborted) return;
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
@@ -266,6 +364,7 @@ export function DataExportButton({
         });
       })
       .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",
@@ -274,11 +373,91 @@ export function DataExportButton({
         });
       })
       .finally(() => {
+        if (exportAbortRef.current === controller) {
+          exportAbortRef.current = undefined;
+        }
         setIsRequesting(false);
+        setProgress(undefined);
+        setSharePointStartedAt(undefined);
         setShowDrawer(false);
         setShowPasswordDialog(false);
       });
   }, [currentOption, isRequesting, onExport, t]);
+
+  const cancelExport = () => {
+    exportAbortRef.current?.abort();
+    setShowDrawer(false);
+    setShowPasswordDialog(false);
+  };
+
+  const retrySharePointExport = (names: string[]) => {
+    const options = sharePointOptionsRef.current;
+    if (!options || retryingNames || names.length === 0) return;
+    const controller = new AbortController();
+    retryAbortRef.current = controller;
+    setRetryingNames(new Set(names));
+    setRetryStartedAt(Date.now());
+    new Promise<ExportOutcome>((resolve, reject) => {
+      onExport({
+        options,
+        databases: names,
+        resolve,
+        reject,
+        signal: controller.signal,
+      });
+    })
+      .then((outcome) => {
+        if (Array.isArray(outcome)) return;
+        setSharePointResults((results) =>
+          mergeSharePointResults(results, outcome.sharepoint)
+        );
+      })
+      .catch((error: unknown) => {
+        setSharePointResults((results) =>
+          mergeSharePointResults(
+            results,
+            results
+              .filter((result) => names.includes(result.name))
+              .map((result) =>
+                toFailedSharePointExport(
+                  { name: result.name, label: result.database },
+                  error
+                )
+              )
+          )
+        );
+      })
+      .finally(() => {
+        if (retryAbortRef.current === controller) {
+          retryAbortRef.current = undefined;
+        }
+        setRetryingNames(undefined);
+        setRetryStartedAt(undefined);
+      });
+  };
+
+  // While an export runs, Escape and an outside click are ignored so a stray
+  // dismissal cannot cancel or orphan it; any other close, such as the close
+  // button, cancels the export.
+  const handleOpenChange =
+    (setOpen: (open: boolean) => void) =>
+    (
+      open: boolean,
+      eventDetails?: { reason?: string; cancel?: () => void }
+    ) => {
+      if (open || !isRequesting) {
+        setOpen(open);
+        return;
+      }
+      if (
+        eventDetails?.reason === "escape-key" ||
+        eventDetails?.reason === "outside-press"
+      ) {
+        eventDetails.cancel?.();
+        return;
+      }
+      cancelExport();
+    };
 
   // Returns true when the clipboard write succeeded — Generate callers
   // gate the password commit on that so the masked input doesn't end up
@@ -324,7 +503,7 @@ export function DataExportButton({
 
   const handleSelectDropdownFormat = (selected: ExportFormat) => {
     setFormat(selected);
-    if (supportPassword) {
+    if (supportPassword && isDownload) {
       setShowPasswordDialog(true);
     } else {
       // Run after state batched.
@@ -336,7 +515,7 @@ export function DataExportButton({
     <Button
       variant="default"
       size={SIZE_TO_BUTTON[size]}
-      disabled={disabled || isRequesting}
+      disabled={disabled || isRequesting || exportUnavailable}
       onClick={(e) => {
         e.preventDefault();
         if (viewMode === "DRAWER") setShowDrawer(true);
@@ -351,13 +530,13 @@ export function DataExportButton({
 
   const dropdownTrigger = (
     <DropdownMenu>
-      <Tooltip content={tooltip} side="bottom">
+      <Tooltip content={triggerTooltip} side="bottom">
         <DropdownMenuTrigger
           render={
             <Button
               variant="default"
               size={SIZE_TO_BUTTON[size]}
-              disabled={disabled || isRequesting}
+              disabled={disabled || isRequesting || exportUnavailable}
               className={cn("gap-x-1", className)}
               aria-label={buttonText}
             >
@@ -388,13 +567,13 @@ export function DataExportButton({
       {viewMode === "DROPDOWN" ? (
         dropdownTrigger
       ) : (
-        <Tooltip content={tooltip} side="bottom">
+        <Tooltip content={triggerTooltip} side="bottom">
           {triggerButton}
         </Tooltip>
       )}
 
       {viewMode === "DRAWER" && (
-        <Sheet open={showDrawer} onOpenChange={setShowDrawer}>
+        <Sheet open={showDrawer} onOpenChange={handleOpenChange(setShowDrawer)}>
           <SheetContent width="medium">
             <SheetHeader>
               <SheetTitle>
@@ -402,32 +581,60 @@ export function DataExportButton({
               </SheetTitle>
             </SheetHeader>
             <SheetBody>
-              <div className="flex flex-col gap-y-4">
+              <FormFieldGroup>
                 {formContent}
 
-                <div className="flex flex-col gap-y-1">
-                  <label className="text-sm text-control">
-                    {t("export-data.export-rows")}
-                  </label>
+                {destinations.length > 1 ? (
+                  <FormField title={t("export-data.destination.self")}>
+                    <RadioGroup
+                      aria-label={t("export-data.destination.self")}
+                      className="flex-col items-start gap-y-2"
+                      value={String(destination)}
+                      onValueChange={(value) =>
+                        setDestination(Number(value) as ExportDestination)
+                      }
+                    >
+                      {destinations.map((option) => (
+                        <RadioGroupItem key={option} value={String(option)}>
+                          <DestinationLabel
+                            destination={option}
+                            sharepointUrl={sharepointUrl}
+                          />
+                        </RadioGroupItem>
+                      ))}
+                    </RadioGroup>
+                  </FormField>
+                ) : (
+                  destination === ExportDestination.SHAREPOINT && (
+                    <FormField title={t("export-data.destination.self")}>
+                      <DestinationLabel
+                        destination={destination}
+                        sharepointUrl={sharepointUrl}
+                      />
+                    </FormField>
+                  )
+                )}
+
+                <FormField title={t("export-data.export-rows")}>
                   <MaxRowCountSelect
                     value={limit}
                     onChange={setLimit}
                     maximum={presetMax}
                     className="h-9"
                   />
-                </div>
+                </FormField>
 
-                <div className="flex flex-col gap-y-1">
-                  <label className="text-sm text-control">
-                    {t("export-data.export-format")}
-                  </label>
+                <FormField title={t("export-data.export-format")}>
                   <Select
                     value={String(format)}
                     onValueChange={(value) => {
                       if (value) setFormat(Number(value) as ExportFormat);
                     }}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger
+                      className="w-full"
+                      aria-label={t("export-data.export-format")}
+                    >
                       <SelectValue>{ExportFormat[format]}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -438,46 +645,91 @@ export function DataExportButton({
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </FormField>
 
-                {supportPassword && (
-                  <div className="flex flex-col gap-y-1">
-                    <label className="text-sm text-control">
-                      {t("export-data.password-optional")}
-                    </label>
+                {supportPassword && isDownload && (
+                  <FormField
+                    title={
+                      <FormLabel htmlFor="data-export-password">
+                        {t("export-data.password-optional")}
+                      </FormLabel>
+                    }
+                  >
                     <Input
+                      id="data-export-password"
                       type="password"
                       autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
-                    <div className="flex items-center gap-x-2 mt-1">
-                      <Button
-                        type="button"
-                        appearance="outline"
-                        size="sm"
-                        onClick={handleGeneratePassword}
-                      >
-                        <Wand2 className="size-4 mr-1" />
-                        {t("export-data.generate-password")}
-                      </Button>
-                      <Button
-                        type="button"
-                        appearance="outline"
-                        size="sm"
-                        disabled={!password}
-                        onClick={() => void copyPasswordToClipboard(password)}
-                      >
-                        <Copy className="size-4 mr-1" />
-                        {t("common.copy")}
-                      </Button>
-                    </div>
-                  </div>
+                    <FormControlGroup>
+                      <FormControlRow>
+                        <Button
+                          type="button"
+                          appearance="outline"
+                          size="sm"
+                          onClick={handleGeneratePassword}
+                        >
+                          <Wand2 className="size-4" />
+                          {t("export-data.generate-password")}
+                        </Button>
+                        <Button
+                          type="button"
+                          appearance="outline"
+                          size="sm"
+                          disabled={!password}
+                          onClick={() => void copyPasswordToClipboard(password)}
+                        >
+                          <Copy className="size-4" />
+                          {t("common.copy")}
+                        </Button>
+                      </FormControlRow>
+                    </FormControlGroup>
+                  </FormField>
                 )}
-              </div>
+              </FormFieldGroup>
             </SheetBody>
             <SheetFooter>
-              <Button appearance="outline" onClick={() => setShowDrawer(false)}>
+              {isRequesting && (
+                <div className="flex min-w-0 flex-1 flex-col gap-y-1.5">
+                  <Progress
+                    className="max-w-80"
+                    value={
+                      progress && progress.total > 1 ? progress.done : null
+                    }
+                    max={progress?.total}
+                    label={
+                      <>
+                        {progress && progress.total > 1
+                          ? t("export-data.progress.databases", progress)
+                          : isDownload
+                            ? t("export-data.progress.download")
+                            : t("export-data.progress.sharepoint")}
+                        {sharePointElapsed !== undefined && (
+                          <>
+                            {" "}
+                            <span className="tabular-nums">
+                              {`${sharePointElapsed}s`}
+                            </span>
+                          </>
+                        )}
+                      </>
+                    }
+                  />
+                  {sharePointElapsed !== undefined &&
+                    sharePointElapsed >= SLOW_HINT_AFTER_SECONDS && (
+                      <p className="max-w-80 text-xs text-control-light">
+                        {t("export-data.progress.sharepoint-slow")}
+                      </p>
+                    )}
+                </div>
+              )}
+              <Button
+                appearance="outline"
+                onClick={
+                  isRequesting ? cancelExport : () => setShowDrawer(false)
+                }
+              >
                 {t("common.cancel")}
               </Button>
               <Button
@@ -493,7 +745,10 @@ export function DataExportButton({
       )}
 
       {viewMode === "DROPDOWN" && supportPassword && (
-        <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <Dialog
+          open={showPasswordDialog}
+          onOpenChange={handleOpenChange(setShowPasswordDialog)}
+        >
           <DialogContent className="w-[26rem] max-w-[calc(100vw-4rem)]">
             <div className="flex flex-col gap-y-3">
               <DialogTitle>{t("export-data.password-optional")}</DialogTitle>
@@ -511,7 +766,11 @@ export function DataExportButton({
                 <Button
                   appearance="outline"
                   size="sm"
-                  onClick={() => setShowPasswordDialog(false)}
+                  onClick={
+                    isRequesting
+                      ? cancelExport
+                      : () => setShowPasswordDialog(false)
+                  }
                 >
                   {t("common.cancel")}
                 </Button>
@@ -528,6 +787,42 @@ export function DataExportButton({
           </DialogContent>
         </Dialog>
       )}
+
+      <SharePointExportResultDialog
+        results={sharePointResults}
+        retry={
+          retryingNames && {
+            names: retryingNames,
+            elapsedSeconds: retryElapsed,
+          }
+        }
+        onRetry={retrySharePointExport}
+        onCancelRetry={() => retryAbortRef.current?.abort()}
+        onClose={() => setSharePointResults([])}
+      />
     </>
+  );
+}
+
+function DestinationLabel({
+  destination,
+  sharepointUrl,
+}: {
+  destination: ExportDestination;
+  sharepointUrl?: string;
+}) {
+  const { t } = useTranslation();
+  if (destination !== ExportDestination.SHAREPOINT) {
+    return <span>{t("export-data.destination.download")}</span>;
+  }
+  return (
+    <span className="flex flex-col">
+      <span>{t("export-data.destination.sharepoint")}</span>
+      {sharepointUrl && (
+        <span className="break-all text-xs text-control-light">
+          {formatSharePointUrl(sharepointUrl)}
+        </span>
+      )}
+    </span>
   );
 }

@@ -2,11 +2,13 @@
 package common
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/google/cel-go/cel"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
@@ -314,4 +316,96 @@ func TestFallbackFactorsDoNotIncludeRiskLevel(t *testing.T) {
 	_, issues := e.Compile(`risk.level == "HIGH"`)
 	a.NotNil(issues)
 	a.Error(issues.Err())
+}
+
+func TestConditionStringOperators(t *testing.T) {
+	t.Parallel()
+
+	scenarios := []struct {
+		name      string
+		attribute string
+		validate  func(string) (cel.Program, error)
+	}{
+		{
+			name:      "approval",
+			attribute: CELAttributeResourceTableName,
+			validate: func(expression string) (cel.Program, error) {
+				if err := ValidateApprovalExprForSource(expression, storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE); err != nil {
+					return nil, err
+				}
+				env, err := cel.NewEnv(ApprovalFactors...)
+				if err != nil {
+					return nil, err
+				}
+				ast, issues := env.Compile(expression)
+				if issues != nil && issues.Err() != nil {
+					return nil, issues.Err()
+				}
+				return env.Program(ast)
+			},
+		},
+		{
+			name:      "iam",
+			attribute: CELAttributeResourceTableName,
+			validate: func(expression string) (cel.Program, error) {
+				return ValidateProjectMemberCELExpr(&expr.Expr{Expression: expression})
+			},
+		},
+		{
+			name:      "masking rule",
+			attribute: CELAttributeResourceTableName,
+			validate:  ValidateMaskingRuleCELExpr,
+		},
+		{
+			name:      "masking exemption",
+			attribute: CELAttributeResourceTableName,
+			validate: func(expression string) (cel.Program, error) {
+				return ValidateMaskingExemptionCELExpr(&expr.Expr{Expression: expression})
+			},
+		},
+		{
+			name:      "database group",
+			attribute: CELAttributeResourceDatabaseName,
+			validate:  ValidateGroupCELExpr,
+		},
+	}
+	operators := []struct {
+		name       string
+		expression string
+		wantMatch  bool
+	}{
+		{"equals", `%s == "orders_archive"`, true},
+		{"not equals", `%s != "orders_archive"`, false},
+		{"in", `%s in ["orders_archive", "audit_log"]`, true},
+		{"not in", `!(%s in ["orders_archive", "audit_log"])`, false},
+		{"contains", `%s.contains("archive")`, true},
+		{"not contains", `!%s.contains("archive")`, false},
+		{"starts with", `%s.startsWith("orders_")`, true},
+		{"ends with", `%s.endsWith("_archive")`, true},
+		{"matches", `%s.matches("^orders_[a-z]+$")`, true},
+	}
+
+	for _, scenario := range scenarios {
+		t.Run(scenario.name, func(t *testing.T) {
+			t.Parallel()
+			for _, operator := range operators {
+				t.Run(operator.name, func(t *testing.T) {
+					t.Parallel()
+					program, err := scenario.validate(fmt.Sprintf(operator.expression, scenario.attribute))
+					require.NoError(t, err)
+					for _, input := range []struct {
+						value string
+						want  bool
+					}{
+						{"orders_archive", operator.wantMatch},
+						{"customers", !operator.wantMatch},
+					} {
+						result, _, err := program.Eval(map[string]any{scenario.attribute: input.value})
+						require.NoError(t, err, input.value)
+						require.Equal(t, input.want, result.Value(), input.value)
+					}
+				})
+			}
+		})
+	}
 }

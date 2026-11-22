@@ -1,0 +1,5 @@
+ XN Hash Join DS_BCAST_INNER  (cost=0.14..6600286.07 rows=8798 width=84)
+   Hash Cond: ("outer".catid = "inner".catid)
+   ->  XN Seq Scan on event  (cost=0.00..87.98 rows=8798 width=35)
+   ->  XN Hash  (cost=0.11..0.11 rows=11 width=49)
+         ->  XN Seq Scan on category  (cost=0.00..0.11 rows=11 width=49)

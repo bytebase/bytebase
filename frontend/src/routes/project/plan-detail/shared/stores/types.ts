@@ -7,6 +7,7 @@ import type {
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Placement } from "../../components/threads/placement/place";
+import type { AutomatedReviewer, FindingGroup } from "../../utils/planGates";
 
 export type PlanDetailPhase = "changes" | "review" | "deploy";
 
@@ -47,15 +48,17 @@ export type EditingSlice = {
 
 export type SelectionSlice = {
   routePhase: PlanDetailPhase | undefined;
-  selectedSpecId: string | undefined;
   selectedStageId: string | undefined;
   selectedTaskName: string | undefined;
   setRouteSelection: (selection: {
     phase?: PlanDetailPhase;
-    specId?: string;
     stageId?: string;
     taskName?: string;
   }) => void;
+  // The spec the Changes phase shows, which a URL without a spec still
+  // resolves to one. Undefined while the Changes phase is not rendered.
+  displayedSpecId: string | undefined;
+  setDisplayedSpecId: (specId: string | undefined) => void;
 };
 
 export type PollingSlice = {
@@ -68,17 +71,35 @@ export type PollingSlice = {
 };
 
 export interface ThreadFocusRequest {
-  // Root comment name of the thread to expand.
+  // Root comment name of the thread to locate.
   commentName: string;
-  // Spec the thread anchors to; the editor of this spec consumes the request.
+  // Spec whose statement editor consumes the request.
   specId: string;
+  // Current saved statement line to reveal when the spec is being edited.
+  lineNumber?: number;
   nonce: number;
+}
+
+// Narrows the statement editor's walker to one group of the review's
+// findings, as a click on a finding count asks for.
+export interface WalkerFilter {
+  group: FindingGroup;
 }
 
 export type ThreadFocusSlice = {
   threadFocus: ThreadFocusRequest | undefined;
   requestThreadFocus: (request: Omit<ThreadFocusRequest, "nonce">) => void;
   clearThreadFocus: (nonce: number) => void;
+  walkerFilter: WalkerFilter | undefined;
+  setWalkerFilter: (filter: WalkerFilter | undefined) => void;
+  // An automated review row to expand and scroll to, as Activity's "Show"
+  // asks for.
+  reviewRowRequest: { reviewer: AutomatedReviewer; nonce: number } | undefined;
+  requestReviewRow: (reviewer: AutomatedReviewer) => void;
+  // A thread's Activity card to scroll to; the timeline unfolds to show it.
+  activityFocus: { commentName: string; nonce: number } | undefined;
+  requestActivityFocus: (commentName: string) => void;
+  clearActivityFocus: (nonce: number) => void;
 };
 
 // Measurements of one placement run, kept so the decision to move the rule

@@ -57,6 +57,9 @@ func ClassifyMCPCeiling(settings *storepb.MCPSetting, err error) MCPCeilingVerdi
 	}
 }
 
+// MCPCeilingLocation is where an admin changes the ceiling; every refusal names it.
+const MCPCeilingLocation = "Integration > MCP > Access policy"
+
 // Refusal is what a door tells the caller it is refusing: what is wrong with
 // this workspace's ceiling, and what an admin does about it. Empty for
 // MCPCeilingServes, which refuses nothing.
@@ -74,13 +77,13 @@ func (v MCPCeilingVerdict) Refusal() string {
 	switch v {
 	case MCPCeilingDisabled:
 		return "a workspace admin has turned MCP access off for this workspace. " +
-			"Ask them to raise the MCP ceiling in the workspace settings"
+			"Ask them to raise the MCP ceiling under " + MCPCeilingLocation
 	case MCPCeilingUnserved:
 		return "this workspace's stored MCP capability ceiling is not one this build serves. " +
-			"Ask a workspace admin to set the MCP ceiling to a supported value in the workspace settings"
+			"Ask a workspace admin to set the MCP ceiling to a supported value under " + MCPCeilingLocation
 	case MCPCeilingUnavailable:
 		return "this workspace's MCP capability ceiling could not be read. " +
-			"Retry shortly; if it persists, ask a workspace admin to check the workspace settings"
+			"Retry shortly; if it persists, ask a workspace admin to check " + MCPCeilingLocation
 	default:
 		return ""
 	}

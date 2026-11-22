@@ -22,6 +22,8 @@ type restoreCase struct {
 	OriginalDatabase string
 	OriginalTable    string
 	Result           string
+	// Error is the refusal, when prior backup cannot restore the input.
+	Error string `yaml:",omitempty"`
 }
 
 func TestRestore(t *testing.T) {
@@ -68,11 +70,16 @@ func TestRestore(t *testing.T) {
 					Column: 0,
 				},
 			})
-			a.NoError(err)
+			errText := ""
+			if err != nil {
+				errText = err.Error()
+			}
 
 			if record {
 				tests[i].Result = result
+				tests[i].Error = errText
 			} else {
+				a.Equal(t.Error, errText, t.Input)
 				a.Equal(t.Result, result, t.Input)
 			}
 		}
@@ -80,34 +87,4 @@ func TestRestore(t *testing.T) {
 	if record {
 		yamltest.Record(t, filepath, tests)
 	}
-}
-
-func TestMariaDBGenerateRestoreSQLRegistration(t *testing.T) {
-	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
-
-	result, err := base.GenerateRestoreSQL(context.Background(), store.Engine_MARIADB, base.RestoreContext{
-		GetDatabaseMetadataFunc: getter,
-		ListDatabaseNamesFunc:   lister,
-		IsCaseSensitive:         false,
-	}, "DELETE FROM test WHERE b1 = 1;", &store.PriorBackupDetail_Item{
-		SourceTable: &store.PriorBackupDetail_Item_Table{
-			Database: "instances/i1/databases/db",
-			Table:    "test",
-		},
-		TargetTable: &store.PriorBackupDetail_Item_Table{
-			Database: "instances/i1/databases/bbarchive",
-			Table:    "prefix_test",
-		},
-		StartPosition: &store.Position{
-			Line:   0,
-			Column: 0,
-		},
-		EndPosition: &store.Position{
-			Line:   math.MaxInt32,
-			Column: 0,
-		},
-	})
-
-	require.NoError(t, err)
-	require.Equal(t, "/*\nOriginal SQL:\nDELETE FROM test WHERE b1 = 1;\n*/\nINSERT INTO `db`.`test` (`a`, `b`, `c`) SELECT `a`, `b`, `c` FROM `bbarchive`.`prefix_test`;", result)
 }

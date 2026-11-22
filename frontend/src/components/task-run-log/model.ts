@@ -1,19 +1,35 @@
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import type { LucideIcon } from "lucide-react";
 import { CheckCircle2, Circle, LoaderCircle, XCircle } from "lucide-react";
-import type { TaskRunLogEntry } from "@/types/proto-es/v1/rollout_service_pb";
+import type {
+  Task_ReleaseState,
+  TaskRunLogEntry,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  TaskRun_Status,
   TaskRunLogEntry_TransactionControl_Type,
   TaskRunLogEntry_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type {
+  Attempt,
+  AttemptGroup,
   DisplayItem,
   EntryGroup,
+  LogRow,
   ReleaseFileEntriesGroup,
   ReleaseFileGroup,
+  ReleaseSpine,
+  ReleaseSpineFile,
   Section,
   SectionStatus,
+  SpineFileSection,
+  SpineFileStatus,
+  SpineItem,
+  SpineLoadKey,
+  SpineLoads,
+  SpineStepSection,
+  SpineWindowItem,
 } from "./types";
 
 const STATUS_CONFIG: Record<
@@ -26,24 +42,33 @@ const STATUS_CONFIG: Record<
   pending: { icon: Circle, className: "text-control-placeholder" },
 };
 
+// Row keys for one run, from assignEntryKeys.
+export type EntryKeys = ReadonlyMap<TaskRunLogEntry, string>;
+
 export interface BuildSectionsOptions {
   getSectionLabel: (type: TaskRunLogEntry_Type) => string;
+  // Assigned over the run's whole entry list. The builders only ever see a
+  // filtered slice of it, so they cannot assign keys themselves.
+  entryKeys: EntryKeys;
   sheet?: Sheet;
   sheetsMap?: Map<string, Sheet>;
   idPrefix?: string;
   forceError?: boolean;
   fileVersion?: string;
   detailText?: TaskRunLogDetailText;
+  taskRunStatus?: TaskRun_Status;
 }
 
 export interface BuildReleaseFileGroupsOptions {
   getSectionLabel: (type: TaskRunLogEntry_Type) => string;
+  entryKeys: EntryKeys;
   sheet?: Sheet;
   sheetsMap?: Map<string, Sheet>;
   idPrefix?: string;
   forceError?: boolean;
   detailText?: TaskRunLogDetailText;
   includeOrphanGroup?: boolean;
+  taskRunStatus?: TaskRun_Status;
 }
 
 export interface TaskRunLogDetailText {
@@ -51,13 +76,45 @@ export interface TaskRunLogDetailText {
   backingUp?: string;
   runningByType?: Partial<Record<TaskRunLogEntry_Type, string>>;
   transactionError?: (typeLabel: string, error: string) => string;
-  retryAttempt?: (current: number, max: number) => string;
   backupCompleted?: (count: number) => string;
 }
+
+const prefixId = (idPrefix: string | undefined, id: string): string =>
+  idPrefix ? `${idPrefix}-${id}` : id;
 
 export const getTimestampMs = (timestamp?: Timestamp): number => {
   if (!timestamp) return 0;
   return Number(timestamp.seconds) * 1000 + timestamp.nanos / 1000000;
+};
+
+// A row's key is the entry's identity: replica, log time at full precision,
+// type, and an ordinal among the entries that tie on all three. task_run_log
+// has no primary key and rows may share a created_at, so time alone ties; the
+// API returns rows in append order, so a tie group's ordinals never shift.
+// Call this once with the run's complete entry list, before any filtering: an
+// ordinal counted over a slice restarts at zero and collides across slices.
+export const assignEntryKeys = (entries: TaskRunLogEntry[]): EntryKeys => {
+  const keys = new Map<TaskRunLogEntry, string>();
+  const tieCounts = new Map<string, number>();
+  for (const entry of entries) {
+    const seconds = entry.logTime?.seconds.toString() ?? "";
+    const nanos = entry.logTime?.nanos ?? 0;
+    const tieGroup = `${entry.replicaId}:${seconds}.${nanos}:${entry.type}`;
+    const ordinal = tieCounts.get(tieGroup) ?? 0;
+    tieCounts.set(tieGroup, ordinal + 1);
+    keys.set(entry, `${tieGroup}:${ordinal}`);
+  }
+  return keys;
+};
+
+const getEntryKey = (entryKeys: EntryKeys, entry: TaskRunLogEntry): string => {
+  const key = entryKeys.get(entry);
+  if (key === undefined) {
+    throw new Error(
+      "task-run log entry has no key; assignEntryKeys must cover every entry handed to a builder"
+    );
+  }
+  return key;
 };
 
 export const formatTime = (timestamp?: Timestamp): string => {
@@ -88,26 +145,29 @@ export const formatRelativeTime = (ms: number): string => {
   return `+${(ms / 1000).toFixed(2)}s`;
 };
 
-export const hasError = (entry: TaskRunLogEntry): boolean => {
+const errorTextOf = (entry: TaskRunLogEntry): string => {
   switch (entry.type) {
     case TaskRunLogEntry_Type.COMMAND_EXECUTE:
-      return Boolean(entry.commandExecute?.response?.error);
+      return entry.commandExecute?.response?.error ?? "";
     case TaskRunLogEntry_Type.TRANSACTION_CONTROL:
-      return Boolean(entry.transactionControl?.error);
+      return entry.transactionControl?.error ?? "";
     case TaskRunLogEntry_Type.SCHEMA_DUMP:
-      return Boolean(entry.schemaDump?.error);
+      return entry.schemaDump?.error ?? "";
     case TaskRunLogEntry_Type.DATABASE_SYNC:
-      return Boolean(entry.databaseSync?.error);
+      return entry.databaseSync?.error ?? "";
     case TaskRunLogEntry_Type.PRIOR_BACKUP:
-      return Boolean(entry.priorBackup?.error);
+      return entry.priorBackup?.error ?? "";
     case TaskRunLogEntry_Type.COMPUTE_DIFF:
-      return Boolean(entry.computeDiff?.error);
+      return entry.computeDiff?.error ?? "";
     case TaskRunLogEntry_Type.GHOST_MIGRATION:
-      return Boolean(entry.ghostMigration?.error);
+      return entry.ghostMigration?.error ?? "";
     default:
-      return false;
+      return "";
   }
 };
+
+export const hasError = (entry: TaskRunLogEntry): boolean =>
+  Boolean(errorTextOf(entry));
 
 export const isComplete = (entry: TaskRunLogEntry): boolean => {
   switch (entry.type) {
@@ -131,21 +191,21 @@ export const isComplete = (entry: TaskRunLogEntry): boolean => {
       return Boolean(
         entry.ghostMigration?.startTime && entry.ghostMigration?.endTime
       );
-    case TaskRunLogEntry_Type.TRANSACTION_CONTROL:
-    case TaskRunLogEntry_Type.RETRY_INFO:
-      return true;
     default:
       return true;
   }
 };
 
+const sortEntriesByTime = (entries: TaskRunLogEntry[]): TaskRunLogEntry[] =>
+  [...entries].sort(
+    (a, b) => getTimestampMs(a.logTime) - getTimestampMs(b.logTime)
+  );
+
 export const groupEntriesByType = (
   entries: TaskRunLogEntry[]
 ): EntryGroup[] => {
   if (entries.length === 0) return [];
-  const sorted = [...entries].sort(
-    (a, b) => getTimestampMs(a.logTime) - getTimestampMs(b.logTime)
-  );
+  const sorted = sortEntriesByTime(entries);
   const groups: EntryGroup[] = [];
   let current: EntryGroup | undefined;
 
@@ -171,18 +231,34 @@ export const hasReleaseFileMarkers = (entries: TaskRunLogEntry[]): boolean => {
   );
 };
 
+// Steps the executor logs outside the file loop (D3). A gh-ost migration and
+// a declarative release's diff computation are logged inside a file, so they
+// are not among them.
+const TASK_LEVEL_TYPES: ReadonlySet<TaskRunLogEntry_Type> = new Set([
+  TaskRunLogEntry_Type.PRIOR_BACKUP,
+  TaskRunLogEntry_Type.SCHEMA_DUMP,
+  TaskRunLogEntry_Type.DATABASE_SYNC,
+]);
+
+export const isTaskLevelEntry = (entry: TaskRunLogEntry): boolean =>
+  TASK_LEVEL_TYPES.has(entry.type);
+
+// A file group ends at the next file marker or at a task-level entry, which
+// starts a group of its own with no file.
 export const groupEntriesByReleaseFile = (
   entries: TaskRunLogEntry[]
 ): ReleaseFileEntriesGroup[] => {
   if (entries.length === 0) return [];
 
-  const sorted = [...entries].sort(
-    (a, b) => getTimestampMs(a.logTime) - getTimestampMs(b.logTime)
-  );
+  const sorted = sortEntriesByTime(entries);
   const groups: ReleaseFileEntriesGroup[] = [];
   let current: ReleaseFileEntriesGroup = { file: null, entries: [] };
 
   for (const entry of sorted) {
+    if (isTaskLevelEntry(entry) && current.file !== null) {
+      groups.push(current);
+      current = { file: null, entries: [] };
+    }
     if (entry.type === TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE) {
       if (current.file !== null || current.entries.length > 0) {
         groups.push(current);
@@ -211,9 +287,7 @@ export const groupEntriesByReleaseFile = (
 
 export const getUniqueReplicaIds = (entries: TaskRunLogEntry[]): string[] => {
   if (entries.length === 0) return [];
-  const sorted = [...entries].sort(
-    (a, b) => getTimestampMs(a.logTime) - getTimestampMs(b.logTime)
-  );
+  const sorted = sortEntriesByTime(entries);
   const replicaIds: string[] = [];
   const seen = new Set<string>();
 
@@ -298,31 +372,46 @@ const extractStatementFromRange = (
     }
   }
   if (!content) return undefined;
+  // A range reaching past the content means the sheet came back partial.
+  // subarray would clamp silently and pass a cut statement off as whole.
+  if (range.end > content.byteLength) return undefined;
   const subarray = content.subarray(range.start, range.end);
   return new TextDecoder().decode(subarray);
 };
+
+interface EntryDetail {
+  detail: string;
+  statement?: string;
+  error?: string;
+}
+
+// The one-line form of a statement. Clamping to the row's width is CSS's job:
+// only the row knows how much fits.
+const collapseStatement = (statement: string): string =>
+  statement.trim().replace(/\s+/g, " ");
 
 const getCommandExecuteDetail = (
   entry: TaskRunLogEntry,
   sheet: Sheet | undefined,
   sheetsMap: Map<string, Sheet> | undefined,
   fileVersion?: string
-): string => {
+): EntryDetail => {
   const command = entry.commandExecute;
-  if (!command) return "";
-  if (command.response?.error) return command.response.error;
+  if (!command) return { detail: "" };
 
-  const statement =
+  const recovered =
     command.statement ||
     (command.range
       ? extractStatementFromRange(command.range, sheet, sheetsMap, fileVersion)
       : undefined);
-  if (!statement) return "-";
+  const statement = recovered?.trim() ? recovered : undefined;
+  const error = command.response?.error || undefined;
 
-  const normalized = statement.trim().replace(/\s+/g, " ");
-  return normalized.length > 80
-    ? `${normalized.substring(0, 80)}...`
-    : normalized;
+  return {
+    detail: error ?? (statement ? collapseStatement(statement) : "-"),
+    statement,
+    error,
+  };
 };
 
 const getTransactionControlDetail = (
@@ -384,18 +473,6 @@ const getPriorBackupDetail = (
   return detailText?.backingUp ?? "";
 };
 
-const getRetryInfoDetail = (
-  entry: TaskRunLogEntry,
-  detailText: TaskRunLogDetailText | undefined
-): string => {
-  const retryInfo = entry.retryInfo;
-  if (!retryInfo) return "";
-  const attempt = detailText?.retryAttempt
-    ? detailText.retryAttempt(retryInfo.retryCount, retryInfo.maximumRetries)
-    : `${retryInfo.retryCount}/${retryInfo.maximumRetries}`;
-  return retryInfo.error ? `${attempt}: ${retryInfo.error}` : attempt;
-};
-
 const getReleaseFileExecuteDetail = (entry: TaskRunLogEntry): string => {
   const releaseFile = entry.releaseFileExecute;
   if (!releaseFile) return "";
@@ -404,19 +481,15 @@ const getReleaseFileExecuteDetail = (entry: TaskRunLogEntry): string => {
     : releaseFile.version;
 };
 
-const getEntryDetail = (
+// Entries that carry status words rather than a payload.
+const getStatusDetail = (
   entry: TaskRunLogEntry,
-  sheet: Sheet | undefined,
-  sheetsMap: Map<string, Sheet> | undefined,
-  detailText: TaskRunLogDetailText | undefined,
-  fileVersion?: string
+  detailText: TaskRunLogDetailText | undefined
 ): string => {
   const runningByType = detailText?.runningByType;
   const completed = detailText?.completed ?? "";
 
   switch (entry.type) {
-    case TaskRunLogEntry_Type.COMMAND_EXECUTE:
-      return getCommandExecuteDetail(entry, sheet, sheetsMap, fileVersion);
     case TaskRunLogEntry_Type.TRANSACTION_CONTROL:
       return getTransactionControlDetail(entry, detailText);
     case TaskRunLogEntry_Type.SCHEMA_DUMP:
@@ -433,8 +506,6 @@ const getEntryDetail = (
       );
     case TaskRunLogEntry_Type.PRIOR_BACKUP:
       return getPriorBackupDetail(entry, detailText);
-    case TaskRunLogEntry_Type.RETRY_INFO:
-      return getRetryInfoDetail(entry, detailText);
     case TaskRunLogEntry_Type.COMPUTE_DIFF:
       return getTimedEntryDetail(
         entry.computeDiff,
@@ -454,6 +525,19 @@ const getEntryDetail = (
   }
 };
 
+const getEntryDetail = (
+  entry: TaskRunLogEntry,
+  sheet: Sheet | undefined,
+  sheetsMap: Map<string, Sheet> | undefined,
+  detailText: TaskRunLogDetailText | undefined,
+  fileVersion?: string
+): EntryDetail => {
+  if (entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE) {
+    return getCommandExecuteDetail(entry, sheet, sheetsMap, fileVersion);
+  }
+  return { detail: getStatusDetail(entry, detailText) };
+};
+
 const getCommandDuration = (entry: TaskRunLogEntry): string | undefined => {
   if (entry.type !== TaskRunLogEntry_Type.COMMAND_EXECUTE) return undefined;
   const startMs = getTimestampMs(entry.commandExecute?.logTime);
@@ -464,28 +548,31 @@ const getCommandDuration = (entry: TaskRunLogEntry): string | undefined => {
 
 const buildDisplayItems = (
   entries: TaskRunLogEntry[],
-  groupIndex: number,
   startTime: number,
-  sheet: Sheet | undefined,
-  sheetsMap: Map<string, Sheet> | undefined,
-  idPrefix: string | undefined,
-  detailText: TaskRunLogDetailText | undefined,
-  fileVersion?: string
+  markedEntry: TaskRunLogEntry | undefined,
+  options: BuildSectionsOptions
 ): DisplayItem[] => {
-  return entries.map((entry, entryIndex) => {
+  return entries.map((entry) => {
     const entryTime = getTimestampMs(entry.logTime);
     const relativeMs = startTime > 0 ? entryTime - startTime : 0;
     const entryHasError = hasError(entry);
 
     return {
-      key: `${idPrefix ?? "section"}-${groupIndex}-${entryIndex}`,
+      key: getEntryKey(options.entryKeys, entry),
       time: formatTime(entry.logTime),
       timeMs: entry.logTime ? entryTime : undefined,
       relativeTime: relativeMs > 0 ? formatRelativeTime(relativeMs) : "",
       levelIndicator: entryHasError ? "\u2717" : "\u2713",
       levelClass: entryHasError ? "text-error" : "text-success",
-      detail: getEntryDetail(entry, sheet, sheetsMap, detailText, fileVersion),
+      ...getEntryDetail(
+        entry,
+        options.sheet,
+        options.sheetsMap,
+        options.detailText,
+        options.fileVersion
+      ),
       detailClass: entryHasError ? "text-error" : "text-control",
+      marked: entry === markedEntry || undefined,
       affectedRows:
         entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE
           ? Number(entry.commandExecute?.response?.affectedRows ?? 0) ||
@@ -496,91 +583,276 @@ const buildDisplayItems = (
   });
 };
 
+const commandFailed = (entry: TaskRunLogEntry): boolean =>
+  entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE && hasError(entry);
+
+const commandSucceeded = (entry: TaskRunLogEntry): boolean =>
+  entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE &&
+  isComplete(entry) &&
+  !hasError(entry);
+
+// The failure that explains the outcome of one execution context: the last
+// failed command, unless a later command succeeded or a retry marker follows
+// it. A lock timeout makes the driver re-run and re-log the whole command list,
+// and it writes the marker before each new attempt, so either one means the
+// failure was superseded. `sorted` must be the whole context, ungrouped:
+// grouping by type would leave every retried failure last in its own section.
+const pickMarkedEntry = (
+  sorted: TaskRunLogEntry[],
+  taskRunStatus: TaskRun_Status | undefined
+): TaskRunLogEntry | undefined => {
+  // Mitigation for a response the API drops (CockroachDB logs one per attempt
+  // and the converter keeps the first): a run that finished DONE has no
+  // failure to explain, whatever its entries claim.
+  if (taskRunStatus === TaskRun_Status.DONE) return undefined;
+
+  const lastFailedIndex = sorted.findLastIndex(commandFailed);
+  if (lastFailedIndex < 0) return undefined;
+  const superseded = sorted
+    .slice(lastFailedIndex + 1)
+    .some(
+      (entry) =>
+        entry.type === TaskRunLogEntry_Type.RETRY_INFO ||
+        commandSucceeded(entry)
+    );
+  return superseded ? undefined : sorted[lastFailedIndex];
+};
+
+// The span covered by a run of entries. `durationMs` is undefined when no entry
+// has a start or none has an end; an unanswered command's end is its start.
+const getEntriesTimeSpan = (
+  entries: TaskRunLogEntry[]
+): { startTime: number; durationMs: number | undefined } => {
+  const timeRanges = entries.map(getEntryTimeRange);
+  const startTimes = timeRanges
+    .map((range) => range.start)
+    .filter((time) => time > 0);
+  const endTimes = timeRanges
+    .map((range) => range.end)
+    .filter((time) => time > 0);
+  const startTime = startTimes.length > 0 ? Math.min(...startTimes) : 0;
+  const endTime = endTimes.length > 0 ? Math.max(...endTimes) : 0;
+  return {
+    startTime,
+    durationMs:
+      startTime > 0 && endTime > 0
+        ? Math.max(endTime - startTime, 0)
+        : undefined,
+  };
+};
+
+const formatOptionalDuration = (durationMs: number | undefined): string =>
+  durationMs === undefined ? "" : formatDuration(durationMs);
+
 const calculateSectionStatus = (entries: TaskRunLogEntry[]): SectionStatus => {
   if (entries.some(hasError)) return "error";
   if (entries.every(isComplete)) return "success";
   return "running";
 };
 
-export const buildSectionsFromEntries = (
+// Sections for one run of a context. `markedEntry` is the context's pick, which
+// a run cannot make on its own; `indexOffset` positions the run's first section
+// among its siblings.
+const buildSections = (
   entries: TaskRunLogEntry[],
-  options: BuildSectionsOptions
-): Section[] => {
-  if (entries.length === 0) return [];
-
-  return groupEntriesByType(entries).map((group, groupIndex) => {
+  options: BuildSectionsOptions,
+  markedEntry: TaskRunLogEntry | undefined,
+  indexOffset = 0
+): Section[] =>
+  groupEntriesByType(entries).map((group, index) => {
+    const groupIndex = indexOffset + index;
     let status = calculateSectionStatus(group.entries);
     if (options.forceError && status === "running") {
       status = "error";
     }
     const statusConfig = STATUS_CONFIG[status];
-
-    const timeRanges = group.entries.map(getEntryTimeRange);
-    const startTimes = timeRanges
-      .map((range) => range.start)
-      .filter((time) => time > 0);
-    const endTimes = timeRanges
-      .map((range) => range.end)
-      .filter((time) => time > 0);
-    const startTime = startTimes.length > 0 ? Math.min(...startTimes) : 0;
-    const endTime = endTimes.length > 0 ? Math.max(...endTimes) : 0;
-    const durationMs = endTime - startTime;
+    const { startTime, durationMs } = getEntriesTimeSpan(group.entries);
 
     return {
-      id: options.idPrefix
-        ? `${options.idPrefix}-section-${groupIndex}`
-        : `section-${groupIndex}`,
+      kind: "section",
+      id: prefixId(options.idPrefix, `section-${groupIndex}`),
       type: group.type,
       label: options.getSectionLabel(group.type),
       status,
       statusIcon: statusConfig.icon,
       statusClass: statusConfig.className,
-      duration:
-        startTime > 0 && endTime > 0
-          ? formatDuration(Math.max(durationMs, 0))
-          : "",
+      duration: formatOptionalDuration(durationMs),
       entryCount: group.entries.length,
-      items: buildDisplayItems(
-        group.entries,
-        groupIndex,
-        startTime,
-        options.sheet,
-        options.sheetsMap,
-        options.idPrefix,
-        options.detailText,
-        options.fileVersion
-      ),
+      items: buildDisplayItems(group.entries, startTime, markedEntry, options),
     };
   });
+
+// Only entries the driver writes inside `driver.Execute` are retried; the
+// executor emits every other type once, around that call.
+const ATTEMPT_MATERIAL_TYPES: ReadonlySet<TaskRunLogEntry_Type> = new Set([
+  TaskRunLogEntry_Type.TRANSACTION_CONTROL,
+  TaskRunLogEntry_Type.COMMAND_EXECUTE,
+  TaskRunLogEntry_Type.RETRY_INFO,
+]);
+
+const isAttemptMaterial = (entry: TaskRunLogEntry): boolean =>
+  ATTEMPT_MATERIAL_TYPES.has(entry.type);
+
+const isRetryMarker = (entry: TaskRunLogEntry): boolean =>
+  entry.type === TaskRunLogEntry_Type.RETRY_INFO;
+
+export const countRetryMarkers = (entries: TaskRunLogEntry[]): number =>
+  entries.filter(isRetryMarker).length;
+
+interface AttemptEntries {
+  entries: TaskRunLogEntry[];
+  marker: TaskRunLogEntry;
+}
+
+// Marker i closes attempt i; the entries after the last marker are the final
+// attempt, which may be empty while the retry has not logged anything yet.
+const cutAttempts = (
+  scope: TaskRunLogEntry[]
+): { attempts: AttemptEntries[]; final: TaskRunLogEntry[] } => {
+  const attempts: AttemptEntries[] = [];
+  let segment: TaskRunLogEntry[] = [];
+  for (const entry of scope) {
+    if (isRetryMarker(entry)) {
+      attempts.push({ entries: segment, marker: entry });
+      segment = [];
+      continue;
+    }
+    segment.push(entry);
+  }
+  return { attempts, final: segment };
+};
+
+// Maximal contiguous runs of attempt material and of one-time entries. Sections
+// group by type, and the two kinds are disjoint, so cutting at every run
+// boundary changes nothing for a run that never retried.
+const splitByAttemptMaterial = (
+  sorted: TaskRunLogEntry[]
+): TaskRunLogEntry[][] => {
+  const runs: TaskRunLogEntry[][] = [];
+  for (const entry of sorted) {
+    const run = runs.at(-1);
+    if (run && isAttemptMaterial(run[0]) === isAttemptMaterial(entry)) {
+      run.push(entry);
+    } else {
+      runs.push([entry]);
+    }
+  }
+  return runs;
+};
+
+// Leaf sections in render order: top-level sections and every attempt's
+// sections, superseded attempts included. Umbrella and attempt rows are
+// containers, not sections.
+export const collectLeafSections = (rows: LogRow[]): Section[] =>
+  rows.flatMap((row) =>
+    row.kind === "section"
+      ? [row]
+      : row.attempts.flatMap((attempt) => attempt.sections)
+  );
+
+// With one previous attempt the umbrella opens straight onto its sections, so
+// that attempt has no row of its own.
+export const soleAttemptOf = (group: AttemptGroup): Attempt | undefined =>
+  group.attempts.length === 1 ? group.attempts[0] : undefined;
+
+// Ids of the umbrella and attempt rows a reader can open.
+export const collectAttemptRowIds = (rows: LogRow[]): string[] =>
+  rows.flatMap((row) => {
+    if (row.kind !== "attempts") return [];
+    if (soleAttemptOf(row)) return [row.id];
+    return [row.id, ...row.attempts.map((attempt) => attempt.id)];
+  });
+
+export const buildRowsFromEntries = (
+  entries: TaskRunLogEntry[],
+  options: BuildSectionsOptions
+): LogRow[] => {
+  const sorted = sortEntriesByTime(entries);
+  // Picked before the cut: an attempt on its own has lost the marker that
+  // supersedes its failure.
+  const markedEntry = pickMarkedEntry(sorted, options.taskRunStatus);
+  const rows: LogRow[] = [];
+
+  for (const run of splitByAttemptMaterial(sorted)) {
+    // A retried execution scope is a run of attempt material holding a marker.
+    if (!run.some(isRetryMarker)) {
+      rows.push(...buildSections(run, options, markedEntry, rows.length));
+      continue;
+    }
+
+    const scope = cutAttempts(run);
+    const groupId = prefixId(options.idPrefix, `attempts-${rows.length}`);
+    let groupDurationMs: number | undefined;
+    const attempts: Attempt[] = scope.attempts.map(
+      ({ entries: attemptEntries, marker }, index) => {
+        const id = `${groupId}-attempt-${index + 1}`;
+        const { durationMs } = getEntriesTimeSpan(attemptEntries);
+        if (durationMs !== undefined) {
+          groupDurationMs = (groupDurationMs ?? 0) + durationMs;
+        }
+        return {
+          id,
+          number: index + 1,
+          reason: marker.retryInfo?.error ?? "",
+          duration: formatOptionalDuration(durationMs),
+          sections: buildSections(
+            attemptEntries,
+            { ...options, idPrefix: id },
+            markedEntry
+          ),
+        };
+      }
+    );
+    const finalSections = buildSections(
+      scope.final,
+      options,
+      markedEntry,
+      rows.length + 1
+    );
+    rows.push({
+      kind: "attempts",
+      id: groupId,
+      attempts,
+      duration: formatOptionalDuration(groupDurationMs),
+      retrying: finalSections.some((section) => section.status === "running"),
+    });
+    rows.push(...finalSections);
+  }
+
+  return rows;
 };
 
 export const buildReleaseFileGroups = (
   entries: TaskRunLogEntry[],
-  options?: BuildReleaseFileGroupsOptions
+  options: BuildReleaseFileGroupsOptions
 ): ReleaseFileGroup[] => {
   const buildOptions: BuildReleaseFileGroupsOptions = {
-    getSectionLabel: (type) => String(type),
     includeOrphanGroup: false,
     ...options,
   };
 
   const results: ReleaseFileGroup[] = [];
   let fileIndex = 0;
+  // Task-level steps before and after the file loop each make a group with no
+  // file, so each needs its own id.
+  let orphanIndex = 0;
 
   for (const group of groupEntriesByReleaseFile(entries)) {
     if (group.file === null) {
       if (!buildOptions.includeOrphanGroup || group.entries.length === 0) {
         continue;
       }
-      const orphanPrefix = buildOptions.idPrefix
-        ? `${buildOptions.idPrefix}-orphan`
-        : "orphan";
+      const orphanPrefix = prefixId(
+        buildOptions.idPrefix,
+        orphanIndex === 0 ? "orphan" : `orphan-${orphanIndex}`
+      );
+      orphanIndex++;
       results.push({
         id: orphanPrefix,
         version: "",
         filePath: "",
         isOrphan: true,
-        sections: buildSectionsFromEntries(group.entries, {
+        rows: buildRowsFromEntries(group.entries, {
           ...buildOptions,
           idPrefix: orphanPrefix,
         }),
@@ -592,15 +864,13 @@ export const buildReleaseFileGroups = (
       continue;
     }
 
-    const filePrefix = buildOptions.idPrefix
-      ? `${buildOptions.idPrefix}-file-${fileIndex}`
-      : `file-${fileIndex}`;
+    const filePrefix = prefixId(buildOptions.idPrefix, `file-${fileIndex}`);
     fileIndex++;
     results.push({
       id: filePrefix,
       version: group.file.version,
       filePath: group.file.filePath,
-      sections: buildSectionsFromEntries(group.entries, {
+      rows: buildRowsFromEntries(group.entries, {
         ...buildOptions,
         idPrefix: filePrefix,
         fileVersion: group.file.version,
@@ -609,4 +879,349 @@ export const buildReleaseFileGroups = (
   }
 
   return results;
+};
+
+// The executor's wrapper around a file's execution error
+// (runVersionedRelease in database_migrate_executor.go). The path stops at the
+// first version marker: the driver's message can quote SQL that contains one.
+const RELEASE_FILE_ERROR_RE =
+  /^failed to execute release file (.*?) \(version ([^)]*)\): ([\s\S]*)$/;
+
+export const parseReleaseFileError = (
+  error: string
+): { path: string; version: string; message: string } | undefined => {
+  const match = RELEASE_FILE_ERROR_RE.exec(error);
+  if (!match) return undefined;
+  return { path: match[1], version: match[2], message: match[3] };
+};
+
+export const firstLineOf = (text: string): string =>
+  text
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => line !== "") ?? "";
+
+// The versions a stored state will apply. Its ranges are positions in the
+// release's file list, which never changes.
+export const pendingVersionsOf = (
+  state: Task_ReleaseState | undefined,
+  files: readonly { version: string }[]
+): Set<string> => {
+  const versions = new Set<string>();
+  for (const range of state?.pendingRanges ?? []) {
+    for (let i = range.start; i < Math.min(range.end, files.length); i++) {
+      versions.add(files[i].version);
+    }
+  }
+  return versions;
+};
+
+export interface ReleaseSpineInput {
+  // The release's files in release order: ascending by version, the order the
+  // executor runs them.
+  files: ReleaseSpineFile[];
+  // The latest run's log; empty before the first run.
+  entries: TaskRunLogEntry[];
+  // The latest run; absent before the first run.
+  run?: { status: TaskRun_Status; error: string };
+  // The state stored on the task at rollout creation; absent for a task
+  // created before it existed, and on the revision page.
+  state?: Task_ReleaseState;
+  // The run follows an earlier run of the task, which may have applied files
+  // the stored state lists as pending.
+  rerun?: boolean;
+}
+
+const isEnded = (status: TaskRun_Status) =>
+  status !== TaskRun_Status.RUNNING &&
+  status !== TaskRun_Status.PENDING &&
+  status !== TaskRun_Status.AVAILABLE;
+
+// Before the first run the stored state is the only source. Once a run has
+// started, its log decides every version up to the newest file marker, since
+// the executor writes a marker before each file it runs and nothing for a
+// file it passes over; the stored state covers the versions above it. An
+// ended run lists only what ran (D3, D5).
+export const buildReleaseSpine = ({
+  files,
+  entries,
+  run,
+  state,
+  rerun = false,
+}: ReleaseSpineInput): ReleaseSpine => {
+  const pending = pendingVersionsOf(state, files);
+  const deleted = new Map(
+    (state?.deletedRevisions ?? []).map((d) => [d.version, d])
+  );
+  // A section exists only for a version the stored state lists as pending or
+  // the run reached; one it counted applied had a live revision then.
+  const deletedNote = (version: string) => {
+    const d = deleted.get(version);
+    if (d) return { time: d.deleteTime, deleter: d.deleter };
+    return state && !pending.has(version)
+      ? { deleter: "", afterRolloutCreation: true }
+      : undefined;
+  };
+  const fileSection = (
+    file: ReleaseSpineFile,
+    status: SpineFileSection["status"],
+    sectionEntries: TaskRunLogEntry[] = []
+  ): SpineFileSection => ({
+    kind: "file",
+    id: `file-${file.version}`,
+    version: file.version,
+    path: file.path,
+    status,
+    entries: sectionEntries,
+    revisionDeleted: deletedNote(file.version),
+  });
+  const foldOf = (applied: ReleaseSpineFile[]): SpineItem[] =>
+    applied.length > 0 ? [{ kind: "applied-earlier", files: applied }] : [];
+
+  if (!run) {
+    if (!state) return { items: [] };
+    return {
+      items: [
+        ...foldOf(files.filter((f) => !pending.has(f.version))),
+        ...files
+          .filter((f) => pending.has(f.version))
+          .map((f) => fileSection(f, "pending")),
+      ],
+    };
+  }
+
+  const fileIndex = new Map(files.map((f, i) => [f.version, i]));
+  const groups = groupEntriesByReleaseFile(entries);
+  const marked = groups.filter((g) => g.file !== null);
+  const newestMarked = marked.at(-1)?.file?.version;
+  const boundary =
+    newestMarked === undefined ? -1 : (fileIndex.get(newestMarked) ?? -1);
+  const markedVersions = new Set(marked.map((g) => g.file?.version));
+  // Before a rerun's first marker the stored state may list files the
+  // earlier run applied (D4).
+  const listed = rerun && marked.length === 0 ? undefined : state;
+  const ended = isEnded(run.status);
+  const failed = run.status === TaskRun_Status.FAILED;
+  const fileError = failed ? parseReleaseFileError(run.error) : undefined;
+
+  const applied: ReleaseSpineFile[] = [];
+  const willApply: SpineFileSection[] = [];
+  files.forEach((file, index) => {
+    if (markedVersions.has(file.version)) return;
+    if (index < boundary || run.status === TaskRun_Status.DONE) {
+      applied.push(file);
+      return;
+    }
+    if (!listed) return;
+    if (!pending.has(file.version)) {
+      applied.push(file);
+    } else if (!ended) {
+      willApply.push(fileSection(file, "pending"));
+    }
+  });
+
+  const runItems: SpineItem[] = [];
+  let errorOwned = !failed;
+  groups.forEach((group, index) => {
+    if (group.file === null) {
+      if (group.entries.length === 0) return;
+      const step: SpineStepSection = {
+        kind: "step",
+        id: `step-${index}`,
+        type: group.entries[0].type,
+        entries: group.entries,
+      };
+      // A step owns the run's error only when the error is its own; a
+      // non-fatal step error, such as the schema sync's, is not (D3).
+      const runError = run.error;
+      if (
+        failed &&
+        !fileError &&
+        group.entries.some((entry) => {
+          const text = errorTextOf(entry);
+          return text !== "" && runError.includes(text);
+        })
+      ) {
+        errorOwned = true;
+      }
+      runItems.push(step);
+      return;
+    }
+    const file: ReleaseSpineFile = {
+      version: group.file.version,
+      path:
+        group.file.filePath ||
+        files[fileIndex.get(group.file.version) ?? -1]?.path ||
+        "",
+    };
+    const isNewest =
+      group.file.version === newestMarked && group === marked.at(-1);
+    let status: SpineFileSection["status"] = "applied";
+    if (isNewest) {
+      if (!ended) status = "running";
+      else if (run.status === TaskRun_Status.CANCELED) status = "canceled";
+      else if (fileError && fileError.version === file.version) {
+        status = "failed";
+      } else if (failed && !run.error && group.entries.some(commandFailed)) {
+        // The run's error is unknown here (a caller passed none), but the
+        // file's own command failed.
+        status = "failed";
+        errorOwned = true;
+      }
+    }
+    const section = fileSection(file, status, group.entries);
+    if (status === "failed" && fileError) {
+      section.error = fileError.message;
+      section.noStatement = !group.entries.some(commandFailed);
+      errorOwned = true;
+    }
+    runItems.push(section);
+  });
+
+  const items: SpineItem[] = [...foldOf(applied), ...runItems, ...willApply];
+  if (!errorOwned && run.error) {
+    items.push({ kind: "run-failed", error: run.error });
+  }
+  return { items };
+};
+
+// The file sections a spine shows before its load rows.
+export const SPINE_SECTION_CAP = 20;
+// Rows one "Load N more" adds when a stretch is longer than it.
+export const SPINE_LOAD_STEP = 20;
+
+export const isSpineItemOpenByDefault = (item: SpineItem): boolean => {
+  switch (item.kind) {
+    case "run-failed":
+      return true;
+    case "step":
+      return item.entries.some(hasError);
+    case "file":
+      return (
+        item.status === "failed" ||
+        item.status === "running" ||
+        item.status === "canceled"
+      );
+    default:
+      return false;
+  }
+};
+
+const PINNED_STATUSES: ReadonlySet<SpineFileStatus> = new Set([
+  "running",
+  "failed",
+  "canceled",
+]);
+
+// The spine as drawn: the first `cap` file sections in version order, the
+// running, failed or canceled section wherever it falls, and each hidden
+// stretch as one load row named by what it holds. `loads` counts the rows the
+// reader loaded per stretch; a stretch holds one state, since a pinned section
+// separates the applied files from the pending ones.
+export const windowSpine = (
+  items: SpineItem[],
+  loads: SpineLoads,
+  cap = SPINE_SECTION_CAP
+): SpineWindowItem[] => {
+  const out: SpineWindowItem[] = [];
+  const shown = new Set<SpineLoadKey>();
+  let fileIndex = 0;
+  let stretch: SpineFileSection[] = [];
+
+  const show = (section: SpineFileSection) => {
+    out.push(section);
+    shown.add(section.status === "pending" ? "pending" : "applied");
+  };
+  const flush = () => {
+    if (stretch.length === 0) return;
+    const first = stretch[0].status;
+    const key: SpineLoadKey =
+      (first === "applied" || first === "pending") &&
+      stretch.every((section) => section.status === first)
+        ? first
+        : "files";
+    const revealed = Math.min(loads[key] ?? 0, stretch.length);
+    for (const section of stretch.slice(0, revealed)) show(section);
+    const count = stretch.length - revealed;
+    if (count > 0) {
+      out.push({
+        kind: "load",
+        key,
+        count,
+        more: key === "files" ? shown.size > 0 : shown.has(key),
+      });
+    }
+    stretch = [];
+  };
+
+  for (const item of items) {
+    if (item.kind === "file") {
+      if (fileIndex < cap || PINNED_STATUSES.has(item.status)) {
+        flush();
+        show(item);
+      } else {
+        stretch.push(item);
+      }
+      fileIndex++;
+      continue;
+    }
+    flush();
+    out.push(item);
+  }
+  flush();
+  return out;
+};
+
+export interface SpineCounts {
+  files: number;
+  applied: number;
+  running: number;
+  failed: number;
+  canceled: number;
+  pending: number;
+  appliedEarlier: number;
+}
+
+// The count line's numbers: every file section by state, and the files
+// applied before this rollout.
+export const countSpine = (
+  items: SpineItem[],
+  totalFiles: number
+): SpineCounts => {
+  const counts: SpineCounts = {
+    files: totalFiles,
+    applied: 0,
+    running: 0,
+    failed: 0,
+    canceled: 0,
+    pending: 0,
+    appliedEarlier: 0,
+  };
+  for (const item of items) {
+    if (item.kind === "applied-earlier") {
+      counts.appliedEarlier += item.files.length;
+    } else if (item.kind === "file") {
+      counts[item.status]++;
+    }
+  }
+  return counts;
+};
+
+// The span from the first entry's start to the last entry's end.
+export const formatEntriesDuration = (entries: TaskRunLogEntry[]): string =>
+  formatOptionalDuration(getEntriesTimeSpan(entries).durationMs);
+
+// The failed command of a file section, for the viewer's diagnostic.
+export const findFailedCommand = (
+  entries: TaskRunLogEntry[]
+): { error: string; range?: { start: number; end: number } } | undefined => {
+  const failedEntry = [...entries].reverse().find(commandFailed);
+  const command = failedEntry?.commandExecute;
+  if (!command) return undefined;
+  return {
+    error: command.response?.error ?? "",
+    range: command.range
+      ? { start: command.range.start, end: command.range.end }
+      : undefined,
+  };
 };

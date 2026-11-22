@@ -57,6 +57,7 @@ vi.mock("@/modules/sql-editor/store/editor", () => ({
 
 vi.mock("@/utils", () => ({
   getInstanceResource: mocks.getInstanceResource,
+  keyboardShortcutStr: (shortcut: string) => shortcut,
   readableDataSourceType: mocks.readableDataSourceType,
 }));
 
@@ -272,6 +273,49 @@ describe("QueryContextSettingPopover", () => {
     const redisRadios = getRedisRadios(content);
     expect(redisRadios.length).toBe(2);
     unmount();
+  });
+
+  test("offers Explain with its shortcut when given one, and runs it", () => {
+    const onExplain = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <QueryContextSettingPopover onExplain={onExplain} />
+    );
+    render();
+    const explain = Array.from(container.querySelectorAll("button")).find(
+      (el) => el.textContent?.startsWith("sql-editor.explain")
+    );
+    expect(explain?.textContent).toContain("cmd_or_ctrl+E");
+
+    act(() => explain?.click());
+    expect(onExplain).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  test("leaves Explain out when not given one, and disables it on request", () => {
+    const explainButtons = (element: ReactElement) => {
+      const { container, render, unmount } = renderIntoContainer(element);
+      render();
+      const buttons = Array.from(container.querySelectorAll("button")).filter(
+        (el) => el.textContent?.startsWith("sql-editor.explain")
+      );
+      const disabled = buttons.map((el) => el.disabled);
+      unmount();
+      return disabled;
+    };
+    expect(explainButtons(<QueryContextSettingPopover />)).toEqual([]);
+    expect(
+      explainButtons(
+        <QueryContextSettingPopover onExplain={vi.fn()} explainDisabled />
+      )
+    ).toEqual([true]);
+    expect(
+      explainButtons(
+        <QueryContextSettingPopover
+          onExplain={vi.fn()}
+          explainDisabledReason="needs bb.sql.explain"
+        />
+      )
+    ).toEqual([true]);
   });
 
   test("MaxRowCountSelect renders inside popover content", () => {

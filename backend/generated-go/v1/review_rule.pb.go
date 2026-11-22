@@ -33,7 +33,8 @@ type ReviewRuleType int32
 
 const (
 	ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED ReviewRuleType = 0
-	// P0: the statements do not parse for the target engine.
+	// P0: the statements do not parse for the target engine. It gates the
+	// other rules (see ReviewRulePolicy).
 	ReviewRuleType_SYNTAX ReviewRuleType = 1
 	// P0: applying the statements to the synced schema fails: a missing
 	// table or column, a duplicate object, or an invalid reference.
@@ -47,13 +48,15 @@ const (
 	ReviewRuleType_REQUIRE_IS_NULL ReviewRuleType = 5
 	// P1: UPDATE or DELETE without WHERE.
 	ReviewRuleType_REQUIRE_WHERE ReviewRuleType = 6
-	// P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE.
+	// P1: dropping any object, such as a table, column, view, index, sequence,
+	// schema, database, or function. Dropping a constraint is
+	// DISALLOW_DROP_CONSTRAINT.
 	ReviewRuleType_DISALLOW_DROP_OBJECT ReviewRuleType = 7
 	// P1: TRUNCATE.
 	ReviewRuleType_DISALLOW_TRUNCATE ReviewRuleType = 8
 	// P1: dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint.
 	ReviewRuleType_DISALLOW_DROP_CONSTRAINT ReviewRuleType = 9
-	// P1: renaming a table or column.
+	// P1: renaming a table, foreign table, view, materialized view, or column.
 	ReviewRuleType_DISALLOW_RENAME ReviewRuleType = 10
 	// P1: the change creates a table without a primary key, or drops a
 	// primary key without adding one back. A table that already lacked a

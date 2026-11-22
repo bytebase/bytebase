@@ -34,8 +34,7 @@ func TestQuerySpanExtractor_ExplainUnwrap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			extractor := newQuerySpanExtractor("test", base.GetQuerySpanContext{}, false)
-			span, err := extractor.getQuerySpan(context.Background(), tt.sql)
+			span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: tt.sql}, "test", "", false)
 			require.NoError(t, err)
 
 			var got []base.ColumnResource

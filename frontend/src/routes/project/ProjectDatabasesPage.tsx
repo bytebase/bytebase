@@ -52,6 +52,7 @@ import {
   useProductIntro,
 } from "@/lib/productIntro";
 import { normalizeInstanceName } from "@/lib/resourceName";
+import { leadsWithQuery } from "@/modules/workspace-setup-guide/scenarios";
 import { readSelectedGuideScenarioId } from "@/modules/workspace-setup-guide/selection";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -141,6 +142,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     availableInstanceCount === undefined
       ? undefined
       : availableInstanceCount > 0;
+  const createDatabaseRequested = currentRoute.query.createDatabase === "1";
   const [syncingRefreshExhausted, setSyncingRefreshExhausted] = useState(false);
   const autoRefreshCountRef = useRef(0);
 
@@ -359,6 +361,17 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     };
   }, [canListProjectInstances, isDefault, projectName]);
 
+  useEffect(() => {
+    if (
+      createDatabaseRequested &&
+      hasAvailableInstance &&
+      hasProjectPermission("bb.instances.list") &&
+      PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every(hasProjectPermission)
+    ) {
+      setShowCreateDrawer(true);
+    }
+  }, [createDatabaseRequested, hasAvailableInstance, hasProjectPermission]);
+
   // Batch operation handlers
   const handleSyncSchema = useCallback(async () => {
     if (syncing) return;
@@ -566,7 +579,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
           showSqlEditor: false,
           showMarkSensitiveData: false,
         }
-      : selectedGuideScenarioId === "query-data"
+      : leadsWithQuery(selectedGuideScenarioId)
         ? {
             title: t("db.project-instance-synced-query-data-title"),
             description: t("db.project-instance-synced-query-data-description"),

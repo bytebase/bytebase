@@ -11,12 +11,14 @@ import {
   Plan_SpecSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { type Sheet, SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
+import { SHEET_PREVIEW_CHARACTER_LIMIT } from "@/utils/v1/sheet";
 import { PLACEMENT_BUDGETS } from "../../components/threads/placement/budgets";
 import {
   current,
   diffPair,
   tokenizeSheet,
   UNAVAILABLE,
+  UNAVAILABLE_SIZE_LIMIT,
 } from "../../components/threads/placement/place";
 import {
   type PlacementClient,
@@ -420,6 +422,58 @@ describe("placementSlice", () => {
     expect(request.generation).toBe(1);
   });
 
+  test("compares multibyte sheets within the API character limit", async () => {
+    const sheets = fakeSheets({
+      [sheetName(SHA_OLD)]: "表表表",
+      [sheetName(SHA_NEW)]: "表表表",
+      [sheetName(SHA_NEWER)]: "表表表表",
+    });
+    for (const name of [
+      sheetName(SHA_OLD),
+      sheetName(SHA_NEW),
+      sheetName(SHA_NEWER),
+    ]) {
+      sheets.prime(name, true);
+    }
+    const { store } = setup({
+      sheets,
+      budgets: {
+        ...PLACEMENT_BUDGETS,
+        maxBytesPerSheet: 12,
+        maxTotalBytes: 24,
+      },
+    });
+    const comments = [comment("multibyte", anchor(SHA_OLD, 1))];
+    await compute(store, comments);
+    expect(store.getState().placements.get(nameOf("multibyte"))).toEqual(
+      current(1, 1)
+    );
+
+    await compute(store, comments, SHA_NEWER);
+    expect(store.getState().placements.get(nameOf("multibyte"))).toEqual({
+      state: "OUTDATED",
+    });
+  });
+
+  test("skips the raw fetch when the preview reaches the API cutoff", async () => {
+    const sheets = fakeSheets(
+      {
+        [sheetName(SHA_OLD)]: "a".repeat(SHEET_PREVIEW_CHARACTER_LIMIT + 1),
+        [sheetName(SHA_NEW)]: NEW_TEXT,
+      },
+      SHEET_PREVIEW_CHARACTER_LIMIT
+    );
+    sheets.prime(sheetName(SHA_NEW), true);
+    const { store, client } = setup({ sheets });
+    await compute(store, [comment("large", anchor(SHA_OLD, 1))]);
+
+    expect(sheets.calls).toEqual([{ name: sheetName(SHA_OLD), raw: false }]);
+    expect(store.getState().placements.get(nameOf("large"))).toEqual(
+      UNAVAILABLE_SIZE_LIMIT
+    );
+    expect((client as ReturnType<typeof immediateClient>).requests).toEqual([]);
+  });
+
   test("bounds the size probe by the sheet cap", async () => {
     const contents: Record<string, string> = {
       [sheetName(SHA_NEW)]: NEW_TEXT,
@@ -509,7 +563,9 @@ test("caches a definitive UNAVAILABLE so the pair is not diffed again", async ()
     specs: specs(SHA_NEW),
   };
   await store.getState().computePlacements(input);
-  expect(store.getState().placements.get(nameOf("moved"))).toEqual(UNAVAILABLE);
+  expect(store.getState().placements.get(nameOf("moved"))).toEqual(
+    UNAVAILABLE_SIZE_LIMIT
+  );
   await store.getState().computePlacements(input);
   const requests = (client as ReturnType<typeof immediateClient>).requests;
   expect(requests).toHaveLength(1);

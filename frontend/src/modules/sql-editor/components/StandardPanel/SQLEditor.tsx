@@ -1,6 +1,7 @@
 import type { IRange } from "monaco-editor";
 import * as monaco from "monaco-editor";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { v1 as uuidv1 } from "uuid";
 import { MonacoEditor } from "@/components/monaco/MonacoEditor";
 import type {
@@ -31,6 +32,7 @@ import {
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { languageOfEngineV1 } from "@/types/sqlEditor/editor";
 import { instanceV1AllowsExplain, nextAnimationFrame } from "@/utils";
+import { explainQueryOption } from "@/utils/queryPlanEngines";
 import { useAIActions } from "../Panels/common/useAIActions";
 import { monacoThemeName } from "../theme/derive";
 import { useActiveSQLEditorTheme } from "../theme/useActiveSQLEditorTheme";
@@ -63,6 +65,7 @@ interface SQLEditorProps {
  * imperatively focus the editor.
  */
 export function SQLEditor({ onExecute }: SQLEditorProps) {
+  const { t } = useTranslation();
   const { isReadOnly: readonly } = useSavedQueryAndTab();
   const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
   const setPendingInsertAtCaret = useSQLEditorStore(
@@ -196,11 +199,13 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
       const tab = tabsState.tabsById.get(tabsState.currentTabId);
       if (!tab) return;
       const statement = getActiveStatement();
+      const engine = engineRef.current ?? Engine.MYSQL;
       const params: SQLEditorQueryParams = {
         connection: { ...tab.connection },
         statement,
-        engine: engineRef.current ?? Engine.MYSQL,
+        engine,
         explain,
+        ...(explain ? { queryOption: explainQueryOption(engine) } : {}),
         selection: newTab ? null : tab.editorState.selection,
       };
       onExecuteRef.current(params, newTab);
@@ -291,7 +296,7 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
     const isBigQuery = engine === Engine.BIGQUERY;
     const action = editorState.addAction({
       id: "ExplainQuery",
-      label: isBigQuery ? "Dry Run Query" : "Explain Query",
+      label: isBigQuery ? t("sql-editor.dry-run") : t("sql-editor.explain"),
       keybindings: [monacoState.KeyMod.CtrlCmd | monacoState.KeyCode.KeyE],
       contextMenuGroupId: "operation",
       contextMenuOrder: 0,
@@ -300,7 +305,7 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
     return () => {
       action.dispose();
     };
-  }, [engine, runQueryAction, editorState, monacoState]);
+  }, [engine, runQueryAction, editorState, monacoState, t]);
 
   // ----- pendingInsertAtCaret -----
   const pendingInsertAtCaret = useSQLEditorStore((s) => s.pendingInsertAtCaret);

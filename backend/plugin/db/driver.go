@@ -3,7 +3,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"log/slog"
@@ -27,60 +26,12 @@ type InstanceMetadata struct {
 	Metadata  *storepb.Instance
 }
 
-// TableKey is the map key for table metadata.
-type TableKey struct {
-	Schema string
-	Table  string
-}
-
-type TableKeyWithColumns struct {
-	Schema  string
-	Table   string
-	Columns []*metadatapb.ColumnMetadata
-}
-
-// ColumnKey is the map key for table metadata.
-type ColumnKey struct {
-	Schema string
-	Table  string
-	Column string
-}
-
-// IndexKey is the map key for table metadata.
-type IndexKey struct {
-	Schema string
-	Table  string
-	Index  string
-}
-
-type ConstraintKey struct {
-	Schema     string
-	Constraint string
-}
-
-type SequenceKey struct {
-	Schema   string
-	Sequence string
-}
-
 var (
 	driversMu sync.RWMutex
 	drivers   = make(map[storepb.Engine]driverFunc)
 )
 
 type driverFunc func() Driver
-
-// MigrationStatus is the status of migration.
-type MigrationStatus string
-
-const (
-	// Pending is the migration status for PENDING.
-	Pending MigrationStatus = "PENDING"
-	// Done is the migration status for DONE.
-	Done MigrationStatus = "DONE"
-	// Failed is the migration status for FAILED.
-	Failed MigrationStatus = "FAILED"
-)
 
 // ConnectionConfig is the configuration for connections.
 type ConnectionConfig struct {
@@ -95,6 +46,7 @@ type ConnectionContext struct {
 	EnvironmentID string
 	InstanceID    string
 	EngineVersion string
+	Vendor        storepb.Vendor
 	// TenantMode indicates whether to use database owner role for PostgreSQL tenant mode.
 	TenantMode   bool
 	DatabaseName string
@@ -152,11 +104,10 @@ type Driver interface {
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
-	GetDB() *sql.DB
 	// Execute will execute the statement.
 	Execute(ctx context.Context, statement string, opts ExecuteOptions) (int64, error)
 	// Used for execute readonly SELECT statement
-	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext QueryContext) ([]*v1pb.QueryResult, error)
+	QueryConn(ctx context.Context, statement string, queryContext QueryContext) ([]*v1pb.QueryResult, error)
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.
@@ -265,34 +216,6 @@ func (o *ExecuteOptions) LogDatabaseSyncEnd(e string) {
 	})
 	if err != nil {
 		slog.Warn("failed to log database sync start", log.BBError(err))
-	}
-}
-
-func (o *ExecuteOptions) LogSchemaDumpStart() {
-	if o == nil || o.CreateTaskRunLog == nil {
-		return
-	}
-	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
-		Type:            storepb.TaskRunLog_SCHEMA_DUMP_START,
-		SchemaDumpStart: &storepb.TaskRunLog_SchemaDumpStart{},
-	})
-	if err != nil {
-		slog.Warn("failed to log schema dump start", log.BBError(err))
-	}
-}
-
-func (o *ExecuteOptions) LogSchemaDumpEnd(derr string) {
-	if o == nil || o.CreateTaskRunLog == nil {
-		return
-	}
-	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
-		Type: storepb.TaskRunLog_SCHEMA_DUMP_END,
-		SchemaDumpEnd: &storepb.TaskRunLog_SchemaDumpEnd{
-			Error: derr,
-		},
-	})
-	if err != nil {
-		slog.Warn("failed to log schema dump end", log.BBError(err))
 	}
 }
 

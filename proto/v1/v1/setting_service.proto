@@ -30,14 +30,13 @@ service SettingService {
   }
 
   // Retrieves a workspace setting by name.
-  // Permissions required: bb.settings.get
+  // Permissions required: bb.settings.getEnvironment for settings/ENVIRONMENT, bb.settings.getWorkspaceProfile for settings/WORKSPACE_PROFILE, bb.settings.get for the others
   rpc GetSetting(GetSettingRequest) returns (Setting) {
     option (google.api.http) = {get: "/v1/{name=settings/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.settings.get";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Updates a workspace setting.
@@ -50,8 +49,7 @@ service SettingService {
     option (bytebase.v1.permission) = "bb.settings.set";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_denial_reason) = REWRITES_SESSION_BOUNDARY;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Sends a test email using the provided config (without persisting).
@@ -121,6 +119,7 @@ message Setting {
     ENVIRONMENT = 7;
     EMAIL = 8;
     MCP = 9;
+    EXPORT = 10;
   }
 
   // The resource name of the setting.
@@ -144,7 +143,34 @@ message SettingValue {
     EnvironmentSetting environment = 7;
     EmailSetting email = 8;
     MCPSetting mcp = 9;
+    ExportSetting export = 10;
   }
+}
+
+// ExportSetting holds each export destination provider's credentials.
+message ExportSetting {
+  // Unset when SharePoint is not configured.
+  SharePointSetting sharepoint = 1;
+}
+
+// SharePointSetting is the Microsoft Entra application that uploads exports to
+// SharePoint. It is granted access per library by the customer's SharePoint
+// administrators.
+message SharePointSetting {
+  // The Microsoft Entra tenant (directory) ID.
+  string tenant_id = 1;
+
+  // The application (client) ID.
+  string client_id = 2;
+
+  // The client secret. It is never returned.
+  string client_secret = 3 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
+
+  // Whether a client secret is stored.
+  bool client_secret_set = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message AppIMSetting {
@@ -263,19 +289,19 @@ message WorkspaceProfileSetting {
   reserved 16;
 
   message PasswordRestriction {
-    // min_length is the minimum length for password, should no less than 8.
+    // min_length is the minimum password length. It must be at least 8.
     int32 min_length = 1;
-    // require_number requires the password must contains at least one number.
+    // require_number requires the password to contain at least one number.
     bool require_number = 2;
-    // require_letter requires the password must contains at least one letter, regardless of upper case or lower case
+    // require_letter requires the password to contain at least one letter, either uppercase or lowercase.
     bool require_letter = 3;
-    // require_uppercase_letter requires the password must contains at least one upper case letter.
+    // require_uppercase_letter requires the password to contain at least one uppercase letter.
     bool require_uppercase_letter = 4;
-    // require_special_character requires the password must contains at least one special character.
+    // require_special_character requires the password to contain at least one special character.
     bool require_special_character = 5;
-    // require_reset_password_for_first_login requires users to reset their password after the 1st login.
+    // require_reset_password_for_first_login requires users to change their password after their first login.
     bool require_reset_password_for_first_login = 6;
-    // password_rotation requires users to reset their password after the duration.
+    // password_rotation requires users to change their password after the duration.
     google.protobuf.Duration password_rotation = 7;
   }
 
@@ -547,6 +573,11 @@ message AISetting {
   string api_key = 4 [(bytebase.v1.audit_behavior) = SENSITIVE];
   string model = 5;
   string version = 6;
+  // Whether the AI SQL review may run. It is off by default and is a consent
+  // of its own beside `enabled`: a review sends the statements of a change to
+  // the provider, and can send the schema of its target databases and their
+  // table statistics.
+  bool sql_review_enabled = 7;
 }
 
 message EnvironmentSetting {

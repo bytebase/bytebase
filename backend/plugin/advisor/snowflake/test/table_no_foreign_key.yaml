@@ -102,3 +102,68 @@
         line: 13
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE CUSTOMER (ID INT FOREIGN KEY REFERENCES PERSON(ID));
+    ALTER TABLE CUSTOMER DROP FOREIGN KEY (ID);
+- statement: |-
+    CREATE TABLE CUSTOMER (ID INT FOREIGN KEY REFERENCES PERSON(ID));
+    ALTER TABLE CUSTOMER DROP CONSTRAINT FK_PERSON;
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: FOREIGN KEY is not allowed in the table CUSTOMER.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE CUSTOMER (ID INT);
+    ALTER TABLE CUSTOMER DROP FOREIGN KEY (ID);
+    ALTER TABLE CUSTOMER ADD FOREIGN KEY (ID) REFERENCES PERSON(ID);
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: FOREIGN KEY is not allowed in the table CUSTOMER.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE CUSTOMER (ID INT FOREIGN KEY REFERENCES PERSON(ID));
+    ALTER TABLE public.customer RENAME CONSTRAINT FK_PERSON TO FK_PERSON2;
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: FOREIGN KEY is not allowed in the table public.customer.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE CUSTOMER LIKE PERSON;
+- statement: |-
+    CREATE TABLE CUSTOMER (ID INT);
+    ALTER TABLE CUSTOMER ADD COLUMN PERSON_ID INT FOREIGN KEY REFERENCES PERSON(ID);
+- statement: |-
+    CREATE TABLE CUSTOMER (ID INT FOREIGN KEY REFERENCES PERSON(ID));
+    CREATE TABLE ORDERING (ID INT);
+    ALTER TABLE ORDERING ADD FOREIGN KEY (ID) REFERENCES CUSTOMER(ID);
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: FOREIGN KEY is not allowed in the table CUSTOMER.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: FOREIGN KEY is not allowed in the table ORDERING.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

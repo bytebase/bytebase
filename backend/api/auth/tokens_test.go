@@ -6,6 +6,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
 const (
@@ -71,4 +73,39 @@ func TestExtractClaimsFromExpiredTokenTokenUse(t *testing.T) {
 	webClaims, err := ExtractClaimsFromExpiredToken(webToken, testSecret)
 	require.NoError(t, err)
 	require.Empty(t, webClaims.TokenUse)
+}
+
+func TestWorkloadIdentityTokenCarriesActorClaim(t *testing.T) {
+	parse := func(t *testing.T, tokenStr string) jwt.MapClaims {
+		t.Helper()
+		claims := jwt.MapClaims{}
+		_, err := jwt.ParseWithClaims(tokenStr, claims, func(_ *jwt.Token) (any, error) {
+			return []byte(testSecret), nil
+		})
+		require.NoError(t, err)
+		return claims
+	}
+
+	federated := common.FederatedIdentity{
+		Issuer:  "https://token.actions.githubusercontent.com",
+		Subject: "repo:my-org/app:ref:refs/heads/main",
+	}
+	tokenStr, err := GenerateWorkloadIdentityToken("ci@workload.bytebase.com", "ws-test", federated, testSecret)
+	require.NoError(t, err)
+	claims := parse(t, tokenStr)
+	require.Equal(t, map[string]any{"iss": federated.Issuer, "sub": federated.Subject}, claims["act"])
+	require.Equal(t, "ci@workload.bytebase.com", claims["sub"])
+	require.Equal(t, "ws-test", claims["workspace_id"])
+	require.Equal(t, []any{AccessTokenAudience}, claims["aud"])
+
+	parsed := &claimsMessage{}
+	_, err = jwt.ParseWithClaims(tokenStr, parsed, func(_ *jwt.Token) (any, error) {
+		return []byte(testSecret), nil
+	})
+	require.NoError(t, err)
+	require.Equal(t, &federated, parsed.federatedIdentity())
+
+	tokenStr, err = GenerateAPIToken("ci@service.bytebase.com", "ws-test", testSecret)
+	require.NoError(t, err)
+	require.NotContains(t, parse(t, tokenStr), "act")
 }

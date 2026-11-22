@@ -158,6 +158,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "c",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 				{
 					Name: "t2",
@@ -172,6 +174,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "c",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 				{
 					Name: "test",
@@ -216,6 +220,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "c",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 				{
 					Name: "t3",
@@ -230,6 +236,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "d",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 			},
 		},
@@ -281,7 +289,7 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.Len(result, 1)
 	a.Equal(
 		"CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;\n"+
-			"INSERT INTO `backupDB`.`_rollback_0_test` SELECT `test`.* FROM test, (SELECT id FROM test2) AS x WHERE test.id = x.id;",
+			"INSERT INTO `backupDB`.`_rollback_0_test` (`a`,`b`,`c`) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, (SELECT id FROM test2) AS x WHERE test.id = x.id;",
 		result[0].Statement,
 	)
 
@@ -292,15 +300,15 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.Len(result, 1)
 	a.Equal(
 		"CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;\n"+
-			"INSERT INTO `backupDB`.`_rollback_0_test` WITH x AS (SELECT id FROM test2) SELECT `test`.* FROM test JOIN x ON test.id = x.id;",
+			"INSERT INTO `backupDB`.`_rollback_0_test` (`a`,`b`,`c`) WITH x AS (SELECT id FROM test2) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test JOIN x ON test.id = x.id;",
 		result[0].Statement,
 	)
 	// The generated backup must be valid SQL (the CTE is defined before use).
-	_, perr := ParseTiDBOmni(result[0].Statement)
+	_, perr := ParseTiDB(result[0].Statement)
 	a.NoError(perr, "generated CTE backup must re-parse as valid SQL")
 
-	// More than maxMixedDMLCount same-table statements use the UNION ALL path,
-	// which cannot emit a per-arm WITH (TiDB rejects WITH after UNION ALL). A CTE
+	// More than maxMixedDMLCount same-table statements use the UNION path,
+	// which cannot emit a per-arm WITH (TiDB rejects WITH after UNION). A CTE
 	// in that batch must be rejected rather than produce invalid SQL.
 	manyWithCTE := "DELETE FROM test WHERE id = 1;\n" +
 		"DELETE FROM test WHERE id = 2;\n" +
@@ -363,7 +371,7 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.Len(result, 2)
 	a.ElementsMatch([]string{"test", "test2"}, []string{result[0].SourceTableName, result[1].SourceTableName})
 	for _, r := range result {
-		_, perr := ParseTiDBOmni(r.Statement)
+		_, perr := ParseTiDB(r.Statement)
 		a.NoError(perr, "generated multi-target backup must re-parse as valid SQL")
 	}
 
@@ -372,7 +380,7 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.Len(result, 2)
 	a.ElementsMatch([]string{"test", "test2"}, []string{result[0].SourceTableName, result[1].SourceTableName})
 	for _, r := range result {
-		_, perr := ParseTiDBOmni(r.Statement)
+		_, perr := ParseTiDB(r.Statement)
 		a.NoError(perr, "generated multi-target backup must re-parse as valid SQL")
 	}
 
@@ -430,14 +438,14 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.NoError(err)
 	a.Len(result, 1)
 	for _, r := range result {
-		_, perr := ParseTiDBOmni(r.Statement)
+		_, perr := ParseTiDB(r.Statement)
 		a.NoError(perr, "parenthesized-join UPDATE backup must re-parse as valid SQL")
 	}
 	result, err = run("DELETE a FROM (test AS a JOIN test2 AS b ON a.a = b.a) WHERE a.a = 1")
 	a.NoError(err)
 	a.Len(result, 1)
 	for _, r := range result {
-		_, perr := ParseTiDBOmni(r.Statement)
+		_, perr := ParseTiDB(r.Statement)
 		a.NoError(perr, "parenthesized-join DELETE backup must re-parse as valid SQL")
 	}
 
@@ -447,7 +455,7 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.NoError(err)
 	a.Len(result, 1)
 	for _, r := range result {
-		_, perr := ParseTiDBOmni(r.Statement)
+		_, perr := ParseTiDB(r.Statement)
 		a.NoError(perr, "parenthesized-join-then-join UPDATE backup must re-parse as valid SQL")
 	}
 
@@ -457,7 +465,7 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.NoError(err)
 	a.Len(result, 1)
 	for _, r := range result {
-		_, perr := ParseTiDBOmni(r.Statement)
+		_, perr := ParseTiDB(r.Statement)
 		a.NoError(perr, "right-operand parenthesized-join UPDATE backup must re-parse as valid SQL")
 	}
 
@@ -467,7 +475,7 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.NoError(err)
 	a.Len(result, 1)
 	for _, r := range result {
-		_, perr := ParseTiDBOmni(r.Statement)
+		_, perr := ParseTiDB(r.Statement)
 		a.NoError(perr, "commented parenthesized-join UPDATE backup must re-parse as valid SQL")
 	}
 
@@ -551,4 +559,48 @@ func TestBackupHonorsCaseSensitivity(t *testing.T) {
 	a.NoError(err, "case-insensitive: alias T resolves qualifier t")
 	_, err = run(true, "UPDATE test AS T SET t.c = 2 WHERE T.a = 1")
 	a.Error(err, "case-sensitive: alias T and qualifier t are different identifiers")
+}
+
+func TestBackupReadsReferencingDatabases(t *testing.T) {
+	keyed := func(name string, foreignKeys ...*metadatapb.ForeignKeyMetadata) *metadatapb.TableMetadata {
+		return &metadatapb.TableMetadata{
+			Name:        name,
+			Columns:     []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "parent_id"}},
+			Indexes:     []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"id"}}},
+			ForeignKeys: foreignKeys,
+		}
+	}
+	tables := map[string][]*metadatapb.TableMetadata{
+		"db":  {keyed("parent"), keyed("other")},
+		"app": {keyed("child", &metadatapb.ForeignKeyMetadata{Name: "fk_remote", Columns: []string{"parent_id"}, ReferencedSchema: "db", ReferencedTable: "parent", ReferencedColumns: []string{"id"}, OnDelete: "CASCADE"})},
+	}
+	var getter base.GetDatabaseMetadataFunc = func(_ context.Context, _ string, database string) (string, *model.DatabaseMetadata, error) {
+		return database, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			Name:    database,
+			Schemas: []*metadatapb.SchemaMetadata{{Tables: tables[database]}},
+		}, nil, nil, store.Engine_TIDB, false), nil
+	}
+	lister := func(context.Context, string) ([]string, error) { return []string{"db", "app"}, nil }
+	transform := func(statement string, referencing base.ListDatabaseNamesFunc) error {
+		_, err := base.TransformDMLToSelect(context.Background(), store.Engine_TIDB, base.TransformContext{
+			GetDatabaseMetadataFunc:      getter,
+			ListDatabaseNamesFunc:        lister,
+			ListReferencingDatabasesFunc: referencing,
+		}, statement, "db", "backupDB", "_rollback")
+		return err
+	}
+	const cascade = "foreign key fk_remote of app.child is ON DELETE CASCADE"
+
+	// Without the hook, every database is read.
+	require.ErrorContains(t, transform("DELETE FROM parent WHERE id = 1", nil), cascade)
+	require.ErrorContains(t, transform("DELETE FROM parent WHERE id = 1", func(context.Context, string) ([]string, error) {
+		return []string{"app"}, nil
+	}), cascade)
+	// The hook narrows the databases read, and is called once per backup.
+	calls := 0
+	require.NoError(t, transform("DELETE FROM parent WHERE id = 1; DELETE FROM other WHERE id = 1", func(context.Context, string) ([]string, error) {
+		calls++
+		return nil, nil
+	}))
+	require.Equal(t, 1, calls)
 }

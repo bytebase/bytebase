@@ -3,10 +3,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { Button } from "@/components/ui/button";
-import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { SearchInput } from "@/components/ui/search-input";
 import { useCurrentUser } from "@/hooks/useAppState";
-import { useClickOutside } from "@/hooks/useClickOutside";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import {
@@ -293,7 +296,6 @@ export function AccountMultiSelect({
     canListProjectWorkloadIdentities,
   ]);
 
-  const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // Cache display labels for selected items so they persist across search changes
   const labelCacheRef = useRef<Map<string, string>>(new Map());
@@ -378,11 +380,10 @@ export function AccountMultiSelect({
     excludeAccounts,
   ]);
 
-  const handleClickOutside = useCallback(() => {
-    setOpen(false);
-    setSearch("");
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) setSearch("");
   }, []);
-  useClickOutside(containerRef, open, handleClickOutside);
 
   // Selected fullnames set for quick lookup
   const selectedFullnames = useMemo(
@@ -526,8 +527,6 @@ export function AccountMultiSelect({
 
   return (
     <div
-      ref={containerRef}
-      className="relative"
       onKeyDown={(event) => {
         if (event.key !== "Escape" || !open) return;
         // Swallow Escape while the dropdown is open: it closes only the
@@ -538,58 +537,56 @@ export function AccountMultiSelect({
         setSearch("");
       }}
     >
-      {/* Trigger */}
-      <div
-        className={cn(
-          "flex flex-wrap items-center gap-1 min-h-[2.25rem] w-full rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm cursor-pointer",
-          disabled && "opacity-50 cursor-not-allowed",
-          open && "border-accent"
-        )}
-        onClick={() => {
-          if (!disabled) {
-            setOpen(!open);
-            requestAnimationFrame(() => inputRef.current?.focus());
+      <Popover open={open} onOpenChange={handleOpenChange}>
+        <PopoverTrigger
+          disabled={disabled}
+          nativeButton={false}
+          render={
+            <div
+              className={cn(
+                "flex flex-wrap items-center gap-1 min-h-[2.25rem] w-full rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent",
+                disabled && "opacity-50 cursor-not-allowed",
+                open && "border-accent"
+              )}
+            />
           }
-        }}
-      >
-        {value.map((binding) => (
-          <span
-            key={binding}
-            className="inline-flex items-center gap-x-1 rounded-xs bg-control-bg px-1.5 py-0.5 text-xs"
-          >
-            {chipLabel(binding)}
-            {!disabled && (
-              <Button
-                type="button"
-                appearance="secondary"
-                size="xs"
-                aria-label={t("common.remove")}
-                className="text-control-light hover:text-error"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  remove(binding);
-                }}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            )}
-          </span>
-        ))}
-        {value.length === 0 && (
-          <span className="text-control-placeholder">
-            {placeholder ?? t("settings.members.select-account", { count: 2 })}
-          </span>
-        )}
-        <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-control-light" />
-      </div>
-
-      {/* Dropdown */}
-      {open && (
-        <div
-          className={cn(
-            "absolute mt-1 w-full bg-background border border-control-border rounded-sm shadow-lg max-h-72 overflow-auto flex flex-col",
-            LAYER_SURFACE_CLASS
+        >
+          {value.map((binding) => (
+            <span
+              key={binding}
+              className="inline-flex items-center gap-x-1 rounded-xs bg-control-bg px-1.5 py-0.5 text-xs"
+            >
+              {chipLabel(binding)}
+              {!disabled && (
+                <Button
+                  type="button"
+                  appearance="secondary"
+                  size="xs"
+                  aria-label={t("common.remove")}
+                  className="text-control-light hover:text-error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    remove(binding);
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </span>
+          ))}
+          {value.length === 0 && (
+            <span className="text-control-placeholder">
+              {placeholder ??
+                t("settings.members.select-account", { count: 2 })}
+            </span>
           )}
+          <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-control-light" />
+        </PopoverTrigger>
+
+        <PopoverContent
+          align="start"
+          initialFocus={inputRef}
+          className="flex max-h-72 w-(--anchor-width) flex-col overflow-auto p-0 shadow-lg"
         >
           {/* Search input */}
           <SearchInput
@@ -842,8 +839,8 @@ export function AccountMultiSelect({
                 </div>
               )}
           </div>
-        </div>
-      )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

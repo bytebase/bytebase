@@ -52,3 +52,46 @@
 - statement: "insert into t values('a',1)\n\n;\n\ninsert into t values('b',2);"
   want:
     - INSERT
+- statement: |-
+    CALL proc(1, 'a');
+  want:
+    - EXECUTE
+- statement: |-
+    CALL hr.pkg.proc(1);
+  want:
+    - EXECUTE
+- statement: |-
+    CALL my_func(1) INTO :x;
+  want:
+    - EXECUTE
+- statement: |-
+    BEGIN
+      proc(1);
+    END;
+    /
+  want:
+    - EXECUTE
+- statement: |-
+    DECLARE
+      v NUMBER;
+    BEGIN
+      v := 1;
+    END;
+  want:
+    - EXECUTE
+- statement: |-
+    <<main>> BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE Authors';
+    END;
+  want:
+    - EXECUTE
+- statement: |-
+    BEGIN
+      DELETE FROM Authors;
+    END;
+  want:
+    - EXECUTE
+- statement: |-
+    CREATE PROCEDURE p AS BEGIN proc(1); END;
+  want:
+    - CREATE_PROCEDURE

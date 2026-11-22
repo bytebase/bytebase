@@ -2,11 +2,15 @@ package wif
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"strings"
 	"testing"
 
+	"github.com/go-jose/go-jose/v4"
 	"github.com/stretchr/testify/require"
 )
 
@@ -179,6 +183,59 @@ func TestFetchJWKSErrorDoesNotIncludeResponseBody(t *testing.T) {
 	)
 	require.Error(t, err)
 	require.NotContains(t, err.Error(), secretBody)
+}
+
+func TestFetchJWKSKeepsUsableKeysBesideOneItCannotParse(t *testing.T) {
+	usable := rsaJWKJSON(t, "usable", 2048)
+	oversized := rsaJWKJSON(t, "oversized", jose.MaxRSAModulusBits+1)
+	setJWKSHTTPClientForTest(t, roundTripFunc(func(*http.Request) (*http.Response, error) {
+		return jsonHTTPResponse(http.StatusOK, `{"keys":[`+oversized+`,`+usable+`]}`), nil
+	}))
+
+	jwks, err := FetchJWKS(
+		context.Background(),
+		"https://issuer.example.com",
+		"https://keys.example.com/direct.json",
+	)
+	require.NoError(t, err)
+	require.Len(t, jwks.Keys, 1)
+	require.Equal(t, "usable", jwks.Keys[0].KeyID)
+	require.Len(t, jwks.Key("usable"), 1)
+}
+
+func TestFetchJWKSErrorsWhenNoPublishedKeyParses(t *testing.T) {
+	oversized := rsaJWKJSON(t, "oversized", jose.MaxRSAModulusBits+1)
+	requestCount := 0
+	setJWKSHTTPClientForTest(t, roundTripFunc(func(*http.Request) (*http.Response, error) {
+		requestCount++
+		return jsonHTTPResponse(http.StatusOK, `{"keys":[`+oversized+`]}`), nil
+	}))
+
+	for range 2 {
+		_, err := FetchJWKS(
+			context.Background(),
+			"https://issuer.example.com",
+			"https://keys.example.com/direct.json",
+		)
+		require.Error(t, err)
+	}
+	// The emptied set must not reach the cache, or a fixed issuer would stay
+	// unreachable for cacheDuration.
+	require.Equal(t, 2, requestCount)
+}
+
+// rsaJWKJSON renders a public RSA JWK whose modulus has the given bit length.
+// The modulus is fabricated, not generated: JWK parsing reads only n and e, and
+// generating a key above jose.MaxRSAModulusBits would dominate the test.
+func rsaJWKJSON(t *testing.T, kid string, modulusBits int) string {
+	t.Helper()
+	modulus := new(big.Int).SetBit(new(big.Int).Lsh(big.NewInt(1), uint(modulusBits-1)), 0, 1)
+	require.Equal(t, modulusBits, modulus.BitLen())
+	return fmt.Sprintf(`{"kty":"RSA","kid":%q,"alg":"RS256","use":"sig","n":%q,"e":%q}`,
+		kid,
+		base64.RawURLEncoding.EncodeToString(modulus.Bytes()),
+		base64.RawURLEncoding.EncodeToString(big.NewInt(65537).Bytes()),
+	)
 }
 
 func setJWKSHTTPClientForTest(t *testing.T, transport http.RoundTripper) {

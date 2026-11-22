@@ -31,8 +31,6 @@ import {
   TIMESTAMP_COLUMN_WIDTH,
 } from "@/components/timestampColumn";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
 import {
   Table,
@@ -50,6 +48,7 @@ import {
   fillableWidth,
   useColumnWidths,
 } from "@/hooks/useColumnWidths";
+import { useLatestRef } from "@/hooks/useLatestRef";
 import { PagedTableFooter, usePagedData } from "@/hooks/usePagedData";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { useTimeReading } from "@/hooks/useTimeReading";
@@ -76,6 +75,7 @@ import {
   hasProjectPermissionV2,
 } from "@/utils";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
+import { AccessGrantActions } from "./AccessGrantActions";
 
 type SortKey = "creator" | "create_time" | "expire_time";
 type SortDir = "asc" | "desc";
@@ -155,9 +155,7 @@ export const grantColumns = (t: (key: string) => string): GrantColumn[] => [
     sortKey: "create_time",
     yieldOrder: 1,
   },
-  // Trailing actions column — no title (blank header), fixed
-  // width sized for two ghost buttons + "View issue".
-  { key: "actions", defaultWidth: 140, minWidth: 96, resizable: false },
+  { key: "actions", defaultWidth: 112, minWidth: 112, resizable: false },
 ];
 
 function hashCode(str: string): number {
@@ -251,10 +249,6 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const [sortKey, setSortKey] = useState<SortKey | "">("");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  const [confirmAction, setConfirmAction] = useState<{
-    type: "activate" | "revoke";
-    grant: AccessGrant;
-  } | null>(null);
   const [issueByGrantName, setIssueByGrantName] = useState<Map<string, Issue>>(
     new Map()
   );
@@ -322,7 +316,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
             </span>
             <span>{u.title}</span>
             {currentUser && u.name === currentUser.name && (
-              <span className="text-xs bg-success/10 text-success rounded-full px-1.5">
+              <span className="inline-flex items-center rounded-xs border border-transparent bg-success/10 px-1.5 py-0.5 text-xs text-success">
                 {t("common.you")}
               </span>
             )}
@@ -507,9 +501,16 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
 
   const paged = usePagedData<AccessGrant>({
     sessionKey: `project-${projectName}-access-grants`,
+    cacheKey: JSON.stringify([
+      "project-access-grants",
+      projectName,
+      searchParams,
+      orderBy,
+    ]),
     fetchList,
     enabled: canList,
   });
+  const refreshRef = useLatestRef(paged.refresh);
 
   useEffect(() => {
     const pendingWithMissingIssue = paged.dataList.filter(
@@ -570,27 +571,23 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     [columns, setWidths]
   );
 
-  const handleConfirm = useCallback(async () => {
-    if (!confirmAction) return;
-    const { type, grant } = confirmAction;
-    if (type === "activate") {
-      await activateAccessGrant(grant.name);
+  const handleAction = useCallback(
+    async (type: "activate" | "revoke", grant: AccessGrant) => {
+      if (type === "activate") {
+        await activateAccessGrant(grant.name);
+      } else {
+        await revokeAccessGrant(grant.name);
+      }
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
-        title: t("common.activated"),
+        title:
+          type === "activate" ? t("common.activated") : t("common.revoked"),
       });
-    } else {
-      await revokeAccessGrant(grant.name);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.revoked"),
-      });
-    }
-    setConfirmAction(null);
-    paged.refresh();
-  }, [confirmAction, activateAccessGrant, revokeAccessGrant, t, paged]);
+      refreshRef.current();
+    },
+    [activateAccessGrant, revokeAccessGrant, t, refreshRef]
+  );
 
   return (
     <ProjectPageLayout>
@@ -618,7 +615,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
             <div className="py-12 border rounded-sm flex items-center justify-center text-control-light">
               {t("common.no-data")}
             </div>
-          ) : paged.isLoading ? (
+          ) : paged.isLoading && paged.dataList.length === 0 ? (
             <div className="flex justify-center py-8 text-control-light">
               {t("common.loading")}
             </div>
@@ -634,6 +631,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
                 className="border rounded-sm overflow-x-auto"
               >
                 <Table
+                  aria-busy={paged.isLoading}
                   className="w-auto table-fixed"
                   style={{ width: `${totalWidth}px` }}
                 >
@@ -680,12 +678,8 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
                         issue={issueByGrantName.get(grant.name)}
                         canActivate={canActivate}
                         canRevoke={canRevoke}
-                        onActivate={() =>
-                          setConfirmAction({ type: "activate", grant })
-                        }
-                        onRevoke={() =>
-                          setConfirmAction({ type: "revoke", grant })
-                        }
+                        onActivate={() => handleAction("activate", grant)}
+                        onRevoke={() => handleAction("revoke", grant)}
                       />
                     ))}
                   </TableBody>
@@ -706,42 +700,6 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
           )}
         </>
       </ComponentPermissionGuard>
-
-      {/* Activate / Revoke confirmation dialog */}
-      <Dialog
-        open={confirmAction !== null}
-        onOpenChange={(open) => {
-          if (!open) setConfirmAction(null);
-        }}
-      >
-        <DialogContent className="p-6">
-          <DialogTitle>
-            {confirmAction?.type === "activate"
-              ? t("sql-editor.activate-access")
-              : t("sql-editor.revoke-access")}
-          </DialogTitle>
-          <p className="text-sm text-control-light mt-2">
-            {confirmAction?.type === "activate"
-              ? t("sql-editor.activate-confirm")
-              : t("sql-editor.revoke-confirm")}
-          </p>
-          <div className="flex justify-end gap-x-2 mt-4">
-            <Button appearance="outline" onClick={() => setConfirmAction(null)}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              variant={
-                confirmAction?.type === "revoke" ? "destructive" : "default"
-              }
-              onClick={handleConfirm}
-            >
-              {confirmAction?.type === "activate"
-                ? t("sql-editor.activate-access")
-                : t("sql-editor.revoke-access")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </ProjectPageLayout>
   );
 }
@@ -764,8 +722,8 @@ export function AccessGrantRow({
   issue?: Issue;
   canActivate: boolean;
   canRevoke: boolean;
-  onActivate: () => void;
-  onRevoke: () => void;
+  onActivate: () => void | Promise<void>;
+  onRevoke: () => void | Promise<void>;
 }) {
   const { t } = useTranslation();
   const status = useTimeReading(accessGrantStatusReading, { grant, issue });
@@ -808,35 +766,15 @@ export function AccessGrantRow({
         "-"
       ),
     actions: (
-      <div className="flex items-center justify-end gap-x-1">
-        {status === "REVOKED" && canActivate && (
-          <Button appearance="secondary" size="sm" onClick={onActivate}>
-            {t("sql-editor.activate-access")}
-          </Button>
-        )}
-        {status === "ACTIVE" && canRevoke && (
-          <Button
-            appearance="secondary"
-            size="sm"
-            className="text-error"
-            onClick={onRevoke}
-          >
-            {t("sql-editor.revoke-access")}
-          </Button>
-        )}
-        {grant.issue && (
-          <RouterLink
-            to={grant.issue.startsWith("/") ? grant.issue : `/${grant.issue}`}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Button appearance="secondary" size="sm">
-              {t("sql-editor.view-issue")}
-            </Button>
-          </RouterLink>
-        )}
-      </div>
+      <AccessGrantActions
+        issue={grant.issue}
+        status={status}
+        expireTimeMs={expireTimeMs}
+        canActivate={canActivate}
+        canRevoke={canRevoke}
+        onActivate={onActivate}
+        onRevoke={onRevoke}
+      />
     ),
   };
 

@@ -1,7 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   issueServiceClientConnect,
   planServiceClientConnect,
@@ -12,6 +11,7 @@ import { router } from "@/app/router";
 import { WORKSPACE_ROUTE_403, WORKSPACE_ROUTE_404 } from "@/app/router/handles";
 import { buildPermissionDeniedRouteQuery } from "@/app/router/permissionDenied";
 import { useProjectByName } from "@/hooks/useProjectByName";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { invalidateProjectPagedDataCacheIfChanged } from "@/lib/projectPagedDataCache";
 import { projectNamePrefix } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -269,7 +269,6 @@ export const useIssueDetailPage = ({
 }: ProjectIssueDetailPageProps & {
   pageHost: HTMLDivElement | null;
 }): IssueDetailPageState => {
-  const { t } = useTranslation();
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
@@ -481,29 +480,7 @@ export const useIssueDetailPage = ({
     };
   }, [pageHost, patchState]);
 
-  useEffect(() => {
-    if (!isEditing) {
-      return;
-    }
-
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.returnValue = t("common.leave-without-saving");
-      event.preventDefault();
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    const removeGuard = router.beforeEach((_to, _from, next) => {
-      if (window.confirm(t("common.leave-without-saving"))) {
-        next();
-      } else {
-        next(false);
-      }
-    });
-
-    return () => {
-      window.removeEventListener("beforeunload", onBeforeUnload);
-      removeGuard();
-    };
-  }, [isEditing, t]);
+  useUnsavedChangesGuard(isEditing);
 
   const isPlanDone = useMemo(() => {
     if (!snapshot.rollout) {

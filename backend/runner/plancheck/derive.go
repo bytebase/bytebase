@@ -11,22 +11,26 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+// HasReviewTargets reports whether the review has SQL to read in the plan:
+// whether DeriveCheckTargets finds any target.
+func HasReviewTargets(ctx context.Context, s *store.Store, project *store.ProjectMessage, plan *store.PlanMessage) (bool, error) {
+	databaseGroup, err := GetDatabaseGroupForPlan(ctx, s, plan, nil)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get database group for plan")
+	}
+	targets, err := DeriveCheckTargets(ctx, s, project, plan, databaseGroup)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to derive review targets")
+	}
+	return len(targets) > 0, nil
+}
+
 // DeriveCheckTargets derives check targets from a plan and optional database
 // group, applying the project's CI sampling limit: plan checks are CI
-// validation, and sampling bounds their cost.
+// validation, and sampling bounds their cost. The review covers the same
+// sample.
 // This replaces the stored config by computing targets at runtime.
 func DeriveCheckTargets(ctx context.Context, s *store.Store, project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup) ([]*CheckTarget, error) {
-	return deriveTargets(ctx, s, project, plan, databaseGroup, true)
-}
-
-// DeriveReviewTargets derives the same targets without CI sampling: a review
-// run's DONE means every (spec, target) unit was evaluated, so review must
-// see the full target set.
-func DeriveReviewTargets(ctx context.Context, s *store.Store, project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup) ([]*CheckTarget, error) {
-	return deriveTargets(ctx, s, project, plan, databaseGroup, false)
-}
-
-func deriveTargets(ctx context.Context, s *store.Store, project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup, applySampling bool) ([]*CheckTarget, error) {
 	var targets []*CheckTarget
 
 	for _, spec := range plan.Config.Specs {
@@ -49,10 +53,8 @@ func deriveTargets(ctx context.Context, s *store.Store, project *store.ProjectMe
 			}
 
 			// Apply sampling upfront
-			if applySampling {
-				if samplingSize := project.Setting.GetCiSamplingSize(); samplingSize > 0 && len(databases) > int(samplingSize) {
-					databases = databases[:samplingSize]
-				}
+			if samplingSize := project.Setting.GetCiSamplingSize(); samplingSize > 0 && len(databases) > int(samplingSize) {
+				databases = databases[:samplingSize]
 			}
 
 			// Parse ghost config from sheet content

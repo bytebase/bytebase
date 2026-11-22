@@ -29,25 +29,26 @@ import (
 
 const reviewRunSchedulerInterval = 5 * time.Second
 
-// Executor executes one review run for one reviewer type.
+// Executor executes a review run.
 type Executor interface {
-	// RunOnce evaluates every (spec, target) unit of the issue's plan
-	// (collect-all, no fail-fast) and returns the results to post as issue
-	// comments. A nil error marks the run DONE and posts the results; a
-	// non-nil error marks it FAILED with the aggregated message and posts
-	// nothing.
+	// RunOnce evaluates every (spec, target) unit of the issue's plan in
+	// scope (collect-all, no fail-fast) and returns the results to post as
+	// issue comments, sorted by sortReviewResults. A nil error marks the run
+	// DONE and posts the results; a non-nil error marks it FAILED with the
+	// aggregated message and posts nothing.
 	RunOnce(ctx context.Context, projectID string, issueUID int64) ([]*store.IssueCommentMessage, error)
 }
 
-// NewScheduler creates a new review run scheduler.
-func NewScheduler(s *store.Store, b *bus.Bus, profile *config.Profile, licenseService *enterprise.LicenseService, productMetrics *productmetrics.ProductMetrics) *Scheduler {
+// NewScheduler creates a new review run scheduler that runs every review run
+// with executor.
+func NewScheduler(s *store.Store, b *bus.Bus, profile *config.Profile, licenseService *enterprise.LicenseService, productMetrics *productmetrics.ProductMetrics, executor Executor) *Scheduler {
 	return &Scheduler{
 		store:          s,
 		bus:            b,
 		profile:        profile,
 		licenseService: licenseService,
 		productMetrics: productMetrics,
-		executorMap:    make(map[string]Executor),
+		executor:       executor,
 	}
 }
 
@@ -58,19 +59,11 @@ type Scheduler struct {
 	profile        *config.Profile
 	licenseService *enterprise.LicenseService
 	productMetrics *productmetrics.ProductMetrics
-	executorMap    map[string]Executor
+	executor       Executor
 
 	// runs tracks the goroutines dispatchReviewRun spawns; Run waits for them,
 	// or they outlive the store.
 	runs sync.WaitGroup
-}
-
-// Register registers an executor for a reviewer type. Call before Run.
-func (s *Scheduler) Register(reviewType string, executor Executor) {
-	if executor == nil {
-		panic(fmt.Sprintf("registered nil executor for reviewer type %q", reviewType))
-	}
-	s.executorMap[reviewType] = executor
 }
 
 // Run runs the scheduler.
@@ -126,25 +119,13 @@ func (s *Scheduler) scheduleReviewRuns(ctx context.Context) (retErr error) {
 		return errors.Wrapf(err, "failed to claim available review runs")
 	}
 	for _, c := range claimed {
-		s.dispatchReviewRun(ctx, c)
+		s.runs.Go(func() { s.runReviewRunOnce(ctx, c) })
 	}
 	result = productmetrics.ResultSuccess
 	return nil
 }
 
-// dispatchReviewRun starts one claimed run's execution. A reviewer type with
-// no registered executor fails immediately: the type space is open, and a
-// claimed run must always reach a terminal status.
-func (s *Scheduler) dispatchReviewRun(ctx context.Context, claimed *store.ClaimedReviewRun) {
-	executor, ok := s.executorMap[claimed.Type]
-	if !ok {
-		s.completeReviewRun(ctx, claimed, nil, errors.Errorf("no executor registered for reviewer type %q", claimed.Type))
-		return
-	}
-	s.runs.Go(func() { s.runReviewRunOnce(ctx, claimed, executor) })
-}
-
-func (s *Scheduler) runReviewRunOnce(ctx context.Context, claimed *store.ClaimedReviewRun, executor Executor) {
+func (s *Scheduler) runReviewRunOnce(ctx context.Context, claimed *store.ClaimedReviewRun) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -155,15 +136,14 @@ func (s *Scheduler) runReviewRunOnce(ctx context.Context, claimed *store.Claimed
 		}
 	}()
 
-	results, err := runExecutorOnce(ctx, executor, claimed)
+	results, err := runExecutorOnce(ctx, s.executor, claimed)
 	if err != nil && errors.Is(err, context.Canceled) {
 		// Shutdown: the completion write would fail on the same canceled
 		// context. The replica's heartbeat stops with the process, so the
 		// reaper fails this run.
 		slog.Info("review run interrupted by shutdown; leaving it to the reaper",
 			slog.String("project", claimed.ProjectID),
-			slog.Int64("issue_id", claimed.IssueUID),
-			slog.String("type", claimed.Type))
+			slog.Int64("issue_id", claimed.IssueUID))
 		return
 	}
 	s.completeReviewRun(ctx, claimed, results, err)
@@ -179,6 +159,7 @@ func (s *Scheduler) completeReviewRun(ctx context.Context, claimed *store.Claime
 	if execErr != nil {
 		status = storepb.ReviewRun_FAILED
 		payload.Error = execErr.Error()
+		payload.Code = errorCode(execErr)
 		results = nil
 	}
 	updated, err := s.store.CompleteReviewRun(ctx, claimed, s.profile.ReplicaID, status, payload, results)
@@ -186,7 +167,6 @@ func (s *Scheduler) completeReviewRun(ctx context.Context, claimed *store.Claime
 		slog.Error("failed to complete review run",
 			slog.String("project", claimed.ProjectID),
 			slog.Int64("issue_id", claimed.IssueUID),
-			slog.String("type", claimed.Type),
 			log.BBError(err))
 		return
 	}
@@ -194,8 +174,32 @@ func (s *Scheduler) completeReviewRun(ctx context.Context, claimed *store.Claime
 		slog.Info("skip completing superseded review run",
 			slog.String("project", claimed.ProjectID),
 			slog.Int64("issue_id", claimed.IssueUID),
-			slog.String("type", claimed.Type),
 			slog.Int64("attempt", claimed.Attempt))
+		return
+	}
+	s.requestRolloutCheck(ctx, claimed)
+}
+
+// requestRolloutCheck asks the rollout creator to look at the issue's plan
+// again: under SQL Review V2 the review holds the automatic rollout until it
+// completes, and in either mode a completed run resolves the findings it
+// supersedes, whose open threads held the rollout. The rollout creator acts
+// only on these requests, so a missed one leaves the issue waiting.
+func (s *Scheduler) requestRolloutCheck(ctx context.Context, claimed *store.ClaimedReviewRun) {
+	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{claimed.ProjectID}, UID: &claimed.IssueUID})
+	if err != nil {
+		slog.Warn("failed to get the issue to check its rollout",
+			slog.String("project", claimed.ProjectID),
+			slog.Int64("issue_id", claimed.IssueUID),
+			log.BBError(err))
+		return
+	}
+	if issue == nil || issue.PlanUID == nil {
+		return
+	}
+	select {
+	case s.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: claimed.ProjectID, PlanID: *issue.PlanUID}:
+	case <-ctx.Done():
 	}
 }
 

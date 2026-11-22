@@ -1,0 +1,61 @@
+- statement: |-
+    CREATE TABLE book(id INT);
+    ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id);
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `tech_book`
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t1 (id INT);
+    CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id_author_id (author_id) REFERENCES author (id));
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `book`
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(
+      a int REFERENCES u(id),
+      b int,
+      CONSTRAINT fk_b FOREIGN KEY (b) REFERENCES u(id),
+      c int,
+      FOREIGN KEY (c) REFERENCES u(id)
+    );
+    ALTER TABLE t
+      ADD COLUMN d int,
+      ADD FOREIGN KEY (d) REFERENCES u(id);
+    ALTER TABLE t DROP FOREIGN KEY fk_b;
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `t`
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `t`
+      startposition:
+        line: 6
+        column: 0
+      endposition: null
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `t`
+      startposition:
+        line: 16
+        column: 0
+      endposition: null

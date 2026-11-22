@@ -9,3 +9,39 @@
         line: 1
         column: 0
       endposition: null
+- statement: DROP DATABASE other
+  changeType: 1
+  want:
+    - status: 2
+      code: 702
+      title: DATABASE_DROP_EMPTY_DATABASE
+      content: Database `other` that is trying to be deleted is not the current database `test`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP SCHEMA `Test`
+  changeType: 1
+  want:
+    - status: 2
+      code: 702
+      title: DATABASE_DROP_EMPTY_DATABASE
+      content: Database `Test` that is trying to be deleted is not the current database `test`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    /* drop */
+    DROP DATABASE
+      test
+  changeType: 1
+  want:
+    - status: 2
+      code: 701
+      title: DATABASE_DROP_EMPTY_DATABASE
+      content: Database `test` is not allowed to drop if not empty
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

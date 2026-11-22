@@ -5,6 +5,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func TestRenderTrain(t *testing.T) {
@@ -268,4 +271,29 @@ func TestValidateTemplate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReleaseVcsSourceRoundTrip(t *testing.T) {
+	in := &v1pb.Release_VCSSource{
+		VcsType:     v1pb.VCSType_GITHUB,
+		Url:         "https://github.com/example/app/commit/0a1b2c3d",
+		CommitSha:   "0a1b2c3d",
+		Branch:      "feature/orders",
+		CommitTitle: "Add the orders table",
+		AuthorName:  "Alex Doe",
+		AuthorLogin: "alexdoe",
+		PullRequest: &v1pb.Release_VCSSource_PullRequest{
+			Url:    "https://github.com/example/app/pull/42",
+			Number: 42,
+			Title:  "Add the orders table",
+		},
+	}
+	stored := convertReleaseVcsSource(in)
+	require.Equal(t, "feature/orders", stored.GetBranch())
+	require.Equal(t, int64(42), stored.GetPullRequest().GetNumber())
+	require.True(t, proto.Equal(in, convertToReleaseVcsSource(stored)))
+
+	// A release from an old action carries only the commit URL.
+	urlOnly := &v1pb.Release_VCSSource{VcsType: v1pb.VCSType_GITLAB, Url: "https://gitlab.example.com/g/app/-/commit/9f8e"}
+	require.True(t, proto.Equal(urlOnly, convertToReleaseVcsSource(convertReleaseVcsSource(urlOnly))))
 }

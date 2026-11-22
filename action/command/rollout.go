@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 	"fmt"
-	"os"
 	"slices"
 	"strings"
 	"time"
@@ -50,18 +49,50 @@ func rolloutPreRun(_ *world.World) func(*cobra.Command, []string) error {
 	}
 }
 
+// RolloutError is a rollout that stopped on failed or canceled tasks. Its
+// message names them, so a job needs no stack trace after it.
+type RolloutError struct {
+	failures []string
+}
+
+func (e *RolloutError) Error() string {
+	message := "rollout stopped: " + e.failures[0]
+	if rest := len(e.failures) - 1; rest > 0 {
+		message += fmt.Sprintf(" (and %d more)", rest)
+	}
+	return message
+}
+
+var (
+	errFailedTasks   = errors.New("found failed tasks. view on Bytebase")
+	errCanceledTasks = errors.New("found canceled tasks. view on Bytebase")
+)
+
 func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
-	return func(command *cobra.Command, _ []string) error {
-		defer func() {
-			output.WriteOutput(w)
-		}()
+	return func(command *cobra.Command, _ []string) (err error) {
 		w.IsRollout = true
 		ctx := command.Context()
 		client, err := newClientFromWorld(w)
 		if err != nil {
+			output.WriteOutput(w, command.OutOrStdout())
 			return errors.Wrapf(err, "failed to create client")
 		}
-		defer client.close()
+		// The result is read after the command stops waiting, whether it
+		// succeeded or not, and before the client closes.
+		defer func() {
+			w.Result = collectResult(ctx, w, client)
+			client.close()
+			output.WriteOutput(w, command.OutOrStdout())
+			if w.Result == nil || (!errors.Is(err, errFailedTasks) && !errors.Is(err, errCanceledTasks)) {
+				return
+			}
+			if failures := w.Result.Failures(); len(failures) > 0 {
+				err = &RolloutError{failures: failures}
+			}
+		}()
+		if err := client.signIn(ctx); err != nil {
+			return err
+		}
 
 		// Check version compatibility
 		if err := checkVersionCompatibility(w, client, args.Version); err != nil {
@@ -183,20 +214,12 @@ func waitForRollout(ctx context.Context, w *world.World, client *client, rollout
 				}
 			}
 		}))
-	if len(rollout.Stages) == 0 {
-		w.Logger.Info("no stages in the rollout. exiting...")
-		return nil
-	}
-
-	targetStageFound := false
-	for _, stage := range rollout.GetStages() {
-		if stage.Environment == w.TargetStage {
-			targetStageFound = true
-			break
-		}
-	}
-	if !targetStageFound {
-		w.Logger.Info("the target stage is not found in the rollout. exiting...", "targetStage", w.TargetStage)
+	// No target database is in this environment. The job passes so that the
+	// jobs for later environments still run; the result carries the warning.
+	if !slices.ContainsFunc(rollout.GetStages(), func(stage *v1pb.Stage) bool {
+		return stage.Environment == w.TargetStage
+	}) {
+		w.Logger.Warn("the rollout has no stage for the target stage, nothing to deploy", "targetStage", w.TargetStage)
 		return nil
 	}
 
@@ -247,10 +270,10 @@ func waitForRollout(ctx context.Context, w *world.World, client *client, rollout
 			}
 
 			if foundFailed {
-				return errors.Errorf("found failed tasks. view on Bytebase")
+				return errFailedTasks
 			}
 			if foundCanceled {
-				return errors.Errorf("found canceled tasks. view on Bytebase")
+				return errCanceledTasks
 			}
 
 			if done {
@@ -303,31 +326,4 @@ func cancelRollout(ctx context.Context, client *client, rolloutName string) erro
 		}
 	}
 	return errs
-}
-
-func getVCSSource(w *world.World) *v1pb.Release_VCSSource {
-	switch w.Platform {
-	case world.GitHub:
-		return &v1pb.Release_VCSSource{
-			VcsType: v1pb.VCSType_GITHUB,
-			Url:     os.Getenv("GITHUB_SERVER_URL") + "/" + os.Getenv("GITHUB_REPOSITORY") + "/commit/" + os.Getenv("GITHUB_SHA"),
-		}
-	case world.GitLab:
-		return &v1pb.Release_VCSSource{
-			VcsType: v1pb.VCSType_GITLAB,
-			Url:     os.Getenv("CI_PROJECT_URL") + "/-/commit/" + os.Getenv("CI_COMMIT_SHA"),
-		}
-	case world.Bitbucket:
-		return &v1pb.Release_VCSSource{
-			VcsType: v1pb.VCSType_BITBUCKET,
-			Url:     os.Getenv("BITBUCKET_GIT_HTTP_ORIGIN") + "/commits/" + os.Getenv("BITBUCKET_COMMIT"),
-		}
-	case world.AzureDevOps:
-		return &v1pb.Release_VCSSource{
-			VcsType: v1pb.VCSType_AZURE_DEVOPS,
-			Url:     os.Getenv("SYSTEM_COLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/_git/" + os.Getenv("BUILD_REPOSITORY_NAME") + "/commit/" + os.Getenv("BUILD_SOURCEVERSION"),
-		}
-	default:
-		return nil
-	}
 }

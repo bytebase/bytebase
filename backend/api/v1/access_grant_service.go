@@ -12,12 +12,14 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // AccessGrantService implements the access grant service.
@@ -149,11 +151,13 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 
 	// Validate every target before creating any access-grant or issue rows.
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	instance, err := s.validateAccessGrantTargets(ctx, projectID, ag.Targets)
+	project, instance, err := s.validateAccessGrantTargets(ctx, projectID, ag.Targets)
 	if err != nil {
 		return nil, err
 	}
-	// Validate the query is a read-only statement (SELECT).
+	if err := refuseAccessGrantWithoutJIT(project); err != nil {
+		return nil, err
+	}
 	if ok, err := isReadOnlyStatementForAccessGrant(ctx, instance.Metadata.GetEngine(), ag.Query); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid query"))
 	} else if !ok {
@@ -201,28 +205,37 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		}
 	}
 
-	// Step 1: Create the access grant.
+	payload := &storepb.AccessGrantPayload{
+		Targets:           ag.Targets,
+		Query:             ag.Query,
+		Unmask:            ag.Unmask,
+		Export:            ag.Export,
+		Reason:            ag.Reason,
+		RequestedDuration: requestedDuration,
+		Schema:            ag.Schema,
+		Container:         ag.Container,
+	}
+	// Decided once and saved on the issue: the workflow skips a done finding, so
+	// a later rule edit cannot change whether this request waits for a person.
+	approval, riskLevel, err := review.EvaluateAccessGrantApproval(ctx, s.store, project, payload)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to evaluate the approval rules for this access grant"))
+	}
+	if err := refuseUnattendedMCPAccessGrant(ctx, approval); err != nil {
+		return nil, err
+	}
+
 	grant, err := s.store.CreateAccessGrant(ctx, &store.AccessGrantMessage{
 		ProjectID:  projectID,
 		Creator:    creatorEmail,
 		Status:     storepb.AccessGrant_PENDING,
 		ExpireTime: expireTime,
-		Payload: &storepb.AccessGrantPayload{
-			Targets:           ag.Targets,
-			Query:             ag.Query,
-			Unmask:            ag.Unmask,
-			Export:            ag.Export,
-			Reason:            ag.Reason,
-			RequestedDuration: requestedDuration,
-			Schema:            ag.Schema,
-			Container:         ag.Container,
-		},
+		Payload:    payload,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create access grant"))
 	}
 
-	// Step 2: Create the associated issue.
 	issue, err := s.store.CreateIssue(ctx, &store.IssueMessage{
 		ProjectID:    projectID,
 		CreatorEmail: creatorEmail,
@@ -230,9 +243,8 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		Type:         storepb.Issue_ACCESS_GRANT,
 		Description:  ag.Reason,
 		Payload: &storepb.Issue{
-			Approval: &storepb.IssuePayloadApproval{
-				ApprovalFindingDone: false,
-			},
+			Approval:      approval,
+			RiskLevel:     riskLevel,
 			AccessGrantId: grant.ID,
 		},
 	})
@@ -240,7 +252,6 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
 
-	// Step 3: Update access grant payload with the issue ID.
 	grant.Payload.IssueId = int64(issue.UID)
 	grant, err = s.store.UpdateAccessGrant(ctx, grant.ID, &store.UpdateAccessGrantMessage{
 		Payload: grant.Payload,
@@ -249,52 +260,74 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update access grant payload"))
 	}
 
-	// Step 4: Post-create: webhook, approval finding, auto-approve.
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &projectID})
+	issue, err = startIssueWorkflow(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %v", projectID))
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	if project != nil {
-		issue, err := startIssueWorkflow(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue)
+	// A saved finding emits no approval event, so notify the approvers here.
+	review.NotifyApprovalRequested(ctx, s.store, s.webhookManager, issue, project)
+	if issue.Status == storepb.Issue_DONE {
+		grant, err = s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
+			Workspace: common.GetWorkspaceIDFromContext(ctx),
+			ID:        &grant.ID,
+		})
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		if issue.Status == storepb.Issue_DONE {
-			// Refresh the grant if issue is completed.
-			grant, err = s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
-				Workspace: common.GetWorkspaceIDFromContext(ctx),
-				ID:        &grant.ID,
-			})
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get access grant %v", grant.ID))
-			}
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get access grant %v", grant.ID))
 		}
 	}
 
 	return connect.NewResponse(convertToAccessGrant(grant)), nil
 }
 
-func (s *AccessGrantService) validateAccessGrantTargets(ctx context.Context, projectID string, targets []string) (*store.InstanceMessage, error) {
+// refuseUnattendedMCPAccessGrant refuses an MCP session's request that would
+// count as approved on creation: an approved grant takes effect at once.
+func refuseUnattendedMCPAccessGrant(ctx context.Context, approval *storepb.IssuePayloadApproval) error {
+	approved, err := utils.CheckApprovalApproved(approval)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check the approval finding"))
+	}
+	if !approved || !mcpSession(ctx) {
+		return nil
+	}
+	return permissionDeniedError(ctx, errors.Errorf(
+		"%s is not available to MCP sessions for this request because no approval rule requires a person to approve it, "+
+			"so the access would be granted at once with no human step. Ask a workspace admin to give access requests "+
+			"an approval rule that names an approver, or request the access in the Bytebase console.",
+		v1connect.AccessGrantServiceCreateAccessGrantProcedure))
+}
+
+// refuseAccessGrantWithoutJIT refuses a request in a project that does not allow
+// just-in-time access: SQLService.preCheckAccess ignores every grant there.
+func refuseAccessGrantWithoutJIT(project *store.ProjectMessage) error {
+	if project.Setting.GetAllowJustInTimeAccess() {
+		return nil
+	}
+	return connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(
+		`just-in-time access is off for project %q, so an access grant there would not apply; `+
+			`a project owner can turn on "Allow access grants" in the project settings`, project.ResourceID))
+}
+
+func (s *AccessGrantService) validateAccessGrantTargets(ctx context.Context, projectID string, targets []string) (*store.ProjectMessage, *store.InstanceMessage, error) {
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		Workspace:  workspaceID,
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %q", projectID))
+		return nil, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %q", projectID))
 	}
 	if project == nil || project.Deleted {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
+		return nil, nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
 
 	var firstInstance *store.InstanceMessage
 	for _, target := range targets {
 		targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid target %q", target))
+			return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid target %q", target))
 		}
 		if targetProjectID != nil && *targetProjectID != projectID {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", target, projectID))
+			return nil, nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", target, projectID))
 		}
 		database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 			Workspace:    workspaceID,
@@ -302,27 +335,27 @@ func (s *AccessGrantService) validateAccessGrantTargets(ctx context.Context, pro
 			DatabaseName: &databaseName,
 		})
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+			return nil, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
 		}
 		if database == nil || database.ProjectID != projectID {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", target, projectID))
+			return nil, nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", target, projectID))
 		}
 		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{Workspace: workspaceID, ResourceID: &instanceID})
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance %q", instanceID))
+			return nil, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance %q", instanceID))
 		}
 		if instance == nil || instance.Deleted {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
+			return nil, nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
 		}
 		if (targetProjectID == nil) != (instance.ProjectID == nil) ||
 			targetProjectID != nil && *targetProjectID != *instance.ProjectID {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("target %q is not canonical for its instance", target))
+			return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("target %q is not canonical for its instance", target))
 		}
 		if firstInstance == nil {
 			firstInstance = instance
 		}
 	}
-	return firstInstance, nil
+	return project, firstInstance, nil
 }
 
 // ActivateAccessGrant activates a pending access grant.

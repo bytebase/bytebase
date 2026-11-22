@@ -129,3 +129,70 @@
         line: 2
         column: 0
       endposition: null
+- statement: CREATE TABLE t2 LIKE tech_book;
+- statement: |-
+    CREATE TABLE t1 (a INT);
+    CREATE TABLE t2 LIKE t1;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table `t1` requires PRIMARY KEY
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table `t2` requires PRIMARY KEY
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t1 (a INT PRIMARY KEY);
+    CREATE TABLE t2 LIKE t1;
+- statement: CREATE TABLE t2 LIKE missing;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table `t2` requires PRIMARY KEY
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book DROP COLUMN id;
+    ALTER TABLE tech_book DROP COLUMN name;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table `tech_book` requires PRIMARY KEY
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE b (x INT);
+    CREATE TABLE a (y INT);
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table `b` requires PRIMARY KEY
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table `a` requires PRIMARY KEY
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t (a INT PRIMARY KEY, b INT PRIMARY KEY);

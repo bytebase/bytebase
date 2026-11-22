@@ -6,11 +6,14 @@ adds to it.
 
 ## What these packages test
 
-Each engine package owns three conversions, and a test covers exactly one:
+Each engine package owns two conversions, and a test covers exactly one:
 
 - `GetDatabaseMetadata` — schema text to metadata.
 - `GetDatabaseDefinition` — metadata to DDL.
-- `schema.GetDatabaseSchemaDiff` plus the package's `generateMigration`.
+
+A metadata diff is not one of them. `schema.DiffMigration` dispatches to the
+engine's registered metadata diff, and every engine that supports one runs on its
+own omni catalog; Bytebase has no shared differ to test.
 
 Do not call `driver.SyncDBSchema` here, and never use a live server's answer as
 the expected value: whether our output matches what an engine stores is engine
@@ -58,14 +61,26 @@ go test ./backend/plugin/schema/tidb/ -run '^TestGetDatabaseDefinition$' -count=
 - Generated DDL must be byte-stable before it can be pinned. Walk maps in sorted
   key order in the generators.
 
-## Two deviations
+## Deviations
 
 Oracle's migration inputs are `oldMetadata`/`newMetadata`, protojson captured
 from a real Oracle, where every other engine's are `oldSchema`/`newSchema`
 schema text. Converting them would rewrite all 34 cases: a metadata/DDL/metadata
 round trip is lossless for 0 of its 68 blobs.
 
-PostgreSQL registers neither `GenerateMigration` nor `GetDatabaseMetadata`, so it
-has no fixture for either. Its migration generation is covered by
-`metadata_migration_test.go`, whose hand-written assertions carry intent a golden
-cannot. Do not convert those.
+PostgreSQL registers no `GetDatabaseMetadata`, so it has no fixture for it. Its
+metadata migrations run on omni's catalog and are
+tested in omni's `pg/catalog`, against PostgreSQL. CockroachDB shares that
+catalog because its synced metadata is PostgreSQL-shaped and omni has no
+CockroachDB catalog. `testdata/cutover_parity.yaml` records the CockroachDB
+migrations Bytebase's deleted generator produced, so every text change the
+catalog makes stays named.
+
+MySQL's, MariaDB's, OceanBase's and TiDB's metadata migrations run on their omni
+catalogs, so their goldens live in omni (`mysql/catalog/testdata/metadata_migration.yaml`,
+`mariadb/catalog/testdata/metadata_migration/`, `oceanbase/catalog/testdata/metadata_migration.yaml`,
+each with omni's own `record` flag and an oracle test). No Bytebase generator is
+left in the family. omni has no TiDB migration corpus yet, so TiDB keeps
+`tidb/testdata/cutover_parity.yaml` beside its hand-written assertions, and
+`mariadb/testdata/cutover_parity.yaml` records what the deleted generator wrote
+for MariaDB and OceanBase and why each group of cases moved.

@@ -23,7 +23,7 @@ func TestValidatePassword(t *testing.T) {
 			restriction: &storepb.WorkspaceProfileSetting_PasswordRestriction{
 				MinLength: 8,
 			},
-			wantErr: "password length should no less than 8 characters",
+			wantErr: "password must be at least 8 characters long",
 		},
 		{
 			name:     "number required",
@@ -31,7 +31,7 @@ func TestValidatePassword(t *testing.T) {
 			restriction: &storepb.WorkspaceProfileSetting_PasswordRestriction{
 				RequireNumber: true,
 			},
-			wantErr: "password must contains at least 1 number",
+			wantErr: "password must contain at least one number",
 		},
 		{
 			name:     "letter required",
@@ -39,7 +39,7 @@ func TestValidatePassword(t *testing.T) {
 			restriction: &storepb.WorkspaceProfileSetting_PasswordRestriction{
 				RequireLetter: true,
 			},
-			wantErr: "password must contains at least 1 lower case letter",
+			wantErr: "password must contain at least one letter",
 		},
 		{
 			name:     "uppercase letter required",
@@ -47,7 +47,7 @@ func TestValidatePassword(t *testing.T) {
 			restriction: &storepb.WorkspaceProfileSetting_PasswordRestriction{
 				RequireUppercaseLetter: true,
 			},
-			wantErr: "password must contains at least 1 upper case letter",
+			wantErr: "password must contain at least one uppercase letter",
 		},
 		{
 			name:     "special character required",
@@ -55,7 +55,7 @@ func TestValidatePassword(t *testing.T) {
 			restriction: &storepb.WorkspaceProfileSetting_PasswordRestriction{
 				RequireSpecialCharacter: true,
 			},
-			wantErr: "password must contains at least 1 special character",
+			wantErr: "password must contain at least one special character",
 		},
 		{
 			name:     "all restrictions satisfied",

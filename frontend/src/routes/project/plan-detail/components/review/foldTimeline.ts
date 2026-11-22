@@ -1,9 +1,11 @@
-// Long-history fold: once the timeline has more than FOLD_THRESHOLD entries,
-// only the first FOLD_HEAD and last FOLD_TAIL render; everything in between
-// collapses into a single fold marker carrying the exact hidden count. One
-// click ("Show all") expands the whole list.
+// Long-history fold: past the first FOLD_HEAD and before the last FOLD_TAIL
+// entries, each stretch of FOLD_MIN_HIDDEN or more unpinned entries collapses
+// into a single fold marker carrying the exact hidden count. Pinned entries
+// stay in place and split the stretch around them. One click ("Show all")
+// expands the whole list.
 export interface FoldableEntry {
   id: string;
+  pinned?: boolean;
 }
 
 export type FoldedItem<T extends FoldableEntry> =
@@ -12,25 +14,36 @@ export type FoldedItem<T extends FoldableEntry> =
 
 export const FOLD_HEAD = 3;
 export const FOLD_TAIL = 3;
-// Fold only when collapsing would actually hide something, i.e. there are more
-// than head + tail entries. ">10" in the design (3 + 3 visible + >=5 hidden).
-export const FOLD_THRESHOLD = 10;
+// Fold only when collapsing would actually hide something. ">10" in the
+// design: 3 + 3 visible + >=5 hidden.
+export const FOLD_MIN_HIDDEN = 5;
 
 export function foldTimeline<T extends FoldableEntry>(
   entries: T[],
   expanded: boolean
 ): FoldedItem<T>[] {
-  const all = entries.map((entry) => ({ type: "entry" as const, entry }));
-  if (expanded || entries.length <= FOLD_THRESHOLD) {
-    return all;
+  if (expanded) {
+    return entries.map((entry) => ({ type: "entry", entry }));
   }
-  const hiddenCount = entries.length - FOLD_HEAD - FOLD_TAIL;
-  const items: FoldedItem<T>[] = entries
-    .slice(0, FOLD_HEAD)
-    .map((entry) => ({ type: "entry" as const, entry }));
-  items.push({ type: "fold", count: hiddenCount });
-  for (const entry of entries.slice(entries.length - FOLD_TAIL)) {
+  const items: FoldedItem<T>[] = [];
+  let stretch: T[] = [];
+  const flush = () => {
+    if (stretch.length >= FOLD_MIN_HIDDEN) {
+      items.push({ type: "fold", count: stretch.length });
+    } else {
+      for (const entry of stretch) items.push({ type: "entry", entry });
+    }
+    stretch = [];
+  };
+  entries.forEach((entry, i) => {
+    const inMiddle = i >= FOLD_HEAD && i < entries.length - FOLD_TAIL;
+    if (inMiddle && !entry.pinned) {
+      stretch.push(entry);
+      return;
+    }
+    flush();
     items.push({ type: "entry", entry });
-  }
+  });
+  flush();
   return items;
 }

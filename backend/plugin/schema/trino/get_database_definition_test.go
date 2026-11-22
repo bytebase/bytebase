@@ -17,6 +17,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 		schema   string
 		table    *metadatapb.TableMetadata
 		expected string
+		wantErr  string
 	}{
 		{
 			name:    "Simple table",
@@ -37,7 +38,9 @@ func TestGetDatabaseDefinition(t *testing.T) {
 					},
 				},
 			},
-			expected: `CREATE TABLE IF NOT EXISTS "testschema"."testtable" (
+			expected: `CREATE SCHEMA IF NOT EXISTS "testschema";
+
+CREATE TABLE IF NOT EXISTS "testschema"."testtable" (
     "id" bigint NOT NULL,
     "name" varchar
 );
@@ -52,11 +55,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 				Name:    "empty_table",
 				Columns: []*metadatapb.ColumnMetadata{},
 			},
-			expected: `CREATE TABLE IF NOT EXISTS "testschema"."empty_table" (
-
-);
-
-`,
+			wantErr: "table testschema.empty_table has no columns",
 		},
 		{
 			name:    "Special characters in identifiers",
@@ -72,16 +71,17 @@ func TestGetDatabaseDefinition(t *testing.T) {
 					},
 				},
 			},
-			expected: `CREATE TABLE IF NOT EXISTS "test_schema"."test.table" (
+			expected: `CREATE SCHEMA IF NOT EXISTS "test_schema";
+
+CREATE TABLE IF NOT EXISTS "test_schema"."test.table" (
     "id-field" bigint NOT NULL
 );
 
 `,
 		},
 	}
-	a := require.New(t)
 	for _, tt := range tests {
-		t.Run(tt.name, func(_ *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			metadata := &metadatapb.DatabaseSchemaMetadata{
 				Name: tt.catalog,
 				Schemas: []*metadatapb.SchemaMetadata{
@@ -93,8 +93,12 @@ func TestGetDatabaseDefinition(t *testing.T) {
 			}
 
 			result, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, metadata)
-			a.NoError(err)
-			a.Equal(tt.expected, result, tt.name)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr, tt.name)
+				return
+			}
+			require.NoError(t, err, tt.name)
+			require.Equal(t, tt.expected, result, tt.name)
 		})
 	}
 }
@@ -126,7 +130,9 @@ func TestWriteCreateTable(t *testing.T) {
 					},
 				},
 			},
-			expected: `CREATE TABLE IF NOT EXISTS "schema"."table" (
+			expected: `CREATE SCHEMA IF NOT EXISTS "schema";
+
+CREATE TABLE IF NOT EXISTS "schema"."table" (
     "col1" integer NOT NULL
 );
 

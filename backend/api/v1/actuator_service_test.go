@@ -68,3 +68,39 @@ func TestActuatorMCPSetting(t *testing.T) {
 		})
 	}
 }
+
+func TestActuatorAIEnabled(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		setting *storepb.AISetting
+		err     error
+		want    bool
+	}{
+		{name: "absent setting"},
+		{name: "disabled setting", setting: &storepb.AISetting{}},
+		{name: "enabled setting", setting: &storepb.AISetting{Enabled: true}, want: true},
+		{name: "unreadable setting", setting: &storepb.AISetting{Enabled: true}, err: errors.New("read failed")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, actuatorAIEnabled(tc.setting, tc.err))
+		})
+	}
+}
+
+func TestActuatorAISQLReviewEnabled(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		setting *storepb.AISetting
+		err     error
+		want    bool
+	}{
+		{name: "absent setting"},
+		{name: "AI on without the review", setting: &storepb.AISetting{Enabled: true}},
+		{name: "the review switched on", setting: &storepb.AISetting{Enabled: true, SqlReviewEnabled: true}, want: true},
+		{name: "unreadable setting", setting: &storepb.AISetting{SqlReviewEnabled: true}, err: errors.New("read failed")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, actuatorAISQLReviewEnabled(tc.setting, tc.err))
+		})
+	}
+}

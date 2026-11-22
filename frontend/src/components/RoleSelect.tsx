@@ -25,6 +25,8 @@ interface RoleSelectProps {
   multiple?: boolean;
   placeholder?: string;
   filterRole?: (role: Role) => boolean;
+  // Single-select only: false hides the clear button, so a role stays chosen.
+  clearable?: boolean;
 }
 
 export function RoleSelect({
@@ -35,6 +37,7 @@ export function RoleSelect({
   multiple = true,
   placeholder,
   filterRole,
+  clearable,
 }: RoleSelectProps) {
   const { t } = useTranslation();
   const roleList = useAppStore((state) => state.roleList);
@@ -116,7 +119,6 @@ export function RoleSelect({
         options={groups}
         placeholder={placeholder || defaultPlaceholder}
         disabled={disabled}
-        portal
       />
     );
   }
@@ -128,7 +130,7 @@ export function RoleSelect({
       options={groups}
       placeholder={placeholder || defaultPlaceholder}
       disabled={disabled}
-      portal
+      clearable={clearable}
     />
   );
 }

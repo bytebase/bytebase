@@ -1,257 +1,1752 @@
-import { useEffect, useMemo, useRef } from "react";
+import {
+  ArrowUpRight,
+  Building2,
+  ChevronRight,
+  Folder,
+  Repeat2,
+  RotateCcw,
+} from "lucide-react";
+import type { ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/app/router/handles";
+import { router } from "@/app/router";
+import {
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
+} from "@/app/router/handles";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { CopyButton } from "@/components/ui/copy-button";
 import { Table } from "@/components/ui/table";
+import { useReactiveRoute } from "@/hooks/useReactiveRoute";
 import {
-  AI_ASSISTANT_PRODUCT_INTRO,
-  PRODUCT_INTRO_QUERY_KEY,
-} from "@/lib/productIntro";
-import { hasWorkspacePermissionV2 } from "@/utils";
-import type { AgentMessage, ToolCall } from "../logic/types";
+  ExistingIssueCommentDraftError,
+  IssueCommentDraftPermissionError,
+  IssueCommentDraftStorageError,
+  prepareIssueCommentDraftRoute,
+  wasIssueCommentDraftDelivered,
+} from "@/lib/issueCommentDraft";
+import { dispatchAgentPlanDraftToCurrentPlan } from "@/lib/plan/agentDraftHandoff";
+import { projectNamePrefix } from "@/lib/resourceName";
+import { cn } from "@/lib/utils";
 import {
+  ACCESS_GRANT_DRAFT_QUERY_KEY,
+  wasDeniedQueryRequestDraftDelivered,
+} from "@/modules/sql-editor/model/accessGrantDraft";
+import { useAppStore } from "@/stores/app";
+import {
+  type AgentApiAttempt,
+  isAgentApiAttemptUncertain,
+} from "../logic/apiAttempt";
+import {
+  type AccessGrantDraft,
+  type DeniedQueryRequestDraft,
+  DeniedQueryRequestDraftStorageError,
+  prepareAgentDeniedQueryRequestRoute,
+  validateDeniedQueryRequestDraft,
+} from "../logic/deniedQueryAccess";
+import { getAgentErrorSummary } from "../logic/errorDisplay";
+import {
+  applyAgentExpressionDraft,
+  extractAgentExpressionDraft,
+} from "../logic/expressionDraft";
+import { resolveAgentHandoffRoute } from "../logic/handoff";
+import { withDefaultAccessGrantReason } from "../logic/justInTime";
+import type { LandingStarterId } from "../logic/landingStarters";
+import {
+  captureAgentPageHandoffContext,
+  minimizeAgentAfterPageHandoff,
+} from "../logic/pageHandoff";
+import {
+  PlanDraftStorageError,
+  prepareAgentPlanDraftRoute,
+} from "../logic/planDraft";
+import { getQueryResponseActions } from "../logic/queryFollowUps";
+import {
+  formatResourceMention,
+  isResourceMentionRange,
+  normalizeAgentResourceReferences,
+} from "../logic/resourceMention";
+import {
+  extractPlanDraftSQL,
+  normalizeAgentResponseActions,
+} from "../logic/responseActions";
+import { getAgentRunContinuation } from "../logic/runCheckpoint";
+import { getAgentRunFeedback } from "../logic/runFeedback";
+import { supportsAgentRunRecovery } from "../logic/runOwnership";
+import { getApiMethodDescriptor } from "../logic/tools/apiMethodClass";
+import type {
+  AgentAnswerEvidence,
+  AgentEvidence,
+  AgentEvidenceReference,
+  AgentHandoff,
+  AgentMessage,
+  AgentResourceReference,
+  AgentResponseAction,
+  ToolCall,
+} from "../logic/types";
+import {
+  selectCurrentChat,
   selectCurrentChatRequiresAIConfiguration,
+  selectCurrentPendingAsk,
   selectError,
   selectLoading,
   selectMessages,
   useAgentStore,
 } from "../store/agent";
+import { AgentAIConfigurationRecovery } from "./AgentAIConfigurationRecovery";
+import { AgentApiRecovery } from "./AgentApiRecovery";
+import { AgentErrorDetails } from "./AgentErrorDetails";
+import {
+  AgentPrimaryAction,
+  AgentPrimaryActionLink,
+} from "./AgentPrimaryAction";
+import { AgentSqlFixReviewAction } from "./AgentSqlFixReviewAction";
+import { AgentStorageStatus } from "./AgentStorageStatus";
+import { MaskingExemptionDraftButton } from "./MaskingExemptionDraftButton";
+import { MaskingRuleDraftButton } from "./MaskingRuleDraftButton";
+import { SemanticTypeDraftButton } from "./SemanticTypeDraftButton";
 import { ToolCallCard } from "./ToolCallCard";
+import { AgentTooltip } from "./ui/AgentTooltip";
 
 interface AgentChatProps {
+  onOpenAccessGrantDraft?: (draft: AccessGrantDraft) => boolean;
   className?: string;
+  contextLabel?: string;
+  context?: string;
+  onRetry?: () => void;
+  onFreeSpaceAndRetry?: () => Promise<boolean>;
+  onResend?: (messageId: string) => void;
+  onSelectSuggestion?: (starterId: LandingStarterId) => void;
+  onContinueAction?: (
+    chatId: string,
+    prompt: string,
+    references: AgentResourceReference[],
+    followUpSourceId?: string
+  ) => void;
 }
 
-export function AgentChat({ className }: AgentChatProps) {
+const EMPTY_CHAT_STARTERS: Record<"workspace" | "project", LandingStarterId[]> =
+  {
+    workspace: [
+      "workspace-attention",
+      "workspace-recent",
+      "workspace-governance",
+    ],
+    project: [
+      "project-open-blockers",
+      "project-open-recent",
+      "project-propose-change",
+      "project-next",
+    ],
+  };
+
+const ISSUE_NAME_PATTERN = /^projects\/([^/]+)\/issues\/([^/]+)$/;
+const PLAN_NAME_PATTERN = /^projects\/([^/]+)\/plans\/([^/]+)$/;
+const DATABASE_NAME_PATTERN =
+  /^(?:projects\/([^/]+)\/)?instances\/([^/]+)\/databases\/([^/]+)$/;
+
+type ResolvedEvidenceReference = {
+  reference: AgentEvidenceReference;
+  label: string;
+  to:
+    | {
+        name: typeof PROJECT_V1_ROUTE_ISSUE_DETAIL;
+        params: { projectId: string; issueId: string };
+      }
+    | {
+        name: typeof PROJECT_V1_ROUTE_PLAN_DETAIL;
+        params: { projectId: string; planId: string };
+      }
+    | {
+        name: typeof PROJECT_V1_ROUTE_DATABASE_DETAIL;
+        params: { projectId: string; instanceId: string; databaseName: string };
+        query: { parent: string };
+      };
+};
+
+function resolveScopedEvidenceReferences(
+  evidence: AgentEvidence
+): ResolvedEvidenceReference[] {
+  if (!evidence || !Array.isArray(evidence.references)) {
+    return [];
+  }
+
+  const projectMatch =
+    typeof evidence.project === "string"
+      ? evidence.project.match(/^projects\/([^/]+)$/)
+      : undefined;
+  const isWorkspaceScoped =
+    typeof evidence.workspace === "string" &&
+    /^workspaces\/[^/]+$/.test(evidence.workspace);
+  if ((projectMatch ? 1 : 0) + (isWorkspaceScoped ? 1 : 0) !== 1) {
+    return [];
+  }
+
+  const projectId = projectMatch?.[1];
+  const resolved: ResolvedEvidenceReference[] = [];
+  for (const reference of evidence.references) {
+    if (!reference || typeof reference.name !== "string") {
+      continue;
+    }
+    if (reference.kind === "issue") {
+      const match = reference.name.match(ISSUE_NAME_PATTERN);
+      if (
+        !match ||
+        (projectId && match[1] !== projectId) ||
+        typeof reference.title !== "string" ||
+        !reference.title
+      ) {
+        continue;
+      }
+      resolved.push({
+        reference,
+        label: reference.title,
+        to: {
+          name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+          params: { projectId: match[1], issueId: match[2] },
+        },
+      });
+      continue;
+    }
+
+    if (reference.kind === "plan") {
+      if (
+        !projectId ||
+        typeof reference.title !== "string" ||
+        !reference.title
+      ) {
+        continue;
+      }
+      const match = reference.name.match(PLAN_NAME_PATTERN);
+      if (!match || match[1] !== projectId) continue;
+      resolved.push({
+        reference,
+        label: reference.title,
+        to: {
+          name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+          params: { projectId: match[1], planId: match[2] },
+        },
+      });
+      continue;
+    }
+
+    if (reference.kind !== "database" || !projectId) continue;
+
+    const match = reference.name.match(DATABASE_NAME_PATTERN);
+    const referenceProjectId = match?.[1];
+    if (!match || (referenceProjectId && referenceProjectId !== projectId)) {
+      continue;
+    }
+    const parent = referenceProjectId
+      ? `projects/${referenceProjectId}/instances/${match[2]}`
+      : `instances/${match[2]}`;
+    resolved.push({
+      reference,
+      label: match[3],
+      to: {
+        name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+        params: {
+          projectId,
+          instanceId: match[2],
+          databaseName: match[3],
+        },
+        query: { parent },
+      },
+    });
+  }
+  return resolved;
+}
+
+function resolveEvidenceReferences(
+  evidence: AgentAnswerEvidence | undefined
+): ResolvedEvidenceReference[] {
+  const groups = Array.isArray(evidence)
+    ? evidence
+    : evidence
+      ? [evidence]
+      : [];
+  const seen = new Set<string>();
+  return groups.flatMap((group) =>
+    resolveScopedEvidenceReferences(group).filter(({ reference }) => {
+      const key = `${reference.kind}:${reference.name}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+  );
+}
+
+function EvidenceReferences({ evidence }: { evidence?: AgentAnswerEvidence }) {
   const { t } = useTranslation();
+  const references = resolveEvidenceReferences(evidence);
+  const labels = {
+    issue: t("agent.evidence.issue"),
+    plan: t("agent.evidence.plan"),
+    database: t("agent.evidence.database"),
+  };
+  if (references.length === 0) return null;
+
+  return (
+    <Collapsible className="mt-2">
+      <CollapsibleTrigger className="w-fit text-xs text-control-light hover:text-control">
+        <ChevronRight className="size-3" />
+        {t("agent.evidence.references")}
+      </CollapsibleTrigger>
+      <CollapsiblePanel className="pt-1">
+        <ul className="flex flex-col gap-y-1 pl-5 text-xs">
+          {references.map(({ reference, label, to }) => (
+            <li key={`${reference.kind}:${reference.name}`}>
+              <span className="text-control-light">
+                {labels[reference.kind]}:{" "}
+              </span>
+              <RouterLink className="normal-link" to={to}>
+                {label}
+              </RouterLink>
+            </li>
+          ))}
+        </ul>
+      </CollapsiblePanel>
+    </Collapsible>
+  );
+}
+
+function HandoffLink({ handoff }: { handoff?: AgentHandoff }) {
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(false);
+  const to = resolveAgentHandoffRoute(handoff);
+  if (!to || !handoff) return null;
+  const labelKey =
+    handoff.kind === "transfer-project-databases"
+      ? "project.home.transfer-databases"
+      : handoff.kind === "connect-project-instance"
+        ? "project.home.connect"
+        : handoff.kind === "create-project-database"
+          ? "project.home.create-database"
+          : `agent.handoff.${handoff.kind}`;
+  const openHandoff = async () => {
+    if (loading) return;
+    const handoffContext = captureAgentPageHandoffContext();
+    setLoading(true);
+    try {
+      const targetPath = router.resolve(to).fullPath;
+      await router.push(to);
+      const currentPath = router.currentRoute.value.fullPath;
+      if (reachedHandoffRoute(currentPath, targetPath)) {
+        minimizeAgentAfterPageHandoff(handoffContext);
+      }
+    } catch {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.failed"),
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  if (
+    handoff.kind === "transfer-project-databases" ||
+    handoff.kind === "connect-project-instance" ||
+    handoff.kind === "create-project-database"
+  ) {
+    return (
+      <AgentPrimaryAction
+        className="-ml-2"
+        data-agent-handoff
+        data-agent-action-open
+        disabled={loading}
+        loading={loading}
+        onClick={() => void openHandoff()}
+      >
+        {t(labelKey)}
+      </AgentPrimaryAction>
+    );
+  }
+  return (
+    <AgentPrimaryActionLink
+      className="-ml-2"
+      data-agent-handoff
+      data-agent-action-open
+      to={to}
+      loading={loading}
+      onClick={(event) => {
+        if (
+          event.defaultPrevented ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey ||
+          event.button !== 0 ||
+          (event.currentTarget.target &&
+            event.currentTarget.target !== "_self") ||
+          event.currentTarget.hasAttribute("download")
+        ) {
+          return;
+        }
+        event.preventDefault();
+        void openHandoff();
+      }}
+    >
+      {t(labelKey)}
+    </AgentPrimaryActionLink>
+  );
+}
+
+function reachedIssueCommentDraftRoute(
+  currentPath: string,
+  targetPath: string
+): boolean {
+  if (currentPath === targetPath) return true;
+  if (!targetPath.startsWith("/") || !currentPath.startsWith("/")) return false;
+  const target = new URL(targetPath, "https://bytebase.invalid");
+  const current = new URL(currentPath, "https://bytebase.invalid");
+  const targetIssue = /^\/projects\/([^/]+)\/issues\/[^/]+$/.exec(
+    target.pathname
+  );
+  const draftKey = target.searchParams.get("agentCommentDraft");
+  return Boolean(
+    targetIssue &&
+      draftKey &&
+      current.searchParams.get("agentCommentDraft") === draftKey &&
+      current.pathname.startsWith(`/projects/${targetIssue[1]}/plans/`)
+  );
+}
+
+function sameRoutePathname(currentPath: string, targetPath: string): boolean {
+  if (!currentPath.startsWith("/") || !targetPath.startsWith("/")) return false;
+  return (
+    new URL(currentPath, "https://bytebase.invalid").pathname ===
+    new URL(targetPath, "https://bytebase.invalid").pathname
+  );
+}
+
+function reachedHandoffRoute(currentPath: string, targetPath: string): boolean {
+  if (currentPath === targetPath) return true;
+  if (!currentPath.startsWith("/") || !targetPath.startsWith("/")) return false;
+  const target = new URL(targetPath, "https://bytebase.invalid");
+  const current = new URL(currentPath, "https://bytebase.invalid");
+  if (
+    current.pathname !== target.pathname ||
+    (target.hash && current.hash !== target.hash)
+  ) {
+    return false;
+  }
+  return [...new Set(target.searchParams.keys())].every((key) => {
+    const expected = target.searchParams.getAll(key);
+    const actual = current.searchParams.getAll(key);
+    return (
+      actual.length === expected.length &&
+      expected.every((value, index) => actual[index] === value)
+    );
+  });
+}
+
+async function waitForDeliveredAccessDraft(key: string): Promise<boolean> {
+  for (let attempt = 0; attempt < 60; attempt++) {
+    if (wasDeniedQueryRequestDraftDelivered(key)) return true;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return false;
+}
+
+async function waitForDeliveredIssueCommentDraft(
+  key: string
+): Promise<boolean> {
+  for (let attempt = 0; attempt < 60; attempt++) {
+    if (wasIssueCommentDraftDelivered(key)) return true;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return false;
+}
+
+function PlanDraftButton({
+  action,
+  answer,
+}: {
+  action: Extract<AgentResponseAction, { kind: "draft-plan" }>;
+  answer: string;
+}) {
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(false);
+  const currentRoute = useReactiveRoute();
+  const isCurrentPlanCreate = (route = router.currentRoute.value) => {
+    const planId = route.params?.planId;
+    const projectId = route.params?.projectId;
+    return (
+      route.name === PROJECT_V1_ROUTE_PLAN_DETAIL &&
+      typeof planId === "string" &&
+      planId.toLowerCase() === "create" &&
+      typeof projectId === "string" &&
+      projectId === action.project.slice("projects/".length)
+    );
+  };
+  const applyToCurrentPlan = isCurrentPlanCreate(currentRoute);
+  const openDraft = async () => {
+    if (loading) return;
+    const handoffContext = captureAgentPageHandoffContext();
+    setLoading(true);
+    try {
+      if (isCurrentPlanCreate()) {
+        const sql = extractPlanDraftSQL(answer);
+        const handled =
+          sql &&
+          dispatchAgentPlanDraftToCurrentPlan({
+            project: action.project,
+            database: action.database,
+            sql,
+            onApplied: () => minimizeAgentAfterPageHandoff(handoffContext),
+          });
+        if (!handled) {
+          useAppStore.getState().notify({
+            module: "bytebase",
+            style: "CRITICAL",
+            title: t("agent.plan-draft.current-plan-unavailable"),
+          });
+        }
+        return;
+      }
+      const route = await prepareAgentPlanDraftRoute(
+        action,
+        answer,
+        t("agent.plan-draft.default-title")
+      );
+      const targetPath = router.resolve(route).fullPath;
+      await router.push(route);
+      if (router.currentRoute.value.fullPath === targetPath) {
+        minimizeAgentAfterPageHandoff(handoffContext);
+      }
+    } catch (error) {
+      const title =
+        error instanceof PlanDraftStorageError
+          ? t("plan.initial-sql-storage-failed")
+          : t("agent.plan-draft.unavailable");
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AgentPrimaryAction
+      className="-ml-2"
+      data-agent-action-draft-plan
+      actionKind={applyToCurrentPlan ? "apply" : "open"}
+      disabled={loading}
+      loading={loading}
+      onClick={() => void openDraft()}
+    >
+      {applyToCurrentPlan
+        ? t("agent.plan-draft.apply-to-current-plan")
+        : t("agent.plan-draft.open")}
+    </AgentPrimaryAction>
+  );
+}
+
+function AccessRequestDraftButton({
+  draft,
+  onOpenAccessGrantDraft,
+}: {
+  draft: DeniedQueryRequestDraft;
+  onOpenAccessGrantDraft?: AgentChatProps["onOpenAccessGrantDraft"];
+}) {
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(false);
+  const openDraft = async () => {
+    if (loading) return;
+    const handoffContext = captureAgentPageHandoffContext();
+    setLoading(true);
+    try {
+      if (draft.kind !== "requestRole") {
+        if (
+          !(await validateDeniedQueryRequestDraft(draft)) ||
+          !onOpenAccessGrantDraft?.(withDefaultAccessGrantReason(draft))
+        ) {
+          useAppStore.getState().notify({
+            module: "bytebase",
+            style: "CRITICAL",
+            title: t("agent.access-grant-draft.unavailable"),
+          });
+          return;
+        }
+        minimizeAgentAfterPageHandoff(handoffContext);
+        return;
+      }
+      const route = await prepareAgentDeniedQueryRequestRoute(draft);
+      const targetPath = router.resolve(route).fullPath;
+      await router.push(route);
+      const key =
+        typeof route === "string"
+          ? undefined
+          : route.query?.[ACCESS_GRANT_DRAFT_QUERY_KEY];
+      const delivered =
+        typeof key === "string" &&
+        sameRoutePathname(router.currentRoute.value.fullPath, targetPath) &&
+        (await waitForDeliveredAccessDraft(key));
+      if (!delivered) {
+        useAppStore.getState().notify({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("agent.access-grant-draft.unavailable"),
+        });
+      } else if (
+        sameRoutePathname(router.currentRoute.value.fullPath, targetPath)
+      ) {
+        minimizeAgentAfterPageHandoff(handoffContext);
+      }
+    } catch (error) {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title:
+          error instanceof DeniedQueryRequestDraftStorageError
+            ? t("agent.access-grant-draft.storage-failed")
+            : t("agent.access-grant-draft.unavailable"),
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AgentPrimaryAction
+      className="-ml-2"
+      data-agent-action-request-access
+      disabled={loading}
+      loading={loading}
+      onClick={() => void openDraft()}
+    >
+      {t("agent.access-grant-draft.open")}
+    </AgentPrimaryAction>
+  );
+}
+
+function AgentExpressionDraftActions({
+  chatId,
+  expression,
+}: {
+  chatId: string;
+  expression: string;
+}) {
+  const { t } = useTranslation();
+  const [applyingMode, setApplyingMode] = useState<"selector" | "raw">();
+  const [appliedMode, setAppliedMode] = useState<"selector" | "raw">();
+  const [failed, setFailed] = useState(false);
+  const canApplySelector = useAgentStore((state) =>
+    state.canApplyExpressionDraft(chatId, "selector")
+  );
+  const canApplyRaw = useAgentStore((state) =>
+    state.canApplyExpressionDraft(chatId, "raw")
+  );
+
+  if (!canApplySelector && !canApplyRaw) return null;
+
+  const apply = async (mode: "selector" | "raw") => {
+    if (applyingMode || appliedMode) return;
+    const handoffContext = captureAgentPageHandoffContext(chatId);
+    setApplyingMode(mode);
+    setFailed(false);
+    try {
+      if (await applyAgentExpressionDraft(chatId, expression, mode)) {
+        setAppliedMode(mode);
+        minimizeAgentAfterPageHandoff(handoffContext);
+      } else {
+        setFailed(true);
+      }
+    } catch {
+      setFailed(true);
+    } finally {
+      setApplyingMode(undefined);
+    }
+  };
+
+  return (
+    <div
+      className="mt-2 flex max-w-full flex-col items-start gap-2"
+      role="group"
+      aria-label={t("cel.agent-help.apply-group")}
+      data-agent-expression-draft
+    >
+      <div className="-ml-2 flex max-w-full flex-wrap gap-2">
+        {canApplySelector && (
+          <AgentPrimaryAction
+            type="button"
+            actionKind="apply"
+            data-agent-expression-draft="selector"
+            disabled={Boolean(applyingMode || appliedMode)}
+            loading={applyingMode === "selector"}
+            completed={appliedMode === "selector"}
+            onClick={() => void apply("selector")}
+          >
+            {appliedMode === "selector"
+              ? t("cel.agent-help.applied-selector")
+              : t("cel.agent-help.apply-selector")}
+          </AgentPrimaryAction>
+        )}
+        {canApplyRaw && (
+          <AgentPrimaryAction
+            type="button"
+            actionKind="apply"
+            data-agent-expression-draft="raw"
+            disabled={Boolean(applyingMode || appliedMode)}
+            loading={applyingMode === "raw"}
+            completed={appliedMode === "raw"}
+            onClick={() => void apply("raw")}
+          >
+            {appliedMode === "raw"
+              ? t("cel.agent-help.applied-raw")
+              : t("cel.agent-help.apply-raw")}
+          </AgentPrimaryAction>
+        )}
+      </div>
+      <p className="text-xs text-control-light">
+        {t("cel.agent-help.unsaved")}
+      </p>
+      {failed && (
+        <p className="text-xs text-error" role="alert">
+          {t("cel.agent-help.invalid")}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function IssueCommentDraftButton({
+  action,
+}: {
+  action: Extract<AgentResponseAction, { kind: "draft-issue-comment" }>;
+}) {
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(false);
+  const openDraft = async () => {
+    if (loading) return;
+    const handoffContext = captureAgentPageHandoffContext();
+    setLoading(true);
+    try {
+      const route = prepareIssueCommentDraftRoute(action.issue, action.comment);
+      const targetPath = router.resolve(route).fullPath;
+      await router.push(route);
+      const draftKey = route.query?.agentCommentDraft;
+      if (
+        typeof draftKey !== "string" ||
+        !reachedIssueCommentDraftRoute(
+          router.currentRoute.value.fullPath,
+          targetPath
+        )
+      ) {
+        return;
+      }
+      if (!(await waitForDeliveredIssueCommentDraft(draftKey))) {
+        useAppStore.getState().notify({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("agent.issue-comment-draft.unavailable"),
+        });
+        return;
+      }
+      if (
+        reachedIssueCommentDraftRoute(
+          router.currentRoute.value.fullPath,
+          targetPath
+        )
+      ) {
+        minimizeAgentAfterPageHandoff(handoffContext);
+      }
+    } catch (error) {
+      const title =
+        error instanceof ExistingIssueCommentDraftError
+          ? t("agent.issue-comment-draft.existing")
+          : error instanceof IssueCommentDraftPermissionError
+            ? t("agent.issue-comment-draft.permission-denied")
+            : error instanceof IssueCommentDraftStorageError
+              ? t("agent.issue-comment-draft.storage-failed")
+              : t("agent.issue-comment-draft.unavailable");
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-full">
+      <AgentPrimaryAction
+        className="-ml-2"
+        data-agent-action-draft-issue-comment
+        disabled={loading}
+        loading={loading}
+        onClick={() => void openDraft()}
+      >
+        {t("agent.issue-comment-draft.open")}
+      </AgentPrimaryAction>
+      <details className="mt-1 text-xs text-control-light">
+        <summary className="cursor-pointer">
+          {t("agent.issue-comment-draft.preview")}
+        </summary>
+        <p className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap text-main">
+          {action.comment}
+        </p>
+      </details>
+    </div>
+  );
+}
+
+function renderBoundMentions(
+  content: string,
+  references: AgentResourceReference[]
+): ReactNode {
+  const labels = new Map<string, { label: string; count: number }>();
+  for (const reference of references) {
+    const mention = formatResourceMention(reference.label);
+    const existing = labels.get(mention);
+    labels.set(mention, {
+      label: reference.label,
+      count: (existing?.count ?? 0) + 1,
+    });
+  }
+
+  const ranges: { start: number; end: number }[] = [];
+  for (const [mention, { label, count }] of labels) {
+    const matches: { start: number; end: number }[] = [];
+    let from = 0;
+    while (from < content.length) {
+      const start = content.indexOf(mention, from);
+      if (start < 0) break;
+      const range = { start, end: start + mention.length };
+      if (isResourceMentionRange(content, range, label)) matches.push(range);
+      from = range.end;
+    }
+    if (matches.length === count) ranges.push(...matches);
+  }
+
+  ranges.sort((a, b) => a.start - b.start);
+  if (ranges.length === 0) return content;
+
+  const parts: ReactNode[] = [];
+  let from = 0;
+  for (const range of ranges) {
+    if (range.start < from) continue;
+    parts.push(content.slice(from, range.start));
+    parts.push(
+      <span
+        key={range.start}
+        className="font-medium text-accent"
+        data-agent-message-mention
+      >
+        {content.slice(range.start, range.end)}
+      </span>
+    );
+    from = range.end;
+  }
+  parts.push(content.slice(from));
+  return parts;
+}
+
+export function AgentChat({
+  onOpenAccessGrantDraft,
+  className,
+  contextLabel,
+  context,
+  onRetry,
+  onFreeSpaceAndRetry,
+  onResend,
+  onSelectSuggestion,
+  onContinueAction,
+}: AgentChatProps) {
+  const { t } = useTranslation();
+  const currentRoute = useReactiveRoute();
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [
+    isAIConfigurationRecoveryDismissed,
+    setAIConfigurationRecoveryDismissed,
+  ] = useState(false);
 
   const messages = useAgentStore(selectMessages);
+  const currentChat = useAgentStore(selectCurrentChat);
   const loading = useAgentStore(selectLoading);
   const error = useAgentStore(selectError);
-  const showAIConfigurationRecovery = useAgentStore(
+  const storagePressure = useAgentStore((state) => state.storagePressure);
+  const storageStatusKey = useAgentStore((state) =>
+    JSON.stringify([state.workspaceName, state.userEmail, state.currentChatId])
+  );
+  const executionAvailable = useAgentStore((state) =>
+    state.canUseAgentExecution()
+  );
+  const remoteBusy = useAgentStore((state) =>
+    Boolean(state.currentChatId && state.remoteBusyChatIds[state.currentChatId])
+  );
+  const chatRequiresAIConfiguration = useAgentStore(
     selectCurrentChatRequiresAIConfiguration
   );
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const pendingAsk = useAgentStore(selectCurrentPendingAsk);
+  const hasActiveController = useAgentStore((state) =>
+    Boolean(
+      state.currentChatId && state.abortControllersByChatId[state.currentChatId]
+    )
+  );
+  const queuedMessageInFlight = useAgentStore((state) =>
+    Boolean(
+      state.currentChatId &&
+        state.queuedUserMessageInFlightByChatId[state.currentChatId]
+    )
+  );
+  const queuedUserMessage = useAgentStore((s) =>
+    s.currentChatId ? s.queuedUserMessagesByChatId[s.currentChatId] : undefined
+  );
+  const responseActionsByMessageId = useMemo(() => {
+    const accepted = new Map<string, AgentResponseAction[]>();
+    let turnMessages: AgentMessage[] = [];
+    for (const message of messages) {
+      if (message.role === "user") turnMessages = [];
+      turnMessages.push(message);
+      if (!message.metadata?.actions) continue;
+      const actions = normalizeAgentResponseActions(message.metadata.actions);
+      // Saved questions must use their own turn, not a later query's evidence.
+      accepted.set(
+        message.id,
+        currentChat?.capability || message.metadata.accessRequestDraft
+          ? actions
+          : getQueryResponseActions(
+              actions,
+              turnMessages,
+              normalizeAgentResourceReferences(
+                message.metadata.resourceReferences,
+                message.metadata.resourceReference
+              ),
+              t,
+              message.metadata.queryMaskingEligibility
+            )
+      );
+    }
+    return accepted;
+  }, [messages, currentChat?.capability, t]);
+  const latestContinuePrompts = responseActionsByMessageId
+    .get(messages.at(-1)?.id ?? "")
+    ?.filter((action) => action.kind === "continue")
+    .map((action) => action.prompt)
+    .join("\0");
+  const previousFollowUp = useRef<{
+    chatId: string | null;
+    prompts?: string;
+  }>({ chatId: null });
+  const draftText = useAgentStore((s) =>
+    currentChatId ? s.draftsByChatId[currentChatId]?.text : s.landingDraft.text
+  );
+  const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
   const allMessages = useAgentStore(selectMessages);
-  const clearError = useAgentStore((s) => s.clearError);
 
-  const allowConfigure = hasWorkspacePermissionV2("bb.settings.set");
+  const feedback = getAgentRunFeedback({
+    executionAvailable,
+    storageBlocked: Boolean(storagePressure),
+    aiConfigurationRequired: chatRequiresAIConfiguration || aiEnabled === false,
+    recoverySupported: supportsAgentRunRecovery(),
+    remoteBusy,
+    chat: currentChat,
+    messages,
+  });
+  const showAIConfigurationRecovery =
+    feedback === "ai-configuration" &&
+    (chatRequiresAIConfiguration || !isAIConfigurationRecoveryDismissed);
+  const showStorageError = feedback === "storage";
 
   const displayMessages = useMemo(
     () =>
       messages.filter(
         (message): message is AgentMessage =>
-          message.role === "user" || message.role === "assistant"
+          (message.role === "user" || message.role === "assistant") &&
+          !message.metadata?.runPreflight &&
+          !(
+            message.role === "assistant" &&
+            error &&
+            message.metadata?.error === error
+          )
       ),
-    [messages]
+    [error, messages]
   );
+  const emptyChatContext = currentChat ? currentChat.context : context;
+  const emptyChatScope = emptyChatContext?.startsWith(projectNamePrefix)
+    ? "project"
+    : "workspace";
+  const showEmptyChat =
+    (currentChat
+      ? currentChat.status === "idle" && !currentChat.archived
+      : Boolean(onSelectSuggestion)) &&
+    messages.length === 0 &&
+    !loading &&
+    !error &&
+    !showAIConfigurationRecovery;
+  // An interruption belongs after the turn's final visible message, including tool calls.
+  const interruptionByLastMessageId = useMemo(() => {
+    const interruptions = new Map<
+      string,
+      { reason: "user" | "unexpected"; userMessageId: string }
+    >();
+    let userMessage: AgentMessage | undefined;
+    let lastMessage: AgentMessage | undefined;
+    const addInterruption = () => {
+      const reason = userMessage?.metadata?.interruptionReason;
+      if (
+        userMessage &&
+        lastMessage &&
+        (reason === "user" || reason === "unexpected")
+      ) {
+        interruptions.set(lastMessage.id, {
+          reason,
+          userMessageId: userMessage.id,
+        });
+      }
+    };
+    for (const message of displayMessages) {
+      if (message.role === "user") {
+        addInterruption();
+        userMessage = message;
+      }
+      lastMessage = message;
+    }
+    addInterruption();
+    return interruptions;
+  }, [displayMessages]);
+  const latestUserMessageId = displayMessages.findLast(
+    (message) => message.role === "user"
+  )?.id;
+  const isResendBlocked =
+    loading ||
+    hasActiveController ||
+    currentChat?.status === "awaiting_user" ||
+    Boolean(pendingAsk) ||
+    Boolean(queuedUserMessage) ||
+    queuedMessageInFlight;
+  const isChatActionBlocked =
+    loading ||
+    currentChat?.status === "awaiting_user" ||
+    currentChat?.archived ||
+    Boolean(storagePressure) ||
+    Boolean(queuedUserMessage);
+  const canRetryError =
+    currentChat?.status === "error" &&
+    Boolean(latestUserMessageId) &&
+    !isChatActionBlocked &&
+    Boolean(onRetry);
+  const stoppedRunContinuation =
+    currentChat?.interruptionReason === "user" &&
+    (currentChat.status === "idle" || currentChat.status === "error")
+      ? getAgentRunContinuation(currentChat, messages)
+      : undefined;
 
-  function getToolResult(
-    messageId: string,
-    toolCallId: string,
-    duplicateIndex = 0
-  ): string | undefined {
+  const toolCallViews = useMemo(() => {
+    type Occurrence = {
+      message: AgentMessage;
+      toolCall: ToolCall;
+      rootUserMessageId?: string;
+      operationId?: string;
+      result?: AgentMessage;
+      missingResultAttempt?: AgentApiAttempt;
+    };
+    const byMessageId = new Map<string, Occurrence[]>();
+    const occurrences: Occurrence[] = [];
+    const linkedAttemptIds = new Set<string>();
+    let rootUserMessageId: string | undefined;
+    for (const [index, message] of allMessages.entries()) {
+      if (message.role === "tool" && message.metadata?.apiAttemptId) {
+        linkedAttemptIds.add(message.metadata.apiAttemptId);
+      }
+      if (message.role === "user") rootUserMessageId = message.id;
+      if (message.role !== "assistant" || !message.toolCalls?.length) continue;
+      const results = new Map<string, AgentMessage[]>();
+      for (let next = index + 1; next < allMessages.length; next++) {
+        const row = allMessages[next];
+        if (row.role === "assistant" || row.role === "user") break;
+        if (row.role === "tool" && row.toolCallId) {
+          const rows = results.get(row.toolCallId) ?? [];
+          rows.push(row);
+          results.set(row.toolCallId, rows);
+        }
+      }
+      const duplicateIndexes = new Map<string, number>();
+      const views = message.toolCalls.map((toolCall): Occurrence => {
+        const duplicateIndex = duplicateIndexes.get(toolCall.id) ?? 0;
+        duplicateIndexes.set(toolCall.id, duplicateIndex + 1);
+        let operationId: string | undefined;
+        if (toolCall.name === "call_api") {
+          try {
+            const operation: unknown = JSON.parse(
+              toolCall.arguments
+            ).operationId;
+            const method =
+              typeof operation === "string"
+                ? getApiMethodDescriptor(operation)
+                : undefined;
+            if (method)
+              operationId = `${method.parent.typeName}.${method.name}`;
+          } catch {
+            /* Unreadable arguments cannot identify a receipt's operation. */
+          }
+        }
+        return {
+          message,
+          toolCall,
+          rootUserMessageId,
+          operationId,
+          result: results.get(toolCall.id)?.[duplicateIndex],
+        };
+      });
+      byMessageId.set(message.id, views);
+      occurrences.push(...views);
+    }
+    const pendingMessageId = pendingAsk?.apiPermission
+      ? occurrences.findLast(
+          (occurrence) =>
+            occurrence.rootUserMessageId === latestUserMessageId &&
+            occurrence.toolCall.id === pendingAsk.toolCallId
+        )?.message.id
+      : undefined;
+    const candidatesByOccurrence = new Map<Occurrence, AgentApiAttempt[]>();
+    const occurrencesByAttempt = new Map<AgentApiAttempt, Occurrence[]>();
+    for (const attempt of currentChat?.apiAttempts ?? []) {
+      if (linkedAttemptIds.has(attempt.id)) continue;
+      const matches = occurrences.filter(
+        (occurrence) =>
+          !occurrence.result &&
+          occurrence.toolCall.name === "call_api" &&
+          occurrence.message.id !== pendingMessageId &&
+          occurrence.toolCall.id === attempt.toolCallId &&
+          occurrence.rootUserMessageId === attempt.rootUserMessageId &&
+          occurrence.operationId === attempt.operationId &&
+          (!occurrence.message.metadata?.runId ||
+            occurrence.message.metadata.runId === attempt.runId)
+      );
+      occurrencesByAttempt.set(attempt, matches);
+      for (const occurrence of matches) {
+        const candidates = candidatesByOccurrence.get(occurrence) ?? [];
+        candidates.push(attempt);
+        candidatesByOccurrence.set(occurrence, candidates);
+      }
+    }
+    const inlineAttemptIds = new Set<string>();
+    for (const [occurrence, candidates] of candidatesByOccurrence) {
+      const attempt = candidates[0];
+      // Provider call IDs are reusable; only an unambiguous receipt belongs on a card.
+      if (
+        candidates.length !== 1 ||
+        occurrencesByAttempt.get(attempt)?.length !== 1
+      )
+        continue;
+      if (
+        attempt.phase === "settled" ||
+        attempt.runId !== currentChat?.runId ||
+        (!loading && !hasActiveController)
+      ) {
+        occurrence.missingResultAttempt = attempt;
+        inlineAttemptIds.add(attempt.id);
+      }
+    }
+    return { byMessageId, inlineAttemptIds, linkedAttemptIds };
+  }, [
+    allMessages,
+    currentChat?.apiAttempts,
+    currentChat?.runId,
+    pendingAsk,
+    latestUserMessageId,
+    loading,
+    hasActiveController,
+  ]);
+
+  function hasAccessGrantDraftAfter(toolCallMessage: AgentMessage): boolean {
     const fullIndex = allMessages.findIndex(
-      (message) => message.id === messageId
+      (message) => message.id === toolCallMessage.id
     );
-    if (fullIndex < 0) return undefined;
+    if (fullIndex < 0) return false;
 
-    let matchingResultIndex = 0;
     for (let index = fullIndex + 1; index < allMessages.length; index++) {
       const message = allMessages[index];
-      if (message.role === "tool" && message.toolCallId === toolCallId) {
-        if (matchingResultIndex === duplicateIndex) {
-          return message.content;
-        }
-        matchingResultIndex++;
-      }
+      if (message.role === "user") return false;
       if (
         message.role === "assistant" &&
         message.content &&
         !message.toolCalls?.length
       ) {
-        break;
+        const metadata = message.metadata;
+        const draft = metadata?.accessRequestDraft;
+        return Boolean(
+          draft &&
+            draft.kind !== "requestRole" &&
+            !metadata?.pending &&
+            !metadata?.error &&
+            metadata?.runId === toolCallMessage.metadata?.runId
+        );
       }
     }
-    return undefined;
-  }
-
-  function getToolCallDuplicateIndex(
-    toolCalls: ToolCall[],
-    currentToolCallIndex: number
-  ): number {
-    const currentToolCall = toolCalls[currentToolCallIndex];
-    let duplicateIndex = 0;
-    for (let index = 0; index < currentToolCallIndex; index++) {
-      if (toolCalls[index]?.id === currentToolCall.id) {
-        duplicateIndex++;
-      }
-    }
-    return duplicateIndex;
-  }
-
-  function goConfigure() {
-    clearError(currentChatId);
+    return false;
   }
 
   function dismiss() {
-    clearError(currentChatId);
+    setAIConfigurationRecoveryDismissed(true);
   }
 
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop =
-        chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop = showEmptyChat
+        ? 0
+        : chatContainerRef.current.scrollHeight;
     }
-  }, [currentChatId, messages.length]);
+  }, [
+    currentChatId,
+    currentChat?.interrupted,
+    messages.length,
+    showEmptyChat,
+    showStorageError,
+  ]);
+
+  useEffect(() => {
+    const previous = previousFollowUp.current;
+    previousFollowUp.current = {
+      chatId: currentChatId,
+      prompts: latestContinuePrompts,
+    };
+    if (
+      previous.chatId !== currentChatId ||
+      !latestContinuePrompts ||
+      previous.prompts === latestContinuePrompts
+    ) {
+      return;
+    }
+    const container = chatContainerRef.current;
+    if (
+      container &&
+      container.scrollHeight - container.scrollTop - container.clientHeight <=
+        160
+    ) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [currentChatId, latestContinuePrompts]);
+
+  useEffect(() => {
+    setAIConfigurationRecoveryDismissed(false);
+  }, [aiEnabled, currentChatId]);
 
   return (
     <div
       ref={chatContainerRef}
-      className={`flex flex-col overflow-y-auto gap-3 p-3 ${className ?? ""}`}
+      className={`flex min-w-0 flex-col overflow-y-auto gap-3 p-3 ${className ?? ""}`}
+      data-agent-chat-scroll-area
     >
-      {displayMessages.map((msg) =>
-        msg.role === "user" ? (
-          <div key={msg.id} className="flex justify-end">
-            <div className="max-w-[80%] rounded-sm bg-info/10 px-3 py-2 text-sm">
-              {msg.content}
-            </div>
+      {showEmptyChat && (
+        <div className="m-auto w-full max-w-xl py-2" data-agent-empty-chat>
+          <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-control-light">
+            {emptyChatScope === "project" ? (
+              <Folder className="size-4 shrink-0" aria-hidden="true" />
+            ) : (
+              <Building2 className="size-4 shrink-0" aria-hidden="true" />
+            )}
+            <span className="min-w-0 truncate">
+              {contextLabel ?? emptyChatContext ?? t("agent.context-workspace")}
+            </span>
           </div>
-        ) : (
-          <div key={msg.id} className="flex flex-col gap-y-2">
-            {msg.content && (
-              <div className="max-w-[80%] rounded-sm bg-control-bg px-3 py-2 text-sm">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    p: ({ children }) => (
-                      <p className="my-1 first:mt-0 last:mb-0">{children}</p>
-                    ),
-                    pre: ({ children }) => (
-                      <pre className="my-1 overflow-x-auto rounded-xs bg-control-bg p-2 text-xs">
-                        {children}
-                      </pre>
-                    ),
-                    code: ({ children }) => (
-                      <code className="break-all rounded-xs bg-control-bg-hover px-1 text-xs">
-                        {children}
-                      </code>
-                    ),
-                    ul: ({ children }) => (
-                      <ul className="my-1 list-disc pl-5">{children}</ul>
-                    ),
-                    ol: ({ children }) => (
-                      <ol className="my-1 list-decimal pl-5">{children}</ol>
-                    ),
-                    li: ({ children }) => (
-                      <li className="my-0.5">{children}</li>
-                    ),
-                    h1: ({ children }) => (
-                      <h1 className="my-1 font-semibold">{children}</h1>
-                    ),
-                    h2: ({ children }) => (
-                      <h2 className="my-1 font-semibold">{children}</h2>
-                    ),
-                    h3: ({ children }) => (
-                      <h3 className="my-1 font-semibold">{children}</h3>
-                    ),
-                    a: ({ children, href }) => (
-                      <a
-                        className="text-accent underline"
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {children}
-                      </a>
-                    ),
-                    blockquote: ({ children }) => (
-                      <blockquote className="my-1 border-l-2 border-control-border pl-2 text-control-light">
-                        {children}
-                      </blockquote>
-                    ),
-                    table: ({ children }) => (
-                      <Table className="my-1 border-collapse text-xs">
-                        {children}
-                      </Table>
-                    ),
-                    th: ({ children }) => (
-                      <th className="border border-control-border px-2 py-1">
-                        {children}
-                      </th>
-                    ),
-                    td: ({ children }) => (
-                      <td className="border border-control-border px-2 py-1">
-                        {children}
-                      </td>
-                    ),
-                  }}
-                >
-                  {msg.content}
-                </ReactMarkdown>
+          <h2 className="mt-3 text-xl font-semibold text-main">
+            {emptyChatScope === "project"
+              ? t("agent.empty-chat.project-heading")
+              : t("agent.empty-chat.workspace-heading")}
+          </h2>
+          {!draftText?.trim() && (
+            <>
+              <div className="mt-4 text-xs font-medium text-control-light">
+                {t("agent.empty-chat.suggestions")}
               </div>
-            )}
-            {msg.toolCalls?.map((toolCall, index, toolCalls) => (
-              <ToolCallCard
-                key={`${msg.id}:${toolCall.id}:${index}`}
-                toolCall={toolCall}
-                result={getToolResult(
-                  msg.id,
-                  toolCall.id,
-                  getToolCallDuplicateIndex(toolCalls, index)
-                )}
-              />
-            ))}
-          </div>
-        )
-      )}
-
-      {loading && (
-        <div className="flex items-center gap-x-2 text-sm text-control-placeholder">
-          <span className="animate-pulse">&#9679;</span> {t("common.loading")}
-        </div>
-      )}
-
-      {showAIConfigurationRecovery ? (
-        <div className="max-w-[80%] rounded-sm border border-warning/20 bg-warning/10 px-3 py-3 text-sm text-warning">
-          <div className="font-medium">
-            {t("agent.ai-not-configured.title")}
-          </div>
-          <div className="mt-1">{t("agent.ai-not-configured.description")}</div>
-          <div className="mt-3 flex flex-wrap gap-x-2 gap-y-2">
-            {allowConfigure && (
-              <RouterLink
-                to={{
-                  name: SETTING_ROUTE_WORKSPACE_GENERAL,
-                  hash: "#ai-assistant",
-                  query: {
-                    [PRODUCT_INTRO_QUERY_KEY]: AI_ASSISTANT_PRODUCT_INTRO,
-                  },
-                }}
-                className={buttonVariants({ size: "sm" })}
-                onClick={goConfigure}
-              >
-                {t("agent.ai-not-configured.configure")}
-              </RouterLink>
-            )}
-            <Button appearance="outline" size="sm" onClick={dismiss}>
-              {t("common.dismiss")}
-            </Button>
-          </div>
-          {!allowConfigure && (
-            <div className="mt-1 text-warning">
-              {t("agent.ai-not-configured.contact-admin")}
-            </div>
+              <div className="mt-2 divide-y divide-block-border border-y border-block-border">
+                {EMPTY_CHAT_STARTERS[emptyChatScope].map((starterId) => (
+                  <Button
+                    key={starterId}
+                    appearance="secondary"
+                    size="sm"
+                    className="h-auto w-full min-w-0 justify-between rounded-xs py-1.5 text-left whitespace-normal hover:text-accent"
+                    onClick={() => onSelectSuggestion?.(starterId)}
+                    data-agent-empty-suggestion
+                    data-starter-id={starterId}
+                  >
+                    <span className="min-w-0 flex-1 break-words">
+                      {t(`agent.landing-starters.${starterId}`)}
+                    </span>
+                    <ArrowUpRight
+                      className="size-4 shrink-0"
+                      aria-hidden="true"
+                    />
+                  </Button>
+                ))}
+              </div>
+            </>
           )}
         </div>
+      )}
+      {displayMessages.map((msg) => {
+        const interruption = interruptionByLastMessageId.get(msg.id);
+        const showInterruption =
+          interruption &&
+          (interruption.userMessageId !== latestUserMessageId ||
+            !feedback ||
+            (feedback === "token-budget" &&
+              currentChat?.runCheckpoint?.suspension !== "token-limit"));
+        const canRetry =
+          interruption &&
+          (interruption.reason === "unexpected" ||
+            (stoppedRunContinuation?.checkpoint.suspension === "interrupted" &&
+              stoppedRunContinuation.checkpoint.rootUserMessageId ===
+                interruption.userMessageId)) &&
+          interruption.userMessageId === latestUserMessageId &&
+          currentChat?.interrupted &&
+          currentChat.interruptionReason === interruption.reason &&
+          !isChatActionBlocked &&
+          onRetry;
+        const isPending = msg.metadata?.pending === true;
+        const actions = responseActionsByMessageId.get(msg.id) ?? [];
+        const openAction = actions.find((action) => action.kind === "open");
+        const proposedHandoff = openAction?.target ?? msg.metadata?.handoff;
+        const diagnosticIssueRoute =
+          currentChat?.capability?.kind === "diagnostic" &&
+          (currentChat.capability.resource.kind === "issue" ||
+            currentChat.capability.resource.kind === "plan") &&
+          proposedHandoff?.kind === "open-issue"
+            ? resolveAgentHandoffRoute(proposedHandoff)
+            : undefined;
+        const handoff =
+          diagnosticIssueRoute &&
+          sameRoutePathname(
+            currentRoute.fullPath,
+            router.resolve(diagnosticIssueRoute).fullPath
+          )
+            ? undefined
+            : proposedHandoff;
+        const planDraftAction = actions.find(
+          (action) => action.kind === "draft-plan"
+        );
+        const sqlFixAction =
+          currentChat?.capability?.kind === "diagnostic"
+            ? actions.find((action) => action.kind === "review-sql-fix")
+            : undefined;
+        const issueCommentDraftAction = actions.find(
+          (action) => action.kind === "draft-issue-comment"
+        );
+        const maskingRuleDraftAction = actions.find(
+          (action) => action.kind === "draft-masking-rule"
+        );
+        const maskingExemptionDraftAction = actions.find(
+          (action) => action.kind === "draft-masking-exemption"
+        );
+        const semanticTypeDraftAction = actions.find(
+          (action) => action.kind === "draft-semantic-type"
+        );
+        const boundReferences = normalizeAgentResourceReferences(
+          msg.metadata?.resourceReferences,
+          msg.metadata?.resourceReference
+        );
+        const continueActions = actions.filter(
+          (action) => action.kind === "continue"
+        );
+        const references = msg.role === "user" ? boundReferences : [];
+        const content = msg.content ?? "";
+        const expressionDraft =
+          msg.role === "assistant" && !isPending && !msg.metadata?.error
+            ? extractAgentExpressionDraft(content)
+            : undefined;
+        const projectReference = references.find(
+          (reference) => reference.kind === "project"
+        );
+        const showTimestamp =
+          msg.role === "user" ||
+          (msg.role === "assistant" &&
+            !isPending &&
+            !!msg.content &&
+            !msg.toolCalls?.length);
+        const timestamp = (
+          <time
+            className={cn(
+              "text-xs text-control-light",
+              msg.role === "user" ? "shrink-0 whitespace-nowrap" : "mt-1"
+            )}
+            dateTime={new Date(msg.createdTs).toISOString()}
+            data-agent-message-timestamp
+          >
+            <HumanizeTs tsMs={msg.createdTs} mode="calendar" tooltip={false} />
+          </time>
+        );
+
+        return (
+          <div key={msg.id}>
+            {msg.role === "user" ? (
+              <div className="flex flex-col items-end">
+                <div
+                  className="flex w-fit min-w-0 max-w-full flex-col gap-y-1 rounded-sm bg-info/10 px-3 py-2 text-sm whitespace-pre-wrap wrap-anywhere"
+                  data-agent-user-message
+                >
+                  <span>{renderBoundMentions(content, references)}</span>
+                  {projectReference &&
+                    !content.includes(
+                      formatResourceMention(projectReference.label)
+                    ) && (
+                      <span
+                        className="text-xs text-control-light"
+                        data-agent-resource-reference
+                      >
+                        {t("common.project")}: {projectReference.label}
+                      </span>
+                    )}
+                </div>
+                <div
+                  className="mt-1 flex max-w-full items-center justify-end gap-0"
+                  data-agent-message-actions
+                >
+                  <CopyButton
+                    content={content}
+                    size="xs"
+                    tooltipLayer="agent"
+                    className="px-1.5"
+                  />
+                  {onResend && !currentChat?.archived && (
+                    <AgentTooltip content={t("agent.resend-message")}>
+                      <Button
+                        appearance="secondary"
+                        size="xs"
+                        aria-label={t("agent.resend-message")}
+                        disabled={isResendBlocked}
+                        onClick={() => onResend(msg.id)}
+                      >
+                        <Repeat2 className="size-3.5" />
+                      </Button>
+                    </AgentTooltip>
+                  )}
+                  {showTimestamp && timestamp}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                <div className="flex flex-col gap-y-2">
+                  {isPending && msg.content ? (
+                    <div
+                      className="flex items-center gap-x-2 text-sm text-control-placeholder"
+                      data-agent-pending-message
+                    >
+                      <span className="animate-pulse">&#9679;</span>
+                      {msg.content}
+                    </div>
+                  ) : msg.content ? (
+                    <div
+                      className="w-fit min-w-0 max-w-full rounded-sm bg-control-bg px-3 py-2 text-sm wrap-anywhere"
+                      data-agent-answer
+                    >
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({ children }) => (
+                            <p className="my-1 first:mt-0 last:mb-0">
+                              {children}
+                            </p>
+                          ),
+                          pre: ({ children }) => (
+                            <pre className="my-1 max-w-full overflow-x-auto rounded-xs bg-control-bg p-2 text-xs whitespace-pre">
+                              {children}
+                            </pre>
+                          ),
+                          code: ({ children }) => (
+                            <code className="break-all rounded-xs bg-control-bg-hover px-1 text-xs">
+                              {children}
+                            </code>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="my-1 list-disc pl-5">{children}</ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="my-1 list-decimal pl-5">
+                              {children}
+                            </ol>
+                          ),
+                          li: ({ children }) => (
+                            <li className="my-0.5">{children}</li>
+                          ),
+                          h1: ({ children }) => (
+                            <h1 className="my-1 font-semibold">{children}</h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2 className="my-1 font-semibold">{children}</h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className="my-1 font-semibold">{children}</h3>
+                          ),
+                          a: ({ children, href }) => (
+                            <a
+                              className="break-all text-accent underline"
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {children}
+                            </a>
+                          ),
+                          blockquote: ({ children }) => (
+                            <blockquote className="my-1 border-l-2 border-control-border pl-2 text-control-light">
+                              {children}
+                            </blockquote>
+                          ),
+                          table: ({ children }) => (
+                            <Table className="my-1 border-collapse text-xs">
+                              {children}
+                            </Table>
+                          ),
+                          th: ({ children }) => (
+                            <th className="border border-control-border px-2 py-1">
+                              {children}
+                            </th>
+                          ),
+                          td: ({ children }) => (
+                            <td className="border border-control-border px-2 py-1">
+                              {children}
+                            </td>
+                          ),
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                      <EvidenceReferences evidence={msg.metadata?.evidence} />
+                      {!currentChat?.archived &&
+                        !msg.metadata?.pending &&
+                        !msg.metadata?.error &&
+                        (handoff ||
+                          sqlFixAction ||
+                          planDraftAction ||
+                          issueCommentDraftAction ||
+                          maskingRuleDraftAction ||
+                          maskingExemptionDraftAction ||
+                          semanticTypeDraftAction ||
+                          msg.metadata?.accessRequestDraft) && (
+                          <div className="mt-2 max-w-full">
+                            {sqlFixAction ? (
+                              <AgentSqlFixReviewAction
+                                action={sqlFixAction}
+                                chatId={msg.chatId}
+                              />
+                            ) : semanticTypeDraftAction ? (
+                              <SemanticTypeDraftButton
+                                draftId={semanticTypeDraftAction.draftId}
+                                chatId={msg.chatId}
+                                messageId={msg.id}
+                              />
+                            ) : maskingExemptionDraftAction ? (
+                              <MaskingExemptionDraftButton
+                                draftId={maskingExemptionDraftAction.draftId}
+                                chatId={msg.chatId}
+                                messageId={msg.id}
+                              />
+                            ) : maskingRuleDraftAction ? (
+                              <MaskingRuleDraftButton
+                                draftId={maskingRuleDraftAction.draftId}
+                                chatId={msg.chatId}
+                                messageId={msg.id}
+                              />
+                            ) : planDraftAction ? (
+                              <PlanDraftButton
+                                action={planDraftAction}
+                                answer={msg.content}
+                              />
+                            ) : issueCommentDraftAction ? (
+                              <IssueCommentDraftButton
+                                action={issueCommentDraftAction}
+                              />
+                            ) : msg.metadata?.accessRequestDraft ? (
+                              <AccessRequestDraftButton
+                                draft={msg.metadata.accessRequestDraft}
+                                onOpenAccessGrantDraft={onOpenAccessGrantDraft}
+                              />
+                            ) : (
+                              <HandoffLink handoff={handoff} />
+                            )}
+                          </div>
+                        )}
+                      {expressionDraft && !currentChat?.archived && (
+                        <AgentExpressionDraftActions
+                          chatId={msg.chatId}
+                          expression={expressionDraft}
+                        />
+                      )}
+                    </div>
+                  ) : null}
+                  {msg.toolCalls?.map((toolCall, index) => (
+                    <ToolCallCard
+                      key={`${msg.id}:${toolCall.id}:${index}`}
+                      toolCall={toolCall}
+                      result={
+                        toolCallViews.byMessageId.get(msg.id)?.[index]?.result
+                          ?.content
+                      }
+                      missingResultAttempt={
+                        toolCallViews.byMessageId.get(msg.id)?.[index]
+                          ?.missingResultAttempt
+                      }
+                      hasRecoveryDraft={
+                        toolCall.name === "done" &&
+                        hasAccessGrantDraftAfter(msg)
+                      }
+                    />
+                  ))}
+                </div>
+                {showTimestamp && timestamp}
+                {msg.content &&
+                  !currentChat?.archived &&
+                  !msg.metadata?.pending &&
+                  !msg.metadata?.error &&
+                  continueActions.length > 0 && (
+                    <div
+                      className="mt-3 flex max-w-full flex-col items-start gap-2"
+                      role="group"
+                      aria-label={t("agent.follow-up.ask-next")}
+                      data-agent-follow-up
+                    >
+                      <div className="text-xs font-medium text-control-light">
+                        {t("agent.follow-up.ask-next")}
+                      </div>
+                      {continueActions.map((action) => (
+                        <Button
+                          key={action.prompt}
+                          type="button"
+                          appearance="secondary"
+                          size="sm"
+                          className="h-auto max-w-full justify-start bg-control-bg py-1.5 text-left whitespace-normal text-main hover:bg-control-bg-hover"
+                          data-agent-action-continue
+                          disabled={
+                            !onContinueAction ||
+                            currentChat?.status !== "idle" ||
+                            currentChat.archived ||
+                            Boolean(queuedUserMessage)
+                          }
+                          onClick={() =>
+                            onContinueAction?.(
+                              msg.chatId,
+                              action.prompt,
+                              boundReferences,
+                              msg.id
+                            )
+                          }
+                        >
+                          <span
+                            className="min-w-0 break-words"
+                            data-agent-follow-up-question
+                          >
+                            {action.prompt}
+                          </span>
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+              </div>
+            )}
+            {showInterruption && (
+              <div
+                role="status"
+                data-agent-interruption-status
+                className="mt-3 rounded-sm border border-block-border bg-control-bg px-2 py-1.5 text-xs"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className={`font-medium ${
+                      interruption.reason === "user"
+                        ? "text-warning"
+                        : "text-error"
+                    }`}
+                  >
+                    {interruption.reason === "user"
+                      ? t("agent.request-stopped-by-user")
+                      : t("agent.interrupted")}
+                  </span>
+                  {canRetry && (
+                    <Button appearance="outline" size="xs" onClick={onRetry}>
+                      {t("agent.retry-last-chat-turn")}
+                    </Button>
+                  )}
+                </div>
+                <div className="mt-0.5 text-control-light">
+                  {interruption.reason === "user"
+                    ? t("agent.request-stopped-retry-hint")
+                    : t("agent.interrupted-retry-hint")}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {loading &&
+        !displayMessages.some((message) => message.metadata?.pending) && (
+          <div className="flex items-center gap-x-2 text-sm text-control-placeholder">
+            <span className="animate-pulse">&#9679;</span> {t("common.loading")}
+          </div>
+        )}
+
+      {!loading &&
+        !hasActiveController &&
+        currentChat?.apiAttempts
+          ?.filter(
+            (attempt) =>
+              attempt.rootUserMessageId === latestUserMessageId &&
+              isAgentApiAttemptUncertain(attempt) &&
+              !toolCallViews.linkedAttemptIds.has(attempt.id) &&
+              !toolCallViews.inlineAttemptIds.has(attempt.id)
+          )
+          .map((attempt) => (
+            <AgentApiRecovery
+              key={`${storageStatusKey}:${attempt.id}`}
+              attempt={attempt}
+            />
+          ))}
+
+      {showAIConfigurationRecovery ? (
+        <AgentAIConfigurationRecovery onDismiss={dismiss} />
+      ) : showStorageError ? (
+        <AgentStorageStatus
+          key={storageStatusKey}
+          pressure={storagePressure}
+          error={error}
+          onRetrySaving={() => useAgentStore.getState().flushRunPersistence()}
+          onFreeSpaceAndRetry={onFreeSpaceAndRetry}
+        />
       ) : (
+        feedback === "error" &&
         error && (
-          <div className="rounded-sm bg-error/10 px-3 py-2 text-sm text-error">
-            {error}
+          <div
+            className="rounded-sm bg-error/10 px-3 py-2 text-sm text-error"
+            role="alert"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 break-words" data-agent-error-summary>
+                {getAgentErrorSummary(error) ?? t("agent.request-failed")}
+              </div>
+              {canRetryError && (
+                <Button
+                  appearance="outline"
+                  size="xs"
+                  className="shrink-0"
+                  data-agent-retry
+                  onClick={onRetry}
+                >
+                  <RotateCcw className="size-3.5" />
+                  {t("agent.retry-last-chat-turn")}
+                </Button>
+              )}
+            </div>
+            <AgentErrorDetails error={error} />
           </div>
         )
       )}

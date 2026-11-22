@@ -1,6 +1,7 @@
 import { StatementType } from "@/types/proto-es/v1/common_pb";
 
 const OTHER_STATEMENT_TYPES = [
+  StatementType.EXECUTE,
   StatementType.STATEMENT_TYPE_UNSPECIFIED,
 ] as const;
 

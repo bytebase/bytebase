@@ -1,13 +1,16 @@
 package command
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/action/world"
@@ -17,7 +20,7 @@ func TestNewClientWithOptionsUsesServiceAccountAuth(t *testing.T) {
 	t.Parallel()
 
 	httpClient := &http.Client{}
-	client, err := newClient("https://example.com", "", "sa@example.com", "secret", clientOptions{
+	client, err := newClient("https://example.com", credential{serviceAccount: "sa@example.com", serviceAccountSecret: "secret"}, clientOptions{
 		httpClient: httpClient,
 		pageSize:   -1,
 	})
@@ -113,7 +116,7 @@ func TestCustomHeadersAreSentOnLoginRequest(t *testing.T) {
 	})
 
 	httpClient := &http.Client{Transport: transport}
-	client, err := newClient("https://example.com", "", "sa@example.com", "secret", clientOptions{
+	client, err := newClient("https://example.com", credential{serviceAccount: "sa@example.com", serviceAccountSecret: "secret"}, clientOptions{
 		httpClient:    httpClient,
 		customHeaders: customHeaders,
 	})
@@ -133,7 +136,7 @@ func TestNewClientDoesNotMutateProvidedHTTPClientTransport(t *testing.T) {
 	transport := &closeIdleRoundTripper{}
 	httpClient := &http.Client{Transport: transport}
 
-	client, err := newClient("https://example.com", "token", "", "", clientOptions{
+	client, err := newClient("https://example.com", credential{accessToken: "token"}, clientOptions{
 		httpClient:    httpClient,
 		customHeaders: customHeaders,
 	})
@@ -203,7 +206,7 @@ func (t *closeIdleRoundTripper) CloseIdleConnections() {
 func TestNewClientWithAccessTokenUsesAccessTokenAuth(t *testing.T) {
 	t.Parallel()
 
-	client, err := newClient("https://example.com", "token", "", "", defaultClientOptions())
+	client, err := newClient("https://example.com", credential{accessToken: "token"}, defaultClientOptions())
 	require.NoError(t, err)
 
 	t.Cleanup(client.close)
@@ -213,7 +216,37 @@ func TestNewClientWithAccessTokenUsesAccessTokenAuth(t *testing.T) {
 	require.Equal(t, 120*time.Second, client.httpClient.Timeout)
 }
 
-func TestNewClientFromWorldPrefersAccessToken(t *testing.T) {
+func TestRejectedAccessTokenFailsAfterOneReauthentication(t *testing.T) {
+	t.Parallel()
+
+	var requests atomic.Int32
+	transport := roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		requests.Add(1)
+		return &http.Response{
+			StatusCode: http.StatusUnauthorized,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader("unauthorized")),
+			Request:    req,
+		}, nil
+	})
+
+	opts := defaultClientOptions()
+	opts.httpClient = &http.Client{Transport: transport}
+	opts.retryConfig = &retryConfig{maxAttempts: 3, initialInterval: time.Millisecond, maxInterval: time.Millisecond}
+	client, err := newClient("https://example.com", credential{accessToken: "null"}, opts)
+	require.NoError(t, err)
+	t.Cleanup(client.close)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	_, err = client.getActuatorInfo(ctx)
+	require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
+	require.NoError(t, ctx.Err())
+	// The first request carries no token; the refresh loads it, and the retry is rejected.
+	require.Equal(t, int32(2), requests.Load())
+}
+
+func TestNewClientFromWorldUsesTheChosenSignIn(t *testing.T) {
 	t.Parallel()
 
 	w := &world.World{
@@ -222,6 +255,7 @@ func TestNewClientFromWorldPrefersAccessToken(t *testing.T) {
 		AccessToken:          "token",
 		ServiceAccount:       "sa@example.com",
 		ServiceAccountSecret: "secret",
+		SignIn:               world.SignInAccessToken,
 	}
 
 	client, err := newClientFromWorld(w)
@@ -230,6 +264,7 @@ func TestNewClientFromWorldPrefersAccessToken(t *testing.T) {
 	t.Cleanup(client.close)
 
 	require.Equal(t, 5*time.Second, client.httpClient.Timeout)
+	require.Equal(t, "with the access token", client.auth.who)
 	require.Equal(t, "", client.serviceAccount)
 	require.Equal(t, "", client.serviceAccountSecret)
 }

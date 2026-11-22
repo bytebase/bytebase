@@ -12,11 +12,13 @@ var highRiskStatementTypes = map[string]bool{
 	"TRUNCATE":      true,
 }
 
-// Moderate risk statement types - data modification, potentially wide impact.
+// Moderate risk statement types - data modification, potentially wide impact,
+// and EXECUTE, whose effect is not visible in the statement.
 var moderateRiskStatementTypes = map[string]bool{
 	"DELETE":      true,
 	"UPDATE":      true,
 	"MERGE":       true,
+	"EXECUTE":     true,
 	"ALTER_TABLE": true,
 	"DROP_INDEX":  true,
 }

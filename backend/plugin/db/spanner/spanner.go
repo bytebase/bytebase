@@ -1,46 +1,54 @@
-// Package spanner is the plugin for Spanner driver.
+// Package spanner is the plugin for the Spanner driver. It adapts omni's
+// spanner/driver, which owns the conversation with Spanner — metadata sync, the
+// server-DDL dump, queries and change scripts — to Bytebase's db.Driver
+// contract.
+//
+// Known differences from the driver this replaced, kept because they are the
+// driver's own behavior or because reproducing the old one would reimplement it:
+//   - A script's statement text keeps its comments. A script the parser cannot
+//     read answers with the parser's error on its statement result instead of
+//     failing the QueryConn call; the old splitter removed comments and let the
+//     server reject the text.
+//   - The result-size cap is byte-accurate rather than checked at power-of-two
+//     row counts, and a cap of 0 means no cap rather than a zero-byte cap.
+//   - The caller's extra parameters reach the driver ("emulator" is read) and
+//     an SSL data source's TLS settings are honoured; the old driver ignored
+//     both. An emulator-pointed instance drops its stored Cloud credential,
+//     which the client refuses to combine with unauthenticated access.
+//   - GRANT and REVOKE are DDL for the admin API; the old prefix test sent them
+//     down the DML path, where Spanner refused them.
+//   - An explain request stops at the first statement that cannot be planned;
+//     the old driver asked for every statement's plan even after a failure.
+//   - SyncInstance keeps the old GoogleSQL filter: a PostgreSQL-dialect database
+//     is not listed. omni can sync and dump one when a caller opens it directly.
 package spanner
 
 import (
 	"context"
-	"database/sql"
-	"encoding/base64"
-	"encoding/json"
+	"crypto/tls"
 	"fmt"
-	"log/slog"
 	"net"
-	"regexp"
-	"strconv"
 	"strings"
-	"time"
 
-	"cloud.google.com/go/spanner"
 	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
-	sppb "cloud.google.com/go/spanner/apiv1/spannerpb"
+	odriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
+	spannerdriver "github.com/bytebase/omni/spanner/driver"
 	"github.com/pkg/errors"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-
-	// Register how this engine plans a limit, for base.StatementWithResultLimit below.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/spanner"
 )
 
 var (
-	dsnRegExp = regexp.MustCompile("projects/(?P<PROJECTGROUP>([a-z]|[-.:]|[0-9])+)/instances/(?P<INSTANCEGROUP>([a-z]|[-]|[0-9])+)/databases/(?P<DATABASEGROUP>([a-z]|[-]|[_]|[0-9])+)")
-
 	_ db.Driver = (*Driver)(nil)
 )
 
@@ -50,13 +58,12 @@ func init() {
 
 // Driver is the Spanner driver.
 type Driver struct {
-	config   db.ConnectionConfig
-	connCtx  db.ConnectionContext
-	client   *spanner.Client
-	dbClient *spannerdb.DatabaseAdminClient
-
-	// databaseName is the currently connected database name.
-	databaseName string
+	util.OmniAdapter
+	// admin lists the instance's databases with their dialects. SyncInstance
+	// keeps Bytebase's GoogleSQL-only listing until the parser routes by
+	// database dialect, and spanner/driver's instance list does not carry one.
+	admin        *spannerdb.DatabaseAdminClient
+	instancePath string
 }
 
 func newDriver() db.Driver {
@@ -66,663 +73,242 @@ func newDriver() db.Driver {
 // Open opens a Spanner driver. It must connect to a specific database.
 // If database isn't provided, part of the driver cannot function.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	if config.DataSource.ProjectId == "" {
-		return nil, errors.New("project ID cannot be empty")
-	}
-	if config.DataSource.InstanceId == "" {
-		return nil, errors.New("instance ID cannot be empty")
-	}
-	d.config = config
-	d.connCtx = config.ConnectionContext
-
-	var o []option.ClientOption
-	if gcpCredential := config.DataSource.GetGcpCredential(); gcpCredential != nil {
-		credOption, err := util.GCPCredentialOption([]byte(gcpCredential.Content))
-		if err != nil {
-			return nil, err
-		}
-		o = append(o, credOption)
-	}
-	// host and port optionally override the default spanner.googleapis.com:443
-	// endpoint, e.g. with a Private Service Connect endpoint. gRPC defaults to
-	// port 443 when no port is given.
-	if host := config.DataSource.Host; host != "" {
-		endpoint := host
-		if port := config.DataSource.Port; port != "" {
-			endpoint = net.JoinHostPort(host, port)
-		}
-		o = append(o, option.WithEndpoint(endpoint))
-	}
-	if config.ConnectionContext.DatabaseName != "" {
-		d.databaseName = config.ConnectionContext.DatabaseName
-		dsn := getDSN(d.instancePath(), config.ConnectionContext.DatabaseName)
-		client, err := spanner.NewClient(
-			ctx,
-			dsn,
-			o...,
-		)
-		if err != nil {
-			return nil, err
-		}
-		d.client = client
-	}
-
-	dbClient, err := spannerdb.NewDatabaseAdminClient(ctx, o...)
+	cfg, err := spannerConfig(config)
 	if err != nil {
 		return nil, err
 	}
-
-	d.dbClient = dbClient
+	impl, err := spannerdriver.Open(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	adminOptions, err := databaseAdminOptions(cfg)
+	if err != nil {
+		_ = impl.Close()
+		return nil, err
+	}
+	admin, err := spannerdb.NewDatabaseAdminClient(ctx, adminOptions...)
+	if err != nil {
+		_ = impl.Close()
+		return nil, err
+	}
+	d.OmniAdapter = util.OmniAdapter{
+		Driver:           impl,
+		NotFoundResource: "database",
+		DatabaseName:     config.ConnectionContext.DatabaseName,
+	}
+	d.AddCloser(admin)
+	d.admin = admin
+	d.instancePath = fmt.Sprintf("projects/%s/instances/%s", config.DataSource.GetProjectId(), config.DataSource.GetInstanceId())
 	return d, nil
 }
 
-// Close closes the driver.
-func (d *Driver) Close(_ context.Context) error {
-	if d.client != nil {
-		d.client.Close()
+// spannerConfig resolves everything Bytebase knows about reaching the instance
+// into the plain values spanner/driver's clients take.
+func spannerConfig(config db.ConnectionConfig) (odriver.Config, error) {
+	ds := config.DataSource
+	cfg := odriver.Config{
+		Host:     ds.GetHost(),
+		Port:     ds.GetPort(),
+		Database: util.ResolveDatabaseName(config),
+		Password: config.Password,
+		Params: map[string]string{
+			spannerdriver.ParamProject:  ds.GetProjectId(),
+			spannerdriver.ParamInstance: ds.GetInstanceId(),
+		},
 	}
-	return d.dbClient.Close()
+	// Bytebase carries a Cloud credential in the data source, where the
+	// instance's IAM extension holds it. A caller that resolved one itself
+	// passes it as the password, and that one wins.
+	if cfg.Password == "" {
+		if credential := ds.GetGcpCredential(); credential != nil {
+			cfg.Password = credential.GetContent()
+		}
+	}
+	// The caller's extra parameters go in verbatim. "emulator" is the one
+	// spanner/driver reads; a name it does not know is ignored.
+	for key, value := range ds.GetExtraConnectionParameters() {
+		cfg.Params[key] = value
+	}
+	// The emulator accepts any caller, and the Google client refuses to build
+	// one that both carries a credential and skips authentication. An instance
+	// keeps its stored credential, so an emulator-pointed one would fail Open
+	// with "options.WithoutAuthentication is incompatible with any option that
+	// provides credentials"; the credential is meaningless to the emulator, so
+	// drop it rather than refuse.
+	if isEmulator(cfg.Params) {
+		cfg.Password = ""
+	}
+	// TLS is required exactly when the caller asks for it; nil leaves the
+	// client's transport, which verifies the server's certificate.
+	if ds.GetUseSsl() {
+		tlsConfig, err := util.GetTLSConfig(ds)
+		if err != nil {
+			return odriver.Config{}, err
+		}
+		cfg.TLS = func(host string) (*tls.Config, error) {
+			byHost := tlsConfig.Clone()
+			byHost.ServerName = host
+			return byHost, nil
+		}
+	}
+	return cfg, nil
 }
 
-// Ping pings the instance.
-func (d *Driver) Ping(ctx context.Context) error {
-	iter := d.dbClient.ListDatabases(ctx, &databasepb.ListDatabasesRequest{
-		Parent: d.instancePath(),
-	})
-	_, err := iter.Next()
-	if err == iterator.Done {
-		return nil
+// databaseAdminOptions builds the admin client's options from the same resolved
+// config spanner/driver's own clients take. It exists only for SyncInstance's
+// dialect listing; every other call is the driver's.
+func databaseAdminOptions(cfg odriver.Config) ([]option.ClientOption, error) {
+	var options []option.ClientOption
+	if cfg.Password != "" {
+		credential, err := util.GCPCredentialOption([]byte(cfg.Password))
+		if err != nil {
+			return nil, err
+		}
+		options = append(options, credential)
 	}
-	if err != nil {
-		return errors.Wrap(err, "spanner: bad connection")
+	endpoint := ""
+	if cfg.Host != "" {
+		endpoint = cfg.Host
+		if cfg.Port != "" {
+			endpoint = net.JoinHostPort(cfg.Host, cfg.Port)
+		}
+		options = append(options, option.WithEndpoint(endpoint))
 	}
-	return nil
+	if isEmulator(cfg.Params) {
+		options = append(options, option.WithoutAuthentication())
+		if cfg.TLS == nil {
+			options = append(options, option.WithGRPCDialOption(
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+			))
+		}
+	}
+	if cfg.TLS != nil {
+		host := endpoint
+		if splitHost, _, err := net.SplitHostPort(endpoint); err == nil {
+			host = splitHost
+		}
+		tlsConfig, err := cfg.TLS(host)
+		if err != nil {
+			return nil, err
+		}
+		if tlsConfig == nil {
+			return nil, errors.New("TLS configuration must not be nil")
+		}
+		options = append(options, option.WithGRPCDialOption(
+			grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
+		))
+	}
+	if cfg.Dial != nil {
+		options = append(options, option.WithGRPCDialOption(
+			grpc.WithContextDialer(func(ctx context.Context, address string) (net.Conn, error) {
+				return cfg.Dial(ctx, "tcp", address)
+			}),
+		))
+	}
+	return options, nil
 }
 
-// GetDB gets the database.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
-// Execute executes a SQL statement.
+// Execute executes a SQL statement. spanner/driver splits the script by the
+// database's dialect, applies a script that holds any DDL statement through the
+// admin API whole, and runs the rest as DML.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	if opts.CreateDatabase {
-		stmts, err := util.SanitizeSQL(statement)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to sanitize %v", statement)
-		}
-		if len(stmts) == 0 {
-			return 0, errors.Errorf("expect sanitized SQLs to have at least one entry, original statement: %v", statement)
-		}
-		if !strings.HasPrefix(stmts[0], "CREATE DATABASE") {
-			return 0, errors.Errorf("expect the first entry of the sanitized SQLs to start with 'CREATE DATABASE', sql %v", stmts[0])
-		}
-		if err := d.creataDatabase(ctx, stmts[0], stmts[1:]); err != nil {
-			return 0, errors.Wrap(err, "failed to create database")
-		}
-		return 0, nil
-	}
-
-	// Parse transaction mode from the script
-	config, cleanedStatement := base.ParseTransactionConfig(statement)
-	statement = cleanedStatement
-	transactionMode := config.Mode
-
-	// Apply default when transaction mode is not specified
-	if transactionMode == transaction.ModeUnspecified {
-		transactionMode = transaction.DefaultMode()
-	}
-
-	stmts, err := util.SanitizeSQL(statement)
-	if err != nil {
-		return 0, err
-	}
-
-	// Check if any statement is DDL
-	ddl := func() bool {
-		for _, stmt := range stmts {
-			if util.IsDDL(stmt) {
-				return true
-			}
-		}
-		return false
-	}()
-
-	// Spanner DDL is always non-transactional
-	if ddl {
-		return d.executeDDL(ctx, stmts, opts)
-	}
-
-	// Execute based on transaction mode
-	if transactionMode == transaction.ModeOff {
-		return d.executeInAutoCommitMode(ctx, stmts, opts)
-	}
-	return d.executeInTransactionMode(ctx, stmts, opts)
+	// Spanner's driver logs only transaction control entries (no per-statement command logs).
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		ParseTransactionDirective: true,
+		PassCreateDatabase:        true,
+		PassMaxRetries:            true,
+		LoggerOptions:             []util.ExecuteLoggerOption{util.WithSkipCommandLogs()},
+	})
 }
 
-func (d *Driver) executeDDL(ctx context.Context, stmts []string, _ db.ExecuteOptions) (int64, error) {
-	op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
-		Database:   getDSN(d.instancePath(), d.databaseName),
-		Statements: stmts,
+// QueryConn queries a SQL statement. Spanner has no session state a statement
+// can set, so each statement reads in a single-use transaction of its own.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	var results []*odriver.Result
+	err := d.QueryEphemeral(ctx, func(session odriver.Session) error {
+		var queryErr error
+		results, queryErr = session.Query(ctx, statement, odriver.QueryOptions{
+			Limit:          queryContext.Limit,
+			Explain:        queryContext.Explain,
+			MaxResultBytes: queryContext.MaximumSQLResultSize,
+		})
+		return queryErr
 	})
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return 0, op.Wait(ctx)
+	return toQueryResults(results, queryContext.MaximumSQLResultSize, queryContext.Explain), nil
 }
 
-func (d *Driver) executeInTransactionMode(ctx context.Context, stmts []string, opts db.ExecuteOptions) (int64, error) {
-	var rowCount int64
-
-	// Log transaction start
-	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
-
-	committed := false
-	if _, err := d.client.ReadWriteTransaction(ctx, func(ctx context.Context, rwt *spanner.ReadWriteTransaction) error {
-		spannerStmts := []spanner.Statement{}
-		for _, stmt := range stmts {
-			spannerStmts = append(spannerStmts, spanner.NewStatement(stmt))
-		}
-		counts, err := rwt.BatchUpdate(ctx, spannerStmts)
-		if err != nil {
-			return err
-		}
-		for _, count := range counts {
-			rowCount += count
-		}
-		committed = true
-		return nil
-	}); err != nil {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, "")
-		return 0, err
-	}
-
-	if committed {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
-	}
-	return rowCount, nil
-}
-
-func (d *Driver) executeInAutoCommitMode(ctx context.Context, stmts []string, _ db.ExecuteOptions) (int64, error) {
-	var rowCount int64
-	// Execute statements individually in auto-commit mode
-	for _, stmt := range stmts {
-		spannerStmt := spanner.NewStatement(stmt)
-		count, err := d.client.PartitionedUpdate(ctx, spannerStmt)
-		if err != nil {
-			return rowCount, err
-		}
-		rowCount += count
-	}
-	return rowCount, nil
-}
-
-func (d *Driver) creataDatabase(ctx context.Context, createStatement string, extraStatement []string) error {
-	op, err := d.dbClient.CreateDatabase(ctx, &databasepb.CreateDatabaseRequest{
-		Parent:          d.instancePath(),
-		CreateStatement: createStatement,
-		ExtraStatements: extraStatement,
+// toQueryResults converts spanner/driver's results into the API's, keeping each
+// statement's error, plan and latency.
+func toQueryResults(results []*odriver.Result, maxResultBytes int64, isExplainRequest bool) []*v1pb.QueryResult {
+	return util.OmniResultsToQueryResultsWith(results, maxResultBytes, util.QueryResultOptions{
+		ClearExplainPlan: isExplainRequest,
+		TypedExplainPlan: true,
+		ConvertValue:     toRowValue,
 	})
-	if err != nil {
-		return err
-	}
-	if _, err := op.Wait(ctx); err != nil {
-		return err
-	}
-	return nil
 }
 
-func getColumnNames(iter *spanner.RowIterator) []string {
-	var names []string
-	for _, field := range iter.Metadata.RowType.Fields {
-		names = append(names, field.Name)
+func toRowValue(value odriver.Value) *v1pb.RowValue {
+	switch value.Kind {
+	case odriver.Float32:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: value.Float64}}
+	case odriver.Int32:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: value.Int64}}
+	case odriver.Structured:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String}}
+	case odriver.Bool, odriver.Bytes, odriver.Float64, odriver.Int64, odriver.String, odriver.Timestamp:
+		return util.OmniRowValue(value)
+	default:
+		return util.NullRowValue
 	}
-	return names
 }
 
-func getColumnTypeNames(iter *spanner.RowIterator) ([]string, error) {
-	var names []string
-	for _, field := range iter.Metadata.RowType.Fields {
-		typeName, err := getColumnTypeName(field.Type)
-		if err != nil {
-			return nil, err
-		}
-		names = append(names, typeName)
-	}
-	return names, nil
-}
-
-func getColumnTypeName(columnType *sppb.Type) (string, error) {
-	if columnType.Code == sppb.TypeCode_STRUCT {
-		return "", errors.New("spanner STRUCT type is not supported")
-	}
-	if columnType.Code == sppb.TypeCode_ARRAY {
-		if columnType.ArrayElementType.Code == sppb.TypeCode_STRUCT {
-			return "", errors.New("spanner STRUCT type is not supported")
-		}
-		return fmt.Sprintf("[]%s", columnType.ArrayElementType.Code.String()), nil
-	}
-	return columnType.Code.String(), nil
-}
-
-// instancePath returns the Spanner instance resource name,
-// e.g. projects/<project>/instances/<instance>.
-func (d *Driver) instancePath() string {
-	return fmt.Sprintf("projects/%s/instances/%s", d.config.DataSource.ProjectId, d.config.DataSource.InstanceId)
-}
-
-func getDSN(instancePath, database string) string {
-	return fmt.Sprintf("%s/databases/%s", instancePath, database)
-}
-
-// get `<database>` from `projects/<project>/instances/<instance>/databases/<database>`.
-func getDatabaseFromDSN(dsn string) (string, error) {
-	match := dsnRegExp.FindStringSubmatch(dsn)
-	if match == nil {
-		return "", errors.New("invalid DSN")
-	}
-	matches := make(map[string]string)
-	for i, name := range dsnRegExp.SubexpNames() {
-		if i != 0 && name != "" {
-			matches[name] = match[i]
-		}
-	}
-	return matches["DATABASEGROUP"], nil
-}
-
-// QueryConn queries a SQL statement in a given connection.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if queryContext.Explain {
-		return d.explainStatement(ctx, statement)
-	}
-
-	stmts, err := util.SanitizeSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	var results []*v1pb.QueryResult
-	for _, statement := range stmts {
-		startTime := time.Now()
-		queryResult, err := func() (*v1pb.QueryResult, error) {
-			if util.IsSelect(statement) {
-				if queryContext.Limit > 0 {
-					statement = base.StatementWithResultLimit(storepb.Engine_SPANNER, statement, queryContext.Limit, "")
-				}
-				return d.queryStatement(ctx, statement, queryContext)
-			}
-			if util.IsDDL(statement) {
-				op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
-					Database:   getDSN(d.instancePath(), d.databaseName),
-					Statements: []string{statement},
-				})
-				if err != nil {
-					return nil, err
-				}
-				if err := op.Wait(ctx); err != nil {
-					return nil, err
-				}
-				return &v1pb.QueryResult{}, nil
-			}
-			var rowCount int64
-			if _, err := d.client.ReadWriteTransaction(ctx, func(ctx context.Context, rwt *spanner.ReadWriteTransaction) error {
-				count, err := rwt.Update(ctx, spanner.NewStatement(statement))
-				if err != nil {
-					return err
-				}
-				rowCount = count
-				return nil
-			}); err != nil {
-				return nil, err
-			}
-			return util.BuildAffectedRowsResult(rowCount, nil), nil
-		}()
-		stop := false
-		if err != nil {
-			queryResult = &v1pb.QueryResult{
-				Error: err.Error(),
-			}
-			stop = true
-		}
-		queryResult.Statement = statement
-		queryResult.Latency = durationpb.New(time.Since(startTime))
-		queryResult.RowsCount = int64(len(queryResult.Rows))
-		results = append(results, queryResult)
-		if stop {
-			break
-		}
-	}
-
-	return results, nil
-}
-
-func (d *Driver) queryStatement(ctx context.Context, statement string, queryContext db.QueryContext) (*v1pb.QueryResult, error) {
-	iter := d.client.Single().Query(ctx, spanner.NewStatement(statement))
-	defer iter.Stop()
-
-	row, err := iter.Next()
-	if err == iterator.Done {
-		// Empty result set - return empty QueryResult with column info
-		columnTypeNames, typeErr := getColumnTypeNames(iter)
-		if typeErr != nil {
-			return nil, typeErr
-		}
-		return &v1pb.QueryResult{
-			ColumnNames:     getColumnNames(iter),
-			ColumnTypeNames: columnTypeNames,
-		}, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	columnTypeNames, err := getColumnTypeNames(iter)
-	if err != nil {
-		return nil, err
-	}
-	result := &v1pb.QueryResult{
-		ColumnNames:     getColumnNames(iter),
-		ColumnTypeNames: columnTypeNames,
-	}
-
+// SyncInstance syncs the instance's GoogleSQL databases. A PostgreSQL-dialect
+// database is filtered out, as it was before the cutover: SPANNER's split and
+// query span are GoogleSQL-only, so listing one would let the editor run a
+// statement its masking analysis cannot read.
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	var databases []*metadatapb.DatabaseSchemaMetadata
+	iter := d.admin.ListDatabases(ctx, &databasepb.ListDatabasesRequest{Parent: d.instancePath})
 	for {
-		rowData, err := readRow(row)
-		if err != nil {
-			return nil, err
-		}
-		result.Rows = append(result.Rows, rowData)
-		n := len(result.Rows)
-		if (n&(n-1) == 0) && int64(proto.Size(result)) > queryContext.MaximumSQLResultSize {
-			result.Error = util.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
-			break
-		}
-		if queryContext.Limit > 0 && n >= queryContext.Limit {
-			break
-		}
-
-		row, err = iter.Next()
+		database, err := iter.Next()
 		if err == iterator.Done {
 			break
 		}
 		if err != nil {
 			return nil, err
 		}
-	}
-	return result, nil
-}
-
-// convertSpannerValue converts google.protobuf.Value to RowValue.
-// Uses type metadata to preserve INT64 precision and properly handle all Spanner types.
-func convertSpannerValue(colType *sppb.Type, v *structpb.Value) *v1pb.RowValue {
-	if v == nil || v.Kind == nil {
-		return util.NullRowValue
-	}
-
-	switch v.Kind.(type) {
-	case *structpb.Value_NullValue:
-		return util.NullRowValue
-	case *structpb.Value_StringValue:
-		stringValue := v.GetStringValue()
-		if colType == nil {
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
-				StringValue: stringValue,
-			}}
+		if database.DatabaseDialect == databasepb.DatabaseDialect_POSTGRESQL {
+			continue
 		}
-
-		switch colType.Code {
-		case sppb.TypeCode_INT64:
-			// Spanner encodes INT64 as strings to preserve precision
-			val, err := strconv.ParseInt(stringValue, 10, 64)
-			if err != nil {
-				slog.Error("failed to parse INT64 string value", log.BBError(err))
-				return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
-					StringValue: stringValue,
-				}}
-			}
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{
-				Int64Value: val,
-			}}
-		case sppb.TypeCode_TIMESTAMP:
-			// Spanner encodes TIMESTAMP as RFC3339 string with nanosecond precision
-			t, err := time.Parse(time.RFC3339Nano, stringValue)
-			if err != nil {
-				slog.Error("failed to parse TIMESTAMP string value", log.BBError(err))
-				return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
-					StringValue: stringValue,
-				}}
-			}
-			// Determine accuracy from the string
-			accuracy := int32(6) // Default to microsecond precision
-			if dotIndex := strings.Index(stringValue, "."); dotIndex >= 0 {
-				// Find the end of fractional seconds (before 'Z' or timezone)
-				endIndex := strings.IndexAny(stringValue[dotIndex:], "Z+-")
-				if endIndex > 0 {
-					accuracy = int32(endIndex - 1)
-					if accuracy > 9 {
-						accuracy = 9 // Cap at nanosecond precision
-					}
-				}
-			}
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampValue{
-				TimestampValue: &v1pb.RowValue_Timestamp{
-					GoogleTimestamp: timestamppb.New(t),
-					Accuracy:        accuracy,
-				},
-			}}
-		case sppb.TypeCode_BYTES:
-			// Spanner encodes BYTES as base64 string
-			bytes, err := base64.StdEncoding.DecodeString(stringValue)
-			if err != nil {
-				slog.Error("failed to decode BYTES base64 string value", log.BBError(err))
-				return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
-					StringValue: stringValue,
-				}}
-			}
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{
-				BytesValue: bytes,
-			}}
-		default:
-			// DATE, JSON, STRING all stay as StringValue
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
-				StringValue: stringValue,
-			}}
-		}
-	case *structpb.Value_NumberValue:
-		// Check if this is INT64 to preserve precision
-		if colType != nil && colType.Code == sppb.TypeCode_INT64 {
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{
-				Int64Value: int64(v.GetNumberValue()),
-			}}
-		}
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{
-			DoubleValue: v.GetNumberValue(),
-		}}
-	case *structpb.Value_BoolValue:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{
-			BoolValue: v.GetBoolValue(),
-		}}
-	case *structpb.Value_ListValue, *structpb.Value_StructValue:
-		// Flatten complex types to JSON strings (no array_value/struct_value in RowValue proto).
-		goValue := v.AsInterface()
-		jsonBytes, err := json.Marshal(goValue)
+		databaseName, err := getDatabaseFromResource(database.Name)
 		if err != nil {
-			slog.Error("failed to marshal Spanner complex value", log.BBError(err))
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
-				StringValue: fmt.Sprintf("%v", goValue),
-			}}
+			return nil, errors.Wrapf(err, "failed to get database name from %s", database.Name)
 		}
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{
-			StringValue: string(jsonBytes),
-		}}
-	default:
-		return util.NullRowValue
+		databases = append(databases, &metadatapb.DatabaseSchemaMetadata{Name: databaseName})
 	}
+	return &db.InstanceMetadata{Databases: databases}, nil
 }
 
-func readRow(row *spanner.Row) (*v1pb.QueryRow, error) {
-	result := &v1pb.QueryRow{}
-	for i := 0; i < row.Size(); i++ {
-		var col spanner.GenericColumnValue
-		if err := row.Column(i, &col); err != nil {
-			return nil, err
-		}
-		result.Values = append(result.Values, convertSpannerValue(col.Type, col.Value))
+// getDatabaseFromResource returns <database> from
+// projects/<project>/instances/<instance>/databases/<database>.
+func getDatabaseFromResource(name string) (string, error) {
+	const marker = "/databases/"
+	index := strings.LastIndex(name, marker)
+	if index < 0 || index+len(marker) == len(name) {
+		return "", errors.New("invalid DSN")
 	}
-
-	return result, nil
+	return name[index+len(marker):], nil
 }
 
-// explainStatement returns the query plan for the given statement as JSON.
-func (d *Driver) explainStatement(ctx context.Context, statement string) ([]*v1pb.QueryResult, error) {
-	if d.client == nil {
-		return nil, errors.New("spanner client is not initialized, database name may be missing")
+// isEmulator reports whether the caller's parameters name the Cloud Spanner
+// emulator, as spanner/driver spells the flag.
+func isEmulator(params map[string]string) bool {
+	switch strings.ToLower(params[spannerdriver.ParamEmulator]) {
+	case "1", "true", "yes":
+		return true
 	}
-
-	stmts, err := util.SanitizeSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	var results []*v1pb.QueryResult
-	for _, stmt := range stmts {
-		startTime := time.Now()
-		queryResult, err := func() (*v1pb.QueryResult, error) {
-			plan, err := d.analyzeStatement(ctx, stmt)
-			if err != nil {
-				return nil, err
-			}
-
-			// Convert the query plan to JSON
-			planJSON, err := convertQueryPlanToJSON(plan)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to convert query plan to JSON")
-			}
-
-			return &v1pb.QueryResult{
-				ColumnNames:     []string{"QUERY PLAN"},
-				ColumnTypeNames: []string{"JSON"},
-				Rows: []*v1pb.QueryRow{
-					{
-						Values: []*v1pb.RowValue{
-							{Kind: &v1pb.RowValue_StringValue{StringValue: planJSON}},
-						},
-					},
-				},
-			}, nil
-		}()
-		if err != nil {
-			queryResult = &v1pb.QueryResult{
-				Error: err.Error(),
-			}
-		}
-		queryResult.Statement = stmt
-		queryResult.Latency = durationpb.New(time.Since(startTime))
-		queryResult.RowsCount = int64(len(queryResult.Rows))
-		results = append(results, queryResult)
-	}
-
-	return results, nil
-}
-
-// analyzeStatement returns the plan Spanner chooses for statement without
-// running it. Spanner rejects DML in a single-use transaction, so anything
-// QueryConn would not read in one is analyzed in a read-write transaction that
-// is rolled back.
-func (d *Driver) analyzeStatement(ctx context.Context, statement string) (*sppb.QueryPlan, error) {
-	if util.IsSelect(statement) {
-		return d.client.Single().AnalyzeQuery(ctx, spanner.NewStatement(statement))
-	}
-	txn, err := spanner.NewReadWriteStmtBasedTransaction(ctx, d.client)
-	if err != nil {
-		return nil, err
-	}
-	defer txn.Rollback(ctx)
-	return txn.AnalyzeQuery(ctx, spanner.NewStatement(statement))
-}
-
-// PlanNode represents a node in the Spanner query plan for JSON serialization.
-type PlanNode struct {
-	Index               int32                `json:"index"`
-	Kind                string               `json:"kind"`
-	DisplayName         string               `json:"displayName"`
-	ChildLinks          []ChildLink          `json:"childLinks,omitempty"`
-	ShortRepresentation *ShortRepresentation `json:"shortRepresentation,omitempty"`
-	Metadata            map[string]any       `json:"metadata,omitempty"`
-	ExecutionStats      map[string]any       `json:"executionStats,omitempty"`
-}
-
-// ChildLink represents a child link in the query plan.
-type ChildLink struct {
-	ChildIndex int32  `json:"childIndex"`
-	Type       string `json:"type,omitempty"`
-	Variable   string `json:"variable,omitempty"`
-}
-
-// ShortRepresentation represents the short representation of a scalar node.
-type ShortRepresentation struct {
-	Description string           `json:"description"`
-	Subqueries  map[string]int32 `json:"subqueries,omitempty"`
-}
-
-// QueryPlan represents the full query plan for JSON serialization.
-type QueryPlan struct {
-	PlanNodes []PlanNode `json:"planNodes"`
-}
-
-// convertQueryPlanToJSON converts a Spanner QueryPlan to JSON string.
-func convertQueryPlanToJSON(plan *sppb.QueryPlan) (string, error) {
-	if plan == nil {
-		return "{}", nil
-	}
-
-	queryPlan := QueryPlan{
-		PlanNodes: make([]PlanNode, 0, len(plan.PlanNodes)),
-	}
-
-	for _, node := range plan.PlanNodes {
-		planNode := PlanNode{
-			Index:       node.Index,
-			Kind:        node.Kind.String(),
-			DisplayName: node.DisplayName,
-		}
-
-		// Convert child links
-		if len(node.ChildLinks) > 0 {
-			planNode.ChildLinks = make([]ChildLink, 0, len(node.ChildLinks))
-			for _, link := range node.ChildLinks {
-				planNode.ChildLinks = append(planNode.ChildLinks, ChildLink{
-					ChildIndex: link.ChildIndex,
-					Type:       link.Type,
-					Variable:   link.Variable,
-				})
-			}
-		}
-
-		// Convert short representation
-		if node.ShortRepresentation != nil {
-			planNode.ShortRepresentation = &ShortRepresentation{
-				Description: node.ShortRepresentation.Description,
-				Subqueries:  node.ShortRepresentation.Subqueries,
-			}
-		}
-
-		// Convert metadata
-		if node.Metadata != nil {
-			planNode.Metadata = node.Metadata.AsMap()
-		}
-
-		// Convert execution stats
-		if node.ExecutionStats != nil {
-			planNode.ExecutionStats = node.ExecutionStats.AsMap()
-		}
-
-		queryPlan.PlanNodes = append(queryPlan.PlanNodes, planNode)
-	}
-
-	jsonBytes, err := json.Marshal(queryPlan)
-	if err != nil {
-		return "", err
-	}
-
-	return string(jsonBytes), nil
+	return false
 }

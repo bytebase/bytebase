@@ -3,9 +3,7 @@ package trino
 import (
 	"context"
 	"strings"
-	"unicode/utf8"
 
-	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/trino/catalog"
 	"github.com/bytebase/omni/trino/completion"
 
@@ -39,7 +37,7 @@ func init() {
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
 	cat := buildCompletionCatalog(ctx, cCtx, statement)
 
-	byteOffset := caretToByteOffset(statement, caretLine, caretOffset)
+	byteOffset := base.CaretToByteOffset(statement, caretLine, caretOffset)
 	cands := completion.Complete(statement, byteOffset, cat)
 
 	result := make([]base.Candidate, 0, len(cands))
@@ -101,21 +99,6 @@ func buildCompletionCatalog(ctx context.Context, cCtx base.CompletionContext, st
 	return cat
 }
 
-// viewDefinitions returns the defining query of every view in the snapshot.
-// Query span feeds them back as a corpus so it can tell which catalogs a view
-// reaches into; an empty definition leaves the view opaque.
-func viewDefinitions(meta *metadatapb.DatabaseSchemaMetadata) []string {
-	var definitions []string
-	for _, schema := range meta.GetSchemas() {
-		for _, view := range schema.GetViews() {
-			if def := view.GetDefinition(); def != "" {
-				definitions = append(definitions, def)
-			}
-		}
-	}
-	return definitions
-}
-
 // catalogNeeded reports whether the current completion statement needs this
 // catalog's full schema/table/column metadata loaded: true for the session
 // default catalog and for any catalog whose name appears in the statement text
@@ -160,33 +143,4 @@ func convertCandidateType(t completion.CandidateType) base.CandidateType {
 	default:
 		return base.CandidateTypeNone
 	}
-}
-
-// caretToByteOffset converts a (1-based line, 0-based column) caret position
-// into a byte offset into statement. The column is interpreted as a UTF-16
-// code-unit offset (the monaco/LSP convention the caller uses), matching how
-// the completion test derives the caret from a "|" marker.
-func caretToByteOffset(statement string, caretLine, caretColumn int) int {
-	line := 1
-	col := 0 // UTF-16 code units consumed on the current line
-	for i := 0; i < len(statement); {
-		if line == caretLine && col >= caretColumn {
-			return i
-		}
-		r, size := utf8.DecodeRuneInString(statement[i:])
-		if r == '\n' {
-			if line == caretLine {
-				// Caret column is past the end of this line; clamp to line end.
-				return i
-			}
-			line++
-			col = 0
-		} else if r <= 0xFFFF {
-			col++
-		} else {
-			col += 2 // surrogate pair
-		}
-		i += size
-	}
-	return len(statement)
 }

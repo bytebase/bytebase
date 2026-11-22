@@ -231,7 +231,7 @@ func (x *Issue) GetDraft() bool {
 type RoleGrant struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The role being requested for the user.
-	// Format: roles/EXPORTER.
+	// Format: roles/{role}.
 	Role string `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
 	// The user who will receive the role.
 	// Format: users/{email}.

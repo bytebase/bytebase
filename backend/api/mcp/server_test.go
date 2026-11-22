@@ -1,16 +1,20 @@
 package mcp
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
@@ -128,7 +132,7 @@ func TestMCPAuthMiddleware(t *testing.T) {
 // failure would surface as a nil-receiver panic on the first ceiling read
 // inside authMiddleware.
 func TestNewServerRequiresStore(t *testing.T) {
-	_, err := NewServer(nil, &config.Profile{}, "test-secret", nil)
+	_, err := NewServer(nil, &config.Profile{}, "test-secret", nil, nil)
 	require.Error(t, err)
 }
 
@@ -593,4 +597,125 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 	tokenStr, err := token.SignedString([]byte(secret))
 	require.NoError(t, err)
 	return tokenStr
+}
+
+func listToolsOverRoute(t *testing.T) []*mcp.Tool {
+	t.Helper()
+	endpoint, _, _ := newProbeServer(t)
+	token := mintMCPToken(t, "test@example.com", "client-A", "ws-test", "mcp:read-only", time.Hour)
+	session := connectLegacy(t, endpoint, token, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	listed, err := session.ListTools(ctx, nil)
+	require.NoError(t, err)
+	return listed.Tools
+}
+
+func TestInitializeServesInstructions(t *testing.T) {
+	const account = `In workspaces/ws-test, this session acts as the Bytebase account test@example.com, with its permissions. ` +
+		`"You" in tool results means it, not another account such as the client's sign-in.`
+	tools := listToolsOverRoute(t)
+	for _, row := range []struct {
+		name         string
+		options      *mcp.ClientOptions
+		instructions string
+	}{
+		{name: "a client without the form", instructions: account + "\n\n" + serverInstructions + "\n\n" + askInChatInstructions},
+		{name: "a client with the form", options: &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle}, instructions: account + "\n\n" + serverInstructions},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			endpoint, _, _ := newProbeServer(t)
+			session := connectLegacy(t, endpoint, mintMCPToken(t, "test@example.com", "client-A", "ws-test", "mcp:read-only", time.Hour), row.options)
+			require.Equal(t, row.instructions, session.InitializeResult().Instructions)
+		})
+	}
+	for _, name := range []string{"query_database", "get_schema", "propose_database_change", "search_api", "call_api"} {
+		require.Contains(t, serverInstructions, name)
+	}
+	for _, tool := range tools {
+		require.NotEqual(t, "get_skill", tool.Name)
+	}
+}
+
+// A second initialize on an open session is refused by the SDK with no result,
+// which the instructions middleware must pass through untouched.
+func TestDuplicateInitializeIsRefusedAndTheServerKeepsServing(t *testing.T) {
+	endpoint, _, _ := newProbeServer(t)
+	token := mintMCPToken(t, "jordan@example.com", "client-A", "ws-test", "mcp:read-write", time.Hour)
+	session := connectLegacy(t, endpoint, token, nil)
+
+	body := `{"jsonrpc":"2.0","id":99,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"dup","version":"0"}}}`
+	req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	req.Header.Set("Mcp-Session-Id", session.ID())
+	req.Header.Set("Mcp-Protocol-Version", session.InitializeResult().ProtocolVersion)
+	resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	reply, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Contains(t, string(reply), `"error"`)
+	require.Contains(t, string(reply), "duplicate", "the SDK refuses the second initialize")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, err = session.ListTools(ctx, nil)
+	require.NoError(t, err, "the session must keep serving after the refused initialize")
+}
+
+func TestServerInstructionsFitClientLimit(t *testing.T) {
+	// No deliverable address is longer than 254 characters: RFC 5321
+	// §4.5.3.1.3 caps a path at 256 octets, angle brackets included.
+	email := strings.Repeat("a", 242) + "@example.com"
+	// Bytebase gives a new workspace a 16-character ID (auth_service.go). A
+	// workspace from before 3.17 keeps its UUID (migration 3.17/0009).
+	workspaceID := "6c86d081-379d-4366-be6f-481425e6f397"
+	endpoint, _, _ := newProbeServer(t)
+	session := connectLegacy(t, endpoint, mintMCPToken(t, email, "client-A", workspaceID, "mcp:read-write", time.Hour), nil)
+	instructions := session.InitializeResult().Instructions
+	require.Contains(t, instructions, email)
+	require.Contains(t, instructions, "workspaces/"+workspaceID)
+
+	// Claude Code cuts server instructions at 4,096 characters, and before
+	// v2.1.296 at 2,048 (code.claude.com/docs/en/mcp). Holding the older limit
+	// keeps the confirmation sentence near the end on those versions too.
+	require.LessOrEqual(t, utf8.RuneCountInString(instructions), 2048)
+	require.Contains(t, instructions, "ask them to confirm")
+}
+
+func TestToolGuidanceNamesOnlyServedToolsAndOperations(t *testing.T) {
+	tools := listToolsOverRoute(t)
+	idx, err := NewOpenAPIIndex()
+	require.NoError(t, err)
+
+	registered := make(map[string]bool, len(tools))
+	guidance := map[string]string{"server instructions": serverInstructions, "ask-in-chat instructions": askInChatInstructions}
+	for _, tool := range tools {
+		registered[tool.Name] = true
+		guidance[tool.Name+" description"] = tool.Description
+	}
+	// Quoted strings are example values, such as a database named "employee_db".
+	quoted := regexp.MustCompile(`"[^"]*"`)
+	snakeCase := regexp.MustCompile(`\b[a-z]+(?:_[a-z]+)+\b`)
+	// Any ID with a letter is checked, so a malformed one fails rather than
+	// going unmatched; the operationId="..." placeholder has none.
+	operationID := regexp.MustCompile(`operationId="([^"]*[A-Za-z][^"]*)"`)
+	// The check sees only that spelling, so the instructions must write the
+	// operation they route to as a call.
+	require.NotEmpty(t, operationID.FindString(serverInstructions), "server instructions name no operationId=\"...\" call to check")
+	for source, text := range guidance {
+		for _, name := range snakeCase.FindAllString(quoted.ReplaceAllString(text, ""), -1) {
+			require.True(t, registered[name], "%s names %q, which is not a registered tool", source, name)
+		}
+		for _, match := range operationID.FindAllStringSubmatch(text, -1) {
+			endpoint, ok := idx.GetEndpoint(match[1])
+			require.True(t, ok, "%s names operation %q, which call_api cannot resolve", source, match[1])
+			class, err := auth.MCPMethodClassOfProcedure(endpoint.Path)
+			require.NoError(t, err)
+			require.False(t, auth.MCPClassIsRefused(class), "%s names operation %q, which is %v: no MCP session can call it", source, match[1], class)
+		}
+	}
 }

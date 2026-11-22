@@ -50,7 +50,6 @@ export const StringOperatorList = [
   "contains",
   "@not_contains",
   "matches",
-  "matches",
   "startsWith",
   "endsWith",
 ] as const;
@@ -133,6 +132,7 @@ const OperatorList: Record<Factor, Operator[]> = {
   [CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID]: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
+    ...StringOperatorList,
   ]),
   [CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID]: uniq([
     ...EqualityOperatorList,
@@ -196,8 +196,13 @@ const OperatorList: Record<Factor, Operator[]> = {
   [CEL_ATTRIBUTE_REQUEST_UNMASK]: uniq([...EqualityOperatorList]),
   [CEL_ATTRIBUTE_REQUEST_EXPORT]: uniq([...EqualityOperatorList]),
 
-  // These factors don't have operator candidates for user selection.
-  [CEL_ATTRIBUTE_RESOURCE_DATABASE]: [],
+  [CEL_ATTRIBUTE_RESOURCE_DATABASE]: uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+    ...StringOperatorList,
+  ]),
+
+  // Expiration is configured separately from the expression selector.
   [CEL_ATTRIBUTE_REQUEST_TIME]: [],
 
   [CEL_ATTRIBUTE_ISSUE_LABELS]: uniq([...ListMembershipOperatorList]),

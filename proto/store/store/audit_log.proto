@@ -54,6 +54,10 @@ message AuditLog {
   // marker.
   MCPDelegation mcp_delegation = 12;
 
+  // The external workload behind a workload identity. Set on a successful
+  // token exchange and on every call made with the token it issued.
+  FederatedIdentity federated_identity = 13;
+
   enum Severity {
     SEVERITY_UNSPECIFIED = 0;
     DEBUG = 1;
@@ -105,4 +109,14 @@ message MCPDelegation {
   // read as a session ID that correlates exactly one row, and a mid-session
   // refusal would get an ID different from the rows the session already wrote.
   string correlation_id = 4;
+}
+
+// The verified OIDC identity a workload identity token was exchanged for.
+// Recorded for audit and never read for authorization.
+message FederatedIdentity {
+  // The token's "iss" claim, e.g. "https://token.actions.githubusercontent.com".
+  string issuer = 1;
+
+  // The token's "sub" claim, e.g. "repo:my-org/app:ref:refs/heads/main".
+  string subject = 2;
 }

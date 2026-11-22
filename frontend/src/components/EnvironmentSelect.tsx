@@ -11,8 +11,6 @@ interface SingleProps {
   multiple?: false;
   value: string;
   onChange: (value: string) => void;
-  /** Extra content rendered next to the selected env in the trigger and rows. */
-  renderSuffix?: (environment: Environment) => React.ReactNode;
 }
 
 interface MultiProps {
@@ -22,17 +20,22 @@ interface MultiProps {
 }
 
 export type EnvironmentSelectProps = (SingleProps | MultiProps) & {
+  triggerRef?: React.Ref<HTMLDivElement>;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  portal?: boolean;
   clearable?: boolean;
+  /**
+   * Extra content rendered next to the environment in every option row, and
+   * in the single-select trigger beside the selected value.
+   */
+  renderSuffix?: (environment: Environment) => React.ReactNode;
 };
 
 export function EnvironmentSelect(props: EnvironmentSelectProps) {
   const { t } = useTranslation();
   const environments = useEnvironmentList();
-  const renderSuffix = !props.multiple ? props.renderSuffix : undefined;
+  const renderSuffix = props.renderSuffix;
 
   const options = useMemo(
     () =>
@@ -62,6 +65,7 @@ export function EnvironmentSelect(props: EnvironmentSelectProps) {
   if (props.multiple) {
     return (
       <Combobox
+        triggerRef={props.triggerRef}
         multiple
         value={props.value}
         onChange={props.onChange}
@@ -69,7 +73,6 @@ export function EnvironmentSelect(props: EnvironmentSelectProps) {
         noResultsText={t("common.no-data")}
         disabled={props.disabled}
         className={props.className}
-        portal={props.portal}
         clearable={clearable}
         options={options}
       />
@@ -78,13 +81,13 @@ export function EnvironmentSelect(props: EnvironmentSelectProps) {
 
   return (
     <Combobox
+      triggerRef={props.triggerRef}
       value={props.value}
       onChange={props.onChange}
       placeholder={placeholder}
       noResultsText={t("common.no-data")}
       disabled={props.disabled}
       className={props.className}
-      portal={props.portal}
       clearable={clearable}
       renderValue={(opt) => {
         const env = environments.find(

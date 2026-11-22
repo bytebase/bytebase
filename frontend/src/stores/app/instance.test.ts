@@ -1,6 +1,11 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  silentContextKey,
+  skipErrorNotificationContextKey,
+} from "@/api/context-key";
 import {
   InstanceSchema,
   type ListInstancesRequest,
@@ -145,6 +150,33 @@ describe("instance store project parent", () => {
     ).resolves.toMatchObject({
       name: "projects/app/instances/sample",
     });
+  });
+
+  test("leaves a failed sample preparation for the caller to report", async () => {
+    const store = createStore();
+    const error = new ConnectError(
+      "Sample Project Instance is not configured",
+      Code.FailedPrecondition
+    );
+    mocks.prepareSampleProjectInstance.mockRejectedValue(error);
+
+    await expect(
+      store.prepareSampleProjectInstance("projects/app")
+    ).rejects.toBe(error);
+
+    const options = mocks.prepareSampleProjectInstance.mock.calls[0][1];
+    expect(options?.contextValues?.get(skipErrorNotificationContextKey)).toBe(
+      true
+    );
+  });
+
+  test("keeps permission and session handling for a failed sample preparation", async () => {
+    const store = createStore();
+
+    await store.prepareSampleProjectInstance("projects/app");
+
+    const options = mocks.prepareSampleProjectInstance.mock.calls[0][1];
+    expect(options?.contextValues?.get(silentContextKey)).toBe(false);
   });
 
   test("uses project permission to fetch a nested instance", async () => {

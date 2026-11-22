@@ -3,7 +3,8 @@ import { act, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MAIN_SCROLL_RESTORATION_ID } from "@/app/router/NavigationScrollRestoration";
-import { State } from "@/types/proto-es/v1/common_pb";
+import type { AgentSqlFixTargetAdapter } from "@/modules/agent/logic/sqlFix";
+import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import type { PlanDetailPageState } from "./shell/hooks/types";
 
 (
@@ -11,6 +12,7 @@ import type { PlanDetailPageState } from "./shell/hooks/types";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  reviewState: undefined as unknown,
   localStorage: {
     clear: vi.fn(),
     getItem: vi.fn(() => null),
@@ -19,8 +21,16 @@ const mocks = vi.hoisted(() => ({
   },
   branchMountCount: { value: 0 },
   routerPush: vi.fn(),
+  routerReplace: vi.fn(),
   selectedSpecRender: vi.fn(),
   usePlanDetailPage: vi.fn(),
+  sqlFixTarget: undefined as AgentSqlFixTargetAdapter | undefined,
+}));
+
+vi.mock("@/modules/agent/logic/sqlFix", () => ({
+  getAgentSqlFixIdentity: () => '["workspaces/example","users/me@example.com"]',
+  notifyAgentSqlFixTargetChanged: () => {},
+  registerAgentSqlFixTarget: (adapter: AgentSqlFixTargetAdapter) => { mocks.sqlFixTarget = adapter; return () => { mocks.sqlFixTarget = undefined; }; },
 }));
 
 vi.stubGlobal("localStorage", mocks.localStorage);
@@ -33,6 +43,7 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/app/router", () => ({
   router: {
     push: mocks.routerPush,
+    replace: mocks.routerReplace,
   },
 }));
 
@@ -68,12 +79,18 @@ vi.mock("@/lib/utils", () => ({
     classes.filter(Boolean).join(" "),
 }));
 
+vi.mock("./components/release/ReleaseFileViewer", () => ({
+  ReleaseFileViewerProvider: ({ children }: { children: ReactNode }) => children,
+  ReleaseFileViewerDock: ({ children }: { children: ReactNode }) => children,
+  VIEWER_DOCK_MIN_WIDTH: 1280,
+  useOpenReleaseFile: () => undefined,
+}));
 vi.mock("./components/deploy/DeployBranch", () => ({
   DeployBranch: () => <div data-testid="deploy-branch">deploy branch</div>,
 }));
 
 vi.mock("./components/review/PlanReviewSection", () => ({
-  PlanReviewSection: () => null,
+  PlanReviewSection: () => <div data-testid="plan-review-section" />,
 }));
 
 vi.mock("./components/PlanDetailChangesBranch", () => ({
@@ -124,6 +141,15 @@ vi.mock("./utils/phaseSummary", () => ({
   buildChangesSummary: () => "",
   buildDeploySummary: () => "",
   buildReviewSummary: () => "",
+  buildReviewSummaryV2: () => ["review summary v2"],
+}));
+
+vi.mock("./hooks/usePlanReviewState", () => ({
+  usePlanReviewState: () => mocks.reviewState,
+}));
+
+vi.mock("./components/PlanDetailDeployWaiting", () => ({
+  PlanDetailDeployWaiting: () => <div data-testid="deploy-waiting" />,
 }));
 
 import { ProjectPlanDetailPage } from "./ProjectPlanDetailPage";
@@ -133,6 +159,7 @@ let root: ReturnType<typeof createRoot>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.reviewState = undefined;
   mocks.branchMountCount.value = 0;
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -191,6 +218,15 @@ const changesMountIdText = () =>
   container.querySelector('[data-testid="changes-mount-id"]')?.textContent;
 
 describe("ProjectPlanDetailPage", () => {
+  it("keeps the SQL-fix target available when saved Changes is collapsed", async () => {
+    const page = buildPage();
+    page.isCreating = false;
+    page.activePhases = new Set(["review"]);
+    mocks.usePlanDetailPage.mockReturnValue(page);
+    await act(async () => { root.render(<ProjectPlanDetailPage planId="42" projectId="foo" />); });
+    expect(changesMountIdText()).toBeUndefined();
+    expect(mocks.sqlFixTarget).toBeDefined();
+  });
   it("only expands phases while creating a plan", async () => {
     const page = buildPage();
     mocks.usePlanDetailPage.mockReturnValue(page);
@@ -320,6 +356,107 @@ describe("ProjectPlanDetailPage", () => {
       mocks.selectedSpecRender.mock.calls.every(([id]) => id === "spec-1")
     ).toBe(true);
     expect(selectedSpecIdText()).toBe("spec-1");
+  });
+
+  it("keeps Plan-create Changes mounted while the phase is collapsed", async () => {
+    const page = buildPage();
+    mocks.usePlanDetailPage.mockReturnValue(page);
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          routeQuery={{}}
+        />
+      );
+      await Promise.resolve();
+    });
+
+    expect(changesMountIdText()).toBe("1");
+
+    page.activePhases = new Set();
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          routeQuery={{}}
+        />
+      );
+    });
+
+    const changesContent = container.querySelector(
+      '[data-testid="changes-mount-id"]'
+    );
+    expect(changesMountIdText()).toBe("1");
+    expect(changesContent?.closest("[hidden]")).not.toBeNull();
+  });
+
+  it("keeps the current Plan-create target in the route context", async () => {
+    const page = buildPage();
+    page.isEditing = true;
+    const spec = {
+      id: "spec-1",
+      config: {
+        case: "changeDatabaseConfig",
+        value: { targets: ["instances/i1/databases/db-a"] },
+      },
+    };
+    page.plan.specs = [spec] as unknown as PlanDetailPageState["plan"]["specs"];
+    mocks.usePlanDetailPage.mockReturnValue(page);
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          routeQuery={{
+            databaseList: "instances/i1/databases/db-a",
+            sqlStorageKey: "keep-this-query",
+          }}
+        />
+      );
+    });
+    expect(mocks.routerReplace).not.toHaveBeenCalled();
+    expect(page.bypassLeaveGuardOnce).not.toHaveBeenCalled();
+
+    page.plan.specs = [
+      {
+        ...spec,
+        config: {
+          ...spec.config,
+          value: { targets: ["instances/i1/databases/db-b"] },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          routeQuery={{
+            databaseList: "instances/i1/databases/db-a",
+            sqlStorageKey: "keep-this-query",
+          }}
+        />
+      );
+    });
+
+    expect(mocks.routerReplace).toHaveBeenCalledWith(
+      {
+        query: {
+          agentDatabaseName: "instances/i1/databases/db-b",
+          databaseList: "instances/i1/databases/db-a",
+          sqlStorageKey: "keep-this-query",
+        },
+      },
+      { preventScrollReset: true }
+    );
+    expect(page.bypassLeaveGuardOnce).toHaveBeenCalledOnce();
+    expect(
+      vi.mocked(page.bypassLeaveGuardOnce).mock.invocationCallOrder[0]
+    ).toBeLessThan(mocks.routerReplace.mock.invocationCallOrder[0]);
   });
 
   it("renders a route-selected spec without an intermediate stale spec", async () => {
@@ -503,6 +640,99 @@ describe("ProjectPlanDetailPage", () => {
       container.querySelector("[data-testid='deploy-future-control']")
     ).toBeNull();
     expect(container.textContent).not.toContain("common.not-started");
+  });
+
+  it("without SQL Review V2 a draft opens Review too, for its AI review and comments", async () => {
+    const page = buildPage();
+    page.isCreating = false;
+    page.planId = "1";
+    page.plan.name = "projects/foo/plans/1";
+    page.plan.issue = "projects/foo/issues/1";
+    page.activePhases = new Set(["changes", "review"]);
+    page.issue = {
+      name: "projects/foo/issues/1",
+      draft: true,
+      status: IssueStatus.OPEN,
+    } as PlanDetailPageState["issue"];
+    mocks.usePlanDetailPage.mockReturnValue(page);
+    mocks.reviewState = undefined;
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage planId="1" projectId="foo" specId="spec-1" />
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector("[data-testid='plan-review-section']")).not.toBeNull();
+    expect(container.textContent).not.toContain("plan.phase.review-description");
+    expect(container.querySelector("[data-testid='deploy-waiting']")).toBeNull();
+  });
+
+  it("under SQL Review V2 a draft opens Review and Deploy lists what it waits on", async () => {
+    const page = buildPage();
+    page.isCreating = false;
+    page.planId = "1";
+    page.plan.name = "projects/foo/plans/1";
+    page.plan.issue = "projects/foo/issues/1";
+    page.activePhases = new Set(["changes", "review"]);
+    page.issue = {
+      name: "projects/foo/issues/1",
+      draft: true,
+      status: IssueStatus.OPEN,
+    } as PlanDetailPageState["issue"];
+    mocks.usePlanDetailPage.mockReturnValue(page);
+    mocks.reviewState = {
+      rows: [
+        {
+          reviewer: "review",
+          conclusion: "open",
+          findings: { open: 2, resolved: 0, openP0: 0 },
+          holdsRollout: true,
+        },
+      ],
+      gates: [],
+      openDiscussions: 0,
+    };
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage planId="1" projectId="foo" specId="spec-1" />
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector("[data-testid='plan-review-section']")).not.toBeNull();
+    expect(container.textContent).not.toContain("plan.phase.review-description");
+    expect(container.querySelector("[data-testid='deploy-waiting']")).not.toBeNull();
+    expect(container.querySelector("[data-testid='phase-attention']")).not.toBeNull();
+  });
+
+  it("under SQL Review V2 a canceled issue's Deploy waits on nothing", async () => {
+    const page = buildPage();
+    page.isCreating = false;
+    page.planId = "1";
+    page.plan.name = "projects/foo/plans/1";
+    page.plan.issue = "projects/foo/issues/1";
+    page.issue = {
+      name: "projects/foo/issues/1",
+      draft: false,
+      status: IssueStatus.CANCELED,
+    } as PlanDetailPageState["issue"];
+    mocks.usePlanDetailPage.mockReturnValue(page);
+    mocks.reviewState = { rows: [], gates: [], openDiscussions: 0 };
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage planId="1" projectId="foo" specId="spec-1" />
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector("[data-testid='deploy-waiting']")).toBeNull();
+    expect(
+      container.querySelector("[data-testid='deploy-future-control']")
+    ).not.toBeNull();
   });
 
   it("shows an incomplete state for a persisted plan without its Draft Review Issue", async () => {

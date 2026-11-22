@@ -22,10 +22,10 @@ const mocks = vi.hoisted(() => {
       queryTimeout: undefined as undefined | { seconds: bigint },
     },
     policy: {
-      disableExport: false,
       disableCopyData: false,
       allowAdminDataSource: false,
       maximumResultRows: 0n,
+      disableDownload: false,
     },
     updateWorkspaceProfile: vi.fn(
       async (_params: {
@@ -186,7 +186,6 @@ beforeEach(() => {
   mocks.profile.sqlEditorCustomTheme = undefined;
   mocks.profile.sqlResultSize = 0n;
   mocks.profile.queryTimeout = undefined;
-  mocks.policy.disableExport = false;
   mocks.policy.disableCopyData = false;
   mocks.policy.allowAdminDataSource = false;
   mocks.policy.maximumResultRows = 0n;
@@ -356,60 +355,120 @@ describe("SQLEditorSection theme", () => {
   });
 });
 
-// The data-export policy is stored as `disableExport`, while the control names
-// the inverse allowed state. Keep that inversion and its explanatory copy in
-// sync.
-describe("SQLEditorSection data-export policy toggle", () => {
-  function renderSection() {
-    const ref = createRef<SectionHandle>();
-    render(
-      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
+describe("SQLEditorSection query data policy toggles", () => {
+  beforeEach(() => {
+    mocks.policy.disableDownload = false;
+  });
+
+  // The theme preview renders switches of its own; keep the settings ones.
+  function settingSwitches(): HTMLElement[] {
+    return Array.from(
+      container.querySelectorAll<HTMLElement>('[role="switch"]')
+    ).filter((control) =>
+      (control.parentElement?.textContent ?? "").startsWith(
+        "settings.general.workspace."
+      )
     );
-    return ref;
   }
 
-  function exportSwitch(): HTMLElement {
-    // The switch renders inside the FormField title span, as a sibling of
-    // the label text (SQLEditorSection.tsx) — scope by that span.
-    const span = Array.from(container.querySelectorAll("span")).find((s) =>
-      s.textContent?.includes("settings.general.workspace.data-export.self")
+  function settingSwitch(label: string): HTMLElement {
+    const control = settingSwitches().find(
+      (candidate) => candidate.parentElement?.textContent === label
     );
-    expect(span).toBeTruthy();
-    const control = span?.querySelector<HTMLElement>('[role="switch"]');
     expect(control).toBeTruthy();
     return control as HTMLElement;
   }
 
-  test("renders the retitled label with its description", () => {
-    renderSection();
-    expect(container.textContent).toContain(
-      "settings.general.workspace.data-export.self"
+  const ALLOW_DOWNLOAD = "settings.general.workspace.allow-download.self";
+
+  test("offers a download switch beside the copy and admin data source switches", () => {
+    render(<SQLEditorSection title="SQL Editor" onDirtyChange={() => {}} />);
+
+    expect(
+      settingSwitches().map((control) => control.parentElement?.textContent)
+    ).toEqual([
+      ALLOW_DOWNLOAD,
+      "settings.general.workspace.data-copy",
+      "settings.general.workspace.allow-admin-data-source.self",
+    ]);
+  });
+
+  test("saving a toggle change upserts the remaining policy fields", async () => {
+    const ref = createRef<SectionHandle>();
+    render(
+      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
     );
-    expect(container.textContent).toContain(
-      "settings.general.workspace.data-export.description"
-    );
-  });
-
-  test("export allowed without approval (disableExport=false) renders checked", () => {
-    mocks.policy.disableExport = false;
-    renderSection();
-    expect(exportSwitch().getAttribute("aria-checked")).toBe("true");
-  });
-
-  test("approval-gated export (disableExport=true) renders unchecked", () => {
-    mocks.policy.disableExport = true;
-    renderSection();
-    expect(exportSwitch().getAttribute("aria-checked")).toBe("false");
-  });
-
-  test("toggling the switch marks the section dirty for the Update bar", () => {
-    mocks.policy.disableExport = false;
-    const ref = renderSection();
-    expect(ref.current?.isDirty()).toBe(false);
     act(() => {
-      exportSwitch().click();
+      settingSwitch("settings.general.workspace.data-copy").click();
     });
     expect(ref.current?.isDirty()).toBe(true);
-    expect(exportSwitch().getAttribute("aria-checked")).toBe("false");
+
+    await act(async () => {
+      await ref.current?.update();
+    });
+
+    expect(mocks.upsertPolicy).toHaveBeenCalledTimes(1);
+    expect(mocks.upsertPolicy.mock.calls[0][0]).toMatchObject({
+      policy: {
+        policy: {
+          case: "queryDataPolicy",
+          value: {
+            disableCopyData: true,
+            disableDownload: false,
+            allowAdminDataSource: false,
+          },
+        },
+      },
+    });
+  });
+
+  test("allows download by default", () => {
+    render(<SQLEditorSection title="SQL Editor" onDirtyChange={() => {}} />);
+
+    expect(settingSwitch(ALLOW_DOWNLOAD)).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+  });
+
+  test("turning off download saves disable_download", async () => {
+    const ref = createRef<SectionHandle>();
+    render(
+      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
+    );
+    act(() => {
+      settingSwitch(ALLOW_DOWNLOAD).click();
+    });
+    expect(settingSwitch(ALLOW_DOWNLOAD)).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
+    expect(ref.current?.isDirty()).toBe(true);
+
+    await act(async () => {
+      await ref.current?.update();
+    });
+
+    expect(mocks.upsertPolicy.mock.calls[0][0]).toMatchObject({
+      policy: {
+        policy: {
+          value: { disableDownload: true },
+        },
+      },
+    });
+  });
+
+  test("reads the stored setting", () => {
+    mocks.policy.disableDownload = true;
+    const ref = createRef<SectionHandle>();
+    render(
+      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
+    );
+
+    expect(settingSwitch(ALLOW_DOWNLOAD)).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
+    expect(ref.current?.isDirty()).toBe(false);
   });
 });

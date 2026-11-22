@@ -357,8 +357,8 @@ const renderIntoContainer = (element: ReactElement) => {
   document.body.appendChild(container);
   return {
     container,
-    render: () => {
-      act(() => {
+    render: async () => {
+      await act(async () => {
         root.render(element);
       });
     },
@@ -403,7 +403,21 @@ afterEach(() => {
 });
 
 describe("AccessGrantRequestDrawer", () => {
-  test("shows the workspace maximum expiration hint when SQL access grants are capped", () => {
+  test("prefills an editable reason without creating a grant before Submit", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        targets={["instances/inst1/databases/db1"]}
+        query="SELECT id FROM orders"
+        reason="Investigate orders"
+        onClose={vi.fn()}
+      />
+    );
+    await render();
+    expect((container.querySelector("[data-testid='textarea']") as HTMLTextAreaElement).value).toBe("Investigate orders");
+    expect(mocks.createAccessGrant).not.toHaveBeenCalled();
+    unmount();
+  });
+  test("shows the workspace maximum expiration hint when SQL access grants are capped", async () => {
     mocks.maximumRequestExpirationSeconds = 30 * 24 * 60 * 60;
     const onClose = vi.fn();
     const { container, render, unmount } = renderIntoContainer(
@@ -413,14 +427,14 @@ describe("AccessGrantRequestDrawer", () => {
         onClose={onClose}
       />
     );
-    render();
+    await render();
 
     expect(container.textContent).toContain("common.expiration-max-hint");
 
     unmount();
   });
 
-  test("renders with pre-filled targets, query, unmask when passed as props", () => {
+  test("renders with pre-filled targets, query, unmask when passed as props", async () => {
     const onClose = vi.fn();
     const { container, render, unmount } = renderIntoContainer(
       <AccessGrantRequestDrawer
@@ -430,7 +444,7 @@ describe("AccessGrantRequestDrawer", () => {
         onClose={onClose}
       />
     );
-    render();
+    await render();
 
     const monacoEditor = container.querySelector(
       "[data-testid='monaco-editor']"
@@ -447,7 +461,7 @@ describe("AccessGrantRequestDrawer", () => {
     unmount();
   });
 
-  test("statement editor is fixed-height (autoHeight=false) so a long query can't overflow and cover the reason box", () => {
+  test("statement editor is fixed-height (autoHeight=false) so a long query can't overflow and cover the reason box", async () => {
     const onClose = vi.fn();
     // A tall statement is what triggered the bug: MonacoEditor's default
     // autoHeight grows the editor to its content (clamped to 600px), overflowing
@@ -461,7 +475,7 @@ describe("AccessGrantRequestDrawer", () => {
         onClose={onClose}
       />
     );
-    render();
+    await render();
 
     const monacoEditor = container.querySelector(
       "[data-testid='monaco-editor']"
@@ -472,7 +486,7 @@ describe("AccessGrantRequestDrawer", () => {
     unmount();
   });
 
-  test("clicking the drawer content does not bubble to the component that opened it", () => {
+  test("clicking the drawer content does not bubble to the component that opened it", async () => {
     const onOwnerClick = vi.fn();
     const onClose = vi.fn();
     const { container, render, unmount } = renderIntoContainer(
@@ -484,7 +498,7 @@ describe("AccessGrantRequestDrawer", () => {
         />
       </div>
     );
-    render();
+    await render();
 
     const textarea = container.querySelector(
       "[data-testid='textarea']"
@@ -499,12 +513,12 @@ describe("AccessGrantRequestDrawer", () => {
     unmount();
   });
 
-  test("Submit button disabled when required fields missing", () => {
+  test("Submit button disabled when required fields missing", async () => {
     const onClose = vi.fn();
     const { container, render, unmount } = renderIntoContainer(
       <AccessGrantRequestDrawer onClose={onClose} />
     );
-    render();
+    await render();
 
     // No targets, no query, no reason — submit should be disabled
     const submitBtn = container.querySelector(
@@ -532,7 +546,7 @@ describe("AccessGrantRequestDrawer", () => {
         onClose={onClose}
       />
     );
-    render();
+    await render();
 
     // Fill in reason
     const textarea = container.querySelector(
@@ -584,7 +598,7 @@ describe("AccessGrantRequestDrawer", () => {
         onClose={onClose}
       />
     );
-    render();
+    await render();
 
     // Fill reason
     const textarea = container.querySelector(
@@ -630,7 +644,7 @@ describe("AccessGrantRequestDrawer", () => {
         onClose={onClose}
       />
     );
-    renderFn();
+    await renderFn();
     await act(async () => {
       await Promise.resolve(); // let the picker's mount fetch resolve
     });
@@ -669,7 +683,7 @@ describe("AccessGrantRequestDrawer", () => {
         onClose={onClose}
       />
     );
-    renderFn();
+    await renderFn();
 
     const textarea = container.querySelector(
       "[data-testid='textarea']"
@@ -719,7 +733,7 @@ describe("AccessGrantRequestDrawer", () => {
         onClose={onClose}
       />
     );
-    renderFn();
+    await renderFn();
 
     const textarea = container.querySelector(
       "[data-testid='textarea']"
@@ -776,7 +790,7 @@ describe("AccessGrantRequestDrawer", () => {
         onClose={onClose}
       />
     );
-    renderFn();
+    await renderFn();
 
     const textarea = container.querySelector(
       "[data-testid='textarea']"

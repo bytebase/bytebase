@@ -13,10 +13,12 @@ interface BaseProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  portal?: boolean;
   projectName?: string;
   environmentName?: string;
   allowedEngineTypeList?: Engine[];
+  // List a database with no environment as disabled, marked "No
+  // environment". For pickers whose result is deployed by environment.
+  requireEnvironment?: boolean;
 }
 
 interface SingleProps {
@@ -41,10 +43,10 @@ export function DatabaseSelect(props: DatabaseSelectProps) {
     placeholder,
     disabled,
     className,
-    portal,
     projectName,
     environmentName,
     allowedEngineTypeList,
+    requireEnvironment,
   } = props;
   const { t } = useTranslation();
   const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
@@ -128,30 +130,41 @@ export function DatabaseSelect(props: DatabaseSelectProps) {
     [getDatabaseByName]
   );
 
-  const buildOption = useCallback((database: Database): ComboboxOption => {
-    const { databaseName, instance } = extractDatabaseResourceName(
-      database.name
-    );
-    return {
-      value: database.name,
-      label: databaseName,
-      description: instance,
-      render: (keyword) => (
-        <div className="flex flex-col gap-1">
-          <DatabaseTargetDisplay
-            database={database}
-            keyword={keyword}
-            showEnvironment
-          />
-          <HighlightLabelText
-            text={database.name}
-            keyword={keyword}
-            className="text-xs text-control-placeholder"
-          />
-        </div>
-      ),
-    };
-  }, []);
+  const buildOption = useCallback(
+    (database: Database): ComboboxOption => {
+      const { databaseName, instance } = extractDatabaseResourceName(
+        database.name
+      );
+      const noEnvironment =
+        requireEnvironment === true && !database.effectiveEnvironment;
+      return {
+        value: database.name,
+        label: databaseName,
+        description: instance,
+        disabled: noEnvironment,
+        render: (keyword) => (
+          <div className="flex flex-col gap-1">
+            <DatabaseTargetDisplay
+              database={database}
+              keyword={keyword}
+              showEnvironment
+            />
+            <HighlightLabelText
+              text={database.name}
+              keyword={keyword}
+              className="text-xs text-control-placeholder"
+            />
+            {noEnvironment && (
+              <span className="text-xs text-warning">
+                {t("database.select-no-environment")}
+              </span>
+            )}
+          </div>
+        ),
+      };
+    },
+    [requireEnvironment, t]
+  );
 
   // Deduped union: current results + any selected value not on the page
   // (resolved from the cache, else a label-only synthesized option from the
@@ -183,7 +196,6 @@ export function DatabaseSelect(props: DatabaseSelectProps) {
     onLoadMore: loadMore,
     disabled,
     className,
-    portal,
     options,
   };
 

@@ -89,3 +89,37 @@
         line: 12
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(a int, b int, c int, d int, e int, f int);
+    CREATE INDEX i1 ON t(a);
+    CREATE INDEX i2 ON t(b);
+    CREATE INDEX i3 ON t(c);
+    CREATE INDEX i4 ON t(d);
+    CREATE INDEX i5 ON t(e);
+    ALTER TABLE t ADD CONSTRAINT uk_t UNIQUE (f);
+  want:
+    - status: 2
+      code: 813
+      title: INDEX_TOTAL_NUMBER_LIMIT
+      content: The count of index in table "public"."t" should be no more than 5, but found 6
+      startposition:
+        line: 7
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int, b int, c int, d int, e int, f int);
+    CREATE INDEX i1 ON t(a);
+    CREATE INDEX i2 ON t(b);
+    CREATE INDEX i3 ON t(c);
+    CREATE INDEX i4 ON t(d);
+    CREATE INDEX i5 ON t(e);
+    CREATE INDEX i6 ON t(f);
+  want:
+    - status: 2
+      code: 813
+      title: INDEX_TOTAL_NUMBER_LIMIT
+      content: The count of index in table "public"."t" should be no more than 5, but found 6
+      startposition:
+        line: 7
+        column: 0
+      endposition: null

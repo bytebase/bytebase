@@ -4,6 +4,7 @@
 package v1
 
 import (
+	status "google.golang.org/genproto/googleapis/rpc/status"
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	proto "google.golang.org/protobuf/proto"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -500,9 +501,6 @@ func (x *IssueComment_ReviewMetadata) Equal(y *IssueComment_ReviewMetadata) bool
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.RunType != y.RunType {
-		return false
-	}
 	if x.RuleType != y.RuleType {
 		return false
 	}
@@ -516,6 +514,23 @@ func (x *IssueComment_ReviewMetadata) Equal(y *IssueComment_ReviewMetadata) bool
 		if x.Targets[i] != y.Targets[i] {
 			return false
 		}
+	}
+	if x.Superseded != y.Superseded {
+		return false
+	}
+	if x.Attempt != y.Attempt {
+		return false
+	}
+	if len(x.Codes) != len(y.Codes) {
+		return false
+	}
+	for i := 0; i < len(x.Codes); i++ {
+		if x.Codes[i] != y.Codes[i] {
+			return false
+		}
+	}
+	if x.Title != y.Title {
+		return false
 	}
 	return true
 }
@@ -583,6 +598,28 @@ func (x *IssueComment_ReviewSubmission) Equal(y *IssueComment_ReviewSubmission) 
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
+	}
+	return true
+}
+
+func (x *IssueComment_ReviewRunCompletion) Equal(y *IssueComment_ReviewRunCompletion) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Attempt != y.Attempt {
+		return false
+	}
+	if x.PostedCount != y.PostedCount {
+		return false
+	}
+	if x.KeptCount != y.KeptCount {
+		return false
+	}
+	if x.SupersededCount != y.SupersededCount {
+		return false
 	}
 	return true
 }
@@ -662,6 +699,9 @@ func (x *IssueComment) Equal(y *IssueComment) bool {
 	if !x.GetReviewSubmission().Equal(y.GetReviewSubmission()) {
 		return false
 	}
+	if !x.GetReviewRunCompletion().Equal(y.GetReviewRunCompletion()) {
+		return false
+	}
 	return true
 }
 
@@ -697,10 +737,7 @@ func (x *ReviewRun) Equal(y *ReviewRun) bool {
 	if x.Name != y.Name {
 		return false
 	}
-	if x.Type != y.Type {
-		return false
-	}
-	if x.Status != y.Status {
+	if x.State != y.State {
 		return false
 	}
 	if p, q := x.CreateTime, y.CreateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
@@ -709,7 +746,25 @@ func (x *ReviewRun) Equal(y *ReviewRun) bool {
 	if p, q := x.EndTime, y.EndTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
-	if x.Error != y.Error {
+	if equal, ok := interface{}(x.Error).(interface{ Equal(*status.Status) bool }); !ok || !equal.Equal(y.Error) {
+		return false
+	} else if !proto.Equal(x.Error, y.Error) {
+		return false
+	}
+	if x.Outdated != y.Outdated {
+		return false
+	}
+	return true
+}
+
+func (x *GetReviewRunRequest) Equal(y *GetReviewRunRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
 		return false
 	}
 	return true

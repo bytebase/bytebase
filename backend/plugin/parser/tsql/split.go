@@ -34,11 +34,11 @@ func init() {
 //
 // On parser failure, falls back to the semicolon-based tokenizer splitter.
 func SplitSQL(statement string) ([]base.Statement, error) {
-	omniStmts, err := omnimssql.Parse(statement)
+	stmts, err := omnimssql.Parse(statement)
 	if err != nil {
 		return splitBySemi(statement)
 	}
-	return toBaseStatements(statement, omniStmts), nil
+	return toBaseStatements(statement, stmts), nil
 }
 
 func splitBySemi(statement string) ([]base.Statement, error) {
@@ -50,15 +50,15 @@ func splitBySemi(statement string) ([]base.Statement, error) {
 // enforcing byte-contiguity and position adjacency. Any bytes that omni did
 // not attribute to a statement (gaps) are absorbed into the following
 // statement so the output remains contiguous.
-func toBaseStatements(sql string, omniStmts []omnimssql.Statement) []base.Statement {
-	if len(omniStmts) == 0 {
+func toBaseStatements(sql string, stmts []omnimssql.Statement) []base.Statement {
+	if len(stmts) == 0 {
 		return nil
 	}
-	result := make([]base.Statement, 0, len(omniStmts))
+	result := make([]base.Statement, 0, len(stmts))
 	positionMapper := base.NewByteOffsetPositionMapper(sql)
 	prevEnd := &storepb.Position{Line: 1, Column: 1}
 	prevByte := 0
-	for _, os := range omniStmts {
+	for _, os := range stmts {
 		startByte := prevByte
 		endByte := os.ByteEnd
 		if endByte < startByte {

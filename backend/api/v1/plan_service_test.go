@@ -106,3 +106,15 @@ func TestBuildV1PlansScopesRelationsByProject(t *testing.T) {
 	require.Equal(t, v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED, byTitle["no issue"].IssueStatus)
 	require.Equal(t, v1pb.ApprovalStatus_APPROVAL_STATUS_UNSPECIFIED, byTitle["no issue"].ApprovalStatus)
 }
+
+func TestConvertToPlanCheckRunResultKeepsSheet(t *testing.T) {
+	t.Parallel()
+	result := convertToPlanCheckRunResult(&storepb.PlanCheckRunResult_Result{
+		Status:      storepb.Advice_SUCCESS,
+		Type:        storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT,
+		Target:      "instances/i/databases/db",
+		SheetSha256: "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+	})
+
+	require.Equal(t, "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae", result.SheetSha256)
+}

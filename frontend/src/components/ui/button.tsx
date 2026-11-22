@@ -14,8 +14,10 @@ const buttonStyles = cva(
       },
       appearance: {
         solid: "",
+        soft: "",
         outline: "border border-control-border bg-transparent",
         secondary: "",
+        ghost: "bg-transparent",
         link: "underline-offset-4 hover:underline",
       },
       size: {
@@ -35,6 +37,12 @@ const buttonStyles = cva(
       },
       {
         variant: "default",
+        appearance: "soft",
+        className:
+          "bg-control-bg text-control hover:bg-control-bg-hover hover:text-control-hover",
+      },
+      {
+        variant: "default",
         appearance: "outline",
         className: "text-control hover:bg-control-bg",
       },
@@ -42,6 +50,11 @@ const buttonStyles = cva(
         variant: "default",
         appearance: "secondary",
         className: "text-control hover:bg-control-bg",
+      },
+      {
+        variant: "default",
+        appearance: "ghost",
+        className: "text-accent hover:bg-accent/10",
       },
       {
         variant: "default",
@@ -55,6 +68,11 @@ const buttonStyles = cva(
       },
       {
         variant: "destructive",
+        appearance: "soft",
+        className: "bg-error/10 text-error hover:bg-error/15",
+      },
+      {
+        variant: "destructive",
         appearance: "outline",
         className:
           "border-error text-error hover:bg-error hover:text-accent-text",
@@ -62,6 +80,11 @@ const buttonStyles = cva(
       {
         variant: "destructive",
         appearance: "secondary",
+        className: "text-error hover:bg-error/10",
+      },
+      {
+        variant: "destructive",
+        appearance: "ghost",
         className: "text-error hover:bg-error/10",
       },
       {

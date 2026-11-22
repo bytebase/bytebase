@@ -1,8 +1,7 @@
 package mysql
 
 import (
-	"strings"
-
+	"github.com/bytebase/omni/mysql/analysis"
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
@@ -11,141 +10,88 @@ import (
 )
 
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
-	sqlTypeSet := make(map[storepb.StatementType]bool)
-	for _, a := range asts {
-		node, ok := GetOmniNode(a)
+	return base.CollectUniqueStatementTypes(asts, func(a base.AST) (storepb.StatementType, error) {
+		node, ok := GetNode(a)
 		if !ok {
-			return nil, errors.New("expected OmniAST for MySQL")
+			return 0, errors.New("expected AST for MySQL")
 		}
-		t := classifyStatementType(node)
-		sqlTypeSet[t] = true
-	}
-	var sqlTypes []storepb.StatementType
-	for sqlType := range sqlTypeSet {
-		sqlTypes = append(sqlTypes, sqlType)
-	}
-	return sqlTypes, nil
+		return classifyStatementType(node), nil
+	})
 }
 
 // StatementTypeWithPosition contains a statement type and its position information.
-// It mirrors the PostgreSQL equivalent so the SDL statement-type gating in the release
-// service can report disallowed statements with line numbers.
-type StatementTypeWithPosition struct {
-	Type storepb.StatementType
-	// Line is the one-based line number where the statement ends.
-	Line int
-	Text string
-}
+type StatementTypeWithPosition = base.StatementTypeWithPosition
 
 // GetStatementTypesWithPositions returns statement types with position information,
-// preserving statement order. Line numbers are one-based. It mirrors
-// pg.GetStatementTypes so the declarative-release gating can surface disallowed SDL
-// statements with positions for MySQL.
+// preserving statement order. Line numbers are one-based.
 func GetStatementTypesWithPositions(asts []base.AST) ([]StatementTypeWithPosition, error) {
-	if len(asts) == 0 {
-		return []StatementTypeWithPosition{}, nil
-	}
-
-	var results []StatementTypeWithPosition
-	for _, a := range asts {
-		omniAST, ok := a.(*OmniAST)
+	return base.CollectStatementTypesWithPosition(asts, func(a base.AST) ([]storepb.StatementType, string, bool, error) {
+		node, ok := a.(*AST)
 		if !ok {
-			return nil, errors.New("expected OmniAST for MySQL")
+			return nil, "", false, errors.New("expected AST for MySQL")
 		}
-		if omniAST.Node == nil {
-			continue
+		if node.Node == nil {
+			return nil, "", false, nil
 		}
-
-		// STATEMENT_TYPE_UNSPECIFIED entries (statements omni parses but the classifier
-		// does not know — GRANT, SET, CALL, …) are INCLUDED, with their positions and
-		// text, so the SDL statement-type gate fails closed: dropping them here would
-		// let an unclassified statement bypass the release-check allowlist entirely.
-		stmtType := classifyStatementType(omniAST.Node)
-
-		line := 0
-		if omniAST.StartPosition != nil {
-			line = int(omniAST.StartPosition.Line)
-		}
-		// End line = start line + embedded newlines in the statement text.
-		endLine := line
-		if omniAST.Text != "" {
-			endLine += strings.Count(omniAST.Text, "\n")
-		}
-
-		results = append(results, StatementTypeWithPosition{
-			Type: stmtType,
-			Line: endLine,
-			Text: omniAST.Text,
-		})
-	}
-
-	return results, nil
+		// STATEMENT_TYPE_UNSPECIFIED entries are INCLUDED so the SDL gate fails closed.
+		return []storepb.StatementType{classifyStatementType(node.Node)}, node.Text, true, nil
+	})
 }
 
 func classifyStatementType(node ast.Node) storepb.StatementType {
-	switch n := node.(type) {
-	// CREATE
-	case *ast.CreateDatabaseStmt:
+	switch analysis.StatementTypeOf(node) {
+	case analysis.CreateDatabase:
 		return storepb.StatementType_CREATE_DATABASE
-	case *ast.CreateTableStmt:
+	case analysis.CreateTable:
 		return storepb.StatementType_CREATE_TABLE
-	case *ast.CreateIndexStmt:
-		return storepb.StatementType_CREATE_INDEX
-	case *ast.CreateViewStmt:
+	case analysis.CreateView:
 		return storepb.StatementType_CREATE_VIEW
-	case *ast.CreateEventStmt:
+	case analysis.CreateIndex:
+		return storepb.StatementType_CREATE_INDEX
+	case analysis.CreateEvent:
 		return storepb.StatementType_CREATE_EVENT
-	case *ast.CreateTriggerStmt:
+	case analysis.CreateTrigger:
 		return storepb.StatementType_CREATE_TRIGGER
-	case *ast.CreateFunctionStmt:
-		if n.IsProcedure {
-			return storepb.StatementType_CREATE_PROCEDURE
-		}
+	case analysis.CreateFunction:
 		return storepb.StatementType_CREATE_FUNCTION
-
-	// DROP
-	case *ast.DropDatabaseStmt:
+	case analysis.CreateProcedure:
+		return storepb.StatementType_CREATE_PROCEDURE
+	case analysis.DropDatabase:
 		return storepb.StatementType_DROP_DATABASE
-	case *ast.DropTableStmt:
+	case analysis.DropTable:
 		return storepb.StatementType_DROP_TABLE
-	case *ast.DropIndexStmt:
-		return storepb.StatementType_DROP_INDEX
-	case *ast.DropViewStmt:
+	case analysis.DropView:
 		return storepb.StatementType_DROP_VIEW
-	case *ast.DropEventStmt:
+	case analysis.DropIndex:
+		return storepb.StatementType_DROP_INDEX
+	case analysis.DropEvent:
 		return storepb.StatementType_DROP_EVENT
-	case *ast.DropTriggerStmt:
+	case analysis.DropTrigger:
 		return storepb.StatementType_DROP_TRIGGER
-	case *ast.DropRoutineStmt:
-		if n.IsProcedure {
-			return storepb.StatementType_DROP_PROCEDURE
-		}
+	case analysis.DropFunction:
 		return storepb.StatementType_DROP_FUNCTION
-
-	// ALTER
-	case *ast.AlterTableStmt:
-		return storepb.StatementType_ALTER_TABLE
-	case *ast.AlterDatabaseStmt:
+	case analysis.DropProcedure:
+		return storepb.StatementType_DROP_PROCEDURE
+	case analysis.AlterDatabase:
 		return storepb.StatementType_ALTER_DATABASE
-	case *ast.AlterViewStmt:
+	case analysis.AlterTable:
+		return storepb.StatementType_ALTER_TABLE
+	case analysis.AlterView:
 		return storepb.StatementType_ALTER_VIEW
-	case *ast.AlterEventStmt:
+	case analysis.AlterEvent:
 		return storepb.StatementType_ALTER_EVENT
-
-	// OTHER DDL
-	case *ast.TruncateStmt:
+	case analysis.Truncate:
 		return storepb.StatementType_TRUNCATE
-	case *ast.RenameTableStmt:
+	case analysis.Rename:
 		return storepb.StatementType_RENAME
-
-	// DML
-	case *ast.InsertStmt:
+	case analysis.Insert:
 		return storepb.StatementType_INSERT
-	case *ast.UpdateStmt:
+	case analysis.Update:
 		return storepb.StatementType_UPDATE
-	case *ast.DeleteStmt:
+	case analysis.Delete:
 		return storepb.StatementType_DELETE
-
+	case analysis.Execute:
+		return storepb.StatementType_EXECUTE
 	default:
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}

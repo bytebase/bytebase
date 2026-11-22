@@ -105,6 +105,10 @@ import type { IssueFilter } from "@/types/v1/issue/issue";
 import type { SQLResultSetV1 } from "@/types/v1/sql";
 import type { AccessGrantDisplayStatus } from "@/utils";
 
+// How a failed request is reported. A caller that shows the failure itself
+// sets `byCaller`, and the global error toast then stays out of it.
+export type ErrorReport = { byCaller?: boolean };
+
 export type ProjectListParams = {
   pageSize: number;
   pageToken: string;
@@ -142,6 +146,7 @@ export type ListServiceAccountsParams = {
   showDeleted: boolean;
   filter?: AccountFilter;
   skipCache?: boolean;
+  silent?: boolean;
 };
 
 export type ListWorkloadIdentitiesParams = {
@@ -151,6 +156,7 @@ export type ListWorkloadIdentitiesParams = {
   showDeleted: boolean;
   filter?: AccountFilter;
   skipCache?: boolean;
+  silent?: boolean;
 };
 
 export type AccessGrantFilter = {
@@ -165,6 +171,9 @@ export type AccessGrantFilter = {
   // boundary whitespace on both sides — internal whitespace preserved
   // byte-for-byte. PR #20491 bot review #3349385091.
   statementExact?: string;
+  queryHash?: string;
+  schema?: string;
+  container?: string;
   creator?: string;
   status?: Exclude<AccessGrantDisplayStatus, "UNKNOWN">[];
   issue?: string;
@@ -248,7 +257,8 @@ export type WorkspaceSlice = {
   loadWorkspaceList: () => Promise<Workspace[]>;
   updateWorkspace: (
     workspace: Workspace,
-    updateMask: string[]
+    updateMask: string[],
+    report?: ErrorReport
   ) => Promise<Workspace>;
   switchWorkspace: (
     workspaceName: string,
@@ -367,15 +377,23 @@ export type IamSlice = {
   roles: Role[];
   rolesRequest?: Promise<Role[]>;
   loadWorkspacePermissionState: () => Promise<void>;
-  loadProjectIamPolicy: (project: string) => Promise<IamPolicy | undefined>;
+  loadProjectIamPolicy: (
+    project: string,
+    silent?: boolean
+  ) => Promise<IamPolicy | undefined>;
   getProjectIamPolicy: (project: string) => IamPolicy;
   updateProjectIamPolicy: (
     project: string,
-    policy: IamPolicy
+    policy: IamPolicy,
+    report?: ErrorReport
   ) => Promise<IamPolicy>;
-  fetchWorkspaceIamPolicy: (silent?: boolean) => Promise<IamPolicy>;
+  fetchWorkspaceIamPolicy: (
+    silent?: boolean,
+    report?: ErrorReport
+  ) => Promise<IamPolicy>;
   patchWorkspaceIamPolicy: (
-    batchPatch: { member: string; roles: string[] }[]
+    batchPatch: { member: string; roles: string[] }[],
+    report?: ErrorReport
   ) => Promise<void>;
   workspaceRoleMapToUsers: () => Map<string, Set<string>>;
   workspaceUserMapToRoles: () => Map<string, Set<string>>;
@@ -416,6 +434,7 @@ export type ProjectSlice = {
     nextPageToken?: string;
   }>;
   fetchProjectList: (params: {
+    signal?: AbortSignal;
     pageSize?: number;
     pageToken?: string;
     silent?: boolean;
@@ -423,8 +442,16 @@ export type ProjectSlice = {
     orderBy?: string;
     cache?: boolean;
   }) => Promise<{ projects: Project[]; nextPageToken?: string }>;
-  createProject: (title: string, resourceId: string) => Promise<Project>;
-  updateProject: (project: Project, updateMask: string[]) => Promise<Project>;
+  createProject: (
+    title: string,
+    resourceId: string,
+    report?: ErrorReport
+  ) => Promise<Project>;
+  updateProject: (
+    project: Project,
+    updateMask: string[],
+    report?: ErrorReport
+  ) => Promise<Project>;
   archiveProject: (project: Project) => Promise<void>;
   restoreProject: (project: Project) => Promise<void>;
   deleteProject: (project: string) => Promise<void>;
@@ -849,7 +876,10 @@ export type UserSlice = {
   }) => Promise<User>;
   getUserByIdentifier: (identifier: string) => User | undefined;
   createUser: (user: User) => Promise<User>;
-  updateUser: (request: UpdateUserRequest) => Promise<User>;
+  updateUser: (
+    request: UpdateUserRequest,
+    report?: ErrorReport
+  ) => Promise<User>;
   updateEmail: (oldEmail: string, newEmail: string) => Promise<User>;
   archiveUser: (name: string) => Promise<void>;
   restoreUser: (name: string) => Promise<User>;
@@ -968,7 +998,7 @@ export type PreferencesSlice = {
 // fallback when the policy isn't cached.
 export type PolicySlice = {
   policyMapByName: Record<string, Policy>;
-  policyRequests: Record<string, Promise<Policy | undefined>>;
+  policyRequests: Record<string, Promise<Policy | null | undefined>>;
   getPolicyByName: (name: string) => Policy | undefined;
   getOrFetchPolicyByName: (
     name: string,
@@ -983,6 +1013,13 @@ export type PolicySlice = {
     policyType: PolicyType;
     refresh?: boolean;
   }) => Promise<Policy | undefined>;
+  // Resolves to null when the resource has no policy and to undefined when
+  // the read failed, which leaves any earlier policy in the cache.
+  fetchPolicyByParentAndType: (params: {
+    parentPath: string;
+    policyType: PolicyType;
+    refresh?: boolean;
+  }) => Promise<Policy | null | undefined>;
   getQueryDataPolicyByParent: (parent: string) => QueryDataPolicy;
   upsertPolicy: (params: {
     parentPath: string;
@@ -1013,7 +1050,17 @@ export type IssueSlice = {
 // permission-denied / silent context conventions.
 export type SQLSlice = {
   query: (params: QueryRequest, signal: AbortSignal) => Promise<SQLResultSetV1>;
-  exportData: (params: ExportRequest) => Promise<Uint8Array>;
+  exportData: (
+    params: ExportRequest,
+    signal?: AbortSignal
+  ) => Promise<ExportDataResult>;
+};
+
+// For an export to a storage destination such as SharePoint, `uri` locates the
+// exported folder and `content` is empty.
+export type ExportDataResult = {
+  content: Uint8Array;
+  uri: string;
 };
 
 export interface GetOrFetchDatabaseMetadataParams {
@@ -1143,6 +1190,11 @@ export interface PlanFind {
   createdTsAfter?: number;
   createdTsBefore?: number;
   hasRollout?: boolean;
+  // Whether any spec references a Release, which separates GitOps from ClickOps Plans.
+  hasRelease?: boolean;
+  release?: string;
+  // Task.Status names; a Plan matches when any task is in one of them.
+  taskStatuses?: string[];
   specType?: string;
   state?: "ACTIVE" | "DELETED";
 }
@@ -1157,6 +1209,13 @@ export type PlanSlice = {
   listPlans: (
     params: ListPlanParams
   ) => Promise<{ plans: Plan[]; nextPageToken: string }>;
+  // The Plan last opened in Plan Detail, so the sidebar can highlight Releases
+  // for a GitOps Plan and Plans for a ClickOps Plan.
+  viewedPlan?: { name: string; isReleaseBacked: boolean };
+  setViewedPlan: (viewedPlan: {
+    name: string;
+    isReleaseBacked: boolean;
+  }) => void;
 };
 
 export type RolloutSlice = {

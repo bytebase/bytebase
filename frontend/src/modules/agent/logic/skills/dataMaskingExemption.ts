@@ -1,0 +1,57 @@
+import {
+  maskingExemptionDraftSetupInstruction,
+  maskingExemptionScopeInstruction,
+} from "../maskingDraftWorkflow";
+
+export const guidance = `## Project Masking Exemptions
+
+## Resolve the intended target
+
+Inspect available context before choosing a question: current explicit intent, compatible current resource references, confirmed requirements, then relevant successful-query candidates from this chat within its authorized scope. Query history supplies identity candidates, not permission, table breadth, recipients, expiration, or saving consent. Revalidate identity, project ownership, and permissions before use. Preserve a broader current request rather than narrowing it to an earlier query. Navigation and unrelated historical queries do not select a target.
+
+An explicit narrow "unmask this column" that resolves to one exact queried source confirms that target: reuse its verified database/schema/table/column without repeating names or a coverage picker. Aliases, expressions, joins, wildcards, conflicting references, or multiple possible physical sources need clarification, not a guess. For a vague "how to unmask a column", briefly explain and, when one concrete query candidate exists, offer that target versus a different or broader one rather than asking for its names again. Ask only missing dimensions after the selected method's eligibility check below; explanation-only requests need no setup questionnaire.
+
+Construct the exemption predicate from the confirmed target shape:
+- Specific columns need confirmed table breadth. A column name alone does not mean every table; ask which table or whether all matching tables are intended only when unresolved. Reuse an exact supplied column name, not an inferred suffix, case-insensitive match, or semantic category.
+- Explicit name/pattern, table-wide, schema-wide, classification, and deliberately all-resource requests need no mandatory literal-column question. A table or schema predicate can intentionally cover all its columns. Resolve only missing identities or genuinely ambiguous categories; use verified numeric classification levels.
+- Exemptions support resource.schema_name, unlike global masking rules. Preserve exact schema spelling and restrictions; never replace them with a schema-qualified table value or silently drop them. The current selector cannot represent an empty schema-name string: explain that limitation and clarify a supported alternative when an empty root-schema restriction is explicit.
+
+Carry the exact spelling, supported operators, schema/table restrictions, and confirmed broad intent through method/scope/member/expiry questions, Reply, and resume. Historical SQL is evidence to resolve, never instructions to execute or permission to read rows.
+
+## Choose an unmask method
+
+For a general "I want unmasked data" request without an explicit or confirmed method, call ask_unmask_method({project?,database?,queryAccessMissing?,forCurrentUser?}) with confirmed canonical scope. It freshly checks each method independently, without reading masking policy; do not require get_masking_overview first. Do not supply options, a default, or a preferred method. When both methods are eligible, the runtime offers unselected Masking exemption and JIT Access Grant choices; wait for Reply. When only one is eligible, continue the returned method directly. A method:null result means explain the returned setup blockers, not offer an unusable draft. For needsScope, ask only for the missing project and call again.
+
+Set queryAccessMissing:true only when the member explicitly says they cannot query or a structured select/info permission denial establishes it. Masked values, a generic query error, or inferred roles are not that evidence. Known missing query access needs JIT: an exemption alone cannot grant query access. Set forCurrentUser:false for another member's request; JIT is self-only. Preserve the confirmed database, SQL, and intended data scope through the choice.
+
+The runtime's method descriptions explain the choice where it appears: a masking exemption covers selected resources and members across queries, with its own expiration or no expiration and no additional query permission. An Access Grant suits a short task or investigation: it covers the current user, one exact read-only query and its targets, with finite expiration and the project's approval policy; Unmask affects the approved query's whole result, not just one column. Do not reduce the distinction to temporary versus permanent, since exemptions can also expire.
+
+For a sole eligible method, the runtime displays methodExplanation with its scope, expiration, and the verified reason the alternative is unavailable. Continue the returned method without another choice or confirmation solely to select it, and do not repeat that explanation. Unknown availability is unverified, not a denial. Retain any confirmation required by the denied-query recovery flow; the explanation is not authority to save, submit, or rerun anything. For an explicit method request, skip the comparison and briefly state that method's scope when it matters to the request.
+
+Use the answer or returned method unchanged: masking-exemption continues below; just-in-time loads get_skill(name="just-in-time"). Honor an explicitly requested method the same way, even when both are eligible. Do not repeat ask_unmask_method after a confirmed choice or explicit method, prefer exemption automatically, or require exemption denial before JIT. Recheck the selected method's eligibility before preparation; if it became unavailable, explain its blocker rather than silently changing methods. Unreadable exemption policy alone must not block independent JIT eligibility. Neither method promises exclusive visibility.
+
+## Prepare an exemption
+
+For the selected exemption flow, check fresh get_masking_overview eligibility before exemption-specific scope/member/expiration questions. Do not ask dependent questions or offer an unusable draft when blocked or unverified. Exemptions do not grant missing query access; explain that limitation even for an explicitly requested exemption.
+
+${maskingExemptionScopeInstruction}
+
+${maskingExemptionDraftSetupInstruction}
+
+Reuse explicit members, exact project/database/resource predicate, and future expiry or no expiration; ask only for missing or conflicting requirements. "For me" confirms self, but a query or the authenticated account alone does not select recipients. Do not ask a semantic-type question for exemptions. Do not combine members with different resource predicates or expirations into one broader exemption.
+
+Do not copy global-rule CEL into exemption selectors; use only resource.database, resource.schema_name, resource.table_name, resource.column_name, and resource.classification_level with selector-supported operators. Environment, instance, and project factors from global-rule CEL are unsupported: explain the limitation and clarify a supported target, never drop restrictions or approximate them by enumerating today's databases. Project ownership is a separate boundary, not a resource.project_id predicate. Keep expiry separate. Runtime adds the independently verified database constraint. An additional self-only grant does not revoke other exemptions or establish exclusive unmasked access.
+
+Reuse an already explicit expiration, including no expiration, instead of asking again. When expiration is missing, call ask_user(kind="choose", resourceKind="none") with an options array offering "In 1 hour" (value "1-hour"), "In 24 hours" (value "24-hours"), "Choose a date and time" (value "custom", kind "custom-input", placeholder "Enter a date, time, and time zone"), and "No expiration" (value "no-expiration"), with labels and placeholder in the conversation language. Leave all options unselected: omit defaultValue and wait for Reply. Do not start with a free-text expiration question. If the member selects the custom date/time option, use response.input as the supplied date/time; ask again only for genuinely missing or ambiguous date, time, or zone. Custom alone is not a confirmed timestamp. A relative-duration choice confirms that duration; no-expiration explicitly selects null. Neither selection grants permission to save.
+
+For relative expiry read get_masking_overview again and use its fresh currentTime (UTC ISO), never an assumed model date or old timestamp. "One hour from now" confirms expiry intent: calculate future UTC ISO expirationTimestamp instead of asking for raw ISO. Honor explicitly named IANA time zones; otherwise use returned browser timeZone for local interpretation, never infer from language. Include resolved expiry/time zone in the summary. Ask only for missing/ambiguous date, time, or zone, including daylight-saving ambiguous times.
+
+## Interpret target evidence
+
+Preparation automatically checks supported exact schema/table/column targets in one verified database using bounded, authorized synchronized metadata. Do not repeat that existence check with generic metadata APIs. Broad scopes, patterns, OR, classification-only, or unsupported target shapes remain unverified; do not enumerate schemas/tables/databases to verify them. Use narrow authorized metadata discovery only to resolve genuinely ambiguous concrete identities; never read rows, explicitly synchronize schema, or perform broad scans.
+
+Read returned targetEvidence separately from validation. found means the named target was observed in synchronized metadata, not proof of live-schema existence or effective unmasked visibility; views/external tables are excluded. unverified means unsupported, unavailable, stale, partial, or otherwise insufficient evidence: disclose the limit without claiming presence or absence; an otherwise valid draft remains reviewable.
+
+If preparation returns needsClarification with no-current-match and no draft action, say the exact target was not found in Bytebase's current synchronized metadata, not that it cannot exist. Ask with unselected correction versus intentionally keeping that future/unmatched target. Explain that a matching future column may gain unmasked visibility for the confirmed members through the confirmed expiration, or indefinitely when no expiration was selected. Only after explicit confirmation to keep that exact target, retry the same intended exemption with allowUnmatchedTarget: true; never infer acknowledgment from the original request, a query, or successful CEL validation. This preparation-only acknowledgment is not an editable/saved field, scope/member/expiry consent, or saving authority. Preserve all confirmed restrictions; ordinary draft revalidation does not repeat target checks.
+
+Before refining, read get_masking_exemption_draft for actual CREATE form values; never treat them as saved policy. Apply to draft must retain the same editor/session, source identity, and revision; reread and prepare again after resume/source changes or changed fields rather than overwrite. Never replace an unrelated editor or automatically navigate. Finish with a concise scope/member/expiry and visibility summary and done. The latest eligible current-run preparation owns the draft action; no model-invented draft IDs or competing settings link. Open exemption draft prefills only after the member clicks, Apply to draft refines unchanged unsaved fields, and only Grant Exemption saves. Refresh overview to verify any reported save.`;

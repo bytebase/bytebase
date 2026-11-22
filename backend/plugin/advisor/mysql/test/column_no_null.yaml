@@ -86,3 +86,63 @@
 - statement: |-
     CREATE TABLE book(id int NOT NULL);
     ALTER TABLE book CHANGE COLUMN id name varchar(255) NOT NULL;
+- statement: |-
+    CREATE TABLE book(
+      b int, a int,
+      c int NOT NULL
+    );
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: '`book`.`a` cannot have NULL value'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: '`book`.`b` cannot have NULL value'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(a int NOT NULL);
+    ALTER TABLE book
+      ADD COLUMN b int,
+      CHANGE COLUMN a c int;
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: '`book`.`b` cannot have NULL value'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: '`book`.`c` cannot have NULL value'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(a int NOT NULL);
+    ALTER TABLE book MODIFY a int;
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: '`book`.`a` cannot have NULL value'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(id int NOT NULL);
+    ALTER TABLE book ADD COLUMN a int;
+    ALTER TABLE book MODIFY a int NOT NULL;

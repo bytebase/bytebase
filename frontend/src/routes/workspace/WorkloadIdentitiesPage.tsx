@@ -1,17 +1,16 @@
-import { Plus, Trash2, Undo2 } from "lucide-react";
+import { create } from "@bufbuild/protobuf";
+import { KeyRound, Plus } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { CreateWorkloadIdentitySheet } from "@/components/CreateWorkloadIdentitySheet";
+import { Trans, useTranslation } from "react-i18next";
+import githubIcon from "@/assets/git/github.svg";
+import gitlabIcon from "@/assets/git/gitlab.svg";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import {
   ProjectPageLayout,
   ProjectPageToolbar,
 } from "@/components/ProjectPageLayout";
-import { UserCell } from "@/components/UserCell";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { CopyButton } from "@/components/ui/copy-button";
-import { listRowStateClassName } from "@/components/ui/styles.stylex";
+import { EllipsisText } from "@/components/ui/ellipsis-text";
 import {
   Table,
   TableBody,
@@ -21,40 +20,177 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip } from "@/components/ui/tooltip";
+import { WorkloadIdentitySheet } from "@/components/WorkloadIdentityFlow/WorkloadIdentitySheet";
 import {
   WorkspacePageLayout,
   WorkspacePageToolbar,
 } from "@/components/WorkspacePageLayout";
 import { PagedTableFooter, usePagedData } from "@/hooks/usePagedData";
 import { useProjectByName } from "@/hooks/useProjectByName";
-import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
-import {
-  ensureWorkloadIdentityFullName,
-  workloadIdentityToUser,
-} from "@/stores/app/workloadIdentity";
+import { ensureWorkloadIdentityFullName } from "@/stores/app/workloadIdentity";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
+import { getWorkloadIdentityNameInBinding } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
-import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
+import {
+  type WorkloadIdentity,
+  WorkloadIdentitySchema,
+} from "@/types/proto-es/v1/workload_identity_service_pb";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
+import {
+  AccountCreatedCell,
+  AccountEmptyRow,
+  AccountListToolbar,
+  type AccountMenuItem,
+  AccountNameCell,
+  AccountPageInfo,
+  AccountRoleCell,
+  AccountRowMenu,
+  AccountSkeletonRows,
+  type AccountStateFilter,
+  accountListRequest,
+  accountMatchesList,
+  DeactivateAccountDialog,
+  useAccountRoles,
+} from "./MachineAccountList";
+import {
+  type WorkloadIdentityTrust,
+  workloadIdentityTrust,
+} from "./workloadIdentityTrust";
+
+// ============================================================
+// TrustCell
+// ============================================================
+
+const capitalize = (text: string) =>
+  text.charAt(0).toLocaleUpperCase() + text.slice(1);
+
+function ProviderIcon({
+  provider,
+}: {
+  readonly provider: WorkloadIdentityTrust["provider"];
+}) {
+  const { t } = useTranslation();
+  const title =
+    provider === "github"
+      ? t("workload-identity.token-source.github-title")
+      : provider === "gitlab"
+        ? t("workload-identity.token-source.gitlab-title")
+        : t("workload-identity.token-source.oidc-title");
+  return (
+    <Tooltip content={title}>
+      <span
+        role="img"
+        aria-label={title}
+        className="flex h-5 w-4 shrink-0 items-center justify-center"
+      >
+        {provider === "oidc" ? (
+          <KeyRound className="size-4 text-control-light" />
+        ) : (
+          <img
+            src={provider === "github" ? githubIcon : gitlabIcon}
+            alt=""
+            className="size-4"
+          />
+        )}
+      </span>
+    </Tooltip>
+  );
+}
+
+// Restates what the create form asked, in the form's own words.
+function TrustCell({ trust }: { readonly trust: WorkloadIdentityTrust }) {
+  const { t } = useTranslation();
+  const { primary, secondary } = trust;
+  const primaryText =
+    primary.kind === "any-repository"
+      ? capitalize(
+          trust.provider === "gitlab"
+            ? t("workload-identity.done.target-any-project", {
+                owner: primary.owner,
+              })
+            : t("workload-identity.done.target-any-repository", {
+                owner: primary.owner,
+              })
+        )
+      : primary.value;
+
+  let secondaryLine: React.ReactNode = null;
+  if (secondary?.kind === "environment") {
+    secondaryLine = (
+      <EllipsisText
+        text={t("account-list.trust-environment-plain", {
+          environment: secondary.value,
+        })}
+        className="text-xs text-control-light"
+      >
+        <Trans
+          i18nKey="account-list.trust-environment"
+          values={{ environment: secondary.value }}
+          components={{ code: <code className="font-mono" /> }}
+        />
+      </EllipsisText>
+    );
+  } else if (secondary?.kind === "any-environment") {
+    secondaryLine = (
+      <EllipsisText
+        text={t("account-list.trust-any-environment")}
+        className="text-xs text-control-light"
+      />
+    );
+  } else if (secondary?.kind === "pattern") {
+    secondaryLine = (
+      <EllipsisText
+        text={secondary.value}
+        className="font-mono text-xs text-control"
+      />
+    );
+  }
+
+  return (
+    <div className="flex max-w-75 items-start gap-x-2">
+      <ProviderIcon provider={trust.provider} />
+      <div className="flex min-w-0 flex-col">
+        <EllipsisText
+          text={primaryText}
+          className={
+            primary.kind === "pattern"
+              ? "font-mono text-xs leading-5 text-main"
+              : "text-main"
+          }
+        />
+        {secondaryLine}
+      </div>
+    </div>
+  );
+}
 
 // ============================================================
 // WorkloadIdentityTable
 // ============================================================
 
+const COLUMNS = 5;
+
 function WorkloadIdentityTable({
-  users,
+  workloadIdentities,
+  loading,
   project,
-  onUserUpdated,
-  onUserSelected,
+  projectName,
+  filtered,
+  onClearFilters,
+  onUpdated,
+  onSelected,
 }: {
-  users: User[];
+  workloadIdentities: WorkloadIdentity[];
+  loading: boolean;
   project?: Project;
-  onUserUpdated: (user: User) => void;
-  onUserSelected?: (user: User) => void;
+  projectName?: string;
+  filtered: boolean;
+  onClearFilters: () => void;
+  onUpdated: (wi: WorkloadIdentity) => void;
+  onSelected: (wi: WorkloadIdentity) => void;
 }) {
   const { t } = useTranslation();
   const deleteWorkloadIdentity = useAppStore(
@@ -63,18 +199,48 @@ function WorkloadIdentityTable({
   const undeleteWorkloadIdentity = useAppStore(
     (state) => state.undeleteWorkloadIdentity
   );
+  const rolesOf = useAccountRoles(projectName);
 
-  const handleDeactivate = async (user: User) => {
-    const confirmed = window.confirm(
-      t("settings.members.action.deactivate-confirm-title")
-    );
-    if (!confirmed) return;
+  const can = (permission: Parameters<typeof hasWorkspacePermissionV2>[0]) =>
+    project
+      ? hasProjectPermissionV2(project, permission)
+      : hasWorkspacePermissionV2(permission);
+  const canOpenDetail = can("bb.workloadIdentities.get");
+  const canDelete = can("bb.workloadIdentities.delete");
+  const canRestore = can("bb.workloadIdentities.undelete");
 
+  const [deactivating, setDeactivating] = useState<WorkloadIdentity>();
+  const [isDeactivating, setIsDeactivating] = useState(false);
+  const handleDeactivate = async () => {
+    if (!deactivating) return;
+    setIsDeactivating(true);
     try {
-      const fullName = ensureWorkloadIdentityFullName(user.email);
-      await deleteWorkloadIdentity(fullName);
-      const updated = { ...user, state: State.DELETED };
-      onUserUpdated(updated as User);
+      await deleteWorkloadIdentity(
+        ensureWorkloadIdentityFullName(deactivating.email)
+      );
+      onUpdated(
+        create(WorkloadIdentitySchema, {
+          ...deactivating,
+          state: State.DELETED,
+        })
+      );
+      setDeactivating(undefined);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    } catch {
+      // error already shown by store
+    } finally {
+      setIsDeactivating(false);
+    }
+  };
+
+  const handleRestore = async (wi: WorkloadIdentity) => {
+    try {
+      await undeleteWorkloadIdentity(ensureWorkloadIdentityFullName(wi.email));
+      onUpdated(create(WorkloadIdentitySchema, { ...wi, state: State.ACTIVE }));
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -85,159 +251,117 @@ function WorkloadIdentityTable({
     }
   };
 
-  const handleRestore = async (user: User) => {
-    try {
-      const fullName = ensureWorkloadIdentityFullName(user.email);
-      await undeleteWorkloadIdentity(fullName);
-      const updated = { ...user, state: State.ACTIVE };
-      onUserUpdated(updated as User);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.updated"),
-      });
-    } catch {
-      // error already shown by store
+  const menuItems = (wi: WorkloadIdentity): AccountMenuItem[] => {
+    if (wi.state === State.DELETED) {
+      return canRestore
+        ? [
+            {
+              key: "restore",
+              label: t("common.restore"),
+              onSelect: () => void handleRestore(wi),
+            },
+          ]
+        : [];
     }
+    const items: AccountMenuItem[] = [];
+    if (canOpenDetail) {
+      items.push({
+        key: "edit",
+        label: t("common.edit"),
+        onSelect: () => onSelected(wi),
+      });
+    }
+    if (canDelete) {
+      items.push({
+        key: "deactivate",
+        label: t("common.deactivate"),
+        destructive: true,
+        onSelect: () => setDeactivating(wi),
+      });
+    }
+    return items;
   };
 
   return (
-    <div className="border rounded-sm overflow-hidden">
+    <div className="overflow-x-auto rounded-sm border">
       <Table>
         <TableHeader>
           <TableRow className="bg-control-bg">
-            <TableHead className="whitespace-nowrap">
-              {t("settings.members.table.account")}
+            <TableHead className="min-w-50 whitespace-nowrap">
+              {t("common.name")}
             </TableHead>
-            <TableHead className="text-right whitespace-nowrap">
-              {t("common.operations")}
+            <TableHead className="whitespace-nowrap">
+              {t("account-list.trusts")}
+            </TableHead>
+            <TableHead className="whitespace-nowrap">
+              {t("settings.members.table.roles")}
+            </TableHead>
+            <TableHead className="whitespace-nowrap">
+              {t("common.created")}
+            </TableHead>
+            <TableHead>
+              <span className="sr-only">{t("common.actions")}</span>
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={2}
-                className="py-8 text-center text-control-light"
-              >
-                {t("common.no-data")}
-              </TableCell>
-            </TableRow>
+          {loading ? (
+            <AccountSkeletonRows columns={COLUMNS} />
+          ) : workloadIdentities.length === 0 ? (
+            <AccountEmptyRow
+              colSpan={COLUMNS}
+              filtered={filtered}
+              emptyText={t("account-list.no-workload-identities")}
+              onClearFilters={onClearFilters}
+            />
           ) : (
-            users.map((user) => {
-              const isDeleted = user.state === State.DELETED;
-              const canOpenDetail =
-                !!onUserSelected &&
-                (project
-                  ? hasProjectPermissionV2(project, "bb.workloadIdentities.get")
-                  : hasWorkspacePermissionV2("bb.workloadIdentities.get"));
-              const canDelete = project
-                ? hasProjectPermissionV2(
-                    project,
-                    "bb.workloadIdentities.delete"
-                  )
-                : hasWorkspacePermissionV2("bb.workloadIdentities.delete");
-              const canRestore = project
-                ? hasProjectPermissionV2(
-                    project,
-                    "bb.workloadIdentities.undelete"
-                  )
-                : hasWorkspacePermissionV2("bb.workloadIdentities.undelete");
-
-              return (
-                <TableRow
-                  key={user.name}
-                  className={
-                    canOpenDetail
-                      ? cn(
-                          "cursor-pointer focus-visible:outline-none focus-visible:bg-control-bg",
-                          listRowStateClassName
-                        )
-                      : undefined
-                  }
-                  tabIndex={canOpenDetail ? 0 : undefined}
-                  role={canOpenDetail ? "button" : undefined}
-                  aria-label={
-                    canOpenDetail ? user.title || user.email : undefined
-                  }
-                  onClick={
-                    canOpenDetail ? () => onUserSelected(user) : undefined
-                  }
-                  onKeyDown={
-                    canOpenDetail
-                      ? (e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            onUserSelected(user);
-                          }
-                        }
-                      : undefined
-                  }
-                >
-                  {/* Account column */}
-                  <TableCell>
-                    <UserCell
-                      title={user.title}
-                      subtitle={user.email}
-                      subtitleAction={<CopyButton content={user.email} />}
-                      nameClassName={
-                        isDeleted
-                          ? "line-through !text-control-light"
-                          : undefined
-                      }
+            workloadIdentities.map((wi) => (
+              <TableRow key={wi.name}>
+                <TableCell className="w-full max-w-0">
+                  <AccountNameCell
+                    title={wi.title}
+                    email={wi.email}
+                    inactive={wi.state === State.DELETED}
+                    onOpen={
+                      canOpenDetail && wi.state !== State.DELETED
+                        ? () => onSelected(wi)
+                        : undefined
+                    }
+                  />
+                </TableCell>
+                <TableCell>
+                  <TrustCell
+                    trust={workloadIdentityTrust(wi.workloadIdentityConfig)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <AccountRoleCell
+                    roles={rolesOf(getWorkloadIdentityNameInBinding(wi.email))}
+                  />
+                </TableCell>
+                <TableCell>
+                  <AccountCreatedCell createTime={wi.createTime} />
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-end">
+                    <AccountRowMenu
+                      label={wi.title || wi.email}
+                      items={menuItems(wi)}
                     />
-                  </TableCell>
-
-                  {/* Operations column — destructive/secondary actions only.
-                      The row itself is clickable to open the detail sheet. */}
-                  <TableCell>
-                    <div className="flex justify-end gap-x-1">
-                      {!isDeleted && canDelete && (
-                        <Tooltip
-                          content={t(
-                            "settings.members.action.deactivate-confirm-title"
-                          )}
-                        >
-                          <Button
-                            appearance="secondary"
-                            size="sm"
-                            className="text-error hover:text-error"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeactivate(user);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </Tooltip>
-                      )}
-                      {isDeleted && canRestore && (
-                        <Tooltip
-                          content={t(
-                            "settings.members.action.reactivate-confirm-title"
-                          )}
-                        >
-                          <Button
-                            appearance="secondary"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRestore(user);
-                            }}
-                          >
-                            <Undo2 className="h-4 w-4" />
-                          </Button>
-                        </Tooltip>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
           )}
         </TableBody>
       </Table>
+
+      <DeactivateAccountDialog
+        account={deactivating}
+        pending={isDeactivating}
+        onCancel={() => setDeactivating(undefined)}
+        onConfirm={() => void handleDeactivate()}
+      />
     </div>
   );
 }
@@ -267,196 +391,125 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
 
   const parent = projectName ?? workspaceResourceName;
 
-  const [showInactive, setShowInactive] = useState(false);
+  const [query, setQuery] = useState("");
+  const [stateFilter, setStateFilter] = useState<AccountStateFilter>("active");
   const [showDrawer, setShowDrawer] = useState(false);
   const [editingWI, setEditingWI] = useState<WorkloadIdentity | undefined>(
     undefined
   );
 
-  const fetchActive = useCallback(
+  const fetchList = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
       const response = await listWorkloadIdentities({
         parent,
         pageSize: params.pageSize,
         pageToken: params.pageToken,
-        showDeleted: false,
+        ...accountListRequest(stateFilter, query),
       });
       return {
-        list: response.workloadIdentities.map(workloadIdentityToUser),
+        list: response.workloadIdentities,
         nextPageToken: response.nextPageToken,
       };
     },
-    [listWorkloadIdentities, parent]
+    [listWorkloadIdentities, parent, stateFilter, query]
   );
 
-  const fetchInactive = useCallback(
-    async (params: { pageSize: number; pageToken: string }) => {
-      const response = await listWorkloadIdentities({
-        parent,
-        pageSize: params.pageSize,
-        pageToken: params.pageToken,
-        showDeleted: true,
-        filter: { state: State.DELETED },
-      });
-      return {
-        list: response.workloadIdentities.map(workloadIdentityToUser),
-        nextPageToken: response.nextPageToken,
-      };
-    },
-    [listWorkloadIdentities, parent]
-  );
-
-  const activeData = usePagedData<User>({
-    sessionKey: `bb.paged-workload-identity-table${projectName ? `.${projectName}` : ""}.active`,
-    fetchList: fetchActive,
+  const data = usePagedData<WorkloadIdentity>({
+    sessionKey: `bb.workload-identities${projectName ? `.${projectName}` : ""}.page-size`,
+    fetchList,
   });
 
-  const inactiveData = usePagedData<User>({
-    sessionKey: `bb.paged-workload-identity-table${projectName ? `.${projectName}` : ""}.deleted`,
-    fetchList: fetchInactive,
-    enabled: showInactive,
-  });
-
-  const handleActiveUpdated = (user: User) => {
-    if (user.state === State.DELETED) {
-      activeData.removeCache(user);
-      inactiveData.updateCache([user]);
-    } else {
-      activeData.updateCache([user]);
+  // Keeps a row only while it matches the filters. Removing the last loaded
+  // row refetches, so remaining pages stay reachable.
+  const handleUpdated = (wi: WorkloadIdentity) => {
+    if (accountMatchesList(wi, stateFilter, query)) {
+      data.updateCache([wi]);
+      return;
+    }
+    data.removeCache(wi);
+    if (data.hasMore && data.dataList.every((row) => row.name === wi.name)) {
+      data.refresh();
     }
   };
 
-  const handleInactiveUpdated = (user: User) => {
-    if (user.state === State.ACTIVE) {
-      inactiveData.removeCache(user);
-      activeData.refresh();
-    } else {
-      inactiveData.updateCache([user]);
-    }
-  };
-
-  // Sequence guard for async row-selection. Each click increments the
-  // counter; only the response from the latest click is allowed to update
-  // `editingWI`. Without this, fast double-clicks on different rows can
-  // resolve out of order and open the sheet with the wrong identity.
+  // Only the latest click may open the sheet, so a slow fetch for an earlier
+  // row cannot replace a later one.
   const selectSeqRef = useRef(0);
-  const handleUserSelected = async (user: User) => {
-    // Load the full WorkloadIdentity (including workloadIdentityConfig with
-    // subjectPattern) before opening the edit Sheet. The list response carries
-    // the full record, so this is usually a cache hit; fetchWorkloadIdentity
-    // only issues a GET when the entity isn't cached. `getWorkloadIdentity`
-    // would instead return a name/email/title-only stub on a cache miss,
-    // leaving Organization/Repository/Branch blank.
+  const handleSelected = async (wi: WorkloadIdentity) => {
     const seq = ++selectSeqRef.current;
-    const wi = await fetchWorkloadIdentity(user.email, true);
-    // Drop stale response — a later click superseded this request.
+    const full = await fetchWorkloadIdentity(wi.email, true);
     if (seq !== selectSeqRef.current) return;
-    setEditingWI(wi);
+    setEditingWI(full);
     setShowDrawer(true);
   };
+
+  const canCreate = project
+    ? project.state === State.ACTIVE &&
+      hasProjectPermissionV2(project, "bb.workloadIdentities.create")
+    : hasWorkspacePermissionV2("bb.workloadIdentities.create");
+  const openCreate = () => {
+    setEditingWI(undefined);
+    setShowDrawer(true);
+  };
+  const filtered = query.trim() !== "" || stateFilter !== "active";
 
   const PageLayout = projectName ? ProjectPageLayout : WorkspacePageLayout;
   const PageToolbar = projectName ? ProjectPageToolbar : WorkspacePageToolbar;
 
   return (
     <PageLayout>
-      <PageToolbar align="end">
-        <PermissionGuard
-          permissions={["bb.workloadIdentities.create"]}
-          project={project}
-        >
-          <Button
-            disabled={
-              project
-                ? project.state !== State.ACTIVE ||
-                  !hasProjectPermissionV2(
-                    project,
-                    "bb.workloadIdentities.create"
-                  )
-                : !hasWorkspacePermissionV2("bb.workloadIdentities.create")
-            }
-            onClick={() => {
-              setEditingWI(undefined);
-              setShowDrawer(true);
-            }}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            {t("common.create")}
-          </Button>
-        </PermissionGuard>
+      <AccountPageInfo
+        isProject={!!projectName}
+        description={t("account-list.workload-identities-description")}
+      />
+
+      <PageToolbar>
+        <AccountListToolbar
+          query={query}
+          onQueryChange={setQuery}
+          state={stateFilter}
+          onStateChange={setStateFilter}
+          action={
+            <PermissionGuard
+              permissions={["bb.workloadIdentities.create"]}
+              project={project}
+            >
+              <Button disabled={!canCreate} onClick={openCreate}>
+                <Plus className="size-4" />
+                {t("common.create")}
+              </Button>
+            </PermissionGuard>
+          }
+        />
       </PageToolbar>
 
       <div className="flex flex-col gap-y-4">
-        {activeData.isLoading && activeData.dataList.length === 0 ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
-          </div>
-        ) : (
-          <>
-            <WorkloadIdentityTable
-              users={activeData.dataList}
-              project={project}
-              onUserUpdated={handleActiveUpdated}
-              onUserSelected={handleUserSelected}
-            />
-            <PagedTableFooter
-              pageSize={activeData.pageSize}
-              pageSizeOptions={activeData.pageSizeOptions}
-              onPageSizeChange={activeData.onPageSizeChange}
-              hasMore={activeData.hasMore}
-              isFetchingMore={activeData.isFetchingMore}
-              onLoadMore={activeData.loadMore}
-            />
-          </>
-        )}
-
-        {/* Show inactive toggle */}
-        <div className="flex items-center gap-x-2 text-sm">
-          <Checkbox
-            id="show-inactive-workload-identities"
-            checked={showInactive}
-            onCheckedChange={(checked) => setShowInactive(checked)}
+        <WorkloadIdentityTable
+          workloadIdentities={data.dataList}
+          loading={data.isLoading && data.dataList.length === 0}
+          project={project}
+          projectName={projectName}
+          filtered={filtered}
+          onClearFilters={() => {
+            setQuery("");
+            setStateFilter("active");
+          }}
+          onUpdated={handleUpdated}
+          onSelected={(wi) => void handleSelected(wi)}
+        />
+        {(data.dataList.length > 0 || data.hasMore) && (
+          <PagedTableFooter
+            pageSize={data.pageSize}
+            pageSizeOptions={data.pageSizeOptions}
+            onPageSizeChange={data.onPageSizeChange}
+            hasMore={data.hasMore}
+            isFetchingMore={data.isFetchingMore}
+            onLoadMore={data.loadMore}
           />
-          <label
-            className="cursor-pointer textinfolabel"
-            htmlFor="show-inactive-workload-identities"
-          >
-            {t("settings.members.show-inactive")}
-          </label>
-        </div>
-
-        {showInactive && (
-          <div className="flex flex-col gap-y-4">
-            <p className="text-lg font-medium leading-7">
-              {t("settings.members.inactive-workload-identities")}
-            </p>
-
-            {inactiveData.isLoading && inactiveData.dataList.length === 0 ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
-              </div>
-            ) : (
-              <>
-                <WorkloadIdentityTable
-                  users={inactiveData.dataList}
-                  project={project}
-                  onUserUpdated={handleInactiveUpdated}
-                />
-                <PagedTableFooter
-                  pageSize={inactiveData.pageSize}
-                  pageSizeOptions={inactiveData.pageSizeOptions}
-                  onPageSizeChange={inactiveData.onPageSizeChange}
-                  hasMore={inactiveData.hasMore}
-                  isFetchingMore={inactiveData.isFetchingMore}
-                  onLoadMore={inactiveData.loadMore}
-                />
-              </>
-            )}
-          </div>
         )}
       </div>
 
-      <CreateWorkloadIdentitySheet
+      <WorkloadIdentitySheet
         open={showDrawer}
         workloadIdentity={editingWI}
         project={projectName}
@@ -464,12 +517,8 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
           setShowDrawer(false);
           setEditingWI(undefined);
         }}
-        onCreated={(wi) => {
-          activeData.updateCache([workloadIdentityToUser(wi)]);
-        }}
-        onUpdated={(wi) => {
-          activeData.updateCache([workloadIdentityToUser(wi)]);
-        }}
+        onCreated={handleUpdated}
+        onUpdated={handleUpdated}
       />
     </PageLayout>
   );

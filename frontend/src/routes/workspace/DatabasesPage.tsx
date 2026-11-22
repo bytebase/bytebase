@@ -50,6 +50,7 @@ import {
 } from "@/stores/modules/v1/common";
 import {
   isValidDatabaseName,
+  isValidProjectName,
   UNKNOWN_ENVIRONMENT_NAME,
   unknownEnvironment,
 } from "@/types";
@@ -135,8 +136,9 @@ export function DatabasesPage() {
     [defaultProjectId, t]
   );
   const searchProjects = useCallback(
-    async (keyword: string): Promise<ValueOption[]> => {
+    async (keyword: string, signal?: AbortSignal): Promise<ValueOption[]> => {
       const { projects } = await useAppStore.getState().fetchProjectList({
+        signal,
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
       });
@@ -154,7 +156,7 @@ export function DatabasesPage() {
   );
 
   const searchInstances = useCallback(
-    async (keyword: string): Promise<ValueOption[]> => {
+    async (keyword: string, signal?: AbortSignal): Promise<ValueOption[]> => {
       if (!hasWorkspacePermissionV2("bb.instances.list")) return [];
       const { instances } = await useAppStore.getState().fetchInstanceList({
         pageSize: getDefaultPagination(),
@@ -561,6 +563,12 @@ export function DatabasesPage() {
       <TransferProjectSheet
         open={showTransferDrawer}
         databases={selectedDatabases}
+        initialProjectName={
+          typeof currentRoute.query.targetProject === "string" &&
+          isValidProjectName(currentRoute.query.targetProject)
+            ? currentRoute.query.targetProject
+            : undefined
+        }
         onClose={() => setShowTransferDrawer(false)}
         onTransfer={handleTransferProject}
       />

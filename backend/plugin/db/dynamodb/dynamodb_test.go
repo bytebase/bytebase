@@ -6,56 +6,62 @@ import (
 	"strings"
 	"testing"
 
+	omnidriver "github.com/bytebase/omni/driver"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
-func TestDynamoDBEndpoint(t *testing.T) {
+func TestEndpointTLS(t *testing.T) {
 	testCases := []struct {
-		name string
-		ds   *storepb.DataSource
-		want string
+		name       string
+		dataSource *storepb.DataSource
+		wantTLS    bool
 	}{
 		{
-			// No host: fall back to the AWS SDK default (real AWS) endpoint.
-			name: "no_host_uses_default_aws",
-			ds:   &storepb.DataSource{Region: "ap-northeast-1"},
-			want: "",
+			// No host: the AWS SDK resolves the region's own https endpoint.
+			name:       "no_host_uses_the_sdk_transport",
+			dataSource: &storepb.DataSource{Region: "ap-northeast-1", UseSsl: true},
 		},
 		{
 			// DynamoDB Local: host + port, no TLS -> http endpoint.
-			name: "local_http",
-			ds:   &storepb.DataSource{Host: "localhost", Port: "18000"},
-			want: "http://localhost:18000",
+			name:       "local_http",
+			dataSource: &storepb.DataSource{Host: "localhost", Port: "18000"},
 		},
 		{
-			name: "host_only_no_port",
-			ds:   &storepb.DataSource{Host: "127.0.0.1"},
-			want: "http://127.0.0.1",
+			name:       "bare_host_with_use_ssl_makes_https",
+			dataSource: &storepb.DataSource{Host: "dynamo.internal", Port: "8000", UseSsl: true},
+			wantTLS:    true,
 		},
 		{
-			// useSsl toggles the scheme to https.
-			name: "https_via_use_ssl",
-			ds:   &storepb.DataSource{Host: "dynamo.internal", Port: "8000", UseSsl: true},
-			want: "https://dynamo.internal:8000",
+			// An explicit scheme wins, as it did in the old endpoint builder.
+			name:       "scheme_prefixed_host_keeps_its_scheme",
+			dataSource: &storepb.DataSource{Host: "http://localhost", Port: "18000", UseSsl: true},
 		},
 		{
-			// Explicit scheme in host is respected; port appended once.
-			name: "scheme_prefixed_host_appends_port",
-			ds:   &storepb.DataSource{Host: "http://localhost", Port: "18000"},
-			want: "http://localhost:18000",
-		},
-		{
-			// Explicit scheme + port already in host: used verbatim.
-			name: "scheme_prefixed_full_url",
-			ds:   &storepb.DataSource{Host: "https://dynamodb.example.com:443"},
-			want: "https://dynamodb.example.com:443",
+			name:       "scheme_prefixed_full_url",
+			dataSource: &storepb.DataSource{Host: "https://dynamodb.example.com:443", UseSsl: true},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := dynamoDBEndpoint(tc.ds); got != tc.want {
-				t.Errorf("dynamoDBEndpoint() = %q, want %q", got, tc.want)
+			got := endpointTLS(tc.dataSource)
+			if (got != nil) != tc.wantTLS {
+				t.Fatalf("endpointTLS() = %v, want TLS function %v", got != nil, tc.wantTLS)
+			}
+			if got == nil {
+				return
+			}
+			config, err := got("")
+			if err != nil {
+				t.Fatalf("endpointTLS() = %v", err)
+			}
+			// The empty config verifies the endpoint against the system roots:
+			// verify_tls_certificate is ignored and a self-signed endpoint does
+			// not pass.
+			if config.InsecureSkipVerify {
+				t.Error("endpoint TLS config skips verification; TLS must verify")
 			}
 		})
 	}
@@ -122,4 +128,212 @@ func TestOpenWithoutRoleArnSkipsAssumeRole(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("Open() error = %v, want nil when no role_arn is set", err)
 	}
+}
+
+// A configured account skips STS and names the pseudo database directly.
+func TestSyncInstanceUsesConfiguredAccount(t *testing.T) {
+	fake := newFakeDynamoDB(t)
+	stsServer, stsLog := newFakeSTS(t, stsAnswers)
+	setHermeticAWSEnv(t)
+	t.Setenv("AWS_ENDPOINT_URL_STS", stsServer.URL)
+	t.Cleanup(fake.server.Close)
+	t.Cleanup(stsServer.Close)
+
+	driver := openTestDriver(t, fake, map[string]string{"accountId": "999999999999"})
+	instance, err := driver.SyncInstance(context.Background())
+	if err != nil {
+		t.Fatalf("SyncInstance() = %v", err)
+	}
+	if len(instance.Databases) != 1 || instance.Databases[0].Name != "999999999999-us-east-1" {
+		t.Errorf("SyncInstance() databases = %v, want [999999999999-us-east-1]", instance.Databases)
+	}
+	if len(stsLog.requests) != 0 {
+		t.Errorf("STS requests = %v, want none for a configured account", stsLog.requests)
+	}
+	if len(fake.requests) != 0 {
+		t.Errorf("DynamoDB requests = %v, want none for SyncInstance", fake.requests)
+	}
+}
+
+func TestContractBehavior(t *testing.T) {
+	t.Run("limit caps the statement", func(t *testing.T) {
+		fake := newFakeDynamoDB(t)
+		t.Cleanup(fake.server.Close)
+		driver := openTestDriver(t, fake, nil)
+
+		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "limit"`, db.QueryContext{Limit: 1})
+		if err != nil {
+			t.Fatalf("QueryConn() = %v", err)
+		}
+		if len(results) != 1 || results[0].RowsCount != 1 {
+			t.Fatalf("QueryConn() = %d results, rows %v; want one row", len(results), rowCounts(results))
+		}
+		// Limit is a cap on the statement's rows, so the driver asks for no
+		// page after it has them.
+		if len(fake.requests) != 1 {
+			t.Errorf("requests = %v, want only the first page", fake.requests)
+		}
+	})
+
+	t.Run("maximum result size truncates", func(t *testing.T) {
+		fake := newFakeDynamoDB(t)
+		t.Cleanup(fake.server.Close)
+		driver := openTestDriver(t, fake, nil)
+
+		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "big"`, db.QueryContext{MaximumSQLResultSize: 1})
+		if err != nil {
+			t.Fatalf("QueryConn() = %v", err)
+		}
+		if len(results) != 1 {
+			t.Fatalf("QueryConn() = %d results, want 1", len(results))
+		}
+		// MaximumSQLResultSize truncates the result and reports the limit.
+		if !strings.Contains(results[0].GetError(), "max allowed output size") {
+			t.Errorf("QueryConn() error = %q, want the result-size message", results[0].GetError())
+		}
+	})
+
+	t.Run("binary is bytes", func(t *testing.T) {
+		fake := newFakeDynamoDB(t)
+		t.Cleanup(fake.server.Close)
+		driver := openTestDriver(t, fake, nil)
+
+		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "binary"`, db.QueryContext{})
+		if err != nil {
+			t.Fatalf("QueryConn() = %v", err)
+		}
+		value := results[0].Rows[0].Values[0]
+		// A binary crosses as bytes, so arbitrary bytes need not be valid UTF-8.
+		if string(value.GetBytesValue()) != string([]byte{0, 1, 2}) {
+			t.Errorf("binary value = %v, want bytes 00 01 02", value)
+		}
+	})
+
+	t.Run("missing attribute is null", func(t *testing.T) {
+		fake := newFakeDynamoDB(t)
+		t.Cleanup(fake.server.Close)
+		driver := openTestDriver(t, fake, nil)
+
+		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "sparse"`, db.QueryContext{})
+		if err != nil {
+			t.Fatalf("QueryConn() = %v", err)
+		}
+		missing := results[0].Rows[1].Values[0]
+		// A missing attribute is an explicit NULL, so the grid renders a null
+		// cell rather than a dropped value.
+		if _, ok := missing.GetKind().(*v1pb.RowValue_NullValue); !ok {
+			t.Errorf("missing attribute = %v, want an explicit NULL", missing)
+		}
+	})
+
+	t.Run("documents are json", func(t *testing.T) {
+		fake := newFakeDynamoDB(t)
+		t.Cleanup(fake.server.Close)
+		driver := openTestDriver(t, fake, nil)
+
+		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "document"`, db.QueryContext{})
+		if err != nil {
+			t.Fatalf("QueryConn() = %v", err)
+		}
+		want := map[string]string{
+			"blob": `["AAEC"]`,
+			"list": `["a","1"]`,
+			"map":  `{"k":"v"}`,
+			"nums": `["1","2"]`,
+			"set":  `["a","b"]`,
+		}
+		for i, column := range results[0].ColumnNames {
+			got := results[0].Rows[0].Values[i].GetStringValue()
+			if got != want[column] {
+				t.Errorf("%s = %q, want %q", column, got, want[column])
+			}
+		}
+	})
+
+	t.Run("secondary indexes sync", func(t *testing.T) {
+		fake := newFakeDynamoDB(t)
+		fake.tables = []string{"orders"}
+		fake.paged = false
+		t.Cleanup(fake.server.Close)
+		driver := openTestDriver(t, fake, nil)
+
+		schema, err := driver.SyncDBSchema(context.Background())
+		if err != nil {
+			t.Fatalf("SyncDBSchema() = %v", err)
+		}
+		if len(schema.Schemas) != 1 || len(schema.Schemas[0].Tables) != 1 {
+			t.Fatalf("SyncDBSchema() = %v, want one table", schema)
+		}
+		table := schema.Schemas[0].Tables[0]
+		var columns []string
+		for _, column := range table.Columns {
+			columns = append(columns, column.Name)
+		}
+		if strings.Join(columns, ",") != "created,pk,sku" {
+			t.Errorf("columns = %v, want [created pk sku]", columns)
+		}
+		// Every key attribute of the table and of its secondary indexes is a
+		// column; a hash-only table has no RANGE index.
+		var indexes []string
+		for _, index := range table.Indexes {
+			indexes = append(indexes, index.Type+":"+index.Name+"("+strings.Join(index.Expressions, ",")+")")
+		}
+		want := []string{
+			"HASH:pk(pk)",
+			"GLOBAL SECONDARY:orders_by_sku(sku)",
+			"LOCAL SECONDARY:orders_by_created(pk,created)",
+		}
+		if strings.Join(indexes, " ") != strings.Join(want, " ") {
+			t.Errorf("indexes = %v, want %v", indexes, want)
+		}
+	})
+}
+
+func openTestDriver(t *testing.T, fake *fakeDynamoDB, extraParams map[string]string) *Driver {
+	t.Helper()
+	setHermeticAWSEnv(t)
+	dataSource := &storepb.DataSource{
+		Host:                      fake.host,
+		Port:                      fake.port,
+		Region:                    "us-east-1",
+		ExtraConnectionParameters: extraParams,
+		IamExtension: &storepb.DataSource_AwsCredential{
+			AwsCredential: &storepb.DataSource_AWSCredential{
+				AccessKeyId:     "AKIAIOSFODNN7EXAMPLE",
+				SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+			},
+		},
+	}
+	inner := newDriver()
+	opened, err := inner.Open(context.Background(), storepb.Engine_DYNAMODB, db.ConnectionConfig{
+		ConnectionContext: db.ConnectionContext{DatabaseName: "123456789012-us-east-1"},
+		DataSource:        dataSource,
+	})
+	if err != nil {
+		t.Fatalf("Open() = %v", err)
+	}
+	driver, ok := opened.(*Driver)
+	if !ok {
+		t.Fatalf("Open() returned %T, want *Driver", opened)
+	}
+	t.Cleanup(func() { _ = driver.Close(context.Background()) })
+	return driver
+}
+
+func TestConvertValueStructured(t *testing.T) {
+	got := convertValue(omnidriver.Value{
+		Kind:       omnidriver.Structured,
+		Structured: map[string]any{"a": float64(1)},
+	})
+	if got.GetStringValue() != `{"a":1}` {
+		t.Errorf("convertValue(Structured) = %q, want JSON", got.GetStringValue())
+	}
+}
+
+func rowCounts(results []*v1pb.QueryResult) []int64 {
+	counts := make([]int64, 0, len(results))
+	for _, result := range results {
+		counts = append(counts, result.RowsCount)
+	}
+	return counts
 }

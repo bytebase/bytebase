@@ -1,0 +1,48 @@
+{
+  "GlobalStats": {
+    "partitionsTotal": 2,
+    "partitionsAssigned": 2,
+    "bytesAssigned": 1024
+  },
+  "Operations": [
+    [
+      {
+        "id": 0,
+        "operation": "Result",
+        "expressions": ["Z1.ID", "Z2.ID"]
+      },
+      {
+        "id": 1,
+        "parentOperators": [0],
+        "operation": "InnerJoin",
+        "expressions": ["joinKey: (Z2.ID = Z1.ID)"]
+      },
+      {
+        "id": 2,
+        "parentOperators": [1],
+        "operation": "TableScan",
+        "objects": ["TESTDB.TEMPORARY_DOC_TEST.Z2"],
+        "expressions": ["ID"],
+        "partitionsAssigned": 1,
+        "partitionsTotal": 1,
+        "bytesAssigned": 512
+      },
+      {
+        "id": 3,
+        "parentOperators": [1],
+        "operation": "JoinFilter",
+        "expressions": ["joinKey: (Z2.ID = Z1.ID)"]
+      },
+      {
+        "id": 4,
+        "parentOperators": [3],
+        "operation": "TableScan",
+        "objects": ["TESTDB.TEMPORARY_DOC_TEST.Z1"],
+        "expressions": ["ID"],
+        "partitionsAssigned": 1,
+        "partitionsTotal": 1,
+        "bytesAssigned": 512
+      }
+    ]
+  ]
+}

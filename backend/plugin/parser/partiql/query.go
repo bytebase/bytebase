@@ -2,7 +2,6 @@ package partiql
 
 import (
 	"errors"
-	"unicode/utf8"
 
 	"github.com/bytebase/omni/partiql/analysis"
 	"github.com/bytebase/omni/partiql/parser"
@@ -36,7 +35,7 @@ func validateQuery(statement string) (bool, bool, error) {
 
 // convertParseError converts an omni *parser.ParseError to a
 // *base.SyntaxError that sql_service.go recognizes for structured
-// error diagnostics. It converts the byte offset in ParseError.Loc
+// error diagnostics. It converts the byte offset in ParseError.Position
 // to 1-based line and 1-based column (rune-based) matching the
 // storepb.Position convention used across all omni parser adapters.
 //
@@ -44,41 +43,9 @@ func validateQuery(statement string) (bool, bool, error) {
 // errors from parsing an isolated statement segment are reported in the
 // coordinates of the original multi-statement script.
 func convertParseError(statement string, pe *parser.ParseError, basePos *storepb.Position) *base.SyntaxError {
-	line, col := byteOffsetToPosition(statement, pe.Loc.Start)
-	if basePos != nil {
-		// The first line of the segment shares a line with basePos, so
-		// column offsets only apply when the error is on that line.
-		if line == 1 {
-			col = int(basePos.Column) + col - 1
-		}
-		line = int(basePos.Line) + line - 1
-	}
 	return &base.SyntaxError{
-		Position: &storepb.Position{
-			Line:   int32(line),
-			Column: int32(col),
-		},
+		Position:   base.ShiftPosition(base.ByteOffsetToRunePosition(statement, pe.Position), basePos),
 		Message:    pe.Error(),
 		RawMessage: pe.Message,
 	}
-}
-
-// byteOffsetToPosition converts a 0-based byte offset to a 1-based
-// line number and 1-based column (in runes). Both line and column are
-// 1-based to match the storepb.Position convention used by other omni
-// parser adapters (see e.g. tsql/omni.go: "runeCol + 1").
-func byteOffsetToPosition(s string, offset int) (line, col int) {
-	line = 1
-	col = 1
-	for i := 0; i < offset && i < len(s); {
-		r, size := utf8.DecodeRuneInString(s[i:])
-		if r == '\n' {
-			line++
-			col = 1
-		} else {
-			col++
-		}
-		i += size
-	}
-	return line, col
 }

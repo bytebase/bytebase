@@ -33,16 +33,14 @@ export function InlineThreadComposer({
 
   return (
     <div
-      className="flex flex-col rounded-sm border border-block-border bg-background"
+      className="flex flex-col rounded-lg border border-control-border bg-background"
       data-testid="inline-thread-composer"
     >
-      <div className="flex items-center gap-x-2 border-b border-block-border bg-control-bg/50 px-3 py-1.5 text-sm">
-        <UserAvatar
-          colorSeed={currentUser.email}
-          size="xs"
-          title={currentUser.title || currentUser.email}
-        />
-        <span className="min-w-0 font-medium text-main">
+      <div
+        className="flex min-h-8 min-w-0 items-center rounded-t-lg border-b border-block-border bg-background px-3 text-xs text-control"
+        data-testid="thread-bar"
+      >
+        <span className="min-w-0 truncate">
           {range.startLine === range.endLine
             ? t("plan.review.thread.add-comment-on-line", {
                 line: range.startLine,
@@ -53,23 +51,35 @@ export function InlineThreadComposer({
               })}
         </span>
       </div>
-      <div className="flex flex-col gap-y-2 px-3 py-2">
-        <MarkdownEditor
-          autoFocus
-          compact
-          content={draft}
-          onChange={onDraftChange}
-          onSubmit={publish}
-          placeholder={t("plan.review.thread.write-comment")}
-        />
-        <div className="flex items-center justify-end gap-x-2">
-          <Button onClick={onCancel} size="sm" appearance="secondary">
-            {t("common.cancel")}
-          </Button>
-          <Button disabled={!canPublish} onClick={publish} size="sm">
-            {pending && <Loader2 className="size-4 animate-spin" />}
-            {t("plan.review.thread.publish")}
-          </Button>
+      <div className="flex items-start gap-x-2 px-2 py-2 sm:px-3">
+        <div
+          className="flex h-6 w-5 shrink-0 items-center"
+          data-testid="composer-avatar"
+        >
+          <UserAvatar
+            colorSeed={currentUser.email}
+            size="xs"
+            title={currentUser.title || currentUser.email}
+          />
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-y-2">
+          <MarkdownEditor
+            autoFocus
+            compact
+            content={draft}
+            onChange={onDraftChange}
+            onSubmit={publish}
+            placeholder={t("plan.review.thread.write-comment")}
+          />
+          <div className="flex items-center justify-end gap-x-2">
+            <Button onClick={onCancel} size="sm" appearance="secondary">
+              {t("common.cancel")}
+            </Button>
+            <Button disabled={!canPublish} onClick={publish} size="sm">
+              {pending && <Loader2 className="size-4 animate-spin" />}
+              {t("plan.review.thread.publish")}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

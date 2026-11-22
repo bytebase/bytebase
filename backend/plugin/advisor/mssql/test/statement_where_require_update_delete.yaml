@@ -24,3 +24,17 @@
       endposition: null
 - statement: DELETE FROM MyTable WHERE a = 1;
   changeType: 1
+- statement: |-
+    UPDATE t SET a = u.a FROM t JOIN u ON t.id = u.id;
+    BEGIN
+      DELETE FROM t;
+    END;
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for UPDATE statement.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

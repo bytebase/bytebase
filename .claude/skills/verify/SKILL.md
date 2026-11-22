@@ -13,12 +13,15 @@ or changing tests, read [the E2E instructions](../../../frontend/tests/e2e/AGENT
 ## Build
 
 ```bash
-pnpm --dir frontend release
-go build -tags embed_frontend -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go
+(cd frontend && pnpm release)
+bash frontend/tests/e2e/build-server.sh
 ```
 
-The `embed_frontend` tag is required to serve the UI. Rebuild the affected
-frontend bundle/backend binary after code changes so the test exercises the fix.
+`build-server.sh` builds with the `embed_frontend` tag, which serves the UI,
+and without `release`, so the dev license validates; it sets dev-only product
+switches to their release values, so SQL review runs V1 (see the E2E README).
+Rebuild the affected frontend bundle/backend binary after code changes so the
+test exercises the fix.
 
 ## Run the affected scenario
 

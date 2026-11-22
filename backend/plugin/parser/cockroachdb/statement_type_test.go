@@ -68,6 +68,10 @@ func TestGetStatementTypes(t *testing.T) {
 		{statement: `UPSERT INTO t VALUES (1)`, want: []storepb.StatementType{storepb.StatementType_INSERT}},
 		{statement: `UPDATE t SET c = 1`, want: []storepb.StatementType{storepb.StatementType_UPDATE}},
 		{statement: `DELETE FROM t WHERE id = 1`, want: []storepb.StatementType{storepb.StatementType_DELETE}},
+		{statement: `CALL archive_orders(30)`, want: []storepb.StatementType{storepb.StatementType_EXECUTE}},
+		{statement: `DO $$ BEGIN DELETE FROM t; END $$`, want: []storepb.StatementType{storepb.StatementType_EXECUTE}},
+		{statement: `EXECUTE purge_stmt(30)`, want: []storepb.StatementType{storepb.StatementType_EXECUTE}},
+		{statement: `PREPARE purge_stmt (INT) AS DELETE FROM t WHERE id = $1`},
 		{
 			statement: `SET application_name = 'x'; CREATE TABLE t (id INT PRIMARY KEY); SELECT 1; INSERT INTO t VALUES (1)`,
 			want:      []storepb.StatementType{storepb.StatementType_CREATE_TABLE, storepb.StatementType_INSERT},

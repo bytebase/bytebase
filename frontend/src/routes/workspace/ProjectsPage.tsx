@@ -2,10 +2,7 @@ import { Archive, Check, EllipsisVertical, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router, useCurrentRoute } from "@/app/router";
-import {
-  PROJECT_V1_ROUTE_DATABASES,
-  PROJECT_V1_ROUTE_ISSUES,
-} from "@/app/router/handles";
+import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router/handles";
 import {
   markListScrollRestorationEntry,
   useListScrollRestorationLoadMore,
@@ -53,9 +50,7 @@ import {
   useURLSearchParam,
 } from "@/hooks/useURLSearchParam";
 import {
-  CONNECT_DATABASE_PRODUCT_INTRO,
   CREATE_PROJECT_PRODUCT_INTRO,
-  PRODUCT_INTRO_QUERY_KEY,
   useProductIntro,
 } from "@/lib/productIntro";
 import {
@@ -76,9 +71,9 @@ import {
 
 const parseProjectSearch = createAdvancedSearchParser(["state", "label"]);
 
-export function projectIssuesRoute(project: Project) {
+function projectHomeRoute(project: Project) {
   return {
-    name: PROJECT_V1_ROUTE_ISSUES,
+    name: PROJECT_V1_ROUTE_DETAIL,
     params: { projectId: getProjectName(project.name) },
   };
 }
@@ -361,7 +356,8 @@ export function ProjectsPage() {
       if (!isLoggedIn) return;
 
       abortRef.current?.abort();
-      abortRef.current = new AbortController();
+      const controller = new AbortController();
+      abortRef.current = controller;
       const currentFetchId = ++fetchIdRef.current;
 
       if (isRefresh) {
@@ -373,6 +369,7 @@ export function ProjectsPage() {
       try {
         const token = isRefresh ? "" : nextPageTokenRef.current;
         const result = await useAppStore.getState().fetchProjectList({
+          signal: controller.signal,
           pageToken: token,
           pageSize,
           filter: {
@@ -385,7 +382,8 @@ export function ProjectsPage() {
           cache: true,
         });
 
-        if (currentFetchId !== fetchIdRef.current) return;
+        if (controller.signal.aborted || currentFetchId !== fetchIdRef.current)
+          return;
 
         if (isRefresh) {
           setProjects(result.projects);
@@ -395,6 +393,7 @@ export function ProjectsPage() {
         nextPageTokenRef.current = result.nextPageToken ?? "";
         setHasMore(Boolean(result.nextPageToken));
       } catch (e) {
+        if (controller.signal.aborted) return;
         if (e instanceof Error && e.name === "AbortError") return;
         console.error(e);
       } finally {
@@ -415,7 +414,10 @@ export function ProjectsPage() {
     prevDepsRef.current = depsKey;
 
     fetchProjects(true);
-    return () => abortRef.current?.abort();
+    return () => {
+      prevDepsRef.current = "";
+      abortRef.current?.abort();
+    };
   }, [
     searchText,
     stateFilter,
@@ -583,20 +585,19 @@ export function ProjectsPage() {
 
   const handleCreated = useCallback((project: Project) => {
     router.push({
-      name: PROJECT_V1_ROUTE_DATABASES,
+      name: PROJECT_V1_ROUTE_DETAIL,
       params: { projectId: getProjectName(project.name) },
-      query: { [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO },
     });
   }, []);
 
   const handleRowClick = useCallback(
     (project: Project, e: React.MouseEvent<HTMLElement>) => {
-      const route = router.resolve(projectIssuesRoute(project));
+      const route = router.resolve(projectHomeRoute(project));
       if (e.ctrlKey || e.metaKey) {
         window.open(route.fullPath, "_blank");
       } else {
         markListScrollRestorationEntry();
-        router.push(projectIssuesRoute(project));
+        router.push(projectHomeRoute(project));
       }
     },
     []

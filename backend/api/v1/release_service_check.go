@@ -648,7 +648,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 				DatabaseName: database.DatabaseName,
 			})
 			if err == nil && dbMetadata != nil {
-				// Thread the synced server version so MySQL builds the version-correct plan.
+				// MySQL reports a server older than 8.0 as an error advice.
 				advices, err := schema.SDLDropAdvices(engine, combinedTargetSDL, dbMetadata, instance.Metadata.GetVersion())
 				if err == nil {
 					sdlDropAdvices = advices
@@ -851,19 +851,22 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	}
 
 	dbMetadataProto := dbMetadata.GetProto()
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+		// A live rule's probe switches to the database owner inside the driver, so the
+		// driver, not only the advisor context, must know the project is in tenant mode.
+		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
+	})
 	if err != nil {
 		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database driver"))
 	}
 	defer driver.Close(ctx)
-	connection := driver.GetDB()
 
 	context := advisor.Context{
 		DBSchema:              dbMetadataProto,
 		DBType:                instance.Metadata.GetEngine(),
 		OriginalMetadata:      originMetadata,
 		FinalMetadata:         finalMetadata,
-		Driver:                connection,
+		Prober:                db.ProberOf(driver),
 		CurrentDatabase:       database.DatabaseName,
 		TenantMode:            project.Setting.GetPostgresDatabaseTenantMode(),
 		ListDatabaseNamesFunc: parsercontext.BuildListDatabaseNamesFunc(s.store),

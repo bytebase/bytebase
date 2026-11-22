@@ -1,8 +1,10 @@
 package trino
 
 import (
+	"context"
 	"testing"
 
+	"github.com/bytebase/omni/trino/analysis"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -19,21 +21,21 @@ func TestTrinoParser(t *testing.T) {
 	require.NotNil(t, results[0].Node(), "Parse tree should not be nil")
 
 	// Verify the statement is read-only.
-	assert.True(t, IsReadOnlyStatement(results[0].Node()), "SELECT statement should be read-only")
+	assert.True(t, analysis.IsReadOnlyStatement(results[0].Node()), "SELECT statement should be read-only")
 
 	// Test data-changing statement detection.
 	sqlDML := "INSERT INTO users (id, name) VALUES (1, 'John')"
 	resultsDML, err := parseTrinoSQL(sqlDML)
 	require.NoError(t, err)
 	require.Len(t, resultsDML, 1)
-	assert.True(t, IsDataChangingStatement(resultsDML[0].Node()), "INSERT statement should be data-changing")
+	assert.True(t, analysis.IsDataChangingStatement(resultsDML[0].Node()), "INSERT statement should be data-changing")
 
 	// Test schema-changing statement detection.
 	sqlDDL := "CREATE TABLE test (id INT, name VARCHAR)"
 	resultsDDL, err := parseTrinoSQL(sqlDDL)
 	require.NoError(t, err)
 	require.Len(t, resultsDDL, 1)
-	assert.True(t, IsSchemaChangingStatement(resultsDDL[0].Node()), "CREATE TABLE should be schema-changing")
+	assert.True(t, analysis.IsSchemaChangingStatement(resultsDDL[0].Node()), "CREATE TABLE should be schema-changing")
 }
 
 func TestTrinoQueryType(t *testing.T) {
@@ -85,10 +87,9 @@ func TestTrinoQueryType(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.sql, func(t *testing.T) {
-			// queryTypeFromText applies the same system-schema promotion the
-			// query-span path uses, so a SELECT over system.* is SelectInfoSchema.
-			queryType := queryTypeFromText(tc.sql)
-			assert.Equal(t, tc.expected, queryType)
+			span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: tc.sql}, "", "", false)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, span.Type)
 		})
 	}
 }

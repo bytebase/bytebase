@@ -37,3 +37,150 @@
         line: 1
         column: 0
       endposition: null
+- statement: execute sp_rename 'Sales.SalesTerritory.TerritoryID', 'territoryId', 'COLUMN';
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: territoryId mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: EXEC sp_rename N'Sales.SalesTerritory.IX_Territory', N'ix_territory', N'INDEX';
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: ix_territory mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: EXEC sp_rename 'OldType', 'new_type', 'USERDATATYPE';
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: new_type mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: EXEC sp_rename 'OldDb', 'new_db', 'DATABASE';
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: new_db mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: EXEC sp_rename @newname = 'SalesTerr', @objname = 'Sales.SalesTerritory';
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: Sales.SalesTerritory mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: EXEC sp_rename @objname = @old_name, @newname = 'salesTerr';
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: salesTerr mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: EXEC sp_rename 'Srv.Db.Sales.SalesTerritory', 'salesTerr';
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: salesTerr mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: EXEC sys.sp_rename 'Sales.SalesTerritory', 'salesTerr';
+  changeType: 1
+- statement: CREATE TABLE bad_ctas WITH (DISTRIBUTION = ROUND_ROBIN) AS SELECT 1 AS ID;
+  changeType: 1
+- statement: CREATE TABLE bad_clone AS CLONE OF Sales.SalesTerritory;
+  changeType: 1
+- statement: SELECT 1 AS ID INTO bad_select;
+  changeType: 1
+- statement: RENAME OBJECT Sales.SalesTerritory TO bad_rename;
+  changeType: 1
+- statement: CREATE PROCEDURE Make_Table AS CREATE TABLE bad_in_proc(ID INT);
+  changeType: 1
+- statement: IF 1 = 1 BEGIN CREATE TABLE bad_in_if(ID INT); END
+  changeType: 1
+- statement: 'CREATE TABLE #Temp_Table(ID INT);'
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '#Temp_Table mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE [A表表表表表表表表表表表表表表表表表表表表表表](ID INT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: A表表表表表表表表表表表表表表表表表表表表表表 mismatches table naming convention, its length should be within 64 characters
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: A表表表表表表表表表表表表表表表表表表表表表表 mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE Good_Name(ID INT);
+
+    CREATE TABLE
+      bad_second(ID INT);
+    EXEC sp_rename
+      'Good_Name',
+      'bad_third';
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: bad_second mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: bad_third mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
+      startposition:
+        line: 5
+        column: 0
+      endposition: null

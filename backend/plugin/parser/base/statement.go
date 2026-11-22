@@ -49,11 +49,16 @@ func TruncateAtSemicolonToken[T any](sql string, start int, tokens []T, loc func
 	return sql[start:]
 }
 
-// NewStatementFromRange builds a Statement from a split segment range.
+// NewStatementFromRange builds a Statement from a split segment range, including an immediately following semicolon.
 func NewStatementFromRange(sql string, mapper *ByteOffsetPositionMapper, byteStart, byteEnd int, empty bool) Statement {
 	if byteEnd < len(sql) && sql[byteEnd] == ';' {
 		byteEnd++
 	}
+	return NewExactStatement(sql, mapper, byteStart, byteEnd, empty)
+}
+
+// NewExactStatement builds a Statement from an exact [byteStart, byteEnd) slice of sql.
+func NewExactStatement(sql string, mapper *ByteOffsetPositionMapper, byteStart, byteEnd int, empty bool) Statement {
 	return Statement{
 		Text:  sql[byteStart:byteEnd],
 		Empty: empty,
@@ -64,6 +69,25 @@ func NewStatementFromRange(sql string, mapper *ByteOffsetPositionMapper, byteSta
 			End:   int32(byteEnd),
 		},
 	}
+}
+
+// BuildStatements converts split segments into []Statement using a single linear pass for positions.
+// When includeTrailingSemi is true, segments ending right before ';' extend by one byte to include it.
+func BuildStatements[T any](sql string, segs []T, bounds func(T) (start, end int, empty bool), includeTrailingSemi bool) []Statement {
+	if len(segs) == 0 {
+		return nil
+	}
+	result := make([]Statement, 0, len(segs))
+	mapper := NewByteOffsetPositionMapper(sql)
+	for _, seg := range segs {
+		start, end, empty := bounds(seg)
+		if includeTrailingSemi {
+			result = append(result, NewStatementFromRange(sql, mapper, start, end, empty))
+		} else {
+			result = append(result, NewExactStatement(sql, mapper, start, end, empty))
+		}
+	}
+	return result
 }
 
 // ParsedStatement is the result of parsing SQL (Statement + AST).

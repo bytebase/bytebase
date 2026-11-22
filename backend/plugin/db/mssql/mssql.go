@@ -1,700 +1,272 @@
-// Package mssql is the plugin for MSSQL driver.
+// Package mssql is Bytebase's SQL Server driver: an adapter over
+// github.com/bytebase/omni/mssql/driver that maps Bytebase's connection config
+// onto the driver contract, and the contract's results back into the product's.
+// The conversation with SQL Server — session setup, metadata sync, the catalog's
+// dump, interactive queries and change scripts — is the driver's.
+//
+// The adapter keeps what is product: the data source to contract conversion (the
+// go-mssqldb parameters, CA file and parameter precedence), the Azure login as a
+// Config.TokenProvider, QueryContext/ExecuteOptions mapping, the v1pb conversion
+// and the task-run logger.
+//
+// Constraints of the engine and the contract, here rather than at each call:
+//   - GetDB returns nil: omni's driver owns its pool, and every production
+//     caller guards a nil handle. QueryConn holds one session for the driver's
+//     life, serialized, so a stream's requests see the session state the pooled
+//     connection carried before.
+//   - Config.TLS is not set: the data source's TLS settings stay go-mssqldb
+//     parameters, so verification, the CA and the TLS minimum are the client's
+//     parse of them; tlsmin is 1.0 unless a parameter sets it. The CA travels as
+//     the `certificate` parameter, which the client reads only from a path, so
+//     the adapter writes it to a temporary file and removes it on Close.
+//   - Config.Dial is not set: an SSH data source is dialled directly, as it was
+//     before this adapter. Adding the tunnel is a separate change.
+//   - Config.ReadOnly is ignored: SQL Server has no read-only session setting.
+//   - QueryContext.Schema is ignored: unqualified names resolve in the session's
+//     default schema.
+//   - QueryContext.Limit rewrites a statement that returns rows; for rows a
+//     rewrite cannot reach (a procedure call, an OUTPUT clause) it is applied as
+//     they are read.
+//   - Execute parses `-- txn-mode` and ignores `-- txn-isolation`, so a
+//     transaction keeps the server's default isolation, as before.
+//   - A masked procedure call or OUTPUT clause keeps its rows and reports the
+//     result's error.
+//   - A count-only statement's result carries one "Affected Rows" row, and
+//     RowsCount counts it.
+//
+// cutover_parity_test.go replays a recording of the driver this replaced over
+// the same corpus and names the cases whose behavior moved.
 package mssql
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
-	"io"
 	"log/slog"
-	"net/url"
+	"maps"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
-	"time"
 
-	// Import MSSQL driver.
-
-	"github.com/golang-sql/sqlexp"
-	gomssqldb "github.com/microsoft/go-mssqldb"
-	"github.com/microsoft/go-mssqldb/azuread"
-
-	// Kerberos Active Directory authentication outside Windows.
-	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	odriver "github.com/bytebase/omni/driver"
+	mssqldriver "github.com/bytebase/omni/mssql/driver"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
-	tsqlbatch "github.com/bytebase/bytebase/backend/plugin/parser/tsql/batch"
 )
 
 var (
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver       = (*Driver)(nil)
+	_ db.RowEstimator = (*Driver)(nil)
 )
 
 func init() {
 	db.Register(storepb.Engine_MSSQL, newDriver)
 }
 
-// Driver is the MSSQL driver.
+// Driver is Bytebase's SQL Server driver.
 type Driver struct {
-	db           *sql.DB
-	databaseName string
-
-	// certificate file path should be deleted if calling closed.
-	certFilePath string
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open opens a MSSQL driver.
-func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	query := url.Values{}
-	query.Add("app name", "bytebase")
-	if config.ConnectionContext.DatabaseName != "" {
-		query.Add("database", config.ConnectionContext.DatabaseName)
-	} else if config.DataSource.Database != "" {
-		query.Add("database", config.DataSource.Database)
-	}
-
-	// In order to be compatible with db servers that only support old versions of tls.
-	// See: https://github.com/microsoft/go-mssqldb/issues/33
-	query.Add("tlsmin", "1.0")
-
-	// Add extra connection parameters if specified in the DataSource
-	for key, value := range config.DataSource.GetExtraConnectionParameters() {
-		query.Add(key, value)
-	}
-
-	var err error
-	if config.DataSource.GetUseSsl() && config.DataSource.GetSslCa() != "" {
-		// Due to Golang runtime limitation, x509 package will throw the error of 'certificate relies on legacy Common Name field, use SANs instead.
-		// Driver reads the certificate from file instead of regarding it as certificate content.
-		// https://github.com/microsoft/go-mssqldb/blob/main/msdsn/conn_str.go#L159
-		// TODO(zp): Driver supports .der format also.
-		const pattern string = "cert-*.pem"
-		file, err := os.CreateTemp(os.TempDir(), pattern)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create temporary file with pattern %s", pattern)
+// Open maps the connection config onto the driver contract. It does not reach
+// the server, as the driver this replaced did not: the pool connects on first
+// use, and Ping or the first statement reports an unreachable server.
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	opened := false
+	defer func() {
+		if !opened {
+			_ = d.Close(ctx)
 		}
-		fName := file.Name()
-		defer func(err error) {
-			if err != nil {
-				_ = os.Remove(fName)
-			} else {
-				d.certFilePath = fName
-			}
-		}(err)
-		_, err = file.WriteString(config.DataSource.GetSslCa())
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to write certificate to file %s", fName)
-		}
-		if err = file.Close(); err != nil {
-			return nil, errors.Wrapf(err, "failed to close file %s", fName)
-		}
-		query.Add("certificate", fName)
-	}
-	query.Add("TrustServerCertificate", "true")
+	}()
 
-	driverName := "sqlserver"
-	password := config.Password
-	if config.DataSource.GetAuthenticationType() == storepb.DataSource_AZURE_IAM {
-		driverName = azuread.DriverName
-		if azureCredential := config.DataSource.GetAzureCredential(); azureCredential != nil {
-			query.Add("fedauth", azuread.ActiveDirectoryServicePrincipal)
-			query.Add("user id", fmt.Sprintf("%s@%s", azureCredential.ClientId, azureCredential.TenantId))
-			query.Add("password", azureCredential.ClientSecret)
-			password = ""
-		} else {
-			query.Add("fedauth", azuread.ActiveDirectoryDefault)
-		}
-	}
-	u := &url.URL{
-		Scheme:   "sqlserver",
-		User:     url.UserPassword(config.DataSource.Username, password),
-		Host:     fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port),
-		RawQuery: query.Encode(),
-	}
-	var db *sql.DB
-	db, err = sql.Open(driverName, u.String())
+	d.OmniAdapter = util.OmniAdapter{}
+
+	cfg, caFile, err := mssqlConfig(config)
 	if err != nil {
 		return nil, err
 	}
-	d.db = db
-	d.databaseName = config.ConnectionContext.DatabaseName
+	if caFile != "" {
+		d.AddCloseFunc(func() error {
+			removeCAFile(caFile)
+			return nil
+		})
+	}
+	impl, err := mssqldriver.Open(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	d.Driver = impl
+	opened = true
 	return d, nil
 }
 
-// Close closes the driver.
-func (d *Driver) Close(_ context.Context) error {
-	if d.certFilePath != "" {
-		if err := os.Remove(d.certFilePath); err != nil {
-			slog.Warn("failed to delete temporary file", slog.String("path", d.certFilePath), log.BBError(err))
-		}
-	}
-	if d.db != nil {
-		return d.db.Close()
-	}
-	return nil
-}
+// mssqlConfig maps the data source onto the driver contract. caFile is the CA
+// written to disk for go-mssqldb, or empty; the caller removes it.
+//
+// Extra Connection Parameters keep the precedence the old driver gave them:
+// they are matched case-insensitively, override the app name and the login, and
+// carry the server, port, TLS mode and certificate the client reads. The
+// database and an Azure credential come from Bytebase, never from them.
+func mssqlConfig(config db.ConnectionConfig) (odriver.Config, string, error) {
+	ds := config.DataSource
 
-// Ping pings the database.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.db.PingContext(ctx)
-}
-
-// GetDB gets the database.
-func (d *Driver) GetDB() *sql.DB {
-	return d.db
-}
-
-// Execute executes a SQL statement and returns the affected rows.
-func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	if opts.CreateDatabase {
-		if _, err := d.db.ExecContext(ctx, statement); err != nil {
-			return 0, err
-		}
-		return 0, nil
+	// go-mssqldb matches parameter keys case-insensitively and accepts each key
+	// once, so the parameters merge by lowercased key, in a stable order.
+	params := map[string]string{}
+	extra := ds.GetExtraConnectionParameters()
+	for _, key := range slices.Sorted(maps.Keys(extra)) {
+		params[strings.ToLower(key)] = extra[key]
 	}
 
-	// Parse transaction mode from the script
-	config, cleanedStatement := base.ParseTransactionConfig(statement)
-	statement = cleanedStatement
-	transactionMode := config.Mode
-
-	// Apply default when transaction mode is not specified
-	if transactionMode == transaction.ModeUnspecified {
-		transactionMode = transaction.DefaultMode()
+	host, port := ds.GetHost(), ds.GetPort()
+	if server, ok := params["server"]; ok {
+		delete(params, "server")
+		host = server
+	}
+	if value, ok := params["port"]; ok {
+		delete(params, "port")
+		port = value
 	}
 
-	// Execute based on transaction mode
-	if transactionMode == transaction.ModeOff {
-		return d.executeInAutoCommitMode(ctx, statement, opts)
+	database := util.ResolveDatabaseName(config)
+	if database == "" {
+		database = params["database"]
 	}
-	return d.executeInTransactionMode(ctx, statement, opts)
-}
+	delete(params, "database")
 
-// executeInTransactionMode executes statements within a single transaction
-func (d *Driver) executeInTransactionMode(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	tx, err := d.db.BeginTx(ctx, nil)
+	user, password := ds.GetUsername(), config.Password
+	if value, ok := params["user id"]; ok {
+		user = value
+	}
+	if value, ok := params["password"]; ok {
+		password = value
+	}
+	delete(params, "user id")
+	delete(params, "password")
+
+	appName := "bytebase"
+	if value, ok := params["app name"]; ok {
+		appName = value
+	}
+	delete(params, "app name")
+
+	caFile, err := writeCAFile(ds)
 	if err != nil {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
-		return 0, err
+		return odriver.Config{}, "", err
 	}
-	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
-
-	committed := false
-	defer func() {
-		err := tx.Rollback()
-		if committed {
-			return
+	if ds.GetUseSsl() {
+		// TLS mode TLS sets a floor that Extra Parameters may raise but not
+		// lower: encrypt=true unless they ask for strict, and
+		// TrustServerCertificate=false when Verify server certificate is on or
+		// they ask for it. The section's CA replaces a certificate parameter.
+		if !strings.EqualFold(params["encrypt"], "strict") {
+			params["encrypt"] = "true"
 		}
-		var rerr string
+		trust, err := strconv.ParseBool(params["trustservercertificate"])
+		verify := ds.GetVerifyTlsCertificate() || (err == nil && !trust)
+		params["trustservercertificate"] = strconv.FormatBool(!verify)
+		if caFile != "" {
+			params["certificate"] = caFile
+		}
+	} else if _, ok := params["trustservercertificate"]; !ok {
+		params["trustservercertificate"] = "true"
+	}
+
+	// tlsmin stays unset: mssql/driver defaults it to 1.0 for a server that
+	// offers only TLS 1.0, and an Extra Connection Parameter replaces it.
+	cfg := odriver.Config{
+		Host:            host,
+		Port:            port,
+		Database:        database,
+		ApplicationName: appName,
+		Params:          params,
+		EngineVersion:   config.ConnectionContext.EngineVersion,
+	}
+	if ds.GetAuthenticationType() == storepb.DataSource_AZURE_IAM {
+		// The token connector authenticates instead of a login, so the fedauth
+		// parameter and the login the old driver put in the DSN have no reader.
+		delete(params, "fedauth")
+		credential, err := util.GetAzureConnectionConfig(config)
 		if err != nil {
-			rerr = err.Error()
+			removeCAFile(caFile)
+			return odriver.Config{}, "", err
 		}
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
-	}()
+		cfg.TokenProvider = azureTokenProvider(credential)
+		return cfg, caFile, nil
+	}
+	cfg.User, cfg.Password = user, password
+	return cfg, caFile, nil
+}
 
-	totalAffectRows := int64(0)
+// azureAudience is the scope Azure SQL asks an Entra ID token for.
+const azureAudience = "https://database.windows.net/.default"
 
-	batch := tsqlbatch.NewBatcher(statement)
-
-	for idx := 0; ; {
-		command, err := batch.Next()
+// azureTokenProvider asks credential for an Azure SQL access token. It is
+// called for each new connection, as the client's connector does.
+func azureTokenProvider(credential azcore.TokenCredential) func(context.Context) (string, error) {
+	return func(ctx context.Context) (string, error) {
+		token, err := credential.GetToken(ctx, policy.TokenRequestOptions{Scopes: []string{azureAudience}})
 		if err != nil {
-			if err == io.EOF {
-				// Try send the last batch to server.
-				v := batch.Batch()
-				if v != nil && len(v.Text) > 0 {
-					opts.LogCommandExecute(&storepb.Range{Start: int32(v.Start), End: int32(v.End)}, v.Text)
-					rowsAffected, err := execute(ctx, tx, v.Text)
-					if err != nil {
-						opts.LogCommandResponse(0, nil, err.Error())
-						return 0, err
-					}
-					opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
-					totalAffectRows += rowsAffected
-				}
-				break
-			}
-			return 0, errors.Wrapf(err, "failed to get next batch for statement: %s", batch.Batch().Text)
+			return "", err
 		}
-		if command == nil {
-			continue
-		}
-		switch v := command.(type) {
-		case *tsqlbatch.GoCommand:
-			b := batch.Batch()
-			// Try send the batch to server.
-			idx++
-			for i := uint(0); i < v.Count; i++ {
-				opts.LogCommandExecute(&storepb.Range{Start: int32(b.Start), End: int32(b.End)}, b.Text)
-				rowsAffected, err := execute(ctx, tx, b.Text)
-				if err != nil {
-					opts.LogCommandResponse(0, nil, err.Error())
-					return 0, err
-				}
-				opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
-				totalAffectRows += rowsAffected
-			}
-		default:
-			return 0, errors.Errorf("unsupported command type: %T", v)
-		}
-		batch.Reset(nil)
+		return token.Token, nil
 	}
-
-	if err := tx.Commit(); err != nil {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
-		return 0, err
-	}
-	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
-	committed = true
-	return totalAffectRows, nil
 }
 
-// executeInAutoCommitMode executes statements sequentially in auto-commit mode
-func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	totalAffectRows := int64(0)
-
-	batch := tsqlbatch.NewBatcher(statement)
-
-	for idx := 0; ; {
-		command, err := batch.Next()
-		if err != nil {
-			if err == io.EOF {
-				// Try send the last batch to server.
-				v := batch.Batch()
-				if v != nil && len(v.Text) > 0 {
-					opts.LogCommandExecute(&storepb.Range{Start: int32(v.Start), End: int32(v.End)}, v.Text)
-					rowsAffected, err := d.executeAutoCommit(ctx, v.Text)
-					if err != nil {
-						opts.LogCommandResponse(0, nil, err.Error())
-						return totalAffectRows, err
-					}
-					opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
-					totalAffectRows += rowsAffected
-				}
-				break
-			}
-			return 0, errors.Wrapf(err, "failed to get next batch for statement: %s", batch.Batch().Text)
-		}
-		if command == nil {
-			continue
-		}
-		switch v := command.(type) {
-		case *tsqlbatch.GoCommand:
-			b := batch.Batch()
-			// Execute the batch in auto-commit mode
-			idx++
-			for i := uint(0); i < v.Count; i++ {
-				opts.LogCommandExecute(&storepb.Range{Start: int32(b.Start), End: int32(b.End)}, b.Text)
-				rowsAffected, err := d.executeAutoCommit(ctx, b.Text)
-				if err != nil {
-					opts.LogCommandResponse(0, nil, err.Error())
-					// In auto-commit mode, we stop at the first error
-					return totalAffectRows, err
-				}
-				opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
-				totalAffectRows += rowsAffected
-			}
-		default:
-			return 0, errors.Errorf("unsupported command type: %T", v)
-		}
-		batch.Reset(nil)
+// writeCAFile writes the data source's CA to a temporary file, because
+// go-mssqldb reads a CA only from a .pem or .der path. It returns "" when TLS is
+// off or no CA is set.
+func writeCAFile(ds *storepb.DataSource) (string, error) {
+	if !ds.GetUseSsl() || ds.GetSslCa() == "" {
+		return "", nil
 	}
-
-	return totalAffectRows, nil
-}
-
-// executeAutoCommit executes a single statement in auto-commit mode
-func (d *Driver) executeAutoCommit(ctx context.Context, statement string) (int64, error) {
-	sqlResult, err := d.db.ExecContext(ctx, statement)
+	file, err := os.CreateTemp("", "cert-*.pem")
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to execute statement in auto-commit mode")
+		return "", errors.Wrap(err, "failed to create the CA certificate file")
 	}
-	rowsAffected, err := sqlResult.RowsAffected()
-	if err != nil {
-		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-		slog.Debug("rowsAffected returns error in auto-commit mode", log.BBError(err))
-		return 0, nil
-	}
-	return rowsAffected, nil
-}
-
-func execute(ctx context.Context, txn *sql.Tx, statement string) (int64, error) {
-	sqlResult, err := txn.ExecContext(ctx, statement)
-	var e gomssqldb.Error
-	if errors.As(err, &e) {
-		err = unpackGoMSSQLDBError(e)
+	_, err = file.WriteString(ds.GetSslCa())
+	if closeErr := file.Close(); err == nil {
+		err = closeErr
 	}
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to execute statement")
+		removeCAFile(file.Name())
+		return "", errors.Wrap(err, "failed to write the CA certificate file")
 	}
-	rowsAffected, err := sqlResult.RowsAffected()
-	if err != nil {
-		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-		slog.Debug("rowsAffected returns error", log.BBError(err))
-		return 0, nil
-	}
-	return rowsAffected, nil
+	return file.Name(), nil
 }
 
-func formatMSSQLError(e gomssqldb.Error) string {
-	b := new(strings.Builder)
-	if len(e.ProcName) > 0 {
-		fmt.Fprintf(b, "Msg %d, Level %d, State %d, Server %s, Procedure %s, Line %d\n", e.Number, e.Class, e.State, e.ServerName, e.ProcName, e.LineNo)
-	} else {
-		fmt.Fprintf(b, "Msg %d, Level %d, State %d, Server %s, Line %d\n", e.Number, e.Class, e.State, e.ServerName, e.LineNo)
-	}
-	b.WriteString(e.Message)
-	return b.String()
-}
-
-func unpackGoMSSQLDBError(err gomssqldb.Error) error {
-	if len(err.All) == 0 || len(err.All) == 1 {
-		return errors.Errorf("%s", formatMSSQLError(err))
-	}
-	var msgs []string
-	for _, e := range err.All {
-		if e.Message == "" {
-			continue
-		}
-		msgs = append(msgs, formatMSSQLError(e))
-	}
-	return errors.Errorf("%s", strings.Join(msgs, "\n"))
-}
-
-func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	// Special handling for EXPLAIN queries in MSSQL is now integrated into queryBatch
-
-	// Regular query processing (unchanged)
-	batch := tsqlbatch.NewBatcher(statement)
-	// Callers pair results[i] with the request's i-th statement, so the further
-	// result sets of procedure calls come after every statement's result.
-	var results, procedureResults []*v1pb.QueryResult
-	for {
-		command, err := batch.Next()
-		if err != nil {
-			if err == io.EOF {
-				v := batch.Batch()
-				if v != nil && len(v.Text) > 0 {
-					// Query the last batch.
-					qr, more, err := d.queryBatch(ctx, conn, v.Text, queryContext)
-					results = append(results, qr...)
-					procedureResults = append(procedureResults, more...)
-					if err != nil {
-						return results, err
-					}
-				}
-				batch.Reset(nil)
-				break
-			}
-			return results, errors.Wrapf(err, "failed to get next batch for statement: %s", batch.Batch().Text)
-		}
-		if command == nil {
-			continue
-		}
-		switch v := command.(type) {
-		case *tsqlbatch.GoCommand:
-			b := batch.Batch()
-			// Query the batch.
-			qr, more, err := d.queryBatch(ctx, conn, b.Text, queryContext)
-			results = append(results, qr...)
-			procedureResults = append(procedureResults, more...)
-			if err != nil {
-				return results, err
-			}
-		default:
-			return results, errors.Errorf("unsupported command type: %T", v)
-		}
-		batch.Reset(nil)
-	}
-	return append(results, procedureResults...), nil
-}
-
-// showplanStatistic picks the SET statement that turns on the requested explain
-// output. SQL Server has no JSON showplan; which formats an engine may be asked
-// for is decided at the API boundary (validateExplainFormat), so anything else
-// arriving here takes the default plan.
-func showplanStatistic(option *v1pb.QueryOption) string {
-	if option.GetExplainFormat() == v1pb.QueryOption_XML {
-		return "SHOWPLAN_XML"
-	}
-	return "SHOWPLAN_ALL"
-}
-
-// queryBatch queries a batch of SQL statements and returns one result for each: the result set of a Result Set-Generating
-// statement, the affected rows of a Row Count-Generating statement, or an empty result. The second slice holds a procedure
-// call's result sets after its first.
-// https://learn.microsoft.com/en-us/sql/odbc/reference/develop-app/result-generating-and-result-free-statements?view=sql-server-ver16
-func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, queryContext db.QueryContext) ([]*v1pb.QueryResult, []*v1pb.QueryResult, error) {
-	singleSQLs, err := tsqlparser.SplitSQL(batch)
-	if err != nil {
-		return nil, nil, err
-	}
-	singleSQLs = base.FilterEmptyStatements(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return nil, nil, nil
-	}
-
-	// Special handling for EXPLAIN queries in MSSQL using explain
-	if queryContext.Explain {
-		explain := showplanStatistic(queryContext.Option)
-		// Enable explain mode once for all statements
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET %s ON", explain)); err != nil { // NOSONAR(go:S2077) explain is a hardcoded constant ("SHOWPLAN_ALL" or "SHOWPLAN_XML"), not user input
-			return nil, nil, errors.Wrap(err, "failed to enable explain mode")
-		}
-		// Ensure explain is turned off after processing
-		defer func() {
-			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET %s OFF", explain)); err != nil { // NOSONAR(go:S2077) explain is a hardcoded constant ("SHOWPLAN_ALL" or "SHOWPLAN_XML"), not user input
-				slog.Warn("failed to disable explain mode", log.BBError(err))
-			}
-		}()
-
-		var results []*v1pb.QueryResult
-
-		// Process each statement with explain enabled
-		for _, singleSQL := range singleSQLs {
-			startTime := time.Now()
-
-			queryResult, err := func() (*v1pb.QueryResult, error) {
-				// Execute query to get execution plan
-				rows, err := conn.QueryContext(ctx, singleSQL.Text)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to get execution plan")
-				}
-				defer rows.Close()
-
-				// Convert to query result
-				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to convert execution plan results")
-				}
-
-				if err = rows.Err(); err != nil {
-					return nil, errors.Wrap(err, "error after processing rows")
-				}
-
-				return r, nil
-			}()
-
-			stop := false
-			if err != nil {
-				queryResult = &v1pb.QueryResult{
-					Error: err.Error(),
-				}
-				stop = true
-			}
-
-			queryResult.Statement = singleSQL.Text
-			queryResult.Latency = durationpb.New(time.Since(startTime))
-			queryResult.RowsCount = int64(len(queryResult.Rows))
-
-			results = append(results, queryResult)
-			if stop {
-				break
-			}
-		}
-
-		return results, nil, nil
-	}
-
-	// Regular query processing for non-EXPLAIN queries
-	startTime := time.Now()
-	var stmtTypes []stmtType
-	var refinedSQLs []string
-	batchBuf := new(strings.Builder)
-	for _, singleSQL := range singleSQLs {
-		stmtType, err := getStmtType(singleSQL.Text)
-		if err != nil {
-			return nil, nil, err
-		}
-		stmtTypes = append(stmtTypes, stmtType)
-		// Before sending the batch to server, we add the limit clause to the statement.
-		s := singleSQL.Text
-		if queryContext.Limit > 0 {
-			s = base.StatementWithResultLimit(storepb.Engine_MSSQL, s, queryContext.Limit, "")
-		}
-		refinedSQLs = append(refinedSQLs, s)
-		if _, err := batchBuf.WriteString(s); err != nil {
-			return nil, nil, err
-		}
-		if _, err := batchBuf.WriteString("\n"); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	refinedBatch := batchBuf.String()
-	retmsg := &sqlexp.ReturnMessage{}
-	rows, qe := conn.QueryContext(ctx, refinedBatch, retmsg) // NOSONAR(go:S2077) intentional execution of user-authored SQL in SQL Editor
-	if qe != nil {
-		return nil, nil, qe
-	}
-	defer rows.Close()
-	var resultSets []*v1pb.QueryResult
-	var rowCounts []int64
-	inResultSet := false
-	for more := true; more; {
-		switch m := retmsg.Message(ctx).(type) {
-		case sqlexp.MsgNotice:
-			if err := isExitError(err); err != nil {
-				return nil, nil, err
-			}
-		case sqlexp.MsgError:
-			err := m.Error
-			var e gomssqldb.Error
-			if errors.As(err, &e) {
-				err = unpackGoMSSQLDBError(e)
-			}
-			return nil, nil, err
-		case sqlexp.MsgRowsAffected:
-			// The count that closes a result set is the result set's own row count.
-			if !inResultSet {
-				rowCounts = append(rowCounts, m.Count)
-			}
-		case sqlexp.MsgNextResultSet:
-			inResultSet = false
-			more = rows.NextResultSet()
-			if err = rows.Err(); err != nil {
-				return nil, nil, err
-			}
-		case sqlexp.MsgNext:
-			result, err := readResultSet(rows, queryContext)
-			if err != nil {
-				return nil, nil, err
-			}
-			resultSets = append(resultSets, result)
-			inResultSet = true
-		default:
-		}
-	}
-
-	results, procedureResults, err := matchResults(refinedSQLs, stmtTypes, resultSets, rowCounts)
-	if err != nil {
-		return nil, nil, err
-	}
-	if queryContext.MaskingEnabled {
-		for i, t := range stmtTypes {
-			if t&(stmtTypeProcedure|stmtTypeOutput) != 0 {
-				withholdRows(results[i])
-			}
-		}
-		for _, result := range procedureResults {
-			withholdRows(result)
-		}
-	}
-	latency := time.Since(startTime)
-	for _, res := range slices.Concat(results, procedureResults) {
-		res.Latency = durationpb.New(latency)
-	}
-	return results, procedureResults, nil
-}
-
-// readResultSet reads the current result set. The limit rewrite covers only SELECT,
-// so the row limit is applied here as well, for the rows of a procedure call or an
-// OUTPUT clause.
-func readResultSet(rows *sql.Rows, queryContext db.QueryContext) (*v1pb.QueryResult, error) {
-	result, err := util.RowsToLimitedQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize, queryContext.Limit)
-	if err != nil {
-		return nil, err
-	}
-	if result.Error != "" {
-		// The read stopped at the size limit, and the next message only arrives
-		// once the rest of the result set has been read. Past the end of a result
-		// set, Next would read the following one.
-		for rows.Next() {
-		}
-		if err := rows.Err(); err != nil {
-			return nil, err
-		}
-	}
-	return result, nil
-}
-
-// withholdRows empties a result set of a procedure call or an OUTPUT clause,
-// whose rows masking cannot trace to columns.
-func withholdRows(result *v1pb.QueryResult) {
-	if len(result.ColumnNames) == 0 {
+func removeCAFile(path string) {
+	if path == "" {
 		return
 	}
-	result.Rows = nil
-	result.RowsCount = 0
-	result.Error = "Rows returned by a procedure call or an OUTPUT clause are hidden because data masking can't be applied to them."
+	if err := os.Remove(path); err != nil {
+		slog.Warn("failed to delete temporary file", "path", path, log.BBError(err))
+	}
 }
 
-// matchResults gives each statement of a batch its result. SQL Server returns
-// results in statement order but does not say which statement returned each, so
-// a batch whose procedure call returns result sets must have no other statement
-// that returns any. The procedure call's result sets after its first are
-// returned separately.
-func matchResults(statements []string, types []stmtType, resultSets []*v1pb.QueryResult, rowCounts []int64) ([]*v1pb.QueryResult, []*v1pb.QueryResult, error) {
-	var withResultSet, withRowCount, procedures int
-	for _, t := range types {
-		switch {
-		case t&stmtTypeResultSetGenerating != 0:
-			withResultSet++
-		case t&stmtTypeRowCountGenerating != 0:
-			withRowCount++
-		case t&stmtTypeProcedure != 0:
-			procedures++
-		default:
-		}
-	}
-	procedureReturnedSets := len(resultSets) != withResultSet
-	if procedureReturnedSets && (withResultSet > 0 || procedures != 1) {
-		return nil, nil, errors.New("cannot match the batch's result sets to its statements; a procedure call that returns rows must be the only statement in its batch that does, so separate the others with GO")
-	}
-	// SET NOCOUNT and procedure calls change how many row counts arrive, so the
-	// counts are shown only when each belongs to one statement.
-	if len(rowCounts) != withRowCount {
-		rowCounts = nil
-	}
-
-	results := make([]*v1pb.QueryResult, len(types))
-	var procedureResults []*v1pb.QueryResult
-	for i, t := range types {
-		result := &v1pb.QueryResult{}
-		switch {
-		case t&stmtTypeResultSetGenerating != 0:
-			result, resultSets = resultSets[0], resultSets[1:]
-		case t&stmtTypeRowCountGenerating != 0 && len(rowCounts) > 0:
-			result, rowCounts = util.BuildAffectedRowsResult(rowCounts[0], nil), rowCounts[1:]
-		case t&stmtTypeProcedure != 0 && procedureReturnedSets:
-			result, procedureResults = resultSets[0], resultSets[1:]
-			for _, r := range procedureResults {
-				r.Statement = statements[i]
-			}
-		default:
-		}
-		result.Statement = statements[i]
-		results[i] = result
-	}
-	return results, procedureResults, nil
+// Execute runs the script's batches, in one transaction unless the `-- txn-mode`
+// directive turns it off, reporting each step to the task run's log.
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	// -- txn-isolation is parsed and dropped, as it was before: the old driver
+	// opened the transaction with the server's default.
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		ParseTransactionDirective: true,
+		PassCreateDatabase:        true,
+		PassMaxRetries:            true,
+	})
 }
 
-func isExitError(err error) error {
-	if err == nil {
-		return nil
-	}
-	var errState uint8
-	switch sqlError := err.(type) {
-	case gomssqldb.Error:
-		errState = sqlError.State
-	default:
-	}
-	// 127 is the magic exit code
-	if errState == 127 {
-		return errors.Errorf("meet exit error, state: %d", errState)
-	}
-	return nil
+// CountAffectedRows returns the optimizer's estimate for one statement, read
+// from the plan SQL Server prints for it.
+func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
+	return d.Driver.(db.RowEstimator).CountAffectedRows(ctx, statement)
 }

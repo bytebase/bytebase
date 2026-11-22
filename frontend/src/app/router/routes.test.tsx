@@ -1,6 +1,8 @@
 import { matchRoutes, type RouteObject } from "react-router";
 import { describe, expect, it } from "vitest";
 import {
+  PROJECT_V1_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
   WORKSPACE_ROUTE_404,
   WORKSPACE_ROUTE_MCP,
@@ -100,6 +102,26 @@ describe("MCP integration route", () => {
 });
 
 describe("react route table reachability", () => {
+  it("renders Project Home at the project root while preserving the Issues route", () => {
+    const home = matchRoutes(routes, "/projects/orders")?.at(-1)?.route;
+    const issues = matchRoutes(routes, "/projects/orders/issues")?.at(-1)?.route;
+    expect((home?.handle as { name?: string })?.name).toBe(
+      PROJECT_V1_ROUTE_DETAIL
+    );
+    expect(home?.lazy).toBeTypeOf("function");
+    expect(home?.element).toBeUndefined();
+    const homeMatches = matchRoutes(routes, "/projects/orders") ?? [];
+    const homeRoute = buildReactRoute(
+      { pathname: "/projects/orders", search: "", hash: "" },
+      homeMatches.map((match) => ({ handle: match.route.handle })),
+      { projectId: "orders" }
+    );
+    expect(homeRoute.requiredPermissions).toEqual(["bb.projects.get"]);
+    expect((issues?.handle as { name?: string })?.name).toBe(
+      PROJECT_V1_ROUTE_ISSUES
+    );
+  });
+
   it("marks SQL Editor layout leaves with an explicit null element", () => {
     const children = sqlEditorRoutes[0].children ?? [];
 

@@ -15,7 +15,7 @@ func TestParseSnowflakeStatements(t *testing.T) {
 	for i, stmt := range stmts {
 		require.False(t, stmt.Empty, i)
 		require.NotNil(t, stmt.AST, i)
-		node, ok := GetOmniNode(stmt.AST)
+		node, ok := GetNode(stmt.AST)
 		require.True(t, ok, i)
 		require.NotNil(t, node, i)
 		// ASTStartPosition keeps the legacy shape: BaseLine()+1, no column.

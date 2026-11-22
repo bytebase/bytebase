@@ -10,12 +10,7 @@ import type { AppFeatures } from "@/types/appProfile";
 import type { Permission } from "@/types/iam/permission";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import {
-  isValidEnvironmentName,
-  NULL_ENVIRONMENT_NAME,
-  nullEnvironment,
-  unknownEnvironment,
-} from "@/types/v1/environment";
+import { resolveEnvironment } from "@/types/v1/environment";
 import { isValidProjectName } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
 import {
@@ -207,25 +202,10 @@ export function useEnvironmentList() {
 
 export function useEnvironment(name: string | undefined) {
   const environmentList = useEnvironmentList();
-  return useMemo(() => {
-    if (!name || name === NULL_ENVIRONMENT_NAME) {
-      return nullEnvironment();
-    }
-    const environment = environmentList.find((env) => env.name === name);
-    if (environment) {
-      return environment;
-    }
-    if (!isValidEnvironmentName(name)) {
-      return unknownEnvironment();
-    }
-    const id = name.replace(/^environments\//, "");
-    return {
-      ...unknownEnvironment(),
-      id,
-      name,
-      title: id,
-    };
-  }, [environmentList, name]);
+  return useMemo(
+    () => resolveEnvironment(name ?? "", environmentList),
+    [environmentList, name]
+  );
 }
 
 export function usePlanFeature(feature: PlanFeature) {

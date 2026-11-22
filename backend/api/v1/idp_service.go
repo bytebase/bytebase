@@ -90,7 +90,7 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("identity provider must be set"))
 	}
 
-	if !isValidResourceID(req.Msg.IdentityProviderId) {
+	if !common.IsValidResourceID(req.Msg.IdentityProviderId) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid identity provider ID %v", req.Msg.IdentityProviderId))
 	}
 	if strings.ToLower(req.Msg.IdentityProvider.Domain) != req.Msg.IdentityProvider.Domain {

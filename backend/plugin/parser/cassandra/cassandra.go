@@ -26,15 +26,15 @@ func parseCassandraStatements(statement string) ([]base.ParsedStatement, error) 
 			continue
 		}
 
-		omniStmts, omniErr := ParseCQL(stmt.Text)
-		if omniErr != nil {
-			return nil, convertOmniError(omniErr, stmt)
+		parsed, err := ParseCQL(stmt.Text)
+		if err != nil {
+			return nil, convertError(err, stmt)
 		}
 
-		for _, os := range omniStmts {
+		for _, os := range parsed {
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
-				AST: &OmniAST{
+				AST: &AST{
 					Node:          os.AST,
 					Text:          stmt.Text,
 					StartPosition: stmt.Start,
@@ -45,13 +45,13 @@ func parseCassandraStatements(statement string) ([]base.ParsedStatement, error) 
 	return result, nil
 }
 
-func convertOmniError(err error, stmt base.Statement) error {
+func convertError(err error, stmt base.Statement) error {
 	var parseErr *omniparser.ParseError
 	if !errors.As(err, &parseErr) {
 		return err
 	}
 
-	pos := byteOffsetToPosition(stmt.Text, parseErr.Loc.Start)
+	pos := byteOffsetToPosition(stmt.Text, parseErr.Position)
 	if stmt.Start != nil {
 		if pos.Line == 1 {
 			pos.Column += stmt.Start.Column - 1

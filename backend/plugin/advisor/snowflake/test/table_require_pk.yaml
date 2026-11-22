@@ -163,3 +163,77 @@
         line: 4
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE CUSTOMER (ID INT PRIMARY KEY);
+    ALTER TABLE "PUBLIC"."CUSTOMER"
+      DROP PRIMARY KEY;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table "PUBLIC"."CUSTOMER" requires PRIMARY KEY.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE CUSTOMER (ID INT PRIMARY KEY);
+    ALTER TABLE CUSTOMER DROP CONSTRAINT PK_CUSTOMER;
+- statement: |-
+    CREATE TABLE CUSTOMER (ID INT);
+    ALTER TABLE CUSTOMER ADD COLUMN NEW_ID INT PRIMARY KEY;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table CUSTOMER requires PRIMARY KEY.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE CUSTOMER AS SELECT 1 AS ID;
+- statement: |-
+    ALTER TABLE CUSTOMER ADD PRIMARY KEY (ID);
+    ALTER TABLE CUSTOMER DROP PRIMARY KEY;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table CUSTOMER requires PRIMARY KEY.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE CUSTOMER (ID INT);
+    DROP VIEW CUSTOMER;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table CUSTOMER requires PRIMARY KEY.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE ORDERING (ID INT);
+    CREATE TABLE CUSTOMER (ID INT);
+    CREATE TABLE PERSON (ID INT PRIMARY KEY);
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table ORDERING requires PRIMARY KEY.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table CUSTOMER requires PRIMARY KEY.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

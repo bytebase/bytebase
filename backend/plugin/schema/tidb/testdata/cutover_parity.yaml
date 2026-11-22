@@ -1,0 +1,280 @@
+- description: Create tables with foreign key constraints
+  difference: the catalog writes CREATE TABLE without IF NOT EXISTS, marks the primary key with TiDB's /*T![clustered_index] CLUSTERED */ comment, renders a secondary index as ALTER TABLE ... ADD KEY inside the create, drops a column's CHARACTER SET when it matches the table's, states DEFAULT CHARSET, renders int as int (not int(11)) and a NULL default as DEFAULT NULL; the old generator wrote CREATE INDEX statements and no clustered-index comment
+  oldSchema: ""
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username)
+    );
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  legacyExpected: |
+    CREATE TABLE IF NOT EXISTS `posts` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `user_id` int NOT NULL,
+      `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+      `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
+      `published_at` datetime,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB COLLATE=utf8mb4_bin;
+    CREATE INDEX `idx_user_id` ON `posts` (`user_id`);
+    CREATE TABLE IF NOT EXISTS `users` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+      `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_email` (`email`)
+    ) ENGINE=InnoDB COLLATE=utf8mb4_bin;
+    CREATE INDEX `idx_username` ON `users` (`username`);
+    ALTER TABLE `posts` ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+  catalogExpected: |-
+    CREATE TABLE `posts` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `user_id` int NOT NULL,
+      `title` varchar(200) NOT NULL,
+      `content` text DEFAULT NULL,
+      `published_at` datetime DEFAULT NULL,
+      PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
+      KEY `idx_user_id` (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+    CREATE TABLE `users` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `username` varchar(50) NOT NULL,
+      `email` varchar(100) NOT NULL,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
+      KEY `idx_username` (`username`),
+      UNIQUE KEY `uk_email` (`email`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+    ALTER TABLE `posts` ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+- description: Basic table operations with columns, constraints, and indexes
+  difference: the catalog drops each table's foreign keys before the table, writes DROP TABLE without IF EXISTS and DROP INDEX as ALTER TABLE ... DROP INDEX, and separates statements with a newline; the old generator relied on DROP TABLE IF EXISTS alone, wrote DROP INDEX ... ON ..., and left blank lines between statements
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_active BOOLEAN DEFAULT true,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username),
+        INDEX idx_email_active (email, is_active)
+    );
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) > 0)
+    );
+
+    CREATE TABLE comments (
+        id INT NOT NULL AUTO_INCREMENT,
+        post_id INT NOT NULL,
+        user_id INT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_post_user (post_id, user_id),
+        CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+        CONSTRAINT fk_comment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username)
+    );
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  legacyExpected: |+
+    DROP TABLE IF EXISTS `comments`;
+
+    DROP INDEX `idx_email_active` ON `users`;
+
+    ALTER TABLE `users` DROP COLUMN `is_active`;
+
+
+  catalogExpected: |-
+    ALTER TABLE `comments` DROP FOREIGN KEY `fk_comment_post`;
+    ALTER TABLE `comments` DROP FOREIGN KEY `fk_comment_user`;
+    ALTER TABLE `users` DROP INDEX `idx_email_active`;
+    ALTER TABLE `users` DROP COLUMN `is_active`;
+    DROP TABLE `comments`
+- description: Views and stored routines
+  difference: the catalog writes DROP VIEW without IF EXISTS in view order and ends after the last statement; the old generator wrote DROP VIEW IF EXISTS with a trailing blank line and put the CREATE OR REPLACE VIEW pair ahead of the drops
+  oldSchema: |
+    CREATE TABLE sales (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_name VARCHAR(100) NOT NULL,
+        sale_amount DECIMAL(10, 2) NOT NULL,
+        sale_date DATE NOT NULL,
+        PRIMARY KEY (id),
+        INDEX idx_product_date (product_name, sale_date)
+    );
+
+    CREATE VIEW monthly_sales AS
+    SELECT
+        YEAR(sale_date) AS year,
+        MONTH(sale_date) AS month,
+        SUM(sale_amount) AS total_sales
+    FROM sales
+    GROUP BY YEAR(sale_date), MONTH(sale_date);
+
+    CREATE VIEW top_products AS
+    SELECT
+        product_name,
+        COUNT(*) AS sale_count,
+        SUM(sale_amount) AS total_revenue
+    FROM sales
+    GROUP BY product_name
+    ORDER BY SUM(sale_amount) DESC;
+
+    CREATE TABLE sales_reports (
+        id INT NOT NULL AUTO_INCREMENT,
+        report_type VARCHAR(50) NOT NULL,
+        report_data JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_type (report_type)
+    );
+  newSchema: |
+    CREATE TABLE sales (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_name VARCHAR(100) NOT NULL,
+        sale_amount DECIMAL(10, 2) NOT NULL,
+        sale_date DATE NOT NULL,
+        PRIMARY KEY (id),
+        INDEX idx_product_date (product_name, sale_date)
+    );
+  legacyExpected: |+
+    CREATE OR REPLACE VIEW `monthly_sales` AS SELECT 1;
+    CREATE OR REPLACE VIEW `top_products` AS SELECT 1;
+    DROP VIEW IF EXISTS `monthly_sales`;
+
+    DROP VIEW IF EXISTS `top_products`;
+
+    DROP TABLE IF EXISTS `sales_reports`;
+
+  catalogExpected: |-
+    DROP VIEW `monthly_sales`;
+    DROP VIEW `top_products`;
+    DROP TABLE `sales_reports`
+- description: Various ALTER TABLE operations
+  difference: the catalog drops indexes with ALTER TABLE ... DROP INDEX and states DEFAULT NULL on the modified column; the old generator wrote DROP INDEX ... ON ... and left a nullable column's default implicit
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(150) NOT NULL,
+        age INT,
+        phone VARCHAR(20),
+        address TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_email (email),
+        INDEX idx_name (name),
+        INDEX idx_age (age),
+        CONSTRAINT chk_age_positive CHECK (age > 0),
+        CONSTRAINT uk_phone UNIQUE (phone)
+    );
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(50) NOT NULL,
+        email VARCHAR(100),
+        age INT,
+        PRIMARY KEY (id),
+        INDEX idx_email (email)
+    );
+  legacyExpected: |
+    DROP INDEX `idx_age` ON `users`;
+
+    DROP INDEX `idx_name` ON `users`;
+
+    DROP INDEX `uk_phone` ON `users`;
+
+    ALTER TABLE `users` DROP COLUMN `phone`;
+
+    ALTER TABLE `users` DROP COLUMN `address`;
+
+    ALTER TABLE `users` DROP COLUMN `created_at`;
+
+
+    ALTER TABLE `users` MODIFY COLUMN `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;
+    ALTER TABLE `users` MODIFY COLUMN `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+  catalogExpected: |-
+    ALTER TABLE `users` DROP INDEX `idx_age`;
+    ALTER TABLE `users` DROP INDEX `idx_name`;
+    ALTER TABLE `users` DROP INDEX `uk_phone`;
+    ALTER TABLE `users` DROP COLUMN `phone`;
+    ALTER TABLE `users` DROP COLUMN `address`;
+    ALTER TABLE `users` DROP COLUMN `created_at`;
+    ALTER TABLE `users` MODIFY COLUMN `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+    ALTER TABLE `users` MODIFY COLUMN `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL
+- description: Generated columns keep their expression
+  difference: the catalog states DEFAULT CHARSET before the collation where the old generator wrote COLLATE alone, and it ends the statement after the last line instead of leaving a trailing blank line
+  oldSchema: ""
+  newSchema: |
+    CREATE TABLE t (
+        a INT NOT NULL,
+        b INT GENERATED ALWAYS AS (a + 1) STORED,
+        c INT GENERATED ALWAYS AS (a * 2) VIRTUAL
+    );
+  legacyExpected: |
+    CREATE TABLE IF NOT EXISTS `t` (
+      `a` int NOT NULL,
+      `b` int GENERATED ALWAYS AS (`a` + 1) STORED,
+      `c` int GENERATED ALWAYS AS (`a` * 2) VIRTUAL
+    ) ENGINE=InnoDB COLLATE=utf8mb4_bin;
+  catalogExpected: |-
+    CREATE TABLE `t` (
+      `a` int NOT NULL,
+      `b` int GENERATED ALWAYS AS (`a` + 1) STORED,
+      `c` int GENERATED ALWAYS AS (`a` * 2) VIRTUAL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+- description: Reverse of comments with special characters - removing all special character comments
+  difference: the catalog doubles an apostrophe inside a comment (''O''Brien''), writes newlines as \n, and renders AUTO_RANDOM with the shard count TiDB reports (AUTO_RANDOM(5)); the old generator did none of the three, so its CREATE TABLE did not parse
+  oldSchema: |
+    CREATE TABLE test_table (
+        id INT NOT NULL AUTO_INCREMENT,
+        simple_field VARCHAR(100),
+        PRIMARY KEY (id)
+    );
+  newSchema: "CREATE TABLE test_table (\n    id INT NOT NULL AUTO_INCREMENT,\n    simple_field VARCHAR(100),\n    field_with_quotes VARCHAR(100) COMMENT 'Field with \"double\" and ''single'' quotes',\n    field_with_symbols VARCHAR(100) COMMENT 'Field with symbols: @#$%^&*()_+-={}[]|:\";''<>?,./ and more!',\n    field_with_unicode VARCHAR(100) COMMENT 'Unicode test: 你好世界 \U0001F30D café naïve résumé Москва العالم 한국어',\n    field_multiline TEXT COMMENT 'Multi-line comment:\nLine 1 with regular text\nLine 2 with \"quotes\" and symbols @#$\nLine 3 with unicode: 测试 \U0001F680 café\nFinal line with mixed content',\n    field_with_sql VARCHAR(100) COMMENT 'Comment with SQL-like content: SELECT * FROM table WHERE id = ''123'' AND name LIKE \"%test%\"',\n    field_with_html VARCHAR(100) COMMENT 'HTML content: <div class=\"test\">Hello & \"World\"</div> <!-- comment -->',\n    field_with_json VARCHAR(100) COMMENT 'JSON example: {\"name\": \"test\", \"value\": 123, \"nested\": {\"key\": \"value with spaces\"}}',\n    field_with_escape VARCHAR(100) COMMENT 'Escape sequences: \\n \\t \\r \" '' \\\\',\n    PRIMARY KEY (id)\n) COMMENT = 'Table with \"double quotes\" and ''single quotes'' in comment';\n\nCREATE TABLE special_comments_table (\n    id BIGINT NOT NULL AUTO_RANDOM COMMENT 'ID with \"quotes\", symbols @#$, unicode 测试\U0001F31F, and\nmulti-line\ncontent',\n    data_field JSON COMMENT 'Updated JSON field: {\"new\": \"structure\", \"with\": [\"array\", \"of\", \"strings\"], \"escapes\": \"\\n\\t\\r\"}',\n    html_field TEXT,\n    sql_field VARCHAR(255) COMMENT 'SQL patterns: SELECT * FROM users WHERE name = ''O''Brien'' AND age > 21',\n    unicode_field VARCHAR(200) COMMENT '多语言支持: English, 中文, العربية, Русский, 日本語, 한국어, Français, Español',\n    symbols_field VARCHAR(100) COMMENT 'All symbols: !@#$%^&*()_+-={}[]|:\";''<>?,./ plus tab    and newline\ntest',\n    url_field VARCHAR(300) COMMENT 'URL with params: https://example.com/path?param1=value1&param2=\"quoted value\"&param3=50%+discount',\n    regex_field VARCHAR(150) COMMENT 'Regex pattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}$ for email validation',\n    PRIMARY KEY (id),\n    INDEX idx_unicode (unicode_field)\n) COMMENT = 'Special characters test table with:\n- Double quotes: \"test\"\n- Single quotes: ''test''\n- Unicode: 特殊字符测试表 \U0001F3AF\n- Symbols: @#$%^&*()\n- HTML: <div>content</div>\n- JSON: {\"key\": \"value\"}\n- URLs: https://example.com\n- Multi-line content with various encodings';\n"
+  legacyExpected: "CREATE TABLE IF NOT EXISTS `special_comments_table` (\n  `id` bigint NOT NULL /*T![auto_rand] AUTO_RANDOM */ COMMENT 'ID with \"quotes\", symbols @#$, unicode 测试\U0001F31F, and\nmulti-line\ncontent',\n  `data_field` json COMMENT 'Updated JSON field: {\"new\": \"structure\", \"with\": [\"array\", \"of\", \"strings\"], \"escapes\": \"\n\t\r\"}',\n  `html_field` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,\n  `sql_field` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'SQL patterns: SELECT * FROM users WHERE name = 'O'Brien' AND age > 21',\n  `unicode_field` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT '多语言支持: English, 中文, العربية, Русский, 日本語, 한국어, Français, Español',\n  `symbols_field` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'All symbols: !@#$%^&*()_+-={}[]|:\";'<>?,./ plus tab    and newline\ntest',\n  `url_field` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'URL with params: https://example.com/path?param1=value1&param2=\"quoted value\"&param3=50%+discount',\n  `regex_field` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Regex pattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$ for email validation',\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB COLLATE=utf8mb4_bin COMMENT='Special characters test table with:\n- Double quotes: \"test\"\n- Single quotes: 'test'\n- Unicode: 特殊字符测试表 \U0001F3AF\n- Symbols: @#$%^&*()\n- HTML: <div>content</div>\n- JSON: {\"key\": \"value\"}\n- URLs: https://example.com\n- Multi-line content with various encodings';\nCREATE INDEX `idx_unicode` ON `special_comments_table` (`unicode_field`);\nALTER TABLE `test_table` COMMENT = 'Table with \"double quotes\" and 'single quotes' in comment';\n\nALTER TABLE `test_table` ADD COLUMN `field_with_quotes` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Field with \"double\" and 'single' quotes';\nALTER TABLE `test_table` ADD COLUMN `field_with_symbols` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Field with symbols: @#$%^&*()_+-={}[]|:\";'<>?,./ and more!';\nALTER TABLE `test_table` ADD COLUMN `field_with_unicode` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Unicode test: 你好世界 \U0001F30D café naïve résumé Москва العالم 한국어';\nALTER TABLE `test_table` ADD COLUMN `field_multiline` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Multi-line comment:\nLine 1 with regular text\nLine 2 with \"quotes\" and symbols @#$\nLine 3 with unicode: 测试 \U0001F680 café\nFinal line with mixed content';\nALTER TABLE `test_table` ADD COLUMN `field_with_sql` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Comment with SQL-like content: SELECT * FROM table WHERE id = '123' AND name LIKE \"%test%\"';\nALTER TABLE `test_table` ADD COLUMN `field_with_html` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'HTML content: <div class=\"test\">Hello & \"World\"</div> <!-- comment -->';\nALTER TABLE `test_table` ADD COLUMN `field_with_json` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'JSON example: {\"name\": \"test\", \"value\": 123, \"nested\": {\"key\": \"value with spaces\"}}';\nALTER TABLE `test_table` ADD COLUMN `field_with_escape` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Escape sequences: \n \t \r \" ' \\';\n"
+  catalogExpected: "CREATE TABLE `special_comments_table` (\n  `id` bigint NOT NULL /*T![auto_rand] AUTO_RANDOM(5) */ COMMENT 'ID with \"quotes\", symbols @#$, unicode 测试\U0001F31F, and\\nmulti-line\\ncontent',\n  `data_field` json DEFAULT NULL COMMENT 'Updated JSON field: {\"new\": \"structure\", \"with\": [\"array\", \"of\", \"strings\"], \"escapes\": \"\\n\t\\r\"}',\n  `html_field` text DEFAULT NULL,\n  `sql_field` varchar(255) DEFAULT NULL COMMENT 'SQL patterns: SELECT * FROM users WHERE name = ''O''Brien'' AND age > 21',\n  `unicode_field` varchar(200) DEFAULT NULL COMMENT '多语言支持: English, 中文, العربية, Русский, 日本語, 한국어, Français, Español',\n  `symbols_field` varchar(100) DEFAULT NULL COMMENT 'All symbols: !@#$%^&*()_+-={}[]|:\";''<>?,./ plus tab    and newline\\ntest',\n  `url_field` varchar(300) DEFAULT NULL COMMENT 'URL with params: https://example.com/path?param1=value1&param2=\"quoted value\"&param3=50%+discount',\n  `regex_field` varchar(150) DEFAULT NULL COMMENT 'Regex pattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}$ for email validation',\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,\n  KEY `idx_unicode` (`unicode_field`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='Special characters test table with:\\n- Double quotes: \"test\"\\n- Single quotes: ''test''\\n- Unicode: 特殊字符测试表 \U0001F3AF\\n- Symbols: @#$%^&*()\\n- HTML: <div>content</div>\\n- JSON: {\"key\": \"value\"}\\n- URLs: https://example.com\\n- Multi-line content with various encodings';\nALTER TABLE `test_table` COMMENT='Table with \"double quotes\" and ''single quotes'' in comment';\nALTER TABLE `test_table` ADD COLUMN `field_with_quotes` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Field with \"double\" and ''single'' quotes' AFTER `simple_field`;\nALTER TABLE `test_table` ADD COLUMN `field_with_symbols` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Field with symbols: @#$%^&*()_+-={}[]|:\";''<>?,./ and more!' AFTER `field_with_quotes`;\nALTER TABLE `test_table` ADD COLUMN `field_with_unicode` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Unicode test: 你好世界 \U0001F30D café naïve résumé Москва العالم 한국어' AFTER `field_with_symbols`;\nALTER TABLE `test_table` ADD COLUMN `field_multiline` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Multi-line comment:\\nLine 1 with regular text\\nLine 2 with \"quotes\" and symbols @#$\\nLine 3 with unicode: 测试 \U0001F680 café\\nFinal line with mixed content' AFTER `field_with_unicode`;\nALTER TABLE `test_table` ADD COLUMN `field_with_sql` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Comment with SQL-like content: SELECT * FROM table WHERE id = ''123'' AND name LIKE \"%test%\"' AFTER `field_multiline`;\nALTER TABLE `test_table` ADD COLUMN `field_with_html` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'HTML content: <div class=\"test\">Hello & \"World\"</div> <!-- comment -->' AFTER `field_with_sql`;\nALTER TABLE `test_table` ADD COLUMN `field_with_json` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'JSON example: {\"name\": \"test\", \"value\": 123, \"nested\": {\"key\": \"value with spaces\"}}' AFTER `field_with_html`;\nALTER TABLE `test_table` ADD COLUMN `field_with_escape` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Escape sequences: \\n \t \\r \" '' \\\\' AFTER `field_with_json`"

@@ -257,6 +257,12 @@ enum StatementType {
   UPDATE = 61;
   DELETE = 62;
   MERGE = 63;
+
+  // A statement that runs procedural or dynamic code: a procedure call (CALL,
+  // T-SQL EXEC), a prepared or dynamic statement (EXECUTE, EXECUTE IMMEDIATE,
+  // EXEC of a SQL string), or an anonymous block (PostgreSQL DO, Oracle
+  // BEGIN ... END).
+  EXECUTE = 70;
 }
 
 // PermissionDeniedDetail provides structured information about permission failures.
@@ -268,4 +274,14 @@ message PermissionDeniedDetail {
   repeated string required_permissions = 2;
   // The resources the user was trying to access.
   repeated string resources = 3;
+}
+
+// Where an export goes. Values are added as destinations are supported.
+enum ExportDestination {
+  // Treated as DOWNLOAD.
+  EXPORT_DESTINATION_UNSPECIFIED = 0;
+  // Return the export in the response.
+  DOWNLOAD = 1;
+  // Upload the export to the project's SharePoint export destination.
+  SHAREPOINT = 2;
 }

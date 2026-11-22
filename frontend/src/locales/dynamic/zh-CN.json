@@ -33,6 +33,10 @@
         "desc": "获得 AI 驱动的查询建议和索引建议。",
         "title": "AI 查询建议"
       },
+      "FEATURE_AI_SQL_REVIEW": {
+        "desc": "AI 模型按你的策略审核每个工单的 SQL，并就发现的风险发表评论。",
+        "title": "AI SQL 审核"
+      },
       "FEATURE_API_INTEGRATION_GUIDANCE": {
         "desc": "API 集成的文档和指南。",
         "title": "API 集成指南"
@@ -272,6 +276,10 @@
       "FEATURE_SCIM": {
         "desc": "跨域身份管理系统支持。",
         "title": "SCIM"
+      },
+      "FEATURE_SHAREPOINT_EXPORT": {
+        "desc": "将 SQL 编辑器的导出文件上传到 SharePoint 文档库。",
+        "title": "SharePoint 导出"
       },
       "FEATURE_SQL_EDITOR_ADMIN_MODE": {
         "desc": "在 SQL 编辑器中访问管理功能。",

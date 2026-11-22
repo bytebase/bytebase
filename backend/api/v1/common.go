@@ -29,9 +29,8 @@ const (
 )
 
 var (
-	resourceIDMatcher = regexp.MustCompile("^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$")
-	deletePatch       = true
-	undeletePatch     = false
+	deletePatch   = true
+	undeletePatch = false
 )
 
 func convertDeletedToState(deleted bool) v1pb.State {
@@ -39,10 +38,6 @@ func convertDeletedToState(deleted bool) v1pb.State {
 		return v1pb.State_DELETED
 	}
 	return v1pb.State_ACTIVE
-}
-
-func isValidResourceID(resourceID string) bool {
-	return resourceIDMatcher.MatchString(resourceID)
 }
 
 // validateLabels validates labels according to the requirements.

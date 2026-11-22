@@ -49,12 +49,12 @@ func TestGetStatementType(t *testing.T) {
 	}
 }
 
-func TestGetStatementTypeUsesOmniAST(t *testing.T) {
+func TestGetStatementTypeUsesAST(t *testing.T) {
 	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, "CREATE SEQUENCE seq START WITH 1;")
 	require.NoError(t, err)
 	require.Len(t, stmts, 1)
 
-	_, ok := stmts[0].AST.(*OmniAST)
+	_, ok := stmts[0].AST.(*AST)
 	require.True(t, ok)
 
 	sqlTypes, err := GetStatementTypes(base.ExtractASTs(stmts))

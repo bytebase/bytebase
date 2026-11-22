@@ -43,6 +43,9 @@ export function AccessPane() {
     (state) => state.searchMyAccessGrants
   );
   const fetchDatabases = useAppStore((state) => state.fetchDatabases);
+  const batchGetOrFetchDatabases = useAppStore(
+    (state) => state.batchGetOrFetchDatabases
+  );
   const getOrFetchDatabaseByName = useAppStore(
     (state) => state.getOrFetchDatabaseByName
   );
@@ -256,12 +259,27 @@ export function AccessPane() {
           setAccessGrantList((prev) => [...prev, ...response.accessGrants]);
         }
         setNextPageToken(response.nextPageToken);
+        const visibleTargets = response.accessGrants.flatMap((grant) =>
+          grant.targets.slice(0, 2)
+        );
+        if (visibleTargets.length > 0) {
+          void batchGetOrFetchDatabases(visibleTargets, true).catch(() => {
+            // The resource path remains a readable fallback for targets that
+            // no longer exist or cannot be loaded.
+          });
+        }
         await fetchIssuesForPendingGrants(response.accessGrants);
       } finally {
         setLoading(false);
       }
     },
-    [projectName, filter, searchMyAccessGrants, fetchIssuesForPendingGrants]
+    [
+      projectName,
+      filter,
+      searchMyAccessGrants,
+      batchGetOrFetchDatabases,
+      fetchIssuesForPendingGrants,
+    ]
   );
 
   // Re-fetch when project or filter changes

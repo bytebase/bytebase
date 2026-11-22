@@ -4,6 +4,7 @@ package common
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -12,6 +13,15 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
+
+var resourceIDPattern = regexp.MustCompile("^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$")
+
+// IsValidResourceID reports whether resourceID can name a new resource, such
+// as an instance or a project: 1 to 63 lowercase letters, digits and dashes,
+// starting with a letter and not ending with a dash.
+func IsValidResourceID(resourceID string) bool {
+	return resourceIDPattern.MatchString(resourceID)
+}
 
 // nolint:revive
 const (
@@ -41,7 +51,6 @@ const (
 	ChangelogPrefix            = "changelogs/"
 	IssueNamePrefix            = "issues/"
 	IssueCommentNamePrefix     = "issueComments/"
-	ReviewRunNamePrefix        = "reviewRuns/"
 	PipelineNamePrefix         = "pipelines/"
 	LogNamePrefix              = "logs/"
 	BranchPrefix               = "branches/"
@@ -62,6 +71,7 @@ const (
 	SchemaStringSuffix = "/schemaString"
 	MetadataSuffix     = "/metadata"
 	CatalogSuffix      = "/catalog"
+	ReviewRunSuffix    = "/reviewRun"
 
 	UserBindingPrefix             = "user:"
 	GroupBindingPrefix            = "group:"
@@ -117,15 +127,6 @@ func GetProjectIDQueryHistoryID(name string) (string, string, error) {
 // FormatAccessGrant returns the resource name for an access grant.
 func FormatAccessGrant(projectID string, id string) string {
 	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), AccessGrantNamePrefix, id)
-}
-
-// TrimSuffixAndGetInstanceDatabaseID trims the suffix from the name and returns the instance ID and database ID.
-func TrimSuffixAndGetInstanceDatabaseID(name string, suffix string) (string, string, error) {
-	trimmed, err := TrimSuffix(name, suffix)
-	if err != nil {
-		return "", "", err
-	}
-	return GetInstanceDatabaseID(trimmed)
 }
 
 // GetEnvironmentID returns the environment ID from a resource name.
@@ -309,18 +310,14 @@ func GetProjectIDIssueUIDIssueCommentID(name string) (string, int64, string, err
 	return tokens[0], issueUID, tokens[2], nil
 }
 
-// GetProjectIDIssueUIDReviewRunID returns the project ID, issue UID, and
-// review run ID from a resource name.
-func GetProjectIDIssueUIDReviewRunID(name string) (string, int64, string, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix, ReviewRunNamePrefix)
-	if err != nil {
-		return "", 0, "", err
+// GetProjectIDIssueUIDFromReviewRun returns the project ID and issue UID from
+// the name of an issue's review run.
+func GetProjectIDIssueUIDFromReviewRun(name string) (string, int64, error) {
+	issueName, ok := strings.CutSuffix(name, ReviewRunSuffix)
+	if !ok {
+		return "", 0, errors.Errorf("invalid review run name %q", name)
 	}
-	issueUID, err := strconv.ParseInt(tokens[1], 10, 64)
-	if err != nil {
-		return "", 0, "", errors.Errorf("invalid issue ID %q", tokens[1])
-	}
-	return tokens[0], issueUID, tokens[2], nil
+	return GetProjectIDIssueUID(issueName)
 }
 
 // GetProjectIDPlanID returns the project ID and plan ID from a resource name.
@@ -334,23 +331,6 @@ func GetProjectIDPlanID(name string) (string, int64, error) {
 		return "", 0, errors.Errorf("invalid plan ID %q", tokens[1])
 	}
 	return tokens[0], planID, nil
-}
-
-// GetProjectIDPlanIDPlanCheckRunID returns the project ID, plan ID and plan check run ID from a resource name.
-func GetProjectIDPlanIDPlanCheckRunID(name string) (string, int64, int64, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, PlanPrefix, PlanCheckRunPrefix)
-	if err != nil {
-		return "", 0, 0, err
-	}
-	planID, err := strconv.ParseInt(tokens[1], 10, 64)
-	if err != nil {
-		return "", 0, 0, errors.Errorf("invalid plan ID %q", tokens[1])
-	}
-	planCheckRunID, err := strconv.ParseInt(tokens[2], 10, 64)
-	if err != nil {
-		return "", 0, 0, errors.Errorf("invalid plan check run ID %q", tokens[2])
-	}
-	return tokens[0], planID, planCheckRunID, nil
 }
 
 // GetProjectIDPlanIDFromPlanCheckRun returns the project ID and plan ID from a plan check run singleton resource name.
@@ -719,10 +699,9 @@ func FormatSheet(projectID string, sheetSha256 string) string {
 	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), SheetIDPrefix, sheetSha256)
 }
 
-// FormatReviewRun formats a review run resource name. The review run ID is
-// the reviewer: "rule" or "ai".
-func FormatReviewRun(projectID string, issueUID int64, reviewRunID string) string {
-	return fmt.Sprintf("%s/%s%s", FormatIssue(projectID, issueUID), ReviewRunNamePrefix, reviewRunID)
+// FormatReviewRun formats the name of an issue's review run.
+func FormatReviewRun(projectID string, issueUID int64) string {
+	return FormatIssue(projectID, issueUID) + ReviewRunSuffix
 }
 
 // FormatIssueComment formats an issue comment resource name under its issue.
@@ -799,10 +778,6 @@ func FormatPlan(projectID string, planUID int64) string {
 // Format: projects/{project}/plans/{plan}/planCheckRun
 func FormatPlanCheckRun(projectID string, planUID int64) string {
 	return fmt.Sprintf("%s/planCheckRun", FormatPlan(projectID, planUID))
-}
-
-func FormatSpec(projectID string, planUID int64, specID string) string {
-	return fmt.Sprintf("%s/%s%s", FormatPlan(projectID, planUID), SpecPrefix, specID)
 }
 
 func GetPolicyResourceTypeAndResource(requestName string) (storepb.Policy_Resource, *string, error) {

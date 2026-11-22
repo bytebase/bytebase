@@ -1,0 +1,64 @@
+- statement: CREATE TABLE t(a int);
+- statement: CREATE TABLE t(a int auto_increment) auto_increment = 20;
+- statement: |-
+    CREATE TABLE t1(a int auto_increment) auto_increment = 20;
+    CREATE TABLE t2(a int auto_increment) auto_increment = 2;
+  want:
+    - status: 2
+      code: 416
+      title: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
+      content: The initial auto-increment value in table `t2` is 2, which doesn't equal 20
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int auto_increment) auto_increment = 20;
+    ALTER TABLE t COMMENT 'table t';
+    ALTER TABLE t AUTO_INCREMENT = 20;
+    ALTER TABLE t AUTO_INCREMENT = 100;
+  want:
+    - status: 2
+      code: 416
+      title: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
+      content: The initial auto-increment value in table `t` is 100, which doesn't equal 20
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: CREATE TABLE db.t(a INT) ENGINE = InnoDB auto_increment 5;
+  want:
+    - status: 2
+      code: 416
+      title: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
+      content: The initial auto-increment value in table `t` is 5, which doesn't equal 20
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE t
+      ADD COLUMN b INT,
+      AUTO_INCREMENT = 99;
+  want:
+    - status: 2
+      code: 416
+      title: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
+      content: The initial auto-increment value in table `t` is 99, which doesn't equal 20
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a INT) AUTO_INCREMENT = 20;
+    ALTER TABLE t AUTO_INCREMENT = 0, ENGINE = InnoDB;
+  want:
+    - status: 2
+      code: 416
+      title: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
+      content: The initial auto-increment value in table `t` is 0, which doesn't equal 20
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE p() BEGIN ALTER TABLE t AUTO_INCREMENT = 5; END;

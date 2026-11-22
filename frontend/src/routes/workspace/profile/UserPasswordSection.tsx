@@ -172,7 +172,7 @@ export function UserPasswordSection({
               autoComplete="new-password"
               placeholder={t("common.sensitive-placeholder")}
               disabled={disabled}
-              className={passwordHint ? "border-error focus:ring-error" : ""}
+              aria-invalid={passwordHint || undefined}
               onChange={(e) => onPasswordChange(e.target.value)}
             />
             <Button
@@ -207,9 +207,7 @@ export function UserPasswordSection({
               autoComplete="new-password"
               placeholder={t("settings.profile.password-confirm-placeholder")}
               disabled={disabled}
-              className={
-                passwordMismatch ? "border-error focus:ring-error" : ""
-              }
+              aria-invalid={passwordMismatch || undefined}
               onChange={(e) => onPasswordConfirmChange(e.target.value)}
             />
             <Button

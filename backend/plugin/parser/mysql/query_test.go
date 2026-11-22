@@ -62,7 +62,7 @@ func TestValidateSQLForEditor(t *testing.T) {
 		},
 		{
 			statement:   `explain    analyze select * from t`,
-			valid:       false,
+			valid:       true,
 			gotAllQuery: true,
 		},
 		{
@@ -137,6 +137,67 @@ func TestValidateSQLForEditor(t *testing.T) {
 				require.Equal(t, test.valid, gotValid, test.statement)
 				require.Equal(t, test.gotAllQuery, gotAllQuery, test.statement)
 			}
+		})
+	}
+}
+
+// EXPLAIN ANALYZE executes what it wraps, unlike a plain EXPLAIN, so it is
+// allowed over a read and refused over everything else. Before this it was
+// refused outright, which cost the legitimate case: profiling a SELECT.
+func TestValidateQueryExplainAnalyze(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		statement string
+		wantValid bool
+	}{
+		{"a plain EXPLAIN plans without running", "EXPLAIN SELECT count(*) FROM t WHERE a = 1", true},
+		{"EXPLAIN ANALYZE over a read", "EXPLAIN ANALYZE SELECT count(*) FROM t WHERE a = 1", true},
+		{"EXPLAIN ANALYZE over a set operation", "EXPLAIN ANALYZE SELECT a FROM t UNION SELECT a FROM s", true},
+		{"EXPLAIN ANALYZE really deletes", "EXPLAIN ANALYZE DELETE FROM t WHERE a = 1", false},
+		{"EXPLAIN ANALYZE really inserts", "EXPLAIN ANALYZE INSERT INTO t SELECT a FROM s", false},
+		{"EXPLAIN ANALYZE really updates", "EXPLAIN ANALYZE UPDATE t SET a = 1", false},
+		{"a plain EXPLAIN of a DML still only plans", "EXPLAIN DELETE FROM t WHERE a = 1", true},
+		{"EXPLAIN ANALYZE over a SELECT that writes a file", "EXPLAIN ANALYZE SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			gotValid, _, err := validateQuery(tc.statement)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantValid, gotValid, tc.statement)
+		})
+	}
+}
+
+// An export under EXPLAIN is still an export request: the editor must not label
+// as a read what it refuses when asked directly. The reads beneath keep the
+// gate from being satisfied by refusing every EXPLAIN.
+func TestValidateQueryExportGate(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		statement string
+		wantValid bool
+	}{
+		{"a bare export", "SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+		{"a bare dump", "SELECT a FROM t INTO DUMPFILE '/tmp/x'", false},
+		{"an export on the second arm", "SELECT 1 UNION SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+		{"an export in a braced arm", "(SELECT a FROM t INTO OUTFILE '/tmp/x') UNION (SELECT 1)", false},
+		{"an export inside a subquery", "SELECT * FROM (SELECT a FROM t INTO OUTFILE '/tmp/x') y", false},
+		{"an export under a plain EXPLAIN", "EXPLAIN SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+		{"a dump under a plain EXPLAIN", "EXPLAIN SELECT a FROM t INTO DUMPFILE '/tmp/x'", false},
+		{"an export on an arm under a plain EXPLAIN", "EXPLAIN SELECT 1 UNION SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+		{"an export under EXPLAIN ANALYZE", "EXPLAIN ANALYZE SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+
+		{"a set operation that exports nothing", "SELECT 1 UNION SELECT 2", true},
+		{"EXPLAIN ANALYZE over a set operation", "EXPLAIN ANALYZE SELECT 1 UNION SELECT 2", true},
+		{"a variable assignment writes no file", "SELECT a FROM t INTO @v", true},
+		{"a variable assignment under a plain EXPLAIN only plans", "EXPLAIN SELECT a FROM t INTO @v", true},
+		{"a variable assignment under EXPLAIN ANALYZE really assigns", "EXPLAIN ANALYZE SELECT a FROM t INTO @v", false},
+		{"a variable assignment on an arm under EXPLAIN ANALYZE", "EXPLAIN ANALYZE SELECT 1 UNION SELECT a FROM t INTO @v", false},
+		{"the clause named in a string literal", "SELECT 'INTO OUTFILE' FROM t", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			gotValid, _, err := validateQuery(tc.statement)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantValid, gotValid, tc.statement)
 		})
 	}
 }

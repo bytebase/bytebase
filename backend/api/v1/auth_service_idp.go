@@ -10,6 +10,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -276,55 +277,61 @@ func (s *AuthService) ldapUserInfo(ctx context.Context, idpID string, idp *store
 	return userInfo, nil
 }
 
-// syncUserGroups syncs the user groups with the given groups.
-// The given groups are the groups that the user belongs to in the identity provider.
-// Supported groups format: ["group1", "group2", ...], ["dev@bb.com", ...]
+// syncUserGroups makes the user's group memberships follow the groups claim
+// from the identity provider. Supported claim formats: ["group1", "group2", ...], ["dev@bb.com", ...]
 func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessage, workspaceID string, groups []string) error {
 	bbGroups, err := s.store.ListGroups(ctx, &store.FindGroupMessage{Workspace: workspaceID})
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list groups"))
 	}
 
-	groupChanged := false
-	for _, bbGroup := range bbGroups {
-		var isMember bool
-		for _, group := range groups {
-			if bbGroup.Email == group || bbGroup.Title == group {
-				isMember = true
-				break
-			}
-		}
-		isBBGroupMember := getMemberInGroup(user, bbGroup) != nil
-		if isMember != isBBGroupMember {
-			if isMember {
-				// Add the user to the group.
-				bbGroup.Payload.Members = append(bbGroup.Payload.Members, &storepb.GroupMember{
-					Role:   storepb.GroupMember_MEMBER,
-					Member: common.FormatUserEmail(user.Email),
-				})
-			} else {
-				// Remove the user from the group.
-				bbGroup.Payload.Members = slices.DeleteFunc(bbGroup.Payload.Members, func(member *storepb.GroupMember) bool {
-					return member.Member == common.FormatUserEmail(user.Email)
-				})
-			}
-			if _, err := s.store.UpdateGroup(ctx, &store.UpdateGroupMessage{
-				ID:        bbGroup.ID,
-				Workspace: bbGroup.Workspace,
-				Payload:   bbGroup.Payload,
-			}); err != nil {
-				return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update group %q", bbGroup.Email))
-			}
-			groupChanged = true
+	patches := groupPatchesFromClaim(user, bbGroups, groups)
+	for _, patch := range patches {
+		if _, err := s.store.UpdateGroup(ctx, patch); err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update group %q", patch.ID))
 		}
 	}
 
-	// Reload IAM cache if group membership changed.
-	if groupChanged {
+	if len(patches) > 0 {
 		if err := s.iamManager.ReloadCache(ctx); err != nil {
 			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to reload IAM cache"))
 		}
 	}
-
 	return nil
+}
+
+// groupPatchesFromClaim returns the member updates that make the user's
+// memberships match the groups claim, which names groups by title or email.
+// Groups with a source are owned by SCIM, so the claim never changes them.
+func groupPatchesFromClaim(user *store.UserMessage, bbGroups []*store.GroupMessage, claim []string) []*store.UpdateGroupMessage {
+	userMember := common.FormatUserEmail(user.Email)
+	var patches []*store.UpdateGroupMessage
+	for _, bbGroup := range bbGroups {
+		if bbGroup.Payload.GetSource() != "" {
+			continue
+		}
+		inClaim := slices.ContainsFunc(claim, func(group string) bool {
+			return bbGroup.Email == group || bbGroup.Title == group
+		})
+		if inClaim == (getMemberInGroup(user, bbGroup) != nil) {
+			continue
+		}
+		payload := proto.CloneOf(bbGroup.Payload)
+		if inClaim {
+			payload.Members = append(payload.Members, &storepb.GroupMember{
+				Role:   storepb.GroupMember_MEMBER,
+				Member: userMember,
+			})
+		} else {
+			payload.Members = slices.DeleteFunc(payload.Members, func(member *storepb.GroupMember) bool {
+				return member.Member == userMember
+			})
+		}
+		patches = append(patches, &store.UpdateGroupMessage{
+			ID:        bbGroup.ID,
+			Workspace: bbGroup.Workspace,
+			Payload:   payload,
+		})
+	}
+	return patches
 }

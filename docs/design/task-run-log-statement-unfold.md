@@ -1,6 +1,6 @@
 # Task-run log — a statement is a payload, not a line
 
-Status: proposal · 2026-09-11 (revised 2026-09-16)
+Status: proposal · 2026-09-11 (revised 2026-09-21)
 
 The task-run log cuts every executed statement to 80 characters and appends `...`. For the
 statements customers actually run — SDL, or a `CREATE TABLE` with a few hundred columns — the row
@@ -80,7 +80,8 @@ What follows from it:
   the only thing that knows how much fits.
 - The line is the news: the error when the command failed, the statement when it did not.
 - Unfolding always reveals the statement, and so does copy. One meaning per control, on every row.
-- Whether a row starts unfolded says what the row is *for*, not how long it is.
+- Nothing starts unfolded. The row that explains the outcome is brought into view; opening it is
+  the reader's move, and a toggle never moves the line that was clicked.
 
 ## Decisions
 
@@ -92,7 +93,7 @@ key: string;          // the entry's identity, not its position — see D14
 detail: string;       // the text the row shows
 statement?: string;   // the statement this row ran, as the sheet stored it
 error?: string;       // the error the command returned
-defaultOpen?: boolean // this is the row D4 picked; the mark D13 and D14 speak of
+marked?: boolean      // the row D4 picked: the failure D13 brings into view
 ```
 
 `key` is listed because its contents change even though the field does not. It is the only
@@ -106,18 +107,17 @@ types that carry status words rather than payloads (`BEGIN`, `Completed`, retry 
 `detail` alone, which is what makes `statement` and `error` the test for both controls below.
 
 A failure whose statement could not be recovered — no `statement`, no usable `range`, or a sheet
-that came back partial — still gets marked, because the mark's first job is to say *this is the row
-that explains the outcome*, and D13 has to render and scroll to it or the error itself stays hidden
-behind *Load more*. What it does not get is a taller section: D8's cap answers to a block actually
-being on screen, not to the mark, and there is no block here. Opening such a row is a no-op, which
-is why D5 gives it no control to open with.
+that came back partial — still gets marked, because the mark's job is to say *this is the row that
+explains the outcome*, and D13 has to render and scroll to it or the error itself stays hidden
+behind *Load more*. What it does not get is a fold control: there is no block to reveal, so D5
+gives it nothing to open with.
 
-`defaultOpen` is the fourth, and it exists because the view cannot work it out. D4's pick is made
+`marked` is the fourth, and it exists because the view cannot work it out. D4's pick is made
 across a whole execution context, and `SectionContent` sees one section at a time; nor can it infer
-the pick from `error`, since every transient failed attempt carries one and opening all of them is
-the thing D4 exists to prevent. So `buildSectionsFromEntries` decides and marks the row it chose,
-and everything downstream — D13's render window, D14's derived open set — reads that flag rather
-than re-deriving a judgement it lacks the inputs for.
+the pick from `error`, since every transient failed attempt carries one and surfacing the first of
+them is the thing D4 exists to prevent. So `buildSectionsFromEntries` decides and marks the row it
+chose, and D13's render window and scroll read that flag rather than re-deriving a judgement they
+lack the inputs for.
 
 **D2 · Truncation moves to CSS.** The row's line renders under `truncate`; the 80-character
 `substring` is deleted. A wide screen shows more of the statement and a narrow sheet shows less,
@@ -132,50 +132,57 @@ never anything else. Where it sits follows what it copies, because position is w
 actually reads: in the row's right-hand cluster while the statement *is* the line, and in the
 top-right corner of the unfolded block once the statement is a block, which is the placement every
 code block on GitHub has already trained people to expect. A failed row's line is the error, so no
-copy button appears on it; that row's copy is in its block, which D4 opens by default. The error
+copy button appears on it; that row's copy is in its block, one click on the row away. The error
 gets none: wanting an error in the clipboard is rare next to wanting the SQL, and it does not
 justify a second control on the densest surface in the product — it stays selectable text, as it
 is today. A row whose statement could not be recovered at all (no `statement`, no usable `range`,
 or a sheet that came back partial) gets no copy button rather than a fallback to something else,
 so the control never means two things. One meaning, one place: copy is the SQL, beside the SQL.
 
-**D4 · What unfolds by default says what the row is for.** A successful statement identifies
-*which* command ran; the reader scanning for the failure does not want it open, so it starts
-folded. A failed command is what the log was opened for, so it starts **unfolded**, with the error
-as its line and the statement that failed in the block beneath — but only the one that explains the
-outcome, which is not the same as every failed row. A run can hold several: on a lock timeout the
+**D4 · Nothing unfolds by default; the failure that explains the outcome is marked.** Every row
+starts folded, the failed one included. An earlier revision opened the failed command by default,
+on the reasoning that it is what the log was opened for, and in use that was wrong twice over. The
+pages that embed the viewer already show the failed task's statement directly above the log, so the
+block repeated it. And it made the reader's first act on a failed log a *fold* — of a row they had
+never opened, in a box whose cap D8 had raised and whose scroll D13 had moved — which is exactly the
+state in which a fold displaces the line being clicked (D16). The error is the news and it is
+always on the line; the statement is one click away.
+
+What the failure does get is the **mark**: D13 renders it past the *Load more* window and brings it
+into view. But only the failure that explains the outcome, which is not the same as every failed
+row. A run can hold several: on a lock timeout the
 Postgres driver retries the whole command list up to `MaximumRetries`
 (`backend/plugin/db/pg/pg.go:463-485`), re-logging every command on each attempt, so the same
-statement can fail three times and the run still succeed. Opening all of them would expand the same
-DDL three times over.
+statement can fail three times and the run still succeed. Marking all of them would bring the first
+attempt into view, not the outcome.
 
-So the rule is: **open the last failed command row in an execution context, and only when no
+So the rule is: **mark the last failed command row in an execution context, and only when no
 command after it succeeded.** The context is the entry sequence `buildSectionsFromEntries` is
 handed — one replica, one release file — and the test runs over that sequence *before* it is
 grouped. It cannot be section-local: sections are typed groups, and `groupEntriesByType` starts a
 new one whenever the entry type changes, while a retry emits a `RETRY_INFO` entry between attempts
 and, in transaction mode, a rollback and a fresh begin as well. Every transient failure would
-therefore be the last failure in a section of its own, and all of them would open. Scanned across
-the context instead, a run that recovered has successful commands after its failure and opens
-nothing, while a run that really failed ends at the failure and opens exactly that row. Per
+therefore be the last failure in a section of its own, and all of them would be marked. Scanned across
+the context instead, a run that recovered has successful commands after its failure and marks
+nothing, while a run that really failed ends at the failure and marks exactly that row. Per
 context, not per run, so a failure on one replica is never silenced by another replica's success.
 A live log is a prefix of the finished one, so the test also treats a failure followed by a
 `RETRY_INFO` entry as not terminal. The driver writes that marker before it re-runs
 (`backend/plugin/db/driver.go:357-367`, called at `pg.go:470`), so the marker is the standing
 signal that another attempt is coming; without it, the five-second poll
-(`useTaskRunLogData.ts:101`) landing between a failed attempt and its retry would open a failure
+(`useTaskRunLogData.ts:101`) landing between a failed attempt and its retry would mark a failure
 that is about to be superseded. What remains is the ~200ms between the failure and the marker,
 and that window is left open deliberately. A poll landing inside it — roughly one chance in
-twenty-five, and only for someone watching a retrying run live — opens a failure that the next
-poll folds again when the marker arrives and the mark moves off it, so the row can sit expanded for
-up to five seconds. Suppressing the mark while the run is still `RUNNING` would remove the flicker
-and take D14's entire point with it, since the case the mark exists for *is* a deploy watched from
+twenty-five, and only for someone watching a retrying run live — scrolls to a failure that the next
+poll unmarks when the marker arrives, so the view can rest on a superseded attempt for up to five
+seconds. Suppressing the mark while the run is still `RUNNING` would remove that and take the
+mark's point with it, since the case the mark exists for *is* a deploy watched from
 the plan page that fails while you are looking at it. The transient state is not false either: that
 command really did fail at that moment; it is only about to be tried again.
 
 The test reads only the entries, which matters because `taskRunStatus` is an optional prop that the
 changelog and revision pages do not pass. One guard uses it where it exists: when a caller passes a
-status of `DONE`, nothing is marked at all. That is cheap, it costs D14 nothing — D14 is about a run
+status of `DONE`, nothing is marked at all. That is cheap, it costs the live case nothing — that is a run
 still `RUNNING` — and it covers the one shape the entries get wrong today. CockroachDB's autocommit
 path logs a single `COMMAND_EXECUTE` outside its retry and a response *per attempt* from inside it
 (`backend/plugin/db/cockroachdb/cockroachdb.go:485-503`), while the converter attaches the first
@@ -186,10 +193,9 @@ command that worked. The guard is opportunistic mitigation, not part of the rule
 costs nothing where the prop already exists and it is not extended to where it does not. The
 changelog and revision pages would need a success signal invented for them — a changelog's status
 is not a task run's — to half-cover one engine's converter bug, and on those two pages that row
-**already** reads as a failure today, before this design touches it. Auto-opening makes a wrong row
-larger; it does not make it wrong. The converter fix below closes it on all four surfaces at once,
-which is why that is where it belongs. Everything else starts folded, and every row toggles either
-way.
+**already** reads as a failure today, before this design touches it. Scrolling to a wrong row makes
+it more prominent; it does not make it wrong. The converter fix below closes it on all four surfaces at once,
+which is why that is where it belongs.
 
 **D5 · A row is foldable when unfolding would show something new.** There are two independent
 reasons it would, and a row needs only one of them:
@@ -203,10 +209,10 @@ reasons it would, and a row needs only one of them:
 
 The first is the one an implementation would most easily miss, and missing it sets a trap. A
 terminal failure on something as short as `SELECT 1` satisfies neither of the other two — its
-statement has no newlines and its line, being the error, is never clamped — so the row would open
-by default under D4 and then, once the reader folded it, offer no way back: the statement and the
-copy button that lives with it are both inside the block. Fold once, lose the SQL. A row holding
-two payloads is always foldable.
+statement has no newlines and its line, being the error, is never clamped — so the row would get
+no control at all, and the statement and the copy button that lives with it, both inside the block,
+could never be reached — on exactly the row whose SQL the reader wants. A row holding two payloads
+is always foldable.
 
 Neither covers the other. A three-line statement can collapse to a line that fits, and a one-line
 statement can be far too wide; mockup E is the proof, where `SET statement_timeout TO '3600s';`
@@ -220,13 +226,12 @@ it on the rows where it matters — mockup D's row 6 is exactly that, a `COMMENT
 its line and would unfold to itself.
 
 A row that is open **and has a statement** is foldable — no measurement, no comparison. The
-statement clause is not decoration: a failure whose statement could not be recovered is still
-marked (D1) and so is nominally open, but it has no block, and an unqualified rule would hand it
-the chevron that D1 and D5 both promise it will not get. The exception exists to let a reader close
-a block that is on screen, so it reaches exactly as far as a block does. Beyond that it sounds like
+exception exists to let a reader close a block that is on screen, so it reaches exactly as far as a
+block does: an override outlives the poll it was made on, and a row whose statement can no longer
+be recovered has no block and gets no chevron. Beyond that it sounds like
 a truism and is in fact the subtlest case here. A successful single-line statement qualifies only
 by the clamp, and D10 has the block *replace* the line when it opens, so the thing the clamp was
-measured on no longer exists. Worse, opening raises D8's cap, which resizes the scroll box, which
+measured on no longer exists. Worse, opening a row in a box still below its cap grows the box, which
 fires the very observer that would reclassify it — so the chevron would vanish from a row while it
 sat expanded, and with it the way back, since the row's click target is gated on the same verdict.
 You must always be able to close what you opened; the verdict is recomputed only for closed rows.
@@ -260,38 +265,50 @@ native markup: `no-native-control` in `frontend/scripts/check-ui-guideline.mjs` 
 `pnpm --dir frontend check` on a raw `<button>` in feature code. The chevron's slot is reserved on
 every command row so the text column stays aligned.
 
-**D7 · Clicking the row toggles it — anywhere but the statement itself.** Click-anywhere is what
-makes the affordance usable at 12px, and it is the convention of every CI log, so the index, the
-timestamps, the glyph and the empty space all toggle. The statement does not, whether it is the
-clamped line or the unfolded block, because text a reader can select must not double as a button.
+**D7 · Clicking a row's line toggles it; the unfolded block does not.** Click-anywhere is what
+makes the affordance usable at 12px, and it is the convention of every CI log, so on a row that has
+a fold control the whole line toggles: the index, the timestamps, the glyph, the empty space, the
+clamped statement and the error. One rule, the same on every row that has a chevron — a reader does
+not have to learn which part of a line is live. The unfolded block is the exception. It is not a
+line but the content the line opened: a reader reads and selects from it, it can be hundreds of
+pixels tall, so a stray click would collapse what is being read, and the chevron sits beside it.
 
-A selection guard alone cannot carry that. It catches the drag — mouse-up at the end of a sweep,
-where the selection is already non-collapsed — but not the double-click, whose *first* click
-arrives with the selection still collapsed and would toggle the row, replacing the very text the
-second click was aiming at. Nothing observable at that moment distinguishes it from a single click,
-and waiting to find out would put a double-click delay on every toggle. Excluding the text removes
-the question instead of timing it.
+That split also settles the double-click. A selection guard catches a drag, where the selection is
+already non-collapsed at mouse-up, but not a double-click, whose first click arrives collapsed and
+is indistinguishable from a single one at that instant. On the block, where selecting an identifier
+is the point and the first click would remove the very text being selected, exclusion answers it.
+On the clamped line the first click expands the row, which is what a click there meant anyway, and
+the word is still there in the block underneath.
 
-So: clicks inside a button are ignored (D6 owns those), clicks on the statement are ignored, a
-click that ends a selection is still ignored as a belt-and-braces guard for a drag that began on
-the metadata and finished over the text, and everything else toggles. Mouse convenience only —
-assistive technology sees D6's controls.
+The error line pays a small, accepted price for the uniform rule. It has no copy button (D3), so it
+is taken by selecting it. A drag never toggles. A double- or triple-click selects as usual and also
+flips the block once, and in a section scrolled to its end that fold can shift the text under the
+pointer mid-gesture. D3 already judged wanting the error in the clipboard rare; a dead zone across
+the widest part of the row that matters most is the larger cost.
 
-**D8 · The section's cap rises while a block is on screen.** A 630px statement inside a 280px box is a
-keyhole. While any row in a section is unfolded, that section's scroll box is capped at
-`max(280px, 60vh)` instead of `ITEM_HEIGHT * MAX_VISIBLE_ITEMS`, and returns to the collapsed cap
-when the last row folds. Both halves matter: `60vh` is the honest unit for "how much of the screen
-may this take", and the `max()` floor keeps a short window from shrinking the box below its
-collapsed height. A run that failed therefore opens taller than one that did not, by way of D4,
-which is the right way round. The box still scrolls — a statement with a few hundred columns is
-taller than any cap worth setting — but it scrolls over most of a screen instead of over ten lines.
+So: clicks inside a button are ignored (D6 owns those), clicks inside the unfolded block are
+ignored, a click that ends a selection is ignored, and everything else toggles. A row that is not
+foldable (D5) has nothing to toggle, so its line is inert — including the error of a failure whose
+statement could not be recovered. Mouse convenience only — assistive technology sees D6's controls.
+
+**D8 · The section's height never changes because a row unfolds.** The scroll box is capped at
+`ITEM_HEIGHT * MAX_VISIBLE_ITEMS` — ten rows, 280px — whether or not a block is open, and a block
+taller than what remains scrolls inside it. An earlier revision raised the cap to `max(280px, 60vh)`
+while a block was on screen, so that a 630px statement would not be read through a keyhole. In use
+the cost was worse than the keyhole: a full box grew by 260px the moment a row was clicked, moving
+every section below it, and shrank again on the fold, which is where the page and the box's own
+scroll got clamped out from under the reader (D16). Layout stability wins: the box the reader
+scanned is the box they unfold in. Two things follow. The block's copy button is sticky to the top
+of the box while the block is in view (D10), so a statement taller than the box can still be
+copied from wherever the reader has scrolled to. And unfolding a row near the bottom of the box has
+to reveal what it opened, since the block lands below the box's visible edge — that is D16's job.
 
 **D9 · The viewer owns one scroll context.** The unfolded block never gets its own `overflow` — it
 grows to its natural height and the section scrolls, so nothing the viewer renders stacks a
 scrollbar inside a scrollbar. It cannot claim the same for the page it sits on:
 `DeployTaskRunHistorySheet` renders the viewer inside `SheetBody`, which is `overflow-y-auto`
 (`components/ui/sheet.tsx:161-167`), so on that one surface the section's box has always sat inside
-an outer scroller, and D8's raised cap makes the inner region bigger. The nesting predates this
+an outer scroller, and an unfolded block now scrolls inside it. The nesting predates this
 change and the sheet's `overscroll-contain` keeps it from chaining. Handing the scroll to the host
 — no cap when the viewer is inside a sheet, `SheetBody` scrolling the expanded statement — would
 remove it, at the price of a second layout mode for the viewer to carry, test, and keep consistent
@@ -302,14 +319,13 @@ mild, the mode would be permanent.
 `whitespace-pre-wrap break-words` on the verbatim statement, in the row's mono face, on
 `bg-background` inside a `border-block-border` block — the block is a framed content region, and
 `docs/agents/frontend-ux.md:143-144` keeps `border-control-border` for controls — with D3's copy
-button in its top-right corner over padding wide enough to hold it, never over the SQL. That
-clearance is not decoration: the contract says text "must not overlap adjacent controls"
+button beside it, in a column of its own at the block's right edge. A column rather than an
+overlay because the contract says text "must not overlap adjacent controls"
 (`frontend-ux.md:113-114`), and the rows D5 newly makes foldable are precisely the ones whose first
-wrapped line runs the full width of the block, so an overlay with no reserved padding would sit on
-top of the statement in the common case rather than a rare one. The block's right padding reserves
-the control's width plus the gap beside it; the text wraps before it
-corner — positioned inside the block's padding so it overlays rather than reflows the SQL, and
-visible for as long as the block is. On a successful row the block replaces the line, so one
+wrapped line runs the full width of the block. The button is `sticky` to the top of the section's
+scroll box: D8 keeps the box at ten rows, so a long statement scrolls under it, and a control pinned
+to the block's top corner would be gone before the reader reached the end of what they want to
+copy. It stays put for as long as any of the block is in view, and leaves with the block. On a successful row the block replaces the line, so one
 statement is on screen at a time and the cluster's copy button gives way to the block's. On a
 failed row the error keeps the line and the block sits beneath it, because both payloads are the
 point. Either way the index, timestamps and status glyph stay pinned to the row's first line,
@@ -336,7 +352,7 @@ free with `CopyButton`. The fold control needs two new keys under `task-run.log-
 accessible names, not visible labels, and land in `en-US` with the other locales falling back
 until translated.
 
-**D13 · A row that opens by default has to be rendered, numbered and in view.** `SectionContent`
+**D13 · The marked row has to be rendered, numbered and in view.** `SectionContent`
 renders only the first
 `MAX_RENDERED_ITEMS` (50) entries of a section until *Load more* is pressed
 (`SectionContent.tsx:29-32`). A migration whose 300th statement fails would therefore have D4 mark
@@ -349,8 +365,8 @@ Rendering the whole section would keep the promise too, but a section has no bou
 can carry thousands of statements — and not having to render all of them is what the cap is for.
 
 Rendering it is not the same as showing it. Fifty rows at 28px is roughly 1,400px of content above
-the marked row, inside a box capped at `max(280px, 60vh)` whose `scrollTop` starts at zero, so the
-row would be mounted, expanded and off-screen — the promise kept in the DOM and broken on the
+the marked row, inside a box capped at 280px whose `scrollTop` starts at zero, so the
+row would be mounted and off-screen — the promise kept in the DOM and broken on the
 screen. When a row becomes the marked one, the section sets its own `scrollTop` to bring it into
 view. Its own, not `scrollIntoView`, which would scroll the page under a reader who was looking at
 something else. It fires once, when the mark lands on a row — and on mount, if a
@@ -364,16 +380,14 @@ pressed — pointing the reader at the wrong statement, which is worse than not 
 number shown is the item's index in the section, and the D13 regression test asserts that number,
 not merely that the row rendered.
 
-**D14 · The open set follows the mark while the log is live.** The viewer polls a running task every
-five seconds (`useTaskRunLogData.ts:101`), and `section.items` changes without `datasetKey`
-changing. Applying D4's mark only when the component mounts would therefore miss the case the
-feature exists for — a deploy watched from the plan page, succeeding command by command, that then
-fails — because the failure arrives on a later poll into an already-mounted section, and nothing
-would open it. So the open set is derived rather than initialised: a row is open when it is marked
-or the reader opened it, and folded when the reader folded it. An explicit toggle outranks the mark
-for as long as the dataset lasts, so a failure the reader folded stays folded through the next
-poll, and a mark that moves off a row — a transient failure that turns out to have been retried —
-takes its auto-open with it.
+**D14 · The reader's folds are the only open state, and they outlive everything but the run.** The
+viewer polls a running task every five seconds (`useTaskRunLogData.ts:101`), and `section.items`
+changes without `datasetKey` changing. A row is open when the reader opened it and folded
+otherwise; nothing else writes that state, so a poll can neither open a row nor close one. The mark
+rides the same polls but touches only D13: a failure arriving on a later poll into an
+already-mounted section is rendered and scrolled to then, not only at mount, and a mark that moves
+off a row — a transient failure that turns out to have been retried — takes nothing with it,
+because it never opened anything.
 
 They also cannot be keyed by the row's render key. That key is positional —
 `` `${idPrefix ?? "section"}-${groupIndex}-${entryIndex}` `` (`model.ts:481`) — and both halves move
@@ -418,21 +432,20 @@ entries that already know their identity; they never mint one.
 Those overrides cannot live in `SectionContent` either, because it is mounted conditionally: collapsing an
 enclosing section unmounts it and reopening builds a fresh one (`TaskRunLogViewer.tsx:195-201`), and
 a live run also swaps the sole-section rendering for the multi-section tree the moment a second
-entry type arrives. Either remount would discard the reader's folds and pop a marked failure back
-open on a dataset that never changed. The overrides therefore sit in `TaskRunLogViewer`, above the
+entry type arrives. Either remount would discard the reader's folds on a dataset that never
+changed. The overrides therefore sit in `TaskRunLogViewer`, above the
 conditional mount, keyed by row and cleared when `taskRunName` changes — the same moment
 `datasetKey` already clears `showAllItems`. `showAllItems` keeps its remount-local behavior;
 re-hiding the tail of a long list on collapse is not a promise anyone made.
 
-It also stops at a collapsed ancestor, deliberately. The viewer already expands a section the
+The mark stops at a collapsed ancestor, deliberately. The viewer already expands a section the
 moment its status turns to error — unless the reader collapsed that section themselves, which
 `userCollapsedSections` records and honours (`useTaskRunLogSections.ts:234-247`), with the same
 treatment for replicas and release files. A mark arriving into a section the reader has shut does
-not reopen it. Doing so would break the precedence this decision just established, where an
-explicit toggle outranks the mark, and it would override the reader at the one moment they have
-most clearly said what they want on screen. Nothing is hidden by this: a collapsed section still
+not reopen it. Doing so would override the reader at the one moment they have most clearly said
+what they want on screen. Nothing is hidden by this: a collapsed section still
 carries its own status, so the header turns to the error glyph and says a failure is inside. When
-the reader opens it, the marked row is already unfolded and the section is already scrolled to it,
+the reader opens it, the section is already scrolled to the marked row,
 because D13's scroll fires on mount whenever a marked row is present, not only when a mark lands on
 a row that is already showing.
 
@@ -442,8 +455,8 @@ remounts the whole viewer and takes the overrides with it. That key is not an ac
 comment above it says the remount exists "for a fresh disclosure state on the new phase", and it is
 also what invalidates an in-flight `RUNNING` log request before it can be cached as complete.
 Persisting overrides across it, in a module-level map keyed by task-run name, would work and would
-quietly undo that intent. And the behavior it produces is the one this doc wants anyway: the flip
-that reopens a folded failure is the flip to the phase where that failure is the outcome. So folds
+quietly undo that intent. A new phase is also a fair place to start clean: the terminal log is a
+different document from the one that was streaming. So folds
 survive polls, section collapse and the sole-to-multi swap *within* a phase, and a new phase starts
 fresh.
 
@@ -486,6 +499,37 @@ The UX contract already asks for right-aligned numerics in tables; these are the
 different frame. This straightens the statement column too, which is the part of the fix that
 improves the log as it stands today.
 
+**D16 · A toggle never moves the clicked line except to reveal what it opened, and folding puts it
+back.** With D8's cap fixed, a toggle changes only the box's scroll range: unfolding lengthens it,
+folding shortens it back to what it was. Two motions follow, and both are the reader's doing.
+
+Unfolding reveals. The marked row is usually the last one, and D13 parks it at the bottom of the
+box, so its block opens below the visible edge; a click that visibly changed nothing but the
+chevron would read as a click that did nothing. So the section scrolls itself by the least that
+shows the row: to its bottom edge when the row fits, and to its top edge — the line at the top of
+the box, the block filling the rest — when the row is taller than the box. The section's own
+scroll, never the page's: the block is clipped by the box, and a page scroll cannot reveal what is
+inside it, so scrolling the page would only move the log under the reader.
+
+Folding puts it back. The folded content is exactly the content before the unfold, so the box's
+scroll range is exactly what it was, and the browser's own clamp lands the line where it stood
+before the reveal — under the pointer when the reveal moved nothing, and back where it was clicked
+from when it did. Nothing compensates for this: a page scroll that kept the line under the pointer
+would slide the whole log up the page instead, which is the jump the fixed cap exists to remove.
+Row 38 of 38, at the bottom of a full box, goes to the top on unfold and comes back to the bottom
+on fold; the page does not move for either.
+
+An earlier revision compensated with the section's and then the page's scroll after every toggle.
+All three displacements it corrected — the cap dropping around the row, the section's scroll
+clamping when the cap rose, the page clamping when the box shrank on a full log — were caused by
+the cap moving, and left with it.
+
+One case is left, and accepted: a box still below its cap grows on unfold and shrinks on fold, and
+a reader who scrolls the page into that growth and then folds is clamped by the page, the way every
+disclosure at the bottom of a page is. Holding the line there would mean reserving the vacated
+height as blank space, state lingering on screen after the click that caused it. Recorded as the
+option and not taken.
+
 ## States
 
 Mockups A–E are in the PR description. Product typography, spacing and semantic colors are taken
@@ -495,8 +539,8 @@ from the live component.
 |---|---|---|
 | A | Today | The 80-character cut, a failed row that is error-only, and the ragged left edge of D15 |
 | B | Folded, hover | D2, D3, D5, D6, D11, D15 — one meaning per control, reserved slots, a straight column |
-| C | Unfolded | D8, D9, D10 — verbatim formatting, copy in the block, raised cap, one scrollbar |
-| D | A failed command | D1, D3, D4, D10 — the error keeps the line, the failed statement and its copy sit beneath it |
+| C | Unfolded | D9, D10 — verbatim formatting, copy in the block; the mockup's raised cap predates D8's revision, the box stays at ten rows |
+| D | A failed command, unfolded | D1, D3, D10 — the error keeps the line, the failed statement and its copy sit beneath it |
 | E | Narrow container | D2 — the same rows in the deploy sheet, clamped by its width |
 
 ## Scope
@@ -506,10 +550,10 @@ Frontend only. The viewer is embedded by `DatabaseChangelogDetailPage`, `Revisio
 
 | File | Change |
 |---|---|
-| `task-run-log/types.ts` | `statement?`, `error?` and `defaultOpen?` on `DisplayItem` |
-| `task-run-log/model.ts` | Delete the `substring`; read the statement for failed commands too; return all the new fields; pick the auto-open row in `buildSectionsFromEntries`, over the whole entry sequence rather than per section; build `key` from the entry's identity instead of `idPrefix-groupIndex-entryIndex` (D14) |
+| `task-run-log/types.ts` | `statement?`, `error?` and `marked?` on `DisplayItem` |
+| `task-run-log/model.ts` | Delete the `substring`; read the statement for failed commands too; return all the new fields; pick the marked row in `buildSectionsFromEntries`, over the whole entry sequence rather than per section; build `key` from the entry's identity instead of `idPrefix-groupIndex-entryIndex` (D14) |
 | `task-run-log/useTaskRunLogSections.ts` | The hook owns every builder call — flat, per-replica, release-file and orphan — so it forwards `taskRunStatus` into all of them; nothing else invokes the builders, and a guard that stops here is a guard that never runs |
-| `task-run-log/SectionContent.tsx` | Fold control, copy button, CSS clamp, default-open failed rows, the marked row rendered and scrolled to past the 50-item window, section cap, `ITEM_HEIGHT` 20 → 28, the reserved timestamp and index columns (D15), and one `ResizeObserver` on the scroll box deciding which rows are foldable (D5) |
+| `task-run-log/SectionContent.tsx` | Fold control, copy button, CSS clamp, the marked row rendered and scrolled to past the 50-item window, section cap, `ITEM_HEIGHT` 20 → 28, the reserved timestamp and index columns (D15), one `ResizeObserver` on the scroll box deciding which rows are foldable (D5), and the reveal on unfold (D16) |
 | `task-run-log/TaskRunLogViewer.tsx` | The reader's fold overrides, held above the conditional mount and cleared with `taskRunName` (D14) |
 | `locales/en-US.json` | Two accessible names |
 
@@ -520,14 +564,14 @@ behavior of this function:
   statement past 80 characters is not truncated (regression); a failed command yields the error as
   `detail` *and* the failed statement in `statement`, including when it has to come from `range`;
   an entry with no statement yields `"-"` and no `statement`.
-- `model.test.ts` again for the auto-open pick, which is where the retry shape has to be locked
+- `model.test.ts` again for the mark, which is where the retry shape has to be locked
   down: entries for two attempts separated by a `RETRY_INFO`, the first failing and the second
-  succeeding, mark **no** row to open even though the failure is last in its own section; the same
+  succeeding, mark **no** row even though the failure is last in its own section; the same
   entries with the second attempt failing mark only the second failure; a failure under one replica
   is not silenced by another replica's success; and a `DONE` `taskRunStatus` marks nothing at all,
   whatever the entries say.
-- `SectionContent`: a foldable row toggles and reports `aria-expanded`; a row marked to open starts
-  unfolded and can be folded; a section of 60 entries whose marked failure is the last one renders
+- `SectionContent`: a foldable row toggles and reports `aria-expanded`; a marked row starts
+  folded like any other; a section of 60 entries whose marked failure is the last one renders
   that row without pressing *Load more*, still reports the hidden count, **numbers it 60, not 51**,
   and leaves the section scrolled to it rather than at the top (D13); copy receives the verbatim statement, never the line and never the error; a failed row
   carries no copy button on its error line and one inside its block; a row with no recoverable
@@ -537,14 +581,28 @@ behavior of this function:
   foldable anyway, and folding then unfolding it brings the statement and its copy button back; and
   a clamped one-line statement **keeps** its chevron after opening — drive an observer callback
   while it is open, which is what raising the cap does in the product, and assert the control
-  survives and still closes the row; a marked failure with no recoverable statement is open yet
+  survives and still closes the row; a marked failure with no recoverable statement
   carries no chevron and no row toggle.
 - Collapsed ancestors (D14), same `datasetKey`: a failure arriving into a section the reader
-  collapsed leaves it collapsed, and expanding it afterwards shows the marked row already unfolded
-  and scrolled to.
-- Clicking (D7): a click on the index, the timestamp or the row's empty space toggles; a click on
-  the clamped line or inside the unfolded block does not, so a double-click selects a word without
-  the row moving under it.
+  collapsed leaves it collapsed, and expanding it afterwards shows the section already scrolled to
+  the marked row, which is still folded.
+- Clicking (D7): on a foldable row a click on the index, the timestamp, the empty space, the clamped
+  line or the error line toggles; a click inside the unfolded block does not, so an identifier can
+  be double-clicked there without the row moving; a click that ends a drag across the clamped line
+  or the error does not toggle; the line of a row that is not foldable does nothing, the error of a
+  failure with no recoverable statement included; and two clicks in quick succession on the clamped
+  line leave the row open, because the second lands on the block.
+- A fixed box (D8): the scroll box's cap is 280px before, during and after a row is unfolded, and
+  the block's copy button is a sticky sibling of the SQL rather than an overlay on it.
+- Revealing and putting back (D16): with the row's geometry stubbed, unfolding a row whose block
+  already fits scrolls nothing; unfolding one at the bottom of the box scrolls the section by
+  exactly the block's overflow, so the line moves up by that and no more; unfolding a row taller
+  than the box puts its line at the box's top; the page is never scrolled by either; folding
+  scrolls nothing itself, and a toggle in one section leaves another section's scroll alone. jsdom
+  has no layout, so the real motion is checked in a browser and in the journey below: a full
+  box keeps its height through unfold and fold, the last row's line goes to the top and comes
+  back, the page does not move, and the sticky copy button is still in view — and still copies the
+  whole statement — after the box has been scrolled to the end of a block taller than itself.
 - `model.test.ts` for the marking edges: a failed command with neither `statement` nor a usable
   `range` is still marked, so D13 renders and scrolls to its error, and no cap change follows
   because it has no block.
@@ -562,9 +620,9 @@ behavior of this function:
   section in two between polls. Asserting the key's stability is the point of the test — a version
   of it that tolerated a changing key would be asserting the bug.
 - Live updates (D14), all on an unchanged `datasetKey`: a section rerendered with a newly marked
-  failure opens it without remounting; a row the reader folded stays folded when the next poll
-  arrives; a row whose mark moves away folds again if the reader never touched it; a folded row is
-  **still folded after collapsing and reopening its enclosing section**, and after the sole-section
+  failure scrolls to it without remounting and does not open it; a row the reader unfolded stays
+  unfolded when the next poll arrives, and when its mark moves away; an unfolded row is
+  **still unfolded after collapsing and reopening its enclosing section**, and after the sole-section
   rendering gives way to the multi-section tree; and `taskRunName` changing clears those toggles,
   as `datasetKey` already clears `showAllItems`.
 

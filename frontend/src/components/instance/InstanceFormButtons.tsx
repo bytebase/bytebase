@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { cloneDeep, isEqual } from "lodash-es";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,12 +8,16 @@ import { behaviorAnalytics } from "@/app/analytics/provider";
 import { router } from "@/app/router";
 import { INSTANCE_ROUTE_DETAIL } from "@/app/router/handles";
 import { useHasInvalidSecretInputs } from "@/components/SecretInput";
+import { Alert } from "@/components/ui/alert";
 import {
   PREPARE_DATABASE_PRODUCT_INTRO,
   PREPARE_DATABASE_TRANSFER_TIP,
   PRODUCT_INTRO_QUERY_KEY,
   PRODUCT_INTRO_TIP_QUERY_KEY,
 } from "@/lib/productIntro";
+import { cn } from "@/lib/utils";
+import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
+import { buildInstanceConnectionHelpPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type {
@@ -24,7 +29,12 @@ import {
   InstanceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { convertKVListToLabels, extractInstanceResourceName } from "@/utils";
+import {
+  convertKVListToLabels,
+  engineNameV1,
+  extractInstanceResourceName,
+} from "@/utils";
+import { extractGrpcErrorMessage } from "@/utils/connect";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -52,7 +62,9 @@ interface InstanceFormButtonsProps {
   allowCancel?: boolean;
   onCreated?: (instance: Instance) => void;
   onUpdated?: (instance: Instance) => void;
+  onAskAgent?: (prompt?: string) => void;
   className?: string;
+  contentClassName?: string;
 }
 
 type ConnectionFailureDialogState = {
@@ -61,11 +73,36 @@ type ConnectionFailureDialogState = {
   failureCategory: ConnectionFailureCategory;
 };
 
+type InstanceCreationFailure = {
+  message: string;
+  failureCode?: string;
+};
+
+const safeConnectFailureCodes = new Set([
+  "AlreadyExists",
+  "FailedPrecondition",
+  "InvalidArgument",
+  "PermissionDenied",
+  "ResourceExhausted",
+  "Unauthenticated",
+  "Unavailable",
+]);
+
+const getSafeConnectFailureCode = (error: unknown) => {
+  if (!(error instanceof ConnectError)) return undefined;
+  const code = Code[error.code];
+  return typeof code === "string" && safeConnectFailureCodes.has(code)
+    ? code
+    : undefined;
+};
+
 export function InstanceFormButtons({
   allowCancel = true,
   onCreated,
   onUpdated,
+  onAskAgent,
   className,
+  contentClassName,
 }: InstanceFormButtonsProps) {
   const { t } = useTranslation();
 
@@ -113,6 +150,27 @@ export function InstanceFormButtons({
   const [testConnectionFailure, setTestConnectionFailure] = useState<
     ConnectionFailureDialogState | undefined
   >();
+  const [createFailure, setCreateFailure] = useState<
+    InstanceCreationFailure | undefined
+  >();
+
+  const askAgentAboutFailure = (
+    stage: "connection test" | "instance creation",
+    failureCategory?: ConnectionFailureCategory,
+    failureCode?: string,
+    failureMessage?: string
+  ) => {
+    if (!onAskAgent) return;
+    onAskAgent(
+      buildInstanceConnectionHelpPrompt({
+        engine: engineNameV1(basicInfo.engine),
+        stage,
+        failureCategory,
+        failureCode,
+        failureMessage,
+      })
+    );
+  };
 
   const checkExternalSecretFeature = (dataSources: DataSource[]) => {
     if (hasExternalSecretFeature) return true;
@@ -233,48 +291,54 @@ export function InstanceFormButtons({
     }
 
     setState((prev) => ({ ...prev, isRequesting: true }));
+    let createdInstance: Instance;
     try {
-      const createdInstance = await useAppStore
+      createdInstance = await useAppStore
         .getState()
         .createInstance(payload, false, parent ? { parent } : undefined);
-      if (onCreated) {
-        onCreated(createdInstance);
-      } else {
-        const instanceId = extractInstanceResourceName(createdInstance.name);
-        router.push({
-          name: INSTANCE_ROUTE_DETAIL,
-          params: { instanceId },
-          query: {
-            syncingInstance: instanceId,
-            [PRODUCT_INTRO_QUERY_KEY]: PREPARE_DATABASE_PRODUCT_INTRO,
-            [PRODUCT_INTRO_TIP_QUERY_KEY]: PREPARE_DATABASE_TRANSFER_TIP,
-          },
-          hash: "databases",
-        });
-      }
-
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t(
-          "instance.successfully-created-instance-createdinstance-name",
-          {
-            0: createdInstance.title,
-          }
-        ),
-        description: parent
-          ? t("db.syncing-databases-for-instance", {
-              0: createdInstance.title,
-            })
-          : undefined,
+    } catch (error) {
+      setCreateFailure({
+        message: extractGrpcErrorMessage(error),
+        failureCode: getSafeConnectFailureCode(error),
       });
+      return;
     } finally {
       setState((prev) => ({ ...prev, isRequesting: false }));
     }
+
+    if (onCreated) {
+      onCreated(createdInstance);
+    } else {
+      const instanceId = extractInstanceResourceName(createdInstance.name);
+      router.push({
+        name: INSTANCE_ROUTE_DETAIL,
+        params: { instanceId },
+        query: {
+          syncingInstance: instanceId,
+          [PRODUCT_INTRO_QUERY_KEY]: PREPARE_DATABASE_PRODUCT_INTRO,
+          [PRODUCT_INTRO_TIP_QUERY_KEY]: PREPARE_DATABASE_TRANSFER_TIP,
+        },
+        hash: "databases",
+      });
+    }
+
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("instance.successfully-created-instance-createdinstance-name", {
+        0: createdInstance.title,
+      }),
+      description: parent
+        ? t("db.syncing-databases-for-instance", {
+            0: createdInstance.title,
+          })
+        : undefined,
+    });
   };
 
   const tryCreate = async () => {
     if (!allowCreate || hasInvalidSecretInputs) return;
+    setCreateFailure(undefined);
     behaviorAnalytics.captureMetric(
       createBehaviorMetric("instance create clicked", {
         routeId: router.currentRoute.value.name?.toString(),
@@ -285,7 +349,7 @@ export function InstanceFormButtons({
     const editingDS = adminDataSource;
     const testResult = await testConnection(editingDS, true);
     if (testResult.success) {
-      doCreate();
+      await doCreate();
     } else {
       maybeOpenConnectionOptions(editingDS);
       const confirmed = await confirmContinueWithConnectionFailure(
@@ -347,6 +411,7 @@ export function InstanceFormButtons({
       });
       const updateMask: string[] = [];
       if (instancePatch.title !== inst.title) updateMask.push("title");
+      if (instancePatch.vendor !== inst.vendor) updateMask.push("vendor");
       if (instancePatch.externalLink !== inst.externalLink)
         updateMask.push("external_link");
       if (instancePatch.activation !== inst.activation)
@@ -516,14 +581,62 @@ export function InstanceFormButtons({
   };
 
   const testConnectionFeedback = testConnectionFailure && (
-    <div className="border-t border-block-border px-4 py-3 sm:px-6">
-      <ConnectionRecovery
-        category={testConnectionFailure.failureCategory}
-        className="max-w-3xl"
-      />
-      <p className="mt-2 whitespace-pre-wrap break-all text-sm text-error">
-        {testConnectionFailure.message}
-      </p>
+    <div className="border-t border-block-border bg-background py-3">
+      <div className={cn("px-4 sm:px-6", contentClassName)}>
+        <ConnectionRecovery
+          category={testConnectionFailure.failureCategory}
+          className="max-w-3xl"
+        />
+        <p
+          className="mt-2 whitespace-pre-wrap break-all text-sm text-error"
+          data-agent-sensitive
+        >
+          {testConnectionFailure.message}
+        </p>
+        {onAskAgent && (
+          <AgentHelpButton
+            size="md"
+            className="mt-3"
+            onClick={() =>
+              askAgentAboutFailure(
+                "connection test",
+                testConnectionFailure.failureCategory,
+                undefined,
+                testConnectionFailure.message
+              )
+            }
+          >
+            {t("instance.ask-agent-about-error")}
+          </AgentHelpButton>
+        )}
+      </div>
+    </div>
+  );
+
+  const createFailureFeedback = createFailure && (
+    <div className={cn("px-4 py-3 sm:px-6", contentClassName)}>
+      <Alert
+        variant="error"
+        title={t("instance.create-failed")}
+        description={<span data-agent-sensitive>{createFailure.message}</span>}
+      >
+        {onAskAgent && (
+          <AgentHelpButton
+            size="md"
+            className="mt-3"
+            onClick={() =>
+              askAgentAboutFailure(
+                "instance creation",
+                undefined,
+                createFailure.failureCode,
+                createFailure.message
+              )
+            }
+          >
+            {t("instance.ask-agent-about-error")}
+          </AgentHelpButton>
+        )}
+      </Alert>
     </div>
   );
 
@@ -555,6 +668,22 @@ export function InstanceFormButtons({
           })}
         </AlertDialogDescription>
         <AlertDialogFooter>
+          {onAskAgent && (
+            <AgentHelpButton
+              size="md"
+              onClick={() => {
+                closeConnectionFailureDialog(false);
+                askAgentAboutFailure(
+                  "connection test",
+                  connectionFailureDialogState.failureCategory,
+                  undefined,
+                  connectionFailureDialogState.message
+                );
+              }}
+            >
+              {t("instance.ask-agent-about-error")}
+            </AgentHelpButton>
+          )}
           <Button
             appearance="outline"
             onClick={() => closeConnectionFailureDialog(false)}
@@ -573,19 +702,23 @@ export function InstanceFormButtons({
     return (
       <>
         {connectionFailureDialog}
+        {createFailureFeedback}
         {testConnectionFeedback}
         <StickyActionFooter
           className={className}
+          contentClassName={contentClassName}
           left={
-            allowCancel ? (
-              <Button
-                appearance="outline"
-                disabled={state.isRequesting || state.isTestingConnection}
-                onClick={cancel}
-              >
-                {t("common.cancel")}
-              </Button>
-            ) : undefined
+            <>
+              {allowCancel && (
+                <Button
+                  appearance="outline"
+                  disabled={state.isRequesting || state.isTestingConnection}
+                  onClick={cancel}
+                >
+                  {t("common.cancel")}
+                </Button>
+              )}
+            </>
           }
           right={
             <>
@@ -635,6 +768,7 @@ export function InstanceFormButtons({
       {testConnectionFeedback}
       <StickyActionFooter
         className={className}
+        contentClassName={contentClassName}
         left={
           <Button
             appearance="outline"

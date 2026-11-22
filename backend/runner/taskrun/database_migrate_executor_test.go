@@ -12,6 +12,45 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+func TestValidateGhostEngine(t *testing.T) {
+	tests := []struct {
+		name    string
+		engine  storepb.Engine
+		wantErr string
+	}{
+		{
+			name:   "mysql",
+			engine: storepb.Engine_MYSQL,
+		},
+		{
+			name:   "mariadb",
+			engine: storepb.Engine_MARIADB,
+		},
+		{
+			name:    "engine gh-ost does not drive",
+			engine:  storepb.Engine_SPANNER,
+			wantErr: "gh-ost requires MySQL or MariaDB",
+		},
+		{
+			name:    "tidb",
+			engine:  storepb.Engine_TIDB,
+			wantErr: "gh-ost requires MySQL or MariaDB",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: tt.engine}}
+			err := validateGhostEngine(instance)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestExecuteGhostMigrationUsesContextLogger(t *testing.T) {
 	requireExecuteGhostMigrationContextSignature(t, executeGhostMigration)
 }

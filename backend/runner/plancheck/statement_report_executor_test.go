@@ -419,3 +419,55 @@ func TestSummaryStatementTypesRejectsEngineWithoutClassifier(t *testing.T) {
 	_, err := SummaryStatementTypes(storepb.Engine_SNOWFLAKE, nil)
 	require.Error(t, err)
 }
+
+// TestBuildSQLSummaryReportReportsMariaDBOnlyStatements pins the report a sheet
+// of MariaDB-only syntax gets. A statement the extractor cannot read counts as
+// skipped, and one skipped statement withholds the whole report: no changed
+// resources and no affected-rows estimate for the sheet.
+func TestBuildSQLSummaryReportReportsMariaDBOnlyStatements(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		statement string
+		wantRows  int64
+	}{
+		{name: "mysql_parsable_sheet", statement: "UPDATE t SET a = 1 WHERE id = 1;", wantRows: 7},
+		{name: "mariadb_only_dml", statement: "UPDATE t SET a = 1 WHERE id = 1;\nDELETE FROM t WHERE id = 2 RETURNING id;", wantRows: 14},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stmts, err := parserbase.ParseStatements(storepb.Engine_MARIADB, tc.statement)
+			require.NoError(t, err)
+			changeSummary, err := parserbase.ExtractChangedResources(storepb.Engine_MARIADB, "db", "", nil /* dbMetadata */, parserbase.ExtractASTs(stmts), tc.statement)
+			require.NoError(t, err)
+			explain := func(context.Context, string) (int64, error) { return 7, nil }
+
+			report, warning := buildSQLSummaryReport(context.Background(), storepb.Engine_MARIADB, nil /* sqlTypes */, changeSummary, explain)
+
+			require.NotNil(t, report)
+			require.Equal(t, tc.wantRows, report.AffectedRows)
+			require.NotNil(t, report.ChangedResources)
+			require.Empty(t, warning)
+		})
+	}
+}
+
+// TestBuildSQLSummaryReportOmitsReportWithSkippedStatements covers the refusal on
+// its own. No engine sets SkippedStatements, so the summary is built here rather
+// than extracted from a statement.
+func TestBuildSQLSummaryReportOmitsReportWithSkippedStatements(t *testing.T) {
+	explains := 0
+	explain := func(context.Context, string) (int64, error) {
+		explains++
+		return 7, nil
+	}
+
+	report, warning := buildSQLSummaryReport(context.Background(), storepb.Engine_MARIADB, nil /* sqlTypes */, &parserbase.ChangeSummary{
+		ChangedResources:  model.NewChangedResources(nil /* dbMetadata */),
+		DMLStatements:     []string{"UPDATE t SET a = 1 WHERE id = 1;"},
+		DMLCount:          1,
+		SkippedStatements: 1,
+	}, explain)
+
+	require.Nil(t, report)
+	require.Equal(t, "Affected rows and changed resources are not reported because 1 of the statements could not be read.", warning)
+	require.Zero(t, explains)
+}

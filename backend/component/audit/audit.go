@@ -57,8 +57,8 @@ func RecordOutOfBandAudit(ctx context.Context, writer LogWriter, mirrorToStdout 
 	row.Severity = storepb.AuditLog_WARNING
 
 	// WithoutCancel so the row survives a client hanging up on its own refusal,
-	// bounded because WithoutCancel drops the request deadline too. Both
-	// callers write on the synchronous path of a refusal already decided, so an
+	// bounded because WithoutCancel drops the request deadline too. Every
+	// caller writes on the synchronous path of a refusal already decided, so an
 	// unbounded insert holds the user's answer open.
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), outOfBandAuditTimeout)
 	defer cancel()
@@ -136,6 +136,12 @@ func LogAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
 	}
 
 	attrs = append(attrs, mcpDelegationAttrs(p.McpDelegation)...)
+	if f := p.FederatedIdentity; f != nil {
+		attrs = append(attrs,
+			slog.String("federated_issuer", f.Issuer),
+			slog.String("federated_subject", f.Subject),
+		)
+	}
 
 	// Include request payload (truncated to 100KB for log manageability)
 	// Request is already redacted for sensitive data by getRequestString()

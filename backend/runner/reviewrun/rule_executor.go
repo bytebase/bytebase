@@ -20,10 +20,10 @@ import (
 // bound the task executor enforces.
 const maxBackupSize = common.MaxSheetCheckSize
 
-// RuleExecutor evaluates the standard rules against every (spec, target)
-// unit of the issue's plan through omni's SQL Review V2 contract: one Review
-// call per (spec, engine), the caller resolving every input that needs the
-// store and the engine deriving the findings.
+// RuleExecutor evaluates the standard rules against the (spec, target) units
+// of the issue's plan in the project's CI sample through omni's SQL Review V2
+// contract: one Review call per (spec, engine), the caller resolving every
+// input that needs the store and the engine deriving the findings.
 type RuleExecutor struct {
 	store       *store.Store
 	reviewFuncs map[storepb.Engine]review.ReviewFunc
@@ -34,46 +34,31 @@ func NewRuleExecutor(s *store.Store) *RuleExecutor {
 	return &RuleExecutor{store: s, reviewFuncs: reviewFuncs}
 }
 
-// RunOnce implements Executor. Collect-all, no fail-fast: every unit is
-// attempted, failures aggregate into one message, and the findings are
+// review returns the rules' results before they become comments, so that the
+// AI review's findings can join them. Collect-all, no fail-fast: every unit is
+// attempted, failures aggregate into one message, and the results are
 // returned only when every unit was evaluated.
-func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID int64) ([]*store.IssueCommentMessage, error) {
-	issue, err := e.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{projectID}, UID: &issueUID})
+func (e *RuleExecutor) review(ctx context.Context, projectID string, issueUID int64) ([]*ruleResult, error) {
+	plan, project, err := loadReviewPlan(ctx, e.store, projectID, issueUID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get issue")
-	}
-	if issue == nil {
-		return nil, errors.Errorf("issue %d not found in project %s", issueUID, projectID)
-	}
-	if issue.PlanUID == nil {
-		return nil, errors.Errorf("issue %d has no plan", issueUID)
-	}
-	plan, err := e.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: projectID, UID: issue.PlanUID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get plan")
-	}
-	if plan == nil {
-		return nil, errors.Errorf("plan %d not found in project %s", *issue.PlanUID, projectID)
-	}
-	project, err := e.store.GetProjectByResourceID(ctx, projectID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project")
-	}
-	if project == nil {
-		return nil, errors.Errorf("project %s not found", projectID)
+		return nil, err
 	}
 	policy, err := e.store.GetEffectiveReviewRulePolicy(ctx, project.Workspace, projectID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get review rule policy")
+	}
+	// An empty policy is the standard rules switched off: they report no
+	// finding, so the run resolves the ones they left. omni evaluates SYNTAX
+	// whether or not it is listed, so it is not asked at all.
+	if len(policy.GetRules()) == 0 {
+		return nil, nil
 	}
 
 	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, e.store, plan, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database group for plan")
 	}
-	// DeriveReviewTargets, not DeriveCheckTargets: review must evaluate every
-	// (spec, target) unit, so the CI sampling limit does not apply.
-	checkTargets, err := plancheck.DeriveReviewTargets(ctx, e.store, project, plan, databaseGroup)
+	checkTargets, err := plancheck.DeriveCheckTargets(ctx, e.store, project, plan, databaseGroup)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to derive review targets")
 	}
@@ -85,14 +70,18 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 			return nil, err
 		}
 		target, err := e.resolveReviewTarget(ctx, project, checkTarget)
+		if errors.Is(err, errNoRuleReviewer) {
+			continue
+		}
 		if err != nil {
 			unitErrs = append(unitErrs, errors.Wrapf(err, "%s", checkTarget.Target))
 			continue
 		}
 		targets = append(targets, target)
 	}
+	markOtherSpecs(targets)
 
-	var comments []*store.IssueCommentMessage
+	var results []*ruleResult
 	sheets := make(map[string]string)
 	for _, unit := range groupReviewUnits(reviewRules(policy), targets) {
 		if err := ctx.Err(); err != nil {
@@ -133,12 +122,12 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 			}
 			unitErrs = append(unitErrs, errors.Wrapf(failure.Err, "%s", unit.Targets[failure.Target].Check.Target))
 		}
-		comments = append(comments, reviewResultComments(projectID, issueUID, unit, sql, result)...)
+		results = append(results, reviewResults(unit, sql, result)...)
 	}
 	if err := aggregateUnitErrors(len(checkTargets), unitErrs); err != nil {
 		return nil, err
 	}
-	return comments, nil
+	return results, nil
 }
 
 // failures reports one error per target of the unit, so the aggregate counts
@@ -151,15 +140,26 @@ func (u *reviewUnit) failures(err error) []error {
 	return errs
 }
 
+// errNoRuleReviewer marks a target whose engine has no standard rule review.
+var errNoRuleReviewer = errors.New("the engine has no standard rule reviewer")
+
+// errMetadataNotSynced marks a database whose schema Bytebase has not synced,
+// so no reviewer can read it.
+var errMetadataNotSynced = errors.New("metadata not synced")
+
 // resolveReviewTarget gathers the inputs the engine cannot derive from the
 // SQL: the synced schema, and the instance facts the review contract lists.
-// A database whose schema is not synced cannot be reviewed.
+// A database whose schema is not synced cannot be reviewed. A target on an
+// engine with no reviewer returns errNoRuleReviewer before its schema is read.
 func (e *RuleExecutor) resolveReviewTarget(ctx context.Context, project *store.ProjectMessage, checkTarget *plancheck.CheckTarget) (*reviewTarget, error) {
 	instance, database, err := plancheck.ResolveDatabaseTarget(ctx, e.store, checkTarget.Target)
 	if err != nil {
 		return nil, err
 	}
 	engine := instance.Metadata.GetEngine()
+	if _, ok := e.reviewFuncs[engine]; !ok {
+		return nil, errNoRuleReviewer
+	}
 	dbSchema, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		Workspace:    instance.Workspace,
 		InstanceID:   database.InstanceID,
@@ -169,7 +169,7 @@ func (e *RuleExecutor) resolveReviewTarget(ctx context.Context, project *store.P
 		return nil, errors.Wrapf(err, "failed to get database schema")
 	}
 	if dbSchema == nil || dbSchema.GetProto() == nil {
-		return nil, errors.New("metadata not synced")
+		return nil, errMetadataNotSynced
 	}
 	schema := dbSchema.GetProto()
 
@@ -186,6 +186,7 @@ func (e *RuleExecutor) resolveReviewTarget(ctx context.Context, project *store.P
 			BackupDatabaseExists: backupDatabaseExists,
 			SessionUser:          sessionUser(project, instance, schema.GetOwner()),
 			LowerCaseTableNames:  int(instance.Metadata.GetMysqlLowerCaseTableNames()),
+			DefaultSchema:        schema.GetDefaultSchema(),
 		},
 	}, nil
 }
@@ -232,24 +233,41 @@ func sessionUser(project *store.ProjectMessage, instance *store.InstanceMessage,
 	return utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN).GetUsername()
 }
 
-// aggregateUnitErrors folds per-unit failures into one message, e.g.
-// "2 of 5 review units failed: instances/prod/databases/db1: ...;
-// instances/prod/databases/db2: ... (+1 more)".
-func aggregateUnitErrors(total int, unitErrs []error) error {
-	if len(unitErrs) == 0 {
-		return nil
-	}
+// unitErrors is the failures of a run's units as one error. It unwraps to
+// each of them, so the kind of failure stays readable through it.
+type unitErrors struct {
+	total int
+	errs  []error
+}
+
+// Error folds the failures into one message, e.g. "2 of 5 review units
+// failed: instances/prod/databases/db1: ...; instances/prod/databases/db2:
+// ... (+1 more)".
+func (e *unitErrors) Error() string {
 	const maxDetailed = 3
 	details := make([]string, 0, maxDetailed)
-	for i, err := range unitErrs {
+	for i, err := range e.errs {
 		if i >= maxDetailed {
 			break
 		}
 		details = append(details, err.Error())
 	}
 	suffix := ""
-	if len(unitErrs) > maxDetailed {
-		suffix = fmt.Sprintf(" (+%d more)", len(unitErrs)-maxDetailed)
+	if len(e.errs) > maxDetailed {
+		suffix = fmt.Sprintf(" (+%d more)", len(e.errs)-maxDetailed)
 	}
-	return errors.Errorf("%d of %d review units failed: %s%s", len(unitErrs), total, strings.Join(details, "; "), suffix)
+	return fmt.Sprintf("%d of %d review units failed: %s%s", len(e.errs), e.total, strings.Join(details, "; "), suffix)
+}
+
+func (e *unitErrors) Unwrap() []error {
+	return e.errs
+}
+
+// aggregateUnitErrors folds per-unit failures into one error, or nil when
+// there is none.
+func aggregateUnitErrors(total int, unitErrs []error) error {
+	if len(unitErrs) == 0 {
+		return nil
+	}
+	return &unitErrors{total: total, errs: unitErrs}
 }

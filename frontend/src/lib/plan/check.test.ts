@@ -2,6 +2,7 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
 import {
+  Plan_SpecSchema,
   PlanCheckRun_Result_Type,
   PlanCheckRun_ResultSchema,
   PlanCheckRun_Status,
@@ -12,6 +13,7 @@ import {
   getFilteredResultGroups,
   getPlanCheckSummary,
   getPlanCheckSummaryWithFallback,
+  planCheckRunListForSpec,
 } from "./check";
 
 describe("plan check helpers", () => {
@@ -129,5 +131,47 @@ describe("plan check helpers", () => {
     expect(groups[0]?.results[0]?.title).toBe("Plan check run timed out");
     expect(groups[1]?.results[0]?.title).toBe("Canceled");
     expect(groups[1]?.results[0]?.content).toBe("Canceled by user");
+  });
+});
+
+describe("planCheckRunListForSpec", () => {
+  const DB = "instances/i/databases/shop";
+  const SHEET_A = "a".repeat(64);
+  const SHEET_B = "b".repeat(64);
+  const spec = (id: string, sheet: string) =>
+    create(Plan_SpecSchema, {
+      id,
+      config: {
+        case: "changeDatabaseConfig",
+        value: { targets: [DB], sheet: `projects/p/sheets/${sheet}` },
+      },
+    });
+  const report = (title: string, sheetSha256: string) =>
+    create(PlanCheckRun_ResultSchema, {
+      type: PlanCheckRun_Result_Type.STATEMENT_SUMMARY_REPORT,
+      target: DB,
+      title,
+      sheetSha256,
+    });
+  const titles = (
+    sheet: string,
+    runs = [
+      create(PlanCheckRunSchema, {
+        status: PlanCheckRun_Status.DONE,
+        results: [
+          report("a", SHEET_A),
+          report("b", SHEET_B),
+          report("old", ""),
+        ],
+      }),
+    ]
+  ) =>
+    planCheckRunListForSpec(runs, spec("spec", sheet)).flatMap((run) =>
+      run.results.map((result) => result.title)
+    );
+
+  test("gives each change on one database only its own sheet's results", () => {
+    expect(titles(SHEET_A)).toEqual(["a", "old"]);
+    expect(titles(SHEET_B)).toEqual(["b", "old"]);
   });
 });

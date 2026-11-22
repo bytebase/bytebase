@@ -1,12 +1,8 @@
 import { create } from "@bufbuild/protobuf";
-import { uniq } from "lodash-es";
-import type { Factor, Operator } from "@/modules/cel";
-import { CollectionOperatorList, EqualityOperatorList } from "@/modules/cel";
 import { useAppStore } from "@/stores/app";
 import type { Algorithm } from "@/types/proto-es/v1/setting_service_pb";
 import { AlgorithmSchema } from "@/types/proto-es/v1/setting_service_pb";
 import type { ResourceSelectOption } from "@/types/v2-shared";
-import { CEL_ATTRIBUTE_RESOURCE_PROJECT_ID } from "@/utils/cel-attributes";
 
 export const getClassificationLevelOptions = () => {
   const classification = useAppStore.getState().classification();
@@ -22,13 +18,6 @@ export const getClassificationLevelOptions = () => {
     value: String(l.level),
   }));
 };
-
-export const factorOperatorOverrideMap = new Map<Factor, Operator[]>([
-  [
-    CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
-    uniq([...EqualityOperatorList, ...CollectionOperatorList]),
-  ],
-]);
 
 export type MaskingType =
   | "full-mask"

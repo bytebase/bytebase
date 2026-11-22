@@ -55,6 +55,7 @@ export {
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
+  WORKSPACE_ROUTE_EXPORT_DESTINATIONS,
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
@@ -210,7 +211,11 @@ function currentRouteSnapshot(): ReactRoute {
     string,
     string | string[] | undefined
   >;
-  const next = assembleRoute(location, matches, leafParams);
+  const next = assembleRoute(
+    location,
+    matches.map((match) => ({ handle: match.route.handle })),
+    leafParams
+  );
   if (
     !currentRouteCache ||
     currentRouteCache.fullPath !== next.fullPath ||

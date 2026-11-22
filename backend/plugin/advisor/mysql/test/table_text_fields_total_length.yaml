@@ -1,0 +1,45 @@
+- statement: CREATE TABLE t (a TEXT, b VARCHAR(20));
+  want:
+    - status: 2
+      code: 813
+      title: TABLE_TEXT_FIELDS_TOTAL_LENGTH
+      content: Table "t" total text column length (65555) exceeds the limit (1000).
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t (a VARCHAR(20), b INT(11));
+- statement: ALTER TABLE tech_book ADD COLUMN c TEXT;
+  want:
+    - status: 2
+      code: 611
+      title: TABLE_TEXT_FIELDS_TOTAL_LENGTH
+      content: Table "tech_book" total text column length (66045) exceeds the limit (1000).
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD COLUMN c VARCHAR(100);
+- statement: |-
+    CREATE TABLE t (a TEXT);
+    DROP TABLE t;
+- statement: |-
+    CREATE TABLE t (a VARCHAR(600));
+    ALTER TABLE t ADD COLUMN b VARCHAR(600);
+  want:
+    - status: 2
+      code: 813
+      title: TABLE_TEXT_FIELDS_TOTAL_LENGTH
+      content: Table "t" total text column length (1200) exceeds the limit (1000).
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 611
+      title: TABLE_TEXT_FIELDS_TOTAL_LENGTH
+      content: Table "t" total text column length (1200) exceeds the limit (1000).
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

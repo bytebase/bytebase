@@ -11,13 +11,18 @@ const planCheckRunOrdinal = (name: string): number => {
   return uid ? Number.parseInt(uid, 10) : 0;
 };
 
-export const getSQLAdviceMarkers = (
-  planCheckRuns: PlanCheckRun[]
-): AdviceOption[] => {
-  const latest = [...planCheckRuns].sort(
+export const latestPlanCheckRun = (
+  planCheckRuns: readonly PlanCheckRun[]
+): PlanCheckRun | undefined =>
+  [...planCheckRuns].sort(
     (left, right) =>
       planCheckRunOrdinal(right.name) - planCheckRunOrdinal(left.name)
   )[0];
+
+export const getSQLAdviceMarkers = (
+  planCheckRuns: PlanCheckRun[]
+): AdviceOption[] => {
+  const latest = latestPlanCheckRun(planCheckRuns);
   if (!latest) {
     return [];
   }

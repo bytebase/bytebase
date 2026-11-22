@@ -2,17 +2,13 @@ package v1
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
-	"time"
 
 	"connectrpc.com/connect"
-	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -312,6 +308,8 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		}
 	}
 
+	attachReleaseStates(ctx, s.store, s.store, tasks)
+
 	if err := CreateRolloutAndPendingTasks(ctx, s.store, user.Email, plan, issue, project, tasks); err != nil {
 		if IsStaleRolloutApprovalError(err) || IsDraftIssueNotSubmittedError(err) {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
@@ -466,6 +464,7 @@ func CreateRolloutAndPendingTasks(
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to get pipeline create for rollout creation")
 			}
+			attachReleaseStates(ctx, s, s, created)
 			return created, nil
 		},
 	})
@@ -669,7 +668,7 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Req
 	defer driver.Close(ctx)
 
 	appName := fmt.Sprintf("bytebase-taskrun-%d", taskRunUID)
-	session, err := getSession(ctx, instance.Metadata.GetEngine(), driver.GetDB(), appName)
+	session, err := getSession(ctx, instance.Metadata.GetEngine(), driver, appName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get session"))
 	}
@@ -679,105 +678,15 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Req
 	return connect.NewResponse(session), nil
 }
 
-func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, appName string) (*v1pb.TaskRunSession, error) {
-	switch engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB:
-		query := `
-			WITH target_session AS (
-				SELECT pid FROM pg_catalog.pg_stat_activity WHERE application_name = $1 LIMIT 1
-			)
-			SELECT
-				a.pid,
-				pg_blocking_pids(a.pid) AS blocked_by_pids,
-				a.query,
-				a.state,
-				a.wait_event_type,
-				a.wait_event,
-				a.datname,
-				a.usename,
-				a.application_name,
-				a.client_addr,
-				a.client_port,
-				a.backend_start,
-				a.xact_start,
-				a.query_start
-			FROM
-				pg_catalog.pg_stat_activity a
-			WHERE a.application_name = $1
-			   OR (SELECT pid FROM target_session) = ANY(pg_blocking_pids(a.pid))
-			   OR a.pid = ANY(pg_blocking_pids((SELECT pid FROM target_session)))
-			ORDER BY a.pid
-		`
-		rows, err := db.QueryContext(ctx, query, appName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to query rows")
-		}
-		defer rows.Close()
-
-		ss := &v1pb.TaskRunSession_Postgres{}
-		for rows.Next() {
-			var s v1pb.TaskRunSession_Postgres_Session
-
-			var blockedByPids pgtype.TextArray
-
-			var bs time.Time
-			var xs, qs *time.Time
-			if err := rows.Scan(
-				&s.Pid,
-				&blockedByPids,
-				&s.Query,
-				&s.State,
-				&s.WaitEventType,
-				&s.WaitEvent,
-				&s.Datname,
-				&s.Usename,
-				&s.ApplicationName,
-				&s.ClientAddr,
-				&s.ClientPort,
-				&bs,
-				&xs,
-				&qs,
-			); err != nil {
-				return nil, errors.Wrapf(err, "failed to scan")
-			}
-
-			if err := blockedByPids.AssignTo(&s.BlockedByPids); err != nil {
-				return nil, errors.Wrapf(err, "failed to assign blocking pids")
-			}
-
-			s.BackendStart = timestamppb.New(bs)
-			if xs != nil {
-				s.XactStart = timestamppb.New(*xs)
-			}
-			if qs != nil {
-				s.QueryStart = timestamppb.New(*qs)
-			}
-
-			if s.ApplicationName == appName {
-				ss.Session = &s
-			} else if ss.Session != nil {
-				// For blocking/blocked sessions, we need to check if they're related to our main session
-				// We stored the main session, so check relationships with it
-				if slices.Contains(s.BlockedByPids, ss.Session.Pid) {
-					ss.BlockedSessions = append(ss.BlockedSessions, &s)
-				} else if slices.Contains(ss.Session.BlockedByPids, s.Pid) {
-					ss.BlockingSessions = append(ss.BlockingSessions, &s)
-				}
-			}
-		}
-
-		if err := rows.Err(); err != nil {
-			return nil, errors.Wrapf(err, "failed to scan rows")
-		}
-
-		return &v1pb.TaskRunSession{
-			Session: &v1pb.TaskRunSession_Postgres_{
-				Postgres: ss,
-			},
-		}, nil
-	default:
+func getSession(ctx context.Context, engine storepb.Engine, driver db.Driver, appName string) (*v1pb.TaskRunSession, error) {
+	if engine != storepb.Engine_POSTGRES && engine != storepb.Engine_COCKROACHDB {
 		return nil, errors.Errorf("session monitoring is only supported for PostgreSQL and CockroachDB")
 	}
+	reader, ok := driver.(db.TaskRunSessionReader)
+	if !ok {
+		return nil, errors.Errorf("session monitoring for engine %v requires a driver implementing TaskRunSessionReader", engine.String())
+	}
+	return reader.TaskRunSession(ctx, appName)
 }
 
 // BatchRunTasks runs tasks in batch.
@@ -1047,7 +956,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		return connect.NewResponse(&v1pb.BatchSkipTasksResponse{}), nil
 	}
 
-	if err := s.store.BatchSkipTasks(ctx, projectID, taskUIDs, request.Reason); err != nil {
+	if err := s.store.BatchSkipTasks(ctx, projectID, taskUIDs, request.Reason, user.Email); err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 		}
@@ -1419,34 +1328,15 @@ func (s *RolloutService) canUserCancelEnvironmentTaskRun(ctx context.Context, us
 // to execution when the project requires issue approval and the plan carries no
 // linked issue.
 //
-// Both approval checks on this path are guarded on a linked issue existing, so
-// a plan created without one reaches task creation with no approval whatever
-// require_issue_approval says. That is not a defect for every caller — the
-// shipped GitOps Service Agent role holds no issue permission at all, so
-// issueless deployment is a supported product contract, and READ_WRITE
-// preserves supported contracts. It is a defect for an MCP session, because
-// without this rule the three FORBIDDEN approval methods are decorative in the
-// change lane: an agent that cannot clear the gate can skip it instead, which
-// is the same end state the self-approval guard exists to prevent. The rule is
-// the one rollout_service.proto states the gate PR owes.
-//
-// It cannot live in the ceiling gate. "The plan has no linked issue" is not a
-// field of either request, so the interceptor would have to read the store to
-// find out — a lookup it has no business doing and one that would race the
-// handler's own. The guard sits where the fact is already loaded.
-//
-// It must bite BEFORE the rollout exists: once an issueless rollout is created,
-// approval finding refuses outright ("rollout already started"), so a rule that
-// only covered BatchRunTasks would leave the change stranded rather than
-// gated. Hence both callers, CreateRollout first.
-//
-// Presence of the delegated grant is the MCP-origin marker, never a field value
-// (common.DelegatedGrant), so the console and the GitOps agent are untouched.
-// BOT-71 tracks whether the product should close this for every caller; if it
-// does, this guard becomes redundant rather than wrong.
+// Both approval checks on this path need a linked issue, so without this guard
+// a session could run a change this project requires approval for with no
+// approval at all. Other callers keep issueless deployment, which the GitOps
+// Service Agent role relies on; BOT-71 tracks whether to close it for everyone.
+// It must refuse before the rollout exists, because approval finding then
+// refuses outright and strands the change, so CreateRollout is guarded as well
+// as BatchRunTasks.
 func rejectMCPOriginatedIssuelessRollout(ctx context.Context, project *store.ProjectMessage, issue *store.IssueMessage, action string) error {
-	authCtx, ok := common.GetAuthContextFromContext(ctx)
-	if !ok || authCtx.DelegatedGrant == nil {
+	if !mcpSession(ctx) {
 		return nil
 	}
 	if !project.Setting.GetRequireIssueApproval() || issue != nil {

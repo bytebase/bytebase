@@ -6,9 +6,11 @@ import {
   DataSource_RedisType,
   DataSourceExternalSecret_AuthType as SecretAuth,
   DataSourceExternalSecret_SecretType as SecretType,
+  Vendor,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { isIAMAuthentication } from "./authentication";
 import { type EditDataSource, getDataSourceSecretValue } from "./common";
+import { isNeonPooledHost } from "./neon-import";
 
 export type ValidationErrors = Record<string, string>;
 
@@ -40,11 +42,13 @@ export function validateDataSource(
   ds: EditDataSource,
   {
     engine,
+    vendor = Vendor.VENDOR_UNSPECIFIED,
     isSaaSMode,
     stored,
     keytabResupply = false,
   }: {
     engine: Engine;
+    vendor?: Vendor;
     isSaaSMode: boolean;
     stored?: DataSource;
     keytabResupply?: boolean;
@@ -68,6 +72,8 @@ export function validateDataSource(
     !/.+:.+:.+/.test(ds.host)
   )
     errors.host = "cloud-sql-host";
+  if (vendor === Vendor.NEON && isNeonPooledHost(ds.host))
+    errors.host = "neon-pooled-host";
   if (
     ds.authenticationType === Auth.AWS_RDS_IAM &&
     (engine !== Engine.DYNAMODB || ds.iamExtension?.case === "awsCredential")
@@ -77,13 +83,9 @@ export function validateDataSource(
     errors.serviceName = "oracle-service";
   if (engine === Engine.DATABRICKS) {
     require("warehouseId", ds.warehouseId);
-  }
-  if (engine === Engine.DATABRICKS || engine === Engine.SNOWFLAKE) {
     const key = getDataSourceSecretValue(ds, "authenticationPrivateKey");
     if (key !== undefined) {
-      require(engine === Engine.DATABRICKS
-        ? "updatedToken"
-        : "authenticationPrivateKey", key);
+      require("updatedToken", key);
     }
   }
   if (engine === Engine.REDIS && ds.redisType === DataSource_RedisType.SENTINEL)

@@ -1,6 +1,14 @@
-import { clone, create } from "@bufbuild/protobuf";
+import { clone, create, equals, toJsonString } from "@bufbuild/protobuf";
 import { Loader2, Pencil, Table, Upload } from "lucide-react";
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
   planServiceClientConnect,
@@ -8,17 +16,39 @@ import {
   sheetServiceClientConnect,
 } from "@/api";
 import {
+  captureEditorViewAnchor,
+  type EditorViewAnchor,
+  focusEditorAtAnchor,
   type IStandaloneCodeEditor,
+  lineViewAnchor,
   MonacoEditor,
   type MonacoModule,
   ReadonlyMonaco,
 } from "@/components/monaco";
-import { ReleaseInfoCard } from "@/components/release/ReleaseInfoCard";
 import { Alert } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useReactiveRoute } from "@/hooks/useReactiveRoute";
 import { seedSheetStatement } from "@/hooks/useSheetStatement";
+import {
+  AGENT_PLAN_DRAFT_EVENT,
+  type AgentPlanDraftEventDetail,
+  appendAgentPlanDraftSQL,
+} from "@/lib/plan/agentDraftHandoff";
+import { expandSpecTargets } from "@/lib/plan/check";
 import { cn } from "@/lib/utils";
+import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
+import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
+import { buildPlanCreatePrompt } from "@/modules/agent/logic/planIssueAssistance";
+import { getDatabaseMentionLabel } from "@/modules/agent/logic/resourceMention";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -34,6 +64,7 @@ import {
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
+  type CheckReleaseResponse_CheckResult,
   GetReleaseRequestSchema,
   type Release,
 } from "@/types/proto-es/v1/release_service_pb";
@@ -43,23 +74,37 @@ import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
 import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
 import { getStatementSize, MAX_UPLOAD_FILE_SIZE_MB } from "@/utils/sheet";
 import { getInstanceResource } from "@/utils/v1/database";
-import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
+import { extractPlanUID, sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import {
+  exceedsSheetPreviewLimit,
   extractSheetUID,
   getSheetStatement,
   setSheetStatement,
 } from "@/utils/v1/sheet";
+import { useRegisterPlanSqlFixEditor } from "../hooks/usePlanSqlFixTarget";
+import { usePlanStatementDomOwner } from "../hooks/usePlanStatementDomOwner";
+import { useChecksInReview } from "../hooks/useSqlReviewV2";
+import { usePlanDetailStore } from "../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
+import { affectedRowsSummary } from "../utils/affectedRows";
 import {
   createEmptyLocalSheet,
   getLocalSheetByName,
+  isSameStatementContent,
   removeLocalSheet,
   setLocalSheetStatement,
 } from "../utils/localSheet";
 import { getSQLAdviceMarkers } from "../utils/sqlAdvice";
+import type { PlanSqlFixEditorSnapshot } from "../utils/sqlFixTarget";
+import { AffectedRowsStrip } from "./AffectedRowsStrip";
+import { ReleaseChangesRail } from "./changes/ReleaseChangesRail";
+import { PlanDetailDraftChecks } from "./PlanDetailDraftChecks";
 import { SchemaEditorSheet } from "./SchemaEditorSheet";
 import { StatementThreadsLayer } from "./threads/StatementThreadsLayer";
-import { sheetSha256OfName } from "./threads/threadModel";
+import {
+  completePreviewLineCount,
+  sheetSha256OfName,
+} from "./threads/threadModel";
 
 // Both modes reserve the same gutter so line numbers and SQL stay aligned
 // when entering or leaving edit mode. Keep these options stable: MonacoEditor
@@ -72,16 +117,23 @@ const STATEMENT_EDITOR_OPTIONS = {
   occurrencesHighlight: "off",
 } as const;
 
-// Sticky scroll would pin statement lines over the thread view zones.
-const THREADS_EDITOR_OPTIONS = {
+// A pinned sticky-scroll line would paint the editor's white over the
+// statement's gray ground, and over the thread view zones.
+const READONLY_EDITOR_OPTIONS = {
   ...STATEMENT_EDITOR_OPTIONS,
-  selectOnLineNumbers: false,
   stickyScroll: { enabled: false },
 } as const;
 
+const THREADS_EDITOR_OPTIONS = {
+  ...READONLY_EDITOR_OPTIONS,
+  selectOnLineNumbers: false,
+} as const;
+
+const EMPTY_CHECK_RUNS: PlanCheckRun[] = [];
+
 export function PlanDetailStatementSection({
   className,
-  planCheckRuns = [],
+  planCheckRuns = EMPTY_CHECK_RUNS,
   spec,
   statementVersion = 0,
 }: {
@@ -92,8 +144,12 @@ export function PlanDetailStatementSection({
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
+  const route = useReactiveRoute();
+  const workspace = useAppStore((s) => s.workspaceResourceName());
+  const actor = useAppStore((s) => s.currentUser?.name ?? "");
   const { setEditing } = page;
   const databasesByName = useAppStore((s) => s.databasesByName);
+  const dbGroupsByName = useAppStore((s) => s.dbGroupsByName);
   const currentUser = page.currentUser;
   const project = page.project;
   const releaseName =
@@ -112,27 +168,49 @@ export function PlanDetailStatementSection({
   );
   const [isDownloading, setIsDownloading] = useState(false);
   const [isEditing, setIsEditing] = useState(page.isCreating);
+  const [localPresentation, setLocalPresentation] = useState(false);
+  const draftOrigin = useRef<object | undefined>(undefined);
+  const sheetLoad = useMemo(
+    () => ({ sheetName, statementVersion }),
+    [sheetName, statementVersion]
+  );
+  const [loadedSheet, setLoadedSheet] = useState<typeof sheetLoad>();
   const [isSaving, setIsSaving] = useState(false);
   const [statement, setStatement] = useState(
     () => seedSheetStatement(sheetName, getLocalSheetByName).statement
   );
   const [draftStatement, setDraftStatement] = useState("");
+  const [inlineChecks, setInlineChecks] = useState<{
+    content?: Uint8Array;
+    results?: CheckReleaseResponse_CheckResult[];
+    targets: string;
+  }>();
   const [isSchemaEditorOpen, setIsSchemaEditorOpen] = useState(false);
+  const [pendingAgentDraft, setPendingAgentDraft] =
+    useState<AgentPlanDraftEventDetail>();
   const inputRef = useRef<HTMLInputElement>(null);
   // The read-only editor instance, captured whenever one is created so the
   // threads layer can attach even if threads become enabled later. Editing,
   // an asynchronous sheet load, or an emptied statement unmounts and disposes
   // it; forget it whenever that happens so the layer never binds to a
   // disposed editor while the next one is still loading.
-  const showsReadonlyEditor =
-    !isLoading && !isEditing && Boolean(statement || draftStatement);
   const [readonlyEditor, setReadonlyEditor] = useState<{
     editor: IStandaloneCodeEditor;
     monaco: MonacoModule;
   }>();
-  useEffect(() => {
-    if (!showsReadonlyEditor) setReadonlyEditor(undefined);
-  }, [showsReadonlyEditor]);
+  const handleReaderReady = useCallback(
+    (monaco: MonacoModule, editor: IStandaloneCodeEditor) => {
+      setReadonlyEditor({ editor, monaco });
+    },
+    []
+  );
+  const [editingEditor, setEditingEditor] = useState<IStandaloneCodeEditor>();
+  const editAnchorRef = useRef<EditorViewAnchor | undefined>(undefined);
+  const focusAppliedSqlRef = useRef(false);
+  const threadFocus = usePlanDetailStore((state) => state.threadFocus);
+  const clearThreadFocus = usePlanDetailStore(
+    (state) => state.clearThreadFocus
+  );
 
   const editingScope = useMemo(() => `statement:${spec.id}`, [spec.id]);
   const targetDatabaseName = useMemo(() => {
@@ -186,6 +264,13 @@ export function PlanDetailStatementSection({
     () => getSQLAdviceMarkers(planCheckRuns),
     [planCheckRuns]
   );
+  // Where the checks are reviewers the statement report is not one; its
+  // estimate sits under the SQL it describes.
+  const checksInReview = useChecksInReview();
+  const affectedRows = useMemo(
+    () => (checksInReview ? affectedRowsSummary(planCheckRuns) : undefined),
+    [checksInReview, planCheckRuns]
+  );
 
   useEffect(() => {
     if (!isEditing) {
@@ -207,8 +292,10 @@ export function PlanDetailStatementSection({
     // Depend on the boolean (not the specs array) so poll-driven refreshes
     // — which produce a new specs reference but the same membership — don't
     // wipe the user's in-progress edits.
-    setIsEditing(page.isCreating || isPendingDraft);
-    setDraftStatement("");
+    if (!draftOrigin.current) {
+      setIsEditing(page.isCreating || isPendingDraft);
+      setDraftStatement("");
+    }
   }, [page.isCreating, isPendingDraft, spec.id]);
 
   useEffect(() => {
@@ -236,7 +323,7 @@ export function PlanDetailStatementSection({
 
       if (!sheetName) {
         setStatement("");
-        setDraftStatement("");
+        if (!draftOrigin.current) setDraftStatement("");
         setRelease(undefined);
         setIsSheetOversize(false);
         return;
@@ -247,7 +334,8 @@ export function PlanDetailStatementSection({
       const seed = seedSheetStatement(sheetName, getLocalSheetByName);
       if (!seed.isLoading) {
         setStatement(seed.statement);
-        setDraftStatement(seed.statement);
+        if (!draftOrigin.current) setDraftStatement(seed.statement);
+        setLoadedSheet(sheetLoad);
         setIsSheetOversize(seed.isTruncated);
         setIsLoading(false);
         return;
@@ -261,7 +349,8 @@ export function PlanDetailStatementSection({
         if (!sheet || canceled) return;
         const nextStatement = getSheetStatement(sheet);
         setStatement(nextStatement);
-        setDraftStatement(nextStatement);
+        if (!draftOrigin.current) setDraftStatement(nextStatement);
+        setLoadedSheet(sheetLoad);
         setIsSheetOversize(getStatementSize(nextStatement) < sheet.contentSize);
       } finally {
         if (!canceled) setIsLoading(false);
@@ -272,18 +361,12 @@ export function PlanDetailStatementSection({
     return () => {
       canceled = true;
     };
-  }, [releaseName, sheetName, statementVersion]);
+  }, [releaseName, sheetName, sheetLoad]);
 
-  if (isValidReleaseName(releaseName)) {
-    return (
-      <PlanDetailReleaseStatement
-        className={className}
-        isLoading={isLoading}
-        release={release}
-        releaseName={releaseName}
-      />
-    );
-  }
+  const hasSingleDatabaseTarget =
+    spec.config?.case === "changeDatabaseConfig" &&
+    spec.config.value.targets?.length === 1 &&
+    isValidDatabaseName(spec.config.value.targets[0]);
 
   const canModifyStatement = Boolean(
     !page.readonly &&
@@ -294,9 +377,285 @@ export function PlanDetailStatementSection({
         currentUser.name === page.plan.creator ||
         hasProjectPermissionV2(project, "bb.plans.update"))
   );
+  const expandedTargets = useMemo(
+    () =>
+      expandSpecTargets(spec, (name) =>
+        dbGroupsByName?.[name]?.matchedDatabases.map(
+          (database) => database.name
+        )
+      ),
+    [dbGroupsByName, spec]
+  );
+  const savedSpec = page.plan.specs.find(
+    (candidate) => candidate.id === spec.id
+  );
+  const savedPlanId = extractPlanUID(page.plan.name);
+  const sheetSha256 = sheetSha256OfName(sheetName);
+  const availableSource = Boolean(
+    page.ready &&
+      !page.isCreating &&
+      canModifyStatement &&
+      !isLoading &&
+      !isSheetOversize &&
+      loadedSheet === sheetLoad &&
+      !releaseName &&
+      actor &&
+      actor === currentUser.name &&
+      workspace &&
+      project?.name &&
+      savedPlanId &&
+      page.plan.name === `${project.name}/plans/${savedPlanId}` &&
+      sheetSha256 &&
+      sheetName === `${project.name}/sheets/${sheetSha256}` &&
+      spec.config.case === "changeDatabaseConfig" &&
+      savedSpec &&
+      equals(Plan_SpecSchema, savedSpec, spec)
+  );
+  const sourceKey = JSON.stringify([
+    actor,
+    workspace,
+    route.fullPath,
+    page.pageKey,
+    project?.name,
+    page.plan.name,
+    page.plan.state,
+    page.plan.approvalStatus,
+    page.plan.issueStatus,
+    toJsonString(Plan_SpecSchema, spec),
+    expandedTargets,
+    availableSource,
+  ]);
+  // A new source occurrence stays distinct even if the server later restores
+  // the exact previous SQL, targets, or edition.
+  const source = useMemo(
+    () => ({ sourceKey, statement, sheetLoad }),
+    [sourceKey, statement, sheetLoad]
+  );
+  const liveSource = useRef<typeof source | undefined>(source);
+  const livePlan = useRef(page.plan);
+  useLayoutEffect(() => {
+    liveSource.current = source;
+    livePlan.current = page.plan;
+    return () => {
+      liveSource.current = undefined;
+    };
+  }, [source, page.plan]);
+  const sourceStale = !!draftOrigin.current && draftOrigin.current !== source;
+  const activityRequested = threadFocus?.specId === spec.id;
+  const localMode = localPresentation && (!activityRequested || sourceStale);
+  const nativeEditing = isEditing && !localMode;
+  const showsReadonlyEditor =
+    !isLoading && !nativeEditing && Boolean(statement || draftStatement);
+  useEffect(() => {
+    if (localPresentation && !localMode) setLocalPresentation(false);
+  }, [localPresentation, localMode]);
+  useEffect(() => {
+    if (!showsReadonlyEditor) setReadonlyEditor(undefined);
+  }, [showsReadonlyEditor]);
+  useEffect(() => {
+    if (nativeEditing) return;
+    setEditingEditor(undefined);
+    editAnchorRef.current = undefined;
+  }, [nativeEditing]);
+  // The native editor lands on an Activity anchor, or on the position captured by Edit.
+  useEffect(() => {
+    if (!nativeEditing || !editingEditor) return;
+    const activityLine =
+      threadFocus?.specId === spec.id ? threadFocus.lineNumber : undefined;
+    const anchor = activityLine
+      ? lineViewAnchor(activityLine)
+      : editAnchorRef.current;
+    editAnchorRef.current = undefined;
+    if (!anchor) return;
+    focusEditorAtAnchor(editingEditor, anchor);
+    if (focusAppliedSqlRef.current) {
+      focusAppliedSqlRef.current = false;
+      editingEditor.getDomNode()?.scrollIntoView({ block: "nearest" });
+    }
+    if (activityLine && threadFocus) {
+      editingEditor.getDomNode()?.scrollIntoView({ block: "nearest" });
+      clearThreadFocus(threadFocus.nonce);
+    }
+  }, [clearThreadFocus, editingEditor, nativeEditing, spec.id, threadFocus]);
+  const discardDraft = () => {
+    draftOrigin.current = undefined;
+    setDraftStatement(statement);
+    setLocalPresentation(false);
+    setIsEditing(false);
+  };
+  const dom = usePlanStatementDomOwner({
+    actor,
+    workspace,
+    pageKey: route.fullPath,
+    plan: page.plan.name,
+    project: project?.name ?? "",
+    source,
+    reader: readonlyEditor?.editor,
+    draft: draftStatement,
+    mode:
+      availableSource &&
+      !isSaving &&
+      !sourceStale &&
+      !activityRequested &&
+      readonlyEditor &&
+      !isSchemaEditorOpen &&
+      !isDownloading
+        ? localMode
+          ? "local"
+          : !isEditing
+            ? "read"
+            : "manual"
+        : "manual",
+    begin: () => {
+      draftOrigin.current = source;
+      setDraftStatement(statement);
+      setLocalPresentation(true);
+      setIsEditing(true);
+    },
+    input: setDraftStatement,
+    cancel: discardDraft,
+  });
+  const sqlFixSnapshot: PlanSqlFixEditorSnapshot = {
+    pageKey: page.pageKey,
+    plan: page.plan.name,
+    specId: spec.id,
+    sheet: sheetName,
+    targets: expandedTargets,
+    currentSql: isEditing && !page.isCreating ? draftStatement : statement,
+    status:
+      page.readonly || page.plan.hasRollout || releaseName || sourceStale
+        ? "readonly"
+        : !canModifyStatement
+          ? "permission-denied"
+          : isLoading || isSaving
+            ? "loading"
+            : isSheetOversize
+              ? "unavailable"
+              : "ready",
+  };
+  const currentSqlFixSnapshot = useRef(sqlFixSnapshot);
+  currentSqlFixSnapshot.current = sqlFixSnapshot;
+  const inlineContent = useMemo(
+    () => new TextEncoder().encode(draftStatement),
+    [draftStatement]
+  );
+  const inlineTargetSignature = JSON.stringify(expandedTargets);
+  const currentInlineChecks =
+    inlineChecks?.targets === inlineTargetSignature &&
+    isSameStatementContent(inlineChecks.content, inlineContent)
+      ? inlineChecks
+      : undefined;
+
+  const updateLocalStatement = useCallback(
+    (nextStatement: string) => {
+      if (!sheetName) return false;
+      const sheet = getLocalSheetByName(sheetName);
+      // Notifying write: the empty-statement validation subscribes to local
+      // sheets. (Previously this cloned the plan into patchState purely to
+      // force a re-render — the identity-preserving snapshot rightly ignores a
+      // content-identical clone, so the signal must be explicit.)
+      setLocalSheetStatement(sheet, nextStatement);
+      setStatement(nextStatement);
+      setDraftStatement(nextStatement);
+      setIsSheetOversize(false);
+      return true;
+    },
+    [sheetName]
+  );
+
+  const applyAgentDraft = useCallback(
+    (detail: AgentPlanDraftEventDetail, sql: string) => {
+      try {
+        if (!updateLocalStatement(sql)) return;
+      } catch {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("agent.plan-draft.current-plan-unavailable"),
+        });
+        return;
+      }
+      setPendingAgentDraft(undefined);
+      detail.onApplied?.();
+    },
+    [t, updateLocalStatement]
+  );
+
+  useRegisterPlanSqlFixEditor(sqlFixSnapshot, (expectedSql, sql) => {
+    const current = currentSqlFixSnapshot.current;
+    if (current.status !== "ready" || current.currentSql !== expectedSql)
+      return false;
+    if (page.isCreating) {
+      try {
+        if (!updateLocalStatement(sql)) return false;
+      } catch {
+        return false;
+      }
+    } else {
+      setLocalPresentation(false);
+      setDraftStatement(sql);
+      setIsEditing(true);
+    }
+    currentSqlFixSnapshot.current = { ...current, currentSql: sql };
+    editAnchorRef.current = lineViewAnchor(1);
+    focusAppliedSqlRef.current = true;
+    if (nativeEditing && editingEditor) {
+      focusEditorAtAnchor(editingEditor, editAnchorRef.current);
+      editingEditor.getDomNode()?.scrollIntoView({ block: "nearest" });
+      editAnchorRef.current = undefined;
+      focusAppliedSqlRef.current = false;
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    if (!page.isCreating) return;
+    const handleAgentDraft = (event: Event) => {
+      const detail = (event as CustomEvent<AgentPlanDraftEventDetail>).detail;
+      if (
+        !detail ||
+        detail.handled ||
+        detail.project !== project?.name ||
+        !hasSingleDatabaseTarget ||
+        targetDatabaseNames[0] !== detail.database
+      ) {
+        return;
+      }
+      detail.handled = true;
+      if (!sheetName || !detail.sql.trim() || isLoading) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("agent.plan-draft.current-plan-unavailable"),
+        });
+        return;
+      }
+      if (statement.trim()) {
+        setPendingAgentDraft(detail);
+        return;
+      }
+      applyAgentDraft(detail, detail.sql);
+    };
+
+    window.addEventListener(AGENT_PLAN_DRAFT_EVENT, handleAgentDraft);
+    return () =>
+      window.removeEventListener(AGENT_PLAN_DRAFT_EVENT, handleAgentDraft);
+  }, [
+    hasSingleDatabaseTarget,
+    isLoading,
+    page.isCreating,
+    project?.name,
+    sheetName,
+    statement,
+    t,
+    targetDatabaseNames,
+    applyAgentDraft,
+  ]);
+
   const canEdit = canModifyStatement && !isSheetOversize && !page.isCreating;
   // An active edit session (not whole-plan creation) shows Save/Cancel.
-  const isInlineEditing = isEditing && !page.isCreating;
+  const isInlineEditing =
+    isEditing && (!page.isCreating || Boolean(draftOrigin.current));
   // Hide Upload/Schema editor only when editing an already-persisted statement;
   // a new pending-draft spec still needs them to author its first statement.
   const isEditingExistingStatement = isInlineEditing && !isPendingDraft;
@@ -304,23 +663,32 @@ export function PlanDetailStatementSection({
     ? draftStatement !== statement
     : isEditing && draftStatement !== statement;
   const canSave =
+    !sourceStale &&
     !isSaving &&
     !isLoading &&
     Boolean(sheetName) &&
     draftStatement.trim() !== "" &&
     hasChanges;
 
-  const updateLocalStatement = (nextStatement: string) => {
-    if (!sheetName) return;
-    const sheet = getLocalSheetByName(sheetName);
-    // Notifying write: the empty-statement validation subscribes to local
-    // sheets. (Previously this cloned the plan into patchState purely to
-    // force a re-render — the identity-preserving snapshot rightly ignores a
-    // content-identical clone, so the signal must be explicit.)
-    setLocalSheetStatement(sheet, nextStatement);
-    setStatement(nextStatement);
-    setDraftStatement(nextStatement);
-    setIsSheetOversize(false);
+  const selectedDatabaseName = hasSingleDatabaseTarget
+    ? targetDatabaseNames[0]
+    : undefined;
+  const selectedDatabase = selectedDatabaseName
+    ? databasesByName[selectedDatabaseName]
+    : undefined;
+  const selectedDatabaseLabel = selectedDatabase
+    ? getDatabaseMentionLabel(selectedDatabase)
+    : selectedDatabaseName?.split("/").at(-1);
+  const askAgentToDraftSQL = () => {
+    if (!project || !selectedDatabaseName || !selectedDatabaseLabel) return;
+    openAgentWithPrompt(buildPlanCreatePrompt(), [
+      {
+        kind: "database",
+        name: selectedDatabaseName,
+        project: project.name,
+        label: selectedDatabaseLabel,
+      },
+    ]);
   };
 
   const handleUploadClick = () => inputRef.current?.click();
@@ -352,6 +720,14 @@ export function PlanDetailStatementSection({
     setIsEditing(true);
   };
 
+  const handleBeginEdit = () => {
+    if (sourceStale) return;
+    editAnchorRef.current =
+      readonlyEditor && captureEditorViewAnchor(readonlyEditor.editor);
+    setLocalPresentation(false);
+    setIsEditing(true);
+  };
+
   const handleSchemaEditorInsert = (nextStatement: string) => {
     if (page.isCreating) {
       updateLocalStatement(nextStatement);
@@ -361,8 +737,8 @@ export function PlanDetailStatementSection({
     setIsEditing(true);
   };
 
-  const patchPlanStatement = (nextSheetName: string) => {
-    const planPatch = clone(PlanSchema, page.plan);
+  const patchPlanStatement = (nextSheetName: string, plan = page.plan) => {
+    const planPatch = clone(PlanSchema, plan);
     const existingIdx = planPatch.specs.findIndex(
       (candidate) => candidate.id === spec.id
     );
@@ -390,6 +766,18 @@ export function PlanDetailStatementSection({
 
   const handleSave = async () => {
     if (!project || !sheetName || !canSave) return;
+    const origin = draftOrigin.current;
+    const isCurrent = () => {
+      if (!origin) return true;
+      const app = useAppStore.getState();
+      return (
+        origin === liveSource.current &&
+        origin === draftOrigin.current &&
+        app.currentUser?.name === actor &&
+        app.workspaceResourceName() === workspace
+      );
+    };
+    if (!isCurrent()) return;
 
     if (page.isCreating) {
       updateLocalStatement(draftStatement);
@@ -404,13 +792,18 @@ export function PlanDetailStatementSection({
       const createdSheet = await useAppStore
         .getState()
         .createSheet(project.name, sheet);
-      const nextPlan = patchPlanStatement(createdSheet.name);
+      if (!isCurrent()) return;
+      const nextPlan = patchPlanStatement(
+        createdSheet.name,
+        origin ? livePlan.current : page.plan
+      );
       if (!nextPlan) return;
       const request = create(UpdatePlanRequestSchema, {
         plan: nextPlan,
         updateMask: { paths: ["specs"] },
       });
       const response = await planServiceClientConnect.updatePlan(request);
+      if (!isCurrent()) return;
       page.patchState({ plan: response });
       // Drop the orphaned local sheet only after the spec is committed
       // to the new server sheet — otherwise an updatePlan failure would
@@ -423,6 +816,8 @@ export function PlanDetailStatementSection({
         removeLocalSheet(previousSheetName);
       }
       setStatement(draftStatement);
+      draftOrigin.current = undefined;
+      setLocalPresentation(false);
       setIsEditing(false);
       pushNotification({
         module: "bytebase",
@@ -483,21 +878,51 @@ export function PlanDetailStatementSection({
 
   const editorContent = page.isCreating ? statement : draftStatement;
 
-  // Inline threads anchor to the saved sheet of a persisted spec, so they
-  // need an issue, a content-addressed sheet, and the complete statement.
-  const sheetSha256 = sheetSha256OfName(sheetName);
+  // Inline threads anchor to the saved sheet of a persisted spec. A truncated
+  // preview can still show threads on its complete lines.
   const issue = page.issue;
-  const threadsEnabled = Boolean(
-    issue &&
-      !page.isCreating &&
-      !isPendingDraft &&
-      sheetSha256 &&
-      !isSheetOversize
+  const showLargeSheetWarning = useMemo(
+    () =>
+      isEditing
+        ? exceedsSheetPreviewLimit(draftStatement)
+        : isSheetOversize ||
+          (!isLoading &&
+            Boolean(sheetSha256) &&
+            exceedsSheetPreviewLimit(statement)),
+    [
+      draftStatement,
+      isEditing,
+      isLoading,
+      isSheetOversize,
+      sheetSha256,
+      statement,
+    ]
   );
+  const previewEndLine = useMemo(
+    () =>
+      isSheetOversize ? completePreviewLineCount(statement, true) : undefined,
+    [isSheetOversize, statement]
+  );
+  const threadsEnabled = Boolean(
+    issue && !page.isCreating && !isPendingDraft && sheetSha256
+  );
+  const showsAffectedRows =
+    Boolean(affectedRows) && !nativeEditing && Boolean(statement.trim());
+
+  if (isValidReleaseName(releaseName) && !localMode) {
+    return (
+      <PlanDetailReleaseStatement
+        className={className}
+        isLoading={isLoading}
+        release={release}
+        releaseName={releaseName}
+      />
+    );
+  }
 
   return (
     <div className={cn("flex flex-col gap-y-1", className)}>
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div
           className={cn(
             "flex items-center gap-x-1 textlabel uppercase",
@@ -515,7 +940,15 @@ export function PlanDetailStatementSection({
           type="file"
         />
         {(canModifyStatement || isEditing) && (
-          <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-2">
+          <div className="ml-auto flex w-full max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-2 sm:w-auto">
+            {page.isCreating &&
+              project &&
+              hasSingleDatabaseTarget &&
+              selectedDatabaseName && (
+                <AgentHelpButton onClick={askAgentToDraftSQL} size="xs">
+                  {t("agent.plan-assistance.ask-draft-sql")}
+                </AgentHelpButton>
+              )}
             {!isEditingExistingStatement && (
               <>
                 <Button
@@ -538,9 +971,11 @@ export function PlanDetailStatementSection({
                 )}
               </>
             )}
-            {!isEditing && canEdit && (
+            {(!isEditing || localMode) && canEdit && (
               <Button
-                onClick={() => setIsEditing(true)}
+                ref={dom.edit}
+                disabled={sourceStale}
+                onClick={handleBeginEdit}
                 size="xs"
                 appearance="outline"
               >
@@ -560,10 +995,8 @@ export function PlanDetailStatementSection({
                   {t("common.save")}
                 </Button>
                 <Button
-                  onClick={() => {
-                    setDraftStatement(statement);
-                    setIsEditing(false);
-                  }}
+                  ref={dom.cancel}
+                  onClick={discardDraft}
                   size="xs"
                   appearance="secondary"
                 >
@@ -574,13 +1007,17 @@ export function PlanDetailStatementSection({
           </div>
         )}
       </div>
-      {isSheetOversize && (
+      {showLargeSheetWarning && (
         <Alert
           variant="warning"
           description={
             <div className="flex items-center justify-between gap-x-4">
-              <span>{t("issue.statement-from-sheet-warning")}</span>
-              {sheetName && (
+              <span>
+                {isEditing
+                  ? t("issue.statement-exceeds-preview-limit")
+                  : t("issue.statement-from-sheet-warning")}
+              </span>
+              {!isEditing && sheetName && (
                 <Button
                   disabled={isDownloading}
                   onClick={() => void downloadSheet()}
@@ -602,50 +1039,80 @@ export function PlanDetailStatementSection({
           {t("common.loading")}
         </div>
       ) : isEditing || showsReadonlyEditor ? (
-        <div className="relative overflow-hidden rounded-sm border border-control-border">
-          {isEditing ? (
-            <MonacoEditor
-              advices={page.isCreating ? markers : []}
-              autoCompleteContext={autoCompleteContext}
-              className="relative h-auto max-h-[600px] min-h-[120px]"
-              content={editorContent}
-              language={language}
-              options={STATEMENT_EDITOR_OPTIONS}
-              onChange={(nextStatement) => {
-                if (page.isCreating) {
-                  updateLocalStatement(nextStatement);
-                  return;
-                }
-                setDraftStatement(nextStatement);
-              }}
-            />
-          ) : (
-            <>
-              <ReadonlyMonaco
-                advices={markers}
+        <div
+          ref={dom.readerGround}
+          className={cn("flex flex-col", localMode && "hidden")}
+          inert={localMode || undefined}
+        >
+          {/* The statement being read sits on gray, so a comment card, which
+              is white, stands apart from the SQL without any line tint. */}
+          <div
+            className={cn(
+              "relative overflow-hidden rounded-sm border border-control-border",
+              showsAffectedRows && "rounded-b-none",
+              !nativeEditing &&
+                "plan-statement--monaco-transparent bg-control-bg/50"
+            )}
+            data-testid={nativeEditing ? undefined : "statement-ground"}
+          >
+            {nativeEditing ? (
+              <MonacoEditor
+                advices={page.isCreating ? markers : []}
+                autoCompleteContext={autoCompleteContext}
                 className="relative h-auto max-h-[600px] min-h-[120px]"
-                content={statement}
+                content={editorContent}
                 language={language}
-                onReady={(monaco, editor) =>
-                  setReadonlyEditor({ editor, monaco })
-                }
-                options={
-                  threadsEnabled
-                    ? THREADS_EDITOR_OPTIONS
-                    : STATEMENT_EDITOR_OPTIONS
-                }
+                options={STATEMENT_EDITOR_OPTIONS}
+                onReady={(_monaco, editor) => setEditingEditor(editor)}
+                onChange={(nextStatement) => {
+                  if (page.isCreating) {
+                    updateLocalStatement(nextStatement);
+                    return;
+                  }
+                  setDraftStatement(nextStatement);
+                }}
               />
-              {threadsEnabled && issue && sheetSha256 && readonlyEditor && (
-                <StatementThreadsLayer
-                  editor={readonlyEditor.editor}
-                  issue={issue}
-                  key={sheetSha256}
-                  monaco={readonlyEditor.monaco}
-                  sheetSha256={sheetSha256}
-                  spec={spec}
+            ) : (
+              <>
+                <ReadonlyMonaco
+                  advices={markers}
+                  className="relative h-auto max-h-[600px] min-h-[120px]"
+                  content={statement}
+                  language={language}
+                  onReady={handleReaderReady}
+                  options={
+                    threadsEnabled
+                      ? THREADS_EDITOR_OPTIONS
+                      : READONLY_EDITOR_OPTIONS
+                  }
                 />
-              )}
-            </>
+                {threadsEnabled && issue && sheetSha256 && readonlyEditor && (
+                  <StatementThreadsLayer
+                    editor={readonlyEditor.editor}
+                    issue={issue}
+                    key={sheetSha256}
+                    monaco={readonlyEditor.monaco}
+                    previewEndLine={previewEndLine}
+                    sheetSha256={sheetSha256}
+                    spec={spec}
+                  />
+                )}
+              </>
+            )}
+          </div>
+          {showsAffectedRows && affectedRows && (
+            <AffectedRowsStrip
+              onGoToLine={
+                readonlyEditor
+                  ? (line) =>
+                      focusEditorAtAnchor(
+                        readonlyEditor.editor,
+                        lineViewAnchor(line)
+                      )
+                  : undefined
+              }
+              summary={affectedRows}
+            />
           )}
         </div>
       ) : (
@@ -653,6 +1120,46 @@ export function PlanDetailStatementSection({
           {t("common.no-data")}
         </div>
       )}
+      {localMode && (
+        <Textarea
+          ref={dom.input}
+          aria-label={statementTitle}
+          autoComplete="off"
+          spellCheck={false}
+          className="font-mono"
+          rows={8}
+          value={draftStatement}
+          readOnly={sourceStale || isSaving}
+          onChange={(event) => setDraftStatement(event.currentTarget.value)}
+        />
+      )}
+      {sourceStale && (
+        <Alert
+          variant="warning"
+          description={t("agent.plan-draft.statement-source-changed")}
+        />
+      )}
+      {isInlineEditing &&
+        !localMode &&
+        canModifyStatement &&
+        !isLoading &&
+        !isSheetOversize && (
+          <PlanDetailDraftChecks
+            title={t("agent.sql-fix.unsaved-checks")}
+            canDiagnose
+            checkedContent={currentInlineChecks?.content}
+            checkResults={currentInlineChecks?.results}
+            content={inlineContent}
+            onCheckResultsChange={(content, results) =>
+              setInlineChecks({
+                content,
+                results,
+                targets: inlineTargetSignature,
+              })
+            }
+            selectedSpec={spec}
+          />
+        )}
       {project && schemaEditorEligible && (
         <SchemaEditorSheet
           open={isSchemaEditorOpen}
@@ -662,6 +1169,49 @@ export function PlanDetailStatementSection({
           onInsert={handleSchemaEditorInsert}
         />
       )}
+      <AlertDialog
+        open={Boolean(pendingAgentDraft)}
+        onOpenChange={(open) => {
+          if (!open) setPendingAgentDraft(undefined);
+        }}
+      >
+        <AlertDialogContent layer="agent">
+          <AlertDialogTitle>
+            {t("agent.plan-draft.existing-sql-title")}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("agent.plan-draft.existing-sql-description")}
+          </AlertDialogDescription>
+          <AlertDialogFooter className="flex-wrap gap-y-2">
+            <Button
+              appearance="secondary"
+              onClick={() => setPendingAgentDraft(undefined)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              appearance="outline"
+              onClick={() => {
+                if (!pendingAgentDraft) return;
+                applyAgentDraft(
+                  pendingAgentDraft,
+                  appendAgentPlanDraftSQL(statement, pendingAgentDraft.sql)
+                );
+              }}
+            >
+              {t("agent.plan-draft.append-sql")}
+            </Button>
+            <Button
+              onClick={() => {
+                if (!pendingAgentDraft) return;
+                applyAgentDraft(pendingAgentDraft, pendingAgentDraft.sql);
+              }}
+            >
+              {t("agent.plan-draft.replace-sql")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -677,12 +1227,13 @@ function PlanDetailReleaseStatement({
   release?: Release;
   releaseName: string;
 }) {
-  return (
-    <ReleaseInfoCard
-      className={cn("h-full", className)}
-      isLoading={isLoading}
-      release={release}
-      releaseName={releaseName}
-    />
-  );
+  const { t } = useTranslation();
+  if (!release) {
+    return (
+      <div className={cn("text-sm text-control-light", className)}>
+        {isLoading ? t("common.loading") : releaseName}
+      </div>
+    );
+  }
+  return <ReleaseChangesRail className={className} release={release} />;
 }

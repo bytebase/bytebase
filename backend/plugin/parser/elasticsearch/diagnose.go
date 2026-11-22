@@ -16,16 +16,16 @@ func init() {
 }
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	omniDiags, err := es.Diagnose(statement)
+	diags, err := es.Diagnose(statement)
 	if err != nil {
 		return nil, err
 	}
-	if omniDiags == nil {
+	if diags == nil {
 		return nil, nil
 	}
 
 	var diagnostics []base.Diagnostic
-	for _, d := range omniDiags {
+	for _, d := range diags {
 		diagnostics = append(diagnostics, base.Diagnostic{
 			Range: lsp.Range{
 				Start: lsp.Position{
