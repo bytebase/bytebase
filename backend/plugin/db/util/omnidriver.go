@@ -4,6 +4,7 @@ package util
 import (
 	"fmt"
 	"strings"
+	"time"
 	"unicode"
 
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -25,6 +26,8 @@ type QueryResultOptions struct {
 	// ClearExplainPlan clears QueryPlan so the API layer stamps the requested
 	// format for explain requests.
 	ClearExplainPlan bool
+	// ClearExplainPlanOnError also clears QueryPlan when result.Err != nil.
+	ClearExplainPlanOnError bool
 	// TypedExplainPlan builds QueryPlan using db.TypedExplainPlan instead of
 	// exact uppercase enum lookup.
 	TypedExplainPlan bool
@@ -40,8 +43,15 @@ type QueryResultOptions struct {
 	SkipColumnTypes bool
 	// TruncatedWins checks result.Truncated before result.Err when setting Error.
 	TruncatedWins bool
+	// FillZeroAffectedRows populates one "Affected Rows: 0" row for a
+	// columnless, error-free result whose AffectedRows is nil.
+	FillZeroAffectedRows bool
 	// Limit, when > 0, caps the number of converted rows.
 	Limit int
+	// FormatOutOfRangeTimestamp, when non-nil, converts Timestamp and
+	// TimestampTZ cells outside google.protobuf.Timestamp's valid [0001..9999]
+	// range into StringValue cells instead of invalid protobuf timestamps.
+	FormatOutOfRangeTimestamp func(t time.Time, withTZ bool) string
 	// ConvertValue optionally overrides cell conversion; when nil, OmniRowValue is used.
 	ConvertValue func(omnidriver.Value) *v1pb.RowValue
 }
@@ -368,6 +378,16 @@ func OmniResultToQueryResultWith(result *omnidriver.Result, maxResultBytes int64
 	for _, row := range rows {
 		values := make([]*v1pb.RowValue, len(row))
 		for i, value := range row {
+			if opts.FormatOutOfRangeTimestamp != nil &&
+				(value.Kind == omnidriver.Timestamp || value.Kind == omnidriver.TimestampTZ) &&
+				timestamppb.New(value.Time).CheckValid() != nil {
+				values[i] = &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: opts.FormatOutOfRangeTimestamp(value.Time, value.Kind == omnidriver.TimestampTZ),
+					},
+				}
+				continue
+			}
 			values[i] = convertValue(value)
 		}
 		out.Rows = append(out.Rows, &v1pb.QueryRow{Values: values})
@@ -389,7 +409,8 @@ func OmniResultToQueryResultWith(result *omnidriver.Result, maxResultBytes int64
 			})
 		}
 	}
-	if !opts.SkipPlan && !opts.ClearExplainPlan && result.Plan != nil {
+	clearPlan := opts.ClearExplainPlan || (opts.ClearExplainPlanOnError && result.Err != nil)
+	if !opts.SkipPlan && !clearPlan && result.Plan != nil {
 		if opts.TypedExplainPlan {
 			out.QueryPlan = db.TypedExplainPlan(result.Plan.Format, result.Plan.Executed, true)
 			if opts.IncludePlanContent {
@@ -417,7 +438,61 @@ func OmniResultToQueryResultWith(result *omnidriver.Result, maxResultBytes int64
 		}
 	}
 	out.RowsCount = int64(len(out.Rows))
+	if opts.FillZeroAffectedRows {
+		FillZeroAffectedRows(result, out)
+	}
 	return out
+}
+
+// FormatDefaultTimestamp formats an out-of-range timestamp as RFC3339Nano when
+// withTZ is true, or UTC "2006-01-02 15:04:05.999999999" otherwise.
+func FormatDefaultTimestamp(t time.Time, withTZ bool) string {
+	if withTZ {
+		return t.Format(time.RFC3339Nano)
+	}
+	return t.UTC().Format("2006-01-02 15:04:05.999999999")
+}
+
+// MySQLForkQueryOptions maps a db.QueryContext onto omnidriver.QueryOptions for
+// MySQL-protocol analytical forks (Doris and StarRocks).
+func MySQLForkQueryOptions(queryContext db.QueryContext) omnidriver.QueryOptions {
+	return omnidriver.QueryOptions{
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		MaxResultBytes: queryContext.MaximumSQLResultSize,
+		MaskingEnabled: queryContext.MaskingEnabled,
+	}
+}
+
+// MySQLForkQueryResultOptions returns QueryResultOptions for Doris and
+// StarRocks adapters.
+func MySQLForkQueryResultOptions() QueryResultOptions {
+	return QueryResultOptions{
+		SkipPlan:     true,
+		SkipMessages: true,
+		ConvertValue: MySQLForkRowValue,
+	}
+}
+
+// MySQLForkRowValue converts a driver cell for Doris and StarRocks: empty byte
+// slices become NULL, Float32 widens to DoubleValue, Int32 widens to
+// Int64Value, and unsupported kinds become NULL.
+func MySQLForkRowValue(value omnidriver.Value) *v1pb.RowValue {
+	switch value.Kind {
+	case omnidriver.Bytes:
+		if len(value.Bytes) == 0 {
+			return NullRowValue
+		}
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.Bytes}}
+	case omnidriver.Float32:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: value.Float64}}
+	case omnidriver.Int32:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: value.Int64}}
+	case omnidriver.Bool, omnidriver.Float64, omnidriver.Int64, omnidriver.String, omnidriver.Timestamp:
+		return OmniRowValue(value)
+	default:
+		return NullRowValue
+	}
 }
 
 // OmniRowValue converts one cell of a contract result into the API's RowValue.

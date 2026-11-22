@@ -17,14 +17,28 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
+// LoadAWSConfig loads the AWS SDK configuration for config and applies role
+// assumption when the data source specifies a role ARN.
+func LoadAWSConfig(ctx context.Context, config db.ConnectionConfig) (aws.Config, error) {
+	return loadAWSConfig(ctx, config, "failed to load AWS config")
+}
+
+func loadAWSConfig(ctx context.Context, config db.ConnectionConfig, wrapMsg string) (aws.Config, error) {
+	awsConfig, err := GetAWSConnectionConfig(ctx, config)
+	if err != nil {
+		return aws.Config{}, errors.Wrap(err, wrapMsg)
+	}
+	if err := AssumeRoleIfNeeded(ctx, &awsConfig, config.ConnectionContext, config.DataSource.GetAwsCredential()); err != nil {
+		return aws.Config{}, err
+	}
+	return awsConfig, nil
+}
+
 // RDSAuthToken builds an AWS RDS IAM authentication token for config.
 func RDSAuthToken(ctx context.Context, config db.ConnectionConfig) (string, error) {
 	ds := config.DataSource
-	awsConfig, err := GetAWSConnectionConfig(ctx, config)
+	awsConfig, err := loadAWSConfig(ctx, config, "load aws config failed")
 	if err != nil {
-		return "", errors.Wrap(err, "load aws config failed")
-	}
-	if err := AssumeRoleIfNeeded(ctx, &awsConfig, config.ConnectionContext, ds.GetAwsCredential()); err != nil {
 		return "", err
 	}
 	dbEndpoint := fmt.Sprintf("%s:%s", ds.GetHost(), ds.GetPort())

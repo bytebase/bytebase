@@ -64,6 +64,71 @@ func TestOmniResultsToQueryResults(t *testing.T) {
 	require.Equal(t, FormatMaximumSQLResultSizeMessage(512), typedWithContent[0].Error)
 }
 
+func TestQueryResultOptionsExtensionsAndMySQLForkHelpers(t *testing.T) {
+	t.Run("FillZeroAffectedRows and ClearExplainPlanOnError", func(t *testing.T) {
+		got := OmniResultsToQueryResultsWith([]*omnidriver.Result{
+			{Statement: "CREATE TABLE t (id INT)"},
+			{Statement: "EXPLAIN SELECT 1", Plan: &omnidriver.Plan{Format: "text"}, Err: errors.New("boom")},
+		}, 1024, QueryResultOptions{
+			ClearExplainPlanOnError: true,
+			TypedExplainPlan:        true,
+			FillZeroAffectedRows:    true,
+		})
+		require.Len(t, got, 2)
+		require.Equal(t, []string{"Affected Rows"}, got[0].ColumnNames)
+		require.Equal(t, int64(1), got[0].RowsCount)
+		require.Equal(t, int64(0), got[0].Rows[0].Values[0].GetInt64Value())
+		require.Nil(t, got[1].QueryPlan)
+		require.Equal(t, "boom", got[1].Error)
+	})
+
+	t.Run("FormatOutOfRangeTimestamp formats extreme timestamps without mutating input", func(t *testing.T) {
+		outOfRangeNTZ := omnidriver.Value{Kind: omnidriver.Timestamp, Time: time.Date(0, 1, 1, 0, 0, 0, 7000000, time.UTC)}
+		outOfRangeTZ := omnidriver.Value{Kind: omnidriver.TimestampTZ, Time: time.Date(10000, 1, 2, 3, 4, 5, 0, time.UTC)}
+		validTS := omnidriver.Value{Kind: omnidriver.Timestamp, Time: time.Date(2026, 5, 11, 12, 34, 56, 0, time.UTC)}
+		input := &omnidriver.Result{
+			Statement: "SELECT 1",
+			Columns:   []omnidriver.Column{{Name: "a"}, {Name: "b"}, {Name: "c"}},
+			Rows:      [][]omnidriver.Value{{outOfRangeNTZ, outOfRangeTZ, validTS}},
+		}
+		got := OmniResultToQueryResultWith(input, 1024, QueryResultOptions{
+			FormatOutOfRangeTimestamp: FormatDefaultTimestamp,
+		})
+		require.Equal(t, "0000-01-01 00:00:00.007", got.Rows[0].Values[0].GetStringValue())
+		require.Equal(t, "10000-01-02T03:04:05Z", got.Rows[0].Values[1].GetStringValue())
+		require.NotNil(t, got.Rows[0].Values[2].GetTimestampValue())
+		// Input cells must remain untouched.
+		require.Equal(t, omnidriver.Timestamp, input.Rows[0][0].Kind)
+		require.Equal(t, omnidriver.TimestampTZ, input.Rows[0][1].Kind)
+	})
+
+	t.Run("MySQLFork helpers", func(t *testing.T) {
+		opts := MySQLForkQueryOptions(db.QueryContext{
+			Limit:                50,
+			Explain:              true,
+			MaximumSQLResultSize: 2048,
+			MaskingEnabled:       true,
+		})
+		require.Equal(t, omnidriver.QueryOptions{
+			Limit:          50,
+			Explain:        true,
+			MaxResultBytes: 2048,
+			MaskingEnabled: true,
+		}, opts)
+
+		resOpts := MySQLForkQueryResultOptions()
+		require.True(t, resOpts.SkipPlan)
+		require.True(t, resOpts.SkipMessages)
+		require.NotNil(t, resOpts.ConvertValue)
+
+		require.Equal(t, NullRowValue, MySQLForkRowValue(omnidriver.Value{Kind: omnidriver.Bytes, Bytes: []byte{}}))
+		require.Equal(t, []byte("abc"), MySQLForkRowValue(omnidriver.Value{Kind: omnidriver.Bytes, Bytes: []byte("abc")}).GetBytesValue())
+		require.Equal(t, 1.5, MySQLForkRowValue(omnidriver.Value{Kind: omnidriver.Float32, Float64: 1.5}).GetDoubleValue())
+		require.Equal(t, int64(7), MySQLForkRowValue(omnidriver.Value{Kind: omnidriver.Int32, Int64: 7}).GetInt64Value())
+		require.Equal(t, NullRowValue, MySQLForkRowValue(omnidriver.Value{Kind: omnidriver.Uint64, Uint64: 1}))
+	})
+}
+
 func TestFillZeroAffectedRows(t *testing.T) {
 	result := &omnidriver.Result{Statement: "CREATE TABLE t (id INT)"}
 	qr := OmniResultToQueryResult(result, 1024)

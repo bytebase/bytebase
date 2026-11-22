@@ -84,25 +84,15 @@ func newDriver() db.Driver {
 // Open maps the connection config onto the driver contract. It does not reach
 // the server; Ping does.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	opened := false
-	defer func() {
-		if !opened {
-			_ = d.Close(ctx)
+	if err := d.OpenWith(ctx, util.AdapterOptions{WithInstanceMetadata: true}, func(*util.OmniAdapter) (odriver.Driver, error) {
+		cfg, err := driverConfig(ctx, config, d)
+		if err != nil {
+			return nil, err
 		}
-	}()
-
-	d.OmniAdapter = util.OmniAdapter{WithInstanceMetadata: true}
-
-	cfg, err := driverConfig(ctx, config, d)
-	if err != nil {
+		return oceanbasedriver.Open(ctx, cfg)
+	}); err != nil {
 		return nil, err
 	}
-	impl, err := oceanbasedriver.Open(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	d.Driver = impl
-	opened = true
 	return d, nil
 }
 
@@ -170,20 +160,14 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // QueryConn runs a script for the editor on the driver's session, one result
 // per statement, and stops at the first statement that fails.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	results, err := d.Query(ctx, func(ctx context.Context) (odriver.Session, error) {
-		session, err := d.OpenSession(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to open a session")
-		}
-		return session, nil
-	}, util.SessionQueryOptions{}, func(session odriver.Session) ([]*odriver.Result, error) {
-		return session.Query(ctx, statement, odriver.QueryOptions{
-			Explain:        queryContext.Explain,
-			ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_JSON),
-			Limit:          queryContext.Limit,
-			MaxResultBytes: queryContext.MaximumSQLResultSize,
-			MaskingEnabled: queryContext.MaskingEnabled,
-		})
+	results, err := d.QueryHeldSession(ctx, statement, odriver.QueryOptions{
+		Explain:        queryContext.Explain,
+		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_JSON),
+		Limit:          queryContext.Limit,
+		MaxResultBytes: queryContext.MaximumSQLResultSize,
+		MaskingEnabled: queryContext.MaskingEnabled,
+	}, util.SessionQueryOptions{
+		WrapOpenError: "failed to open a session",
 	})
 	if err != nil {
 		return nil, err

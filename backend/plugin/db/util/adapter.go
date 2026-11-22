@@ -20,6 +20,10 @@ import (
 // SessionQueryOptions customizes when SessionHolder discards or keeps its held
 // session after running a query.
 type SessionQueryOptions struct {
+	// WrapOpenError, when non-empty, wraps errors returned while lazily opening
+	// the session in QueryHeldSession with this message prefix.
+	WrapOpenError string
+
 	// KeepOnError, when non-nil, is called if the query function returns an
 	// error. Returning true keeps the held session (for recoverable SQL or
 	// parse errors) unless ctx.Err() != nil. When nil, any error discards it.
@@ -160,6 +164,33 @@ type OmniAdapter struct {
 	closers   []func() error
 }
 
+// AdapterOptions configures an OmniAdapter's metadata sync behavior during OpenWith.
+type AdapterOptions struct {
+	WithInstanceMetadata bool
+	NotFoundResource     string
+	DatabaseName         string
+}
+
+// OpenWith configures the adapter from opts, runs open to acquire any auxiliary
+// resources (such as SSH tunnels or Cloud SQL dialers) and open the underlying
+// omni driver, and cleans up via Close if open returns an error.
+func (a *OmniAdapter) OpenWith(
+	ctx context.Context,
+	opts AdapterOptions,
+	open func(*OmniAdapter) (omnidriver.Driver, error),
+) error {
+	a.WithInstanceMetadata = opts.WithInstanceMetadata
+	a.NotFoundResource = opts.NotFoundResource
+	a.DatabaseName = opts.DatabaseName
+	impl, err := open(a)
+	if err != nil {
+		_ = a.Close(ctx)
+		return err
+	}
+	a.Driver = impl
+	return nil
+}
+
 // AddCloser registers c to be closed when Close runs.
 func (a *OmniAdapter) AddCloser(c io.Closer) {
 	if c == nil {
@@ -272,7 +303,18 @@ func (a *OmniAdapter) QueryHeldSession(
 	queryOpts omnidriver.QueryOptions,
 	sessionOpts SessionQueryOptions,
 ) ([]*omnidriver.Result, error) {
-	return a.Query(ctx, a.OpenSession, sessionOpts, func(session omnidriver.Session) ([]*omnidriver.Result, error) {
+	open := a.OpenSession
+	if sessionOpts.WrapOpenError != "" {
+		prefix := sessionOpts.WrapOpenError
+		open = func(ctx context.Context) (omnidriver.Session, error) {
+			session, err := a.OpenSession(ctx)
+			if err != nil {
+				return nil, errors.Wrap(err, prefix)
+			}
+			return session, nil
+		}
+	}
+	return a.Query(ctx, open, sessionOpts, func(session omnidriver.Session) ([]*omnidriver.Result, error) {
 		return session.Query(ctx, statement, queryOpts)
 	})
 }
@@ -287,13 +329,25 @@ func (a *OmniAdapter) QueryEphemeral(ctx context.Context, fn func(omnidriver.Ses
 	return fn(session)
 }
 
-// ExecuteScript runs statement through the underlying omni Executor according to cfg.
-func (a *OmniAdapter) ExecuteScript(ctx context.Context, statement string, opts db.ExecuteOptions, cfg ExecuteConfig) (int64, error) {
-	executor, ok := a.Driver.(omnidriver.Executor)
-	if !ok {
-		return 0, errors.Errorf("driver %T does not implement omni/driver.Executor", a.Driver)
-	}
+// QueryEphemeralSession opens a fresh session, runs statement with queryOpts,
+// and closes the session before returning.
+func (a *OmniAdapter) QueryEphemeralSession(
+	ctx context.Context,
+	statement string,
+	queryOpts omnidriver.QueryOptions,
+) ([]*omnidriver.Result, error) {
+	var results []*omnidriver.Result
+	err := a.QueryEphemeral(ctx, func(session omnidriver.Session) error {
+		var queryErr error
+		results, queryErr = session.Query(ctx, statement, queryOpts)
+		return queryErr
+	})
+	return results, err
+}
 
+// BuildExecuteOptions strips configured transaction directives from statement
+// and constructs the matching omni/driver.ExecuteOptions according to cfg.
+func BuildExecuteOptions(statement string, opts db.ExecuteOptions, cfg ExecuteConfig) (string, omnidriver.ExecuteOptions) {
 	cleaned := statement
 	var txMode omnidriver.TransactionMode
 	var isolation omnidriver.IsolationLevel
@@ -334,5 +388,15 @@ func (a *OmniAdapter) ExecuteScript(ctx context.Context, statement string, opts 
 	if cfg.PassMaxRetries {
 		execOpts.MaxRetries = opts.MaximumRetries
 	}
+	return cleaned, execOpts
+}
+
+// ExecuteScript runs statement through the underlying omni Executor according to cfg.
+func (a *OmniAdapter) ExecuteScript(ctx context.Context, statement string, opts db.ExecuteOptions, cfg ExecuteConfig) (int64, error) {
+	executor, ok := a.Driver.(omnidriver.Executor)
+	if !ok {
+		return 0, errors.Errorf("driver %T does not implement omni/driver.Executor", a.Driver)
+	}
+	cleaned, execOpts := BuildExecuteOptions(statement, opts, cfg)
 	return executor.Execute(ctx, cleaned, execOpts)
 }

@@ -53,4 +53,46 @@ func TestConfigHelpers(t *testing.T) {
 	cfg, err := hostFn("db.example.com")
 	require.NoError(t, err)
 	require.Equal(t, "db.example.com", cfg.ServerName)
+
+	sqlTLSFn, err := SQLStaticTLSFunc(&storepb.DataSource{})
+	require.NoError(t, err)
+	require.Nil(t, sqlTLSFn)
+
+	_, err = SQLStaticTLSFunc(&storepb.DataSource{UseSsl: true, SslCert: "c"})
+	require.ErrorContains(t, err, "sql: tls config error")
+
+	require.Nil(t, PGTLSFunc(&storepb.DataSource{}))
+	pgTLSFn := PGTLSFunc(&storepb.DataSource{UseSsl: true})
+	require.NotNil(t, pgTLSFn)
+	pgTLSCfg, err := pgTLSFn("pg.example.com")
+	require.NoError(t, err)
+	require.Equal(t, "pg.example.com", pgTLSCfg.ServerName)
+
+	var adapter OmniAdapter
+	mysqlCfg, err := MySQLFamilyDriverConfig(db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:     "127.0.0.1",
+			Port:     "9030",
+			Username: "root",
+		},
+		Password: "secret",
+		ConnectionContext: db.ConnectionContext{
+			DatabaseName:  "analytics",
+			EngineVersion: "3.0.0",
+		},
+	}, &adapter)
+	require.NoError(t, err)
+	require.Equal(t, "127.0.0.1", mysqlCfg.Host)
+	require.Equal(t, "9030", mysqlCfg.Port)
+	require.Equal(t, "analytics", mysqlCfg.Database)
+	require.Equal(t, "root", mysqlCfg.User)
+	require.Equal(t, "secret", mysqlCfg.Password)
+	require.Equal(t, "bytebase", mysqlCfg.ApplicationName)
+	require.Equal(t, "3.0.0", mysqlCfg.EngineVersion)
+	require.Nil(t, mysqlCfg.TLS)
+
+	_, err = MySQLFamilyDriverConfig(db.ConnectionConfig{
+		DataSource: &storepb.DataSource{UseSsl: true, SslCert: "c"},
+	}, &adapter)
+	require.ErrorContains(t, err, "sql: tls config error")
 }

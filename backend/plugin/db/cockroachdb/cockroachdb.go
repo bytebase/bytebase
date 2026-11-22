@@ -25,7 +25,6 @@ package cockroachdb
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"strings"
@@ -62,34 +61,22 @@ func newDriver() db.Driver {
 // Open maps the connection config onto the driver contract. It does not reach
 // the server: Ping does.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	opened := false
-	defer func() {
-		if !opened {
-			_ = d.Close(ctx)
-		}
-	}()
-
-	d.OmniAdapter = util.OmniAdapter{
+	if err := d.OpenWith(ctx, util.AdapterOptions{
 		WithInstanceMetadata: true,
 		NotFoundResource:     "database",
 		DatabaseName:         config.ConnectionContext.DatabaseName,
-	}
-
-	cfg, err := cockroachConfig(config)
-	if err != nil {
+	}, func(adapter *util.OmniAdapter) (omnidriver.Driver, error) {
+		cfg, err := cockroachConfig(config)
+		if err != nil {
+			return nil, err
+		}
+		if err := util.SetupSSHDial(config.DataSource, &cfg, adapter, true); err != nil {
+			return nil, err
+		}
+		return omnicockroach.Open(ctx, cfg)
+	}); err != nil {
 		return nil, err
 	}
-
-	if err := util.SetupSSHDial(config.DataSource, &cfg, &d.OmniAdapter, true); err != nil {
-		return nil, err
-	}
-
-	inner, err := omnicockroach.Open(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	d.Driver = inner
-	opened = true
 	return d, nil
 }
 
@@ -103,7 +90,7 @@ func cockroachConfig(config db.ConnectionConfig) (omnidriver.Config, error) {
 	if err := util.ValidateTLSCertKeyPair(dataSource); err != nil {
 		return omnidriver.Config{}, err
 	}
-	cfg := omnidriver.Config{
+	return omnidriver.Config{
 		Host:            dataSource.GetHost(),
 		Port:            dataSource.GetPort(),
 		Database:        util.ResolveDatabaseName(config),
@@ -112,24 +99,8 @@ func cockroachConfig(config db.ConnectionConfig) (omnidriver.Config, error) {
 		ApplicationName: util.ApplicationName(config.ConnectionContext),
 		ReadOnly:        config.ConnectionContext.ReadOnly,
 		EngineVersion:   config.ConnectionContext.EngineVersion,
-	}
-	if dataSource.GetUseSsl() {
-		// util.GetTLSConfig binds certificate verification to the data source's
-		// host; ApplyPGTLSConfig rebinds it to the host of whichever server the
-		// driver dials, so a multi-host list verifies each host's certificate
-		// against its own name, as the old driver did.
-		cfg.TLS = func(host string) (*tls.Config, error) {
-			tlsConfig, err := util.GetTLSConfig(dataSource)
-			if err != nil {
-				return nil, err
-			}
-			if tlsConfig != nil {
-				util.ApplyPGTLSConfig(tlsConfig, host, nil)
-			}
-			return tlsConfig, nil
-		}
-	}
-	return cfg, nil
+		TLS:             util.PGTLSFunc(dataSource),
+	}, nil
 }
 
 // TaskRunSession reads the running session by application name from

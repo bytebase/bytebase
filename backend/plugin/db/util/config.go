@@ -98,6 +98,52 @@ func HostTLSFunc(ds *storepb.DataSource) func(string) (*tls.Config, error) {
 	}
 }
 
+// SQLStaticTLSFunc resolves TLS material eagerly via StaticTLSFunc and wraps
+// any error with the "sql: tls config error" prefix expected by SQL adapters.
+func SQLStaticTLSFunc(ds *storepb.DataSource) (func(string) (*tls.Config, error), error) {
+	tlsFn, err := StaticTLSFunc(ds)
+	if err != nil {
+		return nil, errors.Wrap(err, "sql: tls config error")
+	}
+	return tlsFn, nil
+}
+
+// PGTLSFunc returns a driver.Config.TLS callback that applies PostgreSQL SNI
+// and per-host certificate verification when SSL is enabled, or nil otherwise.
+func PGTLSFunc(ds *storepb.DataSource) func(string) (*tls.Config, error) {
+	if !ds.GetUseSsl() {
+		return nil
+	}
+	return func(host string) (*tls.Config, error) {
+		return GetPGTLSConfigForHost(ds, host)
+	}
+}
+
+// MySQLFamilyDriverConfig builds an omni/driver.Config for MySQL-protocol
+// drivers that use SSH tunneling and eagerly resolved TLS material (Doris and
+// StarRocks).
+func MySQLFamilyDriverConfig(config db.ConnectionConfig, adapter *OmniAdapter) (omnidriver.Config, error) {
+	ds := config.DataSource
+	cfg := omnidriver.Config{
+		Host:            ds.GetHost(),
+		Port:            ds.GetPort(),
+		Database:        config.ConnectionContext.DatabaseName,
+		User:            ds.GetUsername(),
+		Password:        config.Password,
+		ApplicationName: "bytebase",
+		EngineVersion:   config.ConnectionContext.EngineVersion,
+	}
+	if err := SetupSSHDial(ds, &cfg, adapter, false); err != nil {
+		return cfg, err
+	}
+	tlsFn, err := SQLStaticTLSFunc(ds)
+	if err != nil {
+		return cfg, err
+	}
+	cfg.TLS = tlsFn
+	return cfg, nil
+}
+
 // SetupSSHDial opens an SSH tunnel when ds.GetSshHost() is non-empty, registers
 // the ssh.Client on adapter for Close, and sets cfg.Dial. When deadlineAware is
 // true, dials use DialSSHTunnel (required by drivers like pgx that interrupt

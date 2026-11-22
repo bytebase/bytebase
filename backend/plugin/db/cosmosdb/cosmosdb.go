@@ -144,17 +144,9 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("support simple SELECT statement for Cosmos DB engine only, err: %s", err.Error()))
 	}
 
-	var results []*omnidriver.Result
-	err := d.QueryEphemeral(ctx, func(session omnidriver.Session) error {
-		var queryErr error
-		results, queryErr = session.Query(ctx, statement, queryOptions(queryContext))
-		if queryErr != nil {
-			return connect.NewError(connect.CodeInternal, queryErr)
-		}
-		return nil
-	})
+	results, err := d.QueryEphemeralSession(ctx, statement, queryOptions(queryContext))
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	converted := make([]*v1pb.QueryResult, 0, len(results))
 	for _, result := range results {

@@ -74,11 +74,8 @@ func newDriver() db.Driver {
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	dataSource := config.DataSource
 
-	awsConfig, err := util.GetAWSConnectionConfig(ctx, config)
+	awsConfig, err := util.LoadAWSConfig(ctx, config)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load AWS config")
-	}
-	if err := util.AssumeRoleIfNeeded(ctx, &awsConfig, config.ConnectionContext, dataSource.GetAwsCredential()); err != nil {
 		return nil, err
 	}
 
@@ -149,15 +146,10 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 // QueryConn runs a read-only PartiQL script, one result per statement.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	var results []*omnidriver.Result
-	err := d.QueryEphemeral(ctx, func(session omnidriver.Session) error {
-		var queryErr error
-		results, queryErr = session.Query(ctx, statement, omnidriver.QueryOptions{
-			Limit:          queryContext.Limit,
-			Explain:        queryContext.Explain,
-			MaxResultBytes: queryContext.MaximumSQLResultSize,
-		})
-		return queryErr
+	results, err := d.QueryEphemeralSession(ctx, statement, omnidriver.QueryOptions{
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		MaxResultBytes: queryContext.MaximumSQLResultSize,
 	})
 	if err != nil {
 		return nil, err

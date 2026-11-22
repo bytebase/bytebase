@@ -4,7 +4,6 @@ import (
 	"context"
 
 	omnidriver "github.com/bytebase/omni/driver"
-	"github.com/pkg/errors"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -15,14 +14,8 @@ import (
 // session the driver keeps until Close so an editor request's statements share
 // it.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	results, err := d.Query(ctx, func(ctx context.Context) (omnidriver.Session, error) {
-		session, err := d.OpenSession(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to open a session")
-		}
-		return session, nil
-	}, util.SessionQueryOptions{}, func(session omnidriver.Session) ([]*omnidriver.Result, error) {
-		return session.Query(ctx, withoutSQLPlusCommands(statement), queryOptions(queryContext))
+	results, err := d.QueryHeldSession(ctx, withoutSQLPlusCommands(statement), queryOptions(queryContext), util.SessionQueryOptions{
+		WrapOpenError: "failed to open a session",
 	})
 	if err != nil {
 		return nil, err

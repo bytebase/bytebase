@@ -57,7 +57,6 @@ package pg
 
 import (
 	"context"
-	"crypto/tls"
 	"io"
 
 	"cloud.google.com/go/cloudsqlconn"
@@ -104,58 +103,50 @@ func newDriver() db.Driver {
 // Config and opens the driver. It reaches the server only in tenant mode, where
 // every pooled connection runs SET ROLE to the database owner, as before.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	// A driver whose Open fails is discarded without a Close, so Open releases
-	// what it acquired itself.
-	opened := false
-	defer func() {
-		if !opened {
-			_ = d.Close(ctx)
-		}
-	}()
-
-	d.OmniAdapter = util.OmniAdapter{
+	if err := d.OpenWith(ctx, util.AdapterOptions{
 		WithInstanceMetadata: true,
 		NotFoundResource:     "database",
 		DatabaseName:         config.ConnectionContext.DatabaseName,
-	}
-
-	cfg, err := pgConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	switch config.DataSource.GetAuthenticationType() {
-	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
-		// The connector names the instance itself, so the contract's host and
-		// port stay empty and Config.Dial reaches the instance.
-		dialer, err := util.SetupCloudSQLDial(ctx, config, &cfg, &d.OmniAdapter)
+	}, func(adapter *util.OmniAdapter) (omndriver.Driver, error) {
+		cfg, err := pgConfig(config)
 		if err != nil {
 			return nil, err
 		}
-		d.cloudSQLDialer = dialer
-		cfg.Host = ""
-		cfg.Port = ""
-	case storepb.DataSource_AWS_RDS_IAM:
-		password, err := util.RDSAuthToken(ctx, config)
+		switch config.DataSource.GetAuthenticationType() {
+		case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
+			// The connector names the instance itself, so the contract's host and
+			// port stay empty and Config.Dial reaches the instance.
+			dialer, err := util.SetupCloudSQLDial(ctx, config, &cfg, adapter)
+			if err != nil {
+				return nil, err
+			}
+			d.cloudSQLDialer = dialer
+			cfg.Host = ""
+			cfg.Port = ""
+		case storepb.DataSource_AWS_RDS_IAM:
+			password, err := util.RDSAuthToken(ctx, config)
+			if err != nil {
+				return nil, err
+			}
+			cfg.Password = password
+		default:
+			// The data source's password authenticates, and Config.Password holds it.
+		}
+
+		if err := util.SetupSSHDial(config.DataSource, &cfg, adapter, true); err != nil {
+			return nil, err
+		}
+
+		impl, err := pgdriver.Open(ctx, cfg, pgdriver.Options{TenantMode: config.ConnectionContext.TenantMode})
 		if err != nil {
 			return nil, err
 		}
-		cfg.Password = password
-	default:
-		// The data source's password authenticates, and Config.Password holds it.
-	}
-
-	if err := util.SetupSSHDial(config.DataSource, &cfg, &d.OmniAdapter, true); err != nil {
+		d.impl = impl
+		d.connectionCtx = config.ConnectionContext
+		return impl, nil
+	}); err != nil {
 		return nil, err
 	}
-
-	impl, err := pgdriver.Open(ctx, cfg, pgdriver.Options{TenantMode: config.ConnectionContext.TenantMode})
-	if err != nil {
-		return nil, err
-	}
-	d.Driver = impl
-	d.impl = impl
-	d.connectionCtx = config.ConnectionContext
-	opened = true
 	return d, nil
 }
 
@@ -190,12 +181,9 @@ func pgConfig(config db.ConnectionConfig) (omndriver.Config, error) {
 	// A cloud connector provides the TLS itself — the Cloud SQL connector wraps
 	// the tunnel, and the RDS token is the credential — and the connections this
 	// replaced left pgx's default negotiation in place for both.
-	if dataSource.GetUseSsl() &&
-		dataSource.GetAuthenticationType() != storepb.DataSource_GOOGLE_CLOUD_SQL_IAM &&
+	if dataSource.GetAuthenticationType() != storepb.DataSource_GOOGLE_CLOUD_SQL_IAM &&
 		dataSource.GetAuthenticationType() != storepb.DataSource_AWS_RDS_IAM {
-		cfg.TLS = func(host string) (*tls.Config, error) {
-			return util.GetPGTLSConfigForHost(dataSource, host)
-		}
+		cfg.TLS = util.PGTLSFunc(dataSource)
 	}
 	return cfg, nil
 }

@@ -23,12 +23,8 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 	if err != nil {
 		return nil, err
 	}
-	converted := util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, queryContext.Explain)
-	for i, result := range results {
-		// The editor's result shape is the product's: a statement that reports no
-		// count (CREATE TABLE, SET) answers one "Affected Rows 0" row, and the
-		// contract leaves the count nil for it.
-		util.FillZeroAffectedRows(result, converted[i])
-	}
-	return converted, nil
+	return util.OmniResultsToQueryResultsWith(results, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
+		ClearExplainPlan:     queryContext.Explain,
+		FillZeroAffectedRows: true,
+	}), nil
 }
