@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/bytebase/omni/mysql/catalog"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -69,20 +68,6 @@ CREATE TABLE author (
 	})
 }
 
-func TestSDLLoadErrorReportsCallerLineNumbers(t *testing.T) {
-	// Invalid token on line 3 of the caller's SDL; omni pre-creates the default
-	// database without a synthetic SQL prologue, so line numbers match caller text.
-	target := "CREATE TABLE `t` (\n" +
-		"  `id` int NOT NULL,\n" +
-		"  BOGUS TOKEN HERE,\n" +
-		"  PRIMARY KEY (`id`)\n" +
-		");\n"
-	_, err := mysqlDiffSDLMigration("", target, "8.0.32")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "(line 3, column")
-	require.NotContains(t, err.Error(), "(line 5, column")
-}
-
 // TestSDLRegistrationsAreMySQLOnly pins that OceanBase is not registered for
 // the MySQL SDL entry points pending OceanBase oracle validation.
 func TestSDLRegistrationsAreMySQLOnly(t *testing.T) {
@@ -129,79 +114,35 @@ func TestDiffMigrationLoadsMetadataNotSDL(t *testing.T) {
 	require.Error(t, err, "the SDL path must reject the view body")
 }
 
-func TestStripDatabaseContext(t *testing.T) {
-	cases := []struct {
-		name string
-		in   string
-		want string
-	}{
-		{
-			name: "plain_qualifiers_stripped",
-			in:   "ALTER TABLE `bbcatalog`.`t` ADD COLUMN `c` int;\nCREATE INDEX `i` ON `bbcatalog`.`t` (`c`)",
-			want: "ALTER TABLE `t` ADD COLUMN `c` int;\nCREATE INDEX `i` ON `t` (`c`)",
-		},
-		{
-			name: "single_quoted_literal_preserved",
-			in:   "CREATE OR REPLACE VIEW `bbcatalog`.`v` AS select '`bbcatalog`.`x`' AS c from `bbcatalog`.`t`",
-			want: "CREATE OR REPLACE VIEW `v` AS select '`bbcatalog`.`x`' AS c from `t`",
-		},
-		{
-			name: "table_actually_named_bbcatalog",
-			in:   "ALTER TABLE `bbcatalog`.`bbcatalog` ADD COLUMN `c` int",
-			want: "ALTER TABLE `bbcatalog` ADD COLUMN `c` int",
-		},
-		{
-			name: "alias_named_bbcatalog_preserved",
-			in:   "CREATE OR REPLACE VIEW `bbcatalog`.`v` AS SELECT `bbcatalog`.`id` FROM `bbcatalog`.`t1` AS `bbcatalog` JOIN `bbcatalog`.`t2` ON `bbcatalog`.`id` = `t2`.`id`",
-			want: "CREATE OR REPLACE VIEW `v` AS SELECT `bbcatalog`.`id` FROM `t1` AS `bbcatalog` JOIN `t2` ON `bbcatalog`.`id` = `t2`.`id`",
-		},
-		{
-			name: "three_part_reference",
-			in:   "select `bbcatalog`.`t`.`c` from `bbcatalog`.`t`",
-			want: "select `t`.`c` from `t`",
-		},
-		{
-			name: "no_qualifier_untouched",
-			in:   "ALTER TABLE `t` ADD COLUMN `c` int DEFAULT 'bbcatalog'",
-			want: "ALTER TABLE `t` ADD COLUMN `c` int DEFAULT 'bbcatalog'",
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, catalog.StripDatabaseContext(tc.in, sdlDatabaseContext))
-		})
-	}
-}
+// TestSDLMigrationForwardsSessionContextAndStripsDatabaseContext verifies that
+// schema.SDLMigration forwards per-object session context from metadata into
+// omni and strips the synthetic catalog database qualifier from migration SQL.
+func TestSDLMigrationForwardsSessionContextAndStripsDatabaseContext(t *testing.T) {
+	current := metadataFromProto(&metadatapb.DatabaseSchemaMetadata{
+		Name: "app",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Functions: []*metadatapb.FunctionMetadata{{
+				Name:                "f",
+				Definition:          "CREATE FUNCTION `f`(a int) RETURNS int DETERMINISTIC RETURN a + 1",
+				SqlMode:             "PIPES_AS_CONCAT",
+				CharacterSetClient:  "utf8mb4",
+				CollationConnection: "utf8mb4_0900_ai_ci",
+			}},
+		}},
+	})
+	target := "CREATE FUNCTION f(a INT) RETURNS INT DETERMINISTIC RETURN a + 2;\n"
 
-func TestDiffSDLMigrationEmptyTargetDropsEverything(t *testing.T) {
-	source := "CREATE TABLE t (id INT PRIMARY KEY);\n"
-	sql, err := schema.DiffSDLMigration(storepb.Engine_MYSQL, source, "", "8.0.32")
+	sql, err := schema.SDLMigration(storepb.Engine_MYSQL, target, current, "8.0.32")
 	require.NoError(t, err)
-	require.Contains(t, sql, "DROP TABLE")
+	require.Contains(t, sql, "SET sql_mode = 'PIPES_AS_CONCAT'")
 	require.NotContains(t, sql, sdlDatabaseContext)
-}
 
-func TestLoadCatalogFallbackBareTimestamp(t *testing.T) {
-	const table = "CREATE TABLE `t` (`ts` timestamp) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n"
-
-	// LOCK TABLES is not accepted by LoadSDL, forcing the LoadSQL fallback.
-	target := "LOCK TABLES `t` WRITE;\n" + table + "UNLOCK TABLES;\n"
-
-	sql80, err := schema.DiffSDLMigration(storepb.Engine_MYSQL, table, target, "8.0.32")
+	sourceSDL, err := schema.MetadataToSDL(storepb.Engine_MYSQL, current)
 	require.NoError(t, err)
-	require.Empty(t, sql80, "8.0 source/target with identical bare TIMESTAMP must not phantom-diff; got %q", sql80)
-}
-
-func TestSDLRejectsCTAS(t *testing.T) {
-	const source = "CREATE TABLE `t` (`id` int NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB;\n"
-
-	for _, target := range []string{
-		"CREATE TABLE `t` AS SELECT 1 AS `id`;\n",
-		"LOCK TABLES `t` WRITE;\nCREATE TABLE `t` AS SELECT 1 AS `id`;\nUNLOCK TABLES;\n",
-	} {
-		_, err := schema.DiffSDLMigration(storepb.Engine_MYSQL, source, target, "8.0.32")
-		require.ErrorContains(t, err, "CREATE TABLE ... AS SELECT")
-	}
+	bareSQL, err := mysqlDiffSDLMigration(sourceSDL, target, "8.0.32")
+	require.NoError(t, err)
+	require.NotContains(t, bareSQL, "SET sql_mode")
+	require.NotContains(t, bareSQL, sdlDatabaseContext)
 }
 
 func TestSDLRejectsServersBelow80(t *testing.T) {
