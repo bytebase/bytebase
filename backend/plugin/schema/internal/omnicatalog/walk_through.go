@@ -3,7 +3,6 @@ package omnicatalog
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	omnianalysis "github.com/bytebase/omni/analysis"
@@ -89,6 +88,7 @@ type WalkThroughEngine[Catalog any] struct {
 	InspectAST          func(a base.AST) (omnianalysis.WalkThroughStatement, bool)
 	ExtractCatalogError func(err error) (errCode int, message string, ok bool)
 	SplitSQL            func(rawSQL string) ([]base.Statement, error)
+	IsCTAS              func(statement string) bool
 	TrackBatchTables    bool
 	TiDBErrorDialect    bool
 	CaseSensitiveResult func(d *model.DatabaseMetadata) bool
@@ -111,10 +111,10 @@ func RunWalkThrough[Catalog any](
 	dbName := d.GetProto().GetName()
 
 	precheck := PrecheckWalkThrough(d, asts, eng.InspectAST, eng.TrackBatchTables)
-	if eng.SplitSQL != nil {
+	if eng.SplitSQL != nil && eng.IsCTAS != nil {
 		precheck = FirstWalkThroughAdvice(
 			precheck,
-			PrecheckRawCTAS(d, rawSQL, asts, eng.SplitSQL, eng.InspectAST),
+			PrecheckRawCTAS(d, rawSQL, asts, eng.SplitSQL, eng.IsCTAS, eng.InspectAST),
 		)
 	}
 
@@ -384,8 +384,12 @@ func PrecheckRawCTAS(
 	rawSQL string,
 	asts []base.AST,
 	splitSQL func(string) ([]base.Statement, error),
+	isCTAS func(string) bool,
 	inspectAST func(base.AST) (omnianalysis.WalkThroughStatement, bool),
 ) WalkThroughAdvice {
+	if splitSQL == nil || isCTAS == nil {
+		return WalkThroughAdvice{}
+	}
 	statements, err := splitSQL(rawSQL)
 	if err != nil {
 		return WalkThroughAdvice{}
@@ -398,7 +402,7 @@ func PrecheckRawCTAS(
 		currentIndex := statementIndex
 		statementIndex++
 		text := strings.TrimSpace(statement.Text)
-		if !isMySQLCreateTableAsStatement(text) {
+		if !isCTAS(text) {
 			continue
 		}
 		if astSkipsCreateTableAsAdvice(d, asts, currentIndex, inspectAST) {
@@ -428,96 +432,6 @@ func astSkipsCreateTableAsAdvice(d *model.DatabaseMetadata, asts []base.AST, ind
 		return false
 	}
 	return tableExistsInCurrentDatabase(d, info.TableRefs[0])
-}
-
-func isMySQLCreateTableAsStatement(statement string) bool {
-	tokens := mySQLStatementTokens(statement)
-	if len(tokens) < 3 || tokens[0] != "CREATE" {
-		return false
-	}
-	idx := 1
-	if tokens[idx] == "TEMPORARY" {
-		idx++
-	}
-	if idx >= len(tokens) || tokens[idx] != "TABLE" {
-		return false
-	}
-	return slices.Contains(tokens[idx+1:], "SELECT")
-}
-
-func mySQLStatementTokens(statement string) []string {
-	var tokens []string
-	for i := 0; i < len(statement); {
-		switch statement[i] {
-		case '\'', '"', '`':
-			i = skipMySQLQuotedText(statement, i, statement[i])
-		case '#':
-			i = skipMySQLLineComment(statement, i+1)
-		case '-':
-			if i+1 < len(statement) && statement[i+1] == '-' {
-				i = skipMySQLLineComment(statement, i+2)
-			} else {
-				i++
-			}
-		case '/':
-			if i+1 < len(statement) && statement[i+1] == '*' {
-				i = skipMySQLBlockComment(statement, i+2)
-			} else {
-				i++
-			}
-		default:
-			if !isMySQLIdentifierChar(statement[i]) {
-				i++
-				continue
-			}
-			start := i
-			for i < len(statement) && isMySQLIdentifierChar(statement[i]) {
-				i++
-			}
-			tokens = append(tokens, strings.ToUpper(statement[start:i]))
-		}
-	}
-	return tokens
-}
-
-func skipMySQLQuotedText(statement string, start int, quote byte) int {
-	for i := start + 1; i < len(statement); i++ {
-		if statement[i] == '\\' {
-			i++
-			continue
-		}
-		if statement[i] != quote {
-			continue
-		}
-		if i+1 < len(statement) && statement[i+1] == quote {
-			i++
-			continue
-		}
-		return i + 1
-	}
-	return len(statement)
-}
-
-func skipMySQLLineComment(statement string, start int) int {
-	for i := start; i < len(statement); i++ {
-		if statement[i] == '\n' || statement[i] == '\r' {
-			return i + 1
-		}
-	}
-	return len(statement)
-}
-
-func skipMySQLBlockComment(statement string, start int) int {
-	for i := start; i+1 < len(statement); i++ {
-		if statement[i] == '*' && statement[i+1] == '/' {
-			return i + 2
-		}
-	}
-	return len(statement)
-}
-
-func isMySQLIdentifierChar(ch byte) bool {
-	return ch == '_' || ch == '$' || ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z'
 }
 
 // MySQL-family error numbers shared across omni/{mysql,oceanbase,tidb}/catalog.

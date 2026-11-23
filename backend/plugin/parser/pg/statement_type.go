@@ -22,7 +22,7 @@ func GetStatementTypes(asts []base.AST) ([]StatementTypeWithPosition, error) {
 		if wrapped.Node == nil {
 			return nil, "", false, nil
 		}
-		return convertStatementTypes(analysis.StatementTypes(wrapped.Node)), wrapped.Text, true, nil
+		return base.OmniStatementTypes(analysis.StatementTypes(wrapped.Node)), wrapped.Text, true, nil
 	})
 }
 
@@ -34,16 +34,4 @@ func GetStatementTypesForRegistry(asts []base.AST) ([]storepb.StatementType, err
 		return nil, err
 	}
 	return base.ExtractTypesFromPositions(results), nil
-}
-
-// convertStatementTypes maps omni's statement types to storepb's by name and
-// drops a name storepb does not know.
-func convertStatementTypes(types []analysis.StatementType) []storepb.StatementType {
-	var result []storepb.StatementType
-	for _, t := range types {
-		if value := storepb.StatementType(storepb.StatementType_value[string(t)]); value != storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED {
-			result = append(result, value)
-		}
-	}
-	return result
 }

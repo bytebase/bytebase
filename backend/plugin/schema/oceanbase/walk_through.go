@@ -38,6 +38,7 @@ var oceanBaseWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
 	InspectAST:          inspectOceanBaseAST,
 	ExtractCatalogError: extractOceanBaseCatalogError,
 	SplitSQL:            oceanbaseparser.SplitSQL,
+	IsCTAS:              oceanbaseanalysis.IsCreateTableAs,
 }
 
 // WalkThroughWithContext performs DDL simulation using the omni OceanBase catalog.
