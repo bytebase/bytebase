@@ -14,7 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
-func BuildAffectedRowsResult(affectedRows int64, messages []*v1pb.QueryResult_Message) *v1pb.QueryResult {
+func buildAffectedRowsResult(affectedRows int64, messages []*v1pb.QueryResult_Message) *v1pb.QueryResult {
 	return &v1pb.QueryResult{
 		ColumnNames:     []string{"Affected Rows"},
 		ColumnTypeNames: []string{"INT"},

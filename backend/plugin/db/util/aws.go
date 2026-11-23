@@ -24,11 +24,11 @@ func LoadAWSConfig(ctx context.Context, config db.ConnectionConfig) (aws.Config,
 }
 
 func loadAWSConfig(ctx context.Context, config db.ConnectionConfig, wrapMsg string) (aws.Config, error) {
-	awsConfig, err := GetAWSConnectionConfig(ctx, config)
+	awsConfig, err := getAWSConnectionConfig(ctx, config)
 	if err != nil {
 		return aws.Config{}, errors.Wrap(err, wrapMsg)
 	}
-	if err := AssumeRoleIfNeeded(ctx, &awsConfig, config.ConnectionContext, config.DataSource.GetAwsCredential()); err != nil {
+	if err := assumeRoleIfNeeded(ctx, &awsConfig, config.ConnectionContext, config.DataSource.GetAwsCredential()); err != nil {
 		return aws.Config{}, err
 	}
 	return awsConfig, nil
@@ -49,10 +49,9 @@ func RDSAuthToken(ctx context.Context, config db.ConnectionConfig) (string, erro
 	return token, nil
 }
 
-// AssumeRoleIfNeeded checks if role assumption is configured and updates the AWS config with assumed role credentials.
-// This is a shared utility used by multiple AWS service drivers (Elasticsearch, RDS, etc.).
+// assumeRoleIfNeeded checks if role assumption is configured and updates the AWS config with assumed role credentials.
 // Returns an error if role assumption fails.
-func AssumeRoleIfNeeded(ctx context.Context, awsCfg *aws.Config, connectionCtx db.ConnectionContext, awsCredential *storepb.DataSource_AWSCredential) error {
+func assumeRoleIfNeeded(ctx context.Context, awsCfg *aws.Config, connectionCtx db.ConnectionContext, awsCredential *storepb.DataSource_AWSCredential) error {
 	// If no role ARN is provided, no assumption needed
 	if awsCredential == nil || awsCredential.RoleArn == "" {
 		return nil

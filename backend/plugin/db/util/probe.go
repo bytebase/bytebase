@@ -14,38 +14,45 @@ import (
 )
 
 var (
-	_ db.Prober            = (*SQLProber)(nil)
-	_ db.ColumnExtraLookup = (*SQLProber)(nil)
+	_ db.Prober            = (*sqlProber)(nil)
+	_ db.ColumnExtraLookup = (*sqlProber)(nil)
 )
 
-// SQLProber is the probe over a *sql.DB: the handle a driver that has not cut
-// over to omni still holds, and what a test hands a rule instead of a server.
-type SQLProber struct {
+// sqlProber is the probe over a *sql.DB, used by tests that hand a rule a
+// *sql.DB directly instead of an omni driver.
+type sqlProber struct {
 	connection *sql.DB
 }
 
 // NewSQLProber returns a probe over connection, for tests and for a caller that
 // holds only the SQL handle.
 func NewSQLProber(connection *sql.DB) db.Prober {
-	return &SQLProber{connection: connection}
+	return &sqlProber{connection: connection}
 }
 
 // Probe runs the pre-executions and the statement in one transaction that is
 // rolled back. With pCtx.Autocommit it runs the statement alone, because an
 // engine whose probe cannot be wrapped in a transaction (Oracle's BEGIN opens a
 // PL/SQL block, TiDB's BATCH ... DRY RUN refuses one) still has to answer.
-func (p *SQLProber) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
-	return ProbeSQL(ctx, p.connection, pCtx, statement)
+func (p *sqlProber) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
+	return probeSQL(ctx, p.connection, pCtx, statement)
 }
 
 // ColumnExtra returns one column's catalogue extra.
-func (p *SQLProber) ColumnExtra(ctx context.Context, database, table, column string) (string, error) {
-	return QueryColumnExtra(ctx, p.connection, database, table, column)
+func (p *sqlProber) ColumnExtra(ctx context.Context, database, table, column string) (string, error) {
+	var extra string
+	err := p.connection.QueryRowContext(ctx,
+		"SELECT EXTRA FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+		database,
+		table,
+		column,
+	).Scan(&extra)
+	return extra, err
 }
 
-// ProbeSQL is the shared probe over a *sql.DB: it runs the pre-executions and
-// the statement in one transaction that is rolled back.
-func ProbeSQL(ctx context.Context, connection *sql.DB, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
+// probeSQL runs the pre-executions and the statement in one rolled-back
+// transaction over a *sql.DB.
+func probeSQL(ctx context.Context, connection *sql.DB, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
 	if pCtx.Autocommit {
 		if len(pCtx.PreExecutions) > 0 {
 			return db.ProbeResult{}, errors.New("a probe with pre-executions cannot run outside a transaction")
@@ -79,19 +86,6 @@ func ProbeSQL(ctx context.Context, connection *sql.DB, pCtx db.ProbeContext, sta
 	}
 	defer rows.Close()
 	return readProbeRows(rows)
-}
-
-// QueryColumnExtra returns one column's catalogue extra, the bound lookup
-// ColumnExtraLookup carries.
-func QueryColumnExtra(ctx context.Context, connection *sql.DB, database, table, column string) (string, error) {
-	var extra string
-	err := connection.QueryRowContext(ctx,
-		"SELECT EXTRA FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?",
-		database,
-		table,
-		column,
-	).Scan(&extra)
-	return extra, err
 }
 
 // readProbeRows reads rows into the probe result, scanning by the column type
@@ -209,20 +203,6 @@ type OmniProbeOptions struct {
 	FormatCell func(omnidriver.Value) any
 }
 
-// ProbeOmni opens a fresh session from querier, executes the probe according to
-// pCtx and opts, and closes the session before returning.
-func ProbeOmni(ctx context.Context, querier omnidriver.Querier, pCtx db.ProbeContext, statement string, opts OmniProbeOptions) (db.ProbeResult, error) {
-	if err := validateOmniProbeContext(pCtx, opts); err != nil {
-		return db.ProbeResult{}, err
-	}
-	session, err := querier.Session(ctx)
-	if err != nil {
-		return db.ProbeResult{}, err
-	}
-	defer func() { _ = session.Close() }()
-	return ProbeOmniSession(ctx, session, pCtx, statement, opts)
-}
-
 // ProbeOmniSession runs pCtx and statement on an already-open session according
 // to opts.
 func ProbeOmniSession(ctx context.Context, session omnidriver.Session, pCtx db.ProbeContext, statement string, opts OmniProbeOptions) (db.ProbeResult, error) {
@@ -329,11 +309,11 @@ func runProbeQuery(ctx context.Context, session omnidriver.Session, statement st
 	if result.Err != nil {
 		return db.ProbeResult{}, result.Err
 	}
-	return OmniResultToProbeResult(result, opts.FormatCell), nil
+	return omniResultToProbeResult(result, opts.FormatCell), nil
 }
 
-// OmniResultToProbeResult converts one omni driver Result into a db.ProbeResult.
-func OmniResultToProbeResult(result *omnidriver.Result, formatCell func(omnidriver.Value) any) db.ProbeResult {
+// omniResultToProbeResult converts one omni driver Result into a db.ProbeResult.
+func omniResultToProbeResult(result *omnidriver.Result, formatCell func(omnidriver.Value) any) db.ProbeResult {
 	if result == nil {
 		return db.ProbeResult{}
 	}

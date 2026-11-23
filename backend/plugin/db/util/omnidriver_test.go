@@ -157,14 +157,14 @@ func TestQueryResultOptionsExtensionsAndMySQLForkHelpers(t *testing.T) {
 func TestFillZeroAffectedRows(t *testing.T) {
 	result := &omnidriver.Result{Statement: "CREATE TABLE t (id INT)"}
 	qr := OmniResultToQueryResult(result, 1024)
-	FillZeroAffectedRows(result, qr)
+	fillZeroAffectedRows(result, qr)
 	require.Equal(t, []string{"Affected Rows"}, qr.ColumnNames)
 	require.Equal(t, int64(1), qr.RowsCount)
 	require.Equal(t, int64(0), qr.Rows[0].Values[0].GetInt64Value())
 
 	errResult := &omnidriver.Result{Statement: "BAD", Err: errors.New("boom")}
 	errQR := OmniResultToQueryResult(errResult, 1024)
-	FillZeroAffectedRows(errResult, errQR)
+	fillZeroAffectedRows(errResult, errQR)
 	require.Empty(t, errQR.ColumnNames)
 }
 
@@ -175,7 +175,7 @@ func TestOmniExplainFormat(t *testing.T) {
 }
 
 func TestOmniInstanceToMetadata(t *testing.T) {
-	require.Nil(t, OmniInstanceToMetadata(nil, true))
+	require.Nil(t, omniInstanceToMetadata(nil, true))
 
 	limit := int32(10)
 	validUntil := "2030-01-01"
@@ -189,12 +189,12 @@ func TestOmniInstanceToMetadata(t *testing.T) {
 		},
 	}
 
-	withoutMeta := OmniInstanceToMetadata(instance, false)
+	withoutMeta := omniInstanceToMetadata(instance, false)
 	require.Equal(t, "8.0.0", withoutMeta.Version)
 	require.Len(t, withoutMeta.Databases, 1)
 	require.Nil(t, withoutMeta.Metadata)
 
-	withMeta := OmniInstanceToMetadata(instance, true)
+	withMeta := omniInstanceToMetadata(instance, true)
 	require.Equal(t, int32(1), withMeta.Metadata.GetMysqlLowerCaseTableNames())
 	require.Len(t, withMeta.Metadata.GetRoles(), 1)
 	require.Equal(t, "admin", withMeta.Metadata.GetRoles()[0].GetName())

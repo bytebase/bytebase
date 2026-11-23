@@ -193,20 +193,20 @@ func TestGetTLSConfigForHost(t *testing.T) {
 		SslCa:                caPEM,
 	}
 
-	shardCfg, err := GetTLSConfigForHost(verifiedDS, "shard-01.cluster.example.com")
+	shardCfg, err := getTLSConfigForHost(verifiedDS, "shard-01.cluster.example.com")
 	require.NoError(t, err)
 	require.Equal(t, "shard-01.cluster.example.com", shardCfg.ServerName)
 	require.NotNil(t, shardCfg.VerifyPeerCertificate)
 	require.NoError(t, shardCfg.VerifyPeerCertificate([][]byte{shardCert}, nil))
 	require.Error(t, shardCfg.VerifyPeerCertificate([][]byte{seedCert}, nil))
 
-	fallbackCfg, err := GetTLSConfigForHost(verifiedDS, "")
+	fallbackCfg, err := getTLSConfigForHost(verifiedDS, "")
 	require.NoError(t, err)
 	require.Equal(t, "", fallbackCfg.ServerName)
 	require.NoError(t, fallbackCfg.VerifyPeerCertificate([][]byte{seedCert}, nil))
 	require.Error(t, fallbackCfg.VerifyPeerCertificate([][]byte{shardCert}, nil))
 
-	ipv6Cfg, err := GetTLSConfigForHost(verifiedDS, "[2001:db8::1]")
+	ipv6Cfg, err := getTLSConfigForHost(verifiedDS, "[2001:db8::1]")
 	require.NoError(t, err)
 	require.Equal(t, "2001:db8::1", ipv6Cfg.ServerName)
 	require.NoError(t, ipv6Cfg.VerifyPeerCertificate([][]byte{ipv6Cert}, nil))
@@ -216,7 +216,7 @@ func TestGetTLSConfigForHost(t *testing.T) {
 		UseSsl:               true,
 		VerifyTlsCertificate: false,
 	}
-	unverifiedCfg, err := GetTLSConfigForHost(unverifiedDS, "shard-01.cluster.example.com")
+	unverifiedCfg, err := getTLSConfigForHost(unverifiedDS, "shard-01.cluster.example.com")
 	require.NoError(t, err)
 	require.Equal(t, "shard-01.cluster.example.com", unverifiedCfg.ServerName)
 	require.True(t, unverifiedCfg.InsecureSkipVerify)

@@ -57,7 +57,6 @@ require (
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/nyaruka/phonenumbers/v2 v2.0.16
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
-	github.com/opensearch-project/opensearch-go/v5 v5.1.3
 	github.com/pb33f/libopenapi v0.42.3
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.5.0

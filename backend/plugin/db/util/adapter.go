@@ -18,7 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// SessionQueryOptions customizes when SessionHolder discards or keeps its held
+// SessionQueryOptions customizes when OmniAdapter discards or keeps its held
 // session after running a query.
 type SessionQueryOptions struct {
 	// WrapOpenError, when non-empty, wraps errors returned while lazily opening
@@ -36,35 +36,30 @@ type SessionQueryOptions struct {
 	ShouldDiscardResults func(context.Context, omnidriver.Session, []*omnidriver.Result) bool
 }
 
-// SessionHolder manages one lazily opened omni/driver.Session, serializing
+// sessionHolder manages one lazily opened omni/driver.Session, serializing
 // interactive QueryConn calls across a driver's lifetime.
-type SessionHolder struct {
+type sessionHolder struct {
 	mu      sync.Mutex
 	session omnidriver.Session
 }
 
-// NewSessionHolder returns a SessionHolder pre-populated with session.
-func NewSessionHolder(session omnidriver.Session) SessionHolder {
-	return SessionHolder{session: session}
-}
-
 // Session returns the currently held session, or nil if none is open.
-func (h *SessionHolder) Session() omnidriver.Session {
+func (h *sessionHolder) Session() omnidriver.Session {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.session
 }
 
 // SetSession replaces the held session. Intended for unit tests injecting a fake
-// session; callers in production rely on lazy opening inside Query.
-func (h *SessionHolder) SetSession(session omnidriver.Session) {
+// session; callers in production rely on lazy opening inside QueryHeldSession.
+func (h *sessionHolder) SetSession(session omnidriver.Session) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.session = session
 }
 
-// Close closes and clears the held session if one is open.
-func (h *SessionHolder) Close() error {
+// close closes and clears the held session if one is open.
+func (h *sessionHolder) close() error {
 	h.mu.Lock()
 	session := h.session
 	h.session = nil
@@ -75,10 +70,10 @@ func (h *SessionHolder) Close() error {
 	return session.Close()
 }
 
-// Query acquires (opening lazily if needed) the held session, runs fn under the
+// query acquires (opening lazily if needed) the held session, runs fn under the
 // session lock, and discards the session on cancellation, unrecoverable error,
 // or ShouldDiscardResults.
-func (h *SessionHolder) Query(
+func (h *sessionHolder) query(
 	ctx context.Context,
 	open func(context.Context) (omnidriver.Session, error),
 	opts SessionQueryOptions,
@@ -110,7 +105,7 @@ func (h *SessionHolder) Query(
 	return results, nil
 }
 
-func (h *SessionHolder) discardLocked(session omnidriver.Session) {
+func (h *sessionHolder) discardLocked(session omnidriver.Session) {
 	_ = session.Close()
 	if h.session == session {
 		h.session = nil
@@ -151,7 +146,7 @@ type ExecuteConfig struct {
 // held-session query, and script execution plumbing for omni/driver adapters.
 type OmniAdapter struct {
 	Driver omnidriver.Driver
-	SessionHolder
+	sessionHolder
 
 	// WithInstanceMetadata controls whether SyncInstance populates Metadata
 	// (LowerCaseTableNames and Roles).
@@ -204,8 +199,8 @@ func (a *OmniAdapter) OpenWith(
 	return nil
 }
 
-// AddCloser registers c to be closed when Close runs.
-func (a *OmniAdapter) AddCloser(c io.Closer) {
+// addCloser registers c to be closed when Close runs.
+func (a *OmniAdapter) addCloser(c io.Closer) {
 	if c == nil {
 		return
 	}
@@ -226,7 +221,7 @@ func (a *OmniAdapter) AddCloseFunc(fn func() error) {
 // registered auxiliary closers (such as SSH tunnels or cloud IAM dialers).
 func (a *OmniAdapter) Close(context.Context) error {
 	var err error
-	err = multierr.Append(err, a.SessionHolder.Close())
+	err = multierr.Append(err, a.close())
 	if a.Driver != nil {
 		err = multierr.Append(err, a.Driver.Close())
 	}
@@ -256,7 +251,7 @@ func (a *OmniAdapter) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	if err != nil {
 		return nil, err
 	}
-	return OmniInstanceToMetadata(instance, a.WithInstanceMetadata), nil
+	return omniInstanceToMetadata(instance, a.WithInstanceMetadata), nil
 }
 
 // SyncDBSchema reads the connected database schema from the underlying omni
@@ -327,7 +322,7 @@ func (a *OmniAdapter) QueryHeldSession(
 			return session, nil
 		}
 	}
-	return a.Query(ctx, open, sessionOpts, func(session omnidriver.Session) ([]*omnidriver.Result, error) {
+	return a.query(ctx, open, sessionOpts, func(session omnidriver.Session) ([]*omnidriver.Result, error) {
 		return session.Query(ctx, statement, queryOpts)
 	})
 }
@@ -400,7 +395,7 @@ func BuildExecuteOptions(statement string, opts db.ExecuteOptions, cfg ExecuteCo
 	case cfg.StripDirectivesOnly:
 		_, cleaned = base.ParseTransactionConfig(statement)
 	case cfg.ParseTransactionDirective && (!cfg.SkipDirectiveOnCreateDatabase || !opts.CreateDatabase):
-		txMode, isolation, cleaned = ParseTransactionMode(statement)
+		txMode, isolation, cleaned = parseTransactionMode(statement)
 	default:
 		txMode = cfg.DefaultTransaction
 	}

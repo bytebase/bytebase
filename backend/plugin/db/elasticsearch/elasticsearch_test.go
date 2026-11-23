@@ -1,15 +1,23 @@
 package elasticsearch
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
+	"encoding/hex"
 	"encoding/pem"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	sigv4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	omnidriver "github.com/bytebase/omni/driver"
 	"github.com/stretchr/testify/require"
 
@@ -304,4 +312,201 @@ func TestToQueryPlan(t *testing.T) {
 		convert(&omnidriver.Plan{Format: "JSON", Executed: true}))
 	require.Equal(t, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED,
 		convert(&omnidriver.Plan{Format: "not a format"}).GetFormat())
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+type trackingReadCloser struct {
+	io.Reader
+	closed bool
+}
+
+func (c *trackingReadCloser) Close() error {
+	c.closed = true
+	return nil
+}
+
+func TestSignedHTTPRoundTrip(t *testing.T) {
+	staticCreds := credentials.NewStaticCredentialsProvider("AKIAEXAMPLE", "secret-key", "session-token")
+
+	t.Run("GET with nil body signs with empty SHA-256 and does not mutate caller request", func(t *testing.T) {
+		var sent *http.Request
+		transport := &signedHTTP{
+			base: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				sent = req
+				return &http.Response{StatusCode: http.StatusOK, Body: http.NoBody}, nil
+			}),
+			signer:      sigv4.NewSigner(),
+			credentials: staticCreds,
+			region:      "us-west-2",
+		}
+
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://search.us-west-2.es.amazonaws.com/_cluster/health", nil)
+		require.NoError(t, err)
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := transport.RoundTrip(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.NotNil(t, sent)
+		require.NotSame(t, req, sent)
+
+		authHeader := sent.Header.Get("Authorization")
+		require.True(t, strings.HasPrefix(authHeader, "AWS4-HMAC-SHA256 "), authHeader)
+		require.Contains(t, authHeader, "Credential=AKIAEXAMPLE/")
+		require.Contains(t, authHeader, "/us-west-2/es/aws4_request")
+		require.Equal(t, emptyStringSHA256, sent.Header.Get("X-Amz-Content-Sha256"))
+		require.Equal(t, "session-token", sent.Header.Get("X-Amz-Security-Token"))
+		amzDate := sent.Header.Get("X-Amz-Date")
+		require.NotEmpty(t, amzDate)
+		_, err = time.Parse("20060102T150405Z", amzDate)
+		require.NoError(t, err)
+
+		// Caller's request headers must remain untouched.
+		require.Empty(t, req.Header.Get("Authorization"))
+		require.Empty(t, req.Header.Get("X-Amz-Date"))
+		require.Empty(t, req.Header.Get("X-Amz-Content-Sha256"))
+		require.Empty(t, req.Header.Get("X-Amz-Security-Token"))
+		require.Equal(t, "application/json", req.Header.Get("Accept"))
+	})
+
+	t.Run("POST with JSON body preserves body and produces exact payload signature", func(t *testing.T) {
+		const payload = `{"query":{"match_all":{}}}`
+		sum := sha256.Sum256([]byte(payload))
+		wantHash := hex.EncodeToString(sum[:])
+
+		var sent *http.Request
+		var sentBody []byte
+		transport := &signedHTTP{
+			base: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				sent = req
+				var readErr error
+				sentBody, readErr = io.ReadAll(req.Body)
+				require.NoError(t, readErr)
+				return &http.Response{StatusCode: http.StatusOK, Body: http.NoBody}, nil
+			}),
+			signer:      sigv4.NewSigner(),
+			credentials: staticCreds,
+			region:      "eu-central-1",
+		}
+
+		body := &trackingReadCloser{Reader: strings.NewReader(payload)}
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://search.eu-central-1.es.amazonaws.com/books/_search", body)
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := transport.RoundTrip(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.True(t, body.closed)
+		require.Equal(t, payload, string(sentBody))
+		require.Equal(t, wantHash, sent.Header.Get("X-Amz-Content-Sha256"))
+		require.NotEmpty(t, sent.Header.Get("X-Amz-Date"))
+		require.Contains(t, sent.Header.Get("Authorization"), "/eu-central-1/es/aws4_request")
+
+		// Re-sign an identical request at the same timestamp to prove the payload signature matches.
+		signingTime, err := time.Parse("20060102T150405Z", sent.Header.Get("X-Amz-Date"))
+		require.NoError(t, err)
+		expectedReq, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://search.eu-central-1.es.amazonaws.com/books/_search", bytes.NewReader([]byte(payload)))
+		require.NoError(t, err)
+		expectedReq.Header.Set("Content-Type", "application/json")
+		expectedReq.Header.Set("X-Amz-Content-Sha256", wantHash)
+		creds, err := staticCreds.Retrieve(context.Background())
+		require.NoError(t, err)
+		require.NoError(t, sigv4.NewSigner().SignHTTP(context.Background(), creds, expectedReq, wantHash, "es", "eu-central-1", signingTime))
+		require.Equal(t, expectedReq.Header.Get("Authorization"), sent.Header.Get("Authorization"))
+
+		require.Empty(t, req.Header.Get("Authorization"))
+		require.Empty(t, req.Header.Get("X-Amz-Date"))
+	})
+
+	t.Run("propagates credential retrieval failure and closes body", func(t *testing.T) {
+		baseCalled := false
+		transport := &signedHTTP{
+			base: roundTripFunc(func(*http.Request) (*http.Response, error) {
+				baseCalled = true
+				return nil, nil
+			}),
+			signer: sigv4.NewSigner(),
+			credentials: aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
+				return aws.Credentials{}, errors.New("sts unavailable")
+			}),
+			region: "us-east-1",
+		}
+
+		body := &trackingReadCloser{Reader: strings.NewReader("{}")}
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://search.us-east-1.es.amazonaws.com/_search", body)
+		require.NoError(t, err)
+
+		resp, err := transport.RoundTrip(req)
+		if resp != nil {
+			defer resp.Body.Close()
+		}
+		require.Nil(t, resp)
+		require.EqualError(t, err, "sts unavailable")
+		require.False(t, baseCalled)
+		require.True(t, body.closed)
+	})
+
+	t.Run("rejects empty region", func(t *testing.T) {
+		baseCalled := false
+		transport := &signedHTTP{
+			base: roundTripFunc(func(*http.Request) (*http.Response, error) {
+				baseCalled = true
+				return nil, nil
+			}),
+			signer:      sigv4.NewSigner(),
+			credentials: staticCreds,
+		}
+
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://search.us-east-1.es.amazonaws.com/", nil)
+		require.NoError(t, err)
+
+		resp, err := transport.RoundTrip(req)
+		if resp != nil {
+			defer resp.Body.Close()
+		}
+		require.Nil(t, resp)
+		require.ErrorContains(t, err, "region is required")
+		require.False(t, baseCalled)
+	})
+}
+
+func TestSignedTransport(t *testing.T) {
+	t.Run("missing region returns error", func(t *testing.T) {
+		ds := &storepb.DataSource{
+			Host:               "search.us-east-1.es.amazonaws.com",
+			AuthenticationType: storepb.DataSource_AWS_RDS_IAM,
+		}
+		_, err := signedTransport(context.Background(), db.ConnectionConfig{DataSource: ds}, ds, nil)
+		require.ErrorContains(t, err, "region is required for AWS IAM authentication")
+	})
+
+	t.Run("static credentials produce signedHTTP transport", func(t *testing.T) {
+		ds := &storepb.DataSource{
+			Host:               "search.us-east-1.es.amazonaws.com",
+			Region:             "us-east-1",
+			AuthenticationType: storepb.DataSource_AWS_RDS_IAM,
+			IamExtension: &storepb.DataSource_AwsCredential{
+				AwsCredential: &storepb.DataSource_AWSCredential{
+					AccessKeyId:     "AKIAEXAMPLE",
+					SecretAccessKey: "secret-key",
+				},
+			},
+		}
+		rt, err := signedTransport(context.Background(), db.ConnectionConfig{DataSource: ds}, ds, &tls.Config{MinVersion: tls.VersionTLS12})
+		require.NoError(t, err)
+		signed, ok := rt.(*signedHTTP)
+		require.True(t, ok)
+		require.Equal(t, "us-east-1", signed.region)
+		require.NotNil(t, signed.signer)
+		_, isCache := signed.credentials.(*aws.CredentialsCache)
+		require.True(t, isCache)
+	})
 }
