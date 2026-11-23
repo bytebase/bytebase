@@ -1,38 +1,12 @@
-// Package bigquery is Bytebase's BigQuery driver: an adapter over
-// github.com/bytebase/omni/bigquery/driver that maps Bytebase's connection
-// config onto the driver contract and the contract's results back into the
-// product's protos. The job conversation, the statement split, the result
-// decode, the value mapping, the dataset sync queries and the dry run belong to
-// the omni driver.
+// Package bigquery is Bytebase's BigQuery driver, adapting
+// github.com/bytebase/omni/bigquery/driver to Bytebase's db.Driver interface.
 //
-// The mapping the adapter owns:
-//
-//   - The Google Cloud project is the data source's project ID, passed as
-//     driver.Config.Params["project"]. The dataset is the database the driver
-//     was opened on, which every statement's job defaults to and SyncDBSchema
-//     reads.
-//   - The credential is the data source's GCP credential JSON. A caller that
-//     resolved one itself passes it as Config.Password, and that one wins.
-//     Empty leaves the Google authentication library's default chain, which is
-//     what the previous driver did with no credential.
-//   - Config.Host and Config.Port are the endpoint override, for a Private
-//     Service Connect endpoint or a proxy. TLS and Dial are not set: the client
-//     library owns its transport and holds no dialer, so a tunnelled data
-//     source is not honoured, which is also what the previous driver did. The
-//     caller's extra connection parameters are not read, as before.
-//   - GetDB returns nil: BigQuery has no database/sql handle. Every Bytebase
-//     caller already tolerates nil there.
-//   - Execute sends the whole script as one job and reports one command
-//     spanning the script, before and after the job, which is the shape the
-//     previous driver logged. A `-- txn-mode` directive is not parsed: BigQuery
-//     has no multi-statement transaction, and the comment reaches the job as
-//     part of the script, as it did before.
-//   - QueryConn runs on one session the adapter holds from Open to Close. The
-//     session carries no state — every statement is a job of its own.
-//   - Dump writes nothing: googlesql has no catalog that renders a synced
-//     dataset back into DDL, and the previous driver wrote nothing either.
-//   - SyncInstance reports the project's datasets and no version and no roles:
-//     BigQuery states neither.
+// Constraints:
+//   - Project ID is passed as ParamProject; dataset is the opened database.
+//   - Credential defaults to DataSource.GcpCredential when Config.Password is empty.
+//   - TLS, Dial, and extra connection parameters are unused (client library owns transport).
+//   - Execute runs the script as one job without parsing transaction directives.
+//   - SyncInstance reports datasets only (no version or roles).
 package bigquery
 
 import (
@@ -63,30 +37,18 @@ func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open opens a BigQuery driver. It must connect to a specific dataset.
-// If the dataset isn't provided, part of the driver cannot function.
+// Open opens a BigQuery driver targeting the configured project and dataset.
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	cfg := bigQueryConfig(config)
-	impl, err := bqdriver.Open(ctx, cfg)
-	if err != nil {
+	d := &Driver{}
+	if err := d.OpenWith(ctx, util.AdapterOptions{
+		NotFoundResource: "dataset",
+		DatabaseName:     config.ConnectionContext.DatabaseName,
+		EagerSession:     true,
+	}, func(*util.OmniAdapter) (odriver.Driver, error) {
+		return bqdriver.Open(ctx, bigQueryConfig(config))
+	}); err != nil {
 		return nil, err
 	}
-	// BigQuery has no session state a statement can set, because every statement
-	// runs as a job of its own; the session is the driver. It is opened here so
-	// the driver holds one from Open to Close, as the contract asks.
-	session, err := impl.Session(ctx)
-	if err != nil {
-		_ = impl.Close()
-		return nil, err
-	}
-	d := &Driver{
-		OmniAdapter: util.OmniAdapter{
-			Driver:           impl,
-			NotFoundResource: "dataset",
-			DatabaseName:     config.ConnectionContext.DatabaseName,
-		},
-	}
-	d.SetSession(session)
 	return d, nil
 }
 

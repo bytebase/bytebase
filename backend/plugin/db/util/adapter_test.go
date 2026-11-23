@@ -353,6 +353,69 @@ func TestOmniAdapterOpenWithAndSessionHelpers(t *testing.T) {
 		require.True(t, s.closed)
 	})
 
+	t.Run("OpenWith eager session retains session and cleans up on error", func(t *testing.T) {
+		s := &fakeOmniSession{}
+		fake := &fakeOmniDriver{sessions: []*fakeOmniSession{s}}
+		var adapter OmniAdapter
+		require.NoError(t, adapter.OpenWith(ctx, AdapterOptions{
+			NotFoundResource: "dataset",
+			DatabaseName:     "analytics",
+			EagerSession:     true,
+		}, func(*OmniAdapter) (omnidriver.Driver, error) {
+			return fake, nil
+		}))
+		require.Same(t, fake, adapter.Driver)
+		require.Same(t, s, adapter.Session())
+
+		var failed OmniAdapter
+		failingDriver := &fakeOmniDriver{sessionErr: errors.New("session failed")}
+		closerClosed := false
+		err := failed.OpenWith(ctx, AdapterOptions{EagerSession: true}, func(a *OmniAdapter) (omnidriver.Driver, error) {
+			a.AddCloseFunc(func() error {
+				closerClosed = true
+				return nil
+			})
+			return failingDriver, nil
+		})
+		require.EqualError(t, err, "session failed")
+		require.True(t, failingDriver.closed)
+		require.True(t, closerClosed)
+		require.Nil(t, failed.Driver)
+		require.Nil(t, failed.Session())
+	})
+
+	t.Run("QueryHeldConn and QueryEphemeralConn convert results and propagate errors", func(t *testing.T) {
+		s1 := &fakeOmniSession{results: []*omnidriver.Result{{
+			Statement: "SELECT 1",
+			Columns:   []omnidriver.Column{{Name: "n", TypeName: "INT"}},
+			Rows:      [][]omnidriver.Value{{{Kind: omnidriver.Int64, Int64: 1}}},
+		}}}
+		s2 := &fakeOmniSession{results: []*omnidriver.Result{{Statement: "SELECT 2"}}, err: errors.New("boom")}
+		adapter := &OmniAdapter{Driver: &fakeOmniDriver{sessions: []*fakeOmniSession{s1, s2}}}
+
+		got, err := adapter.QueryHeldConn(ctx, "SELECT 1", omnidriver.QueryOptions{MaxResultBytes: 1024}, SessionQueryOptions{}, QueryResultOptions{})
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		require.Equal(t, int64(1), got[0].Rows[0].Values[0].GetInt64Value())
+
+		got, err = adapter.QueryEphemeralConn(ctx, "SELECT 2", omnidriver.QueryOptions{MaxResultBytes: 1024}, QueryResultOptions{})
+		require.EqualError(t, err, "boom")
+		require.Nil(t, got)
+		require.True(t, s2.closed)
+
+		s3 := &fakeOmniSession{results: []*omnidriver.Result{{
+			Statement: "SELECT 3",
+			Columns:   []omnidriver.Column{{Name: "n", TypeName: "INT"}},
+			Rows:      [][]omnidriver.Value{{{Kind: omnidriver.Int64, Int64: 3}}},
+		}}}
+		adapter.Driver = &fakeOmniDriver{sessions: []*fakeOmniSession{s3}}
+		got, err = adapter.QueryEphemeralConn(ctx, "SELECT 3", omnidriver.QueryOptions{MaxResultBytes: 1024}, QueryResultOptions{})
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		require.Equal(t, int64(3), got[0].Rows[0].Values[0].GetInt64Value())
+		require.True(t, s3.closed)
+	})
+
 	t.Run("BuildExecuteOptions maps directives and flags", func(t *testing.T) {
 		stmt, opts := BuildExecuteOptions("-- txn-mode=off\n-- txn-isolation=serializable\nDELETE FROM t;", db.ExecuteOptions{
 			CreateDatabase: true,
