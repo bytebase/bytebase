@@ -56,9 +56,9 @@ type chatGeminiTool struct {
 }
 
 type chatGeminiFunctionDecl struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Parameters  any    `json:"parameters"`
+	Name                 string `json:"name"`
+	Description          string `json:"description"`
+	ParametersJSONSchema any    `json:"parametersJsonSchema"`
 }
 
 type chatGeminiUsage struct {
@@ -213,9 +213,9 @@ func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 				return nil, errors.Errorf("failed to parse parameters schema for tool %s: %s", td.Name, err)
 			}
 			decls = append(decls, chatGeminiFunctionDecl{
-				Name:        td.Name,
-				Description: td.Description,
-				Parameters:  params,
+				Name:                 td.Name,
+				Description:          td.Description,
+				ParametersJSONSchema: params,
 			})
 		}
 		payload.Tools = []chatGeminiTool{{FunctionDeclarations: decls}}
