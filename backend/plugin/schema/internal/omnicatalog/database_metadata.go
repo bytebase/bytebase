@@ -8,8 +8,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// MetadataCatalog is an omni catalog that exports a database snapshot by name.
-type MetadataCatalog interface {
+// metadataCatalog is an omni catalog that exports a database snapshot by name.
+type metadataCatalog interface {
 	DatabaseMetadata(dbName string) *metadatapb.DatabaseSchemaMetadata
 }
 
@@ -17,7 +17,7 @@ type MetadataCatalog interface {
 // and exports the resulting metadata via c.DatabaseMetadata.
 func ExtractSimpleDatabaseMetadata[C any, PC interface {
 	*C
-	MetadataCatalog
+	metadataCatalog
 }](
 	schemaText string,
 	newCatalog func() PC,

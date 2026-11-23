@@ -29,8 +29,8 @@ import (
 // connection already scoped to the target database.
 const Database = "bbcatalog"
 
-// CatalogDiff is an omni SchemaDiff that reports whether a diff is empty.
-type CatalogDiff interface {
+// catalogDiff is an omni SchemaDiff that reports whether a diff is empty.
+type catalogDiff interface {
 	IsEmpty() bool
 }
 
@@ -63,7 +63,7 @@ type Engine[Catalog, Report any] struct {
 }
 
 // DiffSQL builds an Engine.Diff callback from a catalog's Diff and GenerateMigration functions.
-func DiffSQL[Catalog any, D CatalogDiff, P MigrationPlan](
+func DiffSQL[Catalog any, D catalogDiff, P MigrationPlan](
 	diffFn func(from, to *Catalog) D,
 	migrateFn func(from, to *Catalog, diff D) P,
 ) func(from, to *Catalog) (string, bool) {
@@ -82,7 +82,7 @@ func DiffSQL[Catalog any, D CatalogDiff, P MigrationPlan](
 func MySQLFamilyEngine[C any, PC interface {
 	*C
 	LoadMetadataInto(context.Context, *metadatapb.DatabaseSchemaMetadata, string) (*Report, error)
-}, Report any, D CatalogDiff, P MigrationPlan](
+}, Report any, D catalogDiff, P MigrationPlan](
 	newCatalog func() PC,
 	problems func(*Report) []map[string]error,
 	diffFn func(from, to PC) D,

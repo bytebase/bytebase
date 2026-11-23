@@ -90,14 +90,6 @@ func HasExplainStatement(engine storepb.Engine) bool {
 // question the caller did not ask.
 var ErrExplainAnalyzeExecutes = errors.New("EXPLAIN ANALYZE executes the statement it plans, which an explain request never does: run it as a query, or drop ANALYZE to plan the statement")
 
-// OmniExplainAnalyzeError translates omni's ErrExplainAnalyzeExecutes sentinel error to ErrExplainAnalyzeExecutes.
-func OmniExplainAnalyzeError(err error) error {
-	if errors.Is(err, omnianalysis.ErrExplainAnalyzeExecutes) {
-		return ErrExplainAnalyzeExecutes
-	}
-	return err
-}
-
 // ExplainStatementResult adapts an omni ExplainStatement (explain, err) pair,
 // translating ErrExplainAnalyzeExecutes and passing other errors through
 // convertErr when non-nil.

@@ -2,7 +2,6 @@ package plsql
 
 import (
 	"context"
-	"errors"
 
 	"github.com/bytebase/omni/oracle/analysis"
 	pkgerrors "github.com/pkg/errors"
@@ -35,7 +34,7 @@ func newCatalog(ctx context.Context, gCtx base.GetQuerySpanContext) analysis.Cat
 		catalog.GetDatabase = func(instance, name string) (analysis.Database, error) {
 			_, database, err := gCtx.GetDatabaseMetadataFunc(ctx, instance, name)
 			if err != nil {
-				return nil, toOmniError(err)
+				return nil, base.ToOmniNotFoundError(err)
 			}
 			if database == nil {
 				return nil, nil
@@ -47,7 +46,7 @@ func newCatalog(ctx context.Context, gCtx base.GetQuerySpanContext) analysis.Cat
 		catalog.GetLinkedDatabase = func(instance, link, schema string) (string, string, analysis.Database, error) {
 			linkedInstance, name, database, err := gCtx.GetLinkedDatabaseMetadataFunc(ctx, instance, link, schema)
 			if err != nil {
-				return "", "", nil, toOmniError(err)
+				return "", "", nil, base.ToOmniNotFoundError(err)
 			}
 			if database == nil {
 				return linkedInstance, name, nil, nil
@@ -56,33 +55,4 @@ func newCatalog(ctx context.Context, gCtx base.GetQuerySpanContext) analysis.Cat
 		}
 	}
 	return catalog
-}
-
-// omniNotFoundError carries a lookup error that holds a ResourceNotFoundError
-// into omni, which reports it on the span. It keeps the error's text and
-// chain.
-type omniNotFoundError struct {
-	err      error
-	notFound *analysis.NotFoundError
-}
-
-func (e omniNotFoundError) Error() string { return e.err.Error() }
-
-func (e omniNotFoundError) Unwrap() error { return e.err }
-
-func (e omniNotFoundError) As(target any) bool {
-	if t, ok := target.(**analysis.NotFoundError); ok {
-		*t = e.notFound
-		return true
-	}
-	return false
-}
-
-func toOmniError(err error) error {
-	omniErr := base.ToOmniNotFoundError(err)
-	var notFound *analysis.NotFoundError
-	if !errors.As(omniErr, &notFound) {
-		return err
-	}
-	return omniNotFoundError{err: err, notFound: notFound}
 }

@@ -15,10 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-const (
-	PublicSchemaName = "public"
-)
-
 func init() {
 	schema.RegisterWalkThroughWithContext(storepb.Engine_POSTGRES, WalkThroughWithContext)
 }
@@ -141,7 +137,10 @@ func mapSQLSTATEToCode(err error) code.Code {
 }
 
 func getConfiguredSearchPath(d *model.DatabaseMetadata) []string {
-	configured := d.GetConfiguredSearchPath()
+	return formatSearchPath(d.GetConfiguredSearchPath())
+}
+
+func formatSearchPath(configured []model.PGSearchPathItem) []string {
 	if len(configured) == 0 {
 		return nil
 	}

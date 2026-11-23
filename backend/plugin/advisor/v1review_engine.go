@@ -267,8 +267,8 @@ func (e *V1Engine[N]) ContentEndLine(text string) int32 {
 	return e.byteOffsetLine(text, len(trimmed)-1)
 }
 
-// FindLineByName returns the 1-based line of name in text, or ContentStartLine(text).
-func (e *V1Engine[N]) FindLineByName(text, name string) int32 {
+// findLineByName returns the 1-based line of name in text, or ContentStartLine(text).
+func (e *V1Engine[N]) findLineByName(text, name string) int32 {
 	if name != "" {
 		if idx := strings.Index(text, name); idx >= 0 {
 			return e.byteOffsetLine(text, idx)
@@ -316,14 +316,14 @@ func (e *V1Engine[N]) PosFindingOrFirstLine(stmt V1Stmt[N], f v1review.Finding) 
 func (e *V1Engine[N]) PosSearchOrStart(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	line := e.ContentStartLine(stmt.Text)
 	if f.Search != "" {
-		line = e.FindLineByName(stmt.Text, f.Search)
+		line = e.findLineByName(stmt.Text, f.Search)
 	}
 	return e.stmtPos(stmt, line)
 }
 
 // PosNameOrStart anchors the advice on the line containing f.Name, or ContentStartLine.
 func (e *V1Engine[N]) PosNameOrStart(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
-	return e.stmtPos(stmt, e.FindLineByName(stmt.Text, f.Name))
+	return e.stmtPos(stmt, e.findLineByName(stmt.Text, f.Name))
 }
 
 // PosStmtStart anchors the advice at the original splitter start position of stmt.
@@ -391,7 +391,7 @@ func (e *V1Engine[N]) posAlterFirstToken(stmt V1Stmt[N], f v1review.Finding) *st
 func (e *V1Engine[N]) posSearchOrFinding(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	line := e.findingLine(stmt.Text, f)
 	if f.Search != "" {
-		line = e.FindLineByName(stmt.Text, f.Search)
+		line = e.findLineByName(stmt.Text, f.Search)
 	}
 	return e.stmtPos(stmt, line)
 }
@@ -682,11 +682,11 @@ func (e *V1Engine[N]) NumberStmt(
 	content func(V1Stmt[N], v1review.Finding, int) string,
 	posFn ...V1PosFunc[N],
 ) Func {
-	return e.NumberStmtWithMsg(fn, "", positiveOnly, c, content, posFn...)
+	return e.numberStmtWithMsg(fn, "", positiveOnly, c, content, posFn...)
 }
 
-// NumberStmtWithMsg builds a per-statement rule parameterized by number_payload with a custom missing-payload error.
-func (e *V1Engine[N]) NumberStmtWithMsg(
+// numberStmtWithMsg builds a per-statement rule parameterized by number_payload with a custom missing-payload error.
+func (e *V1Engine[N]) numberStmtWithMsg(
 	fn func([]N, int) []v1review.Finding,
 	missingMsg string,
 	positiveOnly bool,

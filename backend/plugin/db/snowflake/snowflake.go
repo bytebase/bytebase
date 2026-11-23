@@ -94,27 +94,26 @@ func snowflakeConfig(config db.ConnectionConfig) odriver.Config {
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// Bytebase treats a non-positive cap as zero allowed bytes, whereas the
 	// omni driver contract treats <= 0 as unbounded.
-	results, err := d.QueryHeldSession(ctx, statement, odriver.QueryOptions{
-		Schema:         queryContext.Schema,
-		Limit:          queryContext.Limit,
-		Explain:        queryContext.Explain,
-		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON),
-		MaskingEnabled: queryContext.MaskingEnabled,
-		MaxResultBytes: util.PositiveMaxResultBytes(queryContext.MaximumSQLResultSize),
-	}, util.SessionQueryOptions{
-		KeepOnError: isRecoverableQueryError,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniResultsToQueryResultsWith(results, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
-		ClearExplainPlan:          queryContext.Explain,
-		ClearExplainPlanOnError:   true,
-		TypedExplainPlan:          true,
-		IncludePlanContent:        true,
-		FillZeroAffectedRows:      true,
-		FormatOutOfRangeTimestamp: util.FormatDefaultTimestamp,
-	}), nil
+	queryOpts := util.OmniQueryOptions(
+		queryContext,
+		true,
+		util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON),
+	)
+	queryOpts.MaxResultBytes = util.PositiveMaxResultBytes(queryContext.MaximumSQLResultSize)
+	return d.QueryHeldConn(
+		ctx,
+		statement,
+		queryOpts,
+		util.SessionQueryOptions{KeepOnError: isRecoverableQueryError},
+		util.QueryResultOptions{
+			ClearExplainPlan:          queryContext.Explain,
+			ClearExplainPlanOnError:   true,
+			TypedExplainPlan:          true,
+			IncludePlanContent:        true,
+			FillZeroAffectedRows:      true,
+			FormatOutOfRangeTimestamp: util.FormatDefaultTimestamp,
+		},
+	)
 }
 
 // isRecoverableQueryError reports whether err left the held Snowflake session

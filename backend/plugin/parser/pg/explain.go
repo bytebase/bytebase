@@ -26,16 +26,14 @@ func explainStatement(statement string, format base.ExplainFormat) (string, erro
 		formatName = "yaml"
 	default:
 	}
-	return convertExplainError(analysis.ExplainStatement(statement, formatName))
+	explain, err := analysis.ExplainStatement(statement, formatName)
+	return base.ExplainStatementResult(explain, err, nil)
 }
 
 // cockroachExplainStatement implements base.ExplainStatement for CockroachDB.
 func cockroachExplainStatement(statement string, format base.ExplainFormat) (string, error) {
-	return convertExplainError(analysis.CockroachExplainStatement(statement, format == base.ExplainFormatJSON))
-}
-
-func convertExplainError(explain string, err error) (string, error) {
-	return explain, base.OmniExplainAnalyzeError(err)
+	explain, err := analysis.CockroachExplainStatement(statement, format == base.ExplainFormatJSON)
+	return base.ExplainStatementResult(explain, err, nil)
 }
 
 // DescribeExplain returns the output format of an EXPLAIN statement and

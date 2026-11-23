@@ -15,6 +15,21 @@ func init() {
 	base.RegisterGenerateRestoreSQL(storepb.Engine_POSTGRES, GenerateRestoreSQL)
 }
 
+// ExtractPrependStatement returns the first SET role or SET search_path
+// statement in statement, trimmed and terminated with a semicolon, or "" if
+// none is present.
+func ExtractPrependStatement(statement string) (string, error) {
+	stmts, err := ParsePg(statement)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to parse statement")
+	}
+	prepend := analysis.PrependStatements(stmts)
+	if prepend == "" {
+		return "", nil
+	}
+	return prepend + ";", nil
+}
+
 func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
 	stmts, err := base.ParseForRestore(statement, backupItem, ParsePg)
 	if err != nil {

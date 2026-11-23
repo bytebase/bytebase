@@ -100,21 +100,46 @@ func OmniNotFoundError(err error) error {
 	return err
 }
 
-// ToOmniNotFoundError converts a Bytebase ResourceNotFoundError into an omni ResourceNotFoundError.
+// omniNotFoundError wraps a lookup error carrying a ResourceNotFoundError so
+// errors.As matches *omnianalysis.ResourceNotFoundError while preserving the
+// original error's text and unwrap chain.
+type omniNotFoundError struct {
+	err      error
+	notFound *omnianalysis.ResourceNotFoundError
+}
+
+func (e omniNotFoundError) Error() string { return e.err.Error() }
+
+func (e omniNotFoundError) Unwrap() error { return e.err }
+
+func (e omniNotFoundError) As(target any) bool {
+	if t, ok := target.(**omnianalysis.ResourceNotFoundError); ok {
+		*t = e.notFound
+		return true
+	}
+	return false
+}
+
+// ToOmniNotFoundError adapts an error carrying a Bytebase ResourceNotFoundError
+// so errors.As matches *omnianalysis.ResourceNotFoundError while keeping the
+// original error's text and unwrap chain.
 func ToOmniNotFoundError(err error) error {
 	var notFound *ResourceNotFoundError
 	if !errors.As(err, &notFound) {
 		return err
 	}
-	return &omnianalysis.ResourceNotFoundError{
-		Err:          notFound.Err,
-		Server:       notFound.Server,
-		DatabaseLink: notFound.DatabaseLink,
-		Database:     notFound.Database,
-		Schema:       notFound.Schema,
-		Table:        notFound.Table,
-		Column:       notFound.Column,
-		Function:     notFound.Function,
+	return omniNotFoundError{
+		err: err,
+		notFound: &omnianalysis.ResourceNotFoundError{
+			Err:          notFound.Err,
+			Server:       notFound.Server,
+			DatabaseLink: notFound.DatabaseLink,
+			Database:     notFound.Database,
+			Schema:       notFound.Schema,
+			Table:        notFound.Table,
+			Column:       notFound.Column,
+			Function:     notFound.Function,
+		},
 	}
 }
 

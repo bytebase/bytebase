@@ -276,11 +276,14 @@ func TestOmniErrorHelpers(t *testing.T) {
 	db := "app"
 	col := "secret"
 	baseNF := &ResourceNotFoundError{Database: &db, Column: &col}
-	omniErr := ToOmniNotFoundError(baseNF)
+	wrappedBaseNF := errors.Wrap(baseNF, "lookup failed")
+	omniErr := ToOmniNotFoundError(wrappedBaseNF)
 	var omniNF *omnianalysis.ResourceNotFoundError
 	require.ErrorAs(t, omniErr, &omniNF)
 	require.Equal(t, "app", *omniNF.Database)
 	require.Equal(t, "secret", *omniNF.Column)
+	require.Equal(t, wrappedBaseNF.Error(), omniErr.Error())
+	require.ErrorIs(t, omniErr, baseNF)
 
 	backErr := OmniNotFoundError(errors.Wrap(omniErr, "wrapped"))
 	var roundTripped *ResourceNotFoundError
@@ -465,9 +468,7 @@ func TestCompletionHelpers(t *testing.T) {
 }
 
 func TestExplainAndDiagnoseHelpers(t *testing.T) {
-	require.ErrorIs(t, OmniExplainAnalyzeError(omnianalysis.ErrExplainAnalyzeExecutes), ErrExplainAnalyzeExecutes)
 	other := errors.New("other")
-	require.Equal(t, other, OmniExplainAnalyzeError(other))
 
 	plan, err := ExplainStatementResult("EXPLAIN SELECT 1", nil, nil)
 	require.NoError(t, err)

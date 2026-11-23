@@ -16,5 +16,5 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 		false,
 		util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "TEXT", v1pb.QueryOption_XML),
 	), util.SessionQueryOptions{})
-	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, false), err
+	return util.OmniResultsToQueryResultsWith(results, queryContext.MaximumSQLResultSize, util.QueryResultOptions{}), err
 }

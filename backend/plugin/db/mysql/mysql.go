@@ -146,18 +146,19 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 	// The product reads a zero cap as "no rows", and the contract reads it as
 	// "no cap". A one-byte cap keeps the old zero-byte behaviour without letting
 	// the query read every row a policy meant to bound.
-	maxResultBytes := util.PositiveMaxResultBytes(queryContext.MaximumSQLResultSize)
-	results, err := d.QueryHeldSession(ctx, statement, odriver.QueryOptions{
-		Limit:          queryContext.Limit,
-		Explain:        queryContext.Explain,
-		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON),
-		MaxResultBytes: maxResultBytes,
-		MaskingEnabled: queryContext.MaskingEnabled,
-	}, util.SessionQueryOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, queryContext.Explain), nil
+	queryOpts := util.OmniQueryOptions(
+		queryContext,
+		false,
+		util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON),
+	)
+	queryOpts.MaxResultBytes = util.PositiveMaxResultBytes(queryContext.MaximumSQLResultSize)
+	return d.QueryHeldConn(
+		ctx,
+		statement,
+		queryOpts,
+		util.SessionQueryOptions{},
+		util.QueryResultOptions{ClearExplainPlan: queryContext.Explain},
+	)
 }
 
 // Probe runs a live review rule's probe on a fresh session. The contract has no

@@ -16,5 +16,5 @@ func init() {
 // form (the driver capability table offers this engine the default plan only).
 func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
 	explained, err := analysis.ExplainStatement(statement)
-	return explained, base.OmniExplainAnalyzeError(err)
+	return base.ExplainStatementResult(explained, err, nil)
 }
