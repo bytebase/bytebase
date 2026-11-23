@@ -2,14 +2,17 @@ package cosmosdb
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"connectrpc.com/connect"
 	omnicosmosdb "github.com/bytebase/omni/cosmosdb/driver"
+	omnidriver "github.com/bytebase/omni/driver"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 // TestConnectionConfigMapsTheCredential pins the adapter's half of Open: an app
@@ -69,4 +72,57 @@ func TestQueryOptionsCarriesTheRequest(t *testing.T) {
 	require.Equal(t, 25, options.Limit)
 	require.True(t, options.Explain)
 	require.Equal(t, int64(2048), options.MaxResultBytes)
+}
+
+type fakeCosmosDriver struct {
+	session omnidriver.Session
+}
+
+func (*fakeCosmosDriver) Ping(context.Context) error { return nil }
+func (*fakeCosmosDriver) Close() error               { return nil }
+func (f *fakeCosmosDriver) Session(context.Context) (omnidriver.Session, error) {
+	return f.session, nil
+}
+
+type fakeCosmosSession struct {
+	gotOpts omnidriver.QueryOptions
+	results []*omnidriver.Result
+	err     error
+}
+
+func (s *fakeCosmosSession) Query(_ context.Context, _ string, opts omnidriver.QueryOptions) ([]*omnidriver.Result, error) {
+	s.gotOpts = opts
+	return s.results, s.err
+}
+
+func (*fakeCosmosSession) Close() error { return nil }
+
+func TestQueryConnSeam(t *testing.T) {
+	ctx := context.Background()
+	session := &fakeCosmosSession{
+		results: []*omnidriver.Result{{
+			Statement: "SELECT * FROM c",
+			Columns:   []omnidriver.Column{{Name: "c", TypeName: "JSON"}},
+			Rows:      [][]omnidriver.Value{{{Kind: omnidriver.String, String: `{"id":"1"}`}}},
+		}},
+	}
+	d := &Driver{OmniAdapter: util.OmniAdapter{Driver: &fakeCosmosDriver{session: session}}}
+
+	results, err := d.QueryConn(ctx, "SELECT * FROM c", db.QueryContext{
+		Container:            "orders",
+		Limit:                10,
+		MaximumSQLResultSize: 1024,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "orders", session.gotOpts.Schema)
+	require.Equal(t, 10, session.gotOpts.Limit)
+	require.Equal(t, int64(1024), session.gotOpts.MaxResultBytes)
+	require.Len(t, results, 1)
+	require.Equal(t, `{"id":"1"}`, results[0].Rows[0].Values[0].GetStringValue())
+
+	// A per-statement result error surfaces as connect.CodeInternal.
+	session.results = []*omnidriver.Result{{Statement: "SELECT * FROM c", Err: errors.New("gateway error")}}
+	_, err = d.QueryConn(ctx, "SELECT * FROM c", db.QueryContext{Container: "orders"})
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+	require.ErrorContains(t, err, "gateway error")
 }

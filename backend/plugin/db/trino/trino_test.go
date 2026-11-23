@@ -4,9 +4,11 @@ import (
 	"context"
 	"testing"
 
+	omnidriver "github.com/bytebase/omni/driver"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -52,4 +54,45 @@ func TestOpenAcceptsTheConfigurationsThatCanConnect(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+type captureTrinoSession struct {
+	gotOpts omnidriver.QueryOptions
+	results []*omnidriver.Result
+}
+
+func (s *captureTrinoSession) Query(_ context.Context, _ string, opts omnidriver.QueryOptions) ([]*omnidriver.Result, error) {
+	s.gotOpts = opts
+	return s.results, nil
+}
+
+func (*captureTrinoSession) Close() error { return nil }
+
+func TestQueryConnFillsZeroAffectedRowsAndMapsExplainFormat(t *testing.T) {
+	session := &captureTrinoSession{
+		results: []*omnidriver.Result{
+			{Statement: "CREATE TABLE memory.default.t (id BIGINT)"},
+		},
+	}
+	d := &Driver{}
+	d.SetSession(session)
+
+	results, err := d.QueryConn(context.Background(), "CREATE TABLE memory.default.t (id BIGINT)", db.QueryContext{
+		Schema:               "default",
+		Limit:                100,
+		Explain:              true,
+		Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+		MaximumSQLResultSize: 1024,
+		MaskingEnabled:       true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "default", session.gotOpts.Schema)
+	require.Equal(t, 100, session.gotOpts.Limit)
+	require.True(t, session.gotOpts.Explain)
+	require.Equal(t, "JSON", session.gotOpts.ExplainFormat)
+	require.Equal(t, int64(1024), session.gotOpts.MaxResultBytes)
+	require.True(t, session.gotOpts.MaskingEnabled)
+	require.Len(t, results, 1)
+	require.Equal(t, []string{"Affected Rows"}, results[0].ColumnNames)
+	require.Equal(t, int64(0), results[0].Rows[0].Values[0].GetInt64Value())
 }

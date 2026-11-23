@@ -33,13 +33,6 @@
 //     dataset back into DDL, and the previous driver wrote nothing either.
 //   - SyncInstance reports the project's datasets and no version and no roles:
 //     BigQuery states neither.
-//
-// The statement split, the query-or-command decision, a result's shape, the
-// result-size cap, the dry run and the sync are omni's driver's, not this
-// adapter's, and several of them behave differently from the replaced driver.
-// This PR's "Parity evidence" section records each difference and what it means
-// for the product; cutover_parity_test.go pins the statement-level ones both
-// ways. Read those before changing the adapter.
 package bigquery
 
 import (

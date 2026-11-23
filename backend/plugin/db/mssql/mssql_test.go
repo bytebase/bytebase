@@ -17,6 +17,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	odriver "github.com/bytebase/omni/driver"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
@@ -585,4 +586,35 @@ func TestQueryConnKeepsOneSession(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Contains(t, results[0].GetError(), "#session")
+}
+
+type fakeMSSQLDriver struct {
+	execScript string
+	execOpts   odriver.ExecuteOptions
+}
+
+func (*fakeMSSQLDriver) Ping(context.Context) error { return nil }
+func (*fakeMSSQLDriver) Close() error               { return nil }
+
+func (f *fakeMSSQLDriver) Execute(_ context.Context, script string, opts odriver.ExecuteOptions) (int64, error) {
+	f.execScript = script
+	f.execOpts = opts
+	return 1, nil
+}
+
+func TestExecuteParsesTxnModeAndIgnoresIsolation(t *testing.T) {
+	fake := &fakeMSSQLDriver{}
+	d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
+
+	rows, err := d.Execute(context.Background(), "-- txn-mode = off\n-- txn-isolation = READ COMMITTED\nINSERT INTO dbo.t VALUES (1);", db.ExecuteOptions{
+		CreateDatabase: true,
+		MaximumRetries: 2,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), rows)
+	require.Equal(t, "INSERT INTO dbo.t VALUES (1);", fake.execScript)
+	require.Equal(t, odriver.AutoCommit, fake.execOpts.Transaction)
+	require.Empty(t, fake.execOpts.Isolation)
+	require.True(t, fake.execOpts.CreateDatabase)
+	require.Equal(t, 2, fake.execOpts.MaxRetries)
 }

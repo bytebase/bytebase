@@ -33,13 +33,6 @@
 //   - Dump writes the server's own SHOW CREATE TABLE for every object: omni has
 //     no databricks catalog that renders a synced schema as Databricks DDL, so
 //     the metadata argument is not read.
-//
-// The statement split, the EXPLAIN rewrite, the result decode, the cap, the
-// session's schema and the dump are omni's driver's, not this adapter's, and
-// several of them behave differently from the replaced driver. This PR's
-// "Parity evidence" table records each difference and what it means for the
-// product, and cutover_parity_test.go asserts both answers over the recorded
-// workspace. Read those before changing the adapter.
 package databricks
 
 import (

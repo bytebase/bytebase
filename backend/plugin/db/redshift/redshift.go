@@ -25,12 +25,6 @@
 //   - Dump writes nothing: omni's Redshift driver has no Dumper — redshift/catalog
 //     has no renderer for a synced snapshot — and a renderer no server has
 //     checked would be the only way to replace the no-op.
-//
-// Behaviour the sync, Execute and the datashare rewrite get from omni's driver
-// rather than from this adapter — the user-schema predicate, script splitting,
-// the refusals of a transactional script that holds a statement Redshift commits
-// on its own, and the stripping of the database name from the named relations —
-// is pinned by cutover_parity_test.go.
 package redshift
 
 import (
