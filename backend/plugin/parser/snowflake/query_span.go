@@ -31,8 +31,8 @@ func GetQuerySpan(
 		},
 	})
 	if err != nil {
-		if errors.Is(err, analysis.ErrMixUserSystemTables) {
-			return nil, base.MixUserSystemTablesError
+		if mixErr := base.ConvertOmniMixTablesError(err); mixErr != nil {
+			return nil, mixErr
 		}
 		var resolveErr *analysis.ResolveError
 		if !errors.As(err, &resolveErr) {
@@ -41,21 +41,14 @@ func GetQuerySpan(
 		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(resolveErr.Err, &resourceNotFound) {
 			return &base.QuerySpan{
-				SourceColumns: convertColumnSet(resolveErr.SourceColumns),
+				SourceColumns: base.OmniColumnSet(resolveErr.SourceColumns),
 				Results:       []base.QuerySpanResult{},
 				NotFoundError: resourceNotFound,
 			}, nil
 		}
 		return nil, resolveErr.Err
 	}
-	if span == nil {
-		return nil, nil
-	}
-	return &base.QuerySpan{
-		Type:          convertQueryType(span.Type),
-		SourceColumns: convertColumnSet(span.SourceColumns),
-		Results:       convertResults(span.Results),
-	}, nil
+	return base.OmniResolvedSpan(span), nil
 }
 
 // resolveTable finds a table in the synced metadata of the instance's
@@ -107,24 +100,4 @@ func resolveTable(ctx context.Context, gCtx base.GetQuerySpanContext, normalized
 		}
 	}
 	return nil, errors.Errorf(`table %s.%s.%s is not found`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
-}
-
-func convertQueryType(t analysis.QueryType) base.QueryType {
-	return base.ConvertQueryType(t, analysis.Select, analysis.Explain, analysis.SelectInfoSchema, analysis.DDL, analysis.DML)
-}
-
-func convertColumnSet(set analysis.ColumnSet) base.SourceColumnSet {
-	return base.ConvertColumnSet(set, func(c analysis.ColumnResource) base.ColumnResource {
-		return base.ColumnResource{Database: c.Database, Schema: c.Schema, Table: c.Table, Column: c.Column}
-	})
-}
-
-func convertResults(results []analysis.QuerySpanResult) []base.QuerySpanResult {
-	return base.ConvertQuerySpanResults(results, func(r analysis.QuerySpanResult) base.QuerySpanResult {
-		return base.QuerySpanResult{
-			Name:          r.Name,
-			SourceColumns: convertColumnSet(r.SourceColumns),
-			IsPlainField:  r.IsPlainField,
-		}
-	})
 }

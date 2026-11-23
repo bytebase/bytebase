@@ -1,30 +1,15 @@
 package base
 
 import (
+	omnianalysis "github.com/bytebase/omni/analysis"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// ChangedResource describes a single database or table change reported by an engine analyzer.
-type ChangedResource struct {
-	Database     string
-	Schema       string
-	Table        string
-	AffectsData  bool
-	DatabaseOnly bool
-}
-
-// StatementChanges captures resource and DML changes extracted from one or more statements.
-type StatementChanges struct {
-	Resources     []ChangedResource
-	DMLStatements []string
-	DMLCount      int
-	InsertCount   int
-}
-
-// AppendStatementChanges merges changes into summary. If skipEmptyTable is true,
-// non-database resources with an empty Table name are ignored.
-func AppendStatementChanges(summary *ChangeSummary, changes StatementChanges, skipEmptyTable bool) {
+// AppendStatementChanges merges omni statement changes into summary. If skipEmptyTable
+// is true, non-database resources with an empty Table name are ignored.
+func AppendStatementChanges(summary *ChangeSummary, changes omnianalysis.StatementChanges, skipEmptyTable bool) {
 	for _, r := range changes.Resources {
 		if r.DatabaseOnly {
 			summary.ChangedResources.AddDatabase(r.Database)
@@ -45,7 +30,7 @@ func ExtractChangedResourcesFromASTs(
 	dbMetadata *model.DatabaseMetadata,
 	asts []AST,
 	skipEmptyTable bool,
-	extract func(AST) (StatementChanges, bool, error),
+	extract func(AST) (omnianalysis.StatementChanges, bool, error),
 ) (*ChangeSummary, error) {
 	summary := &ChangeSummary{
 		ChangedResources: model.NewChangedResources(dbMetadata),
@@ -60,13 +45,4 @@ func ExtractChangedResourcesFromASTs(
 		}
 	}
 	return summary, nil
-}
-
-// MapChangedResources converts engine-specific changed resource entries to []ChangedResource.
-func MapChangedResources[T any](items []T, mapFn func(T) ChangedResource) []ChangedResource {
-	out := make([]ChangedResource, 0, len(items))
-	for _, item := range items {
-		out = append(out, mapFn(item))
-	}
-	return out
 }

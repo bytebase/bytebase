@@ -3,9 +3,8 @@ package tidb
 import (
 	"context"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/omni/tidb/analysis"
+	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -30,24 +29,12 @@ func resolveQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statem
 		Catalog:         newCatalog(ctx, gCtx),
 	})
 	if err != nil {
-		if err == analysis.ErrMixUserSystemTables {
-			return nil, base.MixUserSystemTablesError
-		}
-		if errors.Is(err, analysis.ErrMixUserSystemTables) {
-			return nil, &base.MixedTablesError{Cause: err}
+		if mixErr := base.ConvertOmniMixTablesError(err); mixErr != nil {
+			return nil, mixErr
 		}
 		return nil, err
 	}
-	querySpan := &base.QuerySpan{
-		Type:           convertQueryType(span.Type),
-		ExplainAnalyze: span.ExplainAnalyze,
-		SourceColumns:  convertColumnSet(span.SourceColumns),
-		Results:        convertResults(span.Results),
-	}
-	if span.NotFoundError != nil {
-		querySpan.NotFoundError = convertNotFoundError(span.NotFoundError)
-	}
-	return querySpan, nil
+	return base.OmniResolvedSpan(span), nil
 }
 
 // newCatalog reads the instance's synced metadata for omni. A lookup error
@@ -59,7 +46,7 @@ func newCatalog(ctx context.Context, gCtx base.GetQuerySpanContext) analysis.Cat
 		catalog.GetDatabase = func(name string) (analysis.Database, error) {
 			_, database, err := gCtx.GetDatabaseMetadataFunc(ctx, gCtx.InstanceID, name)
 			if err != nil {
-				return nil, toOmniNotFound(err)
+				return nil, base.ToOmniNotFoundError(err)
 			}
 			if database == nil {
 				return nil, nil
@@ -68,48 +55,4 @@ func newCatalog(ctx context.Context, gCtx base.GetQuerySpanContext) analysis.Cat
 		}
 	}
 	return catalog
-}
-
-func toOmniNotFound(err error) error {
-	var notFound *base.ResourceNotFoundError
-	if !errors.As(err, &notFound) {
-		return err
-	}
-	return &analysis.NotFoundError{
-		Err:      notFound.Err,
-		Database: notFound.Database,
-		Schema:   notFound.Schema,
-		Table:    notFound.Table,
-		Column:   notFound.Column,
-	}
-}
-
-func convertNotFoundError(err *analysis.NotFoundError) *base.ResourceNotFoundError {
-	return &base.ResourceNotFoundError{
-		Err:      err.Err,
-		Database: err.Database,
-		Schema:   err.Schema,
-		Table:    err.Table,
-		Column:   err.Column,
-	}
-}
-
-func convertQueryType(t analysis.QueryType) base.QueryType {
-	return base.ConvertQueryType(t, analysis.Select, analysis.Explain, analysis.SelectInfoSchema, analysis.DDL, analysis.DML)
-}
-
-func convertColumnSet(set analysis.ColumnSet) base.SourceColumnSet {
-	return base.ConvertColumnSet(set, func(c analysis.ColumnResource) base.ColumnResource {
-		return base.ColumnResource{Database: c.Database, Schema: c.Schema, Table: c.Table, Column: c.Column}
-	})
-}
-
-func convertResults(results []analysis.QuerySpanResult) []base.QuerySpanResult {
-	return base.ConvertQuerySpanResults(results, func(r analysis.QuerySpanResult) base.QuerySpanResult {
-		return base.QuerySpanResult{
-			Name:          r.Name,
-			SourceColumns: convertColumnSet(r.SourceColumns),
-			IsPlainField:  r.IsPlainField,
-		}
-	})
 }

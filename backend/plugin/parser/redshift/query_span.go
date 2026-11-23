@@ -2,7 +2,6 @@ package redshift
 
 import (
 	"context"
-	"errors"
 
 	"github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/redshift/analysis"
@@ -48,71 +47,19 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.
 		},
 	})
 	if err != nil {
-		if errors.Is(err, analysis.ErrMixUserSystemTables) {
-			return nil, base.MixUserSystemTablesError
+		if mixErr := base.ConvertOmniMixTablesError(err); mixErr != nil {
+			return nil, mixErr
 		}
 		err = convertError(err, stmt)
 		return nil, pkgerrors.Wrapf(err, "failed to get query span from statement: %s", stmt.Text)
 	}
 
 	return &base.QuerySpan{
-		Type:                      convertQueryType(span.Type),
-		SourceColumns:             convertColumnSet(span.SourceColumns),
-		PredicateColumns:          convertColumnSet(span.PredicateColumns),
-		Results:                   convertResults(span.Results),
-		NotFoundError:             convertNotFoundError(span.NotFoundError),
-		FunctionNotSupportedError: convertFunctionNotSupportedError(span.FunctionNotSupportedError),
+		Type:                      base.OmniQueryType(span.Type),
+		SourceColumns:             base.OmniColumnSet(span.SourceColumns),
+		PredicateColumns:          base.OmniColumnSet(span.PredicateColumns),
+		Results:                   base.OmniQuerySpanResults(span.Results),
+		NotFoundError:             base.OmniNotFoundError(span.NotFoundError),
+		FunctionNotSupportedError: base.OmniFunctionNotSupportedError(span.FunctionNotSupportedError),
 	}, nil
-}
-
-func convertQueryType(t analysis.QueryType) base.QueryType {
-	return base.ConvertQueryType(t, analysis.Select, analysis.Explain, analysis.SelectInfoSchema, analysis.DDL, analysis.DML)
-}
-
-func convertColumnSet(set analysis.ColumnSet) base.SourceColumnSet {
-	return base.ConvertColumnSet(set, func(c analysis.ColumnResource) base.ColumnResource {
-		return base.ColumnResource{Database: c.Database, Schema: c.Schema, Table: c.Table, Column: c.Column}
-	})
-}
-
-func convertResults(results []analysis.ResolvedQuerySpanResult) []base.QuerySpanResult {
-	return base.ConvertQuerySpanResults(results, func(r analysis.ResolvedQuerySpanResult) base.QuerySpanResult {
-		return base.QuerySpanResult{
-			Name:          r.Name,
-			SourceColumns: convertColumnSet(r.SourceColumns),
-			IsPlainField:  r.IsPlainField,
-		}
-	})
-}
-
-func convertNotFoundError(err error) error {
-	if err == nil {
-		return nil
-	}
-	var notFound *analysis.ResourceNotFoundError
-	if errors.As(err, &notFound) {
-		return &base.ResourceNotFoundError{
-			Err:      notFound.Err,
-			Database: notFound.Database,
-			Schema:   notFound.Schema,
-			Table:    notFound.Table,
-			Column:   notFound.Column,
-		}
-	}
-	return err
-}
-
-func convertFunctionNotSupportedError(err error) error {
-	if err == nil {
-		return nil
-	}
-	var unsupported *analysis.FunctionNotSupportedError
-	if errors.As(err, &unsupported) {
-		return &base.FunctionNotSupportedError{
-			Err:        unsupported.Err,
-			Function:   unsupported.Function,
-			Definition: unsupported.Definition,
-		}
-	}
-	return err
 }

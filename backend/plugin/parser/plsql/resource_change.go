@@ -25,19 +25,11 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 			return foundIndex.GetTableProto().GetName(), true
 		}
 	}
-	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, false, func(a base.AST) (base.StatementChanges, bool, error) {
+	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, false, func(a base.AST) (analysis.StatementChanges, bool, error) {
 		wrapped, ok := a.(*AST)
 		if !ok || wrapped == nil {
-			return base.StatementChanges{}, false, nil
+			return analysis.StatementChanges{}, false, nil
 		}
-		changes := analysis.ExtractChangedResources(wrapped.Node, currentDatabase, wrapped.Text, indexTable)
-		return base.StatementChanges{
-			Resources: base.MapChangedResources(changes.Resources, func(r analysis.ChangedResource) base.ChangedResource {
-				return base.ChangedResource{Database: r.Database, Table: r.Table, AffectsData: r.AffectsData, DatabaseOnly: r.DatabaseOnly}
-			}),
-			DMLStatements: changes.DMLStatements,
-			DMLCount:      changes.DMLCount,
-			InsertCount:   changes.InsertCount,
-		}, true, nil
+		return analysis.ExtractChangedResources(wrapped.Node, currentDatabase, wrapped.Text, indexTable), true, nil
 	})
 }
