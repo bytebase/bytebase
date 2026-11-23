@@ -219,7 +219,7 @@
       },
       "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
         "desc": "通过 100+ lint 规则和 schema 一致性检查来执行 SQL 最佳实践。",
-        "title": "SQL 审核"
+        "title": "基于规则的 SQL 审核"
       },
       "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
         "desc": "通过不同环境逐步部署更改。",

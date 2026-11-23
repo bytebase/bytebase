@@ -9,8 +9,8 @@ type T = (key: string, options?: Record<string, unknown>) => string;
 
 // The review's name, which every review result carries as its author. Under
 // SQL Review V2 it is one review, whichever part of it found the problem.
-// Beside V1's plan checks it is the AI review alone, and the plan checks'
-// SQL review keeps its own name.
+// Beside V1's plan checks it is AI SQL review alone, and the plan checks'
+// rule-based SQL review keeps its own name.
 export const reviewerName = (t: T): string =>
   sqlReviewV2Enabled()
     ? t("sql-review.reviewer")

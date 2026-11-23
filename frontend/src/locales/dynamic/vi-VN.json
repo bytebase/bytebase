@@ -219,7 +219,7 @@
       },
       "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
         "desc": "Thực thi các phương pháp hay nhất cho SQL với hơn 100 quy tắc lint và kiểm tra tính nhất quán của schema.",
-        "title": "Đánh giá SQL"
+        "title": "Đánh giá SQL dựa trên quy tắc"
       },
       "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
         "desc": "Triển khai thay đổi tuần tự qua các môi trường khác nhau.",
