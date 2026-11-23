@@ -20,10 +20,7 @@ func init() {
 // parsePLSQLStatements is the ParseStatementsFunc for Oracle (PL/SQL).
 // Returns []ParsedStatement with both text and AST populated.
 func parsePLSQLStatements(statement string) ([]base.ParsedStatement, error) {
-	return base.ParseMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
-		if stmt.Empty {
-			return nil, nil
-		}
+	return base.ParseNonEmptyMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
 		list, err := ParsePLSQL(stmt.Text)
 		if err != nil {
 			return nil, convertError(err, stmt)

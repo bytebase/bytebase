@@ -27,7 +27,7 @@ func (a *AST) ASTStartPosition() *storepb.Position {
 // A statement omni cannot parse carries an AST with a nil Node rather than no
 // AST so base.ExtractASTs preserves it for UNSPECIFIED classification.
 func ParseStatements(statement string, cfg Config) ([]base.ParsedStatement, error) {
-	return base.ParseMultiNodeStatements(statement, func(s string) ([]base.Statement, error) {
+	return base.ParseNonEmptyMultiNodeStatements(statement, func(s string) ([]base.Statement, error) {
 		return SplitSQL(s, cfg)
 	}, func(stmt base.Statement) ([]base.AST, error) {
 		if file, err := parser.Parse(stmt.Text); err == nil && file != nil && len(file.Stmts) > 0 {

@@ -23,7 +23,11 @@ func TestCassandraSplitSQLSeam(t *testing.T) {
 	require.Equal(t, &storepb.Position{Line: 3, Column: 11}, stmts[1].End)
 	require.Equal(t, &storepb.Range{Start: 13, End: 21}, stmts[1].Range)
 
-	// isCommentOnly marks comment-only segments Empty.
-	require.True(t, isCommentOnly("  -- line comment\n/* block */ "))
-	require.False(t, isCommentOnly("-- comment\nSELECT 1"))
+	stmts, err = base.SplitMultiSQL(storepb.Engine_CASSANDRA, "SELECT 1;;\n-- c\n/* d */;\n-- comment\nSELECT 2;\n// done")
+	require.NoError(t, err)
+	var empty []bool
+	for _, stmt := range stmts {
+		empty = append(empty, stmt.Empty)
+	}
+	require.Equal(t, []bool{false, true, true, false, true}, empty)
 }
