@@ -28,6 +28,7 @@ import {
   useMaskingExemptionExprConfig,
 } from "@/lib/sensitive-data/maskingExemption";
 import { AgentPageHelpButton } from "@/modules/agent/components/AgentPageHelpButton";
+import { createMaskingExemptionActionReceipt } from "@/modules/agent/logic/actionReceipt";
 import {
   type MaskingExemptionDraft,
   parseMaskingExemptionDraftCondition,
@@ -448,6 +449,24 @@ export function ProjectMaskingExemptionCreatePage({
         app.workspaceResourceName() === submittedOrigin.workspaceName
       ) {
         try {
+          const receipt = createMaskingExemptionActionReceipt(
+            `${projectName}/policies/MASKING_EXEMPTION`,
+            exemption,
+            submittedOrigin.draftId
+          );
+          if (receipt && app.currentUser?.email) {
+            useAgentStore
+              .getState()
+              .recordActionReceipt(
+                submittedOrigin.chatId,
+                submittedOrigin.messageId,
+                receipt,
+                {
+                  workspaceName: submittedOrigin.workspaceName,
+                  userEmail: app.currentUser.email,
+                }
+              );
+          }
           useAgentStore
             .getState()
             .markMaskingExemptionDraftCreated(

@@ -10164,6 +10164,10 @@ describe("AgentInput", () => {
         await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
       });
       expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(expect.objectContaining({ capability, referencedProject: resource.project, referencedPlan: resource.name }));
+      expect(mocks.buildOutboundHistory.mock.calls.at(-1)?.[4]).toEqual({
+        includeActionReceipts: false,
+        ownerEmail: "agent@example.com",
+      });
       expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith(expect.objectContaining({ capability }));
       expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ capability, referencedPlan: resource.name }));
       expect(store.getChat(chat.id)?.capability).toEqual(capability);
@@ -10629,7 +10633,10 @@ describe("AgentInput", () => {
     });
 
     expect(store.getMessages(chatId)).toEqual(history);
-    expect(mocks.buildOutboundHistory).toHaveBeenLastCalledWith("system", history, undefined);
+    expect(mocks.buildOutboundHistory).toHaveBeenLastCalledWith("system", history, undefined, undefined, {
+      includeActionReceipts: true,
+      ownerEmail: "agent@example.com",
+    });
     expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith({
       runMode: "read-only",
       maskingSections: [],
@@ -12269,7 +12276,9 @@ describe("AgentInput", () => {
     expect(mocks.buildOutboundHistory).toHaveBeenLastCalledWith(
       expect.any(String),
       expect.any(Array),
-      "workspaces/demo"
+      "workspaces/demo",
+      undefined,
+      { includeActionReceipts: true, ownerEmail: "agent@example.com" }
     );
     view.unmount();
   });

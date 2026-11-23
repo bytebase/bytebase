@@ -1610,7 +1610,7 @@ describe("AgentChat", () => {
       container: "",
       unmask: true,
     };
-    store.addMessage({
+    const source = store.addMessage({
       chatId: chat.id,
       role: "assistant",
       content: "The API denied this query.",
@@ -1635,7 +1635,7 @@ describe("AgentChat", () => {
     expect(onOpenAccessGrantDraft).toHaveBeenCalledWith({
       ...draft,
       reason: "Request temporary query access to app with unmasked results.",
-    });
+    }, {chatId: chat.id, messageId: source!.id});
     expect(mocks.prepareAgentDeniedQueryRequestRoute).not.toHaveBeenCalled();
     expect(mocks.routerPush).not.toHaveBeenCalled();
     expect(useAgentStore.getState().minimized).toBe(true);
@@ -1681,7 +1681,7 @@ describe("AgentChat", () => {
               : unmask
                 ? "Request temporary query access to app with unmasked results."
                 : "Request temporary query access to app.",
-          });
+          }, {chatId: chat.id, messageId: store.getMessages(chat.id).at(-1)!.id});
           expect(draft.reason).toBe(reason);
           expect(mocks.validateDeniedQueryRequestDraft).toHaveBeenCalledWith(draft);
           expect(mocks.routerPush).not.toHaveBeenCalled();

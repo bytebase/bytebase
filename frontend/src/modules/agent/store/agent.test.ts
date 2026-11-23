@@ -1,10 +1,16 @@
 import { create } from "@bufbuild/protobuf";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { StoreApi } from "zustand";
+import type { AccessGrantDraft } from "@/modules/sql-editor/model/accessGrantDraft";
 import { useAppStore } from "@/stores/app";
+import {
+  AccessGrant_Status,
+  AccessGrantSchema,
+} from "@/types/proto-es/v1/access_grant_service_pb";
 import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
+import { actionReceiptKey } from "../logic/actionReceipt";
 import {
   fingerprintPreparedApiCall,
   getAgentApiAttemptStatus,
@@ -16,8 +22,10 @@ import {
   withAgentRunLease,
 } from "../logic/runOwnership";
 import type { AgentSqlFixSource } from "../logic/sqlFix";
+import { decodeSubmittedAccessGrant } from "../logic/submittedAccessGrant";
 import { dispatchApprovedApiCall as dispatchPreparedApiCall } from "../logic/tools/callApi";
 import type {
+  AgentActionReceipt,
   AgentChat,
   AgentDiagnosticCapability,
   AgentMessage,
@@ -121,6 +129,670 @@ const s = (store: StoreApi<AgentState>) => {
       state.setWorkspaceName(workspaceName, userEmail),
   };
 };
+
+const decodeReceiptGrant = (receipt: AgentActionReceipt | undefined) =>
+  receipt?.kind === "access-grant"
+    ? decodeSubmittedAccessGrant({
+        grant: receipt.grant,
+        submittedAt: receipt.savedAt,
+      })
+    : undefined;
+
+describe("submitted Access Grants", () => {
+  const workspaceName = "workspaces/alpha";
+  const draft: AccessGrantDraft = {
+    project: "projects/example",
+    sourceDatabase: "instances/example/databases/source",
+    targets: ["instances/example/databases/source"],
+    statement: "SELECT original FROM example",
+  };
+  const origin = { workspaceName, userEmail: TEST_USER_EMAIL, draft };
+  const submitted = (id = "request-1") =>
+    create(AccessGrantSchema, {
+      name: `projects/example/accessGrants/${id}`,
+      creator: `users/${TEST_USER_EMAIL}`,
+      query: "SELECT edited FROM example",
+      targets: ["instances/example/databases/edited"],
+      issue: "projects/example/issues/101",
+      status: AccessGrant_Status.PENDING,
+    });
+  const setup = () => {
+    setAppIdentity({ user: `users/${TEST_USER_EMAIL}` });
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName);
+    const chat = s(store).createChat({ workspaceName });
+    const message = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: { accessRequestDraft: draft },
+    })!;
+    return { store, chat, message };
+  };
+
+  test("links actual edited submissions to the origin after selecting and archiving another chat", () => {
+    const { store, chat, message } = setup();
+    s(store).createChat({ workspaceName });
+    s(store).archiveChat(chat.id);
+
+    const linked = s(store).recordSubmittedAccessGrant(
+      chat.id,
+      message.id,
+      submitted(),
+      origin
+    );
+    expect(decodeReceiptGrant(linked?.metadata?.actionReceipts?.[0])).toEqual(
+      submitted()
+    );
+    expect(s(store).getChat(chat.id)?.archived).toBe(true);
+    expect(s(store).currentChatId).not.toBe(chat.id);
+    s(store).saveState();
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName(workspaceName);
+    expect(
+      decodeReceiptGrant(
+        s(reloaded).getMessages(chat.id)[0].metadata?.actionReceipts?.[0]
+      )
+    ).toEqual(submitted());
+  });
+
+  test("keeps every submitted name without overwriting an immutable receipt", () => {
+    const { store, chat, message } = setup();
+    s(store).recordSubmittedAccessGrant(
+      chat.id,
+      message.id,
+      submitted(),
+      origin
+    );
+    s(store).recordSubmittedAccessGrant(
+      chat.id,
+      message.id,
+      create(AccessGrantSchema, {
+        ...submitted(),
+        query: "SELECT overwritten FROM example",
+      }),
+      origin
+    );
+    const linked = s(store).recordSubmittedAccessGrant(
+      chat.id,
+      message.id,
+      submitted("request-2"),
+      origin
+    );
+    expect(linked?.metadata?.actionReceipts?.map(decodeReceiptGrant)).toEqual([
+      submitted(),
+      submitted("request-2"),
+    ]);
+  });
+
+  test("rejects stale ownership, altered source drafts, foreign grants and deleted chats", () => {
+    const { store, chat, message } = setup();
+    expect(
+      s(store).recordSubmittedAccessGrant(chat.id, message.id, submitted(), {
+        ...origin,
+        userEmail: "other@example.com",
+      })
+    ).toBeNull();
+    expect(
+      s(store).recordSubmittedAccessGrant(chat.id, message.id, submitted(), {
+        ...origin,
+        draft: { ...draft, statement: "SELECT stale FROM example" },
+      })
+    ).toBeNull();
+    expect(
+      s(store).recordSubmittedAccessGrant(
+        chat.id,
+        message.id,
+        create(AccessGrantSchema, {
+          ...submitted(),
+          creator: "users/other@example.com",
+        }),
+        origin
+      )
+    ).toBeNull();
+    setAppIdentity({ user: "users/other@example.com" });
+    expect(
+      s(store).recordSubmittedAccessGrant(
+        chat.id,
+        message.id,
+        submitted(),
+        origin
+      )
+    ).toBeNull();
+    setAppIdentity({ user: `users/${TEST_USER_EMAIL}` });
+    s(store).deleteChat(chat.id);
+    expect(
+      s(store).recordSubmittedAccessGrant(
+        chat.id,
+        message.id,
+        submitted(),
+        origin
+      )
+    ).toBeNull();
+  });
+
+  test("does not attach submitted grants to user messages or different projects", () => {
+    const { store, chat } = setup();
+    const message = s(store).addMessage({
+      chatId: chat.id,
+      role: "user",
+      metadata: { accessRequestDraft: draft },
+    })!;
+    expect(
+      s(store).recordSubmittedAccessGrant(
+        chat.id,
+        message.id,
+        submitted(),
+        origin
+      )
+    ).toBeNull();
+    const assistant = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: { accessRequestDraft: draft },
+    })!;
+    expect(
+      s(store).recordSubmittedAccessGrant(
+        chat.id,
+        assistant.id,
+        create(AccessGrantSchema, {
+          ...submitted(),
+          name: "projects/other/accessGrants/request-1",
+          issue: "projects/other/issues/101",
+        }),
+        origin
+      )
+    ).toBeNull();
+  });
+
+  test("drops restored receipts for another owner or an unsupported source", () => {
+    const { store, chat, message } = setup();
+    s(store).recordSubmittedAccessGrant(
+      chat.id,
+      message.id,
+      submitted(),
+      origin
+    );
+    s(store).saveState();
+    const key = getAgentStateKey(workspaceName);
+    const persisted = JSON.parse(mockStorage.getItem(key)!);
+    const source = persisted.messagesByChatId[chat.id][0];
+    source.metadata.actionReceipts[0].grant.creator = "users/other@example.com";
+    persisted.messagesByChatId[chat.id].push({
+      ...source,
+      id: "user-copy",
+      role: "user",
+    });
+    mockStorage.setItem(key, JSON.stringify(persisted));
+
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName(workspaceName);
+    expect(
+      s(reloaded)
+        .getMessages(chat.id)
+        .map((entry) => entry.metadata?.actionReceipts)
+    ).toEqual([undefined, undefined]);
+  });
+
+  test("merges submissions from another tab without replacing the running owner's answer", () => {
+    const { store: writer, chat, message } = setup();
+    const follower = createAgentStore();
+    s(follower).setWorkspaceName(workspaceName);
+    s(writer).startChatRun(
+      chat.id,
+      { path: "/landing", title: "Home" },
+      { runId: "owner-run" }
+    );
+    s(follower).syncState();
+    s(follower).recordSubmittedAccessGrant(
+      chat.id,
+      message.id,
+      submitted(),
+      origin
+    );
+    s(writer).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Latest answer",
+      metadata: { runId: "owner-run" },
+    });
+    s(writer).incrementChatTotalTokens(chat.id, 7);
+    s(writer).syncState();
+
+    expect(
+      decodeReceiptGrant(
+        s(writer).getMessages(chat.id)[0].metadata?.actionReceipts?.[0]
+      )
+    ).toEqual(submitted());
+    expect(s(writer).getMessages(chat.id)[1].content).toBe("Latest answer");
+    expect(s(writer).getChat(chat.id)).toMatchObject({
+      status: "running",
+      runId: "owner-run",
+      totalTokensUsed: 7,
+    });
+    s(writer).finishChatRun(chat.id);
+  });
+
+  test("preserves a completed answer when a stale tab queues a submitted grant receipt", async () => {
+    vi.stubGlobal("sessionStorage", createMockStorage());
+    vi.stubGlobal("navigator", {
+      locks: {
+        request: async (
+          name: string,
+          options: LockOptions,
+          action: (lock: Lock | null) => unknown
+        ) => action({ name, mode: options.mode ?? "exclusive" }),
+        query: async () => ({ held: [], pending: [] }),
+      },
+    });
+    const { store: writer, chat, message } = setup();
+    expect(await s(writer).flushRunPersistence()).toBe(true);
+    const follower = createAgentStore();
+    s(follower).setWorkspaceName(workspaceName);
+    expect(await s(follower).flushRunPersistence()).toBe(true);
+
+    s(writer).startChatRun(
+      chat.id,
+      { path: "/landing", title: "Home" },
+      { runId: "newer-run" }
+    );
+    s(writer).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Newer answer",
+      metadata: { runId: "newer-run" },
+    });
+    s(writer).finishChatRun(chat.id);
+    expect(
+      s(follower).recordSubmittedAccessGrant(
+        chat.id,
+        message.id,
+        submitted(),
+        origin
+      )
+    ).not.toBeNull();
+    expect(await s(writer).flushRunPersistence()).toBe(true);
+    expect(await s(follower).flushRunPersistence()).toBe(true);
+
+    const persisted = stateStorage.parseAgentStoredState(
+      mockStorage.getItem(getAgentStateKey(workspaceName))!
+    ) as PersistedAgentState;
+    expect(persisted.messagesByChatId[chat.id]).toHaveLength(2);
+    expect(persisted.messagesByChatId[chat.id][1].content).toBe("Newer answer");
+    expect(
+      decodeReceiptGrant(
+        persisted.messagesByChatId[chat.id][0].metadata?.actionReceipts?.[0]
+      )
+    ).toEqual(submitted());
+  });
+
+  test("migrates legacy submission snapshots into shared receipts", () => {
+    const { store, chat, message } = setup();
+    s(store).recordSubmittedAccessGrant(
+      chat.id,
+      message.id,
+      submitted(),
+      origin
+    );
+    s(store).saveState();
+    const key = getAgentStateKey(workspaceName);
+    const persisted = JSON.parse(mockStorage.getItem(key)!);
+    const metadata = persisted.messagesByChatId[chat.id][0].metadata;
+    const receipt = metadata.actionReceipts[0];
+    metadata.submittedAccessGrants = [
+      {
+        grant: receipt.grant,
+        submittedAt: receipt.savedAt,
+      },
+    ];
+    delete metadata.actionReceipts;
+    mockStorage.setItem(key, JSON.stringify(persisted));
+
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName(workspaceName);
+    const restored = s(reloaded).getMessages(chat.id)[0].metadata;
+    expect(restored?.actionReceipts).toEqual([receipt]);
+    expect(restored?.submittedAccessGrants).toBeUndefined();
+  });
+});
+
+describe("shared action receipts", () => {
+  const workspaceName = "workspaces/alpha";
+  const origin = { workspaceName, userEmail: TEST_USER_EMAIL };
+  const rule = (
+    id = "550e8400-e29b-41d4-a716-446655440000"
+  ): Extract<AgentActionReceipt, { kind: "masking-rule" }> => ({
+    kind: "masking-rule",
+    draftId: "draft-rule",
+    policy: `${workspaceName}/policies/MASKING_RULE`,
+    rule: {
+      id,
+      semanticType: "semanticTypes/example",
+      condition: { title: "Edited title", expression: "true" },
+    },
+    savedAt: 100,
+  });
+  const exemption = (): Extract<
+    AgentActionReceipt,
+    { kind: "masking-exemption" }
+  > => ({
+    kind: "masking-exemption",
+    draftId: "draft-exemption",
+    policy: "projects/example/policies/MASKING_EXEMPTION",
+    exemption: {
+      members: ["user:member@example.com"],
+      condition: { expression: "true" },
+    },
+    savedAt: 101,
+  });
+  const setup = () => {
+    setAppIdentity({ user: `users/${TEST_USER_EMAIL}` });
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName);
+    const chat = s(store).createChat({ workspaceName });
+    const message = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: {
+        actions: [{ kind: "draft-masking-rule", draftId: "draft-rule" }],
+      },
+    })!;
+    return { store, chat, message };
+  };
+
+  test("records edited native saves in the original archived chat and survives reload", () => {
+    const { store, chat, message } = setup();
+    const exemptionSource = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: {
+        actions: [
+          { kind: "draft-masking-exemption", draftId: "draft-exemption" },
+        ],
+      },
+    })!;
+    s(store).createChat({ workspaceName });
+    s(store).archiveChat(chat.id);
+    expect(
+      s(store).recordActionReceipt(chat.id, message.id, rule(), origin)
+    ).not.toBeNull();
+    expect(
+      s(store).recordActionReceipt(
+        chat.id,
+        exemptionSource.id,
+        exemption(),
+        origin
+      )
+    ).not.toBeNull();
+    expect(s(store).getMessages(chat.id)[0].metadata?.actionReceipts).toEqual([
+      rule(),
+    ]);
+    expect(s(store).getMessages(chat.id)[1].metadata?.actionReceipts).toEqual([
+      exemption(),
+    ]);
+    s(store).saveState();
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName(workspaceName);
+    expect(
+      s(reloaded).getMessages(chat.id)[0].metadata?.actionReceipts
+    ).toEqual([rule()]);
+    expect(
+      s(reloaded).getMessages(chat.id)[1].metadata?.actionReceipts
+    ).toEqual([exemption()]);
+    expect(s(reloaded).getChat(chat.id)?.archived).toBe(true);
+  });
+
+  test("keeps distinct batch rules and does not replace a saved snapshot", () => {
+    const { store, chat, message } = setup();
+    s(store).recordActionReceipt(chat.id, message.id, rule(), origin);
+    s(store).recordActionReceipt(
+      chat.id,
+      message.id,
+      { ...rule(), savedAt: 200 },
+      origin
+    );
+    const second = rule("550e8400-e29b-41d4-a716-446655440001");
+    s(store).recordActionReceipt(chat.id, message.id, second, origin);
+    expect(s(store).getMessages(chat.id)[0].metadata?.actionReceipts).toEqual([
+      rule(),
+      second,
+    ]);
+  });
+
+  test("drops restored masking receipts outside the chat workspace or project", () => {
+    const { store, chat, message } = setup();
+    const exemptionSource = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: {
+        actions: [
+          { kind: "draft-masking-exemption", draftId: "draft-exemption" },
+        ],
+      },
+    })!;
+    s(store).recordActionReceipt(chat.id, message.id, rule(), origin);
+    s(store).recordActionReceipt(
+      chat.id,
+      exemptionSource.id,
+      exemption(),
+      origin
+    );
+    s(store).saveState();
+    const key = getAgentStateKey(workspaceName);
+    const persisted = JSON.parse(mockStorage.getItem(key)!);
+    persisted.chats.find(
+      (entry: { id: string }) => entry.id === chat.id
+    ).context = "projects/other";
+    persisted.messagesByChatId[chat.id][0].metadata.actionReceipts[0].policy =
+      "workspaces/other/policies/MASKING_RULE";
+    mockStorage.setItem(key, JSON.stringify(persisted));
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName(workspaceName);
+    expect(
+      s(reloaded).getMessages(chat.id)[0].metadata?.actionReceipts
+    ).toBeUndefined();
+    expect(
+      s(reloaded).getMessages(chat.id)[1].metadata?.actionReceipts
+    ).toBeUndefined();
+  });
+
+  test("rejects foreign actors, workspace policy, unsupported draft, and user source", () => {
+    const { store, chat, message } = setup();
+    expect(
+      s(store).recordActionReceipt(chat.id, message.id, rule(), {
+        ...origin,
+        userEmail: "other@example.com",
+      })
+    ).toBeNull();
+    const receipt = rule();
+    expect(
+      s(store).recordActionReceipt(
+        chat.id,
+        message.id,
+        { ...receipt, policy: "workspaces/other/policies/MASKING_RULE" },
+        origin
+      )
+    ).toBeNull();
+    expect(
+      s(store).recordActionReceipt(
+        chat.id,
+        message.id,
+        { ...receipt, draftId: "other-draft" },
+        origin
+      )
+    ).toBeNull();
+    const userMessage = s(store).addMessage({
+      chatId: chat.id,
+      role: "user",
+      metadata: message.metadata,
+    })!;
+    expect(
+      s(store).recordActionReceipt(chat.id, userMessage.id, receipt, origin)
+    ).toBeNull();
+    setAppIdentity({ user: "users/other@example.com" });
+    expect(
+      s(store).recordActionReceipt(chat.id, message.id, receipt, origin)
+    ).toBeNull();
+  });
+
+  test("persists explicit observations without replacing the saved receipt", () => {
+    const { store, chat, message } = setup();
+    const saved = s(store).recordActionReceipt(
+      chat.id,
+      message.id,
+      rule(),
+      origin
+    )!;
+    const receipt = saved.metadata!.actionReceipts![0];
+    const key = actionReceiptKey(receipt);
+    const observation = { observedAt: 200, status: "CHANGED" as const };
+    expect(
+      s(store).recordActionObservation(
+        chat.id,
+        message.id,
+        key,
+        observation,
+        origin
+      )
+    ).not.toBeNull();
+    expect(s(store).getMessages(chat.id)[0].metadata?.actionReceipts).toEqual([
+      { ...rule(), observation: { ...observation, revision: 1 } },
+    ]);
+    s(store).saveState();
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName(workspaceName);
+    expect(
+      s(reloaded).getMessages(chat.id)[0].metadata?.actionReceipts
+    ).toEqual([{ ...rule(), observation: { ...observation, revision: 1 } }]);
+  });
+
+  test.each([300, 200])(
+    "orders a later completed check by revision when its clock reads %i",
+    (observedAt) => {
+      const { store, chat, message } = setup();
+      s(store).recordActionReceipt(chat.id, message.id, rule(), origin);
+      const key = actionReceiptKey(rule());
+      s(store).recordActionObservation(
+        chat.id,
+        message.id,
+        key,
+        {
+          status: "CHANGED",
+          observedAt: 300,
+        },
+        origin
+      );
+      const updated = s(store).recordActionObservation(
+        chat.id,
+        message.id,
+        key,
+        {
+          status: "SAVED",
+          observedAt,
+        },
+        origin
+      );
+      const observation = { status: "SAVED", observedAt, revision: 2 };
+      expect(updated?.metadata?.actionReceipts?.[0].observation).toEqual(
+        observation
+      );
+      s(store).saveState();
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName(workspaceName);
+      expect(
+        s(reloaded).getMessages(chat.id)[0].metadata?.actionReceipts?.[0]
+          .observation
+      ).toEqual(observation);
+    }
+  );
+
+  test("rejects invalid or stale-source observations", () => {
+    const { store, chat, message } = setup();
+    s(store).recordActionReceipt(chat.id, message.id, rule(), origin);
+    const key = actionReceiptKey(rule());
+    const newest = { status: "CHANGED" as const, observedAt: 300 };
+    s(store).recordActionObservation(chat.id, message.id, key, newest, origin);
+    expect(
+      s(store).getMessages(chat.id)[0].metadata?.actionReceipts?.[0].observation
+    ).toEqual({ ...newest, revision: 1 });
+    expect(
+      s(store).recordActionObservation(
+        chat.id,
+        message.id,
+        "unknown",
+        newest,
+        origin
+      )
+    ).toBeNull();
+    expect(
+      s(store).recordActionObservation(
+        chat.id,
+        message.id,
+        key,
+        { status: "SAVED", observedAt: 99 },
+        origin
+      )
+    ).toBeNull();
+    expect(
+      s(store).recordActionObservation(
+        chat.id,
+        message.id,
+        key,
+        { status: "CHANGED", observedAt: NaN },
+        origin
+      )
+    ).toBeNull();
+    s(store).archiveChat(chat.id);
+    expect(
+      s(store).recordActionObservation(chat.id, message.id, key, newest, origin)
+    ).toBeNull();
+  });
+
+  test("merges another tab's latest observation without replacing newer answer progress", () => {
+    const { store: writer, chat, message } = setup();
+    s(writer).recordActionReceipt(chat.id, message.id, rule(), origin);
+    const follower = createAgentStore();
+    s(follower).setWorkspaceName(workspaceName);
+    s(writer).startChatRun(
+      chat.id,
+      { path: "/landing", title: "Home" },
+      { runId: "owner-run" }
+    );
+    s(follower).syncState();
+    const key = actionReceiptKey(rule());
+    s(follower).recordActionObservation(
+      chat.id,
+      message.id,
+      key,
+      {
+        status: "SAVED",
+        observedAt: 300,
+      },
+      origin
+    );
+    const observation = { status: "CHANGED" as const, observedAt: 200 };
+    s(follower).recordActionObservation(
+      chat.id,
+      message.id,
+      key,
+      observation,
+      origin
+    );
+    s(writer).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Latest answer",
+      metadata: { runId: "owner-run" },
+    });
+    s(writer).syncState();
+    expect(
+      s(writer).getMessages(chat.id)[0].metadata?.actionReceipts?.[0]
+        .observation
+    ).toEqual({ ...observation, revision: 2 });
+    expect(s(writer).getMessages(chat.id)[1].content).toBe("Latest answer");
+    expect(s(writer).getChat(chat.id)?.runId).toBe("owner-run");
+    s(writer).finishChatRun(chat.id);
+  });
+});
 
 describe("landing drafts", () => {
   const workspaceName = "workspaces/landing";

@@ -34,6 +34,32 @@ afterEach(() => {
 });
 
 describe("maskingRuleDraftTarget", () => {
+  it("carries exact draft origin through singleton, batch, and apply handoffs", async () => {
+    const open = vi.fn(async () => {});
+    const openMany = vi.fn(async () => {});
+    const apply = vi.fn(async () => {});
+    cleanups.push(
+      registerMaskingRuleDraftTarget(context, {
+        getSnapshot: async () => snapshot,
+        open,
+        openMany,
+        apply,
+      })
+    );
+    const action = { messageId: "message-1", draftId: "draft-1" };
+    const origin = { ...context, ...action };
+    await openMaskingRuleDraftInEditor(draft, context, action);
+    await openMaskingRuleDraftsInEditor([draft, draft], context, action);
+    await applyMaskingRuleDraftInEditor(draft, snapshot, context, action);
+    expect(open).toHaveBeenCalledWith(draft, context.chatId, origin);
+    expect(openMany).toHaveBeenCalledWith(
+      [draft, draft],
+      context.chatId,
+      origin
+    );
+    expect(apply).toHaveBeenCalledWith(draft, snapshot, context.chatId, origin);
+  });
+
   it("delivers a batch in one handoff and never falls back to partial singleton opens", async () => {
     const open = vi.fn(async () => {});
     const openMany = vi.fn(async () => {});

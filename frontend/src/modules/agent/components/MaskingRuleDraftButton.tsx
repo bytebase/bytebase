@@ -97,8 +97,14 @@ export function MaskingRuleDraftButton({
       if (!validatedDraft)
         throw new Error("The masking rule draft is unavailable.");
       assertCurrentContext(context);
+      const action = { draftId, messageId };
       if (expected) {
-        await applyMaskingRuleDraftInEditor(validatedDraft, expected, context);
+        await applyMaskingRuleDraftInEditor(
+          validatedDraft,
+          expected,
+          context,
+          action
+        );
       } else {
         const target = resolveAgentHandoffRoute({
           kind: "open-global-masking",
@@ -110,9 +116,9 @@ export function MaskingRuleDraftButton({
         assertCurrentContext(context);
         assertCurrentTarget(targetPath);
         if (isBatch) {
-          await openMaskingRuleDraftsInEditor(validatedDrafts, context);
+          await openMaskingRuleDraftsInEditor(validatedDrafts, context, action);
         } else {
-          await openMaskingRuleDraftInEditor(validatedDraft, context);
+          await openMaskingRuleDraftInEditor(validatedDraft, context, action);
         }
       }
       assertCurrentContext(context);

@@ -87,7 +87,7 @@ export const getActiveAccessGrantDeadlineMs = (
     ? getAccessGrantExpireTimeMs(grant)
     : undefined;
 
-const getAccessGrantDisplayStatus = (
+export const getAccessGrantDisplayStatus = (
   grant: AccessGrant,
   issue?: Issue
 ): AccessGrantDisplayStatus => {

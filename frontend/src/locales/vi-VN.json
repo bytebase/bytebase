@@ -45,6 +45,17 @@
       "storage-failed": "Couldn't prepare the access request. Try again.",
       "unavailable": "Couldn't open the access request. The database or access settings may have changed."
     },
+    "action-receipt": {
+      "changed": "Đã thay đổi sau khi lưu",
+      "matching": "Đã tìm thấy cấu hình khớp",
+      "not-found": "Không tìm thấy cấu hình đã lưu",
+      "open-exemption": "Mở miễn trừ che dữ liệu",
+      "open-rule": "Mở quy tắc che dữ liệu",
+      "open-unavailable": "Không thể mở cấu hình đã lưu. Hãy kiểm tra trang hiện tại và quyền truy cập.",
+      "saved": "Đã lưu",
+      "status-unavailable": "Không thể kiểm tra cấu hình hiện tại. Kết quả lưu không đổi; hãy kiểm tra quyền rồi thử lại.",
+      "unavailable": "Không thể xem trạng thái"
+    },
     "ai-not-configured": {
       "configure": "Cấu hình",
       "contact-admin": "Liên hệ quản trị viên không gian làm việc để cấu hình AI.",
@@ -453,6 +464,13 @@
       "retry": "Thử lưu lại",
       "save-failed": "Không thể lưu lịch sử Agent. Hãy thử lại.",
       "title": "Bộ nhớ lịch sử Agent"
+    },
+    "submitted-access-grant": {
+      "check-status": "Kiểm tra trạng thái",
+      "observed-at": "Lần kiểm tra gần nhất: {{time}}",
+      "open": "Mở yêu cầu",
+      "open-unavailable": "Không thể mở yêu cầu. Yêu cầu có thể không còn khả dụng hoặc bạn không còn quyền truy cập.",
+      "status-unavailable": "Không thể kiểm tra trạng thái yêu cầu. Yêu cầu có thể không còn khả dụng hoặc bạn không còn quyền truy cập."
     },
     "token-budget": {
       "action-failed": "Không thể cập nhật lượt chạy này. Vui lòng thử lại.",

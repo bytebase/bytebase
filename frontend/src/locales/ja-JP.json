@@ -45,6 +45,17 @@
       "storage-failed": "Couldn't prepare the access request. Try again.",
       "unavailable": "Couldn't open the access request. The database or access settings may have changed."
     },
+    "action-receipt": {
+      "changed": "保存後に変更されています",
+      "matching": "一致する設定が見つかりました",
+      "not-found": "保存した設定が見つかりません",
+      "open-exemption": "マスキング免除を開く",
+      "open-rule": "マスキングルールを開く",
+      "open-unavailable": "保存した設定を開けませんでした。現在のページと権限を確認してください。",
+      "saved": "保存済み",
+      "status-unavailable": "現在の設定を確認できませんでした。保存結果は変わりません。権限を確認して再試行してください。",
+      "unavailable": "状態を確認できません"
+    },
     "ai-not-configured": {
       "configure": "設定",
       "contact-admin": "ワークスペース管理者に AI の設定を依頼してください。",
@@ -453,6 +464,13 @@
       "retry": "保存を再試行",
       "save-failed": "Agent の履歴を保存できませんでした。再試行してください。",
       "title": "Agent 履歴のストレージ"
+    },
+    "submitted-access-grant": {
+      "check-status": "ステータスを確認",
+      "observed-at": "最終確認 {{time}}",
+      "open": "リクエストを開く",
+      "open-unavailable": "リクエストを開けませんでした。利用できなくなったか、アクセス権がない可能性があります。",
+      "status-unavailable": "リクエストのステータスを確認できませんでした。利用できなくなったか、アクセス権がない可能性があります。"
     },
     "token-budget": {
       "action-failed": "この実行を更新できませんでした。もう一度お試しください。",

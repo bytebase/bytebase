@@ -1,6 +1,11 @@
 import { fromBinary, fromJsonString } from "@bufbuild/protobuf";
 import { expect, type BrowserContext, type Page, test } from "@playwright/test";
 import {
+  AccessGrantSchema,
+  AccessGrant_Status,
+  SearchMyAccessGrantsRequestSchema,
+} from "../../../src/types/proto-es/v1/access_grant_service_pb";
+import {
   type AIChatRequest,
   AIChatMessageRole,
   AIChatRequestSchema,
@@ -69,7 +74,7 @@ test.afterAll(async () => {
   );
 });
 
-const windowOf = (page: Page) => page.locator("[data-agent-window]");
+const windowOf = (page: Page) => page.locator("[data-agent-window]:not(button)");
 const button = (page: Page, name: string) =>
   windowOf(page).getByRole("button", { name, exact: true });
 const tool = (id: string, name: string, args: object) => ({
@@ -157,7 +162,8 @@ async function queryRecoveryJourney(
   page: Page,
   context: BrowserContext,
   confirmed: boolean,
-  restricted = false
+  restricted = false,
+  submitRequest = false
 ) {
   const env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
@@ -172,6 +178,11 @@ async function queryRecoveryJourney(
   const originalProjectPolicy = restricted
     ? await env.api.getProjectIamPolicy(env.project)
     : undefined;
+  const originalApproval = submitRequest
+    ? (await env.api.getSetting("WORKSPACE_APPROVAL"))?.value
+    : undefined;
+  let submittedGrant: string | undefined;
+  let submittedIssue: string | undefined;
   const provider = new DeterministicProvider();
   await provider.install(context);
   const requests = observeChat(context);
@@ -271,6 +282,18 @@ async function queryRecoveryJourney(
     await env.api.updateProjectSettings(env.project, {
       allowJustInTimeAccess: true,
     });
+    if (submitRequest) {
+      await env.api.upsertSetting("WORKSPACE_APPROVAL", {
+        workspaceApproval: { rules: [{
+          source: "REQUEST_ACCESS",
+          condition: {expression: "true"},
+          template: {
+            flow: {roles: ["roles/workspaceAdmin"]},
+            title: "Agent access request review",
+          },
+        }] },
+      }, "value.workspace_approval");
+    }
     await open(page, env.baseURL);
     await sendReferencedQuery(page, env, statement);
     await expect(button(page, "Allow once")).toBeEnabled();
@@ -347,6 +370,161 @@ async function queryRecoveryJourney(
         ).not.toBeChecked();
         expect(queries).toBe(1);
         expect(writes).toEqual([]);
+        if (submitRequest) {
+          let statusReads = 0;
+          page.on("request", (request) => {
+            if (new URL(request.url()).pathname !== "/bytebase.v1.AccessGrantService/SearchMyAccessGrants") return;
+            const payload = request.postDataBuffer()!;
+            const body = request.headers()["content-type"]?.startsWith("application/proto")
+              ? fromBinary(SearchMyAccessGrantsRequestSchema, payload)
+              : fromJsonString(SearchMyAccessGrantsRequestSchema, payload.toString());
+            if (!body.filter?.includes("/accessGrants/")) return;
+            ++statusReads;
+            expect(body).toMatchObject({
+              parent: env.project,
+              filter: expect.stringContaining(submittedGrant ?? "/accessGrants/"),
+            });
+          });
+          const editedStatement = "SELECT 2 AS value";
+          await drawer.getByRole("code").click();
+          await page.keyboard.press("Control+a");
+          await page.keyboard.insertText(editedStatement);
+          await expect(drawer.getByRole("code").getByText(editedStatement, {exact: true})).toBeVisible();
+          await drawer.getByRole("checkbox", {name: "Export the query result"}).check();
+          const createdResponse = page.waitForResponse((response) =>
+            new URL(response.url()).pathname === "/bytebase.v1.AccessGrantService/CreateAccessGrant"
+          );
+          const nativeIssuePage = context.waitForEvent("page");
+          await drawer.getByRole("button", {name: "Submit", exact: true}).click();
+          const created = await createdResponse;
+          expect(created.ok()).toBe(true);
+          const payload = await created.body();
+          const grant = created.headers()["content-type"]?.startsWith("application/proto")
+            ? fromBinary(AccessGrantSchema, payload)
+            : fromJsonString(AccessGrantSchema, payload.toString());
+          submittedGrant = grant.name;
+          submittedIssue = grant.issue;
+          expect(grant).toMatchObject({
+            creator: `users/${memberEmail}`,
+            query: editedStatement,
+            targets: [env.database],
+            export: true,
+            status: AccessGrant_Status.PENDING,
+            issue: expect.stringMatching(/\/issues\/\d+$/),
+          });
+          await (await nativeIssuePage).close();
+          await expect(drawer).toBeHidden();
+          await page.locator("#app").getByRole("button", {name: "Agent", exact: true}).click();
+          const receipt = windowOf(page).locator(`[data-agent-submitted-access-grant="${grant.name}"]`);
+          await expect(receipt.getByRole("button", {name: "Check status", exact: true})).toBeVisible();
+          await expect(draft).toHaveCount(0);
+          expect(writes).toEqual(["/bytebase.v1.AccessGrantService/CreateAccessGrant"]);
+          const sourceChatId = await windowOf(page)
+            .locator('[data-agent-chat-row]:has(button[aria-current="true"])')
+            .getAttribute("data-agent-chat-row");
+          expect(sourceChatId).toBeTruthy();
+          const restoreSourceChat = async () => {
+            if (!(await windowOf(page).isVisible())) {
+              await page.locator("#app").getByRole("button", {name: "Agent", exact: true}).click();
+            }
+            const sourceChat = windowOf(page).locator(`[data-agent-chat-row="${sourceChatId}"]`);
+            if (!(await sourceChat.isVisible())) {
+              await windowOf(page).getByRole("button", {name: "Chats", exact: true}).click();
+            }
+            await sourceChat.getByRole("button").first().click();
+            await expect(receipt).toBeVisible();
+          };
+
+          await page.reload();
+          await restoreSourceChat();
+          expect(statusReads).toBe(0);
+          const expectSmallActions = async () => {
+            for (const name of ["Open request", "Check status"]) {
+              const action = receipt.getByRole("button", {name, exact: true});
+              await expect(action).toBeVisible();
+              await expect.poll(() => action.evaluate((element) => {
+                const control = getComputedStyle(element);
+                const icon = getComputedStyle(element.querySelector("svg")!);
+                return {
+                  height: element.getBoundingClientRect().height,
+                  paddingInline: control.paddingInline,
+                  fontSize: control.fontSize,
+                  lineHeight: control.lineHeight,
+                  gap: control.columnGap,
+                  iconWidth: icon.width,
+                  iconHeight: icon.height,
+                  iconShrink: icon.flexShrink,
+                };
+              })).toEqual({
+                height: 28,
+                paddingInline: "8px",
+                fontSize: "12px",
+                lineHeight: "16px",
+                gap: "6px",
+                iconWidth: "16px",
+                iconHeight: "16px",
+                iconShrink: "0",
+              });
+            }
+          };
+          for (const viewport of [{width: 1440, height: 1000}, {width: 390, height: 844}]) {
+            await page.setViewportSize(viewport);
+            await expectSmallActions();
+            expect(await receipt.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
+            await page.screenshot({path: test.info().outputPath(`submitted-grant-${viewport.width}.png`)});
+            await receipt.screenshot({path: test.info().outputPath(`submitted-grant-actions-${viewport.width}.png`)});
+            let release: (() => void) | undefined;
+            const held = new Promise<void>((resolve) => { release = resolve; });
+            const searchPath = "**/bytebase.v1.AccessGrantService/SearchMyAccessGrants";
+            await page.route(searchPath, async (route) => {
+              await held;
+              await route.continue();
+            });
+            const check = receipt.getByRole("button", {name: "Check status", exact: true});
+            try {
+              await check.click();
+              await expect(check).toBeDisabled();
+              await expect(check).toHaveAttribute("aria-busy", "true");
+              await expectSmallActions();
+              await receipt.screenshot({path: test.info().outputPath(`submitted-grant-loading-${viewport.width}.png`)});
+            } finally {
+              release?.();
+            }
+            await expect(check).toBeEnabled();
+            await page.unroute(searchPath);
+            await expect(receipt.locator("[data-agent-access-grant-status]")).toHaveText("Pending");
+          }
+          await page.setViewportSize({width: 1440, height: 1000});
+          expect(statusReads).toBe(2);
+
+          await receipt.getByRole("button", {name: "Open request", exact: true}).click();
+          await expect(page).toHaveURL(new RegExp(`/${grant.issue}(?:[?#]|$)`));
+          await expect(windowOf(page)).toBeHidden();
+          // The native issue page refreshes its own grant when approval changes.
+          await page.goto(`${env.baseURL}/landing`);
+          await restoreSourceChat();
+          const readsBeforeCheck = statusReads;
+          await env.api.approveIssue(grant.issue);
+          await expect.poll(async () => (await env.api.getIssue(grant.issue)).status).toBe("DONE");
+          expect(statusReads).toBe(readsBeforeCheck);
+          await receipt.getByRole("button", {name: "Check status", exact: true}).click();
+          await expect(receipt.locator("[data-agent-access-grant-status]")).toHaveText("Active");
+          expect(statusReads).toBe(readsBeforeCheck + 1);
+          expect(queries).toBe(1);
+          expect(writes).toEqual(["/bytebase.v1.AccessGrantService/CreateAccessGrant"]);
+          expect(provider.calls).toBe(8);
+          provider.respond(done("Your submitted Access Grant was saved and last checked as Active.", true));
+          await send(page, "Was my access request saved?");
+          await expect(windowOf(page).getByText("Your submitted Access Grant was saved and last checked as Active.", {exact: true})).toBeVisible();
+          const followUp = requests.at(-1)!;
+          const outcomes = followUp.messages.map((message) => message.content).join("\n");
+          expect(outcomes).toContain("Observed native-save outcomes");
+          expect(outcomes).toContain(grant.name);
+          expect(outcomes).toContain('"status":"ACTIVE"');
+          expect(provider.calls).toBe(9);
+          expect(queries).toBe(1);
+          expect(writes).toEqual(["/bytebase.v1.AccessGrantService/CreateAccessGrant"]);
+        }
       }
     } else {
       await expect(draft).toHaveCount(0);
@@ -359,26 +537,39 @@ async function queryRecoveryJourney(
     }
     await expect(button(page, "Allow once")).toBeHidden();
     expect(provider.unexpectedCalls).toBe(0);
-    expect(provider.calls).toBe(confirmed ? 8 : 6);
+    expect(provider.calls).toBe(confirmed ? submitRequest ? 9 : 8 : 6);
   } finally {
-    await env.api.updateProjectSettings(env.project, {
-      allowJustInTimeAccess: !!previous.allowJustInTimeAccess,
-    });
-    if (originalWorkspacePolicy) {
-      const latest = await env.api.getWorkspaceIamPolicy(workspace);
-      await env.api.setWorkspaceIamPolicy(workspace, {
-        ...originalWorkspacePolicy,
-        etag: latest.etag,
+    try {
+      if (submittedGrant && submittedIssue) {
+        const issue = await env.api.getIssue(submittedIssue);
+        if (issue.status === "DONE") await env.api.revokeAccessGrant(submittedGrant);
+        else await env.api.rejectIssue(submittedIssue, "Close the disposable test request");
+      }
+    } finally {
+      if (submitRequest) {
+        await env.api.upsertSetting("WORKSPACE_APPROVAL", originalApproval ?? {
+          workspaceApproval: {rules: []},
+        }, "value.workspace_approval");
+      }
+      await env.api.updateProjectSettings(env.project, {
+        allowJustInTimeAccess: !!previous.allowJustInTimeAccess,
       });
+      if (originalWorkspacePolicy) {
+        const latest = await env.api.getWorkspaceIamPolicy(workspace);
+        await env.api.setWorkspaceIamPolicy(workspace, {
+          ...originalWorkspacePolicy,
+          etag: latest.etag,
+        });
+      }
+      if (originalProjectPolicy) {
+        const latest = await env.api.getProjectIamPolicy(env.project);
+        await env.api.setProjectIamPolicy(env.project, {
+          ...originalProjectPolicy,
+          etag: latest.etag,
+        });
+      }
+      if (memberEmail) await env.api.deleteUser(memberEmail);
     }
-    if (originalProjectPolicy) {
-      const latest = await env.api.getProjectIamPolicy(env.project);
-      await env.api.setProjectIamPolicy(env.project, {
-        ...originalProjectPolicy,
-        etag: latest.etag,
-      });
-    }
-    if (memberEmail) await env.api.deleteUser(memberEmail);
   }
 }
 
@@ -401,6 +592,9 @@ test.describe("restricted-member query recovery", () => {
       await queryRecoveryJourney(page, context, confirmed, true);
     });
   }
+  test("links a submitted grant across reload and checks approval only on member clicks without retrying the query", async ({page, context}) => {
+    await queryRecoveryJourney(page, context, true, true, true);
+  });
 });
 
 test("typed skill errors retain paid-feature guidance without leaking diagnostics or inventing HTTP", async ({
