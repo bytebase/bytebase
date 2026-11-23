@@ -142,10 +142,6 @@ func hiveQueryResultOptions(queryContext db.QueryContext) util.QueryResultOption
 	}
 }
 
-func toQueryResult(result *odriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
-	return util.OmniResultToQueryResultWith(result, queryContext.MaximumSQLResultSize, hiveQueryResultOptions(queryContext))
-}
-
 func toRowValue(value odriver.Value) *v1pb.RowValue {
 	switch value.Kind {
 	case odriver.Null:

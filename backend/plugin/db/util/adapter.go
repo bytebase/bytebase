@@ -142,6 +142,14 @@ type ExecuteConfig struct {
 	LoggerOptions []ExecuteLoggerOption
 }
 
+// MySQLForkExecuteConfig is the ExecuteConfig shared by MySQL-protocol
+// analytical forks (Doris and StarRocks), which ignore per-script isolation.
+var MySQLForkExecuteConfig = ExecuteConfig{
+	ParseTransactionDirective: true,
+	PassCreateDatabase:        true,
+	PassMaxRetries:            true,
+}
+
 // OmniAdapter provides shared db.Driver lifecycle, metadata sync, dump,
 // held-session query, and script execution plumbing for omni/driver adapters.
 type OmniAdapter struct {

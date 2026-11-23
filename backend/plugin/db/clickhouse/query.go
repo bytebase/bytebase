@@ -13,7 +13,7 @@ import (
 // QueryConn runs each statement of the script in order on the driver's session.
 // Calls are serialized on that one session, as they were on the editor's connection.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	results, err := d.QueryHeldSession(ctx, statement, omnidriver.QueryOptions{
+	return d.QueryHeldConn(ctx, statement, omnidriver.QueryOptions{
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
 		ExplainFormat:  queryContext.Option.GetExplainFormat().String(),
@@ -25,11 +25,7 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 			// while a decode or protocol error leaves it unusable.
 			return firstError(results) != nil && !sessionAnswers(ctx, session)
 		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	return toQueryResults(results, queryContext), nil
+	}, clickhouseQueryResultOptions(queryContext.Explain))
 }
 
 // firstError returns the first statement error, or nil.
@@ -53,15 +49,13 @@ func sessionAnswers(ctx context.Context, session omnidriver.Session) bool {
 	return results[0].Err == nil
 }
 
-// toQueryResults converts the contract's results into the API's, keeping each
-// statement's error, plan and latency.
-func toQueryResults(results []*omnidriver.Result, queryContext db.QueryContext) []*v1pb.QueryResult {
-	return util.OmniResultsToQueryResultsWith(results, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
-		ClearExplainPlan: queryContext.Explain,
+func clickhouseQueryResultOptions(clearExplainPlan bool) util.QueryResultOptions {
+	return util.QueryResultOptions{
+		ClearExplainPlan: clearExplainPlan,
 		TypedExplainPlan: true,
 		TruncatedWins:    true,
 		ConvertValue:     toRowValue,
-	})
+	}
 }
 
 func toRowValue(value omnidriver.Value) *v1pb.RowValue {

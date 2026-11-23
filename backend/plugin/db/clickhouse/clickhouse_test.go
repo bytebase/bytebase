@@ -118,7 +118,7 @@ func TestToRowValue(t *testing.T) {
 
 func TestToQueryResult(t *testing.T) {
 	toQueryResult := func(result *omnidriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
-		return toQueryResults([]*omnidriver.Result{result}, queryContext)[0]
+		return util.OmniResultToQueryResultWith(result, queryContext.MaximumSQLResultSize, clickhouseQueryResultOptions(queryContext.Explain))
 	}
 	result := &omnidriver.Result{
 		Statement: "SELECT 1",

@@ -126,7 +126,7 @@ func TestDriverConfig(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg, err := driverConfig(tc.config, &util.OmniAdapter{})
+			cfg, err := util.MySQLFamilyDriverConfig(tc.config, &util.OmniAdapter{})
 			if tc.wantErr != "" {
 				require.ErrorContains(t, err, tc.wantErr)
 				return
@@ -150,7 +150,7 @@ func TestExecuteOptions(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, got := executeOptions(tc.statement, tc.opts)
+			_, got := util.BuildExecuteOptions(tc.statement, tc.opts, util.MySQLForkExecuteConfig)
 			require.Equal(t, tc.want, got.Transaction)
 			require.Equal(t, tc.opts.CreateDatabase, got.CreateDatabase)
 			require.Equal(t, tc.opts.MaximumRetries, got.MaxRetries)
@@ -161,7 +161,7 @@ func TestExecuteOptions(t *testing.T) {
 }
 
 func TestQueryOptions(t *testing.T) {
-	got := queryOptions(db.QueryContext{Limit: 7, Explain: true, MaximumSQLResultSize: 1 << 20})
+	got := util.MySQLForkQueryOptions(db.QueryContext{Limit: 7, Explain: true, MaximumSQLResultSize: 1 << 20})
 	require.Equal(t, 7, got.Limit)
 	require.True(t, got.Explain)
 	require.Equal(t, int64(1<<20), got.MaxResultBytes)
@@ -193,13 +193,16 @@ func TestToRowValue(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, toRowValue(tc.value))
+			require.Equal(t, tc.want, util.MySQLForkRowValue(tc.value))
 		})
 	}
 }
 
 func TestToQueryResult(t *testing.T) {
 	latency := 5 * time.Millisecond
+	toQueryResult := func(result *omnidriver.Result, maxResultBytes int64) *v1pb.QueryResult {
+		return util.OmniResultToQueryResultWith(result, maxResultBytes, util.MySQLForkQueryResultOptions())
+	}
 
 	t.Run("a result set keeps the driver's columns, rows and statement", func(t *testing.T) {
 		got := toQueryResult(&omnidriver.Result{
@@ -259,7 +262,7 @@ func TestToQueryResult(t *testing.T) {
 	})
 
 	t.Run("no statements is no results", func(t *testing.T) {
-		require.Nil(t, toQueryResults(nil, 0))
+		require.Nil(t, util.OmniResultsToQueryResultsWith(nil, 0, util.MySQLForkQueryResultOptions()))
 	})
 }
 
@@ -365,7 +368,7 @@ func timestampRowValue(v time.Time, precision int32) *v1pb.RowValue {
 // engine that returns a statement's untraced rows, and the adapter's job is to
 // say that masking is on.
 func TestQueryOptionsCarriesTheRequest(t *testing.T) {
-	options := queryOptions(db.QueryContext{
+	options := util.MySQLForkQueryOptions(db.QueryContext{
 		Limit:                10,
 		Explain:              true,
 		MaximumSQLResultSize: 1024,

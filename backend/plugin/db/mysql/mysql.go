@@ -69,7 +69,6 @@ func init() {
 // Driver is Bytebase's MySQL driver.
 type Driver struct {
 	util.OmniAdapter
-	dbType storepb.Engine
 }
 
 func newDriver() db.Driver {
@@ -82,7 +81,6 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 	if dataSource == nil {
 		return nil, errors.New("mysql: a data source is required")
 	}
-	d.dbType = dbType
 	if err := d.OpenWith(ctx, util.AdapterOptions{WithInstanceMetadata: true}, func(adapter *util.OmniAdapter) (odriver.Driver, error) {
 		cfg := odriver.Config{
 			Host:            dataSource.Host,

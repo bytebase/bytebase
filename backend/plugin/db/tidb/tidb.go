@@ -130,18 +130,13 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 	if queryContext.MaximumSQLResultSize <= 0 {
 		return nil, errors.New("maximum SQL result size must be positive")
 	}
-	results, err := d.QueryHeldSession(ctx, statement, omnidriver.QueryOptions{
-		Schema:         queryContext.Schema,
-		Limit:          queryContext.Limit,
-		Explain:        queryContext.Explain,
-		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "TEXT", v1pb.QueryOption_JSON),
-		MaxResultBytes: queryContext.MaximumSQLResultSize,
-		MaskingEnabled: queryContext.MaskingEnabled,
-	}, util.SessionQueryOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, queryContext.Explain), nil
+	return d.QueryHeldConn(
+		ctx,
+		statement,
+		util.OmniQueryOptions(queryContext, true, util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "TEXT", v1pb.QueryOption_JSON)),
+		util.SessionQueryOptions{},
+		util.QueryResultOptions{ClearExplainPlan: queryContext.Explain},
+	)
 }
 
 // CountAffectedRows returns TiDB's planner estimate of the rows statement

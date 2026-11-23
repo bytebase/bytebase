@@ -160,17 +160,11 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // QueryConn runs a script for the editor on the driver's session, one result
 // per statement, and stops at the first statement that fails.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	results, err := d.QueryHeldSession(ctx, statement, odriver.QueryOptions{
-		Explain:        queryContext.Explain,
-		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_JSON),
-		Limit:          queryContext.Limit,
-		MaxResultBytes: queryContext.MaximumSQLResultSize,
-		MaskingEnabled: queryContext.MaskingEnabled,
-	}, util.SessionQueryOptions{
-		WrapOpenError: "failed to open a session",
-	})
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, queryContext.Explain), nil
+	return d.QueryHeldConn(
+		ctx,
+		statement,
+		util.OmniQueryOptions(queryContext, false, util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_JSON)),
+		util.SessionQueryOptions{WrapOpenError: "failed to open a session"},
+		util.QueryResultOptions{ClearExplainPlan: queryContext.Explain},
+	)
 }

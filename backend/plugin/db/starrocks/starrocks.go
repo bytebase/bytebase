@@ -21,6 +21,7 @@ import (
 	starrocksdriver "github.com/bytebase/omni/starrocks/driver"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
@@ -48,7 +49,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		NotFoundResource:     "database",
 		DatabaseName:         config.ConnectionContext.DatabaseName,
 	}, func(adapter *util.OmniAdapter) (omnidriver.Driver, error) {
-		cfg, err := driverConfig(config, adapter)
+		cfg, err := util.MySQLFamilyDriverConfig(config, adapter)
 		if err != nil {
 			return nil, err
 		}
@@ -59,6 +60,13 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	return d, nil
 }
 
-func driverConfig(config db.ConnectionConfig, adapter *util.OmniAdapter) (omnidriver.Config, error) {
-	return util.MySQLFamilyDriverConfig(config, adapter)
+// Execute runs a SQL script. StarRocks accepts no DDL inside a transaction and
+// commits each data change independently.
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	return d.ExecuteScript(ctx, statement, opts, util.MySQLForkExecuteConfig)
+}
+
+// QueryConn queries a SQL statement on the driver's held session.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	return d.QueryHeldConn(ctx, statement, util.MySQLForkQueryOptions(queryContext), util.SessionQueryOptions{}, util.MySQLForkQueryResultOptions())
 }
