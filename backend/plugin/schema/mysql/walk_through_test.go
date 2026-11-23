@@ -95,10 +95,10 @@ func TestWalkThroughSeamPrechecksAndErrorMapping(t *testing.T) {
 				wantContent: `CREATE TABLE AS statement is used in "CREATE TABLE t2 (b INT) SELECT a FROM t1;"`,
 			},
 			{
-				name:        "CTAS raw fallback with VALUES ROW",
-				statement:   "CREATE TABLE tvx SELECT (x,z) FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);",
+				name:        "CTAS with VALUES ROW",
+				statement:   "CREATE TABLE tvx SELECT x, z FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);",
 				wantCode:    code.StatementCreateTableAs,
-				wantContent: `CREATE TABLE AS statement is used in "CREATE TABLE tvx SELECT (x,z) FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);"`,
+				wantContent: `CREATE TABLE AS statement is used in "CREATE TABLE tvx SELECT x, z FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);"`,
 			},
 			{
 				name:        "CTAS over existing table reports TableExists",

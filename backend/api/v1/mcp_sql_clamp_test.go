@@ -331,11 +331,11 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			reason:    "the statement is not a read",
 		},
 		{
-			name:      "an unseparated batch is refused rather than read on its first statement",
+			name:      "a ClickHouse batch with a trailing write is refused on its second statement",
 			engine:    storepb.Engine_CLICKHOUSE,
 			statement: "SELECT 1; DROP TABLE employee",
 			refused:   true,
-			reason:    "the statement is not a read",
+			reason:    "statement 2 of 2 is not a read",
 		},
 		{
 			// The lexer, not the text, decides. Reading an audit log for
@@ -406,25 +406,10 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 
 // TestMCPClampBatchTailIsClassifiedOnEveryEngine walks one adversarial batch —
 // a leading read with a write behind it — across every engine that has a
-// classifier, and pins which ones the clamp catches it on.
-//
-// It exists because the rule is only as good as the split, and two engines
-// cannot make it: the ClickHouse and Hive splitters break on newlines rather
-// than statement terminators, so a one-line batch reaches the leading-keyword
-// validator whole (BOT-86). That validator now refuses a statement still
-// carrying a terminator it did not end with, which is what keeps the exception
-// set below empty.
-//
-// The set is kept rather than deleted: an engine that starts serving such a
-// batch fails this test instead of passing quietly.
+// classifier, and pins that every engine catches the trailing write.
 func TestMCPClampBatchTailIsClassifiedOnEveryEngine(t *testing.T) {
 	const batch = "SELECT 1; DROP TABLE employee"
 
-	// Empty, and it must stay that way. The ClickHouse and Hive splitters
-	// still break on newlines rather than terminators (BOT-86), but their
-	// validator now refuses a statement that carries a terminator which is not
-	// its own, so an unseparated batch fails closed instead of being read on
-	// its leading SELECT.
 	servesTheWholeBatch := map[storepb.Engine]bool{}
 
 	values := storepb.Engine(0).Descriptor().Values()

@@ -4,82 +4,101 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestValidateSQLForStandard(t *testing.T) {
-	type testData struct {
+func TestValidateQuerySeam(t *testing.T) {
+	require.True(t, base.HasQueryValidator(storepb.Engine_CLICKHOUSE))
+	require.True(t, base.HasQueryValidator(storepb.Engine_HIVE))
+	require.False(t, base.HasQueryValidator(storepb.Engine_DATABRICKS))
+
+	cases := []struct {
+		name     string
+		engine   storepb.Engine
 		sql      string
-		valid    bool
+		readOnly bool
 		allQuery bool
-	}
-	tests := []testData{
+		wantErr  bool
+	}{
 		{
-			sql:      `select* from t`,
-			valid:    true,
+			name:     "clickhouse read-only select",
+			engine:   storepb.Engine_CLICKHOUSE,
+			sql:      "SELECT * FROM t WHERE a = 'insert'",
+			readOnly: true,
 			allQuery: true,
 		},
 		{
-			sql:      `explain select * from t;`,
-			valid:    true,
+			name:     "clickhouse explain select",
+			engine:   storepb.Engine_CLICKHOUSE,
+			sql:      "EXPLAIN SELECT * FROM t;",
+			readOnly: true,
 			allQuery: true,
 		},
 		{
-			sql:      `explain    analyze select * from t`,
-			valid:    false,
-			allQuery: false,
+			name:   "clickhouse explain analyze",
+			engine: storepb.Engine_CLICKHOUSE,
+			sql:    "EXPLAIN ANALYZE SELECT * FROM t",
 		},
 		{
-			sql: `
-				With t as (
-					select * from t1
-				), tx as (
-					select * from t1
-				)
-				update t set a = 1;
-				`,
-			valid:    false,
-			allQuery: false,
+			name:   "clickhouse ddl",
+			engine: storepb.Engine_CLICKHOUSE,
+			sql:    "CREATE TABLE t (a Int32) ENGINE = Memory;",
 		},
 		{
-			sql: `
-				With t as (
-					select * from t1
-				), tx as (
-					select * from t1
-				)
-				insert into t values (1, 2, 3);
-				`,
-			valid:    false,
-			allQuery: false,
+			name:   "clickhouse multi-statement",
+			engine: storepb.Engine_CLICKHOUSE,
+			sql:    "SELECT 1; SELECT 2;",
 		},
 		{
-			sql:      "select * from t where a = 'klasjdfkljsa$tag$; -- lkjdlkfajslkdfj'",
-			valid:    true,
+			name:    "clickhouse syntax error",
+			engine:  storepb.Engine_CLICKHOUSE,
+			sql:     "SELECT 1 FROM",
+			wantErr: true,
+		},
+		{
+			name:     "hive read-only select",
+			engine:   storepb.Engine_HIVE,
+			sql:      "WITH c AS (SELECT 1 AS x) SELECT * FROM c",
+			readOnly: true,
 			allQuery: true,
 		},
 		{
-			sql: `
-				With t as (
-					select * from t1 where a = 'insert'
-				), tx as (
-					select * from "delete"
-				) /* UPDATE */
-				select "update" from t;
-				`,
-			valid:    true,
-			allQuery: true,
+			name:   "hive cte insert",
+			engine: storepb.Engine_HIVE,
+			sql:    "WITH c AS (SELECT 1 AS x) INSERT INTO t SELECT * FROM c",
 		},
 		{
-			sql:      `create table t (a int);`,
-			valid:    false,
-			allQuery: false,
+			name:   "hive explain analyze",
+			engine: storepb.Engine_HIVE,
+			sql:    "EXPLAIN ANALYZE SELECT 1",
+		},
+		{
+			name:   "hive multi-statement with write",
+			engine: storepb.Engine_HIVE,
+			sql:    "SELECT 1; DROP TABLE t;",
+		},
+		{
+			name:    "hive syntax error",
+			engine:  storepb.Engine_HIVE,
+			sql:     "SELECT FROM",
+			wantErr: true,
 		},
 	}
 
-	for _, test := range tests {
-		gotValid, gotAllQuery, err := ValidateSQLForEditor(test.sql)
-		require.NoError(t, err)
-		require.Equal(t, test.valid, gotValid, test.sql)
-		require.Equal(t, test.allQuery, gotAllQuery, test.sql)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			readOnly, allQuery, err := base.ValidateSQLForEditor(tc.engine, tc.sql)
+			if tc.wantErr {
+				require.Error(t, err)
+				require.False(t, readOnly)
+				require.False(t, allQuery)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.readOnly, readOnly)
+			require.Equal(t, tc.allQuery, allQuery)
+		})
 	}
 }

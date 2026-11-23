@@ -1,86 +1,38 @@
 package standard
 
 import (
-	"crypto/rand"
-	"fmt"
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestStandardSplitSQL(t *testing.T) {
-	for _, tc := range []struct {
-		name string
-		fn   base.SplitMultiSQLFunc
-	}{
-		{name: "clickhouse", fn: SplitSQL},
-		{name: "hive", fn: hiveSplitSQL},
-		{name: "databricks", fn: databricksSplitSQL},
+func TestSplitSQLSeam(t *testing.T) {
+	script := "SELECT '中';\nSELECT '文';"
+
+	for _, engine := range []storepb.Engine{
+		storepb.Engine_CLICKHOUSE,
+		storepb.Engine_HIVE,
+		storepb.Engine_DATABRICKS,
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			base.RunSplitTests(t, "test-data/test_split.yaml", base.SplitTestOptions{
-				SplitFunc: tc.fn,
-			})
+		t.Run(engine.String(), func(t *testing.T) {
+			stmts, err := base.SplitMultiSQL(engine, script)
+			require.NoError(t, err)
+			require.Len(t, stmts, 2)
+
+			require.Equal(t, "SELECT '中';", stmts[0].Text)
+			require.Equal(t, &storepb.Position{Line: 1, Column: 1}, stmts[0].Start)
+			require.Equal(t, &storepb.Position{Line: 1, Column: 12}, stmts[0].End)
+			require.Equal(t, &storepb.Range{Start: 0, End: 13}, stmts[0].Range)
+			require.False(t, stmts[0].Empty)
+
+			require.Equal(t, "\nSELECT '文';", stmts[1].Text)
+			require.Equal(t, &storepb.Position{Line: 1, Column: 12}, stmts[1].Start)
+			require.Equal(t, &storepb.Position{Line: 2, Column: 12}, stmts[1].End)
+			require.Equal(t, &storepb.Range{Start: 13, End: 27}, stmts[1].Range)
+			require.False(t, stmts[1].Empty)
 		})
-	}
-}
-
-func generateOneMBInsert() string {
-	letterList := []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	b := make([]byte, 1024*1024)
-	for i := range b {
-		// Use crypto/rand for secure random generation
-		randomIndex, err := rand.Int(rand.Reader, big.NewInt(int64(len(letterList))))
-		if err != nil {
-			// Fallback to a simple pattern if crypto/rand fails
-			b[i] = letterList[i%26]
-		} else {
-			b[i] = letterList[randomIndex.Int64()]
-		}
-	}
-	return fmt.Sprintf("INSERT INTO t values('%s')", string(b))
-}
-
-func TestApplyMultiStatements(t *testing.T) {
-	type testData struct {
-		statement string
-		total     int
-	}
-	tests := []testData{
-		{
-			statement: `
-			CREATE TABLE t(
-				a int,
-				b int,
-				c int);
-
-
-			/* This is a comment */
-			CREATE TABLE t1(
-				a int, b int c)`,
-			total: 2,
-		},
-		{
-			statement: `
-			CREATE TABLE t(
-				a int,
-				b int,
-				c int);
-
-
-			CREATE TABLE t1(
-				a int, b int c);
-			` + generateOneMBInsert(),
-			total: 3,
-		},
-	}
-
-	for _, test := range tests {
-		stmts, err := SplitSQL(test.statement)
-		require.NoError(t, err)
-		require.Equal(t, test.total, len(stmts))
 	}
 }

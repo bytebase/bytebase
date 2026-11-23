@@ -32,3 +32,22 @@ func TestParseCassandraStatementsSeam(t *testing.T) {
 	require.Equal(t, int32(2), syntaxErr.Position.Line)
 	require.Equal(t, int32(3), syntaxErr.Position.Column)
 }
+
+func TestCassandraValidateQuerySeam(t *testing.T) {
+	require.True(t, base.HasQueryValidator(storepb.Engine_CASSANDRA))
+
+	readOnly, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_CASSANDRA, "SELECT * FROM users")
+	require.NoError(t, err)
+	require.True(t, readOnly)
+	require.True(t, allQuery)
+
+	readOnly, allQuery, err = base.ValidateSQLForEditor(storepb.Engine_CASSANDRA, "INSERT INTO users (id) VALUES (1)")
+	require.NoError(t, err)
+	require.False(t, readOnly)
+	require.False(t, allQuery)
+
+	readOnly, allQuery, err = base.ValidateSQLForEditor(storepb.Engine_CASSANDRA, "SELECT FROM")
+	require.Error(t, err)
+	require.False(t, readOnly)
+	require.False(t, allQuery)
+}
