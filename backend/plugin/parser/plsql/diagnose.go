@@ -16,11 +16,7 @@ func init() {
 
 // Diagnose returns the script's first syntax error as a diagnostic.
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	diagnostics := make([]base.Diagnostic, 0)
-	if syntaxError := toSyntaxError(analysis.Diagnose(statement)); syntaxError != nil {
-		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError, statement))
-	}
-	return diagnostics, nil
+	return base.DiagnoseSyntaxError(statement, toSyntaxError(analysis.Diagnose(statement))), nil
 }
 
 // toSyntaxError places omni's error in the text omni parsed. An error without

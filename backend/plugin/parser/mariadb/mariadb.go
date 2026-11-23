@@ -1,9 +1,6 @@
 package mariadb
 
 import (
-	"errors"
-	"fmt"
-
 	mariadbomniparser "github.com/bytebase/omni/mariadb/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -18,59 +15,28 @@ func init() {
 // parseStatements is the ParseStatementsFunc for MariaDB.
 // Returns []ParsedStatement with both text and AST populated.
 func parseStatements(statement string) ([]base.ParsedStatement, error) {
-	// Split once to get Statement with text and positions
-	stmts, err := SplitSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []base.ParsedStatement
-	for _, stmt := range stmts {
-		if stmt.Empty {
-			continue
-		}
-
+	return base.ParseNonEmptyMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
 		list, err := ParseMariaDB(stmt.Text)
 		if err != nil {
 			return nil, convertError(err, stmt)
 		}
-
 		if list == nil || len(list.Items) == 0 {
-			continue
+			return nil, nil
 		}
-
-		for _, node := range list.Items {
-			result = append(result, base.ParsedStatement{
-				Statement: stmt,
-				AST: &AST{
-					Node:          node,
-					Text:          stmt.Text,
-					StartPosition: stmt.Start,
-				},
-			})
+		asts := make([]base.AST, len(list.Items))
+		for i, node := range list.Items {
+			asts[i] = &AST{Node: node, Text: stmt.Text, StartPosition: stmt.Start}
 		}
-	}
-
-	return result, nil
+		return asts, nil
+	})
 }
 
 // convertError converts an omni MariaDB parser error to a base.SyntaxError with proper line:column position.
 func convertError(err error, stmt base.Statement) error {
-	var parseErr *mariadbomniparser.ParseError
-	if !errors.As(err, &parseErr) {
-		return err
-	}
-
-	pos := base.ShiftPosition(ByteOffsetToRunePosition(stmt.Text, parseErr.Position), stmt.Start)
-
-	msg := fmt.Sprintf("Syntax error at line %d:%d: %s", pos.Line, pos.Column, parseErr.Message)
-	if parseErr.RelatedText != "" {
-		msg += "\nrelated text: " + parseErr.RelatedText
-	}
-
-	return &base.SyntaxError{
-		Position:   pos,
-		Message:    msg,
-		RawMessage: parseErr.Message,
-	}
+	return base.ConvertSyntaxError(stmt, err, true,
+		func(pe *mariadbomniparser.ParseError) (int, string) { return pe.Position, pe.Message },
+		func(pe *mariadbomniparser.ParseError, pos *storepb.Position) string {
+			return base.FormatLineColSyntaxError(pos, pe.Message, pe.RelatedText)
+		},
+	)
 }

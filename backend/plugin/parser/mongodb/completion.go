@@ -1,11 +1,9 @@
 package mongodb
 
 import (
-	"cmp"
 	"context"
 	"slices"
 
-	metadatapb "github.com/bytebase/omni/metadata"
 	omnicompletion "github.com/bytebase/omni/mongo/completion"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -18,16 +16,7 @@ func init() {
 
 // Completion is the entry point for MongoDB code completion.
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	var loadDatabase func(ctx context.Context, name string) (*metadatapb.DatabaseSchemaMetadata, error)
-	if cCtx.Metadata != nil {
-		loadDatabase = func(ctx context.Context, name string) (*metadatapb.DatabaseSchemaMetadata, error) {
-			_, metadata, err := cCtx.Metadata(ctx, cCtx.InstanceID, name)
-			if err != nil || metadata == nil {
-				return nil, err
-			}
-			return metadata.GetProto(), nil
-		}
-	}
+	loadDatabase, _ := base.CompletionMetadataLoaders(cCtx)
 
 	candidates := omnicompletion.CompleteSession(ctx, omnicompletion.SessionConfig{
 		DefaultDatabase: cCtx.DefaultDatabase,
@@ -46,14 +35,7 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 
 	// Omni sorts by its finer CandidateType enum; re-sort and compact after
 	// collapsing into Bytebase's coarser base.CandidateType.
-	slices.SortFunc(result, func(a, b base.Candidate) int {
-		return cmp.Or(
-			cmp.Compare(a.Type, b.Type),
-			cmp.Compare(a.Text, b.Text),
-			cmp.Compare(a.Definition, b.Definition),
-			cmp.Compare(a.Comment, b.Comment),
-		)
-	})
+	slices.SortFunc(result, base.CompareCandidate)
 	return slices.CompactFunc(result, func(a, b base.Candidate) bool {
 		return a.Type == b.Type && a.Text == b.Text && a.Definition == b.Definition
 	}), nil

@@ -140,6 +140,130 @@ func TestOmniSpanHelpers(t *testing.T) {
 	noErrSpan := OmniResolvedSpan(&omnianalysis.ResolvedSpan{Type: omnianalysis.DML})
 	require.NoError(t, noErrSpan.NotFoundError)
 	require.Nil(t, noErrSpan.UnresolvedColumnsError)
+
+	// OmniResolvedSpanResult translates ErrMixUserSystemTables and passes through other errors.
+	gotSpan, err := OmniResolvedSpanResult(&omnianalysis.ResolvedSpan{Type: omnianalysis.Select}, nil)
+	require.NoError(t, err)
+	require.Equal(t, Select, gotSpan.Type)
+	_, err = OmniResolvedSpanResult(nil, omnianalysis.ErrMixUserSystemTables)
+	require.ErrorIs(t, err, MixUserSystemTablesError)
+	otherErr := errors.New("parse boom")
+	_, err = OmniResolvedSpanResult(nil, otherErr)
+	require.ErrorIs(t, err, otherErr)
+
+	// OmniQuerySpan converts engine-local span fields and NotFoundError interface.
+	qs := OmniQuerySpan(
+		omnianalysis.Select,
+		omnianalysis.ColumnSet{omniCol: true},
+		omnianalysis.ColumnSet{omniCol: true},
+		omniResults,
+		&omnianalysis.ResourceNotFoundError{Database: &dbName},
+	)
+	require.Equal(t, Select, qs.Type)
+	require.Equal(t, SourceColumnSet{wantCol: true}, qs.SourceColumns)
+	require.Equal(t, SourceColumnSet{wantCol: true}, qs.PredicateColumns)
+	require.Len(t, qs.Results, 1)
+	require.ErrorAs(t, qs.NotFoundError, &nf)
+	require.Equal(t, "db", *nf.Database)
+
+	// OmniTableQuerySpan always initializes non-nil maps/slices.
+	emptyTableSpan := OmniTableQuerySpan(omnianalysis.DDL, nil)
+	require.Equal(t, DDL, emptyTableSpan.Type)
+	require.NotNil(t, emptyTableSpan.SourceColumns)
+	require.NotNil(t, emptyTableSpan.PredicateColumns)
+	require.NotNil(t, emptyTableSpan.Results)
+}
+
+func TestQuerySpanCatalogHelpers(t *testing.T) {
+	ctx := context.Background()
+
+	// RequireDatabaseMetadata checks nil callback, lookup error, nil metadata, and success.
+	_, err := RequireDatabaseMetadata(ctx, GetQuerySpanContext{}, "app")
+	require.EqualError(t, err, "GetDatabaseMetadataFunc is not set in GetQuerySpanContext")
+
+	lookupErr := errors.New("db down")
+	_, err = RequireDatabaseMetadata(ctx, GetQuerySpanContext{
+		InstanceID: "inst-1",
+		GetDatabaseMetadataFunc: func(_ context.Context, _, _ string) (string, *model.DatabaseMetadata, error) {
+			return "", nil, lookupErr
+		},
+	}, "app")
+	require.ErrorIs(t, err, lookupErr)
+
+	_, err = RequireDatabaseMetadata(ctx, GetQuerySpanContext{
+		InstanceID: "inst-1",
+		GetDatabaseMetadataFunc: func(_ context.Context, _, _ string) (string, *model.DatabaseMetadata, error) {
+			return "", nil, nil
+		},
+	}, "app")
+	require.ErrorContains(t, err, "not synced")
+
+	wantProto := &metadatapb.DatabaseSchemaMetadata{Name: "app"}
+	dbMeta := model.NewDatabaseMetadata(wantProto, nil, nil, storepb.Engine_MYSQL, false)
+	gotMeta, err := RequireDatabaseMetadata(ctx, GetQuerySpanContext{
+		InstanceID: "inst-1",
+		GetDatabaseMetadataFunc: func(_ context.Context, inst, db string) (string, *model.DatabaseMetadata, error) {
+			require.Equal(t, "inst-1", inst)
+			require.Equal(t, "app", db)
+			return db, dbMeta, nil
+		},
+	}, "app")
+	require.NoError(t, err)
+	require.Equal(t, dbMeta, gotMeta)
+
+	// Nil callbacks return nil closures.
+	require.Nil(t, QuerySpanListDatabasesFunc(ctx, GetQuerySpanContext{}, true))
+	require.Nil(t, QuerySpanProtoMetadataFunc(ctx, GetQuerySpanContext{}, true))
+
+	missingDB := "ghost"
+	nfErr := &ResourceNotFoundError{Database: &missingDB}
+	gCtx := GetQuerySpanContext{
+		InstanceID: "inst-1",
+		ListDatabaseNamesFunc: func(_ context.Context, inst string) ([]string, error) {
+			require.Equal(t, "inst-1", inst)
+			return nil, nfErr
+		},
+		GetDatabaseMetadataFunc: func(_ context.Context, inst, name string) (string, *model.DatabaseMetadata, error) {
+			require.Equal(t, "inst-1", inst)
+			switch name {
+			case "app":
+				return "app", dbMeta, nil
+			case "ghost":
+				return "", nil, nfErr
+			default:
+				return "", nil, nil
+			}
+		},
+	}
+
+	// Raw mode preserves Bytebase error; translated mode converts to omni ResourceNotFoundError.
+	rawList := QuerySpanListDatabasesFunc(ctx, gCtx, false)
+	_, err = rawList()
+	var baseNF *ResourceNotFoundError
+	require.ErrorAs(t, err, &baseNF)
+
+	rawProto := QuerySpanProtoMetadataFunc(ctx, gCtx, false)
+	gotProto, err := rawProto("app")
+	require.NoError(t, err)
+	require.Equal(t, wantProto, gotProto)
+	nilProto, err := rawProto("unsynced")
+	require.NoError(t, err)
+	require.Nil(t, nilProto)
+	_, err = rawProto("ghost")
+	require.ErrorAs(t, err, &baseNF)
+
+	listDBs, getDB := UnnamedSchemaQuerySpanCatalog(ctx, gCtx, func(d *UnnamedSchemaDatabase) *UnnamedSchemaDatabase { return d })
+	_, err = listDBs()
+	var omniNF *omnianalysis.ResourceNotFoundError
+	require.ErrorAs(t, err, &omniNF)
+	wrappedDB, err := getDB("app")
+	require.NoError(t, err)
+	require.Equal(t, "app", wrappedDB.Name())
+	nilDB, err := getDB("unsynced")
+	require.NoError(t, err)
+	require.Nil(t, nilDB)
+	_, err = getDB("ghost")
+	require.ErrorAs(t, err, &omniNF)
 }
 
 func TestOmniErrorHelpers(t *testing.T) {
@@ -216,6 +340,20 @@ func TestOmniResourceChanges(t *testing.T) {
 	require.Equal(t, "db1", built.GetDatabases()[0].GetName())
 	require.Len(t, built.GetDatabases()[0].GetSchemas()[0].GetTables(), 1)
 	require.Equal(t, "t1", built.GetDatabases()[0].GetSchemas()[0].GetTables()[0].GetName())
+
+	// ExtractTypedChangedResources asserts concrete AST type and supports skipping entries.
+	typedSummary, err := ExtractTypedChangedResources(nil, []AST{dummyAST{}}, "expected dummy", false, func(dummyAST) (omnianalysis.StatementChanges, bool) {
+		return omnianalysis.StatementChanges{
+			Resources: []omnianalysis.ChangedResource{{Database: "db1", Table: "t2"}},
+		}, true
+	})
+	require.NoError(t, err)
+	require.Equal(t, "t2", typedSummary.ChangedResources.Build().GetDatabases()[0].GetSchemas()[0].GetTables()[0].GetName())
+
+	_, err = ExtractTypedChangedResources(nil, []AST{otherStubAST{}}, "expected dummy", false, func(dummyAST) (omnianalysis.StatementChanges, bool) {
+		return omnianalysis.StatementChanges{}, true
+	})
+	require.EqualError(t, err, "expected dummy")
 }
 
 func TestCompletionHelpers(t *testing.T) {
@@ -262,6 +400,24 @@ func TestExplainAndDiagnoseHelpers(t *testing.T) {
 	require.ErrorIs(t, OmniExplainAnalyzeError(omnianalysis.ErrExplainAnalyzeExecutes), ErrExplainAnalyzeExecutes)
 	other := errors.New("other")
 	require.Equal(t, other, OmniExplainAnalyzeError(other))
+
+	plan, err := ExplainStatementResult("EXPLAIN SELECT 1", nil, nil)
+	require.NoError(t, err)
+	require.Equal(t, "EXPLAIN SELECT 1", plan)
+	_, err = ExplainStatementResult("", omnianalysis.ErrExplainAnalyzeExecutes, func(error) error { return errors.New("unexpected") })
+	require.ErrorIs(t, err, ErrExplainAnalyzeExecutes)
+	convertedErr := errors.New("converted")
+	_, err = ExplainStatementResult("", other, func(error) error { return convertedErr })
+	require.ErrorIs(t, err, convertedErr)
+	_, err = ExplainStatementResult("", other, nil)
+	require.ErrorIs(t, err, other)
+
+	require.Equal(t, "SELECT 1 LIMIT 5", RewriteResultLimit("SELECT 1", 5, func(string, int) (string, error) {
+		return "SELECT 1 LIMIT 5", nil
+	}, "FALLBACK %s %d"))
+	require.Equal(t, "SELECT * FROM (SELECT 1) LIMIT 5", RewriteResultLimit("  SELECT 1; ", 5, func(string, int) (string, error) {
+		return "", errors.New("cannot rewrite")
+	}, "SELECT * FROM (%s) LIMIT %d"))
 
 	require.Empty(t, DiagnoseSyntaxError("SELECT 1", nil))
 	diags := ConvertOffsetDiagnostics("SELECT\n  *", []int{9}, func(off int) (int, string) {

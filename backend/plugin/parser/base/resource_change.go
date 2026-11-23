@@ -2,6 +2,7 @@ package base
 
 import (
 	omnianalysis "github.com/bytebase/omni/analysis"
+	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -45,4 +46,23 @@ func ExtractChangedResourcesFromASTs(
 		}
 	}
 	return summary, nil
+}
+
+// ExtractTypedChangedResources asserts each AST has concrete type A (returning
+// typeErr on mismatch) and merges the extracted changes into a ChangeSummary.
+func ExtractTypedChangedResources[A AST](
+	dbMetadata *model.DatabaseMetadata,
+	asts []AST,
+	typeErr string,
+	skipEmptyTable bool,
+	extract func(A) (omnianalysis.StatementChanges, bool),
+) (*ChangeSummary, error) {
+	return ExtractChangedResourcesFromASTs(dbMetadata, asts, skipEmptyTable, func(a AST) (omnianalysis.StatementChanges, bool, error) {
+		typed, ok := a.(A)
+		if !ok {
+			return omnianalysis.StatementChanges{}, false, errors.New(typeErr)
+		}
+		changes, valid := extract(typed)
+		return changes, valid, nil
+	})
 }

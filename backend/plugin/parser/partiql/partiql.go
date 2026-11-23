@@ -1,7 +1,6 @@
 package partiql
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/bytebase/omni/partiql/ast"
@@ -48,11 +47,7 @@ func parsePartiQLStatements(statement string) ([]base.ParsedStatement, error) {
 				// by stmt.Start to refer back to the original script.
 				list, err := parser.Parse(stmt.Text)
 				if err != nil {
-					var parseErr *parser.ParseError
-					if errors.As(err, &parseErr) {
-						return nil, convertParseError(stmt.Text, parseErr, stmt.Start)
-					}
-					return nil, err
+					return nil, convertParseError(stmt.Text, err, stmt.Start)
 				}
 				var node ast.Node
 				if len(list.Items) > 0 {
