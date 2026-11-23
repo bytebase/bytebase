@@ -7,12 +7,17 @@
 package omnicatalog
 
 import (
+	"context"
 	"slices"
 	"strings"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // Database is the synthetic database both snapshots are loaded under. A synced
@@ -24,6 +29,16 @@ import (
 // connection already scoped to the target database.
 const Database = "bbcatalog"
 
+// CatalogDiff is an omni SchemaDiff that reports whether a diff is empty.
+type CatalogDiff interface {
+	IsEmpty() bool
+}
+
+// MigrationPlan is an omni MigrationPlan that renders SQL.
+type MigrationPlan interface {
+	SQL() string
+}
+
 // Engine is one omni catalog package as a metadata diff uses it. The type
 // parameters are the catalog and its load report, which differ per engine.
 type Engine[Catalog, Report any] struct {
@@ -32,10 +47,97 @@ type Engine[Catalog, Report any] struct {
 	// Load installs the snapshot into the catalog, under Database.
 	Load func(*Catalog, *metadatapb.DatabaseSchemaMetadata) (*Report, error)
 	// Problems lists the report's per-object problems for a refusal check.
+	// When nil, the refusal check is skipped.
 	Problems func(*Report) []map[string]error
 	// Diff renders the migration between two loaded catalogs. empty reports
 	// that there is nothing to migrate.
 	Diff func(from, to *Catalog) (sql string, empty bool)
+	// CheckCaseOnlyIdentities refuses snapshots whose relation names collide
+	// under case-folding in DiffMetadataMigration.
+	CheckCaseOnlyIdentities bool
+	// SkipStripDatabaseContext disables StripDatabaseContext on generated SQL
+	// for catalogs that do not load under the synthetic Database name.
+	SkipStripDatabaseContext bool
+	// PostProcess optionally transforms non-empty generated SQL before returning it.
+	PostProcess func(string) string
+}
+
+// DiffSQL builds an Engine.Diff callback from a catalog's Diff and GenerateMigration functions.
+func DiffSQL[Catalog any, D CatalogDiff, P MigrationPlan](
+	diffFn func(from, to *Catalog) D,
+	migrateFn func(from, to *Catalog, diff D) P,
+) func(from, to *Catalog) (string, bool) {
+	return func(from, to *Catalog) (string, bool) {
+		diff := diffFn(from, to)
+		if diff.IsEmpty() {
+			return "", true
+		}
+		return migrateFn(from, to, diff).SQL(), false
+	}
+}
+
+// MySQLFamilyEngine builds an Engine for a MySQL-family omni catalog whose
+// pointer type implements LoadMetadataInto. Optional afterLoad runs after each
+// successful LoadMetadataInto call.
+func MySQLFamilyEngine[C any, PC interface {
+	*C
+	LoadMetadataInto(context.Context, *metadatapb.DatabaseSchemaMetadata, string) (*Report, error)
+}, Report any, D CatalogDiff, P MigrationPlan](
+	newCatalog func() PC,
+	problems func(*Report) []map[string]error,
+	diffFn func(from, to PC) D,
+	migrateFn func(from, to PC, diff D) P,
+	afterLoad func(PC, *metadatapb.DatabaseSchemaMetadata),
+) Engine[C, Report] {
+	return Engine[C, Report]{
+		New: func() *C { return newCatalog() },
+		Load: func(c *C, meta *metadatapb.DatabaseSchemaMetadata) (*Report, error) {
+			report, err := PC(c).LoadMetadataInto(context.Background(), meta, Database)
+			if err != nil {
+				return report, err
+			}
+			if afterLoad != nil {
+				afterLoad(PC(c), meta)
+			}
+			return report, nil
+		},
+		Problems: problems,
+		Diff: DiffSQL(
+			func(from, to *C) D { return diffFn(PC(from), PC(to)) },
+			func(from, to *C, diff D) P { return migrateFn(PC(from), PC(to), diff) },
+		),
+		CheckCaseOnlyIdentities: true,
+	}
+}
+
+// DatabaseProto returns d's underlying proto metadata, or nil when d is nil.
+func DatabaseProto(d *model.DatabaseMetadata) *metadatapb.DatabaseSchemaMetadata {
+	if d == nil {
+		return nil
+	}
+	return d.GetProto()
+}
+
+// DiffMetadataMigration generates the migration between two synced snapshots
+// using engine, checking case-only identities when engine requests it.
+func DiffMetadataMigration[Catalog, Report any](engine Engine[Catalog, Report], oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
+	oldProto, newProto := DatabaseProto(oldSchema), DatabaseProto(newSchema)
+	if engine.CheckCaseOnlyIdentities {
+		oldCS := oldSchema != nil && oldSchema.GetIsObjectCaseSensitive()
+		newCS := newSchema != nil && newSchema.GetIsObjectCaseSensitive()
+		if err := RejectCaseOnlyIdentities(oldProto, newProto, oldCS, newCS); err != nil {
+			return "", err
+		}
+	}
+	return DiffMetadata(engine, oldProto, newProto)
+}
+
+// RegisterMetadataMigration registers a metadata-to-metadata migration handler
+// backed by engine for storeEngine.
+func RegisterMetadataMigration[Catalog, Report any](storeEngine storepb.Engine, engine Engine[Catalog, Report]) {
+	schema.RegisterDiffMetadataMigration(storeEngine, func(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
+		return DiffMetadataMigration(engine, oldSchema, newSchema)
+	})
 }
 
 // DiffMetadata loads both snapshots into one catalog each and renders the
@@ -61,14 +163,22 @@ func DiffMetadata[Catalog, Report any](engine Engine[Catalog, Report], oldMeta, 
 	if err != nil {
 		return "", errors.Wrap(err, "failed to load target schema")
 	}
-	if err := unloadableChanges(oldMeta, newMeta, engine.Problems(fromReport), engine.Problems(toReport)); err != nil {
-		return "", err
+	if engine.Problems != nil {
+		if err := unloadableChanges(oldMeta, newMeta, engine.Problems(fromReport), engine.Problems(toReport)); err != nil {
+			return "", err
+		}
 	}
 	sql, empty := engine.Diff(from, to)
 	if empty {
 		return "", nil
 	}
-	return StripDatabaseContext(sql), nil
+	if !engine.SkipStripDatabaseContext {
+		sql = StripDatabaseContext(sql)
+	}
+	if engine.PostProcess != nil {
+		sql = engine.PostProcess(sql)
+	}
+	return sql, nil
 }
 
 func load[Catalog, Report any](engine Engine[Catalog, Report], meta *metadatapb.DatabaseSchemaMetadata) (*Catalog, *Report, error) {

@@ -16,14 +16,5 @@ func init() {
 // GetDatabaseMetadata parses MySQL schema DDL text and returns database metadata
 // using the omni catalog.
 func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return omnicatalog.ExtractDatabaseMetadata(
-		schemaText,
-		"tmp",
-		catalog.New,
-		execCatalog,
-		nil,
-		func(c *catalog.Catalog, dbName string) *metadatapb.DatabaseSchemaMetadata {
-			return c.DatabaseMetadata(dbName)
-		},
-	)
+	return omnicatalog.ExtractSimpleDatabaseMetadata(schemaText, catalog.New, execCatalog)
 }

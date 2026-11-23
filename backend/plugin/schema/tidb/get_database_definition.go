@@ -6,18 +6,17 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/schema/internal/omnicatalog"
 )
 
 func init() {
-	schema.RegisterGetDatabaseDefinition(storepb.Engine_TIDB, GetDatabaseDefinition)
-
-	schema.RegisterGetTableDefinition(storepb.Engine_TIDB, GetTableDefinition)
-
-	schema.RegisterGetViewDefinition(storepb.Engine_TIDB, GetViewDefinition)
-
-	schema.RegisterGetFunctionDefinition(storepb.Engine_TIDB, GetFunctionDefinition)
-
-	schema.RegisterGetProcedureDefinition(storepb.Engine_TIDB, GetProcedureDefinition)
+	omnicatalog.RegisterMySQLFamilyDefinitions(storepb.Engine_TIDB, omnicatalog.MySQLFamilyDefinitions{
+		Database:  GetDatabaseDefinition,
+		Table:     catalog.TableDefinition,
+		View:      catalog.ViewDefinition,
+		Function:  catalog.FunctionDefinition,
+		Procedure: catalog.ProcedureDefinition,
+	})
 }
 
 // GetDatabaseDefinition renders the mysqldump-style restore script. TiDB has no
@@ -26,20 +25,4 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *metadatapb
 	return catalog.DatabaseDefinition(metadata, catalog.DefinitionOptions{
 		PrintHeader: ctx.PrintHeader,
 	})
-}
-
-func GetTableDefinition(_ string, table *metadatapb.TableMetadata, _ []*metadatapb.SequenceMetadata) (string, error) {
-	return catalog.TableDefinition(table)
-}
-
-func GetViewDefinition(_ string, view *metadatapb.ViewMetadata) (string, error) {
-	return catalog.ViewDefinition(view)
-}
-
-func GetFunctionDefinition(_ string, function *metadatapb.FunctionMetadata) (string, error) {
-	return catalog.FunctionDefinition(function)
-}
-
-func GetProcedureDefinition(_ string, procedure *metadatapb.ProcedureMetadata) (string, error) {
-	return catalog.ProcedureDefinition(procedure)
 }

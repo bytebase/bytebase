@@ -8,6 +8,35 @@ import (
 	"github.com/pkg/errors"
 )
 
+// MetadataCatalog is an omni catalog that exports a database snapshot by name.
+type MetadataCatalog interface {
+	DatabaseMetadata(dbName string) *metadatapb.DatabaseSchemaMetadata
+}
+
+// ExtractSimpleDatabaseMetadata parses schemaText in a fresh "tmp" database
+// and exports the resulting metadata via c.DatabaseMetadata.
+func ExtractSimpleDatabaseMetadata[C any, PC interface {
+	*C
+	MetadataCatalog
+}](
+	schemaText string,
+	newCatalog func() PC,
+	exec func(c PC, sql string, continueOnError bool) ([]ExecResult, error),
+) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return ExtractDatabaseMetadata(
+		schemaText,
+		"tmp",
+		func() *C { return newCatalog() },
+		func(c *C, sql string, continueOnError bool) ([]ExecResult, error) {
+			return exec(PC(c), sql, continueOnError)
+		},
+		nil,
+		func(c *C, dbName string) *metadatapb.DatabaseSchemaMetadata {
+			return PC(c).DatabaseMetadata(dbName)
+		},
+	)
+}
+
 // ExtractDatabaseMetadata initializes an omni catalog with dbName, executes schemaText,
 // and exports the resulting DatabaseSchemaMetadata. When currentDB is non-nil, it
 // selects the database name to export (used by TiDB when schemaText selects its own

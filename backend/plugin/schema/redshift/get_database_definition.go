@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	schema.RegisterGetDatabaseDefinition(storepb.Engine_REDSHIFT, GetDatabaseDefinition)
-	schema.RegisterGetTableDefinition(storepb.Engine_REDSHIFT, GetTableDefinition)
-	schema.RegisterGetViewDefinition(storepb.Engine_REDSHIFT, GetViewDefinition)
+	schema.RegisterDefinitions(schema.Definitions{
+		Database: GetDatabaseDefinition,
+		Table:    GetTableDefinition,
+		View:     GetViewDefinition,
+	}, storepb.Engine_REDSHIFT)
 }
 
 // GetTableDefinition renders one table as DDL, matching DatabaseDefinition

@@ -6,18 +6,17 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/schema/internal/omnicatalog"
 )
 
 func init() {
-	schema.RegisterGetDatabaseDefinition(storepb.Engine_MYSQL, GetDatabaseDefinition)
-
-	schema.RegisterGetTableDefinition(storepb.Engine_MYSQL, GetTableDefinition)
-
-	schema.RegisterGetViewDefinition(storepb.Engine_MYSQL, GetViewDefinition)
-
-	schema.RegisterGetFunctionDefinition(storepb.Engine_MYSQL, GetFunctionDefinition)
-
-	schema.RegisterGetProcedureDefinition(storepb.Engine_MYSQL, GetProcedureDefinition)
+	omnicatalog.RegisterMySQLFamilyDefinitions(storepb.Engine_MYSQL, omnicatalog.MySQLFamilyDefinitions{
+		Database:  GetDatabaseDefinition,
+		Table:     catalog.TableDefinition,
+		View:      catalog.ViewDefinition,
+		Function:  catalog.FunctionDefinition,
+		Procedure: catalog.ProcedureDefinition,
+	})
 }
 
 func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (string, error) {
@@ -25,20 +24,4 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *metadatapb
 		PrintHeader: ctx.PrintHeader,
 		SDLFormat:   ctx.SDLFormat,
 	})
-}
-
-func GetTableDefinition(_ string, table *metadatapb.TableMetadata, _ []*metadatapb.SequenceMetadata) (string, error) {
-	return catalog.TableDefinition(table)
-}
-
-func GetViewDefinition(_ string, view *metadatapb.ViewMetadata) (string, error) {
-	return catalog.ViewDefinition(view)
-}
-
-func GetFunctionDefinition(_ string, function *metadatapb.FunctionMetadata) (string, error) {
-	return catalog.FunctionDefinition(function)
-}
-
-func GetProcedureDefinition(_ string, procedure *metadatapb.ProcedureMetadata) (string, error) {
-	return catalog.ProcedureDefinition(procedure)
 }
