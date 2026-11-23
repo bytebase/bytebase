@@ -23,43 +23,7 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 		LoadDatabase:    loadDB,
 	}, statement, caretLine, caretOffset)
 
-	return base.DeduplicateCandidates(candidates, func(c redshiftcompletion.Candidate) (base.Candidate, bool) {
-		typ := convertCandidateType(c.Type)
-		if typ == base.CandidateTypeNone {
-			return base.Candidate{}, false
-		}
-		return base.Candidate{
-			Text:       c.Text,
-			Type:       typ,
-			Definition: c.Definition,
-			Comment:    c.Comment,
-		}, true
+	return base.ConvertOmniCandidates(candidates, func(c redshiftcompletion.Candidate) (string, redshiftcompletion.CandidateType, string, string) {
+		return c.Text, c.Type, c.Definition, c.Comment
 	}, base.CompareCandidate), nil
-}
-
-func convertCandidateType(t redshiftcompletion.CandidateType) base.CandidateType {
-	switch t {
-	case redshiftcompletion.CandidateKeyword, redshiftcompletion.CandidateType_:
-		return base.CandidateTypeKeyword
-	case redshiftcompletion.CandidateSchema:
-		return base.CandidateTypeSchema
-	case redshiftcompletion.CandidateTable:
-		return base.CandidateTypeTable
-	case redshiftcompletion.CandidateView:
-		return base.CandidateTypeView
-	case redshiftcompletion.CandidateMaterializedView:
-		return base.CandidateTypeMaterializedView
-	case redshiftcompletion.CandidateColumn:
-		return base.CandidateTypeColumn
-	case redshiftcompletion.CandidateFunction:
-		return base.CandidateTypeFunction
-	case redshiftcompletion.CandidateSequence:
-		return base.CandidateTypeSequence
-	case redshiftcompletion.CandidateIndex:
-		return base.CandidateTypeIndex
-	case redshiftcompletion.CandidateTrigger:
-		return base.CandidateTypeTrigger
-	default:
-		return base.CandidateTypeNone
-	}
 }

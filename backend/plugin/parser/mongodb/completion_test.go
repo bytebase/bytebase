@@ -30,7 +30,7 @@ func TestCompletionSeam(t *testing.T) {
 		}, nil, nil, storepb.Engine_MONGODB, true), nil
 	}
 
-	// Registry dispatch, Metadata callback, candidateTypeToBase (Collection->Table, DbMethod->Function),
+	// Registry dispatch, Metadata callback, OmniCandidateType (Collection->Table, DbMethod->Function),
 	// and special collection name formatting via omni CompleteSession.
 	dotCands, err := base.Completion(context.Background(), storepb.Engine_MONGODB, base.CompletionContext{
 		Scene:           base.SceneTypeAll,

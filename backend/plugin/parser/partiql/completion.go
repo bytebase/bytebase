@@ -34,22 +34,12 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	candidates := completion.CompleteWithMetadata(statement, pos, cat, protoMeta)
 
 	return base.DeduplicateCandidates(candidates, func(c completion.Candidate) (base.Candidate, bool) {
-		var candidateType base.CandidateType
-		switch c.Kind {
-		case "keyword":
-			if cCtx.Scene == base.SceneTypeQuery && isDMLKeyword(c.Text) {
-				return base.Candidate{}, false
-			}
-			candidateType = base.CandidateTypeKeyword
-		case "table":
-			candidateType = base.CandidateTypeTable
-		case "column":
-			candidateType = base.CandidateTypeColumn
-		default:
-			candidateType = base.CandidateTypeNone
+		typ := base.OmniCandidateType(c.Type)
+		if typ == base.CandidateTypeKeyword && cCtx.Scene == base.SceneTypeQuery && isDMLKeyword(c.Text) {
+			return base.Candidate{}, false
 		}
 		return base.Candidate{
-			Type: candidateType,
+			Type: typ,
 			Text: c.Text,
 		}, true
 	}, base.CompareCandidateByTypeText), nil

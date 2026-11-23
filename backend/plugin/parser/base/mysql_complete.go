@@ -2,7 +2,6 @@ package base
 
 import (
 	"context"
-	"slices"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 )
@@ -29,25 +28,4 @@ func MySQLFamilyDatabaseLoaders(cCtx CompletionContext) (
 		}
 	}
 	return loadDatabase, listDatabaseNames
-}
-
-// MapMySQLFamilyCandidates converts omni completion candidates into
-// base.Candidate values, drops CandidateTypeNone, deduplicates by
-// (Type, Text, Definition), and sorts deterministically.
-func MapMySQLFamilyCandidates[T any](raw []T, convert func(T) Candidate) []Candidate {
-	candidateMap := make(map[string]Candidate, len(raw))
-	for _, item := range raw {
-		c := convert(item)
-		if c.Type == CandidateTypeNone {
-			continue
-		}
-		candidateMap[c.String()] = c
-	}
-
-	result := make([]Candidate, 0, len(candidateMap))
-	for _, c := range candidateMap {
-		result = append(result, c)
-	}
-	slices.SortFunc(result, CompareCandidate)
-	return result
 }

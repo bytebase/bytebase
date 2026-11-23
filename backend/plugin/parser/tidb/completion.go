@@ -23,47 +23,7 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 		LoadDatabase:      loadDB,
 		ListDatabaseNames: listDBs,
 	}, statement, caretLine, caretOffset)
-	return base.MapMySQLFamilyCandidates(raw, candidateToBase), nil
-}
-
-func candidateToBase(c omnicompletion.Candidate) base.Candidate {
-	return base.Candidate{
-		Type:       candidateTypeToBase(c.Type),
-		Text:       c.Text,
-		Definition: c.Definition,
-		Comment:    c.Comment,
-	}
-}
-
-func candidateTypeToBase(t omnicompletion.CandidateType) base.CandidateType {
-	switch t {
-	case omnicompletion.CandidateKeyword, omnicompletion.CandidateType_:
-		return base.CandidateTypeKeyword
-	case omnicompletion.CandidateDatabase:
-		return base.CandidateTypeDatabase
-	case omnicompletion.CandidateTable:
-		return base.CandidateTypeTable
-	case omnicompletion.CandidateView:
-		return base.CandidateTypeView
-	case omnicompletion.CandidateColumn:
-		return base.CandidateTypeColumn
-	case omnicompletion.CandidateFunction:
-		return base.CandidateTypeFunction
-	case omnicompletion.CandidateProcedure:
-		return base.CandidateTypeRoutine
-	case omnicompletion.CandidateIndex:
-		return base.CandidateTypeIndex
-	case omnicompletion.CandidateTrigger:
-		return base.CandidateTypeTrigger
-	case omnicompletion.CandidateEvent:
-		return base.CandidateTypeEvent
-	case omnicompletion.CandidateCharset:
-		return base.CandidateTypeCharset
-	case omnicompletion.CandidateEngine:
-		return base.CandidateTypeEngine
-	case omnicompletion.CandidateVariable:
-		return base.CandidateTypeSystemVar
-	default:
-		return base.CandidateTypeNone
-	}
+	return base.ConvertOmniCandidates(raw, func(c omnicompletion.Candidate) (string, omnicompletion.CandidateType, string, string) {
+		return c.Text, c.Type, c.Definition, c.Comment
+	}, base.CompareCandidate), nil
 }

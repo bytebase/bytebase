@@ -29,8 +29,8 @@ func OmniQueryType(t omnianalysis.QueryType) QueryType {
 	}
 }
 
-// OmniColumnResource converts an omni ColumnResource to a Bytebase ColumnResource.
-func OmniColumnResource(c omnianalysis.ColumnResource) ColumnResource {
+// omniColumnResource converts an omni ColumnResource to a Bytebase ColumnResource.
+func omniColumnResource(c omnianalysis.ColumnResource) ColumnResource {
 	return ColumnResource{
 		Instance: c.Instance,
 		Server:   c.Server,
@@ -48,7 +48,7 @@ func OmniColumnSet(set omnianalysis.ColumnSet) SourceColumnSet {
 	}
 	out := make(SourceColumnSet, len(set))
 	for col := range set {
-		out[OmniColumnResource(col)] = true
+		out[omniColumnResource(col)] = true
 	}
 	return out
 }
@@ -147,14 +147,14 @@ func OmniTypeNotSupportedError(err *omnianalysis.TypeNotSupportedError) *TypeNot
 	}
 }
 
-// OmniUnresolvedColumnsError converts an omni UnresolvedColumnsError to Bytebase's UnresolvedColumnsError.
-func OmniUnresolvedColumnsError(err *omnianalysis.UnresolvedColumnsError) *UnresolvedColumnsError {
+// omniUnresolvedColumnsError converts an omni UnresolvedColumnsError to Bytebase's UnresolvedColumnsError.
+func omniUnresolvedColumnsError(err *omnianalysis.UnresolvedColumnsError) *UnresolvedColumnsError {
 	if err == nil {
 		return nil
 	}
 	relations := make([]ColumnResource, 0, len(err.Relations))
 	for _, relation := range err.Relations {
-		relations = append(relations, OmniColumnResource(relation))
+		relations = append(relations, omniColumnResource(relation))
 	}
 	return &UnresolvedColumnsError{Relations: relations}
 }
@@ -170,7 +170,7 @@ func OmniResolvedSpan(span *omnianalysis.ResolvedSpan) *QuerySpan {
 		SourceColumns:          OmniColumnSet(span.SourceColumns),
 		Results:                OmniQuerySpanResults(span.Results),
 		PredicateColumns:       OmniColumnSet(span.PredicateColumns),
-		UnresolvedColumnsError: OmniUnresolvedColumnsError(span.UnresolvedColumnsError),
+		UnresolvedColumnsError: omniUnresolvedColumnsError(span.UnresolvedColumnsError),
 	}
 	if span.NotFoundError != nil {
 		out.NotFoundError = OmniResourceNotFoundError(span.NotFoundError)

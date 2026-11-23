@@ -63,26 +63,3 @@ func TestMySQLFamilyDatabaseLoaders(t *testing.T) {
 	require.Equal(t, "inst-1", gotListInstID)
 	require.Equal(t, []string{"appdb", "otherdb"}, names)
 }
-
-func TestMapMySQLFamilyCandidates(t *testing.T) {
-	type rawCand struct {
-		typ  CandidateType
-		text string
-		def  string
-	}
-	got := MapMySQLFamilyCandidates([]rawCand{
-		{typ: CandidateTypeNone, text: "ignored"},
-		{typ: CandidateTypeColumn, text: "id", def: "appdb.t2.id | int"},
-		{typ: CandidateTypeColumn, text: "id", def: "appdb.t1.id | int"},
-		{typ: CandidateTypeKeyword, text: "INT"},
-		{typ: CandidateTypeKeyword, text: "INT"},
-	}, func(r rawCand) Candidate {
-		return Candidate{Type: r.typ, Text: r.text, Definition: r.def}
-	})
-
-	require.Equal(t, []Candidate{
-		{Type: CandidateTypeColumn, Text: "id", Definition: "appdb.t1.id | int"},
-		{Type: CandidateTypeColumn, Text: "id", Definition: "appdb.t2.id | int"},
-		{Type: CandidateTypeKeyword, Text: "INT"},
-	}, got)
-}

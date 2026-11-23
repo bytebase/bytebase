@@ -171,7 +171,7 @@ func TestRestoreHelpers(t *testing.T) {
 		require.Equal(t, strings.Repeat("a", maxRestoreCommentLength)+"...", got)
 	})
 
-	t.Run("PositionInRange and FilterDMLsInRange", func(t *testing.T) {
+	t.Run("positionInRange and FilterDMLsInRange", func(t *testing.T) {
 		item := &storepb.PriorBackupDetail_Item{
 			StartPosition: &storepb.Position{Line: 2, Column: 0},
 			EndPosition:   &storepb.Position{Line: 3, Column: 10},

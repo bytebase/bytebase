@@ -9,7 +9,7 @@ import (
 )
 
 func TestGetQueryTypeSeam(t *testing.T) {
-	// Exercises every Bytebase operationToQueryType branch and safety fallback.
+	// Exercises omni mongo/analysis.ClassifyStatement -> base.OmniQueryType mapping and safety fallbacks.
 	tests := []struct {
 		statement string
 		want      base.QueryType

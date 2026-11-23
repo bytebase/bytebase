@@ -31,29 +31,8 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	for _, c := range cands {
 		result = append(result, base.Candidate{
 			Text: c.Text,
-			Type: convertCandidateType(c.Type),
+			Type: base.OmniCandidateType(c.Type),
 		})
 	}
 	return result, nil
-}
-
-// convertCandidateType maps an omni completion candidate type onto the bytebase
-// base.CandidateType. A Trino catalog corresponds to a bytebase DATABASE.
-func convertCandidateType(t completion.CandidateType) base.CandidateType {
-	switch t {
-	case completion.CandidateKeyword:
-		return base.CandidateTypeKeyword
-	case completion.CandidateCatalog:
-		return base.CandidateTypeDatabase
-	case completion.CandidateSchema:
-		return base.CandidateTypeSchema
-	case completion.CandidateTable:
-		return base.CandidateTypeTable
-	case completion.CandidateView:
-		return base.CandidateTypeView
-	case completion.CandidateColumn:
-		return base.CandidateTypeColumn
-	default:
-		return base.CandidateTypeNone
-	}
 }

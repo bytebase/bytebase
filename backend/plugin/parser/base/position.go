@@ -99,8 +99,8 @@ func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
 	}
 }
 
-// ShiftPosition translates pos relative to basePos (1-based line and column).
-func ShiftPosition(pos, basePos *storepb.Position) *storepb.Position {
+// shiftPosition translates pos relative to basePos (1-based line and column).
+func shiftPosition(pos, basePos *storepb.Position) *storepb.Position {
 	if pos == nil {
 		return nil
 	}
