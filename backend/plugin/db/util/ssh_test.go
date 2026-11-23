@@ -35,7 +35,7 @@ func newSSHClient(t *testing.T) *ssh.Client {
 func openTunnel(t *testing.T, handle func(net.Conn)) (net.Conn, string) {
 	t.Helper()
 	addr := net.JoinHostPort(testcontainer.NewTCPServer(t, handle))
-	conn, err := DialSSHTunnel(context.Background(), newSSHClient(t), "tcp", addr)
+	conn, err := dialSSHTunnel(context.Background(), newSSHClient(t), "tcp", addr)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close() })
 	return conn, addr
@@ -184,6 +184,6 @@ func TestDialSSHTunnelReturnsWhenContextEnds(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err := DialSSHTunnel(ctx, newSSHClient(t), "tcp", net.JoinHostPort(testcontainer.NewTCPServer(t, silent)))
+	_, err := dialSSHTunnel(ctx, newSSHClient(t), "tcp", net.JoinHostPort(testcontainer.NewTCPServer(t, silent)))
 	require.ErrorIs(t, err, context.Canceled)
 }

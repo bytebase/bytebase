@@ -116,12 +116,12 @@ func TestSessionHolderLifecycle(t *testing.T) {
 	t.Run("lazy open reuses and serializes calls", func(t *testing.T) {
 		s1 := &fakeOmniSession{results: []*omnidriver.Result{{Statement: "SELECT 1"}}}
 		opens := 0
-		var holder SessionHolder
+		var holder sessionHolder
 
 		var wg sync.WaitGroup
 		for range 6 {
 			wg.Go(func() {
-				res, err := holder.Query(ctx, func(context.Context) (omnidriver.Session, error) {
+				res, err := holder.query(ctx, func(context.Context) (omnidriver.Session, error) {
 					opens++
 					return s1, nil
 				}, SessionQueryOptions{}, func(s omnidriver.Session) ([]*omnidriver.Result, error) {
@@ -135,7 +135,7 @@ func TestSessionHolderLifecycle(t *testing.T) {
 		require.Equal(t, 1, opens)
 		require.False(t, s1.overlap.Load())
 		require.Same(t, s1, holder.Session())
-		require.NoError(t, holder.Close())
+		require.NoError(t, holder.close())
 		require.True(t, s1.closed)
 		require.Nil(t, holder.Session())
 	})
@@ -145,8 +145,8 @@ func TestSessionHolderLifecycle(t *testing.T) {
 			results: []*omnidriver.Result{{Statement: "SELECT 1"}},
 			err:     errors.New("connection lost"),
 		}
-		holder := NewSessionHolder(s1)
-		res, err := holder.Query(ctx, nil, SessionQueryOptions{}, func(s omnidriver.Session) ([]*omnidriver.Result, error) {
+		holder := sessionHolder{session: s1}
+		res, err := holder.query(ctx, nil, SessionQueryOptions{}, func(s omnidriver.Session) ([]*omnidriver.Result, error) {
 			return s.Query(ctx, "SELECT 1", omnidriver.QueryOptions{})
 		})
 		require.ErrorContains(t, err, "connection lost")
@@ -158,14 +158,14 @@ func TestSessionHolderLifecycle(t *testing.T) {
 	t.Run("KeepOnError preserves session unless context is canceled", func(t *testing.T) {
 		recErr := errors.New("syntax error")
 		s1 := &fakeOmniSession{err: recErr}
-		holder := NewSessionHolder(s1)
+		holder := sessionHolder{session: s1}
 		opts := SessionQueryOptions{
 			KeepOnError: func(_ context.Context, err error) bool {
 				return errors.Is(err, recErr)
 			},
 		}
 
-		_, err := holder.Query(ctx, nil, opts, func(s omnidriver.Session) ([]*omnidriver.Result, error) {
+		_, err := holder.query(ctx, nil, opts, func(s omnidriver.Session) ([]*omnidriver.Result, error) {
 			return s.Query(ctx, "BAD", omnidriver.QueryOptions{})
 		})
 		require.ErrorIs(t, err, recErr)
@@ -174,7 +174,7 @@ func TestSessionHolderLifecycle(t *testing.T) {
 
 		canceledCtx, cancel := context.WithCancel(ctx)
 		cancel()
-		_, err = holder.Query(canceledCtx, nil, opts, func(s omnidriver.Session) ([]*omnidriver.Result, error) {
+		_, err = holder.query(canceledCtx, nil, opts, func(s omnidriver.Session) ([]*omnidriver.Result, error) {
 			return s.Query(canceledCtx, "BAD", omnidriver.QueryOptions{})
 		})
 		require.ErrorIs(t, err, recErr)
@@ -184,8 +184,8 @@ func TestSessionHolderLifecycle(t *testing.T) {
 
 	t.Run("ShouldDiscardResults and context cancel discard session", func(t *testing.T) {
 		s1 := &fakeOmniSession{results: []*omnidriver.Result{{Statement: "SELECT 1", Err: errors.New("bad")}}}
-		holder := NewSessionHolder(s1)
-		_, err := holder.Query(ctx, nil, SessionQueryOptions{
+		holder := sessionHolder{session: s1}
+		_, err := holder.query(ctx, nil, SessionQueryOptions{
 			ShouldDiscardResults: func(_ context.Context, _ omnidriver.Session, results []*omnidriver.Result) bool {
 				return len(results) > 0 && results[0].Err != nil
 			},
@@ -200,7 +200,7 @@ func TestSessionHolderLifecycle(t *testing.T) {
 		holder.SetSession(s2)
 		canceledCtx, cancel := context.WithCancel(ctx)
 		cancel()
-		_, err = holder.Query(canceledCtx, nil, SessionQueryOptions{}, func(s omnidriver.Session) ([]*omnidriver.Result, error) {
+		_, err = holder.query(canceledCtx, nil, SessionQueryOptions{}, func(s omnidriver.Session) ([]*omnidriver.Result, error) {
 			return s.Query(canceledCtx, "SELECT 1", omnidriver.QueryOptions{})
 		})
 		require.NoError(t, err)
@@ -226,7 +226,7 @@ func TestOmniAdapterMethods(t *testing.T) {
 		NotFoundResource:     "database",
 		DatabaseName:         "app",
 	}
-	adapter.AddCloser(closerFunc(func() error {
+	adapter.addCloser(closerFunc(func() error {
 		closedOrder = append(closedOrder, "ssh")
 		return nil
 	}))

@@ -3,7 +3,6 @@ package util
 
 import (
 	"context"
-	"encoding/json"
 
 	"cloud.google.com/go/cloudsqlconn"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -12,13 +11,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/pkg/errors"
-	"google.golang.org/api/option"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
-func GetAWSConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (aws.Config, error) {
+func getAWSConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (aws.Config, error) {
 	region := connCfg.DataSource.GetRegion()
 
 	// Only use static credentials if access key is provided
@@ -39,7 +37,7 @@ func GetAWSConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (a
 	return config.LoadDefaultConfig(ctx, config.WithRegion(region))
 }
 
-func GetGCPConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (*cloudsqlconn.Dialer, error) {
+func getGCPConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (*cloudsqlconn.Dialer, error) {
 	// WithIAMAuthN enables IAM database authentication.
 	opts := []cloudsqlconn.Option{
 		cloudsqlconn.WithIAMAuthN(),
@@ -68,36 +66,6 @@ func cloudSQLDialOptions(ds *storepb.DataSource) []cloudsqlconn.Option {
 		return []cloudsqlconn.Option{cloudsqlconn.WithDefaultDialOptions(cloudsqlconn.WithPSC())}
 	default:
 		return nil
-	}
-}
-
-// GCPCredentialOption returns the appropriate option.ClientOption for the given
-// GCP credential JSON, supporting both service account keys and external account
-// (Workload Identity Federation) configurations.
-//
-// SECURITY NOTE: ExternalAccount and ImpersonatedServiceAccount credential types
-// do not validate the credential configuration. Malicious URLs in the config could
-// pose a security risk. See https://cloud.google.com/docs/authentication/external/externally-sourced-credentials.
-func GCPCredentialOption(credJSON []byte) (option.ClientOption, error) {
-	var cred struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(credJSON, &cred); err != nil {
-		return nil, errors.Wrap(err, "failed to parse GCP credential JSON")
-	}
-	switch cred.Type {
-	case "service_account":
-		return option.WithAuthCredentialsJSON(option.ServiceAccount, credJSON), nil
-	case "external_account":
-		return option.WithAuthCredentialsJSON(option.ExternalAccount, credJSON), nil
-	case "impersonated_service_account":
-		return option.WithAuthCredentialsJSON(option.ImpersonatedServiceAccount, credJSON), nil
-	case "authorized_user":
-		return option.WithAuthCredentialsJSON(option.AuthorizedUser, credJSON), nil
-	case "":
-		return nil, errors.Errorf("GCP credential JSON missing \"type\" field")
-	default:
-		return nil, errors.Errorf("unsupported GCP credential type: %q", cred.Type)
 	}
 }
 

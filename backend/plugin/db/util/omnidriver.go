@@ -78,14 +78,14 @@ func OmniResultsToQueryResultsWith(results []*omnidriver.Result, maxResultBytes 
 	return converted
 }
 
-// FillZeroAffectedRows populates one "Affected Rows: 0" row when the contract
+// fillZeroAffectedRows populates one "Affected Rows: 0" row when the contract
 // returned a columnless, error-free result with nil AffectedRows.
-func FillZeroAffectedRows(result *omnidriver.Result, queryResult *v1pb.QueryResult) {
+func fillZeroAffectedRows(result *omnidriver.Result, queryResult *v1pb.QueryResult) {
 	if result == nil || queryResult == nil {
 		return
 	}
 	if len(result.Columns) == 0 && result.AffectedRows == nil && result.Err == nil && !result.Truncated {
-		affected := BuildAffectedRowsResult(0, queryResult.Messages)
+		affected := buildAffectedRowsResult(0, queryResult.Messages)
 		queryResult.ColumnNames = affected.ColumnNames
 		queryResult.ColumnTypeNames = affected.ColumnTypeNames
 		queryResult.Rows = affected.Rows
@@ -104,10 +104,10 @@ func OmniExplainFormat(format v1pb.QueryOption_ExplainFormat, fallback string, s
 	return fallback
 }
 
-// OmniInstanceToMetadata converts an omni/driver.Instance into db.InstanceMetadata.
+// omniInstanceToMetadata converts an omni/driver.Instance into db.InstanceMetadata.
 // When withInstanceMetadata is true, Metadata is populated with LowerCaseTableNames
 // and Roles.
-func OmniInstanceToMetadata(instance *omnidriver.Instance, withInstanceMetadata bool) *db.InstanceMetadata {
+func omniInstanceToMetadata(instance *omnidriver.Instance, withInstanceMetadata bool) *db.InstanceMetadata {
 	if instance == nil {
 		return nil
 	}
@@ -137,9 +137,9 @@ func OmniInstanceToMetadata(instance *omnidriver.Instance, withInstanceMetadata 
 	return meta
 }
 
-// ParseTransactionMode strips any leading transaction directive from script and
+// parseTransactionMode strips any leading transaction directive from script and
 // returns the resolved omni transaction mode, isolation level, and cleaned script.
-func ParseTransactionMode(script string) (omnidriver.TransactionMode, omnidriver.IsolationLevel, string) {
+func parseTransactionMode(script string) (omnidriver.TransactionMode, omnidriver.IsolationLevel, string) {
 	config, cleaned := base.ParseTransactionConfig(script)
 	mode := config.Mode
 	if mode == transaction.ModeUnspecified {
@@ -396,7 +396,7 @@ func OmniResultToQueryResultWith(result *omnidriver.Result, maxResultBytes int64
 	// shows as one "Affected Rows" row. The contract leaves the count nil for a
 	// statement the engine states none for, which is not the same as zero.
 	if len(result.Columns) == 0 && result.AffectedRows != nil {
-		affected := BuildAffectedRowsResult(*result.AffectedRows, nil)
+		affected := buildAffectedRowsResult(*result.AffectedRows, nil)
 		affected.Statement = out.Statement
 		affected.Latency = out.Latency
 		out = affected
@@ -439,7 +439,7 @@ func OmniResultToQueryResultWith(result *omnidriver.Result, maxResultBytes int64
 	}
 	out.RowsCount = int64(len(out.Rows))
 	if opts.FillZeroAffectedRows {
-		FillZeroAffectedRows(result, out)
+		fillZeroAffectedRows(result, out)
 	}
 	return out
 }

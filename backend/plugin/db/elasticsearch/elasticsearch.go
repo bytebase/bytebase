@@ -54,18 +54,22 @@
 package elasticsearch
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	sigv4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	omnidriver "github.com/bytebase/omni/driver"
 	esdriver "github.com/bytebase/omni/elasticsearch/driver"
-	"github.com/opensearch-project/opensearch-go/v5/signer"
-	"github.com/opensearch-project/opensearch-go/v5/signer/awsv2"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -190,6 +194,11 @@ func tlsSettings(dataSource *storepb.DataSource) (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
+const (
+	openSearchService = "es"
+	emptyStringSHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+)
+
 // signedTransport builds the AWS IAM login path: the credentials are resolved
 // here, and the transport signs every request the driver sends.
 func signedTransport(ctx context.Context, config db.ConnectionConfig, dataSource *storepb.DataSource, tlsConfig *tls.Config) (http.RoundTripper, error) {
@@ -200,12 +209,11 @@ func signedTransport(ctx context.Context, config db.ConnectionConfig, dataSource
 	if err != nil {
 		return nil, err
 	}
+	if _, ok := awsCfg.Credentials.(*aws.CredentialsCache); !ok {
+		awsCfg.Credentials = aws.NewCredentialsCache(awsCfg.Credentials)
+	}
 	if _, err := awsCfg.Credentials.Retrieve(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve AWS credentials")
-	}
-	sig, err := awsv2.NewSigner(awsCfg)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create AWS signer")
 	}
 	return &signedHTTP{
 		base: &http.Transport{
@@ -213,22 +221,72 @@ func signedTransport(ctx context.Context, config db.ConnectionConfig, dataSource
 			ResponseHeaderTimeout: 5 * time.Second,
 			TLSClientConfig:       tlsConfig,
 		},
-		signer: sig,
+		signer:      sigv4.NewSigner(),
+		credentials: awsCfg.Credentials,
+		region:      awsCfg.Region,
 	}, nil
 }
 
-// signedHTTP signs each request before the transport under it sends it, which
-// is what a managed OpenSearch domain requires.
+// signedHTTP signs each request with AWS SigV4 before the transport under it
+// sends it, which is what a managed OpenSearch domain requires.
 type signedHTTP struct {
-	base   http.RoundTripper
-	signer signer.Signer
+	base        http.RoundTripper
+	signer      *sigv4.Signer
+	credentials aws.CredentialsProvider
+	region      string
 }
 
 func (t *signedHTTP) RoundTrip(req *http.Request) (*http.Response, error) {
-	if err := t.signer.SignRequest(req); err != nil {
+	ctx := req.Context()
+	if t.region == "" {
+		closeRequestBody(req.Body)
+		return nil, errors.New("region is required for AWS IAM authentication")
+	}
+	if t.credentials == nil {
+		closeRequestBody(req.Body)
+		return nil, errors.New("AWS credentials provider is not configured")
+	}
+	creds, err := t.credentials.Retrieve(ctx)
+	if err != nil {
+		closeRequestBody(req.Body)
 		return nil, err
 	}
-	return t.base.RoundTrip(req)
+
+	cloned := req.Clone(ctx)
+	payloadHash, err := hashAndRestoreBody(req, cloned)
+	if err != nil {
+		return nil, err
+	}
+	cloned.Header.Set("X-Amz-Content-Sha256", payloadHash)
+
+	if err := t.signer.SignHTTP(ctx, creds, cloned, payloadHash, openSearchService, t.region, time.Now().UTC()); err != nil {
+		return nil, err
+	}
+	return t.base.RoundTrip(cloned)
+}
+
+func hashAndRestoreBody(orig, cloned *http.Request) (string, error) {
+	if orig.Body == nil || orig.Body == http.NoBody {
+		return emptyStringSHA256, nil
+	}
+	bodyBytes, readErr := io.ReadAll(orig.Body)
+	closeErr := orig.Body.Close()
+	if readErr != nil {
+		return "", readErr
+	}
+	if closeErr != nil {
+		return "", closeErr
+	}
+	sum := sha256.Sum256(bodyBytes)
+	cloned.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+	cloned.ContentLength = int64(len(bodyBytes))
+	return hex.EncodeToString(sum[:]), nil
+}
+
+func closeRequestBody(body io.ReadCloser) {
+	if body != nil {
+		_ = body.Close()
+	}
 }
 
 // Ping asks the endpoint for its root document. On a managed OpenSearch domain

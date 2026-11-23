@@ -53,19 +53,19 @@ func GetSSHClient(ds *storepb.DataSource) (*ssh.Client, error) {
 }
 
 // NoDeadlineConn ignores deadlines, so a read or write blocked on it cannot be
-// interrupted. A driver that relies on deadlines dials with DialSSHTunnel.
+// interrupted. A driver that relies on deadlines dials with dialSSHTunnel.
 type NoDeadlineConn struct{ net.Conn }
 
 func (*NoDeadlineConn) SetDeadline(time.Time) error      { return nil }
 func (*NoDeadlineConn) SetReadDeadline(time.Time) error  { return nil }
 func (*NoDeadlineConn) SetWriteDeadline(time.Time) error { return nil }
 
-// DialSSHTunnel dials addr through client. Unlike the ssh channel it wraps, the
+// dialSSHTunnel dials addr through client. Unlike the ssh channel it wraps, the
 // connection it returns honors deadlines and reports addr as its remote
 // address. A driver needs both to stop a query whose context ended: pgx sets a
 // deadline to release the blocked read, then dials RemoteAddr to send the
 // cancel request.
-func DialSSHTunnel(ctx context.Context, client *ssh.Client, network, addr string) (net.Conn, error) {
+func dialSSHTunnel(ctx context.Context, client *ssh.Client, network, addr string) (net.Conn, error) {
 	channel, err := client.DialContext(ctx, network, addr)
 	if err != nil {
 		return nil, err

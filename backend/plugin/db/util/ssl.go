@@ -13,7 +13,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/proto"
@@ -23,7 +22,7 @@ import (
 
 const maxTLSMaterialFileSize int64 = 10 << 20
 
-func HasTLSPath(ds *storepb.DataSource) bool {
+func hasTLSPath(ds *storepb.DataSource) bool {
 	if ds == nil {
 		return false
 	}
@@ -35,7 +34,7 @@ func ResolveTLSMaterial(ds *storepb.DataSource) (*storepb.DataSource, error) {
 		return nil, nil
 	}
 	resolved := proto.Clone(ds).(*storepb.DataSource)
-	if !resolved.GetUseSsl() || !HasTLSPath(resolved) {
+	if !resolved.GetUseSsl() || !hasTLSPath(resolved) {
 		return resolved, nil
 	}
 
@@ -110,7 +109,7 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	if !ds.GetUseSsl() {
 		return nil, nil
 	}
-	if HasTLSPath(ds) {
+	if hasTLSPath(ds) {
 		return nil, errors.New("TLS material must be resolved before building TLS config")
 	}
 
@@ -155,14 +154,14 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	// - VerifyPeerCertificate implements custom verification that handles intermediate certificates
 	// - This pattern allows proper verification even when servers send certificates out of order
 	cfg.InsecureSkipVerify = true
-	cfg.VerifyPeerCertificate = CreateCertificateVerifier(rootCertPool, ds.GetHost())
+	cfg.VerifyPeerCertificate = createCertificateVerifier(rootCertPool, ds.GetHost())
 	return cfg, nil
 }
 
-// GetTLSConfigForHost returns the TLS config for ds with SNI and certificate
+// getTLSConfigForHost returns the TLS config for ds with SNI and certificate
 // hostname verification bound to host when non-empty, so SRV and multi-host
 // drivers verify each dialed server against its own hostname rather than ds.GetHost().
-func GetTLSConfigForHost(ds *storepb.DataSource, host string) (*tls.Config, error) {
+func getTLSConfigForHost(ds *storepb.DataSource, host string) (*tls.Config, error) {
 	cfg, err := GetTLSConfig(ds)
 	if err != nil || cfg == nil {
 		return nil, err
@@ -171,16 +170,15 @@ func GetTLSConfigForHost(ds *storepb.DataSource, host string) (*tls.Config, erro
 	if bare != "" {
 		cfg.ServerName = bare
 		if cfg.VerifyPeerCertificate != nil {
-			cfg.VerifyPeerCertificate = CreateCertificateVerifier(cfg.RootCAs, bare)
+			cfg.VerifyPeerCertificate = createCertificateVerifier(cfg.RootCAs, bare)
 		}
 	}
 	return cfg, nil
 }
 
-// CreateCertificateVerifier returns a verification function that properly handles intermediate certificates
+// createCertificateVerifier returns a verification function that properly handles intermediate certificates
 // and validates the hostname matches the certificate.
-// This is exported for use by database drivers that need custom certificate verification.
-func CreateCertificateVerifier(rootCertPool *x509.CertPool, hostname string) func([][]byte, [][]*x509.Certificate) error {
+func createCertificateVerifier(rootCertPool *x509.CertPool, hostname string) func([][]byte, [][]*x509.Certificate) error {
 	return func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
 		if len(rawCerts) == 0 {
 			return errors.Errorf("empty certificate to verify")
@@ -232,46 +230,22 @@ func configureClientCertificates(ds *storepb.DataSource, cfg *tls.Config) error 
 	return nil
 }
 
-// GetPGTLSConfigForHost returns Bytebase's TLS settings for one host the pg
+// getPGTLSConfigForHost returns Bytebase's TLS settings for one host the pg
 // driver dials: the client certificate and CA from the data source, the
 // verification mode it chose, and a server name and hostname verifier bound to
-// host rather than to the data source's first host. The driver calls it once per
-// host it may dial, so a multi-host data source verifies each host against its
-// own certificate.
-func GetPGTLSConfigForHost(ds *storepb.DataSource, host string) (*tls.Config, error) {
+// host rather than to the data source's first host.
+func getPGTLSConfigForHost(ds *storepb.DataSource, host string) (*tls.Config, error) {
 	tlscfg, err := GetTLSConfig(ds)
 	if err != nil || tlscfg == nil {
 		return nil, err
 	}
-	applyPGTLSConfigForHost(tlscfg, host, tlscfg)
-	return tlscfg, nil
-}
-
-// ApplyPGTLSConfig applies Bytebase TLS settings to pgx primary and fallback TLS configs.
-func ApplyPGTLSConfig(tlscfg *tls.Config, host string, fallbacks []*pgconn.FallbackConfig) {
-	if tlscfg == nil {
-		return
-	}
-	applyPGTLSConfigForHost(tlscfg, host, tlscfg)
-	for _, fallback := range fallbacks {
-		if fallback != nil && fallback.TLSConfig != nil {
-			applyPGTLSConfigForHost(fallback.TLSConfig, fallback.Host, tlscfg)
-		}
-	}
-}
-
-func applyPGTLSConfigForHost(dst *tls.Config, host string, src *tls.Config) {
 	// PostgreSQL proxies use SNI for routing even when certificate verification
 	// is handled by our custom verifier or disabled by the user.
-	dst.ServerName = host
-	if len(src.Certificates) > 0 {
-		dst.Certificates = append([]tls.Certificate(nil), src.Certificates...)
+	tlscfg.ServerName = host
+	if tlscfg.VerifyPeerCertificate != nil {
+		tlscfg.VerifyPeerCertificate = createCertificateVerifier(tlscfg.RootCAs, host)
 	}
-	if src.VerifyPeerCertificate != nil {
-		dst.RootCAs = src.RootCAs
-		dst.InsecureSkipVerify = src.InsecureSkipVerify
-		dst.VerifyPeerCertificate = CreateCertificateVerifier(src.RootCAs, host)
-	}
+	return tlscfg, nil
 }
 
 // rdsCertBundleURL is a variable so tests can point it at a local server.
@@ -387,6 +361,6 @@ func RDSTLSConfig(ctx context.Context, dataSource *storepb.DataSource) (*tls.Con
 	return &tls.Config{ // NOSONAR(go:S4830) VerifyPeerCertificate below verifies chain and hostname
 		RootCAs:               rootCertPool,
 		InsecureSkipVerify:    true, // superseded by VerifyPeerCertificate below
-		VerifyPeerCertificate: CreateCertificateVerifier(rootCertPool, dataSource.GetHost()),
+		VerifyPeerCertificate: createCertificateVerifier(rootCertPool, dataSource.GetHost()),
 	}, nil
 }

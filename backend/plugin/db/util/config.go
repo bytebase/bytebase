@@ -109,7 +109,7 @@ func HostTLSFunc(ds *storepb.DataSource) func(string) (*tls.Config, error) {
 		return nil
 	}
 	return func(host string) (*tls.Config, error) {
-		return GetTLSConfigForHost(ds, host)
+		return getTLSConfigForHost(ds, host)
 	}
 }
 
@@ -130,7 +130,7 @@ func PGTLSFunc(ds *storepb.DataSource) func(string) (*tls.Config, error) {
 		return nil
 	}
 	return func(host string) (*tls.Config, error) {
-		return GetPGTLSConfigForHost(ds, host)
+		return getPGTLSConfigForHost(ds, host)
 	}
 }
 
@@ -161,7 +161,7 @@ func MySQLFamilyDriverConfig(config db.ConnectionConfig, adapter *OmniAdapter) (
 
 // SetupSSHDial opens an SSH tunnel when ds.GetSshHost() is non-empty, registers
 // the ssh.Client on adapter for Close, and sets cfg.Dial. When deadlineAware is
-// true, dials use DialSSHTunnel (required by drivers like pgx that interrupt
+// true, dials use dialSSHTunnel (required by drivers like pgx that interrupt
 // blocked reads via deadlines); otherwise dials use sshClient.Dial directly.
 func SetupSSHDial(ds *storepb.DataSource, cfg *omnidriver.Config, adapter *OmniAdapter, deadlineAware bool) error {
 	if ds.GetSshHost() == "" {
@@ -171,10 +171,10 @@ func SetupSSHDial(ds *storepb.DataSource, cfg *omnidriver.Config, adapter *OmniA
 	if err != nil {
 		return err
 	}
-	adapter.AddCloser(sshClient)
+	adapter.addCloser(sshClient)
 	if deadlineAware {
 		cfg.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
-			return DialSSHTunnel(ctx, sshClient, network, address)
+			return dialSSHTunnel(ctx, sshClient, network, address)
 		}
 	} else {
 		cfg.Dial = func(_ context.Context, network, address string) (net.Conn, error) {
@@ -214,11 +214,11 @@ func SetupSSHDialWithWrap(
 // for Close, sets cfg.Dial to dial config.DataSource.GetHost(), and returns the
 // dialer.
 func SetupCloudSQLDial(ctx context.Context, config db.ConnectionConfig, cfg *omnidriver.Config, adapter *OmniAdapter) (*cloudsqlconn.Dialer, error) {
-	dialer, err := GetGCPConnectionConfig(ctx, config)
+	dialer, err := getGCPConnectionConfig(ctx, config)
 	if err != nil {
 		return nil, errors.Wrap(err, "load gcp config failed")
 	}
-	adapter.AddCloser(dialer)
+	adapter.addCloser(dialer)
 	instance := config.DataSource.GetHost()
 	cfg.Dial = func(ctx context.Context, _, _ string) (net.Conn, error) {
 		return dialer.Dial(ctx, instance)

@@ -80,7 +80,7 @@ func TestProbeSQL(t *testing.T) {
 
 	t.Run("pre-executions and the statement run in one transaction, then roll back", func(t *testing.T) {
 		fake.statements = nil
-		res, err := ProbeSQL(ctx, connection, db.ProbeContext{PreExecutions: []string{"SET search_path = app"}}, "EXPLAIN SELECT 1")
+		res, err := probeSQL(ctx, connection, db.ProbeContext{PreExecutions: []string{"SET search_path = app"}}, "EXPLAIN SELECT 1")
 		require.NoError(t, err)
 		require.Equal(t, []string{"exec: SET search_path = app", "tx: EXPLAIN SELECT 1"}, fake.statements)
 		require.Equal(t, []string{"QUERY PLAN"}, res.Columns)
@@ -91,20 +91,20 @@ func TestProbeSQL(t *testing.T) {
 
 	t.Run("autocommit runs the statement alone", func(t *testing.T) {
 		fake.statements = nil
-		_, err := ProbeSQL(ctx, connection, db.ProbeContext{Autocommit: true}, "EXPLAIN PLAN FOR SELECT 1")
+		_, err := probeSQL(ctx, connection, db.ProbeContext{Autocommit: true}, "EXPLAIN PLAN FOR SELECT 1")
 		require.NoError(t, err)
 		require.Equal(t, []string{"autocommit: EXPLAIN PLAN FOR SELECT 1"}, fake.statements)
 	})
 
 	t.Run("autocommit rejects pre-executions", func(t *testing.T) {
 		fake.statements = nil
-		_, err := ProbeSQL(ctx, connection, db.ProbeContext{Autocommit: true, PreExecutions: []string{"SET search_path = app"}}, "SELECT 1")
+		_, err := probeSQL(ctx, connection, db.ProbeContext{Autocommit: true, PreExecutions: []string{"SET search_path = app"}}, "SELECT 1")
 		require.ErrorContains(t, err, "cannot run outside a transaction")
 		require.Empty(t, fake.statements)
 	})
 
 	t.Run("a refused statement returns the server's error", func(t *testing.T) {
-		_, err := ProbeSQL(ctx, connection, db.ProbeContext{}, "SELECT refused")
+		_, err := probeSQL(ctx, connection, db.ProbeContext{}, "SELECT refused")
 		require.ErrorContains(t, err, "refused")
 	})
 }
@@ -137,8 +137,9 @@ func TestProbeOmni(t *testing.T) {
 			},
 		}
 		q := &fakeOmniDriver{sessions: []*fakeOmniSession{s}}
+		adapter := &OmniAdapter{Driver: q}
 
-		res, err := ProbeOmni(ctx, q, db.ProbeContext{PreExecutions: []string{"", "SET a = 1"}}, "EXPLAIN SELECT 1", OmniProbeOptions{
+		res, err := adapter.ProbeOmni(ctx, db.ProbeContext{PreExecutions: []string{"", "SET a = 1"}}, "EXPLAIN SELECT 1", OmniProbeOptions{
 			BeginStatement:           "START TRANSACTION",
 			RollbackStatement:        "ROLLBACK",
 			RollbackWithoutCancel:    true,
@@ -156,10 +157,11 @@ func TestProbeOmni(t *testing.T) {
 
 	t.Run("autocommit only and pre-execution validation", func(t *testing.T) {
 		q := &fakeOmniDriver{}
-		_, err := ProbeOmni(ctx, q, db.ProbeContext{Autocommit: true, PreExecutions: []string{"SET a = 1"}}, "SELECT 1", OmniProbeOptions{})
+		adapter := &OmniAdapter{Driver: q}
+		_, err := adapter.ProbeOmni(ctx, db.ProbeContext{Autocommit: true, PreExecutions: []string{"SET a = 1"}}, "SELECT 1", OmniProbeOptions{})
 		require.ErrorContains(t, err, "cannot run outside a transaction")
 
-		_, err = ProbeOmni(ctx, q, db.ProbeContext{}, "SELECT 1", OmniProbeOptions{AutocommitOnly: true})
+		_, err = adapter.ProbeOmni(ctx, db.ProbeContext{}, "SELECT 1", OmniProbeOptions{AutocommitOnly: true})
 		require.ErrorContains(t, err, "autocommit-only")
 		require.Equal(t, 0, q.sessionCalls)
 	})
@@ -175,8 +177,8 @@ func TestProbeOmni(t *testing.T) {
 				return []*omnidriver.Result{{}}, nil
 			},
 		}
-		q := &fakeOmniDriver{sessions: []*fakeOmniSession{s}}
-		_, err := ProbeOmni(ctx, q, db.ProbeContext{}, "EXPLAIN BAD", OmniProbeOptions{
+		adapter := &OmniAdapter{Driver: &fakeOmniDriver{sessions: []*fakeOmniSession{s}}}
+		_, err := adapter.ProbeOmni(ctx, db.ProbeContext{}, "EXPLAIN BAD", OmniProbeOptions{
 			BeginStatement:    "BEGIN;",
 			RollbackStatement: "ROLLBACK;",
 		})

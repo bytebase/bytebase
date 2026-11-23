@@ -3,13 +3,13 @@
 // config onto the driver contract and the contract's results back into the
 // product's protos.
 //
-// The AWS credential path stays here. util.GetAWSConnectionConfig reads the
-// data source's static key pair or the SDK's default chain, then
-// util.AssumeRoleIfNeeded assumes the configured role and caches the assumed
-// keys. The omni driver takes a plain key pair, so this adapter hands it the
-// configured pair, or the assumed role's keys read once at Open. The assumed
-// role's keys do not refresh, so a run longer than the role session needs a
-// caller-side credential source the contract does not have yet.
+// The AWS credential path stays here. util.LoadAWSConfig reads the data
+// source's static key pair or the SDK's default chain, then assumes the
+// configured role and caches the assumed keys. The omni driver takes a plain
+// key pair, so this adapter hands it the configured pair, or the assumed role's
+// keys read once at Open. The assumed role's keys do not refresh, so a run
+// longer than the role session needs a caller-side credential source the
+// contract does not have yet.
 //
 // The endpoint mapping also stays here. An empty host leaves the AWS SDK's own
 // endpoint resolution for the region, which is how real AWS is reached; a host
@@ -69,7 +69,7 @@ func newDriver() db.Driver {
 
 // Open maps the connection config onto the driver contract. It does not reach
 // the DynamoDB endpoint; Ping and SyncInstance do. It reaches STS when the data
-// source configures a role to assume, because AssumeRoleIfNeeded resolves the
+// source configures a role to assume, because util.LoadAWSConfig resolves the
 // role's keys here.
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	dataSource := config.DataSource
@@ -86,7 +86,7 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 	awsCredential := dataSource.GetAwsCredential()
 	switch {
 	case awsCredential.GetRoleArn() != "":
-		// AssumeRoleIfNeeded put the assumed role's cached keys in awsConfig.
+		// util.LoadAWSConfig put the assumed role's cached keys in awsConfig.
 		// The contract takes a key pair, so read them once; a refreshing cache
 		// has no place to live on the other side of the seam.
 		value, err := awsConfig.Credentials.Retrieve(ctx)
@@ -96,7 +96,7 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 		user, password = value.AccessKeyID, value.SecretAccessKey
 		params[omnidynamodb.ParamSessionToken] = value.SessionToken
 	case awsCredential.GetAccessKeyId() != "":
-		// The same static pair util.GetAWSConnectionConfig gave the AWS SDK.
+		// The same static pair util.LoadAWSConfig gave the AWS SDK.
 		user, password = awsCredential.GetAccessKeyId(), awsCredential.GetSecretAccessKey()
 		params[omnidynamodb.ParamSessionToken] = awsCredential.GetSessionToken()
 	default:
