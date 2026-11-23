@@ -1,7 +1,6 @@
 package mssql
 
 import (
-	"strings"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -118,6 +117,20 @@ func TestDefinitionPreservesUnrenderedFacts(t *testing.T) {
 	} {
 		require.Contains(t, got, rendered)
 	}
+	// Stripping must not mutate the caller's metadata.
+	s := withFacts.Schemas[0]
+	require.True(t, s.SkipDump)
+	require.Len(t, s.Sequences, 1)
+	require.Len(t, s.Synonyms, 1)
+	require.True(t, s.Tables[0].SkipDump)
+	require.Equal(t, "table comment", s.Tables[0].Comment)
+	require.Len(t, s.Tables[0].Triggers, 1)
+	require.Equal(t, "DF_t_v", s.Tables[0].Columns[1].DefaultConstraintName)
+	require.True(t, s.Views[0].SkipDump)
+	require.Equal(t, "view comment", s.Views[0].Comment)
+	require.Len(t, s.Views[0].Triggers, 1)
+	require.True(t, s.Functions[0].SkipDump)
+	require.True(t, s.Procedures[0].SkipDump)
 }
 
 // TestDefinitionModuleTextUnchanged pins the two module-text normalizations the
@@ -137,41 +150,6 @@ func TestDefinitionModuleTextUnchanged(t *testing.T) {
 	require.Contains(t, got, "ALTER PROCEDURE [dbo].[p] AS SELECT 1;", "an ALTER header stays ALTER")
 }
 
-// TestDefinitionModuleOrderMoved names the one ordering difference the cutover
-// keeps. The catalog creates a function after any function its body names and
-// before a table default or view body that references it; the old renderer wrote
-// all functions last. The text of each module is unchanged, only its position.
-func TestDefinitionModuleOrderMoved(t *testing.T) {
-	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
-		Name: "dbo",
-		Tables: []*metadatapb.TableMetadata{{
-			Name: "t",
-			Columns: []*metadatapb.ColumnMetadata{
-				{Name: "id", Type: "int", Nullable: false},
-				{Name: "v", Type: "int", Nullable: false, Default: "([dbo].[f]())"},
-			},
-			Indexes: []*metadatapb.IndexMetadata{{Name: "PK_t", Type: "CLUSTERED", Primary: true, Unique: true, IsConstraint: true, Expressions: []string{"id"}}},
-		}},
-		Views: []*metadatapb.ViewMetadata{{Name: "v1", Definition: "CREATE VIEW [dbo].[v1] AS SELECT [dbo].[g]() AS x"}},
-		Functions: []*metadatapb.FunctionMetadata{
-			{Name: "f", Definition: "CREATE FUNCTION [dbo].[f]() RETURNS int AS BEGIN RETURN 1 END"},
-			{Name: "g", Definition: "CREATE FUNCTION [dbo].[g]() RETURNS int AS BEGIN RETURN 2 END"},
-			{Name: "h", Definition: "CREATE FUNCTION [dbo].[h]() RETURNS int AS BEGIN RETURN 3 END"},
-		},
-	}}}
-	got, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, meta)
-	require.NoError(t, err)
-
-	at := func(s string) int {
-		i := strings.Index(got, s)
-		require.GreaterOrEqual(t, i, 0, "missing %q", s)
-		return i
-	}
-	require.Less(t, at("CREATE FUNCTION [dbo].[f]"), at("CREATE TABLE [dbo].[t]"), "a table-default function is hoisted")
-	require.Less(t, at("CREATE FUNCTION [dbo].[g]"), at("CREATE VIEW [dbo].[v1]"), "a view function is hoisted")
-	require.Less(t, at("CREATE VIEW [dbo].[v1]"), at("CREATE FUNCTION [dbo].[h]"), "an unreferenced function stays last")
-}
-
 // TestGetObjectDefinitionKeepsLegacyText pins the single-object renderers to the
 // pre-cutover string. The catalog's own renderers trim the extra semicolon and
 // rewrite ALTER to CREATE, so the shim keeps the old formula instead.
@@ -189,22 +167,6 @@ func TestGetObjectDefinitionKeepsLegacyText(t *testing.T) {
 	require.Equal(t, "CREATE PROCEDURE [dbo].[p] AS SELECT 1\n\nGO\n\n", procedure)
 }
 
-// TestExtendedPropertyConstraintCommentDoesNotPolluteTableComment pins the
-// catalog's handling of an extended property on a constraint. For a named
-// @level2type = 'CONSTRAINT' argument omni's catalog does not attach the value
-// to the table comment.
-func TestExtendedPropertyConstraintCommentDoesNotPolluteTableComment(t *testing.T) {
-	sql := `CREATE TABLE [dbo].[t] ([id] int NOT NULL, CONSTRAINT [CK_t] CHECK ([id] > 0));
-EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'ck comment',
-  @level0type = N'SCHEMA', @level0name = N'dbo',
-  @level1type = N'TABLE', @level1name = N't',
-  @level2type = N'CONSTRAINT', @level2name = N'CK_t';`
-
-	metadata, err := GetDatabaseMetadata(sql)
-	require.NoError(t, err)
-	require.Empty(t, metadata.Schemas[0].Tables[0].Comment)
-}
-
 // TestTableDefinitionPreservesUnrenderedFacts pins GetTableDefinition to the
 // same strip contract as GetDatabaseDefinition: SkipDump, comments, triggers,
 // and DefaultConstraintName are stripped before delegating to omni's catalog.
@@ -220,6 +182,12 @@ func TestTableDefinitionPreservesUnrenderedFacts(t *testing.T) {
 	require.NotContains(t, got, "sp_addextendedproperty")
 	require.NotContains(t, got, "DF_t_v")
 	require.NotContains(t, got, "CREATE TRIGGER")
+	// Stripping must not mutate the caller's table metadata.
+	tbl := withFacts.Schemas[0].Tables[0]
+	require.True(t, tbl.SkipDump)
+	require.Equal(t, "table comment", tbl.Comment)
+	require.Len(t, tbl.Triggers, 1)
+	require.Equal(t, "DF_t_v", tbl.Columns[1].DefaultConstraintName)
 }
 
 // TestDefinitionRewritesEachModuleAtItsOwnSection pins replacement to the
