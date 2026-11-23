@@ -10,7 +10,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 func TestStatementDMLDryRun(t *testing.T) {
@@ -67,18 +66,18 @@ func TestStatementDMLDryRun(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			db, fake := newExplainFakeDB(t, tc.plans)
+			prober := newExplainProber(tc.plans)
 			got, err := advisor.SQLReviewCheck(context.Background(), sheet.NewManager(), tc.statement, []*storepb.SQLReviewRule{{
 				Type:   storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN,
 				Level:  storepb.SQLReviewRule_WARNING,
 				Engine: storepb.Engine_POSTGRES,
 			}}, advisor.Context{
 				DBType:          storepb.Engine_POSTGRES,
-				Prober:          dbutil.NewSQLProber(db),
+				Prober:          prober,
 				NoAppendBuiltin: true,
 			})
 			require.NoError(t, err)
-			require.Equal(t, tc.wantExplained, fake.explainedStatements())
+			require.Equal(t, tc.wantExplained, explainedStatements(prober))
 			require.Equal(t, tc.want, got)
 		})
 	}

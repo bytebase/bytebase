@@ -35,8 +35,6 @@ const (
 )
 
 var (
-	// MockIndexColumnList is the mock index column list for test.
-	MockIndexColumnList = []string{"id", "name"}
 	// MockMySQLDatabase is the mock MySQL database for test.
 	MockMySQLDatabase = &metadatapb.DatabaseSchemaMetadata{
 		Name: "test",
@@ -481,6 +479,8 @@ type ProbeRecorder struct {
 	Estimates []string
 	Lookups   []ColumnLookupCall
 
+	// ProbeFunc, when set, answers each probe instead of ProbeErr and Result.
+	ProbeFunc func(pCtx db.ProbeContext, statement string) (db.ProbeResult, error)
 	// ProbeErr makes every probe fail, as a refused statement does.
 	ProbeErr error
 	// Result is what a probe answers. Empty means no rows.
@@ -498,6 +498,9 @@ type ProbeRecorder struct {
 // Probe runs the probe and records it.
 func (r *ProbeRecorder) Probe(_ context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
 	r.Probes = append(r.Probes, ProbeCall{PreExecutions: pCtx.PreExecutions, Autocommit: pCtx.Autocommit, Statement: statement})
+	if r.ProbeFunc != nil {
+		return r.ProbeFunc(pCtx, statement)
+	}
 	if r.ProbeErr != nil {
 		return db.ProbeResult{}, r.ProbeErr
 	}
