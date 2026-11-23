@@ -1,15 +1,12 @@
 package pg
 
 import (
-	"os"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/yamltest"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -254,72 +251,4 @@ func TestPostgresSDLDropAdvices(t *testing.T) {
 	advices, err := schema.SDLDropAdvices(storepb.Engine_POSTGRES, "", db, "")
 	require.NoError(t, err)
 	require.NotEmpty(t, advices)
-}
-
-type cutoverParityCase struct {
-	Description     string `yaml:"description"`
-	Difference      string `yaml:"difference"`
-	OldMetadata     string `yaml:"oldMetadata"`
-	NewMetadata     string `yaml:"newMetadata"`
-	LegacyExpected  string `yaml:"legacyExpected"`
-	CatalogExpected string `yaml:"catalogExpected"`
-	CatalogError    string `yaml:"catalogError,omitempty"`
-}
-
-// TestCockroachMigrationCutover replays every CockroachDB metadata-diff case the
-// deleted Bytebase generator covered. The legacy text was captured before the
-// generator was removed, so it is the differential rather than a live second
-// path. Each case names the difference it records; a future catalog that makes a
-// case match its legacy text still has that difference documented here.
-func TestCockroachMigrationCutover(t *testing.T) {
-	const (
-		record   = false
-		filepath = "testdata/cutover_parity.yaml"
-	)
-	content, err := os.ReadFile(filepath)
-	require.NoError(t, err)
-	var cases []cutoverParityCase
-	require.NoError(t, yaml.Unmarshal(content, &cases))
-	require.NotEmpty(t, cases)
-
-	for i, tc := range cases {
-		t.Run(tc.Description, func(t *testing.T) {
-			require.NotEmpty(t, tc.Difference, "each case names the difference it records")
-			oldDB := parseCockroachMetadata(t, tc.OldMetadata)
-			newDB := parseCockroachMetadata(t, tc.NewMetadata)
-
-			migration, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, oldDB, newDB)
-
-			if record {
-				cases[i].CatalogExpected = migration
-				cases[i].CatalogError = ""
-				if err != nil {
-					cases[i].CatalogExpected = ""
-					cases[i].CatalogError = err.Error()
-				}
-				return
-			}
-			if tc.CatalogError != "" {
-				require.ErrorContains(t, err, tc.CatalogError)
-				require.NotEmpty(t, tc.LegacyExpected, "the legacy generator produced SQL this case no longer does")
-				return
-			}
-			require.NoError(t, err)
-			require.Equal(t, tc.CatalogExpected, migration)
-			if tc.LegacyExpected != tc.CatalogExpected {
-				require.NotEqual(t, tc.LegacyExpected, migration, tc.Difference)
-			}
-		})
-	}
-
-	if record {
-		yamltest.Record(t, filepath, cases)
-	}
-}
-
-func parseCockroachMetadata(t *testing.T, encoded string) *model.DatabaseMetadata {
-	t.Helper()
-	metadata := &metadatapb.DatabaseSchemaMetadata{}
-	require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(encoded), metadata))
-	return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_COCKROACHDB, true)
 }

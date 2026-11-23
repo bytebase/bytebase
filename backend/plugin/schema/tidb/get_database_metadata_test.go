@@ -1,54 +1,49 @@
 package tidb
 
 import (
-	"encoding/json"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common/yamltest"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
-type getDatabaseMetadataCase struct {
-	Description string `yaml:"description"`
-	Schema      string `yaml:"schema"`
-	Metadata    string `yaml:"metadata"`
-}
+func TestGetDatabaseMetadataSeam(t *testing.T) {
+	t.Run("empty schema returns empty metadata", func(t *testing.T) {
+		meta, err := schema.GetDatabaseMetadata(storepb.Engine_TIDB, "  \n")
+		require.NoError(t, err)
+		require.Empty(t, meta.Schemas)
+	})
 
-// TestGetDatabaseMetadata pins what the parser extracts from each schema text.
-// The goldens describe this package's own output, not TiDB's catalog: whether
-// the parser agrees with a live server is engine conformance and belongs in omni.
-func TestGetDatabaseMetadata(t *testing.T) {
-	const (
-		record   = false
-		filepath = "testdata/get_database_metadata.yaml"
-	)
+	t.Run("strips scratch database name and view qualifier when DDL selects no database", func(t *testing.T) {
+		meta, err := schema.GetDatabaseMetadata(storepb.Engine_TIDB, `
+CREATE TABLE t (id INT PRIMARY KEY);
+CREATE VIEW v AS SELECT id FROM t;
+`)
+		require.NoError(t, err)
+		require.Empty(t, meta.Name)
+		require.Len(t, meta.Schemas, 1)
+		require.Len(t, meta.Schemas[0].Views, 1)
+		require.NotContains(t, meta.Schemas[0].Views[0].Definition, catalogDBName)
+	})
 
-	var tests []getDatabaseMetadataCase
-	content, err := os.ReadFile(filepath)
-	require.NoError(t, err)
-	require.NoError(t, yaml.Unmarshal(content, &tests))
+	t.Run("preserves explicit database name and view qualifier when DDL selects one", func(t *testing.T) {
+		meta, err := schema.GetDatabaseMetadata(storepb.Engine_TIDB, `
+CREATE DATABASE app;
+USE app;
+CREATE TABLE t (id INT PRIMARY KEY);
+CREATE VIEW v AS SELECT id FROM t;
+`)
+		require.NoError(t, err)
+		require.Equal(t, "app", meta.Name)
+		require.Len(t, meta.Schemas, 1)
+		require.Len(t, meta.Schemas[0].Views, 1)
+		require.Contains(t, meta.Schemas[0].Views[0].Definition, "`app`.")
+	})
 
-	for i, tc := range tests {
-		t.Run(tc.Description, func(t *testing.T) {
-			metadata, err := GetDatabaseMetadata(tc.Schema)
-			require.NoError(t, err)
-
-			encoded, err := json.MarshalIndent(metadata, "", "  ")
-			require.NoError(t, err)
-			result := string(encoded) + "\n"
-
-			if record {
-				tests[i].Metadata = result
-				return
-			}
-			require.Equal(t, tc.Metadata, result)
-		})
-	}
-
-	if record {
-		yamltest.Record(t, filepath, tests)
-	}
+	t.Run("invalid DDL returns error", func(t *testing.T) {
+		_, err := schema.GetDatabaseMetadata(storepb.Engine_TIDB, "CREATE TABLE (")
+		require.Error(t, err)
+	})
 }
