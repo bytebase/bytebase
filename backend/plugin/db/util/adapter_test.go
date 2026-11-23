@@ -301,3 +301,73 @@ func TestOmniAdapterMethods(t *testing.T) {
 	require.NoError(t, adapter.Close(ctx))
 	require.Empty(t, closedOrder)
 }
+
+func TestOmniAdapterOpenWithAndSessionHelpers(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("OpenWith initializes base and sets driver on success", func(t *testing.T) {
+		var adapter OmniAdapter
+		fake := &fakeOmniDriver{}
+		require.NoError(t, adapter.OpenWith(ctx, AdapterOptions{
+			WithInstanceMetadata: true,
+			NotFoundResource:     "database",
+			DatabaseName:         "app",
+		}, func(*OmniAdapter) (omnidriver.Driver, error) {
+			return fake, nil
+		}))
+		require.Same(t, fake, adapter.Driver)
+		require.True(t, adapter.WithInstanceMetadata)
+		require.Equal(t, "database", adapter.NotFoundResource)
+		require.Equal(t, "app", adapter.DatabaseName)
+	})
+
+	t.Run("OpenWith closes registered closers on error", func(t *testing.T) {
+		var adapter OmniAdapter
+		closed := false
+		err := adapter.OpenWith(ctx, AdapterOptions{WithInstanceMetadata: true}, func(a *OmniAdapter) (omnidriver.Driver, error) {
+			a.AddCloseFunc(func() error {
+				closed = true
+				return nil
+			})
+			return nil, errors.New("dial failed")
+		})
+		require.EqualError(t, err, "dial failed")
+		require.True(t, closed)
+		require.Nil(t, adapter.Driver)
+	})
+
+	t.Run("QueryHeldSession wraps OpenSession error when WrapOpenError is set", func(t *testing.T) {
+		adapter := &OmniAdapter{Driver: &fakeOmniDriver{sessionErr: errors.New("pool exhausted")}}
+		_, err := adapter.QueryHeldSession(ctx, "SELECT 1", omnidriver.QueryOptions{}, SessionQueryOptions{
+			WrapOpenError: "failed to open a session",
+		})
+		require.EqualError(t, err, "failed to open a session: pool exhausted")
+	})
+
+	t.Run("QueryEphemeralSession runs query and closes session", func(t *testing.T) {
+		s := &fakeOmniSession{results: []*omnidriver.Result{{Statement: "SELECT 1"}}}
+		adapter := &OmniAdapter{Driver: &fakeOmniDriver{sessions: []*fakeOmniSession{s}}}
+		results, err := adapter.QueryEphemeralSession(ctx, "SELECT 1", omnidriver.QueryOptions{Limit: 10})
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		require.True(t, s.closed)
+	})
+
+	t.Run("BuildExecuteOptions maps directives and flags", func(t *testing.T) {
+		stmt, opts := BuildExecuteOptions("-- txn-mode=off\n-- txn-isolation=serializable\nDELETE FROM t;", db.ExecuteOptions{
+			CreateDatabase: true,
+			MaximumRetries: 3,
+		}, ExecuteConfig{
+			ParseTransactionDirective: true,
+			PassIsolation:             true,
+			PassCreateDatabase:        true,
+			PassMaxRetries:            true,
+		})
+		require.Equal(t, "DELETE FROM t;", stmt)
+		require.Equal(t, omnidriver.AutoCommit, opts.Transaction)
+		require.Equal(t, omnidriver.IsolationLevel("SERIALIZABLE"), opts.Isolation)
+		require.True(t, opts.CreateDatabase)
+		require.Equal(t, 3, opts.MaxRetries)
+		require.NotNil(t, opts.Log)
+	})
+}

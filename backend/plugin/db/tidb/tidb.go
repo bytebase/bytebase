@@ -73,29 +73,19 @@ func newDriver() db.Driver {
 // Open maps the connection config onto the contract's Config. Like the driver
 // this replaced, Open does not reach the server; Ping does.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	opened := false
-	defer func() {
-		if !opened {
-			_ = d.Close(ctx)
-		}
-	}()
-
-	d.OmniAdapter = util.OmniAdapter{
+	if err := d.OpenWith(ctx, util.AdapterOptions{
 		WithInstanceMetadata: true,
 		NotFoundResource:     "database",
 		DatabaseName:         config.ConnectionContext.DatabaseName,
-	}
-
-	driverConfig, err := buildConfig(config, &d.OmniAdapter)
-	if err != nil {
+	}, func(adapter *util.OmniAdapter) (omnidriver.Driver, error) {
+		driverConfig, err := buildConfig(config, adapter)
+		if err != nil {
+			return nil, err
+		}
+		return tidbdriver.Open(ctx, driverConfig)
+	}); err != nil {
 		return nil, err
 	}
-	impl, err := tidbdriver.Open(ctx, driverConfig)
-	if err != nil {
-		return nil, err
-	}
-	d.Driver = impl
-	opened = true
 	return d, nil
 }
 

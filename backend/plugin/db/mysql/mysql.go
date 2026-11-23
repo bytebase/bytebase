@@ -78,68 +78,54 @@ func newDriver() db.Driver {
 
 // Open maps the resolved data source onto the contract's Config.
 func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
-	// A driver whose Open fails is discarded without a Close, so Open releases
-	// the tunnel, Cloud SQL dialer and pools it acquired itself.
-	success := false
-	defer func() {
-		if !success {
-			_ = d.Close(ctx)
-		}
-	}()
-
 	dataSource := connCfg.DataSource
 	if dataSource == nil {
 		return nil, errors.New("mysql: a data source is required")
 	}
 	d.dbType = dbType
-	d.OmniAdapter = util.OmniAdapter{WithInstanceMetadata: true}
+	if err := d.OpenWith(ctx, util.AdapterOptions{WithInstanceMetadata: true}, func(adapter *util.OmniAdapter) (odriver.Driver, error) {
+		cfg := odriver.Config{
+			Host:            dataSource.Host,
+			Port:            dataSource.Port,
+			Database:        connCfg.ConnectionContext.DatabaseName,
+			User:            dataSource.Username,
+			Password:        connCfg.Password,
+			ApplicationName: "bytebase",
+			EngineVersion:   connCfg.ConnectionContext.EngineVersion,
+			Params:          dataSource.GetExtraConnectionParameters(),
+		}
 
-	cfg := odriver.Config{
-		Host:            dataSource.Host,
-		Port:            dataSource.Port,
-		Database:        connCfg.ConnectionContext.DatabaseName,
-		User:            dataSource.Username,
-		Password:        connCfg.Password,
-		ApplicationName: "bytebase",
-		EngineVersion:   connCfg.ConnectionContext.EngineVersion,
-		Params:          dataSource.GetExtraConnectionParameters(),
-	}
+		switch dataSource.GetAuthenticationType() {
+		case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
+			if _, err := util.SetupCloudSQLDial(ctx, connCfg, &cfg, adapter); err != nil {
+				return nil, err
+			}
+		case storepb.DataSource_AWS_RDS_IAM:
+			if err := util.ConfigureRDSMySQLIAM(ctx, connCfg, &cfg); err != nil {
+				return nil, err
+			}
+		default:
+			if err := util.SetupSSHDial(dataSource, &cfg, adapter, false); err != nil {
+				return nil, err
+			}
+			tlsFn, err := util.SQLStaticTLSFunc(dataSource)
+			if err != nil {
+				return nil, err
+			}
+			cfg.TLS = tlsFn
+		}
 
-	switch dataSource.GetAuthenticationType() {
-	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
-		if _, err := util.SetupCloudSQLDial(ctx, connCfg, &cfg, &d.OmniAdapter); err != nil {
-			return nil, err
+		switch dbType {
+		case storepb.Engine_MYSQL:
+			return mysqld.Open(ctx, cfg)
+		case storepb.Engine_MARIADB:
+			return mariadbd.Open(ctx, cfg)
+		default:
+			return nil, errors.Errorf("mysql: unsupported engine %s", dbType)
 		}
-	case storepb.DataSource_AWS_RDS_IAM:
-		if err := util.ConfigureRDSMySQLIAM(ctx, connCfg, &cfg); err != nil {
-			return nil, err
-		}
-	default:
-		if err := util.SetupSSHDial(dataSource, &cfg, &d.OmniAdapter, false); err != nil {
-			return nil, err
-		}
-		tlsFn, err := util.StaticTLSFunc(dataSource)
-		if err != nil {
-			return nil, errors.Wrap(err, "sql: tls config error")
-		}
-		cfg.TLS = tlsFn
-	}
-
-	var opened odriver.Driver
-	var err error
-	switch dbType {
-	case storepb.Engine_MYSQL:
-		opened, err = mysqld.Open(ctx, cfg)
-	case storepb.Engine_MARIADB:
-		opened, err = mariadbd.Open(ctx, cfg)
-	default:
-		return nil, errors.Errorf("mysql: unsupported engine %s", dbType)
-	}
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
-	d.Driver = opened
-	success = true
 	return d, nil
 }
 
@@ -182,7 +168,7 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 // pCtx.Autocommit runs the statement alone; a MySQL probe is an EXPLAIN, so
 // either shape answers the same.
 func (d *Driver) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
-	return util.ProbeOmni(ctx, d.Driver.(odriver.Querier), pCtx, statement, util.OmniProbeOptions{
+	return d.ProbeOmni(ctx, pCtx, statement, util.OmniProbeOptions{
 		BeginStatement:               "START TRANSACTION",
 		RollbackStatement:            "ROLLBACK",
 		AllowAutocommitPreExecutions: true,

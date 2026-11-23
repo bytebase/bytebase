@@ -23,7 +23,7 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 
 // Probe runs a live review rule's probe on one session of the driver's.
 func (d *Driver) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
-	return util.ProbeOmni(ctx, d.impl, pCtx, statement, d.probeOptions())
+	return d.ProbeOmni(ctx, pCtx, statement, d.probeOptions())
 }
 
 // probeOnSession runs the transaction, the tenant-mode prelude, the

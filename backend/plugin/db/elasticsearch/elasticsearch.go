@@ -99,61 +99,51 @@ func newDriver() db.Driver {
 // login resolves its credentials here; Ping reaches the endpoint.
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	dataSource := config.DataSource
-	d := &Driver{
-		OmniAdapter: util.OmniAdapter{WithInstanceMetadata: true},
-	}
-	opened := false
-	defer func() {
-		if !opened {
-			_ = d.Close(ctx)
+	d := &Driver{}
+	if err := d.OpenWith(ctx, util.AdapterOptions{WithInstanceMetadata: true}, func(adapter *util.OmniAdapter) (omnidriver.Driver, error) {
+		aws := dataSource.GetAuthenticationType() == storepb.DataSource_AWS_RDS_IAM
+
+		cfg := omnidriver.Config{
+			Host: endpointHost(dataSource),
+			Port: dataSource.GetPort(),
 		}
-	}()
-
-	aws := dataSource.GetAuthenticationType() == storepb.DataSource_AWS_RDS_IAM
-
-	cfg := omnidriver.Config{
-		Host: endpointHost(dataSource),
-		Port: dataSource.GetPort(),
-	}
-	var tlsConfig *tls.Config
-	if secure(dataSource) {
-		var err error
-		tlsConfig, err = tlsSettings(dataSource)
-		if err != nil {
-			return nil, err
+		var tlsConfig *tls.Config
+		if secure(dataSource) {
+			var err error
+			tlsConfig, err = tlsSettings(dataSource)
+			if err != nil {
+				return nil, err
+			}
 		}
-	}
 
-	if tlsConfig != nil {
-		cfg.TLS = func(string) (*tls.Config, error) { return tlsConfig, nil }
-	}
-
-	var opts esdriver.Options
-	if aws {
-		// A managed domain signs each request with SigV4 through a transport
-		// of the caller's, which then owns its own connections, so this login
-		// path cannot also take the tunnel.
-		d.aws = true
-		d.awsRoleARN = dataSource.GetAwsCredential().GetRoleArn()
-		transport, err := signedTransport(ctx, config, dataSource, tlsConfig)
-		if err != nil {
-			return nil, err
+		if tlsConfig != nil {
+			cfg.TLS = func(string) (*tls.Config, error) { return tlsConfig, nil }
 		}
-		opts = esdriver.Options{OpenSearch: true, Transport: transport}
-	} else {
-		cfg.User = dataSource.GetUsername()
-		cfg.Password = config.Password
-		if err := util.SetupSSHDial(dataSource, &cfg, &d.OmniAdapter, true); err != nil {
-			return nil, err
-		}
-	}
 
-	inner, err := esdriver.Open(ctx, cfg, opts)
-	if err != nil {
+		var opts esdriver.Options
+		if aws {
+			// A managed domain signs each request with SigV4 through a transport
+			// of the caller's, which then owns its own connections, so this login
+			// path cannot also take the tunnel.
+			d.aws = true
+			d.awsRoleARN = dataSource.GetAwsCredential().GetRoleArn()
+			transport, err := signedTransport(ctx, config, dataSource, tlsConfig)
+			if err != nil {
+				return nil, err
+			}
+			opts = esdriver.Options{OpenSearch: true, Transport: transport}
+		} else {
+			cfg.User = dataSource.GetUsername()
+			cfg.Password = config.Password
+			if err := util.SetupSSHDial(dataSource, &cfg, adapter, true); err != nil {
+				return nil, err
+			}
+		}
+
+		return esdriver.Open(ctx, cfg, opts)
+	}); err != nil {
 		return nil, err
 	}
-	d.Driver = inner
-	opened = true
 	return d, nil
 }
 
@@ -206,11 +196,8 @@ func signedTransport(ctx context.Context, config db.ConnectionConfig, dataSource
 	if dataSource.GetRegion() == "" {
 		return nil, errors.New("region is required for AWS IAM authentication")
 	}
-	awsCfg, err := util.GetAWSConnectionConfig(ctx, config)
+	awsCfg, err := util.LoadAWSConfig(ctx, config)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load AWS config")
-	}
-	if err := util.AssumeRoleIfNeeded(ctx, &awsCfg, config.ConnectionContext, dataSource.GetAwsCredential()); err != nil {
 		return nil, err
 	}
 	if _, err := awsCfg.Credentials.Retrieve(ctx); err != nil {
@@ -284,14 +271,9 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // request. A request that fails fails the call, so the results before it in the
 // same script are not answered either.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	var stmtResults []*omnidriver.Result
-	err := d.QueryEphemeral(ctx, func(session omnidriver.Session) error {
-		var queryErr error
-		stmtResults, queryErr = session.Query(ctx, statement, omnidriver.QueryOptions{
-			Explain:        queryContext.Explain,
-			MaxResultBytes: queryContext.MaximumSQLResultSize,
-		})
-		return queryErr
+	stmtResults, err := d.QueryEphemeralSession(ctx, statement, omnidriver.QueryOptions{
+		Explain:        queryContext.Explain,
+		MaxResultBytes: queryContext.MaximumSQLResultSize,
 	})
 	if err != nil {
 		return nil, err

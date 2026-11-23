@@ -15,7 +15,6 @@ import (
 
 	dorisdriver "github.com/bytebase/omni/doris/driver"
 	omnidriver "github.com/bytebase/omni/driver"
-	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -40,57 +39,22 @@ func newDriver() db.Driver {
 // Open maps the connection config onto the driver contract. It does not reach
 // the server: Ping does.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	opened := false
-	defer func() {
-		if !opened {
-			_ = d.Close(ctx)
-		}
-	}()
-
-	d.OmniAdapter = util.OmniAdapter{
+	if err := d.OpenWith(ctx, util.AdapterOptions{
 		WithInstanceMetadata: true,
 		NotFoundResource:     "database",
 		DatabaseName:         config.ConnectionContext.DatabaseName,
-	}
-
-	cfg, err := driverConfig(config, &d.OmniAdapter)
-	if err != nil {
+	}, func(adapter *util.OmniAdapter) (omnidriver.Driver, error) {
+		cfg, err := driverConfig(config, adapter)
+		if err != nil {
+			return nil, err
+		}
+		return dorisdriver.Open(ctx, cfg)
+	}); err != nil {
 		return nil, err
 	}
-	impl, err := dorisdriver.Open(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	d.Driver = impl
-	opened = true
 	return d, nil
 }
 
-// driverConfig resolves everything Bytebase knows about reaching the server into
-// the plain values the driver takes. The mapping is the MySQL family's: the same
-// host/port or unix socket, the same tunnel as a Dial, and the same TLS material
-// the old DSN registered with go-sql-driver.
 func driverConfig(config db.ConnectionConfig, adapter *util.OmniAdapter) (omnidriver.Config, error) {
-	ds := config.DataSource
-	cfg := omnidriver.Config{
-		Host:     ds.GetHost(),
-		Port:     ds.GetPort(),
-		Database: config.ConnectionContext.DatabaseName,
-		User:     ds.GetUsername(),
-		Password: config.Password,
-		// The driver prefixes a statement it reads as a query with
-		// "/*app=<name>*/", which is how Bytebase names its editor sessions.
-		ApplicationName: "bytebase",
-		EngineVersion:   config.ConnectionContext.EngineVersion,
-	}
-
-	if err := util.SetupSSHDial(ds, &cfg, adapter, false); err != nil {
-		return cfg, err
-	}
-	tlsFn, err := util.StaticTLSFunc(ds)
-	if err != nil {
-		return cfg, errors.Wrap(err, "sql: tls config error")
-	}
-	cfg.TLS = tlsFn
-	return cfg, nil
+	return util.MySQLFamilyDriverConfig(config, adapter)
 }

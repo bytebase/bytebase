@@ -54,7 +54,6 @@ import (
 
 	omnich "github.com/bytebase/omni/clickhouse/driver"
 	omnidriver "github.com/bytebase/omni/driver"
-	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -82,41 +81,29 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 	if err != nil {
 		return nil, err
 	}
-	d := &Driver{
-		OmniAdapter: util.OmniAdapter{WithInstanceMetadata: true},
-	}
-	opened := false
-	defer func() {
-		if !opened {
-			_ = d.Close(ctx)
+	d := &Driver{}
+	if err := d.OpenWith(ctx, util.AdapterOptions{WithInstanceMetadata: true}, func(adapter *util.OmniAdapter) (omnidriver.Driver, error) {
+		if err := util.SetupSSHDial(config.DataSource, &cfg, adapter, true); err != nil {
+			return nil, err
 		}
-	}()
-
-	if err := util.SetupSSHDial(config.DataSource, &cfg, &d.OmniAdapter, true); err != nil {
+		slog.Debug("Opening ClickHouse driver",
+			slog.String("addr", config.DataSource.GetHost()+":"+config.DataSource.GetPort()),
+			slog.String("environment", config.ConnectionContext.EnvironmentID),
+			slog.String("database", config.ConnectionContext.InstanceID),
+		)
+		return omnich.Open(ctx, cfg)
+	}); err != nil {
 		return nil, err
 	}
-
-	slog.Debug("Opening ClickHouse driver",
-		slog.String("addr", config.DataSource.GetHost()+":"+config.DataSource.GetPort()),
-		slog.String("environment", config.ConnectionContext.EnvironmentID),
-		slog.String("database", config.ConnectionContext.InstanceID),
-	)
-
-	impl, err := omnich.Open(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	d.Driver = impl
-	opened = true
 	return d, nil
 }
 
 // clickhouseConfig resolves everything Bytebase knows about reaching the server
 // into the plain values clickhouse/driver takes.
 func clickhouseConfig(dataSource *storepb.DataSource, password, database string) (omnidriver.Config, error) {
-	tlsFn, err := util.StaticTLSFunc(dataSource)
+	tlsFn, err := util.SQLStaticTLSFunc(dataSource)
 	if err != nil {
-		return omnidriver.Config{}, errors.Wrap(err, "sql: tls config error")
+		return omnidriver.Config{}, err
 	}
 	return omnidriver.Config{
 		Host:     dataSource.GetHost(),

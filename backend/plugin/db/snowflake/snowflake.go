@@ -27,12 +27,10 @@ import (
 	"errors"
 	"strconv"
 	"strings"
-	"time"
 
 	odriver "github.com/bytebase/omni/driver"
 	snowflakedriver "github.com/bytebase/omni/snowflake/driver"
 	snowflakeparser "github.com/bytebase/omni/snowflake/parser"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -109,15 +107,14 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 	if err != nil {
 		return nil, err
 	}
-	if len(results) == 0 {
-		return nil, nil
-	}
-
-	converted := make([]*v1pb.QueryResult, 0, len(results))
-	for _, result := range results {
-		converted = append(converted, toQueryResult(result, queryContext))
-	}
-	return converted, nil
+	return util.OmniResultsToQueryResultsWith(results, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
+		ClearExplainPlan:          queryContext.Explain,
+		ClearExplainPlanOnError:   true,
+		TypedExplainPlan:          true,
+		IncludePlanContent:        true,
+		FillZeroAffectedRows:      true,
+		FormatOutOfRangeTimestamp: util.FormatDefaultTimestamp,
+	}), nil
 }
 
 // isRecoverableQueryError reports whether err left the held Snowflake session
@@ -207,59 +204,6 @@ func parseSnowflakeErrorPrefix(msg string) (int, string, bool) {
 		return code, "", true
 	}
 	return 0, "", false
-}
-
-func toQueryResult(result *odriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
-	if result == nil {
-		return &v1pb.QueryResult{}
-	}
-	normalized := normalizeOutOfRangeTimestamps(result)
-	// Explain requests leave QueryPlan unset so SQLService stamps the requested
-	// format; user-written EXPLAIN statements map snowflake/analysis's lowercase
-	// format names ("text", "json") through db.TypedExplainPlan.
-	queryResult := util.OmniResultToQueryResultWith(normalized, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
-		ClearExplainPlan:   queryContext.Explain || normalized.Err != nil,
-		TypedExplainPlan:   true,
-		IncludePlanContent: true,
-	})
-	util.FillZeroAffectedRows(normalized, queryResult)
-	return queryResult
-}
-
-// normalizeOutOfRangeTimestamps converts Timestamp/TimestampTZ cells outside
-// google.protobuf.Timestamp's [0001-01-01, 9999-12-31] range into strings so
-// protobuf serialization never fails on extreme Snowflake dates.
-func normalizeOutOfRangeTimestamps(result *odriver.Result) *odriver.Result {
-	var cloned *odriver.Result
-	for i, row := range result.Rows {
-		var clonedRow []odriver.Value
-		for j, cell := range row {
-			if cell.Kind != odriver.Timestamp && cell.Kind != odriver.TimestampTZ {
-				continue
-			}
-			if timestamppb.New(cell.Time).CheckValid() == nil {
-				continue
-			}
-			if cloned == nil {
-				copyResult := *result
-				copyResult.Rows = append([][]odriver.Value(nil), result.Rows...)
-				cloned = &copyResult
-			}
-			if clonedRow == nil {
-				clonedRow = append([]odriver.Value(nil), row...)
-				cloned.Rows[i] = clonedRow
-			}
-			text := cell.Time.Format(time.RFC3339Nano)
-			if cell.Kind == odriver.Timestamp {
-				text = cell.Time.UTC().Format("2006-01-02 15:04:05.999999999")
-			}
-			clonedRow[j] = odriver.Value{Kind: odriver.String, String: text}
-		}
-	}
-	if cloned != nil {
-		return cloned
-	}
-	return result
 }
 
 // Execute executes a SQL script and returns the affected rows.

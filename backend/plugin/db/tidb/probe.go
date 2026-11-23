@@ -19,7 +19,7 @@ var (
 // Probe runs a live review rule's probe. A BATCH ... DRY RUN statement passes
 // Autocommit, because TiDB refuses it inside a transaction.
 func (d *Driver) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
-	return util.ProbeOmni(ctx, d.Driver.(omnidriver.Querier), pCtx, statement, util.OmniProbeOptions{
+	return d.ProbeOmni(ctx, pCtx, statement, util.OmniProbeOptions{
 		BeginStatement:           "START TRANSACTION",
 		RollbackStatement:        "ROLLBACK",
 		RollbackWithoutCancel:    true,
