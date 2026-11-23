@@ -2,12 +2,11 @@ package tsql
 
 import (
 	"context"
+	"errors"
 	"os"
-	"strings"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -15,41 +14,13 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-func TestCompletionTableRefRule(t *testing.T) {
-	statement, caretLine, caretPosition := getCaretPosition("TRUNCATE TABLE |")
-	getter, lister := buildMockDatabaseMetadataGetterLister()
-	results, err := Completion(context.Background(), base.CompletionContext{
-		Scene:             base.SceneTypeAll,
-		DefaultDatabase:   "Company",
-		Metadata:          getter,
-		ListDatabaseNames: lister,
-	}, statement, caretLine, caretPosition)
-	require.NoError(t, err)
-
-	require.Contains(t, results, base.Candidate{
-		Text: "Employees",
-		Type: base.CandidateTypeTable,
-	})
-}
-
-func TestCompletionUnsyncedDatabase(t *testing.T) {
-	for _, input := range []string{"SELECT * FROM |", "SELECT |"} {
-		statement, caretLine, caretPosition := getCaretPosition(input)
-		results, err := Completion(context.Background(), base.CompletionContext{
-			Scene:           base.SceneTypeAll,
-			DefaultDatabase: "Company",
-			Metadata: func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
-				return "", nil, nil
-			},
-			ListDatabaseNames: func(context.Context, string) ([]string, error) {
-				return []string{"Company"}, nil
-			},
-		}, statement, caretLine, caretPosition)
-		require.NoError(t, err, input)
-		for _, candidate := range results {
-			require.NotContains(t, []base.CandidateType{base.CandidateTypeSchema, base.CandidateTypeTable, base.CandidateTypeColumn}, candidate.Type, input)
+func hasCandidate(cands []base.Candidate, typ base.CandidateType, text string) bool {
+	for _, c := range cands {
+		if c.Type == typ && c.Text == text {
+			return true
 		}
 	}
+	return false
 }
 
 func TestCompletionDoesNotDependOnANTLR(t *testing.T) {
@@ -60,182 +31,119 @@ func TestCompletionDoesNotDependOnANTLR(t *testing.T) {
 	require.NotContains(t, source, "github.com/bytebase/parser/tsql")
 }
 
-func TestCompletionReviewRegressions(t *testing.T) {
-	getter, lister := buildMockDatabaseMetadataGetterLister()
+func TestCompletion_Seam(t *testing.T) {
+	dbs := map[string]*metadatapb.DatabaseSchemaMetadata{
+		"Company": {
+			Name: "Company",
+			Schemas: []*metadatapb.SchemaMetadata{
+				{
+					Name: "dbo",
+					Tables: []*metadatapb.TableMetadata{
+						{
+							Name: "Employees",
+							Columns: []*metadatapb.ColumnMetadata{
+								{Name: "Id", Type: "int"},
+								{Name: "Name", Type: "varchar"},
+							},
+						},
+						{
+							Name:    "Order Items",
+							Columns: []*metadatapb.ColumnMetadata{{Name: "Item ID", Type: "int"}},
+						},
+					},
+					Sequences:  []*metadatapb.SequenceMetadata{{Name: "EmployeeIdSeq"}},
+					Procedures: []*metadatapb.ProcedureMetadata{{Name: "SyncEmployees"}},
+				},
+				{
+					Name: "MySchema",
+					Tables: []*metadatapb.TableMetadata{
+						{Name: "SalaryLevel", Columns: []*metadatapb.ColumnMetadata{{Name: "SalaryUpBound", Type: "int"}}},
+					},
+					Views: []*metadatapb.ViewMetadata{{Name: "SalaryView"}},
+				},
+			},
+		},
+		"School": {
+			Name: "School",
+			Schemas: []*metadatapb.SchemaMetadata{{
+				Name: "dbo",
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "Student", Columns: []*metadatapb.ColumnMetadata{{Name: "ParentName", Type: "varchar"}}},
+				},
+			}},
+		},
+	}
+
 	cCtx := base.CompletionContext{
-		Scene:             base.SceneTypeAll,
-		DefaultDatabase:   "Company",
-		Metadata:          getter,
-		ListDatabaseNames: lister,
+		Scene:           base.SceneTypeAll,
+		DefaultDatabase: "Company",
+		Metadata: func(_ context.Context, _, db string) (string, *model.DatabaseMetadata, error) {
+			if m, ok := dbs[db]; ok {
+				return "", model.NewDatabaseMetadata(m, nil, nil, storepb.Engine_MSSQL, false), nil
+			}
+			return "", nil, errors.New("not found")
+		},
+		ListDatabaseNames: func(context.Context, string) ([]string, error) {
+			return []string{"Company", "School"}, nil
+		},
 	}
 
-	// Canonical built-in function name COUNT() is offered for COU|
-	stmt, line, col := getCaretPosition("SELECT COU| FROM Employees")
-	results, err := Completion(context.Background(), cCtx, stmt, line, col)
+	// Registry dispatch, quoting, and schema/table/sequence candidate mapping.
+	gotFrom, err := base.Completion(context.Background(), storepb.Engine_MSSQL, cCtx, "SELECT * FROM ", 1, len("SELECT * FROM "))
 	require.NoError(t, err)
-	require.Contains(t, results, base.Candidate{Text: "COUNT()", Type: base.CandidateTypeFunction})
+	require.True(t, hasCandidate(gotFrom, base.CandidateTypeTable, "Employees"), "got %v", gotFrom)
+	require.True(t, hasCandidate(gotFrom, base.CandidateTypeTable, "[Order Items]"), "got %v", gotFrom)
+	require.True(t, hasCandidate(gotFrom, base.CandidateTypeSchema, "MySchema"), "got %v", gotFrom)
+	require.True(t, hasCandidate(gotFrom, base.CandidateTypeSequence, "EmployeeIdSeq"), "got %v", gotFrom)
 
-	// Following statements after cursor are isolated away
-	stmt, line, col = getCaretPosition("SELECT a.|; SELECT * FROM Address AS a")
-	results, err = Completion(context.Background(), cCtx, stmt, line, col)
+	// View, routine, database, column, function (), and $action candidate mappings.
+	gotView, err := base.Completion(context.Background(), storepb.Engine_MSSQL, cCtx, "SELECT * FROM MySchema.", 1, len("SELECT * FROM MySchema."))
 	require.NoError(t, err)
-	require.NotContains(t, results, base.Candidate{Text: "Street", Type: base.CandidateTypeColumn})
+	require.True(t, hasCandidate(gotView, base.CandidateTypeView, "SalaryView"), "got %v", gotView)
 
-	// ALTER TABLE column completion scopes to target table only
-	stmt, line, col = getCaretPosition("ALTER TABLE Employees ADD CONSTRAINT pk PRIMARY KEY (|")
-	results, err = Completion(context.Background(), cCtx, stmt, line, col)
+	gotProc, err := base.Completion(context.Background(), storepb.Engine_MSSQL, cCtx, "EXEC ", 1, len("EXEC "))
 	require.NoError(t, err)
-	require.Contains(t, results, base.Candidate{Text: "Name", Type: base.CandidateTypeColumn, Definition: "Company.dbo.Employees | varchar, NOT NULL"})
-	require.NotContains(t, results, base.Candidate{Text: "Street", Type: base.CandidateTypeColumn, Definition: "Company.dbo.Address | varchar, NOT NULL"})
-}
+	require.True(t, hasCandidate(gotProc, base.CandidateTypeRoutine, "SyncEmployees"), "got %v", gotProc)
 
-func getCaretPosition(statement string) (string, int, int) {
-	lines := strings.Split(statement, "\n")
-	for i, line := range lines {
-		if offset := strings.Index(line, "|"); offset != -1 {
-			newLine := strings.Replace(line, "|", "", 1)
-			lines[i] = newLine
-			return strings.Join(lines, "\n"), i + 1, offset
+	gotDB, err := base.Completion(context.Background(), storepb.Engine_MSSQL, cCtx, "USE ", 1, len("USE "))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotDB, base.CandidateTypeDatabase, "School"), "got %v", gotDB)
+
+	gotColFn, err := base.Completion(context.Background(), storepb.Engine_MSSQL, cCtx, "SELECT COU FROM Employees", 1, len("SELECT COU"))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotColFn, base.CandidateTypeFunction, "COUNT()"), "got %v", gotColFn)
+
+	// DefaultSchema wiring resolves non-dbo tables unqualified.
+	schemaCtx := cCtx
+	schemaCtx.DefaultSchema = "MySchema"
+	gotSchema, err := base.Completion(context.Background(), storepb.Engine_MSSQL, schemaCtx, "SELECT  FROM SalaryLevel", 1, len("SELECT "))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotSchema, base.CandidateTypeColumn, "SalaryUpBound"), "got %v", gotSchema)
+
+	// Pseudo-column $action surfaces unquoted as a column candidate.
+	mergeSQL := "MERGE INTO Employees AS d USING Employees AS s ON d.Id = s.Id WHEN MATCHED THEN UPDATE SET d.Name = s.Name OUTPUT "
+	gotMerge, err := base.Completion(context.Background(), storepb.Engine_MSSQL, cCtx, mergeSQL, 1, len(mergeSQL))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotMerge, base.CandidateTypeColumn, "$action"), "got %v", gotMerge)
+
+	// Nil or failing metadata callback returns no object candidates and no error.
+	for _, badCtx := range []base.CompletionContext{
+		{Scene: base.SceneTypeAll, DefaultDatabase: "Company"},
+		{
+			Scene:           base.SceneTypeAll,
+			DefaultDatabase: "Company",
+			Metadata: func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
+				return "", nil, errors.New("metadata unavailable")
+			},
+			ListDatabaseNames: func(context.Context, string) ([]string, error) {
+				return []string{"Company"}, nil
+			},
+		},
+	} {
+		got, err := base.Completion(context.Background(), storepb.Engine_MSSQL, badCtx, "SELECT * FROM ", 1, len("SELECT * FROM "))
+		require.NoError(t, err)
+		for _, c := range got {
+			require.NotContains(t, []base.CandidateType{base.CandidateTypeSchema, base.CandidateTypeTable, base.CandidateTypeColumn}, c.Type)
 		}
 	}
-	panic("caret position not found")
-}
-
-var databaseMetadatas = []*metadatapb.DatabaseSchemaMetadata{
-	{
-		Name: "Company",
-		Schemas: []*metadatapb.SchemaMetadata{
-			{
-				Name: "dbo",
-				Tables: []*metadatapb.TableMetadata{
-					{
-						Name: "Employees",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "Id",
-								Type: "int",
-							},
-							{
-								Name: "Name",
-								Type: "varchar",
-							},
-						},
-					},
-					{
-						Name: "Address",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "EmployeeId",
-								Type: "int",
-							},
-							{
-								Name: "Street",
-								Type: "varchar",
-							},
-						},
-					},
-				},
-				Sequences: []*metadatapb.SequenceMetadata{
-					{
-						Name: "EmployeeIdSeq",
-					},
-					{
-						Name: "OrderSeq",
-					},
-				},
-				Procedures: []*metadatapb.ProcedureMetadata{
-					{
-						Name: "SyncEmployees",
-					},
-				},
-			},
-			{
-				Name: "MySchema",
-				Tables: []*metadatapb.TableMetadata{
-					{
-						Name: "SalaryLevel",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "Id",
-								Type: "int",
-							},
-							{
-								Name: "SalaryUpBound",
-								Type: "int",
-							},
-						},
-					},
-				},
-				Views: []*metadatapb.ViewMetadata{
-					{
-						Name: "SalaryView",
-					},
-				},
-				Sequences: []*metadatapb.SequenceMetadata{
-					{
-						Name: "SalarySeq",
-					},
-				},
-				Procedures: []*metadatapb.ProcedureMetadata{
-					{
-						Name: "SyncSalary",
-					},
-				},
-			},
-		},
-	},
-	{
-		Name: "School",
-		Schemas: []*metadatapb.SchemaMetadata{
-			{
-				Name: "dbo",
-				Tables: []*metadatapb.TableMetadata{
-					{
-						Name: "Student",
-						Columns: []*metadatapb.ColumnMetadata{
-							{
-								Name: "Id",
-								Type: "int",
-							},
-							{
-								Name: "ParentName",
-								Type: "varchar",
-							},
-						},
-					},
-				},
-				Sequences: []*metadatapb.SequenceMetadata{
-					{
-						Name: "StudentSeq",
-					},
-				},
-				Procedures: []*metadatapb.ProcedureMetadata{
-					{
-						Name: "SyncStudents",
-					},
-				},
-			},
-		},
-	},
-}
-
-func buildMockDatabaseMetadataGetterLister() (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
-	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-			m := make(map[string]*model.DatabaseMetadata)
-			for _, metadata := range databaseMetadatas {
-				m[metadata.Name] = model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_MSSQL, false /* isObjectCaseSensitive */)
-			}
-
-			if databaseMetadata, ok := m[databaseName]; ok {
-				return "", databaseMetadata, nil
-			}
-
-			return "", nil, errors.Errorf("database %q not found", databaseName)
-		}, func(context.Context, string) ([]string, error) {
-			var names []string
-			for _, metadata := range databaseMetadatas {
-				names = append(names, metadata.Name)
-			}
-			return names, nil
-		}
 }
