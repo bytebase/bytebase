@@ -54,7 +54,10 @@ import {
   SQLReviewStandardRulesSection,
   useWorkspaceStandardRules,
 } from "./SQLReviewStandardRulesSection";
-import { SQLReviewVersionSwitch } from "./SQLReviewVersionSwitch";
+import {
+  SQLReviewVersionBadge,
+  SQLReviewVersionSwitch,
+} from "./SQLReviewVersionSwitch";
 
 // The resources a policy is attached to, by kind, on one line: the
 // environment and project names carry their own labels.
@@ -375,25 +378,27 @@ export function SQLReviewPage() {
     },
     [sqlReviewStore, t]
   );
+  const versionBadge = isDev() ? <SQLReviewVersionBadge /> : undefined;
+  const versionAction = isDev() ? <SQLReviewVersionSwitch /> : undefined;
 
   return (
     // The page fills the height so the footer sits at the bottom even when the
     // content is short.
     <WorkspacePageLayout className="min-h-full gap-y-4">
-      {isDev() && <SQLReviewVersionSwitch />}
       {sqlReviewV2 ? (
         <>
-          <SQLReviewStandardRulesSection standardRules={standardRules} />
+          <SQLReviewStandardRulesSection
+            standardRules={standardRules}
+            titleSuffix={versionBadge}
+            action={versionAction}
+          />
           <SQLReviewAIReviewSection
             aiReview={aiReview}
             policy={aiReviewPolicy}
           />
         </>
       ) : (
-        // One content width for both sections, centered: on a wide screen the
-        // short policy list and the AI review form share both edges instead of
-        // spreading across it.
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-y-8">
+        <div className="flex w-full flex-col gap-y-8">
           <FormSection
             description={
               <>
@@ -403,7 +408,16 @@ export function SQLReviewPage() {
             }
             layout="single-column"
             padding="none"
-            title={t("sql-review.policies")}
+            title={
+              versionBadge ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <span>{t("sql-review.policies")}</span> {versionBadge}
+                </div>
+              ) : (
+                t("sql-review.policies")
+              )
+            }
+            action={versionAction}
           >
             <div className="flex flex-col gap-y-4">
               <WorkspacePageToolbar>
@@ -444,12 +458,7 @@ export function SQLReviewPage() {
 
       {isDirty && (
         <StickyActionFooter
-          // Beside V1's policies the footer's actions line up with the
-          // centered content above them.
           className="-mb-4 mt-auto"
-          contentClassName={
-            sqlReviewV2 ? undefined : "mx-auto w-full max-w-6xl"
-          }
           contentPadding={false}
           left={
             <Button

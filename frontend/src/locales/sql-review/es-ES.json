@@ -886,8 +886,7 @@
     "string-array-required": "Agregue al menos un valor para {{rule}}."
   },
   "version-switch": {
-    "description": "Solo en compilaciones dev. El servidor ejecuta V1 en un proyecto con todas sus reglas estándar desactivadas, y V2 en los demás. Este navegador muestra las páginas de la versión que elijas.",
-    "self": "Versión de la revisión SQL",
+    "description": "Esta etiqueta muestra la versión de la interfaz seleccionada en el navegador. Las reglas estándar efectivas de cada proyecto determinan qué versión de revisión se ejecuta.",
     "to-v1": {
       "confirm": "Cambiar a V1",
       "description": "Esto desactiva todas las reglas estándar del espacio de trabajo, así que la comprobación del plan ejecuta la revisión SQL V1. Los proyectos que personalizan sus reglas estándar las conservan.",
@@ -897,6 +896,8 @@
       "confirm": "Cambiar a V2",
       "description": "Esto activa todas las reglas estándar del espacio de trabajo, así que la revisión de reglas estándar sustituye a la revisión SQL V1.",
       "title": "¿Cambiar a la revisión SQL V2?"
-    }
+    },
+    "v1": "Revisión SQL V1",
+    "v2": "Revisión SQL V2"
   }
 }

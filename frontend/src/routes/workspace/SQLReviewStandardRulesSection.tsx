@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StandardRuleSwitches } from "@/components/sql-review/StandardRuleSwitches";
 import {
@@ -118,8 +118,12 @@ export function useWorkspaceStandardRules(
 
 export function SQLReviewStandardRulesSection({
   standardRules,
+  titleSuffix,
+  action,
 }: {
   standardRules: WorkspaceStandardRules;
+  titleSuffix?: ReactNode;
+  action?: ReactNode;
 }) {
   const { t } = useTranslation();
   const workspace = useWorkspaceResourceName();
@@ -128,8 +132,17 @@ export function SQLReviewStandardRulesSection({
     <FormSection
       layout="single-column"
       padding="none"
-      title={t("sql-review.standard-rules.self")}
+      title={
+        titleSuffix !== undefined ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <span>{t("sql-review.standard-rules.self")}</span> {titleSuffix}
+          </div>
+        ) : (
+          t("sql-review.standard-rules.self")
+        )
+      }
       description={t("sql-review.standard-rules.description")}
+      action={action}
     >
       {standardRules.readFailed && (
         <Alert

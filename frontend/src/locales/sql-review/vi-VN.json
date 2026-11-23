@@ -886,8 +886,7 @@
     "string-array-required": "Thêm ít nhất một giá trị cho {{rule}}."
   },
   "version-switch": {
-    "description": "Chỉ dành cho bản dev. Máy chủ chạy V1 cho dự án tắt toàn bộ quy tắc tiêu chuẩn, và chạy V2 cho các dự án còn lại. Trình duyệt này hiển thị các trang của phiên bản bạn chọn.",
-    "self": "Phiên bản đánh giá SQL",
+    "description": "Nhãn này hiển thị phiên bản giao diện được chọn trong trình duyệt. Các quy tắc tiêu chuẩn có hiệu lực của từng dự án quyết định phiên bản đánh giá được chạy.",
     "to-v1": {
       "confirm": "Chuyển sang V1",
       "description": "Thao tác này tắt mọi quy tắc tiêu chuẩn của workspace, nên kiểm tra kế hoạch sẽ chạy đánh giá SQL V1. Các dự án tùy chỉnh quy tắc tiêu chuẩn vẫn giữ nguyên.",
@@ -897,6 +896,8 @@
       "confirm": "Chuyển sang V2",
       "description": "Thao tác này bật mọi quy tắc tiêu chuẩn của workspace, nên đánh giá theo quy tắc tiêu chuẩn sẽ thay thế đánh giá SQL V1.",
       "title": "Chuyển sang đánh giá SQL V2?"
-    }
+    },
+    "v1": "Đánh giá SQL V1",
+    "v2": "Đánh giá SQL V2"
   }
 }
