@@ -1,6 +1,7 @@
 package base
 
 import (
+	"errors"
 	"strings"
 
 	omnianalysis "github.com/bytebase/omni/analysis"
@@ -93,6 +94,23 @@ func CollectUniqueStatementTypes(asts []AST, classify func(AST) (storepb.Stateme
 		sqlTypes = append(sqlTypes, sqlType)
 	}
 	return sqlTypes, nil
+}
+
+// CollectOmniStatementTypes extracts each engine's omni AST node via getNode,
+// returning typeErr on mismatch, and collects the unique mapped StatementTypes.
+func CollectOmniStatementTypes[N any](
+	asts []AST,
+	getNode func(AST) (N, bool),
+	typeErr string,
+	classify func(N) omnianalysis.StatementType,
+) ([]storepb.StatementType, error) {
+	return CollectUniqueStatementTypes(asts, func(a AST) (storepb.StatementType, error) {
+		node, ok := getNode(a)
+		if !ok {
+			return 0, errors.New(typeErr)
+		}
+		return OmniStatementType(classify(node)), nil
+	})
 }
 
 // CollectStatementTypesWithPosition returns statement types paired with 1-based end lines and SQL text.

@@ -43,3 +43,39 @@ func TestOmniStatementTypesFiltersUnspecified(t *testing.T) {
 
 	require.Nil(t, OmniStatementTypes([]omnianalysis.StatementType{omnianalysis.StatementTypeUnspecified}))
 }
+
+type stubStatementAST struct {
+	kind omnianalysis.StatementType
+}
+
+func (*stubStatementAST) ASTStartPosition() *storepb.Position { return nil }
+
+func TestCollectOmniStatementTypes(t *testing.T) {
+	getNode := func(a AST) (omnianalysis.StatementType, bool) {
+		s, ok := a.(*stubStatementAST)
+		if !ok || s == nil {
+			return 0, false
+		}
+		return s.kind, true
+	}
+	classify := func(k omnianalysis.StatementType) omnianalysis.StatementType { return k }
+
+	got, err := CollectOmniStatementTypes(
+		[]AST{
+			&stubStatementAST{kind: omnianalysis.CreateTable},
+			&stubStatementAST{kind: omnianalysis.Insert},
+			&stubStatementAST{kind: omnianalysis.CreateTable},
+		},
+		getNode,
+		"expected stub AST",
+		classify,
+	)
+	require.NoError(t, err)
+	require.ElementsMatch(t, []storepb.StatementType{
+		storepb.StatementType_CREATE_TABLE,
+		storepb.StatementType_INSERT,
+	}, got)
+
+	_, err = CollectOmniStatementTypes([]AST{nil}, getNode, "expected stub AST", classify)
+	require.EqualError(t, err, "expected stub AST")
+}

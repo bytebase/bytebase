@@ -17,7 +17,7 @@ func init() {
 // Uses best-effort parsing so that valid statements are returned even when other
 // statements in the input have syntax errors (e.g. user is mid-typing).
 func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
-	stmts, _ := ParseMongoShellBestEffort(statement)
+	stmts, _ := parseMongoShellBestEffort(statement)
 	if len(stmts) == 0 {
 		return nil, nil
 	}

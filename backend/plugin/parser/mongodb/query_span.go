@@ -16,12 +16,12 @@ func init() {
 // It classifies the statement type and populates PredicatePaths from
 // predicate fields extracted by masking analysis.
 func GetQuerySpan(_ context.Context, _ base.GetQuerySpanContext, stmt base.Statement, _ string, _ string, _ bool) (*base.QuerySpan, error) {
-	queryType := GetQueryType(stmt.Text)
+	queryType := getQueryType(stmt.Text)
 	span := &base.QuerySpan{
 		Type: queryType,
 	}
 
-	analysis, err := AnalyzeMaskingStatement(stmt.Text)
+	analysis, err := analyzeMaskingStatement(stmt.Text)
 	if err != nil {
 		return span, err
 	}

@@ -1,7 +1,6 @@
 package redshift
 
 import (
-	omniredshift "github.com/bytebase/omni/redshift"
 	"github.com/bytebase/omni/redshift/ast"
 	omniredshiftparser "github.com/bytebase/omni/redshift/parser"
 
@@ -24,11 +23,6 @@ func (a *AST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
-// ParseRedshift parses SQL using omni's parser.
-func ParseRedshift(sql string) ([]omniredshift.Statement, error) {
-	return omniredshift.Parse(sql)
-}
-
 // GetNode extracts the omni AST node from a base.AST interface.
 func GetNode(a base.AST) (ast.Node, bool) {
 	if a == nil {
@@ -48,8 +42,4 @@ func convertError(err error, stmt base.Statement) error {
 			return base.FormatLineSyntaxError(pos, pe.Message)
 		},
 	)
-}
-
-func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
-	return base.ByteOffsetToRunePosition(sql, byteOffset)
 }

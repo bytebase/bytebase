@@ -28,7 +28,7 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	span := spans[0]
 	require.Equal(t, base.Select, span.Type)
 	require.NotNil(t, span.MongoDBAnalysis)
-	require.Equal(t, MaskableAPIFindOne, span.MongoDBAnalysis.API)
+	require.Equal(t, base.MongoDBMaskableAPIFindOne, span.MongoDBAnalysis.API)
 	require.Contains(t, span.PredicatePaths, "contact.phone")
 	pathStr, err := span.PredicatePaths["contact.phone"].String()
 	require.NoError(t, err)

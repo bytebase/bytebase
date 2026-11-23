@@ -224,7 +224,7 @@ func renderPriorBackupFinding(
 	case v1review.PriorBackupMixedDDLAndDML:
 		pos := defaultPos
 		if mixedLine != nil {
-			pos = base.ConvertANTLRLineToPosition(mixedLine(f.Statement))
+			pos = base.LinePosition(mixedLine(f.Statement))
 		}
 		return code.BuiltinPriorBackupCheck, "Prior backup cannot deal with mixed DDL and DML statements", pos, true
 	case v1review.PriorBackupDDLInBatch:

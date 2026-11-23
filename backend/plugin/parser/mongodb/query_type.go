@@ -6,9 +6,9 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// GetQueryType parses a MongoDB shell statement and returns its query type.
+// getQueryType parses a MongoDB shell statement and returns its query type.
 // Parse errors, empty input, and multi-statement scripts fall back to base.DML.
-func GetQueryType(statement string) base.QueryType {
+func getQueryType(statement string) base.QueryType {
 	qt, _ := analysis.ClassifyStatement(statement)
 	return base.OmniQueryType(qt)
 }

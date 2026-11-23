@@ -8,7 +8,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // CheckSDLIntegrity performs comprehensive integrity checks across SDL files.
@@ -56,7 +56,7 @@ func sdlFileLine(files map[string]string, path string, start int) int {
 	if start < 0 {
 		return 1
 	}
-	return int(pgparser.ByteOffsetToRunePosition(files[path], start).Line)
+	return int(base.ByteOffsetToRunePosition(files[path], start).Line)
 }
 
 func sdlIntegrityAdvice(files map[string]string, path string, f pganalysis.SDLFinding) *storepb.Advice {

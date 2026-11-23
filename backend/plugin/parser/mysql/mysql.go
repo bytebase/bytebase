@@ -8,19 +8,13 @@ import (
 )
 
 func init() {
-	base.RegisterParseStatementsFunc(storepb.Engine_MYSQL, parseMySQLStatements)
+	base.RegisterParseStatementsFunc(storepb.Engine_MYSQL, parseStatements)
 	base.RegisterGetStatementTypes(storepb.Engine_MYSQL, GetStatementTypes)
-}
-
-// parseMySQLStatements is the ParseStatementsFunc for MySQL.
-// Returns []ParsedStatement with both text and AST populated.
-func parseMySQLStatements(statement string) ([]base.ParsedStatement, error) {
-	return parseStatements(statement)
 }
 
 func parseStatements(statement string) ([]base.ParsedStatement, error) {
 	return base.ParseNonEmptyMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
-		list, err := ParseMySQL(stmt.Text)
+		list, err := mysqlomniparser.Parse(stmt.Text)
 		if err != nil {
 			return nil, convertError(err, stmt)
 		}

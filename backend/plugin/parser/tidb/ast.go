@@ -15,7 +15,7 @@ func parseTiDBStatements(statement string) ([]base.ParsedStatement, error) {
 		if stmt.Empty {
 			return nil, nil
 		}
-		list, err := ParseTiDB(stmt.Text)
+		list, err := omniparser.Parse(stmt.Text)
 		if err != nil {
 			return nil, convertParseError(err, stmt)
 		}
@@ -53,11 +53,6 @@ type AST struct {
 // ASTStartPosition implements base.AST.
 func (a *AST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
-}
-
-// ParseTiDB parses SQL using omni/tidb's parser and returns an ast.List.
-func ParseTiDB(sql string) (*ast.List, error) {
-	return omniparser.Parse(sql)
 }
 
 // GetNode extracts the omni AST node from a base.AST interface.

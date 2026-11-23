@@ -27,7 +27,7 @@ func TestGetStatementTypesSeam(t *testing.T) {
 		storepb.StatementType_EXECUTE,
 	}, got)
 
-	withPos, err := GetStatementTypesWithPosition(base.ExtractASTs(stmts))
+	withPos, err := getStatementTypesWithPosition(base.ExtractASTs(stmts))
 	require.NoError(t, err)
 	require.Len(t, withPos, 4)
 	require.Equal(t, 1, withPos[0].Line)

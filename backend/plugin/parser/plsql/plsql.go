@@ -21,7 +21,7 @@ func init() {
 // Returns []ParsedStatement with both text and AST populated.
 func parsePLSQLStatements(statement string) ([]base.ParsedStatement, error) {
 	return base.ParseNonEmptyMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
-		list, err := ParsePLSQL(stmt.Text)
+		list, err := analysis.Parse(stmt.Text)
 		if err != nil {
 			return nil, convertError(err, stmt)
 		}

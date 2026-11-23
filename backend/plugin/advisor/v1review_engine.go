@@ -234,7 +234,7 @@ func (e *V1Engine[N]) absLine(stmt V1Stmt[N], byteOffset int) int {
 }
 
 func (*V1Engine[N]) stmtPos(stmt V1Stmt[N], line int32) *storepb.Position {
-	return base.ConvertANTLRLineToPosition(stmt.BaseLine + int(line))
+	return base.LinePosition(stmt.BaseLine + int(line))
 }
 
 // FirstTokenLine returns the 1-based absolute line of the first non-whitespace rune in stmt.Text.
@@ -291,9 +291,9 @@ func (e *V1Engine[N]) PosContentEnd(stmt V1Stmt[N], _ v1review.Finding) *storepb
 func (e *V1Engine[N]) PosFinding(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	if e.tidbQuirks {
 		if f.Start == 0 && f.End == 0 {
-			return base.ConvertANTLRLineToPosition(e.FirstTokenLine(stmt))
+			return base.LinePosition(e.FirstTokenLine(stmt))
 		}
-		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
+		return base.LinePosition(e.absLine(stmt, f.Start))
 	}
 	return e.stmtPos(stmt, e.findingLine(stmt.Text, f))
 }
@@ -338,14 +338,14 @@ func (*V1Engine[N]) PosNil(V1Stmt[N], v1review.Finding) *storepb.Position {
 
 func (e *V1Engine[N]) posAbsOrFinding(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	if e.tidbQuirks {
-		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
+		return base.LinePosition(e.absLine(stmt, f.Start))
 	}
 	return e.stmtPos(stmt, e.findingLine(stmt.Text, f))
 }
 
 func (e *V1Engine[N]) posStatementAbsOrStmt(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	if e.tidbQuirks {
-		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
+		return base.LinePosition(e.absLine(stmt, f.Start))
 	}
 	return e.PosStatement(stmt, f)
 }
@@ -359,7 +359,7 @@ func (e *V1Engine[N]) posFindingOrTiDBFirstToken(stmt V1Stmt[N], f v1review.Find
 
 func (e *V1Engine[N]) posBaseLineTwice(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	if e.tidbQuirks {
-		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
+		return base.LinePosition(e.absLine(stmt, f.Start))
 	}
 	p := e.stmtPos(stmt, e.findingLine(stmt.Text, f))
 	p.Line += int32(stmt.BaseLine)
@@ -370,10 +370,10 @@ func (e *V1Engine[N]) posAllowlist(stmt V1Stmt[N], f v1review.Finding) *storepb.
 	if e.tidbQuirks {
 		if e.createTableLocStart != nil {
 			if start, ok := e.createTableLocStart(stmt.Node); ok && f.Start != max(start, 0) {
-				return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
+				return base.LinePosition(e.absLine(stmt, f.Start))
 			}
 		}
-		return base.ConvertANTLRLineToPosition(e.FirstTokenLine(stmt))
+		return base.LinePosition(e.FirstTokenLine(stmt))
 	}
 	return e.posBaseLineTwice(stmt, f)
 }
@@ -381,9 +381,9 @@ func (e *V1Engine[N]) posAllowlist(stmt V1Stmt[N], f v1review.Finding) *storepb.
 func (e *V1Engine[N]) posAlterFirstToken(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	if e.tidbQuirks {
 		if e.isAlterTable != nil && e.isAlterTable(stmt.Node) {
-			return base.ConvertANTLRLineToPosition(e.FirstTokenLine(stmt))
+			return base.LinePosition(e.FirstTokenLine(stmt))
 		}
-		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
+		return base.LinePosition(e.absLine(stmt, f.Start))
 	}
 	return e.PosFinding(stmt, f)
 }

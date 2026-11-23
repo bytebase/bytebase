@@ -102,7 +102,7 @@ func init() {
 				return fmt.Sprintf("Failed to dry run statement at line %d: %v", stmt.BaseLine+1, f.Value)
 			},
 			Pos: func(stmt advisor.V1Stmt[ast.Node], _ v1review.Finding) *storepb.Position {
-				return base.ConvertANTLRLineToPosition(stmt.BaseLine + 1)
+				return base.LinePosition(stmt.BaseLine + 1)
 			},
 		}),
 		storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS: e.WhereDisallowFuncAndCalc(func(checkCtx advisor.Context) func([]ast.Node) []v1review.Finding {

@@ -1,6 +1,8 @@
 package redshift
 
 import (
+	omniredshift "github.com/bytebase/omni/redshift"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -17,7 +19,7 @@ func parseRedshiftStatements(statement string) ([]base.ParsedStatement, error) {
 		if stmt.Empty {
 			return nil, nil
 		}
-		parsed, err := ParseRedshift(stmt.Text)
+		parsed, err := omniredshift.Parse(stmt.Text)
 		if err != nil {
 			return nil, convertError(err, stmt)
 		}

@@ -22,7 +22,7 @@ func GetQuerySpan(_ context.Context, _ base.GetQuerySpanContext, stmt base.State
 }
 
 func getQuerySpanImpl(statement string) (*base.QuerySpan, error) {
-	parseResults, err := ParseCosmosDB(statement)
+	parseResults, err := parseCosmosDB(statement)
 	if err != nil {
 		return nil, err
 	}

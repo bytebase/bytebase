@@ -3,6 +3,7 @@ package tidb
 import (
 	"testing"
 
+	omniparser "github.com/bytebase/omni/tidb/parser"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -28,7 +29,7 @@ func TestGetNode(t *testing.T) {
 	a.False(ok)
 
 	// AST with non-nil node round-trips.
-	list, err := ParseTiDB("SELECT 1")
+	list, err := omniparser.Parse("SELECT 1")
 	a.NoError(err)
 	a.NotNil(list)
 	a.NotEmpty(list.Items)

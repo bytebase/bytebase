@@ -31,6 +31,6 @@ func TestGetQueryTypeSeam(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		require.Equal(t, tc.want, GetQueryType(tc.statement), tc.statement)
+		require.Equal(t, tc.want, getQueryType(tc.statement), tc.statement)
 	}
 }

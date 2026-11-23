@@ -10,19 +10,19 @@ import (
 )
 
 func TestParseAndValidateQuerySeam(t *testing.T) {
-	// ParseCosmosDB populates Node, Text, and 1-based StartPosition.
-	res, err := ParseCosmosDB("\n  SELECT c.id FROM users c WHERE c.age > 18")
+	// parseCosmosDB populates Node, Text, and 1-based StartPosition.
+	res, err := parseCosmosDB("\n  SELECT c.id FROM users c WHERE c.age > 18")
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	require.NotNil(t, res[0].Node)
 	require.Equal(t, int32(2), res[0].StartPosition.Line)
 	require.Equal(t, int32(3), res[0].StartPosition.Column)
 
-	empty, err := ParseCosmosDB("   \n\t  ")
+	empty, err := parseCosmosDB("   \n\t  ")
 	require.NoError(t, err)
 	require.Empty(t, empty)
 
-	_, err = ParseCosmosDB("SELCT * FRM c")
+	_, err = parseCosmosDB("SELCT * FRM c")
 	require.Error(t, err)
 
 	// Registry dispatch for ValidateSQLForEditor.

@@ -559,7 +559,7 @@ func buildMySQLFamilyAdvisors[N any](
 				if f.Code != v1review.TablePrimaryKeyMissing {
 					return 0, "", nil, false
 				}
-				pos := base.ConvertANTLRLineToPosition(0)
+				pos := base.LinePosition(0)
 				if f.Statement >= 0 {
 					pos = e.posAbsOrFinding(stmts[f.Statement], f)
 				}

@@ -5,8 +5,8 @@
 Defines which code under `backend/plugin` belongs in omni, the contracts that keep the two
 repositories apart, and the boundary established across all four migration phases. Originally
 proposed on `main` at `fb411c9453` (~195k non-test Go lines under `backend/plugin`); "today" in
-this document reflects the completed migration (omni pin `40325183fbc5`, ~27.4k non-test Go lines
-across 324 files).
+this document reflects the completed migration (omni pin `b702bbc8c871`, ~27.1k non-test Go lines
+across 322 files).
 
 ## Problem
 
@@ -37,7 +37,7 @@ lines of engine-specific code under `backend/plugin` (advisor 58k, parser 63k, s
   defaults) slip past Bytebase CI.
 
 All four phases of this migration have now landed, shrinking `backend/plugin/{advisor,parser,schema,db}`
-from ~195k to ~27.4k non-test Go lines of thin adapters and product glue. This document records
+from ~195k to ~27.1k non-test Go lines of thin adapters and product glue. This document records
 the boundary as implemented and the conventions that keep it clean.
 
 ## Where the boundary stands today
@@ -45,8 +45,8 @@ the boundary as implemented and the conventions that keep it clean.
 Non-test Go footprint under `backend/plugin`:
 
 - `backend/plugin/advisor`: 24 files, 5,874 lines (down from ~58k)
-- `backend/plugin/parser`: 208 files, 10,059 lines (down from ~63k; includes `parser/base` at
-  3,366 lines across 24 files plus 22 engine adapter packages and `parser/standard`)
+- `backend/plugin/parser`: 206 files, 9,792 lines (down from ~63k; includes `parser/base` at
+  3,382 lines across 24 files plus 22 engine adapter packages and `parser/standard`)
 - `backend/plugin/schema`: 35 files, 3,995 lines (down from ~35k; includes
   `schema/internal/omnicatalog` at 1,278 lines across 6 files plus 10 engine adapter packages)
 - `backend/plugin/db`: 57 files, 7,446 lines (down from ~38k; includes `db/util` at 2,350 lines
@@ -232,11 +232,11 @@ The contract style is the one `omni/review` already states:
 
 ## Target state under backend/plugin
 
-| before (`fb411c9453`, ~195k lines) | current state (~27.4k lines) |
+| before (`fb411c9453`, ~195k lines) | current state (~27.1k lines) |
 |---|---|
 | `advisor/<engine>` (~380 rule files, 58k lines) | thin `V1Engine` adapters (10 engines, 5.9k lines total); judgment lives in `omni/<engine>/v1review` behind `omni/v1review` |
 | `advisor` root (registry, `sql_review.go`) | stays as V1's product shell (`v1review_engine.go`, `v1review_mysql_family.go`, `prober.go`); deleted only if the review V2 track retires V1 |
-| `parser/<engine>` capability implementations (63k lines) | thin adapters (22 engine packages + `parser/standard`, 10.1k lines total including `parser/base`) delegating to `omni/<engine>/analysis` and `omni/<engine>/completion` |
+| `parser/<engine>` capability implementations (63k lines) | thin adapters (22 engine packages + `parser/standard`, 9.8k lines total including `parser/base`) delegating to `omni/<engine>/analysis` and `omni/<engine>/completion` |
 | `parser/base` | stays: 13 capability registries, dispatch, product/LSP conversions; shared semantic types (`QueryType`, `StatementType`, `CandidateType`, `WalkThroughStatement`, `ResolvedSpan`, etc.) live in `omni/analysis` |
 | `schema/<engine>` deparse/differ/migration (35k lines) | thin adapters (10 engines, 4.0k lines total including `schema/internal/omnicatalog`) delegating to `omni/<engine>/catalog` and `omni/{clickhouse,trino}/deparse`, plus explicit legacy compatibility shims |
 | `schema` comparers, `differ.go` | deleted; replaced by omni catalog diff via `schema/internal/omnicatalog` |
@@ -297,7 +297,7 @@ across 24 files:
 All 22 engine parser packages under `backend/plugin/parser/` (plus `parser/standard` for
 ClickHouse, Databricks, and Hive) now delegate parsing, analysis, and completion to
 `omni/<engine>/analysis` and `omni/<engine>/completion`, shrinking `backend/plugin/parser` from
-~63k to 10.1k non-test Go lines:
+~63k to 9.8k non-test Go lines:
 
 - `omni/analysis` owns the shared contract types (`QueryType`, `StatementType`, `CandidateType`,
   `WalkThroughStatement`, `ResolvedSpan`, `ColumnResource`, `ChangedResource`, `Statement`, error

@@ -10,7 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // CheckSDLStyle performs SDL style/convention checks on PostgreSQL declarative schema files.
@@ -35,7 +35,7 @@ func CheckSDLStyle(statement string) ([]*storepb.Advice, error) {
 // also counts CR, as the checker always has.
 func sdlStyleLine(statement string, f pganalysis.SDLFinding) int32 {
 	if f.Start >= 0 {
-		return pgparser.ByteOffsetToRunePosition(statement, f.Start).Line
+		return base.ByteOffsetToRunePosition(statement, f.Start).Line
 	}
 	return int32(strings.Count(statement[:f.StatementStart], "\n") + 1)
 }

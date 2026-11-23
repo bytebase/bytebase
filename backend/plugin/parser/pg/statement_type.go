@@ -26,9 +26,7 @@ func GetStatementTypes(asts []base.AST) ([]StatementTypeWithPosition, error) {
 	})
 }
 
-// GetStatementTypesForRegistry returns only the statement types.
-// This is used for registration with base.RegisterGetStatementTypes.
-func GetStatementTypesForRegistry(asts []base.AST) ([]storepb.StatementType, error) {
+func getStatementTypesForRegistry(asts []base.AST) ([]storepb.StatementType, error) {
 	results, err := GetStatementTypes(asts)
 	if err != nil {
 		return nil, err
