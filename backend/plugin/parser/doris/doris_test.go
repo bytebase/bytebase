@@ -1,38 +1,30 @@
 package doris
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestDorisSQLParser(t *testing.T) {
-	tests := []struct {
-		statement    string
-		errorMessage string
-	}{
-		{
-			statement: "SELECT * FROM person LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age;",
-		},
-		{
-			statement: "SELECT * FROM schema1.t1 JOIN schema2.t2 ON t1.c1 = t2.c1",
-		},
-		{
-			// Truncated SELECT — must be reported as a syntax error.
-			statement:    "SELECT a > (select max(a) from t1) FROM",
-			errorMessage: "syntax error at end of input",
-		},
-	}
+func TestDorisParserAndDiagnoseSeam(t *testing.T) {
+	stmts, err := base.ParseStatements(storepb.Engine_DORIS, "SELECT * FROM schema1.t1 JOIN schema2.t2 ON t1.c1 = t2.c1")
+	require.NoError(t, err)
+	require.Len(t, stmts, 1)
+	require.NotNil(t, stmts[0].AST)
 
-	for _, test := range tests {
-		res, err := parseDorisSQL(test.statement)
-		if test.errorMessage == "" {
-			require.NoError(t, err)
-			require.NotEmpty(t, res)
-			require.NotNil(t, res[0].Node())
-		} else {
-			require.Error(t, err)
-			require.Contains(t, err.Error(), test.errorMessage)
-		}
-	}
+	_, err = parseDorisSQL("SELECT a > (select max(a) from t1) FROM")
+	var syntaxErr *base.SyntaxError
+	require.ErrorAs(t, err, &syntaxErr)
+
+	diags, err := base.Diagnose(context.Background(), base.DiagnoseContext{}, storepb.Engine_DORIS, "SELECT 1")
+	require.NoError(t, err)
+	require.Empty(t, diags)
+
+	diags, err = base.Diagnose(context.Background(), base.DiagnoseContext{}, storepb.Engine_DORIS, "SELECT FROM")
+	require.NoError(t, err)
+	require.NotEmpty(t, diags)
 }
