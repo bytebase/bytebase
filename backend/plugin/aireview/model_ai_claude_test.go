@@ -14,8 +14,11 @@ import (
 
 // claudeRequest is the part of the Claude wire format the tests assert on.
 type claudeRequest struct {
-	System    string `json:"system"`
-	MaxTokens int    `json:"max_tokens"`
+	System []struct {
+		Text         string          `json:"text"`
+		CacheControl json.RawMessage `json:"cache_control"`
+	} `json:"system"`
+	MaxTokens int `json:"max_tokens"`
 	Messages  []struct {
 		Role    string          `json:"role"`
 		Content json.RawMessage `json:"content"`
@@ -62,9 +65,12 @@ func TestSettingModelRoundTripsThroughClaude(t *testing.T) {
 	require.Len(t, requests, 2)
 	first := requests[0]
 	require.Equal(t, 16000, first.MaxTokens, "the SQL editor's 4096 is too little for thinking and a long findings list")
-	require.Contains(t, first.System, "# Answer format")
+	require.Len(t, first.System, 1)
+	require.Contains(t, first.System[0].Text, "# Answer format")
+	require.JSONEq(t, `{"type": "ephemeral"}`, string(first.System[0].CacheControl), "the reviews of one project share the tools and the system prompt")
 	require.Len(t, first.Messages, 1)
 	require.Equal(t, "user", first.Messages[0].Role)
+	require.Contains(t, string(first.Messages[0].Content), `"cache_control"`, "the next call of the loop reads this one from the cache")
 	require.Len(t, first.Tools, 2)
 
 	second := requests[1]
@@ -74,11 +80,15 @@ func TestSettingModelRoundTripsThroughClaude(t *testing.T) {
 	require.Contains(t, string(second.Messages[1].Content), `"signature":"sig-1"`, "Claude rejects a tool turn that returns without its thinking")
 	require.Equal(t, "user", second.Messages[2].Role)
 	var results []struct {
-		Type      string `json:"type"`
-		ToolUseID string `json:"tool_use_id"`
+		Type         string          `json:"type"`
+		ToolUseID    string          `json:"tool_use_id"`
+		CacheControl json.RawMessage `json:"cache_control"`
 	}
 	require.NoError(t, json.Unmarshal(second.Messages[2].Content, &results))
 	require.Len(t, results, 2)
 	require.Equal(t, "toolu_1", results[0].ToolUseID)
 	require.Equal(t, "toolu_2", results[1].ToolUseID)
+	require.NotContains(t, string(second.Messages[0].Content), `"cache_control"`, "the cache breakpoint moves to the end of the conversation")
+	require.Empty(t, results[0].CacheControl)
+	require.JSONEq(t, `{"type": "ephemeral"}`, string(results[1].CacheControl))
 }

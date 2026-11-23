@@ -18,7 +18,8 @@ const claudeParallelToolUseReply = `{"model":"claude-sonnet-5","id":"msg_011Cg1p
 
 // claudeRequest is the part of the Claude wire format the tests assert on.
 type claudeRequest struct {
-	MaxTokens int `json:"max_tokens"`
+	System    json.RawMessage `json:"system"`
+	MaxTokens int             `json:"max_tokens"`
 	Messages  []struct {
 		Role    string          `json:"role"`
 		Content json.RawMessage `json:"content"`
@@ -150,6 +151,102 @@ func TestChatClaudeSendsParallelToolResultsInOneUserTurn(t *testing.T) {
 	require.Equal(t, "user", second.Messages[2].Role)
 	require.JSONEq(t, `[
 		{"type": "tool_result", "tool_use_id": "toolu_013EgXcQDNpKPQoYB3SsWFxY", "content": "result of read"},
-		{"type": "tool_result", "tool_use_id": "toolu_01Jkq5nRsJX4dh5kHHcBhYXg", "content": "result of search"}
+		{"type": "tool_result", "tool_use_id": "toolu_01Jkq5nRsJX4dh5kHHcBhYXg", "content": "result of search", "cache_control": {"type": "ephemeral"}}
 	]`, string(second.Messages[2].Content))
+}
+
+func TestChatClaudeCacheBreakpoints(t *testing.T) {
+	t.Parallel()
+
+	const (
+		system = v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_SYSTEM
+		user   = v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER
+		model  = v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_ASSISTANT
+		tool   = v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_TOOL
+	)
+	message := func(role v1pb.AIChatMessageRole, content string) *v1pb.AIChatMessage {
+		return &v1pb.AIChatMessage{Role: role, Content: &content}
+	}
+	toolID := "toolu_1"
+	toolCall := &v1pb.AIChatMessage{Role: model, ToolCalls: []*v1pb.AIChatToolCall{{Id: toolID, Name: "read", Arguments: `{"name": "orders"}`}}}
+	toolResult := func(content string) *v1pb.AIChatMessage {
+		return &v1pb.AIChatMessage{Role: tool, Content: &content, ToolCallId: &toolID}
+	}
+	tools := []*v1pb.AIChatToolDefinition{{Name: "read", Description: "Read a table.", ParametersSchema: `{"type": "object"}`}}
+	const systemBreakpoint = `[{"type": "text", "text": "Review the change.", "cache_control": {"type": "ephemeral"}}]`
+
+	tests := []struct {
+		name     string
+		messages []*v1pb.AIChatMessage
+		tools    []*v1pb.AIChatToolDefinition
+		// wantSystem is empty when the request must carry no system prompt.
+		wantSystem string
+		// wantMessages holds the content of every message, in order.
+		wantMessages []string
+	}{
+		{
+			name:         "a lone message is sent once, so nothing is stored",
+			messages:     []*v1pb.AIChatMessage{message(user, "Lint the files.")},
+			wantMessages: []string{`"Lint the files."`},
+		},
+		{
+			name:         "a system prompt is stored for the requests that share it",
+			messages:     []*v1pb.AIChatMessage{message(system, "Review the change."), message(user, "DROP TABLE orders;")},
+			wantSystem:   systemBreakpoint,
+			wantMessages: []string{`"DROP TABLE orders;"`},
+		},
+		{
+			name:         "tools mean a next call, which reads this one",
+			messages:     []*v1pb.AIChatMessage{message(system, "Review the change."), message(user, "DROP TABLE orders;")},
+			tools:        tools,
+			wantSystem:   systemBreakpoint,
+			wantMessages: []string{`[{"type": "text", "text": "DROP TABLE orders;", "cache_control": {"type": "ephemeral"}}]`},
+		},
+		{
+			name:       "the breakpoint moves to the end of a running conversation",
+			messages:   []*v1pb.AIChatMessage{message(system, "Review the change."), message(user, "DROP TABLE orders;"), toolCall, toolResult("12 rows")},
+			tools:      tools,
+			wantSystem: systemBreakpoint,
+			wantMessages: []string{
+				`"DROP TABLE orders;"`,
+				`[{"type": "tool_use", "id": "toolu_1", "name": "read", "input": {"name": "orders"}}]`,
+				`[{"type": "tool_result", "tool_use_id": "toolu_1", "content": "12 rows", "cache_control": {"type": "ephemeral"}}]`,
+			},
+		},
+		{
+			name:     "earlier turns mean a running conversation without tools too",
+			messages: []*v1pb.AIChatMessage{message(user, "Summarize."), message(model, "Not JSON."), message(user, "Reply with JSON.")},
+			wantMessages: []string{
+				`"Summarize."`,
+				`[{"type": "text", "text": "Not JSON."}]`,
+				`[{"type": "text", "text": "Reply with JSON.", "cache_control": {"type": "ephemeral"}}]`,
+			},
+		},
+		{
+			name:         "blank text takes no breakpoint, which Claude would reject",
+			messages:     []*v1pb.AIChatMessage{message(system, " "), message(user, "")},
+			tools:        tools,
+			wantMessages: []string{`""`},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			var requests []claudeRequest
+			server := newClaudeServer(t, `{"content": [{"type": "text", "text": "ok"}]}`, &requests)
+			setting := &storepb.AISetting{Provider: storepb.AISetting_CLAUDE, Endpoint: server.URL, Model: "claude-sonnet-5-5", ApiKey: "test-key"}
+			_, err := Chat(context.Background(), setting, &v1pb.AIChatRequest{Messages: tc.messages, ToolDefinitions: tc.tools})
+			require.NoError(t, err)
+			require.Len(t, requests, 1)
+			if tc.wantSystem == "" {
+				require.Empty(t, requests[0].System)
+			} else {
+				require.JSONEq(t, tc.wantSystem, string(requests[0].System))
+			}
+			require.Len(t, requests[0].Messages, len(tc.wantMessages))
+			for i, want := range tc.wantMessages {
+				require.JSONEq(t, want, string(requests[0].Messages[i].Content), "message %d", i)
+			}
+		})
+	}
 }
