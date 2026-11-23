@@ -11,7 +11,6 @@ require (
 	buf.build/go/protovalidate v1.4.0
 	cloud.google.com/go/cloudsqlconn v1.26.0
 	cloud.google.com/go/secretmanager v1.23.1
-	cloud.google.com/go/spanner v1.96.1
 	connectrpc.com/connect v1.21.1
 	connectrpc.com/cors v0.1.0
 	connectrpc.com/grpcreflect v1.3.1
@@ -29,7 +28,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.10.4
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/omni v0.0.0-20261123063916-cd392f48efa6
+	github.com/bytebase/omni v0.0.0-20261123072553-ce3f45e89769
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/coreos/go-oidc v2.5.0+incompatible
@@ -103,6 +102,7 @@ require (
 	cloud.google.com/go/iam v1.14.0 // indirect
 	cloud.google.com/go/longrunning v1.3.0 // indirect
 	cloud.google.com/go/monitoring v1.31.0 // indirect
+	cloud.google.com/go/spanner v1.96.1 // indirect
 	cloud.google.com/go/sql v0.3.0 // indirect
 	connectrpc.com/connect/v2 v2.0.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect

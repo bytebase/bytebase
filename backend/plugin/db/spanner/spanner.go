@@ -2,28 +2,17 @@
 // github.com/bytebase/omni/spanner/driver to Bytebase's db.Driver interface.
 //
 // Constraints:
-//   - SyncInstance filters out PostgreSQL-dialect databases via the admin API because Bytebase's SPANNER parser is GoogleSQL-only.
+//   - SyncInstance filters out PostgreSQL-dialect databases via spannerdriver.Options{GoogleSQLOnly: true} because Bytebase's SPANNER parser is GoogleSQL-only.
 //   - Emulator connections drop stored GCP credentials because Google's client rejects credentials combined with WithoutAuthentication.
 //   - Execute logs transaction control entries only (per-statement command logs are skipped).
 package spanner
 
 import (
 	"context"
-	"fmt"
-	"net"
 	"strings"
 
-	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
-	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	odriver "github.com/bytebase/omni/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 	spannerdriver "github.com/bytebase/omni/spanner/driver"
-	"github.com/pkg/errors"
-	"google.golang.org/api/iterator"
-	"google.golang.org/api/option"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -31,7 +20,13 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-var _ db.Driver = (*Driver)(nil)
+var (
+	_ db.Driver = (*Driver)(nil)
+
+	openSpannerDriver = func(ctx context.Context, cfg odriver.Config, opts ...spannerdriver.Options) (odriver.Driver, error) {
+		return spannerdriver.Open(ctx, cfg, opts...)
+	}
+)
 
 func init() {
 	db.Register(storepb.Engine_SPANNER, newDriver)
@@ -40,10 +35,6 @@ func init() {
 // Driver is the Spanner driver.
 type Driver struct {
 	util.OmniAdapter
-	// admin lists the instance's databases with their dialects so SyncInstance
-	// can filter out PostgreSQL-dialect databases.
-	admin        *spannerdb.DatabaseAdminClient
-	instancePath string
 }
 
 func newDriver() db.Driver {
@@ -56,30 +47,12 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 	if err != nil {
 		return nil, err
 	}
-	d := &Driver{
-		instancePath: fmt.Sprintf("projects/%s/instances/%s", config.DataSource.GetProjectId(), config.DataSource.GetInstanceId()),
-	}
+	d := &Driver{}
 	if err := d.OpenWith(ctx, util.AdapterOptions{
 		NotFoundResource: "database",
 		DatabaseName:     config.ConnectionContext.DatabaseName,
-	}, func(adapter *util.OmniAdapter) (odriver.Driver, error) {
-		impl, err := spannerdriver.Open(ctx, cfg)
-		if err != nil {
-			return nil, err
-		}
-		adminOptions, err := databaseAdminOptions(cfg)
-		if err != nil {
-			_ = impl.Close()
-			return nil, err
-		}
-		admin, err := spannerdb.NewDatabaseAdminClient(ctx, adminOptions...)
-		if err != nil {
-			_ = impl.Close()
-			return nil, err
-		}
-		adapter.AddCloser(admin)
-		d.admin = admin
-		return impl, nil
+	}, func(*util.OmniAdapter) (odriver.Driver, error) {
+		return openSpannerDriver(ctx, cfg, spannerdriver.Options{GoogleSQLOnly: true})
 	}); err != nil {
 		return nil, err
 	}
@@ -115,57 +88,6 @@ func spannerConfig(config db.ConnectionConfig) (odriver.Config, error) {
 		Params:   params,
 		TLS:      tlsFunc,
 	}, nil
-}
-
-func databaseAdminOptions(cfg odriver.Config) ([]option.ClientOption, error) {
-	var options []option.ClientOption
-	if cfg.Password != "" {
-		credential, err := util.GCPCredentialOption([]byte(cfg.Password))
-		if err != nil {
-			return nil, err
-		}
-		options = append(options, credential)
-	}
-	endpoint := ""
-	if cfg.Host != "" {
-		endpoint = cfg.Host
-		if cfg.Port != "" {
-			endpoint = net.JoinHostPort(cfg.Host, cfg.Port)
-		}
-		options = append(options, option.WithEndpoint(endpoint))
-	}
-	if isEmulator(cfg.Params) {
-		options = append(options, option.WithoutAuthentication())
-		if cfg.TLS == nil {
-			options = append(options, option.WithGRPCDialOption(
-				grpc.WithTransportCredentials(insecure.NewCredentials()),
-			))
-		}
-	}
-	if cfg.TLS != nil {
-		host := endpoint
-		if splitHost, _, err := net.SplitHostPort(endpoint); err == nil {
-			host = splitHost
-		}
-		tlsConfig, err := cfg.TLS(host)
-		if err != nil {
-			return nil, err
-		}
-		if tlsConfig == nil {
-			return nil, errors.New("TLS configuration must not be nil")
-		}
-		options = append(options, option.WithGRPCDialOption(
-			grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
-		))
-	}
-	if cfg.Dial != nil {
-		options = append(options, option.WithGRPCDialOption(
-			grpc.WithContextDialer(func(ctx context.Context, address string) (net.Conn, error) {
-				return cfg.Dial(ctx, "tcp", address)
-			}),
-		))
-	}
-	return options, nil
 }
 
 // Execute runs a SQL script through omni/spanner/driver, logging transaction
@@ -213,42 +135,6 @@ func toRowValue(value odriver.Value) *v1pb.RowValue {
 	default:
 		return util.NullRowValue
 	}
-}
-
-// SyncInstance lists the instance's GoogleSQL databases, omitting
-// PostgreSQL-dialect databases whose syntax Bytebase's SPANNER parser cannot read.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	var databases []*metadatapb.DatabaseSchemaMetadata
-	iter := d.admin.ListDatabases(ctx, &databasepb.ListDatabasesRequest{Parent: d.instancePath})
-	for {
-		database, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		if database.DatabaseDialect == databasepb.DatabaseDialect_POSTGRESQL {
-			continue
-		}
-		databaseName, err := getDatabaseFromResource(database.Name)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database name from %s", database.Name)
-		}
-		databases = append(databases, &metadatapb.DatabaseSchemaMetadata{Name: databaseName})
-	}
-	return &db.InstanceMetadata{Databases: databases}, nil
-}
-
-// getDatabaseFromResource returns <database> from
-// projects/<project>/instances/<instance>/databases/<database>.
-func getDatabaseFromResource(name string) (string, error) {
-	const marker = "/databases/"
-	index := strings.LastIndex(name, marker)
-	if index < 0 || index+len(marker) == len(name) {
-		return "", errors.New("invalid DSN")
-	}
-	return name[index+len(marker):], nil
 }
 
 func isEmulator(params map[string]string) bool {
