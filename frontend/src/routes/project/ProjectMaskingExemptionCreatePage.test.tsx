@@ -9,6 +9,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { PROJECT_V1_ROUTE_MASKING_EXEMPTION } from "@/app/router/handles";
 import { pushNotification } from "@/stores";
+import { actionReceiptKey } from "@/modules/agent/logic/actionReceipt";
 import { applyMaskingExemptionDraftInEditor, getMaskingExemptionEditorSnapshot, openMaskingExemptionDraftInEditor } from "@/modules/agent/logic/maskingExemptionDraftTarget";
 import { MaskingExemptionPolicy_ExemptionSchema } from "@/types/proto-es/v1/org_policy_service_pb";
 
@@ -230,10 +231,12 @@ vi.mock("@/stores/app", () => ({
         getOrFetchPolicyByParentAndType: mocks.getOrFetchPolicyByParentAndType,
         upsertPolicy: mocks.upsertPolicy,
         classification: mocks.classification,
-        currentUser: { name: mocks.identity.userName, email: mocks.identity.userName.slice("users/".length) },
+        currentUser: { name: mocks.identity.userName, email: mocks.identity.userName.slice("users/".length), workspace: mocks.identity.workspaceName },
+        workspace: { name: mocks.identity.workspaceName },
         workspaceResourceName: () => mocks.identity.workspaceName,
         refreshSubscription: mocks.refreshSubscription,
       }),
+      subscribe: vi.fn(() => () => {}),
     }
   ),
 }));
@@ -489,6 +492,7 @@ describe("ProjectMaskingExemptionCreatePage builder (BYT-9788)", () => {
       {
         kind: "masking-exemption",
         savedAt: expect.any(Number),
+        saveId: expect.any(String),
         draftId: "exemption-1",
         policy: "projects/proj1/policies/MASKING_EXEMPTION",
         exemption: toJson(MaskingExemptionPolicy_ExemptionSchema, saved),
@@ -671,13 +675,30 @@ describe("ProjectMaskingExemptionCreatePage builder (BYT-9788)", () => {
     expect(isNavigationGuarded()).toBe(false);
   });
 
-  test("keeps changes made during a pending save dirty after it succeeds", async () => {
-    const context = { workspaceName: "workspaces/default", userName: "users/member@example.com", chatId: "chat" };
+  test("records both successful native saves from the same draft after edits during a pending save", async () => {
+    const { createAgentStore } = await vi.importActual<typeof import("@/modules/agent/store/agent")>("@/modules/agent/store/agent");
+    localStorage.clear();
+    vi.spyOn(Date, "now").mockReturnValue(1000);
+    const store = createAgentStore();
+    store.getState().setWorkspaceName("workspaces/default", "member@example.com");
+    const chat = store.getState().createChat({ workspaceName: "workspaces/default", context: "projects/proj1" });
+    const message = store.getState().addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: {
+        actions: [{ kind: "draft-masking-exemption", draftId: "exemption-1" }],
+        maskingExemptionDraftHandoff: { draftId: "exemption-1", outcome: "opened" },
+      },
+    })!;
+    mocks.currentChatId = chat.id;
+    mocks.recordActionReceipt.mockImplementation((chatId, messageId, receipt, origin) => store.getState().recordActionReceipt(chatId, messageId, receipt, origin));
+    mocks.markDraftCreated.mockImplementation((chatId, messageId, draftId) => store.getState().markMaskingExemptionDraftCreated(chatId, messageId, draftId));
+    const context = { workspaceName: "workspaces/default", userName: "users/member@example.com", chatId: chat.id };
     const draft = { project: "projects/proj1", scope: { kind: "project" as const }, members: ["user:member@example.com"], condition: "true", description: "Review access", expirationTimestamp: null };
     let finish!: () => void;
     mocks.upsertPolicy.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
     const { container } = render();
-    await act(async () => { await openMaskingExemptionDraftInEditor(draft, context, { draftId: "exemption-1", messageId: "message-1" }); });
+    await act(async () => { await openMaskingExemptionDraftInEditor(draft, context, { draftId: "exemption-1", messageId: message.id }); });
     await clickConfirm(container);
     expect(isNavigationGuarded()).toBe(true);
     await click(container.querySelector<HTMLElement>('[data-testid="account-multi-select"]')!);
@@ -685,7 +706,7 @@ describe("ProjectMaskingExemptionCreatePage builder (BYT-9788)", () => {
 
     expect(mocks.upsertPolicy.mock.calls[0][0].policy.policy.value.exemptions[0].members).toEqual(draft.members);
     expect(mocks.recordActionReceipt).toHaveBeenCalledExactlyOnceWith(
-      "chat", "message-1",
+      chat.id, message.id,
       expect.objectContaining({ exemption: expect.objectContaining({ members: draft.members }) }),
       { workspaceName: context.workspaceName, userEmail: "member@example.com" }
     );
@@ -695,6 +716,34 @@ describe("ProjectMaskingExemptionCreatePage builder (BYT-9788)", () => {
     expect(mocks.routerPush).not.toHaveBeenCalled();
     const confirm = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(button => button.textContent === "common.confirm")!;
     expect(confirm.disabled).toBe(false);
+
+    const firstReceipt = store.getState().getMessages(chat.id)[0].metadata?.actionReceipts?.[0];
+    expect(firstReceipt).toMatchObject({ kind: "masking-exemption", draftId: "exemption-1", exemption: { members: draft.members } });
+    const firstSaved = mocks.upsertPolicy.mock.calls[0][0].policy.policy.value.exemptions[0];
+    mocks.getOrFetchPolicyByParentAndType.mockResolvedValueOnce({
+      policy: {case: "maskingExemptionPolicy", value: {exemptions: [firstSaved]}},
+    });
+    await clickConfirm(container);
+
+    const receipts = store.getState().getMessages(chat.id)[0].metadata?.actionReceipts;
+    expect(mocks.upsertPolicy).toHaveBeenCalledTimes(2);
+    expect(receipts).toHaveLength(2);
+    expect(receipts?.[0]).toEqual(firstReceipt);
+    expect(receipts?.map(receipt => receipt.kind === "masking-exemption" && receipt.exemption)).toEqual(
+      mocks.upsertPolicy.mock.calls.map(([request]) => toJson(MaskingExemptionPolicy_ExemptionSchema, request.policy.policy.value.exemptions.at(-1)))
+    );
+    expect(mocks.upsertPolicy.mock.calls[1][0].policy.policy.value.exemptions).toHaveLength(2);
+    expect(receipts?.[1]).toMatchObject({ kind: "masking-exemption", draftId: "exemption-1", exemption: { members: [...draft.members, "users/alice"] } });
+    expect(new Set(receipts?.map(actionReceiptKey)).size).toBe(2);
+    expect(isNavigationGuarded()).toBe(false);
+    expect(confirm.disabled).toBe(true);
+    expect(mocks.routerPush).toHaveBeenCalledOnce();
+
+    store.getState().saveState();
+    const reloaded = createAgentStore();
+    reloaded.getState().setWorkspaceName(context.workspaceName, "member@example.com");
+    expect(reloaded.getState().getMessages(chat.id)[0].metadata?.actionReceipts).toEqual(receipts);
+    localStorage.clear();
   });
 
   test("does not overwrite dirty forms or a revision edited during async parsing", async () => {

@@ -1,5 +1,6 @@
 import { fromJson, type JsonObject, toJson } from "@bufbuild/protobuf";
 import { isEqual } from "lodash-es";
+import { v4 as uuidv4 } from "uuid";
 import {
   type AccessGrant,
   AccessGrantSchema,
@@ -82,6 +83,7 @@ export function createMaskingExemptionActionReceipt(
   const receipt = normalizeReceipt({
     kind: "masking-exemption",
     policy,
+    saveId: uuidv4(),
     exemption: toJson(MaskingExemptionPolicy_ExemptionSchema, exemption),
     draftId,
     savedAt,
@@ -203,6 +205,11 @@ function normalizeReceipt(raw: unknown): AgentActionReceipt | undefined {
           rule: toJson(MaskingRulePolicy_MaskingRuleSchema, rule) as JsonObject,
         };
       } else {
+        if (
+          raw.saveId !== undefined &&
+          (typeof raw.saveId !== "string" || !raw.saveId.trim())
+        )
+          return undefined;
         const exemption = fromJson(
           MaskingExemptionPolicy_ExemptionSchema,
           raw.exemption as JsonObject
@@ -216,6 +223,7 @@ function normalizeReceipt(raw: unknown): AgentActionReceipt | undefined {
           kind: raw.kind,
           savedAt: raw.savedAt,
           draftId: raw.draftId,
+          ...(raw.saveId === undefined ? {} : { saveId: raw.saveId as string }),
           policy: raw.policy,
           exemption: toJson(
             MaskingExemptionPolicy_ExemptionSchema,
@@ -238,6 +246,9 @@ export function actionReceiptKey(receipt: AgentActionReceipt): string {
         receipt.kind,
         receipt.policy,
         receipt.kind === "masking-rule" ? receipt.rule.id : receipt.draftId,
+        ...(receipt.kind === "masking-exemption" && receipt.saveId
+          ? [receipt.saveId]
+          : []),
       ]);
 }
 

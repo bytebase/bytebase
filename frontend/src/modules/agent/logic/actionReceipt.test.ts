@@ -144,4 +144,83 @@ describe("action receipts", () => {
     ).toEqual([refreshed, second]);
     expect(actionReceiptKey(second)).not.toBe(actionReceiptKey(receipt));
   });
+
+  test.each([false, true])(
+    "keeps distinct exemption saves from the same draft when configuration is identical: %s",
+    (identical) => {
+      const policy = "projects/example/policies/MASKING_EXEMPTION";
+      const exemption = create(MaskingExemptionPolicy_ExemptionSchema, {
+        members: ["user:member@example.com"],
+        condition: { expression: "true" },
+      });
+      const first = createMaskingExemptionActionReceipt(
+        policy,
+        exemption,
+        "draft-1",
+        100
+      )!;
+      const second = createMaskingExemptionActionReceipt(
+        policy,
+        {
+          ...exemption,
+          members: identical ? exemption.members : ["user:other@example.com"],
+        },
+        "draft-1",
+        100
+      )!;
+      expect(actionReceiptKey(second)).not.toBe(actionReceiptKey(first));
+      expect(first.saveId).toEqual(expect.any(String));
+      expect(second.saveId).not.toBe(first.saveId);
+      const metadata = {
+        actions: [
+          { kind: "draft-masking-exemption" as const, draftId: "draft-1" },
+        ],
+      };
+      const saved = JSON.parse(JSON.stringify([first, second, first]));
+      expect(normalizeActionReceipts(saved, metadata)).toEqual([first, second]);
+      expect(mergeActionReceipts([second, first, second])).toEqual([
+        second,
+        first,
+      ]);
+      const checked = {
+        ...second,
+        observation: { status: "MATCHING" as const, observedAt: 200 },
+      };
+      expect(mergeActionReceipts([first, checked, second])).toEqual([
+        first,
+        checked,
+      ]);
+    }
+  );
+
+  test("keeps legacy exemption keys stable and rejects invalid save identities", () => {
+    const legacy = {
+      kind: "masking-exemption" as const,
+      policy: "projects/example/policies/MASKING_EXEMPTION",
+      draftId: "draft-1",
+      savedAt: 100,
+      exemption: {
+        members: ["user:member@example.com"],
+        condition: { expression: "true" },
+      },
+    };
+    const metadata = {
+      actions: [
+        { kind: "draft-masking-exemption" as const, draftId: "draft-1" },
+      ],
+    };
+    const reloaded = normalizeActionReceipts(
+      JSON.parse(JSON.stringify([legacy])),
+      metadata
+    )!;
+    expect(actionReceiptKey(reloaded[0])).toBe(actionReceiptKey(legacy));
+    expect(normalizeActionReceipts([legacy, ...reloaded], metadata)).toEqual([
+      legacy,
+    ]);
+    for (const saveId of [null, 42, "", " "]) {
+      expect(
+        normalizeActionReceipts([{ ...legacy, saveId }], metadata)
+      ).toBeUndefined();
+    }
+  });
 });

@@ -248,6 +248,7 @@ export type AgentActionReceipt = AgentActionReceiptBase &
     | {
         kind: "masking-exemption";
         draftId: string;
+        saveId?: string;
         policy: string;
         exemption: JsonObject;
       }
