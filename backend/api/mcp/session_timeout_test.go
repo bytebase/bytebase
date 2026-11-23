@@ -116,8 +116,10 @@ func TestUnansweredFormEndsItsCall(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), testRequestBound)
 	defer cancel()
+	start := time.Now()
 	rest, err := io.ReadAll(client.openForm(ctx, session))
 	require.NoError(t, err, "the call must end when the form times out")
+	require.Less(t, time.Since(start), testIdleTimeout, "the call must end at the form limit, not the idle timeout")
 	require.Contains(t, string(rest), `"error"`, "the call must end with an error")
 
 	status, body, err := client.post(context.Background(), session, listTools)
@@ -132,10 +134,9 @@ func TestProductionTimeouts(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 	s, err := newServerWithStore(newTestServerStore(), profile, revalidationSecret, nil)
 	require.NoError(t, err)
-	require.Equal(t, mcpSessionIdleTimeout, s.sessionIdleTimeout)
-	require.Positive(t, s.sessionIdleTimeout)
-	require.Greater(t, s.formTimeout(), confirmationLifetime, "a confirmation accepted late must reach the tool and get STALE_CONFIRMATION")
-	require.Less(t, s.formTimeout(), s.sessionIdleTimeout, "no wait for an abandoned form may outlive the session's idle timer")
+	require.Equal(t, sessionTimeouts{idle: mcpSessionIdleTimeout, formAnswer: formAnswerTimeout}, s.timeouts)
+	require.Greater(t, s.timeouts.formAnswer, confirmationLifetime, "a confirmation accepted late must reach the tool and get STALE_CONFIRMATION")
+	require.Less(t, s.timeouts.formAnswer, s.timeouts.idle, "no wait for an abandoned form may outlive the session's idle timer")
 }
 
 const (
@@ -160,9 +161,8 @@ const (
 func newIdleTimeoutServer(t *testing.T) (*Server, *rawMCPClient) {
 	t.Helper()
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
-	s, err := newServerWithIdleTimeout(newTestServerStore(), profile, revalidationSecret, nil, testIdleTimeout)
+	s, err := newServerWithTimeouts(newTestServerStore(), profile, revalidationSecret, nil, sessionTimeouts{idle: testIdleTimeout, formAnswer: testFormTimeout})
 	require.NoError(t, err)
-	s.formAnswerTimeoutOverride = testFormTimeout
 	e := echo.New()
 	s.RegisterRoutes(e)
 	ts := httptest.NewServer(e)
