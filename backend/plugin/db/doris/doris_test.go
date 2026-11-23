@@ -1,16 +1,21 @@
 package doris
 
 import (
+	"bytes"
+	"context"
 	"errors"
+	"io"
 	"testing"
 	"time"
 
 	omnidriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -355,4 +360,153 @@ func TestQueryOptionsCarriesTheRequest(t *testing.T) {
 	require.True(t, options.Explain)
 	require.Equal(t, int64(1024), options.MaxResultBytes)
 	require.True(t, options.MaskingEnabled)
+}
+
+type fakeDorisSession struct {
+	gotOpts omnidriver.QueryOptions
+	results []*omnidriver.Result
+	err     error
+	closed  bool
+}
+
+func (s *fakeDorisSession) Query(_ context.Context, _ string, opts omnidriver.QueryOptions) ([]*omnidriver.Result, error) {
+	s.gotOpts = opts
+	return s.results, s.err
+}
+
+func (s *fakeDorisSession) Close() error {
+	s.closed = true
+	return nil
+}
+
+type fakeDorisDriver struct {
+	sessions      []*fakeDorisSession
+	sessionCalls  int
+	executeScript string
+	executeOpts   omnidriver.ExecuteOptions
+	instance      *omnidriver.Instance
+	schema        *metadatapb.DatabaseSchemaMetadata
+	schemaErr     error
+	dumpDDL       string
+}
+
+func (*fakeDorisDriver) Ping(context.Context) error { return nil }
+func (*fakeDorisDriver) Close() error               { return nil }
+
+func (f *fakeDorisDriver) Session(context.Context) (omnidriver.Session, error) {
+	idx := f.sessionCalls
+	f.sessionCalls++
+	if idx < len(f.sessions) {
+		return f.sessions[idx], nil
+	}
+	return &fakeDorisSession{}, nil
+}
+
+func (f *fakeDorisDriver) Execute(_ context.Context, script string, opts omnidriver.ExecuteOptions) (int64, error) {
+	f.executeScript = script
+	f.executeOpts = opts
+	return 1, nil
+}
+
+func (f *fakeDorisDriver) SyncInstance(context.Context) (*omnidriver.Instance, error) {
+	return f.instance, nil
+}
+
+func (f *fakeDorisDriver) SyncDatabase(context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return f.schema, f.schemaErr
+}
+
+func (f *fakeDorisDriver) Dump(_ context.Context, w io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
+	_, err := io.WriteString(w, f.dumpDDL)
+	return err
+}
+
+func TestDorisAdapterSeam(t *testing.T) {
+	ctx := context.Background()
+
+	s1 := &fakeDorisSession{
+		results: []*omnidriver.Result{{
+			Statement: "SELECT 1",
+			Columns:   []omnidriver.Column{{Name: "1", TypeName: "INT"}},
+			Rows:      [][]omnidriver.Value{{{Kind: omnidriver.Int64, Int64: 1}}},
+		}},
+	}
+	s2 := &fakeDorisSession{err: errors.New("broken session")}
+	impl := &fakeDorisDriver{
+		sessions: []*fakeDorisSession{s1, s2},
+		instance: &omnidriver.Instance{
+			Version:   "3.1.4",
+			Databases: []*metadatapb.DatabaseSchemaMetadata{{Name: "analytics"}},
+		},
+		schema:  &metadatapb.DatabaseSchemaMetadata{Name: "analytics"},
+		dumpDDL: "CREATE TABLE `t` (`id` INT);\n",
+	}
+	d := &Driver{
+		OmniAdapter: util.OmniAdapter{
+			Driver:               impl,
+			WithInstanceMetadata: true,
+			NotFoundResource:     "database",
+			DatabaseName:         "analytics",
+		},
+	}
+
+	// Held session is reused across QueryConn calls.
+	res, err := d.QueryConn(ctx, "SELECT 1", db.QueryContext{Limit: 5, MaskingEnabled: true, MaximumSQLResultSize: 1024})
+	require.NoError(t, err)
+	require.Len(t, res, 1)
+	require.Equal(t, 5, s1.gotOpts.Limit)
+	require.True(t, s1.gotOpts.MaskingEnabled)
+	require.Same(t, s1, d.Session())
+
+	_, err = d.QueryConn(ctx, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1024})
+	require.NoError(t, err)
+	require.Equal(t, 1, impl.sessionCalls)
+
+	// Canceled context discards the held session.
+	canceledCtx, cancel := context.WithCancel(ctx)
+	cancel()
+	_, err = d.QueryConn(canceledCtx, "SELECT 1", db.QueryContext{})
+	require.NoError(t, err)
+	require.True(t, s1.closed)
+	require.Nil(t, d.Session())
+
+	// Session error discards the session.
+	_, err = d.QueryConn(ctx, "SELECT 1", db.QueryContext{})
+	require.ErrorContains(t, err, "broken session")
+	require.True(t, s2.closed)
+	require.Nil(t, d.Session())
+
+	// Execute strips txn-mode and ignores txn-isolation.
+	affected, err := d.Execute(ctx, "-- txn-mode=off\n-- txn-isolation=serializable\nINSERT INTO t VALUES (1)", db.ExecuteOptions{
+		CreateDatabase: true,
+		MaximumRetries: 2,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), affected)
+	require.Equal(t, "INSERT INTO t VALUES (1)", impl.executeScript)
+	require.Equal(t, omnidriver.AutoCommit, impl.executeOpts.Transaction)
+	require.Empty(t, impl.executeOpts.Isolation)
+	require.True(t, impl.executeOpts.CreateDatabase)
+	require.Equal(t, 2, impl.executeOpts.MaxRetries)
+
+	// SyncInstance, SyncDBSchema (including ErrNotFound translation), and Dump.
+	inst, err := d.SyncInstance(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "3.1.4", inst.Version)
+	require.Len(t, inst.Databases, 1)
+
+	schema, err := d.SyncDBSchema(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "analytics", schema.GetName())
+
+	var out bytes.Buffer
+	require.NoError(t, d.Dump(ctx, &out, schema))
+	require.Contains(t, out.String(), "CREATE TABLE `t`")
+
+	impl.schemaErr = omnidriver.ErrNotFound
+	_, err = d.SyncDBSchema(ctx)
+	var bbErr *common.Error
+	require.ErrorAs(t, err, &bbErr)
+	require.Equal(t, common.NotFound, bbErr.Code)
+	require.Contains(t, err.Error(), `database "analytics" not found`)
 }

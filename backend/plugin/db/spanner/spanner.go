@@ -265,10 +265,10 @@ func toRowValue(value odriver.Value) *v1pb.RowValue {
 	}
 }
 
-// SyncInstance syncs the instance's GoogleSQL databases. A PostgreSQL-dialect
-// database is filtered out, as it was before the cutover: SPANNER's split and
-// query span are GoogleSQL-only, so listing one would let the editor run a
-// statement its masking analysis cannot read.
+// SyncInstance syncs the instance's GoogleSQL databases. PostgreSQL-dialect
+// databases are filtered out because SPANNER's split and query span are
+// GoogleSQL-only, so listing one would let the editor run a statement its
+// masking analysis cannot read.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var databases []*metadatapb.DatabaseSchemaMetadata
 	iter := d.admin.ListDatabases(ctx, &databasepb.ListDatabasesRequest{Parent: d.instancePath})
