@@ -33,12 +33,13 @@ export function SQLReviewVersionBadge() {
 
   return (
     <Tooltip
-      content={
-        current === "v1"
-          ? t("sql-review.policies")
-          : t("sql-review.standard-rules.self")
+      content={t("sql-review.version-switch.description")}
+      render={
+        <span
+          tabIndex={0}
+          className="inline-flex shrink-0 rounded-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+        />
       }
-      render={<span className="inline-flex shrink-0" />}
     >
       <Badge className="whitespace-nowrap">
         {current === "v1"

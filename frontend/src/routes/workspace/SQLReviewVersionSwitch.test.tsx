@@ -1,11 +1,15 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { STANDARD_RULE_TYPES } from "@/components/sql-review/standardRules";
+import sqlReviewEnglish from "@/locales/sql-review/en-US.json";
 import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   devSqlReviewVersion,
   setDevSqlReviewVersion,
 } from "@/utils/featureGates";
+
+const versionDescription =
+  "This badge shows the browser's selected UI version. Each project's effective standard rules determine which review version runs.";
 
 const mocks = vi.hoisted(() => ({
   canUpdate: { value: true },
@@ -18,8 +22,12 @@ vi.mock("react-i18next", () => ({
     t: (key: string) =>
       (
         {
+          "sql-review.version-switch.description":
+            sqlReviewEnglish["version-switch"].description,
           "sql-review.version-switch.to-v1.confirm": "Switch to V1",
           "sql-review.version-switch.to-v2.confirm": "Switch to V2",
+          "sql-review.version-switch.v1": "SQL Review V1",
+          "sql-review.version-switch.v2": "SQL Review V2",
         } as Record<string, string>
       )[key] ?? key,
   }),
@@ -39,7 +47,9 @@ vi.mock("@/utils", () => ({
   hasWorkspacePermissionV2: () => mocks.canUpdate.value,
 }));
 
-const { SQLReviewVersionSwitch } = await import("./SQLReviewVersionSwitch");
+const { SQLReviewVersionBadge, SQLReviewVersionSwitch } = await import(
+  "./SQLReviewVersionSwitch"
+);
 
 const choose = (label: string) =>
   act(async () => {
@@ -64,6 +74,39 @@ const savedRules = () => {
   expect(policy.enforce).toBe(true);
   return policy.policy.value.rules;
 };
+
+describe("SQLReviewVersionBadge", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    localStorage.clear();
+  });
+
+  test.each(["v1", "v2"] as const)(
+    "keeps the %s explanation in a tooltip rather than the header",
+    async (version) => {
+      vi.useFakeTimers();
+      setDevSqlReviewVersion(version);
+      render(<SQLReviewVersionBadge />);
+
+      const badge = screen.getByText(`SQL Review ${version.toUpperCase()}`);
+      expect(badge).toBeVisible();
+      expect(screen.queryByText(versionDescription)).not.toBeInTheDocument();
+      expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+
+      const trigger = badge.parentElement!;
+      await act(async () => {
+        trigger.focus();
+        vi.advanceTimersByTime(100);
+      });
+
+      expect(trigger).toHaveFocus();
+      const explanation = screen.getByText(versionDescription);
+      expect(document.getElementById("bb-react-layer-overlay")).toContainElement(
+        explanation
+      );
+    }
+  );
+});
 
 describe("SQLReviewVersionSwitch", () => {
   const location = globalThis.location;

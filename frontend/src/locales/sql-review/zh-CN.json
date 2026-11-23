@@ -886,6 +886,7 @@
     "string-array-required": "请为 {{rule}} 添加至少一个值。"
   },
   "version-switch": {
+    "description": "此标签显示浏览器所选的界面版本。各项目实际生效的标准规则决定运行哪个审核版本。",
     "to-v1": {
       "confirm": "切换到 V1",
       "description": "这会关闭工作空间的全部标准规则，计划检查改为运行 V1 SQL 审核。自定义了标准规则的项目保持不变。",

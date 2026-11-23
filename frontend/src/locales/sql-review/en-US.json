@@ -886,6 +886,7 @@
     "string-array-required": "Add at least one value for {{rule}}."
   },
   "version-switch": {
+    "description": "This badge shows the browser's selected UI version. Each project's effective standard rules determine which review version runs.",
     "to-v1": {
       "confirm": "Switch to V1",
       "description": "This turns every workspace standard rule off, so the plan checks run the V1 SQL review. Projects that customize their standard rules keep them.",
