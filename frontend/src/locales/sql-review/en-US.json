@@ -2,7 +2,7 @@
   "add-or-remove-rules": "Add or remove rules",
   "add-rules": "Add rules",
   "ai-review": {
-    "ai-off": "AI is off for the workspace, so no AI review runs.",
+    "ai-off": "AI is off for the workspace, so no AI SQL review runs.",
     "comments-description": "An AI model reviews the SQL of an issue, including a draft, and comments on the risks it finds. The rollout is blocked until every comment is resolved.",
     "description": "An AI model that reviews the SQL of an issue for risks the standard rules cannot see.",
     "enable": {
@@ -10,12 +10,12 @@
       "self": "Review changes with AI"
     },
     "policy": {
-      "ai-review-policy": "AI review policy",
+      "ai-review-policy": "AI SQL review policy",
       "cannot-clear": "Your role cannot delete policies, so this policy cannot be emptied.",
       "description": "This policy defines what the AI checks when reviewing database changes. It applies to every project in the workspace, and each project can add its own policy.",
       "load-failed": "The review policy could not be loaded.",
       "none": "No review policy.",
-      "paused": "This policy is paused, so AI review does not use it.",
+      "paused": "This policy is paused, so AI SQL review does not use it.",
       "placeholder": "For example:\nReport a schema change that blocks writes on a table with more than 1 million rows.\nEvery foreign key needs an index on its columns.\nNew tables need created_at and updated_at columns.",
       "project-description": "Optional project-specific policy. It is added to the workspace policy and takes precedence when they conflict.",
       "project-none": "No project policy.",
@@ -23,11 +23,11 @@
       "project-self": "Project additional policy",
       "remove-only": "You can remove this policy but not change it. Clear the text to remove it.",
       "self": "Review policy",
-      "standard-rules-hint": "The AI review does not repeat the standard rules, and skips the ones that are off. To have it check one anyway, name it in the policy, such as \"Every UPDATE needs a WHERE clause\".",
+      "standard-rules-hint": "AI SQL review does not repeat the standard rules, and skips the ones that are off. To have it check one anyway, name it in the policy, such as \"Every UPDATE needs a WHERE clause\".",
       "too-large": "The policy is {{size}} bytes, over the {{limit}}-byte limit. Shorten it to save."
     },
-    "project-description": "AI review is configured for the workspace. Add an optional project-specific policy below.",
-    "self": "AI review",
+    "project-description": "AI SQL review is configured for the workspace. Add an optional project-specific policy below.",
+    "self": "AI SQL review",
     "set-for-workspace": "Managed at the workspace level.",
     "turn-on-ai": "Turn on AI",
     "view-workspace-setting": "View workspace AI settings"
@@ -151,7 +151,7 @@
     "name": "Priority"
   },
   "no-permission": "Only DBA or Admin has permission to create or update review policy.",
-  "policies": "SQL review policies",
+  "policies": "Rule-based SQL review policies",
   "policy-create-failed": "Failed to create the review policy.",
   "policy-created": "Successfully created the review policy.",
   "policy-removed": "Successfully removed the review policy.",
