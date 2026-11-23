@@ -55,7 +55,6 @@ require (
 	github.com/labstack/echo/v5 v5.4.4
 	github.com/lib/pq v1.12.3
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
-	github.com/moby/moby/api v1.56.1
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/nyaruka/phonenumbers/v2 v2.0.16
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
@@ -66,7 +65,6 @@ require (
 	github.com/prometheus/client_golang v1.25.0
 	github.com/prometheus/client_model v0.6.3
 	github.com/prometheus/common v0.73.1
-	github.com/sijms/go-ora/v2 v2.9.0
 	github.com/sourcegraph/conc v0.3.0
 	github.com/sourcegraph/jsonrpc2 v0.2.3
 	github.com/spf13/cobra v1.10.2
@@ -257,6 +255,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.3.0 // indirect
+	github.com/moby/moby/api v1.56.1 // indirect
 	github.com/moby/moby/client v0.6.2 // indirect
 	github.com/moby/patternmatcher v0.6.1 // indirect
 	github.com/moby/sys/sequential v0.7.0 // indirect
@@ -296,6 +295,7 @@ require (
 	github.com/segmentio/encoding v0.5.4 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.6 // indirect
 	github.com/shopspring/decimal v1.6.0 // indirect
+	github.com/sijms/go-ora/v2 v2.9.0 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/snowflakedb/gosnowflake/v2 v2.3.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
