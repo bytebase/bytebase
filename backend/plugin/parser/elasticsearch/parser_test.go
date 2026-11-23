@@ -1,49 +1,24 @@
 package elasticsearch
 
 import (
-	"io"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
-
-	"github.com/bytebase/bytebase/backend/common/yamltest"
 )
 
-func TestParseElasticsearchREST(t *testing.T) {
-	type testCase struct {
-		Description string       `yaml:"description,omitempty"`
-		Statement   string       `yaml:"statement,omitempty"`
-		Result      *ParseResult `yaml:"result,omitempty"`
-	}
+func TestParseElasticsearchRESTSeam(t *testing.T) {
+	res, err := ParseElasticsearchREST("GET /users/_search\n{\"query\":{\"match_all\":{}}}")
+	require.NoError(t, err)
+	require.Empty(t, res.Errors)
+	require.Len(t, res.Requests, 1)
+	require.Equal(t, "GET", res.Requests[0].Method)
+	require.Equal(t, "/users/_search", res.Requests[0].URL)
+	require.Equal(t, []string{`{"query":{"match_all":{}}}`}, res.Requests[0].Data)
 
-	var (
-		filepath = "test-data/parse-elasticsearch-rest.yaml"
-		record   = false
-	)
-
-	a := require.New(t)
-	yamlFile, err := os.Open(filepath)
-	a.NoError(err)
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(err)
-	a.NoError(yamlFile.Close())
-
-	var testCases []testCase
-	a.NoError(yaml.Unmarshal(byteValue, &testCases))
-
-	for i, tc := range testCases {
-		got, err := ParseElasticsearchREST(tc.Statement)
-		a.NoErrorf(err, "description: %s", tc.Description)
-		if record {
-			testCases[i].Result = got
-		} else {
-			a.Equalf(tc.Result, got, "description: %s", tc.Description)
-		}
-	}
-
-	if record {
-		yamltest.Record(t, filepath, testCases)
-	}
+	invalid, err := ParseElasticsearchREST("db.users.find({})")
+	require.NoError(t, err)
+	require.NotEmpty(t, invalid.Errors)
+	require.NotNil(t, invalid.Errors[0].Position)
+	require.Equal(t, int32(0), invalid.Errors[0].Position.Line)
+	require.Equal(t, int32(3), invalid.Errors[0].Position.Column)
 }

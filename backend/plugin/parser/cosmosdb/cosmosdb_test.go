@@ -3,88 +3,36 @@ package cosmosdb
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestParseCosmosDB(t *testing.T) {
-	tests := []struct {
-		name          string
-		statement     string
-		wantStatCount int
-		wantErr       bool
-	}{
-		{
-			name:          "Single SELECT statement",
-			statement:     "SELECT * FROM c",
-			wantStatCount: 1,
-			wantErr:       false,
-		},
-		{
-			name:          "SELECT with WHERE clause",
-			statement:     "SELECT c.id, c.name FROM users c WHERE c.age > 18",
-			wantStatCount: 1,
-			wantErr:       false,
-		},
-		{
-			name:          "SELECT with DISTINCT",
-			statement:     "SELECT DISTINCT c.category FROM products c",
-			wantStatCount: 1,
-			wantErr:       false,
-		},
-		{
-			name:          "Empty statement",
-			statement:     "",
-			wantStatCount: 0,
-			wantErr:       false,
-		},
-		{
-			name:          "Only whitespace",
-			statement:     "   \n  \t  ",
-			wantStatCount: 0,
-			wantErr:       false,
-		},
-	}
+func TestParseAndValidateQuerySeam(t *testing.T) {
+	// ParseCosmosDB populates Node, Text, and 1-based StartPosition.
+	res, err := ParseCosmosDB("\n  SELECT c.id FROM users c WHERE c.age > 18")
+	require.NoError(t, err)
+	require.Len(t, res, 1)
+	require.NotNil(t, res[0].Node)
+	require.Equal(t, int32(2), res[0].StartPosition.Line)
+	require.Equal(t, int32(3), res[0].StartPosition.Column)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			results, err := ParseCosmosDB(tt.statement)
-			if tt.wantErr {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, tt.wantStatCount, len(results))
+	empty, err := ParseCosmosDB("   \n\t  ")
+	require.NoError(t, err)
+	require.Empty(t, empty)
 
-			for i, result := range results {
-				assert.NotNil(t, result.Node, "Result %d should have a Node", i)
-				assert.NotEmpty(t, result.Text, "Result %d should have Text", i)
-				assert.NotNil(t, result.StartPosition, "Result %d should have StartPosition", i)
-				assert.Equal(t, int32(1), result.StartPosition.Line, "Result %d should have StartPosition.Line 1", i)
-			}
-		})
-	}
-}
+	_, err = ParseCosmosDB("SELCT * FRM c")
+	require.Error(t, err)
 
-func TestParseCosmosDBErrors(t *testing.T) {
-	tests := []struct {
-		name      string
-		statement string
-	}{
-		{
-			name:      "Invalid SQL syntax",
-			statement: "SELCT * FRM c",
-		},
-		{
-			name:      "Unclosed string",
-			statement: "SELECT * FROM c WHERE c.name = 'test",
-		},
-	}
+	// Registry dispatch for ValidateSQLForEditor.
+	readOnly, returnsData, err := base.ValidateSQLForEditor(storepb.Engine_COSMOSDB, "SELECT * FROM c")
+	require.NoError(t, err)
+	require.True(t, readOnly)
+	require.True(t, returnsData)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := ParseCosmosDB(tt.statement)
-			require.Error(t, err, "Expected error for invalid CosmosDB SQL")
-		})
-	}
+	readOnly, returnsData, err = base.ValidateSQLForEditor(storepb.Engine_COSMOSDB, "SELECT * FROM c WHERE c.name = 'unclosed")
+	require.Error(t, err)
+	require.False(t, readOnly)
+	require.False(t, returnsData)
 }

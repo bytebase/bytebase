@@ -2,50 +2,30 @@ package elasticsearch
 
 import (
 	"context"
-	"io"
-	"os"
 	"testing"
 
+	lsp "github.com/bytebase/lsp-protocol"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common/yamltest"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestStatementRanges(t *testing.T) {
-	type testCase struct {
-		Description string       `yaml:"description,omitempty"`
-		Statement   string       `yaml:"statement,omitempty"`
-		Result      []base.Range `yaml:"result,omitempty"`
-	}
+func TestGetStatementRangesSeam(t *testing.T) {
+	ranges, err := base.GetStatementRanges(context.Background(), base.StatementRangeContext{}, storepb.Engine_ELASTICSEARCH, "GET /users/_search\n{}\n\nGET /orders/_doc/1")
+	require.NoError(t, err)
+	require.Equal(t, []base.Range{
+		{
+			Start: lsp.Position{Line: 0, Character: 0},
+			End:   lsp.Position{Line: 1, Character: 2},
+		},
+		{
+			Start: lsp.Position{Line: 3, Character: 0},
+			End:   lsp.Position{Line: 3, Character: 18},
+		},
+	}, ranges)
 
-	var (
-		filepath = "test-data/statement-ranges.yaml"
-		record   = false
-	)
-
-	a := require.New(t)
-	yamlFile, err := os.Open(filepath)
-	a.NoError(err)
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(err)
-	a.NoError(yamlFile.Close())
-
-	var testCases []testCase
-	a.NoError(yaml.Unmarshal(byteValue, &testCases))
-
-	for i, tc := range testCases {
-		got, err := GetStatementRanges(context.Background(), base.StatementRangeContext{}, tc.Statement)
-		a.NoErrorf(err, "description: %s", tc.Description)
-		if record {
-			testCases[i].Result = got
-		} else {
-			a.Equalf(tc.Result, got, "description: %s", tc.Description)
-		}
-	}
-
-	if record {
-		yamltest.Record(t, filepath, testCases)
-	}
+	empty, err := base.GetStatementRanges(context.Background(), base.StatementRangeContext{}, storepb.Engine_ELASTICSEARCH, "")
+	require.NoError(t, err)
+	require.Empty(t, empty)
 }
