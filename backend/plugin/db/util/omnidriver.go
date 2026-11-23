@@ -453,15 +453,27 @@ func FormatDefaultTimestamp(t time.Time, withTZ bool) string {
 	return t.UTC().Format("2006-01-02 15:04:05.999999999")
 }
 
-// MySQLForkQueryOptions maps a db.QueryContext onto omnidriver.QueryOptions for
-// MySQL-protocol analytical forks (Doris and StarRocks).
-func MySQLForkQueryOptions(queryContext db.QueryContext) omnidriver.QueryOptions {
-	return omnidriver.QueryOptions{
+// OmniQueryOptions maps db.QueryContext onto omnidriver.QueryOptions.
+// Set includeSchema to forward queryContext.Schema, and explainFormat for
+// engines that accept an explicit explain format name.
+func OmniQueryOptions(queryContext db.QueryContext, includeSchema bool, explainFormat string) omnidriver.QueryOptions {
+	opts := omnidriver.QueryOptions{
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
+		ExplainFormat:  explainFormat,
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 		MaskingEnabled: queryContext.MaskingEnabled,
 	}
+	if includeSchema {
+		opts.Schema = queryContext.Schema
+	}
+	return opts
+}
+
+// MySQLForkQueryOptions maps a db.QueryContext onto omnidriver.QueryOptions for
+// MySQL-protocol analytical forks (Doris and StarRocks).
+func MySQLForkQueryOptions(queryContext db.QueryContext) omnidriver.QueryOptions {
+	return OmniQueryOptions(queryContext, false, "")
 }
 
 // MySQLForkQueryResultOptions returns QueryResultOptions for Doris and

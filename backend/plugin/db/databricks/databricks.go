@@ -1,38 +1,11 @@
-// Package databricks is Bytebase's Databricks driver: an adapter over
-// github.com/bytebase/omni/databricks/driver that maps Bytebase's connection
-// config onto the driver contract and the contract's results back into the
-// product's protos. The workspace conversation, the script splitter, the
-// EXPLAIN rewrite, the result decode, the Unity Catalog sync and the server-DDL
-// dump belong to the omni driver.
+// Package databricks is Bytebase's Databricks driver, adapting
+// github.com/bytebase/omni/databricks/driver to Bytebase's db.Driver interface.
 //
-// The mapping the adapter owns:
-//
-//   - Config.Host is the workspace URL. The personal access token is the data
-//     source's authentication private key, which is where the product stores it;
-//     a caller that resolved a token itself passes it as Config.Password, and it
-//     is used when the data source carries none. Token authentication is all
-//     this driver supports, as before.
-//   - The SQL warehouse is the data source's warehouse ID, passed as
-//     driver.Config.Params["warehouseId"]. The catalog is the database the
-//     driver was opened on: it is the session's catalog and what SyncDBSchema
-//     reads.
-//   - TLS and Dial are not set: the previous driver ignored an SSL data source
-//     and an SSH tunnel, and the SDK's own transport verifies the workspace's
-//     certificate against the system roots. The caller's extra connection
-//     parameters are not read, as before.
-//   - Execute sends the script's statements in order and reports each to the
-//     task run log, with the rows the warehouse states in a num_affected_rows
-//     column. The `-- txn-mode` directive is parsed and removed from the script
-//     as before, and Databricks' Statement Execution API exposes no transaction
-//     control, so the mode changes nothing.
-//   - QueryConn runs on one session the adapter holds from Open to Close, and
-//     passes QueryContext.Schema as the schema each statement runs in.
-//   - SyncInstance reports the SQL release and the workspace's catalog names.
-//     SyncDBSchema reads one catalog's schemas, tables, views, materialized views
-//     and external tables.
-//   - Dump writes the server's own SHOW CREATE TABLE for every object: omni has
-//     no databricks catalog that renders a synced schema as Databricks DDL, so
-//     the metadata argument is not read.
+// Constraints:
+//   - Personal access token comes from DataSource.AuthenticationPrivateKey,
+//     falling back to Config.Password; warehouse ID is passed as ParamWarehouseID.
+//   - TLS, Dial, and extra connection parameters are unused (SDK owns transport).
+//   - Execute strips transaction directives without setting transaction mode.
 package databricks
 
 import (
@@ -63,21 +36,14 @@ func newDriver() db.Driver {
 
 // Open opens a Databricks driver. It does not reach the workspace: Ping does.
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	impl, err := databricksdriver.Open(ctx, databricksConfig(config))
-	if err != nil {
+	d := &Driver{}
+	if err := d.OpenWith(ctx, util.AdapterOptions{
+		EagerSession: true,
+	}, func(*util.OmniAdapter) (odbdriver.Driver, error) {
+		return databricksdriver.Open(ctx, databricksConfig(config))
+	}); err != nil {
 		return nil, err
 	}
-	// The SQL Statement Execution API has no session state, so the session is the
-	// driver; it is opened here so the driver holds one from Open to Close.
-	session, err := impl.Session(ctx)
-	if err != nil {
-		_ = impl.Close()
-		return nil, err
-	}
-	d := &Driver{
-		OmniAdapter: util.OmniAdapter{Driver: impl},
-	}
-	d.SetSession(session)
 	return d, nil
 }
 

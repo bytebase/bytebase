@@ -1,30 +1,11 @@
-// Package redshift is Bytebase's Redshift driver: an adapter over
-// github.com/bytebase/omni/redshift/driver that maps a db.ConnectionConfig
-// onto the driver contract and the contract's results back into the product's.
-// The conversation with the server — connection configuration, session setup,
-// metadata sync, statement rewriting and classification, execution, result
-// decoding and the row estimate — is the driver's.
+// Package redshift is Bytebase's Redshift driver, adapting
+// github.com/bytebase/omni/redshift/driver to Bytebase's db.Driver interface.
 //
-// The adapter keeps what is product: the data source to contract conversion,
-// the network and TLS path (SSH tunnel, TLS material), the datashare flag,
-// QueryContext/ExecuteOptions mapping, the v1pb result and error shape, and the
-// task-run logger.
-//
-// Constraints of the engine and the contract, here rather than at each call:
-//   - QueryConn runs on the driver's own session, held from the first call
-//     until Close with calls serialized, so what a statement sets there
-//     (search_path, a temporary table) holds for the next one.
-//   - The data source's extra connection parameters reach no connection: the
-//     only parameter the contract takes here is ParamDatashare, the datashare
-//     flag.
-//   - ApplicationName is not set: the task-run session listing supports
-//     PostgreSQL and CockroachDB only.
-//   - TLS is configured only when the data source carries a client certificate;
-//     a data source with UseSsl alone leaves libpq's default negotiation in
-//     place.
-//   - Dump writes nothing: omni's Redshift driver has no Dumper — redshift/catalog
-//     has no renderer for a synced snapshot — and a renderer no server has
-//     checked would be the only way to replace the no-op.
+// Constraints:
+//   - Only ParamDatashare is forwarded in Params; extra connection parameters are unused.
+//   - TLS is configured only when a client certificate is provided; UseSsl alone
+//     leaves libpq's default negotiation in place.
+//   - Dump is a no-op because omni's Redshift driver implements no Dumper.
 package redshift
 
 import (
@@ -62,35 +43,22 @@ func newDriver() db.Driver {
 // Open resolves the data source's network and TLS path into the contract's
 // Config and opens the driver. It reaches the server only on Ping.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	// A driver whose Open fails is discarded without a Close, so Open releases
-	// what it acquired itself.
-	opened := false
-	defer func() {
-		if !opened {
-			_ = d.Close(ctx)
-		}
-	}()
-
-	d.OmniAdapter = util.OmniAdapter{
+	if err := d.OpenWith(ctx, util.AdapterOptions{
 		WithInstanceMetadata: true,
 		NotFoundResource:     "database",
 		DatabaseName:         config.ConnectionContext.DatabaseName,
-	}
-
-	cfg, err := redshiftConfig(config)
-	if err != nil {
+	}, func(adapter *util.OmniAdapter) (omndriver.Driver, error) {
+		cfg, err := redshiftConfig(config)
+		if err != nil {
+			return nil, err
+		}
+		if err := util.SetupSSHDial(config.DataSource, &cfg, adapter, true); err != nil {
+			return nil, err
+		}
+		return redshiftdriver.Open(ctx, cfg)
+	}); err != nil {
 		return nil, err
 	}
-	if err := util.SetupSSHDial(config.DataSource, &cfg, &d.OmniAdapter, true); err != nil {
-		return nil, err
-	}
-
-	impl, err := redshiftdriver.Open(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	d.Driver = impl
-	opened = true
 	return d, nil
 }
 

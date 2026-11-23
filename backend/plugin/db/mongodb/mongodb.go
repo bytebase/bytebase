@@ -1,32 +1,10 @@
-// Package mongodb is Bytebase's MongoDB driver: an adapter over
-// github.com/bytebase/omni/mongo/driver. The connection string, the sync
-// queries, the mongosh execution, the result rendering and the dump are the
-// driver's; this package maps a db.ConnectionConfig onto the contract's Config
-// and the contract's results back into the product's types.
+// Package mongodb is Bytebase's MongoDB driver, adapting
+// github.com/bytebase/omni/mongo/driver to Bytebase's db.Driver interface.
 //
-// Bytebase registers this engine as MONGODB and dispatches through this
-// package, while omni's tree is mongo/driver. Neither name changes: the engine
-// value is the product's, and the package path is what the driver registry, the
-// parser registration and the completion registration already use.
-//
-// What stays product-side is the path to the server and the task run's log:
-// Open maps a data source onto driver.Config, including an SSH Dial, the TLS
-// material and the connection string options; Execute reports each statement to
-// the task run log; SyncInstance converts the contract's roles into the instance
-// metadata.
-//
-// Every db.Driver method:
-//
-//   - Ping, Close, SyncInstance, SyncDBSchema and Dump delegate.
-//   - GetDB returns nil: MongoDB has no database/sql handle.
-//   - QueryConn opens one session per call; MongoDB keeps no session state.
-//   - Execute runs each statement on its own. MongoDB has no transaction this
-//     path takes part in, so TransactionMode and IsolationLevel are unset, and
-//     no DDL, so a change script is mongosh; MaximumRetries reaches the contract
-//     unused.
-//   - ReadOnly, QueryOptions.Schema and QueryOptions.MaskingEnabled do nothing:
-//     MongoDB has no read-only session, no schema per session and no masking to
-//     withhold.
+// Constraints:
+//   - Bytebase registers this engine as MONGODB while omni's tree is mongo/driver.
+//   - QueryConn opens one ephemeral session per call (MongoDB keeps no session state).
+//   - Execute runs each mongosh statement independently without transaction control.
 package mongodb
 
 import (
@@ -66,25 +44,15 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 	if err != nil {
 		return nil, err
 	}
-	d := &Driver{
-		OmniAdapter: util.OmniAdapter{WithInstanceMetadata: true},
-	}
-	opened := false
-	defer func() {
-		if !opened {
-			_ = d.Close(ctx)
+	d := &Driver{}
+	if err := d.OpenWith(ctx, util.AdapterOptions{WithInstanceMetadata: true}, func(adapter *util.OmniAdapter) (omnidriver.Driver, error) {
+		if err := util.SetupSSHDial(config.DataSource, &driverConfig, adapter, true); err != nil {
+			return nil, err
 		}
-	}()
-
-	if err := util.SetupSSHDial(config.DataSource, &driverConfig, &d.OmniAdapter, true); err != nil {
+		return omnimongo.Open(ctx, driverConfig, options)
+	}); err != nil {
 		return nil, err
 	}
-	inner, err := omnimongo.Open(ctx, driverConfig, options)
-	if err != nil {
-		return nil, err
-	}
-	d.Driver = inner
-	opened = true
 	return d, nil
 }
 
@@ -166,26 +134,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	})
 }
 
-// QueryConn runs the script's statements on a session of its own. MongoDB has
-// no session state, so nothing outlives the call.
+// QueryConn runs the script's statements on an ephemeral session.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	session, err := d.OpenSession(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to open a session")
-	}
-	defer func() { _ = session.Close() }()
-
-	// MongoDB states a plan as one document and has no second format, so
-	// queryContext.Option's explain format has nowhere to go.
-	results, err := session.Query(ctx, statement, omnidriver.QueryOptions{
-		Schema:         queryContext.Schema,
-		Limit:          queryContext.Limit,
-		Explain:        queryContext.Explain,
-		MaxResultBytes: queryContext.MaximumSQLResultSize,
-		MaskingEnabled: queryContext.MaskingEnabled,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, false), nil
+	return d.QueryEphemeralConn(ctx, statement, util.OmniQueryOptions(queryContext, true, ""), util.QueryResultOptions{})
 }
