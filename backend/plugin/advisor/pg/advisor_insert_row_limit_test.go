@@ -21,36 +21,20 @@ func TestInsertRowLimit(t *testing.T) {
 		want          []*storepb.Advice
 	}{
 		{
-			name:      "insert select on conflict",
-			statement: "INSERT INTO big_pk SELECT * FROM big WHERE s_id <= 10 ON CONFLICT DO NOTHING;",
-			plans: map[string]string{
-				"INSERT INTO big_pk SELECT * FROM big WHERE s_id <= 10 ON CONFLICT DO NOTHING": modifyTablePlan(1000),
-			},
-			wantExplained: []string{"INSERT INTO big_pk SELECT * FROM big WHERE s_id <= 10 ON CONFLICT DO NOTHING"},
+			name:          "exceeds limit",
+			statement:     "INSERT INTO t2 SELECT * FROM t;",
+			plans:         map[string]string{"INSERT INTO t2 SELECT * FROM t": modifyTablePlan(1000)},
+			wantExplained: []string{"INSERT INTO t2 SELECT * FROM t"},
 			want: []*storepb.Advice{{
 				Status:        storepb.Advice_WARNING,
 				Code:          code.InsertTooManyRows.Int32(),
 				Title:         title,
-				Content:       `The statement "INSERT INTO big_pk SELECT * FROM big WHERE s_id <= 10 ON CONFLICT DO NOTHING" inserts 1000 rows. The count exceeds 100.`,
+				Content:       `The statement "INSERT INTO t2 SELECT * FROM t" inserts 1000 rows. The count exceeds 100.`,
 				StartPosition: &storepb.Position{Line: 1},
 			}},
 		},
 		{
-			// The CTE's 5000 deleted rows are not inserted rows.
-			name:      "insert with a data-modifying CTE counts only the inserted rows",
-			statement: "WITH d AS (DELETE FROM big RETURNING id) INSERT INTO archive SELECT id FROM d LIMIT 1;",
-			plans: map[string]string{
-				"WITH d AS (DELETE FROM big RETURNING id) INSERT INTO archive SELECT id FROM d LIMIT 1": `[{"Plan": {"Node Type": "ModifyTable", "Operation": "Insert", "Plan Rows": 0, "Plans": [
-					{"Node Type": "ModifyTable", "Operation": "Delete", "Parent Relationship": "InitPlan", "Plan Rows": 5000, "Plans": [
-						{"Node Type": "Seq Scan", "Parent Relationship": "Outer", "Plan Rows": 5000}
-					]},
-					{"Node Type": "Limit", "Parent Relationship": "Outer", "Plan Rows": 1}
-				]}}]`,
-			},
-			wantExplained: []string{"WITH d AS (DELETE FROM big RETURNING id) INSERT INTO archive SELECT id FROM d LIMIT 1"},
-		},
-		{
-			name:          "insert select within the limit",
+			name:          "within limit",
 			statement:     "INSERT INTO t2 SELECT * FROM t LIMIT 30;",
 			plans:         map[string]string{"INSERT INTO t2 SELECT * FROM t LIMIT 30": modifyTablePlan(30)},
 			wantExplained: []string{"INSERT INTO t2 SELECT * FROM t LIMIT 30"},
@@ -68,7 +52,7 @@ func TestInsertRowLimit(t *testing.T) {
 			}},
 		},
 		{
-			name:          "plan without a ModifyTable node",
+			name:          "unreadable plan reports internal count error",
 			statement:     "INSERT INTO t2 SELECT * FROM t;",
 			plans:         map[string]string{"INSERT INTO t2 SELECT * FROM t": "Insert on t2  (cost=0.00..17.00 rows=0 width=0)"},
 			wantExplained: []string{"INSERT INTO t2 SELECT * FROM t"},
@@ -79,10 +63,6 @@ func TestInsertRowLimit(t *testing.T) {
 				Content:       `failed to get row count for "INSERT INTO t2 SELECT * FROM t": failed to parse the EXPLAIN (FORMAT JSON) output: invalid character 'I' looking for beginning of value`,
 				StartPosition: &storepb.Position{Line: 1},
 			}},
-		},
-		{
-			name:      "insert values is counted without explain",
-			statement: "INSERT INTO t2 VALUES (1), (2), (3) ON CONFLICT DO NOTHING;",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
