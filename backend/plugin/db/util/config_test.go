@@ -2,10 +2,14 @@
 package util
 
 import (
+	"context"
+	"net"
 	"testing"
 
+	omnidriver "github.com/bytebase/omni/driver"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
@@ -95,4 +99,62 @@ func TestConfigHelpers(t *testing.T) {
 		DataSource: &storepb.DataSource{UseSsl: true, SslCert: "c"},
 	}, &adapter)
 	require.ErrorContains(t, err, "sql: tls config error")
+}
+
+func TestStaticHostTLSFunc(t *testing.T) {
+	fn, err := StaticHostTLSFunc(&storepb.DataSource{})
+	require.NoError(t, err)
+	require.Nil(t, fn)
+
+	_, err = StaticHostTLSFunc(&storepb.DataSource{UseSsl: true, SslCert: "c"})
+	require.Error(t, err)
+
+	fn, err = StaticHostTLSFunc(&storepb.DataSource{Host: "primary.example.com", UseSsl: true})
+	require.NoError(t, err)
+	require.NotNil(t, fn)
+
+	cfgA, err := fn("node-a.example.com")
+	require.NoError(t, err)
+	cfgB, err := fn("node-b.example.com")
+	require.NoError(t, err)
+	require.Equal(t, "node-a.example.com", cfgA.ServerName)
+	require.Equal(t, "node-b.example.com", cfgB.ServerName)
+	require.NotSame(t, cfgA, cfgB)
+}
+
+func TestSetupSSHDialWithWrap(t *testing.T) {
+	var adapter OmniAdapter
+	var cfg omnidriver.Config
+	require.NoError(t, SetupSSHDialWithWrap(&storepb.DataSource{}, &cfg, &adapter, true, nil))
+	require.Nil(t, cfg.Dial)
+
+	err := SetupSSHDialWithWrap(&storepb.DataSource{SshHost: "127.0.0.1", SshPort: "1"}, &cfg, &adapter, true, nil)
+	require.ErrorContains(t, err, "127.0.0.1:1")
+	require.Nil(t, cfg.Dial)
+
+	sshServer := testcontainer.NewSSHServer(t)
+	ds := &storepb.DataSource{
+		SshHost:       sshServer.GetHost(),
+		SshPort:       sshServer.GetPort(),
+		SshUser:       sshServer.GetUser(),
+		SshPrivateKey: sshServer.GetPrivateKey(),
+	}
+	targetAddr := net.JoinHostPort(testcontainer.NewTCPServer(t, func(conn net.Conn) {
+		_ = conn.Close()
+	}))
+
+	var wrappedAddr string
+	require.NoError(t, SetupSSHDialWithWrap(ds, &cfg, &adapter, false, func(conn net.Conn, address string) net.Conn {
+		wrappedAddr = address
+		return &NoDeadlineConn{Conn: conn}
+	}))
+	t.Cleanup(func() { _ = adapter.Close(context.Background()) })
+	require.NotNil(t, cfg.Dial)
+
+	conn, err := cfg.Dial(context.Background(), "tcp", targetAddr)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close() })
+	_, ok := conn.(*NoDeadlineConn)
+	require.True(t, ok)
+	require.Equal(t, targetAddr, wrappedAddr)
 }

@@ -1,31 +1,14 @@
-// Package spanner is the plugin for the Spanner driver. It adapts omni's
-// spanner/driver, which owns the conversation with Spanner — metadata sync, the
-// server-DDL dump, queries and change scripts — to Bytebase's db.Driver
-// contract.
+// Package spanner is Bytebase's Cloud Spanner driver, adapting
+// github.com/bytebase/omni/spanner/driver to Bytebase's db.Driver interface.
 //
-// Known differences from the driver this replaced, kept because they are the
-// driver's own behavior or because reproducing the old one would reimplement it:
-//   - A script's statement text keeps its comments. A script the parser cannot
-//     read answers with the parser's error on its statement result instead of
-//     failing the QueryConn call; the old splitter removed comments and let the
-//     server reject the text.
-//   - The result-size cap is byte-accurate rather than checked at power-of-two
-//     row counts, and a cap of 0 means no cap rather than a zero-byte cap.
-//   - The caller's extra parameters reach the driver ("emulator" is read) and
-//     an SSL data source's TLS settings are honoured; the old driver ignored
-//     both. An emulator-pointed instance drops its stored Cloud credential,
-//     which the client refuses to combine with unauthenticated access.
-//   - GRANT and REVOKE are DDL for the admin API; the old prefix test sent them
-//     down the DML path, where Spanner refused them.
-//   - An explain request stops at the first statement that cannot be planned;
-//     the old driver asked for every statement's plan even after a failure.
-//   - SyncInstance keeps the old GoogleSQL filter: a PostgreSQL-dialect database
-//     is not listed. omni can sync and dump one when a caller opens it directly.
+// Constraints:
+//   - SyncInstance filters out PostgreSQL-dialect databases via the admin API because Bytebase's SPANNER parser is GoogleSQL-only.
+//   - Emulator connections drop stored GCP credentials because Google's client rejects credentials combined with WithoutAuthentication.
+//   - Execute logs transaction control entries only (per-statement command logs are skipped).
 package spanner
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"net"
 	"strings"
@@ -48,9 +31,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-var (
-	_ db.Driver = (*Driver)(nil)
-)
+var _ db.Driver = (*Driver)(nil)
 
 func init() {
 	db.Register(storepb.Engine_SPANNER, newDriver)
@@ -59,9 +40,8 @@ func init() {
 // Driver is the Spanner driver.
 type Driver struct {
 	util.OmniAdapter
-	// admin lists the instance's databases with their dialects. SyncInstance
-	// keeps Bytebase's GoogleSQL-only listing until the parser routes by
-	// database dialect, and spanner/driver's instance list does not carry one.
+	// admin lists the instance's databases with their dialects so SyncInstance
+	// can filter out PostgreSQL-dialect databases.
 	admin        *spannerdb.DatabaseAdminClient
 	instancePath string
 }
@@ -70,93 +50,73 @@ func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open opens a Spanner driver. It must connect to a specific database.
-// If database isn't provided, part of the driver cannot function.
-func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+// Open opens a Spanner driver targeting the configured project, instance, and database.
+func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	cfg, err := spannerConfig(config)
 	if err != nil {
 		return nil, err
 	}
-	impl, err := spannerdriver.Open(ctx, cfg)
-	if err != nil {
-		return nil, err
+	d := &Driver{
+		instancePath: fmt.Sprintf("projects/%s/instances/%s", config.DataSource.GetProjectId(), config.DataSource.GetInstanceId()),
 	}
-	adminOptions, err := databaseAdminOptions(cfg)
-	if err != nil {
-		_ = impl.Close()
-		return nil, err
-	}
-	admin, err := spannerdb.NewDatabaseAdminClient(ctx, adminOptions...)
-	if err != nil {
-		_ = impl.Close()
-		return nil, err
-	}
-	d.OmniAdapter = util.OmniAdapter{
-		Driver:           impl,
+	if err := d.OpenWith(ctx, util.AdapterOptions{
 		NotFoundResource: "database",
 		DatabaseName:     config.ConnectionContext.DatabaseName,
+	}, func(adapter *util.OmniAdapter) (odriver.Driver, error) {
+		impl, err := spannerdriver.Open(ctx, cfg)
+		if err != nil {
+			return nil, err
+		}
+		adminOptions, err := databaseAdminOptions(cfg)
+		if err != nil {
+			_ = impl.Close()
+			return nil, err
+		}
+		admin, err := spannerdb.NewDatabaseAdminClient(ctx, adminOptions...)
+		if err != nil {
+			_ = impl.Close()
+			return nil, err
+		}
+		adapter.AddCloser(admin)
+		d.admin = admin
+		return impl, nil
+	}); err != nil {
+		return nil, err
 	}
-	d.AddCloser(admin)
-	d.admin = admin
-	d.instancePath = fmt.Sprintf("projects/%s/instances/%s", config.DataSource.GetProjectId(), config.DataSource.GetInstanceId())
 	return d, nil
 }
 
-// spannerConfig resolves everything Bytebase knows about reaching the instance
-// into the plain values spanner/driver's clients take.
 func spannerConfig(config db.ConnectionConfig) (odriver.Config, error) {
 	ds := config.DataSource
-	cfg := odriver.Config{
+	params := map[string]string{
+		spannerdriver.ParamProject:  ds.GetProjectId(),
+		spannerdriver.ParamInstance: ds.GetInstanceId(),
+	}
+	for key, value := range ds.GetExtraConnectionParameters() {
+		params[key] = value
+	}
+	password := config.Password
+	if password == "" {
+		password = ds.GetGcpCredential().GetContent()
+	}
+	// Google's client refuses to combine a credential with WithoutAuthentication.
+	if isEmulator(params) {
+		password = ""
+	}
+	tlsFunc, err := util.StaticHostTLSFunc(ds)
+	if err != nil {
+		return odriver.Config{}, err
+	}
+	return odriver.Config{
 		Host:     ds.GetHost(),
 		Port:     ds.GetPort(),
 		Database: util.ResolveDatabaseName(config),
-		Password: config.Password,
-		Params: map[string]string{
-			spannerdriver.ParamProject:  ds.GetProjectId(),
-			spannerdriver.ParamInstance: ds.GetInstanceId(),
-		},
-	}
-	// Bytebase carries a Cloud credential in the data source, where the
-	// instance's IAM extension holds it. A caller that resolved one itself
-	// passes it as the password, and that one wins.
-	if cfg.Password == "" {
-		if credential := ds.GetGcpCredential(); credential != nil {
-			cfg.Password = credential.GetContent()
-		}
-	}
-	// The caller's extra parameters go in verbatim. "emulator" is the one
-	// spanner/driver reads; a name it does not know is ignored.
-	for key, value := range ds.GetExtraConnectionParameters() {
-		cfg.Params[key] = value
-	}
-	// The emulator accepts any caller, and the Google client refuses to build
-	// one that both carries a credential and skips authentication. An instance
-	// keeps its stored credential, so an emulator-pointed one would fail Open
-	// with "options.WithoutAuthentication is incompatible with any option that
-	// provides credentials"; the credential is meaningless to the emulator, so
-	// drop it rather than refuse.
-	if isEmulator(cfg.Params) {
-		cfg.Password = ""
-	}
-	// TLS is required exactly when the caller asks for it; nil leaves the
-	// client's transport, which verifies the server's certificate.
-	if ds.GetUseSsl() {
-		tlsConfig, err := util.GetTLSConfig(ds)
-		if err != nil {
-			return odriver.Config{}, err
-		}
-		cfg.TLS = func(host string) (*tls.Config, error) {
-			byHost := tlsConfig.Clone()
-			byHost.ServerName = host
-			return byHost, nil
-		}
-	}
-	return cfg, nil
+		Password: password,
+		Params:   params,
+		TLS:      tlsFunc,
+	}, nil
 }
 
-// databaseAdminOptions builds the admin client's options from the same resolved
-// config spanner/driver's own clients take. It exists only for SyncInstance's
-// dialect listing; every other call is the driver's.
 func databaseAdminOptions(cfg odriver.Config) ([]option.ClientOption, error) {
 	var options []option.ClientOption
 	if cfg.Password != "" {
@@ -208,11 +168,9 @@ func databaseAdminOptions(cfg odriver.Config) ([]option.ClientOption, error) {
 	return options, nil
 }
 
-// Execute executes a SQL statement. spanner/driver splits the script by the
-// database's dialect, applies a script that holds any DDL statement through the
-// admin API whole, and runs the rest as DML.
+// Execute runs a SQL script through omni/spanner/driver, logging transaction
+// control entries only.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	// Spanner's driver logs only transaction control entries (no per-statement command logs).
 	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
 		ParseTransactionDirective: true,
 		PassCreateDatabase:        true,
@@ -221,33 +179,25 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	})
 }
 
-// QueryConn queries a SQL statement. Spanner has no session state a statement
-// can set, so each statement reads in a single-use transaction of its own.
+// QueryConn runs a SQL script on an ephemeral session.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	var results []*odriver.Result
-	err := d.QueryEphemeral(ctx, func(session odriver.Session) error {
-		var queryErr error
-		results, queryErr = session.Query(ctx, statement, odriver.QueryOptions{
-			Limit:          queryContext.Limit,
-			Explain:        queryContext.Explain,
-			MaxResultBytes: queryContext.MaximumSQLResultSize,
-		})
-		return queryErr
-	})
-	if err != nil {
-		return nil, err
-	}
-	return toQueryResults(results, queryContext.MaximumSQLResultSize, queryContext.Explain), nil
+	return d.QueryEphemeralConn(ctx, statement, odriver.QueryOptions{
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		MaxResultBytes: queryContext.MaximumSQLResultSize,
+	}, spannerQueryResultOptions(queryContext.Explain))
 }
 
-// toQueryResults converts spanner/driver's results into the API's, keeping each
-// statement's error, plan and latency.
-func toQueryResults(results []*odriver.Result, maxResultBytes int64, isExplainRequest bool) []*v1pb.QueryResult {
-	return util.OmniResultsToQueryResultsWith(results, maxResultBytes, util.QueryResultOptions{
+func spannerQueryResultOptions(isExplainRequest bool) util.QueryResultOptions {
+	return util.QueryResultOptions{
 		ClearExplainPlan: isExplainRequest,
 		TypedExplainPlan: true,
 		ConvertValue:     toRowValue,
-	})
+	}
+}
+
+func toQueryResults(results []*odriver.Result, maxResultBytes int64, isExplainRequest bool) []*v1pb.QueryResult {
+	return util.OmniResultsToQueryResultsWith(results, maxResultBytes, spannerQueryResultOptions(isExplainRequest))
 }
 
 func toRowValue(value odriver.Value) *v1pb.RowValue {
@@ -265,10 +215,8 @@ func toRowValue(value odriver.Value) *v1pb.RowValue {
 	}
 }
 
-// SyncInstance syncs the instance's GoogleSQL databases. PostgreSQL-dialect
-// databases are filtered out because SPANNER's split and query span are
-// GoogleSQL-only, so listing one would let the editor run a statement its
-// masking analysis cannot read.
+// SyncInstance lists the instance's GoogleSQL databases, omitting
+// PostgreSQL-dialect databases whose syntax Bytebase's SPANNER parser cannot read.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var databases []*metadatapb.DatabaseSchemaMetadata
 	iter := d.admin.ListDatabases(ctx, &databasepb.ListDatabasesRequest{Parent: d.instancePath})
@@ -303,8 +251,6 @@ func getDatabaseFromResource(name string) (string, error) {
 	return name[index+len(marker):], nil
 }
 
-// isEmulator reports whether the caller's parameters name the Cloud Spanner
-// emulator, as spanner/driver spells the flag.
 func isEmulator(params map[string]string) bool {
 	switch strings.ToLower(params[spannerdriver.ParamEmulator]) {
 	case "1", "true", "yes":
