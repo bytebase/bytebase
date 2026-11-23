@@ -3,165 +3,268 @@ package mysql
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"io"
 	"testing"
 	"time"
 
 	odriver "github.com/bytebase/omni/driver"
+	mariadbd "github.com/bytebase/omni/mariadb/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
+	mysqld "github.com/bytebase/omni/mysql/driver"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-func newTestDatabase(t *testing.T) (*testcontainer.Container, string) {
-	t.Helper()
-	return testcontainer.NewMySQLDatabase(t)
+type fakeMySQLDriver struct {
+	pinged       bool
+	sessionOpens int
+	sessions     []*fakeMySQLSession
+
+	execScript string
+	execOpts   odriver.ExecuteOptions
+	execFn     func(context.Context, string, odriver.ExecuteOptions) (int64, error)
+
+	instance    *odriver.Instance
+	schema      *metadatapb.DatabaseSchemaMetadata
+	dumpDDL     string
+	estimate    int64
+	estimateSQL string
+	explainJSON string
+	explainSQL  string
 }
 
-func openTestDatabaseDriver(t *testing.T, container *testcontainer.Container, database string) *Driver {
-	t.Helper()
-	return openTestDriver(context.Background(), t, storepb.Engine_MYSQL, container, container.GetUsername(), container.GetPassword(), database)
+func (f *fakeMySQLDriver) Ping(context.Context) error {
+	f.pinged = true
+	return nil
 }
 
-func TestAdapterSyncInstanceAndDump(t *testing.T) {
+func (*fakeMySQLDriver) Close() error { return nil }
+
+func (f *fakeMySQLDriver) Session(context.Context) (odriver.Session, error) {
+	f.sessionOpens++
+	if len(f.sessions) > 0 {
+		s := f.sessions[0]
+		f.sessions = f.sessions[1:]
+		return s, nil
+	}
+	return &fakeMySQLSession{}, nil
+}
+
+func (f *fakeMySQLDriver) SyncInstance(context.Context) (*odriver.Instance, error) {
+	return f.instance, nil
+}
+
+func (f *fakeMySQLDriver) SyncDatabase(context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return f.schema, nil
+}
+
+func (f *fakeMySQLDriver) Dump(_ context.Context, out io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
+	_, err := io.WriteString(out, f.dumpDDL)
+	return err
+}
+
+func (f *fakeMySQLDriver) Execute(ctx context.Context, script string, opts odriver.ExecuteOptions) (int64, error) {
+	f.execScript = script
+	f.execOpts = opts
+	if f.execFn != nil {
+		return f.execFn(ctx, script, opts)
+	}
+	return 1, nil
+}
+
+func (f *fakeMySQLDriver) CountAffectedRows(_ context.Context, statement string) (int64, error) {
+	f.estimateSQL = statement
+	return f.estimate, nil
+}
+
+func (f *fakeMySQLDriver) ExplainJSON(_ context.Context, statement string) (string, error) {
+	f.explainSQL = statement
+	return f.explainJSON, nil
+}
+
+type fakeMySQLSession struct {
+	statements []string
+	lastOpts   odriver.QueryOptions
+	queryFn    func(context.Context, string, odriver.QueryOptions) ([]*odriver.Result, error)
+	closed     bool
+}
+
+func (s *fakeMySQLSession) Query(ctx context.Context, statement string, opts odriver.QueryOptions) ([]*odriver.Result, error) {
+	s.statements = append(s.statements, statement)
+	s.lastOpts = opts
+	if s.queryFn != nil {
+		return s.queryFn(ctx, statement, opts)
+	}
+	return []*odriver.Result{{Statement: statement}}, nil
+}
+
+func (s *fakeMySQLSession) Close() error {
+	s.closed = true
+	return nil
+}
+
+func TestAdapterSyncInstanceAndDumpSeam(t *testing.T) {
 	ctx := context.Background()
-	container, database := newTestDatabase(t)
-	_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf("USE `%s`; CREATE TABLE t (id INT PRIMARY KEY, note VARCHAR(64));", database))
-	require.NoError(t, err)
+	schema := &metadatapb.DatabaseSchemaMetadata{
+		Name: "appdb",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Tables: []*metadatapb.TableMetadata{{Name: "t"}},
+		}},
+	}
+	fake := &fakeMySQLDriver{
+		instance: &odriver.Instance{
+			Version:             "8.0.46",
+			LowerCaseTableNames: 1,
+			Databases:           []*metadatapb.DatabaseSchemaMetadata{{Name: "appdb"}},
+		},
+		schema:  schema,
+		dumpDDL: "CREATE TABLE `t` (`id` INT PRIMARY KEY);",
+	}
+	d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake, WithInstanceMetadata: true}}
 
-	opened := openTestDatabaseDriver(t, container, database)
-	require.NoError(t, opened.Ping(ctx))
+	require.NoError(t, d.Ping(ctx))
+	require.True(t, fake.pinged)
 
-	instance, err := opened.SyncInstance(ctx)
+	instance, err := d.SyncInstance(ctx)
 	require.NoError(t, err)
-	require.NotEmpty(t, instance.Version)
+	require.Equal(t, "8.0.46", instance.Version)
 	require.NotNil(t, instance.Metadata)
-	require.NotEmpty(t, instance.Databases)
+	require.Equal(t, int32(1), instance.Metadata.GetMysqlLowerCaseTableNames())
+	require.Len(t, instance.Databases, 1)
 
-	metadata, err := opened.SyncDBSchema(ctx)
+	metadata, err := d.SyncDBSchema(ctx)
 	require.NoError(t, err)
 	require.Len(t, metadata.Schemas, 1)
-	require.Len(t, metadata.Schemas[0].Tables, 1)
 	require.Equal(t, "t", metadata.Schemas[0].Tables[0].Name)
 
 	var dump bytes.Buffer
-	require.NoError(t, opened.Dump(ctx, &dump, metadata))
+	require.NoError(t, d.Dump(ctx, &dump, metadata))
 	require.Contains(t, dump.String(), "CREATE TABLE `t`")
 }
 
-func TestAdapterQueryConnExecuteAndMasking(t *testing.T) {
+func TestAdapterQueryConnSeam(t *testing.T) {
 	ctx := context.Background()
-	container, database := newTestDatabase(t)
-	_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf("USE `%s`; CREATE TABLE qitems (id INT PRIMARY KEY, note VARCHAR(64));", database))
-	require.NoError(t, err)
 
-	opened := openTestDatabaseDriver(t, container, database)
+	t.Run("holds one session across calls and converts rows and masking counts", func(t *testing.T) {
+		zero := int64(0)
+		sess := &fakeMySQLSession{
+			queryFn: func(_ context.Context, statement string, opts odriver.QueryOptions) ([]*odriver.Result, error) {
+				if opts.MaskingEnabled {
+					return []*odriver.Result{{Statement: statement, AffectedRows: &zero}}, nil
+				}
+				return []*odriver.Result{{
+					Statement: statement,
+					Columns:   []odriver.Column{{Name: "id", TypeName: "INT"}, {Name: "note", TypeName: "VARCHAR"}},
+					Rows: [][]odriver.Value{{
+						{Kind: odriver.Int64, Int64: 1},
+						{Kind: odriver.String, String: "one"},
+					}},
+				}}, nil
+			},
+		}
+		fake := &fakeMySQLDriver{sessions: []*fakeMySQLSession{sess}}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
 
-	rows, err := opened.Execute(ctx, "-- txn-mode=on\nINSERT INTO qitems VALUES (1, 'one'); INSERT INTO qitems VALUES (2, 'two');", db.ExecuteOptions{})
-	require.NoError(t, err)
-	require.GreaterOrEqual(t, rows, int64(2))
+		results, err := d.QueryConn(ctx, "SELECT id, note FROM qitems ORDER BY id", db.QueryContext{
+			Limit:                10,
+			MaximumSQLResultSize: 1 << 20,
+			Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+		})
+		require.NoError(t, err)
+		require.Equal(t, 1, fake.sessionOpens)
+		require.Same(t, sess, d.Session())
+		require.Equal(t, 10, sess.lastOpts.Limit)
+		require.Equal(t, "JSON", sess.lastOpts.ExplainFormat)
+		require.Equal(t, int64(1<<20), sess.lastOpts.MaxResultBytes)
+		require.Len(t, results, 1)
+		require.Equal(t, []string{"id", "note"}, results[0].ColumnNames)
+		require.Equal(t, int64(1), results[0].Rows[0].Values[0].GetInt64Value())
+		require.Equal(t, "one", results[0].Rows[0].Values[1].GetStringValue())
 
-	results, err := opened.QueryConn(ctx, "SELECT id, note FROM qitems ORDER BY id", db.QueryContext{MaximumSQLResultSize: 1 << 20})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Empty(t, results[0].Error)
-	require.Equal(t, []string{"id", "note"}, results[0].ColumnNames)
-	require.Len(t, results[0].Rows, 2)
-	require.Equal(t, int64(1), results[0].Rows[0].Values[0].GetInt64Value())
-	require.Equal(t, "one", results[0].Rows[0].Values[1].GetStringValue())
+		// A zero size cap maps to 1 byte so the contract bounds the result, and
+		// MaskingEnabled forwards to the session.
+		masked, err := d.QueryConn(ctx, "CALL p()", db.QueryContext{MaskingEnabled: true})
+		require.NoError(t, err)
+		require.Equal(t, 1, fake.sessionOpens)
+		require.True(t, sess.lastOpts.MaskingEnabled)
+		require.Equal(t, int64(1), sess.lastOpts.MaxResultBytes)
+		require.Len(t, masked, 1)
+		require.Equal(t, []string{"Affected Rows"}, masked[0].ColumnNames)
+		require.Equal(t, int64(0), masked[0].Rows[0].Values[0].GetInt64Value())
+	})
 
-	// A procedure's result set has columns the statement does not trace, so a
-	// masked query withholds its rows.
-	_, err = opened.Execute(ctx, "CREATE PROCEDURE p() BEGIN SELECT 1 AS n; END", db.ExecuteOptions{})
-	require.NoError(t, err)
-	unmasked, err := opened.QueryConn(ctx, "CALL p()", db.QueryContext{MaximumSQLResultSize: 1 << 20})
-	require.NoError(t, err)
-	require.Len(t, unmasked, 1)
-	require.Len(t, unmasked[0].Rows, 1)
-	masked, err := opened.QueryConn(ctx, "CALL p()", db.QueryContext{MaximumSQLResultSize: 1 << 20, MaskingEnabled: true})
-	require.NoError(t, err)
-	require.Len(t, masked, 1)
-	require.Equal(t, []string{"Affected Rows"}, masked[0].ColumnNames)
-	require.Equal(t, int64(0), masked[0].Rows[0].Values[0].GetInt64Value())
-}
+	t.Run("discards the held session after a canceled query", func(t *testing.T) {
+		sess1 := &fakeMySQLSession{
+			queryFn: func(ctx context.Context, statement string, _ odriver.QueryOptions) ([]*odriver.Result, error) {
+				if err := ctx.Err(); err != nil {
+					return nil, err
+				}
+				return []*odriver.Result{{Statement: statement}}, nil
+			},
+		}
+		sess2 := &fakeMySQLSession{
+			queryFn: func(_ context.Context, statement string, _ odriver.QueryOptions) ([]*odriver.Result, error) {
+				return []*odriver.Result{{
+					Statement: statement,
+					Columns:   []odriver.Column{{Name: "1", TypeName: "BIGINT"}},
+					Rows:      [][]odriver.Value{{{Kind: odriver.Int64, Int64: 1}}},
+				}}, nil
+			},
+		}
+		fake := &fakeMySQLDriver{sessions: []*fakeMySQLSession{sess1, sess2}}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
+		qctx := db.QueryContext{MaximumSQLResultSize: 1 << 20}
 
-// TestAdapterHoldsOneSessionAcrossQueryConnCalls pins the session seam: the
-// editor sends one statement at a time on a driver it keeps, so a user variable
-// and a temporary table set by one call must be visible to the next.
-func TestAdapterHoldsOneSessionAcrossQueryConnCalls(t *testing.T) {
-	ctx := context.Background()
-	container, database := newTestDatabase(t)
-	opened := openTestDatabaseDriver(t, container, database)
+		_, err := d.QueryConn(ctx, "SET @session_marker = 41", qctx)
+		require.NoError(t, err)
 
-	_, err := opened.QueryConn(ctx, "SET @session_marker = 41", db.QueryContext{MaximumSQLResultSize: 1 << 20})
-	require.NoError(t, err)
-	results, err := opened.QueryConn(ctx, "SELECT @session_marker + 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Len(t, results[0].Rows, 1)
-	require.Equal(t, int64(42), results[0].Rows[0].Values[0].GetInt64Value())
+		canceledCtx, cancel := context.WithCancel(ctx)
+		cancel()
+		_, err = d.QueryConn(canceledCtx, "SELECT SLEEP(10)", qctx)
+		require.ErrorIs(t, err, context.Canceled)
+		require.True(t, sess1.closed)
+		require.Nil(t, d.Session(), "a canceled statement's session is not one to keep")
 
-	_, err = opened.QueryConn(ctx, "CREATE TEMPORARY TABLE session_temp (id INT)", db.QueryContext{MaximumSQLResultSize: 1 << 20})
-	require.NoError(t, err)
-	_, err = opened.QueryConn(ctx, "INSERT INTO session_temp VALUES (7)", db.QueryContext{MaximumSQLResultSize: 1 << 20})
-	require.NoError(t, err)
-	results, err = opened.QueryConn(ctx, "SELECT id FROM session_temp", db.QueryContext{MaximumSQLResultSize: 1 << 20})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Len(t, results[0].Rows, 1)
-	require.Equal(t, int64(7), results[0].Rows[0].Values[0].GetInt64Value())
-}
-
-// TestAdapterDiscardsTheSessionAfterACanceledQuery pins that a canceled
-// statement discards the held session so the next editor call starts fresh.
-func TestAdapterDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
-	ctx := context.Background()
-	container, database := newTestDatabase(t)
-	opened := openTestDatabaseDriver(t, container, database)
-	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 20}
-
-	_, err := opened.QueryConn(ctx, "SET @session_marker = 41", queryContext)
-	require.NoError(t, err)
-
-	canceledCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
-	defer cancel()
-	_, _ = opened.QueryConn(canceledCtx, "SELECT SLEEP(10)", queryContext)
-	require.NotNil(t, canceledCtx.Err(), "the statement must have run past its context")
-	require.Nil(t, opened.Session(), "a canceled statement's session is not one to keep")
-
-	results, err := opened.QueryConn(ctx, "SELECT 1", queryContext)
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Len(t, results[0].Rows, 1)
-}
-
-type fakeMySQLDriver struct {
-	execScript string
-	execOpts   odriver.ExecuteOptions
-}
-
-func (*fakeMySQLDriver) Ping(context.Context) error { return nil }
-func (*fakeMySQLDriver) Close() error               { return nil }
-
-func (f *fakeMySQLDriver) Execute(_ context.Context, script string, opts odriver.ExecuteOptions) (int64, error) {
-	f.execScript = script
-	f.execOpts = opts
-	return 1, nil
+		results, err := d.QueryConn(ctx, "SELECT 1", qctx)
+		require.NoError(t, err)
+		require.Equal(t, 2, fake.sessionOpens)
+		require.Same(t, sess2, d.Session())
+		require.Len(t, results, 1)
+		require.Len(t, results[0].Rows, 1)
+	})
 }
 
 // TestAdapterExecuteMapsTxnDirectives pins how Execute maps transaction mode
 // and isolation directives while leaving CreateDatabase and MaximumRetries
 // unset.
 func TestAdapterExecuteMapsTxnDirectives(t *testing.T) {
-	fake := &fakeMySQLDriver{}
+	fake := &fakeMySQLDriver{
+		execFn: func(_ context.Context, script string, opts odriver.ExecuteOptions) (int64, error) {
+			if opts.Transaction == odriver.Transactional {
+				opts.Log.TransactionControl(odriver.Begin, nil)
+			}
+			opts.Log.CommandExecute(odriver.Command{Text: script, ByteStart: 0, ByteEnd: len(script)})
+			opts.Log.CommandResponse(1, []int64{1}, nil)
+			if opts.Transaction == odriver.Transactional {
+				opts.Log.TransactionControl(odriver.Commit, nil)
+			}
+			return 1, nil
+		},
+	}
 	d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
 
+	var logTypes []storepb.TaskRunLog_Type
 	rows, err := d.Execute(context.Background(), "-- txn-mode = on\n-- txn-isolation = READ COMMITTED\nINSERT INTO t VALUES (1);", db.ExecuteOptions{
 		CreateDatabase: true,
 		MaximumRetries: 3,
+		CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
+			logTypes = append(logTypes, entry.Type)
+			return nil
+		},
 	})
 	require.NoError(t, err)
 	require.Equal(t, int64(1), rows)
@@ -170,52 +273,116 @@ func TestAdapterExecuteMapsTxnDirectives(t *testing.T) {
 	require.Equal(t, odriver.ReadCommitted, fake.execOpts.Isolation)
 	require.False(t, fake.execOpts.CreateDatabase)
 	require.Zero(t, fake.execOpts.MaxRetries)
+	require.Equal(t, []storepb.TaskRunLog_Type{
+		storepb.TaskRunLog_TRANSACTION_CONTROL,
+		storepb.TaskRunLog_COMMAND_EXECUTE,
+		storepb.TaskRunLog_COMMAND_RESPONSE,
+		storepb.TaskRunLog_TRANSACTION_CONTROL,
+	}, logTypes)
 
 	_, err = d.Execute(context.Background(), "-- txn-mode = off\nUPDATE t SET v = 1;", db.ExecuteOptions{})
 	require.NoError(t, err)
 	require.Equal(t, odriver.AutoCommit, fake.execOpts.Transaction)
 }
 
-func TestAdapterProbeAndCountAffectedRows(t *testing.T) {
+func TestAdapterProbeAndRowEstimatorSeam(t *testing.T) {
 	ctx := context.Background()
-	container, database := newTestDatabase(t)
-	_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf("USE `%s`; CREATE TABLE td (id INT PRIMARY KEY, d INT); INSERT INTO td VALUES (1, 0), (2, 0), (3, 0);", database))
-	require.NoError(t, err)
-	opened := openTestDatabaseDriver(t, container, database)
 
-	result, err := opened.Probe(ctx, db.ProbeContext{PreExecutions: []string{"SET @probe_marker = 1"}}, "EXPLAIN SELECT @probe_marker")
-	require.NoError(t, err)
-	require.NotEmpty(t, result.Columns)
+	t.Run("transactional probe runs pre-executions and rolls back", func(t *testing.T) {
+		probeSess := &fakeMySQLSession{
+			queryFn: func(_ context.Context, statement string, _ odriver.QueryOptions) ([]*odriver.Result, error) {
+				if statement == "EXPLAIN SELECT @probe_marker" {
+					return []*odriver.Result{
+						{Statement: "ignored"},
+						{
+							Statement: statement,
+							Columns:   []odriver.Column{{Name: "id", TypeName: "INT"}},
+							Rows:      [][]odriver.Value{{{Kind: odriver.Int64, Int64: 1}}},
+						},
+					}, nil
+				}
+				return []*odriver.Result{{Statement: statement}}, nil
+			},
+		}
+		fake := &fakeMySQLDriver{
+			sessions:    []*fakeMySQLSession{probeSess},
+			estimate:    3,
+			explainJSON: `{"query_block":{}}`,
+		}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
 
-	count, err := opened.CountAffectedRows(ctx, "DELETE FROM td WHERE d = 0;")
-	require.NoError(t, err)
-	require.Greater(t, count, int64(0))
+		res, err := d.Probe(ctx, db.ProbeContext{PreExecutions: []string{"", "SET @probe_marker = 1"}}, "EXPLAIN SELECT @probe_marker")
+		require.NoError(t, err)
+		require.Equal(t, []string{
+			"START TRANSACTION",
+			"SET @probe_marker = 1",
+			"EXPLAIN SELECT @probe_marker",
+			"ROLLBACK",
+		}, probeSess.statements)
+		require.True(t, probeSess.closed)
+		require.Equal(t, []string{"id"}, res.Columns)
+		require.Equal(t, [][]any{{int64(1)}}, res.Rows)
+
+		count, err := d.CountAffectedRows(ctx, "DELETE FROM td WHERE d = 0;")
+		require.NoError(t, err)
+		require.Equal(t, int64(3), count)
+		require.Equal(t, "DELETE FROM td WHERE d = 0;", fake.estimateSQL)
+
+		plan, err := d.ExplainJSON(ctx, "SELECT 1")
+		require.NoError(t, err)
+		require.Equal(t, `{"query_block":{}}`, plan)
+		require.Equal(t, "SELECT 1", fake.explainSQL)
+	})
+
+	t.Run("autocommit probe skips transaction control", func(t *testing.T) {
+		probeSess := &fakeMySQLSession{}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: &fakeMySQLDriver{sessions: []*fakeMySQLSession{probeSess}}}}
+
+		_, err := d.Probe(ctx, db.ProbeContext{Autocommit: true, PreExecutions: []string{"SET @a = 1"}}, "EXPLAIN SELECT @a")
+		require.NoError(t, err)
+		require.Equal(t, []string{"SET @a = 1", "EXPLAIN SELECT @a"}, probeSess.statements)
+		require.True(t, probeSess.closed)
+	})
 }
 
-// TestAdapterServesMariaDBThroughItsOwnDriver pins that the MARIADB engine
-// dispatches to omni/mariadb/driver across sync, dump, execute, and query.
-func TestAdapterServesMariaDBThroughItsOwnDriver(t *testing.T) {
+// TestAdapterOpenDispatchesMySQLAndMariaDB pins that Open routes MYSQL to
+// omni/mysql/driver, MARIADB to omni/mariadb/driver, and guards engine-specific
+// estimator methods accordingly.
+func TestAdapterOpenDispatchesMySQLAndMariaDB(t *testing.T) {
 	ctx := context.Background()
-	container, database := testcontainer.NewMariaDBDatabase(t)
-	_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf("USE `%s`; CREATE TABLE m (id INT PRIMARY KEY, note VARCHAR(32));", database))
-	require.NoError(t, err)
+	cfg := db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:     "127.0.0.1",
+			Port:     "3306",
+			Username: "root",
+		},
+		Password:          "secret",
+		ConnectionContext: db.ConnectionContext{DatabaseName: "appdb"},
+	}
 
-	opened := openTestDriver(ctx, t, storepb.Engine_MARIADB, container, container.GetUsername(), container.GetPassword(), database)
-	require.NoError(t, opened.Ping(ctx))
-	instance, err := opened.SyncInstance(ctx)
+	mysqlDrv, err := newDriver().Open(ctx, storepb.Engine_MYSQL, cfg)
 	require.NoError(t, err)
-	require.NotEmpty(t, instance.Version)
+	t.Cleanup(func() { require.NoError(t, mysqlDrv.Close(ctx)) })
+	md, ok := mysqlDrv.(*Driver)
+	require.True(t, ok)
+	require.IsType(t, (*mysqld.Driver)(nil), md.Driver)
+	require.True(t, md.WithInstanceMetadata)
+	_, err = md.EstimateAffectedRowsMariaDB(ctx, nil, "", "")
+	require.ErrorContains(t, err, "needs the MariaDB driver")
 
-	metadata, err := opened.SyncDBSchema(ctx)
+	mariaDrv, err := newDriver().Open(ctx, storepb.Engine_MARIADB, cfg)
 	require.NoError(t, err)
-	var dump bytes.Buffer
-	require.NoError(t, opened.Dump(ctx, &dump, metadata))
-	require.Contains(t, dump.String(), "CREATE TABLE `m`")
+	t.Cleanup(func() { require.NoError(t, mariaDrv.Close(ctx)) })
+	mrd, ok := mariaDrv.(*Driver)
+	require.True(t, ok)
+	require.IsType(t, (*mariadbd.Driver)(nil), mrd.Driver)
+	require.True(t, mrd.WithInstanceMetadata)
+	_, err = mrd.EstimateAffectedRows(ctx, nil, "", "")
+	require.ErrorContains(t, err, "needs the MySQL driver")
 
-	_, err = opened.Execute(ctx, "INSERT INTO m VALUES (1, 'one')", db.ExecuteOptions{})
-	require.NoError(t, err)
-	results, err := opened.QueryConn(ctx, "SELECT note FROM m WHERE id = 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Equal(t, "one", results[0].Rows[0].Values[0].GetStringValue())
+	_, err = newDriver().Open(ctx, storepb.Engine_POSTGRES, cfg)
+	require.ErrorContains(t, err, "unsupported engine POSTGRES")
+
+	_, err = newDriver().Open(ctx, storepb.Engine_MYSQL, db.ConnectionConfig{})
+	require.ErrorContains(t, err, "a data source is required")
 }

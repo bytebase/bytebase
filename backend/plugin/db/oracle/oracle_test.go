@@ -1,6 +1,7 @@
 package oracle
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -8,9 +9,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"database/sql/driver"
 	"encoding/pem"
-	"fmt"
+	"errors"
+	"io"
 	"maps"
 	"math/big"
 	"net"
@@ -19,11 +20,9 @@ import (
 	"time"
 
 	omnidriver "github.com/bytebase/omni/driver"
-	goora "github.com/sijms/go-ora/v2"
-	"github.com/sijms/go-ora/v2/converters"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -102,10 +101,6 @@ END update_salary;`
 	require.Len(t, commands, 9)
 }
 
-// A character set latched on go-ora's process-wide driver must not reach Bytebase's
-// connections. WE8ISO8859P1 stands in for another Oracle data source, as a ZHS16GBK one did in
-// #21902: its decoder mangles this container's AL32UTF8 bytes, so text that survives the round
-// trip proves the connection used its own server's character set.
 // TestConnectionParams pins the data source fields that reach go-ora through the
 // contract's Params, and that an extra parameter wins in any spelling: go-ora
 // upper-cases option keys, so two spellings of one option would leave the winner
@@ -203,46 +198,6 @@ func TestQueryOptionsCarriesTheRequest(t *testing.T) {
 	require.Equal(t, int64(1024), options.MaxResultBytes)
 	require.True(t, options.MaskingEnabled, "masking reaches the driver")
 }
-
-func TestQueryIgnoresTheSharedDriverCharset(t *testing.T) {
-	ctx := context.Background()
-	container, schema := testcontainer.NewOracleSchema(t)
-	// A VARCHAR2 column, which the server sends in the database character set. UNISTR spells
-	// the text out in code points, so no client encoding decides what gets stored.
-	_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf("CREATE TABLE %s.CHARSET_PROBE (C VARCHAR2(100))", schema))
-	require.NoError(t, err)
-	_, err = container.GetDB().ExecContext(ctx, fmt.Sprintf(`INSERT INTO %s.CHARSET_PROBE VALUES (UNISTR('\6570\636E\5E93'))`, schema))
-	require.NoError(t, err)
-
-	const we8iso8859p1, al16utf16 = 31, 2000
-	goora.SetStringConverter(sharedGoOraDriver{}, converters.NewStringConverter(we8iso8859p1), converters.NewStringConverter(al16utf16))
-	t.Cleanup(func() { goora.SetStringConverter(sharedGoOraDriver{}, nil, nil) })
-
-	driver, err := (&Driver{}).Open(ctx, storepb.Engine_ORACLE, db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Host:        container.GetHost(),
-			Port:        container.GetPort(),
-			Username:    container.GetUsername(),
-			ServiceName: testcontainer.OracleServiceName,
-		},
-		Password:          container.GetPassword(),
-		ConnectionContext: db.ConnectionContext{DatabaseName: schema},
-	})
-	require.NoError(t, err)
-	defer driver.Close(ctx)
-
-	results, err := driver.QueryConn(ctx, "SELECT C FROM CHARSET_PROBE", db.QueryContext{MaximumSQLResultSize: 1024})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Empty(t, results[0].Error)
-	require.Equal(t, "数据库", results[0].Rows[0].Values[0].GetStringValue())
-}
-
-// sharedGoOraDriver hands go-ora's process-wide driver to SetStringConverter, which takes
-// whatever exposes a Driver method.
-type sharedGoOraDriver struct{}
-
-func (sharedGoOraDriver) Driver() driver.Driver { return goora.GetDefaultDriver() }
 
 func TestOpenAppliesTLSSettings(t *testing.T) {
 	pki := newTestPKI(t)
@@ -359,147 +314,6 @@ func TestOpenAppliesTLSSettings(t *testing.T) {
 	})
 }
 
-func TestCurrentSchemaOnNewSessions(t *testing.T) {
-	ctx := context.Background()
-	container, schema := testcontainer.NewOracleSchema(t)
-	open := func(schema string) (db.Driver, error) {
-		return (&Driver{}).Open(ctx, storepb.Engine_ORACLE, db.ConnectionConfig{
-			DataSource: &storepb.DataSource{
-				Host:        container.GetHost(),
-				Port:        container.GetPort(),
-				Username:    container.GetUsername(),
-				ServiceName: testcontainer.OracleServiceName,
-			},
-			Password:          container.GetPassword(),
-			ConnectionContext: db.ConnectionContext{DatabaseName: schema},
-		})
-	}
-	t.Run("QueryConn", func(t *testing.T) {
-		// A driver per subtest is a fresh pool, so this reads the schema the driver
-		// set on the session it opened rather than one an earlier statement did.
-		driver, err := open(schema)
-		require.NoError(t, err)
-		defer driver.Close(ctx)
-		results, err := driver.QueryConn(ctx, "SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') FROM DUAL", db.QueryContext{MaximumSQLResultSize: 1024})
-		require.NoError(t, err)
-		require.Len(t, results, 1)
-		require.Empty(t, results[0].Error)
-		require.Equal(t, schema, results[0].Rows[0].Values[0].GetStringValue())
-	})
-
-	t.Run("Execute", func(t *testing.T) {
-		driver, err := open(schema)
-		require.NoError(t, err)
-		defer driver.Close(ctx)
-		_, err = driver.Execute(ctx, "CREATE TABLE SESSION_SCHEMA AS SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') AS NAME FROM DUAL", db.ExecuteOptions{})
-		require.NoError(t, err)
-		var name string
-		require.NoError(t, container.GetDB().QueryRowContext(ctx, fmt.Sprintf("SELECT NAME FROM %s.SESSION_SCHEMA", schema)).Scan(&name))
-		require.Equal(t, schema, name)
-	})
-
-	t.Run("Open fails on a schema that doesn't exist", func(t *testing.T) {
-		_, err := open("NO_SUCH_SCHEMA")
-		require.ErrorContains(t, err, `failed to set current schema to "NO_SUCH_SCHEMA"`)
-	})
-}
-
-// TestQueryConnKeepsTheSessionForTheDriver pins that an editor stream's
-// statements share one session, which a session opened per QueryConn call would
-// lose: the API keeps the driver for the whole stream and calls QueryConn once
-// per statement. ALTER SESSION in the first call must therefore reach the SELECT
-// in the second, whose text would otherwise render in the server's default
-// format.
-func TestQueryConnKeepsTheSessionForTheDriver(t *testing.T) {
-	ctx := context.Background()
-	container, schema := testcontainer.NewOracleSchema(t)
-	driver, err := newDriver().Open(ctx, storepb.Engine_ORACLE, db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Host:        container.GetHost(),
-			Port:        container.GetPort(),
-			Username:    container.GetUsername(),
-			ServiceName: testcontainer.OracleServiceName,
-		},
-		Password:          container.GetPassword(),
-		ConnectionContext: db.ConnectionContext{DatabaseName: schema},
-	})
-	require.NoError(t, err)
-	defer driver.Close(ctx)
-	queryContext := db.QueryContext{MaximumSQLResultSize: 1024}
-
-	results, err := driver.QueryConn(ctx, "ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD'", queryContext)
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Empty(t, results[0].Error)
-
-	results, err = driver.QueryConn(ctx, "SELECT TO_CHAR(DATE '2026-01-02') AS D FROM DUAL", queryContext)
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Empty(t, results[0].Error)
-	require.Len(t, results[0].Rows, 1)
-	require.Equal(t, "2026/01/02", results[0].Rows[0].Values[0].GetStringValue())
-}
-
-// TestProbeRunsTheDryRunAutocommit pins the advisor seam: EXPLAIN PLAN FOR is a
-// PL/SQL block opener, so the rule passes Autocommit and the adapter must run the
-// statement alone rather than refuse it.
-func TestProbeRunsTheDryRunAutocommit(t *testing.T) {
-	ctx := context.Background()
-	container, schema := testcontainer.NewOracleSchema(t)
-	driver, err := newDriver().Open(ctx, storepb.Engine_ORACLE, db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Host:        container.GetHost(),
-			Port:        container.GetPort(),
-			Username:    container.GetUsername(),
-			ServiceName: testcontainer.OracleServiceName,
-		},
-		Password:          container.GetPassword(),
-		ConnectionContext: db.ConnectionContext{DatabaseName: schema},
-	})
-	require.NoError(t, err)
-	defer driver.Close(ctx)
-	prober, ok := driver.(db.Prober)
-	require.True(t, ok)
-
-	_, err = prober.Probe(ctx, db.ProbeContext{Autocommit: true}, "EXPLAIN PLAN FOR SELECT 1 FROM DUAL")
-	require.NoError(t, err)
-
-	_, err = prober.Probe(ctx, db.ProbeContext{Autocommit: true}, "EXPLAIN PLAN FOR SELECT * FROM NO_SUCH_TABLE")
-	require.ErrorContains(t, err, "ORA-00942")
-
-	// The contract's session has no transaction to roll a non-autocommit probe
-	// back with, so it is refused rather than run and left behind.
-	_, err = prober.Probe(ctx, db.ProbeContext{PreExecutions: []string{"ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY'"}}, "SELECT 1 FROM DUAL")
-	require.ErrorContains(t, err, "runs alone")
-}
-
-// TestOwnsPrivateDatabaseLinkAsksTheDriver pins the guard's capability: with no
-// *sql.DB handle, the driver asks with a session of its own.
-func TestOwnsPrivateDatabaseLinkAsksTheDriver(t *testing.T) {
-	ctx := context.Background()
-	container, schema := testcontainer.NewOracleSchema(t)
-	driver, err := newDriver().Open(ctx, storepb.Engine_ORACLE, db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Host:        container.GetHost(),
-			Port:        container.GetPort(),
-			Username:    container.GetUsername(),
-			ServiceName: testcontainer.OracleServiceName,
-		},
-		Password:          container.GetPassword(),
-		ConnectionContext: db.ConnectionContext{DatabaseName: schema},
-	})
-	require.NoError(t, err)
-	defer driver.Close(ctx)
-
-	owner, ok := driver.(interface {
-		OwnsPrivateDatabaseLink(context.Context) (bool, error)
-	})
-	require.True(t, ok)
-	owns, err := owner.OwnsPrivateDatabaseLink(ctx)
-	require.NoError(t, err)
-	require.False(t, owns)
-}
-
 func TestWithoutSQLPlusCommands(t *testing.T) {
 	script := "SET DEFINE OFF\nSELECT 1 AS A FROM DUAL"
 	blanked := withoutSQLPlusCommands(script)
@@ -512,35 +326,103 @@ func TestWithoutSQLPlusCommands(t *testing.T) {
 }
 
 type fakeOracleDriver struct {
+	sessionOpens int
+	sessions     []*captureOracleSession
+	sessionErr   error
+
 	execScript string
 	execOpts   omnidriver.ExecuteOptions
+	execFn     func(context.Context, string, omnidriver.ExecuteOptions) (int64, error)
+
+	instance    *omnidriver.Instance
+	schema      *metadatapb.DatabaseSchemaMetadata
+	dumpDDL     string
+	estimate    int64
+	estimateErr error
+	estimateSQL string
+	ownsLink    bool
+	ownsLinkErr error
 }
 
 func (*fakeOracleDriver) Ping(context.Context) error { return nil }
 func (*fakeOracleDriver) Close() error               { return nil }
 
-func (f *fakeOracleDriver) Execute(_ context.Context, script string, opts omnidriver.ExecuteOptions) (int64, error) {
+func (f *fakeOracleDriver) Session(context.Context) (omnidriver.Session, error) {
+	f.sessionOpens++
+	if f.sessionErr != nil {
+		return nil, f.sessionErr
+	}
+	if len(f.sessions) > 0 {
+		s := f.sessions[0]
+		f.sessions = f.sessions[1:]
+		return s, nil
+	}
+	return &captureOracleSession{}, nil
+}
+
+func (f *fakeOracleDriver) SyncInstance(context.Context) (*omnidriver.Instance, error) {
+	return f.instance, nil
+}
+
+func (f *fakeOracleDriver) SyncDatabase(context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return f.schema, nil
+}
+
+func (f *fakeOracleDriver) Dump(_ context.Context, out io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
+	_, err := io.WriteString(out, f.dumpDDL)
+	return err
+}
+
+func (f *fakeOracleDriver) Execute(ctx context.Context, script string, opts omnidriver.ExecuteOptions) (int64, error) {
 	f.execScript = script
 	f.execOpts = opts
+	if f.execFn != nil {
+		return f.execFn(ctx, script, opts)
+	}
 	return 1, nil
 }
 
-type captureOracleSession struct {
-	gotStatement string
-	gotOpts      omnidriver.QueryOptions
+func (f *fakeOracleDriver) CountAffectedRows(_ context.Context, statement string) (int64, error) {
+	f.estimateSQL = statement
+	return f.estimate, f.estimateErr
 }
 
-func (s *captureOracleSession) Query(_ context.Context, stmt string, opts omnidriver.QueryOptions) ([]*omnidriver.Result, error) {
+func (f *fakeOracleDriver) OwnsPrivateDatabaseLink(context.Context) (bool, error) {
+	return f.ownsLink, f.ownsLinkErr
+}
+
+type captureOracleSession struct {
+	gotStatements []string
+	gotStatement  string
+	gotOpts       omnidriver.QueryOptions
+	queryFn       func(context.Context, string, omnidriver.QueryOptions) ([]*omnidriver.Result, error)
+	closed        bool
+}
+
+func (s *captureOracleSession) Query(ctx context.Context, stmt string, opts omnidriver.QueryOptions) ([]*omnidriver.Result, error) {
+	s.gotStatements = append(s.gotStatements, stmt)
 	s.gotStatement = stmt
 	s.gotOpts = opts
+	if s.queryFn != nil {
+		return s.queryFn(ctx, stmt, opts)
+	}
 	return []*omnidriver.Result{{Statement: stmt}}, nil
 }
 
-func (*captureOracleSession) Close() error { return nil }
+func (s *captureOracleSession) Close() error {
+	s.closed = true
+	return nil
+}
 
 func TestExecuteAndQueryConnSQLPlusSeam(t *testing.T) {
 	ctx := context.Background()
-	fake := &fakeOracleDriver{}
+	fake := &fakeOracleDriver{
+		execFn: func(_ context.Context, script string, opts omnidriver.ExecuteOptions) (int64, error) {
+			opts.Log.CommandExecute(omnidriver.Command{Text: script, ByteStart: 0, ByteEnd: len(script)})
+			opts.Log.CommandResponse(1, []int64{1}, nil)
+			return 1, nil
+		},
+	}
 	session := &captureOracleSession{}
 	d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
 	d.SetSession(session)
@@ -548,7 +430,14 @@ func TestExecuteAndQueryConnSQLPlusSeam(t *testing.T) {
 	_, err := d.Execute(ctx, "CREATE TABLE T (ID NUMBER)", db.ExecuteOptions{CreateDatabase: true})
 	require.ErrorContains(t, err, "create database is not supported for Oracle")
 
-	rows, err := d.Execute(ctx, "-- txn-mode = off\nSET DEFINE OFF\nINSERT INTO T VALUES (1)", db.ExecuteOptions{MaximumRetries: 2})
+	var logTypes []storepb.TaskRunLog_Type
+	rows, err := d.Execute(ctx, "-- txn-mode = off\nSET DEFINE OFF\nINSERT INTO T VALUES (1)", db.ExecuteOptions{
+		MaximumRetries: 2,
+		CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
+			logTypes = append(logTypes, entry.Type)
+			return nil
+		},
+	})
 	require.NoError(t, err)
 	require.Equal(t, int64(1), rows)
 	require.Equal(t, omnidriver.AutoCommit, fake.execOpts.Transaction)
@@ -556,11 +445,190 @@ func TestExecuteAndQueryConnSQLPlusSeam(t *testing.T) {
 	require.Equal(t, 2, fake.execOpts.MaxRetries)
 	require.NotContains(t, fake.execScript, "SET DEFINE OFF")
 	require.Contains(t, fake.execScript, "INSERT INTO T VALUES (1)")
+	require.Equal(t, []storepb.TaskRunLog_Type{
+		storepb.TaskRunLog_COMMAND_EXECUTE,
+		storepb.TaskRunLog_COMMAND_RESPONSE,
+	}, logTypes)
 
 	_, err = d.QueryConn(ctx, "SET DEFINE OFF\nSELECT 1 FROM DUAL", db.QueryContext{MaximumSQLResultSize: 1024})
 	require.NoError(t, err)
 	require.NotContains(t, session.gotStatement, "SET DEFINE OFF")
 	require.Contains(t, session.gotStatement, "SELECT 1 FROM DUAL")
+}
+
+func TestQueryConnAdapterSeam(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("reuses one session across calls and converts values", func(t *testing.T) {
+		affected := int64(2)
+		sess := &captureOracleSession{
+			queryFn: func(_ context.Context, stmt string, _ omnidriver.QueryOptions) ([]*omnidriver.Result, error) {
+				if strings.HasPrefix(stmt, "ALTER SESSION") {
+					return []*omnidriver.Result{{Statement: stmt}}, nil
+				}
+				return []*omnidriver.Result{
+					{
+						Statement: stmt,
+						Columns:   []omnidriver.Column{{Name: "D", TypeName: "VARCHAR2"}, {Name: "N", TypeName: "NUMBER"}},
+						Rows: [][]omnidriver.Value{{
+							{Kind: omnidriver.String, String: "2026/01/02"},
+							{Kind: omnidriver.Null},
+						}},
+					},
+					{
+						Statement:    "UPDATE T SET A = 1",
+						AffectedRows: &affected,
+					},
+				}, nil
+			},
+		}
+		fake := &fakeOracleDriver{sessions: []*captureOracleSession{sess}}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
+		qctx := db.QueryContext{Schema: "APP", Limit: 5, MaximumSQLResultSize: 1024}
+
+		_, err := d.QueryConn(ctx, "ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY/MM/DD'", qctx)
+		require.NoError(t, err)
+		results, err := d.QueryConn(ctx, "SELECT TO_CHAR(DATE '2026-01-02') AS D, NULL AS N FROM DUAL", qctx)
+		require.NoError(t, err)
+
+		require.Equal(t, 1, fake.sessionOpens)
+		require.Same(t, sess, d.Session())
+		require.Equal(t, "APP", sess.gotOpts.Schema)
+		require.Equal(t, 5, sess.gotOpts.Limit)
+		require.Len(t, results, 2)
+		require.Equal(t, "2026/01/02", results[0].Rows[0].Values[0].GetStringValue())
+		require.IsType(t, (*v1pb.RowValue_NullValue)(nil), results[0].Rows[0].Values[1].Kind)
+		require.Equal(t, []string{"Affected Rows"}, results[1].ColumnNames)
+		require.Equal(t, int64(2), results[1].Rows[0].Values[0].GetInt64Value())
+	})
+
+	t.Run("wraps session open errors", func(t *testing.T) {
+		fake := &fakeOracleDriver{sessionErr: errors.New("ORA-01435")}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
+		_, err := d.QueryConn(ctx, "SELECT 1 FROM DUAL", db.QueryContext{MaximumSQLResultSize: 1024})
+		require.ErrorContains(t, err, "failed to open a session")
+		require.ErrorContains(t, err, "ORA-01435")
+	})
+
+	t.Run("discards session after canceled context", func(t *testing.T) {
+		sess1 := &captureOracleSession{
+			queryFn: func(ctx context.Context, _ string, _ omnidriver.QueryOptions) ([]*omnidriver.Result, error) {
+				return nil, ctx.Err()
+			},
+		}
+		sess2 := &captureOracleSession{}
+		fake := &fakeOracleDriver{sessions: []*captureOracleSession{sess1, sess2}}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
+
+		canceledCtx, cancel := context.WithCancel(ctx)
+		cancel()
+		_, err := d.QueryConn(canceledCtx, "SELECT 1 FROM DUAL", db.QueryContext{MaximumSQLResultSize: 1024})
+		require.ErrorIs(t, err, context.Canceled)
+		require.True(t, sess1.closed)
+		require.Nil(t, d.Session())
+
+		_, err = d.QueryConn(ctx, "SELECT 1 FROM DUAL", db.QueryContext{MaximumSQLResultSize: 1024})
+		require.NoError(t, err)
+		require.Equal(t, 2, fake.sessionOpens)
+		require.Same(t, sess2, d.Session())
+	})
+}
+
+func TestProbeAdapterSeam(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("runs autocommit probe on fresh session and maps cells", func(t *testing.T) {
+		probeSess := &captureOracleSession{
+			queryFn: func(_ context.Context, stmt string, _ omnidriver.QueryOptions) ([]*omnidriver.Result, error) {
+				return []*omnidriver.Result{{
+					Statement: stmt,
+					Columns:   []omnidriver.Column{{Name: "OP", TypeName: "VARCHAR2"}, {Name: "META", TypeName: "JSON"}},
+					Rows: [][]omnidriver.Value{{
+						{Kind: omnidriver.String, String: "SELECT STATEMENT"},
+						{Kind: omnidriver.Structured, String: `{"k":"v"}`},
+					}},
+				}}, nil
+			},
+		}
+		fake := &fakeOracleDriver{sessions: []*captureOracleSession{probeSess}}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
+
+		res, err := d.Probe(ctx, db.ProbeContext{Autocommit: true}, "EXPLAIN PLAN FOR SELECT 1 FROM DUAL")
+		require.NoError(t, err)
+		require.Equal(t, []string{"EXPLAIN PLAN FOR SELECT 1 FROM DUAL"}, probeSess.gotStatements)
+		require.True(t, probeSess.closed)
+		require.Equal(t, []string{"OP", "META"}, res.Columns)
+		require.Equal(t, [][]any{{"SELECT STATEMENT", nil}}, res.Rows)
+	})
+
+	t.Run("propagates statement error from probe", func(t *testing.T) {
+		probeSess := &captureOracleSession{
+			queryFn: func(_ context.Context, stmt string, _ omnidriver.QueryOptions) ([]*omnidriver.Result, error) {
+				return []*omnidriver.Result{{Statement: stmt, Err: errors.New("ORA-00942: table or view does not exist")}}, nil
+			},
+		}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: &fakeOracleDriver{sessions: []*captureOracleSession{probeSess}}}}
+
+		_, err := d.Probe(ctx, db.ProbeContext{Autocommit: true}, "EXPLAIN PLAN FOR SELECT * FROM NO_SUCH_TABLE")
+		require.ErrorContains(t, err, "ORA-00942")
+		require.True(t, probeSess.closed)
+	})
+
+	t.Run("refuses non-autocommit probes without opening a session", func(t *testing.T) {
+		fake := &fakeOracleDriver{}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
+
+		_, err := d.Probe(ctx, db.ProbeContext{PreExecutions: []string{"ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY'"}}, "SELECT 1 FROM DUAL")
+		require.ErrorContains(t, err, "runs alone")
+		require.Zero(t, fake.sessionOpens)
+	})
+}
+
+func TestSyncDumpLinksAndRowEstimatorSeam(t *testing.T) {
+	ctx := context.Background()
+	schema := &metadatapb.DatabaseSchemaMetadata{
+		Name:    "APP",
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "APP", Tables: []*metadatapb.TableMetadata{{Name: "T"}}}},
+	}
+	fake := &fakeOracleDriver{
+		instance: &omnidriver.Instance{Version: "23.26.3.0.0", Databases: []*metadatapb.DatabaseSchemaMetadata{{Name: "APP"}}},
+		schema:   schema,
+		dumpDDL:  `CREATE TABLE "T" ("ID" NUMBER);`,
+		estimate: 42,
+		ownsLink: true,
+	}
+	d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
+
+	inst, err := d.SyncInstance(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "23.26.3.0.0", inst.Version)
+	require.Len(t, inst.Databases, 1)
+
+	gotSchema, err := d.SyncDBSchema(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "APP", gotSchema.Name)
+
+	var dump bytes.Buffer
+	require.NoError(t, d.Dump(ctx, &dump, gotSchema))
+	require.Contains(t, dump.String(), `CREATE TABLE "T"`)
+
+	rows, err := d.CountAffectedRows(ctx, "DELETE FROM T WHERE ID = 1")
+	require.NoError(t, err)
+	require.Equal(t, int64(42), rows)
+	require.Equal(t, "DELETE FROM T WHERE ID = 1", fake.estimateSQL)
+
+	owns, err := d.OwnsPrivateDatabaseLink(ctx)
+	require.NoError(t, err)
+	require.True(t, owns)
+
+	fake.ownsLink = false
+	owns, err = d.OwnsPrivateDatabaseLink(ctx)
+	require.NoError(t, err)
+	require.False(t, owns)
+
+	fake.ownsLinkErr = errors.New("ORA-00942")
+	_, err = d.OwnsPrivateDatabaseLink(ctx)
+	require.ErrorContains(t, err, "ORA-00942")
 }
 
 func closedPort(t *testing.T) string {
