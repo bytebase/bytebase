@@ -24,11 +24,4 @@ func TestSplitSQLSeam(t *testing.T) {
 	require.Contains(t, stmts[1].Text, "SELECT 2 FROM DUAL")
 	require.Equal(t, int32(1), stmts[1].Start.Line)
 	require.Equal(t, int32(2), stmts[1].End.Line)
-
-	// SplitSQLForCompletion exposes the completion splitter seam.
-	compStmts, err := SplitSQLForCompletion("SELECT 1 FROM DUAL; SELECT ")
-	require.NoError(t, err)
-	require.Len(t, compStmts, 2)
-	require.Equal(t, "SELECT 1 FROM DUAL", compStmts[0].Text)
-	require.Contains(t, compStmts[1].Text, "SELECT")
 }

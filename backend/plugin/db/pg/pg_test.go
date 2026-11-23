@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -578,27 +577,4 @@ func TestTaskRunSessionConversion(t *testing.T) {
 	require.Equal(t, "bytebase-taskrun-42", got.GetApplicationName())
 	require.Nil(t, got.GetXactStart())
 	require.Equal(t, queryStart, got.GetQueryStart().AsTime())
-}
-
-// pgTestDriver opens a driver on the shared container's database.
-func pgTestDriver(ctx context.Context, t *testing.T, pgContainer *testcontainer.Container, database string, edit func(*db.ConnectionConfig)) *Driver {
-	t.Helper()
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Host:     pgContainer.GetHost(),
-			Port:     pgContainer.GetPort(),
-			Username: "postgres",
-		},
-		Password:          "root-password",
-		ConnectionContext: db.ConnectionContext{DatabaseName: database},
-	}
-	if edit != nil {
-		edit(&config)
-	}
-	opened, err := (&Driver{}).Open(ctx, storepb.Engine_POSTGRES, config)
-	require.NoError(t, err)
-	driver, ok := opened.(*Driver)
-	require.True(t, ok)
-	t.Cleanup(func() { _ = driver.Close(context.Background()) })
-	return driver
 }

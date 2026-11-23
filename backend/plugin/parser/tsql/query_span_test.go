@@ -106,8 +106,8 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	require.ErrorAs(t, convertQuerySpanError(&analysis.NotFoundError{Database: strPtr("app"), Table: strPtr("ghost")}), &nfErr)
 	require.Equal(t, strPtr("ghost"), nfErr.Table)
 
-	require.Equal(t, base.SelectInfoSchema, convertQueryType(analysis.SelectInfoSchema))
-	require.Equal(t, base.DDL, convertQueryType(analysis.DDL))
-	require.Equal(t, base.DML, convertQueryType(analysis.DML))
-	require.Equal(t, base.QueryTypeUnknown, convertQueryType(analysis.QueryType(999)))
+	require.Equal(t, base.SelectInfoSchema, base.OmniQueryType(analysis.SelectInfoSchema))
+	require.Equal(t, base.DDL, base.OmniQueryType(analysis.DDL))
+	require.Equal(t, base.DML, base.OmniQueryType(analysis.DML))
+	require.Equal(t, base.QueryTypeUnknown, base.OmniQueryType(analysis.QueryType(999)))
 }
