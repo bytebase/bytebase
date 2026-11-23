@@ -2,12 +2,10 @@
 package bigquery
 
 import (
-	"fmt"
 	"strings"
 
 	omniast "github.com/bytebase/omni/googlesql/ast"
 	googlesqlv1review "github.com/bytebase/omni/googlesql/v1review"
-	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -39,7 +37,5 @@ func init() {
 	e := advisor.NewV1Engine(extract, byteOffsetLine, advisor.V1PosFindingOrFirstLine)
 
 	advisor.RegisterFunc(storepb.Engine_BIGQUERY, storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE,
-		e.SimpleStmt(googlesqlv1review.StatementWhereRequireUpdateDelete, code.StatementNoWhere, func(_ advisor.V1Stmt[omniast.Node], f v1review.Finding) string {
-			return fmt.Sprintf("WHERE clause is required for %s statement.", f.Name)
-		}))
+		e.SimpleStmt(googlesqlv1review.StatementWhereRequireUpdateDelete, code.StatementNoWhere, e.FmtName("WHERE clause is required for %s statement.")))
 }

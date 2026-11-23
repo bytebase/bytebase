@@ -44,6 +44,22 @@ type V1CompatEntry struct {
 	Warning bool
 }
 
+// V1StandardCompatEntries is the default v1review compatibility code mapping
+// shared by PostgreSQL and MySQL-family engines.
+var V1StandardCompatEntries = map[v1review.Code]V1CompatEntry{
+	v1review.IncompatibleDropDatabase:  {Code: code.CompatibilityDropDatabase},
+	v1review.IncompatibleRenameTable:   {Code: code.CompatibilityRenameTable},
+	v1review.IncompatibleDropTable:     {Code: code.CompatibilityDropTable},
+	v1review.IncompatibleRenameColumn:  {Code: code.CompatibilityRenameColumn},
+	v1review.IncompatibleDropColumn:    {Code: code.CompatibilityDropColumn},
+	v1review.IncompatibleAddPrimaryKey: {Code: code.CompatibilityAddPrimaryKey},
+	v1review.IncompatibleAddUniqueKey:  {Code: code.CompatibilityAddUniqueKey},
+	v1review.IncompatibleAddForeignKey: {Code: code.CompatibilityAddForeignKey},
+	v1review.IncompatibleAddCheck:      {Code: code.CompatibilityAddCheck},
+	v1review.IncompatibleAlterCheck:    {Code: code.CompatibilityAlterCheck},
+	v1review.IncompatibleAlterColumn:   {Code: code.CompatibilityAlterColumn},
+}
+
 // V1EngineOptions configures a V1Engine with optional MySQL-family dialect quirks.
 type V1EngineOptions[N any] struct {
 	Extract             func(Context) ([]V1Stmt[N], error)
@@ -54,33 +70,43 @@ type V1EngineOptions[N any] struct {
 	CreateTableLocStart func(N) (int, bool)
 }
 
-// V1TemplateNamingOptions configures TemplateNaming formatting.
-type V1TemplateNamingOptions[N any] struct {
-	BacktickQuote  bool
+// V1TemplateNamingConfig configures a per-statement template naming rule (NAMING_INDEX_*).
+// Exactly one of FnNoErr or FnNoSchema must be set.
+type V1TemplateNamingConfig[N any] struct {
+	FnNoErr        func([]N, v1review.TemplateConfig, v1review.Schema) []v1review.Finding
+	FnNoSchema     func([]N, v1review.TemplateConfig) ([]v1review.Finding, error)
+	Code           code.Code
+	Kind           string
+	ErrTitle       string
+	InvalidFmt     string
 	InvalidContent func(V1Stmt[N], v1review.Finding) string
+	NilInvalidPos  bool
+	BacktickQuote  bool
+	Pos            V1PosFunc[N]
 }
 
 // V1RowLimitConfig configures a row-limit rule (STATEMENT_INSERT_ROW_LIMIT or
 // STATEMENT_AFFECTED_ROW_LIMIT) on a V1Engine.
 type V1RowLimitConfig[N any] struct {
-	Probes          func([]N) []int
-	Judge           func([]N, map[int]v1review.Probe, int) []v1review.Finding
-	ExceededCode    code.Code
-	ExceededVerb    string
-	ExceededContent func(text, count string, maxRow int) string
-	PositiveOnly    bool
-	TrimEstimate    bool
-	StatementText   func(V1Stmt[N], N) string
-	Estimate        func(ctx context.Context, checkCtx Context, stmt V1Stmt[N], node N, settings []string) (v1review.Probe, error)
-	BudgetPos       func(V1Stmt[N], N) *storepb.Position
-	Pos             V1PosFunc[N]
-	PreExecutions   func(stmts []V1Stmt[N], nodes []N, want []int, visit func(i int, settings []string))
+	Probes         func([]N) []int
+	Judge          func([]N, map[int]v1review.Probe, int) []v1review.Finding
+	ExceededCode   code.Code
+	ExceededVerb   string
+	ExceededPrefix string
+	PositiveOnly   bool
+	TrimEstimate   bool
+	StatementText  func(V1Stmt[N], N) string
+	Estimate       func(ctx context.Context, checkCtx Context, stmt V1Stmt[N], node N, settings []string) (v1review.Probe, error)
+	BudgetPos      func(V1Stmt[N], N) *storepb.Position
+	Pos            V1PosFunc[N]
+	PreExecutions  func(stmts []V1Stmt[N], nodes []N, want []int, visit func(i int, settings []string))
 }
 
 // V1DMLDryRunConfig configures STATEMENT_DML_DRY_RUN on a V1Engine.
 type V1DMLDryRunConfig[N any] struct {
 	Probes        func([]N) []int
 	Judge         func([]N, map[int]v1review.Probe) []v1review.Finding
+	StatementText func(V1Stmt[N]) string
 	Probe         func(ctx context.Context, prober db.Prober, stmt V1Stmt[N], settings []string) v1review.Probe
 	FormatContent func(V1Stmt[N], v1review.Finding) string
 	Pos           V1PosFunc[N]
@@ -207,6 +233,10 @@ func (e *V1Engine[N]) absLine(stmt V1Stmt[N], byteOffset int) int {
 	return stmt.BaseLine + int(e.byteOffsetLine(stmt.Text, byteOffset))
 }
 
+func (*V1Engine[N]) stmtPos(stmt V1Stmt[N], line int32) *storepb.Position {
+	return base.ConvertANTLRLineToPosition(stmt.BaseLine + int(line))
+}
+
 // FirstTokenLine returns the 1-based absolute line of the first non-whitespace rune in stmt.Text.
 func (e *V1Engine[N]) FirstTokenLine(stmt V1Stmt[N]) int {
 	return e.absLine(stmt, firstNonSpaceIndex(stmt.Text))
@@ -222,52 +252,39 @@ func (e *V1Engine[N]) findingLine(text string, f v1review.Finding) int32 {
 
 // ContentStartLine returns the 1-based line of the first non-whitespace character in text.
 func (e *V1Engine[N]) ContentStartLine(text string) int32 {
-	idx := contentStartIndex(text)
-	if idx <= 0 {
-		return 1
+	if idx := contentStartIndex(text); idx > 0 {
+		return e.byteOffsetLine(text, idx)
 	}
-	return e.byteOffsetLine(text, idx)
+	return 1
 }
 
 // ContentEndLine returns the 1-based line of the last non-whitespace, non-semicolon character in text.
 func (e *V1Engine[N]) ContentEndLine(text string) int32 {
-	if text == "" {
+	trimmed := strings.TrimRight(text, " \t\n\r;")
+	if len(trimmed) <= 1 {
 		return 1
 	}
-	idx := -1
-	for i := len(text) - 1; i >= 0; i-- {
-		c := text[i]
-		if c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != ';' {
-			idx = i
-			break
-		}
-	}
-	if idx <= 0 {
-		return 1
-	}
-	return e.byteOffsetLine(text, idx)
+	return e.byteOffsetLine(text, len(trimmed)-1)
 }
 
 // FindLineByName returns the 1-based line of name in text, or ContentStartLine(text).
 func (e *V1Engine[N]) FindLineByName(text, name string) int32 {
-	if name == "" || text == "" {
-		return e.ContentStartLine(text)
+	if name != "" {
+		if idx := strings.Index(text, name); idx >= 0 {
+			return e.byteOffsetLine(text, idx)
+		}
 	}
-	idx := strings.Index(text, name)
-	if idx < 0 {
-		return e.ContentStartLine(text)
-	}
-	return e.byteOffsetLine(text, idx)
+	return e.ContentStartLine(text)
 }
 
 // PosContentStart anchors the advice on the statement's first non-whitespace line.
 func (e *V1Engine[N]) PosContentStart(stmt V1Stmt[N], _ v1review.Finding) *storepb.Position {
-	return base.ConvertANTLRLineToPosition(stmt.BaseLine + int(e.ContentStartLine(stmt.Text)))
+	return e.stmtPos(stmt, e.ContentStartLine(stmt.Text))
 }
 
 // PosContentEnd anchors the advice on the statement's last non-whitespace, non-semicolon line.
 func (e *V1Engine[N]) PosContentEnd(stmt V1Stmt[N], _ v1review.Finding) *storepb.Position {
-	return base.ConvertANTLRLineToPosition(stmt.BaseLine + int(e.ContentEndLine(stmt.Text)))
+	return e.stmtPos(stmt, e.ContentEndLine(stmt.Text))
 }
 
 // PosFinding anchors the advice at f.Start, falling back to the first non-whitespace character.
@@ -278,7 +295,12 @@ func (e *V1Engine[N]) PosFinding(stmt V1Stmt[N], f v1review.Finding) *storepb.Po
 		}
 		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
 	}
-	return base.ConvertANTLRLineToPosition(stmt.BaseLine + int(e.findingLine(stmt.Text, f)))
+	return e.stmtPos(stmt, e.findingLine(stmt.Text, f))
+}
+
+// PosStatement anchors the advice on the statement's start line using PosFinding fallback rules.
+func (e *V1Engine[N]) PosStatement(stmt V1Stmt[N], _ v1review.Finding) *storepb.Position {
+	return e.PosFinding(stmt, v1review.Finding{})
 }
 
 // PosFindingOrFirstLine anchors the advice at f.Start, falling back to line 1 of the statement.
@@ -287,7 +309,7 @@ func (e *V1Engine[N]) PosFindingOrFirstLine(stmt V1Stmt[N], f v1review.Finding) 
 	if f.Start != 0 || f.End != 0 {
 		line = e.byteOffsetLine(stmt.Text, f.Start)
 	}
-	return base.ConvertANTLRLineToPosition(stmt.BaseLine + int(line))
+	return e.stmtPos(stmt, line)
 }
 
 // PosSearchOrStart anchors the advice on the line containing f.Search, or ContentStartLine.
@@ -296,12 +318,17 @@ func (e *V1Engine[N]) PosSearchOrStart(stmt V1Stmt[N], f v1review.Finding) *stor
 	if f.Search != "" {
 		line = e.FindLineByName(stmt.Text, f.Search)
 	}
-	return base.ConvertANTLRLineToPosition(stmt.BaseLine + int(line))
+	return e.stmtPos(stmt, line)
 }
 
 // PosNameOrStart anchors the advice on the line containing f.Name, or ContentStartLine.
 func (e *V1Engine[N]) PosNameOrStart(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
-	return base.ConvertANTLRLineToPosition(stmt.BaseLine + int(e.FindLineByName(stmt.Text, f.Name)))
+	return e.stmtPos(stmt, e.FindLineByName(stmt.Text, f.Name))
+}
+
+// PosStmtStart anchors the advice at the original splitter start position of stmt.
+func (*V1Engine[N]) PosStmtStart(stmt V1Stmt[N], _ v1review.Finding) *storepb.Position {
+	return stmt.Start
 }
 
 // PosNil returns nil for rules whose advice carries no StartPosition.
@@ -313,30 +340,19 @@ func (e *V1Engine[N]) posAbsOrFinding(stmt V1Stmt[N], f v1review.Finding) *store
 	if e.tidbQuirks {
 		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
 	}
-	return base.ConvertANTLRLineToPosition(stmt.BaseLine + int(e.findingLine(stmt.Text, f)))
-}
-
-func (e *V1Engine[N]) posStatement(stmt V1Stmt[N]) *storepb.Position {
-	if e.tidbQuirks {
-		return base.ConvertANTLRLineToPosition(e.FirstTokenLine(stmt))
-	}
-	return base.ConvertANTLRLineToPosition(stmt.BaseLine + int(e.findingLine(stmt.Text, v1review.Finding{})))
-}
-
-func (e *V1Engine[N]) posStatementFinding(stmt V1Stmt[N], _ v1review.Finding) *storepb.Position {
-	return e.posStatement(stmt)
+	return e.stmtPos(stmt, e.findingLine(stmt.Text, f))
 }
 
 func (e *V1Engine[N]) posStatementAbsOrStmt(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	if e.tidbQuirks {
 		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
 	}
-	return e.posStatement(stmt)
+	return e.PosStatement(stmt, f)
 }
 
 func (e *V1Engine[N]) posFindingOrTiDBFirstToken(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	if e.tidbQuirks {
-		return e.posStatement(stmt)
+		return e.PosStatement(stmt, f)
 	}
 	return e.PosFinding(stmt, f)
 }
@@ -345,7 +361,7 @@ func (e *V1Engine[N]) posBaseLineTwice(stmt V1Stmt[N], f v1review.Finding) *stor
 	if e.tidbQuirks {
 		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
 	}
-	p := base.ConvertANTLRLineToPosition(stmt.BaseLine + int(e.findingLine(stmt.Text, f)))
+	p := e.stmtPos(stmt, e.findingLine(stmt.Text, f))
 	p.Line += int32(stmt.BaseLine)
 	return p
 }
@@ -377,7 +393,7 @@ func (e *V1Engine[N]) posSearchOrFinding(stmt V1Stmt[N], f v1review.Finding) *st
 	if f.Search != "" {
 		line = e.FindLineByName(stmt.Text, f.Search)
 	}
-	return base.ConvertANTLRLineToPosition(stmt.BaseLine + int(line))
+	return e.stmtPos(stmt, line)
 }
 
 func (e *V1Engine[N]) stmtText(stmt V1Stmt[N], rawOnTiDB bool) string {
@@ -398,6 +414,36 @@ func (*V1Engine[N]) SchemaOf(m Context) v1review.Schema {
 		return v1review.Schema{}
 	}
 	return v1review.Schema{Metadata: m.DBSchema, ObjectCaseSensitive: m.IsObjectCaseSensitive}
+}
+
+// FmtName returns a content formatter substituting f.Name into format.
+func (*V1Engine[N]) FmtName(format string) func(V1Stmt[N], v1review.Finding) string {
+	return func(_ V1Stmt[N], f v1review.Finding) string { return fmt.Sprintf(format, f.Name) }
+}
+
+// FmtTableCol returns a content formatter substituting f.Table and f.Name into format.
+func (*V1Engine[N]) FmtTableCol(format string) func(V1Stmt[N], v1review.Finding) string {
+	return func(_ V1Stmt[N], f v1review.Finding) string { return fmt.Sprintf(format, f.Table, f.Name) }
+}
+
+// FmtStmt returns a content formatter substituting trimmed statement text into format.
+func (e *V1Engine[N]) FmtStmt(format string) func(V1Stmt[N], v1review.Finding) string {
+	return func(stmt V1Stmt[N], _ v1review.Finding) string { return fmt.Sprintf(format, e.TrimmedText(stmt.Text)) }
+}
+
+// FmtLimit returns a number-rule content formatter substituting the limit into format.
+func (*V1Engine[N]) FmtLimit(format string) func(V1Stmt[N], v1review.Finding, int) string {
+	return func(_ V1Stmt[N], _ v1review.Finding, limit int) string { return fmt.Sprintf(format, limit) }
+}
+
+// SimpleConst builds a per-statement rule with a fixed advice code and constant message.
+func (e *V1Engine[N]) SimpleConst(
+	fn func([]N) []v1review.Finding,
+	c code.Code,
+	msg string,
+	posFn ...V1PosFunc[N],
+) Func {
+	return e.SimpleStmt(fn, c, func(V1Stmt[N], v1review.Finding) string { return msg }, posFn...)
 }
 
 // SimpleStmt builds a per-statement rule with a fixed advice code and content formatter.
@@ -438,21 +484,21 @@ func (e *V1Engine[N]) StmtNodes(
 	}
 }
 
-// Stmt builds a per-statement rule that passes the full V1Stmt to fn and filters/formats findings.
+// Stmt builds a per-statement rule passing the single-element node slice and statement text to fn.
 func (e *V1Engine[N]) Stmt(
-	fn func(V1Stmt[N]) []v1review.Finding,
+	fn func([]N, string) []v1review.Finding,
 	render func(V1Stmt[N], v1review.Finding) (code.Code, string, bool),
 	posFn ...V1PosFunc[N],
 ) Func {
 	pos := e.pos(posFn)
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		stmts, _, status, title, err := e.Prepare(checkCtx)
+		stmts, nodes, status, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
 		var adviceList []*storepb.Advice
-		for _, stmt := range stmts {
-			for _, f := range fn(stmt) {
+		for i, stmt := range stmts {
+			for _, f := range fn(nodes[i:i+1:i+1], stmt.Text) {
 				c, content, ok := render(stmt, f)
 				if !ok {
 					continue
@@ -465,20 +511,20 @@ func (e *V1Engine[N]) Stmt(
 }
 
 // StmtCtx builds a per-statement rule whose prepareFn resolves per-review state once
-// before iterating over statements.
+// before iterating over statements. Returning a nil fn skips evaluation cleanly.
 func (e *V1Engine[N]) StmtCtx(
-	prepareFn func(Context, []N) (func([]N) []v1review.Finding, error),
+	prepareFn func(context.Context, Context, []N) (func([]N) []v1review.Finding, error),
 	render func(Context, V1Stmt[N], v1review.Finding) (code.Code, string, bool),
 	posFn ...V1PosFunc[N],
 ) Func {
 	pos := e.pos(posFn)
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
+	return func(ctx context.Context, checkCtx Context) ([]*storepb.Advice, error) {
 		stmts, nodes, status, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
-		fn, err := prepareFn(checkCtx, nodes)
-		if err != nil {
+		fn, err := prepareFn(ctx, checkCtx, nodes)
+		if err != nil || fn == nil {
 			return nil, err
 		}
 		var adviceList []*storepb.Advice
@@ -527,6 +573,14 @@ func (e *V1Engine[N]) Batch(
 	}, render)
 }
 
+// BatchNodes builds a whole-script rule whose fn takes only the AST nodes.
+func (e *V1Engine[N]) BatchNodes(
+	fn func([]N) []v1review.Finding,
+	render func([]V1Stmt[N], v1review.Finding) (code.Code, string, *storepb.Position, bool),
+) Func {
+	return e.Batch(func(_ Context, nodes []N) []v1review.Finding { return fn(nodes) }, render)
+}
+
 // SimpleBatch builds a whole-script rule with a fixed advice code and optional f.Code filter.
 func (e *V1Engine[N]) SimpleBatch(
 	fn func(Context, []N) []v1review.Finding,
@@ -548,11 +602,33 @@ func (e *V1Engine[N]) SimpleBatch(
 	})
 }
 
+// SimpleBatchNodes builds a SimpleBatch rule whose fn takes only the AST nodes.
+func (e *V1Engine[N]) SimpleBatchNodes(
+	fn func([]N) []v1review.Finding,
+	c code.Code,
+	filterCode v1review.Code,
+	content func(v1review.Finding) string,
+	posFn ...V1PosFunc[N],
+) Func {
+	return e.SimpleBatch(func(_ Context, nodes []N) []v1review.Finding { return fn(nodes) }, c, filterCode, content, posFn...)
+}
+
+// SimpleBatchDB builds a SimpleBatch rule whose fn takes the AST nodes and CurrentDatabase.
+func (e *V1Engine[N]) SimpleBatchDB(
+	fn func([]N, string) []v1review.Finding,
+	c code.Code,
+	filterCode v1review.Code,
+	content func(v1review.Finding) string,
+	posFn ...V1PosFunc[N],
+) Func {
+	return e.SimpleBatch(func(checkCtx Context, nodes []N) []v1review.Finding { return fn(nodes, checkCtx.CurrentDatabase) }, c, filterCode, content, posFn...)
+}
+
 // SchemaBatch builds a whole-script schema rule that triggers ReadMissingSchema
 // when eval returns v1review.ErrSchemaMissing.
 func (e *V1Engine[N]) SchemaBatch(
 	adviceCode code.Code,
-	contentFn func(v1review.Finding) string,
+	contentFn func(Context, v1review.Finding) string,
 	eval func(Context, []N) ([]v1review.Finding, *model.DatabaseMetadata, error),
 	posFn ...V1PosFunc[N],
 ) Func {
@@ -569,7 +645,7 @@ func (e *V1Engine[N]) SchemaBatch(
 		}
 		var adviceList []*storepb.Advice
 		for _, f := range findings {
-			adviceList = append(adviceList, newAdvice(status, adviceCode, title, contentFn(f), pos(stmts[f.Statement], f)))
+			adviceList = append(adviceList, newAdvice(status, adviceCode, title, contentFn(checkCtx, f), pos(stmts[f.Statement], f)))
 		}
 		return adviceList, nil
 	}
@@ -581,32 +657,21 @@ func (e *V1Engine[N]) IndexTotalNumberLimit(
 	contentFn func(v1review.Finding, int) string,
 	posFn ...V1PosFunc[N],
 ) Func {
-	pos := e.pos(posFn)
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		level, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
-		if err != nil {
-			return nil, err
-		}
-		limit, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
-		if err != nil {
-			return nil, err
-		}
-		stmts, nodes, err := e.Nodes(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		findings, err := fn(nodes, limit, V1SchemaOf(checkCtx.FinalMetadata))
-		if err != nil {
-			ReadMissingSchema(checkCtx.FinalMetadata, err)
-			return nil, err
-		}
-		title := checkCtx.Rule.Type.String()
-		var adviceList []*storepb.Advice
-		for _, f := range findings {
-			adviceList = append(adviceList, newAdvice(level, code.IndexCountExceedsLimit, title, contentFn(f, limit), pos(stmts[f.Statement], f)))
-		}
-		return adviceList, nil
-	}
+	return e.SchemaBatch(
+		code.IndexCountExceedsLimit,
+		func(checkCtx Context, f v1review.Finding) string {
+			return contentFn(f, int(checkCtx.Rule.GetNumberPayload().GetNumber()))
+		},
+		func(checkCtx Context, nodes []N) ([]v1review.Finding, *model.DatabaseMetadata, error) {
+			limit, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
+			if err != nil {
+				return nil, nil, err
+			}
+			findings, err := fn(nodes, limit, V1SchemaOf(checkCtx.FinalMetadata))
+			return findings, checkCtx.FinalMetadata, err
+		},
+		posFn...,
+	)
 }
 
 // NumberStmt builds a per-statement rule parameterized by number_payload.
@@ -632,32 +697,19 @@ func (e *V1Engine[N]) NumberStmtWithMsg(
 	if missingMsg == "" {
 		missingMsg = "number_payload is required for this rule"
 	}
-	pos := e.pos(posFn)
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		level, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
-		if err != nil {
-			return nil, err
-		}
-		limit, err := RequireNumberPayload(checkCtx.Rule, missingMsg)
-		if err != nil {
-			return nil, err
-		}
-		if positiveOnly && limit <= 0 {
-			return nil, nil
-		}
-		stmts, nodes, err := e.Nodes(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		title := checkCtx.Rule.Type.String()
-		var adviceList []*storepb.Advice
-		for i, stmt := range stmts {
-			for _, f := range fn(nodes[i:i+1:i+1], limit) {
-				adviceList = append(adviceList, newAdvice(level, c, title, content(stmt, f, limit), pos(stmt, f)))
+	return e.StmtCtx(
+		func(_ context.Context, checkCtx Context, _ []N) (func([]N) []v1review.Finding, error) {
+			limit, err := RequireNumberPayload(checkCtx.Rule, missingMsg)
+			if err != nil || (positiveOnly && limit <= 0) {
+				return nil, err
 			}
-		}
-		return adviceList, nil
-	}
+			return func(nodes []N) []v1review.Finding { return fn(nodes, limit) }, nil
+		},
+		func(checkCtx Context, stmt V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
+			return c, content(stmt, f, int(checkCtx.Rule.GetNumberPayload().GetNumber())), true
+		},
+		posFn...,
+	)
 }
 
 // StringArrayStmt builds a per-statement rule parameterized by string_array_payload.
@@ -672,32 +724,22 @@ func (e *V1Engine[N]) StringArrayStmt(
 	if missingMsg == "" {
 		missingMsg = "string_array_payload is required for this rule"
 	}
-	pos := e.pos(posFn)
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		level, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
-		if err != nil {
-			return nil, err
-		}
-		list, err := RequireStringArrayPayload(checkCtx.Rule, missingMsg)
-		if err != nil {
-			return nil, err
-		}
-		stmts, nodes, err := e.Nodes(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		title := checkCtx.Rule.Type.String()
-		var adviceList []*storepb.Advice
-		for i, stmt := range stmts {
-			for _, f := range fn(nodes[i:i+1:i+1], list) {
-				if filterCode != "" && f.Code != filterCode {
-					continue
-				}
-				adviceList = append(adviceList, newAdvice(level, c, title, content(stmt, f), pos(stmt, f)))
+	return e.StmtCtx(
+		func(_ context.Context, checkCtx Context, _ []N) (func([]N) []v1review.Finding, error) {
+			list, err := RequireStringArrayPayload(checkCtx.Rule, missingMsg)
+			if err != nil {
+				return nil, err
 			}
-		}
-		return adviceList, nil
-	}
+			return func(nodes []N) []v1review.Finding { return fn(nodes, list) }, nil
+		},
+		func(_ Context, stmt V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
+			if filterCode != "" && f.Code != filterCode {
+				return 0, "", false
+			}
+			return c, content(stmt, f), true
+		},
+		posFn...,
+	)
 }
 
 // ColumnRequired builds COLUMN_REQUIRED with grouped missing-column rendering.
@@ -730,7 +772,7 @@ func (e *V1Engine[N]) ColumnRequired(cfg V1ColumnRequiredConfig[N]) Func {
 		return adviceList
 	}
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		level, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
+		stmts, nodes, level, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -738,11 +780,6 @@ func (e *V1Engine[N]) ColumnRequired(cfg V1ColumnRequiredConfig[N]) Func {
 		if err != nil {
 			return nil, err
 		}
-		stmts, nodes, err := e.Nodes(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		title := checkCtx.Rule.Type.String()
 		var adviceList []*storepb.Advice
 		if cfg.Batch {
 			return renderGroups(level, title, stmts, -1, cfg.Fn(nodes, list), adviceList), nil
@@ -754,8 +791,8 @@ func (e *V1Engine[N]) ColumnRequired(cfg V1ColumnRequiredConfig[N]) Func {
 	}
 }
 
-// NamingRule builds a regex naming convention rule with the standard mismatch
-// and optional max-length advice messages.
+// NamingRule builds a per-statement regex naming convention rule with the standard
+// mismatch and optional max-length advice messages.
 func (e *V1Engine[N]) NamingRule(
 	fn func([]N, v1review.NamingConfig) ([]v1review.Finding, error),
 	adviceCode code.Code,
@@ -765,32 +802,12 @@ func (e *V1Engine[N]) NamingRule(
 	subject func(v1review.Finding) string,
 	posFn ...V1PosFunc[N],
 ) Func {
-	mismatch := func(f v1review.Finding, format string) string {
-		return fmt.Sprintf("%s mismatches %s naming convention, naming format should be %q", subject(f), kind, format)
+	if missingMsg == "" {
+		missingMsg = "naming_payload is required for this rule"
 	}
-	var tooLong func(v1review.Finding, int) string
-	if checkLength {
-		tooLong = func(f v1review.Finding, maxLength int) string {
-			return fmt.Sprintf("%s mismatches %s naming convention, its length should be within %d characters", subject(f), kind, maxLength)
-		}
-	}
-	return e.NamingRegex(fn, adviceCode, missingMsg, mismatch, tooLong, posFn...)
-}
-
-// NamingRegex builds a per-statement regex naming rule (NAMING_TABLE, NAMING_COLUMN,
-// TABLE_DROP_NAMING_CONVENTION). When tooLongContent is nil, MaxLength defaults to 0
-// and NameTooLong findings are ignored.
-func (e *V1Engine[N]) NamingRegex(
-	fn func([]N, v1review.NamingConfig) ([]v1review.Finding, error),
-	adviceCode code.Code,
-	missingMsg string,
-	mismatchContent func(v1review.Finding, string) string,
-	tooLongContent func(v1review.Finding, int) string,
-	posFn ...V1PosFunc[N],
-) Func {
 	pos := e.pos(posFn)
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		level, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
+		stmts, nodes, level, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -799,7 +816,7 @@ func (e *V1Engine[N]) NamingRegex(
 			return nil, errors.New(missingMsg)
 		}
 		maxLength := 0
-		if tooLongContent != nil {
+		if checkLength {
 			maxLength = int(namingPayload.MaxLength)
 			if maxLength == 0 {
 				maxLength = DefaultNameLengthLimit
@@ -809,11 +826,6 @@ func (e *V1Engine[N]) NamingRegex(
 		if _, err := cfg.Compile(); err != nil {
 			return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 		}
-		stmts, nodes, err := e.Nodes(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		title := checkCtx.Rule.Type.String()
 		var adviceList []*storepb.Advice
 		for i, stmt := range stmts {
 			findings, err := fn(nodes[i:i+1:i+1], cfg)
@@ -824,12 +836,12 @@ func (e *V1Engine[N]) NamingRegex(
 				var content string
 				switch f.Code {
 				case v1review.NameMismatch:
-					content = mismatchContent(f, namingPayload.Format)
+					content = fmt.Sprintf("%s mismatches %s naming convention, naming format should be %q", subject(f), kind, namingPayload.Format)
 				case v1review.NameTooLong:
-					if tooLongContent == nil {
+					if !checkLength {
 						continue
 					}
-					content = tooLongContent(f, maxLength)
+					content = fmt.Sprintf("%s mismatches %s naming convention, its length should be within %d characters", subject(f), kind, maxLength)
 				default:
 					continue
 				}
@@ -847,64 +859,47 @@ func (e *V1Engine[N]) NamingIdentifierCase(
 	alwaysUpper bool,
 	posFn ...V1PosFunc[N],
 ) Func {
-	pos := e.pos(posFn)
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		level, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
-		if err != nil {
-			return nil, err
-		}
-		payload := checkCtx.Rule.GetNamingCasePayload()
-		if !alwaysUpper && payload == nil {
-			return nil, errors.New("naming_case_payload is required for this rule")
-		}
-		cfg := v1review.CaseConfig{Upper: payload.GetUpper()}
-		stmts, nodes, err := e.Nodes(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		caseLabel := "lower"
-		if alwaysUpper || cfg.Upper {
-			caseLabel = "upper"
-		}
-		title := checkCtx.Rule.Type.String()
-		var adviceList []*storepb.Advice
-		for i, stmt := range stmts {
-			for _, f := range fn(nodes[i:i+1:i+1], cfg) {
-				content := fmt.Sprintf("Identifier %q should be %s case", f.Name, caseLabel)
-				adviceList = append(adviceList, newAdvice(level, code.NamingCaseMismatch, title, content, pos(stmt, f)))
+	return e.StmtCtx(
+		func(_ context.Context, checkCtx Context, _ []N) (func([]N) []v1review.Finding, error) {
+			payload := checkCtx.Rule.GetNamingCasePayload()
+			if !alwaysUpper && payload == nil {
+				return nil, errors.New("naming_case_payload is required for this rule")
 			}
-		}
-		return adviceList, nil
-	}
+			cfg := v1review.CaseConfig{Upper: payload.GetUpper()}
+			return func(nodes []N) []v1review.Finding { return fn(nodes, cfg) }, nil
+		},
+		func(checkCtx Context, _ V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
+			caseLabel := "lower"
+			if alwaysUpper || checkCtx.Rule.GetNamingCasePayload().GetUpper() {
+				caseLabel = "upper"
+			}
+			return code.NamingCaseMismatch, fmt.Sprintf("Identifier %q should be %s case", f.Name, caseLabel), true
+		},
+		posFn...,
+	)
 }
 
 // TemplateNaming builds a per-statement template naming rule (NAMING_INDEX_*).
-func (e *V1Engine[N]) TemplateNaming(
-	fn func([]N, v1review.TemplateConfig, v1review.Schema) ([]v1review.Finding, error),
-	adviceCode code.Code,
-	errTitle string,
-	kindLabel string,
-	invalidFmt string,
-	nilInvalidPos bool,
-	posFn ...V1PosFunc[N],
-) Func {
-	return e.TemplateNamingWithOptions(fn, adviceCode, errTitle, kindLabel, invalidFmt, nilInvalidPos, V1TemplateNamingOptions[N]{}, posFn...)
-}
-
-// TemplateNamingWithOptions builds a per-statement template naming rule with dialect formatting options.
-func (e *V1Engine[N]) TemplateNamingWithOptions(
-	fn func([]N, v1review.TemplateConfig, v1review.Schema) ([]v1review.Finding, error),
-	adviceCode code.Code,
-	errTitle string,
-	kindLabel string,
-	invalidFmt string,
-	nilInvalidPos bool,
-	opts V1TemplateNamingOptions[N],
-	posFn ...V1PosFunc[N],
-) Func {
-	pos := e.pos(posFn)
+func (e *V1Engine[N]) TemplateNaming(cfg V1TemplateNamingConfig[N]) Func {
+	pos := cfg.Pos
+	if pos == nil {
+		pos = e.defaultPos
+	}
+	errTitle := cfg.ErrTitle
+	if errTitle == "" {
+		errTitle = "Internal error for " + strings.ToLower(cfg.Kind) + " naming convention rule"
+	}
+	invalidFmt := cfg.InvalidFmt
+	if invalidFmt == "" {
+		invalidFmt = "Failed to compile regex: %s"
+	}
+	q := `"`
+	if cfg.BacktickQuote {
+		q = "`"
+	}
+	quote := func(s string) string { return q + s + q }
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		level, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
+		stmts, nodes, level, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -918,45 +913,39 @@ func (e *V1Engine[N]) TemplateNamingWithOptions(
 				return nil, errors.Errorf("invalid template %s for rule %s", key, checkCtx.Rule.Type)
 			}
 		}
-		stmts, nodes, err := e.Nodes(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		cfg := v1review.TemplateConfig{Format: namingPayload.Format, MaxLength: maxLength}
+		tcfg := v1review.TemplateConfig{Format: namingPayload.Format, MaxLength: maxLength}
 		schema := V1SchemaOf(checkCtx.OriginalMetadata)
-		title := checkCtx.Rule.Type.String()
 		var adviceList []*storepb.Advice
 		for i, stmt := range stmts {
-			findings, err := fn(nodes[i:i+1:i+1], cfg, schema)
-			if err != nil {
-				return nil, err
+			var findings []v1review.Finding
+			if cfg.FnNoErr != nil {
+				findings = cfg.FnNoErr(nodes[i:i+1:i+1], tcfg, schema)
+			} else if cfg.FnNoSchema != nil {
+				findings, err = cfg.FnNoSchema(nodes[i:i+1:i+1], tcfg)
+				if err != nil {
+					return nil, err
+				}
 			}
 			for _, f := range findings {
 				p := pos(stmt, f)
 				switch f.Code {
 				case v1review.PatternInvalid:
-					if nilInvalidPos {
+					if cfg.NilInvalidPos {
 						p = nil
 					}
 					content := ""
-					if opts.InvalidContent != nil {
-						content = opts.InvalidContent(stmt, f)
+					if cfg.InvalidContent != nil {
+						content = cfg.InvalidContent(stmt, f)
 					} else {
 						content = fmt.Sprintf(invalidFmt, f.Detail)
 					}
 					adviceList = append(adviceList, newAdvice(level, code.Internal, errTitle, content, p))
 				case v1review.NameMismatch:
-					content := fmt.Sprintf("%s in table \"%s\" mismatches the naming convention, expect %q but found \"%s\"", kindLabel, f.Table, f.Pattern, f.Name)
-					if opts.BacktickQuote {
-						content = fmt.Sprintf("%s in table `%s` mismatches the naming convention, expect %q but found `%s`", kindLabel, f.Table, f.Pattern, f.Name)
-					}
-					adviceList = append(adviceList, newAdvice(level, adviceCode, title, content, p))
+					content := fmt.Sprintf("%s in table %s mismatches the naming convention, expect %q but found %s", cfg.Kind, quote(f.Table), f.Pattern, quote(f.Name))
+					adviceList = append(adviceList, newAdvice(level, cfg.Code, title, content, p))
 				case v1review.NameTooLong:
-					content := fmt.Sprintf("%s \"%s\" in table \"%s\" mismatches the naming convention, its length should be within %d characters", kindLabel, f.Name, f.Table, maxLength)
-					if opts.BacktickQuote {
-						content = fmt.Sprintf("%s `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", kindLabel, f.Name, f.Table, maxLength)
-					}
-					adviceList = append(adviceList, newAdvice(level, adviceCode, title, content, p))
+					content := fmt.Sprintf("%s %s in table %s mismatches the naming convention, its length should be within %d characters", cfg.Kind, quote(f.Name), quote(f.Table), maxLength)
+					adviceList = append(adviceList, newAdvice(level, cfg.Code, title, content, p))
 				default:
 				}
 			}
@@ -966,12 +955,16 @@ func (e *V1Engine[N]) TemplateNamingWithOptions(
 }
 
 // BackwardCompatibility builds SCHEMA_BACKWARD_COMPATIBILITY across the full statement batch.
+// A nil entries map defaults to V1StandardCompatEntries.
 func (e *V1Engine[N]) BackwardCompatibility(
 	fn func(Context, []N) []v1review.Finding,
 	entries map[v1review.Code]V1CompatEntry,
 	content func(V1Stmt[N], v1review.Finding, string) string,
 	posFn ...V1PosFunc[N],
 ) Func {
+	if entries == nil {
+		entries = V1StandardCompatEntries
+	}
 	pos := e.pos(posFn)
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
 		stmts, nodes, status, title, err := e.Prepare(checkCtx)
@@ -1044,46 +1037,26 @@ func (e *V1Engine[N]) ColumnComment(
 	formatCol func(v1review.Finding) string,
 	posFn ...V1PosFunc[N],
 ) Func {
-	pos := e.pos(posFn)
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		stmts, nodes, status, title, err := e.Prepare(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		payload := checkCtx.Rule.GetCommentConventionPayload()
-		required, maxLength := true, nilMaxLength
-		if payload != nil {
-			required, maxLength = payload.Required, int(payload.MaxLength)
-			if maxLength <= 0 {
-				if nonPositiveIsMaxInt {
-					maxLength = math.MaxInt
-				} else {
-					maxLength = -1
+	return e.commentBatch(
+		"column", "Column",
+		v1review.ColumnCommentMissing, v1review.ColumnCommentTooLong,
+		formatCol,
+		func(checkCtx Context, nodes []N, payload *storepb.SQLReviewRule_CommentConventionRulePayload) []v1review.Finding {
+			required, maxLength := true, nilMaxLength
+			if payload != nil {
+				required, maxLength = payload.Required, int(payload.MaxLength)
+				if maxLength <= 0 {
+					if nonPositiveIsMaxInt {
+						maxLength = math.MaxInt
+					} else {
+						maxLength = -1
+					}
 				}
 			}
-		}
-		var adviceList []*storepb.Advice
-		for _, f := range fn(checkCtx, nodes, required, maxLength) {
-			if payload == nil {
-				return nil, errors.New("comment_convention_payload is required for column comment rule")
-			}
-			col := formatCol(f)
-			var adviceCode code.Code
-			var content string
-			switch f.Code {
-			case v1review.ColumnCommentMissing:
-				adviceCode = code.CommentEmpty
-				content = "Comment is required for column " + col
-			case v1review.ColumnCommentTooLong:
-				adviceCode = code.CommentTooLong
-				content = fmt.Sprintf("Column %s comment is too long. The length of comment should be within %d characters", col, payload.MaxLength)
-			default:
-				continue
-			}
-			adviceList = append(adviceList, newAdvice(status, adviceCode, title, content, pos(stmts[f.Statement], f)))
-		}
-		return adviceList, nil
-	}
+			return fn(checkCtx, nodes, required, maxLength)
+		},
+		posFn...,
+	)
 }
 
 // TableComment builds TABLE_COMMENT for engines whose omni v1review.TableComment
@@ -1093,31 +1066,51 @@ func (e *V1Engine[N]) TableComment(
 	formatTable func(v1review.Finding) string,
 	posFn ...V1PosFunc[N],
 ) Func {
+	return e.commentBatch(
+		"table", "Table",
+		v1review.TableCommentMissing, v1review.TableCommentTooLong,
+		formatTable,
+		func(checkCtx Context, nodes []N, payload *storepb.SQLReviewRule_CommentConventionRulePayload) []v1review.Finding {
+			var cfg *v1review.TableCommentConfig
+			if payload != nil {
+				cfg = &v1review.TableCommentConfig{Required: payload.Required, MaxLength: int(payload.MaxLength)}
+			}
+			return fn(checkCtx, nodes, cfg)
+		},
+		posFn...,
+	)
+}
+
+func (e *V1Engine[N]) commentBatch(
+	lowerKind, titleKind string,
+	missingCode, tooLongCode v1review.Code,
+	formatTarget func(v1review.Finding) string,
+	eval func(Context, []N, *storepb.SQLReviewRule_CommentConventionRulePayload) []v1review.Finding,
+	posFn ...V1PosFunc[N],
+) Func {
 	pos := e.pos(posFn)
+	missingErr := fmt.Sprintf("comment_convention_payload is required for %s comment rule", lowerKind)
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
 		stmts, nodes, status, title, err := e.Prepare(checkCtx)
 		if err != nil {
 			return nil, err
 		}
-		var cfg *v1review.TableCommentConfig
-		if payload := checkCtx.Rule.GetCommentConventionPayload(); payload != nil {
-			cfg = &v1review.TableCommentConfig{Required: payload.Required, MaxLength: int(payload.MaxLength)}
-		}
+		payload := checkCtx.Rule.GetCommentConventionPayload()
 		var adviceList []*storepb.Advice
-		for _, f := range fn(checkCtx, nodes, cfg) {
-			if cfg == nil {
-				return nil, errors.New("comment_convention_payload is required for table comment rule")
+		for _, f := range eval(checkCtx, nodes, payload) {
+			if payload == nil {
+				return nil, errors.New(missingErr)
 			}
-			tbl := formatTable(f)
+			target := formatTarget(f)
 			var adviceCode code.Code
 			var content string
 			switch f.Code {
-			case v1review.TableCommentMissing:
+			case missingCode:
 				adviceCode = code.CommentEmpty
-				content = "Comment is required for table " + tbl
-			case v1review.TableCommentTooLong:
+				content = fmt.Sprintf("Comment is required for %s %s", lowerKind, target)
+			case tooLongCode:
 				adviceCode = code.CommentTooLong
-				content = fmt.Sprintf("Table %s comment is too long. The length of comment should be within %d characters", tbl, cfg.MaxLength)
+				content = fmt.Sprintf("%s %s comment is too long. The length of comment should be within %d characters", titleKind, target, payload.MaxLength)
 			default:
 				continue
 			}
@@ -1220,31 +1213,20 @@ func (e *V1Engine[N]) RowLimit(cfg V1RowLimitConfig[N]) Func {
 		var explains ExplainBudget
 		probes := make(map[int]v1review.Probe)
 		var probeErr error
-		visit := func(i int, settings []string) {
-			if probeErr != nil {
-				return
-			}
-			if !explains.Spend(budgetPos(stmts[i], nodes[i])) {
-				return
-			}
-			probe, err := estimate(ctx, checkCtx, stmts[i], nodes[i], settings)
-			if err != nil {
-				probeErr = err
-				return
-			}
-			probes[i] = probe
-		}
-		want := cfg.Probes(nodes)
-		if cfg.PreExecutions != nil {
-			cfg.PreExecutions(stmts, nodes, want, visit)
-		} else {
-			for _, i := range want {
-				visit(i, nil)
-				if probeErr != nil {
-					break
+		runProbes(stmts, nodes, cfg.Probes(nodes), cfg.PreExecutions,
+			func() bool { return probeErr != nil },
+			func(i int, settings []string) {
+				if probeErr != nil || !explains.Spend(budgetPos(stmts[i], nodes[i])) {
+					return
 				}
-			}
-		}
+				probe, err := estimate(ctx, checkCtx, stmts[i], nodes[i], settings)
+				if err != nil {
+					probeErr = err
+					return
+				}
+				probes[i] = probe
+			},
+		)
 		if probeErr != nil {
 			return nil, probeErr
 		}
@@ -1264,11 +1246,7 @@ func (e *V1Engine[N]) RowLimit(cfg V1RowLimitConfig[N]) Func {
 			case v1review.RowCountFailed:
 				adviceCode, content = code.Internal, fmt.Sprintf("failed to get row count for \"%s\": %s", text, f.Value)
 			case v1review.RowLimitExceeded:
-				if cfg.ExceededContent != nil {
-					content = cfg.ExceededContent(text, f.Value, maxRow)
-				} else {
-					content = fmt.Sprintf("\"%s\" %s %s rows%s. The count exceeds %d.", text, cfg.ExceededVerb, f.Value, suffix, maxRow)
-				}
+				content = fmt.Sprintf("%s\"%s\" %s %s rows%s. The count exceeds %d.", cfg.ExceededPrefix, text, cfg.ExceededVerb, f.Value, suffix, maxRow)
 			default:
 				continue
 			}
@@ -1285,19 +1263,20 @@ func (e *V1Engine[N]) DMLDryRun(cfg V1DMLDryRunConfig[N]) Func {
 	if pos == nil {
 		pos = e.defaultPos
 	}
+	stmtText := cfg.StatementText
+	if stmtText == nil {
+		stmtText = func(stmt V1Stmt[N]) string { return dryRunText(stmt.Text) }
+	}
 	probeFn := cfg.Probe
 	if probeFn == nil {
 		probeFn = func(ctx context.Context, prober db.Prober, stmt V1Stmt[N], settings []string) v1review.Probe {
-			if _, err := prober.Probe(ctx, db.ProbeContext{PreExecutions: settings}, fmt.Sprintf("EXPLAIN %s", dryRunText(stmt.Text))); err != nil {
-				return v1review.Probe{Error: err.Error()}
-			}
-			return v1review.Probe{}
+			return ExplainProbe(ctx, prober, db.ProbeContext{PreExecutions: settings}, fmt.Sprintf("EXPLAIN %s", stmtText(stmt)))
 		}
 	}
 	formatContent := cfg.FormatContent
 	if formatContent == nil {
 		formatContent = func(stmt V1Stmt[N], f v1review.Finding) string {
-			return fmt.Sprintf("\"%s\" dry runs failed: %s", dryRunText(stmt.Text), f.Value)
+			return fmt.Sprintf("\"%s\" dry runs failed: %s", stmtText(stmt), f.Value)
 		}
 	}
 	return func(ctx context.Context, checkCtx Context) ([]*storepb.Advice, error) {
@@ -1320,24 +1299,16 @@ func (e *V1Engine[N]) DMLDryRun(cfg V1DMLDryRunConfig[N]) Func {
 		}
 		probes := make(map[int]v1review.Probe)
 		explained := 0
-		visit := func(i int, settings []string) {
-			if explained >= common.MaximumLintExplainSize {
-				return
-			}
-			explained++
-			probes[i] = probeFn(ctx, prober, stmts[i], settings)
-		}
-		want := cfg.Probes(nodes)
-		if cfg.PreExecutions != nil {
-			cfg.PreExecutions(stmts, nodes, want, visit)
-		} else {
-			for _, i := range want {
-				visit(i, nil)
+		runProbes(stmts, nodes, cfg.Probes(nodes), cfg.PreExecutions,
+			func() bool { return explained >= common.MaximumLintExplainSize },
+			func(i int, settings []string) {
 				if explained >= common.MaximumLintExplainSize {
-					break
+					return
 				}
-			}
-		}
+				explained++
+				probes[i] = probeFn(ctx, prober, stmts[i], settings)
+			},
+		)
 
 		title := checkCtx.Rule.Type.String()
 		var adviceList []*storepb.Advice
@@ -1346,5 +1317,25 @@ func (e *V1Engine[N]) DMLDryRun(cfg V1DMLDryRunConfig[N]) Func {
 			adviceList = append(adviceList, newAdvice(level, code.StatementDMLDryRunFailed, title, formatContent(stmt, f), pos(stmt, f)))
 		}
 		return adviceList, nil
+	}
+}
+
+func runProbes[N any](
+	stmts []V1Stmt[N],
+	nodes []N,
+	want []int,
+	preExec func([]V1Stmt[N], []N, []int, func(int, []string)),
+	stop func() bool,
+	visit func(int, []string),
+) {
+	if preExec != nil {
+		preExec(stmts, nodes, want, visit)
+		return
+	}
+	for _, i := range want {
+		visit(i, nil)
+		if stop() {
+			break
+		}
 	}
 }

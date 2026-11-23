@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -84,11 +85,5 @@ func DatabaseExists(ctx context.Context, checkCtx Context, database string) bool
 		return false
 	}
 
-	for _, name := range names {
-		if name == database {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(names, database)
 }

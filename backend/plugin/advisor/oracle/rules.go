@@ -34,9 +34,8 @@ func init() {
 				return 0, "", nil, false
 			},
 		}),
-		storepb.SQLReviewRule_COLUMN_ADD_NOT_NULL_REQUIRE_DEFAULT: e.SimpleStmt(oraclev1review.ColumnAddNotNullRequireDefault, code.NotNullColumnWithNoDefault, func(_ advisor.V1Stmt[ast.Node], f v1review.Finding) string {
-			return fmt.Sprintf("Adding not null column %q requires default.", f.Name)
-		}),
+		storepb.SQLReviewRule_COLUMN_ADD_NOT_NULL_REQUIRE_DEFAULT: e.SimpleStmt(oraclev1review.ColumnAddNotNullRequireDefault, code.NotNullColumnWithNoDefault,
+			e.FmtName("Adding not null column %q requires default.")),
 		storepb.SQLReviewRule_COLUMN_COMMENT: e.ColumnComment(
 			func(checkCtx advisor.Context, nodes []ast.Node, required bool, maxLength int) []v1review.Finding {
 				return oraclev1review.ColumnComment(nodes, checkCtx.CurrentDatabase, required, maxLength)
@@ -44,59 +43,37 @@ func init() {
 			-1, true,
 			func(f v1review.Finding) string { return normalizeIdentifierName(f.Table + "." + f.Name) },
 		),
-		storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH: e.NumberStmt(oraclev1review.ColumnMaximumCharacterLength, true, code.CharLengthExceedsLimit, func(_ advisor.V1Stmt[ast.Node], _ v1review.Finding, maximum int) string {
-			return fmt.Sprintf("The maximum character length is %d.", maximum)
-		}),
-		storepb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH: e.NumberStmt(oraclev1review.ColumnMaximumVarcharLength, true, code.VarcharLengthExceedsLimit, func(_ advisor.V1Stmt[ast.Node], _ v1review.Finding, maximum int) string {
-			return fmt.Sprintf("The maximum varchar length is %d.", maximum)
-		}),
-		storepb.SQLReviewRule_COLUMN_NO_NULL: e.SimpleBatch(
-			func(checkCtx advisor.Context, nodes []ast.Node) []v1review.Finding {
-				return oraclev1review.ColumnNoNull(nodes, checkCtx.CurrentDatabase)
-			},
-			code.ColumnCannotNull, "",
-			func(f v1review.Finding) string {
-				return fmt.Sprintf("Column %q is nullable, which is not allowed.", f.Name)
-			},
-		),
+		storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH: e.NumberStmt(oraclev1review.ColumnMaximumCharacterLength, true, code.CharLengthExceedsLimit,
+			e.FmtLimit("The maximum character length is %d.")),
+		storepb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH: e.NumberStmt(oraclev1review.ColumnMaximumVarcharLength, true, code.VarcharLengthExceedsLimit,
+			e.FmtLimit("The maximum varchar length is %d.")),
+		storepb.SQLReviewRule_COLUMN_NO_NULL: e.SimpleBatchDB(oraclev1review.ColumnNoNull, code.ColumnCannotNull, "",
+			advisor.FmtFindingName("Column %q is nullable, which is not allowed.")),
 		storepb.SQLReviewRule_COLUMN_REQUIRED: e.ColumnRequired(advisor.V1ColumnRequiredConfig[ast.Node]{
 			Fn:       oraclev1review.ColumnRequired,
 			QuoteCol: true,
 		}),
-		storepb.SQLReviewRule_COLUMN_REQUIRE_DEFAULT: e.SimpleBatch(
-			func(checkCtx advisor.Context, nodes []ast.Node) []v1review.Finding {
-				return oraclev1review.ColumnRequireDefault(nodes, checkCtx.CurrentDatabase)
-			},
-			code.NoDefault, "",
-			func(f v1review.Finding) string { return fmt.Sprintf("Column %q doesn't have default value", f.Name) },
-		),
+		storepb.SQLReviewRule_COLUMN_REQUIRE_DEFAULT: e.SimpleBatchDB(oraclev1review.ColumnRequireDefault, code.NoDefault, "",
+			advisor.FmtFindingName("Column %q doesn't have default value")),
 		storepb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST: e.StringArrayStmt(oraclev1review.ColumnTypeDisallowList, "string_array_payload is required for column type disallow list rule", code.DisabledColumnType, "", func(_ advisor.V1Stmt[ast.Node], f v1review.Finding) string {
 			return fmt.Sprintf("Disallow column type %s but column \"%s\" is", f.Value, f.Name)
 		}),
-		storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT: e.NumberStmt(oraclev1review.IndexKeyNumberLimit, true, code.IndexKeyNumberExceedsLimit, func(_ advisor.V1Stmt[ast.Node], _ v1review.Finding, limit int) string {
-			return fmt.Sprintf("Index key number should be less than or equal to %d", limit)
-		}),
-		storepb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN: e.SimpleStmt(oraclev1review.StatementInsertMustSpecifyColumn, code.InsertNotSpecifyColumn, func(advisor.V1Stmt[ast.Node], v1review.Finding) string {
-			return "INSERT statement should specify column name."
-		}),
+		storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT: e.NumberStmt(oraclev1review.IndexKeyNumberLimit, true, code.IndexKeyNumberExceedsLimit,
+			e.FmtLimit("Index key number should be less than or equal to %d")),
+		storepb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN: e.SimpleConst(oraclev1review.StatementInsertMustSpecifyColumn, code.InsertNotSpecifyColumn,
+			"INSERT statement should specify column name."),
 		storepb.SQLReviewRule_NAMING_IDENTIFIER_CASE: e.NamingIdentifierCase(oraclev1review.NamingIdentifierCase, false),
-		storepb.SQLReviewRule_NAMING_IDENTIFIER_NO_KEYWORD: e.SimpleStmt(oraclev1review.NamingIdentifierNoKeyword, code.NameIsKeywordIdentifier, func(_ advisor.V1Stmt[ast.Node], f v1review.Finding) string {
-			return fmt.Sprintf("Identifier %q is a keyword and should be avoided", f.Name)
-		}),
+		storepb.SQLReviewRule_NAMING_IDENTIFIER_NO_KEYWORD: e.SimpleStmt(oraclev1review.NamingIdentifierNoKeyword, code.NameIsKeywordIdentifier,
+			e.FmtName("Identifier %q is a keyword and should be avoided")),
 		storepb.SQLReviewRule_NAMING_TABLE: e.NamingRule(
-			oraclev1review.NamingTable, code.NamingTableConventionMismatch, "naming_payload is required for this rule", "table", true,
-			func(f v1review.Finding) string { return fmt.Sprintf(`"%s"`, f.Name) },
+			oraclev1review.NamingTable, code.NamingTableConventionMismatch, "", "table", true,
+			advisor.DoubleQuotedName,
 		),
-		storepb.SQLReviewRule_NAMING_TABLE_NO_KEYWORD: e.SimpleStmt(oraclev1review.NamingTableNoKeyword, code.NameIsKeywordIdentifier, func(_ advisor.V1Stmt[ast.Node], f v1review.Finding) string {
-			return fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", f.Name)
-		}),
-		storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL: e.SimpleStmt(oraclev1review.StatementSelectNoSelectAll, code.StatementSelectAll, func(advisor.V1Stmt[ast.Node], v1review.Finding) string {
-			return "Avoid using SELECT *."
-		}),
-		storepb.SQLReviewRule_STATEMENT_DISALLOW_TRUNCATE: e.Stmt(
-			func(stmt advisor.V1Stmt[ast.Node]) []v1review.Finding {
-				return oraclev1review.StatementDisallowTruncate([]ast.Node{stmt.Node}, stmt.Text)
-			},
+		storepb.SQLReviewRule_NAMING_TABLE_NO_KEYWORD: e.SimpleStmt(oraclev1review.NamingTableNoKeyword, code.NameIsKeywordIdentifier,
+			e.FmtName("Table name %q is a keyword identifier and should be avoided.")),
+		storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL: e.SimpleConst(oraclev1review.StatementSelectNoSelectAll, code.StatementSelectAll,
+			"Avoid using SELECT *."),
+		storepb.SQLReviewRule_STATEMENT_DISALLOW_TRUNCATE: e.Stmt(oraclev1review.StatementDisallowTruncate,
 			func(_ advisor.V1Stmt[ast.Node], f v1review.Finding) (code.Code, string, bool) {
 				switch f.Code {
 				case v1review.Truncate:
@@ -119,10 +96,7 @@ func init() {
 			Judge:  oraclev1review.StatementDMLDryRun,
 			Probe: func(ctx context.Context, prober db.Prober, stmt advisor.V1Stmt[ast.Node], _ []string) v1review.Probe {
 				// BEGIN opens a PL/SQL block in Oracle, so the dry run runs alone.
-				if _, err := prober.Probe(ctx, db.ProbeContext{Autocommit: true}, fmt.Sprintf("EXPLAIN PLAN FOR %s", stmt.Text)); err != nil {
-					return v1review.Probe{Error: err.Error()}
-				}
-				return v1review.Probe{}
+				return advisor.ExplainProbe(ctx, prober, db.ProbeContext{Autocommit: true}, fmt.Sprintf("EXPLAIN PLAN FOR %s", stmt.Text))
 			},
 			FormatContent: func(stmt advisor.V1Stmt[ast.Node], f v1review.Finding) string {
 				return fmt.Sprintf("Failed to dry run statement at line %d: %v", stmt.BaseLine+1, f.Value)
@@ -145,33 +119,20 @@ func init() {
 			},
 			func(f v1review.Finding) string { return normalizeIdentifierName(f.Name) },
 		),
-		storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY: e.SimpleBatch(
-			func(checkCtx advisor.Context, nodes []ast.Node) []v1review.Finding {
-				return oraclev1review.TableNoForeignKey(nodes, checkCtx.CurrentDatabase)
-			},
-			code.TableHasFK, v1review.TableForeignKey,
+		storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY: e.SimpleBatchDB(oraclev1review.TableNoForeignKey, code.TableHasFK, v1review.TableForeignKey,
 			func(f v1review.Finding) string {
 				return fmt.Sprintf("Foreign key is not allowed in the table %s.", normalizeIdentifierName(f.Name))
-			},
-		),
-		storepb.SQLReviewRule_TABLE_REQUIRE_PK: e.SimpleBatch(
-			func(checkCtx advisor.Context, nodes []ast.Node) []v1review.Finding {
-				return oraclev1review.TableRequirePK(nodes, checkCtx.CurrentDatabase)
-			},
-			code.TableNoPK, v1review.TablePrimaryKeyMissing,
+			}),
+		storepb.SQLReviewRule_TABLE_REQUIRE_PK: e.SimpleBatchDB(oraclev1review.TableRequirePK, code.TableNoPK, v1review.TablePrimaryKeyMissing,
 			func(f v1review.Finding) string {
 				return fmt.Sprintf("Table %s requires PRIMARY KEY.", normalizeIdentifierName(f.Name))
-			},
-		),
-		storepb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE: e.SimpleStmt(oraclev1review.StatementWhereNoLeadingWildcardLike, code.StatementLeadingWildcardLike, func(advisor.V1Stmt[ast.Node], v1review.Finding) string {
-			return "Avoid using leading wildcard LIKE."
-		}),
-		storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT: e.SimpleStmt(oraclev1review.StatementWhereRequireSelect, code.StatementNoWhere, func(advisor.V1Stmt[ast.Node], v1review.Finding) string {
-			return "WHERE clause is required for SELECT statement."
-		}),
-		storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE: e.SimpleStmt(oraclev1review.StatementWhereRequireUpdateDelete, code.StatementNoWhere, func(_ advisor.V1Stmt[ast.Node], f v1review.Finding) string {
-			return fmt.Sprintf("WHERE clause is required for %s statement.", f.Name)
-		}),
+			}),
+		storepb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE: e.SimpleConst(oraclev1review.StatementWhereNoLeadingWildcardLike, code.StatementLeadingWildcardLike,
+			"Avoid using leading wildcard LIKE."),
+		storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT: e.SimpleConst(oraclev1review.StatementWhereRequireSelect, code.StatementNoWhere,
+			"WHERE clause is required for SELECT statement."),
+		storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE: e.SimpleStmt(oraclev1review.StatementWhereRequireUpdateDelete, code.StatementNoWhere,
+			e.FmtName("WHERE clause is required for %s statement.")),
 	})
 }
 

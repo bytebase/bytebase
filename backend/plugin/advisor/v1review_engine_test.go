@@ -141,15 +141,16 @@ func TestV1EngineNilPayloads(t *testing.T) {
 	})
 
 	t.Run("naming nil payload returns exact error", func(t *testing.T) {
-		rule := engine.NamingRegex(
+		rule := engine.NamingRule(
 			func([]int, v1review.NamingConfig) ([]v1review.Finding, error) {
 				t.Fatal("should not evaluate findings when payload is nil")
 				return nil, nil
 			},
 			code.NamingTableConventionMismatch,
 			"naming_payload is required for naming table rule",
-			func(f v1review.Finding, _ string) string { return f.Name },
-			nil,
+			"table",
+			false,
+			func(f v1review.Finding) string { return f.Name },
 		)
 		_, err := rule.Check(context.Background(), Context{
 			Rule: &storepb.SQLReviewRule{Type: storepb.SQLReviewRule_NAMING_TABLE, Level: storepb.SQLReviewRule_WARNING},
@@ -293,5 +294,170 @@ func TestV1EngineSharedBuilders(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Equal(t, int64(42), p.Rows)
+	})
+
+	t.Run("ExplainProbe", func(t *testing.T) {
+		okProbe := ExplainProbe(context.Background(), stubPlanProber{}, db.ProbeContext{}, "EXPLAIN SELECT 1")
+		require.Empty(t, okProbe.Error)
+
+		errProbe := ExplainProbe(context.Background(), stubPlanProber{err: errors.New("boom")}, db.ProbeContext{Autocommit: true}, "EXPLAIN PLAN FOR SELECT 1")
+		require.Equal(t, "boom", errProbe.Error)
+	})
+
+	t.Run("StandardCompatEntries default and TemplateNaming variants", func(t *testing.T) {
+		compat := e.BackwardCompatibility(
+			func(Context, []int) []v1review.Finding {
+				return []v1review.Finding{{Statement: 0, Code: v1review.IncompatibleDropTable}}
+			},
+			nil,
+			func(stmt V1Stmt[int], _ v1review.Finding, _ string) string {
+				return e.TrimmedText(stmt.Text) + " incompatible"
+			},
+		)
+		advice, err := compat.Check(context.Background(), Context{
+			Rule: &storepb.SQLReviewRule{Type: storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY, Level: storepb.SQLReviewRule_ERROR},
+		})
+		require.NoError(t, err)
+		require.Len(t, advice, 1)
+		require.Equal(t, code.CompatibilityDropTable.Int32(), advice[0].Code)
+		require.Equal(t, "CREATE TABLE t (id INT) incompatible", advice[0].Content)
+
+		tmpl := e.TemplateNaming(V1TemplateNamingConfig[int]{
+			FnNoSchema: func(nodes []int, _ v1review.TemplateConfig) ([]v1review.Finding, error) {
+				if nodes[0] == 0 {
+					return []v1review.Finding{
+						{Code: v1review.PatternInvalid, Detail: "bad"},
+						{Code: v1review.NameMismatch, Table: "t", Name: "bad_fk", Pattern: "fk_t"},
+					}, nil
+				}
+				return nil, nil
+			},
+			Code:          code.NamingFKConventionMismatch,
+			Kind:          "Foreign key",
+			BacktickQuote: true,
+			NilInvalidPos: true,
+		})
+		advice, err = tmpl.Check(context.Background(), Context{
+			Rule: &storepb.SQLReviewRule{
+				Type:  storepb.SQLReviewRule_NAMING_INDEX_FK,
+				Level: storepb.SQLReviewRule_WARNING,
+				Payload: &storepb.SQLReviewRule_NamingPayload{
+					NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{Format: "fk_{{referencing_table}}"},
+				},
+			},
+		})
+		require.NoError(t, err)
+		require.Len(t, advice, 2)
+		require.Equal(t, "Internal error for foreign key naming convention rule", advice[0].Title)
+		require.Equal(t, "Failed to compile regex: bad", advice[0].Content)
+		require.Nil(t, advice[0].StartPosition)
+		require.Contains(t, advice[1].Content, "Foreign key in table `t` mismatches the naming convention, expect \"fk_t\" but found `bad_fk`")
+	})
+
+	t.Run("TableComment shared commentBatch and StmtCtx skip", func(t *testing.T) {
+		tblComment := e.TableComment(
+			func(Context, []int, *v1review.TableCommentConfig) []v1review.Finding {
+				return []v1review.Finding{{Statement: 0, Code: v1review.TableCommentMissing, Name: "t"}}
+			},
+			BacktickName,
+		)
+		_, err := tblComment.Check(context.Background(), Context{
+			Rule: &storepb.SQLReviewRule{Type: storepb.SQLReviewRule_TABLE_COMMENT, Level: storepb.SQLReviewRule_WARNING},
+		})
+		require.ErrorContains(t, err, "comment_convention_payload is required for table comment rule")
+
+		advice, err := tblComment.Check(context.Background(), Context{
+			Rule: &storepb.SQLReviewRule{
+				Type:  storepb.SQLReviewRule_TABLE_COMMENT,
+				Level: storepb.SQLReviewRule_WARNING,
+				Payload: &storepb.SQLReviewRule_CommentConventionPayload{
+					CommentConventionPayload: &storepb.SQLReviewRule_CommentConventionRulePayload{Required: true},
+				},
+			},
+		})
+		require.NoError(t, err)
+		require.Len(t, advice, 1)
+		require.Equal(t, "Comment is required for table `t`", advice[0].Content)
+
+		skipped := e.StmtCtx(
+			func(context.Context, Context, []int) (func([]int) []v1review.Finding, error) { return nil, nil },
+			func(Context, V1Stmt[int], v1review.Finding) (code.Code, string, bool) {
+				t.Fatal("render should not run when prepareFn returns nil")
+				return 0, "", false
+			},
+		)
+		advice, err = skipped.Check(context.Background(), Context{
+			Rule: &storepb.SQLReviewRule{Type: storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL, Level: storepb.SQLReviewRule_WARNING},
+		})
+		require.NoError(t, err)
+		require.Empty(t, advice)
+	})
+
+	t.Run("RowLimit ExceededPrefix, DMLDryRun StatementText, and formatters", func(t *testing.T) {
+		rowRule := e.RowLimit(V1RowLimitConfig[int]{
+			Probes: func([]int) []int { return []int{1} },
+			Judge: func([]int, map[int]v1review.Probe, int) []v1review.Finding {
+				return []v1review.Finding{{Statement: 1, Code: v1review.RowLimitExceeded, Value: "50"}}
+			},
+			ExceededCode:   code.StatementAffectedRowExceedsLimit,
+			ExceededVerb:   "affected",
+			ExceededPrefix: "The statement ",
+			Estimate: func(context.Context, Context, V1Stmt[int], int, []string) (v1review.Probe, error) {
+				return v1review.Probe{Rows: 50}, nil
+			},
+		})
+		advice, err := rowRule.Check(context.Background(), Context{
+			Rule: &storepb.SQLReviewRule{
+				Type:    storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
+				Level:   storepb.SQLReviewRule_ERROR,
+				Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 10}},
+			},
+		})
+		require.NoError(t, err)
+		require.Len(t, advice, 1)
+		require.Equal(t, `The statement "UPDATE t SET id = 1;" affected 50 rows (estimated). The count exceeds 10.`, advice[0].Content)
+
+		prober := &ProbeRecorder{}
+		dryRun := e.DMLDryRun(V1DMLDryRunConfig[int]{
+			Probes: func([]int) []int { return []int{1} },
+			Judge: func([]int, map[int]v1review.Probe) []v1review.Finding {
+				return []v1review.Finding{{Statement: 1, Value: "err"}}
+			},
+			StatementText: func(stmt V1Stmt[int]) string { return e.TrimmedText(stmt.Text) },
+		})
+		advice, err = dryRun.Check(context.Background(), Context{
+			DBType: storepb.Engine_POSTGRES,
+			Prober: prober,
+			Rule:   &storepb.SQLReviewRule{Type: storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN, Level: storepb.SQLReviewRule_ERROR},
+		})
+		require.NoError(t, err)
+		require.Len(t, prober.Probes, 1)
+		require.Equal(t, "EXPLAIN UPDATE t SET id = 1", prober.Probes[0].Statement)
+		require.Len(t, advice, 1)
+		require.Equal(t, `"UPDATE t SET id = 1" dry runs failed: err`, advice[0].Content)
+
+		startPos := &storepb.Position{Line: 7}
+		withStart := NewV1Engine(func(Context) ([]V1Stmt[int], error) {
+			return []V1Stmt[int]{{Node: 0, Text: "SELECT 1;", Start: startPos}}, nil
+		}, nil, V1PosContentStart)
+		constRule := withStart.SimpleConst(func([]int) []v1review.Finding { return []v1review.Finding{{}} }, code.StatementSelectAll, "avoid *", withStart.PosStmtStart)
+		advice, err = constRule.Check(context.Background(), Context{
+			Rule: &storepb.SQLReviewRule{Type: storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL, Level: storepb.SQLReviewRule_ERROR},
+		})
+		require.NoError(t, err)
+		require.Len(t, advice, 1)
+		require.Equal(t, "avoid *", advice[0].Content)
+		require.Equal(t, int32(7), advice[0].GetStartPosition().GetLine())
+
+		batchDB := e.SimpleBatchDB(func(_ []int, dbName string) []v1review.Finding {
+			return []v1review.Finding{{Statement: 0, Name: dbName}}
+		}, code.TableNoPK, "", FmtFindingName("db=%s"))
+		advice, err = batchDB.Check(context.Background(), Context{
+			CurrentDatabase: "app",
+			Rule:            &storepb.SQLReviewRule{Type: storepb.SQLReviewRule_TABLE_REQUIRE_PK, Level: storepb.SQLReviewRule_ERROR},
+		})
+		require.NoError(t, err)
+		require.Len(t, advice, 1)
+		require.Equal(t, "db=app", advice[0].Content)
 	})
 }

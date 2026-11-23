@@ -129,40 +129,13 @@ func sdlIntegrityAdvice(files map[string]string, path string, f pganalysis.SDLFi
 		)
 	case pganalysis.SDLDuplicateTableAcrossFiles:
 		advice.Code = code.SDLDuplicateTableName.Int32()
-		advice.Title = "Duplicate table name across files"
-		advice.Content = fmt.Sprintf(
-			"Table '%s.%s' is defined in multiple SDL files.\n\n"+
-				"First definition: %s (line %d)\n"+
-				"Duplicate definition: %s (line %d)\n\n"+
-				"Each table must be defined in exactly one file in the SDL project.",
-			f.Schema, f.Table,
-			f.First.Path, firstLine,
-			path, line,
-		)
+		advice.Title, advice.Content = sdlDuplicateAcrossFiles("Table", "table", f.Schema, f.Table, f.First.Path, firstLine, path, line)
 	case pganalysis.SDLDuplicateIndexAcrossFiles:
 		advice.Code = code.SDLDuplicateIndexName.Int32()
-		advice.Title = "Duplicate index name across files"
-		advice.Content = fmt.Sprintf(
-			"Index '%s.%s' is defined in multiple SDL files.\n\n"+
-				"First definition: %s (line %d)\n"+
-				"Duplicate definition: %s (line %d)\n\n"+
-				"Each index must be defined in exactly one file in the SDL project.",
-			f.Schema, f.Name,
-			f.First.Path, firstLine,
-			path, line,
-		)
+		advice.Title, advice.Content = sdlDuplicateAcrossFiles("Index", "index", f.Schema, f.Name, f.First.Path, firstLine, path, line)
 	case pganalysis.SDLDuplicateViewAcrossFiles:
 		advice.Code = code.SDLDuplicateTableName.Int32()
-		advice.Title = "Duplicate view name across files"
-		advice.Content = fmt.Sprintf(
-			"View '%s.%s' is defined in multiple SDL files.\n\n"+
-				"First definition: %s (line %d)\n"+
-				"Duplicate definition: %s (line %d)\n\n"+
-				"Each view must be defined in exactly one file in the SDL project.",
-			f.Schema, f.Name,
-			f.First.Path, firstLine,
-			path, line,
-		)
+		advice.Title, advice.Content = sdlDuplicateAcrossFiles("View", "view", f.Schema, f.Name, f.First.Path, firstLine, path, line)
 	case pganalysis.SDLDuplicateConstraintAcrossFiles:
 		advice.Code = code.SDLDuplicateConstraintName.Int32()
 		advice.Title = "Duplicate constraint name across files"
@@ -237,6 +210,21 @@ func sdlIntegrityAdvice(files map[string]string, path string, f pganalysis.SDLFi
 	default:
 	}
 	return advice
+}
+
+func sdlDuplicateAcrossFiles(titleKind, lowerKind, schema, name, firstPath string, firstLine int, path string, line int) (string, string) {
+	title := fmt.Sprintf("Duplicate %s name across files", lowerKind)
+	content := fmt.Sprintf(
+		"%s '%s.%s' is defined in multiple SDL files.\n\n"+
+			"First definition: %s (line %d)\n"+
+			"Duplicate definition: %s (line %d)\n\n"+
+			"Each %s must be defined in exactly one file in the SDL project.",
+		titleKind, schema, name,
+		firstPath, firstLine,
+		path, line,
+		lowerKind,
+	)
+	return title, content
 }
 
 func sdlConstraintName(name string) string {
