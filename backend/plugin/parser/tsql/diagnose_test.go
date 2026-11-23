@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	lsp "github.com/bytebase/lsp-protocol"
-	"github.com/bytebase/omni/mssql/analysis"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -25,8 +24,7 @@ func TestDiagnoseSeam(t *testing.T) {
 	require.Equal(t, uint32(1), diags[0].Range.Start.Line)
 	require.Equal(t, uint32(17), diags[0].Range.Start.Character)
 
-	require.Nil(t, toSyntaxError(nil))
-	fallback := toSyntaxError(&analysis.SyntaxError{Offset: -1, Message: "unexpected"})
+	fallback := base.SyntaxErrorAtOffset("", -1, "unexpected")
 	require.Equal(t, &storepb.Position{Line: 1, Column: 1}, fallback.Position)
 	require.Equal(t, "unexpected", fallback.Message)
 }

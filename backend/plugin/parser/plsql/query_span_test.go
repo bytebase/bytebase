@@ -88,8 +88,8 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	require.False(t, span.Results[0].Invisible)
 	require.True(t, span.Results[0].SourceColumns[base.ColumnResource{Database: "APP", Table: "EMP", Column: "ID"}])
 
-	// convertResults preserves Invisible and IsPlainField flags across the seam.
-	converted := convertResults([]analysis.QuerySpanResult{{Name: "SECRET", IsPlainField: true, Invisible: true}})
+	// OmniQuerySpanResults preserves Invisible and IsPlainField flags across the seam.
+	converted := base.OmniQuerySpanResults([]analysis.QuerySpanResult{{Name: "SECRET", IsPlainField: true, Invisible: true}})
 	require.Len(t, converted, 1)
 	require.True(t, converted[0].IsPlainField)
 	require.True(t, converted[0].Invisible)
@@ -122,9 +122,9 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to get query span from statement")
 
 	// QueryType conversions.
-	require.Equal(t, base.SelectInfoSchema, convertQueryType(analysis.SelectInfoSchema))
-	require.Equal(t, base.DDL, convertQueryType(analysis.DDL))
-	require.Equal(t, base.DML, convertQueryType(analysis.DML))
-	require.Equal(t, base.Explain, convertQueryType(analysis.Explain))
-	require.Equal(t, base.QueryTypeUnknown, convertQueryType(analysis.QueryType(999)))
+	require.Equal(t, base.SelectInfoSchema, base.OmniQueryType(analysis.SelectInfoSchema))
+	require.Equal(t, base.DDL, base.OmniQueryType(analysis.DDL))
+	require.Equal(t, base.DML, base.OmniQueryType(analysis.DML))
+	require.Equal(t, base.Explain, base.OmniQueryType(analysis.Explain))
+	require.Equal(t, base.QueryTypeUnknown, base.OmniQueryType(analysis.QueryType(999)))
 }

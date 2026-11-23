@@ -57,12 +57,14 @@ func TestExtractChangedResourcesSeam(t *testing.T) {
 	require.Equal(t, want, summary.ChangedResources)
 
 	// DatabaseOnly resources call AddDatabase.
-	dbOnlySummary := &base.ChangeSummary{ChangedResources: model.NewChangedResources(nil)}
-	addStatementChanges(dbOnlySummary, analysis.StatementChanges{
-		Resources: []analysis.ChangedResource{
-			{Database: "APP", DatabaseOnly: true},
-		},
+	dbOnlySummary, err := base.ExtractChangedResourcesFromASTs(nil, []base.AST{&fakeAST{}}, false, func(base.AST) (analysis.StatementChanges, bool, error) {
+		return analysis.StatementChanges{
+			Resources: []analysis.ChangedResource{
+				{Database: "APP", DatabaseOnly: true},
+			},
+		}, true, nil
 	})
+	require.NoError(t, err)
 	wantDBOnly := model.NewChangedResources(nil)
 	wantDBOnly.AddDatabase("APP")
 	require.Equal(t, wantDBOnly, dbOnlySummary.ChangedResources)
