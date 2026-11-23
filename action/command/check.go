@@ -105,9 +105,7 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 				return err
 			}
 		case world.AzureDevOps:
-			if err := azure.LoggingReleaseChecks(checkReleaseResponse); err != nil {
-				return err
-			}
+			azure.LoggingReleaseChecks(checkReleaseResponse)
 		case world.Bitbucket:
 			if err := bitbucket.CreateBitbucketReport(checkReleaseResponse); err != nil {
 				return err
