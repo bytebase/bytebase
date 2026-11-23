@@ -5,13 +5,10 @@ package util
 
 import (
 	"fmt"
-	"strings"
-	"unicode"
 
 	"google.golang.org/protobuf/types/known/structpb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 func buildAffectedRowsResult(affectedRows int64, messages []*v1pb.QueryResult_Message) *v1pb.QueryResult {
@@ -37,11 +34,6 @@ var NullRowValue = &v1pb.RowValue{
 	Kind: &v1pb.RowValue_NullValue{
 		NullValue: structpb.NullValue_NULL_VALUE,
 	},
-}
-
-// TrimStatement trims the unused characters from a statement before running it.
-func TrimStatement(statement string) string {
-	return strings.TrimLeftFunc(strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon), unicode.IsSpace)
 }
 
 func FormatMaximumSQLResultSizeMessage(limit int64) string {

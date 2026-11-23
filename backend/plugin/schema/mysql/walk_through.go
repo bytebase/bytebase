@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	schema.RegisterWalkThroughWithContext(storepb.Engine_MYSQL, WalkThroughWithContext)
+	schema.Register(schema.Engine{WalkThrough: WalkThroughWithContext}, storepb.Engine_MYSQL)
 }
 
 var mysqlWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{

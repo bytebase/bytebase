@@ -12,7 +12,11 @@ import (
 )
 
 func init() {
-	schema.RegisterGetDatabaseDefinition(storepb.Engine_TRINO, GetDatabaseDefinition)
+	schema.Register(schema.Engine{
+		Definitions: schema.Definitions{
+			Database: GetDatabaseDefinition,
+		},
+	}, storepb.Engine_TRINO)
 }
 
 // GetDatabaseDefinition renders the SDL for a Trino database schema by

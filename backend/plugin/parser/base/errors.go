@@ -3,7 +3,21 @@ package base
 import (
 	"fmt"
 	"strings"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
+
+// SyntaxError is a syntax error.
+type SyntaxError struct {
+	Position   *storepb.Position
+	Message    string
+	RawMessage string
+}
+
+// Error returns the error message.
+func (e *SyntaxError) Error() string {
+	return e.Message
+}
 
 // ResourceNotFoundError is returned when a resource is not found in the
 // processing the query.

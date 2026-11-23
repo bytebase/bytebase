@@ -39,18 +39,8 @@ var (
 )
 
 var (
-	mux                     sync.Mutex
-	queryValidators         = make(map[storepb.Engine]ValidateSQLForEditorFunc)
-	changedResourcesGetters = make(map[storepb.Engine]ExtractChangedResourcesFunc)
-	splitters               = make(map[storepb.Engine]SplitMultiSQLFunc)
-	completers              = make(map[storepb.Engine]CompletionFunc)
-	diagnoseCollectors      = make(map[storepb.Engine]DiagnoseFunc)
-	statementRanges         = make(map[storepb.Engine]StatementRangeFunc)
-	spans                   = make(map[storepb.Engine]GetQuerySpanFunc)
-	transformDMLToSelect    = make(map[storepb.Engine]TransformDMLToSelectFunc)
-	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
-	statementParsers        = make(map[storepb.Engine]ParseStatementsFunc)
-	statementTypeGetters    = make(map[storepb.Engine]GetStatementTypesFunc)
+	registryMu sync.Mutex
+	engines    = make(map[storepb.Engine]Engine)
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
@@ -70,20 +60,102 @@ type TransformDMLToSelectFunc func(ctx context.Context, tCtx TransformContext, s
 type GenerateRestoreSQLFunc func(ctx context.Context, rCtx RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error)
 
 // ParseStatementsFunc is the interface for parsing SQL statements and returning []ParsedStatement.
-// This is the new unified parsing function that returns complete ParsedStatement objects with AST.
 type ParseStatementsFunc func(statement string) ([]ParsedStatement, error)
 
 // GetStatementTypesFunc returns the types of statements in the ASTs.
 // Statement types include: INSERT, UPDATE, DELETE (DML), CREATE_TABLE, ALTER_TABLE, DROP_TABLE, etc. (DDL).
 type GetStatementTypesFunc func([]AST) ([]storepb.StatementType, error)
 
-func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := queryValidators[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
+// Engine defines the parser capabilities an engine plugin registers.
+// Any nil field is omitted. Separate Register calls may supply disjoint
+// capabilities for the same engine (for example, googlesql registers shared
+// capabilities while bigquery and spanner add ResultLimit).
+type Engine struct {
+	Split                SplitMultiSQLFunc
+	Parse                ParseStatementsFunc
+	StatementTypes       GetStatementTypesFunc
+	StatementRanges      StatementRangeFunc
+	Diagnose             DiagnoseFunc
+	Complete             CompletionFunc
+	ValidateQuery        ValidateSQLForEditorFunc
+	QuerySpan            GetQuerySpanFunc
+	Explain              ExplainStatementFunc
+	ResultLimit          ResultLimitFunc
+	ExtractChanged       ExtractChangedResourcesFunc
+	TransformDMLToSelect TransformDMLToSelectFunc
+	GenerateRestoreSQL   GenerateRestoreSQLFunc
+}
+
+// Register registers every non-nil capability in spec for each target engine.
+// It panics if any capability is already registered for a target engine.
+func Register(spec Engine, targetEngines ...storepb.Engine) {
+	registryMu.Lock()
+	defer registryMu.Unlock()
+	for _, engine := range targetEngines {
+		cur := engines[engine]
+		mergeEngine(&cur, spec, engine)
+		engines[engine] = cur
 	}
-	queryValidators[engine] = f
+}
+
+func mergeEngine(cur *Engine, spec Engine, engine storepb.Engine) {
+	checkDup := func(alreadySet bool, name string) {
+		if alreadySet {
+			panic(fmt.Sprintf("parser/base: %s registered twice for %s", name, engine))
+		}
+	}
+	if spec.Split != nil {
+		checkDup(cur.Split != nil, "Split")
+		cur.Split = spec.Split
+	}
+	if spec.Parse != nil {
+		checkDup(cur.Parse != nil, "Parse")
+		cur.Parse = spec.Parse
+	}
+	if spec.StatementTypes != nil {
+		checkDup(cur.StatementTypes != nil, "StatementTypes")
+		cur.StatementTypes = spec.StatementTypes
+	}
+	if spec.StatementRanges != nil {
+		checkDup(cur.StatementRanges != nil, "StatementRanges")
+		cur.StatementRanges = spec.StatementRanges
+	}
+	if spec.Diagnose != nil {
+		checkDup(cur.Diagnose != nil, "Diagnose")
+		cur.Diagnose = spec.Diagnose
+	}
+	if spec.Complete != nil {
+		checkDup(cur.Complete != nil, "Complete")
+		cur.Complete = spec.Complete
+	}
+	if spec.ValidateQuery != nil {
+		checkDup(cur.ValidateQuery != nil, "ValidateQuery")
+		cur.ValidateQuery = spec.ValidateQuery
+	}
+	if spec.QuerySpan != nil {
+		checkDup(cur.QuerySpan != nil, "QuerySpan")
+		cur.QuerySpan = spec.QuerySpan
+	}
+	if spec.Explain != nil {
+		checkDup(cur.Explain != nil, "Explain")
+		cur.Explain = spec.Explain
+	}
+	if spec.ResultLimit != nil {
+		checkDup(cur.ResultLimit != nil, "ResultLimit")
+		cur.ResultLimit = spec.ResultLimit
+	}
+	if spec.ExtractChanged != nil {
+		checkDup(cur.ExtractChanged != nil, "ExtractChanged")
+		cur.ExtractChanged = spec.ExtractChanged
+	}
+	if spec.TransformDMLToSelect != nil {
+		checkDup(cur.TransformDMLToSelect != nil, "TransformDMLToSelect")
+		cur.TransformDMLToSelect = spec.TransformDMLToSelect
+	}
+	if spec.GenerateRestoreSQL != nil {
+		checkDup(cur.GenerateRestoreSQL != nil, "GenerateRestoreSQL")
+		cur.GenerateRestoreSQL = spec.GenerateRestoreSQL
+	}
 }
 
 // ValidateSQLForEditor validates the SQL statement for editor.
@@ -99,8 +171,8 @@ func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 // because here the answer for such an engine is a default rather than a
 // verdict.
 func ValidateSQLForEditor(engine storepb.Engine, statement string) (bool, bool, error) {
-	f, ok := queryValidators[engine]
-	if !ok {
+	f := engines[engine].ValidateQuery
+	if f == nil {
 		return true, true, nil
 	}
 	return f(statement)
@@ -108,87 +180,47 @@ func ValidateSQLForEditor(engine storepb.Engine, statement string) (bool, bool, 
 
 // HasQueryValidator reports whether a read-only query validator is registered
 // for engine, so a caller can tell ValidateSQLForEditor's verdict apart from
-// its no-validator default. The map stays unexported: this is the whole of
-// what a caller outside the package may learn about it.
+// its no-validator default.
 //
-// Lock-free like every other lookup here, and for the same reason: validators
-// are registered from package init functions, before any request runs.
+// Lock-free like every other lookup here: capabilities are registered from
+// package init functions before any request runs.
 func HasQueryValidator(engine storepb.Engine) bool {
-	_, ok := queryValidators[engine]
-	return ok
-}
-
-func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChangedResourcesFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := changedResourcesGetters[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	changedResourcesGetters[engine] = f
+	return engines[engine].ValidateQuery != nil
 }
 
 // ExtractChangedResources extracts the changed resources from the SQL.
 func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []AST, statement string) (*ChangeSummary, error) {
-	f, ok := changedResourcesGetters[engine]
-	if !ok {
+	f := engines[engine].ExtractChanged
+	if f == nil {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(currentDatabase, currentSchema, dbMetadata, asts, statement)
 }
 
-func RegisterSplitterFunc(engine storepb.Engine, f SplitMultiSQLFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := splitters[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	splitters[engine] = f
-}
-
 // SplitMultiSQL splits statement into a slice of the single SQL.
 func SplitMultiSQL(engine storepb.Engine, statement string) ([]Statement, error) {
-	f, ok := splitters[engine]
-	if !ok {
+	f := engines[engine].Split
+	if f == nil {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(statement)
 }
 
-// RegisterCompleteFunc registers the completion function for the engine.
-func RegisterCompleteFunc(engine storepb.Engine, f CompletionFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := completers[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	completers[engine] = f
-}
-
 // Completion returns the completion candidates for the statement.
 func Completion(ctx context.Context, engine storepb.Engine, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error) {
-	f, ok := completers[engine]
-	if !ok {
+	f := engines[engine].Complete
+	if f == nil {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(ctx, cCtx, statement, caretLine, caretOffset)
-}
-
-// RegisterDiagnoseFunc registers the diagnose function for the engine.
-func RegisterDiagnoseFunc(engine storepb.Engine, f DiagnoseFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := diagnoseCollectors[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	diagnoseCollectors[engine] = f
 }
 
 // Diagnose returns the diagnostics for the statement. The diagnostics never be nil, and may not be empty although the error is not nil.
 // A non-nil result matters: publishing diagnostics as JSON null instead of an empty array
 // does not clear previously published diagnostics on the LSP client.
 func Diagnose(ctx context.Context, dCtx DiagnoseContext, engine storepb.Engine, statement string) ([]Diagnostic, error) {
-	f, ok := diagnoseCollectors[engine]
-	if !ok {
+	f := engines[engine].Diagnose
+	if f == nil {
 		return []Diagnostic{}, nil
 	}
 	diagnostics, err := f(ctx, dCtx, statement)
@@ -198,40 +230,22 @@ func Diagnose(ctx context.Context, dCtx DiagnoseContext, engine storepb.Engine, 
 	return diagnostics, err
 }
 
-func RegisterStatementRangesFunc(engine storepb.Engine, f StatementRangeFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := statementRanges[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	statementRanges[engine] = f
-}
-
 // GetStatementRanges returns a list of ranges for the statement.
 // Start is inclusive and end is exclusive. Character is 0-based UTF-16 code unit offset, Line is 0-based line number.
 func GetStatementRanges(ctx context.Context, sCtx StatementRangeContext, engine storepb.Engine, statement string) ([]Range, error) {
-	f, ok := statementRanges[engine]
-	if !ok {
+	f := engines[engine].StatementRanges
+	if f == nil {
 		return []lsp.Range{}, nil
 	}
 	return f(ctx, sCtx, statement)
-}
-
-func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := spans[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	spans[engine] = f
 }
 
 // GetQuerySpan gets the span of a query from pre-split statements.
 // The interface will return the query spans with non-critical errors, or return an error if the query is invalid.
 // Callers should split the SQL first using SplitMultiSQL and pass the resulting []Statement.
 func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.Engine, statements []Statement, database, schema string, ignoreCaseSensitive bool) ([]*QuerySpan, error) {
-	f, ok := spans[engine]
-	if !ok {
+	f := engines[engine].QuerySpan
+	if f == nil {
 		return nil, nil
 	}
 	gCtx.Engine = engine
@@ -261,74 +275,36 @@ func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.
 	return results, nil
 }
 
-// RegisterTransformDMLToSelect registers the transformDMLToSelect function for the engine.
-func RegisterTransformDMLToSelect(engine storepb.Engine, f TransformDMLToSelectFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := transformDMLToSelect[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	transformDMLToSelect[engine] = f
-}
-
 // TransformDMLToSelect transforms the DML statement to SELECT statement.
 func TransformDMLToSelect(ctx context.Context, engine storepb.Engine, tCtx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error) {
-	f, ok := transformDMLToSelect[engine]
-	if !ok {
+	f := engines[engine].TransformDMLToSelect
+	if f == nil {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(ctx, tCtx, statement, sourceDatabase, targetDatabase, tablePrefix)
 }
 
-func RegisterGenerateRestoreSQL(engine storepb.Engine, f GenerateRestoreSQLFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := generateRestoreSQL[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	generateRestoreSQL[engine] = f
-}
-
 func GenerateRestoreSQL(ctx context.Context, engine storepb.Engine, rCtx RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
-	f, ok := generateRestoreSQL[engine]
-	if !ok {
+	f := engines[engine].GenerateRestoreSQL
+	if f == nil {
 		return "", errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(ctx, rCtx, statement, backupItem)
 }
 
-func RegisterParseStatementsFunc(engine storepb.Engine, f ParseStatementsFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := statementParsers[engine]; dup {
-		panic(fmt.Sprintf("RegisterParseStatementsFunc called twice %s", engine))
-	}
-	statementParsers[engine] = f
-}
-
 // ParseStatements parses the SQL statement and returns ParsedStatement objects with both text and AST.
-// This is the new unified parsing function.
 func ParseStatements(engine storepb.Engine, statement string) ([]ParsedStatement, error) {
-	f, ok := statementParsers[engine]
-	if !ok {
+	f := engines[engine].Parse
+	if f == nil {
 		return nil, errors.Errorf("engine %s is not supported for ParseStatements", engine)
 	}
 	return f(statement)
 }
 
-func RegisterGetStatementTypes(engine storepb.Engine, f GetStatementTypesFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := statementTypeGetters[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	statementTypeGetters[engine] = f
-}
-
 // GetStatementTypes returns the types of statements in the ASTs.
 func GetStatementTypes(engine storepb.Engine, asts []AST) ([]storepb.StatementType, error) {
-	f, ok := statementTypeGetters[engine]
-	if !ok {
+	f := engines[engine].StatementTypes
+	if f == nil {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(asts)

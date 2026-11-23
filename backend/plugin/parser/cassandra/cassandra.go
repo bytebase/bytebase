@@ -1,7 +1,11 @@
 package cassandra
 
 import (
+	"context"
+
 	omnicassandra "github.com/bytebase/omni/cassandra"
+	"github.com/bytebase/omni/cassandra/analysis"
+	"github.com/bytebase/omni/cassandra/ast"
 	omniparser "github.com/bytebase/omni/cassandra/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -9,7 +13,41 @@ import (
 )
 
 func init() {
-	base.RegisterParseStatementsFunc(storepb.Engine_CASSANDRA, parseCassandraStatements)
+	base.Register(base.Engine{
+		Split:         SplitSQL,
+		Parse:         parseCassandraStatements,
+		ValidateQuery: analysis.ValidateQuery,
+		QuerySpan:     GetQuerySpan,
+	}, storepb.Engine_CASSANDRA)
+}
+
+// AST wraps an omni AST node and implements the base.AST interface.
+type AST struct {
+	Node          ast.Node
+	Text          string
+	StartPosition *storepb.Position
+}
+
+func (a *AST) ASTStartPosition() *storepb.Position {
+	return a.StartPosition
+}
+
+// GetNode extracts the omni AST node from a base.AST interface.
+func GetNode(a base.AST) (ast.Node, bool) {
+	if a == nil {
+		return nil, false
+	}
+	node, ok := a.(*AST)
+	if !ok {
+		return nil, false
+	}
+	return node.Node, true
+}
+
+func SplitSQL(statement string) ([]base.Statement, error) {
+	return base.BuildStatements(statement, omnicassandra.Split(statement), func(s omnicassandra.Segment) (int, int, bool) {
+		return s.ByteStart, s.ByteEnd, s.Empty
+	}, false), nil
 }
 
 func parseCassandraStatements(statement string) ([]base.ParsedStatement, error) {
@@ -24,6 +62,18 @@ func parseCassandraStatements(statement string) ([]base.ParsedStatement, error) 
 		}
 		return asts, nil
 	})
+}
+
+// GetQuerySpan returns the query span for the given CQL statement.
+func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, _ string, _ bool) (*base.QuerySpan, error) {
+	span, err := analysis.ResolveQuerySpan(stmt.Text, analysis.ResolveOptions{
+		DefaultKeyspace:     database,
+		GetDatabaseMetadata: base.QuerySpanProtoMetadataFunc(ctx, gCtx, false),
+	})
+	if err != nil {
+		return nil, convertError(err, base.Statement{Text: stmt.Text})
+	}
+	return base.OmniResolvedSpan(span), nil
 }
 
 func convertError(err error, stmt base.Statement) error {

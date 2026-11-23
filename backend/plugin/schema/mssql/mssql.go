@@ -35,15 +35,17 @@ import (
 )
 
 func init() {
-	schema.RegisterGetDatabaseMetadata(storepb.Engine_MSSQL, GetDatabaseMetadata)
-	schema.RegisterDefinitions(schema.Definitions{
-		Database:  GetDatabaseDefinition,
-		Table:     GetTableDefinition,
-		View:      GetViewDefinition,
-		Function:  GetFunctionDefinition,
-		Procedure: GetProcedureDefinition,
+	schema.Register(schema.Engine{
+		Definitions: schema.Definitions{
+			Database:  GetDatabaseDefinition,
+			Table:     GetTableDefinition,
+			View:      GetViewDefinition,
+			Function:  GetFunctionDefinition,
+			Procedure: GetProcedureDefinition,
+		},
+		DatabaseMetadata:      GetDatabaseMetadata,
+		DiffMetadataMigration: diffMetadataMigration,
 	}, storepb.Engine_MSSQL)
-	schema.RegisterDiffMetadataMigration(storepb.Engine_MSSQL, diffMetadataMigration)
 }
 
 // GetDatabaseMetadata parses SQL Server DDL text and returns database metadata

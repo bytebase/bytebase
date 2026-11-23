@@ -19,9 +19,11 @@ import (
 func init() {
 	// MySQL-only for now: OceanBase is intentionally NOT registered pending validation
 	// against a live OceanBase oracle.
-	schema.RegisterDiffSDLMigration(storepb.Engine_MYSQL, mysqlDiffSDLMigrationWithContext)
-	schema.RegisterSDLDropAdvices(storepb.Engine_MYSQL, mysqlSDLDropAdvices)
-	schema.RegisterDiffMetadataMigration(storepb.Engine_MYSQL, omniDiffMetadataMigration)
+	schema.Register(schema.Engine{
+		DiffSDLMigration:      mysqlDiffSDLMigrationWithContext,
+		SDLDropAdvices:        mysqlSDLDropAdvices,
+		DiffMetadataMigration: omniDiffMetadataMigration,
+	}, storepb.Engine_MYSQL)
 }
 
 // sdlDatabaseContext is the synthetic database both SDL inputs are loaded under,

@@ -135,9 +135,11 @@ func DiffMetadataMigration[Catalog, Report any](engine Engine[Catalog, Report], 
 // RegisterMetadataMigration registers a metadata-to-metadata migration handler
 // backed by engine for storeEngine.
 func RegisterMetadataMigration[Catalog, Report any](storeEngine storepb.Engine, engine Engine[Catalog, Report]) {
-	schema.RegisterDiffMetadataMigration(storeEngine, func(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-		return DiffMetadataMigration(engine, oldSchema, newSchema)
-	})
+	schema.Register(schema.Engine{
+		DiffMetadataMigration: func(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
+			return DiffMetadataMigration(engine, oldSchema, newSchema)
+		},
+	}, storeEngine)
 }
 
 // DiffMetadata loads both snapshots into one catalog each and renders the

@@ -21,13 +21,15 @@ type MySQLFamilyDefinitions struct {
 // RegisterMySQLFamilyDefinitions registers a MySQL-family engine's definition
 // renderers, adapting single-schema omni signatures to schema's registry.
 func RegisterMySQLFamilyDefinitions(engine storepb.Engine, defs MySQLFamilyDefinitions) {
-	schema.RegisterDefinitions(schema.Definitions{
-		Database:  defs.Database,
-		Table:     ignoreTableScope(defs.Table),
-		View:      ignoreObjectScope(defs.View),
-		Function:  ignoreObjectScope(defs.Function),
-		Procedure: ignoreObjectScope(defs.Procedure),
-		Sequence:  ignoreObjectScope(defs.Sequence),
+	schema.Register(schema.Engine{
+		Definitions: schema.Definitions{
+			Database:  defs.Database,
+			Table:     ignoreTableScope(defs.Table),
+			View:      ignoreObjectScope(defs.View),
+			Function:  ignoreObjectScope(defs.Function),
+			Procedure: ignoreObjectScope(defs.Procedure),
+			Sequence:  ignoreObjectScope(defs.Sequence),
+		},
 	}, engine)
 }
 

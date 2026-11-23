@@ -8,5 +8,5 @@ import (
 )
 
 func init() {
-	base.RegisterQueryValidator(storepb.Engine_REDIS, analysis.ValidateQuery)
+	base.Register(base.Engine{ValidateQuery: analysis.ValidateQuery}, storepb.Engine_REDIS)
 }

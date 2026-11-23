@@ -18,7 +18,7 @@ import (
 )
 
 func init() {
-	schema.RegisterWalkThroughWithContext(storepb.Engine_MARIADB, WalkThroughWithContext)
+	schema.Register(schema.Engine{WalkThrough: WalkThroughWithContext}, storepb.Engine_MARIADB)
 }
 
 var mariaDBWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{

@@ -1,9 +1,7 @@
 package base
 
 import (
-	"fmt"
 	"strings"
-	"sync"
 
 	omnianalysis "github.com/bytebase/omni/analysis"
 	"github.com/pkg/errors"
@@ -30,23 +28,6 @@ const (
 // statement. See ExplainStatement for the contract every engine implements.
 type ExplainStatementFunc func(statement string, format ExplainFormat) (string, error)
 
-var (
-	explainMux        sync.Mutex
-	explainStatements = make(map[storepb.Engine]ExplainStatementFunc)
-)
-
-// RegisterExplainStatementFunc registers how engine builds the statement that
-// plans another statement. Only an engine that plans by prefixing EXPLAIN to the
-// statement registers here; see ExplainStatement.
-func RegisterExplainStatementFunc(engine storepb.Engine, f ExplainStatementFunc) {
-	explainMux.Lock()
-	defer explainMux.Unlock()
-	if _, dup := explainStatements[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	explainStatements[engine] = f
-}
-
 // ExplainStatement returns the statement that produces a query plan for
 // statement, which must be a single statement. It is the single source of that
 // rewrite: a driver calls it to build the statement it runs, and the Query
@@ -66,8 +47,8 @@ func RegisterExplainStatementFunc(engine storepb.Engine, f ExplainStatementFunc)
 // all. Those drivers produce a plan on their own and never ask; a caller that
 // cannot tell which kind of engine it holds asks HasExplainStatement first.
 func ExplainStatement(engine storepb.Engine, statement string, format ExplainFormat) (string, error) {
-	f, ok := explainStatements[engine]
-	if !ok {
+	f := engines[engine].Explain
+	if f == nil {
 		return "", errors.Errorf("%s does not plan a statement by prefixing EXPLAIN", engine)
 	}
 	return f(statement, format)
@@ -76,12 +57,8 @@ func ExplainStatement(engine storepb.Engine, statement string, format ExplainFor
 // HasExplainStatement reports whether engine plans a statement by prefixing
 // EXPLAIN to it, which is what makes the statement that runs something other than
 // the one the caller holds.
-//
-// Lock-free like every other lookup here, and for the same reason: the functions
-// are registered from package init functions, before any request runs.
 func HasExplainStatement(engine storepb.Engine) bool {
-	_, ok := explainStatements[engine]
-	return ok
+	return engines[engine].Explain != nil
 }
 
 // ErrExplainAnalyzeExecutes is what an engine returns for a caller's own EXPLAIN

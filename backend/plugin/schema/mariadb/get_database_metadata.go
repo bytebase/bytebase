@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	schema.RegisterGetDatabaseMetadata(storepb.Engine_MARIADB, GetDatabaseMetadata)
+	schema.Register(schema.Engine{DatabaseMetadata: GetDatabaseMetadata}, storepb.Engine_MARIADB)
 }
 
 // GetDatabaseMetadata parses MariaDB schema DDL text and returns database

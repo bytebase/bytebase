@@ -8,14 +8,9 @@ import (
 	"github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mssql/analysis"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
-
-func init() {
-	base.RegisterGetQuerySpan(storepb.Engine_MSSQL, GetQuerySpan)
-}
 
 // GetQuerySpan returns the query span for the given statement.
 func GetQuerySpan(

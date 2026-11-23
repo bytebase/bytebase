@@ -12,7 +12,7 @@ import (
 )
 
 func TestBackupRestoreDoNotDependOnANTLR(t *testing.T) {
-	for _, path := range []string{"backup.go", "restore.go"} {
+	for _, path := range []string{"backup_restore.go"} {
 		content, err := os.ReadFile(path)
 		require.NoError(t, err)
 		source := string(content)

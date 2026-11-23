@@ -9,10 +9,12 @@ import (
 )
 
 func init() {
-	schema.RegisterDefinitions(schema.Definitions{
-		Database: GetDatabaseDefinition,
-		Table:    GetTableDefinition,
-		View:     GetViewDefinition,
+	schema.Register(schema.Engine{
+		Definitions: schema.Definitions{
+			Database: GetDatabaseDefinition,
+			Table:    GetTableDefinition,
+			View:     GetViewDefinition,
+		},
 	}, storepb.Engine_CLICKHOUSE)
 }
 

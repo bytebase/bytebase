@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	schema.RegisterWalkThroughWithContext(storepb.Engine_POSTGRES, WalkThroughWithContext)
+	schema.Register(schema.Engine{WalkThrough: WalkThroughWithContext}, storepb.Engine_POSTGRES)
 }
 
 // WalkThroughWithContext performs DDL simulation using the omni catalog.
