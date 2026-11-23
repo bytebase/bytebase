@@ -54,11 +54,10 @@ type V1EngineOptions[N any] struct {
 	CreateTableLocStart func(N) (int, bool)
 }
 
-// V1TemplateNamingOptions configures TemplateNaming formatting and schema selection.
+// V1TemplateNamingOptions configures TemplateNaming formatting.
 type V1TemplateNamingOptions[N any] struct {
 	BacktickQuote  bool
 	InvalidContent func(V1Stmt[N], v1review.Finding) string
-	SchemaFor      func(N, *model.DatabaseMetadata) v1review.Schema
 }
 
 // V1RowLimitConfig configures a row-limit rule (STATEMENT_INSERT_ROW_LIMIT or
@@ -88,6 +87,26 @@ type V1DMLDryRunConfig[N any] struct {
 	PreExecutions func(stmts []V1Stmt[N], nodes []N, want []int, visit func(i int, settings []string))
 }
 
+// V1ColumnRequiredConfig configures COLUMN_REQUIRED on a V1Engine.
+type V1ColumnRequiredConfig[N any] struct {
+	Fn        func([]N, []string) []v1review.Finding
+	Batch     bool
+	SameGroup func(a, b v1review.Finding) bool
+	TableFmt  string
+	QuoteCol  bool
+	Pos       V1PosFunc[N]
+}
+
+// V1PriorBackupConfig configures BUILTIN_PRIOR_BACKUP_CHECK on a V1Engine.
+type V1PriorBackupConfig[N any] struct {
+	Engine     storepb.Engine
+	Facts      func(ctx context.Context, checkCtx Context) v1review.PriorBackupFacts
+	Check      func(checkCtx Context, stmts []V1Stmt[N], nodes []N, facts v1review.PriorBackupFacts) ([]v1review.Finding, error)
+	Render     func(stmts []V1Stmt[N], nodes []N, f v1review.Finding) (code.Code, string, *storepb.Position, bool)
+	DefaultPos *storepb.Position
+	MixedLine  func(V1Stmt[N]) int
+}
+
 type v1CachedStmts[N any] struct {
 	stmts []V1Stmt[N]
 	nodes []N
@@ -106,6 +125,7 @@ type V1Engine[N any] struct {
 }
 
 // NewV1Engine returns a rule builder for an engine whose AST nodes are N.
+// A nil byteOffsetLine defaults to base.ByteOffsetToRunePosition(sql, offset).Line.
 func NewV1Engine[N any](
 	extract func(Context) ([]V1Stmt[N], error),
 	byteOffsetLine func(sql string, byteOffset int) int32,
@@ -120,9 +140,13 @@ func NewV1Engine[N any](
 
 // NewV1EngineWithOptions returns a rule builder configured with opt.
 func NewV1EngineWithOptions[N any](opt V1EngineOptions[N]) *V1Engine[N] {
+	byteOffsetLine := opt.ByteOffsetLine
+	if byteOffsetLine == nil {
+		byteOffsetLine = defaultByteOffsetLine
+	}
 	e := &V1Engine[N]{
 		extract:             opt.Extract,
-		byteOffsetLine:      opt.ByteOffsetLine,
+		byteOffsetLine:      byteOffsetLine,
 		memoKey:             fmt.Sprintf("v1engine:%d", v1EngineMemoSeq.Add(1)),
 		tidbQuirks:          opt.TiDBQuirks,
 		isAlterTable:        opt.IsAlterTable,
@@ -183,7 +207,8 @@ func (e *V1Engine[N]) absLine(stmt V1Stmt[N], byteOffset int) int {
 	return stmt.BaseLine + int(e.byteOffsetLine(stmt.Text, byteOffset))
 }
 
-func (e *V1Engine[N]) firstTokenLine(stmt V1Stmt[N]) int {
+// FirstTokenLine returns the 1-based absolute line of the first non-whitespace rune in stmt.Text.
+func (e *V1Engine[N]) FirstTokenLine(stmt V1Stmt[N]) int {
 	return e.absLine(stmt, firstNonSpaceIndex(stmt.Text))
 }
 
@@ -249,7 +274,7 @@ func (e *V1Engine[N]) PosContentEnd(stmt V1Stmt[N], _ v1review.Finding) *storepb
 func (e *V1Engine[N]) PosFinding(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	if e.tidbQuirks {
 		if f.Start == 0 && f.End == 0 {
-			return base.ConvertANTLRLineToPosition(e.firstTokenLine(stmt))
+			return base.ConvertANTLRLineToPosition(e.FirstTokenLine(stmt))
 		}
 		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
 	}
@@ -293,7 +318,7 @@ func (e *V1Engine[N]) posAbsOrFinding(stmt V1Stmt[N], f v1review.Finding) *store
 
 func (e *V1Engine[N]) posStatement(stmt V1Stmt[N]) *storepb.Position {
 	if e.tidbQuirks {
-		return base.ConvertANTLRLineToPosition(e.firstTokenLine(stmt))
+		return base.ConvertANTLRLineToPosition(e.FirstTokenLine(stmt))
 	}
 	return base.ConvertANTLRLineToPosition(stmt.BaseLine + int(e.findingLine(stmt.Text, v1review.Finding{})))
 }
@@ -332,7 +357,7 @@ func (e *V1Engine[N]) posAllowlist(stmt V1Stmt[N], f v1review.Finding) *storepb.
 				return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
 			}
 		}
-		return base.ConvertANTLRLineToPosition(e.firstTokenLine(stmt))
+		return base.ConvertANTLRLineToPosition(e.FirstTokenLine(stmt))
 	}
 	return e.posBaseLineTwice(stmt, f)
 }
@@ -340,7 +365,7 @@ func (e *V1Engine[N]) posAllowlist(stmt V1Stmt[N], f v1review.Finding) *storepb.
 func (e *V1Engine[N]) posAlterFirstToken(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	if e.tidbQuirks {
 		if e.isAlterTable != nil && e.isAlterTable(stmt.Node) {
-			return base.ConvertANTLRLineToPosition(e.firstTokenLine(stmt))
+			return base.ConvertANTLRLineToPosition(e.FirstTokenLine(stmt))
 		}
 		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
 	}
@@ -382,20 +407,9 @@ func (e *V1Engine[N]) SimpleStmt(
 	content func(V1Stmt[N], v1review.Finding) string,
 	posFn ...V1PosFunc[N],
 ) Func {
-	pos := e.pos(posFn)
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		stmts, nodes, status, title, err := e.Prepare(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		var adviceList []*storepb.Advice
-		for i, stmt := range stmts {
-			for _, f := range fn(nodes[i : i+1 : i+1]) {
-				adviceList = append(adviceList, newAdvice(status, c, title, content(stmt, f), pos(stmt, f)))
-			}
-		}
-		return adviceList, nil
-	}
+	return e.StmtNodes(fn, func(stmt V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
+		return c, content(stmt, f), true
+	}, posFn...)
 }
 
 // StmtNodes builds a zero-alloc per-statement rule passing node slices to fn and rendering each finding.
@@ -450,9 +464,40 @@ func (e *V1Engine[N]) Stmt(
 	}
 }
 
-// Batch builds a whole-script rule whose render callback chooses the advice code, content, and position.
-func (e *V1Engine[N]) Batch(
-	fn func(Context, []N) []v1review.Finding,
+// StmtCtx builds a per-statement rule whose prepareFn resolves per-review state once
+// before iterating over statements.
+func (e *V1Engine[N]) StmtCtx(
+	prepareFn func(Context, []N) (func([]N) []v1review.Finding, error),
+	render func(Context, V1Stmt[N], v1review.Finding) (code.Code, string, bool),
+	posFn ...V1PosFunc[N],
+) Func {
+	pos := e.pos(posFn)
+	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
+		stmts, nodes, status, title, err := e.Prepare(checkCtx)
+		if err != nil {
+			return nil, err
+		}
+		fn, err := prepareFn(checkCtx, nodes)
+		if err != nil {
+			return nil, err
+		}
+		var adviceList []*storepb.Advice
+		for i, stmt := range stmts {
+			for _, f := range fn(nodes[i : i+1 : i+1]) {
+				c, content, ok := render(checkCtx, stmt, f)
+				if !ok {
+					continue
+				}
+				adviceList = append(adviceList, newAdvice(status, c, title, content, pos(stmt, f)))
+			}
+		}
+		return adviceList, nil
+	}
+}
+
+// BatchStmts builds a whole-script rule passing both statements and nodes to fn.
+func (e *V1Engine[N]) BatchStmts(
+	fn func(Context, []V1Stmt[N], []N) []v1review.Finding,
 	render func([]V1Stmt[N], v1review.Finding) (code.Code, string, *storepb.Position, bool),
 ) Func {
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
@@ -461,7 +506,7 @@ func (e *V1Engine[N]) Batch(
 			return nil, err
 		}
 		var adviceList []*storepb.Advice
-		for _, f := range fn(checkCtx, nodes) {
+		for _, f := range fn(checkCtx, stmts, nodes) {
 			c, content, p, ok := render(stmts, f)
 			if !ok {
 				continue
@@ -470,6 +515,16 @@ func (e *V1Engine[N]) Batch(
 		}
 		return adviceList, nil
 	}
+}
+
+// Batch builds a whole-script rule whose render callback chooses the advice code, content, and position.
+func (e *V1Engine[N]) Batch(
+	fn func(Context, []N) []v1review.Finding,
+	render func([]V1Stmt[N], v1review.Finding) (code.Code, string, *storepb.Position, bool),
+) Func {
+	return e.BatchStmts(func(checkCtx Context, _ []V1Stmt[N], nodes []N) []v1review.Finding {
+		return fn(checkCtx, nodes)
+	}, render)
 }
 
 // SimpleBatch builds a whole-script rule with a fixed advice code and optional f.Code filter.
@@ -491,6 +546,67 @@ func (e *V1Engine[N]) SimpleBatch(
 		}
 		return c, content(f), p, true
 	})
+}
+
+// SchemaBatch builds a whole-script schema rule that triggers ReadMissingSchema
+// when eval returns v1review.ErrSchemaMissing.
+func (e *V1Engine[N]) SchemaBatch(
+	adviceCode code.Code,
+	contentFn func(v1review.Finding) string,
+	eval func(Context, []N) ([]v1review.Finding, *model.DatabaseMetadata, error),
+	posFn ...V1PosFunc[N],
+) Func {
+	pos := e.pos(posFn)
+	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
+		stmts, nodes, status, title, err := e.Prepare(checkCtx)
+		if err != nil {
+			return nil, err
+		}
+		findings, missingMD, err := eval(checkCtx, nodes)
+		if err != nil {
+			ReadMissingSchema(missingMD, err)
+			return nil, err
+		}
+		var adviceList []*storepb.Advice
+		for _, f := range findings {
+			adviceList = append(adviceList, newAdvice(status, adviceCode, title, contentFn(f), pos(stmts[f.Statement], f)))
+		}
+		return adviceList, nil
+	}
+}
+
+// IndexTotalNumberLimit builds INDEX_TOTAL_NUMBER_LIMIT against FinalMetadata.
+func (e *V1Engine[N]) IndexTotalNumberLimit(
+	fn func([]N, int, v1review.Schema) ([]v1review.Finding, error),
+	contentFn func(v1review.Finding, int) string,
+	posFn ...V1PosFunc[N],
+) Func {
+	pos := e.pos(posFn)
+	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
+		level, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
+		if err != nil {
+			return nil, err
+		}
+		limit, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
+		if err != nil {
+			return nil, err
+		}
+		stmts, nodes, err := e.Nodes(checkCtx)
+		if err != nil {
+			return nil, err
+		}
+		findings, err := fn(nodes, limit, V1SchemaOf(checkCtx.FinalMetadata))
+		if err != nil {
+			ReadMissingSchema(checkCtx.FinalMetadata, err)
+			return nil, err
+		}
+		title := checkCtx.Rule.Type.String()
+		var adviceList []*storepb.Advice
+		for _, f := range findings {
+			adviceList = append(adviceList, newAdvice(level, code.IndexCountExceedsLimit, title, contentFn(f, limit), pos(stmts[f.Statement], f)))
+		}
+		return adviceList, nil
+	}
 }
 
 // NumberStmt builds a per-statement rule parameterized by number_payload.
@@ -584,6 +700,83 @@ func (e *V1Engine[N]) StringArrayStmt(
 	}
 }
 
+// ColumnRequired builds COLUMN_REQUIRED with grouped missing-column rendering.
+func (e *V1Engine[N]) ColumnRequired(cfg V1ColumnRequiredConfig[N]) Func {
+	pos := cfg.Pos
+	if pos == nil {
+		pos = e.defaultPos
+	}
+	tableFmt := cfg.TableFmt
+	if tableFmt == "" {
+		tableFmt = "Table %q requires columns: %s"
+	}
+	renderGroups := func(level storepb.Advice_Status, title string, stmts []V1Stmt[N], stmtIdx int, findings []v1review.Finding, adviceList []*storepb.Advice) []*storepb.Advice {
+		for j := 0; j < len(findings); {
+			f := findings[j]
+			var missing []string
+			for ; j < len(findings) && (cfg.SameGroup == nil || cfg.SameGroup(f, findings[j])); j++ {
+				col := findings[j].Name
+				if cfg.QuoteCol {
+					col = fmt.Sprintf("%q", col)
+				}
+				missing = append(missing, col)
+			}
+			idx := stmtIdx
+			if idx < 0 {
+				idx = f.Statement
+			}
+			adviceList = append(adviceList, newAdvice(level, code.NoRequiredColumn, title, fmt.Sprintf(tableFmt, f.Table, strings.Join(missing, ", ")), pos(stmts[idx], f)))
+		}
+		return adviceList
+	}
+	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
+		level, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
+		if err != nil {
+			return nil, err
+		}
+		list, err := RequireStringArrayPayload(checkCtx.Rule, "string_array_payload is required for column required rule")
+		if err != nil {
+			return nil, err
+		}
+		stmts, nodes, err := e.Nodes(checkCtx)
+		if err != nil {
+			return nil, err
+		}
+		title := checkCtx.Rule.Type.String()
+		var adviceList []*storepb.Advice
+		if cfg.Batch {
+			return renderGroups(level, title, stmts, -1, cfg.Fn(nodes, list), adviceList), nil
+		}
+		for i := range stmts {
+			adviceList = renderGroups(level, title, stmts, i, cfg.Fn(nodes[i:i+1:i+1], list), adviceList)
+		}
+		return adviceList, nil
+	}
+}
+
+// NamingRule builds a regex naming convention rule with the standard mismatch
+// and optional max-length advice messages.
+func (e *V1Engine[N]) NamingRule(
+	fn func([]N, v1review.NamingConfig) ([]v1review.Finding, error),
+	adviceCode code.Code,
+	missingMsg string,
+	kind string,
+	checkLength bool,
+	subject func(v1review.Finding) string,
+	posFn ...V1PosFunc[N],
+) Func {
+	mismatch := func(f v1review.Finding, format string) string {
+		return fmt.Sprintf("%s mismatches %s naming convention, naming format should be %q", subject(f), kind, format)
+	}
+	var tooLong func(v1review.Finding, int) string
+	if checkLength {
+		tooLong = func(f v1review.Finding, maxLength int) string {
+			return fmt.Sprintf("%s mismatches %s naming convention, its length should be within %d characters", subject(f), kind, maxLength)
+		}
+	}
+	return e.NamingRegex(fn, adviceCode, missingMsg, mismatch, tooLong, posFn...)
+}
+
 // NamingRegex builds a per-statement regex naming rule (NAMING_TABLE, NAMING_COLUMN,
 // TABLE_DROP_NAMING_CONVENTION). When tooLongContent is nil, MaxLength defaults to 0
 // and NameTooLong findings are ignored.
@@ -647,6 +840,44 @@ func (e *V1Engine[N]) NamingRegex(
 	}
 }
 
+// NamingIdentifierCase builds NAMING_IDENTIFIER_CASE. When alwaysUpper is true,
+// a missing payload is accepted and findings always report upper case.
+func (e *V1Engine[N]) NamingIdentifierCase(
+	fn func([]N, v1review.CaseConfig) []v1review.Finding,
+	alwaysUpper bool,
+	posFn ...V1PosFunc[N],
+) Func {
+	pos := e.pos(posFn)
+	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
+		level, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
+		if err != nil {
+			return nil, err
+		}
+		payload := checkCtx.Rule.GetNamingCasePayload()
+		if !alwaysUpper && payload == nil {
+			return nil, errors.New("naming_case_payload is required for this rule")
+		}
+		cfg := v1review.CaseConfig{Upper: payload.GetUpper()}
+		stmts, nodes, err := e.Nodes(checkCtx)
+		if err != nil {
+			return nil, err
+		}
+		caseLabel := "lower"
+		if alwaysUpper || cfg.Upper {
+			caseLabel = "upper"
+		}
+		title := checkCtx.Rule.Type.String()
+		var adviceList []*storepb.Advice
+		for i, stmt := range stmts {
+			for _, f := range fn(nodes[i:i+1:i+1], cfg) {
+				content := fmt.Sprintf("Identifier %q should be %s case", f.Name, caseLabel)
+				adviceList = append(adviceList, newAdvice(level, code.NamingCaseMismatch, title, content, pos(stmt, f)))
+			}
+		}
+		return adviceList, nil
+	}
+}
+
 // TemplateNaming builds a per-statement template naming rule (NAMING_INDEX_*).
 func (e *V1Engine[N]) TemplateNaming(
 	fn func([]N, v1review.TemplateConfig, v1review.Schema) ([]v1review.Finding, error),
@@ -692,14 +923,10 @@ func (e *V1Engine[N]) TemplateNamingWithOptions(
 			return nil, err
 		}
 		cfg := v1review.TemplateConfig{Format: namingPayload.Format, MaxLength: maxLength}
-		defaultSchema := V1SchemaOf(checkCtx.OriginalMetadata)
+		schema := V1SchemaOf(checkCtx.OriginalMetadata)
 		title := checkCtx.Rule.Type.String()
 		var adviceList []*storepb.Advice
 		for i, stmt := range stmts {
-			schema := defaultSchema
-			if opts.SchemaFor != nil {
-				schema = opts.SchemaFor(nodes[i], checkCtx.OriginalMetadata)
-			}
 			findings, err := fn(nodes[i:i+1:i+1], cfg, schema)
 			if err != nil {
 				return nil, err
@@ -895,6 +1122,54 @@ func (e *V1Engine[N]) TableComment(
 				continue
 			}
 			adviceList = append(adviceList, newAdvice(status, adviceCode, title, content, pos(stmts[f.Statement], f)))
+		}
+		return adviceList, nil
+	}
+}
+
+// PriorBackup builds BUILTIN_PRIOR_BACKUP_CHECK with shared enable-check, facts
+// construction, and default finding rendering.
+func (e *V1Engine[N]) PriorBackup(cfg V1PriorBackupConfig[N]) Func {
+	return func(ctx context.Context, checkCtx Context) ([]*storepb.Advice, error) {
+		if !checkCtx.EnablePriorBackup {
+			return nil, nil
+		}
+		stmts, nodes, level, title, err := e.Prepare(checkCtx)
+		if err != nil {
+			return nil, err
+		}
+		var facts v1review.PriorBackupFacts
+		if cfg.Facts != nil {
+			facts = cfg.Facts(ctx, checkCtx)
+		} else {
+			facts = NewPriorBackupFacts(ctx, checkCtx, cfg.Engine)
+		}
+		findings, err := cfg.Check(checkCtx, stmts, nodes, facts)
+		if err != nil {
+			return nil, err
+		}
+		var mixedLine func(int) int
+		if cfg.MixedLine != nil {
+			mixedLine = func(idx int) int { return cfg.MixedLine(stmts[idx]) }
+		}
+		var adviceList []*storepb.Advice
+		for _, f := range findings {
+			var (
+				adviceCode code.Code
+				content    string
+				p          *storepb.Position
+				ok         bool
+			)
+			if cfg.Render != nil {
+				adviceCode, content, p, ok = cfg.Render(stmts, nodes, f)
+			}
+			if !ok {
+				adviceCode, content, p, ok = renderPriorBackupFinding(f, cfg.DefaultPos, mixedLine)
+			}
+			if !ok {
+				continue
+			}
+			adviceList = append(adviceList, newAdvice(level, adviceCode, title, content, p))
 		}
 		return adviceList, nil
 	}

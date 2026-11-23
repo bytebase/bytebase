@@ -50,6 +50,37 @@ func Estimate(ctx context.Context, engine storepb.Engine, prober db.Prober, stat
 	return v1review.Probe{Rows: rows}, nil
 }
 
+// ExplainPlanRows runs query through checkCtx's prober, extracts the JSON plan,
+// and parses the estimated row count with parsePlan.
+func ExplainPlanRows(
+	ctx context.Context,
+	checkCtx Context,
+	preExecutions []string,
+	query string,
+	parsePlan func(string) (int64, error),
+) (v1review.Probe, error) {
+	prober, err := ProbeFor(checkCtx)
+	if err != nil {
+		return v1review.Probe{}, err
+	}
+	res, err := prober.Probe(ctx, db.ProbeContext{PreExecutions: preExecutions}, query)
+	if err != nil {
+		//nolint:nilerr // a refused statement is the probe finding, reported as advice.
+		return v1review.Probe{Error: err.Error()}, nil
+	}
+	plan, err := res.Plan()
+	if err != nil {
+		//nolint:nilerr // an unreadable plan is the probe finding, reported as advice.
+		return v1review.Probe{CountError: err.Error()}, nil
+	}
+	rows, err := parsePlan(plan)
+	if err != nil {
+		//nolint:nilerr // an unreadable plan is the probe finding, reported as advice.
+		return v1review.Probe{CountError: err.Error()}, nil
+	}
+	return v1review.Probe{Rows: rows}, nil
+}
+
 // ColumnExtraOf returns the connection's catalogue lookup, or an
 // UnsupportedError.
 func ColumnExtraOf(checkCtx Context) (db.ColumnExtraLookup, error) {

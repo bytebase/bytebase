@@ -60,6 +60,10 @@ func v1Nodes[N any](stmts []V1Stmt[N]) []N {
 	return nodes
 }
 
+func defaultByteOffsetLine(sql string, byteOffset int) int32 {
+	return base.ByteOffsetToRunePosition(sql, byteOffset).Line
+}
+
 func contentStartIndex(text string) int {
 	for i, c := range text {
 		if c != ' ' && c != '\t' && c != '\n' && c != '\r' {
@@ -168,86 +172,53 @@ func NewPriorBackupFacts(ctx context.Context, checkCtx Context, engine storepb.E
 }
 
 // NewMySQLPriorBackupAdvisor returns a Func for BUILTIN_PRIOR_BACKUP_CHECK
-// shared by MySQL and MariaDB.
+// shared by MySQL and MariaDB, reusing e's memoized statement extraction.
 func NewMySQLPriorBackupAdvisor[N, P any](
+	e *V1Engine[N],
 	engine storepb.Engine,
-	extract func(Context) ([]V1Stmt[N], error),
 	makeStmt func(N, string) P,
 	checkFn func([]P, v1review.Schema, v1review.PriorBackupFacts) ([]v1review.Finding, error),
 ) Func {
-	return func(ctx context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		if !checkCtx.EnablePriorBackup {
-			return nil, nil
-		}
-		level, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
-		if err != nil {
-			return nil, err
-		}
-		stmts, err := extract(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		pStmts := make([]P, len(stmts))
-		for i, s := range stmts {
-			pStmts[i] = makeStmt(s.Node, s.Text)
-		}
-
-		facts := NewPriorBackupFacts(ctx, checkCtx, engine)
-		schema := v1review.Schema{Metadata: checkCtx.DBSchema, ObjectCaseSensitive: checkCtx.IsObjectCaseSensitive}
-		findings, err := checkFn(pStmts, schema, facts)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to prepare transformation")
-		}
-
-		return RenderPriorBackupFindings(checkCtx.Rule.Type.String(), level, findings, func(idx int) int {
-			return stmts[idx].BaseLine
-		}), nil
-	}
+	return e.PriorBackup(V1PriorBackupConfig[N]{
+		Engine: engine,
+		Check: func(checkCtx Context, stmts []V1Stmt[N], _ []N, facts v1review.PriorBackupFacts) ([]v1review.Finding, error) {
+			pStmts := make([]P, len(stmts))
+			for i, s := range stmts {
+				pStmts[i] = makeStmt(s.Node, s.Text)
+			}
+			findings, err := checkFn(pStmts, e.SchemaOf(checkCtx), facts)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to prepare transformation")
+			}
+			return findings, nil
+		},
+		MixedLine: func(stmt V1Stmt[N]) int { return stmt.BaseLine },
+	})
 }
 
-// RenderPriorBackupFindings renders v1review.PriorBackupCheck findings as Advice.
-func RenderPriorBackupFindings(title string, level storepb.Advice_Status, findings []v1review.Finding, lineOf func(int) int) []*storepb.Advice {
-	var adviceList []*storepb.Advice
-	for _, f := range findings {
-		switch f.Code {
-		case v1review.PriorBackupScriptTooLarge:
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:  level,
-				Title:   title,
-				Content: fmt.Sprintf("The size of the SQL statements exceeds the maximum limit of %s bytes for backup", f.Value),
-				Code:    code.BuiltinPriorBackupCheck.Int32(),
-			})
-		case v1review.PriorBackupMixedDDLAndDML:
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:        level,
-				Title:         title,
-				Content:       "Prior backup cannot deal with mixed DDL and DML statements",
-				Code:          code.BuiltinPriorBackupCheck.Int32(),
-				StartPosition: base.ConvertANTLRLineToPosition(lineOf(f.Statement)),
-			})
-		case v1review.PriorBackupDatabaseMissing:
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:  level,
-				Title:   title,
-				Content: fmt.Sprintf("Need database %q to do prior backup but it does not exist", f.Name),
-				Code:    code.DatabaseNotExists.Int32(),
-			})
-		case v1review.PriorBackupMixedDMLOnTable:
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:  level,
-				Title:   title,
-				Content: fmt.Sprintf("Prior backup cannot handle mixed DML statements on the same table %q", f.Table),
-				Code:    code.BuiltinPriorBackupCheck.Int32(),
-			})
-		case v1review.PriorBackupTooManyDMLStatements:
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:  level,
-				Title:   title,
-				Content: fmt.Sprintf("Prior backup cannot handle more than %s DML statements across different tables", f.Value),
-				Code:    code.BuiltinPriorBackupCheck.Int32(),
-			})
-		default:
+func renderPriorBackupFinding(
+	f v1review.Finding,
+	defaultPos *storepb.Position,
+	mixedLine func(int) int,
+) (code.Code, string, *storepb.Position, bool) {
+	switch f.Code {
+	case v1review.PriorBackupScriptTooLarge:
+		return code.BuiltinPriorBackupCheck, fmt.Sprintf("The size of the SQL statements exceeds the maximum limit of %s bytes for backup", f.Value), defaultPos, true
+	case v1review.PriorBackupMixedDDLAndDML:
+		pos := defaultPos
+		if mixedLine != nil {
+			pos = base.ConvertANTLRLineToPosition(mixedLine(f.Statement))
 		}
+		return code.BuiltinPriorBackupCheck, "Prior backup cannot deal with mixed DDL and DML statements", pos, true
+	case v1review.PriorBackupDDLInBatch:
+		return code.BuiltinPriorBackupCheck, "Prior backup cannot deal with mixed DDL and DML statements", defaultPos, true
+	case v1review.PriorBackupDatabaseMissing:
+		return code.DatabaseNotExists, fmt.Sprintf("Need database %q to do prior backup but it does not exist", f.Name), defaultPos, true
+	case v1review.PriorBackupMixedDMLOnTable:
+		return code.BuiltinPriorBackupCheck, fmt.Sprintf("Prior backup cannot handle mixed DML statements on the same table %q", f.Table), defaultPos, true
+	case v1review.PriorBackupTooManyDMLStatements:
+		return code.BuiltinPriorBackupCheck, fmt.Sprintf("Prior backup cannot handle more than %s DML statements across different tables", f.Value), defaultPos, true
+	default:
+		return 0, "", nil, false
 	}
-	return adviceList
 }

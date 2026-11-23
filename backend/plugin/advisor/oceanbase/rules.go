@@ -13,23 +13,15 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 func init() {
-	extract := advisor.NodeExtractor(oceanbaseparser.GetNode)
-	byteOffsetLine := func(sql string, offset int) int32 {
-		return oceanbaseparser.ByteOffsetToRunePosition(sql, offset).Line
-	}
 	e := advisor.RegisterMySQLFamily(storepb.Engine_OCEANBASE, advisor.MySQLFamilyOptions[ast.Node]{
-		Extract:         extract,
-		ByteOffsetLine:  byteOffsetLine,
+		Extract:         advisor.NodeExtractor(oceanbaseparser.GetNode),
 		DefinesColumn:   definesColumn,
 		ReadsColumnType: readsColumnType,
 		DropsColumn:     dropsColumn,
-		IsRenameIndex:   isRenameIndex,
-		IsDropDatabase:  isDropDatabase,
 	}, advisor.MySQLFamilyRuleSet[ast.Node]{
 		DMLDryRunProbes:                     oceanbasev1review.StatementDMLDryRunProbes,
 		DMLDryRun:                           oceanbasev1review.StatementDMLDryRun,
@@ -86,11 +78,11 @@ func init() {
 		TableRequirePK:                      oceanbasev1review.TableRequirePK,
 	})
 
-	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
-		oceanbaseRowLimitAdvisor(e, oceanbasev1review.StatementInsertRowLimitProbes, oceanbasev1review.StatementInsertRowLimit, code.InsertTooManyRows, "inserts"))
-	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
-		oceanbaseRowLimitAdvisor(e, oceanbasev1review.StatementAffectedRowLimitProbes, oceanbasev1review.StatementAffectedRowLimit, code.StatementAffectedRowExceedsLimit, "affected"))
-	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_STATEMENT_DISALLOW_OFFLINE_DDL, disallowOfflineDDL(e))
+	advisor.RegisterRules(storepb.Engine_OCEANBASE, map[storepb.SQLReviewRule_Type]advisor.Advisor{
+		storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT:     oceanbaseRowLimitAdvisor(e, oceanbasev1review.StatementInsertRowLimitProbes, oceanbasev1review.StatementInsertRowLimit, code.InsertTooManyRows, "inserts"),
+		storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT:   oceanbaseRowLimitAdvisor(e, oceanbasev1review.StatementAffectedRowLimitProbes, oceanbasev1review.StatementAffectedRowLimit, code.StatementAffectedRowExceedsLimit, "affected"),
+		storepb.SQLReviewRule_STATEMENT_DISALLOW_OFFLINE_DDL: disallowOfflineDDL(e),
+	})
 }
 
 func disallowOfflineDDL(e *advisor.V1Engine[ast.Node]) advisor.Func {
@@ -147,31 +139,13 @@ func oceanbaseRowLimitAdvisor(
 			return stmt.Text
 		},
 		Estimate: func(ctx context.Context, checkCtx advisor.Context, stmt advisor.V1Stmt[ast.Node], _ ast.Node, _ []string) (v1review.Probe, error) {
-			return explainRows(ctx, checkCtx, stmt.Text)
+			return advisor.ExplainPlanRows(ctx, checkCtx, nil, fmt.Sprintf("EXPLAIN format=json %s", stmt.Text), oceanbaseparser.EstimateAffectedRowsFromExplainJSON)
 		},
 		BudgetPos: func(stmt advisor.V1Stmt[ast.Node], node ast.Node) *storepb.Position {
 			return nodePosition(e, stmt, node)
 		},
 		Pos: e.PosFindingOrFirstLine,
 	})
-}
-
-func explainRows(ctx context.Context, checkCtx advisor.Context, text string) (v1review.Probe, error) {
-	prober, err := advisor.ProbeFor(checkCtx)
-	if err != nil {
-		return v1review.Probe{}, err
-	}
-	res, err := prober.Probe(ctx, db.ProbeContext{}, fmt.Sprintf("EXPLAIN format=json %s", text))
-	if err != nil {
-		//nolint:nilerr // a refused statement is the probe finding, reported as advice.
-		return v1review.Probe{Error: err.Error()}, nil
-	}
-	rows, err := estimatedRowsFromPlan(res)
-	if err != nil {
-		//nolint:nilerr // an unreadable plan is the probe finding, reported as advice.
-		return v1review.Probe{CountError: err.Error()}, nil
-	}
-	return v1review.Probe{Rows: rows}, nil
 }
 
 func nodePosition(e *advisor.V1Engine[ast.Node], stmt advisor.V1Stmt[ast.Node], node ast.Node) *storepb.Position {
@@ -191,9 +165,9 @@ func nodePosition(e *advisor.V1Engine[ast.Node], stmt advisor.V1Stmt[ast.Node], 
 	return e.PosFindingOrFirstLine(stmt, v1review.Finding{Start: loc.Start, End: loc.Start})
 }
 
-func hasAlterCmd(node ast.Node, requireTable bool, match func(*ast.AlterTableCmd) bool) bool {
+func hasAlterCmd(node ast.Node, match func(*ast.AlterTableCmd) bool) bool {
 	alter, ok := node.(*ast.AlterTableStmt)
-	if !ok || (requireTable && alter.Table == nil) {
+	if !ok || alter.Table == nil {
 		return false
 	}
 	return slices.ContainsFunc(alter.Commands, func(cmd *ast.AlterTableCmd) bool {
@@ -205,33 +179,18 @@ func definesColumn(node ast.Node) bool {
 	if n, ok := node.(*ast.CreateTableStmt); ok {
 		return n.Table != nil && slices.ContainsFunc(n.Columns, func(col *ast.ColumnDef) bool { return col != nil })
 	}
-	return hasAlterCmd(node, true, func(cmd *ast.AlterTableCmd) bool {
-		switch cmd.Type {
-		case ast.ATAddColumn:
-			return cmd.Column != nil || len(cmd.Columns) > 0
-		case ast.ATChangeColumn:
-			return cmd.Column != nil
-		default:
-			return false
-		}
+	return hasAlterCmd(node, func(cmd *ast.AlterTableCmd) bool {
+		return (cmd.Type == ast.ATAddColumn && (cmd.Column != nil || len(cmd.Columns) > 0)) ||
+			(cmd.Type == ast.ATChangeColumn && cmd.Column != nil)
 	})
 }
 
 func readsColumnType(node ast.Node) bool {
-	return hasAlterCmd(node, true, func(cmd *ast.AlterTableCmd) bool {
+	return hasAlterCmd(node, func(cmd *ast.AlterTableCmd) bool {
 		return cmd.Column != nil && cmd.Column.TypeName != nil && (cmd.Type == ast.ATChangeColumn || cmd.Type == ast.ATModifyColumn)
 	})
 }
 
 func dropsColumn(node ast.Node) bool {
-	return hasAlterCmd(node, true, func(cmd *ast.AlterTableCmd) bool { return cmd.Type == ast.ATDropColumn })
-}
-
-func isRenameIndex(node ast.Node) bool {
-	return hasAlterCmd(node, false, func(cmd *ast.AlterTableCmd) bool { return cmd.Type == ast.ATRenameIndex })
-}
-
-func isDropDatabase(node ast.Node) bool {
-	_, ok := node.(*ast.DropDatabaseStmt)
-	return ok
+	return hasAlterCmd(node, func(cmd *ast.AlterTableCmd) bool { return cmd.Type == ast.ATDropColumn })
 }
