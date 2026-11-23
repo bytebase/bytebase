@@ -5031,7 +5031,7 @@
       },
       "sql-review": {
         "description": "分析 SQL 语句中的潜在问题并提供建议，包括内置规则和自定义规则。",
-        "self": "SQL 审核"
+        "self": "基于规则的 SQL 审核"
       }
     },
     "created": "创建时间",

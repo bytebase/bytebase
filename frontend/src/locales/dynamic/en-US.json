@@ -219,7 +219,7 @@
       },
       "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
         "desc": "Enforce SQL best practices with 100+ lint rules and schema consistency checks.",
-        "title": "SQL review"
+        "title": "Rule-based SQL review"
       },
       "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
         "desc": "Deploy changes progressively through different environments.",
