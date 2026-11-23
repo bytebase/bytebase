@@ -311,6 +311,7 @@
         "!src/**/*.test.tsx",
         "!src/utils/datetime.ts",
         "!src/utils/accessGrant.ts",
+        "!src/modules/agent/logic/actionReceipt.ts",
         "!src/hooks/useTimeReading.ts"
       ],
       "plugins": ["./biome-plugins/time-reading-through-hook.grit"]

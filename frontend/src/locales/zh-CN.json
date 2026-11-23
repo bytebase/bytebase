@@ -45,6 +45,17 @@
       "storage-failed": "Couldn't prepare the access request. Try again.",
       "unavailable": "Couldn't open the access request. The database or access settings may have changed."
     },
+    "action-receipt": {
+      "changed": "保存后已更改",
+      "matching": "已找到匹配的配置",
+      "not-found": "未找到已保存的配置",
+      "open-exemption": "打开脱敏豁免",
+      "open-rule": "打开脱敏规则",
+      "open-unavailable": "无法打开已保存的配置，请检查当前页面和权限。",
+      "saved": "已保存",
+      "status-unavailable": "无法检查当前配置。保存结果不受影响，请检查权限后重试。",
+      "unavailable": "状态不可用"
+    },
     "ai-not-configured": {
       "configure": "配置",
       "contact-admin": "请联系工作区管理员配置 AI。",
@@ -453,6 +464,13 @@
       "retry": "重新保存",
       "save-failed": "无法保存 Agent 历史记录。请重试。",
       "title": "Agent 历史记录存储"
+    },
+    "submitted-access-grant": {
+      "check-status": "检查状态",
+      "observed-at": "上次查看于 {{time}}",
+      "open": "打开请求",
+      "open-unavailable": "无法打开请求。请求可能已不可用，或你已无权访问。",
+      "status-unavailable": "无法检查请求状态。请求可能已不可用，或你已无权访问。"
     },
     "token-budget": {
       "action-failed": "无法更新此轮运行，请重试。",

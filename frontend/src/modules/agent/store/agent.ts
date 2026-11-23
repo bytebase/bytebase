@@ -1,12 +1,21 @@
+import { isEqual } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { getResourceId, workspaceNamePrefix } from "@/lib/resourceName";
+import type { AccessGrantDraft } from "@/modules/sql-editor/model/accessGrantDraft";
 import { useAppStore } from "@/stores/app";
 import {
   getNameParentTokens,
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
+import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
+import {
+  actionReceiptKey,
+  createAccessGrantActionReceipt,
+  mergeActionReceipts,
+  normalizeActionReceipts,
+} from "../logic/actionReceipt";
 import {
   type AgentApiActionIdentity,
   type AgentApiAttempt,
@@ -68,6 +77,7 @@ import {
   extractAgentSqlFixSQL,
   isCurrentAgentSqlFixSource,
 } from "../logic/sqlFix";
+import { isAccessGrantSourceDraft } from "../logic/submittedAccessGrant";
 import {
   createRunBudget,
   increaseRunBudgetLimit,
@@ -83,6 +93,9 @@ import {
 } from "../logic/tokenBudget";
 import { normalizeModelCallUsage } from "../logic/tokenUsage";
 import type {
+  AgentActionObservation,
+  AgentActionOrigin,
+  AgentActionReceipt,
   AgentAskUserResponse,
   AgentAttemptReservation,
   AgentChat,
@@ -500,10 +513,23 @@ const normalizeDraftHandoff = (
       }
     : undefined;
 
+const actionReceiptMatchesChat = (
+  receipt: AgentActionReceipt,
+  chat: Pick<AgentChat, "workspaceName" | "context"> | undefined
+) =>
+  receipt.kind === "masking-rule" && chat?.workspaceName
+    ? receipt.policy === `${chat.workspaceName}/policies/MASKING_RULE`
+    : receipt.kind === "masking-exemption" &&
+        chat?.context?.startsWith("projects/")
+      ? receipt.policy === `${chat.context}/policies/MASKING_EXEMPTION`
+      : true;
+
 const normalizeMessage = (
   raw: unknown,
   chatId: string,
-  fallbackTs: number
+  fallbackTs: number,
+  ownerEmail?: string,
+  receiptOwner?: Pick<AgentChat, "workspaceName" | "context">
 ): AgentMessage => {
   const message = isRecord(raw) ? raw : {};
   const metadata = isRecord(message.metadata) ? message.metadata : null;
@@ -520,6 +546,14 @@ const normalizeMessage = (
     message.role,
     actions
   );
+  const receipts =
+    message.role === "assistant"
+      ? normalizeActionReceipts(
+          metadata?.actionReceipts,
+          metadata as AgentMessageMetadata | undefined,
+          ownerEmail
+        )?.filter((receipt) => actionReceiptMatchesChat(receipt, receiptOwner))
+      : undefined;
   return {
     id: typeof message.id === "string" ? message.id : uuidv4(),
     chatId:
@@ -553,6 +587,8 @@ const normalizeMessage = (
     metadata: metadata
       ? {
           ...(metadata as AgentMessage["metadata"]),
+          submittedAccessGrants: undefined,
+          actionReceipts: receipts?.length ? receipts : undefined,
           followUpSourceId: normalizeFollowUpSourceId(
             metadata.followUpSourceId
           ),
@@ -1018,7 +1054,13 @@ const normalizePersistedState = (
       : [];
     const messages = sortMessages(
       rawMessages.map((message, index) =>
-        normalizeMessage(message, chat.id, chat.createdTs + index)
+        normalizeMessage(
+          message,
+          chat.id,
+          chat.createdTs + index,
+          userEmail,
+          chat
+        )
       )
     );
     if (userEmail && scopeKey?.startsWith(AGENT_RUN_STATE_KEY + ".")) {
@@ -1395,6 +1437,29 @@ export interface AgentState {
     chatId: string,
     messageId: string,
     draftId: string
+  ) => AgentMessage | null;
+  recordSubmittedAccessGrant: (
+    chatId: string,
+    messageId: string,
+    grant: AccessGrant,
+    origin: {
+      workspaceName: string;
+      userEmail: string;
+      draft: AccessGrantDraft;
+    }
+  ) => AgentMessage | null;
+  recordActionReceipt: (
+    chatId: string,
+    messageId: string,
+    receipt: AgentActionReceipt,
+    origin: AgentActionOrigin
+  ) => AgentMessage | null;
+  recordActionObservation: (
+    chatId: string,
+    messageId: string,
+    receiptKey: string,
+    observation: AgentActionObservation,
+    origin: AgentActionOrigin
   ) => AgentMessage | null;
 
   // Status
@@ -2097,6 +2162,27 @@ const mergeDraftHandoffs = (
     if (!samePersistedValue(metadata?.[key], receipt))
       metadata = { ...metadata, [key]: receipt };
   }
+  if (message.role === "assistant") {
+    const incoming = normalizeActionReceipts(
+      other.metadata?.actionReceipts,
+      other.metadata
+    );
+    const candidates = samePersistedValue(
+      message.metadata?.accessRequestDraft,
+      other.metadata?.accessRequestDraft
+    )
+      ? incoming
+      : incoming?.filter((receipt) => receipt.kind !== "access-grant");
+    const receipts = normalizeActionReceipts(
+      mergeActionReceipts([
+        ...(metadata?.actionReceipts ?? []),
+        ...(candidates ?? []),
+      ]),
+      message.metadata
+    );
+    if (!samePersistedValue(metadata?.actionReceipts, receipts))
+      metadata = { ...metadata, actionReceipts: receipts };
+  }
   return metadata === message.metadata ? message : { ...message, metadata };
 };
 
@@ -2104,7 +2190,13 @@ const chatExecution = (state: PersistedAgentState, chat: AgentChat) => {
   // Hydration must not look like remote progress just because it normalizes records.
   const messages = (state.messagesByChatId[chat.id] ?? []).map(
     (message, index) =>
-      normalizeMessage(message, chat.id, chat.createdTs + index)
+      normalizeMessage(
+        message,
+        chat.id,
+        chat.createdTs + index,
+        undefined,
+        chat
+      )
   );
   const {
     title: _title,
@@ -2149,6 +2241,8 @@ const chatExecution = (state: PersistedAgentState, chat: AgentChat) => {
           maskingRuleDraftHandoff: _ruleReceipt,
           maskingExemptionDraftHandoff: _exemptionReceipt,
           semanticTypeDraftHandoff: _typeReceipt,
+          submittedAccessGrants: _accessGrantReceipts,
+          actionReceipts: _actionReceipts,
           queryResultRetention: _queryRetention,
           ...metadata
         } = message.metadata;
@@ -3603,6 +3697,146 @@ export const createAgentStore = () => {
             };
           });
           return get().messagesByChatId[chatId]?.at(-1) ?? null;
+        },
+
+        recordSubmittedAccessGrant: (chatId, messageId, grant, origin) => {
+          get().syncState();
+          const state = get();
+          const key = currentScopeKey(state);
+          const message = state.messagesByChatId[chatId]?.find(
+            (candidate) => candidate.id === messageId
+          );
+          const receipt = createAccessGrantActionReceipt(grant);
+          if (
+            !key ||
+            !ownsApiScope(state, key) ||
+            state.workspaceName !== origin.workspaceName ||
+            state.userEmail !== origin.userEmail ||
+            _getChat(chatId)?.workspaceName !== origin.workspaceName ||
+            message?.chatId !== chatId ||
+            message.role !== "assistant" ||
+            !isAccessGrantSourceDraft(message.metadata?.accessRequestDraft) ||
+            !samePersistedValue(
+              message.metadata.accessRequestDraft,
+              origin.draft
+            ) ||
+            !receipt
+          )
+            return null;
+          return get().recordActionReceipt(chatId, messageId, receipt, origin);
+        },
+
+        recordActionReceipt: (chatId, messageId, receipt, origin) => {
+          get().syncState();
+          const state = get();
+          const key = currentScopeKey(state);
+          const chat = _getChat(chatId);
+          const message = state.messagesByChatId[chatId]?.find(
+            (candidate) => candidate.id === messageId
+          );
+          if (
+            !key ||
+            !ownsApiScope(state, key) ||
+            state.workspaceName !== origin.workspaceName ||
+            state.userEmail !== origin.userEmail ||
+            chat?.workspaceName !== origin.workspaceName ||
+            message?.chatId !== chatId ||
+            message.role !== "assistant" ||
+            !actionReceiptMatchesChat(receipt, chat)
+          )
+            return null;
+          const normalized = normalizeActionReceipts(
+            [receipt],
+            { ...message.metadata, submittedAccessGrants: undefined },
+            origin.userEmail
+          )?.[0];
+          if (!normalized) return null;
+          const existing = message.metadata?.actionReceipts ?? [];
+          if (
+            existing.some(
+              (value) =>
+                actionReceiptKey(value) === actionReceiptKey(normalized)
+            )
+          )
+            return message;
+          set((draft) => {
+            const current = draft.messagesByChatId[chatId]?.find(
+              (candidate) => candidate.id === messageId
+            );
+            if (current)
+              current.metadata = {
+                ...current.metadata,
+                actionReceipts: [...existing, normalized],
+              };
+          });
+          return (
+            get().messagesByChatId[chatId]?.find(
+              (candidate) => candidate.id === messageId
+            ) ?? null
+          );
+        },
+
+        recordActionObservation: (
+          chatId,
+          messageId,
+          receiptKey,
+          observation,
+          origin
+        ) => {
+          get().syncState();
+          const state = get();
+          const key = currentScopeKey(state);
+          const chat = _getChat(chatId);
+          const message = state.messagesByChatId[chatId]?.find(
+            (candidate) => candidate.id === messageId
+          );
+          if (
+            !key ||
+            !ownsApiScope(state, key) ||
+            state.workspaceName !== origin.workspaceName ||
+            state.userEmail !== origin.userEmail ||
+            chat?.workspaceName !== origin.workspaceName ||
+            chat.archived ||
+            message?.chatId !== chatId ||
+            message.role !== "assistant"
+          )
+            return null;
+          const existing = message.metadata?.actionReceipts ?? [];
+          const receipt = existing.find(
+            (value) => actionReceiptKey(value) === receiptKey
+          );
+          if (!receipt) return null;
+          const normalized = normalizeActionReceipts(
+            [{ ...receipt, observation }],
+            { ...message.metadata, submittedAccessGrants: undefined },
+            origin.userEmail
+          )?.[0];
+          if (
+            !normalized?.observation ||
+            !isEqual(normalized.observation, observation)
+          )
+            return null;
+          const updated = {
+            ...normalized,
+            observation: {
+              ...normalized.observation,
+              revision: (receipt.observation?.revision ?? 0) + 1,
+            },
+          };
+          set((draft) => {
+            const current = draft.messagesByChatId[chatId]?.find(
+              (candidate) => candidate.id === messageId
+            );
+            if (current?.metadata)
+              current.metadata.actionReceipts = existing.map((value) =>
+                actionReceiptKey(value) === receiptKey ? updated : value
+              );
+          });
+          return (
+            get().messagesByChatId[chatId]?.find(
+              (candidate) => candidate.id === messageId
+            ) ?? null
+          );
         },
 
         recordSemanticTypeDraftHandoff: (

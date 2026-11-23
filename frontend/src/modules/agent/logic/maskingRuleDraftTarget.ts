@@ -14,18 +14,36 @@ export interface MaskingRuleEditorSnapshot {
   chatId?: string;
 }
 
+interface MaskingRuleDraftAction {
+  messageId: string;
+  draftId: string;
+}
+
+export interface MaskingRuleDraftOrigin
+  extends MaskingRuleDraftContext,
+    MaskingRuleDraftAction {}
+
 type TargetContext = Pick<
   MaskingRuleDraftContext,
   "workspaceName" | "userName"
 >;
 interface MaskingRuleDraftTarget {
   getSnapshot: () => Promise<MaskingRuleEditorSnapshot | undefined>;
-  open: (draft: MaskingRuleDraft, chatId: string) => Promise<void>;
-  openMany?: (drafts: MaskingRuleDraft[], chatId: string) => Promise<void>;
+  open: (
+    draft: MaskingRuleDraft,
+    chatId: string,
+    origin?: MaskingRuleDraftOrigin
+  ) => Promise<void>;
+  openMany?: (
+    drafts: MaskingRuleDraft[],
+    chatId: string,
+    origin?: MaskingRuleDraftOrigin
+  ) => Promise<void>;
   apply: (
     draft: MaskingRuleDraft,
     expected: MaskingRuleEditorSnapshot,
-    chatId: string
+    chatId: string,
+    origin?: MaskingRuleDraftOrigin
   ) => Promise<void>;
 }
 interface Registration {
@@ -84,32 +102,43 @@ async function withTarget(
 
 export async function openMaskingRuleDraftInEditor(
   draft: MaskingRuleDraft,
-  context: MaskingRuleDraftContext
+  context: MaskingRuleDraftContext,
+  action?: MaskingRuleDraftAction
 ): Promise<void> {
-  await withTarget(context, (target) => target.open(draft, context.chatId));
+  await withTarget(context, (target) =>
+    action
+      ? target.open(draft, context.chatId, { ...context, ...action })
+      : target.open(draft, context.chatId)
+  );
 }
 
 export async function openMaskingRuleDraftsInEditor(
   drafts: MaskingRuleDraft[],
-  context: MaskingRuleDraftContext
+  context: MaskingRuleDraftContext,
+  action?: MaskingRuleDraftAction
 ): Promise<void> {
   if (drafts.length < 2 || drafts.length > 10)
     throw new Error("A batch requires between 2 and 10 masking rules.");
   await withTarget(context, async (target) => {
     if (!target.openMany)
       throw new Error("The masking rule draft queue is unavailable.");
-    await target.openMany(drafts, context.chatId);
+    await (action
+      ? target.openMany(drafts, context.chatId, { ...context, ...action })
+      : target.openMany(drafts, context.chatId));
   });
 }
 
 export async function applyMaskingRuleDraftInEditor(
   draft: MaskingRuleDraft,
   expected: MaskingRuleEditorSnapshot,
-  context: MaskingRuleDraftContext
+  context: MaskingRuleDraftContext,
+  action?: MaskingRuleDraftAction
 ): Promise<void> {
   if (expected.mode === "edit")
     throw new Error("Existing masking rule editors are review-only.");
   await withTarget(context, (target) =>
-    target.apply(draft, expected, context.chatId)
+    action
+      ? target.apply(draft, expected, context.chatId, { ...context, ...action })
+      : target.apply(draft, expected, context.chatId)
   );
 }

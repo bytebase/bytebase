@@ -80,6 +80,7 @@ const {
     abortControllersByChatId: {} as Record<string, unknown>,
     setCurrentChat: vi.fn(),
     queueUserMessage: vi.fn(),
+    recordActionReceipt: vi.fn(),
     open: vi.fn(),
   },
   openAgentPrompt: vi.fn(
@@ -104,7 +105,7 @@ const {
     hasPermission: true,
     availableSemanticTypeIds: ["DEFAULT", "PARTIAL", "CUSTOM"],
     settingsByName: {},
-    currentUser: { name: "users/member@example.com" },
+    currentUser: { name: "users/member@example.com", email: "member@example.com" } as { name: string; email?: string },
     upsertPolicy: vi.fn(async (_request: unknown) => undefined),
     workspaceResourceName: () => "workspaces/default",
     refreshSubscription: vi.fn(async () => ({})),
@@ -122,6 +123,15 @@ vi.mock("@/modules/cel", () => ({
 vi.mock("@/modules/agent/logic/maskingRuleDraft", () => ({
   parseMaskingRuleDraftCondition: parseDraftCondition,
   validateMaskingRuleDraft: validateDraft,
+}));
+vi.mock("@/modules/agent/logic/actionReceipt", () => ({
+  createMaskingRuleActionReceipt: (policy: string, rule: unknown, draftId: string) => ({
+    kind: "masking-rule",
+    policy,
+    rule: structuredClone(rule),
+    draftId,
+    savedAt: Date.now(),
+  }),
 }));
 vi.mock("@/api", () => ({ settingServiceClientConnect: { getSetting: freshSemanticSetting } }));
 vi.mock("@/app/router", () => ({
@@ -358,7 +368,7 @@ beforeEach(() => {
     },
   ];
   agentState.currentChatId = "chat-1";
-  state.currentUser = { name: "users/member@example.com" };
+  state.currentUser = { name: "users/member@example.com", email: "member@example.com" };
   freshSemanticSetting.mockReset().mockResolvedValue({ value: { value: { case: "semanticType", value: { types: [] } } } });
   validateDraft.mockReset().mockImplementation(async (draft) => draft);
   agentState.getChat.mockImplementation(
@@ -445,6 +455,145 @@ function openRuleHelp() {
 }
 
 describe("GlobalMaskingPage", () => {
+  it("records the edited native save on the exact originating chat and draft", async () => {
+    await renderPage();
+    const action = { messageId: "message-1", draftId: "draft-1" };
+    await act(async () => openMaskingRuleDraftInEditor(agentDraft, agentContext, action));
+    expect(agentState.recordActionReceipt).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole("textbox", { name: prefix + "name" }), {
+      target: { value: "Edited before save" },
+    });
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "PARTIAL" } });
+    fireEvent.click(screen.getAllByRole("button", { name: prefix + "create-rule" }).at(-1)!);
+    await waitFor(() => expect(agentState.recordActionReceipt).toHaveBeenCalledOnce());
+    expect(agentState.recordActionReceipt).toHaveBeenCalledWith(
+      "chat-1",
+      "message-1",
+      expect.objectContaining({
+        kind: "masking-rule",
+        draftId: "draft-1",
+        policy: "workspaces/default/policies/MASKING_RULE",
+        rule: expect.objectContaining({
+          id: "new-rule",
+          semanticType: "PARTIAL",
+          condition: expect.objectContaining({ title: "Edited before save" }),
+        }),
+      }),
+      { workspaceName: "workspaces/default", userEmail: "member@example.com" }
+    );
+  });
+
+  it("links an applied proposal to its own source rather than the original form", async () => {
+    await createManualDraft();
+    const snapshot = await getMaskingRuleEditorSnapshot(agentContext);
+    await act(async () => applyMaskingRuleDraftInEditor(
+      agentDraft,
+      snapshot!,
+      agentContext,
+      { messageId: "replacement-message", draftId: "replacement-draft" }
+    ));
+    expect(agentState.recordActionReceipt).not.toHaveBeenCalled();
+    fireEvent.click(screen.getAllByRole("button", { name: prefix + "create-rule" }).at(-1)!);
+    await waitFor(() => expect(agentState.recordActionReceipt).toHaveBeenCalledOnce());
+    expect(agentState.recordActionReceipt).toHaveBeenCalledWith(
+      "chat-1",
+      "replacement-message",
+      expect.objectContaining({ draftId: "replacement-draft", rule: expect.objectContaining({ id: "new-rule" }) }),
+      expect.anything()
+    );
+  });
+
+  it("records each batch save separately and keeps unsaved entries pending", async () => {
+    await renderPage();
+    state.upsertPolicy.mockImplementation(async (request) => {
+      const { policy } = request as { policy: { policy: unknown } };
+      state.getOrFetchPolicyByParentAndType.mockResolvedValue(policy);
+    });
+    await act(async () => openMaskingRuleDraftsInEditor(
+      [agentDraft, { ...agentDraft, title: "Second draft", semanticType: "PARTIAL" }],
+      agentContext,
+      { messageId: "batch-message", draftId: "batch-draft" }
+    ));
+    expect(agentState.recordActionReceipt).not.toHaveBeenCalled();
+    fireEvent.click(screen.getAllByRole("button", { name: prefix + "create-rule" }).at(-1)!);
+    await waitFor(() => expect(agentState.recordActionReceipt).toHaveBeenCalledOnce());
+    const first = agentState.recordActionReceipt.mock.calls[0];
+    expect(first.slice(0, 3)).toMatchObject([
+      "chat-1", "batch-message",
+      { draftId: "batch-draft", rule: { semanticType: "DEFAULT", condition: { title: agentDraft.title } } },
+    ]);
+    fireEvent.click(await screen.findByRole("button", { name: "agent.masking-rule-draft.queue.review" }));
+    await screen.findByDisplayValue("Second draft");
+    fireEvent.click(screen.getAllByRole("button", { name: prefix + "create-rule" }).at(-1)!);
+    await waitFor(() => expect(agentState.recordActionReceipt).toHaveBeenCalledTimes(2));
+    const second = agentState.recordActionReceipt.mock.calls[1];
+    expect(second.slice(0, 3)).toMatchObject([
+      "chat-1", "batch-message",
+      { draftId: "batch-draft", rule: { semanticType: "PARTIAL", condition: { title: "Second draft" } } },
+    ]);
+    expect(first[2].rule.id).not.toBe(second[2].rule.id);
+  });
+
+  it("keeps canceled origins out of a later native manual save", async () => {
+    await renderPage();
+    await act(async () => openMaskingRuleDraftInEditor(
+      agentDraft, agentContext, { messageId: "message-1", draftId: "draft-1" }
+    ));
+    fireEvent.click(screen.getByRole("button", { name: "common.cancel" }));
+    expect(agentState.recordActionReceipt).not.toHaveBeenCalled();
+    await createDraftForm();
+    fireEvent.click(screen.getAllByRole("button", { name: prefix + "create-rule" }).at(-1)!);
+    await screen.findByText("Manual draft");
+    expect(agentState.recordActionReceipt).not.toHaveBeenCalled();
+  });
+
+  it("records nothing after a failed save and waits for the member's retry", async () => {
+    await renderPage();
+    await act(async () => openMaskingRuleDraftInEditor(
+      agentDraft, agentContext, { messageId: "message-1", draftId: "draft-1" }
+    ));
+    state.upsertPolicy.mockRejectedValueOnce(new Error("controlled failure"));
+    fireEvent.click(screen.getAllByRole("button", { name: prefix + "create-rule" }).at(-1)!);
+    await screen.findByText(prefix + "error.save-failed");
+    expect(state.upsertPolicy).toHaveBeenCalledOnce();
+    expect(agentState.recordActionReceipt).not.toHaveBeenCalled();
+    fireEvent.click(screen.getAllByRole("button", { name: prefix + "create-rule" }).at(-1)!);
+    await waitFor(() => expect(agentState.recordActionReceipt).toHaveBeenCalledOnce());
+    expect(state.upsertPolicy).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["chat", "actor"])("handles %s changes during an in-flight native save", async (change) => {
+    await renderPage();
+    await act(async () => openMaskingRuleDraftInEditor(
+      agentDraft, agentContext, { messageId: "message-1", draftId: "draft-1" }
+    ));
+    let complete!: () => void;
+    state.upsertPolicy.mockImplementationOnce(() => new Promise<undefined>((resolve) => { complete = () => resolve(undefined); }));
+    fireEvent.click(screen.getAllByRole("button", { name: prefix + "create-rule" }).at(-1)!);
+    await waitFor(() => expect(state.upsertPolicy).toHaveBeenCalledOnce());
+    if (change === "chat") agentState.currentChatId = "other-chat";
+    else state.currentUser = { name: "users/other@example.com", email: "other@example.com" };
+    await act(async () => complete());
+    await screen.findByText(agentDraft.title);
+    if (change === "chat") expect(agentState.recordActionReceipt).toHaveBeenCalledWith(
+      "chat-1", "message-1", expect.anything(),
+      { workspaceName: "workspaces/default", userEmail: "member@example.com" }
+    );
+    else expect(agentState.recordActionReceipt).not.toHaveBeenCalled();
+  });
+
+  it("does not turn a successful native save into failure when receipt persistence fails", async () => {
+    await renderPage();
+    await act(async () => openMaskingRuleDraftInEditor(
+      agentDraft, agentContext, { messageId: "message-1", draftId: "draft-1" }
+    ));
+    agentState.recordActionReceipt.mockImplementationOnce(() => { throw new Error("controlled local storage failure"); });
+    fireEvent.click(screen.getAllByRole("button", { name: prefix + "create-rule" }).at(-1)!);
+    await screen.findByText(agentDraft.title);
+    expect(agentState.recordActionReceipt).toHaveBeenCalledOnce();
+    expect(screen.queryByText(prefix + "error.save-failed")).not.toBeInTheDocument();
+  });
+
   it("opens and saves both queued rules when no semantic type setting exists", async () => {
     freshSemanticSetting.mockRejectedValue(
       new ConnectError("Setting not found", Code.NotFound)

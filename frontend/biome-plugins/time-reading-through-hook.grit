@@ -22,7 +22,7 @@
 // matches nothing here, so the two literal forms stay.
 //
 // The modules that define readings compose and build them, so biome.json
-// excludes utils/datetime.ts, utils/accessGrant.ts, and the hook itself. It
+// excludes datetime, Access Grant, action-receipt reading owners and the hook. It
 // excludes every test file too, which is the larger hole: a test builds a
 // reading and reads it directly, since that is how it checks one at all.
 //

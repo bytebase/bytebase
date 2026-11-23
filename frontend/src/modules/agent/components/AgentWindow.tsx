@@ -1,6 +1,7 @@
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
+import { isEqual } from "lodash-es";
 import {
   Archive,
   Check,
@@ -80,6 +81,7 @@ import {
   subscribeAgentPageHelp,
 } from "../logic/contextualHelp";
 import type { AccessGrantDraft } from "../logic/deniedQueryAccess";
+import { withDefaultAccessGrantReason } from "../logic/justInTime";
 import {
   getLandingStarterIdForText,
   type LandingStarterId,
@@ -274,6 +276,7 @@ export function AgentWindow() {
     draft: AccessGrantDraft;
     workspace: string;
     userEmail: string;
+    source: { chatId: string; messageId: string; draft: AccessGrantDraft };
   }>();
   useLayoutEffect(() => {
     if (
@@ -285,13 +288,36 @@ export function AgentWindow() {
     }
   }, [visible, workspace?.name, userEmail, accessGrantDraft]);
   const openAccessGrantDraft = useCallback(
-    (draft: AccessGrantDraft) => {
+    (
+      draft: AccessGrantDraft,
+      source: { chatId: string; messageId: string }
+    ) => {
       const owner = useAppStore.getState();
+      const state = useAgentStore.getState();
+      const chat = state.getChat(source.chatId);
+      const message = state
+        .getMessages(source.chatId)
+        .find((item) => item.id === source.messageId);
+      const sourceDraft = message?.metadata?.accessRequestDraft;
       if (
-        !useAgentStore.getState().visible ||
+        !state.visible ||
+        state.currentChatId !== source.chatId ||
+        !chat ||
+        chat.archived ||
+        message?.role !== "assistant" ||
+        !sourceDraft ||
+        sourceDraft.kind === "requestRole" ||
+        message.metadata?.actionReceipts?.some(
+          (receipt) => receipt.kind === "access-grant"
+        ) ||
+        message.metadata?.submittedAccessGrants?.length ||
+        !isEqual(withDefaultAccessGrantReason(sourceDraft), draft) ||
         !owner.workspace?.name ||
         !owner.currentUser?.email ||
         owner.currentUser.workspace !== owner.workspace.name ||
+        state.workspaceName !== owner.workspace.name ||
+        state.userEmail !== owner.currentUser.email ||
+        chat.workspaceName !== owner.workspace.name ||
         owner.workspace.name !== workspace?.name ||
         owner.currentUser.email !== userEmail
       )
@@ -301,6 +327,7 @@ export function AgentWindow() {
         draft,
         workspace: owner.workspace.name,
         userEmail,
+        source: { ...source, draft: structuredClone(sourceDraft) },
       });
       return true;
     },
@@ -2269,6 +2296,27 @@ export function AgentWindow() {
           container={accessGrantDraft.draft.container}
           unmask={accessGrantDraft.draft.unmask}
           reason={accessGrantDraft.draft.reason}
+          onCreated={(grant) => {
+            const owner = useAppStore.getState();
+            if (
+              owner.workspace?.name !== accessGrantDraft.workspace ||
+              owner.currentUser?.workspace !== accessGrantDraft.workspace ||
+              owner.currentUser?.email !== accessGrantDraft.userEmail
+            )
+              return;
+            useAgentStore
+              .getState()
+              .recordSubmittedAccessGrant(
+                accessGrantDraft.source.chatId,
+                accessGrantDraft.source.messageId,
+                grant,
+                {
+                  workspaceName: accessGrantDraft.workspace,
+                  userEmail: accessGrantDraft.userEmail,
+                  draft: accessGrantDraft.source.draft,
+                }
+              );
+          }}
           onClose={() =>
             setAccessGrantDraft((current) =>
               current?.id === accessGrantDraft.id ? undefined : current

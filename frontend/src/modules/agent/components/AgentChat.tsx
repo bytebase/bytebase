@@ -44,6 +44,10 @@ import {
 } from "@/modules/sql-editor/model/accessGrantDraft";
 import { useAppStore } from "@/stores/app";
 import {
+  actionReceiptKey,
+  normalizeActionReceipts,
+} from "../logic/actionReceipt";
+import {
   type AgentApiAttempt,
   isAgentApiAttemptUncertain,
 } from "../logic/apiAttempt";
@@ -103,6 +107,7 @@ import {
   selectMessages,
   useAgentStore,
 } from "../store/agent";
+import { AgentActionReceiptActions } from "./AgentActionReceiptActions";
 import { AgentAIConfigurationRecovery } from "./AgentAIConfigurationRecovery";
 import { AgentApiRecovery } from "./AgentApiRecovery";
 import { AgentErrorDetails } from "./AgentErrorDetails";
@@ -119,7 +124,10 @@ import { ToolCallCard } from "./ToolCallCard";
 import { AgentTooltip } from "./ui/AgentTooltip";
 
 interface AgentChatProps {
-  onOpenAccessGrantDraft?: (draft: AccessGrantDraft) => boolean;
+  onOpenAccessGrantDraft?: (
+    draft: AccessGrantDraft,
+    source: { chatId: string; messageId: string }
+  ) => boolean;
   className?: string;
   contextLabel?: string;
   context?: string;
@@ -558,22 +566,29 @@ function PlanDraftButton({
 
 function AccessRequestDraftButton({
   draft,
+  chatId,
+  messageId,
   onOpenAccessGrantDraft,
 }: {
   draft: DeniedQueryRequestDraft;
+  chatId: string;
+  messageId: string;
   onOpenAccessGrantDraft?: AgentChatProps["onOpenAccessGrantDraft"];
 }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const openDraft = async () => {
     if (loading) return;
-    const handoffContext = captureAgentPageHandoffContext();
+    const handoffContext = captureAgentPageHandoffContext(chatId);
     setLoading(true);
     try {
       if (draft.kind !== "requestRole") {
         if (
           !(await validateDeniedQueryRequestDraft(draft)) ||
-          !onOpenAccessGrantDraft?.(withDefaultAccessGrantReason(draft))
+          !onOpenAccessGrantDraft?.(withDefaultAccessGrantReason(draft), {
+            chatId,
+            messageId,
+          })
         ) {
           useAppStore.getState().notify({
             module: "bytebase",
@@ -1315,6 +1330,10 @@ export function AgentChat({
           onRetry;
         const isPending = msg.metadata?.pending === true;
         const actions = responseActionsByMessageId.get(msg.id) ?? [];
+        const actionReceipts = normalizeActionReceipts(
+          msg.metadata?.actionReceipts,
+          msg.metadata
+        );
         const openAction = actions.find((action) => action.kind === "open");
         const proposedHandoff = openAction?.target ?? msg.metadata?.handoff;
         const diagnosticIssueRoute =
@@ -1532,9 +1551,21 @@ export function AgentChat({
                           maskingRuleDraftAction ||
                           maskingExemptionDraftAction ||
                           semanticTypeDraftAction ||
-                          msg.metadata?.accessRequestDraft) && (
+                          msg.metadata?.accessRequestDraft ||
+                          actionReceipts?.length) && (
                           <div className="mt-2 max-w-full">
-                            {sqlFixAction ? (
+                            {actionReceipts?.length ? (
+                              <div className="flex min-w-0 flex-col gap-2">
+                                {actionReceipts.map((receipt) => (
+                                  <AgentActionReceiptActions
+                                    key={actionReceiptKey(receipt)}
+                                    chatId={msg.chatId}
+                                    messageId={msg.id}
+                                    receipt={receipt}
+                                  />
+                                ))}
+                              </div>
+                            ) : sqlFixAction ? (
                               <AgentSqlFixReviewAction
                                 action={sqlFixAction}
                                 chatId={msg.chatId}
@@ -1569,6 +1600,8 @@ export function AgentChat({
                             ) : msg.metadata?.accessRequestDraft ? (
                               <AccessRequestDraftButton
                                 draft={msg.metadata.accessRequestDraft}
+                                chatId={msg.chatId}
+                                messageId={msg.id}
                                 onOpenAccessGrantDraft={onOpenAccessGrantDraft}
                               />
                             ) : (

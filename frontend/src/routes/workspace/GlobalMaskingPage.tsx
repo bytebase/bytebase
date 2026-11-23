@@ -51,6 +51,7 @@ import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { getClassificationLevelOptions } from "@/lib/sensitive-data/components-utils";
 import { cn } from "@/lib/utils";
 import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
+import { createMaskingRuleActionReceipt } from "@/modules/agent/logic/actionReceipt";
 import { openAgentPageHelp } from "@/modules/agent/logic/contextualHelp";
 import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
 import {
@@ -59,6 +60,7 @@ import {
   validateMaskingRuleDraft,
 } from "@/modules/agent/logic/maskingRuleDraft";
 import {
+  type MaskingRuleDraftOrigin,
   type MaskingRuleEditorSnapshot,
   registerMaskingRuleDraftTarget,
 } from "@/modules/agent/logic/maskingRuleDraftTarget";
@@ -700,6 +702,7 @@ export function GlobalMaskingPage() {
     };
   }, []);
   const editorRef = useRef<MaskingRuleEditorHandle>(null);
+  const draftOrigins = useRef(new Map<string, MaskingRuleDraftOrigin>());
   const workspaceName = useAppStore((s) => s.workspaceResourceName());
   const userName = useAppStore((s) => s.currentUser?.name);
   const reorderSnapshot = useRef<MaskingRuleItem[]>([]);
@@ -846,18 +849,21 @@ export function GlobalMaskingPage() {
     open: async (
       _draft: MaskingRuleDraft,
       _chatId: string,
-      _active: () => boolean
+      _active: () => boolean,
+      _origin?: MaskingRuleDraftOrigin
     ) => {},
     openMany: async (
       _drafts: MaskingRuleDraft[],
       _chatId: string,
-      _active: () => boolean
+      _active: () => boolean,
+      _origin?: MaskingRuleDraftOrigin
     ) => {},
     apply: async (
       _draft: MaskingRuleDraft,
       _expected: MaskingRuleEditorSnapshot,
       _chatId: string,
-      _active: () => boolean
+      _active: () => boolean,
+      _origin?: MaskingRuleDraftOrigin
     ) => {},
   });
   const assertDraftAvailable = (
@@ -913,7 +919,7 @@ export function GlobalMaskingPage() {
         return undefined;
       }
     },
-    open: async (draft, chatId, active) => {
+    open: async (draft, chatId, active, origin) => {
       if (queue.current?.drafts.some((entry) => entry.status !== "created"))
         throw new Error("Finish the current masking rule draft queue first.");
       assertDraftAvailable(active, false, chatId);
@@ -926,20 +932,22 @@ export function GlobalMaskingPage() {
         assertDraftAvailable(active, false, chatId);
         setMutationError(false);
         setDraftDirty(true);
+        const id = uuidv4();
         updateItems([
           ...pageState.current.items,
           {
             mode: "CREATE",
-            rule: create(MaskingRulePolicy_MaskingRuleSchema, { id: uuidv4() }),
+            rule: create(MaskingRulePolicy_MaskingRuleSchema, { id }),
             initialDraft: { draft, expr, chatId },
           },
         ]);
+        if (origin) draftOrigins.current.set(id, origin);
       } finally {
         draftOperation.current = false;
         setDraftPreparing(false);
       }
     },
-    openMany: async (drafts, chatId, active) => {
+    openMany: async (drafts, chatId, active, origin) => {
       assertDraftAvailable(active, false, chatId);
       if (
         draftOperation.current ||
@@ -975,6 +983,10 @@ export function GlobalMaskingPage() {
           baseline,
           needsRecheck: false,
         });
+        if (origin) {
+          for (const entry of parsed)
+            draftOrigins.current.set(entry.id, origin);
+        }
         setMutationError(false);
         setDraftDirty(true);
         const first = parsed[0];
@@ -991,7 +1003,7 @@ export function GlobalMaskingPage() {
         setDraftPreparing(false);
       }
     },
-    apply: async (draft, expected, chatId, active) => {
+    apply: async (draft, expected, chatId, active, origin) => {
       assertDraftAvailable(active, true, chatId);
       if (draftOperation.current)
         throw new Error("The masking rule editor is busy.");
@@ -1008,6 +1020,10 @@ export function GlobalMaskingPage() {
         const activeRuleId = pageState.current.items.find(
           (item) => item.mode === "CREATE"
         )?.rule.id;
+        if (activeRuleId) {
+          if (origin) draftOrigins.current.set(activeRuleId, origin);
+          else draftOrigins.current.delete(activeRuleId);
+        }
         if (queue.current?.drafts.some((entry) => entry.id === activeRuleId)) {
           updateQueueDrafts(
             queue.current.drafts.map((entry) =>
@@ -1032,12 +1048,18 @@ export function GlobalMaskingPage() {
       { workspaceName, userName },
       {
         getSnapshot: () => draftCallbacks.current.getSnapshot(),
-        open: (draft, chatId) =>
-          draftCallbacks.current.open(draft, chatId, () => active),
-        openMany: (drafts, chatId) =>
-          draftCallbacks.current.openMany(drafts, chatId, () => active),
-        apply: (draft, expected, chatId) =>
-          draftCallbacks.current.apply(draft, expected, chatId, () => active),
+        open: (draft, chatId, origin) =>
+          draftCallbacks.current.open(draft, chatId, () => active, origin),
+        openMany: (drafts, chatId, origin) =>
+          draftCallbacks.current.openMany(drafts, chatId, () => active, origin),
+        apply: (draft, expected, chatId, origin) =>
+          draftCallbacks.current.apply(
+            draft,
+            expected,
+            chatId,
+            () => active,
+            origin
+          ),
       }
     );
     return () => {
@@ -1236,6 +1258,7 @@ export function GlobalMaskingPage() {
           entry.id === cancelledId ? { ...entry, status: "pending" } : entry
         )
       );
+    else if (cancelledId) draftOrigins.current.delete(cancelledId);
     updateItems(
       pageState.current.items.flatMap((item, i) =>
         i !== index
@@ -1252,6 +1275,7 @@ export function GlobalMaskingPage() {
     const index = items.findIndex((item) => item.rule.id === rule.id);
     if (index < 0) return false;
     const isCreate = items[index].mode === "CREATE";
+    const origin = draftOrigins.current.get(rule.id);
     const queued = queue.current?.drafts.find(
       (entry) => entry.id === rule.id && entry.status !== "created"
     );
@@ -1300,6 +1324,32 @@ export function GlobalMaskingPage() {
       next,
       t(isCreate ? "common.created" : "common.updated")
     );
+    if (saved && origin) {
+      draftOrigins.current.delete(rule.id);
+      const app = useAppStore.getState();
+      if (
+        app.workspaceResourceName() === origin.workspaceName &&
+        app.currentUser?.name === origin.userName &&
+        app.currentUser.email
+      ) {
+        try {
+          const receipt = createMaskingRuleActionReceipt(
+            `${origin.workspaceName}/policies/MASKING_RULE`,
+            rule,
+            origin.draftId
+          );
+          if (receipt)
+            useAgentStore
+              .getState()
+              .recordActionReceipt(origin.chatId, origin.messageId, receipt, {
+                workspaceName: origin.workspaceName,
+                userEmail: app.currentUser.email,
+              });
+        } catch {
+          // A local receipt failure cannot turn a successful policy save into failure.
+        }
+      }
+    }
     if (saved && queued && queue.current) {
       replaceQueue({
         ...queue.current,

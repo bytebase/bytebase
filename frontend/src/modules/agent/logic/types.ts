@@ -1,3 +1,4 @@
+import type { JsonObject } from "@bufbuild/protobuf";
 import type { DeniedQueryRequestDraft } from "@/modules/sql-editor/model/accessGrantDraft";
 import type { AgentMaskingPageResource } from "./chatContext";
 import type { MaskingSkillSection } from "./skills";
@@ -203,6 +204,61 @@ export interface AgentDraft {
   mention?: AgentMentionRange;
 }
 
+export interface AgentSubmittedAccessGrant {
+  grant: JsonObject;
+  submittedAt: number;
+}
+
+export type AgentActionStatus =
+  | "SAVED"
+  | "MATCHING"
+  | "CHANGED"
+  | "NOT_FOUND"
+  | "UNAVAILABLE"
+  | "PENDING"
+  | "ACTIVE"
+  | "EXPIRED"
+  | "REVOKED"
+  | "REJECTED"
+  | "CANCELED"
+  | "UNKNOWN";
+
+export interface AgentActionObservation {
+  status: AgentActionStatus;
+  observedAt: number;
+  revision?: number;
+  grant?: JsonObject;
+  issue?: JsonObject;
+}
+
+interface AgentActionReceiptBase {
+  savedAt: number;
+  observation?: AgentActionObservation;
+}
+
+export type AgentActionReceipt = AgentActionReceiptBase &
+  (
+    | { kind: "access-grant"; grant: JsonObject }
+    | {
+        kind: "masking-rule";
+        draftId: string;
+        policy: string;
+        rule: JsonObject;
+      }
+    | {
+        kind: "masking-exemption";
+        draftId: string;
+        saveId?: string;
+        policy: string;
+        exemption: JsonObject;
+      }
+  );
+
+export interface AgentActionOrigin {
+  workspaceName: string;
+  userEmail: string;
+}
+
 export interface AgentMessageMetadata {
   apiAttemptId?: string;
   // Lookup provenance only; the source answer grants no authority for this turn.
@@ -229,6 +285,8 @@ export interface AgentMessageMetadata {
     created?: true;
   };
   accessRequestDraft?: DeniedQueryRequestDraft;
+  submittedAccessGrants?: AgentSubmittedAccessGrant[];
+  actionReceipts?: AgentActionReceipt[];
   semanticTypeDraftHandoff?: {
     draftId: string;
     outcome: "opened";

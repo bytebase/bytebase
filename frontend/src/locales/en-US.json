@@ -45,6 +45,17 @@
       "storage-failed": "Couldn't prepare the access request. Try again.",
       "unavailable": "Couldn't open the access request. The database or access settings may have changed."
     },
+    "action-receipt": {
+      "changed": "Changed since saved",
+      "matching": "Matching configuration found",
+      "not-found": "Saved configuration not found",
+      "open-exemption": "Open exemptions",
+      "open-rule": "Open masking rules",
+      "open-unavailable": "Couldn't open the saved configuration. Check the current page and permissions.",
+      "saved": "Saved",
+      "status-unavailable": "Couldn't check the current configuration. The saved outcome is unchanged; check your permissions and try again.",
+      "unavailable": "Status unavailable"
+    },
     "ai-not-configured": {
       "configure": "Configure",
       "contact-admin": "Contact your workspace admin to configure AI.",
@@ -453,6 +464,13 @@
       "retry": "Retry saving",
       "save-failed": "Couldn't save Agent history. Try again.",
       "title": "Agent history storage"
+    },
+    "submitted-access-grant": {
+      "check-status": "Check status",
+      "observed-at": "Last observed {{time}}",
+      "open": "Open request",
+      "open-unavailable": "Couldn't open the request. It may no longer be available or you may no longer have access.",
+      "status-unavailable": "Couldn't check the request status. It may no longer be available or you may no longer have access."
     },
     "token-budget": {
       "action-failed": "Couldn't update this run. Try again.",

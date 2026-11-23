@@ -1415,7 +1415,11 @@ export function AgentInput({
         systemPrompt,
         useAgentStore.getState().getMessages(chatId),
         chat?.context,
-        ...(chat?.apiAttempts?.length ? ([chat.apiAttempts] as const) : [])
+        chat?.apiAttempts?.length ? chat.apiAttempts : undefined,
+        {
+          includeActionReceipts: !chat?.capability,
+          ownerEmail: useAgentStore.getState().userEmail ?? undefined,
+        }
       );
     },
     []

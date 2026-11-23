@@ -114,6 +114,7 @@ const context = {
   userName: "users/member@example.com",
   chatId: "chat-1",
 };
+const action = { draftId: "draft-1", messageId: "message-1" };
 const draft = {
   title: "Mask sensitive columns",
   condition: 'resource.column_name == "sensitive"',
@@ -209,7 +210,7 @@ describe("MaskingRuleDraftButton", () => {
     await act(async () => button.click());
 
     expect(mocks.revalidateMany).toHaveBeenCalledWith("draft-1", context);
-    expect(mocks.openMany).toHaveBeenCalledWith(drafts, context);
+    expect(mocks.openMany).toHaveBeenCalledWith(drafts, context, action);
     expect(mocks.open).not.toHaveBeenCalled();
     expect(mocks.apply).not.toHaveBeenCalled();
     expect(mocks.consume).toHaveBeenCalledOnce();
@@ -305,7 +306,7 @@ describe("MaskingRuleDraftButton", () => {
       kind: "open-global-masking",
     });
     expect(mocks.push).toHaveBeenCalledWith({ name: "global-masking" });
-    expect(mocks.open).toHaveBeenCalledWith(draft, context);
+    expect(mocks.open).toHaveBeenCalledWith(draft, context, action);
     expect(mocks.apply).not.toHaveBeenCalled();
     expect(mocks.consume).toHaveBeenCalledWith("draft-1", context);
     expect(button.disabled).toBe(true);
@@ -339,7 +340,7 @@ describe("MaskingRuleDraftButton", () => {
 
     await act(async () => button.click());
 
-    expect(mocks.apply).toHaveBeenCalledWith(draft, source, context);
+    expect(mocks.apply).toHaveBeenCalledWith(draft, source, context, action);
     expect(mocks.open).not.toHaveBeenCalled();
     expect(mocks.push).not.toHaveBeenCalled();
     expect(mocks.consume).toHaveBeenCalledWith("draft-1", context);
@@ -414,7 +415,7 @@ describe("MaskingRuleDraftButton", () => {
     mocks.ready.mockReturnValue(true);
     await act(async () => vi.advanceTimersByTimeAsync(50));
 
-    expect(mocks.open).toHaveBeenCalledWith(draft, context);
+    expect(mocks.open).toHaveBeenCalledWith(draft, context, action);
     expect(mocks.consume).toHaveBeenCalledOnce();
     expect(mocks.minimize).toHaveBeenCalledOnce();
   });

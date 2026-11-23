@@ -45,6 +45,17 @@
       "storage-failed": "Couldn't prepare the access request. Try again.",
       "unavailable": "Couldn't open the access request. The database or access settings may have changed."
     },
+    "action-receipt": {
+      "changed": "Modificada desde el guardado",
+      "matching": "Configuración coincidente encontrada",
+      "not-found": "Configuración guardada no encontrada",
+      "open-exemption": "Abrir exenciones",
+      "open-rule": "Abrir reglas de enmascaramiento",
+      "open-unavailable": "No se pudo abrir la configuración guardada. Compruebe la página actual y los permisos.",
+      "saved": "Guardada",
+      "status-unavailable": "No se pudo comprobar la configuración actual. El guardado no cambia; compruebe los permisos e inténtelo de nuevo.",
+      "unavailable": "Estado no disponible"
+    },
     "ai-not-configured": {
       "configure": "Configurar",
       "contact-admin": "Contacte al administrador de su espacio de trabajo para configurar la IA.",
@@ -453,6 +464,13 @@
       "retry": "Volver a guardar",
       "save-failed": "No se pudo guardar el historial de Agent. Vuelve a intentarlo.",
       "title": "Almacenamiento del historial de Agent"
+    },
+    "submitted-access-grant": {
+      "check-status": "Consultar estado",
+      "observed-at": "Última consulta: {{time}}",
+      "open": "Abrir solicitud",
+      "open-unavailable": "No se pudo abrir la solicitud. Es posible que ya no esté disponible o que ya no tengas acceso.",
+      "status-unavailable": "No se pudo consultar el estado de la solicitud. Es posible que ya no esté disponible o que ya no tengas acceso."
     },
     "token-budget": {
       "action-failed": "No se pudo actualizar esta ejecución. Inténtelo de nuevo.",

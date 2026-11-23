@@ -9,7 +9,7 @@ import {
 } from "./outboundHistory";
 import { omitAgentQueryRows } from "./queryResultRetention";
 import { getCurrentTurnResourceReferences } from "./resourceMention";
-import type { AgentMessage } from "./types";
+import type { AgentActionReceipt, AgentMessage } from "./types";
 
 const userMessage = (metadata?: AgentMessage["metadata"]): AgentMessage => ({
   id: "turn-1",
@@ -18,6 +18,461 @@ const userMessage = (metadata?: AgentMessage["metadata"]): AgentMessage => ({
   role: "user",
   content: "What changed?",
   metadata,
+});
+
+describe("saved action outcome context", () => {
+  const rule = (
+    id = "rule-1"
+  ): Extract<AgentActionReceipt, { kind: "masking-rule" }> => ({
+    kind: "masking-rule",
+    draftId: "draft-rule",
+    policy: "workspaces/example/policies/MASKING_RULE",
+    rule: { id, semanticType: "example", condition: { expression: "true" } },
+    savedAt: 100,
+  });
+  const grant = (): Extract<AgentActionReceipt, { kind: "access-grant" }> => ({
+    kind: "access-grant",
+    savedAt: 101,
+    grant: {
+      name: "projects/example/accessGrants/1",
+      issue: "projects/example/issues/2",
+      creator: "users/member@example.com",
+      status: "PENDING",
+      query: "SELECT private_password FROM private_rows",
+      reason: "password=do-not-send",
+      targets: ["instances/example/databases/edited"],
+      unmask: true,
+      export: true,
+      schema: "public",
+    },
+  });
+  const source = (receipts: AgentActionReceipt[] = [rule()]): AgentMessage => ({
+    ...userMessage(),
+    id: "saved-answer",
+    role: "assistant",
+    createdTs: 2,
+    content: "The draft is ready and has not been saved.",
+    metadata: {
+      actions: [{ kind: "draft-masking-rule", draftId: "draft-rule" }],
+      accessRequestDraft: {
+        project: "projects/example",
+        sourceDatabase: "instances/example/databases/original",
+        targets: ["instances/example/databases/original"],
+        statement: "SELECT original FROM original_rows",
+      },
+      actionReceipts: receipts,
+    },
+  });
+  const nextTurn = (): AgentMessage => ({
+    ...userMessage(),
+    id: "next-turn",
+    createdTs: 3,
+    content: "Was it saved?",
+  });
+  const outcomeData = (content: string | undefined) =>
+    JSON.parse(content!.split("\n").at(-1)!);
+  const referencedQuery = (): AgentMessage => ({
+    ...userMessage({
+      resourceReferences: [
+        {
+          kind: "database",
+          name: "instances/example/databases/original",
+          project: "projects/example",
+          label: "Original database",
+        },
+      ],
+    }),
+    content: "Execute SELECT original FROM original_rows",
+  });
+
+  test.each(["workspaces/example", "projects/example"])(
+    "keeps only saved outcome data for an unqualified next turn in %s",
+    (chatContext) => {
+      const saved = source([grant()]);
+      const question = nextTurn();
+      const original = structuredClone([saved, question]);
+      const history = buildOutboundHistory(
+        "Context",
+        [referencedQuery(), saved, question],
+        chatContext,
+        undefined,
+        {
+          ownerEmail: "member@example.com",
+        }
+      );
+      expect(history.map(({ role }) => role)).toEqual(["system", "user"]);
+      expect(history[1].content).toContain(question.content);
+      expect(outcomeData(history[1].content).receipts[0]).toMatchObject({
+        kind: "access-grant",
+        name: "projects/example/accessGrants/1",
+        sourceMessageId: saved.id,
+      });
+      const outbound = JSON.stringify(history);
+      expect(outbound).not.toContain("original_rows");
+      expect(outbound).not.toContain("Original database");
+      expect(outbound).not.toContain("databases/original");
+      expect(outbound).not.toContain(saved.content);
+      expect(outbound).not.toContain("private_password");
+      expect([saved, question]).toEqual(original);
+    }
+  );
+
+  test("does not restore omitted outcomes from another project or workspace policy", () => {
+    const saved = source([grant()]);
+    for (const [chatContext, answer] of [
+      ["projects/other", saved],
+      ["projects/example", source()],
+      ["workspaces/other", source()],
+    ] as const) {
+      const history = sanitizeOutboundHistory(
+        [referencedQuery(), answer, nextTurn()],
+        chatContext,
+        { ownerEmail: "member@example.com" }
+      );
+      expect(history).toHaveLength(1);
+      expect(history[0].content).toBe("Was it saved?");
+    }
+  });
+
+  test("restores matching workspace masking outcomes only as data on the next user message", () => {
+    const history = sanitizeOutboundHistory(
+      [referencedQuery(), source(), nextTurn()],
+      "workspaces/example",
+      { ownerEmail: "member@example.com" }
+    );
+    expect(history).toHaveLength(1);
+    expect(history[0].role).toBe("user");
+    expect(outcomeData(history[0].content).receipts[0]).toMatchObject({
+      kind: "masking-rule",
+      ruleId: "rule-1",
+    });
+  });
+
+  test("does not restore omitted outcomes for interrupted, failed, pending, foreign-owner or diagnostic sources", () => {
+    const saved = source([grant()]);
+    for (const [first, answer, options] of [
+      [
+        {
+          ...referencedQuery(),
+          metadata: {
+            ...referencedQuery().metadata,
+            interruptionReason: "user" as const,
+          },
+        },
+        saved,
+        {},
+      ],
+      [
+        referencedQuery(),
+        { ...saved, metadata: { ...saved.metadata, error: "failed" } },
+        {},
+      ],
+      [
+        referencedQuery(),
+        { ...saved, metadata: { ...saved.metadata, pending: true } },
+        {},
+      ],
+      [referencedQuery(), saved, { ownerEmail: "other@example.com" }],
+      [referencedQuery(), saved, { includeActionReceipts: false }],
+    ] as const) {
+      const history = sanitizeOutboundHistory(
+        [first, answer, nextTurn()],
+        "workspaces/example",
+        { ownerEmail: "member@example.com", ...options }
+      );
+      expect(JSON.stringify(history)).not.toContain(
+        "Observed native-save outcomes"
+      );
+      expect(JSON.stringify(history)).not.toContain("original_rows");
+    }
+  });
+
+  test("does not broaden an explicitly referenced next turn's existing history admission", () => {
+    const saved = source([grant()]);
+    const question = {
+      ...nextTurn(),
+      metadata: {
+        resourceReferences: [
+          {
+            kind: "project" as const,
+            name: "projects/other",
+            project: "projects/other",
+            label: "Other",
+          },
+        ],
+      },
+    };
+    const history = sanitizeOutboundHistory(
+      [referencedQuery(), saved, question],
+      "workspaces/example",
+      { ownerEmail: "member@example.com" }
+    );
+    expect(history[0].content).toContain("original_rows");
+    expect(history[1].role).toBe("assistant");
+    expect(history[1].content).toContain(saved.content);
+    expect(history[2].content).not.toContain("Observed native-save outcomes");
+  });
+
+  test("adds saved outcomes on the next turn without mutating the source", () => {
+    const saved = source();
+    const original = structuredClone(saved);
+    const history = sanitizeOutboundHistory([userMessage(), saved, nextTurn()]);
+    expect(history[1].content).toContain(
+      "supersede earlier unsaved-draft wording"
+    );
+    expect(outcomeData(history[1].content).receipts).toEqual([
+      {
+        kind: "masking-rule",
+        savedAt: 100,
+        observedAt: 100,
+        status: "SAVED",
+        policy: "workspaces/example/policies/MASKING_RULE",
+        ruleId: "rule-1",
+        semanticType: "example",
+      },
+    ]);
+    expect(saved).toEqual(original);
+  });
+
+  test("uses the latest explicit observation and does not claim effective access", () => {
+    const saved = source([
+      { ...rule(), observation: { status: "CHANGED", observedAt: 200 } },
+    ]);
+    const history = sanitizeOutboundHistory([userMessage(), saved, nextTurn()]);
+    expect(outcomeData(history[1].content).receipts[0]).toMatchObject({
+      status: "CHANGED",
+      observedAt: 200,
+      savedAt: 100,
+    });
+    expect(history[1].content).toContain(
+      "not proof of effective masking or query access"
+    );
+    expect(history[1].content).toContain("Never automatically retry");
+  });
+
+  test("describes actual submitted grant fields without SQL, reasons or rows", () => {
+    const history = sanitizeOutboundHistory([
+      userMessage(),
+      source([grant()]),
+      nextTurn(),
+    ]);
+    expect(outcomeData(history[1].content).receipts[0]).toMatchObject({
+      kind: "access-grant",
+      name: "projects/example/accessGrants/1",
+      issue: "projects/example/issues/2",
+      targets: ["instances/example/databases/edited"],
+      unmask: true,
+      export: true,
+      schema: "public",
+      status: "PENDING",
+    });
+    const text = JSON.stringify(history);
+    expect(text).not.toContain("private_password");
+    expect(text).not.toContain("private_rows");
+    expect(text).not.toContain("do-not-send");
+    expect(text).not.toContain("original_rows");
+  });
+
+  test("keeps exemption matching evidence distinct from unique object identity", () => {
+    const saved = source([
+      {
+        kind: "masking-exemption",
+        draftId: "draft-exemption",
+        policy: "projects/example/policies/MASKING_EXEMPTION",
+        exemption: {
+          members: ["user:member@example.com"],
+          condition: { expression: "true" },
+        },
+        savedAt: 100,
+        observation: { status: "MATCHING", observedAt: 200 },
+      },
+    ]);
+    saved.metadata!.actions = [
+      { kind: "draft-masking-exemption", draftId: "draft-exemption" },
+    ];
+    const history = sanitizeOutboundHistory([userMessage(), saved, nextTurn()]);
+    expect(outcomeData(history[1].content).receipts[0]).toMatchObject({
+      kind: "masking-exemption",
+      memberCount: 1,
+      configurationMatchOnly: true,
+    });
+  });
+
+  test("includes a restored legacy grant submission without exposing its query", () => {
+    const receipt = grant();
+    const saved = source([]);
+    saved.metadata!.submittedAccessGrants = [
+      { grant: receipt.grant, submittedAt: receipt.savedAt },
+    ];
+    const history = sanitizeOutboundHistory([userMessage(), saved, nextTurn()]);
+    expect(outcomeData(history[1].content).receipts[0]).toMatchObject({
+      kind: "access-grant",
+      name: receipt.grant.name,
+      savedAt: receipt.savedAt,
+    });
+    expect(JSON.stringify(history)).not.toContain("private_password");
+  });
+
+  test("retains successful save evidence when a later status read is unavailable", () => {
+    const saved = source([
+      { ...rule(), observation: { status: "UNAVAILABLE", observedAt: 200 } },
+    ]);
+    const history = sanitizeOutboundHistory([userMessage(), saved, nextTurn()]);
+    expect(outcomeData(history[1].content).receipts[0]).toMatchObject({
+      savedAt: 100,
+      observedAt: 200,
+      status: "UNAVAILABLE",
+    });
+    expect(history[1].content).toContain("does not undo a successful save");
+  });
+
+  test("does not append outcome metadata to a current-turn tool protocol", () => {
+    const messages = [userMessage(), source()];
+    expect(sanitizeOutboundHistory(messages)).toEqual([
+      {
+        role: "user",
+        content: "What changed?",
+        toolCallId: undefined,
+        toolCalls: undefined,
+      },
+      {
+        role: "assistant",
+        content: messages[1].content,
+        toolCallId: undefined,
+        toolCalls: undefined,
+      },
+    ]);
+  });
+
+  test("does not expose excluded project, canceled, error, or user-message receipts", () => {
+    const saved = source();
+    const differentProject = userMessage({
+      resourceReference: {
+        kind: "project",
+        name: "projects/other",
+        project: "projects/other",
+        label: "Other",
+      },
+    });
+    for (const history of [
+      sanitizeOutboundHistory(
+        [differentProject, saved, nextTurn()],
+        "projects/example"
+      ),
+      sanitizeOutboundHistory([
+        userMessage({ interruptionReason: "user" }),
+        saved,
+        nextTurn(),
+      ]),
+      sanitizeOutboundHistory([
+        userMessage(),
+        { ...saved, metadata: { ...saved.metadata, error: "failed" } },
+        nextTurn(),
+      ]),
+      sanitizeOutboundHistory([{ ...saved, role: "user" }, nextTurn()]),
+    ]) {
+      expect(JSON.stringify(history)).not.toContain(
+        "Observed native-save outcomes"
+      );
+    }
+  });
+
+  test("validates receipt sources and the current owner before exposing grant outcomes", () => {
+    const wrongDraft = source([{ ...rule(), draftId: "unrelated" }]);
+    expect(
+      JSON.stringify(
+        sanitizeOutboundHistory([userMessage(), wrongDraft, nextTurn()])
+      )
+    ).not.toContain("Observed native-save outcomes");
+    const foreignGrant = source([grant()]);
+    expect(
+      JSON.stringify(
+        sanitizeOutboundHistory(
+          [userMessage(), foreignGrant, nextTurn()],
+          undefined,
+          {
+            ownerEmail: "different@example.com",
+          }
+        )
+      )
+    ).not.toContain("Observed native-save outcomes");
+  });
+
+  test("bounds receipts and fields with explicit truncation", () => {
+    const receipts = Array.from({ length: 25 }, (_, index) => {
+      const receipt = rule(`rule-${index}`);
+      if (receipt.kind === "masking-rule")
+        receipt.rule.semanticType = "x".repeat(300);
+      return receipt;
+    });
+    const history = sanitizeOutboundHistory([
+      userMessage(),
+      source(receipts),
+      nextTurn(),
+    ]);
+    const data = outcomeData(history[1].content);
+    expect(data.receipts).toHaveLength(20);
+    expect(data.omittedReceipts).toBe(5);
+    expect(data.receipts[0].ruleId).toBe("rule-5");
+    expect(data.receipts[0].semanticType).toHaveLength(256);
+    expect(
+      data.receipts.every(
+        (receipt: { truncated: boolean }) => receipt.truncated
+      )
+    ).toBe(true);
+  });
+
+  test("diagnostic history can disable receipts without changing ordinary history", () => {
+    const messages = [userMessage(), source(), nextTurn()];
+    const history = buildOutboundHistory(
+      "Context",
+      messages,
+      undefined,
+      undefined,
+      { includeActionReceipts: false }
+    );
+    expect(JSON.stringify(history)).not.toContain(
+      "Observed native-save outcomes"
+    );
+    const ordinary = [
+      userMessage(),
+      { ...source(), metadata: undefined },
+      nextTurn(),
+    ];
+    expect(buildOutboundHistory("Context", ordinary)).toEqual(
+      buildOutboundHistory("Context", ordinary, undefined, undefined, {
+        includeActionReceipts: false,
+      })
+    );
+  });
+
+  test("shares one receipt budget and interpretation note across source messages", () => {
+    const first = source(
+      Array.from({ length: 15 }, (_, index) => rule(`first-${index}`))
+    );
+    const second = {
+      ...source(
+        Array.from({ length: 15 }, (_, index) => rule(`second-${index}`))
+      ),
+      id: "second-source",
+    };
+    const history = sanitizeOutboundHistory([
+      userMessage(),
+      first,
+      second,
+      nextTurn(),
+    ]);
+    const data = [
+      outcomeData(history[1].content),
+      outcomeData(history[2].content),
+    ];
+    expect(data[0].receipts).toHaveLength(5);
+    expect(data[1].receipts).toHaveLength(15);
+    expect(data[0].omittedReceipts).toBe(10);
+    expect(
+      JSON.stringify(history).match(/Never automatically retry/g)
+    ).toHaveLength(1);
+  });
 });
 
 test.each([undefined, 42])(

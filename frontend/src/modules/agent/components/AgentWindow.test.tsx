@@ -1,3 +1,4 @@
+import { create } from "@bufbuild/protobuf";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { act, cloneElement, useEffect, useState } from "react";
@@ -7,6 +8,7 @@ import { getLayerRoot } from "@/components/ui/layer";
 import enUS from "@/locales/en-US.json";
 import { PRESET_BY_ID } from "@/modules/sql-editor/components/theme/presets";
 import type { SQLEditorTheme } from "@/modules/sql-editor/components/theme/types";
+import { type AccessGrant, AccessGrantSchema } from "@/types/proto-es/v1/access_grant_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { createAgentStore, useAgentStore } from "../store/agent";
@@ -24,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   freeSpaceAndRetryActionRef: undefined as { current: (() => Promise<boolean>) | null } | undefined,
   inputUnmounted: vi.fn(),
   accessGrantDrawerOnClose: undefined as (() => void) | undefined,
+  accessGrantDrawerOnCreated: undefined as ((grant: AccessGrant) => void) | undefined,
   routeName: "project.plan.detail",
   activeSQLTheme: undefined as SQLEditorTheme | undefined,
   useTranslation: vi.fn(() => ({
@@ -186,8 +189,9 @@ vi.mock("@/api", async (importOriginal) => {
 });
 
 vi.mock("@/modules/access-control/AccessGrantRequestDrawer", () => ({
-  AccessGrantRequestDrawer: ({onClose, ...props}: {onClose: () => void; query?: string}) => {
+  AccessGrantRequestDrawer: ({onClose, onCreated, ...props}: {onClose: () => void; onCreated?: (grant: AccessGrant) => void; query?: string}) => {
     mocks.accessGrantDrawerOnClose = onClose;
+    mocks.accessGrantDrawerOnCreated = onCreated;
     const [draft, setDraft] = useState(props);
     return <><button type="button" data-testid="access-grant-drawer" data-draft={JSON.stringify(draft)} onClick={onClose} /><input aria-label="Draft query" value={draft.query ?? ""} onChange={(event) => setDraft({...draft, query: event.target.value})} /></>;
   },
@@ -203,7 +207,7 @@ vi.mock("./AgentChat", () => ({
   }: {
     contextLabel?: string;
     onFreeSpaceAndRetry?: () => Promise<boolean>;
-    onOpenAccessGrantDraft?: (draft: AccessGrantDraft) => boolean;
+    onOpenAccessGrantDraft?: (draft: AccessGrantDraft, source: {chatId: string; messageId: string}) => boolean;
     onSelectSuggestion?: (starterId: "project-open-blockers") => void;
     onContinueAction?: (
       chatId: string,
@@ -213,14 +217,20 @@ vi.mock("./AgentChat", () => ({
     ) => void;
   }) => {
     const [storageRecoveryResult, setStorageRecoveryResult] = useState<boolean>();
+    const openDraft = (draft: AccessGrantDraft) => {
+      const state = useAgentStore.getState();
+      const chatId = state.currentChatId ?? state.createChat({context: draft.project}).id;
+      const message = state.addMessage({chatId, role: "assistant", content: "Review the access request.", metadata: {accessRequestDraft: draft}});
+      onOpenAccessGrantDraft?.(draft, {chatId, messageId: message!.id});
+    };
     return (
     <div data-testid="agent-chat" data-context-label={contextLabel} data-storage-recovery-result={storageRecoveryResult}>
       <button type="button" data-testid="agent-free-storage" disabled={!onFreeSpaceAndRetry} onClick={async () => setStorageRecoveryResult(await onFreeSpaceAndRetry?.() ?? false)} />
       <button type="button" data-testid="open-access-draft" onClick={() => {
-        onOpenAccessGrantDraft?.({ project: "projects/orders", sourceDatabase: "instances/prod/databases/orders", targets: ["instances/prod/databases/orders"], statement: "SELECT 1", schema: "", container: "", unmask: true, reason: "Investigate missing order" });
+        openDraft({ project: "projects/orders", sourceDatabase: "instances/prod/databases/orders", targets: ["instances/prod/databases/orders"], statement: "SELECT 1", schema: "", container: "", unmask: true, reason: "Investigate missing order" });
       }} />
       <button type="button" data-testid="open-another-access-draft" onClick={() => {
-        onOpenAccessGrantDraft?.({ project: "projects/analytics", sourceDatabase: "instances/staging/databases/analytics", targets: ["instances/staging/databases/analytics"], statement: "SELECT 2", schema: "public", container: "warehouse", unmask: false, reason: "Investigate analytics" });
+        openDraft({ project: "projects/analytics", sourceDatabase: "instances/staging/databases/analytics", targets: ["instances/staging/databases/analytics"], statement: "SELECT 2", schema: "public", container: "warehouse", unmask: false, reason: "Investigate analytics" });
       }} />
       <button
         type="button"
@@ -664,6 +674,68 @@ test("keeps the inline access draft mounted while minimized and switching chats,
     act(() => useAgentStore.setState({ visible: true, minimized: false }));
     expect(screen.queryByTestId("access-grant-drawer")).toBeNull();
   } finally { unmount(); }
+});
+
+test("links the submitted grant to its source message after switching chats", async () => {
+  const {render, unmount} = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
+    const source = useAgentStore.getState().getMessages(useAgentStore.getState().currentChatId).at(-1)!;
+    const onCreated = mocks.accessGrantDrawerOnCreated;
+    expect(onCreated).toBeTypeOf("function");
+    act(() => { useAgentStore.getState().createChat({context: "projects/analytics"}); });
+    const grant = create(AccessGrantSchema, {
+      name: "projects/orders/accessGrants/submitted",
+      creator: "users/first@example.com",
+      query: "SELECT id FROM orders",
+      targets: ["instances/prod/databases/orders"],
+      unmask: false,
+      export: true,
+      schema: "edited_schema",
+      container: "edited_container",
+      issue: "projects/orders/issues/123",
+    });
+    act(() => onCreated!(grant));
+    const linked = useAgentStore.getState().getMessages(source.chatId).at(-1)!;
+    expect(linked.id).toBe(source.id);
+    expect(linked.metadata?.actionReceipts).toEqual([
+      expect.objectContaining({grant: expect.objectContaining({
+        name: grant.name, query: grant.query, export: true,
+        schema: grant.schema, container: grant.container, issue: grant.issue,
+      })}),
+    ]);
+    expect(useAgentStore.getState().getMessages(useAgentStore.getState().currentChatId)).toEqual([]);
+  } finally { unmount(); }
+});
+
+test.each(["logout", "user", "workspace", "delete"])("does not link a late submission after %s", async (change) => {
+  const {render, unmount} = renderIntoContainer(<AgentWindow />);
+  const currentUser = mocks.currentUser;
+  const workspace = mocks.workspace;
+  try {
+    render();
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
+    const source = useAgentStore.getState().getMessages(useAgentStore.getState().currentChatId).at(-1)!;
+    const onCreated = mocks.accessGrantDrawerOnCreated;
+    expect(onCreated).toBeTypeOf("function");
+    if (change === "logout") mocks.currentUser = undefined;
+    if (change === "user") mocks.currentUser = {...currentUser!, email: "second@example.com"};
+    if (change === "workspace") mocks.workspace = {name: "workspaces/other", title: "Other"};
+    if (change === "delete") act(() => useAgentStore.getState().deleteChat(source.chatId));
+    act(() => onCreated!(create(AccessGrantSchema, {
+      name: "projects/orders/accessGrants/submitted",
+      creator: "users/first@example.com",
+      query: "SELECT 1", targets: ["instances/prod/databases/orders"],
+    })));
+    expect(useAgentStore.getState().getMessages(source.chatId).some((message) => message.metadata?.actionReceipts?.length)).toBe(false);
+  } finally {
+    mocks.currentUser = currentUser;
+    mocks.workspace = workspace;
+    unmount();
+  }
 });
 
 test("resets the form for each explicitly opened access draft without losing edits on restore", async () => {
