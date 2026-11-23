@@ -13,13 +13,3 @@ type SyntaxError struct {
 func (e *SyntaxError) Error() string {
 	return e.Message
 }
-
-// GetLineOffset returns the 0-based line offset from a StartPosition.
-// This is useful for converting from the 1-based StartPosition to the 0-based offset
-// needed for some calculations.
-func GetLineOffset(startPosition *storepb.Position) int {
-	if startPosition == nil {
-		return 0
-	}
-	return int(startPosition.Line) - 1
-}

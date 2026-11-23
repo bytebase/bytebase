@@ -39,8 +39,3 @@ func GetNode(a base.AST) (ast.Node, bool) {
 	}
 	return wrapped.Node, true
 }
-
-// ByteOffsetToRunePosition converts a byte offset in sql to a 1-based line:column position.
-func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
-	return base.ByteOffsetToRunePosition(sql, byteOffset)
-}

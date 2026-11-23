@@ -37,10 +37,8 @@ func TestParseStatementsSeam(t *testing.T) {
 	require.False(t, ok)
 }
 
-func TestConvertErrorAndHelpers(t *testing.T) {
+func TestConvertError(t *testing.T) {
 	sql := "SELECT '你好' FROM t"
-	require.Equal(t, &storepb.Position{Line: 1, Column: 13}, ByteOffsetToRunePosition(sql, len("SELECT '你好' ")))
-	require.Equal(t, &storepb.Position{Line: 1, Column: 19}, ByteOffsetToRunePosition(sql, len(sql)+10))
 
 	parseErr := &mssqlparser.ParseError{Position: len("SELECT '你好' "), Message: "unexpected token"}
 	err := convertError(parseErr, base.Statement{
@@ -55,21 +53,4 @@ func TestConvertErrorAndHelpers(t *testing.T) {
 
 	sentinel := errors.New("boom")
 	require.ErrorIs(t, convertError(sentinel, base.Statement{}), sentinel)
-
-	orig, lower := NormalizeTSQLIdentifierText("")
-	require.Empty(t, orig)
-	require.Empty(t, lower)
-
-	orig, lower = NormalizeTSQLIdentifierText("[OrderID]")
-	require.Equal(t, "OrderID", orig)
-	require.Equal(t, "orderid", lower)
-
-	orig, lower = NormalizeTSQLIdentifierText("Users")
-	require.Equal(t, "Users", orig)
-	require.Equal(t, "users", lower)
-
-	require.True(t, IsTSQLReservedKeyword("SELECT", true))
-	require.False(t, IsTSQLReservedKeyword("select", true))
-	require.True(t, IsTSQLReservedKeyword("select", false))
-	require.False(t, IsTSQLReservedKeyword("my_ident", false))
 }

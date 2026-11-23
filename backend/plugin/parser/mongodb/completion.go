@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"slices"
 
 	omnicompletion "github.com/bytebase/omni/mongo/completion"
 
@@ -23,22 +22,14 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 		LoadDatabase:    loadDatabase,
 	}, statement, caretLine, caretOffset)
 
-	result := make([]base.Candidate, 0, len(candidates))
-	for _, c := range candidates {
-		result = append(result, base.Candidate{
+	return base.DeduplicateCandidates(candidates, func(c omnicompletion.Candidate) (base.Candidate, bool) {
+		return base.Candidate{
 			Type:       candidateTypeToBase(c.Type),
 			Text:       c.Text,
 			Definition: c.Definition,
 			Comment:    c.Comment,
-		})
-	}
-
-	// Omni sorts by its finer CandidateType enum; re-sort and compact after
-	// collapsing into Bytebase's coarser base.CandidateType.
-	slices.SortFunc(result, base.CompareCandidate)
-	return slices.CompactFunc(result, func(a, b base.Candidate) bool {
-		return a.Type == b.Type && a.Text == b.Text && a.Definition == b.Definition
-	}), nil
+		}, true
+	}, base.CompareCandidate), nil
 }
 
 // candidateTypeToBase maps omni completion candidate types to Bytebase base types.

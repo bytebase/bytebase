@@ -29,7 +29,7 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 // error from the split statement that holds it.
 func toSyntaxError(statement string, e *analysis.SyntaxError) *base.SyntaxError {
 	stmt := base.NewStatementFromRange(statement, base.NewByteOffsetPositionMapper(statement), e.ByteStart, e.ByteEnd, false)
-	pos := ByteOffsetToRunePosition(stmt.Text, e.Offset)
+	pos := base.ByteOffsetToRunePosition(stmt.Text, e.Offset)
 	if stmt.Start != nil {
 		pos.Line += stmt.Start.Line - 1
 	}

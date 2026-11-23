@@ -18,9 +18,4 @@ func TestDiagnoseSeam(t *testing.T) {
 	diags, err = base.Diagnose(context.Background(), base.DiagnoseContext{}, storepb.Engine_SNOWFLAKE, "SELECT FROM users")
 	require.NoError(t, err)
 	require.NotEmpty(t, diags)
-
-	require.Nil(t, parseSnowflakeSQL("SELECT * FROM users;"))
-	syntaxErr := parseSnowflakeSQL("SELECT FROM users")
-	require.NotNil(t, syntaxErr)
-	require.NotNil(t, syntaxErr.Position)
 }

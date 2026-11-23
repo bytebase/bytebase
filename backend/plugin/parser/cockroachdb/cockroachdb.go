@@ -1,8 +1,6 @@
 package cockroachdb
 
 import (
-	"strings"
-
 	"github.com/bytebase/omni/cockroachdb/analysis"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -23,7 +21,7 @@ func parseCockroachDBStatements(statement string) ([]base.ParsedStatement, error
 	}
 
 	// Then parse to get ASTs
-	parseResult, err := ParseCockroachDBSQL(statement)
+	parsedStmts, err := analysis.ParseScript(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -35,46 +33,15 @@ func parseCockroachDBStatements(statement string) ([]base.ParsedStatement, error
 		ps := base.ParsedStatement{
 			Statement: stmt,
 		}
-		if !stmt.Empty && parseResult != nil && astIndex < len(parseResult.Stmts) {
+		if !stmt.Empty && astIndex < len(parsedStmts) {
 			ps.AST = &AST{
 				StartPosition: &storepb.Position{Line: 1},
-				Stmt:          parseResult.Stmts[astIndex],
+				Stmt:          parsedStmts[astIndex],
 			}
 			astIndex++
 		}
 		result = append(result, ps)
 	}
 
-	return result, nil
-}
-
-type ParseResult struct {
-	Stmts []analysis.ParsedStatement
-}
-
-// ParseCockroachDBSQL parses the given CockroachDB statement by using LALR(1) parser. Returns the AST if no error.
-func ParseCockroachDBSQL(statement string) (*ParseResult, error) {
-	stmts, err := analysis.ParseScript(statement)
-	if err != nil {
-		return nil, err
-	}
-	return &ParseResult{
-		Stmts: stmts,
-	}, nil
-}
-
-func SplitSQLStatement(statement string) ([]string, error) {
-	stmts, err := analysis.ParseScript(statement)
-	if err != nil {
-		return nil, err
-	}
-	var result []string
-	for _, stmt := range stmts {
-		sql := stmt.Text()
-		if !strings.HasSuffix(sql, ";") {
-			sql += ";"
-		}
-		result = append(result, sql)
-	}
 	return result, nil
 }

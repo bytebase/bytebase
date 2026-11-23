@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 type BackupStatement struct {
@@ -131,25 +130,6 @@ func BackupCatalogFuncs[D any](
 		}
 	}
 	return list, get
-}
-
-// SingleUnnamedSchemaGetter returns a GetDatabase closure serving dbMetadata
-// for databaseName only, or nil when dbMetadata is nil.
-func SingleUnnamedSchemaGetter[D any](
-	databaseName string,
-	dbMetadata *model.DatabaseMetadata,
-	wrap func(*UnnamedSchemaDatabase) D,
-) func(string) (D, error) {
-	if dbMetadata == nil {
-		return nil
-	}
-	return func(name string) (D, error) {
-		var zero D
-		if name != databaseName {
-			return zero, nil
-		}
-		return wrap(&UnnamedSchemaDatabase{Database: dbMetadata}), nil
-	}
 }
 
 // NewColumnClassifier adapts an engine's ClassifyColumns function into a

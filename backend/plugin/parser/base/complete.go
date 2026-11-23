@@ -50,26 +50,6 @@ func (c Candidate) String() string {
 	return fmt.Sprintf("%s (%s) %s", c.Text, c.Type, c.Definition)
 }
 
-type TableReference interface {
-	isTableReference()
-}
-
-type PhysicalTableReference struct {
-	Database string
-	Schema   string
-	Table    string
-	Alias    string
-}
-
-func (*PhysicalTableReference) isTableReference() {}
-
-type VirtualTableReference struct {
-	Table   string
-	Columns []string
-}
-
-func (*VirtualTableReference) isTableReference() {}
-
 type SceneType string
 
 const (

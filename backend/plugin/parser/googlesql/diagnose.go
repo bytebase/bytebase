@@ -21,19 +21,15 @@ import (
 // "unknown or unsupported statement …") passes through.
 func Diagnose(statement string) []base.Diagnostic {
 	diags := diagnostics.Analyze(statement)
-	out := make([]base.Diagnostic, 0, len(diags))
-	mapper := base.NewByteOffsetPositionMapper(statement)
+	filtered := make([]diagnostics.Diagnostic, 0, len(diags))
 	for _, d := range diags {
-		if isValidButUnimplementedStub(d.Message) {
-			continue
+		if !isValidButUnimplementedStub(d.Message) {
+			filtered = append(filtered, d)
 		}
-		syntaxErr := &base.SyntaxError{
-			Position: mapper.Position(d.Range.Start.Offset),
-			Message:  d.Message,
-		}
-		out = append(out, base.ConvertSyntaxErrorToDiagnostic(syntaxErr, statement))
 	}
-	return out
+	return base.ConvertOffsetDiagnostics(statement, filtered, func(d diagnostics.Diagnostic) (int, string) {
+		return d.Range.Start.Offset, d.Message
+	})
 }
 
 // isValidButUnimplementedStub reports whether msg is an omni "not yet supported"

@@ -4,30 +4,15 @@ import (
 	"context"
 
 	"github.com/bytebase/omni/mariadb/analysis"
-	"github.com/bytebase/omni/mariadb/ast"
 	mariadbparser "github.com/bytebase/omni/mariadb/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
 	base.RegisterTransformDMLToSelect(storepb.Engine_MARIADB, TransformDMLToSelect)
 }
-
-type StatementType = analysis.DMLType
-
-const (
-	StatementTypeUnknown = analysis.DMLTypeUnknown
-	StatementTypeUpdate  = analysis.DMLTypeUpdate
-	StatementTypeInsert  = analysis.DMLTypeInsert
-	StatementTypeDelete  = analysis.DMLTypeDelete
-)
-
-type TableReference = analysis.TableReference
-
-type StatementInfo = analysis.DMLTarget
 
 func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
 	catalog := newBackupCatalog(ctx, tCtx.InstanceID, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc)
@@ -53,14 +38,6 @@ func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, state
 			return b.Statement, b.SourceTable, b.BackupTable, b.ByteStart, b.ByteEnd
 		},
 	)
-}
-
-// ExtractTables extracts table references from a DML statement. dbMetadata,
-// which may be nil, is databaseName's metadata.
-func ExtractTables(databaseName string, node ast.Node, fullSQL string, offset int, dbMetadata *model.DatabaseMetadata) ([]StatementInfo, error) {
-	return analysis.ExtractTables(databaseName, node, fullSQL, offset, analysis.Catalog{
-		GetDatabase: base.SingleUnnamedSchemaGetter(databaseName, dbMetadata, wrapDatabase),
-	})
 }
 
 func wrapDatabase(d *base.UnnamedSchemaDatabase) analysis.Database { return d }

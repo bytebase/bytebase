@@ -92,17 +92,6 @@ func TestBackupCatalogFuncsAndColumnClassifier(t *testing.T) {
 		require.ErrorIs(t, err, wantErr)
 	})
 
-	t.Run("SingleUnnamedSchemaGetter", func(t *testing.T) {
-		require.Nil(t, SingleUnnamedSchemaGetter("db1", nil, wrap))
-		get := SingleUnnamedSchemaGetter("db1", dbMeta, wrap)
-		got, err := get("other")
-		require.NoError(t, err)
-		require.Nil(t, got)
-		got, err = get("db1")
-		require.NoError(t, err)
-		require.Equal(t, "db1", got.Name())
-	})
-
 	t.Run("NewColumnClassifier and ClassifyRestoreColumns", func(t *testing.T) {
 		classify := func(_ struct{}, _ bool, db, _ string) (string, error) {
 			if db == "missing" {

@@ -16,21 +16,7 @@ func init() {
 // It uses omni's lexical splitter which handles quotes, dollar-quotes,
 // comments, and BEGIN ATOMIC blocks without requiring valid SQL.
 func SplitSQL(statement string) ([]base.Statement, error) {
-	segments := omnipg.Split(statement)
-
-	result := make([]base.Statement, 0, len(segments))
-	positionMapper := base.NewByteOffsetPositionMapper(statement)
-	for _, seg := range segments {
-		result = append(result, base.Statement{
-			Text:  seg.Text,
-			Empty: seg.Empty(),
-			Start: positionMapper.Position(seg.ByteStart),
-			End:   positionMapper.Position(seg.ByteEnd),
-			Range: &storepb.Range{
-				Start: int32(seg.ByteStart),
-				End:   int32(seg.ByteEnd),
-			},
-		})
-	}
-	return result, nil
+	return base.BuildStatements(statement, omnipg.Split(statement), func(s omnipg.Segment) (int, int, bool) {
+		return s.ByteStart, s.ByteEnd, s.Empty()
+	}, false), nil
 }

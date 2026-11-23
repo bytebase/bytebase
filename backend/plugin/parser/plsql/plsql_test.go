@@ -38,11 +38,6 @@ func TestParseStatementsSeam(t *testing.T) {
 }
 
 func TestConvertErrorAndPositions(t *testing.T) {
-	// Multi-byte runes convert byte offset to 1-based rune column.
-	sql := "SELECT '你好' FROM t"
-	require.Equal(t, &storepb.Position{Line: 1, Column: 13}, ByteOffsetToRunePosition(sql, len("SELECT '你好' ")))
-	require.Equal(t, &storepb.Position{Line: 1, Column: 19}, ByteOffsetToRunePosition(sql, len(sql)+10))
-
 	// Error on line 1 shifts both line and column by stmt.Start.
 	parseErr := &oracleparser.ParseError{Position: 4, Message: "unexpected token"}
 	err := convertError(parseErr, base.Statement{

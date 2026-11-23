@@ -48,7 +48,7 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, base.Select, span.Type)
 
-	// Non-SELECT query types map through googlesql.MapQueryType.
+	// Non-SELECT query types map through base.OmniQueryType.
 	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "INSERT INTO users (id) VALUES (1)"}, "ds1", "", false)
 	require.NoError(t, err)
 	require.Equal(t, base.DML, span.Type)

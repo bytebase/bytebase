@@ -43,11 +43,6 @@ func GetNode(a base.AST) (ast.Node, bool) {
 	return wrapped.Node, true
 }
 
-// ByteOffsetToRunePosition converts a byte offset in sql to a 1-based line:column position.
-func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
-	return base.ByteOffsetToRunePosition(sql, byteOffset)
-}
-
 func convertError(err error, stmt base.Statement) error {
 	return base.ConvertSyntaxError(stmt, err, true,
 		func(pe *oracleparser.ParseError) (int, string) { return pe.Position, pe.Message },
@@ -55,13 +50,4 @@ func convertError(err error, stmt base.Statement) error {
 			return base.FormatLineColSyntaxError(pos, pe.Message, "")
 		},
 	)
-}
-
-func convertParseError(parseErr *oracleparser.ParseError, stmt base.Statement) *base.SyntaxError {
-	pos := base.ShiftPosition(ByteOffsetToRunePosition(stmt.Text, parseErr.Position), stmt.Start)
-	return &base.SyntaxError{
-		Position:   pos,
-		Message:    base.FormatLineColSyntaxError(pos, parseErr.Message, ""),
-		RawMessage: parseErr.Message,
-	}
 }

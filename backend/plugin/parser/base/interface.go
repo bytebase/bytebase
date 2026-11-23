@@ -390,7 +390,7 @@ type ChangeSummary struct {
 	ChangedResources *model.ChangedResources
 	// DMLStatements holds the text of every DML statement whose rows can be estimated, in order.
 	// A statement that runs after the sheet changes the search path starts with WithSearchPath's
-	// prefix, which the driver splits off with SplitSearchPath and runs before the EXPLAIN.
+	// prefix, which the driver splits off and runs before the EXPLAIN.
 	DMLStatements []string
 	// DMLCount counts the DML statements, including those DMLStatements omits.
 	DMLCount int
@@ -411,19 +411,6 @@ func WithSearchPath(statement string, schemas []string) string {
 		quoted[i] = `"` + strings.ReplaceAll(schema, `"`, `""`) + `"`
 	}
 	return searchPathPrefix + strings.Join(quoted, ", ") + ";\n" + statement
-}
-
-// SplitSearchPath returns the SET LOCAL search_path statement that WithSearchPath put before
-// statement, or "" when there is none, and the statement after it.
-func SplitSearchPath(statement string) (string, string) {
-	if !strings.HasPrefix(statement, searchPathPrefix) {
-		return "", statement
-	}
-	setup, rest, ok := strings.Cut(statement, ";\n")
-	if !ok {
-		return "", statement
-	}
-	return setup, rest
 }
 
 type StatementRangeContext struct{}

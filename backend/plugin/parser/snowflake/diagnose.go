@@ -20,17 +20,3 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 		return d.Range.Start.Offset, d.Message
 	}), nil
 }
-
-// parseSnowflakeSQL parses statement with the omni best-effort parser and
-// returns the first syntax error as a *base.SyntaxError (nil when empty or valid).
-func parseSnowflakeSQL(statement string) *base.SyntaxError {
-	diags := diagnostics.Analyze(statement)
-	if len(diags) == 0 {
-		return nil
-	}
-	d := diags[0]
-	return &base.SyntaxError{
-		Position: base.ByteOffsetToRunePosition(statement, d.Range.Start.Offset),
-		Message:  d.Message,
-	}
-}

@@ -17,6 +17,3 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 		return base.OmniStatementType(analysis.StatementTypeOf(node)), nil
 	})
 }
-
-// StatementTypeWithPosition contains a statement type and its position information.
-type StatementTypeWithPosition = base.StatementTypeWithPosition
