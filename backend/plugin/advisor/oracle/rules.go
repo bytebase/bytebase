@@ -11,7 +11,6 @@ import (
 	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
@@ -21,9 +20,7 @@ import (
 )
 
 func init() {
-	extract := func(checkCtx advisor.Context) ([]advisor.V1Stmt[ast.Node], error) {
-		return advisor.ExtractNodes(checkCtx.ParsedStatements, plsqlparser.GetNode), nil
-	}
+	extract := advisor.NodeExtractor(plsqlparser.GetNode)
 	byteOffsetLine := func(sql string, offset int) int32 {
 		return plsqlparser.ByteOffsetToRunePosition(sql, offset).Line
 	}
@@ -274,50 +271,23 @@ func oracleNamingIdentifierCase(e *advisor.V1Engine[ast.Node]) advisor.Func {
 }
 
 func oracleDMLDryRun(e *advisor.V1Engine[ast.Node]) advisor.Func {
-	return func(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-		level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
-		if err != nil {
-			return nil, err
-		}
-		// BYT-8855: Skip DML dry run if there are DDL statements mixed in, because DML
-		// statements often reference objects created by DDL statements, causing false positives.
-		if advisor.ContainsDDL(checkCtx.DBType, checkCtx.ParsedStatements) {
-			return nil, nil
-		}
-		prober, err := advisor.ProbeFor(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		stmts, nodes, err := e.Nodes(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		probes := make(map[int]v1review.Probe)
-		for n, i := range oraclev1review.StatementDMLDryRunProbes(nodes) {
-			if n >= common.MaximumLintExplainSize {
-				break
-			}
+	return e.DMLDryRun(advisor.V1DMLDryRunConfig[ast.Node]{
+		Probes: oraclev1review.StatementDMLDryRunProbes,
+		Judge:  oraclev1review.StatementDMLDryRun,
+		Probe: func(ctx context.Context, prober db.Prober, stmt advisor.V1Stmt[ast.Node], _ []string) v1review.Probe {
 			// BEGIN opens a PL/SQL block in Oracle, so the dry run runs alone.
-			if _, err := prober.Probe(ctx, db.ProbeContext{Autocommit: true}, fmt.Sprintf("EXPLAIN PLAN FOR %s", stmts[i].Text)); err != nil {
-				probes[i] = v1review.Probe{Error: err.Error()}
-			} else {
-				probes[i] = v1review.Probe{}
+			if _, err := prober.Probe(ctx, db.ProbeContext{Autocommit: true}, fmt.Sprintf("EXPLAIN PLAN FOR %s", stmt.Text)); err != nil {
+				return v1review.Probe{Error: err.Error()}
 			}
-		}
-		title := checkCtx.Rule.Type.String()
-		var adviceList []*storepb.Advice
-		for _, f := range oraclev1review.StatementDMLDryRun(nodes, probes) {
-			line := stmts[f.Statement].BaseLine + 1
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:        level,
-				Code:          code.StatementDMLDryRunFailed.Int32(),
-				Title:         title,
-				Content:       fmt.Sprintf("Failed to dry run statement at line %d: %v", line, f.Value),
-				StartPosition: base.ConvertANTLRLineToPosition(line),
-			})
-		}
-		return adviceList, nil
-	}
+			return v1review.Probe{}
+		},
+		FormatContent: func(stmt advisor.V1Stmt[ast.Node], f v1review.Finding) string {
+			return fmt.Sprintf("Failed to dry run statement at line %d: %v", stmt.BaseLine+1, f.Value)
+		},
+		Pos: func(stmt advisor.V1Stmt[ast.Node], _ v1review.Finding) *storepb.Position {
+			return base.ConvertANTLRLineToPosition(stmt.BaseLine + 1)
+		},
+	})
 }
 
 func oraclePriorBackup(e *advisor.V1Engine[ast.Node]) advisor.Func {
@@ -329,13 +299,7 @@ func oraclePriorBackup(e *advisor.V1Engine[ast.Node]) advisor.Func {
 		if err != nil {
 			return nil, err
 		}
-		databaseName := common.BackupDatabaseNameOfEngine(storepb.Engine_ORACLE)
-		facts := v1review.PriorBackupFacts{
-			TotalSize:      checkCtx.StatementsTotalSize,
-			MaxSize:        common.MaxSheetCheckSize,
-			Database:       databaseName,
-			DatabaseExists: advisor.DatabaseExists(ctx, checkCtx, databaseName),
-		}
+		facts := advisor.NewPriorBackupFacts(ctx, checkCtx, storepb.Engine_ORACLE)
 		var adviceList []*storepb.Advice
 		for _, f := range oraclev1review.PriorBackupCheck(nodes, e.SchemaOf(checkCtx), facts) {
 			var adviceCode code.Code

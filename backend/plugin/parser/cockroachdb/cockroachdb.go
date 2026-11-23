@@ -3,15 +3,10 @@ package cockroachdb
 import (
 	"strings"
 
-	crrawparser "github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser"
-	"github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser/statements"
-
-	// Registers parser.ParseDoBlockFn; without it the SQL parser panics on a DO block.
-	_ "github.com/cockroachdb/cockroachdb-parser/pkg/sql/plpgsql/parser"
+	"github.com/bytebase/omni/cockroachdb/analysis"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 func init() {
@@ -54,32 +49,28 @@ func parseCockroachDBStatements(statement string) ([]base.ParsedStatement, error
 }
 
 type ParseResult struct {
-	Stmts statements.Statements
+	Stmts []analysis.ParsedStatement
 }
 
 // ParseCockroachDBSQL parses the given CockroachDB statement by using LALR(1) parser. Returns the AST if no error.
 func ParseCockroachDBSQL(statement string) (*ParseResult, error) {
-	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + ";"
-	stmts, err := crrawparser.Parse(statement)
+	stmts, err := analysis.ParseScript(statement)
 	if err != nil {
 		return nil, err
 	}
-	result := &ParseResult{
+	return &ParseResult{
 		Stmts: stmts,
-	}
-
-	return result, nil
+	}, nil
 }
 
 func SplitSQLStatement(statement string) ([]string, error) {
-	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + ";"
-	stmts, err := crrawparser.Parse(statement)
+	stmts, err := analysis.ParseScript(statement)
 	if err != nil {
 		return nil, err
 	}
 	var result []string
 	for _, stmt := range stmts {
-		sql := stmt.SQL
+		sql := stmt.Text()
 		if !strings.HasSuffix(sql, ";") {
 			sql += ";"
 		}

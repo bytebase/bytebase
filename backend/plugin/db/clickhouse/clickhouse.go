@@ -50,18 +50,10 @@ package clickhouse
 
 import (
 	"context"
-	"crypto/tls"
-	"io"
 	"log/slog"
-	"net"
-	"sync"
 
 	omnich "github.com/bytebase/omni/clickhouse/driver"
 	omnidriver "github.com/bytebase/omni/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/pkg/errors"
-	"go.uber.org/multierr"
-	"golang.org/x/crypto/ssh"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -76,14 +68,7 @@ func init() {
 
 // Driver is Bytebase's ClickHouse driver.
 type Driver struct {
-	impl      *omnich.Driver
-	sshClient *ssh.Client
-
-	// session is the one server session QueryConn runs on, held for the
-	// driver's lifetime so statements a caller runs through one driver share
-	// it.
-	sessionMu sync.Mutex
-	session   omnidriver.Session
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -97,40 +82,30 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 		return nil, err
 	}
 	d := &Driver{}
-	if config.DataSource.GetSshHost() != "" {
-		sshClient, err := util.GetSSHClient(config.DataSource)
-		if err != nil {
+	if err := d.OpenWith(ctx, util.AdapterOptions{WithInstanceMetadata: true}, func(adapter *util.OmniAdapter) (omnidriver.Driver, error) {
+		if err := util.SetupSSHDial(config.DataSource, &cfg, adapter, true); err != nil {
 			return nil, err
 		}
-		d.sshClient = sshClient
-		cfg.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
-			return util.DialSSHTunnel(ctx, sshClient, network, address)
-		}
-	}
-
-	slog.Debug("Opening ClickHouse driver",
-		slog.String("addr", config.DataSource.GetHost()+":"+config.DataSource.GetPort()),
-		slog.String("environment", config.ConnectionContext.EnvironmentID),
-		slog.String("database", config.ConnectionContext.InstanceID),
-	)
-
-	impl, err := omnich.Open(ctx, cfg)
-	if err != nil {
-		d.closeSSHClient()
+		slog.Debug("Opening ClickHouse driver",
+			slog.String("addr", config.DataSource.GetHost()+":"+config.DataSource.GetPort()),
+			slog.String("environment", config.ConnectionContext.EnvironmentID),
+			slog.String("database", config.ConnectionContext.InstanceID),
+		)
+		return omnich.Open(ctx, cfg)
+	}); err != nil {
 		return nil, err
 	}
-	d.impl = impl
 	return d, nil
 }
 
 // clickhouseConfig resolves everything Bytebase knows about reaching the server
 // into the plain values clickhouse/driver takes.
 func clickhouseConfig(dataSource *storepb.DataSource, password, database string) (omnidriver.Config, error) {
-	tlsConfig, err := util.GetTLSConfig(dataSource)
+	tlsFn, err := util.SQLStaticTLSFunc(dataSource)
 	if err != nil {
-		return omnidriver.Config{}, errors.Wrap(err, "sql: tls config error")
+		return omnidriver.Config{}, err
 	}
-	cfg := omnidriver.Config{
+	return omnidriver.Config{
 		Host:     dataSource.GetHost(),
 		Port:     dataSource.GetPort(),
 		Database: database,
@@ -139,96 +114,15 @@ func clickhouseConfig(dataSource *storepb.DataSource, password, database string)
 		// A data source's extra parameters are ClickHouse settings, which is
 		// what the contract carries them as.
 		Params: dataSource.GetExtraConnectionParameters(),
-	}
-	if tlsConfig != nil {
-		cfg.TLS = func(string) (*tls.Config, error) { return tlsConfig, nil }
-	}
-	return cfg, nil
-}
-
-func (d *Driver) closeSSHClient() {
-	if d.sshClient != nil {
-		_ = d.sshClient.Close()
-		d.sshClient = nil
-	}
-}
-
-// Close closes the session, the pool and the SSH tunnel, if any.
-func (d *Driver) Close(context.Context) error {
-	var err error
-	d.sessionMu.Lock()
-	session := d.session
-	d.session = nil
-	d.sessionMu.Unlock()
-	if session != nil {
-		err = multierr.Append(err, session.Close())
-	}
-	if d.impl != nil {
-		err = multierr.Append(err, d.impl.Close())
-	}
-	if d.sshClient != nil {
-		err = multierr.Append(err, d.sshClient.Close())
-		d.sshClient = nil
-	}
-	return err
-}
-
-// Ping pings the server.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.impl.Ping(ctx)
+		TLS:    tlsFn,
+	}, nil
 }
 
 // Execute runs the script's statements, reporting each to the task run's log.
 // ClickHouse cannot roll back, so a script still logs the BEGIN and ROLLBACK
 // its transaction wrapper issues.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	txMode, _, cleaned := util.ParseTransactionMode(statement)
-	return d.impl.Execute(ctx, cleaned, omnidriver.ExecuteOptions{
-		Transaction: txMode,
-		Log:         util.NewExecuteLogger(opts),
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		ParseTransactionDirective: true,
 	})
-}
-
-// SyncInstance syncs the server's version, databases and users.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.impl.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, true), nil
-}
-
-// SyncDBSchema syncs a single database schema. A database the server no longer
-// has is the driver's ErrNotFound.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return d.impl.SyncDatabase(ctx)
-}
-
-// Dump writes the database's DDL as the server states it.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.impl.Dump(ctx, out, dbMetadata)
-}
-
-// discardSessionLocked closes a session a statement took with it, so the
-// stream's next statement opens a new one instead of reusing the dead one. The
-// caller holds sessionMu.
-func (d *Driver) discardSessionLocked(session omnidriver.Session) {
-	_ = session.Close()
-	if d.session == session {
-		d.session = nil
-	}
-}
-
-// querySessionLocked returns the driver's one session, opening it on the first
-// query so Open still does not reach the server. The caller holds sessionMu.
-func (d *Driver) querySessionLocked(ctx context.Context) (omnidriver.Session, error) {
-	if d.session != nil {
-		return d.session, nil
-	}
-	session, err := d.impl.Session(ctx)
-	if err != nil {
-		return nil, err
-	}
-	d.session = session
-	return session, nil
 }

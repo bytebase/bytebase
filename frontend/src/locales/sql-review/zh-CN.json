@@ -2,7 +2,7 @@
   "add-or-remove-rules": "添加或删除规则",
   "add-rules": "添加规则",
   "ai-review": {
-    "ai-off": "工作空间尚未启用 AI，因此不会运行 AI 审核。",
+    "ai-off": "工作空间尚未启用 AI，因此不会运行 AI SQL 审核。",
     "comments-description": "AI 模型会审核工单中的 SQL（包括草稿），并以评论指出发现的风险。在所有评论解决之前，发布会被阻止。",
     "description": "由 AI 模型审核工单中的 SQL，发现标准规则无法识别的风险。",
     "enable": {
@@ -10,12 +10,12 @@
       "self": "使用 AI 审核变更"
     },
     "policy": {
-      "ai-review-policy": "AI 审核策略",
+      "ai-review-policy": "AI SQL 审核策略",
       "cannot-clear": "你的角色无法删除策略，因此不能清空此策略。",
       "description": "此策略定义 AI 审核数据库变更时检查的内容。它适用于工作空间中的每个项目，每个项目都可以添加自己的策略。",
       "load-failed": "审核策略加载失败。",
       "none": "未设置审核策略。",
-      "paused": "此策略已暂停，AI 审核不会使用它。",
+      "paused": "此策略已暂停，AI SQL 审核不会使用它。",
       "placeholder": "例如：\n报告在超过 100 万行的表上会阻塞写入的结构变更。\n每个外键的列都必须有索引。\n新建的表必须包含 created_at 列和 updated_at 列。",
       "project-description": "可选的项目专属策略。它会添加到工作空间策略中；如有冲突则优先。",
       "project-none": "未设置项目策略。",
@@ -23,11 +23,11 @@
       "project-self": "项目补充策略",
       "remove-only": "你可以删除此策略，但不能修改它。清空文本即可删除。",
       "self": "审核策略",
-      "standard-rules-hint": "AI 审核不会重复标准规则的检查，也会跳过已关闭的规则。如需让 AI 审核仍然检查某项，请在策略中写明，例如“每条 UPDATE 语句都必须带有 WHERE 子句”。",
+      "standard-rules-hint": "AI SQL 审核不会重复标准规则的检查，也会跳过已关闭的规则。如需让 AI SQL 审核仍然检查某项，请在策略中写明，例如“每条 UPDATE 语句都必须带有 WHERE 子句”。",
       "too-large": "策略大小为 {{size}} 字节，超过了 {{limit}} 字节的上限。请缩短后再保存。"
     },
-    "project-description": "AI 审核在工作空间中配置。请在下方添加可选的项目专属策略。",
-    "self": "AI 审核",
+    "project-description": "AI SQL 审核在工作空间中配置。请在下方添加可选的项目专属策略。",
+    "self": "AI SQL 审核",
     "set-for-workspace": "由工作空间统一管理。",
     "turn-on-ai": "启用 AI",
     "view-workspace-setting": "查看工作空间 AI 设置"
@@ -151,7 +151,7 @@
     "name": "优先级"
   },
   "no-permission": "仅管理员或 DBA 有权限创建或更新审核策略。",
-  "policies": "SQL 审核策略",
+  "policies": "基于规则的 SQL 审核策略",
   "policy-create-failed": "审核策略创建失败",
   "policy-created": "审核策略已创建",
   "policy-removed": "审核策略已删除",

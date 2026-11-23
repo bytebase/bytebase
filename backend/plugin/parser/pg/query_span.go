@@ -52,19 +52,12 @@ func resolveQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statem
 		if syntaxErr, ok := err.(*analysis.SyntaxError); ok {
 			return nil, convertSyntaxError(statement, syntaxErr)
 		}
-		if err == analysis.ErrMixUserSystemTables {
-			return nil, base.MixUserSystemTablesError
+		if mixErr := base.ConvertOmniMixTablesError(err); mixErr != nil {
+			return nil, mixErr
 		}
 		return nil, err
 	}
-	return &base.QuerySpan{
-		Type:                   convertQueryType(span.Type),
-		ExplainAnalyze:         span.ExplainAnalyze,
-		SourceColumns:          convertColumnSet(span.SourceColumns),
-		Results:                convertResults(span.Results),
-		PredicateColumns:       convertColumnSet(span.PredicateColumns),
-		UnresolvedColumnsError: convertUnresolvedColumnsError(span.UnresolvedColumnsError),
-	}, nil
+	return base.OmniResolvedSpan(span), nil
 }
 
 // convertSyntaxError places the error one byte before the parser's offset, so
@@ -122,67 +115,4 @@ func (d *catalogDatabase) SearchRelation(searchPath []string, name string) (stri
 func (d *catalogDatabase) SearchFunctions(searchPath []string, name string) []*metadata.FunctionMetadata {
 	_, functions := d.database.SearchFunctions(searchPath, name)
 	return functions
-}
-
-func convertQueryType(t analysis.QueryType) base.QueryType {
-	switch t {
-	case analysis.Select:
-		return base.Select
-	case analysis.Explain:
-		return base.Explain
-	case analysis.SelectInfoSchema:
-		return base.SelectInfoSchema
-	case analysis.DDL:
-		return base.DDL
-	case analysis.DML:
-		return base.DML
-	default:
-		return base.QueryTypeUnknown
-	}
-}
-
-func convertColumnResource(column analysis.ColumnResource) base.ColumnResource {
-	return base.ColumnResource{
-		Database: column.Database,
-		Schema:   column.Schema,
-		Table:    column.Table,
-		Column:   column.Column,
-	}
-}
-
-func convertColumnSet(set analysis.ColumnSet) base.SourceColumnSet {
-	if set == nil {
-		return nil
-	}
-	result := make(base.SourceColumnSet, len(set))
-	for column := range set {
-		result[convertColumnResource(column)] = true
-	}
-	return result
-}
-
-func convertResults(results []analysis.QuerySpanResult) []base.QuerySpanResult {
-	if results == nil {
-		return nil
-	}
-	converted := make([]base.QuerySpanResult, 0, len(results))
-	for _, result := range results {
-		converted = append(converted, base.QuerySpanResult{
-			Name:          result.Name,
-			SourceColumns: convertColumnSet(result.SourceColumns),
-			IsPlainField:  result.IsPlainField,
-		})
-	}
-	return converted
-}
-
-func convertUnresolvedColumnsError(err *analysis.UnresolvedColumnsError) *base.UnresolvedColumnsError {
-	if err == nil {
-		return nil
-	}
-	var relations []base.ColumnResource
-	for _, relation := range err.Relations {
-		relations = append(relations, convertColumnResource(relation))
-	}
-	return &base.UnresolvedColumnsError{Relations: relations}
 }

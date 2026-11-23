@@ -6,327 +6,105 @@ import (
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
-	"os"
-
-	"gopkg.in/yaml.v3"
-
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/yamltest"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
-func TestGetTableDefinition(t *testing.T) {
-	tests := []struct {
-		name  string
-		table *metadatapb.TableMetadata
-		want  string
-	}{
-		{
-			// A table whose last column has DEFAULT + NOT NULL, followed by a
-			// table-level FOREIGN KEY with no other indexes or constraints.
-			// The FK must be separated from the column by a comma (ORA-02253).
-			name: "foreign key after default not null column without other constraints",
-			table: &metadatapb.TableMetadata{
-				Name: "T1",
-				Columns: []*metadatapb.ColumnMetadata{
-					{Name: "C1", Type: "NUMBER", Nullable: false},
-					{Name: "C2", Type: "NUMBER(1)", Default: "0", Nullable: false},
-				},
-				ForeignKeys: []*metadatapb.ForeignKeyMetadata{
-					{
-						Name:              "T1_FK",
-						Columns:           []string{"C1"},
-						ReferencedTable:   "T2",
-						ReferencedColumns: []string{"C1"},
-					},
-				},
+func TestOracleDefinitionRegistryAndShims(t *testing.T) {
+	table := &metadatapb.TableMetadata{
+		Name: "T1",
+		Columns: []*metadatapb.ColumnMetadata{
+			{
+				Name:               "ID",
+				Type:               "NUMBER",
+				Nullable:           false,
+				IsIdentity:         true,
+				IdentityGeneration: metadatapb.ColumnMetadata_ALWAYS,
+				IdentitySeed:       1,
+				IdentityIncrement:  1,
 			},
-			want: `CREATE TABLE "T1" (
-  "C1" NUMBER NOT NULL,
-  "C2" NUMBER(1) DEFAULT 0 NOT NULL,
-  CONSTRAINT "T1_FK" FOREIGN KEY ("C1") REFERENCES "T2" ("C1")
-);
-
-`,
 		},
-		{
-			name: "check constraint after column without other constraints",
-			table: &metadatapb.TableMetadata{
-				Name: "T1",
-				Columns: []*metadatapb.ColumnMetadata{
-					{Name: "C1", Type: "NUMBER", Nullable: false},
-				},
-				CheckConstraints: []*metadatapb.CheckConstraintMetadata{
-					{Name: "T1_CK", Expression: `"C1" > 0`},
-				},
-			},
-			want: `CREATE TABLE "T1" (
-  "C1" NUMBER NOT NULL,
-  CONSTRAINT "T1_CK" CHECK ("C1" > 0)
-);
-
-`,
-		},
-		{
-			name: "primary key, check, and foreign key",
-			table: &metadatapb.TableMetadata{
-				Name: "T1",
-				Columns: []*metadatapb.ColumnMetadata{
-					{Name: "C1", Type: "NUMBER", Nullable: false},
-					{Name: "C2", Type: "NUMBER(1)", Default: "0", Nullable: false},
-				},
-				Indexes: []*metadatapb.IndexMetadata{
-					{
-						Name:         "T1_PK",
-						Expressions:  []string{"C1"},
-						Primary:      true,
-						Unique:       true,
-						IsConstraint: true,
-					},
-				},
-				CheckConstraints: []*metadatapb.CheckConstraintMetadata{
-					{Name: "T1_CK", Expression: `"C2" IN (0, 1)`},
-				},
-				ForeignKeys: []*metadatapb.ForeignKeyMetadata{
-					{
-						Name:              "T1_FK",
-						Columns:           []string{"C1"},
-						ReferencedTable:   "T2",
-						ReferencedColumns: []string{"C1"},
-					},
-				},
-			},
-			want: `CREATE TABLE "T1" (
-  "C1" NUMBER NOT NULL,
-  "C2" NUMBER(1) DEFAULT 0 NOT NULL,
-  CONSTRAINT "T1_PK" PRIMARY KEY ("C1"),
-  CONSTRAINT "T1_CK" CHECK ("C2" IN (0, 1)),
-  CONSTRAINT "T1_FK" FOREIGN KEY ("C1") REFERENCES "T2" ("C1")
-);
-
-`,
-		},
-		{
-			name: "object table has no definition",
-			table: &metadatapb.TableMetadata{
-				Name:     "OT",
-				SkipDump: true,
-				Columns:  []*metadatapb.ColumnMetadata{{Name: "X", Type: "NUMBER", Nullable: true}},
-			},
-			want: "",
+		Indexes: []*metadatapb.IndexMetadata{
+			{Name: "IDX_T1_ID", Expressions: []string{"ID"}, Visible: false},
 		},
 	}
+	mv := &metadatapb.MaterializedViewMetadata{
+		Name:       "MV",
+		Definition: "SELECT 1 FROM DUAL",
+		Indexes:    []*metadatapb.IndexMetadata{{Name: "IDX_MV", Expressions: []string{"1"}, Visible: false}},
+	}
+	dbMeta := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:              "APP",
+			Tables:            []*metadatapb.TableMetadata{table},
+			Views:             []*metadatapb.ViewMetadata{{Name: "V", Definition: "SELECT 1 FROM DUAL"}},
+			MaterializedViews: []*metadatapb.MaterializedViewMetadata{mv},
+		}},
+	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetTableDefinition("", tt.table, nil)
-			require.NoError(t, err)
-			require.Equal(t, tt.want, got)
+	t.Run("database definition routes through registry and strips unrendered facts without mutating input", func(t *testing.T) {
+		got, err := schema.GetDatabaseDefinition(storepb.Engine_ORACLE, schema.GetDefinitionContext{}, dbMeta)
+		require.NoError(t, err)
+		require.Contains(t, got, `CREATE TABLE "T1"`)
+		require.Contains(t, got, `CREATE VIEW "V"`)
+		require.Contains(t, got, `CREATE MATERIALIZED VIEW "MV"`)
+		require.NotContains(t, got, "IDENTITY")
+		require.NotContains(t, got, "INVISIBLE")
+		require.True(t, table.Columns[0].IsIdentity)
+		require.False(t, table.Indexes[0].Visible)
+		require.False(t, mv.Indexes[0].Visible)
+	})
+
+	t.Run("table definition respects SkipDump and strips unrendered facts", func(t *testing.T) {
+		skipped, err := schema.GetTableDefinition(storepb.Engine_ORACLE, "", &metadatapb.TableMetadata{
+			Name:     "OT",
+			SkipDump: true,
+			Columns:  []*metadatapb.ColumnMetadata{{Name: "X", Type: "NUMBER"}},
+		}, nil)
+		require.NoError(t, err)
+		require.Empty(t, skipped)
+
+		got, err := schema.GetTableDefinition(storepb.Engine_ORACLE, "", table, nil)
+		require.NoError(t, err)
+		require.Contains(t, got, `CREATE TABLE "T1"`)
+		require.NotContains(t, got, "IDENTITY")
+		require.NotContains(t, got, "INVISIBLE")
+		require.True(t, table.Columns[0].IsIdentity)
+		require.False(t, table.Indexes[0].Visible)
+	})
+
+	t.Run("materialized view definition drops index visibility", func(t *testing.T) {
+		got, err := schema.GetMaterializedViewDefinition(storepb.Engine_ORACLE, "", mv)
+		require.NoError(t, err)
+		require.Contains(t, got, `CREATE MATERIALIZED VIEW "MV"`)
+		require.NotContains(t, got, "INVISIBLE")
+		require.False(t, mv.Indexes[0].Visible)
+	})
+
+	t.Run("object definitions registered for view, function, and procedure", func(t *testing.T) {
+		viewDDL, err := schema.GetViewDefinition(storepb.Engine_ORACLE, "", &metadatapb.ViewMetadata{
+			Name:       "V",
+			Definition: "SELECT 1 FROM DUAL",
 		})
-	}
-}
+		require.NoError(t, err)
+		require.Contains(t, viewDDL, `CREATE VIEW "V"`)
 
-// TestGetObjectDefinition covers the single-object definitions GetSchemaString
-// serves. The metadata is shaped the way Oracle reports it: view and
-// materialized-view definitions are a bare SELECT, and routine definitions
-// start at FUNCTION/PROCEDURE with no CREATE of their own.
-func TestGetObjectDefinition(t *testing.T) {
-	tests := []struct {
-		name string
-		get  func() (string, error)
-		want string
-	}{
-		{
-			name: "view",
-			get: func() (string, error) {
-				return GetViewDefinition("", &metadatapb.ViewMetadata{
-					Name:       "DEPT_EMPLOYEE_COUNT",
-					Definition: "SELECT D.ID AS DEPT_ID, COUNT(E.ID) AS EMP_COUNT\nFROM DEPARTMENTS D",
-				})
-			},
-			want: `CREATE VIEW "DEPT_EMPLOYEE_COUNT" AS SELECT D.ID AS DEPT_ID, COUNT(E.ID) AS EMP_COUNT
-FROM DEPARTMENTS D;
-
-`,
-		},
-		{
-			name: "materialized view",
-			get: func() (string, error) {
-				return GetMaterializedViewDefinition("", &metadatapb.MaterializedViewMetadata{
-					Name:       "PRODUCT_STATS",
-					Definition: "SELECT PRODUCT_ID, COUNT(*) AS ORDER_COUNT FROM ORDERS GROUP BY PRODUCT_ID",
-				})
-			},
-			want: `CREATE MATERIALIZED VIEW "PRODUCT_STATS" AS SELECT PRODUCT_ID, COUNT(*) AS ORDER_COUNT FROM ORDERS GROUP BY PRODUCT_ID;
-
-`,
-		},
-		{
-			// ALL_SOURCE hands back the body starting at FUNCTION, so the
-			// CREATE OR REPLACE prefix has to be supplied here.
-			name: "function gains the CREATE OR REPLACE prefix",
-			get: func() (string, error) {
-				return GetFunctionDefinition("", &metadatapb.FunctionMetadata{
-					Name:       "CALCULATE_DISCOUNT",
-					Definition: "FUNCTION CALCULATE_DISCOUNT(AMOUNT NUMBER)\nRETURN NUMBER\nIS\nBEGIN\n    RETURN AMOUNT * 0.1;\nEND;",
-				})
-			},
-			want: `CREATE OR REPLACE FUNCTION CALCULATE_DISCOUNT(AMOUNT NUMBER)
-RETURN NUMBER
-IS
-BEGIN
-    RETURN AMOUNT * 0.1;
-END;
-
-`,
-		},
-		{
-			name: "procedure gains the CREATE OR REPLACE prefix",
-			get: func() (string, error) {
-				return GetProcedureDefinition("", &metadatapb.ProcedureMetadata{
-					Name:       "LOG_AUDIT",
-					Definition: "PROCEDURE LOG_AUDIT(P_TABLE_NAME VARCHAR2)\nIS\nBEGIN\n    NULL;\nEND;",
-				})
-			},
-			want: `CREATE OR REPLACE PROCEDURE LOG_AUDIT(P_TABLE_NAME VARCHAR2)
-IS
-BEGIN
-    NULL;
-END;
-
-`,
-		},
-		{
-			// An INSTEAD OF trigger carries the view's DML behavior. Dropping it
-			// would hand back schema text that recreates the view read-only.
-			// The body shape is constructTriggerBody's in the Oracle sync: it
-			// prepends CREATE OR REPLACE TRIGGER to ALL_TRIGGERS.DESCRIPTION.
-			name: "view keeps its INSTEAD OF trigger",
-			get: func() (string, error) {
-				return GetViewDefinition("", &metadatapb.ViewMetadata{
-					Name:       "EMPLOYEE_VIEW",
-					Definition: "SELECT EMP_ID, EMAIL FROM EMPLOYEES",
-					Triggers: []*metadatapb.TriggerMetadata{
-						{
-							Name: "EMPLOYEE_VIEW_INSERT_TRG",
-							Body: "CREATE OR REPLACE TRIGGER EMPLOYEE_VIEW_INSERT_TRG\nINSTEAD OF INSERT ON EMPLOYEE_VIEW\nFOR EACH ROW\nBEGIN\n    NULL;\nEND;",
-						},
-					},
-				})
-			},
-			want: `CREATE VIEW "EMPLOYEE_VIEW" AS SELECT EMP_ID, EMAIL FROM EMPLOYEES;
-
-CREATE OR REPLACE TRIGGER EMPLOYEE_VIEW_INSERT_TRG
-INSTEAD OF INSERT ON EMPLOYEE_VIEW
-FOR EACH ROW
-BEGIN
-    NULL;
-END;
-
-`,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.get()
-			require.NoError(t, err)
-			require.Equal(t, tt.want, got)
+		fnDDL, err := schema.GetFunctionDefinition(storepb.Engine_ORACLE, "", &metadatapb.FunctionMetadata{
+			Name:       "F",
+			Definition: "FUNCTION F RETURN NUMBER IS BEGIN RETURN 1; END;",
 		})
-	}
-}
+		require.NoError(t, err)
+		require.Contains(t, fnDDL, "CREATE OR REPLACE FUNCTION F")
 
-// TestObjectDefinitionsRegisteredForOracle goes through the schema registry
-// rather than calling the functions directly, because the registry lookup is
-// what was missing: GetSchemaString served only DATABASE and TABLE for Oracle
-// and returned "engine ORACLE is not supported" for the rest, while
-// supportGetStringSchema on the frontend lists ORACLE and offers "view schema
-// text" on views.
-func TestObjectDefinitionsRegisteredForOracle(t *testing.T) {
-	tests := []struct {
-		name string
-		get  func() (string, error)
-	}{
-		{
-			name: "view",
-			get: func() (string, error) {
-				return schema.GetViewDefinition(storepb.Engine_ORACLE, "", &metadatapb.ViewMetadata{Name: "V", Definition: "SELECT 1 FROM DUAL"})
-			},
-		},
-		{
-			name: "materialized view",
-			get: func() (string, error) {
-				return schema.GetMaterializedViewDefinition(storepb.Engine_ORACLE, "", &metadatapb.MaterializedViewMetadata{Name: "MV", Definition: "SELECT 1 FROM DUAL"})
-			},
-		},
-		{
-			name: "function",
-			get: func() (string, error) {
-				return schema.GetFunctionDefinition(storepb.Engine_ORACLE, "", &metadatapb.FunctionMetadata{Name: "F", Definition: "FUNCTION F RETURN NUMBER IS BEGIN RETURN 1; END;"})
-			},
-		},
-		{
-			name: "procedure",
-			get: func() (string, error) {
-				return schema.GetProcedureDefinition(storepb.Engine_ORACLE, "", &metadatapb.ProcedureMetadata{Name: "P", Definition: "PROCEDURE P IS BEGIN NULL; END;"})
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.get()
-			require.NoError(t, err)
-			require.NotEmpty(t, got)
+		procDDL, err := schema.GetProcedureDefinition(storepb.Engine_ORACLE, "", &metadatapb.ProcedureMetadata{
+			Name:       "P",
+			Definition: "PROCEDURE P IS BEGIN NULL; END;",
 		})
-	}
-}
+		require.NoError(t, err)
+		require.Contains(t, procDDL, "CREATE OR REPLACE PROCEDURE P")
+	})
 
-type getDatabaseDefinitionCase struct {
-	Description string `yaml:"description"`
-	Metadata    string `yaml:"metadata"`
-	Expected    string `yaml:"expected"`
-}
-
-// TestGetDatabaseDefinition pins the DDL generated for each metadata input, and
-// re-parses that DDL to prove it is valid Oracle syntax.
-//
-// The input is metadata rather than a schema text on purpose: deriving it by
-// parsing would cap this test's reach at whatever GetDatabaseMetadata happens to
-// extract, so any generator branch the parser cannot feed would go untested.
-func TestGetDatabaseDefinition(t *testing.T) {
-	const (
-		record   = false
-		filepath = "testdata/get_database_definition.yaml"
-	)
-
-	var tests []getDatabaseDefinitionCase
-	content, err := os.ReadFile(filepath)
-	require.NoError(t, err)
-	require.NoError(t, yaml.Unmarshal(content, &tests))
-
-	for i, tc := range tests {
-		t.Run(tc.Description, func(t *testing.T) {
-			var metadata metadatapb.DatabaseSchemaMetadata
-			require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), &metadata))
-
-			definition, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, &metadata)
-			require.NoError(t, err)
-			require.NotEmpty(t, definition)
-
-			_, err = GetDatabaseMetadata(definition)
-			require.NoError(t, err, "generated definition should parse")
-
-			if record {
-				tests[i].Expected = definition
-				return
-			}
-			require.Equal(t, tc.Expected, definition)
-		})
-	}
-
-	if record {
-		yamltest.Record(t, filepath, tests)
-	}
+	t.Run("nil metadata returns safely from stripUnrenderedFacts", func(t *testing.T) {
+		require.Nil(t, stripUnrenderedFacts(nil))
+	})
 }

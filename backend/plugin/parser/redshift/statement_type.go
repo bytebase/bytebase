@@ -1,136 +1,63 @@
 package redshift
 
 import (
-	"strings"
-
 	"github.com/bytebase/omni/redshift/analysis"
-	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // StatementTypeWithPosition contains statement type and its position information.
-type StatementTypeWithPosition struct {
-	Type storepb.StatementType
-	// Line is the one-based line number where the statement ends.
-	Line int
-	Text string
-}
+type StatementTypeWithPosition = base.StatementTypeWithPosition
 
 // GetStatementTypesWithPosition returns statement types with position information.
 // The line numbers are one-based.
 func GetStatementTypesWithPosition(asts []base.AST) ([]StatementTypeWithPosition, error) {
-	if len(asts) == 0 {
-		return []StatementTypeWithPosition{}, nil
-	}
-
-	var allResults []StatementTypeWithPosition
-	for _, unifiedAST := range asts {
-		wrapped, ok := unifiedAST.(*AST)
-		if !ok {
-			return nil, errors.New("expected Redshift omni AST")
+	return base.CollectSingleStatementTypesWithPosition(asts, "expected Redshift omni AST", false, func(a *AST) (storepb.StatementType, string, bool) {
+		if a == nil || a.Node == nil {
+			return 0, "", false
 		}
-		if wrapped.Node == nil {
-			continue
-		}
-
-		stmtType := convertStatementType(analysis.StatementTypeOf(wrapped.Node))
-		if stmtType == storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED {
-			continue
-		}
-
-		line := 0
-		if wrapped.StartPosition != nil {
-			line = int(wrapped.StartPosition.Line)
-		}
-		line += strings.Count(wrapped.Text, "\n")
-
-		allResults = append(allResults, StatementTypeWithPosition{
-			Type: stmtType,
-			Line: line,
-			Text: wrapped.Text,
-		})
-	}
-
-	return allResults, nil
+		return statementTypeMap[analysis.StatementTypeOf(a.Node)], a.Text, true
+	})
 }
 
-// GetStatementTypes returns only the statement types as strings.
-// This is used for registration with base.RegisterGetStatementTypes.
+// GetStatementTypes returns statement types for registration with base.RegisterGetStatementTypes.
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	results, err := GetStatementTypesWithPosition(asts)
 	if err != nil {
 		return nil, err
 	}
-	types := make([]storepb.StatementType, len(results))
-	for i, r := range results {
-		types[i] = r.Type
-	}
-	return types, nil
+	return base.ExtractTypesFromPositions(results), nil
 }
 
-func convertStatementType(t analysis.StatementType) storepb.StatementType {
-	switch t {
-	case analysis.CreateDatabase:
-		return storepb.StatementType_CREATE_DATABASE
-	case analysis.CreateTable:
-		return storepb.StatementType_CREATE_TABLE
-	case analysis.CreateView:
-		return storepb.StatementType_CREATE_VIEW
-	case analysis.CreateIndex:
-		return storepb.StatementType_CREATE_INDEX
-	case analysis.CreateSequence:
-		return storepb.StatementType_CREATE_SEQUENCE
-	case analysis.CreateSchema:
-		return storepb.StatementType_CREATE_SCHEMA
-	case analysis.CreateFunction:
-		return storepb.StatementType_CREATE_FUNCTION
-	case analysis.DropDatabase:
-		return storepb.StatementType_DROP_DATABASE
-	case analysis.DropTable:
-		return storepb.StatementType_DROP_TABLE
-	case analysis.DropView:
-		return storepb.StatementType_DROP_VIEW
-	case analysis.DropSchema:
-		return storepb.StatementType_DROP_SCHEMA
-	case analysis.DropIndex:
-		return storepb.StatementType_DROP_INDEX
-	case analysis.DropSequence:
-		return storepb.StatementType_DROP_SEQUENCE
-	case analysis.DropFunction:
-		return storepb.StatementType_DROP_FUNCTION
-	case analysis.AlterDatabase:
-		return storepb.StatementType_ALTER_DATABASE
-	case analysis.AlterTable:
-		return storepb.StatementType_ALTER_TABLE
-	case analysis.AlterView:
-		return storepb.StatementType_ALTER_VIEW
-	case analysis.AlterIndex:
-		return storepb.StatementType_ALTER_INDEX
-	case analysis.AlterSequence:
-		return storepb.StatementType_ALTER_SEQUENCE
-	case analysis.RenameIndex:
-		return storepb.StatementType_RENAME_INDEX
-	case analysis.RenameSchema:
-		return storepb.StatementType_RENAME_SCHEMA
-	case analysis.RenameSequence:
-		return storepb.StatementType_RENAME_SEQUENCE
-	case analysis.Comment:
-		return storepb.StatementType_COMMENT
-	case analysis.Truncate:
-		return storepb.StatementType_TRUNCATE
-	case analysis.Insert:
-		return storepb.StatementType_INSERT
-	case analysis.Update:
-		return storepb.StatementType_UPDATE
-	case analysis.Delete:
-		return storepb.StatementType_DELETE
-	case analysis.Merge:
-		return storepb.StatementType_MERGE
-	case analysis.Execute:
-		return storepb.StatementType_EXECUTE
-	default:
-		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-	}
+var statementTypeMap = map[analysis.StatementType]storepb.StatementType{
+	analysis.CreateDatabase: storepb.StatementType_CREATE_DATABASE,
+	analysis.CreateTable:    storepb.StatementType_CREATE_TABLE,
+	analysis.CreateView:     storepb.StatementType_CREATE_VIEW,
+	analysis.CreateIndex:    storepb.StatementType_CREATE_INDEX,
+	analysis.CreateSequence: storepb.StatementType_CREATE_SEQUENCE,
+	analysis.CreateSchema:   storepb.StatementType_CREATE_SCHEMA,
+	analysis.CreateFunction: storepb.StatementType_CREATE_FUNCTION,
+	analysis.DropDatabase:   storepb.StatementType_DROP_DATABASE,
+	analysis.DropTable:      storepb.StatementType_DROP_TABLE,
+	analysis.DropView:       storepb.StatementType_DROP_VIEW,
+	analysis.DropSchema:     storepb.StatementType_DROP_SCHEMA,
+	analysis.DropIndex:      storepb.StatementType_DROP_INDEX,
+	analysis.DropSequence:   storepb.StatementType_DROP_SEQUENCE,
+	analysis.DropFunction:   storepb.StatementType_DROP_FUNCTION,
+	analysis.AlterDatabase:  storepb.StatementType_ALTER_DATABASE,
+	analysis.AlterTable:     storepb.StatementType_ALTER_TABLE,
+	analysis.AlterView:      storepb.StatementType_ALTER_VIEW,
+	analysis.AlterIndex:     storepb.StatementType_ALTER_INDEX,
+	analysis.AlterSequence:  storepb.StatementType_ALTER_SEQUENCE,
+	analysis.RenameIndex:    storepb.StatementType_RENAME_INDEX,
+	analysis.RenameSchema:   storepb.StatementType_RENAME_SCHEMA,
+	analysis.RenameSequence: storepb.StatementType_RENAME_SEQUENCE,
+	analysis.Comment:        storepb.StatementType_COMMENT,
+	analysis.Truncate:       storepb.StatementType_TRUNCATE,
+	analysis.Insert:         storepb.StatementType_INSERT,
+	analysis.Update:         storepb.StatementType_UPDATE,
+	analysis.Delete:         storepb.StatementType_DELETE,
+	analysis.Merge:          storepb.StatementType_MERGE,
+	analysis.Execute:        storepb.StatementType_EXECUTE,
 }

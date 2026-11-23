@@ -27,7 +27,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"net"
 	"strings"
 
@@ -42,10 +41,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -62,9 +58,7 @@ func init() {
 
 // Driver is the Spanner driver.
 type Driver struct {
-	config db.ConnectionConfig
-
-	impl *spannerdriver.Driver
+	util.OmniAdapter
 	// admin lists the instance's databases with their dialects. SyncInstance
 	// keeps Bytebase's GoogleSQL-only listing until the parser routes by
 	// database dialect, and spanner/driver's instance list does not carry one.
@@ -97,8 +91,12 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		_ = impl.Close()
 		return nil, err
 	}
-	d.config = config
-	d.impl = impl
+	d.OmniAdapter = util.OmniAdapter{
+		Driver:           impl,
+		NotFoundResource: "database",
+		DatabaseName:     config.ConnectionContext.DatabaseName,
+	}
+	d.AddCloser(admin)
 	d.admin = admin
 	d.instancePath = fmt.Sprintf("projects/%s/instances/%s", config.DataSource.GetProjectId(), config.DataSource.GetInstanceId())
 	return d, nil
@@ -111,15 +109,12 @@ func spannerConfig(config db.ConnectionConfig) (odriver.Config, error) {
 	cfg := odriver.Config{
 		Host:     ds.GetHost(),
 		Port:     ds.GetPort(),
-		Database: config.ConnectionContext.DatabaseName,
+		Database: util.ResolveDatabaseName(config),
 		Password: config.Password,
 		Params: map[string]string{
 			spannerdriver.ParamProject:  ds.GetProjectId(),
 			spannerdriver.ParamInstance: ds.GetInstanceId(),
 		},
-	}
-	if cfg.Database == "" {
-		cfg.Database = ds.GetDatabase()
 	}
 	// Bytebase carries a Cloud credential in the data source, where the
 	// instance's IAM extension holds it. A caller that resolved one itself
@@ -213,50 +208,31 @@ func databaseAdminOptions(cfg odriver.Config) ([]option.ClientOption, error) {
 	return options, nil
 }
 
-// Close closes the driver.
-func (d *Driver) Close(_ context.Context) error {
-	var closeErr error
-	if d.admin != nil {
-		closeErr = d.admin.Close()
-	}
-	if err := d.impl.Close(); closeErr == nil {
-		closeErr = err
-	}
-	return closeErr
-}
-
-// Ping pings the instance.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.impl.Ping(ctx)
-}
-
 // Execute executes a SQL statement. spanner/driver splits the script by the
 // database's dialect, applies a script that holds any DDL statement through the
 // admin API whole, and runs the rest as DML.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	transactionMode, _, cleaned := util.ParseTransactionMode(statement)
-	return d.impl.Execute(ctx, cleaned, odriver.ExecuteOptions{
-		Transaction:    transactionMode,
-		CreateDatabase: opts.CreateDatabase,
-		MaxRetries:     opts.MaximumRetries,
-		// Spanner's driver logs only transaction control entries (no per-statement command logs).
-		Log: util.NewExecuteLogger(opts, util.WithSkipCommandLogs()),
+	// Spanner's driver logs only transaction control entries (no per-statement command logs).
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		ParseTransactionDirective: true,
+		PassCreateDatabase:        true,
+		PassMaxRetries:            true,
+		LoggerOptions:             []util.ExecuteLoggerOption{util.WithSkipCommandLogs()},
 	})
 }
 
 // QueryConn queries a SQL statement. Spanner has no session state a statement
 // can set, so each statement reads in a single-use transaction of its own.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	session, err := d.impl.Session(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer session.Close()
-
-	results, err := session.Query(ctx, statement, odriver.QueryOptions{
-		Limit:          queryContext.Limit,
-		Explain:        queryContext.Explain,
-		MaxResultBytes: queryContext.MaximumSQLResultSize,
+	var results []*odriver.Result
+	err := d.QueryEphemeral(ctx, func(session odriver.Session) error {
+		var queryErr error
+		results, queryErr = session.Query(ctx, statement, odriver.QueryOptions{
+			Limit:          queryContext.Limit,
+			Explain:        queryContext.Explain,
+			MaxResultBytes: queryContext.MaximumSQLResultSize,
+		})
+		return queryErr
 	})
 	if err != nil {
 		return nil, err
@@ -267,81 +243,23 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 // toQueryResults converts spanner/driver's results into the API's, keeping each
 // statement's error, plan and latency.
 func toQueryResults(results []*odriver.Result, maxResultBytes int64, isExplainRequest bool) []*v1pb.QueryResult {
-	if len(results) == 0 {
-		return nil
-	}
-	queryResults := make([]*v1pb.QueryResult, 0, len(results))
-	for _, result := range results {
-		queryResults = append(queryResults, toQueryResult(result, maxResultBytes, isExplainRequest))
-	}
-	return queryResults
-}
-
-// toQueryResult converts one result. isExplainRequest keeps the typed plan out
-// of an explain request's results: QueryPlan describes a plan the caller's own
-// statement asked for, not the one the request asked the driver to build.
-func toQueryResult(result *odriver.Result, maxResultBytes int64, isExplainRequest bool) *v1pb.QueryResult {
-	queryResult := &v1pb.QueryResult{
-		Statement: result.Statement,
-		Latency:   durationpb.New(result.Latency),
-	}
-	if !isExplainRequest {
-		queryResult.QueryPlan = planOf(result.Plan)
-	}
-	if result.AffectedRows != nil {
-		affected := util.BuildAffectedRowsResult(*result.AffectedRows, nil)
-		affected.Statement = result.Statement
-		affected.Latency = queryResult.Latency
-		affected.RowsCount = int64(len(affected.Rows))
-		return affected
-	}
-	for _, column := range result.Columns {
-		queryResult.ColumnNames = append(queryResult.ColumnNames, column.Name)
-		queryResult.ColumnTypeNames = append(queryResult.ColumnTypeNames, column.TypeName)
-	}
-	for _, row := range result.Rows {
-		values := make([]*v1pb.RowValue, 0, len(row))
-		for _, value := range row {
-			values = append(values, toRowValue(value))
-		}
-		queryResult.Rows = append(queryResult.Rows, &v1pb.QueryRow{Values: values})
-	}
-	queryResult.RowsCount = int64(len(queryResult.Rows))
-	if result.Truncated {
-		queryResult.Error = util.FormatMaximumSQLResultSizeMessage(maxResultBytes)
-	}
-	if result.Err != nil {
-		queryResult.Error = result.Err.Error()
-	}
-	return queryResult
-}
-
-func planOf(plan *odriver.Plan) *v1pb.QueryResult_QueryPlan {
-	if plan == nil {
-		return nil
-	}
-	return db.TypedExplainPlan(plan.Format, plan.Executed, true)
+	return util.OmniResultsToQueryResultsWith(results, maxResultBytes, util.QueryResultOptions{
+		ClearExplainPlan: isExplainRequest,
+		TypedExplainPlan: true,
+		ConvertValue:     toRowValue,
+	})
 }
 
 func toRowValue(value odriver.Value) *v1pb.RowValue {
 	switch value.Kind {
-	case odriver.Bool:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value.Bool}}
-	case odriver.Bytes:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.Bytes}}
-	case odriver.Float32, odriver.Float64:
+	case odriver.Float32:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: value.Float64}}
-	case odriver.Int32, odriver.Int64:
+	case odriver.Int32:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: value.Int64}}
-	case odriver.String, odriver.Structured:
+	case odriver.Structured:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String}}
-	case odriver.Timestamp:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampValue{
-			TimestampValue: &v1pb.RowValue_Timestamp{
-				GoogleTimestamp: timestamppb.New(value.Time),
-				Accuracy:        value.Precision,
-			},
-		}}
+	case odriver.Bool, odriver.Bytes, odriver.Float64, odriver.Int64, odriver.String, odriver.Timestamp:
+		return util.OmniRowValue(value)
 	default:
 		return util.NullRowValue
 	}
@@ -383,23 +301,6 @@ func getDatabaseFromResource(name string) (string, error) {
 		return "", errors.New("invalid DSN")
 	}
 	return name[index+len(marker):], nil
-}
-
-// SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	metadata, err := d.impl.SyncDatabase(ctx)
-	if err != nil {
-		if errors.Is(err, odriver.ErrNotFound) {
-			return nil, common.Errorf(common.NotFound, "database %q not found", d.config.ConnectionContext.DatabaseName)
-		}
-		return nil, err
-	}
-	return metadata, nil
-}
-
-// Dump dumps the database's schema as its server states it.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, metadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.impl.Dump(ctx, out, metadata)
 }
 
 // isEmulator reports whether the caller's parameters name the Cloud Spanner

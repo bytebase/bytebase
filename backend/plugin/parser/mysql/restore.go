@@ -2,13 +2,9 @@ package mysql
 
 import (
 	"context"
-	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/mysql/analysis"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -18,31 +14,27 @@ func init() {
 }
 
 func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
-	originalSQL, err := extractStatement(statement, backupItem)
+	originalSQL, err := base.ExtractSingleStatement(statement, backupItem, base.ExtractStatementOptions{
+		SplitSQL: SplitSQL,
+		Match:    analysis.ReferencesTable,
+	})
 	if err != nil {
-		return "", errors.Errorf("failed to extract single SQL: %v", err)
+		return "", err
 	}
 
-	// Parse the filtered SQL and find its DML nodes; the first decides.
-	matchingNodes, err := analysis.DMLs(originalSQL)
+	matchingNodes, err := base.CheckRestoreDMLs(analysis.DMLs(originalSQL))
 	if err != nil {
-		return "", errors.Wrap(err, "failed to parse statement")
-	}
-	if len(matchingNodes) == 0 {
-		return "", errors.Errorf("no DML statement found in extracted SQL")
+		return "", err
 	}
 
-	_, _, sourceDatabase, err := common.GetDatabaseResourceName(backupItem.SourceTable.Database)
+	sourceDatabase, targetDatabase, err := base.ParseBackupItemDatabases(backupItem)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
+		return "", err
 	}
-	_, _, targetDatabase, err := common.GetDatabaseResourceName(backupItem.TargetTable.Database)
+	catalog := newBackupCatalog(ctx, rCtx.InstanceID, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc)
+	columns, err := base.ClassifyRestoreColumns(rCtx, catalog, backupItem.SourceTable, sourceDatabase, analysis.ClassifyColumns)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get target database ID for %s", backupItem.TargetTable.Database)
-	}
-	columns, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc, rCtx.IsCaseSensitive, rCtx.InstanceID, sourceDatabase, backupItem.SourceTable.Table)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to classify columns for %s.%s", backupItem.SourceTable.Database, backupItem.SourceTable.Table)
+		return "", err
 	}
 
 	return analysis.RestoreSQL(matchingNodes, analysis.RestoreOptions{
@@ -52,71 +44,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		BackupDatabase: targetDatabase,
 		BackupTable:    backupItem.TargetTable.Table,
 		Columns:        columns.Normal,
-		Catalog:        newBackupCatalog(ctx, rCtx.InstanceID, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc),
+		Catalog:        catalog,
 		CaseSensitive:  rCtx.IsCaseSensitive,
 	})
-}
-
-// extractStatement returns the statements between the backup item's positions
-// that change its source table.
-func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
-	if backupItem == nil {
-		return "", errors.Errorf("backup item is nil")
-	}
-
-	list, err := SplitSQL(statement)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to split sql")
-	}
-
-	start := 0
-	end := len(list) - 1
-	for i, item := range list {
-		if equalOrLess(item.Start, backupItem.StartPosition) {
-			start = i
-		}
-	}
-
-	for i := len(list) - 1; i >= 0; i-- {
-		if equalOrGreater(list[i].Start, backupItem.EndPosition) {
-			end = i
-		}
-	}
-
-	_, _, sourceDatabase, err := common.GetDatabaseResourceName(backupItem.SourceTable.Database)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
-	}
-
-	var result []string
-	for i := start; i <= end; i++ {
-		containsSourceTable, err := analysis.ReferencesTable(list[i].Text, sourceDatabase, backupItem.SourceTable.Table)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to parse sql")
-		}
-		if containsSourceTable {
-			result = append(result, list[i].Text)
-		}
-	}
-	return strings.Join(result, ""), nil
-}
-
-func equalOrLess(a, b *storepb.Position) bool {
-	if a.Line < b.Line {
-		return true
-	}
-	if a.Line == b.Line && a.Column <= b.Column {
-		return true
-	}
-	return false
-}
-
-func equalOrGreater(a, b *storepb.Position) bool {
-	if a.Line > b.Line {
-		return true
-	}
-	if a.Line == b.Line && a.Column >= b.Column {
-		return true
-	}
-	return false
 }

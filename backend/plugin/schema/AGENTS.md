@@ -40,7 +40,7 @@ const (
 To regenerate, set `record` to `true`, run that one test, and set it back:
 
 ```bash
-go test ./backend/plugin/schema/tidb/ -run '^TestGetDatabaseDefinition$' -count=1
+go test ./backend/plugin/schema/mssql/ -run '^TestGetDatabaseDefinition$' -count=1
 ```
 
 - Commit the fixture and the restored `record = false` together. A `record = true`
@@ -53,8 +53,8 @@ go test ./backend/plugin/schema/tidb/ -run '^TestGetDatabaseDefinition$' -count=
 
 - YAML block scalars cannot carry tabs, trailing whitespace, or a leading
   newline. A value with any of them is stored as one unreadable quoted line.
-  Indent fixture SQL with spaces; trim a leading newline before comparing, as
-  the PostgreSQL definition test does. Trailing whitespace usually arrives from
+  Indent fixture SQL with spaces; trim a leading newline before comparing when
+  the header opens with a blank line. Trailing whitespace usually arrives from
   a `definition`/`body` field, not the generator — strip it in the fixture.
 - yaml.v3 escapes astral-plane characters, so a golden containing an emoji is
   always a quoted line. Two are, deliberately: they cover 4-byte UTF-8.
@@ -63,24 +63,14 @@ go test ./backend/plugin/schema/tidb/ -run '^TestGetDatabaseDefinition$' -count=
 
 ## Deviations
 
-Oracle's migration inputs are `oldMetadata`/`newMetadata`, protojson captured
-from a real Oracle, where every other engine's are `oldSchema`/`newSchema`
-schema text. Converting them would rewrite all 34 cases: a metadata/DDL/metadata
-round trip is lossless for 0 of its 68 blobs.
+Oracle, PostgreSQL (including CockroachDB), MySQL, OceanBase, and TiDB run
+their metadata extraction, definition rendering, simulation, and metadata
+migrations on their omni catalogs, so their golden YAML corpora live in
+`omni/{oracle,pg,mysql,oceanbase,tidb}/catalog/testdata/` under omni's own
+gates. Bytebase keeps focused seam tests in `backend/plugin/schema/<engine>/`
+for registry wiring, backup/scratch filtering, `stripUnrenderedFacts` /
+`SkipDump`, `legacy_normalize.go`, `omnicatalog` prechecks, and error-to-advice
+mapping.
 
-PostgreSQL registers no `GetDatabaseMetadata`, so it has no fixture for it. Its
-metadata migrations run on omni's catalog and are
-tested in omni's `pg/catalog`, against PostgreSQL. CockroachDB shares that
-catalog because its synced metadata is PostgreSQL-shaped and omni has no
-CockroachDB catalog. `testdata/cutover_parity.yaml` records the CockroachDB
-migrations Bytebase's deleted generator produced, so every text change the
-catalog makes stays named.
-
-MySQL's, MariaDB's, OceanBase's and TiDB's metadata migrations run on their omni
-catalogs, so their goldens live in omni (`mysql/catalog/testdata/metadata_migration.yaml`,
-`mariadb/catalog/testdata/metadata_migration/`, `oceanbase/catalog/testdata/metadata_migration.yaml`,
-each with omni's own `record` flag and an oracle test). No Bytebase generator is
-left in the family. omni has no TiDB migration corpus yet, so TiDB keeps
-`tidb/testdata/cutover_parity.yaml` beside its hand-written assertions, and
-`mariadb/testdata/cutover_parity.yaml` records what the deleted generator wrote
-for MariaDB and OceanBase and why each group of cases moved.
+`mariadb/testdata/cutover_parity.yaml` records what the deleted Bytebase
+generator wrote for MariaDB and OceanBase and why each group of cases moved.

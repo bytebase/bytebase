@@ -36,13 +36,23 @@
       KEY idx_category (category),
       KEY idx_price (price)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-  newSchema: ''
-  legacyExpected: "DROP TABLE IF EXISTS `books`;\n\nDROP TABLE IF EXISTS `products`;\n\nDROP TABLE IF EXISTS `authors`;\n\n"
-  catalogExpected: "ALTER TABLE `books` DROP FOREIGN KEY `fk_author`;\nDROP TABLE `authors`;\nDROP TABLE `books`;\nDROP TABLE `products`"
-  err: ''
+  newSchema: ""
+  legacyExpected: |+
+    DROP TABLE IF EXISTS `books`;
+
+    DROP TABLE IF EXISTS `products`;
+
+    DROP TABLE IF EXISTS `authors`;
+
+  catalogExpected: |-
+    ALTER TABLE `books` DROP FOREIGN KEY `fk_author`;
+    DROP TABLE `authors`;
+    DROP TABLE `books`;
+    DROP TABLE `products`
+  err: ""
 - description: Create tables with foreign key constraints
   difference: the catalog saves and restores explicit_defaults_for_timestamp around creates, writes CREATE TABLE without IF NOT EXISTS, adds secondary indexes as ALTER TABLE ... ADD KEY, renders int as int(11) and CURRENT_TIMESTAMP as current_timestamp(), and separates statements with a newline; the old generator wrote CREATE INDEX statements, left blank lines between statements, and had no session framing
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE TABLE users (
         id INT NOT NULL AUTO_INCREMENT,
@@ -64,9 +74,54 @@
         INDEX idx_user_id (user_id),
         CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  legacyExpected: "CREATE TABLE IF NOT EXISTS `posts` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `user_id` int NOT NULL,\n  `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,\n  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `published_at` datetime DEFAULT NULL,\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\nCREATE INDEX `idx_user_id` ON `posts` (`user_id`);\n\n\nCREATE TABLE IF NOT EXISTS `users` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,\n  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,\n  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uk_email` (`email`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\nCREATE INDEX `idx_username` ON `users` (`username`);\n\n\nALTER TABLE `posts` ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE;\n\n"
-  catalogExpected: "SET @saved_explicit_defaults_for_timestamp = @@explicit_defaults_for_timestamp, explicit_defaults_for_timestamp = 1;\nCREATE TABLE `posts` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `user_id` int(11) NOT NULL,\n  `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,\n  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `published_at` datetime DEFAULT NULL,\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\nCREATE TABLE `users` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,\n  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,\n  `created_at` timestamp NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\nALTER TABLE `posts` ADD KEY `idx_user_id` (`user_id`);\nALTER TABLE `users` ADD UNIQUE KEY `uk_email` (`email`);\nALTER TABLE `users` ADD KEY `idx_username` (`username`);\nALTER TABLE `posts` ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION;\nSET explicit_defaults_for_timestamp = @saved_explicit_defaults_for_timestamp"
-  err: ''
+  legacyExpected: |+
+    CREATE TABLE IF NOT EXISTS `posts` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `user_id` int NOT NULL,
+      `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+      `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+      `published_at` datetime DEFAULT NULL,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    CREATE INDEX `idx_user_id` ON `posts` (`user_id`);
+
+
+    CREATE TABLE IF NOT EXISTS `users` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+      `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_email` (`email`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    CREATE INDEX `idx_username` ON `users` (`username`);
+
+
+    ALTER TABLE `posts` ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE;
+
+  catalogExpected: |-
+    SET @saved_explicit_defaults_for_timestamp = @@explicit_defaults_for_timestamp, explicit_defaults_for_timestamp = 1;
+    CREATE TABLE `posts` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `user_id` int(11) NOT NULL,
+      `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+      `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+      `published_at` datetime DEFAULT NULL,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    CREATE TABLE `users` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+      `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+      `created_at` timestamp NULL DEFAULT current_timestamp(),
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ALTER TABLE `posts` ADD KEY `idx_user_id` (`user_id`);
+    ALTER TABLE `users` ADD KEY `idx_username` (`username`);
+    ALTER TABLE `users` ADD UNIQUE KEY `uk_email` (`email`);
+    ALTER TABLE `posts` ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION;
+    SET explicit_defaults_for_timestamp = @saved_explicit_defaults_for_timestamp
+  err: ""
 - description: Drop indexes and constraints from tables
   difference: the catalog adds secondary indexes as ALTER TABLE ... ADD KEY after the unique key and drops a CHECK expression's redundant parentheses; the old generator wrote CREATE INDEX statements ahead of the unique key
   oldSchema: |
@@ -93,9 +148,27 @@
         CONSTRAINT chk_price_positive CHECK (price > 0),
         CONSTRAINT chk_name_length CHECK (CHAR_LENGTH(name) >= 3)
     ) ENGINE=InnoDB;
-  legacyExpected: "CREATE INDEX `idx_category` ON `products` (`category`);\n\nCREATE INDEX `idx_name` ON `products` (`name`);\n\nCREATE INDEX `idx_price` ON `products` (`price`);\n\nALTER TABLE `products` ADD UNIQUE KEY `uk_sku` (`sku`);\n\nALTER TABLE `products` ADD CONSTRAINT `chk_name_length` CHECK (char_length(`name`) >= 3);\n\nALTER TABLE `products` ADD CONSTRAINT `chk_price_positive` CHECK (`price` > 0);\n\n"
-  catalogExpected: "ALTER TABLE `products` ADD UNIQUE KEY `uk_sku` (`sku`);\nALTER TABLE `products` ADD KEY `idx_name` (`name`);\nALTER TABLE `products` ADD KEY `idx_category` (`category`);\nALTER TABLE `products` ADD KEY `idx_price` (`price`);\nALTER TABLE `products` ADD CONSTRAINT `chk_name_length` CHECK (char_length(`name`) >= 3);\nALTER TABLE `products` ADD CONSTRAINT `chk_price_positive` CHECK (`price` > 0)"
-  err: ''
+  legacyExpected: |+
+    CREATE INDEX `idx_category` ON `products` (`category`);
+
+    CREATE INDEX `idx_name` ON `products` (`name`);
+
+    CREATE INDEX `idx_price` ON `products` (`price`);
+
+    ALTER TABLE `products` ADD UNIQUE KEY `uk_sku` (`sku`);
+
+    ALTER TABLE `products` ADD CONSTRAINT `chk_name_length` CHECK (char_length(`name`) >= 3);
+
+    ALTER TABLE `products` ADD CONSTRAINT `chk_price_positive` CHECK (`price` > 0);
+
+  catalogExpected: |-
+    ALTER TABLE `products` ADD KEY `idx_category` (`category`);
+    ALTER TABLE `products` ADD KEY `idx_name` (`name`);
+    ALTER TABLE `products` ADD KEY `idx_price` (`price`);
+    ALTER TABLE `products` ADD UNIQUE KEY `uk_sku` (`sku`);
+    ALTER TABLE `products` ADD CONSTRAINT `chk_name_length` CHECK (char_length(`name`) >= 3);
+    ALTER TABLE `products` ADD CONSTRAINT `chk_price_positive` CHECK (`price` > 0)
+  err: ""
 - description: 'Reverse: Add indexes and constraints'
   difference: the catalog drops an index with ALTER TABLE ... DROP INDEX; the old generator wrote DROP INDEX ... ON ...
   oldSchema: |
@@ -122,9 +195,28 @@
         sku VARCHAR(50) NOT NULL,
         PRIMARY KEY (id)
     ) ENGINE=InnoDB;
-  legacyExpected: "ALTER TABLE `products` DROP CONSTRAINT `chk_name_length`;\n\nALTER TABLE `products` DROP CONSTRAINT `chk_price_positive`;\n\nDROP INDEX `idx_category` ON `products`;\n\nDROP INDEX `idx_name` ON `products`;\n\nDROP INDEX `idx_price` ON `products`;\n\nDROP INDEX `uk_sku` ON `products`;\n\n\n"
-  catalogExpected: "ALTER TABLE `products` DROP CONSTRAINT `chk_name_length`;\nALTER TABLE `products` DROP CONSTRAINT `chk_price_positive`;\nALTER TABLE `products` DROP INDEX `idx_category`;\nALTER TABLE `products` DROP INDEX `idx_name`;\nALTER TABLE `products` DROP INDEX `idx_price`;\nALTER TABLE `products` DROP INDEX `uk_sku`"
-  err: ''
+  legacyExpected: |+
+    ALTER TABLE `products` DROP CONSTRAINT `chk_name_length`;
+
+    ALTER TABLE `products` DROP CONSTRAINT `chk_price_positive`;
+
+    DROP INDEX `idx_category` ON `products`;
+
+    DROP INDEX `idx_name` ON `products`;
+
+    DROP INDEX `idx_price` ON `products`;
+
+    DROP INDEX `uk_sku` ON `products`;
+
+
+  catalogExpected: |-
+    ALTER TABLE `products` DROP CONSTRAINT `chk_name_length`;
+    ALTER TABLE `products` DROP CONSTRAINT `chk_price_positive`;
+    ALTER TABLE `products` DROP INDEX `idx_category`;
+    ALTER TABLE `products` DROP INDEX `idx_name`;
+    ALTER TABLE `products` DROP INDEX `idx_price`;
+    ALTER TABLE `products` DROP INDEX `uk_sku`
+  err: ""
 - description: 'Reverse: Drop triggers and views'
   difference: the catalog recreates the view as one CREATE OR REPLACE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW and puts it before the triggers; the old generator created it plain, replaced it afterwards, and sorted it after the triggers
   oldSchema: |
@@ -199,11 +291,47 @@
         MAX(changed_at) AS last_changed
     FROM inventory_log
     GROUP BY product_id;
-  legacyExpected: "CREATE VIEW `inventory_changes` AS SELECT 1;\n\nCREATE TRIGGER `trg_inventory_delete` BEFORE DELETE ON `inventory` FOR EACH ROW BEGIN\n    INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)\n    VALUES (OLD.product_id, OLD.quantity, NULL, 'DELETE');\nEND;\n\nCREATE TRIGGER `trg_inventory_insert` AFTER INSERT ON `inventory` FOR EACH ROW BEGIN\n    INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)\n    VALUES (NEW.product_id, NULL, NEW.quantity, 'INSERT');\nEND;\n\nCREATE TRIGGER `trg_inventory_update` AFTER UPDATE ON `inventory` FOR EACH ROW BEGIN\n    IF OLD.quantity != NEW.quantity THEN\n        INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)\n        VALUES (NEW.product_id, OLD.quantity, NEW.quantity, 'UPDATE');\n    END IF;\nEND;\n\nCREATE OR REPLACE VIEW `inventory_changes` AS select `inventory_log`.`product_id` AS `product_id`,count(0) AS `change_count`,max(`inventory_log`.`changed_at`) AS `last_changed` from `inventory_log` group by `inventory_log`.`product_id`;\n\n"
-  catalogExpected: "CREATE OR REPLACE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `inventory_changes` AS select `inventory_log`.`product_id` AS `product_id`,count(0) AS `change_count`,max(`inventory_log`.`changed_at`) AS `last_changed` from `inventory_log` group by `inventory_log`.`product_id`;\nCREATE TRIGGER `trg_inventory_delete` BEFORE DELETE ON `inventory` FOR EACH ROW BEGIN\n    INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)\n    VALUES (OLD.product_id, OLD.quantity, NULL, 'DELETE');\nEND;\nCREATE TRIGGER `trg_inventory_insert` AFTER INSERT ON `inventory` FOR EACH ROW BEGIN\n    INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)\n    VALUES (NEW.product_id, NULL, NEW.quantity, 'INSERT');\nEND;\nCREATE TRIGGER `trg_inventory_update` AFTER UPDATE ON `inventory` FOR EACH ROW BEGIN\n    IF OLD.quantity != NEW.quantity THEN\n        INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)\n        VALUES (NEW.product_id, OLD.quantity, NEW.quantity, 'UPDATE');\n    END IF;\nEND"
-  err: ''
+  legacyExpected: |+
+    CREATE VIEW `inventory_changes` AS SELECT 1;
+
+    CREATE TRIGGER `trg_inventory_delete` BEFORE DELETE ON `inventory` FOR EACH ROW BEGIN
+        INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+        VALUES (OLD.product_id, OLD.quantity, NULL, 'DELETE');
+    END;
+
+    CREATE TRIGGER `trg_inventory_insert` AFTER INSERT ON `inventory` FOR EACH ROW BEGIN
+        INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+        VALUES (NEW.product_id, NULL, NEW.quantity, 'INSERT');
+    END;
+
+    CREATE TRIGGER `trg_inventory_update` AFTER UPDATE ON `inventory` FOR EACH ROW BEGIN
+        IF OLD.quantity != NEW.quantity THEN
+            INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+            VALUES (NEW.product_id, OLD.quantity, NEW.quantity, 'UPDATE');
+        END IF;
+    END;
+
+    CREATE OR REPLACE VIEW `inventory_changes` AS select `inventory_log`.`product_id` AS `product_id`,count(0) AS `change_count`,max(`inventory_log`.`changed_at`) AS `last_changed` from `inventory_log` group by `inventory_log`.`product_id`;
+
+  catalogExpected: |-
+    CREATE OR REPLACE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `inventory_changes` AS select `inventory_log`.`product_id` AS `product_id`,count(0) AS `change_count`,max(`inventory_log`.`changed_at`) AS `last_changed` from `inventory_log` group by `inventory_log`.`product_id`;
+    CREATE TRIGGER `trg_inventory_delete` BEFORE DELETE ON `inventory` FOR EACH ROW BEGIN
+        INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+        VALUES (OLD.product_id, OLD.quantity, NULL, 'DELETE');
+    END;
+    CREATE TRIGGER `trg_inventory_insert` AFTER INSERT ON `inventory` FOR EACH ROW BEGIN
+        INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+        VALUES (NEW.product_id, NULL, NEW.quantity, 'INSERT');
+    END;
+    CREATE TRIGGER `trg_inventory_update` AFTER UPDATE ON `inventory` FOR EACH ROW BEGIN
+        IF OLD.quantity != NEW.quantity THEN
+            INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+            VALUES (NEW.product_id, OLD.quantity, NEW.quantity, 'UPDATE');
+        END IF;
+    END
+  err: ""
 - description: Stored functions and dependent tables
-  difference: 'the catalog refuses the diff: a routine parsed from a schema text carries its body alone, not the SHOW CREATE text the loader installs, so the routine cannot be loaded. The old generator wrote that bare body out, which is not executable DDL.'
+  difference: the catalog drops the table before the functions without IF EXISTS and separates statements with a newline; the old generator dropped functions first with IF EXISTS and left blank lines between statements
   oldSchema: |
     CREATE TABLE sales (
         id INT NOT NULL AUTO_INCREMENT,
@@ -257,12 +385,21 @@
         PRIMARY KEY (id),
         INDEX idx_product_date (product_id, sale_date)
     ) ENGINE=InnoDB;
-  legacyExpected: "DROP FUNCTION IF EXISTS `CalculateTotalSales`;\n\nDROP FUNCTION IF EXISTS `GetTaxAmount`;\n\nDROP TABLE IF EXISTS `sales_summary`;\n\n"
-  catalogExpected: ''
-  err: "cannot generate a migration for objects whose definitions could not be loaded: function:CalculateTotalSales: syntax error at or near \"DECLARE\" (line 2, column 5)\nrelated text:     DECLARE total DECIMAL(10, 2);; function:GetTaxAmount: syntax error at or near \"RETURN\" (line 2, column 5)\nrelated text:     RETURN amount * (tax_rate / 100);"
+  legacyExpected: |+
+    DROP FUNCTION IF EXISTS `CalculateTotalSales`;
+
+    DROP FUNCTION IF EXISTS `GetTaxAmount`;
+
+    DROP TABLE IF EXISTS `sales_summary`;
+
+  catalogExpected: |-
+    DROP TABLE `sales_summary`;
+    DROP FUNCTION `CalculateTotalSales`;
+    DROP FUNCTION `GetTaxAmount`
+  err: ""
 - description: Recreating a partitioned table from metadata
   difference: the catalog creates the table without its partitioning and re-partitions it with a separate ALTER TABLE ... PARTITION BY, and renders int as int(11); the old generator embedded the partition clause in the CREATE TABLE as a /*!50100 */ version comment
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE TABLE ads_member_asset_by_account_channel_d (
         dt DATE NOT NULL,
@@ -278,9 +415,37 @@
         PARTITION p2 VALUES LESS THAN (739002),
         PARTITION p_future VALUES LESS THAN MAXVALUE
     );
-  legacyExpected: "CREATE TABLE IF NOT EXISTS `ads_member_asset_by_account_channel_d` (\n  `dt` date NOT NULL,\n  `member_id` bigint NOT NULL,\n  `account_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,\n  `net_asset_amount` decimal(38,10) DEFAULT NULL,\n  PRIMARY KEY (`dt`, `member_id`, `account_type`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci\n/*!50100 PARTITION BY RANGE (to_days(`dt`))\n(PARTITION `p0` VALUES LESS THAN (739000) ENGINE=InnoDB,\n PARTITION `p1` VALUES LESS THAN (739001) ENGINE=InnoDB,\n PARTITION `p2` VALUES LESS THAN (739002) ENGINE=InnoDB,\n PARTITION `p_future` VALUES LESS THAN MAXVALUE ENGINE=InnoDB) */;\nCREATE INDEX `sindex` ON `ads_member_asset_by_account_channel_d` (`dt`, `member_id`, `account_type`);\n\n\n"
-  catalogExpected: "CREATE TABLE `ads_member_asset_by_account_channel_d` (\n  `dt` date NOT NULL,\n  `member_id` bigint(20) NOT NULL,\n  `account_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,\n  `net_asset_amount` decimal(38,10) DEFAULT NULL,\n  PRIMARY KEY (`dt`,`member_id`,`account_type`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\nALTER TABLE `ads_member_asset_by_account_channel_d` ADD KEY `sindex` (`dt`,`member_id`,`account_type`);\nALTER TABLE `ads_member_asset_by_account_channel_d`  PARTITION BY RANGE (to_days(`dt`))\n(PARTITION `p0` VALUES LESS THAN (739000) ENGINE = innodb,\n PARTITION `p1` VALUES LESS THAN (739001) ENGINE = innodb,\n PARTITION `p2` VALUES LESS THAN (739002) ENGINE = innodb,\n PARTITION `p_future` VALUES LESS THAN MAXVALUE ENGINE = innodb)"
-  err: ''
+  legacyExpected: |+
+    CREATE TABLE IF NOT EXISTS `ads_member_asset_by_account_channel_d` (
+      `dt` date NOT NULL,
+      `member_id` bigint NOT NULL,
+      `account_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+      `net_asset_amount` decimal(38,10) DEFAULT NULL,
+      PRIMARY KEY (`dt`, `member_id`, `account_type`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    /*!50100 PARTITION BY RANGE (to_days(`dt`))
+    (PARTITION `p0` VALUES LESS THAN (739000) ENGINE=InnoDB,
+     PARTITION `p1` VALUES LESS THAN (739001) ENGINE=InnoDB,
+     PARTITION `p2` VALUES LESS THAN (739002) ENGINE=InnoDB,
+     PARTITION `p_future` VALUES LESS THAN MAXVALUE ENGINE=InnoDB) */;
+    CREATE INDEX `sindex` ON `ads_member_asset_by_account_channel_d` (`dt`, `member_id`, `account_type`);
+
+
+  catalogExpected: |-
+    CREATE TABLE `ads_member_asset_by_account_channel_d` (
+      `dt` date NOT NULL,
+      `member_id` bigint(20) NOT NULL,
+      `account_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+      `net_asset_amount` decimal(38,10) DEFAULT NULL,
+      PRIMARY KEY (`dt`,`member_id`,`account_type`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    ALTER TABLE `ads_member_asset_by_account_channel_d` ADD KEY `sindex` (`dt`,`member_id`,`account_type`);
+    ALTER TABLE `ads_member_asset_by_account_channel_d`  PARTITION BY RANGE (to_days(`dt`))
+    (PARTITION `p0` VALUES LESS THAN (739000) ENGINE = innodb,
+     PARTITION `p1` VALUES LESS THAN (739001) ENGINE = innodb,
+     PARTITION `p2` VALUES LESS THAN (739002) ENGINE = innodb,
+     PARTITION `p_future` VALUES LESS THAN MAXVALUE ENGINE = innodb)
+  err: ""
 - description: 'Reverse: Drop JSON columns and indexes'
   difference: the catalog renders a json column as the longtext ... CHECK (json_valid(...)) it is in MariaDB, adds functional indexes as ALTER TABLE ... ADD KEY, and puts the CHECK constraint last; the old generator kept the json alias
   oldSchema: |
@@ -312,12 +477,95 @@
         INDEX idx_brand (brand),
         CONSTRAINT chk_details_not_empty CHECK (JSON_TYPE(details) IS NOT NULL)
     ) ENGINE=InnoDB;
-  legacyExpected: "CREATE TABLE IF NOT EXISTS `products` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,\n  `details` json NOT NULL,\n  `tags` json DEFAULT NULL,\n  `brand` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci GENERATED ALWAYS AS (json_unquote(json_extract(`details`,_utf8mb4'$.brand'))) VIRTUAL,\n  PRIMARY KEY (`id`),\n  CONSTRAINT `chk_details_not_empty` CHECK ((json_type(`details`) is not null))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;\nCREATE INDEX `idx_product_brand` ON `products` (`cast(json_unquote(json_extract(`details`,_utf8mb4'$.brand')) as char(50) charset utf8mb4)`);\n\nCREATE INDEX `idx_product_price` ON `products` (`cast(json_unquote(json_extract(`details`,_utf8mb4'$.price')) as decimal(10,2))`);\n\nCREATE INDEX `idx_brand` ON `products` (`brand`);\n\n\nALTER TABLE `users` ADD COLUMN `preferences` json DEFAULT NULL;\n\nALTER TABLE `users` ADD COLUMN `metadata` json DEFAULT NULL;\n\n"
-  catalogExpected: "CREATE TABLE `products` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,\n  `details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`details`)),\n  `tags` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`tags`)),\n  `brand` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci GENERATED ALWAYS AS (json_unquote(json_extract(`details`,_utf8mb4'$.brand'))) VIRTUAL,\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;\nALTER TABLE `users` ADD COLUMN `preferences` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`preferences`));\nALTER TABLE `users` ADD COLUMN `metadata` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`metadata`));\nALTER TABLE `products` ADD KEY `idx_product_brand` ((cast(json_unquote(json_extract(`details`,_utf8mb4'$.brand')) as char(50) charset utf8mb4)));\nALTER TABLE `products` ADD KEY `idx_product_price` ((cast(json_unquote(json_extract(`details`,_utf8mb4'$.price')) as decimal(10,2))));\nALTER TABLE `products` ADD KEY `idx_brand` (`brand`);\nALTER TABLE `products` ADD CONSTRAINT `chk_details_not_empty` CHECK (json_type(`details`) is not null)"
-  err: ''
+  legacyExpected: |+
+    CREATE TABLE IF NOT EXISTS `products` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+      `details` json NOT NULL,
+      `tags` json DEFAULT NULL,
+      `brand` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci GENERATED ALWAYS AS (json_unquote(json_extract(`details`,_utf8mb4'$.brand'))) VIRTUAL,
+      PRIMARY KEY (`id`),
+      CONSTRAINT `chk_details_not_empty` CHECK ((json_type(`details`) is not null))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+    CREATE INDEX `idx_product_brand` ON `products` (`cast(json_unquote(json_extract(`details`,_utf8mb4'$.brand')) as char(50) charset utf8mb4)`);
+
+    CREATE INDEX `idx_product_price` ON `products` (`cast(json_unquote(json_extract(`details`,_utf8mb4'$.price')) as decimal(10,2))`);
+
+    CREATE INDEX `idx_brand` ON `products` (`brand`);
+
+
+    ALTER TABLE `users` ADD COLUMN `preferences` json DEFAULT NULL;
+
+    ALTER TABLE `users` ADD COLUMN `metadata` json DEFAULT NULL;
+
+  catalogExpected: |-
+    CREATE TABLE `products` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+      `details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`details`)),
+      `tags` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`tags`)),
+      `brand` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci GENERATED ALWAYS AS (json_unquote(json_extract(`details`,_utf8mb4'$.brand'))) VIRTUAL,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+    ALTER TABLE `users` ADD COLUMN `preferences` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`preferences`));
+    ALTER TABLE `users` ADD COLUMN `metadata` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`metadata`));
+    ALTER TABLE `products` ADD KEY `idx_brand` (`brand`);
+    ALTER TABLE `products` ADD KEY `idx_product_brand` ((cast(json_unquote(json_extract(`details`,_utf8mb4'$.brand')) as char(50) charset utf8mb4)));
+    ALTER TABLE `products` ADD KEY `idx_product_price` ((cast(json_unquote(json_extract(`details`,_utf8mb4'$.price')) as decimal(10,2))));
+    ALTER TABLE `products` ADD CONSTRAINT `chk_details_not_empty` CHECK (json_type(`details`) is not null)
+  err: ""
 - description: Verify no migration generated for identical schemas (tests primary key, index, check constraints, DEFAULT NULL fixes)
   difference: the catalog emits nothing because the two snapshots agree once column types are canonicalized; the old generator rewrote eight columns that differed only in DEFAULT NULL and charset normalization
-  oldSchema: "--\n-- Table structure for `some_table`\n--\nCREATE TABLE `some_table` (\n  `id` int NOT NULL,\n  `a` int NOT NULL,\n  PRIMARY KEY (`id`),\n  CONSTRAINT `some_table_chk_1` CHECK (`a` in (1,2,3))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;\n\n--\n-- Table structure for `t`\n--\nCREATE TABLE `t` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `name` char(255) DEFAULT (NULL),\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;\n\n--\n-- Table structure for `t1`\n--\nCREATE TABLE `t1` (\n  `id` int NOT NULL,\n  `a` int NOT NULL,\n  `b` int DEFAULT (NULL),\n  `c` int DEFAULT (NULL),\n  PRIMARY KEY (`id`),\n  KEY `b` (`b`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;\n\n--\n-- Table structure for `test_table`\n--\nCREATE TABLE `test_table` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `name` varchar(100) DEFAULT (NULL),\n  `email` varchar(100) DEFAULT (NULL),\n  `status` varchar(20) DEFAULT ('active'),\n  `age` int DEFAULT (NULL),\n  `score` decimal(5,2) DEFAULT (NULL),\n  PRIMARY KEY (`id`),\n  KEY `idx_name` (`name`),\n  KEY `idx_status_hash` (`status`),\n  UNIQUE KEY `uk_email` (`email`),\n  CONSTRAINT `chk_age` CHECK (`age` >= 18),\n  CONSTRAINT `chk_status` CHECK (`status` in ('active','inactive','pending'))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;\n\n"
+  oldSchema: |+
+    --
+    -- Table structure for `some_table`
+    --
+    CREATE TABLE `some_table` (
+      `id` int NOT NULL,
+      `a` int NOT NULL,
+      PRIMARY KEY (`id`),
+      CONSTRAINT `some_table_chk_1` CHECK (`a` in (1,2,3))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `t`
+    --
+    CREATE TABLE `t` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` char(255) DEFAULT (NULL),
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `t1`
+    --
+    CREATE TABLE `t1` (
+      `id` int NOT NULL,
+      `a` int NOT NULL,
+      `b` int DEFAULT (NULL),
+      `c` int DEFAULT (NULL),
+      PRIMARY KEY (`id`),
+      KEY `b` (`b`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `test_table`
+    --
+    CREATE TABLE `test_table` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) DEFAULT (NULL),
+      `email` varchar(100) DEFAULT (NULL),
+      `status` varchar(20) DEFAULT ('active'),
+      `age` int DEFAULT (NULL),
+      `score` decimal(5,2) DEFAULT (NULL),
+      PRIMARY KEY (`id`),
+      KEY `idx_name` (`name`),
+      KEY `idx_status_hash` (`status`),
+      UNIQUE KEY `uk_email` (`email`),
+      CONSTRAINT `chk_age` CHECK (`age` >= 18),
+      CONSTRAINT `chk_status` CHECK (`status` in ('active','inactive','pending'))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
   newSchema: |
     -- Test that identical schemas don't generate unnecessary migrations
     -- This tests the fixes for primary key, index type, check constraints, and DEFAULT NULL
@@ -359,12 +607,56 @@
         a INT NOT NULL,
         CONSTRAINT some_table_chk_1 CHECK (a IN (1, 2, 3))
     ) ENGINE=InnoDB;
-  legacyExpected: "ALTER TABLE `t` MODIFY COLUMN `name` char(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;\n\nALTER TABLE `t1` MODIFY COLUMN `b` int DEFAULT NULL;\n\nALTER TABLE `t1` MODIFY COLUMN `c` int DEFAULT NULL;\n\nALTER TABLE `test_table` MODIFY COLUMN `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;\n\nALTER TABLE `test_table` MODIFY COLUMN `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;\n\nALTER TABLE `test_table` MODIFY COLUMN `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'active';\n\nALTER TABLE `test_table` MODIFY COLUMN `age` int DEFAULT NULL;\n\nALTER TABLE `test_table` MODIFY COLUMN `score` decimal(5,2) DEFAULT NULL;\n\n"
-  catalogExpected: ''
-  err: ''
+  legacyExpected: |+
+    ALTER TABLE `t` MODIFY COLUMN `name` char(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;
+
+    ALTER TABLE `t1` MODIFY COLUMN `b` int DEFAULT NULL;
+
+    ALTER TABLE `t1` MODIFY COLUMN `c` int DEFAULT NULL;
+
+    ALTER TABLE `test_table` MODIFY COLUMN `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;
+
+    ALTER TABLE `test_table` MODIFY COLUMN `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;
+
+    ALTER TABLE `test_table` MODIFY COLUMN `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'active';
+
+    ALTER TABLE `test_table` MODIFY COLUMN `age` int DEFAULT NULL;
+
+    ALTER TABLE `test_table` MODIFY COLUMN `score` decimal(5,2) DEFAULT NULL;
+
+  catalogExpected: ""
+  err: ""
 - description: Modify existing comments and remove comments by setting to empty string
   difference: the catalog writes ALTER TABLE ... COMMENT='...' before the column changes; the old generator appended the comment changes after them
-  oldSchema: "--\n-- Table structure for `order_items`\n--\nCREATE TABLE `order_items` (\n  `id` int NOT NULL AUTO_INCREMENT COMMENT 'Line item identifier',\n  `order_id` int NOT NULL COMMENT 'Reference to parent order',\n  `product_name` varchar(150) NOT NULL COMMENT 'Full product name including variant details',\n  `quantity` int NOT NULL COMMENT 'Quantity ordered (must be positive)',\n  `unit_price` decimal(10,2) NOT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_order` (`order_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;\n\n--\n-- Table structure for `orders`\n--\nCREATE TABLE `orders` (\n  `id` int NOT NULL AUTO_INCREMENT COMMENT 'Order unique identifier',\n  `customer_name` varchar(100) NOT NULL COMMENT 'Full name of the purchasing customer',\n  `order_date` date NOT NULL,\n  `total_amount` decimal(10,2) DEFAULT NULL,\n  `status` varchar(20) DEFAULT 'pending' COMMENT 'Order processing status (pending, processing, shipped, delivered, cancelled)',\n  `notes` text DEFAULT NULL COMMENT 'Special delivery instructions and customer notes',\n  PRIMARY KEY (`id`),\n  KEY `idx_date` (`order_date`),\n  KEY `idx_status` (`status`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Customer purchase orders with tracking information';\n\n"
+  oldSchema: |+
+    --
+    -- Table structure for `order_items`
+    --
+    CREATE TABLE `order_items` (
+      `id` int NOT NULL AUTO_INCREMENT COMMENT 'Line item identifier',
+      `order_id` int NOT NULL COMMENT 'Reference to parent order',
+      `product_name` varchar(150) NOT NULL COMMENT 'Full product name including variant details',
+      `quantity` int NOT NULL COMMENT 'Quantity ordered (must be positive)',
+      `unit_price` decimal(10,2) NOT NULL,
+      PRIMARY KEY (`id`),
+      KEY `idx_order` (`order_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `orders`
+    --
+    CREATE TABLE `orders` (
+      `id` int NOT NULL AUTO_INCREMENT COMMENT 'Order unique identifier',
+      `customer_name` varchar(100) NOT NULL COMMENT 'Full name of the purchasing customer',
+      `order_date` date NOT NULL,
+      `total_amount` decimal(10,2) DEFAULT NULL,
+      `status` varchar(20) DEFAULT 'pending' COMMENT 'Order processing status (pending, processing, shipped, delivered, cancelled)',
+      `notes` text DEFAULT NULL COMMENT 'Special delivery instructions and customer notes',
+      PRIMARY KEY (`id`),
+      KEY `idx_date` (`order_date`),
+      KEY `idx_status` (`status`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Customer purchase orders with tracking information';
+
   newSchema: |
     CREATE TABLE orders (
         id INT NOT NULL AUTO_INCREMENT COMMENT 'Order unique identifier',
@@ -387,6 +679,36 @@
         PRIMARY KEY (id),
         INDEX idx_order (order_id)
     ) ENGINE=InnoDB COMMENT = 'Individual line items for each order';
-  legacyExpected: "ALTER TABLE `order_items` MODIFY COLUMN `product_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'Name of ordered product';\n\nALTER TABLE `order_items` MODIFY COLUMN `quantity` int NOT NULL COMMENT 'Number of items ordered';\n\nALTER TABLE `order_items` MODIFY COLUMN `unit_price` decimal(10,2) NOT NULL COMMENT 'Price per individual item';\n\nALTER TABLE `order_items` COMMENT = 'Individual line items for each order';\n\nALTER TABLE `orders` MODIFY COLUMN `customer_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'Customer full name';\n\nALTER TABLE `orders` MODIFY COLUMN `order_date` date NOT NULL COMMENT 'Date when order was placed';\n\nALTER TABLE `orders` MODIFY COLUMN `total_amount` decimal(10,2) DEFAULT NULL COMMENT 'Total order amount in USD';\n\nALTER TABLE `orders` MODIFY COLUMN `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'pending' COMMENT 'Current order status';\n\nALTER TABLE `orders` MODIFY COLUMN `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'Additional order notes or special instructions';\n\nALTER TABLE `orders` COMMENT = 'Customer orders and order details';\n\n"
-  catalogExpected: "ALTER TABLE `order_items` COMMENT='Individual line items for each order';\nALTER TABLE `orders` COMMENT='Customer orders and order details';\nALTER TABLE `order_items` MODIFY COLUMN `product_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'Name of ordered product';\nALTER TABLE `order_items` MODIFY COLUMN `quantity` int(11) NOT NULL COMMENT 'Number of items ordered';\nALTER TABLE `order_items` MODIFY COLUMN `unit_price` decimal(10,2) NOT NULL COMMENT 'Price per individual item';\nALTER TABLE `orders` MODIFY COLUMN `customer_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'Customer full name';\nALTER TABLE `orders` MODIFY COLUMN `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'Additional order notes or special instructions';\nALTER TABLE `orders` MODIFY COLUMN `order_date` date NOT NULL COMMENT 'Date when order was placed';\nALTER TABLE `orders` MODIFY COLUMN `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'pending' COMMENT 'Current order status';\nALTER TABLE `orders` MODIFY COLUMN `total_amount` decimal(10,2) DEFAULT NULL COMMENT 'Total order amount in USD'"
-  err: ''
+  legacyExpected: |+
+    ALTER TABLE `order_items` MODIFY COLUMN `product_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'Name of ordered product';
+
+    ALTER TABLE `order_items` MODIFY COLUMN `quantity` int NOT NULL COMMENT 'Number of items ordered';
+
+    ALTER TABLE `order_items` MODIFY COLUMN `unit_price` decimal(10,2) NOT NULL COMMENT 'Price per individual item';
+
+    ALTER TABLE `order_items` COMMENT = 'Individual line items for each order';
+
+    ALTER TABLE `orders` MODIFY COLUMN `customer_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'Customer full name';
+
+    ALTER TABLE `orders` MODIFY COLUMN `order_date` date NOT NULL COMMENT 'Date when order was placed';
+
+    ALTER TABLE `orders` MODIFY COLUMN `total_amount` decimal(10,2) DEFAULT NULL COMMENT 'Total order amount in USD';
+
+    ALTER TABLE `orders` MODIFY COLUMN `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'pending' COMMENT 'Current order status';
+
+    ALTER TABLE `orders` MODIFY COLUMN `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'Additional order notes or special instructions';
+
+    ALTER TABLE `orders` COMMENT = 'Customer orders and order details';
+
+  catalogExpected: |-
+    ALTER TABLE `order_items` COMMENT='Individual line items for each order';
+    ALTER TABLE `orders` COMMENT='Customer orders and order details';
+    ALTER TABLE `order_items` MODIFY COLUMN `product_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'Name of ordered product';
+    ALTER TABLE `order_items` MODIFY COLUMN `quantity` int(11) NOT NULL COMMENT 'Number of items ordered';
+    ALTER TABLE `order_items` MODIFY COLUMN `unit_price` decimal(10,2) NOT NULL COMMENT 'Price per individual item';
+    ALTER TABLE `orders` MODIFY COLUMN `customer_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'Customer full name';
+    ALTER TABLE `orders` MODIFY COLUMN `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'Additional order notes or special instructions';
+    ALTER TABLE `orders` MODIFY COLUMN `order_date` date NOT NULL COMMENT 'Date when order was placed';
+    ALTER TABLE `orders` MODIFY COLUMN `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'pending' COMMENT 'Current order status';
+    ALTER TABLE `orders` MODIFY COLUMN `total_amount` decimal(10,2) DEFAULT NULL COMMENT 'Total order amount in USD'
+  err: ""

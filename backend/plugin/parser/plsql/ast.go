@@ -3,7 +3,6 @@ package plsql
 import (
 	"errors"
 	"fmt"
-	"unicode/utf8"
 
 	"github.com/bytebase/omni/oracle/analysis"
 	"github.com/bytebase/omni/oracle/ast"
@@ -47,31 +46,9 @@ func GetNode(a base.AST) (ast.Node, bool) {
 	return wrapped.Node, true
 }
 
-// ByteOffsetToRunePosition converts a byte offset in sql to a 1-based line:column
-// where column is measured in Unicode code points (runes), matching storepb.Position semantics.
+// ByteOffsetToRunePosition converts a byte offset in sql to a 1-based line:column position.
 func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
-	if byteOffset > len(sql) {
-		byteOffset = len(sql)
-	}
-
-	line := int32(1)
-	runeCol := int32(0) // 0-based rune count on current line
-	i := 0
-	for i < byteOffset {
-		r, size := utf8.DecodeRuneInString(sql[i:])
-		if r == '\n' {
-			line++
-			runeCol = 0
-		} else {
-			runeCol++
-		}
-		i += size
-	}
-
-	return &storepb.Position{
-		Line:   line,
-		Column: runeCol + 1, // convert to 1-based
-	}
+	return base.ByteOffsetToRunePosition(sql, byteOffset)
 }
 
 func convertError(err error, stmt base.Statement) error {
@@ -83,13 +60,7 @@ func convertError(err error, stmt base.Statement) error {
 }
 
 func convertParseError(parseErr *oracleparser.ParseError, stmt base.Statement) *base.SyntaxError {
-	pos := ByteOffsetToRunePosition(stmt.Text, parseErr.Position)
-	if stmt.Start != nil {
-		if pos.Line == 1 {
-			pos.Column += stmt.Start.Column - 1
-		}
-		pos.Line += stmt.Start.Line - 1
-	}
+	pos := base.ShiftPosition(ByteOffsetToRunePosition(stmt.Text, parseErr.Position), stmt.Start)
 
 	msg := fmt.Sprintf("Syntax error at line %d:%d: %s", pos.Line, pos.Column, parseErr.Message)
 	return &base.SyntaxError{

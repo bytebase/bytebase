@@ -14,108 +14,67 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// TestSearchPathResolution proves the rule honors PG's search_path GUC for
-// unqualified table refs. Codex P2 (#3104277513): hardcoding `public` makes
-// deployments using a different search_path silently miss violations.
-func TestSearchPathResolution(t *testing.T) {
-	// Custom mock: indexed `tech_book(name)` lives ONLY in `app_schema`.
-	// public is empty. SearchPath puts app_schema first.
-	dbSchema := &metadatapb.DatabaseSchemaMetadata{
-		Name:       "test",
-		SearchPath: "app_schema, public",
-		Schemas: []*metadatapb.SchemaMetadata{
-			{Name: "public"},
-			{
-				Name: "app_schema",
-				Tables: []*metadatapb.TableMetadata{
-					{
-						Name: "tech_book",
-						Columns: []*metadatapb.ColumnMetadata{
-							{Name: "id", Type: "integer"},
-							{Name: "name", Type: "text"},
-						},
-						Indexes: []*metadatapb.IndexMetadata{
-							{Name: "tech_book_name_idx", Expressions: []string{"name"}},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	stmt := "SELECT * FROM tech_book WHERE UPPER(name) = 'X';"
+// TestWhereDisallowFunctionsSearchPathSeam proves the PG adapter passes the
+// resolved search_path (including $user expansion via SessionUser) to omni's
+// StatementWhereDisallowFunctionsAndCalculations.
+func TestWhereDisallowFunctionsSearchPathSeam(t *testing.T) {
 	rule := &storepb.SQLReviewRule{
 		Type:   storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
 		Level:  storepb.SQLReviewRule_WARNING,
 		Engine: storepb.Engine_POSTGRES,
 	}
-	originalMetadata := model.NewDatabaseMetadata(dbSchema, nil, nil, storepb.Engine_POSTGRES, true /* isCaseSensitive */)
-	checkCtx := advisor.Context{
-		DBType:                storepb.Engine_POSTGRES,
-		OriginalMetadata:      originalMetadata,
-		FinalMetadata:         originalMetadata,
-		CurrentDatabase:       "test",
-		DBSchema:              dbSchema,
-		IsObjectCaseSensitive: true,
-		NoAppendBuiltin:       true,
-	}
-
-	sm := sheet.NewManager()
-	advice, err := advisor.SQLReviewCheck(context.Background(), sm, stmt, []*storepb.SQLReviewRule{rule}, checkCtx)
-	require.NoError(t, err)
-	require.Len(t, advice, 1, "expected exactly one advice for UPPER(name) on indexed col in app_schema (search_path)")
-	require.Contains(t, advice[0].Content, `Function "UPPER" is applied to indexed column "name"`)
-}
-
-// TestSearchPathSessionUserResolution proves the rule resolves the `$user`
-// search_path entry against checkCtx.SessionUser. Codex P2 (#3104477258):
-// using parameterless GetSearchPath drops `$user`, so deployments with
-// `search_path = "$user", public` miss tables in the session-user schema.
-func TestSearchPathSessionUserResolution(t *testing.T) {
-	dbSchema := &metadatapb.DatabaseSchemaMetadata{
-		Name:       "test",
-		SearchPath: `"$user", public`,
-		Schemas: []*metadatapb.SchemaMetadata{
-			{Name: "public"},
-			{
-				Name: "alice",
-				Tables: []*metadatapb.TableMetadata{
+	for _, tc := range []struct {
+		name        string
+		searchPath  string
+		schemaName  string
+		sessionUser string
+	}{
+		{
+			name:       "explicit search_path",
+			searchPath: "app_schema, public",
+			schemaName: "app_schema",
+		},
+		{
+			name:        "session user expands $user entry",
+			searchPath:  `"$user", public`,
+			schemaName:  "alice",
+			sessionUser: "alice",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dbSchema := &metadatapb.DatabaseSchemaMetadata{
+				Name:       "test",
+				SearchPath: tc.searchPath,
+				Schemas: []*metadatapb.SchemaMetadata{
+					{Name: "public"},
 					{
-						Name: "tech_book",
-						Columns: []*metadatapb.ColumnMetadata{
-							{Name: "id", Type: "integer"},
-							{Name: "name", Type: "text"},
-						},
-						Indexes: []*metadatapb.IndexMetadata{
-							{Name: "tech_book_name_idx", Expressions: []string{"name"}},
-						},
+						Name: tc.schemaName,
+						Tables: []*metadatapb.TableMetadata{{
+							Name:    "tech_book",
+							Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}, {Name: "name", Type: "text"}},
+							Indexes: []*metadatapb.IndexMetadata{{Name: "tech_book_name_idx", Expressions: []string{"name"}}},
+						}},
 					},
 				},
-			},
-		},
+			}
+			md := model.NewDatabaseMetadata(dbSchema, nil, nil, storepb.Engine_POSTGRES, true)
+			advice, err := advisor.SQLReviewCheck(context.Background(), sheet.NewManager(),
+				"SELECT * FROM tech_book WHERE UPPER(name) = 'X';",
+				[]*storepb.SQLReviewRule{rule},
+				advisor.Context{
+					DBType:                storepb.Engine_POSTGRES,
+					OriginalMetadata:      md,
+					FinalMetadata:         md,
+					CurrentDatabase:       "test",
+					DBSchema:              dbSchema,
+					IsObjectCaseSensitive: true,
+					SessionUser:           tc.sessionUser,
+					NoAppendBuiltin:       true,
+				},
+			)
+			require.NoError(t, err)
+			require.Len(t, advice, 1)
+			require.Contains(t, advice[0].Content, `Function "UPPER" is applied to indexed column "name"`)
+		})
 	}
-
-	stmt := "SELECT * FROM tech_book WHERE UPPER(name) = 'X';"
-	rule := &storepb.SQLReviewRule{
-		Type:   storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
-		Level:  storepb.SQLReviewRule_WARNING,
-		Engine: storepb.Engine_POSTGRES,
-	}
-	originalMetadata := model.NewDatabaseMetadata(dbSchema, nil, nil, storepb.Engine_POSTGRES, true)
-	checkCtx := advisor.Context{
-		DBType:                storepb.Engine_POSTGRES,
-		OriginalMetadata:      originalMetadata,
-		FinalMetadata:         originalMetadata,
-		CurrentDatabase:       "test",
-		DBSchema:              dbSchema,
-		IsObjectCaseSensitive: true,
-		SessionUser:           "alice",
-		NoAppendBuiltin:       true,
-	}
-
-	sm := sheet.NewManager()
-	advice, err := advisor.SQLReviewCheck(context.Background(), sm, stmt, []*storepb.SQLReviewRule{rule}, checkCtx)
-	require.NoError(t, err)
-	require.Len(t, advice, 1, "expected exactly one advice for UPPER(name) in $user-resolved schema (alice)")
-	require.Contains(t, advice[0].Content, `Function "UPPER" is applied to indexed column "name"`)
 }

@@ -2,106 +2,62 @@ package elasticsearch
 
 import (
 	"context"
-	"io"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common/yamltest"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestGetQuerySpan(t *testing.T) {
-	type testCase struct {
-		Description string         `yaml:"description,omitempty"`
-		Statement   string         `yaml:"statement,omitempty"`
-		QueryType   base.QueryType `yaml:"queryType,omitempty"`
-	}
+func TestGetQuerySpanSeam(t *testing.T) {
+	ctx := context.Background()
 
-	const (
-		record       = false
-		testDataPath = "test-data/query_span.yaml"
+	// Registry dispatch, QueryType conversion, ElasticsearchAnalysis, and nested PathAST conversion.
+	spans, err := base.GetQuerySpan(
+		ctx,
+		base.GetQuerySpanContext{},
+		storepb.Engine_ELASTICSEARCH,
+		[]base.Statement{{Text: "GET /users/_search\n{\"query\":{\"match\":{\"contact.email\":\"alice@example.com\"}}}"}},
+		"",
+		"",
+		false,
 	)
+	require.NoError(t, err)
+	require.Len(t, spans, 1)
+	span := spans[0]
+	require.NotNil(t, span)
+	require.Equal(t, base.Select, span.Type)
+	require.NotNil(t, span.ElasticsearchAnalysis)
+	require.Equal(t, base.ElasticsearchAPIMaskSearch, span.ElasticsearchAnalysis.API)
+	require.Equal(t, "users", span.ElasticsearchAnalysis.Index)
+	require.Contains(t, span.PredicatePaths, "contact.email")
+	pathStr, err := span.PredicatePaths["contact.email"].String()
+	require.NoError(t, err)
+	require.Equal(t, "contact.email", pathStr)
 
-	a := require.New(t)
-
-	yamlFile, err := os.Open(testDataPath)
-	a.NoError(err)
-
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(err)
-	a.NoError(yamlFile.Close())
-
-	var testCases []testCase
-	a.NoError(yaml.Unmarshal(byteValue, &testCases))
-
-	for i, tc := range testCases {
-		t.Run(tc.Description, func(_ *testing.T) {
-			span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: tc.Statement}, "", "", false)
-			a.NoError(err)
-			a.NotNil(span)
-			if record {
-				testCases[i].QueryType = span.Type
-			} else {
-				a.Equalf(tc.QueryType, span.Type, "description: %s, statement: %s", tc.Description, tc.Statement)
-			}
-		})
-	}
-
-	if record {
-		yamltest.Record(t, testDataPath, testCases)
-	}
-}
-
-func TestGetQuerySpanPredicatePaths(t *testing.T) {
-	tests := []struct {
-		description    string
-		statement      string
-		predicatePaths map[string]bool
+	// QueryType variants across DML, DDL, Select, and SelectInfoSchema, plus GetDoc API mapping.
+	for _, tc := range []struct {
+		stmt    string
+		want    base.QueryType
+		wantAPI base.ElasticsearchMaskableAPI
 	}{
-		{
-			description: "search with match predicate",
-			statement:   "GET /users/_search\n{\"query\":{\"match\":{\"email\":\"alice\"}}}",
-			predicatePaths: map[string]bool{
-				"email": true,
-			},
-		},
-		{
-			description: "search with nested bool query",
-			statement:   "GET /users/_search\n{\"query\":{\"bool\":{\"must\":[{\"term\":{\"status\":\"active\"}},{\"range\":{\"age\":{\"gte\":18}}}]}}}",
-			predicatePaths: map[string]bool{
-				"status": true,
-				"age":    true,
-			},
-		},
-		{
-			description:    "get doc returns no predicates",
-			statement:      "GET /users/_doc/123",
-			predicatePaths: map[string]bool{},
-		},
+		{"POST /users/_doc/1\n{\"name\":\"alice\"}", base.DML, base.ElasticsearchAPIUnsupported},
+		{"DELETE /users", base.DDL, base.ElasticsearchAPIUnsupported},
+		{"GET /users/_doc/1", base.Select, base.ElasticsearchAPIMaskGetDoc},
+		{"GET /_cat/indices", base.SelectInfoSchema, base.ElasticsearchAPIUnsupported},
+	} {
+		got, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{}, storepb.Engine_ELASTICSEARCH, []base.Statement{{Text: tc.stmt}}, "", "", false)
+		require.NoError(t, err, tc.stmt)
+		require.Len(t, got, 1, tc.stmt)
+		require.Equal(t, tc.want, got[0].Type, tc.stmt)
+		require.NotNil(t, got[0].ElasticsearchAnalysis, tc.stmt)
+		require.Equal(t, tc.wantAPI, got[0].ElasticsearchAnalysis.API, tc.stmt)
 	}
 
-	a := require.New(t)
-	for _, tc := range tests {
-		span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: tc.statement}, "", "", false)
-		a.NoError(err, tc.description)
-		a.Equal(len(tc.predicatePaths), len(span.PredicatePaths), tc.description)
-		for path := range tc.predicatePaths {
-			_, ok := span.PredicatePaths[path]
-			a.True(ok, "%s: missing path %q", tc.description, path)
-		}
-	}
-}
-
-func TestGetQuerySpan_Error(t *testing.T) {
-	// MongoDB style query, definitely not ElasticSearch
-	stmt := "db.users.find({})"
-	span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: stmt}, "", "", false)
-
-	// New behavior: returns error
+	// Syntax error propagation.
+	errSpans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{}, storepb.Engine_ELASTICSEARCH, []base.Statement{{Text: "db.users.find({})"}}, "", "", false)
 	require.Error(t, err)
-	require.Nil(t, span)
+	require.Nil(t, errSpans)
 	require.Contains(t, err.Error(), "syntax error at line 0, column 3")
 }

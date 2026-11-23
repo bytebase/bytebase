@@ -15,11 +15,10 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// TestTableRequirePKSearchPath proves the rule follows the walkthrough's name
-// resolution: the configured search_path, in-batch SET search_path, and drops
-// that change which same-named table an unqualified name refers to.
-// with_pk and without_pk live only in app_schema; shadow exists in both
-// schemas, with a PK only in public; legacy exists in both without a PK.
+// TestTableRequirePKSearchPath proves Bytebase's walkthrough flows search_path
+// resolution into TABLE_REQUIRE_PK across configured search_path, in-batch SET
+// search_path, and in-batch drops. Pure TableRequirePK multi-schema decision
+// logic lives in omni/pg/v1review.
 func TestTableRequirePKSearchPath(t *testing.T) {
 	dbSchema := &metadatapb.DatabaseSchemaMetadata{
 		Name:       "test",
@@ -35,10 +34,6 @@ func TestTableRequirePKSearchPath(t *testing.T) {
 							{Name: "shadow_pkey", Expressions: []string{"id"}, Unique: true, Primary: true},
 						},
 					},
-					{
-						Name:    "legacy",
-						Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}},
-					},
 				},
 			},
 			{
@@ -49,23 +44,10 @@ func TestTableRequirePKSearchPath(t *testing.T) {
 						Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}},
 					},
 					{
-						Name:    "legacy",
+						Name:    "with_pk",
 						Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}},
-					},
-					{
-						Name: "with_pk",
-						Columns: []*metadatapb.ColumnMetadata{
-							{Name: "id", Type: "integer"},
-							{Name: "name", Type: "text"},
-						},
 						Indexes: []*metadatapb.IndexMetadata{
 							{Name: "with_pk_pkey", Expressions: []string{"id"}, Unique: true, Primary: true},
-						},
-					},
-					{
-						Name: "without_pk",
-						Columns: []*metadatapb.ColumnMetadata{
-							{Name: "id", Type: "integer"},
 						},
 					},
 				},
@@ -75,36 +57,14 @@ func TestTableRequirePKSearchPath(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		searchPath  string // overrides the fixture search_path when set
+		searchPath  string
 		stmt        string
-		wantContent string // empty means no advice
+		wantContent string
 	}{
 		{
-			name:        "drop PK on unqualified table in non-public schema",
+			name:        "configured search_path resolves unqualified drop PK",
 			stmt:        "ALTER TABLE with_pk DROP CONSTRAINT with_pk_pkey;",
 			wantContent: `Table "app_schema"."with_pk" requires PRIMARY KEY`,
-		},
-		{
-			name:        "drop PK column on unqualified table in non-public schema",
-			stmt:        "ALTER TABLE with_pk DROP COLUMN id;",
-			wantContent: `Table "app_schema"."with_pk" requires PRIMARY KEY`,
-		},
-		{
-			name: "unrelated ALTER on unqualified table with PK",
-			stmt: "ALTER TABLE with_pk ADD COLUMN note TEXT;",
-		},
-		{
-			name: "unrelated ALTER on unqualified table without PK",
-			stmt: "ALTER TABLE without_pk ADD COLUMN note TEXT;",
-		},
-		{
-			name:        "create unqualified table lands in first search_path schema",
-			stmt:        "CREATE TABLE fresh(id INT);",
-			wantContent: `Table "app_schema"."fresh" requires PRIMARY KEY`,
-		},
-		{
-			name: "create then drop unqualified table in same batch",
-			stmt: "CREATE TABLE fresh(id INT); DROP TABLE fresh;",
 		},
 		{
 			name:        "in-batch SET search_path redirects unqualified name",
@@ -113,18 +73,9 @@ func TestTableRequirePKSearchPath(t *testing.T) {
 			wantContent: `Table "app_schema"."with_pk" requires PRIMARY KEY`,
 		},
 		{
-			name:        "in-batch drop changes which same-named table is altered",
+			name:        "in-batch drop redirects unqualified ALTER to remaining schema",
 			stmt:        "DROP TABLE app_schema.shadow; ALTER TABLE shadow DROP CONSTRAINT shadow_pkey;",
 			wantContent: `Table "public"."shadow" requires PRIMARY KEY`,
-		},
-		{
-			name: "unrelated ALTER on same-named table without PK in first schema",
-			stmt: "ALTER TABLE shadow ADD COLUMN note TEXT;",
-		},
-		{
-			name:        "qualified drop and recreate does not touch same-named legacy table elsewhere",
-			stmt:        "DROP TABLE app_schema.legacy; CREATE TABLE app_schema.legacy(id INT);",
-			wantContent: `Table "app_schema"."legacy" requires PRIMARY KEY`,
 		},
 	}
 

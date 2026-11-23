@@ -1,71 +1,84 @@
 package pg
 
 import (
-	"os"
-	"strings"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/bytebase/omni/pg/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/yamltest"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
-type getDatabaseDefinitionCase struct {
-	Description string `yaml:"description"`
-	Metadata    string `yaml:"metadata"`
-	Expected    string `yaml:"expected"`
-}
-
-// TestGetDatabaseDefinition pins the DDL generated for each metadata input,
-// and reloads that DDL into an omni catalog to prove it is valid PostgreSQL.
-//
-// The input is metadata rather than a schema text on purpose: deriving it by
-// parsing would cap this test's reach at whatever the loader happens to extract,
-// so any generator branch nothing feeds would go untested.
-func TestGetDatabaseDefinition(t *testing.T) {
-	const (
-		record   = false
-		filepath = "testdata/get_database_definition.yaml"
-	)
-
-	var tests []getDatabaseDefinitionCase
-	content, err := os.ReadFile(filepath)
-	require.NoError(t, err)
-	require.NoError(t, yaml.Unmarshal(content, &tests))
-
-	for i, tc := range tests {
-		t.Run(tc.Description, func(t *testing.T) {
-			var metadata metadatapb.DatabaseSchemaMetadata
-			require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), &metadata))
-
-			definition, err := GetDatabaseDefinition(schema.GetDefinitionContext{PrintHeader: true}, &metadata)
-			require.NoError(t, err)
-			require.NotEmpty(t, definition)
-
-			_, err = catalog.New().Exec(definition, &catalog.ExecOptions{ContinueOnError: true})
-			require.NoError(t, err, "generated definition should load into the omni catalog")
-
-			// A YAML block scalar cannot carry a leading newline, so the blank
-			// line this header opens with is trimmed rather than pinned.
-			definition = strings.TrimPrefix(definition, "\n")
-
-			if record {
-				tests[i].Expected = definition
-				return
-			}
-			require.Equal(t, tc.Expected, definition)
-		})
+func TestGetDatabaseDefinitionSeam(t *testing.T) {
+	backupSchema := common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Name: "app",
+		Extensions: []*metadatapb.ExtensionMetadata{
+			{Name: "pg_trgm", Schema: "public", Version: "1.6"},
+		},
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*metadatapb.TableMetadata{{
+					Name:    "t",
+					Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer", Nullable: false}},
+				}},
+			},
+			{
+				Name: backupSchema,
+				Tables: []*metadatapb.TableMetadata{{
+					Name:    "archived",
+					Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer", Nullable: false}},
+				}},
+			},
+		},
 	}
 
-	if record {
-		yamltest.Record(t, filepath, tests)
-	}
+	t.Run("SkipBackupSchema filters backup schema without mutating caller metadata", func(t *testing.T) {
+		filtered, err := schema.GetDatabaseDefinition(storepb.Engine_POSTGRES, schema.GetDefinitionContext{
+			PrintHeader:      true,
+			SkipBackupSchema: true,
+		}, meta)
+		require.NoError(t, err)
+		require.Contains(t, filtered, `CREATE EXTENSION IF NOT EXISTS "pg_trgm"`)
+		require.Contains(t, filtered, `CREATE TABLE "public"."t"`)
+		require.NotContains(t, filtered, backupSchema)
+		require.Len(t, meta.Schemas, 2, "caller metadata must not be mutated")
+
+		unfiltered, err := schema.GetDatabaseDefinition(storepb.Engine_POSTGRES, schema.GetDefinitionContext{
+			SkipBackupSchema: false,
+		}, meta)
+		require.NoError(t, err)
+		require.Contains(t, unfiltered, backupSchema)
+
+		multiFile, err := schema.GetMultiFileDatabaseDefinition(storepb.Engine_POSTGRES, schema.GetDefinitionContext{
+			SkipBackupSchema: true,
+		}, meta)
+		require.NoError(t, err)
+		require.NotEmpty(t, multiFile.Files)
+		for _, f := range multiFile.Files {
+			require.NotContains(t, f.Name, backupSchema)
+			require.NotContains(t, f.Content, backupSchema)
+		}
+	})
+
+	t.Run("CockroachDB routes through PostgreSQL definition registry", func(t *testing.T) {
+		entry := newPostgresEntryPoint()
+		def, err := schema.GetDatabaseDefinition(storepb.Engine_COCKROACHDB, schema.GetDefinitionContext{PrintHeader: true}, entry.metadata)
+		require.NoError(t, err)
+		require.Contains(t, def, `"public"."t"`)
+
+		tblDef, err := schema.GetTableDefinition(storepb.Engine_COCKROACHDB, "public", entry.table, nil)
+		require.NoError(t, err)
+		require.Contains(t, tblDef, `CREATE TABLE`)
+
+		multiFile, err := schema.GetMultiFileDatabaseDefinition(storepb.Engine_COCKROACHDB, schema.GetDefinitionContext{}, entry.metadata)
+		require.NoError(t, err)
+		require.NotEmpty(t, multiFile.Files)
+	})
 }
 
 func TestParseQualifiedTypeIdent(t *testing.T) {

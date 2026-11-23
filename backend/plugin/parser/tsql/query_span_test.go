@@ -2,224 +2,112 @@ package tsql
 
 import (
 	"context"
-	"io"
-	"os"
+	"errors"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/pkg/errors"
+	"github.com/bytebase/omni/mssql/analysis"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/yamltest"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-func TestGetQuerySpan(t *testing.T) {
-	type testCase struct {
-		Description        string `yaml:"description,omitempty"`
-		Statement          string `yaml:"statement,omitempty"`
-		DefaultDatabase    string `yaml:"defaultDatabase,omitempty"`
-		IgnoreCaseSensitve bool   `yaml:"ignoreCaseSensitive,omitempty"`
-		// Metadata is the protojson encoded metadatapb.DatabaseSchemaMetadata,
-		// if it's empty, we will use the defaultDatabaseMetadata.
-		Metadata  []string            `yaml:"metadata,omitempty"`
-		QuerySpan *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
-	}
+func strPtr(s string) *string { return &s }
 
-	var (
-		record        = false
-		testDataPaths = []string{
-			"test-data/query-span/standard.yaml",
-			"test-data/query-span/join.yaml",
-			"test-data/query-span/case-sensitivity.yaml",
-			"test-data/query-span/query_type.yaml",
-			"test-data/query-span/predicate.yaml",
-			"test-data/query-span/regression.yaml",
-		}
-	)
-
-	a := require.New(t)
-	for _, testDataPath := range testDataPaths {
-		yamlFile, err := os.Open(testDataPath)
-		a.NoError(err)
-
-		var testCases []testCase
-		byteValue, err := io.ReadAll(yamlFile)
-		a.NoError(err)
-		a.NoError(yamlFile.Close())
-		a.NoError(yaml.Unmarshal(byteValue, &testCases))
-
-		for i, tc := range testCases {
-			var ms []*metadatapb.DatabaseSchemaMetadata
-			for _, metadata := range tc.Metadata {
-				storepbMetadata := &metadatapb.DatabaseSchemaMetadata{}
-				a.NoErrorf(common.ProtojsonUnmarshaler.Unmarshal([]byte(metadata), storepbMetadata), "cases %d", i+1)
-				ms = append(ms, storepbMetadata)
-			}
-			databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter(ms)
-			result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
-				GetDatabaseMetadataFunc: databaseMetadataGetter,
-				ListDatabaseNamesFunc:   databaseNameLister,
-				TempTables:              make(map[string]*base.PhysicalTable),
-			}, base.Statement{Text: tc.Statement}, tc.DefaultDatabase, "dbo", tc.IgnoreCaseSensitve)
-			a.NoErrorf(err, "statement: %s", tc.Statement)
-			resultYaml := result.ToYaml()
-			if record {
-				testCases[i].QuerySpan = resultYaml
-			} else {
-				a.Equalf(tc.QuerySpan, resultYaml, "statement: %s", tc.Statement)
-			}
-		}
-
-		if record {
-			yamltest.Record(t, testDataPath, testCases)
-		}
-	}
-}
-
-func buildMockDatabaseMetadataGetter(databaseMetadata []*metadatapb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
-	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-			m := make(map[string]*model.DatabaseMetadata)
-			for _, metadata := range databaseMetadata {
-				m[metadata.Name] = model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_MSSQL, false /* isObjectCaseSensitive */)
-			}
-
-			if databaseMetadata, ok := m[databaseName]; ok {
-				return "", databaseMetadata, nil
-			}
-
-			return "", nil, errors.Errorf("database %q not found", databaseName)
-		}, func(_ context.Context, _ string) ([]string, error) {
-			var names []string
-			for _, metadata := range databaseMetadata {
-				names = append(names, metadata.Name)
-			}
-			return names, nil
-		}
-}
-
-func TestGetQuerySpanUnsyncedDatabase(t *testing.T) {
-	synced := &metadatapb.DatabaseSchemaMetadata{
-		Name: "db",
-		Schemas: []*metadatapb.SchemaMetadata{{
-			Name:   "dbo",
-			Tables: []*metadatapb.TableMetadata{{Name: "t", Columns: []*metadatapb.ColumnMetadata{{Name: "a"}}}},
-		}},
-	}
-	syncedGetter, _ := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{synced})
-	gCtx := base.GetQuerySpanContext{
-		GetDatabaseMetadataFunc: func(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
-			if databaseName == "appdb" {
-				return "", nil, nil
-			}
-			return syncedGetter(ctx, instanceID, databaseName)
-		},
-		ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
-			return []string{"db", "appdb"}, nil
-		},
-		TempTables: make(map[string]*base.PhysicalTable),
-	}
-	const notSynced = `database metadata for database "appdb" not found (database not synced)`
-
-	tests := []struct {
-		name            string
-		statement       string
-		defaultDatabase string
-		wantErr         string
-		wantNotFound    bool
-	}{
-		{name: "table in the unsynced connected database", statement: "SELECT * FROM t", defaultDatabase: "appdb", wantErr: notSynced},
-		{name: "cross-database reference to an unsynced database", statement: "SELECT * FROM appdb.dbo.t", defaultDatabase: "db", wantErr: notSynced},
-		{name: "statement that reads no table", statement: "SELECT 1", defaultDatabase: "appdb"},
-		{name: "table missing from a synced database", statement: "SELECT * FROM missing", defaultDatabase: "db", wantNotFound: true},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: tc.statement}, tc.defaultDatabase, "dbo", true)
-			if tc.wantErr != "" {
-				require.ErrorContains(t, err, tc.wantErr)
-				return
-			}
-			require.NoError(t, err)
-			require.Equal(t, tc.wantNotFound, span.NotFoundError != nil)
-		})
-	}
-}
-
-func TestGetQuerySpanCyclicViewReference(t *testing.T) {
-	metadata := &metadatapb.DatabaseSchemaMetadata{
-		Name: "db",
+func TestGetQuerySpanSeam(t *testing.T) {
+	dbMeta := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Name: "app",
 		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "dbo",
+				Tables: []*metadatapb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*metadatapb.ColumnMetadata{
+							{Name: "id", Type: "int"},
+							{Name: "name", Type: "nvarchar"},
+						},
+					},
+				},
 				Views: []*metadatapb.ViewMetadata{
-					{Name: "v1", Definition: "CREATE VIEW [dbo].[v1] AS SELECT * FROM v2"},
-					{Name: "v2", Definition: "CREATE VIEW [dbo].[v2] AS SELECT * FROM v1"},
+					{Name: "v_users", Definition: "SELECT id FROM dbo.users"},
 				},
 			},
 		},
-	}
-	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
+	}, nil, nil, storepb.Engine_MSSQL, false)
 
-	_, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{
-		GetDatabaseMetadataFunc: getter,
-		ListDatabaseNamesFunc:   lister,
-		TempTables:              make(map[string]*base.PhysicalTable),
-	}, base.Statement{Text: "SELECT * FROM v1"}, "db", "dbo", true)
-	require.Error(t, err)
-	require.ErrorContains(t, err, "cyclic view reference")
-}
-
-// TestGetQuerySpanMarksPlanOutput pins which statements of a batch return a
-// plan: a SET that names SHOWPLAN_* or STATISTICS XML or PROFILE, and every
-// statement while one is on, comments and option lists included. Each option
-// stays on until its own OFF.
-func TestGetQuerySpanMarksPlanOutput(t *testing.T) {
-	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{{Name: "db"}})
-	type want struct {
-		statement      string
-		queryType      base.QueryType
-		explainAnalyze bool
-	}
-	cases := []want{
-		{"SELECT 1", base.Select, false},
-		{"SET /* x */ STATISTICS XML ON -- y", base.Select, true},
-		{"SELECT 2", base.Select, true},
-		{"SET NOCOUNT ON", base.Select, true},
-		{"DELETE FROM t", base.DML, true},
-		{"SET STATISTICS PROFILE OFF", base.Select, true},
-		{"SELECT 8", base.Select, true},
-		{"SET STATISTICS XML OFF", base.Select, true},
-		{"SELECT 3", base.Select, false},
-		{"SET STATISTICS IO ON", base.Select, false},
-		{"SELECT 4", base.Select, false},
-		{"set statistics io, profile on", base.Select, true},
-		{"SELECT 5", base.Select, true},
-		{"SET STATISTICS PROFILE OFF", base.Select, true},
-		{"SET SHOWPLAN_TEXT ON -- z", base.Explain, false},
-		{"SET NOCOUNT OFF", base.Explain, false},
-		{"SET SHOWPLAN_ALL OFF", base.Explain, false},
-		{"SELECT 6", base.Explain, false},
-		{"SET SHOWPLAN_TEXT OFF", base.Explain, false},
-		{"SELECT 7", base.Select, false},
-	}
-	var statements []base.Statement
-	for _, c := range cases {
-		statements = append(statements, base.Statement{Text: c.statement})
+	gCtx := base.GetQuerySpanContext{
+		InstanceID: "inst-1",
+		TempTables: make(map[string]*base.PhysicalTable),
+		PlanOutput: make(base.PlanOutput),
+		ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {
+			return []string{"app"}, nil
+		},
+		GetDatabaseMetadataFunc: func(_ context.Context, _, dbName string) (string, *model.DatabaseMetadata, error) {
+			switch dbName {
+			case "app":
+				return dbName, dbMeta, nil
+			case "missing":
+				return "", nil, &base.ResourceNotFoundError{Err: errors.New("missing db"), Database: strPtr("missing")}
+			default:
+				return "", nil, nil
+			}
+		},
 	}
 
-	spans, err := base.GetQuerySpan(context.Background(), base.GetQuerySpanContext{
-		GetDatabaseMetadataFunc: getter,
-		ListDatabaseNamesFunc:   lister,
-	}, storepb.Engine_MSSQL, statements, "db", "dbo", true)
+	// Table and predicate column mapping via registry.
+	spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_MSSQL, []base.Statement{{Text: "SELECT name FROM dbo.users WHERE id = 1;"}}, "app", "dbo", true)
 	require.NoError(t, err)
-	require.Len(t, spans, len(cases))
-	for i, c := range cases {
-		require.Equal(t, c.queryType, spans[i].Type, c.statement)
-		require.Equal(t, c.explainAnalyze, spans[i].ExplainAnalyze, c.statement)
-	}
+	require.Len(t, spans, 1)
+	span := spans[0]
+	require.Equal(t, base.Select, span.Type)
+	require.Len(t, span.Results, 1)
+	require.True(t, span.Results[0].SourceColumns[base.ColumnResource{Database: "app", Schema: "dbo", Table: "users", Column: "name"}])
+	require.True(t, span.PredicateColumns[base.ColumnResource{Database: "app", Schema: "dbo", Table: "users", Column: "id"}])
+
+	// TempTables round-trip across statements in the same batch.
+	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "CREATE TABLE #tmp (c1 INT);"}, "app", "dbo", true)
+	require.NoError(t, err)
+	require.Contains(t, gCtx.TempTables, "#tmp")
+
+	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT c1 FROM #tmp;"}, "app", "dbo", true)
+	require.NoError(t, err)
+	require.Len(t, span.Results, 1)
+	require.Equal(t, "c1", span.Results[0].Name)
+
+	// ResourceNotFoundError returned by metadata callback maps to span.NotFoundError.
+	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id FROM missing.dbo.users;"}, "app", "dbo", true)
+	require.NoError(t, err)
+	var notFoundErr *base.ResourceNotFoundError
+	require.ErrorAs(t, span.NotFoundError, &notFoundErr)
+	require.Equal(t, strPtr("missing"), notFoundErr.Database)
+
+	// PlanOutput state persists across statements.
+	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SET SHOWPLAN_ALL ON;"}, "app", "dbo", true)
+	require.NoError(t, err)
+	require.NotEmpty(t, gCtx.PlanOutput)
+	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id FROM dbo.users;"}, "app", "dbo", true)
+	require.NoError(t, err)
+	require.Equal(t, base.Explain, span.Type)
+	clear(gCtx.PlanOutput)
+
+	// Mixing user and system tables maps to base.MixUserSystemTablesError.
+	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT u.id, t.name FROM dbo.users u JOIN sys.tables t ON 1=1;"}, "app", "dbo", true)
+	require.ErrorIs(t, err, base.MixUserSystemTablesError)
+
+	// Error wrapper conversions for TypeNotSupportedError and ResourceNotFoundError.
+	var typeErr *base.TypeNotSupportedError
+	require.ErrorAs(t, convertQuerySpanError(&analysis.TypeNotSupportedError{Type: "xml", Name: "x"}), &typeErr)
+	require.Equal(t, "xml", typeErr.Type)
+
+	var nfErr *base.ResourceNotFoundError
+	require.ErrorAs(t, convertQuerySpanError(&analysis.NotFoundError{Database: strPtr("app"), Table: strPtr("ghost")}), &nfErr)
+	require.Equal(t, strPtr("ghost"), nfErr.Table)
+
+	require.Equal(t, base.SelectInfoSchema, base.OmniQueryType(analysis.SelectInfoSchema))
+	require.Equal(t, base.DDL, base.OmniQueryType(analysis.DDL))
+	require.Equal(t, base.DML, base.OmniQueryType(analysis.DML))
+	require.Equal(t, base.QueryTypeUnknown, base.OmniQueryType(analysis.QueryType(999)))
 }

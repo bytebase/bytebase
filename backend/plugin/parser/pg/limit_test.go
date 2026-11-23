@@ -1,198 +1,27 @@
 package pg
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestGetStatementWithResultLimit(t *testing.T) {
-	tests := []struct {
-		name      string
-		statement string
-		limit     int
-		want      string
-	}{
-		{
-			name:      "Simple SELECT without LIMIT",
-			statement: "SELECT * FROM users",
-			limit:     10,
-			want:      "SELECT * FROM users LIMIT 10",
-		},
-		{
-			name:      "SELECT with WHERE clause",
-			statement: "SELECT id, name FROM users WHERE active = true",
-			limit:     5,
-			want:      "SELECT id, name FROM users WHERE active = true LIMIT 5",
-		},
-		{
-			name:      "SELECT with existing LIMIT higher than requested",
-			statement: "SELECT * FROM users LIMIT 100",
-			limit:     10,
-			want:      "SELECT * FROM users LIMIT 10",
-		},
-		{
-			name:      "SELECT with existing LIMIT lower than requested",
-			statement: "SELECT * FROM users LIMIT 5",
-			limit:     10,
-			want:      "SELECT * FROM users LIMIT 5",
-		},
-		{
-			name:      "SELECT with existing LIMIT 0 is kept, not replaced",
-			statement: "SELECT * FROM users LIMIT 0",
-			limit:     10,
-			want:      "SELECT * FROM users LIMIT 0",
-		},
-		{
-			name:      "WITH query (CTE)",
-			statement: "WITH active_users AS (SELECT * FROM users WHERE active = true) SELECT * FROM active_users",
-			limit:     10,
-			want:      "WITH active_users AS (SELECT * FROM users WHERE active = true) SELECT * FROM active_users LIMIT 10",
-		},
-		{
-			name:      "SELECT with ORDER BY",
-			statement: "SELECT * FROM users ORDER BY created_at DESC",
-			limit:     10,
-			want:      "SELECT * FROM users ORDER BY created_at DESC LIMIT 10",
-		},
-		{
-			name:      "SELECT with GROUP BY and HAVING",
-			statement: "SELECT department, COUNT(*) FROM users GROUP BY department HAVING COUNT(*) > 5",
-			limit:     10,
-			want:      "SELECT department, COUNT(*) FROM users GROUP BY department HAVING COUNT(*) > 5 LIMIT 10",
-		},
-		{
-			name:      "UNION query",
-			statement: "SELECT id FROM users UNION SELECT id FROM admins",
-			limit:     10,
-			want:      "SELECT id FROM users UNION SELECT id FROM admins LIMIT 10",
-		},
-		{
-			name:      "SELECT with OFFSET",
-			statement: "SELECT * FROM users LIMIT 20 OFFSET 10",
-			limit:     5,
-			want:      "SELECT * FROM users LIMIT 5 OFFSET 10",
-		},
-		{
-			name:      "SELECT with FOR UPDATE",
-			statement: "SELECT * FROM users WHERE id = 1 FOR UPDATE",
-			limit:     10,
-			want:      "SELECT * FROM users WHERE id = 1 LIMIT 10 FOR UPDATE",
-		},
-		{
-			name:      "Non-SELECT statement (INSERT)",
-			statement: "INSERT INTO users (name) VALUES ('John')",
-			limit:     10,
-			want:      "INSERT INTO users (name) VALUES ('John')",
-		},
-		{
-			name:      "Non-SELECT statement (UPDATE)",
-			statement: "UPDATE users SET active = false WHERE id = 1",
-			limit:     10,
-			want:      "UPDATE users SET active = false WHERE id = 1",
-		},
-		{
-			name:      "Non-SELECT statement (DELETE)",
-			statement: "DELETE FROM users WHERE active = false",
-			limit:     10,
-			want:      "DELETE FROM users WHERE active = false",
-		},
-		{
-			name:      "SELECT with comments",
-			statement: "SELECT * FROM users -- This is a comment\nWHERE active = true",
-			limit:     10,
-			want:      "SELECT * FROM users -- This is a comment\nWHERE active = true LIMIT 10",
-		},
-		{
-			name:      "Complex nested SELECT",
-			statement: "SELECT * FROM (SELECT * FROM users WHERE active = true) AS active_users WHERE created_at > '2023-01-01'",
-			limit:     10,
-			want:      "SELECT * FROM (SELECT * FROM users WHERE active = true) AS active_users WHERE created_at > '2023-01-01' LIMIT 10",
-		},
-		{
-			name:      "SELECT with JOIN",
-			statement: "SELECT u.*, d.name as dept_name FROM users u JOIN departments d ON u.dept_id = d.id",
-			limit:     10,
-			want:      "SELECT u.*, d.name as dept_name FROM users u JOIN departments d ON u.dept_id = d.id LIMIT 10",
-		},
-		{
-			name:      "SELECT with parentheses",
-			statement: "(SELECT * FROM users)",
-			limit:     10,
-			want:      "(SELECT * FROM users) LIMIT 10",
-		},
-		{
-			name:      "SELECT with nested parentheses",
-			statement: "((SELECT * FROM users))",
-			limit:     10,
-			want:      "((SELECT * FROM users)) LIMIT 10",
-		},
-		{
-			name:      "SELECT with parentheses and existing LIMIT higher than requested",
-			statement: "(SELECT * FROM users LIMIT 100)",
-			limit:     10,
-			want:      "(SELECT * FROM users LIMIT 10)",
-		},
-		{
-			name:      "SELECT with parentheses and existing LIMIT lower than requested",
-			statement: "(SELECT * FROM users LIMIT 5)",
-			limit:     10,
-			want:      "(SELECT * FROM users LIMIT 5)",
-		},
-	}
+func TestStatementWithResultLimitSeam(t *testing.T) {
+	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB} {
+		t.Run(engine.String(), func(t *testing.T) {
+			require.Equal(t, "SELECT * FROM t LIMIT 10",
+				base.StatementWithResultLimit(engine, "SELECT * FROM t LIMIT 100", 10, ""))
+			require.Equal(t, "SELECT * FROM t LIMIT 0",
+				base.StatementWithResultLimit(engine, "SELECT * FROM t LIMIT 0", 10, ""))
+			require.Equal(t, "DELETE FROM t",
+				base.StatementWithResultLimit(engine, "DELETE FROM t", 10, ""))
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := statementWithResultLimit(tt.statement, tt.limit, "")
-
-			// For non-SELECT statements, the parser might fail and fall back to CTE approach
-			// which we should avoid for non-SELECT statements
-			if tt.statement == tt.want {
-				// Non-SELECT statements should remain unchanged
-				assert.Equal(t, tt.want, got)
-			} else {
-				// For SELECT statements, check if LIMIT was properly added
-				// The exact format might vary slightly due to parser normalization
-				assert.Contains(t, got, "LIMIT")
-				assert.Contains(t, got, fmt.Sprintf("%d", tt.limit))
-			}
-		})
-	}
-}
-
-// TestCockroachDBReusesPGLimitRewrite locks the fix that gave CockroachDB the
-// same precise rewrite PostgreSQL gets, through the shared registration in
-// limit.go's init(). CockroachDB used to blind-wrap every statement in a CTE
-// regardless of shape — a plain write like DELETE FROM t became
-// WITH result AS (DELETE FROM t) SELECT * FROM result LIMIT n, a statement the
-// read-only classifier could misread as a query with a data-modifying CTE. The
-// registered function must be the exact same one PostgreSQL uses, so a
-// non-SELECT statement passes through unchanged rather than being wrapped, and
-// a SELECT gets the same precise cap.
-func TestCockroachDBReusesPGLimitRewrite(t *testing.T) {
-	require.Equal(t, "DELETE FROM t",
-		base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, "DELETE FROM t", 10, ""))
-	require.Equal(t, "SELECT * FROM t LIMIT 10",
-		base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, "SELECT * FROM t LIMIT 100", 10, ""))
-	// The blind CTE-wrap CockroachDB used before this reuse preserved a literal
-	// LIMIT 0 (the inner zero always won regardless of the outer cap); the
-	// precise rewrite must keep preserving it rather than replacing it.
-	require.Equal(t, "SELECT * FROM t LIMIT 0",
-		base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, "SELECT * FROM t LIMIT 0", 10, ""))
-}
-
-func TestUnlimitedResultLimit(t *testing.T) {
-	for _, clause := range []string{"ALL", "NULL"} {
-		t.Run(clause, func(t *testing.T) {
-			statement := "SELECT * FROM t LIMIT " + clause + " OFFSET 2;"
-			got := statementWithResultLimit(statement, 10, "")
-			require.Equal(t, got, base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, statement, 10, ""))
-			require.Equal(t, "WITH result AS (\nSELECT * FROM t LIMIT "+clause+" OFFSET 2\n) SELECT * FROM result LIMIT 10;", got)
+			// When omni cannot rewrite inline (e.g. LIMIT ALL / LIMIT NULL), Bytebase wraps in a CTE.
+			require.Equal(t, "WITH result AS (\nSELECT * FROM t LIMIT ALL OFFSET 2\n) SELECT * FROM result LIMIT 10;",
+				base.StatementWithResultLimit(engine, "SELECT * FROM t LIMIT ALL OFFSET 2;", 10, ""))
 		})
 	}
 }

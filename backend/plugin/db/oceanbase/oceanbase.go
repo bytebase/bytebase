@@ -49,18 +49,11 @@ package oceanbase
 
 import (
 	"context"
-	"crypto/tls"
-	"io"
-	"net"
 	"strings"
-	"sync"
 
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
-	"golang.org/x/crypto/ssh"
 
 	odriver "github.com/bytebase/omni/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 	oceanbasedriver "github.com/bytebase/omni/oceanbase/driver"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -81,16 +74,7 @@ const applicationName = "bytebase"
 
 // Driver is Bytebase's OceanBase driver.
 type Driver struct {
-	impl      *oceanbasedriver.Driver
-	sshClient *ssh.Client
-
-	// sessionMu guards session. The editor asks for one statement at a time on
-	// a driver it keeps for the whole stream, so the adapter holds one session
-	// for the driver's lifetime: what a statement sets (a user variable, a
-	// temporary table, a session variable) holds for the next, as it did on the
-	// caller's *sql.Conn.
-	sessionMu sync.Mutex
-	session   odriver.Session
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -100,17 +84,15 @@ func newDriver() db.Driver {
 // Open maps the connection config onto the driver contract. It does not reach
 // the server; Ping does.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	cfg, err := driverConfig(ctx, config, d)
-	if err != nil {
-		_ = d.Close(ctx)
+	if err := d.OpenWith(ctx, util.AdapterOptions{WithInstanceMetadata: true}, func(*util.OmniAdapter) (odriver.Driver, error) {
+		cfg, err := driverConfig(ctx, config, d)
+		if err != nil {
+			return nil, err
+		}
+		return oceanbasedriver.Open(ctx, cfg)
+	}); err != nil {
 		return nil, err
 	}
-	impl, err := oceanbasedriver.Open(ctx, cfg)
-	if err != nil {
-		_ = d.Close(ctx)
-		return nil, err
-	}
-	d.impl = impl
 	return d, nil
 }
 
@@ -130,49 +112,24 @@ func driverConfig(ctx context.Context, config db.ConnectionConfig, d *Driver) (o
 
 	switch ds.GetAuthenticationType() {
 	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
-		dialer, err := util.GetGCPConnectionConfig(ctx, config)
-		if err != nil {
-			return odriver.Config{}, errors.Wrap(err, "load gcp config failed")
-		}
-		// The connector names its instance itself, so it ignores the address the
-		// driver passes and dials the data source's host.
-		cfg.Dial = func(ctx context.Context, _, _ string) (net.Conn, error) {
-			return dialer.Dial(ctx, ds.GetHost())
+		if _, err := util.SetupCloudSQLDial(ctx, config, &cfg, &d.OmniAdapter); err != nil {
+			return odriver.Config{}, err
 		}
 		cfg.Params = map[string]string{"parseTime": "true"}
 	case storepb.DataSource_AWS_RDS_IAM:
-		token, tlsConfig, err := rdsLogin(ctx, config)
-		if err != nil {
+		if err := util.ConfigureRDSMySQLIAM(ctx, config, &cfg); err != nil {
 			return odriver.Config{}, err
 		}
-		cfg.Password = token
-		cfg.TLS = func(string) (*tls.Config, error) {
-			return tlsConfig, nil
-		}
-		cfg.Params = map[string]string{"allowCleartextPasswords": "true"}
 	default:
 		params, err := connectionParams(ds.GetExtraConnectionParameters())
 		if err != nil {
 			return odriver.Config{}, err
 		}
 		cfg.Params = params
-		if ds.GetSshHost() != "" {
-			sshClient, err := util.GetSSHClient(ds)
-			if err != nil {
-				return odriver.Config{}, err
-			}
-			d.sshClient = sshClient
-			cfg.Dial = func(_ context.Context, network, address string) (net.Conn, error) {
-				return sshClient.Dial(network, address)
-			}
+		if err := util.SetupSSHDial(ds, &cfg, &d.OmniAdapter, false); err != nil {
+			return odriver.Config{}, err
 		}
-		if ds.GetUseSsl() {
-			// GetTLSConfig binds certificate verification to the data source's host,
-			// which is the host the driver dials.
-			cfg.TLS = func(string) (*tls.Config, error) {
-				return util.GetTLSConfig(ds)
-			}
-		}
+		cfg.TLS = util.LazyTLSFunc(ds)
 	}
 	return cfg, nil
 }
@@ -190,108 +147,30 @@ func connectionParams(extra map[string]string) (map[string]string, error) {
 	return params, nil
 }
 
-// rdsLogin returns the IAM authentication token and the TLS config an AWS RDS
-// connection uses. IAM authentication always requires TLS.
-func rdsLogin(ctx context.Context, config db.ConnectionConfig) (string, *tls.Config, error) {
-	token, err := util.RDSAuthToken(ctx, config)
-	if err != nil {
-		return "", nil, err
-	}
-	tlsConfig, err := util.RDSTLSConfig(ctx, config.DataSource)
-	if err != nil {
-		return "", nil, err
-	}
-	return token, tlsConfig, nil
-}
-
-// Close closes the driver's session, its connections and the tunnel they used.
-func (d *Driver) Close(context.Context) error {
-	var err error
-	d.sessionMu.Lock()
-	if d.session != nil {
-		err = multierr.Append(err, d.session.Close())
-		d.session = nil
-	}
-	d.sessionMu.Unlock()
-	if d.impl != nil {
-		err = multierr.Append(err, d.impl.Close())
-	}
-	if d.sshClient != nil {
-		err = multierr.Append(err, d.sshClient.Close())
-	}
-	return err
-}
-
-// Ping reaches the server.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.impl.Ping(ctx)
-}
-
-// SyncInstance reads the server version, lower_case_table_names, accounts with
-// their global grants, and the non-system databases.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.impl.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, true), nil
-}
-
-// SyncDBSchema reads the database the driver was opened on.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return d.impl.SyncDatabase(ctx)
-}
-
-// Dump writes the database's DDL through omni's OceanBase catalog, which
-// renders the synced metadata this driver returns.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.impl.Dump(ctx, out, dbMetadata)
-}
-
 // Execute runs a change script under the transaction directive it carries.
 // CreateDatabase and MaximumRetries are not mapped: the driver this replaced
 // read neither.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	transactionMode, isolation, cleaned := util.ParseTransactionMode(statement)
-	return d.impl.Execute(ctx, cleaned, odriver.ExecuteOptions{
-		Transaction: transactionMode,
-		Isolation:   isolation,
-		Log:         util.NewExecuteLogger(opts),
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		ParseTransactionDirective: true,
+		PassIsolation:             true,
 	})
 }
 
 // QueryConn runs a script for the editor on the driver's session, one result
 // per statement, and stops at the first statement that fails.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	d.sessionMu.Lock()
-	defer d.sessionMu.Unlock()
-	if d.session == nil {
-		session, err := d.impl.Session(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to open a session")
-		}
-		d.session = session
-	}
-	session := d.session
-
-	results, err := session.Query(ctx, statement, odriver.QueryOptions{
+	results, err := d.QueryHeldSession(ctx, statement, odriver.QueryOptions{
 		Explain:        queryContext.Explain,
 		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_JSON),
 		Limit:          queryContext.Limit,
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 		MaskingEnabled: queryContext.MaskingEnabled,
+	}, util.SessionQueryOptions{
+		WrapOpenError: "failed to open a session",
 	})
 	if err != nil {
-		// The script could not be run at all; the session is not one to keep.
-		_ = session.Close()
-		d.session = nil
 		return nil, err
-	}
-	if ctx.Err() != nil {
-		// The client closes the connection when a statement's context ends, so the
-		// stream's next statement must open a new session.
-		_ = session.Close()
-		d.session = nil
 	}
 	return util.OmniResultsToQueryResults(results, queryContext.MaximumSQLResultSize, queryContext.Explain), nil
 }

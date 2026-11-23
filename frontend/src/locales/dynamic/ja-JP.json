@@ -219,7 +219,7 @@
       },
       "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
         "desc": "100以上のlintルールとスキーマ一貫性チェックでSQLベストプラクティスを適用します。",
-        "title": "SQLレビュー"
+        "title": "ルールベースの SQL レビュー"
       },
       "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
         "desc": "異なる環境を通じて段階的に変更をデプロイします。",

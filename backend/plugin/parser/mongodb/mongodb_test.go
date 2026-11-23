@@ -6,214 +6,83 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestParseMongoShell(t *testing.T) {
-	testCases := []struct {
-		description    string
-		statement      string
-		wantStatements int
-		wantText       string
-	}{
-		{
-			description:    "single find statement",
-			statement:      `db.collection.find({})`,
-			wantStatements: 1,
-			wantText:       `db.collection.find({})`,
-		},
-		{
-			description:    "single find with filter",
-			statement:      `db.users.find({ name: "John" })`,
-			wantStatements: 1,
-			wantText:       `db.users.find({ name: "John" })`,
-		},
-		{
-			description:    "multiple statements",
-			statement:      "db.users.find({});\ndb.products.insertOne({ name: \"test\" })",
-			wantStatements: 2,
-		},
-		{
-			description:    "show databases command",
-			statement:      "show dbs",
-			wantStatements: 1,
-		},
-		{
-			description:    "show collections command",
-			statement:      "show collections",
-			wantStatements: 1,
-		},
-		{
-			description:    "aggregation pipeline",
-			statement:      `db.orders.aggregate([{ $match: { status: "A" } }, { $group: { _id: "$cust_id", total: { $sum: "$amount" } } }])`,
-			wantStatements: 1,
-		},
-		{
-			description:    "bracket notation for collection",
-			statement:      `db["my-collection"].find({})`,
-			wantStatements: 1,
-		},
-		{
-			description:    "method chaining",
-			statement:      `db.users.find({}).sort({ name: 1 }).limit(10)`,
-			wantStatements: 1,
-		},
-		{
-			description:    "empty input",
-			statement:      "",
-			wantStatements: 0,
-		},
-		{
-			description:    "whitespace only",
-			statement:      "   \n\t  ",
-			wantStatements: 0,
-		},
+func TestParseAndDiagnoseSeam(t *testing.T) {
+	// Registry dispatch for ParseStatements + GetNode.
+	stmts, err := base.ParseStatements(storepb.Engine_MONGODB, "db.users.find({});\ndb.products.insertOne({name: \"test\"})")
+	require.NoError(t, err)
+	require.Len(t, stmts, 2)
+	for _, ps := range stmts {
+		require.NotNil(t, ps.Start)
+		require.NotNil(t, ps.End)
+		require.NotNil(t, ps.Range)
+		node, ok := GetNode(ps.AST)
+		require.True(t, ok)
+		require.NotNil(t, node)
 	}
+	_, ok := GetNode(nil)
+	require.False(t, ok)
 
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			result, err := ParseMongoShell(tc.statement)
-			require.NoError(t, err)
+	// Empty input and strict syntax error.
+	empty, err := base.ParseStatements(storepb.Engine_MONGODB, "   \n\t  ")
+	require.NoError(t, err)
+	require.Empty(t, empty)
 
-			require.Len(t, result, tc.wantStatements, "statement count mismatch")
+	_, err = base.ParseStatements(storepb.Engine_MONGODB, `db.collection.find({`)
+	require.Error(t, err)
 
-			if tc.wantStatements > 0 {
-				// Verify all statements have position and AST info.
-				for i, ps := range result {
-					require.NotNil(t, ps.Start, "statement %d should have Start", i)
-					require.NotNil(t, ps.End, "statement %d should have End", i)
-					require.NotNil(t, ps.Range, "statement %d should have Range", i)
-					require.NotNil(t, ps.AST, "statement %d should have AST", i)
-					require.NotEmpty(t, ps.Text, "statement %d should have text", i)
-				}
-			}
+	// Registry dispatch for Diagnose.
+	diags, err := base.Diagnose(context.Background(), base.DiagnoseContext{}, storepb.Engine_MONGODB, `db.users.find()`)
+	require.NoError(t, err)
+	require.Empty(t, diags)
 
-			if tc.wantText != "" {
-				require.Equal(t, tc.wantText, result[0].Text)
-			}
-		})
-	}
-}
-
-func TestParseMongoShellSyntaxError(t *testing.T) {
-	// Omni parser returns an error for invalid syntax.
-	_, err := ParseMongoShell(`db.collection.find({`)
-	require.Error(t, err, "expected parse error for unclosed brace")
+	diags, err = base.Diagnose(context.Background(), base.DiagnoseContext{}, storepb.Engine_MONGODB, `db.collection.find({`)
+	require.NoError(t, err)
+	require.NotEmpty(t, diags)
 }
 
 func TestGetStatementRanges(t *testing.T) {
-	testCases := []struct {
-		description string
-		statement   string
-		wantRanges  int
-	}{
-		{
-			description: "single statement",
-			statement:   `db.collection.find({})`,
-			wantRanges:  1,
-		},
-		{
-			description: "multiple statements on separate lines",
-			statement:   "db.users.find({});\ndb.products.find({})",
-			wantRanges:  2,
-		},
-		{
-			description: "multiline statement",
-			statement: `db.users.aggregate([
-  { $match: { status: "A" } },
-  { $group: { _id: "$cust_id" } }
-])`,
-			wantRanges: 1,
-		},
-		{
-			description: "empty input",
-			statement:   "",
-			wantRanges:  0,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			ranges, err := GetStatementRanges(context.Background(), base.StatementRangeContext{}, tc.statement)
-			require.NoError(t, err)
-			require.Len(t, ranges, tc.wantRanges)
-		})
-	}
-}
-
-func TestGetStatementRangesWithHindiCharacters(t *testing.T) {
-	// Test with Hindi characters - ANTLR returns character (rune) offsets, not byte offsets
-	// The Hindi collection name "मिलन-भेंट" has 9 runes but 25 bytes
-	statement := "db[\"मिलन-भेंट\"].find()\ndb.coll.find()"
-
-	ranges, err := GetStatementRanges(context.Background(), base.StatementRangeContext{}, statement)
+	// Registry dispatch for Bytebase-owned statement_ranges.go (UTF-16 LSP ranges).
+	ranges, err := base.GetStatementRanges(context.Background(), base.StatementRangeContext{}, storepb.Engine_MONGODB, "db.users.find({});\ndb.products.find({})")
 	require.NoError(t, err)
 	require.Len(t, ranges, 2)
 
-	// First statement: db["मिलन-भेंट"].find()
-	// Starts at line 0, char 0
-	// Ends at line 0, char 22 (after the closing paren)
+	empty, err := base.GetStatementRanges(context.Background(), base.StatementRangeContext{}, storepb.Engine_MONGODB, "")
+	require.NoError(t, err)
+	require.Empty(t, empty)
+}
+
+func TestGetStatementRangesWithHindiCharacters(t *testing.T) {
+	// The Hindi collection name "मिलन-भेंट" has 9 UTF-16 code units (9 runes, 25 UTF-8 bytes).
+	statement := "db[\"मिलन-भेंट\"].find()\ndb.coll.find()"
+
+	ranges, err := base.GetStatementRanges(context.Background(), base.StatementRangeContext{}, storepb.Engine_MONGODB, statement)
+	require.NoError(t, err)
+	require.Len(t, ranges, 2)
+
 	require.Equal(t, uint32(0), ranges[0].Start.Line)
 	require.Equal(t, uint32(0), ranges[0].Start.Character)
 	require.Equal(t, uint32(0), ranges[0].End.Line)
 	require.Equal(t, uint32(22), ranges[0].End.Character)
 
-	// Second statement: db.coll.find()
-	// Starts at line 1, char 0
-	// Ends at line 1, char 14
 	require.Equal(t, uint32(1), ranges[1].Start.Line)
 	require.Equal(t, uint32(0), ranges[1].Start.Character)
 	require.Equal(t, uint32(1), ranges[1].End.Line)
 	require.Equal(t, uint32(14), ranges[1].End.Character)
 }
 
-func TestDiagnose(t *testing.T) {
-	testCases := []struct {
-		description        string
-		statement          string
-		wantHasDiagnostics bool
-	}{
-		{
-			description:        "valid statement",
-			statement:          `db.collection.find({})`,
-			wantHasDiagnostics: false,
-		},
-		{
-			description:        "valid statement without arguments",
-			statement:          `db.users.find()`,
-			wantHasDiagnostics: false,
-		},
-		{
-			description:        "syntax error - mid-typing prefix without parentheses",
-			statement:          `db.users.find`,
-			wantHasDiagnostics: true,
-		},
-		{
-			description:        "syntax error - unclosed brace",
-			statement:          `db.collection.find({`,
-			wantHasDiagnostics: true,
-		},
-		{
-			description:        "syntax error - invalid token",
-			statement:          `db.collection.find(@@@@)`,
-			wantHasDiagnostics: true,
-		},
-		{
-			description:        "empty input",
-			statement:          "",
-			wantHasDiagnostics: false,
-		},
-	}
+func TestGetStatementRangesWithSurrogatePair(t *testing.T) {
+	// An emoji outside the BMP counts as 2 UTF-16 code units in LSP coordinates.
+	statement := "db[\"😀\"].find()"
 
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			diagnostics, err := Diagnose(context.Background(), base.DiagnoseContext{}, tc.statement)
-			require.NoError(t, err)
-			if tc.wantHasDiagnostics {
-				require.NotEmpty(t, diagnostics, "expected diagnostics")
-			} else {
-				require.Empty(t, diagnostics, "expected no diagnostics")
-			}
-		})
-	}
+	ranges, err := base.GetStatementRanges(context.Background(), base.StatementRangeContext{}, storepb.Engine_MONGODB, statement)
+	require.NoError(t, err)
+	require.Len(t, ranges, 1)
+	require.Equal(t, uint32(0), ranges[0].Start.Line)
+	require.Equal(t, uint32(0), ranges[0].Start.Character)
+	require.Equal(t, uint32(0), ranges[0].End.Line)
+	require.Equal(t, uint32(15), ranges[0].End.Character)
 }

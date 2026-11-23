@@ -33,25 +33,14 @@
 //     dataset back into DDL, and the previous driver wrote nothing either.
 //   - SyncInstance reports the project's datasets and no version and no roles:
 //     BigQuery states neither.
-//
-// The statement split, the query-or-command decision, a result's shape, the
-// result-size cap, the dry run and the sync are omni's driver's, not this
-// adapter's, and several of them behave differently from the replaced driver.
-// This PR's "Parity evidence" section records each difference and what it means
-// for the product; cutover_parity_test.go pins the statement-level ones both
-// ways. Read those before changing the adapter.
 package bigquery
 
 import (
 	"context"
-	"errors"
-	"io"
 
 	bqdriver "github.com/bytebase/omni/bigquery/driver"
 	odriver "github.com/bytebase/omni/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -67,10 +56,7 @@ func init() {
 
 // Driver is Bytebase's BigQuery driver.
 type Driver struct {
-	config db.ConnectionConfig
-
-	impl    *bqdriver.Driver
-	session odriver.Session
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -93,7 +79,15 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 		_ = impl.Close()
 		return nil, err
 	}
-	return &Driver{config: config, impl: impl, session: session}, nil
+	d := &Driver{
+		OmniAdapter: util.OmniAdapter{
+			Driver:           impl,
+			NotFoundResource: "dataset",
+			DatabaseName:     config.ConnectionContext.DatabaseName,
+		},
+	}
+	d.SetSession(session)
+	return d, nil
 }
 
 // bigQueryConfig resolves everything Bytebase knows about reaching the project
@@ -119,64 +113,22 @@ func bigQueryConfig(config db.ConnectionConfig) odriver.Config {
 	return cfg
 }
 
-// Close closes the session and the driver's client.
-func (d *Driver) Close(context.Context) error {
-	var err error
-	if d.session != nil {
-		err = d.session.Close()
-		d.session = nil
-	}
-	if d.impl != nil {
-		if closeErr := d.impl.Close(); err == nil {
-			err = closeErr
-		}
-	}
-	return err
-}
-
-// Ping runs one statement as a connectivity check.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.impl.Ping(ctx)
-}
-
 // Execute sends the whole script as one job. BigQuery's scripting runs a
 // multi-statement script as one job whose status states the script and carries
 // no per-statement row count, so the task run log holds one command spanning the
 // script.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	return d.impl.Execute(ctx, statement, odriver.ExecuteOptions{
-		// BigQuery has no transaction that a script's statements share, and no
-		// isolation level to set; the driver ignores both.
-		MaxRetries: opts.MaximumRetries,
-		Log:        util.NewExecuteLogger(opts),
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		PassMaxRetries: true,
 	})
 }
 
 // SyncInstance syncs the project's datasets. No version and no roles are
 // reported, because BigQuery states neither.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.impl.SyncInstance(ctx)
+	instance, err := d.Driver.(odriver.Syncer).SyncInstance(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return &db.InstanceMetadata{Databases: instance.Databases}, nil
-}
-
-// SyncDBSchema syncs the dataset the driver was opened on.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	metadata, err := d.impl.SyncDatabase(ctx)
-	if err != nil {
-		if errors.Is(err, odriver.ErrNotFound) {
-			return nil, common.Errorf(common.NotFound, "dataset %q not found", d.config.ConnectionContext.DatabaseName)
-		}
-		return nil, err
-	}
-	return metadata, nil
-}
-
-// Dump writes nothing: the synced metadata does not hold the partitioning,
-// clustering, labels, expiration or view query a dataset's DDL states, and the
-// previous driver wrote nothing either.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, metadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.impl.Dump(ctx, out, metadata)
 }

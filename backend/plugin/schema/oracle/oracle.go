@@ -10,34 +10,43 @@ import (
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/oracle/catalog"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
-	"github.com/bytebase/bytebase/backend/store/model"
+	"github.com/bytebase/bytebase/backend/plugin/schema/internal/omnicatalog"
 )
 
-// Two of GetSchemaString's object types are deliberately left unregistered.
-//
-// SCHEMA: an Oracle schema is a user, one per database, so its definition is the
-// database definition GetDatabaseDefinition already renders. Only pg registers a
-// schema definition; MSSQL, MySQL and TiDB have real schemas and do not.
-//
-// SEQUENCE: no Oracle sequence renderer is registered, so GetSchemaString
-// answers nothing for one. The driver's dump does not render sequences here
-// either: it goes through omni's catalog, which writes the server's definition.
-// A sequence's Start, Increment, MaxValue, Cache and Cycle do reach this package
-// through the sync, so registering the object type is a change of its own.
+// SCHEMA and SEQUENCE are deliberately left unregistered: Oracle schemas map
+// 1:1 to database users (covered by GetDatabaseDefinition), and sequence
+// rendering is not yet wired through GetSchemaString.
 func init() {
 	schema.RegisterGetDatabaseMetadata(storepb.Engine_ORACLE, GetDatabaseMetadata)
-	schema.RegisterGetDatabaseDefinition(storepb.Engine_ORACLE, GetDatabaseDefinition)
-	schema.RegisterGetTableDefinition(storepb.Engine_ORACLE, GetTableDefinition)
-	schema.RegisterGetViewDefinition(storepb.Engine_ORACLE, GetViewDefinition)
-	schema.RegisterGetMaterializedViewDefinition(storepb.Engine_ORACLE, GetMaterializedViewDefinition)
-	schema.RegisterGetFunctionDefinition(storepb.Engine_ORACLE, GetFunctionDefinition)
-	schema.RegisterGetProcedureDefinition(storepb.Engine_ORACLE, GetProcedureDefinition)
-	schema.RegisterDiffMetadataMigration(storepb.Engine_ORACLE, diffMetadataMigration)
+	schema.RegisterDefinitions(schema.Definitions{
+		Database:         GetDatabaseDefinition,
+		Table:            GetTableDefinition,
+		View:             GetViewDefinition,
+		MaterializedView: GetMaterializedViewDefinition,
+		Function:         GetFunctionDefinition,
+		Procedure:        GetProcedureDefinition,
+	}, storepb.Engine_ORACLE)
+	omnicatalog.RegisterMetadataMigration(storepb.Engine_ORACLE, oracleCatalog)
+}
+
+var oracleCatalog = omnicatalog.Engine[catalog.Catalog, catalog.LoadMetadataReport]{
+	New: catalog.New,
+	Load: func(c *catalog.Catalog, meta *metadatapb.DatabaseSchemaMetadata) (*catalog.LoadMetadataReport, error) {
+		return c.LoadMetadata(context.Background(), stripUnrenderedFacts(meta))
+	},
+	Diff:                     omnicatalog.DiffSQL(catalog.Diff, catalog.GenerateMigration),
+	SkipStripDatabaseContext: true,
+	// The legacy generator ended every non-empty script with a newline; omni's plan does not.
+	PostProcess: func(migration string) string {
+		if migration != "" && !strings.HasSuffix(migration, "\n") {
+			return migration + "\n"
+		}
+		return migration
+	},
 }
 
 // GetDatabaseMetadata parses Oracle DDL text and returns database metadata
@@ -87,9 +96,7 @@ func stripUnrenderedFacts(metadata *metadatapb.DatabaseSchemaMetadata) *metadata
 			stripTableFacts(table)
 		}
 		for _, view := range schema.GetMaterializedViews() {
-			for _, index := range view.GetIndexes() {
-				index.Visible = true
-			}
+			resetIndexVisibility(view.GetIndexes())
 		}
 	}
 	return out
@@ -97,9 +104,7 @@ func stripUnrenderedFacts(metadata *metadatapb.DatabaseSchemaMetadata) *metadata
 
 func stripMaterializedViewUnrenderedFacts(view *metadatapb.MaterializedViewMetadata) *metadatapb.MaterializedViewMetadata {
 	out := proto.CloneOf(view)
-	for _, index := range out.GetIndexes() {
-		index.Visible = true
-	}
+	resetIndexVisibility(out.GetIndexes())
 	return out
 }
 
@@ -116,45 +121,11 @@ func stripTableFacts(table *metadatapb.TableMetadata) {
 		column.IdentitySeed = 0
 		column.IdentityIncrement = 0
 	}
-	for _, index := range table.GetIndexes() {
+	resetIndexVisibility(table.GetIndexes())
+}
+
+func resetIndexVisibility(indexes []*metadatapb.IndexMetadata) {
+	for _, index := range indexes {
 		index.Visible = true
 	}
-}
-
-// diffMetadataMigration diffs two synced snapshots with omni's catalog. The
-// catalog stores each snapshot as the sync reported it, so nothing can fail to
-// load; the diff and generator are the decisions.
-func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-	from, err := loadCatalog(oldSchema)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to load source schema")
-	}
-	to, err := loadCatalog(newSchema)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to load target schema")
-	}
-	diff := catalog.Diff(from, to)
-	if diff.IsEmpty() {
-		return "", nil
-	}
-	migration := catalog.GenerateMigration(from, to, diff).SQL()
-	// The legacy generator ended every non-empty script with at least one
-	// newline; the catalog's plan does not, so add the one it omits. Six scripts
-	// also carried a trailing blank line, recorded in cutover_parity.yaml.
-	if migration != "" && !strings.HasSuffix(migration, "\n") {
-		migration += "\n"
-	}
-	return migration, nil
-}
-
-func loadCatalog(d *model.DatabaseMetadata) (*catalog.Catalog, error) {
-	c := catalog.New()
-	var metadata *metadatapb.DatabaseSchemaMetadata
-	if d != nil {
-		metadata = stripUnrenderedFacts(d.GetProto())
-	}
-	if _, err := c.LoadMetadata(context.Background(), metadata); err != nil {
-		return nil, err
-	}
-	return c, nil
 }

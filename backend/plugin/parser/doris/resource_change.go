@@ -14,40 +14,14 @@ func init() {
 }
 
 func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
-	changedResources := model.NewChangedResources(dbMetadata)
-
-	var dmlCount, insertCount int
-	var dmlStatements []string
-
-	for _, unifiedAST := range asts {
-		parsed, ok := unifiedAST.(*astNode)
+	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, true, func(a base.AST) (analysis.StatementChanges, bool, error) {
+		parsed, ok := a.(*astNode)
 		if !ok {
-			return nil, errors.New("expected astNode for Doris")
+			return analysis.StatementChanges{}, false, errors.New("expected astNode for Doris")
 		}
 		if parsed.node == nil {
-			continue
+			return analysis.StatementChanges{}, false, nil
 		}
-
-		changes := analysis.ExtractChangedResources(parsed.node, currentDatabase, parsed.text)
-		for _, r := range changes.Resources {
-			if r.DatabaseOnly {
-				changedResources.AddDatabase(r.Database)
-				continue
-			}
-			if r.Table == "" {
-				continue
-			}
-			changedResources.AddTable(r.Database, "", &storepb.ChangedResourceTable{Name: r.Table}, r.AffectsData)
-		}
-		dmlStatements = append(dmlStatements, changes.DMLStatements...)
-		dmlCount += changes.DMLCount
-		insertCount += changes.InsertCount
-	}
-
-	return &base.ChangeSummary{
-		ChangedResources: changedResources,
-		DMLStatements:    dmlStatements,
-		DMLCount:         dmlCount,
-		InsertCount:      insertCount,
-	}, nil
+		return analysis.ExtractChangedResources(parsed.node, currentDatabase, parsed.text), true, nil
+	})
 }

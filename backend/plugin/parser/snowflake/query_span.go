@@ -31,8 +31,8 @@ func GetQuerySpan(
 		},
 	})
 	if err != nil {
-		if errors.Is(err, analysis.ErrMixUserSystemTables) {
-			return nil, base.MixUserSystemTablesError
+		if mixErr := base.ConvertOmniMixTablesError(err); mixErr != nil {
+			return nil, mixErr
 		}
 		var resolveErr *analysis.ResolveError
 		if !errors.As(err, &resolveErr) {
@@ -41,21 +41,14 @@ func GetQuerySpan(
 		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(resolveErr.Err, &resourceNotFound) {
 			return &base.QuerySpan{
-				SourceColumns: convertColumnSet(resolveErr.SourceColumns),
+				SourceColumns: base.OmniColumnSet(resolveErr.SourceColumns),
 				Results:       []base.QuerySpanResult{},
 				NotFoundError: resourceNotFound,
 			}, nil
 		}
 		return nil, resolveErr.Err
 	}
-	if span == nil {
-		return nil, nil
-	}
-	return &base.QuerySpan{
-		Type:          convertQueryType(span.Type),
-		SourceColumns: convertColumnSet(span.SourceColumns),
-		Results:       convertResults(span.Results),
-	}, nil
+	return base.OmniResolvedSpan(span), nil
 }
 
 // resolveTable finds a table in the synced metadata of the instance's
@@ -107,52 +100,4 @@ func resolveTable(ctx context.Context, gCtx base.GetQuerySpanContext, normalized
 		}
 	}
 	return nil, errors.Errorf(`table %s.%s.%s is not found`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
-}
-
-func convertQueryType(t analysis.QueryType) base.QueryType {
-	switch t {
-	case analysis.Select:
-		return base.Select
-	case analysis.Explain:
-		return base.Explain
-	case analysis.SelectInfoSchema:
-		return base.SelectInfoSchema
-	case analysis.DDL:
-		return base.DDL
-	case analysis.DML:
-		return base.DML
-	default:
-		return base.QueryTypeUnknown
-	}
-}
-
-func convertColumnSet(set analysis.ColumnSet) base.SourceColumnSet {
-	if set == nil {
-		return nil
-	}
-	result := make(base.SourceColumnSet, len(set))
-	for column := range set {
-		result[base.ColumnResource{
-			Database: column.Database,
-			Schema:   column.Schema,
-			Table:    column.Table,
-			Column:   column.Column,
-		}] = true
-	}
-	return result
-}
-
-func convertResults(results []analysis.QuerySpanResult) []base.QuerySpanResult {
-	if results == nil {
-		return nil
-	}
-	converted := make([]base.QuerySpanResult, 0, len(results))
-	for _, result := range results {
-		converted = append(converted, base.QuerySpanResult{
-			Name:          result.Name,
-			SourceColumns: convertColumnSet(result.SourceColumns),
-			IsPlainField:  result.IsPlainField,
-		})
-	}
-	return converted
 }

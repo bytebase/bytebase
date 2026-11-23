@@ -113,6 +113,9 @@ func TestToRowValue(t *testing.T) {
 }
 
 func TestToQueryResult(t *testing.T) {
+	toQueryResult := func(result *omnidriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
+		return toQueryResults([]*omnidriver.Result{result}, queryContext)[0]
+	}
 	result := &omnidriver.Result{
 		Statement: "SELECT 1",
 		Columns:   []omnidriver.Column{{Name: "1", TypeName: "UINT8"}},

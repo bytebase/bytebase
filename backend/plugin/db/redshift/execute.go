@@ -3,8 +3,6 @@ package redshift
 import (
 	"context"
 
-	omndriver "github.com/bytebase/omni/driver"
-
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
@@ -20,17 +18,10 @@ import (
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	// The log records a command's total affected rows and no per-result list,
 	// matching what the driver this replaced recorded.
-	logger := util.NewExecuteLogger(opts, util.WithOmitPerResultAffectedRows())
-	if opts.CreateDatabase {
-		return d.impl.Execute(ctx, statement, omndriver.ExecuteOptions{
-			CreateDatabase: true,
-			Log:            logger,
-		})
-	}
-
-	transactionMode, _, cleanedStatement := util.ParseTransactionMode(statement)
-	return d.impl.Execute(ctx, cleanedStatement, omndriver.ExecuteOptions{
-		Transaction: transactionMode,
-		Log:         logger,
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		ParseTransactionDirective:     true,
+		SkipDirectiveOnCreateDatabase: true,
+		PassCreateDatabase:            true,
+		LoggerOptions:                 []util.ExecuteLoggerOption{util.WithOmitPerResultAffectedRows()},
 	})
 }

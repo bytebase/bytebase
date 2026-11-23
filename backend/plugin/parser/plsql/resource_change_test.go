@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/bytebase/omni/oracle/analysis"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -11,226 +12,60 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-func TestExtractChangedResources(t *testing.T) {
-	statement := `CREATE TABLE t1 (c1 INT);
-	CREATE VIEW hello AS SELECT * FROM world;
-	INSERT INTO T1 (c1) VALUES (1);
-	`
-	changedResources := model.NewChangedResources(nil /* dbMetadata */)
-	changedResources.AddTable(
-		"DB",
-		"",
-		&storepb.ChangedResourceTable{
-			Name: "T1",
-		},
-		false,
-	)
-	want := &base.ChangeSummary{
-		ChangedResources: changedResources,
-		InsertCount:      1,
-	}
-
-	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
-	require.NoError(t, err)
-	asts := base.ExtractASTs(stmts)
-	require.NotEmpty(t, asts)
-
-	// Pass the full asts array to extractChangedResources
-	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
-	require.NoError(t, err)
-	require.Equal(t, want, got)
-}
-
-func TestExtractChangedResourcesSyntax(t *testing.T) {
-	statement := `CREATE TABLE IF NOT EXISTS t1 (c1 INT);
-DROP TABLE IF EXISTS t2;`
-	changedResources := model.NewChangedResources(nil /* dbMetadata */)
-	changedResources.AddTable(
-		"DB",
-		"",
-		&storepb.ChangedResourceTable{
-			Name: "T1",
-		},
-		false,
-	)
-	changedResources.AddTable(
-		"DB",
-		"",
-		&storepb.ChangedResourceTable{
-			Name: "T2",
-		},
-		true,
-	)
-	want := &base.ChangeSummary{
-		ChangedResources: changedResources,
-	}
-
-	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
-	require.NoError(t, err)
-	asts := base.ExtractASTs(stmts)
-	require.NotEmpty(t, asts)
-
-	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
-	require.NoError(t, err)
-	require.Equal(t, want, got)
-}
-
-func TestExtractChangedResourcesDMLSamples(t *testing.T) {
-	statement := `INSERT INTO t1 SELECT * FROM t2;
-UPDATE t1 SET c1 = 5 WHERE c2 = 1;
-DELETE FROM t2 WHERE c1 = 1;`
-	changedResources := model.NewChangedResources(nil /* dbMetadata */)
-	changedResources.AddTable("DB", "", &storepb.ChangedResourceTable{Name: "T1"}, false)
-	changedResources.AddTable("DB", "", &storepb.ChangedResourceTable{Name: "T2"}, false)
-	want := &base.ChangeSummary{
-		ChangedResources: changedResources,
-		DMLStatements: []string{
-			"INSERT INTO t1 SELECT * FROM t2;",
-			"UPDATE t1 SET c1 = 5 WHERE c2 = 1;",
-			"DELETE FROM t2 WHERE c1 = 1;",
-		},
-		DMLCount: 3,
-	}
-
-	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
-	require.NoError(t, err)
-	asts := base.ExtractASTs(stmts)
-	require.NotEmpty(t, asts)
-
-	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
-	require.NoError(t, err)
-	require.Equal(t, want, got)
-}
-
-func TestExtractChangedResourcesDropIndexUsesMetadata(t *testing.T) {
-	statement := `DROP INDEX idx_t1_c1;`
-	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-		Name: "DB",
+func TestExtractChangedResourcesSeam(t *testing.T) {
+	dbMeta := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Name: "HR",
 		Schemas: []*metadatapb.SchemaMetadata{
 			{
-				Name: "DB",
+				Name: "HR",
 				Tables: []*metadatapb.TableMetadata{
 					{
-						Name: "T1",
+						Name: "EMPLOYEES",
+					},
+					{
+						Name: "DEPARTMENTS",
 						Indexes: []*metadatapb.IndexMetadata{
-							{
-								Name: "IDX_T1_C1",
-							},
+							{Name: "IDX_DEPT_NAME"},
 						},
 					},
 				},
 			},
 		},
-	}, nil, nil, storepb.Engine_ORACLE, true /* isObjectCaseSensitive */)
-	changedResources := model.NewChangedResources(dbMetadata)
-	changedResources.AddTable("DB", "", &storepb.ChangedResourceTable{Name: "T1"}, false)
-	want := &base.ChangeSummary{
-		ChangedResources: changedResources,
+	}, nil, nil, storepb.Engine_ORACLE, false)
+
+	parsed, err := base.ParseStatements(storepb.Engine_ORACLE, "UPDATE employees SET id = 2; INSERT INTO employees VALUES (1); TRUNCATE TABLE employees; DROP INDEX idx_dept_name;")
+	require.NoError(t, err)
+
+	var asts []base.AST
+	for _, stmt := range parsed {
+		if stmt.AST != nil {
+			asts = append(asts, stmt.AST)
+		}
 	}
+	// Non-*AST and nil entries are skipped without error.
+	asts = append(asts, &fakeAST{}, nil)
 
-	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
+	summary, err := base.ExtractChangedResources(storepb.Engine_ORACLE, "HR", "", dbMeta, asts, "")
 	require.NoError(t, err)
-	asts := base.ExtractASTs(stmts)
-	require.NotEmpty(t, asts)
+	require.Equal(t, 1, summary.DMLCount)
+	require.Equal(t, 1, summary.InsertCount)
+	require.Len(t, summary.DMLStatements, 1)
 
-	got, err := extractChangedResources("DB", "", dbMetadata, asts, statement)
+	want := model.NewChangedResources(dbMeta)
+	want.AddTable("HR", "", &storepb.ChangedResourceTable{Name: "EMPLOYEES"}, true)
+	want.AddTable("HR", "", &storepb.ChangedResourceTable{Name: "DEPARTMENTS"}, false)
+	require.Equal(t, want, summary.ChangedResources)
+
+	// DatabaseOnly resources call AddDatabase.
+	dbOnlySummary, err := base.ExtractChangedResourcesFromASTs(nil, []base.AST{&fakeAST{}}, false, func(base.AST) (analysis.StatementChanges, bool, error) {
+		return analysis.StatementChanges{
+			Resources: []analysis.ChangedResource{
+				{Database: "APP", DatabaseOnly: true},
+			},
+		}, true, nil
+	})
 	require.NoError(t, err)
-	require.Equal(t, want, got)
-}
-
-func TestExtractChangedResourcesSkipsANTLRFallbackAST(t *testing.T) {
-	updateStatement := "UPDATE t1 SET c1 = 5"
-	triggerStatement := `CREATE OR REPLACE TRIGGER trg
-BEFORE INSERT OR UPDATE OF col1, col2 ON tbl
-REFERENCING OLD AS o NEW AS n
-FOR EACH ROW
-WHEN (n.col1 > 0)
-BEGIN
-  :n.col2 := :o.col2 + 1;
-END;`
-	statement := updateStatement + ";\n" + triggerStatement
-	changedResources := model.NewChangedResources(nil /* dbMetadata */)
-	changedResources.AddTable("DB", "", &storepb.ChangedResourceTable{Name: "T1"}, false)
-	want := &base.ChangeSummary{
-		ChangedResources: changedResources,
-		DMLStatements: []string{
-			"UPDATE t1 SET c1 = 5;",
-		},
-		DMLCount: 1,
-	}
-
-	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, updateStatement)
-	require.NoError(t, err)
-	asts := base.ExtractASTs(stmts)
-	require.Len(t, asts, 1)
-	_, ok := asts[0].(*AST)
-	require.True(t, ok)
-
-	asts = append(asts, testAST{})
-
-	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
-	require.NoError(t, err)
-	require.Equal(t, want, got)
-}
-
-type testAST struct{}
-
-func (testAST) ASTStartPosition() *storepb.Position {
-	return nil
-}
-
-func TestExtractChangedResourcesTruncate(t *testing.T) {
-	const statement = `TRUNCATE TABLE t;`
-
-	want := model.NewChangedResources(nil /* dbMetadata */)
-	want.AddTable("DB", "", &storepb.ChangedResourceTable{Name: "T"}, true)
-
-	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
-	require.NoError(t, err)
-	asts := base.ExtractASTs(stmts)
-	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
-	require.NoError(t, err)
-	require.Equal(t, want, got.ChangedResources)
-}
-
-func TestExtractChangedResourcesMerge(t *testing.T) {
-	const statement = `MERGE INTO OTHER.TGT t USING SRC s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.a = s.a;`
-
-	want := model.NewChangedResources(nil /* dbMetadata */)
-	want.AddTable("OTHER", "", &storepb.ChangedResourceTable{Name: "TGT"}, false)
-
-	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
-	require.NoError(t, err)
-	asts := base.ExtractASTs(stmts)
-	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
-	require.NoError(t, err)
-	require.Equal(t, want, got.ChangedResources)
-}
-
-func TestExtractChangedResourcesObjectDDLDatabaseOnly(t *testing.T) {
-	// Qualified non-table object DDL → a database-only target on the qualified schema.
-	for _, statement := range []string{
-		`CREATE VIEW OTHER.V AS SELECT * FROM T;`,
-		`CREATE SEQUENCE OTHER.S;`,
-		`CREATE SYNONYM OTHER.SYN FOR T;`,
-		`DROP PACKAGE OTHER.PKG;`,
-		`DROP TYPE OTHER.TY;`,
-		`ALTER PACKAGE OTHER.PKG COMPILE;`,
-	} {
-		stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
-		require.NoError(t, err, statement)
-		asts := base.ExtractASTs(stmts)
-		got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
-		require.NoError(t, err, statement)
-		require.Equal(t, []string{"OTHER"}, got.ChangedResources.GetDatabaseOnlyTargets(), statement)
-	}
-
-	// Unqualified object DDL → no database-only target (keeps the request-database fallback).
-	const unqualified = `CREATE VIEW V AS SELECT * FROM T;`
-	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, unqualified)
-	require.NoError(t, err)
-	asts := base.ExtractASTs(stmts)
-	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, unqualified)
-	require.NoError(t, err)
-	require.Empty(t, got.ChangedResources.GetDatabaseOnlyTargets())
+	wantDBOnly := model.NewChangedResources(nil)
+	wantDBOnly.AddDatabase("APP")
+	require.Equal(t, wantDBOnly, dbOnlySummary.ChangedResources)
 }

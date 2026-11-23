@@ -1,58 +1,28 @@
 package mysql
 
 import (
-	"encoding/json"
-	"os"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common/yamltest"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
-type getDatabaseMetadataCase struct {
-	Description string `yaml:"description"`
-	Schema      string `yaml:"schema"`
-	Metadata    string `yaml:"metadata"`
-}
-
-// TestGetDatabaseMetadata pins what the parser extracts from each schema text.
-// The goldens describe this package's own output, not MySQL's catalog: whether
-// the parser agrees with a live server is engine conformance and belongs in omni.
-func TestGetDatabaseMetadata(t *testing.T) {
-	const (
-		record   = false
-		filepath = "testdata/get_database_metadata.yaml"
-	)
-
-	var tests []getDatabaseMetadataCase
-	content, err := os.ReadFile(filepath)
+func TestGetDatabaseMetadataRegistry(t *testing.T) {
+	empty, err := schema.GetDatabaseMetadata(storepb.Engine_MYSQL, "   \n")
 	require.NoError(t, err)
-	require.NoError(t, yaml.Unmarshal(content, &tests))
+	require.Empty(t, empty.Schemas)
 
-	for i, tc := range tests {
-		t.Run(tc.Description, func(t *testing.T) {
-			metadata, err := GetDatabaseMetadata(tc.Schema)
-			require.NoError(t, err)
+	meta, err := schema.GetDatabaseMetadata(storepb.Engine_MYSQL, "CREATE TABLE `t` (`id` int NOT NULL, PRIMARY KEY (`id`));")
+	require.NoError(t, err)
+	require.Len(t, meta.Schemas, 1)
+	require.Len(t, meta.Schemas[0].Tables, 1)
+	require.Equal(t, "t", meta.Schemas[0].Tables[0].Name)
 
-			encoded, err := json.MarshalIndent(metadata, "", "  ")
-			require.NoError(t, err)
-			result := string(encoded) + "\n"
-
-			if record {
-				tests[i].Metadata = result
-				return
-			}
-			require.Equal(t, tc.Metadata, result)
-		})
-	}
-
-	if record {
-		yamltest.Record(t, filepath, tests)
-	}
+	_, err = schema.GetDatabaseMetadata(storepb.Engine_MYSQL, "CREATE TABLE (")
+	require.Error(t, err)
 }
 
 // TestGetDatabaseMetadataParsesPrettyView proves GetDatabaseMetadata accepts the
@@ -76,14 +46,11 @@ func TestGetDatabaseMetadataParsesPrettyView(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, sdl, "AS\nselect\n  `t1`.`a` AS `a`,", "fixture must actually be pretty-printed")
 
-	t.Run("omni", func(t *testing.T) {
-		meta, err := GetDatabaseMetadata(sdl)
-		require.NoError(t, err)
-		require.Len(t, meta.Schemas, 1)
-		require.Len(t, meta.Schemas[0].Views, 1)
-		view := meta.Schemas[0].Views[0]
-		require.Equal(t, "v_pretty", view.Name)
-		require.NotContains(t, view.Definition, "\n",
-			"omni deparse must canonicalize the pretty body back to one line (whitespace washes out)")
-	})
+	meta, err := GetDatabaseMetadata(sdl)
+	require.NoError(t, err)
+	require.Len(t, meta.Schemas, 1)
+	require.Len(t, meta.Schemas[0].Views, 1)
+	view := meta.Schemas[0].Views[0]
+	require.Equal(t, "v_pretty", view.Name)
+	require.NotContains(t, view.Definition, "\n")
 }

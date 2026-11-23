@@ -2,115 +2,135 @@ package tidb
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"io"
 	"testing"
 
+	omnidriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-// TestSyncDBSchemaPassesTheDriversMetadataThrough proves the adapter answers the
-// contract's schema unchanged. What TiDB reports for a table — its columns,
-// defaults, generated columns, indexes, partitions, foreign keys and views — is
-// tidb/driver's corpus and golden, not this repository's.
+type fakeSyncDriver struct {
+	instance     *omnidriver.Instance
+	schema       *metadatapb.DatabaseSchemaMetadata
+	syncDBErr    error
+	dumpSQL      string
+	dumpErr      error
+	dumpedSchema *metadatapb.DatabaseSchemaMetadata
+}
+
+func (*fakeSyncDriver) Ping(context.Context) error { return nil }
+func (*fakeSyncDriver) Close() error               { return nil }
+
+func (f *fakeSyncDriver) SyncInstance(context.Context) (*omnidriver.Instance, error) {
+	return f.instance, nil
+}
+
+func (f *fakeSyncDriver) SyncDatabase(context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	if f.syncDBErr != nil {
+		return nil, f.syncDBErr
+	}
+	return f.schema, nil
+}
+
+func (f *fakeSyncDriver) Dump(_ context.Context, out io.Writer, metadata *metadatapb.DatabaseSchemaMetadata) error {
+	f.dumpedSchema = metadata
+	if f.dumpErr != nil {
+		return f.dumpErr
+	}
+	_, err := io.WriteString(out, f.dumpSQL)
+	return err
+}
+
+// TestSyncDBSchemaPassesTheDriversMetadataThrough proves the adapter returns
+// omni's synced database schema unchanged.
 func TestSyncDBSchemaPassesTheDriversMetadataThrough(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
-	container, database := testcontainer.NewTiDBDatabase(t)
-	_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf("CREATE TABLE %s.orders (id INT PRIMARY KEY, note VARCHAR(64))", database))
-	require.NoError(t, err)
 
-	driver := openTestDriverOn(ctx, t, container, database)
-	t.Cleanup(func() { require.NoError(t, driver.Close(ctx)) })
+	want := &metadatapb.DatabaseSchemaMetadata{
+		Name: "shop",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
+				Name: "orders",
+				Columns: []*metadatapb.ColumnMetadata{
+					{Name: "id", Type: "int"},
+					{Name: "note", Type: "varchar(64)"},
+				},
+			}},
+		}},
+	}
+	driver := &Driver{OmniAdapter: util.OmniAdapter{Driver: &fakeSyncDriver{schema: want}}}
 
-	got, err := driver.SyncDBSchema(ctx)
-	require.NoError(t, err)
-	want, err := driver.impl.SyncDatabase(ctx)
+	got, err := driver.SyncDBSchema(context.Background())
 	require.NoError(t, err)
 	require.Empty(t, cmp.Diff(want, got, protocmp.Transform()))
 }
 
-// TestSyncDBSchemaReportsAMissingDatabase pins the one thing the adapter adds to
-// a failed sync: the contract's ErrNotFound becomes the product's not-found
-// error, which the sync runner reports as a failed sync.
+// TestSyncDBSchemaReportsAMissingDatabase pins the adapter's translation of
+// omni's ErrNotFound into Bytebase's common.NotFound error.
 func TestSyncDBSchemaReportsAMissingDatabase(t *testing.T) {
 	t.Parallel()
+
 	ctx := context.Background()
-	container, database := testcontainer.NewTiDBDatabase(t)
-	driver := openTestDriverOn(ctx, t, container, database+"_missing")
-	t.Cleanup(func() { require.NoError(t, driver.Close(ctx)) })
+	fake := &fakeSyncDriver{syncDBErr: omnidriver.ErrNotFound}
+	driver := &Driver{
+		OmniAdapter: util.OmniAdapter{
+			Driver:           fake,
+			NotFoundResource: "database",
+			DatabaseName:     "shop_missing",
+		},
+	}
 
 	_, err := driver.SyncDBSchema(ctx)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("database %q not found", database+"_missing"))
+	require.Equal(t, common.NotFound, common.ErrorCode(err))
+	require.Contains(t, err.Error(), `database "shop_missing" not found`)
+
+	otherErr := errors.New("connection refused")
+	fake.syncDBErr = otherErr
+	_, err = driver.SyncDBSchema(ctx)
+	require.ErrorIs(t, err, otherErr)
 }
 
-// TestSyncInstanceMapsTheDriversInstance pins the adapter's mapping of the
-// contract's instance onto the product's types: the version and the databases
-// pass through, a role becomes a storepb.InstanceRole, and the server's
-// lower_case_table_names reaches storepb.Instance.
+// TestSyncInstanceMapsTheDriversInstance pins how the adapter maps omni's
+// instance version, databases, roles, and lower_case_table_names onto
+// Bytebase's InstanceMetadata.
 func TestSyncInstanceMapsTheDriversInstance(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
-	container, database := testcontainer.NewTiDBDatabase(t)
-	_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf(`
-		CREATE USER 'bb_sync_probe'@'%%' IDENTIFIED BY 'probe-pass';
-		GRANT SELECT ON %s.* TO 'bb_sync_probe'@'%%';`, database))
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		_, err := container.GetDB().ExecContext(context.Background(), "DROP USER IF EXISTS 'bb_sync_probe'@'%'")
-		require.NoError(t, err)
-	})
 
-	driver := openTestDriver(ctx, t, container)
-	t.Cleanup(func() { require.NoError(t, driver.Close(ctx)) })
+	grantAttr := "GRANT SELECT ON `shop`.* TO 'bb_sync_probe'@'%'"
+	contract := &omnidriver.Instance{
+		Version:             "8.0.11-TiDB-v8.5.5",
+		LowerCaseTableNames: 2,
+		Databases: []*metadatapb.DatabaseSchemaMetadata{
+			{Name: "shop", CharacterSet: "utf8mb4", Collation: "utf8mb4_bin"},
+		},
+		Roles: []*omnidriver.Role{
+			{Name: "'bb_sync_probe'@'%'", Attribute: &grantAttr},
+		},
+	}
+	driver := &Driver{
+		OmniAdapter: util.OmniAdapter{
+			Driver:               &fakeSyncDriver{instance: contract},
+			WithInstanceMetadata: true,
+		},
+	}
 
-	instance, err := driver.SyncInstance(ctx)
+	instance, err := driver.SyncInstance(context.Background())
 	require.NoError(t, err)
-	contract, err := driver.impl.SyncInstance(ctx)
-	require.NoError(t, err)
-
 	require.Equal(t, contract.Version, instance.Version)
 	require.NotNil(t, instance.Metadata)
-	require.Equal(t, contract.LowerCaseTableNames, instance.Metadata.GetMysqlLowerCaseTableNames())
-
-	// A parallel test of this package may create a database between the two
-	// reads, so compare the databases both reads saw.
-	require.NotEmpty(t, instance.Databases)
-	fromContract := map[string]*metadatapb.DatabaseSchemaMetadata{}
-	for _, database := range contract.Databases {
-		fromContract[database.GetName()] = database
-	}
-	mapped := 0
-	for _, database := range instance.Databases {
-		require.Empty(t, database.GetSchemas(), "an instance sync lists databases without their schemas")
-		if want, ok := fromContract[database.GetName()]; ok {
-			require.Empty(t, cmp.Diff(want, database, protocmp.Transform()), database.GetName())
-			mapped++
-		}
-	}
-	require.Positive(t, mapped)
-
-	// The role this test made is the contract's role, in the product's shape.
-	var role *storepb.InstanceRole
-	for _, candidate := range instance.Metadata.GetRoles() {
-		if candidate.GetName() == "'bb_sync_probe'@'%'" {
-			role = candidate
-		}
-	}
-	require.NotNil(t, role)
-	var contractAttribute *string
-	for _, candidate := range contract.Roles {
-		if candidate.Name == "'bb_sync_probe'@'%'" {
-			contractAttribute = candidate.Attribute
-		}
-	}
-	require.NotNil(t, contractAttribute)
-	require.Equal(t, *contractAttribute, role.GetAttribute())
-	require.Contains(t, role.GetAttribute(), "GRANT SELECT")
+	require.Equal(t, int32(2), instance.Metadata.GetMysqlLowerCaseTableNames())
+	require.Empty(t, cmp.Diff(contract.Databases, instance.Databases, protocmp.Transform()))
+	require.Empty(t, cmp.Diff([]*storepb.InstanceRole{{
+		Name:      "'bb_sync_probe'@'%'",
+		Attribute: &grantAttr,
+	}}, instance.Metadata.GetRoles(), protocmp.Transform()))
 }

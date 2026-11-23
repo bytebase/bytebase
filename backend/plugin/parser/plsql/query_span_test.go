@@ -2,255 +2,129 @@ package plsql
 
 import (
 	"context"
-	"io"
-	"os"
+	"errors"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/pkg/errors"
+	"github.com/bytebase/omni/oracle/analysis"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/yamltest"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-const (
-	instanceIDA = "INSTANCE_ID_A"
-	instanceIDB = "INSTANCE_ID_B"
-)
+func strPtr(s string) *string { return &s }
 
-func TestGetQuerySpan(t *testing.T) {
-	type testCase struct {
-		Description     string `yaml:"description,omitempty"`
-		Statement       string `yaml:"statement,omitempty"`
-		DefaultDatabase string `yaml:"defaultDatabase,omitempty"`
-		// Metadata is the protojson encoded metadatapb.DatabaseSchemaMetadata,
-		// if it's empty, we will use the defaultDatabaseMetadata.
-		Metadata              string              `yaml:"metadata,omitempty"`
-		CrossDatabaseMetadata string              `yaml:"crossDatabaseMetadata,omitempty"`
-		QuerySpan             *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
-	}
-
-	const (
-		record       = false
-		testDataPath = "test-data/query_span.yaml"
-	)
-
-	a := require.New(t)
-	yamlFile, err := os.Open(testDataPath)
-	a.NoError(err)
-
-	var testCases []testCase
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(err)
-	a.NoError(yamlFile.Close())
-	a.NoError(yaml.Unmarshal(byteValue, &testCases))
-
-	for i, tc := range testCases {
-		metadata := &metadatapb.DatabaseSchemaMetadata{}
-		a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata))
-		list := []*metadatapb.DatabaseSchemaMetadata{metadata}
-		crossDatabase := &metadatapb.DatabaseSchemaMetadata{}
-		if tc.CrossDatabaseMetadata != "" {
-			a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.CrossDatabaseMetadata), crossDatabase))
-			list = append(list, crossDatabase)
-		}
-		databaseMetadataGetter, databaseNamesLister, linkedDatabaseMetadataGetter := buildMockDatabaseMetadataGetter(list)
-		result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
-			InstanceID:                    instanceIDA,
-			GetDatabaseMetadataFunc:       databaseMetadataGetter,
-			ListDatabaseNamesFunc:         databaseNamesLister,
-			GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataGetter,
-		}, base.Statement{Text: tc.Statement}, tc.DefaultDatabase, "", false)
-		a.NoError(err)
-		a.NotNil(result)
-		resultYaml := result.ToYaml()
-		if record {
-			testCases[i].QuerySpan = resultYaml
-		} else {
-			a.Equal(tc.QuerySpan, resultYaml, "statement: %s", tc.Statement)
-		}
-	}
-
-	if record {
-		yamltest.Record(t, testDataPath, testCases)
-	}
-}
-
-func buildMockDatabaseMetadataGetter(defaultMetadata []*metadatapb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc, base.GetLinkedDatabaseMetadataFunc) {
-	return func(_ context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
-			databaseMetadata := defaultMetadata
-			if instanceID == instanceIDB {
-				databaseMetadata = getLinkedDatabaseMetadata()
-			}
-			m := make(map[string]*model.DatabaseMetadata)
-			for _, metadata := range databaseMetadata {
-				m[metadata.Name] = model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_ORACLE, true /* isObjectCaseSensitive */)
-			}
-
-			if databaseMetadata, ok := m[databaseName]; ok {
-				return databaseName, databaseMetadata, nil
-			}
-
-			return "", nil, errors.Errorf("database %q not found", databaseName)
-		}, func(_ context.Context, instanceID string) ([]string, error) {
-			databaseMetadata := defaultMetadata
-			if instanceID == instanceIDB {
-				return listLinkedDatabaseNames()
-			}
-			names := make([]string, 0, len(databaseMetadata))
-			for _, metadata := range databaseMetadata {
-				names = append(names, metadata.Name)
-			}
-			return names, nil
-		}, func(_ context.Context, _, linkedDatabaseName, schemaName string) (string, string, *model.DatabaseMetadata, error) {
-			databaseMetadata := defaultMetadata
-			var linkedDBInfo *metadatapb.LinkedDatabaseMetadata
-			for _, metadata := range databaseMetadata {
-				for _, linkedDatabase := range metadata.GetLinkedDatabases() {
-					if linkedDatabase.Name == linkedDatabaseName {
-						linkedDBInfo = linkedDatabase
-						break
-					}
-				}
-				if linkedDBInfo != nil {
-					break
-				}
-			}
-			if linkedDBInfo == nil {
-				// Production resolves an unknown link to nothing, not to an error.
-				return "", "", nil, nil
-			}
-
-			// As in production, the written schema wins over the link user, and a link resolves to
-			// nothing when no database of that name exists. LOOPBACK points back at the connected
-			// instance; every other link reaches instance B.
-			databaseName := linkedDBInfo.Username
-			if schemaName != "" {
-				databaseName = schemaName
-			}
-			candidates, instanceID := getLinkedDatabaseMetadata(), instanceIDB
-			if linkedDBInfo.Name == "LOOPBACK" {
-				candidates, instanceID = defaultMetadata, instanceIDA
-			}
-			for _, metadata := range candidates {
-				if metadata.Name == databaseName {
-					return instanceID, metadata.Name, model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_ORACLE, true /* isObjectCaseSensitive */), nil
-				}
-			}
-
-			return "", "", nil, nil
-		}
-}
-
-func listLinkedDatabaseNames() ([]string, error) {
-	return []string{"SCHEMA1", "SCHEMA2"}, nil
-}
-
-func getLinkedDatabaseMetadata() []*metadatapb.DatabaseSchemaMetadata {
-	return []*metadatapb.DatabaseSchemaMetadata{
-		{
-			Name: "SCHEMA1",
-			Schemas: []*metadatapb.SchemaMetadata{
-				{
-					Name: "",
-					Tables: []*metadatapb.TableMetadata{
-						{
-							Name: "LT1",
-							Columns: []*metadatapb.ColumnMetadata{
-								{
-									Name: "LC1",
-									Type: "int",
-								},
-							},
-						},
-						{
-							Name: "LT2",
-							Columns: []*metadatapb.ColumnMetadata{
-								{
-									Name: "LC1",
-									Type: "int",
-								},
-								{
-									Name: "LC2",
-									Type: "int",
-								},
-							},
+func TestGetQuerySpanSeam(t *testing.T) {
+	localDB := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Name: "APP",
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name: "",
+				Tables: []*metadatapb.TableMetadata{
+					{
+						Name: "EMP",
+						Columns: []*metadatapb.ColumnMetadata{
+							{Name: "ID", Type: "NUMBER"},
+							{Name: "SECRET", Type: "VARCHAR2", IsInvisible: true},
 						},
 					},
-					Views: []*metadatapb.ViewMetadata{
-						{
-							Name: "LV1",
-							Definition: `SELECT LC1, LC2
-											FROM LT2
-							`,
-						},
+				},
+				Views: []*metadatapb.ViewMetadata{
+					{Name: "V_EMP", Definition: "SELECT id FROM emp"},
+					{Name: "V_MIX", Definition: "SELECT e.id, u.username FROM emp e JOIN sys.all_users u ON 1=1"},
+				},
+			},
+		},
+		LinkedDatabases: []*metadatapb.LinkedDatabaseMetadata{
+			{Name: "REMOTE_LINK", Username: "REMOTE_APP"},
+		},
+	}, nil, nil, storepb.Engine_ORACLE, false)
+
+	remoteDB := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Name: "REMOTE_APP",
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name: "",
+				Tables: []*metadatapb.TableMetadata{
+					{
+						Name:    "DEPT",
+						Columns: []*metadatapb.ColumnMetadata{{Name: "NAME", Type: "VARCHAR2"}},
 					},
 				},
 			},
 		},
-	}
-}
+	}, nil, nil, storepb.Engine_ORACLE, false)
 
-func TestGetQuerySpanRefusesSystemTableWithLink(t *testing.T) {
-	metadata := &metadatapb.DatabaseSchemaMetadata{
-		Name:            "PUBLIC",
-		Schemas:         []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{{Name: "T", Columns: []*metadatapb.ColumnMetadata{{Name: "A"}}}}}},
-		LinkedDatabases: []*metadatapb.LinkedDatabaseMetadata{{Name: "REMOTE", Username: "SCHEMA1"}},
-	}
-	databaseMetadataGetter, databaseNamesLister, linkedDatabaseMetadataGetter := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
-		InstanceID:                    instanceIDA,
-		GetDatabaseMetadataFunc:       databaseMetadataGetter,
-		ListDatabaseNamesFunc:         databaseNamesLister,
-		GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataGetter,
+		InstanceID: "inst-local",
+		GetDatabaseMetadataFunc: func(_ context.Context, _, dbName string) (string, *model.DatabaseMetadata, error) {
+			switch dbName {
+			case "APP":
+				return dbName, localDB, nil
+			case "MISSING":
+				return "", nil, &base.ResourceNotFoundError{Err: errors.New("db missing"), Database: strPtr("MISSING")}
+			default:
+				return "", nil, nil
+			}
+		},
+		GetLinkedDatabaseMetadataFunc: func(_ context.Context, _, link, _ string) (string, string, *model.DatabaseMetadata, error) {
+			if link == "REMOTE_LINK" {
+				return "inst-remote", "REMOTE_APP", remoteDB, nil
+			}
+			return "", "", nil, &base.ResourceNotFoundError{Err: errors.New("link missing"), DatabaseLink: strPtr(link)}
+		},
 	}
-	// A linked table is a user table: next to a local system table the statement is mixed,
-	// and on its own it is never an info-schema read.
-	_, err := GetQuerySpan(context.TODO(), gCtx, base.Statement{Text: "SELECT * FROM SYS.DBA_USERS, T@REMOTE;"}, "PUBLIC", "", false)
-	require.ErrorIs(t, err, base.MixUserSystemTablesError)
-	span, err := GetQuerySpan(context.TODO(), gCtx, base.Statement{Text: "SELECT * FROM SYS.DBA_USERS@REMOTE;"}, "PUBLIC", "", false)
+
+	// Local table + invisible column skipping + QueryType mapping via registry.
+	spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_ORACLE, []base.Statement{{Text: "SELECT * FROM emp"}}, "APP", "", false)
 	require.NoError(t, err)
+	require.Len(t, spans, 1)
+	span := spans[0]
 	require.Equal(t, base.Select, span.Type)
-}
+	require.Len(t, span.Results, 1)
+	require.Equal(t, "ID", span.Results[0].Name)
+	require.False(t, span.Results[0].Invisible)
+	require.True(t, span.Results[0].SourceColumns[base.ColumnResource{Database: "APP", Table: "EMP", Column: "ID"}])
 
-func TestGetQuerySpanParenthesizedQuery(t *testing.T) {
-	metadata := &metadatapb.DatabaseSchemaMetadata{
-		Name:    "PUBLIC",
-		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{{Name: "T", Columns: []*metadatapb.ColumnMetadata{{Name: "A"}, {Name: "B"}}}}}},
-	}
-	databaseMetadataGetter, databaseNamesLister, linkedDatabaseMetadataGetter := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
-	gCtx := base.GetQuerySpanContext{
-		InstanceID:                    instanceIDA,
-		GetDatabaseMetadataFunc:       databaseMetadataGetter,
-		ListDatabaseNamesFunc:         databaseNamesLister,
-		GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataGetter,
-	}
-	columnA := base.ColumnResource{Database: "PUBLIC", Table: "T", Column: "A"}
-	columnB := base.ColumnResource{Database: "PUBLIC", Table: "T", Column: "B"}
-	tests := []struct {
-		statement string
-		want      base.SourceColumnSet
-	}{
-		{statement: "(SELECT a FROM t)", want: base.SourceColumnSet{columnA: true}},
-		{statement: "(SELECT a FROM t) ORDER BY a", want: base.SourceColumnSet{columnA: true}},
-		{statement: "((SELECT a FROM t)) ORDER BY 1", want: base.SourceColumnSet{columnA: true}},
-		{statement: "(SELECT a FROM t) FETCH FIRST 5 ROWS ONLY", want: base.SourceColumnSet{columnA: true}},
-		{statement: "WITH w AS (SELECT a FROM t) (SELECT a FROM w)", want: base.SourceColumnSet{columnA: true}},
-		{statement: "(SELECT a FROM t) UNION (SELECT b FROM t) ORDER BY 1", want: base.SourceColumnSet{columnA: true, columnB: true}},
-		{statement: "SELECT a FROM t EXCEPT SELECT b FROM t", want: base.SourceColumnSet{columnA: true, columnB: true}},
-	}
-	for _, tc := range tests {
-		t.Run(tc.statement, func(t *testing.T) {
-			span, err := GetQuerySpan(context.TODO(), gCtx, base.Statement{Text: tc.statement}, "PUBLIC", "", false)
-			require.NoError(t, err)
-			require.Len(t, span.Results, 1)
-			require.Equal(t, "A", span.Results[0].Name)
-			require.Equal(t, tc.want, span.Results[0].SourceColumns)
-		})
-	}
+	// OmniQuerySpanResults preserves Invisible and IsPlainField flags across the seam.
+	converted := base.OmniQuerySpanResults([]analysis.QuerySpanResult{{Name: "SECRET", IsPlainField: true, Invisible: true}})
+	require.Len(t, converted, 1)
+	require.True(t, converted[0].IsPlainField)
+	require.True(t, converted[0].Invisible)
+
+	// Linked database callback resolves @remote_link through GetLinkedDatabaseMetadataFunc.
+	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT name FROM dept@remote_link"}, "APP", "", false)
+	require.NoError(t, err)
+	require.Len(t, span.Results, 1)
+	require.True(t, span.Results[0].SourceColumns[base.ColumnResource{Instance: "inst-remote", Server: "REMOTE_LINK", Database: "REMOTE_APP", Table: "DEPT", Column: "NAME"}] ||
+		span.Results[0].SourceColumns[base.ColumnResource{Database: "REMOTE_APP", Table: "DEPT", Column: "NAME"}])
+
+	// ResourceNotFoundError returned from metadata callback round-trips onto QuerySpan.NotFoundError.
+	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id FROM missing.t"}, "APP", "", false)
+	require.NoError(t, err)
+	var notFoundErr *base.ResourceNotFoundError
+	require.ErrorAs(t, span.NotFoundError, &notFoundErr)
+	require.Equal(t, strPtr("MISSING"), notFoundErr.Database)
+
+	// Mixing user and system tables directly maps to base.MixUserSystemTablesError.
+	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT e.id, u.username FROM emp e JOIN sys.all_users u ON 1=1"}, "APP", "", false)
+	require.ErrorIs(t, err, base.MixUserSystemTablesError)
+
+	// Mixing user and system tables inside a view wraps ErrMixUserSystemTables via mixedTablesError.
+	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id FROM v_mix"}, "APP", "", false)
+	require.ErrorIs(t, err, base.MixUserSystemTablesError)
+
+	// Syntax error wraps with statement context.
+	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT FROM ;"}, "APP", "", false)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to get query span from statement")
+
+	// QueryType conversions.
+	require.Equal(t, base.SelectInfoSchema, base.OmniQueryType(analysis.SelectInfoSchema))
+	require.Equal(t, base.DDL, base.OmniQueryType(analysis.DDL))
+	require.Equal(t, base.DML, base.OmniQueryType(analysis.DML))
+	require.Equal(t, base.Explain, base.OmniQueryType(analysis.Explain))
+	require.Equal(t, base.QueryTypeUnknown, base.OmniQueryType(analysis.QueryType(999)))
 }

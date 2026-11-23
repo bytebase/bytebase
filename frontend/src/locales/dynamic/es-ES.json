@@ -219,7 +219,7 @@
       },
       "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
         "desc": "Aplique las mejores prácticas de SQL con más de 100 reglas de lint y verificaciones de coherencia de esquema.",
-        "title": "Revisión de SQL"
+        "title": "Revisión de SQL basada en reglas"
       },
       "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
         "desc": "Despliegue cambios progresivamente a través de diferentes entornos.",

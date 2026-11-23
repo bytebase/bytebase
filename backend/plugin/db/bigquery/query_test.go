@@ -28,7 +28,8 @@ func (*captureSession) Close() error { return nil }
 // caller.
 func TestQueryConnCarriesMaskingMode(t *testing.T) {
 	session := &captureSession{}
-	d := &Driver{session: session}
+	d := &Driver{}
+	d.SetSession(session)
 
 	_, err := d.QueryConn(context.Background(), "SELECT 1", db.QueryContext{
 		Limit:                5,

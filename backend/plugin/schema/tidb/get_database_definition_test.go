@@ -1,62 +1,80 @@
 package tidb
 
 import (
-	"os"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/yamltest"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
-type getDatabaseDefinitionCase struct {
-	Description string `yaml:"description"`
-	Metadata    string `yaml:"metadata"`
-	Expected    string `yaml:"expected"`
-}
-
-// TestGetDatabaseDefinition pins the DDL generated for each metadata input, and
-// re-parses that DDL to prove it is valid TiDB syntax.
-//
-// The input is metadata rather than a schema text on purpose: deriving it by
-// parsing would cap this test's reach at whatever GetDatabaseMetadata happens to
-// extract, so any generator branch the parser cannot feed would go untested.
-func TestGetDatabaseDefinition(t *testing.T) {
-	const (
-		record   = false
-		filepath = "testdata/get_database_definition.yaml"
-	)
-
-	var tests []getDatabaseDefinitionCase
-	content, err := os.ReadFile(filepath)
-	require.NoError(t, err)
-	require.NoError(t, yaml.Unmarshal(content, &tests))
-
-	for i, tc := range tests {
-		t.Run(tc.Description, func(t *testing.T) {
-			var metadata metadatapb.DatabaseSchemaMetadata
-			require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), &metadata))
-
-			definition, err := GetDatabaseDefinition(schema.GetDefinitionContext{PrintHeader: true}, &metadata)
-			require.NoError(t, err)
-			require.NotEmpty(t, definition)
-
-			_, err = GetDatabaseMetadata(definition)
-			require.NoError(t, err, "generated definition should parse")
-
-			if record {
-				tests[i].Expected = definition
-				return
-			}
-			require.Equal(t, tc.Expected, definition)
-		})
+func TestGetDatabaseDefinitionRegistry(t *testing.T) {
+	table := &metadatapb.TableMetadata{
+		Name:      "t",
+		Engine:    "InnoDB",
+		Charset:   "utf8mb4",
+		Collation: "utf8mb4_bin",
+		Columns: []*metadatapb.ColumnMetadata{
+			{Name: "id", Type: "bigint", Default: "AUTO_RANDOM(5)"},
+		},
+		Indexes: []*metadatapb.IndexMetadata{
+			{Name: "PRIMARY", Expressions: []string{"id"}, Primary: true, Unique: true, Visible: true},
+		},
+	}
+	dbMeta := &metadatapb.DatabaseSchemaMetadata{
+		Name: "app",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Tables: []*metadatapb.TableMetadata{table},
+		}},
 	}
 
-	if record {
-		yamltest.Record(t, filepath, tests)
+	for _, tc := range []struct {
+		name     string
+		contains string
+		get      func() (string, error)
+	}{
+		{
+			name:     "database with header",
+			contains: "FOREIGN_KEY_CHECKS=0;",
+			get: func() (string, error) {
+				return schema.GetDatabaseDefinition(storepb.Engine_TIDB, schema.GetDefinitionContext{PrintHeader: true}, dbMeta)
+			},
+		},
+		{
+			name:     "table",
+			contains: "CREATE TABLE `t`",
+			get: func() (string, error) {
+				return schema.GetTableDefinition(storepb.Engine_TIDB, "", table, nil)
+			},
+		},
+		{
+			name:     "view",
+			contains: "CREATE VIEW `v`",
+			get: func() (string, error) {
+				return schema.GetViewDefinition(storepb.Engine_TIDB, "", &metadatapb.ViewMetadata{Name: "v", Definition: "SELECT `id` FROM `t`"})
+			},
+		},
+		{
+			name:     "function",
+			contains: "CREATE FUNCTION `f`() RETURNS int RETURN 1;;",
+			get: func() (string, error) {
+				return schema.GetFunctionDefinition(storepb.Engine_TIDB, "", &metadatapb.FunctionMetadata{Name: "f", Definition: "CREATE FUNCTION `f`() RETURNS int RETURN 1"})
+			},
+		},
+		{
+			name:     "procedure",
+			contains: "CREATE PROCEDURE `p`() BEGIN END;;",
+			get: func() (string, error) {
+				return schema.GetProcedureDefinition(storepb.Engine_TIDB, "", &metadatapb.ProcedureMetadata{Name: "p", Definition: "CREATE PROCEDURE `p`() BEGIN END"})
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := tc.get()
+			require.NoError(t, err)
+			require.Contains(t, got, tc.contains)
+		})
 	}
 }

@@ -2,79 +2,111 @@ package trino
 
 import (
 	"context"
+	"errors"
+	"io"
 	"strings"
 	"testing"
 
+	omnidriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/testing/protocmp"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-// TestSyncInstanceAndDatabaseAgainstALiveServer pins what the omni syncer reads:
-// the catalogs as databases, and one catalog's schemas, tables, columns and
-// views. Two shapes differ from the old driver: information_schema is no longer
-// listed as a schema, and views are now read and dumped.
-func TestSyncInstanceAndDatabaseAgainstALiveServer(t *testing.T) {
+type fakeSyncDumpDriver struct {
+	instance     *omnidriver.Instance
+	schema       *metadatapb.DatabaseSchemaMetadata
+	syncDBErr    error
+	dumpOut      string
+	dumpErr      error
+	dumpedSchema *metadatapb.DatabaseSchemaMetadata
+}
+
+func (*fakeSyncDumpDriver) Ping(context.Context) error { return nil }
+func (*fakeSyncDumpDriver) Close() error               { return nil }
+
+func (f *fakeSyncDumpDriver) SyncInstance(context.Context) (*omnidriver.Instance, error) {
+	return f.instance, nil
+}
+
+func (f *fakeSyncDumpDriver) SyncDatabase(context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	if f.syncDBErr != nil {
+		return nil, f.syncDBErr
+	}
+	return f.schema, nil
+}
+
+func (f *fakeSyncDumpDriver) Dump(_ context.Context, out io.Writer, metadata *metadatapb.DatabaseSchemaMetadata) error {
+	f.dumpedSchema = metadata
+	if f.dumpErr != nil {
+		return f.dumpErr
+	}
+	_, err := io.WriteString(out, f.dumpOut)
+	return err
+}
+
+// TestSyncInstanceAndDatabaseDelegateToOmniDriver pins how the Trino adapter
+// forwards SyncInstance, SyncDBSchema, and Dump to the omni driver.
+func TestSyncInstanceAndDatabaseDelegateToOmniDriver(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
-	c := testcontainer.SharedTrinoContainer(t)
-	driver := openTestDriver(t, &storepb.DataSource{
-		Host:     c.GetHost(),
-		Port:     c.GetPort(),
-		Username: c.GetUsername(),
-		Database: "memory",
-	})
+	wantSchema := &metadatapb.DatabaseSchemaMetadata{
+		Name: "memory",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "default",
+			Tables: []*metadatapb.TableMetadata{{
+				Name: "items",
+				Columns: []*metadatapb.ColumnMetadata{
+					{Name: "id", Type: "bigint"},
+					{Name: "name", Type: "varchar(10)"},
+				},
+			}},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:       "v_items",
+				Definition: "SELECT id FROM memory.default.items",
+			}},
+		}},
+	}
+	fake := &fakeSyncDumpDriver{
+		instance: &omnidriver.Instance{
+			Version:   "482",
+			Databases: []*metadatapb.DatabaseSchemaMetadata{{Name: "memory"}, {Name: "system"}},
+		},
+		schema:  wantSchema,
+		dumpOut: "CREATE SCHEMA IF NOT EXISTS \"default\";\n",
+	}
+	driver := &Driver{
+		OmniAdapter: util.OmniAdapter{
+			Driver:               fake,
+			WithInstanceMetadata: true,
+		},
+	}
 
 	instance, err := driver.SyncInstance(ctx)
 	require.NoError(t, err)
 	require.Equal(t, "482", instance.Version)
-	var catalogs []string
-	for _, database := range instance.Databases {
-		catalogs = append(catalogs, database.Name)
-	}
-	require.Contains(t, catalogs, "memory")
+	require.NotNil(t, instance.Metadata)
+	require.Len(t, instance.Databases, 2)
+	require.Equal(t, "memory", instance.Databases[0].Name)
 
-	_, err = driver.Execute(ctx, "CREATE TABLE memory.default.cutover_sync_t (id BIGINT, name VARCHAR(10));\n"+
-		"CREATE VIEW memory.default.cutover_sync_v AS SELECT id FROM memory.default.cutover_sync_t", db.ExecuteOptions{})
+	gotSchema, err := driver.SyncDBSchema(ctx)
 	require.NoError(t, err)
-
-	schema, err := driver.SyncDBSchema(ctx)
-	require.NoError(t, err)
-	require.Equal(t, "memory", schema.Name)
-
-	var schemas []string
-	var table *struct {
-		columns []string
-	}
-	var view string
-	for _, s := range schema.Schemas {
-		schemas = append(schemas, s.Name)
-		for _, t := range s.Tables {
-			if t.Name == "cutover_sync_t" {
-				var columns []string
-				for _, column := range t.Columns {
-					columns = append(columns, column.Name)
-				}
-				table = &struct{ columns []string }{columns: columns}
-			}
-		}
-		for _, v := range s.Views {
-			if v.Name == "cutover_sync_v" {
-				view = v.Definition
-			}
-		}
-	}
-	// Known difference: the old driver listed information_schema and read no views.
-	require.Equal(t, []string{"default"}, schemas)
-	require.Equal(t, []string{"id", "name"}, table.columns)
-	require.NotEmpty(t, view)
+	require.Empty(t, cmp.Diff(wantSchema, gotSchema, protocmp.Transform()))
 
 	var dump strings.Builder
-	require.NoError(t, driver.Dump(ctx, &dump, schema))
-	// Known difference: the omni dump writes CREATE SCHEMA and views; the old
-	// driver wrote tables only.
-	require.Contains(t, dump.String(), `CREATE SCHEMA IF NOT EXISTS "default";`)
-	require.Contains(t, dump.String(), `CREATE TABLE IF NOT EXISTS "default"."cutover_sync_t"`)
-	require.Contains(t, dump.String(), `CREATE OR REPLACE VIEW "default"."cutover_sync_v"`)
+	require.NoError(t, driver.Dump(ctx, &dump, gotSchema))
+	require.Equal(t, fake.dumpOut, dump.String())
+	require.Empty(t, cmp.Diff(wantSchema, fake.dumpedSchema, protocmp.Transform()))
+
+	fake.syncDBErr = errors.New("catalog unavailable")
+	_, err = driver.SyncDBSchema(ctx)
+	require.ErrorIs(t, err, fake.syncDBErr)
+
+	fake.dumpErr = errors.New("dump failed")
+	err = driver.Dump(ctx, &dump, gotSchema)
+	require.ErrorIs(t, err, fake.dumpErr)
 }

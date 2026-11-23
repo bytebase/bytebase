@@ -25,37 +25,20 @@ import (
 	"database/sql"
 	sqldriver "database/sql/driver"
 	"errors"
-	"io"
 	"strconv"
 	"strings"
-	"sync"
-	"time"
 
 	odriver "github.com/bytebase/omni/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 	snowflakedriver "github.com/bytebase/omni/snowflake/driver"
 	snowflakeparser "github.com/bytebase/omni/snowflake/parser"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-type snowflakeImpl interface {
-	odriver.Driver
-	odriver.Syncer
-	odriver.Dumper
-	odriver.Querier
-	odriver.Executor
-}
-
-var (
-	_ db.Driver     = (*Driver)(nil)
-	_ snowflakeImpl = (*snowflakedriver.Driver)(nil)
-)
+var _ db.Driver = (*Driver)(nil)
 
 func init() {
 	db.Register(storepb.Engine_SNOWFLAKE, newDriver)
@@ -63,13 +46,7 @@ func init() {
 
 // Driver is the Snowflake driver.
 type Driver struct {
-	databaseName string
-	impl         snowflakeImpl
-
-	// sessionMu guards session and serializes QueryConn calls on one held
-	// client connection from the first QueryConn until Close.
-	sessionMu sync.Mutex
-	session   odriver.Session
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -82,8 +59,12 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	if err != nil {
 		return nil, err
 	}
-	d.impl = impl
-	d.databaseName = config.ConnectionContext.DatabaseName
+	d.OmniAdapter = util.OmniAdapter{
+		Driver:               impl,
+		WithInstanceMetadata: true,
+		NotFoundResource:     "database",
+		DatabaseName:         config.ConnectionContext.DatabaseName,
+	}
 	return d, nil
 }
 
@@ -109,70 +90,31 @@ func snowflakeConfig(config db.ConnectionConfig) odriver.Config {
 	return cfg
 }
 
-// Close closes the held query session and the underlying driver.
-func (d *Driver) Close(context.Context) error {
-	d.sessionMu.Lock()
-	var sessionErr error
-	if d.session != nil {
-		sessionErr = d.session.Close()
-		d.session = nil
-	}
-	d.sessionMu.Unlock()
-
-	var implErr error
-	if d.impl != nil {
-		implErr = d.impl.Close()
-	}
-	return errors.Join(sessionErr, implErr)
-}
-
-// Ping pings the database.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.impl.Ping(ctx)
-}
-
 // QueryConn queries a SQL statement on the driver's lazily opened session.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	d.sessionMu.Lock()
-	defer d.sessionMu.Unlock()
-
-	session, err := d.querySessionLocked(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// Bytebase treats a non-positive cap as zero allowed bytes, whereas the
 	// omni driver contract treats <= 0 as unbounded.
-	maxResultBytes := queryContext.MaximumSQLResultSize
-	if maxResultBytes <= 0 {
-		maxResultBytes = 1
-	}
-	results, err := session.Query(ctx, statement, odriver.QueryOptions{
+	results, err := d.QueryHeldSession(ctx, statement, odriver.QueryOptions{
 		Schema:         queryContext.Schema,
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
 		ExplainFormat:  util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "", v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON),
 		MaskingEnabled: queryContext.MaskingEnabled,
-		MaxResultBytes: maxResultBytes,
+		MaxResultBytes: util.PositiveMaxResultBytes(queryContext.MaximumSQLResultSize),
+	}, util.SessionQueryOptions{
+		KeepOnError: isRecoverableQueryError,
 	})
 	if err != nil {
-		if !isRecoverableQueryError(ctx, err) {
-			d.discardSessionLocked(session)
-		}
 		return nil, err
 	}
-	if ctx.Err() != nil {
-		d.discardSessionLocked(session)
-	}
-	if len(results) == 0 {
-		return nil, nil
-	}
-
-	converted := make([]*v1pb.QueryResult, 0, len(results))
-	for _, result := range results {
-		converted = append(converted, toQueryResult(result, queryContext))
-	}
-	return converted, nil
+	return util.OmniResultsToQueryResultsWith(results, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
+		ClearExplainPlan:          queryContext.Explain,
+		ClearExplainPlanOnError:   true,
+		TypedExplainPlan:          true,
+		IncludePlanContent:        true,
+		FillZeroAffectedRows:      true,
+		FormatOutOfRangeTimestamp: util.FormatDefaultTimestamp,
+	}), nil
 }
 
 // isRecoverableQueryError reports whether err left the held Snowflake session
@@ -264,117 +206,12 @@ func parseSnowflakeErrorPrefix(msg string) (int, string, bool) {
 	return 0, "", false
 }
 
-func (d *Driver) querySessionLocked(ctx context.Context) (odriver.Session, error) {
-	if d.session != nil {
-		return d.session, nil
-	}
-	session, err := d.impl.Session(ctx)
-	if err != nil {
-		return nil, err
-	}
-	d.session = session
-	return session, nil
-}
-
-func (d *Driver) discardSessionLocked(session odriver.Session) {
-	_ = session.Close()
-	if d.session == session {
-		d.session = nil
-	}
-}
-
-func toQueryResult(result *odriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
-	if result == nil {
-		return &v1pb.QueryResult{}
-	}
-	normalized := normalizeOutOfRangeTimestamps(result)
-	queryResult := util.OmniResultToQueryResult(normalized, queryContext.MaximumSQLResultSize)
-	util.FillZeroAffectedRows(normalized, queryResult)
-	// Explain requests leave QueryPlan unset so SQLService stamps the requested
-	// format; user-written EXPLAIN statements map snowflake/analysis's lowercase
-	// format names ("text", "json") through db.TypedExplainPlan.
-	if queryContext.Explain || normalized.Err != nil {
-		queryResult.QueryPlan = nil
-	} else if normalized.Plan != nil {
-		queryResult.QueryPlan = db.TypedExplainPlan(normalized.Plan.Format, normalized.Plan.Executed, true)
-		queryResult.QueryPlan.Content = normalized.Plan.Content
-	}
-	return queryResult
-}
-
-// normalizeOutOfRangeTimestamps converts Timestamp/TimestampTZ cells outside
-// google.protobuf.Timestamp's [0001-01-01, 9999-12-31] range into strings so
-// protobuf serialization never fails on extreme Snowflake dates.
-func normalizeOutOfRangeTimestamps(result *odriver.Result) *odriver.Result {
-	var cloned *odriver.Result
-	for i, row := range result.Rows {
-		var clonedRow []odriver.Value
-		for j, cell := range row {
-			if cell.Kind != odriver.Timestamp && cell.Kind != odriver.TimestampTZ {
-				continue
-			}
-			if timestamppb.New(cell.Time).CheckValid() == nil {
-				continue
-			}
-			if cloned == nil {
-				copyResult := *result
-				copyResult.Rows = append([][]odriver.Value(nil), result.Rows...)
-				cloned = &copyResult
-			}
-			if clonedRow == nil {
-				clonedRow = append([]odriver.Value(nil), row...)
-				cloned.Rows[i] = clonedRow
-			}
-			text := cell.Time.Format(time.RFC3339Nano)
-			if cell.Kind == odriver.Timestamp {
-				text = cell.Time.UTC().Format("2006-01-02 15:04:05.999999999")
-			}
-			clonedRow[j] = odriver.Value{Kind: odriver.String, String: text}
-		}
-	}
-	if cloned != nil {
-		return cloned
-	}
-	return result
-}
-
 // Execute executes a SQL script and returns the affected rows.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	transactionMode, _, cleanedStatement := util.ParseTransactionMode(statement)
-	shift := util.DirectiveShift(statement, cleanedStatement)
-	return d.impl.Execute(ctx, cleanedStatement, odriver.ExecuteOptions{
-		Transaction:    transactionMode,
-		CreateDatabase: opts.CreateDatabase,
-		MaxRetries:     opts.MaximumRetries,
-		Log: util.NewExecuteLogger(opts, util.WithCommandRange(func(command odriver.Command) *storepb.Range {
-			start, end := shift(command.ByteStart, command.ByteEnd)
-			return &storepb.Range{Start: int32(start), End: int32(end)}
-		})),
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		ParseTransactionDirective: true,
+		PassCreateDatabase:        true,
+		PassMaxRetries:            true,
+		ShiftCommandRanges:        true,
 	})
-}
-
-// SyncInstance syncs the Snowflake account's version, databases, and user roles.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.impl.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, true), nil
-}
-
-// SyncDBSchema syncs the schema of the database the driver was opened on.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	metadata, err := d.impl.SyncDatabase(ctx)
-	if err != nil {
-		if errors.Is(err, odriver.ErrNotFound) {
-			return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
-		}
-		return nil, err
-	}
-	return metadata, nil
-}
-
-// Dump writes the database's server-rendered DDL.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.impl.Dump(ctx, out, dbMetadata)
 }

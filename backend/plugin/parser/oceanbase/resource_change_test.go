@@ -10,98 +10,21 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-func TestExtractChangedResources(t *testing.T) {
-	statement := `CREATE TABLE t1 (c1 INT);
-	DROP TABLE t1;
-	ALTER TABLE t1 ADD COLUMN c1 INT;
-	RENAME TABLE t1 TO t2;
-	INSERT INTO t1 (c1) VALUES (1), (5);
-	INSERT INTO t1 SET c1 = 7;
-	UPDATE t1 SET c1 = 5;
-	CREATE PROCEDURE getUser(id INT) SELECT * FROM hello WHERE uid = id;
-	`
-	changedResources := model.NewChangedResources(nil /* dbMetadata */)
-	changedResources.AddTable(
-		"db",
-		"",
-		&storepb.ChangedResourceTable{
-			Name: "t1",
-		},
-		true,
-	)
-	changedResources.AddTable(
-		"db",
-		"",
-		&storepb.ChangedResourceTable{
-			Name: "t2",
-		},
-		false,
-	)
-	want := &base.ChangeSummary{
-		ChangedResources: changedResources,
-		DMLStatements: []string{
-			"UPDATE t1 SET c1 = 5;",
-		},
-		DMLCount:    1,
-		InsertCount: 3,
-	}
+func TestExtractChangedResourcesSeam(t *testing.T) {
+	statement := "CREATE TABLE t1 (c1 INT);\nALTER TABLE t1 ADD COLUMN c2 INT;\nINSERT INTO t1 (c1) VALUES (1), (2);\nUPDATE t1 SET c1 = 3;\nCREATE VIEW other_db.v AS SELECT 1;"
 
 	stmts, err := base.ParseStatements(storepb.Engine_OCEANBASE, statement)
 	require.NoError(t, err)
-	asts := base.ExtractASTs(stmts)
-	got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, statement)
-	require.NoError(t, err)
-	require.Equal(t, want, got)
-}
 
-func TestExtractChangedResourcesTruncate(t *testing.T) {
-	const statement = `TRUNCATE TABLE t;`
-
-	want := model.NewChangedResources(nil /* dbMetadata */)
-	want.AddTable("db", "", &storepb.ChangedResourceTable{Name: "t"}, true)
-
-	stmts, err := base.ParseStatements(storepb.Engine_OCEANBASE, statement)
+	got, err := base.ExtractChangedResources(storepb.Engine_OCEANBASE, "db", "", nil, base.ExtractASTs(stmts), statement)
 	require.NoError(t, err)
-	asts := base.ExtractASTs(stmts)
-	got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, statement)
-	require.NoError(t, err)
-	require.Equal(t, want, got.ChangedResources)
-}
 
-func TestExtractChangedResourcesLoadData(t *testing.T) {
-	const statement = `LOAD DATA INFILE '/tmp/f.csv' INTO TABLE other_db.t (a, b);`
+	wantResources := model.NewChangedResources(nil)
+	wantResources.AddTable("db", "", &storepb.ChangedResourceTable{Name: "t1"}, true)
+	wantResources.AddDatabase("other_db")
 
-	want := model.NewChangedResources(nil /* dbMetadata */)
-	want.AddTable("other_db", "", &storepb.ChangedResourceTable{Name: "t"}, false)
-
-	stmts, err := base.ParseStatements(storepb.Engine_OCEANBASE, statement)
-	require.NoError(t, err)
-	asts := base.ExtractASTs(stmts)
-	got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, statement)
-	require.NoError(t, err)
-	require.Equal(t, want, got.ChangedResources)
-}
-
-func TestExtractChangedResourcesObjectDDLDatabaseOnly(t *testing.T) {
-	// Qualified non-table object DDL → a database-only target on the qualifier.
-	for _, statement := range []string{
-		`CREATE VIEW other_db.v AS SELECT 1;`,
-		`DROP VIEW other_db.v;`,
-		`ALTER PROCEDURE other_db.p COMMENT 'c';`,
-	} {
-		stmts, err := base.ParseStatements(storepb.Engine_OCEANBASE, statement)
-		require.NoError(t, err, statement)
-		asts := base.ExtractASTs(stmts)
-		got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, statement)
-		require.NoError(t, err, statement)
-		require.Equal(t, []string{"other_db"}, got.ChangedResources.GetDatabaseOnlyTargets(), statement)
-	}
-	// Unqualified → no database-only target (request-database fallback).
-	const unqualified = `CREATE VIEW v AS SELECT 1;`
-	stmts, err := base.ParseStatements(storepb.Engine_OCEANBASE, unqualified)
-	require.NoError(t, err)
-	asts := base.ExtractASTs(stmts)
-	got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, unqualified)
-	require.NoError(t, err)
-	require.Empty(t, got.ChangedResources.GetDatabaseOnlyTargets())
+	require.Equal(t, wantResources, got.ChangedResources)
+	require.Equal(t, []string{"UPDATE t1 SET c1 = 3;"}, got.DMLStatements)
+	require.Equal(t, 1, got.DMLCount)
+	require.Equal(t, 2, got.InsertCount)
 }

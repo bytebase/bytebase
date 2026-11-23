@@ -18,7 +18,6 @@ require (
 	connectrpc.com/validate v0.9.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.3
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.15.0
-	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.6.0-beta.4
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets v1.5.1
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
 	github.com/aws/aws-sdk-go-v2 v1.47.5
@@ -30,10 +29,9 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.10.4
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/omni v0.0.0-20261121123411-fa2d8723db5c
+	github.com/bytebase/omni v0.0.0-20261121163635-eedd3d2249a7
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/cenkalti/backoff/v7 v7.0.3
-	github.com/cockroachdb/cockroachdb-parser v0.25.2
 	github.com/coreos/go-oidc v2.5.0+incompatible
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/github/gh-ost v1.1.11
@@ -44,7 +42,6 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/cel-go v0.30.0
 	github.com/google/go-cmp v0.7.0
-	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/gosimple/slug v1.15.0
@@ -82,7 +79,6 @@ require (
 	github.com/xuri/excelize/v2 v2.11.1
 	github.com/yterajima/go-sitemap v0.4.0
 	github.com/zeebo/xxh3 v1.1.0
-	go.mongodb.org/mongo-driver/v2 v2.9.3
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.58.0
 	golang.org/x/net v0.62.0
@@ -116,6 +112,7 @@ require (
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.6.0-beta.4 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.13.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.2.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.1 // indirect
@@ -172,6 +169,7 @@ require (
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.4.3 // indirect
+	github.com/cockroachdb/cockroachdb-parser v0.25.2 // indirect
 	github.com/cockroachdb/errors v1.11.3 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20241215232642-bb51bb14a506 // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
@@ -317,6 +315,7 @@ require (
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
+	go.mongodb.org/mongo-driver/v2 v2.9.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.45.0 // indirect

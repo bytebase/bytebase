@@ -33,27 +33,17 @@
 //   - Dump writes the server's own SHOW CREATE TABLE for every object: omni has
 //     no databricks catalog that renders a synced schema as Databricks DDL, so
 //     the metadata argument is not read.
-//
-// The statement split, the EXPLAIN rewrite, the result decode, the cap, the
-// session's schema and the dump are omni's driver's, not this adapter's, and
-// several of them behave differently from the replaced driver. This PR's
-// "Parity evidence" table records each difference and what it means for the
-// product, and cutover_parity_test.go asserts both answers over the recorded
-// workspace. Read those before changing the adapter.
 package databricks
 
 import (
 	"context"
-	"io"
 
 	databricksdriver "github.com/bytebase/omni/databricks/driver"
 	odbdriver "github.com/bytebase/omni/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var _ db.Driver = (*Driver)(nil)
@@ -64,10 +54,7 @@ func init() {
 
 // Driver is Bytebase's Databricks driver.
 type Driver struct {
-	config db.ConnectionConfig
-
-	impl    *databricksdriver.Driver
-	session odbdriver.Session
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -87,7 +74,11 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 		_ = impl.Close()
 		return nil, err
 	}
-	return &Driver{config: config, impl: impl, session: session}, nil
+	d := &Driver{
+		OmniAdapter: util.OmniAdapter{Driver: impl},
+	}
+	d.SetSession(session)
+	return d, nil
 }
 
 // databricksConfig resolves everything Bytebase knows about reaching the
@@ -111,66 +102,15 @@ func databricksConfig(config db.ConnectionConfig) odbdriver.Config {
 	return cfg
 }
 
-// Close closes the session. The SDK client keeps no connection of its own.
-func (d *Driver) Close(context.Context) error {
-	if d.session == nil {
-		return nil
-	}
-	err := d.session.Close()
-	d.session = nil
-	return err
-}
-
-// Ping asks the workspace for its root folder, which is Databricks' connectivity
-// check: there is no SQL-level ping.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.impl.Ping(ctx)
-}
-
 // Execute runs the script's statements in order and returns the rows they
 // affected. Databricks has no transaction control a script can issue, so the
 // transaction mode the product sends changes nothing, which is what the previous
 // driver did.
-//
-// Known difference: the count is the summed num_affected_rows the warehouse
-// states, and each command and its response reach the task run log. The previous
-// driver returned 0 for every script and logged nothing. A logged range names the
-// caller's script, with the removed directive lines left out, because a task run
-// log with LogCommandStatement off slices that script by the range.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	// The directive is removed from the script as before; its mode reaches no
-	// option, because Databricks has no transaction control a script can issue,
-	// and the session's transaction mode is not something the API accepts.
-	_, cleaned := base.ParseTransactionConfig(statement)
-	shift := util.DirectiveShift(statement, cleaned)
-	return d.impl.Execute(ctx, cleaned, odbdriver.ExecuteOptions{
-		CreateDatabase: opts.CreateDatabase,
-		MaxRetries:     opts.MaximumRetries,
-		Log: util.NewExecuteLogger(opts, util.WithCommandRange(func(command odbdriver.Command) *storepb.Range {
-			start, end := shift(command.ByteStart, command.ByteEnd)
-			return &storepb.Range{Start: int32(start), End: int32(end)}
-		})),
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		StripDirectivesOnly: true,
+		PassCreateDatabase:  true,
+		PassMaxRetries:      true,
+		ShiftCommandRanges:  true,
 	})
-}
-
-// SyncInstance syncs the SQL release and the workspace's catalog names. Roles
-// stay empty: Unity Catalog exposes no role a sync reads.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.impl.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, false), nil
-}
-
-// SyncDBSchema syncs the catalog the driver was opened on.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return d.impl.SyncDatabase(ctx)
-}
-
-// Dump writes the server's own DDL for every object in the workspace. The
-// synced metadata is not rendered and does not narrow the dump: omni has no
-// databricks catalog that turns a synced schema back into Databricks DDL.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, metadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.impl.Dump(ctx, out, metadata)
 }

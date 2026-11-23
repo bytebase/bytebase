@@ -1,20 +1,16 @@
 package mongodb
 
 import (
+	"cmp"
 	"context"
-	"regexp"
 	"slices"
-	"strings"
 
-	"github.com/bytebase/omni/mongo/catalog"
+	metadatapb "github.com/bytebase/omni/metadata"
 	omnicompletion "github.com/bytebase/omni/mongo/completion"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
-
-// validIdentifierRegexp matches valid JavaScript identifiers that can be used with dot notation.
-var validIdentifierRegexp = regexp.MustCompile(`^[a-zA-Z_$][a-zA-Z0-9_$]*$`)
 
 func init() {
 	base.RegisterCompleteFunc(storepb.Engine_MONGODB, Completion)
@@ -22,119 +18,45 @@ func init() {
 
 // Completion is the entry point for MongoDB code completion.
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	// Build omni catalog from Bytebase metadata.
-	cat := buildCatalog(ctx, cCtx)
-
-	// Convert caret line:column to byte offset.
-	byteOffset := caretToByteOffset(statement, caretLine, caretOffset)
-
-	// Get omni completion candidates.
-	candidates := omnicompletion.Complete(statement, byteOffset, cat)
-
-	// Detect whether cursor is inside bracket notation (db[|).
-	inBracket := isAfterOpenBracket(statement, byteOffset)
-
-	// Convert to base.Candidate, formatting collection names for context.
-	var result []base.Candidate
-	for _, c := range candidates {
-		text := c.Text
-		if c.Type == omnicompletion.CandidateCollection {
-			text = formatCollectionCandidate(c.Text, inBracket)
+	var loadDatabase func(ctx context.Context, name string) (*metadatapb.DatabaseSchemaMetadata, error)
+	if cCtx.Metadata != nil {
+		loadDatabase = func(ctx context.Context, name string) (*metadatapb.DatabaseSchemaMetadata, error) {
+			_, metadata, err := cCtx.Metadata(ctx, cCtx.InstanceID, name)
+			if err != nil || metadata == nil {
+				return nil, err
+			}
+			return metadata.GetProto(), nil
 		}
+	}
+
+	candidates := omnicompletion.CompleteSession(ctx, omnicompletion.SessionConfig{
+		DefaultDatabase: cCtx.DefaultDatabase,
+		LoadDatabase:    loadDatabase,
+	}, statement, caretLine, caretOffset)
+
+	result := make([]base.Candidate, 0, len(candidates))
+	for _, c := range candidates {
 		result = append(result, base.Candidate{
-			Type: candidateTypeToBase(c.Type),
-			Text: text,
+			Type:       candidateTypeToBase(c.Type),
+			Text:       c.Text,
+			Definition: c.Definition,
+			Comment:    c.Comment,
 		})
 	}
 
-	// Sort and deduplicate.
+	// Omni sorts by its finer CandidateType enum; re-sort and compact after
+	// collapsing into Bytebase's coarser base.CandidateType.
 	slices.SortFunc(result, func(a, b base.Candidate) int {
-		if a.Type != b.Type {
-			if a.Type < b.Type {
-				return -1
-			}
-			return 1
-		}
-		if a.Text < b.Text {
-			return -1
-		}
-		if a.Text > b.Text {
-			return 1
-		}
-		return 0
+		return cmp.Or(
+			cmp.Compare(a.Type, b.Type),
+			cmp.Compare(a.Text, b.Text),
+			cmp.Compare(a.Definition, b.Definition),
+			cmp.Compare(a.Comment, b.Comment),
+		)
 	})
-
 	return slices.CompactFunc(result, func(a, b base.Candidate) bool {
-		return a.Type == b.Type && a.Text == b.Text
+		return a.Type == b.Type && a.Text == b.Text && a.Definition == b.Definition
 	}), nil
-}
-
-// buildCatalog creates an omni catalog from Bytebase completion context.
-func buildCatalog(ctx context.Context, cCtx base.CompletionContext) *catalog.Catalog {
-	cat := catalog.New()
-
-	if cCtx.DefaultDatabase == "" || cCtx.Metadata == nil {
-		return cat
-	}
-
-	_, metadata, err := cCtx.Metadata(ctx, cCtx.InstanceID, cCtx.DefaultDatabase)
-	if err != nil || metadata == nil {
-		return cat
-	}
-
-	cat.LoadMetadata(metadata.GetProto())
-	return cat
-}
-
-// caretToByteOffset converts a 1-based line and 0-based column offset to a byte offset.
-// Note: caretOffset is treated as a rune (code point) offset, not UTF-16 code units.
-// This matches the existing behavior of the completion callers in this codebase.
-func caretToByteOffset(statement string, caretLine int, caretOffset int) int {
-	line := 1
-	col := 0
-	for i, r := range statement {
-		if line == caretLine && col == caretOffset {
-			return i
-		}
-		if r == '\n' {
-			line++
-			col = 0
-		} else {
-			col++
-		}
-	}
-	return len(statement)
-}
-
-// isAfterOpenBracket checks if the cursor position is inside bracket notation (db[|).
-func isAfterOpenBracket(statement string, byteOffset int) bool {
-	// Scan backwards from cursor to find the nearest unmatched '['.
-	for i := byteOffset - 1; i >= 0; i-- {
-		switch statement[i] {
-		case '[':
-			return true
-		case ']', '\n', ';':
-			return false
-		}
-	}
-	return false
-}
-
-// formatCollectionCandidate formats a collection name for completion context.
-// In bracket context (db[|): returns "name"] to complete the bracket expression.
-// In dot context (db.|): returns bracket notation ["name"] for special chars, bare name otherwise.
-func formatCollectionCandidate(name string, inBracket bool) string {
-	if inBracket {
-		escaped := strings.ReplaceAll(name, `\`, `\\`)
-		escaped = strings.ReplaceAll(escaped, `"`, `\"`)
-		return `"` + escaped + `"]`
-	}
-	if !validIdentifierRegexp.MatchString(name) {
-		escaped := strings.ReplaceAll(name, `\`, `\\`)
-		escaped = strings.ReplaceAll(escaped, `"`, `\"`)
-		return `["` + escaped + `"]`
-	}
-	return name
 }
 
 // candidateTypeToBase maps omni completion candidate types to Bytebase base types.

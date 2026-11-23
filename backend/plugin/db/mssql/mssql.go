@@ -33,9 +33,6 @@
 //     result's error.
 //   - A count-only statement's result carries one "Affected Rows" row, and
 //     RowsCount counts it.
-//
-// cutover_parity_test.go replays a recording of the driver this replaced over
-// the same corpus and names the cases whose behavior moved.
 package mssql
 
 import (
@@ -46,12 +43,10 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	odriver "github.com/bytebase/omni/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 	mssqldriver "github.com/bytebase/omni/mssql/driver"
 	"github.com/pkg/errors"
 
@@ -72,18 +67,7 @@ func init() {
 
 // Driver is Bytebase's SQL Server driver.
 type Driver struct {
-	impl *mssqldriver.Driver
-	// certFilePath is the data source's CA written to disk, because go-mssqldb
-	// reads a certificate only from a path. Close removes it.
-	certFilePath string
-
-	// sessionMu serializes QueryConn on the session it shares.
-	sessionMu sync.Mutex
-	// session is the connection the driver's interactive queries share, opened
-	// on the first QueryConn. The editor keeps one driver for a stream, so its
-	// requests see each other's session state as they did on the pooled
-	// connection this replaced.
-	session odriver.Session
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -94,17 +78,31 @@ func newDriver() db.Driver {
 // the server, as the driver this replaced did not: the pool connects on first
 // use, and Ping or the first statement reports an unreachable server.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	opened := false
+	defer func() {
+		if !opened {
+			_ = d.Close(ctx)
+		}
+	}()
+
+	d.OmniAdapter = util.OmniAdapter{}
+
 	cfg, caFile, err := mssqlConfig(config)
 	if err != nil {
 		return nil, err
 	}
+	if caFile != "" {
+		d.AddCloseFunc(func() error {
+			removeCAFile(caFile)
+			return nil
+		})
+	}
 	impl, err := mssqldriver.Open(ctx, cfg)
 	if err != nil {
-		removeCAFile(caFile)
 		return nil, err
 	}
-	d.impl = impl
-	d.certFilePath = caFile
+	d.Driver = impl
+	opened = true
 	return d, nil
 }
 
@@ -136,10 +134,7 @@ func mssqlConfig(config db.ConnectionConfig) (odriver.Config, string, error) {
 		port = value
 	}
 
-	database := config.ConnectionContext.DatabaseName
-	if database == "" {
-		database = ds.GetDatabase()
-	}
+	database := util.ResolveDatabaseName(config)
 	if database == "" {
 		database = params["database"]
 	}
@@ -255,58 +250,20 @@ func removeCAFile(path string) {
 	}
 }
 
-// Close closes the driver's connections, the session its queries shared, and
-// the CA file it wrote.
-func (d *Driver) Close(context.Context) error {
-	d.sessionMu.Lock()
-	if d.session != nil {
-		_ = d.session.Close()
-		d.session = nil
-	}
-	d.sessionMu.Unlock()
-	removeCAFile(d.certFilePath)
-	d.certFilePath = ""
-	if d.impl == nil {
-		return nil
-	}
-	return d.impl.Close()
-}
-
-// Ping reaches the server.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.impl.Ping(ctx)
-}
-
 // Execute runs the script's batches, in one transaction unless the `-- txn-mode`
 // directive turns it off, reporting each step to the task run's log.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	// -- txn-isolation is parsed and dropped, as it was before: the old driver
 	// opened the transaction with the server's default.
-	transactionMode, _, cleanedStatement := util.ParseTransactionMode(statement)
-	return d.impl.Execute(ctx, cleanedStatement, odriver.ExecuteOptions{
-		Transaction:    transactionMode,
-		CreateDatabase: opts.CreateDatabase,
-		MaxRetries:     opts.MaximumRetries,
-		Log:            util.NewExecuteLogger(opts),
+	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{
+		ParseTransactionDirective: true,
+		PassCreateDatabase:        true,
+		PassMaxRetries:            true,
 	})
 }
 
 // CountAffectedRows returns the optimizer's estimate for one statement, read
 // from the plan SQL Server prints for it.
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
-	return d.impl.CountAffectedRows(ctx, statement)
-}
-
-// SyncInstance reads the server version and its user databases.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.impl.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, false), nil
-}
-
-// SyncDBSchema reads the database the driver was opened on.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return d.impl.SyncDatabase(ctx)
+	return d.Driver.(db.RowEstimator).CountAffectedRows(ctx, statement)
 }

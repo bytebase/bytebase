@@ -42,14 +42,14 @@ func resolveQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statem
 		return nil, convertQuerySpanError(err)
 	}
 	querySpan := &base.QuerySpan{
-		Type:             convertQueryType(span.Type),
+		Type:             base.OmniQueryType(span.Type),
 		ExplainAnalyze:   span.ExplainAnalyze,
-		SourceColumns:    convertColumnSet(span.SourceColumns),
-		Results:          convertResults(span.Results),
-		PredicateColumns: convertColumnSet(span.PredicateColumns),
+		SourceColumns:    base.OmniColumnSet(span.SourceColumns),
+		Results:          base.OmniQuerySpanResults(span.Results),
+		PredicateColumns: base.OmniColumnSet(span.PredicateColumns),
 	}
 	if span.NotFoundError != nil {
-		querySpan.NotFoundError = convertNotFoundError(span.NotFoundError)
+		querySpan.NotFoundError = base.OmniResourceNotFoundError(span.NotFoundError)
 	}
 	return querySpan, nil
 }
@@ -68,17 +68,7 @@ func newCatalog(ctx context.Context, gCtx base.GetQuerySpanContext) analysis.Cat
 		catalog.GetDatabase = func(name string) (analysis.Database, error) {
 			_, database, err := gCtx.GetDatabaseMetadataFunc(ctx, gCtx.InstanceID, name)
 			if err != nil {
-				var notFound *base.ResourceNotFoundError
-				if errors.As(err, &notFound) {
-					return nil, &analysis.NotFoundError{
-						Err:      notFound.Err,
-						Database: notFound.Database,
-						Schema:   notFound.Schema,
-						Table:    notFound.Table,
-						Column:   notFound.Column,
-					}
-				}
-				return nil, err
+				return nil, base.ToOmniNotFoundError(err)
 			}
 			if database == nil {
 				return nil, nil
@@ -169,8 +159,8 @@ func (t tempTables) store(batch map[string]*base.PhysicalTable) {
 }
 
 func convertQuerySpanError(err error) error {
-	if err == analysis.ErrMixUserSystemTables {
-		return base.MixUserSystemTablesError
+	if mixErr := base.ConvertOmniMixTablesError(err); mixErr != nil {
+		return mixErr
 	}
 	var typeNotSupported *analysis.TypeNotSupportedError
 	var notFound *analysis.NotFoundError
@@ -195,75 +185,16 @@ func (e querySpanError) As(target any) bool {
 		if !errors.As(e.error, &err) {
 			return false
 		}
-		*target = &base.TypeNotSupportedError{Err: err.Err, Type: err.Type, Name: err.Name, Extra: err.Extra}
+		*target = base.OmniTypeNotSupportedError(err)
 		return true
 	case **base.ResourceNotFoundError:
 		var err *analysis.NotFoundError
 		if !errors.As(e.error, &err) {
 			return false
 		}
-		*target = convertNotFoundError(err)
+		*target = base.OmniResourceNotFoundError(err)
 		return true
 	default:
 		return false
 	}
-}
-
-func convertNotFoundError(err *analysis.NotFoundError) *base.ResourceNotFoundError {
-	return &base.ResourceNotFoundError{
-		Err:      err.Err,
-		Database: err.Database,
-		Schema:   err.Schema,
-		Table:    err.Table,
-		Column:   err.Column,
-	}
-}
-
-func convertQueryType(t analysis.QueryType) base.QueryType {
-	switch t {
-	case analysis.Select:
-		return base.Select
-	case analysis.Explain:
-		return base.Explain
-	case analysis.SelectInfoSchema:
-		return base.SelectInfoSchema
-	case analysis.DDL:
-		return base.DDL
-	case analysis.DML:
-		return base.DML
-	default:
-		return base.QueryTypeUnknown
-	}
-}
-
-func convertColumnSet(set analysis.ColumnSet) base.SourceColumnSet {
-	if set == nil {
-		return nil
-	}
-	result := make(base.SourceColumnSet, len(set))
-	for column := range set {
-		result[base.ColumnResource{
-			Server:   column.Server,
-			Database: column.Database,
-			Schema:   column.Schema,
-			Table:    column.Table,
-			Column:   column.Column,
-		}] = true
-	}
-	return result
-}
-
-func convertResults(results []analysis.QuerySpanResult) []base.QuerySpanResult {
-	if results == nil {
-		return nil
-	}
-	converted := make([]base.QuerySpanResult, 0, len(results))
-	for _, result := range results {
-		converted = append(converted, base.QuerySpanResult{
-			Name:          result.Name,
-			SourceColumns: convertColumnSet(result.SourceColumns),
-			IsPlainField:  result.IsPlainField,
-		})
-	}
-	return converted
 }

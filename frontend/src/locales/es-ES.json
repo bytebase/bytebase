@@ -5115,7 +5115,7 @@
       },
       "sql-review": {
         "description": "Analiza la sentencia SQL en busca de posibles problemas y ofrece recomendaciones. Incluye reglas integradas y sus reglas personalizadas.",
-        "self": "Revisión de SQL"
+        "self": "Revisión de SQL basada en reglas"
       }
     },
     "created": "Creado",

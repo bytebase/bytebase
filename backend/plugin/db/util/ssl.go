@@ -216,8 +216,8 @@ func CreateCertificateVerifier(rootCertPool *x509.CertPool, hostname string) fun
 // configureClientCertificates sets up client certificates for mutual TLS authentication
 func configureClientCertificates(ds *storepb.DataSource, cfg *tls.Config) error {
 	// Validate that both cert and key are provided together
-	if (ds.GetSslCert() == "" && ds.GetSslKey() != "") || (ds.GetSslCert() != "" && ds.GetSslKey() == "") {
-		return errors.Errorf("ssl-cert and ssl-key must be both set or unset")
+	if err := ValidateTLSCertKeyPair(ds); err != nil {
+		return err
 	}
 
 	// Configure client certificate if both cert and key are provided

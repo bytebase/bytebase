@@ -3,10 +3,9 @@ package pg
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/omni/pg/catalog"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -22,43 +21,12 @@ func init() {
 	schema.RegisterSDLDropAdvices(storepb.Engine_COCKROACHDB, pgSDLDropAdvices)
 }
 
-// loadCatalog parses a schema text and returns a catalog reflecting it.
-// LoadSDL is the canonical, dependency-aware path. LoadSQL is tried only as
-// a fallback for raw dumps containing non-SDL statements (e.g. SET, SELECT)
-// that LoadSDL legitimately rejects. When both fail, the LoadSDL error is
-// returned because it is far more diagnostic than LoadSQL's order-dependent
-// failures (e.g. "relation X does not exist" on a forward FK reference).
-func loadCatalog(text string) (*catalog.Catalog, error) {
-	c, sdlErr := catalog.LoadSDL(text)
-	if sdlErr == nil {
-		return c, nil
-	}
-	if c, err := catalog.LoadSQL(text); err == nil {
-		return c, nil
-	}
-	return nil, sdlErr
-}
-
 // buildMigrationPlan loads two schema texts into catalogs, diffs them, and
 // returns the filtered migration plan. Returns nil if there are no changes.
 func buildMigrationPlan(sourceText, targetText string) (*catalog.MigrationPlan, error) {
-	from, err := loadCatalog(sourceText)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load source schema")
-	}
-	to, err := loadCatalog(targetText)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load target schema")
-	}
-	diff := catalog.Diff(from, to)
-	if diff.IsEmpty() {
-		return nil, nil
-	}
-	plan := catalog.GenerateMigration(from, to, diff)
-	plan = plan.Filter(func(op catalog.MigrationOp) bool {
-		return op.SchemaName != "bbdataarchive"
+	return catalog.BuildSDLMigrationPlan(sourceText, targetText, catalog.SDLMigrationOptions{
+		SkipSchemas: []string{common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)},
 	})
-	return plan, nil
 }
 
 // pgDiffSDLMigration is the core migration function: two schema texts in, migration SQL

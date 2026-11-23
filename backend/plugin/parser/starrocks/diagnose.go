@@ -16,15 +16,7 @@ func init() {
 // Diagnose returns syntax diagnostics for the given StarRocks statement,
 // delegating parse and stub filtering to omni's analysis package.
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	diags := analysis.Diagnose(statement)
-	out := make([]base.Diagnostic, 0, len(diags))
-	mapper := base.NewByteOffsetPositionMapper(statement)
-	for _, d := range diags {
-		syntaxErr := &base.SyntaxError{
-			Position: mapper.Position(d.Offset),
-			Message:  d.Message,
-		}
-		out = append(out, base.ConvertSyntaxErrorToDiagnostic(syntaxErr, statement))
-	}
-	return out, nil
+	return base.ConvertOffsetDiagnostics(statement, analysis.Diagnose(statement), func(d analysis.SyntaxError) (int, string) {
+		return d.Offset, d.Message
+	}), nil
 }

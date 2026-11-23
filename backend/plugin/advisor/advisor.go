@@ -168,6 +168,14 @@ func Register(dbType storepb.Engine, ruleType storepb.SQLReviewRule_Type, f Advi
 	}
 }
 
+// IsRegistered reports whether an advisor is registered for dbType and ruleType.
+func IsRegistered(dbType storepb.Engine, ruleType storepb.SQLReviewRule_Type) bool {
+	advisorMu.RLock()
+	defer advisorMu.RUnlock()
+	_, ok := advisors[dbType][ruleType]
+	return ok
+}
+
 // Check runs the advisor and returns the advices.
 func Check(ctx context.Context, dbType storepb.Engine, ruleType storepb.SQLReviewRule_Type, checkCtx Context) (adviceList []*storepb.Advice, err error) {
 	defer func() {

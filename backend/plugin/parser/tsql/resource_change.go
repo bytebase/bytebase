@@ -14,28 +14,14 @@ func init() {
 }
 
 func extractChangedResources(currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
-	summary := &base.ChangeSummary{
-		ChangedResources: model.NewChangedResources(dbMetadata),
-	}
-	for _, unifiedAST := range asts {
-		node, ok := unifiedAST.(*AST)
+	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, false, func(a base.AST) (analysis.StatementChanges, bool, error) {
+		node, ok := a.(*AST)
 		if !ok {
-			return nil, errors.New("expected AST for MSSQL")
+			return analysis.StatementChanges{}, false, errors.New("expected AST for MSSQL")
 		}
 		if node.Node == nil {
-			continue
+			return analysis.StatementChanges{}, false, nil
 		}
-		changes := analysis.ExtractChangedResources(node.Node, currentDatabase, currentSchema, node.Text)
-		for _, resource := range changes.Resources {
-			if resource.DatabaseOnly {
-				summary.ChangedResources.AddDatabase(resource.Database)
-				continue
-			}
-			summary.ChangedResources.AddTable(resource.Database, resource.Schema, &storepb.ChangedResourceTable{Name: resource.Table}, resource.AffectsData)
-		}
-		summary.DMLStatements = append(summary.DMLStatements, changes.DMLStatements...)
-		summary.DMLCount += changes.DMLCount
-		summary.InsertCount += changes.InsertCount
-	}
-	return summary, nil
+		return analysis.ExtractChangedResources(node.Node, currentDatabase, currentSchema, node.Text), true, nil
+	})
 }

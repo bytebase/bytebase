@@ -1,8 +1,6 @@
 package redshift
 
 import (
-	"errors"
-
 	"github.com/bytebase/omni/redshift/analysis"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -18,8 +16,5 @@ func init() {
 // form (the driver capability table offers this engine the default plan only).
 func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
 	explained, err := analysis.ExplainStatement(statement)
-	if errors.Is(err, analysis.ErrExplainAnalyzeExecutes) {
-		return "", base.ErrExplainAnalyzeExecutes
-	}
-	return explained, err
+	return explained, base.OmniExplainAnalyzeError(err)
 }

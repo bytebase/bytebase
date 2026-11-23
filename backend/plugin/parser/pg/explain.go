@@ -1,8 +1,6 @@
 package pg
 
 import (
-	"errors"
-
 	"github.com/bytebase/omni/pg/analysis"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -37,10 +35,7 @@ func cockroachExplainStatement(statement string, format base.ExplainFormat) (str
 }
 
 func convertExplainError(explain string, err error) (string, error) {
-	if errors.Is(err, analysis.ErrExplainAnalyzeExecutes) {
-		return "", base.ErrExplainAnalyzeExecutes
-	}
-	return explain, err
+	return explain, base.OmniExplainAnalyzeError(err)
 }
 
 // DescribeExplain returns the output format of an EXPLAIN statement and

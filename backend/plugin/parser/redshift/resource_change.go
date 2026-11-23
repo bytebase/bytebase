@@ -17,20 +17,9 @@ func extractChangedResources(database string, schema string, dbMetadata *model.D
 	if err != nil {
 		return nil, err
 	}
-
-	changedResources := model.NewChangedResources(dbMetadata)
-	for _, resource := range changes.Resources {
-		changedResources.AddTable(
-			resource.Database,
-			resource.Schema,
-			&storepb.ChangedResourceTable{Name: resource.Table},
-			resource.AffectsData,
-		)
+	summary := &base.ChangeSummary{
+		ChangedResources: model.NewChangedResources(dbMetadata),
 	}
-	return &base.ChangeSummary{
-		ChangedResources: changedResources,
-		DMLStatements:    changes.DMLStatements,
-		DMLCount:         changes.DMLCount,
-		InsertCount:      changes.InsertCount,
-	}, nil
+	base.AppendStatementChanges(summary, *changes, false)
+	return summary, nil
 }

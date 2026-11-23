@@ -82,10 +82,7 @@ func TestQueryConnDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
 	defer cancel()
 	_, _ = driver.QueryConn(canceledCtx, "SELECT SLEEP(10)", queryContext)
 	require.NotNil(t, canceledCtx.Err(), "the statement must have run past its context")
-	// The adapter's contract is that the dead session is not kept; the next
-	// statement's connection is the pool's to pick, and the server may still be
-	// finishing the abandoned statement.
-	require.Nil(t, driver.session, "a canceled statement's session is not one to keep")
+	require.Nil(t, driver.Session(), "a canceled statement's session is not one to keep")
 }
 
 // TestQueryConnMapsTheRequest pins what QueryConn does with a request's

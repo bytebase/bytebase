@@ -12,9 +12,20 @@ import (
 )
 
 func TestStandardSplitSQL(t *testing.T) {
-	base.RunSplitTests(t, "test-data/test_split.yaml", base.SplitTestOptions{
-		SplitFunc: SplitSQL,
-	})
+	for _, tc := range []struct {
+		name string
+		fn   base.SplitMultiSQLFunc
+	}{
+		{name: "clickhouse", fn: SplitSQL},
+		{name: "hive", fn: hiveSplitSQL},
+		{name: "databricks", fn: databricksSplitSQL},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			base.RunSplitTests(t, "test-data/test_split.yaml", base.SplitTestOptions{
+				SplitFunc: tc.fn,
+			})
+		})
+	}
 }
 
 func generateOneMBInsert() string {
@@ -67,16 +78,9 @@ func TestApplyMultiStatements(t *testing.T) {
 		},
 	}
 
-	total := 0
-	countStatements := func(_ string, _, _ int) error {
-		total++
-		return nil
-	}
-
 	for _, test := range tests {
-		total = 0
-		err := applyMultiStatements(test.statement, countStatements)
+		stmts, err := SplitSQL(test.statement)
 		require.NoError(t, err)
-		require.Equal(t, test.total, total)
+		require.Equal(t, test.total, len(stmts))
 	}
 }

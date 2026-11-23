@@ -49,7 +49,9 @@ COMMENT ON COLUMN "public"."orders"."label" IS 'display name';
 					Comment:    "last 30 days",
 				})
 			},
-			want: `CREATE OR REPLACE VIEW "public"."recent_orders" AS SELECT id, total FROM orders;
+			want: `SET search_path TO "public";
+CREATE OR REPLACE VIEW "public"."recent_orders" AS SELECT id, total FROM orders;
+RESET search_path;
 COMMENT ON VIEW "public"."recent_orders" IS 'last 30 days';
 `,
 		},
@@ -198,7 +200,9 @@ COMMENT ON COLUMN "public"."orders"."id" IS 'surrogate key';
 --
 -- View structure for `+"`recent_orders`"+`
 --
+SET search_path TO "public";
 CREATE OR REPLACE VIEW "public"."recent_orders" AS SELECT id FROM orders;
+RESET search_path;
 `, got)
 
 	table, err := GetTableDefinition("public", metadata.Schemas[0].Tables[0], nil)
@@ -243,7 +247,9 @@ func TestIdentifiersNeedingQuotesSurvive(t *testing.T) {
 		},
 	}, nil)
 	require.NoError(t, err)
-	require.Equal(t, `CREATE TABLE "Sales Data"."MixedCase" (
+	require.Equal(t, `SET enable_case_sensitive_identifier TO true;
+
+CREATE TABLE "Sales Data"."MixedCase" (
   "od""d" integer NOT NULL
 );
 COMMENT ON COLUMN "Sales Data"."MixedCase"."od""d" IS 'quoted name';

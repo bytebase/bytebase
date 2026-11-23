@@ -5115,7 +5115,7 @@
       },
       "sql-review": {
         "description": "Phân tích câu lệnh SQL để tìm các vấn đề tiềm ẩn và đưa ra khuyến nghị. Bao gồm các quy tắc tích hợp sẵn và các quy tắc tùy chỉnh của bạn.",
-        "self": "Xem xét SQL"
+        "self": "Đánh giá SQL dựa trên quy tắc"
       }
     },
     "created": "Đã tạo",

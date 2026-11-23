@@ -2,17 +2,10 @@ package mysql
 
 import (
 	"context"
-	"database/sql"
-	"database/sql/driver"
-	"io"
-	"slices"
-	"strconv"
 	"strings"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/bytebase/omni/mysql/ast"
-	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
@@ -21,236 +14,8 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
-
-var (
-	// testMySQLAdvisorExplainJSON is returned for `EXPLAIN FORMAT=JSON` queries.
-	testMySQLAdvisorExplainJSON string
-
-	// testMySQLAdvisorExplainErr, when set, fails every query, standing in for a
-	// statement the server refuses to EXPLAIN.
-	testMySQLAdvisorExplainErr error
-
-	// testMySQLAdvisorSetErr, when set, fails every SET statement.
-	testMySQLAdvisorSetErr error
-
-	// testMySQLAdvisorQueries records every statement the fake driver is asked to
-	// run, so a rule that sent raw DML instead of EXPLAIN is caught rather than
-	// silently succeeding. testMySQLAdvisorQueryConns records the connection that ran each.
-	testMySQLAdvisorQueries     []string
-	testMySQLAdvisorQueryConns  []int
-	testMySQLAdvisorConnections int
-)
-
-func init() {
-	sql.Register("test_mysql_advisor_explain", testMySQLAdvisorExplainDriver{})
-}
-
-type testMySQLAdvisorExplainDriver struct{}
-
-func (testMySQLAdvisorExplainDriver) Open(string) (driver.Conn, error) {
-	testMySQLAdvisorConnections++
-	return &testMySQLAdvisorExplainConn{id: testMySQLAdvisorConnections}, nil
-}
-
-type testMySQLAdvisorExplainConn struct {
-	id int
-}
-
-func (*testMySQLAdvisorExplainConn) Prepare(string) (driver.Stmt, error) {
-	return nil, driver.ErrSkip
-}
-
-func (*testMySQLAdvisorExplainConn) Close() error {
-	return nil
-}
-
-func (*testMySQLAdvisorExplainConn) Begin() (driver.Tx, error) {
-	return testMySQLAdvisorExplainTx{}, nil
-}
-
-func (c *testMySQLAdvisorExplainConn) ExecContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Result, error) {
-	testMySQLAdvisorQueries = append(testMySQLAdvisorQueries, query)
-	testMySQLAdvisorQueryConns = append(testMySQLAdvisorQueryConns, c.id)
-	if !strings.HasPrefix(query, "SET ") {
-		return nil, errors.Errorf("unexpected exec %q", query)
-	}
-	if testMySQLAdvisorSetErr != nil {
-		return nil, testMySQLAdvisorSetErr
-	}
-	return driver.ResultNoRows, nil
-}
-
-func (c *testMySQLAdvisorExplainConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
-	testMySQLAdvisorQueries = append(testMySQLAdvisorQueries, query)
-	testMySQLAdvisorQueryConns = append(testMySQLAdvisorQueryConns, c.id)
-	if testMySQLAdvisorExplainErr != nil {
-		return nil, testMySQLAdvisorExplainErr
-	}
-	if strings.HasPrefix(query, "EXPLAIN FORMAT=JSON ") {
-		return &testMySQLAdvisorExplainResultRows{columns: []string{"EXPLAIN"}, rows: [][]driver.Value{{testMySQLAdvisorExplainJSON}}}, nil
-	}
-	return &testMySQLAdvisorExplainResultRows{columns: []string{"id", "select_type", "table", "type", "rows", "filtered"}}, nil
-}
-
-type testMySQLAdvisorExplainTx struct{}
-
-func (testMySQLAdvisorExplainTx) Commit() error {
-	return nil
-}
-
-func (testMySQLAdvisorExplainTx) Rollback() error {
-	return nil
-}
-
-type testMySQLAdvisorExplainResultRows struct {
-	columns []string
-	rows    [][]driver.Value
-	idx     int
-}
-
-func (r *testMySQLAdvisorExplainResultRows) Columns() []string {
-	return r.columns
-}
-
-func (*testMySQLAdvisorExplainResultRows) Close() error {
-	return nil
-}
-
-func (r *testMySQLAdvisorExplainResultRows) Next(dest []driver.Value) error {
-	if r.idx >= len(r.rows) {
-		return io.EOF
-	}
-	copy(dest, r.rows[r.idx])
-	r.idx++
-	return nil
-}
-
-// testRowEstimator is the seam's RowEstimator over the fake server: it answers
-// what db/mysql.Driver.CountAffectedRows answers, so a rule that still issued
-// its own EXPLAIN or a differently shaped query is caught.
-type testRowEstimator struct {
-	db     *sql.DB
-	prober db.Prober
-}
-
-func (e *testRowEstimator) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
-	return e.prober.Probe(ctx, pCtx, statement)
-}
-
-func (e *testRowEstimator) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
-	list, err := mysqlparser.ParseMySQL(statement)
-	if err != nil {
-		return 0, errors.Wrap(err, "failed to parse statement")
-	}
-	if list == nil || len(list.Items) != 1 {
-		return 0, errors.New("expected exactly one statement")
-	}
-	query := mysqlparser.AffectedRowsQuery(list.Items[0], statement)
-	plan, err := explainJSON(ctx, e.db, query)
-	if err != nil {
-		return 0, err
-	}
-	return estimateAffectedRows(ctx, e.db, list.Items[0], query, plan)
-}
-
-func estimateAffectedRows(ctx context.Context, db *sql.DB, stmt ast.Node, query, plan string) (int64, error) {
-	count, err := mysqlparser.EstimateAffectedRowsFromExplainJSON(stmt, plan)
-	if err == nil {
-		return count, nil
-	}
-	rows, tables, ok := explainTabularEstimate(ctx, db, query)
-	if !ok {
-		return 0, err
-	}
-	return mysqlparser.CapAffectedRowsByLimit(stmt, rows*float64(mysqlparser.DMLTargetCount(stmt, tables))), nil
-}
-
-func explainTabularEstimate(ctx context.Context, db *sql.DB, query string) (float64, int, bool) {
-	rows, err := db.QueryContext(ctx, "EXPLAIN FORMAT=TRADITIONAL "+query)
-	if err != nil {
-		return 0, 0, false
-	}
-	defer rows.Close()
-	columns, err := rows.Columns()
-	if err != nil {
-		return 0, 0, false
-	}
-	column := func(name string) int {
-		return slices.IndexFunc(columns, func(column string) bool { return strings.EqualFold(column, name) })
-	}
-	idIndex, rowsIndex, filteredIndex := column("id"), column("rows"), column("filtered")
-	if idIndex < 0 || rowsIndex < 0 {
-		return 0, 0, false
-	}
-	values := make([]sql.NullString, len(columns))
-	dest := make([]any, len(columns))
-	for i := range values {
-		dest[i] = &values[i]
-	}
-	var blockID string
-	estimate, tables := 1.0, 0
-	for rows.Next() {
-		if err := rows.Scan(dest...); err != nil {
-			return 0, 0, false
-		}
-		tableRows, err := strconv.ParseFloat(values[rowsIndex].String, 64)
-		if !values[rowsIndex].Valid || err != nil || (tables > 0 && values[idIndex].String != blockID) {
-			continue
-		}
-		blockID = values[idIndex].String
-		tables++
-		estimate *= tableRows
-		if filteredIndex >= 0 && values[filteredIndex].Valid {
-			if filtered, err := strconv.ParseFloat(values[filteredIndex].String, 64); err == nil {
-				estimate *= filtered / 100
-			}
-		}
-	}
-	return estimate, tables, tables > 0 && rows.Err() == nil
-}
-
-func explainJSON(ctx context.Context, db *sql.DB, statement string) (string, error) {
-	conn, err := db.Conn(ctx)
-	if err != nil {
-		return "", err
-	}
-	defer conn.Close()
-
-	if _, err := conn.ExecContext(ctx, "SET SESSION explain_json_format_version = 1"); err != nil {
-		var mysqlErr *gomysql.MySQLError
-		if !errors.As(err, &mysqlErr) || mysqlErr.Number != 1193 {
-			return "", errors.Wrap(err, "failed to set explain_json_format_version")
-		}
-	} else {
-		defer func() {
-			_, _ = conn.ExecContext(ctx, "SET SESSION explain_json_format_version = DEFAULT")
-		}()
-	}
-
-	rows, err := conn.QueryContext(ctx, "EXPLAIN FORMAT=JSON "+statement)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
-	var plan strings.Builder
-	for rows.Next() {
-		var line sql.NullString
-		if err := rows.Scan(&line); err != nil {
-			return "", err
-		}
-		plan.WriteString(line.String)
-	}
-	if err := rows.Err(); err != nil {
-		return "", err
-	}
-	return plan.String(), nil
-}
 
 func TestMySQLRules(t *testing.T) {
 	rules := []*storepb.SQLReviewRule{
@@ -341,202 +106,81 @@ func TestMySQLRules(t *testing.T) {
 	}
 }
 
-// openTestMySQLAdvisorDB resets the fake server and opens a pool that keeps no idle
-// connections, so statements that do not share a pinned connection land on different ones.
-func openTestMySQLAdvisorDB(t *testing.T, plan string) *sql.DB {
+func checkTestRowLimitRule(t *testing.T, prober *advisor.ProbeRecorder, ruleType storepb.SQLReviewRule_Type, level storepb.SQLReviewRule_Level, statement string) []*storepb.Advice {
 	t.Helper()
-	testMySQLAdvisorExplainJSON = plan
-	testMySQLAdvisorExplainErr = nil
-	testMySQLAdvisorSetErr = nil
-	testMySQLAdvisorQueries = nil
-	testMySQLAdvisorQueryConns = nil
-	db, err := sql.Open("test_mysql_advisor_explain", "")
-	require.NoError(t, err)
-	db.SetMaxIdleConns(0)
-	t.Cleanup(func() { _ = db.Close() })
-	return db
-}
-
-func checkTestRowLimitRule(t *testing.T, db *sql.DB, engine storepb.Engine, ruleType storepb.SQLReviewRule_Type, level storepb.SQLReviewRule_Level, statement string) []*storepb.Advice {
-	t.Helper()
-	adviceList, err := advisor.SQLReviewCheck(context.Background(), sheet.NewManager(), statement, []*storepb.SQLReviewRule{
-		{
-			Type:    ruleType,
-			Level:   level,
-			Engine:  engine,
-			Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 5}},
-		},
-	}, advisor.Context{
-		DBType:          engine,
-		Prober:          &testRowEstimator{db: db, prober: dbutil.NewSQLProber(db)},
+	adviceList, err := advisor.SQLReviewCheck(context.Background(), sheet.NewManager(), statement, []*storepb.SQLReviewRule{{
+		Type:    ruleType,
+		Level:   level,
+		Engine:  storepb.Engine_MYSQL,
+		Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 5}},
+	}}, advisor.Context{
+		DBType:          storepb.Engine_MYSQL,
+		Prober:          prober,
 		NoAppendBuiltin: true,
 	})
 	require.NoError(t, err)
 	return adviceList
 }
 
-const (
-	// The flagged UPDATE target is scanned first; the join filter on s comes after it.
-	testMySQLUpdateTargetFirstPlan = `{"query_block":{"select_id":1,"nested_loop":[
-		{"table":{"update":true,"table_name":"big","access_type":"ALL","rows_examined_per_scan":11330,"rows_produced_per_join":11330,"filtered":"100.00"}},
-		{"table":{"table_name":"s","access_type":"eq_ref","rows_examined_per_scan":1,"rows_produced_per_join":1133,"filtered":"10.00"}}
-	]}}`
-	// The plan of the SELECT that a single-table UPDATE of td is explained as.
-	testMySQLSingleTableUpdatePlan = `{"query_block":{"select_id":1,"table":{"table_name":"td","access_type":"ALL","rows_examined_per_scan":1000,"rows_produced_per_join":1000,"filtered":"100.00"}}}`
-	testMySQLInsertSelectPlan      = `{"query_block":{"select_id":1,
-		"table":{"insert":true,"table_name":"t2","access_type":"ALL"},
-		"insert_from":{"table":{"table_name":"t","access_type":"ALL","rows_examined_per_scan":1000,"rows_produced_per_join":100,"filtered":"10.00"}}
-	}}`
-	testMySQLInsertTablePlan = `{"query_block":{"select_id":1,
-		"table":{"insert":true,"table_name":"t2","access_type":"ALL"},
-		"insert_from":{"table":{"table_name":"t","access_type":"ALL","rows_examined_per_scan":1000,"rows_produced_per_join":1000,"filtered":"100.00"}}
-	}}`
-)
-
-func TestMySQLRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
+func TestMySQLRowLimitAdvisorSeam(t *testing.T) {
 	for _, tc := range []struct {
-		name      string
-		engine    storepb.Engine
-		ruleType  storepb.SQLReviewRule_Type
-		plan      string
-		setErr    error
-		statement string
-		// explained is the statement the rule explains, when it is not the statement itself.
-		explained string
-		// wantContent is empty when the statement stays within the limit of 5.
+		name        string
+		ruleType    storepb.SQLReviewRule_Type
+		prober      *advisor.ProbeRecorder
+		statement   string
 		wantContent string
 		wantCode    code.Code
-		// fallback is set when the JSON plan has no estimate to read, so the rule also runs the tabular EXPLAIN.
-		fallback bool
 	}{
 		{
-			name:        "update bounded by the join after the target",
-			engine:      storepb.Engine_MYSQL,
-			ruleType:    storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
-			plan:        testMySQLUpdateTargetFirstPlan,
-			statement:   "UPDATE big STRAIGHT_JOIN s ON big.s_id = s.id SET big.v = big.v + 1 WHERE s.flag = 1;",
-			wantContent: `"UPDATE big STRAIGHT_JOIN s ON big.s_id = s.id SET big.v = big.v + 1 WHERE s.flag = 1;" affected 1133 rows (estimated). The count exceeds 5.`,
-			wantCode:    code.StatementAffectedRowExceedsLimit,
-		},
-		{
-			name:      "update capped by LIMIT",
-			engine:    storepb.Engine_MYSQL,
+			name:      "affected row limit within limit",
 			ruleType:  storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
-			plan:      testMySQLSingleTableUpdatePlan,
+			prober:    &advisor.ProbeRecorder{Rows: 3},
 			statement: "UPDATE td SET c = 1 WHERE c = 0 LIMIT 3;",
-			explained: "SELECT 1 FROM td WHERE c = 0 LIMIT 3",
 		},
 		{
-			name:        "target the plan does not name",
-			engine:      storepb.Engine_MYSQL,
+			name:        "affected row limit exceeded",
 			ruleType:    storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
-			plan:        `{"query_block":{"select_id":1,"table":{"table_name":"other","access_type":"ALL","rows_examined_per_scan":1000,"filtered":"100.00"}}}`,
+			prober:      &advisor.ProbeRecorder{Rows: 1000},
 			statement:   "UPDATE td SET c = 1;",
-			explained:   "SELECT 1 FROM td",
 			wantContent: `"UPDATE td SET c = 1;" affected 1000 rows (estimated). The count exceeds 5.`,
 			wantCode:    code.StatementAffectedRowExceedsLimit,
 		},
 		{
-			name:        "plan without an estimate falls back to the tabular plan",
-			engine:      storepb.Engine_MYSQL,
+			name:        "insert row limit exceeded",
 			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
-			plan:        `{"query_block":{"select_id":1,"table":{"insert":true,"select_id":1,"table_name":"t2","access_type":"ALL"}}}`,
-			statement:   "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER () FROM t;",
-			wantContent: `failed to get row count for "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER () FROM t;": table "t2" in the plan has no row estimate`,
-			wantCode:    code.Internal,
-			fallback:    true,
-		},
-		{
-			name:        "insert select reads the source plan",
-			engine:      storepb.Engine_MYSQL,
-			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
-			plan:        testMySQLInsertSelectPlan,
+			prober:      &advisor.ProbeRecorder{Rows: 100},
 			statement:   "INSERT INTO t2 SELECT * FROM t WHERE d = 3;",
 			wantContent: `"INSERT INTO t2 SELECT * FROM t WHERE d = 3;" inserts 100 rows. The count exceeds 5.`,
 			wantCode:    code.InsertTooManyRows,
 		},
 		{
-			name:        "insert table",
-			engine:      storepb.Engine_MYSQL,
-			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
-			plan:        testMySQLInsertTablePlan,
-			statement:   "INSERT INTO t2 TABLE t;",
-			wantContent: `"INSERT INTO t2 TABLE t;" inserts 1000 rows. The count exceeds 5.`,
-			wantCode:    code.InsertTooManyRows,
-		},
-		{
-			name:        "insert table without explain_json_format_version",
-			engine:      storepb.Engine_MYSQL,
-			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
-			plan:        testMySQLInsertTablePlan,
-			setErr:      &gomysql.MySQLError{Number: 1193, Message: "Unknown system variable 'explain_json_format_version'"},
-			statement:   "INSERT INTO t2 TABLE t;",
-			wantContent: `"INSERT INTO t2 TABLE t;" inserts 1000 rows. The count exceeds 5.`,
-			wantCode:    code.InsertTooManyRows,
-		},
-		{
-			name:      "insert select capped by LIMIT",
-			engine:    storepb.Engine_MYSQL,
-			ruleType:  storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
-			plan:      testMySQLInsertSelectPlan,
-			statement: "INSERT INTO t2 SELECT * FROM t WHERE d = 3 LIMIT 3;",
+			name:        "refused estimate reports internal count error",
+			ruleType:    storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
+			prober:      &advisor.ProbeRecorder{EstimateErr: errors.New("Table 'test.tech_book' doesn't exist")},
+			statement:   "UPDATE tech_book SET name = 'xz' WHERE id = 1;",
+			wantContent: `failed to get row count for "UPDATE tech_book SET name = 'xz' WHERE id = 1;": Table 'test.tech_book' doesn't exist`,
+			wantCode:    code.Internal,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			db := openTestMySQLAdvisorDB(t, tc.plan)
-			testMySQLAdvisorSetErr = tc.setErr
-
-			adviceList := checkTestRowLimitRule(t, db, tc.engine, tc.ruleType, storepb.SQLReviewRule_WARNING, tc.statement)
+			adviceList := checkTestRowLimitRule(t, tc.prober, tc.ruleType, storepb.SQLReviewRule_WARNING, tc.statement)
 			if tc.wantContent == "" {
 				require.Empty(t, adviceList)
-			} else {
-				require.Len(t, adviceList, 1)
-				require.Equal(t, tc.wantCode.Int32(), adviceList[0].Code)
-				require.Equal(t, tc.wantContent, adviceList[0].Content)
+				return
 			}
-
-			explained := tc.explained
-			if explained == "" {
-				explained = tc.statement
-			}
-			// The rule sets the JSON format version on the connection that runs the JSON EXPLAIN and
-			// resets it where the server has the variable.
-			wantQueries := []string{"SET SESSION explain_json_format_version = 1", "EXPLAIN FORMAT=JSON " + explained}
-			if tc.setErr == nil {
-				wantQueries = append(wantQueries, "SET SESSION explain_json_format_version = DEFAULT")
-			}
-			jsonQueries := len(wantQueries)
-			if tc.fallback {
-				wantQueries = append(wantQueries, "EXPLAIN FORMAT=TRADITIONAL "+explained)
-			}
-			require.Equal(t, wantQueries, testMySQLAdvisorQueries)
-			for _, conn := range testMySQLAdvisorQueryConns[:jsonQueries] {
-				require.Equal(t, testMySQLAdvisorQueryConns[0], conn)
-			}
+			require.Len(t, adviceList, 1)
+			require.Equal(t, tc.wantCode.Int32(), adviceList[0].Code)
+			require.Equal(t, tc.wantContent, adviceList[0].Content)
 		})
 	}
 }
 
-// TestMySQLRowLimitAdvisorReportsARefusedEstimate covers the seam's one
-// behaviour delta for this rule: the estimate is the driver's, so an EXPLAIN the
-// server refuses is a count error rather than a dry-run failure.
-func TestMySQLRowLimitAdvisorReportsARefusedEstimate(t *testing.T) {
-	db := openTestMySQLAdvisorDB(t, "")
-	testMySQLAdvisorExplainErr = errors.New("Table 'test.tech_book' doesn't exist")
-	defer func() { testMySQLAdvisorExplainErr = nil }()
-
-	adviceList := checkTestRowLimitRule(t, db, storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT, storepb.SQLReviewRule_WARNING, "UPDATE tech_book SET name = 'xz' WHERE id = 1;")
-	require.Len(t, adviceList, 1)
-	require.Equal(t, code.Internal.Int32(), adviceList[0].Code)
-	require.Contains(t, adviceList[0].Content, `failed to get row count for "UPDATE tech_book SET name = 'xz' WHERE id = 1;"`)
-}
-
 func TestMySQLRowLimitAdvisorsWarnAboutStatementsBeyondExplainLimit(t *testing.T) {
 	t.Run("affected row limit", func(t *testing.T) {
-		db := openTestMySQLAdvisorDB(t, testMySQLSingleTableUpdatePlan)
+		prober := &advisor.ProbeRecorder{Rows: 1000}
 		statement := strings.Repeat("UPDATE td SET c = 1;\n", common.MaximumLintExplainSize+2)
 
-		adviceList := checkTestRowLimitRule(t, db, storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT, storepb.SQLReviewRule_ERROR, statement)
+		adviceList := checkTestRowLimitRule(t, prober, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT, storepb.SQLReviewRule_ERROR, statement)
 		require.Len(t, adviceList, common.MaximumLintExplainSize+1)
 		for _, advice := range adviceList[:common.MaximumLintExplainSize] {
 			require.Equal(t, storepb.Advice_ERROR, advice.Status)
@@ -548,15 +192,15 @@ func TestMySQLRowLimitAdvisorsWarnAboutStatementsBeyondExplainLimit(t *testing.T
 		require.Equal(t, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT.String(), warning.Title)
 		require.Equal(t, "Only the first 10 statements were estimated; 2 more were not checked against the row limit.", warning.Content)
 		require.Equal(t, int32(common.MaximumLintExplainSize+1), warning.StartPosition.GetLine())
-		require.Equal(t, common.MaximumLintExplainSize, countTestExplainQueries())
+		require.Len(t, prober.Estimates, common.MaximumLintExplainSize)
 	})
 
 	t.Run("insert row limit keeps counting VALUES rows", func(t *testing.T) {
-		db := openTestMySQLAdvisorDB(t, testMySQLInsertSelectPlan)
+		prober := &advisor.ProbeRecorder{Rows: 100}
 		statement := strings.Repeat("INSERT INTO t2 SELECT * FROM t WHERE d = 3;\n", common.MaximumLintExplainSize+1) +
 			"INSERT INTO t2 (id) VALUES (1), (2), (3), (4), (5), (6);"
 
-		adviceList := checkTestRowLimitRule(t, db, storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_WARNING, statement)
+		adviceList := checkTestRowLimitRule(t, prober, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_WARNING, statement)
 		require.Len(t, adviceList, common.MaximumLintExplainSize+2)
 		require.Equal(t, `"INSERT INTO t2 (id) VALUES (1), (2), (3), (4), (5), (6);" inserts 6 rows. The count exceeds 5.`, adviceList[common.MaximumLintExplainSize].Content)
 		warning := adviceList[common.MaximumLintExplainSize+1]
@@ -565,18 +209,8 @@ func TestMySQLRowLimitAdvisorsWarnAboutStatementsBeyondExplainLimit(t *testing.T
 		require.Equal(t, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT.String(), warning.Title)
 		require.Equal(t, "Only the first 10 statements were estimated; 1 more were not checked against the row limit.", warning.Content)
 		require.Equal(t, int32(common.MaximumLintExplainSize+1), warning.StartPosition.GetLine())
-		require.Equal(t, common.MaximumLintExplainSize, countTestExplainQueries())
+		require.Len(t, prober.Estimates, common.MaximumLintExplainSize)
 	})
-}
-
-func countTestExplainQueries() int {
-	count := 0
-	for _, query := range testMySQLAdvisorQueries {
-		if strings.HasPrefix(query, "EXPLAIN ") {
-			count++
-		}
-	}
-	return count
 }
 
 func TestMySQLBuiltinWalkThroughCheckTableExists(t *testing.T) {
@@ -611,10 +245,6 @@ func TestMySQLBuiltinWalkThroughCheckTableExists(t *testing.T) {
 	require.Equal(t, "Table `user` already exists", adviceList[0].Content)
 }
 
-// TestMySQLDMLDryRunAdvisor covers STATEMENT_DML_DRY_RUN, which the yaml harness
-// cannot: RunSQLReviewRuleTest builds its context with Driver: nil and this rule
-// does nothing without one, which is why test/statement_dml_dry_run.yaml carries
-// statements and no `want:` at all.
 func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 	const stmt = "UPDATE tech_book SET name = 'xz' WHERE id = 1;"
 	rules := []*storepb.SQLReviewRule{{
@@ -624,37 +254,11 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 	}}
 	sm := sheet.NewManager()
 
-	db, err := sql.Open("test_mysql_advisor_explain", "")
-	require.NoError(t, err)
-	defer db.Close()
-
-	// Sequential: the second case arms a package-level failure hook.
-	t.Run("a statement whose EXPLAIN succeeds raises nothing, and the DML never runs", func(t *testing.T) {
-		testMySQLAdvisorQueries = nil
+	t.Run("failed EXPLAIN is reported", func(t *testing.T) {
+		prober := &advisor.ProbeRecorder{ProbeErr: errors.New("Table 'test.tech_book' doesn't exist")}
 		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, stmt, rules, advisor.Context{
 			DBType:          storepb.Engine_MYSQL,
-			Prober:          dbutil.NewSQLProber(db),
-			NoAppendBuiltin: true,
-		})
-		require.NoError(t, err)
-		require.Empty(t, adviceList)
-
-		// The driver is the only way out of the rule, so assert nothing left it but
-		// an EXPLAIN: a dry run that sent the raw UPDATE would pass otherwise.
-		require.NotEmpty(t, testMySQLAdvisorQueries, "the rule must actually reach the driver")
-		for _, q := range testMySQLAdvisorQueries {
-			require.True(t, strings.HasPrefix(q, "EXPLAIN "),
-				"the dry run must only ever EXPLAIN, got %q", q)
-		}
-	})
-
-	t.Run("a statement whose EXPLAIN fails is reported", func(t *testing.T) {
-		testMySQLAdvisorExplainErr = errors.New("Table 'test.tech_book' doesn't exist")
-		defer func() { testMySQLAdvisorExplainErr = nil }()
-
-		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, stmt, rules, advisor.Context{
-			DBType:          storepb.Engine_MYSQL,
-			Prober:          dbutil.NewSQLProber(db),
+			Prober:          prober,
 			NoAppendBuiltin: true,
 		})
 		require.NoError(t, err)
@@ -663,37 +267,31 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 		require.Contains(t, adviceList[0].Content, "dry runs failed")
 	})
 
-	t.Run("a batch that mixes in DDL is not dry-run at all", func(t *testing.T) {
-		testMySQLAdvisorQueries = nil
+	t.Run("batch mixing DDL is skipped", func(t *testing.T) {
+		prober := &advisor.ProbeRecorder{}
 		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "CREATE TABLE t2 (id INT);\n"+stmt, rules, advisor.Context{
 			DBType:          storepb.Engine_MYSQL,
-			Prober:          dbutil.NewSQLProber(db),
+			Prober:          prober,
 			NoAppendBuiltin: true,
 		})
 		require.NoError(t, err)
 		require.Empty(t, adviceList)
-		require.Empty(t, testMySQLAdvisorQueries)
+		require.Empty(t, prober.Probes)
 	})
 
-	t.Run("only INSERT, UPDATE and DELETE are dry-run, each once", func(t *testing.T) {
-		testMySQLAdvisorQueries = nil
+	t.Run("only INSERT, UPDATE and DELETE are probed", func(t *testing.T) {
+		prober := &advisor.ProbeRecorder{}
 		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "SELECT 1;\nINSERT INTO tech_book VALUES (1, 'a');\n"+stmt+"\nDELETE FROM tech_book;", rules, advisor.Context{
 			DBType:          storepb.Engine_MYSQL,
-			Prober:          dbutil.NewSQLProber(db),
+			Prober:          prober,
 			NoAppendBuiltin: true,
 		})
 		require.NoError(t, err)
 		require.Empty(t, adviceList)
-		var explains []string
-		for _, q := range testMySQLAdvisorQueries {
-			if strings.HasPrefix(q, "EXPLAIN ") {
-				explains = append(explains, q)
-			}
-		}
-		require.Equal(t, []string{
-			"EXPLAIN INSERT INTO tech_book VALUES (1, 'a');",
-			"EXPLAIN " + stmt,
-			"EXPLAIN DELETE FROM tech_book;",
-		}, explains)
+		require.Equal(t, []advisor.ProbeCall{
+			{Statement: "EXPLAIN INSERT INTO tech_book VALUES (1, 'a');"},
+			{Statement: "EXPLAIN " + stmt},
+			{Statement: "EXPLAIN DELETE FROM tech_book;"},
+		}, prober.Probes)
 	})
 }

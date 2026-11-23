@@ -34,13 +34,11 @@ package cosmosdb
 import (
 	"context"
 	"crypto/tls"
-	"io"
 	"net/url"
 
 	"connectrpc.com/connect"
 	omnicosmosdb "github.com/bytebase/omni/cosmosdb/driver"
 	omnidriver "github.com/bytebase/omni/driver"
-	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -63,7 +61,7 @@ const cosmosDBEmulatorKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVT
 
 // Driver is Bytebase's Cosmos DB driver.
 type Driver struct {
-	inner *omnicosmosdb.Driver
+	util.OmniAdapter
 }
 
 func newDriver() db.Driver {
@@ -81,7 +79,7 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 	if err != nil {
 		return nil, err
 	}
-	return &Driver{inner: inner}, nil
+	return &Driver{OmniAdapter: util.OmniAdapter{Driver: inner}}, nil
 }
 
 // connectionConfig maps a data source onto the contract's Config: the emulator
@@ -130,28 +128,10 @@ func isLocalhostEndpoint(endpoint string) bool {
 	return host == "localhost" || host == "127.0.0.1" || host == "host.docker.internal"
 }
 
-func (d *Driver) Close(context.Context) error {
-	if d.inner == nil {
-		return nil
-	}
-	return d.inner.Close()
-}
-
-// Ping reads the account's database list as a connectivity check.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.inner.Ping(ctx)
-}
-
 // Execute is unimplemented: the query language has no statement that changes
 // data, and the omni driver has no Executor for this engine.
 func (*Driver) Execute(context.Context, string, db.ExecuteOptions) (int64, error) {
 	return 0, connect.NewError(connect.CodeUnimplemented, errors.New("method Execute unimplemented"))
-}
-
-// Dump writes nothing and returns nil; the package doc says what a synced
-// container lacks that a restore would need.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
-	return d.inner.Dump(ctx, out, dbMetadata)
 }
 
 // QueryConn runs statement in the container QueryContext.Container names.
@@ -164,13 +144,7 @@ func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext d
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("support simple SELECT statement for Cosmos DB engine only, err: %s", err.Error()))
 	}
 
-	session, err := d.inner.Session(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer session.Close()
-
-	results, err := session.Query(ctx, statement, queryOptions(queryContext))
+	results, err := d.QueryEphemeralSession(ctx, statement, queryOptions(queryContext))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -197,18 +171,4 @@ func queryOptions(queryContext db.QueryContext) omnidriver.QueryOptions {
 		Explain:        queryContext.Explain,
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 	}
-}
-
-// SyncInstance reads the account's databases, without their containers.
-func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	instance, err := d.inner.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniInstanceToMetadata(instance, false), nil
-}
-
-// SyncDBSchema reads the connected database's containers as tables.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return d.inner.SyncDatabase(ctx)
 }

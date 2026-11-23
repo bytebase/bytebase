@@ -5115,7 +5115,7 @@
       },
       "sql-review": {
         "description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules.",
-        "self": "SQL review"
+        "self": "Rule-based SQL review"
       }
     },
     "created": "Created",
