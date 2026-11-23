@@ -125,7 +125,7 @@ func DiffMetadataMigration[Catalog, Report any](engine Engine[Catalog, Report], 
 	if engine.CheckCaseOnlyIdentities {
 		oldCS := oldSchema != nil && oldSchema.GetIsObjectCaseSensitive()
 		newCS := newSchema != nil && newSchema.GetIsObjectCaseSensitive()
-		if err := RejectCaseOnlyIdentities(oldProto, newProto, oldCS, newCS); err != nil {
+		if err := rejectCaseOnlyIdentities(oldProto, newProto, oldCS, newCS); err != nil {
 			return "", err
 		}
 	}

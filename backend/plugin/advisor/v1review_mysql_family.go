@@ -128,7 +128,7 @@ type MySQLFamilyRuleSet[N any] struct {
 // RegisterMySQLFamily registers BUILTIN_WALK_THROUGH_CHECK and every non-nil rule
 // in rules for engine, returning the underlying V1Engine for any engine-specific rules.
 func RegisterMySQLFamily[N any](engine storepb.Engine, opt MySQLFamilyOptions[N], rules MySQLFamilyRuleSet[N]) *V1Engine[N] {
-	e := NewV1EngineWithOptions(V1EngineOptions[N]{
+	e := newV1EngineWithOptions(v1EngineOptions[N]{
 		Extract:             opt.Extract,
 		ByteOffsetLine:      opt.ByteOffsetLine,
 		PosMode:             V1PosContentStart,
@@ -404,7 +404,7 @@ func buildMySQLFamilyAdvisors[N any](
 		advisors[storepb.SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST] = e.SchemaBatch(code.IndexPKType, func(_ Context, f v1review.Finding) string {
 			return fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", f.Name, f.Table, f.Value)
 		}, func(checkCtx Context, nodes []N) ([]v1review.Finding, *model.DatabaseMetadata, error) {
-			list, err := RequireStringArrayPayload(checkCtx.Rule, "string_array_payload is required for this rule")
+			list, err := requireStringArrayPayload(checkCtx.Rule, "string_array_payload is required for this rule")
 			if err != nil {
 				return nil, nil, err
 			}
@@ -541,7 +541,7 @@ func buildMySQLFamilyAdvisors[N any](
 				return fmt.Sprintf("Apply DDL on large table '%s' ( %s rows ) will lock table for a long time", f.Name, f.Value)
 			},
 			func(checkCtx Context, nodes []N) ([]v1review.Finding, *model.DatabaseMetadata, error) {
-				limit, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
+				limit, err := requireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
 				if err != nil {
 					return nil, nil, err
 				}
@@ -570,7 +570,7 @@ func buildMySQLFamilyAdvisors[N any](
 	if fn := rules.TableTextFieldsTotalLength; fn != nil {
 		advisors[storepb.SQLReviewRule_TABLE_TEXT_FIELDS_TOTAL_LENGTH] = e.StmtCtx(
 			func(_ context.Context, checkCtx Context, _ []N) (func([]N) []v1review.Finding, error) {
-				maximum, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
+				maximum, err := requireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
 				if err != nil {
 					return nil, err
 				}
@@ -608,7 +608,7 @@ func mysqlMaxStatementsInTransaction() Func {
 		if _, err := NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level); err != nil {
 			return nil, err
 		}
-		if _, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule"); err != nil {
+		if _, err := requireNumberPayload(checkCtx.Rule, "number_payload is required for this rule"); err != nil {
 			return nil, err
 		}
 		return nil, nil
@@ -617,7 +617,7 @@ func mysqlMaxStatementsInTransaction() Func {
 
 func mysqlOnlineMigration[N any](e *V1Engine[N], engine storepb.Engine, fn func([]N, v1review.Schema, string, int64) []v1review.Finding) Func {
 	return func(ctx context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		n, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
+		n, err := requireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
 		if err != nil {
 			return nil, err
 		}

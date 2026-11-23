@@ -2,6 +2,7 @@ package omnicatalog
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -19,6 +20,30 @@ type ExecResult struct {
 	Index int
 	Line  int
 	Error error
+}
+
+// MapExecResults converts engine-specific omni catalog Exec results into []ExecResult.
+func MapExecResults[R any](results []R, err error, project func(R) ExecResult) ([]ExecResult, error) {
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ExecResult, len(results))
+	for i, r := range results {
+		out[i] = project(r)
+	}
+	return out, nil
+}
+
+// ExtractError builds an ExtractCatalogError callback for an engine catalog error type E.
+func ExtractError[E error](extract func(E) (int, string)) func(error) (int, string, bool) {
+	return func(err error) (int, string, bool) {
+		var catErr E
+		if errors.As(err, &catErr) {
+			errCode, msg := extract(catErr)
+			return errCode, msg, true
+		}
+		return 0, "", false
+	}
 }
 
 // walkThroughAdvice pairs a statement index (-1 when unknown) with an advice.

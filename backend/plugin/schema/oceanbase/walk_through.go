@@ -2,7 +2,6 @@ package oceanbase
 
 import (
 	"context"
-	"errors"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	oceanbaseanalysis "github.com/bytebase/omni/oceanbase/analysis"
@@ -33,10 +32,12 @@ var oceanBaseWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
 	DatabaseMetadata: func(c *catalog.Catalog, dbName string) *metadatapb.DatabaseSchemaMetadata {
 		return c.DatabaseMetadata(dbName)
 	},
-	InspectAST:          omnicatalog.InspectAST(oceanbaseparser.GetNode, oceanbaseanalysis.ClassifyWalkThroughStatement),
-	ExtractCatalogError: extractOceanBaseCatalogError,
-	SplitSQL:            oceanbaseparser.SplitSQL,
-	IsCTAS:              oceanbaseanalysis.IsCreateTableAs,
+	InspectAST: omnicatalog.InspectAST(oceanbaseparser.GetNode, oceanbaseanalysis.ClassifyWalkThroughStatement),
+	ExtractCatalogError: omnicatalog.ExtractError(func(e *catalog.Error) (int, string) {
+		return e.Code, e.Message
+	}),
+	SplitSQL: oceanbaseparser.SplitSQL,
+	IsCTAS:   oceanbaseanalysis.IsCreateTableAs,
 }
 
 // WalkThroughWithContext performs DDL simulation using the omni OceanBase catalog.
@@ -50,20 +51,7 @@ func execCatalog(c *catalog.Catalog, sql string, continueOnError bool) ([]omnica
 		opts = &catalog.ExecOptions{ContinueOnError: true}
 	}
 	results, err := c.Exec(sql, opts)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]omnicatalog.ExecResult, len(results))
-	for i, r := range results {
-		out[i] = omnicatalog.ExecResult{Index: r.Index, Line: r.Line, Error: r.Error}
-	}
-	return out, nil
-}
-
-func extractOceanBaseCatalogError(err error) (int, string, bool) {
-	var catErr *catalog.Error
-	if errors.As(err, &catErr) {
-		return catErr.Code, catErr.Message, true
-	}
-	return 0, "", false
+	return omnicatalog.MapExecResults(results, err, func(r catalog.ExecResult) omnicatalog.ExecResult {
+		return omnicatalog.ExecResult{Index: r.Index, Line: r.Line, Error: r.Error}
+	})
 }

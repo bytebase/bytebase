@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	schema.RegisterGetDatabaseDefinition(storepb.Engine_CLICKHOUSE, GetDatabaseDefinition)
-	schema.RegisterGetTableDefinition(storepb.Engine_CLICKHOUSE, GetTableDefinition)
-	schema.RegisterGetViewDefinition(storepb.Engine_CLICKHOUSE, GetViewDefinition)
+	schema.RegisterDefinitions(schema.Definitions{
+		Database: GetDatabaseDefinition,
+		Table:    GetTableDefinition,
+		View:     GetViewDefinition,
+	}, storepb.Engine_CLICKHOUSE)
 }
 
 func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *metadatapb.DatabaseSchemaMetadata) (string, error) {

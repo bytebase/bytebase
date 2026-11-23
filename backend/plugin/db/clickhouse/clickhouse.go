@@ -12,9 +12,6 @@
 //   - Ping, Close, Execute, SyncInstance, SyncDBSchema and Dump delegate.
 //   - QueryConn asks the driver for one session and holds it, so statements a
 //     caller runs through one driver share a session.
-//   - GetDB returns nil: the omni driver owns its pool and hands out sessions
-//     instead of a *sql.DB. Every Bytebase caller already tolerates nil there,
-//     and no ClickHouse feature read the handle.
 //   - Execute reports each statement's range and the transaction control steps
 //     to the task run's log.
 //

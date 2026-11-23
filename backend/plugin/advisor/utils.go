@@ -13,17 +13,17 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// ExplainBudget caps the statements a row limit rule EXPLAINs at common.MaximumLintExplainSize and
+// explainBudget caps the statements a row limit rule EXPLAINs at common.MaximumLintExplainSize and
 // counts the statements it leaves unchecked.
-type ExplainBudget struct {
+type explainBudget struct {
 	used         int
 	skipped      int
 	firstSkipped *storepb.Position
 }
 
-// Spend reports whether the statement at position may be explained, recording it as skipped
+// spend reports whether the statement at position may be explained, recording it as skipped
 // otherwise.
-func (b *ExplainBudget) Spend(position *storepb.Position) bool {
+func (b *explainBudget) spend(position *storepb.Position) bool {
 	if b.used < common.MaximumLintExplainSize {
 		b.used++
 		return true
@@ -35,9 +35,9 @@ func (b *ExplainBudget) Spend(position *storepb.Position) bool {
 	return false
 }
 
-// AppendSkippedAdvice appends one warning covering the skipped statements, if any. It is a warning
+// appendSkippedAdvice appends one warning covering the skipped statements, if any. It is a warning
 // whatever the rule's level.
-func (b *ExplainBudget) AppendSkippedAdvice(adviceList []*storepb.Advice, title string, adviceCode code.Code) []*storepb.Advice {
+func (b *explainBudget) appendSkippedAdvice(adviceList []*storepb.Advice, title string, adviceCode code.Code) []*storepb.Advice {
 	if b.skipped == 0 {
 		return adviceList
 	}

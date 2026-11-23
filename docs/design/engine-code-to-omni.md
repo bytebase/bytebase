@@ -5,7 +5,7 @@
 Defines which code under `backend/plugin` belongs in omni, the contracts that keep the two
 repositories apart, and the boundary established across all four migration phases. Originally
 proposed on `main` at `fb411c9453` (~195k non-test Go lines under `backend/plugin`); "today" in
-this document reflects `main` at `e25f36564c` (omni pin `ce3f45e89769`, ~28.1k non-test Go lines
+this document reflects the completed migration (omni pin `40325183fbc5`, ~27.4k non-test Go lines
 across 324 files).
 
 ## Problem
@@ -37,19 +37,19 @@ lines of engine-specific code under `backend/plugin` (advisor 58k, parser 63k, s
   defaults) slip past Bytebase CI.
 
 All four phases of this migration have now landed, shrinking `backend/plugin/{advisor,parser,schema,db}`
-from ~195k to ~28.1k non-test Go lines of thin adapters and product glue. This document records
+from ~195k to ~27.4k non-test Go lines of thin adapters and product glue. This document records
 the boundary as implemented and the conventions that keep it clean.
 
 ## Where the boundary stands today
 
-Non-test Go footprint under `backend/plugin` at `e25f36564c`:
+Non-test Go footprint under `backend/plugin`:
 
 - `backend/plugin/advisor`: 24 files, 5,874 lines (down from ~58k)
-- `backend/plugin/parser`: 208 files, 10,480 lines (down from ~63k; includes `parser/base` at
-  3,317 lines across 24 files plus 22 engine adapter packages and `parser/standard`)
-- `backend/plugin/schema`: 35 files, 4,087 lines (down from ~35k; includes
-  `schema/internal/omnicatalog` at 1,253 lines across 6 files plus 10 engine adapter packages)
-- `backend/plugin/db`: 57 files, 7,617 lines (down from ~38k; includes `db/util` at 2,507 lines
+- `backend/plugin/parser`: 208 files, 10,059 lines (down from ~63k; includes `parser/base` at
+  3,366 lines across 24 files plus 22 engine adapter packages and `parser/standard`)
+- `backend/plugin/schema`: 35 files, 3,995 lines (down from ~35k; includes
+  `schema/internal/omnicatalog` at 1,278 lines across 6 files plus 10 engine adapter packages)
+- `backend/plugin/db`: 57 files, 7,446 lines (down from ~38k; includes `db/util` at 2,350 lines
   across 10 files, `db/transaction` at 35 lines, root files, and 23 engine adapter directories)
 
 **Parsing and AST — in omni.** Every production parse goes through omni (25 `omni/<engine>/parser`
@@ -97,9 +97,9 @@ query span, statement splitting, changed resources, statement types and ranges, 
 classification, completion, diagnostics, explain generation, result-limit rewriting, DML→SELECT
 backup transforms, and restore SQL to `omni/<engine>/analysis` (23 packages) and
 `omni/<engine>/completion` (11 packages). The shared `omni/analysis` contract owns `QueryType`,
-`StatementType`, `WalkThroughStatement`, `ResolvedSpan`, `ColumnResource`, `ChangedResource`,
-`Statement`, and analysis error types. `backend/plugin/parser/base` keeps the 13 per-engine
-capability registries and translates omni contract values into product/LSP types;
+`StatementType`, `CandidateType`, `WalkThroughStatement`, `ResolvedSpan`, `ColumnResource`,
+`ChangedResource`, `Statement`, and analysis error types. `backend/plugin/parser/base` keeps the 13
+per-engine capability registries and translates omni contract values into product/LSP types;
 `parser/tokenizer`, `split_test_runner.go`, regex `ValidateSQLForEditor` implementations, and
 duplicated analysis/completion corpora have been deleted.
 
@@ -232,15 +232,15 @@ The contract style is the one `omni/review` already states:
 
 ## Target state under backend/plugin
 
-| before (`fb411c9453`, ~195k lines) | current state on `main` (`e25f36564c`, ~28.1k lines) |
+| before (`fb411c9453`, ~195k lines) | current state (~27.4k lines) |
 |---|---|
 | `advisor/<engine>` (~380 rule files, 58k lines) | thin `V1Engine` adapters (10 engines, 5.9k lines total); judgment lives in `omni/<engine>/v1review` behind `omni/v1review` |
 | `advisor` root (registry, `sql_review.go`) | stays as V1's product shell (`v1review_engine.go`, `v1review_mysql_family.go`, `prober.go`); deleted only if the review V2 track retires V1 |
-| `parser/<engine>` capability implementations (63k lines) | thin adapters (22 engine packages + `parser/standard`, 10.5k lines total including `parser/base`) delegating to `omni/<engine>/analysis` and `omni/<engine>/completion` |
-| `parser/base` | stays: 13 capability registries, dispatch, product/LSP conversions; shared semantic types (`QueryType`, `StatementType`, `WalkThroughStatement`, `ResolvedSpan`, etc.) live in `omni/analysis` |
-| `schema/<engine>` deparse/differ/migration (35k lines) | thin adapters (10 engines, 4.1k lines total including `schema/internal/omnicatalog`) delegating to `omni/<engine>/catalog` and `omni/{clickhouse,trino}/deparse`, plus explicit legacy compatibility shims |
+| `parser/<engine>` capability implementations (63k lines) | thin adapters (22 engine packages + `parser/standard`, 10.1k lines total including `parser/base`) delegating to `omni/<engine>/analysis` and `omni/<engine>/completion` |
+| `parser/base` | stays: 13 capability registries, dispatch, product/LSP conversions; shared semantic types (`QueryType`, `StatementType`, `CandidateType`, `WalkThroughStatement`, `ResolvedSpan`, etc.) live in `omni/analysis` |
+| `schema/<engine>` deparse/differ/migration (35k lines) | thin adapters (10 engines, 4.0k lines total including `schema/internal/omnicatalog`) delegating to `omni/<engine>/catalog` and `omni/{clickhouse,trino}/deparse`, plus explicit legacy compatibility shims |
 | `schema` comparers, `differ.go` | deleted; replaced by omni catalog diff via `schema/internal/omnicatalog` |
-| `db/<engine>`, `db/transaction`, `db/util` engine helpers (38k lines) | thin adapters (23 engine directories, 7.6k lines total including `db/util`) delegating protocol, sync, query, execute, explain, and dump to `omni/<engine>/driver` via `db/util.OmniAdapter` |
+| `db/<engine>`, `db/transaction`, `db/util` engine helpers (38k lines) | thin adapters (23 engine directories, 7.4k lines total including `db/util`) delegating protocol, sync, query, execute, explain, and dump to `omni/<engine>/driver` via `db/util.OmniAdapter` |
 | `db` root, `db/util/aws.go`, `db/util/ssh.go`, `db/util/ssl.go` | stay: registry dispatch, `storepb.DataSource` → `omni/driver.Config` translation, IAM/RDS auth, Cloud SQL dialers, SSH tunnels, TLS material resolution, proto result and task-run log conversion |
 | YAML corpora, golden fixtures for the above | analysis, completion, schema, and driver corpora live in omni under its gates; advisor YAML parity fixtures (362 files) remain in `backend/plugin/advisor/*/test/*.yaml` |
 
@@ -255,10 +255,10 @@ Shared omni contract surface (all five packages now in production):
   `v1review.Finding` values (condition code, judged name, byte range). Bytebase keeps the
   registry, payloads, severity levels, live probes, and advice wording.
 - `omni/analysis`: the shared query-analysis contract — `QueryType`, `StatementType`,
-  `WalkThroughStatement`, `ResolvedSpan`, `ColumnResource`, `ChangedResource`, `Statement`, and
-  analysis error types — implemented by 23 `<engine>/analysis` packages. Completion keeps the
-  parser-native signal split in 11 `<engine>/completion` packages, while Bytebase resolves live
-  metadata into product `Candidate` values.
+  `CandidateType`, `WalkThroughStatement`, `ResolvedSpan`, `ColumnResource`, `ChangedResource`,
+  `Statement`, and analysis error types — implemented by 23 `<engine>/analysis` packages and 11
+  `<engine>/completion` packages, while Bytebase resolves live metadata into product `Candidate`
+  values.
 - `omni/driver`: the driver contract — `Config` (endpoint, resolved credentials, optional
   `TokenProvider`, `TLS` callback, `Dial` func, `Params`, `EngineVersion`), `Driver`, `Syncer`,
   `Dumper`, `Querier`, `Session`, `Executor`, `ExecuteLogger`, `Instance`, and `Result`/`Value`
@@ -297,9 +297,9 @@ across 24 files:
 All 22 engine parser packages under `backend/plugin/parser/` (plus `parser/standard` for
 ClickHouse, Databricks, and Hive) now delegate parsing, analysis, and completion to
 `omni/<engine>/analysis` and `omni/<engine>/completion`, shrinking `backend/plugin/parser` from
-~63k to 10.5k non-test Go lines:
+~63k to 10.1k non-test Go lines:
 
-- `omni/analysis` owns the shared contract types (`QueryType`, `StatementType`,
+- `omni/analysis` owns the shared contract types (`QueryType`, `StatementType`, `CandidateType`,
   `WalkThroughStatement`, `ResolvedSpan`, `ColumnResource`, `ChangedResource`, `Statement`, error
   types), and `backend/plugin/parser/base` retains the 13 registries and product/LSP conversions so
   consumers (`backend/api/v1`, lsp, plancheck, export, taskrun, sheet) keep their existing call
@@ -316,7 +316,7 @@ ClickHouse, Databricks, and Hive) now delegate parsing, analysis, and completion
 All 10 engine packages under `backend/plugin/schema/` now delegate metadata↔DDL conversion,
 metadata diff, SDL migration, and walk-through simulation to `omni/<engine>/catalog` (and
 `omni/{clickhouse,trino}/deparse`) via `backend/plugin/schema/internal/omnicatalog`, shrinking
-`backend/plugin/schema` from ~35k to 4.1k non-test Go lines:
+`backend/plugin/schema` from ~35k to 4.0k non-test Go lines:
 
 - The Bytebase-local metadata differ (`differ.go`) and hand-written deparse/migration generators
   were deleted, and MariaDB moved onto its own `omni/mariadb/catalog` fork instead of simulating on
@@ -337,7 +337,7 @@ metadata diff, SDL migration, and walk-through simulation to `omni/<engine>/cata
 All 23 driver packages under `backend/plugin/db/` (registering all 24 `storepb.Engine` values;
 `db/mysql` covers both `MYSQL` and `MARIADB`) now delegate wire protocol, metadata sync, query,
 execute, explain, and dump to `omni/<engine>/driver` behind `omni/driver`, shrinking
-`backend/plugin/db` from ~38k to 7.6k non-test Go lines:
+`backend/plugin/db` from ~38k to 7.4k non-test Go lines:
 
 - `backend/plugin/db/util` (`OmniAdapter`, `SessionHolder`, `omnidriver.go`, `config.go`) owns the
   shared lifecycle, held-session query serialization, `v1pb.QueryResult` conversion, and

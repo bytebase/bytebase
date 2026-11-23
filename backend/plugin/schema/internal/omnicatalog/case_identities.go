@@ -7,11 +7,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-// RejectCaseOnlyIdentities refuses a snapshot whose table or view names differ
+// rejectCaseOnlyIdentities refuses a snapshot whose table or view names differ
 // only by case. The MySQL-family catalogs key relations by lower-cased name, so
 // a case-only rename, or two relations that fold to one key, would be conflated.
 // A case-sensitive instance without that ambiguity diffs normally.
-func RejectCaseOnlyIdentities(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, oldCaseSensitive, newCaseSensitive bool) error {
+func rejectCaseOnlyIdentities(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, oldCaseSensitive, newCaseSensitive bool) error {
 	if !oldCaseSensitive && !newCaseSensitive {
 		return nil
 	}

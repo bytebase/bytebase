@@ -4,10 +4,6 @@
 // with the server — sync queries, statement execution, result decoding, the
 // server-stated dump — is the driver's; what stays here is the path to it (SSH
 // tunnel, TLS material) and the product's types.
-//
-// GetDB returns nil: the driver owns its pool and hands out sessions, so the
-// editor's connection is unused and a caller that needs a *sql.DB is told the
-// engine exposes none.
 package doris
 
 import (

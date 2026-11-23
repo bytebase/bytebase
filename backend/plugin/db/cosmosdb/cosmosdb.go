@@ -13,7 +13,6 @@
 //     data source without one falls back to azidentity's default chain. Config
 //     carries no account key, application name, read-only flag or engine
 //     version, and there is no SSH tunnel: Cosmos DB has no such session knob.
-//   - GetDB returns nil: Cosmos DB has no database/sql handle.
 //   - Execute is connect.CodeUnimplemented. The query language has no statement
 //     that writes, and the omni driver has no Executor for this engine.
 //   - Dump writes nothing: the synced metadata does not carry the partition

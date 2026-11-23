@@ -5,11 +5,6 @@
 // decoding, the server-stated dump — is the driver's; what stays here is the
 // path to it (SSH tunnel, TLS material) and the product's types.
 //
-// GetDB returns nil: the driver owns its pool and hands out sessions, so a
-// caller that needs a *sql.DB is told the engine exposes none. gh-ost's
-// prerequisite probe is the one caller that asks; it refuses an engine outside
-// ghost.SupportsEngine and never reaches this driver's nil pool.
-//
 // QueryConn opens its session once and holds it until Close, because the
 // editor asks for one statement per call and a session variable one call sets
 // must reach the next. The calls are serialized for the same reason one

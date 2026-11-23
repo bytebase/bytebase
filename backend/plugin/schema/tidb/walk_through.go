@@ -2,7 +2,6 @@ package tidb
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	omnianalysis "github.com/bytebase/omni/analysis"
@@ -35,10 +34,12 @@ var tidbWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
 	DatabaseMetadata: func(c *catalog.Catalog, dbName string) *metadatapb.DatabaseSchemaMetadata {
 		return c.DatabaseMetadata(dbName)
 	},
-	InspectAST:          inspectTiDBAST,
-	ExtractCatalogError: extractTiDBCatalogError,
-	TrackBatchTables:    true,
-	TiDBErrorDialect:    true,
+	InspectAST: inspectTiDBAST,
+	ExtractCatalogError: omnicatalog.ExtractError(func(e *catalog.Error) (int, string) {
+		return e.Code, e.Message
+	}),
+	TrackBatchTables: true,
+	TiDBErrorDialect: true,
 	CaseSensitiveResult: func(d *model.DatabaseMetadata) bool {
 		return d.GetIsObjectCaseSensitive()
 	},
@@ -58,22 +59,9 @@ func execCatalog(c *catalog.Catalog, sql string, continueOnError bool) ([]omnica
 		opts = &catalog.ExecOptions{ContinueOnError: true}
 	}
 	results, err := c.Exec(sql, opts)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]omnicatalog.ExecResult, len(results))
-	for i, r := range results {
-		out[i] = omnicatalog.ExecResult{Index: r.Index, Line: r.Line, Error: r.Error}
-	}
-	return out, nil
-}
-
-func extractTiDBCatalogError(err error) (int, string, bool) {
-	var catErr *catalog.Error
-	if errors.As(err, &catErr) {
-		return catErr.Code, catErr.Message, true
-	}
-	return 0, "", false
+	return omnicatalog.MapExecResults(results, err, func(r catalog.ExecResult) omnicatalog.ExecResult {
+		return omnicatalog.ExecResult{Index: r.Index, Line: r.Line, Error: r.Error}
+	})
 }
 
 // tidbBuildRawSQL rebuilds the original SQL from the omni ASTs. Each statement

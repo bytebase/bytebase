@@ -114,25 +114,25 @@ func RegisterDefinitions(defs Definitions, engines ...storepb.Engine) {
 			RegisterGetMultiFileDatabaseDefinition(engine, defs.MultiFileDatabase)
 		}
 		if defs.Schema != nil {
-			RegisterGetSchemaDefinition(engine, defs.Schema)
+			register(getSchemaDefinitions, engine, defs.Schema)
 		}
 		if defs.Table != nil {
-			RegisterGetTableDefinition(engine, defs.Table)
+			register(getTableDefinitions, engine, defs.Table)
 		}
 		if defs.View != nil {
-			RegisterGetViewDefinition(engine, defs.View)
+			register(getViewDefinitions, engine, defs.View)
 		}
 		if defs.MaterializedView != nil {
-			RegisterGetMaterializedViewDefinition(engine, defs.MaterializedView)
+			register(getMaterializedViewDefinitions, engine, defs.MaterializedView)
 		}
 		if defs.Function != nil {
-			RegisterGetFunctionDefinition(engine, defs.Function)
+			register(getFunctionDefinitions, engine, defs.Function)
 		}
 		if defs.Procedure != nil {
-			RegisterGetProcedureDefinition(engine, defs.Procedure)
+			register(getProcedureDefinitions, engine, defs.Procedure)
 		}
 		if defs.Sequence != nil {
-			RegisterGetSequenceDefinition(engine, defs.Sequence)
+			register(getSequenceDefinitions, engine, defs.Sequence)
 		}
 	}
 }
@@ -180,56 +180,28 @@ func call3[F ~func(A, B, C) (R, error), A, B, C, R any](registry map[storepb.Eng
 	return f(a, b, c)
 }
 
-func RegisterGetSequenceDefinition(engine storepb.Engine, f getSequenceDefinition) {
-	register(getSequenceDefinitions, engine, f)
-}
-
 func GetSequenceDefinition(engine storepb.Engine, sequenceName string, sequence *metadatapb.SequenceMetadata) (string, error) {
 	return call2(getSequenceDefinitions, engine, "", sequenceName, sequence)
-}
-
-func RegisterGetFunctionDefinition(engine storepb.Engine, f getFunctionDefinition) {
-	register(getFunctionDefinitions, engine, f)
 }
 
 func GetFunctionDefinition(engine storepb.Engine, functionName string, function *metadatapb.FunctionMetadata) (string, error) {
 	return call2(getFunctionDefinitions, engine, "", functionName, function)
 }
 
-func RegisterGetProcedureDefinition(engine storepb.Engine, f getProcedureDefinition) {
-	register(getProcedureDefinitions, engine, f)
-}
-
 func GetProcedureDefinition(engine storepb.Engine, procedureName string, procedure *metadatapb.ProcedureMetadata) (string, error) {
 	return call2(getProcedureDefinitions, engine, "", procedureName, procedure)
-}
-
-func RegisterGetMaterializedViewDefinition(engine storepb.Engine, f getMaterializedViewDefinition) {
-	register(getMaterializedViewDefinitions, engine, f)
 }
 
 func GetMaterializedViewDefinition(engine storepb.Engine, viewName string, view *metadatapb.MaterializedViewMetadata) (string, error) {
 	return call2(getMaterializedViewDefinitions, engine, "", viewName, view)
 }
 
-func RegisterGetViewDefinition(engine storepb.Engine, f getViewDefinition) {
-	register(getViewDefinitions, engine, f)
-}
-
 func GetViewDefinition(engine storepb.Engine, viewName string, view *metadatapb.ViewMetadata) (string, error) {
 	return call2(getViewDefinitions, engine, "", viewName, view)
 }
 
-func RegisterGetTableDefinition(engine storepb.Engine, f getTableDefinition) {
-	register(getTableDefinitions, engine, f)
-}
-
 func GetTableDefinition(engine storepb.Engine, tableName string, table *metadatapb.TableMetadata, sequences []*metadatapb.SequenceMetadata) (string, error) {
 	return call3(getTableDefinitions, engine, "", tableName, table, sequences)
-}
-
-func RegisterGetSchemaDefinition(engine storepb.Engine, f getSchemaDefinition) {
-	register(getSchemaDefinitions, engine, f)
 }
 
 func GetSchemaDefinition(engine storepb.Engine, schema *metadatapb.SchemaMetadata) (string, error) {
