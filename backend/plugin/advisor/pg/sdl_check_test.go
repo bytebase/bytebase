@@ -3,490 +3,119 @@ package pg
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
+	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 func TestCheckSDLStyle(t *testing.T) {
-	tests := []struct {
-		name      string
-		statement string
-		wantCount int
-		wantCodes []code.Code
-	}{
-		{
-			name: "Valid SDL - table with schema name, table-level named constraints",
-			statement: `CREATE TABLE public.users (
-				id INTEGER,
-				email TEXT,
-				CONSTRAINT pk_users PRIMARY KEY (id),
-				CONSTRAINT uk_users_email UNIQUE (email)
-			);`,
-			wantCount: 0,
-			wantCodes: nil,
-		},
-		{
-			name: "Valid SDL - table with allowed column-level constraints (NOT NULL, DEFAULT)",
-			statement: `CREATE TABLE public.users (
-				id INTEGER NOT NULL DEFAULT 0,
-				email TEXT NOT NULL,
-				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				CONSTRAINT pk_users PRIMARY KEY (id)
-			);`,
-			wantCount: 0,
-			wantCodes: nil,
-		},
-		{
-			name: "Valid SDL - table with GENERATED column constraint",
-			statement: `CREATE TABLE public.users (
-				id INTEGER NOT NULL,
-				email TEXT NOT NULL,
-				email_lower TEXT GENERATED ALWAYS AS (LOWER(email)) STORED,
-				CONSTRAINT pk_users PRIMARY KEY (id)
-			);`,
-			wantCount: 0,
-			wantCodes: nil,
-		},
-		{
-			name: "Error - Missing schema name for table",
-			statement: `CREATE TABLE users (
-				id INTEGER,
-				CONSTRAINT pk_users PRIMARY KEY (id)
-			);`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLRequireSchemaName},
-		},
-		{
-			name: "Error - Column-level PRIMARY KEY constraint",
-			statement: `CREATE TABLE public.users (
-				id INTEGER PRIMARY KEY,
-				email TEXT
-			);`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLDisallowColumnConstraint},
-		},
-		{
-			name: "Error - Column-level UNIQUE constraint",
-			statement: `CREATE TABLE public.users (
-				id INTEGER,
-				email TEXT UNIQUE
-			);`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLDisallowColumnConstraint},
-		},
-		{
-			name: "Error - Column-level CHECK constraint",
-			statement: `CREATE TABLE public.users (
-				id INTEGER CHECK (id > 0),
-				email TEXT
-			);`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLDisallowColumnConstraint},
-		},
-		{
-			name: "Error - Column-level FOREIGN KEY constraint",
-			statement: `CREATE TABLE public.orders (
-				id INTEGER,
-				user_id INTEGER REFERENCES public.users(id)
-			);`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLDisallowColumnConstraint},
-		},
-		{
-			name: "Error - Table-level constraint without name",
-			statement: `CREATE TABLE public.users (
-				id INTEGER,
-				PRIMARY KEY (id)
-			);`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLRequireConstraintName},
-		},
-		{
-			name: "Error - Table-level UNIQUE without name",
-			statement: `CREATE TABLE public.users (
-				id INTEGER,
-				email TEXT,
-				UNIQUE (email)
-			);`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLRequireConstraintName},
-		},
-		{
-			name: "Error - Table-level CHECK without name",
-			statement: `CREATE TABLE public.users (
-				id INTEGER,
-				CHECK (id > 0)
-			);`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLRequireConstraintName},
-		},
-		{
-			name: "Error - Table-level FOREIGN KEY without name",
-			statement: `CREATE TABLE public.users (
-				id INTEGER,
-				CONSTRAINT pk_users PRIMARY KEY (id)
-			);
-			CREATE TABLE public.orders (
-				id INTEGER,
-				user_id INTEGER,
-				FOREIGN KEY (user_id) REFERENCES public.users(id)
-			);`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLRequireConstraintName},
-		},
-		{
-			name: "Error - Multiple disallowed column-level constraints on one column",
-			statement: `CREATE TABLE public.users (
-				id INTEGER PRIMARY KEY UNIQUE CHECK (id > 0),
-				email TEXT
-			);`,
-			wantCount: 1, // One column with multiple disallowed constraints
-			wantCodes: []code.Code{
-				code.SDLDisallowColumnConstraint,
-			},
-		},
-		{
-			name: "Error - Multiple columns with disallowed constraints",
-			statement: `CREATE TABLE public.users (
-				id INTEGER PRIMARY KEY,
-				email TEXT UNIQUE
-			);`,
-			wantCount: 2, // Two columns with disallowed constraints
-			wantCodes: []code.Code{
-				code.SDLDisallowColumnConstraint,
-				code.SDLDisallowColumnConstraint,
-			},
-		},
-		{
-			name: "Valid SDL - Mix of allowed column constraints with table-level constraints",
-			statement: `CREATE TABLE public.users (
-				id INTEGER NOT NULL DEFAULT 0,
-				email TEXT NOT NULL,
-				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				CONSTRAINT pk_users PRIMARY KEY (id),
-				CONSTRAINT uk_users_email UNIQUE (email)
-			);`,
-			wantCount: 0,
-			wantCodes: nil,
-		},
-		{
-			name: "Error - Missing schema name and unnamed constraint",
-			statement: `CREATE TABLE users (
-				id INTEGER,
-				PRIMARY KEY (id)
-			);`,
-			wantCount: 2,
-			wantCodes: []code.Code{
-				code.SDLRequireSchemaName,
-				code.SDLRequireConstraintName,
-			},
-		},
-		{
-			name: "Error - All three types of errors",
-			statement: `CREATE TABLE users (
-				id INTEGER PRIMARY KEY,
-				UNIQUE (id)
-			);`,
-			wantCount: 3,
-			wantCodes: []code.Code{
-				code.SDLRequireSchemaName,
-				code.SDLDisallowColumnConstraint,
-				code.SDLRequireConstraintName,
-			},
-		},
-		{
-			name:      "Valid SDL - CREATE INDEX with schema name",
-			statement: `CREATE INDEX idx_users_email ON public.users (email);`,
-			wantCount: 0,
-			wantCodes: nil,
-		},
-		{
-			name:      "Error - CREATE INDEX without schema name",
-			statement: `CREATE INDEX idx_users_email ON users (email);`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLRequireSchemaName},
-		},
-		{
-			name:      "Error - CREATE INDEX without schema name (quoted table)",
-			statement: `CREATE INDEX "idx_departments_budget" ON ONLY "departments" (budget);`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLRequireSchemaName},
-		},
-		{
-			name:      "Valid SDL - CREATE UNIQUE INDEX with schema name",
-			statement: `CREATE UNIQUE INDEX idx_users_email ON public.users (email);`,
-			wantCount: 0,
-			wantCodes: nil,
-		},
-		{
-			name:      "Error - CREATE UNIQUE INDEX without schema name",
-			statement: `CREATE UNIQUE INDEX idx_users_email ON users (email);`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLRequireSchemaName},
-		},
-		{
-			name:      "Error - CREATE INDEX (unnamed) without schema name",
-			statement: `CREATE INDEX ON users (email);`,
-			wantCount: 2, // Both: missing index name AND missing schema name
-			wantCodes: []code.Code{
-				code.SDLRequireIndexName,
-				code.SDLRequireSchemaName,
-			},
-		},
-		{
-			name:      "Error - CREATE INDEX (unnamed) with schema name",
-			statement: `CREATE INDEX ON public.users (email);`,
-			wantCount: 1, // Only missing index name
-			wantCodes: []code.Code{code.SDLRequireIndexName},
-		},
-		{
-			name: "Valid SDL - CREATE VIEW with schema name",
-			statement: `CREATE TABLE public.users (id INTEGER, active BOOLEAN, CONSTRAINT pk_users PRIMARY KEY (id));
-CREATE VIEW public.active_users AS SELECT * FROM public.users WHERE active = true;`,
-			wantCount: 0,
-			wantCodes: nil,
-		},
-		{
-			name: "Error - CREATE VIEW without schema name",
-			statement: `CREATE TABLE public.users (id INTEGER, active BOOLEAN, CONSTRAINT pk_users PRIMARY KEY (id));
-CREATE VIEW active_users AS SELECT * FROM public.users WHERE active = true;`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLRequireSchemaName},
-		},
-		{
-			name:      "Valid SDL - CREATE SEQUENCE with schema name",
-			statement: `CREATE SEQUENCE public.user_id_seq START 1;`,
-			wantCount: 0,
-			wantCodes: nil,
-		},
-		{
-			name:      "Error - CREATE SEQUENCE without schema name",
-			statement: `CREATE SEQUENCE user_id_seq START 1;`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLRequireSchemaName},
-		},
-		{
-			name: "Valid SDL - CREATE FUNCTION with schema name",
-			statement: `CREATE FUNCTION public.get_user_count() RETURNS INTEGER AS $$
-				SELECT COUNT(*) FROM public.users;
-			$$ LANGUAGE SQL;`,
-			wantCount: 0,
-			wantCodes: nil,
-		},
-		{
-			name: "Error - CREATE FUNCTION without schema name",
-			statement: `CREATE FUNCTION get_user_count() RETURNS INTEGER AS $$
-				SELECT COUNT(*) FROM public.users;
-			$$ LANGUAGE SQL;`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLRequireSchemaName},
-		},
-		{
-			name:      "Valid SDL - ALTER SEQUENCE with schema name",
-			statement: `ALTER SEQUENCE public.user_id_seq OWNED BY public.users.id;`,
-			wantCount: 0,
-			wantCodes: nil,
-		},
-		{
-			name:      "Error - ALTER SEQUENCE without schema name",
-			statement: `ALTER SEQUENCE user_id_seq OWNED BY public.users.id;`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLRequireSchemaName},
-		},
-		{
-			name:      "Valid SDL - ALTER SEQUENCE with other options",
-			statement: `ALTER SEQUENCE public.user_id_seq INCREMENT BY 5 MINVALUE 1 MAXVALUE 1000;`,
-			wantCount: 0,
-			wantCodes: nil,
-		},
-		{
-			name: "Valid SDL - Multiple statements all valid",
-			statement: `CREATE TABLE public.users (
-				id INTEGER,
-				email TEXT,
-				CONSTRAINT pk_users PRIMARY KEY (id)
-			);
+	t.Run("valid and empty inputs produce no advice", func(t *testing.T) {
+		for _, sql := range []string{
+			"",
+			"-- comment only",
+			"CREATE TABLE public.users (id int NOT NULL, CONSTRAINT pk_users PRIMARY KEY (id));",
+		} {
+			advices, err := CheckSDLStyle(sql)
+			require.NoError(t, err)
+			require.Empty(t, advices)
+		}
+	})
 
-			CREATE INDEX idx_users_email ON public.users (email);
+	t.Run("syntax error is returned as error instead of advice", func(t *testing.T) {
+		for _, sql := range []string{
+			"CREATE TABLE public.users (id INTEGER;",
+			"CREATE TABLEX public.users (id INTEGER);",
+		} {
+			advices, err := CheckSDLStyle(sql)
+			require.Error(t, err)
+			require.Nil(t, advices)
+		}
+	})
 
-			CREATE SEQUENCE public.user_id_seq START 1;`,
-			wantCount: 0,
-			wantCodes: nil,
-		},
-		{
-			name: "Error - Multiple statements with multiple errors",
-			statement: `CREATE TABLE users (
-				id INTEGER PRIMARY KEY
-			);
+	t.Run("renders every style finding code, title, content, and line", func(t *testing.T) {
+		sql := "CREATE TABLE users (\n" +
+			"  id int PRIMARY KEY UNIQUE,\n" +
+			"  ref_id int REFERENCES other(id),\n" +
+			"  PRIMARY KEY (id),\n" +
+			"  UNIQUE (ref_id),\n" +
+			"  CHECK (id > 0),\n" +
+			"  FOREIGN KEY (ref_id) REFERENCES parent(id),\n" +
+			"  EXCLUDE USING gist (id WITH =)\n" +
+			");\n" +
+			"CREATE INDEX ON users (id);\n" +
+			"CREATE INDEX idx_u ON users (id);\n" +
+			"CREATE VIEW v AS SELECT 1;\n" +
+			"CREATE SEQUENCE seq;\n" +
+			"ALTER SEQUENCE seq RESTART;\n" +
+			"CREATE FUNCTION fn() RETURNS int AS $$ SELECT 1 $$ LANGUAGE sql;"
 
-			CREATE INDEX idx_users_email ON users (email);
+		advices, err := CheckSDLStyle(sql)
+		require.NoError(t, err)
 
-			CREATE VIEW active_users AS SELECT * FROM users;`,
-			wantCount: 4, // schema name for table + column constraint + schema name for index + schema name for view
-			wantCodes: []code.Code{
-				code.SDLRequireSchemaName,        // table
-				code.SDLDisallowColumnConstraint, // column constraint
-				code.SDLRequireSchemaName,        // index
-				code.SDLRequireSchemaName,        // view
-			},
-		},
-		{
-			name: "Valid SDL - Complex table with multiple named constraints",
-			statement: `CREATE TABLE public.users (
-				id INTEGER,
-				CONSTRAINT pk_users PRIMARY KEY (id)
-			);
-			CREATE TABLE public.products (
-				id INTEGER,
-				CONSTRAINT pk_products PRIMARY KEY (id)
-			);
-			CREATE TABLE public.orders (
-				id INTEGER,
-				user_id INTEGER,
-				product_id INTEGER,
-				quantity INTEGER,
-				total_price NUMERIC,
-				CONSTRAINT pk_orders PRIMARY KEY (id),
-				CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id),
-				CONSTRAINT fk_orders_product FOREIGN KEY (product_id) REFERENCES public.products(id),
-				CONSTRAINT uk_orders_composite UNIQUE (user_id, product_id),
-				CONSTRAINT chk_orders_quantity CHECK (quantity > 0),
-				CONSTRAINT chk_orders_price CHECK (total_price >= 0)
-			);`,
-			wantCount: 0,
-			wantCodes: nil,
-		},
-		{
-			name: "Error - FK reference without schema name (table-level)",
-			statement: `CREATE TABLE public.users (
-				id INTEGER,
-				CONSTRAINT pk_users PRIMARY KEY (id)
-			);
-			CREATE TABLE public.orders (
-				id INTEGER,
-				user_id INTEGER,
-				CONSTRAINT pk_orders PRIMARY KEY (id),
-				CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id)
-			);`,
-			wantCount: 1,
-			wantCodes: []code.Code{code.SDLRequireSchemaName},
-		},
-		{
-			name: "Error - FK reference without schema name (column-level)",
-			statement: `CREATE TABLE public.orders (
-				id INTEGER,
-				user_id INTEGER REFERENCES users(id)
-			);`,
-			wantCount: 2, // Both: disallowed column constraint AND missing schema
-			wantCodes: []code.Code{
-				code.SDLRequireSchemaName,
-				code.SDLDisallowColumnConstraint,
-			},
-		},
-		{
-			name: "Error - Multiple FK references without schema",
-			statement: `CREATE TABLE public.users (
-				id INTEGER,
-				CONSTRAINT pk_users PRIMARY KEY (id)
-			);
-			CREATE TABLE public.products (
-				id INTEGER,
-				CONSTRAINT pk_products PRIMARY KEY (id)
-			);
-			CREATE TABLE public.orders (
-				id INTEGER,
-				user_id INTEGER,
-				product_id INTEGER,
-				CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id),
-				CONSTRAINT fk_orders_product FOREIGN KEY (product_id) REFERENCES products(id)
-			);`,
-			wantCount: 2, // Two FK references without schema
-			wantCodes: []code.Code{
-				code.SDLRequireSchemaName,
-				code.SDLRequireSchemaName,
-			},
-		},
-		{
-			name: "Valid SDL - Mix of FK with and without errors",
-			statement: `CREATE TABLE public.users (
-				id INTEGER,
-				CONSTRAINT pk_users PRIMARY KEY (id)
-			);
-			CREATE TABLE public.products (
-				id INTEGER,
-				CONSTRAINT pk_products PRIMARY KEY (id)
-			);
-			CREATE TABLE public.orders (
-				id INTEGER,
-				user_id INTEGER,
-				product_id INTEGER,
-				CONSTRAINT pk_orders PRIMARY KEY (id),
-				CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id),
-				CONSTRAINT fk_orders_product FOREIGN KEY (product_id) REFERENCES public.products(id)
-			);`,
-			wantCount: 0,
-			wantCodes: nil,
-		},
-	}
+		type want struct {
+			code    code.Code
+			title   string
+			line    int32
+			contain []string
+		}
+		expected := []want{
+			{code.SDLRequireSchemaName, "sdl.require-schema-name", 1, []string{"Table 'users' is created without explicit schema name"}},
+			{code.SDLDisallowColumnConstraint, "sdl.disallow-column-constraint", 2, []string{"Column 'id' in table 'users'", "[PRIMARY KEY UNIQUE]"}},
+			{code.SDLRequireSchemaName, "sdl.require-schema-name", 3, []string{"Column 'ref_id' in table 'users'", "references", "table 'other'"}},
+			{code.SDLDisallowColumnConstraint, "sdl.disallow-column-constraint", 3, []string{"Column 'ref_id' in table 'users'", "[FOREIGN KEY]"}},
+			{code.SDLRequireConstraintName, "sdl.require-constraint-name", 4, []string{"PRIMARY KEY constraint without an explicit name", "PRIMARY KEY (id)"}},
+			{code.SDLRequireConstraintName, "sdl.require-constraint-name", 5, []string{"UNIQUE constraint without an explicit name", "UNIQUE (column)"}},
+			{code.SDLRequireConstraintName, "sdl.require-constraint-name", 6, []string{"CHECK constraint without an explicit name", "CHECK (condition)"}},
+			{code.SDLRequireConstraintName, "sdl.require-constraint-name", 7, []string{"FOREIGN KEY constraint without an explicit name", "FOREIGN KEY (column) REFERENCES other_table(id)"}},
+			{code.SDLRequireSchemaName, "sdl.require-schema-name", 7, []string{"Foreign key constraint in table 'users' references table 'parent'"}},
+			{code.SDLRequireConstraintName, "sdl.require-constraint-name", 8, []string{"CONSTRAINT constraint without an explicit name", "CONSTRAINT constraint_name ..."}},
+			{code.SDLRequireIndexName, "sdl.require-index-name", 10, []string{"Index is created without an explicit name"}},
+			{code.SDLRequireSchemaName, "sdl.require-schema-name", 10, []string{"Index is created on table 'users' without explicit schema name"}},
+			{code.SDLRequireSchemaName, "sdl.require-schema-name", 11, []string{"Index 'idx_u' is created on table 'users' without explicit schema name"}},
+			{code.SDLRequireSchemaName, "sdl.require-schema-name", 12, []string{"View 'v' is created without explicit schema name"}},
+			{code.SDLRequireSchemaName, "sdl.require-schema-name", 13, []string{"Sequence 'seq' is created without explicit schema name"}},
+			{code.SDLRequireSchemaName, "sdl.require-schema-name", 14, []string{"Sequence 'seq' is altered without explicit schema name"}},
+			{code.SDLRequireSchemaName, "sdl.require-schema-name", 15, []string{"Function 'fn' is created without explicit schema name"}},
+		}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			advices, err := CheckSDLStyle(tc.statement)
-			require.NoError(t, err, "CheckSDLStyle should not return error for valid SQL")
-			require.Equal(t, tc.wantCount, len(advices), "Unexpected number of advices")
-
-			if tc.wantCount > 0 {
-				require.NotNil(t, tc.wantCodes, "wantCodes should be specified when wantCount > 0")
-				require.Equal(t, len(tc.wantCodes), len(advices), "Number of advices should match wantCodes")
-
-				// Verify each advice has the expected error code and ERROR status
-				for i, advice := range advices {
-					require.Equal(t, storepb.Advice_ERROR, advice.Status, "All SDL check advices should have ERROR status")
-					require.Equal(t, tc.wantCodes[i].Int32(), advice.Code, "Advice %d should have expected error code", i)
-					require.NotEmpty(t, advice.Title, "Advice should have a title")
-					require.NotEmpty(t, advice.Content, "Advice should have content")
-					require.NotNil(t, advice.StartPosition, "Advice should have start position")
-					require.Greater(t, advice.StartPosition.Line, int32(0), "Line number should be positive")
-				}
+		require.Len(t, advices, len(expected))
+		for i, w := range expected {
+			a := advices[i]
+			require.Equal(t, storepb.Advice_ERROR, a.Status, "advice %d", i)
+			require.Equal(t, w.code.Int32(), a.Code, "advice %d", i)
+			require.Equal(t, w.title, a.Title, "advice %d", i)
+			require.Equal(t, &storepb.Position{Line: w.line, Column: 0}, a.StartPosition, "advice %d", i)
+			for _, sub := range w.contain {
+				require.Contains(t, a.Content, sub, "advice %d", i)
 			}
-		})
-	}
+		}
+	})
 }
 
-func TestCheckSDLStyle_InvalidSQL(t *testing.T) {
-	tests := []struct {
-		name      string
-		statement string
-	}{
-		{
-			name:      "Syntax error - missing parenthesis",
-			statement: `CREATE TABLE public.users (id INTEGER;`,
-		},
-		{
-			name:      "Syntax error - invalid keyword",
-			statement: `CREATE TABLEX public.users (id INTEGER);`,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			_, err := CheckSDLStyle(tc.statement)
-			require.Error(t, err, "CheckSDLStyle should return error for invalid SQL")
-		})
-	}
-}
-
-func TestCheckSDLStyle_EmptyStatement(t *testing.T) {
-	advices, err := CheckSDLStyle("")
+func TestSDLStyleLineCalculation(t *testing.T) {
+	// Statement-anchored findings (Start < 0) count only LF line breaks.
+	stmtWithCR := "CREATE TABLE public.a (id int);\rCREATE TABLE b (id int);"
+	advices, err := CheckSDLStyle(stmtWithCR)
 	require.NoError(t, err)
-	require.Empty(t, advices, "Empty statement should return no advices")
-}
+	require.Len(t, advices, 1)
+	require.Equal(t, int32(1), advices[0].StartPosition.Line)
 
-func TestCheckSDLStyle_CommentOnly(t *testing.T) {
-	advices, err := CheckSDLStyle("-- This is just a comment")
+	stmtWithLF := "CREATE TABLE public.a (id int);\nCREATE TABLE b (id int);"
+	advices, err = CheckSDLStyle(stmtWithLF)
 	require.NoError(t, err)
-	require.Empty(t, advices, "Comment-only statement should return no advices")
+	require.Len(t, advices, 1)
+	require.Equal(t, int32(2), advices[0].StartPosition.Line)
+
+	// Node-anchored findings (Start >= 0) use ByteOffsetToRunePosition, which counts CR as a line break.
+	nodeWithCR := "CREATE TABLE public.a (\rid int PRIMARY KEY\r);"
+	advices, err = CheckSDLStyle(nodeWithCR)
+	require.NoError(t, err)
+	require.Len(t, advices, 1)
+	require.Equal(t, int32(2), advices[0].StartPosition.Line)
+
+	// Verify sdlStyleLine directly for both branches.
+	require.Equal(t, int32(1), sdlStyleLine("a\rb", pganalysis.SDLFinding{Start: -1, StatementStart: 2}))
+	require.Equal(t, int32(2), sdlStyleLine("a\rb", pganalysis.SDLFinding{Start: 2, StatementStart: 0}))
 }
