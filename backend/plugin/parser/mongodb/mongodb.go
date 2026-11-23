@@ -65,21 +65,12 @@ func convertStatements(input string, stmts []mongo.Statement) []base.ParsedState
 		if stmt.Empty() {
 			continue
 		}
-		startPos := positionMapper.Position(stmt.ByteStart)
-		endPos := positionMapper.Position(stmt.ByteEnd)
+		baseStmt := base.NewExactStatement(input, positionMapper, stmt.ByteStart, stmt.ByteEnd, false)
 		result = append(result, base.ParsedStatement{
-			Statement: base.Statement{
-				Text:  stmt.Text,
-				Start: startPos,
-				End:   endPos,
-				Range: &storepb.Range{
-					Start: int32(stmt.ByteStart),
-					End:   int32(stmt.ByteEnd),
-				},
-			},
+			Statement: baseStmt,
 			AST: &AST{
 				Node:          stmt.AST,
-				StartPosition: startPos,
+				StartPosition: baseStmt.Start,
 			},
 		})
 	}

@@ -12,21 +12,7 @@ func init() {
 }
 
 func SplitSQL(statement string) ([]base.Statement, error) {
-	segments := omnicassandra.Split(statement)
-
-	positionMapper := base.NewByteOffsetPositionMapper(statement)
-	result := make([]base.Statement, 0, len(segments))
-	for _, seg := range segments {
-		result = append(result, base.Statement{
-			Text:  seg.Text,
-			Empty: seg.Empty,
-			Start: positionMapper.Position(seg.ByteStart),
-			End:   positionMapper.Position(seg.ByteEnd),
-			Range: &storepb.Range{
-				Start: int32(seg.ByteStart),
-				End:   int32(seg.ByteEnd),
-			},
-		})
-	}
-	return result, nil
+	return base.BuildStatements(statement, omnicassandra.Split(statement), func(s omnicassandra.Segment) (int, int, bool) {
+		return s.ByteStart, s.ByteEnd, s.Empty
+	}, false), nil
 }

@@ -1,9 +1,6 @@
 package tsql
 
 import (
-	"strings"
-	"unicode"
-
 	mssqlparser "github.com/bytebase/omni/mssql/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -40,27 +37,4 @@ func convertError(err error, stmt base.Statement) error {
 			return base.FormatLineSyntaxError(pos, pe.Message)
 		},
 	)
-}
-
-func NormalizeTSQLIdentifierText(text string) (original string, lowercase string) {
-	if text == "" {
-		return "", ""
-	}
-	if text[0] == '[' && text[len(text)-1] == ']' {
-		text = text[1 : len(text)-1]
-	}
-
-	s := ""
-	for _, r := range text {
-		s += string(unicode.ToLower(r))
-	}
-	return text, s
-}
-
-// IsTSQLReservedKeyword returns true if the given keyword is a T-SQL reserved keyword.
-func IsTSQLReservedKeyword(keyword string, caseSensitive bool) bool {
-	if caseSensitive && strings.ToUpper(keyword) != keyword {
-		return false
-	}
-	return mssqlparser.IsReservedKeyword(keyword)
 }

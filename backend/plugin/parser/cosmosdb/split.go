@@ -24,26 +24,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(stmts) == 0 {
-		return nil, nil
-	}
-
-	var result []base.Statement
-	positionMapper := base.NewByteOffsetPositionMapper(statement)
-	for _, stmt := range stmts {
-		startPos := positionMapper.Position(stmt.ByteStart)
-		endPos := positionMapper.Position(stmt.ByteEnd)
-
-		result = append(result, base.Statement{
-			Text: stmt.Text,
-			Range: &storepb.Range{
-				Start: int32(stmt.ByteStart),
-				End:   int32(stmt.ByteEnd),
-			},
-			Start: startPos,
-			End:   endPos,
-			Empty: stmt.Empty(),
-		})
-	}
-	return result, nil
+	return base.BuildStatements(statement, stmts, func(s omnicosmosdb.Statement) (int, int, bool) {
+		return s.ByteStart, s.ByteEnd, s.Empty()
+	}, false), nil
 }

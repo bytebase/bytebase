@@ -20,14 +20,8 @@ type astNode struct {
 
 func (a *astNode) ASTStartPosition() *storepb.Position { return a.startPos }
 
-func (a *astNode) Node() ast.Node { return a.node }
-
 func parseStarRocksStatements(statement string) ([]base.ParsedStatement, error) {
 	return base.ParseSegmentedStatements(statement, SplitSQL, parseSegment)
-}
-
-func parseStarRocksSQL(statement string) ([]*astNode, error) {
-	return base.ParseNonEmptySegments(statement, SplitSQL, parseSegment)
 }
 
 func parseSegment(stmt base.Statement) (*astNode, error) {

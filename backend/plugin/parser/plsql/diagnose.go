@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bytebase/omni/oracle/analysis"
-	oracleparser "github.com/bytebase/omni/oracle/parser"
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -25,11 +24,5 @@ func toSyntaxError(e *analysis.SyntaxError) *base.SyntaxError {
 	if e == nil {
 		return nil
 	}
-	if e.Offset < 0 {
-		return &base.SyntaxError{
-			Position: &store.Position{Line: 1, Column: 1},
-			Message:  e.Message,
-		}
-	}
-	return convertParseError(&oracleparser.ParseError{Position: e.Offset, Message: e.Message}, base.Statement{Text: e.Text})
+	return base.SyntaxErrorAtOffset(e.Text, e.Offset, e.Message)
 }

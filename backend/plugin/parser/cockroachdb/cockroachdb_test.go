@@ -12,15 +12,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
-func TestParseAndSplitSeam(t *testing.T) {
-	// SplitSQLStatement ensures trailing semicolons and skips empty segments.
-	got, err := SplitSQLStatement("SELECT 1;\n\n;\n\nSELECT 2")
-	require.NoError(t, err)
-	require.Equal(t, []string{"SELECT 1;", "SELECT 2;"}, got)
-
-	_, err = SplitSQLStatement("SELECT FROM")
-	require.Error(t, err)
-
+func TestParseSeam(t *testing.T) {
 	// Registry dispatch combines PG splitter positions with CockroachDB ASTs.
 	stmts, err := base.ParseStatements(storepb.Engine_COCKROACHDB, "CREATE TABLE t (id INT); ; UPSERT INTO t VALUES (1);")
 	require.NoError(t, err)
@@ -31,4 +23,7 @@ func TestParseAndSplitSeam(t *testing.T) {
 		require.True(t, ok)
 		require.Equal(t, int32(1), a.ASTStartPosition().Line)
 	}
+
+	_, err = base.ParseStatements(storepb.Engine_COCKROACHDB, "SELECT FROM")
+	require.Error(t, err)
 }

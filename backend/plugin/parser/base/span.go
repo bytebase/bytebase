@@ -159,30 +159,8 @@ func (c ColumnResource) String() string {
 	return strings.Join(list, ".")
 }
 
-type TableSource interface {
-	// Interface guard to forbid other types outside this package to implement this interface.
-	isTableSource()
-
-	GetTableName() string
-	GetSchemaName() string
-	GetDatabaseName() string
-	GetServerName() string
-	// GetQuerySpanResult returns the query span result of the table, it's callers' responsibility
-	// to make a copy of the result if they want to modify it.
-	GetQuerySpanResult() []QuerySpanResult
-}
-
-// baseTableSource is the base implementation table source.
-type baseTableSource struct {
-}
-
-// isTableSource implements the TableSource interface.
-func (baseTableSource) isTableSource() {}
-
 // PhysicalTable is the resource of a physical table.
 type PhysicalTable struct {
-	baseTableSource
-
 	// Server is the normalized server name, it's empty if the column comes from the connected server.
 	Server string
 	// Database is the normalized database name, it should not be empty.
@@ -193,45 +171,6 @@ type PhysicalTable struct {
 	Name string
 	// Columns are the columns of the table.
 	Columns []string
-	// InvisibleColumns are the Columns that SELECT * leaves out.
-	InvisibleColumns map[string]bool
-}
-
-func (p *PhysicalTable) GetTableName() string {
-	return p.Name
-}
-
-func (p *PhysicalTable) GetSchemaName() string {
-	return p.Schema
-}
-
-func (p *PhysicalTable) GetDatabaseName() string {
-	return p.Database
-}
-
-func (p *PhysicalTable) GetServerName() string {
-	return p.Server
-}
-
-func (p *PhysicalTable) GetQuerySpanResult() []QuerySpanResult {
-	result := make([]QuerySpanResult, 0, len(p.Columns))
-	for _, column := range p.Columns {
-		sourceColumnSet := make(SourceColumnSet, 1)
-		sourceColumnSet[ColumnResource{
-			Server:   p.Server,
-			Database: p.Database,
-			Schema:   p.Schema,
-			Table:    p.Name,
-			Column:   column,
-		}] = true
-		result = append(result, QuerySpanResult{
-			Name:          column,
-			SourceColumns: sourceColumnSet,
-			IsPlainField:  true,
-			Invisible:     p.InvisibleColumns[column],
-		})
-	}
-	return result
 }
 
 type GetQuerySpanContext struct {
@@ -270,102 +209,3 @@ type GetDatabaseMetadataFunc func(context.Context, string, string) (string, *mod
 type ListDatabaseNamesFunc func(context.Context, string) ([]string, error)
 
 type GetLinkedDatabaseMetadataFunc func(context.Context, string, string, string) (string, string, *model.DatabaseMetadata, error)
-
-func (s *QuerySpan) ToYaml() *YamlQuerySpan {
-	y := &YamlQuerySpan{
-		Type:             s.Type,
-		Results:          []YamlQuerySpanResult{},
-		SourceColumns:    []ColumnResource{},
-		PredicateColumns: []ColumnResource{},
-	}
-	for _, result := range s.Results {
-		yamlResult := &YamlQuerySpanResult{
-			Name:             result.Name,
-			SourceColumns:    []ColumnResource{},
-			IsPlainField:     result.IsPlainField,
-			SelectAsterisk:   result.SelectAsterisk,
-			SourceFieldPaths: []YamlQuerySpanResultSourceFieldPaths{},
-		}
-		for k := range result.SourceColumns {
-			yamlResult.SourceColumns = append(yamlResult.SourceColumns, k)
-		}
-		slices.SortFunc(yamlResult.SourceColumns, func(i, j ColumnResource) int {
-			if i.String() < j.String() {
-				return -1
-			}
-			if i.String() > j.String() {
-				return 1
-			}
-			return 0
-		})
-		for k, paths := range result.SourceFieldPaths {
-			for _, v := range paths {
-				s, _ := v.String()
-				yamlResult.SourceFieldPaths = append(yamlResult.SourceFieldPaths, YamlQuerySpanResultSourceFieldPaths{
-					Name: k,
-					Path: s,
-				})
-			}
-		}
-		slices.SortFunc(yamlResult.SourceFieldPaths, func(i, j YamlQuerySpanResultSourceFieldPaths) int {
-			if i.Name < j.Name {
-				return -1
-			}
-			if i.Name > j.Name {
-				return 1
-			}
-			return 0
-		})
-		y.Results = append(y.Results, *yamlResult)
-	}
-	for k := range s.SourceColumns {
-		y.SourceColumns = append(y.SourceColumns, k)
-	}
-	slices.SortFunc(y.SourceColumns, func(i, j ColumnResource) int {
-		if i.String() < j.String() {
-			return -1
-		}
-		if i.String() > j.String() {
-			return 1
-		}
-		return 0
-	})
-	for k := range s.PredicateColumns {
-		y.PredicateColumns = append(y.PredicateColumns, k)
-	}
-	slices.SortFunc(y.PredicateColumns, func(i, j ColumnResource) int {
-		if i.String() < j.String() {
-			return -1
-		}
-		if i.String() > j.String() {
-			return 1
-		}
-		return 0
-	})
-	for k := range s.PredicatePaths {
-		y.PredicatePaths = append(y.PredicatePaths, k)
-	}
-	slices.Sort(y.PredicatePaths)
-	return y
-}
-
-type YamlQuerySpan struct {
-	Type             QueryType
-	Results          []YamlQuerySpanResult
-	SourceColumns    []ColumnResource
-	PredicateColumns []ColumnResource
-	PredicatePaths   []string `yaml:"predicatepaths,omitempty"`
-}
-
-type YamlQuerySpanResult struct {
-	Name             string
-	SourceColumns    []ColumnResource
-	IsPlainField     bool
-	SourceFieldPaths []YamlQuerySpanResultSourceFieldPaths
-	SelectAsterisk   bool
-}
-
-type YamlQuerySpanResultSourceFieldPaths struct {
-	Name string
-	Path string
-}

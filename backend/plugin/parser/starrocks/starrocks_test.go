@@ -16,7 +16,7 @@ func TestStarRocksParserAndDiagnoseSeam(t *testing.T) {
 	require.Len(t, stmts, 1)
 	require.NotNil(t, stmts[0].AST)
 
-	_, err = parseStarRocksSQL("SELECT a > (select max(a) from t1) FROM")
+	_, err = base.ParseStatements(storepb.Engine_STARROCKS, "SELECT a > (select max(a) from t1) FROM")
 	var syntaxErr *base.SyntaxError
 	require.ErrorAs(t, err, &syntaxErr)
 

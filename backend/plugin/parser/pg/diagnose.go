@@ -24,14 +24,7 @@ func convertDiagnoseError(err *analysis.DiagnoseError) *base.SyntaxError {
 		return nil
 	}
 	if !err.ParseError {
-		return &base.SyntaxError{
-			Position: &storepb.Position{Line: 1, Column: 1},
-			Message:  err.Message,
-		}
+		return base.SyntaxErrorAtOffset(err.Text, -1, err.Message)
 	}
-	return &base.SyntaxError{
-		Position:   ByteOffsetToRunePosition(err.Text, err.Offset),
-		Message:    err.Message,
-		RawMessage: err.Message,
-	}
+	return base.SyntaxErrorAtOffset(err.Text, err.Offset, err.Message)
 }

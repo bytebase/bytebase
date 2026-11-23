@@ -13,36 +13,25 @@ func init() {
 // parseRedshiftStatements is the ParseStatementsFunc for Redshift.
 // Returns []ParsedStatement with both text and AST populated.
 func parseRedshiftStatements(statement string) ([]base.ParsedStatement, error) {
-	stmts, err := SplitSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []base.ParsedStatement
-	for _, stmt := range stmts {
+	return base.ParseMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
 		if stmt.Empty {
-			result = append(result, base.ParsedStatement{Statement: stmt})
-			continue
+			return nil, nil
 		}
-
 		parsed, err := ParseRedshift(stmt.Text)
 		if err != nil {
 			return nil, convertError(err, stmt)
 		}
+		asts := make([]base.AST, 0, len(parsed))
 		for _, parsedStmt := range parsed {
 			if parsedStmt.Empty() {
 				continue
 			}
-			result = append(result, base.ParsedStatement{
-				Statement: stmt,
-				AST: &AST{
-					Node:          parsedStmt.AST,
-					Text:          stmt.Text,
-					StartPosition: stmt.Start,
-				},
+			asts = append(asts, &AST{
+				Node:          parsedStmt.AST,
+				Text:          stmt.Text,
+				StartPosition: stmt.Start,
 			})
 		}
-	}
-
-	return result, nil
+		return asts, nil
+	})
 }
