@@ -4,11 +4,14 @@ import (
 	"context"
 	"testing"
 
+	omnianalysis "github.com/bytebase/omni/analysis"
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -286,4 +289,81 @@ func TestDefinitionAdaptersAndRegistrations(t *testing.T) {
 	migration, err := schema.DiffMigration(testDiffEngine, nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, "DROP TABLE `old`", migration)
+}
+
+type fakeSourceAST struct {
+	base.AST
+	node   string
+	source string
+}
+
+func (a fakeSourceAST) ASTSource() string { return a.source }
+
+func TestSDLAdviceHelpersAndInspectAST(t *testing.T) {
+	drop := SDLDropAdvice("drop t")
+	require.Equal(t, storepb.Advice_WARNING, drop.Status)
+	require.Equal(t, code.SDLDropOperation.Int32(), drop.Code)
+	require.Equal(t, "DROP operation detected", drop.Title)
+	require.Equal(t, "drop t", drop.Content)
+
+	replace := SDLReplaceAdvice("replace f")
+	require.Equal(t, storepb.Advice_WARNING, replace.Status)
+	require.Equal(t, code.SDLReplaceOperation.Int32(), replace.Code)
+	require.Equal(t, "CREATE OR REPLACE operation detected", replace.Title)
+	require.Equal(t, "replace f", replace.Content)
+
+	const testSDLEngine = storepb.Engine(99903)
+	schema.RegisterGetDatabaseDefinition(testSDLEngine, func(ctx schema.GetDefinitionContext, meta *metadatapb.DatabaseSchemaMetadata) (string, error) {
+		require.True(t, ctx.SkipBackupSchema)
+		require.True(t, ctx.SDLFormat)
+		return "source:" + meta.GetName(), nil
+	})
+	meta := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "app"}, nil, nil, testSDLEngine, true)
+
+	collectCalled := false
+	advices, err := PlanSDLDropAdvices(
+		testSDLEngine,
+		"target",
+		meta,
+		func(src, dst string) (*fakePlan, error) {
+			require.Equal(t, "source:app", src)
+			require.Equal(t, "target", dst)
+			return nil, nil
+		},
+		func(*fakePlan) []*storepb.Advice {
+			collectCalled = true
+			return nil
+		},
+	)
+	require.NoError(t, err)
+	require.Nil(t, advices)
+	require.False(t, collectCalled)
+
+	advices, err = PlanSDLDropAdvices(
+		testSDLEngine,
+		"target",
+		meta,
+		func(_, _ string) (*fakePlan, error) { return &fakePlan{sql: "DROP TABLE t"}, nil },
+		func(p *fakePlan) []*storepb.Advice { return []*storepb.Advice{SDLDropAdvice(p.sql)} },
+	)
+	require.NoError(t, err)
+	require.Len(t, advices, 1)
+	require.Equal(t, "DROP TABLE t", advices[0].Content)
+
+	inspect := InspectAST(
+		func(a base.AST) (string, bool) {
+			f, ok := a.(fakeSourceAST)
+			return f.node, ok
+		},
+		func(n string) omnianalysis.WalkThroughStatement {
+			return omnianalysis.WalkThroughStatement{Database: n}
+		},
+	)
+	info, ok := inspect(fakeSourceAST{node: "db1", source: "  CREATE DATABASE db1; \n"})
+	require.True(t, ok)
+	require.Equal(t, "db1", info.Database)
+	require.Equal(t, "CREATE DATABASE db1;", info.Source)
+
+	_, ok = inspect(nil)
+	require.False(t, ok)
 }

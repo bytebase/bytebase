@@ -37,7 +37,6 @@ var tidbWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
 	},
 	InspectAST:          inspectTiDBAST,
 	ExtractCatalogError: extractTiDBCatalogError,
-	IsCTAS:              tidbanalysis.IsCreateTableAs,
 	TrackBatchTables:    true,
 	TiDBErrorDialect:    true,
 	CaseSensitiveResult: func(d *model.DatabaseMetadata) bool {

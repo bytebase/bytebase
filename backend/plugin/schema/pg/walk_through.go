@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/schema/internal/omnicatalog"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -41,13 +42,7 @@ func WalkThroughWithContext(ctx context.Context, wtCtx schema.WalkThroughContext
 		catBefore.SetSearchPath(searchPath)
 	}
 	if _, err := catBefore.LoadMetadata(ctx, d.GetProto(), catalog.LoadMetadataOptions{Full: true}); err != nil {
-		return &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          code.DDLSimulationFailed.Int32(),
-			Title:         "Failed to load schema",
-			Content:       err.Error(),
-			StartPosition: &storepb.Position{Line: 0},
-		}
+		return omnicatalog.DDLSimulationAdvice("Failed to load schema", err)
 	}
 
 	catAfter := catBefore.Clone()
@@ -55,13 +50,7 @@ func WalkThroughWithContext(ctx context.Context, wtCtx schema.WalkThroughContext
 	// Step 2: Execute user SQL on catAfter.
 	results, execErr := catAfter.Exec(wtCtx.RawSQL, &catalog.ExecOptions{ContinueOnError: true})
 	if execErr != nil {
-		return &storepb.Advice{
-			Status:        storepb.Advice_ERROR,
-			Code:          code.DDLSimulationFailed.Int32(),
-			Title:         "DDL simulation failed",
-			Content:       execErr.Error(),
-			StartPosition: &storepb.Position{Line: 0},
-		}
+		return omnicatalog.DDLSimulationAdvice("DDL simulation failed", execErr)
 	}
 
 	// Step 3: Report the first exec error.

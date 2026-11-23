@@ -3,9 +3,7 @@ package mysql
 import (
 	"context"
 	"errors"
-	"strings"
 
-	omnianalysis "github.com/bytebase/omni/analysis"
 	metadatapb "github.com/bytebase/omni/metadata"
 	mysqlanalysis "github.com/bytebase/omni/mysql/analysis"
 	"github.com/bytebase/omni/mysql/catalog"
@@ -35,7 +33,7 @@ var mysqlWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
 	DatabaseMetadata: func(c *catalog.Catalog, dbName string) *metadatapb.DatabaseSchemaMetadata {
 		return c.DatabaseMetadata(dbName)
 	},
-	InspectAST:          inspectMySQLAST,
+	InspectAST:          omnicatalog.InspectAST(mysqlparser.GetNode, mysqlanalysis.ClassifyWalkThroughStatement),
 	ExtractCatalogError: extractMySQLCatalogError,
 	SplitSQL:            mysqlparser.SplitSQL,
 	IsCTAS:              mysqlanalysis.IsCreateTableAs,
@@ -68,16 +66,4 @@ func extractMySQLCatalogError(err error) (int, string, bool) {
 		return catErr.Code, catErr.Message, true
 	}
 	return 0, "", false
-}
-
-func inspectMySQLAST(unifiedAST base.AST) (omnianalysis.WalkThroughStatement, bool) {
-	node, ok := mysqlparser.GetNode(unifiedAST)
-	if !ok {
-		return omnianalysis.WalkThroughStatement{}, false
-	}
-	info := mysqlanalysis.ClassifyWalkThroughStatement(node)
-	if source, ok := unifiedAST.(interface{ ASTSource() string }); ok {
-		info.Source = strings.TrimSpace(source.ASTSource())
-	}
-	return info, true
 }

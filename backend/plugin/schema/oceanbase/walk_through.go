@@ -3,9 +3,7 @@ package oceanbase
 import (
 	"context"
 	"errors"
-	"strings"
 
-	omnianalysis "github.com/bytebase/omni/analysis"
 	metadatapb "github.com/bytebase/omni/metadata"
 	oceanbaseanalysis "github.com/bytebase/omni/oceanbase/analysis"
 	"github.com/bytebase/omni/oceanbase/catalog"
@@ -35,7 +33,7 @@ var oceanBaseWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
 	DatabaseMetadata: func(c *catalog.Catalog, dbName string) *metadatapb.DatabaseSchemaMetadata {
 		return c.DatabaseMetadata(dbName)
 	},
-	InspectAST:          inspectOceanBaseAST,
+	InspectAST:          omnicatalog.InspectAST(oceanbaseparser.GetNode, oceanbaseanalysis.ClassifyWalkThroughStatement),
 	ExtractCatalogError: extractOceanBaseCatalogError,
 	SplitSQL:            oceanbaseparser.SplitSQL,
 	IsCTAS:              oceanbaseanalysis.IsCreateTableAs,
@@ -68,16 +66,4 @@ func extractOceanBaseCatalogError(err error) (int, string, bool) {
 		return catErr.Code, catErr.Message, true
 	}
 	return 0, "", false
-}
-
-func inspectOceanBaseAST(unifiedAST base.AST) (omnianalysis.WalkThroughStatement, bool) {
-	node, ok := oceanbaseparser.GetNode(unifiedAST)
-	if !ok {
-		return omnianalysis.WalkThroughStatement{}, false
-	}
-	info := oceanbaseanalysis.ClassifyWalkThroughStatement(node)
-	if source, ok := unifiedAST.(interface{ ASTSource() string }); ok {
-		info.Source = strings.TrimSpace(source.ASTSource())
-	}
-	return info, true
 }
