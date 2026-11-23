@@ -40,6 +40,7 @@ var mariaDBWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
 	InspectAST:          inspectMariaDBAST,
 	ExtractCatalogError: extractMariaDBCatalogError,
 	SplitSQL:            mariadbparser.SplitSQL,
+	IsCTAS:              mariadbanalysis.IsCreateTableAs,
 }
 
 // WalkThroughWithContext performs DDL simulation using the omni MariaDB catalog.

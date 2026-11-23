@@ -29,8 +29,8 @@ func TestGetStatementTypesSeam(t *testing.T) {
 	_, err = base.GetStatementTypes(storepb.Engine_MSSQL, []base.AST{&fakeAST{}})
 	require.Error(t, err)
 
-	require.Equal(t, storepb.StatementType_CREATE_DATABASE, convertStatementType(analysis.CreateDatabase))
-	require.Equal(t, storepb.StatementType_ALTER_TABLE, convertStatementType(analysis.AlterTable))
-	require.Equal(t, storepb.StatementType_EXECUTE, convertStatementType(analysis.Execute))
-	require.Equal(t, storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED, convertStatementType(analysis.StatementType(999)))
+	require.Equal(t, storepb.StatementType_CREATE_DATABASE, base.OmniStatementType(analysis.CreateDatabase))
+	require.Equal(t, storepb.StatementType_ALTER_TABLE, base.OmniStatementType(analysis.AlterTable))
+	require.Equal(t, storepb.StatementType_EXECUTE, base.OmniStatementType(analysis.Execute))
+	require.Equal(t, storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED, base.OmniStatementType(analysis.StatementType(999)))
 }

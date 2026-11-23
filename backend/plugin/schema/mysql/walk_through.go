@@ -38,6 +38,7 @@ var mysqlWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
 	InspectAST:          inspectMySQLAST,
 	ExtractCatalogError: extractMySQLCatalogError,
 	SplitSQL:            mysqlparser.SplitSQL,
+	IsCTAS:              mysqlanalysis.IsCreateTableAs,
 }
 
 // WalkThroughWithContext performs DDL simulation using the omni MySQL catalog.

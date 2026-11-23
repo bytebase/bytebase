@@ -51,38 +51,7 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 			types = append(types, storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED)
 			continue
 		}
-		types = append(types, statementTypeMap[analysis.StatementTypeOf(node.Node)])
+		types = append(types, base.OmniStatementType(analysis.StatementTypeOf(node.Node)))
 	}
 	return types, nil
-}
-
-var statementTypeMap = map[analysis.StatementType]storepb.StatementType{
-	analysis.Insert:          storepb.StatementType_INSERT,
-	analysis.Update:          storepb.StatementType_UPDATE,
-	analysis.Delete:          storepb.StatementType_DELETE,
-	analysis.Merge:           storepb.StatementType_MERGE,
-	analysis.Truncate:        storepb.StatementType_TRUNCATE,
-	analysis.CreateTable:     storepb.StatementType_CREATE_TABLE,
-	analysis.CreateView:      storepb.StatementType_CREATE_VIEW,
-	analysis.CreateIndex:     storepb.StatementType_CREATE_INDEX,
-	analysis.CreateSchema:    storepb.StatementType_CREATE_SCHEMA,
-	analysis.CreateDatabase:  storepb.StatementType_CREATE_DATABASE,
-	analysis.CreateFunction:  storepb.StatementType_CREATE_FUNCTION,
-	analysis.CreateProcedure: storepb.StatementType_CREATE_PROCEDURE,
-	analysis.CreateSequence:  storepb.StatementType_CREATE_SEQUENCE,
-	analysis.AlterTable:      storepb.StatementType_ALTER_TABLE,
-	analysis.AlterView:       storepb.StatementType_ALTER_VIEW,
-	analysis.AlterIndex:      storepb.StatementType_ALTER_INDEX,
-	analysis.AlterDatabase:   storepb.StatementType_ALTER_DATABASE,
-	analysis.AlterSequence:   storepb.StatementType_ALTER_SEQUENCE,
-	analysis.DropTable:       storepb.StatementType_DROP_TABLE,
-	analysis.DropView:        storepb.StatementType_DROP_VIEW,
-	analysis.DropIndex:       storepb.StatementType_DROP_INDEX,
-	analysis.DropSchema:      storepb.StatementType_DROP_SCHEMA,
-	analysis.DropDatabase:    storepb.StatementType_DROP_DATABASE,
-	analysis.DropSequence:    storepb.StatementType_DROP_SEQUENCE,
-	analysis.DropFunction:    storepb.StatementType_DROP_FUNCTION,
-	analysis.DropProcedure:   storepb.StatementType_DROP_PROCEDURE,
-	analysis.Rename:          storepb.StatementType_RENAME,
-	analysis.Execute:         storepb.StatementType_EXECUTE,
 }
