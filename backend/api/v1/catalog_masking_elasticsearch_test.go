@@ -11,7 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	esparser "github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // testElasticsearchObjectSchema creates a schema where "email" and "contact.phone" are masked.
@@ -78,12 +78,12 @@ type maskGetSourceCase struct {
 }
 
 type checkBlockedCase struct {
-	Description       string                    `yaml:"description"`
-	API               esparser.MaskableAPI      `yaml:"api"`
-	Index             string                    `yaml:"index"`
-	BlockedFeatures   []esparser.BlockedFeature `yaml:"blockedFeatures"`
-	WantError         bool                      `yaml:"wantError"`
-	WantErrorContains string                    `yaml:"wantErrorContains"`
+	Description       string                                   `yaml:"description"`
+	API               parserbase.ElasticsearchMaskableAPI      `yaml:"api"`
+	Index             string                                   `yaml:"index"`
+	BlockedFeatures   []parserbase.ElasticsearchBlockedFeature `yaml:"blockedFeatures"`
+	WantError         bool                                     `yaml:"wantError"`
+	WantErrorContains string                                   `yaml:"wantErrorContains"`
 }
 
 func loadElasticsearchTestData(t *testing.T) *elasticsearchTestData {
@@ -313,7 +313,7 @@ func TestCheckElasticsearchRequestBlocked(t *testing.T) {
 	for _, tc := range td.CheckBlocked {
 		t.Run(tc.Description, func(t *testing.T) {
 			t.Parallel()
-			analysis := &esparser.RequestAnalysis{
+			analysis := &parserbase.ElasticsearchAnalysis{
 				API:             tc.API,
 				Index:           tc.Index,
 				BlockedFeatures: tc.BlockedFeatures,

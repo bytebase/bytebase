@@ -16,7 +16,7 @@ func init() {
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
 	var syntaxErr *base.SyntaxError
 	if diag := analysis.Diagnose(statement); diag != nil {
-		position := ByteOffsetToRunePosition(statement, diag.Offset)
+		position := base.ByteOffsetToRunePosition(statement, diag.Offset)
 		syntaxErr = &base.SyntaxError{
 			Position:   position,
 			Message:    base.FormatLineSyntaxError(position, diag.Message),

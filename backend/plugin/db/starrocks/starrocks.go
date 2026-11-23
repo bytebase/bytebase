@@ -5,11 +5,6 @@
 // decoding, the server-stated dump — is the driver's; what stays here is the
 // path to it (SSH tunnel, TLS material) and the product's types.
 //
-// GetDB returns nil: the driver owns its pool and hands out sessions, so a
-// caller that needs a *sql.DB is told the engine exposes none. gh-ost's
-// prerequisite probe is the one caller that asks; it refuses an engine outside
-// ghost.SupportsEngine and never reaches this driver's nil pool.
-//
 // QueryConn opens its session once and holds it until Close, because the
 // editor asks for one statement per call and a session variable one call sets
 // must reach the next. The calls are serialized for the same reason one
@@ -26,6 +21,7 @@ import (
 	starrocksdriver "github.com/bytebase/omni/starrocks/driver"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
@@ -53,7 +49,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		NotFoundResource:     "database",
 		DatabaseName:         config.ConnectionContext.DatabaseName,
 	}, func(adapter *util.OmniAdapter) (omnidriver.Driver, error) {
-		cfg, err := driverConfig(config, adapter)
+		cfg, err := util.MySQLFamilyDriverConfig(config, adapter)
 		if err != nil {
 			return nil, err
 		}
@@ -64,6 +60,13 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	return d, nil
 }
 
-func driverConfig(config db.ConnectionConfig, adapter *util.OmniAdapter) (omnidriver.Config, error) {
-	return util.MySQLFamilyDriverConfig(config, adapter)
+// Execute runs a SQL script. StarRocks accepts no DDL inside a transaction and
+// commits each data change independently.
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	return d.ExecuteScript(ctx, statement, opts, util.MySQLForkExecuteConfig)
+}
+
+// QueryConn queries a SQL statement on the driver's held session.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	return d.QueryHeldConn(ctx, statement, util.MySQLForkQueryOptions(queryContext), util.SessionQueryOptions{}, util.MySQLForkQueryResultOptions())
 }

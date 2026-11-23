@@ -23,7 +23,7 @@ func TestMySQLFamilyColumnCommentNilPayload(t *testing.T) {
 	for _, tidbQuirks := range []bool{false, true} {
 		advisors := buildMySQLFamilyAdvisors(
 			storepb.Engine_MYSQL,
-			NewV1EngineWithOptions(V1EngineOptions[int]{
+			newV1EngineWithOptions(v1EngineOptions[int]{
 				Extract:        extract,
 				ByteOffsetLine: byteOffsetLine,
 				PosMode:        V1PosContentStart,
@@ -54,7 +54,7 @@ func TestMySQLFamilyColumnCommentNilPayload(t *testing.T) {
 
 		emptyAdvisors := buildMySQLFamilyAdvisors(
 			storepb.Engine_MYSQL,
-			NewV1EngineWithOptions(V1EngineOptions[int]{
+			newV1EngineWithOptions(v1EngineOptions[int]{
 				Extract:        extract,
 				ByteOffsetLine: byteOffsetLine,
 				PosMode:        V1PosContentStart,
@@ -92,7 +92,7 @@ func TestMySQLFamilyPrepareMemoizesStmtsAndNodes(t *testing.T) {
 	}
 	advisors := buildMySQLFamilyAdvisors(
 		storepb.Engine_MYSQL,
-		NewV1EngineWithOptions(V1EngineOptions[int]{
+		newV1EngineWithOptions(v1EngineOptions[int]{
 			Extract:        opt.Extract,
 			ByteOffsetLine: opt.ByteOffsetLine,
 			PosMode:        V1PosContentStart,

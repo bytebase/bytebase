@@ -72,9 +72,3 @@ func TestRedshiftASTWrapper(t *testing.T) {
 	require.False(t, ok)
 	require.Nil(t, got)
 }
-
-func TestRedshiftByteOffsetToRunePosition(t *testing.T) {
-	position := ByteOffsetToRunePosition("SELECT\n日本 FROM t", len("SELECT\n日"))
-	require.Equal(t, int32(2), position.Line)
-	require.Equal(t, int32(2), position.Column)
-}

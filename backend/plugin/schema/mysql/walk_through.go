@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"context"
-	"errors"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	mysqlanalysis "github.com/bytebase/omni/mysql/analysis"
@@ -33,10 +32,12 @@ var mysqlWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
 	DatabaseMetadata: func(c *catalog.Catalog, dbName string) *metadatapb.DatabaseSchemaMetadata {
 		return c.DatabaseMetadata(dbName)
 	},
-	InspectAST:          omnicatalog.InspectAST(mysqlparser.GetNode, mysqlanalysis.ClassifyWalkThroughStatement),
-	ExtractCatalogError: extractMySQLCatalogError,
-	SplitSQL:            mysqlparser.SplitSQL,
-	IsCTAS:              mysqlanalysis.IsCreateTableAs,
+	InspectAST: omnicatalog.InspectAST(mysqlparser.GetNode, mysqlanalysis.ClassifyWalkThroughStatement),
+	ExtractCatalogError: omnicatalog.ExtractError(func(e *catalog.Error) (int, string) {
+		return e.Code, e.Message
+	}),
+	SplitSQL: mysqlparser.SplitSQL,
+	IsCTAS:   mysqlanalysis.IsCreateTableAs,
 }
 
 // WalkThroughWithContext performs DDL simulation using the omni MySQL catalog.
@@ -50,20 +51,7 @@ func execCatalog(c *catalog.Catalog, sql string, continueOnError bool) ([]omnica
 		opts = &catalog.ExecOptions{ContinueOnError: true}
 	}
 	results, err := c.Exec(sql, opts)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]omnicatalog.ExecResult, len(results))
-	for i, r := range results {
-		out[i] = omnicatalog.ExecResult{Index: r.Index, Line: r.Line, Error: r.Error}
-	}
-	return out, nil
-}
-
-func extractMySQLCatalogError(err error) (int, string, bool) {
-	var catErr *catalog.Error
-	if errors.As(err, &catErr) {
-		return catErr.Code, catErr.Message, true
-	}
-	return 0, "", false
+	return omnicatalog.MapExecResults(results, err, func(r catalog.ExecResult) omnicatalog.ExecResult {
+		return omnicatalog.ExecResult{Index: r.Index, Line: r.Line, Error: r.Error}
+	})
 }

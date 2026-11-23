@@ -27,7 +27,7 @@ func Register(engine storepb.Engine, cfg Config) Handlers {
 			return SplitSQL(statement, cfg)
 		},
 		GetQuerySpan: func(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, _ string, _ bool) (*base.QuerySpan, error) {
-			return NewQuerySpanExtractor(cfg, database, gCtx).GetQuerySpan(ctx, stmt.Text)
+			return getQuerySpan(ctx, cfg, database, gCtx, stmt.Text)
 		},
 	}
 	base.RegisterSplitterFunc(engine, h.SplitSQL)

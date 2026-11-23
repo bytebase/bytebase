@@ -28,7 +28,6 @@
 //   - Dump writes nothing. A synced index states its document count and data
 //     size, not the mappings and settings that would recreate it, so a dump of
 //     the metadata could not create the index it describes.
-//   - GetDB returns nil. Elasticsearch has no database/sql handle.
 //
 // An answer is text: one column per key of an object answer, in name order, or
 // one column holding an array answer, and a value keeps the digits the endpoint

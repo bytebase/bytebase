@@ -2,20 +2,13 @@ package mysql
 
 import (
 	"github.com/bytebase/omni/mysql/analysis"
-	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
-	return base.CollectUniqueStatementTypes(asts, func(a base.AST) (storepb.StatementType, error) {
-		node, ok := GetNode(a)
-		if !ok {
-			return 0, errors.New("expected AST for MySQL")
-		}
-		return base.OmniStatementType(analysis.StatementTypeOf(node)), nil
-	})
+	return base.CollectOmniStatementTypes(asts, GetNode, "expected AST for MySQL", analysis.StatementTypeOf)
 }
 
 // StatementTypeWithPosition contains a statement type and its position information.

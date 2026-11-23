@@ -88,3 +88,9 @@ func TestByteOffsetToRunePositionEdgeCases(t *testing.T) {
 		})
 	}
 }
+
+func TestLinePosition(t *testing.T) {
+	require.Equal(t, &storepb.Position{Line: 1}, LinePosition(-3))
+	require.Equal(t, &storepb.Position{Line: 1}, LinePosition(0))
+	require.Equal(t, &storepb.Position{Line: 7}, LinePosition(7))
+}

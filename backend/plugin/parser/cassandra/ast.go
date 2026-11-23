@@ -1,7 +1,6 @@
 package cassandra
 
 import (
-	omnicassandra "github.com/bytebase/omni/cassandra"
 	"github.com/bytebase/omni/cassandra/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -29,9 +28,4 @@ func GetNode(a base.AST) (ast.Node, bool) {
 		return nil, false
 	}
 	return node.Node, true
-}
-
-// ParseCQL parses CQL using omni's parser and returns omni Statement objects.
-func ParseCQL(sql string) ([]omnicassandra.Statement, error) {
-	return omnicassandra.Parse(sql)
 }

@@ -22,9 +22,9 @@ func TestByteOffsetToRunePositionAndShift(t *testing.T) {
 	require.Equal(t, &storepb.Position{Line: 2, Column: 3}, ByteOffsetToRunePosition(sql, 999))
 
 	basePos := &storepb.Position{Line: 10, Column: 5}
-	require.Equal(t, &storepb.Position{Line: 10, Column: 7}, ShiftPosition(&storepb.Position{Line: 1, Column: 3}, basePos))
-	require.Equal(t, &storepb.Position{Line: 11, Column: 3}, ShiftPosition(&storepb.Position{Line: 2, Column: 3}, basePos))
-	require.Nil(t, ShiftPosition(nil, basePos))
+	require.Equal(t, &storepb.Position{Line: 10, Column: 7}, shiftPosition(&storepb.Position{Line: 1, Column: 3}, basePos))
+	require.Equal(t, &storepb.Position{Line: 11, Column: 3}, shiftPosition(&storepb.Position{Line: 2, Column: 3}, basePos))
+	require.Nil(t, shiftPosition(nil, basePos))
 }
 
 func TestBuildStatementsAndMapByteRangesToLSP(t *testing.T) {
@@ -87,7 +87,7 @@ func TestOmniSpanHelpers(t *testing.T) {
 		Table:    "users",
 		Column:   "id",
 	}
-	require.Equal(t, wantCol, OmniColumnResource(omniCol))
+	require.Equal(t, wantCol, omniColumnResource(omniCol))
 
 	require.Nil(t, OmniColumnSet(nil))
 	require.Equal(t, SourceColumnSet{wantCol: true}, OmniColumnSet(omnianalysis.ColumnSet{omniCol: true}))
@@ -271,7 +271,7 @@ func TestOmniErrorHelpers(t *testing.T) {
 	require.NoError(t, OmniNotFoundError(nil))
 	require.NoError(t, OmniFunctionNotSupportedError(nil))
 	require.Nil(t, OmniTypeNotSupportedError(nil))
-	require.Nil(t, OmniUnresolvedColumnsError(nil))
+	require.Nil(t, omniUnresolvedColumnsError(nil))
 
 	db := "app"
 	col := "secret"
@@ -394,6 +394,74 @@ func TestCompletionHelpers(t *testing.T) {
 		{Type: CandidateTypeColumn, Text: "a"},
 		{Type: CandidateTypeColumn, Text: "b"},
 	}, cands)
+
+	for _, tc := range []struct {
+		in   omnianalysis.CandidateType
+		want CandidateType
+	}{
+		{omnianalysis.CandidateTypeNone, CandidateTypeNone},
+		{omnianalysis.CandidateKeyword, CandidateTypeKeyword},
+		{omnianalysis.CandidateType_, CandidateTypeKeyword},
+		{omnianalysis.CandidateShowTarget, CandidateTypeKeyword},
+		{omnianalysis.CandidateCatalog, CandidateTypeDatabase},
+		{omnianalysis.CandidateDatabase, CandidateTypeDatabase},
+		{omnianalysis.CandidateSchema, CandidateTypeSchema},
+		{omnianalysis.CandidateTable, CandidateTypeTable},
+		{omnianalysis.CandidateSynonym, CandidateTypeTable},
+		{omnianalysis.CandidateCollection, CandidateTypeTable},
+		{omnianalysis.CandidateView, CandidateTypeView},
+		{omnianalysis.CandidateMaterializedView, CandidateTypeMaterializedView},
+		{omnianalysis.CandidateColumn, CandidateTypeColumn},
+		{omnianalysis.CandidateFunction, CandidateTypeFunction},
+		{omnianalysis.CandidateMethod, CandidateTypeFunction},
+		{omnianalysis.CandidateCursorMethod, CandidateTypeFunction},
+		{omnianalysis.CandidateAggStage, CandidateTypeFunction},
+		{omnianalysis.CandidateQueryOperator, CandidateTypeFunction},
+		{omnianalysis.CandidateBSONHelper, CandidateTypeFunction},
+		{omnianalysis.CandidateDbMethod, CandidateTypeFunction},
+		{omnianalysis.CandidateRsMethod, CandidateTypeFunction},
+		{omnianalysis.CandidateShMethod, CandidateTypeFunction},
+		{omnianalysis.CandidateProcedure, CandidateTypeRoutine},
+		{omnianalysis.CandidatePackage, CandidateTypeNone},
+		{omnianalysis.CandidateSequence, CandidateTypeSequence},
+		{omnianalysis.CandidateIndex, CandidateTypeIndex},
+		{omnianalysis.CandidateTrigger, CandidateTypeTrigger},
+		{omnianalysis.CandidateEvent, CandidateTypeEvent},
+		{omnianalysis.CandidateVariable, CandidateTypeSystemVar},
+		{omnianalysis.CandidateCharset, CandidateTypeCharset},
+		{omnianalysis.CandidateEngine, CandidateTypeEngine},
+		{omnianalysis.CandidatePolicy, CandidateTypeNone},
+		{omnianalysis.CandidateExtension, CandidateTypeNone},
+		{omnianalysis.CandidateLogin, CandidateTypeNone},
+		{omnianalysis.CandidateUser, CandidateTypeNone},
+		{omnianalysis.CandidateRole, CandidateTypeNone},
+		{omnianalysis.CandidateDatabaseLink, CandidateTypeNone},
+		{omnianalysis.CandidateConstraint, CandidateTypeNone},
+		{omnianalysis.CandidateType(999), CandidateTypeNone},
+	} {
+		require.Equal(t, tc.want, OmniCandidateType(tc.in), "type=%s", tc.in)
+	}
+
+	type rawCand struct {
+		text    string
+		typ     omnianalysis.CandidateType
+		def     string
+		comment string
+	}
+	converted := ConvertOmniCandidates([]rawCand{
+		{text: "ignored", typ: omnianalysis.CandidatePolicy},
+		{text: "id", typ: omnianalysis.CandidateColumn, def: "t2.id | int"},
+		{text: "id", typ: omnianalysis.CandidateColumn, def: "t1.id | int", comment: "pk"},
+		{text: "INT", typ: omnianalysis.CandidateType_},
+		{text: "INT", typ: omnianalysis.CandidateKeyword},
+	}, func(c rawCand) (string, omnianalysis.CandidateType, string, string) {
+		return c.text, c.typ, c.def, c.comment
+	}, CompareCandidate)
+	require.Equal(t, []Candidate{
+		{Type: CandidateTypeColumn, Text: "id", Definition: "t1.id | int", Comment: "pk"},
+		{Type: CandidateTypeColumn, Text: "id", Definition: "t2.id | int"},
+		{Type: CandidateTypeKeyword, Text: "INT"},
+	}, converted)
 }
 
 func TestExplainAndDiagnoseHelpers(t *testing.T) {

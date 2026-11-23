@@ -14,7 +14,7 @@ func init() {
 // Diagnose performs syntax checking on a MongoDB shell script.
 // Uses best-effort parsing to report all syntax errors, not just the first one.
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	_, parseErrors := ParseMongoShellBestEffort(statement)
+	_, parseErrors := parseMongoShellBestEffort(statement)
 
 	var diagnostics []base.Diagnostic
 	for _, parseErr := range parseErrors {

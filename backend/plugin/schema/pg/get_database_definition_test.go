@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -79,31 +78,4 @@ func TestGetDatabaseDefinitionSeam(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, multiFile.Files)
 	})
-}
-
-func TestParseQualifiedTypeIdent(t *testing.T) {
-	testCases := []struct {
-		input  string
-		schema string
-		name   string
-		ok     bool
-	}{
-		{"integer", "", "", false},
-		{"character varying(50)", "", "", false},
-		{"numeric(9,6)", "", "", false},
-		{"text[]", "", "", false},
-		{"timestamp(6) with time zone", "", "", false},
-		{"public.addr", "public", "addr", true},
-		{"public.addr[]", "public", "addr", true},
-		{"public.addr(5)", "public", "addr", true},
-		{`"My Schema"."Weird Type"`, "My Schema", "Weird Type", true},
-		{`"has""quote".t`, `has"quote`, "t", true},
-		{`other.geo`, "other", "geo", true},
-	}
-	for _, tc := range testCases {
-		schemaName, typeName, ok := parseQualifiedTypeIdent(tc.input)
-		assert.Equal(t, tc.ok, ok, "input %q", tc.input)
-		assert.Equal(t, tc.schema, schemaName, "input %q", tc.input)
-		assert.Equal(t, tc.name, typeName, "input %q", tc.input)
-	}
 }

@@ -10,7 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	mongoparser "github.com/bytebase/bytebase/backend/plugin/parser/mongodb"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type mongodbMaskingTestData struct {
@@ -240,22 +240,22 @@ func mustMongoSchema(t *testing.T, schemaName string) *storepb.ObjectSchema {
 	}
 }
 
-func mustMaskableAPI(t *testing.T, api string) mongoparser.MaskableAPI {
+func mustMaskableAPI(t *testing.T, api string) parserbase.MongoDBMaskableAPI {
 	t.Helper()
 	switch api {
 	case "unsupported":
-		return mongoparser.MaskableAPIUnsupported
+		return parserbase.MongoDBMaskableAPIUnsupported
 	case "find":
-		return mongoparser.MaskableAPIFind
+		return parserbase.MongoDBMaskableAPIFind
 	case "findOne":
-		return mongoparser.MaskableAPIFindOne
+		return parserbase.MongoDBMaskableAPIFindOne
 	case "unsupportedRead":
-		return mongoparser.MaskableAPIUnsupportedRead
+		return parserbase.MongoDBMaskableAPIUnsupportedRead
 	case "aggregate":
-		return mongoparser.MaskableAPIAggregate
+		return parserbase.MongoDBMaskableAPIAggregate
 	default:
 		require.Failf(t, "unknown api", "api %q not found", api)
-		return mongoparser.MaskableAPIUnsupported
+		return parserbase.MongoDBMaskableAPIUnsupported
 	}
 }
 
@@ -284,9 +284,9 @@ func TestCheckMongoDBRequestBlocked(t *testing.T) {
 	for _, tc := range td.CheckBlocked {
 		t.Run(tc.Description, func(t *testing.T) {
 			t.Parallel()
-			var analysis *mongoparser.MaskingAnalysis
+			var analysis *parserbase.MongoDBAnalysis
 			if !tc.AnalysisNil {
-				analysis = &mongoparser.MaskingAnalysis{
+				analysis = &parserbase.MongoDBAnalysis{
 					API:              mustMaskableAPI(t, tc.API),
 					Operation:        tc.Operation,
 					Collection:       tc.Collection,

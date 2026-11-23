@@ -36,11 +36,13 @@ import (
 
 func init() {
 	schema.RegisterGetDatabaseMetadata(storepb.Engine_MSSQL, GetDatabaseMetadata)
-	schema.RegisterGetDatabaseDefinition(storepb.Engine_MSSQL, GetDatabaseDefinition)
-	schema.RegisterGetTableDefinition(storepb.Engine_MSSQL, GetTableDefinition)
-	schema.RegisterGetViewDefinition(storepb.Engine_MSSQL, GetViewDefinition)
-	schema.RegisterGetFunctionDefinition(storepb.Engine_MSSQL, GetFunctionDefinition)
-	schema.RegisterGetProcedureDefinition(storepb.Engine_MSSQL, GetProcedureDefinition)
+	schema.RegisterDefinitions(schema.Definitions{
+		Database:  GetDatabaseDefinition,
+		Table:     GetTableDefinition,
+		View:      GetViewDefinition,
+		Function:  GetFunctionDefinition,
+		Procedure: GetProcedureDefinition,
+	}, storepb.Engine_MSSQL)
 	schema.RegisterDiffMetadataMigration(storepb.Engine_MSSQL, diffMetadataMigration)
 }
 

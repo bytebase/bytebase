@@ -2,7 +2,6 @@ package mariadb
 
 import (
 	"github.com/bytebase/omni/mariadb/ast"
-	mariadbparser "github.com/bytebase/omni/mariadb/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -26,11 +25,6 @@ func (a *AST) ASTSource() string {
 // ASTStartPosition implements base.AST.
 func (a *AST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
-}
-
-// ParseMariaDB parses SQL using omni's MariaDB parser and returns an ast.List.
-func ParseMariaDB(sql string) (*ast.List, error) {
-	return mariadbparser.Parse(sql)
 }
 
 // GetNode extracts the omni AST node from a base.AST interface.

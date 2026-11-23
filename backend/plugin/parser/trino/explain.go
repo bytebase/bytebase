@@ -1,9 +1,7 @@
 package trino
 
 import (
-	"github.com/bytebase/omni/trino/ast"
-	"github.com/bytebase/omni/trino/parser"
-	"github.com/pkg/errors"
+	"github.com/bytebase/omni/trino/analysis"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -17,68 +15,8 @@ func init() {
 // plan (FORMAT JSON); any other format the caller names gets the engine's own
 // text plan (the driver capability table refuses the rest).
 func explainStatement(statement string, format base.ExplainFormat) (string, error) {
-	node, err := singleStatement(statement)
-	if err != nil {
-		return "", err
-	}
-	planned := statement
-	if explain, ok := node.(*parser.ExplainStmt); ok {
-		if explain.Analyze {
-			return "", base.ErrExplainAnalyzeExecutes
-		}
-		if inner, ok := explainedText(explain, statement); ok {
-			planned = inner
-		} else {
-			// Nothing to rebuild around: run what the user wrote rather than
-			// plan a plan.
-			return statement, nil
-		}
-	}
-	if format == base.ExplainFormatJSON {
-		return "EXPLAIN (FORMAT JSON) " + planned, nil
-	}
-	return "EXPLAIN " + planned, nil
-}
-
-// singleStatement returns the one statement in text. An explain request plans one
-// statement at a time: both the drivers and the API gate split a multi-statement
-// request first.
-func singleStatement(text string) (ast.Node, error) {
-	parsed, err := parseTrinoSQL(text)
-	if err != nil {
-		return nil, err
-	}
-	if len(parsed) == 0 || parsed[0].Node() == nil {
-		return nil, errors.New("EXPLAIN needs a statement to plan")
-	}
-	if len(parsed) > 1 {
-		return nil, errors.New("EXPLAIN plans a single statement")
-	}
-	return parsed[0].Node(), nil
-}
-
-// explainedText returns the text within text of the statement explain plans, and
-// whether it could be located.
-func explainedText(explain *parser.ExplainStmt, text string) (string, bool) {
-	inner, ok := nodeSpan(explain.Statement)
-	if !ok {
-		return "", false
-	}
-	// The plan ends where the EXPLAIN does, which is past clauses that the
-	// planned statement's own location can leave out.
-	if inner.Start < 0 || inner.Start >= explain.Loc.End || explain.Loc.End > len(text) {
-		return "", false
-	}
-	return text[inner.Start:explain.Loc.End], true
-}
-
-// nodeSpan returns the source byte range of an omni statement node.
-func nodeSpan(n ast.Node) (ast.Loc, bool) {
-	if qs, ok := n.(*parser.QueryStmt); ok {
-		return qs.Loc, true
-	}
-	if sp, ok := n.(interface{ Span() ast.Loc }); ok {
-		return sp.Span(), true
-	}
-	return ast.Loc{}, false
+	explain, err := analysis.ExplainStatement(statement, format == base.ExplainFormatJSON)
+	return base.ExplainStatementResult(explain, err, func(e error) error {
+		return convertParseError(statement, e, nil)
+	})
 }

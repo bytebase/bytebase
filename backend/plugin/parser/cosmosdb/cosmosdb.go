@@ -15,8 +15,7 @@ type AST struct {
 	StartPosition *storepb.Position
 }
 
-// ParseCosmosDB parses the given CosmosDB SQL statement using omni's parser.
-func ParseCosmosDB(statement string) ([]*AST, error) {
+func parseCosmosDB(statement string) ([]*AST, error) {
 	stmts, err := omnicosmosdb.Parse(statement)
 	if err != nil {
 		return nil, err

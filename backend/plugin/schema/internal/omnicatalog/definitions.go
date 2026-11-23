@@ -23,17 +23,17 @@ type MySQLFamilyDefinitions struct {
 func RegisterMySQLFamilyDefinitions(engine storepb.Engine, defs MySQLFamilyDefinitions) {
 	schema.RegisterDefinitions(schema.Definitions{
 		Database:  defs.Database,
-		Table:     IgnoreTableScope(defs.Table),
-		View:      IgnoreObjectScope(defs.View),
-		Function:  IgnoreObjectScope(defs.Function),
-		Procedure: IgnoreObjectScope(defs.Procedure),
-		Sequence:  IgnoreObjectScope(defs.Sequence),
+		Table:     ignoreTableScope(defs.Table),
+		View:      ignoreObjectScope(defs.View),
+		Function:  ignoreObjectScope(defs.Function),
+		Procedure: ignoreObjectScope(defs.Procedure),
+		Sequence:  ignoreObjectScope(defs.Sequence),
 	}, engine)
 }
 
-// IgnoreTableScope adapts a table definition renderer that takes only *TableMetadata
+// ignoreTableScope adapts a table definition renderer that takes only *TableMetadata
 // to schema's (schemaName, table, sequences) signature.
-func IgnoreTableScope(fn func(*metadatapb.TableMetadata) (string, error)) func(string, *metadatapb.TableMetadata, []*metadatapb.SequenceMetadata) (string, error) {
+func ignoreTableScope(fn func(*metadatapb.TableMetadata) (string, error)) func(string, *metadatapb.TableMetadata, []*metadatapb.SequenceMetadata) (string, error) {
 	if fn == nil {
 		return nil
 	}
@@ -42,8 +42,8 @@ func IgnoreTableScope(fn func(*metadatapb.TableMetadata) (string, error)) func(s
 	}
 }
 
-// IgnoreObjectScope adapts a per-object definition renderer that ignores schemaName.
-func IgnoreObjectScope[T any](fn func(T) (string, error)) func(string, T) (string, error) {
+// ignoreObjectScope adapts a per-object definition renderer that ignores schemaName.
+func ignoreObjectScope[T any](fn func(T) (string, error)) func(string, T) (string, error) {
 	if fn == nil {
 		return nil
 	}

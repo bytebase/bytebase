@@ -23,45 +23,7 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 		LoadDatabase:      loadDB,
 		ListDatabaseNames: listDBs,
 	}, statement, caretLine, caretOffset)
-	return base.DeduplicateCandidates(raw, func(c mssqlcompletion.Candidate) (base.Candidate, bool) {
-		typ := convertCandidateType(c.Type)
-		if typ == base.CandidateTypeNone {
-			return base.Candidate{}, false
-		}
-		return base.Candidate{
-			Type:       typ,
-			Text:       c.Text,
-			Definition: c.Definition,
-			Comment:    c.Comment,
-		}, true
+	return base.ConvertOmniCandidates(raw, func(c mssqlcompletion.Candidate) (string, mssqlcompletion.CandidateType, string, string) {
+		return c.Text, c.Type, c.Definition, c.Comment
 	}, base.CompareCandidate), nil
-}
-
-func convertCandidateType(t mssqlcompletion.CandidateType) base.CandidateType {
-	switch t {
-	case mssqlcompletion.CandidateKeyword, mssqlcompletion.CandidateType_:
-		return base.CandidateTypeKeyword
-	case mssqlcompletion.CandidateDatabase:
-		return base.CandidateTypeDatabase
-	case mssqlcompletion.CandidateSchema:
-		return base.CandidateTypeSchema
-	case mssqlcompletion.CandidateTable:
-		return base.CandidateTypeTable
-	case mssqlcompletion.CandidateView:
-		return base.CandidateTypeView
-	case mssqlcompletion.CandidateColumn:
-		return base.CandidateTypeColumn
-	case mssqlcompletion.CandidateFunction:
-		return base.CandidateTypeFunction
-	case mssqlcompletion.CandidateProcedure:
-		return base.CandidateTypeRoutine
-	case mssqlcompletion.CandidateSequence:
-		return base.CandidateTypeSequence
-	case mssqlcompletion.CandidateIndex:
-		return base.CandidateTypeIndex
-	case mssqlcompletion.CandidateTrigger:
-		return base.CandidateTypeTrigger
-	default:
-		return base.CandidateTypeNone
-	}
 }

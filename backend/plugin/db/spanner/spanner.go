@@ -118,10 +118,6 @@ func spannerQueryResultOptions(isExplainRequest bool) util.QueryResultOptions {
 	}
 }
 
-func toQueryResults(results []*odriver.Result, maxResultBytes int64, isExplainRequest bool) []*v1pb.QueryResult {
-	return util.OmniResultsToQueryResultsWith(results, maxResultBytes, spannerQueryResultOptions(isExplainRequest))
-}
-
 func toRowValue(value odriver.Value) *v1pb.RowValue {
 	switch value.Kind {
 	case odriver.Float32:

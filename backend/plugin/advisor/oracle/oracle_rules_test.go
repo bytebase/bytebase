@@ -142,14 +142,6 @@ END;`,
 			if len(adviceList) != test.wantCount {
 				t.Fatalf("got %d advices, want %d", len(adviceList), test.wantCount)
 			}
-
-			assertOracleStmtsDidNotUseANTLRFallback(t, stmts)
 		})
 	}
-}
-
-func assertOracleStmtsDidNotUseANTLRFallback(t *testing.T, _ []base.ParsedStatement) {
-	t.Helper()
-	// ANTLR fallback has been fully removed from the codebase.
-	// This is now a no-op kept to avoid changing test structure.
 }

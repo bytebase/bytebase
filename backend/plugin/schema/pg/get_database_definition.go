@@ -11,8 +11,6 @@
 package pg
 
 import (
-	"strings"
-
 	"google.golang.org/protobuf/proto"
 
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -94,47 +92,4 @@ func filterBackupSchemaIfNecessary(ctx schema.GetDefinitionContext, metadata *me
 		filtered.Schemas = append(filtered.Schemas, schema)
 	}
 	return filtered
-}
-
-// parseQualifiedTypeIdent splits a type reference produced by the sync layer
-// (format_type output, schema-qualified for user-defined types) into
-// (schema, name), ignoring any typmod or array suffix. It returns ok=false
-// for unqualified references — built-in types are never schema-qualified.
-func parseQualifiedTypeIdent(s string) (string, string, bool) {
-	var parts []string
-	for i := 0; i < len(s); {
-		if s[i] == '"' {
-			var b strings.Builder
-			i++
-			for i < len(s) {
-				if s[i] == '"' {
-					if i+1 < len(s) && s[i+1] == '"' {
-						b.WriteByte('"')
-						i += 2
-						continue
-					}
-					i++
-					break
-				}
-				b.WriteByte(s[i])
-				i++
-			}
-			parts = append(parts, b.String())
-		} else {
-			start := i
-			for i < len(s) && s[i] != '.' && s[i] != '(' && s[i] != '[' {
-				i++
-			}
-			parts = append(parts, strings.TrimSpace(s[start:i]))
-		}
-		if i < len(s) && s[i] == '.' {
-			i++
-			continue
-		}
-		break
-	}
-	if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
-		return parts[0], parts[1], true
-	}
-	return "", "", false
 }

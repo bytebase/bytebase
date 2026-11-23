@@ -112,7 +112,7 @@ func extractRangeStatements(statement string, backupItem *storepb.PriorBackupDet
 		}
 		return "", errors.Wrap(err, msg)
 	}
-	start, end := StatementRangeIndices(list, backupItem.StartPosition, backupItem.EndPosition, opts.ExclusiveEnd)
+	start, end := statementRangeIndices(list, backupItem.StartPosition, backupItem.EndPosition, opts.ExclusiveEnd)
 
 	sourceDatabase := opts.SourceDatabase
 	if sourceDatabase == "" {
@@ -263,7 +263,7 @@ func FilterDMLsInRange[T any](
 	var result []T
 	for _, item := range items {
 		start, end := bounds(item)
-		if PositionInRange(start, end, backupItem.StartPosition, backupItem.EndPosition) {
+		if positionInRange(start, end, backupItem.StartPosition, backupItem.EndPosition) {
 			result = append(result, item)
 		}
 	}
@@ -278,25 +278,25 @@ func StatementNotFoundError(backupItem *storepb.PriorBackupDetail_Item) error {
 		backupItem.EndPosition.Line, backupItem.EndPosition.Column)
 }
 
-// PositionInRange reports whether [start, end] falls within
+// positionInRange reports whether [start, end] falls within
 // [targetStart, targetEnd] in line:column order.
-func PositionInRange(start, end, targetStart, targetEnd *storepb.Position) bool {
-	return EqualOrGreaterPosition(start, targetStart) && EqualOrLessPosition(end, targetEnd)
+func positionInRange(start, end, targetStart, targetEnd *storepb.Position) bool {
+	return equalOrGreaterPosition(start, targetStart) && equalOrLessPosition(end, targetEnd)
 }
 
-// StatementRangeIndices returns the inclusive [start, end] indices in list covering
+// statementRangeIndices returns the inclusive [start, end] indices in list covering
 // [startPos, endPos]. When exclusiveEnd is true, a statement whose Start >= endPos
 // ends the range at i - 1; otherwise it ends at i.
-func StatementRangeIndices(list []Statement, startPos, endPos *storepb.Position, exclusiveEnd bool) (start, end int) {
+func statementRangeIndices(list []Statement, startPos, endPos *storepb.Position, exclusiveEnd bool) (start, end int) {
 	start = 0
 	end = len(list) - 1
 	for i, item := range list {
-		if EqualOrLessPosition(item.Start, startPos) {
+		if equalOrLessPosition(item.Start, startPos) {
 			start = i
 		}
 	}
 	for i := len(list) - 1; i >= 0; i-- {
-		if EqualOrGreaterPosition(list[i].Start, endPos) {
+		if equalOrGreaterPosition(list[i].Start, endPos) {
 			if exclusiveEnd {
 				end = i - 1
 			} else {
@@ -307,16 +307,16 @@ func StatementRangeIndices(list []Statement, startPos, endPos *storepb.Position,
 	return start, end
 }
 
-// EqualOrLessPosition reports whether a is at or before b in line:column order.
-func EqualOrLessPosition(a, b *storepb.Position) bool {
+// equalOrLessPosition reports whether a is at or before b in line:column order.
+func equalOrLessPosition(a, b *storepb.Position) bool {
 	if a.Line < b.Line {
 		return true
 	}
 	return a.Line == b.Line && a.Column <= b.Column
 }
 
-// EqualOrGreaterPosition reports whether a is at or after b in line:column order.
-func EqualOrGreaterPosition(a, b *storepb.Position) bool {
+// equalOrGreaterPosition reports whether a is at or after b in line:column order.
+func equalOrGreaterPosition(a, b *storepb.Position) bool {
 	if a.Line > b.Line {
 		return true
 	}

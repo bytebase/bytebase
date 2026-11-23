@@ -2,18 +2,11 @@ package tsql
 
 import (
 	"github.com/bytebase/omni/mssql/analysis"
-	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
-	return base.CollectUniqueStatementTypes(asts, func(a base.AST) (storepb.StatementType, error) {
-		node, ok := GetNode(a)
-		if !ok {
-			return 0, errors.New("expected omni AST for MSSQL")
-		}
-		return base.OmniStatementType(analysis.StatementTypeOf(node)), nil
-	})
+	return base.CollectOmniStatementTypes(asts, GetNode, "expected omni AST for MSSQL", analysis.StatementTypeOf)
 }

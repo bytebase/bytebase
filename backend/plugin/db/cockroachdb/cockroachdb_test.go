@@ -198,7 +198,7 @@ func TestExecuteOptions(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			script, options := executeOptions(tc.script, tc.options)
+			script, options := util.BuildExecuteOptions(tc.script, tc.options, cockroachExecuteConfig)
 			require.Equal(t, tc.wantScript, script)
 			require.Equal(t, tc.wantMode, options.Transaction)
 			require.Equal(t, tc.options.CreateDatabase, options.CreateDatabase)

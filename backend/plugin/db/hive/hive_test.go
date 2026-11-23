@@ -113,6 +113,10 @@ func TestToRowValue(t *testing.T) {
 // TestToQueryResult maps a result onto the product's: upper-case type names, one
 // row count, and the error a statement carries. A cut result reports the legacy
 // cap message rather than the statement's own error.
+func toQueryResult(result *odriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
+	return util.OmniResultToQueryResultWith(result, queryContext.MaximumSQLResultSize, hiveQueryResultOptions(queryContext))
+}
+
 func TestToQueryResult(t *testing.T) {
 	result := &odriver.Result{
 		Statement: "SELECT 1",

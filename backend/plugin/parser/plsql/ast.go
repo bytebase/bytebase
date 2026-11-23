@@ -1,7 +1,6 @@
 package plsql
 
 import (
-	"github.com/bytebase/omni/oracle/analysis"
 	"github.com/bytebase/omni/oracle/ast"
 	oracleparser "github.com/bytebase/omni/oracle/parser"
 
@@ -22,12 +21,6 @@ type AST struct {
 // ASTStartPosition implements base.AST.
 func (a *AST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
-}
-
-// ParsePLSQL parses SQL using omni's parser and returns an ast.List.
-// This is the recommended entry point for new Oracle code that needs omni AST nodes.
-func ParsePLSQL(sql string) (*ast.List, error) {
-	return analysis.Parse(sql)
 }
 
 // GetNode extracts the omni AST node from a base.AST interface.

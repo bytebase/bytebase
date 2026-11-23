@@ -27,7 +27,11 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 		return nil, nil
 	}
 	return base.DeduplicateCandidates(raw, func(c oraclecompletion.Candidate) (base.Candidate, bool) {
-		typ := convertCandidateType(c.Type)
+		typ := base.OmniCandidateType(c.Type)
+		if c.Type == oraclecompletion.CandidateVariable {
+			// Oracle package variables are user variables rather than MySQL-style system variables.
+			typ = base.CandidateTypeUserVar
+		}
 		if typ == base.CandidateTypeNone {
 			return base.Candidate{}, false
 		}
@@ -38,35 +42,4 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 			Comment:    c.Comment,
 		}, true
 	}, base.CompareCandidate), nil
-}
-
-func convertCandidateType(t oraclecompletion.CandidateType) base.CandidateType {
-	switch t {
-	case oraclecompletion.CandidateKeyword, oraclecompletion.CandidateType_:
-		return base.CandidateTypeKeyword
-	case oraclecompletion.CandidateSchema:
-		return base.CandidateTypeSchema
-	case oraclecompletion.CandidateTable, oraclecompletion.CandidateSynonym:
-		return base.CandidateTypeTable
-	case oraclecompletion.CandidateView:
-		return base.CandidateTypeView
-	case oraclecompletion.CandidateMaterializedView:
-		return base.CandidateTypeMaterializedView
-	case oraclecompletion.CandidateColumn:
-		return base.CandidateTypeColumn
-	case oraclecompletion.CandidateFunction:
-		return base.CandidateTypeFunction
-	case oraclecompletion.CandidateProcedure:
-		return base.CandidateTypeRoutine
-	case oraclecompletion.CandidateSequence:
-		return base.CandidateTypeSequence
-	case oraclecompletion.CandidateIndex:
-		return base.CandidateTypeIndex
-	case oraclecompletion.CandidateTrigger:
-		return base.CandidateTypeTrigger
-	case oraclecompletion.CandidateVariable:
-		return base.CandidateTypeUserVar
-	default:
-		return base.CandidateTypeNone
-	}
 }

@@ -57,7 +57,7 @@ func convertSyntaxError(statement string, err *analysis.SyntaxError) *base.Synta
 	}
 	var parseErr *omniparser.ParseError
 	if errors.As(err.Err, &parseErr) && parseErr.Position > 0 {
-		syntaxErr.Position = ByteOffsetToRunePosition(statement, parseErr.Position-1)
+		syntaxErr.Position = base.ByteOffsetToRunePosition(statement, parseErr.Position-1)
 	}
 	return syntaxErr
 }

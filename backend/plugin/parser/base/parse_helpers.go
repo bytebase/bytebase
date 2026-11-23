@@ -135,7 +135,7 @@ func ConvertParseError[E error](
 	}
 	offset, msg, rawMsg := extract(pe)
 	return &SyntaxError{
-		Position:   ShiftPosition(ByteOffsetToRunePosition(statement, offset), basePos),
+		Position:   shiftPosition(ByteOffsetToRunePosition(statement, offset), basePos),
 		Message:    msg,
 		RawMessage: rawMsg,
 	}

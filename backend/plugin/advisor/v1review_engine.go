@@ -44,9 +44,9 @@ type V1CompatEntry struct {
 	Warning bool
 }
 
-// V1StandardCompatEntries is the default v1review compatibility code mapping
+// v1StandardCompatEntries is the default v1review compatibility code mapping
 // shared by PostgreSQL and MySQL-family engines.
-var V1StandardCompatEntries = map[v1review.Code]V1CompatEntry{
+var v1StandardCompatEntries = map[v1review.Code]V1CompatEntry{
 	v1review.IncompatibleDropDatabase:  {Code: code.CompatibilityDropDatabase},
 	v1review.IncompatibleRenameTable:   {Code: code.CompatibilityRenameTable},
 	v1review.IncompatibleDropTable:     {Code: code.CompatibilityDropTable},
@@ -60,8 +60,8 @@ var V1StandardCompatEntries = map[v1review.Code]V1CompatEntry{
 	v1review.IncompatibleAlterColumn:   {Code: code.CompatibilityAlterColumn},
 }
 
-// V1EngineOptions configures a V1Engine with optional MySQL-family dialect quirks.
-type V1EngineOptions[N any] struct {
+// v1EngineOptions configures a V1Engine with optional MySQL-family dialect quirks.
+type v1EngineOptions[N any] struct {
 	Extract             func(Context) ([]V1Stmt[N], error)
 	ByteOffsetLine      func(sql string, byteOffset int) int32
 	PosMode             V1PosMode
@@ -157,15 +157,15 @@ func NewV1Engine[N any](
 	byteOffsetLine func(sql string, byteOffset int) int32,
 	mode V1PosMode,
 ) *V1Engine[N] {
-	return NewV1EngineWithOptions(V1EngineOptions[N]{
+	return newV1EngineWithOptions(v1EngineOptions[N]{
 		Extract:        extract,
 		ByteOffsetLine: byteOffsetLine,
 		PosMode:        mode,
 	})
 }
 
-// NewV1EngineWithOptions returns a rule builder configured with opt.
-func NewV1EngineWithOptions[N any](opt V1EngineOptions[N]) *V1Engine[N] {
+// newV1EngineWithOptions returns a rule builder configured with opt.
+func newV1EngineWithOptions[N any](opt v1EngineOptions[N]) *V1Engine[N] {
 	byteOffsetLine := opt.ByteOffsetLine
 	if byteOffsetLine == nil {
 		byteOffsetLine = defaultByteOffsetLine
@@ -234,7 +234,7 @@ func (e *V1Engine[N]) absLine(stmt V1Stmt[N], byteOffset int) int {
 }
 
 func (*V1Engine[N]) stmtPos(stmt V1Stmt[N], line int32) *storepb.Position {
-	return base.ConvertANTLRLineToPosition(stmt.BaseLine + int(line))
+	return base.LinePosition(stmt.BaseLine + int(line))
 }
 
 // FirstTokenLine returns the 1-based absolute line of the first non-whitespace rune in stmt.Text.
@@ -291,9 +291,9 @@ func (e *V1Engine[N]) PosContentEnd(stmt V1Stmt[N], _ v1review.Finding) *storepb
 func (e *V1Engine[N]) PosFinding(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	if e.tidbQuirks {
 		if f.Start == 0 && f.End == 0 {
-			return base.ConvertANTLRLineToPosition(e.FirstTokenLine(stmt))
+			return base.LinePosition(e.FirstTokenLine(stmt))
 		}
-		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
+		return base.LinePosition(e.absLine(stmt, f.Start))
 	}
 	return e.stmtPos(stmt, e.findingLine(stmt.Text, f))
 }
@@ -338,14 +338,14 @@ func (*V1Engine[N]) PosNil(V1Stmt[N], v1review.Finding) *storepb.Position {
 
 func (e *V1Engine[N]) posAbsOrFinding(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	if e.tidbQuirks {
-		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
+		return base.LinePosition(e.absLine(stmt, f.Start))
 	}
 	return e.stmtPos(stmt, e.findingLine(stmt.Text, f))
 }
 
 func (e *V1Engine[N]) posStatementAbsOrStmt(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	if e.tidbQuirks {
-		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
+		return base.LinePosition(e.absLine(stmt, f.Start))
 	}
 	return e.PosStatement(stmt, f)
 }
@@ -359,7 +359,7 @@ func (e *V1Engine[N]) posFindingOrTiDBFirstToken(stmt V1Stmt[N], f v1review.Find
 
 func (e *V1Engine[N]) posBaseLineTwice(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	if e.tidbQuirks {
-		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
+		return base.LinePosition(e.absLine(stmt, f.Start))
 	}
 	p := e.stmtPos(stmt, e.findingLine(stmt.Text, f))
 	p.Line += int32(stmt.BaseLine)
@@ -370,10 +370,10 @@ func (e *V1Engine[N]) posAllowlist(stmt V1Stmt[N], f v1review.Finding) *storepb.
 	if e.tidbQuirks {
 		if e.createTableLocStart != nil {
 			if start, ok := e.createTableLocStart(stmt.Node); ok && f.Start != max(start, 0) {
-				return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
+				return base.LinePosition(e.absLine(stmt, f.Start))
 			}
 		}
-		return base.ConvertANTLRLineToPosition(e.FirstTokenLine(stmt))
+		return base.LinePosition(e.FirstTokenLine(stmt))
 	}
 	return e.posBaseLineTwice(stmt, f)
 }
@@ -381,9 +381,9 @@ func (e *V1Engine[N]) posAllowlist(stmt V1Stmt[N], f v1review.Finding) *storepb.
 func (e *V1Engine[N]) posAlterFirstToken(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 	if e.tidbQuirks {
 		if e.isAlterTable != nil && e.isAlterTable(stmt.Node) {
-			return base.ConvertANTLRLineToPosition(e.FirstTokenLine(stmt))
+			return base.LinePosition(e.FirstTokenLine(stmt))
 		}
-		return base.ConvertANTLRLineToPosition(e.absLine(stmt, f.Start))
+		return base.LinePosition(e.absLine(stmt, f.Start))
 	}
 	return e.PosFinding(stmt, f)
 }
@@ -624,7 +624,7 @@ func (e *V1Engine[N]) SimpleBatchDB(
 	return e.SimpleBatch(func(checkCtx Context, nodes []N) []v1review.Finding { return fn(nodes, checkCtx.CurrentDatabase) }, c, filterCode, content, posFn...)
 }
 
-// SchemaBatch builds a whole-script schema rule that triggers ReadMissingSchema
+// SchemaBatch builds a whole-script schema rule that triggers readMissingSchema
 // when eval returns v1review.ErrSchemaMissing.
 func (e *V1Engine[N]) SchemaBatch(
 	adviceCode code.Code,
@@ -640,7 +640,7 @@ func (e *V1Engine[N]) SchemaBatch(
 		}
 		findings, missingMD, err := eval(checkCtx, nodes)
 		if err != nil {
-			ReadMissingSchema(missingMD, err)
+			readMissingSchema(missingMD, err)
 			return nil, err
 		}
 		var adviceList []*storepb.Advice
@@ -663,7 +663,7 @@ func (e *V1Engine[N]) IndexTotalNumberLimit(
 			return contentFn(f, int(checkCtx.Rule.GetNumberPayload().GetNumber()))
 		},
 		func(checkCtx Context, nodes []N) ([]v1review.Finding, *model.DatabaseMetadata, error) {
-			limit, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
+			limit, err := requireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
 			if err != nil {
 				return nil, nil, err
 			}
@@ -699,7 +699,7 @@ func (e *V1Engine[N]) NumberStmtWithMsg(
 	}
 	return e.StmtCtx(
 		func(_ context.Context, checkCtx Context, _ []N) (func([]N) []v1review.Finding, error) {
-			limit, err := RequireNumberPayload(checkCtx.Rule, missingMsg)
+			limit, err := requireNumberPayload(checkCtx.Rule, missingMsg)
 			if err != nil || (positiveOnly && limit <= 0) {
 				return nil, err
 			}
@@ -726,7 +726,7 @@ func (e *V1Engine[N]) StringArrayStmt(
 	}
 	return e.StmtCtx(
 		func(_ context.Context, checkCtx Context, _ []N) (func([]N) []v1review.Finding, error) {
-			list, err := RequireStringArrayPayload(checkCtx.Rule, missingMsg)
+			list, err := requireStringArrayPayload(checkCtx.Rule, missingMsg)
 			if err != nil {
 				return nil, err
 			}
@@ -776,7 +776,7 @@ func (e *V1Engine[N]) ColumnRequired(cfg V1ColumnRequiredConfig[N]) Func {
 		if err != nil {
 			return nil, err
 		}
-		list, err := RequireStringArrayPayload(checkCtx.Rule, "string_array_payload is required for column required rule")
+		list, err := requireStringArrayPayload(checkCtx.Rule, "string_array_payload is required for column required rule")
 		if err != nil {
 			return nil, err
 		}
@@ -955,7 +955,7 @@ func (e *V1Engine[N]) TemplateNaming(cfg V1TemplateNamingConfig[N]) Func {
 }
 
 // BackwardCompatibility builds SCHEMA_BACKWARD_COMPATIBILITY across the full statement batch.
-// A nil entries map defaults to V1StandardCompatEntries.
+// A nil entries map defaults to v1StandardCompatEntries.
 func (e *V1Engine[N]) BackwardCompatibility(
 	fn func(Context, []N) []v1review.Finding,
 	entries map[v1review.Code]V1CompatEntry,
@@ -963,7 +963,7 @@ func (e *V1Engine[N]) BackwardCompatibility(
 	posFn ...V1PosFunc[N],
 ) Func {
 	if entries == nil {
-		entries = V1StandardCompatEntries
+		entries = v1StandardCompatEntries
 	}
 	pos := e.pos(posFn)
 	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
@@ -1135,7 +1135,7 @@ func (e *V1Engine[N]) PriorBackup(cfg V1PriorBackupConfig[N]) Func {
 		if cfg.Facts != nil {
 			facts = cfg.Facts(ctx, checkCtx)
 		} else {
-			facts = NewPriorBackupFacts(ctx, checkCtx, cfg.Engine)
+			facts = newPriorBackupFacts(ctx, checkCtx, cfg.Engine)
 		}
 		findings, err := cfg.Check(checkCtx, stmts, nodes, facts)
 		if err != nil {
@@ -1169,7 +1169,7 @@ func (e *V1Engine[N]) PriorBackup(cfg V1PriorBackupConfig[N]) Func {
 }
 
 // RowLimit builds STATEMENT_INSERT_ROW_LIMIT or STATEMENT_AFFECTED_ROW_LIMIT
-// with shared payload validation, ExplainBudget accounting, and finding rendering.
+// with shared payload validation, explainBudget accounting, and finding rendering.
 func (e *V1Engine[N]) RowLimit(cfg V1RowLimitConfig[N]) Func {
 	pos := cfg.Pos
 	if pos == nil {
@@ -1198,7 +1198,7 @@ func (e *V1Engine[N]) RowLimit(cfg V1RowLimitConfig[N]) Func {
 		if err != nil {
 			return nil, err
 		}
-		maxRow, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
+		maxRow, err := requireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
 		if err != nil {
 			return nil, err
 		}
@@ -1210,13 +1210,13 @@ func (e *V1Engine[N]) RowLimit(cfg V1RowLimitConfig[N]) Func {
 			return nil, err
 		}
 		title := checkCtx.Rule.Type.String()
-		var explains ExplainBudget
+		var explains explainBudget
 		probes := make(map[int]v1review.Probe)
 		var probeErr error
 		runProbes(stmts, nodes, cfg.Probes(nodes), cfg.PreExecutions,
 			func() bool { return probeErr != nil },
 			func(i int, settings []string) {
-				if probeErr != nil || !explains.Spend(budgetPos(stmts[i], nodes[i])) {
+				if probeErr != nil || !explains.spend(budgetPos(stmts[i], nodes[i])) {
 					return
 				}
 				probe, err := estimate(ctx, checkCtx, stmts[i], nodes[i], settings)
@@ -1252,7 +1252,7 @@ func (e *V1Engine[N]) RowLimit(cfg V1RowLimitConfig[N]) Func {
 			}
 			adviceList = append(adviceList, newAdvice(level, adviceCode, title, content, pos(stmt, f)))
 		}
-		return explains.AppendSkippedAdvice(adviceList, title, cfg.ExceededCode), nil
+		return explains.appendSkippedAdvice(adviceList, title, cfg.ExceededCode), nil
 	}
 }
 

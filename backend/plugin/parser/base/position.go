@@ -99,8 +99,8 @@ func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
 	}
 }
 
-// ShiftPosition translates pos relative to basePos (1-based line and column).
-func ShiftPosition(pos, basePos *storepb.Position) *storepb.Position {
+// shiftPosition translates pos relative to basePos (1-based line and column).
+func shiftPosition(pos, basePos *storepb.Position) *storepb.Position {
 	if pos == nil {
 		return nil
 	}
@@ -179,11 +179,9 @@ func safeIntToInt32(v int) int32 {
 	return int32(v)
 }
 
-func ConvertANTLRLineToPosition(line int) *storepb.Position {
-	// ANTLR line numbers are 1-based, and Position uses 1-based line numbering.
-	// Just pass through the value, handling the 0 case for safety.
-	positionLine := max(line, 1)
+// LinePosition returns a 1-based Position for line, clamping non-positive lines to 1.
+func LinePosition(line int) *storepb.Position {
 	return &storepb.Position{
-		Line: safeIntToInt32(positionLine),
+		Line: safeIntToInt32(max(line, 1)),
 	}
 }

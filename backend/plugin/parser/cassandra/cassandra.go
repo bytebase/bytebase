@@ -1,6 +1,7 @@
 package cassandra
 
 import (
+	omnicassandra "github.com/bytebase/omni/cassandra"
 	omniparser "github.com/bytebase/omni/cassandra/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -13,7 +14,7 @@ func init() {
 
 func parseCassandraStatements(statement string) ([]base.ParsedStatement, error) {
 	return base.ParseNonEmptyMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
-		parsed, err := ParseCQL(stmt.Text)
+		parsed, err := omnicassandra.Parse(stmt.Text)
 		if err != nil {
 			return nil, convertError(err, stmt)
 		}

@@ -182,7 +182,7 @@ func TestOpenPassesGoogleSQLOnlyOption(t *testing.T) {
 }
 
 func toQueryResult(result *odriver.Result, maxResultBytes int64) *v1pb.QueryResult {
-	return toQueryResults([]*odriver.Result{result}, maxResultBytes, false)[0]
+	return util.OmniResultToQueryResultWith(result, maxResultBytes, spannerQueryResultOptions(false))
 }
 
 func TestToQueryResult(t *testing.T) {

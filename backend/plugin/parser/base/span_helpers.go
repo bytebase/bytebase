@@ -29,8 +29,8 @@ func OmniQueryType(t omnianalysis.QueryType) QueryType {
 	}
 }
 
-// OmniColumnResource converts an omni ColumnResource to a Bytebase ColumnResource.
-func OmniColumnResource(c omnianalysis.ColumnResource) ColumnResource {
+// omniColumnResource converts an omni ColumnResource to a Bytebase ColumnResource.
+func omniColumnResource(c omnianalysis.ColumnResource) ColumnResource {
 	return ColumnResource{
 		Instance: c.Instance,
 		Server:   c.Server,
@@ -48,7 +48,7 @@ func OmniColumnSet(set omnianalysis.ColumnSet) SourceColumnSet {
 	}
 	out := make(SourceColumnSet, len(set))
 	for col := range set {
-		out[OmniColumnResource(col)] = true
+		out[omniColumnResource(col)] = true
 	}
 	return out
 }
@@ -147,14 +147,14 @@ func OmniTypeNotSupportedError(err *omnianalysis.TypeNotSupportedError) *TypeNot
 	}
 }
 
-// OmniUnresolvedColumnsError converts an omni UnresolvedColumnsError to Bytebase's UnresolvedColumnsError.
-func OmniUnresolvedColumnsError(err *omnianalysis.UnresolvedColumnsError) *UnresolvedColumnsError {
+// omniUnresolvedColumnsError converts an omni UnresolvedColumnsError to Bytebase's UnresolvedColumnsError.
+func omniUnresolvedColumnsError(err *omnianalysis.UnresolvedColumnsError) *UnresolvedColumnsError {
 	if err == nil {
 		return nil
 	}
 	relations := make([]ColumnResource, 0, len(err.Relations))
 	for _, relation := range err.Relations {
-		relations = append(relations, OmniColumnResource(relation))
+		relations = append(relations, omniColumnResource(relation))
 	}
 	return &UnresolvedColumnsError{Relations: relations}
 }
@@ -170,7 +170,7 @@ func OmniResolvedSpan(span *omnianalysis.ResolvedSpan) *QuerySpan {
 		SourceColumns:          OmniColumnSet(span.SourceColumns),
 		Results:                OmniQuerySpanResults(span.Results),
 		PredicateColumns:       OmniColumnSet(span.PredicateColumns),
-		UnresolvedColumnsError: OmniUnresolvedColumnsError(span.UnresolvedColumnsError),
+		UnresolvedColumnsError: omniUnresolvedColumnsError(span.UnresolvedColumnsError),
 	}
 	if span.NotFoundError != nil {
 		out.NotFoundError = OmniResourceNotFoundError(span.NotFoundError)
@@ -303,25 +303,25 @@ func UnnamedSchemaQuerySpanCatalog[D any](
 }
 
 // ConvertOmniMixTablesError translates omni's ErrMixUserSystemTables into Bytebase's
-// MixUserSystemTablesError, preserving wrapping context via MixedTablesError.
+// MixUserSystemTablesError, preserving wrapping context via mixedTablesError.
 // Returns nil if err does not match ErrMixUserSystemTables.
 func ConvertOmniMixTablesError(err error) error {
 	if err == omnianalysis.ErrMixUserSystemTables {
 		return MixUserSystemTablesError
 	}
 	if errors.Is(err, omnianalysis.ErrMixUserSystemTables) {
-		return &MixedTablesError{Cause: err}
+		return &mixedTablesError{Cause: err}
 	}
 	return nil
 }
 
-// MixedTablesError wraps an engine mixed-table error so errors.Is matches MixUserSystemTablesError.
-type MixedTablesError struct {
+// mixedTablesError wraps an engine mixed-table error so errors.Is matches MixUserSystemTablesError.
+type mixedTablesError struct {
 	Cause error
 }
 
 // Error implements error.
-func (e *MixedTablesError) Error() string {
+func (e *mixedTablesError) Error() string {
 	if e.Cause != nil {
 		return e.Cause.Error()
 	}
@@ -329,12 +329,12 @@ func (e *MixedTablesError) Error() string {
 }
 
 // Is allows errors.Is to match MixUserSystemTablesError.
-func (*MixedTablesError) Is(target error) bool {
+func (*mixedTablesError) Is(target error) bool {
 	return target == MixUserSystemTablesError
 }
 
 // Unwrap returns the underlying engine error.
-func (e *MixedTablesError) Unwrap() error {
+func (e *mixedTablesError) Unwrap() error {
 	return e.Cause
 }
 

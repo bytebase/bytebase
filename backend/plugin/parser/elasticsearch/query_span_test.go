@@ -13,12 +13,12 @@ import (
 func TestGetQuerySpanSeam(t *testing.T) {
 	ctx := context.Background()
 
-	// Registry dispatch, QueryType conversion, ElasticsearchAnalysis, and nested PathAST conversion.
+	// Registry dispatch, QueryType conversion, ElasticsearchAnalysis (including blocked features), and nested PathAST conversion.
 	spans, err := base.GetQuerySpan(
 		ctx,
 		base.GetQuerySpanContext{},
 		storepb.Engine_ELASTICSEARCH,
-		[]base.Statement{{Text: "GET /users/_search\n{\"query\":{\"match\":{\"contact.email\":\"alice@example.com\"}}}"}},
+		[]base.Statement{{Text: "GET /users/_search\n{\"query\":{\"match\":{\"contact.email\":\"alice@example.com\"}},\"aggs\":{\"by_status\":{\"terms\":{\"field\":\"status\"}}}}"}},
 		"",
 		"",
 		false,
@@ -31,6 +31,7 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	require.NotNil(t, span.ElasticsearchAnalysis)
 	require.Equal(t, base.ElasticsearchAPIMaskSearch, span.ElasticsearchAnalysis.API)
 	require.Equal(t, "users", span.ElasticsearchAnalysis.Index)
+	require.Equal(t, []base.ElasticsearchBlockedFeature{base.ElasticsearchBlockedFeatureAggs}, span.ElasticsearchAnalysis.BlockedFeatures)
 	require.Contains(t, span.PredicatePaths, "contact.email")
 	pathStr, err := span.PredicatePaths["contact.email"].String()
 	require.NoError(t, err)

@@ -238,8 +238,8 @@ func TestExtractSimpleDatabaseMetadata(t *testing.T) {
 }
 
 func TestDefinitionAdaptersAndRegistrations(t *testing.T) {
-	require.Nil(t, IgnoreTableScope(nil))
-	require.Nil(t, IgnoreObjectScope[string](nil))
+	require.Nil(t, ignoreTableScope(nil))
+	require.Nil(t, ignoreObjectScope[string](nil))
 
 	const testDefEngine = storepb.Engine(99901)
 	RegisterMySQLFamilyDefinitions(testDefEngine, MySQLFamilyDefinitions{
@@ -366,4 +366,36 @@ func TestSDLAdviceHelpersAndInspectAST(t *testing.T) {
 
 	_, ok = inspect(nil)
 	require.False(t, ok)
+
+	type rawExec struct {
+		idx  int
+		line int
+		err  error
+	}
+	mapped, err := MapExecResults([]rawExec{{idx: 1, line: 4}}, nil, func(r rawExec) ExecResult {
+		return ExecResult{Index: r.idx, Line: r.line, Error: r.err}
+	})
+	require.NoError(t, err)
+	require.Equal(t, []ExecResult{{Index: 1, Line: 4}}, mapped)
+
+	boom := errors.New("boom")
+	_, err = MapExecResults([]rawExec{{idx: 1}}, boom, func(r rawExec) ExecResult {
+		return ExecResult{Index: r.idx}
+	})
+	require.ErrorIs(t, err, boom)
+
+	extract := ExtractError(func(e *fakeCatalogError) (int, string) { return e.code, e.msg })
+	errCode, msg, ok := extract(&fakeCatalogError{code: 1050, msg: "exists"})
+	require.True(t, ok)
+	require.Equal(t, 1050, errCode)
+	require.Equal(t, "exists", msg)
+	_, _, ok = extract(boom)
+	require.False(t, ok)
 }
+
+type fakeCatalogError struct {
+	code int
+	msg  string
+}
+
+func (e *fakeCatalogError) Error() string { return e.msg }

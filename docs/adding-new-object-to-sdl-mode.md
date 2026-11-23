@@ -70,14 +70,12 @@ The registrations used by the schema path are:
   emits from the migration plan.
 - `RegisterGetMultiFileDatabaseDefinition` for engines that support a
   multi-file definition.
-- `RegisterGetSchemaDefinition`, `RegisterGetTableDefinition`,
-  `RegisterGetViewDefinition`, `RegisterGetMaterializedViewDefinition`,
-  `RegisterGetFunctionDefinition`, `RegisterGetProcedureDefinition`, and
-  `RegisterGetSequenceDefinition` for the per-object definition endpoints that
-  already exist.
+- `RegisterDefinitions` (via `schema.Definitions`) for the per-object definition
+  endpoints (`Schema`, `Table`, `View`, `MaterializedView`, `Function`,
+  `Procedure`, `Sequence`) alongside `Database` and `MultiFileDatabase`.
 
 If the new object needs a new per-object definition endpoint, add a function
-type, a registry map, and a `Register...`/`Get...` pair to
+type, registry map, `Definitions` field, and `Get...` entry point to
 `backend/plugin/schema/schema.go`, then register the engine's implementation in
 its `init()`. Do not add a Bytebase-side differ, chunk extractor, or generator;
 those responsibilities are in the catalog.

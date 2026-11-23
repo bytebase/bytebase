@@ -43,7 +43,7 @@ func TestDriverConfig(t *testing.T) {
 		},
 	}
 
-	cfg, err := driverConfig(config, &util.OmniAdapter{})
+	cfg, err := util.MySQLFamilyDriverConfig(config, &util.OmniAdapter{})
 	require.NoError(t, err)
 	require.Equal(t, "doris.example.com", cfg.Host)
 	require.Equal(t, "9030", cfg.Port)
@@ -74,7 +74,7 @@ func TestDriverConfigTLSPassesTheResolvedMaterial(t *testing.T) {
 		Password: "secret",
 	}
 
-	cfg, err := driverConfig(config, &util.OmniAdapter{})
+	cfg, err := util.MySQLFamilyDriverConfig(config, &util.OmniAdapter{})
 	require.NoError(t, err)
 	require.NotNil(t, cfg.TLS)
 
@@ -100,7 +100,7 @@ func TestDriverConfigTLSWithoutVerification(t *testing.T) {
 		},
 	}
 
-	cfg, err := driverConfig(config, &util.OmniAdapter{})
+	cfg, err := util.MySQLFamilyDriverConfig(config, &util.OmniAdapter{})
 	require.NoError(t, err)
 	require.NotNil(t, cfg.TLS)
 	tlscfg, err := cfg.TLS("doris.example.com")
@@ -143,7 +143,7 @@ func TestExecuteOptions(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, got := executeOptions(tc.statement, tc.opts)
+			_, got := util.BuildExecuteOptions(tc.statement, tc.opts, util.MySQLForkExecuteConfig)
 			require.Equal(t, tc.wantMode, got.Transaction)
 			require.Empty(t, got.Isolation)
 			require.Equal(t, tc.wantCreate, got.CreateDatabase)
@@ -250,7 +250,7 @@ func TestToRowValue(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, toRowValue(tc.value))
+			require.Equal(t, tc.want, util.MySQLForkRowValue(tc.value))
 		})
 	}
 }
@@ -260,6 +260,9 @@ func TestToRowValue(t *testing.T) {
 // statement's own error in place of the rows.
 func TestToQueryResult(t *testing.T) {
 	latency := 5 * time.Millisecond
+	toQueryResult := func(result *omnidriver.Result, maxResultBytes int64) *v1pb.QueryResult {
+		return util.OmniResultToQueryResultWith(result, maxResultBytes, util.MySQLForkQueryResultOptions())
+	}
 
 	t.Run("affected rows", func(t *testing.T) {
 		affected := int64(3)
@@ -350,7 +353,7 @@ LmNvbTAKBggqhkjOPQQDAgNJADBGAiEAw0gLqM7TOqf0j0p7tjhsH1UKCceIVCQY
 // engine that returns a statement's untraced rows, and the adapter's job is to
 // say that masking is on.
 func TestQueryOptionsCarriesTheRequest(t *testing.T) {
-	options := queryOptions(db.QueryContext{
+	options := util.MySQLForkQueryOptions(db.QueryContext{
 		Limit:                10,
 		Explain:              true,
 		MaximumSQLResultSize: 1024,

@@ -146,20 +146,16 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 // QueryConn runs a read-only PartiQL script, one result per statement.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	results, err := d.QueryEphemeralSession(ctx, statement, omnidriver.QueryOptions{
+	return d.QueryEphemeralConn(ctx, statement, omnidriver.QueryOptions{
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return util.OmniResultsToQueryResultsWith(results, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
+	}, util.QueryResultOptions{
 		SkipPlan:      true,
 		SkipMessages:  true,
 		TruncatedWins: true,
 		ConvertValue:  convertValue,
-	}), nil
+	})
 }
 
 func convertValue(value omnidriver.Value) *v1pb.RowValue {

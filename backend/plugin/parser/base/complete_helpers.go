@@ -6,8 +6,80 @@ import (
 	"slices"
 	"strings"
 
+	omnianalysis "github.com/bytebase/omni/analysis"
 	metadatapb "github.com/bytebase/omni/metadata"
 )
+
+// OmniCandidateType maps an omni analysis.CandidateType to a Bytebase CandidateType.
+// Unmapped types (including CandidateTypeNone) return CandidateTypeNone.
+func OmniCandidateType(t omnianalysis.CandidateType) CandidateType {
+	switch t {
+	case omnianalysis.CandidateKeyword, omnianalysis.CandidateType_, omnianalysis.CandidateShowTarget:
+		return CandidateTypeKeyword
+	case omnianalysis.CandidateCatalog, omnianalysis.CandidateDatabase:
+		return CandidateTypeDatabase
+	case omnianalysis.CandidateSchema:
+		return CandidateTypeSchema
+	case omnianalysis.CandidateTable, omnianalysis.CandidateSynonym, omnianalysis.CandidateCollection:
+		return CandidateTypeTable
+	case omnianalysis.CandidateView:
+		return CandidateTypeView
+	case omnianalysis.CandidateMaterializedView:
+		return CandidateTypeMaterializedView
+	case omnianalysis.CandidateColumn:
+		return CandidateTypeColumn
+	case omnianalysis.CandidateFunction,
+		omnianalysis.CandidateMethod,
+		omnianalysis.CandidateCursorMethod,
+		omnianalysis.CandidateAggStage,
+		omnianalysis.CandidateQueryOperator,
+		omnianalysis.CandidateBSONHelper,
+		omnianalysis.CandidateDbMethod,
+		omnianalysis.CandidateRsMethod,
+		omnianalysis.CandidateShMethod:
+		return CandidateTypeFunction
+	case omnianalysis.CandidateProcedure:
+		return CandidateTypeRoutine
+	case omnianalysis.CandidateSequence:
+		return CandidateTypeSequence
+	case omnianalysis.CandidateIndex:
+		return CandidateTypeIndex
+	case omnianalysis.CandidateTrigger:
+		return CandidateTypeTrigger
+	case omnianalysis.CandidateEvent:
+		return CandidateTypeEvent
+	case omnianalysis.CandidateVariable:
+		return CandidateTypeSystemVar
+	case omnianalysis.CandidateCharset:
+		return CandidateTypeCharset
+	case omnianalysis.CandidateEngine:
+		return CandidateTypeEngine
+	default:
+		return CandidateTypeNone
+	}
+}
+
+// ConvertOmniCandidates converts omni completion candidates into deduplicated,
+// sorted Candidate values, dropping entries whose type maps to CandidateTypeNone.
+func ConvertOmniCandidates[T any](
+	items []T,
+	extract func(T) (text string, typ omnianalysis.CandidateType, definition, comment string),
+	compare func(a, b Candidate) int,
+) []Candidate {
+	return DeduplicateCandidates(items, func(item T) (Candidate, bool) {
+		text, rawType, def, comment := extract(item)
+		typ := OmniCandidateType(rawType)
+		if typ == CandidateTypeNone {
+			return Candidate{}, false
+		}
+		return Candidate{
+			Text:       text,
+			Type:       typ,
+			Definition: def,
+			Comment:    comment,
+		}, true
+	}, compare)
+}
 
 // CompletionMetadataLoaders adapts CompletionContext's Metadata and
 // ListDatabaseNames callbacks into the plain callbacks expected by omni's

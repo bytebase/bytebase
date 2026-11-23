@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	base.RegisterParseStatementsFunc(storepb.Engine_MONGODB, ParseMongoShell)
+	base.RegisterParseStatementsFunc(storepb.Engine_MONGODB, parseMongoShell)
 }
 
 // AST wraps an omni MongoDB AST node and implements the base.AST interface.
@@ -36,13 +36,9 @@ func GetNode(a base.AST) (ast.Node, bool) {
 	return wrapped.Node, true
 }
 
-// ParseMongoShell parses a MongoDB shell script and returns parsed statements
-// with their ASTs. Conforms to the standard ParseStatementsFunc interface.
-//
-// Parsing is strict: a parse error in any statement fails the whole input so
-// callers never silently lose statements (BYT-9950). Use
-// ParseMongoShellBestEffort for partial results.
-func ParseMongoShell(statement string) ([]base.ParsedStatement, error) {
+// parseMongoShell parses a MongoDB shell script strictly so a parse error in any
+// statement fails the whole input instead of silently dropping statements (BYT-9950).
+func parseMongoShell(statement string) ([]base.ParsedStatement, error) {
 	stmts, err := mongo.Parse(statement)
 	if err != nil {
 		return nil, err
@@ -50,10 +46,8 @@ func ParseMongoShell(statement string) ([]base.ParsedStatement, error) {
 	return convertStatements(statement, stmts), nil
 }
 
-// ParseMongoShellBestEffort parses a MongoDB shell script and returns as many
-// successfully parsed statements as possible, along with any parse errors.
-// Used by LSP-facing functions where partial results are better than nothing.
-func ParseMongoShellBestEffort(statement string) ([]base.ParsedStatement, []*omniparser.ParseError) {
+// parseMongoShellBestEffort returns partial statements and parse errors for LSP callers.
+func parseMongoShellBestEffort(statement string) ([]base.ParsedStatement, []*omniparser.ParseError) {
 	result := mongo.ParseBestEffort(statement)
 	return convertStatements(statement, result.Statements), result.Errors
 }

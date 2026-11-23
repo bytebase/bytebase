@@ -72,8 +72,7 @@ func ConvertSyntaxErrorToDiagnostic(err *SyntaxError, statement string) Diagnost
 	end.Character++
 	message := err.Message
 	if err.RawMessage != "" {
-		// Use RawMessage which created by antlr runtime, do not need our fine-tuned message
-		// because we had indicated the error position in the message.
+		// Prefer the parser's raw message since the diagnostic range already indicates position.
 		message = err.RawMessage
 	}
 	return Diagnostic{

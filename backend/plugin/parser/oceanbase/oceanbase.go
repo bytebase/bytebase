@@ -18,7 +18,7 @@ func init() {
 // carries both its text and its AST.
 func parseStatements(statement string) ([]base.ParsedStatement, error) {
 	return base.ParseNonEmptyMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
-		list, err := ParseOceanBase(stmt.Text)
+		list, err := omniparser.Parse(stmt.Text)
 		if err != nil {
 			return nil, convertError(err, stmt)
 		}

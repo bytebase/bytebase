@@ -16,7 +16,7 @@ func init() {
 // separated by newlines without semicolons, so we use the parser to identify
 // statement boundaries.
 func SplitSQL(statement string) ([]base.Statement, error) {
-	stmts, err := ParseMongoShell(statement)
+	stmts, err := parseMongoShell(statement)
 	if err != nil {
 		return nil, err
 	}

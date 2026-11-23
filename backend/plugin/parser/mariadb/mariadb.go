@@ -16,7 +16,7 @@ func init() {
 // Returns []ParsedStatement with both text and AST populated.
 func parseStatements(statement string) ([]base.ParsedStatement, error) {
 	return base.ParseNonEmptyMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
-		list, err := ParseMariaDB(stmt.Text)
+		list, err := mariadbomniparser.Parse(stmt.Text)
 		if err != nil {
 			return nil, convertError(err, stmt)
 		}

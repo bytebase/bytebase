@@ -26,8 +26,8 @@ type V1Stmt[N any] struct {
 	Start    *storepb.Position
 }
 
-// ExtractNodes unwraps parsed statements into V1Stmt values using getNode.
-func ExtractNodes[N any](parsed []base.ParsedStatement, getNode func(base.AST) (N, bool)) []V1Stmt[N] {
+// extractNodes unwraps parsed statements into V1Stmt values using getNode.
+func extractNodes[N any](parsed []base.ParsedStatement, getNode func(base.AST) (N, bool)) []V1Stmt[N] {
 	stmts := make([]V1Stmt[N], 0, len(parsed))
 	for _, stmt := range parsed {
 		if stmt.AST == nil {
@@ -65,7 +65,7 @@ func DoubleQuotedName(f v1review.Finding) string {
 // NodeExtractor returns an extract function for NewV1Engine / MySQLFamilyOptions.
 func NodeExtractor[N any](getNode func(base.AST) (N, bool)) func(Context) ([]V1Stmt[N], error) {
 	return func(checkCtx Context) ([]V1Stmt[N], error) {
-		return ExtractNodes(checkCtx.ParsedStatements, getNode), nil
+		return extractNodes(checkCtx.ParsedStatements, getNode), nil
 	}
 }
 
@@ -128,15 +128,15 @@ func V1SchemaPtrOf(m *model.DatabaseMetadata) *v1review.Schema {
 	return &s
 }
 
-// ReadMissingSchema repeats an unguarded read when omni reports ErrSchemaMissing.
-func ReadMissingSchema(m *model.DatabaseMetadata, err error) {
+// readMissingSchema repeats an unguarded read when omni reports ErrSchemaMissing.
+func readMissingSchema(m *model.DatabaseMetadata, err error) {
 	if err == v1review.ErrSchemaMissing {
 		m.GetSchemaMetadata("")
 	}
 }
 
-// RequireNumberPayload returns the integer number payload or an error with msg when absent.
-func RequireNumberPayload(rule *storepb.SQLReviewRule, msg string) (int, error) {
+// requireNumberPayload returns the integer number payload or an error with msg when absent.
+func requireNumberPayload(rule *storepb.SQLReviewRule, msg string) (int, error) {
 	p := rule.GetNumberPayload()
 	if p == nil {
 		return 0, errors.New(msg)
@@ -144,8 +144,8 @@ func RequireNumberPayload(rule *storepb.SQLReviewRule, msg string) (int, error) 
 	return int(p.Number), nil
 }
 
-// RequireStringArrayPayload returns the string array payload list or an error with msg when absent.
-func RequireStringArrayPayload(rule *storepb.SQLReviewRule, msg string) ([]string, error) {
+// requireStringArrayPayload returns the string array payload list or an error with msg when absent.
+func requireStringArrayPayload(rule *storepb.SQLReviewRule, msg string) ([]string, error) {
 	p := rule.GetStringArrayPayload()
 	if p == nil {
 		return nil, errors.New(msg)
@@ -176,9 +176,9 @@ func keyName(stmtText string, f v1review.Finding, tidbQuirks bool) string {
 	return f.Name
 }
 
-// NewPriorBackupFacts builds PriorBackupFacts for engines whose backup database
+// newPriorBackupFacts builds PriorBackupFacts for engines whose backup database
 // existence is checked via checkCtx.ListDatabaseNamesFunc.
-func NewPriorBackupFacts(ctx context.Context, checkCtx Context, engine storepb.Engine) v1review.PriorBackupFacts {
+func newPriorBackupFacts(ctx context.Context, checkCtx Context, engine storepb.Engine) v1review.PriorBackupFacts {
 	databaseName := common.BackupDatabaseNameOfEngine(engine)
 	return v1review.PriorBackupFacts{
 		TotalSize:      checkCtx.StatementsTotalSize,
@@ -224,7 +224,7 @@ func renderPriorBackupFinding(
 	case v1review.PriorBackupMixedDDLAndDML:
 		pos := defaultPos
 		if mixedLine != nil {
-			pos = base.ConvertANTLRLineToPosition(mixedLine(f.Statement))
+			pos = base.LinePosition(mixedLine(f.Statement))
 		}
 		return code.BuiltinPriorBackupCheck, "Prior backup cannot deal with mixed DDL and DML statements", pos, true
 	case v1review.PriorBackupDDLInBatch:
