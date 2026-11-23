@@ -4,12 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mssql/analysis"
-	"github.com/bytebase/omni/mssql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -19,124 +16,47 @@ func init() {
 }
 
 func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
-	originalSQL, err := extractStatement(statement, backupItem)
-	if err != nil {
-		return "", errors.Errorf("failed to extract single SQL: %v", err)
-	}
-
-	if len(originalSQL) == 0 {
-		return "", errors.Errorf("no original SQL")
-	}
-
-	stmts, err := parseScript(statement)
+	stmts, err := base.ParseForRestore(statement, backupItem, parseScript)
 	if err != nil {
 		return "", err
 	}
 
-	// Find the AST that contains the statement at the backup position
-	var targetResult ast.Node
-	for _, dml := range analysis.BackedUpDMLs(stmts) {
-		if inRange(dml, backupItem) {
-			targetResult = dml.Node
-			break
-		}
+	dmls := base.FilterDMLsInRange(analysis.BackedUpDMLs(stmts), backupItem, func(dml analysis.BackedUpDML) (*storepb.Position, *storepb.Position) {
+		return convertPosition(dml.StartPosition), convertPosition(dml.EndPosition)
+	})
+	if len(dmls) == 0 {
+		return "", errors.New("no original SQL")
 	}
 
-	if targetResult == nil {
-		return "", errors.Errorf("could not find statement at position (line %d:%d - %d:%d)",
-			backupItem.StartPosition.Line, backupItem.StartPosition.Column,
-			backupItem.EndPosition.Line, backupItem.EndPosition.Column)
+	sqls := make([]string, 0, len(dmls))
+	for _, dml := range dmls {
+		sqls = append(sqls, dml.SQL)
+	}
+	// Join with semicolons and add a trailing semicolon.
+	originalSQL := strings.Join(sqls, ";\n") + ";"
+	if dmls[0].Node == nil {
+		return "", base.StatementNotFoundError(backupItem)
 	}
 
-	return doGenerate(ctx, rCtx, originalSQL, targetResult, backupItem)
-}
-
-func doGenerate(ctx context.Context, rCtx base.RestoreContext, originalSQL string, node ast.Node, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
-	_, _, sourceDatabase, err := common.GetDatabaseResourceName(backupItem.SourceTable.Database)
+	sourceDatabase, targetDatabase, err := base.ParseBackupItemDatabases(backupItem)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
+		return "", err
 	}
-	_, _, targetDatabase, err := common.GetDatabaseResourceName(backupItem.TargetTable.Database)
+	tableMeta, err := base.ResolveRestoreTableMetadata(ctx, rCtx, sourceDatabase, backupItem.SourceTable, "dbo", func(string) error {
+		return errors.New("database metadata is nil")
+	})
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get target database ID for %s", backupItem.TargetTable.Database)
+		return "", err
 	}
 
-	if rCtx.GetDatabaseMetadataFunc == nil {
-		return "", errors.Errorf("GetDatabaseMetadataFunc is required")
-	}
-
-	_, databaseMetadata, err := rCtx.GetDatabaseMetadataFunc(ctx, rCtx.InstanceID, sourceDatabase)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get database metadata for %s", sourceDatabase)
-	}
-
-	if databaseMetadata == nil {
-		return "", errors.Errorf("database metadata is nil")
-	}
-
-	schema := backupItem.SourceTable.Schema
-	if schema == "" {
-		schema = "dbo"
-	}
-	schemaMetadata := databaseMetadata.GetSchemaMetadata(schema)
-	if schemaMetadata == nil {
-		return "", errors.Errorf("schema metadata not found for %s", schema)
-	}
-
-	tableMetadata := schemaMetadata.GetTable(backupItem.SourceTable.Table)
-	if tableMetadata == nil {
-		return "", errors.Errorf("table metadata not found for %s.%s", schema, backupItem.SourceTable.Table)
-	}
-
-	var primaryKey *metadata.IndexMetadata
-	if pk := tableMetadata.GetPrimaryKey(); pk != nil {
-		primaryKey = pk.GetProto()
-	}
-	return analysis.RestoreSQL(node, analysis.RestoreOptions{
+	return analysis.RestoreSQL(dmls[0].Node, analysis.RestoreOptions{
 		OriginalDatabase: sourceDatabase,
-		OriginalSchema:   schema,
+		OriginalSchema:   tableMeta.Schema,
 		OriginalTable:    backupItem.SourceTable.Table,
 		BackupDatabase:   targetDatabase,
 		BackupTable:      backupItem.TargetTable.Table,
-		Table:            tableMetadata.GetProto(),
-		PrimaryKey:       primaryKey,
+		Table:            tableMeta.Table,
+		PrimaryKey:       tableMeta.PrimaryKey,
 		OriginalSQL:      originalSQL,
 	})
-}
-
-func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
-	if backupItem == nil {
-		return "", errors.Errorf("backup item is nil")
-	}
-
-	stmts, err := parseScript(statement)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse statement")
-	}
-
-	var originalSQL []string
-	for _, dml := range analysis.BackedUpDMLs(stmts) {
-		if inRange(dml, backupItem) {
-			originalSQL = append(originalSQL, dml.SQL)
-		}
-	}
-	if len(originalSQL) == 0 {
-		return "", nil
-	}
-
-	// Join with semicolons and add a trailing semicolon
-	return strings.Join(originalSQL, ";\n") + ";", nil
-}
-
-// inRange checks if a statement's position range is within the backup item's range.
-func inRange(dml analysis.BackedUpDML, backupItem *storepb.PriorBackupDetail_Item) bool {
-	start, end := convertPosition(dml.StartPosition), convertPosition(dml.EndPosition)
-	targetStart, targetEnd := backupItem.StartPosition, backupItem.EndPosition
-	if start.Line < targetStart.Line || (start.Line == targetStart.Line && start.Column < targetStart.Column) {
-		return false
-	}
-	if end.Line > targetEnd.Line || (end.Line == targetEnd.Line && end.Column > targetEnd.Column) {
-		return false
-	}
-	return true
 }
