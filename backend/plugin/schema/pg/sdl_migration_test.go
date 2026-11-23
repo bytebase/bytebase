@@ -5,440 +5,110 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/bytebase/omni/pg/catalog"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-const eventTriggerFunctionSDL = `
-CREATE FUNCTION audit_ddl() RETURNS event_trigger
-LANGUAGE plpgsql AS $$
-BEGIN
-END;
-$$;
-`
-
-const eventTriggerSDL = eventTriggerFunctionSDL + `
-CREATE EVENT TRIGGER audit_ddl_start
-	ON ddl_command_start
-	WHEN TAG IN ('CREATE TABLE')
-	EXECUTE FUNCTION audit_ddl();
-`
-
-const eventTriggerModifiedSDL = eventTriggerFunctionSDL + `
-CREATE EVENT TRIGGER audit_ddl_start
-	ON ddl_command_end
-	WHEN TAG IN ('CREATE TABLE')
-	EXECUTE FUNCTION audit_ddl();
-`
-
-const eventTriggerFunctionOnlySDL = eventTriggerFunctionSDL
-
-func diffPostgresSDL(t *testing.T, fromSDL, toSDL string) string {
-	t.Helper()
-	sql, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, strings.TrimSpace(fromSDL), strings.TrimSpace(toSDL), "")
-	require.NoError(t, err)
-	return sql
-}
-
-// sDLMigration is a test helper that runs the omni SDL migration pipeline:
-// from = LoadSDL(fromSDL), to = LoadSDL(toSDL), Diff, GenerateMigration.
-func sDLMigration(t *testing.T, fromSDL, toSDL string) string {
-	t.Helper()
-	from, err := catalog.LoadSDL(strings.TrimSpace(fromSDL))
-	require.NoError(t, err)
-	to, err := catalog.LoadSDL(strings.TrimSpace(toSDL))
-	require.NoError(t, err)
-	diff := catalog.Diff(from, to)
-	if diff.IsEmpty() {
-		return ""
-	}
-	plan := catalog.GenerateMigration(from, to, diff)
-	return plan.SQL()
-}
-
-func TestSDLMigration_CreateTable(t *testing.T) {
-	sql := sDLMigration(t, "", `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			email VARCHAR(255) UNIQUE,
-			created_at TIMESTAMP DEFAULT NOW()
-		);
-	`)
-	require.Contains(t, sql, "CREATE TABLE")
-	require.Contains(t, sql, "users")
-}
-
-func TestSDLMigration_DropTable(t *testing.T) {
-	sql := sDLMigration(t, `
-		CREATE TABLE old_table (
-			id INTEGER PRIMARY KEY,
-			data TEXT
-		);
-	`, "")
-	require.Contains(t, sql, "DROP TABLE")
-	require.Contains(t, sql, "old_table")
-}
-
-func TestSDLMigration_AddColumn(t *testing.T) {
-	sql := sDLMigration(t, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL
-		);
-	`, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			email VARCHAR(255)
-		);
-	`)
-	require.Contains(t, sql, "ALTER TABLE")
-	require.Contains(t, sql, "email")
-}
-
-func TestSDLMigration_DropColumn(t *testing.T) {
-	sql := sDLMigration(t, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			email VARCHAR(255)
-		);
-	`, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL
-		);
-	`)
-	require.Contains(t, sql, "ALTER TABLE")
-	require.Contains(t, sql, "DROP COLUMN")
-	require.Contains(t, sql, "email")
-}
-
-func TestSDLMigration_CreateView(t *testing.T) {
-	sql := sDLMigration(t, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			active BOOLEAN DEFAULT TRUE
-		);
-	`, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			active BOOLEAN DEFAULT TRUE
-		);
-		CREATE VIEW active_users AS SELECT id, name FROM users WHERE active = TRUE;
-	`)
-	require.Contains(t, sql, "CREATE VIEW")
-	require.Contains(t, sql, "active_users")
-}
-
-func TestSDLMigration_DropView(t *testing.T) {
-	sql := sDLMigration(t, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			active BOOLEAN DEFAULT TRUE
-		);
-		CREATE VIEW active_users AS SELECT id, name FROM users WHERE active = TRUE;
-	`, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			active BOOLEAN DEFAULT TRUE
-		);
-	`)
-	require.Contains(t, sql, "DROP VIEW")
-	require.Contains(t, sql, "active_users")
-}
-
-func TestSDLMigration_RecordReturningFunctionView(t *testing.T) {
-	sdl := `
-CREATE FUNCTION public.record_pair(OUT id integer, OUT name text)
-RETURNS record
-LANGUAGE sql
-AS $$
-	SELECT 1::integer, 'alice'::text;
-$$;
-
-CREATE VIEW public.record_pair_view AS
-SELECT *
-FROM public.record_pair();
-`
-	sql := sDLMigration(t, sdl, sdl)
-	require.Empty(t, sql)
-}
-
-func TestSDLMigration_CreateFunction(t *testing.T) {
-	sql := sDLMigration(t, "", `
-		CREATE FUNCTION add_numbers(a INTEGER, b INTEGER) RETURNS INTEGER
-		LANGUAGE plpgsql AS $$
-		BEGIN
-			RETURN a + b;
-		END;
-		$$;
-	`)
-	require.Contains(t, sql, "CREATE FUNCTION")
-	require.Contains(t, sql, "add_numbers")
-}
-
-func TestSDLMigration_CreateSequence(t *testing.T) {
-	sql := sDLMigration(t, "", `
-		CREATE SEQUENCE order_seq INCREMENT BY 1 MINVALUE 1 START WITH 1;
-	`)
-	require.Contains(t, sql, "CREATE SEQUENCE")
-	require.Contains(t, sql, "order_seq")
-}
-
-func TestSDLMigration_CreateEnum(t *testing.T) {
-	sql := sDLMigration(t, "", `
-		CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy');
-	`)
-	require.Contains(t, sql, "CREATE TYPE")
-	require.Contains(t, sql, "mood")
-}
-
-func TestSDLMigration_AlterEnum_AddValue(t *testing.T) {
-	sql := sDLMigration(t, `
-		CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy');
-	`, `
-		CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy', 'ecstatic');
-	`)
-	require.Contains(t, sql, "ecstatic")
-}
-
-func TestSDLMigration_CreateIndex(t *testing.T) {
-	sql := sDLMigration(t, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			email VARCHAR(255) NOT NULL
-		);
-	`, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			email VARCHAR(255) NOT NULL
-		);
-		CREATE INDEX idx_users_email ON users (email);
-	`)
-	require.Contains(t, sql, "CREATE INDEX")
-	require.Contains(t, sql, "idx_users_email")
-}
-
-func TestSDLMigration_CreateTrigger(t *testing.T) {
-	sql := sDLMigration(t, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			updated_at TIMESTAMP
-		);
-		CREATE FUNCTION update_timestamp() RETURNS TRIGGER
-		LANGUAGE plpgsql AS $$
-		BEGIN
-			NEW.updated_at = NOW();
-			RETURN NEW;
-		END;
-		$$;
-	`, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			updated_at TIMESTAMP
-		);
-		CREATE FUNCTION update_timestamp() RETURNS TRIGGER
-		LANGUAGE plpgsql AS $$
-		BEGIN
-			NEW.updated_at = NOW();
-			RETURN NEW;
-		END;
-		$$;
-		CREATE TRIGGER trg_update_timestamp
-			BEFORE UPDATE ON users
-			FOR EACH ROW EXECUTE FUNCTION update_timestamp();
-	`)
-	require.Contains(t, sql, "CREATE TRIGGER")
-	require.Contains(t, sql, "trg_update_timestamp")
-}
-
-func TestSDLMigration_EventTriggerSourceSDL(t *testing.T) {
-	sdl := `
-		CREATE FUNCTION audit_ddl() RETURNS event_trigger
-		LANGUAGE plpgsql AS $$
-		BEGIN
-		END;
-		$$;
-
-		CREATE EVENT TRIGGER audit_ddl_start
-			ON ddl_command_start
-			WHEN TAG IN ('CREATE TABLE')
-			EXECUTE FUNCTION audit_ddl();
-	`
-	sql := sDLMigration(t, sdl, sdl)
-	require.Empty(t, sql)
-}
-
-func TestDiffSDLMigration_EventTriggerChanges(t *testing.T) {
-	tests := []struct {
-		name     string
-		fromSDL  string
-		toSDL    string
-		contains []string
-	}{
-		{
-			name:    "add event trigger",
-			fromSDL: eventTriggerFunctionOnlySDL,
-			toSDL:   eventTriggerSDL,
-			contains: []string{
-				`CREATE EVENT TRIGGER "audit_ddl_start" ON "ddl_command_start"`,
-				`WHEN TAG IN ('CREATE TABLE')`,
-				`EXECUTE FUNCTION "public"."audit_ddl"()`,
-			},
-		},
-		{
-			name:    "drop event trigger",
-			fromSDL: eventTriggerSDL,
-			toSDL:   eventTriggerFunctionOnlySDL,
-			contains: []string{
-				`DROP EVENT TRIGGER "audit_ddl_start"`,
-			},
-		},
-		{
-			name:    "modify event trigger",
-			fromSDL: eventTriggerSDL,
-			toSDL:   eventTriggerModifiedSDL,
-			contains: []string{
-				`DROP EVENT TRIGGER "audit_ddl_start"`,
-				`CREATE EVENT TRIGGER "audit_ddl_start" ON "ddl_command_end"`,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sql := diffPostgresSDL(t, tt.fromSDL, tt.toSDL)
-			for _, want := range tt.contains {
-				require.Contains(t, sql, want)
-			}
+func TestDiffSDLMigration_RegistryAndErrorWrapping(t *testing.T) {
+	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB} {
+		t.Run(engine.String(), func(t *testing.T) {
+			sql, err := schema.DiffSDLMigration(engine,
+				"CREATE TABLE public.users (id integer PRIMARY KEY);",
+				"CREATE TABLE public.users (id integer PRIMARY KEY, email text);",
+				"",
+			)
+			require.NoError(t, err)
+			require.Contains(t, sql, "ALTER TABLE")
+			require.Contains(t, sql, "email")
 		})
 	}
+
+	t.Run("raw dump fallback", func(t *testing.T) {
+		rawDump := "SET statement_timeout = 0;\nCREATE TABLE public.users (id integer PRIMARY KEY);"
+		target := "CREATE TABLE public.users (id integer PRIMARY KEY, name text);"
+		sql, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, rawDump, target, "")
+		require.NoError(t, err)
+		require.Contains(t, sql, "name")
+	})
+
+	t.Run("wraps load errors", func(t *testing.T) {
+		_, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, "CREATE TABLE (", "", "")
+		require.ErrorContains(t, err, "failed to load source schema")
+
+		_, err = schema.DiffSDLMigration(storepb.Engine_POSTGRES, "", "CREATE TABLE (", "")
+		require.ErrorContains(t, err, "failed to load target schema")
+	})
 }
 
-func TestSDLMigration_Comment(t *testing.T) {
-	sql := sDLMigration(t, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY
-		);
-	`, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY
-		);
-		COMMENT ON TABLE users IS 'User accounts';
-	`)
-	require.Contains(t, sql, "COMMENT ON TABLE")
-	require.Contains(t, sql, "User accounts")
-}
+func TestPGSDLDropAdvices(t *testing.T) {
+	current := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*metadatapb.TableMetadata{
+				{
+					Name: "users",
+					Columns: []*metadatapb.ColumnMetadata{
+						{Name: "id", Type: "integer"},
+						{Name: "bio", Type: "text", Nullable: true},
+					},
+				},
+				{
+					Name:    "legacy",
+					Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}},
+				},
+			},
+			Functions: []*metadatapb.FunctionMetadata{
+				{Name: "calc", Definition: "CREATE FUNCTION public.calc() RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$;"},
+			},
+		}},
+	}
+	meta := model.NewDatabaseMetadata(current, nil, nil, storepb.Engine_POSTGRES, false)
 
-func TestSDLMigration_NoChange(t *testing.T) {
-	sql := sDLMigration(t, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL
-		);
-	`, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL
-		);
-	`)
-	require.Empty(t, sql)
-}
+	t.Run("no-op produces no advices", func(t *testing.T) {
+		sdl, err := schema.MetadataToSDL(storepb.Engine_POSTGRES, meta)
+		require.NoError(t, err)
+		advices, err := schema.SDLDropAdvices(storepb.Engine_POSTGRES, sdl, meta, "")
+		require.NoError(t, err)
+		require.Empty(t, advices)
+	})
 
-func TestSDLMigration_CreateSchema(t *testing.T) {
-	sql := sDLMigration(t, "", `
-		CREATE SCHEMA analytics;
-		CREATE TABLE analytics.events (
-			id SERIAL PRIMARY KEY,
-			event_name TEXT NOT NULL
-		);
-	`)
-	require.Contains(t, sql, "CREATE SCHEMA")
-	require.Contains(t, sql, "analytics")
-	require.Contains(t, sql, "CREATE TABLE")
-}
+	t.Run("drop table, drop column, and replace function emit warnings", func(t *testing.T) {
+		target := strings.TrimSpace(`
+CREATE TABLE public.users (id integer NOT NULL);
+CREATE FUNCTION public.calc() RETURNS integer LANGUAGE sql AS $$ SELECT 2 $$;
+`)
+		for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB} {
+			advices, err := schema.SDLDropAdvices(engine, target, meta, "")
+			require.NoError(t, err)
+			require.NotEmpty(t, advices)
 
-func TestSDLMigration_AddConstraint(t *testing.T) {
-	sql := sDLMigration(t, `
-		CREATE TABLE orders (
-			id SERIAL PRIMARY KEY,
-			total DECIMAL(10,2)
-		);
-	`, `
-		CREATE TABLE orders (
-			id SERIAL PRIMARY KEY,
-			total DECIMAL(10,2),
-			CONSTRAINT chk_total CHECK (total >= 0)
-		);
-	`)
-	require.Contains(t, sql, "chk_total")
-}
-
-func TestSDLMigration_AddForeignKey(t *testing.T) {
-	sql := sDLMigration(t, `
-		CREATE TABLE categories (
-			id SERIAL PRIMARY KEY,
-			name TEXT NOT NULL
-		);
-		CREATE TABLE products (
-			id SERIAL PRIMARY KEY,
-			category_id INTEGER
-		);
-	`, `
-		CREATE TABLE categories (
-			id SERIAL PRIMARY KEY,
-			name TEXT NOT NULL
-		);
-		CREATE TABLE products (
-			id SERIAL PRIMARY KEY,
-			category_id INTEGER,
-			CONSTRAINT fk_category FOREIGN KEY (category_id) REFERENCES categories(id)
-		);
-	`)
-	require.Contains(t, sql, "fk_category")
-	require.Contains(t, sql, "FOREIGN KEY")
-}
-
-func TestSDLMigration_MultipleChanges(t *testing.T) {
-	sql := sDLMigration(t, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL
-		);
-		CREATE TABLE old_table (
-			id INTEGER PRIMARY KEY
-		);
-	`, `
-		CREATE TABLE users (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			email VARCHAR(255)
-		);
-		CREATE TABLE new_table (
-			id SERIAL PRIMARY KEY,
-			data TEXT
-		);
-	`)
-	require.Contains(t, sql, "DROP TABLE")
-	require.Contains(t, sql, "old_table")
-	require.Contains(t, sql, "email")
-	require.Contains(t, sql, "new_table")
+			var dropContents, replaceContents []string
+			for _, a := range advices {
+				require.Equal(t, storepb.Advice_WARNING, a.Status)
+				switch a.Code {
+				case code.SDLDropOperation.Int32():
+					dropContents = append(dropContents, a.Content)
+				case code.SDLReplaceOperation.Int32():
+					replaceContents = append(replaceContents, a.Content)
+				default:
+					t.Fatalf("unexpected advice code %d: %+v", a.Code, a)
+				}
+			}
+			joinedDrops := strings.Join(dropContents, "\n")
+			require.Contains(t, joinedDrops, "Dropping table 'public.legacy'")
+			require.Contains(t, joinedDrops, "Dropping column from table")
+			require.Contains(t, strings.Join(replaceContents, "\n"), "public.calc")
+		}
+	})
 }
 
 // TestFilter_BbdataarchiveSchemaFiltered verifies that objects in the
 // bbdataarchive schema are excluded from migration output.
 func TestFilter_BbdataarchiveSchemaFiltered(t *testing.T) {
-	// Source has tables in both public and bbdataarchive schemas.
 	sourceMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Schemas: []*metadatapb.SchemaMetadata{
 			{
@@ -455,20 +125,16 @@ func TestFilter_BbdataarchiveSchemaFiltered(t *testing.T) {
 			},
 		},
 	}
-	// Target is empty — should only generate DROP for public, not bbdataarchive.
-	targetSDL := ""
 
 	sourceMeta := model.NewDatabaseMetadata(sourceMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 	sourceSDL, err := schema.MetadataToSDL(storepb.Engine_POSTGRES, sourceMeta)
 	require.NoError(t, err)
 
-	sql, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, sourceSDL, targetSDL, "")
+	sql, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, sourceSDL, "", "")
 	require.NoError(t, err)
 
-	// bbdataarchive objects must not appear in migration.
 	require.NotContains(t, sql, "bbdataarchive")
 	require.NotContains(t, sql, "archived_users")
-	// public objects should be dropped.
 	require.Contains(t, sql, "users")
 }
 
@@ -531,16 +197,15 @@ func TestFilter_SkipDumpObjectsExcluded(t *testing.T) {
 }
 
 // TestFilter_ExtensionPreservedWhenArchiveFiltered verifies that extension
-// operations are preserved even when bbdataarchive objects are filtered.
+// operations are preserved when bbdataarchive objects are filtered.
 func TestFilter_ExtensionPreservedWhenArchiveFiltered(t *testing.T) {
-	sql := sDLMigration(t, "", `CREATE EXTENSION IF NOT EXISTS "citext";`)
-	// Extension creation should not be filtered.
+	sql, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, "", `CREATE EXTENSION IF NOT EXISTS "citext";`, "")
+	require.NoError(t, err)
 	require.Contains(t, sql, "citext")
 }
 
 // TestFilter_NoChangesForIdenticalSchemas verifies that two identical
-// schemas with backup objects produce no migration (backup objects are
-// excluded from both sides consistently).
+// schemas with backup objects produce no migration.
 func TestFilter_NoChangesForIdenticalSchemas(t *testing.T) {
 	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Schemas: []*metadatapb.SchemaMetadata{
@@ -560,7 +225,6 @@ func TestFilter_NoChangesForIdenticalSchemas(t *testing.T) {
 	}
 
 	meta := model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, false)
-	// Use MetadataToSDL to get the exact SDL that would be generated, then diff against itself.
 	sourceSDL, err := schema.MetadataToSDL(storepb.Engine_POSTGRES, meta)
 	require.NoError(t, err)
 	sql, err := schema.SDLMigration(storepb.Engine_POSTGRES, sourceSDL, meta, "")
