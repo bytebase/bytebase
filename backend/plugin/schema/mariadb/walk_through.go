@@ -5,9 +5,7 @@ package mariadb
 import (
 	"context"
 	"errors"
-	"strings"
 
-	omnianalysis "github.com/bytebase/omni/analysis"
 	mariadbanalysis "github.com/bytebase/omni/mariadb/analysis"
 	"github.com/bytebase/omni/mariadb/catalog"
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -37,7 +35,7 @@ var mariaDBWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
 	DatabaseMetadata: func(c *catalog.Catalog, dbName string) *metadatapb.DatabaseSchemaMetadata {
 		return c.DatabaseMetadata(dbName)
 	},
-	InspectAST:          inspectMariaDBAST,
+	InspectAST:          omnicatalog.InspectAST(mariadbparser.GetNode, mariadbanalysis.ClassifyWalkThroughStatement),
 	ExtractCatalogError: extractMariaDBCatalogError,
 	SplitSQL:            mariadbparser.SplitSQL,
 	IsCTAS:              mariadbanalysis.IsCreateTableAs,
@@ -70,16 +68,4 @@ func extractMariaDBCatalogError(err error) (int, string, bool) {
 		return catErr.Code, catErr.Message, true
 	}
 	return 0, "", false
-}
-
-func inspectMariaDBAST(unifiedAST base.AST) (omnianalysis.WalkThroughStatement, bool) {
-	node, ok := mariadbparser.GetNode(unifiedAST)
-	if !ok {
-		return omnianalysis.WalkThroughStatement{}, false
-	}
-	info := mariadbanalysis.ClassifyWalkThroughStatement(node)
-	if source, ok := unifiedAST.(interface{ ASTSource() string }); ok {
-		info.Source = strings.TrimSpace(source.ASTSource())
-	}
-	return info, true
 }

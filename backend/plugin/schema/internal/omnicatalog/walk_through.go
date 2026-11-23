@@ -21,27 +21,27 @@ type ExecResult struct {
 	Error error
 }
 
-// WalkThroughAdvice pairs a statement index (-1 when unknown) with an advice.
-type WalkThroughAdvice struct {
+// walkThroughAdvice pairs a statement index (-1 when unknown) with an advice.
+type walkThroughAdvice struct {
 	Index  int
 	Advice *storepb.Advice
 }
 
-// FirstWalkThroughAdvice returns the earliest non-nil advice by statement index and
+// firstWalkThroughAdvice returns the earliest non-nil advice by statement index and
 // severity.
-func FirstWalkThroughAdvice(advices ...WalkThroughAdvice) WalkThroughAdvice {
-	var result WalkThroughAdvice
+func firstWalkThroughAdvice(advices ...walkThroughAdvice) walkThroughAdvice {
+	var result walkThroughAdvice
 	for _, advice := range advices {
-		if advice.BeforeOrSame(result) {
+		if advice.beforeOrSame(result) {
 			result = advice
 		}
 	}
 	return result
 }
 
-// BeforeOrSame reports whether a precedes or equals b in statement order (with
+// beforeOrSame reports whether a precedes or equals b in statement order (with
 // higher-severity advice winning ties at the same statement index).
-func (a WalkThroughAdvice) BeforeOrSame(b WalkThroughAdvice) bool {
+func (a walkThroughAdvice) beforeOrSame(b walkThroughAdvice) bool {
 	if a.Advice == nil {
 		return false
 	}
@@ -57,11 +57,8 @@ func (a WalkThroughAdvice) BeforeOrSame(b WalkThroughAdvice) bool {
 		}
 		return true
 	}
-	if a.Index >= 0 && b.Index < 0 {
-		return true
-	}
-	if a.Index < 0 && b.Index >= 0 {
-		return false
+	if (a.Index >= 0) != (b.Index >= 0) {
+		return a.Index >= 0
 	}
 	aLine := walkThroughAdviceLine(a.Advice)
 	bLine := walkThroughAdviceLine(b.Advice)
@@ -76,6 +73,25 @@ func walkThroughAdviceLine(advice *storepb.Advice) int32 {
 		return 0
 	}
 	return advice.StartPosition.Line
+}
+
+// InspectAST adapts a parser's GetNode and omni's ClassifyWalkThroughStatement
+// into a WalkThroughEngine.InspectAST callback.
+func InspectAST[Node any](
+	getNode func(base.AST) (Node, bool),
+	classify func(Node) omnianalysis.WalkThroughStatement,
+) func(base.AST) (omnianalysis.WalkThroughStatement, bool) {
+	return func(unifiedAST base.AST) (omnianalysis.WalkThroughStatement, bool) {
+		node, ok := getNode(unifiedAST)
+		if !ok {
+			return omnianalysis.WalkThroughStatement{}, false
+		}
+		info := classify(node)
+		if source, ok := unifiedAST.(interface{ ASTSource() string }); ok {
+			info.Source = strings.TrimSpace(source.ASTSource())
+		}
+		return info, true
+	}
 }
 
 // WalkThroughEngine adapts an omni MySQL-family catalog for DDL walk-through.
@@ -110,18 +126,18 @@ func RunWalkThrough[Catalog any](
 	}
 	dbName := d.GetProto().GetName()
 
-	precheck := PrecheckWalkThrough(d, asts, eng.InspectAST, eng.TrackBatchTables)
+	precheck := precheckWalkThrough(d, asts, eng.InspectAST, eng.TrackBatchTables)
 	if eng.SplitSQL != nil && eng.IsCTAS != nil {
-		precheck = FirstWalkThroughAdvice(
+		precheck = firstWalkThroughAdvice(
 			precheck,
-			PrecheckRawCTAS(d, rawSQL, asts, eng.SplitSQL, eng.IsCTAS, eng.InspectAST),
+			precheckRawCTAS(d, rawSQL, asts, eng.SplitSQL, eng.IsCTAS, eng.InspectAST),
 		)
 	}
 
 	c := eng.New()
 	initSQL := "SET foreign_key_checks = 0;"
-	for _, targetDB := range RenameTargetDatabases(d, asts, eng.InspectAST) {
-		initSQL += fmt.Sprintf("\nCREATE DATABASE IF NOT EXISTS %s;", QuoteIdentifier(targetDB))
+	for _, targetDB := range renameTargetDatabases(d, asts, eng.InspectAST) {
+		initSQL += fmt.Sprintf("\nCREATE DATABASE IF NOT EXISTS %s;", quoteIdentifier(targetDB))
 	}
 	if _, err := eng.Exec(c, initSQL); err != nil {
 		return DDLSimulationAdvice("Failed to initialize catalog", err)
@@ -133,26 +149,26 @@ func RunWalkThrough[Catalog any](
 
 	results, execErr := eng.Exec(c, rawSQL)
 	if execErr != nil {
-		execAdvice := MapCatalogError(d, -1, &storepb.Position{Line: 0}, execErr, eng.ExtractCatalogError, eng.TiDBErrorDialect)
-		if precheck.BeforeOrSame(execAdvice) {
+		execAdvice := mapCatalogError(d, -1, &storepb.Position{Line: 0}, execErr, eng.ExtractCatalogError, eng.TiDBErrorDialect)
+		if precheck.beforeOrSame(execAdvice) {
 			return precheck.Advice
 		}
 		return execAdvice.Advice
 	}
 
-	var execAdvice WalkThroughAdvice
+	var execAdvice walkThroughAdvice
 	for _, r := range results {
 		if r.Error == nil {
 			continue
 		}
 		pos := &storepb.Position{Line: int32(r.Line)}
 		if len(execASTs) > 0 {
-			pos = ExecStatementPosition(execASTs, r.Index)
+			pos = execStatementPosition(execASTs, r.Index)
 		}
-		execAdvice = MapCatalogError(d, r.Index, pos, r.Error, eng.ExtractCatalogError, eng.TiDBErrorDialect)
+		execAdvice = mapCatalogError(d, r.Index, pos, r.Error, eng.ExtractCatalogError, eng.TiDBErrorDialect)
 		break
 	}
-	if precheck.BeforeOrSame(execAdvice) {
+	if precheck.beforeOrSame(execAdvice) {
 		return precheck.Advice
 	}
 	if execAdvice.Advice != nil {
@@ -180,9 +196,17 @@ func DDLSimulationAdvice(title string, err error) *storepb.Advice {
 	}
 }
 
-// ExecStatementPosition maps a catalog result index back to the originating AST's
-// start position.
-func ExecStatementPosition(execASTs []base.AST, index int) *storepb.Position {
+func warningAdvice(c code.Code, content string, pos *storepb.Position) *storepb.Advice {
+	return &storepb.Advice{
+		Status:        storepb.Advice_WARNING,
+		Code:          c.Int32(),
+		Title:         content,
+		Content:       content,
+		StartPosition: pos,
+	}
+}
+
+func execStatementPosition(execASTs []base.AST, index int) *storepb.Position {
 	if index >= 0 && index < len(execASTs) {
 		if pos := execASTs[index].ASTStartPosition(); pos != nil {
 			return &storepb.Position{Line: pos.Line, Column: pos.Column}
@@ -191,32 +215,28 @@ func ExecStatementPosition(execASTs []base.AST, index int) *storepb.Position {
 	return &storepb.Position{Line: 0}
 }
 
-// StatementStartPosition returns a copy of pos or line 0 when nil.
-func StatementStartPosition(pos *storepb.Position) *storepb.Position {
+func statementStartPosition(pos *storepb.Position) *storepb.Position {
 	if pos == nil {
 		return &storepb.Position{Line: 0}
 	}
 	return &storepb.Position{Line: pos.Line, Column: pos.Column}
 }
 
-// QuoteIdentifier quotes a MySQL-family identifier with backticks.
-func QuoteIdentifier(identifier string) string {
+func quoteIdentifier(identifier string) string {
 	return "`" + strings.ReplaceAll(identifier, "`", "``") + "`"
 }
 
-// IsCurrentDatabase reports whether database matches d's current database name,
-// honoring d's object case sensitivity.
-func IsCurrentDatabase(d *model.DatabaseMetadata, database string) bool {
+func isCurrentDatabase(d *model.DatabaseMetadata, database string) bool {
 	if !d.GetIsObjectCaseSensitive() {
 		return strings.EqualFold(d.DatabaseName(), database)
 	}
 	return d.DatabaseName() == database
 }
 
-// RenameTargetDatabases collects distinct non-current destination databases from
+// renameTargetDatabases collects distinct non-current destination databases from
 // RENAME TABLE / ALTER TABLE ... RENAME TO statements whose source is in the current
 // database.
-func RenameTargetDatabases(d *model.DatabaseMetadata, asts []base.AST, inspectAST func(base.AST) (omnianalysis.WalkThroughStatement, bool)) []string {
+func renameTargetDatabases(d *model.DatabaseMetadata, asts []base.AST, inspectAST func(base.AST) (omnianalysis.WalkThroughStatement, bool)) []string {
 	seen := make(map[string]bool)
 	var targets []string
 	for _, unifiedAST := range asts {
@@ -225,10 +245,10 @@ func RenameTargetDatabases(d *model.DatabaseMetadata, asts []base.AST, inspectAS
 			continue
 		}
 		for _, pair := range info.RenamePairs {
-			if pair.Old.Schema != "" && !IsCurrentDatabase(d, pair.Old.Schema) {
+			if pair.Old.Schema != "" && !isCurrentDatabase(d, pair.Old.Schema) {
 				continue
 			}
-			if pair.New.Schema == "" || IsCurrentDatabase(d, pair.New.Schema) || seen[pair.New.Schema] {
+			if pair.New.Schema == "" || isCurrentDatabase(d, pair.New.Schema) || seen[pair.New.Schema] {
 				continue
 			}
 			seen[pair.New.Schema] = true
@@ -238,10 +258,10 @@ func RenameTargetDatabases(d *model.DatabaseMetadata, asts []base.AST, inspectAS
 	return targets
 }
 
-// PrecheckWalkThrough reports the first statement that the catalog would silently
+// precheckWalkThrough reports the first statement that the catalog would silently
 // accept but Bytebase warns on: a cross-database reference, a dropped database, or a
 // CREATE TABLE ... AS SELECT.
-func PrecheckWalkThrough(d *model.DatabaseMetadata, asts []base.AST, inspectAST func(base.AST) (omnianalysis.WalkThroughStatement, bool), trackBatchTables bool) WalkThroughAdvice {
+func precheckWalkThrough(d *model.DatabaseMetadata, asts []base.AST, inspectAST func(base.AST) (omnianalysis.WalkThroughStatement, bool), trackBatchTables bool) walkThroughAdvice {
 	var created map[string]bool
 	if trackBatchTables {
 		created = make(map[string]bool)
@@ -252,14 +272,14 @@ func PrecheckWalkThrough(d *model.DatabaseMetadata, asts []base.AST, inspectAST 
 			continue
 		}
 		if advice := precheckStatement(d, info, created); advice != nil {
-			advice.StartPosition = StatementStartPosition(unifiedAST.ASTStartPosition())
-			return WalkThroughAdvice{Index: i, Advice: advice}
+			advice.StartPosition = statementStartPosition(unifiedAST.ASTStartPosition())
+			return walkThroughAdvice{Index: i, Advice: advice}
 		}
 		if trackBatchTables {
 			updateBatchTables(d, info, created)
 		}
 	}
-	return WalkThroughAdvice{}
+	return walkThroughAdvice{}
 }
 
 func updateBatchTables(d *model.DatabaseMetadata, info omnianalysis.WalkThroughStatement, created map[string]bool) {
@@ -267,13 +287,13 @@ func updateBatchTables(d *model.DatabaseMetadata, info omnianalysis.WalkThroughS
 	case omnianalysis.WalkThroughStatementCreateTable:
 		if len(info.TableRefs) > 0 {
 			t := info.TableRefs[0]
-			if t.Name != "" && (t.Schema == "" || IsCurrentDatabase(d, t.Schema)) {
+			if t.Name != "" && (t.Schema == "" || isCurrentDatabase(d, t.Schema)) {
 				created[tableLookupKey(d, t.Name)] = true
 			}
 		}
 	case omnianalysis.WalkThroughStatementDropTable:
 		for _, t := range info.TableRefs {
-			if t.Name != "" && (t.Schema == "" || IsCurrentDatabase(d, t.Schema)) {
+			if t.Name != "" && (t.Schema == "" || isCurrentDatabase(d, t.Schema)) {
 				delete(created, tableLookupKey(d, t.Name))
 			}
 		}
@@ -289,24 +309,18 @@ func tableLookupKey(d *model.DatabaseMetadata, name string) string {
 }
 
 func precheckStatement(d *model.DatabaseMetadata, info omnianalysis.WalkThroughStatement, created map[string]bool) *storepb.Advice {
+	zeroPos := &storepb.Position{Line: 0}
 	switch info.Kind {
 	case omnianalysis.WalkThroughStatementCreateDatabase, omnianalysis.WalkThroughStatementAlterDatabase:
-		if info.Database != "" && !IsCurrentDatabase(d, info.Database) {
+		if info.Database != "" && !isCurrentDatabase(d, info.Database) {
 			return notCurrentDatabaseAdvice(d, info.Database)
 		}
 	case omnianalysis.WalkThroughStatementDropDatabase:
-		if info.Database != "" && !IsCurrentDatabase(d, info.Database) {
+		if info.Database != "" && !isCurrentDatabase(d, info.Database) {
 			return notCurrentDatabaseAdvice(d, info.Database)
 		}
 		if info.Database != "" {
-			content := fmt.Sprintf("Database `%s` is deleted", info.Database)
-			return &storepb.Advice{
-				Status:        storepb.Advice_WARNING,
-				Code:          code.DatabaseIsDeleted.Int32(),
-				Title:         content,
-				Content:       content,
-				StartPosition: &storepb.Position{Line: 0},
-			}
+			return warningAdvice(code.DatabaseIsDeleted, fmt.Sprintf("Database `%s` is deleted", info.Database), zeroPos)
 		}
 	case omnianalysis.WalkThroughStatementCreateTable:
 		if len(info.TableRefs) > 0 {
@@ -318,14 +332,7 @@ func precheckStatement(d *model.DatabaseMetadata, info omnianalysis.WalkThroughS
 			}
 		}
 		if info.IsCTAS {
-			content := fmt.Sprintf("CREATE TABLE AS statement is used in \"%s\"", info.Source)
-			return &storepb.Advice{
-				Status:        storepb.Advice_WARNING,
-				Code:          code.StatementCreateTableAs.Int32(),
-				Title:         content,
-				Content:       content,
-				StartPosition: &storepb.Position{Line: 0},
-			}
+			return warningAdvice(code.StatementCreateTableAs, fmt.Sprintf("CREATE TABLE AS statement is used in \"%s\"", info.Source), zeroPos)
 		}
 	case omnianalysis.WalkThroughStatementDropTable, omnianalysis.WalkThroughStatementTableRefCheck, omnianalysis.WalkThroughStatementRenameTable:
 		for _, ref := range info.TableRefs {
@@ -339,7 +346,7 @@ func precheckStatement(d *model.DatabaseMetadata, info omnianalysis.WalkThroughS
 }
 
 func precheckTableRefDatabase(d *model.DatabaseMetadata, table omnianalysis.TableRef) *storepb.Advice {
-	if table.Schema == "" || IsCurrentDatabase(d, table.Schema) {
+	if table.Schema == "" || isCurrentDatabase(d, table.Schema) {
 		return nil
 	}
 	return notCurrentDatabaseAdvice(d, table.Schema)
@@ -349,50 +356,41 @@ func tableExistsInBatch(d *model.DatabaseMetadata, created map[string]bool, tabl
 	if tableExistsInCurrentDatabase(d, table) {
 		return true
 	}
-	if created == nil || table.Name == "" || (table.Schema != "" && !IsCurrentDatabase(d, table.Schema)) {
+	if created == nil || table.Name == "" || (table.Schema != "" && !isCurrentDatabase(d, table.Schema)) {
 		return false
 	}
 	return created[tableLookupKey(d, table.Name)]
 }
 
 func tableExistsInCurrentDatabase(d *model.DatabaseMetadata, table omnianalysis.TableRef) bool {
-	if table.Name == "" || (table.Schema != "" && !IsCurrentDatabase(d, table.Schema)) {
+	if table.Name == "" || (table.Schema != "" && !isCurrentDatabase(d, table.Schema)) {
 		return false
 	}
 	s := d.GetSchemaMetadata("")
-	if s == nil {
-		return false
-	}
-	return s.GetTable(table.Name) != nil
+	return s != nil && s.GetTable(table.Name) != nil
 }
 
 func notCurrentDatabaseAdvice(d *model.DatabaseMetadata, databaseName string) *storepb.Advice {
-	content := fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, d.DatabaseName())
-	return &storepb.Advice{
-		Status:        storepb.Advice_WARNING,
-		Code:          code.NotCurrentDatabase.Int32(),
-		Title:         content,
-		Content:       content,
-		StartPosition: &storepb.Position{Line: 0},
-	}
+	return warningAdvice(
+		code.NotCurrentDatabase,
+		fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, d.DatabaseName()),
+		&storepb.Position{Line: 0},
+	)
 }
 
-// PrecheckRawCTAS provides a token-aware fallback for CTAS forms that do not produce
+// precheckRawCTAS provides a token-aware fallback for CTAS forms that do not produce
 // an omni AST yet.
-func PrecheckRawCTAS(
+func precheckRawCTAS(
 	d *model.DatabaseMetadata,
 	rawSQL string,
 	asts []base.AST,
 	splitSQL func(string) ([]base.Statement, error),
 	isCTAS func(string) bool,
 	inspectAST func(base.AST) (omnianalysis.WalkThroughStatement, bool),
-) WalkThroughAdvice {
-	if splitSQL == nil || isCTAS == nil {
-		return WalkThroughAdvice{}
-	}
+) walkThroughAdvice {
 	statements, err := splitSQL(rawSQL)
 	if err != nil {
-		return WalkThroughAdvice{}
+		return walkThroughAdvice{}
 	}
 	statementIndex := 0
 	for _, statement := range statements {
@@ -402,25 +400,19 @@ func PrecheckRawCTAS(
 		currentIndex := statementIndex
 		statementIndex++
 		text := strings.TrimSpace(statement.Text)
-		if !isCTAS(text) {
+		if !isCTAS(text) || astSkipsCreateTableAsAdvice(d, asts, currentIndex, inspectAST) {
 			continue
 		}
-		if astSkipsCreateTableAsAdvice(d, asts, currentIndex, inspectAST) {
-			continue
-		}
-		content := fmt.Sprintf("CREATE TABLE AS statement is used in \"%s\"", text)
-		return WalkThroughAdvice{
+		return walkThroughAdvice{
 			Index: currentIndex,
-			Advice: &storepb.Advice{
-				Status:        storepb.Advice_WARNING,
-				Code:          code.StatementCreateTableAs.Int32(),
-				Title:         content,
-				Content:       content,
-				StartPosition: StatementStartPosition(statement.Start),
-			},
+			Advice: warningAdvice(
+				code.StatementCreateTableAs,
+				fmt.Sprintf("CREATE TABLE AS statement is used in \"%s\"", text),
+				statementStartPosition(statement.Start),
+			),
 		}
 	}
-	return WalkThroughAdvice{}
+	return walkThroughAdvice{}
 }
 
 func astSkipsCreateTableAsAdvice(d *model.DatabaseMetadata, asts []base.AST, index int, inspectAST func(base.AST) (omnianalysis.WalkThroughStatement, bool)) bool {
@@ -434,9 +426,8 @@ func astSkipsCreateTableAsAdvice(d *model.DatabaseMetadata, asts []base.AST, ind
 	return tableExistsInCurrentDatabase(d, info.TableRefs[0])
 }
 
-// MySQL-family error numbers shared across omni/{mysql,oceanbase,tidb}/catalog.
+// MySQL-family error numbers shared across omni/{mysql,mariadb,oceanbase,tidb}/catalog.
 const (
-	errDupDatabase              = 1007
 	errUnknownDatabase          = 1049
 	errDupTable                 = 1050
 	errUnknownTable             = 1051
@@ -458,19 +449,16 @@ const (
 	errDupIndex                 = 1831
 	errFKCannotDropParent       = 3730
 	errFKIncompatibleColumns    = 3780
-	errCheckConstraintViolated  = 3819
 )
 
-// MapCatalogError converts an omni MySQL-family catalog execution error into a
-// WalkThroughAdvice.
-func MapCatalogError(
+func mapCatalogError(
 	d *model.DatabaseMetadata,
 	index int,
 	position *storepb.Position,
 	err error,
 	extract func(error) (int, string, bool),
 	tidbDialect bool,
-) WalkThroughAdvice {
+) walkThroughAdvice {
 	errCode := code.DDLSimulationFailed
 	content := err.Error()
 	if catCode, catMsg, ok := extract(err); ok {
@@ -480,7 +468,7 @@ func MapCatalogError(
 		errCode = code.InvalidColumnDefault
 		content = fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", catalogErrorName(content))
 	}
-	return WalkThroughAdvice{
+	return walkThroughAdvice{
 		Index: index,
 		Advice: &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
@@ -495,8 +483,6 @@ func MapCatalogError(
 func mapMySQLFamilyCatalogError(d *model.DatabaseMetadata, catCode int, catMsg string, tidbDialect bool) (code.Code, string) {
 	name := catalogErrorName(catMsg)
 	switch catCode {
-	case errDupDatabase:
-		return code.DDLSimulationFailed, catMsg
 	case errUnknownDatabase:
 		return code.NotCurrentDatabase, fmt.Sprintf("Database `%s` is not the current database `%s`", name, d.DatabaseName())
 	case errDupTable:
@@ -511,14 +497,12 @@ func mapMySQLFamilyCatalogError(d *model.DatabaseMetadata, catCode int, catMsg s
 		if tidbDialect {
 			return code.ColumnNotExists, fmt.Sprintf("Column `%s` does not exist", strings.TrimPrefix(catMsg, "column does not exist: "))
 		}
-		return code.DDLSimulationFailed, catMsg
 	case errInvalidDefault:
 		return code.InvalidColumnDefault, fmt.Sprintf("Invalid default value for column `%s`", unqualifiedName(name))
 	case errBlobCantHaveDefault:
 		if tidbDialect {
 			return code.InvalidColumnDefault, fmt.Sprintf("BLOB, TEXT or JSON column `%s` can't have a default value", unqualifiedName(name))
 		}
-		return code.DDLSimulationFailed, catMsg
 	case errDupKeyName, errDupIndex, errDupEntry:
 		return code.IndexExists, fmt.Sprintf("Index `%s` already exists", unqualifiedName(name))
 	case errMultiplePriKey:
@@ -530,7 +514,6 @@ func mapMySQLFamilyCatalogError(d *model.DatabaseMetadata, catCode int, catMsg s
 		if !tidbDialect {
 			return code.SpatialIndexKeyNullable, catMsg
 		}
-		return code.DDLSimulationFailed, catMsg
 	case errCantDropKey:
 		if tidbDialect && strings.HasPrefix(catMsg, "Can't DROP") {
 			return code.ColumnNotExists, fmt.Sprintf("Column `%s` does not exist", tidbCantDropName(catMsg))
@@ -553,12 +536,9 @@ func mapMySQLFamilyCatalogError(d *model.DatabaseMetadata, catCode int, catMsg s
 		if !tidbDialect {
 			return code.TableHasFK, catMsg
 		}
-		return code.DDLSimulationFailed, catMsg
-	case errCheckConstraintViolated:
-		return code.DDLSimulationFailed, catMsg
 	default:
-		return code.DDLSimulationFailed, catMsg
 	}
+	return code.DDLSimulationFailed, catMsg
 }
 
 func catalogErrorName(message string) string {

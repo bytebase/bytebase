@@ -66,6 +66,46 @@ CREATE TABLE author (
 		require.Contains(t, joined, "book", "expected dropped table named:\n%s", joined)
 		require.Contains(t, joined, "bio", "expected dropped column named:\n%s", joined)
 	})
+
+	t.Run("replace_vs_drop_view_and_function", func(t *testing.T) {
+		currentObj := `
+CREATE TABLE author (id INT PRIMARY KEY) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE VIEW v_keep AS SELECT id FROM author;
+CREATE VIEW v_drop AS SELECT id FROM author;
+CREATE FUNCTION f_rep(a INT) RETURNS INT DETERMINISTIC RETURN a + 1;
+CREATE FUNCTION f_drop(a INT) RETURNS INT DETERMINISTIC RETURN a;
+`
+		targetObj := `
+CREATE TABLE author (id INT PRIMARY KEY) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE VIEW v_keep AS SELECT id + 1 AS id FROM author;
+CREATE VIEW v_new AS SELECT id FROM author;
+CREATE FUNCTION f_rep(a INT) RETURNS INT DETERMINISTIC RETURN a + 2;
+CREATE FUNCTION f_new(a INT) RETURNS INT DETERMINISTIC RETURN a;
+`
+		advices, err := mysqlSDLDropAdvices(strings.TrimSpace(targetObj), metadataFromSDL(t, currentObj), "8.0")
+		require.NoError(t, err)
+
+		var drops, replaces []string
+		for _, a := range advices {
+			require.Equal(t, storepb.Advice_WARNING, a.Status)
+			switch a.Code {
+			case code.SDLDropOperation.Int32():
+				drops = append(drops, a.Content)
+			case code.SDLReplaceOperation.Int32():
+				replaces = append(replaces, a.Content)
+			default:
+				t.Fatalf("unexpected advice code %d: %+v", a.Code, a)
+			}
+		}
+		require.ElementsMatch(t, []string{
+			"Dropping view 'v_drop' will affect dependent objects.",
+			"Dropping function 'f_drop' will affect dependent objects.",
+		}, drops)
+		require.ElementsMatch(t, []string{
+			"View 'v_keep' definition will be replaced.",
+			"Function 'f_rep' definition will be replaced.",
+		}, replaces)
+	})
 }
 
 // TestSDLRegistrationsAreMySQLOnly pins that OceanBase is not registered for
@@ -139,7 +179,7 @@ func TestSDLMigrationForwardsSessionContextAndStripsDatabaseContext(t *testing.T
 
 	sourceSDL, err := schema.MetadataToSDL(storepb.Engine_MYSQL, current)
 	require.NoError(t, err)
-	bareSQL, err := mysqlDiffSDLMigration(sourceSDL, target, "8.0.32")
+	bareSQL, err := schema.DiffSDLMigration(storepb.Engine_MYSQL, sourceSDL, target, "8.0.32")
 	require.NoError(t, err)
 	require.NotContains(t, bareSQL, "SET sql_mode")
 	require.NotContains(t, bareSQL, sdlDatabaseContext)

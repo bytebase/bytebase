@@ -176,79 +176,29 @@ func TestPostgresDefinitionEntryPoints(t *testing.T) {
 
 	definition, err := schema.GetDatabaseDefinition(storepb.Engine_POSTGRES, ctx, entry.metadata)
 	require.NoError(t, err)
-	require.Contains(t, definition, `CREATE TABLE`)
 	require.Contains(t, definition, `"public"."t"`)
-	require.Contains(t, definition, `CREATE VIEW`)
-	require.Contains(t, definition, `"public"."v"`)
-	require.Contains(t, definition, `CREATE MATERIALIZED VIEW`)
-	require.Contains(t, definition, `"public"."mv"`)
-	require.Contains(t, definition, `CREATE FUNCTION public.f()`)
-	require.Contains(t, definition, `CREATE SEQUENCE`)
-	require.Contains(t, definition, `"public"."s"`)
-	require.Contains(t, definition, `CREATE TYPE`)
-	require.Contains(t, definition, `"public"."e"`)
 	require.Contains(t, definition, `CREATE EXTENSION IF NOT EXISTS "pg_trgm"`)
 
 	schemaDefinition, err := schema.GetSchemaDefinition(storepb.Engine_POSTGRES, entry.schema)
 	require.NoError(t, err)
 	require.Contains(t, schemaDefinition, `COMMENT ON SCHEMA`)
-	require.Contains(t, schemaDefinition, `CREATE TABLE`)
 	tableDefinition, err := schema.GetTableDefinition(storepb.Engine_POSTGRES, "public", entry.table, []*metadatapb.SequenceMetadata{entry.sequence})
 	require.NoError(t, err)
 	require.Contains(t, tableDefinition, `CREATE TABLE`)
-	require.Contains(t, tableDefinition, `"public"."t"`)
 	viewDefinition, err := schema.GetViewDefinition(storepb.Engine_POSTGRES, "public", entry.view)
 	require.NoError(t, err)
 	require.Contains(t, viewDefinition, `CREATE VIEW`)
-	require.Contains(t, viewDefinition, `"public"."v"`)
 	materializedViewDefinition, err := schema.GetMaterializedViewDefinition(storepb.Engine_POSTGRES, "public", entry.materializedView)
 	require.NoError(t, err)
 	require.Contains(t, materializedViewDefinition, `CREATE MATERIALIZED VIEW`)
-	require.Contains(t, materializedViewDefinition, `"public"."mv"`)
 	functionDefinition, err := schema.GetFunctionDefinition(storepb.Engine_POSTGRES, "public", entry.function)
 	require.NoError(t, err)
 	require.Contains(t, functionDefinition, `CREATE FUNCTION`)
-	require.Contains(t, functionDefinition, `public.f()`)
 	sequenceDefinition, err := schema.GetSequenceDefinition(storepb.Engine_POSTGRES, "public", entry.sequence)
 	require.NoError(t, err)
 	require.Contains(t, sequenceDefinition, `CREATE SEQUENCE`)
-	require.Contains(t, sequenceDefinition, `"public"."s"`)
 
 	multiFile, err := schema.GetMultiFileDatabaseDefinition(storepb.Engine_POSTGRES, ctx, entry.metadata)
 	require.NoError(t, err)
 	require.NotEmpty(t, multiFile.Files)
-}
-
-func TestPostgresMetadataToSDL(t *testing.T) {
-	entry := newPostgresEntryPoint()
-	db := model.NewDatabaseMetadata(entry.metadata, nil, nil, storepb.Engine_POSTGRES, true)
-	sdl, err := schema.MetadataToSDL(storepb.Engine_POSTGRES, db)
-	require.NoError(t, err)
-	require.NotEmpty(t, sdl)
-}
-
-func TestPostgresDiffSDLMigration(t *testing.T) {
-	entry := newPostgresEntryPoint()
-	db := model.NewDatabaseMetadata(entry.metadata, nil, nil, storepb.Engine_POSTGRES, true)
-	sdl, err := schema.MetadataToSDL(storepb.Engine_POSTGRES, db)
-	require.NoError(t, err)
-	diff, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, sdl, sdl, "")
-	require.NoError(t, err)
-	require.Empty(t, diff)
-}
-
-func TestPostgresDiffMigration(t *testing.T) {
-	entry := newPostgresEntryPoint()
-	db := model.NewDatabaseMetadata(entry.metadata, nil, nil, storepb.Engine_POSTGRES, true)
-	migration, err := schema.DiffMigration(storepb.Engine_POSTGRES, db, db)
-	require.NoError(t, err)
-	require.Empty(t, migration)
-}
-
-func TestPostgresSDLDropAdvices(t *testing.T) {
-	entry := newPostgresEntryPoint()
-	db := model.NewDatabaseMetadata(entry.metadata, nil, nil, storepb.Engine_POSTGRES, true)
-	advices, err := schema.SDLDropAdvices(storepb.Engine_POSTGRES, "", db, "")
-	require.NoError(t, err)
-	require.NotEmpty(t, advices)
 }

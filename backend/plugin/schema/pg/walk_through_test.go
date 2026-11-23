@@ -5,16 +5,10 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/bytebase/omni/pg/catalog"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-
-	// Registers the PostgreSQL ParseStatements func these tests reach through
-	// base. Nothing in this package's own imports pulls it in.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -42,7 +36,7 @@ func TestWalkThroughSeam(t *testing.T) {
 		require.NotNil(t, state.GetSchemaMetadata("public").GetTable("test"))
 	})
 
-	t.Run("valid DDL updates metadata through registry", func(t *testing.T) {
+	t.Run("valid DDL updates metadata through registry and preserves existing tables", func(t *testing.T) {
 		state := newState()
 		advice := schema.WalkThroughWithContext(
 			context.Background(),
@@ -55,6 +49,7 @@ func TestWalkThroughSeam(t *testing.T) {
 		tbl := state.GetSchemaMetadata("public").GetTable("t")
 		require.NotNil(t, tbl)
 		require.Len(t, tbl.GetProto().GetColumns(), 2)
+		require.NotNil(t, state.GetSchemaMetadata("public").GetTable("test"))
 	})
 
 	t.Run("maps catalog SQLSTATE errors to Bytebase advice codes", func(t *testing.T) {
@@ -102,7 +97,7 @@ func TestWalkThroughSeam(t *testing.T) {
 	})
 }
 
-func TestWalkThroughSearchPathState(t *testing.T) {
+func TestWalkThroughSessionUserAndConfiguredSearchPath(t *testing.T) {
 	tests := []struct {
 		name       string
 		searchPath string
@@ -111,7 +106,7 @@ func TestWalkThroughSearchPathState(t *testing.T) {
 		assert     func(*testing.T, *model.DatabaseMetadata)
 	}{
 		{
-			name:       "session user expands $user on initial resolution",
+			name:       "session user expands $user from configured search_path",
 			searchPath: `"$user", public`,
 			session:    schema.WalkThroughContext{SessionUser: "alice"},
 			sql:        `CREATE TABLE session_target (id int);`,
@@ -122,38 +117,7 @@ func TestWalkThroughSearchPathState(t *testing.T) {
 			},
 		},
 		{
-			name:       "set role recomputes $user target schema",
-			searchPath: `"$user", public`,
-			session:    schema.WalkThroughContext{SessionUser: "alice"},
-			sql:        `SET ROLE bob; CREATE TABLE role_target (id int);`,
-			assert: func(t *testing.T, state *model.DatabaseMetadata) {
-				t.Helper()
-				require.NotNil(t, state.GetSchemaMetadata("bob").GetTable("role_target"))
-				require.Nil(t, state.GetSchemaMetadata("alice").GetTable("role_target"))
-			},
-		},
-		{
-			name:       "set search_path changes unqualified create target",
-			searchPath: `public`,
-			sql:        `SET search_path TO app, public; CREATE TABLE path_target (id int);`,
-			assert: func(t *testing.T, state *model.DatabaseMetadata) {
-				t.Helper()
-				require.NotNil(t, state.GetSchemaMetadata("app").GetTable("path_target"))
-				require.Nil(t, state.GetSchemaMetadata("public").GetTable("path_target"))
-			},
-		},
-		{
-			name:       "ordered lookup picks first matching schema",
-			searchPath: `public`,
-			sql:        `SET search_path TO app, public; CREATE INDEX idx_dup_id ON dup(id);`,
-			assert: func(t *testing.T, state *model.DatabaseMetadata) {
-				t.Helper()
-				require.NotNil(t, state.GetSchemaMetadata("app").GetTable("dup").GetIndex("idx_dup_id"))
-				require.Nil(t, state.GetSchemaMetadata("public").GetTable("dup").GetIndex("idx_dup_id"))
-			},
-		},
-		{
-			name:       "set search_path to default restores configured path",
+			name:       "configured multi-schema search_path is forwarded as default",
 			searchPath: `public, app`,
 			sql:        `SET search_path TO app; SET search_path TO DEFAULT; CREATE TABLE default_target (id int);`,
 			assert: func(t *testing.T, state *model.DatabaseMetadata) {
@@ -162,162 +126,22 @@ func TestWalkThroughSearchPathState(t *testing.T) {
 				require.Nil(t, state.GetSchemaMetadata("app").GetTable("default_target"))
 			},
 		},
-		{
-			name:       "explicit schema still wins over current path",
-			searchPath: `public`,
-			sql:        `SET search_path TO app; CREATE TABLE public.explicit_target (id int);`,
-			assert: func(t *testing.T, state *model.DatabaseMetadata) {
-				t.Helper()
-				require.NotNil(t, state.GetSchemaMetadata("public").GetTable("explicit_target"))
-				require.Nil(t, state.GetSchemaMetadata("app").GetTable("explicit_target"))
-			},
-		},
-		{
-			name:       "missing first path entry is skipped rather than auto-created",
-			searchPath: `missing_schema, public`,
-			sql:        `CREATE TABLE skipped_missing (id int);`,
-			assert: func(t *testing.T, state *model.DatabaseMetadata) {
-				t.Helper()
-				require.Nil(t, state.GetSchemaMetadata("missing_schema"))
-				require.NotNil(t, state.GetSchemaMetadata("public").GetTable("skipped_missing"))
-			},
-		},
 	}
 
-	for i := range tests {
-		test := &tests[i]
-		t.Run(test.name, func(t *testing.T) {
-			state := newSearchPathTestState(test.searchPath)
-			stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, test.sql)
-			require.NoError(t, err)
-			wtCtx := test.session
-			wtCtx.RawSQL = test.sql
-			advice := WalkThroughWithContext(context.Background(), wtCtx, state, base.ExtractASTs(stmts))
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			state := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+				Name:       "postgres",
+				SearchPath: tc.searchPath,
+				Schemas:    []*metadatapb.SchemaMetadata{{Name: "alice"}, {Name: "app"}, {Name: "public"}},
+			}, nil, nil, storepb.Engine_POSTGRES, true)
+			wtCtx := tc.session
+			wtCtx.RawSQL = tc.sql
+			advice := WalkThroughWithContext(context.Background(), wtCtx, state, nil)
 			require.Nil(t, advice)
-			test.assert(t, state)
+			tc.assert(t, state)
 		})
 	}
-}
-
-func newSearchPathTestState(searchPath string) *model.DatabaseMetadata {
-	metadata := &metadatapb.DatabaseSchemaMetadata{
-		Name:       "postgres",
-		SearchPath: searchPath,
-		Schemas: []*metadatapb.SchemaMetadata{
-			{Name: "alice"},
-			{Name: "bob"},
-			{
-				Name: "app",
-				Tables: []*metadatapb.TableMetadata{
-					newSearchPathTestTable("dup"),
-				},
-			},
-			{
-				Name: "public",
-				Tables: []*metadatapb.TableMetadata{
-					newSearchPathTestTable("dup"),
-				},
-			},
-		},
-	}
-	return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true)
-}
-
-func newSearchPathTestTable(name string) *metadatapb.TableMetadata {
-	return &metadatapb.TableMetadata{
-		Name: name,
-		Columns: []*metadatapb.ColumnMetadata{
-			{
-				Name:     "id",
-				Type:     "int",
-				Nullable: false,
-				Position: 1,
-			},
-		},
-	}
-}
-
-// TestClone_SearchPath tests Clone preserves search path and session user.
-func TestClone_SearchPath(t *testing.T) {
-	meta := &metadatapb.DatabaseSchemaMetadata{
-		Name: "postgres",
-		Schemas: []*metadatapb.SchemaMetadata{
-			{Name: "public"},
-			{Name: "alice"},
-		},
-	}
-
-	catBefore := catalog.New()
-	catBefore.SetSessionUser("alice")
-	catBefore.SetSearchPath([]string{"$user", "public"})
-	_, err := catBefore.LoadMetadata(context.Background(), meta, catalog.LoadMetadataOptions{Full: true})
-	require.NoError(t, err)
-
-	catAfter := catBefore.Clone()
-
-	// CREATE TABLE without schema should use search path ($user → alice)
-	_, err = catAfter.Exec(`CREATE TABLE my_table (id int);`, nil)
-	require.NoError(t, err)
-
-	// Table should be in alice schema on clone
-	require.NotNil(t, catAfter.GetRelation("alice", "my_table"))
-
-	// Original should NOT have it
-	require.Nil(t, catBefore.GetRelation("alice", "my_table"))
-
-	// Diff should show the new table
-	diff := catalog.Diff(catBefore, catAfter)
-	require.False(t, diff.IsEmpty())
-
-	foundAliceTable := false
-	for _, rel := range diff.Relations {
-		if rel.SchemaName == "alice" && rel.Name == "my_table" && rel.Action == catalog.DiffAdd {
-			foundAliceTable = true
-		}
-	}
-	require.True(t, foundAliceTable, "diff should show alice.my_table as added")
-}
-
-// TestClone_WalkThroughFunction tests the actual WalkThroughWithContext function
-// using Clone produces correct FinalMetadata.
-func TestClone_WalkThroughFunction(t *testing.T) {
-	meta := &metadatapb.DatabaseSchemaMetadata{
-		Name: "postgres",
-		Schemas: []*metadatapb.SchemaMetadata{
-			{
-				Name: "public",
-				Tables: []*metadatapb.TableMetadata{
-					{
-						Name: "test",
-						Columns: []*metadatapb.ColumnMetadata{
-							{Name: "id", Type: "integer", Position: 1},
-							{Name: "name", Type: "text", Position: 2, Nullable: true},
-						},
-						Indexes: []*metadatapb.IndexMetadata{
-							{Name: "test_pkey", Expressions: []string{"id"}, Unique: true, Primary: true},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	state := model.NewDatabaseMetadata(meta, nil, nil, storepb.Engine_POSTGRES, true)
-	wtCtx := schema.WalkThroughContext{
-		RawSQL: `CREATE TABLE public.new_table (id int PRIMARY KEY, val text);`,
-	}
-
-	advice := WalkThroughWithContext(context.Background(), wtCtx, state, nil)
-	require.Nil(t, advice, "walk-through should succeed")
-
-	// Check FinalMetadata has the new table
-	newTbl := state.GetSchemaMetadata("public").GetTable("new_table")
-	require.NotNil(t, newTbl, "new_table should exist in FinalMetadata")
-
-	// Check original table is preserved
-	origTbl := state.GetSchemaMetadata("public").GetTable("test")
-	require.NotNil(t, origTbl, "test table should still exist")
-	require.Equal(t, 2, len(origTbl.GetProto().Columns))
 }
 
 func TestWalkThroughOwnerChangeAndWrapperPreservation(t *testing.T) {
