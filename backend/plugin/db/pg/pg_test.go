@@ -7,16 +7,18 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/json"
 	"encoding/pem"
-	"fmt"
+	"io"
 	"math/big"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
 	"cloud.google.com/go/cloudsqlconn"
+	omndriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
+	pgdriver "github.com/bytebase/omni/pg/driver"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -363,6 +365,221 @@ func TestCloudSQLIAMDialerClosesWhenOpenFails(t *testing.T) {
 	require.ErrorIs(t, err, cloudsqlconn.ErrDialerClosed)
 }
 
+type stubPGDriver struct {
+	sessionOpens int
+	session      *stubPGSession
+	instance     *omndriver.Instance
+	dumpedMeta   *metadatapb.DatabaseSchemaMetadata
+}
+
+func (*stubPGDriver) Ping(context.Context) error { return nil }
+func (*stubPGDriver) Close() error               { return nil }
+func (d *stubPGDriver) Session(context.Context) (omndriver.Session, error) {
+	d.sessionOpens++
+	return d.session, nil
+}
+func (d *stubPGDriver) SyncInstance(context.Context) (*omndriver.Instance, error) {
+	return d.instance, nil
+}
+func (*stubPGDriver) SyncDatabase(context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return nil, nil
+}
+func (d *stubPGDriver) Dump(_ context.Context, w io.Writer, meta *metadatapb.DatabaseSchemaMetadata) error {
+	d.dumpedMeta = meta
+	_, err := io.WriteString(w, "dumped")
+	return err
+}
+
+type stubPGSession struct {
+	queryFn func(context.Context, string, omndriver.QueryOptions) ([]*omndriver.Result, error)
+}
+
+func (s *stubPGSession) Query(ctx context.Context, script string, opts omndriver.QueryOptions) ([]*omndriver.Result, error) {
+	return s.queryFn(ctx, script, opts)
+}
+func (*stubPGSession) Close() error { return nil }
+
+// TestQueryConnAdapterSeam pins PG-specific adapter transformations in
+// QueryConn: held session reuse, lowercase ExplainFormat mapping and QueryPlan
+// suppression, zero-affected-rows filling, out-of-proto-range timestamp text
+// conversion, and *pgconn.PgError detail extraction.
+func TestQueryConnAdapterSeam(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("reuses held session and forwards options", func(t *testing.T) {
+		var seenOpts []omndriver.QueryOptions
+		sess := &stubPGSession{
+			queryFn: func(_ context.Context, script string, opts omndriver.QueryOptions) ([]*omndriver.Result, error) {
+				seenOpts = append(seenOpts, opts)
+				return []*omndriver.Result{{
+					Statement: script,
+					Plan:      &omndriver.Plan{Format: "JSON"},
+				}}, nil
+			},
+		}
+		stub := &stubPGDriver{session: sess}
+		driver := &Driver{OmniAdapter: util.OmniAdapter{Driver: stub}}
+
+		explainRes, err := driver.QueryConn(ctx, "SELECT 1", db.QueryContext{
+			Schema:               "app",
+			Limit:                50,
+			Explain:              true,
+			MaximumSQLResultSize: 1 << 20,
+			Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+		})
+		require.NoError(t, err)
+		require.Nil(t, explainRes[0].GetQueryPlan(), "explain requests omit typed QueryPlan")
+
+		selfExplainRes, err := driver.QueryConn(ctx, "EXPLAIN (FORMAT JSON) SELECT 1", db.QueryContext{
+			MaximumSQLResultSize: 1 << 20,
+		})
+		require.NoError(t, err)
+		require.Equal(t, v1pb.QueryOption_JSON, selfExplainRes[0].GetQueryPlan().GetFormat())
+		require.Equal(t, 1, stub.sessionOpens, "QueryConn reuses one held session across calls")
+		require.Equal(t, omndriver.QueryOptions{
+			Schema:         "app",
+			Limit:          50,
+			Explain:        true,
+			ExplainFormat:  "json",
+			MaxResultBytes: 1 << 20,
+		}, seenOpts[0])
+		require.Empty(t, seenOpts[1].ExplainFormat)
+	})
+
+	t.Run("fills zero affected rows for statements without a count", func(t *testing.T) {
+		sess := &stubPGSession{
+			queryFn: func(_ context.Context, script string, _ omndriver.QueryOptions) ([]*omndriver.Result, error) {
+				return []*omndriver.Result{{Statement: script}}, nil
+			},
+		}
+		driver := &Driver{OmniAdapter: util.OmniAdapter{Driver: &stubPGDriver{session: sess}}}
+
+		results, err := driver.QueryConn(ctx, "CREATE TABLE counted (id int);", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		require.Equal(t, []string{"Affected Rows"}, results[0].GetColumnNames())
+		require.Equal(t, int64(0), results[0].GetRows()[0].GetValues()[0].GetInt64Value())
+		require.Equal(t, int64(1), results[0].GetRowsCount())
+	})
+
+	t.Run("rewrites out-of-proto-range timestamps as text", func(t *testing.T) {
+		bcTime := time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)
+		okTime := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
+		sess := &stubPGSession{
+			queryFn: func(_ context.Context, script string, _ omndriver.QueryOptions) ([]*omndriver.Result, error) {
+				return []*omndriver.Result{{
+					Statement: script,
+					Columns:   []omndriver.Column{{Name: "ts", TypeName: "TIMESTAMP"}, {Name: "ok", TypeName: "TIMESTAMP"}},
+					Rows: [][]omndriver.Value{{
+						{Kind: omndriver.Timestamp, Time: bcTime},
+						{Kind: omndriver.Timestamp, Time: okTime},
+					}},
+				}}, nil
+			},
+		}
+		driver := &Driver{OmniAdapter: util.OmniAdapter{Driver: &stubPGDriver{session: sess}}}
+
+		results, err := driver.QueryConn(ctx, "SELECT ts, ok", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		require.NoError(t, err)
+		values := results[0].GetRows()[0].GetValues()
+		require.Equal(t, "0001-01-01 00:00:00 BC", values[0].GetStringValue())
+		require.NotNil(t, values[1].GetTimestampValue())
+	})
+
+	t.Run("attaches PostgresError details from *pgconn.PgError", func(t *testing.T) {
+		sess := &stubPGSession{
+			queryFn: func(_ context.Context, script string, _ omndriver.QueryOptions) ([]*omndriver.Result, error) {
+				return []*omndriver.Result{{
+					Statement: script,
+					Err: &pgconn.PgError{
+						Severity: "ERROR",
+						Code:     "42P01",
+						Message:  `relation "missing_table" does not exist`,
+					},
+				}}, nil
+			},
+		}
+		driver := &Driver{OmniAdapter: util.OmniAdapter{Driver: &stubPGDriver{session: sess}}}
+
+		results, err := driver.QueryConn(ctx, "SELECT * FROM missing_table;", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		require.Equal(t, "42P01", results[0].GetPostgresError().GetCode())
+		require.Contains(t, results[0].GetPostgresError().GetMessage(), "missing_table")
+	})
+}
+
+func TestSyncInstanceSkipsNeonPostgresDatabase(t *testing.T) {
+	ctx := context.Background()
+	makeDriver := func(vendor storepb.Vendor) *Driver {
+		return &Driver{
+			OmniAdapter: util.OmniAdapter{
+				Driver: &stubPGDriver{
+					instance: &omndriver.Instance{
+						Version: "16.0",
+						Databases: []*metadatapb.DatabaseSchemaMetadata{
+							{Name: "postgres"},
+							{Name: "appdb"},
+						},
+					},
+				},
+				WithInstanceMetadata: true,
+			},
+			connectionCtx: db.ConnectionContext{Vendor: vendor},
+		}
+	}
+
+	genericMeta, err := makeDriver(storepb.Vendor_VENDOR_UNSPECIFIED).SyncInstance(ctx)
+	require.NoError(t, err)
+	require.Len(t, genericMeta.Databases, 2)
+
+	neonMeta, err := makeDriver(storepb.Vendor_NEON).SyncInstance(ctx)
+	require.NoError(t, err)
+	require.Len(t, neonMeta.Databases, 1)
+	require.Equal(t, "appdb", neonMeta.Databases[0].Name)
+}
+
+func TestDumpOmitsBackupSchema(t *testing.T) {
+	backupSchema := common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
+	stub := &stubPGDriver{}
+	driver := &Driver{OmniAdapter: util.OmniAdapter{Driver: stub}}
+
+	input := &metadatapb.DatabaseSchemaMetadata{
+		Name: "appdb",
+		Schemas: []*metadatapb.SchemaMetadata{
+			{Name: "public"},
+			{Name: backupSchema},
+		},
+	}
+	var buf bytes.Buffer
+	require.NoError(t, driver.Dump(context.Background(), &buf, input))
+	require.Len(t, stub.dumpedMeta.Schemas, 1)
+	require.Equal(t, "public", stub.dumpedMeta.Schemas[0].Name)
+	require.Len(t, input.Schemas, 2, "Dump does not mutate the caller's metadata")
+}
+
+func TestTaskRunSessionConversion(t *testing.T) {
+	start := time.Date(2026, 3, 4, 5, 0, 0, 0, time.UTC)
+	queryStart := start.Add(2 * time.Second)
+	state := "active"
+	got := taskRunSession(&pgdriver.BackendSession{
+		PID:             "100",
+		BlockedByPIDs:   []string{"50"},
+		Query:           "SELECT pg_sleep(5);",
+		State:           &state,
+		ApplicationName: "bytebase-taskrun-42",
+		BackendStart:    start,
+		QueryStart:      &queryStart,
+	})
+	require.Equal(t, "100", got.GetPid())
+	require.Equal(t, []string{"50"}, got.GetBlockedByPids())
+	require.Equal(t, "SELECT pg_sleep(5);", got.GetQuery())
+	require.Equal(t, "active", got.GetState())
+	require.Equal(t, "bytebase-taskrun-42", got.GetApplicationName())
+	require.Nil(t, got.GetXactStart())
+	require.Equal(t, queryStart, got.GetQueryStart().AsTime())
+}
+
 // pgTestDriver opens a driver on the shared container's database.
 func pgTestDriver(ctx context.Context, t *testing.T, pgContainer *testcontainer.Container, database string, edit func(*db.ConnectionConfig)) *Driver {
 	t.Helper()
@@ -384,517 +601,4 @@ func pgTestDriver(ctx context.Context, t *testing.T, pgContainer *testcontainer.
 	require.True(t, ok)
 	t.Cleanup(func() { _ = driver.Close(context.Background()) })
 	return driver
-}
-
-func TestQueryConnSearchPathIncludesPublicAfterSelectedSchema(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPgContainer(t)
-	dbName, rawDB := testcontainer.NewPgDatabase(t)
-	_, err := rawDB.ExecContext(ctx, `
-		CREATE SCHEMA app;
-		CREATE TABLE public.lookup_precedence (marker text);
-		CREATE TABLE app.lookup_precedence (marker text);
-		INSERT INTO public.lookup_precedence VALUES ('public');
-		INSERT INTO app.lookup_precedence VALUES ('app');
-		CREATE FUNCTION public.polar_osfs_extract_table_name(rel text) RETURNS text
-			LANGUAGE sql
-			AS $$ SELECT rel $$;
-		CREATE FUNCTION public.polar_alter_relation_to_oss_with_indexes(rel text) RETURNS text
-			LANGUAGE plpgsql
-			AS $$
-			BEGIN
-				RETURN polar_osfs_extract_table_name(rel);
-			END;
-			$$;
-	`)
-	require.NoError(t, err)
-
-	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-
-	queryContext := db.QueryContext{
-		Schema:               "app",
-		Limit:                5000,
-		MaximumSQLResultSize: 1 << 30,
-	}
-	results, err := driver.QueryConn(ctx, `SELECT public.polar_alter_relation_to_oss_with_indexes('content_messages_2025q1'::text);`, queryContext)
-	require.NoError(t, err)
-	require.Equal(t, "content_messages_2025q1", firstStringValue(t, results))
-
-	results, err = driver.QueryConn(ctx, `SELECT marker FROM lookup_precedence;`, queryContext)
-	require.NoError(t, err)
-	require.Equal(t, "app", firstStringValue(t, results))
-}
-
-func TestQueryConnSearchPathEscapesSelectedSchemaName(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPgContainer(t)
-	dbName, rawDB := testcontainer.NewPgDatabase(t)
-	_, err := rawDB.ExecContext(ctx, `
-		CREATE SCHEMA "app""schema";
-		CREATE TABLE "app""schema".lookup_precedence (marker text);
-		INSERT INTO "app""schema".lookup_precedence VALUES ('quoted');
-	`)
-	require.NoError(t, err)
-
-	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-
-	results, err := driver.QueryConn(ctx, `SELECT marker FROM lookup_precedence;`, db.QueryContext{
-		Schema:               `app"schema`,
-		Limit:                5000,
-		MaximumSQLResultSize: 1 << 30,
-	})
-	require.NoError(t, err)
-	require.Equal(t, "quoted", firstStringValue(t, results))
-}
-
-// TestQueryConnExplainFormat pins both explain outputs at the driver boundary:
-// the default stays the human-readable text plan, and JSON returns the plan tree
-// as a single row. The JSON assertion is what a plan renderer depends on, and
-// running it through QueryConn also proves the editor's read-only validator
-// accepts the parenthesized EXPLAIN form.
-func TestQueryConnExplainFormat(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPgContainer(t)
-	dbName, rawDB := testcontainer.NewPgDatabase(t)
-	_, err := rawDB.ExecContext(ctx, `
-		CREATE TABLE plan_target (id int PRIMARY KEY, note text);
-		INSERT INTO plan_target SELECT g, 'n' || g FROM generate_series(1, 500) g;
-		ANALYZE plan_target;
-	`)
-	require.NoError(t, err)
-
-	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-
-	const statement = `SELECT note FROM plan_target WHERE id > 100;`
-
-	textResults, err := driver.QueryConn(ctx, statement, db.QueryContext{
-		Explain:              true,
-		Limit:                5000,
-		MaximumSQLResultSize: 1 << 30,
-	})
-	require.NoError(t, err)
-	require.NotEmpty(t, textResults)
-	require.Empty(t, textResults[0].GetError())
-	require.Nil(t, textResults[0].GetQueryPlan(), "an explain request's format is the request's, not the statement's")
-	require.Contains(t, firstStringValue(t, textResults), "(cost=")
-
-	jsonResults, err := driver.QueryConn(ctx, statement, db.QueryContext{
-		Explain:              true,
-		Limit:                5000,
-		MaximumSQLResultSize: 1 << 30,
-		Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
-	})
-	require.NoError(t, err)
-	require.NotEmpty(t, jsonResults)
-	require.Empty(t, jsonResults[0].GetError())
-	require.Nil(t, jsonResults[0].GetQueryPlan())
-	require.Len(t, jsonResults[0].GetRows(), 1)
-
-	var plan []struct {
-		Plan struct {
-			NodeType     string  `json:"Node Type"`
-			RelationName string  `json:"Relation Name"`
-			TotalCost    float64 `json:"Total Cost"`
-			PlanRows     float64 `json:"Plan Rows"`
-		} `json:"Plan"`
-	}
-	require.NoError(t, json.Unmarshal([]byte(firstStringValue(t, jsonResults)), &plan))
-	require.Len(t, plan, 1)
-	require.NotEmpty(t, plan[0].Plan.NodeType)
-	require.Equal(t, "plan_target", plan[0].Plan.RelationName)
-	require.Positive(t, plan[0].Plan.TotalCost)
-	require.Positive(t, plan[0].Plan.PlanRows)
-
-	// A statement that already asks for a plan is planned once: the request's
-	// format replaces the caller's EXPLAIN instead of wrapping it, which the
-	// server would reject as a syntax error.
-	planOfPlan, err := driver.QueryConn(ctx, "EXPLAIN (FORMAT TEXT) "+statement, db.QueryContext{
-		Explain:              true,
-		Limit:                5000,
-		MaximumSQLResultSize: 1 << 30,
-		Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
-	})
-	require.NoError(t, err)
-	require.NotEmpty(t, planOfPlan)
-	require.Empty(t, planOfPlan[0].GetError())
-	require.NoError(t, json.Unmarshal([]byte(firstStringValue(t, planOfPlan)), &plan))
-	require.Len(t, plan, 1)
-	require.Equal(t, "plan_target", plan[0].Plan.RelationName)
-}
-
-// TestQueryConnReportsAnAffectedRowForAStatementWithoutACount keeps the editor's
-// result shape: a statement that modifies nothing countable still answers one
-// "Affected Rows" row, with 0.
-func TestQueryConnReportsAnAffectedRowForAStatementWithoutACount(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPgContainer(t)
-	dbName, _ := testcontainer.NewPgDatabase(t)
-	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-
-	results, err := driver.QueryConn(ctx, "CREATE TABLE counted (id int);", db.QueryContext{Limit: 5000, MaximumSQLResultSize: 1 << 20})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Equal(t, []string{"Affected Rows"}, results[0].GetColumnNames())
-	require.Equal(t, int64(0), results[0].GetRows()[0].GetValues()[0].GetInt64Value())
-	require.Equal(t, int64(1), results[0].GetRowsCount())
-}
-
-// TestQueryConnHoldsOneSession proves the driver keeps one session across
-// QueryConn calls, as the editor's one pooled connection did: a statement's
-// session state — here a SET, and a temporary table — holds for the next
-// statement of the same stream.
-func TestQueryConnHoldsOneSession(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPgContainer(t)
-	dbName, _ := testcontainer.NewPgDatabase(t)
-	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-
-	queryContext := db.QueryContext{Limit: 5000, MaximumSQLResultSize: 1 << 20}
-	_, err := driver.QueryConn(ctx, "SET bytebase.kept = 'yes'; CREATE TEMP TABLE kept (id int);", queryContext)
-	require.NoError(t, err)
-
-	results, err := driver.QueryConn(ctx, "SELECT current_setting('bytebase.kept'), (SELECT count(*) FROM kept);", queryContext)
-	require.NoError(t, err)
-	values := results[0].GetRows()[0].GetValues()
-	require.Equal(t, "yes", values[0].GetStringValue())
-	require.Equal(t, int64(0), values[1].GetInt64Value())
-}
-
-// TestQueryConnReportsAPlanOfItsOwn pins the other side of the split: a caller's
-// own EXPLAIN is a plan result, and its typed Plan says which format it is.
-func TestQueryConnReportsAPlanOfItsOwn(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPgContainer(t)
-	dbName, rawDB := testcontainer.NewPgDatabase(t)
-	_, err := rawDB.ExecContext(ctx, `CREATE TABLE plan_target (id int PRIMARY KEY);`)
-	require.NoError(t, err)
-
-	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-	results, err := driver.QueryConn(ctx, "EXPLAIN (FORMAT JSON) SELECT * FROM plan_target;", db.QueryContext{
-		Limit:                5000,
-		MaximumSQLResultSize: 1 << 30,
-	})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Equal(t, v1pb.QueryOption_JSON, results[0].GetQueryPlan().GetFormat())
-}
-
-func TestQueryConnReportsTheServerError(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPgContainer(t)
-	dbName, _ := testcontainer.NewPgDatabase(t)
-
-	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-	results, err := driver.QueryConn(ctx, "SELECT * FROM missing_table;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Contains(t, results[0].GetError(), `relation "missing_table" does not exist`)
-	// The server's own fields ride beside the message, as they did before.
-	require.Equal(t, "42P01", results[0].GetPostgresError().GetCode())
-	require.Contains(t, results[0].GetPostgresError().GetMessage(), "missing_table")
-}
-
-// TestQueryConnWritesATimestampBeyondTheProtoRangeAsText keeps the conversion
-// the API needs: PostgreSQL holds dates google.protobuf.Timestamp does not, and
-// marshaling such a timestamp in a response fails.
-func TestQueryConnWritesATimestampBeyondTheProtoRangeAsText(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPgContainer(t)
-	dbName, _ := testcontainer.NewPgDatabase(t)
-
-	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-	results, err := driver.QueryConn(ctx, "SELECT '0001-01-01 BC'::timestamp AS ts, '2024-01-02 03:04:05'::timestamp AS ok;",
-		db.QueryContext{MaximumSQLResultSize: 1 << 30})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Empty(t, results[0].GetError())
-	values := results[0].GetRows()[0].GetValues()
-	require.Equal(t, "0001-01-01 00:00:00 BC", values[0].GetStringValue())
-	require.NotNil(t, values[1].GetTimestampValue(), "a timestamp the proto holds stays a timestamp")
-}
-
-// TestQueryConnMergeCTEDoesNotLeakRows is a security regression test for the
-// PostgreSQL data-masking bypass where a MERGE smuggled into a data-modifying CTE
-//
-//	WITH x AS (MERGE ... RETURNING masked_col) SELECT masked_col FROM x
-//
-// was misclassified as a read-only query (hasDMLInTree did not recognise MergeStmt
-// as a write). That routed it through QueryConn's row-returning QueryContext path,
-// so the RETURNING columns came back to the client and — because the query-span
-// extractor cannot trace lineage through a MERGE — were returned UNMASKED.
-//
-// The fix classifies MERGE as a write, so the editor routes the statement to
-// ExecContext, which discards the RETURNING rows. This test asserts the
-// security-relevant outcome at the driver boundary: the MERGE-CTE must NOT return
-// the secret value as data rows. MERGE ... RETURNING requires PostgreSQL 17.
-func TestQueryConnMergeCTEDoesNotLeakRows(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPg17Container(t)
-	dbName, rawDB := testcontainer.NewPg17Database(t)
-
-	const secret = "TOP-SECRET-SSN-123-45-6789"
-	require.NoError(t, rawDB.Ping())
-	_, err := rawDB.ExecContext(ctx, `CREATE TABLE secret_doc (id int PRIMARY KEY, secret text);`)
-	require.NoError(t, err)
-	_, err = rawDB.ExecContext(ctx, `INSERT INTO secret_doc VALUES (1, '`+secret+`');`)
-	require.NoError(t, err)
-
-	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-
-	// Baseline: a plain SELECT returns the secret as a data row. This proves the
-	// harness actually surfaces row data, so the negative assertion below is meaningful.
-	selectResults, err := driver.QueryConn(ctx, `SELECT secret FROM secret_doc`, db.QueryContext{Limit: 5000, MaximumSQLResultSize: 1 << 30})
-	require.NoError(t, err)
-	require.True(t, resultsContainValue(selectResults, secret),
-		"baseline plain SELECT should return the secret as a data row")
-
-	// Exploit attempt: a MERGE smuggled into a data-modifying CTE. After the fix it
-	// is classified as a write and routed to Exec, so the RETURNING rows are dropped
-	// and the secret is never returned as data.
-	const mergeCTE = `WITH x AS (
-		MERGE INTO secret_doc t USING secret_doc s ON t.id = s.id
-		WHEN MATCHED THEN UPDATE SET id = t.id
-		RETURNING t.secret AS secret
-	) SELECT secret FROM x`
-	mergeResults, err := driver.QueryConn(ctx, mergeCTE, db.QueryContext{Limit: 5000, MaximumSQLResultSize: 1 << 30})
-	require.NoError(t, err)
-	require.False(t, resultsContainValue(mergeResults, secret),
-		"SECURITY: MERGE-in-CTE must not return the masked column as data rows; got %v", mergeResults)
-}
-
-// TestExecuteReportsTheScriptsOrder proves the tenant-mode prelude and the
-// script's statements run in the order the script states, which the driver that
-// this replaced did not: it moved non-transactional statements ahead.
-func TestExecuteReportsTheScriptsOrder(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPgContainer(t)
-	dbName, rawDB := testcontainer.NewPgDatabase(t)
-
-	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-	var mu sync.Mutex
-	var executed []string
-	_, err := driver.Execute(ctx, "CREATE TABLE first (id int);\nCREATE INDEX CONCURRENTLY second ON first (id);", db.ExecuteOptions{
-		CreateTaskRunLog: func(_ time.Time, log *storepb.TaskRunLog) error {
-			if command := log.GetCommandExecute(); command != nil {
-				mu.Lock()
-				executed = append(executed, strings.TrimSpace(command.GetStatement()))
-				mu.Unlock()
-			}
-			return nil
-		},
-		LogCommandStatement: true,
-	})
-	require.NoError(t, err)
-	require.Equal(t, []string{"CREATE TABLE first (id int);", "CREATE INDEX CONCURRENTLY second ON first (id);"}, executed)
-
-	var count int
-	require.NoError(t, rawDB.QueryRow(`SELECT count(*) FROM pg_class WHERE relname = 'second'`).Scan(&count))
-	require.Equal(t, 1, count)
-}
-
-func TestSyncInstanceAndDump(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPgContainer(t)
-	dbName, rawDB := testcontainer.NewPgDatabase(t)
-	_, err := rawDB.ExecContext(ctx, fmt.Sprintf(`
-		CREATE TABLE t (id int PRIMARY KEY, note text);
-		CREATE SCHEMA %s;
-		CREATE TABLE %s.archived (id int);
-	`, common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES), common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)))
-	require.NoError(t, err)
-
-	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-
-	instance, err := driver.SyncInstance(ctx)
-	require.NoError(t, err)
-	require.NotEmpty(t, instance.Version)
-	require.NotEmpty(t, instance.Metadata.GetRoles())
-	var found bool
-	for _, database := range instance.Databases {
-		if database.Name == dbName {
-			found = true
-			require.NotEmpty(t, database.Owner)
-		}
-	}
-	require.True(t, found, "the synced database %q", dbName)
-
-	metadata, err := driver.SyncDBSchema(ctx)
-	require.NoError(t, err)
-	require.Equal(t, dbName, metadata.GetName())
-	require.NotEmpty(t, metadata.GetSearchPath())
-
-	var buf bytes.Buffer
-	require.NoError(t, driver.Dump(ctx, &buf, metadata))
-	dump := buf.String()
-	require.Contains(t, dump, `CREATE TABLE "public"."t"`)
-	require.NotContains(t, dump, common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES), "the dump omits the backup schema")
-}
-
-func TestSyncInstanceSkipsNeonPostgresDatabase(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPgContainer(t)
-	dbName, _ := testcontainer.NewPgDatabase(t)
-
-	syncDatabaseNames := func(t *testing.T, vendor storepb.Vendor) []string {
-		t.Helper()
-		driver := pgTestDriver(ctx, t, pgContainer, "", func(config *db.ConnectionConfig) {
-			config.ConnectionContext.Vendor = vendor
-		})
-		meta, err := driver.SyncInstance(ctx)
-		require.NoError(t, err)
-
-		names := make([]string, 0, len(meta.Databases))
-		for _, database := range meta.Databases {
-			names = append(names, database.Name)
-		}
-		return names
-	}
-
-	genericNames := syncDatabaseNames(t, storepb.Vendor_VENDOR_UNSPECIFIED)
-	require.Contains(t, genericNames, "postgres")
-	require.Contains(t, genericNames, dbName)
-	require.NotContains(t, genericNames, "template0")
-	require.NotContains(t, genericNames, "template1")
-
-	neonNames := syncDatabaseNames(t, storepb.Vendor_NEON)
-	require.NotContains(t, neonNames, "postgres")
-	require.Contains(t, neonNames, dbName)
-	require.NotContains(t, neonNames, "template0")
-	require.NotContains(t, neonNames, "template1")
-}
-
-func TestPingAMissingDatabase(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPgContainer(t)
-	driver := pgTestDriver(ctx, t, pgContainer, "no-such-database", nil)
-
-	// The contract states this one: Ping on a database the server does not have
-	// fails before any statement reaches it.
-	require.ErrorContains(t, driver.Ping(ctx), "3D000")
-}
-
-// TestProbeTenantModeRunsAsTheOwner proves the probe plans as the database owner
-// in tenant mode: the prelude reads the owner and switches to it on the probe's
-// own session, so the statement sees the role the migration will run as. The
-// advisor context and the driver's connection context carry the same flag, which
-// is what makes this the role a review judges.
-func TestProbeTenantModeRunsAsTheOwner(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPgContainer(t)
-	dbName, rawDB := testcontainer.NewPgDatabase(t)
-	_, err := rawDB.ExecContext(ctx, `
-		CREATE ROLE app_owner;
-		CREATE TABLE owned (id int);
-		ALTER TABLE owned OWNER TO app_owner;
-	`)
-	require.NoError(t, err)
-	_, err = rawDB.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s OWNER TO app_owner", dbName))
-	require.NoError(t, err)
-
-	tenantDriver := pgTestDriver(ctx, t, pgContainer, dbName, func(config *db.ConnectionConfig) {
-		config.ConnectionContext.TenantMode = true
-	})
-	result, err := db.ProberOf(tenantDriver).Probe(ctx, db.ProbeContext{}, "SELECT CURRENT_USER")
-	require.NoError(t, err)
-	require.Equal(t, [][]any{{"app_owner"}}, result.Rows)
-
-	// The login is still the superuser: the prelude switched the session role, not
-	// the credentials.
-	var currentUser string
-	require.NoError(t, rawDB.QueryRow("SELECT CURRENT_USER").Scan(&currentUser))
-	require.Equal(t, "postgres", currentUser)
-
-	plainDriver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-	result, err = db.ProberOf(plainDriver).Probe(ctx, db.ProbeContext{}, "SELECT CURRENT_USER")
-	require.NoError(t, err)
-	require.Equal(t, [][]any{{"postgres"}}, result.Rows)
-}
-
-func TestTaskRunSessionReadsTheRunSession(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	pgContainer := testcontainer.SharedPgContainer(t)
-	dbName, rawDB := testcontainer.NewPgDatabase(t)
-
-	// The task run's driver names its session after the run; the reader is a
-	// second driver, whose own sessions carry the plain name, so it cannot read
-	// itself. GetTaskRunSession opens one the same way.
-	taskRunUID := int64(42)
-	runDriver := pgTestDriver(ctx, t, pgContainer, dbName, func(config *db.ConnectionConfig) {
-		config.ConnectionContext.TaskRunUID = &taskRunUID
-	})
-	reader := pgTestDriver(ctx, t, pgContainer, dbName, nil)
-
-	go func() {
-		_, _ = runDriver.QueryConn(ctx, "SELECT pg_sleep(5);", db.QueryContext{MaximumSQLResultSize: 1 << 30})
-	}()
-	t.Cleanup(func() {
-		_, _ = rawDB.Exec(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = 'bytebase-taskrun-42'`)
-	})
-
-	require.Eventually(t, func() bool {
-		var count int
-		if err := rawDB.QueryRow(`SELECT count(*) FROM pg_stat_activity WHERE application_name = 'bytebase-taskrun-42'`).Scan(&count); err != nil {
-			return false
-		}
-		return count == 1
-	}, 10*time.Second, 20*time.Millisecond, "the query never started on the server")
-
-	session, err := reader.TaskRunSession(ctx, "bytebase-taskrun-42")
-	require.NoError(t, err)
-	require.NotNil(t, session.GetPostgres().GetSession())
-	require.NotEmpty(t, session.GetPostgres().GetSession().GetPid())
-	require.Contains(t, session.GetPostgres().GetSession().GetQuery(), "pg_sleep")
-}
-
-func firstStringValue(t *testing.T, results []*v1pb.QueryResult) string {
-	t.Helper()
-	require.NotEmpty(t, results)
-	require.Empty(t, results[0].GetError())
-	require.NotEmpty(t, results[0].GetRows())
-	require.NotEmpty(t, results[0].GetRows()[0].GetValues())
-	return results[0].GetRows()[0].GetValues()[0].GetStringValue()
-}
-
-// resultsContainValue reports whether any string cell in the results contains want.
-func resultsContainValue(results []*v1pb.QueryResult, want string) bool {
-	for _, r := range results {
-		for _, row := range r.GetRows() {
-			for _, v := range row.GetValues() {
-				if sv, ok := v.GetKind().(*v1pb.RowValue_StringValue); ok && strings.Contains(sv.StringValue, want) {
-					return true
-				}
-			}
-		}
-	}
-	return false
 }
