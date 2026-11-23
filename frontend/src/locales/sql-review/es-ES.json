@@ -2,7 +2,7 @@
   "add-or-remove-rules": "Agregar o eliminar reglas",
   "add-rules": "Agregar reglas",
   "ai-review": {
-    "ai-off": "La IA está desactivada en el espacio de trabajo, por lo que no se ejecuta ninguna revisión con IA.",
+    "ai-off": "La IA está desactivada en el espacio de trabajo, por lo que no se ejecuta ninguna revisión de SQL con IA.",
     "comments-description": "Un modelo de IA revisa el SQL de una incidencia, incluso en borrador, y comenta los riesgos que encuentra. El despliegue queda bloqueado hasta que se resuelvan todos sus comentarios.",
     "description": "Un modelo de IA que revisa el SQL de un issue en busca de riesgos que las reglas estándar no pueden ver.",
     "enable": {
@@ -10,12 +10,12 @@
       "self": "Revisar los cambios con IA"
     },
     "policy": {
-      "ai-review-policy": "Política de revisión con IA",
+      "ai-review-policy": "Política de revisión de SQL con IA",
       "cannot-clear": "Tu rol no puede eliminar políticas, por lo que esta política no se puede vaciar.",
       "description": "Esta política define lo que la IA revisa al evaluar cambios en la base de datos. Se aplica a todos los proyectos del espacio de trabajo y cada proyecto puede agregar su propia política.",
       "load-failed": "No se pudo cargar la política de revisión.",
       "none": "No hay política de revisión.",
-      "paused": "Esta política está en pausa, por lo que la revisión con IA no la usa.",
+      "paused": "Esta política está en pausa, por lo que la revisión de SQL con IA no la usa.",
       "placeholder": "Por ejemplo:\nInforma sobre un cambio de esquema que bloquee las escrituras en una tabla de más de 1 millón de filas.\nToda clave foránea necesita un índice sobre sus columnas.\nLas tablas nuevas necesitan las columnas created_at y updated_at.",
       "project-description": "Política opcional específica del proyecto. Se agrega a la política del espacio de trabajo y tiene prioridad cuando entran en conflicto.",
       "project-none": "No hay política del proyecto.",
@@ -23,11 +23,11 @@
       "project-self": "Política adicional del proyecto",
       "remove-only": "Puedes eliminar esta política, pero no cambiarla. Vacía el texto para eliminarla.",
       "self": "Política de revisión",
-      "standard-rules-hint": "La revisión con IA no repite las reglas estándar y omite las que están desactivadas. Para que compruebe alguna de todos modos, nómbrala en la política, por ejemplo: \"Todo UPDATE necesita una cláusula WHERE\".",
+      "standard-rules-hint": "La revisión de SQL con IA no repite las reglas estándar y omite las que están desactivadas. Para que compruebe alguna de todos modos, nómbrala en la política, por ejemplo: \"Todo UPDATE necesita una cláusula WHERE\".",
       "too-large": "La política ocupa {{size}} bytes, más que el límite de {{limit}} bytes. Acórtala para guardarla."
     },
-    "project-description": "La revisión con IA se configura para el espacio de trabajo. Agrega abajo una política opcional específica del proyecto.",
-    "self": "Revisión con IA",
+    "project-description": "La revisión de SQL con IA se configura para el espacio de trabajo. Agrega abajo una política opcional específica del proyecto.",
+    "self": "Revisión de SQL con IA",
     "set-for-workspace": "Se administra a nivel del espacio de trabajo.",
     "turn-on-ai": "Activar la IA",
     "view-workspace-setting": "Ver la configuración de IA del espacio de trabajo"
@@ -151,7 +151,7 @@
     "name": "Prioridad"
   },
   "no-permission": "Solo el DBA o el administrador tiene permiso para crear o actualizar la política de revisión.",
-  "policies": "Políticas de revisión de SQL",
+  "policies": "Políticas de revisión de SQL basada en reglas",
   "policy-create-failed": "No se pudo crear la política de revisión.",
   "policy-created": "La política de revisión se creó correctamente.",
   "policy-removed": "La política de revisión se eliminó correctamente.",

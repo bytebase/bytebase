@@ -2,7 +2,7 @@
   "add-or-remove-rules": "Thêm hoặc xóa quy tắc",
   "add-rules": "Thêm quy tắc",
   "ai-review": {
-    "ai-off": "AI đang tắt trong không gian làm việc nên không có lần đánh giá bằng AI nào được chạy.",
+    "ai-off": "AI đang tắt trong không gian làm việc nên không có lần đánh giá SQL bằng AI nào được chạy.",
     "comments-description": "Một mô hình AI xem xét SQL của issue, kể cả bản nháp, và bình luận về các rủi ro tìm thấy. Việc triển khai bị chặn cho đến khi mọi bình luận được giải quyết.",
     "description": "Một mô hình AI đánh giá SQL của issue để tìm các rủi ro mà quy tắc tiêu chuẩn không phát hiện được.",
     "enable": {
@@ -10,12 +10,12 @@
       "self": "Đánh giá thay đổi bằng AI"
     },
     "policy": {
-      "ai-review-policy": "Chính sách đánh giá bằng AI",
+      "ai-review-policy": "Chính sách đánh giá SQL bằng AI",
       "cannot-clear": "Vai trò của bạn không thể xóa chính sách, nên không thể để trống chính sách này.",
       "description": "Chính sách này xác định những gì AI kiểm tra khi đánh giá thay đổi cơ sở dữ liệu. Nó áp dụng cho mọi dự án trong không gian làm việc và mỗi dự án có thể thêm chính sách riêng.",
       "load-failed": "Không thể tải chính sách đánh giá.",
       "none": "Chưa có chính sách đánh giá.",
-      "paused": "Chính sách này đang tạm dừng nên tính năng đánh giá bằng AI không sử dụng chính sách này.",
+      "paused": "Chính sách này đang tạm dừng nên tính năng đánh giá SQL bằng AI không sử dụng chính sách này.",
       "placeholder": "Ví dụ:\nBáo cáo thay đổi lược đồ chặn ghi trên bảng có hơn 1 triệu hàng.\nMọi khóa ngoại đều cần chỉ mục trên các cột của nó.\nBảng mới cần có cột created_at và updated_at.",
       "project-description": "Chính sách tùy chọn dành riêng cho dự án. Chính sách này được thêm vào chính sách không gian làm việc và được ưu tiên khi có xung đột.",
       "project-none": "Chưa có chính sách dự án.",
@@ -23,11 +23,11 @@
       "project-self": "Chính sách bổ sung của dự án",
       "remove-only": "Bạn có thể xóa chính sách này nhưng không thể thay đổi nó. Hãy xóa hết nội dung để xóa chính sách.",
       "self": "Chính sách đánh giá",
-      "standard-rules-hint": "Đánh giá bằng AI không lặp lại các quy tắc tiêu chuẩn và bỏ qua những quy tắc đang tắt. Để AI vẫn kiểm tra một quy tắc, hãy nêu rõ trong chính sách, ví dụ: \"Mọi câu lệnh UPDATE đều cần mệnh đề WHERE\".",
+      "standard-rules-hint": "Đánh giá SQL bằng AI không lặp lại các quy tắc tiêu chuẩn và bỏ qua những quy tắc đang tắt. Để AI vẫn kiểm tra một quy tắc, hãy nêu rõ trong chính sách, ví dụ: \"Mọi câu lệnh UPDATE đều cần mệnh đề WHERE\".",
       "too-large": "Chính sách có dung lượng {{size}} byte, vượt quá giới hạn {{limit}} byte. Hãy rút gọn để lưu."
     },
-    "project-description": "Tính năng đánh giá bằng AI được cấu hình cho không gian làm việc. Hãy thêm chính sách tùy chọn dành riêng cho dự án bên dưới.",
-    "self": "Đánh giá bằng AI",
+    "project-description": "Tính năng đánh giá SQL bằng AI được cấu hình cho không gian làm việc. Hãy thêm chính sách tùy chọn dành riêng cho dự án bên dưới.",
+    "self": "Đánh giá SQL bằng AI",
     "set-for-workspace": "Được quản lý ở cấp không gian làm việc.",
     "turn-on-ai": "Bật AI",
     "view-workspace-setting": "Xem thiết lập AI của không gian làm việc"
@@ -151,7 +151,7 @@
     "name": "Mức ưu tiên"
   },
   "no-permission": "Chỉ DBA hoặc Quản trị viên mới có quyền tạo hoặc cập nhật chính sách đánh giá.",
-  "policies": "Chính sách đánh giá SQL",
+  "policies": "Chính sách đánh giá SQL dựa trên quy tắc",
   "policy-create-failed": "Không tạo được chính sách đánh giá.",
   "policy-created": "Đã tạo thành công chính sách đánh giá.",
   "policy-removed": "Đã xóa thành công chính sách đánh giá.",
