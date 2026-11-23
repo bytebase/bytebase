@@ -1,35 +1,10 @@
-// Package cassandra is Bytebase's Cassandra driver: an adapter over
-// github.com/bytebase/omni/cassandra/driver that maps Bytebase's connection
-// config onto the driver contract and the contract's results back into the
-// product's protos.
+// Package cassandra is Bytebase's Cassandra driver, adapting
+// github.com/bytebase/omni/cassandra/driver to Bytebase's db.Driver interface.
 //
-// The pieces that move behaviour, beyond the swap itself:
-//
-//   - Open no longer reaches the cluster. The omni driver builds its gocql
-//     session on first use, so a bad contact point is reported by Ping, not by
-//     Open.
-//   - SSH tunnels work. The omni driver takes a Dial, so a data source with an
-//     SSH host dials through util.DialSSHTunnel, which this driver did not
-//     support before. The live test reaches the cluster through one; TLS is
-//     mapped the same way but not exercised, because the pinned container
-//     speaks plaintext.
-//   - A dropped keyspace answers driver.ErrNotFound from SyncDBSchema instead
-//     of an empty schema: the omni driver asks the catalog whether the
-//     keyspace exists before reading it.
-//   - Execute reports each command to ExecuteOptions.CreateTaskRunLog, so a
-//     task run's log holds the steps a Cassandra script ran.
-//
-// The result shapes stay the ones Bytebase showed: values are converted from
-// the contract's driver.Value with Cassandra's own types (a CQL timestamp is
-// millisecond-accurate, a float is FloatValue, decimal and varint are strings,
-// a time-of-day is HH:MM:SS, and a list, map, set or UDT is its JSON spelling).
-// One shape moved: a tuple column is now one cell of JSON rather than the
-// column's elements expanded into separate cells, because the contract aligns a
-// row's values with the columns the server names.
-//
-// db.ConnectionConfig.Params, ApplicationName and ReadOnly are not mapped:
-// gocql takes no connection string this driver fills, Cassandra has no
-// application name, and it has no read-only session.
+// Constraints:
+//   - Open configures gocql lazily without dialing the cluster; Ping verifies connectivity.
+//   - SSH tunnels wrap dialed connections so RemoteAddr satisfies gocql's *net.TCPAddr assertion.
+//   - Params, ApplicationName, and ReadOnly are unused by Cassandra.
 package cassandra
 
 import (
@@ -70,53 +45,36 @@ func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open maps the connection config onto the driver contract. It does not reach
-// the cluster: Ping does.
+// Open maps the connection config onto the driver contract without dialing the
+// cluster; Ping verifies connectivity.
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	d := &Driver{}
-	opened := false
-	defer func() {
-		if !opened {
-			_ = d.Close(ctx)
-		}
-	}()
-
 	dataSource := config.DataSource
-	var dial func(ctx context.Context, network, address string) (net.Conn, error)
-	if dataSource.GetSshHost() != "" {
-		sshClient, err := util.GetSSHClient(dataSource)
-		if err != nil {
-			return nil, err
-		}
-		d.AddCloser(sshClient)
-		dial = func(ctx context.Context, network, address string) (net.Conn, error) {
-			conn, err := util.DialSSHTunnel(ctx, sshClient, network, address)
-			if err != nil {
-				return nil, err
-			}
-			return &tunnelConn{Conn: conn, remote: remoteTCPAddr(address)}, nil
-		}
-	}
-
-	addrs := []string{formatAddress(dataSource.Host, dataSource.Port)}
+	addrs := make([]string, 0, 1+len(dataSource.AdditionalAddresses))
+	addrs = append(addrs, formatAddress(dataSource.Host, dataSource.Port))
 	for _, addr := range dataSource.AdditionalAddresses {
 		addrs = append(addrs, formatAddress(addr.Host, addr.Port))
 	}
-	inner, err := omnicassandra.Open(ctx, omnidriver.Config{
+	cfg := omnidriver.Config{
 		Host:          strings.Join(addrs, ","),
 		Port:          dataSource.Port,
 		Database:      config.ConnectionContext.DatabaseName,
 		User:          dataSource.Username,
 		Password:      config.Password,
 		TLS:           util.HostTLSFunc(dataSource),
-		Dial:          dial,
 		EngineVersion: config.ConnectionContext.EngineVersion,
-	})
-	if err != nil {
+	}
+
+	d := &Driver{}
+	if err := d.OpenWith(ctx, util.AdapterOptions{}, func(adapter *util.OmniAdapter) (omnidriver.Driver, error) {
+		if err := util.SetupSSHDialWithWrap(dataSource, &cfg, adapter, true, func(conn net.Conn, address string) net.Conn {
+			return &tunnelConn{Conn: conn, remote: remoteTCPAddr(address)}
+		}); err != nil {
+			return nil, err
+		}
+		return omnicassandra.Open(ctx, cfg)
+	}); err != nil {
 		return nil, err
 	}
-	d.Driver = inner
-	opened = true
 	return d, nil
 }
 
@@ -124,6 +82,13 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 // run's log.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	return d.ExecuteScript(ctx, statement, opts, util.ExecuteConfig{})
+}
+
+var cassandraQueryResultOptions = util.QueryResultOptions{
+	SkipPlan:      true,
+	SkipMessages:  true,
+	TruncatedWins: true,
+	ConvertValue:  convertValue,
 }
 
 // QueryConn runs a read-only script, one result per statement, with the
@@ -136,6 +101,10 @@ func (d *Driver) QueryConn(ctx context.Context, rawStatement string, queryContex
 
 	var results []*v1pb.QueryResult
 	err = d.QueryEphemeral(ctx, func(session omnidriver.Session) error {
+		queryOpts := omnidriver.QueryOptions{
+			Limit:          queryContext.Limit,
+			MaxResultBytes: queryContext.MaximumSQLResultSize,
+		}
 		for _, stmt := range stmts {
 			if stmt.Empty {
 				continue
@@ -150,10 +119,7 @@ func (d *Driver) QueryConn(ctx context.Context, rawStatement string, queryContex
 				break
 			}
 
-			stmtResults, err := session.Query(ctx, stmt.Text, omnidriver.QueryOptions{
-				Limit:          queryContext.Limit,
-				MaxResultBytes: queryContext.MaximumSQLResultSize,
-			})
+			stmtResults, err := session.Query(ctx, stmt.Text, queryOpts)
 			if err != nil {
 				results = append(results, &v1pb.QueryResult{
 					Statement: stmt.Text,
@@ -165,12 +131,7 @@ func (d *Driver) QueryConn(ctx context.Context, rawStatement string, queryContex
 
 			stop := false
 			for _, stmtResult := range stmtResults {
-				result := util.OmniResultToQueryResultWith(stmtResult, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
-					SkipPlan:      true,
-					SkipMessages:  true,
-					TruncatedWins: true,
-					ConvertValue:  convertValue,
-				})
+				result := util.OmniResultToQueryResultWith(stmtResult, queryContext.MaximumSQLResultSize, cassandraQueryResultOptions)
 				results = append(results, result)
 				if result.Error != "" {
 					stop = true
@@ -189,10 +150,6 @@ func (d *Driver) QueryConn(ctx context.Context, rawStatement string, queryContex
 	return results, nil
 }
 
-// convertValue maps one contract value onto the product's row value, keeping
-// the shapes Bytebase showed: a 32-bit float stays a FloatValue, a decimal, a
-// varint, a time of day and a collection are strings, and a timestamp is
-// millisecond-accurate.
 func convertValue(value omnidriver.Value) *v1pb.RowValue {
 	switch value.Kind {
 	case omnidriver.Null:
@@ -212,9 +169,7 @@ func convertValue(value omnidriver.Value) *v1pb.RowValue {
 	}
 }
 
-// tunnelConn reports the address the tunnel dialled. gocql reads the remote
-// port from the connection with a *net.TCPAddr assertion, and a tunnel's own
-// address type is not one.
+// tunnelConn satisfies gocql's *net.TCPAddr type assertion on RemoteAddr.
 type tunnelConn struct {
 	net.Conn
 	remote *net.TCPAddr

@@ -17,11 +17,11 @@ import (
 // Claude chat types with tool-calling support.
 
 type chatClaudeRequest struct {
-	Model     string           `json:"model"`
-	System    string           `json:"system,omitempty"`
-	Messages  []chatClaudeMsg  `json:"messages"`
-	Tools     []chatClaudeTool `json:"tools,omitempty"`
-	MaxTokens int              `json:"max_tokens"`
+	Model     string                   `json:"model"`
+	System    []chatClaudeContentBlock `json:"system,omitempty"`
+	Messages  []chatClaudeMsg          `json:"messages"`
+	Tools     []chatClaudeTool         `json:"tools,omitempty"`
+	MaxTokens int                      `json:"max_tokens"`
 }
 
 type chatClaudeMsg struct {
@@ -36,13 +36,65 @@ type chatClaudeTool struct {
 }
 
 type chatClaudeContentBlock struct {
-	Type      string `json:"type"`
-	Text      string `json:"text,omitempty"`
-	ID        string `json:"id,omitempty"`
-	Name      string `json:"name,omitempty"`
-	Input     any    `json:"input,omitempty"`
-	ToolUseID string `json:"tool_use_id,omitempty"`
-	Content   string `json:"content,omitempty"`
+	Type         string              `json:"type"`
+	Text         string              `json:"text,omitempty"`
+	ID           string              `json:"id,omitempty"`
+	Name         string              `json:"name,omitempty"`
+	Input        any                 `json:"input,omitempty"`
+	ToolUseID    string              `json:"tool_use_id,omitempty"`
+	Content      string              `json:"content,omitempty"`
+	CacheControl *claudeCacheControl `json:"cache_control,omitempty"`
+}
+
+// claudeCacheControl on a block is a cache breakpoint. Claude stores the prompt
+// from its first byte through that block, in the order tools, system,
+// messages, and a later request that starts with the same bytes reads it at a
+// fraction of the input price. Claude caches nothing without one.
+type claudeCacheControl struct {
+	Type string `json:"type"`
+}
+
+// claudeEphemeralCache keeps an entry for five minutes after its last use.
+var claudeEphemeralCache = &claudeCacheControl{Type: "ephemeral"}
+
+// claudeSystemBlocks ends the system prompt with a cache breakpoint, which covers
+// the tools as well, so requests that share both read them from the cache
+// whatever their messages are.
+func claudeSystemBlocks(system string) []chatClaudeContentBlock {
+	if strings.TrimSpace(system) == "" {
+		return nil
+	}
+	return []chatClaudeContentBlock{{Type: "text", Text: system, CacheControl: claudeEphemeralCache}}
+}
+
+// markClaudeConversationBreakpoint ends the last message with a cache breakpoint,
+// so the next request of the same conversation reads everything this one
+// sent. A write costs more than plain input, so the caller asks for it only
+// when a next request is expected.
+func markClaudeConversationBreakpoint(messages []chatClaudeMsg) {
+	if len(messages) == 0 {
+		return
+	}
+	last := &messages[len(messages)-1]
+	switch content := last.Content.(type) {
+	case string:
+		// Claude rejects a cache breakpoint on an empty text block.
+		if strings.TrimSpace(content) == "" {
+			return
+		}
+		last.Content = []chatClaudeContentBlock{{Type: "text", Text: content, CacheControl: claudeEphemeralCache}}
+	case []chatClaudeContentBlock:
+		if len(content) == 0 {
+			return
+		}
+		block := &content[len(content)-1]
+		if block.Type == "text" && strings.TrimSpace(block.Text) == "" {
+			return
+		}
+		block.CacheControl = claudeEphemeralCache
+	default:
+		// A turn replayed as Claude sent it is left byte for byte.
+	}
 }
 
 type chatClaudeUsage struct {
@@ -145,7 +197,7 @@ func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 	for _, m := range request.Messages {
 		switch m.Role {
 		case v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_SYSTEM:
-			payload.System = m.GetContent()
+			payload.System = claudeSystemBlocks(m.GetContent())
 			continue
 		case v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER:
 			payload.Messages = append(payload.Messages, chatClaudeMsg{
@@ -218,6 +270,13 @@ func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 			Description: td.Description,
 			InputSchema: schema,
 		})
+	}
+
+	// Tools mean the model can ask for another turn, and earlier turns mean
+	// the conversation is already running. A lone message with neither is sent
+	// once, and a cache breakpoint on it would cost a write that nothing reads.
+	if len(payload.Tools) > 0 || len(payload.Messages) > 1 {
+		markClaudeConversationBreakpoint(payload.Messages)
 	}
 
 	payloadBytes, err := json.Marshal(payload)

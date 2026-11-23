@@ -17,29 +17,12 @@ import (
 )
 
 func init() {
-	extract := func(checkCtx advisor.Context) ([]advisor.V1Stmt[ast.Node], error) {
-		stmts, err := getTiDBNodes(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]advisor.V1Stmt[ast.Node], len(stmts))
-		for i, s := range stmts {
-			out[i] = advisor.V1Stmt[ast.Node]{Node: s.Node, Text: s.Text, BaseLine: s.BaseLine}
-		}
-		return out, nil
-	}
-	byteOffsetLine := func(sql string, offset int) int32 {
-		return tidbparser.ByteOffsetToRunePosition(sql, offset).Line
-	}
 	e := advisor.RegisterMySQLFamily(storepb.Engine_TIDB, advisor.MySQLFamilyOptions[ast.Node]{
-		Extract:             extract,
-		ByteOffsetLine:      byteOffsetLine,
+		Extract:             advisor.NodeExtractor(tidbparser.GetNode),
 		TiDBQuirks:          true,
 		DefinesColumn:       definesColumn,
 		ReadsColumnType:     readsColumnType,
 		DropsColumn:         dropsColumn,
-		IsRenameIndex:       isRenameIndex,
-		IsDropDatabase:      isDropDatabase,
 		IsAlterTable:        isAlterTable,
 		CreateTableLocStart: createTableLocStart,
 	}, advisor.MySQLFamilyRuleSet[ast.Node]{
@@ -92,74 +75,61 @@ func init() {
 		TableRequirePK:                      tidbv1review.TableRequirePK,
 	})
 
-	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK, tidbPriorBackup(e))
-	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN, tidbDMLDryRun(e))
-}
-
-func tidbPriorBackup(e *advisor.V1Engine[ast.Node]) advisor.Func {
-	return func(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-		if !checkCtx.EnablePriorBackup {
-			return nil, nil
-		}
-		stmts, nodes, level, title, err := e.Prepare(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		defaultDB := checkCtx.DBSchema.GetName()
-		if defaultDB == "" {
-			defaultDB = checkCtx.CurrentDatabase
-		}
-		facts := advisor.NewPriorBackupFacts(ctx, checkCtx, storepb.Engine_TIDB)
-		findings := tidbv1review.PriorBackupCheck(nodes, defaultDB, e.SchemaOf(checkCtx), facts)
-		return advisor.RenderPriorBackupFindings(title, level, findings, func(idx int) int {
-			return Stmt{Node: stmts[idx].Node, Text: stmts[idx].Text, BaseLine: stmts[idx].BaseLine}.FirstTokenLine()
-		}), nil
-	}
-}
-
-func tidbDMLDryRun(e *advisor.V1Engine[ast.Node]) advisor.Func {
-	return e.DMLDryRun(advisor.V1DMLDryRunConfig[ast.Node]{
-		Probes: tidbv1review.StatementDMLDryRunProbes,
-		Judge:  tidbv1review.StatementDMLDryRun,
-		Probe: func(ctx context.Context, prober db.Prober, stmt advisor.V1Stmt[ast.Node], _ []string) v1review.Probe {
-			if reason, failed := probeTiDBDML(ctx, prober, Stmt{Node: stmt.Node, Text: stmt.Text, BaseLine: stmt.BaseLine}); failed {
-				return v1review.Probe{Error: reason}
-			}
-			return v1review.Probe{}
-		},
-		FormatContent: func(stmt advisor.V1Stmt[ast.Node], f v1review.Finding) string {
-			return fmt.Sprintf("\"%s\" dry runs failed: %s", strings.TrimSpace(stmt.Text), f.Value)
-		},
-		Pos: func(stmt advisor.V1Stmt[ast.Node], _ v1review.Finding) *storepb.Position {
-			return e.PosFinding(stmt, v1review.Finding{})
-		},
+	advisor.RegisterRules(storepb.Engine_TIDB, map[storepb.SQLReviewRule_Type]advisor.Advisor{
+		storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK: e.PriorBackup(advisor.V1PriorBackupConfig[ast.Node]{
+			Engine: storepb.Engine_TIDB,
+			Check: func(checkCtx advisor.Context, _ []advisor.V1Stmt[ast.Node], nodes []ast.Node, facts v1review.PriorBackupFacts) ([]v1review.Finding, error) {
+				defaultDB := checkCtx.DBSchema.GetName()
+				if defaultDB == "" {
+					defaultDB = checkCtx.CurrentDatabase
+				}
+				return tidbv1review.PriorBackupCheck(nodes, defaultDB, e.SchemaOf(checkCtx), facts), nil
+			},
+			MixedLine: e.FirstTokenLine,
+		}),
+		storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN: e.DMLDryRun(advisor.V1DMLDryRunConfig[ast.Node]{
+			Probes: tidbv1review.StatementDMLDryRunProbes,
+			Judge:  tidbv1review.StatementDMLDryRun,
+			Probe: func(ctx context.Context, prober db.Prober, stmt advisor.V1Stmt[ast.Node], _ []string) v1review.Probe {
+				if reason, failed := probeTiDBDML(ctx, prober, e, stmt); failed {
+					return v1review.Probe{Error: reason}
+				}
+				return v1review.Probe{}
+			},
+			FormatContent: func(stmt advisor.V1Stmt[ast.Node], f v1review.Finding) string {
+				return fmt.Sprintf("\"%s\" dry runs failed: %s", strings.TrimSpace(stmt.Text), f.Value)
+			},
+			Pos: func(stmt advisor.V1Stmt[ast.Node], _ v1review.Finding) *storepb.Position {
+				return e.PosFinding(stmt, v1review.Finding{})
+			},
+		}),
 	})
 }
 
-func probeTiDBDML(ctx context.Context, prober db.Prober, ostmt Stmt) (string, bool) {
+func probeTiDBDML(ctx context.Context, prober db.Prober, e *advisor.V1Engine[ast.Node], stmt advisor.V1Stmt[ast.Node]) (string, bool) {
 	explain := func(sql string) (string, bool) {
 		if _, err := prober.Probe(ctx, db.ProbeContext{}, fmt.Sprintf("EXPLAIN %s", sql)); err != nil {
 			return err.Error(), true
 		}
 		return "", false
 	}
-	node, ok := ostmt.Node.(*ast.BatchStmt)
+	node, ok := stmt.Node.(*ast.BatchStmt)
 	if !ok {
-		return explain(strings.TrimRight(ostmt.TrimmedText(), ";"))
+		return explain(e.TrimmedText(stmt.Text))
 	}
-	if loc, ok := dmlDryRunInnerLoc(node.DML); ok && loc.Start > 0 && loc.Start <= len(ostmt.Text) {
-		dryRunSQL := ostmt.Text[:loc.Start] + "DRY RUN " + ostmt.Text[loc.Start:]
+	if loc, ok := dmlDryRunInnerLoc(node.DML); ok && loc.Start > 0 && loc.Start <= len(stmt.Text) {
+		dryRunSQL := stmt.Text[:loc.Start] + "DRY RUN " + stmt.Text[loc.Start:]
 		if node.DryRun != ast.BatchDryRunNone {
-			dryRunSQL = ostmt.Text
+			dryRunSQL = stmt.Text
 		}
 		if _, err := prober.Probe(ctx, db.ProbeContext{Autocommit: true}, dryRunSQL); err != nil {
 			return err.Error(), true
 		}
 		end := loc.End
-		if end <= loc.Start || end > len(ostmt.Text) {
-			end = len(ostmt.Text)
+		if end <= loc.Start || end > len(stmt.Text) {
+			end = len(stmt.Text)
 		}
-		return explain(strings.TrimRight(strings.TrimSpace(ostmt.Text[loc.Start:end]), ";"))
+		return explain(e.TrimmedText(stmt.Text[loc.Start:end]))
 	}
 	return "failed to extract inner DML", true
 }
@@ -192,14 +162,8 @@ func definesColumn(node ast.Node) bool {
 		return n.Table != nil && slices.ContainsFunc(n.Columns, func(col *ast.ColumnDef) bool { return col != nil })
 	}
 	return hasAlterCmd(node, func(cmd *ast.AlterTableCmd) bool {
-		switch cmd.Type {
-		case ast.ATAddColumn:
-			return slices.ContainsFunc(addColumnTargets(cmd), func(col *ast.ColumnDef) bool { return col != nil })
-		case ast.ATChangeColumn:
-			return cmd.Column != nil
-		default:
-			return false
-		}
+		return (cmd.Type == ast.ATAddColumn && (cmd.Column != nil || slices.ContainsFunc(cmd.Columns, func(col *ast.ColumnDef) bool { return col != nil }))) ||
+			(cmd.Type == ast.ATChangeColumn && cmd.Column != nil)
 	})
 }
 
@@ -221,15 +185,6 @@ func readsColumnType(node ast.Node) bool {
 
 func dropsColumn(node ast.Node) bool {
 	return hasAlterCmd(node, func(cmd *ast.AlterTableCmd) bool { return cmd.Type == ast.ATDropColumn })
-}
-
-func isRenameIndex(node ast.Node) bool {
-	return hasAlterCmd(node, func(cmd *ast.AlterTableCmd) bool { return cmd.Type == ast.ATRenameIndex })
-}
-
-func isDropDatabase(node ast.Node) bool {
-	_, ok := node.(*ast.DropDatabaseStmt)
-	return ok
 }
 
 func isAlterTable(node ast.Node) bool {

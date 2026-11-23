@@ -1,8 +1,6 @@
 package mysql
 
 import (
-	"errors"
-
 	"github.com/bytebase/omni/mysql/analysis"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -17,13 +15,9 @@ func init() {
 // a reader downstream; any other format gets the engine's default plan.
 func explainStatement(statement string, format base.ExplainFormat) (string, error) {
 	explain, err := analysis.ExplainStatement(statement, format == base.ExplainFormatJSON)
-	if err != nil {
-		if errors.Is(err, analysis.ErrExplainAnalyzeExecutes) {
-			return "", base.ErrExplainAnalyzeExecutes
-		}
-		return "", convertError(err, base.Statement{Text: statement})
-	}
-	return explain, nil
+	return base.ExplainStatementResult(explain, err, func(e error) error {
+		return convertError(e, base.Statement{Text: statement})
+	})
 }
 
 // DescribeExplain returns the output format of an EXPLAIN statement and whether

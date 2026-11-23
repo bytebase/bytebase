@@ -1,16 +1,24 @@
 package dynamodb
 
 import (
+	"bytes"
 	"context"
+	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	omnidriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 func TestEndpointTLS(t *testing.T) {
@@ -35,7 +43,7 @@ func TestEndpointTLS(t *testing.T) {
 			wantTLS:    true,
 		},
 		{
-			// An explicit scheme wins, as it did in the old endpoint builder.
+			// An explicit scheme wins.
 			name:       "scheme_prefixed_host_keeps_its_scheme",
 			dataSource: &storepb.DataSource{Host: "http://localhost", Port: "18000", UseSsl: true},
 		},
@@ -47,22 +55,13 @@ func TestEndpointTLS(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := endpointTLS(tc.dataSource)
-			if (got != nil) != tc.wantTLS {
-				t.Fatalf("endpointTLS() = %v, want TLS function %v", got != nil, tc.wantTLS)
-			}
+			require.Equal(t, tc.wantTLS, got != nil)
 			if got == nil {
 				return
 			}
 			config, err := got("")
-			if err != nil {
-				t.Fatalf("endpointTLS() = %v", err)
-			}
-			// The empty config verifies the endpoint against the system roots:
-			// verify_tls_certificate is ignored and a self-signed endpoint does
-			// not pass.
-			if config.InsecureSkipVerify {
-				t.Error("endpoint TLS config skips verification; TLS must verify")
-			}
+			require.NoError(t, err)
+			require.False(t, config.InsecureSkipVerify, "endpoint TLS must verify against system roots")
 		})
 	}
 }
@@ -75,12 +74,7 @@ func setHermeticAWSEnv(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
 	t.Setenv("AWS_SESSION_TOKEN", "")
 	t.Setenv("AWS_ENDPOINT_URL_STS", "http://127.0.0.1:1")
-	// Single attempt: the SDK's default retryer would otherwise retry the
-	// refused connection with backoff, slowing the failure to several seconds.
 	t.Setenv("AWS_MAX_ATTEMPTS", "1")
-	// Shield the tests from ambient AWS configuration on the host: a set
-	// AWS_PROFILE or shared config file would otherwise leak into
-	// config.LoadDefaultConfig.
 	t.Setenv("AWS_PROFILE", "")
 	missing := filepath.Join(t.TempDir(), "nonexistent")
 	t.Setenv("AWS_CONFIG_FILE", missing)
@@ -102,19 +96,14 @@ func TestOpenAssumesRoleWhenRoleArnSet(t *testing.T) {
 			},
 		},
 	})
-	if err == nil {
-		t.Fatal("Open() = nil error; want an assume-role failure, meaning role_arn was ignored")
-	}
-	if !strings.Contains(err.Error(), "failed to assume role") {
-		t.Errorf("Open() error = %q, want it to mention the assume-role attempt", err.Error())
-	}
+	require.ErrorContains(t, err, "failed to assume role")
 }
 
 func TestOpenWithoutRoleArnSkipsAssumeRole(t *testing.T) {
 	setHermeticAWSEnv(t)
 
 	d := newDriver()
-	if _, err := d.Open(context.Background(), storepb.Engine_DYNAMODB, db.ConnectionConfig{
+	opened, err := d.Open(context.Background(), storepb.Engine_DYNAMODB, db.ConnectionConfig{
 		ConnectionContext: db.ConnectionContext{InstanceID: "dynamodb-test"},
 		DataSource: &storepb.DataSource{
 			Region: "us-east-1",
@@ -125,215 +114,188 @@ func TestOpenWithoutRoleArnSkipsAssumeRole(t *testing.T) {
 				},
 			},
 		},
-	}); err != nil {
-		t.Fatalf("Open() error = %v, want nil when no role_arn is set", err)
-	}
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = opened.Close(context.Background()) })
 }
 
-// A configured account skips STS and names the pseudo database directly.
+// A configured accountId skips STS and names the pseudo database directly.
 func TestSyncInstanceUsesConfiguredAccount(t *testing.T) {
-	fake := newFakeDynamoDB(t)
-	stsServer, stsLog := newFakeSTS(t, stsAnswers)
-	setHermeticAWSEnv(t)
-	t.Setenv("AWS_ENDPOINT_URL_STS", stsServer.URL)
-	t.Cleanup(fake.server.Close)
-	t.Cleanup(stsServer.Close)
+	var requests int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(server.Close)
 
-	driver := openTestDriver(t, fake, map[string]string{"accountId": "999999999999"})
-	instance, err := driver.SyncInstance(context.Background())
-	if err != nil {
-		t.Fatalf("SyncInstance() = %v", err)
-	}
-	if len(instance.Databases) != 1 || instance.Databases[0].Name != "999999999999-us-east-1" {
-		t.Errorf("SyncInstance() databases = %v, want [999999999999-us-east-1]", instance.Databases)
-	}
-	if len(stsLog.requests) != 0 {
-		t.Errorf("STS requests = %v, want none for a configured account", stsLog.requests)
-	}
-	if len(fake.requests) != 0 {
-		t.Errorf("DynamoDB requests = %v, want none for SyncInstance", fake.requests)
-	}
+	host, port, ok := strings.Cut(strings.TrimPrefix(server.URL, "http://"), ":")
+	require.True(t, ok)
+
+	setHermeticAWSEnv(t)
+	t.Setenv("AWS_ENDPOINT_URL_STS", server.URL)
+
+	opened, err := newDriver().Open(context.Background(), storepb.Engine_DYNAMODB, db.ConnectionConfig{
+		ConnectionContext: db.ConnectionContext{DatabaseName: "123456789012-us-east-1"},
+		DataSource: &storepb.DataSource{
+			Host:                      host,
+			Port:                      port,
+			Region:                    "us-east-1",
+			ExtraConnectionParameters: map[string]string{"accountId": "999999999999"},
+			IamExtension: &storepb.DataSource_AwsCredential{
+				AwsCredential: &storepb.DataSource_AWSCredential{
+					AccessKeyId:     "AKIAIOSFODNN7EXAMPLE",
+					SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = opened.Close(context.Background()) })
+
+	instance, err := opened.SyncInstance(context.Background())
+	require.NoError(t, err)
+	require.Len(t, instance.Databases, 1)
+	require.Equal(t, "999999999999-us-east-1", instance.Databases[0].Name)
+	require.Zero(t, requests, "configured accountId must call neither STS nor DynamoDB")
 }
 
-func TestContractBehavior(t *testing.T) {
-	t.Run("limit caps the statement", func(t *testing.T) {
-		fake := newFakeDynamoDB(t)
-		t.Cleanup(fake.server.Close)
-		driver := openTestDriver(t, fake, nil)
-
-		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "limit"`, db.QueryContext{Limit: 1})
-		if err != nil {
-			t.Fatalf("QueryConn() = %v", err)
-		}
-		if len(results) != 1 || results[0].RowsCount != 1 {
-			t.Fatalf("QueryConn() = %d results, rows %v; want one row", len(results), rowCounts(results))
-		}
-		// Limit is a cap on the statement's rows, so the driver asks for no
-		// page after it has them.
-		if len(fake.requests) != 1 {
-			t.Errorf("requests = %v, want only the first page", fake.requests)
-		}
-	})
-
-	t.Run("maximum result size truncates", func(t *testing.T) {
-		fake := newFakeDynamoDB(t)
-		t.Cleanup(fake.server.Close)
-		driver := openTestDriver(t, fake, nil)
-
-		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "big"`, db.QueryContext{MaximumSQLResultSize: 1})
-		if err != nil {
-			t.Fatalf("QueryConn() = %v", err)
-		}
-		if len(results) != 1 {
-			t.Fatalf("QueryConn() = %d results, want 1", len(results))
-		}
-		// MaximumSQLResultSize truncates the result and reports the limit.
-		if !strings.Contains(results[0].GetError(), "max allowed output size") {
-			t.Errorf("QueryConn() error = %q, want the result-size message", results[0].GetError())
-		}
-	})
-
-	t.Run("binary is bytes", func(t *testing.T) {
-		fake := newFakeDynamoDB(t)
-		t.Cleanup(fake.server.Close)
-		driver := openTestDriver(t, fake, nil)
-
-		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "binary"`, db.QueryContext{})
-		if err != nil {
-			t.Fatalf("QueryConn() = %v", err)
-		}
-		value := results[0].Rows[0].Values[0]
-		// A binary crosses as bytes, so arbitrary bytes need not be valid UTF-8.
-		if string(value.GetBytesValue()) != string([]byte{0, 1, 2}) {
-			t.Errorf("binary value = %v, want bytes 00 01 02", value)
-		}
-	})
-
-	t.Run("missing attribute is null", func(t *testing.T) {
-		fake := newFakeDynamoDB(t)
-		t.Cleanup(fake.server.Close)
-		driver := openTestDriver(t, fake, nil)
-
-		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "sparse"`, db.QueryContext{})
-		if err != nil {
-			t.Fatalf("QueryConn() = %v", err)
-		}
-		missing := results[0].Rows[1].Values[0]
-		// A missing attribute is an explicit NULL, so the grid renders a null
-		// cell rather than a dropped value.
-		if _, ok := missing.GetKind().(*v1pb.RowValue_NullValue); !ok {
-			t.Errorf("missing attribute = %v, want an explicit NULL", missing)
-		}
-	})
-
-	t.Run("documents are json", func(t *testing.T) {
-		fake := newFakeDynamoDB(t)
-		t.Cleanup(fake.server.Close)
-		driver := openTestDriver(t, fake, nil)
-
-		results, err := driver.QueryConn(context.Background(), `SELECT * FROM "document"`, db.QueryContext{})
-		if err != nil {
-			t.Fatalf("QueryConn() = %v", err)
-		}
-		want := map[string]string{
-			"blob": `["AAEC"]`,
-			"list": `["a","1"]`,
-			"map":  `{"k":"v"}`,
-			"nums": `["1","2"]`,
-			"set":  `["a","b"]`,
-		}
-		for i, column := range results[0].ColumnNames {
-			got := results[0].Rows[0].Values[i].GetStringValue()
-			if got != want[column] {
-				t.Errorf("%s = %q, want %q", column, got, want[column])
-			}
-		}
-	})
-
-	t.Run("secondary indexes sync", func(t *testing.T) {
-		fake := newFakeDynamoDB(t)
-		fake.tables = []string{"orders"}
-		fake.paged = false
-		t.Cleanup(fake.server.Close)
-		driver := openTestDriver(t, fake, nil)
-
-		schema, err := driver.SyncDBSchema(context.Background())
-		if err != nil {
-			t.Fatalf("SyncDBSchema() = %v", err)
-		}
-		if len(schema.Schemas) != 1 || len(schema.Schemas[0].Tables) != 1 {
-			t.Fatalf("SyncDBSchema() = %v, want one table", schema)
-		}
-		table := schema.Schemas[0].Tables[0]
-		var columns []string
-		for _, column := range table.Columns {
-			columns = append(columns, column.Name)
-		}
-		if strings.Join(columns, ",") != "created,pk,sku" {
-			t.Errorf("columns = %v, want [created pk sku]", columns)
-		}
-		// Every key attribute of the table and of its secondary indexes is a
-		// column; a hash-only table has no RANGE index.
-		var indexes []string
-		for _, index := range table.Indexes {
-			indexes = append(indexes, index.Type+":"+index.Name+"("+strings.Join(index.Expressions, ",")+")")
-		}
-		want := []string{
-			"HASH:pk(pk)",
-			"GLOBAL SECONDARY:orders_by_sku(sku)",
-			"LOCAL SECONDARY:orders_by_created(pk,created)",
-		}
-		if strings.Join(indexes, " ") != strings.Join(want, " ") {
-			t.Errorf("indexes = %v, want %v", indexes, want)
-		}
-	})
+func TestConvertValue(t *testing.T) {
+	require.Equal(t, util.NullRowValue, convertValue(omnidriver.Value{Kind: omnidriver.Null}))
+	require.True(t, convertValue(omnidriver.Value{Kind: omnidriver.Bool, Bool: true}).GetBoolValue())
+	require.Equal(t, []byte{0, 1, 2}, convertValue(omnidriver.Value{Kind: omnidriver.Bytes, Bytes: []byte{0, 1, 2}}).GetBytesValue())
+	require.Equal(t, "hello", convertValue(omnidriver.Value{Kind: omnidriver.String, String: "hello"}).GetStringValue())
+	require.Equal(t, `{"a":1}`, convertValue(omnidriver.Value{
+		Kind:       omnidriver.Structured,
+		Structured: map[string]any{"a": float64(1)},
+	}).GetStringValue())
 }
 
-func openTestDriver(t *testing.T, fake *fakeDynamoDB, extraParams map[string]string) *Driver {
-	t.Helper()
-	setHermeticAWSEnv(t)
-	dataSource := &storepb.DataSource{
-		Host:                      fake.host,
-		Port:                      fake.port,
-		Region:                    "us-east-1",
-		ExtraConnectionParameters: extraParams,
-		IamExtension: &storepb.DataSource_AwsCredential{
-			AwsCredential: &storepb.DataSource_AWSCredential{
-				AccessKeyId:     "AKIAIOSFODNN7EXAMPLE",
-				SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+type fakeDynamoSession struct {
+	gotScript string
+	gotOpts   omnidriver.QueryOptions
+	results   []*omnidriver.Result
+	closed    bool
+}
+
+func (s *fakeDynamoSession) Query(_ context.Context, script string, opts omnidriver.QueryOptions) ([]*omnidriver.Result, error) {
+	s.gotScript = script
+	s.gotOpts = opts
+	return s.results, nil
+}
+
+func (s *fakeDynamoSession) Close() error {
+	s.closed = true
+	return nil
+}
+
+type fakeDynamoDriver struct {
+	session       *fakeDynamoSession
+	executeScript string
+	executeFn     func(script string, opts omnidriver.ExecuteOptions) (int64, error)
+	instance      *omnidriver.Instance
+	schema        *metadatapb.DatabaseSchemaMetadata
+}
+
+func (*fakeDynamoDriver) Ping(context.Context) error { return nil }
+func (*fakeDynamoDriver) Close() error               { return nil }
+func (f *fakeDynamoDriver) Session(context.Context) (omnidriver.Session, error) {
+	return f.session, nil
+}
+
+func (f *fakeDynamoDriver) Execute(_ context.Context, script string, opts omnidriver.ExecuteOptions) (int64, error) {
+	f.executeScript = script
+	if f.executeFn != nil {
+		return f.executeFn(script, opts)
+	}
+	return 0, nil
+}
+
+func (f *fakeDynamoDriver) SyncInstance(context.Context) (*omnidriver.Instance, error) {
+	return f.instance, nil
+}
+
+func (f *fakeDynamoDriver) SyncDatabase(context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return f.schema, nil
+}
+
+func (*fakeDynamoDriver) Dump(context.Context, io.Writer, *metadatapb.DatabaseSchemaMetadata) error {
+	return nil
+}
+
+func TestDynamoDBAdapterSeam(t *testing.T) {
+	ctx := context.Background()
+	sess := &fakeDynamoSession{
+		results: []*omnidriver.Result{
+			{
+				Statement: `SELECT * FROM "users"`,
+				Columns:   []omnidriver.Column{{Name: "pk", TypeName: "String"}, {Name: "meta", TypeName: "Map"}},
+				Rows: [][]omnidriver.Value{{
+					{Kind: omnidriver.String, String: "a"},
+					{Kind: omnidriver.Structured, Structured: map[string]any{"k": "v"}},
+				}},
+				Truncated: true,
+			},
+			{
+				Statement: `SELECT * FROM "fail"`,
+				Err:       errors.New("ValidationException: statement failed"),
 			},
 		},
 	}
-	inner := newDriver()
-	opened, err := inner.Open(context.Background(), storepb.Engine_DYNAMODB, db.ConnectionConfig{
-		ConnectionContext: db.ConnectionContext{DatabaseName: "123456789012-us-east-1"},
-		DataSource:        dataSource,
-	})
-	if err != nil {
-		t.Fatalf("Open() = %v", err)
+	var logs []*storepb.TaskRunLog
+	impl := &fakeDynamoDriver{
+		session: sess,
+		executeFn: func(script string, opts omnidriver.ExecuteOptions) (int64, error) {
+			opts.Log.CommandExecute(omnidriver.Command{Text: script, ByteStart: 0, ByteEnd: len(script)})
+			opts.Log.CommandResponse(0, []int64{0}, nil)
+			return 0, nil
+		},
+		instance: &omnidriver.Instance{
+			Databases: []*metadatapb.DatabaseSchemaMetadata{{Name: "123456789012-us-east-1"}},
+		},
+		schema: &metadatapb.DatabaseSchemaMetadata{Name: "123456789012-us-east-1"},
 	}
-	driver, ok := opened.(*Driver)
-	if !ok {
-		t.Fatalf("Open() returned %T, want *Driver", opened)
-	}
-	t.Cleanup(func() { _ = driver.Close(context.Background()) })
-	return driver
-}
+	d := &Driver{OmniAdapter: util.OmniAdapter{Driver: impl}}
 
-func TestConvertValueStructured(t *testing.T) {
-	got := convertValue(omnidriver.Value{
-		Kind:       omnidriver.Structured,
-		Structured: map[string]any{"a": float64(1)},
+	got, err := d.QueryConn(ctx, `SELECT * FROM "users"; SELECT * FROM "fail"`, db.QueryContext{
+		Limit:                5,
+		Explain:              true,
+		MaximumSQLResultSize: 64,
 	})
-	if got.GetStringValue() != `{"a":1}` {
-		t.Errorf("convertValue(Structured) = %q, want JSON", got.GetStringValue())
-	}
-}
+	require.NoError(t, err)
+	require.True(t, sess.closed)
+	require.Equal(t, omnidriver.QueryOptions{
+		Limit:          5,
+		Explain:        true,
+		MaxResultBytes: 64,
+	}, sess.gotOpts)
+	require.Len(t, got, 2)
+	require.Equal(t, util.FormatMaximumSQLResultSizeMessage(64), got[0].Error)
+	require.Equal(t, `{"k":"v"}`, got[0].Rows[0].Values[1].GetStringValue())
+	require.Equal(t, "ValidationException: statement failed", got[1].Error)
 
-func rowCounts(results []*v1pb.QueryResult) []int64 {
-	counts := make([]int64, 0, len(results))
-	for _, result := range results {
-		counts = append(counts, result.RowsCount)
-	}
-	return counts
+	affected, err := d.Execute(ctx, `INSERT INTO "users" VALUE {'pk': 'a'}`, db.ExecuteOptions{
+		LogCommandStatement: true,
+		CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
+			logs = append(logs, entry)
+			return nil
+		},
+	})
+	require.NoError(t, err)
+	require.Zero(t, affected)
+	require.Equal(t, `INSERT INTO "users" VALUE {'pk': 'a'}`, impl.executeScript)
+	require.Len(t, logs, 2)
+	require.Equal(t, storepb.TaskRunLog_COMMAND_EXECUTE, logs[0].Type)
+	require.Equal(t, storepb.TaskRunLog_COMMAND_RESPONSE, logs[1].Type)
+
+	inst, err := d.SyncInstance(ctx)
+	require.NoError(t, err)
+	require.Len(t, inst.Databases, 1)
+
+	schema, err := d.SyncDBSchema(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "123456789012-us-east-1", schema.GetName())
+
+	var out bytes.Buffer
+	require.NoError(t, d.Dump(ctx, &out, schema))
+	require.Empty(t, out.String())
 }

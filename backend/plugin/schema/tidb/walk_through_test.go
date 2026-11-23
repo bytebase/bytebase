@@ -39,10 +39,11 @@ func TestWalkThroughSeam(t *testing.T) {
 		require.Empty(t, state.GetSchemaMetadata("").GetProto().GetTables())
 	})
 
-	t.Run("TrackBatchTables suppresses CTAS IF NOT EXISTS on table created in same batch", func(t *testing.T) {
-		state, advice := runTiDBWalkThrough(t, "CREATE TABLE t(a INT); CREATE TABLE IF NOT EXISTS t AS SELECT 1 AS a;", true)
-		require.Nil(t, advice)
-		require.NotNil(t, state.GetSchemaMetadata("").GetTable("t"))
+	t.Run("CTAS IF NOT EXISTS still rejected as unimplemented in TiDB", func(t *testing.T) {
+		_, advice := runTiDBWalkThrough(t, "CREATE TABLE t(a INT); CREATE TABLE IF NOT EXISTS t AS SELECT 1 AS a;", true)
+		require.NotNil(t, advice)
+		require.Equal(t, code.DDLSimulationFailed.Int32(), advice.Code)
+		require.Equal(t, "'CREATE TABLE ... SELECT' is not implemented yet", advice.Content)
 	})
 
 	t.Run("omnicatalog prechecks and TiDB error dialect mapping", func(t *testing.T) {
@@ -53,10 +54,10 @@ func TestWalkThroughSeam(t *testing.T) {
 			wantContent string
 		}{
 			{
-				name:        "CTAS precheck",
+				name:        "CTAS rejected as unimplemented in TiDB",
 				statement:   "CREATE TABLE t as select * from t1;",
-				wantCode:    code.StatementCreateTableAs,
-				wantContent: `CREATE TABLE AS statement is used in "CREATE TABLE t as select * from t1;"`,
+				wantCode:    code.DDLSimulationFailed,
+				wantContent: "'CREATE TABLE ... SELECT' is not implemented yet",
 			},
 			{
 				name:        "drop current database precheck",

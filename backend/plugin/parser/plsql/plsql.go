@@ -20,43 +20,27 @@ func init() {
 // parsePLSQLStatements is the ParseStatementsFunc for Oracle (PL/SQL).
 // Returns []ParsedStatement with both text and AST populated.
 func parsePLSQLStatements(statement string) ([]base.ParsedStatement, error) {
-	stmts, err := SplitSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []base.ParsedStatement
-	for _, stmt := range stmts {
+	return base.ParseMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
 		if stmt.Empty {
-			result = append(result, base.ParsedStatement{Statement: stmt})
-			continue
+			return nil, nil
 		}
-
 		list, err := ParsePLSQL(stmt.Text)
 		if err != nil {
 			return nil, convertError(err, stmt)
 		}
 		if list == nil || len(list.Items) == 0 {
-			result = append(result, base.ParsedStatement{Statement: stmt})
-			continue
+			return nil, nil
 		}
+		asts := make([]base.AST, 0, len(list.Items))
 		for _, node := range list.Items {
 			raw, ok := node.(*ast.RawStmt)
 			if !ok {
 				continue
 			}
-			result = append(result, base.ParsedStatement{
-				Statement: stmt,
-				AST: &AST{
-					Node:          raw.Stmt,
-					Text:          stmt.Text,
-					StartPosition: stmt.Start,
-				},
-			})
+			asts = append(asts, &AST{Node: raw.Stmt, Text: stmt.Text, StartPosition: stmt.Start})
 		}
-	}
-
-	return result, nil
+		return asts, nil
+	})
 }
 
 // Version is an Oracle release, such as 12.2.

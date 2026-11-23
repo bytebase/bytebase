@@ -1,10 +1,12 @@
 package base
 
 import (
+	"context"
 	"errors"
 
 	omnianalysis "github.com/bytebase/omni/analysis"
 	"github.com/bytebase/omni/metadata"
+	pkgerrors "github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -174,6 +176,130 @@ func OmniResolvedSpan(span *omnianalysis.ResolvedSpan) *QuerySpan {
 		out.NotFoundError = OmniResourceNotFoundError(span.NotFoundError)
 	}
 	return out
+}
+
+// OmniResolvedSpanResult converts an omni ResolveQuerySpan (span, err) pair
+// into a Bytebase QuerySpan, translating ErrMixUserSystemTables when present.
+func OmniResolvedSpanResult(span *omnianalysis.ResolvedSpan, err error) (*QuerySpan, error) {
+	if err != nil {
+		if mixErr := ConvertOmniMixTablesError(err); mixErr != nil {
+			return nil, mixErr
+		}
+		return nil, err
+	}
+	return OmniResolvedSpan(span), nil
+}
+
+// OmniQuerySpan builds a Bytebase QuerySpan from engine-local omni span fields
+// whose NotFoundError is already an error interface.
+func OmniQuerySpan(
+	queryType omnianalysis.QueryType,
+	sourceColumns, predicateColumns omnianalysis.ColumnSet,
+	results []omnianalysis.QuerySpanResult,
+	notFoundErr error,
+) *QuerySpan {
+	return &QuerySpan{
+		Type:             OmniQueryType(queryType),
+		SourceColumns:    OmniColumnSet(sourceColumns),
+		PredicateColumns: OmniColumnSet(predicateColumns),
+		Results:          OmniQuerySpanResults(results),
+		NotFoundError:    OmniNotFoundError(notFoundErr),
+	}
+}
+
+// OmniTableQuerySpan builds a table-level QuerySpan with initialized empty
+// maps/slices for engines that report source tables without column lineage.
+func OmniTableQuerySpan(queryType omnianalysis.QueryType, sourceColumns omnianalysis.ColumnSet) *QuerySpan {
+	sources := OmniColumnSet(sourceColumns)
+	if sources == nil {
+		sources = SourceColumnSet{}
+	}
+	return &QuerySpan{
+		Type:             OmniQueryType(queryType),
+		SourceColumns:    sources,
+		PredicateColumns: SourceColumnSet{},
+		Results:          []QuerySpanResult{},
+	}
+}
+
+// RequireDatabaseMetadata validates gCtx.GetDatabaseMetadataFunc and fetches
+// synced metadata for database, returning an error if the callback is unset,
+// fails, or reports an unsynced (nil) database.
+func RequireDatabaseMetadata(ctx context.Context, gCtx GetQuerySpanContext, database string) (*model.DatabaseMetadata, error) {
+	if gCtx.GetDatabaseMetadataFunc == nil {
+		return nil, pkgerrors.New("GetDatabaseMetadataFunc is not set in GetQuerySpanContext")
+	}
+	_, meta, err := gCtx.GetDatabaseMetadataFunc(ctx, gCtx.InstanceID, database)
+	if err != nil {
+		return nil, pkgerrors.Wrapf(err, "failed to get database metadata for instance %q and database %q", gCtx.InstanceID, database)
+	}
+	if meta == nil {
+		return nil, pkgerrors.Errorf("database metadata for database %q not found (database not synced)", database)
+	}
+	return meta, nil
+}
+
+// QuerySpanListDatabasesFunc adapts gCtx.ListDatabaseNamesFunc for omni
+// query-span catalogs. Returns nil when ListDatabaseNamesFunc is nil.
+func QuerySpanListDatabasesFunc(ctx context.Context, gCtx GetQuerySpanContext, translateNotFound bool) func() ([]string, error) {
+	if gCtx.ListDatabaseNamesFunc == nil {
+		return nil
+	}
+	return func() ([]string, error) {
+		names, err := gCtx.ListDatabaseNamesFunc(ctx, gCtx.InstanceID)
+		if err != nil && translateNotFound {
+			return names, ToOmniNotFoundError(err)
+		}
+		return names, err
+	}
+}
+
+// QuerySpanDatabaseGetter adapts gCtx.GetDatabaseMetadataFunc for omni
+// query-span catalogs. Returns nil when GetDatabaseMetadataFunc is nil.
+func QuerySpanDatabaseGetter[D any](
+	ctx context.Context,
+	gCtx GetQuerySpanContext,
+	translateNotFound bool,
+	wrap func(*model.DatabaseMetadata) D,
+) func(string) (D, error) {
+	if gCtx.GetDatabaseMetadataFunc == nil {
+		return nil
+	}
+	return func(name string) (D, error) {
+		var zero D
+		_, database, err := gCtx.GetDatabaseMetadataFunc(ctx, gCtx.InstanceID, name)
+		if err != nil {
+			if translateNotFound {
+				return zero, ToOmniNotFoundError(err)
+			}
+			return zero, err
+		}
+		if database == nil {
+			return zero, nil
+		}
+		return wrap(database), nil
+	}
+}
+
+// QuerySpanProtoMetadataFunc adapts gCtx.GetDatabaseMetadataFunc to return raw
+// omni DatabaseSchemaMetadata protos. Returns nil when unset.
+func QuerySpanProtoMetadataFunc(ctx context.Context, gCtx GetQuerySpanContext, translateNotFound bool) func(string) (*metadata.DatabaseSchemaMetadata, error) {
+	return QuerySpanDatabaseGetter(ctx, gCtx, translateNotFound, (*model.DatabaseMetadata).GetProto)
+}
+
+// UnnamedSchemaQuerySpanCatalog builds ListDatabaseNames and GetDatabase
+// closures backed by gCtx for unnamed-schema engines, translating
+// ResourceNotFoundError into omni's counterpart so omni reports it on the span.
+func UnnamedSchemaQuerySpanCatalog[D any](
+	ctx context.Context,
+	gCtx GetQuerySpanContext,
+	wrap func(*UnnamedSchemaDatabase) D,
+) (list func() ([]string, error), get func(string) (D, error)) {
+	list = QuerySpanListDatabasesFunc(ctx, gCtx, true)
+	get = QuerySpanDatabaseGetter(ctx, gCtx, true, func(db *model.DatabaseMetadata) D {
+		return wrap(&UnnamedSchemaDatabase{Database: db})
+	})
+	return list, get
 }
 
 // ConvertOmniMixTablesError translates omni's ErrMixUserSystemTables into Bytebase's

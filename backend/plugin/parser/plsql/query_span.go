@@ -16,26 +16,15 @@ func init() {
 }
 
 func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, _ string, _ bool) (*base.QuerySpan, error) {
-	querySpan, err := resolveQuerySpan(ctx, gCtx, stmt.Text, database)
+	querySpan, err := base.OmniResolvedSpanResult(analysis.ResolveQuerySpan(stmt.Text, analysis.ResolveOptions{
+		Instance:        gCtx.InstanceID,
+		DefaultDatabase: database,
+		Catalog:         newCatalog(ctx, gCtx),
+	}))
 	if err != nil {
 		return nil, pkgerrors.Wrapf(err, "failed to get query span from statement: %s", stmt.Text)
 	}
 	return querySpan, nil
-}
-
-func resolveQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement, database string) (*base.QuerySpan, error) {
-	span, err := analysis.ResolveQuerySpan(statement, analysis.ResolveOptions{
-		Instance:        gCtx.InstanceID,
-		DefaultDatabase: database,
-		Catalog:         newCatalog(ctx, gCtx),
-	})
-	if err != nil {
-		if mixErr := base.ConvertOmniMixTablesError(err); mixErr != nil {
-			return nil, mixErr
-		}
-		return nil, err
-	}
-	return base.OmniResolvedSpan(span), nil
 }
 
 // newCatalog reads synced metadata for omni. A nil metadata function stays

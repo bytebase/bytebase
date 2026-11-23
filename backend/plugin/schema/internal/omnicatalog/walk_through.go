@@ -3,9 +3,9 @@ package omnicatalog
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
+	omnianalysis "github.com/bytebase/omni/analysis"
 	metadatapb "github.com/bytebase/omni/metadata"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -19,44 +19,6 @@ type ExecResult struct {
 	Index int
 	Line  int
 	Error error
-}
-
-// TableRef is an engine-neutral schema-qualified table reference.
-type TableRef struct {
-	Schema string
-	Name   string
-}
-
-// RenamePair captures the source and destination tables of a rename statement.
-type RenamePair struct {
-	Old TableRef
-	New TableRef
-}
-
-// StatementKind classifies an AST statement for walk-through precheck.
-type StatementKind int
-
-const (
-	StatementOther StatementKind = iota
-	StatementCreateDatabase
-	StatementAlterDatabase
-	StatementDropDatabase
-	StatementCreateTable
-	StatementDropTable
-	StatementTableRefCheck
-	StatementRenameTable
-)
-
-// StatementInfo holds the engine-neutral fields needed for walk-through precheck
-// and cross-database rename target discovery.
-type StatementInfo struct {
-	Kind        StatementKind
-	Source      string
-	Database    string
-	IfNotExists bool
-	IsCTAS      bool
-	TableRefs   []TableRef
-	RenamePairs []RenamePair
 }
 
 // WalkThroughAdvice pairs a statement index (-1 when unknown) with an advice.
@@ -123,9 +85,10 @@ type WalkThroughEngine[Catalog any] struct {
 	Load                func(ctx context.Context, c *Catalog, meta *metadatapb.DatabaseSchemaMetadata) error
 	Exec                func(c *Catalog, sql string) ([]ExecResult, error)
 	DatabaseMetadata    func(c *Catalog, dbName string) *metadatapb.DatabaseSchemaMetadata
-	InspectAST          func(a base.AST) (StatementInfo, bool)
+	InspectAST          func(a base.AST) (omnianalysis.WalkThroughStatement, bool)
 	ExtractCatalogError func(err error) (errCode int, message string, ok bool)
 	SplitSQL            func(rawSQL string) ([]base.Statement, error)
+	IsCTAS              func(statement string) bool
 	TrackBatchTables    bool
 	TiDBErrorDialect    bool
 	CaseSensitiveResult func(d *model.DatabaseMetadata) bool
@@ -148,10 +111,10 @@ func RunWalkThrough[Catalog any](
 	dbName := d.GetProto().GetName()
 
 	precheck := PrecheckWalkThrough(d, asts, eng.InspectAST, eng.TrackBatchTables)
-	if eng.SplitSQL != nil {
+	if eng.SplitSQL != nil && eng.IsCTAS != nil {
 		precheck = FirstWalkThroughAdvice(
 			precheck,
-			PrecheckRawCTAS(d, rawSQL, asts, eng.SplitSQL, eng.InspectAST),
+			PrecheckRawCTAS(d, rawSQL, asts, eng.SplitSQL, eng.IsCTAS, eng.InspectAST),
 		)
 	}
 
@@ -253,7 +216,7 @@ func IsCurrentDatabase(d *model.DatabaseMetadata, database string) bool {
 // RenameTargetDatabases collects distinct non-current destination databases from
 // RENAME TABLE / ALTER TABLE ... RENAME TO statements whose source is in the current
 // database.
-func RenameTargetDatabases(d *model.DatabaseMetadata, asts []base.AST, inspectAST func(base.AST) (StatementInfo, bool)) []string {
+func RenameTargetDatabases(d *model.DatabaseMetadata, asts []base.AST, inspectAST func(base.AST) (omnianalysis.WalkThroughStatement, bool)) []string {
 	seen := make(map[string]bool)
 	var targets []string
 	for _, unifiedAST := range asts {
@@ -278,7 +241,7 @@ func RenameTargetDatabases(d *model.DatabaseMetadata, asts []base.AST, inspectAS
 // PrecheckWalkThrough reports the first statement that the catalog would silently
 // accept but Bytebase warns on: a cross-database reference, a dropped database, or a
 // CREATE TABLE ... AS SELECT.
-func PrecheckWalkThrough(d *model.DatabaseMetadata, asts []base.AST, inspectAST func(base.AST) (StatementInfo, bool), trackBatchTables bool) WalkThroughAdvice {
+func PrecheckWalkThrough(d *model.DatabaseMetadata, asts []base.AST, inspectAST func(base.AST) (omnianalysis.WalkThroughStatement, bool), trackBatchTables bool) WalkThroughAdvice {
 	var created map[string]bool
 	if trackBatchTables {
 		created = make(map[string]bool)
@@ -299,16 +262,16 @@ func PrecheckWalkThrough(d *model.DatabaseMetadata, asts []base.AST, inspectAST 
 	return WalkThroughAdvice{}
 }
 
-func updateBatchTables(d *model.DatabaseMetadata, info StatementInfo, created map[string]bool) {
+func updateBatchTables(d *model.DatabaseMetadata, info omnianalysis.WalkThroughStatement, created map[string]bool) {
 	switch info.Kind {
-	case StatementCreateTable:
+	case omnianalysis.WalkThroughStatementCreateTable:
 		if len(info.TableRefs) > 0 {
 			t := info.TableRefs[0]
 			if t.Name != "" && (t.Schema == "" || IsCurrentDatabase(d, t.Schema)) {
 				created[tableLookupKey(d, t.Name)] = true
 			}
 		}
-	case StatementDropTable:
+	case omnianalysis.WalkThroughStatementDropTable:
 		for _, t := range info.TableRefs {
 			if t.Name != "" && (t.Schema == "" || IsCurrentDatabase(d, t.Schema)) {
 				delete(created, tableLookupKey(d, t.Name))
@@ -325,13 +288,13 @@ func tableLookupKey(d *model.DatabaseMetadata, name string) string {
 	return name
 }
 
-func precheckStatement(d *model.DatabaseMetadata, info StatementInfo, created map[string]bool) *storepb.Advice {
+func precheckStatement(d *model.DatabaseMetadata, info omnianalysis.WalkThroughStatement, created map[string]bool) *storepb.Advice {
 	switch info.Kind {
-	case StatementCreateDatabase, StatementAlterDatabase:
+	case omnianalysis.WalkThroughStatementCreateDatabase, omnianalysis.WalkThroughStatementAlterDatabase:
 		if info.Database != "" && !IsCurrentDatabase(d, info.Database) {
 			return notCurrentDatabaseAdvice(d, info.Database)
 		}
-	case StatementDropDatabase:
+	case omnianalysis.WalkThroughStatementDropDatabase:
 		if info.Database != "" && !IsCurrentDatabase(d, info.Database) {
 			return notCurrentDatabaseAdvice(d, info.Database)
 		}
@@ -345,7 +308,7 @@ func precheckStatement(d *model.DatabaseMetadata, info StatementInfo, created ma
 				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
-	case StatementCreateTable:
+	case omnianalysis.WalkThroughStatementCreateTable:
 		if len(info.TableRefs) > 0 {
 			if advice := precheckTableRefDatabase(d, info.TableRefs[0]); advice != nil {
 				return advice
@@ -364,7 +327,7 @@ func precheckStatement(d *model.DatabaseMetadata, info StatementInfo, created ma
 				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
-	case StatementDropTable, StatementTableRefCheck, StatementRenameTable:
+	case omnianalysis.WalkThroughStatementDropTable, omnianalysis.WalkThroughStatementTableRefCheck, omnianalysis.WalkThroughStatementRenameTable:
 		for _, ref := range info.TableRefs {
 			if advice := precheckTableRefDatabase(d, ref); advice != nil {
 				return advice
@@ -375,14 +338,14 @@ func precheckStatement(d *model.DatabaseMetadata, info StatementInfo, created ma
 	return nil
 }
 
-func precheckTableRefDatabase(d *model.DatabaseMetadata, table TableRef) *storepb.Advice {
+func precheckTableRefDatabase(d *model.DatabaseMetadata, table omnianalysis.TableRef) *storepb.Advice {
 	if table.Schema == "" || IsCurrentDatabase(d, table.Schema) {
 		return nil
 	}
 	return notCurrentDatabaseAdvice(d, table.Schema)
 }
 
-func tableExistsInBatch(d *model.DatabaseMetadata, created map[string]bool, table TableRef) bool {
+func tableExistsInBatch(d *model.DatabaseMetadata, created map[string]bool, table omnianalysis.TableRef) bool {
 	if tableExistsInCurrentDatabase(d, table) {
 		return true
 	}
@@ -392,7 +355,7 @@ func tableExistsInBatch(d *model.DatabaseMetadata, created map[string]bool, tabl
 	return created[tableLookupKey(d, table.Name)]
 }
 
-func tableExistsInCurrentDatabase(d *model.DatabaseMetadata, table TableRef) bool {
+func tableExistsInCurrentDatabase(d *model.DatabaseMetadata, table omnianalysis.TableRef) bool {
 	if table.Name == "" || (table.Schema != "" && !IsCurrentDatabase(d, table.Schema)) {
 		return false
 	}
@@ -421,8 +384,12 @@ func PrecheckRawCTAS(
 	rawSQL string,
 	asts []base.AST,
 	splitSQL func(string) ([]base.Statement, error),
-	inspectAST func(base.AST) (StatementInfo, bool),
+	isCTAS func(string) bool,
+	inspectAST func(base.AST) (omnianalysis.WalkThroughStatement, bool),
 ) WalkThroughAdvice {
+	if splitSQL == nil || isCTAS == nil {
+		return WalkThroughAdvice{}
+	}
 	statements, err := splitSQL(rawSQL)
 	if err != nil {
 		return WalkThroughAdvice{}
@@ -435,7 +402,7 @@ func PrecheckRawCTAS(
 		currentIndex := statementIndex
 		statementIndex++
 		text := strings.TrimSpace(statement.Text)
-		if !isMySQLCreateTableAsStatement(text) {
+		if !isCTAS(text) {
 			continue
 		}
 		if astSkipsCreateTableAsAdvice(d, asts, currentIndex, inspectAST) {
@@ -456,105 +423,15 @@ func PrecheckRawCTAS(
 	return WalkThroughAdvice{}
 }
 
-func astSkipsCreateTableAsAdvice(d *model.DatabaseMetadata, asts []base.AST, index int, inspectAST func(base.AST) (StatementInfo, bool)) bool {
+func astSkipsCreateTableAsAdvice(d *model.DatabaseMetadata, asts []base.AST, index int, inspectAST func(base.AST) (omnianalysis.WalkThroughStatement, bool)) bool {
 	if index >= len(asts) {
 		return false
 	}
 	info, ok := inspectAST(asts[index])
-	if !ok || info.Kind != StatementCreateTable || !info.IsCTAS || !info.IfNotExists || len(info.TableRefs) == 0 {
+	if !ok || info.Kind != omnianalysis.WalkThroughStatementCreateTable || !info.IsCTAS || !info.IfNotExists || len(info.TableRefs) == 0 {
 		return false
 	}
 	return tableExistsInCurrentDatabase(d, info.TableRefs[0])
-}
-
-func isMySQLCreateTableAsStatement(statement string) bool {
-	tokens := mySQLStatementTokens(statement)
-	if len(tokens) < 3 || tokens[0] != "CREATE" {
-		return false
-	}
-	idx := 1
-	if tokens[idx] == "TEMPORARY" {
-		idx++
-	}
-	if idx >= len(tokens) || tokens[idx] != "TABLE" {
-		return false
-	}
-	return slices.Contains(tokens[idx+1:], "SELECT")
-}
-
-func mySQLStatementTokens(statement string) []string {
-	var tokens []string
-	for i := 0; i < len(statement); {
-		switch statement[i] {
-		case '\'', '"', '`':
-			i = skipMySQLQuotedText(statement, i, statement[i])
-		case '#':
-			i = skipMySQLLineComment(statement, i+1)
-		case '-':
-			if i+1 < len(statement) && statement[i+1] == '-' {
-				i = skipMySQLLineComment(statement, i+2)
-			} else {
-				i++
-			}
-		case '/':
-			if i+1 < len(statement) && statement[i+1] == '*' {
-				i = skipMySQLBlockComment(statement, i+2)
-			} else {
-				i++
-			}
-		default:
-			if !isMySQLIdentifierChar(statement[i]) {
-				i++
-				continue
-			}
-			start := i
-			for i < len(statement) && isMySQLIdentifierChar(statement[i]) {
-				i++
-			}
-			tokens = append(tokens, strings.ToUpper(statement[start:i]))
-		}
-	}
-	return tokens
-}
-
-func skipMySQLQuotedText(statement string, start int, quote byte) int {
-	for i := start + 1; i < len(statement); i++ {
-		if statement[i] == '\\' {
-			i++
-			continue
-		}
-		if statement[i] != quote {
-			continue
-		}
-		if i+1 < len(statement) && statement[i+1] == quote {
-			i++
-			continue
-		}
-		return i + 1
-	}
-	return len(statement)
-}
-
-func skipMySQLLineComment(statement string, start int) int {
-	for i := start; i < len(statement); i++ {
-		if statement[i] == '\n' || statement[i] == '\r' {
-			return i + 1
-		}
-	}
-	return len(statement)
-}
-
-func skipMySQLBlockComment(statement string, start int) int {
-	for i := start; i+1 < len(statement); i++ {
-		if statement[i] == '*' && statement[i+1] == '/' {
-			return i + 2
-		}
-	}
-	return len(statement)
-}
-
-func isMySQLIdentifierChar(ch byte) bool {
-	return ch == '_' || ch == '$' || ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z'
 }
 
 // MySQL-family error numbers shared across omni/{mysql,oceanbase,tidb}/catalog.

@@ -45,15 +45,9 @@ func GetQuerySpan(_ context.Context, _ base.GetQuerySpanContext, stmt base.State
 // into a PathAST with ItemSelector nodes.
 func dotPathToPathAST(dotPath string) *base.PathAST {
 	parts := strings.Split(dotPath, ".")
-	if len(parts) == 0 {
-		return nil
+	nodes := make([]base.SelectorNode, len(parts))
+	for i, part := range parts {
+		nodes[i] = base.NewItemSelector(part)
 	}
-	root := base.NewItemSelector(parts[0])
-	current := base.SelectorNode(root)
-	for _, part := range parts[1:] {
-		next := base.NewItemSelector(part)
-		current.SetNext(next)
-		current = next
-	}
-	return base.NewPathAST(root)
+	return base.BuildPathAST(nodes)
 }

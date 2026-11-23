@@ -1,39 +1,10 @@
-// Package redis is Bytebase's Redis driver: an adapter over
-// github.com/bytebase/omni/redis/driver that maps Bytebase's connection config
-// onto the driver contract and the contract's results back into the product's
-// protos.
+// Package redis is Bytebase's Redis driver, adapting
+// github.com/bytebase/omni/redis/driver to Bytebase's db.Driver interface.
 //
-// Every db.Driver method delegates except for the product seams:
-//
-//   - Open maps the data source onto driver.Config and driver.Options: the
-//     topology, the database index, the master and sentinel logins, a TLS
-//     callback and an SSH Dial. It does not reach the server; Ping does.
-//   - Ping, Close, SyncInstance, SyncDBSchema, Dump, Execute and QueryConn
-//     delegate. GetDB returns nil because Redis has no database/sql handle.
-//   - QueryConn answers QueryOption_ALL_NODES through the contract's
-//     AllNodesQuerier probe on the session, and refuses Explain, which Redis
-//     cannot answer.
-//   - Execute reports each command to the task run's log.
-//
-// Redis has no schema, DDL or SQL: SyncInstance reads INFO server, CONFIG GET
-// databases and INFO keyspace, SyncDBSchema answers the database number, and
-// Dump writes nothing, as before.
-//
-// Behaviour that moves with the driver, all measured in its cutover proof:
-// commands run one per request instead of as one pipeline, so a script pays a
-// round trip per command; the caller's context deadline interrupts a command;
-// a refused command ends the script and carries its error on its own Result
-// (earlier results stand, later commands are not sent) instead of failing the
-// whole call; a per-result latency is the command's own; the result-size cap is
-// byte-accurate rather than proto.Size at power-of-two row counts; an array
-// element that holds no value is a NULL cell rather than the text "<nil>"; a
-// Redis Cluster refuses a non-zero database and a negative index is refused
-// instead of silently running on database 0; a missing port defaults to 6379;
-// `#` is an argument's text rather than the comment the old shell lexer made it;
-// and MaximumSQLResultSize 0 means no cap rather than a zero-byte cap. A missing
-// key is still a NULL row, TLS material is still built once at Open and verified
-// against the data source host, and a refused Explain still answers "Redis does
-// not support EXPLAIN".
+// Constraints:
+//   - Open validates TLS material, database index, and topology lazily without dialing; Ping checks connectivity.
+//   - SSH tunnels wrap connections in util.NoDeadlineConn because ssh channels reject SetDeadline.
+//   - QueryConn refuses Explain and dispatches ALL_NODES through omni/driver.AllNodesQuerier.
 package redis
 
 import (
@@ -68,29 +39,15 @@ func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open maps the connection config onto the driver contract. It does not reach
-// the server: Ping does.
+// Open maps the connection config onto the driver contract without dialing the
+// server; Ping verifies connectivity.
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	d := &Driver{}
-	opened := false
-	defer func() {
-		if !opened {
-			_ = d.Close(ctx)
-		}
-	}()
-
 	dataSource := config.DataSource
 
-	// Old Open built the TLS config once, so invalid TLS material still fails
-	// here rather than on the first connection.
 	tlsFunc, err := util.StaticTLSFunc(dataSource)
 	if err != nil {
 		return nil, errors.Wrap(err, "redis: failed to get tls config")
 	}
-
-	// Old Open read the database index before opening the tunnel, so a name that
-	// is not a number still fails without an SSH connection. The driver parses it
-	// again and refuses a negative index.
 	if name := config.ConnectionContext.DatabaseName; name != "" {
 		if _, err := strconv.Atoi(name); err != nil {
 			return nil, errors.Wrapf(err, "failed to convert database %s to int", name)
@@ -108,6 +65,7 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 	options := omniredis.Options{}
 	switch dataSource.GetRedisType() {
 	case storepb.DataSource_REDIS_TYPE_UNSPECIFIED, storepb.DataSource_STANDALONE:
+		cfg.Host = joinAddress(dataSource.Host, dataSource.Port)
 	case storepb.DataSource_SENTINEL:
 		options = omniredis.Options{
 			Type:             omniredis.Sentinel,
@@ -124,35 +82,21 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 	default:
 		return nil, errors.Errorf("unsupported redis type %s", dataSource.GetRedisType().String())
 	}
-	if options.Type == "" {
-		cfg.Host = joinAddress(dataSource.Host, dataSource.Port)
-	}
-	if dataSource.GetSshHost() != "" {
-		sshClient, err := util.GetSSHClient(dataSource)
-		if err != nil {
+
+	d := &Driver{}
+	if err := d.OpenWith(ctx, util.AdapterOptions{}, func(adapter *util.OmniAdapter) (omnidriver.Driver, error) {
+		if err := util.SetupSSHDialWithWrap(dataSource, &cfg, adapter, false, func(conn net.Conn, _ string) net.Conn {
+			return &util.NoDeadlineConn{Conn: conn}
+		}); err != nil {
 			return nil, err
 		}
-		d.AddCloser(sshClient)
-		cfg.Dial = func(_ context.Context, network, address string) (net.Conn, error) {
-			conn, err := sshClient.Dial(network, address)
-			if err != nil {
-				return nil, err
-			}
-			return &util.NoDeadlineConn{Conn: conn}, nil
-		}
-	}
-
-	inner, err := omniredis.Open(ctx, cfg, options)
-	if err != nil {
+		return omniredis.Open(ctx, cfg, options)
+	}); err != nil {
 		return nil, err
 	}
-	d.Driver = inner
-	opened = true
 	return d, nil
 }
 
-// addressList is the primary address followed by the additional ones, each in
-// the host:port form the old driver handed its clients.
 func addressList(dataSource *storepb.DataSource) string {
 	addrs := make([]string, 0, 1+len(dataSource.GetAdditionalAddresses()))
 	addrs = append(addrs, joinAddress(dataSource.Host, dataSource.Port))
@@ -175,56 +119,52 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	})
 }
 
-// QueryConn runs a script, one result per command. ALL_NODES asks the session
-// for the contract's all-nodes probe; every other option runs on one session.
+var redisQueryResultOptions = util.QueryResultOptions{
+	SkipPlan:      true,
+	SkipMessages:  true,
+	TruncatedWins: true,
+	ConvertValue:  toRowValue,
+}
+
+// QueryConn runs a script on an ephemeral session, dispatching ALL_NODES
+// through omni/driver.AllNodesQuerier and refusing EXPLAIN.
 func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if queryContext.Explain {
 		return nil, errors.New("Redis does not support EXPLAIN")
 	}
-	switch queryContext.Option.GetRedisRunCommandsOn() {
+	runOn := queryContext.Option.GetRedisRunCommandsOn()
+	switch runOn {
 	case v1pb.QueryOption_REDIS_RUN_COMMANDS_ON_UNSPECIFIED, v1pb.QueryOption_SINGLE_NODE, v1pb.QueryOption_ALL_NODES:
 	default:
-		return nil, errors.Errorf("unknown RedisRunCommandOn enum %v", queryContext.Option.GetRedisRunCommandsOn())
+		return nil, errors.Errorf("unknown RedisRunCommandOn enum %v", runOn)
 	}
 
+	queryOpts := omnidriver.QueryOptions{MaxResultBytes: queryContext.MaximumSQLResultSize}
+	if runOn != v1pb.QueryOption_ALL_NODES {
+		return d.QueryEphemeralConn(ctx, statement, queryOpts, redisQueryResultOptions)
+	}
 	var innerResults []*omnidriver.Result
 	err := d.QueryEphemeral(ctx, func(session omnidriver.Session) error {
-		options := omnidriver.QueryOptions{MaxResultBytes: queryContext.MaximumSQLResultSize}
-		if queryContext.Option.GetRedisRunCommandsOn() == v1pb.QueryOption_ALL_NODES {
-			probe, ok := session.(omnidriver.AllNodesQuerier)
-			if !ok {
-				return errors.Errorf("expect *redis.ClusterClient, but get %T", d.Driver)
-			}
-			var queryErr error
-			innerResults, queryErr = probe.QueryAllNodes(ctx, statement, options)
-			return queryErr
+		probe, ok := session.(omnidriver.AllNodesQuerier)
+		if !ok {
+			return errors.Errorf("expect *redis.ClusterClient, but get %T", d.Driver)
 		}
 		var queryErr error
-		innerResults, queryErr = session.Query(ctx, statement, options)
+		innerResults, queryErr = probe.QueryAllNodes(ctx, statement, queryOpts)
 		return queryErr
 	})
 	if err != nil {
 		return nil, err
 	}
-	return util.OmniResultsToQueryResultsWith(innerResults, queryContext.MaximumSQLResultSize, util.QueryResultOptions{
-		SkipPlan:      true,
-		SkipMessages:  true,
-		TruncatedWins: true,
-		ConvertValue:  toRowValue,
-	}), nil
+	return util.OmniResultsToQueryResultsWith(innerResults, queryContext.MaximumSQLResultSize, redisQueryResultOptions), nil
 }
 
-// toRowValue maps one contract value onto the product's row value. Redis
-// reports a command's answer as text (a number included) and a missing key or
-// array element as NULL.
 func toRowValue(value omnidriver.Value) *v1pb.RowValue {
 	switch value.Kind {
 	case omnidriver.Null:
 		return util.NullRowValue
-	case omnidriver.Int32:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(value.Int64)}}
-	case omnidriver.String:
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String}}
+	case omnidriver.Int32, omnidriver.String:
+		return util.OmniRowValue(value)
 	default:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: fmt.Sprintf("%v", value)}}
 	}

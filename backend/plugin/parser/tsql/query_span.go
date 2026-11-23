@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	omnianalysis "github.com/bytebase/omni/analysis"
 	"github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mssql/analysis"
 
@@ -24,59 +25,32 @@ func GetQuerySpan(
 	database, schema string,
 	ignoreCaseSensitive bool,
 ) (*base.QuerySpan, error) {
-	return resolveQuerySpan(ctx, gCtx, stmt.Text, database, schema, ignoreCaseSensitive)
-}
-
-func resolveQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement, database, schema string, ignoreCaseSensitive bool) (*base.QuerySpan, error) {
 	tempTables := newTempTables(gCtx.TempTables)
-	span, err := analysis.ResolveQuerySpan(statement, analysis.ResolveOptions{
+	span, err := analysis.ResolveQuerySpan(stmt.Text, analysis.ResolveOptions{
 		DefaultDatabase:     database,
 		DefaultSchema:       schema,
 		IgnoreCaseSensitive: ignoreCaseSensitive,
-		Catalog:             newCatalog(ctx, gCtx),
-		TempTables:          tempTables.omni,
-		PlanOutput:          gCtx.PlanOutput,
+		Catalog: analysis.Catalog{
+			ListDatabaseNames: base.QuerySpanListDatabasesFunc(ctx, gCtx, false),
+			GetDatabase: base.QuerySpanDatabaseGetter(ctx, gCtx, true, func(db *model.DatabaseMetadata) analysis.Database {
+				return catalogDatabase{database: db}
+			}),
+		},
+		TempTables: tempTables.omni,
+		PlanOutput: gCtx.PlanOutput,
 	})
 	tempTables.store(gCtx.TempTables)
 	if err != nil {
 		return nil, convertQuerySpanError(err)
 	}
-	querySpan := &base.QuerySpan{
-		Type:             base.OmniQueryType(span.Type),
+	return base.OmniResolvedSpan(&omnianalysis.ResolvedSpan{
+		Type:             span.Type,
 		ExplainAnalyze:   span.ExplainAnalyze,
-		SourceColumns:    base.OmniColumnSet(span.SourceColumns),
-		Results:          base.OmniQuerySpanResults(span.Results),
-		PredicateColumns: base.OmniColumnSet(span.PredicateColumns),
-	}
-	if span.NotFoundError != nil {
-		querySpan.NotFoundError = base.OmniResourceNotFoundError(span.NotFoundError)
-	}
-	return querySpan, nil
-}
-
-// newCatalog reads the instance's synced metadata for omni. A lookup error
-// carrying a ResourceNotFoundError becomes omni's NotFoundError, which omni
-// reports on the span rather than as an error.
-func newCatalog(ctx context.Context, gCtx base.GetQuerySpanContext) analysis.Catalog {
-	var catalog analysis.Catalog
-	if gCtx.ListDatabaseNamesFunc != nil {
-		catalog.ListDatabaseNames = func() ([]string, error) {
-			return gCtx.ListDatabaseNamesFunc(ctx, gCtx.InstanceID)
-		}
-	}
-	if gCtx.GetDatabaseMetadataFunc != nil {
-		catalog.GetDatabase = func(name string) (analysis.Database, error) {
-			_, database, err := gCtx.GetDatabaseMetadataFunc(ctx, gCtx.InstanceID, name)
-			if err != nil {
-				return nil, base.ToOmniNotFoundError(err)
-			}
-			if database == nil {
-				return nil, nil
-			}
-			return catalogDatabase{database: database}, nil
-		}
-	}
-	return catalog
+		SourceColumns:    span.SourceColumns,
+		Results:          span.Results,
+		PredicateColumns: span.PredicateColumns,
+		NotFoundError:    span.NotFoundError,
+	}), nil
 }
 
 type catalogDatabase struct {

@@ -76,6 +76,21 @@ func StaticTLSFunc(ds *storepb.DataSource) (func(string) (*tls.Config, error), e
 	}, nil
 }
 
+// StaticHostTLSFunc resolves TLS material eagerly via GetTLSConfig and returns
+// a driver.Config.TLS callback that clones the config with ServerName set to
+// the dialed host, or nil when SSL is disabled.
+func StaticHostTLSFunc(ds *storepb.DataSource) (func(string) (*tls.Config, error), error) {
+	tlsConfig, err := GetTLSConfig(ds)
+	if err != nil || tlsConfig == nil {
+		return nil, err
+	}
+	return func(host string) (*tls.Config, error) {
+		byHost := tlsConfig.Clone()
+		byHost.ServerName = host
+		return byHost, nil
+	}, nil
+}
+
 // LazyTLSFunc returns a driver.Config.TLS callback that builds TLS material
 // via GetTLSConfig on dial when SSL is enabled, or nil when SSL is disabled.
 func LazyTLSFunc(ds *storepb.DataSource) func(string) (*tls.Config, error) {
@@ -164,6 +179,32 @@ func SetupSSHDial(ds *storepb.DataSource, cfg *omnidriver.Config, adapter *OmniA
 	} else {
 		cfg.Dial = func(_ context.Context, network, address string) (net.Conn, error) {
 			return sshClient.Dial(network, address)
+		}
+	}
+	return nil
+}
+
+// SetupSSHDialWithWrap opens an SSH tunnel like SetupSSHDial and wraps each
+// dialed connection with wrap when non-nil (for clients requiring custom
+// RemoteAddr or no-op deadlines).
+func SetupSSHDialWithWrap(
+	ds *storepb.DataSource,
+	cfg *omnidriver.Config,
+	adapter *OmniAdapter,
+	deadlineAware bool,
+	wrap func(conn net.Conn, address string) net.Conn,
+) error {
+	if err := SetupSSHDial(ds, cfg, adapter, deadlineAware); err != nil {
+		return err
+	}
+	if cfg.Dial != nil && wrap != nil {
+		baseDial := cfg.Dial
+		cfg.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
+			conn, err := baseDial(ctx, network, address)
+			if err != nil {
+				return nil, err
+			}
+			return wrap(conn, address), nil
 		}
 	}
 	return nil

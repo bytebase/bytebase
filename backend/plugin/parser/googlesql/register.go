@@ -3,6 +3,8 @@ package googlesql
 import (
 	"context"
 
+	"github.com/bytebase/omni/googlesql/analysis"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -16,9 +18,9 @@ type Handlers struct {
 	GetQuerySpan base.GetQuerySpanFunc
 }
 
-// Register registers the splitter, diagnose, query-span, statement-parser, and
-// statement-type handlers for one GoogleSQL engine with the given dialect
-// configuration.
+// Register registers the splitter, query-validator, diagnose, query-span,
+// statement-parser, and statement-type handlers for one GoogleSQL engine with
+// the given dialect configuration.
 func Register(engine storepb.Engine, cfg Config) Handlers {
 	h := Handlers{
 		SplitSQL: func(statement string) ([]base.Statement, error) {
@@ -29,6 +31,9 @@ func Register(engine storepb.Engine, cfg Config) Handlers {
 		},
 	}
 	base.RegisterSplitterFunc(engine, h.SplitSQL)
+	base.RegisterQueryValidator(engine, func(statement string) (bool, bool, error) {
+		return analysis.ValidateQuery(statement, cfg.Dialect)
+	})
 	base.RegisterDiagnoseFunc(engine, func(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
 		return Diagnose(statement), nil
 	})

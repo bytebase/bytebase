@@ -1,38 +1,11 @@
-// Package mssql is Bytebase's SQL Server driver: an adapter over
-// github.com/bytebase/omni/mssql/driver that maps Bytebase's connection config
-// onto the driver contract, and the contract's results back into the product's.
-// The conversation with SQL Server — session setup, metadata sync, the catalog's
-// dump, interactive queries and change scripts — is the driver's.
+// Package mssql is Bytebase's SQL Server driver, adapting
+// github.com/bytebase/omni/mssql/driver to Bytebase's db.Driver interface.
 //
-// The adapter keeps what is product: the data source to contract conversion (the
-// go-mssqldb parameters, CA file and parameter precedence), the Azure login as a
-// Config.TokenProvider, QueryContext/ExecuteOptions mapping, the v1pb conversion
-// and the task-run logger.
-//
-// Constraints of the engine and the contract, here rather than at each call:
-//   - GetDB returns nil: omni's driver owns its pool, and every production
-//     caller guards a nil handle. QueryConn holds one session for the driver's
-//     life, serialized, so a stream's requests see the session state the pooled
-//     connection carried before.
-//   - Config.TLS is not set: the data source's TLS settings stay go-mssqldb
-//     parameters, so verification, the CA and the TLS minimum are the client's
-//     parse of them; tlsmin is 1.0 unless a parameter sets it. The CA travels as
-//     the `certificate` parameter, which the client reads only from a path, so
-//     the adapter writes it to a temporary file and removes it on Close.
-//   - Config.Dial is not set: an SSH data source is dialled directly, as it was
-//     before this adapter. Adding the tunnel is a separate change.
-//   - Config.ReadOnly is ignored: SQL Server has no read-only session setting.
-//   - QueryContext.Schema is ignored: unqualified names resolve in the session's
-//     default schema.
-//   - QueryContext.Limit rewrites a statement that returns rows; for rows a
-//     rewrite cannot reach (a procedure call, an OUTPUT clause) it is applied as
-//     they are read.
-//   - Execute parses `-- txn-mode` and ignores `-- txn-isolation`, so a
-//     transaction keeps the server's default isolation, as before.
-//   - A masked procedure call or OUTPUT clause keeps its rows and reports the
-//     result's error.
-//   - A count-only statement's result carries one "Affected Rows" row, and
-//     RowsCount counts it.
+// Constraints:
+//   - TLS settings travel as go-mssqldb parameters; CA material is written to a
+//     temp file for go-mssqldb's `certificate` parameter and removed on Close.
+//   - Execute parses `-- txn-mode` and ignores `-- txn-isolation`.
+//   - QueryConn holds one serialized session for the driver's lifetime.
 package mssql
 
 import (
@@ -74,35 +47,24 @@ func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open maps the connection config onto the driver contract. It does not reach
-// the server, as the driver this replaced did not: the pool connects on first
-// use, and Ping or the first statement reports an unreachable server.
+// Open maps the connection config onto the driver contract without dialing the
+// server; Ping or the first statement connects.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	opened := false
-	defer func() {
-		if !opened {
-			_ = d.Close(ctx)
+	if err := d.OpenWith(ctx, util.AdapterOptions{}, func(adapter *util.OmniAdapter) (odriver.Driver, error) {
+		cfg, caFile, err := mssqlConfig(config)
+		if err != nil {
+			return nil, err
 		}
-	}()
-
-	d.OmniAdapter = util.OmniAdapter{}
-
-	cfg, caFile, err := mssqlConfig(config)
-	if err != nil {
+		if caFile != "" {
+			adapter.AddCloseFunc(func() error {
+				removeCAFile(caFile)
+				return nil
+			})
+		}
+		return mssqldriver.Open(ctx, cfg)
+	}); err != nil {
 		return nil, err
 	}
-	if caFile != "" {
-		d.AddCloseFunc(func() error {
-			removeCAFile(caFile)
-			return nil
-		})
-	}
-	impl, err := mssqldriver.Open(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	d.Driver = impl
-	opened = true
 	return d, nil
 }
 

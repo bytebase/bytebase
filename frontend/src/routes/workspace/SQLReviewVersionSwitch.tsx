@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { ArrowLeftRight } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { STANDARD_RULE_TYPES } from "@/components/sql-review/standardRules";
@@ -9,9 +10,9 @@ import {
   AlertDialogFooter,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FormSection } from "@/components/ui/form";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useWorkspaceResourceName } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
 import {
@@ -26,10 +27,28 @@ import {
   setDevSqlReviewVersion,
 } from "@/utils/featureGates";
 
-const VERSION_OPTIONS = [
-  { value: "v1" as const, label: "V1" },
-  { value: "v2" as const, label: "V2" },
-];
+export function SQLReviewVersionBadge() {
+  const { t } = useTranslation();
+  const current = devSqlReviewVersion();
+
+  return (
+    <Tooltip
+      content={t("sql-review.version-switch.description")}
+      render={
+        <span
+          tabIndex={0}
+          className="inline-flex shrink-0 rounded-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+        />
+      }
+    >
+      <Badge className="whitespace-nowrap">
+        {current === "v1"
+          ? t("sql-review.version-switch.v1")
+          : t("sql-review.version-switch.v2")}
+      </Badge>
+    </Tooltip>
+  );
+}
 
 // Dev builds only. The server runs V1's SQL review for a project whose
 // standard rules are all off, so switching writes the workspace standard rules
@@ -39,6 +58,7 @@ export function SQLReviewVersionSwitch() {
   const { t } = useTranslation();
   const workspace = useWorkspaceResourceName();
   const current = devSqlReviewVersion();
+  const next: SqlReviewVersion = current === "v1" ? "v2" : "v1";
   const [target, setTarget] = useState<SqlReviewVersion>();
   const [switching, setSwitching] = useState(false);
 
@@ -69,21 +89,18 @@ export function SQLReviewVersionSwitch() {
   };
 
   return (
-    <FormSection
-      layout="single-column"
-      padding="none"
-      title={t("sql-review.version-switch.self")}
-      description={t("sql-review.version-switch.description")}
-    >
-      <SegmentedControl
-        value={current}
-        options={VERSION_OPTIONS}
-        onValueChange={(version) => {
-          if (version !== current) setTarget(version);
-        }}
-        ariaLabel={t("sql-review.version-switch.self")}
+    <>
+      <Button
+        appearance="outline"
+        className="h-auto whitespace-normal py-2 sm:ml-auto"
+        onClick={() => setTarget(next)}
         disabled={!hasWorkspacePermissionV2("bb.policies.update") || switching}
-      />
+      >
+        <ArrowLeftRight size={16} className="shrink-0" aria-hidden="true" />
+        {next === "v1"
+          ? t("sql-review.version-switch.to-v1.confirm")
+          : t("sql-review.version-switch.to-v2.confirm")}
+      </Button>
       <AlertDialog
         open={target !== undefined}
         onOpenChange={(open) => {
@@ -122,6 +139,6 @@ export function SQLReviewVersionSwitch() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </FormSection>
+    </>
   );
 }

@@ -1,56 +1,11 @@
-// Package oracle is Bytebase's Oracle driver: an adapter over
-// github.com/bytebase/omni/oracle/driver that maps Bytebase's connection config
-// onto the driver contract and the contract's results back into the product's.
-// The conversation with Oracle — session setup, sync, the metadata-rendered
-// dump, queries, change scripts, plan estimates and the database-link probe — is
-// the driver's.
+// Package oracle is Bytebase's Oracle driver, adapting
+// github.com/bytebase/omni/oracle/driver to Bytebase's db.Driver interface.
 //
-// The adapter keeps what is product: the data source to contract conversion
-// (TLS material, the SSH tunnel, SID and service name, extra connection
-// parameters), the QueryContext/ExecuteOptions mapping, the transaction-mode
-// directive, GetDB-shaped callers, the v1pb conversion and the task-run logger.
-//
-// Adapter invariants and engine behaviors:
-//   - The private-link guard takes no connection: OwnsPrivateDatabaseLink asks
-//     the driver, which opens its own session.
-//   - A SELECT that declares PL/SQL returns its rows. The old driver asked
-//     ValidateSQLForEditor and ran anything it did not call a query through Exec,
-//     dropping the rows; the contract decides by the statement's shape.
-//   - QueryContext.Schema switches the session, so the editor's schema choice
-//     reaches Oracle; the old driver ignored it. The driver switches back when
-//     the session closes.
-//   - The result-size cut is byte-accurate, where the old driver checked
-//     proto.Size at power-of-two row counts. The message is the same.
-//   - EXPLAIN PLAN statement IDs are a per-driver counter, not a timestamp with
-//     a random suffix. The plan's statements only differ in that ID.
-//   - A dump is the old text except for two additions: the sequence's full
-//     definition (the old sync read only its name) and COMMENT statements (the
-//     old renderer wrote none). A synced key column renders quoted once, as
-//     before; the doubled "PRIMARY KEY (""ID"")" omni#1388 records is
-//     backend/plugin/schema/oracle quoting a column that already arrives quoted,
-//     on the migration path rather than in a dump.
-//   - A schema the server no longer has answers driver.ErrNotFound, so the sync
-//     records a failure instead of overwriting the schema with nothing.
-//   - An SSH data source dials through Config.Dial; the old driver dialled the
-//     direct host and ignored the jump host.
-//   - TIMESTAMP WITH LOCAL TIME ZONE is rendered in the session's zone, which is
-//     what SQL*Plus prints, where the old driver relabelled whichever zone
-//     go-ora reported as UTC. The two agree while the session zone is the
-//     database's, so the corpus renders the same value on both sides.
-//   - Open defaults an empty port to 1521 and refuses an empty host or user up
-//     front, where the old driver failed inside URL parsing or at first use.
-//
-// The transaction-mode directive stays here and its isolation level is not
-// applied, as before: Oracle's BEGIN opens a PL/SQL block, so the isolation
-// directive was never read.
-//
-// A SQL*Plus command is not SQL and Oracle does not execute one over a session,
-// and the driver sends every segment it splits: the adapter blanks the command
-// out of the script first, which keeps the script running as it did. Blanks
-// rather than deletion keep every other statement's byte offsets, so the
-// statement after a command starts with the blanked command as leading
-// whitespace — the one difference this leaves in a result's or a log's statement
-// text.
+// Constraints:
+//   - Execute parses `-- txn-mode` without applying isolation (BEGIN opens a PL/SQL block).
+//   - SQL*Plus commands are blanked in place before execution/querying to preserve
+//     byte offsets for task run log ranges.
+//   - TLS leaves hostname verification to crypto/tls so go-ora binds ServerName per dial.
 package oracle
 
 import (
@@ -87,49 +42,32 @@ func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open maps the connection config onto the driver contract. It reaches the
-// server when the config names a schema, because the contract's Open does: a
-// schema the account cannot switch to fails here rather than at the first
-// statement, as it did before.
+// Open maps the connection config onto the driver contract and validates the
+// target schema when DatabaseName is set.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	opened := false
-	defer func() {
-		if !opened {
-			_ = d.Close(ctx)
+	if err := d.OpenWith(ctx, util.AdapterOptions{}, func(adapter *util.OmniAdapter) (omnidriver.Driver, error) {
+		dataSource := config.DataSource
+		cfg := omnidriver.Config{
+			Host:          dataSource.GetHost(),
+			Port:          dataSource.GetPort(),
+			Database:      config.ConnectionContext.DatabaseName,
+			User:          dataSource.GetUsername(),
+			Password:      config.Password,
+			Params:        connectionParams(dataSource),
+			EngineVersion: config.ConnectionContext.EngineVersion,
 		}
-	}()
-
-	d.OmniAdapter = util.OmniAdapter{}
-
-	dataSource := config.DataSource
-	cfg := omnidriver.Config{
-		Host:          dataSource.GetHost(),
-		Port:          dataSource.GetPort(),
-		Database:      config.ConnectionContext.DatabaseName,
-		User:          dataSource.GetUsername(),
-		Password:      config.Password,
-		Params:        connectionParams(dataSource),
-		EngineVersion: config.ConnectionContext.EngineVersion,
-	}
-	// The TLS callback keeps certificate verification bound to the host go-ora
-	// dials, which is why it clears util.GetTLSConfig's own verifier: go-ora sets
-	// ServerName per server, and a SERVER address or a listener redirect is
-	// checked against its own name.
-	if dataSource.GetUseSsl() {
-		cfg.TLS = func(string) (*tls.Config, error) {
-			return getTLSConfig(dataSource)
+		if dataSource.GetUseSsl() {
+			cfg.TLS = func(string) (*tls.Config, error) {
+				return getTLSConfig(dataSource)
+			}
 		}
-	}
-	if err := util.SetupSSHDial(dataSource, &cfg, &d.OmniAdapter, true); err != nil {
+		if err := util.SetupSSHDial(dataSource, &cfg, adapter, true); err != nil {
+			return nil, err
+		}
+		return oracledriver.Open(ctx, cfg)
+	}); err != nil {
 		return nil, err
 	}
-
-	impl, err := oracledriver.Open(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	d.Driver = impl
-	opened = true
 	return d, nil
 }
 

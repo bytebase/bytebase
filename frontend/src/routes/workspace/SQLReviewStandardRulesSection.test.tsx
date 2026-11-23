@@ -1,8 +1,10 @@
 import { create } from "@bufbuild/protobuf";
-import { act, fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { type ReactNode, useState } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { STANDARD_RULE_TYPES } from "@/components/sql-review/standardRules";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   type Policy,
   PolicyResourceType,
@@ -98,12 +100,22 @@ const reviewRulePolicy = (
     },
   });
 
-function Harness() {
+function Harness({
+  titleSuffix,
+  action,
+}: {
+  titleSuffix?: ReactNode;
+  action?: ReactNode;
+} = {}) {
   const standardRules = useWorkspaceStandardRules(true);
   const [saved, setSaved] = useState<boolean>();
   return (
     <>
-      <SQLReviewStandardRulesSection standardRules={standardRules} />
+      <SQLReviewStandardRulesSection
+        standardRules={standardRules}
+        titleSuffix={titleSuffix}
+        action={action}
+      />
       <output data-testid="dirty">{String(standardRules.isDirty)}</output>
       <output data-testid="saved">{String(saved)}</output>
       <button
@@ -146,6 +158,27 @@ describe("SQLReviewStandardRulesSection", () => {
       .closest('[data-slot="form-section"]');
     expect(getComputedStyle(section!).paddingTop).toBe("0");
     expect(getComputedStyle(section!).paddingBottom).toBe("0");
+  });
+
+  test("keeps the version badge in the heading and its action beside it", async () => {
+    render(
+      <Harness
+        titleSuffix={<Badge>V2</Badge>}
+        action={<Button>Switch</Button>}
+      />
+    );
+    await findSwitches();
+
+    const heading = screen.getByRole("heading", {
+      name: "sql-review.standard-rules.self V2",
+    });
+    expect(within(heading).getByText("V2")).toBeInTheDocument();
+
+    const action = screen.getByRole("button", { name: "Switch" });
+    expect(heading).not.toContainElement(action);
+    expect(
+      heading.closest('[data-slot="form-section-heading-row"]')
+    ).toContainElement(action);
   });
 
   test("saves the edited rules as the enforced workspace policy", async () => {

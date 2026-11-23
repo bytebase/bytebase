@@ -14,7 +14,10 @@ const mocks = vi.hoisted(() => ({
   sqlReviewV2: { value: true },
   fetchReviewPolicyList: vi.fn(),
   standardRules: {
-    rules: [],
+    rules: undefined,
+    readFailed: false,
+    reload: vi.fn(),
+    canEdit: true,
     setRules: vi.fn(),
     isDirty: false,
     saving: false,
@@ -55,15 +58,21 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/utils/featureGates", () => ({
   sqlReviewV2Enabled: () => mocks.sqlReviewV2.value,
+  devSqlReviewVersion: () => (mocks.sqlReviewV2.value ? "v2" : "v1"),
+  setDevSqlReviewVersion: vi.fn(),
 }));
 
-vi.mock("./SQLReviewStandardRulesSection", () => ({
-  SQLReviewStandardRulesSection: () => <div>standard-rules-section</div>,
+vi.mock("./SQLReviewStandardRulesSection", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./SQLReviewStandardRulesSection")>()),
   useWorkspaceStandardRules: () => mocks.standardRules,
 }));
 
-vi.mock("./SQLReviewVersionSwitch", () => ({
-  SQLReviewVersionSwitch: () => <div>version-switch</div>,
+vi.mock("@/hooks/useAppState", () => ({
+  useWorkspaceResourceName: () => "workspaces/ws",
+}));
+
+vi.mock("@/stores/app", () => ({
+  useAppStore: { getState: () => ({ upsertPolicy: vi.fn() }) },
 }));
 
 vi.mock("./SQLReviewAIReviewSection", () => ({
@@ -202,7 +211,11 @@ describe("SQLReviewPage", () => {
     mocks.sqlReviewV2.value = true;
     render(<SQLReviewPage />);
 
-    expect(screen.getByText("standard-rules-section")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: /^sql-review\.standard-rules\.self/,
+      })
+    ).toBeInTheDocument();
     expect(screen.getByText("ai-review-section")).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "common.update" })
@@ -221,11 +234,17 @@ describe("SQLReviewPage", () => {
     const { container } = render(<SQLReviewPage />);
 
     expect(
-      screen.getByText("standard-rules-section").parentElement
+      screen.getByRole("heading", {
+        name: /^sql-review\.standard-rules\.self/,
+      }).parentElement
     ).not.toHaveClass("mx-auto", "max-w-3xl");
     expect(
       container.querySelector('[data-slot="workspace-page-layout"]')
-    ).toContainElement(screen.getByText("standard-rules-section"));
+    ).toContainElement(
+      screen.getByRole("heading", {
+        name: /^sql-review\.standard-rules\.self/,
+      })
+    );
   });
 
   test("keeps the v1 review policies without SQL Review V2, with the AI review beside them", () => {
@@ -233,7 +252,9 @@ describe("SQLReviewPage", () => {
     render(<SQLReviewPage />);
 
     expect(
-      screen.queryByText("standard-rules-section")
+      screen.queryByRole("heading", {
+        name: /^sql-review\.standard-rules\.self/,
+      })
     ).not.toBeInTheDocument();
     expect(screen.getByText("sql-review.policies")).toBeInTheDocument();
     expect(screen.getByText("sql-review.description")).toBeInTheDocument();
@@ -243,6 +264,30 @@ describe("SQLReviewPage", () => {
       "data-standard-rules",
       "false"
     );
+  });
+
+  test("uses the workspace page width for the V1 policies, AI review, and footer", () => {
+    mocks.sqlReviewV2.value = false;
+    mocks.aiReview.isDirty = true;
+    const { container } = render(<SQLReviewPage />);
+    const page = container.querySelector(
+      '[data-slot="workspace-page-layout"]'
+    );
+    const policies = screen
+      .getByRole("heading", { name: /^sql-review\.policies/ })
+      .closest('[data-slot="form-section"]');
+    const content = policies?.parentElement ?? null;
+    const footer = container.querySelector(
+      '[data-slot="sticky-action-footer-content"]'
+    );
+
+    expect(page).toContainElement(content);
+    expect(content).toContainElement(screen.getByText("ai-review-section"));
+    expect(content).toHaveClass("w-full");
+    expect(content).not.toHaveClass("mx-auto");
+    expect(content).not.toHaveClass("max-w-6xl");
+    expect(footer).not.toHaveClass("mx-auto");
+    expect(footer).not.toHaveClass("max-w-6xl");
   });
 
   test("the footer saves the AI review beside the v1 review policies", async () => {
@@ -259,19 +304,47 @@ describe("SQLReviewPage", () => {
   test.each([
     true,
     false,
-  ])("offers the SQL Review version switch on a dev build (V2: %s)", (v2) => {
+  ])("keeps dev-only version controls in the section heading (V2: %s)", (v2) => {
     mocks.sqlReviewV2.value = v2;
     render(<SQLReviewPage />);
 
-    expect(screen.getByText("version-switch")).toBeInTheDocument();
+    const heading = screen.getByRole("heading", {
+      name: v2 ? /^sql-review\.standard-rules\.self/ : /^sql-review\.policies/,
+    });
+    expect(heading).toHaveAccessibleName(
+      v2
+        ? "sql-review.standard-rules.self sql-review.version-switch.v2"
+        : "sql-review.policies sql-review.version-switch.v1"
+    );
+    const action = screen.getByRole("button", {
+      name: v2
+        ? "sql-review.version-switch.to-v1.confirm"
+        : "sql-review.version-switch.to-v2.confirm",
+    });
+    expect(
+      within(heading).getByText(
+        v2 ? "sql-review.version-switch.v2" : "sql-review.version-switch.v1"
+      )
+    ).toBeInTheDocument();
+    expect(heading).not.toContainElement(action);
+    expect(
+      heading.closest('[data-slot="form-section-heading-row"]')
+    ).toContainElement(action);
+    expect(
+      screen.queryByRole("region", {
+        name: "sql-review.version-switch.self",
+      })
+    ).not.toBeInTheDocument();
   });
 
-  test("leaves the SQL Review version switch out of a release build", () => {
+  test.each([true, false])("leaves version controls out of a release build (V2: %s)", (v2) => {
     mocks.dev.value = false;
-    mocks.sqlReviewV2.value = false;
+    mocks.sqlReviewV2.value = v2;
     render(<SQLReviewPage />);
 
-    expect(screen.queryByText("version-switch")).not.toBeInTheDocument();
+    expect(screen.queryByText("sql-review.version-switch.v1")).not.toBeInTheDocument();
+    expect(screen.queryByText("sql-review.version-switch.v2")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /sql-review\.version-switch\.to-v[12]\.confirm/ })).not.toBeInTheDocument();
   });
 
   test("the footer saves the AI review policy when only it changed", async () => {

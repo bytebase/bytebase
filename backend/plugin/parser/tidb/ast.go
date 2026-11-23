@@ -1,9 +1,6 @@
 package tidb
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/bytebase/omni/tidb/ast"
 	omniparser "github.com/bytebase/omni/tidb/parser"
 
@@ -38,26 +35,12 @@ func parseTiDBStatements(statement string) ([]base.ParsedStatement, error) {
 }
 
 func convertParseError(err error, stmt base.Statement) error {
-	var parseErr *omniparser.ParseError
-	if !errors.As(err, &parseErr) {
-		return err
-	}
-
-	pos := ByteOffsetToRunePosition(stmt.Text, parseErr.Position)
-	if stmt.Start != nil {
-		pos.Line += stmt.Start.Line - 1
-	}
-
-	msg := fmt.Sprintf("Syntax error at line %d:%d: %s", pos.Line, pos.Column, parseErr.Message)
-	if parseErr.RelatedText != "" {
-		msg += "\nrelated text: " + parseErr.RelatedText
-	}
-
-	return &base.SyntaxError{
-		Position:   pos,
-		Message:    msg,
-		RawMessage: parseErr.Message,
-	}
+	return base.ConvertSyntaxError(stmt, err, false,
+		func(pe *omniparser.ParseError) (int, string) { return pe.Position, pe.Message },
+		func(pe *omniparser.ParseError, pos *storepb.Position) string {
+			return base.FormatLineColSyntaxError(pos, pe.Message, pe.RelatedText)
+		},
+	)
 }
 
 // AST wraps an omni/tidb AST node and implements the base.AST interface.

@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -164,16 +165,19 @@ type OmniAdapter struct {
 	closers   []func() error
 }
 
-// AdapterOptions configures an OmniAdapter's metadata sync behavior during OpenWith.
+// AdapterOptions configures an OmniAdapter's metadata sync and session behavior during OpenWith.
 type AdapterOptions struct {
 	WithInstanceMetadata bool
 	NotFoundResource     string
 	DatabaseName         string
+	// EagerSession opens and retains a query session during OpenWith, closing
+	// the driver if opening the session fails.
+	EagerSession bool
 }
 
 // OpenWith configures the adapter from opts, runs open to acquire any auxiliary
 // resources (such as SSH tunnels or Cloud SQL dialers) and open the underlying
-// omni driver, and cleans up via Close if open returns an error.
+// omni driver, and cleans up via Close if open (or eager session opening) fails.
 func (a *OmniAdapter) OpenWith(
 	ctx context.Context,
 	opts AdapterOptions,
@@ -188,6 +192,15 @@ func (a *OmniAdapter) OpenWith(
 		return err
 	}
 	a.Driver = impl
+	if opts.EagerSession {
+		session, err := a.OpenSession(ctx)
+		if err != nil {
+			_ = a.Close(ctx)
+			a.Driver = nil
+			return err
+		}
+		a.SetSession(session)
+	}
 	return nil
 }
 
@@ -343,6 +356,37 @@ func (a *OmniAdapter) QueryEphemeralSession(
 		return queryErr
 	})
 	return results, err
+}
+
+// QueryHeldConn runs statement on the held session and converts the results
+// into API QueryResults, discarding partial results on error.
+func (a *OmniAdapter) QueryHeldConn(
+	ctx context.Context,
+	statement string,
+	queryOpts omnidriver.QueryOptions,
+	sessionOpts SessionQueryOptions,
+	resultOpts QueryResultOptions,
+) ([]*v1pb.QueryResult, error) {
+	results, err := a.QueryHeldSession(ctx, statement, queryOpts, sessionOpts)
+	if err != nil {
+		return nil, err
+	}
+	return OmniResultsToQueryResultsWith(results, queryOpts.MaxResultBytes, resultOpts), nil
+}
+
+// QueryEphemeralConn runs statement on a fresh session, closes the session,
+// and converts the results into API QueryResults.
+func (a *OmniAdapter) QueryEphemeralConn(
+	ctx context.Context,
+	statement string,
+	queryOpts omnidriver.QueryOptions,
+	resultOpts QueryResultOptions,
+) ([]*v1pb.QueryResult, error) {
+	results, err := a.QueryEphemeralSession(ctx, statement, queryOpts)
+	if err != nil {
+		return nil, err
+	}
+	return OmniResultsToQueryResultsWith(results, queryOpts.MaxResultBytes, resultOpts), nil
 }
 
 // BuildExecuteOptions strips configured transaction directives from statement

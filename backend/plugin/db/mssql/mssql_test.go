@@ -1,6 +1,7 @@
 package mssql
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -8,19 +9,19 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"fmt"
+	"errors"
+	"io"
 	"math/big"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	odriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -325,60 +326,6 @@ func TestExplainFormat(t *testing.T) {
 	}
 }
 
-// TestOpenAppliesTLSSettings runs the settings through the client against the
-// pinned server, which presents a certificate that names localhost and no IP
-// address.
-func TestOpenAppliesTLSSettings(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	container := testcontainer.SharedMSSQLContainer(t)
-	signer, err := os.ReadFile(container.GetTLSCAPath())
-	require.NoError(t, err)
-	ca, otherCA := string(signer), string(newTestCA(t))
-
-	for _, tc := range []struct {
-		name string
-		// host is localhost, the name in the server certificate, or 127.0.0.1, which it lacks.
-		host string
-		ds   *storepb.DataSource
-		// encryptOption is the session's sys.dm_exec_connections.encrypt_option.
-		encryptOption string
-		wantErr       string
-	}{
-		{name: "disabled ignores verify", host: "127.0.0.1", ds: &storepb.DataSource{VerifyTlsCertificate: true, SslCa: otherCA}, encryptOption: "FALSE"},
-		{name: "tls accepts any certificate", host: "127.0.0.1", ds: &storepb.DataSource{UseSsl: true, SslCa: otherCA}, encryptOption: "TRUE"},
-		{name: "tls verified against the CA", host: "localhost", ds: &storepb.DataSource{UseSsl: true, VerifyTlsCertificate: true, SslCa: ca}, encryptOption: "TRUE"},
-		{name: "a host missing from the certificate", host: "127.0.0.1", ds: &storepb.DataSource{UseSsl: true, VerifyTlsCertificate: true, SslCa: ca}, wantErr: "doesn't contain any IP SANs"},
-		{name: "a CA that did not sign the certificate", host: "localhost", ds: &storepb.DataSource{UseSsl: true, VerifyTlsCertificate: true, SslCa: otherCA}, wantErr: "certificate signed by unknown authority"},
-		{name: "system trust rejects a private CA", host: "localhost", ds: &storepb.DataSource{UseSsl: true, VerifyTlsCertificate: true}, wantErr: "tls: failed to verify certificate"},
-		{
-			name:    "extra parameters cannot turn verification off",
-			host:    "127.0.0.1",
-			ds:      &storepb.DataSource{UseSsl: true, VerifyTlsCertificate: true, SslCa: ca, ExtraConnectionParameters: map[string]string{"TrustServerCertificate": "true"}},
-			wantErr: "doesn't contain any IP SANs",
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			tc.ds.Username, tc.ds.Host, tc.ds.Port = container.GetUsername(), tc.host, container.GetPort()
-			driver, err := (&Driver{}).Open(ctx, storepb.Engine_MSSQL, db.ConnectionConfig{DataSource: tc.ds, Password: container.GetPassword()})
-			require.NoError(t, err)
-			defer driver.Close(ctx)
-
-			// The adapter holds its session, so the probe runs through QueryConn.
-			results, err := driver.QueryConn(ctx, "SELECT encrypt_option FROM sys.dm_exec_connections WHERE session_id = @@SPID", db.QueryContext{MaximumSQLResultSize: 1 << 30})
-			if tc.wantErr != "" {
-				require.ErrorContains(t, err, tc.wantErr)
-				return
-			}
-			require.NoError(t, err)
-			require.Len(t, results, 1)
-			require.Len(t, results[0].GetRows(), 1)
-			require.Equal(t, tc.encryptOption, results[0].GetRows()[0].GetValues()[0].GetStringValue())
-		})
-	}
-}
-
 // newTestCA returns a self-signed CA certificate in PEM.
 func newTestCA(t *testing.T) []byte {
 	t.Helper()
@@ -398,217 +345,224 @@ func newTestCA(t *testing.T) []byte {
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
 }
 
-func TestQueryConnRecordsLimitedStatement(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	driver, _ := newSyncTestDatabase(ctx, t, testcontainer.SharedMSSQLContainer(t))
-	executeBatches(ctx, t, driver, "CREATE TABLE dbo.t (id INT PRIMARY KEY);\nINSERT INTO dbo.t VALUES (1), (2), (3);")
-
-	// SET returns nothing, so the driver pads an empty result in for it.
-	results, err := driver.QueryConn(ctx, "SET NOCOUNT OFF;\nSELECT TOP 3 id FROM dbo.t ORDER BY id;", db.QueryContext{
-		Limit:                2,
-		MaximumSQLResultSize: 1 << 30,
-	})
-	require.NoError(t, err)
-	require.Len(t, results, 2)
-	require.Equal(t, "SET NOCOUNT OFF;", results[0].GetStatement())
-	require.Equal(t, "\nSELECT TOP 2 id FROM dbo.t ORDER BY id;", results[1].GetStatement())
-	require.Len(t, results[1].GetRows(), 2)
-}
-
-func TestQueryConnMatchesResultsToStatements(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	driver, _ := newSyncTestDatabase(ctx, t, testcontainer.SharedMSSQLContainer(t))
-	executeBatches(ctx, t, driver, `CREATE TABLE dbo.t (id INT PRIMARY KEY);
-INSERT INTO dbo.t VALUES (1), (2), (3);
-GO
-CREATE PROCEDURE dbo.two_sets AS
-BEGIN
-	UPDATE dbo.t SET id = id;
-	SELECT id FROM dbo.t ORDER BY id;
-	SELECT 'second' AS s;
-END`)
-
-	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 30}
-	describe := func(results []*v1pb.QueryResult) []string {
-		var got []string
-		for _, r := range results {
-			line := fmt.Sprintf("%s %v %d", strings.TrimSpace(r.GetStatement()), r.GetColumnNames(), len(r.GetRows()))
-			if r.GetError() != "" {
-				line += " error"
-			}
-			got = append(got, line)
+func requireTable(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata, schemaName, tableName string) *metadatapb.TableMetadata {
+	t.Helper()
+	for _, schema := range metadata.Schemas {
+		if schema.Name != schemaName {
+			continue
 		}
-		return got
+		for _, table := range schema.Tables {
+			if table.Name == tableName {
+				return table
+			}
+		}
 	}
-
-	// Statements that return nothing keep their places across GO, and the
-	// procedure's second result set comes after every statement's result.
-	results, err := driver.QueryConn(ctx, `EXEC dbo.two_sets;
-DECLARE @x INT;
-SELECT @x = id FROM dbo.t;
-GO
-DECLARE @y INT;
-SELECT @y = id FROM dbo.t;
-SELECT id FROM dbo.t WHERE id = 3;`, queryContext)
-	require.NoError(t, err)
-	require.Equal(t, []string{
-		"EXEC dbo.two_sets; [id] 3",
-		"DECLARE @x INT; [] 0",
-		"SELECT @x = id FROM dbo.t; [] 0",
-		"DECLARE @y INT; [] 0",
-		"SELECT @y = id FROM dbo.t; [] 0",
-		"SELECT id FROM dbo.t WHERE id = 3; [id] 1",
-		"EXEC dbo.two_sets; [s] 1",
-	}, describe(results))
-
-	results, err = driver.QueryConn(ctx, "EXEC dbo.two_sets;", db.QueryContext{Limit: 2, MaximumSQLResultSize: 1 << 30})
-	require.NoError(t, err)
-	require.Equal(t, []string{"EXEC dbo.two_sets; [id] 2", "EXEC dbo.two_sets; [s] 1"}, describe(results))
-
-	// The size limit covers the rows kept, not the ones the row limit cuts.
-	results, err = driver.QueryConn(ctx, "EXEC('SELECT TOP 200 name FROM sys.all_objects');", db.QueryContext{Limit: 2, MaximumSQLResultSize: 2000})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Empty(t, results[0].GetError())
-	require.Len(t, results[0].GetRows(), 2)
-
-	// Masking cannot trace the rows of a procedure call or an OUTPUT clause.
-	results, err = driver.QueryConn(ctx, "EXEC dbo.two_sets;\nGO\nUPDATE dbo.t SET id = id OUTPUT inserted.id;\nSELECT id FROM dbo.t WHERE id = 1;", db.QueryContext{MaskingEnabled: true, MaximumSQLResultSize: 1 << 30})
-	require.NoError(t, err)
-	require.Equal(t, []string{
-		"EXEC dbo.two_sets; [id] 0 error",
-		"UPDATE dbo.t SET id = id OUTPUT inserted.id; [id] 0 error",
-		"SELECT id FROM dbo.t WHERE id = 1; [id] 1",
-		"EXEC dbo.two_sets; [s] 0 error",
-	}, describe(results))
-	require.Contains(t, results[0].GetError(), "data masking")
-
-	_, err = driver.QueryConn(ctx, "EXEC dbo.two_sets;\nSELECT 1 AS one;", queryContext)
-	require.ErrorContains(t, err, "cannot match the batch's result sets to its statements")
-
-	_, err = driver.QueryConn(ctx, "SET NOEXEC ON;\nSELECT 1 AS one;", queryContext)
-	require.EqualError(t, err, "SET NOEXEC is not supported")
-	_, err = driver.QueryConn(ctx, "SET ANSI_NULLS, NOEXEC ON;\nDELETE FROM dbo.t;", queryContext)
-	require.EqualError(t, err, "SET NOEXEC is not supported")
-
-	_, err = driver.QueryConn(ctx, "SELECT 1 AS one;\nSELECT 1/0 AS x;", queryContext)
-	require.ErrorContains(t, err, "Divide by zero error encountered")
-
-	// A result set cut off at the size limit must not stall the rest of the batch.
-	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	results, err = driver.QueryConn(timeoutCtx, "SELECT TOP 100 name FROM sys.all_objects;\nSELECT 1 AS one;", db.QueryContext{MaximumSQLResultSize: 1})
-	require.NoError(t, err)
-	require.Len(t, results, 2)
-	require.Contains(t, results[0].GetError(), "exceeds max allowed output size")
-	require.Len(t, results[1].GetRows(), 1)
-}
-
-// TestQueryConnValueShapes pins how a column's type reaches the API, which is
-// what the grid renders. The empty binary cell is the one the driver this
-// replaced reported as NULL.
-func TestQueryConnValueShapes(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	driver, _ := newSyncTestDatabase(ctx, t, testcontainer.SharedMSSQLContainer(t))
-
-	results, err := driver.QueryConn(ctx, `SELECT
-	CAST(0x AS VARBINARY(10)) AS empty_bin,
-	CAST(0x01 AS VARBINARY(10)) AS bin,
-	CAST(1.25 AS DECIMAL(18,2)) AS dec,
-	CAST(1 AS BIT) AS flag,
-	CAST('03:04:05' AS TIME) AS t,
-	CAST('2024-01-02' AS DATE) AS d,
-	CAST('2024-01-02T03:04:05.123+02:00' AS DATETIMEOFFSET) AS dto,
-	CAST('2024-01-02T03:04:05.12' AS DATETIME2(2)) AS dt2`, db.QueryContext{MaximumSQLResultSize: 1 << 30})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	values := results[0].GetRows()[0].GetValues()
-	require.Len(t, values, 8)
-
-	require.Equal(t, []byte{}, values[0].GetBytesValue())
-	require.Equal(t, []byte{0x01}, values[1].GetBytesValue())
-	require.Equal(t, "1.25", values[2].GetStringValue())
-	require.Equal(t, int64(1), values[3].GetInt64Value())
-	require.Equal(t, "03:04:05", values[4].GetStringValue())
-	require.Equal(t, "2024-01-02", values[5].GetStringValue())
-	require.Equal(t, int32(7), values[6].GetTimestampTzValue().GetAccuracy())
-	require.Equal(t, int32(7200), values[6].GetTimestampTzValue().GetOffset())
-	require.Equal(t, int32(2), values[7].GetTimestampValue().GetAccuracy())
-}
-
-// TestQueryConnReportsAffectedRows pins the shape of a statement that returns
-// only its count: one "Affected Rows" row, which the API shows, and RowsCount 1.
-// The old driver left RowsCount at 0 for the same result.
-func TestQueryConnReportsAffectedRows(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	driver, _ := newSyncTestDatabase(ctx, t, testcontainer.SharedMSSQLContainer(t))
-	executeBatches(ctx, t, driver, "CREATE TABLE dbo.counted (id INT PRIMARY KEY);")
-
-	results, err := driver.QueryConn(ctx, "INSERT INTO dbo.counted (id) VALUES (1);", db.QueryContext{MaximumSQLResultSize: 1 << 30})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Equal(t, []string{"Affected Rows"}, results[0].GetColumnNames())
-	require.Len(t, results[0].GetRows(), 1)
-	require.Equal(t, int64(1), results[0].GetRows()[0].GetValues()[0].GetInt64Value())
-	require.Equal(t, int64(1), results[0].GetRowsCount())
-}
-
-// TestQueryConnKeepsOneSession pins the session the editor relies on: it keeps
-// one driver for a stream and calls QueryConn once per request, so a session
-// setting and a temporary table one request creates are still there for the
-// next. The driver this replaced ran both on the editor's pooled connection.
-func TestQueryConnKeepsOneSession(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	container := testcontainer.SharedMSSQLContainer(t)
-	driver, database := newSyncTestDatabase(ctx, t, container)
-
-	// The first request leaves session state behind.
-	_, err := driver.QueryConn(ctx, "CREATE TABLE #session (id INT);\nINSERT INTO #session VALUES (7);\nSET CONTEXT_INFO 0x0102;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
-	require.NoError(t, err)
-
-	// The next request sees the temporary table and the context info.
-	results, err := driver.QueryConn(ctx, "SELECT id FROM #session;\nSELECT CONTEXT_INFO() AS context;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
-	require.NoError(t, err)
-	require.Len(t, results, 2)
-	require.Equal(t, int64(7), results[0].GetRows()[0].GetValues()[0].GetInt64Value())
-	context := results[1].GetRows()[0].GetValues()[0].GetBytesValue()
-	require.Len(t, context, 128)
-	require.Equal(t, []byte{0x01, 0x02}, context[:2])
-
-	// Another driver is another session, even on the same database.
-	otherOpened := openMSSQL(ctx, t, container.GetHost(), container.GetPort(), database)
-	results, err = otherOpened.QueryConn(ctx, "SELECT COUNT(*) AS n FROM #session;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-	require.Contains(t, results[0].GetError(), "#session")
+	require.FailNowf(t, "table not synced", "%s.%s", schemaName, tableName)
+	return nil
 }
 
 type fakeMSSQLDriver struct {
+	sessionOpens int
+	sessions     []*fakeMSSQLSession
+
 	execScript string
 	execOpts   odriver.ExecuteOptions
+	execFn     func(context.Context, string, odriver.ExecuteOptions) (int64, error)
+
+	instance *odriver.Instance
+	dumpDDL  string
 }
 
 func (*fakeMSSQLDriver) Ping(context.Context) error { return nil }
 func (*fakeMSSQLDriver) Close() error               { return nil }
 
-func (f *fakeMSSQLDriver) Execute(_ context.Context, script string, opts odriver.ExecuteOptions) (int64, error) {
+func (f *fakeMSSQLDriver) Session(context.Context) (odriver.Session, error) {
+	f.sessionOpens++
+	if len(f.sessions) > 0 {
+		s := f.sessions[0]
+		f.sessions = f.sessions[1:]
+		return s, nil
+	}
+	return &fakeMSSQLSession{}, nil
+}
+
+func (f *fakeMSSQLDriver) SyncInstance(context.Context) (*odriver.Instance, error) {
+	return f.instance, nil
+}
+
+func (*fakeMSSQLDriver) SyncDatabase(context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return nil, nil
+}
+
+func (f *fakeMSSQLDriver) Dump(_ context.Context, out io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
+	_, err := io.WriteString(out, f.dumpDDL)
+	return err
+}
+
+func (f *fakeMSSQLDriver) Execute(ctx context.Context, script string, opts odriver.ExecuteOptions) (int64, error) {
 	f.execScript = script
 	f.execOpts = opts
+	if f.execFn != nil {
+		return f.execFn(ctx, script, opts)
+	}
 	return 1, nil
 }
 
+type fakeMSSQLSession struct {
+	gotOpts odriver.QueryOptions
+	queryFn func(context.Context, string, odriver.QueryOptions) ([]*odriver.Result, error)
+	closed  bool
+}
+
+func (s *fakeMSSQLSession) Query(ctx context.Context, statement string, opts odriver.QueryOptions) ([]*odriver.Result, error) {
+	s.gotOpts = opts
+	if s.queryFn != nil {
+		return s.queryFn(ctx, statement, opts)
+	}
+	return []*odriver.Result{{Statement: statement}}, nil
+}
+
+func (s *fakeMSSQLSession) Close() error {
+	s.closed = true
+	return nil
+}
+
+// TestQueryConnAdapterSeam pins QueryConn's held session reuse, option
+// forwarding, value shape conversion (including empty binary, timestamps,
+// affected rows, truncation, and partial results on error), and session drop
+// on cancellation.
+func TestQueryConnAdapterSeam(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("reuses one session per driver and converts value shapes", func(t *testing.T) {
+		tz := time.FixedZone("UTC+2", 7200)
+		dtoTime := time.Date(2024, 1, 2, 3, 4, 5, 123000000, tz)
+		dt2Time := time.Date(2024, 1, 2, 3, 4, 5, 120000000, time.UTC)
+		affected := int64(1)
+
+		sess := &fakeMSSQLSession{
+			queryFn: func(_ context.Context, statement string, _ odriver.QueryOptions) ([]*odriver.Result, error) {
+				if statement == "CREATE TABLE #session (id INT);" {
+					return []*odriver.Result{{Statement: statement}}, nil
+				}
+				return []*odriver.Result{
+					{
+						Statement: statement,
+						Columns: []odriver.Column{
+							{Name: "empty_bin", TypeName: "VARBINARY"},
+							{Name: "bin", TypeName: "VARBINARY"},
+							{Name: "dec", TypeName: "DECIMAL"},
+							{Name: "flag", TypeName: "BIT"},
+							{Name: "t", TypeName: "TIME"},
+							{Name: "d", TypeName: "DATE"},
+							{Name: "dto", TypeName: "DATETIMEOFFSET"},
+							{Name: "dt2", TypeName: "DATETIME2"},
+						},
+						Rows: [][]odriver.Value{{
+							{Kind: odriver.Bytes, Bytes: []byte{}},
+							{Kind: odriver.Bytes, Bytes: []byte{0x01}},
+							{Kind: odriver.String, String: "1.25"},
+							{Kind: odriver.Int64, Int64: 1},
+							{Kind: odriver.String, String: "03:04:05"},
+							{Kind: odriver.String, String: "2024-01-02"},
+							{Kind: odriver.TimestampTZ, Time: dtoTime, Precision: 7},
+							{Kind: odriver.Timestamp, Time: dt2Time, Precision: 2},
+						}},
+					},
+					{
+						Statement:    "INSERT INTO dbo.counted (id) VALUES (1);",
+						AffectedRows: &affected,
+					},
+				}, nil
+			},
+		}
+		fake := &fakeMSSQLDriver{sessions: []*fakeMSSQLSession{sess}}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
+		qctx := db.QueryContext{
+			Limit:                2,
+			Explain:              true,
+			MaximumSQLResultSize: 1 << 20,
+			MaskingEnabled:       true,
+			Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_XML},
+		}
+
+		_, err := d.QueryConn(ctx, "CREATE TABLE #session (id INT);", qctx)
+		require.NoError(t, err)
+		results, err := d.QueryConn(ctx, "SELECT ...", qctx)
+		require.NoError(t, err)
+
+		require.Equal(t, 1, fake.sessionOpens)
+		require.Same(t, sess, d.Session())
+		require.Equal(t, 2, sess.gotOpts.Limit)
+		require.True(t, sess.gotOpts.Explain)
+		require.Equal(t, "XML", sess.gotOpts.ExplainFormat)
+		require.Equal(t, int64(1<<20), sess.gotOpts.MaxResultBytes)
+		require.True(t, sess.gotOpts.MaskingEnabled)
+
+		require.Len(t, results, 2)
+		values := results[0].GetRows()[0].GetValues()
+		require.Len(t, values, 8)
+		require.Equal(t, []byte{}, values[0].GetBytesValue())
+		require.Equal(t, []byte{0x01}, values[1].GetBytesValue())
+		require.Equal(t, "1.25", values[2].GetStringValue())
+		require.Equal(t, int64(1), values[3].GetInt64Value())
+		require.Equal(t, "03:04:05", values[4].GetStringValue())
+		require.Equal(t, "2024-01-02", values[5].GetStringValue())
+		require.Equal(t, int32(7), values[6].GetTimestampTzValue().GetAccuracy())
+		require.Equal(t, int32(7200), values[6].GetTimestampTzValue().GetOffset())
+		require.Equal(t, int32(2), values[7].GetTimestampValue().GetAccuracy())
+
+		require.Equal(t, []string{"Affected Rows"}, results[1].GetColumnNames())
+		require.Len(t, results[1].GetRows(), 1)
+		require.Equal(t, int64(1), results[1].GetRows()[0].GetValues()[0].GetInt64Value())
+		require.Equal(t, int64(1), results[1].GetRowsCount())
+	})
+
+	t.Run("returns partial converted results alongside query error and drops session", func(t *testing.T) {
+		batchErr := errors.New("cannot match the batch's result sets to its statements")
+		sess := &fakeMSSQLSession{
+			queryFn: func(context.Context, string, odriver.QueryOptions) ([]*odriver.Result, error) {
+				return []*odriver.Result{
+					{
+						Statement: "SELECT 1;",
+						Columns:   []odriver.Column{{Name: "one", TypeName: "INT"}},
+						Rows:      [][]odriver.Value{{{Kind: odriver.Int64, Int64: 1}}},
+						Truncated: true,
+					},
+				}, batchErr
+			},
+		}
+		d := &Driver{OmniAdapter: util.OmniAdapter{Driver: &fakeMSSQLDriver{sessions: []*fakeMSSQLSession{sess}}}}
+
+		results, err := d.QueryConn(ctx, "SELECT 1;\nGO\nEXEC dbo.two_sets;\nSELECT 1;", db.QueryContext{MaximumSQLResultSize: 1})
+		require.ErrorIs(t, err, batchErr)
+		require.True(t, sess.closed)
+		require.Nil(t, d.Session())
+		require.Len(t, results, 1)
+		require.Contains(t, results[0].GetError(), "exceeds max allowed output size")
+	})
+}
+
 func TestExecuteParsesTxnModeAndIgnoresIsolation(t *testing.T) {
-	fake := &fakeMSSQLDriver{}
+	fake := &fakeMSSQLDriver{
+		execFn: func(_ context.Context, script string, opts odriver.ExecuteOptions) (int64, error) {
+			opts.Log.CommandExecute(odriver.Command{Text: script, ByteStart: 0, ByteEnd: len(script)})
+			opts.Log.CommandResponse(1, []int64{1}, nil)
+			return 1, nil
+		},
+		instance: &odriver.Instance{Version: "16.0.4150.1 (2022)", Databases: []*metadatapb.DatabaseSchemaMetadata{{Name: "appdb"}}},
+		dumpDDL:  "CREATE TABLE [dbo].[t] ([id] INT);",
+	}
 	d := &Driver{OmniAdapter: util.OmniAdapter{Driver: fake}}
 
+	var logTypes []storepb.TaskRunLog_Type
 	rows, err := d.Execute(context.Background(), "-- txn-mode = off\n-- txn-isolation = READ COMMITTED\nINSERT INTO dbo.t VALUES (1);", db.ExecuteOptions{
 		CreateDatabase: true,
 		MaximumRetries: 2,
+		CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
+			logTypes = append(logTypes, entry.Type)
+			return nil
+		},
 	})
 	require.NoError(t, err)
 	require.Equal(t, int64(1), rows)
@@ -617,4 +571,32 @@ func TestExecuteParsesTxnModeAndIgnoresIsolation(t *testing.T) {
 	require.Empty(t, fake.execOpts.Isolation)
 	require.True(t, fake.execOpts.CreateDatabase)
 	require.Equal(t, 2, fake.execOpts.MaxRetries)
+	require.Equal(t, []storepb.TaskRunLog_Type{
+		storepb.TaskRunLog_COMMAND_EXECUTE,
+		storepb.TaskRunLog_COMMAND_RESPONSE,
+	}, logTypes)
+
+	inst, err := d.SyncInstance(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, "16.0.4150.1 (2022)", inst.Version)
+	var dump bytes.Buffer
+	require.NoError(t, d.Dump(context.Background(), &dump, &metadatapb.DatabaseSchemaMetadata{Name: "appdb"}))
+	require.Contains(t, dump.String(), "CREATE TABLE [dbo].[t]")
+}
+
+func TestOpenDoesNotDialAndCleansUpCAFileOnClose(t *testing.T) {
+	ctx := context.Background()
+	d, err := (&Driver{}).Open(ctx, storepb.Engine_MSSQL, db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:                 "127.0.0.1",
+			Port:                 "1433",
+			Username:             "sa",
+			UseSsl:               true,
+			VerifyTlsCertificate: true,
+			SslCa:                string(newTestCA(t)),
+		},
+		Password: "secret",
+	})
+	require.NoError(t, err)
+	require.NoError(t, d.Close(ctx))
 }

@@ -2,7 +2,6 @@ package tsql
 
 import (
 	"github.com/bytebase/omni/mssql/analysis"
-	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -14,14 +13,10 @@ func init() {
 }
 
 func extractChangedResources(currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
-	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, false, func(a base.AST) (analysis.StatementChanges, bool, error) {
-		node, ok := a.(*AST)
-		if !ok {
-			return analysis.StatementChanges{}, false, errors.New("expected AST for MSSQL")
-		}
+	return base.ExtractTypedChangedResources(dbMetadata, asts, "expected AST for MSSQL", false, func(node *AST) (analysis.StatementChanges, bool) {
 		if node.Node == nil {
-			return analysis.StatementChanges{}, false, nil
+			return analysis.StatementChanges{}, false
 		}
-		return analysis.ExtractChangedResources(node.Node, currentDatabase, currentSchema, node.Text), true, nil
+		return analysis.ExtractChangedResources(node.Node, currentDatabase, currentSchema, node.Text), true
 	})
 }

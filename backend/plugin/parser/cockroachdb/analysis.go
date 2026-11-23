@@ -21,13 +21,7 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	if err != nil {
 		return nil, err
 	}
-	var statementTypes []storepb.StatementType
-	for _, statementType := range analysis.StatementTypesFromParsed(stmts) {
-		if value := storepb.StatementType(storepb.StatementType_value[string(statementType)]); value != storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED {
-			statementTypes = append(statementTypes, value)
-		}
-	}
-	return statementTypes, nil
+	return base.OmniStatementTypes(analysis.StatementTypesFromParsed(stmts)), nil
 }
 
 // extractChangedResources resolves an unqualified table to the current database and to a schema of

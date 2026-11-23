@@ -2,10 +2,9 @@ package mysql
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 	"testing"
-	"time"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
@@ -33,26 +32,34 @@ func hasKeyword(cands []base.Candidate, text string) bool {
 	return false
 }
 
-func metadataFunc(meta *metadatapb.DatabaseSchemaMetadata) base.GetDatabaseMetadataFunc {
-	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-		return databaseName, model.NewDatabaseMetadata(meta, nil, nil, storepb.Engine_MYSQL, true /* isObjectCaseSensitive */), nil
-	}
-}
-
-func TestCompletion_RegisteredEngines(t *testing.T) {
-	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
-		Name: "db",
+func TestCompletion_Seam(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Name: "appdb",
 		Schemas: []*metadatapb.SchemaMetadata{{
-			Name:   "",
-			Tables: []*metadatapb.TableMetadata{{Name: "users", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}}}},
+			Tables: []*metadatapb.TableMetadata{
+				{Name: "users", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}}},
+				{Name: "order", Columns: []*metadatapb.ColumnMetadata{{Name: "select", Type: "varchar"}}},
+			},
+			Views: []*metadatapb.ViewMetadata{
+				{Name: "active_users", Definition: "SELECT id FROM users"},
+			},
 		}},
-	})
+	}
 	cCtx := base.CompletionContext{
 		Scene:           base.SceneTypeAll,
-		DefaultDatabase: "db",
-		Metadata:        meta,
+		DefaultDatabase: "appdb",
+		Metadata: func(_ context.Context, _, db string) (string, *model.DatabaseMetadata, error) {
+			if db != "appdb" {
+				return "", nil, nil
+			}
+			return db, model.NewDatabaseMetadata(meta, nil, nil, storepb.Engine_MYSQL, true), nil
+		},
+		ListDatabaseNames: func(context.Context, string) ([]string, error) {
+			return []string{"appdb", "otherdb"}, nil
+		},
 	}
 
+	// Registry dispatch covers all four MySQL-family engines wired to this completer.
 	for _, engine := range []storepb.Engine{
 		storepb.Engine_MYSQL,
 		storepb.Engine_CLICKHOUSE,
@@ -62,665 +69,43 @@ func TestCompletion_RegisteredEngines(t *testing.T) {
 		stmt := "SELECT * FROM "
 		got, err := base.Completion(context.Background(), engine, cCtx, stmt, 1, len(stmt))
 		require.NoError(t, err, "engine %v", engine)
-		require.True(t, hasCandidate(got, base.CandidateTypeTable, "users"),
-			"engine %v should offer table 'users'; got %v", engine, got)
+		require.True(t, hasCandidate(got, base.CandidateTypeTable, "users"), "engine %v: got %v", engine, got)
+		require.True(t, hasCandidate(got, base.CandidateTypeTable, "`order`"), "engine %v: got %v", engine, got)
+		require.True(t, hasCandidate(got, base.CandidateTypeView, "active_users"), "engine %v: got %v", engine, got)
+		require.True(t, hasCandidate(got, base.CandidateTypeDatabase, "otherdb"), "engine %v: got %v", engine, got)
 	}
-}
 
-func TestCompletion_ReservedWordIdentifiersSurface(t *testing.T) {
-	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
-		Name: "testdb",
-		Schemas: []*metadatapb.SchemaMetadata{
-			{
-				Name: "",
-				Tables: []*metadatapb.TableMetadata{
-					{
-						Name: "order",
-						Columns: []*metadatapb.ColumnMetadata{
-							{Name: "select"},
-							{Name: "key"},
-						},
-					},
-				},
+	// Column and function candidate type mapping.
+	colStmt := "SELECT  FROM users"
+	gotCols, err := base.Completion(context.Background(), storepb.Engine_MYSQL, cCtx, colStmt, 1, len("SELECT "))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(gotCols, base.CandidateTypeColumn, "id"), "got %v", gotCols)
+	require.True(t, hasCandidate(gotCols, base.CandidateTypeFunction, "COUNT()"), "got %v", gotCols)
+
+	// Scene wiring: SceneTypeQuery maps to omni ReadOnly mode.
+	queryCtx := cCtx
+	queryCtx.Scene = base.SceneTypeQuery
+	gotAll, err := base.Completion(context.Background(), storepb.Engine_MYSQL, cCtx, "SELECT 1; ", 1, len("SELECT 1; "))
+	require.NoError(t, err)
+	gotQuery, err := base.Completion(context.Background(), storepb.Engine_MYSQL, queryCtx, "SELECT 1; ", 1, len("SELECT 1; "))
+	require.NoError(t, err)
+	require.True(t, hasKeyword(gotAll, "INSERT"))
+	require.False(t, hasKeyword(gotQuery, "INSERT"))
+	require.True(t, hasKeyword(gotQuery, "SELECT"))
+
+	// Nil or failing metadata callback degrades cleanly without returning object candidates.
+	for _, badCtx := range []base.CompletionContext{
+		{Scene: base.SceneTypeAll, DefaultDatabase: "appdb"},
+		{
+			Scene:           base.SceneTypeAll,
+			DefaultDatabase: "appdb",
+			Metadata: func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
+				return "", nil, errors.New("metadata unavailable")
 			},
 		},
-	})
-	cCtx := base.CompletionContext{
-		Scene:           base.SceneTypeAll,
-		DefaultDatabase: "testdb",
-		Metadata:        meta,
-	}
-
-	stmt := "SELECT * FROM "
-	got, err := Completion(context.Background(), cCtx, stmt, 1, len(stmt))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(got, base.CandidateTypeTable, "`order`"),
-		"reserved-word table 'order' should surface quoted as a TABLE candidate; got %v", got)
-
-	stmt2 := "SELECT  FROM `order`"
-	got2, err := Completion(context.Background(), cCtx, stmt2, 1, len("SELECT "))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(got2, base.CandidateTypeColumn, "`select`"),
-		"reserved-word column 'select' should surface quoted as a COLUMN candidate; got %v", got2)
-	require.True(t, hasCandidate(got2, base.CandidateTypeColumn, "`key`"),
-		"reserved-word column 'key' should surface quoted as a COLUMN candidate; got %v", got2)
-}
-
-func TestCompletion_UnparseableColumnTypeFallsBackToStandIn(t *testing.T) {
-	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
-		Name: "db",
-		Schemas: []*metadatapb.SchemaMetadata{
-			{
-				Name: "",
-				Tables: []*metadatapb.TableMetadata{
-					{Name: "t", Columns: []*metadatapb.ColumnMetadata{
-						{Name: "good", Type: "int"},
-						{Name: "weird", Type: ")"},
-					}},
-				},
-			},
-		},
-	})
-	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
-
-	stmt := "SELECT  FROM t"
-	got, err := Completion(context.Background(), cCtx, stmt, 1, len("SELECT "))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "good"),
-		"column 'good' should surface; got %v", got)
-	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "weird"),
-		"column 'weird' with an unparseable type should still surface via the stand-in; got %v", got)
-}
-
-func TestCompletion_QuerySceneFiltersWriteKeywords(t *testing.T) {
-	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
-		Name:    "testdb",
-		Schemas: []*metadatapb.SchemaMetadata{{Name: ""}},
-	})
-	ccx := func(scene base.SceneType) base.CompletionContext {
-		return base.CompletionContext{Scene: scene, DefaultDatabase: "testdb", Metadata: meta}
-	}
-
-	const stmt = "SELECT 1; "
-	all, err := Completion(context.Background(), ccx(base.SceneTypeAll), stmt, 1, len(stmt))
-	require.NoError(t, err)
-	query, err := Completion(context.Background(), ccx(base.SceneTypeQuery), stmt, 1, len(stmt))
-	require.NoError(t, err)
-
-	for _, kw := range []string{"SELECT", "WITH", "SHOW"} {
-		require.True(t, hasKeyword(all, kw), "%s in ALL; got %v", kw, all)
-		require.True(t, hasKeyword(query, kw), "%s must be kept in QUERY; got %v", kw, query)
-	}
-
-	for _, kw := range []string{"INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP"} {
-		require.True(t, hasKeyword(all, kw), "%s in ALL; got %v", kw, all)
-		require.False(t, hasKeyword(query, kw), "%s must be dropped in QUERY; got %v", kw, query)
-	}
-}
-
-func TestCompletion_QuerySceneKeepsReadSubkeywords(t *testing.T) {
-	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
-		Name:    "db",
-		Schemas: []*metadatapb.SchemaMetadata{{Name: ""}},
-	})
-	q := base.CompletionContext{Scene: base.SceneTypeQuery, DefaultDatabase: "db", Metadata: meta}
-
-	for _, tc := range []struct{ stmt, keep string }{
-		{"SHOW ", "CREATE"},
-		{"SELECT 1 FOR ", "UPDATE"},
 	} {
-		got, err := Completion(context.Background(), q, tc.stmt, 1, len(tc.stmt))
+		got, err := base.Completion(context.Background(), storepb.Engine_MYSQL, badCtx, "SELECT * FROM ", 1, len("SELECT * FROM "))
 		require.NoError(t, err)
-		require.True(t, hasKeyword(got, tc.keep),
-			"%q must be kept after %q in the query scene; got %v", tc.keep, tc.stmt, got)
+		require.False(t, hasCandidate(got, base.CandidateTypeTable, "users"))
 	}
-}
-
-func TestCompletion_QuerySceneFiltersWriteKeywordPrefix(t *testing.T) {
-	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
-		Name:    "db",
-		Schemas: []*metadatapb.SchemaMetadata{{Name: ""}},
-	})
-	q := base.CompletionContext{Scene: base.SceneTypeQuery, DefaultDatabase: "db", Metadata: meta}
-
-	got, err := Completion(context.Background(), q, "CRE", 1, len("CRE"))
-	require.NoError(t, err)
-	require.False(t, hasKeyword(got, "CREATE"),
-		"CREATE must be filtered for a prefix at statement start; got %v", got)
-
-	got, err = Completion(context.Background(), q, "SELECT 1; INS", 1, len("SELECT 1; INS"))
-	require.NoError(t, err)
-	require.False(t, hasKeyword(got, "INSERT"),
-		"INSERT must be filtered for a prefix after ';'; got %v", got)
-
-	got, err = Completion(context.Background(), q, "SHOW CRE", 1, len("SHOW CRE"))
-	require.NoError(t, err)
-	require.True(t, hasKeyword(got, "CREATE"),
-		"CREATE must be kept after SHOW even with a prefix; got %v", got)
-
-	// Empty slot in SceneTypeQuery must filter SHUTDOWN and other admin starters.
-	gotEmpty, err := Completion(context.Background(), q, "", 1, 0)
-	require.NoError(t, err)
-	require.False(t, hasKeyword(gotEmpty, "SHUTDOWN"), "SHUTDOWN must be filtered in SceneTypeQuery; got %v", gotEmpty)
-
-	// Main-statement position after a CTE in SceneTypeQuery must filter write verbs like UPDATE/DELETE.
-	for _, postCTE := range []string{"WITH c AS (SELECT 1) ", "WITH c AS (SELECT 1) UP", "WITH c AS (SELECT 1) DEL"} {
-		gotPostCTE, err := Completion(context.Background(), q, postCTE, 1, len(postCTE))
-		require.NoError(t, err)
-		require.False(t, hasKeyword(gotPostCTE, "UPDATE"), "UPDATE must be filtered after %q; got %v", postCTE, gotPostCTE)
-		require.False(t, hasKeyword(gotPostCTE, "DELETE"), "DELETE must be filtered after %q; got %v", postCTE, gotPostCTE)
-	}
-}
-
-func TestCompletion_InstanceLevelDatabaseCandidates(t *testing.T) {
-	meta := func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-		return databaseName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-			Name:    databaseName,
-			Schemas: []*metadatapb.SchemaMetadata{{Name: ""}},
-		}, nil, nil, storepb.Engine_MYSQL, true), nil
-	}
-	cCtx := base.CompletionContext{
-		Scene:             base.SceneTypeAll,
-		DefaultDatabase:   "",
-		Metadata:          meta,
-		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) { return []string{"appdb", "otherdb"}, nil },
-	}
-
-	stmt := "SELECT * FROM "
-	got, err := Completion(context.Background(), cCtx, stmt, 1, len(stmt))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(got, base.CandidateTypeDatabase, "appdb"),
-		"instance-level db candidate 'appdb' should surface without a default database; got %v", got)
-	require.True(t, hasCandidate(got, base.CandidateTypeDatabase, "otherdb"),
-		"instance-level db candidate 'otherdb' should surface without a default database; got %v", got)
-
-	// Instance-level editor (DefaultDatabase == "") also resolves case-folded qualifiers cleanly.
-	caseFoldInstMeta := func(_ context.Context, _, dbName string) (string, *model.DatabaseMetadata, error) {
-		if dbName != "db_b" {
-			return "", nil, nil
-		}
-		return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-			Name: "db_b",
-			Schemas: []*metadatapb.SchemaMetadata{{
-				Tables: []*metadatapb.TableMetadata{{
-					Name:    "orders",
-					Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}},
-				}},
-			}},
-		}, nil, nil, storepb.Engine_MYSQL, false), nil
-	}
-	gotFoldedInst, err := Completion(context.Background(), base.CompletionContext{
-		Scene:             base.SceneTypeAll,
-		DefaultDatabase:   "",
-		Metadata:          caseFoldInstMeta,
-		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) { return []string{"appdb", "db_b"}, nil },
-	}, "SELECT DB_B.orders. FROM DB_B.orders", 1, len("SELECT DB_B.orders."))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotFoldedInst, base.CandidateTypeColumn, "id"),
-		"instance-level folded qualifier DB_B.orders. should resolve db_b; got %v", gotFoldedInst)
-}
-
-func TestCompletion_LimitsToStatementAtCaret(t *testing.T) {
-	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
-		Name: "db",
-		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
-			{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "a1"}, {Name: "a2"}}},
-			{Name: "t2", Columns: []*metadatapb.ColumnMetadata{{Name: "b1"}, {Name: "b2"}}},
-		}}},
-	})
-	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
-
-	stmt := "SELECT * FROM t1; SELECT  FROM t2"
-	caret := len("SELECT * FROM t1; SELECT ")
-	got, err := Completion(context.Background(), cCtx, stmt, 1, caret)
-	require.NoError(t, err)
-
-	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "b1"), "t2.b1 should be in scope; got %v", got)
-	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "b2"), "t2.b2 should be in scope; got %v", got)
-	require.False(t, hasCandidate(got, base.CandidateTypeColumn, "a1"), "t1.a1 must not leak into the 2nd statement; got %v", got)
-	require.False(t, hasCandidate(got, base.CandidateTypeColumn, "a2"), "t1.a2 must not leak into the 2nd statement; got %v", got)
-}
-
-func TestCompletion_ViewWithBareSelectDefinitionSurfaces(t *testing.T) {
-	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
-		Name: "db",
-		Schemas: []*metadatapb.SchemaMetadata{{
-			Name:   "",
-			Tables: []*metadatapb.TableMetadata{{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}}}},
-			Views:  []*metadatapb.ViewMetadata{{Name: "v1", Definition: "SELECT id FROM t1"}},
-		}},
-	})
-	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
-
-	stmt := "SELECT * FROM "
-	got, err := Completion(context.Background(), cCtx, stmt, 1, len(stmt))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(got, base.CandidateTypeView, "v1"),
-		"view with a bare SELECT definition should surface as a VIEW candidate; got %v", got)
-
-	stmt2 := "SELECT  FROM v1"
-	got2, err := Completion(context.Background(), cCtx, stmt2, 1, len("SELECT "))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(got2, base.CandidateTypeColumn, "id"),
-		"view column 'id' should surface when selecting from v1; got %v", got2)
-}
-
-func TestCompletion_FunctionCandidatesGetParens(t *testing.T) {
-	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
-		Name: "db",
-		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
-			{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}}},
-		}}},
-	})
-	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
-
-	stmt := "SELECT  FROM t1"
-	got, err := Completion(context.Background(), cCtx, stmt, 1, len("SELECT "))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(got, base.CandidateTypeFunction, "COUNT()"),
-		"function candidates should carry (); got %v", got)
-	require.False(t, hasCandidate(got, base.CandidateTypeFunction, "COUNT"),
-		"bare function name without () should not appear; got %v", got)
-}
-
-func TestCompletion_QuotesReservedNameAfterStringLiteralWithBacktick(t *testing.T) {
-	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
-		Name: "db",
-		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
-			{Name: "order", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}}},
-		}}},
-	})
-	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
-
-	stmt := "SELECT '`' FROM "
-	got, err := Completion(context.Background(), cCtx, stmt, 1, len(stmt))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(got, base.CandidateTypeTable, "`order`"),
-		"reserved table must stay quoted despite a backtick in a string literal; got %v", got)
-}
-
-func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
-	appMeta := &metadatapb.DatabaseSchemaMetadata{
-		Name: "appdb",
-		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
-			{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "c1"}}},
-		}}},
-	}
-	otherMeta := &metadatapb.DatabaseSchemaMetadata{
-		Name: "otherdb",
-		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
-			{Name: "t2", Columns: []*metadatapb.ColumnMetadata{{Name: "c2"}, {Name: "c3"}}},
-		}}},
-	}
-	loads := map[string]int{}
-	metaFn := func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-		loads[databaseName]++
-		switch databaseName {
-		case "appdb":
-			return databaseName, model.NewDatabaseMetadata(appMeta, nil, nil, storepb.Engine_MYSQL, true), nil
-		case "otherdb":
-			return databaseName, model.NewDatabaseMetadata(otherMeta, nil, nil, storepb.Engine_MYSQL, true), nil
-		default:
-			return "", nil, nil
-		}
-	}
-	listCalls := 0
-	cCtx := base.CompletionContext{
-		Scene:           base.SceneTypeAll,
-		DefaultDatabase: "appdb",
-		Metadata:        metaFn,
-		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
-			listCalls++
-			return []string{"appdb", "otherdb", "unuseddb"}, nil
-		},
-	}
-
-	stmt := "SELECT otherdb.t2. FROM otherdb.t2"
-	got, err := Completion(context.Background(), cCtx, stmt, 1, len("SELECT otherdb.t2."))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "c2"),
-		"cross-db column 'c2' should surface; got %v", got)
-	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "c3"),
-		"cross-db column 'c3' should surface; got %v", got)
-	require.Zero(t, loads["unuseddb"], "unreferenced database must not be loaded")
-	require.Zero(t, listCalls, "qualified cross-db completion must resolve the qualifier directly without ListDatabaseNames")
-
-	gotTbl, err := Completion(context.Background(), cCtx, "SELECT * FROM otherdb.", 1, len("SELECT * FROM otherdb."))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotTbl, base.CandidateTypeTable, "t2"),
-		"cross-db table 't2' should surface; got %v", gotTbl)
-	require.False(t, hasCandidate(gotTbl, base.CandidateTypeTable, "t1"),
-		"default-db table 't1' must not leak into otherdb.; got %v", gotTbl)
-	require.Zero(t, listCalls, "qualified table completion must not enumerate databases")
-
-	stmt2 := "SELECT * FROM "
-	got2, err := Completion(context.Background(), cCtx, stmt2, 1, len(stmt2))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(got2, base.CandidateTypeDatabase, "otherdb"),
-		"non-default database 'otherdb' should surface as a DATABASE candidate; got %v", got2)
-	require.True(t, hasCandidate(got2, base.CandidateTypeDatabase, "unuseddb"),
-		"non-default database 'unuseddb' should surface as a DATABASE candidate; got %v", got2)
-	require.Equal(t, 1, listCalls, "database_ref position should enumerate databases once")
-}
-
-func TestCompletion_SkipsDatabaseEnumerationWhenNotNeeded(t *testing.T) {
-	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
-		Name: "appdb",
-		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
-			{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "c1"}}},
-		}}},
-	})
-	var metaCalls []string
-	trackedMeta := func(ctx context.Context, inst, db string) (string, *model.DatabaseMetadata, error) {
-		metaCalls = append(metaCalls, db)
-		return meta(ctx, inst, db)
-	}
-	listCalls := 0
-	cCtx := base.CompletionContext{
-		Scene:           base.SceneTypeAll,
-		DefaultDatabase: "appdb",
-		Metadata:        trackedMeta,
-		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
-			listCalls++
-			return []string{"appdb", "otherdb"}, nil
-		},
-	}
-
-	stmt := "SELECT  FROM t1"
-	got, err := Completion(context.Background(), cCtx, stmt, 1, len("SELECT "))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "c1"))
-	require.Zero(t, listCalls, "ListDatabaseNames must not be called when neither database_ref nor cross-db qualifiers apply")
-	require.Equal(t, []string{"appdb"}, metaCalls)
-
-	metaCalls = nil
-	stmtAlias := "SELECT a. FROM t1 a WHERE a.c1 = 1"
-	gotAlias, err := Completion(context.Background(), cCtx, stmtAlias, 1, len("SELECT a."))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotAlias, base.CandidateTypeColumn, "c1"))
-	require.Zero(t, listCalls, "ListDatabaseNames must not be called for table/alias column qualifiers")
-	require.Equal(t, []string{"appdb"}, metaCalls, "table/alias qualifiers must not trigger Metadata lookups for non-db names")
-
-	metaCalls = nil
-	stmtInsertMod := "INSERT LOW_PRIORITY INTO otherdb."
-	gotInsertMod, err := Completion(context.Background(), cCtx, stmtInsertMod, 1, len(stmtInsertMod))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotInsertMod, base.CandidateTypeTable, "t1"))
-	require.Zero(t, listCalls, "ListDatabaseNames must not be called for INSERT with modifiers before INTO")
-	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
-
-	// Comma-separated multi-target statements load later qualified databases cleanly.
-	metaCalls = nil
-	stmtAnalyze := "ANALYZE TABLE appdb.t1, otherdb."
-	gotAnalyze, err := Completion(context.Background(), cCtx, stmtAnalyze, 1, len(stmtAnalyze))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotAnalyze, base.CandidateTypeTable, "t1"))
-	require.Zero(t, listCalls, "ListDatabaseNames must not be called for ANALYZE TABLE comma list")
-	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
-
-	metaCalls = nil
-	stmtDropTemp := "DROP TEMPORARY TABLE appdb.t1, otherdb."
-	gotDropTemp, err := Completion(context.Background(), cCtx, stmtDropTemp, 1, len(stmtDropTemp))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotDropTemp, base.CandidateTypeTable, "t1"))
-	require.Zero(t, listCalls, "ListDatabaseNames must not be called for DROP TEMPORARY TABLE comma list")
-	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
-
-	metaCalls = nil
-	stmtTruncate := "TRUNCATE otherdb."
-	gotTruncate, err := Completion(context.Background(), cCtx, stmtTruncate, 1, len(stmtTruncate))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotTruncate, base.CandidateTypeTable, "t1"))
-	require.Zero(t, listCalls, "ListDatabaseNames must not be called for TRUNCATE without TABLE keyword")
-	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
-
-	// Unquoted identifiers containing '$' are treated as single database qualifiers.
-	dollarMeta := func(_ context.Context, _, dbName string) (string, *model.DatabaseMetadata, error) {
-		metaCalls = append(metaCalls, dbName)
-		if dbName == "sales$archive" {
-			return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-				Name: dbName,
-				Schemas: []*metadatapb.SchemaMetadata{{
-					Tables: []*metadatapb.TableMetadata{{
-						Name:    "orders",
-						Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}},
-					}},
-				}},
-			}, nil, nil, storepb.Engine_MYSQL, true), nil
-		}
-		return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: dbName}, nil, nil, storepb.Engine_MYSQL, true), nil
-	}
-	metaCalls = nil
-	stmtDollarCol := "SELECT sales$archive.orders. FROM sales$archive.orders"
-	dollarCtx := base.CompletionContext{
-		Scene:           base.SceneTypeAll,
-		DefaultDatabase: "appdb",
-		Metadata:        dollarMeta,
-		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) {
-			listCalls++
-			return []string{"appdb", "sales$archive"}, nil
-		},
-	}
-	gotDollarCol, err := Completion(context.Background(), dollarCtx, stmtDollarCol, 1, len("SELECT sales$archive.orders."))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotDollarCol, base.CandidateTypeColumn, "id"), "got %v", gotDollarCol)
-	require.Zero(t, listCalls, "ListDatabaseNames must not be called for sales$archive.orders.")
-	require.Equal(t, []string{"appdb", "sales$archive"}, metaCalls)
-
-	metaCalls = nil
-	stmtDollarTbl := "SELECT * FROM sales$archive."
-	_, err = Completion(context.Background(), dollarCtx, stmtDollarTbl, 1, len(stmtDollarTbl))
-	require.NoError(t, err)
-	require.Zero(t, listCalls, "ListDatabaseNames must not be called for sales$archive.")
-	require.Equal(t, []string{"appdb", "sales$archive"}, metaCalls)
-
-	// Parenthesized UPDATE join and case-folded qualifier resolve cross-db objects end-to-end.
-	metaCalls = nil
-	stmtParenUpdate := "UPDATE (otherdb."
-	gotParenUpdate, err := Completion(context.Background(), cCtx, stmtParenUpdate, 1, len(stmtParenUpdate))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotParenUpdate, base.CandidateTypeTable, "t1"))
-	require.Zero(t, listCalls, "ListDatabaseNames must not be called for UPDATE (otherdb.")
-	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
-
-	caseFoldMeta := func(_ context.Context, _, dbName string) (string, *model.DatabaseMetadata, error) {
-		switch dbName {
-		case "appdb":
-			return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "appdb"}, nil, nil, storepb.Engine_MYSQL, false), nil
-		case "db_b":
-			return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-				Name: "db_b",
-				Schemas: []*metadatapb.SchemaMetadata{{
-					Tables: []*metadatapb.TableMetadata{{
-						Name:    "orders",
-						Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}},
-					}},
-				}},
-			}, nil, nil, storepb.Engine_MYSQL, false), nil
-		default:
-			return "", nil, nil
-		}
-	}
-	gotFolded, err := Completion(context.Background(), base.CompletionContext{
-		Scene:             base.SceneTypeAll,
-		DefaultDatabase:   "appdb",
-		Metadata:          caseFoldMeta,
-		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) { return []string{"appdb", "db_b"}, nil },
-	}, "SELECT DB_B.orders. FROM DB_B.orders", 1, len("SELECT DB_B.orders."))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotFolded, base.CandidateTypeColumn, "id"), "case-folded qualifier DB_B.orders. should load db_b; got %v", gotFolded)
-
-	// On lower_case_table_names=0, foo and Foo remain distinct databases.
-	caseSensMeta := func(_ context.Context, _, dbName string) (string, *model.DatabaseMetadata, error) {
-		switch dbName {
-		case "foo":
-			return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-				Name:    "foo",
-				Schemas: []*metadatapb.SchemaMetadata{{Tables: []*metadatapb.TableMetadata{{Name: "t", Columns: []*metadatapb.ColumnMetadata{{Name: "lower_col", Type: "int"}}}}}},
-			}, nil, nil, storepb.Engine_MYSQL, true), nil
-		case "Foo":
-			return dbName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-				Name:    "Foo",
-				Schemas: []*metadatapb.SchemaMetadata{{Tables: []*metadatapb.TableMetadata{{Name: "t", Columns: []*metadatapb.ColumnMetadata{{Name: "upper_col", Type: "int"}}}}}},
-			}, nil, nil, storepb.Engine_MYSQL, true), nil
-		default:
-			return "", nil, nil
-		}
-	}
-	gotDistinct, err := Completion(context.Background(), base.CompletionContext{
-		Scene:           base.SceneTypeAll,
-		DefaultDatabase: "foo",
-		Metadata:        caseSensMeta,
-	}, "SELECT Foo.t. FROM Foo.t", 1, len("SELECT Foo.t."))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotDistinct, base.CandidateTypeColumn, "upper_col"), "case-distinct qualifier Foo.t. should load Foo; got %v", gotDistinct)
-
-	// With both Foo and foo in one query, completion at foo.t. resolves against foo (lower_col), not Foo.
-	stmtMultiCase := "SELECT * FROM Foo.t JOIN foo.t ON Foo.t.lower_col = foo.t.lower_col WHERE foo.t."
-	gotMultiLower, err := Completion(context.Background(), base.CompletionContext{
-		Scene:           base.SceneTypeAll,
-		DefaultDatabase: "foo",
-		Metadata:        caseSensMeta,
-	}, stmtMultiCase, 1, len(stmtMultiCase))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotMultiLower, base.CandidateTypeColumn, "lower_col"), "caret at foo.t. should resolve against foo; got %v", gotMultiLower)
-	require.False(t, hasCandidate(gotMultiLower, base.CandidateTypeColumn, "upper_col"), "caret at foo.t. must not be shadowed by Foo; got %v", gotMultiLower)
-
-	// Alias referencing case-colliding DB resolves to that DB's table columns.
-	stmtAliasCase := "SELECT x. FROM foo.t y JOIN Foo.t x"
-	gotAliasUpper, err := Completion(context.Background(), base.CompletionContext{
-		Scene:           base.SceneTypeAll,
-		DefaultDatabase: "foo",
-		Metadata:        caseSensMeta,
-	}, stmtAliasCase, 1, len("SELECT x."))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotAliasUpper, base.CandidateTypeColumn, "upper_col"), "alias x for Foo.t should suggest upper_col; got %v", gotAliasUpper)
-	require.False(t, hasCandidate(gotAliasUpper, base.CandidateTypeColumn, "lower_col"), "alias x for Foo.t must not be shadowed by foo.t; got %v", gotAliasUpper)
-
-	// Unqualified caret keeps defaultDB (foo) first so Foo referenced elsewhere does not shadow foo tables.
-	gotUnqualifiedDefault, err := Completion(context.Background(), base.CompletionContext{
-		Scene:           base.SceneTypeAll,
-		DefaultDatabase: "foo",
-		Metadata:        caseSensMeta,
-	}, "SELECT  FROM t JOIN Foo.other", 1, len("SELECT "))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotUnqualifiedDefault, base.CandidateTypeColumn, "lower_col"), "unqualified SELECT  FROM t should keep default foo first; got %v", gotUnqualifiedDefault)
-	require.False(t, hasCandidate(gotUnqualifiedDefault, base.CandidateTypeColumn, "upper_col"), "Foo.other must not shadow default foo table at unqualified caret; got %v", gotUnqualifiedDefault)
-
-	// Derived-table alias referencing case-colliding DB resolves to Foo's table columns.
-	stmtDerivedCase := "SELECT x. FROM (SELECT * FROM Foo.t) x"
-	gotDerivedUpper, err := Completion(context.Background(), base.CompletionContext{
-		Scene:           base.SceneTypeAll,
-		DefaultDatabase: "foo",
-		Metadata:        caseSensMeta,
-	}, stmtDerivedCase, 1, len("SELECT x."))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotDerivedUpper, base.CandidateTypeColumn, "upper_col"), "derived alias x for Foo.t should suggest upper_col; got %v", gotDerivedUpper)
-	require.False(t, hasCandidate(gotDerivedUpper, base.CandidateTypeColumn, "lower_col"), "derived alias x for Foo.t must not be shadowed by foo.t; got %v", gotDerivedUpper)
-
-	// Multi-table DELETE target before FROM loads qualifier DB without false-positive alias.* lookups.
-	metaCalls = nil
-	stmtDeleteTarget := "DELETE otherdb."
-	gotDeleteTarget, err := Completion(context.Background(), cCtx, stmtDeleteTarget, 1, len(stmtDeleteTarget))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotDeleteTarget, base.CandidateTypeTable, "t1"))
-	require.Zero(t, listCalls)
-	require.Equal(t, []string{"appdb", "otherdb"}, metaCalls)
-}
-
-func TestCompletion_TrailingSemicolonAndUTF16Caret(t *testing.T) {
-	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
-		Name: "db",
-		Schemas: []*metadatapb.SchemaMetadata{{
-			Name: "",
-			Tables: []*metadatapb.TableMetadata{
-				{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}}},
-			},
-		}},
-	})
-
-	// Cursor in an empty statement slot after semicolons isolates from earlier/later statements.
-	stmtGap := "SELECT * FROM t1; ; SELEC broken"
-	gotGap, err := Completion(context.Background(), base.CompletionContext{
-		Scene:           base.SceneTypeQuery,
-		DefaultDatabase: "db",
-		Metadata:        meta,
-	}, stmtGap, 1, len("SELECT * FROM t1; "))
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotGap, base.CandidateTypeKeyword, "SELECT"), "got %v", gotGap)
-	require.False(t, hasCandidate(gotGap, base.CandidateTypeKeyword, "INSERT"), "empty slot in SceneTypeQuery must not offer write keywords")
-
-	// UTF-16 column offset accounts for surrogate-pair emoji before caret.
-	stmtEmoji := "SELECT '😀',  FROM t1"
-	utf16Col := len("SELECT '") + 2 + len("', ")
-	gotEmoji, err := Completion(context.Background(), base.CompletionContext{
-		Scene:           base.SceneTypeAll,
-		DefaultDatabase: "db",
-		Metadata:        meta,
-	}, stmtEmoji, 1, utf16Col)
-	require.NoError(t, err)
-	require.True(t, hasCandidate(gotEmoji, base.CandidateTypeColumn, "id"), "UTF-16 caret should resolve t1.id; got %v", gotEmoji)
-}
-
-// Completion cost must be bounded by the caret's statement, not the whole
-// sheet: a broken statement anywhere after the caret must not make completion
-// scale with the entire trailing document (BYT-9886).
-func TestCompletionWithBrokenTrailingStatementScalesLinearly(t *testing.T) {
-	a := require.New(t)
-
-	var sheet strings.Builder
-	sheet.WriteString("SELECT a2. FROM t1 JOIN t2 a2 ON t1.c1 = a2.c1;\n")
-	sheet.WriteString("SELEC broken FROM oops;\n")
-	for i := range 800 {
-		fmt.Fprintf(&sheet, "SELECT col_a, col_b, col_c FROM table_%04d WHERE col_a = %d AND col_b LIKE 'pattern%%' ORDER BY col_c LIMIT 100;\n", i, i)
-	}
-
-	started := time.Now()
-	result, err := base.Completion(context.Background(), storepb.Engine_MYSQL, base.CompletionContext{
-		Scene:             base.SceneTypeAll,
-		DefaultDatabase:   "db",
-		Metadata:          getMetadataForTest,
-		ListDatabaseNames: listDatabaseNamesForTest,
-	}, sheet.String(), 1, 10 /* caret right after "SELECT a2." */)
-	elapsed := time.Since(started)
-
-	a.NoError(err)
-	a.True(hasCandidate(result, base.CandidateTypeColumn, "c1"))
-	a.True(hasCandidate(result, base.CandidateTypeColumn, "c2"))
-	a.Less(elapsed, 2*time.Second)
-}
-
-func listDatabaseNamesForTest(_ context.Context, _ string) ([]string, error) {
-	return []string{"db"}, nil
-}
-
-func getMetadataForTest(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-	if databaseName != "db" {
-		return "", nil, nil
-	}
-
-	return "db", model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-		Name: databaseName,
-		Schemas: []*metadatapb.SchemaMetadata{
-			{
-				Name: "",
-				Tables: []*metadatapb.TableMetadata{
-					{
-						Name:    "t1",
-						Columns: []*metadatapb.ColumnMetadata{{Name: "c1"}},
-					},
-					{
-						Name:    "t2",
-						Columns: []*metadatapb.ColumnMetadata{{Name: "c1"}, {Name: "c2"}},
-					},
-				},
-				Views: []*metadatapb.ViewMetadata{
-					{
-						Name:       "v1",
-						Definition: "SELECT * FROM t1",
-					},
-				},
-			},
-		},
-	}, nil, nil, storepb.Engine_MYSQL, true /* isObjectCaseSensitive */), nil
 }

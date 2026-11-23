@@ -148,7 +148,7 @@ func SQLReviewCheck(
 	}
 
 	// Initialize the per-review memo so engine-specific helpers can amortize
-	// work across rules (e.g. omni re-parsing in advisor/tidb). The map header
+	// work across rules (e.g. memoized AST extraction in V1Engine). The map header
 	// propagates by value across rules; the underlying map is shared.
 	checkContext.memo = make(map[string]any)
 

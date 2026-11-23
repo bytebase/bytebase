@@ -102,6 +102,31 @@ func TestQueryResultOptionsExtensionsAndMySQLForkHelpers(t *testing.T) {
 		require.Equal(t, omnidriver.TimestampTZ, input.Rows[0][1].Kind)
 	})
 
+	t.Run("OmniQueryOptions maps context fields", func(t *testing.T) {
+		qCtx := db.QueryContext{
+			Schema:               "app",
+			Limit:                25,
+			Explain:              true,
+			MaximumSQLResultSize: 4096,
+			MaskingEnabled:       true,
+		}
+		require.Equal(t, omnidriver.QueryOptions{
+			Schema:         "app",
+			Limit:          25,
+			Explain:        true,
+			ExplainFormat:  "JSON",
+			MaxResultBytes: 4096,
+			MaskingEnabled: true,
+		}, OmniQueryOptions(qCtx, true, "JSON"))
+		require.Equal(t, omnidriver.QueryOptions{
+			Limit:          25,
+			Explain:        true,
+			ExplainFormat:  "TEXT",
+			MaxResultBytes: 4096,
+			MaskingEnabled: true,
+		}, OmniQueryOptions(qCtx, false, "TEXT"))
+	})
+
 	t.Run("MySQLFork helpers", func(t *testing.T) {
 		opts := MySQLForkQueryOptions(db.QueryContext{
 			Limit:                50,

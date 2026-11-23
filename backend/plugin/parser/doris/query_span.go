@@ -31,15 +31,5 @@ func GetQuerySpan(
 		return nil, convertParseError(stmt.Text, err, stmt.Start)
 	}
 
-	sources := base.OmniColumnSet(resolved.SourceColumns)
-	if sources == nil {
-		sources = base.SourceColumnSet{}
-	}
-
-	return &base.QuerySpan{
-		Type:             base.OmniQueryType(resolved.Type),
-		SourceColumns:    sources,
-		PredicateColumns: base.SourceColumnSet{},
-		Results:          []base.QuerySpanResult{},
-	}, nil
+	return base.OmniTableQuerySpan(resolved.Type, resolved.SourceColumns), nil
 }

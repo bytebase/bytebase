@@ -13,7 +13,7 @@
       endposition: null
 - statement: CREATE TABLE t(name varchar(225));
   changeType: 1
-- statement: ALTER TABLE public.tech_book ADD name_2 varchar(22225)
+- statement: ALTER TABLE hr.tech_book ADD name_2 varchar(22225)
   changeType: 1
   want:
     - status: 2
