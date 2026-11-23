@@ -66,9 +66,9 @@ func TestInsertRowLimit(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			db, fake := newExplainFakeDB(t, tc.plans)
-			got := runRowLimitRule(t, db, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_WARNING, 100, tc.statement)
-			require.Equal(t, tc.wantExplained, fake.explainedStatements())
+			prober := newExplainProber(tc.plans)
+			got := runRowLimitRule(t, prober, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_WARNING, 100, tc.statement)
+			require.Equal(t, tc.wantExplained, explainedStatements(prober))
 			require.Equal(t, tc.want, got)
 		})
 	}
@@ -83,10 +83,10 @@ func TestInsertRowLimitReportsStatementsBeyondExplainLimit(t *testing.T) {
 		statements = append(statements, statement+";")
 	}
 	statements = append(statements, "INSERT INTO t2 VALUES (1), (2), (3);", "INSERT INTO t2 SELECT * FROM t;")
-	db, fake := newExplainFakeDB(t, plans)
+	prober := newExplainProber(plans)
 
-	got := runRowLimitRule(t, db, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_ERROR, 2, strings.Join(statements, "\n"))
-	require.Len(t, fake.explainedStatements(), 10)
+	got := runRowLimitRule(t, prober, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_ERROR, 2, strings.Join(statements, "\n"))
+	require.Len(t, explainedStatements(prober), 10)
 	require.Equal(t, []*storepb.Advice{
 		{
 			Status:        storepb.Advice_ERROR,

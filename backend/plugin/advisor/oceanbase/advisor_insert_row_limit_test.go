@@ -16,7 +16,7 @@ func TestInsertRowLimitAdvisorKeepsCountingValuesBeyondExplainLimit(t *testing.T
 	statement := strings.Repeat("INSERT INTO t2 SELECT * FROM t;\n", common.MaximumLintExplainSize+1) +
 		"INSERT INTO t2 (id) VALUES (1), (2), (3), (4), (5), (6);"
 
-	adviceList := checkTestRowLimitRule(t, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_WARNING, insertPlan, statement)
+	adviceList, prober := checkTestRowLimitRule(t, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_WARNING, insertPlan, statement)
 	require.Len(t, adviceList, common.MaximumLintExplainSize+2)
 	for _, advice := range adviceList[:common.MaximumLintExplainSize] {
 		require.Contains(t, advice.Content, "inserts 100 rows. The count exceeds 5.")
@@ -28,5 +28,5 @@ func TestInsertRowLimitAdvisorKeepsCountingValuesBeyondExplainLimit(t *testing.T
 	require.Equal(t, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT.String(), warning.Title)
 	require.Equal(t, "Only the first 10 statements were estimated; 1 more were not checked against the row limit.", warning.Content)
 	require.Equal(t, int32(common.MaximumLintExplainSize+1), warning.StartPosition.GetLine())
-	require.Equal(t, common.MaximumLintExplainSize, testOceanBaseExplainCount)
+	require.Len(t, prober.Probes, common.MaximumLintExplainSize)
 }
