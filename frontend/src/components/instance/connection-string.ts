@@ -1,5 +1,8 @@
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { DataSource_AuthenticationType } from "@/types/proto-es/v1/instance_service_pb";
+import {
+  DataSource_AuthenticationType,
+  Vendor,
+} from "@/types/proto-es/v1/instance_service_pb";
 import { type EditDataSource, updateDataSourceSecret } from "./common";
 import { defaultPortForEngine } from "./constants";
 import {
@@ -178,17 +181,19 @@ function parseStandardUri(input: string): ParsedUriParts | undefined {
 
 function parsePostgresTls(
   sslMode: string | undefined,
-  ssl?: string
+  ssl?: string,
+  verifiedByDefault = false
 ): ParsedTls | undefined {
   if (sslMode !== undefined) {
     switch (sslMode.trim().toLowerCase()) {
       case "disable":
         return { useSsl: false };
+      case "no-verify":
+        return { useSsl: true, verifyTlsCertificate: false };
       case "allow":
       case "prefer":
       case "require":
-      case "no-verify":
-        return { useSsl: true, verifyTlsCertificate: false };
+        return { useSsl: true, verifyTlsCertificate: verifiedByDefault };
       case "verify-ca":
       case "verify-full":
         return { useSsl: true, verifyTlsCertificate: true };
@@ -203,7 +208,7 @@ function parsePostgresTls(
         return { useSsl: false };
       case "true":
       case "1":
-        return { useSsl: true, verifyTlsCertificate: false };
+        return { useSsl: true, verifyTlsCertificate: verifiedByDefault };
     }
   }
   return undefined;
@@ -264,7 +269,14 @@ function parseLibpqKeyValue(input: string): Map<string, string> | undefined {
 }
 
 function parsePostgresConnectionString(
-  raw: string
+  raw: string,
+  {
+    requireTls = false,
+    verifiedTlsByDefault = false,
+  }: {
+    requireTls?: boolean;
+    verifiedTlsByDefault?: boolean;
+  } = {}
 ): ParsedConnectionString | undefined {
   const unwrapped = stripSurroundingQuotes(
     raw
@@ -298,8 +310,10 @@ function parsePostgresConnectionString(
     );
     const tls = parsePostgresTls(
       uri.query.get("sslmode"),
-      uri.query.get("ssl")
+      uri.query.get("ssl"),
+      verifiedTlsByDefault
     );
+    if (requireTls && tls?.useSsl === false) return undefined;
     return {
       host,
       port: port ?? "5432",
@@ -324,13 +338,19 @@ function parsePostgresConnectionString(
     if (!validated) return undefined;
     port = validated;
   }
+  const tls = parsePostgresTls(
+    kv.get("sslmode"),
+    kv.get("ssl"),
+    verifiedTlsByDefault
+  );
+  if (requireTls && tls?.useSsl === false) return undefined;
   return {
     host,
     port,
     username: kv.get("user") || undefined,
     password: normalizePassword(kv.get("password")),
     database: kv.get("dbname") || undefined,
-    tls: parsePostgresTls(kv.get("sslmode"), kv.get("ssl")),
+    tls,
   };
 }
 
@@ -917,11 +937,20 @@ function parseOracleConnectionString(
 
 export function parseConnectionString(
   engine: Engine,
-  value: string
+  value: string,
+  vendor: Vendor = Vendor.VENDOR_UNSPECIFIED
 ): ParsedConnectionString | undefined {
   switch (engine) {
-    case Engine.POSTGRES:
-      return parsePostgresConnectionString(value);
+    case Engine.POSTGRES: {
+      const isNeon = vendor === Vendor.NEON;
+      return parsePostgresConnectionString(value, {
+        // Neon requires TLS and its console copies `sslmode=require` against
+        // publicly trusted endpoints, so keep certificate verification enabled
+        // unless `sslmode=no-verify` explicitly opts out.
+        requireTls: isNeon,
+        verifiedTlsByDefault: isNeon,
+      });
+    }
     case Engine.MYSQL:
       return parseMysqlConnectionString(value);
     case Engine.MSSQL:
@@ -983,8 +1012,10 @@ export function detectConnectionStringEngine(
 export function applyParsedConnectionString(
   ds: EditDataSource,
   engine: Engine,
-  parsed: ParsedConnectionString
+  parsed: ParsedConnectionString,
+  vendor: Vendor = Vendor.VENDOR_UNSPECIFIED
 ): EditDataSource {
+  const requireTls = engine === Engine.POSTGRES && vendor === Vendor.NEON;
   let next: EditDataSource = {
     ...ds,
     authenticationType: DataSource_AuthenticationType.PASSWORD,
@@ -1023,9 +1054,9 @@ export function applyParsedConnectionString(
   }
 
   if (parsed.tls !== undefined) {
-    if (!parsed.tls.useSsl) {
+    if (!parsed.tls.useSsl && !requireTls) {
       next = { ...next, ...disableLocalTls(next), updateSsl: undefined };
-    } else {
+    } else if (parsed.tls.useSsl || requireTls) {
       const withTls = next.useSsl
         ? next
         : applyLocalTlsPosture(next, LOCAL_TLS_POSTURE_TLS);
@@ -1033,10 +1064,20 @@ export function applyParsedConnectionString(
         ...next,
         ...withTls,
         useSsl: true,
-        verifyTlsCertificate: parsed.tls.verifyTlsCertificate,
+        verifyTlsCertificate: parsed.tls.useSsl
+          ? parsed.tls.verifyTlsCertificate
+          : true,
         updateSsl: undefined,
       };
     }
+  } else if (requireTls && !next.useSsl) {
+    next = {
+      ...next,
+      ...applyLocalTlsPosture(next, LOCAL_TLS_POSTURE_TLS),
+      useSsl: true,
+      verifyTlsCertificate: true,
+      updateSsl: undefined,
+    };
   }
 
   return next;

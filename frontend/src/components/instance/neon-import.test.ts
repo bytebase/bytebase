@@ -35,7 +35,6 @@ import {
   type NeonImportRun,
   neonInstanceId,
   neonReasonText,
-  parseNeonConnectionString,
   remainingInstanceCapacity,
   requestRejection,
   runImportBatches,
@@ -858,27 +857,6 @@ describe("structured reasons", () => {
 });
 
 describe("manual entry", () => {
-  it("reads the connection string the Neon console shows", () => {
-    expect(
-      parseNeonConnectionString(
-        "psql 'postgresql://app_owner:p%40ss@ep-example-123456.us-east-2.aws.neon.tech/storefront?sslmode=require'"
-      )
-    ).toEqual({
-      role: "app_owner",
-      password: "p@ss",
-      host: "ep-example-123456.us-east-2.aws.neon.tech",
-      port: "5432",
-      database: "storefront",
-    });
-    expect(
-      parseNeonConnectionString("postgres://role@db.example.com:6543/app")
-    ).toMatchObject({ password: "", port: "6543" });
-    expect(
-      parseNeonConnectionString("mysql://role@db.example.com/app")
-    ).toBeUndefined();
-    expect(parseNeonConnectionString("ep-example.neon.tech")).toBeUndefined();
-  });
-
   it("recognizes a pooled endpoint host", () => {
     expect(
       isNeonPooledHost("ep-example-123456-pooler.us-east-2.aws.neon.tech")
