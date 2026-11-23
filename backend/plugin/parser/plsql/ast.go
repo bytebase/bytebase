@@ -1,9 +1,6 @@
 package plsql
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/bytebase/omni/oracle/analysis"
 	"github.com/bytebase/omni/oracle/ast"
 	oracleparser "github.com/bytebase/omni/oracle/parser"
@@ -52,20 +49,19 @@ func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
 }
 
 func convertError(err error, stmt base.Statement) error {
-	var parseErr *oracleparser.ParseError
-	if !errors.As(err, &parseErr) {
-		return err
-	}
-	return convertParseError(parseErr, stmt)
+	return base.ConvertSyntaxError(stmt, err, true,
+		func(pe *oracleparser.ParseError) (int, string) { return pe.Position, pe.Message },
+		func(pe *oracleparser.ParseError, pos *storepb.Position) string {
+			return base.FormatLineColSyntaxError(pos, pe.Message, "")
+		},
+	)
 }
 
 func convertParseError(parseErr *oracleparser.ParseError, stmt base.Statement) *base.SyntaxError {
 	pos := base.ShiftPosition(ByteOffsetToRunePosition(stmt.Text, parseErr.Position), stmt.Start)
-
-	msg := fmt.Sprintf("Syntax error at line %d:%d: %s", pos.Line, pos.Column, parseErr.Message)
 	return &base.SyntaxError{
 		Position:   pos,
-		Message:    msg,
+		Message:    base.FormatLineColSyntaxError(pos, parseErr.Message, ""),
 		RawMessage: parseErr.Message,
 	}
 }

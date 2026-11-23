@@ -59,30 +59,13 @@ func parseStatementNode(text string) (omniast.Node, error) {
 	return file.Stmts[0], nil
 }
 
-// convertParseError converts an omni *parser.ParseError into the bare
-// *base.SyntaxError shape the legacy ANTLR error listener produced (callers
-// such as the sheet manager type-assert on *base.SyntaxError to surface
-// syntax-error advices). The error position is computed inside the statement
-// text (rune-based columns) and offset by the statement's start position in
-// the original multi-statement input — mirroring redshift's convertError.
+// convertParseError converts an omni *parser.ParseError into a *base.SyntaxError
+// with position shifted by the statement's start position in the input script.
 func convertParseError(err error, stmt base.Statement) error {
-	var parseErr *omniparser.ParseError
-	if !errors.As(err, &parseErr) {
-		return err
-	}
-
-	mapper := base.NewByteOffsetPositionMapper(stmt.Text)
-	position := mapper.Position(parseErr.Position)
-	if stmt.Start != nil {
-		localLine := position.Line
-		position.Line += stmt.Start.Line - 1
-		if localLine == 1 && stmt.Start.Column > 0 {
-			position.Column += stmt.Start.Column - 1
-		}
-	}
-	return &base.SyntaxError{
-		Position:   position,
-		Message:    fmt.Sprintf("Syntax error at line %d:%d \n%s", position.Line, position.Column, parseErr.Message),
-		RawMessage: parseErr.Message,
-	}
+	return base.ConvertSyntaxError(stmt, err, true,
+		func(pe *omniparser.ParseError) (int, string) { return pe.Position, pe.Message },
+		func(pe *omniparser.ParseError, pos *storepb.Position) string {
+			return fmt.Sprintf("Syntax error at line %d:%d \n%s", pos.Line, pos.Column, pe.Message)
+		},
+	)
 }

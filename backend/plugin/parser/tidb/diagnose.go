@@ -2,7 +2,6 @@ package tidb
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bytebase/omni/tidb/analysis"
 
@@ -16,15 +15,14 @@ func init() {
 
 // Diagnose returns the script's first syntax error as a diagnostic.
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	diagnostics := make([]base.Diagnostic, 0)
 	syntaxError, err := analysis.Diagnose(statement)
 	if err != nil {
 		return nil, err
 	}
-	if syntaxError != nil {
-		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(toSyntaxError(statement, syntaxError), statement))
+	if syntaxError == nil {
+		return base.DiagnoseSyntaxError(statement, nil), nil
 	}
-	return diagnostics, nil
+	return base.DiagnoseSyntaxError(statement, toSyntaxError(statement, syntaxError)), nil
 }
 
 // toSyntaxError places omni's error the way convertParseError places a parse
@@ -35,13 +33,9 @@ func toSyntaxError(statement string, e *analysis.SyntaxError) *base.SyntaxError 
 	if stmt.Start != nil {
 		pos.Line += stmt.Start.Line - 1
 	}
-	msg := fmt.Sprintf("Syntax error at line %d:%d: %s", pos.Line, pos.Column, e.Message)
-	if e.RelatedText != "" {
-		msg += "\nrelated text: " + e.RelatedText
-	}
 	return &base.SyntaxError{
 		Position:   pos,
-		Message:    msg,
+		Message:    base.FormatLineColSyntaxError(pos, e.Message, e.RelatedText),
 		RawMessage: e.Message,
 	}
 }

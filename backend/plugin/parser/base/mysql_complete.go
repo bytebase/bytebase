@@ -1,7 +1,6 @@
 package base
 
 import (
-	"cmp"
 	"context"
 	"slices"
 
@@ -49,13 +48,6 @@ func MapMySQLFamilyCandidates[T any](raw []T, convert func(T) Candidate) []Candi
 	for _, c := range candidateMap {
 		result = append(result, c)
 	}
-	slices.SortFunc(result, func(a, b Candidate) int {
-		return cmp.Or(
-			cmp.Compare(a.Type, b.Type),
-			cmp.Compare(a.Text, b.Text),
-			cmp.Compare(a.Definition, b.Definition),
-			cmp.Compare(a.Comment, b.Comment),
-		)
-	})
+	slices.SortFunc(result, CompareCandidate)
 	return result
 }

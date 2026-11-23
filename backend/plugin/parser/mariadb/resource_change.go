@@ -2,7 +2,6 @@ package mariadb
 
 import (
 	"github.com/bytebase/omni/mariadb/analysis"
-	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -14,11 +13,7 @@ func init() {
 }
 
 func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
-	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, false, func(a base.AST) (analysis.StatementChanges, bool, error) {
-		node, ok := a.(*AST)
-		if !ok {
-			return analysis.StatementChanges{}, false, errors.New("expected AST for MariaDB")
-		}
-		return analysis.ExtractChangedResources(node.Node, currentDatabase, node.Text), true, nil
+	return base.ExtractTypedChangedResources(dbMetadata, asts, "expected AST for MariaDB", false, func(node *AST) (analysis.StatementChanges, bool) {
+		return analysis.ExtractChangedResources(node.Node, currentDatabase, node.Text), true
 	})
 }

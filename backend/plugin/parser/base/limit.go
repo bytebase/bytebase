@@ -2,10 +2,12 @@ package base
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
 	"unicode"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -55,4 +57,15 @@ func StatementWithResultLimit(engine storepb.Engine, statement string, limit int
 // fallback wrapper (a subquery or CTE) would otherwise leave stray inside itself.
 func TrimStatement(statement string) string {
 	return strings.TrimLeftFunc(strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon), unicode.IsSpace)
+}
+
+// RewriteResultLimit runs rewrite and, on error, logs the failure and formats
+// fallbackFmt with TrimStatement(statement) and limit.
+func RewriteResultLimit(statement string, limit int, rewrite func(string, int) (string, error), fallbackFmt string) string {
+	stmt, err := rewrite(statement, limit)
+	if err != nil {
+		slog.Error("fail to add limit clause", slog.String("statement", statement), log.BBError(err))
+		return fmt.Sprintf(fallbackFmt, TrimStatement(statement), limit)
+	}
+	return stmt
 }

@@ -1,8 +1,6 @@
 package tsql
 
 import (
-	"errors"
-	"fmt"
 	"strings"
 	"unicode"
 
@@ -18,64 +16,30 @@ func init() {
 }
 
 func parseTSQLStatements(statement string) ([]base.ParsedStatement, error) {
-	// Split once to get Statement with text and positions.
-	stmts, err := SplitSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []base.ParsedStatement
-	for _, stmt := range stmts {
-		if stmt.Empty {
-			continue
-		}
-
-		stmts, err := ParseTSQL(stmt.Text)
+	return base.ParseNonEmptyMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
+		parsed, err := ParseTSQL(stmt.Text)
 		if err != nil {
 			return nil, convertError(err, stmt)
 		}
-
-		if len(stmts) == 0 {
-			continue
-		}
-
-		for _, os := range stmts {
+		asts := make([]base.AST, 0, len(parsed))
+		for _, os := range parsed {
 			if os.Empty() {
 				continue
 			}
-			result = append(result, base.ParsedStatement{
-				Statement: stmt,
-				AST: &AST{
-					Node:          os.AST,
-					Text:          stmt.Text,
-					StartPosition: stmt.Start,
-				},
-			})
+			asts = append(asts, &AST{Node: os.AST, Text: stmt.Text, StartPosition: stmt.Start})
 		}
-	}
-
-	return result, nil
+		return asts, nil
+	})
 }
 
 // convertError converts an omni parser error to a base.SyntaxError with proper line:column position.
 func convertError(err error, stmt base.Statement) error {
-	var parseErr *mssqlparser.ParseError
-	if !errors.As(err, &parseErr) {
-		return err
-	}
-
-	pos := ByteOffsetToRunePosition(stmt.Text, parseErr.Position)
-
-	// Adjust line by the statement's base line (stmt.Start.Line is 1-based).
-	if stmt.Start != nil {
-		pos.Line += stmt.Start.Line - 1
-	}
-
-	return &base.SyntaxError{
-		Position:   pos,
-		Message:    fmt.Sprintf("Syntax error at line %d: %s", pos.Line, parseErr.Message),
-		RawMessage: parseErr.Message,
-	}
+	return base.ConvertSyntaxError(stmt, err, false,
+		func(pe *mssqlparser.ParseError) (int, string) { return pe.Position, pe.Message },
+		func(pe *mssqlparser.ParseError, pos *storepb.Position) string {
+			return base.FormatLineSyntaxError(pos, pe.Message)
+		},
+	)
 }
 
 func NormalizeTSQLIdentifierText(text string) (original string, lowercase string) {

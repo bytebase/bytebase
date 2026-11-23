@@ -2,6 +2,7 @@ package base
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -91,6 +92,34 @@ func ParseMultiNodeStatements(
 	return result, nil
 }
 
+// ParseNonEmptyMultiNodeStatements splits statement and expands each non-empty
+// segment into zero or more ParsedStatement entries, omitting empty segments
+// and segments yielding no ASTs.
+func ParseNonEmptyMultiNodeStatements(
+	statement string,
+	split func(string) ([]Statement, error),
+	parseSegment func(Statement) ([]AST, error),
+) ([]ParsedStatement, error) {
+	stmts, err := split(statement)
+	if err != nil {
+		return nil, err
+	}
+	var result []ParsedStatement
+	for _, stmt := range stmts {
+		if stmt.Empty {
+			continue
+		}
+		asts, err := parseSegment(stmt)
+		if err != nil {
+			return nil, err
+		}
+		for _, a := range asts {
+			result = append(result, ParsedStatement{Statement: stmt, AST: a})
+		}
+	}
+	return result, nil
+}
+
 // ConvertParseError converts an engine parse error matched via errors.As into a *SyntaxError
 // with 1-based line:column coordinates shifted by basePos. Returns err unchanged if it does
 // not match E.
@@ -110,6 +139,50 @@ func ConvertParseError[E error](
 		Message:    msg,
 		RawMessage: rawMsg,
 	}
+}
+
+// ConvertSyntaxError converts an engine parse error matched via errors.As into
+// a *SyntaxError whose 1-based line:column position is shifted by stmt.Start.
+// When shiftColumn is false, only the line number is shifted.
+func ConvertSyntaxError[E error](
+	stmt Statement,
+	err error,
+	shiftColumn bool,
+	extract func(E) (byteOffset int, rawMessage string),
+	format func(E, *storepb.Position) string,
+) error {
+	var pe E
+	if !errors.As(err, &pe) {
+		return err
+	}
+	offset, rawMsg := extract(pe)
+	pos := ByteOffsetToRunePosition(stmt.Text, offset)
+	if stmt.Start != nil {
+		if shiftColumn && pos.Line == 1 && stmt.Start.Column > 0 {
+			pos.Column += stmt.Start.Column - 1
+		}
+		pos.Line += stmt.Start.Line - 1
+	}
+	return &SyntaxError{
+		Position:   pos,
+		Message:    format(pe, pos),
+		RawMessage: rawMsg,
+	}
+}
+
+// FormatLineColSyntaxError formats a syntax error message with 1-based line:column
+// and optional related text.
+func FormatLineColSyntaxError(pos *storepb.Position, message, relatedText string) string {
+	msg := fmt.Sprintf("Syntax error at line %d:%d: %s", pos.Line, pos.Column, message)
+	if relatedText != "" {
+		msg += "\nrelated text: " + relatedText
+	}
+	return msg
+}
+
+// FormatLineSyntaxError formats a syntax error message with a 1-based line number.
+func FormatLineSyntaxError(pos *storepb.Position, message string) string {
+	return fmt.Sprintf("Syntax error at line %d: %s", pos.Line, message)
 }
 
 // CollectSingleStatementTypesWithPosition classifies each AST into at most one StatementType

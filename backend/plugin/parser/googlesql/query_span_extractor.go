@@ -31,6 +31,7 @@ func NewQuerySpanExtractor(cfg Config, defaultDatabase string, gCtx base.GetQuer
 
 // GetQuerySpan extracts the query span for a single GoogleSQL statement.
 func (q *QuerySpanExtractor) GetQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
+	getMeta := base.QuerySpanProtoMetadataFunc(ctx, q.gCtx, true)
 	span, err := analysis.ResolveQuerySpan(statement, analysis.ResolveOptions{
 		Dialect:                q.cfg.Dialect,
 		DefaultDatabase:        q.defaultDatabase,
@@ -41,17 +42,10 @@ func (q *QuerySpanExtractor) GetQuerySpan(ctx context.Context, statement string)
 		UppercaseStarMergeName: q.cfg.UppercaseStarMergeName,
 		CanonicalBaseFieldName: q.cfg.CanonicalBaseFieldName,
 		GetDatabaseMetadata: func(database string) (*metadata.DatabaseSchemaMetadata, error) {
-			if q.gCtx.GetDatabaseMetadataFunc == nil {
+			if getMeta == nil {
 				return nil, &analysis.ResourceNotFoundError{Database: &database}
 			}
-			_, meta, err := q.gCtx.GetDatabaseMetadataFunc(ctx, q.gCtx.InstanceID, database)
-			if err != nil {
-				return nil, base.ToOmniNotFoundError(err)
-			}
-			if meta == nil {
-				return nil, nil
-			}
-			return meta.GetProto(), nil
+			return getMeta(database)
 		},
 	})
 	if err != nil {
@@ -60,10 +54,5 @@ func (q *QuerySpanExtractor) GetQuerySpan(ctx context.Context, statement string)
 		}
 		return nil, err
 	}
-	return &base.QuerySpan{
-		Type:          MapQueryType(span.Type),
-		SourceColumns: base.OmniColumnSet(span.SourceColumns),
-		Results:       base.OmniQuerySpanResults(span.Results),
-		NotFoundError: base.OmniNotFoundError(span.NotFoundError),
-	}, nil
+	return base.OmniQuerySpan(span.Type, span.SourceColumns, nil, span.Results, span.NotFoundError), nil
 }

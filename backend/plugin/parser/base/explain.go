@@ -98,6 +98,22 @@ func OmniExplainAnalyzeError(err error) error {
 	return err
 }
 
+// ExplainStatementResult adapts an omni ExplainStatement (explain, err) pair,
+// translating ErrExplainAnalyzeExecutes and passing other errors through
+// convertErr when non-nil.
+func ExplainStatementResult(explain string, err error, convertErr func(error) error) (string, error) {
+	if err == nil {
+		return explain, nil
+	}
+	if errors.Is(err, omnianalysis.ErrExplainAnalyzeExecutes) {
+		return "", ErrExplainAnalyzeExecutes
+	}
+	if convertErr != nil {
+		return "", convertErr(err)
+	}
+	return "", err
+}
+
 // StartsWithExplain reports whether the first keyword of statement is EXPLAIN,
 // ignoring leading comments and whitespace. It stands in for an AST check on an
 // engine whose parser cannot answer, which is enough to keep such an engine from

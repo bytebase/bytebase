@@ -1,9 +1,6 @@
 package redshift
 
 import (
-	"errors"
-	"fmt"
-
 	omniredshift "github.com/bytebase/omni/redshift"
 	"github.com/bytebase/omni/redshift/ast"
 	omniredshiftparser "github.com/bytebase/omni/redshift/parser"
@@ -45,17 +42,12 @@ func GetNode(a base.AST) (ast.Node, bool) {
 }
 
 func convertError(err error, stmt base.Statement) error {
-	var parseErr *omniredshiftparser.ParseError
-	if !errors.As(err, &parseErr) {
-		return err
-	}
-
-	position := base.ShiftPosition(ByteOffsetToRunePosition(stmt.Text, parseErr.Position), stmt.Start)
-	return &base.SyntaxError{
-		Position:   position,
-		Message:    fmt.Sprintf("Syntax error at line %d: %s", position.Line, parseErr.Message),
-		RawMessage: parseErr.Message,
-	}
+	return base.ConvertSyntaxError(stmt, err, true,
+		func(pe *omniredshiftparser.ParseError) (int, string) { return pe.Position, pe.Message },
+		func(pe *omniredshiftparser.ParseError, pos *storepb.Position) string {
+			return base.FormatLineSyntaxError(pos, pe.Message)
+		},
+	)
 }
 
 func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {

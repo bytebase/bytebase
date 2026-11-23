@@ -2,7 +2,6 @@ package redshift
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bytebase/omni/redshift/analysis"
 
@@ -15,15 +14,14 @@ func init() {
 }
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	diagnostics := make([]base.Diagnostic, 0)
+	var syntaxErr *base.SyntaxError
 	if diag := analysis.Diagnose(statement); diag != nil {
 		position := ByteOffsetToRunePosition(statement, diag.Offset)
-		syntaxErr := &base.SyntaxError{
+		syntaxErr = &base.SyntaxError{
 			Position:   position,
-			Message:    fmt.Sprintf("Syntax error at line %d: %s", position.Line, diag.Message),
+			Message:    base.FormatLineSyntaxError(position, diag.Message),
 			RawMessage: diag.Message,
 		}
-		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxErr, statement))
 	}
-	return diagnostics, nil
+	return base.DiagnoseSyntaxError(statement, syntaxErr), nil
 }

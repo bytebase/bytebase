@@ -28,24 +28,13 @@ func validateQuery(statement string) (bool, bool, error) {
 	// syntactically valid but not read-only.
 	var parseErr *parser.ParseError
 	if errors.As(err, &parseErr) {
-		return false, false, convertParseError(statement, parseErr, nil)
+		return false, false, convertParseError(statement, err, nil)
 	}
 	return false, false, nil
 }
 
-// convertParseError converts an omni *parser.ParseError to a
-// *base.SyntaxError that sql_service.go recognizes for structured
-// error diagnostics. It converts the byte offset in ParseError.Position
-// to 1-based line and 1-based column (rune-based) matching the
-// storepb.Position convention used across all omni parser adapters.
-//
-// If basePos is non-nil, the computed position is offset by it so that
-// errors from parsing an isolated statement segment are reported in the
-// coordinates of the original multi-statement script.
-func convertParseError(statement string, pe *parser.ParseError, basePos *storepb.Position) *base.SyntaxError {
-	return &base.SyntaxError{
-		Position:   base.ShiftPosition(base.ByteOffsetToRunePosition(statement, pe.Position), basePos),
-		Message:    pe.Error(),
-		RawMessage: pe.Message,
-	}
+func convertParseError(statement string, err error, basePos *storepb.Position) error {
+	return base.ConvertParseError(statement, err, basePos, func(pe *parser.ParseError) (int, string, string) {
+		return pe.Position, pe.Error(), pe.Message
+	})
 }

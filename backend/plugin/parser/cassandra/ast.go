@@ -35,7 +35,3 @@ func GetNode(a base.AST) (ast.Node, bool) {
 func ParseCQL(sql string) ([]omnicassandra.Statement, error) {
 	return omnicassandra.Parse(sql)
 }
-
-func byteOffsetToPosition(sql string, byteOffset int) *storepb.Position {
-	return base.NewByteOffsetPositionMapper(sql).Position(byteOffset)
-}

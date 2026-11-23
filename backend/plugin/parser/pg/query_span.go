@@ -20,44 +20,32 @@ func init() {
 
 // GetQuerySpan returns the query span for the given statement.
 func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, schema string, _ bool) (*base.QuerySpan, error) {
-	if gCtx.GetDatabaseMetadataFunc == nil {
-		return nil, errors.New("GetDatabaseMetadataFunc is not set in GetQuerySpanContext")
-	}
-	_, meta, err := gCtx.GetDatabaseMetadataFunc(ctx, gCtx.InstanceID, database)
+	meta, err := base.RequireDatabaseMetadata(ctx, gCtx, database)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database metadata for instance %q and database %q", gCtx.InstanceID, database)
-	}
-	if meta == nil {
-		return nil, errors.Errorf("database metadata for database %q not found (database not synced)", database)
+		return nil, err
 	}
 	searchPath := meta.GetSearchPath()
 	if schema != "" {
 		searchPath = analysis.SearchPathForSelectedSchema(schema, searchPath)
 	}
 
-	querySpan, err := resolveQuerySpan(ctx, gCtx, stmt.Text, database, searchPath)
+	span, err := analysis.ResolveQuerySpan(ctx, stmt.Text, analysis.ResolveOptions{
+		DefaultDatabase: database,
+		SearchPath:      searchPath,
+		Catalog: analysis.Catalog{
+			GetDatabase: base.QuerySpanDatabaseGetter(ctx, gCtx, false, func(db *model.DatabaseMetadata) analysis.Database {
+				return &catalogDatabase{database: db}
+			}),
+		},
+	})
+	if syntaxErr, ok := err.(*analysis.SyntaxError); ok {
+		err = convertSyntaxError(stmt.Text, syntaxErr)
+	}
+	querySpan, err := base.OmniResolvedSpanResult(span, err)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span from statement: %s", stmt.Text)
 	}
 	return querySpan, nil
-}
-
-func resolveQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement, database string, searchPath []string) (*base.QuerySpan, error) {
-	span, err := analysis.ResolveQuerySpan(ctx, statement, analysis.ResolveOptions{
-		DefaultDatabase: database,
-		SearchPath:      searchPath,
-		Catalog:         newCatalog(ctx, gCtx),
-	})
-	if err != nil {
-		if syntaxErr, ok := err.(*analysis.SyntaxError); ok {
-			return nil, convertSyntaxError(statement, syntaxErr)
-		}
-		if mixErr := base.ConvertOmniMixTablesError(err); mixErr != nil {
-			return nil, mixErr
-		}
-		return nil, err
-	}
-	return base.OmniResolvedSpan(span), nil
 }
 
 // convertSyntaxError places the error one byte before the parser's offset, so
@@ -72,22 +60,6 @@ func convertSyntaxError(statement string, err *analysis.SyntaxError) *base.Synta
 		syntaxErr.Position = ByteOffsetToRunePosition(statement, parseErr.Position-1)
 	}
 	return syntaxErr
-}
-
-// newCatalog reads the instance's synced metadata for omni.
-func newCatalog(ctx context.Context, gCtx base.GetQuerySpanContext) analysis.Catalog {
-	return analysis.Catalog{
-		GetDatabase: func(name string) (analysis.Database, error) {
-			_, database, err := gCtx.GetDatabaseMetadataFunc(ctx, gCtx.InstanceID, name)
-			if err != nil {
-				return nil, err
-			}
-			if database == nil {
-				return nil, nil
-			}
-			return &catalogDatabase{database: database}, nil
-		},
-	}
 }
 
 // catalogDatabase answers omni's lookups with the metadata model's own name

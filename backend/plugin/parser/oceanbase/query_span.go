@@ -21,50 +21,14 @@ func GetQuerySpan(
 	database, _ string,
 	ignoreCaseSensitive bool,
 ) (*base.QuerySpan, error) {
-	querySpan, err := resolveQuerySpan(ctx, gCtx, stmt.Text, database, ignoreCaseSensitive)
+	listDBs, getDB := base.UnnamedSchemaQuerySpanCatalog(ctx, gCtx, func(d *base.UnnamedSchemaDatabase) analysis.Database { return d })
+	querySpan, err := base.OmniResolvedSpanResult(analysis.ResolveQuerySpan(stmt.Text, analysis.ResolveOptions{
+		DefaultDatabase:     database,
+		IgnoreCaseSensitive: ignoreCaseSensitive,
+		Catalog:             analysis.Catalog{ListDatabaseNames: listDBs, GetDatabase: getDB},
+	}))
 	if err != nil {
 		return nil, convertError(err, stmt)
 	}
 	return querySpan, nil
-}
-
-func resolveQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement, database string, ignoreCaseSensitive bool) (*base.QuerySpan, error) {
-	span, err := analysis.ResolveQuerySpan(statement, analysis.ResolveOptions{
-		DefaultDatabase:     database,
-		IgnoreCaseSensitive: ignoreCaseSensitive,
-		Catalog:             newCatalog(ctx, gCtx),
-	})
-	if err != nil {
-		if mixErr := base.ConvertOmniMixTablesError(err); mixErr != nil {
-			return nil, mixErr
-		}
-		return nil, err
-	}
-	return base.OmniResolvedSpan(span), nil
-}
-
-// newCatalog reads the instance's synced metadata for omni. A lookup error
-// carrying a ResourceNotFoundError becomes omni's NotFoundError, which omni
-// reports on the span rather than as an error.
-func newCatalog(ctx context.Context, gCtx base.GetQuerySpanContext) analysis.Catalog {
-	var catalog analysis.Catalog
-	if gCtx.ListDatabaseNamesFunc != nil {
-		catalog.ListDatabaseNames = func() ([]string, error) {
-			names, err := gCtx.ListDatabaseNamesFunc(ctx, gCtx.InstanceID)
-			return names, base.ToOmniNotFoundError(err)
-		}
-	}
-	if gCtx.GetDatabaseMetadataFunc != nil {
-		catalog.GetDatabase = func(name string) (analysis.Database, error) {
-			_, database, err := gCtx.GetDatabaseMetadataFunc(ctx, gCtx.InstanceID, name)
-			if err != nil {
-				return nil, base.ToOmniNotFoundError(err)
-			}
-			if database == nil {
-				return nil, nil
-			}
-			return &base.UnnamedSchemaDatabase{Database: database}, nil
-		}
-	}
-	return catalog
 }

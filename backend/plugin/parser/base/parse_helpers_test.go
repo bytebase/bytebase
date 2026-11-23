@@ -103,6 +103,18 @@ func TestParseMultiNodeStatements(t *testing.T) {
 	parseErr := errors.New("bad syntax")
 	_, err = ParseMultiNodeStatements("input", split, func(Statement) ([]AST, error) { return nil, parseErr })
 	require.ErrorIs(t, err, parseErr)
+
+	// ParseNonEmptyMultiNodeStatements omits empty segments and segments yielding zero ASTs.
+	nonEmpty, err := ParseNonEmptyMultiNodeStatements("input", split, func(stmt Statement) ([]AST, error) {
+		if stmt.Text == "skip" {
+			return nil, nil
+		}
+		return []AST{&stubNodeAST{text: "a"}, &stubNodeAST{text: "b"}}, nil
+	})
+	require.NoError(t, err)
+	require.Len(t, nonEmpty, 2)
+	require.Equal(t, "a", nonEmpty[0].AST.(*stubNodeAST).text)
+	require.Equal(t, "b", nonEmpty[1].AST.(*stubNodeAST).text)
 }
 
 func TestConvertParseError(t *testing.T) {
@@ -128,6 +140,35 @@ func TestConvertParseError(t *testing.T) {
 	mlErr := ConvertParseError("SELECT 1\nFROM", &sampleParseErr{pos: 11, msg: "bad from"}, &storepb.Position{Line: 4, Column: 7}, extract)
 	require.ErrorAs(t, mlErr, &synErr)
 	require.Equal(t, &storepb.Position{Line: 5, Column: 3}, synErr.Position)
+
+	// ConvertSyntaxError formats using the shifted position and honors shiftColumn.
+	stmt := Statement{Text: "SELECT FROM", Start: &storepb.Position{Line: 3, Column: 5}}
+	errLineCol := ConvertSyntaxError(stmt, &sampleParseErr{pos: 4, msg: "bad"}, true,
+		func(pe *sampleParseErr) (int, string) { return pe.pos, pe.msg },
+		func(pe *sampleParseErr, pos *storepb.Position) string {
+			return FormatLineColSyntaxError(pos, pe.msg, "near FROM")
+		},
+	)
+	require.ErrorAs(t, errLineCol, &synErr)
+	require.Equal(t, &storepb.Position{Line: 3, Column: 9}, synErr.Position)
+	require.Equal(t, "Syntax error at line 3:9: bad\nrelated text: near FROM", synErr.Message)
+	require.Equal(t, "bad", synErr.RawMessage)
+
+	errLineOnly := ConvertSyntaxError(stmt, &sampleParseErr{pos: 4, msg: "bad"}, false,
+		func(pe *sampleParseErr) (int, string) { return pe.pos, pe.msg },
+		func(pe *sampleParseErr, pos *storepb.Position) string {
+			return FormatLineSyntaxError(pos, pe.msg)
+		},
+	)
+	require.ErrorAs(t, errLineOnly, &synErr)
+	require.Equal(t, &storepb.Position{Line: 3, Column: 5}, synErr.Position)
+	require.Equal(t, "Syntax error at line 3: bad", synErr.Message)
+
+	// Non-matching error passes through unchanged.
+	require.Equal(t, other, ConvertSyntaxError(stmt, other, true,
+		func(pe *sampleParseErr) (int, string) { return pe.pos, pe.msg },
+		func(_ *sampleParseErr, pos *storepb.Position) string { return FormatLineSyntaxError(pos, "") },
+	))
 }
 
 func TestCollectSingleStatementTypesWithPosition(t *testing.T) {

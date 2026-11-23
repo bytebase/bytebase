@@ -15,11 +15,7 @@ func init() {
 }
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	diagnostics := make([]base.Diagnostic, 0)
-	if syntaxError := convertDiagnoseError(analysis.Diagnose(statement)); syntaxError != nil {
-		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError, statement))
-	}
-	return diagnostics, nil
+	return base.DiagnoseSyntaxError(statement, convertDiagnoseError(analysis.Diagnose(statement))), nil
 }
 
 // convertDiagnoseError positions the error in the text omni parsed.
