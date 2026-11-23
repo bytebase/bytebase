@@ -88,30 +88,20 @@ func init() {
 			MixedLine: e.FirstTokenLine,
 		}),
 		storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN: e.DMLDryRun(advisor.V1DMLDryRunConfig[ast.Node]{
-			Probes: tidbv1review.StatementDMLDryRunProbes,
-			Judge:  tidbv1review.StatementDMLDryRun,
+			Probes:        tidbv1review.StatementDMLDryRunProbes,
+			Judge:         tidbv1review.StatementDMLDryRun,
+			StatementText: func(stmt advisor.V1Stmt[ast.Node]) string { return strings.TrimSpace(stmt.Text) },
 			Probe: func(ctx context.Context, prober db.Prober, stmt advisor.V1Stmt[ast.Node], _ []string) v1review.Probe {
-				if reason, failed := probeTiDBDML(ctx, prober, e, stmt); failed {
-					return v1review.Probe{Error: reason}
-				}
-				return v1review.Probe{}
+				return probeTiDBDML(ctx, prober, e, stmt)
 			},
-			FormatContent: func(stmt advisor.V1Stmt[ast.Node], f v1review.Finding) string {
-				return fmt.Sprintf("\"%s\" dry runs failed: %s", strings.TrimSpace(stmt.Text), f.Value)
-			},
-			Pos: func(stmt advisor.V1Stmt[ast.Node], _ v1review.Finding) *storepb.Position {
-				return e.PosFinding(stmt, v1review.Finding{})
-			},
+			Pos: e.PosStatement,
 		}),
 	})
 }
 
-func probeTiDBDML(ctx context.Context, prober db.Prober, e *advisor.V1Engine[ast.Node], stmt advisor.V1Stmt[ast.Node]) (string, bool) {
-	explain := func(sql string) (string, bool) {
-		if _, err := prober.Probe(ctx, db.ProbeContext{}, fmt.Sprintf("EXPLAIN %s", sql)); err != nil {
-			return err.Error(), true
-		}
-		return "", false
+func probeTiDBDML(ctx context.Context, prober db.Prober, e *advisor.V1Engine[ast.Node], stmt advisor.V1Stmt[ast.Node]) v1review.Probe {
+	explain := func(sql string) v1review.Probe {
+		return advisor.ExplainProbe(ctx, prober, db.ProbeContext{}, fmt.Sprintf("EXPLAIN %s", sql))
 	}
 	node, ok := stmt.Node.(*ast.BatchStmt)
 	if !ok {
@@ -122,8 +112,8 @@ func probeTiDBDML(ctx context.Context, prober db.Prober, e *advisor.V1Engine[ast
 		if node.DryRun != ast.BatchDryRunNone {
 			dryRunSQL = stmt.Text
 		}
-		if _, err := prober.Probe(ctx, db.ProbeContext{Autocommit: true}, dryRunSQL); err != nil {
-			return err.Error(), true
+		if p := advisor.ExplainProbe(ctx, prober, db.ProbeContext{Autocommit: true}, dryRunSQL); p.Error != "" {
+			return p
 		}
 		end := loc.End
 		if end <= loc.Start || end > len(stmt.Text) {
@@ -131,7 +121,7 @@ func probeTiDBDML(ctx context.Context, prober db.Prober, e *advisor.V1Engine[ast
 		}
 		return explain(e.TrimmedText(stmt.Text[loc.Start:end]))
 	}
-	return "failed to extract inner DML", true
+	return v1review.Probe{Error: "failed to extract inner DML"}
 }
 
 func dmlDryRunInnerLoc(n ast.StmtNode) (ast.Loc, bool) {

@@ -32,6 +32,15 @@ func ProbeFor(checkCtx Context) (db.Prober, error) {
 	return checkCtx.Prober, nil
 }
 
+// ExplainProbe runs query through prober, returning an empty Probe on success
+// or Probe{Error: err.Error()} on failure.
+func ExplainProbe(ctx context.Context, prober db.Prober, probeCtx db.ProbeContext, query string) v1review.Probe {
+	if _, err := prober.Probe(ctx, probeCtx, query); err != nil {
+		return v1review.Probe{Error: err.Error()}
+	}
+	return v1review.Probe{}
+}
+
 // Estimate is a row-limit rule's one call: the engine's estimate of the rows
 // statement modifies, shaped as the rule reports it ({Rows} or {CountError}).
 func Estimate(ctx context.Context, engine storepb.Engine, prober db.Prober, statement string) (v1review.Probe, error) {

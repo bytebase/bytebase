@@ -144,19 +144,6 @@ func RegisterMySQLFamily[N any](engine storepb.Engine, opt MySQLFamilyOptions[N]
 }
 
 var (
-	mysqlCompatEntries = map[v1review.Code]V1CompatEntry{
-		v1review.IncompatibleDropDatabase:  {Code: code.CompatibilityDropDatabase},
-		v1review.IncompatibleRenameTable:   {Code: code.CompatibilityRenameTable},
-		v1review.IncompatibleDropTable:     {Code: code.CompatibilityDropTable},
-		v1review.IncompatibleRenameColumn:  {Code: code.CompatibilityRenameColumn},
-		v1review.IncompatibleDropColumn:    {Code: code.CompatibilityDropColumn},
-		v1review.IncompatibleAddPrimaryKey: {Code: code.CompatibilityAddPrimaryKey},
-		v1review.IncompatibleAddUniqueKey:  {Code: code.CompatibilityAddUniqueKey},
-		v1review.IncompatibleAddForeignKey: {Code: code.CompatibilityAddForeignKey},
-		v1review.IncompatibleAddCheck:      {Code: code.CompatibilityAddCheck},
-		v1review.IncompatibleAlterCheck:    {Code: code.CompatibilityAlterCheck},
-		v1review.IncompatibleAlterColumn:   {Code: code.CompatibilityAlterColumn},
-	}
 	dmlLimitCodes   = map[string]code.Code{"INSERT": code.InsertUseLimit, "UPDATE": code.UpdateUseLimit, "DELETE": code.DeleteUseLimit}
 	dmlOrderByCodes = map[string]code.Code{"UPDATE": code.UpdateUseOrderBy, "DELETE": code.DeleteUseOrderBy}
 )
@@ -179,12 +166,6 @@ func buildMySQLFamilyAdvisors[N any](
 			return fmt.Sprintf(format, e.stmtText(stmt, false))
 		}
 	}
-	fmtName := func(format string) func(V1Stmt[N], v1review.Finding) string {
-		return func(_ V1Stmt[N], f v1review.Finding) string { return fmt.Sprintf(format, f.Name) }
-	}
-	fmtTableCol := func(format string) func(V1Stmt[N], v1review.Finding) string {
-		return func(_ V1Stmt[N], f v1review.Finding) string { return fmt.Sprintf(format, f.Table, f.Name) }
-	}
 	addDisallowCreate := func(ruleType storepb.SQLReviewRule_Type, fn func([]N) []v1review.Finding, c code.Code, object string) {
 		addSimple(ruleType, fn, c, e.posBaseLineTwice, fmtStmt(object+" is forbidden, but \"%s\" creates"))
 	}
@@ -203,52 +184,55 @@ func buildMySQLFamilyAdvisors[N any](
 			advisors[ruleType] = e.NamingRule(fn, c, missingMsg, kind, checkLength, subject, pos)
 		}
 	}
-	templateOpts := V1TemplateNamingOptions[N]{
-		BacktickQuote: true,
-		InvalidContent: func(stmt V1Stmt[N], f v1review.Finding) string {
-			return fmt.Sprintf("%q meet internal error %q", trimmedStmtText(stmt.Text), f.Detail)
-		},
+	addSimpleBatch := func(ruleType storepb.SQLReviewRule_Type, fn func([]N) []v1review.Finding, c code.Code, content func(v1review.Finding) string, pos V1PosFunc[N]) {
+		if fn != nil {
+			advisors[ruleType] = e.SimpleBatchNodes(fn, c, "", content, pos)
+		}
 	}
-	addTemplateNaming := func(ruleType storepb.SQLReviewRule_Type, fn func([]N, v1review.TemplateConfig, v1review.Schema) ([]v1review.Finding, error), c code.Code, errTitle, kindLabel string) {
-		advisors[ruleType] = e.TemplateNamingWithOptions(fn, c, errTitle, kindLabel, "", true, templateOpts, e.PosFinding)
+	addOriginalSchemaBatch := func(ruleType storepb.SQLReviewRule_Type, fn func([]N, v1review.Schema) ([]v1review.Finding, error), c code.Code, content func(v1review.Finding) string) {
+		if fn != nil {
+			advisors[ruleType] = e.SchemaBatch(c, func(_ Context, f v1review.Finding) string { return content(f) }, func(checkCtx Context, nodes []N) ([]v1review.Finding, *model.DatabaseMetadata, error) {
+				findings, err := fn(nodes, V1SchemaOf(checkCtx.OriginalMetadata))
+				return findings, checkCtx.OriginalMetadata, err
+			}, e.PosFinding)
+		}
 	}
 
 	// Simple per-statement rules.
-	addSimple(storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_INTEGER, rules.ColumnAutoIncrementMustInteger, code.AutoIncrementColumnNotInteger, e.posAbsOrFinding, fmtTableCol("Auto-increment column `%s`.`%s` requires integer type"))
-	addSimple(storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_UNSIGNED, rules.ColumnAutoIncrementMustUnsigned, code.AutoIncrementColumnSigned, e.posAbsOrFinding, fmtTableCol("Auto-increment column `%s`.`%s` is not UNSIGNED type"))
+	addSimple(storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_INTEGER, rules.ColumnAutoIncrementMustInteger, code.AutoIncrementColumnNotInteger, e.posAbsOrFinding, e.FmtTableCol("Auto-increment column `%s`.`%s` requires integer type"))
+	addSimple(storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_UNSIGNED, rules.ColumnAutoIncrementMustUnsigned, code.AutoIncrementColumnSigned, e.posAbsOrFinding, e.FmtTableCol("Auto-increment column `%s`.`%s` is not UNSIGNED type"))
 	addSimple(storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGE, rules.ColumnDisallowChange, code.UseChangeColumnStatement, e.posStatementAbsOrStmt, fmtStmt("\"%s\" contains CHANGE COLUMN statement"))
 	addSimple(storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGING_ORDER, rules.ColumnDisallowChangingOrder, code.ChangeColumnOrder, e.posStatementAbsOrStmt, fmtStmt("\"%s\" changes column order"))
 	addSimple(storepb.SQLReviewRule_COLUMN_DISALLOW_DROP, rules.ColumnDisallowDrop, code.DropColumn, e.posAbsOrFinding, func(_ V1Stmt[N], f v1review.Finding) string {
 		return fmt.Sprintf("drops column \"%s\" of table \"%s\"", f.Name, f.Table)
 	})
-	addSimple(storepb.SQLReviewRule_COLUMN_DISALLOW_SET_CHARSET, rules.ColumnDisallowSetCharset, code.SetColumnCharset, e.posStatementFinding, fmtStmt("Disallow set column charset but \"%s\" does"))
-	addSimple(storepb.SQLReviewRule_COLUMN_REQUIRE_CHARSET, rules.ColumnRequireCharset, code.NoCharset, e.posAbsOrFinding, fmtName("Column %s does not have a character set specified"))
-	addSimple(storepb.SQLReviewRule_COLUMN_REQUIRE_COLLATION, rules.ColumnRequireCollation, code.NoCollation, e.posAbsOrFinding, fmtName("Column %s does not have a collation specified"))
-	addSimple(storepb.SQLReviewRule_COLUMN_REQUIRE_DEFAULT, rules.ColumnRequireDefault, code.NoDefault, e.posAbsOrFinding, fmtTableCol("Column `%s`.`%s` doesn't have DEFAULT."))
-	addSimple(storepb.SQLReviewRule_COLUMN_SET_DEFAULT_FOR_NOT_NULL, rules.ColumnSetDefaultForNotNull, code.NotNullColumnWithNoDefault, e.posAlterFirstToken, fmtTableCol("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT"))
-	addSimple(storepb.SQLReviewRule_ENGINE_MYSQL_USE_INNODB, rules.EngineMySQLUseInnoDB, code.NotInnoDBEngine, e.PosSearchOrStart, func(stmt V1Stmt[N], _ v1review.Finding) string {
-		return fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", trimmedStmtText(stmt.Text))
-	})
+	addSimple(storepb.SQLReviewRule_COLUMN_DISALLOW_SET_CHARSET, rules.ColumnDisallowSetCharset, code.SetColumnCharset, e.PosStatement, fmtStmt("Disallow set column charset but \"%s\" does"))
+	addSimple(storepb.SQLReviewRule_COLUMN_REQUIRE_CHARSET, rules.ColumnRequireCharset, code.NoCharset, e.posAbsOrFinding, e.FmtName("Column %s does not have a character set specified"))
+	addSimple(storepb.SQLReviewRule_COLUMN_REQUIRE_COLLATION, rules.ColumnRequireCollation, code.NoCollation, e.posAbsOrFinding, e.FmtName("Column %s does not have a collation specified"))
+	addSimple(storepb.SQLReviewRule_COLUMN_REQUIRE_DEFAULT, rules.ColumnRequireDefault, code.NoDefault, e.posAbsOrFinding, e.FmtTableCol("Column `%s`.`%s` doesn't have DEFAULT."))
+	addSimple(storepb.SQLReviewRule_COLUMN_SET_DEFAULT_FOR_NOT_NULL, rules.ColumnSetDefaultForNotNull, code.NotNullColumnWithNoDefault, e.posAlterFirstToken, e.FmtTableCol("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT"))
+	addSimple(storepb.SQLReviewRule_ENGINE_MYSQL_USE_INNODB, rules.EngineMySQLUseInnoDB, code.NotInnoDBEngine, e.PosSearchOrStart, e.FmtStmt("\"%s;\" doesn't use InnoDB engine"))
 	addSimple(storepb.SQLReviewRule_INDEX_NO_DUPLICATE_COLUMN, rules.IndexNoDuplicateColumn, code.DuplicateColumnInIndex, e.PosFinding, func(stmt V1Stmt[N], f v1review.Finding) string {
 		return fmt.Sprintf("%s `%s` has duplicate column `%s`.`%s`", f.Value, keyName(stmt.Text, f, e.tidbQuirks), f.Table, f.Other)
 	})
-	addSimple(storepb.SQLReviewRule_NAMING_IDENTIFIER_NO_KEYWORD, rules.NamingIdentifierNoKeyword, code.NameIsKeywordIdentifier, e.posSearchOrFinding, fmtName("Identifier %q is a keyword and should be avoided"))
-	addSimple(storepb.SQLReviewRule_STATEMENT_ADD_COLUMN_WITHOUT_POSITION, rules.StatementAddColumnWithoutPosition, code.StatementAddColumnWithPosition, e.PosFinding, fmtName("add column with position \"%s\""))
+	addSimple(storepb.SQLReviewRule_NAMING_IDENTIFIER_NO_KEYWORD, rules.NamingIdentifierNoKeyword, code.NameIsKeywordIdentifier, e.posSearchOrFinding, e.FmtName("Identifier %q is a keyword and should be avoided"))
+	addSimple(storepb.SQLReviewRule_STATEMENT_ADD_COLUMN_WITHOUT_POSITION, rules.StatementAddColumnWithoutPosition, code.StatementAddColumnWithPosition, e.PosFinding, e.FmtName("add column with position \"%s\""))
 	addSimple(storepb.SQLReviewRule_STATEMENT_DISALLOW_COMMIT, rules.StatementDisallowCommit, code.StatementDisallowCommit, e.posFindingOrTiDBFirstToken, fmtStmt("Commit is not allowed, related statement: \"%s\""))
 	addSimple(storepb.SQLReviewRule_STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND, rules.StatementInsertDisallowOrderByRand, code.InsertUseOrderByRand, e.posFindingOrTiDBFirstToken, fmtStmt("\"%s\" uses ORDER BY RAND in the INSERT statement"))
 	addSimple(storepb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN, rules.StatementInsertMustSpecifyColumn, code.InsertNotSpecifyColumn, e.posAbsOrFinding, func(stmt V1Stmt[N], _ v1review.Finding) string {
 		return fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", e.stmtText(stmt, true))
 	})
-	addSimple(storepb.SQLReviewRule_STATEMENT_REQUIRE_ALGORITHM_OPTION, rules.StatementRequireAlgorithmOption, code.StatementNoAlgorithmOption, e.PosFinding, fmtName("ALTER TABLE statement should include %s option"))
-	addSimple(storepb.SQLReviewRule_STATEMENT_REQUIRE_LOCK_OPTION, rules.StatementRequireLockOption, code.StatementNoLockOption, e.PosFinding, fmtName("ALTER TABLE statement should include %s option"))
+	addSimple(storepb.SQLReviewRule_STATEMENT_REQUIRE_ALGORITHM_OPTION, rules.StatementRequireAlgorithmOption, code.StatementNoAlgorithmOption, e.PosFinding, e.FmtName("ALTER TABLE statement should include %s option"))
+	addSimple(storepb.SQLReviewRule_STATEMENT_REQUIRE_LOCK_OPTION, rules.StatementRequireLockOption, code.StatementNoLockOption, e.PosFinding, e.FmtName("ALTER TABLE statement should include %s option"))
 	addSimple(storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL, rules.StatementSelectNoSelectAll, code.StatementSelectAll, e.posFindingOrTiDBFirstToken, fmtStmt("\"%s\" uses SELECT all"))
 	addSimple(storepb.SQLReviewRule_STATEMENT_WHERE_NO_EQUAL_NULL, rules.StatementWhereNoEqualNull, code.StatementWhereNoEqualNull, e.PosFinding, fmtStmt("WHERE clause contains equal null: %s"))
 	addSimple(storepb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE, rules.StatementWhereNoLeadingWildcardLike, code.StatementLeadingWildcardLike, e.posFindingOrTiDBFirstToken, fmtStmt("\"%s\" uses leading wildcard LIKE"))
 	addSimple(storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT, rules.StatementWhereRequireSelect, code.StatementNoWhere, e.posFindingOrTiDBFirstToken, fmtStmt("\"%s\" requires WHERE clause"))
 	addSimple(storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE, rules.StatementWhereRequireUpdateDelete, code.StatementNoWhere, e.posFindingOrTiDBFirstToken, fmtStmt("\"%s\" requires WHERE clause"))
-	addSimple(storepb.SQLReviewRule_TABLE_DISALLOW_SET_CHARSET, rules.TableDisallowSetCharset, code.DisallowSetCharset, e.posStatementFinding, fmtStmt("Set charset on tables is disallowed, but \"%s\" uses"))
-	addSimple(storepb.SQLReviewRule_TABLE_REQUIRE_CHARSET, rules.TableRequireCharset, code.NoCharset, e.posStatementFinding, fmtName("Table %s does not have a character set specified"))
-	addSimple(storepb.SQLReviewRule_TABLE_REQUIRE_COLLATION, rules.TableRequireCollation, code.NoCollation, e.posStatementFinding, fmtName("Table %s does not have a collation specified"))
+	addSimple(storepb.SQLReviewRule_TABLE_DISALLOW_PARTITION, rules.TableDisallowPartition, code.CreateTablePartition, e.PosStatement, fmtStmt("Table partition is forbidden, but \"%s\" creates"))
+	addSimple(storepb.SQLReviewRule_TABLE_DISALLOW_SET_CHARSET, rules.TableDisallowSetCharset, code.DisallowSetCharset, e.PosStatement, fmtStmt("Set charset on tables is disallowed, but \"%s\" uses"))
+	addSimple(storepb.SQLReviewRule_TABLE_REQUIRE_CHARSET, rules.TableRequireCharset, code.NoCharset, e.PosStatement, e.FmtName("Table %s does not have a character set specified"))
+	addSimple(storepb.SQLReviewRule_TABLE_REQUIRE_COLLATION, rules.TableRequireCollation, code.NoCollation, e.PosStatement, e.FmtName("Table %s does not have a collation specified"))
 
 	// Disallow create rules.
 	addDisallowCreate(storepb.SQLReviewRule_SYSTEM_EVENT_DISALLOW_CREATE, rules.SystemEventDisallowCreate, code.DisallowCreateEvent, "Event")
@@ -297,51 +281,53 @@ func buildMySQLFamilyAdvisors[N any](
 	addStringArray(storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOWED_LIST, rules.SystemFunctionDisallowedList, code.DisabledFunction, e.posBaseLineTwice, func(stmt V1Stmt[N], f v1review.Finding) string {
 		return fmt.Sprintf("Function \"%s\" is disallowed, but \"%s\" uses", f.Name, strings.TrimSpace(stmt.Text))
 	})
-	addStringArray(storepb.SQLReviewRule_TABLE_DISALLOW_DDL, rules.TableDisallowDDL, code.TableDisallowDDL, e.PosFinding, fmtName("DDL is disallowed on table %s."))
-	addStringArray(storepb.SQLReviewRule_TABLE_DISALLOW_DML, rules.TableDisallowDML, code.TableDisallowDML, e.PosFinding, fmtName("DML is disallowed on table %s."))
+	addStringArray(storepb.SQLReviewRule_TABLE_DISALLOW_DDL, rules.TableDisallowDDL, code.TableDisallowDDL, e.PosFinding, e.FmtName("DDL is disallowed on table %s."))
+	addStringArray(storepb.SQLReviewRule_TABLE_DISALLOW_DML, rules.TableDisallowDML, code.TableDisallowDML, e.PosFinding, e.FmtName("DML is disallowed on table %s."))
 
 	// Regex naming rules.
-	btName := func(f v1review.Finding) string { return fmt.Sprintf("`%s`", f.Name) }
 	btTableCol := func(f v1review.Finding) string { return fmt.Sprintf("`%s`.`%s`", f.Table, f.Name) }
-	addNaming(storepb.SQLReviewRule_NAMING_TABLE, rules.NamingTable, code.NamingTableConventionMismatch, "naming_payload is required for naming table rule", "table", true, btName, e.PosFinding)
+	addNaming(storepb.SQLReviewRule_NAMING_TABLE, rules.NamingTable, code.NamingTableConventionMismatch, "naming_payload is required for naming table rule", "table", true, BacktickName, e.PosFinding)
 	addNaming(storepb.SQLReviewRule_NAMING_COLUMN, rules.NamingColumn, code.NamingColumnConventionMismatch, "naming_payload is required for naming column rule", "column", true, btTableCol, e.posAbsOrFinding)
-	addNaming(storepb.SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT, rules.NamingAutoIncrementColumn, code.NamingAutoIncrementColumnConventionMismatch, "naming_payload is required for this rule", "auto_increment column", true, btTableCol, e.posAbsOrFinding)
-	addNaming(storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, rules.TableDropNaming, code.TableDropNamingConventionMismatch, "naming_payload is required for table drop naming convention rule", "drop table", false, btName, e.posAbsOrFinding)
+	addNaming(storepb.SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT, rules.NamingAutoIncrementColumn, code.NamingAutoIncrementColumnConventionMismatch, "", "auto_increment column", true, btTableCol, e.posAbsOrFinding)
+	addNaming(storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, rules.TableDropNaming, code.TableDropNamingConventionMismatch, "naming_payload is required for table drop naming convention rule", "drop table", false, BacktickName, e.posAbsOrFinding)
 
 	// Template naming rules.
-	if fn := rules.NamingForeignKey; fn != nil {
-		addTemplateNaming(storepb.SQLReviewRule_NAMING_INDEX_FK, func(nodes []N, cfg v1review.TemplateConfig, _ v1review.Schema) ([]v1review.Finding, error) {
-			return fn(nodes, cfg)
-		}, code.NamingFKConventionMismatch, "Internal error for foreign key naming convention rule", "Foreign key")
+	invalidTemplateContent := func(stmt V1Stmt[N], f v1review.Finding) string {
+		return fmt.Sprintf("%q meet internal error %q", trimmedStmtText(stmt.Text), f.Detail)
 	}
-	if fn := rules.NamingIndex; fn != nil {
+	if rules.NamingForeignKey != nil {
+		advisors[storepb.SQLReviewRule_NAMING_INDEX_FK] = e.TemplateNaming(V1TemplateNamingConfig[N]{
+			FnNoSchema: rules.NamingForeignKey, Code: code.NamingFKConventionMismatch, Kind: "Foreign key",
+			InvalidContent: invalidTemplateContent, NilInvalidPos: true, BacktickQuote: true, Pos: e.PosFinding,
+		})
+	}
+	if rules.NamingIndex != nil {
 		errTitle := "Internal error for unique key naming convention rule"
 		if e.tidbQuirks {
-			errTitle = "Internal error for index naming convention rule"
+			errTitle = ""
 		}
-		addTemplateNaming(storepb.SQLReviewRule_NAMING_INDEX_IDX, func(nodes []N, cfg v1review.TemplateConfig, schema v1review.Schema) ([]v1review.Finding, error) {
-			return fn(nodes, cfg, schema), nil
-		}, code.NamingIndexConventionMismatch, errTitle, "Index")
+		advisors[storepb.SQLReviewRule_NAMING_INDEX_IDX] = e.TemplateNaming(V1TemplateNamingConfig[N]{
+			FnNoErr: rules.NamingIndex, Code: code.NamingIndexConventionMismatch, Kind: "Index", ErrTitle: errTitle,
+			InvalidContent: invalidTemplateContent, NilInvalidPos: true, BacktickQuote: true, Pos: e.PosFinding,
+		})
 	}
-	if fn := rules.NamingUniqueKey; fn != nil {
-		addTemplateNaming(storepb.SQLReviewRule_NAMING_INDEX_UK, func(nodes []N, cfg v1review.TemplateConfig, schema v1review.Schema) ([]v1review.Finding, error) {
-			return fn(nodes, cfg, schema), nil
-		}, code.NamingUKConventionMismatch, "Internal error for unique key naming convention rule", "Unique key")
+	if rules.NamingUniqueKey != nil {
+		advisors[storepb.SQLReviewRule_NAMING_INDEX_UK] = e.TemplateNaming(V1TemplateNamingConfig[N]{
+			FnNoErr: rules.NamingUniqueKey, Code: code.NamingUKConventionMismatch, Kind: "Unique key",
+			InvalidContent: invalidTemplateContent, NilInvalidPos: true, BacktickQuote: true, Pos: e.PosFinding,
+		})
 	}
 
-	// Custom per-statement rules using V1Engine.StmtNodes.
-	if rules.StatementDisallowLimit != nil {
-		advisors[storepb.SQLReviewRule_STATEMENT_DISALLOW_LIMIT] = e.StmtNodes(rules.StatementDisallowLimit,
-			func(stmt V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
-				return dmlLimitCodes[f.Name], fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", e.stmtText(stmt, false)), true
+	// Custom per-statement rules.
+	addDMLClause := func(ruleType storepb.SQLReviewRule_Type, fn func([]N) []v1review.Finding, codes map[string]code.Code, format string) {
+		if fn != nil {
+			advisors[ruleType] = e.StmtNodes(fn, func(stmt V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
+				return codes[f.Name], fmt.Sprintf(format, e.stmtText(stmt, false)), true
 			}, e.posFindingOrTiDBFirstToken)
+		}
 	}
-	if rules.StatementDisallowOrderBy != nil {
-		advisors[storepb.SQLReviewRule_STATEMENT_DISALLOW_ORDER_BY] = e.StmtNodes(rules.StatementDisallowOrderBy,
-			func(stmt V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
-				return dmlOrderByCodes[f.Name], fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", e.stmtText(stmt, false)), true
-			}, e.posFindingOrTiDBFirstToken)
-	}
+	addDMLClause(storepb.SQLReviewRule_STATEMENT_DISALLOW_LIMIT, rules.StatementDisallowLimit, dmlLimitCodes, "LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses")
+	addDMLClause(storepb.SQLReviewRule_STATEMENT_DISALLOW_ORDER_BY, rules.StatementDisallowOrderBy, dmlOrderByCodes, "ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses")
 	if rules.StatementDisallowTruncate != nil {
 		advisors[storepb.SQLReviewRule_STATEMENT_DISALLOW_TRUNCATE] = e.StmtNodes(rules.StatementDisallowTruncate,
 			func(_ V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
@@ -355,32 +341,19 @@ func buildMySQLFamilyAdvisors[N any](
 				}
 			}, e.PosFinding)
 	}
-	if rules.TableDisallowPartition != nil {
-		advisors[storepb.SQLReviewRule_TABLE_DISALLOW_PARTITION] = e.StmtNodes(rules.TableDisallowPartition,
-			func(stmt V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
-				if f.Code != "" && f.Code != v1review.TablePartitioned {
-					return 0, "", false
-				}
-				return code.CreateTablePartition, fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", e.stmtText(stmt, false)), true
-			}, e.posStatementFinding)
-	}
 	if rules.TableNoForeignKey != nil {
 		advisors[storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY] = e.StmtNodes(rules.TableNoForeignKey,
 			func(_ V1Stmt[N], f v1review.Finding) (code.Code, string, bool) {
 				if f.Code != "" && f.Code != v1review.TableForeignKey {
 					return 0, "", false
 				}
-				table := f.Table
-				if table == "" {
-					table = f.Name
-				}
-				return code.TableHasFK, fmt.Sprintf("Foreign key is not allowed in the table `%s`", table), true
+				return code.TableHasFK, fmt.Sprintf("Foreign key is not allowed in the table `%s`", cmp.Or(f.Table, f.Name)), true
 			}, e.posBaseLineTwice)
 	}
 
-	// Batch rules using V1Engine.Batch / BackwardCompatibility.
-	if fn := rules.ColumnCurrentTimeCountLimit; fn != nil {
-		advisors[storepb.SQLReviewRule_COLUMN_CURRENT_TIME_COUNT_LIMIT] = e.Batch(func(_ Context, nodes []N) []v1review.Finding { return fn(nodes) },
+	// Batch rules.
+	if rules.ColumnCurrentTimeCountLimit != nil {
+		advisors[storepb.SQLReviewRule_COLUMN_CURRENT_TIME_COUNT_LIMIT] = e.BatchNodes(rules.ColumnCurrentTimeCountLimit,
 			func(stmts []V1Stmt[N], f v1review.Finding) (code.Code, string, *storepb.Position, bool) {
 				switch f.Code {
 				case v1review.ColumnDefaultCurrentTimeCount:
@@ -395,31 +368,20 @@ func buildMySQLFamilyAdvisors[N any](
 	if fn := rules.SchemaBackwardCompatibility; fn != nil {
 		advisors[storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY] = e.BackwardCompatibility(
 			func(_ Context, nodes []N) []v1review.Finding { return fn(nodes) },
-			mysqlCompatEntries,
+			nil,
 			func(stmt V1Stmt[N], _ v1review.Finding, _ string) string {
 				return fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", e.stmtText(stmt, true))
 			},
 			e.posBaseLineTwice,
 		)
 	}
-	if fn := rules.StatementMaxExecutionTime; fn != nil {
-		advisors[storepb.SQLReviewRule_STATEMENT_MAX_EXECUTION_TIME] = e.Batch(func(_ Context, nodes []N) []v1review.Finding { return fn(nodes) },
-			func(_ []V1Stmt[N], f v1review.Finding) (code.Code, string, *storepb.Position, bool) {
-				return code.StatementNoMaxExecutionTime, fmt.Sprintf("The %s is not set", f.Name), nil, true
-			})
-	}
-	if fn := rules.StatementMergeAlterTable; fn != nil {
-		advisors[storepb.SQLReviewRule_STATEMENT_MERGE_ALTER_TABLE] = e.Batch(func(_ Context, nodes []N) []v1review.Finding { return fn(nodes) },
-			func(stmts []V1Stmt[N], f v1review.Finding) (code.Code, string, *storepb.Position, bool) {
-				return code.StatementRedundantAlterTable, fmt.Sprintf("There are %s statements to modify table `%s`", f.Value, f.Table), e.posFindingOrTiDBFirstToken(stmts[f.Statement], f), true
-			})
-	}
-	if fn := rules.TableNoDuplicateIndex; fn != nil {
-		advisors[storepb.SQLReviewRule_TABLE_NO_DUPLICATE_INDEX] = e.Batch(func(_ Context, nodes []N) []v1review.Finding { return fn(nodes) },
-			func(stmts []V1Stmt[N], f v1review.Finding) (code.Code, string, *storepb.Position, bool) {
-				return code.DuplicateIndexInTable, fmt.Sprintf("`%s` has duplicate index `%s`", f.Table, f.Name), e.PosFinding(stmts[f.Statement], f), true
-			})
-	}
+	addSimpleBatch(storepb.SQLReviewRule_STATEMENT_MAX_EXECUTION_TIME, rules.StatementMaxExecutionTime, code.StatementNoMaxExecutionTime, FmtFindingName("The %s is not set"), e.PosNil)
+	addSimpleBatch(storepb.SQLReviewRule_STATEMENT_MERGE_ALTER_TABLE, rules.StatementMergeAlterTable, code.StatementRedundantAlterTable, func(f v1review.Finding) string {
+		return fmt.Sprintf("There are %s statements to modify table `%s`", f.Value, f.Table)
+	}, e.posFindingOrTiDBFirstToken)
+	addSimpleBatch(storepb.SQLReviewRule_TABLE_NO_DUPLICATE_INDEX, rules.TableNoDuplicateIndex, code.DuplicateIndexInTable, func(f v1review.Finding) string {
+		return fmt.Sprintf("`%s` has duplicate index `%s`", f.Table, f.Name)
+	}, e.PosFinding)
 
 	// Shared WHERE / schema-batch rules.
 	if fn := rules.StatementWhereDisallowFunctionsAndCalc; fn != nil {
@@ -432,14 +394,6 @@ func buildMySQLFamilyAdvisors[N any](
 			e.PosFinding,
 		)
 	}
-	addOriginalSchemaBatch := func(ruleType storepb.SQLReviewRule_Type, fn func([]N, v1review.Schema) ([]v1review.Finding, error), c code.Code, content func(v1review.Finding) string) {
-		if fn != nil {
-			advisors[ruleType] = e.SchemaBatch(c, content, func(checkCtx Context, nodes []N) ([]v1review.Finding, *model.DatabaseMetadata, error) {
-				findings, err := fn(nodes, V1SchemaOf(checkCtx.OriginalMetadata))
-				return findings, checkCtx.OriginalMetadata, err
-			}, e.PosFinding)
-		}
-	}
 	addOriginalSchemaBatch(storepb.SQLReviewRule_INDEX_PK_TYPE_LIMIT, rules.IndexPKTypeLimit, code.IndexPKType, func(f v1review.Finding) string {
 		return fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", f.Table, f.Name, f.Value)
 	})
@@ -447,7 +401,7 @@ func buildMySQLFamilyAdvisors[N any](
 		return fmt.Sprintf("Columns in index must not be BLOB but `%s`.`%s` is %s", f.Table, f.Name, f.Value)
 	})
 	if fn := rules.IndexPrimaryKeyTypeAllowlist; fn != nil {
-		advisors[storepb.SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST] = e.SchemaBatch(code.IndexPKType, func(f v1review.Finding) string {
+		advisors[storepb.SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST] = e.SchemaBatch(code.IndexPKType, func(_ Context, f v1review.Finding) string {
 			return fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", f.Name, f.Table, f.Value)
 		}, func(checkCtx Context, nodes []N) ([]v1review.Finding, *model.DatabaseMetadata, error) {
 			list, err := RequireStringArrayPayload(checkCtx.Rule, "string_array_payload is required for this rule")
@@ -499,7 +453,7 @@ func buildMySQLFamilyAdvisors[N any](
 	}
 	if fn := rules.ColumnDisallowChangeType; fn != nil {
 		advisors[storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGE_TYPE] = e.StmtCtx(
-			func(checkCtx Context, nodes []N) (func([]N) []v1review.Finding, error) {
+			func(_ context.Context, checkCtx Context, nodes []N) (func([]N) []v1review.Finding, error) {
 				guardNilMetadata(checkCtx.OriginalMetadata, nodes, opt.ReadsColumnType)
 				schema := V1SchemaOf(checkCtx.OriginalMetadata)
 				return func(stmtNodes []N) []v1review.Finding { return fn(stmtNodes, schema) }, nil
@@ -511,14 +465,16 @@ func buildMySQLFamilyAdvisors[N any](
 		)
 	}
 	if fn := rules.ColumnDisallowDropInIndex; fn != nil {
-		advisors[storepb.SQLReviewRule_COLUMN_DISALLOW_DROP_IN_INDEX] = e.Batch(
+		advisors[storepb.SQLReviewRule_COLUMN_DISALLOW_DROP_IN_INDEX] = e.SimpleBatch(
 			func(checkCtx Context, nodes []N) []v1review.Finding {
 				guardNilMetadata(checkCtx.OriginalMetadata, nodes, opt.DropsColumn)
 				return fn(nodes, V1SchemaOf(checkCtx.OriginalMetadata))
 			},
-			func(stmts []V1Stmt[N], f v1review.Finding) (code.Code, string, *storepb.Position, bool) {
-				return code.DropIndexColumn, fmt.Sprintf("`%s`.`%s` cannot drop index column", f.Table, f.Name), e.posFindingOrTiDBFirstToken(stmts[f.Statement], f), true
+			code.DropIndexColumn, "",
+			func(f v1review.Finding) string {
+				return fmt.Sprintf("`%s`.`%s` cannot drop index column", f.Table, f.Name)
 			},
+			e.posFindingOrTiDBFirstToken,
 		)
 	}
 	if rules.ColumnNoNull != nil {
@@ -532,15 +488,15 @@ func buildMySQLFamilyAdvisors[N any](
 			TableFmt:  "Table `%s` requires columns: %s",
 			Pos: func(stmt V1Stmt[N], f v1review.Finding) *storepb.Position {
 				if e.tidbQuirks {
-					return e.posStatement(stmt)
+					return e.PosStatement(stmt, f)
 				}
-				return &storepb.Position{Line: int32(stmt.BaseLine + int(e.findingLine(stmt.Text, f)))}
+				return &storepb.Position{Line: int32(stmt.BaseLine) + e.findingLine(stmt.Text, f)}
 			},
 		})
 	}
 	if fn := rules.DatabaseDropEmptyDatabase; fn != nil {
 		advisors[storepb.SQLReviewRule_DATABASE_DROP_EMPTY_DATABASE] = e.StmtCtx(
-			func(checkCtx Context, _ []N) (func([]N) []v1review.Finding, error) {
+			func(_ context.Context, checkCtx Context, _ []N) (func([]N) []v1review.Finding, error) {
 				schema := V1SchemaOf(checkCtx.OriginalMetadata)
 				return func(stmtNodes []N) []v1review.Finding { return fn(stmtNodes, schema) }, nil
 			},
@@ -559,7 +515,7 @@ func buildMySQLFamilyAdvisors[N any](
 	}
 	if fn := rules.TableComment; fn != nil {
 		advisors[storepb.SQLReviewRule_TABLE_COMMENT] = e.StmtCtx(
-			func(checkCtx Context, _ []N) (func([]N) []v1review.Finding, error) {
+			func(_ context.Context, checkCtx Context, _ []N) (func([]N) []v1review.Finding, error) {
 				var tableCfg *v1review.TableCommentConfig
 				if payload := checkCtx.Rule.GetCommentConventionPayload(); payload != nil {
 					tableCfg = &v1review.TableCommentConfig{Required: payload.Required, MaxLength: int(payload.MaxLength)}
@@ -576,11 +532,23 @@ func buildMySQLFamilyAdvisors[N any](
 					return 0, "", false
 				}
 			},
-			e.posStatementFinding,
+			e.PosStatement,
 		)
 	}
-	if rules.TableLimitSize != nil {
-		advisors[storepb.SQLReviewRule_TABLE_LIMIT_SIZE] = mysqlTableLimitSize(e, rules.TableLimitSize)
+	if fn := rules.TableLimitSize; fn != nil {
+		advisors[storepb.SQLReviewRule_TABLE_LIMIT_SIZE] = e.SchemaBatch(code.TableExceedLimitSize,
+			func(_ Context, f v1review.Finding) string {
+				return fmt.Sprintf("Apply DDL on large table '%s' ( %s rows ) will lock table for a long time", f.Name, f.Value)
+			},
+			func(checkCtx Context, nodes []N) ([]v1review.Finding, *model.DatabaseMetadata, error) {
+				limit, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
+				if err != nil {
+					return nil, nil, err
+				}
+				return fn(nodes, checkCtx.DBSchema, limit), nil, nil
+			},
+			e.PosStatement,
+		)
 	}
 	if fn := rules.TableRequirePK; fn != nil {
 		advisors[storepb.SQLReviewRule_TABLE_REQUIRE_PK] = e.Batch(
@@ -601,7 +569,7 @@ func buildMySQLFamilyAdvisors[N any](
 	}
 	if fn := rules.TableTextFieldsTotalLength; fn != nil {
 		advisors[storepb.SQLReviewRule_TABLE_TEXT_FIELDS_TOTAL_LENGTH] = e.StmtCtx(
-			func(checkCtx Context, _ []N) (func([]N) []v1review.Finding, error) {
+			func(_ context.Context, checkCtx Context, _ []N) (func([]N) []v1review.Finding, error) {
 				maximum, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
 				if err != nil {
 					return nil, err
@@ -669,17 +637,16 @@ func mysqlOnlineMigration[N any](e *V1Engine[N], engine storepb.Engine, fn func(
 		if err != nil {
 			return nil, err
 		}
-		schema := e.SchemaOf(checkCtx)
 		var adviceList []*storepb.Advice
-		for _, f := range fn(nodes, schema, checkCtx.CurrentDatabase, minRows) {
+		for _, f := range fn(nodes, e.SchemaOf(checkCtx), checkCtx.CurrentDatabase, minRows) {
 			stmt := stmts[f.Statement]
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:        level,
 				Code:          code.AdviseOnlineMigrationForStatement.Int32(),
 				Title:         title,
 				Content:       fmt.Sprintf("Estimated table row count of %q is %s exceeding the set value %d. Consider using online migration for this statement", f.Table, f.Value, minRows),
-				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine + int(e.findingLine(stmt.Text, f))),
-				EndPosition:   base.ConvertANTLRLineToPosition(stmt.BaseLine + int(e.ContentEndLine(stmt.Text))),
+				StartPosition: e.PosFinding(stmt, f),
+				EndPosition:   e.PosContentEnd(stmt, f),
 			})
 		}
 		if len(adviceList) > 1 || (len(adviceList) == 1 && len(checkCtx.ParsedStatements) > 1) {
@@ -749,45 +716,20 @@ func mysqlColumnNoNull[N any](e *V1Engine[N], definesColumn func(N) bool, fn fun
 		}
 		guardNilMetadata(checkCtx.FinalMetadata, nodes, definesColumn)
 		type placed struct {
-			line   int
+			pos    *storepb.Position
 			column string
 			table  string
 		}
 		var columns []placed
 		for _, f := range fn(nodes, V1SchemaOf(checkCtx.FinalMetadata)) {
-			stmt := stmts[f.Statement]
-			line := stmt.BaseLine + int(e.findingLine(stmt.Text, f))
-			if e.tidbQuirks {
-				line = e.absLine(stmt, f.Start)
-			}
-			columns = append(columns, placed{line: line, column: f.Name, table: f.Table})
+			columns = append(columns, placed{pos: e.posAbsOrFinding(stmts[f.Statement], f), column: f.Name, table: f.Table})
 		}
 		slices.SortStableFunc(columns, func(a, b placed) int {
-			return cmp.Or(cmp.Compare(a.line, b.line), cmp.Compare(a.column, b.column))
+			return cmp.Or(cmp.Compare(a.pos.Line, b.pos.Line), cmp.Compare(a.column, b.column))
 		})
 		var adviceList []*storepb.Advice
 		for _, c := range columns {
-			adviceList = append(adviceList, newAdvice(status, code.ColumnCannotNull, title, fmt.Sprintf("`%s`.`%s` cannot have NULL value", c.table, c.column), base.ConvertANTLRLineToPosition(c.line)))
-		}
-		return adviceList, nil
-	}
-}
-
-func mysqlTableLimitSize[N any](e *V1Engine[N], fn func([]N, *metadatapb.DatabaseSchemaMetadata, int) []v1review.Finding) Func {
-	return func(_ context.Context, checkCtx Context) ([]*storepb.Advice, error) {
-		stmts, nodes, status, title, err := e.Prepare(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		limit, err := RequireNumberPayload(checkCtx.Rule, "number_payload is required for this rule")
-		if err != nil {
-			return nil, err
-		}
-		var adviceList []*storepb.Advice
-		for _, f := range fn(nodes, checkCtx.DBSchema, limit) {
-			if f.Code == v1review.TableTooLarge {
-				adviceList = append(adviceList, newAdvice(status, code.TableExceedLimitSize, title, fmt.Sprintf("Apply DDL on large table '%s' ( %s rows ) will lock table for a long time", f.Name, f.Value), e.posStatement(stmts[f.Statement])))
-			}
+			adviceList = append(adviceList, newAdvice(status, code.ColumnCannotNull, title, fmt.Sprintf("`%s`.`%s` cannot have NULL value", c.table, c.column), c.pos))
 		}
 		return adviceList, nil
 	}

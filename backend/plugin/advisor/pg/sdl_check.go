@@ -49,15 +49,7 @@ func sdlStyleAdvice(f pganalysis.SDLFinding, line int32) *storepb.Advice {
 	}
 	switch f.Code {
 	case pganalysis.SDLTableWithoutSchema:
-		advice.Content = fmt.Sprintf(
-			"Table '%s' is created without explicit schema name.\n\n"+
-				"SDL requires all objects to specify their schema explicitly.\n\n"+
-				"Example - Instead of:\n"+
-				"  CREATE TABLE %s (...);\n\n"+
-				"Use:\n"+
-				"  CREATE TABLE schema_name.%s (...);",
-			f.Table, f.Table, f.Table,
-		)
+		advice.Content = sdlObjectWithoutSchema("Table", f.Table, "created", "CREATE TABLE", " (...);")
 	case pganalysis.SDLColumnForeignKeyWithoutSchema:
 		advice.Content = fmt.Sprintf(
 			"Column '%s' in table '%s' has a foreign key reference to table '%s' without explicit schema name.\n\n"+
@@ -169,48 +161,30 @@ func sdlStyleAdvice(f pganalysis.SDLFinding, line int32) *storepb.Advice {
 			)
 		}
 	case pganalysis.SDLViewWithoutSchema:
-		advice.Content = fmt.Sprintf(
-			"View '%s' is created without explicit schema name.\n\n"+
-				"SDL requires all objects to specify their schema explicitly.\n\n"+
-				"Example - Instead of:\n"+
-				"  CREATE VIEW %s AS ...;\n\n"+
-				"Use:\n"+
-				"  CREATE VIEW schema_name.%s AS ...;",
-			f.Name, f.Name, f.Name,
-		)
+		advice.Content = sdlObjectWithoutSchema("View", f.Name, "created", "CREATE VIEW", " AS ...;")
 	case pganalysis.SDLSequenceWithoutSchema:
-		advice.Content = fmt.Sprintf(
-			"Sequence '%s' is created without explicit schema name.\n\n"+
-				"SDL requires all objects to specify their schema explicitly.\n\n"+
-				"Example - Instead of:\n"+
-				"  CREATE SEQUENCE %s ...;\n\n"+
-				"Use:\n"+
-				"  CREATE SEQUENCE schema_name.%s ...;",
-			f.Name, f.Name, f.Name,
-		)
+		advice.Content = sdlObjectWithoutSchema("Sequence", f.Name, "created", "CREATE SEQUENCE", " ...;")
 	case pganalysis.SDLFunctionWithoutSchema:
-		advice.Content = fmt.Sprintf(
-			"Function '%s' is created without explicit schema name.\n\n"+
-				"SDL requires all objects to specify their schema explicitly.\n\n"+
-				"Example - Instead of:\n"+
-				"  CREATE FUNCTION %s(...) ...;\n\n"+
-				"Use:\n"+
-				"  CREATE FUNCTION schema_name.%s(...) ...;",
-			f.Name, f.Name, f.Name,
-		)
+		advice.Content = sdlObjectWithoutSchema("Function", f.Name, "created", "CREATE FUNCTION", "(...) ...;")
 	case pganalysis.SDLAlterSequenceWithoutSchema:
-		advice.Content = fmt.Sprintf(
-			"Sequence '%s' is altered without explicit schema name.\n\n"+
-				"SDL requires all objects to specify their schema explicitly.\n\n"+
-				"Example - Instead of:\n"+
-				"  ALTER SEQUENCE %s ...;\n\n"+
-				"Use:\n"+
-				"  ALTER SEQUENCE schema_name.%s ...;",
-			f.Name, f.Name, f.Name,
-		)
+		advice.Content = sdlObjectWithoutSchema("Sequence", f.Name, "altered", "ALTER SEQUENCE", " ...;")
 	default:
 	}
 	return advice
+}
+
+func sdlObjectWithoutSchema(kind, name, action, stmtPrefix, stmtSuffix string) string {
+	return fmt.Sprintf(
+		"%s '%s' is %s without explicit schema name.\n\n"+
+			"SDL requires all objects to specify their schema explicitly.\n\n"+
+			"Example - Instead of:\n"+
+			"  %s %s%s\n\n"+
+			"Use:\n"+
+			"  %s schema_name.%s%s",
+		kind, name, action,
+		stmtPrefix, name, stmtSuffix,
+		stmtPrefix, name, stmtSuffix,
+	)
 }
 
 // tableConstraintExample returns an example SQL snippet for a constraint type name.

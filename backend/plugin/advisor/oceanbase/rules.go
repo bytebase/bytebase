@@ -86,41 +86,28 @@ func init() {
 }
 
 func disallowOfflineDDL(e *advisor.V1Engine[ast.Node]) advisor.Func {
-	return func(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-		level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
-		if err != nil {
-			return nil, err
-		}
-		lookup, err := advisor.ColumnExtraOf(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		stmts, nodes, err := e.Nodes(checkCtx)
-		if err != nil {
-			return nil, err
-		}
-		title := checkCtx.Rule.Type.String()
-		var adviceList []*storepb.Advice
-		for i, stmt := range stmts {
-			stmtNodes := nodes[i : i+1 : i+1]
-			extras := make(map[v1review.ColumnRef]string)
-			for _, ref := range oceanbasev1review.StatementDisallowOfflineDDLLookups(stmtNodes, checkCtx.CurrentDatabase) {
-				if extra, err := lookup.ColumnExtra(ctx, ref.Database, ref.Table, ref.Column); err == nil {
-					extras[ref] = extra
+	return e.StmtCtx(
+		func(ctx context.Context, checkCtx advisor.Context, _ []ast.Node) (func([]ast.Node) []v1review.Finding, error) {
+			lookup, err := advisor.ColumnExtraOf(checkCtx)
+			if err != nil {
+				return nil, err
+			}
+			currentDB := checkCtx.CurrentDatabase
+			return func(stmtNodes []ast.Node) []v1review.Finding {
+				extras := make(map[v1review.ColumnRef]string)
+				for _, ref := range oceanbasev1review.StatementDisallowOfflineDDLLookups(stmtNodes, currentDB) {
+					if extra, err := lookup.ColumnExtra(ctx, ref.Database, ref.Table, ref.Column); err == nil {
+						extras[ref] = extra
+					}
 				}
-			}
-			for _, f := range oceanbasev1review.StatementDisallowOfflineDDL(stmtNodes, checkCtx.CurrentDatabase, extras) {
-				adviceList = append(adviceList, &storepb.Advice{
-					Status:        level,
-					Code:          code.StatementOfflineDDL.Int32(),
-					Title:         title,
-					Content:       fmt.Sprintf("%s is an offline DDL operation.", f.Name),
-					StartPosition: e.PosFindingOrFirstLine(stmt, f),
-				})
-			}
-		}
-		return adviceList, nil
-	}
+				return oceanbasev1review.StatementDisallowOfflineDDL(stmtNodes, currentDB, extras)
+			}, nil
+		},
+		func(_ advisor.Context, _ advisor.V1Stmt[ast.Node], f v1review.Finding) (code.Code, string, bool) {
+			return code.StatementOfflineDDL, fmt.Sprintf("%s is an offline DDL operation.", f.Name), true
+		},
+		e.PosFindingOrFirstLine,
+	)
 }
 
 func oceanbaseRowLimitAdvisor(

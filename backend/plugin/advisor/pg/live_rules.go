@@ -21,11 +21,11 @@ import (
 )
 
 func pgInsertRowLimit(e *advisor.V1Engine[ast.Node]) advisor.Func {
-	return pgRowLimit(e, pgv1review.StatementInsertRowLimitProbes, pganalysis.EstimatedInsertedRowsFromExplainJSON, pgv1review.StatementInsertRowLimit, code.InsertTooManyRows, "inserts", "")
+	return pgRowLimit(e, pgv1review.StatementInsertRowLimitProbes, pganalysis.EstimatedInsertedRowsFromExplainJSON, pgv1review.StatementInsertRowLimit, code.InsertTooManyRows, "inserts")
 }
 
 func pgAffectedRowLimit(e *advisor.V1Engine[ast.Node]) advisor.Func {
-	return pgRowLimit(e, pgv1review.StatementAffectedRowLimitProbes, pganalysis.EstimatedAffectedRowsFromExplainJSON, pgv1review.StatementAffectedRowLimit, code.StatementAffectedRowExceedsLimit, "affected", " (estimated)")
+	return pgRowLimit(e, pgv1review.StatementAffectedRowLimitProbes, pganalysis.EstimatedAffectedRowsFromExplainJSON, pgv1review.StatementAffectedRowLimit, code.StatementAffectedRowExceedsLimit, "affected")
 }
 
 func pgRowLimit(
@@ -34,16 +34,15 @@ func pgRowLimit(
 	parsePlan func(string) (int64, error),
 	judgeFn func([]ast.Node, map[int]v1review.Probe, int) []v1review.Finding,
 	exceededCode code.Code,
-	verb, suffix string,
+	verb string,
 ) advisor.Func {
 	return e.RowLimit(advisor.V1RowLimitConfig[ast.Node]{
-		Probes:       probesFn,
-		Judge:        judgeFn,
-		ExceededCode: exceededCode,
-		ExceededContent: func(text, count string, maxRow int) string {
-			return fmt.Sprintf("The statement \"%s\" %s %s rows%s. The count exceeds %d.", text, verb, count, suffix, maxRow)
-		},
-		PositiveOnly: true,
+		Probes:         probesFn,
+		Judge:          judgeFn,
+		ExceededCode:   exceededCode,
+		ExceededVerb:   verb,
+		ExceededPrefix: "The statement ",
+		PositiveOnly:   true,
 		StatementText: func(stmt advisor.V1Stmt[ast.Node], node ast.Node) string {
 			return probeText(e, stmt, node)
 		},
@@ -58,14 +57,8 @@ func pgDMLDryRun(e *advisor.V1Engine[ast.Node]) advisor.Func {
 	return e.DMLDryRun(advisor.V1DMLDryRunConfig[ast.Node]{
 		Probes: pgv1review.StatementDMLDryRunProbes,
 		Judge:  pgv1review.StatementDMLDryRun,
-		Probe: func(ctx context.Context, prober db.Prober, stmt advisor.V1Stmt[ast.Node], settings []string) v1review.Probe {
-			if _, err := prober.Probe(ctx, db.ProbeContext{PreExecutions: settings}, fmt.Sprintf("EXPLAIN %s", probeText(e, stmt, stmt.Node))); err != nil {
-				return v1review.Probe{Error: err.Error()}
-			}
-			return v1review.Probe{}
-		},
-		FormatContent: func(stmt advisor.V1Stmt[ast.Node], f v1review.Finding) string {
-			return fmt.Sprintf("\"%s\" dry runs failed: %s", probeText(e, stmt, stmt.Node), f.Value)
+		StatementText: func(stmt advisor.V1Stmt[ast.Node]) string {
+			return probeText(e, stmt, stmt.Node)
 		},
 		PreExecutions: probeEach,
 	})

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
@@ -102,14 +103,9 @@ func SQLReviewCheck(
 	if !checkContext.NoAppendBuiltin {
 		// Append builtin rules only if the user hasn't overridden them in their config.
 		for _, r := range GetBuiltinRules(checkContext.DBType) {
-			overridden := false
-			for _, userRule := range ruleList {
-				if userRule.Type == r.Type && userRule.Engine == r.Engine {
-					overridden = true
-					break
-				}
-			}
-			if overridden {
+			if slices.ContainsFunc(ruleList, func(userRule *storepb.SQLReviewRule) bool {
+				return userRule.Type == r.Type && userRule.Engine == r.Engine
+			}) {
 				continue
 			}
 			ruleList = append(ruleList, r)

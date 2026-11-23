@@ -17,12 +17,13 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// V1Stmt pairs an engine-specific AST node with the statement text and 0-based
-// line offset from which it was parsed.
+// V1Stmt pairs an engine-specific AST node with the statement text, 0-based
+// line offset, and original splitter start position.
 type V1Stmt[N any] struct {
 	Node     N
 	Text     string
 	BaseLine int
+	Start    *storepb.Position
 }
 
 // ExtractNodes unwraps parsed statements into V1Stmt values using getNode.
@@ -40,9 +41,25 @@ func ExtractNodes[N any](parsed []base.ParsedStatement, getNode func(base.AST) (
 			Node:     node,
 			Text:     stmt.Text,
 			BaseLine: stmt.BaseLine(),
+			Start:    stmt.Start,
 		})
 	}
 	return stmts
+}
+
+// FmtFindingName returns a finding content formatter substituting f.Name into format.
+func FmtFindingName(format string) func(v1review.Finding) string {
+	return func(f v1review.Finding) string { return fmt.Sprintf(format, f.Name) }
+}
+
+// BacktickName wraps f.Name in backticks.
+func BacktickName(f v1review.Finding) string {
+	return fmt.Sprintf("`%s`", f.Name)
+}
+
+// DoubleQuotedName wraps f.Name in double quotes without Go escaping.
+func DoubleQuotedName(f v1review.Finding) string {
+	return fmt.Sprintf(`"%s"`, f.Name)
 }
 
 // NodeExtractor returns an extract function for NewV1Engine / MySQLFamilyOptions.
