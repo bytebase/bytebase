@@ -4,87 +4,66 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	oracledriver "github.com/bytebase/omni/oracle/driver"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-func TestParseOracleLinkTarget(t *testing.T) {
-	ep := func(host, port string) oracleEndpoint { return oracleEndpoint{host: host, port: port} }
-	svc := func(service string, endpoints ...oracleEndpoint) oracleLinkTarget {
-		return oracleLinkTarget{endpoints: endpoints, service: service}
-	}
-	sid := func(sid string, endpoints ...oracleEndpoint) oracleLinkTarget {
-		return oracleLinkTarget{endpoints: endpoints, sid: sid}
-	}
+func TestParseOracleConnectStringAndDataSourceMatch(t *testing.T) {
+	// Pure connect-string parsing edge cases live in omni/oracle/driver; this
+	// verifies the seam from omni's ConnectTarget into Bytebase DataSource matching.
 	tests := []struct {
+		name          string
 		connectString string
-		want          oracleLinkTarget
-		ok            bool
+		dataSource    *storepb.DataSource
+		wantParsed    bool
+		wantMatch     bool
 	}{
-		{"localhost:1521/FREEPDB1", svc("FREEPDB1", ep("localhost", "1521")), true},
-		{"//db.example.com:1522/ORCL", svc("ORCL", ep("db.example.com", "1522")), true},
-		{"DB.EXAMPLE.COM/orcl", svc("orcl", ep("db.example.com", "1521")), true},
-		{"host:1521/svc:dedicated/inst1", svc("svc", ep("host", "1521")), true},
-		{"[::1]:1521/svc", svc("svc", ep("::1", "1521")), true},
-		{"[::1]/svc", svc("svc", ep("::1", "1521")), true},
-		{"  host:1521/svc  ", svc("svc", ep("host", "1521")), true},
-		// Easy Connect Plus: scheme, parameters, several addresses.
-		{"tcps://adb.example.com:1522/abc_high.adb.oraclecloud.com", svc("abc_high.adb.oraclecloud.com", ep("adb.example.com", "1522")), true},
-		{"//host:1521/svc?connect_timeout=5&retry_count=2", svc("svc", ep("host", "1521")), true},
-		{"rac1:1521,rac2:1522/svc", svc("svc", ep("rac1", "1521"), ep("rac2", "1522")), true},
-		// A port applies to the hosts listed before it.
-		{"rac1,rac2:1522/svc", svc("svc", ep("rac1", "1522"), ep("rac2", "1522")), true},
-		{"rac1,rac2:1522,rac3/svc", svc("svc", ep("rac1", "1522"), ep("rac2", "1522"), ep("rac3", "1521")), true},
-		{"[::1],[::2]:1522/svc", svc("svc", ep("::1", "1522"), ep("::2", "1522")), true},
-		{"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=db.example.com)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=orcl)))", svc("orcl", ep("db.example.com", "1521")), true},
-		{"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=db)(PORT=1522))(CONNECT_DATA=(SID=orcl)))", sid("orcl", ep("db", "1522")), true},
-		{"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=db))(CONNECT_DATA=(SERVICE_NAME=orcl)))", svc("orcl", ep("db", "1521")), true},
-		{"( DESCRIPTION = ( ADDRESS = ( HOST = db ) ( PORT = 1521 ) ) ( CONNECT_DATA = ( SERVICE_NAME = orcl ) ) )", svc("orcl", ep("db", "1521")), true},
-		// RAC and Data Guard: several addresses, one service.
-		{"(DESCRIPTION=(ADDRESS_LIST=(LOAD_BALANCE=on)(ADDRESS=(PROTOCOL=TCP)(HOST=rac1-vip)(PORT=1521))(ADDRESS=(PROTOCOL=TCP)(HOST=rac2-vip)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=proddb)))", svc("proddb", ep("rac1-vip", "1521"), ep("rac2-vip", "1521")), true},
-		// A TNS alias names nothing on its own.
-		{"PRODDB", oracleLinkTarget{}, false},
-		{"", oracleLinkTarget{}, false},
-		// No service or SID.
-		{"host:1521", oracleLinkTarget{}, false},
-		{"host:1521/", oracleLinkTarget{}, false},
-		{"host:1521/?connect_timeout=5", oracleLinkTarget{}, false},
-		{"/svc", oracleLinkTarget{}, false},
-		{"(DESCRIPTION=(ADDRESS=(HOST=a)(PORT=1521)))", oracleLinkTarget{}, false},
-		// A DESCRIPTION_LIST repeating one service is one database (Data Guard failover).
-		{"(DESCRIPTION_LIST=(DESCRIPTION=(ADDRESS=(HOST=h1)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=proddb)))(DESCRIPTION=(ADDRESS=(HOST=h2)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=PRODDB))))", svc("proddb", ep("h1", "1521"), ep("h2", "1521")), true},
-		// A SOURCE_ROUTE chain passes through a proxy; its first address is not the database.
-		{"(DESCRIPTION=(SOURCE_ROUTE=yes)(ADDRESS=(HOST=cman)(PORT=1521))(ADDRESS=(HOST=real)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=svc)))", oracleLinkTarget{}, false},
-		// A DESCRIPTION_LIST that switches service between addresses names two databases.
-		{"(DESCRIPTION_LIST=(DESCRIPTION=(ADDRESS=(HOST=h1)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=proddb)))(DESCRIPTION=(ADDRESS=(HOST=h2)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=reportdb))))", oracleLinkTarget{}, false},
-		// A service and a SID are different identities even when spelled the same.
-		{"(DESCRIPTION=(ADDRESS=(HOST=a)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=orcl)(SID=orcl)))", oracleLinkTarget{}, false},
-		{"(DESCRIPTION=(ADDRESS=(HOST=a)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=orcl)(SID=other)))", oracleLinkTarget{}, false},
-		{"(DESCRIPTION_LIST=(DESCRIPTION=(ADDRESS=(HOST=h1)(PORT=1521))(CONNECT_DATA=(SID=orcl)))(DESCRIPTION=(ADDRESS=(HOST=h2)(PORT=1521))(CONNECT_DATA=(SID=ORCL))))", sid("orcl", ep("h1", "1521"), ep("h2", "1521")), true},
-		// Malformed.
-		{"host1 host2:1521/svc", oracleLinkTarget{}, false},
-		{"rac1:1521,/svc", oracleLinkTarget{}, false},
-		{"rac1:/svc", oracleLinkTarget{}, false},
-		{"[::1:1521/svc", oracleLinkTarget{}, false},
-		{"[::1]1521/svc", oracleLinkTarget{}, false},
-		{"(DESCRIPTION=(ADDRESS=(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=orcl)))", oracleLinkTarget{}, false},
-		{"(DESCRIPTION=(CONNECT_DATA=(SERVICE_NAME=orcl)))", oracleLinkTarget{}, false},
+		{
+			name:          "easy connect plus multi-host shared port",
+			connectString: "rac1,rac2:1522/FREEPDB1?connect_timeout=5",
+			dataSource:    &storepb.DataSource{Host: "RAC1", Port: "1522", ServiceName: "freepdb1"},
+			wantParsed:    true,
+			wantMatch:     true,
+		},
+		{
+			name:          "tns descriptor with SID",
+			connectString: "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=db)(PORT=1522))(CONNECT_DATA=(SID=orcl)))",
+			dataSource:    &storepb.DataSource{Host: "db", Port: "1522", Sid: "ORCL"},
+			wantParsed:    true,
+			wantMatch:     true,
+		},
+		{
+			name:          "tns alias rejected",
+			connectString: "PRODDB",
+			dataSource:    &storepb.DataSource{Host: "db", Port: "1521", ServiceName: "PRODDB"},
+			wantParsed:    false,
+		},
+		{
+			name:          "source route rejected",
+			connectString: "(DESCRIPTION=(SOURCE_ROUTE=yes)(ADDRESS=(HOST=cman)(PORT=1521))(ADDRESS=(HOST=real)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=svc)))",
+			dataSource:    &storepb.DataSource{Host: "real", Port: "1521", ServiceName: "svc"},
+			wantParsed:    false,
+		},
 	}
 	for _, tc := range tests {
-		got, ok := parseOracleLinkTarget(tc.connectString)
-		require.Equal(t, tc.ok, ok, tc.connectString)
-		require.Equal(t, tc.want, got, tc.connectString)
+		target, ok := oracledriver.ParseConnectString(tc.connectString)
+		require.Equal(t, tc.wantParsed, ok, tc.name)
+		if !tc.wantParsed {
+			continue
+		}
+		require.Equal(t, tc.wantMatch, dataSourceReachesLinkTarget(target, tc.dataSource), tc.name)
 	}
 }
 
 func TestDataSourceReachesLinkTarget(t *testing.T) {
-	endpoints := []oracleEndpoint{{host: "10.0.0.50", port: "1521"}, {host: "rac2-vip", port: "1522"}}
-	byService := oracleLinkTarget{endpoints: endpoints, service: "FREEPDB1"}
-	bySID := oracleLinkTarget{endpoints: endpoints, sid: "FREEPDB1"}
+	endpoints := []oracledriver.Endpoint{{Host: "10.0.0.50", Port: "1521"}, {Host: "rac2-vip", Port: "1522"}}
+	byService := oracledriver.ConnectTarget{Endpoints: endpoints, Service: "FREEPDB1"}
+	bySID := oracledriver.ConnectTarget{Endpoints: endpoints, SID: "FREEPDB1"}
 	tests := []struct {
 		name       string
-		target     oracleLinkTarget
+		target     oracledriver.ConnectTarget
 		dataSource *storepb.DataSource
 		want       bool
 	}{
@@ -108,7 +87,7 @@ func TestDataSourceReachesLinkTarget(t *testing.T) {
 	for _, tc := range tests {
 		require.Equal(t, tc.want, dataSourceReachesLinkTarget(tc.target, tc.dataSource), tc.name)
 	}
-	domained := oracleLinkTarget{endpoints: endpoints, service: "FREEPDB1.corp.com"}
+	domained := oracledriver.ConnectTarget{Endpoints: endpoints, Service: "FREEPDB1.corp.com"}
 	require.False(t, dataSourceReachesLinkTarget(domained, &storepb.DataSource{Host: "10.0.0.50", Port: "1521", ServiceName: "FREEPDB1"}))
 }
 
