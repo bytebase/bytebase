@@ -43,6 +43,13 @@ func TestStatementTypeSeam(t *testing.T) {
 		storepb.StatementType_INSERT,
 	}, got)
 
+	// A lone ';' and a trailing comment hold no statement.
+	stmts, err = ParseStatements("INSERT INTO users (id) VALUES (1);;\n-- done", bigQueryConfig)
+	require.NoError(t, err)
+	got, err = GetStatementTypes(base.ExtractASTs(stmts))
+	require.NoError(t, err)
+	require.Equal(t, []storepb.StatementType{storepb.StatementType_INSERT}, got)
+
 	// Foreign and nil ASTs map safely to UNSPECIFIED.
 	got, err = GetStatementTypes([]base.AST{&foreignAST{}, &AST{}})
 	require.NoError(t, err)
