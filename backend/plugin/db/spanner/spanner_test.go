@@ -5,16 +5,10 @@ import (
 	"context"
 	"errors"
 	"io"
-	"net"
 	"testing"
 	"time"
 
-	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
-	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/api/option"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	odriver "github.com/bytebase/omni/driver"
@@ -141,25 +135,50 @@ func TestOpenRejectsInvalidCredentialJSON(t *testing.T) {
 	require.ErrorContains(t, err, "failed to parse GCP credential JSON")
 }
 
-func TestGetDatabaseFromResource(t *testing.T) {
-	tests := []struct {
-		name string
-		want string
-		ok   bool
-	}{
-		{name: "projects/p/instances/i/databases/d", want: "d", ok: true},
-		{name: "projects/p/instances/i/databases/", ok: false},
-		{name: "projects/p/instances/i", ok: false},
+func TestOpenPassesGoogleSQLOnlyOption(t *testing.T) {
+	var (
+		gotCfg  odriver.Config
+		gotOpts []spannerdriver.Options
+	)
+	fake := &fakeSpannerDriver{
+		instance: &odriver.Instance{
+			Databases: []*metadatapb.DatabaseSchemaMetadata{{Name: "gsql_db"}},
+		},
 	}
-	for _, test := range tests {
-		got, err := getDatabaseFromResource(test.name)
-		if test.ok {
-			require.NoError(t, err)
-			require.Equal(t, test.want, got)
-			continue
-		}
-		require.Error(t, err)
+	origOpen := openSpannerDriver
+	openSpannerDriver = func(_ context.Context, cfg odriver.Config, opts ...spannerdriver.Options) (odriver.Driver, error) {
+		gotCfg = cfg
+		gotOpts = opts
+		return fake, nil
 	}
+	t.Cleanup(func() { openSpannerDriver = origOpen })
+
+	ctx := context.Background()
+	opened, err := (&Driver{}).Open(ctx, storepb.Engine_SPANNER, db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			ProjectId:  "p",
+			InstanceId: "i",
+			Host:       "127.0.0.1",
+			Port:       "9010",
+			ExtraConnectionParameters: map[string]string{
+				spannerdriver.ParamEmulator: "1",
+			},
+		},
+		ConnectionContext: db.ConnectionContext{DatabaseName: "gsql_db"},
+		Password:          `{"type":"service_account"}`,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "p", gotCfg.Params[spannerdriver.ParamProject])
+	require.Equal(t, "i", gotCfg.Params[spannerdriver.ParamInstance])
+	require.Equal(t, "gsql_db", gotCfg.Database)
+	require.Empty(t, gotCfg.Password)
+	require.Equal(t, []spannerdriver.Options{{GoogleSQLOnly: true}}, gotOpts)
+
+	inst, err := opened.SyncInstance(ctx)
+	require.NoError(t, err)
+	require.Nil(t, inst.Metadata)
+	require.Len(t, inst.Databases, 1)
+	require.Equal(t, "gsql_db", inst.Databases[0].Name)
 }
 
 func toQueryResult(result *odriver.Result, maxResultBytes int64) *v1pb.QueryResult {
@@ -212,46 +231,6 @@ func TestToQueryResult(t *testing.T) {
 	require.Equal(t, int64(1), truncated.RowsCount)
 }
 
-type fakeDatabaseAdminServer struct {
-	databasepb.UnimplementedDatabaseAdminServer
-	databases []*databasepb.Database
-}
-
-func (s *fakeDatabaseAdminServer) ListDatabases(_ context.Context, _ *databasepb.ListDatabasesRequest) (*databasepb.ListDatabasesResponse, error) {
-	return &databasepb.ListDatabasesResponse{Databases: s.databases}, nil
-}
-
-// TestSyncInstanceFiltersOutPostgresDatabases pins the adapter's GoogleSQL-only
-// database filter in SyncInstance.
-func TestSyncInstanceFiltersOutPostgresDatabases(t *testing.T) {
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	srv := grpc.NewServer()
-	databasepb.RegisterDatabaseAdminServer(srv, &fakeDatabaseAdminServer{
-		databases: []*databasepb.Database{
-			{Name: "projects/p/instances/i/databases/gsql_db", DatabaseDialect: databasepb.DatabaseDialect_GOOGLE_STANDARD_SQL},
-			{Name: "projects/p/instances/i/databases/pg_db", DatabaseDialect: databasepb.DatabaseDialect_POSTGRESQL},
-		},
-	})
-	go func() { _ = srv.Serve(lis) }()
-	t.Cleanup(srv.Stop)
-
-	ctx := context.Background()
-	admin, err := spannerdb.NewDatabaseAdminClient(ctx,
-		option.WithEndpoint(lis.Addr().String()),
-		option.WithoutAuthentication(),
-		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = admin.Close() })
-
-	d := &Driver{admin: admin, instancePath: "projects/p/instances/i"}
-	inst, err := d.SyncInstance(ctx)
-	require.NoError(t, err)
-	require.Len(t, inst.Databases, 1)
-	require.Equal(t, "gsql_db", inst.Databases[0].Name)
-}
-
 type fakeSpannerSession struct {
 	gotScript string
 	gotOpts   odriver.QueryOptions
@@ -275,6 +254,8 @@ type fakeSpannerDriver struct {
 	executeScript string
 	executeOpts   odriver.ExecuteOptions
 	executeFn     func(script string, opts odriver.ExecuteOptions) (int64, error)
+	instance      *odriver.Instance
+	instanceErr   error
 	schema        *metadatapb.DatabaseSchemaMetadata
 	schemaErr     error
 	dumpDDL       string
@@ -295,7 +276,13 @@ func (f *fakeSpannerDriver) Execute(_ context.Context, script string, opts odriv
 	return 0, nil
 }
 
-func (*fakeSpannerDriver) SyncInstance(context.Context) (*odriver.Instance, error) {
+func (f *fakeSpannerDriver) SyncInstance(context.Context) (*odriver.Instance, error) {
+	if f.instanceErr != nil {
+		return nil, f.instanceErr
+	}
+	if f.instance != nil {
+		return f.instance, nil
+	}
 	return &odriver.Instance{}, nil
 }
 
@@ -328,6 +315,9 @@ func TestSpannerAdapterSeam(t *testing.T) {
 			opts.Log.TransactionControl(odriver.Commit, nil)
 			return 1, nil
 		},
+		instance: &odriver.Instance{
+			Databases: []*metadatapb.DatabaseSchemaMetadata{{Name: "app"}},
+		},
 		schema:  &metadatapb.DatabaseSchemaMetadata{Name: "app"},
 		dumpDDL: "CREATE TABLE Singers (SingerId INT64 NOT NULL) PRIMARY KEY (SingerId);\n",
 	}
@@ -338,6 +328,18 @@ func TestSpannerAdapterSeam(t *testing.T) {
 			DatabaseName:     "app",
 		},
 	}
+
+	// SyncInstance delegates to omni/spanner/driver via OmniAdapter.
+	inst, err := d.SyncInstance(ctx)
+	require.NoError(t, err)
+	require.Nil(t, inst.Metadata)
+	require.Len(t, inst.Databases, 1)
+	require.Equal(t, "app", inst.Databases[0].Name)
+
+	impl.instanceErr = errors.New("permission denied")
+	_, err = d.SyncInstance(ctx)
+	require.ErrorContains(t, err, "permission denied")
+	impl.instanceErr = nil
 
 	// QueryConn forwards options, clears QueryPlan when Explain is true, and closes ephemeral session.
 	got, err := d.QueryConn(ctx, "SELECT 1", db.QueryContext{Limit: 2, Explain: true, MaximumSQLResultSize: 2048})
