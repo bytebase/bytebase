@@ -31,7 +31,7 @@ vi.mock("@/stores/app", () => {
   return { useAppStore };
 });
 vi.mock("../../PlanTable", () => ({
-  PlanStages: () => <div data-testid="stage-cells" />,
+  PlanStageParts: () => <span data-testid="stage-cells" />,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -42,7 +42,9 @@ vi.mock("react-i18next", () => ({
         ? `${key}(${[options.user, options.role].filter(Boolean).join(",")})`
         : options?.targets !== undefined
           ? `${key}(${options.targets})`
-          : key,
+          : options?.version !== undefined
+            ? `${key}(${options.version})`
+            : key,
   }),
   initReactI18next: { type: "3rdParty", init: () => {} },
 }));
@@ -159,6 +161,7 @@ const makePage = (): PlanDetailPageState =>
     plan: {
       creator: "users/owner@example.com",
       name: "projects/p1/plans/123",
+      rolloutStageSummaries: [],
     },
     project: {
       issueLabels: [{ value: "alpha" }, { value: "beta" }],
@@ -185,7 +188,9 @@ beforeEach(() => {
   mocks.fetchRelease.mockImplementation(async () => mocks.release);
   mocks.creationIssueLabels = [];
   mocks.page = makePage();
-  mocks.permissions = new Set();
+  // Most tests read as someone who may change labels; the add control shows
+  // only to them.
+  mocks.permissions = new Set(["bb.issues.update"]);
   mocks.updateIssue.mockImplementation(async (request) => request.issue);
 });
 
@@ -306,15 +311,16 @@ test("does not mark labels required after the draft is submitted", () => {
   expect(labelsTrigger()).not.toHaveTextContent("*");
 });
 
-test("keeps draft labels read-only without issues.update and editable with it", async () => {
+test("shows draft labels without the add control to a reader who cannot change them", async () => {
+  mocks.permissions = new Set();
   const { rerender } = render(<PlanDetailMeta />);
 
-  expect(screen.getByRole("button", { name: "issue.labels" })).toBeDisabled();
+  expect(screen.getByText("alpha")).toBeVisible();
   expect(
-    screen.queryByRole("button", { name: "common.remove" })
+    screen.queryByRole("button", { name: /issue\.labels/ })
   ).not.toBeInTheDocument();
   expect(
-    screen.queryByRole("button", { name: "beta" })
+    screen.queryByRole("button", { name: "common.remove" })
   ).not.toBeInTheDocument();
 
   mocks.permissions = new Set(["bb.issues.update"]);
@@ -340,6 +346,17 @@ test("keeps draft labels read-only without issues.update and editable with it", 
       updateMask: { paths: ["labels"] },
     })
   );
+});
+
+test("leaves the labels out when there are none and the reader cannot add one", () => {
+  mocks.permissions = new Set();
+  mocks.page = {
+    ...makePage(),
+    issue: { ...makePage().issue!, labels: [] },
+  } as unknown as PlanDetailPageState;
+  render(<PlanDetailMeta />);
+  expect(screen.queryByText("plan.details.labels")).not.toBeInTheDocument();
+  expect(partsOf("facts", "label-add")).toHaveLength(0);
 });
 
 const releasePage = (vcsSource?: Record<string, unknown>, type = 1) => {
@@ -371,10 +388,35 @@ const releasePage = (vcsSource?: Record<string, unknown>, type = 1) => {
     },
   } as unknown as PlanDetailPageState;
 };
-const rows = () =>
-  screen.queryAllByTestId("plan-detail-row").map((row) => row.getAttribute("data-row"));
-const sourceRow = () =>
-  screen.getAllByTestId("plan-detail-row").find((row) => row.getAttribute("data-row") === "source")!;
+const uiopsPage = (overrides: Record<string, unknown> = {}) =>
+  ({
+    ...makePage(),
+    plan: { ...makePage().plan, specs: [], rolloutStageSummaries: [] },
+    planCheckRuns: [],
+    ...overrides,
+  }) as unknown as PlanDetailPageState;
+const stages = [{ stage: "projects/p1/plans/123/rollout/stages/test" }];
+
+const lines = () =>
+  screen
+    .queryAllByTestId("plan-detail-line")
+    .map((line) => line.getAttribute("data-line"));
+const lineOf = (name: string) =>
+  screen
+    .getAllByTestId("plan-detail-line")
+    .find((line) => line.getAttribute("data-line") === name)!;
+const partsOf = (name: string, part: string) =>
+  Array.from(lineOf(name).querySelectorAll(`[data-part="${part}"]`));
+const textOf = (element: Element) =>
+  // The accessible name each fact starts with is not part of what it shows.
+  Array.from(element.childNodes)
+    .filter((node) => !(node instanceof HTMLElement && node.classList.contains("sr-only")))
+    .map((node) => node.textContent)
+    .join("");
+const sourceParts = () =>
+  Array.from(lineOf("source").querySelectorAll('[data-testid="source-part"]')).map(
+    (part) => part.textContent
+  );
 
 const GITHUB = 1;
 const githubSource = {
@@ -384,42 +426,214 @@ const githubSource = {
   branch: "feature/orders",
 };
 
-test("a release plan's details block has Source, Triggered, Release and Progress, and no Labels or Review", () => {
+test("a release plan has a source line and a facts line, and no state line before it has stages", () => {
   mocks.page = releasePage(githubSource);
   render(<PlanDetailMeta />);
-  expect(rows()).toEqual(["source", "created", "release", "progress"]);
-  expect(screen.getByTestId("stage-cells")).toBeDefined();
+  expect(lines()).toEqual(["source", "facts"]);
+  expect(textOf(partsOf("facts", "creator")[0])).toBe("plan.details.triggered-by(Shop CI)");
 });
 
-test.each([
-  ["while the release loads", () => new Promise<never>(() => {})],
-  ["when the release cannot be read, as an archived one", () => Promise.reject(new Error("not found"))],
-])("a release plan keeps its rows %s, with - for Source and the release id for Release", async (_, fetch) => {
+test("a release plan's state line holds its stages once it has some", () => {
+  mocks.page = {
+    ...releasePage(githubSource),
+    plan: { ...releasePage(githubSource).plan, rolloutStageSummaries: stages },
+  } as unknown as PlanDetailPageState;
+  render(<PlanDetailMeta />);
+  expect(lines()).toEqual(["source", "facts", "state"]);
+  expect(lineOf("state").querySelector('[data-testid="stage-cells"]')).not.toBeNull();
+  expect(partsOf("state", "approval")).toHaveLength(0);
+});
+
+test("while the release loads, the source line holds its row and the release fact is the release id", async () => {
   mocks.page = releasePage(githubSource);
   mocks.release = undefined;
-  mocks.fetchRelease.mockImplementation(fetch);
+  mocks.fetchRelease.mockImplementation(() => new Promise<never>(() => {}));
   render(<PlanDetailMeta />);
   await waitFor(() => expect(mocks.fetchRelease).toHaveBeenCalled());
-  expect(rows()).toEqual(["source", "created", "release", "progress"]);
-  expect(sourceRow().textContent).toContain("-");
-  const row = (name: string) =>
-    screen.getAllByTestId("plan-detail-row").find((r) => r.getAttribute("data-row") === name)!;
-  expect(row("created").textContent).toContain("plan.details.triggered");
-  expect(row("release").textContent).toContain("r1");
+  expect(lines()).toEqual(["source", "facts"]);
+  expect(lineOf("source").querySelectorAll('[data-testid="source-part"]')).toHaveLength(0);
+  expect(partsOf("facts", "changes").map(textOf)).toEqual(["r1"]);
 });
 
-test("a release plan with an issue keeps Labels and Review, so a project that forces labels can still submit it", () => {
-  mocks.page = { ...releasePage(githubSource), issue: makePage().issue } as unknown as PlanDetailPageState;
+test("a release that cannot be read, as an archived one, loses the source line and keeps the release id", async () => {
+  mocks.page = releasePage(githubSource);
+  mocks.release = undefined;
+  mocks.fetchRelease.mockRejectedValue(new Error("not found"));
   render(<PlanDetailMeta />);
-  expect(rows()).toEqual(["source", "created", "labels", "release", "review", "progress"]);
+  await waitFor(() => expect(lines()).toEqual(["facts"]));
+  expect(partsOf("facts", "changes").map(textOf)).toEqual(["r1"]);
+});
+
+test("a release with no source has no source line", () => {
+  mocks.page = releasePage(undefined);
+  render(<PlanDetailMeta />);
+  expect(lines()).toEqual(["facts"]);
+});
+
+test("a release plan with a submitted issue keeps its labels and approval", () => {
+  mocks.page = {
+    ...releasePage(githubSource),
+    issue: { ...makePage().issue, draft: false, approvalStatus: 2 },
+  } as unknown as PlanDetailPageState;
+  render(<PlanDetailMeta />);
+  expect(lines()).toEqual(["source", "facts", "state"]);
+  expect(partsOf("facts", "label").map((part) => part.textContent)).toEqual(["alpha"]);
+  expect(textOf(partsOf("state", "approval")[0])).toBe("plan.details.awaiting-approval");
+});
+
+test("Migration-based and State-based releases, each fact a part of its own", () => {
+  mocks.page = releasePage(githubSource, 1);
+  const { unmount } = render(<PlanDetailMeta />);
+  expect(partsOf("facts", "changes").map(textOf)).toEqual([
+    "plan.details.migration-based",
+    "plan.details.release-files",
+    "plan.details.update-to-version(202610051530)",
+  ]);
+  unmount();
+  mocks.page = releasePage(githubSource, 2);
+  render(<PlanDetailMeta />);
+  expect(partsOf("facts", "changes").map(textOf)).toEqual([
+    "plan.details.state-based",
+    "202610051500",
+  ]);
+});
+
+test("a UIOps draft has no source line and no state line", () => {
+  mocks.page = uiopsPage();
+  render(<PlanDetailMeta />);
+  expect(lines()).toEqual(["facts"]);
+  expect(textOf(partsOf("facts", "creator")[0])).toBe("owner@example.com");
+  expect(partsOf("facts", "label").map((part) => part.textContent)).toEqual(["alpha"]);
+});
+
+test("a submitted UIOps plan gains the state line, and the facts line is unchanged", () => {
+  mocks.page = uiopsPage();
+  const { unmount } = render(<PlanDetailMeta />);
+  const draftFacts = lineOf("facts").textContent;
+  unmount();
+  mocks.page = uiopsPage({
+    issue: { ...makePage().issue, draft: false, approvalStatus: 2 },
+  });
+  render(<PlanDetailMeta />);
+  expect(lines()).toEqual(["facts", "state"]);
+  expect(lineOf("facts").textContent).toBe(draftFacts);
+});
+
+test("a UIOps plan without an issue has no labels, and a state line only with stages", () => {
+  mocks.page = uiopsPage({ issue: undefined });
+  const { unmount } = render(<PlanDetailMeta />);
+  expect(lines()).toEqual(["facts"]);
+  expect(partsOf("facts", "label")).toHaveLength(0);
+  unmount();
+  mocks.page = uiopsPage({
+    issue: undefined,
+    plan: { ...makePage().plan, specs: [], rolloutStageSummaries: stages },
+  });
+  render(<PlanDetailMeta />);
+  expect(lines()).toEqual(["facts", "state"]);
+});
+
+test("the lines have no fold control", () => {
+  mocks.page = releasePage({ ...githubSource, commitTitle: "Add the orders table" });
+  render(<PlanDetailMeta />);
+  expect(screen.queryByText("plan.phase.hide-details")).not.toBeInTheDocument();
+  expect(screen.queryByText("plan.phase.show-details")).not.toBeInTheDocument();
+});
+
+test("the creation time is the queue form, its full date-time on hover", () => {
+  mocks.page = releasePage(githubSource);
+  render(<PlanDetailMeta />);
+  expect(
+    Array.from(lineOf("facts").querySelectorAll('[data-testid="humanize-ts"]')).map((ts) =>
+      ts.getAttribute("data-mode")
+    )
+  ).toEqual(["queue"]);
+});
+
+test("the approval names the last approver with their role, or the role that is next", () => {
+  const issue = {
+    ...makePage().issue,
+    draft: false,
+    approvalStatus: 3,
+    approvalTemplate: { flow: { roles: ["roles/projectOwner", "roles/workspaceDBA"] } },
+    approvers: [
+      { status: 2, principal: "users/owner@example.com" },
+      { status: 2, principal: "users/alex@example.com" },
+    ],
+  };
+  mocks.page = uiopsPage({ issue });
+  const { unmount } = render(<PlanDetailMeta />);
+  expect(textOf(partsOf("state", "approval")[0])).toBe(
+    "plan.details.approved-by(Alex Doe (workspaceDBA))"
+  );
+  unmount();
+  mocks.page = uiopsPage({
+    issue: { ...issue, approvalStatus: 2, approvers: [{ status: 2, principal: "users/owner@example.com" }] },
+  });
+  render(<PlanDetailMeta />);
+  expect(textOf(partsOf("state", "approval")[0])).toBe("plan.details.waiting-for(workspaceDBA)");
+});
+
+test("the changes fact counts databases and database groups as parts", () => {
+  mocks.page = uiopsPage({
+    plan: {
+      ...makePage().plan,
+      specs: [
+        {
+          config: {
+            case: "changeDatabaseConfig",
+            value: { targets: ["instances/i/databases/a", "projects/p1/databaseGroups/g1"] },
+          },
+        },
+      ],
+      rolloutStageSummaries: [],
+    },
+  });
+  render(<PlanDetailMeta />);
+  expect(partsOf("facts", "changes").map(textOf)).toEqual([
+    "plan.details.databases",
+    "plan.details.database-groups",
+  ]);
+});
+
+test("a plan on database groups only leaves the database count out, and names the kind with the first part", () => {
+  const groupOnly = (planCheckRuns: unknown[]) =>
+    uiopsPage({
+      plan: {
+        ...makePage().plan,
+        specs: [
+          {
+            config: {
+              case: "changeDatabaseConfig",
+              value: { targets: ["projects/p1/databaseGroups/g1"] },
+            },
+          },
+        ],
+        rolloutStageSummaries: [],
+      },
+      planCheckRuns,
+    });
+
+  mocks.page = groupOnly([]);
+  const { unmount } = render(<PlanDetailMeta />);
+  expect(partsOf("facts", "changes").map(textOf)).toEqual(["plan.details.database-groups"]);
+  unmount();
+
+  mocks.page = groupOnly([
+    { results: [{ report: { case: "sqlSummaryReport", value: { statementTypes: ["DELETE"] } } }] },
+  ]);
+  render(<PlanDetailMeta />);
+  expect(partsOf("facts", "changes").map(textOf)).toEqual([
+    "plan.details.changes-on-targets(plan.details.database-groups)",
+  ]);
 });
 
 test("a source link that is not http or https stays plain text", () => {
   for (const url of ["javascript:alert(1)", "ftp://example.com/app/commit/0a1b2c3", "data:text/html,x"]) {
     mocks.page = releasePage({ vcsType: 0, url, commitTitle: "Add the orders table" });
     const view = render(<PlanDetailMeta />);
-    expect(sourceRow().querySelector("a")).toBeNull();
-    expect(sourceRow().textContent).toContain("Add the orders table");
+    expect(lineOf("source").querySelector("a")).toBeNull();
+    expect(lineOf("source").textContent).toContain("Add the orders table");
     view.unmount();
   }
   mocks.page = releasePage({
@@ -428,44 +642,13 @@ test("a source link that is not http or https stays plain text", () => {
     pullRequest: { url: "javascript:alert(1)", number: 42n, title: "" },
   });
   render(<PlanDetailMeta />);
-  expect(sourceRow().querySelector("a")).toBeNull();
+  expect(lineOf("source").querySelector("a")).toBeNull();
 });
 
 test("a title loses bidirectional-override characters, which could make it read as another", () => {
-  mocks.page = releasePage({ ...githubSource, commitTitle: "Add \u202Eelbat\u202C the \u2066orders\u2069 table" });
+  mocks.page = releasePage({ ...githubSource, commitTitle: "Add ‮elbat‬ the ⁦orders⁩ table" });
   render(<PlanDetailMeta />);
-  expect(sourceRow().querySelector("a")?.textContent).toBe("Add elbat the orders table");
-});
-
-test("a UIOps plan's details block has Created, Labels, Changes, Review and Progress, and no Source", () => {
-  mocks.page = {
-    ...makePage(),
-    plan: { ...makePage().plan, specs: [], rolloutStageSummaries: [] },
-    planCheckRuns: [],
-  } as unknown as PlanDetailPageState;
-  render(<PlanDetailMeta />);
-  expect(rows()).toEqual(["created", "labels", "changes", "review", "progress"]);
-});
-
-test("a UIOps plan without an issue has no Labels or Review row", () => {
-  mocks.page = {
-    ...makePage(),
-    issue: undefined,
-    plan: { ...makePage().plan, specs: [], rolloutStageSummaries: [] },
-    planCheckRuns: [],
-  } as unknown as PlanDetailPageState;
-  render(<PlanDetailMeta />);
-  expect(rows()).toEqual(["created", "changes", "progress"]);
-});
-
-test("Migration-based and State-based releases", () => {
-  mocks.page = releasePage(githubSource, 1);
-  const { unmount } = render(<PlanDetailMeta />);
-  expect(screen.getByTestId("plan-detail-release").textContent).toContain("plan.details.migration-based");
-  unmount();
-  mocks.page = releasePage(githubSource, 2);
-  render(<PlanDetailMeta />);
-  expect(screen.getByTestId("plan-detail-release").textContent).toContain("plan.details.state-based");
+  expect(lineOf("source").querySelector("a")?.textContent).toBe("Add elbat the orders table");
 });
 
 test.each([
@@ -493,14 +676,11 @@ test.each([
     ["group/app@9f8e7d6"],
     "https://gitlab.example.com/group/app/-/commit/9f8e7d6c5b4a",
   ],
-])("the Source row with %s", (_, source, parts, href) => {
+])("the source line with %s", (_, source, parts, href) => {
   mocks.page = releasePage(source);
   render(<PlanDetailMeta />);
-  const texts = Array.from(sourceRow().querySelectorAll('[data-testid="source-part"]')).map(
-    (part) => part.textContent
-  );
-  expect(texts).toEqual(parts);
-  expect(sourceRow().querySelector("a")?.getAttribute("href")).toBe(href);
+  expect(sourceParts()).toEqual(parts);
+  expect(lineOf("source").querySelector("a")?.getAttribute("href")).toBe(href);
 });
 
 test("a squash-merge title ending in (#N) shows the number once", () => {
@@ -510,170 +690,62 @@ test("a squash-merge title ending in (#N) shows the number once", () => {
     pullRequest: { url: "https://github.com/example/app/pull/42", number: 42n, title: "" },
   });
   render(<PlanDetailMeta />);
-  expect(sourceRow().querySelector("a")?.textContent).toBe("Add the orders table #42");
+  expect(lineOf("source").querySelector("a")?.textContent).toBe("Add the orders table #42");
 });
 
 test("a long title is cut at 72 characters with the full text as its tooltip", () => {
   const title = "x".repeat(100);
   mocks.page = releasePage({ ...githubSource, commitTitle: title });
   render(<PlanDetailMeta />);
-  const link = sourceRow().querySelector("a")!;
+  const link = lineOf("source").querySelector("a")!;
   expect(link.textContent).toBe(`${"x".repeat(72)}…`);
   expect(link.getAttribute("title")).toBe(title);
+});
+
+test("a long PR title is cut before its number, which stays whole", () => {
+  const title = "y".repeat(100);
+  mocks.page = releasePage({
+    ...githubSource,
+    pullRequest: { url: "https://github.com/example/app/pull/1284", number: 1284n, title },
+  });
+  render(<PlanDetailMeta />);
+  const link = lineOf("source").querySelector("a")!;
+  expect(link.textContent).toBe(`${"y".repeat(72 - " #1284".length)}… #1284`);
+  // The number is its own box, outside the part that shortens to fit the row.
+  expect(link.lastElementChild?.textContent).toBe(" #1284");
+  expect(link.lastElementChild?.className).toContain("shrink-0");
+  expect(link.getAttribute("title")).toBe(`${title} #1284`);
+});
+
+test("a long branch shortens before its end, which stays whole", () => {
+  const branch = "release/2026-q4-billing-and-invoice-currency-migration";
+  mocks.page = releasePage({ ...githubSource, branch });
+  render(<PlanDetailMeta />);
+  const part = lineOf("source").querySelector(`[title="${branch}"]`)!;
+  expect(part.textContent).toBe(branch);
+  expect(part.lastElementChild?.textContent).toBe(branch.slice(-16));
+  expect(part.lastElementChild?.className).toContain("shrink-0");
 });
 
 test("a title with markdown and control characters renders as plain text", () => {
   mocks.page = releasePage({ ...githubSource, commitTitle: "  **Bold** `code`\u0007\u001b[0m  " });
   render(<PlanDetailMeta />);
-  const link = sourceRow().querySelector("a")!;
+  const link = lineOf("source").querySelector("a")!;
   expect(link.textContent).toBe("**Bold** `code`[0m");
   expect(link.querySelector("strong, code")).toBeNull();
-});
-
-test("the details block opens unfolded and folds to the source title and the progress", () => {
-  mocks.page = releasePage({ ...githubSource, commitTitle: "Add the orders table" });
-  const { unmount } = render(<PlanDetailMeta />);
-  const toggle = screen.getByTestId("plan-details-toggle");
-  expect(toggle.textContent).toBe("plan.phase.hide-details");
-  expect(rows()).not.toHaveLength(0);
-  fireEvent.click(toggle);
-  expect(rows()).toHaveLength(0);
-  const block = screen.getByTestId("plan-details");
-  expect(block.textContent).toContain("Add the orders table");
-  expect(screen.getByTestId("stage-cells")).toBeDefined();
-  expect(screen.getByTestId("plan-details-toggle").textContent).toBe("plan.phase.show-details");
-  fireEvent.click(screen.getByTestId("plan-details-toggle"));
-  expect(rows()).not.toHaveLength(0);
-  fireEvent.click(screen.getByTestId("plan-details-toggle"));
-  unmount();
-  // Another plan, or this one reloaded, starts unfolded again.
-  render(<PlanDetailMeta />);
-  expect(rows()).not.toHaveLength(0);
-});
-
-test("a UIOps plan's folded block keeps only the progress", () => {
-  mocks.page = {
-    ...makePage(),
-    plan: { ...makePage().plan, specs: [], rolloutStageSummaries: [] },
-    planCheckRuns: [],
-  } as unknown as PlanDetailPageState;
-  render(<PlanDetailMeta />);
-  fireEvent.click(screen.getByTestId("plan-details-toggle"));
-  expect(screen.getByTestId("stage-cells")).toBeDefined();
-  expect(screen.queryAllByTestId("source-part")).toHaveLength(0);
-});
-
-test("Triggered names the creator by display name, with the creation time", () => {
-  mocks.page = releasePage(githubSource);
-  render(<PlanDetailMeta />);
-  const created = screen.getByTestId("plan-detail-created");
-  expect(created.textContent).toContain("Shop CI");
-  expect(created.textContent).not.toContain("ci@example.com");
-  // The creation time as a date, then its age.
-  expect(
-    Array.from(created.querySelectorAll('[data-testid="humanize-ts"]')).map((ts) =>
-      ts.getAttribute("data-mode")
-    )
-  ).toEqual(["datetime", "queue"]);
-});
-
-test("Review names the last approver with their role, or the role that is next", () => {
-  const issue = {
-    ...makePage().issue,
-    approvalStatus: 3,
-    approvalTemplate: { flow: { roles: ["roles/projectOwner", "roles/workspaceDBA"] } },
-    approvers: [
-      { status: 2, principal: "users/owner@example.com" },
-      { status: 2, principal: "users/alex@example.com" },
-    ],
-  };
-  mocks.page = { ...makePage(), issue, plan: { ...makePage().plan, specs: [], rolloutStageSummaries: [] }, planCheckRuns: [] } as unknown as PlanDetailPageState;
-  const { unmount } = render(<PlanDetailMeta />);
-  const review = () =>
-    screen.getAllByTestId("plan-detail-row").find((row) => row.getAttribute("data-row") === "review")!;
-  expect(review().querySelector("dd")?.textContent).toBe("plan.details.approved-by(Alex Doe (workspaceDBA))");
-  unmount();
-  mocks.page = {
-    ...mocks.page,
-    issue: { ...issue, approvalStatus: 2, approvers: [{ status: 2, principal: "users/owner@example.com" }] },
-  } as unknown as PlanDetailPageState;
-  render(<PlanDetailMeta />);
-  expect(review().querySelector("dd")?.textContent).toBe("plan.details.waiting-for(workspaceDBA)");
-});
-
-test("the Changes row counts databases and database groups apart", () => {
-  mocks.page = {
-    ...makePage(),
-    plan: {
-      ...makePage().plan,
-      specs: [
-        {
-          config: {
-            case: "changeDatabaseConfig",
-            value: { targets: ["instances/i/databases/a", "projects/p1/databaseGroups/g1"] },
-          },
-        },
-      ],
-      rolloutStageSummaries: [],
-    },
-    planCheckRuns: [],
-  } as unknown as PlanDetailPageState;
-  render(<PlanDetailMeta />);
-  const changes = screen
-    .getAllByTestId("plan-detail-row")
-    .find((row) => row.getAttribute("data-row") === "changes")!;
-  expect(changes.textContent).toBe("plan.details.changesplan.details.databases · plan.details.database-groups");
-});
-
-test("a plan on database groups only leaves the database count out of the Changes row", () => {
-  const groupOnly = (planCheckRuns: unknown[]) =>
-    ({
-      ...makePage(),
-      plan: {
-        ...makePage().plan,
-        specs: [
-          {
-            config: {
-              case: "changeDatabaseConfig",
-              value: { targets: ["projects/p1/databaseGroups/g1"] },
-            },
-          },
-        ],
-        rolloutStageSummaries: [],
-      },
-      planCheckRuns,
-    }) as unknown as PlanDetailPageState;
-  const changesRow = () =>
-    screen.getAllByTestId("plan-detail-row").find((row) => row.getAttribute("data-row") === "changes")!
-      .querySelector("dd")!.textContent;
-
-  mocks.page = groupOnly([]);
-  const { unmount } = render(<PlanDetailMeta />);
-  expect(changesRow()).toBe("plan.details.database-groups");
-  unmount();
-
-  mocks.page = groupOnly([
-    { results: [{ report: { case: "sqlSummaryReport", value: { statementTypes: ["DELETE"] } } }] },
-  ]);
-  render(<PlanDetailMeta />);
-  expect(changesRow()).toBe("plan.details.changes-on-targets(plan.details.database-groups)");
 });
 
 test.each([
   ["only a URL", { url: "https://git.example.com/app/commit/77aa" }, ["https://git.example.com/app/commit/77aa"]],
   ["a title, an author and a ref with no URL", { url: "", commitTitle: "Release train 12", authorName: "Alex Doe", branch: "main" }, ["Release train 12", "plan.details.by-author", "main"]],
-])("an undetected CI's Source row shows what the flags passed: %s", (_, source, parts) => {
+])("an undetected CI's source line shows what the flags passed: %s", (_, source, parts) => {
   mocks.page = releasePage({ vcsType: 0, ...source });
   render(<PlanDetailMeta />);
-  const texts = Array.from(sourceRow().querySelectorAll('[data-testid="source-part"]')).map(
-    (part) => part.textContent
-  );
-  expect(texts).toEqual(parts);
+  expect(sourceParts()).toEqual(parts);
 });
 
-test("the release is fetched silently, and a failed fetch is swallowed", async () => {
+test("the release is fetched silently", async () => {
   mocks.page = releasePage(githubSource);
-  mocks.fetchRelease.mockRejectedValue(new Error("permission denied"));
   render(<PlanDetailMeta />);
   await waitFor(() =>
     expect(mocks.fetchRelease).toHaveBeenCalledWith("projects/p1/releases/r1", true)

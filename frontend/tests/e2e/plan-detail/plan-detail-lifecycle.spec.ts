@@ -529,12 +529,12 @@ test.describe("Forced labels stay in metadata and block only submission (S3)", (
         exact: true,
       }),
     ).toBeVisible();
-    // A row of chips lines up with a row of text.
-    const rowHeights = await page
-      .locator('[data-testid="plan-detail-row"] > dt')
-      .evaluateAll((labels) => labels.map((label) => label.getBoundingClientRect().height));
-    expect(rowHeights.length).toBeGreaterThan(2);
-    expect(new Set(rowHeights).size, `row heights ${rowHeights.join(", ")}`).toBe(1);
+    // A chip lines up with the text beside it: every part is one row high.
+    const partHeights = await page
+      .locator('[data-testid="plan-details"] [data-part]')
+      .evaluateAll((parts) => parts.map((part) => part.getBoundingClientRect().height));
+    expect(partHeights.length).toBeGreaterThan(2);
+    expect(new Set(partHeights).size, `part heights ${partHeights.join(", ")}`).toBe(1);
 
     await planPage.headerReadyForReviewButton.click();
     await waitForIssueDraft(seeded.issueName, false);
