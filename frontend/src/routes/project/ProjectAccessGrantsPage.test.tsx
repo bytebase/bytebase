@@ -30,6 +30,10 @@ import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { getAccessGrantDisplayStatusText } from "@/utils/accessGrant";
 
+vi.mock("@/hooks/useMediaQuery", () => ({
+  useMediaQuery: () => false,
+}));
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
   initReactI18next: { type: "3rdParty", init: () => {} },

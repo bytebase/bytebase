@@ -740,6 +740,7 @@
     "admin": "管理员",
     "all": "全部",
     "and": "和",
+    "apply": "应用",
     "approve": "批准",
     "approved": "已批准",
     "archive": "归档",
@@ -5277,6 +5278,25 @@
       "enqueued-with-rollout-time": "等待执行，{{time}} 后执行。",
       "waiting-max-tasks-per-rollout": "正在等待其他任务完成。已达到每次发布的最大运行任务数限制。上次报告时间：{{time}}。"
     }
+  },
+  "time-range": {
+    "add-time": "添加时间",
+    "all-time": "全部时间",
+    "clear": "清除时间范围",
+    "end-day": "结束日期",
+    "from-time": "开始时间（24 小时制）",
+    "invalid-time": "请使用 24 小时制时间，例如 09:30。",
+    "last-12-months": "最近 12 个月",
+    "last-3-months": "最近 3 个月",
+    "last-30-days": "最近 30 天",
+    "last-6-months": "最近 6 个月",
+    "last-7-days": "最近 7 天",
+    "quick-ranges": "快捷范围",
+    "remove-time": "移除时间",
+    "start-day": "开始日期",
+    "to-before-from": "结束时间早于开始时间。",
+    "to-time": "结束时间（24 小时制）",
+    "today": "今天"
   },
   "two-factor": {
     "description": "双重认证为系统成员提供了一个额外的安全层。在登录时，用户需要输入由认证器应用程序生成的安全代码。",

@@ -740,6 +740,7 @@
     "admin": "Administrador",
     "all": "Todos",
     "and": "y",
+    "apply": "Aplicar",
     "approve": "Aprobar",
     "approved": "Aprobado",
     "archive": "Archivo",
@@ -5277,6 +5278,25 @@
       "enqueued-with-rollout-time": "Esperando para ejecutar después de {{time}}.",
       "waiting-max-tasks-per-rollout": "Esperando a que terminen otras tareas. Se ha alcanzado el límite máximo de tareas en ejecución por despliegue. Último informe a las {{time}}."
     }
+  },
+  "time-range": {
+    "add-time": "Añadir hora",
+    "all-time": "Todo el tiempo",
+    "clear": "Borrar el rango de tiempo",
+    "end-day": "Fin",
+    "from-time": "Hora de inicio, formato de 24 horas",
+    "invalid-time": "Usa el formato de 24 horas, por ejemplo 09:30.",
+    "last-12-months": "Últimos 12 meses",
+    "last-3-months": "Últimos 3 meses",
+    "last-30-days": "Últimos 30 días",
+    "last-6-months": "Últimos 6 meses",
+    "last-7-days": "Últimos 7 días",
+    "quick-ranges": "Rangos rápidos",
+    "remove-time": "Quitar hora",
+    "start-day": "Inicio",
+    "to-before-from": "El fin es anterior al inicio.",
+    "to-time": "Hora de fin, formato de 24 horas",
+    "today": "Hoy"
   },
   "two-factor": {
     "description": "La autenticación de dos factores proporciona una capa adicional de seguridad para las cuentas de los miembros. Al iniciar sesión, se te pedirá que ingreses el código de seguridad generado por tu aplicación de autenticación.",
