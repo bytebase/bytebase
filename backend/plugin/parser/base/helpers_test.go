@@ -495,4 +495,53 @@ func TestExplainAndDiagnoseHelpers(t *testing.T) {
 	require.Len(t, diags, 1)
 	require.Equal(t, uint32(1), diags[0].Range.Start.Line)
 	require.Equal(t, uint32(2), diags[0].Range.Start.Character)
+
+	type rawDiag struct {
+		text   string
+		offset int
+		msg    string
+	}
+	nilDiags := DiagnoseFirstError[rawDiag]("SELECT 1", nil, func(d *rawDiag) (string, int, string) {
+		return d.text, d.offset, d.msg
+	})
+	require.NotNil(t, nilDiags)
+	require.Empty(t, nilDiags)
+
+	firstDiags := DiagnoseFirstError("SELECT\n  *", &rawDiag{text: "SELECT\n  *", offset: 9, msg: "bad token"}, func(d *rawDiag) (string, int, string) {
+		return d.text, d.offset, d.msg
+	})
+	require.Len(t, firstDiags, 1)
+	require.Equal(t, uint32(1), firstDiags[0].Range.Start.Line)
+	require.Equal(t, uint32(2), firstDiags[0].Range.Start.Character)
+	require.Equal(t, "bad token", firstDiags[0].Message)
+}
+
+func TestNodeASTAndExtractNode(t *testing.T) {
+	pos := &storepb.Position{Line: 3, Column: 2}
+	wrapped := &NodeAST[string]{
+		Node:          "select-node",
+		Text:          "SELECT 1;",
+		StartPosition: pos,
+	}
+	var a AST = wrapped
+	require.Equal(t, pos, a.ASTStartPosition())
+	require.Equal(t, "SELECT 1;", wrapped.ASTSource())
+
+	node, ok := ExtractNode[string](a)
+	require.True(t, ok)
+	require.Equal(t, "select-node", node)
+
+	// Nil interface, typed nil pointer, and wrong AST type all return (zero, false).
+	_, ok = ExtractNode[string](nil)
+	require.False(t, ok)
+
+	var typedNil *NodeAST[string]
+	_, ok = ExtractNode[string](typedNil)
+	require.False(t, ok)
+
+	_, ok = ExtractNode[int](a)
+	require.False(t, ok)
+
+	_, ok = ExtractNode[string](dummyAST{})
+	require.False(t, ok)
 }

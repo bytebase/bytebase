@@ -24,11 +24,7 @@ func init() {
 }
 
 // AST wraps an omni CosmosDB AST node and implements the base.AST interface.
-type AST struct {
-	Node          ast.Node
-	Text          string
-	StartPosition *storepb.Position
-}
+type AST = base.NodeAST[ast.Node]
 
 func parseCosmosDB(statement string) ([]*AST, error) {
 	stmts, err := omnicosmosdb.Parse(statement)

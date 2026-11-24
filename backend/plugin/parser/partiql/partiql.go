@@ -28,14 +28,7 @@ func init() {
 }
 
 // astNode wraps an omni AST node to implement the base.AST interface.
-type astNode struct {
-	node     ast.Node
-	startPos *storepb.Position
-}
-
-func (a *astNode) ASTStartPosition() *storepb.Position {
-	return a.startPos
-}
+type astNode = base.NodeAST[ast.Node]
 
 // SplitSQL splits the input into multiple SQL statements using the omni splitter.
 func SplitSQL(statement string) ([]base.Statement, error) {
@@ -73,8 +66,8 @@ func parsePartiQLStatements(statement string) ([]base.ParsedStatement, error) {
 					node = list.Items[0]
 				}
 				ps.AST = &astNode{
-					node:     node,
-					startPos: stmt.Start,
+					Node:          node,
+					StartPosition: stmt.Start,
 				}
 			}
 		}

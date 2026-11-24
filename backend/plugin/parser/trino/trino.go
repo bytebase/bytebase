@@ -28,14 +28,7 @@ func init() {
 	}, storepb.Engine_TRINO)
 }
 
-type astNode struct {
-	node     ast.Node
-	startPos *storepb.Position
-}
-
-func (a *astNode) ASTStartPosition() *storepb.Position { return a.startPos }
-
-func (a *astNode) Node() ast.Node { return a.node }
+type astNode = base.NodeAST[ast.Node]
 
 // SplitSQL splits the input into multiple SQL statements using the omni Trino
 // splitter, re-attaching trailing ';' delimiters when present.
@@ -64,7 +57,7 @@ func parseSegment(stmt base.Statement) (*astNode, error) {
 	if file != nil && len(file.Stmts) > 0 {
 		node = file.Stmts[0]
 	}
-	return &astNode{node: node, startPos: stmt.Start}, nil
+	return &astNode{Node: node, StartPosition: stmt.Start}, nil
 }
 
 // Diagnose returns syntax diagnostics for the given Trino statement,

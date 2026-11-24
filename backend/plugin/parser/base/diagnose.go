@@ -95,6 +95,16 @@ func DiagnoseSyntaxError(statement string, syntaxErr *SyntaxError) []Diagnostic 
 	return diagnostics
 }
 
+// DiagnoseFirstError converts an optional engine-specific syntax error into a
+// non-nil Diagnostic slice.
+func DiagnoseFirstError[E any](statement string, err *E, extract func(*E) (text string, offset int, message string)) []Diagnostic {
+	if err == nil {
+		return []Diagnostic{}
+	}
+	text, offset, msg := extract(err)
+	return DiagnoseSyntaxError(statement, SyntaxErrorAtOffset(text, offset, msg))
+}
+
 // SyntaxErrorAtOffset builds a *SyntaxError from a parser text excerpt and byte offset.
 func SyntaxErrorAtOffset(text string, offset int, message string) *SyntaxError {
 	if offset < 0 {

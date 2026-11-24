@@ -26,13 +26,7 @@ func init() {
 	}, storepb.Engine_STARROCKS)
 }
 
-type astNode struct {
-	node     ast.Node
-	text     string
-	startPos *storepb.Position
-}
-
-func (a *astNode) ASTStartPosition() *storepb.Position { return a.startPos }
+type astNode = base.NodeAST[ast.Node]
 
 // SplitSQL splits the input into multiple SQL statements using omni's analysis
 // package, then attaches 1-based line and rune column positions.
@@ -55,7 +49,7 @@ func parseSegment(stmt base.Statement) (*astNode, error) {
 	if file != nil && len(file.Stmts) > 0 {
 		node = file.Stmts[0]
 	}
-	return &astNode{node: node, text: stmt.Text, startPos: stmt.Start}, nil
+	return &astNode{Node: node, Text: stmt.Text, StartPosition: stmt.Start}, nil
 }
 
 func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
@@ -117,10 +111,10 @@ func statementWithResultLimit(statement string, limit int, _ string) string {
 
 func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
 	return base.ExtractTypedChangedResources(dbMetadata, asts, "expected astNode for StarRocks", true, func(parsed *astNode) (analysis.StatementChanges, bool) {
-		if parsed.node == nil {
+		if parsed.Node == nil {
 			return analysis.StatementChanges{}, false
 		}
-		return analysis.ExtractChangedResources(parsed.node, currentDatabase, parsed.text), true
+		return analysis.ExtractChangedResources(parsed.Node, currentDatabase, parsed.Text), true
 	})
 }
 

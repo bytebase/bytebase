@@ -31,36 +31,11 @@ func init() {
 }
 
 // AST wraps an omni AST node and implements the base.AST interface.
-type AST struct {
-	// Node is the omni AST node (e.g. *ast.SelectStmt, *ast.CreateTableStmt).
-	Node ast.Node
-	// Text is the original SQL text of this statement.
-	Text string
-	// StartPosition is the 1-based position where this statement starts.
-	StartPosition *storepb.Position
-}
-
-// ASTSource returns the statement's own text, which the schema walk-through reads
-// when it needs the statement as written.
-func (a *AST) ASTSource() string {
-	return a.Text
-}
-
-// ASTStartPosition implements base.AST.
-func (a *AST) ASTStartPosition() *storepb.Position {
-	return a.StartPosition
-}
+type AST = base.NodeAST[ast.Node]
 
 // GetNode extracts the omni AST node from a base.AST interface.
 func GetNode(a base.AST) (ast.Node, bool) {
-	if a == nil {
-		return nil, false
-	}
-	node, ok := a.(*AST)
-	if !ok {
-		return nil, false
-	}
-	return node.Node, true
+	return base.ExtractNode[ast.Node](a)
 }
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
@@ -96,11 +71,9 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 
 // Diagnose returns the script's first syntax error as a diagnostic.
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	var syntaxErr *base.SyntaxError
-	if e := analysis.Diagnose(statement); e != nil {
-		syntaxErr = base.SyntaxErrorAtOffset(e.Text, e.Offset, e.Message)
-	}
-	return base.DiagnoseSyntaxError(statement, syntaxErr), nil
+	return base.DiagnoseFirstError(statement, analysis.Diagnose(statement), func(e *analysis.SyntaxError) (string, int, string) {
+		return e.Text, e.Offset, e.Message
+	}), nil
 }
 
 // Completion provides auto-complete candidates for OceanBase statements using

@@ -15,8 +15,8 @@ func init() {
 
 	// V1 anchored every finding on where the splitter starts the statement,
 	// which can include leading whitespace or comments before the node.
-	advisor.RegisterFunc(storepb.Engine_REDSHIFT, storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION,
-		e.NamingRule(
+	advisor.RegisterRules(storepb.Engine_REDSHIFT, map[storepb.SQLReviewRule_Type]advisor.Advisor{
+		storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION: e.NamingRule(
 			redshiftv1review.TableDropNaming,
 			code.TableDropNamingConventionMismatch,
 			"naming_payload is required for table drop naming convention rule",
@@ -24,5 +24,6 @@ func init() {
 			false,
 			advisor.BacktickName,
 			e.PosStmtStart,
-		))
+		),
+	})
 }

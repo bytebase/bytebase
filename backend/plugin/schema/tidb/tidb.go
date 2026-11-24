@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	omnianalysis "github.com/bytebase/omni/analysis"
 	metadatapb "github.com/bytebase/omni/metadata"
 	tidbanalysis "github.com/bytebase/omni/tidb/analysis"
 	"github.com/bytebase/omni/tidb/catalog"
@@ -94,7 +93,7 @@ var tidbWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
 	DatabaseMetadata: func(c *catalog.Catalog, dbName string) *metadatapb.DatabaseSchemaMetadata {
 		return c.DatabaseMetadata(dbName)
 	},
-	InspectAST: inspectTiDBAST,
+	InspectAST: omnicatalog.InspectAST(tidbparser.GetNode, tidbanalysis.ClassifyWalkThroughStatement),
 	ExtractCatalogError: omnicatalog.ExtractError(func(e *catalog.Error) (int, string) {
 		return e.Code, e.Message
 	}),
@@ -147,16 +146,4 @@ func tidbBuildRawSQL(asts []base.AST) (string, []base.AST) {
 		execASTs = append(execASTs, a)
 	}
 	return b.String(), execASTs
-}
-
-func inspectTiDBAST(unifiedAST base.AST) (omnianalysis.WalkThroughStatement, bool) {
-	node, ok := tidbparser.GetNode(unifiedAST)
-	if !ok {
-		return omnianalysis.WalkThroughStatement{}, false
-	}
-	info := tidbanalysis.ClassifyWalkThroughStatement(node)
-	if wrapped, ok := unifiedAST.(*tidbparser.AST); ok {
-		info.Source = strings.TrimSpace(wrapped.Text)
-	}
-	return info, true
 }
