@@ -1,6 +1,6 @@
 # Release-backed plan page
 
-Status: proposal · 2026-10-27
+Status: implemented in #21875, except D10 as revised 2026-11-24, a proposal
 
 A GitOps release is minted by bytebase-action inside the customer's CI: one run creates the release
 (a snapshot of the migration folder at that commit), a plan whose title is the release id, and the
@@ -10,9 +10,9 @@ migration failed, and today it shows the release artifact twice and the per-data
 The rule this doc lands on: **Changes is the artifact and Deploy is the outcome: the Changes rail
 lists the release's files by version with no status, and each task shows what the release did, or
 will do, to its database as one spine of file sections in the task-run log's own rows.** Every
-task is folded on load to one line that says what happened. A details block under the title names
-the pull request or commit, the release and the progress per stage, and gives a UIOps plan the same
-block. No action is added. Main already retired the release detail page (D12). The backend adds one task payload field,
+task is folded on load to one line that says what happened. Fact lines under the title name
+the pull request or commit, the release and the progress per stage, and a UIOps plan gets the same
+lines but the source. No action is added. Main already retired the release detail page (D12). The backend adds one task payload field,
 two fields on a skipped task and a few optional proto fields; the executor does not change.
 
 ## Problem
@@ -126,7 +126,7 @@ visit); each row's full path in monospace link color, which reads as source code
 repeated on every row, as loud as the name.
 
 **D2 · Changes never shows per-database status.** No chips, no "applied" marks, no counts of what
-ran. The aggregate is the Progress row (D10) and the stage chips; the detail is in each task.
+ran. The aggregate is the state line's stage cell (D10) and the stage chips; the detail is in each task.
 Rejected: status chips on the files in Changes, which would have to pick one database to be true
 for.
 
@@ -437,16 +437,15 @@ task panel's 1024 px threshold, which leaves the task cards 512 px; the path as 
 length outweighs the version.
 
 **D9 · The source row lives on `Release.VCSSource`, filled by the action from the CI environment and
-explicit flags.** The details block's Source row (D10) renders the fields it has in a fixed order:
+explicit flags.** The source line (D10) renders the fields it has in a fixed order:
 `title · author · repo@sha · branch`, missing fields leaving no gap. The title is the pull request
 title when the run knows one, else the first line of the commit message, else `repo@sha`; the PR or
 the commit is the link. Text only: trimmed, control and bidirectional-override characters removed
-(U+202A–202E, U+2066–2069, which could make a title read as another), no markdown, 72 characters
-then an ellipsis with the full text as the tooltip. Repository and SHA are parsed from the commit
+(U+202A–202E, U+2066–2069, which could make a title read as another), no markdown, 72 characters,
+shortened in the middle so a PR title keeps its `#N`, with the full text as the tooltip. Repository and SHA are parsed from the commit
 URL the action already sends, so a release with only `url` still gets a row (States). Any client
 that can create a release writes these fields, so the row and the viewer's file link (D8) use only
-an `http` or `https` URL; any other scheme leaves the title as text and the file unlinked. On a phone the
-title takes its own line and the rest a second muted line.
+an `http` or `https` URL; any other scheme leaves the title as text and the file unlinked.
 
 `VCSSource` gains `commit_sha`, `branch`, `commit_title`, `author_name`, `author_login`,
 and `pull_request { url, number, title }` in both the v1 and the store proto, all
@@ -495,49 +494,71 @@ token the rollout job does not always have; a link to the CI run: no visit in th
 to the pipeline, the PR's checks already lead there, and it would cost a URL template per platform
 and a proto field.
 
-**D10 · A details block under the title, for release and UIOps plans; the title stays the release
-id.** Short facts about the plan sit as labeled rows in one block in the page's flow, between the
-title row and the description. The rows are body text (14 px), the size of the Progress row's stage
-cells, with muted labels; the caption size (12 px) is for secondary text, and these are the page's
-main facts. Every row has one height, 24 px, the shared `xs` control height that the label chips,
-their remove button and the add-label button keep, with its content centered, so a row of chips
-lines up with a row of text; only a row that wraps grows:
+**D10 · Fact lines under the title, without labels, for release and UIOps plans; the title stays
+the release id.** Short facts about the plan sit between the title row and the description as lines
+of values, in body text (14 px). A fact is shown by its value alone: a name beside a time reads as
+who and when, a chip as a label, a status icon beside an environment as a stage. A fact takes words
+only where its form does not identify it, and those words are part of the value ("update to
+version", "Triggered by"). A fact with no value is absent and holds no place. Three kinds of line,
+in this order:
 
-| Row | Release-backed plan | UIOps plan |
-|---|---|---|
-| Source | D9's row: PR or commit title, author, `repo@sha`, branch | none |
-| Triggered / Created | "shop-ci (service account) · Oct 5, 15:02 · 12 minutes ago": the plan's creator by display name, not email, and `create_time` | The creator and time, today's "Created by" line |
-| Labels | As UIOps: a release plan can get an issue like any plan, and a project that forces labels then needs them here | Today's inline issue labels, editable in place, required when the project forces them; absent when the plan has no issue |
-| Release / Changes | "Migration-based · 493 files · update to version `202610051530`", the release's highest version, the last in D1's stored order, or "State-based · `<schema version>`", from the release's type and files | "DDL", "DML" or "Mixed" on N databases, from the plan check's `statement_types`; database groups are counted beside the databases, and a kind of target the plan does not have is left out: "DML on 1 database group", "DDL on 2 databases · 1 database group" |
-| Review | As UIOps | The issue's approval state, "✓ Approved by alex (DBA) · Oct 5, 14:45", or who is next; absent when the plan has no issue |
-| Progress | The plan list's stage cell (`ProjectPlanDashboardPage.tsx`): each stage's status icon and name, joined by arrows, wrapping when there are many | Same |
+| Line | Fact | Release-backed plan | UIOps plan |
+|---|---|---|---|
+| Source | Source | D9's row: PR or commit title, author, `repo@sha`, branch | none |
+| Facts | Creator and time | "Triggered by shop-ci · 34 minutes ago": the plan's creator by display name, not email, and `create_time`. The verb tells the creator from the source row's author on the line above | "alex · 16 minutes ago", with no verb: the line names one person |
+| | What changes | "Migration-based · 493 files · update to version `202610051530`", the release's highest version, the last in D1's stored order, or "State-based · `<schema version>`", from the release's type and files | "DDL", "DML" or "Mixed" on N databases, from the plan check's `statement_types`; database groups are counted beside the databases, and a kind of target the plan does not have is left out: "DML on 1 database group", "DDL on 2 databases · 1 database group" |
+| | Labels | As UIOps: a release plan can get an issue like any plan, and a project that forces labels then needs them here | Today's inline issue labels as chips, editable in place, the add control after them for a reader who may change them, with the required mark when the project forces labels; absent when the plan has no issue, except on the create screen, which shows only today's label picker |
+| State | Approval | As UIOps | The issue's approval state with its status icon: "Waiting for DBA" ("Awaiting approval" until the flow names a role), "Approved by alex (DBA)", "Rejected" or "No approval required"; absent when the plan has no issue and while the issue is a draft |
+| | Progress | The plan list's stage cell (`PlanStages` in `PlanTable.tsx`): each stage's status icon and name, joined by arrows; absent, not "-", while the plan has no stage summaries | Same |
 
-The plan's spec names its release, so the block takes a release plan's rows from the first render
-rather than when the release arrives. Until the release is read, and when it cannot be read (an
-archived release, which `GetRelease` no longer returns), Source shows "-" and Release shows the
-release id.
+The time follows [timestamp-display.md](timestamp-display.md)'s rule for this field: the age for 30
+days and the date after, with the full date-time as the tooltip.
 
-The block folds. It opens unfolded every time the page loads, with "Hide details" at its top right,
-the plan page's existing link text for its sections. Folded, it keeps one line in the same box: the
-Progress cell, after the Source title on a release plan, with "Show details" at the right. The fold
-lasts while the page is open and is not remembered, so the next plan opened, or this one reloaded,
-starts unfolded. The description is not part of the block and keeps its own Show more.
+The state line is the one line that comes and goes with the plan's life. A draft has none: the title
+row's action says where the plan stands. The line appears when the plan is submitted, or when a plan
+with no issue gets its first stage, under the other lines and above the description, and from then
+on only its text changes. So once the page has loaded, the title row and the lines above the state
+line never move. The state line is medium weight in the main text
+color; the other lines are regular weight, with times, separators and the source line after its
+title lighter. No line folds, and
+the lines have no "Hide details".
 
-The description stays below the block, rendered and clipped as today (`PlanDetailHeaderDetails.tsx`:
-150 characters or 3 lines, then Show more), so the rows keep their place whatever its length. A
-release plan's collapsed Changes line then shows only the targets per stage, each stage by its
-environment's title, as in the Progress row. "Migration-based" and
-"State-based" are the docs' names for the two GitOps workflows; the console's "Versioned" and
-"Declarative" elsewhere are a separate copy change. Rejected: the PR title as the plan title, which
-breaks the link from the CI summary and the plan list, and is absent on a rebase merge or an
-undetected platform; a side panel for the block, which competes with the file viewer's side panel
-(D8) and takes width the folded cards need; the description as the block's last row, which turns
-the block into a document container under a second label and gives every CI-created plan an empty
-row; remembering the fold across plans, which would hide Source and Review on the next plan without
-the reader choosing it; folding by default, which hides the facts a reader opens the page for; the release facts in the Changes summary instead of a block, which leaves Progress no place and
-splits plan facts between two spots; a statement count (it needs a parse the page does not have)
-and a summed row estimate (each database differs; its card has its own); counts in the Progress
-row, which the stage tabs and chips already carry.
+Every row is 24 px high, the shared `xs` control height that the label chips and the add-label
+button keep, with 4 px between rows, whether a row starts a line or comes from a line wrapping, so
+a wrapped row and a new line look the same. A line wraps only between its parts: the pieces its
+separators join ("Migration-based", "493 files" and "update to version …" are three), a label chip,
+or one stage with its icon. A part never wraps inside itself, and a separator or an arrow shows only
+between two parts on the same row. Only the source title and the branch can be wider than the
+page; each shortens once, in the middle, to D9's 72 characters or the room on its row, whichever is
+less, so the title keeps its `#N` and the branch its end. Nothing scrolls sideways. At
+phone width a release plan is about six rows.
+
+The plan's spec names its release, so a release plan holds one row for the source line from the
+first render. Until the release is read, the
+release fact shows the release id. When the release cannot be read (an archived release, which
+`GetRelease` no longer returns), the source line is removed and the release fact keeps the release
+id; a release that carries no source loses the source line only.
+
+The description stays below the lines, rendered and clipped as today (`PlanDetailHeaderDetails.tsx`:
+150 characters or 3 lines, then Show more), so the lines keep their place whatever its length. A
+reader who may edit a plan with no description sees "Add description" as muted text in the
+description's place, and it opens today's editor there. "Migration-based" and "State-based" are the docs' names for the two GitOps workflows; the console's
+"Versioned" and "Declarative" elsewhere are a separate copy change. Rejected: the PR title as the
+plan title, which breaks the link from the CI summary and the plan list, and is absent on a rebase
+merge or an undetected platform; a side panel for the facts, which competes with the file viewer's
+side panel (D8) and takes width the folded cards need; one labeled row per fact, which takes five
+rows on a UIOps plan and four on a release plan, sets every fact at one weight, keeps a row for a
+fact with no value and then needs a fold to give the height back; labels as column heads above
+their values, which uses the width but wraps to two bands on a narrow page; no state line, which
+leaves a reader to open Review and Deploy for what one line says; the state line above the fact
+lines, which moves them when it appears, or below the description, which puts it at a different
+height on every plan; a state line from the start reading "Draft", which repeats the title row's
+action to save one shift; the add-description control on the fact line, which opens the editor away
+from the control; wrapping inside a fact, or a tighter gap between wrapped rows, which makes a
+wrapped row read as part of neither line; the release facts in the Changes summary instead of the
+fact line, which splits plan facts between two spots; a statement count (it needs a parse the page
+does not have) and a summed row estimate (each database differs; its card has its own); counts in
+the stage cell, which the stage tabs and chips already carry.
 
 **D11 · No error classification.** The page states the file, the statement, the error and what
 applied, and stops. Rejected: recognizing "already exists", lock timeouts and constraint
@@ -593,7 +614,7 @@ Changes:
 | Rollout | Rail |
 |---|---|
 | Not started | Open: today's spec tab and Targets, then the manifest line, groups, 12 rows then "Load 12 more" and "Load all (N)", "Show fewer" once extended |
-| Started or finished | Collapsed: the targets per stage (the release facts are in the details block, D10); opens on click to the same content |
+| Started or finished | Collapsed: the targets per stage (the release facts are in the fact line, D10); opens on click to the same content |
 | Declarative release | One line: the schema folder at its version, with Open |
 
 The viewer, by the page's width:
@@ -604,16 +625,23 @@ The viewer, by the page's width:
 | 640 to 1279 px | Standard-width sheet over a scrim | Same body; on close the sheet keeps showing its file until it has slid away, as the UX contract's sheets do, so no empty panel slides off |
 | Below 640 px | Full-width sheet | Lines wrap |
 
-The details block's Source row:
+The source line:
 
 | Data the release carries | Row |
 |---|---|
 | PR known | `<PR title> #N` as the link · by `<author>` · `repo@sha` · `branch` |
 | Commit title only | `<commit title>` as the link · by `<author>` · `repo@sha` · `branch` |
 | Platform without title or author in the environment (Bitbucket push) | `repo@sha` · `branch` |
-| Only `url` (old action, or a release created through the API) | Source · `repo@sha` |
+| Only `url` (old action, or a release created through the API) | `repo@sha` as the link |
 
 ## Scope
+
+The D10 revision of 2026-11-24 ships as one frontend PR on its own, after this doc's
+implementation (#21875): `PlanDetailMeta.tsx` and `PlanDetailHeaderDetails.tsx` with their tests,
+`PlanStages` in `PlanTable.tsx` with `PlanTable.test.tsx`, whose arrows the plan and release lists
+share, the locale files, and `frontend/tests/e2e/plan-detail/plan-detail-lifecycle.spec.ts`. It carries D10
+alone, changes no API and depends on no other slice. The rows below are the original
+implementation's.
 
 | Area | File | Change |
 |---|---|---|
@@ -627,7 +655,7 @@ The details block's Source row:
 | Frontend | `frontend/src/routes/project/plan-detail/components/deploy/DeployTaskHeader.tsx`, `DeployTaskItem.tsx`, `DeployBranch.tsx` | Every task folded on load; the folded card's one-line description per state for release and UIOps tasks, with its tint, under the database below 640 px; the stage selected on load (D3). |
 | Frontend | `frontend/src/components/release/ReleaseFileViewer.tsx` (new), `ReleaseFileDetailPanel.tsx` | The viewer: one body with the diagnostic drawn from the command's byte range and error, the path's copy control and the file-at-commit link; side panel or sheet by `useMediaQuery` (D8, D9). |
 | Frontend | `frontend/src/routes/project/plan-detail/components/PlanDetailTaskRolloutActionPanel.tsx` | Each task's status chip after its database, replacing the status icon, and a failed task's error line, for UIOps and release tasks; the reason field shown and required for release-backed tasks (D7). |
-| Frontend | `frontend/src/routes/project/plan-detail/components/PlanDetailHeaderDetails.tsx`, `PlanDetailMeta.tsx` | The details block for release and UIOps plans, with the Source row and the plan list's stage cell for Progress, its fold (unfolded on every load, held in component state), above the description, which keeps today's clipping (D9, D10). |
+| Frontend | `frontend/src/routes/project/plan-detail/components/PlanDetailHeaderDetails.tsx`, `PlanDetailMeta.tsx` | The fact lines for release and UIOps plans: the source line, the fact line and the state line with the plan list's stage cell, one row height and gap at every width, no fold, above the description, which keeps today's clipping and gains the add-description text in its place (D9, D10). |
 | Frontend | `frontend/src/locales/*.json` | New strings; the retired release-page strings removed. |
 | Backend | `proto/store/store/task.proto`, `proto/v1/v1/rollout_service.proto`, `backend/api/v1/rollout_service_task.go`, `rollout_service_converter.go` | The release state field on the task payload, computed at creation with the store's `Versions` filter, returned on the v1 task (D4). |
 | Backend | `proto/store/store/task.proto`, `proto/v1/v1/rollout_service.proto`, `backend/store/task.go`, `backend/api/v1/rollout_service.go` | The skipper and skip time written by `BatchSkipTasks`, output-only on the v1 task (D7). |
@@ -683,16 +711,20 @@ Tests to write, per the placement rules in `AGENTS.md`:
 - Header click tests, folded and open: a click on the line's empty space and on the card padding
   toggles once; the task name and the caret toggle once, not twice; the checkbox, an action button
   and the margin around each do not toggle; a click ending a text selection does not toggle.
-- Details block tests: each row for a release plan and a UIOps plan, the rows a plan kind lacks
-  absent, and a release plan with an issue keeping Labels and Review; a release plan's rows before
-  its release loads and when the fetch fails, with "-" for Source and the release id for Release;
-  Migration-based and
-  State-based; the Progress row's stage cells wrapping at six stages;
-  the labels editable in place and required when the project forces them, and in
-  `plan-detail-lifecycle.spec.ts` every row the same height once a label is set; the description below the
-  block clipped at 150 characters or 3 lines; the block unfolded on load, folding to the Progress
-  line (after the Source title on a release plan) and back, and unfolded again after a reload or on
-  another plan.
+- Fact line tests: each fact for a release plan and a UIOps plan, a fact with no value absent with
+  no placeholder, and a release plan with an issue keeping its labels and approval; "Triggered by"
+  on a release plan only; the time under the 30-day rule with the full date-time as its tooltip; no
+  state line on a draft or on a plan with no issue and no stage summaries, the approval text per approval
+  status, and the stage cell wrapping between stages at six stages; a release plan holding the source line's row
+  before its release loads, losing it when the fetch fails or the release has no source, with the
+  release id as the release fact until the release is read; Migration-based and State-based; the
+  labels editable in place and required when the project forces them; no fold control; the
+  description below the lines clipped at 150 characters or 3 lines, and "Add description" shown
+  only to a reader who may edit, opening the editor in its place; and in
+  `plan-detail-lifecycle.spec.ts`, at 390 px wide, every row the same height and gap, no row
+  starting or ending with a separator or an arrow, the release fact as three parts, a long source
+  title shortened in the middle with its `#N` kept and a long branch keeping its end, and the page
+  not scrolling sideways.
 - Changes rail tests: descending order over timestamp, counter and dotted versions; two versions
   that parse equal kept in the stored order, reversed; mixed timestamp lengths as one flat list; the grouping per
   shape with the newest group open, and over a hundred counter or dotted versions as one flat list; 12 rows, "Load 12 more", "Load all" and "Show fewer"; a backfilled low version landing in its
@@ -708,7 +740,7 @@ Tests to write, per the placement rules in `AGENTS.md`:
   by the page's width; swapping files in the docked column; Close and Esc; the plan's state, such
   as loaded rows, kept when the column opens and closes.
 - Source row tests: each row of the States table from a `VCSSource` with that subset; a squash-merge
-  title ending in `(#N)` rendered with the number once; the 72-character truncation and tooltip; a
+  title ending in `(#N)` rendered with the number once; the 72-character truncation in the middle, keeping `#N`, and its tooltip; a
   title with markdown, control and bidirectional-override characters rendered as text; no link,
   in the row or the viewer, from a URL that is not `http` or `https`; the parse of `repo@sha` from each
   platform's commit URL.
