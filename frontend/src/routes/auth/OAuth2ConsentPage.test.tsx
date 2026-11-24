@@ -567,7 +567,7 @@ describe("OAuth2ConsentPage", () => {
     expect(label).toBeDefined();
     expect(modeBadge).toHaveClass("whitespace-nowrap");
     expect(
-      [...container.querySelectorAll("h3")].map((node) => node.textContent)
+      [...container.querySelectorAll("h2")].map((node) => node.textContent)
     ).toEqual(["oauth2.consent.mcp.title", "oauth2.consent.mcp.title-refused"]);
 
     const [allowed, refused] = [...container.querySelectorAll("ul[role='list']")]

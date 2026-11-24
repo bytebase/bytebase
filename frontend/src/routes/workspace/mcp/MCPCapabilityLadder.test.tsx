@@ -150,7 +150,7 @@ describe("MCPCapabilityLadder", () => {
   // policy; the trigger is the first one, so the list adds only the second.
   test("expanded, the two groups are headed allowed and not allowed", () => {
     const { container, unmount } = renderIntoContainer(ladder({}));
-    const headings = [...container.querySelectorAll("h3")].map(
+    const headings = [...container.querySelectorAll("h4")].map(
       (node) => node.textContent
     );
     expect(headings).toEqual([
@@ -160,7 +160,7 @@ describe("MCPCapabilityLadder", () => {
     expect(
       container
         .querySelector('[data-testid="mcp-ladder-trigger"]')
-        ?.closest("h3")
+        ?.closest("h4")
     ).not.toBeNull();
     expect(container.textContent).not.toContain(
       "settings.mcp.ladder.summary.read-only"
