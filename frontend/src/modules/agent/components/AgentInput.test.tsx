@@ -1430,15 +1430,15 @@ describe("AgentInput", () => {
       }
     });
 
-    test("does not reveal token or error feedback after dismissing configuration while AI stays disabled", () => {
+    test("keeps AI configuration feedback instead of token or error recovery while AI stays disabled", () => {
       const { store, chat } = seedFeedbackRun(true);
       mocks.aiEnabled = false;
       const view = renderFeedback();
       try {
         view.render();
         expectOneCurrentFeedback(view.container, "agent.ai-not-configured.title");
-        act(() => screen.getByRole("button", { name: "common.dismiss" }).click());
-        expect(view.container.querySelector('[role="alert"], [data-agent-token-budget]')).toBeNull();
+        expect(screen.queryByRole("button", { name: "common.dismiss" })).toBeNull();
+        expect(view.container.querySelector("[data-agent-token-budget], [data-agent-error-summary]")).toBeNull();
         expect(view.container.querySelector<HTMLButtonElement>("[data-agent-send]")).toBeDisabled();
         expect(store.getChat(chat.id)?.runCheckpoint?.suspension).toBe("token-limit");
         expectNoExecution();
@@ -1983,6 +1983,8 @@ describe("AgentInput", () => {
 
   test("increases and resumes the same logical run without clearing its draft or repeating startup", async () => {
     enableRunRecovery();
+    const { buildOutboundHistory } = await vi.importActual<typeof import("../logic/outboundHistory")>("../logic/outboundHistory");
+    mocks.buildOutboundHistory.mockImplementation(buildOutboundHistory);
     let logicalRunId: string | undefined;
     mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks, _signal, options) => {
       expect(options.reserveProviderAttempt).toBeTypeOf("function");
@@ -2025,6 +2027,19 @@ describe("AgentInput", () => {
     expect(store.getChat(chat.id)?.runBudget?.totalTokensUsed).toBe(120_000);
     expect(store.getChat(chat.id)?.runBudget?.limit).toBe(150_000);
     expect(useAgentStore.getState().preferences.tokenLimitPerRun).toBe(60_000);
+    for (const [history] of mocks.runAgentLoop.mock.calls) {
+      expect(history.flatMap((message: { toolCalls?: unknown[] }) => message.toolCalls ?? [])).toContainEqual(expect.objectContaining({
+        name: "get_project_overview",
+        origin: "runtime",
+      }));
+    }
+    expect(await store.flushRunPersistence()).toBe(true);
+    const reloaded = createAgentStore();
+    reloaded.getState().setWorkspaceName("workspaces/demo", "agent@example.com");
+    expect(reloaded.getState().getMessages(chat.id).flatMap(message => message.toolCalls ?? [])).toContainEqual(expect.objectContaining({
+      name: "get_project_overview",
+      origin: "runtime",
+    }));
     view.unmount();
   });
 
@@ -3305,6 +3320,55 @@ describe("AgentInput", () => {
       view.unmount();
     }
   });
+
+  test.each([true, false])(
+    "wraps full custom confirmation labels without changing the answer, confirmed=%s",
+    async (confirmed) => {
+      mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat(undefined, "projects/orders");
+      const confirmLabel = "Prepare the unsaved database access request for review before submitting";
+      const cancelLabel = "KeepTheCurrentDatabaseAccessUnchangedAndDoNotPrepareAnyRequest";
+      store.awaitUser(chat.id, {
+        toolCallId: "confirm-long-labels",
+        kind: "confirm",
+        prompt: "Prepare this unsaved draft?",
+        confirmLabel,
+        cancelLabel,
+      });
+      const view = renderIntoContainer(<AgentInput />);
+      try {
+        await act(async () => view.render());
+        const scope = within(view.container);
+        const confirm = scope.getByRole("button", { name: confirmLabel });
+        const cancel = scope.getByRole("button", { name: cancelLabel });
+        expect(view.container.querySelector("[data-agent-pending-preview]")).toHaveClass("min-h-0", "overflow-y-auto");
+        const actions = confirm.closest("[data-agent-confirmation-actions]");
+        expect(actions).toHaveClass("flex-wrap", "justify-end", "w-full");
+        expect(actions).toContainElement(cancel);
+        expect(cancel.compareDocumentPosition(confirm) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        for (const button of [confirm, cancel]) {
+          expect(button).toHaveClass("max-w-full", "min-w-0", "whitespace-normal", "wrap-anywhere", "h-auto", "min-h-7", "py-1");
+          expect(button).not.toHaveClass("whitespace-nowrap", "h-7", "truncate");
+        }
+        expect(confirm).toHaveTextContent(confirmLabel);
+        expect(cancel).toHaveTextContent(cancelLabel);
+        expect(store.getPendingAsk(chat.id)?.toolCallId).toBe("confirm-long-labels");
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+
+        await act(async () => (confirmed ? confirm : cancel).click());
+
+        const response = store.getMessages(chat.id).find((message) => message.toolCallId === "confirm-long-labels");
+        expect(JSON.parse(response?.content ?? "null")).toMatchObject({
+          kind: "confirm",
+          confirmed,
+          answer: confirmed ? confirmLabel : cancelLabel,
+        });
+      } finally {
+        view.unmount();
+      }
+    }
+  );
 
   test("passes a historical masking database candidate without selecting it", async () => {
     mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
@@ -6612,6 +6676,12 @@ describe("AgentInput", () => {
     expect(mocks.executeTool).toHaveBeenCalledWith("get_masking_overview", args, expect.any(String));
     const history = mocks.runAgentLoop.mock.calls[0][0];
     const refresh = history.find((message: { role: string }) => message.role === "tool");
+    expect(history.find((message: { role: string }) => message.role === "assistant")?.toolCalls).toMatchObject([
+      { name: "get_masking_overview", origin: "runtime" },
+    ]);
+    expect(store.getMessages(chat.id).findLast(message => message.toolCalls?.some(call => call.id === refresh.toolCallId))?.toolCalls).toMatchObject([
+      { name: "get_masking_overview", origin: "runtime" },
+    ]);
     if (fails) expect(JSON.parse(refresh.content)).toMatchObject({ error: expect.any(String) });
     else expect(refresh.content).toBe(freshResult);
     expect(store.getMessages(chat.id).find((message) => message.content === "Open Global Masking, then select Create rule.")?.metadata?.actions).toEqual(openTargets.length ? [{ kind: "open", target }] : undefined);
@@ -12256,7 +12326,7 @@ describe("AgentInput", () => {
     expect(referenceHistory.slice(-2)).toMatchObject([
       {
         role: "assistant",
-        toolCalls: [{ name: "get_project_overview" }],
+        toolCalls: [{ name: "get_project_overview", origin: "runtime" }],
       },
       { role: "tool", toolCallId: referenceHistory.at(-2)?.toolCalls?.[0].id },
     ]);
@@ -12510,7 +12580,7 @@ describe("AgentInput", () => {
       content?: string;
     }[];
     expect(history.slice(-2)).toMatchObject([
-      { role: "assistant", toolCalls: [{ name: "get_issue_overview", arguments: JSON.stringify({ issueName }) }] },
+      { role: "assistant", toolCalls: [{ name: "get_issue_overview", arguments: JSON.stringify({ issueName }), origin: "runtime" }] },
       { role: "tool", content: overview },
     ]);
 
@@ -12604,7 +12674,7 @@ describe("AgentInput", () => {
       content?: string;
     }[];
     expect(history.slice(-2)).toMatchObject([
-      { role: "assistant", toolCalls: [{ name: "get_plan_overview", arguments: JSON.stringify({ planName }) }] },
+      { role: "assistant", toolCalls: [{ name: "get_plan_overview", arguments: JSON.stringify({ planName }), origin: "runtime" }] },
       { role: "tool", content: overview },
     ]);
     expect(
@@ -13115,6 +13185,7 @@ describe("AgentInput", () => {
         toolCalls: [{
           name: "get_database_overview",
           arguments: JSON.stringify({ databaseName }),
+          origin: "runtime",
         }],
       },
       { role: "tool", content: overview },
@@ -14189,8 +14260,8 @@ describe("AgentInput", () => {
       const button = [...container.querySelectorAll("button")].find(
         (button) => button.textContent === label
       );
-      expect(button).toHaveClass("h-7", "px-2", "text-xs");
-      expect(button).not.toHaveClass("h-9");
+      expect(button).toHaveClass("h-auto", "min-h-7", "px-2", "text-xs");
+      expect(button).not.toHaveClass("h-9", "h-7");
     }
 
     unmount();
@@ -14370,8 +14441,8 @@ describe("AgentInput", () => {
       const button = [...view.container.querySelectorAll("button")].find(
         (button) => button.textContent === label
       );
-      expect(button?.classList.contains("h-7")).toBe(true);
-      expect(button?.classList.contains("text-xs")).toBe(true);
+      expect(button).toHaveClass("h-auto", "min-h-7", "text-xs");
+      expect(button).not.toHaveClass("h-7");
     }
 
     await act(async () => {

@@ -26,10 +26,12 @@ import {
   buildReleaseSpine,
   buildRowsFromEntries,
   collectLeafSections,
+  completedOneTimeError,
   countSpine,
   findFailedCommand,
   firstLineOf,
   formatEntriesDuration,
+  hasError,
   isSpineItemOpenByDefault,
   SPINE_LOAD_STEP,
   type SpineCounts,
@@ -86,6 +88,7 @@ export interface ReleaseSpineViewProps {
   detailText?: TaskRunLogDetailText;
   onOpenFile?: OpenReleaseFile;
   revisionsLink?: RevisionsLinkTarget;
+  diagnosticHelp?: ReactNode;
   // The task was skipped: no file is about to apply.
   skipped?: boolean;
 }
@@ -115,6 +118,7 @@ export function ReleaseSpineView({
   detailText,
   onOpenFile,
   revisionsLink,
+  diagnosticHelp,
   skipped,
 }: ReleaseSpineViewProps) {
   const { t } = useTranslation();
@@ -124,6 +128,25 @@ export function ReleaseSpineView({
   );
   const [loads, setLoads] = useState<SpineLoads>({});
   const items = useMemo(() => windowSpine(spine.items, loads), [spine, loads]);
+  const diagnosticTarget = useMemo(
+    () =>
+      diagnosticHelp
+        ? (spine.items.find(
+            (item) => item.kind === "file" && item.status === "failed"
+          ) ??
+          spine.items.find((item) => item.kind === "run-failed") ??
+          spine.items.find(
+            (item) =>
+              (item.kind === "file" || item.kind === "step") &&
+              item.entries.some((entry) =>
+                run?.status === TaskRun_Status.DONE
+                  ? completedOneTimeError(entry)
+                  : hasError(entry)
+              )
+          ))
+        : undefined,
+    [diagnosticHelp, run?.status, spine]
+  );
   const counts = useMemo(
     () => countSpine(spine.items, files.length),
     [spine, files.length]
@@ -274,10 +297,17 @@ export function ReleaseSpineView({
   const renderFile = (section: SpineFileSection) => {
     const file = { version: section.version, path: section.path };
     const note = deletedNote(section);
+    const help = diagnosticTarget === section ? diagnosticHelp : undefined;
     const pathLink = (
-      <span className="flex min-w-0 items-center gap-x-1">
+      <span
+        className={cn(
+          "flex min-w-0 items-center gap-x-1",
+          help && "col-start-1 row-start-2 items-start sm:items-center"
+        )}
+      >
         <FilePath
           label={section.path || section.version}
+          wrap={Boolean(help)}
           onOpen={
             onOpenFile
               ? () => onOpenFile(file, openContextOf(section))
@@ -313,6 +343,24 @@ export function ReleaseSpineView({
     }
     const open = isOpen(section.id, section);
     const duration = formatEntriesDuration(section.entries);
+    const identity = (
+      <>
+        <CollapsibleTrigger
+          className="w-auto shrink-0"
+          data-testid={`spine-file-${section.version}`}
+        >
+          <Chevron open={open} />
+          <span className="tabular-nums text-control">{section.version}</span>
+          <Badge variant={STATUS_VARIANT[section.status]}>
+            {note && section.status === "applied"
+              ? t("task-run.spine.status.applied-again")
+              : statusLabel(section.status)}
+          </Badge>
+        </CollapsibleTrigger>
+        {/* Outside the toggle: a focusable icon cannot nest in a button. */}
+        {note ? <RevisionDeletedInfo text={note} /> : null}
+      </>
+    );
     return (
       <Collapsible
         key={section.id}
@@ -321,27 +369,34 @@ export function ReleaseSpineView({
         className={ROW_DIVIDER}
       >
         <div
-          className="flex items-center gap-x-2 px-3 py-1.5"
+          className={cn(
+            "flex items-center gap-x-2 px-3 py-1.5",
+            help && "grid grid-cols-[minmax(0,1fr)_auto] gap-y-1 sm:flex"
+          )}
           data-testid={`spine-file-${section.version}-row`}
         >
-          <CollapsibleTrigger
-            className="w-auto shrink-0"
-            data-testid={`spine-file-${section.version}`}
-          >
-            <Chevron open={open} />
-            <span className="tabular-nums text-control">{section.version}</span>
-            <Badge variant={STATUS_VARIANT[section.status]}>
-              {note && section.status === "applied"
-                ? t("task-run.spine.status.applied-again")
-                : statusLabel(section.status)}
-            </Badge>
-          </CollapsibleTrigger>
-          {/* Outside the toggle: a focusable icon cannot nest in a button. */}
-          {note ? <RevisionDeletedInfo text={note} /> : null}
+          {help ? (
+            <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-x-2 sm:shrink-0">
+              {identity}
+            </div>
+          ) : (
+            identity
+          )}
           {pathLink}
-          <span className="flex-1" />
+          <span className={cn("flex-1", help && "hidden sm:block")} />
+          {help ? (
+            <div className="col-start-2 row-start-1 shrink-0 justify-self-end font-sans">
+              {help}
+            </div>
+          ) : null}
           {duration ? (
-            <span className="shrink-0 tabular-nums text-control-light">
+            <span
+              className={cn(
+                "shrink-0 tabular-nums text-control-light",
+                help &&
+                  "col-start-2 row-start-2 self-start justify-self-end sm:self-auto"
+              )}
+            >
               {duration}
             </span>
           ) : null}
@@ -379,6 +434,16 @@ export function ReleaseSpineView({
     testId?: string
   ) => {
     const open = isOpen(id, item);
+    const help = diagnosticTarget === item ? diagnosticHelp : undefined;
+    const trigger = (
+      <CollapsibleTrigger
+        className={cn(TRIGGER_ROW, help && "min-w-0 flex-1")}
+        data-testid={testId}
+      >
+        <Chevron open={open} />
+        {label}
+      </CollapsibleTrigger>
+    );
     return (
       <Collapsible
         key={id}
@@ -386,14 +451,37 @@ export function ReleaseSpineView({
         onOpenChange={() => toggle(id, item)}
         className={ROW_DIVIDER}
       >
-        <CollapsibleTrigger className={TRIGGER_ROW} data-testid={testId}>
-          <Chevron open={open} />
-          {label}
-        </CollapsibleTrigger>
+        {help ? (
+          <div className="flex items-center gap-x-2">
+            {trigger}
+            <div className="shrink-0 pr-3 font-sans">{help}</div>
+          </div>
+        ) : (
+          trigger
+        )}
         <CollapsiblePanel>{children}</CollapsiblePanel>
       </Collapsible>
     );
   };
+
+  const renderRunFailure = (error: string, help?: ReactNode) => (
+    <div
+      key="run-failed"
+      className={cn(ROW_DIVIDER, "px-3 py-1.5")}
+      data-testid="spine-run-failed"
+    >
+      <div className="flex items-center gap-x-2">
+        <ChevronDown className="size-3.5 shrink-0 text-control-placeholder" />
+        <span className="text-control">{t("task-run.spine.run-failed")}</span>
+        {help ? <div className="ml-auto shrink-0 font-sans">{help}</div> : null}
+      </div>
+      {error ? (
+        <div className="whitespace-pre-wrap break-words px-6 pt-1 text-error">
+          {error}
+        </div>
+      ) : null}
+    </div>
+  );
 
   const renderItem = (item: SpineWindowItem): ReactNode => {
     switch (item.kind) {
@@ -480,22 +568,9 @@ export function ReleaseSpineView({
         );
       }
       case "run-failed":
-        return (
-          <div
-            key="run-failed"
-            className={cn(ROW_DIVIDER, "px-3 py-1.5")}
-            data-testid="spine-run-failed"
-          >
-            <div className="flex items-center gap-x-2">
-              <ChevronDown className="size-3.5 shrink-0 text-control-placeholder" />
-              <span className="text-control">
-                {t("task-run.spine.run-failed")}
-              </span>
-            </div>
-            <div className="whitespace-pre-wrap px-6 pt-1 text-error">
-              {item.error}
-            </div>
-          </div>
+        return renderRunFailure(
+          item.error,
+          diagnosticTarget === item ? diagnosticHelp : undefined
         );
     }
   };
@@ -518,7 +593,16 @@ export function ReleaseSpineView({
     }
   };
 
-  if (items.length === 0) return null;
+  if (items.length === 0 && !diagnosticHelp) return null;
+  const showFailedFallback =
+    diagnosticHelp &&
+    !diagnosticTarget &&
+    run?.status === TaskRun_Status.FAILED;
+  // Applied files can be windowed even when they hold a nonfatal step error.
+  const showWindowedHelp =
+    diagnosticHelp &&
+    diagnosticTarget &&
+    !items.some((item) => item === diagnosticTarget);
   return (
     <div
       className="flex w-full flex-col gap-y-1.5 text-xs"
@@ -529,7 +613,13 @@ export function ReleaseSpineView({
       </div>
       <div className="w-full overflow-hidden rounded-sm border border-block-border bg-control-bg/50 font-mono">
         {items.map(renderItem)}
+        {showFailedFallback
+          ? renderRunFailure(run?.error ?? "", diagnosticHelp)
+          : null}
       </div>
+      {showWindowedHelp ? (
+        <div className="flex justify-end">{diagnosticHelp}</div>
+      ) : null}
       {/* Each file writes its revision when it commits, so a run that failed
           after applying a file already has revisions to show. */}
       {revisionsLink &&
@@ -645,16 +735,31 @@ const TRIGGER_ROW =
   "w-full justify-start bg-background px-3 py-1.5 text-control-light hover:bg-control-bg";
 
 // A path opens the file viewer; where there is none it is plain text.
-function FilePath({ label, onOpen }: { label: string; onOpen?: () => void }) {
+function FilePath({
+  label,
+  onOpen,
+  wrap,
+}: {
+  label: string;
+  onOpen?: () => void;
+  wrap?: boolean;
+}) {
+  const textClass = wrap
+    ? "whitespace-normal wrap-anywhere sm:truncate"
+    : "truncate";
   if (!onOpen) {
-    return <span className="min-w-0 truncate font-mono text-xs">{label}</span>;
+    return (
+      <span className={cn("min-w-0 font-mono text-xs", textClass)}>
+        {label}
+      </span>
+    );
   }
   return (
     <Button
       type="button"
       appearance="link"
       size="sm"
-      className="h-auto min-w-0 truncate p-0 font-mono text-xs"
+      className={cn("h-auto min-w-0 p-0 font-mono text-xs", textClass)}
       onClick={onOpen}
     >
       {label}

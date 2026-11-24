@@ -25,6 +25,7 @@ import {
   openSemanticTypeDraftInEditor,
 } from "../logic/semanticTypeDraftTarget";
 import { useAgentStore } from "../store/agent";
+import { AgentActionGroup } from "./AgentActionGroup";
 import { AgentPrimaryAction } from "./AgentPrimaryAction";
 
 export function SemanticTypeDraftButton({
@@ -125,7 +126,7 @@ export function SemanticTypeDraftButton({
   };
 
   return (
-    <div className="flex min-w-0 flex-col items-start gap-2">
+    <div className="flex w-full min-w-0 flex-col items-start gap-2">
       {summary && (
         <dl className="flex max-w-full min-w-0 flex-col gap-1 text-xs">
           <div className="flex flex-wrap items-baseline gap-x-2">
@@ -152,16 +153,6 @@ export function SemanticTypeDraftButton({
           </div>
         </dl>
       )}
-      <AgentPrimaryAction
-        className="-ml-2"
-        data-agent-action-draft-semantic-type
-        loading={loading}
-        completed={Boolean(completed)}
-        disabled={!draft}
-        onClick={() => void openDraft()}
-      >
-        {label}
-      </AgentPrimaryAction>
       <p className="text-xs text-control-light">
         {completed === "created"
           ? t("agent.semantic-type-draft.saved")
@@ -174,6 +165,17 @@ export function SemanticTypeDraftButton({
           {t("agent.semantic-type-draft.unavailable")}
         </Alert>
       )}
+      <AgentActionGroup>
+        <AgentPrimaryAction
+          data-agent-action-draft-semantic-type
+          loading={loading}
+          completed={Boolean(completed)}
+          disabled={!draft}
+          onClick={() => void openDraft()}
+        >
+          {label}
+        </AgentPrimaryAction>
+      </AgentActionGroup>
     </div>
   );
 }

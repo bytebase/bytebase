@@ -13,8 +13,14 @@ import { useTranslation } from "react-i18next";
 import { ComponentPermissionGuard } from "@/components/ComponentPermissionGuard";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { PermissionGuard } from "@/components/PermissionGuard";
+import { SecretInput } from "@/components/SecretInput";
 import { Alert } from "@/components/ui/alert";
-import { FormField, FormFieldGroup, FormSection } from "@/components/ui/form";
+import {
+  FormField,
+  FormFieldGroup,
+  FormLabel,
+  FormSection,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -107,6 +113,7 @@ export const AIAugmentationSection = forwardRef<
   }, [aiSetting]);
 
   const [state, setState] = useState<AIState>(getInitialState);
+  const [apiKeyResetKey, setApiKeyResetKey] = useState(0);
   const [selectedModel, setSelectedModel] = useState(() =>
     getSelectedModel(getInitialState())
   );
@@ -118,6 +125,7 @@ export const AIAugmentationSection = forwardRef<
       prevAiSettingRef.current = aiSetting;
       setState(getInitialState());
       setSelectedModel(getSelectedModel(getInitialState()));
+      setApiKeyResetKey((key) => key + 1);
     }
   }, [aiSetting, getInitialState]);
 
@@ -152,6 +160,7 @@ export const AIAugmentationSection = forwardRef<
   const revert = useCallback(() => {
     setState(getInitialState());
     setSelectedModel(getSelectedModel(getInitialState()));
+    setApiKeyResetKey((key) => key + 1);
   }, [getInitialState]);
 
   const update = useCallback(async () => {
@@ -182,6 +191,7 @@ export const AIAugmentationSection = forwardRef<
       }),
       updateMask: create(FieldMaskSchema, { paths }),
     });
+    setApiKeyResetKey((key) => key + 1);
   }, [state, getInitialState, aiSetting]);
 
   useImperativeHandle(ref, () => ({ isDirty, revert, update }));
@@ -348,9 +358,13 @@ export const AIAugmentationSection = forwardRef<
 
                     {/* API Key */}
                     <FormField
-                      title={t(
-                        "settings.general.workspace.ai-assistant.api-key.self"
-                      )}
+                      title={
+                        <FormLabel htmlFor="ai-api-key">
+                          {t(
+                            "settings.general.workspace.ai-assistant.api-key.self"
+                          )}
+                        </FormLabel>
+                      }
                       description={t(
                         "settings.general.workspace.ai-assistant.api-key.description",
                         {
@@ -377,14 +391,14 @@ export const AIAugmentationSection = forwardRef<
                           </span>
                         ))}
                     >
-                      <Input
+                      <SecretInput
+                        id="ai-api-key"
                         value={state.apiKey}
                         disabled={!canEdit}
-                        placeholder={t(
-                          "settings.general.workspace.ai-assistant.api-key.placeholder"
-                        )}
-                        onChange={(e) =>
-                          setState((s) => ({ ...s, apiKey: e.target.value }))
+                        resetKey={`${state.provider}:${apiKeyResetKey}`}
+                        placeholder={t("common.sensitive-placeholder")}
+                        onValueChange={(apiKey) =>
+                          setState((s) => ({ ...s, apiKey }))
                         }
                       />
                     </FormField>

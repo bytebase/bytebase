@@ -5,6 +5,7 @@ import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import i18n from "@/lib/i18n";
+import { useAgentStore } from "@/modules/agent/store/agent";
 import { retry, runningCommand } from "./taskRunLogEntries";
 import {
   Task_ReleaseStateSchema,
@@ -28,7 +29,14 @@ import type {
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  appState: {
+    notify: vi.fn(),
+    workspace: { name: "workspaces/example" },
+    currentUser: { email: "agent@example.com", workspace: "workspaces/example" },
+    serverInfo: { aiEnabled: true },
+  },
   useTaskRunLogData: vi.fn(),
+  fetchConfiguration: vi.fn(),
   useTaskRunLogSections: vi.fn(),
   actualUseTaskRunLogSections: undefined as
     | typeof useTaskRunLogSections
@@ -48,8 +56,32 @@ vi.mock("./useTaskRunLogSections", async (importOriginal) => {
 
 // CopyButton reaches the app store, whose import chain is not available here.
 vi.mock("@/stores/app", () => ({
-  useAppStore: { getState: () => ({ notify: vi.fn() }) },
+  useAppStore: Object.assign(
+    <T,>(selector: (state: typeof mocks.appState) => T) => selector(mocks.appState),
+    { getState: () => mocks.appState }
+  ),
 }));
+vi.mock("@/app/router", () => ({
+  router: { currentRoute: { value: { fullPath: "/projects/other/plans/999" } } },
+}));
+vi.mock("@/modules/agent/logic/chatContext", () => ({
+  getCurrentChatContext: () => "projects/other",
+}));
+vi.mock("@/stores/modules/v1/setting", () => ({
+  useSettingV1Store: {
+    getState: () => ({ getOrFetchSettingByName: mocks.fetchConfiguration }),
+  },
+}));
+
+const diagnosticRunName =
+  "projects/example/plans/42/rollout/stages/prod/tasks/2/taskRuns/3";
+const diagnosticProps = {
+  taskRunName: diagnosticRunName,
+  taskRunStatus: TaskRun_Status.FAILED,
+  agentHelp: { provenance: "latest" as const },
+};
+const diagnosticHelp = (container: HTMLElement) =>
+  within(container).queryAllByTestId("task-run-diagnostic-help");
 
 const createDefaultData = () => ({
   entries: [],
@@ -222,6 +254,133 @@ beforeEach(() => {
 });
 
 describe("TaskRunLogViewer", () => {
+  test.each(["plain", "loading", "empty"] as const)(
+    "places failed-run help inside the supplied error alert in the %s layout",
+    (layout) => {
+      if (layout !== "plain") {
+        mocks.useTaskRunLogSections.mockReturnValue({ ...createDefaultSections(), rows: [] });
+        mocks.useTaskRunLogData.mockReturnValue({ ...createDefaultData(), logFetch: { status: layout === "loading" ? "loading" : "success" } });
+      }
+      const view = renderViewer({
+        ...diagnosticProps,
+        runError: "Shown failure",
+        renderErrorAlert: (action) => <div role="alert">Shown failure{action}</div>,
+      });
+      const alert = within(view.container).getByRole("alert");
+      expect(within(alert).getByRole("button", { name: "Ask Agent" })).toBeTruthy();
+      expect(diagnosticHelp(view.container)).toHaveLength(1);
+      view.unmount();
+    }
+  );
+  test.each(["plain", "sole-section", "loading", "empty"] as const)(
+    "shows one exact-run action in the %s FAILED layout",
+    (layout) => {
+      if (layout === "plain") {
+        mocks.useTaskRunLogSections.mockReturnValue({
+          ...createDefaultSections(),
+          rows: [section("command", "Command"), section("sync", "Sync")],
+        });
+      } else if (layout === "loading" || layout === "empty") {
+        mocks.useTaskRunLogSections.mockReturnValue({
+          ...createDefaultSections(),
+          rows: [],
+        });
+        mocks.useTaskRunLogData.mockReturnValue({
+          ...createDefaultData(),
+          logFetch: { status: layout === "loading" ? "loading" : "success" },
+        });
+      }
+      const { container, unmount } = renderViewer(diagnosticProps);
+      expect(diagnosticHelp(container)).toHaveLength(1);
+      expect(diagnosticHelp(container)[0]?.dataset.taskRunName).toBe(
+        diagnosticRunName
+      );
+      expect(button(container, /Ask Agent/)).toBeTruthy();
+      unmount();
+    }
+  );
+
+  test("opens a read-only diagnostic bound to the displayed run, not the current Plan", () => {
+    mocks.fetchConfiguration.mockClear();
+    const store = useAgentStore.getState();
+    store.setWorkspaceName("workspaces/example", "agent@example.com");
+    useAgentStore.setState({
+      chats: [],
+      currentChatId: null,
+      queuedUserMessagesByChatId: {},
+    });
+    const view = renderViewer({ ...diagnosticProps, runError: "Shown failure" });
+    expect(useAgentStore.getState().chats).toHaveLength(0);
+    act(() => button(view.container, /Ask Agent/).click());
+    const { chats, queuedUserMessagesByChatId } = useAgentStore.getState();
+    expect(chats).toHaveLength(1);
+    const resource = {
+      kind: "plan",
+      name: "projects/example/plans/42",
+      project: "projects/example",
+      label: "projects/example/plans/42",
+    };
+    expect(chats[0]?.capability).toEqual({ kind: "diagnostic", resource });
+    expect(Object.keys(queuedUserMessagesByChatId)).toEqual([chats[0]?.id]);
+    const queued = queuedUserMessagesByChatId[chats[0].id];
+    expect(queued).toMatchObject({
+      runMode: "read-only",
+      resourceReferences: [resource],
+    });
+    expect(queued.text).toContain(diagnosticRunName);
+    expect(queued.text).toContain("Shown failure");
+    expect(mocks.useTaskRunLogData).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchConfiguration).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  test("leaves a log-only reader and a clean DONE run without an action", () => {
+    mocks.useTaskRunLogData.mockReturnValue({
+      ...createDefaultData(),
+      taskRun: {
+        name: diagnosticRunName,
+        status: TaskRun_Status.FAILED,
+        detail: "Existing failure",
+      },
+    });
+    const view = renderViewer({ taskRunName: diagnosticRunName });
+    expect(diagnosticHelp(view.container)).toHaveLength(0);
+    view.rerender({ ...diagnosticProps, taskRunStatus: TaskRun_Status.DONE });
+    expect(diagnosticHelp(view.container)).toHaveLength(0);
+    view.unmount();
+  });
+
+  test("waits for a DONE snapshot before showing a completed one-time error", () => {
+    const entries = [
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.DATABASE_SYNC,
+        databaseSync: {
+          startTime: { seconds: 1n, nanos: 0 },
+          endTime: { seconds: 2n, nanos: 0 },
+          error: "Recorded sync failure",
+        },
+      }),
+    ];
+    const props = { ...diagnosticProps, taskRunStatus: TaskRun_Status.DONE };
+    const setSnapshotStatus = (status: TaskRun_Status) =>
+      mocks.useTaskRunLogData.mockReturnValue({
+        ...createDefaultData(),
+        entries,
+        logSnapshot: { taskRunName: diagnosticRunName, status },
+        taskRun: {
+          name: diagnosticRunName,
+          status: TaskRun_Status.RUNNING,
+          detail: "Stale detail",
+        },
+      });
+    setSnapshotStatus(TaskRun_Status.RUNNING);
+    const view = renderViewer(props);
+    expect(diagnosticHelp(view.container)).toHaveLength(0);
+    setSnapshotStatus(TaskRun_Status.DONE);
+    view.rerender({ ...props, runError: "" });
+    expect(diagnosticHelp(view.container)).toHaveLength(1);
+    view.unmount();
+  });
   test("drops the summary scaffolding for a lone section", () => {
     const { container, unmount } = renderViewer();
 
@@ -903,6 +1062,52 @@ describe("TaskRunLogViewer release spine", () => {
   const failedError =
     'failed to execute release file migrations/008_change.sql (version 008): ERROR: column "c" already exists\nDETAIL: more';
 
+  test.each(["spine", "release fallback", "replica"] as const)(
+    "shows one exact-run diagnostic in the %s layout",
+    (layout) => {
+      const entries = [marker(1, "008"), run(2, "boom")];
+      if (layout === "spine") {
+        useRelease(entries);
+      } else if (layout === "replica") {
+        useRelease([
+          { ...entries[0], replicaId: "r1" },
+          { ...entries[1], replicaId: "r2" },
+        ]);
+      } else {
+        mocks.useTaskRunLogData.mockReturnValue({
+          ...createDefaultData(),
+          entries,
+        });
+      }
+      const view = renderViewer({ ...diagnosticProps, runError: failedError });
+      expect(diagnosticHelp(view.container)).toHaveLength(1);
+      expect(diagnosticHelp(view.container)[0]?.dataset.taskRunName).toBe(
+        diagnosticRunName
+      );
+      expect(within(view.container).queryByTestId("release-spine") !== null).toBe(
+        layout === "spine"
+      );
+      if (layout === "spine") {
+        const row = within(view.container).getByTestId("spine-file-008-row");
+        expect(within(row).getByRole("button", { name: "Ask Agent" })).toBeTruthy();
+        expect(within(row).getByTestId("spine-file-008").contains(diagnosticHelp(view.container)[0])).toBe(false);
+      }
+      if (layout === "release fallback") {
+        expect(
+          button(view.container, /008: migrations\/008_change\.sql/)
+        ).toBeTruthy();
+      }
+      if (layout === "replica") {
+        expect(
+          within(view.container).getAllByRole("button", {
+            name: /Replica #[12]/i,
+          })
+        ).toHaveLength(2);
+      }
+      view.unmount();
+    }
+  );
+
   test("the failed section opens on its failed row; collapsed, its header carries the error's first line", () => {
     failedRun();
     const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError });
@@ -1180,7 +1385,7 @@ describe("TaskRunLogViewer release spine", () => {
     const spine = renderViewer({
       taskRunStatus: TaskRun_Status.FAILED,
       runError: failedError,
-      errorAlert: <div data-testid="error-alert" />,
+      renderErrorAlert: () => <div data-testid="error-alert" />,
     });
     expect(within(spine.container).queryByTestId("error-alert")).toBeNull();
     spine.unmount();
@@ -1195,7 +1400,7 @@ describe("TaskRunLogViewer release spine", () => {
     const replicas = renderViewer({
       taskRunStatus: TaskRun_Status.FAILED,
       runError: failedError,
-      errorAlert: <div data-testid="error-alert" />,
+      renderErrorAlert: () => <div data-testid="error-alert" />,
     });
     expect(within(replicas.container).getByTestId("error-alert")).toBeDefined();
     replicas.unmount();

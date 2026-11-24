@@ -27,6 +27,7 @@ import {
   minimizeAgentAfterPageHandoff,
 } from "../logic/pageHandoff";
 import { useAgentStore } from "../store/agent";
+import { AgentActionGroup } from "./AgentActionGroup";
 import { AgentPrimaryAction } from "./AgentPrimaryAction";
 
 export function MaskingRuleDraftButton({
@@ -141,7 +142,7 @@ export function MaskingRuleDraftButton({
   };
 
   return (
-    <div className="flex min-w-0 flex-col items-start gap-2">
+    <div className="flex w-full min-w-0 flex-col items-start gap-2">
       {drafts?.map((draft, index) => (
         <div key={index} className="flex max-w-full min-w-0 flex-col gap-2">
           {isBatch && (
@@ -172,17 +173,6 @@ export function MaskingRuleDraftButton({
           </code>
         </div>
       ))}
-      <AgentPrimaryAction
-        className="-ml-2"
-        data-agent-action-draft-masking-rule
-        actionKind={source ? "apply" : "open"}
-        loading={loading}
-        completed={Boolean(completed)}
-        disabled={!drafts?.length}
-        onClick={() => void openDraft()}
-      >
-        {label}
-      </AgentPrimaryAction>
       <p className="text-xs text-control-light">
         {!drafts?.length && !completed && !unavailable
           ? t("agent.masking-rule-draft.inactive")
@@ -193,6 +183,18 @@ export function MaskingRuleDraftButton({
           {t("agent.masking-rule-draft.unavailable")}
         </Alert>
       )}
+      <AgentActionGroup>
+        <AgentPrimaryAction
+          data-agent-action-draft-masking-rule
+          actionKind={source ? "apply" : "open"}
+          loading={loading}
+          completed={Boolean(completed)}
+          disabled={!drafts?.length}
+          onClick={() => void openDraft()}
+        >
+          {label}
+        </AgentPrimaryAction>
+      </AgentActionGroup>
     </div>
   );
 }

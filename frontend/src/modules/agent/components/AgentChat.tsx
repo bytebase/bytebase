@@ -107,6 +107,7 @@ import {
   selectMessages,
   useAgentStore,
 } from "../store/agent";
+import { AgentActionGroup } from "./AgentActionGroup";
 import { AgentActionReceiptActions } from "./AgentActionReceiptActions";
 import { AgentAIConfigurationRecovery } from "./AgentAIConfigurationRecovery";
 import { AgentApiRecovery } from "./AgentApiRecovery";
@@ -369,7 +370,6 @@ function HandoffLink({ handoff }: { handoff?: AgentHandoff }) {
   ) {
     return (
       <AgentPrimaryAction
-        className="-ml-2"
         data-agent-handoff
         data-agent-action-open
         disabled={loading}
@@ -382,7 +382,6 @@ function HandoffLink({ handoff }: { handoff?: AgentHandoff }) {
   }
   return (
     <AgentPrimaryActionLink
-      className="-ml-2"
       data-agent-handoff
       data-agent-action-open
       to={to}
@@ -550,7 +549,6 @@ function PlanDraftButton({
 
   return (
     <AgentPrimaryAction
-      className="-ml-2"
       data-agent-action-draft-plan
       actionKind={applyToCurrentPlan ? "apply" : "open"}
       disabled={loading}
@@ -638,7 +636,6 @@ function AccessRequestDraftButton({
 
   return (
     <AgentPrimaryAction
-      className="-ml-2"
       data-agent-action-request-access
       disabled={loading}
       loading={loading}
@@ -690,12 +687,20 @@ function AgentExpressionDraftActions({
 
   return (
     <div
-      className="mt-2 flex max-w-full flex-col items-start gap-2"
+      className="mt-2 flex w-full min-w-0 flex-col gap-2"
       role="group"
       aria-label={t("cel.agent-help.apply-group")}
       data-agent-expression-draft
     >
-      <div className="-ml-2 flex max-w-full flex-wrap gap-2">
+      <p className="text-xs text-control-light">
+        {t("cel.agent-help.unsaved")}
+      </p>
+      {failed && (
+        <p className="text-xs text-error" role="alert">
+          {t("cel.agent-help.invalid")}
+        </p>
+      )}
+      <AgentActionGroup>
         {canApplySelector && (
           <AgentPrimaryAction
             type="button"
@@ -726,15 +731,7 @@ function AgentExpressionDraftActions({
               : t("cel.agent-help.apply-raw")}
           </AgentPrimaryAction>
         )}
-      </div>
-      <p className="text-xs text-control-light">
-        {t("cel.agent-help.unsaved")}
-      </p>
-      {failed && (
-        <p className="text-xs text-error" role="alert">
-          {t("cel.agent-help.invalid")}
-        </p>
-      )}
+      </AgentActionGroup>
     </div>
   );
 }
@@ -800,17 +797,8 @@ function IssueCommentDraftButton({
   };
 
   return (
-    <div className="max-w-full">
-      <AgentPrimaryAction
-        className="-ml-2"
-        data-agent-action-draft-issue-comment
-        disabled={loading}
-        loading={loading}
-        onClick={() => void openDraft()}
-      >
-        {t("agent.issue-comment-draft.open")}
-      </AgentPrimaryAction>
-      <details className="mt-1 text-xs text-control-light">
+    <div className="flex w-full min-w-0 flex-col gap-2">
+      <details className="text-xs text-control-light">
         <summary className="cursor-pointer">
           {t("agent.issue-comment-draft.preview")}
         </summary>
@@ -818,6 +806,16 @@ function IssueCommentDraftButton({
           {action.comment}
         </p>
       </details>
+      <AgentActionGroup>
+        <AgentPrimaryAction
+          data-agent-action-draft-issue-comment
+          disabled={loading}
+          loading={loading}
+          onClick={() => void openDraft()}
+        >
+          {t("agent.issue-comment-draft.open")}
+        </AgentPrimaryAction>
+      </AgentActionGroup>
     </div>
   );
 }
@@ -887,11 +885,6 @@ export function AgentChat({
   const { t } = useTranslation();
   const currentRoute = useReactiveRoute();
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [
-    isAIConfigurationRecoveryDismissed,
-    setAIConfigurationRecoveryDismissed,
-  ] = useState(false);
-
   const messages = useAgentStore(selectMessages);
   const currentChat = useAgentStore(selectCurrentChat);
   const loading = useAgentStore(selectLoading);
@@ -976,9 +969,7 @@ export function AgentChat({
     chat: currentChat,
     messages,
   });
-  const showAIConfigurationRecovery =
-    feedback === "ai-configuration" &&
-    (chatRequiresAIConfiguration || !isAIConfigurationRecoveryDismissed);
+  const showAIConfigurationRecovery = feedback === "ai-configuration";
   const showStorageError = feedback === "storage";
 
   const displayMessages = useMemo(
@@ -1211,10 +1202,6 @@ export function AgentChat({
     return false;
   }
 
-  function dismiss() {
-    setAIConfigurationRecoveryDismissed(true);
-  }
-
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = showEmptyChat
@@ -1251,10 +1238,6 @@ export function AgentChat({
       container.scrollTop = container.scrollHeight;
     }
   }, [currentChatId, latestContinuePrompts]);
-
-  useEffect(() => {
-    setAIConfigurationRecoveryDismissed(false);
-  }, [aiEnabled, currentChatId]);
 
   return (
     <div
@@ -1553,7 +1536,7 @@ export function AgentChat({
                           semanticTypeDraftAction ||
                           msg.metadata?.accessRequestDraft ||
                           actionReceipts?.length) && (
-                          <div className="mt-2 max-w-full">
+                          <AgentActionGroup className="mt-2">
                             {actionReceipts?.length ? (
                               <div className="flex min-w-0 flex-col gap-2">
                                 {actionReceipts.map((receipt) => (
@@ -1607,7 +1590,7 @@ export function AgentChat({
                             ) : (
                               <HandoffLink handoff={handoff} />
                             )}
-                          </div>
+                          </AgentActionGroup>
                         )}
                       {expressionDraft && !currentChat?.archived && (
                         <AgentExpressionDraftActions
@@ -1692,29 +1675,40 @@ export function AgentChat({
                 data-agent-interruption-status
                 className="mt-3 rounded-sm border border-block-border bg-control-bg px-2 py-1.5 text-xs"
               >
-                <div className="flex items-center justify-between gap-2">
+                <div>
                   <span
-                    className={`font-medium ${
+                    className={cn(
+                      "min-w-0 break-words font-medium",
                       interruption.reason === "user"
                         ? "text-warning"
                         : "text-error"
-                    }`}
+                    )}
                   >
                     {interruption.reason === "user"
                       ? t("agent.request-stopped-by-user")
                       : t("agent.interrupted")}
                   </span>
-                  {canRetry && (
-                    <Button appearance="outline" size="xs" onClick={onRetry}>
-                      {t("agent.retry-last-chat-turn")}
-                    </Button>
-                  )}
                 </div>
                 <div className="mt-0.5 text-control-light">
                   {interruption.reason === "user"
                     ? t("agent.request-stopped-retry-hint")
                     : t("agent.interrupted-retry-hint")}
                 </div>
+                {canRetry && (
+                  <AgentActionGroup
+                    className="mt-2"
+                    data-agent-interruption-actions
+                  >
+                    <Button
+                      appearance="outline"
+                      size="sm"
+                      className="h-auto min-h-7 min-w-0 max-w-full py-1 whitespace-normal wrap-anywhere"
+                      onClick={onRetry}
+                    >
+                      {t("agent.retry-last-chat-turn")}
+                    </Button>
+                  </AgentActionGroup>
+                )}
               </div>
             )}
           </div>
@@ -1746,7 +1740,7 @@ export function AgentChat({
           ))}
 
       {showAIConfigurationRecovery ? (
-        <AgentAIConfigurationRecovery onDismiss={dismiss} />
+        <AgentAIConfigurationRecovery />
       ) : showStorageError ? (
         <AgentStorageStatus
           key={storageStatusKey}
@@ -1762,24 +1756,26 @@ export function AgentChat({
             className="rounded-sm bg-error/10 px-3 py-2 text-sm text-error"
             role="alert"
           >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 break-words" data-agent-error-summary>
-                {getAgentErrorSummary(error) ?? t("agent.request-failed")}
-              </div>
-              {canRetryError && (
-                <Button
-                  appearance="outline"
-                  size="xs"
-                  className="shrink-0"
-                  data-agent-retry
-                  onClick={onRetry}
-                >
-                  <RotateCcw className="size-3.5" />
-                  {t("agent.retry-last-chat-turn")}
-                </Button>
-              )}
+            <div className="min-w-0 break-words" data-agent-error-summary>
+              {getAgentErrorSummary(error) ?? t("agent.request-failed")}
             </div>
-            <AgentErrorDetails error={error} />
+            <AgentErrorDetails
+              error={error}
+              actions={
+                canRetryError ? (
+                  <Button
+                    appearance="outline"
+                    size="sm"
+                    className="h-auto min-h-7 min-w-0 max-w-full py-1 whitespace-normal wrap-anywhere"
+                    data-agent-retry
+                    onClick={onRetry}
+                  >
+                    <RotateCcw className="size-4" />
+                    {t("agent.retry-last-chat-turn")}
+                  </Button>
+                ) : undefined
+              }
+            />
           </div>
         )
       )}

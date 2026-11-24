@@ -9,13 +9,24 @@ import {
 import { memo, type ReactNode, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useSeededState } from "@/hooks/useSeededState";
+import {
+  AgentDiagnosticHelpButton,
+  useAgentDiagnosticHelpAvailable,
+} from "@/modules/agent/components/AgentDiagnosticHelpButton";
+import { getTaskRunDiagnostic } from "@/modules/agent/logic/taskRunDiagnostics";
 import { Release_Type } from "@/types/proto-es/v1/release_service_pb";
 import {
   type Task_ReleaseState,
   TaskRun_Status,
   TaskRunLogEntry_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  extractPlanNameFromRolloutName,
+  extractRolloutNameFromTaskRunName,
+} from "@/utils/v1/issue/rollout";
+import { extractProjectResourceName } from "@/utils/v1/project";
 import { LogRows, ROW_DIVIDER } from "./LogRows";
 import { countRetryMarkers, type TaskRunLogDetailText } from "./model";
 import {
@@ -32,6 +43,7 @@ import { useTaskRunLogSections } from "./useTaskRunLogSections";
 
 export interface TaskRunLogViewerProps {
   taskRunName: string;
+  agentHelp?: { provenance: "latest" | "explicit-history" };
   // Pass when known: a terminal status lets a cached log render without a
   // refetch, since a finished run's log is immutable. Callers without a
   // TaskRun in hand (changelog/revision pages) omit it and always revalidate,
@@ -51,34 +63,39 @@ export interface TaskRunLogViewerProps {
   onOpenFile?: OpenReleaseFile;
   // The run's error alert. The spine places the error on its section, so the
   // alert shows only when the spine does not render.
-  errorAlert?: ReactNode;
+  renderErrorAlert?: (action: ReactNode) => ReactNode;
   // The database's revisions, shown once the run applied a file. Without the
   // spine there are no per-file states, so only a done run shows it.
   revisionsLink?: RevisionsLinkTarget;
 }
 
 // memo: callers pass scalars and identity-stable objects (the stored state,
-// a memoized error alert and file opener), and data flows in via zustand
+// a memoized error-alert renderer and file opener), and data flows in via zustand
 // subscriptions, so re-renders of the surrounding card don't cascade into the
 // log tree unless the run itself changed.
 export const TaskRunLogViewer = memo(function TaskRunLogViewer({
   taskRunName,
+  agentHelp,
   taskRunStatus,
   active = true,
   runError,
   releaseState,
   rerun,
   onOpenFile,
-  errorAlert,
+  renderErrorAlert,
   revisionsLink,
 }: TaskRunLogViewerProps) {
   const { t } = useTranslation();
+  const helpAvailable = useAgentDiagnosticHelpAvailable();
+  const narrow = useMediaQuery("(max-width: 639px)");
   const {
     entries,
     logFetch,
+    logSnapshot,
     sheet,
     sheetsMap,
     release,
+    task,
     taskRun: fetchedRun,
   } = useTaskRunLogData(taskRunName, taskRunStatus, active);
 
@@ -188,6 +205,39 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
       : { status, error: runError ?? fetchedRun?.detail ?? "" };
   }, [taskRunStatus, runError, fetchedRun]);
 
+  const provenance = agentHelp?.provenance;
+  const diagnostic = useMemo(() => {
+    if (!taskRunName || !provenance || !spineRun) return undefined;
+    const planName = extractPlanNameFromRolloutName(
+      extractRolloutNameFromTaskRunName(taskRunName)
+    );
+    return getTaskRunDiagnostic({
+      resource: {
+        kind: "plan",
+        name: planName,
+        label: planName,
+        project: `projects/${extractProjectResourceName(planName)}`,
+      },
+      planName,
+      run: {
+        name: taskRunName,
+        status: spineRun.status,
+        detail: spineRun.error,
+      },
+      provenance,
+      task,
+      log: { entries, fetchStatus: logFetch.status, snapshot: logSnapshot },
+    });
+  }, [
+    entries,
+    logFetch.status,
+    logSnapshot,
+    provenance,
+    spineRun,
+    task,
+    taskRunName,
+  ]);
+
   const hasRenderableReleaseFiles =
     hasReleaseFiles && releaseFileGroups.length > 0;
   const hasContent =
@@ -196,13 +246,30 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
   if (!taskRunName) {
     return null;
   }
+  const renderHelp = (iconOnly = false) =>
+    diagnostic && helpAvailable ? (
+      <span
+        className="inline-flex min-w-0 font-sans"
+        data-testid="task-run-diagnostic-help"
+        data-task-run-name={taskRunName}
+      >
+        <AgentDiagnosticHelpButton context={diagnostic} iconOnly={iconOnly} />
+      </span>
+    ) : null;
+  const help = renderHelp();
+  const alertOwnsHelp =
+    renderErrorAlert !== undefined &&
+    spineRun?.status === TaskRun_Status.FAILED;
+  const errorAlert = renderErrorAlert?.(alertOwnsHelp ? help : null);
+  const footerHelp = alertOwnsHelp ? null : help;
   const showRevisions =
     revisionsLink !== undefined && taskRunStatus === TaskRun_Status.DONE;
   const withAlert = (node: ReactNode) =>
-    errorAlert || showRevisions ? (
+    errorAlert || showRevisions || footerHelp ? (
       <div className="flex flex-col gap-2">
         {errorAlert}
         {node}
+        {footerHelp && <div className="flex justify-end">{footerHelp}</div>}
         {showRevisions && revisionsLink ? (
           <RevisionsLink target={revisionsLink} />
         ) : null}
@@ -234,6 +301,7 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
         detailText={detailText}
         onOpenFile={onOpenFile}
         revisionsLink={revisionsLink}
+        diagnosticHelp={renderHelp(narrow)}
       />
     );
   }
@@ -249,7 +317,7 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
         </div>
       );
     }
-    return errorAlert ?? null;
+    return withAlert(null);
   }
 
   // A single section with no replicas or release files carries no structure

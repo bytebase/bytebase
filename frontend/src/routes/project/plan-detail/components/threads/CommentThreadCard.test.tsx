@@ -121,6 +121,10 @@ vi.mock("@/stores/app", () => ({
   useAppStore: Object.assign(
     (selector: (state: unknown) => unknown) =>
       selector({
+        workspace: { name: "workspaces/example" },
+        currentUser: { name: "users/member@example.com", email: "member@example.com", workspace: "workspaces/example" },
+        serverInfo: { aiEnabled: true },
+        settingsByName: {},
         getUserByIdentifier: (principal: string) => ({
           name: principal,
           email: principal.replace(/^users\//, ""),

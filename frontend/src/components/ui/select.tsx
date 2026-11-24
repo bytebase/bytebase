@@ -106,6 +106,7 @@ function Select<Value, Multiple extends boolean | undefined = false>(
     >
       <BaseSelect.Root
         {...props}
+        modal={props.modal ?? false}
         value={value}
         onValueChange={handleValueChange}
       />

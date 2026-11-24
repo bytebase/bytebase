@@ -11,10 +11,16 @@ import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 //
 // The log loads asynchronously, so gating this on the log's contents would
 // flip the alert after first paint.
-export function TaskRunErrorAlert({ taskRun }: Readonly<{ taskRun: TaskRun }>) {
+export function TaskRunErrorAlert({
+  taskRun,
+  action,
+}: Readonly<{ taskRun: TaskRun; action?: ReactNode }>) {
   const { t } = useTranslation();
 
-  if (taskRun.status !== TaskRun_Status.FAILED || !taskRun.detail) {
+  if (
+    taskRun.status !== TaskRun_Status.FAILED ||
+    (!taskRun.detail && !action)
+  ) {
     return null;
   }
 
@@ -23,10 +29,18 @@ export function TaskRunErrorAlert({ taskRun }: Readonly<{ taskRun: TaskRun }>) {
       variant="error"
       title={t("common.error")}
       description={
-        <span className="whitespace-pre-wrap break-words font-mono text-xs">
-          {taskRun.detail}
-        </span>
+        taskRun.detail ? (
+          <span className="whitespace-pre-wrap break-words font-mono text-xs">
+            {taskRun.detail}
+          </span>
+        ) : undefined
       }
-    />
+    >
+      {action && (
+        <div className="mt-3 flex flex-wrap justify-end gap-2">{action}</div>
+      )}
+    </Alert>
   );
 }
+
+import type { ReactNode } from "react";

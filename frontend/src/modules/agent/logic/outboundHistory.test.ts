@@ -3689,6 +3689,130 @@ describe("sanitizeOutboundHistory", () => {
   });
 });
 
+describe("runtime preflight provenance", () => {
+  test("marks a legacy current-turn preflight call without removing its result or changing stored history", () => {
+    const messages: AgentMessage[] = [
+      {
+        id: "preflight-user",
+        chatId: "chat-1",
+        createdTs: 1,
+        role: "user",
+        content: "Review plan 12.",
+      },
+      {
+        id: "preflight-call",
+        chatId: "chat-1",
+        createdTs: 2,
+        role: "assistant",
+        toolCalls: [
+          {
+            id: "preflight-plan-overview",
+            name: "get_plan_overview",
+            arguments: '{"plan":"projects/example/plans/12"}',
+          },
+        ],
+        metadata: { runId: "run-1", runPreflight: true },
+      },
+      {
+        id: "preflight-result",
+        chatId: "chat-1",
+        createdTs: 3,
+        role: "tool",
+        toolCallId: "preflight-plan-overview",
+        content: '{"plan":"projects/example/plans/12","status":"OPEN"}',
+        metadata: { runId: "run-1", runPreflight: true },
+      },
+    ];
+    const original = structuredClone(messages);
+
+    const history = sanitizeOutboundHistory(messages);
+
+    expect(history).toEqual([
+      { role: "user", content: "Review plan 12." },
+      {
+        role: "assistant",
+        toolCalls: [
+          {
+            id: "preflight-plan-overview",
+            name: "get_plan_overview",
+            arguments: '{"plan":"projects/example/plans/12"}',
+            origin: "runtime",
+          },
+        ],
+      },
+      {
+        role: "tool",
+        toolCallId: "preflight-plan-overview",
+        content: '{"plan":"projects/example/plans/12","status":"OPEN"}',
+      },
+    ]);
+    expect(messages).toEqual(original);
+    expect(history[1].toolCalls?.[0]).not.toBe(messages[1].toolCalls?.[0]);
+  });
+
+  test.each([undefined, "opaque-provider-thought-signature"])(
+    "does not classify an unmarked overview call as runtime when its signature is %s",
+    (metadata) => {
+      const messages: AgentMessage[] = [
+        {
+          id: "model-user",
+          chatId: "chat-1",
+          createdTs: 1,
+          role: "user",
+          content: "Review plan 12.",
+        },
+        {
+          id: "model-call",
+          chatId: "chat-1",
+          createdTs: 2,
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "model-plan-overview",
+              name: "get_plan_overview",
+              arguments: '{"plan":"projects/example/plans/12"}',
+              metadata,
+            },
+          ],
+        },
+        {
+          id: "model-result",
+          chatId: "chat-1",
+          createdTs: 3,
+          role: "tool",
+          toolCallId: "model-plan-overview",
+          content: '{"plan":"projects/example/plans/12","status":"OPEN"}',
+        },
+      ];
+      const original = structuredClone(messages);
+
+      const history = sanitizeOutboundHistory(messages);
+
+      expect(history).toEqual([
+        { role: "user", content: "Review plan 12." },
+        {
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "model-plan-overview",
+              name: "get_plan_overview",
+              arguments: '{"plan":"projects/example/plans/12"}',
+              metadata,
+            },
+          ],
+        },
+        {
+          role: "tool",
+          toolCallId: "model-plan-overview",
+          content: '{"plan":"projects/example/plans/12","status":"OPEN"}',
+        },
+      ]);
+      expect(messages).toEqual(original);
+      expect(history[1].toolCalls?.[0]).not.toBe(messages[1].toolCalls?.[0]);
+    }
+  );
+});
+
 describe("historical terminal answer copies", () => {
   const answerTurn = (id: string, content = "The database has three tables.") =>
     [

@@ -16,6 +16,7 @@ import {
   Minus,
   Pencil,
   Plus,
+  RefreshCw,
   Settings,
   Trash2,
   Undo2,
@@ -114,6 +115,7 @@ import {
   MIN_WIDTH,
   WINDOW_MARGIN,
 } from "../window";
+import { AgentActionGroup } from "./AgentActionGroup";
 import { AgentChat } from "./AgentChat";
 import { AgentContextualStart } from "./AgentContextualStart";
 import { AgentInput } from "./AgentInput";
@@ -270,6 +272,14 @@ export function AgentWindow() {
     currentUser && workspace && currentUser.workspace === workspace.name
       ? currentUser.email
       : "";
+  const currentOwnerIdentity =
+    workspace?.name && userEmail
+      ? JSON.stringify([workspace.name, userEmail])
+      : null;
+  const initializationFailure = useAgentStore(
+    (state) => state.initializationFailureIdentity
+  );
+  const [initializationAttempt, setInitializationAttempt] = useState(0);
   const accessGrantDraftSequence = useRef(0);
   const [accessGrantDraft, setAccessGrantDraft] = useState<{
     id: number;
@@ -335,8 +345,26 @@ export function AgentWindow() {
   );
 
   useLayoutEffect(() => {
-    useAgentStore.getState().setWorkspaceName(workspace?.name, userEmail);
-  }, [hasRunningChat, userEmail, workspace?.name]);
+    const initialized = useAgentStore
+      .getState()
+      .setWorkspaceName(workspace?.name, userEmail);
+    const failureIdentity = initialized
+      ? undefined
+      : (currentOwnerIdentity ?? undefined);
+    if (
+      useAgentStore.getState().initializationFailureIdentity !== failureIdentity
+    ) {
+      useAgentStore.setState({
+        initializationFailureIdentity: failureIdentity,
+      });
+    }
+  }, [
+    currentOwnerIdentity,
+    hasRunningChat,
+    initializationAttempt,
+    userEmail,
+    workspace?.name,
+  ]);
 
   const windowRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -2274,13 +2302,50 @@ export function AgentWindow() {
 
   // --- Render ---
 
+  if (!visible || !userEmail) {
+    return null;
+  }
   if (
-    !visible ||
-    !userEmail ||
     storedWorkspaceName !== workspace?.name ||
     storedUserEmail !== userEmail
   ) {
-    return null;
+    if (
+      minimized ||
+      !currentOwnerIdentity ||
+      initializationFailure !== currentOwnerIdentity
+    ) {
+      return null;
+    }
+    return (
+      <AgentDialog
+        open
+        onOpenChange={(open) => {
+          if (!open) useAgentStore.getState().toggle();
+        }}
+      >
+        <AgentDialogContent className="flex max-w-md flex-col gap-4 p-6">
+          <div className="flex flex-col gap-2">
+            <AgentDialogTitle>
+              {t("agent.storage.load-unavailable")}
+            </AgentDialogTitle>
+            <AgentDialogDescription>
+              {t("agent.storage.load-unavailable-description")}
+            </AgentDialogDescription>
+          </div>
+          <div className="flex flex-wrap justify-end gap-2">
+            <AgentDialogClose
+              render={<Button appearance="outline">{t("common.close")}</Button>}
+            />
+            <Button
+              onClick={() => setInitializationAttempt((attempt) => attempt + 1)}
+            >
+              <RefreshCw aria-hidden="true" />
+              {t("agent.storage.retry-loading")}
+            </Button>
+          </div>
+        </AgentDialogContent>
+      </AgentDialog>
+    );
   }
 
   const accessGrantDrawer = accessGrantDraft &&
@@ -2367,7 +2432,7 @@ export function AgentWindow() {
               <> {t("agent.api-recovery.delete-warning")}</>
             )}
           </AgentDialogDescription>
-          <div className="mt-6 flex justify-end gap-x-2">
+          <AgentActionGroup className="mt-6">
             <AgentDialogClose
               render={
                 <Button appearance="outline" type="button">
@@ -2385,7 +2450,7 @@ export function AgentWindow() {
                 if (pendingDeleteChatId) deleteChat(pendingDeleteChatId);
               }}
             />
-          </div>
+          </AgentActionGroup>
         </AgentDialogContent>
       </AgentDialog>
       <BaseDialog.Root
@@ -3124,7 +3189,7 @@ function ChatListMenu({
               <> {t("agent.api-recovery.delete-warning")}</>
             )}
           </AgentPopoverTitle>
-          <div className="flex justify-end gap-2">
+          <AgentActionGroup>
             <Button
               appearance="outline"
               size="sm"
@@ -3144,7 +3209,7 @@ function ChatListMenu({
             >
               {archived ? t("common.delete") : t("common.archive")}
             </Button>
-          </div>
+          </AgentActionGroup>
         </AgentPopoverContent>
       </AgentPopover>
     </>
@@ -3274,7 +3339,7 @@ function ChatRowMenu({
           <AgentPopoverTitle className="mb-3 font-normal">
             {t("agent.archive-chat-confirmation")}
           </AgentPopoverTitle>
-          <div className="flex justify-end gap-2">
+          <AgentActionGroup>
             <Button
               appearance="outline"
               size="sm"
@@ -3292,7 +3357,7 @@ function ChatRowMenu({
             >
               {t("common.archive")}
             </Button>
-          </div>
+          </AgentActionGroup>
         </AgentPopoverContent>
       </AgentPopover>
     </>

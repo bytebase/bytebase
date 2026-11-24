@@ -459,9 +459,12 @@
       "free-failed": "无法释放足够的空间。请关闭其他 Agent 标签页或结束正在进行的运行，然后重试。",
       "free-title": "删除其他已保存的 Agent 聊天？",
       "full": "Agent 历史记录存储空间已满。",
+      "load-unavailable": "Agent 暂不可用",
+      "load-unavailable-description": "无法加载当前账号和工作空间的对话。已保存的历史记录未被删除。",
       "retention-info": "聊天历史保留",
       "retention-policy": "优先清理查询结果预览。如果仍需释放空间，则删除较早完成的聊天，无论是否已归档。已打开的聊天、未完成的运行和草稿会被保留。",
       "retry": "重新保存",
+      "retry-loading": "重试",
       "save-failed": "无法保存 Agent 历史记录。请重试。",
       "title": "Agent 历史记录存储"
     },
@@ -3819,7 +3822,6 @@
           "api-key": {
             "description": "提供 API 密钥，只读。{{viewDoc}}",
             "find-my-key": "找到我的 Key",
-            "placeholder": "API Key 通常以 sk-***** 开头",
             "self": "API Key"
           },
           "available-in-saas": "AI 助手已在此工作空间中启用，并由 Bytebase 管理。",

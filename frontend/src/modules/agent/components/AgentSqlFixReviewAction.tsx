@@ -23,6 +23,7 @@ import {
 } from "../logic/sqlFix";
 import type { AgentResponseAction } from "../logic/types";
 import { type AgentState, useAgentStore } from "../store/agent";
+import { AgentActionGroup } from "./AgentActionGroup";
 import { AgentPrimaryAction } from "./AgentPrimaryAction";
 import {
   AgentDialog,
@@ -213,7 +214,6 @@ export function AgentSqlFixReviewAction({
   return (
     <>
       <AgentPrimaryAction
-        className="-ml-2"
         data-agent-action-review-sql-fix
         disabled={!available}
         loading={revealing}
@@ -287,32 +287,43 @@ export function AgentSqlFixReviewAction({
                 {statusMessage}
               </Alert>
             )}
-            {draft && status === "stale" && (
-              <Button
-                appearance="link"
-                className="self-start"
-                onClick={reviewCurrent}
-                size="sm"
-              >
-                {t("agent.sql-fix.review-current")}
-                <ArrowRight size={controlSize.sm.iconSize} />
-              </Button>
-            )}
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-block-border p-6">
-            <span className="flex items-center gap-1.5 text-xs text-control-light">
-              <FilePenLine className="size-4" />
+          <div className="flex min-w-0 flex-col gap-4 border-t border-block-border p-6">
+            <span className="flex min-w-0 items-start gap-1.5 text-xs text-control-light">
+              <FilePenLine className="size-4 shrink-0" />
               {t("agent.sql-fix.unsaved-only")}
             </span>
-            <div className="ml-auto flex items-center gap-2">
-              <AgentDialogClose render={<Button appearance="outline" />}>
+            <AgentActionGroup>
+              {draft && status === "stale" && (
+                <Button
+                  appearance="link"
+                  className="h-auto min-h-7 min-w-0 max-w-full py-1 whitespace-normal wrap-anywhere"
+                  onClick={reviewCurrent}
+                  size="sm"
+                >
+                  {t("agent.sql-fix.review-current")}
+                  <ArrowRight size={controlSize.sm.iconSize} />
+                </Button>
+              )}
+              <AgentDialogClose
+                render={
+                  <Button
+                    appearance="outline"
+                    className="h-auto min-h-9 min-w-0 max-w-full py-2 whitespace-normal wrap-anywhere"
+                  />
+                }
+              >
                 {t("common.cancel")}
               </AgentDialogClose>
-              <Button disabled={!ready} onClick={apply}>
+              <Button
+                className="h-auto min-h-9 min-w-0 max-w-full py-2 whitespace-normal wrap-anywhere"
+                disabled={!ready}
+                onClick={apply}
+              >
                 <Check size={controlSize.md.iconSize} />
                 {t("agent.sql-fix.apply")}
               </Button>
-            </div>
+            </AgentActionGroup>
           </div>
         </AgentDialogContent>
       </AgentDialog>

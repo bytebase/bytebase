@@ -16,6 +16,7 @@ import {
   buildReleaseSpine,
   buildRowsFromEntries,
   collectLeafSections,
+  completedOneTimeError,
   countSpine,
   groupEntriesByReleaseFile,
   hasReleaseFileMarkers,
@@ -1677,5 +1678,56 @@ describe("release spine error ownership", () => {
       status: "applied",
     });
     expect(spine.items.at(-1)).toMatchObject({ kind: "run-failed", error });
+  });
+});
+
+describe("completedOneTimeError", () => {
+  test.each([
+    [TaskRunLogEntry_Type.SCHEMA_DUMP, "schemaDump"],
+    [TaskRunLogEntry_Type.DATABASE_SYNC, "databaseSync"],
+    [TaskRunLogEntry_Type.PRIOR_BACKUP, "priorBackup"],
+    [TaskRunLogEntry_Type.COMPUTE_DIFF, "computeDiff"],
+    [TaskRunLogEntry_Type.GHOST_MIGRATION, "ghostMigration"],
+  ] as const)(
+    "requires a completed, nonempty error for type %s",
+    (type, field) => {
+      const entry = create(TaskRunLogEntrySchema, {
+        type,
+        [field]: {
+          startTime: ts(1),
+          endTime: ts(2),
+          error: " original error ",
+        },
+      });
+      expect(completedOneTimeError(entry)).toBe(" original error ");
+      const payload = entry[field];
+      if (!payload) throw new Error("missing step fixture");
+      const { startTime, endTime } = payload;
+      payload.endTime = undefined;
+      expect(completedOneTimeError(entry)).toBeUndefined();
+      payload.endTime = endTime;
+      payload.startTime = undefined;
+      expect(completedOneTimeError(entry)).toBeUndefined();
+      payload.startTime = startTime;
+      payload.error = " \n ";
+      expect(completedOneTimeError(entry)).toBeUndefined();
+    }
+  );
+
+  test("does not treat command, transaction, or retry errors as one-time errors", () => {
+    const transactionError = transaction(3);
+    if (!transactionError.transactionControl)
+      throw new Error("missing transaction fixture");
+    transactionError.transactionControl.error = "transaction error";
+    for (const entry of [
+      command(1, { error: "command error" }),
+      transactionError,
+      retry(4, 1, { error: "retry error" }),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.DATABASE_SYNC,
+      }),
+    ]) {
+      expect(completedOneTimeError(entry)).toBeUndefined();
+    }
   });
 });

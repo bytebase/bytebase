@@ -1,6 +1,12 @@
+import { create } from "@bufbuild/protobuf";
 import { createRef, type ReactNode } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  type AISetting,
+  AISetting_Provider,
+  AISettingSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import type { SectionHandle } from "./useSettingSection";
 
 const mocks = vi.hoisted(() => ({
@@ -9,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   refreshServerInfo: vi.fn(),
   isSaaSMode: false,
   aiEnabled: false as boolean | undefined,
+  aiSetting: undefined as AISetting | undefined,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -27,7 +34,10 @@ vi.mock("@/utils", () => ({
 vi.mock("@/stores/app", () => {
   const state = {
     settingsByName: {},
-    getSettingByName: () => undefined,
+    getSettingByName: () =>
+      mocks.aiSetting
+        ? { value: { value: { case: "ai", value: mocks.aiSetting } } }
+        : undefined,
     getOrFetchSettingByName: mocks.getOrFetchSettingByName,
     upsertSetting: mocks.upsertSetting,
     refreshServerInfo: mocks.refreshServerInfo,
@@ -55,6 +65,7 @@ vi.mock("@/components/ui/alert", () => ({
   Alert: ({ description }: { description: ReactNode }) => <div>{description}</div>,
 }));
 vi.mock("@/components/ui/form", () => ({
+  FormLabel: (props: React.LabelHTMLAttributes<HTMLLabelElement>) => <label {...props} />,
   FormField: ({ children, title }: { children?: ReactNode; title: ReactNode }) => (
     <div>{title}{children}</div>
   ),
@@ -91,6 +102,7 @@ describe("AIAugmentationSection", () => {
     vi.clearAllMocks();
     mocks.isSaaSMode = false;
     mocks.aiEnabled = false;
+    mocks.aiSetting = undefined;
     mocks.upsertSetting.mockResolvedValue(undefined);
     mocks.refreshServerInfo.mockResolvedValue(undefined);
   });
@@ -174,4 +186,73 @@ describe("AIAugmentationSection", () => {
     const request = mocks.upsertSetting.mock.calls[0][0];
     expect(request.updateMask.paths).toContain("value.ai.provider");
   });
+
+  test.each([
+    ["OpenAI", AISetting_Provider.OPEN_AI],
+    ["Azure OpenAI", AISetting_Provider.AZURE_OPENAI],
+    ["Gemini", AISetting_Provider.GEMINI],
+    ["Claude", AISetting_Provider.CLAUDE],
+  ])("protects the %s API key while preserving updates", async (_name, provider) => {
+    mocks.aiSetting = create(AISettingSchema, {
+      enabled: true,
+      provider,
+      endpoint: "https://api.example.com",
+      model: "example-model",
+    });
+    const ref = createRef<SectionHandle>();
+    render(<AIAugmentationSection ref={ref} title="AI" onDirtyChange={vi.fn()} />);
+
+    const input = screen.getByPlaceholderText(
+      "common.sensitive-placeholder"
+    ) as HTMLInputElement;
+    expect(input.type).toBe("password");
+    expect(input.autocomplete).toBe("new-password");
+    expect(input.closest("[data-agent-sensitive]")).not.toBeNull();
+    expect(screen.getByLabelText(
+      "settings.general.workspace.ai-assistant.api-key.self"
+    )).toBe(input);
+
+    fireEvent.change(input, { target: { value: "example-api-key" } });
+    expect(input.type).toBe("password");
+    fireEvent.click(screen.getByRole("button", {
+      name: "common.toggle-password-visibility",
+    }));
+    expect(input.type).toBe("text");
+    expect(input.value).toBe("example-api-key");
+
+    await act(async () => ref.current?.update());
+    const request = mocks.upsertSetting.mock.calls[0][0];
+    expect(request.value.value.value.apiKey).toBe("example-api-key");
+    expect(request.value.value.value.provider).toBe(provider);
+    expect(request.updateMask.paths).toContain("value.ai.api_key");
+  });
+
+  test.each(["revert", "update"] as const)(
+    "masks the next API key after %s resets a revealed draft",
+    async (action) => {
+      mocks.aiSetting = create(AISettingSchema, {
+        enabled: true,
+        provider: AISetting_Provider.GEMINI,
+        endpoint: "https://api.example.com",
+        model: "example-model",
+      });
+      const ref = createRef<SectionHandle>();
+      render(<AIAugmentationSection ref={ref} title="AI" onDirtyChange={vi.fn()} />);
+      const label = "settings.general.workspace.ai-assistant.api-key.self";
+      fireEvent.change(screen.getByLabelText(label), {
+        target: { value: "example-api-key" },
+      });
+      fireEvent.click(screen.getByRole("button", {
+        name: "common.toggle-password-visibility",
+      }));
+      expect(screen.getByLabelText(label)).toHaveAttribute("type", "text");
+
+      await act(async () => { await ref.current?.[action](); });
+
+      fireEvent.change(screen.getByLabelText(label), {
+        target: { value: "next-example-api-key" },
+      });
+      expect(screen.getByLabelText(label)).toHaveAttribute("type", "password");
+    }
+  );
 });
