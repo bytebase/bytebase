@@ -18,7 +18,7 @@ export const apiResponseFallbackInstruction =
 type RecoveryInstruction = readonly [explanation: string, nextStep?: string];
 
 const diagnosticFallbackInstruction =
-  "This is diagnostic evidence only. Explain the observed failure or uncertainty using available evidence within the original diagnostic scope. Separate known facts from unknown causes and effects, and preserve confirmed successful parts. State missing evidence or ask for clarifying diagnostic input; do not suggest operational retries, permission or access requests, approvals, navigation, drafts, or configuration changes. Any diagnostic reads must stay within this chat's original read-only scope; diagnostic restrictions override recovery suggestions.";
+  "This is diagnostic evidence only. Explain the observed failure or uncertainty using available evidence within the original diagnostic scope. Separate known facts from unknown causes and effects, and preserve confirmed successful parts. State missing evidence or ask for clarifying diagnostic input. Recovery guidance is not authorization: do not automatically retry, request access, change configuration, navigate, or prepare drafts. Protected API requests require the runtime's exact one-time approval within the original diagnostic project; approval never overrides scope or backend authorization. Only submit mutations or SQL when the member explicitly asks, and never infer consent from a failure or earlier approval.";
 
 const instructions = (
   subject: string

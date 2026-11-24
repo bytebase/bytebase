@@ -85,6 +85,10 @@ describe("buildSystemPrompt", () => {
         },
       });
       expect(prompt).toContain("diagnostic chat");
+      expect(prompt).toContain("read-by-default");
+      expect(prompt).toContain("one-time approval");
+      expect(prompt).not.toContain("permanently read-only");
+      expect(prompt).not.toContain("Never request write permission");
       expect(prompt).toContain(name);
       expect(prompt).toContain("projects/orders");
       expect(prompt).toContain("local draft");

@@ -11,11 +11,7 @@ const isConcreteScope = (value: string) => {
     return false;
   }
   return (
-    !decoded
-      .split("/")
-      .some(
-        (token) => token === "-" || token === "create" || token.includes("*")
-      ) &&
+    !decoded.split("/").some((token) => token === "-" || token.includes("*")) &&
     !/[a-z][a-z0-9+.-]*:\/\//i.test(decoded) &&
     !/(?:password|passwd|pwd|secret|token|api[_-]?key|authorization)\s*[:=]/i.test(
       decoded
@@ -49,4 +45,22 @@ export const normalizeAgentDiagnosticCapability = (
     kind: "diagnostic",
     resource: { ...resource, label: resource.name },
   };
+};
+
+export const sameAgentDiagnosticCapability = (
+  left: unknown,
+  right: unknown
+): boolean => {
+  if (left === undefined || right === undefined) {
+    return left === undefined && right === undefined;
+  }
+  const normalizedLeft = normalizeAgentDiagnosticCapability(left);
+  const normalizedRight = normalizeAgentDiagnosticCapability(right);
+  return (
+    !!normalizedLeft &&
+    !!normalizedRight &&
+    normalizedLeft.resource.kind === normalizedRight.resource.kind &&
+    normalizedLeft.resource.name === normalizedRight.resource.name &&
+    normalizedLeft.resource.project === normalizedRight.resource.project
+  );
 };

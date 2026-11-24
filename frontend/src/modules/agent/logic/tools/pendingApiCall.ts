@@ -15,10 +15,15 @@ import {
   parseCallApiResult,
   preflightRejectedApiResult,
 } from "../callApiResult";
+import {
+  normalizeAgentDiagnosticCapability,
+  sameAgentDiagnosticCapability,
+} from "../diagnosticCapability";
 import { isAgentExecutionContextCurrent } from "../executionContext";
 import type { AgentDiagnosticCapability } from "../types";
 import { checkPreparedApiPermission } from "./apiPermissionPreflight";
 import { dispatchApprovedApiCall, type PreparedApiCall } from "./callApi";
+import { isDiagnosticApiCallInScope } from "./diagnosticApiScope";
 import {
   type IssueDecisionPermission,
   validateIssueDecisionPermission,
@@ -31,6 +36,7 @@ interface PendingApiCall {
   toolCallId: string;
   userName: string;
   call: PreparedApiCall;
+  capability?: AgentDiagnosticCapability;
   issueDecision?: IssueDecisionPermission;
   domOrigin?: CapturedDomMutation;
   expiresAt: number;
@@ -108,6 +114,7 @@ export function createPendingApiCall({
   domContext,
   priorAttemptIds,
   isScopeCurrent,
+  capability,
 }: {
   chatId: string;
   toolCallId: string;
@@ -118,9 +125,14 @@ export function createPendingApiCall({
   domContext?: AgentDomContext;
   priorAttemptIds?: readonly string[];
   isScopeCurrent?: () => boolean;
+  capability?: AgentDiagnosticCapability;
 }): { actionId: string; expiresAt: number } {
   if (!userName) {
     throw new Error("A signed-in user is required to request permission.");
+  }
+  const diagnostic = normalizeAgentDiagnosticCapability(capability);
+  if (capability !== undefined && (!diagnostic || domOrigin)) {
+    throw new Error("The diagnostic API scope could not be verified.");
   }
   const now = Date.now();
   if (
@@ -154,6 +166,12 @@ export function createPendingApiCall({
     userName,
     domOrigin,
     call: Object.freeze({ ...call }),
+    capability: diagnostic
+      ? Object.freeze({
+          ...diagnostic,
+          resource: Object.freeze({ ...diagnostic.resource }),
+        })
+      : undefined,
     issueDecision: issueDecision
       ? Object.freeze({ ...issueDecision })
       : undefined,
@@ -276,17 +294,27 @@ export async function resolvePendingApiCall({
   }
 
   pendingApiCalls.delete(actionId);
-  if (capability !== undefined) {
+  if (!sameAgentDiagnosticCapability(pending.capability, capability)) {
     return notSentApiResult(
-      "API permission requests cannot execute in a diagnostic chat.",
+      "Permission request does not match this diagnostic scope.",
       "permission-rejected"
     );
   }
   const origin = pending.domOrigin;
+  const diagnostic = pending.capability;
   const domCurrent = () =>
     Date.now() < pending.expiresAt &&
     !!origin &&
     isCurrentDomApiCall(origin, pending.call, domContext);
+  const contextCurrent = () =>
+    pending.isScopeCurrent?.() !== false &&
+    (!pending.capability || !!context) &&
+    (!context ||
+      (context.userName === userName &&
+        context.chatId === chatId &&
+        context.toolCallId === toolCallId &&
+        context.logicalActionId === actionId &&
+        context.isCurrent()));
   if (!approved) {
     return origin && !domCurrent()
       ? staleDomPermission
@@ -299,9 +327,37 @@ export async function resolvePendingApiCall({
         "canceled-before-dispatch"
       );
     if (origin && !domCurrent()) return staleDomPermission;
+    if (Date.now() >= pending.expiresAt)
+      return notSentApiResult(
+        "Permission request expired.",
+        "permission-rejected"
+      );
+    if (!sameAgentDiagnosticCapability(pending.capability, capability))
+      return notSentApiResult(
+        "Permission request does not match this diagnostic scope.",
+        "permission-rejected"
+      );
+    if (!contextCurrent())
+      return notSentApiResult(
+        "Permission has no matching execution context.",
+        "admission-rejected"
+      );
   };
   let failure = checkContext();
   if (failure) return failure;
+  if (diagnostic) {
+    const inScope = await isDiagnosticApiCallInScope(
+      pending.call,
+      diagnostic
+    ).catch(() => false);
+    failure = checkContext();
+    if (failure) return failure;
+    if (!inScope)
+      return notSentApiResult(
+        "The approved API call is outside this diagnostic scope.",
+        "preflight-rejected"
+      );
+  }
   const access = await checkPreparedApiPermission(pending.call);
   failure = checkContext();
   if (failure) return failure;
@@ -325,22 +381,17 @@ export async function resolvePendingApiCall({
     failure = checkContext();
     if (failure) return failure;
   }
-  if (
-    pending.isScopeCurrent?.() === false ||
-    (context &&
-      (context.userName !== userName ||
-        context.chatId !== chatId ||
-        context.toolCallId !== toolCallId ||
-        context.logicalActionId !== actionId))
-  )
-    return notSentApiResult(
-      "Permission has no matching execution context.",
-      "admission-rejected"
-    );
   const result = await dispatchApprovedApiCall(pending.call, {
     context,
     signal,
-    ...(pending.isScopeCurrent && { isScopeCurrent: pending.isScopeCurrent }),
+    isScopeCurrent: () =>
+      (!!origin || Date.now() < pending.expiresAt) &&
+      sameAgentDiagnosticCapability(pending.capability, capability) &&
+      contextCurrent(),
+    ...(diagnostic && {
+      validateBeforeSend: () =>
+        isDiagnosticApiCallInScope(pending.call, diagnostic),
+    }),
     ...(origin && { dom: { expectedContext: origin, beforeSend: domCurrent } }),
   });
   if (

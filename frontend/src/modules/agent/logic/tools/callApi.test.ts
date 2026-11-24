@@ -266,6 +266,141 @@ describe("callApi", () => {
     }
   );
 
+  test.each(["denied", "unavailable"])(
+    "rejects an approved request when final async validation is %s",
+    async (state) => {
+      mocks.fetch.mockResolvedValue(createResponse({ status: 200, body: {} }));
+      const settle = vi.fn(async () => true);
+      const result = JSON.parse(
+        await directDispatch(
+          {
+            operationId: "bytebase.v1.DatabaseService.UpdateDatabase",
+            path: "/bytebase.v1.DatabaseService/UpdateDatabase",
+            body: JSON.stringify({
+              database: { name: "instances/example/databases/app" },
+              updateMask: "labels",
+            }),
+          },
+          {
+            context: { ...context, settleAgentApiAttempt: settle },
+            validateBeforeSend: async () => {
+              if (state === "unavailable") throw new Error("Unavailable");
+              return false;
+            },
+          }
+        )
+      );
+      expect(result.agentExecution).toMatchObject({
+        result: "not-sent",
+        reason: "preflight-rejected",
+        attemptId: "test-attempt",
+      });
+      expect(mocks.fetch).not.toHaveBeenCalled();
+      expect(settle).toHaveBeenCalledExactlyOnceWith(
+        "test-attempt",
+        result.agentExecution,
+        expect.any(String)
+      );
+    }
+  );
+
+  test.each(["canceled", "scope", "context", "DOM"])(
+    "rechecks %s after awaiting final request validation",
+    async (change) => {
+      mocks.fetch.mockResolvedValue(createResponse({ status: 200, body: {} }));
+      const controller = new AbortController();
+      let current = true;
+      let finishValidation!: (valid: boolean) => void;
+      const validation = vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishValidation = resolve;
+          })
+      );
+      const pending = directDispatch(
+        {
+          operationId: "bytebase.v1.DatabaseService.UpdateDatabase",
+          path: "/bytebase.v1.DatabaseService/UpdateDatabase",
+          body: JSON.stringify({
+            database: { name: "instances/example/databases/app" },
+            updateMask: "labels",
+          }),
+        },
+        {
+          signal: controller.signal,
+          context: {
+            ...context,
+            isCurrent: () => change !== "context" || current,
+          },
+          isScopeCurrent: () => change !== "scope" || current,
+          validateBeforeSend: validation,
+          ...(change === "DOM" && {
+            dom: {
+              expectedContext: {
+                actor: mocks.actor,
+                workspace: mocks.workspace,
+              },
+              beforeSend: () => current,
+            },
+          }),
+        }
+      );
+      await vi.waitFor(() => expect(validation).toHaveBeenCalledOnce());
+      if (change === "canceled") controller.abort();
+      else current = false;
+      finishValidation(true);
+      expect(JSON.parse(await pending).agentExecution).toMatchObject({
+        result: "not-sent",
+        reason:
+          change === "canceled"
+            ? "canceled-before-dispatch"
+            : "admission-rejected",
+        attemptId: "test-attempt",
+      });
+      expect(mocks.fetch).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each(["allowed", "denied", "unavailable", "identity"])(
+    "revalidates a refreshed metadata read when final scope is %s",
+    async (state) => {
+      mocks.getEndpointPath.mockReturnValue(
+        "/bytebase.v1.ProjectService/GetProject"
+      );
+      mocks.fetch
+        .mockResolvedValueOnce(
+          createResponse({ status: 401, body: { code: "unauthenticated" } })
+        )
+        .mockResolvedValueOnce(
+          createResponse({ status: 200, body: { name: "projects/example" } })
+        );
+      mocks.refreshTokens.mockResolvedValue(undefined);
+      let current = true;
+      const validate = vi.fn(async () => {
+        if (mocks.fetch.mock.calls.length === 0) return true;
+        if (state === "unavailable") throw new Error("Unavailable");
+        if (state === "identity") current = false;
+        return state !== "denied";
+      });
+      const result = JSON.parse(
+        await directCall(
+          { operationId: "ProjectService/GetProject" },
+          {
+            context: { ...context, isCurrent: () => current },
+            validateBeforeSend: validate,
+          }
+        )
+      );
+      expect(validate).toHaveBeenCalledTimes(2);
+      expect(mocks.fetch).toHaveBeenCalledTimes(state === "allowed" ? 2 : 1);
+      expect(result).toMatchObject(
+        state === "allowed"
+          ? { status: 200, response: { name: "projects/example" } }
+          : { status: 401, agentExecution: { result: "failed" } }
+      );
+    }
+  );
+
   test("prepares an exact canonical request without sending it", async () => {
     mocks.getEndpointPath.mockReturnValue(
       "/bytebase.v1.ProjectService/UpdateProject"
@@ -804,12 +939,16 @@ describe("callApi", () => {
       )
       .mockRejectedValueOnce(new TypeError("second response lost"));
     mocks.refreshTokens.mockResolvedValue(undefined);
+    const validateBeforeSend = vi.fn(async () => true);
 
     const result = JSON.parse(
-      await callApi({
-        operationId: "SQLService/Query",
-        body: { statement: "SELECT 1" },
-      })
+      await callApi(
+        {
+          operationId: "SQLService/Query",
+          body: { statement: "SELECT 1" },
+        },
+        { validateBeforeSend }
+      )
     );
 
     expect(result).toMatchObject({
@@ -818,6 +957,8 @@ describe("callApi", () => {
       agentExecution: { result: "failed", effects: "possible" },
     });
     expect(mocks.fetch).toHaveBeenCalledTimes(1);
+    expect(validateBeforeSend).toHaveBeenCalledOnce();
+    expect(mocks.refreshTokens).not.toHaveBeenCalled();
     expect(mocks.fetch).toHaveBeenNthCalledWith(
       1,
       expect.stringContaining("/bytebase.v1.SQLService/Query"),

@@ -1,7 +1,89 @@
 import { describe, expect, test } from "vitest";
-import { normalizeAgentDiagnosticCapability } from "./diagnosticCapability";
+import {
+  normalizeAgentDiagnosticCapability,
+  sameAgentDiagnosticCapability,
+} from "./diagnosticCapability";
+
+describe("sameAgentDiagnosticCapability", () => {
+  const capability = {
+    kind: "diagnostic",
+    resource: {
+      kind: "database",
+      name: "instances/example/databases/app",
+      project: "projects/example",
+      label: "Application",
+    },
+  };
+
+  test("matches ordinary chats without granting a diagnostic capability", () => {
+    expect(sameAgentDiagnosticCapability(undefined, undefined)).toBe(true);
+    expect(sameAgentDiagnosticCapability(undefined, capability)).toBe(false);
+    expect(sameAgentDiagnosticCapability(capability, undefined)).toBe(false);
+  });
+
+  test("compares the normalized resource binding without its display label", () => {
+    expect(
+      sameAgentDiagnosticCapability(capability, {
+        kind: "diagnostic",
+        resource: {
+          ...capability.resource,
+          name: " instances/example/databases/app ",
+          project: " projects/example ",
+          label: "Another display label",
+        },
+      })
+    ).toBe(true);
+  });
+
+  test.each([
+    { kind: "plan", name: "projects/example/plans/42" },
+    { name: "instances/example/databases/other" },
+    { project: "projects/other" },
+  ])("rejects a changed resource binding %j", (resource) => {
+    expect(
+      sameAgentDiagnosticCapability(capability, {
+        kind: "diagnostic",
+        resource: { ...capability.resource, ...resource },
+      })
+    ).toBe(false);
+  });
+
+  test.each(
+    [null, {}, [], { kind: "unknown" }, { kind: "diagnostic" }].map(
+      (invalid) => ({ invalid })
+    )
+  )("never equates malformed supplied capability $invalid", ({ invalid }) => {
+    expect(sameAgentDiagnosticCapability(invalid, invalid)).toBe(false);
+    expect(sameAgentDiagnosticCapability(invalid, undefined)).toBe(false);
+    expect(sameAgentDiagnosticCapability(undefined, invalid)).toBe(false);
+    expect(sameAgentDiagnosticCapability(capability, invalid)).toBe(false);
+    expect(sameAgentDiagnosticCapability(invalid, capability)).toBe(false);
+  });
+});
 
 describe("normalizeAgentDiagnosticCapability", () => {
+  test.each([
+    ["plan", "projects/create/plans/42", "projects/create"],
+    ["issue", "projects/create/issues/42", "projects/create"],
+    ["database", "instances/create/databases/app", "projects/example"],
+    ["database", "instances/example/databases/create", "projects/example"],
+    [
+      "database",
+      "projects/create/instances/create/databases/create",
+      "projects/create",
+    ],
+  ])("accepts a valid named %s resource %s", (kind, name, project) => {
+    expect(
+      normalizeAgentDiagnosticCapability({
+        kind: "diagnostic",
+        resource: { kind, name, project, label: name },
+      })
+    ).toEqual({
+      kind: "diagnostic",
+      resource: { kind, name, project, label: name },
+    });
+  });
+
   test.each([
     ["plan", "projects/example/plans/42"],
     ["issue", "projects/example/issues/42"],
@@ -50,7 +132,6 @@ describe("normalizeAgentDiagnosticCapability", () => {
       ["issue", "projects/example/issues/*", "projects/example"],
       ["database", "instances/-/databases/app", "projects/example"],
       ["database", "instances/example/databases/*", "projects/example"],
-      ["database", "instances/example/databases/create", "projects/example"],
       [
         "database",
         "instances/example/databases/password=secret",

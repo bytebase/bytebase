@@ -10312,7 +10312,7 @@ describe("AgentInput", () => {
           expect(prompt).toContain("Explain the observed failure");
           expect(prompt).toContain("resource conflict");
           expect(prompt).toContain(
-            "diagnostic restrictions override recovery suggestions"
+            "Recovery guidance is not authorization"
           );
         } else {
           expect(prompt).toBe(initialPrompt);
@@ -10326,7 +10326,7 @@ describe("AgentInput", () => {
         expect(
           followUp.toolDefinitions.find(({ name }) => name === "call_api")
             ?.description
-        ).toContain(`Read authorized diagnostic evidence in ${resource.project}`);
+        ).toContain(`Call authorized APIs in ${resource.project}`);
         expect(
           followUp.toolDefinitions.filter(({ name }) =>
             /^(navigate|dom_action|get_page_state|get_just_in_time_overview|prepare_)/.test(
@@ -14516,11 +14516,15 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
-  test("passes durable diagnostic capability to pending API resolution", async () => {
+  test("resumes an approved diagnostic API call in the same bound chat", async () => {
     const resource = { kind: "plan" as const, name: "projects/orders/plans/7", project: "projects/orders", label: "projects/orders/plans/7" };
     const capability = { kind: "diagnostic" as const, resource };
     const store = useAgentStore.getState();
+    mocks.currentUserEmail = "me@example.com";
+    store.setWorkspaceName("workspaces/demo", "me@example.com");
     const chat = store.createChat({ context: resource.project, capability });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Update this project title." });
+    store.startChatRun(chat.id, undefined, { runId: "diagnostic-run" });
     store.awaitUser(chat.id, {
       toolCallId: "tool-write",
       prompt: "bytebase.v1.ProjectService.UpdateProject",
@@ -14532,17 +14536,24 @@ describe("AgentInput", () => {
       body: '{"project":{"name":"projects/orders"}}',
       expiresAt: Date.now() + 60_000,
     });
-    mocks.resolvePendingApiCall.mockResolvedValue('{"error":"Diagnostic request denied."}');
+    let scopeWasCurrent = false;
+    mocks.resolvePendingApiCall.mockImplementationOnce(async (options) => {
+      scopeWasCurrent = options.context?.isCurrent() ?? false;
+      return '{"status":200,"response":{"name":"projects/orders"}}';
+    });
     mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
     const view = renderIntoContainer(<AgentInput />);
     view.render();
     await act(async () => {
       [...view.container.querySelectorAll("button")].find((button) => button.textContent === "agent.api-permission-allow")?.click();
     });
-    expect(mocks.resolvePendingApiCall).toHaveBeenCalledWith(expect.objectContaining({ capability }));
+    expect(mocks.resolvePendingApiCall).toHaveBeenCalledWith(expect.objectContaining({ approved: true, capability, context: expect.objectContaining({ chatId: chat.id, logicalActionId: "action-diagnostic" }) }));
+    expect(scopeWasCurrent).toBe(true);
     expect(store.getMessages(chat.id)).toEqual(expect.arrayContaining([
-      expect.objectContaining({ role: "tool", content: '{"error":"Diagnostic request denied."}' }),
+      expect.objectContaining({ role: "tool", content: '{"status":200,"response":{"name":"projects/orders"}}' }),
     ]));
+    expect(store.getChat(chat.id)?.capability).toEqual(capability);
+    expect(store.getPendingAsk(chat.id)).toBeNull();
     view.unmount();
   });
 

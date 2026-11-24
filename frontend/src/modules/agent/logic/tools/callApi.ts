@@ -346,6 +346,7 @@ export async function prepareApiCall(
 
 interface ApiDispatchOptions {
   isScopeCurrent?: () => boolean;
+  validateBeforeSend?: () => Promise<boolean>;
   signal?: AbortSignal;
   attemptId?: string;
   context?: AgentApiDispatchContext;
@@ -474,36 +475,65 @@ export async function dispatchApprovedApiCall(
 
 async function sendPreparedApiCall(
   call: PreparedApiCall,
-  { signal, attemptId, context, isScopeCurrent, dom }: ApiDispatchOptions = {}
+  {
+    signal,
+    attemptId,
+    context,
+    isScopeCurrent,
+    validateBeforeSend,
+    dom,
+  }: ApiDispatchOptions = {}
 ): Promise<string> {
-  if (signal?.aborted) {
-    return notSentApiResult(
-      "The request was canceled before dispatch.",
-      "canceled-before-dispatch",
-      attemptId
-    );
+  const checkContext = () => {
+    if (signal?.aborted) {
+      return notSentApiResult(
+        "The request was canceled before dispatch.",
+        "canceled-before-dispatch",
+        attemptId
+      );
+    }
+    if (isScopeCurrent?.() === false || context?.isCurrent() === false)
+      return notSentApiResult(
+        "Agent action ownership changed before dispatch.",
+        "admission-rejected",
+        attemptId
+      );
+    if (
+      dom &&
+      (!isAgentExecutionContextCurrent(dom.expectedContext, signal) ||
+        !dom.beforeSend())
+    )
+      return JSON.stringify({
+        called: false,
+        ...JSON.parse(
+          notSentApiResult(
+            "Not called: The page action changed or expired.",
+            "admission-rejected",
+            attemptId
+          )
+        ),
+      });
+  };
+  const validateScope = async () => {
+    try {
+      return (await validateBeforeSend?.()) === true;
+    } catch {
+      return false;
+    }
+  };
+  let failure = checkContext();
+  if (failure) return failure;
+  if (validateBeforeSend) {
+    const valid = await validateScope();
+    failure = checkContext();
+    if (failure) return failure;
+    if (!valid)
+      return notSentApiResult(
+        "The API request scope could not be verified before dispatch.",
+        "preflight-rejected",
+        attemptId
+      );
   }
-  if (isScopeCurrent?.() === false || context?.isCurrent() === false)
-    return notSentApiResult(
-      "Agent action ownership changed before dispatch.",
-      "admission-rejected",
-      attemptId
-    );
-  if (
-    dom &&
-    (!isAgentExecutionContextCurrent(dom.expectedContext, signal) ||
-      !dom.beforeSend())
-  )
-    return JSON.stringify({
-      called: false,
-      ...JSON.parse(
-        notSentApiResult(
-          "Not called: The page action changed or expired.",
-          "admission-rejected",
-          attemptId
-        )
-      ),
-    });
 
   const controller = new AbortController();
   let abortKind: "canceled-after-dispatch" | "timed-out" | undefined;
@@ -529,9 +559,12 @@ async function sendPreparedApiCall(
       !isProtectedAgentApiCall(call) &&
       !controller.signal.aborted &&
       (await tryRefresh(controller.signal)) &&
-      !controller.signal.aborted
+      !controller.signal.aborted &&
+      !checkContext()
     ) {
-      result = await send();
+      const valid = !validateBeforeSend || (await validateScope());
+      if (valid && !controller.signal.aborted && !checkContext())
+        result = await send();
     }
   } catch (err) {
     result = {

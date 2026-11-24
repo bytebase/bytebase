@@ -1,7 +1,10 @@
 // Multi-mode search for Bytebase API endpoints.
 // Ported from backend/api/mcp/openapi_index.go and tool_search.go.
 
-import { getApiAuthorization } from "./apiMethodClass";
+import {
+  apiCallNeedsConfirmation,
+  getApiAuthorization,
+} from "./apiMethodClass";
 import {
   type EndpointInfo,
   endpoints,
@@ -335,6 +338,9 @@ function formatEndpointDetail(operationId: string): string {
   const lines: string[] = [];
   lines.push(`## ${ep.service}/${ep.method}\n`);
   lines.push(`${ep.summary}\n`);
+  lines.push(
+    `Agent execution: ${apiCallNeedsConfirmation(ep.operationId) ? "one-time approval required" : "automatic read"}; subject to chat scope and API authorization.\n`
+  );
 
   const authorization = getApiAuthorization(ep.operationId);
   if (authorization?.authMethod === "IAM") {

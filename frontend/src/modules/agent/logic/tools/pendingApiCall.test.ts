@@ -5,12 +5,14 @@ import {
   registerAgentDomOwner,
 } from "../../dom/interactionRegistry";
 import { agentApiExecutionEvidence } from "../apiExecution";
+import type { AgentDiagnosticCapability } from "../types";
 import type { PreparedApiCall } from "./callApi";
 
 const mocks = vi.hoisted(() => ({
   checkPreparedApiPermission: vi.fn(),
   dispatchPreparedApiCall: vi.fn(),
   validateIssueDecisionPermission: vi.fn(),
+  isDiagnosticApiCallInScope: vi.fn(),
   refreshTokens: vi.fn(),
   workspace: "workspaces/example",
 }));
@@ -37,6 +39,9 @@ vi.mock("./callApi", () => ({
 }));
 vi.mock("./issueDecisionPermission", () => ({
   validateIssueDecisionPermission: mocks.validateIssueDecisionPermission,
+}));
+vi.mock("./diagnosticApiScope", () => ({
+  isDiagnosticApiCallInScope: mocks.isDiagnosticApiCallInScope,
 }));
 
 import {
@@ -69,6 +74,16 @@ const makeCall = (): PreparedApiCall => ({
   operationId: "bytebase.v1.ProjectService.UpdateProject",
   path: "/bytebase.v1.ProjectService/UpdateProject",
   body: JSON.stringify({ project: { name: "projects/demo", title: "Before" } }),
+});
+
+const diagnosticCapability = (): AgentDiagnosticCapability => ({
+  kind: "diagnostic",
+  resource: {
+    kind: "plan",
+    name: "projects/demo/plans/1",
+    project: "projects/demo",
+    label: "Plan",
+  },
 });
 
 const disposers: (() => void)[] = [];
@@ -634,7 +649,7 @@ describe("pendingApiCall", () => {
     expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
   test.each(["valid", "malformed"])(
-    "consumes an approved %s diagnostic action without dispatch",
+    "cannot reuse a normal permission with a %s diagnostic capability",
     async (kind) => {
       const { actionId } = createPendingApiCall({
         chatId: "diagnostic",
@@ -673,6 +688,492 @@ describe("pendingApiCall", () => {
     }
   );
 
+  test.each([
+    {
+      operationId: "bytebase.v1.RolloutService.GetTaskRunSession",
+      path: "/bytebase.v1.RolloutService/GetTaskRunSession",
+      body: JSON.stringify({
+        name: "projects/demo/plans/1/rollout/stages/prod/tasks/3/taskRuns/4",
+      }),
+    },
+    {
+      operationId: "bytebase.v1.SQLService.Query",
+      path: "/bytebase.v1.SQLService/Query",
+      body: JSON.stringify({
+        name: "instances/demo/databases/example",
+        statement: "SELECT 1",
+        limit: 100,
+      }),
+    },
+    {
+      operationId: "bytebase.v1.PlanService.UpdatePlan",
+      path: "/bytebase.v1.PlanService/UpdatePlan",
+      body: JSON.stringify({
+        plan: { name: "projects/demo/plans/1", title: "Updated" },
+        updateMask: "title",
+      }),
+    },
+  ])(
+    "allows one approved diagnostic $operationId in its captured scope",
+    async (call) => {
+      const identity = {
+        chatId: "diagnostic",
+        toolCallId: "protected",
+        userName: "users/1",
+      };
+      const capability = diagnosticCapability();
+      const permission = createPendingApiCall({
+        ...identity,
+        call,
+        capability,
+      });
+      capability.resource.name = "projects/demo/plans/2";
+      const args = {
+        ...identity,
+        ...permission,
+        capability: diagnosticCapability(),
+        approved: true,
+      };
+
+      expect(JSON.parse(await resolvePendingApiCall(args))).toMatchObject({
+        status: 200,
+      });
+      expect(mocks.isDiagnosticApiCallInScope).toHaveBeenCalledExactlyOnceWith(
+        call,
+        {
+          kind: "diagnostic",
+          resource: {
+            kind: "plan",
+            name: "projects/demo/plans/1",
+            project: "projects/demo",
+            label: "projects/demo/plans/1",
+          },
+        }
+      );
+      const [capturedCall, capturedCapability] =
+        mocks.isDiagnosticApiCallInScope.mock.calls[0];
+      expect(Object.isFrozen(capturedCall)).toBe(true);
+      expect(Object.isFrozen(capturedCapability)).toBe(true);
+      expect(Object.isFrozen(capturedCapability.resource)).toBe(true);
+      expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledTimes(1);
+      expect(JSON.parse(await resolvePendingApiCall(args)).error).toMatch(
+        /used/
+      );
+      expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  test.each([
+    undefined,
+    {
+      kind: "diagnostic",
+      resource: {
+        kind: "plan",
+        name: "projects/demo/plans/2",
+        project: "projects/demo",
+        label: "Other plan",
+      },
+    },
+    {
+      kind: "diagnostic",
+      resource: {
+        kind: "plan",
+        name: "projects/demo/plans/1",
+        project: "projects/other",
+        label: "Malformed",
+      },
+    },
+    null,
+  ])(
+    "cannot omit or change a captured diagnostic capability: %j",
+    async (capability) => {
+      const identity = {
+        chatId: "diagnostic",
+        toolCallId: "mismatch",
+        userName: "users/1",
+      };
+      const permission = createPendingApiCall({
+        ...identity,
+        call: makeCall(),
+        capability: diagnosticCapability(),
+      });
+      const result = await resolvePendingApiCall({
+        ...identity,
+        ...permission,
+        capability: capability as AgentDiagnosticCapability | undefined,
+        approved: true,
+      });
+      expect(JSON.parse(result).agentExecution.result).toBe("not-sent");
+      expect(mocks.isDiagnosticApiCallInScope).not.toHaveBeenCalled();
+      expect(mocks.checkPreparedApiPermission).not.toHaveBeenCalled();
+      expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
+    }
+  );
+
+  test("cannot create a diagnostic permission from a malformed scope", () => {
+    const capability = diagnosticCapability();
+    capability.resource.project = "projects/other";
+    expect(() =>
+      createPendingApiCall({
+        chatId: "diagnostic",
+        toolCallId: "malformed",
+        userName: "users/1",
+        call: makeCall(),
+        capability,
+      })
+    ).toThrow(/diagnostic/i);
+  });
+
+  test("cannot create a diagnostic permission from a DOM action", async () => {
+    const f = await domFixture();
+    expect(() =>
+      createPendingApiCall({
+        ...f.identity,
+        call: f.prepared.call,
+        domOrigin: f.prepared.origin,
+        domContext: f.ctx,
+        capability: diagnosticCapability(),
+      })
+    ).toThrow();
+  });
+
+  test.each(["denied", "expired", "out-of-scope"])(
+    "consumes a %s diagnostic permission without dispatch",
+    async (state) => {
+      const identity = {
+        chatId: "diagnostic",
+        toolCallId: "not-sent",
+        userName: "users/1",
+      };
+      const capability = diagnosticCapability();
+      const permission = createPendingApiCall({
+        ...identity,
+        call: makeCall(),
+        capability,
+      });
+      if (state === "expired")
+        vi.spyOn(Date, "now").mockReturnValue(permission.expiresAt);
+      if (state === "out-of-scope")
+        mocks.isDiagnosticApiCallInScope.mockResolvedValue(false);
+      const args = {
+        ...identity,
+        ...permission,
+        capability,
+        approved: state !== "denied",
+      };
+      try {
+        const result = JSON.parse(await resolvePendingApiCall(args));
+        expect(result.agentExecution.result).toBe("not-sent");
+        expect(result.error).toMatch(
+          state === "denied"
+            ? /denied/i
+            : state === "expired"
+              ? /expired/i
+              : /scope/i
+        );
+        expect(JSON.parse(await resolvePendingApiCall(args)).error).toMatch(
+          /used/
+        );
+        expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
+      } finally {
+        vi.restoreAllMocks();
+      }
+    }
+  );
+
+  test.each(["diagnostic-scope", "permission", "issue-decision"])(
+    "rechecks diagnostic scope and ownership after asynchronous %s validation",
+    async (stage) => {
+      const identity = {
+        chatId: "diagnostic",
+        toolCallId: "scope-changed",
+        userName: "users/1",
+      };
+      let current = true;
+      const capability = diagnosticCapability();
+      const permission = createPendingApiCall({
+        ...identity,
+        call: makeCall(),
+        capability,
+        isScopeCurrent: () => current,
+        issueDecision: {
+          issueName: "projects/demo/issues/1",
+          issueTitle: "Example change",
+          impact: "reject",
+          action: "reject",
+          snapshot: "before",
+        },
+      });
+      const changeScope = async () => {
+        current = false;
+        return true;
+      };
+      if (stage === "diagnostic-scope")
+        mocks.isDiagnosticApiCallInScope.mockImplementationOnce(changeScope);
+      if (stage === "permission")
+        mocks.checkPreparedApiPermission.mockImplementationOnce(async () => {
+          await changeScope();
+          return { kind: "allowed" };
+        });
+      if (stage === "issue-decision")
+        mocks.validateIssueDecisionPermission.mockImplementationOnce(
+          changeScope
+        );
+
+      const result = JSON.parse(
+        await resolvePendingApiCall({
+          ...identity,
+          ...permission,
+          capability,
+          approved: true,
+        })
+      );
+      expect(mocks.isDiagnosticApiCallInScope).toHaveBeenCalledOnce();
+      expect(result.agentExecution.result).toBe("not-sent");
+      expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
+      if (stage === "diagnostic-scope")
+        expect(mocks.checkPreparedApiPermission).not.toHaveBeenCalled();
+      if (stage !== "issue-decision")
+        expect(mocks.validateIssueDecisionPermission).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each(["expired", "canceled", "capability", "context"])(
+    "rechecks %s after diagnostic IAM preflight",
+    async (change) => {
+      const identity = {
+        chatId: "diagnostic",
+        toolCallId: "changed",
+        userName: "users/1",
+      };
+      const capability = diagnosticCapability();
+      const permission = createPendingApiCall({
+        ...identity,
+        call: makeCall(),
+        capability,
+      });
+      let current = true;
+      const controller = new AbortController();
+      mocks.checkPreparedApiPermission.mockImplementationOnce(async () => {
+        if (change === "expired")
+          vi.spyOn(Date, "now").mockReturnValue(permission.expiresAt);
+        if (change === "canceled") controller.abort();
+        if (change === "capability")
+          capability.resource.name = "projects/demo/plans/2";
+        if (change === "context") current = false;
+        return { kind: "allowed" };
+      });
+      try {
+        const result = JSON.parse(
+          await resolveApproval({
+            ...identity,
+            ...permission,
+            capability,
+            approved: true,
+            signal: controller.signal,
+            context: {
+              ...identity,
+              scopeKey: "scope",
+              logicalActionId: permission.actionId,
+              runId: "run",
+              rootUserMessageId: "root",
+              isCurrent: () => current,
+              beginAgentApiAttempt: async () => ({
+                kind: "admitted",
+                attemptId: "diagnostic-attempt",
+              }),
+              settleAgentApiAttempt: async () => true,
+            },
+          })
+        );
+        expect(mocks.checkPreparedApiPermission).toHaveBeenCalledOnce();
+        expect(result.agentExecution.result).toBe("not-sent");
+        expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
+      } finally {
+        vi.restoreAllMocks();
+      }
+    }
+  );
+
+  test("a diagnostic permission requires a current execution context", async () => {
+    const identity = {
+      chatId: "diagnostic",
+      toolCallId: "missing-context",
+      userName: "users/1",
+    };
+    const capability = diagnosticCapability();
+    const permission = createPendingApiCall({
+      ...identity,
+      call: makeCall(),
+      capability,
+    });
+    const result = await resolveApproval({
+      ...identity,
+      ...permission,
+      capability,
+      approved: true,
+    });
+    expect(JSON.parse(result).agentExecution.result).toBe("not-sent");
+    expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test.each(["expiry", "capability", "scope"])(
+    "a diagnostic approval rechecks %s after receipt admission without a POST",
+    async (change) => {
+      const identity = {
+        chatId: "diagnostic",
+        toolCallId: "dispatch-boundary",
+        userName: "users/1",
+      };
+      let current = true;
+      const capability = diagnosticCapability();
+      const permission = createPendingApiCall({
+        ...identity,
+        call: makeCall(),
+        capability,
+        isScopeCurrent: () => current,
+      });
+      const sender =
+        await vi.importActual<typeof import("./callApi")>("./callApi");
+      const fetch = vi.fn();
+      vi.stubGlobal("fetch", fetch);
+      mocks.dispatchPreparedApiCall.mockImplementationOnce(
+        sender.dispatchApprovedApiCall
+      );
+      const settle = vi.fn(async () => true);
+      const args = {
+        ...identity,
+        ...permission,
+        capability,
+        approved: true,
+        context: {
+          ...identity,
+          scopeKey: "scope",
+          logicalActionId: permission.actionId,
+          runId: "run",
+          rootUserMessageId: "root",
+          isCurrent: () => true,
+          beginAgentApiAttempt: async () => {
+            if (change === "expiry")
+              vi.spyOn(Date, "now").mockReturnValue(permission.expiresAt);
+            if (change === "capability")
+              capability.resource.name = "projects/demo/plans/2";
+            if (change === "scope") current = false;
+            return {
+              kind: "admitted" as const,
+              attemptId: "diagnostic-attempt",
+            };
+          },
+          settleAgentApiAttempt: settle,
+        },
+      };
+      try {
+        const result = JSON.parse(await resolveApproval(args));
+        expect(result.agentExecution).toMatchObject({
+          result: "not-sent",
+          effects: "none",
+          attemptId: "diagnostic-attempt",
+        });
+        expect(settle).toHaveBeenCalledExactlyOnceWith(
+          "diagnostic-attempt",
+          result.agentExecution,
+          expect.any(String)
+        );
+        expect(fetch).not.toHaveBeenCalled();
+        expect(JSON.parse(await resolveApproval(args)).error).toMatch(/used/);
+        expect(fetch).not.toHaveBeenCalled();
+      } finally {
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+      }
+    }
+  );
+
+  test.each(["IAM", "receipt"])(
+    "revalidates diagnostic database ownership after %s awaits",
+    async (stage) => {
+      const identity = {
+        chatId: "diagnostic",
+        toolCallId: "database-ownership",
+        userName: "users/1",
+      };
+      const capability = diagnosticCapability();
+      const call = {
+        operationId: "bytebase.v1.DatabaseService.UpdateDatabase",
+        path: "/bytebase.v1.DatabaseService/UpdateDatabase",
+        body: JSON.stringify({
+          database: {
+            name: "instances/example/databases/app",
+            labels: { environment: "test" },
+          },
+          updateMask: "labels",
+        }),
+      };
+      let project = "projects/demo";
+      mocks.isDiagnosticApiCallInScope.mockImplementation(
+        async () => project === "projects/demo"
+      );
+      if (stage === "IAM")
+        mocks.checkPreparedApiPermission.mockImplementationOnce(async () => {
+          project = "projects/other";
+          return { kind: "allowed" };
+        });
+      const permission = createPendingApiCall({
+        ...identity,
+        call,
+        capability,
+      });
+      const sender =
+        await vi.importActual<typeof import("./callApi")>("./callApi");
+      const fetch = vi.fn(async () => new Response("{}", { status: 200 }));
+      vi.stubGlobal("fetch", fetch);
+      mocks.dispatchPreparedApiCall.mockImplementationOnce(
+        sender.dispatchApprovedApiCall
+      );
+      const settle = vi.fn(async () => true);
+      try {
+        const result = JSON.parse(
+          await resolveApproval({
+            ...identity,
+            ...permission,
+            capability,
+            approved: true,
+            context: {
+              ...identity,
+              scopeKey: "scope",
+              logicalActionId: permission.actionId,
+              runId: "run",
+              rootUserMessageId: "root",
+              isCurrent: () => true,
+              beginAgentApiAttempt: async () => {
+                if (stage === "receipt") project = "projects/other";
+                return {
+                  kind: "admitted",
+                  attemptId: "diagnostic-attempt",
+                };
+              },
+              settleAgentApiAttempt: settle,
+            },
+          })
+        );
+        expect(result.agentExecution).toMatchObject({
+          result: "not-sent",
+          reason: "preflight-rejected",
+          attemptId: "diagnostic-attempt",
+        });
+        expect(mocks.isDiagnosticApiCallInScope).toHaveBeenCalledTimes(2);
+        expect(settle).toHaveBeenCalledExactlyOnceWith(
+          "diagnostic-attempt",
+          result.agentExecution,
+          expect.any(String)
+        );
+        expect(fetch).not.toHaveBeenCalled();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    }
+  );
+
   beforeEach(() => {
     vi.useRealTimers();
     mocks.workspace = "workspaces/example";
@@ -685,6 +1186,8 @@ describe("pendingApiCall", () => {
     );
     mocks.validateIssueDecisionPermission.mockReset();
     mocks.validateIssueDecisionPermission.mockResolvedValue(true);
+    mocks.isDiagnosticApiCallInScope.mockReset();
+    mocks.isDiagnosticApiCallInScope.mockResolvedValue(true);
   });
 
   test("does not use a DOM permission grant in a different signed-in workspace", async () => {

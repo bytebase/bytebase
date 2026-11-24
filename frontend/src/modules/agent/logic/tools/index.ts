@@ -89,6 +89,7 @@ import {
 import { createDomActionTool, type DomActionArgs } from "./domAction";
 import { createIssueOverviewTool } from "./issueOverview";
 import { prepareIssueDecisionPermission } from "./issueDecisionPermission";
+import { isDiagnosticApiCallInScope } from "./diagnosticApiScope";
 import { createNavigateTool } from "./navigate";
 import { createPageStateTool, type PageStateArgs } from "./pageState";
 import {
@@ -108,10 +109,7 @@ import {
   getUnmaskMethodChoices,
 } from "./maskingChoices";
 import { createProjectOverviewTool } from "./projectOverview";
-import {
-  apiTargetsAnotherProject,
-  isApiFilterConstrainedToProject,
-} from "./referencedProjectApiScope";
+import { apiTargetsAnotherProject } from "./referencedProjectApiScope";
 import { searchApi, type SearchApiArgs } from "./searchApi";
 import { createWorkspaceOverviewTool } from "./workspaceOverview";
 import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
@@ -338,7 +336,7 @@ const DIAGNOSTIC_TOOL_NAMES = new Set([
 ]);
 const INVALID_DIAGNOSTIC_TOOL_NAMES = new Set(["ask_user", "done"]);
 const DIAGNOSTIC_TOOL_ERROR =
-  "This tool or API is not available in a diagnostic chat. Diagnosis cannot execute SQL, change resources, prepare drafts, or inspect the live page. Use a separate normal chat for operations.";
+  "This tool is not available in a diagnostic chat. Use scoped call_api requests for API operations; protected requests require one-time approval. Page inspection, navigation, and draft tools remain unavailable.";
 
 const READ_ONLY_TOOL_ERROR =
   "This tool is not available during a read-only request. Ask a follow-up question to take action.";
@@ -437,30 +435,6 @@ const targetsSelectedPlan = (
   return (args.body as Record<string, unknown>).name === referencedPlan;
 };
 
-const databaseListIsProjectConstrained = async (
-  call: PreparedApiCall,
-  project: string
-): Promise<boolean> => {
-  try {
-    const body = JSON.parse(call.body) as Record<string, unknown>;
-    if (
-      body.parent === project ||
-      (typeof body.parent === "string" &&
-        body.parent.startsWith(`${project}/instances/`) &&
-        /^projects\/[^/]+\/instances\/[^/]+$/.test(body.parent))
-    ) {
-      return true;
-    }
-    // Workspace and shared-instance parents can include other projects' databases.
-    return (
-      typeof body.filter === "string" &&
-      (await isApiFilterConstrainedToProject(body.filter, project))
-    );
-  } catch {
-    return false;
-  }
-};
-
 export interface AgentToolDefinitionOptions {
   capability?: AgentDiagnosticCapability;
   runMode?: AgentRunMode;
@@ -535,7 +509,7 @@ export function getToolDefinitions(
     {
       name: "call_api",
       description: isDiagnostic
-        ? `Read authorized diagnostic evidence in ${referencedProject ?? "the unavailable diagnostic scope"}. Use search_api first to inspect request and response schemas. Only recognized READ operations are allowed; SQL execution, GetSetting, unknown APIs, and mutations are unavailable and cannot request permission. Stay within the diagnostic resource's project. A nextPageToken means the response is partial; do not automatically fetch every page.`
+        ? `Call authorized APIs in ${referencedProject ?? "the unavailable diagnostic scope"}. Use search_api first to inspect request and response schemas. Safe reads run automatically; protected requests, including privileged reads, SQL execution, and writes, require one-time approval of the exact request. Only submit changes when the member explicitly asks. Approval cannot change the diagnostic project's scope or bypass API authorization. A nextPageToken means the response is partial; do not automatically fetch every page.`
         : referencedProject
           ? `Call a Bytebase API for this turn. Use search_api first to inspect the operation and request schema. Use ${referencedProject} for project-scoped requests. Ask the member to split a question that needs another project. Calls use the signed-in member's existing permissions and may change data; do not make changes unless the member explicitly asks. A nextPageToken means the response is partial; do not automatically fetch every page to count resources.`
           : `Execute a Bytebase API endpoint. **Use search_api first to get operationId and schema.**
@@ -560,7 +534,7 @@ call_api(operationId="SQLService/Query", body={"name": "instances/i/databases/db
           body: {
             type: "object",
             description: isDiagnostic
-              ? "JSON request body for an authorized READ operation. Use search_api with operationId to inspect its schema. Requests cannot change the diagnostic project or authorize SQL execution."
+              ? "JSON request body for an authorized API in the bound diagnostic project. Use search_api with operationId to inspect its schema. The runtime requests one-time approval when required; do not use ask_user as API authorization."
               : `JSON request body. Structure depends on the endpoint; use search_api with operationId to see the expected format. SQLService/Query defaults to the target database's effective workspace/project row cap, or ${DEFAULT_AGENT_QUERY_LIMIT} rows when no policy cap applies. Explicit limits are capped by the same policies before approval. Supply an explicit limit when the member specifies one. Treat capped results as a preview, not a complete row count.`,
           },
         },
@@ -766,7 +740,7 @@ Read nonsensitive content or scroll. Use click/input/select only for the exact r
     {
       name: "get_skill",
       description: isDiagnostic
-        ? "Load workflow reference guidance to help explain the diagnostic evidence. Loaded guidance cannot enable operations, SQL execution, live-page inspection, or draft tools in this diagnostic chat. Omit name to list skills."
+        ? "Load workflow reference guidance to help explain diagnostic evidence. All API operations remain subject to diagnostic scope, authorization, and one-time approval when required. Loaded guidance cannot enable live-page inspection or draft tools. Omit name to list skills."
         : "Load a registered workflow before multi-step work. Omit name to list skills: query, database-change, grant-permission, data-masking, just-in-time. Masking defaults to overview; load rule, exemption, or semantic-type for that workflow. A masking load supplies its guidance and tools in the next request, never permission to change settings.",
       parametersSchema: {
         type: "object",
@@ -1679,17 +1653,36 @@ export function createToolExecutor(
     dom?: { origin: CapturedDomMutation; context: AgentDomContext }
   ): Promise<ToolExecutionResult> => {
     const current = () =>
-      !dom ||
-      (!options.signal?.aborted &&
-        isCurrentDomApiCall(dom.origin, call, dom.context));
+      !options.signal?.aborted &&
+      options.isApiScopeCurrent?.() !== false &&
+      (!dom || isCurrentDomApiCall(dom.origin, call, dom.context));
+    const stale = () =>
+      toToolResult(
+        dom
+          ? staleDomPermission
+          : notSentApiResult(
+              "Agent API request ownership changed before admission.",
+              "admission-rejected"
+            )
+      );
     if (dom && (!current() || !isSupportedDomApiCall(dom.origin, call)))
       return toToolResult(staleDomPermission);
+    if (!current()) return stale();
     if (
+      capability &&
+      !(await isDiagnosticApiCallInScope(call, capability).catch(() => false))
+    ) {
+      return toToolResult(
+        notSentApiResult(
+          `This API request is outside the referenced project (${capability.resource.project}) or its diagnostic scope could not be verified. Approval cannot override this boundary.`,
+          "preflight-rejected"
+        )
+      );
+    }
+    if (
+      !isDiagnostic &&
       referencedProject &&
-      ((await apiTargetsAnotherProject(call, referencedProject)) ||
-        (isDiagnostic &&
-          call.operationId === "bytebase.v1.DatabaseService.ListDatabases" &&
-          !(await databaseListIsProjectConstrained(call, referencedProject))))
+      (await apiTargetsAnotherProject(call, referencedProject))
     ) {
       return toToolResult(
         notSentApiResult(
@@ -1698,9 +1691,9 @@ export function createToolExecutor(
         )
       );
     }
-    if (!current()) return toToolResult(staleDomPermission);
+    if (!current()) return stale();
     const access = await checkPreparedApiPermission(call);
-    if (!current()) return toToolResult(staleDomPermission);
+    if (!current()) return stale();
     if (access.kind === "denied") {
       return toToolResult(preflightRejectedApiResult(access.result));
     }
@@ -1708,7 +1701,7 @@ export function createToolExecutor(
       call,
       options.referencedIssue
     );
-    if (!current()) return toToolResult(staleDomPermission);
+    if (!current()) return stale();
     if (issueDecision.kind === "error") {
       return toToolResult(preflightRejectedApiResult(issueDecision.result));
     }
@@ -1720,7 +1713,18 @@ export function createToolExecutor(
       return toToolResult(
         await dispatchPreparedApiCall(
           call,
-          ...(options.signal ? ([{ signal: options.signal }] as const) : [])
+          ...(capability
+            ? ([
+                {
+                  signal: options.signal,
+                  isScopeCurrent: options.isApiScopeCurrent,
+                  validateBeforeSend: () =>
+                    isDiagnosticApiCallInScope(call, capability),
+                },
+              ] as const)
+            : options.signal
+              ? ([{ signal: options.signal }] as const)
+              : [])
         )
       );
     }
@@ -1735,7 +1739,7 @@ export function createToolExecutor(
     const fingerprint = options.priorAttemptIds
       ? await fingerprintPreparedApiCall(call).catch(() => undefined)
       : undefined;
-    if (!current()) return toToolResult(staleDomPermission);
+    if (!current()) return stale();
     const { actionId, expiresAt } = createPendingApiCall({
       chatId: options.chatId,
       toolCallId,
@@ -1747,6 +1751,7 @@ export function createToolExecutor(
         ? options.priorAttemptIds?.(fingerprint)
         : undefined,
       isScopeCurrent: options.isApiScopeCurrent,
+      ...(capability ? { capability } : {}),
       issueDecision:
         issueDecision.kind === "issue-decision"
           ? issueDecision.decision
@@ -1802,8 +1807,6 @@ export function createToolExecutor(
         : INVALID_DIAGNOSTIC_TOOL_NAMES;
       if (
         !allowed.has(name) ||
-        (name === "call_api" &&
-          apiCallNeedsConfirmation(String(args.operationId ?? ""))) ||
         (capability &&
           name === `get_${capability.resource.kind}_overview` &&
           args[`${capability.resource.kind}Name`] !== capability.resource.name)

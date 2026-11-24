@@ -3,6 +3,24 @@ import { describe, expect, test } from "vitest";
 import { searchApi } from "./searchApi";
 
 describe("searchApi", () => {
+  test.each([
+    "RolloutService/GetTaskRunSession",
+    "PlanService/UpdatePlan",
+    "SQLService/Query",
+  ])(
+    "discloses one-time approval for protected %s without hiding it",
+    async (operationId) => {
+      const result = await searchApi({ operationId });
+      expect(result).toContain(operationId);
+      expect(result).toContain("Agent execution: one-time approval required");
+    }
+  );
+
+  test("discloses safe-read execution without promising scope or IAM access", async () => {
+    const result = await searchApi({ operationId: "PlanService/GetPlan" });
+    expect(result).toContain("Agent execution: automatic read");
+    expect(result).toContain("subject to chat scope and API authorization");
+  });
   test("finds the database-listing endpoint from a natural-language query", async () => {
     const result = await searchApi({
       query: "list databases in this project",
