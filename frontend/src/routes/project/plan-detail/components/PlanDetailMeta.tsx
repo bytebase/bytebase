@@ -1,23 +1,17 @@
 import { create } from "@bufbuild/protobuf";
-import { Plus, X } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { CircleCheck, CircleX, Clock, Plus, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Collapsible,
-  CollapsiblePanel,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useReleaseByName } from "@/hooks/useAppState";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 import {
   buildSourceRow,
@@ -41,7 +35,7 @@ import {
 import { colorToHex, hasProjectPermissionV2 } from "@/utils";
 import { displayRoleTitle } from "@/utils/role";
 import { extractReleaseUID } from "@/utils/v1/release";
-import { PlanStages } from "../../PlanTable";
+import { PlanStageParts } from "../../PlanTable";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { isDatabaseGroupName } from "../utils/phaseSummary";
 import {
@@ -50,6 +44,27 @@ import {
 } from "./deploy/foldedTaskDescription";
 import { useUserDisplayName } from "./useUserDisplayName";
 
+// The fact lines (D10). Every part starts with the same left padding, which
+// holds its separator; a line's negative margin moves a row's first padding
+// into the clipped strip left of the box, so a separator or an arrow shows
+// only between two parts on one row. Rows wrapped or not share one height and
+// one gap.
+const LINES =
+  "flex flex-col gap-y-1 overflow-x-clip [overflow-clip-margin:2px]";
+const LINE = "-ml-4 flex flex-wrap items-center gap-y-1";
+const PART =
+  "relative flex min-h-6 min-w-0 max-w-full items-center gap-x-1 pl-4";
+const SEPARATED = `${PART} before:absolute before:left-1.5 before:text-control-light before:content-['·']`;
+const ARROW = "absolute left-0.5";
+
+// The end a reader identifies a branch by.
+const BRANCH_END_LENGTH = 16;
+
+type Approval = {
+  tone: "done" | "rejected" | "waiting" | "none";
+  text: string;
+};
+
 export function PlanDetailMeta() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
@@ -57,25 +72,28 @@ export function PlanDetailMeta() {
   const project = page.project;
   const creatorName = useUserDisplayName(page.plan.creator || undefined);
   const createdTimeMs = getTimeForPbTimestampProtoEs(page.plan.createTime);
-  const [detailsOpen, setDetailsOpen] = useState(true);
-  const releaseName = page.plan.specs?.find(
+  const releaseConfig = page.plan.specs?.find(
     (spec) => spec.config?.case === "changeDatabaseConfig"
   )?.config;
   const releaseResource =
-    releaseName?.case === "changeDatabaseConfig"
-      ? releaseName.value.release
+    releaseConfig?.case === "changeDatabaseConfig"
+      ? releaseConfig.value.release
       : "";
   const release = useReleaseByName(releaseResource);
-  // The spec names the release, so the rows are a release plan's from the
+  // The spec names the release, so the lines are a release plan's from the
   // first render, before the release is read or when it cannot be (D10).
   const isReleasePlan = Boolean(releaseResource);
   const fetchRelease = useAppStore((state) => state.fetchRelease);
+  const [releaseUnreadable, setReleaseUnreadable] = useState(false);
   useEffect(() => {
+    setReleaseUnreadable(false);
     if (releaseResource) {
-      fetchRelease(releaseResource, true).catch(() => {});
+      fetchRelease(releaseResource, true).catch(() =>
+        setReleaseUnreadable(true)
+      );
     }
   }, [fetchRelease, releaseResource]);
-  const changesSummary = useMemo(() => {
+  const changesParts = useMemo(() => {
     const targets = [
       ...new Set(
         (page.plan.specs ?? []).flatMap((spec) =>
@@ -104,13 +122,15 @@ export function PlanDetailMeta() {
         ? t("plan.details.database-groups", { count: groupCount })
         : "",
     ].filter(Boolean);
-    const targetsText = parts.join(" · ");
-    return kind
-      ? t("plan.details.changes-on-targets", {
-          kind: statementKindLabel(kind, t),
-          targets: targetsText,
-        })
-      : targetsText;
+    if (!kind) return parts;
+    const [first, ...rest] = parts;
+    return [
+      t("plan.details.changes-on-targets", {
+        kind: statementKindLabel(kind, t),
+        targets: first,
+      }),
+      ...rest,
+    ];
   }, [page.plan.specs, page.planCheckRuns, t]);
   // Approvers are recorded in the order of the approval flow's roles.
   const flowRoles = page.issue?.approvalTemplate?.flow?.roles ?? [];
@@ -119,29 +139,36 @@ export function PlanDetailMeta() {
   );
   const lastApprover = approvedSteps.at(-1);
   const lastApproverName = useUserDisplayName(lastApprover?.principal);
-  const reviewSummary = useMemo(() => {
+  const approval = useMemo((): Approval | undefined => {
     const issue = page.issue;
-    if (!issue) return "";
+    // A draft has no state line: the title row's action says where it stands.
+    if (!issue || issue.draft) return undefined;
     switch (issue.approvalStatus) {
       case ApprovalStatus.APPROVED: {
         const role = flowRoles[approvedSteps.length - 1];
-        return lastApprover
-          ? t("plan.details.approved-by", {
-              user: role
-                ? `${lastApproverName} (${displayRoleTitle(role)})`
-                : lastApproverName,
-            })
-          : t("plan.details.approved");
+        return {
+          tone: "done",
+          text: lastApprover
+            ? t("plan.details.approved-by", {
+                user: role
+                  ? `${lastApproverName} (${displayRoleTitle(role)})`
+                  : lastApproverName,
+              })
+            : t("plan.details.approved"),
+        };
       }
       case ApprovalStatus.REJECTED:
-        return t("plan.details.rejected");
+        return { tone: "rejected", text: t("plan.details.rejected") };
       case ApprovalStatus.SKIPPED:
-        return t("plan.details.no-approval");
+        return { tone: "none", text: t("plan.details.no-approval") };
       default: {
         const next = flowRoles[approvedSteps.length];
-        return next
-          ? t("plan.details.waiting-for", { role: displayRoleTitle(next) })
-          : t("plan.details.awaiting-approval");
+        return {
+          tone: "waiting",
+          text: next
+            ? t("plan.details.waiting-for", { role: displayRoleTitle(next) })
+            : t("plan.details.awaiting-approval"),
+        };
       }
     }
   }, [page.issue, t, flowRoles, approvedSteps, lastApprover, lastApproverName]);
@@ -193,204 +220,246 @@ export function PlanDetailMeta() {
     }
   };
 
-  const createdLine = (
-    <span
-      className="flex flex-wrap items-center gap-x-1"
-      data-testid="plan-detail-created"
-    >
-      <span>{creatorName}</span>
-      {createdTimeMs !== undefined && (
-        <>
-          <span aria-hidden="true">·</span>
-          <HumanizeTs mode="datetime" tsMs={createdTimeMs} />
-          <span aria-hidden="true">·</span>
-          <HumanizeTs tsMs={createdTimeMs} />
-        </>
-      )}
-    </span>
-  );
+  // Until the release is read the source line holds its row; it goes when
+  // the release cannot be read or carries no source.
+  const showSourceLine =
+    isReleasePlan &&
+    (release ? Boolean(buildSourceRow(release.vcsSource)) : !releaseUnreadable);
+  const releaseParts = !isReleasePlan
+    ? []
+    : !release
+      ? [extractReleaseUID(releaseResource)]
+      : release.type === Release_Type.DECLARATIVE
+        ? [t("plan.details.state-based"), release.files[0]?.version ?? ""]
+        : [
+            t("plan.details.migration-based"),
+            t("plan.details.release-files", { count: release.files.length }),
+            t("plan.details.update-to-version", {
+              version: newestVersion(release),
+            }),
+          ];
+  const labelsShown =
+    page.issue && (allowChangeLabels || (page.issue.labels ?? []).length > 0);
+  // The verb tells the CI account apart from the source line's author.
+  const creatorText = isReleasePlan
+    ? t("plan.details.triggered-by", { user: creatorName })
+    : creatorName;
+  const hasStages = page.plan.rolloutStageSummaries.length > 0;
+  const showStateLine = Boolean(approval) || hasStages;
 
-  // Folded, the block keeps one line: the source title on a release plan,
-  // then the progress. The fold lives only while the page is open (D10).
-  const toggle = (
-    <CollapsibleTrigger
-      className="w-auto shrink-0 text-accent hover:underline"
-      data-testid="plan-details-toggle"
-    >
-      {detailsOpen
-        ? t("plan.phase.hide-details")
-        : t("plan.phase.show-details")}
-    </CollapsibleTrigger>
-  );
   return (
-    <Collapsible
-      open={detailsOpen}
-      onOpenChange={setDetailsOpen}
-      className="mt-1 flex flex-col gap-y-1 text-sm"
+    <div
+      className={cn("mt-1 text-sm text-control", LINES)}
       data-testid="plan-details"
     >
-      {!detailsOpen && (
-        <div className="flex min-w-0 items-center gap-x-3">
-          {release && <SourceRowView source={release.vcsSource} titleOnly />}
-          <PlanStages plan={page.plan} />
-          <span className="flex-1" />
-          {toggle}
+      {showSourceLine && (
+        <div className={LINE} data-testid="plan-detail-line" data-line="source">
+          <span className="sr-only">{t("plan.details.source")}</span>
+          {release ? (
+            <SourceParts source={release.vcsSource} />
+          ) : (
+            <span className={PART} />
+          )}
         </div>
       )}
-      <CollapsiblePanel className="flex items-start gap-x-3">
-        <dl className="grid min-w-0 flex-1 grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1">
-          {isReleasePlan && (
-            <DetailRow label={t("plan.details.source")} row="source">
-              <SourceRowView source={release?.vcsSource} />
-            </DetailRow>
+      <div className={LINE} data-testid="plan-detail-line" data-line="facts">
+        <span className={SEPARATED} data-part="creator">
+          {!isReleasePlan && (
+            <span className="sr-only">{t("plan.details.created")}</span>
           )}
-          <DetailRow
-            label={
-              isReleasePlan
-                ? t("plan.details.triggered")
-                : t("plan.details.created")
-            }
-            row="created"
+          <span className="truncate" title={creatorText}>
+            {creatorText}
+          </span>
+        </span>
+        {createdTimeMs !== undefined && (
+          <span
+            className={cn(SEPARATED, "text-control-light")}
+            data-part="time"
           >
-            {createdLine}
-          </DetailRow>
-          {page.issue && (
-            <DetailRow label={t("plan.details.labels")} row="labels">
-              <InlineLabels
-                allowChange={allowChangeLabels}
-                issueLabels={project?.issueLabels ?? []}
-                labels={page.issue.labels || []}
-                onUpdate={handleLabelsUpdate}
-                required={
-                  page.issue.draft && (project?.forceIssueLabels ?? false)
-                }
-              />
-            </DetailRow>
-          )}
-          {isReleasePlan ? (
-            <DetailRow label={t("plan.details.release")} row="release">
-              <span data-testid="plan-detail-release">
-                {!release
-                  ? extractReleaseUID(releaseResource)
-                  : release.type === Release_Type.DECLARATIVE
-                    ? t("plan.details.state-based", {
-                        version: release.files[0]?.version ?? "",
-                      })
-                    : t("plan.details.migration-based", {
-                        count: release.files.length,
-                        version: newestVersion(release),
-                      })}
+            <HumanizeTs tsMs={createdTimeMs} />
+          </span>
+        )}
+        {(isReleasePlan ? releaseParts : changesParts)
+          .filter(Boolean)
+          .map((part, index) => (
+            <span
+              key={`${index}-${part}`}
+              className={SEPARATED}
+              data-part="changes"
+            >
+              {index === 0 && (
+                <span className="sr-only">
+                  {isReleasePlan
+                    ? t("plan.details.release")
+                    : t("plan.details.changes")}
+                </span>
+              )}
+              <span className="truncate" title={part}>
+                {part}
               </span>
-            </DetailRow>
-          ) : (
-            <DetailRow label={t("plan.details.changes")} row="changes">
-              {changesSummary}
-            </DetailRow>
+            </span>
+          ))}
+        {labelsShown && page.issue && (
+          <>
+            <span className="sr-only">{t("plan.details.labels")}</span>
+            <InlineLabels
+              allowChange={allowChangeLabels}
+              issueLabels={project?.issueLabels ?? []}
+              labels={page.issue.labels || []}
+              onUpdate={handleLabelsUpdate}
+              required={
+                page.issue.draft && (project?.forceIssueLabels ?? false)
+              }
+              inLine
+            />
+          </>
+        )}
+      </div>
+      {showStateLine && (
+        <div
+          className={cn(LINE, "font-medium text-main")}
+          data-testid="plan-detail-line"
+          data-line="state"
+        >
+          {approval && (
+            <span className={SEPARATED} data-part="approval">
+              <span className="sr-only">{t("plan.details.review")}</span>
+              <ApprovalIcon tone={approval.tone} />
+              <span className="truncate" title={approval.text}>
+                {approval.text}
+              </span>
+            </span>
           )}
-          {page.issue && (
-            <DetailRow label={t("plan.details.review")} row="review">
-              {reviewSummary}
-            </DetailRow>
+          {hasStages && (
+            <>
+              <span className="sr-only">{t("plan.details.progress")}</span>
+              <PlanStageParts
+                plan={page.plan}
+                partClassName={(index) => (index === 0 ? SEPARATED : PART)}
+                arrowClassName={ARROW}
+              />
+            </>
           )}
-          <DetailRow label={t("plan.details.progress")} row="progress">
-            <PlanStages plan={page.plan} />
-          </DetailRow>
-        </dl>
-        {toggle}
-      </CollapsiblePanel>
-    </Collapsible>
+        </div>
+      )}
+    </div>
   );
 }
 
-function DetailRow({
-  label,
-  row,
-  children,
-}: {
-  label: string;
-  row: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="contents" data-testid="plan-detail-row" data-row={row}>
-      {/* One height for every row: the xs controls in the Labels row. */}
-      <dt className="flex min-h-6 items-center text-control-placeholder">
-        {label}
-      </dt>
-      <dd className="flex min-h-6 min-w-0 items-center text-control">
-        <div className="w-full min-w-0">{children}</div>
-      </dd>
-    </div>
-  );
+function ApprovalIcon({ tone }: { tone: Approval["tone"] }) {
+  switch (tone) {
+    case "done":
+      return (
+        <CircleCheck
+          aria-hidden="true"
+          className="size-4 shrink-0 text-success"
+        />
+      );
+    case "rejected":
+      return (
+        <CircleX aria-hidden="true" className="size-4 shrink-0 text-error" />
+      );
+    case "waiting":
+      return (
+        <Clock
+          aria-hidden="true"
+          className="size-4 shrink-0 text-control-light"
+        />
+      );
+    default:
+      return (
+        <CircleCheck
+          aria-hidden="true"
+          className="size-4 shrink-0 text-control-light"
+        />
+      );
+  }
 }
 
 // The store keeps the files in the executor's order, newest last.
 const newestVersion = (release: Release) => release.files.at(-1)?.version ?? "";
 
-function SourceRowView({
-  source,
-  titleOnly = false,
-}: {
-  source?: Release_VCSSource;
-  // The folded block keeps only the title.
-  titleOnly?: boolean;
-}) {
-  const { t } = useTranslation();
-  const narrow = useMediaQuery("(max-width: 639px)");
-  const row = buildSourceRow(source);
-  if (!row) return <span className="text-control-placeholder">-</span>;
-  const text = row.title ?? row.repoAtSha ?? row.href;
-  const truncated =
-    text && text.length > SOURCE_TITLE_LIMIT
-      ? `${text.slice(0, SOURCE_TITLE_LIMIT)}…`
-      : text;
-  const head = truncated ? (
-    row.href ? (
-      <a
-        className="truncate text-accent hover:underline"
-        data-testid="source-part"
-        href={row.href}
-        rel="noopener noreferrer"
-        target="_blank"
-        title={text}
-      >
-        {truncated}
-      </a>
-    ) : (
-      <span className="truncate" data-testid="source-part" title={text}>
-        {truncated}
+// D9's 72-character cap and the row's width cut the same place: before a
+// PR's "#N", so the number stays.
+function SourceTitle({ text, href }: { text: string; href?: string }) {
+  const match = / #\d+$/.exec(text);
+  const tail = match ? match[0] : "";
+  const room = SOURCE_TITLE_LIMIT - tail.length;
+  let head = tail ? text.slice(0, -tail.length) : text;
+  if (head.length > room) head = `${head.slice(0, room)}…`;
+  const content = (
+    <>
+      <span className="truncate">{head}</span>
+      {tail && <span className="shrink-0 whitespace-pre">{tail}</span>}
+    </>
+  );
+  return href ? (
+    <a
+      className="flex min-w-0 font-medium text-accent hover:underline"
+      data-testid="source-part"
+      href={href}
+      rel="noopener noreferrer"
+      target="_blank"
+      title={text}
+    >
+      {content}
+    </a>
+  ) : (
+    <span className="flex min-w-0" data-testid="source-part" title={text}>
+      {content}
+    </span>
+  );
+}
+
+// A branch shortens before its end, the part a reader tells branches apart by.
+function BranchPart({ branch }: { branch: string }) {
+  if (branch.length <= BRANCH_END_LENGTH) {
+    return (
+      <span className="truncate" data-testid="source-part" title={branch}>
+        {branch}
       </span>
-    )
-  ) : null;
-  if (titleOnly) return head;
-  const rest = [
-    row.author
-      ? t("plan.details.by-author", { author: row.author })
-      : undefined,
-    row.title ? row.repoAtSha : undefined,
-    row.branch,
-  ].filter((part): part is string => Boolean(part));
+    );
+  }
   return (
-    <span className="flex min-w-0 flex-wrap items-center gap-x-1">
-      {head}
-      {rest.length > 0 && (
-        <span
-          className={cn(
-            "flex flex-wrap items-center gap-x-1",
-            narrow && "basis-full text-control-light"
-          )}
-        >
-          {rest.map((part, index) => (
-            <span key={part} className="flex items-center gap-x-1">
-              {(!narrow || index > 0) && head !== null && (
-                <span aria-hidden="true">·</span>
-              )}
-              <span data-testid="source-part">{part}</span>
-            </span>
-          ))}
+    <span className="flex min-w-0" data-testid="source-part" title={branch}>
+      <span className="truncate">{branch.slice(0, -BRANCH_END_LENGTH)}</span>
+      <span className="shrink-0">{branch.slice(-BRANCH_END_LENGTH)}</span>
+    </span>
+  );
+}
+
+function SourceParts({ source }: { source?: Release_VCSSource }) {
+  const { t } = useTranslation();
+  const row = buildSourceRow(source);
+  if (!row) return null;
+  const text = row.title ?? row.repoAtSha ?? row.href;
+  return (
+    <>
+      {text && (
+        <span className={SEPARATED}>
+          <SourceTitle text={text} href={row.href} />
         </span>
       )}
-    </span>
+      {row.author && (
+        <span className={cn(SEPARATED, "text-control-light")}>
+          <span className="truncate" data-testid="source-part">
+            {t("plan.details.by-author", { author: row.author })}
+          </span>
+        </span>
+      )}
+      {row.title && row.repoAtSha && (
+        <span className={cn(SEPARATED, "text-control-light")}>
+          <span className="truncate" data-testid="source-part">
+            {row.repoAtSha}
+          </span>
+        </span>
+      )}
+      {row.branch && (
+        <span className={cn(SEPARATED, "text-control-light")}>
+          <BranchPart branch={row.branch} />
+        </span>
+      )}
+    </>
   );
 }
 
@@ -400,6 +469,7 @@ function InlineLabels({
   labels,
   onUpdate,
   required,
+  inLine = false,
 }: {
   allowChange: boolean;
   issueLabels: Array<{ color?: Color; value: string }>;
@@ -407,10 +477,14 @@ function InlineLabels({
   onUpdate: (labels: string[]) => Promise<void> | void;
   /** The project forces issue labels, so submitting for review needs one. */
   required: boolean;
+  /** Each chip and the add control are parts of the fact line. */
+  inLine?: boolean;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  // A chip or the add control is a part of the line, with no separator.
+  const partClass = inLine ? PART : undefined;
 
   const toggleLabel = async (value: string) => {
     const next = labels.includes(value)
@@ -429,117 +503,131 @@ function InlineLabels({
     return (
       <span
         key={value}
-        className="inline-flex h-6 items-center gap-1 rounded-xs bg-control-bg px-1.5 text-xs text-control"
+        className={partClass}
+        data-part={inLine ? "label" : undefined}
       >
-        <span
-          className="size-2.5 shrink-0 rounded-sm"
-          style={{
-            backgroundColor: option?.color
-              ? colorToHex(option.color)
-              : undefined,
-          }}
-        />
-        <span className="truncate">{value}</span>
-        {allowChange && (
-          <Button
-            appearance="secondary"
-            size="xs"
-            aria-label={t("common.remove")}
-            className={cn(
-              "inline-flex shrink-0 items-center justify-center text-control-placeholder transition-colors",
-              isUpdating
-                ? "cursor-not-allowed opacity-60"
-                : "hover:text-control"
-            )}
-            disabled={isUpdating}
-            onClick={() => void toggleLabel(value)}
-            type="button"
-          >
-            <X className="size-3" />
-          </Button>
-        )}
+        <span className="inline-flex h-6 items-center gap-1 rounded-xs bg-control-bg px-1.5 text-xs text-control">
+          <span
+            className="size-2.5 shrink-0 rounded-sm"
+            style={{
+              backgroundColor: option?.color
+                ? colorToHex(option.color)
+                : undefined,
+            }}
+          />
+          <span className="truncate">{value}</span>
+          {allowChange && (
+            <Button
+              appearance="secondary"
+              size="xs"
+              aria-label={t("common.remove")}
+              className={cn(
+                "inline-flex shrink-0 items-center justify-center text-control-placeholder transition-colors",
+                isUpdating
+                  ? "cursor-not-allowed opacity-60"
+                  : "hover:text-control"
+              )}
+              disabled={isUpdating}
+              onClick={() => void toggleLabel(value)}
+              type="button"
+            >
+              <X className="size-3" />
+            </Button>
+          )}
+        </span>
       </span>
     );
   });
 
   const triggerDisabled = !allowChange || isUpdating;
 
-  return (
-    <div className="flex flex-wrap items-center gap-1">
-      {chips}
-      <Popover open={open} onOpenChange={allowChange ? setOpen : undefined}>
-        <PopoverTrigger
-          render={
-            <Button
-              appearance="secondary"
-              size="xs"
-              className={cn(
-                "inline-flex items-center gap-1 rounded-xs border border-dashed border-control-border px-1.5 py-0.5 text-xs text-control-placeholder transition-colors",
-                allowChange &&
-                  !isUpdating &&
-                  "hover:border-control hover:text-control",
-                triggerDisabled && "cursor-not-allowed opacity-60"
-              )}
-              disabled={triggerDisabled}
-              type="button"
-            />
-          }
-        >
-          <Plus className="size-3" />
-          <span>{t("issue.labels")}</span>
-          {/* Only while unsatisfied: once a label is picked the trigger is an
-              "add another" affordance, and the requirement is already met. */}
-          {required && labels.length === 0 && (
-            <span className="text-error">*</span>
-          )}
-        </PopoverTrigger>
-        <PopoverContent
-          side="bottom"
-          align="start"
-          initialFocus={false}
-          finalFocus={false}
-          className="w-56 overflow-hidden bg-background p-0"
-        >
-          <div className="max-h-60 overflow-y-auto">
-            {issueLabels.length === 0 ? (
-              <div className="px-3 py-6 text-sm text-control-placeholder">
-                {t("common.no-data")}
-              </div>
-            ) : (
-              issueLabels.map((option) => {
-                const isSelected = labels.includes(option.value);
-                return (
-                  <Button
-                    appearance="secondary"
-                    size="md"
-                    key={option.value}
-                    className="flex w-full min-w-0 justify-start gap-x-2 px-3 py-2 text-left text-sm transition-colors hover:bg-control-bg"
-                    disabled={isUpdating}
-                    onClick={() => void toggleLabel(option.value)}
-                    type="button"
-                  >
-                    <Checkbox checked={isSelected} />
-                    <span
-                      className="size-4 shrink-0 rounded-sm"
-                      style={{
-                        backgroundColor: option.color
-                          ? colorToHex(option.color)
-                          : undefined,
-                      }}
-                    />
-                    <span
-                      className="min-w-0 flex-1 truncate"
-                      title={option.value}
-                    >
-                      {option.value}
-                    </span>
-                  </Button>
-                );
-              })
+  const picker = (
+    <Popover open={open} onOpenChange={allowChange ? setOpen : undefined}>
+      <PopoverTrigger
+        render={
+          <Button
+            appearance="secondary"
+            size="xs"
+            className={cn(
+              "inline-flex items-center gap-1 rounded-xs border border-dashed border-control-border px-1.5 py-0.5 text-xs text-control-placeholder transition-colors",
+              allowChange &&
+                !isUpdating &&
+                "hover:border-control hover:text-control",
+              triggerDisabled && "cursor-not-allowed opacity-60"
             )}
-          </div>
-        </PopoverContent>
-      </Popover>
+            disabled={triggerDisabled}
+            type="button"
+          />
+        }
+      >
+        <Plus className="size-3" />
+        <span>{t("issue.labels")}</span>
+        {/* Only while unsatisfied: once a label is picked the trigger is an
+            "add another" affordance, and the requirement is already met. */}
+        {required && labels.length === 0 && (
+          <span className="text-error">*</span>
+        )}
+      </PopoverTrigger>
+      <PopoverContent
+        side="bottom"
+        align="start"
+        initialFocus={false}
+        finalFocus={false}
+        className="w-56 overflow-hidden bg-background p-0"
+      >
+        <div className="max-h-60 overflow-y-auto">
+          {issueLabels.length === 0 ? (
+            <div className="px-3 py-6 text-sm text-control-placeholder">
+              {t("common.no-data")}
+            </div>
+          ) : (
+            issueLabels.map((option) => {
+              const isSelected = labels.includes(option.value);
+              return (
+                <Button
+                  appearance="secondary"
+                  size="md"
+                  key={option.value}
+                  className="flex w-full min-w-0 justify-start gap-x-2 px-3 py-2 text-left text-sm transition-colors hover:bg-control-bg"
+                  disabled={isUpdating}
+                  onClick={() => void toggleLabel(option.value)}
+                  type="button"
+                >
+                  <Checkbox checked={isSelected} />
+                  <span
+                    className="size-4 shrink-0 rounded-sm"
+                    style={{
+                      backgroundColor: option.color
+                        ? colorToHex(option.color)
+                        : undefined,
+                    }}
+                  />
+                  <span
+                    className="min-w-0 flex-1 truncate"
+                    title={option.value}
+                  >
+                    {option.value}
+                  </span>
+                </Button>
+              );
+            })
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+
+  return (
+    <div className={inLine ? "contents" : "flex flex-wrap items-center gap-1"}>
+      {chips}
+      {(allowChange || !inLine) && (
+        <span
+          className={partClass}
+          data-part={inLine ? "label-add" : undefined}
+        >
+          {picker}
+        </span>
+      )}
     </div>
   );
 }

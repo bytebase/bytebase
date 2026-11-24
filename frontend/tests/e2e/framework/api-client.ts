@@ -683,7 +683,17 @@ export class BytebaseApiClient {
   // Releases
   async createRelease(
     project: string,
-    release: { files: { path: string; version: string; statement: string }[]; vcsSource: { vcsType: string; url: string } },
+    release: {
+      files: { path: string; version: string; statement: string }[];
+      vcsSource: {
+        vcsType: string;
+        url: string;
+        commitSha?: string;
+        branch?: string;
+        authorLogin?: string;
+        pullRequest?: { url: string; number: string; title: string };
+      };
+    },
   ): Promise<{ name: string }> {
     return this.request<{ name: string }>("POST", `/v1/${project}/releases`, {
       type: "VERSIONED",

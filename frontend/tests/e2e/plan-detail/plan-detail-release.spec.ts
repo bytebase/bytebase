@@ -51,6 +51,10 @@ async function screenshot(page: Page, name: string) {
 async function createReleasePlan(
   label: string,
   files: { n: number; statement: string }[],
+  vcsSource: Parameters<BytebaseApiClient["createRelease"]>[1]["vcsSource"] = {
+    vcsType: "GITHUB",
+    url: `https://github.com/example/app/commit/${COMMIT}`,
+  },
 ): Promise<{ id: string; name: string; releaseId: string }> {
   const release = await env.api.createRelease(env.project, {
     files: files.map(({ n, statement }) => ({
@@ -58,10 +62,7 @@ async function createReleasePlan(
       version: version(n),
       statement,
     })),
-    vcsSource: {
-      vcsType: "GITHUB",
-      url: `https://github.com/example/app/commit/${COMMIT}`,
-    },
+    vcsSource,
   });
   createdReleases.push(release.name);
   const plan = await env.api.createReleasePlan(env.project, lastSegment(release.name), {
@@ -438,4 +439,54 @@ test("a click on the task header line folds and unfolds the card, and the margin
   await header.getByRole("checkbox").click();
   await expect(page.getByText("Selected tasks: 1")).toBeVisible();
   await expect(name).toHaveAttribute("aria-expanded", "false");
+});
+
+test("on a phone the lines under the title keep one row rhythm, keep the PR's number and never scroll sideways", async ({ browser }) => {
+  const title = "feat(billing): backfill invoice currency and drop the legacy amount columns";
+  const branch = "release/2026-q4-billing-and-invoice-currency-migration";
+  const plan = await createReleasePlan("phone", [{ n: 70, statement: `CREATE TABLE ${schema}.p70 (id INT);` }], {
+    vcsType: "GITHUB",
+    url: `https://github.com/example/app/commit/${COMMIT}`,
+    commitSha: COMMIT,
+    branch,
+    authorLogin: "maya",
+    pullRequest: { url: "https://github.com/example/app/pull/1284", number: "1284", title },
+  });
+  const page = await developerPage(browser);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${env.baseURL}/projects/${projectId}/plans/${plan.id}`);
+
+  const lines = page.getByTestId("plan-details");
+  const link = lines.getByRole("link", { name: /#1284/ });
+  await expect(link).toBeVisible();
+  await expect(link).toHaveAttribute("title", `${title} #1284`);
+  await expect(lines.getByText(/^Triggered by /)).toBeVisible();
+  await screenshot(page, "release-header-phone");
+
+  const layout = await lines.evaluate((box) => {
+    const boxLeft = box.getBoundingClientRect().left;
+    const parts = Array.from(
+      box.querySelectorAll<HTMLElement>('[data-testid="plan-detail-line"] > :not(.sr-only)'),
+    ).map((part) => part.getBoundingClientRect());
+    const number = Array.from(box.querySelectorAll("a span")).find((span) => span.textContent === " #1284");
+    return {
+      heights: [...new Set(parts.map((part) => Math.round(part.height)))],
+      tops: [...new Set(parts.map((part) => Math.round(part.top)))].sort((a, b) => a - b),
+      // A part that starts a row puts its separator padding left of the box,
+      // where the box clips it.
+      rowStarts: parts.filter((part) => part.left < boxLeft).map((part) => Math.round(boxLeft - part.left)),
+      numberRight: number?.getBoundingClientRect().right ?? Number.POSITIVE_INFINITY,
+      pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+    };
+  });
+  expect(layout.heights).toEqual([24]);
+  // Wrapped or new, every row is 24 px with 4 px between rows.
+  expect(layout.tops.slice(1).map((top, i) => top - layout.tops[i])).toEqual(
+    Array(layout.tops.length - 1).fill(28),
+  );
+  expect(layout.rowStarts.length).toBe(layout.tops.length);
+  expect(new Set(layout.rowStarts)).toEqual(new Set([16]));
+  expect(layout.numberRight).toBeLessThanOrEqual(390);
+  expect(layout.pageScrolls).toBe(false);
+  await page.context().close();
 });

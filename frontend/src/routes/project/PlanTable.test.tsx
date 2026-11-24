@@ -155,6 +155,45 @@ describe("PlanTable", () => {
     expect(stages).toContain("Production");
   });
 
+  test("keeps each stage's arrow with the stage after it, so a wrapped row never ends in one", () => {
+    mocks.getEnvironmentByName.mockReturnValue(undefined);
+    render([
+      {
+        ...basePlan,
+        rolloutStageSummaries: ["test", "staging", "prod"].map((id) => ({
+          stage: `projects/foo/plans/7/rollout/stages/${id}`,
+          taskStatusCounts: [],
+        })),
+      } as unknown as Plan,
+    ]);
+
+    const parts = Array.from(
+      container.querySelectorAll('td [data-part="stage"]')
+    ).map((part) => part.textContent);
+    expect(parts).toEqual([
+      "environments/test",
+      "→environments/staging",
+      "→environments/prod",
+    ]);
+  });
+
+  test("shortens a stage title at its end, with the full title as its tooltip", () => {
+    const longTitle = "Production (EU, regulated customers, change window Sunday 02:00 UTC)";
+    mocks.getEnvironmentByName.mockReturnValue({ title: longTitle });
+    render([
+      {
+        ...basePlan,
+        rolloutStageSummaries: [
+          { stage: "projects/foo/plans/7/rollout/stages/prod", taskStatusCounts: [] },
+        ],
+      } as unknown as Plan,
+    ]);
+
+    const name = container.querySelector(`td [data-part="stage"] [title="${longTitle}"]`);
+    expect(name?.textContent).toBe(longTitle);
+    expect(name?.className).toContain("truncate");
+  });
+
   test("shows - for a Plan without rollout stages", () => {
     render([basePlan]);
 

@@ -107,29 +107,51 @@ export const useStageTitle = () => {
 };
 
 export function PlanStages({ plan }: { plan: Plan }) {
-  const stageTitle = useStageTitle();
-
   if (plan.rolloutStageSummaries.length === 0) {
     return <span className="text-control-light">-</span>;
   }
   return (
     <div className="flex items-center gap-1 flex-wrap">
-      {plan.rolloutStageSummaries.map((summary, index) => {
-        const stageStatus = getStageStatusFromCounts(summary.taskStatusCounts);
-        return (
-          <div key={summary.stage} className="flex items-center gap-1">
-            <div className="flex items-center gap-1">
-              <TaskStatusIcon size="tiny" status={stageStatus} />
-              <span className="text-sm">{stageTitle(summary.stage)}</span>
-            </div>
-            {index < plan.rolloutStageSummaries.length - 1 && (
-              <span className="mx-1 text-control-light">&rarr;</span>
-            )}
-          </div>
-        );
-      })}
+      <PlanStageParts plan={plan} />
     </div>
   );
+}
+
+// One wrap unit per stage, its arrow before it, so a wrapped row never ends
+// with an arrow.
+export function PlanStageParts({
+  plan,
+  partClassName,
+  arrowClassName = "mx-1",
+}: {
+  plan: Plan;
+  partClassName?: (index: number) => string;
+  arrowClassName?: string;
+}) {
+  const stageTitle = useStageTitle();
+  return plan.rolloutStageSummaries.map((summary, index) => (
+    <span
+      key={summary.stage}
+      className={cn("flex items-center gap-1", partClassName?.(index))}
+      data-part="stage"
+    >
+      {index > 0 && (
+        <span
+          aria-hidden="true"
+          className={cn("text-control-light", arrowClassName)}
+        >
+          &rarr;
+        </span>
+      )}
+      <TaskStatusIcon
+        size="tiny"
+        status={getStageStatusFromCounts(summary.taskStatusCounts)}
+      />
+      <span className="truncate text-sm" title={stageTitle(summary.stage)}>
+        {stageTitle(summary.stage)}
+      </span>
+    </span>
+  ));
 }
 
 const resolvePlanDetailUrl = (plan: Plan, projectId: string): string =>

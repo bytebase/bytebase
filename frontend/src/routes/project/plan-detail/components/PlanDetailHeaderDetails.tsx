@@ -3,7 +3,7 @@
 // scroll, following GitHub's issue-header pattern (BYT-9722). Owns its own
 // description-edit state; the title row owns the title + lifecycle slot.
 import { create } from "@bufbuild/protobuf";
-import { ChevronUp, Plus } from "lucide-react";
+import { ChevronUp } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/api";
@@ -250,16 +250,17 @@ export function PlanDetailHeaderDetails() {
             )}
           </div>
         ) : allowDescriptionEdit ? (
+          // Where the description will render, as the editor opens there.
           <Button
-            className="italic opacity-60"
+            className="mt-1 px-2 text-control-light hover:text-control"
+            data-testid="plan-description-add"
             onClick={() => {
               setEditingDescription(true);
               setEditing("description", true);
             }}
             size="xs"
-            appearance="secondary"
+            appearance="link"
           >
-            <Plus className="mr-1 size-4" />
             {t("plan.description.placeholder")}
           </Button>
         ) : null}
