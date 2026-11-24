@@ -21,20 +21,15 @@ export type MCPCapabilityRowId =
   | "read-workflow"
   | "read-access"
   | "propose"
-  | "request-access"
-  | "masking-exemptions"
-  | "approve"
-  | "add-instances"
-  | "ci-identities"
-  | "approval-rules"
-  | "masking-rules"
-  | "run-rollouts"
   | "run-statements"
-  | "export"
+  | "request-access"
+  | "approve"
+  | "masking"
+  | "add-instances"
   | "manage";
 
 export interface MCPCapabilityRow {
-  /** Keys the row's copy under `settings.mcp.ladder.row.<id>.*`. */
+  /** Keys the row's title under `settings.mcp.ladder.row.<id>.title`. */
   readonly id: MCPCapabilityRowId;
   readonly tier: MCPCapabilityTier;
 }
@@ -52,7 +47,8 @@ export interface MCPCapabilityRow {
  *
  * `run-statements` is the one row backed by no method: it names the statement
  * clamp (`mcp_sql_clamp.go`) that Read-write lifts, which is a real difference
- * between the modes that no method name shows.
+ * between the modes that no method name shows. What no mode serves is not a row;
+ * `MCPCapabilityList` renders it last among the refused rows.
  */
 export const MCP_CAPABILITY_ROWS: readonly MCPCapabilityRow[] = [
   { id: "read-schemas", tier: "read" },
@@ -60,23 +56,12 @@ export const MCP_CAPABILITY_ROWS: readonly MCPCapabilityRow[] = [
   { id: "read-workflow", tier: "read" },
   { id: "read-access", tier: "read" },
   { id: "propose", tier: "write" },
-  { id: "request-access", tier: "write" },
-  { id: "masking-exemptions", tier: "write" },
-  { id: "approve", tier: "write" },
-  { id: "add-instances", tier: "write" },
-  { id: "ci-identities", tier: "write" },
-  { id: "approval-rules", tier: "write" },
-  { id: "masking-rules", tier: "write" },
-  { id: "run-rollouts", tier: "write" },
   { id: "run-statements", tier: "write" },
-  { id: "export", tier: "write" },
+  { id: "request-access", tier: "write" },
+  { id: "approve", tier: "write" },
+  { id: "masking", tier: "write" },
+  { id: "add-instances", tier: "write" },
   { id: "manage", tier: "write" },
-];
-
-/** Tier order, and with it the order the "stops here" dividers appear in. */
-export const MCP_CAPABILITY_TIERS: readonly MCPCapabilityTier[] = [
-  "read",
-  "write",
 ];
 
 /**
@@ -106,17 +91,8 @@ export const servedRows = (mode: MCPMode): readonly MCPCapabilityRow[] =>
  * the ids they are built from. These families are template-keyed, so
  * `check-i18n.mjs` exempts them by prefix and cannot report a missing line.
  */
-export const mcpTierKey = (
-  tier: MCPCapabilityTier,
-  part: "tier" | "stops"
-): string => `settings.mcp.ladder.${part}.${tier}`;
+export const mcpTierKey = (tier: MCPCapabilityTier): string =>
+  `settings.mcp.ladder.tier.${tier}`;
 
-export const mcpRowKey = (
-  row: MCPCapabilityRow,
-  part: "title" | "details"
-): string => `settings.mcp.ladder.row.${row.id}.${part}`;
-
-export const rowsInTier = (
-  tier: MCPCapabilityTier
-): readonly MCPCapabilityRow[] =>
-  MCP_CAPABILITY_ROWS.filter((row) => row.tier === tier);
+export const mcpRowKey = (row: MCPCapabilityRow): string =>
+  `settings.mcp.ladder.row.${row.id}.title`;

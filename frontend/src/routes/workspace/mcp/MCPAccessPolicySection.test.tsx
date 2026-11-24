@@ -361,31 +361,25 @@ describe("MCPAccessPolicySection", () => {
 
     // The open state carries into editing, and the list follows the pick
     // rather than the stored mode.
+    const allowedGroup = () => container.querySelector("ul")?.textContent;
     clickText(container, "settings.mcp.policy.edit");
     await flush();
-    expect(container.textContent).toContain(
-      "settings.mcp.ladder.heading(settings.mcp.policy.mode.read-only.title)"
-    );
+    expect(container.textContent).toContain("settings.mcp.ladder.heading");
+    expect(allowedGroup()).not.toContain("settings.mcp.ladder.row.propose.title");
     clickText(container, "settings.mcp.policy.mode.read-write.title");
     await flush();
-    expect(container.textContent).toContain(
-      "settings.mcp.ladder.heading(settings.mcp.policy.mode.read-write.title)"
-    );
+    expect(allowedGroup()).toContain("settings.mcp.ladder.row.propose.title");
     expect(container.textContent).toContain("settings.mcp.ladder.tier.write");
     unmount();
   });
 
-  test("the open and details state start over when the page is reopened", async () => {
+  test("the open state starts over when the page is reopened", async () => {
     const first = renderIntoContainer(<MCPAccessPolicySection />);
     first.render();
     await flush();
     clickText(first.container, "settings.mcp.ladder.summary.read-only");
     await flush();
-    clickText(first.container, "settings.mcp.ladder.show-details");
-    await flush();
-    expect(first.container.textContent).toContain(
-      "settings.mcp.ladder.row.read-schemas.details"
-    );
+    expect(first.container.querySelectorAll("li").length).toBeGreaterThan(0);
     first.unmount();
 
     const second = renderIntoContainer(<MCPAccessPolicySection />);
@@ -395,9 +389,6 @@ describe("MCPAccessPolicySection", () => {
     clickText(second.container, "settings.mcp.ladder.summary.read-only");
     await flush();
     expect(second.container.querySelectorAll("li").length).toBeGreaterThan(0);
-    expect(second.container.textContent).not.toContain(
-      "settings.mcp.ladder.row.read-schemas.details"
-    );
     second.unmount();
   });
 
