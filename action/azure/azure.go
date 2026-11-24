@@ -3,16 +3,14 @@ package azure
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/action/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func LoggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
+func LoggingReleaseChecks(resp *v1pb.CheckReleaseResponse) {
 	if resp == nil || len(resp.Results) == 0 {
 		fmt.Println("No check results found.")
-		return nil
+		return
 	}
 
 	hasError := false
@@ -49,9 +47,4 @@ func LoggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
 	} else if hasWarning {
 		fmt.Println("##vso[task.logissue type=warning;]SQL review has warnings")
 	}
-
-	if hasError {
-		return errors.Errorf("SQL review failed with errors")
-	}
-	return nil
 }
