@@ -146,8 +146,6 @@ describe("MCPCapabilityLadder", () => {
     unmount();
   });
 
-  // The chip or the selector already names the mode, so the headings name the
-  // policy; the trigger is the first one, so the list adds only the second.
   test("expanded, the two groups are headed allowed and not allowed", () => {
     const { container, unmount } = renderIntoContainer(ladder({}));
     const headings = [...container.querySelectorAll("h4")].map(
@@ -230,6 +228,14 @@ describe("MCPCapabilityLadder", () => {
     };
     expect(markOf("read-schemas")).toBe("settings.mcp.ladder.mark.allowed");
     expect(markOf("propose")).toBe("settings.mcp.ladder.mark.refused");
+
+    const floor = rowItems(container).find((node) =>
+      node.textContent?.includes("settings.mcp.ladder.floor.text")
+    );
+    expect(floor?.querySelector("span.sr-only")?.textContent).toBe(
+      "settings.mcp.ladder.mark.refused"
+    );
+    expect(floor?.textContent).not.toContain("settings.mcp.ladder.tier.");
     unmount();
   });
 });
