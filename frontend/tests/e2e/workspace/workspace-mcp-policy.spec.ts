@@ -201,8 +201,6 @@ test.describe("MCP access policy capability ladder", () => {
     await gotoMCPPage(page);
     await openLadder(page);
 
-    // Rows a mode does not serve stay visible in the second group, so
-    // comparing two modes never needs a second surface.
     await expect(
       page.getByRole("heading", { name: COPY.ladder.heading, exact: true })
     ).toBeVisible();
