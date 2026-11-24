@@ -93,6 +93,11 @@
     "archived-only-chats": "Ver chats archivados",
     "args": "Argumentos",
     "assistant-title": "Asistente de IA",
+    "attention": {
+      "needs-attention": "Requiere atención",
+      "needs-input": "El agente necesita tu respuesta",
+      "review-request": "Revisa esta solicitud antes de continuar."
+    },
     "cancel": "Cancelar",
     "cancel-request": "Cancelar solicitud",
     "chat-archived-notice": "Este chat está archivado.",
