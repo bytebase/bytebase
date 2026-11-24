@@ -1,6 +1,6 @@
 # Onboarding flow, the first four screens
 
-Status: implemented in this PR, with stills in place of D9's animations · 2026-10-12 (revised 2026-10-14) · builds on the project home, [#21572] (merged)
+Status: implemented in this PR, with stills in place of D9's animations · 2026-10-12 (revised 2026-10-14) · builds on the project home, [#21572] (merged) · amended by [onboarding-self-hosted-steps.md](onboarding-self-hosted-steps.md): self-hosted's steps, the name, the words and the goal picture
 
 A new Cloud workspace opens on a setup wizard that asks for a goal and "who will use Bytebase with
 you", then for your name, a workspace name, a first project and a sample-database checkbox. Until
