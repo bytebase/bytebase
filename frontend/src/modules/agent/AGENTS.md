@@ -48,9 +48,14 @@ clarification stay domain-owned. `apiResponseGuidance.ts` supplies a common fall
 plus protocol-specific advice only for API failures or validated uncertain execution.
 Execution metadata must satisfy the shared envelope validator before specialized
 advice. A later matching request cannot resolve an earlier attempt's possible or
-partial effects. Shared safety rules cover all prompt modes; diagnostic advice stays
-explanation-only and never starts query access, drafts, retries, or operational
-approval workflows.
+partial effects. Shared safety rules cover all prompt modes. Diagnostic chats are
+read-by-default: protected APIs use the common exact-request one-time approval
+flow after positive project-scope admission, with fresh scope and identity checks
+at approval and dispatch. Direct SQL execution and export are unavailable until
+their effective database targets can be verified within the diagnostic project.
+Recovery advice never authorizes a write, grants access,
+or permits automatic retries. Diagnostic DOM, navigation, and draft tools remain
+unavailable.
 
 Current-turn recovery guidance reuses the existing query Access Grant workflow,
 including fresh eligibility and member consent. Recovery metadata never authorizes

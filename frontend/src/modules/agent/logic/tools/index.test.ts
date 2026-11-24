@@ -921,6 +921,7 @@ import { createIssueOverviewTool } from "./issueOverview";
 import { createNavigateTool } from "./navigate";
 import { createPageStateTool } from "./pageState";
 import {
+  createPendingApiCall,
   getPendingApiCallPreview,
   resolvePendingApiCall,
 } from "./pendingApiCall";
@@ -1831,7 +1832,7 @@ describe("diagnostic capability", () => {
     ).toContain("projects/referenced");
     expect(
       tools.find(({ name }) => name === "call_api")?.description
-    ).not.toContain("may change data");
+    ).toContain("one-time approval");
   });
 
   test("advertises only Open and Continue answer actions without changing normal drafts", () => {
@@ -1854,30 +1855,307 @@ describe("diagnostic capability", () => {
   });
 
   test.each([
-    "IssueService/ApproveIssue",
-    "RolloutService/BatchRunTasks",
-    "RolloutService/CreateRollout",
-    "SQLService/Query",
-    "SettingService/GetSetting",
-    "UnknownService/Unknown",
-  ])("rejects %s without dispatch or permission", async (operationId) => {
-    const executor = createToolExecutor({} as AppRouterInstance, {
+    [
+      "RolloutService/GetTaskRunSession",
+      {
+        parent:
+          "projects/referenced/plans/12/rollout/stages/prod/tasks/1/taskRuns/1",
+      },
+    ],
+    [
+      "RolloutService/BatchRunTasks",
+      {
+        parent: "projects/referenced/plans/12/rollout/stages/prod",
+        tasks: ["projects/referenced/plans/12/rollout/stages/prod/tasks/1"],
+      },
+    ],
+    [
+      "RolloutService/CreateRollout",
+      { parent: "projects/referenced/plans/12" },
+    ],
+    [
+      "PlanService/UpdatePlan",
+      {
+        plan: {
+          name: "projects/referenced/plans/12",
+          title: "Corrected title",
+        },
+        updateMask: "title",
+      },
+    ],
+  ])(
+    "requests exact one-time approval for diagnostic %s",
+    async (operationId, body) => {
+      databaseApi.getDatabase.mockResolvedValue({
+        name: "instances/primary/databases/app",
+        project: "projects/referenced",
+      });
+      const executor = createToolExecutor({} as AppRouterInstance, {
+        capability,
+        chatId: "diagnostic",
+        userName: "users/1",
+      });
+      const result = await executor(
+        "call_api",
+        { operationId, body },
+        "protected"
+      );
+      expect(result.kind).toBe("ask_user");
+      if (result.kind !== "ask_user" || !result.ask.apiPermission)
+        throw new Error("Expected exact API permission");
+      expect(result.ask.kind).toBe("confirm");
+      const preview = getPendingApiCallPreview({
+        actionId: result.ask.apiPermission.actionId,
+        chatId: "diagnostic",
+        toolCallId: "protected",
+        userName: "users/1",
+      });
+      expect(preview?.operationId).toBe(
+        operationId
+          .replace("/", ".")
+          .replace(/^(?!bytebase\.v1\.)/, "bytebase.v1.")
+      );
+      expect(JSON.parse(preview!.body)).toMatchObject(body);
+      expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+      expect(checkPreparedApiPermission).toHaveBeenCalledOnce();
+    }
+  );
+
+  test.each([
+    ["SQLService/Query", { statement: "SELECT * FROM foreign_db.t" }],
+    ["SQLService/Query", { statement: "UPDATE foreign_db.t SET id = 1" }],
+    ["SQLService/Query", { statement: "SELECT 1" }],
+    ["SQLService/Query", { statement: "SELECT 1", explain: true }],
+    ["SQLService/Export", { statement: "SELECT * FROM foreign_db.t" }],
+    [
+      "SQLService/Export",
+      { statement: "SELECT * FROM foreign_db.t", admin: true },
+    ],
+  ])(
+    "rejects diagnostic SQL execution %s %j before requesting approval",
+    async (operationId, sql) => {
+      const name = "instances/primary/databases/app";
+      databaseApi.getDatabase.mockResolvedValue({
+        name,
+        project: capability.resource.project,
+      });
+      const result = await createToolExecutor({} as AppRouterInstance, {
+        capability,
+        chatId: "diagnostic",
+        userName: "users/1",
+      })("call_api", { operationId, body: { name, ...sql } }, "sql");
+      expect(result).toMatchObject({
+        kind: "tool_result",
+        result: expect.stringMatching(/diagnostic.*scope/i),
+      });
+      expect(checkPreparedApiPermission).not.toHaveBeenCalled();
+      expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each(["Query", "Export"])(
+    "rechecks diagnostic SQL scope for an already-created %s permission",
+    async (method) => {
+      const name = "instances/primary/databases/app";
+      databaseApi.getDatabase.mockResolvedValue({
+        name,
+        project: capability.resource.project,
+      });
+      const identity = {
+        chatId: "diagnostic-sql",
+        userName: "users/1",
+        toolCallId: "sql-permission",
+      };
+      const call = {
+        operationId: `bytebase.v1.SQLService.${method}`,
+        path: `/bytebase.v1.SQLService/${method}`,
+        body: JSON.stringify({ name, statement: "SELECT * FROM foreign_db.t" }),
+      };
+      const { actionId } = createPendingApiCall({
+        ...identity,
+        call,
+        capability,
+      });
+      expect(getPendingApiCallPreview({ ...identity, actionId })).toMatchObject(
+        {
+          operationId: call.operationId,
+          body: call.body,
+        }
+      );
+      const context = {
+        ...identity,
+        scopeKey: "scope",
+        rootUserMessageId: "question",
+        runId: "run",
+        logicalActionId: actionId,
+        isCurrent: () => true,
+        beginAgentApiAttempt: vi.fn(),
+        settleAgentApiAttempt: vi.fn(),
+      };
+      const result = await resolvePendingApiCall({
+        ...identity,
+        actionId,
+        approved: true,
+        capability,
+        context,
+      });
+      expect(JSON.parse(result)).toMatchObject({
+        error: expect.stringMatching(/outside this diagnostic scope/i),
+        agentExecution: {
+          result: "not-sent",
+          effects: "none",
+          reason: "preflight-rejected",
+        },
+      });
+      expect(
+        getPendingApiCallPreview({ ...identity, actionId })
+      ).toBeUndefined();
+      expect(checkPreparedApiPermission).not.toHaveBeenCalled();
+      expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each([
+    ["SettingService/GetSetting", { name: "settings/AI" }],
+    ["ProjectService/SearchProjects", {}],
+    [
+      "PlanService/UpdatePlan",
+      {
+        plan: { name: "projects/other/plans/12", title: "Other" },
+        updateMask: "title",
+      },
+    ],
+  ])(
+    "rejects unprovable or foreign diagnostic scope for %s before approval",
+    async (operationId, body) => {
+      const result = await createToolExecutor({} as AppRouterInstance, {
+        capability,
+        chatId: "diagnostic",
+        userName: "users/1",
+      })("call_api", { operationId, body }, "outside");
+      expect(result).toMatchObject({
+        kind: "tool_result",
+        result: expect.stringMatching(
+          /(?:diagnostic|project).*scope|outside.*project/i
+        ),
+      });
+      expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+      expect(checkPreparedApiPermission).not.toHaveBeenCalled();
+    }
+  );
+
+  test("rejects an unknown diagnostic operation without asking for approval", async () => {
+    const result = await createToolExecutor({} as AppRouterInstance, {
       capability,
       chatId: "diagnostic",
       userName: "users/1",
-    });
-    const result = await executor(
+    })(
       "call_api",
-      { operationId, body: { name: capability.resource.name } },
-      "blocked"
+      {
+        operationId: "UnknownService/Unknown",
+        body: { name: capability.resource.name },
+      },
+      "unknown"
     );
     expect(result).toMatchObject({
       kind: "tool_result",
-      result: expect.stringMatching(/diagnostic/i),
+      result: expect.stringMatching(/unknown|not found/i),
     });
     expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
     expect(checkPreparedApiPermission).not.toHaveBeenCalled();
   });
+
+  test.each(["plan", "issue", "database"] as const)(
+    "approves exactly one API call without changing the bound %s",
+    async (kind) => {
+      const bound = {
+        kind: "diagnostic" as const,
+        resource: {
+          kind,
+          name:
+            kind === "database"
+              ? "instances/primary/databases/app"
+              : `projects/referenced/${kind}s/12`,
+          project: "projects/referenced",
+          label: "Recorded problem",
+        },
+      };
+      databaseApi.getDatabase.mockResolvedValue({
+        name: "instances/primary/databases/app",
+        project: "projects/referenced",
+      });
+      const identity = {
+        chatId: "diagnostic",
+        userName: "users/1",
+        toolCallId: "diagnostic-write",
+      };
+      const result = await createToolExecutor({} as AppRouterInstance, {
+        ...identity,
+        capability: bound,
+      })(
+        "call_api",
+        {
+          operationId: "ProjectService/UpdateProject",
+          body: {
+            project: { name: "projects/referenced", title: "Corrected title" },
+            updateMask: "title",
+          },
+        },
+        identity.toolCallId
+      );
+      expect(result.kind).toBe("ask_user");
+      if (result.kind !== "ask_user" || !result.ask.apiPermission)
+        throw new Error("Expected API approval");
+      expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+      const actionId = result.ask.apiPermission.actionId;
+      const context = {
+        ...identity,
+        scopeKey: "scope",
+        rootUserMessageId: "question",
+        runId: "run",
+        logicalActionId: actionId,
+        isCurrent: () => true,
+        beginAgentApiAttempt: vi.fn(),
+        settleAgentApiAttempt: vi.fn(),
+      };
+      await expect(
+        resolvePendingApiCall({
+          ...identity,
+          actionId,
+          capability: bound,
+          context,
+          approved: true,
+        })
+      ).resolves.toBe("call_api");
+      expect(dispatchPreparedApiCall).toHaveBeenCalledOnce();
+      expect(dispatchPreparedApiCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operationId: "bytebase.v1.ProjectService.UpdateProject",
+          body: JSON.stringify({
+            project: { name: "projects/referenced", title: "Corrected title" },
+            updateMask: "title",
+          }),
+        }),
+        expect.objectContaining({
+          context,
+          isScopeCurrent: expect.any(Function),
+        })
+      );
+      expect(
+        getPendingApiCallPreview({ ...identity, actionId })
+      ).toBeUndefined();
+      await expect(
+        resolvePendingApiCall({
+          ...identity,
+          actionId,
+          capability: bound,
+          context,
+          approved: true,
+        })
+      ).resolves.toContain("already used");
+      expect(dispatchPreparedApiCall).toHaveBeenCalledOnce();
+    }
+  );
 
   test.each(["PlanService/GetPlan", "RolloutService/GetTaskRun"])(
     "allows scoped read %s and keeps the original project",
@@ -1891,7 +2169,7 @@ describe("diagnostic capability", () => {
       const name =
         operationId === "PlanService/GetPlan"
           ? capability.resource.name
-          : "projects/referenced/rollouts/12/stages/prod/tasks/1/taskRuns/1";
+          : "projects/referenced/plans/12/rollout/stages/prod/tasks/1/taskRuns/1";
       await expect(
         executor("call_api", { operationId, body: { name } }, "read")
       ).resolves.toEqual({ kind: "tool_result", result: "call_api" });
@@ -3401,7 +3679,7 @@ describe("agent tools referenced project", () => {
           path: "/bytebase.v1.SQLService/Query",
           body: preview?.body,
         },
-        { context, signal: undefined }
+        { context, signal: undefined, isScopeCurrent: expect.any(Function) }
       );
     }
   );

@@ -2915,6 +2915,8 @@ describe("durable run recovery", () => {
     mockStorage.setItem(otherKey, other);
     const draft = { text: "Keep this draft" };
     s(store).setDraft(chat.id, draft);
+    // Cancel the debounced save before this test's storage is replaced.
+    s(store).saveState();
     expect(await s(store).flushRunPersistence()).toBe(true);
     expect(await s(store).checkAgentStorageAdmission()).toBe(false);
     expect(s(store).storagePressure).toMatchObject({
@@ -5259,6 +5261,161 @@ describe("diagnostic chat capability", () => {
   });
   const persistedState = () =>
     JSON.parse(mockStorage.getItem(getAgentStateKey(workspaceName))!);
+
+  const createDispatch = (capability?: AgentDiagnosticCapability) => {
+    setAppIdentity({ user: `users/${TEST_USER_EMAIL}` });
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName);
+    const chat = s(store).createChat({ capability });
+    const root = s(store).addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "Inspect the resource",
+    })!;
+    s(store).startChatRun(chat.id, undefined, { runId: "dispatch-run" });
+    const identity = {
+      chatId: chat.id,
+      runId: "dispatch-run",
+      rootUserMessageId: root.id,
+      toolCallId: "call",
+      logicalActionId: "approval",
+    };
+    return { store, chat, identity };
+  };
+
+  const replaceCapability = (
+    store: StoreApi<AgentState>,
+    chatId: string,
+    capability: unknown
+  ) => {
+    // Keep persistence rebasing from restoring the original capability.
+    vi.stubGlobal("localStorage", undefined);
+    store.setState({
+      chats: s(store).chats.map((chat) =>
+        chat.id === chatId
+          ? { ...chat, capability: capability as AgentDiagnosticCapability }
+          : chat
+      ),
+    });
+  };
+
+  test("keeps a diagnostic API dispatch context current for its captured resource", () => {
+    const { store, chat, identity } = createDispatch(diagnosticCapability());
+    const context = s(store).createApiDispatchContext(identity);
+
+    expect(context?.isCurrent()).toBe(true);
+    const capability = diagnosticCapability();
+    capability.resource.label = "Renamed plan";
+    replaceCapability(store, chat.id, capability);
+    expect(context?.isCurrent()).toBe(true);
+  });
+
+  test("captures a copy before an in-place diagnostic resource mutation", () => {
+    const { store, chat, identity } = createDispatch(diagnosticCapability());
+    let resourceName = "projects/example/plans/42";
+    const capability: AgentDiagnosticCapability = {
+      kind: "diagnostic",
+      resource: {
+        ...diagnosticCapability().resource,
+        get name() {
+          return resourceName;
+        },
+      },
+    };
+    replaceCapability(store, chat.id, capability);
+    const context = s(store).createApiDispatchContext(identity);
+    expect(context?.isCurrent()).toBe(true);
+
+    resourceName = "projects/example/plans/99";
+
+    expect(s(store).getChat(chat.id)?.capability?.resource.name).toBe(
+      "projects/example/plans/99"
+    );
+    expect(context?.isCurrent()).toBe(false);
+  });
+
+  test.each([
+    undefined,
+    null,
+    { kind: "diagnostic" },
+    {
+      kind: "diagnostic",
+      resource: {
+        kind: "plan",
+        name: "projects/example/plans/99",
+        project: "projects/example",
+        label: "Other plan",
+      },
+    },
+    {
+      kind: "diagnostic",
+      resource: {
+        kind: "issue",
+        name: "projects/example/issues/42",
+        project: "projects/example",
+        label: "Issue",
+      },
+    },
+  ])("invalidates an API dispatch when capability becomes %j", (capability) => {
+    const { store, chat, identity } = createDispatch(diagnosticCapability());
+    const context = s(store).createApiDispatchContext(identity);
+    expect(context?.isCurrent()).toBe(true);
+
+    replaceCapability(store, chat.id, capability);
+
+    expect(context?.isCurrent()).toBe(false);
+  });
+
+  test("keeps an ordinary API dispatch current until diagnostic scope is added", () => {
+    const { store, chat, identity } = createDispatch();
+    const context = s(store).createApiDispatchContext(identity);
+    expect(context?.isCurrent()).toBe(true);
+
+    replaceCapability(store, chat.id, diagnosticCapability());
+
+    expect(context?.isCurrent()).toBe(false);
+  });
+
+  test.each([null, {}, { kind: "diagnostic" }])(
+    "rejects a malformed diagnostic capability before creating a context: %j",
+    (capability) => {
+      const { store, chat, identity } = createDispatch();
+      replaceCapability(store, chat.id, capability);
+
+      expect(s(store).createApiDispatchContext(identity)).toBeNull();
+    }
+  );
+
+  test("rejects a dispatch context for a missing chat", () => {
+    const { store, identity } = createDispatch(diagnosticCapability());
+
+    expect(
+      s(store).createApiDispatchContext({ ...identity, chatId: "missing" })
+    ).toBeNull();
+  });
+
+  test.each(["actor", "workspace", "run", "archive", "chat"])(
+    "invalidates a diagnostic API dispatch after its %s changes",
+    (change) => {
+      const { store, chat, identity } = createDispatch(diagnosticCapability());
+      const context = s(store).createApiDispatchContext(identity);
+      expect(context?.isCurrent()).toBe(true);
+
+      if (change === "actor") {
+        setAppIdentity({ user: "users/other@example.com" });
+      } else if (change === "workspace") {
+        setAppIdentity({ workspace: "workspaces/other" });
+      } else if (change === "run") {
+        s(store).startChatRun(chat.id, undefined, { runId: "other-run" });
+      } else if (change === "archive") {
+        s(store).archiveChat(chat.id);
+      } else {
+        s(store).deleteChat(chat.id);
+      }
+
+      expect(context?.isCurrent()).toBe(false);
+    }
+  );
 
   test("copies and normalizes the resource before storing a new chat", () => {
     const store = createAgentStore();

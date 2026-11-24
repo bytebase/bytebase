@@ -38,7 +38,10 @@ import {
   supportsAgentChatProtection,
   withAgentChatEvictionLease,
 } from "../logic/chatProtection";
-import { normalizeAgentDiagnosticCapability } from "../logic/diagnosticCapability";
+import {
+  normalizeAgentDiagnosticCapability,
+  sameAgentDiagnosticCapability,
+} from "../logic/diagnosticCapability";
 import type {
   AgentExpressionDraftMode,
   AgentExpressionDraftTarget,
@@ -4505,6 +4508,12 @@ export const createAgentStore = () => {
           if (!scopeKey || !ownsApiScope(get(), scopeKey)) return null;
           const userName = useAppStore.getState().currentUser?.name;
           if (!userName) return null;
+          const chat = _getChat(identity.chatId);
+          if (!chat) return null;
+          const capability = normalizeAgentDiagnosticCapability(
+            chat.capability
+          );
+          if (chat.capability !== undefined && !capability) return null;
           const context = { ...identity, scopeKey, userName };
           const revision = scopeRevision;
           const appScope = getAppApiScope();
@@ -4521,7 +4530,7 @@ export const createAgentStore = () => {
                 sameScope() &&
                 !!chat &&
                 !chat.archived &&
-                !chat.capability &&
+                sameAgentDiagnosticCapability(capability, chat.capability) &&
                 chat.status === "running" &&
                 chat.runId === identity.runId
               );

@@ -333,6 +333,8 @@ describe("getAgentApiRecoveryGuidance", () => {
       expect(guidance).not.toContain(
         "Suggest one evidence-supported next step"
       );
+      expect(guidance).toContain("one-time approval");
+      expect(guidance).not.toContain("original read-only scope");
     }
   );
 
