@@ -104,10 +104,11 @@ func init() {
 		TableTextFieldsTotalLength:                mysqlv1review.TableTextFieldsTotalLength,
 	})
 
-	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
-		advisor.NewMySQLPriorBackupAdvisor(e, storepb.Engine_MYSQL, func(node ast.Node, text string) mysqlv1review.PriorBackupStatement {
+	advisor.RegisterRules(storepb.Engine_MYSQL, map[storepb.SQLReviewRule_Type]advisor.Advisor{
+		storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK: advisor.NewMySQLPriorBackupAdvisor(e, storepb.Engine_MYSQL, func(node ast.Node, text string) mysqlv1review.PriorBackupStatement {
 			return mysqlv1review.PriorBackupStatement{Node: node, Text: text}
-		}, mysqlv1review.PriorBackupCheck))
+		}, mysqlv1review.PriorBackupCheck),
+	})
 }
 
 func hasAlterCmd(node ast.Node, match func(*ast.AlterTableCmd) bool) bool {

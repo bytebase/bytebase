@@ -28,26 +28,11 @@ func init() {
 }
 
 // AST wraps an omni MongoDB AST node and implements the base.AST interface.
-type AST struct {
-	Node          ast.Node
-	StartPosition *storepb.Position
-}
-
-// ASTStartPosition implements base.AST.
-func (a *AST) ASTStartPosition() *storepb.Position {
-	return a.StartPosition
-}
+type AST = base.NodeAST[ast.Node]
 
 // GetNode extracts the omni AST node from a base.AST interface.
 func GetNode(a base.AST) (ast.Node, bool) {
-	if a == nil {
-		return nil, false
-	}
-	wrapped, ok := a.(*AST)
-	if !ok {
-		return nil, false
-	}
-	return wrapped.Node, true
+	return base.ExtractNode[ast.Node](a)
 }
 
 // SplitSQL splits the input into multiple MongoDB statements.

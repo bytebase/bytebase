@@ -37,30 +37,11 @@ func init() {
 }
 
 // AST wraps an omni AST node and implements the base.AST interface.
-type AST struct {
-	// Node is the omni AST node (e.g. *ast.SelectStmt, *ast.CreateTableStmt).
-	Node ast.Node
-	// Text is the original SQL text of this statement.
-	Text string
-	// StartPosition is the 1-based position where this statement starts.
-	StartPosition *storepb.Position
-}
-
-// ASTStartPosition implements base.AST.
-func (a *AST) ASTStartPosition() *storepb.Position {
-	return a.StartPosition
-}
+type AST = base.NodeAST[ast.Node]
 
 // GetNode extracts the omni AST node from a base.AST interface.
 func GetNode(a base.AST) (ast.Node, bool) {
-	if a == nil {
-		return nil, false
-	}
-	wrapped, ok := a.(*AST)
-	if !ok {
-		return nil, false
-	}
-	return wrapped.Node, true
+	return base.ExtractNode[ast.Node](a)
 }
 
 // Version is an Oracle release, such as 12.2.
@@ -116,11 +97,9 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 
 // Diagnose returns the script's first syntax error as a diagnostic.
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	var syntaxErr *base.SyntaxError
-	if e := analysis.Diagnose(statement); e != nil {
-		syntaxErr = base.SyntaxErrorAtOffset(e.Text, e.Offset, e.Message)
-	}
-	return base.DiagnoseSyntaxError(statement, syntaxErr), nil
+	return base.DiagnoseFirstError(statement, analysis.Diagnose(statement), func(e *analysis.SyntaxError) (string, int, string) {
+		return e.Text, e.Offset, e.Message
+	}), nil
 }
 
 // Completion returns Oracle auto-completion candidates backed by omni's

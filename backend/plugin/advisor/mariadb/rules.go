@@ -80,10 +80,11 @@ func init() {
 		TableRequirePK:                      mariadbv1review.TableRequirePK,
 	})
 
-	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
-		advisor.NewMySQLPriorBackupAdvisor(e, storepb.Engine_MARIADB, func(node ast.Node, text string) mariadbv1review.PriorBackupStatement {
+	advisor.RegisterRules(storepb.Engine_MARIADB, map[storepb.SQLReviewRule_Type]advisor.Advisor{
+		storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK: advisor.NewMySQLPriorBackupAdvisor(e, storepb.Engine_MARIADB, func(node ast.Node, text string) mariadbv1review.PriorBackupStatement {
 			return mariadbv1review.PriorBackupStatement{Node: node, Text: text}
-		}, mariadbv1review.PriorBackupCheck))
+		}, mariadbv1review.PriorBackupCheck),
+	})
 }
 
 func hasAlterCmd(node ast.Node, match func(*ast.AlterTableCmd) bool) bool {

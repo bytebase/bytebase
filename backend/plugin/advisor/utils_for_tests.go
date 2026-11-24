@@ -324,8 +324,8 @@ var (
 	}
 )
 
-// TestCase is the data struct for test.
-type TestCase struct {
+// testCase is the data struct for advisor YAML test fixtures.
+type testCase struct {
 	Statement string            `yaml:"statement"`
 	Want      []*storepb.Advice `yaml:"want,omitempty"`
 }
@@ -336,7 +336,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 	require.NotNil(t, rule, "rule must not be nil")
 	require.NotEqual(t, storepb.SQLReviewRule_TYPE_UNSPECIFIED, rule.Type, "rule type must be specified")
 
-	var tests []TestCase
+	var tests []testCase
 
 	fileName := strings.Map(func(r rune) rune {
 		switch r {

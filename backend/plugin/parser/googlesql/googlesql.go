@@ -145,15 +145,7 @@ func SplitSQL(statement string, cfg Config) ([]base.Statement, error) {
 
 // AST wraps one omni GoogleSQL statement node so it satisfies base.AST. Node is
 // nil when omni could not parse the statement.
-type AST struct {
-	Node          ast.Node
-	StartPosition *storepb.Position
-}
-
-// ASTStartPosition implements base.AST.
-func (a *AST) ASTStartPosition() *storepb.Position {
-	return a.StartPosition
-}
+type AST = base.NodeAST[ast.Node]
 
 // ParseStatements splits the input with the dialect's splitter and parses each
 // statement into an omni AST node.

@@ -33,24 +33,11 @@ func init() {
 }
 
 // AST wraps an omni/tidb AST node and implements the base.AST interface.
-type AST struct {
-	Node          ast.Node
-	Text          string
-	StartPosition *storepb.Position
-}
-
-// ASTStartPosition implements base.AST.
-func (a *AST) ASTStartPosition() *storepb.Position {
-	return a.StartPosition
-}
+type AST = base.NodeAST[ast.Node]
 
 // GetNode extracts the omni AST node from a base.AST interface.
 func GetNode(a base.AST) (ast.Node, bool) {
-	wrapped, ok := a.(*AST)
-	if !ok || wrapped == nil {
-		return nil, false
-	}
-	return wrapped.Node, true
+	return base.ExtractNode[ast.Node](a)
 }
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.

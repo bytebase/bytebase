@@ -16,6 +16,35 @@ type AST interface {
 	ASTStartPosition() *storepb.Position
 }
 
+// NodeAST wraps an engine-specific AST node with its original SQL text and
+// 1-based start position, implementing AST and the schema walk-through's
+// ASTSource accessor.
+type NodeAST[N any] struct {
+	Node          N
+	Text          string
+	StartPosition *storepb.Position
+}
+
+// ASTSource returns the statement's original SQL text.
+func (a *NodeAST[N]) ASTSource() string {
+	return a.Text
+}
+
+// ASTStartPosition implements AST.
+func (a *NodeAST[N]) ASTStartPosition() *storepb.Position {
+	return a.StartPosition
+}
+
+// ExtractNode unwraps the engine-specific AST node from a *NodeAST[N].
+func ExtractNode[N any](a AST) (N, bool) {
+	var zero N
+	wrapped, ok := a.(*NodeAST[N])
+	if !ok || wrapped == nil {
+		return zero, false
+	}
+	return wrapped.Node, true
+}
+
 // Statement is the result of splitting SQL (text + positions, no AST).
 type Statement struct {
 	// Text is the SQL text content.

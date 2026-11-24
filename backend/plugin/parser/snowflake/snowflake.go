@@ -30,30 +30,12 @@ func init() {
 }
 
 // AST wraps an omni AST node and implements the base.AST interface.
-type AST struct {
-	// Node is the omni AST node for this statement (e.g. *ast.SelectStmt).
-	Node omniast.Node
-	// Text is the original SQL text of this statement.
-	Text string
-	// StartPosition is the 1-based position where this statement starts.
-	StartPosition *storepb.Position
-}
-
-// ASTStartPosition implements base.AST.
-func (a *AST) ASTStartPosition() *storepb.Position {
-	return a.StartPosition
-}
+type AST = base.NodeAST[omniast.Node]
 
 // GetNode extracts the omni AST node from a base.AST interface.
 func GetNode(a base.AST) (omniast.Node, bool) {
-	if a == nil {
-		return nil, false
-	}
-	wrapper, ok := a.(*AST)
-	if !ok || wrapper.Node == nil {
-		return nil, false
-	}
-	return wrapper.Node, true
+	node, ok := base.ExtractNode[omniast.Node](a)
+	return node, ok && node != nil
 }
 
 // SplitSQL splits the input into statements, each with its trailing ';'.

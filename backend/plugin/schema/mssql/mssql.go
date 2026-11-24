@@ -347,12 +347,12 @@ func reconcileSkipDump(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, case
 		schema.SkipDump = false
 	}
 	for _, oldSchema := range oldOut.GetSchemas() {
-		if schemaByName(newOut, oldSchema.GetName(), normalize) == nil {
+		if findByName(newOut.GetSchemas(), oldSchema.GetName(), normalize) == nil {
 			clearSkipDump(oldSchema)
 		}
 	}
 	for _, oldSchema := range oldOut.GetSchemas() {
-		newSchema := schemaByName(newOut, oldSchema.GetName(), normalize)
+		newSchema := findByName(newOut.GetSchemas(), oldSchema.GetName(), normalize)
 		if newSchema == nil {
 			continue
 		}
@@ -378,12 +378,12 @@ func reconcileSkipDump(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, case
 			func(s *metadatapb.SequenceMetadata) { s.SkipDump = false })
 	}
 	for _, newSchema := range newOut.GetSchemas() {
-		oldSchema := schemaByName(oldOut, newSchema.GetName(), normalize)
+		oldSchema := findByName(oldOut.GetSchemas(), newSchema.GetName(), normalize)
 		if oldSchema == nil {
 			continue
 		}
 		for _, table := range newSchema.GetTables() {
-			oldTable := tableByName(oldSchema, table.GetName(), normalize)
+			oldTable := findByName(oldSchema.GetTables(), table.GetName(), normalize)
 			if oldTable == nil {
 				continue
 			}
@@ -393,7 +393,7 @@ func reconcileSkipDump(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, case
 				func(t *metadatapb.TriggerMetadata) { t.SkipDump = false })
 		}
 		for _, view := range newSchema.GetViews() {
-			oldView := viewByName(oldSchema, view.GetName(), normalize)
+			oldView := findByName(oldSchema.GetViews(), view.GetName(), normalize)
 			if oldView == nil {
 				continue
 			}
@@ -466,31 +466,15 @@ func clearSkipDump(schema *metadatapb.SchemaMetadata) {
 	}
 }
 
-func tableByName(schema *metadatapb.SchemaMetadata, name string, normalize func(string) string) *metadatapb.TableMetadata {
-	for _, table := range schema.GetTables() {
-		if normalize(table.GetName()) == normalize(name) {
-			return table
+func findByName[T interface{ GetName() string }](items []T, name string, normalize func(string) string) T {
+	want := normalize(name)
+	for _, item := range items {
+		if normalize(item.GetName()) == want {
+			return item
 		}
 	}
-	return nil
-}
-
-func viewByName(schema *metadatapb.SchemaMetadata, name string, normalize func(string) string) *metadatapb.ViewMetadata {
-	for _, view := range schema.GetViews() {
-		if normalize(view.GetName()) == normalize(name) {
-			return view
-		}
-	}
-	return nil
-}
-
-func schemaByName(meta *metadatapb.DatabaseSchemaMetadata, name string, normalize func(string) string) *metadatapb.SchemaMetadata {
-	for _, schema := range meta.GetSchemas() {
-		if normalize(schema.GetName()) == normalize(name) {
-			return schema
-		}
-	}
-	return nil
+	var zero T
+	return zero
 }
 
 // diffMetadataMigration diffs two synced snapshots with omni's catalog. The

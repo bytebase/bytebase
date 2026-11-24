@@ -132,11 +132,6 @@ func (f Func) Check(ctx context.Context, checkCtx Context) ([]*storepb.Advice, e
 	return f(ctx, checkCtx)
 }
 
-// RegisterFunc registers fn as the advisor for dbType and ruleType.
-func RegisterFunc(dbType storepb.Engine, ruleType storepb.SQLReviewRule_Type, fn Func) {
-	Register(dbType, ruleType, fn)
-}
-
 // RegisterRules registers every rule in rules for dbType.
 func RegisterRules(dbType storepb.Engine, rules map[storepb.SQLReviewRule_Type]Advisor) {
 	for ruleType, a := range rules {

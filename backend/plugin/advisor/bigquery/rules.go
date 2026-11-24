@@ -14,16 +14,12 @@ import (
 
 	// Registers the BigQuery parser so ParseStatements resolves the engine.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"
-	"github.com/bytebase/bytebase/backend/plugin/parser/googlesql"
 )
 
 func init() {
 	extract := advisor.NodeExtractor(func(a base.AST) (omniast.Node, bool) {
-		ast, ok := a.(*googlesql.AST)
-		if !ok || ast.Node == nil {
-			return nil, false
-		}
-		return ast.Node, true
+		node, ok := base.ExtractNode[omniast.Node](a)
+		return node, ok && node != nil
 	})
 	byteOffsetLine := func(sql string, offset int) int32 {
 		if offset <= 0 {
@@ -36,6 +32,11 @@ func init() {
 	}
 	e := advisor.NewV1Engine(extract, byteOffsetLine, advisor.V1PosFindingOrFirstLine)
 
-	advisor.RegisterFunc(storepb.Engine_BIGQUERY, storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE,
-		e.SimpleStmt(googlesqlv1review.StatementWhereRequireUpdateDelete, code.StatementNoWhere, e.FmtName("WHERE clause is required for %s statement.")))
+	advisor.RegisterRules(storepb.Engine_BIGQUERY, map[storepb.SQLReviewRule_Type]advisor.Advisor{
+		storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE: e.SimpleStmt(
+			googlesqlv1review.StatementWhereRequireUpdateDelete,
+			code.StatementNoWhere,
+			e.FmtName("WHERE clause is required for %s statement."),
+		),
+	})
 }
