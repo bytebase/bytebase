@@ -21,14 +21,16 @@ import (
 // 1:1 to database users (covered by GetDatabaseDefinition), and sequence
 // rendering is not yet wired through GetSchemaString.
 func init() {
-	schema.RegisterGetDatabaseMetadata(storepb.Engine_ORACLE, GetDatabaseMetadata)
-	schema.RegisterDefinitions(schema.Definitions{
-		Database:         GetDatabaseDefinition,
-		Table:            GetTableDefinition,
-		View:             GetViewDefinition,
-		MaterializedView: GetMaterializedViewDefinition,
-		Function:         GetFunctionDefinition,
-		Procedure:        GetProcedureDefinition,
+	schema.Register(schema.Engine{
+		Definitions: schema.Definitions{
+			Database:         GetDatabaseDefinition,
+			Table:            GetTableDefinition,
+			View:             GetViewDefinition,
+			MaterializedView: GetMaterializedViewDefinition,
+			Function:         GetFunctionDefinition,
+			Procedure:        GetProcedureDefinition,
+		},
+		DatabaseMetadata: GetDatabaseMetadata,
 	}, storepb.Engine_ORACLE)
 	omnicatalog.RegisterMetadataMigration(storepb.Engine_ORACLE, oracleCatalog)
 }

@@ -28,16 +28,5 @@ func getMigrationSearchPath(d *model.DatabaseMetadata) []string {
 	if d == nil {
 		return nil
 	}
-	configured := model.ParsePGConfiguredSearchPathIncludingSystem(d.GetProto().GetSearchPath())
-	searchPath := make([]string, 0, len(configured))
-	for _, item := range configured {
-		if item.CurrentUser {
-			searchPath = append(searchPath, "$user")
-			continue
-		}
-		if item.Schema != "" {
-			searchPath = append(searchPath, item.Schema)
-		}
-	}
-	return searchPath
+	return formatSearchPath(model.ParsePGConfiguredSearchPathIncludingSystem(d.GetProto().GetSearchPath()))
 }

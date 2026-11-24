@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bytebase/omni/pg/ast"
 	ghostbase "github.com/github/gh-ost/go/base"
 	"github.com/github/gh-ost/go/logic"
 	gomysql "github.com/go-sql-driver/mysql"
@@ -990,27 +989,7 @@ func getPrependStatements(engine storepb.Engine, statement string) (string, erro
 	if engine != storepb.Engine_POSTGRES {
 		return "", nil
 	}
-
-	stmts, err := pg.ParsePg(statement)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to parse statement")
-	}
-
-	for _, stmt := range stmts {
-		varSet, ok := stmt.AST.(*ast.VariableSetStmt)
-		if !ok {
-			continue
-		}
-		if strings.EqualFold(varSet.Name, "role") || strings.EqualFold(varSet.Name, "search_path") {
-			text := strings.TrimSpace(stmt.Text)
-			if !strings.HasSuffix(text, ";") {
-				text += ";"
-			}
-			return text, nil
-		}
-	}
-
-	return "", nil
+	return pg.ExtractPrependStatement(statement)
 }
 
 func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, sheetContent string) (string, error) {

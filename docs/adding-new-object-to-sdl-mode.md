@@ -49,33 +49,32 @@ points, and keep the engine-specific deviations.
 
 ## 2. Wire the engine shim
 
-Each engine package registers its catalog entry points from `init()`. For an
-object that is only part of the whole-database definition, there is usually no
-new registration: the existing `RegisterGetDatabaseDefinition` function already
-delegates to the catalog's `DatabaseDefinition`, which now renders the object.
+Each engine package registers its catalog entry points from `init()` via
+`schema.Register(schema.Engine{...}, engines...)`. For an object that is only
+part of the whole-database definition, there is usually no new registration:
+the existing `Definitions.Database` handler already delegates to the catalog's
+`DatabaseDefinition`, which now renders the object.
 
-The registrations used by the schema path are:
+The `schema.Engine` capabilities used by the schema path are:
 
-- `RegisterGetDatabaseDefinition` and `GetDatabaseDefinition` for dump and
-  definition output.
-- `RegisterGetDatabaseMetadata` and `GetDatabaseMetadata` for parsing schema
-  text back into metadata.
-- `RegisterDiffMetadataMigration` and `DiffMigration` for metadata-to-metadata
-  migration, with the engine's catalog loaded through `LoadMetadata` or
-  `LoadMetadataInto`.
-- `RegisterDiffSDLMigration`, `DiffSDLMigration`, and `SDLMigration` for the
-  declarative path. `SDLMigration` converts the current metadata to SDL with
-  `MetadataToSDL`, then diffs it against the user's SDL.
-- `RegisterSDLDropAdvices` for destructive-operation warnings that the engine
-  emits from the migration plan.
-- `RegisterGetMultiFileDatabaseDefinition` for engines that support a
-  multi-file definition.
-- `RegisterDefinitions` (via `schema.Definitions`) for the per-object definition
-  endpoints (`Schema`, `Table`, `View`, `MaterializedView`, `Function`,
-  `Procedure`, `Sequence`) alongside `Database` and `MultiFileDatabase`.
+- `Definitions.Database` (`GetDatabaseDefinition`) for dump and definition output.
+- `Definitions.MultiFileDatabase` (`GetMultiFileDatabaseDefinition`) for engines
+  that support a multi-file definition.
+- `Definitions.{Schema,Table,View,MaterializedView,Function,Procedure,Sequence}`
+  for the per-object definition endpoints.
+- `DatabaseMetadata` (`GetDatabaseMetadata`) for parsing schema text back into
+  metadata.
+- `DiffMetadataMigration` (`DiffMigration`) for metadata-to-metadata migration,
+  with the engine's catalog loaded through `LoadMetadata` or `LoadMetadataInto`.
+- `DiffSDLMigration` (`DiffSDLMigration` and `SDLMigration`) for the declarative
+  path. `SDLMigration` converts the current metadata to SDL with `MetadataToSDL`,
+  then diffs it against the user's SDL.
+- `SDLDropAdvices` for destructive-operation warnings that the engine emits from
+  the migration plan.
+- `WalkThrough` (`WalkThroughWithContext`) for DDL simulation against the catalog.
 
-If the new object needs a new per-object definition endpoint, add a function
-type, registry map, `Definitions` field, and `Get...` entry point to
+If the new object needs a new per-object definition endpoint, add the field to
+`Definitions`, wire it in `mergeEngine`, and add a `Get...` entry point to
 `backend/plugin/schema/schema.go`, then register the engine's implementation in
 its `init()`. Do not add a Bytebase-side differ, chunk extractor, or generator;
 those responsibilities are in the catalog.

@@ -71,9 +71,6 @@ type Context struct {
 	DBType      storepb.Engine
 	SessionUser string
 
-	// Snowflake specific fields (duplicates CurrentDatabase, kept for compatibility).
-	// CurrentDatabase string
-
 	// Used for test only.
 	NoAppendBuiltin bool
 

@@ -120,7 +120,7 @@ func TestGetQuerySpanSeam(t *testing.T) {
 }
 
 func TestRedshiftQuerySpanEntrypointDoesNotDependOnANTLR(t *testing.T) {
-	content, err := os.ReadFile("query_span.go")
+	content, err := os.ReadFile("redshift.go")
 	require.NoError(t, err)
 	source := string(content)
 	require.NotContains(t, source, "github.com/antlr4-go/antlr/v4")

@@ -22,15 +22,17 @@ import (
 )
 
 func init() {
-	schema.RegisterDefinitions(schema.Definitions{
-		Database:          GetDatabaseDefinition,
-		Schema:            catalog.SchemaDefinition,
-		Table:             catalog.TableDefinition,
-		View:              catalog.ViewDefinition,
-		MaterializedView:  catalog.MaterializedViewDefinition,
-		Function:          catalog.FunctionDefinition,
-		Sequence:          catalog.SequenceDefinition,
-		MultiFileDatabase: GetMultiFileDatabaseDefinition,
+	schema.Register(schema.Engine{
+		Definitions: schema.Definitions{
+			Database:          GetDatabaseDefinition,
+			Schema:            catalog.SchemaDefinition,
+			Table:             catalog.TableDefinition,
+			View:              catalog.ViewDefinition,
+			MaterializedView:  catalog.MaterializedViewDefinition,
+			Function:          catalog.FunctionDefinition,
+			Sequence:          catalog.SequenceDefinition,
+			MultiFileDatabase: GetMultiFileDatabaseDefinition,
+		},
 	}, storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB)
 }
 

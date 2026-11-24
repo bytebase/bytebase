@@ -18,7 +18,7 @@ import (
 )
 
 func init() {
-	schema.RegisterWalkThrough(storepb.Engine_TIDB, WalkThrough)
+	schema.Register(schema.Engine{WalkThrough: WalkThroughWithContext}, storepb.Engine_TIDB)
 }
 
 var tidbWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
@@ -45,12 +45,12 @@ var tidbWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
 	},
 }
 
-// WalkThrough simulates the DDL in asts against the database state d using the
+// WalkThroughWithContext simulates the DDL in asts against the database state d using the
 // omni TiDB catalog, then replaces d with the resulting schema so downstream
 // advisor rules see the post-DDL metadata.
-func WalkThrough(d *model.DatabaseMetadata, asts []base.AST) *storepb.Advice {
+func WalkThroughWithContext(ctx context.Context, _ schema.WalkThroughContext, d *model.DatabaseMetadata, asts []base.AST) *storepb.Advice {
 	rawSQL, execASTs := tidbBuildRawSQL(asts)
-	return omnicatalog.RunWalkThrough(context.Background(), tidbWalkThroughEngine, rawSQL, d, asts, execASTs)
+	return omnicatalog.RunWalkThrough(ctx, tidbWalkThroughEngine, rawSQL, d, asts, execASTs)
 }
 
 func execCatalog(c *catalog.Catalog, sql string, continueOnError bool) ([]omnicatalog.ExecResult, error) {

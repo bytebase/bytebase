@@ -171,7 +171,7 @@ func buildMySQLFamilyAdvisors[N any](
 	}
 	addNumber := func(ruleType storepb.SQLReviewRule_Type, fn func([]N, int) []v1review.Finding, missingMsg string, positiveOnly bool, c code.Code, pos V1PosFunc[N], content func(V1Stmt[N], v1review.Finding, int) string) {
 		if fn != nil {
-			advisors[ruleType] = e.NumberStmtWithMsg(fn, missingMsg, positiveOnly, c, content, pos)
+			advisors[ruleType] = e.numberStmtWithMsg(fn, missingMsg, positiveOnly, c, content, pos)
 		}
 	}
 	addStringArray := func(ruleType storepb.SQLReviewRule_Type, fn func([]N, []string) []v1review.Finding, c code.Code, pos V1PosFunc[N], content func(V1Stmt[N], v1review.Finding) string) {

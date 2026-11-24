@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	schema.RegisterWalkThroughWithContext(storepb.Engine_OCEANBASE, WalkThroughWithContext)
+	schema.Register(schema.Engine{WalkThrough: WalkThroughWithContext}, storepb.Engine_OCEANBASE)
 }
 
 var oceanBaseWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{

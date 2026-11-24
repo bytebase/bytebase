@@ -313,11 +313,15 @@ func TestSDLAdviceHelpersAndInspectAST(t *testing.T) {
 	require.Equal(t, "replace f", replace.Content)
 
 	const testSDLEngine = storepb.Engine(99903)
-	schema.RegisterGetDatabaseDefinition(testSDLEngine, func(ctx schema.GetDefinitionContext, meta *metadatapb.DatabaseSchemaMetadata) (string, error) {
-		require.True(t, ctx.SkipBackupSchema)
-		require.True(t, ctx.SDLFormat)
-		return "source:" + meta.GetName(), nil
-	})
+	schema.Register(schema.Engine{
+		Definitions: schema.Definitions{
+			Database: func(ctx schema.GetDefinitionContext, meta *metadatapb.DatabaseSchemaMetadata) (string, error) {
+				require.True(t, ctx.SkipBackupSchema)
+				require.True(t, ctx.SDLFormat)
+				return "source:" + meta.GetName(), nil
+			},
+		},
+	}, testSDLEngine)
 	meta := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "app"}, nil, nil, testSDLEngine, true)
 
 	collectCalled := false

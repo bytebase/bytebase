@@ -79,8 +79,8 @@ type StatementTypeWithPosition struct {
 	Text string
 }
 
-// CollectUniqueStatementTypes returns the deduplicated set of statement types classified from asts.
-func CollectUniqueStatementTypes(asts []AST, classify func(AST) (storepb.StatementType, error)) ([]storepb.StatementType, error) {
+// collectUniqueStatementTypes returns the deduplicated set of statement types classified from asts.
+func collectUniqueStatementTypes(asts []AST, classify func(AST) (storepb.StatementType, error)) ([]storepb.StatementType, error) {
 	sqlTypeSet := make(map[storepb.StatementType]bool, len(asts))
 	for _, a := range asts {
 		typ, err := classify(a)
@@ -104,7 +104,7 @@ func CollectOmniStatementTypes[N any](
 	typeErr string,
 	classify func(N) omnianalysis.StatementType,
 ) ([]storepb.StatementType, error) {
-	return CollectUniqueStatementTypes(asts, func(a AST) (storepb.StatementType, error) {
+	return collectUniqueStatementTypes(asts, func(a AST) (storepb.StatementType, error) {
 		node, ok := getNode(a)
 		if !ok {
 			return 0, errors.New(typeErr)

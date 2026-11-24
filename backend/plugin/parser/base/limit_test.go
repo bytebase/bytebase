@@ -22,9 +22,13 @@ func TestStatementWithResultLimit(t *testing.T) {
 
 func TestRegisterResultLimitFuncPanicsOnDuplicate(t *testing.T) {
 	const engine = storepb.Engine(999999) // not a real engine; scoped to this test
-	RegisterResultLimitFunc(engine, func(statement string, _ int, _ string) string { return statement })
+	Register(Engine{
+		ResultLimit: func(statement string, _ int, _ string) string { return statement },
+	}, engine)
 	require.Panics(t, func() {
-		RegisterResultLimitFunc(engine, func(statement string, _ int, _ string) string { return statement })
+		Register(Engine{
+			ResultLimit: func(statement string, _ int, _ string) string { return statement },
+		}, engine)
 	})
 }
 

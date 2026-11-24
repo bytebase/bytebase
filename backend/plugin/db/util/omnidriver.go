@@ -56,15 +56,6 @@ type QueryResultOptions struct {
 	ConvertValue func(omnidriver.Value) *v1pb.RowValue
 }
 
-// OmniResultsToQueryResults converts a slice of omni driver results into API
-// QueryResults. When clearExplainPlan is true, QueryPlan is cleared so the API
-// layer stamps the plan format for explain requests.
-func OmniResultsToQueryResults(results []*omnidriver.Result, maxResultBytes int64, clearExplainPlan bool) []*v1pb.QueryResult {
-	return OmniResultsToQueryResultsWith(results, maxResultBytes, QueryResultOptions{
-		ClearExplainPlan: clearExplainPlan,
-	})
-}
-
 // OmniResultsToQueryResultsWith converts a slice of omni driver results into API
 // QueryResults according to opts.
 func OmniResultsToQueryResultsWith(results []*omnidriver.Result, maxResultBytes int64, opts QueryResultOptions) []*v1pb.QueryResult {

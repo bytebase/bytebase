@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"sync"
 	"unicode"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -23,31 +22,14 @@ import (
 // carry an error return only every driver would immediately discard.
 type ResultLimitFunc func(statement string, limit int, engineVersion string) string
 
-var (
-	limitMux   sync.Mutex
-	limitFuncs = make(map[storepb.Engine]ResultLimitFunc)
-)
-
-// RegisterResultLimitFunc registers how engine caps a statement's row count.
-// Only an engine whose driver enforces the cap in the SQL text registers here;
-// an engine with no entry runs the statement unchanged (see StatementWithResultLimit).
-func RegisterResultLimitFunc(engine storepb.Engine, f ResultLimitFunc) {
-	limitMux.Lock()
-	defer limitMux.Unlock()
-	if _, dup := limitFuncs[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	limitFuncs[engine] = f
-}
-
 // StatementWithResultLimit returns statement rewritten to return at most limit
 // rows, for engines that enforce the cap in SQL text. An engine with nothing
 // registered — because its driver caps rows another way (Hive trims by result
 // size; MongoDB, Redis and the other non-SQL stores have no row cap here at
 // all) — returns statement unchanged; callers do not need to ask first.
 func StatementWithResultLimit(engine storepb.Engine, statement string, limit int, engineVersion string) string {
-	f, ok := limitFuncs[engine]
-	if !ok {
+	f := engines[engine].ResultLimit
+	if f == nil {
 		return statement
 	}
 	return f(statement, limit, engineVersion)

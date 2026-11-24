@@ -30,17 +30,19 @@ func Register(engine storepb.Engine, cfg Config) Handlers {
 			return getQuerySpan(ctx, cfg, database, gCtx, stmt.Text)
 		},
 	}
-	base.RegisterSplitterFunc(engine, h.SplitSQL)
-	base.RegisterQueryValidator(engine, func(statement string) (bool, bool, error) {
-		return analysis.ValidateQuery(statement, cfg.Dialect)
-	})
-	base.RegisterDiagnoseFunc(engine, func(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-		return Diagnose(statement), nil
-	})
-	base.RegisterGetQuerySpan(engine, h.GetQuerySpan)
-	base.RegisterParseStatementsFunc(engine, func(statement string) ([]base.ParsedStatement, error) {
-		return ParseStatements(statement, cfg)
-	})
-	base.RegisterGetStatementTypes(engine, GetStatementTypes)
+	base.Register(base.Engine{
+		Split: h.SplitSQL,
+		Parse: func(statement string) ([]base.ParsedStatement, error) {
+			return ParseStatements(statement, cfg)
+		},
+		StatementTypes: GetStatementTypes,
+		Diagnose: func(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
+			return Diagnose(statement), nil
+		},
+		ValidateQuery: func(statement string) (bool, bool, error) {
+			return analysis.ValidateQuery(statement, cfg.Dialect)
+		},
+		QuerySpan: h.GetQuerySpan,
+	}, engine)
 	return h
 }

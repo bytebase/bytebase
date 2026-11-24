@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	schema.RegisterGetDatabaseMetadata(storepb.Engine_OCEANBASE, GetDatabaseMetadata)
+	schema.Register(schema.Engine{DatabaseMetadata: GetDatabaseMetadata}, storepb.Engine_OCEANBASE)
 }
 
 // GetDatabaseMetadata parses OceanBase MySQL-mode schema DDL text and returns

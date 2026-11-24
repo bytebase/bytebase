@@ -16,8 +16,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestOmniResultsToQueryResults(t *testing.T) {
-	require.Nil(t, OmniResultsToQueryResults(nil, 1024, false))
+func TestOmniResultsToQueryResultsWith(t *testing.T) {
+	require.Nil(t, OmniResultsToQueryResultsWith(nil, 1024, QueryResultOptions{}))
 
 	results := []*omnidriver.Result{
 		{
@@ -28,12 +28,12 @@ func TestOmniResultsToQueryResults(t *testing.T) {
 		},
 	}
 
-	withPlan := OmniResultsToQueryResults(results, 1024, false)
+	withPlan := OmniResultsToQueryResultsWith(results, 1024, QueryResultOptions{})
 	require.Len(t, withPlan, 1)
 	require.NotNil(t, withPlan[0].QueryPlan)
 	require.Equal(t, v1pb.QueryOption_JSON, withPlan[0].QueryPlan.Format)
 
-	withoutPlan := OmniResultsToQueryResults(results, 1024, true)
+	withoutPlan := OmniResultsToQueryResultsWith(results, 1024, QueryResultOptions{ClearExplainPlan: true})
 	require.Len(t, withoutPlan, 1)
 	require.Nil(t, withoutPlan[0].QueryPlan)
 

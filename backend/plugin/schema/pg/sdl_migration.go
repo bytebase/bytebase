@@ -13,12 +13,11 @@ import (
 )
 
 func init() {
-	schema.RegisterDiffSDLMigration(storepb.Engine_POSTGRES, pgDiffSDLMigration)
-	schema.RegisterDiffSDLMigration(storepb.Engine_COCKROACHDB, pgDiffSDLMigration)
-	schema.RegisterDiffMetadataMigration(storepb.Engine_POSTGRES, diffMetadataMigration)
-	schema.RegisterDiffMetadataMigration(storepb.Engine_COCKROACHDB, diffMetadataMigration)
-	schema.RegisterSDLDropAdvices(storepb.Engine_POSTGRES, pgSDLDropAdvices)
-	schema.RegisterSDLDropAdvices(storepb.Engine_COCKROACHDB, pgSDLDropAdvices)
+	schema.Register(schema.Engine{
+		DiffSDLMigration:      pgDiffSDLMigration,
+		DiffMetadataMigration: diffMetadataMigration,
+		SDLDropAdvices:        pgSDLDropAdvices,
+	}, storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB)
 }
 
 func buildMigrationPlan(sourceText, targetText string) (*catalog.MigrationPlan, error) {

@@ -11,7 +11,11 @@ import (
 func init() {
 	// MySQL-only for now: OceanBase is intentionally NOT registered pending validation
 	// against a live OceanBase oracle.
-	schema.RegisterGetMultiFileDatabaseDefinition(storepb.Engine_MYSQL, GetMultiFileDatabaseDefinition)
+	schema.Register(schema.Engine{
+		Definitions: schema.Definitions{
+			MultiFileDatabase: GetMultiFileDatabaseDefinition,
+		},
+	}, storepb.Engine_MYSQL)
 }
 
 // GetMultiFileDatabaseDefinition emits the database schema as one SDL file per object.

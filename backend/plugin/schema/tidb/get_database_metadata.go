@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	schema.RegisterGetDatabaseMetadata(storepb.Engine_TIDB, GetDatabaseMetadata)
+	schema.Register(schema.Engine{DatabaseMetadata: GetDatabaseMetadata}, storepb.Engine_TIDB)
 }
 
 // catalogDBName is the throwaway scratch database used when schemaText selects

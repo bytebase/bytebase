@@ -15,52 +15,9 @@ import (
 )
 
 var (
-	mux                             sync.Mutex
-	getDatabaseDefinitions          = make(map[storepb.Engine]getDatabaseDefinition)
-	getSchemaDefinitions            = make(map[storepb.Engine]getSchemaDefinition)
-	getTableDefinitions             = make(map[storepb.Engine]getTableDefinition)
-	getViewDefinitions              = make(map[storepb.Engine]getViewDefinition)
-	getMaterializedViewDefinitions  = make(map[storepb.Engine]getMaterializedViewDefinition)
-	getFunctionDefinitions          = make(map[storepb.Engine]getFunctionDefinition)
-	getProcedureDefinitions         = make(map[storepb.Engine]getProcedureDefinition)
-	getSequenceDefinitions          = make(map[storepb.Engine]getSequenceDefinition)
-	getDatabaseMetadataMap          = make(map[storepb.Engine]getDatabaseMetadata)
-	sdlDropAdvicesFns               = make(map[storepb.Engine]sdlDropAdvices)
-	diffSDLMigrations               = make(map[storepb.Engine]diffSDLMigration)
-	diffMetadataMigrations          = make(map[storepb.Engine]diffMetadataMigration)
-	getMultiFileDatabaseDefinitions = make(map[storepb.Engine]getMultiFileDatabaseDefinition)
-	walkThroughs                    = make(map[storepb.Engine]walkThrough)
-	walkThroughsWithContext         = make(map[storepb.Engine]walkThroughWithContext)
+	registryMu sync.Mutex
+	engines    = make(map[storepb.Engine]Engine)
 )
-
-type getDatabaseDefinition func(GetDefinitionContext, *metadatapb.DatabaseSchemaMetadata) (string, error)
-type getMultiFileDatabaseDefinition func(GetDefinitionContext, *metadatapb.DatabaseSchemaMetadata) (*MultiFileSchemaResult, error)
-type getSchemaDefinition func(*metadatapb.SchemaMetadata) (string, error)
-type getTableDefinition func(string, *metadatapb.TableMetadata, []*metadatapb.SequenceMetadata) (string, error)
-type getViewDefinition func(string, *metadatapb.ViewMetadata) (string, error)
-type getMaterializedViewDefinition func(string, *metadatapb.MaterializedViewMetadata) (string, error)
-type getFunctionDefinition func(string, *metadatapb.FunctionMetadata) (string, error)
-type getProcedureDefinition func(string, *metadatapb.ProcedureMetadata) (string, error)
-type getSequenceDefinition func(string, *metadatapb.SequenceMetadata) (string, error)
-type getDatabaseMetadata func(string) (*metadatapb.DatabaseSchemaMetadata, error)
-type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error)
-
-// diffSDLMigration computes migration SQL between two SDL texts. engineVersion is the
-// target server's version string (e.g. "8.0.32"); an engine may reject a version it
-// does not support (MySQL below 8.0), and engines that do not look at it (PostgreSQL)
-// take `_ string`. An empty or unparseable version is accepted.
-//
-// sessionCtx is the per-object session context (sql_mode / charset / collation, and
-// time_zone for events) captured on the SOURCE (current) schema. The declarative SDL
-// text is bare (a clean export carries no `SET sql_mode` framing), so the context that a
-// routine/trigger/event must be re-created under enters out-of-band here. Only MySQL
-// consumes it (to wrap recreates in a save/restore of the OLD object's context); other
-// engines have no session context and take a nil-safe `_`. A nil map means "no context"
-// (bare recreates) — the metadata↔metadata and SDL↔SDL callers pass nil.
-type diffSDLMigration func(sourceSDL, targetSDL, engineVersion string, sessionCtx *SDLSessionContextMap) (string, error)
-type diffMetadataMigration func(oldSchema, newSchema *model.DatabaseMetadata) (string, error)
-type walkThrough func(*model.DatabaseMetadata, []base.AST) *storepb.Advice
-type walkThroughWithContext func(context.Context, WalkThroughContext, *model.DatabaseMetadata, []base.AST) *storepb.Advice
 
 // WalkThroughContext carries optional session state into schema walk-through implementations.
 type WalkThroughContext struct {
@@ -90,7 +47,7 @@ type MultiFileSchemaResult struct {
 	Files []File
 }
 
-// Definitions groups the schema definition handlers an engine registers.
+// Definitions groups the schema definition renderers an engine registers.
 // Any nil field is skipped.
 type Definitions struct {
 	Database          func(GetDefinitionContext, *metadatapb.DatabaseSchemaMetadata) (string, error)
@@ -104,46 +61,98 @@ type Definitions struct {
 	Sequence          func(string, *metadatapb.SequenceMetadata) (string, error)
 }
 
-// RegisterDefinitions registers every non-nil handler in defs for each engine.
-func RegisterDefinitions(defs Definitions, engines ...storepb.Engine) {
-	for _, engine := range engines {
-		if defs.Database != nil {
-			RegisterGetDatabaseDefinition(engine, defs.Database)
-		}
-		if defs.MultiFileDatabase != nil {
-			RegisterGetMultiFileDatabaseDefinition(engine, defs.MultiFileDatabase)
-		}
-		if defs.Schema != nil {
-			register(getSchemaDefinitions, engine, defs.Schema)
-		}
-		if defs.Table != nil {
-			register(getTableDefinitions, engine, defs.Table)
-		}
-		if defs.View != nil {
-			register(getViewDefinitions, engine, defs.View)
-		}
-		if defs.MaterializedView != nil {
-			register(getMaterializedViewDefinitions, engine, defs.MaterializedView)
-		}
-		if defs.Function != nil {
-			register(getFunctionDefinitions, engine, defs.Function)
-		}
-		if defs.Procedure != nil {
-			register(getProcedureDefinitions, engine, defs.Procedure)
-		}
-		if defs.Sequence != nil {
-			register(getSequenceDefinitions, engine, defs.Sequence)
-		}
+// Engine defines the schema capabilities an engine plugin registers.
+// Any nil field is omitted. Separate Register calls may supply disjoint
+// capabilities for the same engine (for example, omnicatalog registers shared
+// definitions while engine packages add walkthrough or metadata extraction).
+type Engine struct {
+	Definitions
+	DatabaseMetadata func(string) (*metadatapb.DatabaseSchemaMetadata, error)
+	SDLDropAdvices   func(userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error)
+	// DiffSDLMigration computes migration SQL between two SDL texts.
+	// engineVersion is the target server's version string (e.g. "8.0.32");
+	// engines that do not inspect it accept "". sessionCtx carries per-object
+	// session context from the source schema for MySQL bare-SDL recreates;
+	// nil means bare recreates.
+	DiffSDLMigration      func(sourceSDL, targetSDL, engineVersion string, sessionCtx *SDLSessionContextMap) (string, error)
+	DiffMetadataMigration func(oldSchema, newSchema *model.DatabaseMetadata) (string, error)
+	WalkThrough           func(context.Context, WalkThroughContext, *model.DatabaseMetadata, []base.AST) *storepb.Advice
+}
+
+// Register registers every non-nil capability in spec for each target engine.
+// It panics if any capability is already registered for a target engine.
+func Register(spec Engine, targetEngines ...storepb.Engine) {
+	registryMu.Lock()
+	defer registryMu.Unlock()
+	for _, engine := range targetEngines {
+		cur := engines[engine]
+		mergeEngine(&cur, spec, engine)
+		engines[engine] = cur
 	}
 }
 
-func register[T any](registry map[storepb.Engine]T, engine storepb.Engine, f T) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := registry[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
+func mergeEngine(cur *Engine, spec Engine, engine storepb.Engine) {
+	checkDup := func(alreadySet bool, name string) {
+		if alreadySet {
+			panic(fmt.Sprintf("schema: %s registered twice for %s", name, engine))
+		}
 	}
-	registry[engine] = f
+	if spec.Database != nil {
+		checkDup(cur.Database != nil, "Database")
+		cur.Database = spec.Database
+	}
+	if spec.MultiFileDatabase != nil {
+		checkDup(cur.MultiFileDatabase != nil, "MultiFileDatabase")
+		cur.MultiFileDatabase = spec.MultiFileDatabase
+	}
+	if spec.Schema != nil {
+		checkDup(cur.Schema != nil, "Schema")
+		cur.Schema = spec.Schema
+	}
+	if spec.Table != nil {
+		checkDup(cur.Table != nil, "Table")
+		cur.Table = spec.Table
+	}
+	if spec.View != nil {
+		checkDup(cur.View != nil, "View")
+		cur.View = spec.View
+	}
+	if spec.MaterializedView != nil {
+		checkDup(cur.MaterializedView != nil, "MaterializedView")
+		cur.MaterializedView = spec.MaterializedView
+	}
+	if spec.Function != nil {
+		checkDup(cur.Function != nil, "Function")
+		cur.Function = spec.Function
+	}
+	if spec.Procedure != nil {
+		checkDup(cur.Procedure != nil, "Procedure")
+		cur.Procedure = spec.Procedure
+	}
+	if spec.Sequence != nil {
+		checkDup(cur.Sequence != nil, "Sequence")
+		cur.Sequence = spec.Sequence
+	}
+	if spec.DatabaseMetadata != nil {
+		checkDup(cur.DatabaseMetadata != nil, "DatabaseMetadata")
+		cur.DatabaseMetadata = spec.DatabaseMetadata
+	}
+	if spec.SDLDropAdvices != nil {
+		checkDup(cur.SDLDropAdvices != nil, "SDLDropAdvices")
+		cur.SDLDropAdvices = spec.SDLDropAdvices
+	}
+	if spec.DiffSDLMigration != nil {
+		checkDup(cur.DiffSDLMigration != nil, "DiffSDLMigration")
+		cur.DiffSDLMigration = spec.DiffSDLMigration
+	}
+	if spec.DiffMetadataMigration != nil {
+		checkDup(cur.DiffMetadataMigration != nil, "DiffMetadataMigration")
+		cur.DiffMetadataMigration = spec.DiffMetadataMigration
+	}
+	if spec.WalkThrough != nil {
+		checkDup(cur.WalkThrough != nil, "WalkThrough")
+		cur.WalkThrough = spec.WalkThrough
+	}
 }
 
 func notSupportedError(engine storepb.Engine, feature string) error {
@@ -153,75 +162,76 @@ func notSupportedError(engine storepb.Engine, feature string) error {
 	return errors.Errorf("engine %s is not supported for %s", engine, feature)
 }
 
-func call1[F ~func(A) (R, error), A, R any](registry map[storepb.Engine]F, engine storepb.Engine, a A) (R, error) {
-	f, ok := registry[engine]
-	if !ok {
-		var zero R
-		return zero, notSupportedError(engine, "")
-	}
-	return f(a)
-}
-
-func call2[F ~func(A, B) (R, error), A, B, R any](registry map[storepb.Engine]F, engine storepb.Engine, feature string, a A, b B) (R, error) {
-	f, ok := registry[engine]
-	if !ok {
-		var zero R
-		return zero, notSupportedError(engine, feature)
-	}
-	return f(a, b)
-}
-
-func call3[F ~func(A, B, C) (R, error), A, B, C, R any](registry map[storepb.Engine]F, engine storepb.Engine, feature string, a A, b B, c C) (R, error) {
-	f, ok := registry[engine]
-	if !ok {
-		var zero R
-		return zero, notSupportedError(engine, feature)
-	}
-	return f(a, b, c)
-}
-
 func GetSequenceDefinition(engine storepb.Engine, sequenceName string, sequence *metadatapb.SequenceMetadata) (string, error) {
-	return call2(getSequenceDefinitions, engine, "", sequenceName, sequence)
+	f := engines[engine].Sequence
+	if f == nil {
+		return "", notSupportedError(engine, "")
+	}
+	return f(sequenceName, sequence)
 }
 
 func GetFunctionDefinition(engine storepb.Engine, functionName string, function *metadatapb.FunctionMetadata) (string, error) {
-	return call2(getFunctionDefinitions, engine, "", functionName, function)
+	f := engines[engine].Function
+	if f == nil {
+		return "", notSupportedError(engine, "")
+	}
+	return f(functionName, function)
 }
 
 func GetProcedureDefinition(engine storepb.Engine, procedureName string, procedure *metadatapb.ProcedureMetadata) (string, error) {
-	return call2(getProcedureDefinitions, engine, "", procedureName, procedure)
+	f := engines[engine].Procedure
+	if f == nil {
+		return "", notSupportedError(engine, "")
+	}
+	return f(procedureName, procedure)
 }
 
 func GetMaterializedViewDefinition(engine storepb.Engine, viewName string, view *metadatapb.MaterializedViewMetadata) (string, error) {
-	return call2(getMaterializedViewDefinitions, engine, "", viewName, view)
+	f := engines[engine].MaterializedView
+	if f == nil {
+		return "", notSupportedError(engine, "")
+	}
+	return f(viewName, view)
 }
 
 func GetViewDefinition(engine storepb.Engine, viewName string, view *metadatapb.ViewMetadata) (string, error) {
-	return call2(getViewDefinitions, engine, "", viewName, view)
+	f := engines[engine].View
+	if f == nil {
+		return "", notSupportedError(engine, "")
+	}
+	return f(viewName, view)
 }
 
 func GetTableDefinition(engine storepb.Engine, tableName string, table *metadatapb.TableMetadata, sequences []*metadatapb.SequenceMetadata) (string, error) {
-	return call3(getTableDefinitions, engine, "", tableName, table, sequences)
+	f := engines[engine].Table
+	if f == nil {
+		return "", notSupportedError(engine, "")
+	}
+	return f(tableName, table, sequences)
 }
 
 func GetSchemaDefinition(engine storepb.Engine, schema *metadatapb.SchemaMetadata) (string, error) {
-	return call1(getSchemaDefinitions, engine, schema)
-}
-
-func RegisterGetDatabaseDefinition(engine storepb.Engine, f getDatabaseDefinition) {
-	register(getDatabaseDefinitions, engine, f)
+	f := engines[engine].Schema
+	if f == nil {
+		return "", notSupportedError(engine, "")
+	}
+	return f(schema)
 }
 
 func GetDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (string, error) {
-	return call2(getDatabaseDefinitions, engine, "", ctx, metadata)
-}
-
-func RegisterGetDatabaseMetadata(engine storepb.Engine, f getDatabaseMetadata) {
-	register(getDatabaseMetadataMap, engine, f)
+	f := engines[engine].Database
+	if f == nil {
+		return "", notSupportedError(engine, "")
+	}
+	return f(ctx, metadata)
 }
 
 func GetDatabaseMetadata(engine storepb.Engine, schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return call1(getDatabaseMetadataMap, engine, schemaText)
+	f := engines[engine].DatabaseMetadata
+	if f == nil {
+		return nil, notSupportedError(engine, "")
+	}
+	return f(schemaText)
 }
 
 // SDLSessionContext is the session state a routine/trigger/event was created under, as
@@ -251,13 +261,7 @@ type SDLSessionContextMap struct {
 }
 
 // buildSDLSessionContextMap extracts per-object session context from the synced current
-// schema. MySQL stores functions/procedures/events on the schema and triggers on their
-// owning table; a routine/trigger carries sql_mode/charset/collation and an event also
-// carries time_zone. Keys are lower-cased object names (matching omni's identity folding).
-// Returns nil only when there is no metadata to read; otherwise it returns an allocated
-// map (with empty submaps when the schema has no such objects), which the consumer applies
-// as "no context for any object". Engines without session context (their metadata leaves
-// these fields empty) still produce a map, but only MySQL's diff consumes it.
+// schema. Keys are lower-cased object names (matching omni's identity folding).
 func buildSDLSessionContextMap(currentSchema *model.DatabaseMetadata) *SDLSessionContextMap {
 	if currentSchema == nil {
 		return nil
@@ -297,11 +301,7 @@ func buildSDLSessionContextMap(currentSchema *model.DatabaseMetadata) *SDLSessio
 		}
 		for _, table := range sm.GetTables() {
 			for _, trigger := range table.GetTriggers() {
-				// Keyed by lower-cased name to match omni's trigger identity, which is
-				// itself lower-folded (catalog stores triggers as map[string]*Trigger by
-				// toLower(name)). Triggers whose names differ only by case therefore
-				// collapse to one entry — an inherited omni limitation, not introduced
-				// here; MySQL trigger names can be case-sensitive on lower_case_table_names=0.
+				// Keyed by lower-cased name to match omni's trigger identity folding.
 				m.Triggers[strings.ToLower(trigger.GetName())] = SDLSessionContext{
 					SQLMode:             trigger.GetSqlMode(),
 					CharacterSetClient:  trigger.GetCharacterSetClient(),
@@ -318,11 +318,6 @@ func buildSDLSessionContextMap(currentSchema *model.DatabaseMetadata) *SDLSessio
 // against the user SDL. engineVersion is the target server's version string (e.g.
 // "8.0.32"); MySQL returns an error for a server older than 8.0, and other engines
 // ignore it.
-//
-// The per-object session context (sql_mode/charset/collation, and event time_zone) is
-// extracted from currentSchema and threaded to the diff so MySQL re-creates a routine/
-// trigger/event under its ORIGINAL session context — the bare SDL source carries none.
-// Other engines ignore it.
 func SDLMigration(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) (string, error) {
 	sourceSDL, err := MetadataToSDL(engine, currentSchema)
 	if err != nil {
@@ -331,30 +326,27 @@ func SDLMigration(engine storepb.Engine, userSDLText string, currentSchema *mode
 	return diffSDLMigrationWithContext(engine, sourceSDL, userSDLText, engineVersion, buildSDLSessionContextMap(currentSchema))
 }
 
-func RegisterSDLDropAdvices(engine storepb.Engine, f sdlDropAdvices) {
-	register(sdlDropAdvicesFns, engine, f)
-}
-
 // SDLDropAdvices analyzes the SDL migration for destructive operations and returns warnings.
 // engineVersion is the target server's version string; MySQL reports a server older
 // than 8.0 as an error advice, and other engines ignore it.
 func SDLDropAdvices(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error) {
-	return call3(sdlDropAdvicesFns, engine, "SDL drop advices", userSDLText, currentSchema, engineVersion)
+	f := engines[engine].SDLDropAdvices
+	if f == nil {
+		return nil, notSupportedError(engine, "SDL drop advices")
+	}
+	return f(userSDLText, currentSchema, engineVersion)
 }
 
 // DiffMigration computes the migration SQL between two database metadata states.
-// Engines may register a metadata migration to avoid round-tripping synced
-// metadata through SDL text. Otherwise, engines with DiffSDLMigration registered
-// convert both sides to SDL and diff (no server version is available here, so the
-// engine's default stored form applies). An engine with neither registered cannot
-// produce a migration.
-//
-// MySQL diffs every server version as 8.0, the one stored form omni's catalog keeps.
+// Engines may register DiffMetadataMigration to avoid round-tripping synced
+// metadata through SDL text; otherwise engines with DiffSDLMigration convert
+// both sides to SDL and diff.
 func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-	if f, ok := diffMetadataMigrations[engine]; ok {
-		return f(oldSchema, newSchema)
+	e := engines[engine]
+	if e.DiffMetadataMigration != nil {
+		return e.DiffMetadataMigration(oldSchema, newSchema)
 	}
-	if _, ok := diffSDLMigrations[engine]; ok {
+	if e.DiffSDLMigration != nil {
 		sourceSDL, err := MetadataToSDL(engine, oldSchema)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to convert source schema to SDL")
@@ -368,11 +360,7 @@ func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMe
 	return "", notSupportedError(engine, "")
 }
 
-func RegisterDiffMetadataMigration(engine storepb.Engine, f diffMetadataMigration) {
-	register(diffMetadataMigrations, engine, f)
-}
-
-// MetadataToSDL converts database metadata to SDL text using the registered GetDatabaseDefinition.
+// MetadataToSDL converts database metadata to SDL text using the registered Database definition renderer.
 func MetadataToSDL(engine storepb.Engine, meta *model.DatabaseMetadata) (string, error) {
 	if meta == nil {
 		return "", nil
@@ -387,56 +375,33 @@ func MetadataToSDL(engine storepb.Engine, meta *model.DatabaseMetadata) (string,
 	}, proto)
 }
 
-func RegisterDiffSDLMigration(engine storepb.Engine, f diffSDLMigration) {
-	register(diffSDLMigrations, engine, f)
-}
-
 // DiffSDLMigration computes migration SQL between two SDL texts. engineVersion is the
 // target server's version string: MySQL returns an error for a server older than 8.0,
 // and other engines ignore it. Pass "" when no version is known.
-//
-// This SDL↔SDL entry point carries no per-object session context (there is no synced
-// metadata to source it from), so a MySQL recreate through this path is bare. The
-// live rollout uses SDLMigration, which builds the context from the current schema.
 func DiffSDLMigration(engine storepb.Engine, sourceSDL, targetSDL, engineVersion string) (string, error) {
 	return diffSDLMigrationWithContext(engine, sourceSDL, targetSDL, engineVersion, nil)
 }
 
-// diffSDLMigrationWithContext is DiffSDLMigration plus the optional per-object session
-// context threaded to the engine's registered diff. sessionCtx is nil for the callers
-// without synced metadata (SDL↔SDL DiffSchema, metadata↔metadata DiffMigration); only
-// SDLMigration supplies it.
 func diffSDLMigrationWithContext(engine storepb.Engine, sourceSDL, targetSDL, engineVersion string, sessionCtx *SDLSessionContextMap) (string, error) {
-	f, ok := diffSDLMigrations[engine]
-	if !ok {
+	f := engines[engine].DiffSDLMigration
+	if f == nil {
 		return "", notSupportedError(engine, "SDL diff migration")
 	}
 	return f(sourceSDL, targetSDL, engineVersion, sessionCtx)
 }
 
-func RegisterGetMultiFileDatabaseDefinition(engine storepb.Engine, f getMultiFileDatabaseDefinition) {
-	register(getMultiFileDatabaseDefinitions, engine, f)
-}
-
 func GetMultiFileDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (*MultiFileSchemaResult, error) {
-	return call2(getMultiFileDatabaseDefinitions, engine, "multi-file database definition", ctx, metadata)
-}
-
-func RegisterWalkThrough(engine storepb.Engine, f walkThrough) {
-	register(walkThroughs, engine, f)
-}
-
-func RegisterWalkThroughWithContext(engine storepb.Engine, f walkThroughWithContext) {
-	register(walkThroughsWithContext, engine, f)
+	f := engines[engine].MultiFileDatabase
+	if f == nil {
+		return nil, notSupportedError(engine, "multi-file database definition")
+	}
+	return f(ctx, metadata)
 }
 
 func WalkThroughWithContext(ctx context.Context, engine storepb.Engine, wtCtx WalkThroughContext, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
-	if f, ok := walkThroughsWithContext[engine]; ok {
-		return f(ctx, wtCtx, d, ast)
-	}
-	f, ok := walkThroughs[engine]
-	if !ok {
+	f := engines[engine].WalkThrough
+	if f == nil {
 		return nil
 	}
-	return f(d, ast)
+	return f(ctx, wtCtx, d, ast)
 }

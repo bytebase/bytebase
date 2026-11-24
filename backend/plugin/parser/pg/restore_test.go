@@ -55,3 +55,65 @@ func TestRestoreSeam(t *testing.T) {
 	})
 	require.ErrorContains(t, err, "GetDatabaseMetadataFunc is required")
 }
+
+func TestExtractPrependStatement(t *testing.T) {
+	tests := []struct {
+		name      string
+		statement string
+		want      string
+		wantErr   bool
+	}{
+		{
+			name:      "set role",
+			statement: "SET role = 'admin';",
+			want:      "SET role = 'admin';",
+		},
+		{
+			name:      "set role without trailing semicolon",
+			statement: "  SET role = 'admin'  ",
+			want:      "SET role = 'admin';",
+		},
+		{
+			name:      "set search_path mixed case",
+			statement: "Set Search_Path = schema1, public;",
+			want:      "Set Search_Path = schema1, public;",
+		},
+		{
+			name:      "first matching statement wins",
+			statement: "SET work_mem = '64MB'; SET search_path = app; SET role = 'admin';",
+			want:      "SET search_path = app;",
+		},
+		{
+			name:      "preserves internal whitespace and trailing comment",
+			statement: "  SET\trole = \n'admin'  ; -- comment",
+			want:      "SET\trole = \n'admin'  ;",
+		},
+		{
+			name:      "non-matching statements return empty",
+			statement: "SET work_mem = '64MB'; CREATE TABLE role (id int); SELECT 1;",
+			want:      "",
+		},
+		{
+			name:      "empty and whitespace",
+			statement: "   \n\t  ",
+			want:      "",
+		},
+		{
+			name:      "invalid syntax returns error",
+			statement: "SET role = ;",
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ExtractPrependStatement(tt.statement)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}

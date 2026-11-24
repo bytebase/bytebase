@@ -15,9 +15,11 @@ func TestDiagnoseNeverReturnsNil(t *testing.T) {
 	a := require.New(t)
 
 	// Engine diagnose funcs return a nil slice for valid statements.
-	RegisterDiagnoseFunc(storepb.Engine_MONGODB, func(_ context.Context, _ DiagnoseContext, _ string) ([]Diagnostic, error) {
-		return nil, nil
-	})
+	Register(Engine{
+		Diagnose: func(_ context.Context, _ DiagnoseContext, _ string) ([]Diagnostic, error) {
+			return nil, nil
+		},
+	}, storepb.Engine_MONGODB)
 
 	for _, engine := range []storepb.Engine{
 		storepb.Engine_MONGODB,

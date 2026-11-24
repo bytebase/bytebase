@@ -9,32 +9,38 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-func TestRegisterDefinitions(t *testing.T) {
+func TestRegister(t *testing.T) {
 	const (
 		engineA = storepb.Engine(99911)
 		engineB = storepb.Engine(99912)
 	)
 	t.Cleanup(func() {
-		mux.Lock()
-		defer mux.Unlock()
-		for _, e := range []storepb.Engine{engineA, engineB} {
-			delete(getDatabaseDefinitions, e)
-			delete(getTableDefinitions, e)
-			delete(getViewDefinitions, e)
-		}
+		registryMu.Lock()
+		defer registryMu.Unlock()
+		delete(engines, engineA)
+		delete(engines, engineB)
 	})
 
-	RegisterDefinitions(Definitions{
-		Database: func(_ GetDefinitionContext, m *metadatapb.DatabaseSchemaMetadata) (string, error) {
-			return "db:" + m.GetName(), nil
-		},
-		Table: func(s string, tbl *metadatapb.TableMetadata, _ []*metadatapb.SequenceMetadata) (string, error) {
-			return s + "." + tbl.GetName(), nil
-		},
-		View: func(s string, v *metadatapb.ViewMetadata) (string, error) {
-			return s + "." + v.GetName(), nil
+	Register(Engine{
+		Definitions: Definitions{
+			Database: func(_ GetDefinitionContext, m *metadatapb.DatabaseSchemaMetadata) (string, error) {
+				return "db:" + m.GetName(), nil
+			},
+			Table: func(s string, tbl *metadatapb.TableMetadata, _ []*metadatapb.SequenceMetadata) (string, error) {
+				return s + "." + tbl.GetName(), nil
+			},
+			View: func(s string, v *metadatapb.ViewMetadata) (string, error) {
+				return s + "." + v.GetName(), nil
+			},
 		},
 	}, engineA, engineB)
+
+	// Disjoint capability registration for an already-registered engine succeeds.
+	Register(Engine{
+		DatabaseMetadata: func(text string) (*metadatapb.DatabaseSchemaMetadata, error) {
+			return &metadatapb.DatabaseSchemaMetadata{Name: text}, nil
+		},
+	}, engineA)
 
 	for _, engine := range []storepb.Engine{engineA, engineB} {
 		got, err := GetDatabaseDefinition(engine, GetDefinitionContext{}, &metadatapb.DatabaseSchemaMetadata{Name: "app"})
@@ -53,10 +59,18 @@ func TestRegisterDefinitions(t *testing.T) {
 		require.ErrorContains(t, err, "is not supported")
 	}
 
-	require.PanicsWithValue(t, "Register called twice 99911", func() {
-		RegisterGetDatabaseDefinition(engineA, func(_ GetDefinitionContext, _ *metadatapb.DatabaseSchemaMetadata) (string, error) {
-			return "", nil
-		})
+	meta, err := GetDatabaseMetadata(engineA, "app")
+	require.NoError(t, err)
+	require.Equal(t, "app", meta.GetName())
+
+	require.PanicsWithValue(t, "schema: Database registered twice for 99911", func() {
+		Register(Engine{
+			Definitions: Definitions{
+				Database: func(_ GetDefinitionContext, _ *metadatapb.DatabaseSchemaMetadata) (string, error) {
+					return "", nil
+				},
+			},
+		}, engineA)
 	})
 }
 

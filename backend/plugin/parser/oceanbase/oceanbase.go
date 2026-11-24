@@ -3,19 +3,76 @@
 package oceanbase
 
 import (
+	"context"
+
+	"github.com/bytebase/omni/oceanbase/analysis"
+	"github.com/bytebase/omni/oceanbase/ast"
+	omnicompletion "github.com/bytebase/omni/oceanbase/completion"
 	omniparser "github.com/bytebase/omni/oceanbase/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
-	base.RegisterParseStatementsFunc(storepb.Engine_OCEANBASE, parseStatements)
-	base.RegisterGetStatementTypes(storepb.Engine_OCEANBASE, GetStatementTypes)
+	base.Register(base.Engine{
+		Split:          SplitSQL,
+		Parse:          parseStatements,
+		StatementTypes: GetStatementTypes,
+		Diagnose:       Diagnose,
+		Complete:       Completion,
+		ValidateQuery:  validateQuery,
+		QuerySpan:      GetQuerySpan,
+		Explain:        explainStatement,
+		ResultLimit:    statementWithResultLimit,
+		ExtractChanged: extractChangedResources,
+	}, storepb.Engine_OCEANBASE)
 }
 
-// parseStatements is the ParseStatementsFunc for OceanBase. Each returned statement
-// carries both its text and its AST.
+// AST wraps an omni AST node and implements the base.AST interface.
+type AST struct {
+	// Node is the omni AST node (e.g. *ast.SelectStmt, *ast.CreateTableStmt).
+	Node ast.Node
+	// Text is the original SQL text of this statement.
+	Text string
+	// StartPosition is the 1-based position where this statement starts.
+	StartPosition *storepb.Position
+}
+
+// ASTSource returns the statement's own text, which the schema walk-through reads
+// when it needs the statement as written.
+func (a *AST) ASTSource() string {
+	return a.Text
+}
+
+// ASTStartPosition implements base.AST.
+func (a *AST) ASTStartPosition() *storepb.Position {
+	return a.StartPosition
+}
+
+// GetNode extracts the omni AST node from a base.AST interface.
+func GetNode(a base.AST) (ast.Node, bool) {
+	if a == nil {
+		return nil, false
+	}
+	node, ok := a.(*AST)
+	if !ok {
+		return nil, false
+	}
+	return node.Node, true
+}
+
+// SplitSQL splits the given SQL statement into multiple SQL statements.
+// It uses omni's lexical splitter which handles quotes, comments, compound
+// statements (BEGIN...END, IF...END IF, etc.) and DELIMITER without
+// requiring valid SQL.
+func SplitSQL(statement string) ([]base.Statement, error) {
+	return base.BuildStatements(statement, omniparser.Split(statement), func(s omniparser.Segment) (int, int, bool) {
+		return s.ByteStart, s.ByteEnd, s.Empty()
+	}, true), nil
+}
+
 func parseStatements(statement string) ([]base.ParsedStatement, error) {
 	return base.ParseNonEmptyMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
 		list, err := omniparser.Parse(stmt.Text)
@@ -33,7 +90,96 @@ func parseStatements(statement string) ([]base.ParsedStatement, error) {
 	})
 }
 
-// convertError converts an omni parser error to a base.SyntaxError with proper line:column position.
+func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
+	return base.CollectOmniStatementTypes(asts, GetNode, "expected AST for OceanBase", analysis.StatementTypeOf)
+}
+
+// Diagnose returns the script's first syntax error as a diagnostic.
+func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
+	var syntaxErr *base.SyntaxError
+	if e := analysis.Diagnose(statement); e != nil {
+		syntaxErr = base.SyntaxErrorAtOffset(e.Text, e.Offset, e.Message)
+	}
+	return base.DiagnoseSyntaxError(statement, syntaxErr), nil
+}
+
+// Completion provides auto-complete candidates for OceanBase statements using
+// the omni OceanBase completion engine.
+func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
+	loadDB, listDBs := base.MySQLFamilyDatabaseLoaders(cCtx)
+	raw := omnicompletion.CompleteSession(ctx, omnicompletion.SessionConfig{
+		ReadOnly:          cCtx.Scene == base.SceneTypeQuery,
+		DefaultDatabase:   cCtx.DefaultDatabase,
+		LoadDatabase:      loadDB,
+		ListDatabaseNames: listDBs,
+	}, statement, caretLine, caretOffset)
+	return base.ConvertOmniCandidates(raw, func(c omnicompletion.Candidate) (string, omnicompletion.CandidateType, string, string) {
+		return c.Text, c.Type, c.Definition, c.Comment
+	}, base.CompareCandidate), nil
+}
+
+func validateQuery(statement string) (bool, bool, error) {
+	stmts, err := omniparser.Parse(statement)
+	if err != nil {
+		return false, false, convertError(err, base.Statement{Text: statement})
+	}
+	readOnly, returnsData := analysis.ValidateQuery(stmts.Items)
+	return readOnly, returnsData, nil
+}
+
+// GetQuerySpan returns the query span for the given statement.
+func GetQuerySpan(
+	ctx context.Context,
+	gCtx base.GetQuerySpanContext,
+	stmt base.Statement,
+	database, _ string,
+	ignoreCaseSensitive bool,
+) (*base.QuerySpan, error) {
+	listDBs, getDB := base.UnnamedSchemaQuerySpanCatalog(ctx, gCtx, func(d *base.UnnamedSchemaDatabase) analysis.Database { return d })
+	querySpan, err := base.OmniResolvedSpanResult(analysis.ResolveQuerySpan(stmt.Text, analysis.ResolveOptions{
+		DefaultDatabase:     database,
+		IgnoreCaseSensitive: ignoreCaseSensitive,
+		Catalog:             analysis.Catalog{ListDatabaseNames: listDBs, GetDatabase: getDB},
+	}))
+	if err != nil {
+		return nil, convertError(err, stmt)
+	}
+	return querySpan, nil
+}
+
+// explainStatement implements base.ExplainStatement. Only the JSON format has
+// a reader downstream; any other format gets the engine's default plan.
+func explainStatement(statement string, format base.ExplainFormat) (string, error) {
+	explain, err := analysis.ExplainStatement(statement, format == base.ExplainFormatJSON)
+	return base.ExplainStatementResult(explain, err, func(e error) error {
+		return convertError(e, base.Statement{Text: statement})
+	})
+}
+
+// DescribeExplain returns the output format of an EXPLAIN statement and whether
+// it executes the statement it plans.
+func DescribeExplain(statement string) (format string, executed bool, ok bool) {
+	return analysis.DescribeExplain(statement)
+}
+
+// EstimateAffectedRowsFromExplainJSON returns the EST.ROWS estimate from OceanBase
+// `EXPLAIN FORMAT=JSON` output.
+func EstimateAffectedRowsFromExplainJSON(plan string) (int64, error) {
+	return analysis.EstimateAffectedRowsFromExplainJSON(plan)
+}
+
+// statementWithResultLimit implements base.ResultLimitFunc for OceanBase. It takes
+// no engineVersion.
+func statementWithResultLimit(statement string, limit int, _ string) string {
+	return base.RewriteResultLimit(statement, limit, analysis.RewriteResultLimit, "SELECT * FROM (%s) result LIMIT %d;")
+}
+
+func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
+	return base.ExtractTypedChangedResources(dbMetadata, asts, "expected AST for MySQL", false, func(node *AST) (analysis.StatementChanges, bool) {
+		return analysis.ExtractChangedResources(node.Node, currentDatabase, node.Text), true
+	})
+}
+
 func convertError(err error, stmt base.Statement) error {
 	return base.ConvertSyntaxError(stmt, err, true,
 		func(pe *omniparser.ParseError) (int, string) { return pe.Position, pe.Message },
