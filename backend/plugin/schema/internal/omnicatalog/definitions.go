@@ -3,34 +3,33 @@ package omnicatalog
 import (
 	metadatapb "github.com/bytebase/omni/metadata"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
 // MySQLFamilyDefinitions holds the per-object definition functions exposed by a
 // MySQL-family omni catalog (mysql, oceanbase, tidb, mariadb).
 type MySQLFamilyDefinitions struct {
-	Database  func(schema.GetDefinitionContext, *metadatapb.DatabaseSchemaMetadata) (string, error)
-	Table     func(*metadatapb.TableMetadata) (string, error)
-	View      func(*metadatapb.ViewMetadata) (string, error)
-	Function  func(*metadatapb.FunctionMetadata) (string, error)
-	Procedure func(*metadatapb.ProcedureMetadata) (string, error)
-	Sequence  func(*metadatapb.SequenceMetadata) (string, error)
+	Database          func(schema.GetDefinitionContext, *metadatapb.DatabaseSchemaMetadata) (string, error)
+	MultiFileDatabase func(schema.GetDefinitionContext, *metadatapb.DatabaseSchemaMetadata) (*schema.MultiFileSchemaResult, error)
+	Table             func(*metadatapb.TableMetadata) (string, error)
+	View              func(*metadatapb.ViewMetadata) (string, error)
+	Function          func(*metadatapb.FunctionMetadata) (string, error)
+	Procedure         func(*metadatapb.ProcedureMetadata) (string, error)
+	Sequence          func(*metadatapb.SequenceMetadata) (string, error)
 }
 
-// RegisterMySQLFamilyDefinitions registers a MySQL-family engine's definition
-// renderers, adapting single-schema omni signatures to schema's registry.
-func RegisterMySQLFamilyDefinitions(engine storepb.Engine, defs MySQLFamilyDefinitions) {
-	schema.Register(schema.Engine{
-		Definitions: schema.Definitions{
-			Database:  defs.Database,
-			Table:     ignoreTableScope(defs.Table),
-			View:      ignoreObjectScope(defs.View),
-			Function:  ignoreObjectScope(defs.Function),
-			Procedure: ignoreObjectScope(defs.Procedure),
-			Sequence:  ignoreObjectScope(defs.Sequence),
-		},
-	}, engine)
+// SchemaDefinitions adapts single-schema MySQL-family omni definition renderers
+// into a schema.Definitions value for schema.Register.
+func (defs MySQLFamilyDefinitions) SchemaDefinitions() schema.Definitions {
+	return schema.Definitions{
+		Database:          defs.Database,
+		MultiFileDatabase: defs.MultiFileDatabase,
+		Table:             ignoreTableScope(defs.Table),
+		View:              ignoreObjectScope(defs.View),
+		Function:          ignoreObjectScope(defs.Function),
+		Procedure:         ignoreObjectScope(defs.Procedure),
+		Sequence:          ignoreObjectScope(defs.Sequence),
+	}
 }
 
 // ignoreTableScope adapts a table definition renderer that takes only *TableMetadata

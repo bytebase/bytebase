@@ -15,10 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-func init() {
-	schema.Register(schema.Engine{WalkThrough: WalkThroughWithContext}, storepb.Engine_POSTGRES)
-}
-
 // WalkThroughWithContext performs DDL simulation using the omni catalog.
 //  1. catalog.LoadMetadata(metadata) → load existing schema into catalog
 //  2. catalog.Exec(userSQL) → execute user DDL, collect per-statement Changes

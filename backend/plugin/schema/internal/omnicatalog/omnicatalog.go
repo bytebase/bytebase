@@ -15,8 +15,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -132,14 +130,12 @@ func DiffMetadataMigration[Catalog, Report any](engine Engine[Catalog, Report], 
 	return DiffMetadata(engine, oldProto, newProto)
 }
 
-// RegisterMetadataMigration registers a metadata-to-metadata migration handler
-// backed by engine for storeEngine.
-func RegisterMetadataMigration[Catalog, Report any](storeEngine storepb.Engine, engine Engine[Catalog, Report]) {
-	schema.Register(schema.Engine{
-		DiffMetadataMigration: func(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-			return DiffMetadataMigration(engine, oldSchema, newSchema)
-		},
-	}, storeEngine)
+// MetadataMigrationFunc returns a schema.Engine.DiffMetadataMigration callback
+// backed by engine.
+func MetadataMigrationFunc[Catalog, Report any](engine Engine[Catalog, Report]) func(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
+	return func(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
+		return DiffMetadataMigration(engine, oldSchema, newSchema)
+	}
 }
 
 // DiffMetadata loads both snapshots into one catalog each and renders the

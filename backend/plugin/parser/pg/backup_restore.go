@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	omnipg "github.com/bytebase/omni/pg"
 	"github.com/bytebase/omni/pg/analysis"
 	"github.com/pkg/errors"
 
@@ -12,7 +13,7 @@ import (
 )
 
 func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, statement string, _ string, targetSchema string, tablePrefix string) ([]base.BackupStatement, error) {
-	stmts, err := ParsePg(statement)
+	stmts, err := omnipg.Parse(statement)
 	if err != nil {
 		return nil, errors.Wrapf(errors.Wrap(err, "failed to parse statement"), "failed to prepare transformation")
 	}
@@ -48,7 +49,7 @@ func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, state
 // statement in statement, trimmed and terminated with a semicolon, or "" if
 // none is present.
 func ExtractPrependStatement(statement string) (string, error) {
-	stmts, err := ParsePg(statement)
+	stmts, err := omnipg.Parse(statement)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse statement")
 	}
@@ -60,7 +61,7 @@ func ExtractPrependStatement(statement string) (string, error) {
 }
 
 func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
-	stmts, err := base.ParseForRestore(statement, backupItem, ParsePg)
+	stmts, err := base.ParseForRestore(statement, backupItem, omnipg.Parse)
 	if err != nil {
 		return "", err
 	}

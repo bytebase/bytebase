@@ -62,11 +62,6 @@ func (a *AST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
-// ParsePg parses SQL using omni's parser and returns omni Statement objects directly.
-func ParsePg(sql string) ([]omnipg.Statement, error) {
-	return omnipg.Parse(sql)
-}
-
 // GetNode extracts the omni AST node from a base.AST interface.
 func GetNode(a base.AST) (ast.Node, bool) {
 	if a == nil {
@@ -90,7 +85,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 
 func parsePgStatements(statement string) ([]base.ParsedStatement, error) {
 	return base.ParseNonEmptyMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
-		parsed, err := ParsePg(stmt.Text)
+		parsed, err := omnipg.Parse(stmt.Text)
 		if err != nil {
 			return nil, convertError(err, stmt)
 		}
@@ -172,7 +167,7 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 // validateQuery reports whether the statement may run in the SQL editor's
 // read-only mode and whether every statement returns data.
 func validateQuery(statement string) (bool, bool, error) {
-	stmts, err := ParsePg(statement)
+	stmts, err := omnipg.Parse(statement)
 	if err != nil {
 		return false, false, err
 	}
