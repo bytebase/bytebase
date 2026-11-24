@@ -40,7 +40,7 @@ export function MCPCapabilityLadder({
     <Collapsible open={expanded} onOpenChange={onExpandedChange}>
       {/* Expanded, the trigger is the first group's heading; it stays inside
           the heading element collapsed too, so toggling keeps its focus. */}
-      <h3 className="py-2">
+      <h4 className="py-2">
         <CollapsibleTrigger
           className="min-w-0 rounded-xs"
           data-testid="mcp-ladder-trigger"
@@ -64,12 +64,13 @@ export function MCPCapabilityLadder({
               : t(mcpSummaryKey(mode))}
           </span>
         </CollapsibleTrigger>
-      </h3>
+      </h4>
 
       <CollapsiblePanel className="flex flex-col gap-y-3">
         <MCPCapabilityList
           mode={mode}
           refusedHeading={t("settings.mcp.ladder.heading-refused")}
+          headingLevel={4}
         />
         <a
           href={MCP_CAPABILITY_DOCS_URL}

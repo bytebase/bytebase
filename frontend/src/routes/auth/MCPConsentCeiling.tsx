@@ -52,6 +52,7 @@ export function MCPConsentCeiling({ mode }: Props) {
           mode={mode}
           allowedHeading={t("oauth2.consent.mcp.title")}
           refusedHeading={t("oauth2.consent.mcp.title-refused")}
+          headingLevel={2}
         />
       </MCPConsentPolicyCard>
 
