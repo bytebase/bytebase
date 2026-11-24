@@ -88,9 +88,9 @@ const DYNAMIC_PREFIXES = [
   "settings.mcp.policy.unserved.title",
   // The capability ladder's template-driven families only: row titles keyed by
   // row id, the per-mode summary, and the tier tag keyed by tier. Listed per
-  // family rather than as the
-  // `settings.mcp.ladder.` subtree, which would also exempt every sibling key
-  // the ladder names literally — the floor line among them.
+  // family rather than as the `settings.mcp.ladder.` subtree, which would also
+  // exempt every sibling key the ladder names literally, such as the floor
+  // row's `floor.text`.
   "settings.mcp.ladder.row.",
   "settings.mcp.ladder.summary.",
   "settings.mcp.ladder.tier.",

@@ -59,6 +59,8 @@ export function MCPCapabilityLadder({
                 : "text-sm text-control-light"
             )}
           >
+            {/* The chip or the selector above already names the mode, so
+                neither label repeats it. */}
             {expanded
               ? t("settings.mcp.ladder.heading")
               : t(mcpSummaryKey(mode))}
