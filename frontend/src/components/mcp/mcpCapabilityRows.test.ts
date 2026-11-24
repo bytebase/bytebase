@@ -4,8 +4,6 @@ import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
 import {
   isRowServed,
   MCP_CAPABILITY_ROWS,
-  MCP_CAPABILITY_TIERS,
-  rowsInTier,
   servedRows,
 } from "./mcpCapabilityRows";
 import { isServingMode, MCP_CAPABILITY_CHOICES } from "./mcpPolicy";
@@ -29,9 +27,21 @@ describe("mcpCapabilityRows", () => {
     expect(
       servedRows(MCPSetting_Capability.READ_ONLY).map((row) => row.id)
     ).toEqual(["read-schemas", "read-data", "read-workflow", "read-access"]);
-    expect(servedRows(MCPSetting_Capability.READ_WRITE)).toHaveLength(
-      MCP_CAPABILITY_ROWS.length
-    );
+    expect(
+      servedRows(MCPSetting_Capability.READ_WRITE).map((row) => row.id)
+    ).toEqual([
+      "read-schemas",
+      "read-data",
+      "read-workflow",
+      "read-access",
+      "propose",
+      "run-statements",
+      "request-access",
+      "approve",
+      "masking",
+      "add-instances",
+      "manage",
+    ]);
   });
 
   // isServingMode gates the ladder and the consent routing, and is the one mode
@@ -53,20 +63,6 @@ describe("mcpCapabilityRows", () => {
       );
       expect(isRowServed(MCPSetting_Capability.DISABLED, row)).toBe(false);
       expect(isRowServed(MCPSetting_Capability.READ_WRITE, row)).toBe(true);
-    }
-  });
-
-  // The ladder renders one list per tier, in MCP_CAPABILITY_TIERS order. This
-  // pins that doing so reproduces the ordered list exactly — which is both the
-  // contiguity of each tier and the position of its "stops here" divider.
-  test("rendering tier by tier reproduces the one ordered list", () => {
-    expect(
-      MCP_CAPABILITY_TIERS.flatMap((tier) => [...rowsInTier(tier)])
-    ).toEqual([...MCP_CAPABILITY_ROWS]);
-    expect(MCP_CAPABILITY_TIERS).toEqual(["read", "write"]);
-    // Every tier carries rows, so no divider is emitted for an empty list.
-    for (const tier of MCP_CAPABILITY_TIERS) {
-      expect(rowsInTier(tier).length).toBeGreaterThan(0);
     }
   });
 

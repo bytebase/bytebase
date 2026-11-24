@@ -8,7 +8,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect, type Page } from "@playwright/test";
-import { rowsInTier } from "../../../src/components/mcp/mcpCapabilityRows";
+import { MCP_CAPABILITY_ROWS } from "../../../src/components/mcp/mcpCapabilityRows";
 import enUS from "../../../src/locales/en-US.json";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
@@ -31,13 +31,14 @@ let originalMCPSetting: Record<string, unknown>;
 // itself is pinned in mcpCapabilityRows.test.ts, not here.
 const rowTitle = (id: keyof typeof COPY.ladder.row) => COPY.ladder.row[id].title;
 const titlesInTier = (tier: "read" | "write") =>
-  rowsInTier(tier).map((row) => rowTitle(row.id));
+  MCP_CAPABILITY_ROWS.filter((row) => row.tier === tier).map((row) =>
+    rowTitle(row.id)
+  );
 const READ_ROWS = titlesInTier("read");
 const WRITE_ROWS = titlesInTier("write");
 
 const READ_ONLY_SUMMARY = COPY.ladder.summary["read-only"];
 const READ_WRITE_SUMMARY = COPY.ladder.summary["read-write"];
-const EXPORT_DETAILS = COPY.ladder.row.export.details;
 
 async function readCapability(): Promise<string> {
   const setting = (await env.api.getSetting("MCP")) as {
@@ -72,6 +73,22 @@ function chip(page: Page, mode: string) {
 // cannot satisfy the locator.
 function row(page: Page, title: string) {
   return page.locator("li").filter({ hasText: title }).first();
+}
+
+// A row's text also carries its allowed mark and tier tag, so a group's rows
+// are matched as containing their titles, in order and exactly that many.
+const containing = (titles: string[]) =>
+  titles.map(
+    (title) => new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+  );
+
+// The group that ends with what no mode allows, and the one before it.
+function refusedGroup(page: Page) {
+  return page.locator("ul").filter({ hasText: COPY.ladder.floor.text });
+}
+
+function allowedGroup(page: Page) {
+  return page.locator("ul").filter({ hasText: READ_ROWS[0] });
 }
 
 // Located by test id, not by label: the trigger's accessible name is the mode
@@ -163,7 +180,9 @@ test.describe("MCP access policy capability ladder", () => {
     // the page's only audit disclosure, so the claim has to survive a copy edit
     // that keeps the sentence and drops the clause.
     await expect(
-      page.getByText(/MCP operations are recorded in Bytebase audit logs/)
+      page.getByText(
+        /Queries, exports, proposed changes and rollouts are recorded in the audit log/
+      )
     ).toBeVisible();
 
     // Connect a client carries the authentication clause; nothing repeats it
@@ -175,18 +194,30 @@ test.describe("MCP access policy capability ladder", () => {
     await expect(row(page, READ_ROWS[0])).toHaveCount(0);
   });
 
-  test("the list shows every row under either mode, tagging only the mode's prefix (M2)", async ({
+  test("the list shows what the mode allows, then what it does not (M2)", async ({
     page,
   }) => {
     await setCapability("READ_ONLY");
     await gotoMCPPage(page);
     await openLadder(page);
 
-    // Rows a mode does not serve stay visible and muted, so comparing two
-    // modes never needs a second surface.
-    for (const title of [...READ_ROWS, ...WRITE_ROWS]) {
-      await expect(row(page, title)).toBeVisible();
-    }
+    // Rows a mode does not serve stay visible in the second group, so
+    // comparing two modes never needs a second surface.
+    await expect(
+      page.getByRole("heading", { name: COPY.ladder.heading, exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: COPY.ladder["heading-refused"],
+        exact: true,
+      })
+    ).toBeVisible();
+    await expect(allowedGroup(page).locator("li")).toHaveText(
+      containing(READ_ROWS)
+    );
+    await expect(refusedGroup(page).locator("li")).toHaveText(
+      containing([...WRITE_ROWS, COPY.ladder.floor.text])
+    );
     // The tier tag rides the served rows only, so the word "write" never
     // appears beside something Read-only allows.
     for (const title of READ_ROWS) {
@@ -199,18 +230,17 @@ test.describe("MCP access policy capability ladder", () => {
         row(page, title).getByText(COPY.ladder.tier.write, { exact: true })
       ).toHaveCount(0);
     }
-    await expect(page.getByText(COPY.ladder.stops.read)).toBeVisible();
-    await expect(page.getByText(COPY.ladder.stops.write)).toBeVisible();
-    await expect(page.getByText(COPY.ladder.floor.text)).toBeVisible();
 
-    // One second-level control for all the rows, not one expander per row.
-    await expect(page.getByText(EXPORT_DETAILS)).toHaveCount(0);
-    await page.getByRole("button", { name: "Show details" }).click();
-    await expect(page.getByText(EXPORT_DETAILS)).toBeVisible();
+    // What each row covers is in the docs, not behind a details control.
+    await expect(page.getByRole("button", { name: "Show details" })).toHaveCount(
+      0
+    );
     await expect(
-      page.getByText(COPY.ladder.row["read-workflow"].details)
-    ).toBeVisible();
-
+      page.getByRole("link", { name: COPY.ladder["docs-link"] })
+    ).toHaveAttribute(
+      "href",
+      "https://docs.bytebase.com/integrations/mcp#what-each-mode-allows"
+    );
   });
 
   test("picking Read-write renders the post-save list, and Save persists it (M3)", async ({
@@ -262,13 +292,11 @@ test.describe("MCP access policy capability ladder", () => {
     // write rows proves it re-read the stored mode, which the summary string
     // would not.
     await expect(
-      page.getByText(
-        COPY.ladder.heading.replace(
-          "{{mode}}",
-          COPY.policy.mode["read-write"].title
-        )
-      )
+      page.getByRole("heading", { name: COPY.ladder.heading, exact: true })
     ).toBeVisible();
+    await expect(refusedGroup(page).locator("li")).toHaveText(
+      containing([COPY.ladder.floor.text])
+    );
     for (const title of WRITE_ROWS) {
       await expect(
         row(page, title).getByText(COPY.ladder.tier.write, { exact: true })

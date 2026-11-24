@@ -2764,7 +2764,9 @@
           "policy-label": "Política del espacio de trabajo",
           "title": "El acceso MCP está desactivado"
         },
+        "policy-label": "Política del espacio de trabajo",
         "title": "Esta sesión puede",
+        "title-refused": "Esta sesión no puede",
         "undisclosed": {
           "line": {
             "nothing-approved": "No se ha aprobado nada y no hay nada conectado"
@@ -2782,7 +2784,7 @@
             "title": "No se pudo comprobar la política MCP"
           }
         },
-        "write-caution": "Una sesión de IA con acceso de escritura hace cambios reales. Apruébela solo en una máquina que usted controle."
+        "write-caution": "Una sesión de IA con acceso de escritura hace cambios reales. En los clientes que no pueden pedir confirmación, las consultas de escritura se ejecutan sin preguntar. Apruébela solo en una máquina que usted controle."
       },
       "title": "Solicitud de autorización",
       "workspace-label": "Concediendo acceso al workspace"
@@ -4067,86 +4069,50 @@
       },
       "ladder": {
         "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
+        "docs-link": "Qué cubre cada capacidad",
         "floor": {
-          "label": "Nunca, en ningún modo:",
-          "text": "elevar esta política, crear una clave de cuenta de servicio, cambiar la contraseña, el correo o el MFA de una persona, mostrar un secreto almacenado, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona."
+          "text": "Elevar esta política, crear una clave de cuenta de servicio, cambiar la contraseña, el correo o el MFA de una persona, mostrar un secreto almacenado, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona"
         },
-        "heading": "{{mode}} permite",
-        "hide-details": "Ocultar detalles",
+        "heading": "Esta política permite",
+        "heading-refused": "Esta política no permite",
         "mark": {
           "allowed": "Permitido",
           "refused": "No permitido"
         },
         "row": {
           "add-instances": {
-            "details": "Añadir a un proyecto una instancia de PostgreSQL que inicia sesión con usuario y contraseña · Cada instancia se confirma en el cliente MCP del usuario antes de añadirse · Sus bases de datos pasan a ese proyecto de forma permanente",
-            "title": "Añadir instancias a proyectos"
-          },
-          "approval-rules": {
-            "details": "Añadir, quitar, reordenar o cambiar las reglas que deciden quién aprueba un cambio de base de datos · Cada cambio se confirma en el cliente MCP del usuario antes de hacerse · Las reglas de respaldo y las reglas de otros tipos de issues no cambian",
-            "title": "Gestionar las reglas de aprobación de cambios de base de datos"
+            "title": "Añadir instancias a proyectos y crear identidades de CI"
           },
           "approve": {
-            "details": "Cada decisión se confirma en el cliente MCP del usuario antes de tomarse · Las solicitudes de rol se deciden en la consola · Se aplican las reglas de aprobación y la configuración de autoaprobación del proyecto, como en la consola",
-            "title": "Aprobar o rechazar issues"
-          },
-          "ci-identities": {
-            "details": "Crear una identidad de carga de trabajo con la que inician sesión los trabajos de GitHub Actions o GitLab CI de un repositorio, con el rol Agente de Servicio GitOps en un proyecto, de modo que puede desplegar sin aprobación · Cada identidad se confirma en el cliente MCP del usuario antes de crearse · Esta política no limita lo que hace, y dura hasta que se elimina",
-            "title": "Crear identidades de CI"
-          },
-          "export": {
-            "details": "Exportar resultados como archivos. Los datos salen de Bytebase.",
-            "title": "Exportar resultados de consulta"
+            "title": "Aprobar o rechazar issues y gestionar las reglas de aprobación de cambios de base de datos"
           },
           "manage": {
-            "details": "Sincronizar instancias y bases de datos · Consultas guardadas",
-            "title": "Gestionar el mantenimiento de bases de datos"
+            "title": "Sincronizar instancias y bases de datos, y gestionar las consultas guardadas"
           },
-          "masking-exemptions": {
-            "details": "Eximir a un miembro del enmascaramiento para una base de datos, un esquema, una tabla o una columna, o para todas las bases de datos de un proyecto, con vencimiento opcional · Cada exención y cada retirada se confirma en el cliente MCP del usuario antes de aplicarse · Los datos exentos se muestran sin enmascarar en los resultados de consultas y exportaciones",
-            "title": "Conceder o revocar exenciones de enmascaramiento"
-          },
-          "masking-rules": {
-            "details": "Añadir, quitar, reordenar o cambiar las reglas que deciden qué columnas se enmascaran y cómo · Cada cambio se confirma en el cliente MCP del usuario antes de hacerse · Los tipos semánticos no cambian",
-            "title": "Definir las reglas de enmascaramiento"
+          "masking": {
+            "title": "Definir las reglas de enmascaramiento y conceder o revocar exenciones"
           },
           "propose": {
-            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones · Crear y eliminar revisiones · Generar diferencias de esquema. La política de aprobación del proyecto decide si un cambio necesita aprobación",
-            "title": "Proponer cambios"
+            "title": "Proponer y desplegar cambios de base de datos"
           },
           "read-access": {
-            "details": "Quién tiene cada rol en el espacio de trabajo y sus proyectos · Grupos y sus miembros · Roles y sus permisos · Reglas y exenciones de enmascaramiento · Políticas de implementación, de consulta de datos, de etiquetas y de revisión · Reglas de aprobación, entornos, tipos semánticos y clasificación de datos · Concesiones de acceso, incluidas las solicitudes pendientes · Identidades de CI y quién puede iniciar sesión con ellas",
             "title": "Leer miembros, roles y políticas"
           },
           "read-data": {
-            "details": "Ejecutar consultas de solo lectura · En Solo lectura, una solicitud se rechaza por completo salvo que cada sentencia se demuestre ser una lectura que devuelve datos; la profundidad de esa comprobación depende del motor y, en algunos motores, ninguna sentencia puede demostrarse que sea una lectura · Su propio historial de consultas · Consultas guardadas y hojas a las que tiene acceso",
             "title": "Leer datos ejecutando consultas"
           },
           "read-schemas": {
-            "details": "Esquemas · Bases de datos e instancias · Proyectos y grupos de bases de datos · Catálogos, historiales de cambios y revisiones · Configuraciones de revisión SQL · Datos de su propia sesión y del espacio de trabajo",
             "title": "Leer esquemas y metadatos"
           },
           "read-workflow": {
-            "details": "Issues y comentarios · Plans y comprobaciones de plan · Despliegues, ejecuciones de tareas y registros · Versiones · Vistas previas de reversión",
             "title": "Leer el flujo de cambios"
           },
           "request-access": {
-            "details": "Pedir una concesión con límite de tiempo para ejecutar una sentencia concreta, opcionalmente con resultados sin enmascarar o exportados; la sentencia debe ser una lectura hasta donde el motor pueda comprobarlo · La concesión solo empieza después de ser aprobada, y se rechaza una solicitud que no necesitaría la aprobación de nadie · Una concesión solo se aplica donde el proyecto permite concesiones de acceso · Revocar una concesión activa · Activar o desactivar \"Permitir concesiones de acceso\" de un proyecto, después de que el usuario lo confirme",
-            "title": "Solicitar concesiones de acceso"
-          },
-          "run-rollouts": {
-            "details": "Crear un despliegue · Ejecutar, omitir o cancelar sus tareas, bajo la política de aprobación del proyecto",
-            "title": "Ejecutar despliegues y tareas"
+            "title": "Solicitar concesiones de acceso y exportar resultados de consulta"
           },
           "run-statements": {
-            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP a través de consultas, hasta donde el motor y los permisos del propio usuario lo permitan · Si el cliente MCP del usuario admite confirmaciones, una consulta que no es una lectura hasta donde el motor pueda comprobarlo solo se ejecuta después de que el usuario la confirme · En otros clientes, una consulta así puede ejecutarse sin preguntar",
             "title": "Ejecutar sentencias DML y DDL"
           }
-        },
-        "show-details": "Mostrar detalles",
-        "stops": {
-          "read": "Solo lectura termina aquí",
-          "write": "Lectura y escritura termina aquí"
         },
         "summary": {
           "read-only": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; una solicitud que lleve algo que no pueda demostrarse que es una lectura se rechaza, y no se exporta nada",
@@ -4158,7 +4124,7 @@
         }
       },
       "policy": {
-        "audit": "Las operaciones de MCP se registran en los registros de auditoría de Bytebase.",
+        "audit": "Las consultas, las exportaciones, los cambios propuestos y los despliegues se registran en el registro de auditoría.",
         "bound": "Cada sesión MCP está limitada por los permisos de Bytebase del usuario conectado y por las operaciones que admite el motor de base de datos de destino.",
         "current": "Política actual: {{mode}}",
         "description": "{{bound}} {{audit}}",

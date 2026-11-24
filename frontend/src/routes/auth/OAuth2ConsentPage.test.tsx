@@ -555,57 +555,33 @@ describe("OAuth2ConsentPage", () => {
     handle.unmount();
   });
 
-  test("a read-only ceiling starts compact and can reveal the complete MCP policy boundary", async () => {
+  test("a read-only ceiling lists what the session may, then may not, do", async () => {
     const { container, unmount } = await renderWithCeiling({ capability: 3 });
-    expect(container.textContent).toContain("settings.mcp.ladder.row.read-schemas.title");
-    expect(container.textContent).not.toContain(
-      "settings.mcp.ladder.row.read-schemas.details"
-    );
-    expect(container.textContent).toContain(
-      "settings.mcp.ladder.row.run-statements.title"
-    );
-    expect(container.textContent).not.toContain(
-      "settings.mcp.ladder.row.run-statements.details"
-    );
-    expect(container.textContent).toContain("settings.mcp.ladder.stops.read");
-    expect(container.textContent).toContain("settings.mcp.ladder.floor.text");
-    expect(container.textContent).not.toContain("oauth2.consent.mcp.line.no-write");
-    expect(container.textContent).toContain("settings.mcp.ladder.show-details");
-    expect(container.textContent).toContain("oauth2.consent.allow-access");
-
-    const detailsAction = [...container.querySelectorAll("button")].find(
-      (button) =>
-        button.textContent?.includes("settings.mcp.ladder.show-details")
-    );
-    const sessionTitle = [...container.querySelectorAll("p")].find((node) =>
-      node.textContent?.includes("oauth2.consent.mcp.title")
+    const text = container.textContent ?? "";
+    const label = [...container.querySelectorAll("p")].find((node) =>
+      node.textContent?.includes("oauth2.consent.mcp.policy-label")
     );
     const modeBadge = [...container.querySelectorAll("span")].find((node) =>
       node.textContent?.includes("settings.mcp.policy.mode.read-only.title")
     );
-    expect(detailsAction).toHaveAttribute("aria-expanded", "false");
-    expect(detailsAction?.parentElement).toHaveClass("ml-auto", "shrink-0");
-    expect(sessionTitle?.parentElement).toHaveClass("items-center", "gap-2");
-    expect(sessionTitle?.parentElement?.parentElement).toHaveClass(
-      "flex-col",
-      "gap-2"
-    );
+    expect(label).toBeDefined();
     expect(modeBadge).toHaveClass("whitespace-nowrap");
-    expect(modeBadge?.parentElement).toHaveClass(
-      "flex-wrap",
-      "max-w-full"
-    );
-    expect(modeBadge?.parentElement).not.toHaveClass("ml-auto", "xl:ml-auto");
-    act(() => detailsAction?.click());
+    expect(
+      [...container.querySelectorAll("h3")].map((node) => node.textContent)
+    ).toEqual(["oauth2.consent.mcp.title", "oauth2.consent.mcp.title-refused"]);
 
-    expect(container.textContent).toContain(
-      "settings.mcp.ladder.row.read-schemas.details"
-    );
-    expect(container.textContent).toContain(
-      "settings.mcp.ladder.row.run-statements.details"
-    );
-    expect(container.textContent).toContain("settings.mcp.ladder.hide-details");
-    expect(detailsAction).toHaveAttribute("aria-expanded", "true");
+    const [allowed, refused] = [...container.querySelectorAll("ul[role='list']")]
+      .filter((list) => list.textContent?.includes("settings.mcp.ladder."))
+      .map((list) => list.textContent ?? "");
+    expect(allowed).toContain("settings.mcp.ladder.row.read-schemas.title");
+    expect(allowed).not.toContain("settings.mcp.ladder.row.run-statements.title");
+    expect(refused).toContain("settings.mcp.ladder.row.run-statements.title");
+    expect(refused.endsWith("settings.mcp.ladder.floor.text")).toBe(true);
+
+    expect(text).not.toContain("details");
+    expect(text).not.toContain("settings.mcp.ladder.stops.");
+    expect(text).not.toContain("oauth2.consent.mcp.write-caution");
+    expect(text).toContain("oauth2.consent.allow-access");
     unmount();
   });
 

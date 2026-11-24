@@ -1,10 +1,8 @@
 import { Info, ScrollText } from "lucide-react";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MCPCapabilityList } from "@/components/mcp/MCPCapabilityList";
 import type { MCPServingMode } from "@/components/mcp/mcpPolicy";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
 import type { MCPConsentLine } from "./MCPConsentPolicyCard";
 import { MCPConsentPolicyCard } from "./MCPConsentPolicyCard";
@@ -26,12 +24,11 @@ interface Props {
  */
 export function MCPConsentCeiling({ mode }: Props) {
   const { t } = useTranslation();
-  const [details, setDetails] = useState(false);
 
   const lines: MCPConsentLine[] = [
     // A bound, not a grant: neutral glyph and no mark, so it is not counted
-    // among the rows above it. The capability list holds mode-specific details;
-    // this shared line gives the constraint that applies to every MCP session.
+    // among the rows above it. Row titles carry no caveats, so this one line
+    // bounds them all.
     {
       key: "capped",
       icon: <Info className="size-4 text-control-light" />,
@@ -47,23 +44,15 @@ export function MCPConsentCeiling({ mode }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <MCPConsentPolicyCard
-        label={t("oauth2.consent.mcp.title")}
+        label={t("oauth2.consent.mcp.policy-label")}
         mode={mode}
-        headerAction={
-          <Button
-            appearance="link"
-            size="sm"
-            aria-expanded={details}
-            onClick={() => setDetails(!details)}
-          >
-            {details
-              ? t("settings.mcp.ladder.hide-details")
-              : t("settings.mcp.ladder.show-details")}
-          </Button>
-        }
         lines={lines}
       >
-        <MCPCapabilityList mode={mode} details={details} tierDividers floor />
+        <MCPCapabilityList
+          mode={mode}
+          allowedHeading={t("oauth2.consent.mcp.title")}
+          refusedHeading={t("oauth2.consent.mcp.title-refused")}
+        />
       </MCPConsentPolicyCard>
 
       {mode === MCPSetting_Capability.READ_WRITE && (
