@@ -69,7 +69,8 @@ What follows from it:
 
 ## The rows
 
-Eleven rows: four read, seven write, and the row no mode serves, called the floor below. Each has a title, which is all the
+Twelve rows: eleven capability rows, four read and seven write, and a twelfth that no mode serves,
+called the floor below. Each has a title, which is all the
 product shows, and a list of sub-items in plain words, which the MCP docs page publishes under the
 row's title (D2). A write row merged from two earlier rows (D15) lists each part's sub-items under
 the part's own verb. The right column records which classified methods the row's wording has to
@@ -88,7 +89,7 @@ appears in the product.
 | write | Request access grants and export query results | *Request:* Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after it is approved, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants · Revoke an active grant · Turn a project's "Allow access grants" on or off, after the user confirms · *Export:* Export results as files. Data leaves Bytebase | 4 WRITE methods. Request: 3 WRITE methods: `AccessGrantService/CreateAccessGrant` and `RevokeAccessGrant`, served like any WRITE method; and `ProjectService/UpdateProject`, served only through the `set_just_in_time_access` tool, which asks the user to confirm and changes only that setting. Export: 1 WRITE method: `SQLService/Export`, which requires the user's own `bb.sql.export` on the data it reads, from a role or a matching export grant, and runs only statements Bytebase can show are reads |
 | write | Approve or reject issues and manage approval rules for database changes | *Approve:* Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console · *Approval rules:* Add, remove, reorder or change the rules that decide who approves a database change · Each change is confirmed in the user's MCP client before it is made · The fallback rules and the rules for other kinds of issues stay as they are | 3 WRITE methods. Approve: 2 WRITE methods: `ApproveIssue`, `RejectIssue`, served only through the `decide_issue` tool, which asks the user to confirm each decision and refuses role requests. Approval rules: 1 WRITE method: `SettingService/UpdateSetting`, which the gate serves only with a confirmation that `administer_workspace` attaches, for the approval rules alone (D13) |
 | write | Set masking rules and grant or revoke exemptions | *Masking rules:* Add, remove, reorder or change the rules that decide which columns are masked and how · Each change is confirmed in the user's MCP client before it is made · Semantic types stay as they are · *Exemptions:* Exempt one member from masking for a database, a schema, a table or a column, or for every database in a project, with an optional expiry · Each exemption and each removal is confirmed in the user's MCP client before it is made · Exempted data shows unmasked in query and export results | 1 WRITE method, `OrgPolicyService/UpdatePolicy`, served two ways. Exemptions: served only through the `grant_masking_exemption` and `revoke_masking_exemption` tools, which ask the user to confirm, then add one exemption entry or remove one member from the entries whose condition matches exactly; other policy types and `CreatePolicy` and `DeletePolicy` stay refused. Masking rules: served for the workspace masking rule policy only through `administer_workspace`, which asks the user to confirm. On a workspace with no rules stored, `allowMissing` makes the handler create the policy; `CreatePolicy` itself stays refused |
-| write | Add instances and create CI identities | *Instances:* Add a PostgreSQL instance to a project, signed in with a user name and password · Each instance is confirmed in the user's MCP client before it is added · Its databases join that project for good · *CI identities:* Create a workload identity that GitHub Actions or GitLab CI jobs in one repository sign in as, with the GitOps Service Agent role in one project, so it can roll out without approval · Each identity is confirmed in the user's MCP client before it is created · This policy does not limit what it does, and it lasts until it is removed | 3 WRITE methods. Instances: 1 WRITE method: `InstanceService/CreateInstance`, which the gate serves only with a confirmation that `administer_workspace` attaches for the new instance; the tool confirms only a PostgreSQL instance in a project that signs in with a password (D13). `UpdateInstance`, whose `allow_missing` also creates an instance, stays EXCLUDED with the other instance writes. CI identities: 2 WRITE methods: `WorkloadIdentityService/CreateWorkloadIdentity` and `ProjectService/SetIamPolicy`, which the gate serves only with the confirmations `administer_workspace` attaches: one for the new identity, and one for the project whose policy then gains it, in the GitOps Service Agent role (D13). The tool takes the provider's own issuer and a pattern that admits every job of one repository. `UpdateWorkloadIdentity` stays FORBIDDEN, and the other identity writes and `WorkspaceService/SetIamPolicy` stay EXCLUDED |
+| write | Add instances to projects and create CI identities | *Instances:* Add a PostgreSQL instance to a project, signed in with a user name and password · Each instance is confirmed in the user's MCP client before it is added · Its databases join that project for good · *CI identities:* Create a workload identity that GitHub Actions or GitLab CI jobs in one repository sign in as, with the GitOps Service Agent role in one project, so it can roll out without approval · Each identity is confirmed in the user's MCP client before it is created · This policy does not limit what it does, and it lasts until it is removed | 3 WRITE methods. Instances: 1 WRITE method: `InstanceService/CreateInstance`, which the gate serves only with a confirmation that `administer_workspace` attaches for the new instance; the tool confirms only a PostgreSQL instance in a project that signs in with a password (D13). `UpdateInstance`, whose `allow_missing` also creates an instance, stays EXCLUDED with the other instance writes. CI identities: 2 WRITE methods: `WorkloadIdentityService/CreateWorkloadIdentity` and `ProjectService/SetIamPolicy`, which the gate serves only with the confirmations `administer_workspace` attaches: one for the new identity, and one for the project whose policy then gains it, in the GitOps Service Agent role (D13). The tool takes the provider's own issuer and a pattern that admits every job of one repository. `UpdateWorkloadIdentity` stays FORBIDDEN, and the other identity writes and `WorkspaceService/SetIamPolicy` stay EXCLUDED |
 | write | Sync instances and databases, and manage saved queries | Sync instances and databases · Saved queries | 9 WRITE methods: sync, saved-query writes |
 | — | *Read-write serves the rows above* | | 118 methods |
 | floor | Raise this policy, create a service account key, change a person's password, email or MFA, show a stored secret, open an Admin mode session, or read anyone else's query history | | 104 methods: 32 FORBIDDEN, 72 EXCLUDED |
@@ -176,8 +177,7 @@ authorized by a read permission. **The same statement, mode and engine can get d
 different RPCs; a claim about what runs has to name the operation as well as the engine.**
 
 Four wordings later, the line states the bound and stops: "Capped by your own Bytebase permissions, and by what Bytebase supports for each database engine and each operation".
-Its Read-only sibling keeps a consequence because there the clamp really is one rule with one
-outcome. Parallelism between the two is broken on purpose.
+Both modes now share one bound line, which states the bound and names no consequence (D10).
 
 Two choices in the wording are deliberate. Row 2 says *Read data by running queries* rather than
 "Run queries" so the verb stays Read and the sub-item carries the rule that keeps it true under
@@ -319,8 +319,8 @@ capability covers", opens the MCP docs page at the table that lists each row's s
 rows, middle column). No method names, no permission names, no counts. The row no mode serves is
 the last row of the second group (D14), because it is what a security-minded admin reads first and
 what keeps the list honest about the 104 methods no mode reaches. There is no constants line under
-the list; the facts it would carry (capped by the user's own permissions, operations audited) are
-the section description.
+the list; the facts it would carry (capped by the user's own permissions, what the audit log
+records) are the section description (D4).
 
 The first version put the sub-items behind one "Show details" toggle for every row at once
 (per-row expanders were rejected as fiddly). BYT-10597 removed it: opened, it put a long reference
@@ -330,8 +330,10 @@ product's promises: the titles are bounded once by the section description (and 
 page by the same line, D10), and the docs carry the rest. Three sub-items are caveats rather than
 reference — a write query runs without asking in a client that cannot show confirmations, a CI
 identity is not limited by this policy and lasts until removed, an added instance's databases join
-the project for good. They move to the docs with the others; the Read-write caution on the consent
-page and D13's trade already say that a Read-write session makes real changes.
+the project for good. The first goes on the consent page, in the Read-write caution (D10), because
+it is what the person approving most needs: a write can run with no prompt and no review. The
+other two move to the docs with the rest; the caution and D13's trade already say that a
+Read-write session makes real changes.
 
 **D3 — The mode chip is the subject; the "In force" line and the mode sentence go.** The
 three-stripe icon and the words "In force" are removed. View state reads: the mode chip (success
@@ -353,11 +355,16 @@ the rendered name rather than the attribute, which satisfies a DOM query while n
 **D4 — The two notes under the card move and shrink.** "A ceiling change applies to the next
 request…" shows only while editing, as "Applies to every running session's next request.", and
 names the change when the form is dirty: "Read-only → Read-write applies to every running
-session's next request." "MCP policy denials are recorded in the audit log" is a fact about the
-feature, not about the current state, so it joins the section description. Per
-[audit-what-produces-a-row.md](audit-what-produces-a-row.md) a refusal reaches stdout only when
-audit logging to stdout is enabled, so the description carries that condition rather than an
-unqualified "audited": "The most any MCP session may do here. Sessions are also capped by each user's permissions, and policy refusals are streamed to stdout when audit logging to stdout is enabled."
+session's next request." The note on what the audit log records is a fact about the
+feature, not about the current state, so it joins the section description. It claims only what
+the database stores per [audit-what-produces-a-row.md](audit-what-produces-a-row.md): calls to
+audited methods that reach their handler. Schema and metadata reads are unaudited, and a call that
+the ceiling gate or a permission check refuses before its handler is only streamed, when audit
+logging to stdout is on. So the line
+names what is stored and says refusals mostly are not, never an unqualified "MCP operations are
+recorded": "Queries, exports, proposed changes and rollouts are recorded in the audit log. Most
+refused calls are not." The section description is the bound line followed by this line, and the
+consent page shows the same two (D10).
 
 **D5 — Edit state: icon cards, the selected mode's "Best for", and the pick's ladder.** The
 three mode cards lose their descriptions; they duplicated the ladder. What remains is the shape of
@@ -395,11 +402,14 @@ exist on the page: "approve access in the browser" in the Connect a client descr
 was useful: "Add Bytebase to your AI client and start asking. On first connection you sign in and
 approve access in the browser."
 
-**D10 — The consent page uses the same rows in the same two groups, and bounds them once.** Under
-the mode chip, "This session may" lists the served rows with ✓ and "This session may not" the rest,
+**D10 — The consent page uses the same rows in the same two groups, and bounds them once.** The
+card's label above the mode chip is "Workspace policy", as on the Disabled and unreadable consent
+cards, since the chip shows the workspace's policy as it is now. Under the chip, "This session may" lists the served rows with ✓ and "This session may not" the rest,
 ending with the row no mode serves, exactly as the settings page groups them (D14). Then the bound
 line and the audit line, the same two sentences the settings section description is built from.
-Read-write keeps its caution. Its mode chip carries the same icon as the settings page's. One
+Read-write keeps its caution, with one clause added (Peter Zhu, 2026-11-24): "An AI session with
+write access makes real changes. In clients that can't ask for confirmation, write queries run
+without asking. Approve only on a machine you control." Its mode chip carries the same icon as the settings page's. One
 wording table serves both surfaces. The headings name the session rather than the policy, because
 the person approving is deciding about their own session; there is no docs link, so the approval
 screen stays one decision.
@@ -516,9 +526,10 @@ under
 `oauth2.consent.mcp.*` values.
 
 - Section description: the bound line and the audit line, "Every MCP session is limited by the
-  connected user's Bytebase permissions and the target database engine's supported operations. MCP
-  operations are recorded in Bytebase audit logs." The consent page shows the same two sentences
-  (D10).
+  connected user's Bytebase permissions and the target database engine's supported operations.
+  Queries, exports, proposed changes and rollouts are recorded in the audit log. Most refused calls
+  are not." The consent page shows the same two sentences (D10). The audit line replaces the shipped
+  "MCP operations are recorded in Bytebase audit logs.", which claims more than is stored (D4).
 - Disclosure line, collapsed — Read-only: "Read schemas, data, the change workflow, members, roles and policies; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported".
   Read-write: "Read schemas, data, the change workflow, members, roles and policies; propose, request and revoke access, grant masking exemptions, approve, run, export and manage".
   Group headings: "This policy allows", "This policy does not allow". Docs link: "What each
@@ -562,7 +573,7 @@ under
   to every running session's next request."
 - Connect a client: the sentence in D9.
 - Consent: group headings "This session may", "This session may not"; row titles; the bound and
-  audit lines of the section description; the Read-write caution, unchanged.
+  audit lines of the section description; the Read-write caution with its added clause (D10).
 
 ## Implementation
 
@@ -630,8 +641,12 @@ release ships.
 
 1. **Docs (bytebase.com), `docs/integrations/mcp.mdx`.** Under Access policy, a "What each mode
    allows" table: one entry per row in The rows, titled as in the product, with its sub-items, and
-   a column for the modes that serve it; the row no mode serves closes the table. The same PR
-   corrects the page where it trails the product: it has no lines for adding instances, creating CI
+   a column for the modes that serve it; the row no mode serves closes the table. The table
+   replaces the page's mode table. The "What no mode allows" list stays, minus the lines Read-write
+   now serves in part: changing approval and masking rules, adding instances to projects, and
+   creating CI identities with a project role. Each such line keeps what is still refused, such as
+   workspace IAM and other workspace settings. The same PR corrects the rest of the page where it
+   trails the product: it has no lines for adding instances, creating CI
    identities, or changing approval or masking rules, and it says an agent cannot read the approval
    rules, which the members row now serves.
 2. **This repo: this doc, then the frontend, in one PR.** It delivers D2, D6, D10, D14 and D15.
@@ -639,9 +654,11 @@ release ships.
      the row no mode serves as the twelfth entry (D14).
    - `MCPCapabilityList` renders the two groups from the mode, with no `details` or divider
      options; `MCPCapabilityLadder` drops its details control and renders the docs link;
-     `MCPConsentCeiling` drops its details control and passes its two headings.
+     `MCPConsentCeiling` drops its details control, labels its card "Workspace policy" and passes
+     its two headings.
    - Locale, all five files: add the two settings headings, the consent "may not" heading and the
-     docs link; reword the titles of The rows; remove the `stops.*` family and its
+     docs link; reword the titles of The rows, the audit line (D4) and the Read-write caution
+     (`oauth2.consent.mcp.write-caution`, D10); remove the `stops.*` family and its
      `DYNAMIC_PREFIXES` entry, `floor.label`, `show-details`, `hide-details` and every
      `row.*.details`.
    - Tests, named by what they assert: each mode's two groups (D14 counts, Read-only and
@@ -675,8 +692,10 @@ promise. What to do:
    executes statements separately — `SQLService/Query` and `SQLService/Export` gate on different
    conditions, so a sentence true of one is not thereby true of the other.
 
-Both surfaces render row titles only, so a caveat that belongs to one mode or one engine has to
-live in the bound line (D10) or in the title itself, never only in a row's sub-items.
+Both surfaces render row titles only, so a caveat a title needs in order to be true, one that holds
+only for one mode or one engine, has to live in the bound line (D10) or in the title itself, never
+only in a row's sub-items. A note on how a true capability behaves, such as when a confirmation is
+asked, is not that kind of caveat; it lives in the docs (D2).
 
 
 ## Out of scope
