@@ -81,6 +81,82 @@ describe("task run diagnostic evidence", () => {
     expect(ctx).not.toHaveProperty("sql");
   });
 
+  test.each(["latest", "explicit-history"] as const)(
+    "accepts the valid create environment for %s failed Plan runs",
+    (provenance) => {
+      const createTask = taskName.replace("/stages/prod/", "/stages/create/");
+      const createRun = `${createTask}/taskRuns/8`;
+      const ctx = getTaskRunDiagnostic({
+        ...input(),
+        provenance,
+        run: { ...input().run, name: createRun },
+        task: create(TaskSchema, { name: createTask }),
+      });
+      expect(ctx).toMatchObject({
+        sourceId: createRun,
+        resource: { name: planName },
+      });
+      expect(facts(ctx)).toMatchObject({
+        Status: "FAILED",
+        Provenance: provenance,
+      });
+    }
+  );
+
+  test.each(["latest", "explicit-history"] as const)(
+    "accepts the valid create environment for %s completed runs with step errors",
+    (provenance) => {
+      const createRun = name.replace("/stages/prod/", "/stages/create/");
+      const ctx = getTaskRunDiagnostic({
+        ...input(Status.DONE),
+        provenance,
+        run: { ...input(Status.DONE).run, name: createRun },
+        log: {
+          ...log([diffError()]),
+          snapshot: { taskRunName: createRun, status: Status.DONE },
+        },
+      });
+      expect(ctx).toMatchObject({
+        sourceId: createRun,
+        detail: "Recorded step error",
+      });
+      expect(facts(ctx)).toMatchObject({
+        Status: "DONE",
+        Provenance: provenance,
+      });
+    }
+  );
+
+  test.each(["latest", "explicit-history"] as const)(
+    "accepts the valid create environment for %s database-creation failures",
+    (provenance) => {
+      const createTask = taskName.replace("/stages/prod/", "/stages/create/");
+      const createRun = `${createTask}/taskRuns/8`;
+      const ctx = getTaskRunDiagnostic({
+        ...input(),
+        resource: issue,
+        provenance,
+        run: { ...input().run, name: createRun },
+        task: create(TaskSchema, {
+          name: createTask,
+          target: "instances/example",
+          payload: {
+            case: "databaseCreate",
+            value: { sheet: `${project}/sheets/2` },
+          },
+        }),
+      });
+      expect(ctx).toMatchObject({
+        sourceId: createRun,
+        resource: { kind: "issue", name: issue.name },
+      });
+      expect(facts(ctx)).toMatchObject({
+        Status: "FAILED",
+        Provenance: provenance,
+      });
+    }
+  );
+
   test.each([
     [Type.SCHEMA_DUMP, "schemaDump"],
     [Type.DATABASE_SYNC, "databaseSync"],
@@ -262,6 +338,8 @@ describe("task run diagnostic evidence", () => {
     name.replace("/example/", "/other/"),
     name.replace("/stages/prod/", "/stages/*/"),
     name.replace("/tasks/5/", "/tasks/0/"),
+    name.replace("/tasks/5/", "/tasks/create/"),
+    name.replace("/taskRuns/8", "/taskRuns/create"),
     `${name}/extra`,
     `${name}\n`,
   ])("rejects malformed or foreign run names: %s", (invalid) => {

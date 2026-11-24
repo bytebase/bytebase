@@ -88,7 +88,6 @@ export function getTaskRunDiagnostic({
     !match ||
     match[0] !== run.name ||
     match.groups?.plan !== planName ||
-    match.groups.stage === "create" ||
     (task && task.name !== match.groups.task)
   )
     return undefined;
