@@ -283,6 +283,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
             <TimeRangePicker
               params={searchParams}
               onParamsChange={setSearchParams}
+              label={t("common.created")}
             />
             <PermissionGuard
               permissions={["bb.plans.create", "bb.issues.create"]}

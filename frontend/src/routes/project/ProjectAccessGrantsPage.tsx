@@ -608,6 +608,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
             <TimeRangePicker
               params={searchParams}
               onParamsChange={setSearchParams}
+              label={t("common.created")}
             />
           </ProjectPageToolbar>
 

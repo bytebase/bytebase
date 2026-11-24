@@ -740,6 +740,7 @@
     "admin": "管理者",
     "all": "全て",
     "and": "と",
+    "apply": "適用",
     "approve": "承認",
     "approved": "承認済み",
     "archive": "アーカイブ",
@@ -5277,6 +5278,25 @@
       "enqueued-with-rollout-time": "{{time}} の後に実行される予定です。",
       "waiting-max-tasks-per-rollout": "他のタスクが完了するのを待っています。ロールアウトごとの最大実行タスク数制限に達しました。最後の報告は {{time}} です。"
     }
+  },
+  "time-range": {
+    "add-time": "時刻を追加",
+    "all-time": "全期間",
+    "clear": "期間をクリア",
+    "end-day": "終了日",
+    "from-time": "開始時刻（24 時間表記）",
+    "invalid-time": "09:30 のように 24 時間表記で入力してください。",
+    "last-12-months": "過去 12 か月",
+    "last-3-months": "過去 3 か月",
+    "last-30-days": "過去 30 日間",
+    "last-6-months": "過去 6 か月",
+    "last-7-days": "過去 7 日間",
+    "quick-ranges": "クイック範囲",
+    "remove-time": "時刻を削除",
+    "start-day": "開始日",
+    "to-before-from": "終了が開始より前になっています。",
+    "to-time": "終了時刻（24 時間表記）",
+    "today": "今日"
   },
   "two-factor": {
     "description": "2 要素認証は、システム メンバーに追加のセキュリティ層を提供します。ログインするとき、ユーザーは認証アプリケーションによって生成されたセキュリティ コードを入力する必要があります。",
