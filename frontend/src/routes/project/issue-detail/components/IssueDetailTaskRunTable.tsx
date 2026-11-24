@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import {
   executionDurationOfTaskRun,
@@ -53,6 +54,7 @@ export function IssueDetailTaskRunTable({
   const { t } = useTranslation();
   const page = useIssueDetailContext();
   const agentHelpAvailable = useAgentDiagnosticHelpAvailable();
+  const compactHelp = useMediaQuery("(max-width: 767px)");
   const projectName = `${projectNamePrefix}${page.projectId}`;
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
@@ -220,16 +222,24 @@ export function IssueDetailTaskRunTable({
                     </TableCell>
                   )}
                   <TableCell className="min-w-0 pr-2">
-                    <IssueDetailTaskRunComment taskRun={taskRun} />
-                    {diagnostic && (
-                      <div
-                        className="mt-1"
-                        data-testid="task-run-diagnostic-help"
-                        data-task-run-name={taskRun.name}
-                      >
-                        <AgentDiagnosticHelpButton context={diagnostic} />
+                    <div className="flex min-w-0 items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <IssueDetailTaskRunComment taskRun={taskRun} />
                       </div>
-                    )}
+                      {diagnostic && (
+                        <div
+                          className="-my-1 flex shrink-0"
+                          data-testid="task-run-diagnostic-help"
+                          data-task-run-name={taskRun.name}
+                        >
+                          <AgentDiagnosticHelpButton
+                            context={diagnostic}
+                            iconOnly={compactHelp}
+                            className="relative after:absolute after:-inset-2"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <IssueDetailTaskRunDateCell date={taskRun.createTime} />

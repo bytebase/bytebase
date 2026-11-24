@@ -42,9 +42,11 @@ export function useAgentDiagnosticHelpAvailable(): boolean {
 export function AgentDiagnosticHelpButton({
   context,
   iconOnly = false,
+  className,
 }: {
   context: AgentDiagnosticContext;
   iconOnly?: boolean;
+  className?: string;
 }) {
   const { t } = useTranslation();
   const available = useAgentDiagnosticHelpAvailable();
@@ -53,6 +55,7 @@ export function AgentDiagnosticHelpButton({
     <AgentHelpButton
       size="sm"
       iconOnly={iconOnly}
+      className={className}
       onClick={() => openAgentDiagnosticHelp(context)}
     >
       {t("agent.diagnostic-help.ask-agent")}

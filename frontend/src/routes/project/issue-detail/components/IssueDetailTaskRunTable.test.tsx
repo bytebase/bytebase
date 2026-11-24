@@ -20,7 +20,11 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { IssueDetailPageSnapshot } from "../hooks/useIssueDetailPage";
 
-const availability = vi.hoisted(() => ({ aiEnabled: true }));
+const availability = vi.hoisted(() => ({ aiEnabled: true, narrow: false }));
+
+vi.mock("@/hooks/useMediaQuery", () => ({
+  useMediaQuery: () => availability.narrow,
+}));
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -112,6 +116,7 @@ const helpSelector = '[data-testid="task-run-diagnostic-help"]';
 
 beforeEach(() => {
   availability.aiEnabled = true;
+  availability.narrow = false;
 });
 
 afterEach(() => {
@@ -124,13 +129,14 @@ afterEach(() => {
 
 describe("IssueDetailTaskRunTable", () => {
   test.each(["Database creation failed", ""])(
-    "offers Issue-bound help below the comment for a failed run with detail %j",
+    "offers Issue-bound help inline after the comment for a failed run with detail %j",
     (detail) => {
       const container = renderRuns([{ ...failed, detail }]);
       const help = container.querySelector(helpSelector);
       const detailCell = help?.closest("td");
       expect(help?.getAttribute("data-task-run-name")).toBe(failed.name);
-      expect(detailCell?.firstElementChild?.textContent).toBe(detail || "-");
+      expect(help?.previousElementSibling?.textContent).toBe(detail || "-");
+      expect(help?.parentElement).toBe(detailCell?.firstElementChild);
       const button = help?.querySelector("button");
       expect(button?.getAttribute("aria-label")).toBe(
         "agent.diagnostic-help.ask-agent"
@@ -152,6 +158,25 @@ describe("IssueDetailTaskRunTable", () => {
       expect(context?.resource).not.toHaveProperty("database");
     }
   );
+
+  test("uses a labeled icon-only action on narrow screens without adding a column", () => {
+    availability.narrow = true;
+    const container = renderRuns([failed]);
+    const help = container.querySelector(helpSelector);
+    const button = help?.querySelector("button");
+    expect(button?.getAttribute("aria-label")).toBe(
+      "agent.diagnostic-help.ask-agent"
+    );
+    expect(button?.getAttribute("title")).toBe(
+      "agent.diagnostic-help.ask-agent"
+    );
+    expect(button?.textContent).toBe("");
+    expect(help?.closest("tr")?.querySelectorAll("td")).toHaveLength(5);
+    act(() => button?.click());
+    expect(openAgentDiagnosticHelp).toHaveBeenCalledWith(
+      expect.objectContaining({ sourceId: failed.name })
+    );
+  });
 
   test("keeps a failed attempt historical after a newer success of the same task", () => {
     const done = create(TaskRunSchema, {

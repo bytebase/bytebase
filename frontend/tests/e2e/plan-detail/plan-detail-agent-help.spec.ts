@@ -17,6 +17,7 @@ import {
   type Route,
   type TestInfo,
 } from "@playwright/test";
+import { TIMESTAMP_COLUMN_WIDTH } from "../../../src/components/timestampColumn";
 import { ActuatorInfoSchema } from "../../../src/types/proto-es/v1/actuator_service_pb";
 import {
   AIChatMessageRole,
@@ -827,11 +828,12 @@ async function observeExecutionLogs(
 async function captureExecution(
   page: Page,
   testInfo: TestInfo,
-  name: string
+  name: string,
+  target?: Locator
 ) {
   const file = `agent-task-run-${name}.png`;
   const directory = process.env.BYTEBASE_E2E_SCREENSHOT_DIR;
-  await page.screenshot({
+  await (target ?? page).screenshot({
     animations: "disabled",
     path: directory ? join(directory, file) : testInfo.outputPath(file),
   });
@@ -908,7 +910,52 @@ for (const viewport of executionViewports) {
         const help = wrappers.getByRole("button", { name: viewport.help, exact: true });
         await expect(help).toHaveCount(1);
         await assertFits(page, help);
-        expect(await help.evaluate((button) => button.scrollWidth <= button.clientWidth + 1)).toBe(true);
+        expect(await help.evaluate((button) => {
+          const bounds = button.getBoundingClientRect();
+          return [...button.children].every((child) => {
+            const content = child.getBoundingClientRect();
+            return content.left >= bounds.left - 1 && content.right <= bounds.right + 1 && child.scrollWidth <= child.clientWidth + 1;
+          });
+        })).toBe(true);
+        if (fixture.issue) {
+          const row = page.getByRole("row").filter({ has: wrappers });
+          const cells = row.getByRole("cell");
+          const detailCell = cells.nth(1);
+          const comment = detailCell.getByText(fixture.selected.detail!, { exact: true });
+          await expect(comment).toBeVisible();
+          const commentBounds = (await comment.boundingBox())!;
+          const helpBounds = (await help.boundingBox())!;
+          const detailBounds = (await detailCell.boundingBox())!;
+          const rowBounds = (await row.boundingBox())!;
+          expect(Math.abs(commentBounds.y + commentBounds.height / 2 - helpBounds.y - helpBounds.height / 2)).toBeLessThanOrEqual(1);
+          expect(commentBounds.x + commentBounds.width).toBeLessThanOrEqual(helpBounds.x);
+          const paddingRight = await detailCell.evaluate((cell) => parseFloat(getComputedStyle(cell).paddingRight));
+          expect(Math.abs(detailBounds.x + detailBounds.width - paddingRight - helpBounds.x - helpBounds.width)).toBeLessThanOrEqual(1);
+          const baselineRowHeight = await wrappers.evaluate((wrapper) => {
+            const display = wrapper.style.display;
+            wrapper.style.display = "none";
+            const height = wrapper.closest("tr")!.getBoundingClientRect().height;
+            wrapper.style.display = display;
+            return height;
+          });
+          expect(rowBounds.height).toBeLessThanOrEqual(baselineRowHeight + 1);
+          for (const timestamp of [cells.nth(2), cells.nth(3)]) {
+            expect((await timestamp.boundingBox())!.width).toBe(TIMESTAMP_COLUMN_WIDTH.compact);
+          }
+          expect(await comment.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+          const iconOnly = viewport.viewport.width < 768;
+          await expect(help).toHaveText(iconOnly ? "" : viewport.help);
+          await expect(help).toHaveAttribute("title", viewport.help);
+          if (iconOnly) {
+            const hitArea = await help.evaluate((button) => {
+              const target = getComputedStyle(button, "::after");
+              return { width: parseFloat(target.width), height: parseFloat(target.height) };
+            });
+            expect(hitArea.width).toBeGreaterThanOrEqual(44);
+            expect(hitArea.height).toBeGreaterThanOrEqual(44);
+          }
+          await captureExecution(page, testInfo, `${viewport.label}-create-database-failed-inline-table`, row.locator("xpath=ancestor::table/.."));
+        }
         await help.focus();
         await expect(help).toBeFocused();
         const synthetic = surface === "latest-failed-replica" || surface === "done-recorded-sync-error";
