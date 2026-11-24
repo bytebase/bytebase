@@ -1,16 +1,16 @@
 # MCP access policy — show what a mode allows
 
-Status: accepted · 2026-09-10
+Status: accepted · 2026-09-10 · revised 2026-11-24 for BYT-10597 (D2, D10, D14, D15)
 
 The MCP settings page offers three modes (Disabled, Read-only, Read-write) and describes each in
 one sentence. Since [#21324](https://github.com/bytebase/bytebase/pull/21324) removed the per-mode
 method drawer, nothing on the page says what a mode actually serves, and an admin choosing between
 Read-only and Read-write has nothing to compare beyond two sentences. The rule this doc lands on:
-**show capabilities, not methods or permissions — one ordered list of capability rows in which
-each mode is a prefix, collapsed by default inside the existing Access policy section, and
-following the picked mode while editing.** The page also gets shorter: the mode cards shrink to an
+**show capabilities, not methods or permissions — for the mode in force or being picked, what it
+allows and then what it does not allow, as row titles alone, collapsed by default inside the
+existing Access policy section.** The page also gets shorter: the mode cards shrink to an
 icon, a label and a three-word caption, with the selected mode's "Best for" under them; the
-disclosure line is the mode's description, and row details sit behind one toggle. The product change
+disclosure line is the mode's description, and what each row covers is in the docs. The product change
 is frontend-only, with one comment added to the `mcp_method_class` annotation and its generated
 output; keeping the row wording true to the method classification is a rule in `AGENTS.md`
 rather than a lint (D11). A custom access policy is out of scope, but the list is shaped so that it
@@ -41,50 +41,57 @@ A second problem surfaced once the list existed: the edit state carried about 37
 them duplicated. The three mode cards described what the list already showed, and every row's
 detail line was visible whether or not anyone wanted it.
 
+A third came from review once the list had grown to sixteen rows (BYT-10597). Two dividers, "Read-only
+stops here" and "Read-write stops here", split one list, and a separate red line said what no mode
+does. A reader has to know the modes are nested to parse that, and under Read-only the boundary of
+the mode in force sits mid-list, followed by a divider naming a mode that is not in force. Consent
+screens elsewhere read the other way: what is allowed, then what is not. Under Read-write the list
+was sixteen ticked rows, and "Show details" opened a long reference line under every one of them.
+
 ## Principle
 
-> **A capability is a verb phrase an admin recognizes, standing for an exact set of served methods. The three modes are nested, so one ordered list with two dividers shows all three at once,
-> and the mode in force — or the mode being picked — is a highlighted prefix of that list.**
+> **A capability is a verb phrase an admin recognizes, standing for an exact set of served methods.
+> A mode is shown as two groups of rows: what it allows, then what it does not allow. The rows keep
+> one order, and because the modes are nested, each mode's allowed group is a prefix of it.**
 
 What follows from it:
 
 - The unit shown is a capability row, never a method, a permission, or a count.
-- The list is the same in view and in edit. Editing changes which prefix is served, nothing else.
-- Rows a mode does not serve stay visible and muted, so comparing modes never needs a second
-  surface.
-- What no mode serves is one line under the list, never a row.
-- Nothing on the section is said twice. The mode name appears in the chip or the selector; the
-  description in the disclosure line; the audience in the "Best for" line; the detail behind one
-  toggle.
+- The rows are the same in view and in edit. Editing changes which rows fall in which group,
+  nothing else.
+- Rows a mode does not serve stay visible, muted in the second group, so comparing modes never
+  needs a second surface.
+- What no mode serves is one more row, always the last of the second group, so under Read-write it
+  is the whole group.
+- Nothing on the section is said twice. The mode name appears in the chip or the selector, so the
+  group headings say "This policy"; the description is in the disclosure line; the audience in the
+  "Best for" line; what each row covers, in the docs.
 
 ## The rows
 
-Sixteen rows: four read, twelve write. Each has a title and a one-line list of sub-items in plain
-words. The right column records which classified methods the row's wording has to cover; it is
-documentation for whoever rereads these rows after a classification change, and never appears in
-the product.
+Eleven rows: four read, seven write, and the row no mode serves, called the floor below. Each has a title, which is all the
+product shows, and a list of sub-items in plain words, which the MCP docs page publishes under the
+row's title (D2). A write row merged from two earlier rows (D15) lists each part's sub-items under
+the part's own verb. The right column records which classified methods the row's wording has to
+cover; it is documentation for whoever rereads these rows after a classification change, and never
+appears in the product.
 
-| Tier | Row | Sub-items shown | Classified methods the wording must cover |
+| Tier | Row | Sub-items, published in the docs | Classified methods the wording must cover |
 |---|---|---|---|
 | read | Read schemas and metadata | Schemas · Databases and instances · Projects and database groups · Catalogs, changelogs and revisions · SQL review configs · Your own session and workspace facts | 31 READ methods: `DatabaseService` reads, projects, instances, database groups, catalogs, changelogs, revisions, review configs, session facts |
 | read | Read data by running queries | Run read-only queries · Under Read-only, a request is refused whole unless every statement is shown to be a read that returns data; how deeply that can be checked varies by engine, and on some engines no statement can be shown to be a read at all · Your own query history · Saved queries and sheets you have access to | 9 READ methods: `SQLService/Query`, query history (4), saved-query reads (3), `GetSheet` |
 | read | Read the change workflow | Issues and comments · Plans and plan checks · Rollouts, task runs and logs · Releases · Rollback previews | 17 READ methods: issue, plan, rollout and release reads |
 | read | Read members, roles and policies | Who holds which role in the workspace and its projects · Groups and their members · Roles and their permissions · Masking rules and exemptions · Rollout, data query, tag and review policies · Approval rules, environments, semantic types and data classification · Access grants, including pending requests · CI identities and who can sign in as them | 15 READ methods: `GetIamPolicy` on projects and the workspace, group reads (3), role reads (2), `GetPolicy`, `ListPolicies`, access-grant reads (3, with `SearchMyAccessGrants`), workload identity reads (2), and `GetSetting`, which the gate serves for those four settings only |
-| — | *Read-only stops here* | | 72 methods |
-| write | Propose changes | Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. The project's approval policy decides whether a change needs approval | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
-| write | Request access grants | Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after it is approved, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants · Revoke an active grant · Turn a project's "Allow access grants" on or off, after the user confirms | 3 WRITE methods: `AccessGrantService/CreateAccessGrant` and `RevokeAccessGrant`, served like any WRITE method; and `ProjectService/UpdateProject`, served only through the `set_just_in_time_access` tool, which asks the user to confirm and changes only that setting |
-| write | Grant or revoke masking exemptions | Exempt one member from masking for a database, a schema, a table or a column, or for every database in a project, with an optional expiry · Each exemption and each removal is confirmed in the user's MCP client before it is made · Exempted data shows unmasked in query and export results | 1 WRITE method: `OrgPolicyService/UpdatePolicy`, served only through the `grant_masking_exemption` and `revoke_masking_exemption` tools, which ask the user to confirm, then add one exemption entry or remove one member from the entries whose condition matches exactly; the workspace masking rule policy changes through `administer_workspace` (Set masking rules), and other policy types and `CreatePolicy` and `DeletePolicy` stay refused |
-| write | Approve or reject issues | Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console | 2 WRITE methods: `ApproveIssue`, `RejectIssue`, served only through the `decide_issue` tool, which asks the user to confirm each decision and refuses role requests |
-| write | Add instances to projects | Add a PostgreSQL instance to a project, signed in with a user name and password · Each instance is confirmed in the user's MCP client before it is added · Its databases join that project for good | 1 WRITE method: `InstanceService/CreateInstance`, which the gate serves only with a confirmation that `administer_workspace` attaches for the new instance; the tool confirms only a PostgreSQL instance in a project that signs in with a password (D13). `UpdateInstance`, whose `allow_missing` also creates an instance, stays EXCLUDED with the other instance writes |
-| write | Create CI identities | Create a workload identity that GitHub Actions or GitLab CI jobs in one repository sign in as, with the GitOps Service Agent role in one project, so it can roll out without approval · Each identity is confirmed in the user's MCP client before it is created · This policy does not limit what it does, and it lasts until it is removed | 2 WRITE methods: `WorkloadIdentityService/CreateWorkloadIdentity` and `ProjectService/SetIamPolicy`, which the gate serves only with the confirmations `administer_workspace` attaches: one for the new identity, and one for the project whose policy then gains it, in the GitOps Service Agent role (D13). The tool takes the provider's own issuer and a pattern that admits every job of one repository. `UpdateWorkloadIdentity` stays FORBIDDEN, and the other identity writes and `WorkspaceService/SetIamPolicy` stay EXCLUDED |
-| write | Manage approval rules for database changes | Add, remove, reorder or change the rules that decide who approves a database change · Each change is confirmed in the user's MCP client before it is made · The fallback rules and the rules for other kinds of issues stay as they are | 1 WRITE method: `SettingService/UpdateSetting`, which the gate serves only with a confirmation that `administer_workspace` attaches, for the approval rules alone (D13) |
-| write | Set masking rules | Add, remove, reorder or change the rules that decide which columns are masked and how · Each change is confirmed in the user's MCP client before it is made · Semantic types stay as they are | The `OrgPolicyService/UpdatePolicy` method of Grant or revoke masking exemptions, served for the workspace masking rule policy only through `administer_workspace`, which asks the user to confirm. On a workspace with no rules stored, `allowMissing` makes the handler create the policy; `CreatePolicy` itself stays refused |
-| write | Run rollouts and tasks | Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
+| — | *Read-only serves the rows above* | | 72 methods |
+| write | Propose and roll out database changes | *Propose:* Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. The project's approval policy decides whether a change needs approval · *Roll out:* Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 26 WRITE methods. Propose: 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata`. Roll out: 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
 | write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow · Where the user's MCP client supports confirmations, a query that is not a read as far as the engine can check it runs only after the user confirms it · In other clients such a query can run without asking | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts. A statement Bytebase cannot show is a read runs only through the `query_database` tool, which asks the user to confirm it when the client can show the form (`mcp_sql_write.go`) |
-| write | Export query results | Export results as files. Data leaves Bytebase | 1 WRITE method: `SQLService/Export`, which requires the user's own `bb.sql.export` on the data it reads, from a role or a matching export grant, and runs only statements Bytebase can show are reads |
-| write | Manage database housekeeping | Sync instances and databases · Saved queries | 9 WRITE methods: sync, saved-query writes |
-| — | *Read-write stops here* | | 118 methods |
-| floor | Never, in any mode: raise this policy, create a service account key, change a person's password, email or MFA, show a stored secret, open an Admin mode session, or read anyone else's query history. | | 104 methods: 32 FORBIDDEN, 72 EXCLUDED |
+| write | Request access grants and export query results | *Request:* Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after it is approved, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants · Revoke an active grant · Turn a project's "Allow access grants" on or off, after the user confirms · *Export:* Export results as files. Data leaves Bytebase | 4 WRITE methods. Request: 3 WRITE methods: `AccessGrantService/CreateAccessGrant` and `RevokeAccessGrant`, served like any WRITE method; and `ProjectService/UpdateProject`, served only through the `set_just_in_time_access` tool, which asks the user to confirm and changes only that setting. Export: 1 WRITE method: `SQLService/Export`, which requires the user's own `bb.sql.export` on the data it reads, from a role or a matching export grant, and runs only statements Bytebase can show are reads |
+| write | Approve or reject issues and manage approval rules for database changes | *Approve:* Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console · *Approval rules:* Add, remove, reorder or change the rules that decide who approves a database change · Each change is confirmed in the user's MCP client before it is made · The fallback rules and the rules for other kinds of issues stay as they are | 3 WRITE methods. Approve: 2 WRITE methods: `ApproveIssue`, `RejectIssue`, served only through the `decide_issue` tool, which asks the user to confirm each decision and refuses role requests. Approval rules: 1 WRITE method: `SettingService/UpdateSetting`, which the gate serves only with a confirmation that `administer_workspace` attaches, for the approval rules alone (D13) |
+| write | Set masking rules and grant or revoke exemptions | *Masking rules:* Add, remove, reorder or change the rules that decide which columns are masked and how · Each change is confirmed in the user's MCP client before it is made · Semantic types stay as they are · *Exemptions:* Exempt one member from masking for a database, a schema, a table or a column, or for every database in a project, with an optional expiry · Each exemption and each removal is confirmed in the user's MCP client before it is made · Exempted data shows unmasked in query and export results | 1 WRITE method, `OrgPolicyService/UpdatePolicy`, served two ways. Exemptions: served only through the `grant_masking_exemption` and `revoke_masking_exemption` tools, which ask the user to confirm, then add one exemption entry or remove one member from the entries whose condition matches exactly; other policy types and `CreatePolicy` and `DeletePolicy` stay refused. Masking rules: served for the workspace masking rule policy only through `administer_workspace`, which asks the user to confirm. On a workspace with no rules stored, `allowMissing` makes the handler create the policy; `CreatePolicy` itself stays refused |
+| write | Add instances and create CI identities | *Instances:* Add a PostgreSQL instance to a project, signed in with a user name and password · Each instance is confirmed in the user's MCP client before it is added · Its databases join that project for good · *CI identities:* Create a workload identity that GitHub Actions or GitLab CI jobs in one repository sign in as, with the GitOps Service Agent role in one project, so it can roll out without approval · Each identity is confirmed in the user's MCP client before it is created · This policy does not limit what it does, and it lasts until it is removed | 3 WRITE methods. Instances: 1 WRITE method: `InstanceService/CreateInstance`, which the gate serves only with a confirmation that `administer_workspace` attaches for the new instance; the tool confirms only a PostgreSQL instance in a project that signs in with a password (D13). `UpdateInstance`, whose `allow_missing` also creates an instance, stays EXCLUDED with the other instance writes. CI identities: 2 WRITE methods: `WorkloadIdentityService/CreateWorkloadIdentity` and `ProjectService/SetIamPolicy`, which the gate serves only with the confirmations `administer_workspace` attaches: one for the new identity, and one for the project whose policy then gains it, in the GitOps Service Agent role (D13). The tool takes the provider's own issuer and a pattern that admits every job of one repository. `UpdateWorkloadIdentity` stays FORBIDDEN, and the other identity writes and `WorkspaceService/SetIamPolicy` stay EXCLUDED |
+| write | Sync instances and databases, and manage saved queries | Sync instances and databases · Saved queries | 9 WRITE methods: sync, saved-query writes |
+| — | *Read-write serves the rows above* | | 118 methods |
+| floor | Raise this policy, create a service account key, change a person's password, email or MFA, show a stored secret, open an Admin mode session, or read anyone else's query history | | 104 methods: 32 FORBIDDEN, 72 EXCLUDED |
 
 Every row is displayed under every mode — served, or muted with a `—` — and against every engine a
 workspace happens to hold, so **every line on this card must be true on both axes: mode and engine.**
@@ -181,7 +188,8 @@ policy will want it as its own switch.
 Every sub-item names only what the served methods can do. Sheets are created, never edited: there
 is no update RPC. Releases and revisions are created and deleted: `ReleaseService/UpdateRelease` is
 classified WRITE but answers Unimplemented, and Revision has no update RPC, so "edit" would
-advertise an operation that does not exist. Housekeeping once also named database settings and
+advertise an operation that does not exist. The sync and saved-queries row, once titled "Manage
+database housekeeping", also named database settings and
 labels, moving a database between projects, and database groups. Those five methods
 (`UpdateDatabase`, `BatchUpdateDatabases` and the three database-group writes) are EXCLUDED now,
 for `REDRAWS_GOVERNANCE_BOUNDARY`: a database's project and environment decide which approval, SQL
@@ -259,9 +267,11 @@ is approved. *Request*: none until it is approved, and then access to one statem
 unmasked or exported if asked for. *Approve*: none directly; the issue proceeds: a change rolls out
 as the project's rollout policy allows, and an access request takes effect. Role requests stay in
 the console. *Grant*: direct and standing: an exempted member sees the covered data unmasked in
-query and export results until the exemption ends or is revoked. *Run*: direct. *Export*: data leaves the product. *Manage*:
+query and export results until the exemption ends or is revoked. *Run* and *Roll out*: direct. *Export*: data leaves the product. *Manage*:
 configuration only, no data path. Within a tier the verb repeats; it changes only where the effect
-changes.
+changes. A row merged from two parts (D15) keeps each part's verb, so "Set masking rules and grant
+or revoke exemptions" says *Grant* where "Manage masking rules and exemptions" would hide the
+standing unmask behind a configuration verb.
 
 One verb for the whole write tier was tried and rejected:
 
@@ -278,12 +288,13 @@ policy may still require approval); *Export* over Read or Download (Read hides t
 which is why Export is WRITE-class in the first place); *Manage* over Update or Maintain (Update
 reads as a data change, Maintain is vague); *Request* over Propose (a proposal waits for approval
 only when the project's approval policy says so, a session's request always does, and what an approved request
-gives is access to data, not a change); *Approve* is a row of its own, not a sub-item of Propose,
-because deciding someone's proposal or request is a different effect from filing one. Rollouts and
-DML/DDL both take *Run* and stay two rows, because a custom policy will want "run approved
-rollouts, but no ad-hoc SQL" — the workflow the product exists for.
+gives is access to data, not a change); *Approve* stays out of the propose row,
+because deciding someone's proposal or request is a different effect from filing one; it shares a
+row with the approval rules, which decide who may approve. Rollouts join proposals in one row and
+DML/DDL keeps a row of its own, because a custom policy will want "run approved rollouts, but no
+ad-hoc SQL" — the workflow the product exists for — and that line falls between two rows.
 
-The tier is named once, by the dividers, so no row repeats it in its title.
+The tier is named by the tag on each allowed row, so no row repeats it in its title.
 
 ## Decisions
 
@@ -295,21 +306,32 @@ rows Read-only serves; the EXCLUDED reads
 (audit logs, users, other people's query history, task-run sessions) are
 refused in every mode, so no summary may say "read everything". The line never repeats the mode
 name, which the chip (view) or the
-selector (edit) already shows. Expanded, it becomes the list heading "Read-write allows", with a
-"Show details" control on the right. In view state it sits under the chip line; in edit state it
+selector (edit) already shows. Expanded, it becomes the first group's heading, "This policy
+allows" (D14). In view state it sits under the chip line; in edit state it
 sits under the selector and its "Best for" line, so the cause and its effect are adjacent. The open
 state carries across the view-to-edit transition within a page
 visit, and starts collapsed on the next one. Remembering it per browser was cut in review as more
 machinery than a settings page visited this rarely earns.
 
-**D2 — Content: rows first, sub-items behind one toggle.** Expanded, each row shows its title and
-its tier tag, nothing else. "Show details" reveals the sub-item line for every row at once, so
-there is one second-level control rather than one per row; per-row expanders were rejected as fiddly. No
-method names, no permission names, no counts, no link to a method list. The floor is kept as one
-short line because it is what a security-minded admin reads first, and it is what keeps the list
-honest about the 104 methods no mode reaches. There is no constants line under the list; the facts
-it would carry (capped by the user's own permissions, refusals audited) move into the section
-description.
+**D2 — Content: row titles only; what each row covers is in the docs.** Expanded, each row shows
+its title, and an allowed row its tier tag, nothing else. Under the groups, one link, "What each
+capability covers", opens the MCP docs page at the table that lists each row's sub-items (The
+rows, middle column). No method names, no permission names, no counts. The row no mode serves is
+the last row of the second group (D14), because it is what a security-minded admin reads first and
+what keeps the list honest about the 104 methods no mode reaches. There is no constants line under
+the list; the facts it would carry (capped by the user's own permissions, operations audited) are
+the section description.
+
+The first version put the sub-items behind one "Show details" toggle for every row at once
+(per-row expanders were rejected as fiddly). BYT-10597 removed it: opened, it put a long reference
+line under each of sixteen rows, and an admin choosing a mode needs the titles, while the
+sub-items are reference for the few who audit a row. Their caveats do not disappear from the
+product's promises: the titles are bounded once by the section description (and on the consent
+page by the same line, D10), and the docs carry the rest. Three sub-items are caveats rather than
+reference — a write query runs without asking in a client that cannot show confirmations, a CI
+identity is not limited by this policy and lasts until removed, an added instance's databases join
+the project for good. They move to the docs with the others; the Read-write caution on the consent
+page and D13's trade already say that a Read-write session makes real changes.
 
 **D3 — The mode chip is the subject; the "In force" line and the mode sentence go.** The
 three-stripe icon and the words "In force" are removed. View state reads: the mode chip (success
@@ -354,15 +376,16 @@ show after saving. No "adds N over Read-only", no added or removed marks, no com
 stored mode: the muted rows already show what a pick does not serve. The edit state is about 90
 words collapsed and 140 expanded, down from about 215 and 375 in the first draft of this design.
 
-**D6 — Marks: ✓ or —, plus a tier tag on served rows only.** A served row shows ✓, a `success`
-"read" badge or a `warning` "write" badge after its title, and full-contrast text. An unserved row
-shows —, muted text, and no badge. Under Read-only the write rows are unserved, so a "write" badge
+**D6 — Marks: ✓ or —, plus a tier tag on served rows only.** A served row, in the first group,
+shows ✓, a `success` "read" badge or a `warning` "write" badge after its title, and full-contrast
+text. An unserved row, in the second group, shows —, muted text, and no badge; the row no mode
+serves is marked like any other. Under Read-only the write rows are unserved, so a "write" badge
 never appears there.
 
 **D7 — Disabled.** In view, the chip and the sentence "No MCP session can connect to this
 workspace." are the whole answer; no disclosure. In edit with Disabled picked, the Disabled card is
 selected, the "Best for" line reads "keeping MCP off until you are ready to turn it on", and the
-disclosure slot holds a static line in the floor's soft error tone, "Nothing is allowed; no MCP
+disclosure slot holds a static line in the soft error tone of the — marks, "Nothing is allowed; no MCP
 session can connect.", so red means "no capability" everywhere on the card. It is not a button and
 does not repeat the mode name.
 
@@ -372,23 +395,26 @@ exist on the page: "approve access in the browser" in the Connect a client descr
 was useful: "Add Bytebase to your AI client and start asking. On first connection you sign in and
 approve access in the browser."
 
-**D10 — The consent page uses the row titles, and bounds them once.** "This session may" lists the served rows with ✓,
-one ✕ line for the unserved tier under Read-only ( + NO_WRITE + ), then the
-existing capped and audit lines. Read-write keeps its caution. Its mode chip carries the
-same icon as the settings page's. One wording table serves both surfaces.
+**D10 — The consent page uses the same rows in the same two groups, and bounds them once.** Under
+the mode chip, "This session may" lists the served rows with ✓ and "This session may not" the rest,
+ending with the row no mode serves, exactly as the settings page groups them (D14). Then the bound
+line and the audit line, the same two sentences the settings section description is built from.
+Read-write keeps its caution. Its mode chip carries the same icon as the settings page's. One
+wording table serves both surfaces. The headings name the session rather than the policy, because
+the person approving is deciding about their own session; there is no docs link, so the approval
+screen stays one decision.
 
-Titles alone carry no caveats, and the caveats live in the row details this screen does not render —
-so on a workspace whose engine refuses every statement, an unqualified "Read data by running queries
-✓" promises a capability the session does not have. The screen cannot carry a detail line for every row and
-stay an approval screen, so it bounds the whole list once instead, on the line that already limits it
-by the reader's own permissions. That bound is per mode, because the statement clamp it describes
-runs only under Read-only: "Capped by your own Bytebase permissions, and by what Bytebase can check on each database engine — where it cannot show a statement is a read, no query runs at all" against
-"Capped by your own Bytebase permissions, and by what Bytebase supports for each database engine and each operation". The Read-only line names a
-consequence because the clamp is one rule with one outcome. The Read-write line does not: what runs
-there varies by engine *and* by operation, and every consequence clause written for it has been false
-once (see the complement and method axes in The rows). It states the bound and stops. One line either way, and the ✓ marks
-read as what the policy admits rather than what will succeed. It carries a neutral glyph and no
-"Allowed" mark, so a bound is not counted as a further grant.
+Titles alone carry no caveats, so on a workspace whose engine refuses every statement, an
+unqualified "Read data by running queries ✓" promises a capability the session does not have.
+Neither surface carries a detail line per row, so the whole list is bounded once, on the line that
+already limits it by the reader's own permissions: "Every MCP session is limited by the connected
+user's Bytebase permissions and the target database engine's supported operations." It states the
+bound and stops, in both modes. A first version gave each mode its own bound and named a consequence
+for Read-only; the consent page and the settings page were unified on this one line in
+[#21517](https://github.com/bytebase/bytebase/pull/21517), and every consequence clause written for
+Read-write had been false once (see the complement and method axes in The rows). The ✓ marks read as
+what the policy admits rather than what will succeed. The bound line carries a neutral glyph and no
+"Allowed" mark, so it is not counted as a further grant.
 
 **D11 — The wording is bound to the classification by instruction, not by a lint.** The row
 titles claim to cover every READ and WRITE method, and a method annotated into either class is
@@ -438,6 +464,37 @@ admin who wants no agent to change a setting chooses Read-only. Vincent Huang de
 that admin changes are no more dangerous than the DDL and DML that Read-write already runs, and that
 a user who does not trust the agent with a setting changes it in the console.
 
+**D14 — Two groups, allowed then not allowed, instead of one list with dividers.** The rows split
+by whether the mode serves them: "This policy allows" holds the served rows, "This policy does not
+allow" holds the rest, and the row no mode serves is always the last row of the second group. Under
+Read-only that is four rows, then seven write rows and the last row; under Read-write, eleven rows,
+then the last row alone. Each group keeps the table's order. The headings say "This policy" because
+the chip or the selector directly above already names the mode, and in edit state they describe
+the mode being picked.
+
+The first version drew one list of all sixteen rows with "Read-only stops here" and "Read-write
+stops here" dividers, plus a red "Never, in any mode:" line under it. Rejected in BYT-10597: the
+dividers ask the reader to know the modes are nested, put the boundary of the mode in force
+mid-list, and under Read-only name a mode that is not in force. The red line was a third kind of
+"not allowed" beside the — rows; once a group says what the policy does not allow, the line is one
+more such row, and its label is dropped. Its text is unchanged, and it holds in every mode, so
+switching modes in edit state shows it staying put. Comparing modes still needs no second surface:
+picking the other mode moves rows between the groups.
+
+**D15 — Write rows merge by the object they act on, from twelve to seven.** Two write rows merge
+when they act on the same object or the same flow: proposing and rolling out a change; requesting an
+access grant, which can ask for exportable results, and exporting results; deciding issues and
+setting who decides them; masking rules and masking exemptions; adding an instance and creating a CI
+identity, the two things `administer_workspace` creates rather than edits. A row stays alone when an admin chooses or refuses
+Read-write over it: running DML and DDL directly, outside any review. Housekeeping is renamed for
+what it does, since "Manage database housekeeping" said nothing. A merged title names every part's
+verb and object (the verb rule), so it covers each part's methods and "Keeping the rows true" applies
+to it unchanged; the table keeps the parts apart, so a custom policy that needs one as its own
+switch can split the row again.
+
+The four read rows do not merge. They are short and parallel ("Read …"), and the one candidate pair
+— the change workflow with members, roles and policies — makes a title that reads as two rows.
+
 ## States
 
 | State | What the section shows |
@@ -445,10 +502,10 @@ a user who does not trust the agent with a setting changes it in the console.
 | View · Read-only or Read-write | Chip line with Edit policy; the disclosure line as the description, collapsed on every visit (D1). |
 | View · Disabled | Chip line; "No MCP session can connect to this workspace." No disclosure. |
 | View · unreadable, unserved, read failed | The existing warning or error, unchanged. No disclosure. |
-| Edit · Read-only or Read-write picked | Icon cards with the pick selected; the pick's "Best for" line; the disclosure for the pick, collapsed by default, rendering the post-save view, with "Show details" once expanded; separator; footer sentence (naming the change when dirty), Cancel, Save (enabled only when dirty). |
+| Edit · Read-only or Read-write picked | Icon cards with the pick selected; the pick's "Best for" line; the disclosure for the pick, collapsed by default, rendering the post-save view, expanded as the two groups (D14) and the docs link; separator; footer sentence (naming the change when dirty), Cancel, Save (enabled only when dirty). |
 | Edit · Disabled picked | Icon cards with Disabled selected; its "Best for" line; the static soft-error line in the disclosure slot (D7); separator; footer sentence (naming the change when dirty), Cancel, Save. |
 | Edit · nothing picked | Only reachable from an unreadable or unserved ceiling: icon cards with no selection; "Pick a mode to save this policy." in the disclosure slot; Cancel, Save disabled. |
-| Consent page | Served row titles with ✓, the ✕ line under Read-only, then the existing constants and caution. |
+| Consent page | The mode chip; "This session may" with the served rows; "This session may not" with the rest, ending with the row no mode serves; the bound and audit lines; the caution under Read-write (D10). |
 
 ## Copy
 
@@ -458,10 +515,14 @@ under
 `settings.mcp.ladder.*` are new; the rest replace existing `settings.mcp.*` and
 `oauth2.consent.mcp.*` values.
 
-- Section description: "The most any MCP session may do here. Sessions are also capped by each user's permissions, and policy refusals are streamed to stdout when audit logging to stdout is enabled."
+- Section description: the bound line and the audit line, "Every MCP session is limited by the
+  connected user's Bytebase permissions and the target database engine's supported operations. MCP
+  operations are recorded in Bytebase audit logs." The consent page shows the same two sentences
+  (D10).
 - Disclosure line, collapsed — Read-only: "Read schemas, data, the change workflow, members, roles and policies; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported".
   Read-write: "Read schemas, data, the change workflow, members, roles and policies; propose, request and revoke access, grant masking exemptions, approve, run, export and manage".
-  Expanded heading: "{mode} allows". Details control: "Show details" / "Hide details".
+  Group headings: "This policy allows", "This policy does not allow". Docs link: "What each
+  capability covers".
 - Disabled — view sentence: "No MCP session can connect to this workspace." Edit static line:
   "Nothing is allowed; no MCP session can connect."
 - Card captions: Disabled "No sessions connect"; Read-only "Explore and query"; Read-write "Change
@@ -471,9 +532,10 @@ under
   "making database changes through an AI agent, still capped by each user's own permissions".
 - The Read-only description sentence ("Sessions can explore schemas and run read-only queries…")
   is retired everywhere; its content lives in the Read-only summary and in row 2's sub-item.
-- Row titles and sub-items: the table above, verbatim.
-- Dividers: "Read-only stops here", "Read-write stops here".
-- Floor: "Never, in any mode: raise this policy, create a service account key, change a person's password, email or MFA, show a stored secret, open an Admin mode session, or read anyone else's query history."
+- Row titles: the table above, verbatim. Sub-items: the docs page, from the same table.
+- The row no mode serves: "Raise this policy, create a service account key, change a person's
+  password, email or MFA, show a stored secret, open an Admin mode session, or read anyone else's
+  query history". Until BYT-10597 it was a separate line led by "Never, in any mode:" (D14).
   "Approve issues" left the floor when approving and rejecting moved to the confirmed tool.
   "Administer the workspace" and "handle credentials" left it when `administer_workspace` began
   changing workspace administration after a confirmation (D13). The line no longer covers every
@@ -491,17 +553,21 @@ under
   send data to a third party" and was false on the effect axis: `CreateIssue` is served under
   Read-write and its webhook posts the title and description outward. It is not replaced by a row
   caveat — the webhook fires identically for an issue a human files in the console, so it is a
-  property of the workspace's notification config rather than of this ceiling, and the "Propose
-  changes" row already says the session can file issues. The fifth draft read "open an admin
+  property of the workspace's notification config rather than of this ceiling, and the propose
+  row already says the session can file issues. The fifth draft read "open an admin
   connection" and was false on the same axis for the opposite reason — it named the plumbing rather
   than the feature, and MCP does reach the admin data source. It names Admin mode now.
 - Tier badges: "read", "write".
 - Footer, clean: "Applies to every running session's next request." Dirty: "{from} → {to} applies
   to every running session's next request."
 - Connect a client: the sentence in D9.
-- Consent: row titles; "No changes, rollouts, exports or database management"; the two capped lines above.
+- Consent: group headings "This session may", "This session may not"; row titles; the bound and
+  audit lines of the section description; the Read-write caution, unchanged.
 
 ## Implementation
+
+The first version's implementation, then the BYT-10597 revision, which supersedes it where the two
+differ: the details control, the dividers and the floor line are gone.
 
 ### Frontend
 
@@ -557,6 +623,34 @@ No behavior change. One comment on `MCPMethodClass` in `proto/v1/v1/annotation.p
 regenerated output; the rule that keeps the row wording true is an instruction under Metadata and
 API conventions in the root `AGENTS.md` (D11), not code.
 
+### Revision for BYT-10597
+
+Two PRs, in this order, because the card links to a docs anchor that has to exist when the
+release ships.
+
+1. **Docs (bytebase.com), `docs/integrations/mcp.mdx`.** Under Access policy, a "What each mode
+   allows" table: one entry per row in The rows, titled as in the product, with its sub-items, and
+   a column for the modes that serve it; the row no mode serves closes the table. The same PR
+   corrects the page where it trails the product: it has no lines for adding instances, creating CI
+   identities, or changing approval or masking rules, and it says an agent cannot read the approval
+   rules, which the members row now serves.
+2. **This repo: this doc, then the frontend, in one PR.** It delivers D2, D6, D10, D14 and D15.
+   - Rows: `mcpCapabilityRows.ts` lists the eleven ids of The rows in order, with their tiers, and
+     the row no mode serves as the twelfth entry (D14).
+   - `MCPCapabilityList` renders the two groups from the mode, with no `details` or divider
+     options; `MCPCapabilityLadder` drops its details control and renders the docs link;
+     `MCPConsentCeiling` drops its details control and passes its two headings.
+   - Locale, all five files: add the two settings headings, the consent "may not" heading and the
+     docs link; reword the titles of The rows; remove the `stops.*` family and its
+     `DYNAMIC_PREFIXES` entry, `floor.label`, `show-details`, `hide-details` and every
+     `row.*.details`.
+   - Tests, named by what they assert: each mode's two groups (D14 counts, Read-only and
+     Read-write); the row no mode serves is last in the second group in both modes; no details
+     control on either surface; the consent page renders both headings; the settings card renders
+     the docs link. `frontend/tests/e2e/workspace/workspace-mcp-policy.spec.ts` reads row titles
+     and a row's details from `en-US.json`, so it moves to the new ids and asserts the groups
+     instead of the details.
+
 ## Keeping the rows true
 
 Nothing enforces the wording, so annotating an RPC `mcp_method_class = READ` or `WRITE` — a new RPC,
@@ -569,7 +663,8 @@ promise. What to do:
    the generated list of every method and its class, and CI forces a diff on it for the same change.
 2. If none covers it, reword a row or add one. The copy is `settings.mcp.ladder.row.*` in
    `frontend/src/locales/` — all five files — and the order and tier are in
-   `frontend/src/components/mcp/mcpCapabilityRows.ts`. Update the table above in the same change.
+   `frontend/src/components/mcp/mcpCapabilityRows.ts`. Update the table above in the same change,
+   and the docs table that publishes the sub-items (D2) in the docs repo.
 3. Check the new wording on all five axes in The rows — mode, engine, effect, complement and
    method — against their rules: state the bound and never the behavior, name the feature and never
    the mechanism, and claim only what holds whatever the caller's permissions. A line you are
@@ -580,8 +675,8 @@ promise. What to do:
    executes statements separately — `SQLService/Query` and `SQLService/Export` gate on different
    conditions, so a sentence true of one is not thereby true of the other.
 
-The consent screen renders row titles only, so a caveat that belongs to one mode or one engine has
-to live in the bound line there (D10), not in a row's sub-items.
+Both surfaces render row titles only, so a caveat that belongs to one mode or one engine has to
+live in the bound line (D10) or in the title itself, never only in a row's sub-items.
 
 
 ## Out of scope
@@ -592,12 +687,13 @@ to live in the bound line there (D10), not in a row's sub-items.
   rows become independently selectable is met: `SQLService/Export` runs only statements Bytebase
   can show are reads for an MCP session (`mcp_sql_write.go`). Export needed its own check because
   it skips statement validation on MySQL, and the driver executes non-query statements. The same
-  split is why the consent card's Read-write bound names the operation as well as the engine (the
-  method axis in The rows).
-- A docs page listing the methods per row, generated from the inventory. Worth doing; not linked
-  from the card until it exists.
+  split is why the bound line speaks of supported operations, not only of the engine (the method
+  axis in The rows). A merged row splits again where a custom policy needs its parts as separate
+  switches (D15).
+- A docs page listing the methods per row, generated from the inventory. The card links to the
+  sub-item table (D2), which names capabilities, not methods.
 - Making the collapsed list findable by the browser's find-in-page. Base UI unmounts a closed panel,
-  so the rows and the floor line are absent from the DOM until the disclosure is opened, and
+  so the rows are absent from the DOM until the disclosure is opened, and
   `hiddenUntilFound` would keep them mounted instead. Declined: collapsing by default is D1's
   decision, the summary line states what the mode allows and the trigger is beside it, and the
   attribute's browser support is uneven — the unmount also keeps the rows out of the accessibility
@@ -611,5 +707,3 @@ to live in the bound line there (D10), not in a row's sub-items.
 - The Access policy section is a framed card, which predates the "no cards inside cards" rule.
   This change adds no nesting and removes the nested mode cards, so unframing the section is a
   natural follow-up.
-- Whether the consent page should also show the sub-items. The proposal shows titles only, to keep
-  the approval screen short.
