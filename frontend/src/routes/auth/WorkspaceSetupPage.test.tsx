@@ -515,6 +515,13 @@ describe("WorkspaceSetupPage", () => {
         name: "Info",
         workspace: "My workspace",
       },
+      {
+        from: "a real name on an address that names nobody",
+        email: "12345@qq.com",
+        title: "Wang Wei",
+        name: "Wang Wei",
+        workspace: "Wang's workspace",
+      },
     ])("guesses the names of a new account from $from", (account) => {
       mocks.currentUser = {
         ...mocks.currentUser,
@@ -938,6 +945,62 @@ describe("WorkspaceSetupPage", () => {
       );
     });
 
+    test("holds the project step read-only while Finish runs", async () => {
+      const release = holdNextCall(mocks.createProject);
+      startAtProject();
+      await nameProject();
+
+      fireEvent.click(finishButton());
+      await waitFor(() => expect(mocks.createProject).toHaveBeenCalled());
+
+      expect(screen.getByLabelText(/^Project name/)).toBeDisabled();
+      expect(
+        screen.queryByRole("button", { name: "Edit" })
+      ).not.toBeInTheDocument();
+      expect(choice(SAMPLE)).toHaveAttribute("aria-disabled", "true");
+      expect(choice(OWN_INSTANCE)).toHaveAttribute("aria-disabled", "true");
+      release();
+      await landed();
+    });
+
+    test("holds the first step read-only while Skip setup saves", async () => {
+      const release = holdNextCall(mocks.updateWorkspace);
+      render(<WorkspaceSetupPage />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Skip setup" }));
+      await waitFor(() => expect(mocks.updateWorkspace).toHaveBeenCalled());
+
+      expect(screen.getByLabelText("Workspace name")).toBeDisabled();
+      release();
+      await landed();
+    });
+
+    test.each([
+      {
+        // Cleared, so no new ID is derived and only the name has changed.
+        answer: "the project name",
+        change: () => type(screen.getByLabelText(/^Project name/), ""),
+      },
+      { answer: "the project ID", change: () => editProjectId("pay") },
+      {
+        answer: "the database choice",
+        change: () => fireEvent.click(screen.getByText(OWN_INSTANCE)),
+      },
+    ])("drops a failed Finish's report once $answer changes", async ({
+      change,
+    }) => {
+      mocks.createProject.mockRejectedValueOnce(unavailable());
+      mocks.getProject.mockRejectedValueOnce(unavailable());
+      startAtProject();
+      await nameProject();
+      fireEvent.click(finishButton());
+      await failed();
+
+      change();
+
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
     test("reports a failed Finish on the project step until an answer it ran with changes", async () => {
       mocks.prepareSampleProjectInstance.mockRejectedValueOnce(
         unavailable("disk full")
@@ -1160,6 +1223,33 @@ describe("WorkspaceSetupPage", () => {
       fireEvent.click(screen.getByRole("button", { name: "Skip setup" }));
 
       await landed();
+    });
+
+    test("offers no Skip setup on Cloud", () => {
+      render(<WorkspaceSetupPage />);
+
+      expect(
+        screen.queryByRole("button", { name: "Skip setup" })
+      ).not.toBeInTheDocument();
+    });
+
+    test("withdraws Skip setup once a Finish attempt has created the project", async () => {
+      mocks.isSaaSMode = false;
+      mocks.prepareSampleProjectInstance.mockRejectedValueOnce(unavailable());
+      startAtProject();
+      await nameProject();
+      fireEvent.click(finishButton());
+      await failed();
+
+      fireEvent.click(backButton());
+      fireEvent.click(backButton());
+
+      expect(
+        screen.getByRole("heading", { name: "Name your workspace" })
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Skip setup" })
+      ).not.toBeInTheDocument();
     });
 
     test("leaves the workspace name as it is when Skip setup is pressed with the field emptied", async () => {
@@ -1502,6 +1592,24 @@ describe("WorkspaceSetupPage", () => {
         "createProject",
         "prepareSample",
       ]);
+    });
+
+    test("gives the guide no team size from an older self-hosted draft", async () => {
+      mocks.isSaaSMode = false;
+      storeDraft({
+        screen: "team",
+        goal: "query-data",
+        projectTitle: "Payments",
+        projectId: "payments-ab12",
+        source: "own",
+        teamSize: "2-10",
+      });
+      render(<WorkspaceSetupPage />);
+
+      fireEvent.click(finishButton());
+
+      await landed();
+      expect(readGuideTeamSize()).toBeUndefined();
     });
 
     test("opens an older self-hosted draft saved on the team step on the project step, and adds no one from it", async () => {

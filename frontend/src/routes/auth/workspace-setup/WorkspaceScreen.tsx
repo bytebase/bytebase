@@ -18,7 +18,6 @@ export function WorkspaceScreen({
   skipFailure,
 }: {
   readonly name: string;
-  // Cloud only: a self-hosted account named itself at sign-up.
   readonly showName: boolean;
   readonly workspaceTitle: string;
   readonly showWorkspaceTitle: boolean;
@@ -75,6 +74,7 @@ export function WorkspaceScreen({
               aria-describedby={
                 missingName ? "workspace-setup-name-note" : undefined
               }
+              disabled={skipping}
               onChange={(event) => onNameChange(event.target.value)}
             />
             {missingName && (
@@ -101,6 +101,7 @@ export function WorkspaceScreen({
                   ? "workspace-setup-workspace-title-note"
                   : undefined
               }
+              disabled={skipping}
               onChange={(event) => onWorkspaceTitleChange(event.target.value)}
             />
             {missingWorkspaceTitle && (

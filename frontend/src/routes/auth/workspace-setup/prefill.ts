@@ -126,8 +126,8 @@ const namesNobody = (email: string) => {
   );
 };
 
-// Never empty: the name is required, and the field starts filled so the first
-// click is the only click.
+// Filled whenever the address yields a word, so the required field starts
+// answered and the first click is the only click.
 export const guessDisplayName = (
   email: string,
   title: string | undefined
@@ -172,7 +172,13 @@ export const guessWorkspaceTitle = (
   const company = guessCompany(email);
   if (company) return { kind: "title", title: company };
   const firstName = displayName.split(/\s+/)[0];
-  return firstName && !namesNobody(email)
+  // A name made from an address that names nobody ("Admin", "13800138000")
+  // names no workspace either; a name the person gave still does.
+  const fromAddress = sameText(
+    displayName,
+    localPartWords(email).map(capitalize).join(" ")
+  );
+  return firstName && !(fromAddress && namesNobody(email))
     ? { kind: "personal", firstName }
     : { kind: "anonymous" };
 };

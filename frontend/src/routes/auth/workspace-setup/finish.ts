@@ -90,8 +90,8 @@ const INVITEE_PROJECT_ROLES: string[] = [
   PresetRoleType.SQL_EDITOR_EXPORTER,
 ];
 
-// Screen 1's two names. The name is optional, and an empty one is not saved
-// over the account's.
+// Screen 1's names. An empty one is not saved: the person's when the wizard
+// does not ask it, the workspace's when a skip leaves the field emptied.
 export const saveSetupNames = async (
   names: SetupNames,
   superseded: Superseded

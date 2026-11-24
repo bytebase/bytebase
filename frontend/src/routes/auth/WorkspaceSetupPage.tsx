@@ -423,7 +423,8 @@ function WorkspaceSetupWizard() {
     captureSubmitted({ ...answers, result: "finished" });
     endSetup();
     if (draft.goal) saveSelectedGuideScenarioId(draft.goal);
-    if (draft.teamSize) saveGuideTeamSize(draft.teamSize);
+    // Cloud's: a self-hosted draft from the earlier team step may still hold one.
+    if (isSaaSMode && draft.teamSize) saveGuideTeamSize(draft.teamSize);
     if (isSaaSMode) {
       saveWorkspaceSetupFinished(
         workspace?.name ?? currentUser.workspace,
@@ -465,8 +466,7 @@ function WorkspaceSetupWizard() {
     });
   };
 
-  // Self-hosted asks no name on step 1, so an account that may not rename the
-  // workspace has nothing to answer there and starts on the goal.
+  // An account with nothing to answer on step 1 starts on the goal.
   const askWorkspace = isSaaSMode || canRenameWorkspace;
   const screen =
     draft.screen === "workspace" && !askWorkspace ? "goal" : draft.screen;
