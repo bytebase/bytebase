@@ -65,9 +65,9 @@ type Server struct {
 	// API call. Zero means use the default (internalAPITimeout).
 	internalAPITimeoutOverride time.Duration
 
-	// sessionIdleTimeout is the SessionTimeout the /mcp handler was built with,
-	// kept so a test can check the production value.
-	sessionIdleTimeout time.Duration
+	// timeouts are what the /mcp handler and its form middleware were built
+	// with, kept so a test can check the production values.
+	timeouts sessionTimeouts
 }
 
 type serverStore interface {
@@ -118,13 +118,20 @@ func maskingSkipsUnactivatedUnder(licenses instanceLicense) func(ctx context.Con
 	}
 }
 
-func newServerWithStore(stores serverStore, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
-	return newServerWithIdleTimeout(stores, profile, secret, internalAPI, mcpSessionIdleTimeout)
+// sessionTimeouts are how long a session may sit idle and how long a tool call
+// waits for a form's answer.
+type sessionTimeouts struct {
+	idle       time.Duration
+	formAnswer time.Duration
 }
 
-// newServerWithIdleTimeout builds the server with a given session idle timeout,
-// so tests can shorten it without leaving the production construction.
-func newServerWithIdleTimeout(stores serverStore, profile *config.Profile, secret string, internalAPI http.Handler, idleTimeout time.Duration) (*Server, error) {
+func newServerWithStore(stores serverStore, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
+	return newServerWithTimeouts(stores, profile, secret, internalAPI, sessionTimeouts{idle: mcpSessionIdleTimeout, formAnswer: formAnswerTimeout})
+}
+
+// newServerWithTimeouts builds the server with the given session timeouts, so
+// tests can shorten them without leaving the production construction.
+func newServerWithTimeouts(stores serverStore, profile *config.Profile, secret string, internalAPI http.Handler, timeouts sessionTimeouts) (*Server, error) {
 	mcpServer := mcp.NewServer(&mcp.Implementation{
 		Name:    "bytebase",
 		Version: profile.Version,
@@ -146,7 +153,7 @@ func newServerWithIdleTimeout(stores serverStore, profile *config.Profile, secre
 		// Until NewServer binds the license, the form warns whenever an
 		// instance is not activated.
 		maskingSkipsUnactivated: func(context.Context, string) bool { return true },
-		sessionIdleTimeout:      idleTimeout,
+		timeouts:                timeouts,
 	}
 	s.registerTools()
 
@@ -186,14 +193,17 @@ func newServerWithIdleTimeout(stores serverStore, profile *config.Profile, secre
 	// timeout the SDK keeps them until the process exits (BYT-10375). The
 	// abandoned sessions held at once are about the abandonment rate times this
 	// timeout. A client that returns after expiry gets 404 and must initialize
-	// again, as the spec requires. A call waiting on a form the client abandoned
-	// keeps its session open (BYT-10567).
+	// again, as the spec requires.
+	//
+	// The session closes only once its in-flight calls return. Until then the
+	// SDK keeps it, and a call that arrives gets 200 and an empty stream, not
+	// the 404.
 	streamable := mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
 		return s.mcpServer
 	}, &mcp.StreamableHTTPOptions{
 		DisableLocalhostProtection: true,
 		MaxRequestBodyBytes:        maxMCPRequestBodyBytes,
-		SessionTimeout:             idleTimeout,
+		SessionTimeout:             timeouts.idle,
 	})
 
 	// Refresh per-request metadata that would otherwise be frozen at session
@@ -207,6 +217,7 @@ func newServerWithIdleTimeout(stores serverStore, profile *config.Profile, secre
 	mcpServer.AddReceivingMiddleware(liveRequestMetadata)
 	mcpServer.AddReceivingMiddleware(nameSignedInAccount)
 	mcpServer.AddReceivingMiddleware(askInChatWithoutForm)
+	mcpServer.AddSendingMiddleware(expireUnansweredForms(timeouts.formAnswer))
 
 	// Pin each session to the identity it was opened with. The SDK captures
 	// TokenInfo.UserID when a session is created and rejects later requests
@@ -237,6 +248,14 @@ const (
 
 	// mcpSessionIdleTimeout is documented at the handler that applies it.
 	mcpSessionIdleTimeout = time.Hour
+
+	// formAnswerTimeout bounds the wait for a form's answer. It is longer than
+	// confirmationLifetime, so a confirmation accepted after that still reaches
+	// the tool, which reports it stale, instead of failing with the SDK's raw
+	// error. It must stay below mcpSessionIdleTimeout, so that no wait for an
+	// abandoned form is left to hold a closing session (see SessionTimeout at
+	// the handler).
+	formAnswerTimeout = confirmationLifetime + time.Minute
 )
 
 // negotiateLegacyProtocol keeps a session's recorded revision equal to the one
@@ -292,6 +311,22 @@ func askInChatWithoutForm(next mcp.MethodHandler) mcp.MethodHandler {
 			initialized.Instructions += "\n\n" + askInChatInstructions
 		}
 		return result, err
+	}
+}
+
+// expireUnansweredForms ends a tool call's wait for a form's answer after
+// timeout. Both forms, a write confirmation and a database choice, reach the
+// client as an elicitation the SDK sends through this middleware.
+func expireUnansweredForms(timeout time.Duration) mcp.Middleware {
+	return func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			if _, isElicitation := req.GetParams().(*mcp.ElicitParams); !isElicitation {
+				return next(ctx, method, req)
+			}
+			ctx, cancel := context.WithTimeout(ctx, timeout)
+			defer cancel()
+			return next(ctx, method, req)
+		}
 	}
 }
 
