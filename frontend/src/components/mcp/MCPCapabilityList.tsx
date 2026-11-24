@@ -44,7 +44,7 @@ export function MCPCapabilityList({
   const allowed = MCP_CAPABILITY_ROWS.filter((row) => isRowServed(mode, row));
   const refused = MCP_CAPABILITY_ROWS.filter((row) => !isRowServed(mode, row));
   return (
-    <div className="flex flex-col gap-y-2">
+    <div className="flex flex-col gap-y-3">
       {allowedHeading && (
         <Heading className={GROUP_HEADING_CLASS}>{allowedHeading}</Heading>
       )}
@@ -53,7 +53,7 @@ export function MCPCapabilityList({
           <CapabilityRow key={row.id} row={row} served />
         ))}
       </ul>
-      <Separator className="my-1" />
+      <Separator />
       <Heading className={GROUP_HEADING_CLASS}>{refusedHeading}</Heading>
       <ul role="list" className="flex flex-col gap-y-2">
         {refused.map((row) => (
