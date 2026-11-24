@@ -151,6 +151,7 @@ import {
   selectMessages,
   useAgentStore,
 } from "../store/agent";
+import { AgentActionGroup } from "./AgentActionGroup";
 import { AgentChatbox, AgentChatboxFooter } from "./AgentChatbox";
 import { AgentErrorDetails, AgentErrorDetailsPanel } from "./AgentErrorDetails";
 import { AgentFollowUpQueueList } from "./AgentFollowUpQueueList";
@@ -1891,6 +1892,7 @@ export function AgentInput({
             id: toolCallId,
             name: "get_masking_overview",
             arguments: JSON.stringify(maskingResumeArgs),
+            origin: "runtime" as const,
           };
           let result: string;
           try {
@@ -1998,6 +2000,7 @@ export function AgentInput({
                   id: preflightCallId,
                   name: "get_project_overview",
                   arguments: "{}",
+                  origin: "runtime",
                 },
               ],
             },
@@ -2070,6 +2073,7 @@ export function AgentInput({
                   id: preflightCallId,
                   name: "get_plan_overview",
                   arguments: JSON.stringify(args),
+                  origin: "runtime",
                 },
               ],
             },
@@ -2142,6 +2146,7 @@ export function AgentInput({
                   id: preflightCallId,
                   name: "get_issue_overview",
                   arguments: JSON.stringify(args),
+                  origin: "runtime",
                 },
               ],
             },
@@ -2205,6 +2210,7 @@ export function AgentInput({
                   id: preflightCallId,
                   name: "get_database_overview",
                   arguments: JSON.stringify(args),
+                  origin: "runtime",
                 },
               ],
             },
@@ -4461,7 +4467,10 @@ export function AgentInput({
   );
 
   return (
-    <div ref={composerRef} className="flex flex-col gap-3 border-t p-3">
+    <div
+      ref={composerRef}
+      className="flex max-h-full min-h-0 flex-col gap-3 border-t p-3"
+    >
       <AgentFollowUpQueueList
         queue={followUpQueue}
         disabled={remoteBusy}
@@ -4600,10 +4609,13 @@ export function AgentInput({
           onEndRun={endCurrentRun}
         />
       )}
-      <div className="min-w-0">
+      <div className="flex min-h-0 min-w-0 flex-col">
         {/* Pending ask banner */}
         {currentPendingAsk && (
-          <div className="mb-3 rounded-xs bg-warning/10 px-3 py-2 text-xs text-warning">
+          <div
+            className="mb-3 min-h-0 overflow-y-auto rounded-xs bg-warning/10 px-3 py-2 text-xs text-warning"
+            data-agent-pending-preview
+          >
             {apiPermission ? (
               <>
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -4753,7 +4765,7 @@ export function AgentInput({
                       : t("agent.pending-input-hint")}
                 </div>
                 {canCancelPendingRequest && (
-                  <div className="mt-2 flex justify-end">
+                  <AgentActionGroup className="mt-2">
                     <Button
                       appearance="secondary"
                       size="sm"
@@ -4762,35 +4774,27 @@ export function AgentInput({
                     >
                       {t("agent.cancel-request")}
                     </Button>
-                  </div>
+                  </AgentActionGroup>
                 )}
               </>
             )}
           </div>
         )}
 
-        {isAwaitingConfirm && <div className="mb-1">{inputFooter}</div>}
+        {isAwaitingConfirm && (
+          <div className="mb-1 shrink-0">{inputFooter}</div>
+        )}
 
         {/* Confirm buttons */}
         {isAwaitingConfirm ? (
-          <div className="flex flex-wrap gap-x-2 gap-y-2">
+          <AgentActionGroup
+            className="shrink-0"
+            data-agent-confirmation-actions
+          >
             <Button
               appearance="secondary"
               size="sm"
-              className="rounded-xs bg-accent text-accent-text hover:bg-accent-hover disabled:opacity-50"
-              disabled={
-                isCurrentChatRunning ||
-                localLeasePending ||
-                (apiPermission && !apiPermissionPreview)
-              }
-              onClick={() => submitConfirmation(true)}
-            >
-              {apiPermission ? t("agent.api-permission-allow") : confirmLabel}
-            </Button>
-            <Button
-              appearance="secondary"
-              size="sm"
-              className="rounded-xs border text-control hover:bg-control-bg disabled:opacity-50"
+              className="h-auto min-h-7 min-w-0 max-w-full rounded-xs border py-1 text-control whitespace-normal wrap-anywhere hover:bg-control-bg disabled:opacity-50"
               disabled={isCurrentChatRunning || localLeasePending}
               onClick={() => submitConfirmation(false)}
             >
@@ -4800,7 +4804,20 @@ export function AgentInput({
                   : t("agent.api-permission-dismiss")
                 : cancelLabel}
             </Button>
-          </div>
+            <Button
+              appearance="secondary"
+              size="sm"
+              className="h-auto min-h-7 min-w-0 max-w-full rounded-xs bg-accent py-1 text-accent-text whitespace-normal wrap-anywhere hover:bg-accent-hover disabled:opacity-50"
+              disabled={
+                isCurrentChatRunning ||
+                localLeasePending ||
+                (apiPermission && !apiPermissionPreview)
+              }
+              onClick={() => submitConfirmation(true)}
+            >
+              {apiPermission ? t("agent.api-permission-allow") : confirmLabel}
+            </Button>
+          </AgentActionGroup>
         ) : isAwaitingChoose ? (
           /* Choose options */
           <div className="flex min-w-0 flex-col gap-3">

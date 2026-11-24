@@ -169,6 +169,37 @@ const errorTextOf = (entry: TaskRunLogEntry): string => {
 export const hasError = (entry: TaskRunLogEntry): boolean =>
   Boolean(errorTextOf(entry));
 
+export function completedOneTimeError(
+  entry: TaskRunLogEntry
+): string | undefined {
+  let step:
+    | Pick<
+        NonNullable<TaskRunLogEntry["schemaDump"]>,
+        "startTime" | "endTime" | "error"
+      >
+    | undefined;
+  switch (entry.type) {
+    case TaskRunLogEntry_Type.SCHEMA_DUMP:
+      step = entry.schemaDump;
+      break;
+    case TaskRunLogEntry_Type.DATABASE_SYNC:
+      step = entry.databaseSync;
+      break;
+    case TaskRunLogEntry_Type.PRIOR_BACKUP:
+      step = entry.priorBackup;
+      break;
+    case TaskRunLogEntry_Type.COMPUTE_DIFF:
+      step = entry.computeDiff;
+      break;
+    case TaskRunLogEntry_Type.GHOST_MIGRATION:
+      step = entry.ghostMigration;
+      break;
+  }
+  return step?.startTime && step.endTime && step.error.trim()
+    ? step.error
+    : undefined;
+}
+
 export const isComplete = (entry: TaskRunLogEntry): boolean => {
   switch (entry.type) {
     case TaskRunLogEntry_Type.COMMAND_EXECUTE:

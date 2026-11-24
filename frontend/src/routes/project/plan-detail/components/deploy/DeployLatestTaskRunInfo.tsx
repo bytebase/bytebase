@@ -1,5 +1,5 @@
 import { Clock3, History, User } from "lucide-react";
-import { useMemo } from "react";
+import { type ReactNode, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskRunStatusIcon } from "@/components/TaskRunStatusIcon";
@@ -29,6 +29,7 @@ const STATUS_LABEL_CLASS: Partial<Record<TaskRun_Status, string>> = {
   [TaskRun_Status.DONE]: "text-success",
   [TaskRun_Status.FAILED]: "text-error",
 };
+const LATEST_AGENT_HELP = { provenance: "latest" } as const;
 
 export function DeployLatestTaskRunInfo({
   active = true,
@@ -57,8 +58,10 @@ export function DeployLatestTaskRunInfo({
   const { t } = useTranslation();
   // Stable across renders, so the memoized log viewer re-renders only when
   // the run changes.
-  const errorAlert = useMemo(
-    () => <TaskRunErrorAlert taskRun={taskRun} />,
+  const renderErrorAlert = useCallback(
+    (action: ReactNode) => (
+      <TaskRunErrorAlert taskRun={taskRun} action={action} />
+    ),
     [taskRun]
   );
   const updateDate = getDateForPbTimestampProtoEs(taskRun.updateTime);
@@ -131,6 +134,7 @@ export function DeployLatestTaskRunInfo({
           cache freshness and the live poll while running. */}
       <TaskRunLogViewer
         active={active}
+        agentHelp={LATEST_AGENT_HELP}
         key={`logs-${taskRun.name}-${taskRun.status}`}
         taskRunName={taskRun.name}
         taskRunStatus={taskRun.status}
@@ -138,7 +142,7 @@ export function DeployLatestTaskRunInfo({
         releaseState={releaseState}
         rerun={historyCount > 1}
         onOpenFile={onOpenFile}
-        errorAlert={errorAlert}
+        renderErrorAlert={renderErrorAlert}
         revisionsLink={revisionsLink}
       />
 

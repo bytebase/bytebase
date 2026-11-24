@@ -22,6 +22,7 @@ import { registerAgentExpressionTarget } from "../logic/expressionDraft";
 import { buildOutboundHistory } from "../logic/outboundHistory";
 import { acceptAgentResponseActions } from "../logic/responseActions";
 import type {
+  AgentActionReceipt,
   AgentChat as AgentChatRecord,
   AgentHandoff,
   AgentMessageMetadata,
@@ -184,7 +185,12 @@ vi.mock("@/stores/app", () => {
   const state = {
     getSettingByName: mocks.getSettingByName,
     getWorkspaceProfile: () => ({}),
-    currentUser: { name: "users/member@example.com" },
+    currentUser: {
+      name: "users/member@example.com",
+      email: "member@example.com",
+      workspace: "workspaces/demo",
+    },
+    workspace: { name: "workspaces/demo" },
     workspaceResourceName: () => "workspaces/demo",
     get serverInfo() {
       return { aiEnabled: mocks.aiEnabled };
@@ -283,10 +289,11 @@ const expectCompactPrimaryAction = (
   label: string,
   icon = "arrow-up-right"
 ) => {
-  expect(action).toHaveClass("h-7", "text-xs", "text-accent", "max-w-full");
-  expect(action).not.toHaveClass("border", "h-auto", "whitespace-normal");
+  expect(action).toHaveClass("min-h-7", "h-auto", "whitespace-normal", "text-xs", "text-accent", "max-w-full");
+  expect(action).not.toHaveClass("border", "h-7");
   expect(action).toHaveAttribute("title", label);
-  expect(action?.querySelector(".truncate")?.textContent).toBe(label);
+  expect(action?.firstElementChild?.textContent).toBe(label);
+  expect(action?.firstElementChild).toHaveClass("wrap-anywhere");
   expect(action?.lastElementChild).toHaveClass(`lucide-${icon}`);
 };
 
@@ -358,6 +365,49 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
+  test.each([1, 2])("keeps %i saved receipts in the action group instead of reopening their drafts", (count) => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "workspaces/demo", workspaceName: "workspaces/demo" });
+    const receipts: Extract<AgentActionReceipt, { kind: "masking-rule" }>[] = Array.from({ length: count }, (_, index) => ({
+      kind: "masking-rule",
+      policy: "workspaces/demo/policies/MASKING_RULE",
+      draftId: `saved-draft-${index}`,
+      rule: {
+        id: `saved-rule-${index}`,
+        semanticType: "ssn",
+        condition: { title: `Saved masking rule ${index + 1}`, expression: "true" },
+      },
+      savedAt: 100,
+    }));
+    mocks.getMaskingRuleDraft.mockReturnValue({
+      title: "Old unsaved draft",
+      condition: "true",
+      semanticType: "ssn",
+      scope: { kind: "workspace" },
+    });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "The masking rules were saved.",
+      metadata: {
+        actions: receipts.map(({ draftId }) => ({ kind: "draft-masking-rule", draftId })),
+        actionReceipts: receipts,
+      },
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    const group = container.querySelector("[data-agent-action-group]");
+    expect(group?.querySelectorAll("[data-agent-action-receipt]")).toHaveLength(count);
+    expect(group?.querySelectorAll("[data-agent-action-check-receipt]")).toHaveLength(count);
+    for (let index = 0; index < count; index++) {
+      expect(group).toHaveTextContent(`Saved masking rule ${index + 1}`);
+    }
+    expect(container.querySelector("[data-agent-action-draft-masking-rule]")).toBeNull();
+    expect(container).not.toHaveTextContent("Old unsaved draft");
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    unmount();
+  });
+
   test("offers a diagnostic SQL fix review without preparing or applying on render", async () => {
     const store = useAgentStore.getState();
     const resource = { kind: "plan" as const, name: "projects/sample/plans/9", project: "projects/sample", label: "projects/sample/plans/9" };
@@ -773,6 +823,11 @@ describe("AgentChat", () => {
       );
       expect(retry?.textContent).toBe("agent.retry-last-chat-turn");
       expect(retry?.querySelector(".lucide-rotate-ccw")).not.toBeNull();
+      expect(retry).toHaveClass("max-w-full", "whitespace-normal", "wrap-anywhere");
+      const footer = container.querySelector("[data-agent-error-actions]");
+      expect(footer).toContainElement(retry);
+      expect(footer).not.toContainElement(container.querySelector("[data-agent-error-details]"));
+      expect(footer).not.toContainElement(container.querySelector("[data-agent-error-summary]"));
       act(() => retry?.click());
       expect(onRetry).toHaveBeenCalledOnce();
     } finally {
@@ -1288,7 +1343,7 @@ describe("AgentChat", () => {
       "cel.agent-help.apply-raw",
       "file-pen-line"
     );
-    expect(selectorButton?.parentElement).toHaveClass("-ml-2", "gap-2");
+    expect(selectorButton?.parentElement).toHaveClass("justify-end", "flex-wrap", "w-full", "gap-2");
     expect(selectorButton).not.toHaveClass("-ml-2");
     expect(
       container.querySelector('[data-agent-expression-draft="raw"]')
@@ -1626,7 +1681,7 @@ describe("AgentChat", () => {
     );
     expect(button?.textContent).toContain("agent.access-grant-draft.open");
     expectCompactPrimaryAction(button, "agent.access-grant-draft.open");
-    expect(button).toHaveClass("-ml-2");
+    expect(button).not.toHaveClass("-ml-2");
     expect(mocks.prepareAgentDeniedQueryRequestRoute).not.toHaveBeenCalled();
     expect(mocks.validateDeniedQueryRequestDraft).not.toHaveBeenCalled();
     expect(onOpenAccessGrantDraft).not.toHaveBeenCalled();
@@ -1930,7 +1985,7 @@ describe("AgentChat", () => {
     );
     expect(button?.textContent).toContain("agent.issue-comment-draft.open");
     expectCompactPrimaryAction(button, "agent.issue-comment-draft.open");
-    expect(button).toHaveClass("-ml-2");
+    expect(button).not.toHaveClass("-ml-2");
     await act(async () => button?.click());
     expect(mocks.prepareIssueCommentDraftRoute).toHaveBeenCalledWith(
       action.issue,
@@ -2061,7 +2116,7 @@ describe("AgentChat", () => {
     );
     expect(button?.textContent).toContain("agent.plan-draft.open");
     expectCompactPrimaryAction(button, "agent.plan-draft.open");
-    expect(button).toHaveClass("-ml-2");
+    expect(button).not.toHaveClass("-ml-2");
     expect(button?.parentElement).toHaveClass("max-w-full");
     expect(mocks.prepareAgentPlanDraftRoute).not.toHaveBeenCalled();
     await act(async () => button?.click());
@@ -2985,7 +3040,7 @@ describe("AgentChat", () => {
     const link = container.querySelector<HTMLAnchorElement>("[data-agent-handoff]");
     expect(link?.textContent).toContain("agent.handoff.review-database-changes");
     expectCompactPrimaryAction(link, "agent.handoff.review-database-changes");
-    expect(link).toHaveClass("-ml-2");
+    expect(link).not.toHaveClass("-ml-2");
     expect(link?.getAttribute("href")).toContain(PROJECT_V1_ROUTE_ISSUES);
     expect(mocks.routerPush).not.toHaveBeenCalled();
     unmount();
@@ -3167,7 +3222,7 @@ describe("AgentChat", () => {
       "button[data-agent-handoff]"
     );
     expectCompactPrimaryAction(button, button?.textContent ?? "");
-    expect(button).toHaveClass("-ml-2");
+    expect(button).not.toHaveClass("-ml-2");
     await act(async () => button?.click());
 
     expect(button).not.toBeNull();
@@ -3729,6 +3784,9 @@ describe("AgentChat", () => {
         (button) => button.textContent === "agent.retry-last-chat-turn"
       );
       expect(retry).toBeDefined();
+      expect(retry?.parentElement).toHaveAttribute("data-agent-interruption-actions");
+      expect(retry?.parentElement).toHaveClass("flex-wrap", "justify-end", "w-full");
+      expect(retry).toHaveClass("max-w-full", "whitespace-normal", "wrap-anywhere");
       act(() => retry?.click());
       expect(onRetry).toHaveBeenCalledOnce();
       expect(result?.textContent).not.toContain("common.dismiss");
@@ -3991,7 +4049,7 @@ describe("AgentChat", () => {
     unmount();
   });
 
-  test("shows AI setup and a settings link when ai_enabled is false", () => {
+  test("keeps AI setup visible without a dismiss action when ai_enabled is false", () => {
     mocks.aiEnabled = false;
 
     const { container, render, unmount } = renderIntoContainer(<AgentChat />);
@@ -4009,22 +4067,14 @@ describe("AgentChat", () => {
       name: SETTING_ROUTE_WORKSPACE_GENERAL,
       hash: "#ai-assistant",
     });
+    expect(container.textContent).not.toContain("common.dismiss");
+    expect(configureLink?.parentElement?.children).toHaveLength(1);
     act(() => configureLink?.click());
     expect(mocks.routerPush).toHaveBeenCalledWith(
       expect.objectContaining({
         name: SETTING_ROUTE_WORKSPACE_GENERAL,
         hash: "#ai-assistant",
       })
-    );
-
-    const dismissButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "common.dismiss"
-    );
-    act(() => {
-      dismissButton?.click();
-    });
-    expect(container.textContent).not.toContain(
-      "agent.ai-not-configured.title"
     );
 
     unmount();

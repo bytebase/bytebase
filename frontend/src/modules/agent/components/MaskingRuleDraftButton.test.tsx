@@ -194,6 +194,15 @@ afterEach(() => {
 });
 
 describe("MaskingRuleDraftButton", () => {
+  test("keeps the draft action after its summary and unsaved notice", () => {
+    const { button } = renderButton();
+    const actions = button.closest("[data-agent-action-group]");
+    expect(actions).not.toBeNull();
+    expect(actions?.parentElement?.lastElementChild).toBe(actions);
+    expect(actions?.previousElementSibling?.textContent).toContain("agent.masking-rule-draft.unsaved");
+    expect(button).not.toHaveClass("-ml-2");
+  });
+
   test("reviews every batch summary and opens all drafts in one member handoff", async () => {
     const second = { ...draft, title: "Mask email", condition: 'resource.column_name == "email"', semanticType: "semanticTypes/email" };
     const drafts = [draft, second];
@@ -291,7 +300,7 @@ describe("MaskingRuleDraftButton", () => {
   test("minimizes only after a member opens the filled local draft without saving", async () => {
     const { button, container } = renderButton();
     expect(button.textContent).toContain("agent.masking-rule-draft.open");
-    expect(button).toHaveClass("text-accent", "bg-transparent", "h-7", "gap-1.5");
+    expect(button).toHaveClass("text-accent", "bg-transparent", "h-auto", "min-h-7", "gap-1.5");
     expect(button.querySelector("svg")).toHaveClass("size-4", "lucide-arrow-up-right");
     expect(button).not.toHaveClass("border");
     expect(container.textContent).toContain("agent.masking-rule-draft.unsaved");

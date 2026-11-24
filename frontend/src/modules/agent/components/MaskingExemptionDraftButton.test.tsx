@@ -113,6 +113,15 @@ afterEach(() => {
 });
 
 describe("MaskingExemptionDraftButton", () => {
+  test("keeps the exemption action after its summary and unsaved notice", () => {
+    const { button } = renderButton();
+    const actions = button.closest("[data-agent-action-group]");
+    expect(actions).not.toBeNull();
+    expect(actions?.parentElement?.lastElementChild).toBe(actions);
+    expect(actions?.previousElementSibling?.textContent).toContain("Only fills the unsaved form.");
+    expect(button).not.toHaveClass("-ml-2");
+  });
+
   test("uses the Grant Exemption summary labels and no-expiration text", () => {
     mocks.getDraft.mockReturnValue({ ...draft, expirationTimestamp: null });
     const { container, button } = renderButton();
@@ -139,7 +148,7 @@ describe("MaskingExemptionDraftButton", () => {
   test("opens the exact project create form only after a member click and never saves", async () => {
     const { button, container } = renderButton();
     expect(button.textContent).toBe("Open exemption draft");
-    expect(button).toHaveClass("text-accent", "bg-transparent", "h-7");
+    expect(button).toHaveClass("text-accent", "bg-transparent", "h-auto", "min-h-7");
     expect(button.querySelector("svg")).toHaveClass("size-4", "lucide-arrow-up-right");
     expect(container.textContent).toContain(draft.members.join(", "));
     expect(container.textContent).toContain(draft.scope.database);

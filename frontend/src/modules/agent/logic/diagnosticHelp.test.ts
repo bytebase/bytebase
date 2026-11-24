@@ -56,6 +56,16 @@ describe("Agent diagnostic snapshot", () => {
     expect(buildAgentDiagnosticPrompt(context())).toContain("sql replacement");
   });
 
+  test("task run help explains recorded execution without offering an editor replacement", () => {
+    const prompt = buildAgentDiagnosticPrompt({
+      ...context(),
+      kind: "task-run",
+    });
+    expect(prompt).toContain("recorded attempt");
+    expect(prompt).toContain("Current Plan SQL is not evidence");
+    expect(prompt).not.toContain("sql replacement");
+  });
+
   test.each([
     "user-resolve",
     "user-reject",

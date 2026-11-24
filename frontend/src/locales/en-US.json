@@ -459,9 +459,12 @@
       "free-failed": "Could not free enough space. Close other Agent tabs or end active runs, then try again.",
       "free-title": "Remove other saved Agent chats?",
       "full": "Agent history storage is full.",
+      "load-unavailable": "Agent unavailable",
+      "load-unavailable-description": "The agent couldn't load conversations for this account and workspace. Saved history has not been deleted.",
       "retention-info": "Chat history retention",
       "retention-policy": "Query-result previews are cleared first. If more space is needed, older completed chats, archived or not, are removed. Open chats, unfinished runs, and drafts are kept.",
       "retry": "Retry saving",
+      "retry-loading": "Retry",
       "save-failed": "Couldn't save Agent history. Try again.",
       "title": "Agent history storage"
     },
@@ -3818,7 +3821,6 @@
           "api-key": {
             "description": "Supply API Key, read-only. {{viewDoc}}",
             "find-my-key": "Find my key",
-            "placeholder": "An API Key usually starts with sk-*****",
             "self": "API Key"
           },
           "available-in-saas": "AI Assistant is available in this workspace and managed by Bytebase.",

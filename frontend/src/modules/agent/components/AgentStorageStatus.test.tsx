@@ -14,30 +14,24 @@ const pressure = { reason: "unavailable" as const, phase: "saving" as const, byt
 const fullPressure = { ...pressure, reason: "budget" as const };
 
 describe("AgentStorageStatus", () => {
-  test("matches the transcript error panel with a compact outlined recovery action", () => {
+  test("places the outlined recovery action in its own bottom-right row", () => {
     render(<AgentStorageStatus pressure={pressure} onRetrySaving={vi.fn()} />);
     const region = screen.getByRole("alert");
     const retry = screen.getByRole("button", { name: "agent.storage.retry" });
     expect(region).toHaveClass("rounded-sm", "border-0", "bg-error/10", "px-3", "py-2", "text-sm", "text-error", "shadow-none");
     expect(region).not.toHaveClass("text-xs", "text-warning", "bg-warning/10");
     const header = region.querySelector("[data-agent-storage-header]");
-    expect(header).toHaveClass("flex", "items-start", "justify-between", "gap-2");
     expect(header).toContainElement(screen.getByText("agent.storage.save-failed"));
-    expect(header).toContainElement(retry);
-    expect(retry.parentElement).toHaveClass("ml-auto", "shrink-0");
-    expect(screen.getByText("agent.storage.save-failed")).not.toHaveClass(
-      "grow",
-      "basis-64"
-    );
+    expect(header).not.toContainElement(retry);
+    expect(region.querySelector("[data-agent-error-footer]")).toContainElement(retry);
     expect(region.querySelector(":scope > svg")).toBeNull();
-    expect(retry).toHaveClass("h-6", "gap-1.5");
-    expect(retry).toHaveClass("border", "border-control-border");
-    expect(retry.querySelector("svg")).toHaveAttribute("width", "14");
-    expect(retry.querySelector("svg")).toHaveAttribute("height", "14");
+    expect(retry).toHaveClass("h-auto", "min-h-7", "max-w-full", "whitespace-normal", "wrap-anywhere", "gap-1.5", "border");
+    expect(retry.querySelector("svg")).toHaveAttribute("width", "16");
+    expect(retry.querySelector("svg")).toHaveAttribute("height", "16");
     expect(retry.querySelector("svg")).toHaveClass("shrink-0");
   });
 
-  test("keeps expandable shared Error details below the summary and right-aligned recovery", async () => {
+  test("keeps Error details and expanded diagnostics above recovery actions", async () => {
     const rawError = "QuotaExceededError: Browser storage is full";
     const fetch = vi.fn();
     vi.stubGlobal("fetch", fetch);
@@ -50,16 +44,18 @@ describe("AgentStorageStatus", () => {
     const retry = screen.getByRole("button", { name: "agent.storage.retry" });
     const details = screen.getByRole("button", { name: "error-page.error-details" });
     expect(header).toContainElement(status);
-    expect(header).toContainElement(retry);
+    expect(header).not.toContainElement(retry);
     expect(header).not.toContainElement(details);
     expect(header && (header.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy();
     expect(region.querySelectorAll("svg.lucide-triangle-alert")).toHaveLength(0);
     expect(region.querySelector(":scope > svg")).toBeNull();
-    const actions = region.querySelector("[data-agent-storage-actions]");
-    expect(actions).toHaveClass("flex", "shrink-0", "ml-auto");
-    expect(actions).not.toHaveClass("flex-wrap");
+    const actions = region.querySelector("[data-agent-error-actions]");
+    expect(actions).toHaveClass("flex", "min-w-0", "flex-wrap", "justify-end");
     expect(actions).toContainElement(retry);
     expect(actions).not.toContainElement(details);
+    const footer = region.querySelector("[data-agent-error-footer]");
+    expect(footer).toContainElement(details);
+    expect(footer).toContainElement(retry);
     expect(details).toHaveAttribute("data-agent-error-details");
     expect(details).toHaveClass("text-xs", "underline", "decoration-dotted");
     expect(details).toHaveAttribute("aria-expanded", "false");
@@ -69,6 +65,9 @@ describe("AgentStorageStatus", () => {
     const diagnostic = screen.getByText(rawError);
     expect(region).toContainElement(diagnostic);
     expect(header).not.toContainElement(diagnostic);
+    expect(footer).toContainElement(diagnostic);
+    expect(actions).not.toContainElement(diagnostic);
+    expect(diagnostic.compareDocumentPosition(actions!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(header && (header.compareDocumentPosition(diagnostic) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy();
     expect(within(region).getAllByRole("button")).toHaveLength(2);
     expect(onRetrySaving).not.toHaveBeenCalled();
@@ -146,15 +145,15 @@ describe("AgentStorageStatus", () => {
     expect(screen.getByText("agent.storage.full")).toBeVisible();
     expect(screen.queryByRole("button", { name: "agent.storage.retry" })).toBeNull();
     const recovery = screen.getByRole("button", { name: "agent.storage.free-and-retry" });
-    expect(recovery.parentElement).toHaveClass("ml-auto");
-    expect(recovery.querySelector("svg")).toHaveAttribute("width", "14");
-    expect(recovery.querySelector("svg")).toHaveAttribute("height", "14");
+    expect(recovery.parentElement).toHaveClass("justify-end", "flex-wrap");
+    expect(recovery.querySelector("svg")).toHaveAttribute("width", "16");
+    expect(recovery.querySelector("svg")).toHaveAttribute("height", "16");
     await act(async () => fireEvent.click(recovery));
     const dialog = await screen.findByRole("dialog", { name: "agent.storage.free-title" });
     expect(dialog.closest("[data-bb-layer-family]")).toHaveAttribute("data-bb-layer-family", "agent");
     expect(dialog).toHaveClass("w-64", "p-3");
     expect(screen.queryByRole("alertdialog")).toBeNull();
-    expect(within(dialog).getByRole("button", { name: "agent.storage.free-and-retry" })).toHaveClass("h-7");
+    expect(within(dialog).getByRole("button", { name: "agent.storage.free-and-retry" })).toHaveClass("h-auto", "min-h-7", "max-w-full", "whitespace-normal", "wrap-anywhere");
     expect(within(dialog).getByRole("button", { name: "agent.storage.free-and-retry" }).querySelector("svg")).toBeNull();
     expect(onFreeSpaceAndRetry).not.toHaveBeenCalled();
     expect(screen.queryByRole("checkbox")).toBeNull();

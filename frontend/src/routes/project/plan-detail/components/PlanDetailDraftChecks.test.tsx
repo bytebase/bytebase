@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/api", () => ({ releaseServiceClientConnect: { checkRelease: mocks.checkRelease } }));
 vi.mock("@/stores", () => ({ pushNotification: vi.fn() }));
 vi.mock("@/stores/app", () => {
-  const getState = () => ({ databasesByName: mocks.databases, dbGroupsByName: {}, workspaceResourceName: () => "workspaces/example", currentUser: { name: "users/member@example.com" } });
+  const getState = () => ({ databasesByName: mocks.databases, dbGroupsByName: {}, workspaceResourceName: () => "workspaces/example", workspace: { name: "workspaces/example" }, currentUser: { name: "users/member@example.com", email: "member@example.com", workspace: "workspaces/example" }, serverInfo: { aiEnabled: true }, settingsByName: {} });
   return { useAppStore: Object.assign((select: (state: unknown) => unknown) => select(getState()), { getState }) };
 });
 vi.mock("../shell/PlanDetailContext", () => ({ usePlanDetailContext: () => mocks.page }));

@@ -25,6 +25,7 @@ import {
   minimizeAgentAfterPageHandoff,
 } from "../logic/pageHandoff";
 import { useAgentStore } from "../store/agent";
+import { AgentActionGroup } from "./AgentActionGroup";
 import { AgentPrimaryAction } from "./AgentPrimaryAction";
 
 export function MaskingExemptionDraftButton({
@@ -138,7 +139,7 @@ export function MaskingExemptionDraftButton({
   };
 
   return (
-    <div className="flex min-w-0 flex-col items-start gap-2">
+    <div className="flex w-full min-w-0 flex-col items-start gap-2">
       {draft && (
         <>
           <dl className="flex max-w-full min-w-0 flex-col gap-1 text-xs">
@@ -169,17 +170,6 @@ export function MaskingExemptionDraftButton({
           </code>
         </>
       )}
-      <AgentPrimaryAction
-        className="-ml-2"
-        data-agent-action-draft-masking-exemption
-        actionKind={source ? "apply" : "open"}
-        loading={loading}
-        completed={Boolean(completed)}
-        disabled={!draft}
-        onClick={() => void openDraft()}
-      >
-        {label}
-      </AgentPrimaryAction>
       {!completed && (
         <p className="text-xs text-control-light">
           {!draft && !unavailable
@@ -192,6 +182,18 @@ export function MaskingExemptionDraftButton({
           {t("agent.masking-exemption-draft.unavailable")}
         </Alert>
       )}
+      <AgentActionGroup>
+        <AgentPrimaryAction
+          data-agent-action-draft-masking-exemption
+          actionKind={source ? "apply" : "open"}
+          loading={loading}
+          completed={Boolean(completed)}
+          disabled={!draft}
+          onClick={() => void openDraft()}
+        >
+          {label}
+        </AgentPrimaryAction>
+      </AgentActionGroup>
     </div>
   );
 }

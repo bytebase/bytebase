@@ -701,8 +701,24 @@ export class BytebaseApiClient {
     return this.request<{ name: string }>("POST", `/v1/${planName}/rollout`, {});
   }
 
-  async getRollout(planName: string): Promise<{ stages?: { name: string; tasks?: { name: string }[] }[] }> {
+  async getRollout(planName: string): Promise<{ stages?: { name: string; tasks?: { name: string; target: string }[] }[] }> {
     return this.request("GET", `/v1/${planName}/rollout`);
+  }
+
+  async listTaskRuns(task: string): Promise<{ name: string; status: string; detail?: string }[]> {
+    const response = await this.request<{
+      taskRuns?: { name: string; status: string; detail?: string }[];
+    }>("GET", `/v1/${task}/taskRuns?pageSize=100`);
+    return response.taskRuns ?? [];
+  }
+
+  async getTaskRunLog(run: string): Promise<{
+    entries?: {
+      type: string;
+      commandExecute?: { response?: { error?: string } };
+    }[];
+  }> {
+    return this.request("GET", `/v1/${run}/log`);
   }
 
   async batchRunTasks(stage: string, tasks: string[]): Promise<void> {

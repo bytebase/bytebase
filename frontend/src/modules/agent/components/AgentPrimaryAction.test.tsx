@@ -27,10 +27,11 @@ describe("AgentPrimaryAction", () => {
     const click = vi.fn();
     const container = render(<AgentPrimaryAction onClick={click}>Open rule draft</AgentPrimaryAction>);
     const button = container.querySelector("button")!;
-    expect(button).toHaveClass("h-7", "text-xs", "text-accent", "bg-transparent", "hover:bg-accent/10", "gap-1.5");
-    expect(button).not.toHaveClass("border", "h-auto", "hover:underline");
+    expect(button).toHaveClass("h-auto", "min-h-7", "py-1", "text-xs", "text-accent", "bg-transparent", "hover:bg-accent/10", "gap-1.5");
+    expect(button).not.toHaveClass("border", "h-7", "hover:underline");
     expect(button.title).toBe("Open rule draft");
-    expect(button.querySelector("span")).toHaveClass("truncate");
+    expect(button.querySelector("span")).toHaveClass("min-w-0", "wrap-anywhere");
+    expect(button.querySelector("span")).not.toHaveClass("truncate");
     expect(button.lastElementChild).toHaveClass("lucide-arrow-up-right", "size-4", "shrink-0");
     act(() => button.click());
     expect(click).toHaveBeenCalledOnce();
@@ -40,11 +41,11 @@ describe("AgentPrimaryAction", () => {
     { actionKind: "apply" as const, loading: false, completed: false, icon: "lucide-file-pen-line", disabled: false },
     { actionKind: "apply" as const, loading: true, completed: false, icon: "lucide-loader-circle", disabled: true },
     { actionKind: "apply" as const, loading: false, completed: true, icon: "lucide-check", disabled: true },
-  ])("keeps the same dimensions for $icon", ({ icon, disabled, ...presentation }) => {
+  ])("keeps content-sized controls for $icon", ({ icon, disabled, ...presentation }) => {
     const click = vi.fn();
     const container = render(<AgentPrimaryAction {...presentation} onClick={click}>Apply to draft</AgentPrimaryAction>);
     const button = container.querySelector("button")!;
-    expect(button).toHaveClass("h-7", "text-xs");
+    expect(button).toHaveClass("h-auto", "min-h-7", "py-1", "text-xs");
     expect(button.querySelector("svg")).toHaveClass(icon, "size-4");
     expect(button.disabled).toBe(disabled);
     act(() => button.click());
@@ -60,7 +61,7 @@ describe("AgentPrimaryAction", () => {
     const container = render(<AgentPrimaryActionLink to="/settings/global-masking">Open masking settings</AgentPrimaryActionLink>);
     const link = container.querySelector("a")!;
     expect(link.getAttribute("href")).toBe("/settings/global-masking");
-    expect(link).toHaveClass("h-7", "text-accent", "hover:bg-accent/10");
+    expect(link).toHaveClass("h-auto", "min-h-7", "py-1", "text-accent", "hover:bg-accent/10");
     expect(link.title).toBe("Open masking settings");
     expect(link.lastElementChild).toHaveClass("lucide-arrow-up-right", "size-4");
     act(() => link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, metaKey: true })));
@@ -75,5 +76,21 @@ describe("AgentPrimaryAction", () => {
     expect(link.getAttribute("aria-disabled")).toBe("true");
     act(() => link.click());
     expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  test.each([false, true])("wraps a long label without clipping or shrinking its icon for link=%s", (link) => {
+    const label = "Open the workspace AI assistant configuration settings and review the current provider";
+    const container = render(link
+      ? <AgentPrimaryActionLink to="/settings/global-masking">{label}</AgentPrimaryActionLink>
+      : <AgentPrimaryAction>{label}</AgentPrimaryAction>);
+    const action = container.querySelector("button, a")!;
+    const content = action.querySelector("span")!;
+
+    expect(action).toHaveClass("h-auto", "min-h-7", "min-w-0", "max-w-full", "py-1", "whitespace-normal");
+    expect(action).not.toHaveClass("whitespace-nowrap");
+    expect(content).toHaveTextContent(label);
+    expect(content).toHaveClass("min-w-0", "wrap-anywhere");
+    expect(content).not.toHaveClass("truncate");
+    expect(action.lastElementChild).toHaveClass("size-4", "shrink-0");
   });
 });

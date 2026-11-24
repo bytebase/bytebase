@@ -1,5 +1,12 @@
 import { writeFile } from "node:fs/promises";
-import { expect, type Page, type Request, test } from "@playwright/test";
+import {
+  expect,
+  type Locator,
+  type Page,
+  type Request,
+  type TestInfo,
+  test,
+} from "@playwright/test";
 import {
   type BareServer,
   bareServerStartTimeoutMs,
@@ -232,6 +239,79 @@ function expectLabelsPatch(request: Request, labels: Record<string, string>) {
   expect(Object.keys(patch ?? {}).sort()).toEqual(["labels", "name"]);
 }
 
+async function expectPreviewContained(element: Locator, container: Locator) {
+  await expect(container).toBeVisible();
+  await expect(element).toBeVisible();
+  await expect.poll(async () => {
+    const bounds = await element.boundingBox();
+    const parent = await container.boundingBox();
+    return bounds !== null && parent !== null &&
+      bounds.x >= parent.x - 1 &&
+      bounds.x + bounds.width <= parent.x + parent.width + 1 &&
+      bounds.y >= parent.y - 1 &&
+      bounds.y + bounds.height <= parent.y + parent.height + 1;
+  }).toBe(true);
+  const bounds = await element.boundingBox();
+  const parent = await container.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(parent).not.toBeNull();
+  expect(bounds!.x).toBeGreaterThanOrEqual(parent!.x - 1);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(parent!.x + parent!.width + 1);
+  expect(bounds!.y).toBeGreaterThanOrEqual(parent!.y - 1);
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(parent!.y + parent!.height + 1);
+  expect(await element.evaluate((node) => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+}
+
+async function captureMobilePermission(
+  page: Page,
+  agent: DomMutationAgent,
+  testInfo: TestInfo,
+  kind: "labels" | "environment",
+  requestValue: string
+) {
+  const originalViewport = page.viewportSize();
+  const scenarios: {
+    title: string;
+    width: number;
+    screenshots: { file: string; label: string }[];
+  }[] = [];
+  const exact = agent.window.locator("details").filter({ hasText: "Exact API request" });
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(agent.window).toBeVisible();
+    await expect(agent.allow).toBeVisible();
+    await expect(agent.deny).toBeVisible();
+    await expect(agent.allow).toBeEnabled();
+    await expectPreviewContained(agent.allow, agent.window);
+    await expectPreviewContained(agent.deny, agent.window);
+    const actions = agent.allow.locator("xpath=ancestor::*[@data-agent-action-group][1]");
+    await expect(actions).toHaveCSS("flex-wrap", "wrap");
+    await expect.poll(async () => {
+      const group = await actions.boundingBox();
+      const last = await actions.getByRole("button").last().boundingBox();
+      return group !== null && last !== null && Math.abs(last.x + last.width - group.x - group.width) <= 1;
+    }).toBe(true);
+    const screenshots = [];
+    const diffFile = `${kind}-diff-${width}.png`;
+    await agent.window.screenshot({ path: testInfo.outputPath(diffFile) });
+    screenshots.push({ file: diffFile, label: `${kind} before-and-after permission preview` });
+    await exact.locator("summary").click();
+    await expect(exact.locator("pre")).toContainText(requestValue);
+    await expect(exact.locator("pre")).toContainText(database);
+    await exact.locator("pre").scrollIntoViewIfNeeded();
+    await expectPreviewContained(exact.locator("pre"), agent.window);
+    await expectPreviewContained(agent.allow, agent.window);
+    await expectPreviewContained(agent.deny, agent.window);
+    const exactFile = `${kind}-exact-request-${width}.png`;
+    await agent.window.screenshot({ path: testInfo.outputPath(exactFile) });
+    screenshots.push({ file: exactFile, label: `${kind} exact API request` });
+    await exact.locator("summary").click();
+    scenarios.push({ title: `${kind} permission preview`, width, screenshots });
+    await writeFile(testInfo.outputPath("screenshots.json"), JSON.stringify({ scenarios }, null, 2));
+  }
+  if (originalViewport) await page.setViewportSize(originalViewport);
+}
+
 test("labels stay local and focus-preserving until one exact approved write", async ({
   page,
 }, testInfo) => {
@@ -335,6 +415,9 @@ test("labels stay local and focus-preserving until one exact approved write", as
     path: testInfo.outputPath("labels-desktop.png"),
     fullPage: true,
   });
+  await captureMobilePermission(page, agent, testInfo, "labels", "agent-approved");
+  expect(writes).toHaveLength(0);
+  expect((await readDatabase()).labels).toEqual(baseline);
   await agent.allow.dblclick();
   await run.done();
   expect(writes).toHaveLength(1);
@@ -370,11 +453,9 @@ test("environment select prepares without native change, inherited selection is 
   ).toBeVisible();
   expect(writes).toHaveLength(0);
   expect((await readDatabase()).environment ?? "").toBe("");
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({
-    path: testInfo.outputPath("environment-mobile.png"),
-    fullPage: true,
-  });
+  await captureMobilePermission(page, agent, testInfo, "environment", prod);
+  expect(writes).toHaveLength(0);
+  expect((await readDatabase()).environment ?? "").toBe("");
   await agent.allow.click();
   await run.done();
   expect(writes).toHaveLength(1);

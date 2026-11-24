@@ -80,6 +80,24 @@ const show = () => render(<AgentSqlFixReviewAction action={{ kind: "review-sql-f
 const open = () => fireEvent.click(screen.getByRole("button", { name: "agent.sql-fix.review" }));
 
 describe("AgentSqlFixReviewAction", () => {
+  test("keeps review commands in the final action row after the unsaved notice", () => {
+    show(); open();
+    const apply = screen.getByRole("button", { name: "agent.sql-fix.apply" });
+    const actions = apply.closest("[data-agent-action-group]");
+    expect(actions).not.toBeNull();
+    expect(actions?.parentElement?.lastElementChild).toBe(actions);
+    expect(actions?.previousElementSibling?.textContent).toContain("agent.sql-fix.unsaved-only");
+    expect(screen.getByRole("button", { name: "common.cancel" }).parentElement).toBe(actions);
+  });
+
+  test("keeps the stale SQL handoff beside the other final review commands", () => {
+    targetStatus = "stale";
+    show(); open();
+    const current = screen.getByRole("button", { name: "agent.sql-fix.review-current" });
+    const apply = screen.getByRole("button", { name: "agent.sql-fix.apply" });
+    expect(current.closest("[data-agent-action-group]")).toBe(apply.closest("[data-agent-action-group]"));
+  });
+
   test("reviews exact original/proposed SQL without changing the editor until Apply", async () => {
     show();
     expect(revealCount).toBe(0);

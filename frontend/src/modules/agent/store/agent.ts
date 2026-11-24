@@ -1322,6 +1322,8 @@ export interface AgentState {
   refreshChatProtection: () => void;
   releaseChatProtection: () => void;
   storagePressure?: AgentStoragePressure;
+  // Volatile owner identity; failed history loading must not disable other owners.
+  initializationFailureIdentity?: string;
   expressionDraftTargetsByChatId: Record<
     string,
     RegisteredExpressionDraftTarget

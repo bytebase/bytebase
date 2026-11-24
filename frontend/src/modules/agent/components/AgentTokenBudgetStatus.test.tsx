@@ -31,7 +31,7 @@ const checkpoint: AgentRunCheckpoint = {
   bindings: { page: { path: "/", title: "Home" }, references: [], runMode: "default" }, maskingSections: [], phase: "working",
 };
 
-function setup(value: AgentChat | null = chat, disabled = false, recovery: { remoteBusy?: boolean; canResume?: boolean; pendingAttemptId?: string } = {}) {
+function setup(value: AgentChat | null = chat, disabled = false, recovery: { remoteBusy?: boolean; canResume?: boolean; pendingAttemptId?: string; error?: string } = {}) {
   if (value?.runBudget && value.modelAttempts === undefined) {
     value = { ...value, modelAttempts: [
       { attemptId: "run-1:1", runId: "run-1", ordinal: 1, outcome: "response", usage: { purpose: "agent", toolNames: [], totalTokens: value.runBudget.totalTokensUsed } },
@@ -141,6 +141,41 @@ describe("AgentTokenBudgetStatus", () => {
     focus.remove();
   });
 
+  test.each([800, 1100])("places wrapping actions below usage, error details, and partial accounting at %i tokens", async (totalTokensUsed) => {
+    setup({ ...chat, status: "paused", runCheckpoint: checkpoint, runBudget: { ...chat.runBudget!, totalTokensUsed, hasUnreportedUsage: true } }, false, { error: "Provider response unavailable" });
+    const button = screen.getByRole("button", { name: totalTokensUsed >= 1000 ? "Increase limit" : "Retry" });
+    const actions = button.parentElement!;
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Error details" })));
+
+    expect(actions).toHaveClass("flex", "w-full", "flex-wrap", "justify-end", "gap-2");
+    expect(actions.parentElement?.lastElementChild).toBe(actions);
+    expect(actions.lastElementChild).toBe(button);
+    for (const content of [
+      screen.getByText(`At least ${totalTokensUsed.toLocaleString("en-US")} / 1,000 tokens`),
+      screen.getByText("Provider response unavailable"),
+      screen.getByText("Some token usage was not reported."),
+    ]) {
+      expect(actions.contains(content)).toBe(false);
+      expect(content.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    }
+    for (const command of actions.querySelectorAll("button")) {
+      expect(command).toHaveClass("h-auto", "min-h-7", "min-w-0", "max-w-full", "py-1", "whitespace-normal", "wrap-anywhere");
+    }
+  });
+
+  test("keeps failed recovery feedback above the final action row", async () => {
+    const { onResume } = setup({ ...chat, status: "paused", runCheckpoint: checkpoint, runBudget: { ...chat.runBudget!, limit: 2000, totalTokensUsed: 1100 } });
+    onResume.mockReturnValueOnce(false);
+    const retry = screen.getByRole("button", { name: "Retry" });
+    await act(async () => fireEvent.click(retry));
+
+    const actions = retry.parentElement!;
+    const failure = screen.getByRole("alert");
+    expect(actions.parentElement?.lastElementChild).toBe(actions);
+    expect(failure.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    expect(retry).toBeEnabled();
+  });
+
   test("does not show a missing-usage warning while the first response is pending", () => {
     const { container } = setup({ ...chat, runId: "run-1", modelAttempts: [], runBudget: { ...chat.runBudget!, totalTokensUsed: 0, providerAttemptCount: 1 } }, false, { pendingAttemptId: "run-1:1" });
     expect(container.textContent).toBe("");
@@ -231,6 +266,14 @@ describe("AgentTokenBudgetStatus", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Increase and resume" })));
     expect(screen.getByRole("spinbutton")).toHaveValue(2);
     expect(screen.getByRole("alert")).toHaveTextContent("Couldn't update this run. Try again.");
+    const confirm = screen.getByRole("button", { name: "Increase and resume" });
+    const actions = confirm.parentElement!;
+    expect(actions).toHaveClass("w-full", "flex-wrap", "justify-end", "gap-2");
+    expect(actions.parentElement?.lastElementChild).toBe(actions);
+    expect(screen.getByRole("alert").compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    for (const command of actions.querySelectorAll("button")) {
+      expect(command).toHaveClass("h-auto", "min-h-7", "min-w-0", "max-w-full", "py-1", "whitespace-normal", "wrap-anywhere");
+    }
     expect(screen.queryByRole("button", { name: "Resume" })).toBeNull();
     expect(onResume).not.toHaveBeenCalled();
   });

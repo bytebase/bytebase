@@ -52,6 +52,8 @@ export interface UseTaskRunLogDataResult {
   // The task's release, when the task is release-based.
   release?: Release;
   entries: TaskRunLogEntry[];
+  // Identity and status of the observation that produced these log entries.
+  logSnapshot?: { taskRunName: string; status?: TaskRun_Status };
   sheet: Sheet | undefined;
   sheetsMap: Map<string, Sheet>;
   metadataFetch: FetchState;
@@ -111,7 +113,11 @@ const isLogCacheFresh = (
 // the log grows live instead of freezing until the run's status flips.
 const LIVE_LOG_POLL_INTERVAL_MS = 5000;
 
-type LogSlice = { entries: TaskRunLogEntry[]; state: FetchState };
+type LogSlice = {
+  entries: TaskRunLogEntry[];
+  state: FetchState;
+  logSnapshot?: UseTaskRunLogDataResult["logSnapshot"];
+};
 
 const seedLogSlice = (taskRunName?: string): LogSlice => {
   if (!taskRunName) {
@@ -119,7 +125,11 @@ const seedLogSlice = (taskRunName?: string): LogSlice => {
   }
   const cached = taskRunLogEntriesCache.get(taskRunName);
   if (cached) {
-    return { entries: cached.entries, state: { status: "success" } };
+    return {
+      entries: cached.entries,
+      state: { status: "success" },
+      logSnapshot: { taskRunName, status: cached.status },
+    };
   }
   return { entries: [], state: { status: "loading" } };
 };
@@ -426,14 +436,29 @@ export const useTaskRunLogData = (
           entries: response.entries,
           status: taskRunStatus,
         });
-        // Identity-stable across live-poll ticks: unchanged entries keep the
-        // previous slice so the viewer doesn't re-render for nothing.
-        setLogSlice((prev) =>
-          prev.state.status === "success" &&
-          sameMessageList(TaskRunLogEntrySchema, prev.entries, response.entries)
-            ? prev
-            : { entries: response.entries, state: { status: "success" } }
-        );
+        setLogSlice((prev) => {
+          const sameEntries = sameMessageList(
+            TaskRunLogEntrySchema,
+            prev.entries,
+            response.entries
+          );
+          if (
+            sameEntries &&
+            prev.state.status === "success" &&
+            prev.logSnapshot?.taskRunName === requestedTaskRunName &&
+            prev.logSnapshot.status === taskRunStatus
+          ) {
+            return prev;
+          }
+          return {
+            entries: sameEntries ? prev.entries : response.entries,
+            state: { status: "success" },
+            logSnapshot: {
+              taskRunName: requestedTaskRunName,
+              status: taskRunStatus,
+            },
+          };
+        });
       })
       .catch((error: unknown) => {
         if (
@@ -444,7 +469,7 @@ export const useTaskRunLogData = (
         }
         // Keep showing stale cached entries over an empty error state.
         setLogSlice((prev) => ({
-          entries: prev.entries,
+          ...prev,
           state: { status: "error", error: getErrorMessage(error) },
         }));
       });
@@ -644,6 +669,7 @@ export const useTaskRunLogData = (
     taskRun: fetchedRun?.name === taskRunName ? fetchedRun : undefined,
     release: sheetSlice.release,
     entries: logSlice.entries,
+    logSnapshot: logSlice.logSnapshot,
     sheet: sheetSlice.sheet,
     sheetsMap: sheetSlice.sheetsMap,
     metadataFetch: metadataFetchState,

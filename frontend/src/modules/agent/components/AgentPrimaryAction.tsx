@@ -11,7 +11,8 @@ interface ActionPresentation {
   completed?: boolean;
 }
 
-const actionClassName = "max-w-full min-w-0 justify-start gap-1.5 text-left";
+const actionClassName =
+  "h-auto min-h-7 min-w-0 max-w-full justify-start gap-1.5 py-1 text-left whitespace-normal wrap-anywhere";
 
 function ActionContent({
   children,
@@ -28,7 +29,7 @@ function ActionContent({
         : ArrowUpRight;
   return (
     <>
-      <span className="min-w-0 truncate">{children}</span>
+      <span className="min-w-0 wrap-anywhere">{children}</span>
       <Icon
         className={cn("size-4 shrink-0", loading && "animate-spin")}
         aria-hidden="true"

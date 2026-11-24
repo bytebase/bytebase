@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, Clock3, User } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskRunStatusIcon } from "@/components/TaskRunStatusIcon";
@@ -27,6 +27,7 @@ import { TaskRunErrorAlert } from "./TaskRunErrorAlert";
 // runs collapse to header rows. Keeps the sheet scannable and avoids fetching
 // every run's log up front.
 const COLLAPSE_OLDER_RUNS_THRESHOLD = 4;
+const HISTORY_AGENT_HELP = { provenance: "explicit-history" } as const;
 
 export function DeployTaskRunHistorySheet({
   onOpenChange,
@@ -109,8 +110,10 @@ function TaskRunHistoryItem({
 }) {
   const { t } = useTranslation();
   // Stable across renders, so the memoized log viewer keeps its memo.
-  const errorAlert = useMemo(
-    () => <TaskRunErrorAlert taskRun={taskRun} />,
+  const renderErrorAlert = useCallback(
+    (action: ReactNode) => (
+      <TaskRunErrorAlert taskRun={taskRun} action={action} />
+    ),
     [taskRun]
   );
   const startMs =
@@ -169,11 +172,12 @@ function TaskRunHistoryItem({
               unmount cleanup invalidates the in-flight RUNNING log request,
               which would otherwise cache an incomplete RUNNING log. */}
           <TaskRunLogViewer
+            agentHelp={HISTORY_AGENT_HELP}
             key={`logs-${taskRun.name}-${taskRun.status}`}
             taskRunName={taskRun.name}
             taskRunStatus={taskRun.status}
             runError={taskRun.detail}
-            errorAlert={errorAlert}
+            renderErrorAlert={renderErrorAlert}
           />
         </div>
       )}

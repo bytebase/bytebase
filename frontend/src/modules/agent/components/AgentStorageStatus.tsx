@@ -83,22 +83,17 @@ export function AgentStorageStatus({
         aria-label={t("agent.storage.title")}
         data-agent-storage-status
       >
-        <div
-          className="flex items-start justify-between gap-2"
-          data-agent-storage-header
-        >
-          <p className="min-w-0 break-words">
-            {full ? t("agent.storage.full") : t("agent.storage.save-failed")}
-          </p>
-          <div
-            className="ml-auto flex shrink-0 items-center"
-            data-agent-storage-actions
-          >
+        <p className="min-w-0 break-words" data-agent-storage-header>
+          {full ? t("agent.storage.full") : t("agent.storage.save-failed")}
+        </p>
+        <AgentErrorDetails
+          error={error}
+          actions={
             <Button
               ref={recoveryRef}
-              size="xs"
+              size="sm"
               appearance="outline"
-              className="gap-1.5"
+              className="h-auto min-h-7 min-w-0 max-w-full gap-1.5 py-1 whitespace-normal wrap-anywhere"
               disabled={disabled || pending || (full && !onFreeSpaceAndRetry)}
               aria-busy={pending}
               aria-haspopup={full ? "dialog" : undefined}
@@ -113,17 +108,16 @@ export function AgentStorageStatus({
               }}
             >
               {full ? (
-                <Trash2 size={14} className="shrink-0" aria-hidden="true" />
+                <Trash2 size={16} className="shrink-0" aria-hidden="true" />
               ) : (
-                <RotateCw size={14} className="shrink-0" aria-hidden="true" />
+                <RotateCw size={16} className="shrink-0" aria-hidden="true" />
               )}
               {full
                 ? t("agent.storage.free-and-retry")
                 : t("agent.storage.retry")}
             </Button>
-          </div>
-        </div>
-        <AgentErrorDetails error={error} />
+          }
+        />
       </Alert>
       <AgentPopover
         open={confirmationOpen}
@@ -149,6 +143,7 @@ export function AgentStorageStatus({
             <Button
               appearance="outline"
               size="sm"
+              className="h-auto min-h-7 min-w-0 max-w-full py-1 whitespace-normal wrap-anywhere"
               disabled={pending}
               onClick={() => setConfirmationOpen(false)}
             >
@@ -157,6 +152,7 @@ export function AgentStorageStatus({
             <Button
               variant="destructive"
               size="sm"
+              className="h-auto min-h-7 min-w-0 max-w-full py-1 whitespace-normal wrap-anywhere"
               disabled={disabled || pending || !onFreeSpaceAndRetry}
               aria-busy={pending}
               onClick={() => void freeSpaceAndRetry()}

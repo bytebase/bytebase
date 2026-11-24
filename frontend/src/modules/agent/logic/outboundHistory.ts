@@ -172,11 +172,15 @@ const cloneMessage = ({
   content,
   toolCallId,
   toolCalls,
-}: Message): Message => ({
+  metadata,
+}: AgentMessage): Message => ({
   role,
   content,
   toolCallId,
-  toolCalls: toolCalls?.map((toolCall) => ({ ...toolCall })),
+  toolCalls: toolCalls?.map((toolCall) => ({
+    ...toolCall,
+    ...(metadata?.runPreflight ? { origin: "runtime" as const } : {}),
+  })),
 });
 
 const historicalClarification = (

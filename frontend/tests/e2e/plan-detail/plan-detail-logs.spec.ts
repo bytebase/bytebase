@@ -101,6 +101,9 @@ async function runRetriedPlan(
 
   await planPage.headerRunStage.click();
   await planPage.confirmRunTaskDialog();
+  await page.locator("#plan-phase-deploy").getByRole("button", {
+    name: new RegExp(env.databaseId),
+  }).first().click();
 
   // The umbrella says so once the attempt after the last scheduled failure is
   // waiting on the lock.

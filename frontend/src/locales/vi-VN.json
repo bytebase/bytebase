@@ -459,9 +459,12 @@
       "free-failed": "Không thể giải phóng đủ bộ nhớ. Hãy đóng các thẻ Agent khác hoặc kết thúc các lượt chạy đang hoạt động rồi thử lại.",
       "free-title": "Xóa các cuộc trò chuyện Agent đã lưu khác?",
       "full": "Bộ nhớ lịch sử Agent đã đầy.",
+      "load-unavailable": "Agent không khả dụng",
+      "load-unavailable-description": "Không thể tải cuộc trò chuyện cho tài khoản và không gian làm việc này. Lịch sử đã lưu chưa bị xóa.",
       "retention-info": "Lưu giữ lịch sử trò chuyện",
       "retention-policy": "Bản xem trước kết quả truy vấn được xóa trước. Nếu cần thêm dung lượng, các cuộc trò chuyện đã hoàn tất cũ nhất sẽ bị xóa, dù đã lưu trữ hay chưa. Các cuộc trò chuyện đang mở, lượt chạy chưa hoàn tất và bản nháp được giữ lại.",
       "retry": "Thử lưu lại",
+      "retry-loading": "Thử lại",
       "save-failed": "Không thể lưu lịch sử Agent. Hãy thử lại.",
       "title": "Bộ nhớ lịch sử Agent"
     },
@@ -3818,7 +3821,6 @@
           "api-key": {
             "description": "Cung cấp Khóa API, chỉ đọc. {{viewDoc}}",
             "find-my-key": "Tìm khóa của tôi",
-            "placeholder": "Khóa API thường bắt đầu bằng sk-*****",
             "self": "Khóa API"
           },
           "available-in-saas": "Trợ lý AI có sẵn trong workspace này và do Bytebase quản lý.",

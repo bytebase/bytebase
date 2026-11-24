@@ -303,27 +303,79 @@ describe("useTaskRunLogData caching", () => {
     }
   });
 
-  test("revalidates once when a cached running log remounts as done", async () => {
+  test.each([false, true])(
+    "revalidates a cached running log on a done remount (identical entries: %s)",
+    async (identical) => {
+      mocks.rolloutsByName = { [ROLLOUT_NAME]: makeRolloutWithTask() };
+      mocks.getSheetByName.mockReturnValue(makeSheet("select 1", 8));
+      const taskRunName = `${TASK_NAME}/taskRuns/run-to-done-${identical}`;
+      const entry = create(TaskRunLogEntrySchema, { replicaId: "running" });
+      mocks.getTaskRunLog.mockResolvedValueOnce({ entries: [entry] });
+
+      const running = renderHook(taskRunName, TaskRun_Status.RUNNING);
+      await running.flush();
+      running.unmount();
+
+      // First mount at DONE: cache was recorded at RUNNING → revalidate once.
+      mocks.getTaskRunLog.mockResolvedValueOnce({
+        entries: [
+          create(TaskRunLogEntrySchema, {
+            replicaId: identical ? "running" : "done",
+          }),
+        ],
+      });
+      const done = renderHook(taskRunName, TaskRun_Status.DONE);
+      const cachedEntries = done.result().entries;
+      expect(done.result().logSnapshot).toEqual({
+        taskRunName,
+        status: TaskRun_Status.RUNNING,
+      });
+      await done.flush();
+      expect(done.result().logSnapshot).toEqual({
+        taskRunName,
+        status: TaskRun_Status.DONE,
+      });
+      if (identical) {
+        expect(done.result().entries).toBe(cachedEntries);
+      } else {
+        expect(done.result().entries[0].replicaId).toBe("done");
+      }
+      expect(mocks.getTaskRunLog).toHaveBeenCalledTimes(2);
+      done.unmount();
+
+      // Subsequent DONE mounts hit the terminal cache.
+      const again = renderHook(taskRunName, TaskRun_Status.DONE);
+      await again.flush();
+      expect(mocks.getTaskRunLog).toHaveBeenCalledTimes(2);
+      again.unmount();
+    }
+  );
+
+  test("keeps running log provenance when terminal revalidation fails", async () => {
     mocks.rolloutsByName = { [ROLLOUT_NAME]: makeRolloutWithTask() };
     mocks.getSheetByName.mockReturnValue(makeSheet("select 1", 8));
-    const taskRunName = `${TASK_NAME}/taskRuns/run-to-done`;
-    mocks.getTaskRunLog.mockResolvedValue({ entries: [{ deployId: "a" }] });
-
+    const taskRunName = `${TASK_NAME}/taskRuns/failed-log-refresh`;
+    mocks.getTaskRunLog.mockResolvedValueOnce({
+      entries: [create(TaskRunLogEntrySchema, { replicaId: "running" })],
+    });
     const running = renderHook(taskRunName, TaskRun_Status.RUNNING);
     await running.flush();
+    const cachedEntries = running.result().entries;
     running.unmount();
 
-    // First mount at DONE: cache was recorded at RUNNING → revalidate once.
+    mocks.getTaskRunLog.mockRejectedValueOnce(new Error("Log unavailable"));
     const done = renderHook(taskRunName, TaskRun_Status.DONE);
     await done.flush();
-    expect(mocks.getTaskRunLog).toHaveBeenCalledTimes(2);
+    expect(done.result().logFetch).toEqual({
+      status: "error",
+      error: "Log unavailable",
+    });
+    expect(done.result().entries).toBe(cachedEntries);
+    expect(done.result().logSnapshot).toEqual({
+      taskRunName,
+      status: TaskRun_Status.RUNNING,
+    });
     done.unmount();
-
-    // Subsequent DONE mounts hit the terminal cache.
-    const again = renderHook(taskRunName, TaskRun_Status.DONE);
-    await again.flush();
-    expect(mocks.getTaskRunLog).toHaveBeenCalledTimes(2);
-    again.unmount();
   });
 
   test("a late log response from an unmounted instance cannot rewind the cache", async () => {
@@ -366,6 +418,10 @@ describe("useTaskRunLogData caching", () => {
     mocks.getTaskRunLog.mockReturnValue(new Promise(() => {}));
     const reopened = renderHook(taskRunName, TaskRun_Status.DONE);
     expect(reopened.result().entries).toHaveLength(2);
+    expect(reopened.result().logSnapshot).toEqual({
+      taskRunName,
+      status: TaskRun_Status.DONE,
+    });
     reopened.unmount();
   });
 
@@ -411,6 +467,10 @@ describe("useTaskRunLogData caching", () => {
           (entry) => (entry as unknown as { deployId: string }).deployId
         )
     ).toEqual(["new-1", "new-2"]);
+    expect(hook.result().logSnapshot).toEqual({
+      taskRunName: newRunName,
+      status: TaskRun_Status.DONE,
+    });
     hook.unmount();
   });
 

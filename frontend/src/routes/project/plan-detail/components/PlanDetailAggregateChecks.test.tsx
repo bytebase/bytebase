@@ -38,6 +38,15 @@ vi.mock("../shell/PlanDetailContext", () => ({
 
 vi.mock("./PlanTargetDisplay", () => ({ PlanTargetDisplay: () => null }));
 vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({ openAgentWithPrompt: (...args: unknown[]) => mocks.open(...args) }));
+vi.mock("@/stores/app", () => {
+  const getState = () => ({
+    workspace: { name: "workspaces/example" },
+    currentUser: { name: "users/member@example.com", email: "member@example.com", workspace: "workspaces/example" },
+    serverInfo: { aiEnabled: true },
+    settingsByName: {},
+  });
+  return { useAppStore: Object.assign((selector: (state: unknown) => unknown) => selector(getState()), { getState }) };
+});
 
 import { PlanDetailAggregateChecks } from "./PlanDetailAggregateChecks";
 

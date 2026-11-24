@@ -62,13 +62,26 @@ afterEach(() => {
 });
 
 describe("AgentAIConfigurationRecovery", () => {
+  test("uses compact mobile spacing without changing desktop alert spacing", () => {
+    const container = render(<AgentAIConfigurationRecovery />);
+    const alert = container.querySelector('[role="alert"]')!;
+    const actions = container.querySelector("[data-agent-ai-configuration-actions]")!;
+
+    expect(alert).toHaveClass("p-2", "gap-x-2", "sm:px-4", "sm:py-3", "sm:gap-x-3");
+    expect(actions).toHaveClass("mt-2", "sm:mt-3");
+  });
+
   test("uses the compact primary action for configuration without changing navigation", () => {
     const container = render(<AgentAIConfigurationRecovery />);
     const link = container.querySelector("a")!;
 
     expect(link).toHaveAttribute("data-agent-primary-action");
     expect(link).toHaveClass(
-      "h-7",
+      "h-auto",
+      "min-h-7",
+      "max-w-full",
+      "whitespace-normal",
+      "wrap-anywhere",
       "text-xs",
       "bg-transparent",
       "text-accent",
@@ -89,23 +102,6 @@ describe("AgentAIConfigurationRecovery", () => {
     });
   });
 
-  test("keeps dismiss as a secondary action", () => {
-    const onDismiss = vi.fn();
-    const container = render(
-      <AgentAIConfigurationRecovery onDismiss={onDismiss} />
-    );
-    const dismiss = container.querySelector("button")!;
-
-    expect(dismiss.textContent).toBe("common.dismiss");
-    expect(dismiss).toHaveClass("border", "h-7");
-    expect(dismiss).not.toHaveAttribute("data-agent-primary-action");
-    act(() => dismiss.click());
-    expect(onDismiss).toHaveBeenCalledOnce();
-    expect(mocks.clearError).toHaveBeenCalledWith("chat-1");
-    expect(mocks.toggle).not.toHaveBeenCalled();
-    expect(mocks.push).not.toHaveBeenCalled();
-  });
-
   test("does not offer configuration without permission", () => {
     mocks.allowConfigure = false;
     const container = render(<AgentAIConfigurationRecovery />);
@@ -114,5 +110,29 @@ describe("AgentAIConfigurationRecovery", () => {
     expect(container.textContent).toContain(
       "agent.ai-not-configured.contact-admin"
     );
+  });
+
+  test("places only Configure in the final full-width, right-aligned wrapping row", () => {
+    const container = render(<AgentAIConfigurationRecovery />);
+    const alert = container.querySelector('[role="alert"]')!;
+    const link = container.querySelector("a")!;
+    const actions = link.parentElement!;
+
+    expect(alert).not.toHaveClass("max-w-[80%]");
+    expect(actions).toHaveClass("flex", "w-full", "flex-wrap", "justify-end", "gap-2");
+    expect(actions.children).toHaveLength(1);
+    expect(actions.lastElementChild).toBe(link);
+    expect(container.querySelector("button")).toBeNull();
+    expect(actions.parentElement?.lastElementChild).toBe(actions);
+    expect(actions.textContent).not.toContain("agent.ai-not-configured.description");
+  });
+
+  test("shows contact-admin guidance without any actions for a restricted user", () => {
+    mocks.allowConfigure = false;
+    const container = render(<AgentAIConfigurationRecovery />);
+    expect(container.textContent).toContain("agent.ai-not-configured.contact-admin");
+    expect(container.querySelector("[data-agent-ai-configuration-actions]")).toBeNull();
+    expect(container.querySelector("button")).toBeNull();
+    expect(container.querySelector("a")).toBeNull();
   });
 });

@@ -14,6 +14,7 @@ export interface ToolCall {
   name: string;
   arguments: string; // JSON-encoded
   metadata?: string; // Opaque provider-specific data (e.g., Gemini thought_signature)
+  origin?: "runtime";
 }
 
 export interface Message {

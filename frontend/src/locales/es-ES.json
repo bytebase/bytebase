@@ -459,9 +459,12 @@
       "free-failed": "No se pudo liberar suficiente espacio. Cierra otras pestañas de Agent o finaliza las ejecuciones activas y vuelve a intentarlo.",
       "free-title": "¿Eliminar otros chats guardados de Agent?",
       "full": "El almacenamiento del historial de Agent está lleno.",
+      "load-unavailable": "Agent no disponible",
+      "load-unavailable-description": "No se pudieron cargar las conversaciones de esta cuenta y espacio de trabajo. El historial guardado no se ha eliminado.",
       "retention-info": "Conservación del historial de chats",
       "retention-policy": "Primero se eliminan las vistas previas de los resultados de las consultas. Si se necesita más espacio, se eliminan los chats completados más antiguos, estén archivados o no. Se conservan los chats abiertos, las ejecuciones sin finalizar y los borradores.",
       "retry": "Volver a guardar",
+      "retry-loading": "Reintentar",
       "save-failed": "No se pudo guardar el historial de Agent. Vuelve a intentarlo.",
       "title": "Almacenamiento del historial de Agent"
     },
@@ -3818,7 +3821,6 @@
           "api-key": {
             "description": "Proporcionar clave API, solo lectura. {{viewDoc}}",
             "find-my-key": "Encuentra mi llave",
-            "placeholder": "Una clave de API generalmente comienza con sk-*****",
             "self": "Clave de API"
           },
           "available-in-saas": "El Asistente de IA está disponible en este espacio de trabajo y lo administra Bytebase.",

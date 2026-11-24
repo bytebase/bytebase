@@ -42,13 +42,25 @@ const viewerMounts = vi.hoisted(() => ({ count: 0 }));
 vi.mock("@/components/task-run-log", async () => {
   const { useEffect } = await import("react");
   return {
-    TaskRunLogViewer: ({ taskRunName }: { taskRunName: string }) => {
+    TaskRunLogViewer: ({
+      taskRunName,
+      agentHelp,
+    }: {
+      taskRunName: string;
+      agentHelp?: { provenance: string };
+    }) => {
       // Counts fresh mounts so a test can assert the viewer remounts (rather
       // than re-renders in place) when its key changes.
       useEffect(() => {
         viewerMounts.count += 1;
       }, []);
-      return <div data-task-run-name={taskRunName} data-testid="log-viewer" />;
+      return (
+        <div
+          data-task-run-name={taskRunName}
+          data-provenance={agentHelp?.provenance}
+          data-testid="log-viewer"
+        />
+      );
     },
   };
 });
@@ -57,7 +69,7 @@ vi.mock("@/components/HumanizeTs", async () => ({
   ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
-const taskName = "projects/p1/rollouts/r1/stages/s1/tasks/t1";
+const taskName = "projects/example/plans/42/rollout/stages/prod/tasks/2";
 
 const CREATED_AT_MS = 1_000_000;
 // Older runs step back from it, so the newest run is the named instant and
@@ -88,18 +100,19 @@ const renderSheet = (taskRuns: ReturnType<typeof makeTaskRuns>) => {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
-  const element: ReactElement = (
+  const element = (runs: typeof taskRuns): ReactElement => (
     <DeployTaskRunHistorySheet
       onOpenChange={() => {}}
       open={true}
-      taskRuns={taskRuns}
+      taskRuns={runs}
     />
   );
-  act(() => {
-    root.render(element);
-  });
+  const rerender = (runs: typeof taskRuns) =>
+    act(() => root.render(element(runs)));
+  rerender(taskRuns);
   return {
     container,
+    rerender,
     cleanup: () => {
       act(() => root.unmount());
       container.remove();
@@ -192,8 +205,10 @@ describe("DeployTaskRunHistorySheet", () => {
   });
 
   test("collapses older runs at four or more, expanding on click", () => {
+    viewerMounts.count = 0;
     const { container, cleanup } = renderSheet(makeTaskRuns(4));
     expect(mountedLogNames(container)).toEqual([`${taskName}/taskRuns/4`]);
+    expect(viewerMounts.count).toBe(1);
 
     const buttons = container.querySelectorAll("button");
     expect(buttons[0].getAttribute("aria-expanded")).toBe("true");
@@ -208,6 +223,33 @@ describe("DeployTaskRunHistorySheet", () => {
       `${taskName}/taskRuns/3`,
     ]);
     expect(buttons[1].getAttribute("aria-expanded")).toBe("true");
+    expect(viewerMounts.count).toBe(2);
+    cleanup();
+  });
+
+  test("keeps an expanded older run's exact selection after a newer success", () => {
+    const runs = makeTaskRuns(4);
+    const { container, rerender, cleanup } = renderSheet(runs);
+    act(() => container.querySelectorAll("button")[1].click());
+
+    rerender([
+      makeTaskRun({
+        name: `${taskName}/taskRuns/5`,
+        status: TaskRun_Status.DONE,
+      }),
+      ...runs,
+    ]);
+
+    const olderName = runs[1].name;
+    const older = Array.from(
+      container.querySelectorAll<HTMLElement>("[data-testid=log-viewer]")
+    ).find((node) => node.dataset.taskRunName === olderName);
+    expect(older?.dataset.provenance).toBe("explicit-history");
+    expect(mountedLogNames(container)).toEqual([
+      `${taskName}/taskRuns/5`,
+      runs[0].name,
+      olderName,
+    ]);
     cleanup();
   });
 });

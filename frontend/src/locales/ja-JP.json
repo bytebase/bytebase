@@ -459,9 +459,12 @@
       "free-failed": "十分な空き容量を確保できませんでした。他の Agent タブを閉じるか、進行中の実行を終了してから再試行してください。",
       "free-title": "他の保存済み Agent チャットを削除しますか？",
       "full": "Agent 履歴のストレージがいっぱいです。",
+      "load-unavailable": "Agent を利用できません",
+      "load-unavailable-description": "このアカウントとワークスペースの会話を読み込めませんでした。保存済みの履歴は削除されていません。",
       "retention-info": "チャット履歴の保持",
       "retention-policy": "クエリ結果のプレビューを最初に削除します。さらに空き容量が必要な場合は、アーカイブの有無にかかわらず、完了した古いチャットを削除します。開いているチャット、未完了の実行、下書きは保持されます。",
       "retry": "保存を再試行",
+      "retry-loading": "再試行",
       "save-failed": "Agent の履歴を保存できませんでした。再試行してください。",
       "title": "Agent 履歴のストレージ"
     },
@@ -3818,7 +3821,6 @@
           "api-key": {
             "description": "読み取り専用の API キーを入力してください。{{viewDoc}}",
             "find-my-key": "鍵を探す",
-            "placeholder": "API キーは通常 sk-***** で始まります",
             "self": "APIキー"
           },
           "available-in-saas": "AI アシスタントはこのワークスペースで利用でき、Bytebase によって管理されています。",

@@ -12,7 +12,7 @@ vi.mock("@/hooks/useAppState", () => ({ useCurrentUser: () => ({ email: "member@
 vi.mock("@/hooks/usePrincipal", () => ({ usePrincipal: () => null, principalLabel: () => "Member" }));
 vi.mock("@/stores", () => ({ pushNotification: vi.fn() }));
 vi.mock("@/stores/app", () => {
-  const getState = () => ({ roleList: [], workspaceResourceName: () => "workspaces/example", currentUser: { name: "users/member@example.com" } });
+  const getState = () => ({ roleList: [], workspaceResourceName: () => "workspaces/example", workspace: { name: "workspaces/example" }, currentUser: { name: "users/member@example.com", email: "member@example.com", workspace: "workspaces/example" }, serverInfo: { aiEnabled: true }, settingsByName: {} });
   return { useAppStore: Object.assign((select: (state: unknown) => unknown) => select(getState()), { getState }) };
 });
 vi.mock("../../shell/PlanDetailContext", () => ({ usePlanDetailContext: () => mocks.page }));

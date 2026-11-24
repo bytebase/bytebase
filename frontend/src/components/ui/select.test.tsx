@@ -245,6 +245,83 @@ describe("Select multi-select chips", () => {
   });
 });
 
+describe("Select page scrolling", () => {
+  afterEach(async () => {
+    cleanup();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(20);
+    });
+    vi.useRealTimers();
+  });
+
+  async function renderOpenSelect(
+    modal?: boolean,
+    onValueChange?: (value: string | null) => void
+  ) {
+    vi.resetModules();
+    vi.doUnmock("@base-ui/react/select");
+    const { Select, SelectContent, SelectItem, SelectTrigger } =
+      await import("./select");
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    render(
+      <Select
+        defaultOpen
+        modal={modal}
+        defaultValue="alpha"
+        onValueChange={onValueChange}
+      >
+        <SelectTrigger aria-label="Model">Alpha</SelectTrigger>
+        <SelectContent>
+          <SelectItem value="alpha">Alpha</SelectItem>
+          <SelectItem value="beta">Beta</SelectItem>
+        </SelectContent>
+      </Select>
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(20);
+    });
+  }
+
+  test("opens without changing document scrolling by default", async () => {
+    await renderOpenSelect();
+
+    expect(screen.getByRole("listbox")).toBeTruthy();
+    expect(document.body.style.overflowY).toBe("");
+    expect(document.documentElement.style.overflowY).toBe("");
+    expect(document.documentElement.style.scrollbarGutter).toBe("");
+  });
+
+  test("preserves explicit modal scroll locking", async () => {
+    await renderOpenSelect(true);
+
+    expect(screen.getByRole("listbox")).toBeTruthy();
+    expect(document.body.style.overflowY).toBe("hidden");
+  });
+
+  test("selects with the keyboard and restores focus to the trigger", async () => {
+    const onValueChange = vi.fn();
+    await renderOpenSelect(undefined, onValueChange);
+
+    fireEvent.keyDown(screen.getByRole("option", { name: "Alpha" }), {
+      key: "ArrowDown",
+    });
+    expect(document.activeElement).toBe(
+      screen.getByRole("option", { name: "Beta" })
+    );
+    fireEvent.keyDown(document.activeElement!, { key: "Enter" });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(20);
+    });
+
+    expect(onValueChange.mock.calls[0]?.[0]).toBe("beta");
+    expect(screen.getByRole("combobox")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    expect(document.activeElement).toBe(screen.getByRole("combobox"));
+  });
+});
+
 describe("SelectTrigger", () => {
   afterEach(() => {
     document.body.innerHTML = "";

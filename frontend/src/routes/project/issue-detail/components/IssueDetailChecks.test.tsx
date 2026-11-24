@@ -12,7 +12,7 @@ vi.mock("@/hooks/useAppState", () => ({ useCurrentUser: () => ({ email: "member@
 vi.mock("@/hooks/useProjectByName", () => ({ useProjectByName: () => ({}) }));
 vi.mock("@/stores", () => ({ pushNotification: vi.fn() }));
 vi.mock("@/stores/app", () => {
-  const getState = () => ({ projectsByName: {}, workspaceResourceName: () => "workspaces/example", currentUser: { name: "users/member@example.com" } });
+  const getState = () => ({ projectsByName: {}, workspaceResourceName: () => "workspaces/example", workspace: { name: "workspaces/example" }, currentUser: { name: "users/member@example.com", email: "member@example.com", workspace: "workspaces/example" }, serverInfo: { aiEnabled: true }, settingsByName: {} });
   return { useAppStore: Object.assign((select: (state: unknown) => unknown) => select(getState()), { getState }) };
 });
 vi.mock("@/utils", () => ({ hasProjectPermissionV2: () => false }));

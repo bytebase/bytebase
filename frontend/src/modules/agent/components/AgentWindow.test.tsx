@@ -11,7 +11,7 @@ import type { SQLEditorTheme } from "@/modules/sql-editor/components/theme/types
 import { type AccessGrant, AccessGrantSchema } from "@/types/proto-es/v1/access_grant_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
-import { createAgentStore, useAgentStore } from "../store/agent";
+import { createAgentStore, getAgentStateKey, useAgentStore } from "../store/agent";
 import { DEFAULT_AGENT_PREFERENCES, getAgentPreferencesKey } from "../store/preferences";
 import type { AgentPageResource } from "../logic/chatContext";
 import { openAgentPageHelp } from "../logic/contextualHelp";
@@ -489,6 +489,140 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   document.body.innerHTML = "";
+});
+
+test("offers non-destructive recovery when saved conversations cannot initialize", async () => {
+  const key = getAgentStateKey("workspaces/acme", "first@example.com")!.replace(
+    "bb-agent-state-v3",
+    "bb-agent-state-v2"
+  );
+  const saved = "{unreadable saved history";
+  localStorage.clear();
+  localStorage.setItem(key, saved);
+  useAgentStore.setState({ workspaceName: null, userEmail: null, visible: true });
+  const view = renderIntoContainer(<AgentWindow />);
+  try {
+    view.render();
+    const recovery = screen.getByRole("dialog", {
+      name: "agent.storage.load-unavailable",
+    });
+    expect(document.querySelector("[data-agent-window]")).toBeNull();
+    expect(screen.queryByTestId("agent-chat")).not.toBeInTheDocument();
+    expect(localStorage.getItem(key)).toBe(saved);
+    const failedOwner = JSON.stringify(["workspaces/acme", "first@example.com"]);
+    expect(useAgentStore.getState().initializationFailureIdentity).toBe(failedOwner);
+    await act(async () => {
+      within(recovery).getByRole("button", {
+        name: "agent.storage.retry-loading",
+      }).click();
+    });
+    expect(localStorage.getItem(key)).toBe(saved);
+    expect(useAgentStore.getState().workspaceName).toBeNull();
+    expect(useAgentStore.getState().userEmail).toBeNull();
+    expect(useAgentStore.getState().initializationFailureIdentity).toBe(failedOwner);
+    await act(async () => {
+      within(recovery).getByRole("button", { name: "common.close" }).click();
+    });
+    expect(useAgentStore.getState().visible).toBe(false);
+    expect(localStorage.getItem(key)).toBe(saved);
+    expect(useAgentStore.getState().initializationFailureIdentity).toBe(failedOwner);
+  } finally {
+    view.unmount();
+  }
+});
+
+test("Retry loads the current owner's available history without replaying a request", async () => {
+  const key = getAgentStateKey("workspaces/acme", "first@example.com")!.replace(
+    "bb-agent-state-v3",
+    "bb-agent-state-v2"
+  );
+  localStorage.clear();
+  localStorage.setItem(key, "{unreadable saved history");
+  useAgentStore.setState({ workspaceName: null, userEmail: null, visible: true });
+  const view = renderIntoContainer(<AgentWindow />);
+  try {
+    view.render();
+    const recovery = screen.getByRole("dialog", {
+      name: "agent.storage.load-unavailable",
+    });
+    localStorage.setItem(key, JSON.stringify({
+      currentChatId: "recovered",
+      chats: [{ id: "recovered", title: "Recovered conversation", context: "projects/orders" }],
+      messagesByChatId: { recovered: [{ id: "old-message", role: "user", content: "An earlier question" }] },
+    }));
+    await act(async () => {
+      within(recovery).getByRole("button", {
+        name: "agent.storage.retry-loading",
+      }).click();
+    });
+    expect(document.querySelector("[data-agent-window]")).not.toBeNull();
+    expect(useAgentStore.getState().workspaceName).toBe("workspaces/acme");
+    expect(useAgentStore.getState().userEmail).toBe("first@example.com");
+    expect(useAgentStore.getState().initializationFailureIdentity).toBeUndefined();
+    expect(useAgentStore.getState().chats.some((chat) => chat.id === "recovered")).toBe(true);
+    expect(useAgentStore.getState().queuedUserMessagesByChatId).toEqual({});
+    expect(screen.queryByRole("dialog", {
+      name: "agent.storage.load-unavailable",
+    })).not.toBeInTheDocument();
+  } finally {
+    view.unmount();
+  }
+});
+
+test("switching owners clears a failed load without altering the previous owner's saved history", () => {
+  const key = getAgentStateKey("workspaces/acme", "first@example.com")!.replace(
+    "bb-agent-state-v3",
+    "bb-agent-state-v2"
+  );
+  const saved = "{unreadable saved history";
+  localStorage.clear();
+  localStorage.setItem(key, saved);
+  useAgentStore.setState({ workspaceName: null, userEmail: null, visible: true });
+  const view = renderIntoContainer(<AgentWindow />);
+  try {
+    view.render();
+    expect(useAgentStore.getState().initializationFailureIdentity).toBe(
+      JSON.stringify(["workspaces/acme", "first@example.com"])
+    );
+    mocks.currentUser = {
+      name: "users/second@example.com",
+      email: "second@example.com",
+      workspace: "workspaces/acme",
+    };
+    view.render();
+    expect(useAgentStore.getState().initializationFailureIdentity).toBeUndefined();
+    expect(useAgentStore.getState().userEmail).toBe("second@example.com");
+    expect(localStorage.getItem(key)).toBe(saved);
+  } finally {
+    view.unmount();
+  }
+});
+
+test("a deferred workspace switch does not expose or stop the other conversation", async () => {
+  const previous = useAgentStore.getState().chats[0]!;
+  useAgentStore.setState({
+    workspaceName: "workspaces/other",
+    chats: [{ ...previous, id: "previous-owner", title: "Private other-workspace conversation", status: "running" }],
+    currentChatId: "previous-owner",
+  });
+  const view = renderIntoContainer(<AgentWindow />);
+  try {
+    view.render();
+    const recovery = screen.getByRole("dialog", {
+      name: "agent.storage.load-unavailable",
+    });
+    expect(screen.queryByText("Private other-workspace conversation")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("agent-chat")).not.toBeInTheDocument();
+    await act(async () => {
+      within(recovery).getByRole("button", {
+        name: "agent.storage.retry-loading",
+      }).click();
+    });
+    expect(useAgentStore.getState().workspaceName).toBe("workspaces/other");
+    expect(useAgentStore.getState().chats[0]?.status).toBe("running");
+  } finally {
+    view.unmount();
+  }
 });
 
 test.each([
@@ -5954,6 +6088,7 @@ describe("AgentWindow", () => {
       act(() => store.startChatRun(activeChatId, { path: "/projects/orders", title: "Orders" }));
       const confirmation = getLayerRoot("agent").querySelector(`[data-agent-${action}-all-chats-confirmation]`) as HTMLElement;
       const confirmButton = within(confirmation).getByRole("button", { name: label });
+      expect(confirmButton.parentElement).toHaveClass("flex-wrap", "justify-end");
       expect(confirmButton).toBeDisabled();
       act(() => confirmButton.click());
       expect(store.getChat(activeChatId)?.archived).toBe(false);

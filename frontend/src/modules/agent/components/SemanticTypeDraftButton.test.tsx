@@ -112,6 +112,15 @@ afterEach(() => {
 });
 
 describe("SemanticTypeDraftButton", () => {
+  test("keeps the semantic type action after its summary and unsaved notice", () => {
+    const { button } = renderButton();
+    const actions = button.closest("[data-agent-action-group]");
+    expect(actions).not.toBeNull();
+    expect(actions?.parentElement?.lastElementChild).toBe(actions);
+    expect(actions?.previousElementSibling?.textContent).toContain("Only fills the unsaved form.");
+    expect(button).not.toHaveClass("-ml-2");
+  });
+
   test.each(["en-US", "es-ES", "ja-JP", "vi-VN", "zh-CN"])("localizes the open, opened, and created receipts in %s", async locale => {
     const initial = renderButton(locale);
     expect(initial.container.textContent).not.toContain("agent.semantic-type-draft.");
@@ -144,7 +153,7 @@ describe("SemanticTypeDraftButton", () => {
 
   test("opens only after a member click and summarizes without a salt", async () => {
     const { button, container } = renderButton();
-    expect(button).toHaveClass("text-accent", "bg-transparent", "h-7");
+    expect(button).toHaveClass("text-accent", "bg-transparent", "h-auto", "min-h-7");
     expect(button.querySelector("svg")).toHaveClass("lucide-arrow-up-right");
     expect(container.textContent).toContain(draft.title);
     expect(container.textContent).toContain(draft.description);
