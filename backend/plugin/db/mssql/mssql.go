@@ -25,6 +25,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
@@ -228,4 +229,15 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // from the plan SQL Server prints for it.
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
 	return d.Driver.(db.RowEstimator).CountAffectedRows(ctx, statement)
+}
+
+// QueryConn runs a script on the held session and converts any results
+// (including partial results from earlier batches when an error occurs).
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	results, err := d.QueryHeldSession(ctx, statement, util.OmniQueryOptions(
+		queryContext,
+		false,
+		util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "TEXT", v1pb.QueryOption_XML),
+	), util.SessionQueryOptions{})
+	return util.OmniResultsToQueryResultsWith(results, queryContext.MaximumSQLResultSize, util.QueryResultOptions{}), err
 }

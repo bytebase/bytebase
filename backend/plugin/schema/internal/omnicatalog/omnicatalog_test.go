@@ -242,18 +242,20 @@ func TestDefinitionAdaptersAndRegistrations(t *testing.T) {
 	require.Nil(t, ignoreObjectScope[string](nil))
 
 	const testDefEngine = storepb.Engine(99901)
-	RegisterMySQLFamilyDefinitions(testDefEngine, MySQLFamilyDefinitions{
-		Database: func(ctx schema.GetDefinitionContext, meta *metadatapb.DatabaseSchemaMetadata) (string, error) {
-			if ctx.SDLFormat {
-				return "sdl:" + meta.GetName(), nil
-			}
-			return "dump:" + meta.GetName(), nil
-		},
-		Table:     func(tbl *metadatapb.TableMetadata) (string, error) { return "table:" + tbl.GetName(), nil },
-		View:      func(v *metadatapb.ViewMetadata) (string, error) { return "view:" + v.GetName(), nil },
-		Function:  func(fn *metadatapb.FunctionMetadata) (string, error) { return "fn:" + fn.GetName(), nil },
-		Procedure: func(p *metadatapb.ProcedureMetadata) (string, error) { return "proc:" + p.GetName(), nil },
-	})
+	schema.Register(schema.Engine{
+		Definitions: MySQLFamilyDefinitions{
+			Database: func(ctx schema.GetDefinitionContext, meta *metadatapb.DatabaseSchemaMetadata) (string, error) {
+				if ctx.SDLFormat {
+					return "sdl:" + meta.GetName(), nil
+				}
+				return "dump:" + meta.GetName(), nil
+			},
+			Table:     func(tbl *metadatapb.TableMetadata) (string, error) { return "table:" + tbl.GetName(), nil },
+			View:      func(v *metadatapb.ViewMetadata) (string, error) { return "view:" + v.GetName(), nil },
+			Function:  func(fn *metadatapb.FunctionMetadata) (string, error) { return "fn:" + fn.GetName(), nil },
+			Procedure: func(p *metadatapb.ProcedureMetadata) (string, error) { return "proc:" + p.GetName(), nil },
+		}.SchemaDefinitions(),
+	}, testDefEngine)
 
 	got, err := schema.GetDatabaseDefinition(testDefEngine, schema.GetDefinitionContext{SDLFormat: true}, &metadatapb.DatabaseSchemaMetadata{Name: "db"})
 	require.NoError(t, err)
@@ -279,13 +281,15 @@ func TestDefinitionAdaptersAndRegistrations(t *testing.T) {
 	require.ErrorContains(t, err, "is not supported")
 
 	const testDiffEngine = storepb.Engine(99902)
-	RegisterMetadataMigration(testDiffEngine, MySQLFamilyEngine(
-		func() *fakeCatalog { return &fakeCatalog{} },
-		func(*fakeReport) []map[string]error { return nil },
-		func(_, _ *fakeCatalog) fakeDiff { return fakeDiff{sql: "DROP TABLE `" + Database + "`.`old`"} },
-		func(_, _ *fakeCatalog, d fakeDiff) fakePlan { return fakePlan{sql: d.sql} },
-		nil,
-	))
+	schema.Register(schema.Engine{
+		DiffMetadataMigration: MetadataMigrationFunc(MySQLFamilyEngine(
+			func() *fakeCatalog { return &fakeCatalog{} },
+			func(*fakeReport) []map[string]error { return nil },
+			func(_, _ *fakeCatalog) fakeDiff { return fakeDiff{sql: "DROP TABLE `" + Database + "`.`old`"} },
+			func(_, _ *fakeCatalog, d fakeDiff) fakePlan { return fakePlan{sql: d.sql} },
+			nil,
+		)),
+	}, testDiffEngine)
 	migration, err := schema.DiffMigration(testDiffEngine, nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, "DROP TABLE `old`", migration)
