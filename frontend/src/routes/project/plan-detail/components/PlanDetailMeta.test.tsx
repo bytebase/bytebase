@@ -683,6 +683,24 @@ test.each([
   expect(lineOf("source").querySelector("a")?.getAttribute("href")).toBe(href);
 });
 
+test("every source part that can shorten keeps its full text as the tooltip", () => {
+  mocks.page = releasePage({
+    ...githubSource,
+    authorName: "Alex Doe",
+    commitTitle: "Add the orders index",
+  });
+  render(<PlanDetailMeta />);
+  const parts = Array.from(lineOf("source").querySelectorAll('[data-testid="source-part"]'));
+  expect(parts.map((part) => part.getAttribute("title"))).toEqual(
+    parts.map((part) => part.textContent)
+  );
+});
+
+test("a label chip keeps its full name as the tooltip", () => {
+  render(<PlanDetailMeta />);
+  expect(partsOf("facts", "label")[0].querySelector('[title="alpha"]')?.textContent).toBe("alpha");
+});
+
 test("a squash-merge title ending in (#N) shows the number once", () => {
   mocks.page = releasePage({
     ...githubSource,

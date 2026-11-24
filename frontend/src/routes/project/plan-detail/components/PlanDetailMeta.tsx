@@ -44,7 +44,7 @@ import {
 } from "./deploy/foldedTaskDescription";
 import { useUserDisplayName } from "./useUserDisplayName";
 
-// The fact lines (D10). Every part starts with the same left padding, which
+// The lines under the plan title. Every part starts with the same left padding, which
 // holds its separator; a line's negative margin moves a row's first padding
 // into the clipped strip left of the box, so a separator or an arrow shows
 // only between two parts on one row. Rows wrapped or not share one height and
@@ -81,7 +81,7 @@ export function PlanDetailMeta() {
       : "";
   const release = useReleaseByName(releaseResource);
   // The spec names the release, so the lines are a release plan's from the
-  // first render, before the release is read or when it cannot be (D10).
+  // first render, before the release is read or when it cannot be.
   const isReleasePlan = Boolean(releaseResource);
   const fetchRelease = useAppStore((state) => state.fetchRelease);
   const [releaseUnreadable, setReleaseUnreadable] = useState(false);
@@ -379,7 +379,7 @@ function ApprovalIcon({ tone }: { tone: Approval["tone"] }) {
 // The store keeps the files in the executor's order, newest last.
 const newestVersion = (release: Release) => release.files.at(-1)?.version ?? "";
 
-// D9's 72-character cap and the row's width cut the same place: before a
+// The 72-character cap and the row's width cut the same place: before a
 // PR's "#N", so the number stays.
 function SourceTitle({ text, href }: { text: string; href?: string }) {
   const match = / #\d+$/.exec(text);
@@ -428,6 +428,15 @@ function BranchPart({ branch }: { branch: string }) {
   );
 }
 
+// A source part that shortens at its end keeps its full text on hover.
+function TruncatedText({ text }: { text: string }) {
+  return (
+    <span className="truncate" data-testid="source-part" title={text}>
+      {text}
+    </span>
+  );
+}
+
 function SourceParts({ source }: { source?: Release_VCSSource }) {
   const { t } = useTranslation();
   const row = buildSourceRow(source);
@@ -442,16 +451,14 @@ function SourceParts({ source }: { source?: Release_VCSSource }) {
       )}
       {row.author && (
         <span className={cn(SEPARATED, "text-control-light")}>
-          <span className="truncate" data-testid="source-part">
-            {t("plan.details.by-author", { author: row.author })}
-          </span>
+          <TruncatedText
+            text={t("plan.details.by-author", { author: row.author })}
+          />
         </span>
       )}
       {row.title && row.repoAtSha && (
         <span className={cn(SEPARATED, "text-control-light")}>
-          <span className="truncate" data-testid="source-part">
-            {row.repoAtSha}
-          </span>
+          <TruncatedText text={row.repoAtSha} />
         </span>
       )}
       {row.branch && (
@@ -515,7 +522,9 @@ function InlineLabels({
                 : undefined,
             }}
           />
-          <span className="truncate">{value}</span>
+          <span className="truncate" title={value}>
+            {value}
+          </span>
           {allowChange && (
             <Button
               appearance="secondary"
