@@ -2915,6 +2915,8 @@ describe("durable run recovery", () => {
     mockStorage.setItem(otherKey, other);
     const draft = { text: "Keep this draft" };
     s(store).setDraft(chat.id, draft);
+    // Cancel the debounced save before this test's storage is replaced.
+    s(store).saveState();
     expect(await s(store).flushRunPersistence()).toBe(true);
     expect(await s(store).checkAgentStorageAdmission()).toBe(false);
     expect(s(store).storagePressure).toMatchObject({
