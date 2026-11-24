@@ -1,6 +1,6 @@
 # MCP access policy — show what a mode allows
 
-Status: accepted · 2026-09-10 · revised 2026-11-24 for BYT-10597 (D2, D10, D14, D15)
+Status: accepted · 2026-09-10 · revised 2026-11-24 for BYT-10597 (D1, D2, D4, D6, D10, D14, D15)
 
 The MCP settings page offers three modes (Disabled, Read-only, Read-write) and describes each in
 one sentence. Since [#21324](https://github.com/bytebase/bytebase/pull/21324) removed the per-mode
@@ -176,7 +176,7 @@ access check falls back to `bb.sql.select` — a `DELETE` that runs unrefused, u
 authorized by a read permission. **The same statement, mode and engine can get different answers from
 different RPCs; a claim about what runs has to name the operation as well as the engine.**
 
-Four wordings later, the line states the bound and stops: "Capped by your own Bytebase permissions, and by what Bytebase supports for each database engine and each operation".
+Four wordings later, the Read-write consent line stated the bound and stopped: "Capped by your own Bytebase permissions, and by what Bytebase supports for each database engine and each operation".
 Both modes now share one bound line, which states the bound and names no consequence (D10).
 
 Two choices in the wording are deliberate. Row 2 says *Read data by running queries* rather than
@@ -315,8 +315,9 @@ machinery than a settings page visited this rarely earns.
 
 **D2 — Content: row titles only; what each row covers is in the docs.** Expanded, each row shows
 its title, and an allowed row its tier tag, nothing else. Under the groups, one link, "What each
-capability covers", opens the MCP docs page at the table that lists each row's sub-items (The
-rows, middle column). No method names, no permission names, no counts. The row no mode serves is
+capability covers", opens the MCP docs page at its "What each mode allows" heading
+(`https://docs.bytebase.com/integrations/mcp#what-each-mode-allows`), whose table lists each row's
+sub-items (The rows, middle column). No method names, no permission names, no counts. The row no mode serves is
 the last row of the second group (D14), because it is what a security-minded admin reads first and
 what keeps the list honest about the 104 methods no mode reaches. There is no constants line under
 the list; the facts it would carry (capped by the user's own permissions, what the audit log
@@ -332,8 +333,9 @@ reference — a write query runs without asking in a client that cannot show con
 identity is not limited by this policy and lasts until removed, an added instance's databases join
 the project for good. The first goes on the consent page, in the Read-write caution (D10), because
 it is what the person approving most needs: a write can run with no prompt and no review. The
-other two move to the docs with the rest; the caution and D13's trade already say that a
-Read-write session makes real changes.
+other two move to the docs with the rest. On the settings card they are one link away, and the card
+does not say that a CI identity or an instance's project membership outlasts a later downgrade;
+that is accepted with the move.
 
 **D3 — The mode chip is the subject; the "In force" line and the mode sentence go.** The
 three-stripe icon and the words "In force" are removed. View state reads: the mode chip (success
@@ -494,7 +496,7 @@ picking the other mode moves rows between the groups.
 when they act on the same object or the same flow: proposing and rolling out a change; requesting an
 access grant, which can ask for exportable results, and exporting results; deciding issues and
 setting who decides them; masking rules and masking exemptions; adding an instance and creating a CI
-identity, the two things `administer_workspace` creates rather than edits. A row stays alone when an admin chooses or refuses
+identity, the two parts that connect a system outside Bytebase to a project. A row stays alone when an admin chooses or refuses
 Read-write over it: running DML and DDL directly, outside any review. Housekeeping is renamed for
 what it does, since "Manage database housekeeping" said nothing. A merged title names every part's
 verb and object (the verb rule), so it covers each part's methods and "Keeping the rows true" applies
@@ -639,32 +641,40 @@ release ships.
 
 1. **Docs (bytebase.com), `docs/integrations/mcp.mdx`.** Under Access policy, a "What each mode
    allows" table: one entry per row in The rows, titled as in the product, with its sub-items, and
-   a column for the modes that serve it; the row no mode serves closes the table. The table
-   replaces the page's mode table. The "What no mode allows" list stays, minus the lines Read-write
-   now serves in part: changing approval and masking rules, adding instances to projects, and
-   creating CI identities with a project role. Each such line keeps what is still refused, such as
-   workspace IAM and other workspace settings. The same PR corrects the rest of the page where it
+   a column for the modes that serve it; the row no mode serves closes the table. The settings card
+   links to that heading (D2). The table
+   replaces the page's mode table. The "What no mode allows" list stays, and every line that a row
+   contradicts, in either mode, is cut back to what is still refused. Read-write contradicts the
+   lines on changing approval and masking rules, adding instances to projects, and creating CI
+   identities with a project role; every mode contradicts the line on reading workspace settings,
+   since the members row serves four of them. What those lines still refuse, such as workspace IAM
+   and other workspace settings, stays. The same PR corrects the rest of the page where it
    trails the product: it has no lines for adding instances, creating CI
    identities, or changing approval or masking rules, and it says an agent cannot read the approval
    rules, which the members row now serves.
-2. **This repo: this doc, then the frontend, in one PR.** It delivers D2, D6, D10, D14 and D15.
-   - Rows: `mcpCapabilityRows.ts` lists the eleven ids of The rows in order, with their tiers, and
-     the row no mode serves as the twelfth entry (D14).
+2. **This repo: this doc, then the frontend, in one PR.** It delivers D1, D2, D4, D6, D10, D14 and D15.
+   - Rows: `mcpCapabilityRows.ts` lists the eleven capability ids of The rows in order, with their
+     tiers. The floor is not one of them: `MCPCapabilityList` renders it from its own key,
+     `settings.mcp.ladder.floor.text`, as the last row of the second group in every mode (D14), so
+     the tier type stays read and write, and the rule that Read-write serves every listed row stays
+     true.
    - `MCPCapabilityList` renders the two groups from the mode, with no `details` or divider
-     options; `MCPCapabilityLadder` drops its details control and renders the docs link;
+     options; `MCPCapabilityLadder` drops its details control and renders the docs link, and since its trigger
+     is the first group's heading (D1), it passes only the second;
      `MCPConsentCeiling` drops its details control, labels its card "Workspace policy" and passes
      its two headings.
-   - Locale, all five files: add the two settings headings, the consent "may not" heading and the
-     docs link; reword the titles of The rows, the audit line (D4) and the Read-write caution
+   - Locale, all five files: reword `ladder.heading` to "This policy allows"; add the "does not
+     allow" heading, the consent "may not" heading and the docs link; reword `floor.text` to the
+     floor row; reword the titles of The rows, the audit line (D4) and the Read-write caution
      (`oauth2.consent.mcp.write-caution`, D10); remove the `stops.*` family and its
      `DYNAMIC_PREFIXES` entry, `floor.label`, `show-details`, `hide-details` and every
      `row.*.details`.
    - Tests, named by what they assert: each mode's two groups (D14 counts, Read-only and
      Read-write); the row no mode serves is last in the second group in both modes; no details
      control on either surface; the consent page renders both headings; the settings card renders
-     the docs link. `frontend/tests/e2e/workspace/workspace-mcp-policy.spec.ts` reads row titles
-     and a row's details from `en-US.json`, so it moves to the new ids and asserts the groups
-     instead of the details.
+     the docs link. `frontend/tests/e2e/workspace/workspace-mcp-policy.spec.ts` reads row titles,
+     a row's details and the audit sentence from `en-US.json`, so it moves to the new ids and the new
+     audit line, and asserts the groups instead of the details and dividers.
 
 ## Keeping the rows true
 
@@ -689,6 +699,9 @@ promise. What to do:
    `EngineSupportQueryNewACL` as a conjunction rather than either alone, and check each RPC that
    executes statements separately — `SQLService/Query` and `SQLService/Export` gate on different
    conditions, so a sentence true of one is not thereby true of the other.
+5. On every reclassification, even one an existing row already covers, check the floor row and the
+   docs page's "What no mode allows" list against every row's sub-items in both modes, and cut back
+   any line a served method now contradicts.
 
 Both surfaces render row titles only, so a caveat a title needs in order to be true, one that holds
 only for one mode or one engine, has to live in the bound line (D10) or in the title itself, never
@@ -704,8 +717,8 @@ asked, is not that kind of caveat; it lives in the docs (D2).
   rows become independently selectable is met: `SQLService/Export` runs only statements Bytebase
   can show are reads for an MCP session (`mcp_sql_write.go`). Export needed its own check because
   it skips statement validation on MySQL, and the driver executes non-query statements. The same
-  split is why the bound line speaks of supported operations, not only of the engine (the method
-  axis in The rows). A merged row splits again where a custom policy needs its parts as separate
+  split is why the bound line names no consequence: a cap stays true however each operation
+  refuses (the method axis in The rows). A merged row splits again where a custom policy needs its parts as separate
   switches (D15).
 - A docs page listing the methods per row, generated from the inventory. The card links to the
   sub-item table (D2), which names capabilities, not methods.
