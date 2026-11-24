@@ -361,9 +361,8 @@ the database stores per [audit-what-produces-a-row.md](audit-what-produces-a-row
 audited methods that reach their handler. Schema and metadata reads are unaudited, and a call that
 the ceiling gate or a permission check refuses before its handler is only streamed, when audit
 logging to stdout is on. So the line
-names what is stored and says refusals mostly are not, never an unqualified "MCP operations are
-recorded": "Queries, exports, proposed changes and rollouts are recorded in the audit log. Most
-refused calls are not." The section description is the bound line followed by this line, and the
+names what is stored, never an unqualified "MCP operations are recorded": "Queries, exports,
+proposed changes and rollouts are recorded in the audit log." Where refusals go is in the docs. The section description is the bound line followed by this line, and the
 consent page shows the same two (D10).
 
 **D5 — Edit state: icon cards, the selected mode's "Best for", and the pick's ladder.** The
@@ -527,8 +526,7 @@ under
 
 - Section description: the bound line and the audit line, "Every MCP session is limited by the
   connected user's Bytebase permissions and the target database engine's supported operations.
-  Queries, exports, proposed changes and rollouts are recorded in the audit log. Most refused calls
-  are not." The consent page shows the same two sentences (D10). The audit line replaces the shipped
+  Queries, exports, proposed changes and rollouts are recorded in the audit log." The consent page shows the same two sentences (D10). The audit line replaces the shipped
   "MCP operations are recorded in Bytebase audit logs.", which claims more than is stored (D4).
 - Disclosure line, collapsed — Read-only: "Read schemas, data, the change workflow, members, roles and policies; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported".
   Read-write: "Read schemas, data, the change workflow, members, roles and policies; propose, request and revoke access, grant masking exemptions, approve, run, export and manage".
