@@ -1,5 +1,5 @@
 import { Check, Minus } from "lucide-react";
-import { Fragment } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type {
   MCPCapabilityRow,
@@ -7,10 +7,9 @@ import type {
 } from "@/components/mcp/mcpCapabilityRows";
 import {
   isRowServed,
-  MCP_CAPABILITY_TIERS,
+  MCP_CAPABILITY_ROWS,
   mcpRowKey,
   mcpTierKey,
-  rowsInTier,
 } from "@/components/mcp/mcpCapabilityRows";
 import type { MCPServingMode } from "@/components/mcp/mcpPolicy";
 import type { BadgeProps } from "@/components/ui/badge";
@@ -25,120 +24,102 @@ const TIER_VARIANT: Record<MCPCapabilityTier, BadgeProps["variant"]> = {
 
 interface Props {
   readonly mode: MCPServingMode;
-  readonly details: boolean;
-  readonly tierDividers?: boolean;
-  readonly floor?: boolean;
+  /** Omitted where the caller renders the first heading itself. */
+  readonly allowedHeading?: string;
+  readonly refusedHeading: string;
 }
 
 /**
- * The capability rows shared by policy configuration and consent.
- *
- * Every consumer shows the same capability boundary: what the selected mode
- * serves, where it stops, and what it refuses.
+ * The capability rows shared by policy configuration and consent: what the
+ * mode serves, then what it refuses, ending with what no mode serves.
  */
 export function MCPCapabilityList({
   mode,
-  details,
-  tierDividers = false,
-  floor = false,
+  allowedHeading,
+  refusedHeading,
 }: Props) {
-  const { t } = useTranslation();
+  const allowed = MCP_CAPABILITY_ROWS.filter((row) => isRowServed(mode, row));
+  const refused = MCP_CAPABILITY_ROWS.filter((row) => !isRowServed(mode, row));
   return (
-    <>
+    <div className="flex flex-col gap-y-2">
+      {allowedHeading && <GroupHeading>{allowedHeading}</GroupHeading>}
       <ul role="list" className="flex flex-col gap-y-2">
-        {MCP_CAPABILITY_TIERS.map((tier) => (
-          <Fragment key={tier}>
-            {rowsInTier(tier).map((row) => (
-              <CapabilityRow
-                key={row.id}
-                row={row}
-                served={isRowServed(mode, row)}
-                details={details}
-              />
-            ))}
-            {tierDividers && <TierDivider tier={tier} />}
-          </Fragment>
+        {allowed.map((row) => (
+          <CapabilityRow key={row.id} row={row} served />
         ))}
       </ul>
-      {floor && (
-        <p className="bg-error/5 px-3 py-2 text-sm text-error my-2">
-          <span className="font-medium">
-            {t("settings.mcp.ladder.floor.label")}
-          </span>{" "}
-          {t("settings.mcp.ladder.floor.text")}
-        </p>
-      )}
-    </>
+      <Separator className="my-1" />
+      <GroupHeading>{refusedHeading}</GroupHeading>
+      <ul role="list" className="flex flex-col gap-y-2">
+        {refused.map((row) => (
+          <CapabilityRow key={row.id} row={row} served={false} />
+        ))}
+        <FloorRow />
+      </ul>
+    </div>
   );
+}
+
+function GroupHeading({ children }: { children: ReactNode }) {
+  return <h3 className="text-base font-semibold text-main">{children}</h3>;
 }
 
 function CapabilityRow({
   row,
   served,
-  details,
 }: {
   row: MCPCapabilityRow;
   served: boolean;
-  details: boolean;
 }) {
   const { t } = useTranslation();
   return (
     <li className="flex items-start gap-x-2 px-1 py-1">
-      <span
-        className={cn(
-          "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full",
-          served ? "bg-success/10 text-success" : "bg-error/10 text-error"
-        )}
-      >
-        {served ? (
-          <Check className="size-3" aria-hidden="true" />
-        ) : (
-          <Minus className="size-3" aria-hidden="true" />
-        )}
-        <span className="sr-only">
-          {served
-            ? t("settings.mcp.ladder.mark.allowed")
-            : t("settings.mcp.ladder.mark.refused")}
+      <Mark served={served} />
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <span className={cn("text-sm", served ? "text-main" : "text-control")}>
+          {t(mcpRowKey(row))}
         </span>
-      </span>
-      <div className="flex min-w-0 flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={cn("text-sm", served ? "text-main" : "text-control")}
-          >
-            {t(mcpRowKey(row, "title"))}
-          </span>
-          {served && (
-            <Badge
-              variant={TIER_VARIANT[row.tier]}
-              className="px-2 py-0 text-xs"
-            >
-              {t(mcpTierKey(row.tier, "tier"))}
-            </Badge>
-          )}
-        </div>
-        {details && (
-          <p className="text-xs leading-5 text-control-light">
-            {t(mcpRowKey(row, "details"))}
-          </p>
+        {served && (
+          <Badge variant={TIER_VARIANT[row.tier]} className="px-2 py-0 text-xs">
+            {t(mcpTierKey(row.tier))}
+          </Badge>
         )}
       </div>
     </li>
   );
 }
 
-function TierDivider({ tier }: { tier: MCPCapabilityTier }) {
+function Mark({ served }: { served: boolean }) {
   const { t } = useTranslation();
   return (
-    <li
-      role="presentation"
-      className="flex items-center gap-x-2 py-2 text-xs text-control-light"
+    <span
+      className={cn(
+        "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full",
+        served ? "bg-success/10 text-success" : "bg-error/10 text-error"
+      )}
     >
-      <Separator className="flex-1" />
-      <span className="uppercase font-medium text-main tracking-wide">
-        {t(mcpTierKey(tier, "stops"))}
+      {served ? (
+        <Check className="size-3" aria-hidden="true" />
+      ) : (
+        <Minus className="size-3" aria-hidden="true" />
+      )}
+      <span className="sr-only">
+        {served
+          ? t("settings.mcp.ladder.mark.allowed")
+          : t("settings.mcp.ladder.mark.refused")}
       </span>
-      <Separator className="flex-1" />
+    </span>
+  );
+}
+
+function FloorRow() {
+  const { t } = useTranslation();
+  return (
+    <li className="flex items-start gap-x-2 px-1 py-1">
+      <Mark served={false} />
+      <span className="text-sm text-control">
+        {t("settings.mcp.ladder.floor.text")}
+      </span>
     </li>
   );
 }

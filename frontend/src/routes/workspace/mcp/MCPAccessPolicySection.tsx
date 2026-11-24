@@ -38,7 +38,6 @@ export function MCPAccessPolicySection() {
   // Held here rather than in the ladder so the open state carries from the view
   // into the editor, which renders the ladder in a different place.
   const [ladderOpen, setLadderOpen] = useState(false);
-  const [ladderDetails, setLadderDetails] = useState(false);
   const serverInfo = useAppStore((state) => state.serverInfo);
   const loadServerInfo = useAppStore((state) => state.loadServerInfo);
   const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);
@@ -126,9 +125,7 @@ export function MCPAccessPolicySection() {
       <MCPCapabilityLadder
         mode={mode}
         expanded={ladderOpen}
-        details={ladderDetails}
         onExpandedChange={setLadderOpen}
-        onDetailsChange={setLadderDetails}
       />
     );
   };
