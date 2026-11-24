@@ -51,7 +51,9 @@ advice. A later matching request cannot resolve an earlier attempt's possible or
 partial effects. Shared safety rules cover all prompt modes. Diagnostic chats are
 read-by-default: protected APIs use the common exact-request one-time approval
 flow after positive project-scope admission, with fresh scope and identity checks
-at approval and dispatch. Recovery advice never authorizes a write, grants access,
+at approval and dispatch. Direct SQL execution and export are unavailable until
+their effective database targets can be verified within the diagnostic project.
+Recovery advice never authorizes a write, grants access,
 or permits automatic retries. Diagnostic DOM, navigation, and draft tools remain
 unavailable.
 

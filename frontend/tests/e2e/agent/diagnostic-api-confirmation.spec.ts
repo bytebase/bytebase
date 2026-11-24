@@ -10,6 +10,7 @@ import {
   test,
 } from "../agent-token-budget/token-budget.fixture";
 import { loadTestEnv } from "../framework/env";
+import { loginBrowserContext } from "../framework/sign-in";
 
 test.setTimeout(90_000);
 
@@ -377,5 +378,185 @@ test("a diagnostic chat keeps exact one-time API permission and its project boun
   } finally {
     if (foreignProject) await env.api.deleteProject(foreignProject.name);
     await env.api.deleteProject(project.name);
+  }
+});
+
+test("a restricted diagnostic member can read but cannot authorize or dispatch a forbidden write", async ({
+  page,
+  context,
+  provider,
+}) => {
+  const env = loadTestEnv();
+  await env.api.login(env.adminEmail, env.adminPassword);
+  const { workspace } = await env.api.getActuatorInfo();
+  const suffix = Date.now();
+  const email = `diagnostic-viewer-${suffix}@example.com`;
+  const password = "e2e-diagnostic-viewer-1!";
+  const title = "Restricted diagnostic API fixture";
+  const project = await env.api.createProject(
+    `agent-diagnostic-viewer-${suffix}`,
+    title,
+    { allowRequestRole: true },
+  );
+  let createdUser = false;
+  let workspaceMember = false;
+  try {
+    const issue = await env.api.createRoleGrantIssue(
+      project.name,
+      { role: "roles/projectViewer", user: `users/${env.adminEmail}` },
+      "Restricted diagnostic scope fixture",
+    );
+    await env.api.createUser(email, password, "Diagnostic viewer fixture");
+    createdUser = true;
+    await env.api.addWorkspaceRoleMember(workspace, email, "roles/workspaceMember");
+    workspaceMember = true;
+    await env.api.appendProjectBinding(project.name, "roles/projectViewer", [`user:${email}`]);
+    await loginBrowserContext(context, env.baseURL, email, password);
+    const currentUser = await context.request.get(`${env.baseURL}/v1/users/me`);
+    expect(currentUser.ok()).toBe(true);
+    expect(await currentUser.json()).toMatchObject({ email });
+    const forbiddenTitle = "Unauthorized diagnostic title";
+    const forbiddenWrite = await context.request.patch(
+      `${env.baseURL}/v1/${project.name}?updateMask=title`,
+      { data: { name: project.name, title: forbiddenTitle } },
+    );
+    expect(forbiddenWrite.status()).toBe(403);
+    expect((await env.api.getProject(project.name)).title).toBe(title);
+
+    const capability = {
+      kind: "diagnostic",
+      resource: {
+        kind: "issue",
+        name: issue.name,
+        project: project.name,
+        label: issue.name,
+      },
+    };
+    const chatId = `diagnostic-viewer-${suffix}`;
+    const workspaceId = workspace.split("/").at(-1)!;
+    const storageKey = `bb-agent-state-v3.${workspaceId.length}:${workspaceId}.${email}`;
+    await page.addInitScript(
+      ({ storageKey, workspace, project, capability, chatId }) => {
+        const now = Date.now();
+        localStorage.setItem(storageKey, JSON.stringify({
+          currentChatId: chatId,
+          chats: [{
+            id: chatId,
+            title: "Restricted diagnostic API permission",
+            context: project,
+            workspaceName: workspace,
+            capability,
+            createdTs: now,
+            updatedTs: now,
+            status: "idle",
+            totalTokensUsed: 0,
+            archived: false,
+          }],
+          messagesByChatId: { [chatId]: [] },
+          pendingAskByChatId: {},
+          draftsByChatId: {},
+          queuedUserMessagesByChatId: {},
+        }));
+        localStorage.setItem("bb.release", JSON.stringify({
+          ignoreRemindModalTillNextRelease: true,
+          nextCheckTs: now + 86_400_000,
+        }));
+      },
+      { storageKey, workspace, project: project.name, capability, chatId },
+    );
+    const providerRequests: AIChatRequest[] = [];
+    const updates: string[] = [];
+    context.on("request", (request) => {
+      const path = new URL(request.url()).pathname;
+      if (path === "/bytebase.v1.ProjectService/UpdateProject") updates.push(path);
+      if (path !== "/bytebase.v1.AIService/Chat") return;
+      const body = request.postDataBuffer();
+      if (!body) throw new Error("Missing Chat request body");
+      providerRequests.push(
+        request.headers()["content-type"]?.startsWith("application/proto")
+          ? fromBinary(AIChatRequestSchema, body)
+          : fromJsonString(AIChatRequestSchema, body.toString()),
+      );
+    });
+    await page.goto(`${env.baseURL}/landing`);
+    await page.getByRole("button", { name: "Agent", exact: true }).click();
+    const agent = windowOf(page);
+    await expect(agent).toBeVisible();
+    const row = agent.getByRole("button", {
+      name: "Restricted diagnostic API permission",
+      exact: true,
+    });
+    if (!(await row.isVisible())) await button(page, "Chats").first().click();
+    await row.click();
+
+    provider.respond(tool("viewer-read", "call_api", {
+      operationId: projectRead,
+      body: { name: project.name },
+    }));
+    provider.respond(answer(10, "The viewer's permitted project read completed."));
+    await send(page, "Read this diagnostic project's current title.");
+    await expect(agent.getByText("The viewer's permitted project read completed.", { exact: true })).toBeVisible();
+    expect(resultOf(providerRequests, "viewer-read")).toMatchObject({ status: 200 });
+    await expect(button(page, "Allow once")).toBeHidden();
+
+    provider.respond(tool("viewer-update-schema", "search_api", { operationId: projectUpdate }));
+    provider.respond(tool("viewer-forbidden-update", "call_api", {
+      operationId: projectUpdate,
+      body: {
+        project: { name: project.name, title: forbiddenTitle },
+        updateMask: "title",
+      },
+    }));
+    provider.respond(answer(10, "The viewer cannot authorize this project update."));
+    await send(page, "Change this project's title after my one-time approval.");
+    await expect(agent.getByText("The viewer cannot authorize this project update.", { exact: true })).toBeVisible();
+    await expect(button(page, "Allow once")).toBeHidden();
+    await expect(agent.getByText("Request permission", { exact: true })).toBeHidden();
+    expect(resultOf(providerRequests, "viewer-forbidden-update")).toMatchObject({
+      preflightStatus: 403,
+      preflight: { requiredPermissions: ["bb.projects.update"] },
+      agentExecution: { result: "not-sent", effects: "none", reason: "preflight-rejected" },
+    });
+    expect(updates).toEqual([]);
+    const saved = await page.evaluate(({ storageKey, chatId }) => {
+      const state = JSON.parse(localStorage.getItem(storageKey) ?? "{}");
+      return {
+        pending: state.pendingAskByChatId?.[chatId],
+        capability: state.chats?.find((chat: { id: string }) => chat.id === chatId)?.capability,
+      };
+    }, { storageKey, chatId });
+    expect(saved.pending).toBeUndefined();
+    expect(saved.capability).toEqual(capability);
+
+    provider.respond(tool("viewer-continued-read", "call_api", {
+      operationId: projectRead,
+      body: { name: project.name },
+    }));
+    provider.respond(answer(10, "The viewer can continue diagnosing without write access."));
+    await send(page, "Continue with another permitted project read.");
+    await expect(agent.getByText("The viewer can continue diagnosing without write access.", { exact: true })).toBeVisible();
+    expect(resultOf(providerRequests, "viewer-continued-read")).toMatchObject({ status: 200 });
+    await expect(button(page, "Allow once")).toBeHidden();
+    expect(updates).toEqual([]);
+    expect((await env.api.getProject(project.name)).title).toBe(title);
+    expect(provider.calls).toBe(7);
+  } finally {
+    try {
+      if (workspaceMember) {
+        const policy = await env.api.getWorkspaceIamPolicy(workspace);
+        const member = `user:${email}`;
+        policy.bindings = policy.bindings.map((binding) => ({
+          ...binding,
+          members: binding.members.filter((name) => name !== member),
+        }));
+        await env.api.setWorkspaceIamPolicy(workspace, policy);
+      }
+    } finally {
+      try {
+        await env.api.deleteProject(project.name);
+      } finally {
+        if (createdUser) await env.api.deleteUser(email);
+      }
+    }
   }
 });

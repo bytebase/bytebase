@@ -111,7 +111,7 @@ describe("isDiagnosticApiCallInScope", () => {
       api.getDatabase.mockResolvedValue({ name, project: "projects/example" });
       await expect(
         isDiagnosticApiCallInScope(
-          prepared("SQLService/Query", { name, statement: "SELECT 1" }),
+          prepared("DatabaseService/GetDatabase", { name }),
           capability
         )
       ).resolves.toBe(true);
@@ -265,19 +265,22 @@ describe("isDiagnosticApiCallInScope", () => {
   it.each([
     "instances/shared/databases/app",
     "projects/example/instances/primary/databases/app",
-  ])("positively resolves a database target for Query: %s", async (name) => {
-    api.getDatabase.mockResolvedValue({ name, project: "projects/example" });
-    await expect(
-      isDiagnosticApiCallInScope(
-        prepared("SQLService/Query", { name, statement: "SELECT 1" }),
-        capability
-      )
-    ).resolves.toBe(true);
-    expect(api.getDatabase).toHaveBeenCalledWith(
-      expect.objectContaining({ name }),
-      expect.anything()
-    );
-  });
+  ])(
+    "positively resolves a database target for GetDatabase: %s",
+    async (name) => {
+      api.getDatabase.mockResolvedValue({ name, project: "projects/example" });
+      await expect(
+        isDiagnosticApiCallInScope(
+          prepared("DatabaseService/GetDatabase", { name }),
+          capability
+        )
+      ).resolves.toBe(true);
+      expect(api.getDatabase).toHaveBeenCalledWith(
+        expect.objectContaining({ name }),
+        expect.anything()
+      );
+    }
+  );
 
   it.each([
     { name: "instances/shared/databases/app", project: "projects/other" },
@@ -289,9 +292,8 @@ describe("isDiagnosticApiCallInScope", () => {
     else api.getDatabase.mockRejectedValue(new Error("Unavailable"));
     await expect(
       isDiagnosticApiCallInScope(
-        prepared("SQLService/Query", {
+        prepared("DatabaseService/GetDatabase", {
           name: "instances/shared/databases/app",
-          statement: "SELECT 1",
         }),
         capability
       )
@@ -323,6 +325,203 @@ describe("isDiagnosticApiCallInScope", () => {
       )
     ).resolves.toBe(true);
   });
+
+  it.each([
+    "Shop Orders",
+    "percent%",
+    "literal%2Fname",
+    "question?mark",
+    "hash#tag",
+    "back\\slash",
+  ])(
+    "preserves the exact opaque database ID %j for metadata reads",
+    async (id) => {
+      for (const prefix of [
+        "instances/shared",
+        "projects/example/instances/primary",
+      ]) {
+        const name = `${prefix}/databases/${id}`;
+        api.getDatabase.mockResolvedValue({
+          name,
+          project: "projects/example",
+        });
+        await expect(
+          isDiagnosticApiCallInScope(
+            prepared("DatabaseService/GetDatabaseMetadata", {
+              name: `${name}/metadata`,
+            }),
+            capability
+          )
+        ).resolves.toBe(true);
+        expect(api.getDatabase).toHaveBeenCalledWith(
+          expect.objectContaining({ name }),
+          expect.anything()
+        );
+      }
+    }
+  );
+
+  it.each(["projects/other", ""])(
+    "rejects an opaque database ID without matching project proof %j",
+    async (project) => {
+      const name = "instances/shared/databases/Shop Orders";
+      api.getDatabase.mockResolvedValue({ name, project });
+      await expect(
+        isDiagnosticApiCallInScope(
+          prepared("DatabaseService/GetDatabaseMetadata", {
+            name: `${name}/metadata`,
+          }),
+          capability
+        )
+      ).resolves.toBe(false);
+    }
+  );
+
+  it("does not accept decoded database proof for a literal percent-encoded ID", async () => {
+    api.getDatabase.mockResolvedValue({
+      name: "instances/shared/databases/Shop Orders",
+      project: "projects/example",
+    });
+    await expect(
+      isDiagnosticApiCallInScope(
+        prepared("DatabaseService/GetDatabaseMetadata", {
+          name: "instances/shared/databases/Shop%20Orders/metadata",
+        }),
+        capability
+      )
+    ).resolves.toBe(false);
+  });
+
+  it.each(["instances/shared", "projects/example/instances/primary"])(
+    "admits the SDL schema singleton under %s after exact database proof",
+    async (prefix) => {
+      const name = `${prefix}/databases/Shop Orders`;
+      api.getDatabase.mockResolvedValue({ name, project: "projects/example" });
+      await expect(
+        isDiagnosticApiCallInScope(
+          prepared("DatabaseService/GetDatabaseSDLSchema", {
+            name: `${name}/sdlSchema`,
+          }),
+          capability
+        )
+      ).resolves.toBe(true);
+    }
+  );
+
+  it.each(["app", "app/schema", "app/sdlSchema/extra"])(
+    "rejects a malformed SDL schema singleton %s",
+    async (suffix) => {
+      const name = "instances/shared/databases/app";
+      api.getDatabase.mockResolvedValue({ name, project: "projects/example" });
+      await expect(
+        isDiagnosticApiCallInScope(
+          prepared("DatabaseService/GetDatabaseSDLSchema", {
+            name: `instances/shared/databases/${suffix}`,
+          }),
+          capability
+        )
+      ).resolves.toBe(false);
+    }
+  );
+
+  it.each([
+    {
+      parent: "projects/example",
+      names: [
+        "instances/shared/databases/app",
+        "projects/example/instances/primary/databases/app",
+      ],
+    },
+    {
+      parent: "instances/shared",
+      names: [
+        "instances/shared/databases/app",
+        "instances/shared/databases/Shop Orders",
+      ],
+    },
+    {
+      parent: "projects/example/instances/primary",
+      names: ["projects/example/instances/primary/databases/app"],
+    },
+  ])("admits BatchGetDatabases with supported parent $parent", async (body) => {
+    api.getDatabase.mockImplementation(async ({ name }: { name: string }) => ({
+      name,
+      project: "projects/example",
+    }));
+    await expect(
+      isDiagnosticApiCallInScope(
+        prepared("DatabaseService/BatchGetDatabases", body),
+        capability
+      )
+    ).resolves.toBe(true);
+  });
+
+  it.each([
+    { parent: "projects/other", names: ["instances/shared/databases/app"] },
+    {
+      parent: "projects/example/plans/12",
+      names: ["instances/shared/databases/app"],
+    },
+    { parent: "instances/-", names: ["instances/shared/databases/app"] },
+    { parent: "projects/example", names: [] },
+    {
+      parent: "projects/example",
+      names: [
+        "instances/shared/databases/app",
+        "instances/shared/databases/foreign",
+      ],
+    },
+  ])("rejects unprovable BatchGetDatabases targets %j", async (body) => {
+    api.getDatabase.mockImplementation(async ({ name }: { name: string }) => ({
+      name,
+      project: name.endsWith("/foreign")
+        ? "projects/other"
+        : "projects/example",
+    }));
+    await expect(
+      isDiagnosticApiCallInScope(
+        prepared("DatabaseService/BatchGetDatabases", body),
+        capability
+      )
+    ).resolves.toBe(false);
+  });
+
+  it.each([
+    ["SQLService/Query", { statement: "SELECT * FROM foreign_db.records" }],
+    ["SQLService/Query", { statement: "SELECT 1" }],
+    [
+      "SQLService/Query",
+      { statement: "SELECT * FROM foreign_db.records", explain: true },
+    ],
+    [
+      "SQLService/Query",
+      { statement: "USE foreign_db; SELECT * FROM records" },
+    ],
+    [
+      "SQLService/Export",
+      { statement: "SELECT * FROM foreign_db.records", admin: false },
+    ],
+    [
+      "SQLService/Export",
+      { statement: "SELECT * FROM foreign_db.records", admin: true },
+    ],
+    [
+      "SQLService/AdminExecute",
+      { statement: "UPDATE foreign_db.records SET value = 1" },
+    ],
+  ])(
+    "rejects %s when effective SQL targets cannot be proven: %j",
+    async (operation, body) => {
+      const name = "instances/shared/databases/app";
+      api.getDatabase.mockResolvedValue({ name, project: "projects/example" });
+      await expect(
+        isDiagnosticApiCallInScope(
+          prepared(operation, { name, ...body }),
+          capability
+        )
+      ).resolves.toBe(false);
+    }
+  );
 
   it.each(["projects/example", "projects/example/instances/primary"])(
     "admits ListDatabases with project parent %s",

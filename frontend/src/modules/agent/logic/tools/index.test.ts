@@ -921,6 +921,7 @@ import { createIssueOverviewTool } from "./issueOverview";
 import { createNavigateTool } from "./navigate";
 import { createPageStateTool } from "./pageState";
 import {
+  createPendingApiCall,
   getPendingApiCallPreview,
   resolvePendingApiCall,
 } from "./pendingApiCall";
@@ -1882,10 +1883,6 @@ describe("diagnostic capability", () => {
         updateMask: "title",
       },
     ],
-    [
-      "SQLService/Query",
-      { name: "instances/primary/databases/app", statement: "SELECT 1" },
-    ],
   ])(
     "requests exact one-time approval for diagnostic %s",
     async (operationId, body) => {
@@ -1921,6 +1918,100 @@ describe("diagnostic capability", () => {
       expect(JSON.parse(preview!.body)).toMatchObject(body);
       expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
       expect(checkPreparedApiPermission).toHaveBeenCalledOnce();
+    }
+  );
+
+  test.each([
+    ["SQLService/Query", { statement: "SELECT * FROM foreign_db.t" }],
+    ["SQLService/Query", { statement: "UPDATE foreign_db.t SET id = 1" }],
+    ["SQLService/Query", { statement: "SELECT 1" }],
+    ["SQLService/Query", { statement: "SELECT 1", explain: true }],
+    ["SQLService/Export", { statement: "SELECT * FROM foreign_db.t" }],
+    [
+      "SQLService/Export",
+      { statement: "SELECT * FROM foreign_db.t", admin: true },
+    ],
+  ])(
+    "rejects diagnostic SQL execution %s %j before requesting approval",
+    async (operationId, sql) => {
+      const name = "instances/primary/databases/app";
+      databaseApi.getDatabase.mockResolvedValue({
+        name,
+        project: capability.resource.project,
+      });
+      const result = await createToolExecutor({} as AppRouterInstance, {
+        capability,
+        chatId: "diagnostic",
+        userName: "users/1",
+      })("call_api", { operationId, body: { name, ...sql } }, "sql");
+      expect(result).toMatchObject({
+        kind: "tool_result",
+        result: expect.stringMatching(/diagnostic.*scope/i),
+      });
+      expect(checkPreparedApiPermission).not.toHaveBeenCalled();
+      expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each(["Query", "Export"])(
+    "rechecks diagnostic SQL scope for an already-created %s permission",
+    async (method) => {
+      const name = "instances/primary/databases/app";
+      databaseApi.getDatabase.mockResolvedValue({
+        name,
+        project: capability.resource.project,
+      });
+      const identity = {
+        chatId: "diagnostic-sql",
+        userName: "users/1",
+        toolCallId: "sql-permission",
+      };
+      const call = {
+        operationId: `bytebase.v1.SQLService.${method}`,
+        path: `/bytebase.v1.SQLService/${method}`,
+        body: JSON.stringify({ name, statement: "SELECT * FROM foreign_db.t" }),
+      };
+      const { actionId } = createPendingApiCall({
+        ...identity,
+        call,
+        capability,
+      });
+      expect(getPendingApiCallPreview({ ...identity, actionId })).toMatchObject(
+        {
+          operationId: call.operationId,
+          body: call.body,
+        }
+      );
+      const context = {
+        ...identity,
+        scopeKey: "scope",
+        rootUserMessageId: "question",
+        runId: "run",
+        logicalActionId: actionId,
+        isCurrent: () => true,
+        beginAgentApiAttempt: vi.fn(),
+        settleAgentApiAttempt: vi.fn(),
+      };
+      const result = await resolvePendingApiCall({
+        ...identity,
+        actionId,
+        approved: true,
+        capability,
+        context,
+      });
+      expect(JSON.parse(result)).toMatchObject({
+        error: expect.stringMatching(/outside this diagnostic scope/i),
+        agentExecution: {
+          result: "not-sent",
+          effects: "none",
+          reason: "preflight-rejected",
+        },
+      });
+      expect(
+        getPendingApiCallPreview({ ...identity, actionId })
+      ).toBeUndefined();
+      expect(checkPreparedApiPermission).not.toHaveBeenCalled();
+      expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
     }
   );
 

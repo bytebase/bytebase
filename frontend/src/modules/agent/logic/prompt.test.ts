@@ -86,6 +86,9 @@ describe("buildSystemPrompt", () => {
       });
       expect(prompt).toContain("diagnostic chat");
       expect(prompt).toContain("read-by-default");
+      expect(prompt).toContain(
+        "Direct SQL execution and export are unavailable"
+      );
       expect(prompt).toContain("one-time approval");
       expect(prompt).not.toContain("permanently read-only");
       expect(prompt).not.toContain("Never request write permission");

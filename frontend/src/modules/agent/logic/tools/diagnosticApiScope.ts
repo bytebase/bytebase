@@ -37,6 +37,18 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 const isConcreteResource = (name: string): boolean => {
   try {
     const tokens = name.split("/");
+    const databaseIdPosition =
+      tokens[0] === "instances" && tokens[2] === "databases"
+        ? 3
+        : tokens[0] === "projects" &&
+            tokens[2] === "instances" &&
+            tokens[4] === "databases"
+          ? 5
+          : -1;
+    // Preserve the opaque database ID while validating structural segments.
+    const structure = tokens
+      .filter((_, index) => index !== databaseIdPosition)
+      .join("/");
     const numericIdPositions: number[] = [];
     if (tokens[0] === "projects") {
       if (tokens[2] === "plans" || tokens[2] === "issues")
@@ -52,8 +64,8 @@ const isConcreteResource = (name: string): boolean => {
       }
     }
     return (
-      name === decodeURIComponent(name) &&
-      !/[\\?#\s]/.test(name) &&
+      structure === decodeURIComponent(structure) &&
+      !/[\\?#\s]/.test(structure) &&
       numericIdPositions.every((index) =>
         /^[1-9]\d*$/.test(tokens[index] ?? "")
       ) &&
@@ -200,10 +212,18 @@ const collectNestedTargets = (
     ) {
       const addTarget = (name: string) => {
         const reference = getOption(field, resource_reference);
+        // The SDL singleton suffix is absent from its Database annotation.
+        const referenceName =
+          schema.typeName === "bytebase.v1.GetDatabaseSDLSchemaRequest" &&
+          field.name === "name"
+            ? name.endsWith("/sdlSchema")
+              ? name.slice(0, -"/sdlSchema".length)
+              : ""
+            : name;
         targets.add(
           !hasOption(field, resource_reference) ||
             matchesResourceType(
-              name,
+              referenceName,
               reference.type || reference.childType,
               !!reference.childType
             )
@@ -276,6 +296,13 @@ export async function isDiagnosticApiCallInScope(
   ) {
     return false;
   }
+  // A default database does not prove the effective SQL targets; no scoped resolver is exposed.
+  if (
+    method.parent.typeName === "bytebase.v1.SQLService" &&
+    method.input.field.statement
+  ) {
+    return false;
+  }
   let body: Record<string, unknown>;
   try {
     const raw: unknown = JSON.parse(call.body);
@@ -319,14 +346,30 @@ export async function isDiagnosticApiCallInScope(
     );
   }
 
-  const ignoredParent =
+  const batchDatabaseRead =
+    method.input.typeName === "bytebase.v1.BatchGetDatabasesRequest";
+  if (
+    batchDatabaseRead &&
+    (typeof body.parent !== "string" ||
+      !isConcreteResource(body.parent) ||
+      !(
+        body.parent === project ||
+        /^instances\/[^/]+$/.test(body.parent) ||
+        (body.parent.startsWith(`${project}/instances/`) &&
+          /^projects\/[^/]+\/instances\/[^/]+$/.test(body.parent))
+      ))
+  ) {
+    return false;
+  }
+  const targetsFromBatch =
+    batchDatabaseRead ||
     method.input.typeName === "bytebase.v1.BatchUpdateIssuesStatusRequest";
   const batch = method.name.startsWith("Batch")
     ? batchTargets(method.input, body)
     : [];
   if (!batch) return false;
   const permissionTargets = getApiPermissionResources(call.operationId, body);
-  const primaryTargets = ignoredParent
+  const primaryTargets = targetsFromBatch
     ? batch
     : (permissionTargets ??
       (batch.length ? [...batch, body.parent] : undefined));
@@ -341,7 +384,7 @@ export async function isDiagnosticApiCallInScope(
   const targets = new Set<string>([...primaryTargets, ...batch]);
   collectNestedTargets(
     method.input,
-    ignoredParent ? { ...body, parent: undefined } : body,
+    targetsFromBatch ? { ...body, parent: undefined } : body,
     targets
   );
   for (const target of targets) {
