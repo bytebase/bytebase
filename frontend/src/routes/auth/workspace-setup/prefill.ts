@@ -110,6 +110,24 @@ const capitalize = (word: string) =>
 
 const sameText = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
+const localPartWords = (email: string) =>
+  (email.split("@")[0] ?? "")
+    .split("+")[0]
+    .split(/[._-]+/)
+    .filter(Boolean);
+
+// The address names a mailbox or a number rather than a person.
+const namesNobody = (email: string) => {
+  const words = localPartWords(email);
+  return (
+    !/\p{L}/u.test(words.join("")) ||
+    SHARED_MAILBOXES.has(words.join("").toLowerCase()) ||
+    words.some((word) => SHARED_MAILBOXES.has(word.toLowerCase()))
+  );
+};
+
+// Never empty: the name is required, and the field starts filled so the first
+// click is the only click.
 export const guessDisplayName = (
   email: string,
   title: string | undefined
@@ -120,13 +138,7 @@ export const guessDisplayName = (
   if (given && !sameText(given, email) && !sameText(given, localPart)) {
     return given;
   }
-  const base = localPart.split("+")[0] ?? "";
-  const words = base.split(/[._-]+/).filter(Boolean);
-  const namesNobody =
-    !/\p{L}/u.test(base) ||
-    SHARED_MAILBOXES.has(words.join("").toLowerCase()) ||
-    words.some((word) => SHARED_MAILBOXES.has(word.toLowerCase()));
-  return namesNobody ? "" : words.map(capitalize).join(" ");
+  return localPartWords(email).map(capitalize).join(" ");
 };
 
 // The company part of the address's domain: the label before the top-level
@@ -160,5 +172,7 @@ export const guessWorkspaceTitle = (
   const company = guessCompany(email);
   if (company) return { kind: "title", title: company };
   const firstName = displayName.split(/\s+/)[0];
-  return firstName ? { kind: "personal", firstName } : { kind: "anonymous" };
+  return firstName && !namesNobody(email)
+    ? { kind: "personal", firstName }
+    : { kind: "anonymous" };
 };

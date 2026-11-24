@@ -123,6 +123,17 @@ describe("SignupPage", () => {
     unmount();
   });
 
+  test("asks for the person's name as Your name, which is what it saves", () => {
+    const { container, render, unmount } = renderIntoContainer(<SignupPage />);
+    render();
+
+    expect(container.querySelector('label[for="name"]')?.textContent).toBe(
+      "settings.profile.display-name*"
+    );
+
+    unmount();
+  });
+
   test("does not enter initial setup when signup is disallowed", () => {
     mocks.workspace = "";
     mocks.disallowSignup = true;

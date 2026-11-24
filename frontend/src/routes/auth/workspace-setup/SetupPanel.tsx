@@ -1,9 +1,14 @@
-import { Database, Folder } from "lucide-react";
-import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
+import { Database, EyeOff, Folder } from "lucide-react";
+import {
+  Fragment,
+  type ReactNode,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import exploreImage from "@/assets/illustration/setup-explore.webp";
 import heroImage from "@/assets/illustration/setup-hero.webp";
-import queryImage from "@/assets/illustration/setup-query.webp";
 import logoFull from "@/assets/logo-full.svg";
 import { EngineIcon } from "@/components/EngineIcon";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -18,7 +23,6 @@ import type { SetupGoal, SetupScreen, SetupSource } from "./draft";
 // panel until the file has loaded.
 const STILLS = {
   hero: { src: heroImage, width: 1638, height: 1111 },
-  query: { src: queryImage, width: 1638, height: 1136 },
   explore: { src: exploreImage, width: 1638, height: 1002 },
 } as const;
 
@@ -28,14 +32,78 @@ const stillFor = (goal: SetupGoal | undefined): Still | undefined => {
   switch (goal) {
     case "create-database-change":
       return "hero";
-    case "query-data":
-      return "query";
     case "just-exploring":
       return "explore";
+    case "query-data":
     case undefined:
       return undefined;
   }
 };
+
+// Sample rows for the query picture; the salary column comes back masked.
+const QUERY_ROWS = [
+  ["Jordan Miller", "jordanmiller@mail.com"],
+  ["Amy Ryan", "amyryan@mail.com"],
+  ["Shauna Harrison", "shaunah@mail.com"],
+] as const;
+
+// The query goal: a statement and its result with the salary column masked,
+// which is what guardrails on a query look like. Masking is an Enterprise
+// feature, so the goal's own words promise only the query history.
+function QueryPreview() {
+  const { t } = useTranslation();
+  return (
+    <Drawn width={560} height={392}>
+      <div className="flex h-full flex-col gap-y-4 p-7">
+        <div className="rounded-sm border border-block-border bg-background px-5 py-4 font-mono text-sm leading-6 text-main">
+          <div>
+            <span className="font-medium text-info">SELECT</span> name, email,
+            salary
+          </div>
+          <div>
+            <span className="font-medium text-info">FROM</span> employee
+          </div>
+          <div>
+            <span className="font-medium text-info">LIMIT</span> 3
+          </div>
+        </div>
+        <div className="rounded-sm border border-block-border bg-background px-5 pt-4 pb-2">
+          <div className="grid grid-cols-[1fr_1.4fr_auto] gap-x-3 text-sm tabular-nums">
+            <div className="pb-2.5 text-xs font-medium text-control-light">
+              name
+            </div>
+            <div className="pb-2.5 text-xs font-medium text-control-light">
+              email
+            </div>
+            <div className="flex items-center gap-x-1.5 pb-2.5 text-xs font-medium whitespace-nowrap text-control-light">
+              salary
+              <span className="inline-flex items-center gap-x-1 rounded-xs bg-accent/10 px-1.5 text-xs text-accent">
+                <EyeOff className="size-3" />
+                {t("workspace-setup.panel.masked")}
+              </span>
+            </div>
+            {QUERY_ROWS.map(([name, email]) => (
+              <Fragment key={email}>
+                <div className="border-t border-block-border py-2.5 text-main">
+                  {name}
+                </div>
+                <div className="border-t border-block-border py-2.5 text-main">
+                  {email}
+                </div>
+                <div className="border-t border-block-border py-2.5 font-mono tracking-widest text-control-light">
+                  ******
+                </div>
+              </Fragment>
+            ))}
+          </div>
+          <div className="mt-1 border-t border-block-border pt-2.5 pb-1.5 text-xs text-control-light">
+            {t("workspace-setup.panel.query-recorded")}
+          </div>
+        </div>
+      </div>
+    </Drawn>
+  );
+}
 
 const FRAME = "overflow-hidden rounded-sm border border-block-border";
 
@@ -238,18 +306,15 @@ function GhostInstance({ left }: { readonly left: number }) {
 }
 
 // The workspace holding the project as it is named, and the project's
-// instances: the one the database choice brings, then two to come. A project
-// left for later is dashed, with no instances.
+// instances: the one the database choice brings, then two to come.
 function ProjectPreview({
   workspaceTitle,
   projectTitle,
   source,
-  noProject,
 }: {
   readonly workspaceTitle: string;
   readonly projectTitle: string;
   readonly source: SetupSource;
-  readonly noProject: boolean;
 }) {
   const { t } = useTranslation();
   const own = source === "own";
@@ -262,19 +327,8 @@ function ProjectPreview({
           {workspaceTitle}
         </div>
       </div>
-      <div
-        className={cn(
-          "absolute top-[108px] left-11 flex h-[76px] w-[296px] items-center gap-x-3 rounded-sm border bg-background px-4",
-          noProject
-            ? "border-dashed border-control-border text-control-light"
-            : "border-block-border text-main"
-        )}
-      >
-        {noProject ? (
-          <div className="size-9 shrink-0 rounded-sm bg-control-bg-hover" />
-        ) : (
-          <ProjectIcon className="size-9" />
-        )}
+      <div className="absolute top-[108px] left-11 flex h-[76px] w-[296px] items-center gap-x-3 rounded-sm border border-block-border bg-background px-4 text-main">
+        <ProjectIcon className="size-9" />
         <div className="min-w-0">
           <div className="truncate text-lg font-semibold">
             {projectTitle || t("workspace-setup.project.your-project")}
@@ -289,70 +343,64 @@ function ProjectPreview({
           <GhostBar width="40%" />
         </div>
       </div>
-      {!noProject && (
-        <>
-          <svg
-            className="absolute inset-0 fill-none stroke-control-border"
-            viewBox="0 0 640 452"
-          >
-            <path d="M192 184 V204" />
-            <rect
-              x="187.5"
-              y="204.5"
-              width="10"
-              height="10"
-              rx="2"
-              className="fill-background"
-            />
-            <path d="M192 215 V228 C192 235 188 238 182 238 H159 C153 238 149 241 149 247 V262" />
-            <path d="M192 228 C192 235 196 238 202 238 H509 C515 238 519 241 519 247 V262" />
-            <path d="M337 238 C343 238 347 241 347 247 V262" />
-          </svg>
-          <div
-            className={cn(
-              "absolute top-[262px] left-11 h-[134px] w-[210px] rounded-sm border bg-background p-3",
-              own
-                ? "border-dashed border-control-border"
-                : "border-block-border"
-            )}
-          >
-            <div className="flex gap-x-2">
-              {own ? (
-                <div className="size-5 shrink-0 rounded-xs bg-control-bg-hover" />
-              ) : (
-                <EngineIcon engine={Engine.POSTGRES} className="size-5" />
-              )}
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-main">
-                  {own
-                    ? t("workspace-setup.panel.own-instance")
-                    : t("workspace-setup.panel.sample-instance")}
-                </div>
-                <div className={cn(CAPTION, "mt-1")}>
-                  {own
-                    ? t("workspace-setup.panel.connected-after-setup")
-                    : t("common.instance")}
-                </div>
-              </div>
-            </div>
-            <div
-              className={cn(
-                "mt-3 flex items-center gap-x-1.5 truncate rounded-xs px-2.5 py-2 font-mono text-xs",
-                own
-                  ? "border border-dashed border-control-border text-control-light"
-                  : "bg-main text-background"
-              )}
-            >
-              <Database className="size-3.5 shrink-0" />
+      <svg
+        className="absolute inset-0 fill-none stroke-control-border"
+        viewBox="0 0 640 452"
+      >
+        <path d="M192 184 V204" />
+        <rect
+          x="187.5"
+          y="204.5"
+          width="10"
+          height="10"
+          rx="2"
+          className="fill-background"
+        />
+        <path d="M192 215 V228 C192 235 188 238 182 238 H159 C153 238 149 241 149 247 V262" />
+        <path d="M192 228 C192 235 196 238 202 238 H509 C515 238 519 241 519 247 V262" />
+        <path d="M337 238 C343 238 347 241 347 247 V262" />
+      </svg>
+      <div
+        className={cn(
+          "absolute top-[262px] left-11 h-[134px] w-[210px] rounded-sm border bg-background p-3",
+          own ? "border-dashed border-control-border" : "border-block-border"
+        )}
+      >
+        <div className="flex gap-x-2">
+          {own ? (
+            <div className="size-5 shrink-0 rounded-xs bg-control-bg-hover" />
+          ) : (
+            <EngineIcon engine={Engine.POSTGRES} className="size-5" />
+          )}
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-main">
               {own
-                ? t("workspace-setup.panel.own-databases")
-                : t("workspace-setup.panel.sample-database")}
+                ? t("workspace-setup.panel.own-instance")
+                : t("workspace-setup.panel.sample-instance")}
+            </div>
+            <div className={cn(CAPTION, "mt-1")}>
+              {own
+                ? t("workspace-setup.panel.connected-after-setup")
+                : t("common.instance")}
             </div>
           </div>
-          <GhostInstance left={270} />
-          <GhostInstance left={442} />
-        </>
-      )}
+        </div>
+        <div
+          className={cn(
+            "mt-3 flex items-center gap-x-1.5 truncate rounded-xs px-2.5 py-2 font-mono text-xs",
+            own
+              ? "border border-dashed border-control-border text-control-light"
+              : "bg-main text-background"
+          )}
+        >
+          <Database className="size-3.5 shrink-0" />
+          {own
+            ? t("workspace-setup.panel.own-databases")
+            : t("workspace-setup.panel.sample-database")}
+        </div>
+      </div>
+      <GhostInstance left={270} />
+      <GhostInstance left={442} />
     </Drawn>
   );
 }
@@ -365,7 +413,6 @@ export function SetupPanel({
   memberEmail,
   projectTitle,
   source,
-  noProject,
   teamSize,
   invitees,
 }: {
@@ -376,8 +423,6 @@ export function SetupPanel({
   readonly memberEmail: string;
   readonly projectTitle: string;
   readonly source: SetupSource;
-  // Self-hosted left the project for later.
-  readonly noProject: boolean;
   readonly teamSize: GuideTeamSize | undefined;
   // The addresses Finish would add.
   readonly invitees: readonly string[];
@@ -388,7 +433,6 @@ export function SetupPanel({
         workspaceTitle={workspaceTitle}
         projectTitle={projectTitle}
         source={source}
-        noProject={noProject}
       />
     );
   }
@@ -402,6 +446,7 @@ export function SetupPanel({
       />
     );
   }
+  if (screen === "goal" && goal === "query-data") return <QueryPreview />;
   // The chosen goal's picture; until a goal is chosen the workspace preview
   // stays.
   const still = screen === "goal" ? stillFor(goal) : undefined;

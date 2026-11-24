@@ -262,9 +262,16 @@ const eventsNamed = (event: string) =>
     .filter((metric) => metric.event === event)
     .map((metric) => metric.properties);
 
+// The screen's primary button: Continue, or Finish where the screen ends setup.
+const primaryButton = () =>
+  screen.getByRole("button", { name: /^(Continue|Finish)$/ });
+const steps = () =>
+  within(screen.getByRole("list"))
+    .getAllByRole("listitem")
+    .map((step) => step.textContent);
 const nameProject = async (name = "Payments") => {
   type(screen.getByLabelText(/^Project name/), name);
-  await waitFor(() => expect(continueButton()).toBeEnabled());
+  await waitFor(() => expect(primaryButton()).toBeEnabled());
 };
 const editProjectId = (id: string) => {
   fireEvent.click(screen.getByRole("button", { name: "Edit" }));
@@ -420,7 +427,7 @@ describe("WorkspaceSetupPage", () => {
       render(<WorkspaceSetupPage />);
 
       expect(
-        screen.getByRole("heading", { name: "Set up your workspace" })
+        screen.getByRole("heading", { name: "Name your workspace" })
       ).toBeInTheDocument();
       expect(screen.getByLabelText(/^Your name/)).toHaveValue("Ed");
       expect(screen.getByLabelText(/^Your name/)).toHaveFocus();
@@ -453,24 +460,24 @@ describe("WorkspaceSetupPage", () => {
         workspace: "Acme",
       },
       {
-        from: "a shared mailbox, which names nobody",
+        from: "a shared mailbox, named by its address",
         email: "admin@acme.co.uk",
         title: "admin",
-        name: "",
+        name: "Admin",
         workspace: "Acme",
       },
       {
         from: "a mailbox named for a team",
         email: "it-support@acme.com",
         title: "",
-        name: "",
+        name: "It Support",
         workspace: "Acme",
       },
       {
         from: "a mailbox that takes no replies",
         email: "no-reply@acme.com",
         title: "",
-        name: "",
+        name: "No Reply",
         workspace: "Acme",
       },
       {
@@ -495,17 +502,17 @@ describe("WorkspaceSetupPage", () => {
         workspace: "Wang's workspace",
       },
       {
-        from: "a number on a public mail domain, which names nobody",
+        from: "a number on a public mail domain, which names no workspace",
         email: "13800138000@139.com",
         title: "",
-        name: "",
+        name: "13800138000",
         workspace: "My workspace",
       },
       {
         from: "a shared mailbox on a public mail domain",
         email: "info@outlook.com",
         title: "",
-        name: "",
+        name: "Info",
         workspace: "My workspace",
       },
     ])("guesses the names of a new account from $from", (account) => {
@@ -566,13 +573,16 @@ describe("WorkspaceSetupPage", () => {
       );
     });
 
-    test("lets the name be emptied without the guess coming back", () => {
+    test("requires the name, with the reason under the field once it is emptied", () => {
       render(<WorkspaceSetupPage />);
+      const yourName = screen.getByLabelText(/^Your name/);
+      expect(yourName).toHaveAccessibleName("Your name");
 
-      type(screen.getByLabelText(/^Your name/), "");
+      type(yourName, " ");
 
-      expect(screen.getByLabelText(/^Your name/)).toHaveValue("");
-      expect(continueButton()).toBeEnabled();
+      expect(yourName).toHaveValue(" ");
+      expect(continueButton()).toBeDisabled();
+      expect(yourName).toHaveAccessibleDescription("Enter your name");
     });
 
     test("shows nothing until the account is known, and records no entry before the workspace is", () => {
@@ -593,10 +603,63 @@ describe("WorkspaceSetupPage", () => {
   });
 
   describe("every screen", () => {
-    const steps = () =>
-      within(screen.getByRole("list"))
-        .getAllByRole("listitem")
-        .map((step) => step.textContent);
+    test("says what each step asks and nothing about the setup around it", async () => {
+      const view = render(<WorkspaceSetupPage />);
+      const page = () => view.container.textContent ?? "";
+      const describes = (heading: string, description?: string) => {
+        expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
+        if (description) expect(page()).toContain(description);
+      };
+
+      describes(
+        "Name your workspace",
+        "A workspace holds your projects, databases and people."
+      );
+      expect(page()).not.toContain("Everyone you add joins this workspace.");
+
+      goToGoal();
+      describes("What do you want to do first?", "Pick what brought you here.");
+      expect(page()).toContain("You can pick a direction later.");
+      expect(page()).not.toMatch(/Finish line|once setup ends|We'll suggest/);
+
+      fireEvent.click(screen.getByText(QUERY_GOAL));
+      fireEvent.click(continueButton());
+      describes(
+        "Create your first project",
+        "A project groups the databases a team works on, with its members and policies."
+      );
+      expect(page()).not.toMatch(/Bytebase needs a database|Setup finishes first/);
+
+      await nameProject();
+      fireEvent.click(continueButton());
+      describes("How many people will use Bytebase?");
+      expect(page()).not.toMatch(/Your team|One question before you finish/);
+    });
+
+    test("adds nothing under a question while it is unanswered", async () => {
+      render(<WorkspaceSetupPage />);
+      goToGoal();
+      expect(
+        screen.getByRole("radiogroup", { name: "What do you want to do first?" })
+      ).not.toHaveAccessibleDescription();
+      expect(screen.queryByText("Pick one to continue")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByText(QUERY_GOAL));
+      fireEvent.click(continueButton());
+      expect(screen.getByLabelText(/^Project name/)).not.toHaveAccessibleDescription();
+      expect(screen.queryByText("Enter a project name")).not.toBeInTheDocument();
+
+      await nameProject();
+      fireEvent.click(continueButton());
+      expect(
+        screen.getByRole("radiogroup", {
+          name: "How many people will use Bytebase?",
+        })
+      ).not.toHaveAccessibleDescription();
+      expect(
+        screen.queryByText("Pick a team size to finish")
+      ).not.toBeInTheDocument();
+    });
 
     test("shows the same four steps, with the ones behind it checked off", () => {
       startAtProject();
@@ -697,18 +760,16 @@ describe("WorkspaceSetupPage", () => {
     const goalChoices = () =>
       screen.getByRole("radiogroup", { name: "What do you want to do first?" });
 
-    test("blocks Continue until a goal is picked, with the reason under the choices", () => {
+    test("blocks Continue until a goal is picked", () => {
       render(<WorkspaceSetupPage />);
       goToGoal();
 
       expect(within(goalChoices()).getAllByRole("radio")).toHaveLength(3);
       expect(continueButton()).toBeDisabled();
-      expect(goalChoices()).toHaveAccessibleDescription("Pick one to continue");
 
       fireEvent.click(screen.getByText(QUERY_GOAL));
 
       expect(continueButton()).toBeEnabled();
-      expect(goalChoices()).not.toHaveAccessibleDescription();
     });
   });
 
@@ -719,81 +780,15 @@ describe("WorkspaceSetupPage", () => {
 
       expect(projectName).toHaveValue("");
       expect(continueButton()).toBeDisabled();
-      expect(projectName).toHaveAccessibleDescription(
-        expect.stringContaining("Enter a project name")
-      );
       expect(choice(SAMPLE)).toBeChecked();
       expect(choice(OWN_INSTANCE)).not.toBeChecked();
 
       await nameProject();
 
       expect(screen.getByText("payments-ab12")).toBeInTheDocument();
-      expect(projectName).not.toHaveAccessibleDescription(
-        expect.stringContaining("Enter a project name")
-      );
       expect(
         screen.getByRole("radiogroup", { name: "Database for Payments" })
       ).toBeInTheDocument();
-    });
-
-    test("lets self-hosted leave the project for later, offering no database and making no project", async () => {
-      mocks.isSaaSMode = false;
-      startAtProject(CHANGE_GOAL);
-      const projectName = screen.getByLabelText(/^Project name/);
-
-      expect(projectName).toHaveAccessibleName(
-        expect.stringContaining("optional")
-      );
-      expect(projectName).toHaveAccessibleDescription(
-        expect.stringContaining("Leave it empty to create a project later.")
-      );
-      expect(screen.queryByText(SAMPLE)).not.toBeInTheDocument();
-      expect(screen.queryByText(OWN_INSTANCE)).not.toBeInTheDocument();
-
-      fireEvent.click(continueButton());
-      fireEvent.click(screen.getByText("2–10"));
-      fireEvent.click(finishButton());
-
-      await landed();
-      expect(mocks.routerReplace).toHaveBeenCalledWith({
-        name: WORKSPACE_ROUTE_LANDING,
-      });
-      expect(writes()).toEqual(["updateUser", "updateWorkspace"]);
-      expect(readSelectedGuideScenarioId()).toBe("create-database-change");
-      expect(eventsNamed("workspace setup submitted")).toEqual([
-        expect.objectContaining({
-          result: "finished",
-          source: "none",
-          sample_enabled: false,
-        }),
-      ]);
-    });
-
-    test("offers the database again once a self-hosted project is named", async () => {
-      mocks.isSaaSMode = false;
-      startAtProject();
-
-      await nameProject();
-
-      expect(choice(SAMPLE)).toBeChecked();
-      expect(choice(OWN_INSTANCE)).not.toBeChecked();
-    });
-
-    test("needs the project name on self-hosted once a create has been sent", () => {
-      mocks.isSaaSMode = false;
-      storeDraft({
-        screen: "project",
-        goal: "query-data",
-        projectTitle: "",
-        projectId: "",
-        attemptedProjectId: "payments-ab12",
-      });
-      render(<WorkspaceSetupPage />);
-
-      expect(screen.getByLabelText(/^Project name/)).toHaveAccessibleDescription(
-        expect.stringContaining("Enter a project name")
-      );
-      expect(continueButton()).toBeDisabled();
     });
 
     test("blocks Continue on an emptied project ID, with the field's reason", async () => {
@@ -908,6 +903,88 @@ describe("WorkspaceSetupPage", () => {
     });
   });
 
+  describe("self-hosted, three steps", () => {
+    beforeEach(() => {
+      mocks.isSaaSMode = false;
+    });
+
+    test("asks only the workspace name on the first step, as sign-up asked the person's", () => {
+      render(<WorkspaceSetupPage />);
+
+      expect(screen.queryByLabelText(/^Your name/)).not.toBeInTheDocument();
+      expect(screen.getByLabelText("Workspace name")).toHaveFocus();
+    });
+
+    test("starts on the goal step for an account with nothing to answer on the first", () => {
+      mocks.canUpdateWorkspace = false;
+      render(<WorkspaceSetupPage />);
+
+      expect(
+        screen.getByRole("heading", { name: "What do you want to do first?" })
+      ).toBeInTheDocument();
+    });
+
+    test("has no team step and finishes on the project step", async () => {
+      startAtProject();
+
+      expect(steps()).toEqual(["Workspace", "Goal", "3Project"]);
+      await nameProject();
+      fireEvent.click(finishButton());
+
+      await landed();
+      expect(writes()).toEqual(["updateWorkspace", "createProject", "prepareSample"]);
+      expect(mocks.routerReplace).toHaveBeenCalledWith(
+        expect.objectContaining({ name: PROJECT_V1_ROUTE_DATABASES })
+      );
+    });
+
+    test("reports a failed Finish on the project step until an answer it ran with changes", async () => {
+      mocks.prepareSampleProjectInstance.mockRejectedValueOnce(
+        unavailable("disk full")
+      );
+      startAtProject();
+      await nameProject();
+      fireEvent.click(finishButton());
+
+      const alert = await failed();
+      expect(alert).toHaveTextContent("Could not prepare the sample database.");
+      expect(alert).toHaveTextContent("disk full");
+      expect(screen.getByRole("button", { name: "Try again" })).toBeEnabled();
+      expect(
+        screen.getByRole("button", { name: "Finish without the sample" })
+      ).toBeEnabled();
+
+      fireEvent.click(screen.getByText(OWN_INSTANCE));
+
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Finish without the sample" })
+      ).not.toBeInTheDocument();
+      expect(finishButton()).toBeEnabled();
+    });
+
+    test("needs a project name to create one, and finishes without a project on its own button", async () => {
+      startAtProject(CHANGE_GOAL);
+
+      expect(screen.getByLabelText(/^Project name/)).toHaveAccessibleName(
+        "Project name"
+      );
+      expect(finishButton()).toBeDisabled();
+      expect(choice(SAMPLE)).toBeChecked();
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Finish without a project" })
+      );
+
+      await landed();
+      expect(mocks.routerReplace).toHaveBeenCalledWith({
+        name: WORKSPACE_ROUTE_LANDING,
+      });
+      expect(writes()).toEqual(["updateWorkspace"]);
+      expect(readSelectedGuideScenarioId()).toBe("create-database-change");
+    });
+  });
+
   describe("screen 3, after a Finish attempt created the project", () => {
     // One invitee, so every step of the commit has work to do.
     const failFinish = async () => {
@@ -955,11 +1032,12 @@ describe("WorkspaceSetupPage", () => {
     });
   });
 
-  describe("I'll do this later", () => {
+  describe("Finish without a project", () => {
     const skipButton = () =>
-      screen.getByRole("button", { name: "I'll do this later" });
+      screen.getByRole("button", { name: "Finish without a project" });
     const skipOffered = () =>
-      screen.queryByRole("button", { name: "I'll do this later" }) !== null;
+      screen.queryByRole("button", { name: "Finish without a project" }) !==
+      null;
 
     test("is not offered on Cloud, where setup is mandatory", () => {
       startAtProject();
@@ -967,18 +1045,13 @@ describe("WorkspaceSetupPage", () => {
       expect(skipOffered()).toBe(false);
     });
 
-    test("saves the two names on self-hosted and leaves without creating a project", async () => {
+    test("records a skipped setup, and the next visit starts over", async () => {
       mocks.isSaaSMode = false;
       const view = startAtProject(CHANGE_GOAL);
 
       fireEvent.click(skipButton());
 
       await landed();
-      expect(mocks.routerReplace).toHaveBeenCalledWith({
-        name: WORKSPACE_ROUTE_LANDING,
-      });
-      expect(writes()).toEqual(["updateUser", "updateWorkspace"]);
-      expect(readSelectedGuideScenarioId()).toBe("create-database-change");
       expect(eventsNamed("workspace setup submitted")).toEqual([
         {
           setup_version: "v2",
@@ -991,21 +1064,20 @@ describe("WorkspaceSetupPage", () => {
       view.unmount();
       render(<WorkspaceSetupPage />);
       expect(
-        screen.getByRole("heading", { name: "Set up your workspace" })
+        screen.getByRole("heading", { name: "Name your workspace" })
       ).toBeInTheDocument();
     });
 
-    test("stays on the screen with the error when the names cannot be saved, and can be pressed again", async () => {
+    test("stays on the screen with the error when the workspace name cannot be saved, and can be pressed again", async () => {
       mocks.isSaaSMode = false;
-      mocks.updateUser.mockRejectedValueOnce(unavailable("database is down"));
+      mocks.updateWorkspace.mockRejectedValueOnce(
+        unavailable("database is down")
+      );
       startAtProject();
 
       fireEvent.click(skipButton());
 
       const alert = await failed();
-      expect(alert).toHaveTextContent(
-        "Could not save your name and the workspace name."
-      );
       expect(alert).toHaveTextContent("database is down");
       expect(screen.getByLabelText(/^Project name/)).toBeInTheDocument();
       expect(mocks.routerReplace).not.toHaveBeenCalled();
@@ -1017,7 +1089,7 @@ describe("WorkspaceSetupPage", () => {
 
     test("drops its failure's report once the screen is left", async () => {
       mocks.isSaaSMode = false;
-      mocks.updateUser.mockRejectedValueOnce(unavailable());
+      mocks.updateWorkspace.mockRejectedValueOnce(unavailable());
       startAtProject();
       fireEvent.click(skipButton());
       await failed();
@@ -1033,13 +1105,11 @@ describe("WorkspaceSetupPage", () => {
       mocks.isSaaSMode = false;
       mocks.createProject.mockRejectedValueOnce(unavailable());
       mocks.getProject.mockRejectedValueOnce(unavailable());
-      await startAtTeam();
-      finishAlone();
+      startAtProject();
+      await nameProject();
+      fireEvent.click(finishButton());
       await failed();
 
-      fireEvent.click(backButton());
-
-      await waitFor(() => expect(mocks.getProject).toHaveBeenCalledTimes(1));
       expect(skipOffered()).toBe(false);
       expect(screen.getByLabelText(/^Project name/)).toBeEnabled();
     });
@@ -1047,14 +1117,71 @@ describe("WorkspaceSetupPage", () => {
     test("is withdrawn once a Finish attempt has created the project", async () => {
       mocks.isSaaSMode = false;
       mocks.prepareSampleProjectInstance.mockRejectedValueOnce(unavailable());
-      await startAtTeam();
-      finishAlone();
+      startAtProject();
+      await nameProject();
+      fireEvent.click(finishButton());
       await failed();
-
-      fireEvent.click(backButton());
 
       expect(screen.getByLabelText(/^Project name/)).toBeDisabled();
       expect(skipOffered()).toBe(false);
+    });
+
+    test("is offered on the first step as Skip setup, which saves the workspace name and leaves", async () => {
+      mocks.isSaaSMode = false;
+      render(<WorkspaceSetupPage />);
+      type(screen.getByLabelText("Workspace name"), "Acme");
+
+      fireEvent.click(screen.getByRole("button", { name: "Skip setup" }));
+
+      await landed();
+      expect(mocks.routerReplace).toHaveBeenCalledWith({
+        name: WORKSPACE_ROUTE_LANDING,
+      });
+      expect(writes()).toEqual(["updateWorkspace"]);
+      expect(mocks.updateWorkspace).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Acme" }),
+        ["title"],
+        REPORT
+      );
+    });
+
+    test("keeps the first step with the error when Skip setup cannot save the workspace name", async () => {
+      mocks.isSaaSMode = false;
+      mocks.updateWorkspace.mockRejectedValueOnce(unavailable("database is down"));
+      render(<WorkspaceSetupPage />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Skip setup" }));
+
+      const alert = await failed();
+      expect(alert).toHaveTextContent("Could not save the workspace name.");
+      expect(alert).toHaveTextContent("database is down");
+      expect(mocks.routerReplace).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByRole("button", { name: "Skip setup" }));
+
+      await landed();
+    });
+
+    test("leaves the workspace name as it is when Skip setup is pressed with the field emptied", async () => {
+      mocks.isSaaSMode = false;
+      render(<WorkspaceSetupPage />);
+      type(screen.getByLabelText("Workspace name"), " ");
+
+      fireEvent.click(screen.getByRole("button", { name: "Skip setup" }));
+
+      await landed();
+      expect(writes()).toEqual([]);
+    });
+
+    test("is offered again once the server refused the create, which leaves no project", async () => {
+      mocks.isSaaSMode = false;
+      mocks.createProject.mockRejectedValueOnce(alreadyExists());
+      startAtProject();
+      await nameProject();
+      fireEvent.click(finishButton());
+
+      expect(await screen.findByText(ID_EXISTS)).toBeInTheDocument();
+      expect(skipOffered()).toBe(true);
     });
   });
 
@@ -1073,16 +1200,12 @@ describe("WorkspaceSetupPage", () => {
           .map((radio) => radio.closest("label")?.textContent)
       ).toEqual(["Just me", "2–10", "11–50", "51–200", "200+"]);
       expect(finishButton()).toBeDisabled();
-      expect(teamSizes()).toHaveAccessibleDescription(
-        "Pick a team size to finish"
-      );
       expect(backButton()).toBeEnabled();
       expect(screen.queryByText("Invite teammates")).not.toBeInTheDocument();
 
       fireEvent.click(screen.getByText("Just me"));
 
       expect(finishButton()).toBeEnabled();
-      expect(teamSizes()).not.toHaveAccessibleDescription();
       expect(screen.queryByText("Invite teammates")).not.toBeInTheDocument();
     });
 
@@ -1381,19 +1504,7 @@ describe("WorkspaceSetupPage", () => {
       ]);
     });
 
-    test("asks only the team size on self-hosted, where a member added would have no password", async () => {
-      mocks.isSaaSMode = false;
-      await startAtTeam();
-      fireEvent.click(screen.getByText("2–10"));
-
-      expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
-      fireEvent.click(finishButton());
-      await landed();
-      expect(mocks.updateProjectIamPolicy).not.toHaveBeenCalled();
-      expect(mocks.patchWorkspaceIamPolicy).not.toHaveBeenCalled();
-    });
-
-    test("adds no one on self-hosted from addresses a draft holds", async () => {
+    test("opens an older self-hosted draft saved on the team step on the project step, and adds no one from it", async () => {
       mocks.isSaaSMode = false;
       storeDraft({
         screen: "team",
@@ -1406,6 +1517,7 @@ describe("WorkspaceSetupPage", () => {
       });
       render(<WorkspaceSetupPage />);
 
+      expect(screen.getByLabelText(/^Project name/)).toHaveValue("Payments");
       expect(screen.queryByText("ann@example.com")).not.toBeInTheDocument();
       fireEvent.click(finishButton());
       await landed();
@@ -1531,7 +1643,11 @@ describe("WorkspaceSetupPage", () => {
         "1111"
       );
       fireEvent.click(screen.getByText(QUERY_GOAL));
-      expect(still()).toBe("query");
+      // Drawn in the page: a query whose salary column comes back masked.
+      expect(panel().queryByRole("presentation")).not.toBeInTheDocument();
+      expect(panel().getByText(/SELECT/)).toBeInTheDocument();
+      expect(panel().getByText("Masked")).toBeInTheDocument();
+      expect(panel().getAllByText("******")).toHaveLength(3);
       fireEvent.click(screen.getByText(EXPLORING));
       expect(still()).toBe("explore");
     });
@@ -1555,20 +1671,6 @@ describe("WorkspaceSetupPage", () => {
       expect(
         panel().queryByText("Sample Project Instance")
       ).not.toBeInTheDocument();
-    });
-
-    test("draws no instances for a project self-hosted leaves for later", async () => {
-      mocks.isSaaSMode = false;
-      render(<WithLeftColumn />);
-      goToProject();
-
-      expect(panel().getByText("your project")).toBeInTheDocument();
-      expect(
-        panel().queryByText("Sample Project Instance")
-      ).not.toBeInTheDocument();
-
-      await nameProject();
-      expect(panel().getByText("Sample Project Instance")).toBeInTheDocument();
     });
 
     test("lists the team in the workspace as it is answered, five rows at most", async () => {
@@ -1771,13 +1873,17 @@ describe("WorkspaceSetupPage", () => {
 
   describe("draft", () => {
     test.each([
-      { deployment: "self-hosted", isSaaSMode: false, heading: "Your team" },
+      {
+        deployment: "self-hosted",
+        isSaaSMode: false,
+        heading: "Create your first project",
+      },
       {
         deployment: "Cloud",
         isSaaSMode: true,
-        heading: "Create a project and choose its database",
+        heading: "Create your first project",
       },
-    ])("resumes a draft with no project name where $deployment allows it", ({
+    ])("resumes a draft with no project name on the project step, on $deployment", ({
       isSaaSMode,
       heading,
     }) => {
@@ -1810,7 +1916,7 @@ describe("WorkspaceSetupPage", () => {
 
       expect(
         screen.getByRole("heading", {
-          name: "Create a project and choose its database",
+          name: "Create your first project",
         })
       ).toBeInTheDocument();
     });
@@ -1839,7 +1945,7 @@ describe("WorkspaceSetupPage", () => {
       render(<WorkspaceSetupPage />);
 
       expect(
-        screen.getByRole("heading", { name: "Set up your workspace" })
+        screen.getByRole("heading", { name: "Name your workspace" })
       ).toBeInTheDocument();
     });
 
@@ -1852,7 +1958,7 @@ describe("WorkspaceSetupPage", () => {
       {
         missing: "a project name",
         stored: { screen: "team", goal: "query-data", projectId: "pay" },
-        opensOn: "Create a project and choose its database",
+        opensOn: "Create your first project",
       },
     ])("opens on the first unanswered screen when the stored draft is ahead of its answers, here $missing", ({
       stored,
@@ -1876,7 +1982,7 @@ describe("WorkspaceSetupPage", () => {
       render(<WorkspaceSetupPage />);
 
       expect(
-        screen.getByRole("heading", { name: "Set up your workspace" })
+        screen.getByRole("heading", { name: "Name your workspace" })
       ).toBeInTheDocument();
     });
 
@@ -2184,25 +2290,12 @@ describe("WorkspaceSetupPage", () => {
 
     test("leaves the setup flag alone on self-hosted, where setup is not mandatory", async () => {
       mocks.isSaaSMode = false;
-      await startAtTeam();
-      finishAlone();
+      startAtProject();
+      await nameProject();
+      fireEvent.click(finishButton());
 
       await landed();
       expect(readWorkspaceSetupFinished("workspaces/ws1")).toBeUndefined();
-    });
-
-    test("does not save an emptied name over the account's", async () => {
-      render(<WorkspaceSetupPage />);
-      type(screen.getByLabelText(/^Your name/), " ");
-      await goToTeam();
-      finishAlone();
-
-      await landed();
-      expect(writes()).toEqual([
-        "updateWorkspace",
-        "createProject",
-        "prepareSample",
-      ]);
     });
 
     test("finishes the own-instance path on project instances", async () => {
@@ -3112,33 +3205,33 @@ describe("WorkspaceSetupPage", () => {
 
         test("neither clears the draft nor leaves when the other tab took setup up during a skip", async () => {
           mocks.isSaaSMode = false;
-          const release = holdNextCall(mocks.updateUser);
+          const release = holdNextCall(mocks.updateWorkspace);
           startAtProject();
           await nameProject();
           fireEvent.click(
-            screen.getByRole("button", { name: "I'll do this later" })
+            screen.getByRole("button", { name: "Finish without a project" })
           );
-          await waitFor(() => expect(mocks.updateUser).toHaveBeenCalled());
+          await waitFor(() => expect(mocks.updateWorkspace).toHaveBeenCalled());
 
           const theirs = { ...stored(), projectTitle: "Orders" };
           otherTabSaves(theirs);
           release();
           await settle();
 
-          expect(writes()).toEqual(["updateUser"]);
+          expect(writes()).toEqual(["updateWorkspace"]);
           expect(mocks.routerReplace).not.toHaveBeenCalled();
           expect(stored()).toEqual(theirs);
         });
 
         test("reports no failure of a skip the other tab took setup up from", async () => {
           mocks.isSaaSMode = false;
-          const fail = holdNextCall(mocks.updateUser);
+          const fail = holdNextCall(mocks.updateWorkspace);
           startAtProject();
           await nameProject();
           fireEvent.click(
-            screen.getByRole("button", { name: "I'll do this later" })
+            screen.getByRole("button", { name: "Finish without a project" })
           );
-          await waitFor(() => expect(mocks.updateUser).toHaveBeenCalled());
+          await waitFor(() => expect(mocks.updateWorkspace).toHaveBeenCalled());
 
           otherTabSaves({ ...stored(), projectTitle: "Orders" });
           continueHere(document.body);
@@ -3224,10 +3317,10 @@ describe("WorkspaceSetupPage", () => {
           report: "a failed skip",
           arrange: async () => {
             mocks.isSaaSMode = false;
-            mocks.updateUser.mockRejectedValueOnce(unavailable());
+            mocks.updateWorkspace.mockRejectedValueOnce(unavailable());
             startAtProject();
             fireEvent.click(
-              screen.getByRole("button", { name: "I'll do this later" })
+              screen.getByRole("button", { name: "Finish without a project" })
             );
           },
         },
@@ -3510,23 +3603,20 @@ describe("WorkspaceSetupPage", () => {
         ).not.toBeInTheDocument();
       });
 
-      test("leaves a create it finds missing unsettled, so the retry takes the project as its own once the create lands", async () => {
+      test("keeps the ways out hidden while a create is unanswered, so the retry takes the project as its own once the create lands", async () => {
         mocks.isSaaSMode = false;
         const land = delayLostWrite(mocks.createProject);
-        await startAtTeam();
-        finishAlone();
+        startAtProject();
+        await nameProject();
+        fireEvent.click(finishButton());
         await failed();
 
-        fireEvent.click(backButton());
-        await waitFor(() => expect(mocks.getProject).toHaveBeenCalled());
-        await settle();
         expect(
-          screen.queryByRole("button", { name: "I'll do this later" })
+          screen.queryByRole("button", { name: "Finish without a project" })
         ).not.toBeInTheDocument();
         land();
         await settle();
-        fireEvent.click(continueButton());
-        fireEvent.click(finishButton());
+        tryAgain();
 
         await landed();
         expect(mocks.createProject).toHaveBeenCalledTimes(2);

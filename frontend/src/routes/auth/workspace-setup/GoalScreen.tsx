@@ -2,11 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { isSetupGoal, type SetupGoal } from "./draft";
-import {
-  choiceCardClassName,
-  SetupNote,
-  SetupScreenFrame,
-} from "./SetupScreenFrame";
+import { choiceCardClassName, SetupScreenFrame } from "./SetupScreenFrame";
 
 export function GoalScreen({
   goal,
@@ -16,7 +12,8 @@ export function GoalScreen({
 }: {
   readonly goal: SetupGoal | undefined;
   readonly onGoalChange: (goal: SetupGoal) => void;
-  readonly onBack: () => void;
+  // Absent when there is no step before this one to go back to.
+  readonly onBack: (() => void) | undefined;
   readonly onContinue: () => void;
 }) {
   const { t } = useTranslation();
@@ -31,10 +28,12 @@ export function GoalScreen({
       }}
       footer={
         <>
-          <Button type="button" appearance="secondary" onClick={onBack}>
-            {t("common.back")}
-          </Button>
-          <Button type="submit" disabled={!goal}>
+          {onBack && (
+            <Button type="button" appearance="secondary" onClick={onBack}>
+              {t("common.back")}
+            </Button>
+          )}
+          <Button type="submit" className="ml-auto" disabled={!goal}>
             {t("workspace-setup.continue")}
           </Button>
         </>
@@ -43,7 +42,6 @@ export function GoalScreen({
       <div className="flex flex-col gap-y-2">
         <RadioGroup
           aria-label={t("workspace-setup.goal.title")}
-          aria-describedby={goal ? undefined : "workspace-setup-goal-note"}
           value={goal ?? ""}
           onValueChange={(value) => {
             if (isSetupGoal(value)) onGoalChange(value);
@@ -62,9 +60,6 @@ export function GoalScreen({
             <div className="mt-1 text-control-light">
               {t("workspace-setup.goal.change.description")}
             </div>
-            <div className="mt-2 text-xs text-control-light">
-              {t("workspace-setup.goal.change.finish-line")}
-            </div>
           </RadioGroupItem>
           <RadioGroupItem
             value="query-data"
@@ -77,9 +72,6 @@ export function GoalScreen({
             </div>
             <div className="mt-1 text-control-light">
               {t("workspace-setup.goal.query.description")}
-            </div>
-            <div className="mt-2 text-xs text-control-light">
-              {t("workspace-setup.goal.query.finish-line")}
             </div>
           </RadioGroupItem>
           {/* Drawn without a card so it does not read as a third goal. */}
@@ -97,11 +89,6 @@ export function GoalScreen({
             </div>
           </RadioGroupItem>
         </RadioGroup>
-        {!goal && (
-          <SetupNote id="workspace-setup-goal-note">
-            {t("workspace-setup.goal.required")}
-          </SetupNote>
-        )}
       </div>
     </SetupScreenFrame>
   );

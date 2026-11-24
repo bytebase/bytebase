@@ -5472,42 +5472,39 @@
     "goal": {
       "change": {
         "description": "编写一个 Schema 变更或数据修复，由 SQL 审核检查后部署到数据库。",
-        "finish-line": "终点：一个通过 SQL 审核并完成部署的变更",
         "title": "规划、审核并部署数据库变更"
       },
-      "description": "选择您来这里想做的事。设置完成后，我们会优先推荐它。",
+      "description": "选择您来这里的目的。",
       "explore": {
-        "description": "我们会先推荐一条简单的查询，方向可以之后再选。",
+        "description": "之后可以再选择方向。",
         "title": "还不确定，先看看"
       },
       "query": {
         "description": "在编辑器中对数据库执行 SQL，每条语句都会记录在查询历史中。",
-        "finish-line": "终点：一条来自数据库的查询结果",
         "title": "在安全防护下查询数据"
       },
-      "required": "请选择一项以继续",
       "title": "您想先做什么？"
     },
     "optional": "可选",
     "panel": {
       "connected-after-setup": "设置完成后连接",
+      "masked": "已脱敏",
       "own-databases": "其中的数据库",
       "own-instance": "您的实例",
+      "query-recorded": "3 行。已记录到查询历史。",
       "sample-database": "示例数据库",
       "sample-instance": "示例项目实例",
       "workspace": "工作空间"
     },
     "project": {
       "database-title": "{{project}} 的数据库",
-      "description": "Bytebase 需要数据库才能工作。请先为承载它的项目命名，再选择第一个数据库的来源。",
+      "description": "项目把一个团队使用的数据库与其成员和策略组织在一起。",
       "exists": "该项目已存在，可在项目设置中重命名。",
       "name": "项目名称",
-      "name-hint": "项目把一个团队使用的数据库与其成员和策略组织在一起。每次变更和查询都发生在某个项目中。",
-      "name-optional-note": "留空则稍后再创建项目。",
       "name-placeholder": "支付、数据平台、内部工具",
       "name-required": "请输入项目名称",
       "own": {
-        "description": "实例即您的数据库服务器。设置会先完成，之后您在 {{project}} 中连接它。",
+        "description": "实例即您的数据库服务器。之后您在 {{project}} 中连接它。",
         "title": "设置完成后连接我自己的实例"
       },
       "sample": {
@@ -5519,8 +5516,8 @@
         "unavailable": "本服务器不提供示例数据库。",
         "used": "该工作空间已使用过示例数据库。"
       },
-      "skip": "稍后再说",
-      "title": "创建项目并选择其数据库",
+      "skip": "不创建项目，直接完成",
+      "title": "创建您的第一个项目",
       "your-project": "您的项目"
     },
     "steps": {
@@ -5534,12 +5531,12 @@
       "address-own": "这是您自己的地址",
       "address-placeholder": "name@company.com",
       "address-placeholder-more": "再添加一个地址",
-      "description": "完成前的最后一个问题。",
       "failed": {
         "invitees": "无法添加您列出的人员。",
         "names": "无法保存您的姓名和工作空间名称。",
         "project": "无法创建 {{project}}。",
-        "sample": "无法准备示例数据库。"
+        "sample": "无法准备示例数据库。",
+        "workspace-name": "无法保存工作区名称。"
       },
       "finish": "完成",
       "finish-invite_one": "发送 {{count}} 份邀请并完成",
@@ -5555,7 +5552,6 @@
       "progress-sample": "正在创建 {{project}} 及其示例数据库…",
       "remove-address": "移除 {{email}}",
       "size": "有多少人会使用 Bytebase？",
-      "size-required": "请选择团队规模以完成",
       "sizes": {
         "11-50": "11–50",
         "2-10": "2–10",
@@ -5563,17 +5559,17 @@
         "51-200": "51–200",
         "just-me": "仅我自己"
       },
-      "title": "您的团队",
       "try-again": "重试"
     },
     "workspace": {
       "default-name": "{{name}} 的工作空间",
       "default-name-anonymous": "我的工作空间",
-      "description": "有了工作空间、项目和数据库，Bytebase 即可使用。",
+      "description": "工作区包含您的项目、数据库和成员。",
       "name-placeholder": "输入您的姓名",
-      "title": "设置您的工作空间",
+      "name-required": "请输入你的姓名",
+      "skip": "跳过设置",
+      "title": "为工作区命名",
       "workspace-name": "工作空间名称",
-      "workspace-name-hint": "您添加的所有人都会加入该工作空间。",
       "workspace-name-placeholder": "通常是您的公司名称",
       "workspace-name-required": "请输入工作空间名称"
     }

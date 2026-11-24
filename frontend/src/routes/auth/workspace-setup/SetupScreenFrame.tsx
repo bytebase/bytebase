@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Separator } from "@/components/ui/separator";
 import { StepIndicator } from "@/components/ui/step-indicator";
 import { cn } from "@/lib/utils";
-import type { SetupScreen } from "./draft";
+import { useAppStore } from "@/stores/app";
+import { type SetupScreen, setupScreens } from "./draft";
 
 export function SetupScreenFrame({
   screen,
@@ -15,18 +16,24 @@ export function SetupScreenFrame({
 }: {
   readonly screen: SetupScreen;
   readonly title: string;
-  readonly description: string;
+  // A step whose heading is its whole question has none.
+  readonly description?: string;
   readonly children: ReactNode;
   readonly footer: ReactNode;
   readonly onSubmit: () => void;
 }) {
   const { t } = useTranslation();
-  const steps = [
-    { key: "workspace", title: t("workspace-setup.steps.workspace") },
-    { key: "goal", title: t("workspace-setup.steps.goal") },
-    { key: "project", title: t("workspace-setup.steps.project") },
-    { key: "team", title: t("workspace-setup.steps.team") },
-  ];
+  const isSaaS = useAppStore((state) => state.isSaaSMode());
+  const titles: Record<SetupScreen, string> = {
+    workspace: t("workspace-setup.steps.workspace"),
+    goal: t("workspace-setup.steps.goal"),
+    project: t("workspace-setup.steps.project"),
+    team: t("workspace-setup.steps.team"),
+  };
+  const steps = setupScreens(isSaaS).map((key) => ({
+    key,
+    title: titles[key],
+  }));
 
   // Each screen is a new form, and the button that led here is gone, so the
   // keyboard would be left on the page body. It goes to the screen's first
@@ -58,7 +65,9 @@ export function SetupScreenFrame({
       <StepIndicator steps={steps} currentKey={screen} fitOneRow />
       <div className="flex flex-col gap-y-1">
         <h1 className="text-xl font-semibold text-main">{title}</h1>
-        <p className="text-sm text-control-light">{description}</p>
+        {description && (
+          <p className="text-sm text-control-light">{description}</p>
+        )}
       </div>
       {children}
       <Separator />

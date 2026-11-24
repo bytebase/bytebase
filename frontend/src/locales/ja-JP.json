@@ -5472,42 +5472,39 @@
     "goal": {
       "change": {
         "description": "スキーマ変更またはデータ修正を作成し、SQLレビューでチェックしてからデータベースにロールアウトします。",
-        "finish-line": "ゴール：SQLレビューを通過してロールアウトされた変更",
         "title": "データベース変更を計画・レビューしてロールアウトする"
       },
-      "description": "ここに来た目的を選択してください。セットアップ完了後、最初にそれを提案します。",
+      "description": "ここに来た目的を選んでください。",
       "explore": {
-        "description": "まず簡単なクエリを提案します。方向は後で選べます。",
+        "description": "方向は後で選べます。",
         "title": "まだ決めていない、試してみたい"
       },
       "query": {
         "description": "エディタからデータベースに対してSQLを実行します。すべてのステートメントがクエリ履歴に記録されます。",
-        "finish-line": "ゴール：データベースからのクエリ結果",
         "title": "ガードレール付きでデータをクエリする"
       },
-      "required": "続行するには1つ選択してください",
       "title": "最初に何をしますか？"
     },
     "optional": "任意",
     "panel": {
       "connected-after-setup": "セットアップ後に接続",
+      "masked": "マスク済み",
       "own-databases": "そのデータベース",
       "own-instance": "あなたのインスタンス",
+      "query-recorded": "3 行。クエリ履歴に記録されました。",
       "sample-database": "サンプルデータベース",
       "sample-instance": "サンプルプロジェクトインスタンス",
       "workspace": "ワークスペース"
     },
     "project": {
       "database-title": "{{project}} のデータベース",
-      "description": "Bytebase を使うにはデータベースが必要です。それを保持するプロジェクトに名前を付け、最初のデータベースの入手元を選択してください。",
+      "description": "プロジェクトは、チームが扱うデータベースをメンバーやポリシーとともにまとめます。",
       "exists": "このプロジェクトはすでに存在します。名前はプロジェクト設定で変更できます。",
       "name": "プロジェクト名",
-      "name-hint": "プロジェクトは、チームが扱うデータベースをメンバーやポリシーとともにまとめます。すべての変更とクエリはプロジェクト内で行われます。",
-      "name-optional-note": "空欄のままにすると、プロジェクトは後で作成できます。",
       "name-placeholder": "決済、データ基盤、社内ツール",
       "name-required": "プロジェクト名を入力してください",
       "own": {
-        "description": "インスタンスとはお使いのデータベースサーバーです。先にセットアップを完了し、その後 {{project}} から接続します。",
+        "description": "インスタンスとはお使いのデータベースサーバーです。後で {{project}} から接続します。",
         "title": "セットアップ後に自分のインスタンスを接続する"
       },
       "sample": {
@@ -5519,8 +5516,8 @@
         "unavailable": "このサーバーではサンプルデータベースを利用できません。",
         "used": "このワークスペースはすでにサンプルデータベースを使用しています。"
       },
-      "skip": "後で設定する",
-      "title": "プロジェクトを作成してデータベースを選択",
+      "skip": "プロジェクトを作らずに完了",
+      "title": "最初のプロジェクトを作成",
       "your-project": "あなたのプロジェクト"
     },
     "steps": {
@@ -5534,12 +5531,12 @@
       "address-own": "あなた自身のアドレスです",
       "address-placeholder": "name@company.com",
       "address-placeholder-more": "別のアドレス",
-      "description": "完了前の最後の質問です。",
       "failed": {
         "invitees": "指定したメンバーを追加できませんでした。",
         "names": "名前とワークスペース名を保存できませんでした。",
         "project": "{{project}} を作成できませんでした。",
-        "sample": "サンプルデータベースを準備できませんでした。"
+        "sample": "サンプルデータベースを準備できませんでした。",
+        "workspace-name": "ワークスペース名を保存できませんでした。"
       },
       "finish": "完了",
       "finish-invite_one": "{{count}} 件の招待を送信して完了",
@@ -5555,7 +5552,6 @@
       "progress-sample": "{{project}} とサンプルデータベースを作成中…",
       "remove-address": "{{email}} を削除",
       "size": "Bytebase を何人で使いますか？",
-      "size-required": "完了するにはチームの人数を選択してください",
       "sizes": {
         "11-50": "11–50",
         "2-10": "2–10",
@@ -5563,17 +5559,17 @@
         "51-200": "51–200",
         "just-me": "自分だけ"
       },
-      "title": "あなたのチーム",
       "try-again": "再試行"
     },
     "workspace": {
       "default-name": "{{name}} のワークスペース",
       "default-name-anonymous": "マイワークスペース",
-      "description": "ワークスペース、プロジェクト、データベースがそろえば Bytebase を使い始められます。",
+      "description": "ワークスペースには、プロジェクト、データベース、メンバーがまとまります。",
       "name-placeholder": "名前を入力",
-      "title": "ワークスペースをセットアップ",
+      "name-required": "名前を入力してください",
+      "skip": "セットアップをスキップ",
+      "title": "ワークスペースに名前を付ける",
       "workspace-name": "ワークスペース名",
-      "workspace-name-hint": "追加したメンバーは全員このワークスペースに参加します。",
       "workspace-name-placeholder": "通常は会社名",
       "workspace-name-required": "ワークスペース名を入力してください"
     }
