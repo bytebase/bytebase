@@ -34,13 +34,14 @@ import { extractInstanceResourceName } from "@/utils";
 import { extractProjectResourceName } from "@/utils/v1/project";
 import {
   clearSetupDraft,
-  projectOptional,
   readSetupDraft,
   type SetupDraft,
   type SetupSource,
   saveSetupDraft,
   watchSetupDraft,
+  waysOutOffered,
 } from "./workspace-setup/draft";
+import type { SetupFinishFailure } from "./workspace-setup/FinishStatus";
 import {
   findLostCreate,
   runSetupFinish,
@@ -58,10 +59,7 @@ import {
   guessWorkspaceTitle,
 } from "./workspace-setup/prefill";
 import { SetupPanel } from "./workspace-setup/SetupPanel";
-import {
-  type SetupFinishFailure,
-  TeamScreen,
-} from "./workspace-setup/TeamScreen";
+import { TeamScreen } from "./workspace-setup/TeamScreen";
 import { WorkspaceScreen } from "./workspace-setup/WorkspaceScreen";
 
 const WORKSPACE_SETUP_PAGE_ENTERED_KEY = "workspace-setup.page-entered.v1";
@@ -307,7 +305,8 @@ function WorkspaceSetupWizard() {
 
   const names: SetupNames = {
     userName: currentUser.name,
-    displayName: name.trim(),
+    // Self-hosted asks the name at sign-up, so the wizard leaves it alone.
+    displayName: isSaaSMode ? name.trim() : "",
     workspaceName: canRenameWorkspace ? workspace?.name : undefined,
     workspaceTitle: workspaceTitle.trim(),
   };
@@ -340,8 +339,7 @@ function WorkspaceSetupWizard() {
     leaveWithoutProject();
   };
 
-  const mayLeaveProject = projectOptional(draft, isSaaSMode);
-  const withoutProject = mayLeaveProject && !draft.projectTitle.trim();
+  const mayLeaveWithoutProject = waysOutOffered(draft, isSaaSMode);
   // The addresses Finish adds. Self-hosted lists no one (D7), whatever an
   // earlier draft holds.
   const invitees =
@@ -350,7 +348,7 @@ function WorkspaceSetupWizard() {
       : validInviteAddresses(draft.emails, currentUser.email);
 
   const finish = async ({ withoutSample = false } = {}) => {
-    if (!draft.teamSize) return;
+    if (isSaaSMode && !draft.teamSize) return;
     // Saved first, so another tab on the draft stops before this attempt
     // writes.
     update(withoutSample ? { source: "own" } : {});
@@ -363,18 +361,17 @@ function WorkspaceSetupWizard() {
     setFailure(undefined);
     const finishSource: SetupSource = withoutSample ? "own" : source;
     const answers = {
-      source: withoutProject ? "none" : finishSource,
+      source: finishSource,
       team_size: draft.teamSize,
       invite_count: invitees.length,
       // Kept beside `team_size` for the dashboards built on the earlier
       // wizard's team-or-solo answer.
       collaboration_type: draft.teamSize === "just-me" ? "solo" : "team",
-      sample_enabled: !withoutProject && finishSource === "sample",
+      sample_enabled: finishSource === "sample",
     };
     const result = await runSetupFinish(
       {
         ...names,
-        withoutProject,
         projectTitle: draft.projectTitle.trim(),
         projectId: draft.projectId,
         createdProject: draft.createdProject,
@@ -383,8 +380,7 @@ function WorkspaceSetupWizard() {
         // Asked again until the request has returned once: a self-hosted
         // server lists the instance before it is ready, and a repeated
         // request answers with the same one.
-        prepareSample:
-          !withoutProject && finishSource === "sample" && !draft.samplePrepared,
+        prepareSample: finishSource === "sample" && !draft.samplePrepared,
         invitees,
         projectGrants: draft.projectGrants ?? {},
         superseded,
@@ -427,16 +423,12 @@ function WorkspaceSetupWizard() {
     captureSubmitted({ ...answers, result: "finished" });
     endSetup();
     if (draft.goal) saveSelectedGuideScenarioId(draft.goal);
-    saveGuideTeamSize(draft.teamSize);
+    if (draft.teamSize) saveGuideTeamSize(draft.teamSize);
     if (isSaaSMode) {
       saveWorkspaceSetupFinished(
         workspace?.name ?? currentUser.workspace,
         true
       );
-    }
-    if (!result.project) {
-      leaveWithoutProject();
-      return;
     }
     try {
       useAppStore.getState().setRecentProject(result.project);
@@ -473,12 +465,19 @@ function WorkspaceSetupWizard() {
     });
   };
 
+  // Self-hosted asks no name on step 1, so an account that may not rename the
+  // workspace has nothing to answer there and starts on the goal.
+  const askWorkspace = isSaaSMode || canRenameWorkspace;
+  const screen =
+    draft.screen === "workspace" && !askWorkspace ? "goal" : draft.screen;
+
   const renderScreen = () => {
-    switch (draft.screen) {
+    switch (screen) {
       case "workspace":
         return (
           <WorkspaceScreen
             name={name}
+            showName={isSaaSMode}
             workspaceTitle={workspaceTitle}
             showWorkspaceTitle={canRenameWorkspace}
             onNameChange={(value) => update({ name: value })}
@@ -486,6 +485,9 @@ function WorkspaceSetupWizard() {
               update({ workspaceTitle: value })
             }
             onContinue={() => continueFrom(1, "goal")}
+            onSkip={mayLeaveWithoutProject ? () => void skip() : undefined}
+            skipping={skipping}
+            skipFailure={skipFailure}
           />
         );
       case "goal":
@@ -493,7 +495,7 @@ function WorkspaceSetupWizard() {
           <GoalScreen
             goal={draft.goal}
             onGoalChange={(goal) => update({ goal })}
-            onBack={() => show("workspace")}
+            onBack={askWorkspace ? () => show("workspace") : undefined}
             onContinue={() => continueFrom(2, "project")}
           />
         );
@@ -531,12 +533,13 @@ function WorkspaceSetupWizard() {
             sample={sampleOffer}
             samplePrepared={!!draft.samplePrepared}
             isSaaS={isSaaSMode}
-            projectOptional={mayLeaveProject}
             skipping={skipping}
             skipFailure={skipFailure}
-            onSkip={mayLeaveProject ? () => void skip() : undefined}
+            onSkip={mayLeaveWithoutProject ? () => void skip() : undefined}
             validateProjectId={validateProjectId}
             onProjectTitleChange={(projectTitle) => {
+              // A failure is reported for the answers it ran with.
+              setFailure(undefined);
               if (projectTitle.trim()) {
                 update({ projectTitle });
               } else {
@@ -548,13 +551,21 @@ function WorkspaceSetupWizard() {
             }}
             onProjectIdChange={(projectId) => {
               if (draftRef.current.projectId !== projectId) {
+                setFailure(undefined);
                 update({ projectId });
               }
             }}
             onProjectIdValidChange={setProjectIdValid}
-            onSourceChange={(source) => update({ source })}
+            onSourceChange={(source) => {
+              setFailure(undefined);
+              update({ source });
+            }}
             onBack={() => show("goal")}
             onContinue={() => continueFrom(3, "team")}
+            onFinish={isSaaSMode ? undefined : () => void finish()}
+            onFinishWithoutSample={() => void finish({ withoutSample: true })}
+            finishing={finishing}
+            failure={failure}
           />
         );
     }
@@ -564,7 +575,7 @@ function WorkspaceSetupWizard() {
     <>
       <SplashPanel>
         <SetupPanel
-          screen={draft.screen}
+          screen={screen}
           goal={draft.goal}
           workspaceTitle={
             canRenameWorkspace ? workspaceTitle : (workspace?.title ?? "")
@@ -573,7 +584,6 @@ function WorkspaceSetupWizard() {
           memberEmail={currentUser.email}
           projectTitle={draft.projectTitle.trim()}
           source={source}
-          noProject={withoutProject}
           teamSize={draft.teamSize}
           invitees={invitees}
         />

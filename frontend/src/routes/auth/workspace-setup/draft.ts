@@ -16,6 +16,10 @@ const SETUP_SCREENS = ["workspace", "goal", "project", "team"] as const;
 
 export type SetupScreen = (typeof SETUP_SCREENS)[number];
 
+// The team step is Cloud's: on self-hosted its answer reaches nothing.
+export const setupScreens = (isSaaS: boolean): readonly SetupScreen[] =>
+  isSaaS ? SETUP_SCREENS : SETUP_SCREENS.filter((screen) => screen !== "team");
+
 export type SetupGoal = Exclude<GuideScenarioId, "mark-sensitive-data">;
 
 export type SetupSource = "sample" | "own";
@@ -81,9 +85,9 @@ const refusedId = (value: unknown): SetupDraft["refusedProjectId"] => {
     : undefined;
 };
 
-// Self-hosted may leave the project for later while no create has been sent,
-// as with the skip (D12).
-export const projectOptional = (draft: SetupDraft, isSaaS: boolean) =>
+// Self-hosted's ways out of setup without a project, offered until a Finish
+// attempt has created the project or sent a create whose outcome is unknown.
+export const waysOutOffered = (draft: SetupDraft, isSaaS: boolean) =>
   !isSaaS && !draft.createdProject && !draft.attemptedProjectId;
 
 // Storage is outside the type system, so every field is read defensively and
@@ -111,18 +115,18 @@ export const readSetupDraft = (isSaaS: boolean): SetupDraft => {
     sampleInstanceName: optionalString(stored.sampleInstanceName),
     projectGrants: grants(stored.projectGrants),
   };
-  const projectAnswered = draft.projectTitle.trim()
-    ? !!draft.projectId
-    : projectOptional(draft, isSaaS);
+  const projectAnswered = !!draft.projectTitle.trim() && !!draft.projectId;
+  const screens = setupScreens(isSaaS);
   const reachable: SetupScreen = !draft.goal
     ? "goal"
-    : !projectAnswered
+    : !projectAnswered || !isSaaS
       ? "project"
       : "team";
-  const storedScreen = SETUP_SCREENS.find((screen) => screen === stored.screen);
+  // A self-hosted draft saved on the team step before it was removed opens on
+  // the last step there is.
+  const storedScreen = screens.find((screen) => screen === stored.screen);
   draft.screen =
-    storedScreen &&
-    SETUP_SCREENS.indexOf(storedScreen) <= SETUP_SCREENS.indexOf(reachable)
+    storedScreen && screens.indexOf(storedScreen) <= screens.indexOf(reachable)
       ? storedScreen
       : reachable;
   return draft;

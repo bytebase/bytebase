@@ -5540,42 +5540,39 @@
     "goal": {
       "change": {
         "description": "Write a schema change or a data fix, let SQL review check it, and roll it out to the database.",
-        "finish-line": "Finish line: a change that passed SQL review and rolled out",
         "title": "Plan, review and roll out a database change"
       },
-      "description": "Pick what brought you here. We suggest it first once setup ends.",
+      "description": "Pick what brought you here.",
       "explore": {
-        "description": "We'll suggest a quick query to start. Pick a direction later.",
+        "description": "You can pick a direction later.",
         "title": "Not sure yet, just exploring"
       },
       "query": {
         "description": "Run SQL on the database from the editor, with every statement recorded in query history.",
-        "finish-line": "Finish line: a query result from the database",
         "title": "Query data with guardrails"
       },
-      "required": "Pick one to continue",
       "title": "What do you want to do first?"
     },
     "optional": "optional",
     "panel": {
       "connected-after-setup": "Connected after setup",
+      "masked": "Masked",
       "own-databases": "Its databases",
       "own-instance": "Your instance",
+      "query-recorded": "3 rows. Recorded in query history.",
       "sample-database": "Sample database",
       "sample-instance": "Sample Project Instance",
       "workspace": "Workspace"
     },
     "project": {
       "database-title": "Database for {{project}}",
-      "description": "Bytebase needs a database to do anything. Name the project that will hold it, then choose where the first one comes from.",
+      "description": "A project groups the databases a team works on, with its members and policies.",
       "exists": "This project already exists. Rename it in its settings.",
       "name": "Project name",
-      "name-hint": "A project groups the databases a team works on, with its members and policies. Every change and query happens inside one.",
-      "name-optional-note": "Leave it empty to create a project later.",
       "name-placeholder": "Payments, Data platform, Internal tools",
       "name-required": "Enter a project name",
       "own": {
-        "description": "An instance is your database server. Setup finishes first; you connect it from {{project}} afterwards.",
+        "description": "An instance is your database server. You connect it from {{project}} afterwards.",
         "title": "Connect my own instance after setup"
       },
       "sample": {
@@ -5587,8 +5584,8 @@
         "unavailable": "The sample database is not available on this server.",
         "used": "This workspace has already used its sample database."
       },
-      "skip": "I'll do this later",
-      "title": "Create a project and choose its database",
+      "skip": "Finish without a project",
+      "title": "Create your first project",
       "your-project": "your project"
     },
     "steps": {
@@ -5602,12 +5599,12 @@
       "address-own": "Your own address",
       "address-placeholder": "name@company.com",
       "address-placeholder-more": "Another address",
-      "description": "One question before you finish.",
       "failed": {
         "invitees": "Could not add the people you listed.",
         "names": "Could not save your name and the workspace name.",
         "project": "Could not create {{project}}.",
-        "sample": "Could not prepare the sample database."
+        "sample": "Could not prepare the sample database.",
+        "workspace-name": "Could not save the workspace name."
       },
       "finish": "Finish",
       "finish-invite_one": "Send {{count}} invite and finish",
@@ -5623,7 +5620,6 @@
       "progress-sample": "Creating {{project}} and its sample database…",
       "remove-address": "Remove {{email}}",
       "size": "How many people will use Bytebase?",
-      "size-required": "Pick a team size to finish",
       "sizes": {
         "11-50": "11–50",
         "2-10": "2–10",
@@ -5631,17 +5627,17 @@
         "51-200": "51–200",
         "just-me": "Just me"
       },
-      "title": "Your team",
       "try-again": "Try again"
     },
     "workspace": {
       "default-name": "{{name}}'s workspace",
       "default-name-anonymous": "My workspace",
-      "description": "Bytebase is ready once it has a workspace, a project and a database.",
+      "description": "A workspace holds your projects, databases and people.",
       "name-placeholder": "Enter your name",
-      "title": "Set up your workspace",
+      "name-required": "Enter your name",
+      "skip": "Skip setup",
+      "title": "Name your workspace",
       "workspace-name": "Workspace name",
-      "workspace-name-hint": "Everyone you add joins this workspace.",
       "workspace-name-placeholder": "Usually your company",
       "workspace-name-required": "Enter a workspace name"
     }

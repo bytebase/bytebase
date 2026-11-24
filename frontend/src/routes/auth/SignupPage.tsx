@@ -160,7 +160,7 @@ export function SignupPage() {
                 htmlFor="name"
                 className="block text-sm font-medium leading-5 text-control"
               >
-                {t("common.username")}
+                {t("settings.profile.display-name")}
                 <span className="text-error ml-0.5">*</span>
               </label>
               <div className="mt-1 rounded-sm shadow-xs">

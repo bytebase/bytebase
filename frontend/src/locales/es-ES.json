@@ -5540,42 +5540,39 @@
     "goal": {
       "change": {
         "description": "Escriba un cambio de esquema o una corrección de datos, deje que la revisión de SQL lo compruebe y despliéguelo en la base de datos.",
-        "finish-line": "Meta: un cambio que superó la revisión de SQL y se desplegó",
         "title": "Planificar, revisar y desplegar un cambio de base de datos"
       },
-      "description": "Elija lo que le trajo aquí. Se lo sugeriremos primero al terminar la configuración.",
+      "description": "Elija lo que le trajo aquí.",
       "explore": {
-        "description": "Le sugeriremos una consulta rápida para empezar. Elija un rumbo más adelante.",
+        "description": "Puede elegir una dirección más tarde.",
         "title": "Aún no lo sé, solo estoy explorando"
       },
       "query": {
         "description": "Ejecute SQL en la base de datos desde el editor, con cada sentencia registrada en el historial de consultas.",
-        "finish-line": "Meta: un resultado de consulta de la base de datos",
         "title": "Consultar datos con protecciones"
       },
-      "required": "Elija una opción para continuar",
       "title": "¿Qué quiere hacer primero?"
     },
     "optional": "opcional",
     "panel": {
       "connected-after-setup": "Se conecta tras la configuración",
+      "masked": "Enmascarado",
       "own-databases": "Sus bases de datos",
       "own-instance": "Su instancia",
+      "query-recorded": "3 filas. Registrado en el historial de consultas.",
       "sample-database": "Base de datos de ejemplo",
       "sample-instance": "Instancia de proyecto de muestra",
       "workspace": "Espacio de trabajo"
     },
     "project": {
       "database-title": "Base de datos para {{project}}",
-      "description": "Bytebase necesita una base de datos para funcionar. Dé nombre al proyecto que la contendrá y elija de dónde viene la primera.",
+      "description": "Un proyecto agrupa las bases de datos en las que trabaja un equipo, con sus miembros y políticas.",
       "exists": "Este proyecto ya existe. Cámbiele el nombre en su configuración.",
       "name": "Nombre del proyecto",
-      "name-hint": "Un proyecto agrupa las bases de datos en las que trabaja un equipo, con sus miembros y políticas. Cada cambio y cada consulta ocurre dentro de uno.",
-      "name-optional-note": "Déjelo vacío para crear un proyecto más tarde.",
       "name-placeholder": "Pagos, Plataforma de datos, Herramientas internas",
       "name-required": "Introduzca un nombre de proyecto",
       "own": {
-        "description": "Una instancia es su servidor de base de datos. La configuración termina primero; después la conecta desde {{project}}.",
+        "description": "Una instancia es su servidor de base de datos. Después la conecta desde {{project}}.",
         "title": "Conectar mi propia instancia después de la configuración"
       },
       "sample": {
@@ -5587,8 +5584,8 @@
         "unavailable": "La base de datos de ejemplo no está disponible en este servidor.",
         "used": "Este espacio de trabajo ya ha usado su base de datos de ejemplo."
       },
-      "skip": "Lo haré después",
-      "title": "Cree un proyecto y elija su base de datos",
+      "skip": "Terminar sin proyecto",
+      "title": "Cree su primer proyecto",
       "your-project": "su proyecto"
     },
     "steps": {
@@ -5602,12 +5599,12 @@
       "address-own": "Su propia dirección",
       "address-placeholder": "nombre@empresa.com",
       "address-placeholder-more": "Otra dirección",
-      "description": "Una pregunta antes de terminar.",
       "failed": {
         "invitees": "No se pudo añadir a las personas indicadas.",
         "names": "No se pudieron guardar su nombre y el nombre del espacio de trabajo.",
         "project": "No se pudo crear {{project}}.",
-        "sample": "No se pudo preparar la base de datos de ejemplo."
+        "sample": "No se pudo preparar la base de datos de ejemplo.",
+        "workspace-name": "No se pudo guardar el nombre del espacio de trabajo."
       },
       "finish": "Finalizar",
       "finish-invite_one": "Enviar {{count}} invitación y finalizar",
@@ -5623,7 +5620,6 @@
       "progress-sample": "Creando {{project}} y su base de datos de ejemplo…",
       "remove-address": "Quitar {{email}}",
       "size": "¿Cuántas personas usarán Bytebase?",
-      "size-required": "Elija un tamaño de equipo para finalizar",
       "sizes": {
         "11-50": "11–50",
         "2-10": "2–10",
@@ -5631,17 +5627,17 @@
         "51-200": "51–200",
         "just-me": "Solo yo"
       },
-      "title": "Su equipo",
       "try-again": "Reintentar"
     },
     "workspace": {
       "default-name": "Espacio de trabajo de {{name}}",
       "default-name-anonymous": "Mi espacio de trabajo",
-      "description": "Bytebase está listo cuando tiene un espacio de trabajo, un proyecto y una base de datos.",
+      "description": "Un espacio de trabajo reúne sus proyectos, bases de datos y personas.",
       "name-placeholder": "Introduzca su nombre",
-      "title": "Configure su espacio de trabajo",
+      "name-required": "Introduzca su nombre",
+      "skip": "Omitir la configuración",
+      "title": "Ponga nombre a su espacio de trabajo",
       "workspace-name": "Nombre del espacio de trabajo",
-      "workspace-name-hint": "Todas las personas que añada se unirán a este espacio de trabajo.",
       "workspace-name-placeholder": "Normalmente su empresa",
       "workspace-name-required": "Introduzca un nombre para el espacio de trabajo"
     }

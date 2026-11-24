@@ -1,13 +1,7 @@
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  FormField,
-  FormFieldGroup,
-  FormLabel,
-  FormTitle,
-} from "@/components/ui/form";
+import { FormField, FormFieldGroup, FormLabel } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { isGuideTeamSize } from "@/modules/workspace-setup-guide/selection";
 import {
@@ -15,15 +9,10 @@ import {
   type GuideTeamSize,
 } from "@/modules/workspace-setup-guide/types";
 import type { SetupSource } from "./draft";
-import type { SetupFinishStage } from "./finish";
+import { FinishStatus, type SetupFinishFailure } from "./FinishStatus";
 import { InviteEmailsInput } from "./InviteEmailsInput";
 import { describeInviteAddresses, validInviteAddresses } from "./inviteEmails";
 import { SetupNote, SetupScreenFrame } from "./SetupScreenFrame";
-
-export type SetupFinishFailure = {
-  stage: SetupFinishStage;
-  detail?: string;
-};
 
 export function TeamScreen({
   teamSize,
@@ -91,20 +80,6 @@ export function TeamScreen({
         return t("workspace-setup.team.sizes.200-plus");
     }
   };
-  const failureTitle = (stage: SetupFinishStage) => {
-    switch (stage) {
-      case "names":
-        return t("workspace-setup.team.failed.names");
-      case "project":
-        return t("workspace-setup.team.failed.project", {
-          project: projectTitle,
-        });
-      case "sample":
-        return t("workspace-setup.team.failed.sample");
-      case "invitees":
-        return t("workspace-setup.team.failed.invitees");
-    }
-  };
   const finishLabel = finishing
     ? t("workspace-setup.team.finishing")
     : failure
@@ -116,8 +91,7 @@ export function TeamScreen({
   return (
     <SetupScreenFrame
       screen="team"
-      title={t("workspace-setup.team.title")}
-      description={t("workspace-setup.team.description")}
+      title={t("workspace-setup.team.size")}
       onSubmit={() => {
         if (enteredNonAddress()) return;
         if (teamSize && !finishing) onFinish();
@@ -158,12 +132,8 @@ export function TeamScreen({
     >
       <FormFieldGroup>
         <FormField>
-          <FormTitle>{t("workspace-setup.team.size")}</FormTitle>
           <RadioGroup
             aria-label={t("workspace-setup.team.size")}
-            aria-describedby={
-              teamSize ? undefined : "workspace-setup-team-size-note"
-            }
             value={teamSize ?? ""}
             disabled={finishing}
             onValueChange={(value) => {
@@ -177,11 +147,6 @@ export function TeamScreen({
               </RadioGroupItem>
             ))}
           </RadioGroup>
-          {!teamSize && (
-            <SetupNote id="workspace-setup-team-size-note">
-              {t("workspace-setup.team.size-required")}
-            </SetupNote>
-          )}
         </FormField>
         {invites && (
           <FormField>
@@ -214,22 +179,12 @@ export function TeamScreen({
           </FormField>
         )}
       </FormFieldGroup>
-      {failure && (
-        <Alert
-          variant="error"
-          title={failureTitle(failure.stage)}
-          description={failure.detail}
-        />
-      )}
-      {finishing && (
-        <p role="status" className="text-sm text-control-light">
-          {source === "sample"
-            ? t("workspace-setup.team.progress-sample", {
-                project: projectTitle,
-              })
-            : t("workspace-setup.team.progress", { project: projectTitle })}
-        </p>
-      )}
+      <FinishStatus
+        finishing={finishing}
+        failure={failure}
+        projectTitle={projectTitle}
+        source={source}
+      />
     </SetupScreenFrame>
   );
 }

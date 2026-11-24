@@ -53,9 +53,6 @@ type Superseded = () => boolean;
 
 type SetupFinishInput = SetupNames & {
   ownerEmail: string;
-  // Self-hosted may leave the project for later (D12): nothing past the names
-  // is written then.
-  withoutProject: boolean;
   projectTitle: string;
   projectId: string;
   // The project an earlier attempt created.
@@ -70,7 +67,7 @@ type SetupFinishInput = SetupNames & {
 };
 
 type SetupFinishResult =
-  | { ok: true; project: string | undefined }
+  | { ok: true; project: string }
   | {
       ok: false;
       stage: SetupFinishStage;
@@ -109,7 +106,9 @@ export const saveSetupNames = async (
       REPORT
     );
   }
-  if (names.workspaceName && !superseded()) {
+  // The server refuses an empty title; a skip with the field emptied keeps the
+  // name the workspace has.
+  if (names.workspaceName && names.workspaceTitle && !superseded()) {
     await store.updateWorkspace(
       create(WorkspaceSchema, {
         name: names.workspaceName,
@@ -333,7 +332,6 @@ const commitSetup = async (
   } catch (error) {
     return { ok: false, stage: "names", error };
   }
-  if (input.withoutProject) return { ok: true, project: undefined };
 
   let project = input.createdProject;
   if (!project) {

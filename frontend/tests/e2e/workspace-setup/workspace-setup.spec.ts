@@ -1,17 +1,16 @@
-// First-run setup wizard (docs/design/onboarding-flow.md).
+// First-run setup wizard (docs/design/onboarding-flow.md, amended by
+// docs/design/onboarding-self-hosted-steps.md).
 //
 // The wizard is offered only to a workspace's sole member, and its sample is
 // single-use, so the shared e2e server (two members, sample used) cannot show
 // it. This spec boots a server of its own in first-run state and walks one
-// journey on it, in the only order that keeps the wizard reachable: the skip,
-// a finish without a project and the own-instance path use no sample; the
-// sample path goes last.
+// journey on it, in the only order that keeps the wizard reachable: the two
+// ways out and the own-instance path use no sample; the sample path goes last.
 //
-// That server is self-hosted, so the journey sees self-hosted wording: the
-// skip, an optional project name, a sample that runs on this server, and a
-// team screen with no list of people. Cloud's invitations, and retries whose member writes lost their
-// answers, are covered by the wizard's unit tests, and each goal's step order
-// by the project home's.
+// That server is self-hosted, so the journey sees self-hosted's three steps:
+// no name on the first (sign-up asked it), Finish on the project step, and a
+// sample that runs on this server. Cloud's name, team step and invitations are
+// covered by the wizard's unit tests.
 
 import { expect, type Page, test } from "@playwright/test";
 import {
@@ -44,13 +43,15 @@ test.afterAll(async () => {
 
 const continueButton = (page: Page) =>
   page.getByRole("button", { name: "Continue", exact: true });
+const finishButton = (page: Page) =>
+  page.getByRole("button", { name: "Finish", exact: true });
 const backButton = (page: Page) =>
   page.getByRole("button", { name: "Back", exact: true });
 
 const openWizard = async (page: Page) => {
   await page.goto(`${server.baseURL}/auth/setup`);
   await expect(
-    page.getByRole("heading", { name: "Set up your workspace" })
+    page.getByRole("heading", { name: "Name your workspace" })
   ).toBeVisible();
 };
 
@@ -95,56 +96,40 @@ test("first-run setup: skip, no project, own instance, then the sample", async (
     server.adminPassword
   );
 
-  await test.step("I'll do this later saves the names and creates no project", async () => {
+  await test.step("Skip setup saves the workspace name and creates no project", async () => {
     const projectsBefore = await projectNames();
     await openWizard(page);
-    await expect(page.getByLabel(/^Your name/)).toHaveValue("Demo");
-    await page.getByLabel(/^Your name/).fill("Dana");
+    await expect(page.getByLabel(/^Your name/)).toHaveCount(0);
     await page.getByLabel("Workspace name").fill("Acme");
+    await page.getByRole("button", { name: "Skip setup" }).click();
+
+    await page.waitForURL(/\/landing/);
+    expect(await projectNames()).toEqual(projectsBefore);
+  });
+
+  await test.step("Finish without a project saves the answers and creates no project", async () => {
+    const projectsBefore = await projectNames();
+    await openWizard(page);
+    // Setup ended before, so this name is the one it saved.
+    await expect(page.getByLabel("Workspace name")).toHaveValue("Acme");
     await continueButton(page).click();
 
     await expect(continueButton(page)).toBeDisabled();
-    await expect(page.getByText("Pick one to continue")).toBeVisible();
     await page.getByText("Not sure yet, just exploring").click();
     await continueButton(page).click();
 
-    // A name shows the database choice; the skip still makes no project.
-    await page.getByLabel(/^Project name/).fill("Drafts");
+    // The database choice shows before the project is named.
     await expect(page.getByText(/running on this server/)).toBeVisible();
     await expect(page.getByText(/7 days/)).toHaveCount(0);
-    await expect(page.getByText(/Bytebase Cloud/)).toHaveCount(0);
-    await page.getByRole("button", { name: "I'll do this later" }).click();
+    await expect(finishButton(page)).toBeDisabled();
+    await page.getByRole("button", { name: "Finish without a project" }).click();
 
-    // Leaving setup without a project lands on the workspace landing (#21594).
     await page.waitForURL(/\/landing/);
     expect(await projectNames()).toEqual(projectsBefore);
   });
 
-  await test.step("Finish without a project name saves the answers and creates no project", async () => {
-    const projectsBefore = await projectNames();
+  await test.step("the own-instance path keeps every answer on Back and finishes on the project step", async () => {
     await openWizard(page);
-    await continueButton(page).click();
-    await page.getByText("Not sure yet, just exploring").click();
-    await continueButton(page).click();
-
-    await expect(
-      page.getByText("Leave it empty to create a project later.")
-    ).toBeVisible();
-    await expect(page.getByText("Start with the sample database")).toHaveCount(0);
-    await continueButton(page).click();
-    await page.getByText("2–10", { exact: true }).click();
-    await page.getByRole("button", { name: "Finish", exact: true }).click();
-
-    // Leaving setup without a project lands on the workspace landing (#21594).
-    await page.waitForURL(/\/landing/);
-    expect(await projectNames()).toEqual(projectsBefore);
-  });
-
-  await test.step("the own-instance path keeps every answer on Back and lands on Connect an instance", async () => {
-    await openWizard(page);
-    // Setup ended each time before, so these names are the ones it saved.
-    await expect(page.getByLabel(/^Your name/)).toHaveValue("Dana");
-    await expect(page.getByLabel("Workspace name")).toHaveValue("Acme");
     // A name only the draft holds, so Back cannot show it from the server.
     await page.getByLabel("Workspace name").fill("Acme Data");
     await continueButton(page).click();
@@ -156,17 +141,7 @@ test("first-run setup: skip, no project, own instance, then the sample", async (
       .getByText(/^payments-[a-z0-9]{4}$/)
       .innerText();
     await page.getByText("Connect my own instance after setup").click();
-    await continueButton(page).click();
 
-    await page.getByText("2–10", { exact: true }).click();
-    await expect(page.getByRole("textbox")).toHaveCount(0);
-
-    await backButton(page).click();
-    await expect(page.getByLabel("Project name")).toHaveValue("Payments");
-    await expect(page.getByText(chosenId)).toBeVisible();
-    await expect(
-      choice(page, "Connect my own instance after setup")
-    ).toHaveAttribute("aria-checked", "true");
     await backButton(page).click();
     await expect(
       choice(page, "Plan, review and roll out a database change")
@@ -175,10 +150,13 @@ test("first-run setup: skip, no project, own instance, then the sample", async (
     await expect(page.getByLabel("Workspace name")).toHaveValue("Acme Data");
     await continueButton(page).click();
     await continueButton(page).click();
-    await continueButton(page).click();
-    await expect(choice(page, "2–10")).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByLabel("Project name")).toHaveValue("Payments");
+    await expect(page.getByText(chosenId)).toBeVisible();
+    await expect(
+      choice(page, "Connect my own instance after setup")
+    ).toHaveAttribute("aria-checked", "true");
 
-    await page.getByRole("button", { name: "Finish", exact: true }).click();
+    await finishButton(page).click();
 
     // An own-instance setup finishes on the project's instances page, where
     // the connect control carries the "Connect the instance" intro (#21594).
@@ -206,15 +184,16 @@ test("first-run setup: skip, no project, own instance, then the sample", async (
     await expect(
       choice(page, "Start with the sample database")
     ).toHaveAttribute("aria-checked", "true");
-    await continueButton(page).click();
 
-    await page.getByText("2–10", { exact: true }).click();
-
-    // The project is created and the answer is lost.
+    // The project is created and the answer is lost; the failure shows on the
+    // project step, which holds Finish on self-hosted.
     await loseAnswerOnce(page, "ProjectService/CreateProject", () =>
-      page.getByRole("button", { name: "Finish", exact: true }).click()
+      finishButton(page).click()
     );
     await expect(page.getByText("Could not create Orders.")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Finish without a project" })
+    ).toHaveCount(0);
 
     // The retry takes that project as its own and prepares the sample.
     await page.getByRole("button", { name: "Try again" }).click();
