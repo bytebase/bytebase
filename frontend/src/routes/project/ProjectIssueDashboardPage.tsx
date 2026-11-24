@@ -35,10 +35,11 @@ import {
   mergeSearchParams,
 } from "@/utils";
 
+// The project comes from the route path, so it stays out of the query string.
 const serializeSearchParams = (params: SearchParams): string =>
   buildSearchTextBySearchParams({
     ...params,
-    scopes: params.scopes.filter((scope) => !scope.readonly),
+    scopes: params.scopes.filter((scope) => scope.id !== "project"),
   });
 
 export function ProjectIssueDashboardPage({

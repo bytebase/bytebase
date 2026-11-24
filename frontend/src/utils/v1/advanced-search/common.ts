@@ -85,6 +85,11 @@ export const mergeSearchParams = (base: SearchParams, patch: SearchParams) => {
   return base;
 };
 
+// TimeRangePicker edits these scopes, not the search bar. The search text
+// cannot carry `readonly`, so parsing restores it to keep them out of the
+// search bar's chips and its Clear.
+const PICKER_OWNED_SCOPE_IDS: readonly string[] = ["created"];
+
 export const buildSearchParamsBySearchText = (text: string): SearchParams => {
   const params = emptySearchParams();
   const segments = text.split(/\s+/g);
@@ -97,6 +102,7 @@ export const buildSearchParamsBySearchText = (text: string): SearchParams => {
       params.scopes.push({
         id: parts[0],
         value: decodeURIComponent(parts[1]),
+        ...(PICKER_OWNED_SCOPE_IDS.includes(parts[0]) && { readonly: true }),
       });
     } else {
       querySegments.push(decodeURIComponent(seg));
