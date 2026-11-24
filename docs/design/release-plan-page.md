@@ -640,7 +640,8 @@ The source line:
 The D10 revision of 2026-11-24 ships as one frontend PR on its own, after this doc's
 implementation (#21875): `PlanDetailMeta.tsx` and `PlanDetailHeaderDetails.tsx` with their tests,
 `PlanStages` in `PlanTable.tsx` with `PlanTable.test.tsx`, whose arrows the plan and release lists
-share, the locale files, and `frontend/tests/e2e/plan-detail/plan-detail-lifecycle.spec.ts`. It carries D10
+share, the locale files, and the e2e specs `plan-detail-lifecycle.spec.ts` and
+`plan-detail-release.spec.ts` with the release fixture they seed through. It carries D10
 alone, changes no API and depends on no other slice. The rows below are the original
 implementation's.
 
@@ -721,12 +722,12 @@ Tests to write, per the placement rules in `AGENTS.md`:
   release id as the release fact until the release is read; Migration-based and State-based; the
   labels editable in place and required when the project forces them; no fold control; the
   description below the lines clipped at 150 characters or 3 lines, and "Add description" shown
-  only to a reader who may edit, opening the editor in its place; and in
-  `plan-detail-lifecycle.spec.ts`, at 390 px wide, every row the same height and gap, no row
-  starting or ending with a separator or an arrow, the release fact as three parts, a long source
-  title shortened in the middle with its `#N` kept, a long branch keeping its end, a long
-  environment title shortened at its end, and the page
-  not scrolling sideways.
+  only to a reader who may edit, opening the editor in its place; the release fact as three
+  parts, a long source title shortened before its `#N`, a long branch keeping its end, and a stage
+  title that shortens at its end with its tooltip. In `plan-detail-lifecycle.spec.ts`, every part
+  one row high once a label is set; in `plan-detail-release.spec.ts`, at 390 px wide, every row
+  the same height and gap, no separator showing at a row's start, a long PR title keeping its
+  `#N` in view, and the page not scrolling sideways.
 - Changes rail tests: descending order over timestamp, counter and dotted versions; two versions
   that parse equal kept in the stored order, reversed; mixed timestamp lengths as one flat list; the grouping per
   shape with the newest group open, and over a hundred counter or dotted versions as one flat list; 12 rows, "Load 12 more", "Load all" and "Show fewer"; a backfilled low version landing in its
