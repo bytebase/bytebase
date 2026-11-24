@@ -528,9 +528,10 @@ button keep, with 4 px between rows, whether a row starts a line or comes from a
 a wrapped row and a new line look the same. A line wraps only between its parts: the pieces its
 separators join ("Migration-based", "493 files" and "update to version …" are three), a label chip,
 or one stage with its icon. A part never wraps inside itself, and a separator or an arrow shows only
-between two parts on the same row. Only the source title and the branch can be wider than the
-page; each shortens once, in the middle, to D9's 72 characters or the room on its row, whichever is
-less, so the title keeps its `#N` and the branch its end. Nothing scrolls sideways. At
+between two parts on the same row. A part wider than its row shortens once, with its full text as
+the tooltip: the source title and the branch in the middle, so the title keeps its `#N` and the
+branch its end (the title also to D9's 72 characters, whichever is shorter), and any other part at
+its end. Nothing scrolls sideways. At
 phone width a release plan is about six rows.
 
 The plan's spec names its release, so a release plan holds one row for the source line from the
@@ -723,7 +724,8 @@ Tests to write, per the placement rules in `AGENTS.md`:
   only to a reader who may edit, opening the editor in its place; and in
   `plan-detail-lifecycle.spec.ts`, at 390 px wide, every row the same height and gap, no row
   starting or ending with a separator or an arrow, the release fact as three parts, a long source
-  title shortened in the middle with its `#N` kept and a long branch keeping its end, and the page
+  title shortened in the middle with its `#N` kept, a long branch keeping its end, a long
+  environment title shortened at its end, and the page
   not scrolling sideways.
 - Changes rail tests: descending order over timestamp, counter and dotted versions; two versions
   that parse equal kept in the stored order, reversed; mixed timestamp lengths as one flat list; the grouping per
