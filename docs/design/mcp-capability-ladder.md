@@ -1,6 +1,6 @@
 # MCP access policy — show what a mode allows
 
-Status: accepted · 2026-09-10 · revised 2026-11-24 for BYT-10597 (D1, D2, D4, D6, D10, D14, D15)
+Status: accepted · 2026-09-10 · revised 2026-11-24 for BYT-10597 (D1, D2, D4, D6, D10, D14, D15); the revision's frontend is implemented in this PR
 
 The MCP settings page offers three modes (Disabled, Read-only, Read-write) and describes each in
 one sentence. Since [#21324](https://github.com/bytebase/bytebase/pull/21324) removed the per-mode
