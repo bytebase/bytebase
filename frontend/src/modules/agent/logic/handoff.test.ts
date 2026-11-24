@@ -330,6 +330,7 @@ describe("collectAgentHandoffs", () => {
           setup: {
             isDefault: false,
             instance: "empty",
+            projectInstance: "empty",
             transferableDatabase: "present",
             canConnectInstance: true,
             canTransferDatabases: true,
@@ -354,6 +355,7 @@ describe("collectAgentHandoffs", () => {
           setup: {
             isDefault: false,
             instance: "present",
+            projectInstance: "present",
             transferableDatabase: "present",
             canConnectInstance: true,
             canTransferDatabases: true,
@@ -383,6 +385,7 @@ describe("collectAgentHandoffs", () => {
           setup: {
             isDefault: false,
             instance: "present",
+            projectInstance: "empty",
             transferableDatabase: "present",
             canConnectInstance: true,
             canTransferDatabases: true,
@@ -399,17 +402,27 @@ describe("collectAgentHandoffs", () => {
   });
 
   test.each([
-    ["empty", "empty", ["connect-project-instance"]],
+    ["empty", "empty", "empty", ["connect-project-instance"]],
+    ["present", "empty", "empty", ["connect-project-instance"]],
     [
+      "present",
       "present",
       "empty",
       ["create-project-database", "connect-project-instance"],
     ],
-    ["unknown", "empty", ["connect-project-instance"]],
-    ["empty", "unknown", ["connect-project-instance"]],
+    ["unknown", "unknown", "empty", []],
+    ["present", "unknown", "empty", []],
+    ["empty", "empty", "unknown", ["connect-project-instance"]],
+    ["present", "unknown", "present", ["transfer-project-databases"]],
+    [
+      "present",
+      "empty",
+      "present",
+      ["transfer-project-databases", "connect-project-instance"],
+    ],
   ] as const)(
-    "chooses setup from instance %s and transfer %s",
-    (instance, transferableDatabase, expectedKinds) => {
+    "chooses setup from instance %s, project instance %s, and transfer %s",
+    (instance, projectInstance, transferableDatabase, expectedKinds) => {
       const result = collectAgentHandoffs(
         "get_project_overview",
         JSON.stringify({
@@ -418,6 +431,7 @@ describe("collectAgentHandoffs", () => {
           setup: {
             isDefault: false,
             instance,
+            projectInstance,
             transferableDatabase,
             canConnectInstance: true,
             canTransferDatabases: true,
@@ -437,6 +451,7 @@ describe("collectAgentHandoffs", () => {
       setup: {
         isDefault: false,
         instance: "empty",
+        projectInstance: "empty",
         transferableDatabase: "empty",
         canConnectInstance: true,
         canTransferDatabases: true,
@@ -446,6 +461,7 @@ describe("collectAgentHandoffs", () => {
     for (const payload of [
       { ...overview, databases: { status: "unavailable" } },
       { ...overview, setup: undefined },
+      { ...overview, setup: { ...overview.setup, projectInstance: undefined } },
       { ...overview, setup: { ...overview.setup, isDefault: true } },
       { ...overview, setup: { ...overview.setup, canConnectInstance: false } },
     ]) {

@@ -7,6 +7,7 @@ export type ProjectSetupStep =
 export type ProjectSetupState = {
   isDefault: boolean;
   instance: ResourceAvailability;
+  projectInstance: ResourceAvailability;
   transferableDatabase: ResourceAvailability;
   canConnectInstance: boolean;
   canTransferDatabases: boolean;
@@ -25,13 +26,9 @@ export function getProjectSetupSteps(
   const canOfferTransfer =
     input.canTransferDatabases && input.transferableDatabase === "present";
   if (canOfferTransfer) steps.push("transferDatabases");
-  if (
-    input.instance === "empty" &&
-    !canOfferTransfer &&
-    input.canConnectInstance
-  ) {
+  if (input.projectInstance === "empty" && input.canConnectInstance) {
     steps.push("connect");
-  } else if (input.instance === "present" && input.canCreateDatabase) {
+  } else if (input.projectInstance === "present" && input.canCreateDatabase) {
     steps.push("createDatabase");
   }
   return steps;
