@@ -84,6 +84,9 @@ type adminRules struct {
 	// question starts the form's question, which adds the user and a question
 	// mark.
 	question string
+	// questionWithEffect, when set, is question with the change's effect in
+	// it, which the form takes when the effect's own line does not fit.
+	questionWithEffect string
 	// apply is the form's fixed sentence.
 	apply string
 	// replace is how a step replaces a rule. The added rule goes first, so the
@@ -631,9 +634,18 @@ type formChange struct {
 // form builds a rule entry's form: a line or more per rule change, and the
 // description that lists every rule.
 func (r adminRules) form(ctx context.Context, changes []formChange, effect, description, link string) (*adminForm, error) {
-	return fitForm(ctx, r.question, changes, effect, r.apply, description, func(needed int, tooLong string) error {
+	refuse := func(needed int, tooLong string) error {
 		return changeTooLong(needed, tooLong, r, link)
-	})
+	}
+	form, err := fitForm(ctx, r.question, changes, effect, r.apply, description, refuse)
+	if err == nil || r.questionWithEffect == "" || !slices.ContainsFunc(changes, func(c formChange) bool { return c.effect }) {
+		return form, err
+	}
+	// A removal shows the effect and adding a full-mask rule does not, so
+	// without this a rule one form adds might fit no form to remove. The
+	// question may pass messageLineWidth, since Claude Code cuts a long line
+	// (messageLines): a narrow terminal loses only the account at its end.
+	return fitForm(ctx, r.questionWithEffect, changes, "", r.apply, description, refuse)
 }
 
 // fitForm builds an entry's form in the lines Claude Code shows: the question

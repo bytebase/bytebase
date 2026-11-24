@@ -614,6 +614,19 @@ func TestAdministerWorkspaceFitsALongRuleBesideAnIssue(t *testing.T) {
 	require.Equal(t, `Plan edits recheck your "hr#12" under these rules.`, lines[3])
 }
 
+// Only the masking entry states its effect in the question: the approval
+// effect names the user's issues, which leave a question no room.
+func TestAdministerWorkspaceKeepsTheIssueLineOutOfTheQuestion(t *testing.T) {
+	long := changeRule("HR salary", `resource.environment_id == "prod" && resource.database_name == "hr_prod" && resource.table_name == "salary"`, "roles/workspaceDBA")
+	diff, err := diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), long}, "")
+	require.NoError(t, err)
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	_, err = approvalRulesForm(alice, diff, "", "")
+	require.NoError(t, err)
+	_, err = approvalRulesForm(alice, diff, issuesLine([]string{"hr#12"}, false), "")
+	require.ErrorContains(t, err, "CHANGE_TOO_LONG")
+}
+
 func TestAdministerWorkspaceNamesTheUserIssuesAwaitingApproval(t *testing.T) {
 	for name, tc := range map[string]struct {
 		morePending bool

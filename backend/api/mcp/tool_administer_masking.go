@@ -33,11 +33,12 @@ const (
 )
 
 var maskingRules = adminRules{
-	name:     "the masking rules",
-	read:     "call_api OrgPolicyService/GetPolicy",
-	question: "Change the masking rules",
-	apply:    maskingRulesApply,
-	replace:  "add a rule under a new UUID before removing the one it replaces (two rules cannot share an id)",
+	name:               "the masking rules",
+	read:               "call_api OrgPolicyService/GetPolicy",
+	question:           "Change the masking rules",
+	questionWithEffect: "Change the masking rules (can unmask data, for you too)",
+	apply:              maskingRulesApply,
+	replace:            "add a rule under a new UUID before removing the one it replaces (two rules cannot share an id)",
 }
 
 // maskingRulesPath is where the rules sit in an UpdatePolicyRequest, as
