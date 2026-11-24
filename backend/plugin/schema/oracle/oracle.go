@@ -30,9 +30,9 @@ func init() {
 			Function:         GetFunctionDefinition,
 			Procedure:        GetProcedureDefinition,
 		},
-		DatabaseMetadata: GetDatabaseMetadata,
+		DatabaseMetadata:      GetDatabaseMetadata,
+		DiffMetadataMigration: omnicatalog.MetadataMigrationFunc(oracleCatalog),
 	}, storepb.Engine_ORACLE)
-	omnicatalog.RegisterMetadataMigration(storepb.Engine_ORACLE, oracleCatalog)
 }
 
 var oracleCatalog = omnicatalog.Engine[catalog.Catalog, catalog.LoadMetadataReport]{

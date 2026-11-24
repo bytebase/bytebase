@@ -82,11 +82,10 @@ those responsibilities are in the catalog.
 For the MySQL family, the metadata diff also has to understand the object when
 the catalog reports it as unloadable. Add the new kind to
 `omnicatalog.snapshotObject` in `backend/plugin/schema/internal/omnicatalog/omnicatalog.go`.
-PostgreSQL has its own `snapshotObjects` in
-`backend/plugin/schema/pg/catalog_migration.go`.
+PostgreSQL handles unloadable-object refusal inside `omni/pg/catalog.MetadataMigration`.
 
 If the object's DDL needs policy checks or destructive-operation advice, extend
-the engine's `walk_through.go` or its `SDLDropAdvices` implementation. That is a
+the engine's walk-through or its `SDLDropAdvices` implementation. That is a
 separate concern from making the object round-trip through metadata and DDL.
 
 ## 3. Test the dump, definition, and diff paths
@@ -131,10 +130,9 @@ and catalog round trips.
    tests so `SyncDBSchema` populates the new metadata field.
 4. Bump `github.com/bytebase/omni` in `go.mod` and run `go mod tidy` once the
    omni proto, catalog, driver sync, and tests have landed.
-5. Update the engine shim's `get_database_definition.go`,
-   `get_database_metadata.go`, `metadata_migration.go` or `catalog_migration.go`,
-   and `sdl_migration.go` only where the wiring or a documented deviation
-   requires it.
+5. Update the engine shim (`backend/plugin/schema/<engine>/<engine>.go`, plus
+   `mysql/sdl_migration.go` or `pg/walk_through.go` where split) only where the
+   wiring or a documented deviation requires it.
 6. Add the refusal lookup for an unloadable object if the catalog reports one.
 7. Add definition, metadata, metadata-diff, and SDL-diff coverage; add a driver
    sync or dump test when the `backend/plugin/db/` adapter owns behavior on that

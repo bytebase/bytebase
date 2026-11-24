@@ -90,6 +90,7 @@ export function IssueSearchBar({
   onOrderByChange: (v: string) => void;
   scopeOptions: ScopeOption[];
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="min-w-0 basis-80 grow">
@@ -99,7 +100,11 @@ export function IssueSearchBar({
           scopeOptions={scopeOptions}
         />
       </div>
-      <TimeRangePicker params={params} onParamsChange={onParamsChange} />
+      <TimeRangePicker
+        params={params}
+        onParamsChange={onParamsChange}
+        label={t("common.created")}
+      />
       <IssueSortDropdown orderBy={orderBy} onOrderByChange={onOrderByChange} />
     </div>
   );

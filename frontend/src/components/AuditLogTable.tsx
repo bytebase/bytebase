@@ -16,6 +16,7 @@ import {
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
 import { TimeRangePicker } from "@/components/TimeRangePicker";
+import { formatRangeScope, quickRange } from "@/components/time-range";
 import {
   TIMESTAMP_COLUMN_MIN_WIDTH,
   TIMESTAMP_COLUMN_WIDTH,
@@ -685,15 +686,13 @@ export function AuditLogTable({
   const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
 
   const buildDefaultParams = useCallback((): SearchParams => {
-    const to = dayjs().endOf("day");
-    const from = to.add(-30, "day");
     return {
       query: "",
       scopes: [
         ...(readonlyScopes?.map((s) => ({ ...s, readonly: true })) ?? []),
         {
           id: "created",
-          value: `${from.valueOf()},${to.valueOf()}`,
+          value: formatRangeScope(quickRange("last-30-days")),
           readonly: true,
         },
       ],
@@ -960,6 +959,7 @@ export function AuditLogTable({
         <TimeRangePicker
           params={searchParams}
           onParamsChange={setSearchParams}
+          label={t("audit-log.table.created-ts")}
         />
         {canExport && (
           <ExportDropdown

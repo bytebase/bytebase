@@ -15,8 +15,44 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
+// Runs on OceanBase's own catalog fork so OceanBase-specific index options,
+// TTL, and column groups load and render accurately.
 func init() {
-	schema.Register(schema.Engine{WalkThrough: WalkThroughWithContext}, storepb.Engine_OCEANBASE)
+	schema.Register(schema.Engine{
+		Definitions: omnicatalog.MySQLFamilyDefinitions{
+			Database:  GetDatabaseDefinition,
+			Table:     catalog.TableDefinition,
+			View:      catalog.ViewDefinition,
+			Function:  catalog.FunctionDefinition,
+			Procedure: catalog.ProcedureDefinition,
+		}.SchemaDefinitions(),
+		DatabaseMetadata:      GetDatabaseMetadata,
+		DiffMetadataMigration: omnicatalog.MetadataMigrationFunc(oceanBaseCatalog),
+		WalkThrough:           WalkThroughWithContext,
+	}, storepb.Engine_OCEANBASE)
+}
+
+var oceanBaseCatalog = omnicatalog.MySQLFamilyEngine(
+	catalog.New,
+	func(report *catalog.LoadMetadataReport) []map[string]error {
+		return []map[string]error{report.Degraded, report.Missing, report.Incomplete}
+	},
+	catalog.Diff,
+	catalog.GenerateMigration,
+	nil,
+)
+
+func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (string, error) {
+	return catalog.DatabaseDefinition(metadata, catalog.DefinitionOptions{
+		PrintHeader: ctx.PrintHeader,
+		SDLFormat:   ctx.SDLFormat,
+	})
+}
+
+// GetDatabaseMetadata parses OceanBase MySQL-mode schema DDL text and returns
+// database metadata using the omni catalog.
+func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return omnicatalog.ExtractSimpleDatabaseMetadata(schemaText, catalog.New, execCatalog)
 }
 
 var oceanBaseWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{

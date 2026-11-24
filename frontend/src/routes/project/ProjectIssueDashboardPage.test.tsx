@@ -32,6 +32,10 @@ vi.mock("@/hooks/useAppState", () => ({
   useCurrentUser: () => ({ email: "me@example.com" }),
 }));
 
+vi.mock("@/hooks/useMediaQuery", () => ({
+  useMediaQuery: () => false,
+}));
+
 vi.mock("@/hooks/usePagedData", () => ({
   PagedTableFooter: () => null,
   usePagedData: mocks.usePagedData,
@@ -87,9 +91,10 @@ const lastIssueFind = async () => {
   return (listIssues.mock.lastCall as unknown as [{ find: unknown }])[0].find;
 };
 
-const pickDay = (label: string, day: number) => {
-  const row = screen.getByText(label).parentElement as HTMLElement;
-  fireEvent.click(within(row).getByRole("button"));
+const timeRangeTrigger = () =>
+  screen.getByRole("button", { name: /^common\.created/ });
+
+const pickDay = (day: number) => {
   const grids = screen.getAllByRole("grid");
   fireEvent.click(
     within(grids[grids.length - 1]).getByRole("button", {
@@ -130,13 +135,13 @@ describe("ProjectIssueDashboardPage time range", () => {
   test("applies a picked range to the URL and the issue filter", async () => {
     renderPage();
 
-    fireEvent.click(screen.getByRole("button", { name: "common.select" }));
-    pickDay("common.from", 15);
-    pickDay("common.to", 20);
-    fireEvent.click(screen.getByRole("button", { name: "common.confirm" }));
+    fireEvent.click(timeRangeTrigger());
+    pickDay(15);
+    pickDay(20);
+    fireEvent.click(screen.getByRole("button", { name: "common.apply" }));
 
     const from = dayjs().date(15).startOf("day").valueOf();
-    const to = dayjs().date(20).startOf("day").valueOf();
+    const to = dayjs().date(20).endOf("day").valueOf();
     await waitFor(() => expect(q).toContain(`created:${from}%2C${to}`));
     expect(q).not.toContain("project:");
     expect(createdScopeChip()).toBeNull();
@@ -164,9 +169,11 @@ describe("ProjectIssueDashboardPage time range", () => {
   test("clears the range", async () => {
     renderPage("/projects/foo/issues?q=status%3AOPEN%20created%3A1000%2C2000");
 
-    fireEvent.click(screen.getByRole("button", { name: /1970-01-01/ }));
+    fireEvent.click(timeRangeTrigger());
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "common.clear" }));
+      fireEvent.click(
+        screen.getByRole("button", { name: "time-range.all-time" })
+      );
     });
 
     await waitFor(() => expect(q).not.toContain("created:"));

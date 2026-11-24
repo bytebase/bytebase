@@ -743,6 +743,7 @@
     "admin": "Quản trị viên",
     "all": "Tất cả",
     "and": "và",
+    "apply": "Áp dụng",
     "approve": "Phê duyệt",
     "approved": "Đã phê duyệt",
     "archive": "Lưu trữ",
@@ -5279,6 +5280,25 @@
       "enqueued-with-rollout-time": "Đang chờ thực thi sau {{time}}.",
       "waiting-max-tasks-per-rollout": "Đang chờ các tác vụ khác hoàn thành. Đã đạt đến giới hạn số lượng tác vụ đang chạy tối đa cho mỗi lần triển khai. Báo cáo gần nhất lúc {{time}}."
     }
+  },
+  "time-range": {
+    "add-time": "Thêm giờ",
+    "all-time": "Toàn bộ thời gian",
+    "clear": "Xóa khoảng thời gian",
+    "end-day": "Kết thúc",
+    "from-time": "Giờ bắt đầu, định dạng 24 giờ",
+    "invalid-time": "Dùng định dạng 24 giờ, ví dụ 09:30.",
+    "last-12-months": "12 tháng qua",
+    "last-3-months": "3 tháng qua",
+    "last-30-days": "30 ngày qua",
+    "last-6-months": "6 tháng qua",
+    "last-7-days": "7 ngày qua",
+    "quick-ranges": "Khoảng nhanh",
+    "remove-time": "Bỏ giờ",
+    "start-day": "Bắt đầu",
+    "to-before-from": "Thời điểm kết thúc sớm hơn thời điểm bắt đầu.",
+    "to-time": "Giờ kết thúc, định dạng 24 giờ",
+    "today": "Hôm nay"
   },
   "two-factor": {
     "description": "Xác thực hai yếu tố cung cấp một lớp bảo mật bổ sung cho các tài khoản thành viên. Khi đăng nhập, bạn sẽ được yêu cầu nhập mã bảo mật do Ứng dụng xác thực của bạn tạo.",

@@ -16,16 +16,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-func init() {
-	// MySQL-only for now: OceanBase is intentionally NOT registered pending validation
-	// against a live OceanBase oracle.
-	schema.Register(schema.Engine{
-		DiffSDLMigration:      mysqlDiffSDLMigrationWithContext,
-		SDLDropAdvices:        mysqlSDLDropAdvices,
-		DiffMetadataMigration: omniDiffMetadataMigration,
-	}, storepb.Engine_MYSQL)
-}
-
 // sdlDatabaseContext is the synthetic database both SDL inputs are loaded under,
 // matching the metadata diff so unqualified DDL resolves consistently.
 const sdlDatabaseContext = omnicatalog.Database

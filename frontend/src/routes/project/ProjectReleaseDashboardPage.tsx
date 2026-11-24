@@ -267,6 +267,7 @@ export function ProjectReleaseDashboardPage({
           <TimeRangePicker
             params={searchParams}
             onParamsChange={setSearchParams}
+            label={t("common.created")}
           />
           {hasGitOpsPlan && (
             <PermissionGuard

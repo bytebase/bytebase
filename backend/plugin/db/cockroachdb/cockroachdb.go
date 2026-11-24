@@ -207,3 +207,30 @@ func optionalValueTimestamp(v omnidriver.Value) *timestamppb.Timestamp {
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
 	return d.Driver.(db.RowEstimator).CountAffectedRows(ctx, statement)
 }
+
+var cockroachExecuteConfig = util.ExecuteConfig{
+	ParseTransactionDirective: true,
+	PassCreateDatabase:        true,
+}
+
+// Execute runs the script's statements under the transaction directive the
+// script starts with, reporting each step to the task run's log. An unspecified
+// mode is transactional, and isolation directives and MaximumRetries are ignored.
+func (d *Driver) Execute(ctx context.Context, script string, opts db.ExecuteOptions) (int64, error) {
+	return d.ExecuteScript(ctx, script, opts, cockroachExecuteConfig)
+}
+
+// QueryConn runs the script on the driver's session, one result per statement,
+// and serializes its calls.
+func (d *Driver) QueryConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	return d.QueryHeldConn(
+		ctx,
+		statement,
+		util.OmniQueryOptions(queryContext, true, util.OmniExplainFormat(queryContext.Option.GetExplainFormat(), "TEXT", v1pb.QueryOption_JSON)),
+		util.SessionQueryOptions{},
+		util.QueryResultOptions{
+			ClearExplainPlan:     queryContext.Explain,
+			FillZeroAffectedRows: true,
+		},
+	)
+}
