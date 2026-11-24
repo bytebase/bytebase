@@ -1,5 +1,4 @@
 import { Check, Minus } from "lucide-react";
-import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type {
   MCPCapabilityRow,
@@ -27,6 +26,8 @@ interface Props {
   /** Omitted where the caller renders the first heading itself. */
   readonly allowedHeading?: string;
   readonly refusedHeading: string;
+  /** The level that nests the group headings under the caller's own. */
+  readonly headingLevel: 2 | 4;
 }
 
 /**
@@ -37,19 +38,23 @@ export function MCPCapabilityList({
   mode,
   allowedHeading,
   refusedHeading,
+  headingLevel,
 }: Props) {
+  const Heading = headingLevel === 2 ? "h2" : "h4";
   const allowed = MCP_CAPABILITY_ROWS.filter((row) => isRowServed(mode, row));
   const refused = MCP_CAPABILITY_ROWS.filter((row) => !isRowServed(mode, row));
   return (
     <div className="flex flex-col gap-y-2">
-      {allowedHeading && <GroupHeading>{allowedHeading}</GroupHeading>}
+      {allowedHeading && (
+        <Heading className={GROUP_HEADING_CLASS}>{allowedHeading}</Heading>
+      )}
       <ul role="list" className="flex flex-col gap-y-2">
         {allowed.map((row) => (
           <CapabilityRow key={row.id} row={row} served />
         ))}
       </ul>
       <Separator className="my-1" />
-      <GroupHeading>{refusedHeading}</GroupHeading>
+      <Heading className={GROUP_HEADING_CLASS}>{refusedHeading}</Heading>
       <ul role="list" className="flex flex-col gap-y-2">
         {refused.map((row) => (
           <CapabilityRow key={row.id} row={row} served={false} />
@@ -60,9 +65,7 @@ export function MCPCapabilityList({
   );
 }
 
-function GroupHeading({ children }: { children: ReactNode }) {
-  return <h3 className="text-base font-semibold text-main">{children}</h3>;
-}
+const GROUP_HEADING_CLASS = "text-base font-semibold text-main";
 
 function CapabilityRow({
   row,
