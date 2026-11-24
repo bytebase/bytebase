@@ -12,6 +12,8 @@ import heroImage from "@/assets/illustration/setup-hero.webp";
 import logoFull from "@/assets/logo-full.svg";
 import { EngineIcon } from "@/components/EngineIcon";
 import { UserAvatar } from "@/components/UserAvatar";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import type { GuideTeamSize } from "@/modules/workspace-setup-guide/types";
 import { PresetRoleType } from "@/types/iam/role";
@@ -77,10 +79,10 @@ function QueryPreview() {
             </div>
             <div className="flex items-center gap-x-1.5 pb-2.5 text-xs font-medium whitespace-nowrap text-control-light">
               salary
-              <span className="inline-flex items-center gap-x-1 rounded-xs bg-accent/10 px-1.5 text-xs text-accent">
+              <Badge variant="secondary">
                 <EyeOff className="size-3" />
                 {t("workspace-setup.panel.masked")}
-              </span>
+              </Badge>
             </div>
             {QUERY_ROWS.map(([name, email]) => (
               <Fragment key={email}>
@@ -96,7 +98,8 @@ function QueryPreview() {
               </Fragment>
             ))}
           </div>
-          <div className="mt-1 border-t border-block-border pt-2.5 pb-1.5 text-xs text-control-light">
+          <Separator className="mt-1" />
+          <div className="pt-2.5 pb-1.5 text-xs text-control-light">
             {t("workspace-setup.panel.query-recorded")}
           </div>
         </div>

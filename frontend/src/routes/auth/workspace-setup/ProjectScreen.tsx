@@ -156,7 +156,7 @@ export function ProjectScreen({
             id="workspace-setup-project-title"
             value={projectTitle}
             autoComplete="off"
-            disabled={projectExists}
+            disabled={projectExists || busy}
             placeholder={t("workspace-setup.project.name-placeholder")}
             aria-describedby={
               projectExists
@@ -183,7 +183,7 @@ export function ProjectScreen({
             <ResourceIdField
               suffix
               keepInitialValue
-              readonly={projectExists}
+              readonly={projectExists || busy}
               value={projectId}
               autoComplete="off"
               resourceName={t("common.project")}
@@ -209,7 +209,7 @@ export function ProjectScreen({
           <RadioGroup
             aria-label={databaseTitle}
             value={source}
-            disabled={samplePrepared}
+            disabled={samplePrepared || busy}
             onValueChange={(value) => {
               if (value === "sample" || value === "own") onSourceChange(value);
             }}

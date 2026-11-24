@@ -23,8 +23,6 @@ export function FinishStatus({
   readonly source: SetupSource;
 }) {
   const { t } = useTranslation();
-  // Self-hosted saves only the workspace name; the person named themselves at
-  // sign-up.
   const isSaaS = useAppStore((state) => state.isSaaSMode());
   const failureTitle = (stage: SetupFinishStage) => {
     switch (stage) {

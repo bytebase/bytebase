@@ -5604,7 +5604,7 @@
         "names": "无法保存您的姓名和工作空间名称。",
         "project": "无法创建 {{project}}。",
         "sample": "无法准备示例数据库。",
-        "workspace-name": "无法保存工作区名称。"
+        "workspace-name": "无法保存工作空间名称。"
       },
       "finish": "完成",
       "finish-invite_one": "发送 {{count}} 份邀请并完成",
@@ -5632,11 +5632,11 @@
     "workspace": {
       "default-name": "{{name}} 的工作空间",
       "default-name-anonymous": "我的工作空间",
-      "description": "工作区包含您的项目、数据库和成员。",
+      "description": "工作空间包含您的项目、数据库和成员。",
       "name-placeholder": "输入您的姓名",
-      "name-required": "请输入你的姓名",
+      "name-required": "请输入您的姓名",
       "skip": "跳过设置",
-      "title": "为工作区命名",
+      "title": "为工作空间命名",
       "workspace-name": "工作空间名称",
       "workspace-name-placeholder": "通常是您的公司名称",
       "workspace-name-required": "请输入工作空间名称"
