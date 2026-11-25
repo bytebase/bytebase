@@ -12,6 +12,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/dynamodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/elasticsearch"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/hive"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/mariadb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mongodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
