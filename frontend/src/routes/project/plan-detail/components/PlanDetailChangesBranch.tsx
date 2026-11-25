@@ -152,9 +152,11 @@ import {
   getDatabaseGroupRouteParams,
   splitInlineDatabases,
 } from "../utils/targets";
+import { hasChangeWithoutTargets } from "./lifecycle/advanceState";
 import { PlanChangeReference } from "./PlanChangeReference";
 import { PlanDetailAggregateChecks } from "./PlanDetailAggregateChecks";
 import { PlanDetailDraftChecks } from "./PlanDetailDraftChecks";
+import { PlanDetailFieldLabel } from "./PlanDetailFieldLabel";
 import { PlanDetailStatementSection } from "./PlanDetailStatementSection";
 import { PlanDetailTabItem, PlanDetailTabStrip } from "./PlanDetailTabStrip";
 import { PlanTargetDisplay } from "./PlanTargetDisplay";
@@ -1363,6 +1365,7 @@ function TargetsSection({
     }
     return [];
   }, [selectedSpec]);
+  const missingTargets = hasChangeWithoutTargets([selectedSpec]);
   const [showAllTargetsDialog, setShowAllTargetsDialog] = useState(false);
   const [searchText, setSearchText] = useState("");
   const visibleTargets = useMemo(
@@ -1465,13 +1468,16 @@ function TargetsSection({
     <>
       <div className="flex flex-col gap-y-1">
         <div className="flex items-center gap-1">
-          <span className="textlabel uppercase">{t("plan.targets.title")}</span>
+          <PlanDetailFieldLabel
+            label={t("plan.targets.title")}
+            missing={missingTargets}
+          />
           {targets.length > 1 && (
             <span className="textlabel text-control-light">
               ({targets.length})
             </span>
           )}
-          {allowEdit && (
+          {allowEdit && targets.length > 0 && (
             <Tooltip content={t("common.edit")}>
               <Button
                 aria-label={t("common.edit")}
@@ -1550,9 +1556,20 @@ function TargetsSection({
               </Button>
             )}
           </div>
+        ) : allowEdit ? (
+          <div>
+            <Button
+              appearance="outline"
+              onClick={onEdit}
+              size="sm"
+              type="button"
+            >
+              {t("plan.select-targets")}
+            </Button>
+          </div>
         ) : (
           <div className="py-1 text-sm text-control-light">
-            {t("plan.targets.no-targets-found")}
+            {t("plan.targets.no-targets-selected")}
           </div>
         )}
       </div>
