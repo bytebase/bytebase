@@ -389,7 +389,6 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 		diff.changes = append(diff.changes, formChange{
 			text:   fmt.Sprintf("Remove, %s: %s", diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)),
 			effect: true,
-			kind:   ruleRemoved,
 		})
 	}
 	for _, rule := range requested {
@@ -408,7 +407,6 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 			diff.changes = append(diff.changes, formChange{
 				text:   fmt.Sprintf("Add rule %d, %s: %s", i+1, diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)),
 				effect: !diff.masksEveryValue(rule.GetSemanticType()),
-				kind:   ruleAdded,
 			})
 			diff.marks = append(diff.marks, "new")
 			continue
@@ -506,7 +504,7 @@ func maskingRuleTitle(rule *v1pb.MaskingRulePolicy_MaskingRule) string {
 func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) (*adminForm, error) {
 	var list ruleList
 	if len(diff.requested) == 0 {
-		list.before = []string{"No masking rule is left, so each column keeps its own semantic type."}
+		list.empty = "No masking rule is left, so each column keeps its own semantic type."
 	} else {
 		list.header = "The masking rules, in the order masking tries them:"
 		for i, rule := range diff.requested {
@@ -538,7 +536,7 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 			return form, nil
 		}
 	}
-	return rules.listed(ctx, diff.changes, maskingRulesUnmask, list, link)
+	return rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, list, link)
 }
 
 // maskingFormDigest binds an answer to the form, the request, and the stored

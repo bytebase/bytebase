@@ -1111,14 +1111,37 @@ func TestAdministerInstanceFitsOrdinaryCloudHosts(t *testing.T) {
 		}, strings.Split(asked.Message, "\n"))
 	})
 
-	// The user is the one value of the request that can leave the message, and
-	// only here: two IDs that need a second row, and a host that needs two.
-	t.Run("two long IDs and an RDS endpoint move the user under the choice", func(t *testing.T) {
-		asked := ask(t, "prod-payments-us-east-1", "payments-platform", rds, true)
+	// A question that names the activation in a second row would leave the
+	// host one row, so the activation goes beside the environment, and every
+	// value of the request stays in the message.
+	for name, host := range map[string]string{"an RDS endpoint": rds, "an Aurora read-only endpoint": auroraRead} {
+		t.Run("two long IDs, activated, and "+name, func(t *testing.T) {
+			asked := ask(t, "prod-payments-us-east-1", "payments-platform", host, true)
+			lines := strings.Split(asked.Message, "\n")
+			require.Len(t, lines, messageLines)
+			require.Equal(t, `Add instance "prod-payments-us-east-1" to "payments-platform", as alice@example.com?`, lines[0])
+			require.Equal(t, `Host "`+host+`", `+facts+"Activated.", unwrapMessage(strings.Join(lines[1:], "\n")))
+			require.True(t, strings.HasPrefix(choiceDescription(t, asked), "Its databases join the project for good.\n"), choiceDescription(t, asked))
+		})
+	}
+
+	t.Run("two IDs that fit one row keep the activation in the question", func(t *testing.T) {
+		asked := ask(t, "payments-prod", "payments", auroraRead, true)
 		lines := strings.Split(asked.Message, "\n")
 		require.Len(t, lines, messageLines)
-		require.Equal(t, []string{`Add activated instance "prod-payments-us-east-1" to`, `> "payments-platform", as alice@example.com?`}, lines[:2])
-		require.Equal(t, `Host "`+rds+`", port 5432, TLS required and verified. Environment "prod".`, unwrapMessage(strings.Join(lines[2:], "\n")))
+		require.Equal(t, `Add activated instance "payments-prod" to "payments", as alice@example.com?`, lines[0])
+		require.Equal(t, `Environment "prod". Its databases join the project for good.`, lines[3])
+	})
+
+	// The user is the one value of the request that can leave the message, and
+	// only for a host this long. It then leads the description, which both of
+	// Claude Code's renderers show.
+	t.Run("a host of 95 characters, not activated, moves the user under the choice", func(t *testing.T) {
+		host := strings.Repeat("h", 83) + ".example.com"
+		asked := ask(t, "payments-prod", "payments", host, false)
+		lines := strings.Split(asked.Message, "\n")
+		require.Len(t, lines, messageLines)
+		require.Equal(t, `Host "`+host+`", port 5432, TLS required and verified. Environment "prod". `+instanceNotActivated, unwrapMessage(strings.Join(lines[1:], "\n")))
 		require.True(t, strings.HasPrefix(choiceDescription(t, asked), "User \"bytebase\". Its databases join the project for good.\n"), choiceDescription(t, asked))
 	})
 }

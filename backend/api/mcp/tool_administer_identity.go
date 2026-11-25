@@ -348,19 +348,20 @@ func (c *identityCreation) fill() {
 // identityForm builds the form that asks to create the identity: who signs in
 // as it, and the role it gets.
 func identityForm(ctx context.Context, c *identityCreation, link string) (*adminForm, error) {
-	question := func(identityID string) string {
-		return fmt.Sprintf("Create workload identity %q in %q", identityID, c.projectID)
-	}
 	repository, _ := readIdentityRepository(c.config())
 	needed := 0
-	for _, layout := range identityLayouts(c, repository) {
+	for _, layout := range identityLayouts(c, c.request.GetWorkloadIdentityId(), repository) {
 		var form *adminForm
-		if form, needed = fitLayout(ctx, question(c.request.GetWorkloadIdentityId()), layout); form != nil {
+		if form, needed = fitLayout(ctx, layout); form != nil {
 			return form, nil
 		}
 	}
 	suggestion := "create it signed in to the Bytebase console: " + link
-	if len(wrapMessageLine(question(c.request.GetWorkloadIdentityId()))) > 1 && len(wrapMessageLine(question("a"))) == 1 {
+	rows := func(identityID string) int {
+		layouts := identityLayouts(c, identityID, repository)
+		return len(wrapMessageLine(layouts[len(layouts)-1].question))
+	}
+	if rows(c.request.GetWorkloadIdentityId()) > 1 && rows("a") == 1 {
 		suggestion = "use a shorter identity ID, or " + suggestion
 	}
 	return nil, &toolError{
@@ -370,11 +371,12 @@ func identityForm(ctx context.Context, c *identityCreation, link string) (*admin
 	}
 }
 
-// identityLayouts are the identity form's layouts, from today's to the barest;
-// the form is the first that fits. The repository, which decides who signs in,
-// and the rollouts without approval stay in the message in each. What moves
-// under the choice is the same for every identity the tool creates.
-func identityLayouts(c *identityCreation, repository identityRepository) []formLayout {
+// identityLayouts are the layouts of the form that creates identityID, from
+// today's to the barest; the form is the first that fits. The repository,
+// which decides who signs in, and the rollouts without approval stay in the
+// message in each. What moves under the choice is the same for every identity
+// the tool creates.
+func identityLayouts(c *identityCreation, identityID string, repository identityRepository) []formLayout {
 	jobs := "GitLab CI"
 	if repository.github {
 		jobs = "GitHub Actions"
@@ -386,10 +388,17 @@ func identityLayouts(c *identityCreation, repository identityRepository) []formL
 	// (RolloutService.CreateRollout).
 	const rollsOut = "It can roll out without approval."
 	role := fmt.Sprintf("Role: %s.", identityRoleTitle)
+	question := fmt.Sprintf("Create workload identity %q in %q", identityID, c.projectID)
+	// The lines under the question say what kind of identity it is, so a
+	// question that needs a second row gives up the word for the repository's.
+	dense := question
+	if short := fmt.Sprintf("Create identity %q in %q", identityID, c.projectID); len(wrapMessageLine(short)) < len(wrapMessageLine(question)) {
+		dense = short
+	}
 	return []formLayout{
-		{changes: []formChange{{text: signsIn + ", and " + unlimited + "."}, {text: role + " " + rollsOut}}, description: identityDescription(c, repository, "")},
-		{changes: []formChange{{text: signsIn + "."}, {text: role + " " + rollsOut}}, description: identityDescription(c, repository, capitalize(unlimited)+".")},
-		{changes: []formChange{{text: signsIn + ". " + rollsOut}}, description: identityDescription(c, repository, role+" "+capitalize(unlimited)+".")},
+		{question: question, changes: []formChange{{text: signsIn + ", and " + unlimited + "."}, {text: role + " " + rollsOut}}, description: identityDescription(c, repository, "")},
+		{question: dense, changes: []formChange{{text: signsIn + "."}, {text: role + " " + rollsOut}}, description: identityDescription(c, repository, capitalize(unlimited)+".")},
+		{question: dense, changes: []formChange{{text: signsIn + ". " + rollsOut}}, description: identityDescription(c, repository, role+" "+capitalize(unlimited)+".")},
 	}
 }
 

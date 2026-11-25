@@ -303,15 +303,6 @@ func choiceLabels(t *testing.T, asked *mcp.ElicitParams) (string, []string) {
 	return field.Title, labels
 }
 
-// changeTexts returns the lines of changes as a form states them.
-func changeTexts(changes []formChange) []string {
-	var texts []string
-	for _, change := range changes {
-		texts = append(texts, change.text)
-	}
-	return texts
-}
-
 func choiceDescription(t *testing.T, asked *mcp.ElicitParams) string {
 	t.Helper()
 	schema, err := json.Marshal(asked.RequestedSchema)
@@ -489,7 +480,8 @@ func TestAdministerWorkspaceRefusesAChangeTooLongForTheDescription(t *testing.T)
 	}{
 		"more rules than the description has rows": {
 			rules: several,
-			want: []string{"this change needs 11 lines, more than the 10 one confirmation form has room for under its choice",
+			want: []string{"this change needs 13 lines, more than the 10 one confirmation form has room for under its choice",
+				"make the change in smaller steps, a few rules at a time",
 				"Each step is a form of its own and applies when the user accepts it", "tell the user the change comes in steps",
 				"a smaller step changes fewer rules, never a condition",
 				"add a rule before removing the one it replaces", "before each step read the rules again with call_api SettingService/GetSetting"},
@@ -520,26 +512,69 @@ func TestAdministerWorkspaceRefusesAChangeTooLongForTheDescription(t *testing.T)
 	}
 }
 
-// The count line names each kind of change, and counts the rules that end
-// with no approvers apart: a count alone reads the same when approvers are
-// replaced by none, which is why the first design refused to count.
+// The count line names each kind of change, and says how many rules end with
+// no approvers: a count alone reads the same when approvers are replaced by
+// none, which is why the first design refused to count.
 func TestCountLineNamesEachKindOfChange(t *testing.T) {
-	removed, added, changed := formChange{kind: ruleRemoved}, formChange{kind: ruleAdded}, formChange{kind: ruleChanged}
-	unapproved := formChange{kind: ruleChanged, emptyFlow: true}
-	for want, changes := range map[string][]formChange{
-		"Add 1 rule, listed under Action.":                                             {added},
-		"Remove 1 rule, listed under Action.":                                          {removed},
-		"Change 1 rule, listed under Action.":                                          {changed},
-		"Add 4 rules, listed under Action.":                                            {added, added, added, added},
-		"Remove 1 rule and add 3, listed under Action.":                                {added, removed, added, added},
-		"Remove 2 rules, add 1 and change 1, listed under Action.":                     {changed, removed, added, removed},
-		"Change 1 rule (1 with no approval), listed under Action.":                     {unapproved},
-		"Add 2 rules and change 1 (2 with no approval), listed under Action.":          {added, {kind: ruleAdded, emptyFlow: true}, unapproved},
-		"Remove 1 rule, add 1 and change 2 (1 with no approval), listed under Action.": {removed, added, changed, unapproved},
+	for want, tc := range map[string]struct {
+		changes    int
+		marks      []string
+		unapproved int
+	}{
+		"Add 1 rule, listed under Action.":                                                           {1, []string{"new"}, 0},
+		"Remove 1 rule, listed under Action.":                                                        {1, nil, 0},
+		"Change 1 rule, listed under Action.":                                                        {1, []string{"kept", "changed"}, 0},
+		"Add 4 rules, listed under Action.":                                                          {4, []string{"new", "new", "kept", "new", "new"}, 0},
+		"Remove 1 rule and add 3, listed under Action.":                                              {4, []string{"new", "new", "new"}, 0},
+		"Remove 2 rules, add 1 and change 1, listed under Action.":                                   {4, []string{"changed", "kept", "new"}, 0},
+		"Change 1 rule, listed under Action; 1 rule will need no approval.":                          {1, []string{"changed"}, 1},
+		"Add 2 rules and change 1, listed under Action; 2 rules will need no approval.":              {3, []string{"new", "new", "changed"}, 2},
+		"Remove 12 rules, add 34 and change 5, listed under Action; 39 rules will need no approval.": {51, append(slices.Repeat([]string{"new"}, 34), slices.Repeat([]string{"changed"}, 5)...), 39},
 	} {
-		require.Equal(t, want, countLine(changes))
+		require.Equal(t, want, countLine(tc.changes, tc.marks, tc.unapproved))
 		require.LessOrEqual(t, len(wrapMessageLine(want)), 2, "the count line leaves the question and the effect their lines")
 	}
+}
+
+// Each rule a change removes, adds or changes gets one change line, which is
+// what lets the count line read the removals off the marks.
+func TestAdministerWorkspaceGivesEachChangedRuleOneLine(t *testing.T) {
+	a := changeRule("A", "resource.environment_id == 'a'", "roles/projectOwner")
+	b := changeRule("B", "resource.environment_id == 'b'", "roles/projectOwner")
+	c := changeRule("C", "resource.environment_id == 'c'", "roles/projectOwner")
+	renamed := changeRule("B2", "resource.environment_id == 'b'", "roles/workspaceDBA")
+	renamed.Template.Description = "now with a description"
+	diff, err := diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), a, b, c},
+		[]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), renamed, changeRule("D", "resource.environment_id == 'd'"), a}, "")
+	require.NoError(t, err)
+	require.Equal(t, []string{"changed", "new", "changed"}, diff.marks)
+	require.Len(t, diff.changes, 4, "one removal, and one line for each new or changed rule: %q", diff.changes)
+	require.Equal(t, "Remove 1 rule, add 1 and change 2, listed under Action.", countLine(len(diff.changes), diff.marks, 0))
+}
+
+// A rule a form adds is never refused its removal: the removal's line is no
+// longer than the add's, and the sentence only a removal shows gives way.
+func TestAdministerWorkspaceRemovesEveryRuleOneFormAdds(t *testing.T) {
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	issues := issuesLine([]string{"hr#12"}, false)
+	asked := func(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule) bool {
+		diff, err := diffApprovalRules(stored, requested, "")
+		require.NoError(t, err)
+		_, err = approvalRulesForm(alice, diff, issues, "")
+		return err == nil
+	}
+	added, refused := 0, 0
+	for n := 1; n <= 800; n += 3 {
+		rule := changeRule("Long", `resource.environment_id == "prod" && resource.database_name == "`+strings.Repeat("d", n)+`"`, "roles/workspaceDBA")
+		if !asked([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), rule}) {
+			refused++
+			continue
+		}
+		added++
+		require.True(t, asked([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), rule}, []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}), "remove a rule of %d", n)
+	}
+	require.Positive(t, added)
+	require.Positive(t, refused, "the sweep must pass the longest rule a form states")
 }
 
 // Approvers replaced by none keep the number of changes. The form that lists
@@ -568,7 +603,7 @@ func TestAdministerWorkspaceCountsARuleThatEndsWithNoApproval(t *testing.T) {
 	}, "\n"), toOwner.Message)
 
 	toNone := ask(t, long("HR salary"), staging)
-	require.Equal(t, `Change 1 rule (1 with no approval), listed under Action.`, strings.Split(toNone.Message, "\n")[1])
+	require.Equal(t, `Change 1 rule, listed under Action; 1 rule will need no approval.`, strings.Split(toNone.Message, "\n")[1])
 	description := strings.Split(unwrapMessage(choiceDescription(t, toNone)), "\n")
 	require.Equal(t, "Change, \"Workspace DBA\" to no approval: `resource.environment_id == \"prod\" && resource.project_id == \"hr\" && resource.database_name == \"hr_prod\" && resource.table_name == \"salary\"`", description[0],
 		"the change leads the description, where fullscreen shows one row")
@@ -632,7 +667,7 @@ func TestAdministerWorkspaceStatesEachKindOfChange(t *testing.T) {
 			diff, err := diffApprovalRules(append([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, tc.stored...),
 				append([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, tc.requested...), "")
 			require.NoError(t, err)
-			require.Equal(t, tc.want, changeTexts(diff.changes))
+			require.Equal(t, tc.want, diff.changes)
 		})
 	}
 }
@@ -722,7 +757,7 @@ func TestAdministerWorkspaceKeepsTheIssueLineOutOfTheQuestion(t *testing.T) {
 	alice := withUserEmail(context.Background(), "alice@example.com")
 	form, err := approvalRulesForm(alice, diff, "", "")
 	require.NoError(t, err)
-	require.Empty(t, form.inSteps, "with no issue line, the message states the rule")
+	require.NotContains(t, form.message, "listed under Action", "with no issue line, the message states the rule")
 	form, err = approvalRulesForm(alice, diff, issuesLine([]string{"hr#12"}, false), "")
 	require.NoError(t, err)
 	require.Equal(t, strings.Join([]string{
@@ -812,7 +847,7 @@ func TestAdministerWorkspaceEscapesAConditionThatDoesNotPrintAtEverySite(t *test
 		`Change, "Project owner" to "Workspace DBA": "x\u200by"`,
 		`Add rule 2, no approval: "pr\u202eod"`,
 		`Add rule 3, no approval: "resource.environment_id == \"prod\" &&\nresource.project_id == \"hr\""`,
-	}, changeTexts(diff.changes))
+	}, diff.changes)
 
 	oddFallback := &v1pb.WorkspaceApprovalSetting_Rule{Condition: &expr.Expr{Expression: "p\u200bq"},
 		Template: &v1pb.ApprovalTemplate{Title: "Odd", Flow: &v1pb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}}}
@@ -908,6 +943,66 @@ func TestWrapLineNeverTakesMoreRowsThanFillingThem(t *testing.T) {
 			require.Equal(t, line, joined.String(), "a break leaves nothing out")
 		}
 	}
+}
+
+// A line that the last-space rule already wrapped in the fewest rows keeps its
+// breaks, so a form changes only where that rule cost it a row, or cut a value
+// at the width where a separator of a name now ends the row.
+func TestWrapLineKeepsEveryBreakAtASpaceThatCostNoRow(t *testing.T) {
+	// before is the wrap as it was: every row ended at its last space, the
+	// space was dropped, and a continuation started with "> ". atSpaces
+	// reports that no row had to be cut at the width.
+	before := func(line string) (rows []string, atSpaces bool) {
+		prefix := ""
+		atSpaces = true
+		for lineColumns(prefix+line) > messageLineWidth {
+			width := messageLineWidth - lineColumns(prefix)
+			runes := []rune(line)
+			cut := min(width, len(runes))
+			for lineColumns(string(runes[:cut])) > width {
+				cut--
+			}
+			next := cut
+			if space := strings.LastIndex(string(runes[:cut]), " "); space > 0 {
+				cut = len([]rune(string(runes[:cut])[:space]))
+				next = cut + 1
+			} else {
+				atSpaces = false
+			}
+			rows = append(rows, prefix+string(runes[:cut]))
+			line = string(runes[next:])
+			prefix = "> "
+		}
+		return append(rows, prefix+line), atSpaces
+	}
+	random := rand.New(rand.NewPCG(11, 2))
+	alphabet := []rune(`abcdefghijklmnopqrstuvwxyz0123456789"'=&|/.-_`)
+	same, fewer := 0, 0
+	for range 5000 {
+		var tokens []string
+		for range 2 + random.IntN(20) {
+			token := make([]rune, 1+random.IntN(1+random.IntN(80)))
+			for i := range token {
+				token[i] = alphabet[random.IntN(len(alphabet))]
+			}
+			tokens = append(tokens, string(token))
+		}
+		line := strings.Join(tokens, " ")
+		was, atSpaces := before(line)
+		now := wrapMessageLine(line)
+		require.LessOrEqual(t, len(now), len(was), line)
+		switch {
+		case len(now) < len(was):
+			fewer++
+		case atSpaces:
+			same++
+			// A space that ended a row was dropped, and now starts the next.
+			require.Equal(t, strings.Join(was, "\n"), strings.ReplaceAll(strings.Join(now, "\n"), "\n"+continuedLine+" ", "\n> "), line)
+		default:
+		}
+	}
+	require.Greater(t, same, 1000)
+	require.Greater(t, fewer, 100)
 }
 
 func TestWrapLineBreaksWhereALineReadsBest(t *testing.T) {

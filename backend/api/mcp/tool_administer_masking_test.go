@@ -230,23 +230,8 @@ func TestAdministerMaskingRulesStatesWhatEachTypeDoes(t *testing.T) {
 	} {
 		diff, err := diffMaskingRules(nil, []*v1pb.MaskingRulePolicy_MaskingRule{maskingRule("r1", "", `resource.environment_id == "prod"`, id)}, types, "")
 		require.NoError(t, err, id)
-		require.Equal(t, []shownChange{{"Add rule 1, " + want.phrase + ": env \"prod\", every column", want.unmasks}}, shownChanges(diff.changes), id)
+		require.Equal(t, []formChange{{"Add rule 1, " + want.phrase + ": env \"prod\", every column", want.unmasks}}, diff.changes, id)
 	}
-}
-
-// shownChange is what a change line shows: its text, and whether the form
-// states the unmask effect for it.
-type shownChange struct {
-	text   string
-	effect bool
-}
-
-func shownChanges(changes []formChange) []shownChange {
-	var shown []shownChange
-	for _, change := range changes {
-		shown = append(shown, shownChange{change.text, change.effect})
-	}
-	return shown
 }
 
 func TestAdministerMaskingRulesStatesEachKindOfChange(t *testing.T) {
@@ -262,37 +247,37 @@ func TestAdministerMaskingRulesStatesEachKindOfChange(t *testing.T) {
 	rules := func(rules ...*v1pb.MaskingRulePolicy_MaskingRule) []*v1pb.MaskingRulePolicy_MaskingRule { return rules }
 	for name, tc := range map[string]struct {
 		stored, requested []*v1pb.MaskingRulePolicy_MaskingRule
-		want              []shownChange
+		want              []formChange
 	}{
 		"removed": {stored: rules(prod), requested: nil,
-			want: []shownChange{{"Remove, Full mask: env \"prod\", every column", true}}},
+			want: []formChange{{"Remove, Full mask: env \"prod\", every column", true}}},
 		"a full mask added before the kept rules": {stored: rules(test), requested: rules(prod, test),
-			want: []shownChange{{"Add rule 1, Full mask: env \"prod\", every column", false}}},
+			want: []formChange{{"Add rule 1, Full mask: env \"prod\", every column", false}}},
 		"a partial mask added after the kept rules": {stored: rules(prod), requested: rules(prod, test),
-			want: []shownChange{{"Add rule 2, Partial mask: env \"test\", every column", true}}},
+			want: []formChange{{"Add rule 2, Partial mask: env \"test\", every column", true}}},
 		"moved": {stored: rules(prod, test), requested: rules(test, prod),
-			want: []shownChange{{"Move to rule 2: env \"prod\", every column", true}}},
+			want: []formChange{{"Move to rule 2: env \"prod\", every column", true}}},
 		"given a partial mask": {stored: rules(prod),
 			requested: rules(with(prod, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.SemanticType = "bb.default-partial" })),
-			want:      []shownChange{{"Change type, Full mask to Partial mask: env \"prod\", every column", true}}},
+			want:      []formChange{{"Change type, Full mask to Partial mask: env \"prod\", every column", true}}},
 		"given a full mask": {stored: rules(test),
 			requested: rules(with(test, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.SemanticType = "bb.default" })),
-			want:      []shownChange{{"Change type, Partial mask to Full mask: env \"test\", every column", false}}},
+			want:      []formChange{{"Change type, Partial mask to Full mask: env \"test\", every column", false}}},
 		"renamed": {stored: rules(prod),
 			requested: rules(with(prod, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.Condition.Title = "Production" })),
-			want:      []shownChange{{"Rename to \"Production\": env \"prod\", every column", false}}},
+			want:      []formChange{{"Rename to \"Production\": env \"prod\", every column", false}}},
 		"renamed to no title": {stored: rules(prod),
 			requested: rules(with(prod, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.Condition.Title = "" })),
-			want:      []shownChange{{"Rename to untitled: env \"prod\", every column", false}}},
+			want:      []formChange{{"Rename to untitled: env \"prod\", every column", false}}},
 		"given a full mask, moved and renamed": {stored: rules(test, prod),
 			requested: rules(prod, with(test, func(r *v1pb.MaskingRulePolicy_MaskingRule) {
 				r.SemanticType = "bb.default"
 				r.Condition.Title = "Testing"
 			})),
-			want: []shownChange{{"Change type, Partial mask to Full mask; move to rule 2; rename to \"Testing\": env \"test\", every column", true}}},
+			want: []formChange{{"Change type, Partial mask to Full mask; move to rule 2; rename to \"Testing\": env \"test\", every column", true}}},
 		"condition changed": {stored: rules(prod),
 			requested: rules(maskingRule("r3", "Prod", `resource.environment_id == "production"`, "bb.default")),
-			want: []shownChange{
+			want: []formChange{
 				{"Remove, Full mask: env \"prod\", every column", true},
 				{"Add rule 1, Full mask: env \"production\", every column", false},
 			}},
@@ -300,7 +285,7 @@ func TestAdministerMaskingRulesStatesEachKindOfChange(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			diff, err := diffMaskingRules(tc.stored, tc.requested, types, "")
 			require.NoError(t, err)
-			require.Equal(t, tc.want, shownChanges(diff.changes))
+			require.Equal(t, tc.want, diff.changes)
 		})
 	}
 }
@@ -590,7 +575,7 @@ func TestAdministerMaskingRulesRefusesAChangeTooLongForTheDescription(t *testing
 	refusal := resultToolError(t, res)
 	require.Equal(t, "CHANGE_TOO_LONG", refusal.Code)
 	require.Equal(t, "this change needs 11 lines, more than the 10 one confirmation form has room for under its choice, so the masking rules were not changed", refusal.Message)
-	require.Contains(t, refusal.Suggestion, "make the change in smaller steps, a rule or two at a time")
+	require.Contains(t, refusal.Suggestion, "make the change in smaller steps, a few rules at a time")
 	require.Contains(t, refusal.Suggestion, "a smaller step changes fewer rules, never a condition")
 	require.Contains(t, refusal.Suggestion, "add a rule under a new UUID before removing the one it replaces")
 	require.Contains(t, refusal.Suggestion, "read the rules again with call_api OrgPolicyService/GetPolicy")
@@ -714,7 +699,7 @@ func TestAdministerMaskingRulesRemovesOrMovesEveryRuleOneFormAdds(t *testing.T) 
 		diff, err := diffMaskingRules(stored, requested, types, "")
 		require.NoError(t, err)
 		form, err := maskingRulesForm(alice, diff, "")
-		return err == nil, err == nil && form.inSteps == ""
+		return err == nil, err == nil && !strings.Contains(form.message, "listed under Action")
 	}
 	short := maskingRule("r0", "SSN", `resource.column_name == "ssn"`, "bb.default")
 	for _, condition := range []func(name string) string{
@@ -816,7 +801,7 @@ func TestAdministerMaskingRulesCutsALongRuleListToTheDescription(t *testing.T) {
 	require.Equal(t, `The masking rules, in the order masking tries them:`, rows[0])
 	require.Equal(t, `1. "Rule 1" (kept), Full mask: any db, any table, column "column_00"`, rows[1])
 	require.Equal(t, `8. "Rule 8" (kept), Full mask: any db, any table, column "column_07"`, rows[8])
-	require.Equal(t, `... and 23 more rules.`, rows[9])
+	require.Equal(t, `... and 23 more rules, tried after these.`, rows[9])
 }
 
 // On a form that lists its changes under the choice, a user who cannot read
@@ -831,13 +816,21 @@ func TestAdministerMaskingRulesOffersStepsWhenAListedChangeIsChangedInChat(t *te
 	user := &asker{answer: confirmAnswer(confirmChoiceChange)}
 	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
+	const changed = "Not changed: the user wants to change this request. Ask them what to change, then call administer_workspace with the revised rules."
 	listed := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, rules...)))))
-	require.True(t, strings.HasPrefix(listed, "Not changed: the user wants to change this request. Ask them what to change, then call administer_workspace with the revised rules. The form listed the rule changes under its choice"), listed)
+	require.True(t, strings.HasPrefix(listed, changed+" The form listed the rule changes under its choice"), listed)
 	require.Contains(t, listed, "make the change in smaller steps, a rule or two at a time, and keep each rule's condition unchanged")
-	require.Contains(t, listed, "A rule change too long for the message stays under the choice.")
+	require.Contains(t, listed, "read the rules again with call_api OrgPolicyService/GetPolicy")
 
 	whole := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, rules[:2]...)))))
-	require.Equal(t, "Not changed: the user wants to change this request. Ask them what to change, then call administer_workspace with the revised rules.", whole)
+	require.Equal(t, changed, whole)
+
+	// Steps cannot put a rule in the message that fits no message alone.
+	long := maskingRule("r-long", "", `resource.environment_id == "prod" && resource.database_name == "hr_prod" && (resource.column_name == "amount" || resource.column_name == "bonus" || resource.column_name == "commission" || resource.column_name == "allowance")`, "bb.default")
+	alone := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, long)))))
+	require.Equal(t, changed, alone)
+	both := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, long, rules[0])))))
+	require.Equal(t, changed, both)
 	require.Empty(t, mock.calls())
 }
 

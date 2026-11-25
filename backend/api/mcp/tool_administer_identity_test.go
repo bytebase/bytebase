@@ -523,14 +523,43 @@ func TestAdministerIdentityFitsOrdinaryRepositoryPaths(t *testing.T) {
 			},
 			moved: policy,
 		},
-		"two long IDs move the role's name too": {
+		// The lines under the question say what kind of identity it is, so a
+		// question that needs a second row gives up the word.
+		"two long IDs shorten the question": {
 			edit: func(request, config map[string]any) {
 				request["parent"], request["workloadIdentityId"] = "projects/payments-platform", "payments-migrations-ci"
 				config["subjectPattern"] = "repo:acme-corp/payments-platform-database-migrations:*"
 			},
 			message: []string{
-				`Create workload identity "payments-migrations-ci" in`,
-				`> "payments-platform", as alice@example.com?`,
+				`Create identity "payments-migrations-ci" in "payments-platform", as alice@example.com?`,
+				`Any GitHub Actions job in`,
+				`> "acme-corp/payments-platform-database-migrations" signs in as it.`,
+				`Role: GitOps Service Agent. It can roll out without approval.`,
+			},
+			moved: policy,
+		},
+		"two long IDs and a nested GitLab path of 80": {
+			edit: func(request, config map[string]any) {
+				request["parent"], request["workloadIdentityId"] = "projects/payments-platform", "payments-migrations-ci"
+				config["providerType"] = "GITLAB"
+				config["subjectPattern"] = "project_path:acme-financial-services/platform-engineering/data/payments-ledger/schema-migrations:*"
+			},
+			message: []string{
+				`Create identity "payments-migrations-ci" in "payments-platform", as alice@example.com?`,
+				`Any GitLab CI job in "acme-financial-services/platform-engineering/`,
+				`>data/payments-ledger/schema-migrations" signs in as it.`,
+				`Role: GitOps Service Agent. It can roll out without approval.`,
+			},
+			moved: policy,
+		},
+		"two IDs that still need a second row move the role's name too": {
+			edit: func(request, config map[string]any) {
+				request["parent"], request["workloadIdentityId"] = "projects/payments-platform-production", "payments-ledger-migrations-ci"
+				config["subjectPattern"] = "repo:acme-corp/payments-platform-database-migrations:*"
+			},
+			message: []string{
+				`Create workload identity "payments-ledger-migrations-ci" in`,
+				`> "payments-platform-production", as alice@example.com?`,
 				`Any GitHub Actions job in "acme-corp/payments-platform-database-`,
 				`>migrations" signs in as it. It can roll out without approval.`,
 			},

@@ -359,33 +359,28 @@ func (s *Server) checkEnvironment(ctx context.Context, c *instanceCreation) erro
 // instanceForm builds the form that asks to add the instance. The password
 // appears nowhere in it.
 func instanceForm(ctx context.Context, c *instanceCreation, maskingSkips bool, link string) (*adminForm, error) {
-	// Activation can take one of the license's fixed number of instance
-	// licenses (InstanceService.checkActivationLimit), so the question names it.
-	add := "Add instance"
-	if c.request.GetInstance().GetActivation() {
-		add = "Add activated instance"
-	}
-	question := func(instanceID string) string {
-		return fmt.Sprintf("%s %q to %q", add, instanceID, c.projectID)
-	}
 	notActivated := maskingSkips && !c.request.GetInstance().GetActivation()
 	// Whether any layout fits is decided as if the TLS mode had its longest
 	// wording, so a weaker TLS setting never turns a refusal into a form.
 	needed := 0
-	for _, layout := range instanceLayouts(c, notActivated, tlsNotVerified) {
-		if _, needed = fitLayout(ctx, question(c.request.GetInstanceId()), layout); needed == 0 {
+	for _, layout := range instanceLayouts(c, c.request.GetInstanceId(), notActivated, tlsNotVerified) {
+		if _, needed = fitLayout(ctx, layout); needed == 0 {
 			break
 		}
 	}
 	if needed == 0 {
-		for _, layout := range instanceLayouts(c, notActivated, tlsMode(c.dataSource())) {
-			if form, _ := fitLayout(ctx, question(c.request.GetInstanceId()), layout); form != nil {
+		for _, layout := range instanceLayouts(c, c.request.GetInstanceId(), notActivated, tlsMode(c.dataSource())) {
+			if form, _ := fitLayout(ctx, layout); form != nil {
 				return form, nil
 			}
 		}
 	}
 	suggestion := "add the instance signed in to the Bytebase console: " + link
-	if len(wrapMessageLine(question(c.request.GetInstanceId()))) > 1 && len(wrapMessageLine(question("a"))) == 1 {
+	rows := func(instanceID string) int {
+		layouts := instanceLayouts(c, instanceID, notActivated, tlsNotVerified)
+		return len(wrapMessageLine(layouts[len(layouts)-1].question))
+	}
+	if rows(c.request.GetInstanceId()) > 1 && rows("a") == 1 {
 		suggestion = "use a shorter instance ID, or " + suggestion
 	}
 	return nil, &toolError{
@@ -395,12 +390,13 @@ func instanceForm(ctx context.Context, c *instanceCreation, maskingSkips bool, l
 	}
 }
 
-// instanceLayouts are the instance form's layouts, from today's to the barest;
-// the form is the first that fits. The host, the port, the TLS mode, the
-// environment and the not-activated line stay in the message in each: the host
-// receives the password, and the others decide how it travels and which rules
-// and masking apply. tls is the TLS mode's wording.
-func instanceLayouts(c *instanceCreation, notActivated bool, tls string) []formLayout {
+// instanceLayouts are the layouts of the form that adds instanceID, from
+// today's to the barest; the form is the first that fits. The host, the port,
+// the TLS mode, the environment, the activation and the not-activated line
+// stay in the message in each: the host receives the password, and the others
+// decide how it travels and which rules, licenses and masking apply. tls is
+// the TLS mode's wording.
+func instanceLayouts(c *instanceCreation, instanceID string, notActivated bool, tls string) []formLayout {
 	ds := c.dataSource()
 	host := fmt.Sprintf("Host %q, port %s", ds.GetHost(), ds.GetPort())
 	user := fmt.Sprintf("user %q", ds.GetUsername())
@@ -418,11 +414,24 @@ func instanceLayouts(c *instanceCreation, notActivated bool, tls string) []formL
 		whole = append(whole, formChange{text: instanceNotActivated})
 		notes += " " + instanceNotActivated
 	}
+	// Activation can take one of the license's fixed number of instance
+	// licenses (InstanceService.checkActivationLimit), so the form names it: in
+	// the question, or beside the environment when the question then keeps to
+	// one row and leaves the host another.
+	plain := fmt.Sprintf("Add instance %q to %q", instanceID, c.projectID)
+	question, dense := plain, plain
+	if c.request.GetInstance().GetActivation() {
+		question = fmt.Sprintf("Add activated instance %q to %q", instanceID, c.projectID)
+		if dense = question; len(wrapMessageLine(plain)) < len(wrapMessageLine(question)) {
+			dense = plain
+			notes += " Activated."
+		}
+	}
 	details := instanceDescription(c)
 	return []formLayout{
-		{changes: whole, description: details},
-		{changes: []formChange{{text: host + ", " + user + ", " + tls + ". " + notes}}, description: forGood + "\n" + details},
-		{changes: []formChange{{text: host + ", " + tls + ". " + notes}}, description: capitalize(user) + ". " + forGood + "\n" + details},
+		{question: question, changes: whole, description: details},
+		{question: dense, changes: []formChange{{text: host + ", " + user + ", " + tls + ". " + notes}}, description: forGood + "\n" + details},
+		{question: dense, changes: []formChange{{text: host + ", " + tls + ". " + notes}}, description: capitalize(user) + ". " + forGood + "\n" + details},
 	}
 }
 
