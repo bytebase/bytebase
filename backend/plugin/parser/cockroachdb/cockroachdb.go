@@ -12,22 +12,41 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// Splitting, diagnostics, completion, query validation, query span and result
-// limit are PostgreSQL's: omni has no CockroachDB versions of the last five, and
-// its CockroachDB splitter breaks a BEGIN ATOMIC body at its semicolons.
+// Completion and query span are PostgreSQL's: omni has no CockroachDB versions
+// of them yet.
 func init() {
 	base.Register(base.Engine{
-		Split:          pgparser.SplitSQL,
+		Split:          splitSQL,
 		Parse:          parseCockroachDBStatements,
 		StatementTypes: GetStatementTypes,
-		Diagnose:       pgparser.Diagnose,
+		Diagnose:       diagnose,
 		Complete:       pgparser.Completion,
-		ValidateQuery:  pgparser.ValidateQuery,
+		ValidateQuery:  analysis.ValidateQuery,
 		QuerySpan:      getQuerySpan,
 		Explain:        explainStatement,
-		ResultLimit:    pgparser.StatementWithResultLimit,
+		ResultLimit:    statementWithResultLimit,
 		ExtractChanged: extractChangedResources,
 	}, storepb.Engine_COCKROACHDB)
+}
+
+func splitSQL(statement string) ([]base.Statement, error) {
+	return base.BuildStatements(statement, analysis.SplitSegments(statement), func(s analysis.Segment) (int, int, bool) {
+		return s.ByteStart, s.ByteEnd, s.Empty()
+	}, false), nil
+}
+
+func diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
+	var syntaxErr *base.SyntaxError
+	if err := analysis.Diagnose(statement); err != nil {
+		syntaxErr = base.SyntaxErrorAtOffset(statement, err.Offset, err.Message)
+	}
+	return base.DiagnoseSyntaxError(statement, syntaxErr), nil
+}
+
+// statementWithResultLimit falls back to a CTE only for a statement CockroachDB
+// cannot parse, which then fails on the server either way.
+func statementWithResultLimit(statement string, limit int, _ string) string {
+	return base.RewriteResultLimit(statement, limit, analysis.RewriteResultLimit, "WITH result AS (\n%s\n) SELECT * FROM result LIMIT %d;")
 }
 
 // AST is the AST implementation for CockroachDB parser.

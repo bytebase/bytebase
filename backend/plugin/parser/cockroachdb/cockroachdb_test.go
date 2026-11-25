@@ -44,6 +44,11 @@ func TestDiagnoseSeam(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, diags, 1)
 	require.Equal(t, uint32(1), diags[0].Range.Start.Line)
+
+	// CockroachDB-only syntax the PostgreSQL grammar rejects.
+	diags, err = base.Diagnose(context.Background(), base.DiagnoseContext{}, storepb.Engine_COCKROACHDB, "UPSERT INTO t VALUES (1);\nSELECT * FROM t@idx AS OF SYSTEM TIME '-10s';")
+	require.NoError(t, err)
+	require.Empty(t, diags)
 }
 
 func TestCompletionSeam(t *testing.T) {
@@ -65,7 +70,12 @@ func TestValidateSQLForEditorSeam(t *testing.T) {
 	require.True(t, valid)
 	require.True(t, allQuery)
 
-	valid, allQuery, err = base.ValidateSQLForEditor(storepb.Engine_COCKROACHDB, "DELETE FROM t;")
+	valid, allQuery, err = base.ValidateSQLForEditor(storepb.Engine_COCKROACHDB, "SHOW RANGES FROM TABLE t; SELECT * FROM t AS OF SYSTEM TIME '-10s';")
+	require.NoError(t, err)
+	require.True(t, valid)
+	require.True(t, allQuery)
+
+	valid, allQuery, err = base.ValidateSQLForEditor(storepb.Engine_COCKROACHDB, "SELECT * FROM [UPSERT INTO t VALUES (1) RETURNING *];")
 	require.NoError(t, err)
 	require.False(t, valid)
 	require.False(t, allQuery)
@@ -93,8 +103,14 @@ func TestExplainStatementSeam(t *testing.T) {
 }
 
 func TestStatementWithResultLimitSeam(t *testing.T) {
-	require.Equal(t, "SELECT * FROM t LIMIT 10",
-		base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, "SELECT * FROM t LIMIT 100", 10, ""))
+	for statement, want := range map[string]string{
+		"SELECT * FROM t LIMIT 100": "SELECT * FROM t LIMIT 10",
+		// A CTE wrapper would move AS OF SYSTEM TIME off the top-level statement.
+		"SELECT * FROM t AS OF SYSTEM TIME '-10s'": "SELECT * FROM t AS OF SYSTEM TIME '-10s' LIMIT 10",
+		"SHOW RANGES FROM TABLE t":                 "SHOW RANGES FROM TABLE t",
+	} {
+		require.Equal(t, want, base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, statement, 10, ""))
+	}
 }
 
 func TestGetQuerySpanSeam(t *testing.T) {

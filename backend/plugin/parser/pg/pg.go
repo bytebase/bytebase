@@ -23,10 +23,10 @@ func init() {
 		StatementRanges:      GetStatementRanges,
 		Diagnose:             Diagnose,
 		Complete:             Completion,
-		ValidateQuery:        ValidateQuery,
+		ValidateQuery:        validateQuery,
 		QuerySpan:            GetQuerySpan,
 		Explain:              explainStatement,
-		ResultLimit:          StatementWithResultLimit,
+		ResultLimit:          statementWithResultLimit,
 		ExtractChanged:       extractChangedResources,
 		TransformDMLToSelect: TransformDMLToSelect,
 		GenerateRestoreSQL:   GenerateRestoreSQL,
@@ -133,9 +133,9 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	}, base.CompareCandidateByTypeText), nil
 }
 
-// ValidateQuery reports whether the statement may run in the SQL editor's
+// validateQuery reports whether the statement may run in the SQL editor's
 // read-only mode and whether every statement returns data.
-func ValidateQuery(statement string) (bool, bool, error) {
+func validateQuery(statement string) (bool, bool, error) {
 	stmts, err := omnipg.Parse(statement)
 	if err != nil {
 		return false, false, err
@@ -169,8 +169,7 @@ func DescribeExplain(statement string) (format string, executed bool, ok bool) {
 	return analysis.DescribeExplain(statement)
 }
 
-// StatementWithResultLimit caps the rows a query returns at limit.
-func StatementWithResultLimit(statement string, limit int, _ string) string {
+func statementWithResultLimit(statement string, limit int, _ string) string {
 	return base.RewriteResultLimit(statement, limit, analysis.RewriteResultLimit, "WITH result AS (\n%s\n) SELECT * FROM result LIMIT %d;")
 }
 
