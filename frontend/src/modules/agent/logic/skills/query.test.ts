@@ -3,6 +3,11 @@ import { describe, expect, test } from "vitest";
 import { getSkill } from "./index";
 
 describe("query skill", () => {
+  test("a database is not a prerequisite for general SQL explanations", () => {
+    expect(getSkill({ name: "query" })).toContain(
+      "General SQL questions do not need a connection"
+    );
+  });
   test("keeps no-persistence SQL review out of the auto-saving editor", () => {
     const guidance = getSkill({ name: "query" });
 

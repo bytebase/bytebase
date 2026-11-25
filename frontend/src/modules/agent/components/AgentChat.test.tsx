@@ -539,6 +539,32 @@ describe("AgentChat", () => {
     }
   );
 
+  test("keeps malformed SQL context readable and copyable without Resend", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "Historical SQL question",
+      metadata: { sqlEditorContextInvalid: true },
+    });
+    const onResend = vi.fn();
+    const view = renderIntoContainer(<AgentChat onResend={onResend} />);
+    view.render();
+    try {
+      expect(view.container.textContent).toContain("Historical SQL question");
+      const resend = view.container.querySelector<HTMLButtonElement>(
+        'button[aria-label="agent.resend-message"]'
+      );
+      expect(resend).toBeDisabled();
+      act(() => resend?.click());
+      expect(onResend).not.toHaveBeenCalled();
+      expect(view.container.querySelector('button[aria-label="common.copy"]')).toBeEnabled();
+    } finally {
+      view.unmount();
+    }
+  });
+
   test("resends each user message by its original ID without changing the draft", () => {
     const store = useAgentStore.getState();
     const chat = store.ensureCurrentChat();

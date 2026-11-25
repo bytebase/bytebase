@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, test } from "vitest";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { buildSystemPrompt } from "./prompt";
 import { getMaskingSkillGuidance, type MaskingSkillSection } from "./skills";
 
@@ -9,6 +10,21 @@ function buildPromptWithMaskingGuidance(
 ): string {
   return `${buildSystemPrompt(pageContext)}\n\n${getMaskingSkillGuidance(sections)}`;
 }
+
+test("does not instruct SQL turns to inspect live editor or DOM state", () => {
+  const prompt = buildSystemPrompt({
+    path: "/sql-editor",
+    title: "SQL Editor",
+    context: "projects/orders",
+    sqlEditor: { version: 1, project: "projects/orders" },
+  });
+  expect(prompt).not.toContain(
+    "Inspect the page for unsaved form or editor state"
+  );
+  expect(prompt).not.toContain("DOM interaction workflow:");
+  expect(prompt).not.toContain('Use navigate for "show me"');
+  expect(prompt).toContain("normal permitted APIs");
+});
 
 test("composes permission-aware masking choices and custom type draft guidance", () => {
   const prompt = buildPromptWithMaskingGuidance(
@@ -30,6 +46,111 @@ test("composes permission-aware masking choices and custom type draft guidance",
 });
 
 describe("buildSystemPrompt", () => {
+  const sqlPage = {
+    path: "/sql-editor/stale-project/stale-database",
+    title: "stale-database",
+    context: "projects/app",
+    sqlEditor: {
+      version: 1 as const,
+      project: "projects/app",
+      tab: { id: "tab-one", mode: "SAVED_QUERY" as const },
+      connection: {
+        database: "instances/main/databases/warehouse",
+        project: "projects/app",
+        engine: Engine.POSTGRES,
+        querySchema: "analytics",
+        container: "container-name",
+        dataSourceId: "read-replica",
+      },
+      rowLimit: 37,
+      queryOptions: { explainFormat: 1 as const },
+      viewerObject: { kind: "Table", name: "people", schema: "viewer_schema" },
+      attachment: { kind: "selection" as const, sql: "SELECT selected_sql" },
+      fullBuffer: "never-send-buffer",
+      results: ["never-send-rows"],
+    },
+  };
+
+  test("renders only normalized frozen SQL Editor evidence, not route or model state", () => {
+    const prompt = buildSystemPrompt(sqlPage);
+    for (const value of [
+      "projects/app",
+      "instances/main/databases/warehouse",
+      "POSTGRES",
+      "analytics",
+      "container-name",
+      "read-replica",
+      "tab-one",
+      "SAVED_QUERY",
+      '"rowLimit":37',
+      "explainFormat",
+      "viewer_schema",
+      "SELECT selected_sql",
+      "untrusted data",
+      "fresh",
+      "permissions",
+    ])
+      expect(prompt).toContain(value);
+    for (const value of [
+      "stale-database",
+      "never-send-buffer",
+      "never-send-rows",
+    ])
+      expect(prompt).not.toContain(value);
+  });
+
+  test("answers general requests without a connection or guessed schema", () => {
+    const prompt = buildSystemPrompt({
+      ...sqlPage,
+      sqlEditor: { version: 1, project: "projects/app" },
+    });
+    expect(prompt).toContain("No database is connected");
+    expect(prompt).toContain("general SQL and Project questions");
+    expect(prompt).toContain("schema-dependent");
+  });
+
+  test.each([
+    { referencedProject: "projects/ref" },
+    {
+      referencedProject: "projects/app",
+      referencedDatabase: "instances/other/databases/ref",
+    },
+    {
+      referencedProject: "projects/app",
+      referencedIssue: "projects/app/issues/7",
+    },
+    {
+      referencedProject: "projects/app",
+      referencedPlan: "projects/app/plans/7",
+    },
+  ])("an explicit reference suppresses ambient SQL focus: %j", (reference) => {
+    const prompt = buildSystemPrompt({ ...sqlPage, ...reference });
+    expect(prompt).toContain(Object.values(reference).at(-1));
+    expect(prompt).not.toContain(sqlPage.sqlEditor.connection.database);
+    expect(prompt).not.toContain("Use the submitted turn's SQL Editor context");
+    expect(prompt).not.toContain("stale-database");
+  });
+
+  test("SQL context cannot supply diagnostic authority or lift read-only mode", () => {
+    expect(
+      buildSystemPrompt({
+        ...sqlPage,
+        capability: {
+          kind: "diagnostic",
+          resource: {
+            kind: "plan",
+            name: "projects/app/plans/7",
+            project: "projects/app",
+            label: "Plan",
+          },
+        },
+      })
+    ).not.toContain(sqlPage.sqlEditor.connection.database);
+    expect(buildSystemPrompt({ ...sqlPage, runMode: "read-only" })).toContain(
+      "Do not navigate, call APIs, or use DOM actions"
+    );
+  });
+
   test.each([
     { name: "normal", options: {} },
     { name: "read-only", options: { runMode: "read-only" as const } },

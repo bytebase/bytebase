@@ -7,11 +7,12 @@ import { useAppStore } from "@/stores/app";
 import { isValidDatabaseName } from "@/types";
 import { Engine, IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import { getCurrentAgentSqlEditorContext } from "./sqlEditorHost";
 
 interface PageContext {
   user?: { name: string; email: string; title: string };
-  project?: { name: string; title: string; state: string };
-  database?: { name: string; engine: string; environment: string };
+  project?: { name: string; title?: string; state?: string };
+  database?: { name: string; engine: string; environment?: string };
   instance?: {
     name: string;
     title: string;
@@ -45,6 +46,19 @@ export async function extractRouteContext(
     // Store not initialized
   }
 
+  const sql = getCurrentAgentSqlEditorContext();
+  if (sql) {
+    if (sql.kind === "ready") {
+      const { project, connection } = sql.snapshot;
+      if (project) ctx.project = { name: project };
+      if (connection)
+        ctx.database = {
+          name: connection.database,
+          engine: Engine[connection.engine],
+        };
+    }
+    return ctx;
+  }
   const { projectId, databaseName, instanceId, issueId } =
     route.params as Record<string, string>;
 

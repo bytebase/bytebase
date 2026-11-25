@@ -29,6 +29,9 @@ import {
   withAgentRunLease,
 } from "../logic/runOwnership";
 import { getAgentRunStartup } from "../logic/runCheckpoint";
+import type { AgentSqlEditorSnapshot } from "../logic/sqlEditorContext";
+import { registerAgentSqlEditorHost } from "../logic/sqlEditorHost";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { boundAgentQueryResult } from "../logic/queryResultRetention";
 import { createAgentStore, getAgentStateKey, selectError, useAgentStore } from "../store/agent";
 import { AGENT_STORAGE_LIMIT_BYTES, AgentStorageFullError } from "../store/storageBudget";
@@ -516,12 +519,485 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
+  useAgentStore.setState({ sqlEditorHost: undefined });
   vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
+const publishSqlEditor = (snapshot?: AgentSqlEditorSnapshot) =>
+  act(() => {
+    registerAgentSqlEditorHost({
+      id: "sql",
+      slot: document.body,
+      mainColumn: document.body,
+      resizer: document.body,
+      paneRatio: 0.3,
+      captureContext: () =>
+        snapshot ? { kind: "ready", snapshot } : { kind: "pending" },
+    });
+  });
+
 describe("AgentInput", () => {
+  describe("SQL Editor submission", () => {
+    const project = "projects/orders";
+    const projectOnly: AgentSqlEditorSnapshot = { version: 1, project };
+    const connected: AgentSqlEditorSnapshot = {
+      ...projectOnly,
+      tab: { id: "orders-tab", mode: "SAVED_QUERY" },
+      connection: {
+        database: "instances/prod/databases/orders",
+        project,
+        engine: Engine.POSTGRES,
+        querySchema: "public",
+        dataSourceId: "reader",
+      },
+    };
+    const publish = publishSqlEditor;
+
+    test("a foreign history chat stays readable with its real scope and cannot submit a new turn", async () => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/billing" });
+      store.addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        content: "Billing history",
+      });
+      store.setDraft(chat.id, { text: "Keep this question" });
+      publish(projectOnly);
+      const onNewChat = vi.fn();
+      const view = renderIntoContainer(<AgentInput onNewChat={onNewChat} />);
+      try {
+        view.render();
+        expect(
+          view.container.querySelector("[data-agent-context]")?.textContent
+        ).toContain("Billing");
+        expect(
+          view.container.querySelector<HTMLButtonElement>("[data-agent-send]")
+            ?.disabled
+        ).toBe(true);
+        act(() =>
+          fireEvent.keyDown(view.container.querySelector("textarea")!, {
+            key: "Enter",
+          })
+        );
+        act(() =>
+          within(view.container)
+            .getByRole("button", { name: "agent.new-chat" })
+            .click()
+        );
+        expect(onNewChat).toHaveBeenCalledOnce();
+        expect(store.getDraft(chat.id).text).toBe("Keep this question");
+        expect(store.getMessages(chat.id)).toHaveLength(1);
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      } finally {
+        view.unmount();
+      }
+    });
+
+    test("holds first Send during initialization and freezes each submitted scope on both messages", async () => {
+      enableRunRecovery();
+      const store = useAgentStore.getState();
+      store.clearCurrentChat();
+      store.setLandingDraft({ text: "Explain indexes" });
+      publish();
+      const view = renderIntoContainer(<AgentInput />);
+      mocks.runAgentLoop.mockImplementation(
+        (
+          await vi.importActual<typeof import("../logic/agentLoop")>(
+            "../logic/agentLoop"
+          )
+        ).runAgentLoop
+      );
+      mocks.buildSystemPrompt.mockImplementation(
+        (
+          await vi.importActual<typeof import("../logic/prompt")>(
+            "../logic/prompt"
+          )
+        ).buildSystemPrompt
+      );
+      mocks.buildOutboundHistory.mockImplementation(
+        (
+          await vi.importActual<typeof import("../logic/outboundHistory")>(
+            "../logic/outboundHistory"
+          )
+        ).buildOutboundHistory
+      );
+      mocks.executeTool.mockResolvedValue({
+        kind: "done",
+        text: "Index help",
+        success: true,
+      });
+      mocks.aiChat.mockResolvedValue({
+        content: "",
+        toolCalls: [
+          {
+            id: "done",
+            name: "done",
+            arguments: JSON.stringify({ text: "Index help", success: true }),
+          },
+        ],
+        stopReason: AIChatResponse_StopReason.TURN_COMPLETED,
+      });
+      try {
+        view.render();
+        const send = () =>
+          view.container.querySelector<HTMLButtonElement>("[data-agent-send]")!;
+        expect(send().disabled).toBe(true);
+        expect(useAgentStore.getState().currentChatId).toBeNull();
+        const snapshots = [
+          projectOnly,
+          connected,
+          {
+            ...connected,
+            tab: { id: "other", mode: "SAVED_QUERY" as const },
+            connection: {
+              ...connected.connection!,
+              querySchema: "archive",
+              dataSourceId: "reports",
+            },
+          },
+          projectOnly,
+        ];
+        for (const [i, snapshot] of snapshots.entries()) {
+          publish(snapshot);
+          expect(
+            view.container.querySelector<HTMLButtonElement>(
+              "[data-agent-context-trigger]"
+            )?.disabled
+          ).toBe(true);
+          if (i)
+            act(() =>
+              store.setDraft(useAgentStore.getState().currentChatId!, {
+                text: "Another question",
+              })
+            );
+          await act(async () => {
+            send().click();
+            await vi.waitFor(() =>
+              expect(
+                store
+                  .getMessages(useAgentStore.getState().currentChatId)
+                  .filter((m) => m.content === "Index help")
+              ).toHaveLength(i + 1)
+            );
+          });
+          const messages = store.getMessages(
+            useAgentStore.getState().currentChatId
+          );
+          expect(messages.filter((m) => m.role === "user")).toHaveLength(i + 1);
+          expect(
+            messages.findLast((m) => m.role === "user")?.metadata?.sqlEditor
+          ).toEqual(snapshot);
+          expect(messages.at(-1)?.metadata).toMatchObject({
+            sqlEditor: snapshot,
+            sqlActionProvenance: {
+              version: 1,
+              runId: messages.at(-1)?.metadata?.runId,
+              runMode: "default",
+              diagnostic: false,
+            },
+          });
+          expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(
+            expect.objectContaining({ context: project, sqlEditor: snapshot })
+          );
+          const actual = (mocks.aiChat.mock.lastCall![0] as AIChatRequest)
+            .messages[0].content;
+          expect(actual).toContain(project);
+          if (snapshot.connection) {
+            expect(actual).toContain(snapshot.connection.database);
+            expect(actual).toContain(snapshot.connection.querySchema);
+            expect(actual).toContain(snapshot.connection.dataSourceId);
+          } else expect(actual).not.toContain(connected.connection!.database);
+          expect(
+            mocks.executeTool.mock.calls.every(([name]) => name === "done")
+          ).toBe(true);
+        }
+        expect(
+          store.getMessages(useAgentStore.getState().currentChatId)[0].metadata
+            ?.sqlEditor
+        ).toEqual(projectOnly);
+      } finally {
+        view.unmount();
+      }
+    });
+
+    test.each(["resend", "retry"] as const)(
+      "uses the original SQL binding on %s when the active tab changed",
+      async (action) => {
+        enableRunRecovery();
+        const store = useAgentStore.getState();
+        const chat = store.createChat({ context: project });
+        const source = store.addMessage({
+          chatId: chat.id,
+          role: "user",
+          content: "Explain my connection",
+          metadata: { route: "/sql", sqlEditor: connected },
+        })!;
+        store.setChatStatus(chat.id, "error", { lastError: "failed" });
+        publish(projectOnly);
+        const resend = createRef<((id: string) => void) | null>();
+        const retry = createRef<(() => void) | null>();
+        const view = renderIntoContainer(
+          <AgentInput resendActionRef={resend} retryActionRef={retry} />
+        );
+        mocks.runAgentLoop.mockResolvedValue({
+          kind: "completed",
+          success: true,
+          totalTokensUsed: 0,
+        });
+        try {
+          view.render();
+          await act(async () => {
+            if (action === "resend") resend.current?.(source.id);
+            else retry.current?.();
+            await vi.waitFor(() =>
+              expect(mocks.buildSystemPrompt).toHaveBeenCalled()
+            );
+          });
+          expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(
+            expect.objectContaining({ path: "/sql", sqlEditor: connected })
+          );
+          expect(
+            store.getMessages(chat.id).findLast((m) => m.role === "user")
+              ?.metadata?.sqlEditor
+          ).toEqual(connected);
+          const options = vi
+            .mocked(mocks.createToolExecutor)
+            .mock.calls.at(-1) as unknown as Parameters<
+            typeof createToolExecutor
+          >;
+          expect(options[1]?.canUseCurrentPage?.()).toBe(false);
+        } finally {
+          view.unmount();
+        }
+      }
+    );
+
+    test.each([false, true])("restores a blocked SQL startup across reload and uses live focus only after an edit: edited=%s", async (edited) => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({context: project});
+      const page = {path: "/sql", title: "Editor", sqlEditor: connected};
+      store.queueUserMessage({chatId: chat.id, text: "Explain the target", page});
+      mocks.getOrFetchSettingByName.mockResolvedValue({value: {value: {case:"ai", value: {enabled:false}}}});
+      const view = renderIntoContainer(<AgentInput />);
+      try {
+        view.render();
+        await act(async () => {
+          await vi.waitFor(() => expect(store.getDraft(chat.id).text).toBe("Explain the target"));
+        });
+        expect(store.getDraft(chat.id).queuedSqlPage).toEqual(page);
+        expect(await store.flushRunPersistence()).toBe(true);
+        view.render(<div />);
+        act(() => store.loadState());
+        expect(store.getDraft(chat.id).queuedSqlPage).toEqual(page);
+        expect(store.getMessages(chat.id)).toHaveLength(0);
+        publish(projectOnly);
+        mocks.getOrFetchSettingByName.mockResolvedValue(undefined);
+        act(() => store.clearError(chat.id));
+        view.render(<AgentInput />);
+        if (edited) act(() => fireEvent.change(view.container.querySelector("textarea")!, {target:{value:"A new question"}}));
+        mocks.runAgentLoop.mockResolvedValue({kind:"completed", success:true, totalTokensUsed:0});
+        await act(async () => {
+          view.container.querySelector<HTMLButtonElement>("[data-agent-send]")!.click();
+          await vi.waitFor(() => expect(mocks.buildSystemPrompt).toHaveBeenCalled());
+        });
+        expect(store.getMessages(chat.id).find(m => m.role === "user")?.metadata?.sqlEditor).toEqual(edited ? projectOnly : connected);
+      } finally { view.unmount(); }
+    });
+
+    test("a corrupt restored SQL draft cannot become an ordinary Send without an edit", () => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({context:project});
+      store.setDraft(chat.id, {text:"Keep this question", queuedSqlPage: null});
+      publish(projectOnly);
+      const view = renderIntoContainer(<AgentInput />);
+      try {
+        view.render();
+        expect(view.container.querySelector("textarea")).toHaveValue("Keep this question");
+        expect(view.container.querySelector("[data-agent-send]")).toBeDisabled();
+        act(() => fireEvent.keyDown(view.container.querySelector("textarea")!, {key:"Enter"}));
+        expect(store.getMessages(chat.id)).toHaveLength(0);
+      } finally { view.unmount(); }
+    });
+
+    test.each(["fifo", "startup"].flatMap(slot => ["snapshot", "missing reference", "changed reference"].map(reason => ({slot, reason}))))("a restored $slot Ask next cannot dispatch with a $reason mismatch", async ({slot,reason}) => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({context:project});
+      const ref = {kind:"database" as const,name:"instances/prod/databases/explicit",project,label:"Explicit"};
+      const metadata = {sqlEditor:connected, resourceReferences:[ref]};
+      store.addMessage({chatId:chat.id,role:"user",content:"Original",metadata});
+      const source = store.addMessage({chatId:chat.id,role:"assistant",content:"Original answer",metadata})!;
+      const entry = {chatId:chat.id,text:"Ask next",page:{path:"/sql",title:"Editor",sqlEditor:reason === "snapshot" ? projectOnly : connected},followUpSourceId:source.id,
+        ...(reason === "missing reference" ? {} : {resourceReferences:[reason === "changed reference" ? {...ref,name:"instances/prod/databases/replacement"} : ref]})};
+      if (slot === "fifo") store.enqueueFollowUp(entry);
+      else store.queueUserMessage(entry);
+      await store.flushRunPersistence();
+      store.loadState();
+      mocks.runAgentLoop.mockResolvedValue({kind:"completed",success:true,totalTokensUsed:0});
+      const view = renderIntoContainer(<AgentInput />);
+      try {
+        view.render();
+        await act(async () => {
+          if (slot === "fifo") within(view.container).getByRole("button", { name: "agent.follow-up-queue.resume" }).click();
+          await vi.waitFor(() => {
+            if (slot === "fifo") expect(store.getChat(chat.id)?.lastError).toBeTruthy();
+            else expect(store.getDraft(chat.id)).toMatchObject({text:expect.stringContaining(entry.text),queuedSqlPage:null});
+          });
+        });
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+        expect(store.getMessages(chat.id).map(m => m.content)).toEqual(["Original","Original answer"]);
+        if (slot === "fifo") expect(useAgentStore.getState().followUpQueuesByChatId[chat.id]).toMatchObject({paused:true,messages:[entry]});
+      } finally { view.unmount(); }
+    });
+
+    test.each(["Resend", "Ask next"] as const)("legacy %s does not copy a new SQL Editor URL or title into a historic request", async action => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({context:project});
+      const user = store.addMessage({chatId:chat.id, role:"user", content:"Explain this page", metadata:{route:"/original"}})!;
+      const answer = store.addMessage({chatId:chat.id, role:"assistant", content:"The original page", metadata:{route:"/original"}})!;
+      if (action === "Ask next") store.setDraft(chat.id, {text:"Continue", followUpSourceId:answer.id});
+      publish(connected);
+      mocks.currentPath = "/sql?database=private-live-target";
+      mocks.runAgentLoop.mockResolvedValue({kind:"completed",success:true,totalTokensUsed:0});
+      const resend = createRef<((id:string)=>void) | null>();
+      const view = renderIntoContainer(<AgentInput resendActionRef={resend} />);
+      try {
+        view.render();
+        await act(async () => {
+          if (action === "Resend") resend.current?.(user.id);
+          else view.container.querySelector<HTMLButtonElement>("[data-agent-send]")!.click();
+          await vi.waitFor(() => expect(mocks.buildSystemPrompt).toHaveBeenCalled());
+        });
+        expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(expect.objectContaining({path:"/original",title:""}));
+        expect(mocks.buildSystemPrompt.mock.lastCall?.[0].sqlEditor).toBeUndefined();
+      } finally { view.unmount(); }
+    });
+
+    test.each([false, true])("an unchanged Ask next draft keeps its source SQL target after clarification=%s", async (clarified) => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: project });
+      const reference = {kind:"database" as const, name:"instances/prod/databases/explicit", project, label:"Original"};
+      const metadata = {route:"/sql", sqlEditor:connected, resourceReferences:[reference]};
+      store.addMessage({
+        chatId: chat.id,
+        role: "user",
+        content: "Explain A",
+        metadata: clarified ? { ...metadata, resourceReferences: [{ kind: "project", name: project, project, label: "Project" }] } : metadata,
+      });
+      if (clarified) {
+        store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: "choose-database", name: "ask_user", arguments: '{"kind":"input","prompt":"Which database?"}' }] });
+        store.addMessage({ chatId: chat.id, role: "tool", toolCallId: "choose-database", content: '{"kind":"input","answer":"@Original"}', metadata: { resourceReferences: [reference] } });
+      }
+      const answer = store.addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        content: "Details",
+        metadata,
+      })!;
+      store.setDraft(chat.id, {
+        text: "@Renamed Tell me more",
+        mentions: [{range: {start:0,end:8},resource:{...reference,label:"Renamed"}}],
+        followUpSourceId: answer.id,
+      });
+      publish(projectOnly);
+      const view = renderIntoContainer(<AgentInput />);
+      mocks.executeTool.mockResolvedValue({kind:"tool_result",result:JSON.stringify({project,database:{status:"available",name:reference.name,state:"ACTIVE"}})});
+      mocks.runAgentLoop.mockResolvedValue({
+        kind: "completed",
+        success: true,
+        totalTokensUsed: 0,
+      });
+      try {
+        view.render();
+        await act(async () => {
+          view.container
+            .querySelector<HTMLButtonElement>("[data-agent-send]")!
+            .click();
+          await vi.waitFor(() =>
+            expect(mocks.buildSystemPrompt).toHaveBeenCalled()
+          );
+        });
+        expect(store.getMessages(chat.id).findLast(message => message.role === "user")?.metadata?.sqlEditor).toEqual(
+          connected
+        );
+        expect(mocks.executeTool).toHaveBeenCalledWith("get_database_overview", {databaseName:reference.name}, expect.any(String));
+      } finally {
+        view.unmount();
+      }
+    });
+
+    test.each(["changed owner", "denied", "foreign reference"])(
+      "never falls back to the ambient database when the explicit reference fails: %s",
+      async (failure) => {
+        mocks.runAgentLoop.mockResolvedValue({
+          kind: "completed",
+          success: true,
+          totalTokensUsed: 0,
+        });
+        const store = useAgentStore.getState();
+        const chat = store.createChat({ context: project });
+        const resource = {
+          kind: "database" as const,
+          name: "instances/prod/databases/report",
+          project:
+            failure === "foreign reference" ? "projects/billing" : project,
+          label: "report",
+        };
+        store.queueUserMessage({
+          chatId: chat.id,
+          text: "Review @report",
+          resourceReferences: [resource],
+          page: { path: "/sql", title: "Editor", sqlEditor: connected },
+        });
+        mocks.executeTool.mockResolvedValue({
+          kind: "tool_result",
+          result: JSON.stringify(
+            failure === "denied"
+              ? { error: "Permission denied" }
+              : {
+                  project: "projects/billing",
+                  database: {
+                    status: "available",
+                    name: resource.name,
+                    state: "ACTIVE",
+                  },
+                }
+          ),
+        });
+        const view = renderIntoContainer(<AgentInput />);
+        try {
+          view.render();
+          await act(async () => {
+            await vi.waitFor(() =>
+              expect(
+                store
+                  .getMessages(chat.id)
+                  .some((m) => m.role === "assistant") ||
+                  store.getChat(chat.id)?.status === "error"
+              ).toBe(true)
+            );
+          });
+          expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+          if (failure === "foreign reference")
+            expect(mocks.executeTool).not.toHaveBeenCalled();
+          else {
+            expect(
+              mocks.executeTool.mock.calls.map(([name, args]) => [name, args])
+            ).toEqual([
+              ["get_database_overview", { databaseName: resource.name }],
+            ]);
+            expect(store.getMessages(chat.id).at(-1)?.metadata).toMatchObject({
+              sqlEditor: connected,
+              sqlActionProvenance: { runMode: "read-only", diagnostic: false },
+            });
+          }
+        } finally {
+          view.unmount();
+        }
+      }
+    );
+  });
   describe("landing draft", () => {
     beforeEach(() => {
       useAgentStore.setState({
@@ -917,6 +1393,91 @@ describe("AgentInput", () => {
     vi.stubGlobal("sessionStorage", createMockStorage());
   };
 
+  test("keeps one provider request across surface placement and minimize/restore", async () => {
+    enableAsynchronousRunRecovery();
+    const { AgentSurface } = await import("./AgentSurface");
+    const { runAgentLoop } = await vi.importActual<
+      typeof import("../logic/agentLoop")
+    >("../logic/agentLoop");
+    mocks.runAgentLoop.mockImplementation(runAgentLoop);
+    const startupTool = mocks.executeTool.getMockImplementation()!;
+    mocks.executeTool.mockImplementation(async (name, ...args) =>
+      name === "done"
+        ? { kind: "done", text: "The query draft is ready.", success: true }
+        : startupTool(name, ...args)
+    );
+    let finishProvider: (() => void) | undefined;
+    mocks.aiChat.mockImplementation(() => new Promise((resolve) => {
+      finishProvider = () => resolve({
+        content: "",
+        toolCalls: [{
+          id: "done-once", name: "done", arguments: JSON.stringify({
+            text: "The query draft is ready.", success: true,
+          }),
+        }],
+        stopReason: AIChatResponse_StopReason.TURN_COMPLETED,
+      });
+    }));
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.open();
+    store.queueUserMessage({
+      chatId: chat.id, text: "Draft a query", page: { path: "/demo", title: "Demo" },
+    });
+    const surface = (
+      presentation: ComponentProps<typeof AgentSurface>["presentation"],
+      minimized = false
+    ) => (
+      <AgentSurface presentation={presentation}>
+        {minimized ? null : <AgentInput />}
+      </AgentSurface>
+    );
+    const view = renderIntoContainer(surface("floating"));
+    view.render();
+    try {
+      await act(async () => {
+        await vi.waitFor(() => expect(mocks.aiChat).toHaveBeenCalledOnce());
+      });
+      const controller = store.getAbortController(chat.id);
+      expect(controller).not.toBeNull();
+      const input = screen.getByRole("textbox");
+      act(() => store.setDraft(chat.id, { text: "Keep this next question" }));
+
+      for (const presentation of ["sql-editor-docked", "sql-editor-overlay", "floating"] as const) {
+        view.render(surface(presentation));
+        expect(screen.getByRole("textbox")).toBe(input);
+        expect(screen.getByRole("textbox")).toHaveValue("Keep this next question");
+        expect(store.getAbortController(chat.id)).toBe(controller);
+        expect(controller?.signal.aborted).toBe(false);
+        expect(mocks.aiChat).toHaveBeenCalledOnce();
+      }
+
+      act(() => store.minimize());
+      view.render(surface("sql-editor-docked", true));
+      expect(screen.queryByRole("textbox")).toBeNull();
+      expect(controller?.signal.aborted).toBe(false);
+      act(() => store.restore());
+      view.render(surface("sql-editor-docked"));
+      expect(screen.getByRole("textbox")).toHaveValue("Keep this next question");
+      expect(store.getAbortController(chat.id)).toBe(controller);
+      expect(mocks.aiChat).toHaveBeenCalledOnce();
+
+      await act(async () => {
+        finishProvider?.();
+        await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle"));
+      });
+      expect(mocks.aiChat).toHaveBeenCalledOnce();
+      expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+      expect(store.getMessages(chat.id).filter(({ content }) =>
+        content === "The query draft is ready."
+      )).toHaveLength(1);
+      expect(store.getDraft(chat.id).text).toBe("Keep this next question");
+    } finally {
+      await act(async () => { finishProvider?.(); });
+      view.unmount();
+    }
+  });
+
   const waitForLeaseRelease = async (chatId: string) => {
     const { workspaceName, userEmail } = useAgentStore.getState();
     const key = getAgentStateKey(workspaceName!, userEmail!)!;
@@ -1060,7 +1621,7 @@ describe("AgentInput", () => {
       enableRunRecovery();
       const store = useAgentStore.getState();
       const resource = { kind: "project" as const, name: "projects/orders", project: "projects/orders", label: "Orders" };
-      const page = { path: "/demo", title: "Demo" };
+      const page = { path: "/demo", title: "Demo", sqlEditor: { version: 1 as const, project: resource.project, tab: {id: "original", mode: "SAVED_QUERY" as const} } };
       const chat = store.createChat({ context: resource.name, page });
       store.setDraft(chat.id, { text: "Keep my next request" });
       const freeAgentStorage = store.freeAgentStorage;
@@ -1083,10 +1644,12 @@ describe("AgentInput", () => {
         expect(store.getChat(chat.id)?.runCheckpoint?.startupComplete).toBe(false);
         expect(getAgentRunStartup(store.getChat(chat.id), store.getMessages(chat.id))).toBeDefined();
         await store.flushRunPersistence();
+        publishSqlEditor({version: 1, project: resource.project, tab: {id: "next", mode: "ADMIN"}});
         act(() => useAgentStore.setState({ storagePressure: pressure }));
         await confirmFreeSpace();
         expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
         expect(mocks.runAgentLoop.mock.calls[0][5]).toMatchObject({ runId });
+        expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(expect.objectContaining({sqlEditor:page.sqlEditor}));
         expect(mocks.executeTool).toHaveBeenCalledWith("get_project_overview", {}, expect.any(String));
         expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ referencedProject: resource.name }));
         expect(store.getMessages(chat.id).filter((message) => message.role === "user").map((message) => message.id)).toEqual([root.id]);
@@ -2002,7 +2565,7 @@ describe("AgentInput", () => {
       return { kind: "completed", success: true, totalTokensUsed: 60_000 };
     });
     const store = useAgentStore.getState();
-    const page = { path: "/projects/billing", title: "Billing" };
+    const page = { path: "/projects/billing", title: "Billing", sqlEditor: {version:1 as const, project:"projects/billing", tab:{id:"initial", mode:"SAVED_QUERY" as const}} };
     const chat = store.createChat({ context: "projects/billing", page });
     store.queueUserMessage({ chatId: chat.id, text: "Review this project.", page, resourceReferences: [{ kind: "project", name: "projects/billing", project: "projects/billing", label: "Billing" }] });
     const view = renderIntoContainer(<AgentInput />);
@@ -2019,8 +2582,10 @@ describe("AgentInput", () => {
     expect(mocks.runAgentLoop).toHaveBeenCalledTimes(1);
     expect(view.container.textContent).not.toContain("agent.token-budget.resume");
     const confirm = await openRunLimitIncrease(view.container, 150);
+    publishSqlEditor({version:1, project:"projects/billing", tab:{id:"other", mode:"ADMIN"}});
     await act(async () => { confirm.click(); await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle")); });
     expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2);
+    expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(expect.objectContaining({sqlEditor:page.sqlEditor}));
     expect(mocks.executeTool).toHaveBeenCalledTimes(startupCalls);
     expect(store.getDraft(chat.id).text).toBe("Keep this draft.");
     expect(store.getMessages(chat.id).filter(message => message.role === "user")).toHaveLength(1);
@@ -5976,8 +6541,19 @@ describe("AgentInput", () => {
       try {
         await submit(view, "List databases");
         await waitForRuns(1);
+        const sqlEditor: AgentSqlEditorSnapshot = {version:1, project:"projects/orders", tab:{id:"first", mode:"SAVED_QUERY"}};
+        publishSqlEditor(sqlEditor);
         await submit(view, "List database owners");
+        const next: AgentSqlEditorSnapshot = { ...sqlEditor, tab:{id:"other", mode:"ADMIN"} };
+        publishSqlEditor(next);
         await submit(view, "What does SELECT @x mean?");
+        await store.flushRunPersistence();
+        const reloaded = createAgentStore();
+        reloaded.getState().setWorkspaceName("workspaces/demo", "agent@example.com");
+        const restored = reloaded.getState().followUpQueuesByChatId[view.chatId];
+        expect(reloaded.getState().promoteFollowUp(view.chatId, restored.messages[0].id)).toBeNull();
+        expect(restored.messages.map(m => m.page.sqlEditor)).toEqual([sqlEditor, next]);
+        publishSqlEditor({ version:1, project:"projects/orders" });
         expect(mocks.runAgentLoop).toHaveBeenCalledTimes(1);
         expect(view.userMessages().map(({ content }) => content)).toEqual([
           "List databases",
@@ -6006,6 +6582,7 @@ describe("AgentInput", () => {
 
         await act(async () => releaseFlush?.());
         await waitForRuns(2);
+        expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(expect.objectContaining({sqlEditor}));
         expect(store.getAbortController(view.chatId)).not.toBe(firstController);
         expect(view.userMessages().map(({ content }) => content)).toEqual([
           "List databases",
@@ -6014,6 +6591,7 @@ describe("AgentInput", () => {
 
         await act(async () => finishSecond(success));
         await waitForRuns(3);
+        expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(expect.objectContaining({sqlEditor:next}));
         await waitForLeaseRelease(view.chatId);
         expect(view.userMessages().map(({ content }) => content)).toEqual([
           "List databases",
@@ -10236,6 +10814,7 @@ describe("AgentInput", () => {
       expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(expect.objectContaining({ capability, referencedProject: resource.project, referencedPlan: resource.name }));
       expect(mocks.buildOutboundHistory.mock.calls.at(-1)?.[4]).toEqual({
         includeActionReceipts: false,
+        includeHistoricalDatabase: false,
         ownerEmail: "agent@example.com",
       });
       expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith(expect.objectContaining({ capability }));
@@ -10832,6 +11411,34 @@ describe("AgentInput", () => {
   });
 
   describe("Resend admission", () => {
+    test("does not resubmit a malformed SQL context as a broad new turn", async () => {
+      enableRunRecovery();
+      mocks.runAgentLoop.mockResolvedValue({ kind: "completed", success: true, totalTokensUsed: 0 });
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      const original = store.addMessage({
+        chatId: chat.id, role: "user", content: "Historical SQL question",
+        metadata: { sqlEditorContextInvalid: true },
+      })!;
+      store.setDraft(chat.id, { text: "Keep my next question" });
+      const history = store.getMessages(chat.id);
+      const resendActionRef = createRef<((messageId: string) => void) | null>();
+      const view = renderIntoContainer(<AgentInput resendActionRef={resendActionRef} />);
+      try {
+        view.render();
+        const configurationReads = mocks.getOrFetchSettingByName.mock.calls.length;
+        await act(async () => { await resendActionRef.current?.(original.id); });
+        expect(mocks.getOrFetchSettingByName).toHaveBeenCalledTimes(configurationReads);
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+        expect(mocks.aiChat).not.toHaveBeenCalled();
+        expect(mocks.executeTool).not.toHaveBeenCalled();
+        expect(store.getMessages(chat.id)).toEqual(history);
+        expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+      } finally {
+        view.unmount();
+      }
+    });
+
     test.each(["idle", "error"] as const)("rechecks admission for an %s chat despite prior storage pressure", async (status) => {
       enableRunRecovery();
       mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, _callbacks, _signal, options) => {

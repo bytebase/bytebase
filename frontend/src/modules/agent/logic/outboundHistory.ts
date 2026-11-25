@@ -12,6 +12,10 @@ import {
   formatResourceMention,
   getHumanInputResourceReferenceMap,
 } from "./resourceMention";
+import {
+  type AgentSqlEditorSnapshot,
+  getAgentSourceSqlEditorContext,
+} from "./sqlEditorContext";
 import type {
   AgentActionReceipt,
   AgentMessage,
@@ -22,6 +26,7 @@ import type {
 
 interface OutboundHistoryOptions {
   includeActionReceipts?: boolean;
+  includeHistoricalDatabase?: boolean;
   ownerEmail?: string;
 }
 
@@ -672,16 +677,19 @@ const getHistoricalDatabaseIdentity = (
   const current = messages[currentIndex];
   if (!chatContext || !current) return undefined;
   const sourceId = current.metadata?.followUpSourceId;
+  if (
+    current.metadata?.sqlEditorContextInvalid ||
+    (sourceId === undefined && current.metadata?.sqlEditor !== undefined)
+  )
+    return undefined;
+  let sourceEditor: AgentSqlEditorSnapshot | undefined;
   let historyStart = 0;
   let historyEnd = currentIndex;
   if (sourceId !== undefined) {
-    if (
-      typeof sourceId !== "string" ||
-      !sourceId ||
-      sourceId.length > 1000 ||
-      sourceDepth >= 100
-    )
-      return undefined;
+    if (sourceDepth >= 100) return undefined;
+    const sql = getAgentSourceSqlEditorContext(sourceMessages, sourceId);
+    if (sql?.kind === "pending") return undefined;
+    sourceEditor = sql?.snapshot;
     const sourceIndex = messages.findIndex(
       (message) => message.id === sourceId
     );
@@ -689,12 +697,7 @@ const getHistoricalDatabaseIdentity = (
     if (
       !source ||
       sourceIndex >= currentIndex ||
-      source.role !== "assistant" ||
-      source.chatId !== current.chatId ||
-      isHistoricalAssistantError(source) ||
-      sourceMessages.some(
-        (message, index) => index !== sourceIndex && message.id === sourceId
-      )
+      source.chatId !== current.chatId
     )
       return undefined;
     historyStart = messages
@@ -710,6 +713,24 @@ const getHistoricalDatabaseIdentity = (
   const currentReferences = messages
     .slice(currentIndex)
     .flatMap((message) => references.get(message) ?? []);
+  // An explicit reference scopes its turn independently of editor focus.
+  const useSourceEditor =
+    sourceEditor !== undefined &&
+    !currentReferences.length &&
+    !history.some((message) => references.get(message)?.length);
+  const sourceConnection = useSourceEditor
+    ? sourceEditor?.connection
+    : undefined;
+  if (
+    useSourceEditor &&
+    (!sourceConnection ||
+      sourceConnection.project.length > 1000 ||
+      (chatContext.startsWith("projects/") &&
+        sourceEditor?.project !== chatContext) ||
+      (chatContext.startsWith("workspaces/") &&
+        sourceEditor?.project !== undefined))
+  )
+    return undefined;
   const currentDatabase = allowCurrentDatabase
     ? currentReferences.find((reference) => reference.kind === "database")
     : undefined;
@@ -747,6 +768,8 @@ const getHistoricalDatabaseIdentity = (
     : new Set<string>();
   let candidates = new Map<string, HistoricalDatabaseContext>();
   const databaseProjects = new Map<string, string | null>();
+  if (sourceConnection)
+    databaseProjects.set(sourceConnection.database, sourceConnection.project);
   let ignoredTurn = false;
   for (const message of history) {
     if (message.role === "user")
@@ -776,6 +799,14 @@ const getHistoricalDatabaseIdentity = (
     project?: string,
     query?: HistoricalDatabaseContext["query"]
   ) => {
+    if (
+      sourceConnection &&
+      (database !== sourceConnection.database ||
+        (query &&
+          (query.schema !== sourceConnection.querySchema ||
+            query.container !== sourceConnection.container)))
+    )
+      return;
     if (database.length > 1000 || /[\u0000-\u001f\u007f]/u.test(database))
       return;
     const match = HISTORICAL_DATABASE_NAME.exec(database);
@@ -860,6 +891,13 @@ const getHistoricalDatabaseIdentity = (
       ) {
         const query = historicalQueryRequest(args.body);
         if (sourceId !== undefined) {
+          if (
+            sourceConnection &&
+            args.body.dataSourceId !== sourceConnection.dataSourceId
+          ) {
+            invalidSourceQuery = true;
+            continue;
+          }
           if (query)
             sourceQueries.add(
               JSON.stringify({ database: args.body.name, query })
@@ -878,6 +916,18 @@ const getHistoricalDatabaseIdentity = (
     (invalidSourceQuery || sourceQueries.size !== 1)
   ) {
     const owningUser = messages[historyStart];
+    if (
+      !invalidSourceQuery &&
+      !sourceHasQuery &&
+      !interrupted &&
+      owningUser.metadata?.followUpSourceId === undefined &&
+      sourceConnection &&
+      !getAnsweredDatabaseChoices(history).size
+    ) {
+      add(sourceConnection.database, sourceConnection.project);
+      finishTurn();
+      return latest;
+    }
     if (
       invalidSourceQuery ||
       sourceHasQuery ||
@@ -992,7 +1042,10 @@ export const buildOutboundHistory = (
   attempts?: readonly AgentApiAttempt[],
   options: OutboundHistoryOptions = {}
 ): Message[] => {
-  const identityContext = historicalDatabaseContext(messages, chatContext);
+  const identityContext =
+    options.includeHistoricalDatabase === false
+      ? undefined
+      : historicalDatabaseContext(messages, chatContext);
   const unresolved = attempts?.filter(isAgentApiAttemptUncertain);
   return [
     {

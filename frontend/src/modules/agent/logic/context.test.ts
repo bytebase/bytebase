@@ -6,10 +6,15 @@ import {
   PROJECT_V1_ROUTE_INSTANCE_DETAIL,
 } from "@/app/router/handles";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import type { AgentSqlContextCapture } from "./sqlEditorContext";
 
 const mocks = vi.hoisted(() => ({
+  sqlCapture: vi.fn<() => AgentSqlContextCapture | undefined>(),
   getOrFetchDatabaseByName: vi.fn(),
   getOrFetchInstanceByName: vi.fn(),
+}));
+vi.mock("./sqlEditorHost", () => ({
+  getCurrentAgentSqlEditorContext: mocks.sqlCapture,
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -43,8 +48,34 @@ const unknownDatabase = {
 
 describe("extractRouteContext", () => {
   beforeEach(() => {
+    mocks.sqlCapture.mockReset();
     mocks.getOrFetchDatabaseByName.mockReset();
     mocks.getOrFetchInstanceByName.mockReset();
+  });
+
+  test("does not fetch a stale SQL URL database even while the selected Project is pending", async () => {
+    mocks.sqlCapture.mockReturnValue({ kind: "pending" });
+    expect((await extractRouteContext(databaseRoute)).database).toBeUndefined();
+    expect(mocks.getOrFetchDatabaseByName).not.toHaveBeenCalled();
+    mocks.sqlCapture.mockReturnValue({
+      kind: "ready",
+      snapshot: {
+        version: 1,
+        project: "projects/new",
+        connection: {
+          database: "instances/main/databases/new",
+          project: "projects/new",
+          engine: Engine.MYSQL,
+        },
+      },
+    });
+    const context = await extractRouteContext(databaseRoute);
+    expect(context.database).toMatchObject({
+      name: "instances/main/databases/new",
+      engine: "MYSQL",
+    });
+    expect(context.project).toMatchObject({ name: "projects/new" });
+    expect(mocks.getOrFetchDatabaseByName).not.toHaveBeenCalled();
   });
 
   test("resolves a workspace instance database", async () => {

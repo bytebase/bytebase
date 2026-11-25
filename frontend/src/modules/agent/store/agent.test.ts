@@ -8,6 +8,7 @@ import {
   AccessGrantSchema,
 } from "@/types/proto-es/v1/access_grant_service_pb";
 import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
 import { actionReceiptKey } from "../logic/actionReceipt";
@@ -137,6 +138,424 @@ const decodeReceiptGrant = (receipt: AgentActionReceipt | undefined) =>
         submittedAt: receipt.savedAt,
       })
     : undefined;
+
+describe("SQL Editor snapshot storage", () => {
+  const workspace = "workspaces/sql-context";
+  const project = "projects/example";
+  const page = {
+    path: "/sql-editor",
+    title: "SQL Editor",
+    sqlEditor: {
+      version: 1,
+      project,
+      connection: {
+        database: "projects/example/instances/demo/databases/example",
+        project,
+        engine: Engine.POSTGRES,
+      },
+      attachment: { kind: "selection", sql: " SELECT 1;\r\n" },
+    },
+  } as const;
+  const answerProvenance = {
+    version: 1,
+    runId: "older-run",
+    runMode: "read-only",
+    diagnostic: false,
+  } as const;
+  const storedCheckpoint = {
+    version: 1,
+    runId: "current-run",
+    suspension: "interrupted",
+    rootUserMessageId: "request",
+    throughMessageId: "request",
+    bindings: { page, references: [], runMode: "default" },
+    maskingSections: [],
+    phase: "working",
+  };
+  const storedChat = {
+    id: "chat",
+    title: "History",
+    context: project,
+    workspaceName: workspace,
+    createdTs: 1,
+    updatedTs: 3,
+    page,
+    runId: storedCheckpoint.runId,
+    runMode: "default",
+    runBudget: {
+      version: 1,
+      runId: storedCheckpoint.runId,
+      limit: 100,
+      totalTokensUsed: 0,
+      hasUnreportedUsage: false,
+      providerAttemptCount: 0,
+      revision: 0,
+    },
+    runCheckpoint: storedCheckpoint,
+  };
+  const storedMessages = [
+    {
+      id: "request",
+      chatId: "chat",
+      role: "user",
+      createdTs: 1,
+      content: "Explain this query",
+      metadata: { sqlEditor: page.sqlEditor },
+    },
+    {
+      id: "answer",
+      chatId: "chat",
+      role: "assistant",
+      createdTs: 2,
+      content: "Readable answer",
+      metadata: {
+        runId: "older-run",
+        sqlEditor: page.sqlEditor,
+        sqlActionProvenance: answerProvenance,
+      },
+    },
+  ];
+  const startup = { id: "startup", chatId: "chat", text: "Queued", page };
+  const followUp = { id: "fifo", chatId: "chat", text: "Next", page };
+  const restore = (data: Record<string, unknown>) => {
+    mockStorage.setItem(
+      getAgentStateKey(workspace),
+      JSON.stringify({
+        currentChatId: "chat",
+        chats: [storedChat],
+        messagesByChatId: { chat: storedMessages },
+        ...data,
+      })
+    );
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspace);
+    return store;
+  };
+
+  test("keeps per-turn source and run mode across passive reload and rebase", () => {
+    const store = restore({
+      queuedUserMessagesByChatId: { chat: startup },
+      followUpQueuesByChatId: { chat: { messages: [followUp], paused: false } },
+    });
+    const read = () => {
+      expect(s(store).getChat("chat")?.page).toEqual(page);
+      expect(s(store).getChat("chat")?.runCheckpoint?.bindings.page).toEqual(
+        page
+      );
+      const [request, answer] = s(store).getMessages("chat");
+      expect(request.metadata?.sqlEditor).toEqual(page.sqlEditor);
+      expect(answer.metadata).toMatchObject({
+        sqlEditor: page.sqlEditor,
+        sqlActionProvenance: answerProvenance,
+      });
+      expect(s(store).queuedUserMessagesByChatId.chat?.page).toEqual(page);
+      expect(s(store).followUpQueuesByChatId.chat).toMatchObject({
+        paused: true,
+        messages: [followUp],
+      });
+    };
+    read();
+    const peer = createAgentStore();
+    s(peer).setWorkspaceName(workspace);
+    s(peer).renameChat("chat", "Renamed in another tab");
+    s(peer).saveState();
+    s(store).syncState();
+    expect(s(store).getChat("chat")?.title).toBe("Renamed in another tab");
+    read();
+  });
+
+  test("first Send does not reuse an idle-looking chat with a remote owner", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspace);
+    const busy = s(store).createChat({
+      context: "projects/orders",
+      workspaceName: workspace,
+    });
+    const follower = createAgentStore();
+    s(follower).setWorkspaceName(workspace);
+    const controller = new AbortController();
+    s(store).setAbortController(busy.id, controller);
+    s(follower).syncState();
+    expect(s(follower).remoteBusyChatIds[busy.id]).toBe(true);
+    expect(s(follower).getChat(busy.id)?.status).toBe("idle");
+    const target = s(follower).selectOrCreateChatForContext(
+      "projects/orders",
+      page,
+      workspace
+    );
+    expect(target?.id).toBeTruthy();
+    expect(target?.id).not.toBe(busy.id);
+    expect(s(store).getAbortController(busy.id)).toBe(controller);
+    expect(controller.signal.aborted).toBe(false);
+  });
+
+  test("retains the source when queued startup text becomes a user message", () => {
+    const store = restore({
+      chats: [
+        {
+          ...storedChat,
+          runId: null,
+          runBudget: undefined,
+          runCheckpoint: undefined,
+        },
+      ],
+      queuedUserMessagesByChatId: { chat: startup },
+    });
+    expect(s(store).commitQueuedUserMessage("chat")).toMatchObject({
+      queued: startup,
+      message: { metadata: { sqlEditor: page.sqlEditor } },
+    });
+  });
+
+  test.each([
+    { version: 2 },
+    { version: 1, connection: page.sqlEditor.connection },
+  ])(
+    "blocks malformed startup, FIFO and checkpoint targets without discarding the transcript: %j",
+    (sqlEditor) => {
+      const invalidPage = { ...page, sqlEditor };
+      const store = restore({
+        chats: [
+          {
+            ...storedChat,
+            status: "running",
+            runCheckpoint: {
+              ...storedCheckpoint,
+              bindings: { ...storedCheckpoint.bindings, page: invalidPage },
+            },
+          },
+        ],
+        messagesByChatId: {
+          chat: [
+            storedMessages[0],
+            {
+              ...storedMessages[1],
+              metadata: {
+                ...storedMessages[1].metadata,
+                sqlActionProvenance: {
+                  ...answerProvenance,
+                  diagnostic: "false",
+                },
+              },
+            },
+          ],
+        },
+        queuedUserMessagesByChatId: { chat: { ...startup, page: invalidPage } },
+        followUpQueuesByChatId: {
+          chat: {
+            messages: [{ ...followUp, page: invalidPage }],
+            paused: false,
+          },
+        },
+      });
+      expect(s(store).getChat("chat")).toMatchObject({
+        status: "idle",
+        runId: null,
+      });
+      expect(s(store).getChat("chat")?.runCheckpoint).toBeUndefined();
+      expect(s(store).getChat("chat")?.interrupted).toBe(false);
+      expect(s(store).takeQueuedUserMessage("chat")).toBeNull();
+      expect(s(store).followUpQueuesByChatId.chat).toBeUndefined();
+      expect(
+        s(store)
+          .getMessages("chat")
+          .map(({ content }) => content)
+      ).toEqual(["Explain this query", "Readable answer"]);
+      expect(
+        s(store).getMessages("chat")[1]?.metadata?.sqlActionProvenance
+      ).toBeUndefined();
+    }
+  );
+
+  test.each(["startup", "singleton", "fifo"])(
+    "does not resurrect malformed %s SQL work from an old duplicate",
+    (slot) => {
+      const oldPage = { path: page.path, title: page.title };
+      const invalidPage = { ...page, sqlEditor: { version: 2 } };
+      const entry = { ...startup, fromFollowUpQueue: true };
+      const store = restore({
+        queuedUserMessagesByChatId: {
+          chat: { ...entry, page: slot === "startup" ? invalidPage : oldPage },
+        },
+        queuedUserMessage: {
+          ...startup,
+          page: slot === "singleton" ? invalidPage : oldPage,
+        },
+        followUpQueuesByChatId: {
+          chat: {
+            messages: [
+              { ...startup, page: slot === "fifo" ? invalidPage : oldPage },
+              followUp,
+            ],
+            paused: false,
+          },
+        },
+      });
+      expect(s(store).queuedUserMessagesByChatId.chat).toBeUndefined();
+      expect(s(store).followUpQueuesByChatId.chat?.messages).toEqual([
+        expect.objectContaining(followUp),
+      ]);
+      expect(s(store).getMessages("chat")).toHaveLength(2);
+    }
+  );
+
+  test("a storage rebase does not resurrect an invalid startup from a legacy wire copy", () => {
+    const old = { ...startup, page: { path: page.path, title: page.title } };
+    const store = restore({
+      queuedUserMessagesByChatId: { chat: old },
+      queuedUserMessage: old,
+    });
+    expect(s(store).queuedUserMessagesByChatId.chat).toMatchObject(old);
+
+    mockStorage.setItem(
+      getAgentStateKey(workspace),
+      JSON.stringify({
+        currentChatId: "chat",
+        chats: [storedChat],
+        messagesByChatId: { chat: storedMessages },
+        queuedUserMessagesByChatId: {
+          chat: { ...startup, page: { ...page, sqlEditor: null } },
+        },
+        queuedUserMessage: old,
+      })
+    );
+    s(store).syncState();
+    expect(s(store).takeQueuedUserMessage("chat")).toBeNull();
+    expect(s(store).getMessages("chat")).toHaveLength(2);
+  });
+
+  test("does not recover a valid-looking checkpoint whose user turn has an invalid SQL target", () => {
+    const store = restore({
+      messagesByChatId: {
+        chat: [
+          {
+            ...storedMessages[0],
+            metadata: { sqlEditor: { ...page.sqlEditor, version: 2 } },
+          },
+          storedMessages[1],
+        ],
+      },
+    });
+    const assertBlocked = () => {
+      expect(s(store).getChat("chat")).toMatchObject({
+        status: "idle",
+        runId: null,
+      });
+      expect(s(store).getChat("chat")?.runCheckpoint).toBeUndefined();
+      expect(s(store).getMessages("chat")[0]).toMatchObject({
+        content: "Explain this query",
+        metadata: { sqlEditorContextInvalid: true },
+      });
+    };
+    assertBlocked();
+    s(store).startChatRun("chat", { path: "/", title: "Home" });
+    assertBlocked();
+  });
+
+  test("reloads a corrupt queued SQL draft as blocked until its text or references change", () => {
+    const draft = {
+      text: "Keep this question",
+      queuedSqlPage: { ...page, sqlEditor: { version: 2 } },
+    };
+    const store = restore({ draftsByChatId: { chat: draft } });
+    expect(s(store).getDraft("chat")).toEqual({
+      text: draft.text,
+      queuedSqlPage: null,
+    });
+    s(store).setDraft("chat", { text: draft.text });
+    expect(s(store).getDraft("chat").queuedSqlPage).toBeNull();
+    s(store).setDraft("chat", { text: "A new request" });
+    expect(s(store).getDraft("chat").queuedSqlPage).toBeUndefined();
+  });
+
+  test("leaves an answer Copy-only if its claimed SQL provenance belongs to a different run", () => {
+    const store = restore({
+      messagesByChatId: {
+        chat: [
+          storedMessages[0],
+          {
+            ...storedMessages[1],
+            metadata: {
+              ...storedMessages[1].metadata,
+              sqlActionProvenance: {
+                ...answerProvenance,
+                runId: storedChat.runId,
+                runMode: "default",
+              },
+            },
+          },
+        ],
+      },
+    });
+    const answer = s(store).getMessages("chat")[1];
+    expect(answer?.content).toBe("Readable answer");
+    expect(answer?.metadata?.sqlEditor).toEqual(page.sqlEditor);
+    expect(answer?.metadata?.sqlActionProvenance).toBeUndefined();
+  });
+
+  test.each([
+    "different target",
+    "missing turn snapshot",
+    "missing run snapshot",
+  ])("does not resume a run with a %s", (mismatch) => {
+    const differentTarget = {
+      ...page.sqlEditor,
+      connection: {
+        ...page.sqlEditor.connection,
+        database: "instances/demo/databases/example",
+      },
+    };
+    const runPage = {
+      ...page,
+      sqlEditor:
+        mismatch === "missing run snapshot" ? undefined : page.sqlEditor,
+    };
+    const store = restore({
+      chats: [
+        {
+          ...storedChat,
+          status: "awaiting_user",
+          runCheckpoint: {
+            ...storedCheckpoint,
+            suspension: "awaiting-user",
+            bindings: { ...storedCheckpoint.bindings, page: runPage },
+          },
+        },
+      ],
+      pendingAskByChatId: {
+        chat: { kind: "input", prompt: "Continue?", toolCallId: "ask" },
+      },
+      messagesByChatId: {
+        chat: [
+          {
+            ...storedMessages[0],
+            metadata: {
+              sqlEditor:
+                mismatch === "missing turn snapshot"
+                  ? undefined
+                  : mismatch === "different target"
+                    ? differentTarget
+                    : page.sqlEditor,
+            },
+          },
+          storedMessages[1],
+        ],
+      },
+    });
+    expect(s(store).getPendingAsk("chat")).toBeNull();
+    expect(s(store).getChat("chat")).toMatchObject({
+      status: "idle",
+      runId: null,
+      interrupted: false,
+    });
+    expect(s(store).getChat("chat")?.runCheckpoint).toBeUndefined();
+    expect(
+      s(store)
+        .getMessages("chat")
+        .map(({ content }) => content)
+    ).toEqual(["Explain this query", "Readable answer"]);
+  });
+});
 
 describe("submitted Access Grants", () => {
   const workspaceName = "workspaces/alpha";
@@ -1059,6 +1478,34 @@ describe("follow-up queues", () => {
     });
   });
 
+  test("promotes an ordinary SQL question with its queued page instead of the previous answer's target", () => {
+    const { store, chatId, input } = setup();
+    const sqlEditor = {
+      version: 1 as const,
+      project: "projects/orders",
+      tab: { id: "second", mode: "SAVED_QUERY" as const },
+    };
+    s(store).addMessage({
+      chatId,
+      role: "assistant",
+      content: "Previous result",
+      metadata: {
+        sqlEditor: { ...sqlEditor, tab: { id: "first", mode: "SAVED_QUERY" } },
+      },
+    });
+    const id = s(store).enqueueFollowUp({
+      ...input,
+      page: { path: "/sql", title: "Editor", sqlEditor },
+      resourceReferences: undefined,
+    })!;
+    expect(
+      s(store).promoteFollowUp(chatId, id)?.followUpSourceId
+    ).toBeUndefined();
+    expect(
+      s(store).commitQueuedUserMessage(chatId)?.message.metadata
+    ).toMatchObject({ route: "/sql", sqlEditor });
+  });
+
   test.each(["source", "reference", "references"] as const)(
     "preserves a queued follow-up's explicit %s instead of rebinding it",
     (kind) => {
@@ -1320,7 +1767,18 @@ describe("follow-up queues", () => {
 
   test("reloads follow-ups paused without adding them to history or the startup slot", () => {
     const { store, chatId, input } = setup();
-    const first = s(store).enqueueFollowUp(input)!;
+    const firstInput = {
+      ...input,
+      page: {
+        ...input.page,
+        sqlEditor: {
+          version: 1 as const,
+          project: "projects/orders",
+          tab: { id: "orders", mode: "SAVED_QUERY" as const },
+        },
+      },
+    };
+    const first = s(store).enqueueFollowUp(firstInput)!;
     const second = s(store).enqueueFollowUp({ ...input, text: "List tables" })!;
     expect(s(store).followUpQueuesByChatId[chatId]?.paused).toBe(false);
 
@@ -1329,7 +1787,7 @@ describe("follow-up queues", () => {
     expect(s(restored).followUpQueuesByChatId[chatId]).toMatchObject({
       paused: true,
       messages: [
-        { ...input, id: first },
+        { ...firstInput, id: first },
         { id: second, text: "List tables" },
       ],
     });

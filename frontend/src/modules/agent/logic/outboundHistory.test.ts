@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import i18n from "@/lib/i18n";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { createAgentStore } from "../store/agent";
 import { normalizeAgentApiAttempts } from "./apiAttempt";
 import {
@@ -605,6 +606,102 @@ const sourceBoundQueryHistory = () => {
 };
 
 describe("source-bound query follow-ups", () => {
+  const sqlTurn = () => {
+    const fixture = sourceBoundQueryHistory();
+    const connection = {
+      project: fixture.project,
+      database: "instances/captured/databases/original",
+      engine: Engine.POSTGRES,
+      querySchema: "public",
+    };
+    const metadata = {
+      sqlEditor: { version: 1 as const, project: fixture.project, connection },
+    };
+    fixture.contacts[0].metadata = metadata;
+    fixture.contacts[3].metadata = metadata;
+    fixture.followUp.metadata = { followUpSourceId: "contacts-answer" };
+    return { ...fixture, connection, metadata };
+  };
+
+  test("an explanation-only source supplies its frozen database, not a later successful Query", () => {
+    const f = sqlTurn();
+    const messages = [f.contacts[0], f.contacts[3], ...f.employees, f.followUp];
+    const system = buildOutboundHistory("system", messages, f.project)[0]
+      .content;
+    expect(system).toContain(f.connection.database);
+    expect(system).not.toContain(f.employeesSQL);
+    expect(getHistoricalMaskingDatabase(messages, f.project)).toEqual({
+      database: f.connection.database,
+      project: f.project,
+    });
+  });
+
+  test("a source query for a different database cannot replace frozen SQL focus", () => {
+    const f = sqlTurn();
+    const system = buildOutboundHistory("system", f.messages, f.project)[0]
+      .content;
+    expect(system).not.toContain(f.contactsSQL);
+    expect(system).not.toContain(f.database);
+  });
+
+  test("historical SQL identity remains bounded even without a source query", () => {
+    const f = sqlTurn();
+    f.connection.database = "instances/main/databases/" + "q".repeat(12_000);
+    const messages = [f.contacts[0], f.contacts[3], f.followUp];
+    expect(getHistoricalMaskingDatabase(messages, f.project)).toBeUndefined();
+    expect(
+      buildOutboundHistory("system", messages, f.project)[0].content
+    ).not.toContain(f.connection.database);
+  });
+
+  test("a source query with a conflicting schema cannot supply historical SQL", () => {
+    const f = sqlTurn();
+    f.contacts[1].toolCalls![0].arguments = JSON.stringify({
+      operationId: "SQLService/Query",
+      body: {
+        name: f.connection.database,
+        schema: "other",
+        statement: f.contactsSQL,
+      },
+    });
+    expect(
+      buildOutboundHistory("system", f.messages, f.project)[0].content
+    ).not.toContain(f.contactsSQL);
+  });
+
+  test("invalid source SQL metadata cannot fall back to a successful query", () => {
+    const f = sqlTurn();
+    f.contacts[3].metadata!.sqlEditorContextInvalid = true;
+    expect(
+      buildOutboundHistory("system", f.messages, f.project)[0].content
+    ).not.toContain(f.contactsSQL);
+  });
+
+  test("different source user/answer snapshots do not supply historical SQL", () => {
+    const f = sqlTurn();
+    f.contacts[3].metadata = { sqlEditor: { version: 1, project: f.project } };
+    expect(
+      buildOutboundHistory("system", f.messages, f.project)[0].content
+    ).not.toContain(f.contactsSQL);
+  });
+
+  test("restricted chats can suppress historical database guidance", () => {
+    const f = sourceBoundQueryHistory();
+    expect(
+      buildOutboundHistory("diagnostic", f.messages, f.project, undefined, {
+        includeHistoricalDatabase: false,
+      })[0].content
+    ).toBe("diagnostic");
+  });
+
+  test("an ordinary SQL turn does not inherit the last database from masking history", () => {
+    const f = sqlTurn();
+    f.followUp.metadata = { sqlEditor: { version: 1, project: f.project } };
+    expect(
+      buildOutboundHistory("system", f.messages, f.project)[0].content
+    ).not.toContain(f.employeesSQL);
+    expect(getHistoricalMaskingDatabase(f.messages, f.project)).toBeUndefined();
+  });
   const explanationChain = (hops = 1, withReferences = false) => {
     const fixture = sourceBoundQueryHistory();
     const explanations: AgentMessage[] = [];

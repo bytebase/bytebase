@@ -18,7 +18,9 @@ Run SQL queries against databases managed by Bytebase.
 
 ${sqlEditorPersistenceInstruction}
 
-## Prerequisites
+General SQL questions do not need a connection. For schema-dependent work or execution, use the verified database for this turn; ask for a target if none was selected. Read the relevant synced schema through permitted APIs rather than guessing tables or columns. Do not substitute another database when a read fails.
+
+## Execution prerequisites
 
 - Know the instance and database name
 - Have \`bb.databases.get\` for the database; data access is checked separately for the statement (for example, \`bb.sql.select\` or \`bb.sql.info\`).

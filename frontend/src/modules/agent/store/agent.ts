@@ -75,6 +75,12 @@ import {
   withAgentStorageBudgetLock,
 } from "../logic/runOwnership";
 import {
+  normalizeAgentChatSnapshot,
+  normalizeAgentSqlActionProvenance,
+  normalizeAgentSqlEditorSnapshot,
+} from "../logic/sqlEditorContext";
+import type { AgentSqlEditorHost } from "../logic/sqlEditorHost";
+import {
   type AgentSqlFixDraft,
   type AgentSqlFixSource,
   extractAgentSqlFixSQL,
@@ -323,6 +329,11 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 };
 
+const hasInvalidSqlPage = (value: unknown): boolean =>
+  isRecord(value) &&
+  value.sqlEditor !== undefined &&
+  !normalizeAgentChatSnapshot(value);
+
 const normalizeFollowUpSourceId = (value: unknown): string | undefined => {
   if (value === undefined) return undefined;
   // Dropping an invalid marker would silently restore latest-query fallback.
@@ -334,7 +345,13 @@ const normalizeFollowUpSourceId = (value: unknown): string | undefined => {
 const normalizeDraft = (raw: unknown): AgentDraft | null => {
   if (!isRecord(raw) || typeof raw.text !== "string") return null;
   const followUpSourceId = normalizeFollowUpSourceId(raw.followUpSourceId);
-  const provenance = followUpSourceId !== undefined ? { followUpSourceId } : {};
+  const queuedSqlPage = normalizeAgentChatSnapshot(raw.queuedSqlPage);
+  const provenance = {
+    ...(followUpSourceId !== undefined ? { followUpSourceId } : {}),
+    ...(raw.queuedSqlPage !== undefined
+      ? { queuedSqlPage: queuedSqlPage?.sqlEditor ? queuedSqlPage : null }
+      : {}),
+  };
   if (raw.mentions !== undefined) {
     const mentions = normalizeAgentResourceMentions(raw.text, raw.mentions);
     return {
@@ -432,13 +449,12 @@ const normalizeQueuedUserMessage = (
     typeof raw.chatId !== "string" ||
     !chatIds.has(raw.chatId) ||
     typeof raw.text !== "string" ||
-    !raw.text.trim() ||
-    !isRecord(raw.page) ||
-    typeof raw.page.path !== "string" ||
-    typeof raw.page.title !== "string"
+    !raw.text.trim()
   ) {
     return null;
   }
+  const page = normalizeAgentChatSnapshot(raw.page);
+  if (!page) return null;
   const resourceReferences = normalizeAgentResourceReferences(
     raw.resourceReferences,
     raw.resourceReference
@@ -448,7 +464,7 @@ const normalizeQueuedUserMessage = (
     id: raw.id,
     chatId: raw.chatId,
     text: raw.text,
-    page: { path: raw.page.path, title: raw.page.title },
+    page,
     ...(maskingPage ? { maskingPage } : {}),
     ...(raw.fromFollowUpQueue === true ? { fromFollowUpQueue: true } : {}),
     runMode:
@@ -536,6 +552,28 @@ const normalizeMessage = (
 ): AgentMessage => {
   const message = isRecord(raw) ? raw : {};
   const metadata = isRecord(message.metadata) ? message.metadata : null;
+  const role =
+    message.role === "assistant" ||
+    message.role === "system" ||
+    message.role === "tool"
+      ? message.role
+      : "user";
+  const hasSqlTurn = role === "user" || role === "assistant";
+  const sqlEditor = hasSqlTurn
+    ? normalizeAgentSqlEditorSnapshot(metadata?.sqlEditor)
+    : undefined;
+  const sqlEditorContextInvalid =
+    hasSqlTurn &&
+    (metadata?.sqlEditorContextInvalid === true ||
+      (metadata?.sqlEditor !== undefined && !sqlEditor));
+  const provenance =
+    sqlEditor && !sqlEditorContextInvalid && role === "assistant"
+      ? normalizeAgentSqlActionProvenance(metadata?.sqlActionProvenance)
+      : undefined;
+  const sqlActionProvenance =
+    metadata?.runId === undefined || metadata.runId === provenance?.runId
+      ? provenance
+      : undefined;
   const resourceReferences = metadata
     ? normalizeAgentResourceReferences(
         metadata.resourceReferences,
@@ -567,12 +605,7 @@ const normalizeMessage = (
           : chatId,
     createdTs:
       typeof message.createdTs === "number" ? message.createdTs : fallbackTs,
-    role:
-      message.role === "assistant" ||
-      message.role === "system" ||
-      message.role === "tool"
-        ? message.role
-        : "user",
+    role,
     content:
       typeof message.content === "string"
         ? metadata?.queryResultRetention &&
@@ -590,6 +623,18 @@ const normalizeMessage = (
     metadata: metadata
       ? {
           ...(metadata as AgentMessage["metadata"]),
+          ...(metadata.sqlEditor !== undefined ? { sqlEditor } : {}),
+          ...(metadata.sqlEditorContextInvalid !== undefined ||
+          sqlEditorContextInvalid
+            ? {
+                sqlEditorContextInvalid: sqlEditorContextInvalid
+                  ? true
+                  : undefined,
+              }
+            : {}),
+          ...(metadata.sqlActionProvenance !== undefined
+            ? { sqlActionProvenance }
+            : {}),
           submittedAccessGrants: undefined,
           actionReceipts: receipts?.length ? receipts : undefined,
           followUpSourceId: normalizeFollowUpSourceId(
@@ -863,15 +908,7 @@ const normalizeChat = (raw: unknown): AgentChat => {
             }),
           }
         : undefined,
-    page:
-      isRecord(chat.page) &&
-      typeof chat.page.path === "string" &&
-      typeof chat.page.title === "string"
-        ? {
-            path: chat.page.path,
-            title: chat.page.title,
-          }
-        : undefined,
+    page: normalizeAgentChatSnapshot(chat.page),
     archived: Boolean(chat.archived),
     lastError:
       typeof chat.lastError === "string"
@@ -929,6 +966,16 @@ function applyChatAccounting(chat: AgentChat) {
   }
 }
 
+function matchesRunSqlSnapshot(
+  message: AgentMessage | undefined,
+  page: AgentChatSnapshot | undefined
+) {
+  return (
+    !message?.metadata?.sqlEditorContextInvalid &&
+    samePersistedValue(message?.metadata?.sqlEditor, page?.sqlEditor)
+  );
+}
+
 function isValidChatCheckpoint(
   chat: AgentChat,
   messages: AgentMessage[],
@@ -947,6 +994,7 @@ function isValidChatCheckpoint(
     chat.runBudget?.runId === checkpoint.runId &&
     root >= 0 &&
     through >= root &&
+    matchesRunSqlSnapshot(messages[root], checkpoint.bindings.page) &&
     samePersistedValue(chat.capability, checkpoint.bindings.capability)
   );
 }
@@ -1009,14 +1057,33 @@ const normalizePersistedState = (
   ) {
     throw new Error("Cannot restore the owner of an Agent API journal");
   }
-  const chats = rawChats
-    .filter(
-      (chat) =>
-        !isRecord(chat) ||
-        chat.capability === undefined ||
-        normalizeAgentDiagnosticCapability(chat.capability) !== undefined
+  const malformedSqlRuns = new Map<string, unknown>();
+  const chats = rawChats.flatMap((rawChat) => {
+    if (
+      isRecord(rawChat) &&
+      rawChat.capability !== undefined &&
+      !normalizeAgentDiagnosticCapability(rawChat.capability)
     )
-    .map((chat) => normalizeChat(chat));
+      return [];
+    const chat = normalizeChat(rawChat);
+    if (isRecord(rawChat)) {
+      const checkpoint = isRecord(rawChat.runCheckpoint)
+        ? rawChat.runCheckpoint
+        : undefined;
+      const bindings =
+        checkpoint && isRecord(checkpoint.bindings)
+          ? checkpoint.bindings
+          : undefined;
+      if (
+        hasInvalidSqlPage(bindings?.page) ||
+        (bindings?.executionOrigin !== undefined && !chat.runCheckpoint) ||
+        (hasInvalidSqlPage(rawChat.page) &&
+          (chat.runId || chat.status !== "idle" || chat.interrupted))
+      )
+        malformedSqlRuns.set(chat.id, checkpoint?.rootUserMessageId);
+    }
+    return [chat];
+  });
   const ownerIds = new Set(chats.map((chat) => chat.id));
   for (const buckets of [raw.messagesByChatId, raw.messagesByThreadId]) {
     if (!isRecord(buckets)) continue;
@@ -1046,10 +1113,38 @@ const normalizePersistedState = (
   const rawStartupMessages = isRecord(raw.queuedUserMessagesByChatId)
     ? raw.queuedUserMessagesByChatId
     : {};
+  const blockedQueueIdsByChat = new Map<string, Set<string>>();
+  const blockMalformedQueueEntry = (value: unknown, owner?: string) => {
+    if (
+      !isRecord(value) ||
+      typeof value.id !== "string" ||
+      typeof value.chatId !== "string" ||
+      (owner !== undefined && owner !== value.chatId) ||
+      !hasInvalidSqlPage(value.page)
+    )
+      return;
+    const blocked =
+      blockedQueueIdsByChat.get(value.chatId) ?? new Set<string>();
+    blocked.add(value.id);
+    blockedQueueIdsByChat.set(value.chatId, blocked);
+  };
+  for (const [chatId, value] of Object.entries(rawStartupMessages))
+    blockMalformedQueueEntry(value, chatId);
+  blockMalformedQueueEntry(raw.queuedUserMessage);
+  for (const [chatId, queue] of Object.entries(rawFollowUpQueues))
+    if (isRecord(queue) && Array.isArray(queue.messages))
+      for (const value of queue.messages)
+        blockMalformedQueueEntry(value, chatId);
+  const isBlockedQueueEntry = (value: unknown) =>
+    isRecord(value) &&
+    typeof value.chatId === "string" &&
+    typeof value.id === "string" &&
+    blockedQueueIdsByChat.get(value.chatId)?.has(value.id);
   const rawActiveChatIds = Array.isArray(raw.activeChatIds)
     ? raw.activeChatIds.filter((id): id is string => typeof id === "string")
     : [];
   const activeFollowUpOwners = new Set<string>();
+  const blockedRunIds = new Set<string>();
 
   for (const chat of chats) {
     const rawMessages: unknown[] = Array.isArray(rawMessagesByChatId[chat.id])
@@ -1084,6 +1179,44 @@ const normalizePersistedState = (
     );
     if (chat.legacyUsage || chat.modelAttempts || chat.runBudget)
       applyChatAccounting(chat);
+    const malformedRun = malformedSqlRuns.has(chat.id);
+    const rootMessageId =
+      malformedSqlRuns.get(chat.id) ?? chat.runCheckpoint?.rootUserMessageId;
+    const rootMessage = rootMessageId
+      ? messages.find(({ id, role }) => id === rootMessageId && role === "user")
+      : messages.findLast(({ role }) => role === "user");
+    const invalidRoot =
+      rootMessage &&
+      (rootMessage.metadata?.sqlEditorContextInvalid ||
+        isBlockedQueueEntry(rootMessage));
+    const invalidRun =
+      malformedRun ||
+      invalidRoot ||
+      (chat.runCheckpoint &&
+        !matchesRunSqlSnapshot(
+          rootMessage,
+          chat.runCheckpoint.bindings.page
+        )) ||
+      (chat.runId &&
+        messages.some(
+          ({ metadata }) =>
+            metadata?.runId === chat.runId && metadata?.sqlEditorContextInvalid
+        ));
+    if (invalidRun) {
+      blockedRunIds.add(chat.id);
+      if (rootMessage)
+        rootMessage.metadata = {
+          ...rootMessage.metadata,
+          sqlEditorContextInvalid: true,
+        };
+      chat.status = DEFAULT_CHAT_STATUS;
+      chat.runId = null;
+      chat.runCheckpoint = undefined;
+      chat.interrupted = false;
+      chat.interruptionReason = undefined;
+      chat.lastError = null;
+      chat.requiresAIConfiguration = false;
+    }
     if (
       chat.runCheckpoint &&
       !isValidChatCheckpoint(chat, messages, chat.runCheckpoint)
@@ -1117,10 +1250,13 @@ const normalizePersistedState = (
     if (
       preserveActiveFollowUpOwners &&
       !chat.archived &&
-      ((isRecord(startup) && startup.fromFollowUpQueue === true) ||
+      !invalidRun &&
+      ((isRecord(startup) &&
+        startup.fromFollowUpQueue === true &&
+        !isBlockedQueueEntry(startup)) ||
         (isRecord(followUps) &&
           Array.isArray(followUps.messages) &&
-          followUps.messages.length > 0 &&
+          followUps.messages.some((value) => !isBlockedQueueEntry(value)) &&
           (chat.status === "running" ||
             chat.status === "awaiting_user" ||
             rawActiveChatIds.includes(chat.id))))
@@ -1172,6 +1308,7 @@ const normalizePersistedState = (
   const chatIds = new Set(chats.map((chat) => chat.id));
   const queuedUserMessagesByChatId: Record<string, QueuedUserMessage> = {};
   for (const [chatId, value] of Object.entries(rawStartupMessages)) {
+    if (isBlockedQueueEntry(value)) continue;
     const message = normalizeQueuedUserMessage(value, chatIds);
     if (message?.chatId === chatId) {
       queuedUserMessagesByChatId[chatId] = message;
@@ -1182,8 +1319,9 @@ const normalizePersistedState = (
     chatIds
   );
   if (legacyQueuedMessage) {
-    queuedUserMessagesByChatId[legacyQueuedMessage.chatId] ??=
-      legacyQueuedMessage;
+    if (!isBlockedQueueEntry(legacyQueuedMessage))
+      queuedUserMessagesByChatId[legacyQueuedMessage.chatId] ??=
+        legacyQueuedMessage;
   }
 
   const followUpQueuesByChatId: Record<string, AgentFollowUpQueue> = {};
@@ -1197,6 +1335,7 @@ const normalizePersistedState = (
       if (startup) seen.add(startup.id);
       const messages: QueuedUserMessage[] = [];
       for (const value of queue.messages) {
+        if (isBlockedQueueEntry(value)) continue;
         const message = normalizeQueuedUserMessage(value, chatIds);
         if (message?.chatId !== chat.id || seen.has(message.id)) continue;
         seen.add(message.id);
@@ -1207,6 +1346,7 @@ const normalizePersistedState = (
           messages,
           paused:
             chat.archived ||
+            blockedRunIds.has(chat.id) ||
             (recoverInterruptedRuns && !activeFollowUpOwners.has(chat.id)) ||
             queue.paused !== false,
         };
@@ -1270,6 +1410,7 @@ const normalizePersistedState = (
       ? rawActiveChatIds.filter(
           (id) =>
             chatIds.has(id) &&
+            !blockedRunIds.has(id) &&
             (!recoverInterruptedRuns || activeFollowUpOwners.has(id))
         )
       : undefined,
@@ -1295,6 +1436,8 @@ export interface AgentState {
   settleAgentApiAttempt: AgentApiDispatchContext["settleAgentApiAttempt"];
   // Window state
   visible: boolean;
+  // A callable reference keeps the mounted DOM out of Immer drafts.
+  sqlEditorHost: (() => AgentSqlEditorHost) | undefined;
   size: { width: number; height: number };
   sidebarWidth: number;
   minimized: boolean;
@@ -2651,6 +2794,7 @@ export const createAgentStore = () => {
       return {
         // Window state
         visible: false,
+        sqlEditorHost: undefined,
         size: initialWindowState.size,
         sidebarWidth: initialWindowState.sidebarWidth,
         minimized: false,
@@ -2774,15 +2918,30 @@ export const createAgentStore = () => {
           if (!_getChat(chatId)) return;
           const normalized = normalizeDraft(draft);
           if (!normalized) return;
-          const { followUpSourceId: source, ...previous } =
-            get().getDraft(chatId);
-          const { followUpSourceId: nextSource, ...next } = normalized;
-          if (source !== undefined) {
+          const {
+            followUpSourceId: source,
+            queuedSqlPage: page,
+            ...previous
+          } = get().getDraft(chatId);
+          const {
+            followUpSourceId: nextSource,
+            queuedSqlPage: nextPage,
+            ...next
+          } = normalized;
+          if (source !== undefined || page !== undefined) {
             const unchanged = JSON.stringify(previous) === JSON.stringify(next);
-            if (unchanged && nextSource === undefined)
+            if (unchanged && source !== undefined && nextSource === undefined)
               normalized.followUpSourceId = source;
             if (!unchanged && nextSource === source)
               delete normalized.followUpSourceId;
+            if (unchanged && page !== undefined && nextPage === undefined)
+              normalized.queuedSqlPage = page;
+            if (
+              !unchanged &&
+              page !== undefined &&
+              samePersistedValue(page, nextPage)
+            )
+              delete normalized.queuedSqlPage;
           }
           set((state) => {
             if (
@@ -2875,7 +3034,9 @@ export const createAgentStore = () => {
 
         queueUserMessage: (message) => {
           get().syncState();
+          const page = normalizeAgentChatSnapshot(message.page);
           if (
+            !page ||
             get().remoteBusyChatIds[message.chatId] ||
             _getChat(message.chatId)?.status !== "idle" ||
             _getChat(message.chatId)?.runCheckpoint?.suspension ===
@@ -2897,6 +3058,7 @@ export const createAgentStore = () => {
           set((state) => {
             state.queuedUserMessagesByChatId[message.chatId] = {
               ...rest,
+              page,
               id: uuidv4(),
               ...(followUpSourceId !== undefined
                 ? {
@@ -3006,6 +3168,9 @@ export const createAgentStore = () => {
           const source = state.getMessages(chatId).at(-1);
           const promoted =
             head.followUpSourceId === undefined &&
+            !head.page.sqlEditor &&
+            !source?.metadata?.sqlEditor &&
+            !source?.metadata?.sqlEditorContextInvalid &&
             !head.resourceReference &&
             !head.resourceReferences?.length &&
             source?.chatId === chatId &&
@@ -3085,10 +3250,17 @@ export const createAgentStore = () => {
                 role: "user",
                 content: queued.text,
                 metadata:
+                  queued.page.sqlEditor ||
                   queued.resourceReferences ||
                   queued.resourceReference ||
                   queued.followUpSourceId !== undefined
                     ? {
+                        ...(queued.page.sqlEditor
+                          ? {
+                              route: queued.page.path,
+                              sqlEditor: queued.page.sqlEditor,
+                            }
+                          : {}),
                         ...(queued.resourceReferences
                           ? { resourceReferences: queued.resourceReferences }
                           : queued.resourceReference
@@ -3196,6 +3368,7 @@ export const createAgentStore = () => {
 
           const isReusable = (chat: AgentChat) =>
             !chat.archived &&
+            !get().remoteBusyChatIds[chat.id] &&
             chat.capability === undefined &&
             chat.status === "idle" &&
             !get().getPendingAsk(chat.id) &&
@@ -3994,14 +4167,20 @@ export const createAgentStore = () => {
         },
 
         startChatRun: (chatId, page, options = {}) => {
+          const normalizedPage = page && normalizeAgentChatSnapshot(page);
+          const root = get()
+            .getMessages(chatId)
+            .findLast(({ role }) => role === "user");
           if (
+            (page && !normalizedPage) ||
+            !matchesRunSqlSnapshot(root, normalizedPage) ||
             (currentScopeKey(get()) && !get().canUseAgentExecution()) ||
             _getChat(chatId)?.runCheckpoint ||
             (_getChat(chatId)?.runId && _getChat(chatId)?.runBudget) ||
             _getChat(chatId)?.status === "paused"
           )
             return;
-          get().setChatStatus(chatId, "running", { page });
+          get().setChatStatus(chatId, "running", { page: normalizedPage });
           set((state) => {
             const chat = state.chats.find((c) => c.id === chatId);
             if (chat) {
@@ -4034,7 +4213,9 @@ export const createAgentStore = () => {
               .getMessages(chatId)
               .some(
                 (message) =>
-                  message.id === rootUserMessageId && message.role === "user"
+                  message.id === rootUserMessageId &&
+                  message.role === "user" &&
+                  matchesRunSqlSnapshot(message, bindings.page)
               ) ||
             !canOwnRun(get(), chatId)
           )
@@ -5117,6 +5298,7 @@ export const createAgentStore = () => {
             set((draft) => {
               draft.workspaceName = null;
               draft.userEmail = null;
+              draft.sqlEditorHost = undefined;
               draft.chats = empty.chats;
               draft.messagesByChatId = empty.messagesByChatId;
               draft.pendingAskByChatId = empty.pendingAskByChatId;
@@ -5244,6 +5426,7 @@ export const createAgentStore = () => {
             draft.workspaceName = workspaceName;
             draft.storagePressure = undefined;
             draft.userEmail = nextUserEmail;
+            draft.sqlEditorHost = undefined;
             draft.chats = persistedState.chats;
             draft.messagesByChatId = persistedState.messagesByChatId;
             draft.pendingAskByChatId = persistedState.pendingAskByChatId;
