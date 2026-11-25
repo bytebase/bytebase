@@ -63,5 +63,4 @@ func TestGetDatabaseDefinitionSeam(t *testing.T) {
 			require.NotContains(t, f.Content, backupSchema)
 		}
 	})
-
 }

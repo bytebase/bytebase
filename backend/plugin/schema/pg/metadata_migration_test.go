@@ -39,7 +39,6 @@ func TestDiffMigrationRouting(t *testing.T) {
 	sql, err := schema.DiffMigration(storepb.Engine_POSTGRES, source, target)
 	require.NoError(t, err)
 	require.Equal(t, "ALTER TABLE public.t ADD COLUMN note text", sql)
-
 }
 
 // TestDiffMigrationSeamOptions verifies Bytebase-side adapter options:
