@@ -127,7 +127,7 @@ func (s *Server) handleSetJustInTimeAccess(ctx context.Context, req *mcp.CallToo
 
 	action := "Turn " + change.state()
 	return s.askToConfirm(ctx, change, digest[:], describeJustInTimeChange(ctx, change),
-		confirmChoice{question: action + " just-in-time access?", action: action}), nil, nil
+		confirmChoice{action: action}), nil, nil
 }
 
 // describeJustInTimeChange builds the confirmation message. A project ID is at

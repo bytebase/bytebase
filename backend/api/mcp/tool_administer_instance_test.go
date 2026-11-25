@@ -321,6 +321,9 @@ func TestAdministerInstanceAddsJourneyOnesServer(t *testing.T) {
 	res := callAdminister(t, session, instanceParams(body))
 	require.False(t, res.IsError, resultText(t, res))
 	asked := user.lastParams(t)
+	title, labels := choiceLabels(t, asked)
+	require.Equal(t, "Action", title)
+	require.Equal(t, []string{"Add instance", "Change it in chat"}, labels)
 	require.Equal(t, strings.Join([]string{
 		`Add activated instance "hr-staging" to "hr", as alice@example.com?`,
 		`Host "localhost", port 5433, user "postgres", TLS not required`,

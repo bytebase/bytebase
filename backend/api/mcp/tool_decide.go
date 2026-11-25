@@ -145,7 +145,7 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 		return formatToolError(err), nil, nil
 	}
 	action := capitalize(decision.verb())
-	choice := confirmChoice{question: action + " this issue?", action: action}
+	choice := confirmChoice{action: action}
 	if view.Comment != "" {
 		choice.description = fmt.Sprintf("Comment: %q", view.Comment)
 	}

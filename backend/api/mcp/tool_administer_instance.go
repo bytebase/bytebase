@@ -106,7 +106,7 @@ func (s *Server) administerInstance(ctx context.Context, req *mcp.CallToolReques
 		return formatToolError(err), nil, nil
 	}
 	digest := adminFormDigest(form, change.request)
-	if result := s.confirmAdminChange(ctx, req, change, digest, form, creationSubject{nothing: "no instance was added"}, "this request and its form"); result != nil {
+	if result := s.confirmAdminChange(ctx, req, change, digest, form, creationSubject{nothing: "no instance was added", verb: "Add instance"}, "this request and its form"); result != nil {
 		return result, nil, nil
 	}
 

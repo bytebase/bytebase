@@ -250,6 +250,9 @@ func TestAdministerIdentityCreatesJourneyFoursIdentityWithItsRole(t *testing.T) 
 	res := callAdminister(t, session, identityParams(identityBody(t, nil)))
 	require.False(t, res.IsError, resultText(t, res))
 	asked := user.lastParams(t)
+	title, labels := choiceLabels(t, asked)
+	require.Equal(t, "Action", title)
+	require.Equal(t, []string{"Create identity", "Change it in chat"}, labels)
 	require.Equal(t, strings.Join([]string{
 		`Create workload identity "hr-migrations-ci" in "hr", as alice@example.com?`,
 		`Any GitHub Actions job in "example-org/hr-migrations" signs in as it,`,

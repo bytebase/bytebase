@@ -121,7 +121,7 @@ func TestSetJustInTimeAccessTurnsItOnOnConfirmation(t *testing.T) {
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
-		"title":"Turn on just-in-time access?",
+		"title":"Action",
 		"oneOf":[{"const":"apply","title":"Turn on"},{"const":"change","title":"Change it in chat"}],
 		"default":"apply"}}}`,
 		string(schema))
@@ -157,7 +157,7 @@ func TestSetJustInTimeAccessSaysWhatTurningItOffDoes(t *testing.T) {
 	schema, err := json.Marshal(user.lastParams(t).RequestedSchema)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
-		"title":"Turn off just-in-time access?",
+		"title":"Action",
 		"oneOf":[{"const":"apply","title":"Turn off"},{"const":"change","title":"Change it in chat"}],
 		"default":"apply"}}}`, string(schema))
 	calls := mock.calls()

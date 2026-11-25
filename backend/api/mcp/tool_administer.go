@@ -113,6 +113,8 @@ type adminSubject interface {
 	revised() string
 	// reread is the next step after a stale answer.
 	reread() string
+	// action names the change on the form's first choice, such as "Save rules".
+	action() string
 }
 
 func (r adminRules) unchanged() string { return r.name + " stay as they are" }
@@ -121,9 +123,14 @@ func (r adminRules) notChanged() string { return r.name + " were not changed" }
 
 func (adminRules) revised() string { return "the revised rules" }
 
+func (adminRules) action() string { return "Save rules" }
+
 // creationSubject is a create in confirmAdminChange's words. nothing says that
-// nothing was made, such as "no instance was added".
-type creationSubject struct{ nothing string }
+// nothing was made, such as "no instance was added", and verb names the create
+// on the form, such as "Add instance".
+type creationSubject struct{ nothing, verb string }
+
+func (c creationSubject) action() string { return c.verb }
 
 func (c creationSubject) unchanged() string { return c.nothing }
 
@@ -774,12 +781,12 @@ func changeTooLong(needed int, tooLong string, rules adminRules, link string) *t
 }
 
 // confirmAdminChange asks the user to confirm w, or reads their answer. It
-// returns the result that ends the call, or nil when the user chose Apply and
+// returns the result that ends the call, or nil when the user chose the action and
 // what the form showed still reads as it did when they were asked.
 func (s *Server) confirmAdminChange(ctx context.Context, req *mcp.CallToolRequest, w confirmableWrite, digest []byte, form *adminForm, subject adminSubject, shown string) *mcp.CallToolResult {
 	reply, answered := s.signedReply(ctx, req, w, digest)
 	if !answered {
-		return s.askToConfirm(ctx, w, digest, form.message, confirmChoice{question: "Apply this change?", action: "Apply", description: form.description})
+		return s.askToConfirm(ctx, w, digest, form.message, confirmChoice{action: subject.action(), description: form.description})
 	}
 	switch choice, why := confirmationOutcome(reply.response); choice {
 	case confirmChoiceApply:

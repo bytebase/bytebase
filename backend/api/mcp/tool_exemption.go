@@ -326,7 +326,7 @@ func (s *Server) handleGrantMaskingExemption(ctx context.Context, req *mcp.CallT
 		}
 		return formatToolError(&toolError{Code: "CHANGE_TOO_LONG", Message: tooLong, Suggestion: next}), nil, nil
 	}
-	choice := confirmChoice{question: "Exempt this member from masking?", action: "Exempt"}
+	choice := confirmChoice{action: "Exempt"}
 	if grant.note != "" {
 		choice.description = fmt.Sprintf("Reason: %q", grant.note)
 	}
@@ -380,7 +380,7 @@ func (s *Server) handleRevokeMaskingExemption(ctx context.Context, req *mcp.Call
 	if expiry != "" {
 		notes = append(notes, expiry)
 	}
-	choice := confirmChoice{question: "Revoke this masking exemption?", action: "Revoke", description: strings.Join(notes, "\n")}
+	choice := confirmChoice{action: "Revoke", description: strings.Join(notes, "\n")}
 	return s.confirmExemptionWrite(ctx, req, write, exemptions, body, message, choice, output,
 		fmt.Sprintf("the exemption for %s was not removed", input.Member),
 		fmt.Sprintf("Removed %s's masking exemption in %s.", input.Member, input.Project),

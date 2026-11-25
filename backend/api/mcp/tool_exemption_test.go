@@ -430,7 +430,7 @@ func TestMaskingExemptionFormsForTheJourneysExemption(t *testing.T) {
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
-		"title":"Exempt this member from masking?",
+		"title":"Action",
 		"description":"Reason: \"HR team needs to see employee personal details (birth dates, salaries) in production\"",
 		"oneOf":[{"const":"apply","title":"Exempt"},{"const":"change","title":"Change it in chat"}],
 		"default":"apply"}}}`, string(schema))
@@ -450,7 +450,7 @@ func TestMaskingExemptionFormsForTheJourneysExemption(t *testing.T) {
 	schema, err = json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
-		"title":"Revoke this masking exemption?",
+		"title":"Action",
 		"oneOf":[{"const":"apply","title":"Revoke"},{"const":"change","title":"Change it in chat"}],
 		"default":"apply"}}}`, string(schema), "one matching entry needs no description")
 	require.Empty(t, mock.calls())

@@ -203,6 +203,7 @@ func TestQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 			schema, err := json.Marshal(asked.RequestedSchema)
 			require.NoError(t, err)
 			require.Contains(t, string(schema), `"default":"run"`)
+			require.Contains(t, string(schema), `"title":"Action"`)
 			require.Contains(t, string(schema), row.choices)
 			require.Contains(t, string(schema), `"description":"Run now runs it at once, with no issue or approval."`)
 			require.Equal(t, []queryCall{{Statement: insert}, {Statement: insert, Confirmed: true}}, mock.calls())

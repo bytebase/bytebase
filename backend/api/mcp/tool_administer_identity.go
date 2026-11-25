@@ -129,7 +129,7 @@ func (s *Server) administerIdentity(ctx context.Context, req *mcp.CallToolReques
 		return formatToolError(err), nil, nil
 	}
 	digest := adminFormDigest(form, change.request)
-	if result := s.confirmAdminChange(ctx, req, change, digest, form, creationSubject{nothing: "no workload identity was created"}, "this request and its form"); result != nil {
+	if result := s.confirmAdminChange(ctx, req, change, digest, form, creationSubject{nothing: "no workload identity was created", verb: "Create identity"}, "this request and its form"); result != nil {
 		return result, nil, nil
 	}
 

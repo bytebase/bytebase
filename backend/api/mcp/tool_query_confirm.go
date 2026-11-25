@@ -137,7 +137,7 @@ func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirm
 		"properties": map[string]any{
 			runChoiceField: map[string]any{
 				"type":        "string",
-				"title":       "Run this request?",
+				"title":       confirmChoiceTitle,
 				"description": description,
 				"oneOf":       choices,
 				"default":     runChoiceRun,

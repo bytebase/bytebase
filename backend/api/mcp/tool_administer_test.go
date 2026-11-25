@@ -232,9 +232,9 @@ func TestAdministerWorkspaceAppliesConfirmedApprovalRules(t *testing.T) {
 		approvalRulesApply)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
-		"title":"Apply this change?",
+		"title":"Action",
 		"description":`+string(description)+`,
-		"oneOf":[{"const":"apply","title":"Apply"},{"const":"change","title":"Change it in chat"}],
+		"oneOf":[{"const":"apply","title":"Save rules"},{"const":"change","title":"Change it in chat"}],
 		"default":"apply"}}}`, string(schema))
 
 	calls := mock.calls()
@@ -277,6 +277,29 @@ func TestAdministerWorkspaceFitsTheTwoRulesAnAgentWrites(t *testing.T) {
 }
 
 // choiceDescription returns the description of the approval form's choice field.
+// choiceLabels returns the title of a form's choice field and its choices'
+// labels.
+func choiceLabels(t *testing.T, asked *mcp.ElicitParams) (string, []string) {
+	t.Helper()
+	schema, err := json.Marshal(asked.RequestedSchema)
+	require.NoError(t, err)
+	var form struct {
+		Properties map[string]struct {
+			Title string `json:"title"`
+			OneOf []struct {
+				Title string `json:"title"`
+			} `json:"oneOf"`
+		} `json:"properties"`
+	}
+	require.NoError(t, json.Unmarshal(schema, &form))
+	field := form.Properties[confirmChoiceField]
+	var labels []string
+	for _, choice := range field.OneOf {
+		labels = append(labels, choice.Title)
+	}
+	return field.Title, labels
+}
+
 func choiceDescription(t *testing.T, asked *mcp.ElicitParams) string {
 	t.Helper()
 	schema, err := json.Marshal(asked.RequestedSchema)

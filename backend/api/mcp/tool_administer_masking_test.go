@@ -163,6 +163,9 @@ func TestAdministerMaskingRulesAsksForTheJourneyRuleOnAWorkspaceWithNone(t *test
 	res := callAdminister(t, session, maskingParams(body))
 	require.False(t, res.IsError, resultText(t, res))
 	asked := user.lastParams(t)
+	title, labels := choiceLabels(t, asked)
+	require.Equal(t, "Action", title)
+	require.Equal(t, []string{"Save rules", "Change it in chat"}, labels)
 	require.Equal(t, strings.Join([]string{
 		`Change the masking rules, as alice@example.com?`,
 		"Add rule 1, Full mask: env \"prod\", any db, any table, columns",
