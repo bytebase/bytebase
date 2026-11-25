@@ -9,7 +9,6 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/googlesql/googlesqltest"
 )
 
 func TestGetQuerySpanSeam(t *testing.T) {
@@ -30,7 +29,7 @@ func TestGetQuerySpanSeam(t *testing.T) {
 			},
 		},
 	}
-	getter, lister := googlesqltest.BuildMockDatabaseMetadataGetter(storepb.Engine_SPANNER, []*metadatapb.DatabaseSchemaMetadata{metadata})
+	getter, lister := buildMockDatabaseMetadataGetter(storepb.Engine_SPANNER, []*metadatapb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -50,8 +49,8 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, base.Select, span.Type)
 	require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "analytics", Table: "events"}: true}, span.SourceColumns)
-	require.Equal(t, []string{"analytics.events.id"}, googlesqltest.SourcesOf(span.Results[0]))
-	require.Equal(t, []string{"analytics.events.payload"}, googlesqltest.SourcesOf(span.Results[1]))
+	require.Equal(t, []string{"analytics.events.id"}, sourcesOf(span.Results[0]))
+	require.Equal(t, []string{"analytics.events.payload"}, sourcesOf(span.Results[1]))
 
 	// System-only queries early-return an empty SelectInfoSchema span (including SPANNER_SYS).
 	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT * FROM SPANNER_SYS.QUERY_STATS_TOP_MINUTE"}, "db", "", false)

@@ -135,20 +135,16 @@ func TestOpenRejectsInvalidCredentialJSON(t *testing.T) {
 	require.ErrorContains(t, err, "failed to parse GCP credential JSON")
 }
 
-func TestOpenPassesGoogleSQLOnlyOption(t *testing.T) {
-	var (
-		gotCfg  odriver.Config
-		gotOpts []spannerdriver.Options
-	)
+func TestOpenPassesConfig(t *testing.T) {
+	var gotCfg odriver.Config
 	fake := &fakeSpannerDriver{
 		instance: &odriver.Instance{
 			Databases: []*metadatapb.DatabaseSchemaMetadata{{Name: "gsql_db"}},
 		},
 	}
 	origOpen := openSpannerDriver
-	openSpannerDriver = func(_ context.Context, cfg odriver.Config, opts ...spannerdriver.Options) (odriver.Driver, error) {
+	openSpannerDriver = func(_ context.Context, cfg odriver.Config) (odriver.Driver, error) {
 		gotCfg = cfg
-		gotOpts = opts
 		return fake, nil
 	}
 	t.Cleanup(func() { openSpannerDriver = origOpen })
@@ -172,7 +168,6 @@ func TestOpenPassesGoogleSQLOnlyOption(t *testing.T) {
 	require.Equal(t, "i", gotCfg.Params[spannerdriver.ParamInstance])
 	require.Equal(t, "gsql_db", gotCfg.Database)
 	require.Empty(t, gotCfg.Password)
-	require.Equal(t, []spannerdriver.Options{{GoogleSQLOnly: true}}, gotOpts)
 
 	inst, err := opened.SyncInstance(ctx)
 	require.NoError(t, err)
