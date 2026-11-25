@@ -39,7 +39,7 @@ func init() {
 		Diagnose:      Diagnose,
 		Complete:      Completion,
 		ValidateQuery: validateQuery,
-		QuerySpan:     GetQuerySpan,
+		QuerySpan:     getCockroachQuerySpan,
 		Explain:       cockroachExplainStatement,
 		ResultLimit:   statementWithResultLimit,
 	}, storepb.Engine_COCKROACHDB)

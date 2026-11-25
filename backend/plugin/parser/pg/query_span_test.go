@@ -44,6 +44,7 @@ func TestGetQuerySpanSeam(t *testing.T) {
 					},
 					{Name: "degraded"},
 				},
+				Views: []*metadatapb.ViewMetadata{{Name: "v", Definition: "SELECT ssn FROM public.t"}},
 			},
 		},
 	}
@@ -60,6 +61,18 @@ func TestGetQuerySpanSeam(t *testing.T) {
 		require.Equal(t, base.Select, spans[0].Type)
 		require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "app", Table: "t", Column: "email"}: true}, spans[0].Results[0].SourceColumns)
 		require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "app", Table: "t", Column: "email"}: true}, spans[0].PredicateColumns)
+	}
+
+	// CockroachDB follows a view's column to the table column behind it; PostgreSQL stops at the view.
+	viewColumn := base.ColumnResource{Database: "db", Schema: "public", Table: "v", Column: "ssn"}
+	tableColumn := base.ColumnResource{Database: "db", Schema: "public", Table: "t", Column: "ssn"}
+	for engine, want := range map[storepb.Engine]base.SourceColumnSet{
+		storepb.Engine_POSTGRES:    {viewColumn: true},
+		storepb.Engine_COCKROACHDB: {viewColumn: true, tableColumn: true},
+	} {
+		spans, err := base.GetQuerySpan(context.Background(), gCtx, engine, []base.Statement{{Text: "SELECT ssn FROM public.v"}}, "db", "", false)
+		require.NoError(t, err)
+		require.Equal(t, want, spans[0].Results[0].SourceColumns, engine)
 	}
 
 	// ExplainAnalyze and query types convert across the seam.
