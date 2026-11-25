@@ -83,10 +83,9 @@ func (s maskingScope) phrase() string {
 		}
 	}
 	schema, table, columns := s["schema_name"], s["table_name"], s["column_name"]
-	switch {
-	case s["database_name"] != nil:
-		parts = append(parts, "db "+scopeValues(s["database_name"]))
-	case schema != nil || table != nil || columns != nil:
+	if db := s["database_name"]; db != nil {
+		parts = append(parts, "db "+scopeValues(db))
+	} else if schema != nil || table != nil || columns != nil {
 		parts = append(parts, "any db")
 	}
 	if schema != nil && (table == nil || columns == nil) {
@@ -101,7 +100,7 @@ func (s maskingScope) phrase() string {
 		parts = append(parts, strings.Join(path, "."))
 	case table != nil:
 		parts = append(parts, "table "+scopeValues(table)+", every column")
-	case columns != nil && len(columns) == 1:
+	case len(columns) == 1:
 		parts = append(parts, "any table, column "+scopeValues(columns))
 	case columns != nil:
 		parts = append(parts, "any table, columns "+scopeValues(columns))

@@ -144,8 +144,7 @@ func decodeScopePhrase(t *testing.T, phrase string) map[string][]string {
 	labels := map[string]string{"env": "environment_id", "project": "project_id", "instance": "instance_id", "db": "database_name", "schema": "schema_name", "table": "table_name", "column": "column_name", "columns": "column_name"}
 	reach := map[string][]string{}
 	for _, part := range splitScope(t, phrase, ", ") {
-		switch part {
-		case "any db", "any table", "every column":
+		if part == "any db" || part == "any table" || part == "every column" {
 			continue
 		}
 		if label, value, found := strings.Cut(part, " "); found && labels[label] != "" {
@@ -186,21 +185,24 @@ func splitScope(t *testing.T, text, sep string) []string {
 	var parts []string
 	depth, start := 0, 0
 	for i := 0; i < len(text); {
-		switch {
-		case text[i] == '"':
+		if text[i] == '"' {
 			quoted, err := strconv.QuotedPrefix(text[i:])
 			require.NoError(t, err, text)
 			i += len(quoted)
 			continue
-		case text[i] == '(':
-			depth++
-		case text[i] == ')':
-			depth--
-		case depth == 0 && strings.HasPrefix(text[i:], sep):
+		}
+		if depth == 0 && strings.HasPrefix(text[i:], sep) {
 			parts = append(parts, text[start:i])
 			i += len(sep)
 			start = i
 			continue
+		}
+		switch text[i] {
+		case '(':
+			depth++
+		case ')':
+			depth--
+		default:
 		}
 		i++
 	}
