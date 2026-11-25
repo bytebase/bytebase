@@ -28,7 +28,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.10.4
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/omni v0.0.0-20261125172525-a44ce902c295
+	github.com/bytebase/omni v0.0.0-20261125233831-c36850e42f81
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/coreos/go-oidc v2.5.0+incompatible
@@ -348,5 +348,3 @@ require (
 )
 
 replace github.com/github/gh-ost => github.com/bytebase/gh-ost2 v0.0.0-20261120013736-268c77f2c0ca
-
-replace github.com/bytebase/omni => /home/d_bytebase_com/omni-worktrees/crdb-sdl
