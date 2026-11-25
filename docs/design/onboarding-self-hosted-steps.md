@@ -11,7 +11,7 @@ once setup ends", "Finish line: …") rather than the choice on screen. The rule
 screen, not the setup around it.** Self-hosted gets three steps and finishes on the project step;
 Cloud keeps four. Frontend only.
 
-The screens for both deployments are drawn on the design canvas linked from the pull request.
+Mockups of the screens for both deployments are in [#22220](https://github.com/bytebase/bytebase/pull/22220).
 
 ## Problem
 
@@ -189,7 +189,7 @@ Removed: self-hosted step 4, and the self-hosted step-3 states "no project" and 
 
 ## Scope
 
-Two pull requests, in this order or side by side, since they share no files.
+Two slices, shipped in one pull request as separate commits; they share no files.
 
 1. **The wizard: D1 to D8.** Delivers every row of the States table. Files:
    `frontend/src/routes/auth/WorkspaceSetupPage.tsx`; under `frontend/src/routes/auth/workspace-setup/`
