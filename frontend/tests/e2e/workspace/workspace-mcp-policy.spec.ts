@@ -185,10 +185,15 @@ test.describe("MCP access policy capability ladder", () => {
       )
     ).toBeVisible();
 
-    // Connect a client carries the authentication clause; nothing repeats it
+    // The sign-in step carries the authentication clause; nothing repeats it
     // as a separate alert.
     await expect(page.getByText("Authentication Required")).toHaveCount(0);
-    await expect(page.getByText(COPY.connect.description)).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: COPY.connect.step["sign-in"],
+        exact: true,
+      })
+    ).toBeVisible();
 
     // Collapsed by default: the list is a disclosure, not the card.
     await expect(row(page, READ_ROWS[0])).toHaveCount(0);

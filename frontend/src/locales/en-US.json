@@ -4110,16 +4110,44 @@
     },
     "mcp": {
       "connect": {
-        "description": "Add Bytebase to your AI client and start asking. On first connection you sign in and approve access in the browser.",
-        "desktop-note": "Claude Desktop reads remote servers from your Claude account, not from the config file. Add this URL as a custom connector under Customize > Connectors on claude.ai, then it appears in Claude Desktop.",
-        "json-note": "This is the mcpServers shape. Client config formats differ: VS Code, for example, expects servers in its own mcp.json, so use the VS Code tab for that.",
-        "title": "Connect a client"
+        "copy-off": "Copy is off until the External URL is set.",
+        "copy-prompt": "Copy the prompt",
+        "copy-setup": "Copy the setup for {{tool}}",
+        "desktop": {
+          "add": "Add this to the file and save it.",
+          "example": "See an example",
+          "open-file": "From that folder, open <code>{{file}}</code> in a text editor.",
+          "open-folder": "In Claude Desktop, click your name in the lower-left corner, then <ui>{{path}}</ui>. A folder opens.",
+          "requirement": "Requires Node.js 20 or later."
+        },
+        "other": {
+          "note": "The format can differ by tool.",
+          "tab": "Other",
+          "title": "Add to your AI tool's MCP config"
+        },
+        "prompt-title": "Ask your AI tool",
+        "setup-guide": "Setup guide",
+        "sign-in": {
+          "claude-code": "In Claude Code, run /mcp, select bytebase, and choose Authenticate. In the browser window that opens, sign in to Bytebase and click {{allow}}.",
+          "claude-desktop": "Quit and reopen Claude Desktop. In the browser window that opens, sign in to Bytebase and click {{allow}}.",
+          "default": "The first time your AI tool uses Bytebase, a browser window opens. Sign in to Bytebase and click {{allow}}."
+        },
+        "step": {
+          "add": "Add Bytebase to your AI tool",
+          "prompt": "Try a prompt",
+          "sign-in": "Sign in"
+        },
+        "terminal": "Run in your terminal",
+        "title": "Connect your AI tool",
+        "vscode": {
+          "guide": "VS Code setup guide",
+          "install": "Install in VS Code",
+          "off": "Install is off until the External URL is set."
+        }
       },
-      "description": "Connect AI assistants to Bytebase using the Model Context Protocol.",
+      "description": "Connect AI tools to Bytebase using the Model Context Protocol.",
       "first-prompt": {
-        "description": "Once connected, try asking your AI assistant:",
-        "example": "List all projects in my Bytebase instance",
-        "title": "Your first prompt"
+        "example": "List all projects in my Bytebase instance"
       },
       "ladder": {
         "disabled": "Nothing is allowed; no MCP session can connect.",

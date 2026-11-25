@@ -4110,16 +4110,44 @@
     },
     "mcp": {
       "connect": {
-        "description": "Bytebase を AI クライアントに追加すれば、すぐに質問を始められます。初回接続時にはブラウザーでサインインし、アクセスを承認します。",
-        "desktop-note": "Claude Desktop はリモートサーバーを設定ファイルではなく Claude アカウントから読み込みます。claude.ai の Customize > Connectors でこの URL をカスタムコネクタとして追加すると、Claude Desktop に表示されます。",
-        "json-note": "これは mcpServers 形式です。クライアントごとに設定形式が異なります。たとえば VS Code は独自の mcp.json で servers を使うため、その場合は VS Code タブを使ってください。",
-        "title": "クライアントを接続"
+        "copy-off": "外部 URL が設定されるまでコピーできません。",
+        "copy-prompt": "プロンプトをコピー",
+        "copy-setup": "{{tool}} の設定をコピー",
+        "desktop": {
+          "add": "次の内容をファイルに追加して保存します。",
+          "example": "例を見る",
+          "open-file": "そのフォルダーにある <code>{{file}}</code> をテキストエディターで開きます。",
+          "open-folder": "Claude Desktop で左下の自分の名前をクリックし、<ui>{{path}}</ui> を選択します。フォルダーが開きます。",
+          "requirement": "Node.js 20 以降が必要です。"
+        },
+        "other": {
+          "note": "形式はツールによって異なる場合があります。",
+          "tab": "その他",
+          "title": "AI ツールの MCP 設定に追加"
+        },
+        "prompt-title": "AI ツールに質問",
+        "setup-guide": "セットアップガイド",
+        "sign-in": {
+          "claude-code": "Claude Code で /mcp を実行し、bytebase を選択して Authenticate を選びます。開いたブラウザーウィンドウで Bytebase にサインインし、「{{allow}}」をクリックします。",
+          "claude-desktop": "Claude Desktop を終了して開き直します。開いたブラウザーウィンドウで Bytebase にサインインし、「{{allow}}」をクリックします。",
+          "default": "AI ツールが初めて Bytebase を使うときに、ブラウザーウィンドウが開きます。Bytebase にサインインし、「{{allow}}」をクリックします。"
+        },
+        "step": {
+          "add": "Bytebase を AI ツールに追加",
+          "prompt": "プロンプトを試す",
+          "sign-in": "サインイン"
+        },
+        "terminal": "ターミナルで実行",
+        "title": "AI ツールを接続",
+        "vscode": {
+          "guide": "VS Code セットアップガイド",
+          "install": "VS Code にインストール",
+          "off": "外部 URL が設定されるまでインストールできません。"
+        }
       },
-      "description": "Model Context Protocol を使用して、AI アシスタントを Bytebase に接続します。",
+      "description": "Model Context Protocol を使用して、AI ツールを Bytebase に接続します。",
       "first-prompt": {
-        "description": "接続後、AI アシスタントに聞いてみてください：",
-        "example": "Bytebase インスタンス内のすべてのプロジェクトをリストする",
-        "title": "最初のプロンプト"
+        "example": "Bytebase インスタンス内のすべてのプロジェクトをリストする"
       },
       "ladder": {
         "disabled": "何も許可されません。MCP セッションは接続できません。",
