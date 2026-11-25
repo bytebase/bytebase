@@ -1147,9 +1147,6 @@ func TestAdministerInstanceFitsOrdinaryCloudHosts(t *testing.T) {
 	})
 }
 
-// Whether a form fits is decided as if the TLS mode had its longest wording.
-// Otherwise a form refused with TLS required could fit with TLS off, and the
-// refusal would lead an agent to weaken the connection.
 const instanceTooLong = "this instance's names and host are too long for one confirmation form, which keeps room for any TLS setting, so no instance was added"
 
 // The refusal is decided with the longest TLS wording, so the shortest host it
@@ -1180,6 +1177,9 @@ func TestAdministerInstanceRefusalStatesTheRuleAndNoLineCount(t *testing.T) {
 	t.Fatal("no host was refused")
 }
 
+// Whether a form fits is decided as if the TLS mode had its longest wording.
+// Otherwise a form refused with TLS required could fit with TLS off, and the
+// refusal would lead an agent to weaken the connection.
 func TestAdministerInstanceNeverFitsOnlyWithWeakerTLS(t *testing.T) {
 	for _, mode := range []string{tlsNotRequired, tlsVerified} {
 		require.LessOrEqual(t, len(mode), len(tlsNotVerified), "the layouts are measured with the longest wording")

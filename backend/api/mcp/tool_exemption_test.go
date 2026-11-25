@@ -974,9 +974,9 @@ func TestRevokeMaskingExemptionStatesEveryExemptionAFormGrants(t *testing.T) {
 	require.Positive(t, refused, "and one no form states")
 }
 
-// The rows that name the columns leave two: the reason on a grant, and on a
-// revoke the note on matching entries and the expiry. So the description of
-// either form keeps to the rows an 80-by-24 terminal shows.
+// The rows that name the columns leave two: for a grant's reason, and for a
+// revoke's note on matching entries and its expiry. Only a reason longer than
+// two rows takes a description past the rows an 80-by-24 terminal shows.
 func TestMaskingExemptionColumnsLeaveTheNotesTheirRows(t *testing.T) {
 	ctx := withUserEmail(context.Background(), "alice@example.com")
 	input := GrantMaskingExemptionInput{
