@@ -3,9 +3,10 @@ import { usePrincipal } from "@/hooks/usePrincipal";
 import { useAppStore } from "@/stores/app";
 import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 
-// A principal's display name for "users/{email}", fetched once if not cached;
-// the email until it loads, or when it cannot. A service account or workload
-// identity, as CI is, is read from its own service.
+// A principal's display name for "users/{email}", fetched once if not cached.
+// A person reads as the email until loaded, or when it cannot be. A service
+// account or workload identity, as CI is, is read from its own service and
+// named from its email until then, as usePrincipal does.
 export function useUserDisplayName(name: string | undefined): string {
   const email = name?.replace(/^users\//, "") ?? "";
   const isPerson = !email || getAccountTypeByEmail(email) === AccountType.USER;
