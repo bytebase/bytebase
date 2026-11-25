@@ -1,0 +1,67 @@
+package hive
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+)
+
+func TestValidateQuerySeam(t *testing.T) {
+	require.True(t, base.HasQueryValidator(storepb.Engine_HIVE))
+
+	cases := []struct {
+		name     string
+		engine   storepb.Engine
+		sql      string
+		readOnly bool
+		allQuery bool
+		wantErr  bool
+	}{
+		{
+			name:     "hive read-only select",
+			engine:   storepb.Engine_HIVE,
+			sql:      "WITH c AS (SELECT 1 AS x) SELECT * FROM c",
+			readOnly: true,
+			allQuery: true,
+		},
+		{
+			name:   "hive cte insert",
+			engine: storepb.Engine_HIVE,
+			sql:    "WITH c AS (SELECT 1 AS x) INSERT INTO t SELECT * FROM c",
+		},
+		{
+			name:   "hive explain analyze",
+			engine: storepb.Engine_HIVE,
+			sql:    "EXPLAIN ANALYZE SELECT 1",
+		},
+		{
+			name:   "hive multi-statement with write",
+			engine: storepb.Engine_HIVE,
+			sql:    "SELECT 1; DROP TABLE t;",
+		},
+		{
+			name:    "hive syntax error",
+			engine:  storepb.Engine_HIVE,
+			sql:     "SELECT FROM",
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			readOnly, allQuery, err := base.ValidateSQLForEditor(tc.engine, tc.sql)
+			if tc.wantErr {
+				require.Error(t, err)
+				require.False(t, readOnly)
+				require.False(t, allQuery)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.readOnly, readOnly)
+			require.Equal(t, tc.allQuery, allQuery)
+		})
+	}
+}
