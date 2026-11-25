@@ -19,6 +19,9 @@ interface CopyButtonProps {
   readonly disabled?: boolean;
   readonly className?: string;
   readonly tooltipLayer?: LayerFamily;
+  // Visible text beside the icon. With it the button needs no tooltip; without
+  // it the button is icon-only.
+  readonly children?: React.ReactNode;
 }
 
 export function CopyButton({
@@ -30,6 +33,7 @@ export function CopyButton({
   disabled,
   className,
   tooltipLayer,
+  children,
 }: CopyButtonProps) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
@@ -52,24 +56,33 @@ export function CopyButton({
     timerRef.current = setTimeout(() => setCopied(false), 2000);
   }, [content, t]);
 
+  const hasText = children !== undefined;
+  const button = (
+    <Button
+      type="button"
+      variant={variant}
+      appearance={appearance}
+      size={size}
+      disabled={disabled}
+      onClick={handleCopy}
+      aria-label={hasText ? label : (label ?? t("common.copy"))}
+      className={cn(!hasText && "px-1", className)}
+    >
+      {copied ? (
+        // On a solid button the check takes the button's own text color.
+        <Check
+          className={cn("size-3.5", appearance !== "solid" && "text-success")}
+        />
+      ) : (
+        <Copy className="size-3.5" />
+      )}
+      {children}
+    </Button>
+  );
+  if (hasText) return button;
   return (
     <Tooltip content={t("common.copy")} layer={tooltipLayer}>
-      <Button
-        type="button"
-        variant={variant}
-        appearance={appearance}
-        size={size}
-        disabled={disabled}
-        onClick={handleCopy}
-        aria-label={label ?? t("common.copy")}
-        className={cn("px-1", className)}
-      >
-        {copied ? (
-          <Check className="size-3.5 text-success" />
-        ) : (
-          <Copy className="size-3.5" />
-        )}
-      </Button>
+      {button}
     </Tooltip>
   );
 }

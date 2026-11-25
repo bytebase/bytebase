@@ -4,10 +4,7 @@ import { PROJECT_V1_ROUTE_MEMBERS } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  StepHeading,
-} from "@/components/WorkloadIdentityFlow/StepParts";
+import { FormField } from "@/components/ui/form";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { getWorkloadIdentityProviderText } from "@/utils";
@@ -15,10 +12,10 @@ import { displayRoleTitle } from "@/utils/role";
 import { WorkloadIdentitySelect } from "../WorkloadIdentitySelect";
 import { repositoriesOf, workflowProviderOf } from "./identity";
 import { ProviderLogo } from "./ProviderLogo";
+import { setupFieldId } from "./setupField";
 
-// Step 2: the workload identity the workflow signs in as, and what setup reads
-// from it.
-export function WorkloadIdentityStep({
+// The workload identity the workflow signs in as, and what setup reads from it.
+export function SignInField({
   projectId,
   projectName,
   hasIdentities,
@@ -69,12 +66,11 @@ export function WorkloadIdentityStep({
     );
 
   return (
-    <div className="flex flex-col gap-y-4">
-      <StepHeading
-        question={t("gitops.setup.identity.question")}
-        description={t("gitops.setup.identity.description")}
-      />
-
+    <FormField
+      id={setupFieldId("sign-in")}
+      className="scroll-my-4"
+      title={t("gitops.setup.identity.field-label")}
+    >
       {!hasIdentities && !identityName ? (
         <div className="flex flex-col items-start gap-y-3 rounded-sm border border-block-border p-4">
           <p className="text-sm text-control-light">
@@ -83,7 +79,7 @@ export function WorkloadIdentityStep({
           {createButton("solid")}
         </div>
       ) : (
-        <Field label={t("gitops.setup.identity.label")}>
+        <div className="flex flex-col gap-y-1.5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <WorkloadIdentitySelect
               projectName={projectName}
@@ -96,37 +92,36 @@ export function WorkloadIdentityStep({
             />
             <div className="shrink-0">{createButton("outline")}</div>
           </div>
-        </Field>
+          <p className="text-xs text-control-light">
+            {t("gitops.setup.identity.description")}
+          </p>
+        </div>
       )}
 
       {identity && (
-        <section className="flex flex-col gap-y-2">
-          <h4 className="text-sm font-medium text-main">
-            {t("gitops.setup.identity.read-from")}
-          </h4>
-          <dl className="flex flex-col gap-y-2 rounded-sm border border-block-border bg-control-bg/50 p-3 text-sm">
-            <Fact label={t("gitops.setup.identity.git-provider")}>
-              <span className="flex items-center gap-x-1.5">
-                {provider && <ProviderLogo provider={provider} />}
-                {getWorkloadIdentityProviderText(
-                  identity.workloadIdentityConfig?.providerType ??
-                    WorkloadIdentityConfig_ProviderType.PROVIDER_TYPE_UNSPECIFIED,
-                  t("settings.members.workload-identity-generic-oidc")
-                )}
-              </span>
-            </Fact>
-            <Fact label={t("gitops.setup.identity.repositories")}>
-              {repositoriesText(identity)}
-            </Fact>
-            <Fact label={t("gitops.setup.identity.role")}>
-              {roles === undefined
-                ? t("common.unknown")
-                : roles.length === 0
-                  ? "-"
-                  : roles.map(displayRoleTitle).join(", ")}
-            </Fact>
-          </dl>
-        </section>
+        <div className="flex flex-col gap-y-1 text-sm text-control">
+          <p className="flex min-w-0 items-center gap-x-1.5">
+            {provider && <ProviderLogo provider={provider} />}
+            <span className="min-w-0 wrap-anywhere">
+              {getWorkloadIdentityProviderText(
+                identity.workloadIdentityConfig?.providerType ??
+                  WorkloadIdentityConfig_ProviderType.PROVIDER_TYPE_UNSPECIFIED,
+                t("settings.members.workload-identity-generic-oidc")
+              )}{" "}
+              · {repositoriesText(identity)}
+            </span>
+          </p>
+          <p>
+            {t("gitops.setup.identity.role-line", {
+              roles:
+                roles === undefined
+                  ? t("common.unknown")
+                  : roles.length === 0
+                    ? "-"
+                    : roles.map(displayRoleTitle).join(", "),
+            })}
+          </p>
+        </div>
       )}
 
       {identity && provider && roles?.length === 0 && (
@@ -143,7 +138,7 @@ export function WorkloadIdentityStep({
           </RouterLink>
         </Alert>
       )}
-    </div>
+    </FormField>
   );
 }
 
@@ -157,20 +152,5 @@ function useRepositoriesText() {
       return identity.workloadIdentityConfig?.subjectPattern || "-";
     },
     [t]
-  );
-}
-
-function Fact({
-  label,
-  children,
-}: {
-  readonly label: string;
-  readonly children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-x-4 gap-y-1 sm:flex-row">
-      <dt className="text-control-light sm:w-56 sm:shrink-0">{label}</dt>
-      <dd className="min-w-0 wrap-anywhere text-main">{children}</dd>
-    </div>
   );
 }

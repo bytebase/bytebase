@@ -1457,17 +1457,13 @@
   "gitops": {
     "back-to-releases": "Volver a Lanzamientos",
     "setup": {
-      "continue": "Continuar",
       "databases": {
         "create-group": "Crear un grupo de bases de datos",
         "databases-hint": "Estas bases de datos se escriben en los archivos del flujo de trabajo. Para agregar una después, edita los archivos.",
-        "databases-label": "Bases de datos",
         "databases-placeholder": "Selecciona bases de datos",
         "databases-tab": "Bases de datos",
         "deploy-order-hint": "Los cambios se despliegan un entorno a la vez, en este orden.",
-        "description": "El flujo de trabajo revisa y despliega cada archivo de migración en estas bases de datos.",
         "group-hint": "Una base de datos que se una a este grupo después también se despliega, sin cambiar los archivos del flujo de trabajo.",
-        "group-label": "Grupo de bases de datos",
         "group-matches-none": "Este grupo todavía no coincide con ninguna base de datos, así que no hay nada que desplegar.",
         "group-placeholder": "Selecciona un grupo de bases de datos",
         "group-tab": "Grupo de bases de datos",
@@ -1475,8 +1471,6 @@
         "no-group-title": "Este proyecto no tiene grupos de bases de datos",
         "none-pickable-description": "Ninguna base de datos de este proyecto tiene entorno, así que ninguna tiene lugar en el orden de despliegue. Asigna un entorno a una base de datos para elegirla.",
         "none-pickable-title": "No se puede elegir ninguna base de datos",
-        "question": "¿En qué bases de datos debe desplegar GitOps?",
-        "recommended": "Recomendado",
         "view-databases": "Ver bases de datos",
         "view-group": "Ver grupo"
       },
@@ -1490,41 +1484,76 @@
         "unassigned-description_one": "No tiene entorno, así que el despliegue la omite sin error. Asígnale un entorno para incluirla.",
         "unassigned-description_other": "No tienen entorno, así que el despliegue las omite sin error. Asígnales un entorno para incluirlas.",
         "unassigned-title_one": "{{count}} base de datos no se desplegará",
-        "unassigned-title_other": "{{count}} bases de datos no se desplegarán"
+        "unassigned-title_other": "{{count}} bases de datos no se desplegarán",
+        "unsupported-description_one": "El flujo basado en estado admite PostgreSQL y MySQL. El despliegue falla en esta base de datos. Quítala de «Desplegar en» o usa el flujo basado en migraciones.",
+        "unsupported-description_other": "El flujo basado en estado admite PostgreSQL y MySQL. El despliegue falla en estas bases de datos. Quítalas de «Desplegar en» o usa el flujo basado en migraciones.",
+        "unsupported-title_one": "{{count}} base de datos no admite el flujo basado en estado",
+        "unsupported-title_other": "{{count}} bases de datos no admiten el flujo basado en estado"
+      },
+      "deploy-to": {
+        "label": "Desplegar en"
+      },
+      "export-schema": {
+        "description": "Los archivos de esquema exportados contienen la definición completa del esquema de esta base de datos, como sentencias CREATE. El primer despliegue hace que cada base de datos de “Desplegar en” coincida con ellos.",
+        "label": "Exportar el esquema de",
+        "none-supported": "Ninguna base de datos de «Desplegar en» admite el flujo basado en estado",
+        "placeholder": "Selecciona una base de datos"
       },
       "external-url-description": "Tu flujo de trabajo usa esta dirección para conectarse a Bytebase. Ya puedes seguir los pasos. Los archivos del flujo de trabajo estarán completos cuando un administrador del espacio de trabajo la configure.",
       "files": {
+        "choice-needs-environment": "Necesita una base de datos con entorno",
+        "choice-needs-role": "Necesita un rol de GitOps",
         "copy-off": "Copiar está desactivado hasta que se configure la URL externa",
+        "copy-path": "Copiar la ruta del archivo",
         "description": "Los archivos ya contienen tus bases de datos y tu identidad de carga de trabajo. Cópialos tal como están.",
+        "description-pending": "La configuración convierte las opciones de arriba en archivos de flujo de trabajo para tu repositorio: un job revisa cada cambio en la carpeta de migraciones y otro lo despliega tras la fusión. Bytebase no guarda nada; los archivos contienen toda la configuración.",
+        "description-pending-state": "La configuración convierte las opciones de arriba en archivos de flujo de trabajo y archivos de esquema para tu repositorio: el flujo de trabajo revisa cada cambio en los archivos de esquema y lo despliega tras la fusión. Bytebase no guarda nada; los archivos contienen toda la configuración.",
+        "description-state": "Los archivos de flujo de trabajo ya contienen tus bases de datos y tu identidad de carga de trabajo. Los archivos de esquema se exportan de la base de datos que elijas abajo. Agrega ambos tal como están.",
         "developers-github": "Para desarrolladores: agrega un archivo como <code>{{file}}</code> en un pull request. Los nombres de archivo empiezan con un número de versión. El flujo de trabajo omite un archivo sin él.",
         "developers-gitlab": "Para desarrolladores: agrega un archivo como <code>{{file}}</code> en un merge request. Los nombres de archivo empiezan con un número de versión. El flujo de trabajo omite un archivo sin él.",
+        "developers-state-github": "Para desarrolladores: edita los archivos de esquema en un pull request. Cambia, agrega o elimina una sentencia CREATE, y Bytebase genera el DDL de migración de cada base de datos.",
+        "developers-state-gitlab": "Para desarrolladores: edita los archivos de esquema en un merge request. Cambia, agrega o elimina una sentencia CREATE, y Bytebase genera el DDL de migración de cada base de datos.",
         "folder-hint": "El flujo de trabajo revisa y despliega los archivos SQL de esta carpeta.",
         "folder-invalid": "Introduce una ruta de carpeta relativa a la raíz del repositorio, como migrations o db/migrations.",
         "folder-label": "Carpeta de migraciones",
+        "gitlab-include-note": "Si tu repositorio ya tiene <code>.gitlab-ci.yml</code>, agrégale estas líneas.",
         "heading": "Agrega los archivos a tu repositorio",
+        "locked-request-step": "Explica qué ocurre una vez fusionados los archivos.",
+        "locked-schema-step": "Muestra el esquema exportado, con una descarga.",
+        "locked-workflow-step": "Muestra los archivos, completados con tus opciones.",
         "next-github": "Cuando los archivos estén en la rama predeterminada, el siguiente pull request que cambie la carpeta de migraciones recibirá un comentario de revisión de Bytebase. Al fusionarlo, se despliega.",
         "next-gitlab": "Cuando los archivos estén en la rama predeterminada, el siguiente merge request que cambie la carpeta de migraciones recibirá un comentario de revisión de Bytebase. Al fusionarlo, se despliega.",
-        "next-title": "Qué pasa después",
+        "next-state-github": "Cuando los archivos estén en la rama predeterminada, el siguiente pull request que cambie los archivos de esquema recibirá un comentario de revisión de Bytebase con el DDL de migración de cada base de datos. Al fusionarlo, se despliega.",
+        "next-state-gitlab": "Cuando los archivos estén en la rama predeterminada, el siguiente merge request que cambie los archivos de esquema recibirá un comentario de revisión de Bytebase con el DDL de migración de cada base de datos. Al fusionarlo, se despliega.",
         "repository": "Repositorio",
+        "request-step-description-github": "Haz commit de los archivos y abre un pull request hacia la rama predeterminada.",
+        "request-step-description-gitlab": "Haz commit de los archivos y abre un merge request hacia la rama predeterminada.",
+        "request-step-title": "Abre una pull request o merge request",
+        "request-step-title-github": "Abre un pull request",
+        "request-step-title-gitlab": "Abre un merge request",
+        "schema-folder-hint": "El flujo de trabajo revisa y despliega los archivos de esquema de esta carpeta.",
+        "schema-folder-invalid": "Introduce una ruta de carpeta relativa a la raíz del repositorio, como schema o db/schema.",
+        "schema-folder-label": "Carpeta del esquema",
+        "schema-step-description": "La carpeta debe contener el esquema completo antes del primer cambio de esquema. Expórtalo aquí y descomprímelo en <code>{{folder}}</code>, u omite este paso si tu repositorio ya lo tiene.",
+        "schema-step-title": "Agrega los archivos de esquema",
         "show-all": "Mostrar las {{lines}} líneas",
-        "url-missing": "Los archivos muestran <code>{{placeholder}}</code> donde va la dirección de Bytebase. Copiar está desactivado hasta que se configure la URL externa, porque un flujo de trabajo sin dirección no puede conectarse a Bytebase."
+        "url-missing": "Los archivos muestran <code>{{placeholder}}</code> donde va la dirección de Bytebase. Copiar está desactivado hasta que se configure la URL externa, porque un flujo de trabajo sin dirección no puede conectarse a Bytebase.",
+        "waiting-for": "Falta elegir",
+        "workflow-step-description": "Crea cada archivo en la ruta indicada.",
+        "workflow-step-title": "Agrega los archivos de flujo de trabajo"
       },
       "identity": {
         "create": "Crear identidad de carga de trabajo",
         "description": "Tu flujo de trabajo inicia sesión en Bytebase con esta identidad, así que no se guarda ningún secreto en el repositorio.",
         "every-repository": "Todos los repositorios de {{owner}}",
-        "git-provider": "Proveedor de Git",
-        "label": "Identidad de carga de trabajo",
+        "field-label": "Iniciar sesión como",
         "no-role-description": "Su flujo de trabajo puede iniciar sesión, pero Bytebase rechazará la revisión y el despliegue. Concédele el rol GitOps Service Agent en la página Miembros.",
         "no-role-title": "Esta identidad no tiene ningún rol que permita GitOps",
         "none": "Este proyecto todavía no tiene identidades de carga de trabajo.",
         "open-members": "Abrir Miembros",
         "other-provider": "Otro OIDC. La configuración no tiene archivos de flujo de trabajo para él.",
         "placeholder": "Selecciona una identidad de carga de trabajo",
-        "question": "¿Con qué identidad de carga de trabajo inicia sesión tu flujo de trabajo?",
-        "read-from": "Leído de esta identidad",
-        "repositories": "Repositorios que pueden iniciar sesión",
-        "role": "Rol en este proyecto"
+        "role-line": "Rol en este proyecto: {{roles}}"
       },
       "no-database": {
         "description": "GitOps despliega en las bases de datos de este proyecto. Primero agrega o transfiere una base de datos a este proyecto.",
@@ -1534,14 +1563,35 @@
         "description": "Tu flujo de trabajo inicia sesión en Bytebase como una identidad de carga de trabajo de este proyecto. Pide a un propietario del proyecto que cree una.",
         "title": "Este proyecto no tiene identidades de carga de trabajo"
       },
-      "outcome": "Cada pull request que cambia la carpeta de migraciones recibe una revisión de Bytebase. Al fusionarlo, se despliega.",
-      "scope": "La configuración genera archivos de flujo de trabajo para GitHub Actions y GitLab CI. Para otras plataformas de CI/CD, consulta la <docs>documentación de GitOps</docs>.",
-      "steps": {
-        "databases": "Bases de datos",
-        "workflow-files": "Archivos del flujo de trabajo",
-        "workload-identity": "Identidad de carga de trabajo"
+      "outcome": "Cada pull request que cambia los archivos SQL recibe una revisión de Bytebase. Al fusionarlo, se despliega.",
+      "schema-files": {
+        "empty": "Esta base de datos no tiene objetos de esquema, así que no hay nada que exportar. Elige una base de datos que contenga el esquema.",
+        "exporting": "Exportando el esquema de {{database}}",
+        "failed": "No se pudo exportar el esquema",
+        "filter": "Filtrar archivos",
+        "filter-count_one": "{{shown}} de {{count}} archivo",
+        "filter-count_other": "{{shown}} de {{count}} archivos",
+        "more-matches_one": "Coincide {{count}} archivo más. Escribe más para acotar la lista.",
+        "more-matches_other": "Coinciden {{count}} archivos más. Escribe más para acotar la lista.",
+        "no-match": "Ningún archivo coincide con “{{query}}”.",
+        "show-all": "Mostrar los {{count}} archivos",
+        "summary_one": "{{count}} archivo de {{database}}",
+        "summary_other": "{{count}} archivos de {{database}}"
       },
-      "title": "GitOps"
+      "scope": "La configuración genera archivos de flujo de trabajo para GitHub Actions y GitLab CI. Para otras plataformas de CI/CD, consulta la <docs>documentación de GitOps</docs>.",
+      "title": "GitOps",
+      "workflow-type": {
+        "label": "Tipo de flujo de trabajo",
+        "limits-engines": "<b>PostgreSQL recomendado.</b> También se admite MySQL 8.0 o posterior.",
+        "limits-link": "Ver todas las limitaciones en la documentación",
+        "limits-schema-only": "<b>Solo cambios de esquema.</b> Para cambios de datos (INSERT, UPDATE, DELETE), usa el flujo basado en migraciones.",
+        "limits-statements": "<b>Sentencias limitadas.</b> En PostgreSQL solo se admiten CREATE TABLE, CREATE INDEX, CREATE VIEW, CREATE SEQUENCE, CREATE FUNCTION y ALTER SEQUENCE (para OWNED BY).",
+        "limits-title": "Antes de elegir el flujo basado en estado",
+        "migration-description": "Escribes archivos de migración incrementales. Se ejecutan en el orden de sus números de versión.",
+        "migration-title": "Basado en migraciones",
+        "state-description": "Mantienes la definición completa del esquema. Bytebase genera el DDL de migración que lleva cada base de datos a ese estado.",
+        "state-title": "Basado en estado (SDL)"
+      }
     }
   },
   "identity-provider": {

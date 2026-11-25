@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { DatabaseSelectOption } from "@/components/DatabaseSelectOption";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
-import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { usePaginatedSelect } from "@/hooks/usePaginatedSelect";
 import { useAppStore } from "@/stores/app";
@@ -143,23 +143,13 @@ export function DatabaseSelect(props: DatabaseSelectProps) {
         description: instance,
         disabled: noEnvironment,
         render: (keyword) => (
-          <div className="flex flex-col gap-1">
-            <DatabaseTargetDisplay
-              database={database}
-              keyword={keyword}
-              showEnvironment
-            />
-            <HighlightLabelText
-              text={database.name}
-              keyword={keyword}
-              className="text-xs text-control-placeholder"
-            />
-            {noEnvironment && (
-              <span className="text-xs text-warning">
-                {t("database.select-no-environment")}
-              </span>
-            )}
-          </div>
+          <DatabaseSelectOption
+            database={database}
+            keyword={keyword}
+            disabledReason={
+              noEnvironment ? t("database.select-no-environment") : undefined
+            }
+          />
         ),
       };
     },

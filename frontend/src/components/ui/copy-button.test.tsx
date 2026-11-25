@@ -90,6 +90,32 @@ describe("CopyButton", () => {
     expect(button.querySelector(".lucide-copy")).not.toBeNull();
   });
 
+  test("with text, it is named by the text and has no tooltip", async () => {
+    render(
+      <CopyButton content="Original text" appearance="solid" size="sm">
+        Copy file
+      </CopyButton>
+    );
+    const button = screen.getByRole("button", { name: "Copy file" });
+    expect(button).not.toHaveClass("px-1");
+
+    await act(async () => {
+      fireEvent.focus(button);
+      vi.advanceTimersByTime(100);
+    });
+    expect(
+      document.getElementById("bb-react-layer-overlay")?.textContent ?? ""
+    ).not.toContain("common.copy");
+
+    await act(async () => {
+      fireEvent.click(button);
+    });
+    expect(mocks.writeTextToClipboard).toHaveBeenCalledWith("Original text");
+    expect(button.querySelector(".lucide-check")).not.toHaveClass(
+      "text-success"
+    );
+  });
+
   test("takes its accessible name from the label, keeping the generic tooltip", async () => {
     render(<CopyButton content="ana@example.com" label="Copy email for Ana" />);
     const button = screen.getByRole("button", { name: "Copy email for Ana" });
