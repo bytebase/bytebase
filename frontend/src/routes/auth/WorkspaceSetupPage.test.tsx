@@ -945,6 +945,28 @@ describe("WorkspaceSetupPage", () => {
       );
     });
 
+    test("reports the collaboration type as unselected on every attempt, as no team size is asked", async () => {
+      mocks.prepareSampleProjectInstance.mockRejectedValueOnce(unavailable());
+      startAtProject();
+      await nameProject();
+      fireEvent.click(finishButton());
+      await failed();
+
+      tryAgain();
+
+      await landed();
+      expect(eventsNamed("workspace setup submitted")).toEqual([
+        expect.objectContaining({
+          result: "failed",
+          collaboration_type: "unselected",
+        }),
+        expect.objectContaining({
+          result: "finished",
+          collaboration_type: "unselected",
+        }),
+      ]);
+    });
+
     test("holds the project step read-only while Finish runs", async () => {
       const release = holdNextCall(mocks.createProject);
       startAtProject();

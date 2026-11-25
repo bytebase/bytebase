@@ -366,7 +366,11 @@ function WorkspaceSetupWizard() {
       invite_count: invitees.length,
       // Kept beside `team_size` for the dashboards built on the earlier
       // wizard's team-or-solo answer.
-      collaboration_type: draft.teamSize === "just-me" ? "solo" : "team",
+      collaboration_type: !draft.teamSize
+        ? "unselected"
+        : draft.teamSize === "just-me"
+          ? "solo"
+          : "team",
       sample_enabled: finishSource === "sample",
     };
     const result = await runSetupFinish(
