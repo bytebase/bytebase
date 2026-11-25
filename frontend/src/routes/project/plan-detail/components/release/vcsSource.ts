@@ -20,7 +20,7 @@ const PLATFORM_NAME: Partial<Record<VCSType, string>> = {
 export interface RepoCommit {
   // The repository URL.
   repoUrl: string;
-  // "owner/name": the repository URL's last two segments.
+  // The repository as its platform names it, such as "owner/name".
   repo: string;
   sha: string;
 }
@@ -42,8 +42,35 @@ export const parseRepoCommit = (
   const repoUrl = source.url.slice(0, index);
   const sha = source.commitSha || source.url.slice(index + commitPath!.length);
   if (!repoUrl || !sha) return undefined;
-  const segments = repoUrl.replace(/\/+$/, "").split("/");
-  return { repoUrl, repo: segments.slice(-2).join("/"), sha };
+  const repo = repoName(source.vcsType, repoUrl);
+  if (!repo) return undefined;
+  return { repoUrl, repo, sha };
+};
+
+// The URL's path after the host: "owner/name", or a GitLab subgroup's whole
+// "group/subgroup/name". Azure DevOps puts the organization and "_git" in the
+// path, so its name is "<project>/<repo>" from either side of "_git".
+const repoName = (vcsType: VCSType, repoUrl: string): string => {
+  const segments = repoUrl
+    .replace(/^https?:\/\/[^/]+/i, "")
+    .split("/")
+    .filter(Boolean)
+    .map(decodeSegment);
+  if (vcsType === VCSType.AZURE_DEVOPS) {
+    const git = segments.lastIndexOf("_git");
+    if (git > 0 && git < segments.length - 1) {
+      return `${segments[git - 1]}/${segments[git + 1]}`;
+    }
+  }
+  return segments.join("/");
+};
+
+const decodeSegment = (segment: string): string => {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
 };
 
 export const platformName = (vcsType: VCSType | undefined) =>
