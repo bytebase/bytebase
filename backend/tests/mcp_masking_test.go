@@ -3,7 +3,7 @@ package tests
 // An MCP session applies the caller's own masking provisioning exactly as the
 // console does. Two mechanisms let a user see a real value, and they reach
 // masking through different doors: a masking exemption is filtered per caller
-// inside the masking pass (QueryResultMasker.exemptionsForPrincipal), while an
+// inside the masking pass (queryResultMasker.exemptionsForPrincipal), while an
 // access grant's unmask turns the pass off at the query context
 // (db.QueryContext.SkipMasking), which Query and Export each set on their own.
 // Every read below asserts both transports on one fixture, so an agent that

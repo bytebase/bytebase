@@ -705,6 +705,7 @@
       "add-root-condition-placeholder": "Click \"Add condition\" or \"Add condition group\" to add condition",
       "cannot-convert-to-selection": "This condition cannot be represented by a manual selection.",
       "description-tips": "A condition is a rule that can be configured via an expression. For example, the condition \"Environment is prod\" will match issues executed in the \"prod\" environment.",
+      "factor": "Condition field",
       "group": {
         "and": {
           "description": "All of the following are true..."
@@ -716,6 +717,8 @@
       },
       "input-value": "Input value",
       "input-value-press-enter": "Input value, press Enter to confirm",
+      "operator": "Operator",
+      "retry-loading-options": "Retry loading options",
       "select-value": "Select value",
       "self": "Condition"
     }

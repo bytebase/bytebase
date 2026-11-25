@@ -110,6 +110,7 @@ var IAMPolicyConditionCELAttributes = []cel.EnvOption{
 
 // MaskingRulePolicyCELAttributes are the variables when evaluating masking rule.
 var MaskingRulePolicyCELAttributes = []cel.EnvOption{
+	cel.Variable(CELAttributePrincipalGroups, cel.ListType(cel.StringType)),
 	cel.Variable(CELAttributeResourceEnvironmentID, cel.StringType),
 	cel.Variable(CELAttributeResourceProjectID, cel.StringType),
 	cel.Variable(CELAttributeResourceInstanceID, cel.StringType),

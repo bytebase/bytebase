@@ -11,6 +11,8 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { v4 as uuidv4 } from "uuid";
 import type { AgentPageHelpRequest } from "@/modules/agent/logic/contextualHelp";
+import type { Factor } from "@/modules/cel";
+import type { OptionConfig } from "@/utils/expr";
 
 const {
   state,
@@ -159,11 +161,15 @@ vi.mock("@/components/ExprEditor", () => ({
     readonly,
     onUpdate,
     bordered = true,
+    factorList,
+    optionConfigMap,
   }: {
     expr: unknown;
     readonly?: boolean;
     onUpdate: (expr: unknown) => void;
     bordered?: boolean;
+    factorList: Factor[];
+    optionConfigMap: Map<Factor, OptionConfig>;
   }) => (
     <>
       <output
@@ -171,6 +177,10 @@ vi.mock("@/components/ExprEditor", () => ({
         data-readonly={readonly}
         data-bordered={bordered}
         data-agent-help={!readonly}
+        data-has-group-picker={
+          factorList.includes("principal.groups") &&
+          !!optionConfigMap.get("principal.groups")?.search
+        }
       >
         {JSON.stringify(expr)}
       </output>
@@ -1790,6 +1800,24 @@ describe("GlobalMaskingPage", () => {
       fixtures[1],
     ]);
   });
+
+  it("provides the group picker and retains a saved group condition on rename", async () => {
+    const expression = 'resource.environment_id == "test" && !("groups/deleted@example.com" in principal.groups)';
+    const rule = {
+      ...fixtures[0],
+      condition: { ...fixtures[0].condition, expression },
+    };
+    state.getOrFetchPolicyByParentAndType.mockResolvedValue({
+      policy: { case: "maskingRulePolicy", value: { rules: [rule] } },
+    });
+    const name = await editFirstRule();
+    expect(screen.getByTestId("condition-editor")).toHaveAttribute("data-has-group-picker", "true");
+    fireEvent.change(name, { target: { value: "Renamed group rule" } });
+    fireEvent.click(screen.getByRole("button", { name: prefix + "save-rule" }));
+    await screen.findByText("Renamed group rule");
+    expect(savedRules()[0].condition.expression).toBe(expression);
+  });
+
   it("retains a failed save draft and permits retry", async () => {
     state.upsertPolicy.mockRejectedValueOnce(new Error("write failed"));
     const name = await editFirstRule();

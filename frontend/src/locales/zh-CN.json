@@ -705,6 +705,7 @@
       "add-root-condition-placeholder": "点击「添加条件」或「添加条件组」以添加条件",
       "cannot-convert-to-selection": "此条件无法通过手动选择表示。",
       "description-tips": "条件是通过表达式配置的规则。例如：条件「环境 为 prod」将会匹配在「prod」环境中执行的工单。",
+      "factor": "条件字段",
       "group": {
         "and": {
           "description": "以下全部为真…"
@@ -716,6 +717,8 @@
       },
       "input-value": "输入值",
       "input-value-press-enter": "输入值，按回车确认",
+      "operator": "运算符",
+      "retry-loading-options": "重试加载选项",
       "select-value": "选择值",
       "self": "条件"
     }

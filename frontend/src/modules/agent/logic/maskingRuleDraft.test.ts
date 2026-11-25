@@ -481,6 +481,77 @@ describe("masking rule drafts", () => {
         },
       ],
     },
+    {
+      condition: '"groups/analysts@example.com" in principal.groups',
+      ast: call("@in", [
+        string("groups/analysts@example.com"),
+        ident("principal.groups"),
+      ]),
+      args: [
+        {
+          type: "Condition",
+          operator: "@contains",
+          args: ["principal.groups", "groups/analysts@example.com"],
+        },
+      ],
+    },
+    {
+      condition:
+        '"groups/cf18e87e-7eae-4a01-ade0-2c321a9e1d2b" in principal.groups',
+      ast: call("@in", [
+        string("groups/cf18e87e-7eae-4a01-ade0-2c321a9e1d2b"),
+        ident("principal.groups"),
+      ]),
+      args: [
+        {
+          type: "Condition",
+          operator: "@contains",
+          args: [
+            "principal.groups",
+            "groups/cf18e87e-7eae-4a01-ade0-2c321a9e1d2b",
+          ],
+        },
+      ],
+    },
+    {
+      condition: '!("groups/analysts@example.com" in principal.groups)',
+      ast: call("!_", [
+        call("@in", [
+          string("groups/analysts@example.com"),
+          ident("principal.groups"),
+        ]),
+      ]),
+      args: [
+        {
+          type: "Condition",
+          operator: "@not_contains",
+          args: ["principal.groups", "groups/analysts@example.com"],
+        },
+      ],
+    },
+    {
+      condition:
+        'resource.column_name == "email" && "groups/analysts@example.com" in principal.groups',
+      ast: call("_&&_", [
+        equals("resource.column_name", "email"),
+        call("@in", [
+          string("groups/analysts@example.com"),
+          ident("principal.groups"),
+        ]),
+      ]),
+      args: [
+        {
+          type: "Condition",
+          operator: "_==_",
+          args: ["resource.column_name", "email"],
+        },
+        {
+          type: "Condition",
+          operator: "@contains",
+          args: ["principal.groups", "groups/analysts@example.com"],
+        },
+      ],
+    },
   ])(
     "preserves the confirmed resource predicate: $condition",
     async ({ condition, ast, args }) => {
@@ -508,6 +579,46 @@ describe("masking rule drafts", () => {
       prepareMaskingRuleDraft({ ...input, condition }, context)
     ).rejects.toThrow(/selector/i);
   });
+
+  it("rejects role targeting rather than interpreting roles as groups", async () => {
+    const condition = '"roles/sqlEditorUser" in principal.roles';
+    expressions.set(
+      condition,
+      call("@in", [string("roles/sqlEditorUser"), ident("principal.roles")])
+    );
+
+    await expect(
+      prepareMaskingRuleDraft({ ...input, condition }, context)
+    ).rejects.toThrow(/selector/i);
+  });
+
+  it.each([
+    "analysts",
+    "roles/sqlEditorUser",
+    "users/analysts@example.com",
+    "groups/",
+    "groups/analysts/child",
+    "groups/analysts team",
+  ])(
+    "rejects a noncanonical group target %j in either polarity",
+    async (group) => {
+      for (const negated of [false, true]) {
+        const membership = call("@in", [
+          string(group),
+          ident("principal.groups"),
+        ]);
+        const condition = `${negated ? "!(" : ""}${JSON.stringify(group)} in principal.groups${negated ? ")" : ""}`;
+        expressions.set(
+          condition,
+          negated ? call("!_", [membership]) : membership
+        );
+
+        await expect(
+          prepareMaskingRuleDraft({ ...input, condition }, context)
+        ).rejects.toThrow(/group/i);
+      }
+    }
+  );
 
   it("prepares a built-in rule before the semantic types setting exists", async () => {
     mocks.getSetting.mockRejectedValue(

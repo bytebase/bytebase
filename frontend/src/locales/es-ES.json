@@ -705,6 +705,7 @@
       "add-root-condition-placeholder": "Haga clic en \"Agregar condición\" o \"Agregar grupo de condiciones\" para agregar una condición",
       "cannot-convert-to-selection": "Esta condición no se puede representar mediante una selección manual.",
       "description-tips": "Una condición es una regla que se puede configurar mediante una expresión. Por ejemplo, la condición \"Entorno es prod\" coincidirá con las incidencias ejecutadas en el entorno \"prod\".",
+      "factor": "Campo de condición",
       "group": {
         "and": {
           "description": "Todos los siguientes son verdaderos..."
@@ -716,6 +717,8 @@
       },
       "input-value": "Valor de entrada",
       "input-value-press-enter": "Ingrese el valor, presione Enter para confirmar",
+      "operator": "Operador",
+      "retry-loading-options": "Reintentar carga",
       "select-value": "Seleccionar valor",
       "self": "Condición"
     }
