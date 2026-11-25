@@ -4,8 +4,8 @@ package bigquery
 import (
 	"strings"
 
-	omniast "github.com/bytebase/omni/googlesql/ast"
-	googlesqlv1review "github.com/bytebase/omni/googlesql/v1review"
+	omniast "github.com/bytebase/omni/bigquery/ast"
+	bigqueryv1review "github.com/bytebase/omni/bigquery/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -34,7 +34,7 @@ func init() {
 
 	advisor.RegisterRules(storepb.Engine_BIGQUERY, map[storepb.SQLReviewRule_Type]advisor.Advisor{
 		storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE: e.SimpleStmt(
-			googlesqlv1review.StatementWhereRequireUpdateDelete,
+			bigqueryv1review.StatementWhereRequireUpdateDelete,
 			code.StatementNoWhere,
 			e.FmtName("WHERE clause is required for %s statement."),
 		),

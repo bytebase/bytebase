@@ -9,21 +9,20 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/googlesql/googlesqltest"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func TestGetQuerySpanSeam(t *testing.T) {
 	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "ds1",
-		Schemas: googlesqltest.DefaultSchemaTables(
+		Schemas: defaultSchemaTables(
 			&metadatapb.TableMetadata{
 				Name:    "users",
 				Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "email"}},
 			},
 		),
 	}
-	getter, lister := googlesqltest.BuildMockDatabaseMetadataGetter(storepb.Engine_BIGQUERY, []*metadatapb.DatabaseSchemaMetadata{metadata})
+	getter, lister := buildMockDatabaseMetadataGetter(storepb.Engine_BIGQUERY, []*metadatapb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -40,8 +39,8 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	require.Nil(t, spans[0].NotFoundError)
 	require.Equal(t, base.SourceColumnSet{{Database: "ds1", Table: "users"}: true}, spans[0].SourceColumns)
 	require.Len(t, spans[0].Results, 2)
-	require.Equal(t, []string{"users.id"}, googlesqltest.SourcesOf(spans[0].Results[0]))
-	require.Equal(t, []string{"users.email"}, googlesqltest.SourcesOf(spans[0].Results[1]))
+	require.Equal(t, []string{"users.id"}, sourcesOf(spans[0].Results[0]))
+	require.Equal(t, []string{"users.email"}, sourcesOf(spans[0].Results[1]))
 
 	// BigQuery dialect flag: SET classifies as Select.
 	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SET x = 1"}, "ds1", "", false)
