@@ -4428,15 +4428,22 @@ describe("AgentWindow", () => {
     const store = useAgentStore.getState();
     const chat = store.ensureCurrentChat(undefined, "projects/orders");
     store.addMessage({ chatId: chat.id, role: "user", content: "Query contacts" });
-    const source = store.addMessage({ chatId: chat.id, role: "assistant", content: "Contacts returned." })!;
+    const source = store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Contacts returned.",
+      metadata: { route: "/projects/orders/databases/contacts" },
+    })!;
     store.addMessage({ chatId: chat.id, role: "user", content: "Query employees" });
     store.addMessage({ chatId: chat.id, role: "assistant", content: "Employees returned." });
     store.setDraft(chat.id, { text: "Keep my unsent draft." });
     const draft = structuredClone(store.getDraft(chat.id));
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
-    render();
+    const previousTitle = document.title;
+    document.title = "Employees";
 
     try {
+      render();
       act(() => document.body.querySelector<HTMLButtonElement>(
         '[data-testid="agent-continue-with-source"]'
       )?.click());
@@ -4444,9 +4451,12 @@ describe("AgentWindow", () => {
         chatId: chat.id,
         text: "How can I request access to unmasked data?",
         followUpSourceId: source.id,
+        page: { path: "/projects/orders/databases/contacts", title: "" },
       });
+      expect(getCurrentQueuedUserMessage()?.page.sqlEditor).toBeUndefined();
       expect(store.getDraft(chat.id)).toEqual(draft);
     } finally {
+      document.title = previousTitle;
       unmount();
     }
   });

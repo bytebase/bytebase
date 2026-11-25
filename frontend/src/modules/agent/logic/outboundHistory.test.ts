@@ -623,6 +623,148 @@ describe("source-bound query follow-ups", () => {
     return { ...fixture, connection, metadata };
   };
 
+  const chosenSqlTurn = (connected = false) => {
+    const fixture = sqlTurn();
+    const sqlEditor = {
+      version: 1 as const,
+      project: fixture.project,
+      ...(connected ? { connection: fixture.connection } : {}),
+    };
+    fixture.contacts[0].metadata = { sqlEditor };
+    fixture.contacts[3].metadata = { sqlEditor };
+    const choice = clarification(
+      "source-database-choice",
+      {
+        kind: "choose",
+        resourceKind: "database",
+        prompt: "Which database?",
+        options: [{ label: "Orders", value: fixture.database }],
+      },
+      { kind: "choose", answer: "Orders", value: fixture.database }
+    );
+    return {
+      ...fixture,
+      choice,
+      messages: [
+        fixture.contacts[0],
+        ...choice,
+        ...fixture.contacts.slice(1),
+        fixture.followUp,
+      ],
+    };
+  };
+
+  test.each([false, true])(
+    "a validated source database choice overrides ambient SQL focus (connected=%s)",
+    (connected) => {
+      const fixture = chosenSqlTurn(connected);
+      const stored = structuredClone(fixture.messages);
+      const system = buildOutboundHistory(
+        "system",
+        fixture.messages,
+        fixture.project
+      )[0].content;
+      expect(system).toContain("Historical database context");
+      expect(system).toContain(fixture.database);
+      expect(system).toContain(fixture.contactsSQL);
+      expect(system).not.toContain(fixture.connection.database);
+      expect(system).toContain("not authorization");
+      expect(
+        getHistoricalMaskingDatabase(fixture.messages, fixture.project)
+      ).toEqual({ database: fixture.database });
+      expect(fixture.messages).toEqual(stored);
+    }
+  );
+
+  test.each(["uncorrelated", "unoffered", "cancelled"])(
+    "an invalid %s database choice cannot replace connectionless SQL context",
+    (invalid) => {
+      const fixture = chosenSqlTurn();
+      const reply = fixture.choice[1];
+      if (invalid === "uncorrelated") reply.toolCallId = "missing-question";
+      else if (invalid === "unoffered")
+        fixture.choice[0].toolCalls![0].arguments = JSON.stringify({
+          kind: "choose",
+          resourceKind: "database",
+          options: [
+            { label: "Other", value: "instances/main/databases/other" },
+          ],
+        });
+      else
+        reply.content = JSON.stringify({ kind: "cancelled", reason: "user" });
+      const system = buildOutboundHistory(
+        "system",
+        fixture.messages,
+        fixture.project
+      )[0].content;
+      expect(system).toContain("Source-bound follow-up");
+      expect(system).not.toContain(fixture.contactsSQL);
+      expect(
+        getHistoricalMaskingDatabase(fixture.messages, fixture.project)
+      ).toBeUndefined();
+    }
+  );
+
+  test.each([
+    "different-query-target",
+    "multiple-choices",
+    "foreign-project",
+    "conflicting-reference",
+  ])("conflicting %s evidence cannot supply a source query", (conflict) => {
+    const fixture = chosenSqlTurn();
+    const other = "instances/main/databases/other";
+    if (conflict === "conflicting-reference") {
+      fixture.contacts[0].metadata!.resourceReferences = [
+        { ...fixture.reference, name: other },
+      ];
+    } else if (conflict === "multiple-choices") {
+      fixture.messages.splice(
+        3,
+        0,
+        ...clarification(
+          "second-source-choice",
+          {
+            kind: "choose",
+            resourceKind: "database",
+            options: [{ label: "Other", value: other }],
+          },
+          { kind: "choose", answer: "Other", value: other }
+        )
+      );
+    } else {
+      const target =
+        conflict === "foreign-project"
+          ? "projects/other/instances/main/databases/orders"
+          : other;
+      if (conflict === "foreign-project") {
+        fixture.choice[0].toolCalls![0].arguments = JSON.stringify({
+          kind: "choose",
+          resourceKind: "database",
+          options: [{ label: "Other", value: target }],
+        });
+        fixture.choice[1].content = JSON.stringify({
+          kind: "choose",
+          answer: "Other",
+          value: target,
+        });
+      }
+      fixture.contacts[1].toolCalls![0].arguments = JSON.stringify({
+        operationId: "SQLService/Query",
+        body: { name: target, statement: fixture.contactsSQL },
+      });
+    }
+    const system = buildOutboundHistory(
+      "system",
+      fixture.messages,
+      fixture.project
+    )[0].content;
+    expect(system).toContain("Source-bound follow-up");
+    expect(system).not.toContain(fixture.contactsSQL);
+    expect(
+      getHistoricalMaskingDatabase(fixture.messages, fixture.project)
+    ).toBeUndefined();
+  });
+
   test("an explanation-only source supplies its frozen database, not a later successful Query", () => {
     const f = sqlTurn();
     const messages = [f.contacts[0], f.contacts[3], ...f.employees, f.followUp];

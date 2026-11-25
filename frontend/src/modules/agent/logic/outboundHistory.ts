@@ -713,9 +713,12 @@ const getHistoricalDatabaseIdentity = (
   const currentReferences = messages
     .slice(currentIndex)
     .flatMap((message) => references.get(message) ?? []);
-  // An explicit reference scopes its turn independently of editor focus.
+  const sourceDatabaseChoices = getAnsweredDatabaseChoices(history);
+  if (sourceEditor && sourceDatabaseChoices.size > 1) return undefined;
+  // A validated choice, like an explicit reference, overrides editor focus.
   const useSourceEditor =
     sourceEditor !== undefined &&
+    !sourceDatabaseChoices.size &&
     !currentReferences.length &&
     !history.some((message) => references.get(message)?.length);
   const sourceConnection = useSourceEditor
@@ -799,6 +802,14 @@ const getHistoricalDatabaseIdentity = (
     project?: string,
     query?: HistoricalDatabaseContext["query"]
   ) => {
+    if (
+      sourceEditor &&
+      sourceDatabaseChoices.size &&
+      !sourceDatabaseChoices.has(database)
+    ) {
+      invalidSourceQuery = true;
+      return;
+    }
     if (
       sourceConnection &&
       (database !== sourceConnection.database ||

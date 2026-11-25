@@ -1580,25 +1580,24 @@ export function AgentWindow() {
       if (action?.kind !== "continue") return;
       const boundReferences = normalizeAgentResourceReferences(references);
       if (boundReferences.length !== references.length) return;
-      const source = followUpSourceId
-        ? store.getMessages(chatId).find(({ id }) => id === followUpSourceId)
-        : undefined;
-      const sqlSource = followUpSourceId
-        ? getAgentSourceSqlEditorContext(
-            store.getMessages(chatId),
-            followUpSourceId
-          )
-        : undefined;
-      if (sqlSource?.kind === "pending") return;
-      const page = {
-        ...getCurrentPageSnapshot(),
-        ...(typeof source?.metadata?.route === "string"
-          ? { path: source.metadata.route }
-          : {}),
-        ...(sqlSource?.kind === "ready"
-          ? { sqlEditor: sqlSource.snapshot }
-          : {}),
-      };
+      let page: AgentChatSnapshot;
+      if (followUpSourceId === undefined) {
+        page = getCurrentPageSnapshot();
+      } else {
+        const messages = store.getMessages(chatId);
+        const sqlSource = followUpSourceId
+          ? getAgentSourceSqlEditorContext(messages, followUpSourceId)
+          : undefined;
+        if (sqlSource?.kind === "pending") return;
+        const source = messages.find(({ id }) => id === followUpSourceId);
+        page = {
+          path: source?.metadata?.route ?? "",
+          title: "",
+          ...(sqlSource?.kind === "ready"
+            ? { sqlEditor: sqlSource.snapshot }
+            : {}),
+        };
+      }
 
       const prefix = boundReferences
         .map((reference) => formatResourceMention(reference.label))
