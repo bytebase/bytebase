@@ -877,7 +877,7 @@ func describeRules(changes []string, list ruleSection, fixed string) string {
 // sectionRows returns the header and the rules that fit room rows, from the
 // first tried, then a row that counts the rest and says where they sit: a rule
 // left out can still be tried before one the change adds. When not even the
-// first rule fits, one row counts them all.
+// first rule fits, one row counts them all, and with no row left nothing does.
 func sectionRows(list ruleSection, room int) []string {
 	if len(list.rules) == 0 {
 		if rows := wrapLine(list.empty, descriptionLineWidth); list.empty != "" && len(rows) <= room {
