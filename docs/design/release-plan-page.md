@@ -445,7 +445,8 @@ the commit is the link. Text only: trimmed, control and bidirectional-override c
 shortened in the middle so a PR title keeps its `#N`, with the full text as the tooltip. Repository and SHA are parsed from the commit
 URL the action already sends, so a release with only `url` still gets a row (States). The
 repository reads as its platform names it: the URL's path after the host (`group/subgroup/name` on
-GitLab), and `<project>/<repo>` on Azure DevOps, from either side of `_git`. Any client
+GitLab), and `<project>/<repo>` on Azure DevOps, from either side of `_git`, or `<repo>` alone when
+a pasted URL names no project. Any client
 that can create a release writes these fields, so the row and the viewer's file link (D8) use only
 an `http` or `https` URL; any other scheme leaves the title as text and the file unlinked.
 
@@ -510,7 +511,7 @@ in this order:
 | Facts | Creator and time | "Triggered by shop-ci · 34 minutes ago": the plan's creator by display name, not email, and `create_time`. The verb tells the creator from the source row's author on the line above | "alex · 16 minutes ago", with no verb: the line names one person |
 | | What changes | "Migration-based · 493 files · update to version `202610051530`", the release's highest version, the last in D1's stored order, or "State-based · `<schema version>`", from the release's type and files | "DDL", "DML" or "Mixed" on N databases, from the plan check's `statement_types`; database groups are counted beside the databases, and a kind of target the plan does not have is left out: "DML on 1 database group", "DDL on 2 databases · 1 database group" |
 | | Labels | As UIOps: a release plan can get an issue like any plan, and a project that forces labels then needs them here | Today's inline issue labels as chips, editable in place, the add control after them for a reader who may change them, with the required mark when the project forces labels; absent when the plan has no issue, except on the create screen, which shows only today's label picker |
-| State | Approval | As UIOps | The issue's approval state with its status icon: "Waiting for DBA" ("Awaiting approval" until the flow names a role), "Approved by alex (DBA)", "Rejected", "No approval required", or "Bypassed" once the plan has a rollout while approval is still pending, as the Review section and the plan list read it; absent when the plan has no issue and while the issue is a draft |
+| State | Approval | As UIOps | The issue's approval state with its status icon: "Waiting for DBA" ("Awaiting approval" until the flow names a role), "Approved by alex (DBA)", "Rejected", "No approval required", "Bypassed" once the plan has a rollout while approval is still pending, or "Closed" once the issue is closed, as the Review section and the plan list read them; absent when the plan has no issue and while the issue is a draft |
 | | Progress | The plan list's stage cell (`PlanStages` in `PlanTable.tsx`): each stage's status icon and name, joined by arrows; absent, not "-", while the plan has no stage summaries | Same |
 
 The time follows [timestamp-display.md](timestamp-display.md)'s rule for this field: the age for 30
