@@ -21,6 +21,7 @@ import (
 	// and a missing splitter reads as "no splitter" without saying so.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/cassandra"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/clickhouse"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/cosmosdb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/doris"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch"

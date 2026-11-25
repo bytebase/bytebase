@@ -18,20 +18,6 @@ func TestExplainStatementSeam(t *testing.T) {
 		want      string
 	}{
 		{
-			name:      "clickhouse json",
-			engine:    storepb.Engine_CLICKHOUSE,
-			statement: "SELECT 1",
-			format:    base.ExplainFormatJSON,
-			want:      "EXPLAIN json = 1, indexes = 1 SELECT 1",
-		},
-		{
-			name:      "clickhouse default",
-			engine:    storepb.Engine_CLICKHOUSE,
-			statement: "SELECT 1",
-			format:    base.ExplainFormatDefault,
-			want:      "EXPLAIN SELECT 1",
-		},
-		{
 			name:      "hive json",
 			engine:    storepb.Engine_HIVE,
 			statement: "SELECT 1",

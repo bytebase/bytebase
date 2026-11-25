@@ -13,7 +13,6 @@ func TestSplitSQLSeam(t *testing.T) {
 	script := "SELECT '中';\nSELECT '文';"
 
 	for _, engine := range []storepb.Engine{
-		storepb.Engine_CLICKHOUSE,
 		storepb.Engine_HIVE,
 		storepb.Engine_DATABRICKS,
 	} {

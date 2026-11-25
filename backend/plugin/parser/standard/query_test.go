@@ -10,7 +10,6 @@ import (
 )
 
 func TestValidateQuerySeam(t *testing.T) {
-	require.True(t, base.HasQueryValidator(storepb.Engine_CLICKHOUSE))
 	require.True(t, base.HasQueryValidator(storepb.Engine_HIVE))
 	require.False(t, base.HasQueryValidator(storepb.Engine_DATABRICKS))
 
@@ -22,41 +21,6 @@ func TestValidateQuerySeam(t *testing.T) {
 		allQuery bool
 		wantErr  bool
 	}{
-		{
-			name:     "clickhouse read-only select",
-			engine:   storepb.Engine_CLICKHOUSE,
-			sql:      "SELECT * FROM t WHERE a = 'insert'",
-			readOnly: true,
-			allQuery: true,
-		},
-		{
-			name:     "clickhouse explain select",
-			engine:   storepb.Engine_CLICKHOUSE,
-			sql:      "EXPLAIN SELECT * FROM t;",
-			readOnly: true,
-			allQuery: true,
-		},
-		{
-			name:   "clickhouse explain analyze",
-			engine: storepb.Engine_CLICKHOUSE,
-			sql:    "EXPLAIN ANALYZE SELECT * FROM t",
-		},
-		{
-			name:   "clickhouse ddl",
-			engine: storepb.Engine_CLICKHOUSE,
-			sql:    "CREATE TABLE t (a Int32) ENGINE = Memory;",
-		},
-		{
-			name:   "clickhouse multi-statement",
-			engine: storepb.Engine_CLICKHOUSE,
-			sql:    "SELECT 1; SELECT 2;",
-		},
-		{
-			name:    "clickhouse syntax error",
-			engine:  storepb.Engine_CLICKHOUSE,
-			sql:     "SELECT 1 FROM",
-			wantErr: true,
-		},
 		{
 			name:     "hive read-only select",
 			engine:   storepb.Engine_HIVE,
