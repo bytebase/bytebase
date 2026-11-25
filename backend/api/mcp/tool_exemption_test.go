@@ -480,7 +480,7 @@ func TestMaskingExemptionToolsRefuseAFormTooLongBeforeAsking(t *testing.T) {
 		}, tooManyLines, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 		"a grant naming a column that is widest only once quoted": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod/databases/hr",
-			"table": "T", "columns": []string{strings.Repeat("b", 40) + strings.Repeat(`"`, 10), strings.Repeat("a", 55)},
+			"table": "T", "columns": []string{strings.Repeat("b", 40) + strings.Repeat(`"`, 20), strings.Repeat("a", 65)},
 		}, tooManyLines, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 		"a grant to a member too long for the question": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:" + strings.Repeat("m", 50) + "@example.com", "database": "instances/prod/databases/hr",
@@ -787,7 +787,7 @@ func TestRevokeMaskingExemptionRefusesWithoutAMatch(t *testing.T) {
 
 // unwrapMessage joins each continued line back to the line it continues.
 func unwrapMessage(message string) string {
-	return strings.ReplaceAll(message, "\n"+continuedLine, " ")
+	return strings.ReplaceAll(message, "\n"+continuedLine, "")
 }
 
 func TestMaskingExemptionFormsKeepAMemberOnItsLine(t *testing.T) {
@@ -841,8 +841,9 @@ func TestMaskingExemptionFormsShowEveryValueWhole(t *testing.T) {
 
 	_, tooLong = describeExemptionGrant(ctx, &exemptionGrant{member: member, database: "d", instanceID: longest, databaseName: longest, table: "t", columns: []string{"c"}})
 	require.NotEmpty(t, tooLong, "two 63-character names and a column need more lines than a form shows")
-	_, tooLong = describeExemptionGrant(ctx, &exemptionGrant{project: "projects/" + longest, member: member})
-	require.NotEmpty(t, tooLong, "a 63-character project ID cannot share a line, so its scope needs three")
+	grant, tooLong := describeExemptionGrant(ctx, &exemptionGrant{project: "projects/" + longest, member: member})
+	require.Empty(t, tooLong, "a 63-character project ID starts on the scope's first line, so the scope takes two")
+	requireWhole(t, grant, longest)
 	_, _, tooLong = describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: member, Condition: strings.Repeat("c", 200)})
 	require.NotEmpty(t, tooLong, "a 200-character condition needs more lines than a form shows")
 

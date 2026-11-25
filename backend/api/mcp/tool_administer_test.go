@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -615,7 +616,7 @@ func TestAdministerWorkspaceContinuesALongConditionOnTheNextLine(t *testing.T) {
 	}
 	require.True(t, strings.HasPrefix(lines[2], continuedLine), lines[2])
 	require.Equal(t, "Add rule 1, \"Workspace DBA\": `resource.environment_id == 'prod' && "+
-		"resource.project_id == 'hr' && resource.database_name == 'hr_prod'`", lines[1]+" "+strings.TrimPrefix(lines[2], continuedLine))
+		"resource.project_id == 'hr' && resource.database_name == 'hr_prod'`", lines[1]+strings.TrimPrefix(lines[2], continuedLine))
 	require.Equal(t, approvalRulesApply, lines[3], "the fixed sentence goes whole in the line that is left")
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
@@ -640,7 +641,7 @@ func TestAdministerWorkspaceFitsALongRuleBesideAnIssue(t *testing.T) {
 // Only the masking entry states its effect in the question: the approval
 // effect names the user's issues, which leave a question no room.
 func TestAdministerWorkspaceKeepsTheIssueLineOutOfTheQuestion(t *testing.T) {
-	long := changeRule("HR salary", `resource.environment_id == "prod" && resource.database_name == "hr_prod" && resource.table_name == "salary"`, "roles/workspaceDBA")
+	long := changeRule("HR salary", `resource.environment_id == "prod" && resource.project_id == "hr" && resource.database_name == "hr_prod" && resource.table_name == "salary"`, "roles/workspaceDBA")
 	diff, err := diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), long}, "")
 	require.NoError(t, err)
 	alice := withUserEmail(context.Background(), "alice@example.com")
@@ -776,6 +777,98 @@ func TestAdministerWorkspaceMarksEveryContinuationLine(t *testing.T) {
 					require.False(t, unicode.IsLetter(first), "%q poses as a line of its own", line)
 				}
 			}
+		})
+	}
+}
+
+// A row that ends at a space must not cost a row: a long quoted value after a
+// space would leave the row before it nearly empty, and a form has four.
+func TestWrapLineNeverTakesMoreRowsThanFillingThem(t *testing.T) {
+	// fillRows counts the rows of line when every row is filled, without
+	// wrapLine's helpers.
+	fillRows := func(line string, width int) int {
+		rows, room := 1, width
+		for _, r := range line {
+			columns := lineColumns(string(r))
+			if columns > room {
+				rows++
+				room = width - lineColumns(continuedLine)
+			}
+			room -= columns
+		}
+		return rows
+	}
+	random := rand.New(rand.NewPCG(10598, 22224))
+	alphabet := []rune(`abcdefghijklmnopqrstuvwxyz0123456789"',()=&|/.-_@名前`)
+	for range 5000 {
+		var tokens []string
+		for range 1 + random.IntN(12) {
+			token := make([]rune, 1+random.IntN(90))
+			for i := range token {
+				token[i] = alphabet[random.IntN(len(alphabet))]
+			}
+			tokens = append(tokens, string(token))
+		}
+		line := strings.Join(tokens, " ")
+		for _, width := range []int{messageLineWidth, 40} {
+			rows := wrapLine(line, width)
+			require.Len(t, rows, fillRows(line, width), "%q at %d: %q", line, width, rows)
+			var joined strings.Builder
+			for i, row := range rows {
+				require.LessOrEqual(t, lineColumns(row), width, "%q", rows)
+				if i > 0 {
+					require.True(t, strings.HasPrefix(row, continuedLine), "%q", rows)
+					row = strings.TrimPrefix(row, continuedLine)
+				}
+				joined.WriteString(row)
+			}
+			require.Equal(t, line, joined.String(), "a break leaves nothing out")
+		}
+	}
+}
+
+func TestWrapLineBreaksWhereALineReadsBest(t *testing.T) {
+	for name, tc := range map[string]struct {
+		line string
+		want []string
+	}{
+		"at a space, as before, when that costs no row": {
+			`Host "prod-payments-db.c1abcdefghij.us-east-1.rds.amazonaws.com", port 5432, user "bytebase", TLS required and verified`,
+			[]string{
+				`Host "prod-payments-db.c1abcdefghij.us-east-1.rds.amazonaws.com",`,
+				`> port 5432, user "bytebase", TLS required and verified`,
+			},
+		},
+		"after a dot of a host when the space before the host would cost a row": {
+			`Host "payments-ledger-prod.cluster-c1abcdefghij.us-east-1.rds.amazonaws.com", port 5432, user "bytebase", TLS required and verified`,
+			[]string{
+				`Host "payments-ledger-prod.cluster-c1abcdefghij.us-east-1.rds.`,
+				`>amazonaws.com", port 5432, user "bytebase", TLS required and verified`,
+			},
+		},
+		"after a dash of a path": {
+			`Any GitLab CI job in "acme/platform/data/payments-ledger/schema-migrations" signs in as it.`,
+			[]string{
+				`Any GitLab CI job in "acme/platform/data/payments-ledger/schema-`,
+				`>migrations" signs in as it.`,
+			},
+		},
+		"before the space that follows a full row": {
+			strings.Repeat("a", 70) + " " + strings.Repeat("b", 10),
+			[]string{strings.Repeat("a", 70), "> " + strings.Repeat("b", 10)},
+		},
+		"before a value's own space, which the next row keeps, and at the width": {
+			`Column "` + strings.Repeat("c", 60) + ` name" and "` + strings.Repeat("d", 80) + `"`,
+			[]string{
+				`Column "` + strings.Repeat("c", 60),
+				`> name" and "` + strings.Repeat("d", 57),
+				`>` + strings.Repeat("d", 23) + `"`,
+			},
+		},
+		"a line that fits": {"Environment \"prod\".", []string{`Environment "prod".`}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			require.Equal(t, tc.want, wrapMessageLine(tc.line))
 		})
 	}
 }

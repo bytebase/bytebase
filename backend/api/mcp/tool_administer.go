@@ -865,33 +865,79 @@ func issuesLine(issues []string, more bool) string {
 	return line + rest(0) + underRules
 }
 
-// continuedLine starts each continuation of a wrapped message line. Every
-// first line starts with a letter, so no part of a long value can pose as a line
-// of its own.
-const continuedLine = "> "
+// continuedLine starts each continuation of a wrapped line. Every first line
+// starts with a letter, so no part of a long value can pose as a line of its
+// own. The text goes on right after the mark with nothing left out, so a reader
+// can tell a break inside a value (">rest") from one before a space ("> rest").
+const continuedLine = ">"
 
-// wrapMessageLine breaks line into lines of at most messageLineWidth columns,
-// at a space where it can, and starts each continuation with continuedLine.
+// wrapMessageLine breaks line into the rows of a form's message.
 func wrapMessageLine(line string) []string {
-	var lines []string
+	return wrapLine(line, messageLineWidth)
+}
+
+// wrapLine breaks line into rows of at most width columns, each continuation
+// starting with continuedLine. It never takes more rows than filling every row
+// would, since a form shows four: a row ends before a space, or after a
+// separator of a name or a path, only when that costs no row.
+func wrapLine(line string, width int) []string {
+	var rows []string
+	runes := []rune(line)
 	prefix := ""
-	for lineColumns(prefix+line) > messageLineWidth {
-		width := messageLineWidth - lineColumns(prefix)
-		runes := []rune(line)
-		cut := min(width, len(runes))
-		for lineColumns(string(runes[:cut])) > width {
-			cut--
+	for lineColumns(prefix+string(runes)) > width {
+		full := filledRunes(runes, width-lineColumns(prefix))
+		rest := filledRows(runes[full:], width)
+		cut := full
+		switch space, separator := lastBreaks(runes[:full]); {
+		case space > 0 && filledRows(runes[space:], width) <= rest:
+			cut = space
+		case full < len(runes) && runes[full] == ' ':
+			// The row is full, and the space starts the next one.
+		case separator > 0 && filledRows(runes[separator:], width) <= rest:
+			cut = separator
+		default:
 		}
-		next := cut
-		if space := strings.LastIndex(string(runes[:cut]), " "); space > 0 {
-			cut = len([]rune(string(runes[:cut])[:space]))
-			next = cut + 1
-		}
-		lines = append(lines, prefix+string(runes[:cut]))
-		line = string(runes[next:])
+		rows = append(rows, prefix+string(runes[:cut]))
+		runes = runes[cut:]
 		prefix = continuedLine
 	}
-	return append(lines, prefix+line)
+	return append(rows, prefix+string(runes))
+}
+
+// filledRunes returns how many of runes fit in columns, and at least one, so a
+// row always takes some.
+func filledRunes(runes []rune, columns int) int {
+	n := min(columns, len(runes))
+	for n > 1 && lineColumns(string(runes[:n])) > columns {
+		n--
+	}
+	return max(n, min(1, len(runes)))
+}
+
+// filledRows returns the continuation rows runes take when each is filled.
+func filledRows(runes []rune, width int) int {
+	rows := 0
+	for len(runes) > 0 {
+		runes = runes[filledRunes(runes, width-lineColumns(continuedLine)):]
+		rows++
+	}
+	return rows
+}
+
+// lastBreaks returns where a row of runes can end early: the index of its last
+// space, and the index after its last '/', '.', '-' or '_'. Each is 0 when
+// there is none past the row's first rune.
+func lastBreaks(runes []rune) (space, separator int) {
+	for i := len(runes) - 1; i > 0 && (space == 0 || separator == 0); i-- {
+		switch {
+		case runes[i] == ' ' && space == 0:
+			space = i
+		case separator == 0 && strings.ContainsRune("/.-_", runes[i-1]):
+			separator = i
+		default:
+		}
+	}
+	return space, separator
 }
 
 // issuesAwaitingApproval lists the user's open change issues whose approval is

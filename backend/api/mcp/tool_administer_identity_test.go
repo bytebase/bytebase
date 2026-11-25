@@ -424,7 +424,7 @@ func TestAdministerIdentityRefusesBeforeAsking(t *testing.T) {
 		"every repository":    {func(_, config map[string]any) { config["subjectPattern"] = "repo:example-org/*" }, "UNSUPPORTED_CHANGE", "does not name one repository with every job in it"},
 		"a question too wide": {func(request, _ map[string]any) { request["workloadIdentityId"] = strings.Repeat("a", 35) }, "CHANGE_TOO_LONG", "the question naming identity"},
 		"a path too long to fit": {func(_, config map[string]any) {
-			config["subjectPattern"] = "repo:" + strings.Repeat("o", 20) + "/" + strings.Repeat("r", 22) + ":*"
+			config["subjectPattern"] = "repo:" + strings.Repeat("o", 20) + "/" + strings.Repeat("r", 40) + ":*"
 		}, "CHANGE_TOO_LONG", "this workload identity needs 5 lines"},
 		"an unknown request body": {func(request, _ map[string]any) { request["parent"] = 7 }, "INVALID_REQUEST", ""},
 	} {
