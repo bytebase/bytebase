@@ -30,6 +30,15 @@ export function getPlanDraftState(input: {
   return input.issueName ? "draft" : "incomplete";
 }
 
+// A rollout started, or the issue finished, while its approval was pending:
+// "Bypass and deploy" on a project that does not require approval.
+export function isApprovalBypassed(
+  input: Omit<ReviewBadgeInput, "hasIssue">
+): boolean {
+  const completed = input.hasRollout || input.issueStatus === IssueStatus.DONE;
+  return completed && input.approvalStatus === ApprovalStatus.PENDING;
+}
+
 export function getReviewBadge(
   input: ReviewBadgeInput
 ): ReviewBadge | undefined {
@@ -38,8 +47,7 @@ export function getReviewBadge(
   if (issueStatus === IssueStatus.CANCELED) {
     return { labelKey: "common.closed", variant: "default" };
   }
-  const completed = hasRollout || issueStatus === IssueStatus.DONE;
-  if (completed && approvalStatus === ApprovalStatus.PENDING) {
+  if (isApprovalBypassed({ issueStatus, hasRollout, approvalStatus })) {
     return { labelKey: "common.bypassed", variant: "default" };
   }
   switch (approvalStatus) {

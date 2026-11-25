@@ -574,6 +574,28 @@ test("the approval names the last approver with their role, or the role that is 
   expect(textOf(partsOf("state", "approval")[0])).toBe("plan.details.waiting-for(workspaceDBA)");
 });
 
+test("a rollout started while approval is pending reads Bypassed, as the Review section does", () => {
+  const issue = {
+    ...makePage().issue,
+    draft: false,
+    approvalStatus: 2,
+    approvalTemplate: { flow: { roles: ["roles/projectOwner"] } },
+    approvers: [],
+  };
+  mocks.page = uiopsPage({
+    issue,
+    rollout: { name: "projects/p1/plans/123/rollout" },
+  });
+  const { unmount } = render(<PlanDetailMeta />);
+  expect(textOf(partsOf("state", "approval")[0])).toBe("common.bypassed");
+  unmount();
+  mocks.page = uiopsPage({ issue });
+  render(<PlanDetailMeta />);
+  expect(textOf(partsOf("state", "approval")[0])).toBe(
+    "plan.details.waiting-for(projectOwner)"
+  );
+});
+
 test("the changes fact counts databases and database groups as parts", () => {
   mocks.page = uiopsPage({
     plan: {

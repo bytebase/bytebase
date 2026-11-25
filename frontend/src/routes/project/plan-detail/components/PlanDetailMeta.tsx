@@ -1,5 +1,12 @@
 import { create } from "@bufbuild/protobuf";
-import { CircleCheck, CircleX, Clock, Plus, X } from "lucide-react";
+import {
+  CircleCheck,
+  CircleDashed,
+  CircleX,
+  Clock,
+  Plus,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
@@ -36,6 +43,7 @@ import { colorToHex, hasProjectPermissionV2 } from "@/utils";
 import { displayRoleTitle } from "@/utils/role";
 import { extractReleaseUID } from "@/utils/v1/release";
 import { PlanStageParts } from "../../PlanTable";
+import { isApprovalBypassed } from "../../utils/reviewBadge";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { isDatabaseGroupName } from "../utils/phaseSummary";
 import {
@@ -61,7 +69,7 @@ const ARROW = "absolute left-0.5";
 const BRANCH_END_LENGTH = 16;
 
 type Approval = {
-  tone: "done" | "rejected" | "waiting" | "none";
+  tone: "done" | "rejected" | "waiting" | "bypassed" | "none";
   text: string;
 };
 
@@ -143,6 +151,15 @@ export function PlanDetailMeta() {
     const issue = page.issue;
     // A draft has no state line: the title row's action says where it stands.
     if (!issue || issue.draft) return undefined;
+    if (
+      isApprovalBypassed({
+        issueStatus: issue.status,
+        hasRollout: Boolean(page.rollout),
+        approvalStatus: issue.approvalStatus,
+      })
+    ) {
+      return { tone: "bypassed", text: t("common.bypassed") };
+    }
     switch (issue.approvalStatus) {
       case ApprovalStatus.APPROVED: {
         const role = flowRoles[approvedSteps.length - 1];
@@ -171,7 +188,15 @@ export function PlanDetailMeta() {
         };
       }
     }
-  }, [page.issue, t, flowRoles, approvedSteps, lastApprover, lastApproverName]);
+  }, [
+    page.issue,
+    page.rollout,
+    t,
+    flowRoles,
+    approvedSteps,
+    lastApprover,
+    lastApproverName,
+  ]);
   const allowChangeLabels = useMemo(() => {
     if (!project || !page.issue || page.issue.status !== IssueStatus.OPEN) {
       return false;
@@ -358,6 +383,13 @@ function ApprovalIcon({ tone }: { tone: Approval["tone"] }) {
     case "rejected":
       return (
         <CircleX aria-hidden="true" className="size-4 shrink-0 text-error" />
+      );
+    case "bypassed":
+      return (
+        <CircleDashed
+          aria-hidden="true"
+          className="size-4 shrink-0 text-control-light"
+        />
       );
     case "waiting":
       return (
