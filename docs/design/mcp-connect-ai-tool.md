@@ -159,10 +159,10 @@ now" link, stays the way to fix it.
      endpoint; step 2 follows the selected tool; one test per row of "States".
    - `frontend/tests/e2e/workspace/workspace-mcp-policy.spec.ts`: the assertion that read the
      removed description now reads the "Sign in" step.
-2. **The setup guide**, in the docs repository. A part per tool with the other ways to connect, a
-   before-and-after example of the Claude Desktop file, the `code --add-mcp` command, and
-   troubleshooting. This PR stays a draft until the guide has the `#claude-desktop` and `#vs-code`
-   parts the page links to.
+2. **The setup guide**, in the docs repository, at `/integrations/mcp/setup`. A part per tool with
+   the other ways to connect, a before-and-after example of the Claude Desktop file, the
+   `code --add-mcp` command, and troubleshooting. This PR stays a draft until the guide is published
+   with the `#claude-desktop` and `#vs-code` parts the page links to.
 3. **An npm release** of `@bytebase/bytebase-mcp` with the Claude Desktop fixes.
 
 ## Not in this PR

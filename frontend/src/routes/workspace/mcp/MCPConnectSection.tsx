@@ -7,7 +7,8 @@ import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { useServerState } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
 
-export const MCP_SETUP_GUIDE_URL = "https://docs.bytebase.com/integrations/mcp";
+export const MCP_SETUP_GUIDE_URL =
+  "https://docs.bytebase.com/integrations/mcp/setup";
 const DESKTOP_GUIDE_URL = `${MCP_SETUP_GUIDE_URL}#claude-desktop`;
 const VSCODE_GUIDE_URL = `${MCP_SETUP_GUIDE_URL}#vs-code`;
 
