@@ -1062,7 +1062,7 @@ describe("Activity bar", () => {
   const foldControl = () => barNode().querySelector("button[aria-expanded]") as HTMLButtonElement;
   const unfolded = () => container.querySelector("[data-testid='thread-comment']") !== null;
 
-  test("shows the lines on the right, then View in Statement in the link color", () => {
+  test("shows the lines on the right, then View in Statement in the link color with no icon", () => {
     const onViewInStatement = vi.fn();
     render(
       <CommentThreadCard bar={activityBar({ anchorState: "CURRENT", onViewInStatement })} issue={issue} project={project} thread={thread()} />
@@ -1072,6 +1072,7 @@ describe("Activity bar", () => {
     expect(lines?.textContent).toBe("plan.review.thread.anchor.line:2");
     expect(lines?.compareDocumentPosition(link!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(link?.className).toContain("text-accent");
+    expect(link?.querySelector("svg")).toBeNull();
     click(link);
     expect(onViewInStatement).toHaveBeenCalledOnce();
     expect(unfolded()).toBe(true);
