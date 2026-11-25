@@ -456,30 +456,39 @@ func TestMaskingExemptionFormsForTheJourneysExemption(t *testing.T) {
 	require.Empty(t, mock.calls())
 }
 
+// grantMessage and revokeMessage return a form's message, and why no form
+// states the exemption.
+func grantMessage(ctx context.Context, g *exemptionGrant) (message, tooLong string) {
+	form, tooLong, _ := describeExemptionGrant(ctx, g)
+	return form.message, tooLong
+}
+
+func revokeMessage(ctx context.Context, input RevokeMaskingExemptionInput) (message, tooLong string) {
+	form, tooLong := describeExemptionRevoke(ctx, input)
+	return form.message, tooLong
+}
+
 func TestMaskingExemptionToolsRefuseAFormTooLongBeforeAsking(t *testing.T) {
 	longest := strings.Repeat("x", 63)
 	const tooManyLines = "more than the 4 one confirmation form shows, so nothing changed"
+	var manyColumns []string
+	for i := range 60 {
+		manyColumns = append(manyColumns, fmt.Sprintf("column_%02d", i))
+	}
 	for name, tc := range map[string]struct {
 		tool      string
 		arguments map[string]any
 		reason    string
 		want      string
 	}{
-		"a grant naming columns that fit one at a time": {"grant_masking_exemption", map[string]any{
+		"a grant naming more columns than the description has rows for": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod-analytics-replica/databases/hr_reporting",
-			"table": "employee_compensation", "columns": []string{"base_salary_amount", "annual_bonus_amount", "stock_grant_value", "commission_rate"},
-		}, tooManyLines, "exempt fewer columns at a time, or grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+			"table": "employee_compensation", "columns": manyColumns,
+		}, "the names of this exemption's columns need 12 lines, more than the 10 one confirmation form has room for under its choice, so nothing changed",
+			"exempt fewer columns at a time, or grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 		"a grant naming columns that do not fit even one at a time": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/" + longest + "/databases/" + longest,
 			"table": "employee", "columns": []string{"birth_date", "gender"},
-		}, tooManyLines, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
-		"a grant naming a column too long for a form even alone": {"grant_masking_exemption", map[string]any{
-			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod/databases/hr",
-			"table": "t", "columns": []string{"a", strings.Repeat("c", 128)},
-		}, tooManyLines, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
-		"a grant naming a column that is widest only once quoted": {"grant_masking_exemption", map[string]any{
-			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod/databases/hr",
-			"table": "T", "columns": []string{strings.Repeat("b", 40) + strings.Repeat(`"`, 20), strings.Repeat("a", 65)},
 		}, tooManyLines, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 		"a grant of one long column": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/" + longest + "/databases/" + longest,
@@ -710,12 +719,12 @@ func TestRevokeMaskingExemptionNamesWhatItEnds(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			scope, expiry := revokeScope(RevokeMaskingExemptionInput{Project: "projects/hr", Member: "user:bob@example.com", Condition: tc.condition})
+			_, scope, expiry := revokeScope(RevokeMaskingExemptionInput{Project: "projects/hr", Member: "user:bob@example.com", Condition: tc.condition})
 			require.Equal(t, tc.scope, scope)
 			require.Equal(t, tc.expiry, expiry)
 		})
 	}
-	scope, _ := revokeScope(RevokeMaskingExemptionInput{Project: "projects/hr", Member: "allUsers",
+	_, scope, _ := revokeScope(RevokeMaskingExemptionInput{Project: "projects/hr", Member: "allUsers",
 		Condition: `(resource.instance_id == "prod" && resource.database_name == "hr" && resource.table_name == "employee" && resource.column_name in ["salary", "bonus"])`})
 	require.Equal(t, `Database "hr" on instance "prod", any schema, columns "salary", "bonus" in "employee"`, scope,
 		"a member a grant refuses, such as allUsers, still reads in the grant's words")
@@ -786,8 +795,8 @@ func unwrapMessage(message string) string {
 func TestMaskingExemptionFormsKeepAMemberOnItsLine(t *testing.T) {
 	ctx := withUserEmail(context.Background(), "alice@example.com")
 	forged := "user:bob@example.com\nInstance \"dev\"\nDatabase \"sandbox\", table \"t\""
-	grant, _ := describeExemptionGrant(ctx, &exemptionGrant{project: "projects/hr", member: forged})
-	revoke, _, _ := describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: forged})
+	grant, _ := grantMessage(ctx, &exemptionGrant{project: "projects/hr", member: forged})
+	revoke, _ := revokeMessage(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: forged})
 	for name, message := range map[string]string{"grant": grant, "revoke": revoke} {
 		lines := strings.Split(message, "\n")
 		require.Len(t, lines, messageLines, "%s: %q", name, lines)
@@ -819,39 +828,39 @@ func TestMaskingExemptionFormsShowEveryValueWhole(t *testing.T) {
 			columns: []string{"birth_date", "gender", "salary"}},
 	} {
 		t.Run(name, func(t *testing.T) {
-			message, tooLong := describeExemptionGrant(ctx, g)
+			message, tooLong := grantMessage(ctx, g)
 			require.Empty(t, tooLong, "%q", message)
-			requireWhole(t, message, exemptionScope(g))
+			requireWhole(t, message, exemptionScope(g, false))
 			require.NotContains(t, message, "rrr", "the reason goes to the description")
 			lines := strings.Split(message, "\n")
 			require.True(t, strings.HasPrefix(lines[len(lines)-1], "Bypasses masking") && strings.HasSuffix(lines[len(lines)-1], "adds no masking."),
 				"the effect takes one line: %q", lines)
 		})
 	}
-	revoke, _, tooLong := describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: member,
+	revoke, tooLong := revokeMessage(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: member,
 		Condition: `request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.instance_id == "prod-pg" && resource.database_name == "hr_prod")`})
 	require.Empty(t, tooLong, "%q", revoke)
 	requireWhole(t, revoke, `Database "hr_prod" on instance "prod-pg", all tables, until "2026-10-27T00:00:00.000Z"`)
 
-	_, tooLong = describeExemptionGrant(ctx, &exemptionGrant{member: member, database: "d", instanceID: longest, databaseName: longest, table: "t", columns: []string{"c"}})
+	_, tooLong = grantMessage(ctx, &exemptionGrant{member: member, database: "d", instanceID: longest, databaseName: longest, table: "t", columns: []string{"c"}})
 	require.NotEmpty(t, tooLong, "two 63-character names and a column need more lines than a form shows")
-	grant, tooLong := describeExemptionGrant(ctx, &exemptionGrant{project: "projects/" + longest, member: member})
+	grant, tooLong := grantMessage(ctx, &exemptionGrant{project: "projects/" + longest, member: member})
 	require.Empty(t, tooLong, "a 63-character project ID starts on the scope's first line, so the scope takes two")
 	requireWhole(t, grant, longest)
-	_, _, tooLong = describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: member, Condition: strings.Repeat("c", 200)})
+	_, tooLong = revokeMessage(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: member, Condition: strings.Repeat("c", 200)})
 	require.NotEmpty(t, tooLong, "a 200-character condition needs more lines than a form shows")
 
 	// 61 characters, so `Exempt "…"` and `Revoke "…"` end at column 70.
 	edge := "user:" + strings.Repeat("m", 44) + "@example.com"
-	_, tooLong = describeExemptionGrant(ctx, &exemptionGrant{project: "projects/hr", member: edge})
+	_, tooLong = grantMessage(ctx, &exemptionGrant{project: "projects/hr", member: edge})
 	require.Empty(t, tooLong)
-	_, _, tooLong = describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: edge})
+	_, tooLong = revokeMessage(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: edge})
 	require.Empty(t, tooLong)
 	// One character more, and the member takes a second row, whole.
 	wide := edge + "m"
-	grant, tooLong = describeExemptionGrant(ctx, &exemptionGrant{project: "projects/hr", member: wide})
+	grant, tooLong = grantMessage(ctx, &exemptionGrant{project: "projects/hr", member: wide})
 	require.Empty(t, tooLong)
-	revoke, _, tooLong = describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: wide})
+	revoke, tooLong = revokeMessage(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: wide})
 	require.Empty(t, tooLong)
 	for question, message := range map[string]string{
 		`Exempt "` + wide + `" from masking, as alexander.smith@example.com?`:        grant,
@@ -862,4 +871,100 @@ func TestMaskingExemptionFormsShowEveryValueWhole(t *testing.T) {
 		require.Equal(t, question, unwrapMessage(strings.Join(lines[:2], "\n")))
 		require.LessOrEqual(t, lineColumns(lines[0]), messageLineWidth)
 	}
+}
+
+// A list of columns the message has no room for goes under the choice, and the
+// message counts it. The database, the instance and the table stay.
+func TestGrantMaskingExemptionListsColumnsTheMessageHasNoRoomFor(t *testing.T) {
+	arguments := map[string]any{
+		"project": "projects/hr", "member": "user:bob@example.com",
+		"database": "instances/prod-payments-us-east-1/databases/payments_ledger_prod", "table": "salary",
+		"columns":    []string{"amount", "bonus", "base_pay", "equity", "ssn", "iban"},
+		"expireTime": "2026-12-01T00:00:00Z", "reason": "Quarter-end audit",
+	}
+	const scope = `Database "payments_ledger_prod" on instance "prod-payments-us-east-1",` + "\n" +
+		`> any schema, 6 columns in "salary", listed under Action`
+	const columns = `Columns: "amount", "bonus", "base_pay", "equity", "ssn", "iban"`
+
+	mock := &policyMock{databaseProject: "projects/hr"}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
+	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	res := callExemptionTool(t, session, "grant_masking_exemption", arguments)
+	require.False(t, res.IsError, resultText(t, res))
+	asked := user.lastParams(t)
+	require.Equal(t, strings.Join([]string{
+		`Exempt "user:bob@example.com" from masking, as alice@example.com?`,
+		scope,
+		`Bypasses masking until "2026-12-01T00:00:00.000Z"; adds no masking.`,
+	}, "\n"), asked.Message)
+	require.Equal(t, columns+"\nReason: \"Quarter-end audit\"", choiceDescription(t, asked))
+	require.Len(t, mock.calls(), 1)
+
+	// What the grant wrote, a revoke states the same way: BYT-10598 was a rule
+	// one form could add and no form could remove.
+	grant, err := parseExemptionGrant(GrantMaskingExemptionInput{
+		Project: "projects/hr", Member: "user:bob@example.com", Database: "instances/prod-payments-us-east-1/databases/payments_ledger_prod",
+		Table: "salary", Columns: []string{"amount", "bonus", "base_pay", "equity", "ssn", "iban"}, ExpireTime: "2026-12-01T00:00:00Z",
+	})
+	require.NoError(t, err)
+	mock = &policyMock{exemptions: []map[string]any{{"members": []any{"user:bob@example.com"}, "condition": map[string]any{"expression": grant.condition()}}}}
+	user = &asker{answer: confirmAnswer(confirmChoiceApply)}
+	session = connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	res = callExemptionTool(t, session, "revoke_masking_exemption", map[string]any{
+		"project": "projects/hr", "member": "user:bob@example.com", "condition": grant.condition(),
+	})
+	require.False(t, res.IsError, resultText(t, res))
+	asked = user.lastParams(t)
+	require.Equal(t, strings.Join([]string{
+		`Revoke "user:bob@example.com"'s masking exemption, as alice@example.com?`,
+		scope,
+		`Ends their bypass of masking here, unless another exemption covers it.`,
+	}, "\n"), asked.Message)
+	require.Equal(t, columns+"\nIt would expire \"2026-12-01T00:00:00.000Z\".", choiceDescription(t, asked))
+	require.Len(t, mock.calls(), 1)
+}
+
+// Whatever exemption a form grants, a form revokes: the two share the scope's
+// line and the rows that name the columns.
+func TestRevokeMaskingExemptionStatesEveryExemptionAFormGrants(t *testing.T) {
+	ctx := withUserEmail(context.Background(), "alice@example.com")
+	granted, listed, refused := 0, 0, 0
+	for _, member := range []string{"user:bob@example.com", "user:" + strings.Repeat("m", 50) + "@example.com"} {
+		for _, name := range []int{4, 20, 63} {
+			for n := 0; n <= 70; n++ {
+				for _, expireTime := range []string{"", "2026-12-01T00:00:00Z"} {
+					for _, schema := range []string{"", "public"} {
+						input := GrantMaskingExemptionInput{
+							Project: "projects/payments", Member: member, ExpireTime: expireTime,
+							Database: "instances/" + strings.Repeat("i", name) + "/databases/" + strings.Repeat("d", name),
+						}
+						if n > 0 {
+							input.Schema, input.Table = schema, "salary"
+						}
+						for i := range n {
+							input.Columns = append(input.Columns, fmt.Sprintf("column_%02d", i))
+						}
+						g, err := parseExemptionGrant(input)
+						require.NoError(t, err)
+						grant, tooLong, _ := describeExemptionGrant(ctx, g)
+						if tooLong != "" {
+							refused++
+							continue
+						}
+						granted++
+						if len(grant.columns) > 0 {
+							listed++
+						}
+						revoke, tooLong := describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: input.Project, Member: member, Condition: g.condition()})
+						require.Empty(t, tooLong, "%d columns, names of %d: %q", n, name, revoke.message)
+						require.Equal(t, grant.columns, revoke.columns)
+						require.LessOrEqual(t, len(strings.Split(revoke.message, "\n")), messageLines)
+					}
+				}
+			}
+		}
+	}
+	require.Positive(t, listed, "the sweep must reach a grant that lists its columns under the choice")
+	require.Greater(t, granted, listed)
+	require.Positive(t, refused, "and one no form states")
 }
