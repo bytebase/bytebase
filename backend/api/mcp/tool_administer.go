@@ -726,8 +726,8 @@ type formChange struct {
 // ruleSection is what a rule form's description says of the rules a change
 // leaves. Only before counts toward refusing a change, and its builder bounds
 // it: empty shows on a removal alone, and a rule a form adds must not be
-// refused its removal for it. So empty is one row, which the changes leave
-// free unless they take every row.
+// refused its removal for it. So empty is one row, and it shows unless the
+// changes and before leave none.
 type ruleSection struct {
 	before []string
 	// name starts the row that counts a list the description has no room
