@@ -521,7 +521,6 @@ func fitExemptionScope(ctx context.Context, head, rest string, g *exemptionGrant
 		return exemptionForm{message: message}, tooLong, false
 	}
 	if message, tooLong = fitExemption(ctx, head, rest, exemptionScope(g, true), effect); tooLong != "" {
-		// The counted scope is longer than a scope that names one column.
 		return exemptionForm{message: message}, tooLong, eachColumnFits(ctx, head, rest, g, effect)
 	}
 	label := "Columns: "
@@ -535,8 +534,9 @@ func fitExemptionScope(ctx context.Context, head, rest string, g *exemptionGrant
 	return exemptionForm{message: message, columns: columns}, "", false
 }
 
-// eachColumnFits reports whether every column of an exemption that names
-// several fits a form alone, so fewer columns at a time can help.
+// eachColumnFits reports whether an exemption that names several columns gets
+// a form for each of them alone, so fewer columns at a time can help. A scope
+// that counts several columns can be longer than one that names or counts one.
 func eachColumnFits(ctx context.Context, head, rest string, g *exemptionGrant, effect string) bool {
 	if len(g.columns) < 2 {
 		return false
@@ -544,7 +544,7 @@ func eachColumnFits(ctx context.Context, head, rest string, g *exemptionGrant, e
 	for _, column := range g.columns {
 		one := *g
 		one.columns = []string{column}
-		if _, tooLong := fitExemption(ctx, head, rest, exemptionScope(&one, false), effect); tooLong != "" {
+		if _, tooLong, _ := fitExemptionScope(ctx, head, rest, &one, effect); tooLong != "" {
 			return false
 		}
 	}

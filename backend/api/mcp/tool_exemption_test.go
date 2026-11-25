@@ -1005,3 +1005,46 @@ func TestMaskingExemptionColumnsLeaveTheNotesTheirRows(t *testing.T) {
 	}
 	require.Equal(t, exemptionColumnRows, most, "the sweep must reach the most rows the columns take")
 }
+
+// The advice to exempt fewer columns at a time is given exactly when each
+// column gets a form alone, by the path a one-column grant takes. A long
+// column name fits a message only as a count, and the count of one column is
+// a character shorter than the count of two.
+func TestGrantMaskingExemptionAdvisesFewerColumnsWhenEachGetsAForm(t *testing.T) {
+	ctx := withUserEmail(context.Background(), "alice@example.com")
+	refused := func(input GrantMaskingExemptionInput) (bool, bool) {
+		g, err := parseExemptionGrant(input)
+		require.NoError(t, err)
+		_, tooLong, fewer := describeExemptionGrant(ctx, g)
+		return tooLong != "", fewer
+	}
+	advised, sent := 0, 0
+	for n := 1; n <= 63; n++ {
+		input := GrantMaskingExemptionInput{
+			Project: "projects/hr", Member: "user:bob@example.com",
+			Database: "instances/inst-payments-eu-west/databases/" + strings.Repeat("d", n),
+			Schema:   "public", Table: "employee_compensation_hist",
+			Columns: []string{"base_salary_before_tax_local", "bonus_paid_in_local_currency"},
+		}
+		isRefused, fewer := refused(input)
+		if !isRefused {
+			continue
+		}
+		alone := true
+		for _, column := range input.Columns {
+			one := input
+			one.Columns = []string{column}
+			if oneRefused, _ := refused(one); oneRefused {
+				alone = false
+			}
+		}
+		require.Equal(t, alone, fewer, "database name of %d", n)
+		if fewer {
+			advised++
+		} else {
+			sent++
+		}
+	}
+	require.Positive(t, advised, "the sweep must reach a grant refused only for its count of columns")
+	require.Positive(t, sent, "and one whose columns fit no form")
+}

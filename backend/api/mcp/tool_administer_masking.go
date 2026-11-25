@@ -517,7 +517,7 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 		return form, nil
 	}
 	alone := func(change formChange) bool {
-		return rules.alone(ctx, maskingRulesQuestion, change, maskingRulesUnmask) || rules.alone(ctx, maskingRulesQuestionWithEffect, change, "")
+		return messageHolds(ctx, maskingRulesQuestion, change, maskingRulesUnmask) || messageHolds(ctx, maskingRulesQuestionWithEffect, change, "")
 	}
 	return rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, maskingRuleSection(diff, true), link,
 		!slices.ContainsFunc(diff.changes, func(change formChange) bool { return !alone(change) }))
@@ -532,7 +532,7 @@ func maskingRuleSection(diff *maskingRulesDiff, listed bool) ruleSection {
 	if len(diff.requested) == 0 {
 		return ruleSection{empty: "No masking rule is left, so each column keeps its own semantic type."}
 	}
-	list := ruleSection{header: "The masking rules, in the order masking tries them:"}
+	list := ruleSection{name: "Masking rules", header: "The masking rules, in the order masking tries them:"}
 	for i, rule := range diff.requested {
 		line := fmt.Sprintf("%d. %s (%s), %s", i+1, maskingRuleTitle(rule), diff.marks[i], diff.typePhrase(rule.GetSemanticType()))
 		switch {

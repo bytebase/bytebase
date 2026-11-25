@@ -480,7 +480,8 @@ func TestAdministerWorkspaceRefusesAChangeTooLongForTheDescription(t *testing.T)
 	}{
 		"more rules than the description has rows": {
 			rules: several,
-			want: []string{"this change needs 13 lines, more than the 10 one confirmation form has room for under its choice",
+			// The fallback line takes two of the ten rows.
+			want: []string{"this change needs 11 lines, more than the 8 one confirmation form has room for under its choice",
 				"make the change in smaller steps, a few rules at a time",
 				"Each step is a form of its own and applies when the user accepts it", "tell the user the change comes in steps",
 				"a smaller step changes fewer rules, never a condition",
@@ -633,17 +634,21 @@ func TestAdministerWorkspaceSendsARuleWithNoRoomBesideTheFallbackLineToTheConsol
 	var refused *toolError
 	require.ErrorAs(t, err, &refused)
 	require.Equal(t, "CHANGE_TOO_LONG", refused.Code)
+	// The message counts the rows the fallback line leaves, which the rule
+	// passes, and not the ten it fits alone.
+	require.True(t, strings.HasPrefix(refused.Message, `the rule change "Add rule 1, \"Workspace DBA\": `), refused.Message)
+	require.True(t, strings.HasSuffix(refused.Message, " needs more lines than the 8 one confirmation form has room for under its choice, so the approval rules were not changed"), refused.Message)
 	require.Contains(t, refused.Suggestion, "make that change signed in to the Bytebase console: LINK")
 	require.NotContains(t, refused.Suggestion, "smaller steps")
 }
 
 // When the rows left hold no rule, one row still says how many there are.
 func TestSectionRowsCountsAListItCannotShow(t *testing.T) {
-	list := ruleSection{header: "The rules for database changes, in the order an approval check tries them:",
+	list := ruleSection{name: "Rules for database changes", header: "The rules for database changes, in the order an approval check tries them:",
 		rules: []string{`1. "A" (kept), "Project owner": ` + "`resource.environment_id == 'a'`", `2. "B" (kept), no approval: ` + "`resource.environment_id == 'b'`", `3. "C" (new), no approval`}}
 	require.Nil(t, sectionRows(list, 0))
 	for room := 1; room <= 3; room++ {
-		require.Equal(t, []string{"3 rules in all, not listed here."}, sectionRows(list, room), "room %d", room)
+		require.Equal(t, []string{"Rules for database changes in all: 3. Their list has no room here."}, sectionRows(list, room), "room %d", room)
 	}
 	require.Equal(t, []string{
 		"The rules for database changes, in the order an approval check",
@@ -652,7 +657,28 @@ func TestSectionRowsCountsAListItCannotShow(t *testing.T) {
 		"... and 2 more rules, tried after these.",
 	}, sectionRows(list, 4))
 	require.Len(t, sectionRows(list, 5), 5)
-	require.Equal(t, []string{"1 rule in all, not listed here."}, sectionRows(ruleSection{header: list.header, rules: list.rules[:1]}, 2))
+	require.Equal(t, []string{"Masking rules in all: 1. Their list has no room here."}, sectionRows(ruleSection{name: "Masking rules", header: list.header, rules: list.rules[:1]}, 2))
+}
+
+// The row that counts a list follows the fallback line, so it names the rules
+// it counts: the kept rule and the five the change lines add.
+func TestAdministerWorkspaceNamesTheRulesAListHasNoRoomFor(t *testing.T) {
+	stored := []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), changeRule("Kept", "resource.environment_id == 'kept'", "roles/projectOwner")}
+	requested := slices.Clone(stored)
+	for i := range 5 {
+		requested = append(requested, changeRule(fmt.Sprintf("e%d", i), fmt.Sprintf("resource.environment_id == 'e%d'", i), "roles/workspaceDBA"))
+	}
+	diff, err := diffApprovalRules(stored, requested, "")
+	require.NoError(t, err)
+	form, err := approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, "", "")
+	require.NoError(t, err)
+	rows := strings.Split(form.description, "\n")
+	require.Equal(t, []string{
+		"Add rule 6, \"Workspace DBA\": `resource.environment_id == 'e4'`",
+		`Unmatched changes go to the fallback rules: "Fallback Rule"`,
+		`> ("Project owner").`,
+		"Rules for database changes in all: 6. Their list has no room here.",
+	}, rows[4:])
 }
 
 // A rule a form adds is never refused its removal: the removal's line is no

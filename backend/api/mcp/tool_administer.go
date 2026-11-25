@@ -644,7 +644,7 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 		}
 	}
 	line, fallback := fallbackLine(diff.fallback)
-	list := ruleSection{before: []string{line}}
+	list := ruleSection{before: []string{line}, name: "Rules for database changes"}
 	switch {
 	case len(diff.requested) == 0 && fallback:
 		list.empty = "No rule for database changes is left, so the fallback rules decide every database change."
@@ -729,6 +729,10 @@ type formChange struct {
 // refused its removal for it.
 type ruleSection struct {
 	before []string
+	// name starts the row that counts a list the description has no room
+	// for. The row may follow a line about other rules, and the change lines
+	// above it state some of the rules it counts.
+	name   string
 	header string
 	rules  []string
 	empty  string
@@ -740,13 +744,13 @@ func (r adminRules) form(ctx context.Context, changes []formChange, count, effec
 	if form := r.whole(ctx, r.question, changes, effect, list); form != nil {
 		return form, nil
 	}
-	alone := func(change formChange) bool { return r.alone(ctx, r.question, change, effect) }
+	alone := func(change formChange) bool { return messageHolds(ctx, r.question, change, effect) }
 	return r.listed(ctx, changes, count, effect, list, link, !slices.ContainsFunc(changes, func(change formChange) bool { return !alone(change) }))
 }
 
-// alone reports whether the message of a form under question has room for
-// change by itself.
-func (adminRules) alone(ctx context.Context, question string, change formChange, effect string) bool {
+// messageHolds reports whether the message of a form under question has room
+// for change by itself.
+func messageHolds(ctx context.Context, question string, change formChange, effect string) bool {
 	return len(fitMessage(questionLines(ctx, question, ""), []formChange{change}, effect)) <= messageLines
 }
 
@@ -760,8 +764,7 @@ func (r adminRules) whole(ctx context.Context, question string, changes []formCh
 	lines, fixed := withFixed(lines, r.apply)
 	// With no change to list, the description always has room: the lines
 	// before the rule list are bounded (fallbackRows), and the list is cut.
-	description, _ := describeRules(nil, list, fixed)
-	return &adminForm{message: strings.Join(lines, "\n"), description: description}
+	return &adminForm{message: strings.Join(lines, "\n"), description: describeRules(nil, list, fixed)}
 }
 
 // listed returns the form whose message counts the changes and whose
@@ -770,31 +773,32 @@ func (r adminRules) whole(ctx context.Context, question string, changes []formCh
 // agent may offer them in steps.
 func (r adminRules) listed(ctx context.Context, changes []formChange, count, effect string, list ruleSection, link string, eachAlone bool) (*adminForm, error) {
 	lines := append(questionLines(ctx, r.question, ""), wrapMessageLine(count)...)
-	before := 0
+	// Every step carries the lines before the list, so the changes have the
+	// rows those lines leave, and one with no room beside them fits no form.
+	room := descriptionLines
 	for _, line := range list.before {
-		before += len(wrapLine(line, descriptionLineWidth))
+		room -= len(wrapLine(line, descriptionLineWidth))
 	}
 	var texts []string
-	tooLong := ""
+	needed, tooLong := 0, ""
 	affected := false
 	for _, change := range changes {
 		texts = append(texts, change.text)
 		affected = affected || change.effect
-		// Every step carries the lines before the list, so a change with no
-		// room beside them fits no form.
-		if tooLong == "" && before+len(wrapLine(change.text, descriptionLineWidth)) > descriptionLines {
+		rows := len(wrapLine(change.text, descriptionLineWidth))
+		needed += rows
+		if tooLong == "" && rows > room {
 			tooLong = change.text
 		}
+	}
+	if needed > room {
+		return nil, changeTooLong(needed, room, tooLong, r, link)
 	}
 	if affected && effect != "" {
 		lines = append(lines, wrapMessageLine(effect)...)
 	}
 	lines, fixed := withFixed(lines, r.apply)
-	description, needed := describeRules(texts, list, fixed)
-	if needed > descriptionLines {
-		return nil, changeTooLong(needed, tooLong, r, link)
-	}
-	form := &adminForm{message: strings.Join(lines, "\n"), description: description}
+	form := &adminForm{message: strings.Join(lines, "\n"), description: describeRules(texts, list, fixed)}
 	if eachAlone && len(changes) > 1 {
 		form.inSteps = "The form listed the rule changes under its choice, where a client may show one line of them. If the user wants each change in the form's message, " + r.steps("a rule or two")
 	}
@@ -855,22 +859,18 @@ func countLine(changes int, marks []string, unapproved int) string {
 }
 
 // describeRules lays out a rule form's description in descriptionLines rows:
-// the changes the message only counts and the lines before the list, then as
-// much of the list as fits. needed passes descriptionLines when the first two
-// do not fit.
-func describeRules(changes []string, list ruleSection, fixed string) (description string, needed int) {
+// the changes the message only counts and the lines before the list, which the
+// caller has found room for, then as much of the list as fits.
+func describeRules(changes []string, list ruleSection, fixed string) string {
 	var rows []string
 	for _, line := range slices.Concat(changes, list.before) {
 		rows = append(rows, wrapLine(line, descriptionLineWidth)...)
-	}
-	if len(rows) > descriptionLines {
-		return "", len(rows)
 	}
 	rows = append(rows, sectionRows(list, descriptionLines-len(rows))...)
 	if wrapped := wrapLine(fixed, descriptionLineWidth); fixed != "" && len(rows)+len(wrapped) <= descriptionLines {
 		rows = append(rows, wrapped...)
 	}
-	return strings.Join(rows, "\n"), len(rows)
+	return strings.Join(rows, "\n")
 }
 
 // sectionRows returns the header and the rules that fit room rows, from the
@@ -897,9 +897,10 @@ func sectionRows(list ruleSection, room int) []string {
 			return append(rows, "... and 1 more rule, tried after these.")
 		case i > 0:
 			return append(rows, fmt.Sprintf("... and %d more rules, tried after these.", left))
-		case room > 0:
-			return []string{capitalize(countRules(left)) + " in all, not listed here."}
 		default:
+			if count := wrapLine(fmt.Sprintf("%s in all: %d. Their list has no room here.", list.name, left), descriptionLineWidth); len(count) <= room {
+				return count
+			}
 			return nil
 		}
 	}
@@ -967,20 +968,20 @@ func fitMessage(question []string, changes []formChange, effect string) []string
 	return lines
 }
 
-// changeTooLong refuses a change whose lines need more rows than the form has
-// under its choice. Smaller steps help only when every rule change fits there
-// alone; tooLong is the first one that does not.
-func changeTooLong(needed int, tooLong string, rules adminRules, link string) *toolError {
+// changeTooLong refuses a change whose lines need more rows than the room a
+// form has for them under its choice. Smaller steps help only when every rule
+// change fits there alone; tooLong is the first one that does not.
+func changeTooLong(needed, room int, tooLong string, rules adminRules, link string) *toolError {
 	if tooLong != "" {
 		return &toolError{
 			Code:       "CHANGE_TOO_LONG",
-			Message:    fmt.Sprintf("the rule change %q needs more lines than the %d one confirmation form has room for under its choice, so %s were not changed", tooLong, descriptionLines, rules.name),
+			Message:    fmt.Sprintf("the rule change %q needs more lines than the %d one confirmation form has room for under its choice, so %s were not changed", tooLong, room, rules.name),
 			Suggestion: "do not shorten the rule's condition to make it fit; make that change signed in to the Bytebase console: " + link,
 		}
 	}
 	return &toolError{
 		Code:       "CHANGE_TOO_LONG",
-		Message:    fmt.Sprintf("this change needs %d lines, more than the %d one confirmation form has room for under its choice, so %s were not changed", needed, descriptionLines, rules.name),
+		Message:    fmt.Sprintf("this change needs %d lines, more than the %d one confirmation form has room for under its choice, so %s were not changed", needed, room, rules.name),
 		Suggestion: rules.steps("a few rules") + " Or change the rules signed in to the Bytebase console: " + link,
 	}
 }

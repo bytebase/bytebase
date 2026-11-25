@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -644,7 +645,7 @@ func TestAdministerInstanceRefusesBeforeAsking(t *testing.T) {
 		}, "so no instance was added (add the instance signed in"},
 		"a host too long for any form": {func(_, _, dataSource map[string]any) {
 			dataSource["host"] = strings.Repeat("h", 200) + ".example.com"
-		}, "CHANGE_TOO_LONG"},
+		}, "CHANGE_TOO_LONG: " + instanceTooLong},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := newInstanceMock()
@@ -1149,6 +1150,36 @@ func TestAdministerInstanceFitsOrdinaryCloudHosts(t *testing.T) {
 // Whether a form fits is decided as if the TLS mode had its longest wording.
 // Otherwise a form refused with TLS required could fit with TLS off, and the
 // refusal would lead an agent to weaken the connection.
+const instanceTooLong = "this instance's names and host are too long for one confirmation form, which keeps room for any TLS setting, so no instance was added"
+
+// The refusal is decided with the longest TLS wording, so the shortest host it
+// refuses with a weaker setting still fits the lines with its own wording. The
+// message states the rule, and no count of lines the request does not need.
+func TestAdministerInstanceRefusalStatesTheRuleAndNoLineCount(t *testing.T) {
+	ctx := withUserEmail(context.Background(), "alice@example.com")
+	for n := 1; n <= 200; n++ {
+		c, err := parseInstanceCreation(instanceBody(t, func(_, instance, dataSource map[string]any) {
+			instance["activation"] = false
+			dataSource["host"], dataSource["useSsl"] = strings.Repeat("h", n), false
+		}), "ws-test")
+		require.NoError(t, err)
+		_, err = instanceForm(ctx, c, true, "")
+		if err == nil {
+			continue
+		}
+		fits := slices.ContainsFunc(instanceLayouts(c, c.request.GetInstanceId(), true, tlsNotRequired), func(layout formLayout) bool {
+			form, _ := fitLayout(ctx, layout)
+			return form != nil
+		})
+		require.True(t, fits, "host of %d", n)
+		var refused *toolError
+		require.ErrorAs(t, err, &refused)
+		require.Equal(t, instanceTooLong, refused.Message)
+		return
+	}
+	t.Fatal("no host was refused")
+}
+
 func TestAdministerInstanceNeverFitsOnlyWithWeakerTLS(t *testing.T) {
 	for _, mode := range []string{tlsNotRequired, tlsVerified} {
 		require.LessOrEqual(t, len(mode), len(tlsNotVerified), "the layouts are measured with the longest wording")
