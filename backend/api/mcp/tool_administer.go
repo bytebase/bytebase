@@ -647,7 +647,7 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 	list := ruleSection{before: []string{line}, name: "Rules for database changes"}
 	switch {
 	case len(diff.requested) == 0 && fallback:
-		list.empty = "No rule for database changes is left, so the fallback rules decide every database change."
+		list.empty = "No rule for database changes is left, so the fallback rules decide."
 	case len(diff.requested) == 0:
 		list.empty = "No rule for database changes is left."
 	default:
@@ -726,7 +726,8 @@ type formChange struct {
 // ruleSection is what a rule form's description says of the rules a change
 // leaves. Only before counts toward refusing a change, and its builder bounds
 // it: empty shows on a removal alone, and a rule a form adds must not be
-// refused its removal for it.
+// refused its removal for it. So empty is one row, which the changes leave
+// free unless they take every row.
 type ruleSection struct {
 	before []string
 	// name starts the row that counts a list the description has no room

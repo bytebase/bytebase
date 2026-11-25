@@ -660,6 +660,23 @@ func TestSectionRowsCountsAListItCannotShow(t *testing.T) {
 	require.Equal(t, []string{"Masking rules in all: 1. Their list has no room here."}, sectionRows(ruleSection{name: "Masking rules", header: list.header, rules: list.rules[:1]}, 2))
 }
 
+// A change that removes every rule says so while one row is free: the
+// sentence takes one row, here the last of the ten.
+func TestAdministerWorkspaceSaysNoRuleIsLeftInTheLastRow(t *testing.T) {
+	stored := []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}
+	for i := range 7 {
+		stored = append(stored, changeRule(fmt.Sprintf("e%d", i), fmt.Sprintf("resource.environment_id == 'e%d'", i), "roles/workspaceDBA"))
+	}
+	diff, err := diffApprovalRules(stored, stored[:1], "")
+	require.NoError(t, err)
+	form, err := approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, "", "")
+	require.NoError(t, err)
+	require.Contains(t, form.message, "Remove 7 rules, listed under Action.")
+	rows := strings.Split(form.description, "\n")
+	require.Len(t, rows, descriptionLines)
+	require.Equal(t, "No rule for database changes is left, so the fallback rules decide.", rows[descriptionLines-1])
+}
+
 // The row that counts a list follows the fallback line, so it names the rules
 // it counts: the kept rule and the five the change lines add.
 func TestAdministerWorkspaceNamesTheRulesAListHasNoRoomFor(t *testing.T) {
@@ -1287,7 +1304,7 @@ func TestAdministerWorkspaceDescribesTheRulesLeft(t *testing.T) {
 			stored:    []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), prodRule},
 			requested: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()},
 			want: "Unmatched changes go to the fallback rules: \"Fallback Rule\" (\"Project owner\").\n" +
-				"No rule for database changes is left, so the fallback rules decide every database change.",
+				"No rule for database changes is left, so the fallback rules decide.",
 		},
 		"no fallback rule": {
 			stored:    []*v1pb.WorkspaceApprovalSetting_Rule{prodRule},
