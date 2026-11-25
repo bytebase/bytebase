@@ -31,8 +31,6 @@ func init() {
 		TransformDMLToSelect: TransformDMLToSelect,
 		GenerateRestoreSQL:   GenerateRestoreSQL,
 	}, storepb.Engine_POSTGRES)
-	// Snowflake reuses PostgreSQL completion.
-	base.Register(base.Engine{Complete: Completion}, storepb.Engine_SNOWFLAKE)
 }
 
 // AST wraps an omni AST node and implements the base.AST interface.

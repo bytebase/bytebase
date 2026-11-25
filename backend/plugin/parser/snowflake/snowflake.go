@@ -22,6 +22,7 @@ func init() {
 		Parse:           parseSnowflakeStatements,
 		StatementRanges: GetStatementRanges,
 		Diagnose:        Diagnose,
+		Complete:        Completion,
 		ValidateQuery:   analysis.ValidateQuery,
 		QuerySpan:       GetQuerySpan,
 		Explain:         explainStatement,
