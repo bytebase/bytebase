@@ -21,6 +21,7 @@ import (
 	// and a missing splitter reads as "no splitter" without saying so.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/cassandra"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/clickhouse"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/cosmosdb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/databricks"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/doris"
@@ -37,7 +38,6 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/redshift"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/spanner"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/starrocks"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/trino"
