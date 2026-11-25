@@ -13,7 +13,7 @@ points, and keep the engine-specific deviations.
 | Layer | Location | Responsibility |
 |---|---|---|
 | Metadata contract | `github.com/bytebase/omni/metadata` (`proto/omni/metadata/database.proto` in omni) | `DatabaseSchemaMetadata`, `SchemaMetadata`, and the nested object messages. Bytebase persists this as protojson and discards unknown fields, so a field that is not here is dropped before any engine sees it. |
-| Engine driver | `github.com/bytebase/omni/<engine>/driver` and `backend/plugin/db/<engine>/` | `SyncDatabase` queries the live server and populates `DatabaseSchemaMetadata`; the Bytebase driver adapter's `SyncDBSchema` delegates to it (`backend/plugin/db/mysql/` covers both MySQL and MariaDB). |
+| Engine driver | `github.com/bytebase/omni/<engine>/driver` and `backend/plugin/db/<engine>/` | `SyncDatabase` queries the live server and populates `DatabaseSchemaMetadata`; the Bytebase driver adapter's `SyncDBSchema` delegates to it (`backend/plugin/db/mysql/` for MySQL, `backend/plugin/db/mariadb/` for MariaDB). |
 | Engine catalog | `github.com/bytebase/omni/<engine>/catalog` | Loads SDL, SQL, or synced metadata; renders database and per-object definitions; diffs two catalogs and emits a migration plan. |
 | Engine shim | `backend/plugin/schema/<engine>/` | Registers the catalog functions, filters or repairs metadata where Bytebase has a compatibility rule, and supplies engine-specific walk-throughs. |
 | Registry and dispatch | `backend/plugin/schema/schema.go` | Maps an engine to its registered functions. The main entry points are `GetDatabaseDefinition`, `GetDatabaseMetadata`, `SDLMigration`, `DiffSDLMigration`, and `DiffMigration`. |

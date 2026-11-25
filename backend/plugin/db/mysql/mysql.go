@@ -1,9 +1,7 @@
 // Package mysql is Bytebase's MySQL driver: an adapter over
-// github.com/bytebase/omni/mysql/driver, and over github.com/bytebase/omni/mariadb/driver
-// for the MARIADB engine value this package also registers. It maps a
-// db.ConnectionConfig onto the contract's Config, the contract's results back
-// onto the product's types, and keeps the credential, tunnel and TLS material
-// in Bytebase where it belongs.
+// github.com/bytebase/omni/mysql/driver. It maps a db.ConnectionConfig onto the
+// contract's Config, the contract's results back onto the product's types, and
+// keeps the credential, tunnel and TLS material in Bytebase where it belongs.
 //
 // The adapter keeps what is product: the data source to contract conversion,
 // the AWS RDS and Google Cloud SQL IAM paths, the RDS CA bundle, SSH tunnels,
@@ -44,8 +42,6 @@ import (
 	"github.com/pkg/errors"
 
 	odriver "github.com/bytebase/omni/driver"
-	mariadbast "github.com/bytebase/omni/mariadb/ast"
-	mariadbd "github.com/bytebase/omni/mariadb/driver"
 	mysqlast "github.com/bytebase/omni/mysql/ast"
 	mysqld "github.com/bytebase/omni/mysql/driver"
 
@@ -63,7 +59,6 @@ var (
 
 func init() {
 	db.Register(storepb.Engine_MYSQL, newDriver)
-	db.Register(storepb.Engine_MARIADB, newDriver)
 }
 
 // Driver is Bytebase's MySQL driver.
@@ -76,7 +71,7 @@ func newDriver() db.Driver {
 }
 
 // Open maps the resolved data source onto the contract's Config.
-func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	dataSource := connCfg.DataSource
 	if dataSource == nil {
 		return nil, errors.New("mysql: a data source is required")
@@ -113,14 +108,7 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 			cfg.TLS = tlsFn
 		}
 
-		switch dbType {
-		case storepb.Engine_MYSQL:
-			return mysqld.Open(ctx, cfg)
-		case storepb.Engine_MARIADB:
-			return mariadbd.Open(ctx, cfg)
-		default:
-			return nil, errors.Errorf("mysql: unsupported engine %s", dbType)
-		}
+		return mysqld.Open(ctx, cfg)
 	}); err != nil {
 		return nil, err
 	}
@@ -193,15 +181,6 @@ func (d *Driver) EstimateAffectedRows(ctx context.Context, stmt mysqlast.Node, q
 	driver, ok := d.Driver.(*mysqld.Driver)
 	if !ok {
 		return 0, errors.New("mysql: EstimateAffectedRows needs the MySQL driver")
-	}
-	return driver.EstimateAffectedRows(ctx, stmt, query, plan)
-}
-
-// EstimateAffectedRowsMariaDB reads a MariaDB node's estimate from plan.
-func (d *Driver) EstimateAffectedRowsMariaDB(ctx context.Context, stmt mariadbast.Node, query, plan string) (int64, error) {
-	driver, ok := d.Driver.(*mariadbd.Driver)
-	if !ok {
-		return 0, errors.New("mysql: EstimateAffectedRowsMariaDB needs the MariaDB driver")
 	}
 	return driver.EstimateAffectedRows(ctx, stmt, query, plan)
 }
