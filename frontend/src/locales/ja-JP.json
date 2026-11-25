@@ -3244,10 +3244,12 @@
     },
     "targets": {
       "no-targets-found": "対象が見つかりません",
+      "no-targets-selected": "対象が選択されていません",
       "non-env-warning": {
         "one": "有効な環境がないため、{{count}} 件のデータベースはロールアウトから除外されます:",
         "other": "有効な環境がないため、{{count}} 件のデータベースはロールアウトから除外されます:"
       },
+      "required": "ターゲットは必須です",
       "title": "ターゲット",
       "view-all": "すべて表示 ({{count}})"
     },

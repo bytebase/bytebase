@@ -3244,10 +3244,12 @@
     },
     "targets": {
       "no-targets-found": "Không tìm thấy mục tiêu",
+      "no-targets-selected": "Chưa chọn mục tiêu",
       "non-env-warning": {
         "one": "{{count}} cơ sở dữ liệu sẽ bị loại khỏi rollout vì không có môi trường hiệu lực:",
         "other": "{{count}} cơ sở dữ liệu sẽ bị loại khỏi rollout vì không có môi trường hiệu lực:"
       },
+      "required": "Mục tiêu là bắt buộc",
       "title": "Mục tiêu",
       "view-all": "Xem tất cả ({{count}})"
     },

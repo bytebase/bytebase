@@ -3244,10 +3244,12 @@
     },
     "targets": {
       "no-targets-found": "No se encontraron objetivos",
+      "no-targets-selected": "No se seleccionaron objetivos",
       "non-env-warning": {
         "one": "{{count}} base de datos se excluirá del despliegue porque no tiene un entorno efectivo:",
         "other": "{{count}} bases de datos se excluirán del despliegue porque no tienen un entorno efectivo:"
       },
+      "required": "Los objetivos son obligatorios",
       "title": "Objetivos",
       "view-all": "Ver todo ({{count}})"
     },

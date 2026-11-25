@@ -99,6 +99,7 @@ import type { PlanSqlFixEditorSnapshot } from "../utils/sqlFixTarget";
 import { AffectedRowsStrip } from "./AffectedRowsStrip";
 import { ReleaseChangesRail } from "./changes/ReleaseChangesRail";
 import { PlanDetailDraftChecks } from "./PlanDetailDraftChecks";
+import { PlanDetailFieldLabel } from "./PlanDetailFieldLabel";
 import { SchemaEditorSheet } from "./SchemaEditorSheet";
 import { StatementThreadsLayer } from "./threads/StatementThreadsLayer";
 import {
@@ -923,15 +924,7 @@ export function PlanDetailStatementSection({
   return (
     <div className={cn("flex flex-col gap-y-1", className)}>
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div
-          className={cn(
-            "flex items-center gap-x-1 textlabel uppercase",
-            isEmpty && "text-error"
-          )}
-        >
-          <span>{statementTitle}</span>
-          {isEmpty && <span className="text-error">*</span>}
-        </div>
+        <PlanDetailFieldLabel label={statementTitle} missing={isEmpty} />
         <Input
           ref={inputRef}
           accept=".sql,.txt,application/sql,text/plain"

@@ -3244,10 +3244,12 @@
     },
     "targets": {
       "no-targets-found": "未找到目标",
+      "no-targets-selected": "未选择目标",
       "non-env-warning": {
         "one": "{{count}} 个数据库因为没有生效环境，将不会进入发布:",
         "other": "{{count}} 个数据库因为没有生效环境，将不会进入发布:"
       },
+      "required": "目标库不能为空",
       "title": "目标库",
       "view-all": "查看全部 ({{count}})"
     },

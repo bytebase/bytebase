@@ -10,10 +10,12 @@
 //
 //   DRAFT
 //   - Create stays actionable and states every blocker on press. (C1)
+//   - Create blocks a change with no targets. (C2)
 //   - A clean draft becomes ready for review in one press. (S1)
 //   - Failed checks are either a blocker or one named override. (S2)
 //   - Forced labels stay in metadata and block only submission. (S3)
 //   - Unsaved edits and missing permissions are actionable blockers. (S4/S5)
+//   - A change with no targets blocks submission. (S7)
 //
 //   REVIEW
 //   - Persona split: candidate sees the "Review" action; a non-candidate
@@ -352,6 +354,35 @@ test.describe("Create states every blocker and advances to a real draft (C1)", (
   });
 });
 
+test.describe("Create blocks a change with no targets (C2)", () => {
+  test.beforeAll(async () => {
+    await setApproval(false);
+  });
+
+  test("Create names the missing targets and stays on the create page", async () => {
+    await planPage.gotoCreate(projectId);
+    await planPage.dismissModals();
+    await planPage.headerTitle.fill(`E2E Lifecycle Create No Targets ${Date.now()}`);
+    await planPage.fillPlanStatement("SELECT 1;");
+    await expect(
+      page.getByText("Targets", { exact: true }).locator(".."),
+    ).toHaveText("Targets*");
+
+    await planPage.headerCreateButton.click();
+
+    const notice = planPage.lifecycleAlert("Cannot create plan");
+    await expect(notice).toContainText("Targets are required");
+    await expect(notice).not.toContainText("Statement is empty");
+    await expect(page).toHaveURL(/\/plans\/create/);
+
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Select Targets", exact: true }).click();
+    await expect(
+      page.getByRole("dialog", { name: "Select Targets" }),
+    ).toBeVisible();
+  });
+});
+
 test.describe("A clean draft submits for review without an intermediate form (S1)", () => {
   let seeded: Awaited<ReturnType<typeof seedDraftPlan>>;
 
@@ -588,6 +619,35 @@ test.describe("A persisted Plan without its draft Issue is incomplete (S6)", () 
       timeout: 15_000,
     });
     await expect(planPage.headerReadyForReviewButton).toHaveCount(0);
+  });
+});
+
+test.describe("A change with no targets blocks submission (S7)", () => {
+  let planId = "";
+  let issueName = "";
+
+  test.beforeAll(async () => {
+    await setApproval(false);
+    const ts = Date.now();
+    const title = `E2E Lifecycle No Targets ${ts}`;
+    const sheet = await env.api.createSheet(env.project, "SELECT 1;");
+    const plan = await env.api.createPlan(env.project, title, [
+      { id: `spec-${ts}`, targets: [], sheet },
+    ]);
+    const issue = await env.api.createDraftIssue(env.project, title, plan.name);
+    planId = plan.name.split("/").pop()!;
+    issueName = issue.name;
+  });
+
+  test("Ready for Review names the missing targets and leaves the draft unsubmitted", async () => {
+    await goPlan(planId);
+    await planPage.headerReadyForReviewButton.click();
+
+    await expect(
+      planPage.lifecycleAlert("Not ready for review"),
+    ).toContainText("Targets are required");
+    await expect(page.getByText("missing change targets")).toHaveCount(0);
+    await waitForIssueDraft(issueName, true);
   });
 });
 

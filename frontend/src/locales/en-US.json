@@ -3244,10 +3244,12 @@
     },
     "targets": {
       "no-targets-found": "No targets found",
+      "no-targets-selected": "No targets selected",
       "non-env-warning": {
         "one": "{{count}} database will be excluded from rollout because it has no effective environment:",
         "other": "{{count}} databases will be excluded from rollout because they have no effective environment:"
       },
+      "required": "Targets are required",
       "title": "Targets",
       "view-all": "View all ({{count}})"
     },
