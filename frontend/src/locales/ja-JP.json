@@ -4130,7 +4130,10 @@
         "sign-in": {
           "claude-code": "Claude Code で /mcp を実行し、bytebase を選択して Authenticate を選びます。開いたブラウザーウィンドウで Bytebase にサインインし、「{{allow}}」をクリックします。",
           "claude-desktop": "Claude Desktop を終了して開き直します。開いたブラウザーウィンドウで Bytebase にサインインし、「{{allow}}」をクリックします。",
-          "default": "AI ツールが初めて Bytebase を使うときに、ブラウザーウィンドウが開きます。Bytebase にサインインし、「{{allow}}」をクリックします。"
+          "codex": "コマンドを実行するとブラウザーウィンドウが開きます。Bytebase にサインインし、「{{allow}}」をクリックします。ウィンドウが開かなかった場合は、codex mcp login bytebase を実行します。",
+          "copilot-cli": "Copilot CLI を起動します。開いたブラウザーウィンドウで Bytebase にサインインし、「{{allow}}」をクリックします。ウィンドウが開かない場合は、Copilot CLI で /mcp auth bytebase を実行します。",
+          "default": "AI ツールが初めて Bytebase を使うときに、ブラウザーウィンドウが開きます。Bytebase にサインインし、「{{allow}}」をクリックします。",
+          "gemini-cli": "Gemini CLI で /mcp auth bytebase を実行します。開いたブラウザーウィンドウで Bytebase にサインインし、「{{allow}}」をクリックします。"
         },
         "step": {
           "add": "Bytebase を AI ツールに追加",

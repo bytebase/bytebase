@@ -4130,7 +4130,10 @@
         "sign-in": {
           "claude-code": "In Claude Code, run /mcp, select bytebase, and choose Authenticate. In the browser window that opens, sign in to Bytebase and click {{allow}}.",
           "claude-desktop": "Quit and reopen Claude Desktop. In the browser window that opens, sign in to Bytebase and click {{allow}}.",
-          "default": "The first time your AI tool uses Bytebase, a browser window opens. Sign in to Bytebase and click {{allow}}."
+          "codex": "The command opens a browser window. Sign in to Bytebase and click {{allow}}. If no window opened, run codex mcp login bytebase.",
+          "copilot-cli": "Start Copilot CLI. In the browser window that opens, sign in to Bytebase and click {{allow}}. If no window opens, run /mcp auth bytebase in Copilot CLI.",
+          "default": "The first time your AI tool uses Bytebase, a browser window opens. Sign in to Bytebase and click {{allow}}.",
+          "gemini-cli": "In Gemini CLI, run /mcp auth bytebase. In the browser window that opens, sign in to Bytebase and click {{allow}}."
         },
         "step": {
           "add": "Add Bytebase to your AI tool",

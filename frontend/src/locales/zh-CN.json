@@ -4130,7 +4130,10 @@
         "sign-in": {
           "claude-code": "在 Claude Code 中运行 /mcp，选择 bytebase，然后选择 Authenticate。在打开的浏览器窗口中登录 Bytebase，然后点击“{{allow}}”。",
           "claude-desktop": "退出并重新打开 Claude Desktop。在打开的浏览器窗口中登录 Bytebase，然后点击“{{allow}}”。",
-          "default": "AI 工具首次使用 Bytebase 时会打开浏览器窗口。登录 Bytebase，然后点击“{{allow}}”。"
+          "codex": "该命令会打开浏览器窗口。登录 Bytebase，然后点击“{{allow}}”。如果没有打开窗口，请运行 codex mcp login bytebase。",
+          "copilot-cli": "启动 Copilot CLI。在打开的浏览器窗口中登录 Bytebase，然后点击“{{allow}}”。如果没有打开窗口，请在 Copilot CLI 中运行 /mcp auth bytebase。",
+          "default": "AI 工具首次使用 Bytebase 时会打开浏览器窗口。登录 Bytebase，然后点击“{{allow}}”。",
+          "gemini-cli": "在 Gemini CLI 中运行 /mcp auth bytebase。在打开的浏览器窗口中登录 Bytebase，然后点击“{{allow}}”。"
         },
         "step": {
           "add": "把 Bytebase 添加到你的 AI 工具",

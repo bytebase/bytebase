@@ -100,17 +100,30 @@ export function MCPConnectSection() {
         },
         signIn: t("settings.mcp.connect.sign-in.claude-desktop", { allow }),
       },
-      command("codex", "Codex", `codex mcp add bytebase --url ${endpoint}`),
-      command(
-        "copilot-cli",
-        "Copilot CLI",
-        `copilot mcp add --transport http bytebase ${endpoint}`
-      ),
-      command(
-        "gemini-cli",
-        "Gemini CLI",
-        `gemini mcp add --transport http bytebase ${endpoint}`
-      ),
+      {
+        ...command(
+          "codex",
+          "Codex",
+          `codex mcp add bytebase --url ${endpoint}`
+        ),
+        signIn: t("settings.mcp.connect.sign-in.codex", { allow }),
+      },
+      {
+        ...command(
+          "copilot-cli",
+          "Copilot CLI",
+          `copilot mcp add --transport http bytebase ${endpoint}`
+        ),
+        signIn: t("settings.mcp.connect.sign-in.copilot-cli", { allow }),
+      },
+      {
+        ...command(
+          "gemini-cli",
+          "Gemini CLI",
+          `gemini mcp add --transport http bytebase ${endpoint}`
+        ),
+        signIn: t("settings.mcp.connect.sign-in.gemini-cli", { allow }),
+      },
       {
         id: "vscode",
         title: "VS Code",

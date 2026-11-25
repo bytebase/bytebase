@@ -31,14 +31,14 @@ they want the shortest path from this page to a first answer.
 
 The page can only offer what the tool supports. How each fact was checked is in the last column.
 
-| Tool | How a remote MCP server is added | Checked by |
-|---|---|---|
-| Claude Code | `claude mcp add --transport http <name> <url>`. Sign-in starts from `/mcp`. | `claude mcp add --help`, Claude Code 2.1.330 |
-| Claude Desktop | The config file `claude_desktop_config.json` takes only servers that Claude starts with a command. An entry with a URL and no command is skipped, and the app says so in a dialog. A connector takes a URL but connects from Anthropic's servers. An MCP Bundle (`.mcpb`) installs with a double-click. | Read in the app's code, build of 2026-11-21. The dialog was not triggered. |
-| Codex | `codex mcp add <name> --url <url>`. The CLI, the IDE extension and the desktop app share one config file. | `codex mcp add --help`, CLI 0.171.0; OpenAI's Codex MCP docs |
-| Copilot CLI | `copilot mcp add --transport http <name> <url>` | Carried over from the page before this change; not rechecked |
-| Gemini CLI | `gemini mcp add --transport http <name> <url>` | Carried over; not rechecked. Its successor is tracked in [BYT-10613](https://linear.app/bytebase/issue/BYT-10613). |
-| VS Code | A link that starts with `vscode:mcp/install?` and carries the server as URL-encoded JSON opens VS Code on that server's page, with an Install button. `code --add-mcp '<json>'` does the same from a terminal. | `code --help`, VS Code 1.145.2, for the command. The link handler was read in the installed app's code; the link was not clicked through. |
+| Tool | How a remote MCP server is added | How sign-in starts | Checked by |
+|---|---|---|---|
+| Claude Code | `claude mcp add --transport http <name> <url>` | Run `/mcp`, select the server, choose Authenticate | `claude mcp add --help`, Claude Code 2.1.330 |
+| Claude Desktop | The config file `claude_desktop_config.json` takes only servers that Claude starts with a command. An entry with a URL and no command is skipped, and the app says so in a dialog. A connector takes a URL but connects from Anthropic's servers. An MCP Bundle (`.mcpb`) installs with a double-click. | The package opens the browser when Claude Desktop starts it | Read in the app's code, build of 2026-11-21. The dialog was not triggered. |
+| Codex | `codex mcp add <name> --url <url>`. The CLI, the IDE extension and the desktop app share one config file. | The add command signs in at once (its `--oauth-client-registration` option is "for the immediate login only"); `codex mcp login <name>` if no browser window opened | `codex mcp add --help` and `codex mcp login --help`, CLI 0.171.0; OpenAI's Codex MCP docs |
+| Copilot CLI | `copilot mcp add --transport http <name> <url>` | Before 1.0.116, starting the CLI opens the browser. From 1.0.116 it waits for `/mcp auth <name>`. | Copilot CLI release notes, 1.0.116-0; its MCP docs |
+| Gemini CLI | `gemini mcp add --transport http <name> <url>` | `/mcp auth <name>` | Gemini CLI MCP docs. Its successor is tracked in [BYT-10613](https://linear.app/bytebase/issue/BYT-10613). |
+| VS Code | A link that starts with `vscode:mcp/install?` and carries the server as URL-encoded JSON opens VS Code on that server's page, with an Install button. `code --add-mcp '<json>'` does the same from a terminal. | VS Code asks to sign in the first time it uses the server | `code --help`, VS Code 1.145.2, for the command. The link handler was read in the installed app's code; the link was not clicked through. |
 
 For Claude Desktop this leaves one path that works against a private instance today: a command
 entry in the config file that starts the npm package
@@ -48,7 +48,10 @@ on the user's computer and forwards to this instance's `/mcp`.
 ## Decisions
 
 **D1 · Three numbered steps.** Add Bytebase to your AI tool, sign in, try a prompt. The tool picked
-in step 1 decides what step 2 says, because how sign-in starts differs by tool. The former "Your
+in step 1 decides what step 2 says, because how sign-in starts differs by tool. Every tool whose sign-in does not
+start on its own gets its own step 2 line, from the "How sign-in starts" column above; the default
+line is only for a tool that asks by itself. A line never tells the user to start a sign-in the tool
+already started: a command that only sometimes applies is the fallback, after "if no window opened". The former "Your
 first prompt" section becomes step 3. Rejected: tabs with one action each and nothing after, since
 sign-in is where users get lost and it had no place; and a list of all tools down the page, which is
 long and mostly about tools the reader does not use.
@@ -117,6 +120,9 @@ sits in the strip, so it never covers the text, and a long command wraps instead
 | Step 2, default | The first time your AI tool uses Bytebase, a browser window opens. Sign in to Bytebase and click Allow access. |
 | Step 2, Claude Code | In Claude Code, run /mcp, select bytebase, and choose Authenticate. In the browser window that opens, sign in to Bytebase and click Allow access. |
 | Step 2, Claude Desktop | Quit and reopen Claude Desktop. In the browser window that opens, sign in to Bytebase and click Allow access. |
+| Step 2, Codex | The command opens a browser window. Sign in to Bytebase and click Allow access. If no window opened, run codex mcp login bytebase. |
+| Step 2, Copilot CLI | Start Copilot CLI. In the browser window that opens, sign in to Bytebase and click Allow access. If no window opens, run /mcp auth bytebase in Copilot CLI. |
+| Step 2, Gemini CLI | In Gemini CLI, run /mcp auth bytebase. In the browser window that opens, sign in to Bytebase and click Allow access. |
 | Step 3 | Try a prompt |
 | Claude Desktop, 1 | In Claude Desktop, click your name in the lower-left corner, then **Settings > Desktop app > Extensions > Edit config**. A folder opens. |
 | Claude Desktop, 2 | From that folder, open `claude_desktop_config.json` in a text editor. |

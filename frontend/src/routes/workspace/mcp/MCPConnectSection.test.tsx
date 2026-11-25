@@ -141,24 +141,23 @@ describe("MCPConnectSection", () => {
     unmount();
   });
 
-  test("the sign-in step follows the selected tool", () => {
+  // Each tool starts sign-in its own way; only VS Code and Other ask by
+  // themselves the first time they use Bytebase.
+  test.each([
+    ["Claude Code", "claude-code"],
+    ["Claude Desktop", "claude-desktop"],
+    ["Codex", "codex"],
+    ["Copilot CLI", "copilot-cli"],
+    ["Gemini CLI", "gemini-cli"],
+    ["VS Code", "default"],
+    ["settings.mcp.connect.other.tab", "default"],
+  ])("the sign-in step for %s says how that tool starts sign-in", (title, key) => {
     const { container, unmount } = render(<MCPConnectSection />);
-    expect(container.textContent).toContain(
-      "settings.mcp.connect.sign-in.claude-code"
-    );
-
-    openTab(container, "Claude Desktop");
-    expect(container.textContent).toContain(
-      "settings.mcp.connect.sign-in.claude-desktop"
-    );
-    expect(container.textContent).not.toContain(
-      "settings.mcp.connect.sign-in.claude-code"
-    );
-
-    openTab(container, "Codex");
-    expect(container.textContent).toContain(
-      "settings.mcp.connect.sign-in.default"
-    );
+    openTab(container, title);
+    const signIn = [...container.querySelectorAll("p")]
+      .map((p) => p.textContent)
+      .filter((text) => text?.startsWith("settings.mcp.connect.sign-in."));
+    expect(signIn).toEqual([`settings.mcp.connect.sign-in.${key}`]);
     unmount();
   });
 
