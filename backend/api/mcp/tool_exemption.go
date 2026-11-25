@@ -730,34 +730,51 @@ func resourceValues(e celast.Expr) (string, []string, bool) {
 	if e.Kind() != celast.CallKind || len(e.AsCall().Args()) != 2 {
 		return "", nil, false
 	}
-	left, right := e.AsCall().Args()[0], e.AsCall().Args()[1]
-	if left.Kind() != celast.SelectKind {
+	attribute, ok := resourceAttribute(e.AsCall().Args()[0])
+	if !ok {
 		return "", nil, false
 	}
-	if operand := left.AsSelect().Operand(); operand.Kind() != celast.IdentKind || operand.AsIdent() != "resource" {
-		return "", nil, false
-	}
-	attribute := left.AsSelect().FieldName()
+	right := e.AsCall().Args()[1]
 	switch e.AsCall().FunctionName() {
 	case operators.Equals:
 		value, ok := stringLiteral(right)
 		return attribute, []string{value}, ok
 	case operators.In:
-		if attribute != "column_name" || right.Kind() != celast.ListKind {
+		if attribute != "column_name" {
 			return "", nil, false
 		}
-		var values []string
-		for _, element := range right.AsList().Elements() {
-			value, ok := stringLiteral(element)
-			if !ok {
-				return "", nil, false
-			}
-			values = append(values, value)
-		}
-		return attribute, values, true
+		values, ok := stringLiterals(right)
+		return attribute, values, ok
 	default:
 		return "", nil, false
 	}
+}
+
+// resourceAttribute returns x of the select resource.x.
+func resourceAttribute(e celast.Expr) (string, bool) {
+	if e.Kind() != celast.SelectKind {
+		return "", false
+	}
+	if operand := e.AsSelect().Operand(); operand.Kind() != celast.IdentKind || operand.AsIdent() != "resource" {
+		return "", false
+	}
+	return e.AsSelect().FieldName(), true
+}
+
+// stringLiterals returns the values of a list of string literals.
+func stringLiterals(e celast.Expr) ([]string, bool) {
+	if e.Kind() != celast.ListKind {
+		return nil, false
+	}
+	var values []string
+	for _, element := range e.AsList().Elements() {
+		value, ok := stringLiteral(element)
+		if !ok {
+			return nil, false
+		}
+		values = append(values, value)
+	}
+	return values, true
 }
 
 func stringLiteral(e celast.Expr) (string, bool) {

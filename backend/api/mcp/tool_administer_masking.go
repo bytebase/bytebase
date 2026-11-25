@@ -383,7 +383,7 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 			continue
 		}
 		diff.changes = append(diff.changes, formChange{
-			text:   fmt.Sprintf("Remove, %s: %s", diff.typePhrase(rule.GetSemanticType()), conditionText(condition)),
+			text:   fmt.Sprintf("Remove, %s: %s", diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)),
 			effect: true,
 		})
 	}
@@ -401,7 +401,7 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 		before := storedByCondition[condition]
 		if before == nil {
 			diff.changes = append(diff.changes, formChange{
-				text:   fmt.Sprintf("Add rule %d, %s: %s", i+1, diff.typePhrase(rule.GetSemanticType()), conditionText(condition)),
+				text:   fmt.Sprintf("Add rule %d, %s: %s", i+1, diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)),
 				effect: !diff.masksEveryValue(rule.GetSemanticType()),
 			})
 			continue
@@ -436,7 +436,7 @@ func (d *maskingRulesDiff) keptRuleChange(before, rule *v1pb.MaskingRulePolicy_M
 	}
 	line := strings.Join(clauses, "; ")
 	return formChange{
-		text:   fmt.Sprintf("%s%s: %s", strings.ToUpper(line[:1]), line[1:], conditionText(rule.GetCondition().GetExpression())),
+		text:   fmt.Sprintf("%s%s: %s", strings.ToUpper(line[:1]), line[1:], maskingConditionText(rule.GetCondition().GetExpression())),
 		effect: effect,
 	}, true
 }
@@ -451,6 +451,11 @@ func (d *maskingRulesDiff) typePhrase(id string) string {
 	semanticType, ok := d.types[id]
 	if !ok {
 		return fmt.Sprintf("%q (no such type, masks nothing)", id)
+	}
+	// A stored type cannot take a built-in ID (masker.WithBuiltinSemanticTypes
+	// drops it), so the algorithm alone names a built-in type.
+	if id == masker.DefaultSemanticTypeID || id == masker.DefaultPartialSemanticTypeID {
+		return masker.AlgorithmName(semanticType.GetAlgorithm())
 	}
 	if m := d.typeMasker(id); m == nil || !masker.MasksValues(m) {
 		return fmt.Sprintf("%q (masks nothing)", semanticType.GetTitle())

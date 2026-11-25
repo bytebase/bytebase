@@ -165,15 +165,15 @@ func TestAdministerMaskingRulesAsksForTheJourneyRuleOnAWorkspaceWithNone(t *test
 	asked := user.lastParams(t)
 	require.Equal(t, strings.Join([]string{
 		`Change the masking rules, as alice@example.com?`,
-		"Add rule 1, \"Default\" (Full mask): `resource.environment_id == \"prod\"",
-		"> && resource.column_name in [\"birth_date\", \"gender\", \"amount\"]`",
+		"Add rule 1, Full mask: env \"prod\", any db, any table, columns",
+		"> (\"birth_date\", \"gender\", \"amount\")",
 		maskingRulesApply,
 	}, "\n"), asked.Message)
 	for _, line := range strings.Split(asked.Message, "\n") {
 		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
 	}
 	require.Equal(t, "The masking rules, in the order masking tries them:\n"+
-		"1. \"Personal data in prod\", \"Default\" (Full mask): `"+journeyCondition+"`", choiceDescription(t, asked))
+		"1. \"Personal data in prod\", Full mask: `"+journeyCondition+"`", choiceDescription(t, asked))
 
 	calls := mock.calls()
 	require.Len(t, calls, 1)
@@ -211,9 +211,9 @@ func TestAdministerMaskingRulesStatesWhatEachTypeDoes(t *testing.T) {
 		phrase  string
 		unmasks bool
 	}{
-		"bb.default":         {`"Default" (Full mask)`, false},
+		"bb.default":         {"Full mask", false},
 		"redacted":           {`"Redacted" (Full mask)`, false},
-		"bb.default-partial": {`"Default Partial" (Partial mask)`, true},
+		"bb.default-partial": {"Partial mask", true},
 		"email":              {`"Email" (Hash (MD5))`, true},
 		"plain":              {`"Plain" (masks nothing)`, true},
 		"empty-range":        {`"Empty range" (masks nothing)`, true},
@@ -223,7 +223,7 @@ func TestAdministerMaskingRulesStatesWhatEachTypeDoes(t *testing.T) {
 	} {
 		diff, err := diffMaskingRules(nil, []*v1pb.MaskingRulePolicy_MaskingRule{maskingRule("r1", "", `resource.environment_id == "prod"`, id)}, types, "")
 		require.NoError(t, err, id)
-		require.Equal(t, []formChange{{"Add rule 1, " + want.phrase + ": `resource.environment_id == \"prod\"`", want.unmasks}}, diff.changes, id)
+		require.Equal(t, []formChange{{"Add rule 1, " + want.phrase + ": env \"prod\", every column", want.unmasks}}, diff.changes, id)
 	}
 }
 
@@ -243,36 +243,36 @@ func TestAdministerMaskingRulesStatesEachKindOfChange(t *testing.T) {
 		want              []formChange
 	}{
 		"removed": {stored: rules(prod), requested: nil,
-			want: []formChange{{"Remove, \"Default\" (Full mask): `resource.environment_id == \"prod\"`", true}}},
+			want: []formChange{{"Remove, Full mask: env \"prod\", every column", true}}},
 		"a full mask added before the kept rules": {stored: rules(test), requested: rules(prod, test),
-			want: []formChange{{"Add rule 1, \"Default\" (Full mask): `resource.environment_id == \"prod\"`", false}}},
+			want: []formChange{{"Add rule 1, Full mask: env \"prod\", every column", false}}},
 		"a partial mask added after the kept rules": {stored: rules(prod), requested: rules(prod, test),
-			want: []formChange{{"Add rule 2, \"Default Partial\" (Partial mask): `resource.environment_id == \"test\"`", true}}},
+			want: []formChange{{"Add rule 2, Partial mask: env \"test\", every column", true}}},
 		"moved": {stored: rules(prod, test), requested: rules(test, prod),
-			want: []formChange{{"Move to rule 2: `resource.environment_id == \"prod\"`", true}}},
+			want: []formChange{{"Move to rule 2: env \"prod\", every column", true}}},
 		"given a partial mask": {stored: rules(prod),
 			requested: rules(with(prod, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.SemanticType = "bb.default-partial" })),
-			want:      []formChange{{"Change type, \"Default\" (Full mask) to \"Default Partial\" (Partial mask): `resource.environment_id == \"prod\"`", true}}},
+			want:      []formChange{{"Change type, Full mask to Partial mask: env \"prod\", every column", true}}},
 		"given a full mask": {stored: rules(test),
 			requested: rules(with(test, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.SemanticType = "bb.default" })),
-			want:      []formChange{{"Change type, \"Default Partial\" (Partial mask) to \"Default\" (Full mask): `resource.environment_id == \"test\"`", false}}},
+			want:      []formChange{{"Change type, Partial mask to Full mask: env \"test\", every column", false}}},
 		"renamed": {stored: rules(prod),
 			requested: rules(with(prod, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.Condition.Title = "Production" })),
-			want:      []formChange{{"Rename to \"Production\": `resource.environment_id == \"prod\"`", false}}},
+			want:      []formChange{{"Rename to \"Production\": env \"prod\", every column", false}}},
 		"renamed to no title": {stored: rules(prod),
 			requested: rules(with(prod, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.Condition.Title = "" })),
-			want:      []formChange{{"Rename to untitled: `resource.environment_id == \"prod\"`", false}}},
+			want:      []formChange{{"Rename to untitled: env \"prod\", every column", false}}},
 		"given a full mask, moved and renamed": {stored: rules(test, prod),
 			requested: rules(prod, with(test, func(r *v1pb.MaskingRulePolicy_MaskingRule) {
 				r.SemanticType = "bb.default"
 				r.Condition.Title = "Testing"
 			})),
-			want: []formChange{{"Change type, \"Default Partial\" (Partial mask) to \"Default\" (Full mask); move to rule 2; rename to \"Testing\": `resource.environment_id == \"test\"`", true}}},
+			want: []formChange{{"Change type, Partial mask to Full mask; move to rule 2; rename to \"Testing\": env \"test\", every column", true}}},
 		"condition changed": {stored: rules(prod),
 			requested: rules(maskingRule("r3", "Prod", `resource.environment_id == "production"`, "bb.default")),
 			want: []formChange{
-				{"Remove, \"Default\" (Full mask): `resource.environment_id == \"prod\"`", true},
-				{"Add rule 1, \"Default\" (Full mask): `resource.environment_id == \"production\"`", false},
+				{"Remove, Full mask: env \"prod\", every column", true},
+				{"Add rule 1, Full mask: env \"production\", every column", false},
 			}},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -295,7 +295,7 @@ func TestAdministerMaskingRulesSaysAChangeCanUnmaskData(t *testing.T) {
 	require.Contains(t, resultText(t, res), "Not changed: the user declined")
 	require.Equal(t, strings.Join([]string{
 		`Change the masking rules, as alice@example.com?`,
-		"Remove, \"Default\" (Full mask): `resource.environment_id == \"prod\"`",
+		"Remove, Full mask: env \"prod\", every column",
 		maskingRulesUnmask,
 		maskingRulesApply,
 	}, "\n"), user.lastParams(t).Message)
@@ -316,12 +316,12 @@ func TestAdministerMaskingRulesLeavesTheFixedSentenceToAFullDescription(t *testi
 	require.Contains(t, resultText(t, res), "Not changed: the user declined")
 	require.Equal(t, strings.Join([]string{
 		`Change the masking rules, as alice@example.com?`,
-		"Remove, \"Default\" (Full mask): `resource.environment_id == \"prod\"`",
-		"Add rule 1, \"Default\" (Full mask): `resource.environment_id == \"test\"`",
+		"Remove, Full mask: env \"prod\", every column",
+		"Add rule 1, Full mask: env \"test\", every column",
 		maskingRulesUnmask,
 	}, "\n"), user.lastParams(t).Message)
 	require.Equal(t, "The masking rules, in the order masking tries them:\n"+
-		"1. \"Test\", \"Default\" (Full mask): `resource.environment_id == \"test\"`\n"+maskingRulesApply,
+		"1. \"Test\", Full mask: `resource.environment_id == \"test\"`\n"+maskingRulesApply,
 		choiceDescription(t, user.lastParams(t)))
 }
 
@@ -480,8 +480,8 @@ func TestAdministerMaskingRulesSuggestsStepsForAChangeThatFitsAFormAlone(t *test
 	mock := &maskingMock{}
 	prod := maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default")
 	mock.setStored(prod)
-	condition := `resource.environment_id == "prod" && resource.column_name in ["birth_date", "gender", "amount", "salary", "address", "phone"]`
-	require.Len(t, wrapMessageLine("Add rule 1, \"Default\" (Full mask): "+conditionText(condition)), 3, "the added rule takes three lines")
+	condition := `resource.environment_id == "prod" && (resource.column_name == "birth_date" || resource.column_name == "gender" || resource.column_name == "amount")`
+	require.Len(t, wrapMessageLine("Add rule 1, Full mask: "+maskingConditionText(condition)), 3, "the added rule takes three lines")
 	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
@@ -505,7 +505,7 @@ func TestAdministerMaskingRulesRemovesALongRuleItAdded(t *testing.T) {
 	mock := &maskingMock{}
 	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
-	rule := maskingRule("r1", "Salary amounts", `resource.database_name == "hr_test" && resource.table_name == "salary" && resource.column_name == "amount"`, "bb.default")
+	rule := maskingRule("r1", "Salary amounts", `resource.database_name == "hr_test" && resource.table_name == "salary" && (resource.column_name == "amount" || resource.column_name == "bonus")`, "bb.default")
 
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(true, rule))))
 	require.False(t, res.IsError, resultText(t, res))
@@ -540,7 +540,7 @@ func TestAdministerMaskingRulesPutsTheUnmaskEffectInTheQuestionWhenItsLineDoesNo
 // so a request that also adds a rule is told to take steps, and each step fits.
 func TestAdministerMaskingRulesReplacesALongRuleInSteps(t *testing.T) {
 	mock := &maskingMock{}
-	long := maskingRule("r1", "Salary amounts", `resource.database_name == "hr_test" && resource.table_name == "salary" && resource.column_name == "amount"`, "bb.default")
+	long := maskingRule("r1", "Salary amounts", `resource.database_name == "hr_test" && resource.table_name == "salary" && (resource.column_name == "amount" || resource.column_name == "bonus")`, "bb.default")
 	short := maskingRule("r2", "Amounts", `resource.column_name == "amount"`, "bb.default")
 	mock.setStored(long)
 	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
