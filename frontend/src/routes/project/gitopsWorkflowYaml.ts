@@ -18,6 +18,9 @@ export function bytebaseActionImage(serverVersion: string): string {
 // owner changes it.
 export const DEFAULT_MIGRATION_FOLDER = "migrations";
 
+// The folder the docs tell users to unzip the schema export into.
+export const DEFAULT_SCHEMA_FOLDER = "schema";
+
 // Written in place of the Bytebase URL while the workspace External URL is not
 // set. The page shows it marked and does not offer the files for copying.
 export const EXTERNAL_URL_PLACEHOLDER = "{EXTERNAL_URL}";
@@ -43,6 +46,10 @@ export interface WorkflowParams {
   // Environment IDs in deploy order, one deploy job each.
   environments: string[];
   folder: string;
+  // State-based (SDL): the folder holds the whole schema, which the export
+  // nests in subfolders, and the release is declarative. Left out, the files
+  // are migration-based.
+  declarative?: boolean;
 }
 
 export interface WorkflowFile {
@@ -81,7 +88,16 @@ export function generateWorkflowFiles(p: WorkflowParams): WorkflowFile[] {
   ];
 }
 
-const filePattern = (p: WorkflowParams) => `${p.folder}/*.sql`;
+const filePattern = (p: WorkflowParams) =>
+  p.declarative ? `${p.folder}/**/*.sql` : `${p.folder}/*.sql`;
+
+// Only the review and the release-creating rollout read the files, so only they
+// pass --declarative. A deploy job that takes --plan reuses the plan's release.
+const declarativeArg = (p: WorkflowParams) =>
+  p.declarative ? " --declarative" : "";
+// The same flag as its own continuation line in a GitHub `run: |` command.
+const githubDeclarative = (p: WorkflowParams) =>
+  p.declarative ? " \\\n            --declarative" : "";
 const targetList = (p: WorkflowParams) => p.targets.join(",");
 
 // Database names are free-form. A target list outside this set is quoted where
@@ -128,7 +144,7 @@ jobs:
             --url=$BYTEBASE_URL \\
             --project=projects/${p.projectId} \\
             --targets=${shellWord(targetList(p))} \\
-            --file-pattern=${filePattern(p)}
+            --file-pattern=${filePattern(p)}${githubDeclarative(p)}
 `;
 }
 
@@ -194,7 +210,7 @@ jobs:
             --url=$BYTEBASE_URL \\
             --project=$BYTEBASE_PROJECT \\
             --targets=${shellWord(targetList(p))} \\
-            --file-pattern=${filePattern(p)} \\
+            --file-pattern=${filePattern(p)}${githubDeclarative(p)} \\
             --output=\${{ runner.temp }}/bytebase-metadata.json
       - name: Set output
         id: set-output
@@ -258,7 +274,7 @@ bytebase-sql-review:
       aud: ${GENERATED_WORKFLOW_AUDIENCE}
 ${gitlabRules(p, '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH')}
   script:
-    - bytebase-action check --url=$BYTEBASE_URL --project=$BYTEBASE_PROJECT --targets="$BYTEBASE_TARGETS" --file-pattern=$BYTEBASE_FILE_PATTERN
+    - bytebase-action check --url=$BYTEBASE_URL --project=$BYTEBASE_PROJECT --targets="$BYTEBASE_TARGETS" --file-pattern=$BYTEBASE_FILE_PATTERN${declarativeArg(p)}
 
 bytebase-create-rollout:
   stage: deploy
@@ -268,7 +284,7 @@ bytebase-create-rollout:
       aud: ${GENERATED_WORKFLOW_AUDIENCE}
 ${gitlabRules(p, "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH")}
   script:
-    - bytebase-action rollout --url=$BYTEBASE_URL --project=$BYTEBASE_PROJECT --targets="$BYTEBASE_TARGETS" --file-pattern=$BYTEBASE_FILE_PATTERN --output=bytebase-metadata.json
+    - bytebase-action rollout --url=$BYTEBASE_URL --project=$BYTEBASE_PROJECT --targets="$BYTEBASE_TARGETS" --file-pattern=$BYTEBASE_FILE_PATTERN${declarativeArg(p)} --output=bytebase-metadata.json
   artifacts:
     paths: [bytebase-metadata.json]
 ${deployJobs.join("")}`;

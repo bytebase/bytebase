@@ -464,6 +464,7 @@ export function Combobox(props: ComboboxProps) {
       {/* Trigger */}
       <div
         ref={props.triggerRef}
+        data-slot="combobox-trigger"
         className={cn(
           // `flex-wrap` only matters for multi-select where chips can spill
           // onto a new line; in single-select mode it lets the X/chevron

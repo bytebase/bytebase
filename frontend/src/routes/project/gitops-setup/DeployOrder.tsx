@@ -1,9 +1,15 @@
+import { ArrowRight, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Popover,
   PopoverContent,
@@ -20,61 +26,53 @@ export const VISIBLE_DATABASES = 3;
 // The "+N more" list gets a search box above this many databases.
 const SEARCHABLE_DATABASES = 20;
 
-// The picked databases in the order the deploy reaches them: one section per
-// environment, joined by a line, and a warning for databases with no
-// environment.
-export function DeployOrder({ targets }: { readonly targets: DeployTargets }) {
+// The picked databases in the order the deploy reaches them: one line with the
+// environments and their counts, the full list behind "Deploy order", and a
+// warning for the databases the deploy skips or fails on.
+export function DeployOrder({
+  targets,
+  unsupported,
+}: {
+  readonly targets: DeployTargets;
+  // The databases whose engine the picked workflow type does not support.
+  readonly unsupported: Database[];
+}) {
   const { t } = useTranslation();
-  const { stages, unassigned, total } = targets;
+  const { stages, unassigned } = targets;
+  const deployed = stages.reduce(
+    (count, stage) => count + stage.databases.length,
+    0
+  );
   return (
-    <div className="flex flex-col gap-y-3">
+    <div className="flex flex-col gap-y-2">
       {stages.length > 0 && (
-        <div className="flex flex-col gap-y-2">
-          {total > VISIBLE_DATABASES && (
-            <p className="text-sm text-control-light">
-              {t("gitops.setup.deploy-order.summary", {
-                databases: t("gitops.setup.deploy-order.database-count", {
-                  count: total,
-                }),
-                environments: t("gitops.setup.deploy-order.environment-count", {
-                  count: stages.length,
-                }),
-              })}
-            </p>
-          )}
-          <ol
-            aria-label={t("gitops.setup.deploy-order.label")}
-            className="rounded-sm border border-block-border px-4 py-1"
-          >
-            {stages.map((stage, index) => (
-              <li
-                key={stage.environment}
-                className="relative flex flex-col gap-y-2 py-3 pl-8"
-              >
-                {index > 0 && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute top-0 left-3 h-6 w-px -translate-x-1/2 bg-control-border"
-                  />
-                )}
-                {index < stages.length - 1 && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute top-6 bottom-0 left-3 w-px -translate-x-1/2 bg-control-border"
-                  />
-                )}
-                <span
+        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-control">
+          <span>
+            {t("gitops.setup.deploy-order.summary", {
+              databases: t("gitops.setup.deploy-order.database-count", {
+                count: deployed,
+              }),
+              environments: t("gitops.setup.deploy-order.environment-count", {
+                count: stages.length,
+              }),
+            })}
+          </span>
+          {stages.map((stage, index) => (
+            <span
+              key={stage.environment}
+              className="inline-flex items-center gap-x-1.5"
+            >
+              {index > 0 && (
+                <ArrowRight
                   aria-hidden="true"
-                  className="absolute top-6 left-3 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-control-border bg-background"
+                  className="size-3.5 text-control-light"
                 />
-                <div className="flex h-6 items-center">
-                  <EnvironmentLabel environmentName={stage.environment} />
-                </div>
-                <DatabaseChips databases={stage.databases} />
-              </li>
-            ))}
-          </ol>
-        </div>
+              )}
+              <EnvironmentLabel environmentName={stage.environment} />
+              <span className="tabular-nums">({stage.databases.length})</span>
+            </span>
+          ))}
+        </p>
       )}
       {unassigned.length > 0 && (
         <Alert
@@ -89,7 +87,79 @@ export function DeployOrder({ targets }: { readonly targets: DeployTargets }) {
           <DatabaseChips className="mt-2" databases={unassigned} />
         </Alert>
       )}
+      {unsupported.length > 0 && (
+        <Alert
+          variant="warning"
+          title={t("gitops.setup.deploy-order.unsupported-title", {
+            count: unsupported.length,
+          })}
+          description={t("gitops.setup.deploy-order.unsupported-description", {
+            count: unsupported.length,
+          })}
+        >
+          <DatabaseChips className="mt-2" databases={unsupported} />
+        </Alert>
+      )}
+      {stages.length > 0 && (
+        <Collapsible>
+          <CollapsibleTrigger className="group w-auto self-start text-sm font-medium text-accent hover:underline">
+            <ChevronRight
+              aria-hidden="true"
+              className="size-4 transition-transform group-data-[panel-open]:rotate-90"
+            />
+            {t("gitops.setup.deploy-order.label")}
+          </CollapsibleTrigger>
+          <CollapsiblePanel className="flex flex-col gap-y-2 pt-2">
+            <DeployOrderList stages={stages} />
+            <p className="text-xs text-control-light">
+              {t("gitops.setup.databases.deploy-order-hint")}
+            </p>
+          </CollapsiblePanel>
+        </Collapsible>
+      )}
     </div>
+  );
+}
+
+function DeployOrderList({
+  stages,
+}: {
+  readonly stages: DeployTargets["stages"];
+}) {
+  const { t } = useTranslation();
+  return (
+    <ol
+      aria-label={t("gitops.setup.deploy-order.label")}
+      className="rounded-sm border border-block-border px-4 py-1"
+    >
+      {stages.map((stage, index) => (
+        <li
+          key={stage.environment}
+          className="relative flex flex-col gap-y-2 py-3 pl-8"
+        >
+          {index > 0 && (
+            <span
+              aria-hidden="true"
+              className="absolute top-0 left-3 h-6 w-px -translate-x-1/2 bg-control-border"
+            />
+          )}
+          {index < stages.length - 1 && (
+            <span
+              aria-hidden="true"
+              className="absolute top-6 bottom-0 left-3 w-px -translate-x-1/2 bg-control-border"
+            />
+          )}
+          <span
+            aria-hidden="true"
+            className="absolute top-6 left-3 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-control-border bg-background"
+          />
+          <div className="flex h-6 items-center">
+            <EnvironmentLabel environmentName={stage.environment} />
+          </div>
+          <DatabaseChips databases={stage.databases} />
+        </li>
+      ))}
+    </ol>
   );
 }
 

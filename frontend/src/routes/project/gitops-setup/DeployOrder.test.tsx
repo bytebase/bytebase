@@ -55,8 +55,16 @@ describe("DeployOrder", () => {
   let container: HTMLDivElement;
   let root: ReturnType<typeof createRoot>;
 
-  const render = (targets: DeployTargets) => {
-    act(() => root.render(<DeployOrder targets={targets} />));
+  const render = (targets: DeployTargets, unsupported: Database[] = []) => {
+    act(() =>
+      root.render(<DeployOrder targets={targets} unsupported={unsupported} />)
+    );
+  };
+  const openList = () => {
+    const trigger = [...container.querySelectorAll("button")].find((b) =>
+      b.textContent?.includes("gitops.setup.deploy-order.label")
+    );
+    act(() => trigger?.click());
   };
 
   beforeEach(() => {
@@ -70,32 +78,70 @@ describe("DeployOrder", () => {
     container.remove();
   });
 
-  test("shows one section per environment in the given order", () => {
+  test("sums up the environments in order, with the list behind a toggle", () => {
     render({
       stages: [
-        { environment: "environments/test", id: "test", databases: [db("t1")] },
+        {
+          environment: "environments/test",
+          id: "test",
+          databases: many("t", 4),
+        },
         { environment: "environments/prod", id: "prod", databases: [db("p1")] },
       ],
-      unassigned: [],
-      total: 2,
-      loading: false,
-    });
-    const environments = [
-      ...container.querySelectorAll('[data-testid="environment"]'),
-    ].map((e) => e.textContent);
-    expect(environments).toEqual(["environments/test", "environments/prod"]);
-    // Two databases: no total line and no "+N more".
-    expect(container.textContent).not.toContain("gitops.setup.deploy-order.summary");
-    expect(container.querySelector('[data-testid="more"]')).toBeNull();
-  });
-
-  test("shows three chips, then +N more, and the total above three", () => {
-    render({
-      stages: [{ environment: "environments/prod", id: "prod", databases: many("p", 5) }],
       unassigned: [],
       total: 5,
       loading: false,
     });
+    expect(container.textContent).toContain(
+      'database-count {\\"count\\":5}'
+    );
+    const environments = () =>
+      [...container.querySelectorAll('[data-testid="environment"]')].map(
+        (e) => e.textContent
+      );
+    expect(environments()).toEqual(["environments/test", "environments/prod"]);
+    expect(container.textContent).toContain("(4)");
+    expect(container.querySelector("li")).toBeNull();
+
+    openList();
+    expect(container.querySelectorAll("li")).toHaveLength(2);
+  });
+
+  test("lists the databases the workflow type does not support", () => {
+    const stage = {
+      environment: "environments/prod",
+      id: "prod",
+      databases: [db("p1"), db("mongo1")],
+    };
+    const targets = { stages: [stage], unassigned: [], total: 2, loading: false };
+    render(targets);
+    expect(container.textContent).not.toContain("unsupported-title");
+
+    render(targets, [db("mongo1")]);
+    expect(container.textContent).toContain(
+      'gitops.setup.deploy-order.unsupported-title {"count":1}'
+    );
+    expect(
+      [...container.querySelectorAll('[data-testid="database"]')].map(
+        (e) => e.textContent
+      )
+    ).toEqual(["instances/pg/databases/mongo1"]);
+  });
+
+  test("the list shows three chips, then +N more", () => {
+    render({
+      stages: [
+        {
+          environment: "environments/prod",
+          id: "prod",
+          databases: many("p", 5),
+        },
+      ],
+      unassigned: [],
+      total: 5,
+      loading: false,
+    });
+    openList();
     const section = container.querySelector("li");
     const chips = [
       ...(section?.querySelectorAll('[data-testid="database"]') ?? []),
@@ -108,12 +154,13 @@ describe("DeployOrder", () => {
     expect(container.querySelector('[data-testid="more"]')?.textContent).toBe(
       'common.n-more {"n":2}'
     );
-    expect(container.textContent).toContain("gitops.setup.deploy-order.summary");
   });
 
-  test("warns about databases with no environment", () => {
+  test("warns about databases with no environment, outside the toggle", () => {
     render({
-      stages: [{ environment: "environments/prod", id: "prod", databases: [db("p1")] }],
+      stages: [
+        { environment: "environments/prod", id: "prod", databases: [db("p1")] },
+      ],
       unassigned: [db("old1"), db("old2")],
       total: 3,
       loading: false,
@@ -123,5 +170,9 @@ describe("DeployOrder", () => {
       'gitops.setup.deploy-order.unassigned-title {"count":2}'
     );
     expect(alert?.textContent).toContain("instances/pg/databases/old2");
+    // The summary counts only the databases that are deployed.
+    expect(container.textContent).toContain(
+      'database-count {\\"count\\":1}'
+    );
   });
 });
