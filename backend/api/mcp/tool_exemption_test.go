@@ -484,12 +484,17 @@ func TestMaskingExemptionToolsRefuseAFormTooLongBeforeAsking(t *testing.T) {
 		"a grant naming more columns than the description has rows for": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod-analytics-replica/databases/hr_reporting",
 			"table": "employee_compensation", "columns": manyColumns,
-		}, "the names of this exemption's columns need 12 lines, more than the 10 one confirmation form has room for under its choice, so nothing changed",
+		}, "the names of this exemption's columns need 12 lines, more than the 8 one confirmation form has room for under its choice, so nothing changed",
 			"exempt fewer columns at a time, or grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 		"a grant naming columns that do not fit even one at a time": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/" + longest + "/databases/" + longest,
 			"table": "employee", "columns": []string{"birth_date", "gender"},
 		}, tooManyLines, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+		// The counted scope is longer than a scope that names one column.
+		"a grant whose columns each fit a form, where their count does not": {"grant_masking_exemption", map[string]any{
+			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/inst-payments-eu-west/databases/payroll_archive_2026",
+			"schema": "public", "table": "employee_compensation_hist", "columns": []string{"base_salary", "bonus", "ssn"},
+		}, tooManyLines, "exempt fewer columns at a time, or grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 		"a grant of one long column": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/" + longest + "/databases/" + longest,
 			"table": "employee", "columns": []string{"birth_date"},
@@ -719,12 +724,12 @@ func TestRevokeMaskingExemptionNamesWhatItEnds(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			_, scope, expiry := revokeScope(RevokeMaskingExemptionInput{Project: "projects/hr", Member: "user:bob@example.com", Condition: tc.condition})
+			scope, expiry := revokeScope(RevokeMaskingExemptionInput{Project: "projects/hr", Member: "user:bob@example.com", Condition: tc.condition})
 			require.Equal(t, tc.scope, scope)
 			require.Equal(t, tc.expiry, expiry)
 		})
 	}
-	_, scope, _ := revokeScope(RevokeMaskingExemptionInput{Project: "projects/hr", Member: "allUsers",
+	scope, _ := revokeScope(RevokeMaskingExemptionInput{Project: "projects/hr", Member: "allUsers",
 		Condition: `(resource.instance_id == "prod" && resource.database_name == "hr" && resource.table_name == "employee" && resource.column_name in ["salary", "bonus"])`})
 	require.Equal(t, `Database "hr" on instance "prod", any schema, columns "salary", "bonus" in "employee"`, scope,
 		"a member a grant refuses, such as allUsers, still reads in the grant's words")
@@ -967,4 +972,36 @@ func TestRevokeMaskingExemptionStatesEveryExemptionAFormGrants(t *testing.T) {
 	require.Positive(t, listed, "the sweep must reach a grant that lists its columns under the choice")
 	require.Greater(t, granted, listed)
 	require.Positive(t, refused, "and one no form states")
+}
+
+// The rows that name the columns leave two: the reason on a grant, and on a
+// revoke the note on matching entries and the expiry. So the description of
+// either form keeps to the rows an 80-by-24 terminal shows.
+func TestMaskingExemptionColumnsLeaveTheNotesTheirRows(t *testing.T) {
+	ctx := withUserEmail(context.Background(), "alice@example.com")
+	input := GrantMaskingExemptionInput{
+		Project: "projects/hr", Member: "user:bob@example.com", Database: "instances/prod-payments-us-east-1/databases/payments_ledger_prod",
+		Table: "salary", ExpireTime: "2026-12-01T00:00:00Z",
+	}
+	most := 0
+	for n := 4; n <= 70; n++ {
+		input.Columns = append(input.Columns[:0], make([]string, n)...)
+		for i := range input.Columns {
+			input.Columns[i] = fmt.Sprintf("column_%02d", i)
+		}
+		g, err := parseExemptionGrant(input)
+		require.NoError(t, err)
+		grant, tooLong, fewer := describeExemptionGrant(ctx, g)
+		if tooLong != "" {
+			require.True(t, fewer, "%d columns", n)
+			continue
+		}
+		revoke, tooLong := describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: input.Project, Member: input.Member, Condition: g.condition()})
+		require.Empty(t, tooLong)
+		require.NotEmpty(t, revoke.expiry, "the counted scope's line has no room for the expiry")
+		require.LessOrEqual(t, len(grant.columns)+1, descriptionLines)
+		require.LessOrEqual(t, len(revoke.columns)+2, descriptionLines)
+		most = max(most, len(grant.columns))
+	}
+	require.Equal(t, exemptionColumnRows, most, "the sweep must reach the most rows the columns take")
 }

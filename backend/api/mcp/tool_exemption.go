@@ -505,27 +505,50 @@ func describeExemptionGrant(ctx context.Context, g *exemptionGrant) (form exempt
 	return fitExemptionScope(ctx, fmt.Sprintf("Exempt %q", g.member), " from masking", g, effect)
 }
 
+// exemptionColumnRows are the rows of an exemption form's description that
+// name its columns. The reason, or a revoke's two notes, follow them in the
+// rows descriptionLines leaves.
+const exemptionColumnRows = descriptionLines - 2
+
 // fitExemptionScope builds the form of an exemption with g's scope. The
 // message names the columns when it has room, and counts them otherwise, with
 // their names first under the choice. A grant and the revoke of what it wrote
-// share this, so no form grants an exemption that no form revokes.
+// share this, so no form grants an exemption that no form revokes. fewer
+// reports that a refused exemption fits with fewer columns.
 func fitExemptionScope(ctx context.Context, head, rest string, g *exemptionGrant, effect string) (form exemptionForm, tooLong string, fewer bool) {
 	message, tooLong := fitExemption(ctx, head, rest, exemptionScope(g, false), effect)
 	if tooLong == "" || len(g.columns) == 0 {
 		return exemptionForm{message: message}, tooLong, false
 	}
 	if message, tooLong = fitExemption(ctx, head, rest, exemptionScope(g, true), effect); tooLong != "" {
-		return exemptionForm{message: message}, tooLong, false
+		// The counted scope is longer than a scope that names one column.
+		return exemptionForm{message: message}, tooLong, eachColumnFits(ctx, head, rest, g, effect)
 	}
 	label := "Columns: "
 	if len(g.columns) == 1 {
 		label = "Column: "
 	}
 	columns := wrapLine(label+quoteAll(g.columns), descriptionLineWidth)
-	if len(columns) > descriptionLines {
-		return exemptionForm{message: message}, fmt.Sprintf("the names of this exemption's columns need %d lines, more than the %d one confirmation form has room for under its choice, so nothing changed", len(columns), descriptionLines), len(g.columns) > 1
+	if len(columns) > exemptionColumnRows {
+		return exemptionForm{message: message}, fmt.Sprintf("the names of this exemption's columns need %d lines, more than the %d one confirmation form has room for under its choice, so nothing changed", len(columns), exemptionColumnRows), len(g.columns) > 1
 	}
 	return exemptionForm{message: message, columns: columns}, "", false
+}
+
+// eachColumnFits reports whether every column of an exemption that names
+// several fits a form alone, so fewer columns at a time can help.
+func eachColumnFits(ctx context.Context, head, rest string, g *exemptionGrant, effect string) bool {
+	if len(g.columns) < 2 {
+		return false
+	}
+	for _, column := range g.columns {
+		one := *g
+		one.columns = []string{column}
+		if _, tooLong := fitExemption(ctx, head, rest, exemptionScope(&one, false), effect); tooLong != "" {
+			return false
+		}
+	}
+	return true
 }
 
 // exemptionScope names what the grant covers. counted states the columns by
@@ -592,46 +615,55 @@ func describeColumns(columns []string, table string, counted bool) string {
 func describeExemptionRevoke(ctx context.Context, input RevokeMaskingExemptionInput) (form exemptionForm, tooLong string) {
 	const effect = "Ends their bypass of masking here, unless another exemption covers it."
 	head, rest := fmt.Sprintf("Revoke %q", input.Member), "'s masking exemption"
-	g, scope, until := revokeScope(input)
+	scope, until := revokeScope(input)
 	if until != "" {
 		if message, tooLong := fitExemption(ctx, head, rest, fmt.Sprintf("%s, until %q", scope, until), effect); tooLong == "" {
 			return exemptionForm{message: message}, ""
 		}
 		form.expiry = fmt.Sprintf("It would expire %q.", until)
 	}
-	if g == nil {
-		form.message, tooLong = fitExemption(ctx, head, rest, scope, effect)
-		return form, tooLong
+	if g, ok := revokedGrant(input); ok {
+		scoped, tooLong, _ := fitExemptionScope(ctx, head, rest, g, effect)
+		scoped.expiry = form.expiry
+		return scoped, tooLong
 	}
-	scoped, tooLong, _ := fitExemptionScope(ctx, head, rest, g, effect)
-	scoped.expiry = form.expiry
-	return scoped, tooLong
+	form.message, tooLong = fitExemption(ctx, head, rest, scope, effect)
+	return form, tooLong
 }
 
-// revokeScope names the exemption the revoke ends, and its expiry apart. A
-// condition in the form a grant writes reads in the grant's words, and g is
-// then that grant. Any other shows through conditionText, with its expiry
-// apart when splitExemptionExpiry can split one off.
-func revokeScope(input RevokeMaskingExemptionInput) (g *exemptionGrant, scope, expiry string) {
+// revokedGrant returns the grant that wrote the revoke's condition, when one
+// could have.
+func revokedGrant(input RevokeMaskingExemptionInput) (*exemptionGrant, bool) {
 	// An all-databases grant with no expiry writes no condition, which CEL
 	// cannot parse.
 	if input.Condition == "" {
-		g = &exemptionGrant{project: input.Project}
-		return g, exemptionScope(g, false), ""
+		return &exemptionGrant{project: input.Project}, true
+	}
+	parsed, ok := parseExemptionCondition(input.Condition)
+	if !ok {
+		return nil, false
+	}
+	return exemptionGrantOf(input, parsed)
+}
+
+// revokeScope names the exemption the revoke ends, and its expiry apart. A
+// condition in the form a grant writes reads in the grant's words. Any other
+// shows through conditionText, with its expiry apart when splitExemptionExpiry
+// can split one off.
+func revokeScope(input RevokeMaskingExemptionInput) (scope, expiry string) {
+	if g, ok := revokedGrant(input); ok {
+		return exemptionScope(g, false), g.expireTime
 	}
 	projectID, _ := common.GetProjectID(input.Project)
 	parsed, ok := parseExemptionCondition(input.Condition)
 	if !ok {
-		return nil, fmt.Sprintf("Project %q: %s", projectID, conditionText(input.Condition)), ""
-	}
-	if g, ok := exemptionGrantOf(input, parsed); ok {
-		return g, exemptionScope(g, false), g.expireTime
+		return fmt.Sprintf("Project %q: %s", projectID, conditionText(input.Condition)), ""
 	}
 	condition, expiry := splitExemptionExpiry(input.Condition, parsed)
 	if condition == "" {
-		return nil, fmt.Sprintf("Project %q: all databases", projectID), expiry
+		return fmt.Sprintf("Project %q: all databases", projectID), expiry
 	}
-	return nil, fmt.Sprintf("Project %q: %s", projectID, conditionText(condition)), expiry
+	return fmt.Sprintf("Project %q: %s", projectID, conditionText(condition)), expiry
 }
 
 // parseExemptionCondition parses an exemption's condition, or reports false for

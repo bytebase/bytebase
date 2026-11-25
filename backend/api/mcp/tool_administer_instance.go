@@ -385,7 +385,7 @@ func instanceForm(ctx context.Context, c *instanceCreation, maskingSkips bool, l
 	}
 	return nil, &toolError{
 		Code:       "CHANGE_TOO_LONG",
-		Message:    fmt.Sprintf("this instance needs %d lines, more than the %d one confirmation form shows, so no instance was added", needed, messageLines),
+		Message:    fmt.Sprintf("this instance needs more lines than the %d one confirmation form shows, so no instance was added", messageLines),
 		Suggestion: suggestion,
 	}
 }

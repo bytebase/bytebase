@@ -506,31 +506,33 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 	if len(diff.requested) < 2 {
 		rules.apply = ""
 	}
-	if form := rules.whole(ctx, maskingRulesQuestion, diff.changes, maskingRulesUnmask, maskingRuleList(diff, false)); form != nil {
+	if form := rules.whole(ctx, maskingRulesQuestion, diff.changes, maskingRulesUnmask, maskingRuleSection(diff, false)); form != nil {
 		return form, nil
 	}
 	// A removal shows the effect and adding a full-mask rule does not, so
 	// without this the message could state a rule's add whole and only count
 	// its removal. The question may pass messageLineWidth: Claude Code cuts a
 	// long row, which costs a narrow terminal only the account at its end.
-	if slices.ContainsFunc(diff.changes, func(change formChange) bool { return change.effect }) {
-		if form := rules.whole(ctx, maskingRulesQuestionWithEffect, diff.changes, "", maskingRuleList(diff, false)); form != nil {
-			return form, nil
-		}
+	if form := rules.whole(ctx, maskingRulesQuestionWithEffect, diff.changes, "", maskingRuleSection(diff, false)); form != nil {
+		return form, nil
 	}
-	return rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, maskingRuleList(diff, true), link)
+	alone := func(change formChange) bool {
+		return rules.alone(ctx, maskingRulesQuestion, change, maskingRulesUnmask) || rules.alone(ctx, maskingRulesQuestionWithEffect, change, "")
+	}
+	return rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, maskingRuleSection(diff, true), link,
+		!slices.ContainsFunc(diff.changes, func(change formChange) bool { return !alone(change) }))
 }
 
-// maskingRuleList is what the description says of the rules a change leaves.
+// maskingRuleSection is what the description says of the rules a change leaves.
 // Every line names its rule's type: the order decides which rule masks a
 // column, and a move's change line shows no type. A kept rule, which no change
 // line shows, gives its scope. A new or changed one gives the CEL it stores,
 // unless the description lists the changes itself, right above it.
-func maskingRuleList(diff *maskingRulesDiff, listed bool) ruleList {
+func maskingRuleSection(diff *maskingRulesDiff, listed bool) ruleSection {
 	if len(diff.requested) == 0 {
-		return ruleList{empty: "No masking rule is left, so each column keeps its own semantic type."}
+		return ruleSection{empty: "No masking rule is left, so each column keeps its own semantic type."}
 	}
-	list := ruleList{header: "The masking rules, in the order masking tries them:"}
+	list := ruleSection{header: "The masking rules, in the order masking tries them:"}
 	for i, rule := range diff.requested {
 		line := fmt.Sprintf("%d. %s (%s), %s", i+1, maskingRuleTitle(rule), diff.marks[i], diff.typePhrase(rule.GetSemanticType()))
 		switch {

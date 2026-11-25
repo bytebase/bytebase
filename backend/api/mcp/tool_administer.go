@@ -644,7 +644,7 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 		}
 	}
 	line, fallback := fallbackLine(diff.fallback)
-	list := ruleList{before: []string{line}}
+	list := ruleSection{before: []string{line}}
 	switch {
 	case len(diff.requested) == 0 && fallback:
 		list.empty = "No rule for database changes is left, so the fallback rules decide every database change."
@@ -668,11 +668,16 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 	return approvalRules.form(ctx, changes, countLine(len(changes), diff.marks, unapproved), issues, list, link)
 }
 
+// fallbackRows bounds the fallback line. The stored fallback rules are not
+// the change's, so the line must leave the change its rows whatever they hold.
+const fallbackRows = 3
+
 // fallbackLine names the fallback rules a database change goes to when no rule
 // for database changes matches, and reports whether any can match. The
 // approval check tries them in order, skips one with no condition and lets
 // "true" match every change (review.matchRulesForSource); a change no
-// fallback rule matches needs no approval.
+// fallback rule matches needs no approval. The line names as many rules as
+// fallbackRows hold, from the first tried, and counts the rest.
 func fallbackLine(rules []*v1pb.WorkspaceApprovalSetting_Rule) (string, bool) {
 	var named []string
 	catchAll := false
@@ -692,11 +697,23 @@ func fallbackLine(rules []*v1pb.WorkspaceApprovalSetting_Rule) (string, bool) {
 	if len(named) == 0 {
 		return "A change no rule matches needs no approval.", false
 	}
-	line := "Unmatched changes go to the fallback rules: " + strings.Join(named, ", ") + "."
+	unmatched := ""
 	if !catchAll {
-		line += " A change no fallback rule matches needs no approval."
+		unmatched = " A change no fallback rule matches needs no approval."
 	}
-	return line, true
+	for shown := len(named); shown > 0; shown-- {
+		line := "Unmatched changes go to the fallback rules: " + strings.Join(named[:shown], ", ")
+		if rest := len(named) - shown; rest > 0 {
+			line += fmt.Sprintf(" and %d more", rest)
+		}
+		if line += "." + unmatched; len(wrapLine(line, descriptionLineWidth)) <= fallbackRows {
+			return line, true
+		}
+	}
+	if len(named) == 1 {
+		return "Unmatched changes go to a fallback rule too long to name here." + unmatched, true
+	}
+	return fmt.Sprintf("Unmatched changes go to %d fallback rules too long to name here.", len(named)) + unmatched, true
 }
 
 // formChange is one change line of a form. effect marks a change that the
@@ -706,10 +723,11 @@ type formChange struct {
 	effect bool
 }
 
-// ruleList is what a rule form's description says of the rules a change
-// leaves. Only before counts toward refusing a change: empty shows on a
-// removal alone, and a rule a form adds must not be refused its removal for it.
-type ruleList struct {
+// ruleSection is what a rule form's description says of the rules a change
+// leaves. Only before counts toward refusing a change, and its builder bounds
+// it: empty shows on a removal alone, and a rule a form adds must not be
+// refused its removal for it.
+type ruleSection struct {
 	before []string
 	header string
 	rules  []string
@@ -718,41 +736,54 @@ type ruleList struct {
 
 // form builds a rule entry's form: the change lines in the message when they
 // fit it, and counted there by count and listed under the choice otherwise.
-func (r adminRules) form(ctx context.Context, changes []formChange, count, effect string, list ruleList, link string) (*adminForm, error) {
+func (r adminRules) form(ctx context.Context, changes []formChange, count, effect string, list ruleSection, link string) (*adminForm, error) {
 	if form := r.whole(ctx, r.question, changes, effect, list); form != nil {
 		return form, nil
 	}
-	return r.listed(ctx, changes, count, effect, list, link)
+	alone := func(change formChange) bool { return r.alone(ctx, r.question, change, effect) }
+	return r.listed(ctx, changes, count, effect, list, link, !slices.ContainsFunc(changes, func(change formChange) bool { return !alone(change) }))
+}
+
+// alone reports whether the message of a form under question has room for
+// change by itself.
+func (adminRules) alone(ctx context.Context, question string, change formChange, effect string) bool {
+	return len(fitMessage(questionLines(ctx, question, ""), []formChange{change}, effect)) <= messageLines
 }
 
 // whole returns the form whose message states every change under question, or
 // nil when that takes more lines than a form shows.
-func (r adminRules) whole(ctx context.Context, question string, changes []formChange, effect string, list ruleList) *adminForm {
+func (r adminRules) whole(ctx context.Context, question string, changes []formChange, effect string, list ruleSection) *adminForm {
 	lines := fitMessage(questionLines(ctx, question, ""), changes, effect)
 	if len(lines) > messageLines {
 		return nil
 	}
 	lines, fixed := withFixed(lines, r.apply)
+	// With no change to list, the description always has room: the lines
+	// before the rule list are bounded (fallbackRows), and the list is cut.
 	description, _ := describeRules(nil, list, fixed)
 	return &adminForm{message: strings.Join(lines, "\n"), description: description}
 }
 
 // listed returns the form whose message counts the changes and whose
 // description lists them first, or refuses a change it has no room for.
-func (r adminRules) listed(ctx context.Context, changes []formChange, count, effect string, list ruleList, link string) (*adminForm, error) {
-	question := questionLines(ctx, r.question, "")
-	lines := append(slices.Clone(question), wrapMessageLine(count)...)
+// eachAlone says that a message has room for each change by itself, so the
+// agent may offer them in steps.
+func (r adminRules) listed(ctx context.Context, changes []formChange, count, effect string, list ruleSection, link string, eachAlone bool) (*adminForm, error) {
+	lines := append(questionLines(ctx, r.question, ""), wrapMessageLine(count)...)
+	before := 0
+	for _, line := range list.before {
+		before += len(wrapLine(line, descriptionLineWidth))
+	}
 	var texts []string
 	tooLong := ""
-	affected, eachFitsTheMessage := false, true
+	affected := false
 	for _, change := range changes {
 		texts = append(texts, change.text)
 		affected = affected || change.effect
-		if tooLong == "" && len(wrapLine(change.text, descriptionLineWidth)) > descriptionLines {
+		// Every step carries the lines before the list, so a change with no
+		// room beside them fits no form.
+		if tooLong == "" && before+len(wrapLine(change.text, descriptionLineWidth)) > descriptionLines {
 			tooLong = change.text
-		}
-		if len(fitMessage(question, []formChange{change}, effect)) > messageLines {
-			eachFitsTheMessage = false
 		}
 	}
 	if affected && effect != "" {
@@ -764,8 +795,7 @@ func (r adminRules) listed(ctx context.Context, changes []formChange, count, eff
 		return nil, changeTooLong(needed, tooLong, r, link)
 	}
 	form := &adminForm{message: strings.Join(lines, "\n"), description: description}
-	// Steps put each change in a message only when each fits one alone.
-	if eachFitsTheMessage && len(changes) > 1 {
+	if eachAlone && len(changes) > 1 {
 		form.inSteps = "The form listed the rule changes under its choice, where a client may show one line of them. If the user wants each change in the form's message, " + r.steps("a rule or two")
 	}
 	return form, nil
@@ -828,7 +858,7 @@ func countLine(changes int, marks []string, unapproved int) string {
 // the changes the message only counts and the lines before the list, then as
 // much of the list as fits. needed passes descriptionLines when the first two
 // do not fit.
-func describeRules(changes []string, list ruleList, fixed string) (description string, needed int) {
+func describeRules(changes []string, list ruleSection, fixed string) (description string, needed int) {
 	var rows []string
 	for _, line := range slices.Concat(changes, list.before) {
 		rows = append(rows, wrapLine(line, descriptionLineWidth)...)
@@ -836,17 +866,18 @@ func describeRules(changes []string, list ruleList, fixed string) (description s
 	if len(rows) > descriptionLines {
 		return "", len(rows)
 	}
-	rows = append(rows, listRows(list, descriptionLines-len(rows))...)
+	rows = append(rows, sectionRows(list, descriptionLines-len(rows))...)
 	if wrapped := wrapLine(fixed, descriptionLineWidth); fixed != "" && len(rows)+len(wrapped) <= descriptionLines {
 		rows = append(rows, wrapped...)
 	}
 	return strings.Join(rows, "\n"), len(rows)
 }
 
-// listRows returns the header and the rules that fit room rows, from the first
-// tried, then a row that counts the rest and says where they sit: a rule left
-// out can still be tried before one the change adds.
-func listRows(list ruleList, room int) []string {
+// sectionRows returns the header and the rules that fit room rows, from the
+// first tried, then a row that counts the rest and says where they sit: a rule
+// left out can still be tried before one the change adds. When not even the
+// first rule fits, one row counts them all.
+func sectionRows(list ruleSection, room int) []string {
 	if len(list.rules) == 0 {
 		if rows := wrapLine(list.empty, descriptionLineWidth); list.empty != "" && len(rows) <= room {
 			return rows
@@ -857,17 +888,20 @@ func listRows(list ruleList, room int) []string {
 	for i, rule := range list.rules {
 		wrapped := wrapLine(rule, descriptionLineWidth)
 		left := len(list.rules) - i
-		if len(rows)+len(wrapped)+min(left-1, 1) > room {
-			if i == 0 {
-				return nil
-			}
-			noun := "rules"
-			if left == 1 {
-				noun = "rule"
-			}
-			return append(rows, fmt.Sprintf("... and %d more %s, tried after these.", left, noun))
+		if len(rows)+len(wrapped)+min(left-1, 1) <= room {
+			rows = append(rows, wrapped...)
+			continue
 		}
-		rows = append(rows, wrapped...)
+		switch {
+		case i > 0 && left == 1:
+			return append(rows, "... and 1 more rule, tried after these.")
+		case i > 0:
+			return append(rows, fmt.Sprintf("... and %d more rules, tried after these.", left))
+		case room > 0:
+			return []string{capitalize(countRules(left)) + " in all, not listed here."}
+		default:
+			return nil
+		}
 	}
 	return rows
 }
@@ -1041,10 +1075,10 @@ func issuesLine(issues []string, more bool) string {
 	return line + rest(0) + underRules
 }
 
-// continuedLine starts each continuation of a wrapped line. Every first line
-// starts with a letter, so no part of a long value can pose as a line of its
-// own. The text goes on right after the mark with nothing left out, so a reader
-// can tell a break inside a value (">rest") from one before a space ("> rest").
+// continuedLine starts each continuation of a wrapped line. No first row
+// starts with it, so no part of a long value can pose as a row of its own. The
+// text goes on right after the mark with nothing left out, so a reader can
+// tell a break inside a value (">rest") from one before a space ("> rest").
 const continuedLine = ">"
 
 // wrapMessageLine breaks line into the rows of a form's message.
@@ -1054,7 +1088,7 @@ func wrapMessageLine(line string) []string {
 
 // wrapLine breaks line into rows of at most width columns, each continuation
 // starting with continuedLine. It never takes more rows than filling every row
-// would, since a form shows four: a row ends before a space, or after a
+// would, since a form's rows are few: a row ends before a space, or after a
 // separator of a name or a path, only when that costs no row.
 func wrapLine(line string, width int) []string {
 	var rows []string

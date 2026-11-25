@@ -843,6 +843,14 @@ func TestAdministerMaskingRulesOffersStepsWhenAListedChangeIsChangedInChat(t *te
 	whole := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, rules[:2]...)))))
 	require.Equal(t, changed, whole)
 
+	// A rule the message states alone only with the unmask effect in its
+	// question counts as one a step can state.
+	folded := maskingRule("r-folded", "Pay", `resource.database_name == "hr_test" && resource.table_name == "salary" && (resource.column_name == "amount" || resource.column_name == "bonus")`, "bb.default")
+	mock.setStored(folded)
+	byFold := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, rules[:2]...)))))
+	require.True(t, strings.HasPrefix(byFold, changed+" The form listed the rule changes under its choice"), byFold)
+	mock.setStored()
+
 	// Steps cannot put a rule in the message that fits no message alone.
 	long := maskingRule("r-long", "", `resource.environment_id == "prod" && resource.database_name == "hr_prod" && (resource.column_name == "amount" || resource.column_name == "bonus" || resource.column_name == "commission" || resource.column_name == "allowance")`, "bb.default")
 	alone := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, long)))))

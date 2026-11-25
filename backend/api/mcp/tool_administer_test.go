@@ -279,7 +279,6 @@ func TestAdministerWorkspaceFitsTheTwoRulesAnAgentWrites(t *testing.T) {
 	require.Len(t, mock.calls(), 1)
 }
 
-// choiceDescription returns the description of the approval form's choice field.
 // choiceLabels returns the title of a form's choice field and its choices'
 // labels.
 func choiceLabels(t *testing.T, asked *mcp.ElicitParams) (string, []string) {
@@ -303,6 +302,7 @@ func choiceLabels(t *testing.T, asked *mcp.ElicitParams) (string, []string) {
 	return field.Title, labels
 }
 
+// choiceDescription returns the description of a form's choice field.
 func choiceDescription(t *testing.T, asked *mcp.ElicitParams) string {
 	t.Helper()
 	schema, err := json.Marshal(asked.RequestedSchema)
@@ -514,7 +514,7 @@ func TestAdministerWorkspaceRefusesAChangeTooLongForTheDescription(t *testing.T)
 
 // The count line names each kind of change, and says how many rules end with
 // no approvers: a count alone reads the same when approvers are replaced by
-// none, which is why the first design refused to count.
+// none.
 func TestCountLineNamesEachKindOfChange(t *testing.T) {
 	for want, tc := range map[string]struct {
 		changes    int
@@ -577,6 +577,82 @@ func TestAdministerWorkspaceDropsTheFixedSentenceFromAFullForm(t *testing.T) {
 	require.Len(t, rows, descriptionLines, "%q", rows)
 	require.NotContains(t, form.message+form.description, approvalRulesApply)
 	require.Contains(t, unwrapMessage(form.description), `Unmatched changes go to the fallback rules: "Fallback Rule" ("Project owner").`, "the fallback line is never the one that gives way")
+}
+
+// The stored fallback rules are not the change's to shorten, so their line is
+// bounded: a workspace with many of them still gets a form, with a
+// description, and a change still has its rows.
+func TestAdministerWorkspaceBoundsTheFallbackLine(t *testing.T) {
+	var stored []*v1pb.WorkspaceApprovalSetting_Rule
+	for i := range 6 {
+		stored = append(stored, &v1pb.WorkspaceApprovalSetting_Rule{
+			Condition: &expr.Expr{Expression: fmt.Sprintf(`resource.project_id == "p%d"`, i)},
+			Template:  &v1pb.ApprovalTemplate{Title: fmt.Sprintf("Fallback %d", i), Flow: &v1pb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}},
+		})
+	}
+	line, matches := fallbackLine(stored)
+	require.True(t, matches)
+	require.Len(t, wrapLine(line, descriptionLineWidth), fallbackRows)
+	require.True(t, strings.HasPrefix(line, `Unmatched changes go to the fallback rules: "Fallback 0" ("Project owner") when `), line)
+	require.True(t, strings.HasSuffix(line, "`resource.project_id == \"p0\"` and 5 more. A change no fallback rule matches needs no approval."), line)
+
+	long := &v1pb.WorkspaceApprovalSetting_Rule{Condition: &expr.Expr{Expression: strings.Repeat(`resource.project_id == "p" || `, 12) + "false"},
+		Template: &v1pb.ApprovalTemplate{Title: "Long", Flow: &v1pb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}}}
+	line, _ = fallbackLine([]*v1pb.WorkspaceApprovalSetting_Rule{long, fallbackRule()})
+	require.Equal(t, "Unmatched changes go to 2 fallback rules too long to name here.", line, "a first rule too long for the rows is counted with the rest")
+
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	diff, err := diffApprovalRules(stored, append(slices.Clone(stored), prodRule), "")
+	require.NoError(t, err)
+	form, err := approvalRulesForm(alice, diff, "", "")
+	require.NoError(t, err)
+	require.NotContains(t, form.message, "listed under Action", "the message states the change")
+	rows := strings.Split(form.description, "\n")
+	require.LessOrEqual(t, len(rows), descriptionLines)
+	require.Equal(t, strings.Split(strings.Join(wrapLine(line0(stored), descriptionLineWidth), "\n"), "\n"), rows[:fallbackRows], "the description starts with the bounded fallback line")
+	require.Contains(t, form.description, `1. "Prod" (new), "Workspace DBA"`)
+}
+
+func line0(rules []*v1pb.WorkspaceApprovalSetting_Rule) string {
+	line, _ := fallbackLine(rules)
+	return line
+}
+
+// Every step carries the fallback line, so one rule with no room beside it
+// fits no form: the advice is the console, never smaller steps.
+func TestAdministerWorkspaceSendsARuleWithNoRoomBesideTheFallbackLineToTheConsole(t *testing.T) {
+	rule := changeRule("Long", strings.Repeat(`resource.project_id == "p" || `, 18)+"false", "roles/workspaceDBA")
+	change := "Add rule 1, \"Workspace DBA\": " + conditionText(rule.GetCondition().GetExpression())
+	require.LessOrEqual(t, len(wrapLine(change, descriptionLineWidth)), descriptionLines, "the rule fits the rows alone")
+	line, _ := fallbackLine([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()})
+	require.Greater(t, len(wrapLine(change, descriptionLineWidth))+len(wrapLine(line, descriptionLineWidth)), descriptionLines, "and not beside the fallback line")
+
+	diff, err := diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), rule}, "LINK")
+	require.NoError(t, err)
+	_, err = approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, "", "LINK")
+	var refused *toolError
+	require.ErrorAs(t, err, &refused)
+	require.Equal(t, "CHANGE_TOO_LONG", refused.Code)
+	require.Contains(t, refused.Suggestion, "make that change signed in to the Bytebase console: LINK")
+	require.NotContains(t, refused.Suggestion, "smaller steps")
+}
+
+// When the rows left hold no rule, one row still says how many there are.
+func TestSectionRowsCountsAListItCannotShow(t *testing.T) {
+	list := ruleSection{header: "The rules for database changes, in the order an approval check tries them:",
+		rules: []string{`1. "A" (kept), "Project owner": ` + "`resource.environment_id == 'a'`", `2. "B" (kept), no approval: ` + "`resource.environment_id == 'b'`", `3. "C" (new), no approval`}}
+	require.Nil(t, sectionRows(list, 0))
+	for room := 1; room <= 3; room++ {
+		require.Equal(t, []string{"3 rules in all, not listed here."}, sectionRows(list, room), "room %d", room)
+	}
+	require.Equal(t, []string{
+		"The rules for database changes, in the order an approval check",
+		"> tries them:",
+		`1. "A" (kept), "Project owner": ` + "`resource.environment_id == 'a'`",
+		"... and 2 more rules, tried after these.",
+	}, sectionRows(list, 4))
+	require.Len(t, sectionRows(list, 5), 5)
+	require.Equal(t, []string{"1 rule in all, not listed here."}, sectionRows(ruleSection{header: list.header, rules: list.rules[:1]}, 2))
 }
 
 // A rule a form adds is never refused its removal: the removal's line is no
@@ -972,9 +1048,10 @@ func TestWrapLineNeverTakesMoreRowsThanFillingThem(t *testing.T) {
 	}
 }
 
-// A line that the last-space rule already wrapped in the fewest rows keeps its
-// breaks, so a form changes only where that rule cost it a row, or cut a value
-// at the width where a separator of a name now ends the row.
+// A line that the last-space rule already wrapped in the fewest rows, with
+// every break at a space, keeps its rows. So a form changes only where that
+// rule cost it a row, or cut a value at the width: such a row may now end at a
+// separator of a name, and its continuation starts ">" with no space.
 func TestWrapLineKeepsEveryBreakAtASpaceThatCostNoRow(t *testing.T) {
 	// before is the wrap as it was: every row ended at its last space, the
 	// space was dropped, and a continuation started with "> ". atSpaces
@@ -1023,8 +1100,9 @@ func TestWrapLineKeepsEveryBreakAtASpaceThatCostNoRow(t *testing.T) {
 			fewer++
 		case atSpaces:
 			same++
-			// A space that ended a row was dropped, and now starts the next.
-			require.Equal(t, strings.Join(was, "\n"), strings.ReplaceAll(strings.Join(now, "\n"), "\n"+continuedLine+" ", "\n> "), line)
+			// The space the old wrap dropped after "> " now follows ">", so
+			// the rows are equal as text.
+			require.Equal(t, was, now, line)
 		default:
 		}
 	}
