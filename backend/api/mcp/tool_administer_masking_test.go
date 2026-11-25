@@ -532,7 +532,34 @@ func TestAdministerMaskingRulesPutsTheUnmaskEffectInTheQuestionWhenItsLineDoesNo
 		"> (resource.column_name == \"amount\" || resource.column_name ==",
 		"> \"bonus\")`",
 	}, "\n"), user.lastParams(t).Message)
-	require.LessOrEqual(t, lineColumns(maskingRules.questionWithEffect), messageLineWidth, "the effect comes before the account, which a narrow terminal cuts")
+	require.Equal(t, "No masking rule is left, so each column keeps its own semantic type.\n"+maskingRulesApply, choiceDescription(t, user.lastParams(t)))
+	require.LessOrEqual(t, lineColumns(maskingRulesQuestionWithEffect), messageLineWidth, "the effect comes before the account, which a narrow terminal cuts")
+}
+
+// With the unmask effect in the question, the long removal fits a form alone,
+// so a request that also adds a rule is told to take steps, and each step fits.
+func TestAdministerMaskingRulesReplacesALongRuleInSteps(t *testing.T) {
+	mock := &maskingMock{}
+	long := maskingRule("r1", "Salary amounts", `resource.database_name == "hr_test" && resource.table_name == "salary" && resource.column_name == "amount"`, "bb.default")
+	short := maskingRule("r2", "Amounts", `resource.column_name == "amount"`, "bb.default")
+	mock.setStored(long)
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, short))))
+	require.True(t, res.IsError, resultText(t, res))
+	require.Contains(t, resultText(t, res), "make the change in smaller steps")
+	require.NotContains(t, resultText(t, res), "make that change signed in")
+	require.Zero(t, user.asked.Load())
+	require.Empty(t, mock.calls())
+
+	res = callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, proto.CloneOf(long), short))))
+	require.False(t, res.IsError, resultText(t, res))
+	mock.setStored(long, short)
+	res = callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, proto.CloneOf(short)))))
+	require.False(t, res.IsError, resultText(t, res))
+	require.EqualValues(t, 2, user.asked.Load())
+	require.Len(t, mock.calls(), 2)
 }
 
 // A removal or a move states the unmask effect, and adding a full-mask rule does

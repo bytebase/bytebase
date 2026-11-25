@@ -27,18 +27,20 @@ const (
 	// so it goes in the message whenever a line is left.
 	maskingRulesApply = "First matching rule decides; unmatched columns keep their own type."
 
-	// maskingRulesUnmask is the change's effect on the user: masking applies to
+	// maskingRulesEffect is the change's effect on the user: masking applies to
 	// their own queries too.
-	maskingRulesUnmask = "This can unmask data, for you too."
+	maskingRulesEffect             = "can unmask data, for you too"
+	maskingRulesUnmask             = "This " + maskingRulesEffect + "."
+	maskingRulesQuestion           = "Change the masking rules"
+	maskingRulesQuestionWithEffect = maskingRulesQuestion + " (" + maskingRulesEffect + ")"
 )
 
 var maskingRules = adminRules{
-	name:               "the masking rules",
-	read:               "call_api OrgPolicyService/GetPolicy",
-	question:           "Change the masking rules",
-	questionWithEffect: "Change the masking rules (can unmask data, for you too)",
-	apply:              maskingRulesApply,
-	replace:            "add a rule under a new UUID before removing the one it replaces (two rules cannot share an id)",
+	name:     "the masking rules",
+	read:     "call_api OrgPolicyService/GetPolicy",
+	question: maskingRulesQuestion,
+	apply:    maskingRulesApply,
+	replace:  "add a rule under a new UUID before removing the one it replaces (two rules cannot share an id)",
 }
 
 // maskingRulesPath is where the rules sit in an UpdatePolicyRequest, as
@@ -483,8 +485,9 @@ func maskingRuleTitle(rule *v1pb.MaskingRulePolicy_MaskingRule) string {
 	return "untitled"
 }
 
-// maskingRulesForm builds the masking form. Its effect line shows when a
-// change can show data unmasked.
+// maskingRulesForm builds the masking form. When a change can show data
+// unmasked, the form says so on a line of its own, or in the question when
+// that line does not fit.
 func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) (*adminForm, error) {
 	var sb strings.Builder
 	if len(diff.requested) == 0 {
@@ -495,5 +498,15 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 			fmt.Fprintf(&sb, "\n%d. %s, %s: %s", i+1, maskingRuleTitle(rule), diff.typePhrase(rule.GetSemanticType()), conditionText(rule.GetCondition().GetExpression()))
 		}
 	}
-	return maskingRules.form(ctx, diff.changes, maskingRulesUnmask, sb.String(), link)
+	form, err := maskingRules.form(ctx, diff.changes, maskingRulesUnmask, sb.String(), link)
+	if err == nil {
+		return form, nil
+	}
+	// A removal shows the effect and adding a full-mask rule does not, so
+	// without this a rule one form adds might fit no form to remove. The
+	// question may pass messageLineWidth, since Claude Code cuts a long line
+	// (messageLines): a narrow terminal loses only the account at its end.
+	folded := maskingRules
+	folded.question = maskingRulesQuestionWithEffect
+	return folded.form(ctx, diff.changes, "", sb.String(), link)
 }
