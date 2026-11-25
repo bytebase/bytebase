@@ -702,10 +702,7 @@ func (r adminRules) form(ctx context.Context, changes []formChange, effect, desc
 // fixed sentence, when there is one, goes in the message when a line is left,
 // and ends the description otherwise.
 func fitForm(ctx context.Context, question string, changes []formChange, effect, fixed, description string, refuse func(needed int, tooLong string) error) (*adminForm, error) {
-	if email := getUserEmail(ctx); email != "" {
-		question += ", as " + email
-	}
-	lines, tooLong := fitMessage(question+"?", changes, effect)
+	lines, tooLong := fitMessage(questionLines(ctx, question, ""), changes, effect)
 	if len(lines) > messageLines {
 		return nil, refuse(len(lines), tooLong)
 	}
@@ -732,21 +729,52 @@ func adminFormDigest(form *adminForm, request proto.Message) []byte {
 	return h.Sum(nil)
 }
 
+// questionLines wraps a form's question and ends it with rest, the user's
+// account and a question mark. Every name in question shows whole: only what
+// follows it may run past the width, where Claude Code cuts a row.
+func questionLines(ctx context.Context, question, rest string) []string {
+	rows := wrapMessageLine(question)
+	last := len(rows) - 1
+	rows[last] += rest
+	if email := getUserEmail(ctx); email != "" {
+		rows[last] += ", as " + email
+	}
+	rows[last] += "?"
+	return rows
+}
+
+// formLayout is one way to state a request: the lines after the question, and
+// the description, which leads with what those lines leave out.
+type formLayout struct {
+	changes     []formChange
+	description string
+}
+
+// fitLayout returns layout's form, or the lines its message needs when they
+// are more than a form shows.
+func fitLayout(ctx context.Context, question string, layout formLayout) (*adminForm, int) {
+	lines, _ := fitMessage(questionLines(ctx, question, ""), layout.changes, "")
+	if len(lines) > messageLines {
+		return nil, len(lines)
+	}
+	return &adminForm{message: strings.Join(lines, "\n"), description: layout.description}, 0
+}
+
 // fitMessage puts the question, each change line and the change's effect on
 // the user into the lines a form shows, continuing a long line on the next.
 // The effect shows when a change has it. tooLong is the first change that
 // does not fit a form alone, if any.
-func fitMessage(question string, changes []formChange, effect string) (lines []string, tooLong string) {
+func fitMessage(question []string, changes []formChange, effect string) (lines []string, tooLong string) {
 	var effectLines []string
 	if effect != "" {
 		effectLines = wrapMessageLine(effect)
 	}
-	lines = []string{question}
+	lines = slices.Clone(question)
 	affected := false
 	for _, change := range changes {
 		changeLines := wrapMessageLine(change.text)
 		lines = append(lines, changeLines...)
-		alone := 1 + len(changeLines)
+		alone := len(question) + len(changeLines)
 		if change.effect {
 			alone += len(effectLines)
 			affected = true

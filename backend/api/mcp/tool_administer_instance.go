@@ -21,8 +21,8 @@ import (
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
-// instanceNotActivated is a change line, never description text, which Claude
-// Code's fullscreen renderer cuts to one line.
+// instanceNotActivated stays in the message, never the description, which
+// Claude Code's fullscreen renderer cuts to one line.
 const instanceNotActivated = "Not activated, so masking skips it."
 
 // instanceRequestFields are the CreateInstanceRequest fields the instance
@@ -366,53 +366,84 @@ func instanceForm(ctx context.Context, c *instanceCreation, maskingSkips bool, l
 		add = "Add activated instance"
 	}
 	question := func(instanceID string) string {
-		return fmt.Sprintf("%s %q to %q?", add, instanceID, c.projectID)
+		return fmt.Sprintf("%s %q to %q", add, instanceID, c.projectID)
 	}
-	// Only the account's email may run past a line, so the IDs must fit.
-	if lineColumns(question(c.request.GetInstanceId())) > messageLineWidth {
-		suggestion := "add the instance signed in to the Bytebase console: " + link
-		if lineColumns(question("a")) <= messageLineWidth {
-			suggestion = "use a shorter instance ID, or " + suggestion
-		}
-		return nil, &toolError{
-			Code:       "CHANGE_TOO_LONG",
-			Message:    fmt.Sprintf("the question naming instance %q and project %q is wider than one line of the confirmation form, so no instance was added", c.request.GetInstanceId(), c.projectID),
-			Suggestion: suggestion,
+	notActivated := maskingSkips && !c.request.GetInstance().GetActivation()
+	// Whether any layout fits is decided as if the TLS mode had its longest
+	// wording, so a weaker TLS setting never turns a refusal into a form.
+	needed := 0
+	for _, layout := range instanceLayouts(c, notActivated, tlsNotVerified) {
+		if _, needed = fitLayout(ctx, question(c.request.GetInstanceId()), layout); needed == 0 {
+			break
 		}
 	}
+	if needed == 0 {
+		for _, layout := range instanceLayouts(c, notActivated, tlsMode(c.dataSource())) {
+			if form, _ := fitLayout(ctx, question(c.request.GetInstanceId()), layout); form != nil {
+				return form, nil
+			}
+		}
+	}
+	suggestion := "add the instance signed in to the Bytebase console: " + link
+	if len(wrapMessageLine(question(c.request.GetInstanceId()))) > 1 && len(wrapMessageLine(question("a"))) == 1 {
+		suggestion = "use a shorter instance ID, or " + suggestion
+	}
+	return nil, &toolError{
+		Code:       "CHANGE_TOO_LONG",
+		Message:    fmt.Sprintf("this instance needs %d lines, more than the %d one confirmation form shows, so no instance was added", needed, messageLines),
+		Suggestion: suggestion,
+	}
+}
+
+// instanceLayouts are the instance form's layouts, from today's to the barest;
+// the form is the first that fits. The host, the port, the TLS mode, the
+// environment and the not-activated line stay in the message in each: the host
+// receives the password, and the others decide how it travels and which rules
+// and masking apply. tls is the TLS mode's wording.
+func instanceLayouts(c *instanceCreation, notActivated bool, tls string) []formLayout {
 	ds := c.dataSource()
+	host := fmt.Sprintf("Host %q, port %s", ds.GetHost(), ds.GetPort())
+	user := fmt.Sprintf("user %q", ds.GetUsername())
 	placement := "No environment."
 	if id := c.environmentID(); id != "" {
 		placement = fmt.Sprintf("Environment %q.", id)
 	}
-	changes := []formChange{
-		{text: fmt.Sprintf("Host %q, port %s, user %q, %s", ds.GetHost(), ds.GetPort(), ds.GetUsername(), tlsMode(ds))},
-		{text: placement + " Its databases join the project for good."},
+	const forGood = "Its databases join the project for good."
+	whole := []formChange{
+		{text: host + ", " + user + ", " + tls},
+		{text: placement + " " + forGood},
 	}
-	if maskingSkips && !c.request.GetInstance().GetActivation() {
-		changes = append(changes, formChange{text: instanceNotActivated})
+	notes := placement
+	if notActivated {
+		whole = append(whole, formChange{text: instanceNotActivated})
+		notes += " " + instanceNotActivated
 	}
-	return fitForm(ctx, strings.TrimSuffix(question(c.request.GetInstanceId()), "?"), changes, "", "", instanceDescription(c), func(needed int, _ string) error {
-		return &toolError{
-			Code:       "CHANGE_TOO_LONG",
-			Message:    fmt.Sprintf("this instance needs %d lines, more than the %d one confirmation form shows, so no instance was added", needed, messageLines),
-			Suggestion: "an instance cannot be added in steps, so add it signed in to the Bytebase console: " + link,
-		}
-	})
+	details := instanceDescription(c)
+	return []formLayout{
+		{changes: whole, description: details},
+		{changes: []formChange{{text: host + ", " + user + ", " + tls + ". " + notes}}, description: forGood + "\n" + details},
+		{changes: []formChange{{text: host + ", " + tls + ". " + notes}}, description: capitalize(user) + ". " + forGood + "\n" + details},
+	}
 }
 
-// tlsMode names the TLS mode the PostgreSQL driver uses: sslmode=require with
-// the verification the data source's TLS settings carry when use_ssl is set
-// (with no CA or SSH tunnel, which the entry refuses), and pgx's default,
-// prefer, otherwise, which tries TLS and accepts plain text.
+// The TLS modes the PostgreSQL driver uses, as the form names them:
+// sslmode=require with the verification the data source's TLS settings carry
+// when use_ssl is set (with no CA or SSH tunnel, which the entry refuses), and
+// pgx's default, prefer, otherwise, which tries TLS and accepts plain text.
+const (
+	tlsNotRequired = "TLS not required"
+	tlsVerified    = "TLS required and verified"
+	tlsNotVerified = "TLS required, not verified"
+)
+
 func tlsMode(ds *v1pb.DataSource) string {
 	switch {
 	case !ds.GetUseSsl():
-		return "TLS not required"
+		return tlsNotRequired
 	case ds.GetVerifyTlsCertificate():
-		return "TLS required and verified"
+		return tlsVerified
 	default:
-		return "TLS required, not verified"
+		return tlsNotVerified
 	}
 }
 

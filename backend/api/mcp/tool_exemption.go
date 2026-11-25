@@ -519,25 +519,16 @@ func exemptionScope(g *exemptionGrant) string {
 
 // fitExemption puts an exemption form's question, its change and the change's
 // effect into the lines a form shows. The question starts with head, which
-// names the member and must fit one line: only the text after it, which ends
-// with the account's email, may run past the line. tooLong says why the form
+// names the member and shows whole; rest follows it. tooLong says why the form
 // does not fit, or is empty when it does. Values enter through %q or
 // conditionText, so none can pose as a line of the message.
 func fitExemption(ctx context.Context, head, rest, change, effect string) (message, tooLong string) {
-	question := head + rest
-	if email := getUserEmail(ctx); email != "" {
-		question += ", as " + email
-	}
-	lines, _ := fitMessage(question+"?", []formChange{{text: change, effect: true}}, effect)
+	lines, _ := fitMessage(questionLines(ctx, head, rest), []formChange{{text: change, effect: true}}, effect)
 	message = strings.Join(lines, "\n")
-	switch {
-	case lineColumns(head) > messageLineWidth:
-		return message, fmt.Sprintf("the member does not fit the %d columns one line of the confirmation form shows, so nothing changed", messageLineWidth)
-	case len(lines) > messageLines:
+	if len(lines) > messageLines {
 		return message, fmt.Sprintf("this exemption needs %d lines, more than the %d one confirmation form shows, so nothing changed", len(lines), messageLines)
-	default:
-		return message, ""
 	}
+	return message, ""
 }
 
 // describeNarrowing names what the grant covers within the database. A table

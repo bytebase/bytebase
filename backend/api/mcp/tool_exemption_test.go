@@ -459,7 +459,6 @@ func TestMaskingExemptionFormsForTheJourneysExemption(t *testing.T) {
 func TestMaskingExemptionToolsRefuseAFormTooLongBeforeAsking(t *testing.T) {
 	longest := strings.Repeat("x", 63)
 	const tooManyLines = "more than the 4 one confirmation form shows, so nothing changed"
-	const memberTooLong = "the member does not fit the 70 columns one line of the confirmation form shows, so nothing changed"
 	for name, tc := range map[string]struct {
 		tool      string
 		arguments map[string]any
@@ -482,9 +481,6 @@ func TestMaskingExemptionToolsRefuseAFormTooLongBeforeAsking(t *testing.T) {
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod/databases/hr",
 			"table": "T", "columns": []string{strings.Repeat("b", 40) + strings.Repeat(`"`, 20), strings.Repeat("a", 65)},
 		}, tooManyLines, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
-		"a grant to a member too long for the question": {"grant_masking_exemption", map[string]any{
-			"project": "projects/hr", "member": "user:" + strings.Repeat("m", 50) + "@example.com", "database": "instances/prod/databases/hr",
-		}, memberTooLong, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 		"a grant of one long column": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/" + longest + "/databases/" + longest,
 			"table": "employee", "columns": []string{"birth_date"},
@@ -492,9 +488,6 @@ func TestMaskingExemptionToolsRefuseAFormTooLongBeforeAsking(t *testing.T) {
 		"a revoke of a long condition": {"revoke_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:bob@example.com", "condition": strings.Repeat("c", 200),
 		}, tooManyLines, "remove it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
-		"a revoke for a member too long for the question": {"revoke_masking_exemption", map[string]any{
-			"project": "projects/hr", "member": "user:" + strings.Repeat("m", 50) + "@example.com", "condition": "",
-		}, memberTooLong, "remove it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := &policyMock{databaseProject: "projects/hr", exemptions: []map[string]any{
@@ -797,8 +790,9 @@ func TestMaskingExemptionFormsKeepAMemberOnItsLine(t *testing.T) {
 	revoke, _, _ := describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: forged})
 	for name, message := range map[string]string{"grant": grant, "revoke": revoke} {
 		lines := strings.Split(message, "\n")
-		require.Len(t, lines, 3, "%s: %q", name, lines)
-		require.True(t, strings.HasPrefix(lines[1], `Project "hr": all databases`), "%s: a line break in the member stays on line 1, escaped: %q", name, lines)
+		require.Len(t, lines, messageLines, "%s: %q", name, lines)
+		require.True(t, strings.HasPrefix(lines[1], continuedLine), "%s: a line break in the member is escaped, and its second row is marked: %q", name, lines)
+		require.True(t, strings.HasPrefix(lines[2], `Project "hr": all databases`), "%s: %q", name, lines)
 	}
 }
 
@@ -853,8 +847,19 @@ func TestMaskingExemptionFormsShowEveryValueWhole(t *testing.T) {
 	require.Empty(t, tooLong)
 	_, _, tooLong = describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: edge})
 	require.Empty(t, tooLong)
-	_, tooLong = describeExemptionGrant(ctx, &exemptionGrant{project: "projects/hr", member: edge + "m"})
-	require.NotEmpty(t, tooLong)
-	_, _, tooLong = describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: edge + "m"})
-	require.NotEmpty(t, tooLong)
+	// One character more, and the member takes a second row, whole.
+	wide := edge + "m"
+	grant, tooLong = describeExemptionGrant(ctx, &exemptionGrant{project: "projects/hr", member: wide})
+	require.Empty(t, tooLong)
+	revoke, _, tooLong = describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: wide})
+	require.Empty(t, tooLong)
+	for question, message := range map[string]string{
+		`Exempt "` + wide + `" from masking, as alexander.smith@example.com?`:        grant,
+		`Revoke "` + wide + `"'s masking exemption, as alexander.smith@example.com?`: revoke,
+	} {
+		lines := strings.Split(message, "\n")
+		require.Len(t, lines, messageLines, "%q", lines)
+		require.Equal(t, question, unwrapMessage(strings.Join(lines[:2], "\n")))
+		require.LessOrEqual(t, lineColumns(lines[0]), messageLineWidth)
+	}
 }
