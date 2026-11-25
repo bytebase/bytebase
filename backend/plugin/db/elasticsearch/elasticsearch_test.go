@@ -163,6 +163,22 @@ func TestTLSSettings(t *testing.T) {
 		require.Equal(t, uint16(tls.VersionTLS12), tlsConfig.MinVersion)
 	})
 
+	t.Run("a host with its own scheme is verified by the name inside it", func(t *testing.T) {
+		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+		ca := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw}))
+		for _, host := range []string{"127.0.0.1", "https://127.0.0.1", "https://127.0.0.1:9200"} {
+			tlsConfig, err := tlsSettings(&storepb.DataSource{Host: host, UseSsl: true, VerifyTlsCertificate: true, SslCa: ca})
+			require.NoError(t, err, host)
+			client := &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
+			resp, err := client.Get(server.URL)
+			require.NoError(t, err, host)
+			require.NoError(t, resp.Body.Close())
+		}
+	})
+
 	t.Run("a CA that is not a certificate is an error", func(t *testing.T) {
 		_, err := tlsSettings(&storepb.DataSource{UseSsl: true, SslCa: "not a certificate"})
 		require.ErrorContains(t, err, "failed to add CA certificate")
