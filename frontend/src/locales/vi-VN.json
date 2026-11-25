@@ -4171,7 +4171,7 @@
             "title": "Quản lý truy vấn đã lưu"
           },
           "workload-identities": {
-            "title": "Tạo workload identity có vai trò dự án"
+            "title": "Tạo workload identity cho GitOps"
           }
         },
         "summary": {

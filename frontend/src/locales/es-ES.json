@@ -4171,7 +4171,7 @@
             "title": "Gestionar las consultas guardadas"
           },
           "workload-identities": {
-            "title": "Crear identidades de carga de trabajo con un rol de proyecto"
+            "title": "Crear identidades de carga de trabajo para GitOps"
           }
         },
         "summary": {

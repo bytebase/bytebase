@@ -4171,7 +4171,7 @@
             "title": "Manage saved queries"
           },
           "workload-identities": {
-            "title": "Create workload identities with a project role"
+            "title": "Create workload identities for GitOps"
           }
         },
         "summary": {

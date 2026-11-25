@@ -4171,7 +4171,7 @@
             "title": "保存済みクエリの管理"
           },
           "workload-identities": {
-            "title": "プロジェクトロール付きのワークロード ID の作成"
+            "title": "GitOps 用のワークロード ID の作成"
           }
         },
         "summary": {

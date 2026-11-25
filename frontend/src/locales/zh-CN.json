@@ -4171,7 +4171,7 @@
             "title": "管理已保存的查询"
           },
           "workload-identities": {
-            "title": "创建带项目角色的工作负载身份"
+            "title": "为 GitOps 创建工作负载身份"
           }
         },
         "summary": {
