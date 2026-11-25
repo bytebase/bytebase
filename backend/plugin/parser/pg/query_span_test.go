@@ -44,6 +44,7 @@ func TestGetQuerySpanSeam(t *testing.T) {
 					},
 					{Name: "degraded"},
 				},
+				Views: []*metadatapb.ViewMetadata{{Name: "v", Definition: "SELECT ssn FROM public.t"}},
 			},
 		},
 	}
@@ -52,18 +53,21 @@ func TestGetQuerySpanSeam(t *testing.T) {
 		GetDatabaseMetadataFunc: buildSeamMetadataGetter(meta),
 	}
 
-	// Registry wiring for both PostgreSQL and CockroachDB, plus selected-schema search path.
-	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB} {
-		spans, err := base.GetQuerySpan(context.Background(), gCtx, engine, []base.Statement{{Text: "SELECT email FROM t WHERE email = 'a'"}}, "db", "app", false)
-		require.NoError(t, err)
-		require.Len(t, spans, 1)
-		require.Equal(t, base.Select, spans[0].Type)
-		require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "app", Table: "t", Column: "email"}: true}, spans[0].Results[0].SourceColumns)
-		require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "app", Table: "t", Column: "email"}: true}, spans[0].PredicateColumns)
-	}
+	// Registry wiring plus selected-schema search path.
+	spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_POSTGRES, []base.Statement{{Text: "SELECT email FROM t WHERE email = 'a'"}}, "db", "app", false)
+	require.NoError(t, err)
+	require.Len(t, spans, 1)
+	require.Equal(t, base.Select, spans[0].Type)
+	require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "app", Table: "t", Column: "email"}: true}, spans[0].Results[0].SourceColumns)
+	require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "app", Table: "t", Column: "email"}: true}, spans[0].PredicateColumns)
+
+	// A view's column stops at the view, as PostgreSQL's result-set metadata does.
+	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT ssn FROM public.v"}, "db", "", false)
+	require.NoError(t, err)
+	require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "public", Table: "v", Column: "ssn"}: true}, span.Results[0].SourceColumns)
 
 	// ExplainAnalyze and query types convert across the seam.
-	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "EXPLAIN ANALYZE DELETE FROM public.t"}, "db", "", false)
+	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "EXPLAIN ANALYZE DELETE FROM public.t"}, "db", "", false)
 	require.NoError(t, err)
 	require.Equal(t, base.DML, span.Type)
 	require.True(t, span.ExplainAnalyze)

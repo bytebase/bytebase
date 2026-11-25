@@ -1,7 +1,10 @@
 package cockroachdb
 
 import (
+	"context"
+
 	"github.com/bytebase/omni/cockroachdb/analysis"
+	crdbcompletion "github.com/bytebase/omni/cockroachdb/completion"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -11,10 +14,49 @@ import (
 
 func init() {
 	base.Register(base.Engine{
+		Split:          splitSQL,
 		Parse:          parseCockroachDBStatements,
 		StatementTypes: GetStatementTypes,
+		Diagnose:       diagnose,
+		Complete:       completion,
+		ValidateQuery:  analysis.ValidateQuery,
+		QuerySpan:      getQuerySpan,
+		Explain:        explainStatement,
+		ResultLimit:    statementWithResultLimit,
 		ExtractChanged: extractChangedResources,
 	}, storepb.Engine_COCKROACHDB)
+}
+
+func completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
+	loadDB, _ := base.CompletionMetadataLoaders(cCtx)
+	candidates := crdbcompletion.CompleteSession(ctx, crdbcompletion.SessionConfig{
+		DefaultDatabase: cCtx.DefaultDatabase,
+		DefaultSchema:   cCtx.DefaultSchema,
+		LoadDatabase:    loadDB,
+	}, statement, caretLine, caretOffset)
+	return base.ConvertOmniCandidates(candidates, func(c crdbcompletion.Candidate) (string, crdbcompletion.CandidateType, string, string) {
+		return c.Text, c.Type, c.Definition, c.Comment
+	}, base.CompareCandidateByTypeText), nil
+}
+
+func splitSQL(statement string) ([]base.Statement, error) {
+	return base.BuildStatements(statement, analysis.SplitSegments(statement), func(s analysis.Segment) (int, int, bool) {
+		return s.ByteStart, s.ByteEnd, s.Empty()
+	}, false), nil
+}
+
+func diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
+	var syntaxErr *base.SyntaxError
+	if err := analysis.Diagnose(statement); err != nil {
+		syntaxErr = base.SyntaxErrorAtOffset(statement, err.Offset, err.Message)
+	}
+	return base.DiagnoseSyntaxError(statement, syntaxErr), nil
+}
+
+// statementWithResultLimit falls back to a CTE only for a statement CockroachDB
+// cannot parse, which then fails on the server either way.
+func statementWithResultLimit(statement string, limit int, _ string) string {
+	return base.RewriteResultLimit(statement, limit, analysis.RewriteResultLimit, "WITH result AS (\n%s\n) SELECT * FROM result LIMIT %d;")
 }
 
 // AST is the AST implementation for CockroachDB parser.
@@ -61,6 +103,13 @@ func parseCockroachDBStatements(statement string) ([]base.ParsedStatement, error
 	}
 
 	return result, nil
+}
+
+// explainStatement plans the statement with EXPLAIN, or EXPLAIN (DISTSQL) for
+// JSON, whose diagram link is the one machine-readable plan CockroachDB returns.
+func explainStatement(statement string, format base.ExplainFormat) (string, error) {
+	explain, err := analysis.ExplainStatement(statement, format == base.ExplainFormatJSON)
+	return base.ExplainStatementResult(explain, err, nil)
 }
 
 // GetStatementTypes returns the types of the statements that have one, in order, each followed by
