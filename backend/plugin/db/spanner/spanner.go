@@ -2,7 +2,7 @@
 // github.com/bytebase/omni/spanner/driver to Bytebase's db.Driver interface.
 //
 // Constraints:
-//   - SyncInstance filters out PostgreSQL-dialect databases via spannerdriver.Options{GoogleSQLOnly: true} because Bytebase's SPANNER parser is GoogleSQL-only.
+//   - The omni driver serves GoogleSQL only: SyncInstance skips PostgreSQL-dialect databases and Open refuses one.
 //   - Emulator connections drop stored GCP credentials because Google's client rejects credentials combined with WithoutAuthentication.
 //   - Execute logs transaction control entries only (per-statement command logs are skipped).
 package spanner
@@ -23,8 +23,8 @@ import (
 var (
 	_ db.Driver = (*Driver)(nil)
 
-	openSpannerDriver = func(ctx context.Context, cfg odriver.Config, opts ...spannerdriver.Options) (odriver.Driver, error) {
-		return spannerdriver.Open(ctx, cfg, opts...)
+	openSpannerDriver = func(ctx context.Context, cfg odriver.Config) (odriver.Driver, error) {
+		return spannerdriver.Open(ctx, cfg)
 	}
 )
 
@@ -52,7 +52,7 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 		NotFoundResource: "database",
 		DatabaseName:     config.ConnectionContext.DatabaseName,
 	}, func(*util.OmniAdapter) (odriver.Driver, error) {
-		return openSpannerDriver(ctx, cfg, spannerdriver.Options{GoogleSQLOnly: true})
+		return openSpannerDriver(ctx, cfg)
 	}); err != nil {
 		return nil, err
 	}
