@@ -4138,7 +4138,7 @@
             "title": "Phê duyệt hoặc từ chối Issue"
           },
           "data-access": {
-            "title": "Quản lý quyền truy cập dữ liệu: cấp quyền truy cập và miễn trừ che giấu"
+            "title": "Quản lý quyền truy cập dữ liệu: các lượt cấp quyền truy cập và miễn trừ che giấu"
           },
           "export": {
             "title": "Xuất kết quả truy vấn"
@@ -4153,7 +4153,7 @@
             "title": "Đề xuất và triển khai thay đổi cơ sở dữ liệu"
           },
           "read-changes": {
-            "title": "Đọc kế hoạch, triển khai, Issue và cấp quyền truy cập"
+            "title": "Đọc kế hoạch, triển khai, Issue và các lượt cấp quyền truy cập"
           },
           "read-databases": {
             "title": "Đọc lược đồ và dữ liệu cơ sở dữ liệu"
@@ -4175,8 +4175,8 @@
           }
         },
         "summary": {
-          "read-only": "Đọc lược đồ, dữ liệu, kế hoạch, triển khai, Issue, cấp quyền truy cập, dự án, phiên bản, cơ sở dữ liệu, thành viên, vai trò và chính sách; yêu cầu chứa bất kỳ thứ gì không thể chứng minh là đọc đều bị từ chối, và không xuất được gì",
-          "read-write": "Đọc lược đồ, dữ liệu, kế hoạch, triển khai, Issue, cấp quyền truy cập, dự án, phiên bản, cơ sở dữ liệu, thành viên, vai trò và chính sách; chạy câu lệnh, xuất, đề xuất và triển khai thay đổi, phê duyệt, quản lý quyền truy cập dữ liệu và truy vấn đã lưu, thêm phiên bản, tạo workload identity và thay đổi chính sách"
+          "read-only": "Đọc lược đồ, dữ liệu, kế hoạch, triển khai, Issue, các lượt cấp quyền truy cập, dự án, phiên bản, cơ sở dữ liệu, thành viên, vai trò và chính sách; yêu cầu chứa bất kỳ thứ gì không thể chứng minh là đọc đều bị từ chối, và không xuất được gì",
+          "read-write": "Đọc lược đồ, dữ liệu, kế hoạch, triển khai, Issue, các lượt cấp quyền truy cập, dự án, phiên bản, cơ sở dữ liệu, thành viên, vai trò và chính sách; chạy câu lệnh, xuất, đề xuất và triển khai thay đổi, phê duyệt, quản lý quyền truy cập dữ liệu và truy vấn đã lưu, thêm phiên bản, tạo workload identity và thay đổi chính sách"
         },
         "tier": {
           "read": "đọc",

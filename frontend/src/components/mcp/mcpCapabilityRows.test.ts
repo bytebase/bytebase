@@ -68,7 +68,7 @@ describe("mcpCapabilityRows", () => {
     ]);
   });
 
-  test("each tier has one read row per category, so no read spans two", () => {
+  test("the read rows follow the categories one to one, in order", () => {
     expect(
       MCP_CAPABILITY_ROWS.filter((row) => row.tier === "read").map(
         (row) => row.category
