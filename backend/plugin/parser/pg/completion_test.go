@@ -78,10 +78,9 @@ func TestCompletion_Seam(t *testing.T) {
 		},
 	}
 
-	// Registry dispatch covers POSTGRES, SNOWFLAKE, and COCKROACHDB.
+	// Registry dispatch covers POSTGRES and COCKROACHDB.
 	for _, engine := range []storepb.Engine{
 		storepb.Engine_POSTGRES,
-		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_COCKROACHDB,
 	} {
 		got, err := base.Completion(context.Background(), engine, cCtx, "SELECT * FROM ", 1, len("SELECT * FROM "))

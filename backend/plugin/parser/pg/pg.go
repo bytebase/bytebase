@@ -43,8 +43,6 @@ func init() {
 		Explain:       cockroachExplainStatement,
 		ResultLimit:   statementWithResultLimit,
 	}, storepb.Engine_COCKROACHDB)
-	// Snowflake reuses PostgreSQL completion.
-	base.Register(base.Engine{Complete: Completion}, storepb.Engine_SNOWFLAKE)
 }
 
 // AST wraps an omni AST node and implements the base.AST interface.
