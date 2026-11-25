@@ -348,3 +348,5 @@ require (
 )
 
 replace github.com/github/gh-ost => github.com/bytebase/gh-ost2 v0.0.0-20261120013736-268c77f2c0ca
+
+replace github.com/bytebase/omni => /home/d_bytebase_com/omni-worktrees/crdb-sdl
