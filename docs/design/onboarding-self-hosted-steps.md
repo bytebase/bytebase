@@ -161,12 +161,13 @@ masking is Enterprise (Given): the picture shows what guardrails look like, and 
 promise only what the free plan has, a query recorded in query history. It is drawn in the page like
 the project and workspace pictures, replacing the still image of onboarding-flow D9.
 
-**D9 · The steps hold still, and only the current step is accented.** The shared step indicator
-draws a completed step as a soft check with a plain title, and only the current step in the accent
-color, so the eye finds where it is; this changes every wizard that uses it. The setup route's form
-column starts at a fixed distance from the top instead of being centered, so the steps and the
-heading stay in place from step to step and while fields appear. Rejected: a setup-only variant of
-the indicator, which would make the same steps look different in other wizards.
+**D9 · The steps hold still, and only the current step is filled.** The shared step indicator
+draws a completed step as a check on a pale accent tint with a plain title, and fills only the
+current step with the accent color, so the eye finds where it is; this changes every wizard that
+uses it. The setup route's form column starts at a fixed distance from the top instead of being
+centered, so the steps and the heading stay in place from step to step and while fields appear.
+Rejected: a setup-only variant of the indicator, which would make the same steps look different in
+other wizards.
 
 ## States
 

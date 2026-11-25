@@ -208,7 +208,7 @@ export function StepIndicator({
     steps.map((step, index) => {
       const isCurrent = index === activeIndex;
       const isCompleted = activeIndex >= 0 && index < activeIndex;
-      // Only the current step is accented, so the eye finds where it is.
+      // Only the current step is filled with the accent, so the eye finds where it is.
       const body = (
         <div className="flex items-center gap-x-2">
           <div
