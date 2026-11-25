@@ -1,6 +1,6 @@
 # Release-backed plan page
 
-Status: implemented in #21875, except D10 as revised 2026-11-24, a proposal
+Status: implemented in #21875, and D10 as revised 2026-11-24 in #22221
 
 A GitOps release is minted by bytebase-action inside the customer's CI: one run creates the release
 (a snapshot of the migration folder at that commit), a plan whose title is the release id, and the
