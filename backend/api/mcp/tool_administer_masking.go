@@ -508,14 +508,15 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 	} else {
 		sb.WriteString("The masking rules, in the order masking tries them:")
 		for i, rule := range diff.requested {
-			condition := rule.GetCondition().GetExpression()
-			// The message never shows a kept rule, so its line says what it
-			// decides: a kept rule ahead of a new one can take its columns.
-			if diff.marks[i] == "kept" {
-				fmt.Fprintf(&sb, "\n%d. %s (kept), %s: %s", i+1, maskingRuleTitle(rule), diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition))
-				continue
+			// Every line names its rule's type, since the order decides which
+			// rule masks a column and a move's line in the message shows no
+			// type. A kept rule never appears in the message, so its line
+			// gives its scope; a new or changed one gives the CEL it stores.
+			condition := maskingConditionText(rule.GetCondition().GetExpression())
+			if diff.marks[i] != "kept" {
+				condition = conditionText(rule.GetCondition().GetExpression())
 			}
-			fmt.Fprintf(&sb, "\n%d. %s (%s): %s", i+1, maskingRuleTitle(rule), diff.marks[i], conditionText(condition))
+			fmt.Fprintf(&sb, "\n%d. %s (%s), %s: %s", i+1, maskingRuleTitle(rule), diff.marks[i], diff.typePhrase(rule.GetSemanticType()), condition)
 		}
 	}
 	rules := maskingRules

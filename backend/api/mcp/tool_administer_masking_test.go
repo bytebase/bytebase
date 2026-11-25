@@ -175,7 +175,7 @@ func TestAdministerMaskingRulesAsksForTheJourneyRuleOnAWorkspaceWithNone(t *test
 		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
 	}
 	require.Equal(t, "The masking rules, in the order masking tries them:\n"+
-		"1. \"Personal data in prod\" (new): `"+journeyCondition+"`", choiceDescription(t, asked))
+		"1. \"Personal data in prod\" (new), Full mask: `"+journeyCondition+"`", choiceDescription(t, asked))
 
 	calls := mock.calls()
 	require.Len(t, calls, 1)
@@ -326,10 +326,27 @@ func TestAdministerMaskingRulesLeavesTheFixedSentenceToAFullDescription(t *testi
 	}, "\n"), user.lastParams(t).Message)
 	require.Equal(t, "The masking rules, in the order masking tries them:\n"+
 		"1. \"A\" (kept), Full mask: env \"a\", every column\n"+
-		"2. \"B\" (new): `resource.environment_id == \"b\"`\n"+
-		"3. \"C\" (new): `resource.environment_id == \"c\"`\n"+
-		"4. \"D\" (new): `resource.environment_id == \"d\"`\n"+maskingRulesApply,
+		"2. \"B\" (new), Full mask: `resource.environment_id == \"b\"`\n"+
+		"3. \"C\" (new), Full mask: `resource.environment_id == \"c\"`\n"+
+		"4. \"D\" (new), Full mask: `resource.environment_id == \"d\"`\n"+maskingRulesApply,
 		choiceDescription(t, user.lastParams(t)))
+}
+
+// A move's line in the message shows no type, and the order decides which rule
+// masks a column, so the description names the moved rule's type.
+func TestAdministerMaskingRulesNamesAMovedRulesType(t *testing.T) {
+	types, err := semanticTypesFromSetting(nil)
+	require.NoError(t, err)
+	full := maskingRule("r1", "SSN", `resource.column_name == "ssn"`, "bb.default")
+	partial := maskingRule("r2", "PII", `resource.column_name in ["email", "ssn"]`, "bb.default-partial")
+	diff, err := diffMaskingRules([]*v1pb.MaskingRulePolicy_MaskingRule{full, partial}, []*v1pb.MaskingRulePolicy_MaskingRule{partial, full}, types, "")
+	require.NoError(t, err)
+	form, err := maskingRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, "")
+	require.NoError(t, err)
+	require.Contains(t, form.message, "Move to rule 2: any db, any table, column \"ssn\"")
+	require.Equal(t, "The masking rules, in the order masking tries them:\n"+
+		"1. \"PII\" (kept), Partial mask: any db, any table, columns (\"email\", \"ssn\")\n"+
+		"2. \"SSN\" (changed), Full mask: `resource.column_name == \"ssn\"`", form.description)
 }
 
 func TestAdministerMaskingRulesRefusesBeforeAsking(t *testing.T) {

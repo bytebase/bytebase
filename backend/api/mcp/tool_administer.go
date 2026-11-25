@@ -636,12 +636,11 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 	default:
 		sb.WriteString("\nThe rules for database changes, in the order an approval check tries them:")
 		for i, rule := range diff.requested {
-			// The message never shows a kept rule, so its line says what it
-			// decides: a kept rule ahead of a new one can take its changes.
+			// As on the masking form, every line names its approvers, and a
+			// kept rule, which the message never shows, its condition.
+			fmt.Fprintf(&sb, "\n%d. %s (%s), %s", i+1, ruleTitle(rule), diff.marks[i], approvers(rule))
 			if diff.marks[i] == "kept" {
-				fmt.Fprintf(&sb, "\n%d. %s (kept), %s: %s", i+1, ruleTitle(rule), approvers(rule), conditionText(rule.GetCondition().GetExpression()))
-			} else {
-				fmt.Fprintf(&sb, "\n%d. %s (%s)", i+1, ruleTitle(rule), diff.marks[i])
+				fmt.Fprintf(&sb, ": %s", conditionText(rule.GetCondition().GetExpression()))
 			}
 			if description := rule.GetTemplate().GetDescription(); description != "" {
 				fmt.Fprintf(&sb, " (description %q)", description)

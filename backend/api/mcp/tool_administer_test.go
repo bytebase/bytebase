@@ -227,8 +227,8 @@ func TestAdministerWorkspaceAppliesConfirmedApprovalRules(t *testing.T) {
 	require.NoError(t, err)
 	description, err := json.Marshal("Unmatched changes go to the fallback rules: \"Fallback Rule\" (\"Project owner\").\n" +
 		"The rules for database changes, in the order an approval check tries them:\n" +
-		"1. \"Test\" (new)\n" +
-		"2. \"Prod\" (new)\n" +
+		"1. \"Test\" (new), no approval\n" +
+		"2. \"Prod\" (new), \"Workspace DBA\"\n" +
 		approvalRulesApply)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
@@ -271,7 +271,7 @@ func TestAdministerWorkspaceFitsTheTwoRulesAnAgentWrites(t *testing.T) {
 		"Add rule 2, no approval: `resource.environment_id == \"test\"`",
 		`Plan edits recheck your "hr#12" under these rules.`,
 	}, "\n"), asked.Message)
-	require.Contains(t, choiceDescription(t, asked), "1. \"Prod changes need DBA\" (new)\n2. \"Test changes need no approval\" (new)\n")
+	require.Contains(t, choiceDescription(t, asked), "1. \"Prod changes need DBA\" (new), \"Workspace DBA\"\n2. \"Test changes need no approval\" (new), no approval\n")
 	require.True(t, strings.HasSuffix(choiceDescription(t, asked), "\n"+approvalRulesApply), "a full message leaves the fixed sentence to the description")
 	require.Len(t, mock.calls(), 1)
 }
@@ -874,12 +874,12 @@ func TestAdministerWorkspaceDescribesTheRulesLeft(t *testing.T) {
 		"an added rule's description": {
 			stored:    []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()},
 			requested: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), described},
-			want:      "1. \"Prod\" (new) (description \"Production\")",
+			want:      "1. \"Prod\" (new), \"Workspace DBA\" (description \"Production\")",
 		},
 		"a kept rule": {
 			stored:    []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), described},
 			requested: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), described, changeRule("Test", "resource.environment_id == 'test'")},
-			want:      "1. \"Prod\" (kept), \"Workspace DBA\": `resource.environment_id == 'prod'` (description \"Production\")\n2. \"Test\" (new)",
+			want:      "1. \"Prod\" (kept), \"Workspace DBA\": `resource.environment_id == 'prod'` (description \"Production\")\n2. \"Test\" (new), no approval",
 		},
 		"no rule left": {
 			stored:    []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), prodRule},
@@ -897,6 +897,11 @@ func TestAdministerWorkspaceDescribesTheRulesLeft(t *testing.T) {
 			requested: []*v1pb.WorkspaceApprovalSetting_Rule{hrFallback, described},
 			want: "Unmatched changes go to the fallback rules: \"HR\" (\"Project owner\") when `resource.project_id == \"hr\"`. " +
 				"A change no fallback rule matches needs no approval.\n",
+		},
+		"a moved rule names its approvers": {
+			stored:    []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), described, changeRule("Test", "resource.environment_id == 'test'")},
+			requested: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), changeRule("Test", "resource.environment_id == 'test'"), described},
+			want:      "2. \"Prod\" (changed), \"Workspace DBA\" (description \"Production\")",
 		},
 		"a fallback rule with no condition, which never matches": {
 			stored:    []*v1pb.WorkspaceApprovalSetting_Rule{emptyFallback, fallbackRule()},
