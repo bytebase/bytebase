@@ -83,6 +83,12 @@ func TestGetQuerySpan(t *testing.T) {
 			wantCols: base.SourceColumnSet{{Database: "information_schema", Table: "tables"}: true},
 		},
 		{
+			name:     "case-sensitive user database named System is not treated as system",
+			sql:      "SELECT * FROM System.secret",
+			wantType: base.Select,
+			wantCols: base.SourceColumnSet{{Database: "System", Table: "secret"}: true},
+		},
+		{
 			name:     "insert",
 			sql:      "INSERT INTO example_db.orders (id) VALUES (1)",
 			wantType: base.DML,
@@ -108,6 +114,12 @@ func TestGetQuerySpan(t *testing.T) {
 		Text: "SELECT * FROM orders JOIN system.tables ON true",
 	}, "default_db", "", false)
 	require.ErrorIs(t, err, base.MixUserSystemTablesError)
+
+	// Table functions (e.g. remote(), cluster()) must fail closed instead of returning an empty span.
+	_, err = GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{
+		Text: "SELECT * FROM remote('127.0.0.1', 'other_db', 'secret')",
+	}, "default_db", "", false)
+	require.ErrorContains(t, err, "table function")
 
 	// Syntax error preserves statement start offset.
 	_, err = GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{

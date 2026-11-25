@@ -45,7 +45,9 @@ func GetQuerySpan(
 		ignoreCaseSensitive: ignoreCaseSensitive,
 		sources:             make(base.SourceColumnSet),
 	}
-	c.walkStatement(stmts[0], nil)
+	if err := c.walkStatement(stmts[0], nil); err != nil {
+		return nil, err
+	}
 
 	if qt == base.Select || qt == base.SelectInfoSchema {
 		if c.hasUserTable && c.hasSystemTable {
@@ -96,8 +98,11 @@ func (c *spanCollector) normalizeName(name string) string {
 	return name
 }
 
-func isClickHouseSystemDatabase(db string) bool {
-	return strings.EqualFold(db, "system") || strings.EqualFold(db, "information_schema")
+func isClickHouseSystemDatabase(db string, ignoreCaseSensitive bool) bool {
+	if ignoreCaseSensitive {
+		return strings.EqualFold(db, "system") || strings.EqualFold(db, "information_schema")
+	}
+	return db == "system" || db == "information_schema" || db == "INFORMATION_SCHEMA"
 }
 
 func (c *spanCollector) recordTable(db, table string) {
@@ -107,7 +112,7 @@ func (c *spanCollector) recordTable(db, table string) {
 	if db == "" {
 		db = c.defaultDatabase
 	}
-	if isClickHouseSystemDatabase(db) {
+	if isClickHouseSystemDatabase(db, c.ignoreCaseSensitive) {
 		c.hasSystemTable = true
 	} else {
 		c.hasUserTable = true
@@ -118,26 +123,30 @@ func (c *spanCollector) recordTable(db, table string) {
 	}] = true
 }
 
-func (c *spanCollector) walkStatement(stmt chparser.Statement, ctes map[string]bool) {
+func (c *spanCollector) walkStatement(stmt chparser.Statement, ctes map[string]bool) error {
 	switch s := stmt.(type) {
 	case *chparser.SelectUnionStmt:
-		c.walkSelectUnion(s, ctes)
+		return c.walkSelectUnion(s, ctes)
 	case *chparser.SelectStmt:
-		c.walkSelect(s, ctes)
+		return c.walkSelect(s, ctes)
 	case *chparser.InsertStmt:
+		if s.Func != nil {
+			return errors.Errorf("table function %q is not supported in ClickHouse query span", s.Func.Name)
+		}
 		c.recordTable(s.Database, s.Table)
 		if s.Select != nil {
-			c.walkSelectUnion(s.Select, ctes)
+			return c.walkSelectUnion(s.Select, ctes)
 		}
 	case *chparser.DeleteStmt:
 		db, tbl := splitQualifiedTable(s.Table)
 		c.recordTable(db, tbl)
-		c.walkExpr(s.Where, ctes)
+		return c.walkExpr(s.Where, ctes)
 	case *chparser.UpdateStmt:
 		db, tbl := splitQualifiedTable(s.Table)
 		c.recordTable(db, tbl)
-		c.walkExpr(s.Where, ctes)
+		return c.walkExpr(s.Where, ctes)
 	}
+	return nil
 }
 
 func splitQualifiedTable(qualified string) (string, string) {
@@ -147,18 +156,21 @@ func splitQualifiedTable(qualified string) (string, string) {
 	return "", qualified
 }
 
-func (c *spanCollector) walkSelectUnion(u *chparser.SelectUnionStmt, ctes map[string]bool) {
+func (c *spanCollector) walkSelectUnion(u *chparser.SelectUnionStmt, ctes map[string]bool) error {
 	if u == nil {
-		return
+		return nil
 	}
 	for _, item := range u.Items {
-		c.walkSelect(item, ctes)
+		if err := c.walkSelect(item, ctes); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (c *spanCollector) walkSelect(s *chparser.SelectStmt, parentCTEs map[string]bool) {
+func (c *spanCollector) walkSelect(s *chparser.SelectStmt, parentCTEs map[string]bool) error {
 	if s == nil {
-		return
+		return nil
 	}
 	ctes := make(map[string]bool, len(parentCTEs)+len(s.With))
 	maps.Copy(ctes, parentCTEs)
@@ -166,135 +178,190 @@ func (c *spanCollector) walkSelect(s *chparser.SelectStmt, parentCTEs map[string
 		if w == nil {
 			continue
 		}
-		if w.Subquery != nil {
-			c.walkSelectUnion(w.Subquery, ctes)
+		if err := c.walkSelectUnion(w.Subquery, ctes); err != nil {
+			return err
 		}
-		if w.Expr != nil {
-			c.walkExpr(w.Expr, ctes)
+		if err := c.walkExpr(w.Expr, ctes); err != nil {
+			return err
 		}
 		if w.Alias != "" {
 			ctes[c.normalizeName(w.Alias)] = true
 		}
 	}
 
-	if s.Nested != nil {
-		c.walkSelectUnion(s.Nested, ctes)
+	if err := c.walkSelectUnion(s.Nested, ctes); err != nil {
+		return err
 	}
-	if s.From != nil {
-		c.walkJoin(s.From, ctes)
+	if err := c.walkJoin(s.From, ctes); err != nil {
+		return err
 	}
 	if s.ArrayJoin != nil {
 		for _, expr := range s.ArrayJoin.Exprs {
-			c.walkExpr(expr, ctes)
+			if err := c.walkExpr(expr, ctes); err != nil {
+				return err
+			}
 		}
 	}
 	for _, col := range s.Columns {
-		c.walkExpr(col, ctes)
+		if err := c.walkExpr(col, ctes); err != nil {
+			return err
+		}
 	}
-	c.walkExpr(s.Prewhere, ctes)
-	c.walkExpr(s.Where, ctes)
+	if err := c.walkExpr(s.Prewhere, ctes); err != nil {
+		return err
+	}
+	if err := c.walkExpr(s.Where, ctes); err != nil {
+		return err
+	}
 	if s.GroupBy != nil {
 		for _, expr := range s.GroupBy.Exprs {
-			c.walkExpr(expr, ctes)
+			if err := c.walkExpr(expr, ctes); err != nil {
+				return err
+			}
 		}
 	}
-	c.walkExpr(s.Having, ctes)
-	c.walkExpr(s.Qualify, ctes)
+	if err := c.walkExpr(s.Having, ctes); err != nil {
+		return err
+	}
+	if err := c.walkExpr(s.Qualify, ctes); err != nil {
+		return err
+	}
 	for _, ob := range s.OrderBy {
 		if ob != nil {
-			c.walkExpr(ob.Expr, ctes)
+			if err := c.walkExpr(ob.Expr, ctes); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func (c *spanCollector) walkJoin(j *chparser.JoinExpr, ctes map[string]bool) {
+func (c *spanCollector) walkJoin(j *chparser.JoinExpr, ctes map[string]bool) error {
 	if j == nil {
-		return
+		return nil
 	}
-	if j.Left != nil {
-		c.walkJoin(j.Left, ctes)
+	if err := c.walkJoin(j.Left, ctes); err != nil {
+		return err
 	}
-	if j.Right != nil {
-		c.walkJoin(j.Right, ctes)
+	if err := c.walkJoin(j.Right, ctes); err != nil {
+		return err
 	}
 	if j.Table != nil {
 		t := j.Table
 		if t.Subquery != nil {
-			c.walkSelectUnion(t.Subquery, ctes)
+			if err := c.walkSelectUnion(t.Subquery, ctes); err != nil {
+				return err
+			}
 		} else if t.Func != nil {
-			c.walkExpr(t.Func, ctes)
+			// Table functions such as remote() or cluster() can read arbitrary external
+			// or cross-database tables; fail closed rather than returning an empty span.
+			return errors.Errorf("table function %q is not supported in ClickHouse query span", t.Func.Name)
 		} else if t.Table != "" {
 			if t.Database == "" && ctes[c.normalizeName(t.Table)] {
-				return
+				return nil
 			}
 			c.recordTable(t.Database, t.Table)
 		}
 	}
 	for _, on := range j.On {
-		c.walkExpr(on, ctes)
+		if err := c.walkExpr(on, ctes); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (c *spanCollector) walkExpr(expr chparser.Expr, ctes map[string]bool) {
+func (c *spanCollector) walkExpr(expr chparser.Expr, ctes map[string]bool) error {
 	if expr == nil {
-		return
+		return nil
 	}
 	switch e := expr.(type) {
 	case *chparser.SubqueryExpr:
-		c.walkSelectUnion(e.Query, ctes)
+		return c.walkSelectUnion(e.Query, ctes)
 	case *chparser.AliasExpr:
-		c.walkExpr(e.Expr, ctes)
+		return c.walkExpr(e.Expr, ctes)
 	case *chparser.ParenExpr:
-		c.walkExpr(e.Expr, ctes)
+		return c.walkExpr(e.Expr, ctes)
 	case *chparser.UnaryExpr:
-		c.walkExpr(e.Expr, ctes)
+		return c.walkExpr(e.Expr, ctes)
 	case *chparser.BinaryExpr:
-		c.walkExpr(e.Left, ctes)
-		c.walkExpr(e.Right, ctes)
-	case *chparser.TernaryExpr:
-		c.walkExpr(e.Cond, ctes)
-		c.walkExpr(e.Then, ctes)
-		c.walkExpr(e.Else, ctes)
-	case *chparser.InExpr:
-		c.walkExpr(e.Left, ctes)
-		c.walkExpr(e.Right, ctes)
-	case *chparser.BetweenExpr:
-		c.walkExpr(e.Expr, ctes)
-		c.walkExpr(e.Low, ctes)
-		c.walkExpr(e.High, ctes)
-	case *chparser.IsNullExpr:
-		c.walkExpr(e.Expr, ctes)
-	case *chparser.LikeExpr:
-		c.walkExpr(e.Left, ctes)
-		c.walkExpr(e.Right, ctes)
-	case *chparser.CastExpr:
-		c.walkExpr(e.Expr, ctes)
-	case *chparser.CaseExpr:
-		c.walkExpr(e.Operand, ctes)
-		for _, w := range e.Whens {
-			c.walkExpr(w.Cond, ctes)
-			c.walkExpr(w.Then, ctes)
+		if err := c.walkExpr(e.Left, ctes); err != nil {
+			return err
 		}
-		c.walkExpr(e.Else, ctes)
+		return c.walkExpr(e.Right, ctes)
+	case *chparser.TernaryExpr:
+		if err := c.walkExpr(e.Cond, ctes); err != nil {
+			return err
+		}
+		if err := c.walkExpr(e.Then, ctes); err != nil {
+			return err
+		}
+		return c.walkExpr(e.Else, ctes)
+	case *chparser.InExpr:
+		if err := c.walkExpr(e.Left, ctes); err != nil {
+			return err
+		}
+		return c.walkExpr(e.Right, ctes)
+	case *chparser.BetweenExpr:
+		if err := c.walkExpr(e.Expr, ctes); err != nil {
+			return err
+		}
+		if err := c.walkExpr(e.Low, ctes); err != nil {
+			return err
+		}
+		return c.walkExpr(e.High, ctes)
+	case *chparser.IsNullExpr:
+		return c.walkExpr(e.Expr, ctes)
+	case *chparser.LikeExpr:
+		if err := c.walkExpr(e.Left, ctes); err != nil {
+			return err
+		}
+		return c.walkExpr(e.Right, ctes)
+	case *chparser.CastExpr:
+		return c.walkExpr(e.Expr, ctes)
+	case *chparser.CaseExpr:
+		if err := c.walkExpr(e.Operand, ctes); err != nil {
+			return err
+		}
+		for _, w := range e.Whens {
+			if err := c.walkExpr(w.Cond, ctes); err != nil {
+				return err
+			}
+			if err := c.walkExpr(w.Then, ctes); err != nil {
+				return err
+			}
+		}
+		return c.walkExpr(e.Else, ctes)
 	case *chparser.FuncCallExpr:
 		for _, p := range e.Params {
-			c.walkExpr(p, ctes)
+			if err := c.walkExpr(p, ctes); err != nil {
+				return err
+			}
 		}
 		for _, a := range e.Args {
-			c.walkExpr(a, ctes)
+			if err := c.walkExpr(a, ctes); err != nil {
+				return err
+			}
 		}
 	case *chparser.ArrayExpr:
 		for _, item := range e.Items {
-			c.walkExpr(item, ctes)
+			if err := c.walkExpr(item, ctes); err != nil {
+				return err
+			}
 		}
 	case *chparser.TupleExpr:
 		for _, item := range e.Items {
-			c.walkExpr(item, ctes)
+			if err := c.walkExpr(item, ctes); err != nil {
+				return err
+			}
 		}
 	case *chparser.TupleAccessExpr:
-		c.walkExpr(e.Expr, ctes)
+		return c.walkExpr(e.Expr, ctes)
 	case *chparser.IndexExpr:
-		c.walkExpr(e.Expr, ctes)
-		c.walkExpr(e.Index, ctes)
+		if err := c.walkExpr(e.Expr, ctes); err != nil {
+			return err
+		}
+		return c.walkExpr(e.Index, ctes)
 	}
+	return nil
 }
