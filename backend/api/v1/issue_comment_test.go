@@ -170,6 +170,114 @@ func TestIssueCommentAPI(t *testing.T) {
 	require.Equal(t, v1pb.IssueComment_OPEN, derived.GetThreadState())
 }
 
+func TestGetIssueComment(t *testing.T) {
+	t.Parallel()
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	_, err := stores.GetDB().ExecContext(ctx, `INSERT INTO project (resource_id, workspace, name) VALUES ('project-b', 'default', 'Project B')`)
+	require.NoError(t, err)
+	issue := createReviewRunIssue(ctx, t, stores, "project-a")
+	otherIssue := createReviewRunIssue(ctx, t, stores, "project-a")
+	otherProjectIssue := createReviewRunIssue(ctx, t, stores, "project-b")
+	require.Equal(t, issue.UID, otherProjectIssue.UID, "the issue ids must collide")
+	service := newIssueServiceForTest(t, stores)
+	parent := common.FormatIssue(issue.ProjectID, issue.UID)
+	otherParent := common.FormatIssue(otherIssue.ProjectID, otherIssue.UID)
+	otherProjectParent := common.FormatIssue(otherProjectIssue.ProjectID, otherProjectIssue.UID)
+
+	create := func(parent string, comment *v1pb.IssueComment) *v1pb.IssueComment {
+		t.Helper()
+		resp, err := service.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{
+			Parent: parent, IssueComment: comment,
+		}))
+		require.NoError(t, err)
+		return resp.Msg
+	}
+	list := func(filter string) []*v1pb.IssueComment {
+		t.Helper()
+		resp, err := service.ListIssueComments(ctx, connect.NewRequest(&v1pb.ListIssueCommentsRequest{
+			Parent: parent, Filter: filter, PageSize: 100,
+		}))
+		require.NoError(t, err)
+		return resp.Msg.IssueComments
+	}
+	get := func(name string) (*v1pb.IssueComment, error) {
+		t.Helper()
+		resp, err := service.GetIssueComment(ctx, connect.NewRequest(&v1pb.GetIssueCommentRequest{Name: name}))
+		if err != nil {
+			return nil, err
+		}
+		return resp.Msg, nil
+	}
+
+	sheets, err := stores.CreateSheets(ctx, issue.ProjectID, &store.SheetMessage{Statement: "SELECT 1;\nSELECT 2;\nSELECT 3;"})
+	require.NoError(t, err)
+	anchor := &v1pb.StatementAnchor{
+		Spec: "spec-1", SheetSha256: sheets[0].Sha256,
+		StartPosition: &v1pb.Position{Line: 2}, EndPosition: &v1pb.Position{Line: 3},
+	}
+	root := create(parent, &v1pb.IssueComment{Comment: "root", StatementAnchor: anchor})
+	reply := create(parent, &v1pb.IssueComment{Comment: "reply", Root: &root.Name})
+	event, err := stores.CreateIssueComments(ctx, "creator@example.com", &store.IssueCommentMessage{
+		ProjectID: issue.ProjectID, IssueUID: issue.UID,
+		Payload: &storepb.IssueCommentPayload{Event: &storepb.IssueCommentPayload_ReviewSubmission_{
+			ReviewSubmission: &storepb.IssueCommentPayload_ReviewSubmission{},
+		}},
+	})
+	require.NoError(t, err)
+	eventName := common.FormatIssueComment(parent, event.ResourceID)
+
+	listed := append(list(""), list(fmt.Sprintf("root == %q", root.Name))...)
+	require.Equal(t, []string{root.Name, eventName, reply.Name}, commentNames(listed))
+	for _, want := range listed {
+		got, err := get(want.Name)
+		require.NoError(t, err)
+		require.True(t, proto.Equal(want, got), "Get must return %s as List does", want.Name)
+	}
+	gotRoot, err := get(root.Name)
+	require.NoError(t, err)
+	require.True(t, proto.Equal(anchor, gotRoot.StatementAnchor))
+	require.Equal(t, v1pb.IssueComment_OPEN, gotRoot.GetThreadState())
+	gotReply, err := get(reply.Name)
+	require.NoError(t, err)
+	require.Equal(t, root.Name, gotReply.GetRoot())
+	gotEvent, err := get(eventName)
+	require.NoError(t, err)
+	require.NotNil(t, gotEvent.GetReviewSubmission())
+
+	// Each other scope holds a comment of its own, so a NOT_FOUND below comes
+	// from the comment's scope and not from a missing issue.
+	for _, scope := range []string{otherParent, otherProjectParent} {
+		own := create(scope, &v1pb.IssueComment{Comment: "elsewhere"})
+		got, err := get(own.Name)
+		require.NoError(t, err)
+		require.True(t, proto.Equal(own, got))
+
+		for _, name := range []string{root.Name, reply.Name, eventName} {
+			_, err := get(strings.Replace(name, parent+"/", scope+"/", 1))
+			require.Equal(t, connect.CodeNotFound, connect.CodeOf(err), "%s is not a comment of %s", name, scope)
+		}
+		_, err = get(strings.Replace(own.Name, scope+"/", parent+"/", 1))
+		require.Equal(t, connect.CodeNotFound, connect.CodeOf(err), "%s is not a comment of %s", own.Name, parent)
+	}
+
+	for _, tc := range []struct {
+		name     string
+		wantCode connect.Code
+	}{
+		{common.FormatIssueComment(parent, "no-such-comment"), connect.CodeNotFound},
+		{common.FormatIssueComment(common.FormatIssue(issue.ProjectID, 999999), event.ResourceID), connect.CodeNotFound},
+		{common.FormatIssueComment(common.FormatIssue("no-such-project", issue.UID), event.ResourceID), connect.CodeNotFound},
+		{parent, connect.CodeInvalidArgument},
+		{parent + "/issueComments/", connect.CodeInvalidArgument},
+		{"projects/project-a/issues/abc/issueComments/" + event.ResourceID, connect.CodeInvalidArgument},
+		{"", connect.CodeInvalidArgument},
+	} {
+		_, err := get(tc.name)
+		require.Equal(t, tc.wantCode, connect.CodeOf(err), tc.name)
+	}
+}
+
 func commentNames(comments []*v1pb.IssueComment) []string {
 	names := make([]string, 0, len(comments))
 	for _, comment := range comments {

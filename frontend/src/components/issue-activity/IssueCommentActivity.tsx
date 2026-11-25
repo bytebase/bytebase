@@ -3,14 +3,14 @@
 // rows). Used by both the issue-detail comment list and the plan-detail review
 // timeline so their icons, wordings, and detailed styles stay consistent.
 import { Loader2, Send } from "lucide-react";
-import { Fragment, type ReactNode, useEffect, useState } from "react";
+import { Fragment, type ReactNode, type Ref, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   buildPlanRolloutRouteFromPlanName,
   buildSpecDetailRouteFromPlanName,
 } from "@/app/router/routeHelpers";
 import { AccountTypeBadge } from "@/components/AccountTypeBadge";
-import { HumanizeTs } from "@/components/HumanizeTs";
+import { HumanizeTs, type TimestampLink } from "@/components/HumanizeTs";
 import {
   type ActivityIconSpec,
   ICON_BADGE_TONE,
@@ -63,6 +63,9 @@ interface ActivityProps {
   // their canonical spec detail route.
   linkless?: boolean;
   renderPlanChangeReference?: PlanChangeReferenceRenderer;
+  // The comment's own address, where the page gives it one: its timestamp is
+  // then this link.
+  timestampLink?: TimestampLink;
 }
 
 export type PlanChangeReferenceRenderer = ({
@@ -161,6 +164,8 @@ export function ActivityRowShell({
   icon,
   id,
   isLast,
+  linked = false,
+  rowRef,
   subjectSuffix,
 }: {
   body?: ReactNode;
@@ -168,17 +173,28 @@ export function ActivityRowShell({
   icon: ReactNode;
   id?: string;
   isLast: boolean;
+  // The page's address names this row, which is then outlined.
+  linked?: boolean;
+  rowRef?: Ref<HTMLDivElement>;
   subjectSuffix?: ReactNode;
 }) {
   return (
     <ActivityRowFrame compact={!body} icon={icon} id={id} isLast={isLast}>
       <div
+        aria-current={linked || undefined}
         className={cn(
           "overflow-hidden rounded-sm border",
           body
             ? "ml-3 border-block-border bg-background"
-            : "ml-1 border-transparent"
+            : "ml-1 border-transparent",
+          // Positioned, so the outline is drawn over the white ring of the
+          // row's icon beside it and not under it.
+          linked ? "relative outline-2 outline-accent" : "outline-hidden",
+          // A one-line row is outlined around its words, not the whole width.
+          linked && !body && "w-fit max-w-full"
         )}
+        data-linked={linked || undefined}
+        ref={rowRef}
       >
         <div
           className={cn(
@@ -227,6 +243,7 @@ function IssueCommentHeader({
   plan,
   renderPlanChangeReference,
   similarCount,
+  timestampLink,
 }: ActivityProps & { similarCount?: number }) {
   const { t } = useTranslation();
   const createdTs = getTimeForPbTimestampProtoEs(comment.createTime);
@@ -250,7 +267,11 @@ function IssueCommentHeader({
           {t("activity.n-similar-activities", { count: similarCount })}
         </Badge>
       )}
-      <HumanizeTs className="text-xs text-control-light" tsMs={createdTs} />
+      <HumanizeTs
+        className="text-xs text-control-light"
+        link={timestampLink}
+        tsMs={createdTs}
+      />
       {isEdited && (
         <span className="text-control-light text-xs">
           ({t("common.edited")})
@@ -267,14 +288,19 @@ export function IssueCommentRow({
   comment,
   isLast,
   issue,
+  linked,
   linkless,
   plan,
   renderPlanChangeReference,
+  rowRef,
   similarCount,
   subjectSuffix,
+  timestampLink,
 }: ActivityProps & {
   body?: ReactNode;
   isLast: boolean;
+  linked?: boolean;
+  rowRef?: Ref<HTMLDivElement>;
   similarCount?: number;
   subjectSuffix?: ReactNode;
 }) {
@@ -289,6 +315,7 @@ export function IssueCommentRow({
           plan={plan}
           renderPlanChangeReference={renderPlanChangeReference}
           similarCount={similarCount}
+          timestampLink={timestampLink}
         />
       }
       icon={
@@ -296,6 +323,8 @@ export function IssueCommentRow({
       }
       id={comment.name}
       isLast={isLast}
+      linked={linked}
+      rowRef={rowRef}
       subjectSuffix={subjectSuffix}
     />
   );

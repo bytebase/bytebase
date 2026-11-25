@@ -1,4 +1,5 @@
-import type { ComponentType } from "react";
+import type { ComponentType, MouseEventHandler } from "react";
+import { cloneElement } from "react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useTimeReading } from "@/hooks/useTimeReading";
@@ -61,7 +62,20 @@ interface HumanizeTsProps {
    * AgentTooltip at the call site instead.
    */
   tooltip?: boolean;
+  /**
+   * Makes the label a link to what the timestamp belongs to. The link is the
+   * tooltip's trigger, so the hidden reading also shows on keyboard focus.
+   */
+  link?: TimestampLink;
 }
+
+export interface TimestampLink {
+  href: string;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
+}
+
+const LINK_CLASS_NAME =
+  "rounded-xs underline-offset-2 hover:text-control hover:underline focus:outline-hidden focus-visible:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2";
 
 // Tooltip bodies mount only while open, so as components they cost nothing
 // for the rows nobody hovers, and a time-varying one can keep counting.
@@ -131,6 +145,7 @@ export function HumanizeTs({
   className,
   truncate = false,
   tooltip = true,
+  link,
 }: HumanizeTsProps) {
   // Subscribe to locale changes so the rendered strings update on a language switch.
   useTranslation();
@@ -157,14 +172,20 @@ export function HumanizeTs({
         className
       );
   const content = segments ? <DateKeptWhole {...segments} /> : label;
+  const box = link ? (
+    <a
+      className={cn(boxClassName, LINK_CLASS_NAME)}
+      href={link.href}
+      onClick={link.onClick}
+    />
+  ) : (
+    <span className={boxClassName} />
+  );
   if (!tooltip) {
-    return <span className={boxClassName}>{content}</span>;
+    return cloneElement(box, undefined, content);
   }
   return (
-    <Tooltip
-      content={<Hidden tsMs={tsMs} />}
-      render={<span className={boxClassName} />}
-    >
+    <Tooltip content={<Hidden tsMs={tsMs} />} render={box}>
       {content}
     </Tooltip>
   );

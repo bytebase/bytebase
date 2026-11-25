@@ -867,6 +867,24 @@ export declare type ListIssueCommentsResponse = Message<"bytebase.v1.ListIssueCo
 export declare const ListIssueCommentsResponseSchema: GenMessage<ListIssueCommentsResponse>;
 
 /**
+ * @generated from message bytebase.v1.GetIssueCommentRequest
+ */
+export declare type GetIssueCommentRequest = Message<"bytebase.v1.GetIssueCommentRequest"> & {
+  /**
+   * Format: projects/{project}/issues/{issue}/issueComments/{issueComment}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.GetIssueCommentRequest.
+ * Use `create(GetIssueCommentRequestSchema)` to create a new message.
+ */
+export declare const GetIssueCommentRequestSchema: GenMessage<GetIssueCommentRequest>;
+
+/**
  * @generated from message bytebase.v1.CreateIssueCommentRequest
  */
 export declare type CreateIssueCommentRequest = Message<"bytebase.v1.CreateIssueCommentRequest"> & {
@@ -1645,6 +1663,20 @@ export declare const IssueService: GenService<{
     methodKind: "unary";
     input: typeof ListIssueCommentsRequestSchema;
     output: typeof ListIssueCommentsResponseSchema;
+  },
+  /**
+   * Gets a comment on an issue: an event, a root comment or a reply.
+   * The web address of a comment is its plan's page followed by
+   * #issueComments/{issueComment}; the plan's issue field and that fragment,
+   * joined by a slash, are the comment's name.
+   * Permissions required: bb.issueComments.list
+   *
+   * @generated from rpc bytebase.v1.IssueService.GetIssueComment
+   */
+  getIssueComment: {
+    methodKind: "unary";
+    input: typeof GetIssueCommentRequestSchema;
+    output: typeof IssueCommentSchema;
   },
   /**
    * Adds a comment to an issue.

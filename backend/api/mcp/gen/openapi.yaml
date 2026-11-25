@@ -3264,6 +3264,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Issue'
+  /bytebase.v1.IssueService/GetIssueComment:
+    post:
+      tags:
+        - bytebase.v1.IssueService
+      summary: GetIssueComment
+      description: |-
+        Gets a comment on an issue: an event, a root comment or a reply.
+         The web address of a comment is its plan's page followed by
+         #issueComments/{issueComment}; the plan's issue field and that fragment,
+         joined by a slash, are the comment's name.
+         Permissions required: bb.issueComments.list
+      operationId: bytebase.v1.IssueService.GetIssueComment
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          description: Define the version of the Connect protocol
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
+        - name: Connect-Timeout-Ms
+          in: header
+          description: Define the timeout, in ms
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetIssueCommentRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.IssueComment'
   /bytebase.v1.IssueService/GetReviewRun:
     post:
       tags:
@@ -14194,6 +14238,17 @@ components:
             The name of the instance to retrieve.
              Format: instances/{instance} or projects/{project}/instances/{instance}
       title: GetInstanceRequest
+      required:
+        - name
+      additionalProperties: false
+    bytebase.v1.GetIssueCommentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: 'Format: projects/{project}/issues/{issue}/issueComments/{issueComment}'
+      title: GetIssueCommentRequest
       required:
         - name
       additionalProperties: false

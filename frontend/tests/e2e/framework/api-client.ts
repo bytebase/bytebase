@@ -859,6 +859,13 @@ export class BytebaseApiClient {
     );
   }
 
+  // Reads one comment by name: an event, a root comment or a reply.
+  async getIssueComment(
+    commentName: string,
+  ): Promise<{ name: string; comment: string; root?: string }> {
+    return this.request("GET", `/v1/${commentName}`);
+  }
+
   // `root` creates a reply in that thread; `statementAnchor` starts a thread
   // anchored to whole lines of the spec's saved sheet (zero columns, inclusive
   // end line). Both omitted: a general comment.

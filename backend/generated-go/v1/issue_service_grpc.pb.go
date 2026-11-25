@@ -25,6 +25,7 @@ const (
 	IssueService_SearchIssues_FullMethodName            = "/bytebase.v1.IssueService/SearchIssues"
 	IssueService_UpdateIssue_FullMethodName             = "/bytebase.v1.IssueService/UpdateIssue"
 	IssueService_ListIssueComments_FullMethodName       = "/bytebase.v1.IssueService/ListIssueComments"
+	IssueService_GetIssueComment_FullMethodName         = "/bytebase.v1.IssueService/GetIssueComment"
 	IssueService_CreateIssueComment_FullMethodName      = "/bytebase.v1.IssueService/CreateIssueComment"
 	IssueService_UpdateIssueComment_FullMethodName      = "/bytebase.v1.IssueService/UpdateIssueComment"
 	IssueService_BatchUpdateIssuesStatus_FullMethodName = "/bytebase.v1.IssueService/BatchUpdateIssuesStatus"
@@ -60,6 +61,12 @@ type IssueServiceClient interface {
 	// Lists comments on an issue.
 	// Permissions required: bb.issueComments.list
 	ListIssueComments(ctx context.Context, in *ListIssueCommentsRequest, opts ...grpc.CallOption) (*ListIssueCommentsResponse, error)
+	// Gets a comment on an issue: an event, a root comment or a reply.
+	// The web address of a comment is its plan's page followed by
+	// #issueComments/{issueComment}; the plan's issue field and that fragment,
+	// joined by a slash, are the comment's name.
+	// Permissions required: bb.issueComments.list
+	GetIssueComment(ctx context.Context, in *GetIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
 	// Adds a comment to an issue.
 	// Permissions required: bb.issueComments.create
 	CreateIssueComment(ctx context.Context, in *CreateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
@@ -166,6 +173,16 @@ func (c *issueServiceClient) ListIssueComments(ctx context.Context, in *ListIssu
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListIssueCommentsResponse)
 	err := c.cc.Invoke(ctx, IssueService_ListIssueComments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *issueServiceClient) GetIssueComment(ctx context.Context, in *GetIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IssueComment)
+	err := c.cc.Invoke(ctx, IssueService_GetIssueComment_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -286,6 +303,12 @@ type IssueServiceServer interface {
 	// Lists comments on an issue.
 	// Permissions required: bb.issueComments.list
 	ListIssueComments(context.Context, *ListIssueCommentsRequest) (*ListIssueCommentsResponse, error)
+	// Gets a comment on an issue: an event, a root comment or a reply.
+	// The web address of a comment is its plan's page followed by
+	// #issueComments/{issueComment}; the plan's issue field and that fragment,
+	// joined by a slash, are the comment's name.
+	// Permissions required: bb.issueComments.list
+	GetIssueComment(context.Context, *GetIssueCommentRequest) (*IssueComment, error)
 	// Adds a comment to an issue.
 	// Permissions required: bb.issueComments.create
 	CreateIssueComment(context.Context, *CreateIssueCommentRequest) (*IssueComment, error)
@@ -355,6 +378,9 @@ func (UnimplementedIssueServiceServer) UpdateIssue(context.Context, *UpdateIssue
 }
 func (UnimplementedIssueServiceServer) ListIssueComments(context.Context, *ListIssueCommentsRequest) (*ListIssueCommentsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListIssueComments not implemented")
+}
+func (UnimplementedIssueServiceServer) GetIssueComment(context.Context, *GetIssueCommentRequest) (*IssueComment, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetIssueComment not implemented")
 }
 func (UnimplementedIssueServiceServer) CreateIssueComment(context.Context, *CreateIssueCommentRequest) (*IssueComment, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateIssueComment not implemented")
@@ -508,6 +534,24 @@ func _IssueService_ListIssueComments_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(IssueServiceServer).ListIssueComments(ctx, req.(*ListIssueCommentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IssueService_GetIssueComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetIssueCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IssueServiceServer).GetIssueComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IssueService_GetIssueComment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IssueServiceServer).GetIssueComment(ctx, req.(*GetIssueCommentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -704,6 +748,10 @@ var IssueService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListIssueComments",
 			Handler:    _IssueService_ListIssueComments_Handler,
+		},
+		{
+			MethodName: "GetIssueComment",
+			Handler:    _IssueService_GetIssueComment_Handler,
 		},
 		{
 			MethodName: "CreateIssueComment",

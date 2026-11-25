@@ -422,6 +422,13 @@ func TestGetResourceFromRequest(t *testing.T) {
 			want:    []string{""},
 		},
 		{
+			// Without a resource reference on name, the check would fall back
+			// to the workspace and refuse a project member.
+			request: &v1pb.GetIssueCommentRequest{Name: "projects/hello/issues/1/issueComments/comment-a"},
+			method:  "/bytebase.v1.IssueService/GetIssueComment",
+			want:    []string{"projects/hello/issues/1/issueComments/comment-a"},
+		},
+		{
 			request: &v1pb.BatchUpdateDatabasesRequest{
 				Requests: []*v1pb.UpdateDatabaseRequest{
 					{Database: &v1pb.Database{Name: "instances/hello/databases/hello"}},

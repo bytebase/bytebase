@@ -1,5 +1,11 @@
 import { create } from "@bufbuild/protobuf";
-import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  waitFor,
+} from "@testing-library/react";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { Plan_ChangeDatabaseConfigSchema, Plan_SpecSchema, PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
@@ -279,6 +285,33 @@ describe("StatementAnchorContext", () => {
     expect(bar().getAttribute("data-link")).toBeNull();
     await waitFor(() => expect(state()).toBe("CURRENT"));
     expect(bar().getAttribute("data-link")).toBe("yes");
+  });
+
+  test("keeps the excerpt's height while the recorded revision loads, so nothing under it moves", async () => {
+    delete mocks.sheets[savedName];
+    let arrive: (sheet: unknown) => void = () => {};
+    mocks.fetchSheet.mockReturnValueOnce(
+      new Promise((resolve) => {
+        arrive = resolve;
+      })
+    );
+    // One commented line borrows the two before it, as the excerpt will.
+    const { container } = renderAnchor({ anchor: anchor(5, 5), placement: OUTDATED });
+    const placeholder = () =>
+      container.querySelector<HTMLElement>("[data-testid='excerpt-placeholder']");
+    // Three lines of 1.5rem and the excerpt's 1rem of padding.
+    expect(placeholder()?.style.height).toBe("5.5rem");
+    expect(container.querySelector("[data-line-number]")).toBeNull();
+    const sheet = create(SheetSchema, { name: savedName, content: new TextEncoder().encode(original) });
+    mocks.sheets[savedName] = sheet;
+    await act(async () => arrive(sheet));
+    await waitFor(() => expect(container.querySelectorAll("[data-line-number]")).toHaveLength(3));
+    expect(placeholder()).toBeNull();
+  });
+
+  test("a thread that is not on lines keeps no room for an excerpt", () => {
+    const { container } = renderAnchor({ anchor: undefined, placement: undefined });
+    expect(container.querySelector("[data-testid='excerpt-placeholder']")).toBeNull();
   });
 
   test("fetches a missing recorded revision instead of using the current SQL", async () => {

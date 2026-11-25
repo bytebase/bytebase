@@ -33,6 +33,9 @@ export interface TimelineEntry {
   // consecutive similar activities (e.g. repeated label edits). Drives the
   // "(N similar activities)" badge. Absent means a standalone row.
   similarCount?: number;
+  // With similarCount, the ids of the entries this row stands in for, so the
+  // address of any of them lands on it.
+  standsFor?: string[];
   // An open run, which the long-history fold leaves in place.
   pinned?: boolean;
   // A run's group: the card of every finding it posted while open, none while

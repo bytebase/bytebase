@@ -185,6 +185,7 @@
     - [BatchUpdateIssuesStatusResponse](#bytebase-v1-BatchUpdateIssuesStatusResponse)
     - [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest)
     - [CreateIssueRequest](#bytebase-v1-CreateIssueRequest)
+    - [GetIssueCommentRequest](#bytebase-v1-GetIssueCommentRequest)
     - [GetIssueRequest](#bytebase-v1-GetIssueRequest)
     - [GetReviewRunRequest](#bytebase-v1-GetReviewRunRequest)
     - [Issue](#bytebase-v1-Issue)
@@ -3616,6 +3617,21 @@ needs a person&#39;s acceptance, not that it is forbidden.
 
 
 
+<a name="bytebase-v1-GetIssueCommentRequest"></a>
+
+### GetIssueCommentRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/issueComments/{issueComment} |
+
+
+
+
+
+
 <a name="bytebase-v1-GetIssueRequest"></a>
 
 ### GetIssueRequest
@@ -4204,6 +4220,7 @@ IssueService manages issues for tracking database changes and tasks.
 | SearchIssues | [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest) | [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse) | Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter &amp; query. Permissions required: bb.issues.get |
 | UpdateIssue | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | [Issue](#bytebase-v1-Issue) | Updates an issue&#39;s properties such as title, description, or labels. Permissions required: bb.issues.update |
 | ListIssueComments | [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest) | [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse) | Lists comments on an issue. Permissions required: bb.issueComments.list |
+| GetIssueComment | [GetIssueCommentRequest](#bytebase-v1-GetIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) | Gets a comment on an issue: an event, a root comment or a reply. The web address of a comment is its plan&#39;s page followed by #issueComments/{issueComment}; the plan&#39;s issue field and that fragment, joined by a slash, are the comment&#39;s name. Permissions required: bb.issueComments.list |
 | CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) | Adds a comment to an issue. Permissions required: bb.issueComments.create |
 | UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) | Updates an existing issue comment. Permissions required: bb.issueComments.update |
 | BatchUpdateIssuesStatus | [BatchUpdateIssuesStatusRequest](#bytebase-v1-BatchUpdateIssuesStatusRequest) | [BatchUpdateIssuesStatusResponse](#bytebase-v1-BatchUpdateIssuesStatusResponse) | Updates the status of multiple issues in a single operation. Permissions required: bb.issues.update |

@@ -146,6 +146,8 @@ export function StatementAnchorContext({
         statement={statement}
         range={range}
       />
+    ) : range && sheetName !== "" && !loaded ? (
+      <ExcerptPlaceholder range={range} />
     ) : undefined;
 
   return (
@@ -191,6 +193,29 @@ const colorizedLinesOf = (
   return lines;
 };
 
+const excerptStartLine = (range: LineRange): number => {
+  const commentedLines = range.endLine - range.startLine + 1;
+  return Math.max(
+    1,
+    range.startLine - Math.max(0, MIN_EXCERPT_LINES - commentedLines)
+  );
+};
+
+// The excerpt's box before its sheet loads, as tall as the excerpt will be,
+// so what is under it does not move when the lines arrive.
+function ExcerptPlaceholder({ range }: { range: LineRange }) {
+  const lines = range.endLine - excerptStartLine(range) + 1;
+  return (
+    <div
+      aria-hidden="true"
+      className="box-border bg-control-bg"
+      data-testid="excerpt-placeholder"
+      // The excerpt's lines are leading-6, inside py-2.
+      style={{ height: `${lines * 1.5 + 1}rem` }}
+    />
+  );
+}
+
 function SqlExcerpt({
   dimmed,
   sheetName,
@@ -202,11 +227,7 @@ function SqlExcerpt({
   statement: string;
   range: LineRange;
 }) {
-  const commentedLines = range.endLine - range.startLine + 1;
-  const startLine = Math.max(
-    1,
-    range.startLine - Math.max(0, MIN_EXCERPT_LINES - commentedLines)
-  );
+  const startLine = excerptStartLine(range);
   const [scrolled, setScrolled] = useState(false);
   const lines = useMemo(
     () => excerptLines(statement, { startLine, endLine: range.endLine }),

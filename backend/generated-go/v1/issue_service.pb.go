@@ -188,7 +188,7 @@ func (x IssueComment_ThreadState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use IssueComment_ThreadState.Descriptor instead.
 func (IssueComment_ThreadState) EnumDescriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{21, 0}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{22, 0}
 }
 
 // Priority says what resolving the thread means. It has no bearing on
@@ -245,7 +245,7 @@ func (x IssueComment_ReviewMetadata_Priority) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use IssueComment_ReviewMetadata_Priority.Descriptor instead.
 func (IssueComment_ReviewMetadata_Priority) EnumDescriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{21, 0, 0}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{22, 0, 0}
 }
 
 // Approval status values.
@@ -302,7 +302,7 @@ func (x IssueComment_Approval_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use IssueComment_Approval_Status.Descriptor instead.
 func (IssueComment_Approval_Status) EnumDescriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{21, 1, 0}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{22, 1, 0}
 }
 
 // There is no canceled state: a run has no effect until its fenced
@@ -361,7 +361,7 @@ func (x ReviewRun_State) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ReviewRun_State.Descriptor instead.
 func (ReviewRun_State) EnumDescriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{23, 0}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{24, 0}
 }
 
 type GetIssueRequest struct {
@@ -1715,6 +1715,51 @@ func (x *ListIssueCommentsResponse) GetNextPageToken() string {
 	return ""
 }
 
+type GetIssueCommentRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Format: projects/{project}/issues/{issue}/issueComments/{issueComment}
+	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetIssueCommentRequest) Reset() {
+	*x = GetIssueCommentRequest{}
+	mi := &file_v1_issue_service_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetIssueCommentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetIssueCommentRequest) ProtoMessage() {}
+
+func (x *GetIssueCommentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_issue_service_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetIssueCommentRequest.ProtoReflect.Descriptor instead.
+func (*GetIssueCommentRequest) Descriptor() ([]byte, []int) {
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *GetIssueCommentRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
 type CreateIssueCommentRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The issue name
@@ -1728,7 +1773,7 @@ type CreateIssueCommentRequest struct {
 
 func (x *CreateIssueCommentRequest) Reset() {
 	*x = CreateIssueCommentRequest{}
-	mi := &file_v1_issue_service_proto_msgTypes[19]
+	mi := &file_v1_issue_service_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1740,7 +1785,7 @@ func (x *CreateIssueCommentRequest) String() string {
 func (*CreateIssueCommentRequest) ProtoMessage() {}
 
 func (x *CreateIssueCommentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[19]
+	mi := &file_v1_issue_service_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1753,7 +1798,7 @@ func (x *CreateIssueCommentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateIssueCommentRequest.ProtoReflect.Descriptor instead.
 func (*CreateIssueCommentRequest) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{19}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *CreateIssueCommentRequest) GetParent() string {
@@ -1788,7 +1833,7 @@ type UpdateIssueCommentRequest struct {
 
 func (x *UpdateIssueCommentRequest) Reset() {
 	*x = UpdateIssueCommentRequest{}
-	mi := &file_v1_issue_service_proto_msgTypes[20]
+	mi := &file_v1_issue_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1800,7 +1845,7 @@ func (x *UpdateIssueCommentRequest) String() string {
 func (*UpdateIssueCommentRequest) ProtoMessage() {}
 
 func (x *UpdateIssueCommentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[20]
+	mi := &file_v1_issue_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1813,7 +1858,7 @@ func (x *UpdateIssueCommentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateIssueCommentRequest.ProtoReflect.Descriptor instead.
 func (*UpdateIssueCommentRequest) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{20}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *UpdateIssueCommentRequest) GetParent() string {
@@ -1892,7 +1937,7 @@ type IssueComment struct {
 
 func (x *IssueComment) Reset() {
 	*x = IssueComment{}
-	mi := &file_v1_issue_service_proto_msgTypes[21]
+	mi := &file_v1_issue_service_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1904,7 +1949,7 @@ func (x *IssueComment) String() string {
 func (*IssueComment) ProtoMessage() {}
 
 func (x *IssueComment) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[21]
+	mi := &file_v1_issue_service_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1917,7 +1962,7 @@ func (x *IssueComment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueComment.ProtoReflect.Descriptor instead.
 func (*IssueComment) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{21}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *IssueComment) GetName() string {
@@ -2101,7 +2146,7 @@ type StatementAnchor struct {
 
 func (x *StatementAnchor) Reset() {
 	*x = StatementAnchor{}
-	mi := &file_v1_issue_service_proto_msgTypes[22]
+	mi := &file_v1_issue_service_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2113,7 +2158,7 @@ func (x *StatementAnchor) String() string {
 func (*StatementAnchor) ProtoMessage() {}
 
 func (x *StatementAnchor) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[22]
+	mi := &file_v1_issue_service_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2126,7 +2171,7 @@ func (x *StatementAnchor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StatementAnchor.ProtoReflect.Descriptor instead.
 func (*StatementAnchor) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{22}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *StatementAnchor) GetSpec() string {
@@ -2182,7 +2227,7 @@ type ReviewRun struct {
 
 func (x *ReviewRun) Reset() {
 	*x = ReviewRun{}
-	mi := &file_v1_issue_service_proto_msgTypes[23]
+	mi := &file_v1_issue_service_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2194,7 +2239,7 @@ func (x *ReviewRun) String() string {
 func (*ReviewRun) ProtoMessage() {}
 
 func (x *ReviewRun) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[23]
+	mi := &file_v1_issue_service_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2207,7 +2252,7 @@ func (x *ReviewRun) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReviewRun.ProtoReflect.Descriptor instead.
 func (*ReviewRun) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{23}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ReviewRun) GetName() string {
@@ -2263,7 +2308,7 @@ type GetReviewRunRequest struct {
 
 func (x *GetReviewRunRequest) Reset() {
 	*x = GetReviewRunRequest{}
-	mi := &file_v1_issue_service_proto_msgTypes[24]
+	mi := &file_v1_issue_service_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2275,7 +2320,7 @@ func (x *GetReviewRunRequest) String() string {
 func (*GetReviewRunRequest) ProtoMessage() {}
 
 func (x *GetReviewRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[24]
+	mi := &file_v1_issue_service_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2288,7 +2333,7 @@ func (x *GetReviewRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetReviewRunRequest.ProtoReflect.Descriptor instead.
 func (*GetReviewRunRequest) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{24}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *GetReviewRunRequest) GetName() string {
@@ -2308,7 +2353,7 @@ type RunReviewRequest struct {
 
 func (x *RunReviewRequest) Reset() {
 	*x = RunReviewRequest{}
-	mi := &file_v1_issue_service_proto_msgTypes[25]
+	mi := &file_v1_issue_service_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2320,7 +2365,7 @@ func (x *RunReviewRequest) String() string {
 func (*RunReviewRequest) ProtoMessage() {}
 
 func (x *RunReviewRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[25]
+	mi := &file_v1_issue_service_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2333,7 +2378,7 @@ func (x *RunReviewRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunReviewRequest.ProtoReflect.Descriptor instead.
 func (*RunReviewRequest) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{25}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *RunReviewRequest) GetName() string {
@@ -2356,7 +2401,7 @@ type Issue_Approver struct {
 
 func (x *Issue_Approver) Reset() {
 	*x = Issue_Approver{}
-	mi := &file_v1_issue_service_proto_msgTypes[26]
+	mi := &file_v1_issue_service_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2368,7 +2413,7 @@ func (x *Issue_Approver) String() string {
 func (*Issue_Approver) ProtoMessage() {}
 
 func (x *Issue_Approver) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[26]
+	mi := &file_v1_issue_service_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2428,7 +2473,7 @@ type IssueComment_ReviewMetadata struct {
 
 func (x *IssueComment_ReviewMetadata) Reset() {
 	*x = IssueComment_ReviewMetadata{}
-	mi := &file_v1_issue_service_proto_msgTypes[27]
+	mi := &file_v1_issue_service_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2440,7 +2485,7 @@ func (x *IssueComment_ReviewMetadata) String() string {
 func (*IssueComment_ReviewMetadata) ProtoMessage() {}
 
 func (x *IssueComment_ReviewMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[27]
+	mi := &file_v1_issue_service_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2453,7 +2498,7 @@ func (x *IssueComment_ReviewMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueComment_ReviewMetadata.ProtoReflect.Descriptor instead.
 func (*IssueComment_ReviewMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{21, 0}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{22, 0}
 }
 
 func (x *IssueComment_ReviewMetadata) GetRuleType() ReviewRuleType {
@@ -2516,7 +2561,7 @@ type IssueComment_Approval struct {
 
 func (x *IssueComment_Approval) Reset() {
 	*x = IssueComment_Approval{}
-	mi := &file_v1_issue_service_proto_msgTypes[28]
+	mi := &file_v1_issue_service_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2528,7 +2573,7 @@ func (x *IssueComment_Approval) String() string {
 func (*IssueComment_Approval) ProtoMessage() {}
 
 func (x *IssueComment_Approval) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[28]
+	mi := &file_v1_issue_service_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2541,7 +2586,7 @@ func (x *IssueComment_Approval) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueComment_Approval.ProtoReflect.Descriptor instead.
 func (*IssueComment_Approval) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{21, 1}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{22, 1}
 }
 
 func (x *IssueComment_Approval) GetStatus() IssueComment_Approval_Status {
@@ -2568,7 +2613,7 @@ type IssueComment_IssueUpdate struct {
 
 func (x *IssueComment_IssueUpdate) Reset() {
 	*x = IssueComment_IssueUpdate{}
-	mi := &file_v1_issue_service_proto_msgTypes[29]
+	mi := &file_v1_issue_service_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2580,7 +2625,7 @@ func (x *IssueComment_IssueUpdate) String() string {
 func (*IssueComment_IssueUpdate) ProtoMessage() {}
 
 func (x *IssueComment_IssueUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[29]
+	mi := &file_v1_issue_service_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2593,7 +2638,7 @@ func (x *IssueComment_IssueUpdate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueComment_IssueUpdate.ProtoReflect.Descriptor instead.
 func (*IssueComment_IssueUpdate) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{21, 2}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{22, 2}
 }
 
 func (x *IssueComment_IssueUpdate) GetFromTitle() string {
@@ -2661,7 +2706,7 @@ type IssueComment_ReviewSubmission struct {
 
 func (x *IssueComment_ReviewSubmission) Reset() {
 	*x = IssueComment_ReviewSubmission{}
-	mi := &file_v1_issue_service_proto_msgTypes[30]
+	mi := &file_v1_issue_service_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2673,7 +2718,7 @@ func (x *IssueComment_ReviewSubmission) String() string {
 func (*IssueComment_ReviewSubmission) ProtoMessage() {}
 
 func (x *IssueComment_ReviewSubmission) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[30]
+	mi := &file_v1_issue_service_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2686,7 +2731,7 @@ func (x *IssueComment_ReviewSubmission) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueComment_ReviewSubmission.ProtoReflect.Descriptor instead.
 func (*IssueComment_ReviewSubmission) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{21, 3}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{22, 3}
 }
 
 // A review run completed, and what it did to the earlier results. Posted
@@ -2708,7 +2753,7 @@ type IssueComment_ReviewRunCompletion struct {
 
 func (x *IssueComment_ReviewRunCompletion) Reset() {
 	*x = IssueComment_ReviewRunCompletion{}
-	mi := &file_v1_issue_service_proto_msgTypes[31]
+	mi := &file_v1_issue_service_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2720,7 +2765,7 @@ func (x *IssueComment_ReviewRunCompletion) String() string {
 func (*IssueComment_ReviewRunCompletion) ProtoMessage() {}
 
 func (x *IssueComment_ReviewRunCompletion) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[31]
+	mi := &file_v1_issue_service_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2733,7 +2778,7 @@ func (x *IssueComment_ReviewRunCompletion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueComment_ReviewRunCompletion.ProtoReflect.Descriptor instead.
 func (*IssueComment_ReviewRunCompletion) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{21, 4}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{22, 4}
 }
 
 func (x *IssueComment_ReviewRunCompletion) GetAttempt() int64 {
@@ -2776,7 +2821,7 @@ type IssueComment_PlanUpdate struct {
 
 func (x *IssueComment_PlanUpdate) Reset() {
 	*x = IssueComment_PlanUpdate{}
-	mi := &file_v1_issue_service_proto_msgTypes[32]
+	mi := &file_v1_issue_service_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2788,7 +2833,7 @@ func (x *IssueComment_PlanUpdate) String() string {
 func (*IssueComment_PlanUpdate) ProtoMessage() {}
 
 func (x *IssueComment_PlanUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[32]
+	mi := &file_v1_issue_service_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2801,7 +2846,7 @@ func (x *IssueComment_PlanUpdate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueComment_PlanUpdate.ProtoReflect.Descriptor instead.
 func (*IssueComment_PlanUpdate) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{21, 5}
+	return file_v1_issue_service_proto_rawDescGZIP(), []int{22, 5}
 }
 
 func (x *IssueComment_PlanUpdate) GetFromSpecs() []*Plan_Spec {
@@ -2943,7 +2988,10 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x06filter\x18\x04 \x01(\tR\x06filter\"\x85\x01\n" +
 	"\x19ListIssueCommentsResponse\x12@\n" +
 	"\x0eissue_comments\x18\x01 \x03(\v2\x19.bytebase.v1.IssueCommentR\rissueComments\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x90\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"P\n" +
+	"\x16GetIssueCommentRequest\x126\n" +
+	"\x04name\x18\x01 \x01(\tB\"\xe2A\x01\x02\xfaA\x1b\n" +
+	"\x19bytebase.com/IssueCommentR\x04name\"\x90\x01\n" +
 	"\x19CreateIssueCommentRequest\x123\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x06parent\x12>\n" +
@@ -3059,7 +3107,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x16bytebase.com/ReviewRunR\x04name\"G\n" +
 	"\x10RunReviewRequest\x123\n" +
 	"\x04name\x18\x01 \x01(\tB\x1f\xe2A\x01\x02\xfaA\x18\n" +
-	"\x16bytebase.com/ReviewRunR\x04name2\xee\x13\n" +
+	"\x16bytebase.com/ReviewRunR\x04name2\xa2\x15\n" +
 	"\fIssueService\x12\x84\x01\n" +
 	"\bGetIssue\x12\x1c.bytebase.v1.GetIssueRequest\x1a\x12.bytebase.v1.Issue\"F\xdaA\x04name\x8a\xea0\rbb.issues.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/issues/*}\x12\xa0\x01\n" +
 	"\vCreateIssue\x12\x1f.bytebase.v1.CreateIssueRequest\x1a\x12.bytebase.v1.Issue\"\\\xdaA\fparent,issue\x8a\xea0\x10bb.issues.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02':\x05issue\"\x1e/v1/{parent=projects/*}/issues\x12\x98\x01\n" +
@@ -3067,7 +3115,8 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"ListIssues\x12\x1e.bytebase.v1.ListIssuesRequest\x1a\x1f.bytebase.v1.ListIssuesResponse\"I\xdaA\x06parent\x8a\xea0\x0ebb.issues.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{parent=projects/*}/issues\x12\x9e\x01\n" +
 	"\fSearchIssues\x12 .bytebase.v1.SearchIssuesRequest\x1a!.bytebase.v1.SearchIssuesResponse\"I\x8a\xea0\rbb.issues.get\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/{parent=projects/*}/issues:search\x12\xab\x01\n" +
 	"\vUpdateIssue\x12\x1f.bytebase.v1.UpdateIssueRequest\x1a\x12.bytebase.v1.Issue\"g\xdaA\x11issue,update_mask\x8a\xea0\x10bb.issues.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02-:\x05issue2$/v1/{issue.name=projects/*/issues/*}\x12\xc4\x01\n" +
-	"\x11ListIssueComments\x12%.bytebase.v1.ListIssueCommentsRequest\x1a&.bytebase.v1.ListIssueCommentsResponse\"`\xdaA\x06parent\x8a\xea0\x15bb.issueComments.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{parent=projects/*/issues/*}/issueComments\x12\xd6\x01\n" +
+	"\x11ListIssueComments\x12%.bytebase.v1.ListIssueCommentsRequest\x1a&.bytebase.v1.ListIssueCommentsResponse\"`\xdaA\x06parent\x8a\xea0\x15bb.issueComments.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{parent=projects/*/issues/*}/issueComments\x12\xb1\x01\n" +
+	"\x0fGetIssueComment\x12#.bytebase.v1.GetIssueCommentRequest\x1a\x19.bytebase.v1.IssueComment\"^\xdaA\x04name\x8a\xea0\x15bb.issueComments.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{name=projects/*/issues/*/issueComments/*}\x12\xd6\x01\n" +
 	"\x12CreateIssueComment\x12&.bytebase.v1.CreateIssueCommentRequest\x1a\x19.bytebase.v1.IssueComment\"}\xdaA\x14parent,issue_comment\x8a\xea0\x17bb.issueComments.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x029:\rissue_comment\"(/v1/{parent=projects/*/issues/*}:comment\x12\xe3\x01\n" +
 	"\x12UpdateIssueComment\x12&.bytebase.v1.UpdateIssueCommentRequest\x1a\x19.bytebase.v1.IssueComment\"\x89\x01\xdaA parent,issue_comment,update_mask\x8a\xea0\x17bb.issueComments.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x029:\rissue_comment2(/v1/{parent=projects/*/issues/*}:comment\x12\xd1\x01\n" +
 	"\x17BatchUpdateIssuesStatus\x12+.bytebase.v1.BatchUpdateIssuesStatusRequest\x1a,.bytebase.v1.BatchUpdateIssuesStatusResponse\"[\x8a\xea0\x10bb.issues.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x025:\x01*\"0/v1/{parent=projects/*}/issues:batchUpdateStatus\x12\x83\x01\n" +
@@ -3092,7 +3141,7 @@ func file_v1_issue_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_issue_service_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_v1_issue_service_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_v1_issue_service_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_v1_issue_service_proto_goTypes = []any{
 	(Issue_Type)(0),                           // 0: bytebase.v1.Issue.Type
 	(Issue_Approver_Status)(0),                // 1: bytebase.v1.Issue.Approver.Status
@@ -3119,111 +3168,114 @@ var file_v1_issue_service_proto_goTypes = []any{
 	(*ApprovalFlow)(nil),                      // 22: bytebase.v1.ApprovalFlow
 	(*ListIssueCommentsRequest)(nil),          // 23: bytebase.v1.ListIssueCommentsRequest
 	(*ListIssueCommentsResponse)(nil),         // 24: bytebase.v1.ListIssueCommentsResponse
-	(*CreateIssueCommentRequest)(nil),         // 25: bytebase.v1.CreateIssueCommentRequest
-	(*UpdateIssueCommentRequest)(nil),         // 26: bytebase.v1.UpdateIssueCommentRequest
-	(*IssueComment)(nil),                      // 27: bytebase.v1.IssueComment
-	(*StatementAnchor)(nil),                   // 28: bytebase.v1.StatementAnchor
-	(*ReviewRun)(nil),                         // 29: bytebase.v1.ReviewRun
-	(*GetReviewRunRequest)(nil),               // 30: bytebase.v1.GetReviewRunRequest
-	(*RunReviewRequest)(nil),                  // 31: bytebase.v1.RunReviewRequest
-	(*Issue_Approver)(nil),                    // 32: bytebase.v1.Issue.Approver
-	(*IssueComment_ReviewMetadata)(nil),       // 33: bytebase.v1.IssueComment.ReviewMetadata
-	(*IssueComment_Approval)(nil),             // 34: bytebase.v1.IssueComment.Approval
-	(*IssueComment_IssueUpdate)(nil),          // 35: bytebase.v1.IssueComment.IssueUpdate
-	(*IssueComment_ReviewSubmission)(nil),     // 36: bytebase.v1.IssueComment.ReviewSubmission
-	(*IssueComment_ReviewRunCompletion)(nil),  // 37: bytebase.v1.IssueComment.ReviewRunCompletion
-	(*IssueComment_PlanUpdate)(nil),           // 38: bytebase.v1.IssueComment.PlanUpdate
-	(*fieldmaskpb.FieldMask)(nil),             // 39: google.protobuf.FieldMask
-	(IssueStatus)(0),                          // 40: bytebase.v1.IssueStatus
-	(*timestamppb.Timestamp)(nil),             // 41: google.protobuf.Timestamp
-	(RiskLevel)(0),                            // 42: bytebase.v1.RiskLevel
-	(ApprovalStatus)(0),                       // 43: bytebase.v1.ApprovalStatus
-	(*expr.Expr)(nil),                         // 44: google.type.Expr
-	(*durationpb.Duration)(nil),               // 45: google.protobuf.Duration
-	(*Position)(nil),                          // 46: bytebase.v1.Position
-	(*status.Status)(nil),                     // 47: google.rpc.Status
-	(ReviewRuleType)(0),                       // 48: bytebase.v1.ReviewRuleType
-	(*Plan_Spec)(nil),                         // 49: bytebase.v1.Plan.Spec
+	(*GetIssueCommentRequest)(nil),            // 25: bytebase.v1.GetIssueCommentRequest
+	(*CreateIssueCommentRequest)(nil),         // 26: bytebase.v1.CreateIssueCommentRequest
+	(*UpdateIssueCommentRequest)(nil),         // 27: bytebase.v1.UpdateIssueCommentRequest
+	(*IssueComment)(nil),                      // 28: bytebase.v1.IssueComment
+	(*StatementAnchor)(nil),                   // 29: bytebase.v1.StatementAnchor
+	(*ReviewRun)(nil),                         // 30: bytebase.v1.ReviewRun
+	(*GetReviewRunRequest)(nil),               // 31: bytebase.v1.GetReviewRunRequest
+	(*RunReviewRequest)(nil),                  // 32: bytebase.v1.RunReviewRequest
+	(*Issue_Approver)(nil),                    // 33: bytebase.v1.Issue.Approver
+	(*IssueComment_ReviewMetadata)(nil),       // 34: bytebase.v1.IssueComment.ReviewMetadata
+	(*IssueComment_Approval)(nil),             // 35: bytebase.v1.IssueComment.Approval
+	(*IssueComment_IssueUpdate)(nil),          // 36: bytebase.v1.IssueComment.IssueUpdate
+	(*IssueComment_ReviewSubmission)(nil),     // 37: bytebase.v1.IssueComment.ReviewSubmission
+	(*IssueComment_ReviewRunCompletion)(nil),  // 38: bytebase.v1.IssueComment.ReviewRunCompletion
+	(*IssueComment_PlanUpdate)(nil),           // 39: bytebase.v1.IssueComment.PlanUpdate
+	(*fieldmaskpb.FieldMask)(nil),             // 40: google.protobuf.FieldMask
+	(IssueStatus)(0),                          // 41: bytebase.v1.IssueStatus
+	(*timestamppb.Timestamp)(nil),             // 42: google.protobuf.Timestamp
+	(RiskLevel)(0),                            // 43: bytebase.v1.RiskLevel
+	(ApprovalStatus)(0),                       // 44: bytebase.v1.ApprovalStatus
+	(*expr.Expr)(nil),                         // 45: google.type.Expr
+	(*durationpb.Duration)(nil),               // 46: google.protobuf.Duration
+	(*Position)(nil),                          // 47: bytebase.v1.Position
+	(*status.Status)(nil),                     // 48: google.rpc.Status
+	(ReviewRuleType)(0),                       // 49: bytebase.v1.ReviewRuleType
+	(*Plan_Spec)(nil),                         // 50: bytebase.v1.Plan.Spec
 }
 var file_v1_issue_service_proto_depIdxs = []int32{
 	19, // 0: bytebase.v1.CreateIssueRequest.issue:type_name -> bytebase.v1.Issue
 	19, // 1: bytebase.v1.ListIssuesResponse.issues:type_name -> bytebase.v1.Issue
 	19, // 2: bytebase.v1.SearchIssuesResponse.issues:type_name -> bytebase.v1.Issue
 	19, // 3: bytebase.v1.UpdateIssueRequest.issue:type_name -> bytebase.v1.Issue
-	39, // 4: bytebase.v1.UpdateIssueRequest.update_mask:type_name -> google.protobuf.FieldMask
-	40, // 5: bytebase.v1.BatchUpdateIssuesStatusRequest.status:type_name -> bytebase.v1.IssueStatus
+	40, // 4: bytebase.v1.UpdateIssueRequest.update_mask:type_name -> google.protobuf.FieldMask
+	41, // 5: bytebase.v1.BatchUpdateIssuesStatusRequest.status:type_name -> bytebase.v1.IssueStatus
 	0,  // 6: bytebase.v1.Issue.type:type_name -> bytebase.v1.Issue.Type
-	40, // 7: bytebase.v1.Issue.status:type_name -> bytebase.v1.IssueStatus
-	32, // 8: bytebase.v1.Issue.approvers:type_name -> bytebase.v1.Issue.Approver
+	41, // 7: bytebase.v1.Issue.status:type_name -> bytebase.v1.IssueStatus
+	33, // 8: bytebase.v1.Issue.approvers:type_name -> bytebase.v1.Issue.Approver
 	21, // 9: bytebase.v1.Issue.approval_template:type_name -> bytebase.v1.ApprovalTemplate
-	41, // 10: bytebase.v1.Issue.create_time:type_name -> google.protobuf.Timestamp
-	41, // 11: bytebase.v1.Issue.update_time:type_name -> google.protobuf.Timestamp
+	42, // 10: bytebase.v1.Issue.create_time:type_name -> google.protobuf.Timestamp
+	42, // 11: bytebase.v1.Issue.update_time:type_name -> google.protobuf.Timestamp
 	20, // 12: bytebase.v1.Issue.role_grant:type_name -> bytebase.v1.RoleGrant
-	42, // 13: bytebase.v1.Issue.risk_level:type_name -> bytebase.v1.RiskLevel
-	43, // 14: bytebase.v1.Issue.approval_status:type_name -> bytebase.v1.ApprovalStatus
-	44, // 15: bytebase.v1.RoleGrant.condition:type_name -> google.type.Expr
-	45, // 16: bytebase.v1.RoleGrant.expiration:type_name -> google.protobuf.Duration
+	43, // 13: bytebase.v1.Issue.risk_level:type_name -> bytebase.v1.RiskLevel
+	44, // 14: bytebase.v1.Issue.approval_status:type_name -> bytebase.v1.ApprovalStatus
+	45, // 15: bytebase.v1.RoleGrant.condition:type_name -> google.type.Expr
+	46, // 16: bytebase.v1.RoleGrant.expiration:type_name -> google.protobuf.Duration
 	22, // 17: bytebase.v1.ApprovalTemplate.flow:type_name -> bytebase.v1.ApprovalFlow
-	27, // 18: bytebase.v1.ListIssueCommentsResponse.issue_comments:type_name -> bytebase.v1.IssueComment
-	27, // 19: bytebase.v1.CreateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
-	27, // 20: bytebase.v1.UpdateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
-	39, // 21: bytebase.v1.UpdateIssueCommentRequest.update_mask:type_name -> google.protobuf.FieldMask
-	41, // 22: bytebase.v1.IssueComment.create_time:type_name -> google.protobuf.Timestamp
-	41, // 23: bytebase.v1.IssueComment.update_time:type_name -> google.protobuf.Timestamp
+	28, // 18: bytebase.v1.ListIssueCommentsResponse.issue_comments:type_name -> bytebase.v1.IssueComment
+	28, // 19: bytebase.v1.CreateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
+	28, // 20: bytebase.v1.UpdateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
+	40, // 21: bytebase.v1.UpdateIssueCommentRequest.update_mask:type_name -> google.protobuf.FieldMask
+	42, // 22: bytebase.v1.IssueComment.create_time:type_name -> google.protobuf.Timestamp
+	42, // 23: bytebase.v1.IssueComment.update_time:type_name -> google.protobuf.Timestamp
 	2,  // 24: bytebase.v1.IssueComment.thread_state:type_name -> bytebase.v1.IssueComment.ThreadState
-	28, // 25: bytebase.v1.IssueComment.statement_anchor:type_name -> bytebase.v1.StatementAnchor
-	33, // 26: bytebase.v1.IssueComment.review_metadata:type_name -> bytebase.v1.IssueComment.ReviewMetadata
-	34, // 27: bytebase.v1.IssueComment.approval:type_name -> bytebase.v1.IssueComment.Approval
-	35, // 28: bytebase.v1.IssueComment.issue_update:type_name -> bytebase.v1.IssueComment.IssueUpdate
-	38, // 29: bytebase.v1.IssueComment.plan_update:type_name -> bytebase.v1.IssueComment.PlanUpdate
-	36, // 30: bytebase.v1.IssueComment.review_submission:type_name -> bytebase.v1.IssueComment.ReviewSubmission
-	37, // 31: bytebase.v1.IssueComment.review_run_completion:type_name -> bytebase.v1.IssueComment.ReviewRunCompletion
-	46, // 32: bytebase.v1.StatementAnchor.start_position:type_name -> bytebase.v1.Position
-	46, // 33: bytebase.v1.StatementAnchor.end_position:type_name -> bytebase.v1.Position
+	29, // 25: bytebase.v1.IssueComment.statement_anchor:type_name -> bytebase.v1.StatementAnchor
+	34, // 26: bytebase.v1.IssueComment.review_metadata:type_name -> bytebase.v1.IssueComment.ReviewMetadata
+	35, // 27: bytebase.v1.IssueComment.approval:type_name -> bytebase.v1.IssueComment.Approval
+	36, // 28: bytebase.v1.IssueComment.issue_update:type_name -> bytebase.v1.IssueComment.IssueUpdate
+	39, // 29: bytebase.v1.IssueComment.plan_update:type_name -> bytebase.v1.IssueComment.PlanUpdate
+	37, // 30: bytebase.v1.IssueComment.review_submission:type_name -> bytebase.v1.IssueComment.ReviewSubmission
+	38, // 31: bytebase.v1.IssueComment.review_run_completion:type_name -> bytebase.v1.IssueComment.ReviewRunCompletion
+	47, // 32: bytebase.v1.StatementAnchor.start_position:type_name -> bytebase.v1.Position
+	47, // 33: bytebase.v1.StatementAnchor.end_position:type_name -> bytebase.v1.Position
 	5,  // 34: bytebase.v1.ReviewRun.state:type_name -> bytebase.v1.ReviewRun.State
-	41, // 35: bytebase.v1.ReviewRun.create_time:type_name -> google.protobuf.Timestamp
-	41, // 36: bytebase.v1.ReviewRun.end_time:type_name -> google.protobuf.Timestamp
-	47, // 37: bytebase.v1.ReviewRun.error:type_name -> google.rpc.Status
+	42, // 35: bytebase.v1.ReviewRun.create_time:type_name -> google.protobuf.Timestamp
+	42, // 36: bytebase.v1.ReviewRun.end_time:type_name -> google.protobuf.Timestamp
+	48, // 37: bytebase.v1.ReviewRun.error:type_name -> google.rpc.Status
 	1,  // 38: bytebase.v1.Issue.Approver.status:type_name -> bytebase.v1.Issue.Approver.Status
-	48, // 39: bytebase.v1.IssueComment.ReviewMetadata.rule_type:type_name -> bytebase.v1.ReviewRuleType
+	49, // 39: bytebase.v1.IssueComment.ReviewMetadata.rule_type:type_name -> bytebase.v1.ReviewRuleType
 	3,  // 40: bytebase.v1.IssueComment.ReviewMetadata.priority:type_name -> bytebase.v1.IssueComment.ReviewMetadata.Priority
 	4,  // 41: bytebase.v1.IssueComment.Approval.status:type_name -> bytebase.v1.IssueComment.Approval.Status
-	40, // 42: bytebase.v1.IssueComment.IssueUpdate.from_status:type_name -> bytebase.v1.IssueStatus
-	40, // 43: bytebase.v1.IssueComment.IssueUpdate.to_status:type_name -> bytebase.v1.IssueStatus
-	49, // 44: bytebase.v1.IssueComment.PlanUpdate.from_specs:type_name -> bytebase.v1.Plan.Spec
-	49, // 45: bytebase.v1.IssueComment.PlanUpdate.to_specs:type_name -> bytebase.v1.Plan.Spec
+	41, // 42: bytebase.v1.IssueComment.IssueUpdate.from_status:type_name -> bytebase.v1.IssueStatus
+	41, // 43: bytebase.v1.IssueComment.IssueUpdate.to_status:type_name -> bytebase.v1.IssueStatus
+	50, // 44: bytebase.v1.IssueComment.PlanUpdate.from_specs:type_name -> bytebase.v1.Plan.Spec
+	50, // 45: bytebase.v1.IssueComment.PlanUpdate.to_specs:type_name -> bytebase.v1.Plan.Spec
 	6,  // 46: bytebase.v1.IssueService.GetIssue:input_type -> bytebase.v1.GetIssueRequest
 	7,  // 47: bytebase.v1.IssueService.CreateIssue:input_type -> bytebase.v1.CreateIssueRequest
 	8,  // 48: bytebase.v1.IssueService.ListIssues:input_type -> bytebase.v1.ListIssuesRequest
 	10, // 49: bytebase.v1.IssueService.SearchIssues:input_type -> bytebase.v1.SearchIssuesRequest
 	12, // 50: bytebase.v1.IssueService.UpdateIssue:input_type -> bytebase.v1.UpdateIssueRequest
 	23, // 51: bytebase.v1.IssueService.ListIssueComments:input_type -> bytebase.v1.ListIssueCommentsRequest
-	25, // 52: bytebase.v1.IssueService.CreateIssueComment:input_type -> bytebase.v1.CreateIssueCommentRequest
-	26, // 53: bytebase.v1.IssueService.UpdateIssueComment:input_type -> bytebase.v1.UpdateIssueCommentRequest
-	13, // 54: bytebase.v1.IssueService.BatchUpdateIssuesStatus:input_type -> bytebase.v1.BatchUpdateIssuesStatusRequest
-	15, // 55: bytebase.v1.IssueService.ApproveIssue:input_type -> bytebase.v1.ApproveIssueRequest
-	16, // 56: bytebase.v1.IssueService.RejectIssue:input_type -> bytebase.v1.RejectIssueRequest
-	17, // 57: bytebase.v1.IssueService.RequestIssue:input_type -> bytebase.v1.RequestIssueRequest
-	18, // 58: bytebase.v1.IssueService.RetryIssueApproval:input_type -> bytebase.v1.RetryIssueApprovalRequest
-	30, // 59: bytebase.v1.IssueService.GetReviewRun:input_type -> bytebase.v1.GetReviewRunRequest
-	31, // 60: bytebase.v1.IssueService.RunReview:input_type -> bytebase.v1.RunReviewRequest
-	19, // 61: bytebase.v1.IssueService.GetIssue:output_type -> bytebase.v1.Issue
-	19, // 62: bytebase.v1.IssueService.CreateIssue:output_type -> bytebase.v1.Issue
-	9,  // 63: bytebase.v1.IssueService.ListIssues:output_type -> bytebase.v1.ListIssuesResponse
-	11, // 64: bytebase.v1.IssueService.SearchIssues:output_type -> bytebase.v1.SearchIssuesResponse
-	19, // 65: bytebase.v1.IssueService.UpdateIssue:output_type -> bytebase.v1.Issue
-	24, // 66: bytebase.v1.IssueService.ListIssueComments:output_type -> bytebase.v1.ListIssueCommentsResponse
-	27, // 67: bytebase.v1.IssueService.CreateIssueComment:output_type -> bytebase.v1.IssueComment
-	27, // 68: bytebase.v1.IssueService.UpdateIssueComment:output_type -> bytebase.v1.IssueComment
-	14, // 69: bytebase.v1.IssueService.BatchUpdateIssuesStatus:output_type -> bytebase.v1.BatchUpdateIssuesStatusResponse
-	19, // 70: bytebase.v1.IssueService.ApproveIssue:output_type -> bytebase.v1.Issue
-	19, // 71: bytebase.v1.IssueService.RejectIssue:output_type -> bytebase.v1.Issue
-	19, // 72: bytebase.v1.IssueService.RequestIssue:output_type -> bytebase.v1.Issue
-	19, // 73: bytebase.v1.IssueService.RetryIssueApproval:output_type -> bytebase.v1.Issue
-	29, // 74: bytebase.v1.IssueService.GetReviewRun:output_type -> bytebase.v1.ReviewRun
-	29, // 75: bytebase.v1.IssueService.RunReview:output_type -> bytebase.v1.ReviewRun
-	61, // [61:76] is the sub-list for method output_type
-	46, // [46:61] is the sub-list for method input_type
+	25, // 52: bytebase.v1.IssueService.GetIssueComment:input_type -> bytebase.v1.GetIssueCommentRequest
+	26, // 53: bytebase.v1.IssueService.CreateIssueComment:input_type -> bytebase.v1.CreateIssueCommentRequest
+	27, // 54: bytebase.v1.IssueService.UpdateIssueComment:input_type -> bytebase.v1.UpdateIssueCommentRequest
+	13, // 55: bytebase.v1.IssueService.BatchUpdateIssuesStatus:input_type -> bytebase.v1.BatchUpdateIssuesStatusRequest
+	15, // 56: bytebase.v1.IssueService.ApproveIssue:input_type -> bytebase.v1.ApproveIssueRequest
+	16, // 57: bytebase.v1.IssueService.RejectIssue:input_type -> bytebase.v1.RejectIssueRequest
+	17, // 58: bytebase.v1.IssueService.RequestIssue:input_type -> bytebase.v1.RequestIssueRequest
+	18, // 59: bytebase.v1.IssueService.RetryIssueApproval:input_type -> bytebase.v1.RetryIssueApprovalRequest
+	31, // 60: bytebase.v1.IssueService.GetReviewRun:input_type -> bytebase.v1.GetReviewRunRequest
+	32, // 61: bytebase.v1.IssueService.RunReview:input_type -> bytebase.v1.RunReviewRequest
+	19, // 62: bytebase.v1.IssueService.GetIssue:output_type -> bytebase.v1.Issue
+	19, // 63: bytebase.v1.IssueService.CreateIssue:output_type -> bytebase.v1.Issue
+	9,  // 64: bytebase.v1.IssueService.ListIssues:output_type -> bytebase.v1.ListIssuesResponse
+	11, // 65: bytebase.v1.IssueService.SearchIssues:output_type -> bytebase.v1.SearchIssuesResponse
+	19, // 66: bytebase.v1.IssueService.UpdateIssue:output_type -> bytebase.v1.Issue
+	24, // 67: bytebase.v1.IssueService.ListIssueComments:output_type -> bytebase.v1.ListIssueCommentsResponse
+	28, // 68: bytebase.v1.IssueService.GetIssueComment:output_type -> bytebase.v1.IssueComment
+	28, // 69: bytebase.v1.IssueService.CreateIssueComment:output_type -> bytebase.v1.IssueComment
+	28, // 70: bytebase.v1.IssueService.UpdateIssueComment:output_type -> bytebase.v1.IssueComment
+	14, // 71: bytebase.v1.IssueService.BatchUpdateIssuesStatus:output_type -> bytebase.v1.BatchUpdateIssuesStatusResponse
+	19, // 72: bytebase.v1.IssueService.ApproveIssue:output_type -> bytebase.v1.Issue
+	19, // 73: bytebase.v1.IssueService.RejectIssue:output_type -> bytebase.v1.Issue
+	19, // 74: bytebase.v1.IssueService.RequestIssue:output_type -> bytebase.v1.Issue
+	19, // 75: bytebase.v1.IssueService.RetryIssueApproval:output_type -> bytebase.v1.Issue
+	30, // 76: bytebase.v1.IssueService.GetReviewRun:output_type -> bytebase.v1.ReviewRun
+	30, // 77: bytebase.v1.IssueService.RunReview:output_type -> bytebase.v1.ReviewRun
+	62, // [62:78] is the sub-list for method output_type
+	46, // [46:62] is the sub-list for method input_type
 	46, // [46:46] is the sub-list for extension type_name
 	46, // [46:46] is the sub-list for extension extendee
 	0,  // [0:46] is the sub-list for field type_name
@@ -3238,21 +3290,21 @@ func file_v1_issue_service_proto_init() {
 	file_v1_common_proto_init()
 	file_v1_plan_service_proto_init()
 	file_v1_review_rule_proto_init()
-	file_v1_issue_service_proto_msgTypes[21].OneofWrappers = []any{
+	file_v1_issue_service_proto_msgTypes[22].OneofWrappers = []any{
 		(*IssueComment_Approval_)(nil),
 		(*IssueComment_IssueUpdate_)(nil),
 		(*IssueComment_PlanUpdate_)(nil),
 		(*IssueComment_ReviewSubmission_)(nil),
 		(*IssueComment_ReviewRunCompletion_)(nil),
 	}
-	file_v1_issue_service_proto_msgTypes[29].OneofWrappers = []any{}
+	file_v1_issue_service_proto_msgTypes[30].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_issue_service_proto_rawDesc), len(file_v1_issue_service_proto_rawDesc)),
 			NumEnums:      6,
-			NumMessages:   33,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

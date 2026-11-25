@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { timestampFromMs } from "@bufbuild/protobuf/wkt";
-import { act, type ReactNode } from "react";
+import { act, type ReactNode, type Ref } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { shownTimestampModes } from "@/test-utils/humanizeTs";
@@ -61,11 +61,17 @@ vi.mock("@/components/issue-activity/IssueCommentActivity", () => ({
   ActivityRowShell: ({
     header,
     icon,
+    id,
+    linked,
+    rowRef,
   }: {
     header: ReactNode;
     icon: ReactNode;
+    id?: string;
+    linked?: boolean;
+    rowRef?: Ref<HTMLLIElement>;
   }) => (
-    <li>
+    <li data-linked={linked || undefined} data-row={id} ref={rowRef}>
       {icon}
       {header}
     </li>
@@ -145,33 +151,47 @@ vi.mock("../../shared/stores/usePlanDetailStore", () => ({
   }),
 }));
 
-vi.mock("../threads/CommentThreadCard", () => ({
-  CommentThreadCard: ({
-    bar,
-    className,
-    excerpt,
-    spec,
-    thread,
-  }: {
-    bar: { foldLabel: string };
-    className?: string;
-    excerpt?: ReactNode;
-    spec?: { id: string };
-    thread: { root: { name: string }; replies: { name: string }[] };
-  }) => (
-    <div
-      data-class-name={className ?? ""}
-      data-fold-label={bar.foldLabel}
-      id={thread.root.name}
-      data-replies={thread.replies.length}
-      data-root={thread.root.name}
-      data-spec={spec?.id}
-      data-testid="thread-card"
-    >
-      {excerpt}
-    </div>
-  ),
-}));
+// The stand-in card takes the landing for any of its comments, as the real
+// card's comments do between them.
+vi.mock("../threads/CommentThreadCard", async () => {
+  const { useActivityLanding } = await import(
+    "../../hooks/useActivityLanding"
+  );
+  return {
+    CommentThreadCard: ({
+      bar,
+      className,
+      excerpt,
+      spec,
+      thread,
+    }: {
+      bar: { foldLabel: string };
+      className?: string;
+      excerpt?: ReactNode;
+      spec?: { id: string };
+      thread: { root: { name: string }; replies: { name: string }[] };
+    }) => {
+      const { ref } = useActivityLanding<HTMLDivElement>([
+        thread.root.name,
+        ...thread.replies.map((reply) => reply.name),
+      ]);
+      return (
+        <div
+          data-class-name={className ?? ""}
+          data-fold-label={bar.foldLabel}
+          id={thread.root.name}
+          data-replies={thread.replies.length}
+          data-root={thread.root.name}
+          data-spec={spec?.id}
+          data-testid="thread-card"
+          ref={ref}
+        >
+          {excerpt}
+        </div>
+      );
+    },
+  };
+});
 
 vi.mock("../threads/StatementAnchorContext", () => ({
   StatementAnchorContext: ({
@@ -503,6 +523,10 @@ describe("ReviewActivityTimeline", () => {
     const scrollIntoView = vi.fn();
     const original = Element.prototype.scrollIntoView;
     Element.prototype.scrollIntoView = scrollIntoView;
+    // Far below the fold, so the landing has to scroll.
+    const offScreen = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockReturnValue({ top: 5000, bottom: 5100 } as DOMRect);
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -526,15 +550,17 @@ describe("ReviewActivityTimeline", () => {
     expect(document.getElementById(name)).toBeNull();
     mocks.activityFocus = { commentName: name, nonce: 2 };
     draw();
-    const card = document.getElementById(name);
-    expect(card).not.toBeNull();
+    const card = document.querySelector('[data-testid="thread-card"]');
+    expect(card?.getAttribute("data-root")).toBe(name);
     expect(scrollIntoView.mock.contexts).toContain(card);
+    expect(document.activeElement).toBe(card);
     expect(mocks.clearActivityFocus).toHaveBeenCalledWith(2);
     mocks.activityFocus = undefined;
     mocks.clearActivityFocus.mockReset();
     act(() => root.unmount());
     container.remove();
     Element.prototype.scrollIntoView = original;
+    offScreen.mockRestore();
   });
 
   test.each([
@@ -605,6 +631,80 @@ describe("ReviewActivityTimeline", () => {
     act(() => root.unmount());
   });
 
+  test("a request for a reply opens the hidden review that holds its thread", () => {
+    const finding = "projects/p1/issues/1/issueComments/finding";
+    const reply = "projects/p1/issues/1/issueComments/reply";
+    const comments = [
+      create(IssueCommentSchema, {
+        name: "projects/p1/issues/1/issueComments/c0",
+        event: {
+          case: "reviewRunCompletion",
+          value: create(IssueComment_ReviewRunCompletionSchema, { attempt: 0n, postedCount: 1 }),
+        },
+      }),
+      create(IssueCommentSchema, {
+        name: finding,
+        comment: "No WHERE clause",
+        threadState: IssueComment_ThreadState.RESOLVED,
+        reviewMetadata: create(IssueComment_ReviewMetadataSchema, { superseded: true, attempt: 0n }),
+      }),
+      create(IssueCommentSchema, { name: reply, comment: "Fixed", root: finding }),
+    ];
+    Element.prototype.scrollIntoView = vi.fn();
+    mocks.activityFocus = { commentName: reply, nonce: 5 };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ReviewActivityTimeline
+          comments={comments}
+          issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+          plan={create(PlanSchema, { name: "projects/p1/plans/1" })}
+        />
+      );
+    });
+    const card = container.querySelector('[data-testid="thread-card"]');
+    expect(card?.getAttribute("data-root")).toBe(finding);
+    expect(mocks.clearActivityFocus).toHaveBeenCalledWith(5);
+    mocks.activityFocus = undefined;
+    mocks.clearActivityFocus.mockReset();
+    act(() => root.unmount());
+    container.remove();
+    Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+  });
+
+  test("a request for a comment the timeline does not draw is dropped", () => {
+    const comments = [
+      create(IssueCommentSchema, {
+        name: "projects/p1/issues/1/issueComments/t0",
+        comment: "thread",
+        threadState: IssueComment_ThreadState.OPEN,
+      }),
+    ];
+    mocks.activityFocus = {
+      commentName: "projects/p1/issues/1/issueComments/gone",
+      nonce: 6,
+    };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ReviewActivityTimeline
+          comments={comments}
+          issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+          plan={create(PlanSchema, { name: "projects/p1/plans/1" })}
+        />
+      );
+    });
+    expect(mocks.clearActivityFocus).toHaveBeenCalledWith(6);
+    mocks.activityFocus = undefined;
+    mocks.clearActivityFocus.mockReset();
+    act(() => root.unmount());
+    container.remove();
+  });
+
   test("unfolds the timeline to reach a card asked for from elsewhere", () => {
     const name = (i: number) => `projects/p1/issues/1/issueComments/t${i}`;
     const comments = Array.from({ length: 12 }, (_, i) =>
@@ -618,6 +718,10 @@ describe("ReviewActivityTimeline", () => {
     const scrollIntoView = vi.fn();
     const original = Element.prototype.scrollIntoView;
     Element.prototype.scrollIntoView = scrollIntoView;
+    // Far below the fold, so the landing has to scroll.
+    const offScreen = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockReturnValue({ top: 5000, bottom: 5100 } as DOMRect);
     mocks.activityFocus = { commentName: name(6), nonce: 4 };
     const container = document.createElement("div");
     document.body.appendChild(container);
@@ -631,13 +735,16 @@ describe("ReviewActivityTimeline", () => {
         />
       );
     });
-    const card = document.getElementById(name(6));
+    const card = document.querySelector(
+      `[data-testid="thread-card"][data-root="${name(6)}"]`
+    );
     expect(card).not.toBeNull();
     expect(scrollIntoView.mock.contexts).toContain(card);
     expect(mocks.clearActivityFocus).toHaveBeenCalledWith(4);
     act(() => root.unmount());
     container.remove();
     Element.prototype.scrollIntoView = original;
+    offScreen.mockRestore();
   });
 
   test("hands a thread card the plan spec its anchor names, and none for a spec the plan lacks", () => {

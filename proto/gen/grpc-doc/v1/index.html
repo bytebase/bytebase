@@ -879,6 +879,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetIssueCommentRequest"><span class="badge">M</span>GetIssueCommentRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.GetIssueRequest"><span class="badge">M</span>GetIssueRequest</a>
                 </li>
               
@@ -11014,6 +11018,30 @@ Format: projects/{project} </p></td>
 
         
       
+        <h3 id="bytebase.v1.GetIssueCommentRequest">GetIssueCommentRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/issues/{issue}/issueComments/{issueComment} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.GetIssueRequest">GetIssueRequest</h3>
         <p></p>
 
@@ -12582,6 +12610,17 @@ Permissions required: bb.issueComments.list</p></td>
               </tr>
             
               <tr>
+                <td>GetIssueComment</td>
+                <td><a href="#bytebase.v1.GetIssueCommentRequest">GetIssueCommentRequest</a></td>
+                <td><a href="#bytebase.v1.IssueComment">IssueComment</a></td>
+                <td><p>Gets a comment on an issue: an event, a root comment or a reply.
+The web address of a comment is its plan&#39;s page followed by
+#issueComments/{issueComment}; the plan&#39;s issue field and that fragment,
+joined by a slash, are the comment&#39;s name.
+Permissions required: bb.issueComments.list</p></td>
+              </tr>
+            
+              <tr>
                 <td>CreateIssueComment</td>
                 <td><a href="#bytebase.v1.CreateIssueCommentRequest">CreateIssueCommentRequest</a></td>
                 <td><a href="#bytebase.v1.IssueComment">IssueComment</a></td>
@@ -12742,6 +12781,16 @@ Permissions required: bb.reviewRuns.run</p></td>
                 <td>ListIssueComments</td>
                 <td>GET</td>
                 <td>/v1/{parent=projects/*/issues/*}/issueComments</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetIssueComment</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/issues/*/issueComments/*}</td>
                 <td></td>
               </tr>
               

@@ -99,9 +99,9 @@ describe("consolidateConsecutive", () => {
   });
 
   test("a lone label change passes through without a count", () => {
-    expect(shape(consolidateConsecutive([labelEntry("c1")]))).toEqual([
-      { id: "c1", similarCount: undefined },
-    ]);
+    const result = consolidateConsecutive([labelEntry("c1")]);
+    expect(shape(result)).toEqual([{ id: "c1", similarCount: undefined }]);
+    expect(result[0].standsFor).toBeUndefined();
   });
 
   test("consecutive same-actor label changes collapse to the latest, tagged with the run length", () => {
@@ -112,6 +112,8 @@ describe("consolidateConsecutive", () => {
     ]);
     // Representative is the last (latest) entry; count is the full run length.
     expect(shape(result)).toEqual([{ id: "c3", similarCount: 3 }]);
+    // The row stands for all three, so the address of each lands on it.
+    expect(result[0].standsFor).toEqual(["c1", "c2", "c3"]);
   });
 
   test("label changes by different actors are not merged", () => {

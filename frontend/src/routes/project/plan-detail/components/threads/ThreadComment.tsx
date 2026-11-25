@@ -1,5 +1,5 @@
-import { Loader2, Pencil } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { canEditIssueComment } from "@/components/issue-activity/IssueCommentActivity";
@@ -10,6 +10,9 @@ import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { useActivityLanding } from "../../hooks/useActivityLanding";
+import { useCommentTimestampLink } from "../../shell/CommentLinkContext";
+import { CommentActionsMenu } from "./CommentActionsMenu";
 import { ReviewHeading, ReviewTargets, useCommentAuthor } from "./ReviewResult";
 
 // Roots and replies share one layout: the avatar in a column of its own, and
@@ -41,6 +44,9 @@ export function ThreadComment({
   const [draft, setDraft] = useState(comment.comment);
   const [saving, setSaving] = useState(false);
   const allowEdit = canEditIssueComment(comment, project);
+  const names = useMemo(() => [comment.name], [comment.name]);
+  const { linked, ref } = useActivityLanding<HTMLDivElement>(names);
+  const timestampLink = useCommentTimestampLink(comment.name);
 
   useEffect(() => {
     if (!isEditing) setDraft(comment.comment);
@@ -59,12 +65,21 @@ export function ThreadComment({
 
   return (
     <div
+      aria-current={linked || undefined}
       className={cn(
-        "@container/comment flex items-start gap-x-2 px-2 py-2 sm:px-3",
+        "@container/comment relative flex items-start gap-x-2 px-2 py-2 outline-hidden sm:px-3",
+        // The outline of the comment the page's address names sits 4px
+        // inside the card's edge, so it is not taken for the focus ring. It
+        // is raised over the line that joins the replies to the first
+        // comment, which would otherwise cross its lower edge.
+        linked &&
+          "before:pointer-events-none before:absolute before:inset-1 before:z-1 before:rounded-sm before:border-2 before:border-accent",
         className
       )}
+      data-linked={linked || undefined}
       data-testid="thread-comment"
       id={comment.name}
+      ref={ref}
     >
       <div
         className="flex h-6 w-5 shrink-0 items-center"
@@ -86,6 +101,7 @@ export function ThreadComment({
             </span>
             <HumanizeTs
               className="hidden shrink-0 whitespace-nowrap text-xs text-control-light @2xs/comment:inline"
+              link={timestampLink}
               tsMs={createdTs}
             />
             {isEdited && (
@@ -95,20 +111,21 @@ export function ThreadComment({
             )}
           </div>
           <div className="flex shrink-0 items-center gap-x-1">
-            {allowEdit && !isEditing && (
-              <Button
-                aria-label={t("common.edit")}
-                onClick={() => {
-                  setDraft(comment.comment);
-                  setIsEditing(true);
-                }}
-                size="xs"
-                appearance="secondary"
-              >
-                <Pencil className="size-3.5" />
-              </Button>
-            )}
             {actions}
+            {!isEditing && (
+              <CommentActionsMenu
+                authorName={author.name}
+                commentName={comment.name}
+                onEdit={
+                  allowEdit
+                    ? () => {
+                        setDraft(comment.comment);
+                        setIsEditing(true);
+                      }
+                    : undefined
+                }
+              />
+            )}
           </div>
         </div>
         {review && (
