@@ -204,8 +204,8 @@ export function useApprovalCandidates(
   const currentUserCandidate = candidates.find(
     (candidate) => candidate.user.email === currentUserEmail
   );
-  // The server matches an allUsers binding to everyone, so the signed-in user
-  // holds the role without being listed under their own email.
+  // The server matches an allUsers binding to every user
+  // (GetUserIAMPolicyBindings), so the signed-in user holds the role unlisted.
   const currentUserEligibility =
     currentUserCandidate ??
     (currentUser && users.some((user) => user.email === ALL_USERS_USER_EMAIL)
