@@ -52,24 +52,22 @@ import {
 } from "./deploy/foldedTaskDescription";
 import { useUserDisplayName } from "./useUserDisplayName";
 
-// The lines under the plan title. Every part starts with the same left padding, which
-// holds its separator; a line's negative margin moves a row's first padding
-// into the clipped strip left of the box, so a separator or an arrow shows
-// only between two parts on one row. Rows wrapped or not share one height and
-// one gap.
+// The lines under the plan title. A part's separator or arrow sits in the gap
+// before it, so a part that starts a row puts it left of the box, where the box
+// clips it: a separator shows only between two parts on one row. Rows wrapped
+// or not share one height and one gap.
 const LINES =
   "flex flex-col gap-y-1 overflow-x-clip [overflow-clip-margin:2px]";
-const LINE = "-ml-4 flex flex-wrap items-center gap-y-1";
-const PART =
-  "relative flex min-h-6 min-w-0 max-w-full items-center gap-x-1 pl-4";
-const SEPARATED = `${PART} before:absolute before:left-1.5 before:text-control-light before:content-['·']`;
-const ARROW = "absolute left-0.5";
+const LINE = "flex flex-wrap items-center gap-x-4 gap-y-1";
+const PART = "relative flex min-h-6 min-w-0 max-w-full items-center gap-x-1";
+const SEPARATED = `${PART} before:absolute before:-left-2.5 before:text-control-light before:content-['·']`;
+const ARROW = "absolute -left-3.5";
 
 // The end a reader identifies a branch by.
 const BRANCH_END_LENGTH = 16;
 
 type Approval = {
-  tone: "done" | "rejected" | "waiting" | "bypassed" | "none";
+  tone: "done" | "rejected" | "waiting" | "bypassed" | "closed" | "none";
   text: string;
 };
 
@@ -151,6 +149,10 @@ export function PlanDetailMeta() {
     const issue = page.issue;
     // A draft has no state line: the title row's action says where it stands.
     if (!issue || issue.draft) return undefined;
+    // Closed and Bypassed outrank the approval status, as in the Review badge.
+    if (issue.status === IssueStatus.CANCELED) {
+      return { tone: "closed", text: t("common.closed") };
+    }
     if (
       isApprovalBypassed({
         issueStatus: issue.status,
@@ -283,7 +285,7 @@ export function PlanDetailMeta() {
           {release ? (
             <SourceParts source={release.vcsSource} />
           ) : (
-            <span className={PART} />
+            <span className={PART} data-part="source" />
           )}
         </div>
       )}
@@ -384,6 +386,13 @@ function ApprovalIcon({ tone }: { tone: Approval["tone"] }) {
       return (
         <CircleX aria-hidden="true" className="size-4 shrink-0 text-error" />
       );
+    case "closed":
+      return (
+        <CircleX
+          aria-hidden="true"
+          className="size-4 shrink-0 text-control-light"
+        />
+      );
     case "bypassed":
       return (
         <CircleDashed
@@ -427,7 +436,7 @@ function SourceTitle({ text, href }: { text: string; href?: string }) {
   );
   return href ? (
     <a
-      className="flex min-w-0 font-medium text-accent hover:underline"
+      className="flex min-w-0 text-accent hover:underline"
       data-testid="source-part"
       href={href}
       rel="noopener noreferrer"
@@ -477,24 +486,33 @@ function SourceParts({ source }: { source?: Release_VCSSource }) {
   return (
     <>
       {text && (
-        <span className={SEPARATED}>
+        <span className={SEPARATED} data-part="source">
           <SourceTitle text={text} href={row.href} />
         </span>
       )}
       {row.author && (
-        <span className={cn(SEPARATED, "text-control-light")}>
+        <span
+          className={cn(SEPARATED, "text-control-light")}
+          data-part="source"
+        >
           <TruncatedText
             text={t("plan.details.by-author", { author: row.author })}
           />
         </span>
       )}
       {row.title && row.repoAtSha && (
-        <span className={cn(SEPARATED, "text-control-light")}>
+        <span
+          className={cn(SEPARATED, "text-control-light")}
+          data-part="source"
+        >
           <TruncatedText text={row.repoAtSha} />
         </span>
       )}
       {row.branch && (
-        <span className={cn(SEPARATED, "text-control-light")}>
+        <span
+          className={cn(SEPARATED, "text-control-light")}
+          data-part="source"
+        >
           <BranchPart branch={row.branch} />
         </span>
       )}
@@ -545,7 +563,7 @@ function InlineLabels({
         className={partClass}
         data-part={inLine ? "label" : undefined}
       >
-        <span className="inline-flex h-6 items-center gap-1 rounded-xs bg-control-bg px-1.5 text-xs text-control">
+        <span className="inline-flex h-6 min-w-0 max-w-full items-center gap-1 rounded-xs bg-control-bg px-1.5 text-xs text-control">
           <span
             className="size-2.5 shrink-0 rounded-sm"
             style={{

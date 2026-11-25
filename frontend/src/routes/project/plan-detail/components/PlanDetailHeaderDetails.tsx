@@ -252,7 +252,7 @@ export function PlanDetailHeaderDetails() {
         ) : allowDescriptionEdit ? (
           // Where the description will render, as the editor opens there.
           <Button
-            className="mt-1 px-2 text-control-light hover:text-control"
+            className="mt-1 text-control-light hover:text-control"
             data-testid="plan-description-add"
             onClick={() => {
               setEditingDescription(true);

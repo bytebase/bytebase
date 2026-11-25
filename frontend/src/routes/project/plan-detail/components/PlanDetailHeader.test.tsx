@@ -389,6 +389,29 @@ describe("PlanDetailHeader draft ownership", () => {
     });
   });
 
+  test("Add description shows only to a reader who may edit, and opens the editor in its place", () => {
+    mocks.page = makePage();
+    mocks.page.plan.description = "";
+    const { unmount } = render(<PlanDetailHeaderDetails />);
+    fireEvent.click(screen.getByTestId("plan-description-add"));
+    expect(screen.queryByTestId("plan-description-add")).toBeNull();
+    expect(screen.getByRole("textbox")).toHaveValue("");
+    unmount();
+
+    mocks.page = { ...makePage(), readonly: true } as PlanDetailPageState;
+    mocks.page.plan.description = "";
+    const readonly = render(<PlanDetailHeaderDetails />);
+    expect(screen.queryByTestId("plan-description-add")).toBeNull();
+    readonly.unmount();
+
+    mocks.permissions = new Set();
+    mocks.page = makePage();
+    mocks.page.plan.description = "";
+    mocks.page.plan.creator = "users/someone-else";
+    render(<PlanDetailHeaderDetails />);
+    expect(screen.queryByTestId("plan-description-add")).toBeNull();
+  });
+
   test("preserves dirty title and description edits across polling updates", () => {
     const { rerender } = render(
       <>

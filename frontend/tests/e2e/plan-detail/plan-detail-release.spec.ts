@@ -465,16 +465,23 @@ test("on a phone the lines under the title keep one row rhythm, keep the PR's nu
 
   const layout = await lines.evaluate((box) => {
     const boxLeft = box.getBoundingClientRect().left;
-    const parts = Array.from(
-      box.querySelectorAll<HTMLElement>('[data-testid="plan-detail-line"] > :not(.sr-only)'),
-    ).map((part) => part.getBoundingClientRect());
-    const number = Array.from(box.querySelectorAll("a span")).find((span) => span.textContent === " #1284");
+    const elements = Array.from(box.querySelectorAll<HTMLElement>('[data-testid="plan-detail-line"] [data-part]'));
+    const parts = elements.map((part) => part.getBoundingClientRect());
+    const startSeparators = elements
+      .filter((part) => Math.round(part.getBoundingClientRect().left) === Math.round(boxLeft))
+      .map((part) => getComputedStyle(part, "::before"))
+      .filter((before) => before.content !== "none")
+      .map((before) => parseFloat(before.left));
+    const number = Array.from(box.querySelectorAll('[data-testid="source-part"] span')).find(
+      (span) => span.textContent === " #1284",
+    );
     return {
       heights: [...new Set(parts.map((part) => Math.round(part.height)))],
       tops: [...new Set(parts.map((part) => Math.round(part.top)))].sort((a, b) => a - b),
-      // A part that starts a row puts its separator padding left of the box,
-      // where the box clips it.
-      rowStarts: parts.filter((part) => part.left < boxLeft).map((part) => Math.round(boxLeft - part.left)),
+      // A part that starts a row sits at the box's edge, its separator left of
+      // the box, where the box clips it.
+      rowStarts: parts.filter((part) => Math.round(part.left) === Math.round(boxLeft)).length,
+      startSeparators,
       numberRight: number?.getBoundingClientRect().right ?? Number.POSITIVE_INFINITY,
       pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
     };
@@ -484,8 +491,10 @@ test("on a phone the lines under the title keep one row rhythm, keep the PR's nu
   expect(layout.tops.slice(1).map((top, i) => top - layout.tops[i])).toEqual(
     Array(layout.tops.length - 1).fill(28),
   );
-  expect(layout.rowStarts.length).toBe(layout.tops.length);
-  expect(new Set(layout.rowStarts)).toEqual(new Set([16]));
+  expect(layout.rowStarts).toBe(layout.tops.length);
+  // Past the box's 2 px clip margin, so the box hides it.
+  expect(layout.startSeparators.length).toBeGreaterThan(0);
+  for (const left of layout.startSeparators) expect(left).toBeLessThanOrEqual(-8);
   expect(layout.numberRight).toBeLessThanOrEqual(390);
   expect(layout.pageScrolls).toBe(false);
   await page.context().close();

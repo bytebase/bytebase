@@ -111,7 +111,7 @@ export function PlanStages({ plan }: { plan: Plan }) {
     return <span className="text-control-light">-</span>;
   }
   return (
-    <div className="flex items-center gap-1 flex-wrap">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       <PlanStageParts plan={plan} />
     </div>
   );
@@ -122,7 +122,7 @@ export function PlanStages({ plan }: { plan: Plan }) {
 export function PlanStageParts({
   plan,
   partClassName,
-  arrowClassName = "mx-1",
+  arrowClassName,
 }: {
   plan: Plan;
   partClassName?: (index: number) => string;
@@ -132,7 +132,7 @@ export function PlanStageParts({
   return plan.rolloutStageSummaries.map((summary, index) => (
     <span
       key={summary.stage}
-      className={cn("flex items-center gap-1", partClassName?.(index))}
+      className={cn("flex min-w-0 items-center gap-2", partClassName?.(index))}
       data-part="stage"
     >
       {index > 0 && (
@@ -143,12 +143,14 @@ export function PlanStageParts({
           &rarr;
         </span>
       )}
-      <TaskStatusIcon
-        size="tiny"
-        status={getStageStatusFromCounts(summary.taskStatusCounts)}
-      />
-      <span className="truncate text-sm" title={stageTitle(summary.stage)}>
-        {stageTitle(summary.stage)}
+      <span className="flex min-w-0 items-center gap-1">
+        <TaskStatusIcon
+          size="tiny"
+          status={getStageStatusFromCounts(summary.taskStatusCounts)}
+        />
+        <span className="truncate text-sm" title={stageTitle(summary.stage)}>
+          {stageTitle(summary.stage)}
+        </span>
       </span>
     </span>
   ));
