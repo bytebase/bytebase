@@ -11,7 +11,7 @@ import (
 
 // base.IsAllDML resolves through the registry this package populates, and it is
 // what computeNeedDump calls to decide whether a BigQuery migration skips the
-// schema dump. The googlesql tests cover the type mapping one layer down; these
+// schema dump. The seam tests cover the type mapping one layer down; these
 // pin the predicate the executor actually calls.
 func TestIsAllDML(t *testing.T) {
 	tests := []struct {

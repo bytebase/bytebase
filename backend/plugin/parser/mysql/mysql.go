@@ -28,9 +28,8 @@ func init() {
 		TransformDMLToSelect: TransformDMLToSelect,
 		GenerateRestoreSQL:   GenerateRestoreSQL,
 	}, storepb.Engine_MYSQL)
-	// ClickHouse, StarRocks, and Doris reuse MySQL completion; ClickHouse also reuses MySQL diagnose.
+	// ClickHouse reuses MySQL completion and diagnose.
 	base.Register(base.Engine{Complete: Completion, Diagnose: Diagnose}, storepb.Engine_CLICKHOUSE)
-	base.Register(base.Engine{Complete: Completion}, storepb.Engine_STARROCKS, storepb.Engine_DORIS)
 }
 
 // AST wraps an omni AST node and implements the base.AST interface.

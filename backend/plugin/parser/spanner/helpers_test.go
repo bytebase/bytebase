@@ -1,6 +1,4 @@
-// Package googlesqltest holds the mock metadata and assertion helpers shared by
-// the bigquery and spanner query-span seam tests.
-package googlesqltest
+package spanner
 
 import (
 	"context"
@@ -14,9 +12,9 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// BuildMockDatabaseMetadataGetter builds the metadata getter/lister pair the
+// buildMockDatabaseMetadataGetter builds the metadata getter/lister pair the
 // query-span tests use, keyed by database name.
-func BuildMockDatabaseMetadataGetter(engine storepb.Engine, databaseMetadata []*metadatapb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
+func buildMockDatabaseMetadataGetter(engine storepb.Engine, databaseMetadata []*metadatapb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadata {
@@ -37,14 +35,9 @@ func BuildMockDatabaseMetadataGetter(engine storepb.Engine, databaseMetadata []*
 		}
 }
 
-// DefaultSchemaTables wraps tables into a single default ("") schema.
-func DefaultSchemaTables(tables ...*metadatapb.TableMetadata) []*metadatapb.SchemaMetadata {
-	return []*metadatapb.SchemaMetadata{{Name: "", Tables: tables}}
-}
-
-// SourcesOf renders a result's source columns as sorted "[schema.]table.column"
+// sourcesOf renders a result's source columns as sorted "[schema.]table.column"
 // strings for compact assertions.
-func SourcesOf(r base.QuerySpanResult) []string {
+func sourcesOf(r base.QuerySpanResult) []string {
 	out := make([]string, 0, len(r.SourceColumns))
 	for c := range r.SourceColumns {
 		name := c.Table + "." + c.Column
