@@ -4125,7 +4125,7 @@
         "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
         "docs-link": "Qué cubre cada capacidad",
         "floor": {
-          "text": "Elevar esta política, crear una clave de cuenta de servicio, cambiar la contraseña, el correo o el MFA de una persona, mostrar un secreto almacenado, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona"
+          "text": "Cambiar la política de acceso MCP, crear una clave de cuenta de servicio, cambiar la contraseña, el correo o el MFA de un usuario, mostrar un secreto almacenado, abrir una sesión de modo Admin, leer o exportar el registro de auditoría ni leer el historial de consultas de otros usuarios"
         },
         "heading": "Esta política permite",
         "heading-refused": "Esta política no permite",
@@ -4134,43 +4134,49 @@
           "refused": "No permitido"
         },
         "row": {
-          "add-instances": {
-            "title": "Añadir instancias a proyectos y crear identidades de CI"
-          },
           "approve": {
-            "title": "Aprobar o rechazar issues y gestionar las reglas de aprobación de cambios de base de datos"
+            "title": "Aprobar o rechazar issues"
           },
-          "manage": {
-            "title": "Sincronizar instancias y bases de datos, y gestionar las consultas guardadas"
+          "data-access": {
+            "title": "Gestionar el acceso a datos: concesiones de acceso y exenciones de enmascaramiento"
           },
-          "masking": {
-            "title": "Definir las reglas de enmascaramiento y conceder o revocar exenciones"
+          "export": {
+            "title": "Exportar resultados de consulta"
+          },
+          "instances": {
+            "title": "Añadir y sincronizar instancias y bases de datos"
+          },
+          "policies": {
+            "title": "Cambiar políticas: reglas de aprobación, reglas de enmascaramiento y ajustes de concesiones de acceso"
           },
           "propose": {
             "title": "Proponer y desplegar cambios de base de datos"
           },
-          "read-access": {
+          "read-changes": {
+            "title": "Leer planes, despliegues, issues y concesiones de acceso"
+          },
+          "read-databases": {
+            "title": "Leer esquemas y datos de bases de datos"
+          },
+          "read-policies": {
             "title": "Leer miembros, roles y políticas"
           },
-          "read-data": {
-            "title": "Leer datos ejecutando consultas"
-          },
-          "read-schemas": {
-            "title": "Leer esquemas y metadatos"
-          },
-          "read-workflow": {
-            "title": "Leer el flujo de cambios"
-          },
-          "request-access": {
-            "title": "Solicitar concesiones de acceso y exportar resultados de consulta"
+          "read-workspace": {
+            "title": "Leer proyectos, instancias y bases de datos"
           },
           "run-statements": {
             "title": "Ejecutar sentencias DML y DDL"
+          },
+          "saved-queries": {
+            "title": "Gestionar las consultas guardadas"
+          },
+          "workload-identities": {
+            "title": "Crear identidades de carga de trabajo con un rol de proyecto"
           }
         },
         "summary": {
-          "read-only": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; una solicitud que lleve algo que no pueda demostrarse que es una lectura se rechaza, y no se exporta nada",
-          "read-write": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; proponer, solicitar y revocar acceso, conceder exenciones de enmascaramiento, aprobar, ejecutar, exportar y gestionar"
+          "read-only": "Leer esquemas, datos, planes, despliegues, issues, concesiones de acceso, proyectos, instancias, bases de datos, miembros, roles y políticas; una solicitud que lleve algo que no pueda demostrarse que es una lectura se rechaza, y no se exporta nada",
+          "read-write": "Leer esquemas, datos, planes, despliegues, issues, concesiones de acceso, proyectos, instancias, bases de datos, miembros, roles y políticas; ejecutar sentencias, exportar, proponer y desplegar cambios, aprobar, gestionar el acceso a datos y las consultas guardadas, añadir instancias, crear identidades de carga de trabajo y cambiar políticas"
         },
         "tier": {
           "read": "lectura",
@@ -4178,8 +4184,8 @@
         }
       },
       "policy": {
-        "audit": "Las consultas, las exportaciones, los cambios propuestos y los despliegues se registran en el registro de auditoría.",
-        "bound": "Cada sesión MCP está limitada por los permisos de Bytebase del usuario conectado y por las operaciones que admite el motor de base de datos de destino.",
+        "audit": "Todas las operaciones ejecutadas mediante MCP se registrarán en el registro de auditoría.",
+        "bound": "Cada sesión MCP está limitada por los permisos de Bytebase del usuario conectado.",
         "current": "Política actual: {{mode}}",
         "description": "{{bound}} {{audit}}",
         "edit": "Editar política",

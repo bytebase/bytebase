@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
 import {
   isRowServed,
+  MCP_CAPABILITY_CATEGORIES,
   MCP_CAPABILITY_ROWS,
   servedRows,
 } from "./mcpCapabilityRows";
@@ -26,22 +27,53 @@ describe("mcpCapabilityRows", () => {
     expect(servedRows(MCPSetting_Capability.DISABLED)).toHaveLength(0);
     expect(
       servedRows(MCPSetting_Capability.READ_ONLY).map((row) => row.id)
-    ).toEqual(["read-schemas", "read-data", "read-workflow", "read-access"]);
+    ).toEqual([
+      "read-databases",
+      "read-changes",
+      "read-workspace",
+      "read-policies",
+    ]);
     expect(
       servedRows(MCPSetting_Capability.READ_WRITE).map((row) => row.id)
     ).toEqual([
-      "read-schemas",
-      "read-data",
-      "read-workflow",
-      "read-access",
-      "propose",
+      "read-databases",
+      "read-changes",
+      "read-workspace",
+      "read-policies",
       "run-statements",
-      "request-access",
+      "export",
+      "saved-queries",
+      "propose",
       "approve",
-      "masking",
-      "add-instances",
-      "manage",
+      "data-access",
+      "instances",
+      "workload-identities",
+      "policies",
     ]);
+  });
+
+  test("rows run reads first, then by category in the design's order", () => {
+    const rank = (row: (typeof MCP_CAPABILITY_ROWS)[number]) => [
+      row.tier === "read" ? 0 : 1,
+      MCP_CAPABILITY_CATEGORIES.indexOf(row.category),
+    ];
+    const ranks = MCP_CAPABILITY_ROWS.map(rank);
+    const sorted = [...ranks].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    expect(ranks).toEqual(sorted);
+    expect(MCP_CAPABILITY_CATEGORIES).toEqual([
+      "databases",
+      "changes",
+      "workspace",
+      "policies",
+    ]);
+  });
+
+  test("each tier has one read row per category, so no read spans two", () => {
+    expect(
+      MCP_CAPABILITY_ROWS.filter((row) => row.tier === "read").map(
+        (row) => row.category
+      )
+    ).toEqual([...MCP_CAPABILITY_CATEGORIES]);
   });
 
   // isServingMode gates the ladder and the consent routing, and is the one mode

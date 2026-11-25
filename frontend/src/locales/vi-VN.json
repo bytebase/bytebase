@@ -4125,7 +4125,7 @@
         "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",
         "docs-link": "Mỗi khả năng bao gồm những gì",
         "floor": {
-          "text": "Nâng chính sách này, tạo khóa tài khoản dịch vụ, đổi mật khẩu, email hoặc MFA của một người, hiển thị bí mật đã lưu, mở phiên chế độ Admin, hoặc đọc lịch sử truy vấn của người khác"
+          "text": "Thay đổi chính sách truy cập MCP, tạo khóa tài khoản dịch vụ, đổi mật khẩu, email hoặc MFA của người dùng, hiển thị bí mật đã lưu, mở phiên chế độ Admin, đọc hoặc xuất nhật ký kiểm toán, hoặc đọc lịch sử truy vấn của người dùng khác"
         },
         "heading": "Chính sách này cho phép",
         "heading-refused": "Chính sách này không cho phép",
@@ -4134,43 +4134,49 @@
           "refused": "Không được phép"
         },
         "row": {
-          "add-instances": {
-            "title": "Thêm phiên bản vào dự án và tạo danh tính CI"
-          },
           "approve": {
-            "title": "Phê duyệt hoặc từ chối Issue và quản lý quy tắc phê duyệt thay đổi cơ sở dữ liệu"
+            "title": "Phê duyệt hoặc từ chối Issue"
           },
-          "manage": {
-            "title": "Đồng bộ phiên bản và cơ sở dữ liệu, và quản lý truy vấn đã lưu"
+          "data-access": {
+            "title": "Quản lý quyền truy cập dữ liệu: cấp quyền truy cập và miễn trừ che giấu"
           },
-          "masking": {
-            "title": "Đặt quy tắc che giấu và cấp hoặc thu hồi miễn trừ"
+          "export": {
+            "title": "Xuất kết quả truy vấn"
+          },
+          "instances": {
+            "title": "Thêm và đồng bộ phiên bản và cơ sở dữ liệu"
+          },
+          "policies": {
+            "title": "Thay đổi chính sách: quy tắc phê duyệt, quy tắc che giấu và cài đặt cấp quyền truy cập"
           },
           "propose": {
             "title": "Đề xuất và triển khai thay đổi cơ sở dữ liệu"
           },
-          "read-access": {
+          "read-changes": {
+            "title": "Đọc kế hoạch, triển khai, Issue và cấp quyền truy cập"
+          },
+          "read-databases": {
+            "title": "Đọc lược đồ và dữ liệu cơ sở dữ liệu"
+          },
+          "read-policies": {
             "title": "Đọc thành viên, vai trò và chính sách"
           },
-          "read-data": {
-            "title": "Đọc dữ liệu bằng cách chạy truy vấn"
-          },
-          "read-schemas": {
-            "title": "Đọc lược đồ và siêu dữ liệu"
-          },
-          "read-workflow": {
-            "title": "Đọc quy trình thay đổi"
-          },
-          "request-access": {
-            "title": "Yêu cầu cấp quyền truy cập và xuất kết quả truy vấn"
+          "read-workspace": {
+            "title": "Đọc dự án, phiên bản và cơ sở dữ liệu"
           },
           "run-statements": {
             "title": "Chạy câu lệnh DML và DDL"
+          },
+          "saved-queries": {
+            "title": "Quản lý truy vấn đã lưu"
+          },
+          "workload-identities": {
+            "title": "Tạo workload identity có vai trò dự án"
           }
         },
         "summary": {
-          "read-only": "Đọc lược đồ, dữ liệu, quy trình thay đổi, thành viên, vai trò và chính sách; yêu cầu chứa bất kỳ thứ gì không thể chứng minh là đọc đều bị từ chối, và không xuất được gì",
-          "read-write": "Đọc lược đồ, dữ liệu, quy trình thay đổi, thành viên, vai trò và chính sách; đề xuất, yêu cầu và thu hồi truy cập, cấp miễn trừ che giấu, phê duyệt, chạy, xuất và quản lý"
+          "read-only": "Đọc lược đồ, dữ liệu, kế hoạch, triển khai, Issue, cấp quyền truy cập, dự án, phiên bản, cơ sở dữ liệu, thành viên, vai trò và chính sách; yêu cầu chứa bất kỳ thứ gì không thể chứng minh là đọc đều bị từ chối, và không xuất được gì",
+          "read-write": "Đọc lược đồ, dữ liệu, kế hoạch, triển khai, Issue, cấp quyền truy cập, dự án, phiên bản, cơ sở dữ liệu, thành viên, vai trò và chính sách; chạy câu lệnh, xuất, đề xuất và triển khai thay đổi, phê duyệt, quản lý quyền truy cập dữ liệu và truy vấn đã lưu, thêm phiên bản, tạo workload identity và thay đổi chính sách"
         },
         "tier": {
           "read": "đọc",
@@ -4178,8 +4184,8 @@
         }
       },
       "policy": {
-        "audit": "Truy vấn, xuất dữ liệu, thay đổi được đề xuất và triển khai được ghi lại trong nhật ký kiểm toán.",
-        "bound": "Mỗi phiên MCP bị giới hạn bởi quyền Bytebase của người dùng đã kết nối và các thao tác mà engine cơ sở dữ liệu đích hỗ trợ.",
+        "audit": "Mọi thao tác được thực hiện qua MCP sẽ được ghi lại trong nhật ký kiểm toán.",
+        "bound": "Mỗi phiên MCP bị giới hạn bởi quyền Bytebase của người dùng đã kết nối.",
         "current": "Chính sách hiện tại: {{mode}}",
         "description": "{{bound}} {{audit}}",
         "edit": "Sửa chính sách",

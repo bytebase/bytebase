@@ -83,7 +83,7 @@ the product.
 |---|---|---|---|---|
 | Databases | read | Read database schemas and data | Schemas, tables, columns and their definitions · Run read-only queries · Under Read-only, a request is refused whole unless every statement is shown to be a read that returns data; how deeply that can be checked varies by engine, and on some engines no statement can be shown to be a read at all · Each instance's database roles · Your own query history · Saved queries you have access to | 13 READ methods: schema reads (4: `GetDatabaseMetadata`, `GetDatabaseSchema`, `GetDatabaseSDLSchema`, `GetSchemaString`), `SQLService/Query`, query history (4), saved-query reads (3), `InstanceRoleService/ListInstanceRoles` |
 | Changes and access | read | Read plans, rollouts, issues and access grants | Plans and plan checks · Rollouts, task runs and logs · Issues and comments · Releases · Rollback previews · Changelogs and revisions · SQL sheets you have access to, which hold the statements of plans, releases and revisions · Access grants, including pending requests | 26 READ methods: issue (6), plan (3), rollout (6) and release (3) reads, changelog reads (2), revision reads (2), `GetSheet`, access-grant reads (3, with `SearchMyAccessGrants`) |
-| Workspace | read | Read projects, instances and databases | Projects · Instances · Databases and database groups · CI identities and who can sign in as them · Your own session and workspace facts | 19 READ methods: project reads (4), instance reads (2), database reads (4: `GetDatabase`, `BatchGetDatabases`, `ListDatabases`, `SearchDatabases`), database-group reads (2), workload identity reads (2), session facts (5: `GetActuatorInfo`, `GetAuthenticationInfo`, `GetCurrentUser`, `GetWorkspace`, `ListWorkspaces`) |
+| Workspace | read | Read projects, instances and databases | Projects · Instances · Databases and database groups · Workload identities and who can sign in as them · Your own session and workspace facts | 19 READ methods: project reads (4), instance reads (2), database reads (4: `GetDatabase`, `BatchGetDatabases`, `ListDatabases`, `SearchDatabases`), database-group reads (2), workload identity reads (2), session facts (5: `GetActuatorInfo`, `GetAuthenticationInfo`, `GetCurrentUser`, `GetWorkspace`, `ListWorkspaces`) |
 | Policies | read | Read members, roles and policies | Who holds which role in the workspace and its projects · Groups and their members · Roles and their permissions · Masking rules and exemptions · Rollout, data query, tag and review policies · Approval rules, environments, semantic types and data classification · Each database's column classification · SQL review configs | 15 READ methods: `GetIamPolicy` on projects and the workspace, group reads (3), role reads (2), `GetPolicy`, `ListPolicies`, `GetSetting`, which the gate serves for those four settings only, review-config reads (2), `GetDatabaseCatalog`, and `CelService/BatchParse` and `BatchDeparse`, which parse the conditions rules are written in |
 | — | — | *Read-only serves the rows above* | | 73 methods |
 | Databases | write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow · Where the user's MCP client supports confirmations, a query that is not a read as far as the engine can check it runs only after the user confirms it · In other clients such a query can run without asking | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts. A statement Bytebase cannot show is a read runs only through the `query_database` tool, which asks the user to confirm it when the client can show the form (`mcp_sql_write.go`) |
@@ -93,7 +93,7 @@ the product.
 | Changes and access | write | Approve or reject issues | Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console | 2 WRITE methods: `ApproveIssue`, `RejectIssue`, served only through the `decide_issue` tool, which asks the user to confirm each decision and refuses role requests |
 | Changes and access | write | Manage data access: access grants and masking exemptions | *Access grants:* Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after it is approved, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants · Revoke an active grant · *Masking exemptions:* Exempt one member from masking for a database, a schema, a table or a column, or for every database in a project, with an optional expiry · Each exemption and each removal is confirmed in the user's MCP client before it is made · Exempted data shows unmasked in query and export results | 2 WRITE methods and one use of a third. Access grants: `AccessGrantService/CreateAccessGrant` and `RevokeAccessGrant`, served like any WRITE method. Masking exemptions: `OrgPolicyService/UpdatePolicy`, served only through the `grant_masking_exemption` and `revoke_masking_exemption` tools, which ask the user to confirm, then add one exemption entry or remove one member from the entries whose condition matches exactly; other policy types and `CreatePolicy` and `DeletePolicy` stay refused |
 | Workspace | write | Add and sync instances and databases | *Add:* Add a PostgreSQL instance to a project, signed in with a user name and password · Each instance is confirmed in the user's MCP client before it is added · Its databases join that project for good · *Sync:* Sync instances and databases · A database found on an instance's server since the last sync joins the instance's project, or the default project | 5 WRITE methods. Add: `InstanceService/CreateInstance`, which the gate serves only with a confirmation that `administer_workspace` attaches for the new instance; the tool confirms only a PostgreSQL instance in a project that signs in with a password (D13). `UpdateInstance`, whose `allow_missing` also creates an instance, stays EXCLUDED with the other instance writes. Sync: `SyncInstance`, `BatchSyncInstances`, `SyncDatabase`, `BatchSyncDatabases` |
-| Workspace | write | Create CI identities with a project role | Create a workload identity that GitHub Actions or GitLab CI jobs in one repository sign in as, with the GitOps Service Agent role in one project, so it can roll out without approval · Each identity is confirmed in the user's MCP client before it is created · This policy does not limit what it does, and it lasts until it is removed | 2 WRITE methods: `WorkloadIdentityService/CreateWorkloadIdentity` and `ProjectService/SetIamPolicy`, which the gate serves only with the confirmations `administer_workspace` attaches: one for the new identity, and one for the project whose policy then gains it, in the GitOps Service Agent role (D13). The tool takes the provider's own issuer and a pattern that admits every job of one repository. `UpdateWorkloadIdentity` stays FORBIDDEN, and the other identity writes and `WorkspaceService/SetIamPolicy` stay EXCLUDED |
+| Workspace | write | Create workload identities with a project role | Create a workload identity that GitHub Actions or GitLab CI jobs in one repository sign in as, with the GitOps Service Agent role in one project, so it can roll out without approval · Each identity is confirmed in the user's MCP client before it is created · This policy does not limit what it does, and it lasts until it is removed | 2 WRITE methods: `WorkloadIdentityService/CreateWorkloadIdentity` and `ProjectService/SetIamPolicy`, which the gate serves only with the confirmations `administer_workspace` attaches: one for the new identity, and one for the project whose policy then gains it, in the GitOps Service Agent role (D13). The tool takes the provider's own issuer and a pattern that admits every job of one repository. `UpdateWorkloadIdentity` stays FORBIDDEN, and the other identity writes and `WorkspaceService/SetIamPolicy` stay EXCLUDED |
 | Policies | write | Change policies: approval rules, masking rules and access-grant settings | Each change is confirmed in the user's MCP client before it is made · *Approval rules:* Add, remove, reorder or change the rules that decide who approves a database change · The fallback rules and the rules for other kinds of issues stay as they are · *Masking rules:* Add, remove, reorder or change the rules that decide which columns are masked and how · Removing, reordering or loosening a rule can show a column's data unmasked in later query and export results · Semantic types stay as they are · *Access-grant settings:* Turn a project's "Allow access grants" on or off | 2 WRITE methods and one use of a third. Approval rules: `SettingService/UpdateSetting`, which the gate serves only with a confirmation that `administer_workspace` attaches, for the approval rules alone (D13). Access-grant settings: `ProjectService/UpdateProject`, served only through the `set_just_in_time_access` tool, which asks the user to confirm and changes only that setting. Masking rules: `OrgPolicyService/UpdatePolicy`, served for the workspace masking rule policy only through `administer_workspace`, which asks the user to confirm. On a workspace with no rules stored, `allowMissing` makes the handler create the policy; `CreatePolicy` itself stays refused |
 | — | — | *Read-write serves the rows above* | | 119 methods |
 | — | floor | Change the MCP access policy, create a service account key, change a user's password, email or MFA, show a stored secret, open an Admin mode session, read or export the audit log, or read other users' query history | | 104 methods: 32 FORBIDDEN, 72 EXCLUDED |
@@ -279,7 +279,7 @@ the console. *Grant*: direct and standing: an exempted member sees the covered d
 query and export results until the exemption ends or is revoked. *Run* and *Roll out*: direct. *Export*: data leaves the product. *Add*,
 *Sync* and *Create*: something new the workspace manages, which opens a standing path: an added
 instance's databases join a project for good, a sync registers a database created on the server
-since the last one in the instance's project, and a created CI identity can roll out without
+since the last one in the instance's project, and a created workload identity can roll out without
 approval, so each title names what it adds, syncs or creates. *Change*, on the policies row:
 the rules every later case runs under, and a masking rule among them decides what every later query
 and export returns, which is why the title names masking rules rather than "policies" alone. *Manage*: configuration
@@ -312,7 +312,7 @@ only when the project's approval policy says so, a session's request always does
 gives is access to data, not a change); *Approve* stays out of the propose row,
 because deciding someone's proposal or request is a different effect from filing one, and out of
 the policies row, because it decides one issue while the approval rules decide every later one
-(D16). *Create*, not Manage, for CI identities: creating one is the only identity write served
+(D16). *Create*, not Manage, for workload identities: creating one is the only identity write served
 (`UpdateWorkloadIdentity` is FORBIDDEN, deleting and restoring are EXCLUDED), so Manage would
 claim edits the session cannot make. Rollouts join proposals in one row and
 DML/DDL keeps a row of its own, because a custom policy will want "run approved rollouts, but no
@@ -358,7 +358,7 @@ identity is not limited by this policy and lasts until removed, an added instanc
 the project for good. The first goes on the consent page, in the Read-write caution (D10), because
 it is what the person approving most needs: a write can run with no prompt and no review. The
 other two move to the docs with the rest. On the settings card they are one link away, and the card
-does not say that a CI identity or an instance's project membership outlasts a later downgrade;
+does not say that a workload identity or an instance's project membership outlasts a later downgrade;
 that is accepted with the move.
 
 **D3 — The mode chip is the subject; the "In force" line and the mode sentence go.** The
@@ -472,7 +472,7 @@ mode, a write runs only as a rollout, and neither surface says so beside the row
 **D11 — The wording is bound to the classification by instruction, not by a lint.** The rows
 claim to cover every READ and WRITE method: each title names its main objects, and its docs
 sub-items list the rest. A title therefore does not name everything its row serves; under Read-only
-the card does not say that a session can read CI identities and who can sign in as them, which the
+the card does not say that a session can read workload identities and who can sign in as them, which the
 workspace read row's sub-items do. That is accepted with the second revision's shorter titles.
 A method annotated into either class is
 served the moment it is annotated, whether or not a row names it. The first draft closed that with
@@ -562,7 +562,7 @@ moves to the workspace read row.
 
 History. The first edition had sixteen rows, by API service. The first BYT-10597 revision merged
 write rows by object, to eleven rows in all: approving issues with the approval rules, masking rules
-with exemptions, adding instances with CI identities, requesting access grants with exporting. Each
+with exemptions, adding instances with workload identities, requesting access grants with exporting. Each
 of those pairs put a decision on one case beside a rule for every case, or one category beside
 another, and review on 2026-11-25 asked for the data plane and the control plane to be told apart.
 This revision splits those pairs along the categories and merges within each, to thirteen.
@@ -578,7 +578,7 @@ that needed a decision, so a newly classified method is placed by them rather th
    DDL, exports, saved queries). No: **Changes and access** (plans, rollouts, issues, approvals,
    access grants, masking exemptions). *Control plane:* does it set a rule? Yes: **Policies**
    (roles, approval rules, masking rules, access-grant settings, review configs). No:
-   **Workspace** (projects, instances, databases as inventory, CI identities, sync).
+   **Workspace** (projects, instances, databases as inventory, workload identities, sync).
 
 A read takes the category of what it reads. The pairs the split was drawn to separate:
 
@@ -590,7 +590,7 @@ A read takes the category of what it reads. The pairs the split was drawn to sep
 
 Cases the questions decide that a reader might place otherwise: saved queries are Databases, a
 person's own SQL that runs against the database; changelogs and revisions are Changes and access,
-the record of what changes did; a CI identity is Workspace, an identity the workspace manages, as
+the record of what changes did; a workload identity is Workspace, an identity the workspace manages, as
 an added instance is a server it manages; sync is Workspace, a refresh of what Bytebase knows about
 its inventory, with no effect on a database's contents; column
 classification, review configs and CEL parsing are Policies, the conditions rules apply; an
@@ -600,7 +600,7 @@ Changes and access. The read follows the method that returns it; splitting the m
 across two rows would make neither title true alone.
 
 **Tie-break.** A row takes the category of its head object, and a method that serves only that
-object follows the row. Creating a CI identity also grants it a project role through
+object follows the row. Creating a workload identity also grants it a project role through
 `ProjectService/SetIamPolicy`, and the row stays Workspace, with the role named in its title.
 
 **Order.** Reads before writes, so Read-only's allowed group stays a prefix (Principle). Within a
@@ -650,9 +650,9 @@ under
   members, roles and policies". Read-only goes on: "; a request carrying anything that cannot be shown to be
   a read is refused, and nothing is exported". Read-write goes on: "; run statements, export,
   propose and roll out changes, approve, manage data access and saved queries, add instances,
-  create CI identities and change policies". Every write row's verb is there, with sync folded into
+  create workload identities and change policies". Every write row's verb is there, with sync folded into
   adding instances; the hazards
-  the verb rule protects (run, export, approve, data access, CI identities, policies) each keep a
+  the verb rule protects (run, export, approve, data access, workload identities, policies) each keep a
   word of their own.
   Group headings: "This policy allows", "This policy does not allow". Docs link: "What each
   capability covers".
@@ -666,7 +666,9 @@ under
 - The Read-only description sentence ("Sessions can explore schemas and run read-only queries…")
   is retired everywhere; its content lives in the Read-only summary and in the data read row's
   sub-item.
-- Row titles: the table above, verbatim. Sub-items: the docs page, from the same table.
+- Row titles: the table above, verbatim. Sub-items: the docs page, from the same table. A title
+  uses the console's own noun: "workload identities", not "CI identities", which no screen says
+  (Peter Zhu, 2026-11-25).
 - The row no mode serves: "Change the MCP access policy, create a service account key, change a
   user's password, email or MFA, show a stored secret, open an Admin mode session, read or export
   the audit log, or read other users' query history". Until BYT-10597 it was a separate line led by
@@ -822,7 +824,7 @@ card's link lands on it.
      its tier and its category. A unit test holds the order to D16: every read row before every
      write row, and within a tier the categories in D16's order. The new ids are `read-databases`,
      `read-changes`, `read-workspace`, `read-policies`, `run-statements`, `export`, `saved-queries`,
-     `propose`, `approve`, `data-access`, `instances`, `ci-identities` and `policies`; an id names
+     `propose`, `approve`, `data-access`, `instances`, `workload-identities` and `policies`; an id names
      what the row is now, and a first-revision id survives only where it still names the row.
    - No component changes: `MCPCapabilityList` renders whatever rows the table lists, in order, and
      the category is not drawn (D16).
