@@ -1,22 +1,33 @@
 // The project GitOps setup page: one page that turns a few choices into the
-// files to add to a repository. The suite creates its own database group and
-// workload identity through the API and walks the state-based setup, which
-// also exports the schema files.
+// files to add to a repository. The suite creates its own database group,
+// workload identity and schema, and walks the state-based setup, which exports
+// that schema as files.
 import { expect, test } from "@playwright/test";
 import type { BytebaseApiClient } from "../framework/api-client";
 import { loadTestEnv, type TestEnv } from "../framework/env";
+import { execSql, getInstancePgPort } from "../framework/psql";
 
 let env: TestEnv & { api: BytebaseApiClient };
 let projectId: string;
 const suffix = Date.now().toString(36);
 const GROUP_TITLE = `E2E setup group ${suffix}`;
 const WI_TITLE = `E2E setup CI ${suffix}`;
+// The schema the export is asserted on. The suffix is base 36, so the name is
+// a safe SQL identifier.
+const SCHEMA = `e2e_setup_${suffix}`;
+const SCHEMA_FOLDER = `schemas/${SCHEMA}/tables/`;
 const created: { group?: string; workloadIdentity?: string } = {};
 const SHOTS = process.env.BYTEBASE_E2E_SHOTS;
 
 test.beforeAll(async () => {
   env = loadTestEnv();
   projectId = env.project.split("/").pop()!;
+  const port = await getInstancePgPort(env);
+  execSql(env.databaseId, port, `CREATE SCHEMA ${SCHEMA}`);
+  execSql(env.databaseId, port, `CREATE TABLE ${SCHEMA}.setup_item (id INT PRIMARY KEY, label TEXT)`);
+  execSql(env.databaseId, port, `CREATE TABLE ${SCHEMA}.setup_note (id INT PRIMARY KEY, body TEXT)`);
+  // The export reads the synced metadata, not the live database.
+  await env.api.syncDatabase(env.database);
   const group = await env.api.createDatabaseGroup(
     env.project,
     `e2e-setup-${suffix}`,
@@ -47,6 +58,8 @@ test.afterAll(async () => {
   await env.api.setProjectIamPolicy(env.project, policy);
   if (created.workloadIdentity) await env.api.deleteWorkloadIdentity(created.workloadIdentity);
   if (created.group) await env.api.deleteDatabaseGroup(created.group);
+  execSql(env.databaseId, await getInstancePgPort(env), `DROP SCHEMA IF EXISTS ${SCHEMA} CASCADE`);
+  await env.api.syncDatabase(env.database);
 });
 
 test("state-based setup: the choices unlock the steps, and step 2 exports the schema files", async ({ page }) => {
@@ -96,12 +109,14 @@ test("state-based setup: the choices unlock the steps, and step 2 exports the sc
   const download = page.getByRole("button", { name: "Download" });
   await expect(download).toBeEnabled();
   await expect(page.getByText(/\d+ files? from /)).toBeVisible();
-  const tables = page.getByRole("button", { name: /tables\// });
+  const tables = page.getByRole("button", { name: SCHEMA_FOLDER });
   await expect(tables).toBeVisible();
   if ((await tables.getAttribute("aria-expanded")) !== "true") await tables.click();
-  await page.getByRole("button", { name: /\.sql$/ }).first().click();
-  // The first file may be a table or a function; either opens to its SQL.
-  await expect(page.locator("pre").filter({ hasText: /CREATE / }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "setup_note.sql", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "setup_item.sql", exact: true }).click();
+  await expect(
+    page.locator("pre").filter({ hasText: `CREATE TABLE "${SCHEMA}"."setup_item"` }),
+  ).toBeVisible();
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/gitops-setup-schema.png`, fullPage: true });
 
   const saved = page.waitForEvent("download");
