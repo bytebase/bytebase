@@ -86,8 +86,13 @@ which is a normal path and not a fallback, so it is named for who uses it and no
 
 **D7 · The setup guide is linked from the section heading.** One "Setup guide" link sits in the
 heading row, where the access policy section above puts "Edit policy". Tabs whose way has a known
-other way link to their own part of the guide: "See an example" on Claude Desktop, "VS Code setup
-guide" on VS Code.
+other way link to their own part of the guide.
+
+| Link on the page | Where it goes |
+|---|---|
+| Setup guide | `https://docs.bytebase.com/integrations/mcp/setup` |
+| See an example, on Claude Desktop | `https://docs.bytebase.com/integrations/mcp/setup#claude-desktop` |
+| VS Code setup guide, on VS Code | `https://docs.bytebase.com/integrations/mcp/setup#vs-code` |
 
 **D8 · A control that carries the External URL is off until the URL is set.** See "States". A tool
 set up with the placeholder address cannot reach Bytebase, and the failure shows later, in the tool,
@@ -147,7 +152,8 @@ now" link, stays the way to fix it.
   ([BYT-10611](https://linear.app/bytebase/issue/BYT-10611)). Chat works.
 - **Starting the package through `npx` from Claude Desktop is not tested.** Claude Desktop may not
   find `npx` when Node.js was installed with a version manager.
-- **The links into the setup guide point at parts that do not exist yet.** See "Scope".
+- **The links into the setup guide lead nowhere until the guide is published.** The page and its two
+  parts were checked on the docs preview. See "Scope".
 
 ## Scope
 
@@ -159,10 +165,10 @@ now" link, stays the way to fix it.
      endpoint; step 2 follows the selected tool; one test per row of "States".
    - `frontend/tests/e2e/workspace/workspace-mcp-policy.spec.ts`: the assertion that read the
      removed description now reads the "Sign in" step.
-2. **The setup guide**, in the docs repository, at `/integrations/mcp/setup`. A part per tool with
-   the other ways to connect, a before-and-after example of the Claude Desktop file, the
-   `code --add-mcp` command, and troubleshooting. This PR stays a draft until the guide is published
-   with the `#claude-desktop` and `#vs-code` parts the page links to.
+2. **The setup guide**, in the docs repository ([bytebase/bytebase.com#307](https://github.com/bytebase/bytebase.com/pull/307)),
+   at `/integrations/mcp/setup`. A part per tool with the other ways to connect, a before-and-after
+   example of the Claude Desktop file, the `code --add-mcp` command, and troubleshooting. It has to
+   be published before this change ships, so the three links in D7 land on a page that exists.
 3. **An npm release** of `@bytebase/bytebase-mcp` with the Claude Desktop fixes.
 
 ## Not in this PR
