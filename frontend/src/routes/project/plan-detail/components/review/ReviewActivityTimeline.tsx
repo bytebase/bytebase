@@ -1,4 +1,4 @@
-import { FileText, Loader2, MessagesSquare, Pencil } from "lucide-react";
+import { FileText, Loader2, MessagesSquare } from "lucide-react";
 import {
   type ReactNode,
   useCallback,
@@ -27,6 +27,7 @@ import {
   collectPlanUpdateSpecs,
   diffPlanSpecsForEvent,
 } from "@/lib/plan/diffPlanSpecs";
+import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -40,17 +41,23 @@ import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
+import { useActivityLanding } from "../../hooks/useActivityLanding";
 import { useFocusThread } from "../../hooks/useFocusThread";
 import { usePlanChangeReferenceData } from "../../hooks/usePlanChangeReferenceData";
 import { usePlanReviewRun } from "../../hooks/useSqlReviewV2";
 import { placementOf } from "../../shared/stores/placementSlice";
 import { usePlanDetailStore } from "../../shared/stores/usePlanDetailStore";
+import {
+  ActivityScope,
+  useCommentTimestampLink,
+} from "../../shell/CommentLinkContext";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import type { PlanChangeReferenceResources } from "../../utils/changeReference";
 import { reviewerName } from "../../utils/reviewLabels";
 import { PlanSpecChangeReference } from "../PlanChangeReference";
+import { CommentActionsMenu } from "../threads/CommentActionsMenu";
 import { CommentThreadCard } from "../threads/CommentThreadCard";
-import { ReviewerIcon } from "../threads/ReviewResult";
+import { ReviewerIcon, useCommentAuthor } from "../threads/ReviewResult";
 import { StatementAnchorContext } from "../threads/StatementAnchorContext";
 import {
   type CommentThread,
@@ -149,6 +156,14 @@ export function ReviewActivityTimeline({
       runToggles,
     ]
   );
+  const findingNames = useMemo(() => {
+    const names = new Set<string>();
+    for (const entry of entries) {
+      if (entry.source.type !== "review-run") continue;
+      for (const finding of entry.source.findings) names.add(finding.name);
+    }
+    return names;
+  }, [entries]);
   const items = useMemo(() => {
     const renderable = entries.filter(isRenderableEntry);
     const consolidated = consolidateConsecutive(renderable);
@@ -156,30 +171,68 @@ export function ReviewActivityTimeline({
   }, [entries, expanded]);
   // A card asked for from elsewhere may be a finding of a hidden run, which
   // shows no cards, so its run opens first and the scroll waits for it.
-  const hiddenRunOfFocus = useMemo(
+  const focusedThread = useMemo(
     () =>
       activityFocus
+        ? threads.find(
+            (thread) =>
+              thread.root.name === activityFocus.commentName ||
+              thread.replies.some(
+                (reply) => reply.name === activityFocus.commentName
+              )
+          )
+        : undefined,
+    [activityFocus, threads]
+  );
+  const hiddenRunOfFocus = useMemo(
+    () =>
+      focusedThread
         ? entries.find(
             (entry) =>
               entry.source.type === "review-run" &&
               !entry.source.open &&
               entry.source.findings.some(
-                (finding) => finding.name === activityFocus.commentName
+                (finding) => finding.name === focusedThread.root.name
               )
           )
         : undefined,
-    [activityFocus, entries]
+    [entries, focusedThread]
   );
   useEffect(() => {
     if (hiddenRunOfFocus) toggleRun(hiddenRunOfFocus.id, true);
   }, [hiddenRunOfFocus, toggleRun]);
+  // The entry asked for takes the landing itself once it is drawn. A request
+  // for something the timeline never draws is dropped here, or it would wait
+  // and fire on a later one.
+  const drawnNames = useMemo(() => {
+    const names = new Set<string>();
+    for (const entry of consolidateConsecutive(
+      entries.filter(isRenderableEntry)
+    )) {
+      if (entry.source.type === "review-run") {
+        names.add(entry.source.completionName);
+      } else if (entry.source.type === "plan-created") {
+        continue;
+      } else {
+        names.add(entry.id);
+      }
+      for (const name of entry.standsFor ?? []) names.add(name);
+    }
+    for (const thread of threads) {
+      if (!names.has(thread.root.name) && !findingNames.has(thread.root.name)) {
+        continue;
+      }
+      names.add(thread.root.name);
+      for (const reply of thread.replies) names.add(reply.name);
+    }
+    return names;
+  }, [entries, findingNames, threads]);
   useEffect(() => {
-    if (!activityFocus || !expanded || hiddenRunOfFocus) return;
-    document
-      .getElementById(activityFocus.commentName)
-      ?.scrollIntoView({ behavior: "smooth", block: "center" });
-    clearActivityFocus(activityFocus.nonce);
-  }, [activityFocus, clearActivityFocus, expanded, hiddenRunOfFocus, items]);
+    if (!activityFocus || comments.length === 0) return;
+    if (!drawnNames.has(activityFocus.commentName)) {
+      clearActivityFocus(activityFocus.nonce);
+    }
+  }, [activityFocus, clearActivityFocus, comments.length, drawnNames]);
   // Permission-gated only — comments are allowed regardless of issue status
   // (the backend and the issue-detail list allow commenting on done issues).
   const allowComment = Boolean(
@@ -191,35 +244,37 @@ export function ReviewActivityTimeline({
       <h4 className="text-sm font-medium text-main">
         {t("plan.review.activity.self")}
       </h4>
-      <ul className="flex flex-col">
-        {items.map((item, i) => {
-          if (item.type === "fold") {
+      <ActivityScope focus={activityFocus} onLanded={clearActivityFocus}>
+        <ul className="flex flex-col">
+          {items.map((item, i) => {
+            if (item.type === "fold") {
+              return (
+                <TornSeparator
+                  count={item.count}
+                  key={`fold-${i}`}
+                  onShowAll={() => setExpanded(true)}
+                />
+              );
+            }
+            const isLast = !items
+              .slice(i + 1)
+              .some((next) => next.type !== "fold");
             return (
-              <TornSeparator
-                count={item.count}
-                key={`fold-${i}`}
-                onShowAll={() => setExpanded(true)}
+              <ActivityRow
+                changeReferenceResources={changeReferenceResources}
+                entry={item.entry}
+                issue={issue}
+                isLast={isLast}
+                key={item.entry.id}
+                onToggleRun={toggleRun}
+                plan={plan}
+                renderPlanChangeReference={renderPlanChangeReference}
+                threads={threads}
               />
             );
-          }
-          const isLast = !items
-            .slice(i + 1)
-            .some((next) => next.type !== "fold");
-          return (
-            <ActivityRow
-              changeReferenceResources={changeReferenceResources}
-              entry={item.entry}
-              issue={issue}
-              isLast={isLast}
-              key={item.entry.id}
-              onToggleRun={toggleRun}
-              plan={plan}
-              renderPlanChangeReference={renderPlanChangeReference}
-              threads={threads}
-            />
-          );
-        })}
-      </ul>
+          })}
+        </ul>
+      </ActivityScope>
       {allowComment && <ReviewCommentComposer issueName={issue.name} />}
     </div>
   );
@@ -354,16 +409,51 @@ function ActivityRow({
         plan={plan}
         renderPlanChangeReference={renderPlanChangeReference}
         similarCount={entry.similarCount}
+        standsFor={entry.standsFor}
       />
     );
   }
-  // Synthetic, review-only events (plan created / marked ready) have no backing
-  // issue comment, so render the shared row shell with a local icon + header.
+  return (
+    <SyntheticRow
+      // "Marked ready" has a comment behind it once the review submission is
+      // recorded as one; "created this plan" never has.
+      commentName={
+        source.type === "ready-for-review" && entry.id !== source.type
+          ? entry.id
+          : undefined
+      }
+      isLast={isLast}
+      source={source}
+    />
+  );
+}
+
+// Review-only events (plan created / marked ready) render the shared row
+// shell with a local icon and header.
+function SyntheticRow({
+  commentName,
+  isLast,
+  source,
+}: {
+  commentName: string | undefined;
+  isLast: boolean;
+  source: Extract<
+    TimelineSource,
+    { type: "plan-created" | "ready-for-review" }
+  >;
+}) {
+  const names = useMemo(
+    () => (commentName ? [commentName] : []),
+    [commentName]
+  );
+  const { linked, ref } = useActivityLanding<HTMLDivElement>(names);
   return (
     <ActivityRowShell
-      header={<SyntheticHeader source={source} />}
+      header={<SyntheticHeader commentName={commentName} source={source} />}
       icon={<SyntheticIcon type={source.type} />}
       isLast={isLast}
+      linked={linked}
+      rowRef={ref}
     />
   );
 }
@@ -385,6 +475,9 @@ function ReviewRunActivityRow({
   source: Extract<TimelineSource, { type: "review-run" }>;
 }) {
   const { t } = useTranslation();
+  const names = useMemo(() => [source.completionName], [source.completionName]);
+  const { linked, ref } = useActivityLanding<HTMLDivElement>(names);
+  const timestampLink = useCommentTimestampLink(source.completionName);
   const { postedCount } = source.completion;
   const summary =
     postedCount > 0
@@ -400,6 +493,7 @@ function ReviewRunActivityRow({
       <span className="text-control">{summary}</span>
       <HumanizeTs
         className="text-xs text-control-light"
+        link={timestampLink}
         tsMs={getTimeForPbTimestampProtoEs(source.time)}
       />
       {source.findings.length > 0 && (
@@ -427,6 +521,8 @@ function ReviewRunActivityRow({
         icon={icon}
         id={source.completionName}
         isLast={isLast}
+        linked={linked}
+        rowRef={ref}
       />
     );
   }
@@ -436,7 +532,16 @@ function ReviewRunActivityRow({
         className="ml-3 rounded-lg border border-block-border"
         data-testid="review-group"
       >
-        <div className="flex min-h-7 min-w-0 flex-wrap items-center gap-x-2 px-3 py-2 text-sm">
+        <div
+          aria-current={linked || undefined}
+          className={cn(
+            "relative flex min-h-7 min-w-0 flex-wrap items-center gap-x-2 px-3 py-2 text-sm outline-hidden",
+            linked &&
+              "before:pointer-events-none before:absolute before:inset-1 before:rounded-sm before:border-2 before:border-accent"
+          )}
+          data-linked={linked || undefined}
+          ref={ref}
+        >
           {header}
         </div>
         {cards.length > 0 && (
@@ -464,14 +569,17 @@ function SyntheticIcon({
 }
 
 function SyntheticHeader({
+  commentName,
   source,
 }: {
+  commentName: string | undefined;
   source: Extract<
     TimelineSource,
     { type: "plan-created" | "ready-for-review" }
   >;
 }) {
   const { t } = useTranslation();
+  const timestampLink = useCommentTimestampLink(commentName);
   return (
     <>
       <CommentCreator creator={source.creator} />
@@ -484,6 +592,7 @@ function SyntheticHeader({
       )}
       <HumanizeTs
         className="text-xs text-control-light"
+        link={timestampLink}
         tsMs={getTimeForPbTimestampProtoEs(source.time)}
       />
     </>
@@ -499,6 +608,7 @@ function ReviewCommentRow({
   plan,
   renderPlanChangeReference,
   similarCount,
+  standsFor,
 }: {
   comment: IssueComment;
   isLast: boolean;
@@ -506,8 +616,17 @@ function ReviewCommentRow({
   plan: Plan;
   renderPlanChangeReference: PlanChangeReferenceRenderer;
   similarCount?: number;
+  // The comments a merged row stands in for; their addresses land on it.
+  standsFor?: string[];
 }) {
   const { t } = useTranslation();
+  const names = useMemo(
+    () => standsFor ?? [comment.name],
+    [comment.name, standsFor]
+  );
+  const { linked, ref } = useActivityLanding<HTMLDivElement>(names);
+  const timestampLink = useCommentTimestampLink(comment.name);
+  const author = useCommentAuthor(comment);
   const page = usePlanDetailContext();
   const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
   const [isEditing, setIsEditing] = useState(false);
@@ -611,18 +730,22 @@ function ReviewCommentRow({
     );
   }
 
+  // A row with text is a comment and has the comment's menu; an event row has
+  // no actions, and its timestamp is its link.
   const subjectSuffix =
-    allowEdit && !isEditing ? (
-      <Button
-        onClick={() => {
-          setEditContent(comment.comment);
-          setIsEditing(true);
-        }}
-        size="xs"
-        appearance="secondary"
-      >
-        <Pencil className="size-3.5" />
-      </Button>
+    body !== undefined && !isEditing ? (
+      <CommentActionsMenu
+        authorName={author.name}
+        commentName={comment.name}
+        onEdit={
+          allowEdit
+            ? () => {
+                setEditContent(comment.comment);
+                setIsEditing(true);
+              }
+            : undefined
+        }
+      />
     ) : undefined;
 
   return (
@@ -631,11 +754,14 @@ function ReviewCommentRow({
       comment={comment}
       isLast={isLast}
       issue={issue}
+      linked={linked}
       linkless
       plan={plan}
       renderPlanChangeReference={renderPlanChangeReference}
+      rowRef={ref}
       similarCount={similarCount}
       subjectSuffix={subjectSuffix}
+      timestampLink={timestampLink}
     />
   );
 }

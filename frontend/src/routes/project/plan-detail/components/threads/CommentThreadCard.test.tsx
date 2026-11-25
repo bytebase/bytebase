@@ -153,6 +153,7 @@ vi.mock("@/utils/iam/permission", () => ({
     mocks.hasPermission(project, permission),
 }));
 
+import { ActivityScope } from "../../shell/CommentLinkContext";
 import { CommentThreadCard, type ThreadBarProps } from "./CommentThreadCard";
 import { groupThreads } from "./threadModel";
 
@@ -1351,5 +1352,95 @@ describe("the production badge in the bar", () => {
     expect(expanded()).toBe("true");
     click(envBadges()[0]);
     expect(expanded()).toBe("false");
+  });
+});
+
+describe("a card asked for by a comment's address", () => {
+  const ACTIVITY_BAR = {
+    place: "activity" as const,
+    title: "orders",
+    foldLabel: "orders",
+  };
+  const replies = Array.from({ length: 6 }, (_, index) =>
+    comment(`r${index + 1}`, `Reply ${index + 1}`, { root: rootName })
+  );
+  const previews = () =>
+    Array.from(container.querySelectorAll("[data-testid='preview']")).map(
+      (node) => node.textContent
+    );
+  const draw = (
+    thread: ReturnType<typeof groupThreads>[number],
+    focus: string | undefined,
+    onLanded = vi.fn()
+  ) =>
+    render(
+      <ActivityScope
+        focus={focus ? { commentName: focus, nonce: 3 } : undefined}
+        onLanded={onLanded}
+      >
+        <CommentThreadCard
+          bar={ACTIVITY_BAR}
+          issue={issue}
+          project={project}
+          thread={thread}
+        />
+      </ActivityScope>
+    );
+
+  test("unfolds a resolved card and shows the replies folded away, then the reply takes the landing", () => {
+    const [thread] = groupThreads([
+      comment("root", "Root", { resolved: true }),
+      ...replies,
+    ]);
+    const onLanded = vi.fn();
+    draw(thread, undefined, onLanded);
+    expect(previews()).toEqual([]);
+    const hidden = `${ISSUE}/issueComments/r2`;
+    draw(thread, hidden, onLanded);
+    expect(previews()).toHaveLength(7);
+    expect(document.activeElement?.id).toBe(hidden);
+    expect(onLanded).toHaveBeenCalledWith(3);
+    // Unfolding to show a comment does not reopen the thread.
+    expect(
+      container
+        .querySelector("[data-testid='comment-thread']")
+        ?.getAttribute("data-thread-state")
+    ).toBe("resolved");
+  });
+
+  test("a request for the first comment unfolds the card and leaves the replies as they were", () => {
+    const [thread] = groupThreads([
+      comment("root", "Root", { resolved: true }),
+      ...replies,
+    ]);
+    draw(thread, undefined);
+    draw(thread, rootName);
+    expect(previews()).toEqual(["Root", "Reply 5", "Reply 6"]);
+    expect(document.activeElement?.id).toBe(rootName);
+  });
+
+  test("a request for another thread's comment leaves the card folded", () => {
+    const [thread] = groupThreads([
+      comment("root", "Root", { resolved: true }),
+      ...replies,
+    ]);
+    draw(thread, `${ISSUE}/issueComments/elsewhere`);
+    expect(previews()).toEqual([]);
+  });
+
+  test("the statement editor's card ignores the request", () => {
+    const [thread] = groupThreads([
+      comment("root", "Root", { resolved: true }),
+      ...replies,
+    ]);
+    render(
+      <CommentThreadCard
+        bar={ACTIVITY_BAR}
+        issue={issue}
+        project={project}
+        thread={thread}
+      />
+    );
+    expect(previews()).toEqual([]);
   });
 });

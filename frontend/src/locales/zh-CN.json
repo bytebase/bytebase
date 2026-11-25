@@ -778,6 +778,7 @@
     "copy": "拷贝",
     "copy-all": "复制全部",
     "copy-failed": "复制失败",
+    "copy-link": "复制链接",
     "create": "创建",
     "created": "已创建",
     "created-at": "创建于",
@@ -3147,6 +3148,7 @@
           "view-in-statement": "在语句中查看"
         },
         "applies-to": "适用于",
+        "comment-actions": "{{name}} 的评论的操作",
         "comment-on-lines": "评论所选行",
         "comment-on-plan": "对计划的评论",
         "comment-title_one": "第 {{range}} 行的评论",

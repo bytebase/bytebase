@@ -778,6 +778,7 @@
     "copy": "Copy",
     "copy-all": "Copy all",
     "copy-failed": "Copy failed",
+    "copy-link": "Copy link",
     "create": "Create",
     "created": "Created",
     "created-at": "Created",
@@ -3147,6 +3148,7 @@
           "view-in-statement": "View in Statement"
         },
         "applies-to": "Applies to",
+        "comment-actions": "Actions for {{name}}'s comment",
         "comment-on-lines": "Comment on lines",
         "comment-on-plan": "Comment on the plan",
         "comment-title_one": "Comment on line {{range}}",

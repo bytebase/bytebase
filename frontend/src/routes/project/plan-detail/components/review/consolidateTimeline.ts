@@ -136,7 +136,11 @@ export function consolidateConsecutive(
     } else {
       const rep = (classified.kind.merge ?? latestMerge)(run);
       if (rep !== null) {
-        result.push({ ...rep, similarCount: run.length });
+        result.push({
+          ...rep,
+          similarCount: run.length,
+          standsFor: run.map((entry) => entry.id),
+        });
       }
     }
     i = j;

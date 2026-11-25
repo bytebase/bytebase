@@ -49,6 +49,9 @@ const (
 	// IssueServiceListIssueCommentsProcedure is the fully-qualified name of the IssueService's
 	// ListIssueComments RPC.
 	IssueServiceListIssueCommentsProcedure = "/bytebase.v1.IssueService/ListIssueComments"
+	// IssueServiceGetIssueCommentProcedure is the fully-qualified name of the IssueService's
+	// GetIssueComment RPC.
+	IssueServiceGetIssueCommentProcedure = "/bytebase.v1.IssueService/GetIssueComment"
 	// IssueServiceCreateIssueCommentProcedure is the fully-qualified name of the IssueService's
 	// CreateIssueComment RPC.
 	IssueServiceCreateIssueCommentProcedure = "/bytebase.v1.IssueService/CreateIssueComment"
@@ -97,6 +100,12 @@ type IssueServiceClient interface {
 	// Lists comments on an issue.
 	// Permissions required: bb.issueComments.list
 	ListIssueComments(context.Context, *connect.Request[v1.ListIssueCommentsRequest]) (*connect.Response[v1.ListIssueCommentsResponse], error)
+	// Gets a comment on an issue: an event, a root comment or a reply.
+	// The web address of a comment is its plan's page followed by
+	// #issueComments/{issueComment}; the plan's issue field and that fragment,
+	// joined by a slash, are the comment's name.
+	// Permissions required: bb.issueComments.list
+	GetIssueComment(context.Context, *connect.Request[v1.GetIssueCommentRequest]) (*connect.Response[v1.IssueComment], error)
 	// Adds a comment to an issue.
 	// Permissions required: bb.issueComments.create
 	CreateIssueComment(context.Context, *connect.Request[v1.CreateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error)
@@ -188,6 +197,12 @@ func NewIssueServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(issueServiceMethods.ByName("ListIssueComments")),
 			connect.WithClientOptions(opts...),
 		),
+		getIssueComment: connect.NewClient[v1.GetIssueCommentRequest, v1.IssueComment](
+			httpClient,
+			baseURL+IssueServiceGetIssueCommentProcedure,
+			connect.WithSchema(issueServiceMethods.ByName("GetIssueComment")),
+			connect.WithClientOptions(opts...),
+		),
 		createIssueComment: connect.NewClient[v1.CreateIssueCommentRequest, v1.IssueComment](
 			httpClient,
 			baseURL+IssueServiceCreateIssueCommentProcedure,
@@ -253,6 +268,7 @@ type issueServiceClient struct {
 	searchIssues            *connect.Client[v1.SearchIssuesRequest, v1.SearchIssuesResponse]
 	updateIssue             *connect.Client[v1.UpdateIssueRequest, v1.Issue]
 	listIssueComments       *connect.Client[v1.ListIssueCommentsRequest, v1.ListIssueCommentsResponse]
+	getIssueComment         *connect.Client[v1.GetIssueCommentRequest, v1.IssueComment]
 	createIssueComment      *connect.Client[v1.CreateIssueCommentRequest, v1.IssueComment]
 	updateIssueComment      *connect.Client[v1.UpdateIssueCommentRequest, v1.IssueComment]
 	batchUpdateIssuesStatus *connect.Client[v1.BatchUpdateIssuesStatusRequest, v1.BatchUpdateIssuesStatusResponse]
@@ -292,6 +308,11 @@ func (c *issueServiceClient) UpdateIssue(ctx context.Context, req *connect.Reque
 // ListIssueComments calls bytebase.v1.IssueService.ListIssueComments.
 func (c *issueServiceClient) ListIssueComments(ctx context.Context, req *connect.Request[v1.ListIssueCommentsRequest]) (*connect.Response[v1.ListIssueCommentsResponse], error) {
 	return c.listIssueComments.CallUnary(ctx, req)
+}
+
+// GetIssueComment calls bytebase.v1.IssueService.GetIssueComment.
+func (c *issueServiceClient) GetIssueComment(ctx context.Context, req *connect.Request[v1.GetIssueCommentRequest]) (*connect.Response[v1.IssueComment], error) {
+	return c.getIssueComment.CallUnary(ctx, req)
 }
 
 // CreateIssueComment calls bytebase.v1.IssueService.CreateIssueComment.
@@ -359,6 +380,12 @@ type IssueServiceHandler interface {
 	// Lists comments on an issue.
 	// Permissions required: bb.issueComments.list
 	ListIssueComments(context.Context, *connect.Request[v1.ListIssueCommentsRequest]) (*connect.Response[v1.ListIssueCommentsResponse], error)
+	// Gets a comment on an issue: an event, a root comment or a reply.
+	// The web address of a comment is its plan's page followed by
+	// #issueComments/{issueComment}; the plan's issue field and that fragment,
+	// joined by a slash, are the comment's name.
+	// Permissions required: bb.issueComments.list
+	GetIssueComment(context.Context, *connect.Request[v1.GetIssueCommentRequest]) (*connect.Response[v1.IssueComment], error)
 	// Adds a comment to an issue.
 	// Permissions required: bb.issueComments.create
 	CreateIssueComment(context.Context, *connect.Request[v1.CreateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error)
@@ -446,6 +473,12 @@ func NewIssueServiceHandler(svc IssueServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(issueServiceMethods.ByName("ListIssueComments")),
 		connect.WithHandlerOptions(opts...),
 	)
+	issueServiceGetIssueCommentHandler := connect.NewUnaryHandler(
+		IssueServiceGetIssueCommentProcedure,
+		svc.GetIssueComment,
+		connect.WithSchema(issueServiceMethods.ByName("GetIssueComment")),
+		connect.WithHandlerOptions(opts...),
+	)
 	issueServiceCreateIssueCommentHandler := connect.NewUnaryHandler(
 		IssueServiceCreateIssueCommentProcedure,
 		svc.CreateIssueComment,
@@ -514,6 +547,8 @@ func NewIssueServiceHandler(svc IssueServiceHandler, opts ...connect.HandlerOpti
 			issueServiceUpdateIssueHandler.ServeHTTP(w, r)
 		case IssueServiceListIssueCommentsProcedure:
 			issueServiceListIssueCommentsHandler.ServeHTTP(w, r)
+		case IssueServiceGetIssueCommentProcedure:
+			issueServiceGetIssueCommentHandler.ServeHTTP(w, r)
 		case IssueServiceCreateIssueCommentProcedure:
 			issueServiceCreateIssueCommentHandler.ServeHTTP(w, r)
 		case IssueServiceUpdateIssueCommentProcedure:
@@ -563,6 +598,10 @@ func (UnimplementedIssueServiceHandler) UpdateIssue(context.Context, *connect.Re
 
 func (UnimplementedIssueServiceHandler) ListIssueComments(context.Context, *connect.Request[v1.ListIssueCommentsRequest]) (*connect.Response[v1.ListIssueCommentsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.ListIssueComments is not implemented"))
+}
+
+func (UnimplementedIssueServiceHandler) GetIssueComment(context.Context, *connect.Request[v1.GetIssueCommentRequest]) (*connect.Response[v1.IssueComment], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.GetIssueComment is not implemented"))
 }
 
 func (UnimplementedIssueServiceHandler) CreateIssueComment(context.Context, *connect.Request[v1.CreateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error) {

@@ -778,6 +778,7 @@
     "copy": "Sao chép",
     "copy-all": "Sao chép tất cả",
     "copy-failed": "Sao chép thất bại",
+    "copy-link": "Sao chép liên kết",
     "create": "Tạo",
     "created": "Đã tạo",
     "created-at": "Thời gian tạo",
@@ -3147,6 +3148,7 @@
           "view-in-statement": "Xem trong câu lệnh"
         },
         "applies-to": "Áp dụng cho",
+        "comment-actions": "Thao tác cho bình luận của {{name}}",
         "comment-on-lines": "Bình luận các dòng đã chọn",
         "comment-on-plan": "Bình luận về kế hoạch",
         "comment-title_one": "Bình luận về dòng {{range}}",

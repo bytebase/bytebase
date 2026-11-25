@@ -778,6 +778,7 @@
     "copy": "コピー",
     "copy-all": "すべてコピー",
     "copy-failed": "コピーに失敗しました",
+    "copy-link": "リンクをコピー",
     "create": "作成する",
     "created": "作成済",
     "created-at": "作成日時",
@@ -3147,6 +3148,7 @@
           "view-in-statement": "ステートメントで表示"
         },
         "applies-to": "対象",
+        "comment-actions": "{{name}} のコメントの操作",
         "comment-on-lines": "選択行にコメント",
         "comment-on-plan": "プランへのコメント",
         "comment-title_one": "{{range}} 行目へのコメント",

@@ -452,6 +452,19 @@ func (x *ListIssueCommentsResponse) Equal(y *ListIssueCommentsResponse) bool {
 	return true
 }
 
+func (x *GetIssueCommentRequest) Equal(y *GetIssueCommentRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	return true
+}
+
 func (x *CreateIssueCommentRequest) Equal(y *CreateIssueCommentRequest) bool {
 	if x == y {
 		return true

@@ -11298,6 +11298,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListIssueCommentsResponse'
+  /v1/projects/{project}/issues/{issue}/issueComments/{issueComment}:
+    get:
+      tags:
+        - IssueService
+      summary: GetIssueComment
+      description: |-
+        Gets a comment on an issue: an event, a root comment or a reply.
+         The web address of a comment is its plan's page followed by
+         #issueComments/{issueComment}; the plan's issue field and that fragment,
+         joined by a slash, are the comment's name.
+         Permissions required: bb.issueComments.list
+      operationId: IssueService_GetIssueComment
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: issue
+          in: path
+          description: The issue id.
+          required: true
+          schema:
+            type: string
+        - name: issueComment
+          in: path
+          description: The issueComment id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.IssueComment'
   /v1/projects/{project}/issues/{issue}/reviewRun:
     get:
       tags:
@@ -21751,6 +21789,17 @@ components:
             The name of the instance to retrieve.
              Format: instances/{instance} or projects/{project}/instances/{instance}
       title: GetInstanceRequest
+      required:
+        - name
+      additionalProperties: false
+    bytebase.v1.GetIssueCommentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: 'Format: projects/{project}/issues/{issue}/issueComments/{issueComment}'
+      title: GetIssueCommentRequest
       required:
         - name
       additionalProperties: false
