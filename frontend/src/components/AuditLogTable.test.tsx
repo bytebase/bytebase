@@ -252,6 +252,33 @@ afterEach(() => {
 });
 
 describe("AuditLogTable", () => {
+  test("preserves the selected end-of-day millisecond in the search filter", async () => {
+    mocks.searchAuditLogs.mockResolvedValue({ auditLogs: [], nextPageToken: "" });
+    const { render, unmount } = renderIntoContainer(
+      <AuditLogTable parent="projects/-" canExport={false} />
+    );
+    await render();
+
+    const from = Date.UTC(2026, 10, 24);
+    const to = Date.UTC(2026, 10, 24, 23, 59, 59, 999);
+    await act(async () => {
+      (
+        mocks.onTimeRangeParamsChange.value as (params: {
+          query: string;
+          scopes: Array<{ id: string; value: string }>;
+        }) => void
+      )({
+        query: "",
+        scopes: [{ id: "created", value: `${from},${to}` }],
+      });
+    });
+
+    expect(mocks.searchAuditLogs.mock.lastCall?.[0].filter).toContain(
+      'create_time <= "2026-11-24T23:59:59.999Z"'
+    );
+    unmount();
+  });
+
   test("explains why a range larger than 30 days cannot be exported", async () => {
     vi.useFakeTimers();
     mocks.searchAuditLogs.mockResolvedValue({ auditLogs: [], nextPageToken: "" });
