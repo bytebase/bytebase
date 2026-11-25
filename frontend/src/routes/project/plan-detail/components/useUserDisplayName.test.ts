@@ -8,10 +8,15 @@ const store = vi.hoisted(() => {
     serviceAccountsByName: {} as Record<string, { title: string }>,
     workloadIdentitiesByName: {} as Record<string, { title: string }>,
     getUserByIdentifier: (identifier: string) => state.usersByName[identifier],
+    // As the store does: an unread account is named from its email.
     getServiceAccount: (name: string) =>
-      state.serviceAccountsByName[name] ?? { title: "" },
+      state.serviceAccountsByName[name] ?? {
+        title: name.slice("serviceAccounts/".length).split("@")[0],
+      },
     getWorkloadIdentity: (name: string) =>
-      state.workloadIdentitiesByName[name] ?? { title: "" },
+      state.workloadIdentitiesByName[name] ?? {
+        title: name.slice("workloadIdentities/".length).split("@")[0],
+      },
     getOrFetchUserByIdentifier: vi.fn(async () => ({})),
     fetchServiceAccount: vi.fn(async () => ({})),
     fetchWorkloadIdentity: vi.fn(async () => ({})),
@@ -70,9 +75,12 @@ test.each([
   }
 );
 
-test("the email stands in until the record loads", () => {
-  const { result } = renderHook(() =>
-    useUserDisplayName("users/ci@service.bytebase.com")
-  );
-  expect(result.current).toBe("ci@service.bytebase.com");
+test("until its record loads, a person reads as the email, and CI as the name in its email, as the member list does", () => {
+  expect(
+    renderHook(() => useUserDisplayName("users/new@example.com")).result.current
+  ).toBe("new@example.com");
+  expect(
+    renderHook(() => useUserDisplayName("users/ci@service.bytebase.com")).result
+      .current
+  ).toBe("ci");
 });
