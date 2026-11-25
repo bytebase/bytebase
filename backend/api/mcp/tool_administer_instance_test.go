@@ -329,9 +329,7 @@ func TestAdministerInstanceAddsJourneyOnesServer(t *testing.T) {
 	for _, line := range strings.Split(asked.Message, "\n") {
 		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
 	}
-	require.Equal(t, "PostgreSQL instance \"hr-staging\", titled \"HR Staging\".\n"+
-		"After you apply, Bytebase tests the connection and adds nothing if it fails. "+
-		`It signs in as "postgres" with the password in the request; this form does not show it.`, choiceDescription(t, asked))
+	require.Equal(t, `Title "HR Staging", password set (not shown)`, choiceDescription(t, asked))
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
 	require.NotContains(t, asked.Message+string(schema), journeyOnePassword, "the form never shows the password")
@@ -591,7 +589,7 @@ func TestAdministerInstanceStatesTheConnectionDatabaseInTheDescription(t *testin
 	asked := user.lastParams(t)
 	require.NotContains(t, asked.Message, "hr_staging")
 	description := choiceDescription(t, asked)
-	require.Contains(t, description, `It signs in as "postgres" with no password. It connects to database "hr_staging", and syncs every database on the server.`)
+	require.Equal(t, "Title \"HR Staging\", no password\nConnects to database \"hr_staging\", and syncs every database on the server.", description)
 }
 
 func TestAdministerInstanceRefusesBeforeAsking(t *testing.T) {

@@ -261,8 +261,7 @@ func TestAdministerIdentityCreatesJourneyFoursIdentityWithItsRole(t *testing.T) 
 	}
 	require.Equal(t, strings.Join([]string{
 		`The rule trusts the owner's name: if "example-org" is renamed or deleted, whoever registers the name can sign in as it.`,
-		`It signs in as hr-migrations-ci@hr.workload.bytebase.com with tokens from https://token.actions.githubusercontent.com for audience "bytebase". It lasts until it is removed.`,
-		`GitOps Service Agent lets it create plans, releases and rollouts in this project and run their tasks in every environment. Its rollouts carry no issue, so no approval rule holds them. Titled "HR migrations CI".`,
+		`Titled "HR migrations CI". It signs in as hr-migrations-ci@hr.workload.bytebase.com, and its role runs tasks in every environment of the project.`,
 	}, "\n"), choiceDescription(t, asked))
 
 	creations, grants, _ := mock.calls()
@@ -349,7 +348,7 @@ func TestAdministerIdentityWarnsOfTheOwnersNameOnlyWithNeitherID(t *testing.T) {
 		"repo:example-org@111/hr-migrations:*":     `The pattern pins owner ID "111", so a new account under a freed name cannot sign in as it.`,
 		"repo:example-org/hr-migrations@456:*":     `The pattern pins repository ID "456", so a new account under a freed name cannot sign in as it.`,
 		"repo:example-org@111/hr-migrations@456:*": `The pattern pins owner ID "111" and repository ID "456", so a new account under a freed name cannot sign in as it.`,
-		"project_path:example-org/hr-migrations:*": `It signs in as hr-migrations-ci@hr.workload.bytebase.com with tokens from https://gitlab.com for audience "bytebase". It lasts until it is removed.`,
+		"project_path:example-org/hr-migrations:*": `Titled "HR migrations CI". It signs in as hr-migrations-ci@hr.workload.bytebase.com, and its role runs tasks in every environment of the project.`,
 	} {
 		t.Run(pattern, func(t *testing.T) {
 			user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
@@ -584,7 +583,6 @@ func TestAdministerIdentityCreatesAGitLabIdentityWithGitLabsIssuer(t *testing.T)
 		config["providerType"], config["subjectPattern"] = "GITLAB", "project_path:acme/team/deploy:*"
 	})))
 	require.False(t, res.IsError, resultText(t, res))
-	require.Contains(t, choiceDescription(t, user.lastParams(t)), "with tokens from https://gitlab.com for audience \"bytebase\".")
 	creations, grants, _ := mock.calls()
 	require.Len(t, creations, 1)
 	require.Len(t, grants, 1)

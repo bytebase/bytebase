@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -109,7 +110,7 @@ func (s *Server) administerMaskingRules(ctx context.Context, req *mcp.CallToolRe
 			Suggestion: "send the same request with allowMissing: true",
 		}), nil, nil
 	}
-	types, err := s.readSemanticTypes(ctx)
+	types, storedTypes, err := s.readSemanticTypes(ctx)
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
@@ -125,9 +126,7 @@ func (s *Server) administerMaskingRules(ctx context.Context, req *mcp.CallToolRe
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
-	// The stored rules and the semantic types are bound through the form, which
-	// states each change to the rules and what each rule's type does.
-	digest := adminFormDigest(form, change.request)
+	digest := maskingFormDigest(form, change.request, stored, storedTypes)
 	if result := s.confirmAdminChange(ctx, req, change, digest, form, maskingRules, "the masking rules, the semantic types or this request"); result != nil {
 		return result, nil, nil
 	}
@@ -266,22 +265,25 @@ func (s *Server) readMaskingRules(ctx context.Context, name string) ([]*v1pb.Mas
 
 // readSemanticTypes reads the workspace's semantic types with the user's
 // permissions. A workspace that stores none has only the built-in types.
-func (s *Server) readSemanticTypes(ctx context.Context) (map[string]*storepb.SemanticTypeSetting_SemanticType, error) {
+func (s *Server) readSemanticTypes(ctx context.Context) (map[string]*storepb.SemanticTypeSetting_SemanticType, []*v1pb.SemanticTypeSetting_SemanticType, error) {
 	resp, err := s.apiRequest(ctx, v1connect.SettingServiceGetSettingProcedure, map[string]any{"name": common.SettingNamePrefix + v1pb.Setting_SEMANTIC_TYPES.String()})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read the semantic types")
+		return nil, nil, errors.Wrap(err, "failed to read the semantic types")
 	}
 	if resp.Status == http.StatusNotFound {
-		return semanticTypesFromSetting(nil)
+		types, err := semanticTypesFromSetting(nil)
+		return types, nil, err
 	}
 	if err := checkAPIResponse(resp, "read the semantic types", "bb.settings.get"); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	setting := &v1pb.Setting{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(resp.Body, setting); err != nil {
-		return nil, errors.Wrap(err, "failed to parse the semantic types")
+		return nil, nil, errors.Wrap(err, "failed to parse the semantic types")
 	}
-	return semanticTypesFromSetting(setting.GetValue().GetSemanticType().GetTypes())
+	stored := setting.GetValue().GetSemanticType().GetTypes()
+	types, err := semanticTypesFromSetting(stored)
+	return types, stored, err
 }
 
 // semanticTypesFromSetting maps the semantic types masking reads by their ID:
@@ -322,8 +324,10 @@ type maskingRulesDiff struct {
 	// requested rules that differ, in the order masking tries them. A change
 	// that can show data unmasked has the effect.
 	changes []formChange
-	// requested are the rules as the request orders them.
+	// requested are the rules as the request orders them, and marks say of
+	// each whether it is new, changed or kept as stored.
 	requested []*v1pb.MaskingRulePolicy_MaskingRule
+	marks     []string
 	// types describe each rule's semantic type.
 	types map[string]*storepb.SemanticTypeSetting_SemanticType
 }
@@ -404,12 +408,16 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 				text:   fmt.Sprintf("Add rule %d, %s: %s", i+1, diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)),
 				effect: !diff.masksEveryValue(rule.GetSemanticType()),
 			})
+			diff.marks = append(diff.marks, "new")
 			continue
 		}
 		moved := !inOrder[kept]
 		kept++
 		if change, ok := diff.keptRuleChange(before, rule, moved, i+1); ok {
 			diff.changes = append(diff.changes, change)
+			diff.marks = append(diff.marks, "changed")
+		} else {
+			diff.marks = append(diff.marks, "kept")
 		}
 	}
 	return diff, nil
@@ -500,10 +508,21 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 	} else {
 		sb.WriteString("The masking rules, in the order masking tries them:")
 		for i, rule := range diff.requested {
-			fmt.Fprintf(&sb, "\n%d. %s, %s: %s", i+1, maskingRuleTitle(rule), diff.typePhrase(rule.GetSemanticType()), conditionText(rule.GetCondition().GetExpression()))
+			condition := rule.GetCondition().GetExpression()
+			// The message never shows a kept rule, so its line says what it
+			// decides: a kept rule ahead of a new one can take its columns.
+			if diff.marks[i] == "kept" {
+				fmt.Fprintf(&sb, "\n%d. %s (kept), %s: %s", i+1, maskingRuleTitle(rule), diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition))
+				continue
+			}
+			fmt.Fprintf(&sb, "\n%d. %s (%s): %s", i+1, maskingRuleTitle(rule), diff.marks[i], conditionText(condition))
 		}
 	}
-	form, err := maskingRules.form(ctx, diff.changes, maskingRulesUnmask, sb.String(), link)
+	rules := maskingRules
+	if len(diff.requested) < 2 {
+		rules.apply = ""
+	}
+	form, err := rules.form(ctx, diff.changes, maskingRulesUnmask, sb.String(), link)
 	if err == nil {
 		return form, nil
 	}
@@ -511,7 +530,19 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 	// without this a rule one form adds might fit no form to remove. The
 	// question may pass messageLineWidth, since Claude Code cuts a long line
 	// (messageLines): a narrow terminal loses only the account at its end.
-	folded := maskingRules
+	folded := rules
 	folded.question = maskingRulesQuestionWithEffect
 	return folded.form(ctx, diff.changes, "", sb.String(), link)
+}
+
+// maskingFormDigest binds an answer to the form, the request, and the stored
+// rules and semantic types the form was built from. A kept rule can move to
+// another type that reads the same, and a type's settings show only as its
+// algorithm's name, so the form alone does not cover them.
+func maskingFormDigest(form *adminForm, request *v1pb.UpdatePolicyRequest, stored []*v1pb.MaskingRulePolicy_MaskingRule, types []*v1pb.SemanticTypeSetting_SemanticType) []byte {
+	h := sha256.New()
+	_, _ = h.Write(adminFormDigest(form, request))
+	_, _ = h.Write(auth.MCPValueDigest(&v1pb.MaskingRulePolicy{Rules: stored}))
+	_, _ = h.Write(auth.MCPValueDigest(&v1pb.SemanticTypeSetting{Types: types}))
+	return h.Sum(nil)
 }

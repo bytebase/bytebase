@@ -121,7 +121,7 @@ func signedMaskingState(t *testing.T, s *Server, stored []*v1pb.MaskingRulePolic
 	alice := withOAuth2ClientID(withUserEmail(withWorkspaceID(context.Background(), "ws-test"), "alice@example.com"), "client-A")
 	form, err := maskingRulesForm(alice, diff, "")
 	require.NoError(t, err)
-	return s.signConfirmationState(alice, change, adminFormDigest(form, change.request), askedAt)
+	return s.signConfirmationState(alice, change, maskingFormDigest(form, change.request, stored, nil), askedAt)
 }
 
 func maskingRule(id, title, condition, semanticType string) *v1pb.MaskingRulePolicy_MaskingRule {
@@ -167,13 +167,12 @@ func TestAdministerMaskingRulesAsksForTheJourneyRuleOnAWorkspaceWithNone(t *test
 		`Change the masking rules, as alice@example.com?`,
 		"Add rule 1, Full mask: env \"prod\", any db, any table, columns",
 		"> (\"birth_date\", \"gender\", \"amount\")",
-		maskingRulesApply,
 	}, "\n"), asked.Message)
 	for _, line := range strings.Split(asked.Message, "\n") {
 		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
 	}
 	require.Equal(t, "The masking rules, in the order masking tries them:\n"+
-		"1. \"Personal data in prod\", Full mask: `"+journeyCondition+"`", choiceDescription(t, asked))
+		"1. \"Personal data in prod\" (new): `"+journeyCondition+"`", choiceDescription(t, asked))
 
 	calls := mock.calls()
 	require.Len(t, calls, 1)
@@ -297,31 +296,36 @@ func TestAdministerMaskingRulesSaysAChangeCanUnmaskData(t *testing.T) {
 		`Change the masking rules, as alice@example.com?`,
 		"Remove, Full mask: env \"prod\", every column",
 		maskingRulesUnmask,
-		maskingRulesApply,
 	}, "\n"), user.lastParams(t).Message)
 	require.Equal(t, "No masking rule is left, so each column keeps its own semantic type.", choiceDescription(t, user.lastParams(t)))
 	require.Empty(t, mock.calls())
 }
 
-// With the question, two change lines and the unmask line, the message is full,
-// so the fixed sentence ends the description.
+// With the question and three change lines, the message is full, so the fixed
+// sentence ends the description. Kept rules say what they decide.
 func TestAdministerMaskingRulesLeavesTheFixedSentenceToAFullDescription(t *testing.T) {
 	mock := &maskingMock{}
-	mock.setStored(maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default"))
+	kept := maskingRule("r1", "A", `resource.environment_id == "a"`, "bb.default")
+	mock.setStored(kept)
 	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
 	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
-	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false,
-		maskingRule("r2", "Test", `resource.environment_id == "test"`, "bb.default")))))
+	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, proto.CloneOf(kept),
+		maskingRule("r2", "B", `resource.environment_id == "b"`, "bb.default"),
+		maskingRule("r3", "C", `resource.environment_id == "c"`, "bb.default"),
+		maskingRule("r4", "D", `resource.environment_id == "d"`, "bb.default")))))
 	require.Contains(t, resultText(t, res), "Not changed: the user declined")
 	require.Equal(t, strings.Join([]string{
 		`Change the masking rules, as alice@example.com?`,
-		"Remove, Full mask: env \"prod\", every column",
-		"Add rule 1, Full mask: env \"test\", every column",
-		maskingRulesUnmask,
+		"Add rule 2, Full mask: env \"b\", every column",
+		"Add rule 3, Full mask: env \"c\", every column",
+		"Add rule 4, Full mask: env \"d\", every column",
 	}, "\n"), user.lastParams(t).Message)
 	require.Equal(t, "The masking rules, in the order masking tries them:\n"+
-		"1. \"Test\", Full mask: `resource.environment_id == \"test\"`\n"+maskingRulesApply,
+		"1. \"A\" (kept), Full mask: env \"a\", every column\n"+
+		"2. \"B\" (new): `resource.environment_id == \"b\"`\n"+
+		"3. \"C\" (new): `resource.environment_id == \"c\"`\n"+
+		"4. \"D\" (new): `resource.environment_id == \"d\"`\n"+maskingRulesApply,
 		choiceDescription(t, user.lastParams(t)))
 }
 
@@ -441,6 +445,44 @@ func TestAdministerMaskingRulesRefusesAnAnswerOverTypesThatChanged(t *testing.T)
 	require.Empty(t, mock.calls())
 }
 
+// A type no rule names shows nowhere on the form, so the digest binds every
+// type read.
+func TestAdministerMaskingRulesRefusesAnAnswerOverATypeNoRuleNames(t *testing.T) {
+	md5 := &v1pb.Algorithm{Mask: &v1pb.Algorithm_Md5Mask{Md5Mask: &v1pb.Algorithm_MD5Mask{}}}
+	mock := &maskingMock{types: []*v1pb.SemanticTypeSetting_SemanticType{semanticType("email", "Email", md5)}}
+	mock.setStored()
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
+	user.whileAsked = func() {
+		mock.mu.Lock()
+		defer mock.mu.Unlock()
+		mock.types = []*v1pb.SemanticTypeSetting_SemanticType{semanticType("email", "Email", nil)}
+	}
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false,
+		maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default")))))
+	require.True(t, res.IsError, resultText(t, res))
+	require.Contains(t, resultText(t, res), "STALE_CONFIRMATION")
+	require.Empty(t, mock.calls())
+}
+
+// Two types can read the same on the form, so a removed rule that moves to the
+// other one changes nothing the form shows; the digest binds the stored rules.
+func TestAdministerMaskingRulesRefusesAnAnswerOverARemovedRuleMovedToALikeType(t *testing.T) {
+	starred := &v1pb.Algorithm{Mask: &v1pb.Algorithm_FullMask_{FullMask: &v1pb.Algorithm_FullMask{Substitution: "*"}}}
+	hashed := &v1pb.Algorithm{Mask: &v1pb.Algorithm_FullMask_{FullMask: &v1pb.Algorithm_FullMask{Substitution: "#"}}}
+	mock := &maskingMock{types: []*v1pb.SemanticTypeSetting_SemanticType{semanticType("secret-a", "Secret", starred), semanticType("secret-b", "Secret", hashed)}}
+	mock.setStored(maskingRule("r1", "SSN", `resource.column_name == "ssn"`, "secret-a"))
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
+	user.whileAsked = func() { mock.setStored(maskingRule("r1", "SSN", `resource.column_name == "ssn"`, "secret-b")) }
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false))))
+	require.True(t, res.IsError, resultText(t, res))
+	require.Contains(t, resultText(t, res), "STALE_CONFIRMATION")
+	require.Empty(t, mock.calls())
+}
+
 func TestAdministerMaskingRulesRefusesAnAnswerToAnotherRequest(t *testing.T) {
 	mock := &maskingMock{}
 	mock.setStored()
@@ -521,11 +563,13 @@ func TestAdministerMaskingRulesRemovesALongRuleItAdded(t *testing.T) {
 func TestAdministerMaskingRulesPutsTheUnmaskEffectInTheQuestionWhenItsLineDoesNotFit(t *testing.T) {
 	fullMask := &v1pb.Algorithm{Mask: &v1pb.Algorithm_FullMask_{FullMask: &v1pb.Algorithm_FullMask{Substitution: "*"}}}
 	mock := &maskingMock{types: []*v1pb.SemanticTypeSetting_SemanticType{semanticType("secret", "Secret", fullMask)}}
-	mock.setStored(maskingRule("r1", "Pay", `resource.database_name == "hr_test" && (resource.column_name == "amount" || resource.column_name == "bonus")`, "secret"))
+	ssn := maskingRule("r2", "SSN", `resource.column_name == "ssn"`, "bb.default")
+	email := maskingRule("r3", "Email", `resource.column_name == "email"`, "bb.default-partial")
+	mock.setStored(maskingRule("r1", "Pay", `resource.database_name == "hr_test" && (resource.column_name == "amount" || resource.column_name == "bonus")`, "secret"), ssn, email)
 	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
 	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
-	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false))))
+	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, proto.CloneOf(ssn), proto.CloneOf(email)))))
 	require.Contains(t, resultText(t, res), "Not changed: the user declined")
 	require.Equal(t, strings.Join([]string{
 		"Change the masking rules (can unmask data, for you too), as alice@example.com?",
@@ -533,7 +577,10 @@ func TestAdministerMaskingRulesPutsTheUnmaskEffectInTheQuestionWhenItsLineDoesNo
 		"> (resource.column_name == \"amount\" || resource.column_name ==",
 		"> \"bonus\")`",
 	}, "\n"), user.lastParams(t).Message)
-	require.Equal(t, "No masking rule is left, so each column keeps its own semantic type.\n"+maskingRulesApply, choiceDescription(t, user.lastParams(t)))
+	require.Equal(t, "The masking rules, in the order masking tries them:\n"+
+		"1. \"SSN\" (kept), Full mask: any db, any table, column \"ssn\"\n"+
+		"2. \"Email\" (kept), Partial mask: any db, any table, column \"email\"\n"+maskingRulesApply,
+		choiceDescription(t, user.lastParams(t)))
 	require.LessOrEqual(t, lineColumns(maskingRulesQuestionWithEffect), messageLineWidth, "the effect comes before the account, which a narrow terminal cuts")
 }
 

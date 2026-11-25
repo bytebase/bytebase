@@ -416,21 +416,19 @@ func tlsMode(ds *v1pb.DataSource) string {
 	}
 }
 
-// instanceDescription is what the message leaves out.
+// instanceDescription is what the message leaves out: the title, whether the
+// request sets a password, and the database the instance connects to.
 func instanceDescription(c *instanceCreation) string {
 	ds := c.dataSource()
-	var sb strings.Builder
-	fmt.Fprintf(&sb, "PostgreSQL instance %q, titled %q.", c.request.GetInstanceId(), c.request.GetInstance().GetTitle())
-	sb.WriteString("\nAfter you apply, Bytebase tests the connection and adds nothing if it fails.")
-	if ds.GetPassword() == "" {
-		fmt.Fprintf(&sb, " It signs in as %q with no password.", ds.GetUsername())
-	} else {
-		fmt.Fprintf(&sb, " It signs in as %q with the password in the request; this form does not show it.", ds.GetUsername())
+	password := "no password"
+	if ds.GetPassword() != "" {
+		password = "password set (not shown)"
 	}
+	description := fmt.Sprintf("Title %q, %s", c.request.GetInstance().GetTitle(), password)
 	if database := ds.GetDatabase(); database != "" {
-		fmt.Fprintf(&sb, " It connects to database %q, and syncs every database on the server.", database)
+		description += fmt.Sprintf("\nConnects to database %q, and syncs every database on the server.", database)
 	}
-	return sb.String()
+	return description
 }
 
 // instanceAddedText reports the added instance: whether Bytebase synced it, and

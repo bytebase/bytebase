@@ -365,8 +365,13 @@ type approvalRulesDiff struct {
 	// changes are the form's change lines: the removed rules, then the
 	// requested rules that differ, in the order an approval check tries them.
 	changes []string
-	// requested are the rules for database changes as the request orders them.
+	// requested are the rules for database changes as the request orders them,
+	// and marks say of each whether it is new, changed or kept as stored.
 	requested []*v1pb.WorkspaceApprovalSetting_Rule
+	marks     []string
+	// fallback are the stored rules with no source, which decide a database
+	// change no rule for database changes matches.
+	fallback []*v1pb.WorkspaceApprovalSetting_Rule
 }
 
 // diffApprovalRules compares the requested rule list with the stored one. The
@@ -412,6 +417,11 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 	}
 
 	diff := &approvalRulesDiff{requested: requestedDB}
+	for _, rule := range storedOther {
+		if rule.GetSource() == v1pb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED {
+			diff.fallback = append(diff.fallback, rule)
+		}
+	}
 	var storedKept, requestedKept []string
 	for _, rule := range storedDB {
 		condition := rule.GetCondition().GetExpression()
@@ -440,6 +450,7 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 			// The first matching rule decides, so an added rule's place is part
 			// of the change.
 			diff.changes = append(diff.changes, fmt.Sprintf("Add rule %d, %s: %s", i+1, approvers(rule), conditionText(condition)))
+			diff.marks = append(diff.marks, "new")
 			continue
 		}
 		if !proto.Equal(before.GetTemplate().GetFlow(), rule.GetTemplate().GetFlow()) {
@@ -452,6 +463,9 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 		if clauses := keptRuleClauses(before, rule, moved, i+1); len(clauses) > 0 {
 			line := strings.Join(clauses, "; ")
 			diff.changes = append(diff.changes, fmt.Sprintf("%s%s: %s", strings.ToUpper(line[:1]), line[1:], conditionText(condition)))
+			diff.marks = append(diff.marks, "changed")
+		} else {
+			diff.marks = append(diff.marks, "kept")
 		}
 	}
 	return diff, nil
@@ -605,20 +619,60 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 		changes = append(changes, formChange{text: change, effect: true})
 	}
 	var sb strings.Builder
-	if len(diff.requested) == 0 {
-		sb.WriteString("No rule for database changes is left, so the fallback rules decide every database change, and a change that none of them matches needs no approval.")
-	} else {
-		sb.WriteString("The rules for database changes, in the order an approval check tries them:")
+	line, fallback := fallbackLine(diff.fallback)
+	sb.WriteString(line)
+	switch {
+	case len(diff.requested) == 0 && fallback:
+		sb.WriteString("\nNo rule for database changes is left, so the fallback rules decide every database change.")
+	case len(diff.requested) == 0:
+		sb.WriteString("\nNo rule for database changes is left.")
+	default:
+		sb.WriteString("\nThe rules for database changes, in the order an approval check tries them:")
 		for i, rule := range diff.requested {
-			fmt.Fprintf(&sb, "\n%d. %s, %s: %s", i+1, ruleTitle(rule), approvers(rule), conditionText(rule.GetCondition().GetExpression()))
+			// The message never shows a kept rule, so its line says what it
+			// decides: a kept rule ahead of a new one can take its changes.
+			if diff.marks[i] == "kept" {
+				fmt.Fprintf(&sb, "\n%d. %s (kept), %s: %s", i+1, ruleTitle(rule), approvers(rule), conditionText(rule.GetCondition().GetExpression()))
+			} else {
+				fmt.Fprintf(&sb, "\n%d. %s (%s)", i+1, ruleTitle(rule), diff.marks[i])
+			}
 			if description := rule.GetTemplate().GetDescription(); description != "" {
 				fmt.Fprintf(&sb, " (description %q)", description)
 			}
 		}
-		sb.WriteString("\nWhen none of them matches, the fallback rules decide, and a change that no rule matches needs no approval.")
 	}
-	sb.WriteString(" Rules for other sources stay as they are.")
 	return approvalRules.form(ctx, changes, issues, sb.String(), link)
+}
+
+// fallbackLine names the fallback rules a database change goes to when no rule
+// for database changes matches, and reports whether any can match. The
+// approval check tries them in order, skips one with no condition and lets
+// "true" match every change (review.matchRulesForSource); a change no
+// fallback rule matches needs no approval.
+func fallbackLine(rules []*v1pb.WorkspaceApprovalSetting_Rule) (string, bool) {
+	var named []string
+	catchAll := false
+	for _, rule := range rules {
+		condition := rule.GetCondition().GetExpression()
+		if condition == "" {
+			continue
+		}
+		text := fmt.Sprintf("%s (%s)", ruleTitle(rule), approvers(rule))
+		if condition == "true" {
+			catchAll = true
+		} else {
+			text += " when " + conditionText(condition)
+		}
+		named = append(named, text)
+	}
+	if len(named) == 0 {
+		return "A change no rule matches needs no approval.", false
+	}
+	line := "Unmatched changes go to the fallback rules: " + strings.Join(named, ", ") + "."
+	if !catchAll {
+		line += " A change no fallback rule matches needs no approval."
+	}
+	return line, true
 }
 
 // formChange is one change line of a form. effect marks a change that the
