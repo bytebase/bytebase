@@ -389,6 +389,7 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 		diff.changes = append(diff.changes, formChange{
 			text:   fmt.Sprintf("Remove, %s: %s", diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)),
 			effect: true,
+			kind:   ruleRemoved,
 		})
 	}
 	for _, rule := range requested {
@@ -407,6 +408,7 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 			diff.changes = append(diff.changes, formChange{
 				text:   fmt.Sprintf("Add rule %d, %s: %s", i+1, diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)),
 				effect: !diff.masksEveryValue(rule.GetSemanticType()),
+				kind:   ruleAdded,
 			})
 			diff.marks = append(diff.marks, "new")
 			continue
@@ -502,11 +504,11 @@ func maskingRuleTitle(rule *v1pb.MaskingRulePolicy_MaskingRule) string {
 // unmasked, the form says so on a line of its own, or in the question when
 // that line does not fit.
 func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) (*adminForm, error) {
-	var sb strings.Builder
+	var list ruleList
 	if len(diff.requested) == 0 {
-		sb.WriteString("No masking rule is left, so each column keeps its own semantic type.")
+		list.before = []string{"No masking rule is left, so each column keeps its own semantic type."}
 	} else {
-		sb.WriteString("The masking rules, in the order masking tries them:")
+		list.header = "The masking rules, in the order masking tries them:"
 		for i, rule := range diff.requested {
 			// Every line names its rule's type, since the order decides which
 			// rule masks a column and a move's line in the message shows no
@@ -516,24 +518,27 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 			if diff.marks[i] != "kept" {
 				condition = conditionText(rule.GetCondition().GetExpression())
 			}
-			fmt.Fprintf(&sb, "\n%d. %s (%s), %s: %s", i+1, maskingRuleTitle(rule), diff.marks[i], diff.typePhrase(rule.GetSemanticType()), condition)
+			list.rules = append(list.rules, fmt.Sprintf("%d. %s (%s), %s: %s", i+1, maskingRuleTitle(rule), diff.marks[i], diff.typePhrase(rule.GetSemanticType()), condition))
 		}
 	}
 	rules := maskingRules
 	if len(diff.requested) < 2 {
 		rules.apply = ""
 	}
-	form, err := rules.form(ctx, diff.changes, maskingRulesUnmask, sb.String(), link)
-	if err == nil {
+	if form := rules.whole(ctx, maskingRulesQuestion, diff.changes, maskingRulesUnmask, list); form != nil {
 		return form, nil
 	}
 	// A removal shows the effect and adding a full-mask rule does not, so
-	// without this a rule one form adds might fit no form to remove. The
-	// question may pass messageLineWidth, since Claude Code cuts a long line
-	// (messageLines): a narrow terminal loses only the account at its end.
-	folded := rules
-	folded.question = maskingRulesQuestionWithEffect
-	return folded.form(ctx, diff.changes, "", sb.String(), link)
+	// without this a rule whose add the message states whole could have a
+	// removal it only counts. The question may pass messageLineWidth, since
+	// Claude Code cuts a long row (messageLines): a narrow terminal loses only
+	// the account at its end.
+	if slices.ContainsFunc(diff.changes, func(change formChange) bool { return change.effect }) {
+		if form := rules.whole(ctx, maskingRulesQuestionWithEffect, diff.changes, "", list); form != nil {
+			return form, nil
+		}
+	}
+	return rules.listed(ctx, diff.changes, maskingRulesUnmask, list, link)
 }
 
 // maskingFormDigest binds an answer to the form, the request, and the stored

@@ -141,7 +141,7 @@ func describeJustInTimeChange(ctx context.Context, change *justInTimeChange) str
 	if !change.enabled {
 		effect = "Grants here stop applying (not revoked), and new requests are refused."
 	}
-	lines, _ := fitMessage(questionLines(ctx, question, ""), []formChange{{text: fmt.Sprintf("Project %q", projectID), effect: true}}, effect)
+	lines := fitMessage(questionLines(ctx, question, ""), []formChange{{text: fmt.Sprintf("Project %q", projectID), effect: true}}, effect)
 	return strings.Join(lines, "\n")
 }
 

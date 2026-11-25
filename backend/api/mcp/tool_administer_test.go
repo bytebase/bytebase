@@ -226,8 +226,10 @@ func TestAdministerWorkspaceAppliesConfirmedApprovalRules(t *testing.T) {
 	}
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
-	description, err := json.Marshal("Unmatched changes go to the fallback rules: \"Fallback Rule\" (\"Project owner\").\n" +
-		"The rules for database changes, in the order an approval check tries them:\n" +
+	description, err := json.Marshal("Unmatched changes go to the fallback rules: \"Fallback Rule\"\n" +
+		"> (\"Project owner\").\n" +
+		"The rules for database changes, in the order an approval check\n" +
+		"> tries them:\n" +
 		"1. \"Test\" (new), no approval\n" +
 		"2. \"Prod\" (new), \"Workspace DBA\"\n" +
 		approvalRulesApply)
@@ -299,6 +301,15 @@ func choiceLabels(t *testing.T, asked *mcp.ElicitParams) (string, []string) {
 		labels = append(labels, choice.Title)
 	}
 	return field.Title, labels
+}
+
+// changeTexts returns the lines of changes as a form states them.
+func changeTexts(changes []formChange) []string {
+	var texts []string
+	for _, change := range changes {
+		texts = append(texts, change.text)
+	}
+	return texts
 }
 
 func choiceDescription(t *testing.T, asked *mcp.ElicitParams) string {
@@ -390,8 +401,8 @@ func TestAdministerWorkspaceRefusesAClientThatCannotConfirm(t *testing.T) {
 
 func TestAdministerWorkspaceRefusesBeforeAsking(t *testing.T) {
 	tooMany := []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}
-	for _, environment := range []string{"a", "b", "c", "d"} {
-		tooMany = append(tooMany, changeRule(environment, "resource.environment_id == '"+environment+"'"))
+	for i := range descriptionLines + 1 {
+		tooMany = append(tooMany, changeRule(fmt.Sprintf("e%d", i), fmt.Sprintf("resource.environment_id == 'e%d'", i)))
 	}
 	withField := approvalBody(t, fallbackRule(), prodRule)
 	withField["validateOnly"] = true
@@ -465,17 +476,20 @@ func TestAdministerWorkspaceRefusesBeforeAsking(t *testing.T) {
 	}
 }
 
-func TestAdministerWorkspaceRefusesATooLongChangeWithTheConsolePage(t *testing.T) {
-	long := changeRule("Long", strings.Repeat("resource.project_id == 'p' || ", 9)+"true")
+func TestAdministerWorkspaceRefusesAChangeTooLongForTheDescription(t *testing.T) {
+	long := changeRule("Long", strings.Repeat("resource.project_id == 'p' || ", 30)+"true")
+	several := []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}
+	for i := range descriptionLines + 1 {
+		several = append(several, changeRule(fmt.Sprintf("e%d", i), fmt.Sprintf("resource.environment_id == 'e%d'", i)))
+	}
 	for name, tc := range map[string]struct {
 		rules   []*v1pb.WorkspaceApprovalSetting_Rule
 		want    []string
 		notWant string
 	}{
-		"several short rules": {
-			rules: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), changeRule("a", "resource.environment_id == 'a'"),
-				changeRule("b", "resource.environment_id == 'b'"), changeRule("c", "resource.environment_id == 'c'"), changeRule("d", "resource.environment_id == 'd'")},
-			want: []string{"this change needs 5 lines, more than the 4 one confirmation form shows",
+		"more rules than the description has rows": {
+			rules: several,
+			want: []string{"this change needs 11 lines, more than the 10 one confirmation form has room for under its choice",
 				"Each step is a form of its own and applies when the user accepts it", "tell the user the change comes in steps",
 				"a smaller step changes fewer rules, never a condition",
 				"add a rule before removing the one it replaces", "before each step read the rules again with call_api SettingService/GetSetting"},
@@ -489,8 +503,10 @@ func TestAdministerWorkspaceRefusesATooLongChangeWithTheConsolePage(t *testing.T
 		t.Run(name, func(t *testing.T) {
 			mock := &approvalMock{}
 			mock.setStored(fallbackRule())
-			_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
+			user := &asker{answer: confirmAnswer(confirmChoiceApply)}
+			_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 			res := callAdminister(t, session, administerParams(approvalBody(t, tc.rules...)))
+			require.True(t, res.IsError, resultText(t, res))
 			for _, want := range tc.want {
 				require.Contains(t, resultText(t, res), want)
 			}
@@ -498,8 +514,66 @@ func TestAdministerWorkspaceRefusesATooLongChangeWithTheConsolePage(t *testing.T
 			if tc.notWant != "" {
 				require.NotContains(t, resultText(t, res), tc.notWant)
 			}
+			require.Zero(t, user.asked.Load())
+			require.Empty(t, mock.calls())
 		})
 	}
+}
+
+// The count line names each kind of change, and counts the rules that end
+// with no approvers apart: a count alone reads the same when approvers are
+// replaced by none, which is why the first design refused to count.
+func TestCountLineNamesEachKindOfChange(t *testing.T) {
+	removed, added, changed := formChange{kind: ruleRemoved}, formChange{kind: ruleAdded}, formChange{kind: ruleChanged}
+	unapproved := formChange{kind: ruleChanged, emptyFlow: true}
+	for want, changes := range map[string][]formChange{
+		"Add 1 rule, listed under Action.":                                             {added},
+		"Remove 1 rule, listed under Action.":                                          {removed},
+		"Change 1 rule, listed under Action.":                                          {changed},
+		"Add 4 rules, listed under Action.":                                            {added, added, added, added},
+		"Remove 1 rule and add 3, listed under Action.":                                {added, removed, added, added},
+		"Remove 2 rules, add 1 and change 1, listed under Action.":                     {changed, removed, added, removed},
+		"Change 1 rule (1 with no approval), listed under Action.":                     {unapproved},
+		"Add 2 rules and change 1 (2 with no approval), listed under Action.":          {added, {kind: ruleAdded, emptyFlow: true}, unapproved},
+		"Remove 1 rule, add 1 and change 2 (1 with no approval), listed under Action.": {removed, added, changed, unapproved},
+	} {
+		require.Equal(t, want, countLine(changes))
+		require.LessOrEqual(t, len(wrapMessageLine(want)), 2, "the count line leaves the question and the effect their lines")
+	}
+}
+
+// Approvers replaced by none keep the number of changes. The form that lists
+// its changes under the choice still says so in the message.
+func TestAdministerWorkspaceCountsARuleThatEndsWithNoApproval(t *testing.T) {
+	long := func(title string, roles ...string) *v1pb.WorkspaceApprovalSetting_Rule {
+		return changeRule(title, `resource.environment_id == "prod" && resource.project_id == "hr" && resource.database_name == "hr_prod" && resource.table_name == "salary"`, roles...)
+	}
+	staging := changeRule("Staging", `resource.environment_id == "staging"`, "roles/projectOwner")
+	ask := func(t *testing.T, requested ...*v1pb.WorkspaceApprovalSetting_Rule) *mcp.ElicitParams {
+		t.Helper()
+		mock := &approvalMock{pendingIssues: []string{"projects/hr/issues/12"}}
+		mock.setStored(fallbackRule(), long("HR salary", "roles/workspaceDBA"), staging)
+		user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+		_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+		callAdminister(t, session, administerParams(approvalBody(t, append([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, requested...)...)))
+		return user.lastParams(t)
+	}
+
+	toOwner := ask(t, long("HR salary", "roles/projectOwner"), staging)
+	require.Equal(t, strings.Join([]string{
+		`Change the approval rules for database changes, as alice@example.com?`,
+		`Change 1 rule, listed under Action.`,
+		`Plan edits recheck your "hr#12" under these rules.`,
+		approvalRulesApply,
+	}, "\n"), toOwner.Message)
+
+	toNone := ask(t, long("HR salary"), staging)
+	require.Equal(t, `Change 1 rule (1 with no approval), listed under Action.`, strings.Split(toNone.Message, "\n")[1])
+	description := strings.Split(unwrapMessage(choiceDescription(t, toNone)), "\n")
+	require.Equal(t, "Change, \"Workspace DBA\" to no approval: `resource.environment_id == \"prod\" && resource.project_id == \"hr\" && resource.database_name == \"hr_prod\" && resource.table_name == \"salary\"`", description[0],
+		"the change leads the description, where fullscreen shows one row")
+	require.Equal(t, `Unmatched changes go to the fallback rules: "Fallback Rule" ("Project owner").`, description[1])
+	require.LessOrEqual(t, len(strings.Split(choiceDescription(t, toNone), "\n")), descriptionLines)
 }
 
 func TestAdministerWorkspaceStatesMovedAndChangedRules(t *testing.T) {
@@ -558,7 +632,7 @@ func TestAdministerWorkspaceStatesEachKindOfChange(t *testing.T) {
 			diff, err := diffApprovalRules(append([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, tc.stored...),
 				append([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, tc.requested...), "")
 			require.NoError(t, err)
-			require.Equal(t, tc.want, diff.changes)
+			require.Equal(t, tc.want, changeTexts(diff.changes))
 		})
 	}
 }
@@ -639,16 +713,25 @@ func TestAdministerWorkspaceFitsALongRuleBesideAnIssue(t *testing.T) {
 }
 
 // Only the masking entry states its effect in the question: the approval
-// effect names the user's issues, which leave a question no room.
+// effect names the user's issues, which leave a question no room. A rule too
+// long to share the message with that line goes under the choice.
 func TestAdministerWorkspaceKeepsTheIssueLineOutOfTheQuestion(t *testing.T) {
 	long := changeRule("HR salary", `resource.environment_id == "prod" && resource.project_id == "hr" && resource.database_name == "hr_prod" && resource.table_name == "salary"`, "roles/workspaceDBA")
 	diff, err := diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), long}, "")
 	require.NoError(t, err)
 	alice := withUserEmail(context.Background(), "alice@example.com")
-	_, err = approvalRulesForm(alice, diff, "", "")
+	form, err := approvalRulesForm(alice, diff, "", "")
 	require.NoError(t, err)
-	_, err = approvalRulesForm(alice, diff, issuesLine([]string{"hr#12"}, false), "")
-	require.ErrorContains(t, err, "CHANGE_TOO_LONG")
+	require.Empty(t, form.inSteps, "with no issue line, the message states the rule")
+	form, err = approvalRulesForm(alice, diff, issuesLine([]string{"hr#12"}, false), "")
+	require.NoError(t, err)
+	require.Equal(t, strings.Join([]string{
+		`Change the approval rules for database changes, as alice@example.com?`,
+		`Add 1 rule, listed under Action.`,
+		`Plan edits recheck your "hr#12" under these rules.`,
+		approvalRulesApply,
+	}, "\n"), form.message)
+	require.True(t, strings.HasPrefix(form.description, "Add rule 1, \"Workspace DBA\": `resource.environment_id == \"prod\" &&"), form.description)
 }
 
 func TestAdministerWorkspaceNamesTheUserIssuesAwaitingApproval(t *testing.T) {
@@ -729,7 +812,7 @@ func TestAdministerWorkspaceEscapesAConditionThatDoesNotPrintAtEverySite(t *test
 		`Change, "Project owner" to "Workspace DBA": "x\u200by"`,
 		`Add rule 2, no approval: "pr\u202eod"`,
 		`Add rule 3, no approval: "resource.environment_id == \"prod\" &&\nresource.project_id == \"hr\""`,
-	}, diff.changes)
+	}, changeTexts(diff.changes))
 
 	oddFallback := &v1pb.WorkspaceApprovalSetting_Rule{Condition: &expr.Expr{Expression: "p\u200bq"},
 		Template: &v1pb.ApprovalTemplate{Title: "Odd", Flow: &v1pb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}}}
@@ -738,7 +821,7 @@ func TestAdministerWorkspaceEscapesAConditionThatDoesNotPrintAtEverySite(t *test
 	form, err := approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, "", "")
 	require.NoError(t, err)
 	require.Contains(t, form.message, `Add rule 2, no approval: "pr\u202eod"`)
-	require.Contains(t, form.description, `"Odd" ("Project owner") when "p\u200bq"`)
+	require.Contains(t, unwrapMessage(form.description), `"Odd" ("Project owner") when "p\u200bq"`)
 	require.Contains(t, form.description, `1. "Kept" (kept), "Project owner": "x\u200by"`)
 	require.False(t, strings.ContainsAny(form.message+form.description, "\t\u200b\u202e"))
 }
@@ -1007,7 +1090,7 @@ func TestAdministerWorkspaceDescribesTheRulesLeft(t *testing.T) {
 			require.NoError(t, err)
 			form, err := approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, "", "")
 			require.NoError(t, err)
-			require.Contains(t, form.description, tc.want)
+			require.Contains(t, unwrapMessage(form.description), tc.want)
 		})
 	}
 }

@@ -91,6 +91,12 @@ type adminRules struct {
 	replace string
 }
 
+// steps tells the agent how to make a change in several forms.
+func (r adminRules) steps() string {
+	return "make the change in smaller steps, a rule or two at a time, and keep each rule's condition unchanged: a smaller step changes fewer rules, never a condition. Each step is a form of its own and applies when the user accepts it, so tell the user the change comes in steps, " +
+		r.replace + ", and before each step read the rules again with " + r.read + " and build the step from them."
+}
+
 var approvalRules = adminRules{
 	name:     "the approval rules",
 	read:     "call_api SettingService/GetSetting",
@@ -371,7 +377,8 @@ func approvalRulesDigest(message string, stored *v1pb.WorkspaceApprovalSetting, 
 type approvalRulesDiff struct {
 	// changes are the form's change lines: the removed rules, then the
 	// requested rules that differ, in the order an approval check tries them.
-	changes []string
+	// Each has the form's effect, the user's issues awaiting approval.
+	changes []formChange
 	// requested are the rules for database changes as the request orders them,
 	// and marks say of each whether it is new, changed or kept as stored.
 	requested []*v1pb.WorkspaceApprovalSetting_Rule
@@ -436,7 +443,9 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 			storedKept = append(storedKept, condition)
 			continue
 		}
-		diff.changes = append(diff.changes, fmt.Sprintf("Remove, %s: %s", approvers(rule), conditionText(condition)))
+		diff.changes = append(diff.changes, formChange{
+			text: fmt.Sprintf("Remove, %s: %s", approvers(rule), conditionText(condition)), effect: true, kind: ruleRemoved,
+		})
 	}
 	for _, rule := range requestedDB {
 		if condition := rule.GetCondition().GetExpression(); storedByCondition[condition] != nil {
@@ -456,7 +465,9 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 			}
 			// The first matching rule decides, so an added rule's place is part
 			// of the change.
-			diff.changes = append(diff.changes, fmt.Sprintf("Add rule %d, %s: %s", i+1, approvers(rule), conditionText(condition)))
+			diff.changes = append(diff.changes, formChange{
+				text: fmt.Sprintf("Add rule %d, %s: %s", i+1, approvers(rule), conditionText(condition)), effect: true, kind: ruleAdded, emptyFlow: emptyFlow(rule),
+			})
 			diff.marks = append(diff.marks, "new")
 			continue
 		}
@@ -469,7 +480,9 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 		kept++
 		if clauses := keptRuleClauses(before, rule, moved, i+1); len(clauses) > 0 {
 			line := strings.Join(clauses, "; ")
-			diff.changes = append(diff.changes, fmt.Sprintf("%s%s: %s", strings.ToUpper(line[:1]), line[1:], conditionText(condition)))
+			diff.changes = append(diff.changes, formChange{
+				text: fmt.Sprintf("%s%s: %s", strings.ToUpper(line[:1]), line[1:], conditionText(condition)), effect: true, emptyFlow: emptyFlow(rule),
+			})
 			diff.marks = append(diff.marks, "changed")
 		} else {
 			diff.marks = append(diff.marks, "kept")
@@ -558,12 +571,17 @@ func longestCommonOrder(a, b []string) []bool {
 	return kept
 }
 
+// emptyFlow reports whether a change that rule matches needs no approval.
+func emptyFlow(rule *v1pb.WorkspaceApprovalSetting_Rule) bool {
+	return len(rule.GetTemplate().GetFlow().GetRoles()) == 0
+}
+
 // approvers names a rule's approval flow: each step's role in order, a
 // predefined role by its display name and any other value as written, or "no
 // approval" for an empty flow.
 func approvers(rule *v1pb.WorkspaceApprovalSetting_Rule) string {
 	roles := rule.GetTemplate().GetFlow().GetRoles()
-	if len(roles) == 0 {
+	if emptyFlow(rule) {
 		return "no approval"
 	}
 	names := make([]string, 0, len(roles))
@@ -615,39 +633,38 @@ func approverError(rule *v1pb.WorkspaceApprovalSetting_Rule) error {
 type adminForm struct {
 	message     string
 	description string
+	// inSteps is set when the form lists its changes under the choice: what
+	// the agent may do when the user wants each one in the message.
+	inSteps string
 }
 
 // approvalRulesForm builds the approval form. Its effect line names the user's
 // issues whose approval a plan edit would check again under the new rules, so
 // every step of the change shows it.
 func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues string, link string) (*adminForm, error) {
-	changes := make([]formChange, 0, len(diff.changes))
-	for _, change := range diff.changes {
-		changes = append(changes, formChange{text: change, effect: true})
-	}
-	var sb strings.Builder
 	line, fallback := fallbackLine(diff.fallback)
-	sb.WriteString(line)
+	list := ruleList{before: []string{line}}
 	switch {
 	case len(diff.requested) == 0 && fallback:
-		sb.WriteString("\nNo rule for database changes is left, so the fallback rules decide every database change.")
+		list.before = append(list.before, "No rule for database changes is left, so the fallback rules decide every database change.")
 	case len(diff.requested) == 0:
-		sb.WriteString("\nNo rule for database changes is left.")
+		list.before = append(list.before, "No rule for database changes is left.")
 	default:
-		sb.WriteString("\nThe rules for database changes, in the order an approval check tries them:")
+		list.header = "The rules for database changes, in the order an approval check tries them:"
 		for i, rule := range diff.requested {
 			// As on the masking form, every line names its approvers, and a
 			// kept rule, which the message never shows, its condition.
-			fmt.Fprintf(&sb, "\n%d. %s (%s), %s", i+1, ruleTitle(rule), diff.marks[i], approvers(rule))
+			text := fmt.Sprintf("%d. %s (%s), %s", i+1, ruleTitle(rule), diff.marks[i], approvers(rule))
 			if diff.marks[i] == "kept" {
-				fmt.Fprintf(&sb, ": %s", conditionText(rule.GetCondition().GetExpression()))
+				text += ": " + conditionText(rule.GetCondition().GetExpression())
 			}
 			if description := rule.GetTemplate().GetDescription(); description != "" {
-				fmt.Fprintf(&sb, " (description %q)", description)
+				text += fmt.Sprintf(" (description %q)", description)
 			}
+			list.rules = append(list.rules, text)
 		}
 	}
-	return approvalRules.form(ctx, changes, issues, sb.String(), link)
+	return approvalRules.form(ctx, diff.changes, issues, list, link)
 }
 
 // fallbackLine names the fallback rules a database change goes to when no rule
@@ -686,34 +703,179 @@ func fallbackLine(rules []*v1pb.WorkspaceApprovalSetting_Rule) (string, bool) {
 type formChange struct {
 	text   string
 	effect bool
+	// kind is what a rule change does, for the line that counts a form's
+	// changes.
+	kind changeKind
+	// emptyFlow marks an approval rule that needs no approval once the change
+	// is made.
+	emptyFlow bool
 }
 
-// form builds a rule entry's form: a line or more per rule change, and the
-// description that lists every rule.
-func (r adminRules) form(ctx context.Context, changes []formChange, effect, description, link string) (*adminForm, error) {
-	return fitForm(ctx, r.question, changes, effect, r.apply, description, func(needed int, tooLong string) error {
-		return changeTooLong(needed, tooLong, r, link)
-	})
+type changeKind int
+
+const (
+	ruleChanged changeKind = iota
+	ruleRemoved
+	ruleAdded
+)
+
+// ruleList is what a rule form's description says of the rules a change
+// leaves: the lines before the list, and the list under its header.
+type ruleList struct {
+	before []string
+	header string
+	rules  []string
 }
 
-// fitForm builds an entry's form in the lines Claude Code shows: the question
-// with the user's account, a line or more per change, and the change's effect
-// on the user. A form that does not fit is refused with refuse, never cut. The
-// fixed sentence, when there is one, goes in the message when a line is left,
-// and ends the description otherwise.
-func fitForm(ctx context.Context, question string, changes []formChange, effect, fixed, description string, refuse func(needed int, tooLong string) error) (*adminForm, error) {
-	lines, tooLong := fitMessage(questionLines(ctx, question, ""), changes, effect)
+// form builds a rule entry's form: the change lines in the message when they
+// fit it, and counted there and listed under the choice otherwise.
+func (r adminRules) form(ctx context.Context, changes []formChange, effect string, list ruleList, link string) (*adminForm, error) {
+	if form := r.whole(ctx, r.question, changes, effect, list); form != nil {
+		return form, nil
+	}
+	return r.listed(ctx, changes, effect, list, link)
+}
+
+// whole returns the form whose message states every change under question, or
+// nil when that takes more lines than a form shows.
+func (r adminRules) whole(ctx context.Context, question string, changes []formChange, effect string, list ruleList) *adminForm {
+	lines := fitMessage(questionLines(ctx, question, ""), changes, effect)
 	if len(lines) > messageLines {
-		return nil, refuse(len(lines), tooLong)
+		return nil
 	}
-	switch {
-	case fixed == "":
-	case len(lines) < messageLines:
-		lines = append(lines, fixed)
-	default:
-		description += "\n" + fixed
+	lines, fixed := withFixed(lines, r.apply)
+	description, _ := describeRules(nil, list, fixed)
+	return &adminForm{message: strings.Join(lines, "\n"), description: description}
+}
+
+// listed returns the form whose message counts the changes and whose
+// description lists them first. It refuses a change the description has no
+// room for.
+func (r adminRules) listed(ctx context.Context, changes []formChange, effect string, list ruleList, link string) (*adminForm, error) {
+	lines := append(questionLines(ctx, r.question, ""), wrapMessageLine(countLine(changes))...)
+	var texts []string
+	tooLong := ""
+	affected := false
+	for _, change := range changes {
+		texts = append(texts, change.text)
+		affected = affected || change.effect
+		if tooLong == "" && len(wrapLine(change.text, descriptionLineWidth)) > descriptionLines {
+			tooLong = change.text
+		}
 	}
-	return &adminForm{message: strings.Join(lines, "\n"), description: description}, nil
+	if affected && effect != "" {
+		lines = append(lines, wrapMessageLine(effect)...)
+	}
+	lines, fixed := withFixed(lines, r.apply)
+	description, needed := describeRules(texts, list, fixed)
+	if needed > descriptionLines {
+		return nil, changeTooLong(needed, tooLong, r, link)
+	}
+	return &adminForm{
+		message:     strings.Join(lines, "\n"),
+		description: description,
+		inSteps: "The form listed the rule changes under its choice, where a client may show one line of them. If the user wants each change in the form's message, " +
+			r.steps() + " A rule change too long for the message stays under the choice.",
+	}, nil
+}
+
+// withFixed puts the fixed sentence in the message when a line is left, and
+// returns it for the description otherwise.
+func withFixed(lines []string, fixed string) ([]string, string) {
+	if fixed == "" || len(lines) >= messageLines {
+		return lines, fixed
+	}
+	return append(lines, fixed), ""
+}
+
+// countLine counts a form's rule changes by kind, for a message that leaves
+// them to the description. It never says how much of them a client shows:
+// Claude Code's fullscreen renderer shows one row. An approval rule that ends
+// with no approvers is counted apart, since a count alone reads the same when
+// approvers are replaced by none.
+func countLine(changes []formChange) string {
+	counts := map[changeKind]int{}
+	unapproved := 0
+	for _, change := range changes {
+		counts[change.kind]++
+		if change.emptyFlow {
+			unapproved++
+		}
+	}
+	var parts []string
+	for _, kind := range []struct {
+		kind changeKind
+		verb string
+	}{{ruleRemoved, "remove"}, {ruleAdded, "add"}, {ruleChanged, "change"}} {
+		switch n := counts[kind.kind]; {
+		case n == 0:
+		case len(parts) == 0:
+			parts = append(parts, kind.verb+" "+countRules(n))
+		default:
+			parts = append(parts, fmt.Sprintf("%s %d", kind.verb, n))
+		}
+	}
+	line := parts[0]
+	if len(parts) > 1 {
+		line = strings.Join(parts[:len(parts)-1], ", ") + " and " + parts[len(parts)-1]
+	}
+	if unapproved > 0 {
+		line += fmt.Sprintf(" (%d with no approval)", unapproved)
+	}
+	return capitalize(line) + ", listed under " + confirmChoiceTitle + "."
+}
+
+// describeRules lays out a rule form's description in descriptionLines rows:
+// the changes the message only counts, then what the change leaves. The rule
+// list is cut to the rows left, since the first rules decide first, and the
+// fixed sentence takes a last free row. needed passes descriptionLines when
+// the changes alone do not fit, and the description is then empty.
+func describeRules(changes []string, list ruleList, fixed string) (description string, needed int) {
+	var rows []string
+	for _, change := range changes {
+		rows = append(rows, wrapLine(change, descriptionLineWidth)...)
+	}
+	if len(rows) > descriptionLines {
+		return "", len(rows)
+	}
+	for _, line := range list.before {
+		wrapped := wrapLine(line, descriptionLineWidth)
+		if len(rows)+len(wrapped) > descriptionLines {
+			break
+		}
+		rows = append(rows, wrapped...)
+	}
+	rows = append(rows, listRows(list, descriptionLines-len(rows))...)
+	if wrapped := wrapLine(fixed, descriptionLineWidth); fixed != "" && len(rows)+len(wrapped) <= descriptionLines {
+		rows = append(rows, wrapped...)
+	}
+	return strings.Join(rows, "\n"), len(rows)
+}
+
+// listRows returns the header and as many rules as room rows hold, ending with
+// a row that counts the rules left out, or nothing when not even the first
+// rule fits.
+func listRows(list ruleList, room int) []string {
+	rows := wrapLine(list.header, descriptionLineWidth)
+	for i, rule := range list.rules {
+		wrapped := wrapLine(rule, descriptionLineWidth)
+		left := len(list.rules) - i
+		if len(rows)+len(wrapped)+min(left-1, 1) > room {
+			if i == 0 {
+				return nil
+			}
+			noun := "rules"
+			if left == 1 {
+				noun = "rule"
+			}
+			return append(rows, fmt.Sprintf("... and %d more %s.", left, noun))
+		}
+		rows = append(rows, wrapped...)
+	}
+	if len(list.rules) == 0 {
+		return nil
+	}
+	return rows
 }
 
 // adminFormDigest binds an answer to the form the user read and to the
@@ -753,7 +915,7 @@ type formLayout struct {
 // fitLayout returns layout's form, or the lines its message needs when they
 // are more than a form shows.
 func fitLayout(ctx context.Context, question string, layout formLayout) (*adminForm, int) {
-	lines, _ := fitMessage(questionLines(ctx, question, ""), layout.changes, "")
+	lines := fitMessage(questionLines(ctx, question, ""), layout.changes, "")
 	if len(lines) > messageLines {
 		return nil, len(lines)
 	}
@@ -761,49 +923,36 @@ func fitLayout(ctx context.Context, question string, layout formLayout) (*adminF
 }
 
 // fitMessage puts the question, each change line and the change's effect on
-// the user into the lines a form shows, continuing a long line on the next.
-// The effect shows when a change has it. tooLong is the first change that
-// does not fit a form alone, if any.
-func fitMessage(question []string, changes []formChange, effect string) (lines []string, tooLong string) {
-	var effectLines []string
-	if effect != "" {
-		effectLines = wrapMessageLine(effect)
-	}
-	lines = slices.Clone(question)
+// the user into the lines of a message, continuing a long line on the next.
+// The effect shows when a change has it.
+func fitMessage(question []string, changes []formChange, effect string) []string {
+	lines := slices.Clone(question)
 	affected := false
 	for _, change := range changes {
-		changeLines := wrapMessageLine(change.text)
-		lines = append(lines, changeLines...)
-		alone := len(question) + len(changeLines)
-		if change.effect {
-			alone += len(effectLines)
-			affected = true
-		}
-		if tooLong == "" && alone > messageLines {
-			tooLong = change.text
-		}
+		lines = append(lines, wrapMessageLine(change.text)...)
+		affected = affected || change.effect
 	}
-	if affected {
-		lines = append(lines, effectLines...)
+	if affected && effect != "" {
+		lines = append(lines, wrapMessageLine(effect)...)
 	}
-	return lines, tooLong
+	return lines
 }
 
-// changeTooLong refuses a change whose message needs more lines than a form
-// shows. Smaller steps help only when every rule change fits a form alone;
-// tooLong is the first one that does not.
+// changeTooLong refuses a change whose lines need more rows than the form has
+// under its choice. Smaller steps help only when every rule change fits there
+// alone; tooLong is the first one that does not.
 func changeTooLong(needed int, tooLong string, rules adminRules, link string) *toolError {
 	if tooLong != "" {
 		return &toolError{
 			Code:       "CHANGE_TOO_LONG",
-			Message:    fmt.Sprintf("the rule change %q needs more lines than the %d one confirmation form shows, so %s were not changed", tooLong, messageLines, rules.name),
+			Message:    fmt.Sprintf("the rule change %q needs more lines than the %d one confirmation form has room for under its choice, so %s were not changed", tooLong, descriptionLines, rules.name),
 			Suggestion: "do not shorten the rule's condition to make it fit; make that change signed in to the Bytebase console: " + link,
 		}
 	}
 	return &toolError{
 		Code:       "CHANGE_TOO_LONG",
-		Message:    fmt.Sprintf("this change needs %d lines, more than the %d one confirmation form shows, so %s were not changed", needed, messageLines, rules.name),
-		Suggestion: "make the change in smaller steps, a rule or two at a time, and keep each rule's condition unchanged: a smaller step changes fewer rules, never a condition. Each step is a form of its own and applies when the user accepts it, so tell the user the change comes in steps, " + rules.replace + ", and before each step read the rules again with " + rules.read + " and build the step from them. Or change the rules signed in to the Bytebase console: " + link,
+		Message:    fmt.Sprintf("this change needs %d lines, more than the %d one confirmation form has room for under its choice, so %s were not changed", needed, descriptionLines, rules.name),
+		Suggestion: rules.steps() + " Or change the rules signed in to the Bytebase console: " + link,
 	}
 }
 
@@ -818,7 +967,11 @@ func (s *Server) confirmAdminChange(ctx context.Context, req *mcp.CallToolReques
 	switch choice, why := confirmationOutcome(reply.response); choice {
 	case confirmChoiceApply:
 	case confirmChoiceChange:
-		return textResult(fmt.Sprintf("Not changed: %s. Ask them what to change, then call administer_workspace with %s.", why, subject.revised()))
+		text := fmt.Sprintf("Not changed: %s. Ask them what to change, then call administer_workspace with %s.", why, subject.revised())
+		if form.inSteps != "" {
+			text += " " + form.inSteps
+		}
+		return textResult(text)
 	default:
 		return textResult(fmt.Sprintf("Not changed: %s, so %s. Do not retry unless the user asks.", why, subject.unchanged()))
 	}

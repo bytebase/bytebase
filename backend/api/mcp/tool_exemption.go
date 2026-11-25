@@ -523,7 +523,7 @@ func exemptionScope(g *exemptionGrant) string {
 // does not fit, or is empty when it does. Values enter through %q or
 // conditionText, so none can pose as a line of the message.
 func fitExemption(ctx context.Context, head, rest, change, effect string) (message, tooLong string) {
-	lines, _ := fitMessage(questionLines(ctx, head, rest), []formChange{{text: change, effect: true}}, effect)
+	lines := fitMessage(questionLines(ctx, head, rest), []formChange{{text: change, effect: true}}, effect)
 	message = strings.Join(lines, "\n")
 	if len(lines) > messageLines {
 		return message, fmt.Sprintf("this exemption needs %d lines, more than the %d one confirmation form shows, so nothing changed", len(lines), messageLines)
