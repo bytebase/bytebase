@@ -22,6 +22,7 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
   AccountType,
+  ALL_USERS_USER_EMAIL,
   getAccountTypeByEmail,
   groupBindingPrefix,
   unknownUser,
@@ -203,11 +204,23 @@ export function useApprovalCandidates(
   const currentUserCandidate = candidates.find(
     (candidate) => candidate.user.email === currentUserEmail
   );
+  // The server matches an allUsers binding to everyone, so the signed-in user
+  // holds the role without being listed under their own email.
+  const currentUserEligibility =
+    currentUserCandidate ??
+    (currentUser && users.some((user) => user.email === ALL_USERS_USER_EMAIL)
+      ? getApprovalEligibility({
+          actor: currentUser.name,
+          issueCreator: issue.creator,
+          lastPlanEditor,
+          project,
+        })
+      : undefined);
 
   return {
     candidates,
-    canCurrentUserApprove: currentUserCandidate?.canApprove ?? false,
-    isCurrentUserReviewCandidate: currentUserCandidate?.canReview ?? false,
-    isCurrentUserRoleMember: currentUserCandidate !== undefined,
+    canCurrentUserApprove: currentUserEligibility?.canApprove ?? false,
+    isCurrentUserReviewCandidate: currentUserEligibility?.canReview ?? false,
+    isCurrentUserRoleMember: currentUserEligibility !== undefined,
   };
 }

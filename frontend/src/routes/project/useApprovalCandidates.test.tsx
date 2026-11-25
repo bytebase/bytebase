@@ -40,7 +40,10 @@ vi.mock("@/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) => selector(store),
 }));
 vi.mock("@/hooks/useAppState", () => ({
-  useCurrentUser: () => ({ email: session.currentUserEmail }),
+  useCurrentUser: () => ({
+    name: `users/${session.currentUserEmail}`,
+    email: session.currentUserEmail,
+  }),
 }));
 vi.mock("@/hooks/useProjectByName", () => ({
   useProjectByName: () => session.project,
@@ -166,6 +169,35 @@ describe("useApprovalCandidates", () => {
       "A",
     ]);
     expect(result.current.isCurrentUserRoleMember).toBe(true);
+  });
+
+  test("a role bound to allUsers lets the signed-in user review and approve", async () => {
+    session.currentUserEmail = "dev@example.com";
+    workspaceHolders = ["users/allUsers"];
+    store.projectPoliciesByName[PROJECT] = policy([]);
+
+    const result = await candidatesOf();
+
+    await waitFor(() => expect(result.current.candidates).toHaveLength(1));
+    expect(result.current).toMatchObject({
+      canCurrentUserApprove: true,
+      isCurrentUserReviewCandidate: true,
+      isCurrentUserRoleMember: true,
+    });
+  });
+
+  test("the issue creator matched through allUsers is held to the self-approval rule", async () => {
+    session.currentUserEmail = "dev@example.com";
+    store.projectPoliciesByName[PROJECT] = policy(["allUsers"]);
+
+    const result = await candidatesOf(issue("users/dev@example.com"));
+
+    await waitFor(() => expect(result.current.candidates).toHaveLength(1));
+    expect(result.current).toMatchObject({
+      canCurrentUserApprove: false,
+      isCurrentUserReviewCandidate: false,
+      isCurrentUserRoleMember: true,
+    });
   });
 
   test("nobody holds the role: no candidates", async () => {
