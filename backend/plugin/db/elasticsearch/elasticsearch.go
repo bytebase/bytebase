@@ -62,6 +62,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -70,6 +71,7 @@ import (
 	omnidriver "github.com/bytebase/omni/driver"
 	esdriver "github.com/bytebase/omni/elasticsearch/driver"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -174,6 +176,16 @@ func secure(dataSource *storepb.DataSource) bool {
 // source with no TLS settings encrypts without verifying, and a CA certificate
 // becomes part of the endpoint's roots whether or not verification is on.
 func tlsSettings(dataSource *storepb.DataSource) (*tls.Config, error) {
+	// The certificate is checked against the host's name, so a host that
+	// carries its own scheme and port is checked by the name inside it.
+	if host := dataSource.GetHost(); strings.Contains(host, "://") {
+		u, err := url.Parse(strings.TrimSpace(host))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse address %q", host)
+		}
+		dataSource = proto.CloneOf(dataSource)
+		dataSource.Host = u.Hostname()
+	}
 	tlsConfig, err := util.GetTLSConfig(dataSource)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get TLS config")
