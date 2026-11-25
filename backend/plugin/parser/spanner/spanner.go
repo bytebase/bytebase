@@ -1,4 +1,4 @@
-// Package spanner registers the Spanner engine handlers on omni's googlesql
+// Package spanner registers the Spanner engine handlers on omni's spanner
 // tree (Spanner's grammar): the query-span extractor, the splitter, the diagnostics adapter, the
 // query-type mapping and the result limit.
 //
@@ -13,11 +13,11 @@ import (
 	"context"
 	"strings"
 
-	"github.com/bytebase/omni/googlesql/analysis"
-	"github.com/bytebase/omni/googlesql/ast"
-	"github.com/bytebase/omni/googlesql/diagnostics"
-	"github.com/bytebase/omni/googlesql/parser"
 	"github.com/bytebase/omni/metadata"
+	"github.com/bytebase/omni/spanner/analysis"
+	"github.com/bytebase/omni/spanner/ast"
+	"github.com/bytebase/omni/spanner/diagnostics"
+	"github.com/bytebase/omni/spanner/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"

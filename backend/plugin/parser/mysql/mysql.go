@@ -28,8 +28,6 @@ func init() {
 		TransformDMLToSelect: TransformDMLToSelect,
 		GenerateRestoreSQL:   GenerateRestoreSQL,
 	}, storepb.Engine_MYSQL)
-	// ClickHouse reuses MySQL completion and diagnose.
-	base.Register(base.Engine{Complete: Completion, Diagnose: Diagnose}, storepb.Engine_CLICKHOUSE)
 }
 
 // AST wraps an omni AST node and implements the base.AST interface.

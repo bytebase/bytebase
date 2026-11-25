@@ -1,4 +1,4 @@
-package standard
+package clickhouse
 
 import (
 	"testing"
@@ -14,8 +14,6 @@ func TestSplitSQLSeam(t *testing.T) {
 
 	for _, engine := range []storepb.Engine{
 		storepb.Engine_CLICKHOUSE,
-		storepb.Engine_HIVE,
-		storepb.Engine_DATABRICKS,
 	} {
 		t.Run(engine.String(), func(t *testing.T) {
 			stmts, err := base.SplitMultiSQL(engine, script)

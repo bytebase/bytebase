@@ -8,7 +8,6 @@ import (
 	"time"
 
 	odriver "github.com/bytebase/omni/driver"
-	mariadbd "github.com/bytebase/omni/mariadb/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
 	mysqld "github.com/bytebase/omni/mysql/driver"
 	"github.com/stretchr/testify/require"
@@ -345,10 +344,8 @@ func TestAdapterProbeAndRowEstimatorSeam(t *testing.T) {
 	})
 }
 
-// TestAdapterOpenDispatchesMySQLAndMariaDB pins that Open routes MYSQL to
-// omni/mysql/driver, MARIADB to omni/mariadb/driver, and guards engine-specific
-// estimator methods accordingly.
-func TestAdapterOpenDispatchesMySQLAndMariaDB(t *testing.T) {
+// TestAdapterOpenUsesMySQLDriver pins that Open routes to omni/mysql/driver.
+func TestAdapterOpenUsesMySQLDriver(t *testing.T) {
 	ctx := context.Background()
 	cfg := db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
@@ -367,21 +364,9 @@ func TestAdapterOpenDispatchesMySQLAndMariaDB(t *testing.T) {
 	require.True(t, ok)
 	require.IsType(t, (*mysqld.Driver)(nil), md.Driver)
 	require.True(t, md.WithInstanceMetadata)
-	_, err = md.EstimateAffectedRowsMariaDB(ctx, nil, "", "")
-	require.ErrorContains(t, err, "needs the MariaDB driver")
 
-	mariaDrv, err := newDriver().Open(ctx, storepb.Engine_MARIADB, cfg)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, mariaDrv.Close(ctx)) })
-	mrd, ok := mariaDrv.(*Driver)
-	require.True(t, ok)
-	require.IsType(t, (*mariadbd.Driver)(nil), mrd.Driver)
-	require.True(t, mrd.WithInstanceMetadata)
-	_, err = mrd.EstimateAffectedRows(ctx, nil, "", "")
+	_, err = (&Driver{OmniAdapter: util.OmniAdapter{Driver: &fakeMySQLDriver{}}}).EstimateAffectedRows(ctx, nil, "", "")
 	require.ErrorContains(t, err, "needs the MySQL driver")
-
-	_, err = newDriver().Open(ctx, storepb.Engine_POSTGRES, cfg)
-	require.ErrorContains(t, err, "unsupported engine POSTGRES")
 
 	_, err = newDriver().Open(ctx, storepb.Engine_MYSQL, db.ConnectionConfig{})
 	require.ErrorContains(t, err, "a data source is required")
