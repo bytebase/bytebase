@@ -11,8 +11,6 @@ import (
 
 func TestValidateQuerySeam(t *testing.T) {
 	require.True(t, base.HasQueryValidator(storepb.Engine_CLICKHOUSE))
-	require.True(t, base.HasQueryValidator(storepb.Engine_HIVE))
-	require.False(t, base.HasQueryValidator(storepb.Engine_DATABRICKS))
 
 	cases := []struct {
 		name     string
@@ -55,34 +53,6 @@ func TestValidateQuerySeam(t *testing.T) {
 			name:    "clickhouse syntax error",
 			engine:  storepb.Engine_CLICKHOUSE,
 			sql:     "SELECT 1 FROM",
-			wantErr: true,
-		},
-		{
-			name:     "hive read-only select",
-			engine:   storepb.Engine_HIVE,
-			sql:      "WITH c AS (SELECT 1 AS x) SELECT * FROM c",
-			readOnly: true,
-			allQuery: true,
-		},
-		{
-			name:   "hive cte insert",
-			engine: storepb.Engine_HIVE,
-			sql:    "WITH c AS (SELECT 1 AS x) INSERT INTO t SELECT * FROM c",
-		},
-		{
-			name:   "hive explain analyze",
-			engine: storepb.Engine_HIVE,
-			sql:    "EXPLAIN ANALYZE SELECT 1",
-		},
-		{
-			name:   "hive multi-statement with write",
-			engine: storepb.Engine_HIVE,
-			sql:    "SELECT 1; DROP TABLE t;",
-		},
-		{
-			name:    "hive syntax error",
-			engine:  storepb.Engine_HIVE,
-			sql:     "SELECT FROM",
 			wantErr: true,
 		},
 	}

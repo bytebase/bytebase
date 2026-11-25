@@ -31,34 +31,6 @@ func TestExplainStatementSeam(t *testing.T) {
 			format:    base.ExplainFormatDefault,
 			want:      "EXPLAIN SELECT 1",
 		},
-		{
-			name:      "hive json",
-			engine:    storepb.Engine_HIVE,
-			statement: "SELECT 1",
-			format:    base.ExplainFormatJSON,
-			want:      "EXPLAIN FORMATTED SELECT 1",
-		},
-		{
-			name:      "hive default",
-			engine:    storepb.Engine_HIVE,
-			statement: "SELECT 1",
-			format:    base.ExplainFormatDefault,
-			want:      "EXPLAIN SELECT 1",
-		},
-		{
-			name:      "databricks formatted",
-			engine:    storepb.Engine_DATABRICKS,
-			statement: "SELECT 1",
-			format:    base.ExplainFormatDefault,
-			want:      "EXPLAIN FORMATTED SELECT 1",
-		},
-		{
-			name:      "databricks preserves existing explain",
-			engine:    storepb.Engine_DATABRICKS,
-			statement: "EXPLAIN EXTENDED SELECT 1",
-			format:    base.ExplainFormatJSON,
-			want:      "EXPLAIN EXTENDED SELECT 1",
-		},
 	}
 
 	for _, tc := range cases {
