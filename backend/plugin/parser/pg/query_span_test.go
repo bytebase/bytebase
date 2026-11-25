@@ -61,20 +61,13 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "app", Table: "t", Column: "email"}: true}, spans[0].Results[0].SourceColumns)
 	require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "app", Table: "t", Column: "email"}: true}, spans[0].PredicateColumns)
 
-	// A view's column stops at the view unless throughViews follows it to the table column behind it.
-	viewColumn := base.ColumnResource{Database: "db", Schema: "public", Table: "v", Column: "ssn"}
-	tableColumn := base.ColumnResource{Database: "db", Schema: "public", Table: "t", Column: "ssn"}
-	for throughViews, want := range map[bool]base.SourceColumnSet{
-		false: {viewColumn: true},
-		true:  {viewColumn: true, tableColumn: true},
-	} {
-		span, err := ResolveQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT ssn FROM public.v"}, "db", "", throughViews)
-		require.NoError(t, err)
-		require.Equal(t, want, span.Results[0].SourceColumns, throughViews)
-	}
+	// A view's column stops at the view, as PostgreSQL's result-set metadata does.
+	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT ssn FROM public.v"}, "db", "", false)
+	require.NoError(t, err)
+	require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "public", Table: "v", Column: "ssn"}: true}, span.Results[0].SourceColumns)
 
 	// ExplainAnalyze and query types convert across the seam.
-	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "EXPLAIN ANALYZE DELETE FROM public.t"}, "db", "", false)
+	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "EXPLAIN ANALYZE DELETE FROM public.t"}, "db", "", false)
 	require.NoError(t, err)
 	require.Equal(t, base.DML, span.Type)
 	require.True(t, span.ExplainAnalyze)

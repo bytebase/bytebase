@@ -28,7 +28,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.10.4
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/omni v0.0.0-20261125065035-5e9b881d989b
+	github.com/bytebase/omni v0.0.0-20261125094907-5732674de90e
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/coreos/go-oidc v2.5.0+incompatible

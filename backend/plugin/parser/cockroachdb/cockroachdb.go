@@ -4,29 +4,39 @@ import (
 	"context"
 
 	"github.com/bytebase/omni/cockroachdb/analysis"
+	crdbcompletion "github.com/bytebase/omni/cockroachdb/completion"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// Completion and query span are PostgreSQL's: omni has no CockroachDB versions
-// of them yet.
 func init() {
 	base.Register(base.Engine{
 		Split:          splitSQL,
 		Parse:          parseCockroachDBStatements,
 		StatementTypes: GetStatementTypes,
 		Diagnose:       diagnose,
-		Complete:       pgparser.Completion,
+		Complete:       completion,
 		ValidateQuery:  analysis.ValidateQuery,
 		QuerySpan:      getQuerySpan,
 		Explain:        explainStatement,
 		ResultLimit:    statementWithResultLimit,
 		ExtractChanged: extractChangedResources,
 	}, storepb.Engine_COCKROACHDB)
+}
+
+func completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
+	loadDB, _ := base.CompletionMetadataLoaders(cCtx)
+	candidates := crdbcompletion.CompleteSession(ctx, crdbcompletion.SessionConfig{
+		DefaultDatabase: cCtx.DefaultDatabase,
+		DefaultSchema:   cCtx.DefaultSchema,
+		LoadDatabase:    loadDB,
+	}, statement, caretLine, caretOffset)
+	return base.ConvertOmniCandidates(candidates, func(c crdbcompletion.Candidate) (string, crdbcompletion.CandidateType, string, string) {
+		return c.Text, c.Type, c.Definition, c.Comment
+	}, base.CompareCandidateByTypeText), nil
 }
 
 func splitSQL(statement string) ([]base.Statement, error) {
@@ -93,12 +103,6 @@ func parseCockroachDBStatements(statement string) ([]base.ParsedStatement, error
 	}
 
 	return result, nil
-}
-
-// getQuerySpan follows a view's columns to the table columns behind them, as
-// CockroachDB's result-set metadata does, so a masking policy on either applies.
-func getQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, schema string, _ bool) (*base.QuerySpan, error) {
-	return pgparser.ResolveQuerySpan(ctx, gCtx, stmt, database, schema, true)
 }
 
 // explainStatement plans the statement with EXPLAIN, or EXPLAIN (DISTSQL) for

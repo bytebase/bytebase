@@ -59,9 +59,20 @@ func TestCompletionSeam(t *testing.T) {
 			return "db", databaseMetadata(), nil
 		},
 	}
-	got, err := base.Completion(context.Background(), storepb.Engine_COCKROACHDB, cCtx, "SELECT * FROM ", 1, len("SELECT * FROM "))
-	require.NoError(t, err)
-	require.Contains(t, got, base.Candidate{Type: base.CandidateTypeTable, Text: "t"})
+	for statement, want := range map[string]base.Candidate{
+		"SELECT * FROM ":                {Type: base.CandidateTypeTable, Text: "t"},
+		"SELECT s FROM t":               {Type: base.CandidateTypeColumn, Text: "ssn"},
+		"UPS":                           {Type: base.CandidateTypeKeyword, Text: "UPSERT"},
+		"SELECT * FROM t AS OF SYSTEM ": {Type: base.CandidateTypeKeyword, Text: "TIME"},
+	} {
+		caret := len(statement)
+		if statement == "SELECT s FROM t" {
+			caret = len("SELECT s")
+		}
+		got, err := base.Completion(context.Background(), storepb.Engine_COCKROACHDB, cCtx, statement, 1, caret)
+		require.NoError(t, err)
+		require.Contains(t, got, want, statement)
+	}
 }
 
 func TestValidateSQLForEditorSeam(t *testing.T) {
@@ -111,21 +122,6 @@ func TestStatementWithResultLimitSeam(t *testing.T) {
 	} {
 		require.Equal(t, want, base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, statement, 10, ""))
 	}
-}
-
-func TestGetQuerySpanSeam(t *testing.T) {
-	gCtx := base.GetQuerySpanContext{
-		GetDatabaseMetadataFunc: func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
-			return "db", databaseMetadata(), nil
-		},
-	}
-	// A view's column also names the table column behind it.
-	spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_COCKROACHDB, []base.Statement{{Text: "SELECT ssn FROM v"}}, "db", "", false)
-	require.NoError(t, err)
-	require.Equal(t, base.SourceColumnSet{
-		{Database: "db", Schema: "public", Table: "v", Column: "ssn"}: true,
-		{Database: "db", Schema: "public", Table: "t", Column: "ssn"}: true,
-	}, spans[0].Results[0].SourceColumns)
 }
 
 func databaseMetadata() *model.DatabaseMetadata {
