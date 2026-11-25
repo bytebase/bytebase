@@ -26,7 +26,7 @@ const renderIntoContainer = (element: ReactElement) => {
 };
 
 describe("StepIndicator", () => {
-  test("accents only the current step, with a soft check and a plain title for a completed one", () => {
+  test("fills only the current step with the accent; a completed step has a tinted check and a plain title", () => {
     const { container, unmount } = renderIntoContainer(
       <StepIndicator
         currentIndex={1}
@@ -46,12 +46,15 @@ describe("StepIndicator", () => {
     ]);
     expect(labels[0]).not.toHaveClass("text-accent");
     expect(labels[0]).toHaveClass("text-control");
-    expect(labels[1]).toHaveClass("text-accent");
+    expect(labels[0]).not.toHaveClass("font-medium");
+    expect(labels[1]).toHaveClass("text-accent", "font-medium");
     expect(labels[2]).toHaveClass("text-control-light");
+    expect(labels[2]).not.toHaveClass("font-medium");
     const circles = labels.map((label) => label.previousElementSibling);
     expect(circles[0]).toHaveClass("bg-accent/10", "text-accent");
     expect(circles[0]).not.toHaveClass("bg-accent");
     expect(circles[1]).toHaveClass("bg-accent", "text-accent-text");
+    expect(circles[2]).toHaveClass("bg-control-bg-hover", "text-control-light");
     expect(container.querySelector("svg")).toBeTruthy();
     // A completed step shows a check, which carries the number it replaced.
     expect(container.textContent).not.toContain("1");
