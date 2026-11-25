@@ -431,10 +431,10 @@ function SearchableSelect({
               key={option.value}
               type="button"
               appearance="secondary"
-              size="sm"
+              size="md"
               aria-pressed={option.value === value}
               className={cn(
-                "w-full justify-start",
+                "w-full shrink-0 justify-start",
                 option.value === value && "text-accent"
               )}
               onClick={() => handleSelect(option)}
@@ -452,7 +452,8 @@ function SearchableSelect({
             <Button
               type="button"
               appearance="secondary"
-              size="sm"
+              size="md"
+              className="shrink-0"
               onClick={() => void doSearch(queryRef.current, nextPageToken)}
             >
               {t("cel.condition.retry-loading-options")}
@@ -468,7 +469,8 @@ function SearchableSelect({
             <Button
               type="button"
               appearance="secondary"
-              size="sm"
+              size="md"
+              className="shrink-0"
               onClick={() => void doSearch(queryRef.current, nextPageToken)}
             >
               {t("common.load-more")}

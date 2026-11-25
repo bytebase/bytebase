@@ -11,6 +11,7 @@ import { SqlEditorPage } from "../sql-editor/sql-editor.page";
 const GROUP_EMAIL = "e2e-group-masking@example.com";
 const GROUP_TITLE = "E2E Masked Readers";
 const GROUP_OWNER = { member: "users/dba1@example.com", role: "OWNER" };
+const GROUP_OPTION_COUNT = 8;
 const RULE_TITLE = "E2E Group-Targeted Masking";
 const DATABASE_SCHEMA = "e2e_group_masking";
 const QUERY =
@@ -21,7 +22,7 @@ test.setTimeout(90_000);
 let env: ReturnType<typeof loadTestEnv>;
 let api: APIRequestContext | undefined;
 let pgPort: string | undefined;
-let groupPath: string | undefined;
+const groupPaths: string[] = [];
 let restorePolicy: (() => Promise<void>) | undefined;
 let setMembership: (isMember: boolean) => Promise<void>;
 
@@ -31,6 +32,24 @@ async function expectOK(response: APIResponse): Promise<void> {
       `${response.url()} failed (${response.status()}): ${await response.text()}`,
     );
   }
+}
+
+async function createGroup(
+  request: APIRequestContext,
+  email: string,
+  title: string,
+) {
+  const response = await request.post(
+    `/v1/groups?groupEmail=${encodeURIComponent(email)}`,
+    { data: { title, members: [GROUP_OWNER] } },
+  );
+  await expectOK(response);
+  const group = (await response.json()) as {
+    name: string;
+    members: { member: string; role: string }[];
+  };
+  groupPaths.push(`/v1/${group.name}`);
+  return group;
 }
 
 test.beforeAll(async ({ playwright }) => {
@@ -48,17 +67,19 @@ test.beforeAll(async ({ playwright }) => {
     await expectOK(originalPolicy);
   }
 
-  const group = await request.post(
-    `/v1/groups?groupEmail=${encodeURIComponent(GROUP_EMAIL)}`,
-    { data: { title: GROUP_TITLE, members: [GROUP_OWNER] } },
+  const { name: groupName, members: initialMembers } = await createGroup(
+    request,
+    GROUP_EMAIL,
+    GROUP_TITLE,
   );
-  await expectOK(group);
-  const { name: groupName, members: initialMembers } = (await group.json()) as {
-    name: string;
-    members: { member: string; role: string }[];
-  };
+  for (let index = 1; index < GROUP_OPTION_COUNT; index++) {
+    await createGroup(
+      request,
+      `e2e-group-masking-option-${index}@example.com`,
+      `${GROUP_TITLE} option ${index}`,
+    );
+  }
   const path = `/v1/${groupName}`;
-  groupPath = path;
   expect(initialMembers).toEqual([GROUP_OWNER]);
   setMembership = async (isMember) => {
     const members = [GROUP_OWNER];
@@ -122,11 +143,10 @@ test.beforeAll(async ({ playwright }) => {
 
 test.afterAll(async () => {
   const request = api;
-  const path = groupPath;
   const port = pgPort;
   const results = await Promise.allSettled([
     restorePolicy?.(),
-    request && path && request.delete(path).then(expectOK),
+    ...groupPaths.map((path) => request?.delete(path).then(expectOK)),
     port &&
       (async () => {
         execSql(
@@ -159,10 +179,19 @@ test("global masking follows current user group membership", async ({ page }) =>
     await condition
       .getByRole("button", { name: groupLabel, exact: true })
       .click();
-    await page
-      .getByRole("dialog", { name: "Select value" })
-      .getByRole("button", { name: groupLabel, exact: true })
-      .click();
+    const picker = page.getByRole("dialog", { name: "Select value" });
+    await expect(
+      picker.getByRole("button", { name: /^E2E Masked Readers / }),
+    ).toHaveCount(GROUP_OPTION_COUNT);
+    const option = picker.getByRole("button", { name: groupLabel, exact: true });
+    expect(
+      (await option.boundingBox())?.height,
+      "group option height must not shrink in a populated picker",
+    ).toBeGreaterThanOrEqual(36);
+    const label = option.getByText(groupLabel, { exact: true });
+    await expect(label).toHaveCSS("font-size", "14px");
+    await expect(label).toHaveCSS("line-height", "20px");
+    await option.click();
     await page.getByRole("button", { name: "Cancel", exact: true }).click();
   });
 
