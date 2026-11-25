@@ -552,6 +552,33 @@ func TestAdministerWorkspaceGivesEachChangedRuleOneLine(t *testing.T) {
 	require.Equal(t, "Remove 1 rule, add 1 and change 2, listed under Action.", countLine(len(diff.changes), diff.marks, 0))
 }
 
+// The fixed sentence is the same on every form, so it takes a row only when
+// one is free: in the message first, then under the choice, and nowhere when
+// both are full.
+func TestAdministerWorkspaceDropsTheFixedSentenceFromAFullForm(t *testing.T) {
+	long := func(title, environment string, roles ...string) *v1pb.WorkspaceApprovalSetting_Rule {
+		return changeRule(title, `resource.environment_id == "`+environment+`" && resource.project_id == "payments-platform"`, roles...)
+	}
+	stored := []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), long("Prod", "prod", "roles/workspaceDBA"), long("Staging", "staging", "roles/projectOwner")}
+	// One rule removed, one changed to no approval and two added: the count
+	// line takes two rows, and with the user's issue the message is full.
+	requested := []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), long("Staging", "staging"), long("Test", "test"), long("Dev", "dev")}
+	diff, err := diffApprovalRules(stored, requested, "")
+	require.NoError(t, err)
+	form, err := approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, issuesLine([]string{"hr#12"}, false), "")
+	require.NoError(t, err)
+	require.Equal(t, strings.Join([]string{
+		`Change the approval rules for database changes, as alice@example.com?`,
+		`Remove 1 rule, add 2 and change 1, listed under Action; 3 rules will`,
+		`> need no approval.`,
+		`Plan edits recheck your "hr#12" under these rules.`,
+	}, "\n"), form.message)
+	rows := strings.Split(form.description, "\n")
+	require.Len(t, rows, descriptionLines, "%q", rows)
+	require.NotContains(t, form.message+form.description, approvalRulesApply)
+	require.Contains(t, unwrapMessage(form.description), `Unmatched changes go to the fallback rules: "Fallback Rule" ("Project owner").`, "the fallback line is never the one that gives way")
+}
+
 // A rule a form adds is never refused its removal: the removal's line is no
 // longer than the add's, and the sentence only a removal shows gives way.
 func TestAdministerWorkspaceRemovesEveryRuleOneFormAdds(t *testing.T) {

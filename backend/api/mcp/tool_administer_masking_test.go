@@ -685,6 +685,24 @@ func TestAdministerMaskingRulesReplacesALongRuleInOneForm(t *testing.T) {
 	require.Len(t, mock.calls(), 1)
 }
 
+// Each rule a change removes, adds or changes gets one change line, which is
+// what lets the count line read the removals off the marks.
+func TestAdministerMaskingRulesGivesEachChangedRuleOneLine(t *testing.T) {
+	types, err := semanticTypesFromSetting(nil)
+	require.NoError(t, err)
+	rule := func(id, title, column, semanticType string) *v1pb.MaskingRulePolicy_MaskingRule {
+		return maskingRule(id, title, `resource.column_name == "`+column+`"`, semanticType)
+	}
+	stored := []*v1pb.MaskingRulePolicy_MaskingRule{rule("a", "A", "a", "bb.default"), rule("b", "B", "b", "bb.default"), rule("c", "C", "c", "bb.default"), rule("d", "D", "d", "bb.default")}
+	// b is retyped, renamed and moved at once; a and d are removed; c is kept.
+	requested := []*v1pb.MaskingRulePolicy_MaskingRule{rule("c", "C", "c", "bb.default"), rule("b", "B2", "b", "bb.default-partial"), rule("e", "E", "e", "bb.default")}
+	diff, err := diffMaskingRules(stored, requested, types, "")
+	require.NoError(t, err)
+	require.Equal(t, []string{"kept", "changed", "new"}, diff.marks)
+	require.Len(t, diff.changes, 4, "two removals, and one line for each new or changed rule: %v", diff.changes)
+	require.Equal(t, "Remove 2 rules, add 1 and change 1, listed under Action.", countLine(len(diff.changes), diff.marks, 0))
+}
+
 // BYT-10598: a removal states the unmask effect and adding a full-mask rule
 // does not, so a rule one form could add fit no form that removed it. Whatever
 // a form adds, a form removes or moves, and what the message states whole when
