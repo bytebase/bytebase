@@ -709,13 +709,13 @@ func changeTooLong(needed int, tooLong string, rules adminRules, link string) *t
 		return &toolError{
 			Code:       "CHANGE_TOO_LONG",
 			Message:    fmt.Sprintf("the rule change %q needs more lines than the %d one confirmation form shows, so %s were not changed", tooLong, messageLines, rules.name),
-			Suggestion: "make that change signed in to the Bytebase console: " + link,
+			Suggestion: "do not shorten the rule's condition to make it fit; make that change signed in to the Bytebase console: " + link,
 		}
 	}
 	return &toolError{
 		Code:       "CHANGE_TOO_LONG",
 		Message:    fmt.Sprintf("this change needs %d lines, more than the %d one confirmation form shows, so %s were not changed", needed, messageLines, rules.name),
-		Suggestion: "make the change in smaller steps, a rule or two at a time. Each step is a form of its own and applies when the user accepts it, so tell the user the change comes in steps, " + rules.replace + ", and before each step read the rules again with " + rules.read + " and build the step from them. Or change the rules signed in to the Bytebase console: " + link,
+		Suggestion: "make the change in smaller steps, a rule or two at a time, and keep each rule's condition unchanged: a smaller step changes fewer rules, never a condition. Each step is a form of its own and applies when the user accepts it, so tell the user the change comes in steps, " + rules.replace + ", and before each step read the rules again with " + rules.read + " and build the step from them. Or change the rules signed in to the Bytebase console: " + link,
 	}
 }
 

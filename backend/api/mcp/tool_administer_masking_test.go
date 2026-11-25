@@ -489,6 +489,7 @@ func TestAdministerMaskingRulesSuggestsStepsForAChangeThatFitsAFormAlone(t *test
 	require.True(t, res.IsError)
 	require.Contains(t, resultText(t, res), "this change needs 5 lines")
 	require.Contains(t, resultText(t, res), "make the change in smaller steps")
+	require.Contains(t, resultText(t, res), "a smaller step changes fewer rules, never a condition")
 	require.Contains(t, resultText(t, res), "add a rule under a new UUID before removing the one it replaces")
 	require.Empty(t, mock.calls())
 
@@ -607,6 +608,7 @@ func TestAdministerMaskingRulesSendsARemovalNoFormFitsToTheConsole(t *testing.T)
 	require.True(t, res.IsError, resultText(t, res))
 	require.Contains(t, resultText(t, res), "needs more lines than the 4 one confirmation form shows")
 	require.Contains(t, resultText(t, res), "make that change signed in to the Bytebase console")
+	require.Contains(t, resultText(t, res), "do not shorten the rule's condition to make it fit")
 	require.Zero(t, user.asked.Load())
 	require.Empty(t, mock.calls())
 }

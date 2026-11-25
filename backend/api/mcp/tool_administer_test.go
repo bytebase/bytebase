@@ -454,11 +454,12 @@ func TestAdministerWorkspaceRefusesATooLongChangeWithTheConsolePage(t *testing.T
 				changeRule("b", "resource.environment_id == 'b'"), changeRule("c", "resource.environment_id == 'c'"), changeRule("d", "resource.environment_id == 'd'")},
 			want: []string{"this change needs 5 lines, more than the 4 one confirmation form shows",
 				"Each step is a form of its own and applies when the user accepts it", "tell the user the change comes in steps",
+				"a smaller step changes fewer rules, never a condition",
 				"add a rule before removing the one it replaces", "before each step read the rules again with call_api SettingService/GetSetting"},
 		},
 		"one rule too long for any form": {
 			rules:   []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), long},
-			want:    []string{"make that change signed in to the Bytebase console"},
+			want:    []string{"make that change signed in to the Bytebase console", "do not shorten the rule's condition to make it fit"},
 			notWant: "smaller steps",
 		},
 	} {
