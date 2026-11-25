@@ -1,4 +1,4 @@
-import { Check, Minus } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type {
   MCPCapabilityRow,
@@ -104,7 +104,7 @@ function Mark({ served }: { served: boolean }) {
       {served ? (
         <Check className="size-3" aria-hidden="true" />
       ) : (
-        <Minus className="size-3" aria-hidden="true" />
+        <X className="size-3" aria-hidden="true" />
       )}
       <span className="sr-only">
         {served

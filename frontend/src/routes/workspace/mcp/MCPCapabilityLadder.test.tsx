@@ -236,6 +236,18 @@ describe("MCPCapabilityLadder", () => {
       "settings.mcp.ladder.mark.refused"
     );
     expect(floor?.textContent).not.toContain("settings.mcp.ladder.tier.");
+
+    // Lucide names each icon in its class, so the glyph is checked by name.
+    const iconOf = (rowId: string) =>
+      rowItems(container)
+        .find((node) => node.textContent?.includes(`row.${rowId}.title`))
+        ?.querySelector("svg")
+        ?.getAttribute("class");
+    expect(iconOf("read-schemas")).toContain("lucide-check");
+    expect(iconOf("propose")).toContain("lucide-x");
+    expect(floor?.querySelector("svg")?.getAttribute("class")).toContain(
+      "lucide-x"
+    );
     unmount();
   });
 });

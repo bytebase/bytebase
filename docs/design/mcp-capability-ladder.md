@@ -94,7 +94,7 @@ appears in the product.
 | — | *Read-write serves the rows above* | | 118 methods |
 | floor | Raise this policy, create a service account key, change a person's password, email or MFA, show a stored secret, open an Admin mode session, or read anyone else's query history | | 104 methods: 32 FORBIDDEN, 72 EXCLUDED |
 
-Every row is displayed under every mode — served, or muted with a `—` — and against every engine a
+Every row is displayed under every mode — served, or muted with a ✕ — and against every engine a
 workspace happens to hold, so **every line on this card must be true on both axes: mode and engine.**
 That covers every row, and equally the collapsed summary, the card captions and the "Best for"
 lines, which are not rows and were missed the first time the rule was applied. The summary is the
@@ -384,16 +384,16 @@ show after saving. No "adds N over Read-only", no added or removed marks, no com
 stored mode: the muted rows already show what a pick does not serve. The edit state is about 90
 words collapsed and 140 expanded, down from about 215 and 375 in the first draft of this design.
 
-**D6 — Marks: ✓ or —, plus a tier tag on served rows only.** A served row, in the first group,
+**D6 — Marks: ✓ or ✕, plus a tier tag on served rows only.** A served row, in the first group,
 shows ✓, a `success` "read" badge or a `warning` "write" badge after its title, and full-contrast
-text. An unserved row, in the second group, shows —, muted text, and no badge; the row no mode
+text. An unserved row, in the second group, shows ✕, muted text, and no badge; the row no mode
 serves is marked like any other. Under Read-only the write rows are unserved, so a "write" badge
 never appears there.
 
 **D7 — Disabled.** In view, the chip and the sentence "No MCP session can connect to this
 workspace." are the whole answer; no disclosure. In edit with Disabled picked, the Disabled card is
 selected, the "Best for" line reads "keeping MCP off until you are ready to turn it on", and the
-disclosure slot holds a static line in the soft error tone of the — marks, "Nothing is allowed; no MCP
+disclosure slot holds a static line in the soft error tone of the ✕ marks, "Nothing is allowed; no MCP
 session can connect.", so red means "no capability" everywhere on the card. It is not a button and
 does not repeat the mode name.
 
