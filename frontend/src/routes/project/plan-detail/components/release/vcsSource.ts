@@ -42,7 +42,8 @@ export const parseRepoCommit = (
   const repoUrl = source.url.slice(0, index);
   const sha = source.commitSha || source.url.slice(index + commitPath!.length);
   if (!repoUrl || !sha) return undefined;
-  const repo = repoName(source.vcsType, repoUrl);
+  // Decoding can bring back characters D9 removes from source text.
+  const repo = cleanSourceText(repoName(source.vcsType, repoUrl));
   if (!repo) return undefined;
   return { repoUrl, repo, sha };
 };

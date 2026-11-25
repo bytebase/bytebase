@@ -482,8 +482,14 @@ test("on a phone the lines under the title keep one row rhythm, keep the PR's nu
       // the box, where the box clips it.
       rowStarts: parts.filter((part) => Math.round(part.left) === Math.round(boxLeft)).length,
       startSeparators,
+      // The lines clip sideways, so the number must end inside them.
       numberRight: number?.getBoundingClientRect().right ?? Number.POSITIVE_INFINITY,
-      pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+      boxRight: box.getBoundingClientRect().right,
+      // The dashboard's main pane, not the document, is what scrolls.
+      paneScrolls: (() => {
+        const pane = document.getElementById("bb-layout-main");
+        return !pane || pane.scrollWidth > pane.clientWidth;
+      })(),
     };
   });
   expect(layout.heights).toEqual([24]);
@@ -495,7 +501,7 @@ test("on a phone the lines under the title keep one row rhythm, keep the PR's nu
   // Past the box's 2 px clip margin, so the box hides it.
   expect(layout.startSeparators.length).toBeGreaterThan(0);
   for (const left of layout.startSeparators) expect(left).toBeLessThanOrEqual(-8);
-  expect(layout.numberRight).toBeLessThanOrEqual(390);
-  expect(layout.pageScrolls).toBe(false);
+  expect(layout.numberRight).toBeLessThanOrEqual(layout.boxRight);
+  expect(layout.paneScrolls).toBe(false);
   await page.context().close();
 });
