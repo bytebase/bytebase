@@ -910,6 +910,62 @@ describe("JIT tools", () => {
       result: expect.stringContaining("not selected"),
     });
   });
+
+  test("prepares a selected chat's Access Grant draft without live page access", async () => {
+    const execute = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      workspaceName: "workspaces/example",
+      canUseCurrentChat: () => true,
+      canUseCurrentPage: () => false,
+    });
+    const args = {
+      project: "projects/sample",
+      database: "instances/main/databases/app",
+      statement: "SELECT email FROM people",
+      unmask: false,
+    };
+    expect(await execute("prepare_access_grant_draft", args, "draft")).toEqual({
+      kind: "tool_result",
+      result: "jit_draft",
+    });
+    expect(jitApi.prepare).toHaveBeenCalledExactlyOnceWith(args);
+  });
+
+  test.each([false, true])(
+    "blocks an unselected chat's Access Grant draft even with page access=%s",
+    async (pageAccess) => {
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        canUseCurrentChat: () => false,
+        canUseCurrentPage: () => pageAccess,
+      });
+      expect(
+        await execute("prepare_access_grant_draft", {}, "draft")
+      ).toMatchObject({
+        kind: "tool_result",
+        result: expect.stringContaining("not selected"),
+      });
+      expect(jitApi.prepare).not.toHaveBeenCalled();
+    }
+  );
+
+  test("discards an Access Grant draft when chat scope changes during preparation", async () => {
+    let current = true;
+    jitApi.prepare.mockImplementationOnce(async () => {
+      current = false;
+      return "jit_draft";
+    });
+    const execute = createToolExecutor({} as AppRouterInstance, {
+      canUseCurrentChat: () => current,
+      canUseCurrentPage: () => false,
+    });
+    expect(
+      await execute("prepare_access_grant_draft", {}, "draft")
+    ).toMatchObject({
+      kind: "tool_result",
+      result: expect.stringContaining("not selected"),
+    });
+    expect(jitApi.prepare).toHaveBeenCalledOnce();
+  });
 });
 
 import { checkPreparedApiPermission } from "./apiPermissionPreflight";
@@ -2391,9 +2447,11 @@ describe("diagnostic capability", () => {
     "prepare_masking_rule_draft",
     "prepare_masking_exemption_draft",
     "prepare_semantic_type_draft",
+    "prepare_access_grant_draft",
   ])("rejects forged diagnostic %s calls", async (name) => {
     const result = await createToolExecutor({} as AppRouterInstance, {
       capability,
+      canUseCurrentChat: () => true,
     })(name, {}, "blocked");
     expect(result).toMatchObject({
       kind: "tool_result",
@@ -6249,6 +6307,7 @@ describe("agent tools concurrency guard", () => {
 
       const executeTool = createToolExecutor({} as AppRouterInstance, {
         chatId: "background-chat",
+        canUseCurrentChat: () => true,
         canUseCurrentPage: () => false,
       });
       const result = await executeTool(name, {}, `tool-${name}`);

@@ -1822,6 +1822,9 @@ export function AgentInput({
         resumeCheckpoint?.pageToolPath ??
         bindings?.pageToolPath ??
         (frozenPageContext ? page.path : undefined);
+      const canUseCurrentChat = () =>
+        isCurrentChatScope(store, chatId) &&
+        useAgentStore.getState().currentChatId === chatId;
       const executor = createToolExecutor(router, {
         chatId,
         runId,
@@ -1888,11 +1891,11 @@ export function AgentInput({
             maskingSections.add(load.section);
           }
         },
+        canUseCurrentChat,
         canUseCurrentPage: () =>
           !page.sqlEditor &&
           !getRegisteredAgentSqlEditorHost() &&
-          isCurrentChatScope(store, chatId) &&
-          useAgentStore.getState().currentChatId === chatId &&
+          canUseCurrentChat() &&
           (pageToolPath === undefined ||
             getCurrentPageSnapshot().path === pageToolPath),
         onNavigate: () => {

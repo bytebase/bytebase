@@ -811,6 +811,55 @@ describe("source-bound query follow-ups", () => {
     ).not.toContain(f.contactsSQL);
   });
 
+  test.each([
+    { captured: undefined, requested: undefined, verified: true },
+    { captured: undefined, requested: "", verified: true },
+    { captured: "replica", requested: "replica", verified: true },
+    { captured: "replica", requested: "", verified: false },
+    { captured: "replica", requested: undefined, verified: false },
+    { captured: undefined, requested: "replica", verified: false },
+    { captured: "replica", requested: "other", verified: false },
+    { captured: undefined, requested: null, verified: false },
+    { captured: undefined, requested: false, verified: false },
+    { captured: undefined, requested: 0, verified: false },
+  ])(
+    "source SQL data source captured=$captured requested=$requested is verified=$verified",
+    ({ captured, requested, verified }) => {
+      const f = sqlTurn();
+      const connection = { ...f.connection, dataSourceId: captured };
+      const metadata = {
+        sqlEditor: { version: 1 as const, project: f.project, connection },
+      };
+      f.contacts[0].metadata = metadata;
+      f.contacts[3].metadata = metadata;
+      f.contacts[1].toolCalls![0].arguments = JSON.stringify({
+        operationId: "SQLService/Query",
+        body: {
+          name: connection.database,
+          schema: connection.querySchema,
+          statement: f.contactsSQL,
+          ...(requested === undefined ? {} : { dataSourceId: requested }),
+        },
+      });
+      const system = buildOutboundHistory("system", f.messages, f.project)[0]
+        .content;
+      if (verified) {
+        expect(system).toContain(f.contactsSQL);
+        expect(system).toContain(connection.database);
+        expect(getHistoricalMaskingDatabase(f.messages, f.project)).toEqual({
+          database: connection.database,
+          project: f.project,
+        });
+      } else {
+        expect(system).toContain("Source-bound follow-up");
+        expect(system).not.toContain(f.contactsSQL);
+        expect(
+          getHistoricalMaskingDatabase(f.messages, f.project)
+        ).toBeUndefined();
+      }
+    }
+  );
+
   test("invalid source SQL metadata cannot fall back to a successful query", () => {
     const f = sqlTurn();
     f.contacts[3].metadata!.sqlEditorContextInvalid = true;

@@ -902,9 +902,11 @@ const getHistoricalDatabaseIdentity = (
       ) {
         const query = historicalQueryRequest(args.body);
         if (sourceId !== undefined) {
+          const dataSourceId =
+            args.body.dataSourceId === "" ? undefined : args.body.dataSourceId;
           if (
             sourceConnection &&
-            args.body.dataSourceId !== sourceConnection.dataSourceId
+            dataSourceId !== sourceConnection.dataSourceId
           ) {
             invalidSourceQuery = true;
             continue;

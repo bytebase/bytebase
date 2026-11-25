@@ -712,11 +712,31 @@ describe("AgentInput", () => {
           expect(
             mocks.executeTool.mock.calls.every(([name]) => name === "done")
           ).toBe(true);
+          const [, executor] = mocks.createToolExecutor.mock
+            .lastCall as unknown as Parameters<typeof createToolExecutor>;
+          expect(executor?.canUseCurrentChat?.()).toBe(true);
+          expect(executor?.canUseCurrentPage?.()).toBe(false);
         }
         expect(
           store.getMessages(useAgentStore.getState().currentChatId)[0].metadata
             ?.sqlEditor
         ).toEqual(projectOnly);
+        const [, executor] = mocks.createToolExecutor.mock
+          .lastCall as unknown as Parameters<typeof createToolExecutor>;
+        const chatId = useAgentStore.getState().currentChatId!;
+        act(() => store.clearCurrentChat());
+        expect(executor?.canUseCurrentChat?.()).toBe(false);
+        act(() => store.setCurrentChat(chatId));
+        expect(executor?.canUseCurrentChat?.()).toBe(true);
+        act(() => useAgentStore.setState({ userEmail: "other@example.com" }));
+        expect(executor?.canUseCurrentChat?.()).toBe(false);
+        act(() =>
+          useAgentStore.setState({
+            userEmail: "agent@example.com",
+            workspaceName: "workspaces/other",
+          })
+        );
+        expect(executor?.canUseCurrentChat?.()).toBe(false);
       } finally {
         view.unmount();
       }
