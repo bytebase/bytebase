@@ -48,9 +48,11 @@ export const parseRepoCommit = (
 };
 
 // The URL's path after the host: "owner/name", or a GitLab subgroup's whole
-// "group/subgroup/name". Azure DevOps puts the organization and "_git" in the
-// path, so its name is "<project>/<repo>" from either side of "_git".
+// "group/subgroup/name". Azure DevOps puts "_git" in the path, and on
+// dev.azure.com the organization too, so its name is "<project>/<repo>" from
+// either side of "_git", or the repo alone when a pasted URL names no project.
 const repoName = (vcsType: VCSType, repoUrl: string): string => {
+  const host = /^https?:\/\/([^/]+)/i.exec(repoUrl)?.[1].toLowerCase() ?? "";
   const segments = repoUrl
     .replace(/^https?:\/\/[^/]+/i, "")
     .split("/")
@@ -58,8 +60,10 @@ const repoName = (vcsType: VCSType, repoUrl: string): string => {
     .map(decodeSegment);
   if (vcsType === VCSType.AZURE_DEVOPS) {
     const git = segments.lastIndexOf("_git");
-    if (git > 0 && git < segments.length - 1) {
-      return `${segments[git - 1]}/${segments[git + 1]}`;
+    if (git >= 0 && git < segments.length - 1) {
+      const repo = segments[git + 1];
+      const projectAt = host === "dev.azure.com" ? 1 : 0;
+      return git > projectAt ? `${segments[git - 1]}/${repo}` : repo;
     }
   }
   return segments.join("/");

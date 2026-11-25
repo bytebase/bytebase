@@ -31,7 +31,30 @@ vi.mock("@/stores/app", () => {
   return { useAppStore };
 });
 vi.mock("../../PlanTable", () => ({
-  PlanStageParts: () => <span data-testid="stage-cells" />,
+  // Renders the classes the header hands over, so a test can see them.
+  PlanStageParts: ({
+    plan,
+    partClassName,
+    arrowClassName,
+  }: {
+    plan: { rolloutStageSummaries: { stage: string }[] };
+    partClassName?: (index: number) => string;
+    arrowClassName?: string;
+  }) =>
+    plan.rolloutStageSummaries.map((summary, index) => (
+      <span
+        className={partClassName?.(index)}
+        data-part="stage"
+        key={summary.stage}
+      >
+        {index > 0 && (
+          <span className={arrowClassName} data-testid="stage-arrow">
+            →
+          </span>
+        )}
+        {summary.stage}
+      </span>
+    )),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -440,8 +463,30 @@ test("a release plan's state line holds its stages once it has some", () => {
   } as unknown as PlanDetailPageState;
   render(<PlanDetailMeta />);
   expect(lines()).toEqual(["source", "facts", "state"]);
-  expect(lineOf("state").querySelector('[data-testid="stage-cells"]')).not.toBeNull();
+  expect(partsOf("state", "stage")).toHaveLength(1);
   expect(partsOf("state", "approval")).toHaveLength(0);
+});
+
+test("six stages wrap between stages, each arrow in the gap before its stage, out of the row's flow", () => {
+  const sixStages = ["test", "qa", "staging", "canary", "prod-eu", "prod-us"].map((id) => ({
+    stage: `projects/p1/plans/123/rollout/stages/${id}`,
+  }));
+  mocks.page = uiopsPage({
+    plan: { ...makePage().plan, specs: [], rolloutStageSummaries: sixStages },
+  });
+  render(<PlanDetailMeta />);
+  const parts = partsOf("state", "stage");
+  expect(parts).toHaveLength(6);
+  // Only the first carries a separator; the others start with their arrow.
+  expect(parts.map((part) => part.className.includes("before:content-"))).toEqual([
+    true, false, false, false, false, false,
+  ]);
+  const arrows = lineOf("state").querySelectorAll('[data-testid="stage-arrow"]');
+  expect(arrows).toHaveLength(5);
+  for (const arrow of arrows) {
+    expect(arrow.className).toMatch(/(^| )absolute( |$)/);
+    expect(arrow.className).toMatch(/(^| )-left-/);
+  }
 });
 
 test("while the release loads, the source line holds its row and the release fact is the release id", async () => {
@@ -572,6 +617,56 @@ test("the approval names the last approver with their role, or the role that is 
   });
   render(<PlanDetailMeta />);
   expect(textOf(partsOf("state", "approval")[0])).toBe("plan.details.waiting-for(workspaceDBA)");
+});
+
+test.each([
+  { approvalStatus: 4, text: "plan.details.rejected" },
+  { approvalStatus: 5, text: "plan.details.no-approval" },
+])("approval status $approvalStatus reads $text", ({ approvalStatus, text }) => {
+  mocks.page = uiopsPage({
+    issue: { ...makePage().issue, draft: false, approvalStatus },
+  });
+  render(<PlanDetailMeta />);
+  expect(textOf(partsOf("state", "approval")[0])).toBe(text);
+});
+
+test.each([
+  { rollout: undefined },
+  { rollout: { name: "projects/p1/plans/123/rollout" } },
+])("a closed issue reads Closed, with or without a rollout, as the Review section does", ({ rollout }) => {
+  mocks.page = uiopsPage({
+    issue: { ...makePage().issue, draft: false, approvalStatus: 2, status: IssueStatus.CANCELED },
+    rollout,
+  });
+  render(<PlanDetailMeta />);
+  expect(textOf(partsOf("state", "approval")[0])).toBe("common.closed");
+});
+
+test("a label chip can shrink to its part, so a long label shortens at its end", () => {
+  mocks.page = uiopsPage({
+    issue: { ...makePage().issue, draft: false, approvalStatus: 2, labels: ["a-very-long-label"] },
+  });
+  render(<PlanDetailMeta />);
+  const chip = partsOf("facts", "label")[0].firstElementChild!;
+  expect(chip.className.split(" ")).toEqual(expect.arrayContaining(["min-w-0", "max-w-full"]));
+  expect(chip.querySelector(".truncate")?.textContent).toBe("a-very-long-label");
+});
+
+test("only the state line is medium weight; the source title is regular", () => {
+  mocks.page = {
+    ...releasePage({ ...githubSource, commitTitle: "Add the orders table" }),
+    issue: { ...makePage().issue, draft: false, approvalStatus: 2 },
+  } as unknown as PlanDetailPageState;
+  render(<PlanDetailMeta />);
+  expect(lineOf("state").className).toContain("font-medium");
+  // The add-label control is a shared Button, whose weight is its own.
+  const weighted = ["source", "facts"].flatMap((line) =>
+    Array.from(lineOf(line).querySelectorAll(".font-medium")).filter(
+      (element) => !element.closest("button")
+    )
+  );
+  expect(weighted).toEqual([]);
+  expect(lineOf("source").querySelector("a")).not.toBeNull();
 });
 
 test("a rollout started while approval is pending reads Bypassed, as the Review section does", () => {

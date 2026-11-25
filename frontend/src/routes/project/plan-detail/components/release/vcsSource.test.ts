@@ -52,6 +52,20 @@ describe("parseRepoCommit", () => {
       "Payments/api",
     ],
     [
+      "a pasted dev.azure.com URL without a project",
+      VCSType.AZURE_DEVOPS,
+      "https://dev.azure.com/example/_git/api",
+      "/commit/",
+      "api",
+    ],
+    [
+      "a pasted visualstudio.com URL without a project",
+      VCSType.AZURE_DEVOPS,
+      "https://example.visualstudio.com/_git/api",
+      "/commit/",
+      "api",
+    ],
+    [
       "an Azure DevOps project with a space",
       VCSType.AZURE_DEVOPS,
       "https://dev.azure.com/example/Shop%20Team/_git/api",
