@@ -23,26 +23,14 @@ func init() {
 		StatementRanges:      GetStatementRanges,
 		Diagnose:             Diagnose,
 		Complete:             Completion,
-		ValidateQuery:        validateQuery,
+		ValidateQuery:        ValidateQuery,
 		QuerySpan:            GetQuerySpan,
 		Explain:              explainStatement,
-		ResultLimit:          statementWithResultLimit,
+		ResultLimit:          StatementWithResultLimit,
 		ExtractChanged:       extractChangedResources,
 		TransformDMLToSelect: TransformDMLToSelect,
 		GenerateRestoreSQL:   GenerateRestoreSQL,
 	}, storepb.Engine_POSTGRES)
-	// CockroachDB shares PostgreSQL grammar for split, diagnose, completion,
-	// query validation, query span, explain, and result limit; parser/cockroachdb
-	// registers its own Parse, StatementTypes, and ExtractChanged.
-	base.Register(base.Engine{
-		Split:         SplitSQL,
-		Diagnose:      Diagnose,
-		Complete:      Completion,
-		ValidateQuery: validateQuery,
-		QuerySpan:     getCockroachQuerySpan,
-		Explain:       cockroachExplainStatement,
-		ResultLimit:   statementWithResultLimit,
-	}, storepb.Engine_COCKROACHDB)
 	// Snowflake reuses PostgreSQL completion.
 	base.Register(base.Engine{Complete: Completion}, storepb.Engine_SNOWFLAKE)
 }
@@ -145,9 +133,9 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	}, base.CompareCandidateByTypeText), nil
 }
 
-// validateQuery reports whether the statement may run in the SQL editor's
+// ValidateQuery reports whether the statement may run in the SQL editor's
 // read-only mode and whether every statement returns data.
-func validateQuery(statement string) (bool, bool, error) {
+func ValidateQuery(statement string) (bool, bool, error) {
 	stmts, err := omnipg.Parse(statement)
 	if err != nil {
 		return false, false, err
@@ -175,18 +163,14 @@ func explainStatement(statement string, format base.ExplainFormat) (string, erro
 	return base.ExplainStatementResult(explain, err, nil)
 }
 
-func cockroachExplainStatement(statement string, format base.ExplainFormat) (string, error) {
-	explain, err := analysis.CockroachExplainStatement(statement, format == base.ExplainFormatJSON)
-	return base.ExplainStatementResult(explain, err, nil)
-}
-
 // DescribeExplain returns the output format of an EXPLAIN statement and
 // whether it executes the statement it plans.
 func DescribeExplain(statement string) (format string, executed bool, ok bool) {
 	return analysis.DescribeExplain(statement)
 }
 
-func statementWithResultLimit(statement string, limit int, _ string) string {
+// StatementWithResultLimit caps the rows a query returns at limit.
+func StatementWithResultLimit(statement string, limit int, _ string) string {
 	return base.RewriteResultLimit(statement, limit, analysis.RewriteResultLimit, "WITH result AS (\n%s\n) SELECT * FROM result LIMIT %d;")
 }
 

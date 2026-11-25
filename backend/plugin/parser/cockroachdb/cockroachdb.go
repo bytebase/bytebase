@@ -1,18 +1,31 @@
 package cockroachdb
 
 import (
+	"context"
+
 	"github.com/bytebase/omni/cockroachdb/analysis"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
+// Splitting, diagnostics, completion, query validation, query span and result
+// limit are PostgreSQL's: omni has no CockroachDB versions of the last five, and
+// its CockroachDB splitter breaks a BEGIN ATOMIC body at its semicolons.
 func init() {
 	base.Register(base.Engine{
+		Split:          pgparser.SplitSQL,
 		Parse:          parseCockroachDBStatements,
 		StatementTypes: GetStatementTypes,
+		Diagnose:       pgparser.Diagnose,
+		Complete:       pgparser.Completion,
+		ValidateQuery:  pgparser.ValidateQuery,
+		QuerySpan:      getQuerySpan,
+		Explain:        explainStatement,
+		ResultLimit:    pgparser.StatementWithResultLimit,
 		ExtractChanged: extractChangedResources,
 	}, storepb.Engine_COCKROACHDB)
 }
@@ -61,6 +74,19 @@ func parseCockroachDBStatements(statement string) ([]base.ParsedStatement, error
 	}
 
 	return result, nil
+}
+
+// getQuerySpan follows a view's columns to the table columns behind them, as
+// CockroachDB's result-set metadata does, so a masking policy on either applies.
+func getQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, schema string, _ bool) (*base.QuerySpan, error) {
+	return pgparser.ResolveQuerySpan(ctx, gCtx, stmt, database, schema, true)
+}
+
+// explainStatement plans the statement with EXPLAIN, or EXPLAIN (DISTSQL) for
+// JSON, whose diagram link is the one machine-readable plan CockroachDB returns.
+func explainStatement(statement string, format base.ExplainFormat) (string, error) {
+	explain, err := analysis.ExplainStatement(statement, format == base.ExplainFormatJSON)
+	return base.ExplainStatementResult(explain, err, nil)
 }
 
 // GetStatementTypes returns the types of the statements that have one, in order, each followed by

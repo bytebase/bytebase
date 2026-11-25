@@ -78,12 +78,8 @@ func TestCompletion_Seam(t *testing.T) {
 		},
 	}
 
-	// Registry dispatch covers POSTGRES, SNOWFLAKE, and COCKROACHDB.
-	for _, engine := range []storepb.Engine{
-		storepb.Engine_POSTGRES,
-		storepb.Engine_SNOWFLAKE,
-		storepb.Engine_COCKROACHDB,
-	} {
+	// Registry dispatch covers POSTGRES and SNOWFLAKE.
+	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_SNOWFLAKE} {
 		got, err := base.Completion(context.Background(), engine, cCtx, "SELECT * FROM ", 1, len("SELECT * FROM "))
 		require.NoError(t, err, "engine %v", engine)
 		require.True(t, hasCandidate(got, base.CandidateTypeTable, "orders"), "engine %v: got %v", engine, got)

@@ -15,16 +15,13 @@ import (
 
 // GetQuerySpan returns the query span for the given statement.
 func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, schema string, _ bool) (*base.QuerySpan, error) {
-	return resolveQuerySpan(ctx, gCtx, stmt, database, schema, false)
+	return ResolveQuerySpan(ctx, gCtx, stmt, database, schema, false)
 }
 
-// getCockroachQuerySpan follows a view's columns to the columns behind them, as
-// CockroachDB's result-set metadata does, so a masking policy on either applies.
-func getCockroachQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, schema string, _ bool) (*base.QuerySpan, error) {
-	return resolveQuerySpan(ctx, gCtx, stmt, database, schema, true)
-}
-
-func resolveQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, schema string, throughViews bool) (*base.QuerySpan, error) {
+// ResolveQuerySpan returns the query span for the given statement. throughViews
+// follows a view's columns to the columns behind them, so a result read from a
+// view names both.
+func ResolveQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, schema string, throughViews bool) (*base.QuerySpan, error) {
 	meta, err := base.RequireDatabaseMetadata(ctx, gCtx, database)
 	if err != nil {
 		return nil, err

@@ -53,26 +53,24 @@ func TestGetQuerySpanSeam(t *testing.T) {
 		GetDatabaseMetadataFunc: buildSeamMetadataGetter(meta),
 	}
 
-	// Registry wiring for both PostgreSQL and CockroachDB, plus selected-schema search path.
-	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB} {
-		spans, err := base.GetQuerySpan(context.Background(), gCtx, engine, []base.Statement{{Text: "SELECT email FROM t WHERE email = 'a'"}}, "db", "app", false)
-		require.NoError(t, err)
-		require.Len(t, spans, 1)
-		require.Equal(t, base.Select, spans[0].Type)
-		require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "app", Table: "t", Column: "email"}: true}, spans[0].Results[0].SourceColumns)
-		require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "app", Table: "t", Column: "email"}: true}, spans[0].PredicateColumns)
-	}
+	// Registry wiring plus selected-schema search path.
+	spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_POSTGRES, []base.Statement{{Text: "SELECT email FROM t WHERE email = 'a'"}}, "db", "app", false)
+	require.NoError(t, err)
+	require.Len(t, spans, 1)
+	require.Equal(t, base.Select, spans[0].Type)
+	require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "app", Table: "t", Column: "email"}: true}, spans[0].Results[0].SourceColumns)
+	require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "app", Table: "t", Column: "email"}: true}, spans[0].PredicateColumns)
 
-	// CockroachDB follows a view's column to the table column behind it; PostgreSQL stops at the view.
+	// A view's column stops at the view unless throughViews follows it to the table column behind it.
 	viewColumn := base.ColumnResource{Database: "db", Schema: "public", Table: "v", Column: "ssn"}
 	tableColumn := base.ColumnResource{Database: "db", Schema: "public", Table: "t", Column: "ssn"}
-	for engine, want := range map[storepb.Engine]base.SourceColumnSet{
-		storepb.Engine_POSTGRES:    {viewColumn: true},
-		storepb.Engine_COCKROACHDB: {viewColumn: true, tableColumn: true},
+	for throughViews, want := range map[bool]base.SourceColumnSet{
+		false: {viewColumn: true},
+		true:  {viewColumn: true, tableColumn: true},
 	} {
-		spans, err := base.GetQuerySpan(context.Background(), gCtx, engine, []base.Statement{{Text: "SELECT ssn FROM public.v"}}, "db", "", false)
+		span, err := ResolveQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT ssn FROM public.v"}, "db", "", throughViews)
 		require.NoError(t, err)
-		require.Equal(t, want, spans[0].Results[0].SourceColumns, engine)
+		require.Equal(t, want, span.Results[0].SourceColumns, throughViews)
 	}
 
 	// ExplainAnalyze and query types convert across the seam.
