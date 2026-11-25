@@ -59,6 +59,26 @@ describe("SplashLayout", () => {
     expect(rightColumn).toHaveClass("lg:w-1/2", "lg:flex-none");
   });
 
+  test.each([
+    { route: AUTH_SIGNIN_MODULE, wide: true, aligned: "centered" },
+    { route: AUTH_SETUP_MODULE, wide: true, aligned: "top" },
+    { route: AUTH_SETUP_MODULE, wide: false, aligned: "top" },
+  ])("aligns the $route page's column to the $aligned (wide: $wide)", ({
+    route,
+    wide,
+    aligned,
+  }) => {
+    const { getByTestId } = renderLayout(route, { wide });
+
+    const column = getByTestId("auth-page").parentElement;
+    if (aligned === "top") {
+      expect(column).toHaveClass("justify-start");
+      expect(column).not.toHaveClass("justify-center");
+    } else {
+      expect(column).toHaveClass("justify-center");
+    }
+  });
+
   test("gives the setup page no slot below lg, where the left column is hidden", () => {
     const { getByTestId, queryByText } = renderLayout(AUTH_SETUP_MODULE, {
       wide: false,

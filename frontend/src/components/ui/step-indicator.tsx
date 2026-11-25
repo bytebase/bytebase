@@ -206,16 +206,19 @@ export function StepIndicator({
 
   const items = (compact: boolean) =>
     steps.map((step, index) => {
-      const isReached = activeIndex >= 0 && index <= activeIndex;
+      const isCurrent = index === activeIndex;
       const isCompleted = activeIndex >= 0 && index < activeIndex;
+      // Only the current step is accented, so the eye finds where it is.
       const body = (
         <div className="flex items-center gap-x-2">
           <div
             className={cn(
               "flex size-6 items-center justify-center rounded-full text-xs font-medium",
-              isReached
-                ? "bg-accent text-accent-text"
-                : "bg-control-bg-hover text-control-light"
+              isCurrent && "bg-accent text-accent-text",
+              isCompleted && "bg-accent/10 text-accent",
+              !isCurrent &&
+                !isCompleted &&
+                "bg-control-bg-hover text-control-light"
             )}
           >
             {isCompleted ? (
@@ -231,8 +234,10 @@ export function StepIndicator({
           <span
             className={cn(
               "text-sm",
-              isReached ? "text-accent font-medium" : "text-control-light",
-              compact && index !== activeIndex && "sr-only"
+              isCurrent && "text-accent font-medium",
+              isCompleted && "text-control",
+              !isCurrent && !isCompleted && "text-control-light",
+              compact && !isCurrent && "sr-only"
             )}
           >
             {step.title}

@@ -28,7 +28,8 @@ const LEFT_COLUMN_QUERY = "(min-width: 1024px)";
 // own, which would compound with the column's. The column is also the
 // containing block for the page's absolutely positioned children: `pb-24`
 // keeps the sign-in and sign-up `AuthFooter` (`absolute bottom-0`) clear of
-// the form, which therefore sits 24px above true center on every route.
+// the form, which therefore sits 24px above true center. The setup page is
+// top-aligned instead, so its steps and heading hold still from step to step.
 export function SplashLayout() {
   const matches = useMatches();
   const currentRouteName = (
@@ -48,8 +49,10 @@ export function SplashLayout() {
       )}
       <div
         className={cn(
-          "relative flex-1 flex flex-col items-center justify-center py-12 pb-24 px-4 sm:px-6",
-          pageOwnsPanel && "lg:flex-none lg:px-20 lg:w-1/2 xl:px-24"
+          "relative flex-1 flex flex-col items-center py-12 pb-24 px-4 sm:px-6",
+          pageOwnsPanel
+            ? "justify-start lg:pt-28 lg:flex-none lg:px-20 lg:w-1/2 xl:px-24"
+            : "justify-center"
         )}
       >
         <SplashPanelContext.Provider
