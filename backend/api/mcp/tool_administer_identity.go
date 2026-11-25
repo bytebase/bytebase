@@ -371,11 +371,9 @@ func identityForm(ctx context.Context, c *identityCreation, link string) (*admin
 	}
 }
 
-// identityLayouts are the layouts of the form that creates identityID, from
-// today's to the barest; the form is the first that fits. The repository,
-// which decides who signs in, and the rollouts without approval stay in the
-// message in each. What moves under the choice is the same for every identity
-// the tool creates.
+// identityLayouts are the layouts of the form that creates identityID, fullest
+// first; the form is the first that fits. Each keeps the repository, which
+// decides who signs in, and the rollouts without approval in the message.
 func identityLayouts(c *identityCreation, identityID string, repository identityRepository) []formLayout {
 	jobs := "GitLab CI"
 	if repository.github {

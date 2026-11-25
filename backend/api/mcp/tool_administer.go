@@ -707,10 +707,8 @@ type formChange struct {
 }
 
 // ruleList is what a rule form's description says of the rules a change
-// leaves: the lines before the list, then the list under its header, or the
-// sentence that stands for it when no rule is left. Only before counts toward
-// refusing a change, so a rule a form adds is never refused its removal by a
-// line the removal alone shows.
+// leaves. Only before counts toward refusing a change: empty shows on a
+// removal alone, and a rule a form adds must not be refused its removal for it.
 type ruleList struct {
 	before []string
 	header string
@@ -740,8 +738,7 @@ func (r adminRules) whole(ctx context.Context, question string, changes []formCh
 }
 
 // listed returns the form whose message counts the changes and whose
-// description lists them first. It refuses a change the description has no
-// room for.
+// description lists them first, or refuses a change it has no room for.
 func (r adminRules) listed(ctx context.Context, changes []formChange, count, effect string, list ruleList, link string) (*adminForm, error) {
 	question := questionLines(ctx, r.question, "")
 	lines := append(slices.Clone(question), wrapMessageLine(count)...)
@@ -784,11 +781,10 @@ func withFixed(lines []string, fixed string) ([]string, string) {
 }
 
 // countLine counts a form's rule changes by kind, for a message that leaves
-// them to the description. changes is the number of change lines, each for one
-// rule, and marks say which requested rules are new or changed, so the rest of
-// the lines remove a rule. unapproved is how many new or changed approval
-// rules end with no approvers. The line never says how much of the list a
-// client shows: Claude Code's fullscreen renderer shows one row.
+// them to the description. Each of the changes lines is for one rule, so those
+// that marks do not call new or changed remove one. The line never says how
+// much of the list a client shows: Claude Code's fullscreen renderer shows one
+// row.
 func countLine(changes int, marks []string, unapproved int) string {
 	added, changed := 0, 0
 	for _, mark := range marks {
@@ -829,10 +825,9 @@ func countLine(changes int, marks []string, unapproved int) string {
 }
 
 // describeRules lays out a rule form's description in descriptionLines rows:
-// the changes the message only counts, then what the change leaves. The rule
-// list is cut to the rows left, and the fixed sentence takes a last free row.
-// needed passes descriptionLines when the changes and the lines before the
-// list do not fit, and the description is then empty.
+// the changes the message only counts and the lines before the list, then as
+// much of the list as fits. needed passes descriptionLines when the first two
+// do not fit.
 func describeRules(changes []string, list ruleList, fixed string) (description string, needed int) {
 	var rows []string
 	for _, line := range slices.Concat(changes, list.before) {
@@ -848,11 +843,9 @@ func describeRules(changes []string, list ruleList, fixed string) (description s
 	return strings.Join(rows, "\n"), len(rows)
 }
 
-// listRows returns the header and as many rules as room rows hold, from the
-// first tried, and ends with a row that counts the rest. A rule left out can
-// still be tried before one the change adds, so that row says where they sit.
-// With no rule left it returns the sentence that says so. It returns nothing
-// when not even the first rule, or that sentence, fits.
+// listRows returns the header and the rules that fit room rows, from the first
+// tried, then a row that counts the rest and says where they sit: a rule left
+// out can still be tried before one the change adds.
 func listRows(list ruleList, room int) []string {
 	if len(list.rules) == 0 {
 		if rows := wrapLine(list.empty, descriptionLineWidth); list.empty != "" && len(rows) <= room {

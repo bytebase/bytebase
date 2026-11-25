@@ -487,10 +487,9 @@ func (s *Server) confirmExemptionWrite(ctx context.Context, req *mcp.CallToolReq
 // description because the message has no room for it.
 type exemptionForm struct {
 	message string
-	// columns are the rows that name the columns when the message only counts
-	// them.
+	// columns name the columns, when the message only counts them.
 	columns []string
-	// expiry says when a revoked exemption would expire, when the scope's line
+	// expiry is when a revoked exemption would expire, when the scope's line
 	// has no room for it.
 	expiry string
 }
@@ -503,20 +502,19 @@ func describeExemptionGrant(ctx context.Context, g *exemptionGrant) (form exempt
 	if g.expireTime != "" {
 		effect = fmt.Sprintf("Bypasses masking until %q; adds no masking.", g.expireTime)
 	}
-	return fitExemptionScope(ctx, fmt.Sprintf("Exempt %q", g.member), " from masking", g, "", effect)
+	return fitExemptionScope(ctx, fmt.Sprintf("Exempt %q", g.member), " from masking", g, effect)
 }
 
 // fitExemptionScope builds the form of an exemption with g's scope. The
 // message names the columns when it has room, and counts them otherwise, with
 // their names first under the choice. A grant and the revoke of what it wrote
-// share the scope's line and the columns' rows, so a form that grants an
-// exemption is never refused its revoke. after ends the scope's line.
-func fitExemptionScope(ctx context.Context, head, rest string, g *exemptionGrant, after, effect string) (form exemptionForm, tooLong string, fewer bool) {
-	message, tooLong := fitExemption(ctx, head, rest, exemptionScope(g, false)+after, effect)
+// share this, so no form grants an exemption that no form revokes.
+func fitExemptionScope(ctx context.Context, head, rest string, g *exemptionGrant, effect string) (form exemptionForm, tooLong string, fewer bool) {
+	message, tooLong := fitExemption(ctx, head, rest, exemptionScope(g, false), effect)
 	if tooLong == "" || len(g.columns) == 0 {
 		return exemptionForm{message: message}, tooLong, false
 	}
-	if message, tooLong = fitExemption(ctx, head, rest, exemptionScope(g, true)+after, effect); tooLong != "" {
+	if message, tooLong = fitExemption(ctx, head, rest, exemptionScope(g, true), effect); tooLong != "" {
 		return exemptionForm{message: message}, tooLong, false
 	}
 	label := "Columns: "
@@ -605,7 +603,7 @@ func describeExemptionRevoke(ctx context.Context, input RevokeMaskingExemptionIn
 		form.message, tooLong = fitExemption(ctx, head, rest, scope, effect)
 		return form, tooLong
 	}
-	scoped, tooLong, _ := fitExemptionScope(ctx, head, rest, g, "", effect)
+	scoped, tooLong, _ := fitExemptionScope(ctx, head, rest, g, effect)
 	scoped.expiry = form.expiry
 	return scoped, tooLong
 }

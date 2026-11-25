@@ -510,10 +510,9 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 		return form, nil
 	}
 	// A removal shows the effect and adding a full-mask rule does not, so
-	// without this a rule whose add the message states whole could have a
-	// removal it only counts. The question may pass messageLineWidth, since
-	// Claude Code cuts a long row (messageLines): a narrow terminal loses only
-	// the account at its end.
+	// without this the message could state a rule's add whole and only count
+	// its removal. The question may pass messageLineWidth: Claude Code cuts a
+	// long row, which costs a narrow terminal only the account at its end.
 	if slices.ContainsFunc(diff.changes, func(change formChange) bool { return change.effect }) {
 		if form := rules.whole(ctx, maskingRulesQuestionWithEffect, diff.changes, "", maskingRuleList(diff, false)); form != nil {
 			return form, nil
@@ -523,11 +522,10 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 }
 
 // maskingRuleList is what the description says of the rules a change leaves.
-// Every line names its rule's type, since the order decides which rule masks a
-// column and a move's change line shows no type. A kept rule never appears
-// among the changes, so its line gives its scope. A new or changed rule's line
-// gives the CEL it stores, or no condition when the description lists the
-// changes itself, right above, and the rows go to the kept rules.
+// Every line names its rule's type: the order decides which rule masks a
+// column, and a move's change line shows no type. A kept rule, which no change
+// line shows, gives its scope. A new or changed one gives the CEL it stores,
+// unless the description lists the changes itself, right above it.
 func maskingRuleList(diff *maskingRulesDiff, listed bool) ruleList {
 	if len(diff.requested) == 0 {
 		return ruleList{empty: "No masking rule is left, so each column keeps its own semantic type."}

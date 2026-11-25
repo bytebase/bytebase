@@ -390,12 +390,11 @@ func instanceForm(ctx context.Context, c *instanceCreation, maskingSkips bool, l
 	}
 }
 
-// instanceLayouts are the layouts of the form that adds instanceID, from
-// today's to the barest; the form is the first that fits. The host, the port,
-// the TLS mode, the environment, the activation and the not-activated line
-// stay in the message in each: the host receives the password, and the others
-// decide how it travels and which rules, licenses and masking apply. tls is
-// the TLS mode's wording.
+// instanceLayouts are the layouts of the form that adds instanceID, fullest
+// first; the form is the first that fits. Each keeps the host, the port, the
+// TLS mode, the environment and the activation in the message: the host
+// receives the password, and the rest decide how it travels and which rules,
+// licenses and masking apply.
 func instanceLayouts(c *instanceCreation, instanceID string, notActivated bool, tls string) []formLayout {
 	ds := c.dataSource()
 	host := fmt.Sprintf("Host %q, port %s", ds.GetHost(), ds.GetPort())
@@ -416,8 +415,8 @@ func instanceLayouts(c *instanceCreation, instanceID string, notActivated bool, 
 	}
 	// Activation can take one of the license's fixed number of instance
 	// licenses (InstanceService.checkActivationLimit), so the form names it: in
-	// the question, or beside the environment when the question then keeps to
-	// one row and leaves the host another.
+	// the question, or beside the environment when that keeps the question to
+	// one row.
 	plain := fmt.Sprintf("Add instance %q to %q", instanceID, c.projectID)
 	question, dense := plain, plain
 	if c.request.GetInstance().GetActivation() {

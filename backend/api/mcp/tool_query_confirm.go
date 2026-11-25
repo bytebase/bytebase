@@ -37,13 +37,12 @@ const (
 	messageLineWidth = 70
 )
 
-// Claude Code's default renderer draws a form in 13 rows plus the rows of its
-// choice's description, with an empty row under it, and a form taller than the
-// terminal loses its top row by row: the server's name, then the question.
-// A description row holds the terminal's width less 12. So a description that
-// grows with a list keeps to 10 rows of 68 columns, the most an 80-by-24
-// terminal shows whole under four message lines. The fullscreen renderer shows
-// the first of those rows.
+// Claude Code's default renderer draws a form in 13 rows plus its
+// description's, and a form taller than the terminal loses its top: the
+// server's name, then the question. A description row holds the terminal's
+// width less 12. So a description that grows with a list keeps to 10 rows of
+// 68 columns, the most an 80-by-24 terminal shows whole. Fullscreen shows the
+// first row.
 const (
 	descriptionLines     = 10
 	descriptionLineWidth = 68
