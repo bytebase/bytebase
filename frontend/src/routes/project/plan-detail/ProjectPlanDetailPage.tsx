@@ -252,6 +252,7 @@ function ProjectPlanDetailPageInner({
                       "sticky top-0 z-20 shrink-0 bg-background",
                       headerStuck && "border-b"
                     )}
+                    data-plan-sticky-header
                   >
                     <PlanDetailHeader />
                   </header>

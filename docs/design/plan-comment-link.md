@@ -107,13 +107,13 @@ a click does not change the selected change.
 **D4 · Opening the address reveals the comment.** The page expands Review, shows the whole
 timeline, opens the run, unfolds the card and shows all replies, as far as each is in the way.
 Each step is what the reader's own click does, and it stays that way afterwards. Then the page
-puts the comment in the middle of the viewport. It jumps there without animation, because a
-reader who opens a link never saw where the scroll began. A comment already in view does not
-move, so a click on its timestamp leaves the page still. The card's SQL excerpt takes its height
-from the comment's line range before its sheet loads, so the comment does not shift after the
-jump. The page does this once per navigation, never on a refresh of its data. A comment the
-page has not loaded yet, as when a link is pasted into a tab that already shows the plan, is
-looked for by listing the comments once more.
+puts the comment in the middle of the viewport. It jumps there without animation, because a reader
+who opens a link never saw where the scroll began. A comment whose first row shows below the
+sticky title row does not move, so a click on its timestamp leaves the page still. The card's SQL
+excerpt takes its height from the comment's line range before its sheet loads, so the comment does
+not shift after the jump. The page does this once per navigation, never on a refresh of its data.
+A comment the page has not loaded yet, as when a link is pasted into a tab that already shows the
+plan, is looked for by listing the comments once more.
 
 **D5 · The linked comment is outlined while the address names it.** A 2px outline in `accent`,
 on the row or, inside a card, on the one comment and not the card. In a card it sits 4px inside
@@ -187,7 +187,9 @@ two do not call it.
      Activity; `hooks/useActivityLanding.ts`, by which the entry asked for scrolls and focuses
      itself; `ReviewActivityTimeline.tsx`; `consolidateTimeline.ts`, to keep the names a merged
      row stands for; `CommentThreadCard.tsx` and `ThreadComment.tsx`, for unfolding and the
-     outline; `StatementAnchorContext.tsx`, for the excerpt's height before its sheet loads.
+     outline; `StatementAnchorContext.tsx`, for the excerpt's height before its sheet loads;
+     `src/hooks/useSheetStatement.ts`, which left a sheet loading for good when another reader
+     cached it first, and so left that height empty.
      Shared: `IssueCommentActivity.tsx`, for the row's outline. The entry takes the landing
      through its own ref, so it is one element whatever else shares its `id`.
    - Tests: beside each of those files. They include every row of States; a reply among hidden

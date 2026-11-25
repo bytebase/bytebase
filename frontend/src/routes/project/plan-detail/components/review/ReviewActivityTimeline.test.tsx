@@ -523,6 +523,10 @@ describe("ReviewActivityTimeline", () => {
     const scrollIntoView = vi.fn();
     const original = Element.prototype.scrollIntoView;
     Element.prototype.scrollIntoView = scrollIntoView;
+    // Far below the fold, so the landing has to scroll.
+    const offScreen = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockReturnValue({ top: 5000, bottom: 5100 } as DOMRect);
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -556,6 +560,7 @@ describe("ReviewActivityTimeline", () => {
     act(() => root.unmount());
     container.remove();
     Element.prototype.scrollIntoView = original;
+    offScreen.mockRestore();
   });
 
   test.each([
@@ -713,6 +718,10 @@ describe("ReviewActivityTimeline", () => {
     const scrollIntoView = vi.fn();
     const original = Element.prototype.scrollIntoView;
     Element.prototype.scrollIntoView = scrollIntoView;
+    // Far below the fold, so the landing has to scroll.
+    const offScreen = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockReturnValue({ top: 5000, bottom: 5100 } as DOMRect);
     mocks.activityFocus = { commentName: name(6), nonce: 4 };
     const container = document.createElement("div");
     document.body.appendChild(container);
@@ -735,6 +744,7 @@ describe("ReviewActivityTimeline", () => {
     act(() => root.unmount());
     container.remove();
     Element.prototype.scrollIntoView = original;
+    offScreen.mockRestore();
   });
 
   test("hands a thread card the plan spec its anchor names, and none for a spec the plan lacks", () => {

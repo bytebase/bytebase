@@ -97,7 +97,12 @@ export const useSheetStatement = ({
     if (extractSheetUID(sheetName).startsWith("-")) {
       return;
     }
-    if (useAppStore.getState().getSheetByName(sheetName)) {
+    // Another reader of the same sheet may have cached it since the seed ran
+    // during render. The seed then said "loading", and nothing else would
+    // ever clear it.
+    const cached = useAppStore.getState().getSheetByName(sheetName);
+    if (cached) {
+      setSnapshot((prev) => (prev.isLoading ? snapshotOfSheet(cached) : prev));
       return;
     }
 

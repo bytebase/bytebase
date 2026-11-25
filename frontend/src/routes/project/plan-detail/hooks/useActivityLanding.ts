@@ -1,21 +1,23 @@
 import { useLayoutEffect, useRef } from "react";
 import { useActivityScope, useCommentLinks } from "../shell/CommentLinkContext";
 
-// The page's sticky title row covers this much of the top of the scroll pane.
-const STICKY_HEADER_HEIGHT = 64;
+// Enough of an entry's first row to read who wrote it and when.
+const FIRST_ROW_HEIGHT = 24;
 
 // Brings an Activity entry to the reader: into view when it is not already
 // there, without animation, and under keyboard focus so the next Tab starts
-// from it. An entry already in view stays where it is.
+// from it. An entry whose first row shows, below the page's sticky title row,
+// stays where it is: the reader is looking at it, or has just clicked it.
 function landOn(element: HTMLElement) {
   const pane = element.closest<HTMLElement>("[data-scroll-restoration-id]");
   const view = pane?.getBoundingClientRect() ?? {
     top: 0,
     bottom: window.innerHeight,
   };
+  const header = pane?.querySelector<HTMLElement>("[data-plan-sticky-header]");
+  const top = header ? header.getBoundingClientRect().bottom : view.top;
   const rect = element.getBoundingClientRect();
-  const inView =
-    rect.top >= view.top + STICKY_HEADER_HEIGHT && rect.bottom <= view.bottom;
+  const inView = rect.top >= top && rect.top + FIRST_ROW_HEIGHT <= view.bottom;
   if (!inView) element.scrollIntoView({ block: "center" });
   if (!element.hasAttribute("tabindex")) element.tabIndex = -1;
   element.focus({ preventScroll: true });

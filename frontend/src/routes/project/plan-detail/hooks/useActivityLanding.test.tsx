@@ -28,6 +28,9 @@ function Entry({ names }: { names: string[] }) {
 
 const scrollIntoView = vi.fn();
 const onLanded = vi.fn();
+// The scroll pane is 800px tall and its sticky title row covers the top 56px.
+const PANE = { top: 0, bottom: 800 };
+const HEADER = { top: 0, bottom: 56 };
 let rect = { top: 0, bottom: 0 };
 
 beforeEach(() => {
@@ -35,7 +38,15 @@ beforeEach(() => {
   rect = { top: 0, bottom: 0 };
   HTMLElement.prototype.scrollIntoView = scrollIntoView;
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
-    () => rect as DOMRect
+    function (this: HTMLElement) {
+      if (this.hasAttribute("data-scroll-restoration-id")) {
+        return PANE as DOMRect;
+      }
+      if (this.hasAttribute("data-plan-sticky-header")) {
+        return HEADER as DOMRect;
+      }
+      return rect as DOMRect;
+    }
   );
 });
 
@@ -46,12 +57,15 @@ afterEach(() => {
 });
 
 const inActivity = (focusName: string | undefined, children: ReactNode) => (
-  <ActivityScope
-    focus={focusName ? { commentName: focusName, nonce: 7 } : undefined}
-    onLanded={onLanded}
-  >
-    {children}
-  </ActivityScope>
+  <div data-scroll-restoration-id="main">
+    <header data-plan-sticky-header />
+    <ActivityScope
+      focus={focusName ? { commentName: focusName, nonce: 7 } : undefined}
+      onLanded={onLanded}
+    >
+      {children}
+    </ActivityScope>
+  </div>
 );
 
 describe("useActivityLanding", () => {
@@ -74,8 +88,26 @@ describe("useActivityLanding", () => {
     expect(onLanded).toHaveBeenCalledWith(7);
   });
 
-  test("an entry under the sticky title row counts as off screen", () => {
-    rect = { top: 10, bottom: 60 };
+  test("an entry whose first row is under the sticky title row counts as off screen", () => {
+    rect = { top: 40, bottom: 140 };
+    render(inActivity(NAME, <Entry names={[NAME]} />));
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+
+  test("an entry just below the sticky title row stays where it is", () => {
+    rect = { top: 58, bottom: 158 };
+    render(inActivity(NAME, <Entry names={[NAME]} />));
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  test("a long entry whose first row shows stays where it is, though it runs off the bottom", () => {
+    rect = { top: 600, bottom: 1400 };
+    render(inActivity(NAME, <Entry names={[NAME]} />));
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  test("an entry whose first row is cut by the bottom edge is jumped to", () => {
+    rect = { top: 790, bottom: 890 };
     render(inActivity(NAME, <Entry names={[NAME]} />));
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
   });

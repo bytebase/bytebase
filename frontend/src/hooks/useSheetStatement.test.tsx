@@ -56,6 +56,27 @@ describe("useSheetStatement", () => {
     expect(getOrFetchSheetByName).not.toHaveBeenCalled();
   });
 
+  test("uses a sheet another reader cached between the first render and the effect", async () => {
+    // Not cached when the render seeds the snapshot, cached by the time the
+    // effect looks: the effect neither fetches nor leaves it loading.
+    getSheetByName
+      .mockReturnValueOnce(undefined)
+      .mockReturnValue(sheet("select 1;"));
+    const { snapshots } = renderSnapshots({
+      enabled: true,
+      sheetName: "projects/p/sheets/1",
+    });
+    expect(snapshots[0].isLoading).toBe(true);
+    await waitFor(() =>
+      expect(snapshots.at(-1)).toEqual({
+        statement: "select 1;",
+        isLoading: false,
+        isTruncated: false,
+      })
+    );
+    expect(getOrFetchSheetByName).not.toHaveBeenCalled();
+  });
+
   test("shows loading (not empty) on the first render when a fetch is needed", async () => {
     getSheetByName.mockReturnValue(undefined);
     getOrFetchSheetByName.mockResolvedValue(sheet("select 2;"));
