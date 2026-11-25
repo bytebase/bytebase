@@ -551,11 +551,11 @@ func TestAdministerMaskingRulesListsAChangeTooLongForTheMessageUnderTheChoice(t 
 		`Add rule 3, Full mask: env "c", every column`,
 		`Add rule 4, Full mask: env "d", every column`,
 		`The masking rules, in the order masking tries them:`,
-		"1. untitled (new), Full mask: `resource.environment_id == \"a\"`",
-		"2. untitled (new), Full mask: `resource.environment_id == \"b\"`",
-		"3. untitled (new), Full mask: `resource.environment_id == \"c\"`",
-		"4. untitled (new), Full mask: `resource.environment_id == \"d\"`",
-	}, "\n"), choiceDescription(t, asked))
+		`1. untitled (new), Full mask`,
+		`2. untitled (new), Full mask`,
+		`3. untitled (new), Full mask`,
+		`4. untitled (new), Full mask`,
+	}, "\n"), choiceDescription(t, asked), "the changes above state each new rule's condition, so the list does not repeat it")
 	require.Len(t, mock.calls(), 1, "one form makes the whole change in one write")
 }
 
@@ -613,7 +613,7 @@ func TestAdministerMaskingRulesReplacesARuleInOneForm(t *testing.T) {
 		`Remove, Full mask: env "prod", every column`,
 		"Add rule 1, Full mask: `" + condition + "`",
 		`The masking rules, in the order masking tries them:`,
-		"1. \"Personal data in prod\" (new), Full mask: `" + condition + "`",
+		`1. "Personal data in prod" (new), Full mask`,
 	}, description, "the removal leads, and each change reads as a message line would")
 	require.LessOrEqual(t, len(strings.Split(choiceDescription(t, asked), "\n")), descriptionLines)
 	require.EqualValues(t, 1, user.asked.Load())

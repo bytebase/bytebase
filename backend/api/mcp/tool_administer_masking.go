@@ -502,28 +502,11 @@ func maskingRuleTitle(rule *v1pb.MaskingRulePolicy_MaskingRule) string {
 // unmasked, the form says so on a line of its own, or in the question when
 // that line does not fit.
 func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) (*adminForm, error) {
-	var list ruleList
-	if len(diff.requested) == 0 {
-		list.empty = "No masking rule is left, so each column keeps its own semantic type."
-	} else {
-		list.header = "The masking rules, in the order masking tries them:"
-		for i, rule := range diff.requested {
-			// Every line names its rule's type, since the order decides which
-			// rule masks a column and a move's line in the message shows no
-			// type. A kept rule never appears in the message, so its line
-			// gives its scope; a new or changed one gives the CEL it stores.
-			condition := maskingConditionText(rule.GetCondition().GetExpression())
-			if diff.marks[i] != "kept" {
-				condition = conditionText(rule.GetCondition().GetExpression())
-			}
-			list.rules = append(list.rules, fmt.Sprintf("%d. %s (%s), %s: %s", i+1, maskingRuleTitle(rule), diff.marks[i], diff.typePhrase(rule.GetSemanticType()), condition))
-		}
-	}
 	rules := maskingRules
 	if len(diff.requested) < 2 {
 		rules.apply = ""
 	}
-	if form := rules.whole(ctx, maskingRulesQuestion, diff.changes, maskingRulesUnmask, list); form != nil {
+	if form := rules.whole(ctx, maskingRulesQuestion, diff.changes, maskingRulesUnmask, maskingRuleList(diff, false)); form != nil {
 		return form, nil
 	}
 	// A removal shows the effect and adding a full-mask rule does not, so
@@ -532,11 +515,36 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 	// Claude Code cuts a long row (messageLines): a narrow terminal loses only
 	// the account at its end.
 	if slices.ContainsFunc(diff.changes, func(change formChange) bool { return change.effect }) {
-		if form := rules.whole(ctx, maskingRulesQuestionWithEffect, diff.changes, "", list); form != nil {
+		if form := rules.whole(ctx, maskingRulesQuestionWithEffect, diff.changes, "", maskingRuleList(diff, false)); form != nil {
 			return form, nil
 		}
 	}
-	return rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, list, link)
+	return rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, maskingRuleList(diff, true), link)
+}
+
+// maskingRuleList is what the description says of the rules a change leaves.
+// Every line names its rule's type, since the order decides which rule masks a
+// column and a move's change line shows no type. A kept rule never appears
+// among the changes, so its line gives its scope. A new or changed rule's line
+// gives the CEL it stores, or no condition when the description lists the
+// changes itself, right above, and the rows go to the kept rules.
+func maskingRuleList(diff *maskingRulesDiff, listed bool) ruleList {
+	if len(diff.requested) == 0 {
+		return ruleList{empty: "No masking rule is left, so each column keeps its own semantic type."}
+	}
+	list := ruleList{header: "The masking rules, in the order masking tries them:"}
+	for i, rule := range diff.requested {
+		line := fmt.Sprintf("%d. %s (%s), %s", i+1, maskingRuleTitle(rule), diff.marks[i], diff.typePhrase(rule.GetSemanticType()))
+		switch {
+		case diff.marks[i] == "kept":
+			line += ": " + maskingConditionText(rule.GetCondition().GetExpression())
+		case !listed:
+			line += ": " + conditionText(rule.GetCondition().GetExpression())
+		default:
+		}
+		list.rules = append(list.rules, line)
+	}
+	return list
 }
 
 // maskingFormDigest binds an answer to the form, the request, and the stored
