@@ -83,6 +83,15 @@ describe("parseRepoCommit", () => {
     }
   );
 
+  test("a percent-encoded bidirectional override is removed after decoding", () => {
+    expect(
+      parse(
+        VCSType.GITHUB,
+        "https://github.com/example/app%E2%80%AEgnp/commit/0a1b2c3d4e5f"
+      )?.repo
+    ).toBe("example/appgnp");
+  });
+
   test("gives nothing for a commit URL with no repository path", () => {
     expect(
       parse(VCSType.GITHUB, "https://github.com/commit/0a1b2c3d4e5f")

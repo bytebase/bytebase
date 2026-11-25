@@ -1,19 +1,24 @@
 import { useEffect } from "react";
+import { usePrincipal } from "@/hooks/usePrincipal";
 import { useAppStore } from "@/stores/app";
+import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 
-// A user's display name for "users/{email}", fetched once if not cached; the
-// email until the user loads, or when it cannot.
+// A principal's display name for "users/{email}", fetched once if not cached;
+// the email until it loads, or when it cannot. A service account or workload
+// identity, as CI is, is read from its own service.
 export function useUserDisplayName(name: string | undefined): string {
+  const email = name?.replace(/^users\//, "") ?? "";
+  const isPerson = !email || getAccountTypeByEmail(email) === AccountType.USER;
   const user = useAppStore((state) =>
-    name ? state.getUserByIdentifier(name) : undefined
+    name && isPerson ? state.getUserByIdentifier(name) : undefined
   );
   useEffect(() => {
-    if (!name || user) return;
+    if (!name || !isPerson || user) return;
     void useAppStore
       .getState()
       .getOrFetchUserByIdentifier({ identifier: name, silent: true })
       .catch(() => {});
-  }, [name, user]);
-  const email = name?.replace(/^users\//, "") ?? "";
-  return user?.title || email;
+  }, [name, isPerson, user]);
+  const principal = usePrincipal(isPerson ? undefined : name);
+  return (isPerson ? user?.title : principal?.title) || email;
 }
