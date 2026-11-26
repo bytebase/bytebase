@@ -71,6 +71,7 @@ import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
+import { captureAgentPageSnapshot } from "../logic/capturePage";
 import { chatNeedsAttention } from "../logic/chatAttention";
 import {
   type AgentPageResource,
@@ -98,8 +99,11 @@ import {
   normalizeAgentResourceReferences,
 } from "../logic/resourceMention";
 import { normalizeAgentResponseActions } from "../logic/responseActions";
+import { getAgentSourceSqlEditorContext } from "../logic/sqlEditorContext";
+import { getCurrentAgentSqlEditorContext } from "../logic/sqlEditorHost";
 import type {
   AgentChat as AgentChatRecord,
+  AgentChatSnapshot,
   AgentDraft,
   AgentResourceReference,
   AgentRunMode,
@@ -126,6 +130,7 @@ import {
   AgentMinimizedLauncher,
 } from "./AgentMinimizedLauncher";
 import { AgentPreferences } from "./AgentPreferences";
+import { AgentSurface, useAgentDockBounds } from "./AgentSurface";
 import {
   RESIZE_POINTER_MEDIA_QUERY,
   supportsWindowBorderResize,
@@ -225,6 +230,10 @@ export function AgentWindow() {
 
   const visible = useAgentStore((s) => s.visible);
   const minimized = useAgentStore((s) => s.minimized);
+  const sqlEditorHost = useAgentStore((s) => s.sqlEditorHost?.());
+  const sqlEditorContext = sqlEditorHost
+    ? getCurrentAgentSqlEditorContext()
+    : undefined;
   const size = useAgentStore((s) => s.size);
   const sidebarWidth = useAgentStore((s) => s.sidebarWidth);
   const orderedChats = useAgentStore(selectOrderedChats);
@@ -529,12 +538,79 @@ export function AgentWindow() {
     },
     [userEmail, workspace?.name]
   );
+  const previousSqlScopeRef = useRef<
+    { owner: string; context: string } | undefined
+  >(undefined);
+  const sqlLandingDraftsRef = useRef(new Map<string, AgentDraft>());
+  const sqlScope =
+    sqlEditorContext?.kind === "ready"
+      ? (sqlEditorContext.snapshot.project ?? workspace?.name)
+      : undefined;
+  useEffect(() => {
+    if (!sqlEditorHost) {
+      previousSqlScopeRef.current = undefined;
+      return;
+    }
+    if (
+      !visible ||
+      !sqlScope ||
+      !workspace?.name ||
+      !userEmail ||
+      contextualPageHelp ||
+      storedWorkspaceName !== workspace.name ||
+      storedUserEmail !== userEmail
+    )
+      return;
+    const owner = `${workspace.name}:${userEmail}`;
+    const previous = previousSqlScopeRef.current;
+    if (previous?.owner === owner && previous.context === sqlScope) return;
+    if (
+      previous?.owner === owner &&
+      contextualStart &&
+      contextualChatScope?.context === previous.context
+    ) {
+      sqlLandingDraftsRef.current.set(
+        JSON.stringify([owner, previous.context]),
+        contextualDraft
+      );
+    }
+    previousSqlScopeRef.current = { owner, context: sqlScope };
+    const store = useAgentStore.getState();
+    if (
+      store.getChat(store.currentChatId)?.context === sqlScope &&
+      !contextualStart
+    )
+      return;
+    const page = resetContextualStart(sqlScope);
+    if (page) {
+      setContextualDraft(
+        sqlLandingDraftsRef.current.get(JSON.stringify([owner, sqlScope])) ?? {
+          text: "",
+        }
+      );
+    }
+    if (!page) store.clearCurrentChat();
+    setShowArchivedOnly(false);
+  }, [
+    sqlEditorHost,
+    sqlScope,
+    visible,
+    workspace?.name,
+    userEmail,
+    storedWorkspaceName,
+    storedUserEmail,
+    contextualStart,
+    contextualDraft,
+    contextualChatScope,
+    contextualPageHelp,
+    resetContextualStart,
+  ]);
   const [compactPanel, setCompactPanel] = useState<"chats" | "archived" | null>(
     null
   );
   const [mobileScreen, setMobileScreen] = useState<
     "chats" | "conversation" | "archived"
-  >("chats");
+  >("conversation");
   const [collapsedChatGroups, setCollapsedChatGroups] = useState<Set<string>>(
     () => new Set()
   );
@@ -546,6 +622,7 @@ export function AgentWindow() {
 
   useEffect(() => {
     setPreferencesOpen(false);
+    sqlLandingDraftsRef.current.clear();
   }, [storedWorkspaceName, storedUserEmail]);
 
   useEffect(() => {
@@ -603,7 +680,12 @@ export function AgentWindow() {
           continuedChatIdRef.current = null;
         }
       }
-      if (!pageResource && !hasQueuedChat && !lastChat) {
+      if (
+        !pageResource &&
+        !hasQueuedChat &&
+        !lastChat &&
+        !getCurrentAgentSqlEditorContext()
+      ) {
         const selected = store.currentChatId
           ? store.getChat(store.currentChatId)
           : undefined;
@@ -846,10 +928,24 @@ export function AgentWindow() {
     [clampWidth, clampHeight]
   );
 
-  const displaySize = useMemo(
+  const ownerReady = Boolean(
+    userEmail &&
+      storedWorkspaceName === workspace?.name &&
+      storedUserEmail === userEmail
+  );
+  const dockBounds = useAgentDockBounds(
+    visible && !minimized && ownerReady ? sqlEditorHost : undefined
+  );
+  const presentation = dockBounds
+    ? "sql-editor-docked"
+    : sqlEditorHost
+      ? "sql-editor-overlay"
+      : "floating";
+  const floatingSize = useMemo(
     () => getDisplaySize(size.width, size.height),
     [getDisplaySize, size.height, size.width]
   );
+  const displaySize = dockBounds ?? floatingSize;
 
   const clampSidebarWidth = useCallback(
     (width: number, windowWidth = displaySize.width) => {
@@ -871,7 +967,7 @@ export function AgentWindow() {
     [clampSidebarWidth, sidebarWidth]
   );
 
-  const windowStyle: React.CSSProperties = {
+  const windowStyle: React.CSSProperties = dockBounds ?? {
     right: `${WINDOW_MARGIN}px`,
     bottom: `${WINDOW_MARGIN}px`,
     width: `${displaySize.width}px`,
@@ -900,6 +996,7 @@ export function AgentWindow() {
   const isCompactWindow =
     displaySize.width <= COMPACT_WINDOW_MAX_WIDTH && !isMobileWindow;
   const isCompactDrawerOpen = isCompactWindow && compactPanel !== null;
+  const showPersistentSidebar = !isMobileWindow && !isCompactWindow;
 
   // --- Derived chat data ---
 
@@ -1003,7 +1100,7 @@ export function AgentWindow() {
     hasRunningChat || !showArchivedOnly || archivedChats.length === 0;
   const isDeleteAllDisabled =
     hasRunningChat || !showArchivedOnly || archivedChats.length === 0;
-  const canResizeWindow = supportsFinePointer;
+  const canResizeWindow = supportsFinePointer && presentation === "floating";
 
   useEffect(() => {
     if (!visible || missingProjectContexts.length === 0) return;
@@ -1276,9 +1373,12 @@ export function AgentWindow() {
 
   const createChat = useCallback(() => {
     const context = getCurrentChatContext();
+    sqlLandingDraftsRef.current.delete(
+      JSON.stringify([`${workspace?.name}:${userEmail}`, context])
+    );
     const pageResource = resetContextualStart(context);
     setChatGroupOpen(context, true, false);
-    if (pageResource) {
+    if (pageResource || getCurrentAgentSqlEditorContext()) {
       useAgentStore.getState().clearCurrentChat();
     } else {
       useAgentStore.getState().createChat({
@@ -1295,6 +1395,7 @@ export function AgentWindow() {
     resetContextualStart,
     setChatGroupOpen,
     workspace?.name,
+    userEmail,
   ]);
 
   const createChatForContext = useCallback(
@@ -1469,6 +1570,8 @@ export function AgentWindow() {
   const selectEmptyChatSuggestion = useCallback(
     (starterId: LandingStarterId) => {
       const store = useAgentStore.getState();
+      const page = captureAgentPageSnapshot();
+      if (!page) return;
       let chat = store.getChat(store.currentChatId);
       if (!chat) {
         if (
@@ -1478,13 +1581,15 @@ export function AgentWindow() {
         )
           return;
         chat = store.ensureCurrentChat(
-          getCurrentPageSnapshot(),
+          page,
           store.landingContext ?? getCurrentChatContext() ?? workspace?.name,
           workspace?.name
         );
       }
       if (
         chat.status !== "idle" ||
+        (page.sqlEditor &&
+          chat.context !== (page.sqlEditor.project ?? workspace?.name)) ||
         store.getMessages(chat.id).length ||
         store.getDraft(chat.id).text.trim() ||
         store.queuedUserMessagesByChatId[chat.id]
@@ -1494,7 +1599,7 @@ export function AgentWindow() {
       store.queueUserMessage({
         chatId: chat.id,
         text: t(`agent.landing-starters.${starterId}`),
-        page: getCurrentPageSnapshot(),
+        page,
         runMode: "read-only",
         starterId,
       });
@@ -1525,6 +1630,24 @@ export function AgentWindow() {
       if (action?.kind !== "continue") return;
       const boundReferences = normalizeAgentResourceReferences(references);
       if (boundReferences.length !== references.length) return;
+      let page: AgentChatSnapshot;
+      if (followUpSourceId === undefined) {
+        page = getCurrentPageSnapshot();
+      } else {
+        const messages = store.getMessages(chatId);
+        const sqlSource = followUpSourceId
+          ? getAgentSourceSqlEditorContext(messages, followUpSourceId)
+          : undefined;
+        if (sqlSource?.kind === "pending") return;
+        const source = messages.find(({ id }) => id === followUpSourceId);
+        page = {
+          path: source?.metadata?.route ?? "",
+          title: "",
+          ...(sqlSource?.kind === "ready"
+            ? { sqlEditor: sqlSource.snapshot }
+            : {}),
+        };
+      }
 
       const prefix = boundReferences
         .map((reference) => formatResourceMention(reference.label))
@@ -1532,7 +1655,7 @@ export function AgentWindow() {
       store.queueUserMessage({
         chatId,
         text: `${prefix}${prefix ? " " : ""}${action.prompt}`,
-        page: getCurrentPageSnapshot(),
+        page,
         runMode: "default",
         ...(followUpSourceId !== undefined ? { followUpSourceId } : {}),
         ...(boundReferences.length > 0
@@ -1604,7 +1727,15 @@ export function AgentWindow() {
         getCurrentChatContext();
       if (!chatContext) return;
       const store = useAgentStore.getState();
-      const page = getCurrentPageSnapshot();
+      const page: AgentChatSnapshot | undefined = pageHelp
+        ? getCurrentPageSnapshot()
+        : captureAgentPageSnapshot();
+      if (
+        !page ||
+        (page.sqlEditor &&
+          chatContext !== (page.sqlEditor.project ?? workspace?.name))
+      )
+        return;
       const current = store.getChat(store.currentChatId);
       const canReusePlaceholder =
         current &&
@@ -1620,18 +1751,21 @@ export function AgentWindow() {
         !current.runBudget &&
         current.status === "idle" &&
         !store.isChatRunning(current.id) &&
+        !store.remoteBusyChatIds[current.id] &&
         store.getMessages(current.id).length === 0 &&
         !store.getPendingAsk(current.id) &&
         !store.draftsByChatId[current.id] &&
         !store.queuedUserMessagesByChatId[current.id];
-      const chat = canReusePlaceholder
-        ? store.ensureCurrentChat(page, chatContext, workspace?.name)
-        : store.createChat({
-            page,
-            context: chatContext,
-            workspaceName: workspace?.name,
-          });
-      if (useAgentStore.getState().currentChatId !== chat.id) return;
+      const chat = page.sqlEditor
+        ? store.selectOrCreateChatForContext(chatContext, page, workspace?.name)
+        : canReusePlaceholder
+          ? store.ensureCurrentChat(page, chatContext, workspace?.name)
+          : store.createChat({
+              page,
+              context: chatContext,
+              workspaceName: workspace?.name,
+            });
+      if (!chat || useAgentStore.getState().currentChatId !== chat.id) return;
       const hasBoundMention =
         runMode === "default" &&
         reference &&
@@ -1646,6 +1780,7 @@ export function AgentWindow() {
           ? formatResourceMention(reference.label)
           : "";
       if (prompt) {
+        const previousQueuedId = store.queuedUserMessagesByChatId[chat.id]?.id;
         store.queueUserMessage({
           chatId: chat.id,
           text: mention ? `${mention} ${prompt}` : prompt,
@@ -1663,6 +1798,9 @@ export function AgentWindow() {
               }
             : {}),
         });
+        const queued =
+          useAgentStore.getState().queuedUserMessagesByChatId[chat.id];
+        if (!queued || queued.id === previousQueuedId) return;
       } else {
         store.setDraft(chat.id, {
           text: `${mention} `,
@@ -1684,6 +1822,11 @@ export function AgentWindow() {
       contextualPageHelpRef.current = null;
       setContextualPageHelp(null);
       setContextualStart(null);
+      if (page.sqlEditor) {
+        sqlLandingDraftsRef.current.delete(
+          JSON.stringify([`${workspace?.name}:${userEmail}`, chatContext])
+        );
+      }
       setContextualDraft({ text: "" });
       if (isCompactWindow) setCompactPanel(null);
       if (isMobileWindow) setMobileScreen("conversation");
@@ -1697,6 +1840,7 @@ export function AgentWindow() {
       setChatGroupOpen,
       t,
       workspace?.name,
+      userEmail,
     ]
   );
 
@@ -1746,6 +1890,10 @@ export function AgentWindow() {
   }, []);
 
   // --- Resize handlers ---
+
+  useLayoutEffect(() => {
+    if (presentation !== "floating") resizeCleanupRef.current?.();
+  }, [presentation]);
 
   const startResize = useCallback(
     (
@@ -1850,9 +1998,9 @@ export function AgentWindow() {
 
   // --- ResizeObserver ---
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = windowRef.current;
-    if (!el) {
+    if (!el || presentation !== "floating") {
       resizeObserverRef.current?.disconnect();
       return;
     }
@@ -1884,7 +2032,13 @@ export function AgentWindow() {
     observer.observe(el);
     resizeObserverRef.current = observer;
     return () => observer.disconnect();
-  }, [visible, minimized, viewportSize.width, viewportSize.height]);
+  }, [
+    visible,
+    minimized,
+    presentation,
+    viewportSize.width,
+    viewportSize.height,
+  ]);
 
   // --- Sync sidebar width when window width changes ---
 
@@ -1926,7 +2080,7 @@ export function AgentWindow() {
   }, [isCompactWindow]);
 
   useLayoutEffect(() => {
-    if (visible && isMobileWindow) setMobileScreen("conversation");
+    if (visible || !isMobileWindow) setMobileScreen("conversation");
   }, [isMobileWindow, visible]);
 
   const saveSidebarWidth = useCallback(() => {
@@ -2234,6 +2388,9 @@ export function AgentWindow() {
         loading={canReferenceContextualResource && contextualLoading}
         maskingRuleEditor={contextualPageHelp?.maskingRuleEditor}
         canStart={canStartPageHelp}
+        contextPending={
+          !contextualPageHelp && sqlEditorContext?.kind === "pending"
+        }
         hasCurrentChat={!contextualPageHelp?.onStart && !!continuableChat}
         showAIConfigurationRecovery={
           aiEnabled === false || currentChat?.requiresAIConfiguration === true
@@ -2299,6 +2456,7 @@ export function AgentWindow() {
               </div>
             ) : (
               <AgentInput
+                onNewChat={createChat}
                 retryActionRef={retryLastTurnRef}
                 freeSpaceAndRetryActionRef={freeSpaceAndRetryRef}
                 resendActionRef={resendMessageRef}
@@ -2531,11 +2689,10 @@ export function AgentWindow() {
     );
   }
 
-  const agentWindow = createPortal(
-    <div
+  const agentWindow = (
+    <AgentSurface
       ref={windowRef}
-      data-agent-window
-      className="fixed overflow-visible"
+      presentation={presentation}
       style={windowStyle}
     >
       <AgentDialog
@@ -2583,7 +2740,12 @@ export function AgentWindow() {
           if (!open) setCompactPanel(null);
         }}
       >
-        <div className="flex size-full flex-col overflow-hidden rounded-sm border border-block-border bg-background shadow-xl">
+        <div
+          className={cn(
+            "flex size-full flex-col overflow-hidden border border-block-border bg-background",
+            !dockBounds && "rounded-sm shadow-xl"
+          )}
+        >
           {/* Header */}
           <div
             data-agent-window-header
@@ -2761,126 +2923,108 @@ export function AgentWindow() {
             className="relative min-h-0 flex-1"
             data-agent-window-body
           >
-            {isMobileWindow ? (
-              mobileScreen === "conversation" ? (
-                <div
-                  className={cn(
-                    "flex size-full flex-col bg-background",
-                    preferencesOpen && "hidden"
-                  )}
-                  hidden={preferencesOpen}
-                  inert={preferencesOpen || undefined}
-                  data-agent-mobile-conversation
-                >
-                  {renderConversation()}
-                </div>
-              ) : (
-                <div
-                  className={cn(
-                    "size-full overflow-y-auto bg-control-bg",
-                    preferencesOpen && "hidden"
-                  )}
-                  hidden={preferencesOpen}
-                  inert={preferencesOpen || undefined}
-                  data-agent-mobile-chat-list
-                >
-                  <div className="flex flex-col" data-agent-chat-list>
-                    {displayedChatGroups.map((group) => {
-                      const groupKey = getChatGroupStateKey(
-                        group.context,
-                        showArchivedOnly
-                      );
-                      const groupIsOpen = !collapsedChatGroups.has(groupKey);
+            {isMobileWindow && mobileScreen !== "conversation" ? (
+              <div
+                className={cn(
+                  "size-full overflow-y-auto bg-control-bg",
+                  preferencesOpen && "hidden"
+                )}
+                hidden={preferencesOpen}
+                inert={preferencesOpen || undefined}
+                data-agent-mobile-chat-list
+              >
+                <div className="flex flex-col" data-agent-chat-list>
+                  {displayedChatGroups.map((group) => {
+                    const groupKey = getChatGroupStateKey(
+                      group.context,
+                      showArchivedOnly
+                    );
+                    const groupIsOpen = !collapsedChatGroups.has(groupKey);
 
-                      return (
-                        <Collapsible
-                          key={group.context ?? "unscoped"}
-                          open={groupIsOpen}
-                          onOpenChange={(open) =>
-                            setChatGroupOpen(group.context, open)
+                    return (
+                      <Collapsible
+                        key={group.context ?? "unscoped"}
+                        open={groupIsOpen}
+                        onOpenChange={(open) =>
+                          setChatGroupOpen(group.context, open)
+                        }
+                        data-agent-chat-group={group.context ?? "unscoped"}
+                      >
+                        <div
+                          className="flex w-full min-w-0 items-center justify-between gap-x-2 pt-2 pb-1 text-sm font-medium text-control-light hover:bg-control-bg-hover"
+                          data-agent-chat-group-header={
+                            group.context ?? "unscoped"
                           }
-                          data-agent-chat-group={group.context ?? "unscoped"}
                         >
-                          <div
-                            className="flex w-full min-w-0 items-center justify-between gap-x-2 pt-2 pb-1 text-sm font-medium text-control-light hover:bg-control-bg-hover"
-                            data-agent-chat-group-header={
+                          <CollapsibleTrigger
+                            className="h-7 w-auto min-w-0 flex-1 justify-start gap-x-2 rounded-none pr-1 pl-4 text-sm font-medium text-control-light hover:bg-transparent"
+                            title={
+                              group.context
+                                ? getContextLabel(group.context)
+                                : t("agent.other-chats")
+                            }
+                            data-agent-chat-group-toggle={
                               group.context ?? "unscoped"
                             }
                           >
-                            <CollapsibleTrigger
-                              className="h-7 w-auto min-w-0 flex-1 justify-start gap-x-2 rounded-none pr-1 pl-4 text-sm font-medium text-control-light hover:bg-transparent"
-                              title={
-                                group.context
-                                  ? getContextLabel(group.context)
-                                  : t("agent.other-chats")
-                              }
-                              data-agent-chat-group-toggle={
-                                group.context ?? "unscoped"
-                              }
-                            >
-                              {groupIsOpen ? (
-                                <FolderOpen
-                                  className="size-4 shrink-0"
-                                  aria-hidden="true"
-                                />
-                              ) : (
-                                <Folder
-                                  className="size-4 shrink-0"
-                                  aria-hidden="true"
-                                />
-                              )}
-                              <span className="truncate">
-                                {group.context
-                                  ? getContextLabel(group.context)
-                                  : t("agent.other-chats")}
-                              </span>
-                            </CollapsibleTrigger>
-                            {group.context && !showArchivedOnly && (
-                              <AgentTooltip
-                                content={`${t("agent.new-chat")}: ${getContextLabel(group.context)}`}
-                              >
-                                <Button
-                                  appearance="secondary"
-                                  size="xs"
-                                  className="mr-2 shrink-0 text-control-light hover:bg-control/25"
-                                  aria-label={`${t("agent.new-chat")}: ${getContextLabel(group.context)}`}
-                                  data-agent-new-chat-for-context={
-                                    group.context
-                                  }
-                                  onClick={() =>
-                                    createMobileChat(group.context)
-                                  }
-                                >
-                                  <Plus
-                                    className="size-3.5"
-                                    aria-hidden="true"
-                                  />
-                                </Button>
-                              </AgentTooltip>
+                            {groupIsOpen ? (
+                              <FolderOpen
+                                className="size-4 shrink-0"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <Folder
+                                className="size-4 shrink-0"
+                                aria-hidden="true"
+                              />
                             )}
-                          </div>
-                          <CollapsiblePanel
-                            className="p-0"
-                            data-agent-chat-group-children={
-                              group.context ?? "unscoped"
-                            }
-                          >
-                            {group.chats.map(renderChatRow)}
-                          </CollapsiblePanel>
-                        </Collapsible>
-                      );
-                    })}
-                  </div>
+                            <span className="truncate">
+                              {group.context
+                                ? getContextLabel(group.context)
+                                : t("agent.other-chats")}
+                            </span>
+                          </CollapsibleTrigger>
+                          {group.context && !showArchivedOnly && (
+                            <AgentTooltip
+                              content={`${t("agent.new-chat")}: ${getContextLabel(group.context)}`}
+                            >
+                              <Button
+                                appearance="secondary"
+                                size="xs"
+                                className="mr-2 shrink-0 text-control-light hover:bg-control/25"
+                                aria-label={`${t("agent.new-chat")}: ${getContextLabel(group.context)}`}
+                                data-agent-new-chat-for-context={group.context}
+                                onClick={() => createMobileChat(group.context)}
+                              >
+                                <Plus className="size-3.5" aria-hidden="true" />
+                              </Button>
+                            </AgentTooltip>
+                          )}
+                        </div>
+                        <CollapsiblePanel
+                          className="p-0"
+                          data-agent-chat-group-children={
+                            group.context ?? "unscoped"
+                          }
+                        >
+                          {group.chats.map(renderChatRow)}
+                        </CollapsiblePanel>
+                      </Collapsible>
+                    );
+                  })}
                 </div>
-              )
+              </div>
             ) : (
               <div
                 className={cn("flex size-full", preferencesOpen && "hidden")}
                 hidden={preferencesOpen}
                 inert={preferencesOpen || undefined}
-                data-agent-desktop-layout
+                data-agent-desktop-layout={isMobileWindow ? undefined : true}
+                data-agent-mobile-conversation={isMobileWindow || undefined}
               >
-                <div className="w-12 shrink-0">{renderRail()}</div>
+                {!isMobileWindow && (
+                  <div className="w-12 shrink-0">{renderRail()}</div>
+                )}
                 <PanelGroup
                   orientation="horizontal"
                   className="relative z-0 min-w-0 flex-1 bg-background"
@@ -2888,22 +3032,28 @@ export function AgentWindow() {
                   aria-hidden={isCompactDrawerOpen || undefined}
                   inert={isCompactDrawerOpen || undefined}
                   onLayoutChanged={(_, meta) => {
-                    if (!isCompactWindow && meta.isUserInteraction)
+                    if (
+                      !isMobileWindow &&
+                      !isCompactWindow &&
+                      meta.isUserInteraction
+                    )
                       saveSidebarWidth();
                   }}
                 >
                   {/* Sidebar */}
                   <Panel
-                    key={isCompactWindow ? "compact" : "roomy"}
+                    key={showPersistentSidebar ? "roomy" : "compact"}
                     id="agent-chat-sidebar"
                     panelRef={sidebarPanelRef}
-                    defaultSize={isCompactWindow ? 0 : clampedSidebarWidth}
-                    minSize={isCompactWindow ? 0 : minSidebarWidth}
-                    maxSize={isCompactWindow ? 0 : maxSidebarWidth}
+                    defaultSize={
+                      showPersistentSidebar ? clampedSidebarWidth : 0
+                    }
+                    minSize={showPersistentSidebar ? minSidebarWidth : 0}
+                    maxSize={showPersistentSidebar ? maxSidebarWidth : 0}
                     groupResizeBehavior="preserve-pixel-size"
                     className="relative"
                   >
-                    {(!isCompactWindow || compactPanel) && (
+                    {(showPersistentSidebar || isCompactDrawerOpen) && (
                       <CompactDrawerPortal
                         compact={isCompactWindow}
                         container={bodyRef}
@@ -3098,7 +3248,7 @@ export function AgentWindow() {
                     )}
                   </Panel>
 
-                  {!isCompactWindow && (
+                  {showPersistentSidebar && (
                     <PanelResizeHandle
                       data-agent-sidebar-resize
                       className="group relative w-1 shrink-0 cursor-ew-resize bg-control-bg transition-colors hover:bg-accent/10"
@@ -3137,8 +3287,7 @@ export function AgentWindow() {
             />
           )
         )}
-    </div>,
-    getLayerRoot("agent")
+    </AgentSurface>
   );
   return (
     <>

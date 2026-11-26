@@ -9,7 +9,7 @@ import enUS from "@/locales/en-US.json";
 import { PRESET_BY_ID } from "@/modules/sql-editor/components/theme/presets";
 import type { SQLEditorTheme } from "@/modules/sql-editor/components/theme/types";
 import { type AccessGrant, AccessGrantSchema } from "@/types/proto-es/v1/access_grant_service_pb";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { createAgentStore, getAgentStateKey, useAgentStore } from "../store/agent";
 import { DEFAULT_AGENT_PREFERENCES, getAgentPreferencesKey } from "../store/preferences";
@@ -17,6 +17,8 @@ import type { AgentPageResource } from "../logic/chatContext";
 import { openAgentPageHelp } from "../logic/contextualHelp";
 import type { AccessGrantDraft } from "../logic/deniedQueryAccess";
 import type { AgentDraft } from "../logic/types";
+import { registerAgentSqlEditorHost } from "../logic/sqlEditorHost";
+import type { AgentSqlContextCapture, AgentSqlEditorSnapshot } from "../logic/sqlEditorContext";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -301,6 +303,29 @@ vi.mock("./AgentInput", () => ({
 }));
 
 let AgentWindow: typeof import("./AgentWindow").AgentWindow;
+
+const sqlSnapshot = (database = "instances/primary/databases/shared"): AgentSqlEditorSnapshot => ({
+  version: 1,
+  project: "projects/orders",
+  tab: { id: "sql-tab", mode: "SAVED_QUERY" },
+  connection: { database, project: "projects/orders", engine: Engine.POSTGRES, querySchema: "public" },
+  batchActive: false,
+});
+
+const sqlHost = () => {
+  const slot = document.createElement("div");
+  document.body.appendChild(slot);
+  let unregister: (() => void) | undefined;
+  return {
+    update(capture: AgentSqlContextCapture) {
+      unregister = registerAgentSqlEditorHost({
+        id: "sql-host", slot, mainColumn: slot, resizer: slot, paneRatio: 0.3,
+        captureContext: () => capture,
+      });
+    },
+    cleanup() { unregister?.(); slot.remove(); },
+  };
+};
 
 const renderIntoContainer = (element: ReactElement) => {
   const container = document.createElement("div");
@@ -1507,6 +1532,97 @@ test("shows an empty start on general pages without discarding the previous disc
 });
 
 describe("AgentWindow", () => {
+  test("tracks the SQL slot without remounting the composer or changing floating preferences", () => {
+    const store = useAgentStore.getState();
+    const view = renderIntoContainer(<AgentWindow />);
+    const mainColumn = document.createElement("div");
+    const slot = document.createElement("div");
+    const resizer = document.createElement("div");
+    document.body.appendChild(mainColumn);
+    mainColumn.append(resizer, slot);
+    let available = 960;
+    let top = 100;
+    vi.spyOn(mainColumn, "getBoundingClientRect").mockImplementation(() => new DOMRect(0, 0, available, 800));
+    vi.spyOn(resizer, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 8, 800));
+    vi.spyOn(slot, "getBoundingClientRect").mockImplementation(() => new DOMRect(500, top, parseFloat(slot.style.width) || 0, 700));
+    const notifyResize = new Set<() => void>();
+    vi.stubGlobal("ResizeObserver", class {
+      constructor(private callback: () => void) {}
+      observe(element: HTMLElement) { if (element === mainColumn) notifyResize.add(this.callback); }
+      disconnect() { notifyResize.delete(this.callback); }
+    });
+    let unregister = () => {};
+    let unregisterReplacement = () => {};
+    try {
+      view.render();
+      const chat = store.ensureCurrentChat(undefined, "projects/orders");
+      const controller = new AbortController();
+      act(() => {
+        store.setDraft(chat.id, {text: "Unsent follow-up"});
+        store.startChatRun(chat.id, {path: "/", title: "Orders"});
+        store.setAbortController(chat.id, controller);
+        store.awaitUser(chat.id, {toolCallId: "confirm", kind: "confirm", prompt: "Proceed?"});
+      });
+      const input = screen.getByTestId("agent-input");
+      const frame = input.closest<HTMLElement>("[data-agent-window]")!;
+      act(() => fireEvent.change(screen.getByRole("textbox", {name:"Mock pending answer"}), {target:{value:"My answer"}}));
+      const floatSize = {...useAgentStore.getState().size};
+      act(() => {
+        unregister = registerAgentSqlEditorHost({ id: "editor", mainColumn, slot, resizer, paneRatio: 0.8, captureContext: () => ({kind: "pending"}) });
+      });
+      expect(frame.dataset.agentPresentation).toBe("sql-editor-docked");
+      expect(frame.parentElement).toBe(getLayerRoot("agent"));
+      expect(slot.style.width).toBe("472px");
+      expect(frame).toHaveStyle({left:"500px",top:"100px",width:"472px",height:"700px"});
+      expect(frame.querySelector("[data-agent-window-resize-zone]")).toBeNull();
+      top = 56;
+      act(() => mainColumn.dispatchEvent(new Event("scroll")));
+      expect(frame.style.top).toBe("56px");
+      available = 1300;
+      act(() => notifyResize.forEach((listener) => listener()));
+      expect(slot.style.width).toBe("640px");
+      available = 959;
+      act(() => notifyResize.forEach((listener) => listener()));
+      expect(frame.dataset.agentPresentation).toBe("sql-editor-overlay");
+      expect(slot.style.width).toBe("");
+      expect(frame.style.left).toBe("");
+      expect(screen.getByTestId("agent-input")).toBe(input);
+      expect(screen.getByRole("textbox", {name:"Mock pending answer"})).toHaveValue("My answer");
+      expect(mocks.inputUnmounted).not.toHaveBeenCalled();
+      available = 1100;
+      const replacement = document.createElement("div");
+      mainColumn.appendChild(replacement);
+      vi.spyOn(replacement, "getBoundingClientRect").mockImplementation(() =>
+        new DOMRect(700, 80, parseFloat(replacement.style.width) || 0, 600));
+      act(() => {
+        unregisterReplacement = registerAgentSqlEditorHost({ id: "new-editor", mainColumn, slot: replacement, resizer, paneRatio: 0.3, captureContext: () => ({kind: "pending"}) });
+      });
+      act(unregister);
+      expect(frame.dataset.agentPresentation).toBe("sql-editor-docked");
+      expect(replacement.style.width).toBe("460px");
+      expect(frame.style.left).toBe("700px");
+      expect(slot.style.width).toBe("");
+      expect(screen.getByTestId("agent-input")).toBe(input);
+      expect(useAgentStore.getState().size).toEqual(floatSize);
+      act(() => store.minimize());
+      expect(replacement.style.width).toBe("");
+      expect(mocks.inputUnmounted).toHaveBeenCalledOnce();
+      act(() => store.restore());
+      expect(replacement.style.width).toBe("460px");
+      expect(screen.getByTestId("agent-input")).toBeVisible();
+      act(unregisterReplacement);
+      expect(screen.getByTestId("agent-input").closest("[data-agent-window]")).toHaveAttribute("data-agent-presentation", "floating");
+      expect(replacement.style.width).toBe("");
+      expect(store.getDraft(chat.id)?.text).toBe("Unsent follow-up");
+      expect(useAgentStore.getState().pendingAskByChatId[chat.id]?.toolCallId).toBe("confirm");
+      expect(controller.signal.aborted).toBe(false);
+    } finally {
+      act(unregister);
+      act(unregisterReplacement);
+      view.unmount();
+      mainColumn.remove();
+    }
+  });
   test("does not offer execution recovery when the archived chat has no input handler", () => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ title: "Archived question", context: mocks.workspace.name });
@@ -4274,6 +4390,164 @@ describe("AgentWindow", () => {
     unmount();
   });
 
+  test("holds SQL contextual suggestions until Project initialization resolves", () => {
+    mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+    const host = sqlHost();
+    host.update({ kind: "pending" });
+    const view = renderIntoContainer(<AgentWindow />);
+    try {
+      view.render();
+      const suggestion = document.body.querySelector<HTMLButtonElement>("[data-agent-contextual-suggestion]");
+      expect(suggestion).not.toBeNull();
+      expect(suggestion).toBeDisabled();
+      const chats = useAgentStore.getState().chats;
+      act(() => suggestion?.click());
+      expect(useAgentStore.getState().chats).toEqual(chats);
+      expect(getCurrentQueuedUserMessage()).toBeUndefined();
+    } finally { view.unmount(); host.cleanup(); }
+  });
+
+  test("moves to the selected SQL Project landing without rebinding the running chat", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders", workspaceName: mocks.workspace.name });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Keep investigating" });
+    store.setDraft(chat.id, { text: "Unsent Orders draft" });
+    store.startChatRun(chat.id);
+    const host = sqlHost();
+    const view = renderIntoContainer(<AgentWindow />);
+    try {
+      view.render();
+      act(() => host.update({ kind: "ready", snapshot: sqlSnapshot() }));
+      const messages = store.getMessages(chat.id);
+      mocks.currentContext = "projects/analytics";
+      mocks.pageResource = { kind: "project", name: "projects/analytics", project: "projects/analytics" };
+      act(() => host.update({ kind: "ready", snapshot: { version: 1, project: "projects/analytics" } }));
+      expect(document.body.querySelector('[data-agent-contextual-start="project"]')).not.toBeNull();
+      expect(document.body.querySelector("[data-agent-contextual-input]")?.textContent).toContain("Analytics");
+      expect(store.getChat(chat.id)).toMatchObject({ context: "projects/orders", status: "running" });
+      expect(store.getMessages(chat.id)).toEqual(messages);
+      expect(store.getDraft(chat.id).text).toBe("Unsent Orders draft");
+      expect(store.chats).toHaveLength(1);
+    } finally { view.unmount(); host.cleanup(); }
+  });
+
+  test("retains unsent SQL landing drafts with their selected Project", () => {
+    const host = sqlHost();
+    mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+    host.update({ kind: "ready", snapshot: { version: 1, project: "projects/orders" } });
+    const view = renderIntoContainer(<AgentWindow />);
+    const prompt = () => document.querySelector<HTMLTextAreaElement>("[data-agent-contextual-input] textarea")!;
+    const selectProject = (project: string) => {
+      mocks.currentContext = project;
+      mocks.pageResource = { kind: "project", name: project, project };
+      act(() => host.update({ kind: "ready", snapshot: { version: 1, project } }));
+    };
+    try {
+      view.render();
+      const chatCount = useAgentStore.getState().chats.length;
+      fireEvent.change(prompt(), { target: { value: "Unsent Orders question" } });
+      selectProject("projects/analytics");
+      expect(prompt()).toHaveValue("");
+      fireEvent.change(prompt(), { target: { value: "Unsent Analytics question" } });
+      selectProject("projects/orders");
+      expect(prompt()).toHaveValue("Unsent Orders question");
+      selectProject("projects/analytics");
+      expect(prompt()).toHaveValue("Unsent Analytics question");
+      expect(useAgentStore.getState().chats).toHaveLength(chatCount);
+    } finally { view.unmount(); host.cleanup(); }
+  });
+
+  test.each(["pending", "other-project"])("keeps explicit page help independent of %s SQL scope", (change) => {
+    const host = sqlHost();
+    host.update({ kind: "ready", snapshot: sqlSnapshot() });
+    const view = renderIntoContainer(<AgentWindow />);
+    const onStart = vi.fn(() => false);
+    let revoke = () => {};
+    try {
+      view.render();
+      act(() => { revoke = openAgentPageHelp({ page: { kind: "global-masking" }, onStart }); });
+      fireEvent.change(document.querySelector<HTMLTextAreaElement>("[data-agent-contextual-input] textarea")!, { target: { value: "Explain this exact draft" } });
+      if (change === "other-project") {
+        mocks.currentContext = "projects/analytics";
+        mocks.pageResource = { kind: "project", name: "projects/analytics", project: "projects/analytics" };
+      }
+      act(() => host.update(change === "pending" ? { kind: "pending" } : { kind: "ready", snapshot: { version: 1, project: "projects/analytics" } }));
+      expect(document.querySelector('[data-agent-contextual-start="global-masking"]')).not.toBeNull();
+      const send = document.querySelector<HTMLButtonElement>("[data-agent-contextual-input] [data-agent-send]")!;
+      expect(send).toBeEnabled();
+      act(() => send.click());
+      expect(onStart).toHaveBeenCalledWith("Explain this exact draft");
+      expect(document.querySelector("[data-agent-contextual-input] textarea")).toHaveValue("Explain this exact draft");
+    } finally { act(() => revoke()); view.unmount(); host.cleanup(); }
+  });
+
+  test("captures SQL context for the contextual first Send without a database", () => {
+    mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+    const host = sqlHost();
+    const snapshot: AgentSqlEditorSnapshot = { version: 1, project: "projects/orders" };
+    host.update({ kind: "ready", snapshot });
+    const view = renderIntoContainer(<AgentWindow />);
+    try {
+      view.render();
+      act(() => document.body.querySelector<HTMLButtonElement>("[data-agent-contextual-suggestion]")?.click());
+      expect(getCurrentQueuedUserMessage()?.page.sqlEditor).toEqual(snapshot);
+      expect(useAgentStore.getState().getChat(useAgentStore.getState().currentChatId)?.context).toBe("projects/orders");
+    } finally { view.unmount(); host.cleanup(); }
+  });
+
+  test.each(["pending", "other-project"])("submits explicit page help without ambient %s SQL context", (change) => {
+    const host = sqlHost();
+    host.update({ kind: "ready", snapshot: sqlSnapshot() });
+    const view = renderIntoContainer(<AgentWindow />);
+    let revoke = () => {};
+    try {
+      view.render();
+      act(() => { revoke = openAgentPageHelp({ page: { kind: "global-masking" } }); });
+      act(() => host.update(change === "pending" ? { kind: "pending" } : { kind: "ready", snapshot: { version: 1, project: "projects/analytics" } }));
+      act(() => document.querySelector<HTMLButtonElement>("[data-agent-contextual-suggestion]")?.click());
+      expect(getCurrentQueuedUserMessage()).toMatchObject({ text: "agent.contextual-start.masking-global-effect" });
+      expect(getCurrentQueuedUserMessage()?.page.sqlEditor).toBeUndefined();
+      expect(useAgentStore.getState().getChat(useAgentStore.getState().currentChatId)?.context).toBe(mocks.workspace.name);
+    } finally { act(() => revoke()); view.unmount(); host.cleanup(); }
+  });
+
+  test("keeps an SQL landing draft when queue admission is rejected", () => {
+    const host = sqlHost();
+    mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+    host.update({ kind: "ready", snapshot: { version: 1, project: "projects/orders" } });
+    const view = renderIntoContainer(<AgentWindow />);
+    const queue = vi.spyOn(useAgentStore.getState(), "queueUserMessage").mockImplementation(() => {});
+    try {
+      view.render();
+      fireEvent.change(document.querySelector<HTMLTextAreaElement>("[data-agent-contextual-input] textarea")!, { target: { value: "Keep my question" } });
+      act(() => document.querySelector<HTMLButtonElement>("[data-agent-contextual-input] [data-agent-send]")?.click());
+      expect(queue).toHaveBeenCalled();
+      expect(document.querySelector("[data-agent-contextual-input] textarea")).toHaveValue("Keep my question");
+      expect(getCurrentQueuedUserMessage()).toBeUndefined();
+    } finally { queue.mockRestore(); view.unmount(); host.cleanup(); }
+  });
+
+  test.each([false, true])("Ask next freezes its source SQL snapshot and rejects mismatches=%s", (mismatch) => {
+    const store = useAgentStore.getState();
+    const original = sqlSnapshot();
+    const live = sqlSnapshot("projects/orders/instances/secondary/databases/shared");
+    const chat = store.createChat({ context: "projects/orders", page: { path: "/sql-editor", title: "SQL Editor", sqlEditor: live } });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Original question", metadata: { sqlEditor: original } });
+    const answer = store.addMessage({ chatId: chat.id, role: "assistant", content: "Original answer", metadata: { route: "/sql-editor", sqlEditor: mismatch ? live : original } })!;
+    const host = sqlHost();
+    host.update({ kind: "ready", snapshot: live });
+    const view = renderIntoContainer(<AgentWindow />);
+    try {
+      view.render();
+      act(() => document.body.querySelector<HTMLButtonElement>('[data-testid="agent-continue-with-source"]')?.click());
+      if (mismatch) expect(getCurrentQueuedUserMessage()).toBeUndefined();
+      else {
+        expect(getCurrentQueuedUserMessage()?.page.sqlEditor).toEqual(original);
+        expect(getCurrentQueuedUserMessage()?.followUpSourceId).toBe(answer.id);
+      }
+    } finally { view.unmount(); host.cleanup(); }
+  });
+
   test("queues a response follow-up to send immediately", () => {
     const store = useAgentStore.getState();
     const chat = store.ensureCurrentChat(undefined, "projects/orders");
@@ -4370,15 +4644,22 @@ describe("AgentWindow", () => {
     const store = useAgentStore.getState();
     const chat = store.ensureCurrentChat(undefined, "projects/orders");
     store.addMessage({ chatId: chat.id, role: "user", content: "Query contacts" });
-    const source = store.addMessage({ chatId: chat.id, role: "assistant", content: "Contacts returned." })!;
+    const source = store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Contacts returned.",
+      metadata: { route: "/projects/orders/databases/contacts" },
+    })!;
     store.addMessage({ chatId: chat.id, role: "user", content: "Query employees" });
     store.addMessage({ chatId: chat.id, role: "assistant", content: "Employees returned." });
     store.setDraft(chat.id, { text: "Keep my unsent draft." });
     const draft = structuredClone(store.getDraft(chat.id));
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
-    render();
+    const previousTitle = document.title;
+    document.title = "Employees";
 
     try {
+      render();
       act(() => document.body.querySelector<HTMLButtonElement>(
         '[data-testid="agent-continue-with-source"]'
       )?.click());
@@ -4386,9 +4667,12 @@ describe("AgentWindow", () => {
         chatId: chat.id,
         text: "How can I request access to unmasked data?",
         followUpSourceId: source.id,
+        page: { path: "/projects/orders/databases/contacts", title: "" },
       });
+      expect(getCurrentQueuedUserMessage()?.page.sqlEditor).toBeUndefined();
       expect(store.getDraft(chat.id)).toEqual(draft);
     } finally {
+      document.title = previousTitle;
       unmount();
     }
   });

@@ -1425,7 +1425,10 @@ export function AgentChat({
                         appearance="secondary"
                         size="xs"
                         aria-label={t("agent.resend-message")}
-                        disabled={isResendBlocked}
+                        disabled={
+                          isResendBlocked ||
+                          msg.metadata?.sqlEditorContextInvalid
+                        }
                         onClick={() => onResend(msg.id)}
                       >
                         <Repeat2 className="size-3.5" />

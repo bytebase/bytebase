@@ -1,5 +1,6 @@
 import { normalizeAgentDiagnosticCapability } from "./diagnosticCapability";
 import { normalizeAgentResourceReferences } from "./resourceMention";
+import { normalizeAgentChatSnapshot } from "./sqlEditorContext";
 import { normalizeModelCallUsage } from "./tokenUsage";
 import type {
   AgentAttemptReservation,
@@ -252,9 +253,6 @@ export function normalizeRunBindings(
 ): AgentRunBindings | undefined {
   if (
     !record(value) ||
-    !record(value.page) ||
-    typeof value.page.path !== "string" ||
-    typeof value.page.title !== "string" ||
     (value.pageToolPath !== undefined &&
       typeof value.pageToolPath !== "string") ||
     !Array.isArray(value.references) ||
@@ -263,6 +261,28 @@ export function normalizeRunBindings(
     (value.instanceName !== undefined && typeof value.instanceName !== "string")
   )
     return undefined;
+  const page = normalizeAgentChatSnapshot(value.page);
+  if (!page) return undefined;
+  let executionOrigin: AgentRunBindings["executionOrigin"];
+  if (value.executionOrigin !== undefined) {
+    const origin = value.executionOrigin;
+    if (
+      !record(origin) ||
+      origin.kind !== "sql-response" ||
+      typeof origin.messageId !== "string" ||
+      !origin.messageId.trim() ||
+      !count(origin.blockIndex) ||
+      typeof origin.sourceHash !== "string" ||
+      !/^[0-9a-f]{64}$/.test(origin.sourceHash)
+    )
+      return undefined;
+    executionOrigin = {
+      kind: origin.kind,
+      messageId: origin.messageId,
+      blockIndex: origin.blockIndex,
+      sourceHash: origin.sourceHash,
+    };
+  }
   const references = normalizeAgentResourceReferences(value.references);
   if (references.length !== value.references.length) return undefined;
   const capability = normalizeAgentDiagnosticCapability(value.capability);
@@ -270,7 +290,7 @@ export function normalizeRunBindings(
   const maskingPage = normalizeRunMaskingPage(value.maskingPage);
   if (value.maskingPage !== undefined && !maskingPage) return undefined;
   return {
-    page: { path: value.page.path, title: value.page.title },
+    page,
     ...(value.pageToolPath === undefined
       ? {}
       : { pageToolPath: value.pageToolPath as string }),
@@ -284,6 +304,7 @@ export function normalizeRunBindings(
       : { instanceName: value.instanceName as string }),
     ...(capability ? { capability } : {}),
     ...(maskingPage ? { maskingPage } : {}),
+    ...(executionOrigin ? { executionOrigin } : {}),
   };
 }
 

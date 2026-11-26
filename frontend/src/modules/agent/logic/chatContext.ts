@@ -20,6 +20,7 @@ import {
 import { projectNamePrefix, workspaceNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
 import { isValidDatabaseName } from "@/types/v1/database";
+import { getCurrentAgentSqlEditorContext } from "./sqlEditorHost";
 
 export function resolveChatContext(
   route: ReactRoute,
@@ -41,6 +42,16 @@ export function getCurrentChatContext(): string | undefined {
     state.currentUser?.workspace ||
     state.serverInfo?.workspace ||
     "";
+  const sql = getCurrentAgentSqlEditorContext();
+  if (sql) {
+    if (sql.kind === "pending") return undefined;
+    return (
+      sql.snapshot.project ??
+      (workspaceName.startsWith(workspaceNamePrefix)
+        ? workspaceName
+        : undefined)
+    );
+  }
   return resolveChatContext(router.currentRoute.value, workspaceName);
 }
 
@@ -223,5 +234,10 @@ export function resolveAgentPageResource(
 }
 
 export function getCurrentAgentPageResource(): AgentPageResource | undefined {
+  const sql = getCurrentAgentSqlEditorContext();
+  if (sql) {
+    const project = sql.kind === "ready" ? sql.snapshot.project : undefined;
+    return project ? { kind: "project", name: project, project } : undefined;
+  }
   return resolveAgentPageResource(router.currentRoute.value);
 }

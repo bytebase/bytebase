@@ -2,6 +2,10 @@ import type { JsonObject } from "@bufbuild/protobuf";
 import type { DeniedQueryRequestDraft } from "@/modules/sql-editor/model/accessGrantDraft";
 import type { AgentMaskingPageResource } from "./chatContext";
 import type { MaskingSkillSection } from "./skills";
+import type {
+  AgentSqlActionProvenance,
+  AgentSqlEditorSnapshot,
+} from "./sqlEditorContext";
 
 export interface ToolDefinition {
   name: string;
@@ -64,6 +68,12 @@ export interface AgentRunBindings {
   capability?: AgentDiagnosticCapability;
   instanceName?: string;
   maskingPage?: AgentMaskingPageResource;
+  executionOrigin?: {
+    kind: "sql-response";
+    messageId: string;
+    blockIndex: number;
+    sourceHash: string;
+  };
 }
 
 export interface AgentRunCheckpoint {
@@ -107,6 +117,7 @@ export interface AgentStoragePressure {
 export interface AgentChatSnapshot {
   path: string;
   title: string;
+  sqlEditor?: AgentSqlEditorSnapshot;
 }
 
 export type AgentEvidenceReference =
@@ -195,6 +206,8 @@ export interface AgentResourceMention {
 
 export interface AgentDraft {
   text: string;
+  /** Frozen queued SQL origin; null keeps an invalid saved origin blocked until edited. */
+  queuedSqlPage?: AgentChatSnapshot | null;
   followUpSourceId?: string;
   mentions?: AgentResourceMention[];
   project?: {
@@ -261,6 +274,10 @@ export interface AgentActionOrigin {
 }
 
 export interface AgentMessageMetadata {
+  sqlEditor?: AgentSqlEditorSnapshot;
+  sqlActionProvenance?: AgentSqlActionProvenance;
+  // Keep a malformed historical SQL turn distinct from a turn without SQL context.
+  sqlEditorContextInvalid?: true;
   apiAttemptId?: string;
   // Lookup provenance only; the source answer grants no authority for this turn.
   followUpSourceId?: string;

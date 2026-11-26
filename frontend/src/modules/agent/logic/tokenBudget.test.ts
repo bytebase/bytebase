@@ -29,6 +29,57 @@ test("normalizes the optional page-tool binding on a checkpoint", () => {
   ).toBeUndefined();
 });
 
+test("preserves the frozen SQL page and deterministic origin in run checkpoints", () => {
+  const page = {
+    path: "/sql-editor",
+    title: "SQL Editor",
+    sqlEditor: { version: 1, project: "projects/demo" },
+  };
+  const executionOrigin = {
+    kind: "sql-response",
+    messageId: "answer",
+    blockIndex: 0,
+    sourceHash: "a".repeat(64),
+  };
+  const bindings = {
+    page,
+    executionOrigin,
+    references: [],
+    runMode: "default",
+  };
+  const checkpoint = {
+    version: 1,
+    runId: "run",
+    suspension: "interrupted",
+    rootUserMessageId: "root",
+    throughMessageId: "root",
+    bindings,
+    maskingSections: [],
+    phase: "working",
+  };
+  expect(normalizeRunBindings(bindings)).toEqual(bindings);
+  expect(normalizeRunCheckpoint(checkpoint)).toEqual(checkpoint);
+  expect(
+    normalizeRunCheckpoint({
+      ...checkpoint,
+      bindings: { ...bindings, page: { ...page, sqlEditor: null } },
+    })
+  ).toBeUndefined();
+  for (const patch of [
+    { kind: "unknown" },
+    { messageId: "" },
+    { blockIndex: -1 },
+    { blockIndex: 0.5 },
+    { sourceHash: "not-a-hash" },
+  ])
+    expect(
+      normalizeRunBindings({
+        ...bindings,
+        executionOrigin: { ...executionOrigin, ...patch },
+      })
+    ).toBeUndefined();
+});
+
 import type { AgentChat, AgentModelAttempt } from "./types";
 
 const attempt = (ordinal: number, totalTokens?: number): AgentModelAttempt => ({

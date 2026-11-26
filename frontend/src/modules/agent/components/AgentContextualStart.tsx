@@ -35,6 +35,7 @@ interface AgentContextualStartProps {
   maskingRuleEditor?: boolean;
   loading: boolean;
   canStart: boolean;
+  contextPending?: boolean;
   hasCurrentChat: boolean;
   draft: AgentDraft;
   onDraftChange: (draft: AgentDraft) => void;
@@ -59,6 +60,7 @@ export function AgentContextualStart({
   maskingRuleEditor = false,
   loading,
   canStart,
+  contextPending = false,
   hasCurrentChat,
   draft,
   onDraftChange,
@@ -81,7 +83,8 @@ export function AgentContextualStart({
     page.kind === "plan" ||
     page.kind === "issue" ||
     (page.kind === "plan-create" && Boolean(page.databaseName));
-  const inputDisabled = !canStart || showAIConfigurationRecovery;
+  const inputDisabled =
+    !canStart || contextPending || showAIConfigurationRecovery;
   const resources = useAgentResourceDraft({
     draft,
     onDraftChange,
@@ -94,6 +97,7 @@ export function AgentContextualStart({
   });
   const canSend =
     canStart &&
+    !contextPending &&
     !showAIConfigurationRecovery &&
     (!requiresReference || (!loading && Boolean(reference))) &&
     !resources.hasInvalidReferences &&
@@ -260,7 +264,9 @@ export function AgentContextualStart({
                     appearance="secondary"
                     size="sm"
                     className="h-auto w-full min-w-0 justify-between rounded-xs py-1.5 text-left whitespace-normal hover:text-accent"
-                    disabled={!canStart || loading || !reference}
+                    disabled={
+                      !canStart || contextPending || loading || !reference
+                    }
                     onClick={() => onStart("", reference)}
                     data-agent-contextual-mention
                   >
@@ -286,7 +292,11 @@ export function AgentContextualStart({
                     appearance="secondary"
                     size="sm"
                     className="h-auto w-full min-w-0 justify-between rounded-xs py-1.5 text-left whitespace-normal hover:text-accent"
-                    disabled={!canStart || (requiresReference && !reference)}
+                    disabled={
+                      !canStart ||
+                      contextPending ||
+                      (requiresReference && !reference)
+                    }
                     onClick={() => onStart(suggestion, reference)}
                     data-agent-contextual-suggestion
                   >
@@ -307,12 +317,18 @@ export function AgentContextualStart({
               {t("agent.contextual-start.active-request")}
             </p>
           )}
+          {contextPending && (
+            <p role="status" className="mt-4 text-sm text-control-light">
+              {t("common.loading")}
+            </p>
+          )}
           {hasCurrentChat && (
             <Button
               appearance="solid"
               size="sm"
               className="mt-4"
               onClick={onContinue}
+              disabled={contextPending}
               data-agent-contextual-continue
             >
               {t("agent.contextual-start.continue-chat")}
@@ -334,6 +350,7 @@ export function AgentContextualStart({
               contextTitle={contextTitle}
               workspace={workspace}
               contextDisabled
+              contextReadOnly
               onSelectContext={() => false}
               chat={null}
               showEmptyUsage

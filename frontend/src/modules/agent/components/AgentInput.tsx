@@ -1,3 +1,4 @@
+import { isEqual } from "lodash-es";
 import { AlertTriangle, ChevronRight, Send } from "lucide-react";
 import {
   type RefObject,
@@ -39,6 +40,7 @@ import {
 import { priorUncertainApiAttemptIds } from "../logic/apiAttempt";
 import { getAgentApiRecoveryGuidance } from "../logic/apiResponseGuidance";
 import { parseCallApiResult } from "../logic/callApiResult";
+import { captureAgentPageSnapshot } from "../logic/capturePage";
 import {
   type AgentMaskingPageResource,
   getCurrentAgentPageResource,
@@ -110,6 +112,11 @@ import {
   getMaskingSkillGuidance,
   type MaskingSkillSection,
 } from "../logic/skills";
+import { getAgentSourceSqlEditorContext } from "../logic/sqlEditorContext";
+import {
+  getCurrentAgentSqlEditorContext,
+  getRegisteredAgentSqlEditorHost,
+} from "../logic/sqlEditorHost";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
 import { apiCallNeedsConfirmation } from "../logic/tools/apiMethodClass";
 import { extractDatabaseOverviewEvidence } from "../logic/tools/databaseOverview";
@@ -128,6 +135,7 @@ import { createWorkspaceAttentionTool } from "../logic/tools/workspaceAttention"
 import { extractWorkspaceOverviewEvidence } from "../logic/tools/workspaceOverview";
 import type {
   AgentAnswerEvidence,
+  AgentChatSnapshot,
   AgentDraft,
   AgentEvidence,
   AgentHandoff,
@@ -234,6 +242,12 @@ const permissionDomContext = (
 ) => {
   const chat = useAgentStore.getState().getChat(chatId);
   if (!runId || !chat) return;
+  if (
+    chat.runCheckpoint?.bindings.page.sqlEditor ||
+    chat.page?.sqlEditor ||
+    getRegisteredAgentSqlEditorHost()
+  )
+    return;
   const runMode = chat.runMode ?? "default";
   const project = chat.runCheckpoint?.bindings.context ?? chat.context;
   const scopeKey =
@@ -251,6 +265,7 @@ const permissionDomContext = (
         live = store.getChat(chatId);
       if (
         !isCurrentChatScope(scope, chatId) ||
+        Boolean(getRegisteredAgentSqlEditorHost()) ||
         store.currentChatId !== chatId ||
         !live ||
         live.archived ||
@@ -425,6 +440,116 @@ const getCurrentPageSnapshot = () => ({
   title: document.title,
 });
 
+function sqlAnswerMetadata(
+  page: AgentChatSnapshot,
+  runId: string,
+  runMode: AgentRunMode,
+  diagnostic: boolean
+) {
+  return {
+    route: page.path,
+    runId,
+    ...(page.sqlEditor
+      ? {
+          sqlEditor: page.sqlEditor,
+          sqlActionProvenance: {
+            version: 1 as const,
+            runId,
+            runMode,
+            diagnostic,
+          },
+        }
+      : {}),
+  };
+}
+
+function sourceMessagePage(
+  message: AgentMessage,
+  fallback: AgentChatSnapshot
+): AgentChatSnapshot {
+  return message.metadata?.sqlEditor || getRegisteredAgentSqlEditorHost()
+    ? {
+        path: message.metadata?.route ?? "",
+        title: "",
+        ...(message.metadata?.sqlEditor
+          ? { sqlEditor: message.metadata.sqlEditor }
+          : {}),
+      }
+    : { path: fallback.path, title: fallback.title };
+}
+
+function followUpSourcePage(
+  messages: AgentMessage[],
+  id: string,
+  references: AgentResourceReference[]
+): AgentChatSnapshot | undefined {
+  const context = getAgentSourceSqlEditorContext(messages, id);
+  const index = messages.findIndex((message) => message.id === id);
+  const source = messages[index];
+  if (context?.kind === "ready") {
+    const sameTargets = (expected: AgentResourceReference[]) =>
+      expected.length === references.length &&
+      expected.every((a) =>
+        references.some(
+          (b) =>
+            a.kind === b.kind && a.name === b.name && a.project === b.project
+        )
+      );
+    const sourceReferences = normalizeAgentResourceReferences(
+      source.metadata?.resourceReferences,
+      source.metadata?.resourceReference
+    );
+    const turnReferences = getCurrentTurnResourceReferences(
+      messages.slice(0, index)
+    );
+    if (
+      !sameTargets(sourceReferences) ||
+      (turnReferences.length && !sameTargets(turnReferences))
+    )
+      return;
+    return {
+      path: source.metadata?.route ?? "",
+      title: "",
+      sqlEditor: context.snapshot,
+    };
+  }
+  if (
+    context?.kind === "pending" &&
+    (getRegisteredAgentSqlEditorHost() ||
+      messages.some(
+        ({ metadata }) =>
+          metadata?.sqlEditor || metadata?.sqlEditorContextInvalid
+      ))
+  )
+    return;
+  return source
+    ? sourceMessagePage(source, getCurrentPageSnapshot())
+    : getCurrentPageSnapshot();
+}
+
+function matchesQueuedSource(
+  messages: AgentMessage[],
+  entry: {
+    id: string;
+    page: AgentChatSnapshot;
+    followUpSourceId?: string;
+    resourceReference?: AgentResourceReference;
+    resourceReferences?: AgentResourceReference[];
+  }
+) {
+  if (entry.followUpSourceId === undefined) return true;
+  const index = messages.findIndex((message) => message.id === entry.id);
+  const source = followUpSourcePage(
+    index < 0 ? messages : messages.slice(0, index),
+    entry.followUpSourceId,
+    normalizeAgentResourceReferences(
+      entry.resourceReferences,
+      entry.resourceReference
+    )
+  );
+  return Boolean(source && isEqual(source.sqlEditor, entry.page.sqlEditor));
+}
+
 interface RecentActivityEvent {
   actor: string;
   action: string;
@@ -556,11 +681,13 @@ const mergeOverviewEvidence = (
 // ---------------------------------------------------------------------------
 
 export function AgentInput({
+  onNewChat,
   retryActionRef,
   resendActionRef,
   focusActionRef,
   freeSpaceAndRetryActionRef,
 }: {
+  onNewChat?: () => void;
   retryActionRef?: RefObject<(() => void) | null>;
   resendActionRef?: RefObject<((messageId: string) => void) | null>;
   focusActionRef?: RefObject<((atEnd?: boolean) => void) | null>;
@@ -583,6 +710,7 @@ export function AgentInput({
   );
   const currentChatId = useAgentStore((s) => s.currentChatId);
   const landingContext = useAgentStore((s) => s.landingContext);
+  const sqlHost = useAgentStore((s) => s.sqlEditorHost);
   const workspaceName = useAgentStore((s) => s.workspaceName);
   const userEmail = useAgentStore((s) => s.userEmail);
   const localLeasePending = useSyncExternalStore(
@@ -613,9 +741,27 @@ export function AgentInput({
   );
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
   const currentUserName = useAppStore((s) => s.currentUser?.name ?? "");
-  const context = currentChat
-    ? currentChat.context
-    : (landingContext ?? getCurrentChatContext() ?? workspaceName ?? undefined);
+  const editor = sqlHost && getCurrentAgentSqlEditorContext();
+  const editorScoped = Boolean(editor);
+  const editorScope =
+    editor?.kind === "ready"
+      ? (editor.snapshot.project ?? workspaceName ?? undefined)
+      : undefined;
+  const foreignChat = Boolean(
+    editorScope &&
+      currentChat &&
+      currentChat.context !== editorScope &&
+      (currentChat.context || currentMessages.length)
+  );
+  const context = editorScoped
+    ? (currentChat?.context ??
+      (currentMessages.length ? undefined : editorScope))
+    : currentChat
+      ? currentChat.context
+      : (landingContext ??
+        getCurrentChatContext() ??
+        workspaceName ??
+        undefined);
   const projectContext = context?.startsWith(projectNamePrefix)
     ? context
     : undefined;
@@ -1090,6 +1236,8 @@ export function AgentInput({
   const hasAdditionalMention =
     draftMentions.length > 0 && hasUnboundResourceMention(input, draftMentions);
   const isSendDisabled =
+    (!currentPendingAsk && currentDraft?.queuedSqlPage === null) ||
+    (!currentPendingAsk && editorScoped && (!editorScope || foreignChat)) ||
     !executionAvailable ||
     currentChat?.archived ||
     currentChat?.status === "paused" ||
@@ -1116,6 +1264,7 @@ export function AgentInput({
 
   const selectContext = useCallback(
     (resource: string) => {
+      if (getRegisteredAgentSqlEditorHost()) return false;
       const store = useAgentStore.getState();
       if (!store.currentChatId) {
         store.setLandingDraft(store.landingDraft, resource);
@@ -1419,6 +1568,7 @@ export function AgentInput({
         chat?.apiAttempts?.length ? chat.apiAttempts : undefined,
         {
           includeActionReceipts: !chat?.capability,
+          ...(chat?.capability ? { includeHistoricalDatabase: false } : {}),
           ownerEmail: useAgentStore.getState().userEmail ?? undefined,
         }
       );
@@ -1469,7 +1619,7 @@ export function AgentInput({
   const runChat = useCallback(
     async (
       chatId: string,
-      page: { path: string; title: string },
+      page: AgentChatSnapshot,
       runId: string,
       runMode: AgentRunMode,
       skipReferencePreflight = false,
@@ -1491,9 +1641,27 @@ export function AgentInput({
       const rawCapability =
         bindings?.capability ?? store.getChat(chatId)?.capability;
       const capability = normalizeAgentDiagnosticCapability(rawCapability);
+      const answerMetadata = sqlAnswerMetadata(
+        page,
+        runId,
+        runMode,
+        rawCapability !== undefined
+      );
       const turnReferences = getCurrentTurnResourceReferences(
         store.getMessages(chatId)
       );
+      const sqlProject = page.sqlEditor?.project;
+      if (
+        sqlProject &&
+        [...turnReferences, ...(bindings?.references ?? [])].some(
+          (reference) => reference.project !== sqlProject
+        )
+      ) {
+        store.setChatStatus(chatId, "error", {
+          lastError: t("agent.contextual-start.resource-unavailable"),
+        });
+        return;
+      }
       const scopeMismatch =
         capability &&
         turnReferences.some((reference) =>
@@ -1510,7 +1678,7 @@ export function AgentInput({
           content: scopeMismatch
             ? t("agent.diagnostic-help.scope-mismatch")
             : t("agent.contextual-start.resource-unavailable"),
-          metadata: { route: page.path, runId },
+          metadata: answerMetadata,
         });
         store.finishChatRun(chatId);
         return;
@@ -1540,11 +1708,12 @@ export function AgentInput({
       const referencedDatabase = databaseReference?.name;
       const referencedIssue = issueReference?.name;
       const referencedPlan = planReference?.name;
-      const currentPageResource = capability
-        ? undefined
-        : frozenPageContext
-          ? frozenPageContext.maskingPage
-          : getCurrentAgentPageResource();
+      const currentPageResource =
+        capability || page.sqlEditor
+          ? undefined
+          : frozenPageContext
+            ? frozenPageContext.maskingPage
+            : getCurrentAgentPageResource();
       const maskingPage = bindings
         ? bindings.maskingPage
         : isAgentMaskingPageResource(currentPageResource)
@@ -1552,7 +1721,7 @@ export function AgentInput({
           : undefined;
       const instanceName = bindings
         ? bindings.instanceName
-        : referencedProject
+        : referencedProject || page.sqlEditor
           ? undefined
           : resolveInstanceNameFromPagePath(page.path);
       const controller = new AbortController();
@@ -1653,6 +1822,9 @@ export function AgentInput({
         resumeCheckpoint?.pageToolPath ??
         bindings?.pageToolPath ??
         (frozenPageContext ? page.path : undefined);
+      const canUseCurrentChat = () =>
+        isCurrentChatScope(store, chatId) &&
+        useAgentStore.getState().currentChatId === chatId;
       const executor = createToolExecutor(router, {
         chatId,
         runId,
@@ -1672,6 +1844,8 @@ export function AgentInput({
                   chat = live.getChat(chatId);
                 return (
                   ownsInvocation() &&
+                  !page.sqlEditor &&
+                  !getRegisteredAgentSqlEditorHost() &&
                   live.canUseAgentExecution() &&
                   !!chat &&
                   !chat.archived &&
@@ -1701,10 +1875,12 @@ export function AgentInput({
         pagePath: page.path,
         referencedDatabase,
         databaseChoiceProject: maskingResumeArgs?.project,
-        historicalDatabase: getHistoricalMaskingDatabase(
-          store.getMessages(chatId),
-          store.getChat(chatId)?.context
-        ),
+        historicalDatabase: capability
+          ? undefined
+          : getHistoricalMaskingDatabase(
+              store.getMessages(chatId),
+              store.getChat(chatId)?.context
+            ),
         referencedIssue,
         referencedPlan,
         maskingPage,
@@ -1715,9 +1891,11 @@ export function AgentInput({
             maskingSections.add(load.section);
           }
         },
+        canUseCurrentChat,
         canUseCurrentPage: () =>
-          isCurrentChatScope(store, chatId) &&
-          useAgentStore.getState().currentChatId === chatId &&
+          !page.sqlEditor &&
+          !getRegisteredAgentSqlEditorHost() &&
+          canUseCurrentChat() &&
           (pageToolPath === undefined ||
             getCurrentPageSnapshot().path === pageToolPath),
         onNavigate: () => {
@@ -1985,7 +2163,7 @@ export function AgentInput({
               chatId,
               role: "assistant",
               content: t("agent.project-reference-unavailable"),
-              metadata: { route: page.path, runId },
+              metadata: answerMetadata,
             });
             useAgentStore.getState().finishChatRun(chatId);
             return;
@@ -2056,7 +2234,7 @@ export function AgentInput({
               chatId,
               role: "assistant",
               content: t("agent.plan-reference-unavailable"),
-              metadata: { route: page.path, runId },
+              metadata: answerMetadata,
             });
             useAgentStore.getState().finishChatRun(chatId);
             return;
@@ -2128,7 +2306,7 @@ export function AgentInput({
               chatId,
               role: "assistant",
               content: t("agent.issue-reference-unavailable"),
-              metadata: { route: page.path, runId },
+              metadata: answerMetadata,
             });
             useAgentStore.getState().finishChatRun(chatId);
             return;
@@ -2193,7 +2371,7 @@ export function AgentInput({
               chatId,
               role: "assistant",
               content: t("agent.database-reference-unavailable"),
-              metadata: { route: page.path, runId },
+              metadata: answerMetadata,
             });
             useAgentStore.getState().finishChatRun(chatId);
             return;
@@ -2523,7 +2701,7 @@ export function AgentInput({
             chatId,
             role: "assistant",
             content: t("agent.provider-attempt-limit"),
-            metadata: { route: page.path, runId },
+            metadata: answerMetadata,
           });
         }
 
@@ -2599,8 +2777,7 @@ export function AgentInput({
             role: "assistant",
             content: finalText,
             metadata: {
-              route: page.path,
-              runId,
+              ...answerMetadata,
               ...(overviewEvidence ? { evidence: overviewEvidence } : {}),
               ...(handoff ? { handoff } : {}),
               ...(actions.length > 0 ? { actions } : {}),
@@ -2682,8 +2859,9 @@ export function AgentInput({
   const runRecentActivityStarter = useCallback(
     async (
       chatId: string,
-      page: { path: string; title: string },
+      page: AgentChatSnapshot,
       runId: string,
+      runMode: AgentRunMode,
       parent: string
     ) => {
       const store = useAgentStore.getState();
@@ -2709,7 +2887,7 @@ export function AgentInput({
           chatId,
           role: "assistant",
           content: formatRecentActivity(result),
-          metadata: { route: page.path, runId },
+          metadata: sqlAnswerMetadata(page, runId, runMode, false),
         });
         store.finishChatRun(chatId);
         return !parseRecentActivityResult(result).error;
@@ -2723,7 +2901,7 @@ export function AgentInput({
           chatId,
           role: "assistant",
           content: t("agent.recent-activity.unavailable"),
-          metadata: { route: page.path, runId },
+          metadata: sqlAnswerMetadata(page, runId, runMode, false),
         });
         store.finishChatRun(chatId);
       } finally {
@@ -2738,8 +2916,9 @@ export function AgentInput({
   const runWorkspaceAttentionStarter = useCallback(
     async (
       chatId: string,
-      page: { path: string; title: string },
-      runId: string
+      page: AgentChatSnapshot,
+      runId: string,
+      runMode: AgentRunMode
     ) => {
       const store = useAgentStore.getState();
       const controller = new AbortController();
@@ -2767,8 +2946,7 @@ export function AgentInput({
           role: "assistant",
           content: formatWorkspaceAttention(result),
           metadata: {
-            route: page.path,
-            runId,
+            ...sqlAnswerMetadata(page, runId, runMode, false),
             handoff: collectAgentHandoffs("get_workspace_attention", result, {
               workspaceName: store.getChat(chatId)?.context,
             })[0],
@@ -2786,7 +2964,7 @@ export function AgentInput({
           chatId,
           role: "assistant",
           content: t("agent.workspace-attention.unavailable"),
-          metadata: { route: page.path, runId },
+          metadata: sqlAnswerMetadata(page, runId, runMode, false),
         });
         store.finishChatRun(chatId);
       } finally {
@@ -2801,8 +2979,9 @@ export function AgentInput({
   const runProjectAttentionStarter = useCallback(
     async (
       chatId: string,
-      page: { path: string; title: string },
-      runId: string
+      page: AgentChatSnapshot,
+      runId: string,
+      runMode: AgentRunMode
     ) => {
       const store = useAgentStore.getState();
       const controller = new AbortController();
@@ -2830,8 +3009,7 @@ export function AgentInput({
           role: "assistant",
           content: formatProjectAttention(result),
           metadata: {
-            route: page.path,
-            runId,
+            ...sqlAnswerMetadata(page, runId, runMode, false),
             handoff: collectAgentHandoffs("get_project_open_issues", result, {
               projectName: store.getChat(chatId)?.context,
             })[0],
@@ -2849,7 +3027,7 @@ export function AgentInput({
           chatId,
           role: "assistant",
           content: t("agent.project-attention.unavailable"),
-          metadata: { route: page.path, runId },
+          metadata: sqlAnswerMetadata(page, runId, runMode, false),
         });
         store.finishChatRun(chatId);
       } finally {
@@ -2864,7 +3042,7 @@ export function AgentInput({
   const executeChatRun = useCallback(
     async (
       chatId: string,
-      currentPage: { path: string; title: string },
+      currentPage: AgentChatSnapshot,
       runMode: AgentRunMode = "default",
       starterId?: LandingStarterId,
       skipReferencePreflight = false,
@@ -2888,6 +3066,28 @@ export function AgentInput({
             (currentStore.remoteBusyChatIds[chatId] &&
               !supportsAgentRunRecovery())
           ) {
+            return;
+          }
+          if (!supportsAgentRunRecovery() && intent === "continue") {
+            const root = store
+              .getMessages(chatId)
+              .findLast((message) => message.role === "user");
+            if (root?.metadata?.sqlEditorContextInvalid) return;
+            if (root?.metadata?.sqlEditor)
+              currentPage = sourceMessagePage(root, currentPage);
+          }
+          const boundPage =
+            intent === "new"
+              ? currentPage
+              : (chat.runCheckpoint?.bindings.page ?? currentPage);
+          if (
+            boundPage.sqlEditor &&
+            (boundPage.sqlEditor.project ?? currentStore.workspaceName) !==
+              chat.context
+          ) {
+            currentStore.setChatStatus(chatId, "error", {
+              lastError: t("agent.contextual-start.resource-unavailable"),
+            });
             return;
           }
           const references = getCurrentTurnResourceReferences(
@@ -2974,9 +3174,11 @@ export function AgentInput({
               const capability = normalizeAgentDiagnosticCapability(
                 chat.capability
               );
-              const pageResource = frozenPageContext
-                ? frozenPageContext.maskingPage
-                : getCurrentAgentPageResource();
+              const pageResource = currentPage.sqlEditor
+                ? undefined
+                : frozenPageContext
+                  ? frozenPageContext.maskingPage
+                  : getCurrentAgentPageResource();
               const bindings: AgentRunBindings = {
                 page: currentPage,
                 ...(frozenPageContext
@@ -2989,7 +3191,7 @@ export function AgentInput({
                 ...(isAgentMaskingPageResource(pageResource)
                   ? { maskingPage: pageResource }
                   : {}),
-                ...(!hasResourceReference
+                ...(!hasResourceReference && !currentPage.sqlEditor
                   ? {
                       instanceName: resolveInstanceNameFromPagePath(
                         currentPage.path
@@ -3044,6 +3246,7 @@ export function AgentInput({
                 chatId,
                 currentPage,
                 runId,
+                effectiveRunMode,
                 "projects/-"
               )
             );
@@ -3062,6 +3265,7 @@ export function AgentInput({
                   chatId,
                   currentPage,
                   runId,
+                  effectiveRunMode,
                   projectName
                 )
               );
@@ -3075,7 +3279,12 @@ export function AgentInput({
           ) {
             accepted = true;
             succeeded = Boolean(
-              await runWorkspaceAttentionStarter(chatId, currentPage, runId)
+              await runWorkspaceAttentionStarter(
+                chatId,
+                currentPage,
+                runId,
+                effectiveRunMode
+              )
             );
             return;
           }
@@ -3088,7 +3297,12 @@ export function AgentInput({
             if (projectName?.startsWith(projectNamePrefix)) {
               accepted = true;
               succeeded = Boolean(
-                await runProjectAttentionStarter(chatId, currentPage, runId)
+                await runProjectAttentionStarter(
+                  chatId,
+                  currentPage,
+                  runId,
+                  effectiveRunMode
+                )
               );
               return;
             }
@@ -3199,6 +3413,13 @@ export function AgentInput({
                   useAgentStore.getState().followUpQueuesByChatId[chatId];
                 if (latest?.paused) return;
                 if (latest?.messages[0]?.id !== head.id) continue;
+                if (!matchesQueuedSource(current.getMessages(chatId), head)) {
+                  current.setFollowUpQueuePaused(chatId, true);
+                  current.setChatStatus(chatId, "error", {
+                    lastError: t("agent.contextual-start.resource-unavailable"),
+                  });
+                  return;
+                }
                 const promoted = current.promoteFollowUp(chatId, head.id);
                 if (!promoted) return;
                 if (!current.commitQueuedUserMessage(chatId)) {
@@ -3242,7 +3463,7 @@ export function AgentInput({
         drainingFollowUps.delete(key);
       }
     },
-    [blockWhenAIIsNotConfigured, executeChatRun]
+    [blockWhenAIIsNotConfigured, executeChatRun, t]
   );
 
   const startChatRun = useCallback(
@@ -3296,7 +3517,12 @@ export function AgentInput({
       if (!message) continue;
 
       void (async () => {
-        const restoreQueuedText = () => {
+        const restoreQueuedText = (
+          invalidSource = !matchesQueuedSource(
+            store.getMessages(message.chatId),
+            message
+          )
+        ) => {
           const draft = store.getDraft(message.chatId);
           if (!draft.text && !draft.project && !draft.resource) {
             const references = normalizeAgentResourceReferences(
@@ -3322,6 +3548,11 @@ export function AgentInput({
                 : message.text;
             store.setDraft(message.chatId, {
               text,
+              ...(invalidSource
+                ? { queuedSqlPage: null }
+                : message.page.sqlEditor
+                  ? { queuedSqlPage: message.page }
+                  : {}),
               ...(message.followUpSourceId !== undefined
                 ? { followUpSourceId: message.followUpSourceId }
                 : {}),
@@ -3362,6 +3593,13 @@ export function AgentInput({
         }
         await withChatRunSegment(message.chatId, async (lease) => {
           if (
+            !matchesQueuedSource(store.getMessages(message.chatId), message)
+          ) {
+            restoreQueuedText(true);
+            store.finishQueuedUserMessage(message.chatId);
+            return;
+          }
+          if (
             supportsAgentRunRecovery() &&
             store.getChat(message.chatId)?.runId
           ) {
@@ -3389,6 +3627,37 @@ export function AgentInput({
   const send = useCallback(async () => {
     const store = useAgentStore.getState();
     const chat = selectCurrentChat(store);
+    const hasAsk = chat && store.getPendingAsk(chat.id);
+    const draft = chat ? store.getDraft(chat.id) : store.landingDraft;
+    if (!hasAsk && draft.queuedSqlPage === null) return;
+    const sourceId = draft.followUpSourceId;
+    const currentPage = hasAsk
+      ? (getCurrentPageSnapshot() as AgentChatSnapshot)
+      : chat && sourceId !== undefined
+        ? followUpSourcePage(
+            store.getMessages(chat.id),
+            sourceId,
+            getDraftResourceMentions(draft).map(({ resource }) => resource)
+          )
+        : (draft.queuedSqlPage ?? captureAgentPageSnapshot());
+    if (!currentPage) return;
+    if (
+      !hasAsk &&
+      draft.queuedSqlPage &&
+      !isEqual(draft.queuedSqlPage.sqlEditor, currentPage.sqlEditor)
+    )
+      return;
+    const sqlScope =
+      currentPage.sqlEditor &&
+      (currentPage.sqlEditor.project ?? workspace?.name);
+    if (
+      currentPage.sqlEditor &&
+      (!sqlScope ||
+        (chat &&
+          chat.context !== sqlScope &&
+          (chat.context || store.getMessages(chat.id).length)))
+    )
+      return;
     if (
       chat &&
       !store.getPendingAsk(chat.id) &&
@@ -3415,7 +3684,7 @@ export function AgentInput({
       const queuedId = store.enqueueFollowUp({
         chatId: chat.id,
         text,
-        page: getCurrentPageSnapshot(),
+        page: currentPage,
         runMode: "default",
         ...(draft.followUpSourceId !== undefined
           ? { followUpSourceId: draft.followUpSourceId }
@@ -3441,8 +3710,10 @@ export function AgentInput({
     )
       return;
 
-    const currentPage = getCurrentPageSnapshot();
-    const landingDraft = chat ? undefined : store.landingDraft;
+    const originatingDraft = chat
+      ? store.getDraft(chat.id)
+      : store.landingDraft;
+    const landingDraft = chat ? undefined : originatingDraft;
     if (landingDraft) {
       const mentions = getDraftResourceMentions(landingDraft);
       if (
@@ -3452,19 +3723,39 @@ export function AgentInput({
       )
         return;
     }
-    const sourceThread = store.ensureCurrentChat(
-      currentPage,
-      (landingDraft ? store.landingContext : undefined) ??
-        getCurrentChatContext(),
-      workspace?.name
-    );
+    const sourceThread =
+      sqlScope && (!chat || !chat.context)
+        ? store.selectOrCreateChatForContext(
+            sqlScope,
+            currentPage,
+            workspace?.name
+          )
+        : store.ensureCurrentChat(
+            currentPage,
+            (landingDraft ? store.landingContext : undefined) ??
+              getCurrentChatContext(),
+            workspace?.name
+          );
+    if (!sourceThread) return;
     const sourceChatId = sourceThread.id;
+    const existingDraft = store.getDraft(sourceChatId);
+    const preserveDraft = Boolean(
+      landingDraft &&
+        sqlScope &&
+        (existingDraft.text || getDraftResourceMentions(existingDraft).length)
+    );
     if (landingDraft) {
-      store.setDraft(sourceChatId, landingDraft);
-      if (useAgentStore.getState().landingDraft === landingDraft)
+      if (!preserveDraft) store.setDraft(sourceChatId, landingDraft);
+      if (
+        !preserveDraft &&
+        useAgentStore.getState().landingDraft === landingDraft
+      )
         store.clearLandingDraft();
     }
-    const submittedDraft = store.getDraft(sourceChatId);
+    const detachedDraft = preserveDraft || (chat && chat.id !== sourceChatId);
+    const submittedDraft = detachedDraft
+      ? originatingDraft
+      : store.getDraft(sourceChatId);
     const pendingAskBeforeConfig = store.getPendingAsk(sourceChatId);
     if (await blockWhenAIIsNotConfigured(sourceChatId)) return;
     if (!isCurrentChatScope(store, sourceChatId)) return;
@@ -3582,6 +3873,9 @@ export function AgentInput({
         content: text,
         metadata: {
           route: currentPage.path,
+          ...(currentPage.sqlEditor
+            ? { sqlEditor: currentPage.sqlEditor }
+            : {}),
           ...(submittedDraft.followUpSourceId !== undefined
             ? { followUpSourceId: submittedDraft.followUpSourceId }
             : {}),
@@ -3590,8 +3884,15 @@ export function AgentInput({
         },
       });
       if (!submittedMessage) return;
-      if (store.getDraft(sourceChatId) === submittedDraft) {
-        store.clearDraft(sourceChatId);
+      if (
+        preserveDraft &&
+        useAgentStore.getState().landingDraft === landingDraft
+      ) {
+        store.clearLandingDraft();
+      } else {
+        const draftOwnerId = chat?.id ?? sourceChatId;
+        if (store.getDraft(draftOwnerId) === submittedDraft)
+          store.clearDraft(draftOwnerId);
       }
       setResourcePickerOpen(false);
       mentionRangeRef.current = null;
@@ -3653,6 +3954,7 @@ export function AgentInput({
         : messages.findLast((candidate) => candidate.role === "user");
       if (
         message?.role !== "user" ||
+        message.metadata?.sqlEditorContextInvalid ||
         !message.content?.trim() ||
         (!messageId &&
           !storageRecovery &&
@@ -3663,6 +3965,18 @@ export function AgentInput({
       }
 
       const messageText = message.content;
+      if (message.metadata?.followUpSourceId !== undefined) {
+        const source = followUpSourcePage(
+          messages.slice(0, messages.indexOf(message)),
+          message.metadata.followUpSourceId,
+          normalizeAgentResourceReferences(
+            message.metadata.resourceReferences,
+            message.metadata.resourceReference
+          )
+        );
+        if (!source || !isEqual(source.sqlEditor, message.metadata.sqlEditor))
+          return;
+      }
       const retryStartup =
         !messageId && Boolean(getAgentRunStartup(chat, messages));
       const retryNew =
@@ -3675,6 +3989,7 @@ export function AgentInput({
       const action = Symbol();
       messageActionInFlightRef.current = action;
       const currentPage = getCurrentPageSnapshot();
+      const sourcePage = sourceMessagePage(message, currentPage);
       try {
         if (await blockWhenAIIsNotConfigured(chat.id)) return;
         const current = useAgentStore.getState();
@@ -3736,7 +4051,10 @@ export function AgentInput({
               role: "user",
               content: messageText,
               metadata: {
-                route: currentPage.path,
+                route: sourcePage.path,
+                ...(sourcePage.sqlEditor
+                  ? { sqlEditor: sourcePage.sqlEditor }
+                  : {}),
                 ...(message.metadata?.followUpSourceId !== undefined
                   ? { followUpSourceId: message.metadata.followUpSourceId }
                   : {}),
@@ -3755,7 +4073,7 @@ export function AgentInput({
           }
           accepted = await startChatRun(
             chat.id,
-            currentPage,
+            sourcePage,
             messageId ? "default" : (chat.runMode ?? "default"),
             starterId,
             false,
@@ -4374,6 +4692,7 @@ export function AgentInput({
         Boolean(currentPendingAsk) ||
         currentChat?.status === "paused"
       }
+      contextReadOnly={editorScoped}
       onSelectContext={selectContext}
       chat={currentChat}
       pendingAttemptId={pendingAttemptId}
@@ -4493,6 +4812,16 @@ export function AgentInput({
             void drainFollowUps(currentChatId, undefined, true);
         }}
       />
+      {foreignChat && onNewChat && (
+        <Button
+          appearance="secondary"
+          size="sm"
+          className="self-start"
+          onClick={onNewChat}
+        >
+          {t("agent.new-chat")}
+        </Button>
+      )}
       {feedback === "execution-unavailable" && (
         <Alert appearance="caption" variant="warning">
           <div className="min-w-0">

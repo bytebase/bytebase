@@ -32,6 +32,7 @@ interface AgentChatboxFooterProps {
   contextTitle?: string;
   workspace?: { name: string; title: string };
   contextDisabled: boolean;
+  contextReadOnly?: boolean;
   onSelectContext: (context: string) => boolean;
   chat: AgentChat | null;
   pendingAttemptId?: string;
@@ -213,6 +214,7 @@ export function AgentChatboxFooter({
   contextTitle,
   workspace,
   contextDisabled,
+  contextReadOnly = false,
   onSelectContext,
   chat,
   pendingAttemptId,
@@ -227,7 +229,7 @@ export function AgentChatboxFooter({
         context={context}
         contextTitle={contextTitle}
         workspace={workspace}
-        disabled={contextDisabled}
+        disabled={contextDisabled || contextReadOnly}
         onSelect={onSelectContext}
       />
       <AgentTokenUsage

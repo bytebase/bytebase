@@ -1397,6 +1397,7 @@ interface CreateToolExecutorOptions {
   capability?: AgentDiagnosticCapability;
   onSkillLoaded?: (load: Extract<SkillLoadResult, { kind: "loaded" }>) => void;
   chatId?: string;
+  canUseCurrentChat?: () => boolean;
   canUseCurrentPage?: () => boolean;
   userName?: string;
   context?: string;
@@ -1423,7 +1424,6 @@ const PAGE_BOUND_TOOL_NAMES = new Set([
   "get_masking_exemption_draft",
   "prepare_masking_exemption_draft",
   "prepare_semantic_type_draft",
-  "prepare_access_grant_draft",
   ...PAGE_MUTATION_TOOL_NAMES,
 ]);
 const BACKGROUND_PAGE_TOOL_ERROR = JSON.stringify({
@@ -1795,6 +1795,8 @@ export function createToolExecutor(
     !!referencedPlan &&
     ((name === "get_plan_overview" && args.planName === referencedPlan) ||
       (name === "call_api" && targetsSelectedPlan(args, referencedPlan)));
+  const canUseCurrentChat =
+    options.canUseCurrentChat ?? options.canUseCurrentPage;
 
   return async (
     name: string,
@@ -1819,8 +1821,9 @@ export function createToolExecutor(
       }
     }
     if (
-      PAGE_BOUND_TOOL_NAMES.has(name) &&
-      options.canUseCurrentPage?.() === false
+      (PAGE_BOUND_TOOL_NAMES.has(name) &&
+        options.canUseCurrentPage?.() === false) ||
+      (name === "prepare_access_grant_draft" && canUseCurrentChat?.() === false)
     ) {
       return toToolResult(BACKGROUND_PAGE_TOOL_ERROR);
     }
@@ -1928,9 +1931,7 @@ export function createToolExecutor(
       case "prepare_access_grant_draft": {
         const result = await justInTimeTools.prepare(args);
         return toToolResult(
-          options.canUseCurrentPage?.() === false
-            ? BACKGROUND_PAGE_TOOL_ERROR
-            : result
+          canUseCurrentChat?.() === false ? BACKGROUND_PAGE_TOOL_ERROR : result
         );
       }
       case "get_masking_rule_draft":

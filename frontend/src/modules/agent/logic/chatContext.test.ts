@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import type { ReactRoute } from "@/app/router";
 import {
   INSTANCE_ROUTE_CREATE,
@@ -27,7 +27,30 @@ import {
   WORKSPACE_ROUTE_GLOBAL_MASKING,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
 } from "@/app/router/handles";
-import { resolveAgentPageResource, resolveChatContext } from "./chatContext";
+import {
+  getCurrentAgentPageResource,
+  getCurrentChatContext,
+  resolveAgentPageResource,
+  resolveChatContext,
+} from "./chatContext";
+import type { AgentSqlContextCapture } from "./sqlEditorContext";
+
+const sqlHost = vi.hoisted(() => ({
+  captureContext: vi.fn<() => AgentSqlContextCapture>(),
+}));
+vi.mock("./sqlEditorHost", () => ({
+  getCurrentAgentSqlEditorContext: sqlHost.captureContext,
+}));
+vi.mock("@/stores/app", () => ({
+  useAppStore: { getState: () => ({ workspace: { name: "workspaces/demo" } }) },
+}));
+vi.mock("@/app/router", () => ({
+  router: {
+    currentRoute: {
+      value: { name: "sql-editor.database", params: { projectId: "stale" } },
+    },
+  },
+}));
 
 const routeWithParams = (params: ReactRoute["params"]) =>
   ({ params }) as ReactRoute;
@@ -47,6 +70,27 @@ const detailRoute = (
 });
 
 describe("resolveChatContext", () => {
+  test("a mounted SQL Editor's Project is authoritative over the URL", () => {
+    sqlHost.captureContext.mockReturnValue({ kind: "pending" });
+    expect(getCurrentChatContext()).toBeUndefined();
+    expect(getCurrentAgentPageResource()).toBeUndefined();
+    sqlHost.captureContext.mockReturnValue({
+      kind: "ready",
+      snapshot: { version: 1 },
+    });
+    expect(getCurrentChatContext()).toBe("workspaces/demo");
+    expect(getCurrentAgentPageResource()).toBeUndefined();
+    sqlHost.captureContext.mockReturnValue({
+      kind: "ready",
+      snapshot: { version: 1, project: "projects/selected" },
+    });
+    expect(getCurrentChatContext()).toBe("projects/selected");
+    expect(getCurrentAgentPageResource()).toEqual({
+      kind: "project",
+      name: "projects/selected",
+      project: "projects/selected",
+    });
+  });
   test("uses the project resource on project routes", () => {
     expect(
       resolveChatContext(
