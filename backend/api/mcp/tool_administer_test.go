@@ -1100,13 +1100,17 @@ func TestAdministerWorkspaceCountsTheRulesAFarMovePasses(t *testing.T) {
 	require.Greater(t, len(wrapLine(diff.shorter[0][0], descriptionLineWidth)), descriptionLines-2, "the counts by approvers pass the rows the fallback line leaves")
 	require.True(t, strings.HasPrefix(unwrapMessage(terse.description), diff.shorter[1][0]+"\n"), terse.description)
 
-	// A condition too long for any form is still refused, with its shortest line.
+	// A condition too long for any form: the move is refused. The eleven
+	// rules it passes can each move ahead of it, a few to a form, so the
+	// refusal counts their lines and sends the change to smaller steps.
 	_, diff, err = form(12, strings.Repeat(`resource.project_id == "p" || `, 30)+"false")
 	var refused *toolError
 	require.ErrorAs(t, err, &refused)
 	require.Equal(t, "CHANGE_TOO_LONG", refused.Code)
-	require.Contains(t, refused.Message, strconv.Quote(diff.shorter[1][0]))
-	require.Contains(t, refused.Suggestion, "make that change signed in to the Bytebase console: LINK")
+	require.Greater(t, len(wrapLine(diff.shorter[1][0], descriptionLineWidth)), descriptionLines, "the move's shortest line fits no form")
+	require.Equal(t, "this change needs 22 lines, more than the 8 one confirmation form has room for under its choice, so the approval rules were not changed", refused.Message)
+	require.Contains(t, refused.Suggestion, "make the change in smaller steps, a few rules at a time")
+	require.Contains(t, refused.Suggestion, "Or change the rules signed in to the Bytebase console: LINK")
 }
 
 // The shortest line of a move still says how many of the rules it passes need
@@ -1184,28 +1188,41 @@ func TestAdministerWorkspaceMoveCountsEveryKindOfApproversItHasRowsFor(t *testin
 	require.Contains(t, unapproved, `Move to rule 8, "Workspace DBA", now behind 7 rules, 1 with no approval and 6 with other approvers: `)
 }
 
-// A reorder can be read by more than one set of moved rules, and its reverse
-// reads them the other way round. So before a form is refused the other
-// reading is tried: a swap that a form makes, a form swaps back.
+// askedApprovalChange sends requested to a workspace that stores stored, each
+// after the fallback rule, and returns the form the user was asked, with its
+// lines joined again, or the result when none was.
+func askedApprovalChange(t *testing.T, stored, requested []*v1pb.WorkspaceApprovalSetting_Rule) (message, description, refusal string) {
+	t.Helper()
+	mock := &approvalMock{}
+	mock.setStored(slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, stored)...)
+	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+	_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	res := callAdminister(t, session, administerParams(approvalBody(t, slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, requested)...)))
+	if user.asked.Load() == 0 {
+		return "", "", resultText(t, res)
+	}
+	asked := user.lastParams(t)
+	return unwrapMessage(asked.Message), unwrapMessage(choiceDescription(t, asked)), ""
+}
+
+// projectsCondition matches n projects, in about 32 characters each.
+func projectsCondition(prefix string, n int) string {
+	var terms []string
+	for i := range n {
+		terms = append(terms, fmt.Sprintf(`resource.project_id == "%s%02d"`, prefix, i))
+	}
+	return strings.Join(terms, " || ")
+}
+
+// A reorder has more than one description: when two rules trade places,
+// either one moved. Before a form is refused it is described by the moves
+// that take the fewest rows, so a swap that a form makes, a form swaps back.
 func TestAdministerWorkspaceSwapsBackWhatItSwaps(t *testing.T) {
 	swap := func(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule) (message, refusal string) {
-		mock := &approvalMock{}
-		mock.setStored(slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, stored)...)
-		user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
-		_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
-		res := callAdminister(t, session, administerParams(approvalBody(t, slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, requested)...)))
-		if user.asked.Load() == 0 {
-			return "", resultText(t, res)
-		}
-		return unwrapMessage(user.lastParams(t).Message), ""
+		message, _, refusal = askedApprovalChange(t, stored, requested)
+		return message, refusal
 	}
-	projects := func(n int) string {
-		var terms []string
-		for i := range n {
-			terms = append(terms, fmt.Sprintf(`resource.project_id == "p%02d"`, i))
-		}
-		return strings.Join(terms, " || ")
-	}
+	projects := func(n int) string { return projectsCondition("p", n) }
 	production := changeRule("Production", `resource.environment_id == "prod"`, "roles/workspaceDBA")
 	for n := 4; n <= 26; n++ {
 		many := changeRule("Core projects", projects(n), "roles/projectOwner")
@@ -1216,89 +1233,432 @@ func TestAdministerWorkspaceSwapsBackWhatItSwaps(t *testing.T) {
 		require.Empty(t, refusal, "%d projects, swapped back", n)
 	}
 
-	// The first reading stands wherever it gets a form: the rule that ends
-	// second is the moved one.
+	// The description by the fewest moves stands wherever it gets a form: the
+	// rule that ends second is the moved one.
 	short := changeRule("Core projects", projects(4), "roles/projectOwner")
 	message, _ := swap([]*v1pb.WorkspaceApprovalSetting_Rule{short, production}, []*v1pb.WorkspaceApprovalSetting_Rule{production, short})
 	require.Contains(t, message, `Move to rule 2, "Project owner", now behind "Production" ("Workspace DBA"): `+"`"+projects(4)+"`")
-	// A rule too long for any form is not the moved one in the second reading.
+	// A rule too long for any form is not the moved one when the other fits.
 	long := changeRule("Core projects", projects(26), "roles/projectOwner")
 	message, _ = swap([]*v1pb.WorkspaceApprovalSetting_Rule{long, production}, []*v1pb.WorkspaceApprovalSetting_Rule{production, long})
 	require.Contains(t, message, `Move to rule 1, "Workspace DBA", now ahead of "Core projects" ("Project owner"): `+"`"+`resource.environment_id == "prod"`+"`")
-	// With no reading that fits, the refusal is the first reading's.
-	other := changeRule("Other projects", strings.ReplaceAll(projects(26), `"p`, `"q`), "roles/workspaceDBA")
+	// Two rules that are each too long for any form cannot trade places in
+	// one, by either description or in steps.
+	other := changeRule("Other projects", projectsCondition("q", 26), "roles/workspaceDBA")
 	_, refusal := swap([]*v1pb.WorkspaceApprovalSetting_Rule{long, other}, []*v1pb.WorkspaceApprovalSetting_Rule{other, long})
 	require.Contains(t, refusal, "CHANGE_TOO_LONG")
 	require.Contains(t, refusal, "Move to rule 2, ")
 	require.Contains(t, refusal, "now behind 1 rule with other approvers")
 	require.NotContains(t, refusal, "Move to rule 1, ")
+	require.Contains(t, refusal, "make that change signed in to the Bytebase console")
+	require.NotContains(t, refusal, "smaller steps")
 }
 
-// The second reading of a reorder is the first reading of its reverse, and it
-// is worth a form only when it differs and its moves could fit one.
-func TestMovesReadBothWays(t *testing.T) {
-	random := rand.New(rand.NewPCG(22234, 9))
-	kept := func(elements []string, inOrder []bool) []string {
-		var names []string
-		for i, name := range elements {
-			if inOrder[i] {
-				names = append(names, name)
-			}
-		}
-		slices.Sort(names)
-		return names
-	}
-	differ := 0
-	for range 400 {
-		n := 2 + random.IntN(7)
-		a := make([]string, n)
-		for i := range a {
-			a[i] = fmt.Sprintf("r%d", i)
-		}
-		b := slices.Clone(a)
-		random.Shuffle(n, func(i, j int) { b[i], b[j] = b[j], b[i] })
-		first, second := longestCommonOrders(a, b)
-		back, backSecond := longestCommonOrders(b, a)
-		require.Equal(t, kept(b, second), kept(a, back), "%v to %v", a, b)
-		require.Equal(t, kept(b, first), kept(a, backSecond), "%v to %v", a, b)
-		require.Len(t, kept(b, second), len(kept(b, first)), "both readings are as long")
-		for _, inOrder := range [][]bool{first, second} {
-			var order []string
-			for i, name := range b {
-				if inOrder[i] {
-					order = append(order, name)
-				}
-			}
-			require.True(t, slices.IsSorted(order), "the kept rules are in a's order: %v", order)
-		}
-		if !slices.Equal(first, second) {
-			differ++
-		}
-	}
-	require.Greater(t, differ, 100)
+// Two swaps in one request, each of a long rule and a short one. Whichever
+// rule a tie-break calls moved, one long rule is, and its line fits no form.
+// The lines of the two short rules state the same reorder and fit.
+func TestAdministerWorkspaceDescribesAReorderByTheMovesThatFit(t *testing.T) {
+	core := changeRule("Core projects", projectsCondition("a", 19), "roles/projectOwner")
+	production := changeRule("Production", `resource.environment_id == "prod"`, "roles/workspaceDBA")
+	staging := changeRule("Staging", `resource.environment_id == "staging"`, "roles/projectReleaser")
+	data := changeRule("Data projects", projectsCondition("d", 19), "roles/workspaceAdmin")
+	stored := []*v1pb.WorkspaceApprovalSetting_Rule{core, production, staging, data}
+	swapped := []*v1pb.WorkspaceApprovalSetting_Rule{production, core, data, staging}
 
-	rules := func(n int) []string {
-		var names []string
-		for i := range n {
-			names = append(names, fmt.Sprintf("r%02d", i))
+	message, description, refusal := askedApprovalChange(t, stored, swapped)
+	require.Empty(t, refusal)
+	require.Contains(t, message, "Change 2 rules, listed under Action.")
+	require.True(t, strings.HasPrefix(description,
+		`Move to rule 1, "Workspace DBA", now ahead of "Core projects" ("Project owner"): `+"`"+`resource.environment_id == "prod"`+"`\n"+
+			`Move to rule 4, "Project releaser", now behind "Data projects" ("Workspace admin"): `+"`"+`resource.environment_id == "staging"`+"`\n"), description)
+
+	message, description, refusal = askedApprovalChange(t, swapped, stored)
+	require.Empty(t, refusal)
+	require.Contains(t, message, "Change 2 rules, listed under Action.")
+	require.True(t, strings.HasPrefix(description,
+		`Move to rule 2, "Workspace DBA", now behind "Core projects" ("Project owner"): `+"`"+`resource.environment_id == "prod"`+"`\n"+
+			`Move to rule 3, "Project releaser", now ahead of "Data projects" ("Workspace admin"): `+"`"+`resource.environment_id == "staging"`+"`\n"), description)
+
+	// The moves that fit can be more than the fewest: a long rule that moves
+	// behind three short ones is described by theirs.
+	qa := changeRule("QA", `resource.environment_id == "qa"`, "roles/projectOwner")
+	message, description, refusal = askedApprovalChange(t,
+		[]*v1pb.WorkspaceApprovalSetting_Rule{core, production, staging, qa}, []*v1pb.WorkspaceApprovalSetting_Rule{production, staging, qa, core})
+	require.Empty(t, refusal)
+	require.Contains(t, message, "Change 3 rules, listed under Action.")
+	require.True(t, strings.HasPrefix(description,
+		`Move to rule 1, "Workspace DBA", now ahead of "Core projects" ("Project owner"): `+"`"+`resource.environment_id == "prod"`+"`\n"+
+			`Move to rule 2, "Project releaser", now ahead of "Core projects" ("Project owner"): `+"`"+`resource.environment_id == "staging"`+"`\n"+
+			`Move to rule 3, "Project owner", now ahead of 1 rule with the same approvers: `+"`"+`resource.environment_id == "qa"`+"`\n"), description)
+
+	// The description by the fewest moves stands wherever it gets a form.
+	short := changeRule("Core projects", projectsCondition("a", 3), "roles/projectOwner")
+	message, _, refusal = askedApprovalChange(t,
+		[]*v1pb.WorkspaceApprovalSetting_Rule{short, production, staging, qa}, []*v1pb.WorkspaceApprovalSetting_Rule{production, staging, qa, short})
+	require.Empty(t, refusal)
+	require.Contains(t, message, "Change 1 rule, listed under Action.")
+}
+
+// A reorder too long for one form is sent to smaller steps whenever steps can
+// make it, however many rules moved, and to the console only when two rules
+// that are each too long for a form trade places. Each step here gets a form.
+func TestAdministerWorkspaceAdvisesStepsWheneverStepsCanMakeAReorder(t *testing.T) {
+	roles := []string{"roles/workspaceDBA", "roles/projectOwner", "roles/projectReleaser", "roles/workspaceAdmin", "roles/projectDeveloper", "roles/sqlEditorUser"}
+	for _, pairs := range []int{6, 11, 12} {
+		var stored, swapped []*v1pb.WorkspaceApprovalSetting_Rule
+		for pair := range pairs {
+			long := changeRule(fmt.Sprintf("Projects %d", pair), projectsCondition(fmt.Sprintf("g%d-", pair), 19), roles[pair%len(roles)])
+			short := changeRule(fmt.Sprintf("Environment %d", pair), fmt.Sprintf(`resource.environment_id == "e%d"`, pair), roles[(pair+1)%len(roles)])
+			stored, swapped = append(stored, long, short), append(swapped, short, long)
 		}
-		return names
+		for _, request := range [][2][]*v1pb.WorkspaceApprovalSetting_Rule{{stored, swapped}, {swapped, stored}} {
+			from, to := request[0], request[1]
+			_, _, refusal := askedApprovalChange(t, from, to)
+			require.Contains(t, refusal, "CHANGE_TOO_LONG", "%d pairs", pairs)
+			require.Contains(t, refusal, fmt.Sprintf("this change needs %d lines, more than the 8 one confirmation form has room for", 2*pairs))
+			require.Contains(t, refusal, "make the change in smaller steps, a few rules at a time")
+			// The steps: one pair at a time.
+			for pair := range pairs {
+				step := slices.Clone(from)
+				step[2*pair], step[2*pair+1] = to[2*pair], to[2*pair+1]
+				message, _, refusal := askedApprovalChange(t, from, step)
+				require.Empty(t, refusal, "%d pairs, pair %d alone", pairs, pair)
+				require.Contains(t, message, "Move to rule ")
+				from = step
+			}
+			require.Equal(t, to, from)
+		}
 	}
-	reversed := func(n int) []string {
-		names := rules(n)
-		slices.Reverse(names)
-		return names
+
+	// A long rule moves behind five short ones: one form has no room for five
+	// moves, and steps of a few rules do.
+	long := changeRule("Core projects", projectsCondition("a", 19), "roles/projectOwner")
+	var short []*v1pb.WorkspaceApprovalSetting_Rule
+	for i := range 5 {
+		short = append(short, changeRule(fmt.Sprintf("Environment %d", i), fmt.Sprintf(`resource.environment_id == "e%d"`, i), roles[i%2*2]))
 	}
-	_, another := movesRead(rules(2), reversed(2), false)
-	require.True(t, another, "a swap has two readings")
-	_, another = movesRead(rules(2), reversed(2), true)
-	require.False(t, another, "the second reading has no other")
-	_, another = movesRead(rules(4), append(rules(4)[1:], "r00"), false)
-	require.False(t, another, "a move across the list has one reading")
-	_, another = movesRead(rules(descriptionLines+1), reversed(descriptionLines+1), false)
-	require.True(t, another, "ten moves can take a row each")
-	_, another = movesRead(rules(descriptionLines+2), reversed(descriptionLines+2), false)
-	require.False(t, another, "eleven moves fit no form by either reading")
+	stored := slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{long}, short)
+	_, _, refusal := askedApprovalChange(t, stored, slices.Concat(short, []*v1pb.WorkspaceApprovalSetting_Rule{long}))
+	require.Contains(t, refusal, "this change needs 10 lines, more than the 8 one confirmation form has room for")
+	require.Contains(t, refusal, "make the change in smaller steps, a few rules at a time")
+	message, _, refusal := askedApprovalChange(t, stored, slices.Concat(short[:3], []*v1pb.WorkspaceApprovalSetting_Rule{long}, short[3:]))
+	require.Empty(t, refusal)
+	require.Contains(t, message, "Change 3 rules, listed under Action.")
+	message, _, refusal = askedApprovalChange(t, slices.Concat(short[:3], []*v1pb.WorkspaceApprovalSetting_Rule{long}, short[3:]), slices.Concat(short, []*v1pb.WorkspaceApprovalSetting_Rule{long}))
+	require.Empty(t, refusal)
+	require.Contains(t, message, "Change 2 rules, listed under Action.")
+
+	// Two rules too long for any form trade places among the swaps: no step
+	// can make that one.
+	other := changeRule("Other projects", projectsCondition("q", 19), "roles/workspaceDBA")
+	_, _, refusal = askedApprovalChange(t, slices.Concat(stored, []*v1pb.WorkspaceApprovalSetting_Rule{other}), slices.Concat(short, []*v1pb.WorkspaceApprovalSetting_Rule{other, long}))
+	require.Contains(t, refusal, "CHANGE_TOO_LONG")
+	require.Contains(t, refusal, "make that change signed in to the Bytebase console")
+	require.NotContains(t, refusal, "smaller steps")
+}
+
+// everyDescription calls try with each way to describe a reorder: every set of
+// rules that traded order with another whose moves leave the rest in stored
+// order. was is each kept rule's stored place, in the order the request has
+// them.
+func everyDescription(was []int, try func(inOrder []bool)) {
+	traded := make([]bool, len(was))
+	for x := range was {
+		for y := range was {
+			traded[x] = traded[x] || x != y && (x < y) != (was[x] < was[y])
+		}
+	}
+	for moved := range 1 << len(was) {
+		inOrder := make([]bool, len(was))
+		last, valid := -1, true
+		for kept := range was {
+			if moved>>kept&1 == 1 {
+				valid = valid && traded[kept]
+				continue
+			}
+			inOrder[kept] = true
+			valid = valid && was[kept] > last
+			last = was[kept]
+		}
+		if valid {
+			try(inOrder)
+		}
+	}
+}
+
+// reorderedPlaces returns the places of n rules after a few neighbors trade
+// places, or after a shuffle.
+func reorderedPlaces(random *rand.Rand, n int) []int {
+	if random.IntN(3) == 0 {
+		return random.Perm(n)
+	}
+	places := make([]int, n)
+	for i := range places {
+		places[i] = i
+	}
+	for range 1 + random.IntN(4) {
+		i := random.IntN(n - 1)
+		places[i], places[i+1] = places[i+1], places[i]
+	}
+	return places
+}
+
+// advisesSteps reports whether a rule form's refusal sends the change to
+// smaller steps, and not to the console alone.
+func advisesSteps(t *testing.T, err error) bool {
+	t.Helper()
+	var refused *toolError
+	require.ErrorAs(t, err, &refused)
+	require.Equal(t, "CHANGE_TOO_LONG", refused.Code)
+	require.NotContains(t, refused.Message, ", now :", "a rule that traded order with none is not moved")
+	return strings.Contains(refused.Suggestion, "smaller steps")
+}
+
+// Whichever rules a tie-break calls moved, a reorder is refused only when no
+// description of it fits a form, and is sent to smaller steps whenever some
+// description has no line too long for one. Each description is tried here
+// through the form builder itself.
+func TestApprovalReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	random := rand.New(rand.NewPCG(22234, 12))
+	roles := [][]string{nil, {"roles/workspaceDBA"}, {"roles/projectOwner"}, {"roles/projectOwner", "roles/workspaceDBA"}}
+	titles := []string{"", "QA", "Production", "Payments platform schema and data changes"}
+	// Fallback lines of one, two and three rows.
+	staging := &v1pb.WorkspaceApprovalSetting_Rule{
+		Condition: &expr.Expr{Expression: `resource.environment_id == "staging"`},
+		Template:  &v1pb.ApprovalTemplate{Title: "Staging changes", Flow: &v1pb.ApprovalFlow{Roles: []string{"roles/projectOwner", "roles/workspaceDBA"}}},
+	}
+	fallbacks := [][]*v1pb.WorkspaceApprovalSetting_Rule{nil, {fallbackRule()}, {staging, fallbackRule()}}
+	rooms := map[int]int{}
+	var forms, rescued, toSteps, toConsole, adviceChanged int
+	for range 600 {
+		fallback := fallbacks[random.IntN(len(fallbacks))]
+		n := 2 + random.IntN(5)
+		var stored []*v1pb.WorkspaceApprovalSetting_Rule
+		for i := range n {
+			// Conditions of every length, so that a column more or less
+			// decides a row.
+			terms := []int{1, 1, 2, 4, 8, 12, 16, 20}[random.IntN(8)]
+			condition := projectsCondition(fmt.Sprintf("r%d-", i), terms) + strings.Repeat(" ", random.IntN(40))
+			stored = append(stored, changeRule(titles[random.IntN(len(titles))], condition, roles[random.IntN(len(roles))]...))
+		}
+		var requested []*v1pb.WorkspaceApprovalSetting_Rule
+		for _, place := range reorderedPlaces(random, n) {
+			rule := proto.CloneOf(stored[place])
+			switch random.IntN(8) {
+			case 0:
+				rule.Template.Flow.Roles = roles[random.IntN(len(roles))]
+			case 1:
+				rule.Template.Title = titles[random.IntN(len(titles))]
+			default:
+			}
+			requested = append(requested, rule)
+		}
+		if random.IntN(6) == 0 {
+			requested = append(requested, changeRule("Added", `resource.environment_id == "added"`, "roles/workspaceDBA"))
+		}
+		match, err := matchApprovalRules(slices.Concat(fallback, stored), slices.Concat(fallback, requested), "LINK")
+		require.NoError(t, err)
+		if !slices.Contains(match.inOrder, false) {
+			continue
+		}
+		line, _ := fallbackLine(match.fallback)
+		rooms[descriptionLines-len(wrapLine(line, descriptionLineWidth))]++
+
+		was := make([]int, len(match.kept))
+		for kept, rule := range match.kept {
+			was[kept] = rule.was
+		}
+		fits, bySteps := false, false
+		everyDescription(was, func(inOrder []bool) {
+			if _, err := approvalRulesForm(alice, match.described(inOrder), "", "LINK"); err == nil {
+				fits = true
+			} else if advisesSteps(t, err) {
+				bySteps = true
+			}
+		})
+
+		byFewestMoves, firstErr := approvalRulesForm(alice, match.described(match.inOrder), "", "LINK")
+		diff, err := diffApprovalRules(slices.Concat(fallback, stored), slices.Concat(fallback, requested), "LINK")
+		require.NoError(t, err)
+		form, err := approvalRulesForm(alice, diff, "", "LINK")
+		require.Equal(t, fits, err == nil, "stored %v\nrequested %v", stored, requested)
+		switch {
+		case err == nil && firstErr == nil:
+			forms++
+			require.Equal(t, byFewestMoves, form, "the description by the fewest moves stands where it gets a form")
+		case err == nil:
+			rescued++
+			require.NotContains(t, form.message+form.description, ", now :", "a rule that traded order with none is not moved")
+		default:
+			require.Equal(t, bySteps, advisesSteps(t, err), "stored %v\nrequested %v", stored, requested)
+			if bySteps {
+				toSteps++
+			} else {
+				toConsole++
+			}
+			if bySteps != advisesSteps(t, firstErr) {
+				adviceChanged++
+			}
+		}
+	}
+	require.Len(t, rooms, 3, "the fallback line takes one, two and three rows: %v", rooms)
+	require.Greater(t, forms, 100)
+	require.Greater(t, rescued, 30, "forms that the description by the fewest moves has no room for")
+	require.Greater(t, toSteps, 50)
+	require.Greater(t, toConsole, 50)
+	require.Greater(t, adviceChanged, 15, "refusals whose advice the description by the fewest moves gets wrong")
+}
+
+// The wordings differ in which move is cheap: a rule that passes one rule with
+// a short title has a shorter line with the name than with a count, and one
+// that passes a long title a longer one. So each wording is tried with its own
+// cheapest moves. Here the first rule fits no form as moved, and the second
+// fits one wording only.
+func TestApprovalReorderTriesTheCheapestMovesOfEachWording(t *testing.T) {
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	hopeless := projectsCondition("h", 30)
+	for _, tc := range []struct {
+		name          string
+		passed        *v1pb.WorkspaceApprovalSetting_Rule
+		fits, refused int
+		line          string
+	}{
+		{"by name", changeRule("B", hopeless, "b"), 0, 2, `now ahead of "B" ("b"): `},
+		{"by count", changeRule("Payments platform schema and data changes", hopeless, "roles/projectOwner", "roles/workspaceDBA"), 2, 0, "now ahead of 1 rule with "},
+	} {
+		// The condition whose move line has room in one wording and not in
+		// the other.
+		var stored, requested []*v1pb.WorkspaceApprovalSetting_Rule
+		var match *approvalRulesMatch
+		for pad := 0; ; pad++ {
+			require.Less(t, pad, 200, tc.name)
+			moved := changeRule("Moved", projectsCondition("m", 12)+` || resource.project_id == "`+strings.Repeat("m", pad)+`"`, "roles/workspaceDBA")
+			stored = []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), tc.passed, moved}
+			requested = []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), moved, tc.passed}
+			var err error
+			match, err = matchApprovalRules(stored, requested, "")
+			require.NoError(t, err)
+			lines := match.changeLines(0, true)
+			if len(wrapLine(lines[tc.fits], descriptionLineWidth)) == 8 && len(wrapLine(lines[tc.refused], descriptionLineWidth)) == 9 {
+				break
+			}
+		}
+		require.Equal(t, []bool{true, false}, match.inOrder, "the fewest moves call the first rule moved")
+		for wording, line := range match.changeLines(1, true) {
+			require.Greater(t, len(wrapLine(line, descriptionLineWidth)), 8, "%s: wording %d of the first rule's move", tc.name, wording)
+		}
+		_, err := approvalRulesForm(alice, match.described(match.inOrder), "", "")
+		require.Error(t, err, tc.name)
+
+		diff, err := diffApprovalRules(stored, requested, "")
+		require.NoError(t, err)
+		form, err := approvalRulesForm(alice, diff, "", "")
+		require.NoError(t, err, tc.name)
+		require.Contains(t, unwrapMessage(form.description), `Move to rule 1, "Workspace DBA", `+tc.line, tc.name)
+	}
+}
+
+// cheapestOrder leaves in place a run of rules in stored order, never moves a
+// rule that traded order with none, and no other set of moves costs less.
+func TestCheapestOrderMovesTheRulesThatCostTheLeast(t *testing.T) {
+	random := rand.New(rand.NewPCG(22234, 11))
+	untraded, moreMoves := 0, 0
+	for range 3000 {
+		n := 1 + random.IntN(8)
+		was := random.Perm(n)
+		costs := make([]moveCost, n)
+		for i := range costs {
+			costs[i] = moveCost{random.IntN(2), random.IntN(4), 1}
+		}
+		traded := tradedOrder(was)
+		for x := range was {
+			inverted := false
+			for y := range was {
+				inverted = inverted || x != y && (x < y) != (was[x] < was[y])
+			}
+			require.Equal(t, inverted, traded[x], "%v, rule %d", was, x)
+			if !inverted {
+				untraded++
+			}
+		}
+		inOrder := cheapestOrder(was, traded, func(kept int) moveCost { return costs[kept] })
+
+		// Every set of moves that leaves the rest in stored order. Moving
+		// every rule is one, and the dearest.
+		var least moveCost
+		for _, cost := range costs {
+			for i := range least {
+				least[i] += cost[i]
+			}
+		}
+		fewest := n
+		for moved := range 1 << n {
+			total, last, valid, moves := moveCost{}, -1, true, 0
+			for kept := range was {
+				if moved>>kept&1 == 1 {
+					moves++
+					for i := range total {
+						total[i] += costs[kept][i]
+					}
+					continue
+				}
+				valid = valid && was[kept] > last
+				last = was[kept]
+			}
+			if !valid {
+				continue
+			}
+			if moves < fewest {
+				fewest = moves
+			}
+			if slices.Compare(total[:], least[:]) < 0 {
+				least = total
+			}
+		}
+		paid, last, moves := moveCost{}, -1, 0
+		for kept := range was {
+			if inOrder[kept] {
+				require.Greater(t, was[kept], last, "%v: the rules left in place are in stored order", was)
+				last = was[kept]
+				continue
+			}
+			require.True(t, traded[kept], "%v: rule %d traded order with none", was, kept)
+			moves++
+			for i := range paid {
+				paid[i] += costs[kept][i]
+			}
+		}
+		require.Equal(t, least, paid, "%v with the costs %v", was, costs)
+		if moves > fewest {
+			moreMoves++
+		}
+	}
+	require.Greater(t, untraded, 300)
+	require.Greater(t, moreMoves, 100, "the cheapest moves are often more than the fewest")
+}
+
+// A move is priced by what it adds to the rule's line: a line that fits no
+// form before anything else, then its rows.
+func TestMoveLineCost(t *testing.T) {
+	// The longest line of words that takes n rows.
+	rows := func(n int) string {
+		line := "word"
+		for len(wrapLine(line+" word", descriptionLineWidth)) <= n {
+			line += " word"
+		}
+		require.Len(t, wrapLine(line, descriptionLineWidth), n)
+		return line
+	}
+	require.Equal(t, moveCost{0, 1, 1}, moveLineCost("Move to rule 2: a", "", 8))
+	require.Equal(t, moveCost{0, 0, 1}, moveLineCost("Change, a to b; move to rule 2: a", "Change, a to b: a", 8))
+	require.Equal(t, moveCost{0, 1, 1}, moveLineCost(rows(3)+" word", rows(3), 8))
+	require.Equal(t, moveCost{0, 8, 1}, moveLineCost(rows(8), "", 8))
+	require.Equal(t, moveCost{0, 3, 1}, moveLineCost(rows(8), rows(5), 8))
+	require.Equal(t, moveCost{1, 0, 1}, moveLineCost(rows(9), "", 8))
+	require.Equal(t, moveCost{1, 0, 1}, moveLineCost(rows(9), rows(8), 8))
+	require.Equal(t, moveCost{0, 8, 1}, moveLineCost(rows(8), "", 9))
+	require.Equal(t, moveCost{0, 1, 1}, moveLineCost(rows(10), rows(9), 8), "a line too long without the move is too long by any description")
 }
 
 // A step is a request of its own, and its rules decide which rules a move's
@@ -1326,12 +1686,12 @@ func TestAdministerWorkspaceOffersNoStepsForAMove(t *testing.T) {
 	form, diff := listed([]*v1pb.WorkspaceApprovalSetting_Rule{finance, prod}, []*v1pb.WorkspaceApprovalSetting_Rule{
 		changeRule("Finance", `resource.project_id == "finance"`, "roles/projectOwner"), prod, added,
 	})
-	require.False(t, diff.moved)
+	require.Zero(t, diff.moves)
 	require.Len(t, diff.changes, 2)
 	require.Contains(t, form.inSteps, "a rule or two at a time")
 
 	form, diff = listed([]*v1pb.WorkspaceApprovalSetting_Rule{finance, prod}, []*v1pb.WorkspaceApprovalSetting_Rule{prod, finance, added})
-	require.True(t, diff.moved)
+	require.Equal(t, 1, diff.moves)
 	require.Len(t, diff.changes, 2)
 	for _, change := range diff.changes {
 		require.True(t, alone(change), change)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -822,27 +823,41 @@ func TestAdministerMaskingRulesCutsALongRuleListToTheDescription(t *testing.T) {
 	require.Equal(t, `... and 23 more rules, tried after these.`, rows[9])
 }
 
-// The masking form reads a reorder both ways too: a swap that a form makes, a
-// form swaps back, also when one of the two rules is too long for any form.
+// askedMaskingChange sends requested to a workspace that stores stored, and
+// returns the form the user was asked or the result when none was.
+func askedMaskingChange(t *testing.T, stored, requested []*v1pb.MaskingRulePolicy_MaskingRule) (message, description, refusal string) {
+	t.Helper()
+	mock := &maskingMock{}
+	mock.setStored(stored...)
+	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, requested...))))
+	if user.asked.Load() == 0 {
+		return "", "", resultText(t, res)
+	}
+	asked := user.lastParams(t)
+	return asked.Message, choiceDescription(t, asked), ""
+}
+
+// columnsCondition matches n columns of one table, in about 33 characters
+// each.
+func columnsCondition(table, prefix string, n int) string {
+	var terms []string
+	for i := range n {
+		terms = append(terms, fmt.Sprintf(`resource.column_name == "%s%02d"`, prefix, i))
+	}
+	return `resource.table_name == "` + table + `" && (` + strings.Join(terms, " || ") + ")"
+}
+
+// The masking form describes a refused reorder by the moves that take the
+// fewest rows too: a swap that a form makes, a form swaps back, also when one
+// of the two rules is too long for any form.
 func TestAdministerMaskingRulesSwapsBackWhatItSwaps(t *testing.T) {
 	swap := func(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule) (message, refusal string) {
-		mock := &maskingMock{}
-		mock.setStored(stored...)
-		user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
-		_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
-		res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, requested...))))
-		if user.asked.Load() == 0 {
-			return "", resultText(t, res)
-		}
-		return user.lastParams(t).Message, ""
+		message, _, refusal = askedMaskingChange(t, stored, requested)
+		return message, refusal
 	}
-	columns := func(n int) string {
-		var terms []string
-		for i := range n {
-			terms = append(terms, fmt.Sprintf(`resource.column_name == "c%02d"`, i))
-		}
-		return `resource.table_name == "orders" && (` + strings.Join(terms, " || ") + ")"
-	}
+	columns := func(n int) string { return columnsCondition("orders", "c", n) }
 	short := maskingRule("r-short", "Short", `resource.column_name == "ssn"`, "bb.default")
 	for n := 2; n <= 30; n += 2 {
 		many := maskingRule("r-many", "Many columns", columns(n), "bb.default")
@@ -853,20 +868,198 @@ func TestAdministerMaskingRulesSwapsBackWhatItSwaps(t *testing.T) {
 		require.Empty(t, refusal, "%d columns, swapped back", n)
 	}
 
-	// The first reading stands wherever it gets a form, and the second names
-	// the short rule as moved when the long one fits no form.
+	// The description by the fewest moves stands wherever it gets a form, and
+	// the short rule is the moved one when the long one fits no form.
 	few := maskingRule("r-many", "Many columns", columns(2), "bb.default")
 	message, _ := swap([]*v1pb.MaskingRulePolicy_MaskingRule{few, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, few})
 	require.Contains(t, unwrapMessage(message), "Move to rule 2: `"+columns(2)+"`")
 	long := maskingRule("r-many", "Many columns", columns(30), "bb.default")
 	message, _ = swap([]*v1pb.MaskingRulePolicy_MaskingRule{long, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, long})
 	require.Contains(t, message, `Move to rule 1: any db, any table, column "ssn"`)
-	// With no reading that fits, the refusal is the first reading's.
-	other := maskingRule("r-other", "Other columns", strings.ReplaceAll(columns(30), `"c`, `"d`), "bb.default")
+	// Two rules that are each too long for any form cannot trade places in
+	// one, by either description or in steps.
+	other := maskingRule("r-other", "Other columns", columnsCondition("orders", "d", 30), "bb.default")
 	_, refusal := swap([]*v1pb.MaskingRulePolicy_MaskingRule{long, other}, []*v1pb.MaskingRulePolicy_MaskingRule{other, long})
 	require.Contains(t, refusal, "CHANGE_TOO_LONG")
 	require.Contains(t, refusal, "Move to rule 2: ")
 	require.NotContains(t, refusal, "Move to rule 1: ")
+	require.Contains(t, refusal, "make that change signed in to the Bytebase console")
+	require.NotContains(t, refusal, "smaller steps")
+}
+
+// Two swaps in one request, each of a long rule and a short one: the lines of
+// the two short rules fit a form, whichever rule a tie-break calls moved. A
+// reorder with no room in one form is sent to smaller steps whenever steps can
+// make it.
+func TestAdministerMaskingRulesDescribesAReorderByTheMovesThatFit(t *testing.T) {
+	wideA := maskingRule("r-a", "Many columns A", columnsCondition("orders", "a", 24), "bb.default")
+	ssn := maskingRule("r-b", "SSN", `resource.column_name == "ssn"`, "bb.default")
+	email := maskingRule("r-c", "Email", `resource.column_name == "email"`, "bb.default-partial")
+	wideD := maskingRule("r-d", "Many columns D", columnsCondition("orders", "d", 24), "bb.default-partial")
+	stored := []*v1pb.MaskingRulePolicy_MaskingRule{wideA, ssn, email, wideD}
+	swapped := []*v1pb.MaskingRulePolicy_MaskingRule{ssn, wideA, wideD, email}
+	for _, request := range [][2][]*v1pb.MaskingRulePolicy_MaskingRule{{stored, swapped}, {swapped, stored}} {
+		message, _, refusal := askedMaskingChange(t, request[0], request[1])
+		require.Empty(t, refusal)
+		rows := strings.Split(message, "\n")
+		require.Len(t, rows, 4)
+		require.Regexp(t, `^Move to rule [12]: any db, any table, column "ssn"$`, rows[1])
+		require.Regexp(t, `^Move to rule [34]: any db, any table, column "email"$`, rows[2])
+	}
+
+	// Ten swaps of a rule of two rows and a rule of one: the ten moves of two
+	// rows have no room, and the ten of one row take the ten rows a form has.
+	var pairs, traded []*v1pb.MaskingRulePolicy_MaskingRule
+	for i := range 10 {
+		twoRows := maskingRule(fmt.Sprintf("r-two-%d", i), "", columnsCondition(fmt.Sprintf("t%d", i), "c", 3), "bb.default")
+		narrow := maskingRule(fmt.Sprintf("r-narrow-%d", i), "", fmt.Sprintf(`resource.column_name == "s%d"`, i), "bb.default")
+		pairs, traded = append(pairs, twoRows, narrow), append(traded, narrow, twoRows)
+	}
+	message, description, refusal := askedMaskingChange(t, pairs, traded)
+	require.Empty(t, refusal)
+	require.Contains(t, message, "Change 10 rules, listed under Action.")
+	require.Equal(t, descriptionLines, strings.Count(description, "\n")+1)
+	require.True(t, strings.HasSuffix(description, `Move to rule 19: any db, any table, column "s9"`), description)
+
+	// Eleven swaps of a wide rule and a narrow one have no room in one form,
+	// and each has room alone.
+	pairs, traded = nil, nil
+	for i := range 11 {
+		wide := maskingRule(fmt.Sprintf("r-wide-%d", i), "", columnsCondition(fmt.Sprintf("t%d", i), "c", 24), "bb.default")
+		narrow := maskingRule(fmt.Sprintf("r-narrow-%d", i), "", fmt.Sprintf(`resource.column_name == "s%d"`, i), "bb.default")
+		pairs, traded = append(pairs, wide, narrow), append(traded, narrow, wide)
+	}
+	_, _, refusal = askedMaskingChange(t, pairs, traded)
+	require.Contains(t, refusal, "this change needs 11 lines, more than the 10 one confirmation form has room for")
+	require.Contains(t, refusal, "make the change in smaller steps, a few rules at a time")
+	from := pairs
+	for pair := range 11 {
+		step := slices.Clone(from)
+		step[2*pair], step[2*pair+1] = traded[2*pair], traded[2*pair+1]
+		message, _, refusal := askedMaskingChange(t, from, step)
+		require.Empty(t, refusal, "pair %d alone", pair)
+		require.Contains(t, message, fmt.Sprintf(`Move to rule %d: any db, any table, column "s%d"`, 2*pair+1, pair))
+		from = step
+	}
+}
+
+// A move is priced by the rows of its own line. Here the first rule fits no
+// form as moved, and the second one's line takes exactly the ten rows a form
+// has: one column more and it would take eleven.
+func TestMaskingReorderPricesAMoveByItsOwnLine(t *testing.T) {
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	types, err := semanticTypesFromSetting(nil)
+	require.NoError(t, err)
+	hopeless := maskingRule("r-hopeless", "", columnsCondition("orders", "h", 30), "bb.default")
+	moved := func(pad int) *v1pb.MaskingRulePolicy_MaskingRule {
+		return maskingRule("r-moved", "", columnsCondition("orders", "m", 16)+` || resource.column_name == "`+strings.Repeat("m", pad)+`"`, "bb.default")
+	}
+	rows := func(pad int) int {
+		diff, err := diffMaskingRules([]*v1pb.MaskingRulePolicy_MaskingRule{moved(pad), hopeless}, []*v1pb.MaskingRulePolicy_MaskingRule{hopeless, moved(pad)}, types, "")
+		require.NoError(t, err)
+		require.Len(t, diff.changes, 1)
+		require.True(t, strings.HasPrefix(diff.changes[0].text, "Move to rule 2: "), diff.changes[0].text)
+		return len(wrapLine(diff.changes[0].text, descriptionLineWidth))
+	}
+	pad := 0
+	for rows(pad+1) <= descriptionLines {
+		pad++
+		require.Less(t, pad, 400)
+	}
+	require.Equal(t, descriptionLines, rows(pad))
+
+	// The fewest moves call the first rule moved, which fits no form.
+	stored := []*v1pb.MaskingRulePolicy_MaskingRule{hopeless, moved(pad)}
+	requested := []*v1pb.MaskingRulePolicy_MaskingRule{moved(pad), hopeless}
+	match, err := matchMaskingRules(stored, requested, types, "")
+	require.NoError(t, err)
+	require.Equal(t, []bool{true, false}, match.inOrder)
+	_, err = maskingRulesForm(alice, match.described(match.inOrder, false), "")
+	require.Error(t, err)
+
+	diff, err := diffMaskingRules(stored, requested, types, "")
+	require.NoError(t, err)
+	form, err := maskingRulesForm(alice, diff, "")
+	require.NoError(t, err)
+	require.Contains(t, form.message, "Change 1 rule, listed under Action.")
+	require.True(t, strings.HasPrefix(form.description, "Move to rule 1: `resource.table_name == \"orders\" && ("), form.description)
+	require.Equal(t, descriptionLines, strings.Count(form.description, "\n")+1)
+}
+
+// Whichever rules a tie-break calls moved, a masking reorder is refused only
+// when no description of it fits a form, and is sent to smaller steps whenever
+// some description has no line too long for one.
+func TestMaskingReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	types, err := semanticTypesFromSetting(nil)
+	require.NoError(t, err)
+	random := rand.New(rand.NewPCG(22234, 13))
+	semanticTypes := []string{"bb.default", "bb.default-partial", ""}
+	var forms, rescued, toSteps, toConsole, adviceChanged int
+	for range 500 {
+		n := 2 + random.IntN(5)
+		var stored []*v1pb.MaskingRulePolicy_MaskingRule
+		for i := range n {
+			// Conditions of every length, so that a column more or less
+			// decides a row.
+			columns := []int{1, 1, 2, 4, 8, 16, 20, 24}[random.IntN(8)]
+			condition := columnsCondition(fmt.Sprintf("t%d", i), "c", columns) + strings.Repeat(" ", random.IntN(40))
+			stored = append(stored, maskingRule(fmt.Sprintf("r%d", i), []string{"", "Pay"}[random.IntN(2)], condition, semanticTypes[random.IntN(len(semanticTypes))]))
+		}
+		var requested []*v1pb.MaskingRulePolicy_MaskingRule
+		for _, place := range reorderedPlaces(random, n) {
+			rule := proto.CloneOf(stored[place])
+			switch random.IntN(8) {
+			case 0:
+				rule.SemanticType = semanticTypes[random.IntN(len(semanticTypes))]
+			case 1:
+				rule.Condition.Title = "Renamed"
+			default:
+			}
+			requested = append(requested, rule)
+		}
+		match, err := matchMaskingRules(stored, requested, types, "LINK")
+		require.NoError(t, err)
+		if !slices.Contains(match.inOrder, false) {
+			continue
+		}
+		fits, bySteps := false, false
+		everyDescription(match.was, func(inOrder []bool) {
+			if _, err := maskingRulesForm(alice, match.described(inOrder, false), "LINK"); err == nil {
+				fits = true
+			} else if advisesSteps(t, err) {
+				bySteps = true
+			}
+		})
+
+		byFewestMoves, firstErr := maskingRulesForm(alice, match.described(match.inOrder, false), "LINK")
+		diff, err := diffMaskingRules(stored, requested, types, "LINK")
+		require.NoError(t, err)
+		form, err := maskingRulesForm(alice, diff, "LINK")
+		require.Equal(t, fits, err == nil, "stored %v\nrequested %v", stored, requested)
+		switch {
+		case err == nil && firstErr == nil:
+			forms++
+			require.Equal(t, byFewestMoves, form, "the description by the fewest moves stands where it gets a form")
+		case err == nil:
+			rescued++
+		default:
+			require.Equal(t, bySteps, advisesSteps(t, err), "stored %v\nrequested %v", stored, requested)
+			if bySteps {
+				toSteps++
+			} else {
+				toConsole++
+			}
+			if bySteps != advisesSteps(t, firstErr) {
+				adviceChanged++
+			}
+		}
+	}
+	require.Greater(t, forms, 100)
+	require.Greater(t, rescued, 30, "forms that the description by the fewest moves has no room for")
+	require.Greater(t, toSteps, 20)
+	require.Greater(t, toConsole, 50)
+	require.Greater(t, adviceChanged, 5, "refusals whose advice the description by the fewest moves gets wrong")
 }
 
 // On a form that lists its changes under the choice, a user who cannot read
@@ -905,9 +1098,9 @@ func TestAdministerMaskingRulesOffersStepsWhenAListedChangeIsChangedInChat(t *te
 	both := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, long, rules[0])))))
 	require.Equal(t, changed, both)
 
-	// A form by the second reading of a reorder offers no steps, though each of
-	// its lines fits a message alone: a step that swaps one pair reads it the
-	// first way, by the wide rule, and lists that under the choice.
+	// A form by the fewest rows offers no steps, though each of its lines fits
+	// a message alone: a step that swaps one pair is described by its fewest
+	// moves first, by the wide rule, and lists that under the choice.
 	var pairs, swapped []*v1pb.MaskingRulePolicy_MaskingRule
 	for i := range 4 {
 		var columns []string
@@ -919,8 +1112,8 @@ func TestAdministerMaskingRulesOffersStepsWhenAListedChangeIsChangedInChat(t *te
 		pairs, swapped = append(pairs, wide, narrow), append(swapped, narrow, wide)
 	}
 	mock.setStored(pairs...)
-	bySecond := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, swapped...)))))
-	require.Equal(t, changed, bySecond)
+	byRows := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, swapped...)))))
+	require.Equal(t, changed, byRows)
 	asked := user.lastParams(t)
 	require.Contains(t, asked.Message, "Change 4 rules, listed under Action.")
 	require.Contains(t, choiceDescription(t, asked), `Move to rule 1: any db, any table, column "s0"`)

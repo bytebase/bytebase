@@ -384,11 +384,12 @@ type approvalRulesDiff struct {
 	// order it tries them: a move counts the rules it passes by their
 	// approvers and names none, and then only counts them.
 	shorter [2][]string
-	// moved reports that the request moves a kept rule.
-	moved bool
-	// other builds the change by the second reading of its moves. It is nil
-	// when that reading is not worth a form (movesRead).
-	other func() (*approvalRulesDiff, error)
+	// moves counts the kept rules the description calls moved.
+	moves int
+	// fewestRows describes the same change by other moves, for a form with
+	// room rows for its changes (approvalRulesMatch.byFewestRows). It is nil
+	// when no rule moved, and on a description it built.
+	fewestRows func(room int) []*approvalRulesDiff
 	// requested are the rules for database changes as the request orders them,
 	// and marks say of each whether it is new, changed or kept as stored.
 	requested []*v1pb.WorkspaceApprovalSetting_Rule
@@ -404,12 +405,39 @@ type approvalRulesDiff struct {
 // form does not show them. The rules for database changes are matched by their
 // condition, the text an approval check evaluates.
 func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, link string) (*approvalRulesDiff, error) {
-	return approvalRulesDiffBy(stored, requested, link, false)
+	match, err := matchApprovalRules(stored, requested, link)
+	if err != nil {
+		return nil, err
+	}
+	// A kept rule outside the longest common order moved: the first matching
+	// rule decides, so a move changes which rule decides some changes.
+	diff := match.described(match.inOrder)
+	if diff.moves > 0 {
+		diff.fewestRows = match.byFewestRows
+	}
+	return diff, nil
 }
 
-// approvalRulesDiffBy is diffApprovalRules by the first or the second reading
-// of the moves (longestCommonOrders).
-func approvalRulesDiffBy(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, link string, second bool) (*approvalRulesDiff, error) {
+// approvalRulesMatch is a request's rules for database changes matched to the
+// stored ones: what a description of the change is built from, whichever of
+// the kept rules it calls moved.
+type approvalRulesMatch struct {
+	requested []*v1pb.WorkspaceApprovalSetting_Rule
+	// stored are the stored rules for database changes by condition.
+	stored   map[string]*v1pb.WorkspaceApprovalSetting_Rule
+	fallback []*v1pb.WorkspaceApprovalSetting_Rule
+	// removed has a line for each stored rule the request leaves out.
+	removed []string
+	kept    []keptRule
+	kinds   approverKinds
+	// inOrder marks the kept rules in a longest common order of the two lists.
+	inOrder []bool
+	// moveLines holds changeLines of the rules it was asked for as moved: a
+	// rule can be moved in more than one description.
+	moveLines map[int][3]string
+}
+
+func matchApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, link string) (*approvalRulesMatch, error) {
 	// The request cannot carry such a field, so the write would drop it unstated.
 	for _, rule := range stored {
 		if field := unlistedField(rule.ProtoReflect(), approvalRulesPath, approvalRequestFields); field != "" {
@@ -446,10 +474,10 @@ func approvalRulesDiffBy(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule
 		}
 	}
 
-	diff := &approvalRulesDiff{requested: requestedDB}
+	match := &approvalRulesMatch{requested: requestedDB, stored: storedByCondition, moveLines: map[int][3]string{}}
 	for _, rule := range storedOther {
 		if rule.GetSource() == v1pb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED {
-			diff.fallback = append(diff.fallback, rule)
+			match.fallback = append(match.fallback, rule)
 		}
 	}
 	var storedKept, requestedKept []string
@@ -459,18 +487,22 @@ func approvalRulesDiffBy(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule
 			storedKept = append(storedKept, condition)
 			continue
 		}
-		diff.add(fmt.Sprintf("Remove, %s: %s", approvers(rule), conditionText(condition)))
+		match.removed = append(match.removed, fmt.Sprintf("Remove, %s: %s", approvers(rule), conditionText(condition)))
 	}
 	storedPlace := make(map[string]int, len(storedKept))
 	for place, condition := range storedKept {
 		storedPlace[condition] = place
 	}
-	var keptRules []keptRule
-	var kinds approverKinds
 	flows := map[string]int{}
 	for i, rule := range requestedDB {
 		condition := rule.GetCondition().GetExpression()
-		if storedByCondition[condition] == nil {
+		before := storedByCondition[condition]
+		if before == nil || !proto.Equal(before.GetTemplate().GetFlow(), rule.GetTemplate().GetFlow()) {
+			if err := approverError(rule); err != nil {
+				return nil, err
+			}
+		}
+		if before == nil {
 			continue
 		}
 		requestedKept = append(requestedKept, condition)
@@ -482,63 +514,116 @@ func approvalRulesDiffBy(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule
 		key := fmt.Sprintf("%q", rule.GetTemplate().GetFlow().GetRoles())
 		if _, ok := flows[key]; !ok {
 			flows[key] = len(flows)
-			kinds.texts = append(kinds.texts, who)
+			match.kinds.texts = append(match.kinds.texts, who)
 		}
 		label := fmt.Sprintf("%s (%s)", name, who)
-		keptRules = append(keptRules, keptRule{
-			was: storedPlace[condition], flow: flows[key],
+		match.kept = append(match.kept, keptRule{
+			position: i + 1, was: storedPlace[condition], flow: flows[key],
 			label: label, labelSize: textSize(label), approverSize: textSize(who),
 			unapproved: len(rule.GetTemplate().GetFlow().GetRoles()) == 0,
 		})
 	}
-	kinds.rules = [2][]int{make([]int, len(flows)), make([]int, len(flows))}
-	// A kept rule outside the longest common order moved: the first matching
-	// rule decides, so a move changes which rule decides some changes.
-	inOrder, another := movesRead(storedKept, requestedKept, second)
-	if another {
-		diff.other = func() (*approvalRulesDiff, error) { return approvalRulesDiffBy(stored, requested, link, true) }
+	match.kinds.rules = [2][]int{make([]int, len(flows)), make([]int, len(flows))}
+	match.inOrder = longestCommonOrder(storedKept, requestedKept)
+	return match, nil
+}
+
+// described returns the change with the kept rules outside inOrder as moved.
+func (m *approvalRulesMatch) described(inOrder []bool) *approvalRulesDiff {
+	diff := &approvalRulesDiff{requested: m.requested, fallback: m.fallback}
+	for _, line := range m.removed {
+		diff.add(line)
 	}
 	kept := 0
-	for i, rule := range requestedDB {
+	for i, rule := range m.requested {
 		condition := rule.GetCondition().GetExpression()
-		before := storedByCondition[condition]
-		if before == nil {
-			if err := approverError(rule); err != nil {
-				return nil, err
-			}
+		if m.stored[condition] == nil {
 			// The first matching rule decides, so an added rule's place is part
 			// of the change.
 			diff.add(fmt.Sprintf("Add rule %d, %s: %s", i+1, approvers(rule), conditionText(condition)))
 			diff.marks = append(diff.marks, "new")
 			continue
 		}
-		if !proto.Equal(before.GetTemplate().GetFlow(), rule.GetTemplate().GetFlow()) {
-			if err := approverError(rule); err != nil {
-				return nil, err
-			}
-		}
 		moved := !inOrder[kept]
-		named, shorter := "", [2]string{}
-		if moved {
-			named, shorter = rulesPassed(kept, keptRules, kinds)
-			diff.moved = true
-		}
+		lines := m.changeLines(kept, moved)
 		kept++
-		if clauses := keptRuleClauses(before, rule, moved, i+1, named); len(clauses) > 0 {
-			line := func(clauses []string) string {
-				text := strings.Join(clauses, "; ")
-				return fmt.Sprintf("%s%s: %s", strings.ToUpper(text[:1]), text[1:], conditionText(condition))
-			}
-			diff.changes = append(diff.changes, line(clauses))
-			for j, passed := range shorter {
-				diff.shorter[j] = append(diff.shorter[j], line(keptRuleClauses(before, rule, moved, i+1, passed)))
-			}
-			diff.marks = append(diff.marks, "changed")
-		} else {
+		if lines[0] == "" {
 			diff.marks = append(diff.marks, "kept")
+			continue
+		}
+		if moved {
+			diff.moves++
+		}
+		diff.changes = append(diff.changes, lines[0])
+		for i := range diff.shorter {
+			diff.shorter[i] = append(diff.shorter[i], lines[i+1])
+		}
+		diff.marks = append(diff.marks, "changed")
+	}
+	return diff
+}
+
+// changeLines returns a kept rule's change line in each wording a form tries,
+// with the rule moved or not: the rules it traded order with named, counted by
+// their approvers, and only counted. They are empty for a rule that does not
+// change.
+func (m *approvalRulesMatch) changeLines(kept int, moved bool) [3]string {
+	position := m.kept[kept].position
+	rule := m.requested[position-1]
+	condition := rule.GetCondition().GetExpression()
+	line := func(passed string) string {
+		clauses := keptRuleClauses(m.stored[condition], rule, moved, position, passed)
+		if len(clauses) == 0 {
+			return ""
+		}
+		text := strings.Join(clauses, "; ")
+		return fmt.Sprintf("%s%s: %s", strings.ToUpper(text[:1]), text[1:], conditionText(condition))
+	}
+	if !moved {
+		unmoved := line("")
+		return [3]string{unmoved, unmoved, unmoved}
+	}
+	lines, ok := m.moveLines[kept]
+	if !ok {
+		named, shorter := rulesPassed(kept, m.kept, m.kinds)
+		lines = [3]string{line(named), line(shorter[0]), line(shorter[1])}
+		m.moveLines[kept] = lines
+	}
+	return lines
+}
+
+// byFewestRows describes the change by the moves whose lines take the fewest
+// rows, for a form with room rows for its changes. A reorder has more than one
+// description: when two rules trade places, either one moved. The wordings
+// differ in which moves are cheap, so each has its own description, in the
+// order a form tries the wordings. A form tries every wording of a
+// description, so one with the moves of the wording before it is left out.
+func (m *approvalRulesMatch) byFewestRows(room int) []*approvalRulesDiff {
+	was := make([]int, len(m.kept))
+	for kept, rule := range m.kept {
+		was[kept] = rule.was
+	}
+	traded := tradedOrder(was)
+	costs := make([][3]moveCost, len(m.kept))
+	for kept := range m.kept {
+		if !traded[kept] {
+			continue
+		}
+		moved, unmoved := m.changeLines(kept, true), m.changeLines(kept, false)
+		for wording := range costs[kept] {
+			costs[kept][wording] = moveLineCost(moved[wording], unmoved[wording], room)
 		}
 	}
-	return diff, nil
+	var diffs []*approvalRulesDiff
+	var last []bool
+	for wording := range 3 {
+		order := cheapestOrder(was, traded, func(kept int) moveCost { return costs[kept][wording] })
+		if wording == 0 || !slices.Equal(order, last) {
+			diffs = append(diffs, m.described(order))
+		}
+		last = order
+	}
+	return diffs
 }
 
 // add appends a change line that reads the same with or without room.
@@ -553,8 +638,9 @@ func (d *approvalRulesDiff) add(line string) {
 // measured, and its approvers numbered, once: every move of a request can
 // pass the same rule.
 type keptRule struct {
-	// was is its place among the kept rules as stored.
-	was int
+	// position is its place among the requested rules, from 1, and was its
+	// place among the kept rules as stored.
+	position, was int
 	// flow numbers its list of approver roles: two rules with the same list
 	// have the same number.
 	flow int
@@ -785,12 +871,9 @@ func rulesByCondition[R interface{ GetCondition() *expr.Expr }](rules []R) (map[
 	return byCondition, ""
 }
 
-// longestCommonOrders marks the elements of b that stay in the order a has
-// them, by a longest common subsequence; the rest moved. A reorder can have
-// more than one. Where two are as long, first gives up a's element and second
-// gives up b's, so second is the first reading of the same reorder from b to
-// a: a move's reverse reads its moves the other way round.
-func longestCommonOrders(a, b []string) (first, second []bool) {
+// longestCommonOrder marks the elements of b that stay in the order a has
+// them, by the longest common subsequence; the rest moved.
+func longestCommonOrder(a, b []string) []bool {
 	lengths := make([][]int, len(a)+1)
 	for i := range lengths {
 		lengths[i] = make([]int, len(b)+1)
@@ -804,61 +887,103 @@ func longestCommonOrders(a, b []string) (first, second []bool) {
 			}
 		}
 	}
-	walk := func(giveUpB bool) []bool {
-		kept := make([]bool, len(b))
-		for i, j := 0, 0; i < len(a) && j < len(b); {
-			switch withoutA, withoutB := lengths[i+1][j], lengths[i][j+1]; {
-			case a[i] == b[j]:
-				kept[j] = true
-				i++
-				j++
-			case withoutA > withoutB || (withoutA == withoutB && !giveUpB):
-				i++
-			default:
-				j++
+	kept := make([]bool, len(b))
+	for i, j := 0, 0; i < len(a) && j < len(b); {
+		switch {
+		case a[i] == b[j]:
+			kept[j] = true
+			i++
+			j++
+		case lengths[i+1][j] >= lengths[i][j+1]:
+			i++
+		default:
+			j++
+		}
+	}
+	return kept
+}
+
+// moveCost is what a description pays to call one kept rule moved, compared in
+// this order: a line too long for any form, the rows the move adds to the
+// rule's line, and the move itself.
+type moveCost [3]int
+
+// moveLineCost prices a move by the rule's change line with and without it,
+// for a form with room rows for its changes.
+func moveLineCost(moved, unmoved string, room int) moveCost {
+	rows := func(line string) int {
+		if line == "" {
+			return 0
+		}
+		return len(wrapLine(line, descriptionLineWidth))
+	}
+	with, without := rows(moved), rows(unmoved)
+	if with > room && without <= room {
+		return moveCost{1, 0, 1}
+	}
+	return moveCost{0, with - without, 1}
+}
+
+// tradedOrder marks the kept rules that traded order with another one. was is
+// each rule's place among the kept rules as stored, in the order the request
+// has them.
+func tradedOrder(was []int) []bool {
+	traded := make([]bool, len(was))
+	for kept, highest := 0, -1; kept < len(was); kept++ {
+		traded[kept] = was[kept] < highest
+		highest = max(highest, was[kept])
+	}
+	for kept, lowest := len(was)-1, len(was); kept >= 0; kept-- {
+		traded[kept] = traded[kept] || was[kept] > lowest
+		lowest = min(lowest, was[kept])
+	}
+	return traded
+}
+
+// cheapestOrder marks the kept rules a description leaves in place when its
+// moves must cost the least: every rule that traded order with none, and of
+// the others the run in stored order that would cost the most to move. Kept
+// rules are distinct, so such a run is a common order of the two lists.
+func cheapestOrder(was []int, traded []bool, cost func(kept int) moveCost) []bool {
+	// One number weighs a move, in moveCost's order: a row weighs more than
+	// every move together, and a line too long for any form more than every
+	// row together.
+	costs := make([]moveCost, len(was))
+	row, line := 1, 1
+	for kept := range was {
+		if traded[kept] {
+			costs[kept] = cost(kept)
+			line += costs[kept][1]
+			row += costs[kept][2]
+		}
+	}
+	line *= row
+	inOrder := make([]bool, len(was))
+	// saved is the most a run that ends at a rule saves, and before the rule
+	// ahead of it in that run.
+	saved := make([]int, len(was))
+	before := make([]int, len(was))
+	last := -1
+	for kept := range was {
+		if !traded[kept] {
+			inOrder[kept] = true
+			continue
+		}
+		own := costs[kept][0]*line + costs[kept][1]*row + costs[kept][2]
+		saved[kept], before[kept] = own, -1
+		for earlier := range kept {
+			if traded[earlier] && was[earlier] < was[kept] && saved[earlier]+own > saved[kept] {
+				saved[kept], before[kept] = saved[earlier]+own, earlier
 			}
 		}
-		return kept
-	}
-	return walk(false), walk(true)
-}
-
-// movesRead returns which elements of b stay in order by the first or the
-// second reading, and for the first whether the second is worth a form: it
-// names other rules as moved, and the moves, which take a row each by either
-// reading, are no more than a description has rows.
-func movesRead(a, b []string, second bool) (inOrder []bool, another bool) {
-	first, other := longestCommonOrders(a, b)
-	if second {
-		return other, false
-	}
-	moves := 0
-	for _, kept := range first {
-		if !kept {
-			moves++
+		if last < 0 || saved[kept] > saved[last] {
+			last = kept
 		}
 	}
-	return first, moves <= descriptionLines && !slices.Equal(first, other)
-}
-
-// secondReading builds the form of a change by the second reading of its
-// moves, for a change whose first reading is refused; a rule form is refused
-// only for its length. The readings name different rules as moved, and a
-// reorder's reverse takes them the other way round, so without this a form
-// could make a swap that no form swaps back.
-func secondReading[D any](other func() (D, error), form func(D) (*adminForm, error)) *adminForm {
-	if other == nil {
-		return nil
+	for kept := last; kept >= 0; kept = before[kept] {
+		inOrder[kept] = true
 	}
-	diff, err := other()
-	if err != nil {
-		return nil
-	}
-	built, err := form(diff)
-	if err != nil {
-		return nil
-	}
-	return built
+	return inOrder
 }
 
 // approvers names a rule's approval flow: each step's role in order, a
@@ -967,7 +1092,7 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 		}
 		// A step is a request of its own, and its rules decide which rules a
 		// move's line names there. So a change with a move is offered no steps.
-		eachAlone := !diff.moved && !slices.ContainsFunc(changes, func(change formChange) bool {
+		eachAlone := diff.moves == 0 && !slices.ContainsFunc(changes, func(change formChange) bool {
 			return !messageHolds(ctx, approvalRules.question, change, issues)
 		})
 		return approvalRules.listed(ctx, changes, countLine(len(changes), diff.marks, unapproved), issues, list, link, eachAlone)
@@ -985,14 +1110,28 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 			tried = lines
 		}
 	}
-	if err != nil {
-		if other := secondReading(diff.other, func(second *approvalRulesDiff) (*adminForm, error) {
-			return approvalRulesForm(ctx, second, issues, link)
-		}); other != nil {
-			return other, nil
+	if err != nil && diff.fewestRows != nil && otherMovesHelp(diff.moves, tried, list.room()) {
+		// The last description tried takes the fewest rows in the shortest
+		// wording, so its refusal is the one that says whether smaller steps
+		// help.
+		for _, other := range diff.fewestRows(list.room()) {
+			if built, err = approvalRulesForm(ctx, other, issues, link); err == nil {
+				break
+			}
 		}
 	}
 	return built, err
+}
+
+// otherMovesHelp reports whether a reorder that is refused as its fewest moves
+// is worth describing by other moves. They are never fewer, and each takes a
+// row, so they can fit only when the fewest are no more than the rows. And
+// they can change the refusal's advice only when one of lines, the refused
+// description's, fits no form.
+func otherMovesHelp(moves int, lines []string, room int) bool {
+	return moves <= room || slices.ContainsFunc(lines, func(line string) bool {
+		return len(wrapLine(line, descriptionLineWidth)) > room
+	})
 }
 
 // fallbackRows bounds the fallback line. The stored fallback rules are not
@@ -1079,6 +1218,17 @@ type ruleSection struct {
 	empty  string
 }
 
+// room is the rows a description has for a form's changes. Every step carries
+// the lines before the list, so the changes have the rows those lines leave,
+// and one with no room beside them fits no form.
+func (s ruleSection) room() int {
+	room := descriptionLines
+	for _, line := range s.before {
+		room -= len(wrapLine(line, descriptionLineWidth))
+	}
+	return room
+}
+
 // messageHolds reports whether the message of a form under question has room
 // for change by itself.
 func messageHolds(ctx context.Context, question string, change formChange, effect string) bool {
@@ -1104,12 +1254,7 @@ func (r adminRules) whole(ctx context.Context, question string, changes []formCh
 // agent may offer them in steps.
 func (r adminRules) listed(ctx context.Context, changes []formChange, count, effect string, list ruleSection, link string, eachAlone bool) (*adminForm, error) {
 	lines := append(questionLines(ctx, r.question, ""), wrapMessageLine(count)...)
-	// Every step carries the lines before the list, so the changes have the
-	// rows those lines leave, and one with no room beside them fits no form.
-	room := descriptionLines
-	for _, line := range list.before {
-		room -= len(wrapLine(line, descriptionLineWidth))
-	}
+	room := list.room()
 	var texts []string
 	needed, tooLong := 0, ""
 	affected := false

@@ -330,11 +330,14 @@ type maskingRulesDiff struct {
 	marks     []string
 	// types describe each rule's semantic type.
 	types map[string]*storepb.SemanticTypeSetting_SemanticType
-	// other builds the change by the second reading of its moves. It is nil
-	// when that reading is not worth a form (movesRead). second reports that
-	// this diff is that reading.
-	other  func() (*maskingRulesDiff, error)
-	second bool
+	// moves counts the kept rules the description calls moved.
+	moves int
+	// fewestRows describes the same change by the moves whose lines take the
+	// fewest rows, for a form with room rows for its changes
+	// (maskingRulesMatch.byFewestRows). It is nil when no rule moved, and on
+	// the description it built, which byRows marks.
+	fewestRows func(room int) *maskingRulesDiff
+	byRows     bool
 }
 
 // diffMaskingRules compares the requested rule list with the stored one. Rules
@@ -347,12 +350,36 @@ type maskingRulesDiff struct {
 // hand columns to a rule that masks them less, and so can a rule given a type
 // that is not a full mask; these changes say they can unmask data.
 func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, types map[string]*storepb.SemanticTypeSetting_SemanticType, link string) (*maskingRulesDiff, error) {
-	return maskingRulesDiffBy(stored, requested, types, link, false)
+	match, err := matchMaskingRules(stored, requested, types, link)
+	if err != nil {
+		return nil, err
+	}
+	// A kept rule outside the longest common order moved.
+	diff := match.described(match.inOrder, false)
+	if diff.moves > 0 {
+		diff.fewestRows = match.byFewestRows
+	}
+	return diff, nil
 }
 
-// maskingRulesDiffBy is diffMaskingRules by the first or the second reading of
-// the moves (longestCommonOrders).
-func maskingRulesDiffBy(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, types map[string]*storepb.SemanticTypeSetting_SemanticType, link string, second bool) (*maskingRulesDiff, error) {
+// maskingRulesMatch is a request's masking rules matched to the stored ones:
+// what a description of the change is built from, whichever of the kept rules
+// it calls moved.
+type maskingRulesMatch struct {
+	requested []*v1pb.MaskingRulePolicy_MaskingRule
+	// stored are the stored rules by condition.
+	stored map[string]*v1pb.MaskingRulePolicy_MaskingRule
+	types  map[string]*storepb.SemanticTypeSetting_SemanticType
+	// removed has a change for each stored rule the request leaves out.
+	removed []formChange
+	// was is each kept rule's place among the kept rules as stored, in the
+	// order the request has them, and inOrder marks those in a longest common
+	// order of the two lists.
+	was     []int
+	inOrder []bool
+}
+
+func matchMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, types map[string]*storepb.SemanticTypeSetting_SemanticType, link string) (*maskingRulesMatch, error) {
 	// The request cannot carry such a field, so the write would drop it unstated.
 	for _, rule := range stored {
 		if field := unlistedField(rule.ProtoReflect(), maskingRulesPath, maskingRequestFields); field != "" {
@@ -389,34 +416,40 @@ func maskingRulesDiffBy(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule,
 		}
 	}
 
-	diff := &maskingRulesDiff{requested: requested, types: types, second: second}
+	match := &maskingRulesMatch{requested: requested, stored: storedByCondition, types: types}
+	phrases := &maskingRulesDiff{types: types}
 	var storedKept, requestedKept []string
+	storedPlace := map[string]int{}
 	for _, rule := range stored {
 		condition := rule.GetCondition().GetExpression()
 		if _, kept := requestedByCondition[condition]; kept {
+			storedPlace[condition] = len(storedKept)
 			storedKept = append(storedKept, condition)
 			continue
 		}
-		diff.changes = append(diff.changes, formChange{
-			text:   fmt.Sprintf("Remove, %s: %s", diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)),
+		match.removed = append(match.removed, formChange{
+			text:   fmt.Sprintf("Remove, %s: %s", phrases.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)),
 			effect: true,
 		})
 	}
 	for _, rule := range requested {
 		if condition := rule.GetCondition().GetExpression(); storedByCondition[condition] != nil {
 			requestedKept = append(requestedKept, condition)
+			match.was = append(match.was, storedPlace[condition])
 		}
 	}
-	// A kept rule outside the longest common order moved, and an added rule's
-	// place is part of its change.
-	inOrder, another := movesRead(storedKept, requestedKept, second)
-	if another {
-		diff.other = func() (*maskingRulesDiff, error) { return maskingRulesDiffBy(stored, requested, types, link, true) }
-	}
+	match.inOrder = longestCommonOrder(storedKept, requestedKept)
+	return match, nil
+}
+
+// described returns the change with the kept rules outside inOrder as moved.
+// An added rule's place is part of its change.
+func (m *maskingRulesMatch) described(inOrder []bool, byRows bool) *maskingRulesDiff {
+	diff := &maskingRulesDiff{changes: slices.Clone(m.removed), requested: m.requested, types: m.types, byRows: byRows}
 	kept := 0
-	for i, rule := range requested {
+	for i, rule := range m.requested {
 		condition := rule.GetCondition().GetExpression()
-		before := storedByCondition[condition]
+		before := m.stored[condition]
 		if before == nil {
 			diff.changes = append(diff.changes, formChange{
 				text:   fmt.Sprintf("Add rule %d, %s: %s", i+1, diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)),
@@ -427,6 +460,9 @@ func maskingRulesDiffBy(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule,
 		}
 		moved := !inOrder[kept]
 		kept++
+		if moved {
+			diff.moves++
+		}
 		if change, ok := diff.keptRuleChange(before, rule, moved, i+1); ok {
 			diff.changes = append(diff.changes, change)
 			diff.marks = append(diff.marks, "changed")
@@ -434,7 +470,30 @@ func maskingRulesDiffBy(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule,
 			diff.marks = append(diff.marks, "kept")
 		}
 	}
-	return diff, nil
+	return diff
+}
+
+// byFewestRows describes the change by the moves whose lines take the fewest
+// rows, as approvalRulesMatch.byFewestRows does. A masking move's line has one
+// wording, so there is one description.
+func (m *maskingRulesMatch) byFewestRows(room int) *maskingRulesDiff {
+	traded := tradedOrder(m.was)
+	costs := make([]moveCost, len(m.was))
+	phrases := &maskingRulesDiff{types: m.types}
+	kept := 0
+	for i, rule := range m.requested {
+		before := m.stored[rule.GetCondition().GetExpression()]
+		if before == nil {
+			continue
+		}
+		if traded[kept] {
+			moved, _ := phrases.keptRuleChange(before, rule, true, i+1)
+			unmoved, _ := phrases.keptRuleChange(before, rule, false, i+1)
+			costs[kept] = moveLineCost(moved.text, unmoved.text, room)
+		}
+		kept++
+	}
+	return m.described(cheapestOrder(m.was, traded, func(kept int) moveCost { return costs[kept] }), true)
 }
 
 // keptRuleChange states how a kept rule changes, one clause per field the form
@@ -533,15 +592,20 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 	alone := func(change formChange) bool {
 		return messageHolds(ctx, maskingRulesQuestion, change, maskingRulesUnmask) || messageHolds(ctx, maskingRulesQuestionWithEffect, change, "")
 	}
-	// A step is a request of its own and reads its moves the first way, so a
-	// form by the second reading offers no steps.
-	eachAlone := !diff.second && !slices.ContainsFunc(diff.changes, func(change formChange) bool { return !alone(change) })
-	form, err := rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, maskingRuleSection(diff, true), link, eachAlone)
-	if err != nil {
-		if other := secondReading(diff.other, func(second *maskingRulesDiff) (*adminForm, error) {
-			return maskingRulesForm(ctx, second, link)
-		}); other != nil {
-			return other, nil
+	// A step is a request of its own, described by its fewest moves first, so
+	// a form by the fewest rows offers no steps.
+	eachAlone := !diff.byRows && !slices.ContainsFunc(diff.changes, func(change formChange) bool { return !alone(change) })
+	list := maskingRuleSection(diff, true)
+	form, err := rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, list, link, eachAlone)
+	if err != nil && diff.fewestRows != nil {
+		lines := make([]string, 0, len(diff.changes))
+		for _, change := range diff.changes {
+			lines = append(lines, change.text)
+		}
+		// The description by the fewest rows is the one whose refusal says
+		// whether smaller steps help.
+		if otherMovesHelp(diff.moves, lines, list.room()) {
+			return maskingRulesForm(ctx, diff.fewestRows(list.room()), link)
 		}
 	}
 	return form, err
