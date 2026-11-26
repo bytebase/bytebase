@@ -66,6 +66,8 @@ var ElasticsearchBlockedFeatureNames = map[ElasticsearchBlockedFeature]string{
 type ElasticsearchAnalysis struct {
 	API             ElasticsearchMaskableAPI      // Classification of the endpoint
 	Index           string                        // Target index name extracted from URL (empty if not applicable)
+	Targets         [][]string                    // Index expressions the request reads, as written (omni's RequestAnalysis.Targets)
+	ExpandsHidden   bool                          // True when expand_wildcards lets a wildcard reach hidden indices
 	BlockedFeatures []ElasticsearchBlockedFeature // Features found in request body that must be blocked
 	SourceFields    []string                      // Fields requested via _source filtering (nil = all fields, empty = _source disabled)
 	SourceDisabled  bool                          // True when _source: false is set
