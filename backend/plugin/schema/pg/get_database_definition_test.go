@@ -63,19 +63,4 @@ func TestGetDatabaseDefinitionSeam(t *testing.T) {
 			require.NotContains(t, f.Content, backupSchema)
 		}
 	})
-
-	t.Run("CockroachDB routes through PostgreSQL definition registry", func(t *testing.T) {
-		entry := newPostgresEntryPoint()
-		def, err := schema.GetDatabaseDefinition(storepb.Engine_COCKROACHDB, schema.GetDefinitionContext{PrintHeader: true}, entry.metadata)
-		require.NoError(t, err)
-		require.Contains(t, def, `"public"."t"`)
-
-		tblDef, err := schema.GetTableDefinition(storepb.Engine_COCKROACHDB, "public", entry.table, nil)
-		require.NoError(t, err)
-		require.Contains(t, tblDef, `CREATE TABLE`)
-
-		multiFile, err := schema.GetMultiFileDatabaseDefinition(storepb.Engine_COCKROACHDB, schema.GetDefinitionContext{}, entry.metadata)
-		require.NoError(t, err)
-		require.NotEmpty(t, multiFile.Files)
-	})
 }

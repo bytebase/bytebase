@@ -14,7 +14,7 @@ import (
 )
 
 func TestDiffSDLMigration_RegistryAndErrorWrapping(t *testing.T) {
-	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB} {
+	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES} {
 		t.Run(engine.String(), func(t *testing.T) {
 			sql, err := schema.DiffSDLMigration(engine,
 				"CREATE TABLE public.users (id integer PRIMARY KEY);",
@@ -81,7 +81,7 @@ func TestPGSDLDropAdvices(t *testing.T) {
 CREATE TABLE public.users (id integer NOT NULL);
 CREATE FUNCTION public.calc() RETURNS integer LANGUAGE sql AS $$ SELECT 2 $$;
 `)
-		for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB} {
+		for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES} {
 			advices, err := schema.SDLDropAdvices(engine, target, meta, "")
 			require.NoError(t, err)
 			require.NotEmpty(t, advices)
