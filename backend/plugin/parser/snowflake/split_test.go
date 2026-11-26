@@ -20,7 +20,12 @@ func TestSnowflakeSplitSQLSeam(t *testing.T) {
 	require.Equal(t, &storepb.Position{Line: 1, Column: 10}, stmts[1].Start)
 	require.Equal(t, &storepb.Position{Line: 3, Column: 12}, stmts[1].End)
 
+	// The lone ';' between them is kept as an empty segment, as in pg and mysql.
 	stmts, err = SplitSQL("SELECT 1;;SELECT 2;")
 	require.NoError(t, err)
-	require.Len(t, stmts, 2)
+	require.Len(t, stmts, 3)
+	require.False(t, stmts[0].Empty)
+	require.True(t, stmts[1].Empty)
+	require.Equal(t, ";", stmts[1].Text)
+	require.False(t, stmts[2].Empty)
 }
