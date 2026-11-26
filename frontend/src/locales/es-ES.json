@@ -440,6 +440,17 @@
       "unsaved": "Solo rellena el formulario sin guardar. Revíselo antes de seleccionar Crear."
     },
     "send": "Enviar",
+    "sql-block": {
+      "actions": "Acciones de SQL",
+      "autosave": "El editor SQL puede crear o actualizar automáticamente una consulta guardada después de este cambio.",
+      "copy": "Copiar SQL",
+      "insert": "Insertar",
+      "readonly": "Este editor SQL es de solo lectura.",
+      "replace-selection": "Reemplazar selección",
+      "run-query": "Ejecutar consulta",
+      "stale": "El editor o el chat original ya no está listo para esta acción.",
+      "unavailable": "El editor SQL original no está disponible."
+    },
     "sql-fix": {
       "applied": "SQL aplicado al borrador",
       "apply": "Aplicar al borrador",

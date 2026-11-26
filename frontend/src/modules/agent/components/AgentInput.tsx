@@ -117,6 +117,11 @@ import {
   getCurrentAgentSqlEditorContext,
   getRegisteredAgentSqlEditorHost,
 } from "../logic/sqlEditorHost";
+import {
+  type AgentSqlActionSource,
+  canBeginAgentSqlResponseAction,
+  getCurrentAgentSqlActionSource,
+} from "../logic/sqlResponse";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
 import { apiCallNeedsConfirmation } from "../logic/tools/apiMethodClass";
 import { extractDatabaseOverviewEvidence } from "../logic/tools/databaseOverview";
@@ -683,12 +688,16 @@ const mergeOverviewEvidence = (
 export function AgentInput({
   onNewChat,
   retryActionRef,
+  sqlExecutionRef,
   resendActionRef,
   focusActionRef,
   freeSpaceAndRetryActionRef,
 }: {
   onNewChat?: () => void;
   retryActionRef?: RefObject<(() => void) | null>;
+  sqlExecutionRef?: RefObject<
+    ((source: AgentSqlActionSource) => Promise<boolean>) | null
+  >;
   resendActionRef?: RefObject<((messageId: string) => void) | null>;
   focusActionRef?: RefObject<((atEnd?: boolean) => void) | null>;
   freeSpaceAndRetryActionRef?: RefObject<(() => Promise<boolean>) | null>;
@@ -913,10 +922,16 @@ export function AgentInput({
   const feedback = getAgentRunFeedback({
     executionAvailable,
     storageBlocked: Boolean(storagePressure),
-    aiConfigurationRequired: isAIConfigurationBlocked || aiEnabled === false,
+    aiConfigurationRequired:
+      !currentChat?.runCheckpoint?.bindings.executionOrigin &&
+      (isAIConfigurationBlocked || aiEnabled === false),
     recoverySupported: supportsAgentRunRecovery(),
     remoteBusy,
-    continuationUnavailable: Boolean(currentContinuationFailure),
+    continuationUnavailable: Boolean(
+      currentContinuationFailure ||
+        (currentChat?.status === "idle" &&
+          currentChat.runCheckpoint?.bindings.executionOrigin)
+    ),
     chat: currentChat,
     messages: currentMessages,
     pendingAttemptId,
@@ -1796,6 +1811,11 @@ export function AgentInput({
             ]
       );
       const toolOptions = {
+        ...(page.sqlEditor?.editorTarget?.mountId &&
+        page.sqlEditor.tab?.mode === "SAVED_QUERY" &&
+        !page.sqlEditor.batchActive
+          ? { enableSqlEditorBlocks: true }
+          : {}),
         runMode,
         referencedProject,
         instanceName,
@@ -1826,6 +1846,9 @@ export function AgentInput({
         isCurrentChatScope(store, chatId) &&
         useAgentStore.getState().currentChatId === chatId;
       const executor = createToolExecutor(router, {
+        ...(toolOptions.enableSqlEditorBlocks
+          ? { enableSqlEditorBlocks: true }
+          : {}),
         chatId,
         runId,
         getDomContext: () =>
@@ -2783,8 +2806,11 @@ export function AgentInput({
               ...(actions.length > 0 ? { actions } : {}),
               ...(queryMaskingEligibility ? { queryMaskingEligibility } : {}),
               ...(accessRequestDraft ? { accessRequestDraft } : {}),
-              ...(actions.some((action) => action.kind === "continue") &&
-              references.length > 0
+              ...(actions.some(
+                (action) =>
+                  action.kind === "continue" ||
+                  action.kind === "sql-editor-block"
+              ) && references.length > 0
                 ? { resourceReferences: references }
                 : {}),
             },
@@ -3063,6 +3089,9 @@ export function AgentInput({
           if (
             !chat ||
             chat.archived ||
+            currentStore.getMessages(chatId).findLast((m) => m.role === "user")
+              ?.metadata?.sqlExecutionAction ||
+            chat.runCheckpoint?.bindings.executionOrigin ||
             (currentStore.remoteBusyChatIds[chatId] &&
               !supportsAgentRunRecovery())
           ) {
@@ -3954,6 +3983,7 @@ export function AgentInput({
         : messages.findLast((candidate) => candidate.role === "user");
       if (
         message?.role !== "user" ||
+        message.metadata?.sqlExecutionAction ||
         message.metadata?.sqlEditorContextInvalid ||
         !message.content?.trim() ||
         (!messageId &&
@@ -4133,6 +4163,58 @@ export function AgentInput({
   }, [runMessageAction]);
 
   useEffect(() => {
+    if (!sqlExecutionRef) return;
+    const requestAgentSqlExecution = async (input: AgentSqlActionSource) => {
+      if (
+        !canBeginAgentSqlResponseAction(input) ||
+        !getCurrentAgentSqlActionSource(input)
+      )
+        return false;
+      if (
+        messageActionInFlightRef.current ||
+        localLeasePending ||
+        !supportsAgentRunRecovery()
+      )
+        return false;
+      const source = structuredClone(input);
+      const { editorTarget, connection } = source.snapshot;
+      if (!editorTarget || !connection) return false;
+      const publish =
+        getRegisteredAgentSqlEditorHost()?.captureQueryResultTarget?.(
+          editorTarget.tabId,
+          connection.database,
+          connection.project
+        );
+      const token = Symbol();
+      messageActionInFlightRef.current = token;
+      try {
+        const { beginSqlResponseAction } = await import(
+          "../logic/sqlExecution"
+        );
+        let accepted = false;
+        await withChatRunSegment(source.chatId, async () => {
+          if (messageActionInFlightRef.current !== token) return;
+          accepted = await beginSqlResponseAction(
+            source,
+            getCurrentPageSnapshot(),
+            t("sql-editor.execute-query"),
+            publish
+          );
+        });
+        return accepted;
+      } finally {
+        if (messageActionInFlightRef.current === token)
+          messageActionInFlightRef.current = null;
+      }
+    };
+    sqlExecutionRef.current = requestAgentSqlExecution;
+    return () => {
+      if (sqlExecutionRef.current === requestAgentSqlExecution)
+        sqlExecutionRef.current = null;
+    };
+  }, [sqlExecutionRef, localLeasePending, t]);
+
+  useEffect(() => {
     if (!freeSpaceAndRetryActionRef) return;
     freeSpaceAndRetryActionRef.current = freeSpaceAndRetry;
     return () => {
@@ -4265,6 +4347,11 @@ export function AgentInput({
         let approvalController: AbortController | undefined;
         try {
           const chatId = chat.id;
+          const deterministic =
+            chat.runCheckpoint?.bindings.executionOrigin?.kind ===
+              "sql-response" ||
+            store.getMessages(chatId).findLast((m) => m.role === "user")
+              ?.metadata?.sqlExecutionAction !== undefined;
           const currentPage = getCurrentPageSnapshot();
           const permissionArgs = {
             actionId: pendingAsk.apiPermission.actionId,
@@ -4288,7 +4375,11 @@ export function AgentInput({
             if (initialPreview?.dom && requestAvailable)
               requestAvailable = Boolean(preview());
           };
-          if (requestAvailable && (await blockWhenAIIsNotConfigured(chatId))) {
+          if (
+            !deterministic &&
+            requestAvailable &&
+            (await blockWhenAIIsNotConfigured(chatId))
+          ) {
             return;
           }
           recheckPage();
@@ -4304,7 +4395,12 @@ export function AgentInput({
               !currentStore.isChatRunning(chatId);
             if (!sameAsk()) return;
             recheckPage();
-            if (confirmed && requestAvailable && !canContinueChatRun(chatId))
+            if (
+              !deterministic &&
+              confirmed &&
+              requestAvailable &&
+              !canContinueChatRun(chatId)
+            )
               return;
             if (
               supportsAgentRunRecovery() &&
@@ -4336,6 +4432,17 @@ export function AgentInput({
                     logicalActionId: permission.actionId,
                   })
                 : null;
+            const matchesSqlRoot =
+              !!context &&
+              initialPreview?.sqlAction === true &&
+              !!root &&
+              isEqual(
+                root.metadata?.sqlExecutionAction,
+                active?.runCheckpoint?.bindings.executionOrigin
+              ) &&
+              active?.runCheckpoint?.bindings.executionOrigin?.kind ===
+                "sql-response" &&
+              active.runCheckpoint.rootUserMessageId === root.id;
             currentStore.setChatStatus(chatId, "running");
             approvalController = new AbortController();
             currentStore.setAbortController(chatId, approvalController);
@@ -4351,7 +4458,10 @@ export function AgentInput({
             const result = await resolvePendingApiCall({
               ...permissionArgs,
               ...(domContext ? { domContext } : {}),
-              approved: confirmed && requestAvailable,
+              approved:
+                confirmed &&
+                requestAvailable &&
+                (!deterministic || matchesSqlRoot),
               signal: approvalController.signal,
               ...(context && { context }),
               ...(capability !== undefined ? { capability } : {}),
@@ -4396,8 +4506,29 @@ export function AgentInput({
                 });
                 return;
               }
-              if (approvalController.signal.aborted || currentChat.archived)
+              if (
+                !deterministic &&
+                (approvalController.signal.aborted || currentChat.archived)
+              )
                 return;
+            }
+            if (deterministic) {
+              const success =
+                evidence.execution?.reason === "rpc-success" &&
+                !approvalController.signal.aborted &&
+                !currentChat.archived;
+              if (!success) currentStore.setFollowUpQueuePaused(chatId, true);
+              currentStore.finishChatRun(chatId);
+              setContinuationFailure(null);
+              if (
+                (await currentStore.flushRunPersistence()) &&
+                success &&
+                currentStore.getAbortController(chatId) === approvalController
+              ) {
+                currentStore.setAbortController(chatId, null);
+                await drainFollowUps(chatId, lease);
+              }
+              return;
             }
             if (
               !requestAvailable ||
@@ -4528,6 +4659,7 @@ export function AgentInput({
       canContinueChatRun,
       confirmLabel,
       cancelLabel,
+      drainFollowUps,
       startChatRun,
       t,
     ]

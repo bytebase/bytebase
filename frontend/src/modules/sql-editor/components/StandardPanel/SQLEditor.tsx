@@ -1,6 +1,14 @@
 import type { IRange } from "monaco-editor";
 import * as monaco from "monaco-editor";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { v1 as uuidv1 } from "uuid";
 import { MonacoEditor } from "@/components/monaco/MonacoEditor";
@@ -38,6 +46,7 @@ import { monacoThemeName } from "../theme/derive";
 import { useActiveSQLEditorTheme } from "../theme/useActiveSQLEditorTheme";
 import { computeAppendedSelection } from "./appendSelection";
 import { prepareSnippetInsertion } from "./prepareSnippetInsertion";
+import { SqlEditorTargetRegistrationContext } from "./sqlEditorAgentTarget";
 import { activeSQLEditorRef, activeStatementRef } from "./state";
 import { UploadFileButton } from "./UploadFileButton";
 
@@ -214,6 +223,9 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
   );
 
   // ----- onReady: register Monaco actions + commands -----
+  const registerNativeTarget = useContext(SqlEditorTargetRegistrationContext);
+  const unregisterNativeTargetRef = useRef<(() => void) | undefined>(undefined);
+  useLayoutEffect(() => () => unregisterNativeTargetRef.current?.(), []);
   const handleReady = useCallback(
     (m: MonacoModule, editor: IStandaloneCodeEditor) => {
       monacoRef.current = m;
@@ -221,6 +233,11 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
       setMonacoState(m);
       setEditorState(editor);
       activeSQLEditorRef.value = editor;
+      unregisterNativeTargetRef.current?.();
+      unregisterNativeTargetRef.current =
+        tabId && registerNativeTarget
+          ? registerNativeTarget(tabId, editor, m.editor.EditorOption.readOnly)
+          : undefined;
 
       editor.addAction({
         id: "RunQuery",
@@ -241,7 +258,7 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
       // Save command — fire-and-forget; lives with the editor.
       editor.addCommand(m.KeyMod.CtrlCmd | m.KeyCode.KeyS, handleSaveSheet);
     },
-    [runQueryAction, handleSaveSheet]
+    [runQueryAction, handleSaveSheet, registerNativeTarget, tabId]
   );
 
   // ----- AI Monaco actions (explain-code / find-problems / new-chat) -----

@@ -96,6 +96,7 @@ import {
   normalizeRunBudget,
   normalizeRunCheckpoint,
   normalizeRunMaskingPage,
+  normalizeSqlExecutionOrigin,
   projectChatUsage,
   projectRunBudget,
   reserveRunAttempt,
@@ -623,6 +624,16 @@ const normalizeMessage = (
     metadata: metadata
       ? {
           ...(metadata as AgentMessage["metadata"]),
+          ...(metadata.sqlExecutionAction !== undefined
+            ? {
+                sqlExecutionAction:
+                  role === "user"
+                    ? (normalizeSqlExecutionOrigin(
+                        metadata.sqlExecutionAction
+                      ) ?? (true as const))
+                    : undefined,
+              }
+            : {}),
           ...(metadata.sqlEditor !== undefined ? { sqlEditor } : {}),
           ...(metadata.sqlEditorContextInvalid !== undefined ||
           sqlEditorContextInvalid
@@ -5103,6 +5114,14 @@ export const createAgentStore = () => {
         recoverPendingAsk: async (chatId, runId) => {
           get().syncState();
           const chat = _getChat(chatId);
+          const permission = get().getPendingAsk(chatId)?.apiPermission;
+          const expiredSqlPermission =
+            !!chat?.runCheckpoint?.bindings.executionOrigin &&
+            permission?.operationId === "bytebase.v1.SQLService.Query" &&
+            typeof permission.expiresAt === "number" &&
+            Number.isFinite(permission.expiresAt) &&
+            permission.expiresAt > 0 &&
+            Date.now() >= permission.expiresAt;
           if (
             !chat ||
             chat.runId !== runId ||
@@ -5111,7 +5130,8 @@ export const createAgentStore = () => {
             get().getAbortController(chatId) ||
             !supportsAgentRunRecovery() ||
             !canOwnRun(get(), chatId) ||
-            !getAgentRunContinuation(chat, get().getMessages(chatId))
+            (!expiredSqlPermission &&
+              !getAgentRunContinuation(chat, get().getMessages(chatId)))
           )
             return false;
           set((state) => {

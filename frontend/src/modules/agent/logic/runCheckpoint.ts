@@ -25,6 +25,7 @@ export function getAgentRunStartup(
     !budget ||
     !checkpoint ||
     checkpoint.startupComplete !== false ||
+    checkpoint.bindings.executionOrigin !== undefined ||
     checkpoint.phase !== "working" ||
     checkpoint.suspension !== "interrupted" ||
     checkpoint.finalizationText !== undefined ||
@@ -51,6 +52,7 @@ export function getAgentRunStartup(
   if (
     root?.id !== checkpoint.rootUserMessageId ||
     root.role !== "user" ||
+    root.metadata?.sqlExecutionAction ||
     !root.content?.trim() ||
     root.metadata?.runId !== checkpoint.runId ||
     root.metadata.pending ||
@@ -125,6 +127,7 @@ export function getAgentRunContinuation(
     !budget ||
     !checkpoint ||
     checkpoint.startupComplete !== true ||
+    checkpoint.bindings.executionOrigin !== undefined ||
     chat.runId !== checkpoint.runId ||
     budget.runId !== checkpoint.runId ||
     (checkpoint.phase === "finalizing" &&
@@ -150,6 +153,7 @@ export function getAgentRunContinuation(
     if (message.id === checkpoint.rootUserMessageId) {
       if (
         message.role !== "user" ||
+        message.metadata?.sqlExecutionAction ||
         (message.metadata?.runId !== undefined &&
           message.metadata.runId !== checkpoint.runId)
       )

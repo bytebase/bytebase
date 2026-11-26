@@ -1,14 +1,19 @@
-import { create, fromJson } from "@bufbuild/protobuf";
+import { create, fromJson, fromJsonString } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { databaseServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import { refreshTokens } from "@/api/refreshToken";
 import { getEffectiveQueryDataPolicy } from "@/lib/queryDataPolicy";
+import type { AgentSqlQueryObservation } from "@/modules/sql-editor/model/agentQueryResult";
 import { useAppStore } from "@/stores/app";
 import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
-import { QueryRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  QueryRequestSchema,
+  QueryResponseSchema,
+} from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { protobufJsonRegistry } from "@/types/protobufJsonRegistry";
 import {
   type AgentApiDispatchContext,
   fingerprintPreparedApiCall,
@@ -19,6 +24,7 @@ import {
   isProtectedAgentApiCall,
 } from "../apiExecution";
 import { handleAgentApiResponse } from "../apiResponse";
+import { parseAgentRpcError } from "../apiRpcError";
 import { notSentApiResult } from "../callApiResult";
 import {
   type AgentExecutionContext,
@@ -345,6 +351,7 @@ export async function prepareApiCall(
 }
 
 interface ApiDispatchOptions {
+  onQueryObservation?: (observation: AgentSqlQueryObservation) => void;
   isScopeCurrent?: () => boolean;
   validateBeforeSend?: () => Promise<boolean>;
   signal?: AbortSignal;
@@ -481,6 +488,7 @@ async function sendPreparedApiCall(
     context,
     isScopeCurrent,
     validateBeforeSend,
+    onQueryObservation,
     dom,
   }: ApiDispatchOptions = {}
 ): Promise<string> {
@@ -550,6 +558,7 @@ async function sendPreparedApiCall(
     fetchApi({ path: call.path, body: call.body, signal: controller.signal });
   let result: ObservedApiResponse;
 
+  const beginTimestampMS = Date.now();
   try {
     result = await send();
     if (
@@ -584,14 +593,49 @@ async function sendPreparedApiCall(
   } catch {
     // Missing request context must not discard an observed API outcome.
   }
+  const evidence = classifyAgentApiResponse(call, {
+    ...result.observation,
+    attemptId,
+  });
+  if (
+    onQueryObservation &&
+    call.operationId === "bytebase.v1.SQLService.Query" &&
+    call.path === "/bytebase.v1.SQLService/Query"
+  ) {
+    try {
+      const observed = result.observation;
+      if (
+        observed.kind === "response" &&
+        (evidence.reason === "rpc-success" ||
+          evidence.reason === "query-result-error")
+      ) {
+        onQueryObservation({
+          kind: "response",
+          beginTimestampMS,
+          response: fromJsonString(QueryResponseSchema, observed.body, {
+            registry: protobufJsonRegistry,
+          }),
+        });
+      } else if (
+        observed.kind === "response" &&
+        evidence.reason === "rpc-error"
+      ) {
+        const error = parseAgentRpcError(observed.body, observed.status);
+        onQueryObservation(
+          error
+            ? { kind: "error", error, beginTimestampMS }
+            : { kind: "uncertain" }
+        );
+      } else onQueryObservation({ kind: "uncertain" });
+    } catch {
+      // A skipped native refresh cannot change the observed API outcome.
+    }
+  }
   const raw = handleAgentApiResponse(
     { operationId: call.operationId, body },
     JSON.stringify({
       ...result.parsed,
-      agentExecution: classifyAgentApiResponse(call, {
-        ...result.observation,
-        attemptId,
-      }),
+      agentExecution: evidence,
     })
   );
   return call.operationId === "bytebase.v1.SQLService.Query" &&

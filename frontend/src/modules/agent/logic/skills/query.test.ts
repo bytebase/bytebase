@@ -3,6 +3,12 @@ import { describe, expect, test } from "vitest";
 import { getSkill } from "./index";
 
 describe("query skill", () => {
+  test("marks only SQL prepared for this editor, not examples or review-only responses", () => {
+    const guidance = getSkill({ name: "query" });
+    expect(guidance).toContain('kind: "sql-editor-block", blockIndex');
+    expect(guidance).toContain("zero-based complete top-level SQL fence index");
+    expect(guidance).toContain("Do not mark examples or review-only SQL");
+  });
   test("a database is not a prerequisite for general SQL explanations", () => {
     expect(getSkill({ name: "query" })).toContain(
       "General SQL questions do not need a connection"

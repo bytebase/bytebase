@@ -248,6 +248,27 @@ export function normalizeRunMaskingPage(
   return undefined;
 }
 
+export function normalizeSqlExecutionOrigin(
+  origin: unknown
+): AgentRunBindings["executionOrigin"] {
+  if (
+    !record(origin) ||
+    origin.kind !== "sql-response" ||
+    typeof origin.messageId !== "string" ||
+    !origin.messageId.trim() ||
+    !count(origin.blockIndex) ||
+    typeof origin.sourceHash !== "string" ||
+    !/^[0-9a-f]{64}$/.test(origin.sourceHash)
+  )
+    return;
+  return {
+    kind: origin.kind,
+    messageId: origin.messageId,
+    blockIndex: origin.blockIndex,
+    sourceHash: origin.sourceHash,
+  };
+}
+
 export function normalizeRunBindings(
   value: unknown
 ): AgentRunBindings | undefined {
@@ -263,26 +284,8 @@ export function normalizeRunBindings(
     return undefined;
   const page = normalizeAgentChatSnapshot(value.page);
   if (!page) return undefined;
-  let executionOrigin: AgentRunBindings["executionOrigin"];
-  if (value.executionOrigin !== undefined) {
-    const origin = value.executionOrigin;
-    if (
-      !record(origin) ||
-      origin.kind !== "sql-response" ||
-      typeof origin.messageId !== "string" ||
-      !origin.messageId.trim() ||
-      !count(origin.blockIndex) ||
-      typeof origin.sourceHash !== "string" ||
-      !/^[0-9a-f]{64}$/.test(origin.sourceHash)
-    )
-      return undefined;
-    executionOrigin = {
-      kind: origin.kind,
-      messageId: origin.messageId,
-      blockIndex: origin.blockIndex,
-      sourceHash: origin.sourceHash,
-    };
-  }
+  const executionOrigin = normalizeSqlExecutionOrigin(value.executionOrigin);
+  if (value.executionOrigin !== undefined && !executionOrigin) return undefined;
   const references = normalizeAgentResourceReferences(value.references);
   if (references.length !== value.references.length) return undefined;
   const capability = normalizeAgentDiagnosticCapability(value.capability);

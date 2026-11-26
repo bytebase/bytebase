@@ -219,7 +219,10 @@ function getDataQueryContext(
 const supportsQueryFollowUps = (actions: AgentResponseAction[]) =>
   actions.some((action) => action.kind === "continue") &&
   actions.every(
-    (action) => action.kind === "continue" || action.kind === "open"
+    (action) =>
+      action.kind === "continue" ||
+      action.kind === "open" ||
+      action.kind === "sql-editor-block"
   );
 
 export function getQueryMaskingSetupTarget(

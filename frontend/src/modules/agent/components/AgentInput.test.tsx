@@ -314,7 +314,8 @@ vi.mock("../logic/tools/databaseOverview", () => ({
   extractDatabaseOverviewEvidence: mocks.extractDatabaseOverviewEvidence,
 }));
 
-vi.mock("../logic/tools/pendingApiCall", () => ({
+vi.mock("../logic/tools/pendingApiCall", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../logic/tools/pendingApiCall")>()),
   getPendingApiCallPreview: mocks.getPendingApiCallPreview,
   resolvePendingApiCall: mocks.resolvePendingApiCall,
 }));
@@ -554,6 +555,314 @@ describe("AgentInput", () => {
       },
     };
     const publish = publishSqlEditor;
+
+    test.each([
+      "allow",
+      "deny",
+      "stale",
+      "foreign",
+      "expired",
+      "stop",
+      "cross-tab",
+      "reload",
+      "before-final-send",
+      "after-send",
+      "queued",
+    ] as const)(
+      "deterministic SQL click and %s resolve through the common permission without a model",
+      async (decision) => {
+        let leaseAvailable = true;
+        if (decision === "cross-tab")
+          enableAsynchronousRunRecovery(() => leaseAvailable);
+        else enableRunRecovery();
+        mocks.currentUserEmail = "me@example.com";
+        useAgentStore.setState({ userEmail: mocks.currentUserEmail });
+        const store = useAgentStore.getState();
+        const chat = store.createChat({ context: project });
+        const snapshot: AgentSqlEditorSnapshot = {
+          ...connected,
+          rowLimit: 500,
+          editorTarget: {
+            actor: "users/me@example.com",
+            workspace: mocks.workspace.name,
+            hostId: "sql",
+            mountId: "mount",
+            tabId: connected.tab!.id,
+            tabMode: "SAVED_QUERY",
+            project,
+            modelUri: "inmemory://query",
+            modelVersion: 1,
+            connection: connected.connection,
+            selection: { start: 0, end: 0, caret: 0 },
+          },
+        };
+        let current = snapshot;
+        registerAgentSqlEditorHost({
+          id: "sql",
+          slot: document.body,
+          mainColumn: document.body,
+          resizer: document.body,
+          paneRatio: 0.3,
+          captureContext: () => ({ kind: "ready", snapshot: current }),
+          inspect: () => ({ status: "ready" }),
+          captureQueryResultTarget: (
+            await import("@/modules/sql-editor/model/agentQueryResult")
+          ).captureAgentQueryResultTarget,
+        });
+        const sql = " SELECT 1;\r\nSELECT 2; ";
+        store.addMessage({
+          chatId: chat.id,
+          role: "user",
+          content: "Draft SQL",
+          metadata: { sqlEditor: snapshot },
+        });
+        const msg = store.addMessage({
+          chatId: chat.id,
+          role: "assistant",
+          content: ["```sql", sql, "```"].join("\r\n"),
+          metadata: {
+            runId: "original",
+            sqlEditor: snapshot,
+            sqlActionProvenance: {
+              version: 1,
+              runId: "original",
+              runMode: "default",
+              diagnostic: false,
+            },
+            actions: [{ kind: "sql-editor-block", blockIndex: 0 }],
+          },
+        })!;
+        const { bindAgentSqlBlockActions } = await import("../logic/sqlResponse");
+        const [source] = bindAgentSqlBlockActions(msg);
+        expect(source?.sql).toBe(sql);
+        const api = await vi.importActual<
+          typeof import("../logic/tools/pendingApiCall")
+        >("../logic/tools/pendingApiCall");
+        mocks.getPendingApiCallPreview.mockImplementation(
+          api.getPendingApiCallPreview
+        );
+        mocks.resolvePendingApiCall.mockImplementation(api.resolvePendingApiCall);
+        const { databaseServiceClientConnect } = await import("@/api");
+        let ownerProject = project;
+        let stopBeforeSend = false;
+        const db = vi
+          .spyOn(databaseServiceClientConnect, "getDatabase")
+          .mockImplementation(async () => {
+            if (stopBeforeSend) {
+              stopBeforeSend = false;
+              store.cancel(chat.id, "user");
+            }
+            if (
+              decision === "before-final-send" &&
+              store.getChat(chat.id)?.apiAttempts?.length
+            )
+              current = { ...snapshot, queryOptions: { redisRunCommandsOn: 1 } };
+            return {
+              name: snapshot.connection!.database,
+              project: ownerProject,
+              state: 1,
+            } as never;
+          });
+        const app = (await import("@/stores/app")).useAppStore.getState();
+        const policies = mocks.projectPoliciesByName;
+        mocks.projectPoliciesByName = { ...policies, [project]: {} };
+        const policy = {
+          policy: { case: "queryDataPolicy", value: { maximumResultRows: 7 } },
+        };
+        Object.assign(app, {
+          loadSubscription: async () => ({}),
+          hasFeature: () => true,
+          fetchPolicyByParentAndType: async () => policy,
+          roles: [{}],
+          workspacePolicy: {},
+        });
+        const check = vi.spyOn(app, "hasProjectPermission").mockReturnValue(true);
+        const tabs = (await import("@/modules/sql-editor/store/tab"))
+          .useSQLEditorTabsStore;
+        const previousTabs = tabs.getState();
+        const nativeTab = {
+          ...(await import("@/utils")).defaultSQLEditorTab(),
+          id: snapshot.tab!.id,
+          connection: {
+            instance: "instances/prod",
+            database: snapshot.connection!.database,
+            schema: "public",
+            dataSourceId: "reader",
+          },
+        };
+        tabs.setState({
+          currentTabId: nativeTab.id,
+          tabsById: new Map([[nativeTab.id, nativeTab]]),
+        });
+        vi.spyOn(
+          (await import("@/modules/sql-editor/store")).useSQLEditorStore.getState(),
+          "mergeLatest"
+        ).mockResolvedValue(undefined as never);
+        const post = vi.fn(async () => {
+          if (decision === "after-send") current = { ...snapshot, rowLimit: 1 };
+          return new Response('{"results":[]}', {
+            headers: { "Content-Type": "application/json" },
+          });
+        });
+        vi.stubGlobal("fetch", post);
+        const ref = createRef<(s: typeof source) => Promise<boolean>>();
+        const view = renderIntoContainer(<AgentInput sqlExecutionRef={ref} />);
+        try {
+          view.render();
+          await act(async () => {
+            expect(await ref.current!(source)).toBe(true);
+          });
+          expect(store.getChat(chat.id)?.status).toBe("awaiting_user");
+          expect(
+            store.getChat(chat.id)?.runCheckpoint?.bindings.executionOrigin
+              ?.sourceHash
+          ).toBe(source.sourceHash);
+          expect(
+            store.getMessages(chat.id).findLast((m) => m.role === "user")?.metadata
+              ?.sqlExecutionAction
+          ).toEqual(
+            store.getChat(chat.id)?.runCheckpoint?.bindings.executionOrigin
+          );
+          expect(
+            JSON.parse(
+              mocks.getPendingApiCallPreview.mock.results.at(-1)!.value.body
+            )
+          ).toMatchObject({
+            statement: sql,
+            name: snapshot.connection!.database,
+            limit: 7,
+            schema: "public",
+            dataSourceId: "reader",
+          });
+          expect(post).not.toHaveBeenCalled();
+          expect(mocks.aiChat).not.toHaveBeenCalled();
+          const sqlRunId = store.getChat(chat.id)?.runId;
+          if (decision === "queued") {
+            await act(async () => {
+              expect(
+                store.enqueueFollowUp({
+                  chatId: chat.id,
+                  text: "List open issues",
+                  page: store.getChat(chat.id)!.runCheckpoint!.bindings.page,
+                })
+              ).toBeTruthy();
+            });
+            mocks.runAgentLoop.mockResolvedValue({
+              kind: "completed",
+              success: true,
+              totalTokensUsed: 0,
+            });
+          }
+          if (decision === "stale") current = { ...snapshot, rowLimit: 4 };
+          if (decision === "foreign") ownerProject = "projects/other";
+          if (decision === "stop") stopBeforeSend = true;
+          if (decision === "expired")
+            vi.spyOn(Date, "now").mockReturnValue(Date.now() + 301_000);
+          if (decision === "reload") {
+            const loaded = createAgentStore().getState();
+            loaded.setWorkspaceName(mocks.workspace.name, mocks.currentUserEmail);
+            expect(
+              getAgentRunStartup(
+                loaded.getChat(chat.id),
+                loaded.getMessages(chat.id)
+              )
+            ).toBeUndefined();
+            expect(
+              loaded.getMessages(chat.id).findLast((m) => m.role === "user")
+                ?.metadata?.sqlExecutionAction
+            ).toEqual(expect.objectContaining({ sourceHash: source.sourceHash }));
+            await act(async () => {
+              store.setWorkspaceName();
+              store.setWorkspaceName(mocks.workspace.name, mocks.currentUserEmail);
+            });
+            expect(
+              within(view.container).getByRole("button", {
+                name: "agent.api-permission-allow",
+              })
+            ).toHaveProperty("disabled", true);
+          }
+          if (decision === "cross-tab") {
+            leaseAvailable = false;
+            await act(async () => {
+              within(view.container)
+                .getByRole("button", { name: "agent.api-permission-allow" })
+                .click();
+            });
+            expect(post).not.toHaveBeenCalled();
+            expect(store.getPendingAsk(chat.id)).toBeTruthy();
+            leaseAvailable = true;
+          }
+          await act(async () => {
+            const button = within(view.container).getByRole("button", {
+              name:
+                decision === "reload"
+                  ? "agent.api-permission-dismiss"
+                  : decision === "deny" || decision === "cross-tab"
+                    ? "agent.api-permission-deny"
+                    : "agent.api-permission-allow",
+            });
+            button.click();
+          });
+          await vi.waitFor(() =>
+            expect(store.getChat(chat.id)?.status).toBe("idle")
+          );
+          expect(post).toHaveBeenCalledTimes(
+            ["allow", "after-send", "queued"].includes(decision) ? 1 : 0
+          );
+          expect(
+            tabs
+              .getState()
+              .tabsById.get(nativeTab.id)
+              ?.databaseQueryContexts?.get(nativeTab.connection.database)?.length ??
+              0
+          ).toBe(decision === "allow" || decision === "queued" ? 1 : 0);
+          if (decision === "after-send")
+            expect(
+              store
+                .getMessages(chat.id)
+                .some(
+                  (m) =>
+                    m.role === "tool" &&
+                    m.content?.includes('"reason":"rpc-success"')
+                )
+            ).toBe(true);
+          expect(store.getChat(chat.id)?.status).toBe("idle");
+          expect(store.getPendingAsk(chat.id)).toBeFalsy();
+          expect(mocks.aiChat).not.toHaveBeenCalled();
+          if (decision === "queued") {
+            expect(mocks.runAgentLoop).toHaveBeenCalledTimes(1);
+            expect(mocks.runAgentLoop.mock.calls[0][5].runId).not.toBe(
+              sqlRunId
+            );
+            expect(
+              store.getMessages(chat.id).findLast((m) => m.role === "user")
+                ?.content
+            ).toBe("List open issues");
+            expect(
+              useAgentStore.getState().followUpQueuesByChatId[chat.id]
+                ?.messages ?? []
+            ).toHaveLength(0);
+          } else {
+            expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+          }
+          if (decision === "allow")
+            expect(db.mock.calls.length).toBeGreaterThanOrEqual(3);
+        } finally {
+          tabs.setState(previousTabs);
+          mocks.projectPoliciesByName = policies;
+          check.mockRestore();
+          for (const key of [
+            "loadSubscription",
+            "hasFeature",
+            "fetchPolicyByParentAndType",
+            "roles",
+            "workspacePolicy",
+          ] as const)
+            Reflect.deleteProperty(app, key);
+          view.unmount();
+        }
+      }
+    );
 
     test("a foreign history chat stays readable with its real scope and cannot submit a new turn", async () => {
       const store = useAgentStore.getState();

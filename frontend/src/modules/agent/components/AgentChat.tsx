@@ -87,6 +87,12 @@ import {
 import { getAgentRunContinuation } from "../logic/runCheckpoint";
 import { getAgentRunFeedback } from "../logic/runFeedback";
 import { supportsAgentRunRecovery } from "../logic/runOwnership";
+import {
+  type AgentSqlActionSource,
+  bindAgentSqlBlockActions,
+  isAgentSqlActionChat,
+  readAgentSqlBlocks,
+} from "../logic/sqlResponse";
 import { getApiMethodDescriptor } from "../logic/tools/apiMethodClass";
 import type {
   AgentAnswerEvidence,
@@ -116,6 +122,7 @@ import {
   AgentPrimaryAction,
   AgentPrimaryActionLink,
 } from "./AgentPrimaryAction";
+import { AgentSqlBlock } from "./AgentSqlBlock";
 import { AgentSqlFixReviewAction } from "./AgentSqlFixReviewAction";
 import { AgentStorageStatus } from "./AgentStorageStatus";
 import { MaskingExemptionDraftButton } from "./MaskingExemptionDraftButton";
@@ -135,6 +142,7 @@ interface AgentChatProps {
   onRetry?: () => void;
   onFreeSpaceAndRetry?: () => Promise<boolean>;
   onResend?: (messageId: string) => void;
+  onRun?: (source: AgentSqlActionSource) => Promise<boolean>;
   onSelectSuggestion?: (starterId: LandingStarterId) => void;
   onContinueAction?: (
     chatId: string,
@@ -879,6 +887,7 @@ export function AgentChat({
   onRetry,
   onFreeSpaceAndRetry,
   onResend,
+  onRun,
   onSelectSuggestion,
   onContinueAction,
 }: AgentChatProps) {
@@ -887,6 +896,7 @@ export function AgentChat({
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const messages = useAgentStore(selectMessages);
   const currentChat = useAgentStore(selectCurrentChat);
+  const workspaceName = useAgentStore((state) => state.workspaceName);
   const loading = useAgentStore(selectLoading);
   const error = useAgentStore(selectError);
   const storagePressure = useAgentStore((state) => state.storagePressure);
@@ -945,6 +955,35 @@ export function AgentChat({
     }
     return accepted;
   }, [messages, currentChat?.capability, t]);
+  const sqlBlocksByMessageId = useMemo(() => {
+    const answers = new Map<
+      string,
+      {
+        positions: Map<number, ReturnType<typeof readAgentSqlBlocks>[number]>;
+        sources: Map<number, AgentSqlActionSource>;
+      }
+    >();
+    for (const message of messages) {
+      if (
+        message.role !== "assistant" ||
+        message.metadata?.pending ||
+        (!message.content?.includes("```") && !message.content?.includes("~~~"))
+      )
+        continue;
+      const blocks = readAgentSqlBlocks(message.content);
+      if (!blocks.length) continue;
+      answers.set(message.id, {
+        positions: new Map(blocks.map((block) => [block.start, block])),
+        sources: new Map(
+          bindAgentSqlBlockActions(message, messages).map((source) => [
+            source.blockIndex,
+            source,
+          ])
+        ),
+      });
+    }
+    return answers;
+  }, [messages]);
   const latestContinuePrompts = responseActionsByMessageId
     .get(messages.at(-1)?.id ?? "")
     ?.filter((action) => action.kind === "continue")
@@ -1029,9 +1068,13 @@ export function AgentChat({
     addInterruption();
     return interruptions;
   }, [displayMessages]);
-  const latestUserMessageId = displayMessages.findLast(
+  const latestUserMessage = displayMessages.findLast(
     (message) => message.role === "user"
-  )?.id;
+  );
+  const latestUserMessageId = latestUserMessage?.id;
+  const latestTurnRunsSql = Boolean(
+    latestUserMessage?.metadata?.sqlExecutionAction
+  );
   const isResendBlocked =
     loading ||
     hasActiveController ||
@@ -1048,6 +1091,7 @@ export function AgentChat({
   const canRetryError =
     currentChat?.status === "error" &&
     Boolean(latestUserMessageId) &&
+    !latestTurnRunsSql &&
     !isChatActionBlocked &&
     Boolean(onRetry);
   const stoppedRunContinuation =
@@ -1307,11 +1351,13 @@ export function AgentChat({
               stoppedRunContinuation.checkpoint.rootUserMessageId ===
                 interruption.userMessageId)) &&
           interruption.userMessageId === latestUserMessageId &&
+          !latestTurnRunsSql &&
           currentChat?.interrupted &&
           currentChat.interruptionReason === interruption.reason &&
           !isChatActionBlocked &&
           onRetry;
         const isPending = msg.metadata?.pending === true;
+        const sqlBlocks = sqlBlocksByMessageId.get(msg.id);
         const actions = responseActionsByMessageId.get(msg.id) ?? [];
         const actionReceipts = normalizeActionReceipts(
           msg.metadata?.actionReceipts,
@@ -1419,22 +1465,24 @@ export function AgentChat({
                     tooltipLayer="agent"
                     className="px-1.5"
                   />
-                  {onResend && !currentChat?.archived && (
-                    <AgentTooltip content={t("agent.resend-message")}>
-                      <Button
-                        appearance="secondary"
-                        size="xs"
-                        aria-label={t("agent.resend-message")}
-                        disabled={
-                          isResendBlocked ||
-                          msg.metadata?.sqlEditorContextInvalid
-                        }
-                        onClick={() => onResend(msg.id)}
-                      >
-                        <Repeat2 className="size-3.5" />
-                      </Button>
-                    </AgentTooltip>
-                  )}
+                  {onResend &&
+                    !currentChat?.archived &&
+                    !msg.metadata?.sqlExecutionAction && (
+                      <AgentTooltip content={t("agent.resend-message")}>
+                        <Button
+                          appearance="secondary"
+                          size="xs"
+                          aria-label={t("agent.resend-message")}
+                          disabled={
+                            isResendBlocked ||
+                            msg.metadata?.sqlEditorContextInvalid
+                          }
+                          onClick={() => onResend(msg.id)}
+                        >
+                          <Repeat2 className="size-3.5" />
+                        </Button>
+                      </AgentTooltip>
+                    )}
                   {showTimestamp && timestamp}
                 </div>
               </div>
@@ -1462,11 +1510,46 @@ export function AgentChat({
                               {children}
                             </p>
                           ),
-                          pre: ({ children }) => (
-                            <pre className="my-1 max-w-full overflow-x-auto rounded-xs bg-control-bg p-2 text-xs whitespace-pre">
-                              {children}
-                            </pre>
-                          ),
+                          pre: ({ children, node }) => {
+                            const pre = (
+                              <pre className="my-1 max-w-full overflow-x-auto rounded-xs bg-control-bg p-2 text-xs whitespace-pre">
+                                {children}
+                              </pre>
+                            );
+                            const start = node?.position?.start.offset;
+                            const block =
+                              start === undefined
+                                ? undefined
+                                : sqlBlocks?.positions.get(start);
+                            if (
+                              !block ||
+                              block.end !== node?.position?.end.offset
+                            )
+                              return pre;
+                            const source = sqlBlocks?.sources.get(
+                              block.blockIndex
+                            );
+                            return (
+                              <AgentSqlBlock
+                                sql={block.sql}
+                                source={
+                                  source &&
+                                  currentChat &&
+                                  source.chatId === currentChat.id &&
+                                  isAgentSqlActionChat(
+                                    currentChat,
+                                    source.snapshot,
+                                    workspaceName
+                                  )
+                                    ? source
+                                    : undefined
+                                }
+                                onRun={onRun}
+                              >
+                                {pre}
+                              </AgentSqlBlock>
+                            );
+                          },
                           code: ({ children }) => (
                             <code className="break-all rounded-xs bg-control-bg-hover px-1 text-xs">
                               {children}

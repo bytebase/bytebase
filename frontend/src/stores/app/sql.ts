@@ -2,8 +2,20 @@ import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { sqlServiceClientConnect } from "@/api";
 import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
 import { ExportDestination } from "@/types/proto-es/v1/common_pb";
+import type { QueryResponse } from "@/types/proto-es/v1/sql_service_pb";
 import { extractGrpcErrorMessage } from "@/utils/connect";
 import type { AppSliceCreator, SQLSlice } from "./types";
+
+export const queryResultSet = (response: QueryResponse) => ({
+  error: "",
+  results: response.results,
+  appliedAccessGrant: response.appliedAccessGrant,
+});
+export const queryErrorResultSet = (error: unknown) => ({
+  error: extractGrpcErrorMessage(error),
+  results: [],
+  status: error instanceof ConnectError ? error.code : Code.Unknown,
+});
 
 /**
  * Stateless — just RPC wrappers around `query` / `export` with the SQL
@@ -22,17 +34,9 @@ export const createSQLSlice: AppSliceCreator<SQLSlice> = () => ({
           .set(silentContextKey, true),
         signal,
       });
-      return {
-        error: "",
-        results: response.results,
-        appliedAccessGrant: response.appliedAccessGrant,
-      };
+      return queryResultSet(response);
     } catch (err) {
-      return {
-        error: extractGrpcErrorMessage(err),
-        results: [],
-        status: err instanceof ConnectError ? err.code : Code.Unknown,
-      };
+      return queryErrorResultSet(err);
     }
   },
 

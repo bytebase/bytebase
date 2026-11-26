@@ -37,6 +37,7 @@ import {
 import { normalizeAgentHandoff } from "../handoff";
 import { normalizeAgentDiagnosticCapability } from "../diagnosticCapability";
 import { normalizeAgentResponseActions } from "../responseActions";
+import { extractAgentSqlBlocks } from "../sqlResponse";
 import { agentApiErrorResult } from "../apiResponse";
 import {
   prepareMaskingRuleDraft,
@@ -69,13 +70,10 @@ import type {
   ToolExecutionResult,
   ToolExecutor,
 } from "../types";
-import { apiCallNeedsConfirmation } from "./apiMethodClass";
-import { fingerprintPreparedApiCall } from "../apiAttempt";
-import { notSentApiResult, preflightRejectedApiResult } from "../callApiResult";
-import { checkPreparedApiPermission } from "./apiPermissionPreflight";
+import { notSentApiResult } from "../callApiResult";
+import { admitPreparedAgentApiCall } from "./apiAdmission";
 import {
   DEFAULT_AGENT_QUERY_LIMIT,
-  dispatchPreparedApiCall,
   prepareApiCall,
   type CallApiArgs,
   type PreparedApiCall,
@@ -88,16 +86,9 @@ import {
 } from "./instanceOverview";
 import { createDomActionTool, type DomActionArgs } from "./domAction";
 import { createIssueOverviewTool } from "./issueOverview";
-import { prepareIssueDecisionPermission } from "./issueDecisionPermission";
-import { isDiagnosticApiCallInScope } from "./diagnosticApiScope";
 import { createNavigateTool } from "./navigate";
 import { createPageStateTool, type PageStateArgs } from "./pageState";
-import {
-  createPendingApiCall,
-  isCurrentDomApiCall,
-  isSupportedDomApiCall,
-  staleDomPermission,
-} from "./pendingApiCall";
+import { staleDomPermission } from "./pendingApiCall";
 import { createPlanOverviewTool } from "./planOverview";
 import { createProjectOpenIssuesTool } from "./projectOpenIssues";
 import { createProjectGovernanceOverviewTool } from "./projectGovernanceOverview";
@@ -109,7 +100,6 @@ import {
   getUnmaskMethodChoices,
 } from "./maskingChoices";
 import { createProjectOverviewTool } from "./projectOverview";
-import { apiTargetsAnotherProject } from "./referencedProjectApiScope";
 import { searchApi, type SearchApiArgs } from "./searchApi";
 import { createWorkspaceOverviewTool } from "./workspaceOverview";
 import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
@@ -204,7 +194,10 @@ const parseAskUserKind = (
   return "input";
 };
 
-const parseDoneArgs = (args: Record<string, unknown>): ToolExecutionResult => {
+const parseDoneArgs = (
+  args: Record<string, unknown>,
+  enableSqlEditorBlocks: boolean
+): ToolExecutionResult => {
   if (typeof args.text !== "string" || !args.text.trim()) {
     throw new Error("done requires a non-empty text string");
   }
@@ -214,10 +207,18 @@ const parseDoneArgs = (args: Record<string, unknown>): ToolExecutionResult => {
   const handoff = args.success
     ? normalizeAgentHandoff(args.handoff)
     : undefined;
+  const blockIndexes = new Set(
+    args.success &&
+      enableSqlEditorBlocks &&
+      Array.isArray(args.actions) &&
+      args.actions.some((action) => action?.kind === "sql-editor-block")
+      ? extractAgentSqlBlocks(args.text).map(({ blockIndex }) => blockIndex)
+      : []
+  );
   const actions = args.success
-    ? normalizeAgentResponseActions(args.actions).filter(
-        (action) => action.kind !== "review-sql-fix"
-      )
+    ? normalizeAgentResponseActions(args.actions, (index) =>
+        blockIndexes.has(index)
+      ).filter((action) => action.kind !== "review-sql-fix")
     : [];
   return {
     kind: "done",
@@ -436,6 +437,7 @@ const targetsSelectedPlan = (
 };
 
 export interface AgentToolDefinitionOptions {
+  enableSqlEditorBlocks?: boolean;
   capability?: AgentDiagnosticCapability;
   runMode?: AgentRunMode;
   referencedProject?: string;
@@ -448,6 +450,10 @@ export function getToolDefinitions(
   options: AgentToolDefinitionOptions = {}
 ): ToolDefinition[] {
   const isDiagnostic = options.capability !== undefined;
+  const enableSqlEditorBlocks =
+    options.enableSqlEditorBlocks === true &&
+    options.runMode !== "read-only" &&
+    !isDiagnostic;
   const capability = normalizeAgentDiagnosticCapability(options.capability);
   if (isDiagnostic) {
     options = {
@@ -908,8 +914,11 @@ Read nonsensitive content or scroll. Use click/input/select only for the exact r
               ? "Optional member-clicked Open and Continue actions only. Open navigates to an exact resource supported by diagnostic evidence; it never approves, retries, or executes. Continue asks a useful follow-up within the original diagnostic scope. Do not include API requests, SQL, or resource @ mentions in actions."
               : "draft-semantic-type is runtime-owned after successful custom semantic-type preparation; opening it only prefills an unsaved form, and the member must confirm the row to save. " +
                 "draft-masking-exemption is the corresponding runtime-owned primary action for a prepared NEW unsaved project exemption; the member alone saves it using Grant Exemption. " +
-                "Optional member-clicked actions. Use at most one primary Open, draft-plan, draft-issue-comment, or draft-masking-rule, plus up to three distinct Continue questions. Open uses a current-turn observed destination, never a URL or invented resource. draft-plan normally opens a populated, unsaved Plan; on the matching Plan-create page it applies SQL locally and asks before replacing existing SQL. It never persists or executes. draft-issue-comment opens an unsent review comment for an Issue observed in this turn; it never posts automatically. draft-masking-rule opens or applies an unsaved masking form only after a member click; the runtime supplies its latest eligible current-run action after successful preparation, so omit a competing primary action. Continue sends a new user message when clicked, without approving a change. Do not include API requests, SQL, or resource @ mentions in an action.",
-            maxItems: 4,
+                "Optional member-clicked actions. Use at most one primary Open, draft-plan, draft-issue-comment, or draft-masking-rule, plus up to three distinct Continue questions. Open uses a current-turn observed destination, never a URL or invented resource. draft-plan normally opens a populated, unsaved Plan; on the matching Plan-create page it applies SQL locally and asks before replacing existing SQL. It never persists or executes. draft-issue-comment opens an unsent review comment for an Issue observed in this turn; it never posts automatically. draft-masking-rule opens or applies an unsaved masking form only after a member click; the runtime supplies its latest eligible current-run action after successful preparation, so omit a competing primary action. Continue sends a new user message when clicked, without approving a change. Do not include API requests, SQL, or resource @ mentions in an action." +
+                (enableSqlEditorBlocks
+                  ? " Separately propose at most four sql-editor-block markers by zero-based complete top-level SQL fence index for SQL prepared for this editor, never for examples. Each marker contains only kind and blockIndex."
+                  : ""),
+            maxItems: enableSqlEditorBlocks ? 8 : 4,
             items: {
               type: "object",
               properties: {
@@ -925,6 +934,7 @@ Read nonsensitive content or scroll. Use click/input/select only for the exact r
                         "draft-masking-exemption",
                         "draft-semantic-type",
                         "continue",
+                        ...(enableSqlEditorBlocks ? ["sql-editor-block"] : []),
                       ],
                 },
                 target: {
@@ -990,6 +1000,9 @@ Read nonsensitive content or scroll. Use click/input/select only for the exact r
                     }
                   : {}),
                 prompt: { type: "string" },
+                ...(enableSqlEditorBlocks
+                  ? { blockIndex: { type: "integer", minimum: 0 } }
+                  : {}),
               },
               required: ["kind"],
             },
@@ -1389,6 +1402,7 @@ Read nonsensitive content or scroll. Use click/input/select only for the exact r
 }
 
 interface CreateToolExecutorOptions {
+  enableSqlEditorBlocks?: boolean;
   runId?: string;
   getDomContext?: () => AgentDomContext | undefined;
   priorAttemptIds?: (fingerprint: string) => string[];
@@ -1647,130 +1661,25 @@ export function createToolExecutor(
     return referencedPlanAccess;
   };
 
-  const admitPreparedCall = async (
+  const admitPreparedCall = (
     call: PreparedApiCall,
     toolCallId: string,
     dom?: { origin: CapturedDomMutation; context: AgentDomContext }
-  ): Promise<ToolExecutionResult> => {
-    const current = () =>
-      !options.signal?.aborted &&
-      options.isApiScopeCurrent?.() !== false &&
-      (!dom || isCurrentDomApiCall(dom.origin, call, dom.context));
-    const stale = () =>
-      toToolResult(
-        dom
-          ? staleDomPermission
-          : notSentApiResult(
-              "Agent API request ownership changed before admission.",
-              "admission-rejected"
-            )
-      );
-    if (dom && (!current() || !isSupportedDomApiCall(dom.origin, call)))
-      return toToolResult(staleDomPermission);
-    if (!current()) return stale();
-    if (
-      capability &&
-      !(await isDiagnosticApiCallInScope(call, capability).catch(() => false))
-    ) {
-      return toToolResult(
-        notSentApiResult(
-          `This API request is outside the referenced project (${capability.resource.project}) or its diagnostic scope could not be verified. Approval cannot override this boundary.`,
-          "preflight-rejected"
-        )
-      );
-    }
-    if (
-      !isDiagnostic &&
-      referencedProject &&
-      (await apiTargetsAnotherProject(call, referencedProject))
-    ) {
-      return toToolResult(
-        notSentApiResult(
-          `This API request is outside the referenced project (${referencedProject}). Ask in a separate message to use another project.`,
-          "preflight-rejected"
-        )
-      );
-    }
-    if (!current()) return stale();
-    const access = await checkPreparedApiPermission(call);
-    if (!current()) return stale();
-    if (access.kind === "denied") {
-      return toToolResult(preflightRejectedApiResult(access.result));
-    }
-    const issueDecision = await prepareIssueDecisionPermission(
+  ): Promise<ToolExecutionResult> =>
+    admitPreparedAgentApiCall({
       call,
-      options.referencedIssue
-    );
-    if (!current()) return stale();
-    if (issueDecision.kind === "error") {
-      return toToolResult(preflightRejectedApiResult(issueDecision.result));
-    }
-    if (
-      !dom &&
-      issueDecision.kind === "not-issue-decision" &&
-      !apiCallNeedsConfirmation(call.operationId)
-    ) {
-      return toToolResult(
-        await dispatchPreparedApiCall(
-          call,
-          ...(capability
-            ? ([
-                {
-                  signal: options.signal,
-                  isScopeCurrent: options.isApiScopeCurrent,
-                  validateBeforeSend: () =>
-                    isDiagnosticApiCallInScope(call, capability),
-                },
-              ] as const)
-            : options.signal
-              ? ([{ signal: options.signal }] as const)
-              : [])
-        )
-      );
-    }
-    if (!options.chatId || !options.userName) {
-      return toToolResult(
-        notSentApiResult(
-          "Cannot request API permission without a signed-in chat.",
-          "permission-rejected"
-        )
-      );
-    }
-    const fingerprint = options.priorAttemptIds
-      ? await fingerprintPreparedApiCall(call).catch(() => undefined)
-      : undefined;
-    if (!current()) return stale();
-    const { actionId, expiresAt } = createPendingApiCall({
-      chatId: options.chatId,
       toolCallId,
+      dom,
+      chatId: options.chatId,
       userName: options.userName,
-      call,
-      domOrigin: dom?.origin,
-      domContext: dom?.context,
-      priorAttemptIds: fingerprint
-        ? options.priorAttemptIds?.(fingerprint)
-        : undefined,
+      signal: options.signal,
+      referencedProject,
+      referencedIssue: options.referencedIssue,
+      diagnosticRequested: isDiagnostic,
+      capability,
+      priorAttemptIds: options.priorAttemptIds,
       isScopeCurrent: options.isApiScopeCurrent,
-      ...(capability ? { capability } : {}),
-      issueDecision:
-        issueDecision.kind === "issue-decision"
-          ? issueDecision.decision
-          : undefined,
     });
-    return {
-      kind: "ask_user",
-      ask: {
-        kind: "confirm",
-        toolCallId,
-        prompt: call.operationId,
-        apiPermission: {
-          actionId,
-          operationId: call.operationId,
-          expiresAt,
-        },
-      },
-    };
-  };
 
   const canUseIssueAccess = (
     name: string,
@@ -2500,7 +2409,12 @@ export function createToolExecutor(
         return parseAskUserArgs({ ...args, options: verified }, toolCallId);
       }
       case "done":
-        return parseDoneArgs(args);
+        return parseDoneArgs(
+          args,
+          options.enableSqlEditorBlocks === true &&
+            options.runMode !== "read-only" &&
+            !isDiagnostic
+        );
       default:
         return toToolResult(JSON.stringify({ error: `Unknown tool: ${name}` }));
     }

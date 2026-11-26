@@ -173,16 +173,23 @@ describe("SQL Editor snapshots", () => {
       actor: "users/member@example.com",
       workspace: "workspaces/example",
       hostId: "mount-1",
+      mountId: "editor-1",
+      project,
       tabId: tab.id,
+      tabMode: tab.mode,
       modelUri: "inmemory://sql/example",
       modelVersion: 2,
       connection,
-      selection: { start: 10, end: 13 },
+      selection: { start: 10, end: 13, caret: 13 },
     };
     const snapshot = { version: 1, project, tab, connection, editorTarget };
     expect(normalizeAgentSqlEditorSnapshot(snapshot)).toEqual(snapshot);
     for (const patch of [
       { tabId: "tab-2" },
+      { tabMode: "ADMIN" },
+      { mountId: "" },
+      { project: "projects/other" },
+      { selection: { start: 10, end: 13, caret: 11 } },
       { modelVersion: 0 },
       { selection: { start: 0.25, end: 13 } },
       { selection: { start: 13, end: 10 } },
@@ -212,10 +219,13 @@ describe("SQL Editor snapshots", () => {
         actor: "users/member@example.com",
         workspace: "workspaces/example",
         hostId: "mount-1",
+        mountId: "editor-1",
+        project,
         tabId: tab.id,
+        tabMode: tab.mode,
         modelUri: "inmemory://sql/example",
         modelVersion: 2,
-        selection: { start: 0, end: 0 },
+        selection: { start: 0, end: 0, caret: 0 },
       },
     };
     expect(normalizeAgentSqlEditorSnapshot(snapshot)).toEqual(snapshot);

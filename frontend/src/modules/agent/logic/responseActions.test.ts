@@ -26,6 +26,50 @@ const issueCommentDraft = {
 const ddlAnswer = "I suggest:\n\n```sql\nCREATE TABLE notes (id INT);\n```";
 
 describe("response actions", () => {
+  test("normalizes additive SQL markers independently when primary and Continue slots are full", () => {
+    const marker = (blockIndex: number) => ({
+      kind: "sql-editor-block",
+      blockIndex,
+    });
+    const more = [
+      { kind: "continue", prompt: "How should I test it?" },
+      { kind: "continue", prompt: "What should I check next?" },
+    ];
+    const actions = [
+      open,
+      followUp,
+      ...more,
+      marker(-1),
+      marker(0),
+      marker(0),
+      marker(1.5),
+      { ...marker(1), sql: "SELECT 1" },
+      marker(2),
+      marker(3),
+      marker(4),
+      marker(5),
+    ];
+    const expected = [
+      open,
+      followUp,
+      ...more,
+      marker(0),
+      marker(2),
+      marker(3),
+      marker(4),
+    ];
+    expect(normalizeAgentResponseActions(actions)).toEqual(expected);
+    expect(acceptAgentResponseActions(actions, [open.target])).toEqual(
+      expected
+    );
+    expect(
+      acceptAgentResponseActions(actions, [open.target], undefined, ["draft"])
+    ).toEqual([
+      { kind: "draft-masking-rule", draftId: "draft" },
+      ...expected.slice(1),
+    ]);
+  });
+
   test("normalizes runtime SQL fix actions without accepting model-provided IDs", () => {
     const action = { kind: "review-sql-fix", draftId: "sql-fix-1" };
     expect(normalizeAgentResponseActions([action, followUp])).toEqual([
