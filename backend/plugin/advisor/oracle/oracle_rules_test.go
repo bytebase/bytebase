@@ -9,7 +9,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/oracle"
 )
 
 func TestOracleRules(t *testing.T) {

@@ -11,13 +11,13 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	mssqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mssql"
 )
 
 func TestPrepareTransformationUsesAST(t *testing.T) {
 	sql := `UPDATE p SET c1 = 1 FROM dbo.pokes AS p WHERE p.c1 = 1;
 DELETE p FROM dbo.pokes AS p WHERE p.c1 = 1;`
-	stmts, err := tsqlparser.ParseTSQL(sql)
+	stmts, err := mssqlparser.ParseTSQL(sql)
 	require.NoError(t, err)
 
 	var parsedStatements []base.ParsedStatement
@@ -31,7 +31,7 @@ DELETE p FROM dbo.pokes AS p WHERE p.c1 = 1;`
 				Text:  stmt.Text,
 				Start: start,
 			},
-			AST: &tsqlparser.AST{
+			AST: &mssqlparser.AST{
 				Node:          stmt.AST,
 				StartPosition: start,
 			},

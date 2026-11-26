@@ -28,7 +28,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	oracleparser "github.com/bytebase/bytebase/backend/plugin/parser/oracle"
 )
 
 func TestParseVersion(t *testing.T) {
@@ -51,7 +51,7 @@ func TestParseVersion(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		v, err := plsql.ParseVersion(test.Banner)
+		v, err := oracleparser.ParseVersion(test.Banner)
 		require.NoError(t, err)
 		require.Equal(t, test.First, v.First)
 		require.Equal(t, test.Second, v.Second)
@@ -59,7 +59,7 @@ func TestParseVersion(t *testing.T) {
 }
 
 func TestOracleSplitKeepsTrailingFragmentForDatabaseExecution(t *testing.T) {
-	commands, err := plsql.SplitSQL("DROP TABLESPACE xxx; CASCADE")
+	commands, err := oracleparser.SplitSQL("DROP TABLESPACE xxx; CASCADE")
 	require.NoError(t, err)
 	commands = base.FilterEmptyStatements(commands)
 	require.Len(t, commands, 2)
@@ -95,7 +95,7 @@ IS
 BEGIN
   UPDATE employees SET salary = salary + 1 WHERE id = p_employee_id;
 END update_salary;`
-	commands, err := plsql.SplitSQL(statement)
+	commands, err := oracleparser.SplitSQL(statement)
 	require.NoError(t, err)
 	commands = base.FilterEmptyStatements(commands)
 	require.Len(t, commands, 9)

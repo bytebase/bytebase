@@ -15,11 +15,11 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	oracleparser "github.com/bytebase/bytebase/backend/plugin/parser/oracle"
 )
 
 func init() {
-	e := advisor.NewV1Engine(advisor.NodeExtractor(plsqlparser.GetNode), nil, advisor.V1PosFindingOrFirstLine)
+	e := advisor.NewV1Engine(advisor.NodeExtractor(oracleparser.GetNode), nil, advisor.V1PosFindingOrFirstLine)
 
 	advisor.RegisterRules(storepb.Engine_ORACLE, map[storepb.SQLReviewRule_Type]advisor.Advisor{
 		storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK: e.PriorBackup(advisor.V1PriorBackupConfig[ast.Node]{

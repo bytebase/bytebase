@@ -1,4 +1,4 @@
-package tsql
+package mssql
 
 import (
 	"testing"

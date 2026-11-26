@@ -1,4 +1,4 @@
-package plsql
+package oracle
 
 import (
 	"errors"
