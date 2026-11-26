@@ -296,10 +296,15 @@ func checkSensitivePredicates(
 	var err error
 
 	if analysis := span.MongoDBAnalysis; analysis != nil && analysis.Collection != "" {
-		objectSchema, err = getMongoDBResultSchema(ctx, stores, database, analysis)
+		source, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to get object schema for collection %q", analysis.Collection)
+		}
+		result, err := getMongoDBResultSchema(ctx, stores, database, analysis)
 		if err != nil {
 			return "", err
 		}
+		return mongoDBPredicateRefusal(span, source, result), nil
 	} else if analysis := span.ElasticsearchAnalysis; analysis != nil && analysis.Index != "" {
 		objectSchema, err = getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Index)
 		if err != nil {
@@ -307,17 +312,33 @@ func checkSensitivePredicates(
 		}
 	}
 
-	if objectSchema == nil {
-		return "", nil
-	}
+	return predicateRefusal(span, objectSchema), nil
+}
 
+// mongoDBPredicateRefusal checks a read's predicates against its collection's
+// schema and against its result's: a $match before a $lookup reads the source
+// fields, which the join's "as" may then overwrite, and one after it reads the
+// joined fields.
+func mongoDBPredicateRefusal(span *parserbase.QuerySpan, source, result *storepb.ObjectSchema) string {
+	if refusal := predicateRefusal(span, source); refusal != "" {
+		return refusal
+	}
+	return predicateRefusal(span, result)
+}
+
+// predicateRefusal returns the refusal for a span whose predicates use a field
+// the schema tags with a semantic type, or "" if none does.
+func predicateRefusal(span *parserbase.QuerySpan, objectSchema *storepb.ObjectSchema) string {
+	if objectSchema == nil {
+		return ""
+	}
 	for pathStr := range span.PredicatePaths {
 		semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
 		if semanticType != "" {
-			return fmt.Sprintf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType), nil
+			return fmt.Sprintf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType)
 		}
 	}
-	return "", nil
+	return ""
 }
 
 func getFirstSemanticTypeInPath(ast *parserbase.PathAST, objectSchema *storepb.ObjectSchema) string {
@@ -1108,12 +1129,17 @@ func (*elasticsearchMasker) maskResults(
 	return nil
 }
 
-// lookupSemanticTypeByDotPath splits a dot-delimited field path and walks the ObjectSchema
-// to find the semantic type at the leaf.
+// lookupSemanticTypeByDotPath splits a dot-delimited field path and walks the ObjectSchema,
+// through the items of arrays, to find the semantic type at the leaf.
 func lookupSemanticTypeByDotPath(dotPath string, objectSchema *storepb.ObjectSchema) string {
 	parts := strings.Split(dotPath, ".")
 	current := objectSchema
 	for _, part := range parts {
+		// A dotted path reaches into the documents of an array, as a
+		// $lookup's joined field holds them.
+		for current != nil && current.SemanticType == "" && current.GetArrayKind() != nil {
+			current = current.GetArrayKind().GetKind()
+		}
 		if current == nil {
 			return ""
 		}
@@ -1133,6 +1159,10 @@ func lookupSemanticTypeByDotPath(dotPath string, objectSchema *storepb.ObjectSch
 			return ""
 		}
 		current = child
+	}
+	// A condition on an array field matches its items too.
+	for current != nil && current.SemanticType == "" && current.GetArrayKind() != nil {
+		current = current.GetArrayKind().GetKind()
 	}
 	if current != nil {
 		return current.SemanticType

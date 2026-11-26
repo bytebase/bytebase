@@ -402,3 +402,52 @@ func TestMongoDBJoinMaskedWithoutSourceSchema(t *testing.T) {
 		requireJSONEqual(t, `{"item": "x", "u": [{"name": "n", "email": "******"}]}`, got)
 	}
 }
+
+func TestMongoDBPredicateRefusal(t *testing.T) {
+	t.Parallel()
+	orders := &storepb.ObjectSchema{Type: storepb.ObjectSchema_OBJECT}
+	joinedOverEmail := injectJoinedSchemas(testMongoDBUsersSchema(), []joinedSchema{{asField: "email", schema: orders}})
+	joinedUsers := injectJoinedSchemas(nil, []joinedSchema{{asField: "u", schema: testMongoDBUsersSchema()}})
+	tests := []struct {
+		statement string
+		source    *storepb.ObjectSchema
+		result    *storepb.ObjectSchema
+		want      string
+	}{
+		{
+			// The join overwrites email, but the $match before it reads the source field.
+			statement: `db.users.aggregate([{$match: {email: "guess@example.com"}}, {$lookup: {from: "orders", localField: "_id", foreignField: "userId", as: "email"}}])`,
+			source:    testMongoDBUsersSchema(),
+			result:    joinedOverEmail,
+			want:      `using field "email"`,
+		},
+		{
+			statement: `db.orders.aggregate([{$lookup: {from: "users", localField: "u", foreignField: "_id", as: "u"}}, {$match: {"u.email": "guess@example.com"}}])`,
+			result:    joinedUsers,
+			want:      `using field "u.email"`,
+		},
+		{
+			statement: `db.orders.aggregate([{$lookup: {from: "users", localField: "u", foreignField: "_id", as: "u"}}, {$match: {u: {$elemMatch: {name: "n"}}}}])`,
+			result:    injectJoinedSchemas(nil, []joinedSchema{{asField: "u", schema: &storepb.ObjectSchema{Type: storepb.ObjectSchema_OBJECT, SemanticType: masker.DefaultSemanticTypeID}}}),
+			want:      `using field "u"`,
+		},
+		{
+			statement: `db.users.find({name: "n"})`,
+			source:    testMongoDBUsersSchema(),
+			result:    testMongoDBUsersSchema(),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.statement, func(t *testing.T) {
+			t.Parallel()
+			span, err := mongodbparser.GetQuerySpan(context.Background(), parserbase.GetQuerySpanContext{}, parserbase.Statement{Text: tc.statement}, "mydb", "", false)
+			require.NoError(t, err)
+			got := mongoDBPredicateRefusal(span, tc.source, tc.result)
+			if tc.want == "" {
+				require.Empty(t, got)
+				return
+			}
+			require.Contains(t, got, tc.want)
+		})
+	}
+}
