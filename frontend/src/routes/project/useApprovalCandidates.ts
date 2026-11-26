@@ -29,6 +29,7 @@ import {
 import {
   ensureUserFullName,
   isBindingPolicyExpired,
+  isUserIncludedInList,
   memberMapToRolesInProjectIAM,
 } from "@/utils";
 import {
@@ -121,15 +122,16 @@ export function useApprovalCandidates(
       [...memberMap.keys()].sort((a, b) => a.localeCompare(b))
     );
   }, [projectIamPolicy, role, getGroupByIdentifier]);
+  const holderNames = useMemo(
+    () => (holderNamesKey ? (JSON.parse(holderNamesKey) as string[]) : []),
+    [holderNamesKey]
+  );
 
   useEffect(() => {
     let canceled = false;
     const load = async () => {
-      const names = holderNamesKey
-        ? (JSON.parse(holderNamesKey) as string[])
-        : [];
       const withPrefix = (prefix: string) =>
-        names.filter((name) => name.startsWith(prefix));
+        holderNames.filter((name) => name.startsWith(prefix));
       // Each kind of principal is served by its own service. A record that
       // does not resolve keeps a placeholder named from its email.
       const [people, serviceAccounts, workloadIdentities] = await Promise.all([
@@ -184,7 +186,7 @@ export function useApprovalCandidates(
     currentUserEmail,
     fetchServiceAccount,
     fetchWorkloadIdentity,
-    holderNamesKey,
+    holderNames,
   ]);
 
   const candidates = useMemo(
@@ -200,14 +202,22 @@ export function useApprovalCandidates(
       })),
     [issue.creator, lastPlanEditor, project, users]
   );
-  const currentUserCandidate = candidates.find(
-    (candidate) => candidate.user.email === currentUserEmail
-  );
+  // The same check as the issue page's Review action: an allUsers holder
+  // includes everyone, as on the server.
+  const currentUserEligibility =
+    currentUser && isUserIncludedInList(currentUserEmail, holderNames)
+      ? getApprovalEligibility({
+          actor: currentUser.name,
+          issueCreator: issue.creator,
+          lastPlanEditor,
+          project,
+        })
+      : undefined;
 
   return {
     candidates,
-    canCurrentUserApprove: currentUserCandidate?.canApprove ?? false,
-    isCurrentUserReviewCandidate: currentUserCandidate?.canReview ?? false,
-    isCurrentUserRoleMember: currentUserCandidate !== undefined,
+    canCurrentUserApprove: currentUserEligibility?.canApprove ?? false,
+    isCurrentUserReviewCandidate: currentUserEligibility?.canReview ?? false,
+    isCurrentUserRoleMember: currentUserEligibility !== undefined,
   };
 }
