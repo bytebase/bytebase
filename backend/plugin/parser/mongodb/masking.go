@@ -41,6 +41,9 @@ func analysisToMasking(a *analysis.StatementAnalysis) (*base.MongoDBAnalysis, er
 		Operation:  a.MethodName,
 		Collection: a.Collection,
 	}
+	for _, read := range a.Reads {
+		result.Reads = append(result.Reads, base.MongoDBNamespace{Database: read.Database, Collection: read.Collection})
+	}
 
 	switch a.Operation {
 	case analysis.OpFind:
