@@ -55,7 +55,9 @@ import { useUserDisplayName } from "./useUserDisplayName";
 // The lines under the plan title. A part's separator or arrow sits in the gap
 // before it, so a part that starts a row puts it left of the box, where the box
 // clips it: a separator shows only between two parts on one row. Rows wrapped
-// or not share one height and one gap.
+// or not share one height and one gap. The clip margin is all a part's focus
+// ring may reach past the part, so a control at a part's edge drops the ring
+// offset.
 const LINES =
   "flex flex-col gap-y-1 overflow-x-clip [overflow-clip-margin:2px]";
 const LINE = "flex flex-wrap items-center gap-x-4 gap-y-1";
@@ -609,6 +611,7 @@ function InlineLabels({
             size="xs"
             className={cn(
               "inline-flex items-center gap-1 rounded-xs border border-dashed border-control-border px-1.5 py-0.5 text-xs text-control-placeholder transition-colors",
+              inLine && "focus-visible:ring-offset-0",
               allowChange &&
                 !isUpdating &&
                 "hover:border-control hover:text-control",

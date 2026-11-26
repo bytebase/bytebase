@@ -228,3 +228,43 @@ export async function setPermissiveGates(
     "value.workspace_approval",
   );
 }
+
+// The header lines clip 2 px past their edge, and any part can start a row, so
+// each control's keyboard focus ring must end within 2 px of its part. Returns
+// the controls whose ring reaches further, or that never showed one.
+export async function headerFocusRingsPastClip(page: Page): Promise<string[]> {
+  await page.keyboard.press("Shift");
+  return page.getByTestId("plan-details").evaluate((box) => {
+    const transparent = /rgba\([^)]*,\s*0\)/;
+    const reach = (el: HTMLElement) => {
+      const style = getComputedStyle(el);
+      let max = 0;
+      for (const shadow of style.boxShadow.split(/,(?![^(]*\))/)) {
+        if (shadow.includes("inset") || transparent.test(shadow)) continue;
+        const [x = 0, y = 0, blur = 0, spread = 0] = [...shadow.matchAll(/(-?[\d.]+)px/g)].map((m) => Number(m[1]));
+        max = Math.max(max, Math.max(Math.abs(x), Math.abs(y)) + blur + spread);
+      }
+      if (style.outlineStyle !== "none" && !transparent.test(style.outlineColor)) {
+        max = Math.max(max, parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset));
+      }
+      return max;
+    };
+    const controls = box.querySelectorAll<HTMLElement>("[data-part] a, [data-part] button");
+    const failures = controls.length === 0 ? ["no controls in the lines"] : [];
+    for (const el of controls) {
+      const name = el.getAttribute("aria-label") || el.textContent?.trim() || el.tagName;
+      el.focus();
+      const ring = reach(el);
+      if (!el.matches(":focus-visible") || ring === 0) {
+        failures.push(`${name}: no focus ring`);
+        continue;
+      }
+      const part = el.closest("[data-part]")!.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
+      const past = Math.max(part.left - (rect.left - ring), rect.right + ring - part.right);
+      if (past > 2.5) failures.push(`${name}: ${past}px past its part`);
+    }
+    (document.activeElement as HTMLElement | null)?.blur();
+    return failures;
+  });
+}
