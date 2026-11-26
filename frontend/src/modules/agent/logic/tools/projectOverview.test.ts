@@ -94,13 +94,14 @@ describe("projectOverview", () => {
     });
     expect(overview?.setup).toMatchObject({
       instance: "empty",
+      projectInstance: "empty",
       transferableDatabase: "present",
       canTransferDatabases: true,
       recommendedStep: "transferDatabases",
     });
   });
 
-  test("uses an existing workspace instance when no transferable database exists", async () => {
+  test("recommends connecting for an empty project with only workspace instances", async () => {
     mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
     state.fetchDatabases.mockResolvedValue({
       nextPageToken: "",
@@ -126,9 +127,55 @@ describe("projectOverview", () => {
     });
     expect(overview?.setup).toMatchObject({
       instance: "present",
+      projectInstance: "empty",
       transferableDatabase: "empty",
+      recommendedStep: "connect",
+    });
+  });
+
+  test("recommends creating a database on an existing project instance", async () => {
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockResolvedValue({
+      nextPageToken: "",
+      databases: [],
+    });
+    state.fetchInstanceList.mockImplementation(async ({ parent }) => ({
+      instances: parent ? [{ name: "projects/sample/instances/primary" }] : [],
+    }));
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup).toMatchObject({
+      instance: "present",
+      projectInstance: "present",
       recommendedStep: "createDatabase",
     });
+  });
+
+  test("retains connect after transfer when only workspace instances exist", async () => {
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockImplementation(async ({ parent }) => ({
+      nextPageToken: "",
+      databases:
+        parent === "workspaces/example"
+          ? [{ name: "instances/shared/databases/unassigned" }]
+          : [],
+    }));
+    state.fetchInstanceList.mockImplementation(async ({ parent }) => ({
+      instances: parent ? [] : [{ name: "instances/shared" }],
+    }));
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup).toMatchObject({
+      instance: "present",
+      projectInstance: "empty",
+      recommendedStep: "transferDatabases",
+    });
+    expect(overview?.setup && getProjectSetupSteps(overview.setup)).toEqual([
+      "transferDatabases",
+      "connect",
+    ]);
   });
 
   test("retains both eligible setup flows while recommending transfer first", async () => {
@@ -170,6 +217,7 @@ describe("projectOverview", () => {
 
     expect(overview?.setup).toMatchObject({
       instance: "present",
+      projectInstance: "present",
       transferableDatabase: "present",
       canConnectInstance: true,
       canTransferDatabases: true,
@@ -191,6 +239,7 @@ describe("projectOverview", () => {
 
     expect(overview?.setup).toMatchObject({
       instance: "unknown",
+      projectInstance: "unknown",
       transferableDatabase: "empty",
       canConnectInstance: false,
       canTransferDatabases: false,
@@ -231,7 +280,89 @@ describe("projectOverview", () => {
 
     expect(overview?.setup).toMatchObject({
       instance: "unknown",
+      projectInstance: "unknown",
       transferableDatabase: "unknown",
+    });
+    expect(overview?.setup?.recommendedStep).toBeUndefined();
+  });
+
+  test("does not infer project-instance absence from a successful workspace read", async () => {
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockResolvedValue({
+      nextPageToken: "",
+      databases: [],
+    });
+    state.fetchInstanceList.mockImplementation(async ({ parent }) => {
+      if (parent) throw new Error("unavailable");
+      return { instances: [{ name: "instances/shared" }] };
+    });
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup).toMatchObject({
+      instance: "present",
+      projectInstance: "unknown",
+    });
+    expect(overview?.setup?.recommendedStep).toBeUndefined();
+  });
+
+  test("does not infer project-instance absence when listing is denied", async () => {
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockResolvedValue({
+      nextPageToken: "",
+      databases: [],
+    });
+    state.hasProjectPermission.mockImplementation(
+      (_project, permission) => permission !== "bb.instances.list"
+    );
+    state.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "instances/shared" }],
+    });
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup).toMatchObject({
+      instance: "present",
+      projectInstance: "unknown",
+      canConnectInstance: true,
+    });
+    expect(overview?.setup?.recommendedStep).toBeUndefined();
+  });
+
+  test("does not infer project-instance absence from a partial empty page", async () => {
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockResolvedValue({
+      nextPageToken: "",
+      databases: [],
+    });
+    state.fetchInstanceList.mockImplementation(async ({ parent }) =>
+      parent
+        ? { instances: [], nextPageToken: "more" }
+        : { instances: [{ name: "instances/shared" }], nextPageToken: "" }
+    );
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup).toMatchObject({
+      instance: "present",
+      projectInstance: "unknown",
+    });
+    expect(overview?.setup?.recommendedStep).toBeUndefined();
+  });
+
+  test("falls back to connect when transfer discovery fails", async () => {
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockImplementation(async ({ parent }) => {
+      if (parent === "workspaces/example") throw new Error("unavailable");
+      return { nextPageToken: "", databases: [] };
+    });
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup).toMatchObject({
+      projectInstance: "empty",
+      transferableDatabase: "unknown",
+      recommendedStep: "connect",
     });
   });
 
@@ -434,6 +565,7 @@ describe("projectOverview", () => {
       setup: {
         isDefault: false,
         instance: "empty",
+        projectInstance: "empty",
         transferableDatabase: "present",
         canConnectInstance: true,
         canTransferDatabases: true,

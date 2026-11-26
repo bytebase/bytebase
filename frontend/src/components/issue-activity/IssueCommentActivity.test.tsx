@@ -513,3 +513,52 @@ describe("IssueCommentRow", () => {
     expect(reference.closest("a")).toBeNull();
   });
 });
+
+describe("a row with an address", () => {
+  const remark = create(IssueCommentSchema, {
+    name: "projects/p/issues/1/issueComments/c1",
+    creator: "users/alice@example.com",
+    comment: "a remark",
+    createTime: timestampFromMs(Date.UTC(2026, 2, 2, 12)),
+  });
+
+  test("its timestamp is the link the page gives it", () => {
+    render(
+      <IssueCommentRow
+        comment={remark}
+        isLast
+        linkless
+        timestampLink={{ href: "#issueComments/c1" }}
+      />
+    );
+    const timestamp = screen.getByTestId("humanize-ts");
+    expect(timestamp.tagName).toBe("A");
+    expect(timestamp.getAttribute("href")).toBe("#issueComments/c1");
+  });
+
+  test("its timestamp is text where the page gives it none", () => {
+    render(<IssueCommentRow comment={remark} isLast linkless />);
+    expect(screen.getByTestId("humanize-ts").tagName).toBe("SPAN");
+  });
+
+  test("is outlined and marked current only when the address names it", () => {
+    const { container, rerender } = render(
+      <IssueCommentRow comment={remark} isLast linkless />
+    );
+    expect(container.querySelector("[aria-current]")).toBeNull();
+    rerender(<IssueCommentRow comment={remark} isLast linked linkless />);
+    const row = container.querySelector('[aria-current="true"]');
+    expect(row?.className).toContain("outline-accent");
+    // Drawn over the ring of the icon beside it.
+    expect(row?.className).toContain("relative");
+  });
+
+  test("hands its box to the page, which lands on it", () => {
+    const rowRef = { current: null as HTMLDivElement | null };
+    const { container } = render(
+      <IssueCommentRow comment={remark} isLast linkless rowRef={rowRef} />
+    );
+    expect(rowRef.current).not.toBeNull();
+    expect(container.contains(rowRef.current)).toBe(true);
+  });
+});

@@ -18,6 +18,7 @@ func init() {
 		Parse:           parseStarRocksStatements,
 		StatementRanges: GetStatementRanges,
 		Diagnose:        Diagnose,
+		Complete:        Completion,
 		ValidateQuery:   validateQuery,
 		QuerySpan:       GetQuerySpan,
 		Explain:         explainStatement,

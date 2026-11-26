@@ -1,7 +1,6 @@
 import { create, toJsonString } from "@bufbuild/protobuf";
 import { AnySchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
 import { Download, ExternalLink, Maximize2, X } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -78,9 +77,7 @@ import { protobufJsonRegistry } from "@/types/protobufJsonRegistry";
 import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 import { getDefaultPagination, humanizeDurationV1 } from "@/utils";
 import { isValidEmail } from "@/utils/util";
-import { celString } from "@/utils/v1/celLiteral";
-
-dayjs.extend(utc);
+import { celString, celTimestampString } from "@/utils/v1/celLiteral";
 
 // ============================================================
 // Filter helpers
@@ -149,13 +146,9 @@ function buildFilterString(filter: AuditLogFilter): string {
     );
   }
   if (filter.createdTsAfter)
-    parts.push(
-      `create_time >= ${celString(dayjs(filter.createdTsAfter).utc().format())}`
-    );
+    parts.push(`create_time >= ${celTimestampString(filter.createdTsAfter)}`);
   if (filter.createdTsBefore)
-    parts.push(
-      `create_time <= ${celString(dayjs(filter.createdTsBefore).utc().format())}`
-    );
+    parts.push(`create_time <= ${celTimestampString(filter.createdTsBefore)}`);
   return parts.join(" && ");
 }
 

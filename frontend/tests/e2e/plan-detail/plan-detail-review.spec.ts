@@ -934,8 +934,9 @@ test.describe("inline comment edit shows the edited marker in place (BYT-9746)",
     const edited = `${original} (edited inline)`;
     const row = page.locator("li", { hasText: original });
     await expect(row).toBeVisible({ timeout: 15_000 });
-    // The pencil edit affordance (own comment, no text label → target the icon).
-    await row.locator("button:has(svg.lucide-pencil)").click();
+    // Edit is in the comment's menu.
+    await row.getByRole("button", { name: /^Actions for / }).click();
+    await page.getByRole("menuitem", { name: "Edit" }).click();
     const editor = page.locator("textarea[placeholder='Leave a comment...']");
     await editor.fill(edited);
     await page.getByRole("button", { name: "Save", exact: true }).click();
@@ -2350,5 +2351,149 @@ test.describe("Editing keeps the reading position; Activity links land in the ed
     await goReview(planId);
     await followActivityLinkWhileEditing();
     await expectLineRevealedForTyping();
+  });
+});
+
+test.describe("A comment's address (BYT-10604)", () => {
+  test.describe.configure({ mode: "serial" });
+  let planId: string;
+  let planName: string;
+  let rootName = "";
+  let hiddenReplyName = "";
+  const stamp = Date.now();
+  const rootText = `Address root ${stamp}`;
+  const replyText = (n: number) => `Address reply ${n} ${stamp}`;
+  const fragmentOf = (commentName: string) =>
+    commentName.split("/").slice(-2).join("/");
+  const planUrl = () => `${env.baseURL}/projects/${projectId}/plans/${planId}`;
+  const linkedComment = () =>
+    page.locator(
+      "#plan-phase-review [data-testid='thread-comment'][aria-current='true']",
+    );
+
+  test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review Address",
+      sql: [
+        `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_addr1_${stamp} TEXT;`,
+        `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_addr2_${stamp} TEXT;`,
+      ].join("\n"),
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    planId = seeded.planId;
+    planName = seeded.planName;
+    const plan = await env.api.getPlan(seeded.planName);
+    const spec = plan.specs?.[0];
+    const root = await env.api.createIssueComment(seeded.issueName, rootText, {
+      statementAnchor: {
+        spec: spec?.id ?? "",
+        sheetSha256: spec?.changeDatabaseConfig?.sheet?.split("/").pop() ?? "",
+        startLine: 1,
+        endLine: 2,
+      },
+    });
+    rootName = root.name;
+    // Six replies: the card shows the last two and folds the first four away.
+    for (let n = 1; n <= 6; n++) {
+      const reply = await env.api.createIssueComment(
+        seeded.issueName,
+        replyText(n),
+        { root: root.name },
+      );
+      if (n === 2) hiddenReplyName = reply.name;
+    }
+    await env.api.setIssueCommentThreadState(root.name, "RESOLVED");
+  });
+
+  test("the address reads back as the comment through the API", async () => {
+    // The plan names its issue; the fragment is the rest of the comment's name.
+    const plan = await env.api.getPlan(planName);
+    const name = `${plan.issue}/${fragmentOf(hiddenReplyName)}`;
+    expect(name).toBe(hiddenReplyName);
+    const reply = await env.api.getIssueComment(name);
+    expect(reply.comment).toBe(replyText(2));
+    expect(reply.root).toBe(rootName);
+  });
+
+  test("opening a reply's address unfolds its resolved thread, shows the folded replies and marks the reply", async () => {
+    await page.goto(`${planUrl()}#${fragmentOf(hiddenReplyName)}`);
+    await planPage.dismissModals();
+    const linked = linkedComment();
+    await expect(linked).toContainText(replyText(2), { timeout: 15_000 });
+    await expect(linked).toBeInViewport();
+    await expect(linked).toBeFocused();
+    const card = planPage.threadCardOf("review", rootName);
+    await expect(card.getByTestId("thread-comment")).toHaveCount(7);
+    // Showing a comment does not reopen its thread.
+    await expect(card).toHaveAttribute("data-thread-state", "resolved");
+    expect(new URL(page.url()).hash).toBe(`#${fragmentOf(hiddenReplyName)}`);
+    // Only the comment the address names is marked.
+    await expect(
+      page.locator("#plan-phase-review [aria-current='true']"),
+    ).toHaveCount(1);
+  });
+
+  test("a timestamp is the comment's link, and following it moves the mark without moving the page", async () => {
+    const card = planPage.threadCardOf("review", rootName);
+    const rootComment = card.getByTestId("thread-comment").first();
+    const timestamp = rootComment.locator("a[href^='#issueComments/']");
+    await expect(timestamp).toHaveAttribute("href", `#${fragmentOf(rootName)}`);
+    await rootComment.scrollIntoViewIfNeeded();
+    const before = await rootComment.boundingBox();
+    await timestamp.click();
+    await expect(page).toHaveURL(`${planUrl()}#${fragmentOf(rootName)}`);
+    await expect(linkedComment()).toContainText(rootText);
+    const after = await rootComment.boundingBox();
+    expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThan(2);
+  });
+
+  test("the comment's menu copies its address on the plan's root path", async () => {
+    await sharedContext.grantPermissions(["clipboard-read", "clipboard-write"]);
+    const card = planPage.threadCardOf("review", rootName);
+    const reply = card
+      .getByTestId("thread-comment")
+      .filter({ hasText: replyText(2) });
+    await reply.getByRole("button", { name: /^Actions for / }).click();
+    await page.getByRole("menuitem", { name: "Copy link" }).click();
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(`${planUrl()}#${fragmentOf(hiddenReplyName)}`);
+  });
+
+  test("an address opens Review when it is collapsed", async () => {
+    await page.goto(planUrl());
+    await planPage.dismissModals();
+    // The header also has a "Review" button, so the toggle is found by its
+    // section, not by the word.
+    const toggle = page
+      .locator("#plan-phase-review")
+      .getByText(/Hide details|Show details/)
+      .first();
+    await toggle.click();
+    await expect(toggle).toHaveText(/Show/, { timeout: 5_000 });
+    await expect(planPage.threadCardOf("review", rootName)).toHaveCount(0);
+    // The same document takes the new fragment, as a pasted link would.
+    await page.evaluate((fragment) => {
+      window.location.hash = fragment;
+    }, fragmentOf(hiddenReplyName));
+    await expect(linkedComment()).toContainText(replyText(2), {
+      timeout: 15_000,
+    });
+    await expect(linkedComment()).toBeInViewport();
+  });
+
+  test("an address that names no comment opens the plan as it is", async () => {
+    // Leave the plan first, so this is a fresh load and not a change of
+    // fragment on a page the last test had already unfolded.
+    await page.goto("about:blank");
+    await page.goto(`${planUrl()}#issueComments/no-such-comment`);
+    await planPage.dismissModals();
+    await planPage.expandSection("Review");
+    const card = planPage.threadCardOf("review", rootName);
+    await expect(card).toBeVisible({ timeout: 15_000 });
+    // The resolved thread stays folded, and nothing is marked.
+    await expect(card.getByTestId("thread-comment")).toHaveCount(0);
+    await expect(page.locator("[aria-current='true']")).toHaveCount(0);
   });
 });

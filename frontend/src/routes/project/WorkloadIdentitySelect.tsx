@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import { usePaginatedSelect } from "@/hooks/usePaginatedSelect";
+import {
+  type SelectPage,
+  usePaginatedSelect,
+} from "@/hooks/usePaginatedSelect";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
@@ -22,6 +25,9 @@ interface WorkloadIdentitySelectProps {
   // Why an identity cannot be picked, or undefined when it can. A disabled
   // identity stays listed and shows the reason in place of its description.
   disabledReason?: (workloadIdentity: WorkloadIdentity) => string | undefined;
+  // The project's first page of identities, when the owner has already loaded
+  // it. The select starts from it instead of loading on mount.
+  initialPage?: SelectPage<WorkloadIdentity>;
 }
 
 export function WorkloadIdentitySelect({
@@ -33,6 +39,7 @@ export function WorkloadIdentitySelect({
   className,
   describe,
   disabledReason,
+  initialPage,
 }: WorkloadIdentitySelectProps) {
   const { t } = useTranslation();
   const listWorkloadIdentities = useAppStore(
@@ -65,10 +72,13 @@ export function WorkloadIdentitySelect({
     hasMore,
     loadingMore,
     loadMore,
-  } = usePaginatedSelect({ fetchPage: listPage });
+  } = usePaginatedSelect({ fetchPage: listPage, initialPage });
 
+  // The initial page answers the first search only: a later change to what
+  // the list queries makes a new `search`, which loads.
+  const seededSearch = useRef(initialPage ? search : undefined);
   useEffect(() => {
-    search("");
+    if (seededSearch.current !== search) search("");
   }, [search]);
 
   const options = useMemo(() => {

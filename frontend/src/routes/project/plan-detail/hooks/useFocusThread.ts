@@ -17,7 +17,8 @@ export function useFocusThread() {
 
   const focusInActivity = useCallback(
     (root: IssueComment) => {
-      focusPlanPhase("review", expandPhase);
+      // The entry scrolls itself into view once the timeline shows it.
+      expandPhase("review");
       storeApi.getState().requestActivityFocus(root.name);
     },
     [expandPhase, storeApi]

@@ -210,6 +210,57 @@ describe("DatabaseSelect — multi mode", () => {
     unmount();
   });
 
+  test("with an initial page, lists it and fetches nothing until a search", async () => {
+    const dbA = db("instances/i/databases/a");
+    const { unmount } = render(
+      <DatabaseSelect
+        multiple
+        value={[]}
+        onChange={vi.fn()}
+        projectName="projects/p"
+        initialPage={{ items: [dbA], nextPageToken: "page-2" }}
+      />
+    );
+    await flush();
+
+    expect(mocks.fetchDatabases).not.toHaveBeenCalled();
+    expect(combo.props?.options.map((option) => option.value)).toEqual([
+      dbA.name,
+    ]);
+    expect(combo.props?.hasMore).toBe(true);
+
+    await act(async () => {
+      await combo.props?.onSearch?.("");
+    });
+    expect(mocks.fetchDatabases).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  test("with an initial page, a change of project still loads", async () => {
+    const initialPage = { items: [db("instances/i/databases/a")] };
+    const select = (projectName: string) => (
+      <DatabaseSelect
+        multiple
+        value={[]}
+        onChange={vi.fn()}
+        projectName={projectName}
+        initialPage={initialPage}
+      />
+    );
+    const { rerender, unmount } = render(select("projects/p"));
+    await flush();
+    expect(mocks.fetchDatabases).not.toHaveBeenCalled();
+
+    rerender(select("projects/q"));
+    await flush();
+
+    expect(mocks.fetchDatabases).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchDatabases).toHaveBeenCalledWith(
+      expect.objectContaining({ parent: "projects/q" })
+    );
+    unmount();
+  });
+
   // GREEN GUARD (passes pre- and post-fix). Not the bug repro — DatabaseSelect
   // already wires onSearch; the missing onSearch was in the DRAWER's local
   // MultiDatabaseSelect. The true red bug-repro lives in the drawer test.

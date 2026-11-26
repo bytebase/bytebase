@@ -1961,6 +1961,222 @@ describe("AgentWindow", () => {
     unmount();
   });
 
+  test("shows pending feedback in the same status slot and keeps it after selecting the chat", () => {
+    const store = useAgentStore.getState();
+    const waiting = store.createChat({ title: "Waiting for a choice", context: "projects/orders" });
+    store.awaitUser(waiting.id, { toolCallId: "ask", kind: "choose", prompt: "Which environment?", options: [{ label: "Staging", value: "staging" }] });
+    const selected = store.createChat({ title: "Another chat", context: "projects/orders" });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+      const row = () => document.querySelector(`[data-agent-chat-row="${waiting.id}"]`)!;
+      expect(row().querySelector('[aria-label="agent.attention.needs-attention"]')).toBeInstanceOf(SVGElement);
+      expect(row().querySelector('[data-agent-chat-status="attention"]')).not.toBeNull();
+      expect(document.querySelector(`[data-agent-chat-row="${selected.id}"] [data-agent-chat-status="idle"]`)).not.toBeNull();
+      act(() => (row().querySelector("button") as HTMLButtonElement).click());
+      expect(useAgentStore.getState().currentChatId).toBe(waiting.id);
+      expect(store.getPendingAsk(waiting.id)).not.toBeNull();
+      expect(row().querySelector('[data-agent-chat-status="attention"]')).not.toBeNull();
+      act(() => store.setChatStatus(waiting.id, "running"));
+      expect(row().querySelector('[data-agent-chat-status="running"]')).not.toBeNull();
+      expect(row().querySelector('[aria-label="common.running"]')).toBeInstanceOf(SVGElement);
+    } finally { unmount(); }
+  });
+
+  test.each([
+    ["awaiting_user", "agent.attention.needs-attention"],
+    ["running", "common.running"],
+  ] as const)(
+    "shows the %s status tooltip when the chat button receives focus",
+    async (status, label) => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({
+        title: "Status chat",
+        context: "projects/orders",
+      });
+      if (status === "awaiting_user") {
+        store.awaitUser(chat.id, {
+          toolCallId: "ask",
+          kind: "input",
+          prompt: "Which environment?",
+        });
+      } else {
+        store.setChatStatus(chat.id, status);
+      }
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        const row = document.querySelector<HTMLElement>(
+          `[data-agent-chat-row="${chat.id}"]`
+        )!;
+        const button = within(row).getByRole("button", {
+          name: (name) => name.startsWith(label) && name.endsWith("Status chat"),
+        });
+        const matches = button.matches.bind(button);
+        vi.spyOn(button, "matches").mockImplementation(
+          (selector) => selector === ":focus-visible" || matches(selector)
+        );
+        await act(async () => button.focus());
+        expect(button).toHaveFocus();
+        const tooltip = await screen.findByText(label);
+        expect(tooltip).toHaveAttribute("data-agent-tooltip-content");
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test("opens the exact waiting chat from its minimized preview without answering it", async () => {
+    const store = useAgentStore.getState();
+    const waiting = store.createChat({ title: "Waiting chat", context: "projects/orders" });
+    store.awaitUser(waiting.id, { toolCallId: "ask", kind: "input", prompt: "Which environment?" });
+    const selected = store.createChat({ title: "Selected chat", context: "projects/orders" });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+      act(() => store.minimize());
+      await waitFor(() => expect(document.querySelector("[data-agent-attention-preview]")).not.toBeNull());
+      expect(useAgentStore.getState().currentChatId).toBe(selected.id);
+      const preview = document.querySelector("[data-agent-attention-preview]")!;
+      expect(preview.textContent).toContain("Which environment?");
+      act(() => (within(preview as HTMLElement).getByRole("button", { name: /Waiting chat/ })).click());
+      expect(useAgentStore.getState().minimized).toBe(false);
+      expect(useAgentStore.getState().currentChatId).toBe(waiting.id);
+      expect(store.getPendingAsk(waiting.id)?.toolCallId).toBe("ask");
+      expect(store.getMessages(waiting.id)).toEqual([]);
+    } finally { unmount(); }
+  });
+
+  test.each([1000, 2000])(
+    "uses the existing token-limit wording in the minimized preview with a %i token budget",
+    async (limit) => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ title: "Paused run", context: "projects/orders" });
+      const message = store.addMessage({
+        chatId: chat.id,
+        role: "user",
+        content: "Review database access",
+        metadata: { runId: "run-1" },
+      })!;
+      useAgentStore.setState({
+        chats: [{
+          ...chat,
+          status: "paused",
+          runId: "run-1",
+          runBudget: { version: 1, runId: "run-1", limit, totalTokensUsed: 1000, hasUnreportedUsage: false, providerAttemptCount: 1, revision: 1 },
+          runCheckpoint: {
+            version: 1,
+            runId: "run-1",
+            suspension: "token-limit",
+            rootUserMessageId: message.id,
+            throughMessageId: message.id,
+            bindings: { page: { path: "/projects/orders", title: "Order service" }, context: "projects/orders", references: [], runMode: "read-only" },
+            maskingSections: [],
+            phase: "working",
+            startupComplete: true,
+          },
+        }],
+      });
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        act(() => store.minimize());
+        const preview = await screen.findByRole("region", { name: "agent.attention.needs-input" });
+        expect(within(preview).getByText("agent.token-budget.paused")).toBeVisible();
+      } finally { unmount(); }
+    }
+  );
+
+  test("does not label an empty pending question as a token-limit pause", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ title: "Empty question", context: "projects/orders" });
+    store.awaitUser(chat.id, { toolCallId: "ask", kind: "input", prompt: "" });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+      act(() => store.minimize());
+      const preview = await screen.findByRole("region", { name: "agent.attention.needs-input" });
+      expect(within(preview).getByRole("button", { name: "Empty question" })).toBeVisible();
+      expect(within(preview).queryByText("agent.token-budget.paused")).toBeNull();
+    } finally { unmount(); }
+  });
+
+  test.each(["landing", "continue"] as const)(
+    "honors a preview selection before the new member's first open with the %s preference",
+    async (openingBehavior) => {
+      mocks.pageResource = {
+        kind: "project",
+        name: "projects/orders",
+        project: "projects/orders",
+      };
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        act(() => useAgentStore.getState().minimize());
+        mocks.currentUser = {
+          name: "users/second@example.com",
+          email: "second@example.com",
+          workspace: mocks.workspace.name,
+        };
+        render();
+        const store = useAgentStore.getState();
+        expect(store.userEmail).toBe(mocks.currentUser.email);
+        expect(store.minimized).toBe(true);
+        let waitingId = "";
+        act(() => {
+          store.updatePreferences({ openingBehavior });
+          store.createChat({
+            title: "Current page chat",
+            context: "projects/orders",
+            workspaceName: mocks.workspace.name,
+          });
+          const waiting = store.createChat({
+            title: "Waiting chat",
+            context: "projects/analytics",
+            workspaceName: mocks.workspace.name,
+            select: false,
+          });
+          store.awaitUser(waiting.id, {
+            toolCallId: "ask",
+            kind: "input",
+            prompt: "Which environment?",
+          });
+          waitingId = waiting.id;
+        });
+        const preview = await screen.findByRole("region", {
+          name: "agent.attention.needs-input",
+        });
+        act(() =>
+          within(preview).getByRole("button", { name: /Waiting chat/ }).click()
+        );
+        expect(useAgentStore.getState().currentChatId).toBe(waitingId);
+        expect(document.querySelector("[data-agent-contextual-start]")).toBeNull();
+        expect(store.getPendingAsk(waitingId)?.toolCallId).toBe("ask");
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test("does not show a waiting-chat preview when closed and does not expose protected request details", async () => {
+    const store = useAgentStore.getState();
+    const waiting = store.createChat({ title: "Review a change", context: "projects/orders" });
+    store.awaitUser(waiting.id, { toolCallId: "permission", kind: "confirm", prompt: "UPDATE private_table SET secret_value = 1", apiPermission: { actionId: "one-time", operationId: "UpdateProject" } });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+      act(() => store.minimize());
+      await waitFor(() => expect(document.querySelector("[data-agent-attention-preview]")).not.toBeNull());
+      const preview = document.querySelector("[data-agent-attention-preview]")!;
+      expect(preview.textContent).toContain("agent.attention.review-request");
+      expect(preview.textContent).not.toContain("secret_value");
+      act(() => { store.open(); store.toggle(); });
+      expect(useAgentStore.getState().visible).toBe(false);
+      expect(document.querySelector("[data-agent-attention-preview]")).toBeNull();
+      expect(store.getPendingAsk(waiting.id)).not.toBeNull();
+    } finally { unmount(); }
+  });
+
   test.each([
     { width: 1600, height: 1000, footerHeight: 72 },
     { width: 390, height: 844, footerHeight: 120 },

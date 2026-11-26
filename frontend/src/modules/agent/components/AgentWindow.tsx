@@ -6,6 +6,7 @@ import {
   Archive,
   Check,
   ChevronLeft,
+  CircleAlert,
   Ellipsis,
   EllipsisVertical,
   Folder,
@@ -71,6 +72,7 @@ import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
 import { captureAgentPageSnapshot } from "../logic/capturePage";
+import { chatNeedsAttention } from "../logic/chatAttention";
 import {
   type AgentPageResource,
   getCurrentAgentPageResource,
@@ -235,6 +237,8 @@ export function AgentWindow() {
   const size = useAgentStore((s) => s.size);
   const sidebarWidth = useAgentStore((s) => s.sidebarWidth);
   const orderedChats = useAgentStore(selectOrderedChats);
+  const messagesByChatId = useAgentStore((s) => s.messagesByChatId);
+  const pendingAskByChatId = useAgentStore((s) => s.pendingAskByChatId);
   const currentChat = useAgentStore(selectCurrentChat);
   const currentChatId = useAgentStore((s) => s.currentChatId);
   const landingDraft = useAgentStore((s) => s.landingDraft);
@@ -1025,6 +1029,36 @@ export function AgentWindow() {
     () => orderedChats.filter((chat) => chat.archived),
     [orderedChats]
   );
+  const attentionChatIds = useMemo(() => {
+    if (
+      !visible ||
+      !chatProtectionReady ||
+      storedWorkspaceName !== workspace?.name ||
+      storedUserEmail !== userEmail
+    )
+      return new Set<string>();
+    return new Set(
+      activeChats
+        .filter((chat) =>
+          chatNeedsAttention(
+            chat,
+            messagesByChatId[chat.id] ?? [],
+            pendingAskByChatId[chat.id]
+          )
+        )
+        .map((chat) => chat.id)
+    );
+  }, [
+    visible,
+    chatProtectionReady,
+    storedWorkspaceName,
+    workspace?.name,
+    storedUserEmail,
+    userEmail,
+    activeChats,
+    messagesByChatId,
+    pendingAskByChatId,
+  ]);
 
   useEffect(() => {
     if (
@@ -1093,6 +1127,22 @@ export function AgentWindow() {
   const getEditableChatTitle = useCallback(
     (chat: AgentChatRecord) => chat.title || t("agent.chat-default-title"),
     [t]
+  );
+  const attentionChats = useMemo(
+    () =>
+      activeChats
+        .filter((chat) => attentionChatIds.has(chat.id))
+        .map((chat) => {
+          const ask = pendingAskByChatId[chat.id];
+          return {
+            chatId: chat.id,
+            title: getEditableChatTitle(chat),
+            prompt: ask?.apiPermission
+              ? t("agent.attention.review-request")
+              : (ask?.prompt ?? t("agent.token-budget.paused")),
+          };
+        }),
+    [activeChats, attentionChatIds, pendingAskByChatId, getEditableChatTitle, t]
   );
 
   const getContextLabel = useCallback(
@@ -2127,120 +2177,191 @@ export function AgentWindow() {
     },
     [commitRenameChat]
   );
-
-  const renderChatRow = (chat: AgentChatRecord) => (
-    <div
-      key={chat.id}
-      className={cn(
-        "group/agent-chat flex min-h-10 w-full min-w-0 items-center gap-x-2 py-1.5 pr-3 pl-5 text-left text-sm transition-colors",
-        !contextualStart && chat.id === currentChatId
-          ? "bg-accent/10 text-accent"
-          : "text-control hover:bg-control-bg-hover"
-      )}
-      data-agent-chat-row={chat.id}
-      onBlur={(event) => {
-        if (
-          renamingChatId === chat.id &&
-          !event.currentTarget.contains(event.relatedTarget)
-        ) {
-          commitRenameChat(false);
-        }
-      }}
-    >
-      {renamingChatId === chat.id ? (
-        <>
-          <Input
-            ref={renameInputRef}
-            size="sm"
-            value={renamingTitle}
-            onChange={(event) => setRenamingTitle(event.target.value)}
-            className="min-w-0 flex-1"
-            aria-label={t("agent.rename-chat-placeholder")}
-            placeholder={t("agent.rename-chat-placeholder")}
-            data-agent-inline-rename-input
-            data-agent-chat-title-input
-            onKeyDown={onRenameKeydown}
-          />
-          <div className="flex shrink-0 items-center gap-x-1">
-            <AgentTooltip content={t("common.save")}>
-              <Button
-                appearance="secondary"
-                size="xs"
-                aria-label={t("common.save")}
-                data-agent-save-chat-title
-                disabled={
-                  !renamingTitle.trim() ||
-                  renamingTitle.trim() === getEditableChatTitle(chat)
-                }
-                onClick={() => commitRenameChat()}
-              >
-                <Check className="size-3.5" aria-hidden="true" />
-              </Button>
-            </AgentTooltip>
-            <AgentTooltip content={t("common.cancel")}>
-              <Button
-                appearance="secondary"
-                size="xs"
-                aria-label={t("common.cancel")}
-                data-agent-cancel-chat-title
-                onClick={() => cancelRenameChat(true)}
-              >
-                <X className="size-3.5" aria-hidden="true" />
-              </Button>
-            </AgentTooltip>
-          </div>
-        </>
-      ) : (
-        <>
-          <Button
-            appearance="secondary"
-            size="md"
-            type="button"
-            title={getEditableChatTitle(chat)}
-            className="h-auto min-w-0 flex-1 justify-start p-0 text-left font-normal hover:bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={!useAgentStore.getState().canSelectChat(chat.id)}
-            aria-current={
-              !contextualStart && chat.id === currentChatId ? "true" : undefined
-            }
-            onMouseDown={(event) => {
-              // Keep the rows in place until the pending chat click completes.
-              if (renamingChatId && event.button === 0) event.preventDefault();
-            }}
-            onClick={(event) => {
-              isMobileWindow
-                ? selectMobileChat(chat.id)
-                : handleChatRowClick(chat.id);
-              if (renamingChatId) event.currentTarget.focus();
-            }}
-          >
-            <div
-              className="flex w-full min-w-0 items-center gap-2"
-              data-agent-chat-title
-            >
-              {chat.status === "running" && (
-                <LoaderCircle
-                  className="size-3.5 shrink-0 animate-spin text-accent"
-                  role="img"
-                  aria-label={t("common.running")}
-                />
-              )}
-              <span className="min-w-0 truncate">
-                {getEditableChatTitle(chat)}
-              </span>
-            </div>
-          </Button>
-          <ChatRowMenu
-            title={getEditableChatTitle(chat)}
-            archived={chat.archived}
-            onRename={() => beginRenameChat(chat.id)}
-            onArchive={() => archiveChat(chat.id)}
-            onRestore={() => unarchiveChat(chat.id)}
-            onDelete={() => setPendingDeleteChatId(chat.id)}
-          />
-        </>
-      )}
-    </div>
+  const openAttentionChat = useCallback(
+    (chatId: string) => {
+      const store = useAgentStore.getState();
+      const owner = useAppStore.getState();
+      if (
+        !store.visible ||
+        !store.minimized ||
+        !store.chatProtectionReady ||
+        store.workspaceName !== owner.workspace?.name ||
+        store.userEmail !== owner.currentUser?.email ||
+        owner.currentUser?.workspace !== owner.workspace?.name ||
+        !chatNeedsAttention(
+          store.getChat(chatId),
+          store.getMessages(chatId),
+          store.getPendingAsk(chatId)
+        ) ||
+        !store.canSelectChat(chatId)
+      )
+        return;
+      setPreferencesOpen(false);
+      setShowArchivedOnly(false);
+      setCompactPanel(null);
+      selectMobileChat(chatId);
+      if (useAgentStore.getState().currentChatId !== chatId) return;
+      // This explicit selection takes precedence over the owner's first-open preference.
+      if (
+        openedOwnerRef.current?.workspaceName !== store.workspaceName ||
+        openedOwnerRef.current?.userEmail !== store.userEmail
+      ) {
+        openedOwnerRef.current = {
+          workspaceName: store.workspaceName,
+          userEmail: store.userEmail,
+          openingBehavior: store.preferences.openingBehavior,
+        };
+      }
+      store.open();
+    },
+    [selectMobileChat]
   );
+
+  const renderChatRow = (chat: AgentChatRecord) => {
+    const status = attentionChatIds.has(chat.id)
+      ? "attention"
+      : chat.status === "running"
+        ? "running"
+        : "idle";
+    const statusLabel =
+      status === "attention"
+        ? t("agent.attention.needs-attention")
+        : status === "running"
+          ? t("common.running")
+          : undefined;
+    return (
+      <div
+        key={chat.id}
+        className={cn(
+          "group/agent-chat flex min-h-10 w-full min-w-0 items-center gap-x-2 py-1.5 pr-3 pl-5 text-left text-sm transition-colors",
+          !contextualStart && chat.id === currentChatId
+            ? "bg-accent/10 text-accent"
+            : "text-control hover:bg-control-bg-hover"
+        )}
+        data-agent-chat-row={chat.id}
+        onBlur={(event) => {
+          if (
+            renamingChatId === chat.id &&
+            !event.currentTarget.contains(event.relatedTarget)
+          ) {
+            commitRenameChat(false);
+          }
+        }}
+      >
+        {renamingChatId === chat.id ? (
+          <>
+            <Input
+              ref={renameInputRef}
+              size="sm"
+              value={renamingTitle}
+              onChange={(event) => setRenamingTitle(event.target.value)}
+              className="min-w-0 flex-1"
+              aria-label={t("agent.rename-chat-placeholder")}
+              placeholder={t("agent.rename-chat-placeholder")}
+              data-agent-inline-rename-input
+              data-agent-chat-title-input
+              onKeyDown={onRenameKeydown}
+            />
+            <div className="flex shrink-0 items-center gap-x-1">
+              <AgentTooltip content={t("common.save")}>
+                <Button
+                  appearance="secondary"
+                  size="xs"
+                  aria-label={t("common.save")}
+                  data-agent-save-chat-title
+                  disabled={
+                    !renamingTitle.trim() ||
+                    renamingTitle.trim() === getEditableChatTitle(chat)
+                  }
+                  onClick={() => commitRenameChat()}
+                >
+                  <Check className="size-3.5" aria-hidden="true" />
+                </Button>
+              </AgentTooltip>
+              <AgentTooltip content={t("common.cancel")}>
+                <Button
+                  appearance="secondary"
+                  size="xs"
+                  aria-label={t("common.cancel")}
+                  data-agent-cancel-chat-title
+                  onClick={() => cancelRenameChat(true)}
+                >
+                  <X className="size-3.5" aria-hidden="true" />
+                </Button>
+              </AgentTooltip>
+            </div>
+          </>
+        ) : (
+          <>
+            <AgentTooltip
+              content={statusLabel}
+              render={
+                <Button
+                  appearance="secondary"
+                  size="md"
+                  type="button"
+                  title={getEditableChatTitle(chat)}
+                  className="h-auto min-w-0 flex-1 justify-start p-0 text-left font-normal hover:bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={!useAgentStore.getState().canSelectChat(chat.id)}
+                  aria-current={
+                    !contextualStart && chat.id === currentChatId
+                      ? "true"
+                      : undefined
+                  }
+                  onMouseDown={(event) => {
+                    // Keep the rows in place until the pending chat click completes.
+                    if (renamingChatId && event.button === 0)
+                      event.preventDefault();
+                  }}
+                  onClick={(event) => {
+                    isMobileWindow
+                      ? selectMobileChat(chat.id)
+                      : handleChatRowClick(chat.id);
+                    if (renamingChatId) event.currentTarget.focus();
+                  }}
+                />
+              }
+            >
+              <div
+                className="flex w-full min-w-0 items-center gap-2"
+                data-agent-chat-title
+              >
+                <span
+                  className="inline-flex w-3.5 shrink-0 items-center justify-center"
+                  data-agent-chat-status={status}
+                >
+                  {status === "attention" ? (
+                    <CircleAlert
+                      className="size-3.5 shrink-0 text-warning-hover"
+                      role="img"
+                      aria-label={statusLabel}
+                    />
+                  ) : status === "running" ? (
+                    <LoaderCircle
+                      className="size-3.5 shrink-0 animate-spin text-accent motion-reduce:animate-none"
+                      role="img"
+                      aria-label={statusLabel}
+                    />
+                  ) : null}
+                </span>
+                <span className="min-w-0 truncate">
+                  {getEditableChatTitle(chat)}
+                </span>
+              </div>
+            </AgentTooltip>
+            <ChatRowMenu
+              title={getEditableChatTitle(chat)}
+              archived={chat.archived}
+              onRename={() => beginRenameChat(chat.id)}
+              onArchive={() => archiveChat(chat.id)}
+              onRestore={() => unarchiveChat(chat.id)}
+              onDelete={() => setPendingDeleteChatId(chat.id)}
+            />
+          </>
+        )}
+      </div>
+    );
+  };
 
   const renderConversation = () =>
     contextualStart ? (
@@ -2554,11 +2675,13 @@ export function AgentWindow() {
         {accessGrantDrawer}
         {createPortal(
           <AgentMinimizedLauncher
+            attentionChats={attentionChats}
             initialPosition={launcherPositionRef.current}
             onPositionChange={(position) => {
               launcherPositionRef.current = position;
             }}
             onOpen={() => useAgentStore.getState().open()}
+            onOpenChat={openAttentionChat}
           />,
           getLayerRoot("agent")
         )}

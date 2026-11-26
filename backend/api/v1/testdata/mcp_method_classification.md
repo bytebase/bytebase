@@ -16,12 +16,12 @@ served by no ceiling.
 
 | Class | Methods | Meaning |
 |---|---|---|
-| READ | 72 | served to a read-only session and above |
+| READ | 73 | served to a read-only session and above |
 | WRITE | 46 | served to a read-write session only |
 | EXCLUDED | 72 | served by no ceiling this phase ships |
 | FORBIDDEN | 32 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
-| **total** | **222** | |
+| **total** | **223** | |
 
 | Method | Class | Reason | Permission |
 |---|---|---|---|
@@ -104,6 +104,7 @@ served by no ceiling.
 | IssueService/CreateIssue | WRITE | — | bb.issues.create |
 | IssueService/CreateIssueComment | WRITE | — | bb.issueComments.create |
 | IssueService/GetIssue | READ | — | bb.issues.get |
+| IssueService/GetIssueComment | READ | — | bb.issueComments.list |
 | IssueService/GetReviewRun | READ | — | bb.reviewRuns.get |
 | IssueService/ListIssueComments | READ | — | bb.issueComments.list |
 | IssueService/ListIssues | READ | — | bb.issues.list |

@@ -2,15 +2,23 @@
 import { describe, expect, test } from "vitest";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { getCreatePlanBlockers, getSubmitReviewAdvance } from "./advanceState";
+import {
+  getCreatePlanBlockers,
+  getSubmitReviewAdvance,
+  hasChangeWithoutTargets,
+} from "./advanceState";
 
 const t = (key: string) => key;
 
-const makePlan = (cases: string[], statusCount = {}): Plan =>
+const makePlan = (
+  cases: string[],
+  statusCount = {},
+  targets = ["instances/test/databases/db"]
+): Plan =>
   ({
     planCheckRunStatusCount: statusCount,
     specs: cases.map((caseName) => ({
-      config: { case: caseName, value: {} },
+      config: { case: caseName, value: { targets } },
     })),
   }) as unknown as Plan;
 
@@ -40,22 +48,36 @@ const submitArgs = (
 const ids = (blockers: { id: string }[]) => blockers.map((b) => b.id);
 
 describe("getCreatePlanBlockers", () => {
+  const createArgs = (
+    overrides: Partial<Parameters<typeof getCreatePlanBlockers>[0]> = {}
+  ) => ({
+    emptySpecCount: 0,
+    missingTargets: false,
+    title: "Add column",
+    t,
+    ...overrides,
+  });
+
   test("flags an empty title", () => {
-    expect(getCreatePlanBlockers({ emptySpecCount: 0, title: "", t })).toEqual([
+    expect(getCreatePlanBlockers(createArgs({ title: "" }))).toEqual([
       { id: "title", kind: "fix", message: "plan.title-required" },
     ]);
   });
 
   test("flags a whitespace-only title", () => {
-    expect(
-      ids(getCreatePlanBlockers({ emptySpecCount: 0, title: "   ", t }))
-    ).toEqual(["title"]);
+    expect(ids(getCreatePlanBlockers(createArgs({ title: "   " })))).toEqual([
+      "title",
+    ]);
+  });
+
+  test("flags a database change with no targets", () => {
+    expect(getCreatePlanBlockers(createArgs({ missingTargets: true }))).toEqual(
+      [{ id: "targets", kind: "fix", message: "plan.targets.required" }]
+    );
   });
 
   test("flags empty statements", () => {
-    expect(
-      getCreatePlanBlockers({ emptySpecCount: 2, title: "Add column", t })
-    ).toEqual([
+    expect(getCreatePlanBlockers(createArgs({ emptySpecCount: 2 }))).toEqual([
       {
         id: "statement",
         kind: "fix",
@@ -67,24 +89,23 @@ describe("getCreatePlanBlockers", () => {
   test("lists every blocker, title first", () => {
     expect(
       ids(
-        getCreatePlanBlockers({
-          emptySpecCount: 1,
-          permissionReason: "common.missing-required-permission",
-          title: "",
-          t,
-        })
+        getCreatePlanBlockers(
+          createArgs({
+            emptySpecCount: 1,
+            missingTargets: true,
+            permissionReason: "common.missing-required-permission",
+            title: "",
+          })
+        )
       )
-    ).toEqual(["title", "statement", "permission"]);
+    ).toEqual(["title", "targets", "statement", "permission"]);
   });
 
   test("reports a missing permission as a blocker rather than hiding the action", () => {
     expect(
-      getCreatePlanBlockers({
-        emptySpecCount: 0,
-        permissionReason: "common.missing-required-permission",
-        title: "Add column",
-        t,
-      })
+      getCreatePlanBlockers(
+        createArgs({ permissionReason: "common.missing-required-permission" })
+      )
     ).toEqual([
       {
         id: "permission",
@@ -95,9 +116,29 @@ describe("getCreatePlanBlockers", () => {
   });
 
   test("returns no blockers when valid", () => {
+    expect(getCreatePlanBlockers(createArgs())).toEqual([]);
+  });
+});
+
+describe("hasChangeWithoutTargets", () => {
+  test("is true when any database change has no targets", () => {
+    const plan = makePlan(["changeDatabaseConfig", "changeDatabaseConfig"]);
+    const second = plan.specs[1].config.value as { targets: string[] };
+    second.targets = [];
+
+    expect(hasChangeWithoutTargets(plan.specs)).toBe(true);
+  });
+
+  test("ignores specs that are not database changes", () => {
     expect(
-      getCreatePlanBlockers({ emptySpecCount: 0, title: "Add column", t })
-    ).toEqual([]);
+      hasChangeWithoutTargets(makePlan(["createDatabaseConfig"], {}, []).specs)
+    ).toBe(false);
+  });
+
+  test("is false when every database change has a target", () => {
+    expect(
+      hasChangeWithoutTargets(makePlan(["changeDatabaseConfig"]).specs)
+    ).toBe(false);
   });
 });
 
@@ -110,6 +151,16 @@ describe("getSubmitReviewAdvance", () => {
     expect(
       ids(getSubmitReviewAdvance(submitArgs({ emptySpecCount: 1 })).blockers)
     ).toEqual(["statement"]);
+  });
+
+  test("flags a database change with no targets", () => {
+    expect(
+      getSubmitReviewAdvance(
+        submitArgs({ plan: makePlan(["changeDatabaseConfig"], {}, []) })
+      ).blockers
+    ).toEqual([
+      { id: "targets", kind: "fix", message: "plan.targets.required" },
+    ]);
   });
 
   test("marks queued and running checks as a wait, not a chore", () => {

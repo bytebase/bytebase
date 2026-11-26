@@ -59,12 +59,9 @@ func TestCompletion_Seam(t *testing.T) {
 		},
 	}
 
-	// Registry dispatch covers all four MySQL-family engines wired to this completer.
+	// Registry dispatch reaches this completer.
 	for _, engine := range []storepb.Engine{
 		storepb.Engine_MYSQL,
-		storepb.Engine_CLICKHOUSE,
-		storepb.Engine_STARROCKS,
-		storepb.Engine_DORIS,
 	} {
 		stmt := "SELECT * FROM "
 		got, err := base.Completion(context.Background(), engine, cCtx, stmt, 1, len(stmt))

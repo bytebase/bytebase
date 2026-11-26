@@ -68,6 +68,7 @@ const render = (element: ReactElement) => {
   act(() => root.render(element));
   return {
     container,
+    rerender: (next: ReactElement) => act(() => root.render(next)),
     unmount: () => {
       act(() => root.unmount());
       container.remove();
@@ -113,6 +114,59 @@ describe("WorkloadIdentitySelect", () => {
 
     expect(combo.props?.className).toContain("w-full");
     expect(combo.props?.className).toContain("max-w-lg");
+    unmount();
+  });
+
+  test("with an initial page, lists it and fetches nothing until a search", async () => {
+    const { unmount } = render(
+      <WorkloadIdentitySelect
+        projectName="projects/p"
+        value=""
+        onChange={() => {}}
+        initialPage={{
+          items: [workloadIdentity("workloadIdentities/one", "One")],
+          nextPageToken: "page-2",
+        }}
+      />
+    );
+    await flush();
+
+    expect(mocks.listWorkloadIdentities).not.toHaveBeenCalled();
+    expect(combo.props?.options.map((option) => option.value)).toEqual([
+      "workloadIdentities/one",
+    ]);
+    expect(combo.props?.hasMore).toBe(true);
+
+    await act(async () => {
+      await combo.props?.onSearch?.("");
+    });
+    expect(mocks.listWorkloadIdentities).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  test("with an initial page, a change of project still loads", async () => {
+    const initialPage = {
+      items: [workloadIdentity("workloadIdentities/one", "One")],
+    };
+    const select = (projectName: string) => (
+      <WorkloadIdentitySelect
+        projectName={projectName}
+        value=""
+        onChange={() => {}}
+        initialPage={initialPage}
+      />
+    );
+    const { rerender, unmount } = render(select("projects/p"));
+    await flush();
+    expect(mocks.listWorkloadIdentities).not.toHaveBeenCalled();
+
+    rerender(select("projects/q"));
+    await flush();
+
+    expect(mocks.listWorkloadIdentities).toHaveBeenCalledTimes(1);
+    expect(mocks.listWorkloadIdentities).toHaveBeenCalledWith(
+      expect.objectContaining({ parent: "projects/q" })
+    );
     unmount();
   });
 

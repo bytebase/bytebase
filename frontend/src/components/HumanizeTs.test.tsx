@@ -370,3 +370,63 @@ describe("HumanizeTs", () => {
     }
   );
 });
+
+describe("a linked timestamp", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test("is one link that carries the label, the classes and the click", () => {
+    const onClick = vi.fn((event: { preventDefault: () => void }) =>
+      event.preventDefault()
+    );
+    const { container, root } = mount();
+    act(() =>
+      root.render(
+        <HumanizeTs
+          className="text-xs"
+          link={{ href: "#issueComments/c1", onClick }}
+          tsMs={secondsAgo(90)}
+        />
+      )
+    );
+    expect(container.childElementCount).toBe(1);
+    const link = container.querySelector("a");
+    expect(link?.getAttribute("href")).toBe("#issueComments/c1");
+    expect(link?.className).toContain("text-xs");
+    expect(link?.textContent).not.toBe("");
+    act(() => link?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  test("shows the full time on keyboard focus, as the link is the tooltip's trigger", async () => {
+    const { container, root } = mount();
+    act(() =>
+      root.render(
+        <HumanizeTs link={{ href: "#issueComments/c1" }} tsMs={secondsAgo(90)} />
+      )
+    );
+    expect(overlayText()).toBe("");
+    await openTooltip(container.querySelector("a"));
+    expect(overlayText()).not.toBe("");
+  });
+
+  test("stays a link where the tooltip is turned off", () => {
+    const { container, root } = mount();
+    act(() =>
+      root.render(
+        <HumanizeTs
+          link={{ href: "#issueComments/c1" }}
+          tooltip={false}
+          tsMs={secondsAgo(90)}
+        />
+      )
+    );
+    expect(container.querySelector("a")?.getAttribute("href")).toBe(
+      "#issueComments/c1"
+    );
+  });
+});

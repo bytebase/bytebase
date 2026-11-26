@@ -45,6 +45,7 @@ import { getLocalSheetByName, removeLocalSheet } from "../utils/localSheet";
 import {
   getCreatePlanBlockers,
   getSubmitReviewAdvance,
+  hasChangeWithoutTargets,
   NO_ADVANCE,
   NO_BLOCKERS,
 } from "./lifecycle/advanceState";
@@ -399,11 +400,13 @@ export function PlanDetailHeader() {
   // submit path only counts them, so key the memo on the count, not the array.
   const selectedLabelCount = page.issue?.labels?.length ?? 0;
 
+  const missingTargets = hasChangeWithoutTargets(page.plan.specs ?? []);
   const createBlockers = useMemo(
     () =>
       isCreating
         ? getCreatePlanBlockers({
             emptySpecCount: emptySpecIdSet.size,
+            missingTargets,
             permissionReason: createPermissionReason,
             title: page.plan.title,
             t,
@@ -413,6 +416,7 @@ export function PlanDetailHeader() {
       createPermissionReason,
       emptySpecIdSet.size,
       isCreating,
+      missingTargets,
       page.plan.title,
       t,
     ]

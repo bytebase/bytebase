@@ -1,5 +1,4 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import dayjs from "dayjs";
 import { uniq } from "lodash-es";
 import { planServiceClientConnect } from "@/api";
 import {
@@ -12,7 +11,7 @@ import {
   getValuesFromSearchParams,
   type SearchParams,
 } from "@/utils";
-import { celString } from "@/utils/v1/celLiteral";
+import { celString, celTimestampString } from "@/utils/v1/celLiteral";
 import type { AppSliceCreator, PlanFind, PlanSlice } from "./types";
 
 export const buildPlanFilter = (find: PlanFind): string => {
@@ -26,14 +25,10 @@ export const buildPlanFilter = (find: PlanFind): string => {
     filter.push(`creator == ${celString(find.creator)}`);
   }
   if (find.createdTsAfter) {
-    filter.push(
-      `create_time >= ${celString(dayjs(find.createdTsAfter).utc().format())}`
-    );
+    filter.push(`create_time >= ${celTimestampString(find.createdTsAfter)}`);
   }
   if (find.createdTsBefore) {
-    filter.push(
-      `create_time <= ${celString(dayjs(find.createdTsBefore).utc().format())}`
-    );
+    filter.push(`create_time <= ${celTimestampString(find.createdTsBefore)}`);
   }
   if (find.hasRollout !== undefined) {
     filter.push(`has_rollout == ${find.hasRollout}`);

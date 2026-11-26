@@ -644,10 +644,15 @@ describe("buildSystemPrompt", () => {
       context: "projects/sample",
     });
     expect(prompt).toContain("transfer an eligible unassigned database first");
-    expect(prompt).toContain("connect an instance directly");
-    expect(prompt).toContain("create a database on an available instance");
+    expect(prompt).toContain("setup.projectInstance is empty");
+    expect(prompt).toContain("setup.projectInstance is present");
+    expect(prompt).toContain(
+      "A workspace instance alone does not enable Create for an empty project"
+    );
     expect(prompt).toContain("transfer-project-databases");
-    expect(prompt).toContain("specific setup request in any active project");
+    expect(prompt).toContain(
+      "specific setup request in an established project"
+    );
   });
   test("requests fresh validation only for database choices", () => {
     const prompt = buildSystemPrompt({ path: "/landing", title: "Workspace" });

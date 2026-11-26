@@ -37,18 +37,15 @@ func TestParseStatementsSeam(t *testing.T) {
 }
 
 func TestDiagnoseSeam(t *testing.T) {
-	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB} {
-		t.Run(engine.String(), func(t *testing.T) {
-			diags, err := base.Diagnose(context.Background(), base.DiagnoseContext{}, engine, "SELECT 1;")
-			require.NoError(t, err)
-			require.Empty(t, diags)
+	engine := storepb.Engine_POSTGRES
+	diags, err := base.Diagnose(context.Background(), base.DiagnoseContext{}, engine, "SELECT 1;")
+	require.NoError(t, err)
+	require.Empty(t, diags)
 
-			diags, err = base.Diagnose(context.Background(), base.DiagnoseContext{}, engine, "SELECT 1;\nSELECT * FROM")
-			require.NoError(t, err)
-			require.Len(t, diags, 1)
-			require.Equal(t, uint32(1), diags[0].Range.Start.Line)
-		})
-	}
+	diags, err = base.Diagnose(context.Background(), base.DiagnoseContext{}, engine, "SELECT 1;\nSELECT * FROM")
+	require.NoError(t, err)
+	require.Len(t, diags, 1)
+	require.Equal(t, uint32(1), diags[0].Range.Start.Line)
 
 	// Non-parse errors fall back to line 1, column 1.
 	syntaxErr := convertDiagnoseError(&analysis.DiagnoseError{Message: "unexpected", ParseError: false})

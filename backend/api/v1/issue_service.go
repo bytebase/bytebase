@@ -1255,6 +1255,35 @@ func (s *IssueService) ListIssueComments(ctx context.Context, req *connect.Reque
 	}), nil
 }
 
+// GetIssueComment gets an event, a root comment, or a reply by name.
+func (s *IssueService) GetIssueComment(ctx context.Context, req *connect.Request[v1pb.GetIssueCommentRequest]) (*connect.Response[v1pb.IssueComment], error) {
+	projectID, issueUID, issueCommentID, err := common.GetProjectIDIssueUIDIssueCommentID(req.Msg.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid comment name %q: %v", req.Msg.Name, err))
+	}
+	issueName := common.FormatIssue(projectID, issueUID)
+	issue, err := s.getIssueMessage(ctx, issueName)
+	if err != nil {
+		return nil, err
+	}
+
+	// The comment ID is unique on its own, so the project and issue scope is
+	// what makes a name under another issue not found.
+	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID:  issue.ProjectID,
+		IssueUID:   &issue.UID,
+		ResourceID: &issueCommentID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get issue comment"))
+	}
+	if issueComment == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue comment %q not found", req.Msg.Name))
+	}
+
+	return connect.NewResponse(convertToIssueComment(issueName, issueComment)), nil
+}
+
 // CreateIssueComment creates the issue comment.
 func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Request[v1pb.CreateIssueCommentRequest]) (*connect.Response[v1pb.IssueComment], error) {
 	if req.Msg.IssueComment.GetComment() == "" {

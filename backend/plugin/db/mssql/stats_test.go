@@ -10,7 +10,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/mssql"
 )
 
 type fakeRowEstimatorDriver struct {

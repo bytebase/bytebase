@@ -2,7 +2,6 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  ExternalLink,
   Loader2,
   RotateCcw,
 } from "lucide-react";
@@ -42,6 +41,7 @@ import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { useActivityReveal } from "../../hooks/useActivityLanding";
 import "./CommentThreadCard.css";
 import {
   productionEnvironmentsOf,
@@ -149,6 +149,18 @@ export function CommentThreadCard({
   useEffect(() => {
     setOwnFolded(thread.resolved);
   }, [thread.resolved]);
+  // Activity is asked to show one of this thread's comments: the card unfolds,
+  // and so do the replies when the comment is one folded away among them.
+  const commentNames = useMemo(
+    () => [thread.root.name, ...thread.replies.map((reply) => reply.name)],
+    [thread.replies, thread.root.name]
+  );
+  const revealed = useActivityReveal(commentNames);
+  useEffect(() => {
+    if (!revealed) return;
+    setOwnFolded(false);
+    if (revealed !== thread.root.name) setShowAllReplies(true);
+  }, [revealed, thread.root.name]);
   const folded = bar.folded ?? ownFolded;
   const toggleFold =
     bar.onToggleFold ?? (() => setOwnFolded((current) => !current));
@@ -574,7 +586,6 @@ function ThreadBar({
               size="xs"
             >
               {t("plan.review.thread.anchor.view-in-statement")}
-              <ExternalLink className="size-3" />
             </Button>
           )}
         </span>

@@ -100,6 +100,19 @@ service IssueService {
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
+  // Gets a comment on an issue: an event, a root comment or a reply.
+  // The web address of a comment is its plan's page followed by
+  // #issueComments/{issueComment}; the plan's issue field and that fragment,
+  // joined by a slash, are the comment's name.
+  // Permissions required: bb.issueComments.list
+  rpc GetIssueComment(GetIssueCommentRequest) returns (IssueComment) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/issues/*/issueComments/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.issueComments.list";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
+  }
+
   // Adds a comment to an issue.
   // Permissions required: bb.issueComments.create
   rpc CreateIssueComment(CreateIssueCommentRequest) returns (IssueComment) {
@@ -613,6 +626,14 @@ message ListIssueCommentsResponse {
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
+}
+
+message GetIssueCommentRequest {
+  // Format: projects/{project}/issues/{issue}/issueComments/{issueComment}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/IssueComment"}
+  ];
 }
 
 message CreateIssueCommentRequest {

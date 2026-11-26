@@ -31,20 +31,6 @@ func init() {
 		TransformDMLToSelect: TransformDMLToSelect,
 		GenerateRestoreSQL:   GenerateRestoreSQL,
 	}, storepb.Engine_POSTGRES)
-	// CockroachDB shares PostgreSQL grammar for split, diagnose, completion,
-	// query validation, query span, explain, and result limit; parser/cockroachdb
-	// registers its own Parse, StatementTypes, and ExtractChanged.
-	base.Register(base.Engine{
-		Split:         SplitSQL,
-		Diagnose:      Diagnose,
-		Complete:      Completion,
-		ValidateQuery: validateQuery,
-		QuerySpan:     GetQuerySpan,
-		Explain:       cockroachExplainStatement,
-		ResultLimit:   statementWithResultLimit,
-	}, storepb.Engine_COCKROACHDB)
-	// Snowflake reuses PostgreSQL completion.
-	base.Register(base.Engine{Complete: Completion}, storepb.Engine_SNOWFLAKE)
 }
 
 // AST wraps an omni AST node and implements the base.AST interface.
@@ -172,11 +158,6 @@ func explainStatement(statement string, format base.ExplainFormat) (string, erro
 	default:
 	}
 	explain, err := analysis.ExplainStatement(statement, formatName)
-	return base.ExplainStatementResult(explain, err, nil)
-}
-
-func cockroachExplainStatement(statement string, format base.ExplainFormat) (string, error) {
-	explain, err := analysis.CockroachExplainStatement(statement, format == base.ExplainFormatJSON)
 	return base.ExplainStatementResult(explain, err, nil)
 }
 

@@ -1,6 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import dayjs from "dayjs";
 import { uniq } from "lodash-es";
 import {
   issueServiceClientConnect,
@@ -27,7 +26,11 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { celString, celStringList } from "@/utils/v1/celLiteral";
+import {
+  celString,
+  celStringList,
+  celTimestampString,
+} from "@/utils/v1/celLiteral";
 import type { AppSliceCreator, IssueSlice } from "./types";
 
 // Resource names are `projects/{project}/issues/{issue}` — yank the project
@@ -61,14 +64,10 @@ export const buildIssueFilter = (find: IssueFilter): string => {
     );
   }
   if (find.createdTsAfter) {
-    filter.push(
-      `create_time >= ${celString(dayjs(find.createdTsAfter).utc().format())}`
-    );
+    filter.push(`create_time >= ${celTimestampString(find.createdTsAfter)}`);
   }
   if (find.createdTsBefore) {
-    filter.push(
-      `create_time <= ${celString(dayjs(find.createdTsBefore).utc().format())}`
-    );
+    filter.push(`create_time <= ${celTimestampString(find.createdTsBefore)}`);
   }
   if (find.typeList && find.typeList.length > 0) {
     filter.push(

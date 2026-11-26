@@ -22,6 +22,10 @@ const escapeCELStringLiteral = (value: string): string =>
 export const celString = (value: string): string =>
   `"${escapeCELStringLiteral(value)}"`;
 
+// Renders a Unix millisecond timestamp as an RFC3339 string literal.
+export const celTimestampString = (timestamp: number): string =>
+  celString(new Date(timestamp).toJSON() ?? "Invalid Date");
+
 // Renders values as a CEL list literal, e.g. `["a", "b"]`, for `in` operands.
 export const celStringList = (values: readonly string[]): string =>
   `[${values.map(celString).join(", ")}]`;

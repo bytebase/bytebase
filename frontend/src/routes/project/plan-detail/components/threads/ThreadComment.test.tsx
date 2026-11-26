@@ -1,6 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { timestampFromMs } from "@bufbuild/protobuf/wkt";
-import { cleanup, render, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, within } from "@testing-library/react";
+import type { ReactElement, ReactNode } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   IssueComment_ReviewMetadata_Priority,
@@ -25,9 +26,47 @@ vi.mock("@/components/HumanizeTs", async () => ({
   ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
+const mocks = vi.hoisted(() => ({ canEdit: false }));
+
 // The activity module drags Monaco into the test; only the edit rule matters.
 vi.mock("@/components/issue-activity/IssueCommentActivity", () => ({
-  canEditIssueComment: () => false,
+  canEditIssueComment: () => mocks.canEdit,
+}));
+
+vi.mock("@/app/router", () => ({
+  router: {
+    push: vi.fn(),
+    resolve: () => ({ href: "/projects/p/plans/9" }),
+  },
+}));
+
+vi.mock("../../shell/PlanDetailContext", () => ({
+  usePlanDetailContext: () => ({
+    bypassLeaveGuardOnce: vi.fn(),
+    isEditing: false,
+    planId: "9",
+    projectId: "p",
+  }),
+}));
+
+// The menu's parts are laid out in place, so a test reads what it holds.
+vi.mock("@/components/ui/dropdown-menu", () => ({
+  DropdownMenu: ({ children }: { children: ReactNode }) => <>{children}</>,
+  DropdownMenuContent: ({ children }: { children: ReactNode }) => (
+    <div role="menu">{children}</div>
+  ),
+  DropdownMenuItem: ({
+    children,
+    onClick,
+  }: {
+    children: ReactNode;
+    onClick?: () => void;
+  }) => (
+    <button onClick={onClick} role="menuitem" type="button">
+      {children}
+    </button>
+  ),
+  DropdownMenuTrigger: ({ render }: { render: ReactElement }) => render,
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
@@ -62,9 +101,16 @@ vi.mock("../PlanTargetDisplay", () => ({
   ),
 }));
 
+import {
+  ActivityScope,
+  CommentLinkProvider,
+} from "../../shell/CommentLinkContext";
 import { ThreadComment } from "./ThreadComment";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  mocks.canEdit = false;
+});
 
 const ISSUE = "projects/p/issues/1";
 const project = { name: "projects/p" } as Project;
@@ -251,6 +297,97 @@ describe("ThreadComment", () => {
     expect(container.textContent).not.toContain("!chart");
     expect(container.textContent).toContain(
       '<img src="https://attacker.example/raw.png">'
+    );
+  });
+});
+
+describe("a comment's address", () => {
+  const NAME = `${ISSUE}/issueComments/1`;
+  const onPlanPage = (ui: ReactNode, linked?: string) => (
+    <CommentLinkProvider linkedCommentName={linked}>{ui}</CommentLinkProvider>
+  );
+  const commentUi = (
+    <ThreadComment
+      comment={userComment("Looks risky.")}
+      onEdit={vi.fn()}
+      project={project}
+    />
+  );
+  const menuItems = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll('[role="menuitem"]')).map(
+      (item) => item.textContent
+    );
+
+  test("its timestamp is a link whose href is the fragment alone", () => {
+    const { getByTestId } = render(onPlanPage(commentUi));
+    const timestamp = getByTestId("humanize-ts");
+    expect(timestamp.tagName).toBe("A");
+    expect(timestamp.getAttribute("href")).toBe("#issueComments/1");
+  });
+
+  test("its actions are one menu, with Copy link and no Edit for a reader who may not edit", () => {
+    const { container } = render(onPlanPage(commentUi));
+    expect(
+      container.querySelectorAll(
+        'button[aria-label="plan.review.thread.comment-actions"]'
+      )
+    ).toHaveLength(1);
+    expect(menuItems(container)).toEqual(["common.copy-link"]);
+    expect(container.querySelector('button[aria-label="common.edit"]')).toBeNull();
+  });
+
+  test("Edit is in the menu for a reader who may edit, and opens the editor", () => {
+    mocks.canEdit = true;
+    const { container, getByText, queryByText } = render(onPlanPage(commentUi));
+    expect(menuItems(container)).toEqual(["common.copy-link", "common.edit"]);
+    expect(queryByText("common.save")).toBeNull();
+    fireEvent.click(getByText("common.edit"));
+    expect(getByText("common.save")).toBeTruthy();
+    // The menu leaves while the comment is being edited.
+    expect(menuItems(container)).toEqual([]);
+  });
+
+  test("outside a plan page it has no link and no menu", () => {
+    const { container, getByTestId } = render(commentUi);
+    expect(getByTestId("humanize-ts").tagName).toBe("SPAN");
+    expect(container.querySelector('[role="menu"]')).toBeNull();
+  });
+
+  test("is outlined and marked current in Activity when the address names it", () => {
+    const { getByTestId } = render(
+      onPlanPage(
+        <ActivityScope focus={undefined} onLanded={vi.fn()}>
+          {commentUi}
+        </ActivityScope>,
+        NAME
+      )
+    );
+    const comment = getByTestId("thread-comment");
+    expect(comment.getAttribute("aria-current")).toBe("true");
+    expect(comment.className).toContain("before:border-accent");
+    expect(comment.className).toContain("before:inset-1");
+    // Over the line that joins the replies to the first comment.
+    expect(comment.className).toContain("before:z-1");
+  });
+
+  test("is not outlined in the statement editor, which draws the same comment", () => {
+    const { getByTestId } = render(onPlanPage(commentUi, NAME));
+    const comment = getByTestId("thread-comment");
+    expect(comment.hasAttribute("aria-current")).toBe(false);
+    expect(comment.className).not.toContain("before:border-accent");
+  });
+
+  test("another comment is not outlined", () => {
+    const { getByTestId } = render(
+      onPlanPage(
+        <ActivityScope focus={undefined} onLanded={vi.fn()}>
+          {commentUi}
+        </ActivityScope>,
+        `${ISSUE}/issueComments/other`
+      )
+    );
+    expect(getByTestId("thread-comment").hasAttribute("aria-current")).toBe(
+      false
     );
   });
 });

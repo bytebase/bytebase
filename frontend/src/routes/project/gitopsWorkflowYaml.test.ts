@@ -215,6 +215,52 @@ describe("generateWorkflowFiles", () => {
     expect(files[1].content).not.toContain("migrations/");
   });
 
+  test("state-based reads the nested schema folder and passes --declarative", () => {
+    const params = { ...workflow, folder: "schema", declarative: true };
+    const [review, deploy] = generateWorkflowFiles(params);
+    expect(parse(review.content).on.pull_request.paths).toEqual([
+      "schema/**/*.sql",
+    ]);
+    expect(parse(deploy.content).on.push.paths).toEqual(["schema/**/*.sql"]);
+
+    const run = (content: string, job: string) =>
+      (parse(content).jobs[job].steps ?? [])
+        .map((step) => step.run ?? "")
+        .join("\n");
+    expect(run(review.content, "sql-review")).toContain(
+      "--file-pattern=schema/**/*.sql \\\n  --declarative"
+    );
+    expect(run(deploy.content, "create-rollout")).toContain(
+      "--file-pattern=schema/**/*.sql \\\n  --declarative \\\n  --output="
+    );
+    // A deploy job reuses the plan, whose release is already declarative.
+    expect(run(deploy.content, "deploy-to-prod")).not.toContain(
+      "--declarative"
+    );
+
+    const [gitlab] = generateWorkflowFiles({ ...params, provider: "gitlab" });
+    const jobs = parsedGitlabJobs(gitlab.content);
+    expect(jobs["bytebase-sql-review"].rules?.[0].changes).toEqual([
+      "schema/**/*.sql",
+    ]);
+    expect(jobs["bytebase-sql-review"].script?.[0]).toMatch(/ --declarative$/);
+    expect(jobs["bytebase-create-rollout"].script?.[0]).toContain(
+      " --declarative --output=bytebase-metadata.json"
+    );
+    expect(jobs["bytebase-deploy-to-prod"].script?.join("\n")).not.toContain(
+      "--declarative"
+    );
+  });
+
+  test("migration-based files have no --declarative", () => {
+    for (const provider of ["github", "gitlab"] as const) {
+      for (const file of generateWorkflowFiles({ ...workflow, provider })) {
+        expect(file.content).not.toContain("--declarative");
+        expect(file.content).not.toContain("**");
+      }
+    }
+  });
+
   test("the URL placeholder still parses", () => {
     const [review] = generateWorkflowFiles({
       ...workflow,

@@ -78,21 +78,14 @@ func TestCompletion_Seam(t *testing.T) {
 		},
 	}
 
-	// Registry dispatch covers POSTGRES, SNOWFLAKE, and COCKROACHDB.
-	for _, engine := range []storepb.Engine{
-		storepb.Engine_POSTGRES,
-		storepb.Engine_SNOWFLAKE,
-		storepb.Engine_COCKROACHDB,
-	} {
-		got, err := base.Completion(context.Background(), engine, cCtx, "SELECT * FROM ", 1, len("SELECT * FROM "))
-		require.NoError(t, err, "engine %v", engine)
-		require.True(t, hasCandidate(got, base.CandidateTypeTable, "orders"), "engine %v: got %v", engine, got)
-		require.True(t, hasCandidate(got, base.CandidateTypeTable, `"Order Items"`), "engine %v: got %v", engine, got)
-		require.True(t, hasCandidate(got, base.CandidateTypeSchema, "analytics"), "engine %v: got %v", engine, got)
-		require.True(t, hasCandidate(got, base.CandidateTypeView, "active_orders"), "engine %v: got %v", engine, got)
-		require.True(t, hasCandidate(got, base.CandidateTypeMaterializedView, "orders_summary"), "engine %v: got %v", engine, got)
-		require.True(t, hasCandidate(got, base.CandidateTypeSequence, "order_seq"), "engine %v: got %v", engine, got)
-	}
+	got, err := base.Completion(context.Background(), storepb.Engine_POSTGRES, cCtx, "SELECT * FROM ", 1, len("SELECT * FROM "))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(got, base.CandidateTypeTable, "orders"), "got %v", got)
+	require.True(t, hasCandidate(got, base.CandidateTypeTable, `"Order Items"`), "got %v", got)
+	require.True(t, hasCandidate(got, base.CandidateTypeSchema, "analytics"), "got %v", got)
+	require.True(t, hasCandidate(got, base.CandidateTypeView, "active_orders"), "got %v", got)
+	require.True(t, hasCandidate(got, base.CandidateTypeMaterializedView, "orders_summary"), "got %v", got)
+	require.True(t, hasCandidate(got, base.CandidateTypeSequence, "order_seq"), "got %v", got)
 
 	// DefaultSchema wiring prepends non-public schema to search_path.
 	analyticsCtx := cCtx

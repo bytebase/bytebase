@@ -6,6 +6,18 @@ const QUOTED = 'SELECT * FROM "users"';
 const ESCAPED = 'SELECT * FROM \\"users\\"';
 
 describe("buildPlanFilter", () => {
+  test("preserves milliseconds in both created-time bounds", () => {
+    expect(
+      buildPlanFilter({
+        project: "projects/p",
+        createdTsAfter: Date.UTC(2026, 10, 24, 0, 0, 0, 125),
+        createdTsBefore: Date.UTC(2026, 10, 24, 23, 59, 59, 999),
+      })
+    ).toBe(
+      'create_time >= "2026-11-24T00:00:00.125Z" && create_time <= "2026-11-24T23:59:59.999Z"'
+    );
+  });
+
   test("escapes a quote in the free-text query", () => {
     const filter = buildPlanFilter({
       project: "projects/p",

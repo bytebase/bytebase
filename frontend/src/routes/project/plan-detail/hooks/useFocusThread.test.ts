@@ -11,6 +11,7 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 
 const mocks = vi.hoisted(() => ({
+  expandPhase: vi.fn(),
   focusPlanPhase: vi.fn(),
   push: vi.fn(),
   requestActivityFocus: vi.fn(),
@@ -35,7 +36,7 @@ vi.mock("../shared/stores/usePlanDetailStore", () => ({
 
 vi.mock("../shell/PlanDetailContext", () => ({
   usePlanDetailContext: () => ({
-    expandPhase: vi.fn(),
+    expandPhase: mocks.expandPhase,
     plan: create(PlanSchema, {
       specs: [
         create(Plan_SpecSchema, { id: "spec-1" }),
@@ -86,10 +87,9 @@ test.each([
 ])("sends a thread %s to its Activity card", (_, spec) => {
   const { result } = renderHook(() => useFocusThread());
   result.current.focusInStatement(thread(spec));
-  expect(mocks.focusPlanPhase).toHaveBeenCalledWith(
-    "review",
-    expect.any(Function)
-  );
+  // The entry scrolls itself into view, so the phase is only expanded.
+  expect(mocks.expandPhase).toHaveBeenCalledWith("review");
+  expect(mocks.focusPlanPhase).not.toHaveBeenCalled();
   expect(mocks.requestActivityFocus).toHaveBeenCalledWith(
     "projects/p/issues/1/issueComments/7"
   );

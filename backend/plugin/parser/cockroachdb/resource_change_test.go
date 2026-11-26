@@ -10,9 +10,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
-
-	// Registers the statement splitter that CockroachDB parsing uses.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 type foreignAST struct{}

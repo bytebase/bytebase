@@ -97,6 +97,7 @@ async function collectProjectSetup(
     return {
       isDefault: false,
       instance: "unknown",
+      projectInstance: "unknown",
       transferableDatabase: "unknown",
       canConnectInstance: false,
       canTransferDatabases: false,
@@ -108,6 +109,7 @@ async function collectProjectSetup(
     return {
       isDefault: true,
       instance: "unknown",
+      projectInstance: "unknown",
       transferableDatabase: "unknown",
       canConnectInstance: false,
       canTransferDatabases: false,
@@ -115,17 +117,22 @@ async function collectProjectSetup(
     };
   }
 
-  const instanceRequests = [
+  const instanceParents = [
     ...(canListProjectInstances ? [projectName] : []),
     ...(canListWorkspaceInstances ? [undefined] : []),
-  ].map(async (parent) => {
-    const { instances } = await state.fetchInstanceList({
+  ];
+  const instanceRequests = instanceParents.map(async (parent) => {
+    const { instances, nextPageToken } = await state.fetchInstanceList({
       parent,
       pageSize: 1,
       filter: { state: State.ACTIVE },
       silent: true,
     });
-    return instances.length ? ("present" as const) : ("empty" as const);
+    return instances.length
+      ? ("present" as const)
+      : nextPageToken
+        ? ("unknown" as const)
+        : ("empty" as const);
   });
   const [instanceResults, transferableDatabase] = await Promise.all([
     Promise.allSettled(instanceRequests),
@@ -143,9 +150,11 @@ async function collectProjectSetup(
           .catch(() => "unknown" as const)
       : Promise.resolve("empty" as const),
   ]);
-  const instanceStates = instanceResults.map((result) =>
-    result.status === "fulfilled" ? result.value : "unknown"
+  const instanceStates: ResourceAvailability[] = instanceResults.map(
+    (result) => (result.status === "fulfilled" ? result.value : "unknown")
   );
+  const projectInstance =
+    instanceStates[instanceParents.indexOf(projectName)] ?? "unknown";
   const instance: ResourceAvailability = instanceStates.includes("present")
     ? "present"
     : !instanceStates.length || instanceStates.includes("unknown")
@@ -154,6 +163,7 @@ async function collectProjectSetup(
   return {
     isDefault: false,
     instance,
+    projectInstance,
     transferableDatabase,
     canConnectInstance:
       projectName !== defaultProject && projectAllows("bb.instances.create"),

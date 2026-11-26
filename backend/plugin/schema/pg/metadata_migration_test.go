@@ -28,9 +28,8 @@ func newPGDatabaseMetadata(tables []*metadatapb.TableMetadata, views []*metadata
 	}, nil, nil, storepb.Engine_POSTGRES, true)
 }
 
-// TestDiffMigrationRouting proves both engines' metadata diffs reach omni's
-// catalog. CockroachDB shares the PostgreSQL catalog; its legacy generator is
-// gone.
+// TestDiffMigrationRouting proves PostgreSQL's metadata diff reaches omni's
+// catalog.
 func TestDiffMigrationRouting(t *testing.T) {
 	id := &metadatapb.ColumnMetadata{Name: "id", Type: "integer"}
 	note := &metadatapb.ColumnMetadata{Name: "note", Type: "text", Nullable: true}
@@ -38,10 +37,6 @@ func TestDiffMigrationRouting(t *testing.T) {
 	target := newPGDatabaseMetadata([]*metadatapb.TableMetadata{pgTable(id, note)}, nil)
 
 	sql, err := schema.DiffMigration(storepb.Engine_POSTGRES, source, target)
-	require.NoError(t, err)
-	require.Equal(t, "ALTER TABLE public.t ADD COLUMN note text", sql)
-
-	sql, err = schema.DiffMigration(storepb.Engine_COCKROACHDB, source, target)
 	require.NoError(t, err)
 	require.Equal(t, "ALTER TABLE public.t ADD COLUMN note text", sql)
 }

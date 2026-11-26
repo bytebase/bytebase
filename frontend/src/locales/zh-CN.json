@@ -93,6 +93,11 @@
     "archived-only-chats": "查看已归档对话",
     "args": "参数",
     "assistant-title": "AI 助手",
+    "attention": {
+      "needs-attention": "需要关注",
+      "needs-input": "Agent 需要您的反馈",
+      "review-request": "请先查看此请求，再继续。"
+    },
     "cancel": "取消",
     "cancel-request": "取消请求",
     "chat-archived-notice": "此对话已归档。",
@@ -778,6 +783,7 @@
     "copy": "拷贝",
     "copy-all": "复制全部",
     "copy-failed": "复制失败",
+    "copy-link": "复制链接",
     "create": "创建",
     "created": "已创建",
     "created-at": "创建于",
@@ -1457,17 +1463,13 @@
   "gitops": {
     "back-to-releases": "返回发布包",
     "setup": {
-      "continue": "继续",
       "databases": {
         "create-group": "创建数据库组",
         "databases-hint": "这些数据库会写入工作流文件。之后如需添加，请编辑这些文件。",
-        "databases-label": "数据库",
         "databases-placeholder": "选择数据库",
         "databases-tab": "数据库",
         "deploy-order-hint": "变更按此顺序逐个环境部署。",
-        "description": "工作流针对这些数据库审核并部署每个迁移文件。",
         "group-hint": "之后加入此组的数据库也会被部署，无需修改工作流文件。",
-        "group-label": "数据库组",
         "group-matches-none": "此组尚未匹配任何数据库，因此没有可部署的内容。",
         "group-placeholder": "选择数据库组",
         "group-tab": "数据库组",
@@ -1475,8 +1477,6 @@
         "no-group-title": "此项目没有数据库组",
         "none-pickable-description": "此项目中的所有数据库都没有环境，因此都不在部署顺序中。为数据库分配环境后即可选择。",
         "none-pickable-title": "没有可选择的数据库",
-        "question": "GitOps 应部署到哪些数据库？",
-        "recommended": "推荐",
         "view-databases": "查看数据库",
         "view-group": "查看组"
       },
@@ -1490,41 +1490,76 @@
         "unassigned-description_one": "它没有环境，部署会跳过它且不报错。为它指定环境即可纳入部署。",
         "unassigned-description_other": "它们没有环境，部署会跳过它们且不报错。为它们指定环境即可纳入部署。",
         "unassigned-title_one": "{{count}} 个数据库不会被部署",
-        "unassigned-title_other": "{{count}} 个数据库不会被部署"
+        "unassigned-title_other": "{{count}} 个数据库不会被部署",
+        "unsupported-description_one": "基于状态的工作流支持 PostgreSQL 和 MySQL。部署会在这个数据库上失败。请将它从“部署到”中移除，或改用基于迁移的工作流。",
+        "unsupported-description_other": "基于状态的工作流支持 PostgreSQL 和 MySQL。部署会在这些数据库上失败。请将它们从“部署到”中移除，或改用基于迁移的工作流。",
+        "unsupported-title_one": "{{count}} 个数据库不支持基于状态的工作流",
+        "unsupported-title_other": "{{count}} 个数据库不支持基于状态的工作流"
+      },
+      "deploy-to": {
+        "label": "部署到"
+      },
+      "export-schema": {
+        "description": "导出的 schema 文件以 CREATE 语句保存此数据库的完整 schema 定义。首次部署会使“部署到”中的每个数据库与之一致。",
+        "label": "导出 schema 的数据库",
+        "none-supported": "“部署到”中没有支持基于状态工作流的数据库",
+        "placeholder": "选择数据库"
       },
       "external-url-description": "你的工作流通过此地址访问 Bytebase。你现在就可以完成这些步骤。工作区管理员设置该地址后，工作流文件即完整。",
       "files": {
+        "choice-needs-environment": "需要至少一个有环境的数据库",
+        "choice-needs-role": "需要 GitOps 角色",
         "copy-off": "设置外部 URL 之前无法复制",
+        "copy-path": "复制文件路径",
         "description": "这些文件已包含你的数据库和工作负载身份。请原样复制。",
+        "description-pending": "设置会根据上面的选择为你的仓库生成工作流文件：一个作业审核对迁移文件夹的每次变更，另一个在合并后部署。Bytebase 不保存任何内容，全部设置都在这些文件中。",
+        "description-pending-state": "设置会根据上面的选择为你的仓库生成工作流文件和 schema 文件：工作流审核对 schema 文件的每次变更，并在合并后部署。Bytebase 不保存任何内容，全部设置都在这些文件中。",
+        "description-state": "工作流文件已包含你的数据库和工作负载身份。schema 文件从你在下方选择的数据库导出。请原样添加两者。",
         "developers-github": "开发者：在拉取请求中添加一个文件，例如 <code>{{file}}</code>。文件名以版本号开头。没有版本号的文件会被工作流跳过。",
         "developers-gitlab": "开发者：在合并请求中添加一个文件，例如 <code>{{file}}</code>。文件名以版本号开头。没有版本号的文件会被工作流跳过。",
+        "developers-state-github": "开发者：在拉取请求中编辑 schema 文件。修改、添加或删除 CREATE 语句，Bytebase 会为每个数据库生成迁移 DDL。",
+        "developers-state-gitlab": "开发者：在合并请求中编辑 schema 文件。修改、添加或删除 CREATE 语句，Bytebase 会为每个数据库生成迁移 DDL。",
         "folder-hint": "工作流审核并部署此文件夹中的 SQL 文件。",
         "folder-invalid": "请输入相对于仓库根目录的文件夹路径，例如 migrations 或 db/migrations。",
         "folder-label": "迁移文件夹",
+        "gitlab-include-note": "如果仓库中已有 <code>.gitlab-ci.yml</code>，请将以下几行添加到其中。",
         "heading": "将文件添加到你的仓库",
+        "locked-request-step": "说明文件合并后会发生什么。",
+        "locked-schema-step": "显示导出的 schema，并提供下载。",
+        "locked-workflow-step": "显示根据你的选择填好的文件。",
         "next-github": "文件进入默认分支后，下一个修改迁移文件夹的拉取请求会收到 Bytebase 审核评论。合并后即部署。",
         "next-gitlab": "文件进入默认分支后，下一个修改迁移文件夹的合并请求会收到 Bytebase 审核评论。合并后即部署。",
-        "next-title": "接下来会发生什么",
+        "next-state-github": "文件进入默认分支后，下一个修改 schema 文件的拉取请求会收到 Bytebase 审核评论，其中包含每个数据库的迁移 DDL。合并后即部署。",
+        "next-state-gitlab": "文件进入默认分支后，下一个修改 schema 文件的合并请求会收到 Bytebase 审核评论，其中包含每个数据库的迁移 DDL。合并后即部署。",
         "repository": "仓库",
+        "request-step-description-github": "提交这些文件，并向默认分支创建拉取请求。",
+        "request-step-description-gitlab": "提交这些文件，并向默认分支创建合并请求。",
+        "request-step-title": "创建拉取请求或合并请求",
+        "request-step-title-github": "创建拉取请求",
+        "request-step-title-gitlab": "创建合并请求",
+        "schema-folder-hint": "工作流审核并部署此文件夹中的 schema 文件。",
+        "schema-folder-invalid": "请输入相对于仓库根目录的文件夹路径，例如 schema 或 db/schema。",
+        "schema-folder-label": "Schema 文件夹",
+        "schema-step-description": "在第一次 schema 变更之前，该文件夹必须包含完整的 schema。在此导出并解压到 <code>{{folder}}</code>；如果你的仓库已有这些文件，可跳过此步骤。",
+        "schema-step-title": "添加 schema 文件",
         "show-all": "显示全部 {{lines}} 行",
-        "url-missing": "文件中 Bytebase 地址的位置显示为 <code>{{placeholder}}</code>。设置外部 URL 之前无法复制，因为没有地址的工作流无法访问 Bytebase。"
+        "url-missing": "文件中 Bytebase 地址的位置显示为 <code>{{placeholder}}</code>。设置外部 URL 之前无法复制，因为没有地址的工作流无法访问 Bytebase。",
+        "waiting-for": "等待选择",
+        "workflow-step-description": "按显示的路径创建每个文件。",
+        "workflow-step-title": "添加工作流文件"
       },
       "identity": {
         "create": "创建工作负载身份",
         "description": "你的工作流以此身份登录 Bytebase，因此仓库中不存储任何密钥。",
         "every-repository": "{{owner}} 的所有仓库",
-        "git-provider": "Git 提供商",
-        "label": "工作负载身份",
+        "field-label": "登录身份",
         "no-role-description": "其工作流可以登录，但 Bytebase 会拒绝审核和部署。请在成员页面为其授予 GitOps Service Agent 角色。",
         "no-role-title": "此身份没有允许 GitOps 的角色",
         "none": "此项目还没有工作负载身份。",
         "open-members": "打开成员",
         "other-provider": "其他 OIDC。设置中没有适用于它的工作流文件。",
         "placeholder": "选择工作负载身份",
-        "question": "你的工作流以哪个工作负载身份登录？",
-        "read-from": "从此身份读取",
-        "repositories": "可登录的仓库",
-        "role": "在此项目中的角色"
+        "role-line": "在此项目中的角色：{{roles}}"
       },
       "no-database": {
         "description": "GitOps 部署到此项目的数据库。请先向此项目添加或转移一个数据库。",
@@ -1534,14 +1569,35 @@
         "description": "你的工作流以此项目的工作负载身份登录 Bytebase。请让项目所有者创建一个。",
         "title": "此项目没有工作负载身份"
       },
-      "outcome": "每个修改迁移文件夹的拉取请求都会获得 Bytebase 审核。合并后即部署。",
-      "scope": "设置会为 GitHub Actions 和 GitLab CI 生成工作流文件。其他 CI/CD 平台请参阅 <docs>GitOps 文档</docs>。",
-      "steps": {
-        "databases": "数据库",
-        "workflow-files": "工作流文件",
-        "workload-identity": "工作负载身份"
+      "outcome": "每个修改 SQL 文件的拉取请求都会获得 Bytebase 审核。合并后即部署。",
+      "schema-files": {
+        "empty": "此数据库没有任何 schema 对象，因此没有可导出的内容。请选择包含 schema 的数据库。",
+        "exporting": "正在导出 {{database}} 的 schema",
+        "failed": "无法导出 schema",
+        "filter": "筛选文件",
+        "filter-count_one": "{{shown}} / {{count}} 个文件",
+        "filter-count_other": "{{shown}} / {{count}} 个文件",
+        "more-matches_one": "还有 {{count}} 个文件匹配。请输入更多内容以缩小范围。",
+        "more-matches_other": "还有 {{count}} 个文件匹配。请输入更多内容以缩小范围。",
+        "no-match": "没有与“{{query}}”匹配的文件。",
+        "show-all": "显示全部 {{count}} 个文件",
+        "summary_one": "来自 {{database}} 的 {{count}} 个文件",
+        "summary_other": "来自 {{database}} 的 {{count}} 个文件"
       },
-      "title": "GitOps"
+      "scope": "设置会为 GitHub Actions 和 GitLab CI 生成工作流文件。其他 CI/CD 平台请参阅 <docs>GitOps 文档</docs>。",
+      "title": "GitOps",
+      "workflow-type": {
+        "label": "工作流类型",
+        "limits-engines": "<b>推荐 PostgreSQL。</b>也支持 MySQL 8.0 及以上版本。",
+        "limits-link": "在文档中查看全部限制",
+        "limits-schema-only": "<b>仅限 schema 变更。</b>数据变更（INSERT、UPDATE、DELETE）请使用基于迁移的工作流。",
+        "limits-statements": "<b>支持的语句有限。</b>在 PostgreSQL 上，仅支持 CREATE TABLE、CREATE INDEX、CREATE VIEW、CREATE SEQUENCE、CREATE FUNCTION 以及用于 OWNED BY 的 ALTER SEQUENCE。",
+        "limits-title": "选择基于状态的工作流之前",
+        "migration-description": "你编写增量迁移文件，按版本号顺序执行。",
+        "migration-title": "基于迁移",
+        "state-description": "你维护完整的 schema 定义。Bytebase 生成迁移 DDL，使每个数据库达到该状态。",
+        "state-title": "基于状态（SDL）"
+      }
     }
   },
   "identity-provider": {
@@ -3097,6 +3153,7 @@
           "view-in-statement": "在语句中查看"
         },
         "applies-to": "适用于",
+        "comment-actions": "{{name}} 的评论的操作",
         "comment-on-lines": "评论所选行",
         "comment-on-plan": "对计划的评论",
         "comment-title_one": "第 {{range}} 行的评论",
@@ -3194,10 +3251,12 @@
     },
     "targets": {
       "no-targets-found": "未找到目标",
+      "no-targets-selected": "未选择目标",
       "non-env-warning": {
         "one": "{{count}} 个数据库因为没有生效环境，将不会进入发布:",
         "other": "{{count}} 个数据库因为没有生效环境，将不会进入发布:"
       },
+      "required": "目标库不能为空",
       "title": "目标库",
       "view-all": "查看全部 ({{count}})"
     },
@@ -3304,7 +3363,8 @@
       "no-databases": "暂无可访问的数据库。",
       "no-databases-create-description": "在已连接的实例中创建数据库以开始使用。",
       "no-databases-description": "连接实例，将数据库加入此项目。",
-      "no-databases-prerequisite": "连接实例后，数据库才会显示在这里。",
+      "no-databases-prerequisite": "请项目所有者或工作空间管理员连接实例，或将数据库转入此项目。",
+      "no-databases-transfer-connect-description": "将未分配的数据库转入此项目，或连接实例。",
       "no-databases-transfer-description": "将未分配的数据库转入此项目，或创建新数据库。",
       "query-database": "查询数据库",
       "query-database-description": "在 SQL 编辑器中浏览此项目的数据库。",

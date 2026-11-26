@@ -1,3 +1,5 @@
+import type { MouseEventHandler } from "react";
+
 /**
  * A stand-in for `HumanizeTs` that keeps what a test might be about: the
  * instant, and the form the surface asked for. A stub that renders only its
@@ -11,26 +13,34 @@ export const humanizeTsStub = () => ({
     precision = "second",
     className,
     truncate = false,
+    link,
   }: {
     tsMs: number | undefined;
     mode?: string;
     precision?: string;
     className?: string;
     truncate?: boolean;
-  }) =>
+    link?: { href: string; onClick?: MouseEventHandler<HTMLAnchorElement> };
+  }) => {
     // Nothing at all without an instant, as the component does: a stub that
     // left an empty box behind would hide a row that kept its separator.
-    tsMs === undefined ? null : (
-      <span
-        data-testid="humanize-ts"
-        data-mode={mode}
-        data-precision={precision}
-        data-truncate={truncate}
-        className={className}
-      >
+    if (tsMs === undefined) return null;
+    const props = {
+      "data-testid": "humanize-ts",
+      "data-mode": mode,
+      "data-precision": precision,
+      "data-truncate": truncate,
+      className,
+    };
+    // A linked timestamp stays a link, so a test can read where it points.
+    return link ? (
+      <a {...props} href={link.href} onClick={link.onClick}>
         {tsMs}
-      </span>
-    ),
+      </a>
+    ) : (
+      <span {...props}>{tsMs}</span>
+    );
+  },
 });
 
 const shown = (root: ParentNode) =>

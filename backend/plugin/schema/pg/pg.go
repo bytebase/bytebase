@@ -1,13 +1,9 @@
-// Package pg implements Bytebase's schema contracts for PostgreSQL and
-// CockroachDB on top of omni's pg catalog. The catalog owns the database,
-// multi-file and per-object definitions, the SDL diff and the metadata diff.
-// Bytebase keeps the registry wiring, the backup-schema filter, the legacy
-// index-expression repair in legacy_normalize.go, and the DDL walk-through.
-//
-// CockroachDB shares the catalog: its synced metadata is PostgreSQL-shaped and
-// omni has no CockroachDB catalog. testdata/cutover_parity.yaml records the
-// migrations the deleted Bytebase generator produced, so every text change the
-// catalog introduces stays named.
+// Package pg implements Bytebase's schema contracts for PostgreSQL on top of
+// omni's pg catalog. The catalog owns the database, multi-file and per-object
+// definitions, the SDL diff and the metadata diff. Bytebase keeps the registry
+// wiring, the backup-schema filter, the legacy index-expression repair in
+// legacy_normalize.go, and the DDL walk-through. CockroachDB has its own
+// catalog in omni and its own package here.
 package pg
 
 import (
@@ -41,7 +37,7 @@ func init() {
 		DiffSDLMigration:      pgDiffSDLMigration,
 		DiffMetadataMigration: diffMetadataMigration,
 		SDLDropAdvices:        pgSDLDropAdvices,
-	}, storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB)
+	}, storepb.Engine_POSTGRES)
 	schema.Register(schema.Engine{
 		WalkThrough: WalkThroughWithContext,
 	}, storepb.Engine_POSTGRES)
@@ -108,8 +104,7 @@ func filterBackupSchemaIfNecessary(ctx schema.GetDefinitionContext, metadata *me
 }
 
 // diffMetadataMigration generates the migration between two synced snapshots
-// with omni's catalog. PostgreSQL and CockroachDB share it: their metadata is
-// PostgreSQL-shaped and omni has no CockroachDB catalog.
+// with omni's catalog.
 func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
 	return catalog.MetadataMigration(context.Background(), omnicatalog.DatabaseProto(oldSchema), omnicatalog.DatabaseProto(newSchema), catalog.MetadataMigrationOptions{
 		SourceSearchPath: getMigrationSearchPath(oldSchema),

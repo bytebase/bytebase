@@ -588,6 +588,31 @@ describe("PlanDetailHeader draft ownership", () => {
     expect(mocks.updateIssue).not.toHaveBeenCalled();
   });
 
+  test("lists a database change with no targets instead of submitting it", () => {
+    mocks.permissions = new Set(["bb.plans.update", "bb.issues.update"]);
+    mocks.lifecycle = { kind: "ready-for-review" };
+    const page = makePage();
+    mocks.page = {
+      ...page,
+      plan: {
+        ...page.plan,
+        specs: [
+          { config: { case: "changeDatabaseConfig", value: { targets: [] } } },
+        ],
+      },
+    } as unknown as PlanDetailPageState;
+    render(<PlanDetailHeader />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "plan.ready-for-review" })
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "plan.targets.required"
+    );
+    expect(mocks.updateIssue).not.toHaveBeenCalled();
+  });
+
   test("confirms a named override before submitting past failed checks", async () => {
     mocks.permissions = new Set(["bb.plans.update", "bb.issues.update"]);
     mocks.lifecycle = { kind: "ready-for-review" };
@@ -597,7 +622,14 @@ describe("PlanDetailHeader draft ownership", () => {
       plan: {
         ...page.plan,
         planCheckRunStatusCount: { ERROR: 1 },
-        specs: [{ config: { case: "changeDatabaseConfig", value: {} } }],
+        specs: [
+          {
+            config: {
+              case: "changeDatabaseConfig",
+              value: { targets: ["instances/test/databases/db"] },
+            },
+          },
+        ],
       },
     } as unknown as PlanDetailPageState;
     render(<PlanDetailHeader />);
@@ -624,7 +656,14 @@ describe("PlanDetailHeader draft ownership", () => {
       plan: {
         ...page.plan,
         planCheckRunStatusCount: { ERROR: 1 },
-        specs: [{ config: { case: "changeDatabaseConfig", value: {} } }],
+        specs: [
+          {
+            config: {
+              case: "changeDatabaseConfig",
+              value: { targets: ["instances/test/databases/db"] },
+            },
+          },
+        ],
       },
       project: { ...page.project, enforceSqlReview: true },
     } as unknown as PlanDetailPageState;
@@ -798,6 +837,30 @@ describe("PlanDetailHeader draft ownership", () => {
     const notice = screen.getByRole("alert");
     expect(notice).toHaveTextContent("plan.cannot-create");
     expect(notice).toHaveTextContent("plan.title-required");
+  });
+
+  test("lists a database change with no targets instead of creating it", () => {
+    mocks.permissions = new Set(["bb.plans.create", "bb.issues.create"]);
+    mocks.lifecycle = { kind: "create" };
+    const page = makePage({ creating: true });
+    mocks.page = {
+      ...page,
+      plan: {
+        ...page.plan,
+        specs: [
+          { config: { case: "changeDatabaseConfig", value: { targets: [] } } },
+        ],
+      },
+    } as unknown as PlanDetailPageState;
+
+    render(<PlanDetailHeader />);
+
+    fireEvent.click(screen.getByRole("button", { name: "common.create" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "plan.targets.required"
+    );
+    expect(mocks.createPlan).not.toHaveBeenCalled();
   });
 
   test("puts the cursor in the empty title when that is the blocker", () => {

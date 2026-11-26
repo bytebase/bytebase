@@ -6,7 +6,7 @@
 // answers "which control does the header show"; this answers "what does that
 // control say when pressed".
 import { getPlanCheckSummaryWithFallback } from "@/lib/plan/check";
-import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 type T = (key: string, options?: Record<string, unknown>) => string;
@@ -45,13 +45,22 @@ const fix = (id: string, message: string): AdvanceBlocker => ({
   message,
 });
 
+export const hasChangeWithoutTargets = (specs: Plan_Spec[]): boolean =>
+  specs.some(
+    (spec) =>
+      spec.config?.case === "changeDatabaseConfig" &&
+      spec.config.value.targets.length === 0
+  );
+
 export const getCreatePlanBlockers = ({
   emptySpecCount,
+  missingTargets,
   permissionReason,
   title,
   t,
 }: {
   emptySpecCount: number;
+  missingTargets: boolean;
   permissionReason?: string;
   title: string;
   t: T;
@@ -59,6 +68,9 @@ export const getCreatePlanBlockers = ({
   const blockers: AdvanceBlocker[] = [];
   if (!title.trim()) {
     blockers.push(fix("title", t("plan.title-required")));
+  }
+  if (missingTargets) {
+    blockers.push(fix("targets", t("plan.targets.required")));
   }
   if (emptySpecCount > 0) {
     blockers.push(fix("statement", t("plan.navigator.statement-empty")));
@@ -95,6 +107,9 @@ export const getSubmitReviewAdvance = ({
   // shared summary does not count, and a queued check still has to finish.
   const queued = plan.planCheckRunStatusCount?.AVAILABLE ?? 0;
 
+  if (hasChangeWithoutTargets(plan.specs)) {
+    blockers.push(fix("targets", t("plan.targets.required")));
+  }
   if (emptySpecCount > 0) {
     blockers.push(fix("statement", t("plan.navigator.statement-empty")));
   }

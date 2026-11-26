@@ -508,6 +508,7 @@ var auditRecordedFields = []string{
 	"bytebase.v1.GetIamPolicyRequest.resource",
 	"bytebase.v1.GetIdentityProviderRequest.name",
 	"bytebase.v1.GetInstanceRequest.name",
+	"bytebase.v1.GetIssueCommentRequest.name",
 	"bytebase.v1.GetIssueRequest.name",
 	"bytebase.v1.GetPlanCheckRunRequest.name",
 	"bytebase.v1.GetPlanRequest.name",

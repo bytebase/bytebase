@@ -1,6 +1,7 @@
-import { Bot } from "lucide-react";
+import { ArrowUpRight, Bot, CircleAlert } from "lucide-react";
 import {
   type PointerEvent as ReactPointerEvent,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -8,22 +9,34 @@ import {
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { WINDOW_MARGIN } from "../window";
+import { AgentPersistentPreview } from "./ui/AgentPersistentPreview";
 
 export interface AgentLauncherPosition {
   right: number;
   bottom: number;
 }
 
+export interface AgentAttentionPreviewItem {
+  chatId: string;
+  title: string;
+  prompt: string;
+}
+
 export function AgentMinimizedLauncher({
+  attentionChats = [],
   initialPosition,
   onPositionChange,
   onOpen,
+  onOpenChat,
 }: {
+  attentionChats?: readonly AgentAttentionPreviewItem[];
   initialPosition?: AgentLauncherPosition;
   onPositionChange?: (position: AgentLauncherPosition) => void;
   onOpen: () => void;
+  onOpenChat?: (chatId: string) => void;
 }) {
   const { t } = useTranslation();
+  const previewTitleId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [position, setPosition] = useState(
     initialPosition ?? { right: WINDOW_MARGIN, bottom: WINDOW_MARGIN }
@@ -121,7 +134,7 @@ export function AgentMinimizedLauncher({
     };
   }, []);
 
-  return (
+  const button = (
     <Button
       ref={buttonRef}
       type="button"
@@ -177,5 +190,60 @@ export function AgentMinimizedLauncher({
     >
       <Bot className="size-5" aria-hidden="true" />
     </Button>
+  );
+  const showPreview = attentionChats.length > 0 && onOpenChat !== undefined;
+
+  return (
+    <>
+      {button}
+      {showPreview && (
+        <AgentPersistentPreview anchor={buttonRef}>
+          <section
+            aria-labelledby={previewTitleId}
+            className="flex max-h-(--available-height) w-80 max-w-(--available-width) flex-col overflow-hidden rounded-sm border border-warning/30 bg-background text-control shadow-md"
+            data-agent-attention-preview
+          >
+            <h2
+              id={previewTitleId}
+              className="flex shrink-0 items-center gap-2 border-b border-warning/30 bg-warning/10 px-3 py-2 text-sm font-medium text-control"
+            >
+              <Bot className="size-4 shrink-0 text-accent" aria-hidden="true" />
+              <span className="min-w-0 wrap-anywhere">
+                {t("agent.attention.needs-input")}
+              </span>
+            </h2>
+            <ul className="max-h-48 min-h-0 divide-y divide-block-border overflow-y-auto overscroll-contain">
+              {attentionChats.map(({ chatId, title, prompt }) => (
+                <li key={chatId}>
+                  <Button
+                    type="button"
+                    size="md"
+                    appearance="secondary"
+                    title={title}
+                    className="h-auto w-full justify-start gap-2 rounded-none py-2 text-left focus-visible:ring-inset focus-visible:ring-offset-0"
+                    onClick={() => onOpenChat(chatId)}
+                  >
+                    <CircleAlert
+                      className="size-4 shrink-0 text-warning-hover"
+                      aria-hidden="true"
+                    />
+                    <span className="flex min-w-0 flex-1 flex-col gap-1">
+                      <span className="truncate">{title}</span>
+                      <span className="line-clamp-2 text-xs font-normal text-control-light wrap-anywhere whitespace-normal">
+                        {prompt}
+                      </span>
+                    </span>
+                    <ArrowUpRight
+                      className="size-4 shrink-0 text-control-light"
+                      aria-hidden="true"
+                    />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </AgentPersistentPreview>
+      )}
+    </>
   );
 }

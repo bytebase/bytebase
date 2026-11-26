@@ -1479,6 +1479,74 @@ describe("PlanDetailChangesBranch", () => {
     ).toBeNull();
   });
 
+  it("marks Targets as required only while the change on screen has none", () => {
+    const targetsHeading = () =>
+      [...container.querySelectorAll("div")].find(
+        (element) =>
+          element.children.length > 0 &&
+          element.textContent?.replace("*", "") === "plan.targets.title"
+      )?.textContent;
+
+    act(() => {
+      root.render(<StatefulSpecHarness targets={[[], [DB_WIDGETS]]} />);
+    });
+
+    expect(targetsHeading()).toBe("plan.targets.title*");
+
+    const specTabs = [...container.querySelectorAll("button")].filter(
+      (button) => button.querySelector("[data-plan-change-reference]")
+    );
+    act(() => {
+      specTabs[1]?.click();
+    });
+
+    expect(targetsHeading()).toBe("plan.targets.title");
+  });
+
+  it("offers Select targets in place of the pencil while an editable change has none", async () => {
+    const buttons = () => [...container.querySelectorAll("button")];
+    const selectTargets = () =>
+      buttons().find((button) => button.textContent === "plan.select-targets");
+    const editPencil = () =>
+      buttons().find(
+        (button) => button.getAttribute("aria-label") === "common.edit"
+      );
+
+    act(() => {
+      root.render(<StatefulSpecHarness targets={[[], [DB_WIDGETS]]} />);
+    });
+
+    expect(selectTargets()).toBeTruthy();
+    expect(editPencil()).toBeUndefined();
+    expect(container.textContent).not.toContain("common.database-group");
+
+    await act(async () => {
+      selectTargets()?.click();
+    });
+    await flush();
+
+    expect(container.textContent).toContain("common.database-group");
+  });
+
+  it("tells a reader that no targets are selected without offering to select them", () => {
+    const page = buildPageState();
+    page.readonly = true;
+    page.plan.specs = [
+      { id: "spec-1", config: { case: "changeDatabaseConfig", value: { targets: [] } } },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+
+    act(() => {
+      root.render(
+        <PlanDetailProvider value={page}>
+          <PlanDetailChangesBranch selectedSpecId="spec-1" onSelectedSpecIdChange={vi.fn()} />
+        </PlanDetailProvider>
+      );
+    });
+
+    expect(container.textContent).toContain("plan.targets.no-targets-selected");
+    expect(container.textContent).not.toContain("plan.select-targets");
+  });
+
   it("shows target loading while a change target is not cached", () => {
     mocks.databaseStore.getDatabaseByName.mockReturnValue({ name: "" });
     mocks.databaseStore.getOrFetchDatabaseByName.mockImplementation(

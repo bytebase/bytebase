@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/oracle"
 )
 
 // TestOraclePriorBackupCheckAdapter covers Bytebase's BUILTIN_PRIOR_BACKUP_CHECK

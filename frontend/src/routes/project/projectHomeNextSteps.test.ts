@@ -4,6 +4,7 @@ import { getProjectHomeNextSteps } from "./projectHomeNextSteps";
 const input = {
   database: "empty" as const,
   instance: "empty" as const,
+  projectInstance: "empty" as const,
   transferableDatabase: "empty" as const,
   change: "not-started" as const,
   membership: "solo" as const,
@@ -22,10 +23,13 @@ describe("getProjectHomeNextSteps", () => {
   });
 
   test("creates a database when a usable instance exists", () => {
-    expect(getProjectHomeNextSteps({ ...input, instance: "present" })).toEqual([
-      "createDatabase",
-      "members",
-    ]);
+    expect(
+      getProjectHomeNextSteps({
+        ...input,
+        instance: "present",
+        projectInstance: "present",
+      })
+    ).toEqual(["createDatabase", "members"]);
   });
 
   test("offers transfer first and creation second for unassigned databases", () => {
@@ -33,6 +37,7 @@ describe("getProjectHomeNextSteps", () => {
       getProjectHomeNextSteps({
         ...input,
         instance: "present",
+        projectInstance: "present",
         transferableDatabase: "present",
       })
     ).toEqual(["transferDatabases", "createDatabase", "members"]);
@@ -43,6 +48,7 @@ describe("getProjectHomeNextSteps", () => {
       getProjectHomeNextSteps({
         ...input,
         instance: "unknown",
+        projectInstance: "unknown",
         transferableDatabase: "present",
         canCreateDatabase: false,
       })
@@ -64,6 +70,7 @@ describe("getProjectHomeNextSteps", () => {
       getProjectHomeNextSteps({
         ...input,
         instance: "present",
+        projectInstance: "present",
         transferableDatabase: "present",
         canTransferDatabases: false,
       })
@@ -72,15 +79,20 @@ describe("getProjectHomeNextSteps", () => {
       getProjectHomeNextSteps({
         ...input,
         instance: "present",
+        projectInstance: "present",
         transferableDatabase: "unknown",
       })
     ).toEqual(["createDatabase", "members"]);
   });
 
   test("keeps membership setup available while resource state is uncertain", () => {
-    expect(getProjectHomeNextSteps({ ...input, instance: "unknown" })).toEqual([
-      "members",
-    ]);
+    expect(
+      getProjectHomeNextSteps({
+        ...input,
+        instance: "unknown",
+        projectInstance: "unknown",
+      })
+    ).toEqual(["members"]);
     expect(getProjectHomeNextSteps({ ...input, database: "unknown" })).toEqual([
       "members",
     ]);
