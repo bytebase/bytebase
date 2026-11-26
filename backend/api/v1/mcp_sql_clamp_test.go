@@ -30,10 +30,11 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/hive"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mongodb"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/oracle"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/redis"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/redshift"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
@@ -41,7 +42,6 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/starrocks"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/trino"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 // unclassifiedEngineWrites are the engines with no registered read-only

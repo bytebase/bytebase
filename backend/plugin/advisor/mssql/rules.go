@@ -13,12 +13,12 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	mssqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mssql"
 )
 
 func init() {
 	extract := advisor.NodeExtractor(func(a base.AST) (ast.Node, bool) {
-		n, ok := tsqlparser.GetNode(a)
+		n, ok := mssqlparser.GetNode(a)
 		return n, ok && n != nil
 	})
 	e := advisor.NewV1Engine(extract, nil, advisor.V1PosFinding)

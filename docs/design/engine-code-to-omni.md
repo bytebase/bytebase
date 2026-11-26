@@ -56,8 +56,8 @@ Non-test Go footprint under `backend/plugin`:
 packages plus `omni/cockroachdb/analysis`, which encapsulates `cockroachdb-parser` inside omni as
 a tracked follow-up to replace with a native parser). ANTLR (`github.com/antlr4-go/antlr/v4`) is
 `// indirect` in `go.mod` and kept out of Bytebase by guard tests
-(`backend/plugin/parser/tsql/backup_test.go` and
-`backend/plugin/parser/{pg,plsql,redshift,tsql}/completion_test.go`).
+(`backend/plugin/parser/mssql/backup_test.go` and
+`backend/plugin/parser/{mssql,oracle,pg,redshift}/completion_test.go`).
 
 **Metadata — in omni.** `omni/metadata` (generated from omni's `proto/omni/metadata/database.proto`)
 is the database schema snapshot type, imported across ~183 files in `backend`; the store proto no

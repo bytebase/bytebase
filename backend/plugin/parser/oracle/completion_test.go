@@ -1,4 +1,4 @@
-package plsql
+package oracle
 
 import (
 	"context"
@@ -24,7 +24,7 @@ func hasCandidate(cands []base.Candidate, typ base.CandidateType, text string) b
 }
 
 func TestCompletionDoesNotDependOnANTLR(t *testing.T) {
-	content, err := os.ReadFile("plsql.go")
+	content, err := os.ReadFile("oracle.go")
 	require.NoError(t, err)
 	source := string(content)
 	require.NotContains(t, source, "github.com/antlr4-go/antlr/v4")
