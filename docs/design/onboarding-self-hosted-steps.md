@@ -166,7 +166,9 @@ draws a completed step as a check on a pale accent tint with a plain title, and 
 current step with the accent color, so the eye finds where it is; this changes every wizard that
 uses it. The setup route's form column starts at a fixed distance from the top instead of being
 centered, so the steps and the heading stay in place from step to step and while fields appear.
-Rejected: a setup-only variant of the indicator, which would make the same steps look different in
+Whether the indicator shows every title or only the current one depends on the column's width
+alone, never on which step is current. From lg the left picture stays in view while the form grows
+past the window. Rejected: a setup-only variant of the indicator, which would make the same steps look different in
 other wizards.
 
 ## States
@@ -205,7 +207,8 @@ Two slices, shipped in one pull request as separate commits; they share no files
 2. **Shared layout: D9.** `frontend/src/components/ui/step-indicator.tsx` and
    `frontend/src/app/layouts/SplashLayout.tsx`, with their existing tests
    (`step-indicator.test.tsx`, `SplashLayout.test.tsx`) asserting the completed and current step's
-   look and the setup column's top alignment. Depends on nothing.
+   look, a width test that is the same on every step, the setup column's top alignment and the
+   left picture staying in view. Depends on nothing.
 
 No backend, proto or event change: the events of onboarding-flow D10 stay as they are, and
 self-hosted sends none (Given).

@@ -204,7 +204,9 @@ export function StepIndicator({
     );
   }
 
-  const items = (compact: boolean) =>
+  // `measure` draws every title at the current step's weight, so the width
+  // that picks full or compact is the same on every step.
+  const items = (compact: boolean, measure = false) =>
     steps.map((step, index) => {
       const isCurrent = index === activeIndex;
       const isCompleted = activeIndex >= 0 && index < activeIndex;
@@ -234,7 +236,8 @@ export function StepIndicator({
           <span
             className={cn(
               "text-sm",
-              isCurrent && "text-accent font-medium",
+              (isCurrent || measure) && "font-medium",
+              isCurrent && "text-accent",
               isCompleted && "text-control",
               !isCurrent && !isCompleted && "text-control-light",
               compact && !isCurrent && "sr-only"
@@ -296,7 +299,7 @@ export function StepIndicator({
         aria-hidden="true"
         className="pointer-events-none invisible absolute top-0 left-0 flex w-max items-center gap-x-2 px-0.5"
       >
-        {items(false)}
+        {items(false, true)}
       </ol>
     </div>
   );

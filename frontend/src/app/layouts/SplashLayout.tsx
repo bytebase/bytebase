@@ -21,7 +21,9 @@ const LEFT_COLUMN_QUERY = "(min-width: 1024px)";
 // Auth chrome: the routed auth page is centered in one column. The setup
 // route alone splits in two from lg, with the wizard's own panel on the left
 // and the page in the right half; below lg that column is hidden and the page
-// gets no slot, so the panel is not mounted unseen.
+// gets no slot, so the panel is not mounted unseen. The panel is one window
+// tall and sticky, so its picture stays in view while the form grows; the
+// pictures size themselves to fit the window (`SetupPanel.tsx`).
 //
 // The column owns the gutter and centers the page, which fills it up to its
 // own cap (`w-full max-w-*`) and adds no width fraction or side padding of its
@@ -44,7 +46,7 @@ export function SplashLayout() {
       {pageOwnsPanel && (
         <div
           ref={setPanelSlot}
-          className="hidden bg-control-bg lg:flex w-0 flex-1 items-center justify-center p-12"
+          className="hidden bg-control-bg lg:flex lg:sticky lg:top-0 lg:h-dvh w-0 flex-1 items-center justify-center p-12"
         />
       )}
       <div
