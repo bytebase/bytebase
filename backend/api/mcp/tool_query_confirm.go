@@ -213,15 +213,19 @@ func fitsMessageLines(lines []string) bool {
 func lineColumns(line string) int {
 	columns := 0
 	for _, r := range line {
-		if unicode.Is(unicode.Mn, r) {
-			continue
-		}
-		columns++
-		if kind := width.LookupRune(r).Kind(); kind == width.EastAsianWide || kind == width.EastAsianFullwidth {
-			columns++
-		}
+		columns += charColumns(r)
 	}
 	return columns
+}
+
+func charColumns(r rune) int {
+	if unicode.Is(unicode.Mn, r) {
+		return 0
+	}
+	if kind := width.LookupRune(r).Kind(); kind == width.EastAsianWide || kind == width.EastAsianFullwidth {
+		return 2
+	}
+	return 1
 }
 
 // answeredChoice returns the choice an answer acts on, Run now or Create an

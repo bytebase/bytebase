@@ -379,6 +379,10 @@ type approvalRulesDiff struct {
 	// changes are the form's change lines: the removed rules, then the
 	// requested rules that differ, in the order an approval check tries them.
 	changes []string
+	// shorter are the same lines for a form with no room for them, in the
+	// order it tries them: a move counts the rules it passes by their
+	// approvers and names none, and then only counts them.
+	shorter [2][]string
 	// requested are the rules for database changes as the request orders them,
 	// and marks say of each whether it is new, changed or kept as stored.
 	requested []*v1pb.WorkspaceApprovalSetting_Rule
@@ -443,12 +447,24 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 			storedKept = append(storedKept, condition)
 			continue
 		}
-		diff.changes = append(diff.changes, fmt.Sprintf("Remove, %s: %s", approvers(rule), conditionText(condition)))
+		diff.add(fmt.Sprintf("Remove, %s: %s", approvers(rule), conditionText(condition)))
 	}
-	for _, rule := range requestedDB {
-		if condition := rule.GetCondition().GetExpression(); storedByCondition[condition] != nil {
-			requestedKept = append(requestedKept, condition)
+	storedPlace := make(map[string]int, len(storedKept))
+	for place, condition := range storedKept {
+		storedPlace[condition] = place
+	}
+	var keptRules []keptRule
+	for i, rule := range requestedDB {
+		condition := rule.GetCondition().GetExpression()
+		if storedByCondition[condition] == nil {
+			continue
 		}
+		requestedKept = append(requestedKept, condition)
+		name := ruleTitle(rule)
+		if rule.GetTemplate().GetTitle() == "" {
+			name = fmt.Sprintf("rule %d", i+1)
+		}
+		keptRules = append(keptRules, keptRule{was: storedPlace[condition], name: name, roles: rule.GetTemplate().GetFlow().GetRoles(), approvers: approvers(rule)})
 	}
 	// A kept rule outside the longest common order moved: the first matching
 	// rule decides, so a move changes which rule decides some changes.
@@ -463,7 +479,7 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 			}
 			// The first matching rule decides, so an added rule's place is part
 			// of the change.
-			diff.changes = append(diff.changes, fmt.Sprintf("Add rule %d, %s: %s", i+1, approvers(rule), conditionText(condition)))
+			diff.add(fmt.Sprintf("Add rule %d, %s: %s", i+1, approvers(rule), conditionText(condition)))
 			diff.marks = append(diff.marks, "new")
 			continue
 		}
@@ -473,10 +489,20 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 			}
 		}
 		moved := !inOrder[kept]
+		named, shorter := "", [2]string{}
+		if moved {
+			named, shorter = rulesPassed(kept, keptRules)
+		}
 		kept++
-		if clauses := keptRuleClauses(before, rule, moved, i+1); len(clauses) > 0 {
-			line := strings.Join(clauses, "; ")
-			diff.changes = append(diff.changes, fmt.Sprintf("%s%s: %s", strings.ToUpper(line[:1]), line[1:], conditionText(condition)))
+		if clauses := keptRuleClauses(before, rule, moved, i+1, named); len(clauses) > 0 {
+			line := func(clauses []string) string {
+				text := strings.Join(clauses, "; ")
+				return fmt.Sprintf("%s%s: %s", strings.ToUpper(text[:1]), text[1:], conditionText(condition))
+			}
+			diff.changes = append(diff.changes, line(clauses))
+			for j, passed := range shorter {
+				diff.shorter[j] = append(diff.shorter[j], line(keptRuleClauses(before, rule, moved, i+1, passed)))
+			}
 			diff.marks = append(diff.marks, "changed")
 		} else {
 			diff.marks = append(diff.marks, "kept")
@@ -485,15 +511,178 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 	return diff, nil
 }
 
+// add appends a change line that reads the same with or without room.
+func (d *approvalRulesDiff) add(line string) {
+	d.changes = append(d.changes, line)
+	for i := range d.shorter {
+		d.shorter[i] = append(d.shorter[i], line)
+	}
+}
+
+// keptRule is a kept rule as a move's line refers to it: by its title, or by
+// its place when it has none.
+type keptRule struct {
+	// was is its place among the kept rules as stored.
+	was       int
+	name      string
+	roles     []string
+	approvers string
+}
+
+// maxApproverGroups bounds the kinds of approvers a move's line counts apart,
+// so the line stays short whatever the stored rules hold.
+const maxApproverGroups = 6
+
+// passedSide is the kept rules that traded order with a moved rule, on one
+// side of it. The first matching rule decides, and its template carries the
+// approvers, so only a rule with other approvers changes who approves: those
+// are named, and counted by their approvers, and the rest are only counted.
+type passedSide struct {
+	total, same int
+	// names stop where they could no longer fit a description, since a
+	// workspace can store any number of rules.
+	names       []string
+	nameColumns int
+	groups      []approverGroup
+	// ungrouped are the rules with approvers past maxApproverGroups kinds.
+	ungrouped int
+}
+
+type approverGroup struct {
+	approvers string
+	rules     int
+}
+
+func (s *passedSide) add(other, moved keptRule) {
+	s.total++
+	if slices.Equal(other.roles, moved.roles) {
+		s.same++
+		return
+	}
+	if s.nameColumns <= descriptionLines*descriptionLineWidth {
+		name := fmt.Sprintf("%s (%s)", other.name, other.approvers)
+		s.names = append(s.names, name)
+		s.nameColumns += lineColumns(name)
+	}
+	for i := range s.groups {
+		if s.groups[i].approvers == other.approvers {
+			s.groups[i].rules++
+			return
+		}
+	}
+	if len(s.groups) == maxApproverGroups {
+		s.ungrouped++
+		return
+	}
+	s.groups = append(s.groups, approverGroup{approvers: other.approvers, rules: 1})
+}
+
+// named names each rule with other approvers and counts the rest. ok is false
+// when the names stopped short.
+func (s *passedSide) named() (text string, ok bool) {
+	items := slices.Clone(s.names)
+	if s.same > 0 {
+		items = append(items, countRules(s.same)+" with the same approvers")
+	}
+	return andList(items), len(s.names) == s.total-s.same
+}
+
+// counted counts the rules by their approvers, and names none.
+func (s *passedSide) counted() string {
+	other := s.total - s.same
+	switch {
+	case other == 0 || s.ungrouped > 0:
+		return s.terse()
+	case len(s.groups) == 1 && s.same == 0:
+		return countRules(other) + " with " + s.groups[0].approvers
+	default:
+	}
+	parts := make([]string, 0, len(s.groups)+1)
+	for _, group := range s.groups {
+		parts = append(parts, fmt.Sprintf("%d with %s", group.rules, group.approvers))
+	}
+	if s.same > 0 {
+		parts = append(parts, fmt.Sprintf("%d with the same approvers", s.same))
+	}
+	return countRules(s.total) + ": " + strings.Join(parts, ", ")
+}
+
+// terse says only how many rules there are and how many have other approvers,
+// so it has room wherever the move's own line has.
+func (s *passedSide) terse() string {
+	switch other := s.total - s.same; {
+	case other == 0:
+		return countRules(s.same) + " with the same approvers"
+	case s.same == 0:
+		return countRules(s.total) + " with other approvers"
+	default:
+		return fmt.Sprintf("%s, %d of them with other approvers", countRules(s.total), other)
+	}
+}
+
+// rulesPassed says which kept rules the moved one traded order with: the
+// rules it is now behind, which take the changes both match, and those it is
+// now ahead of. A line states it because the rule list under the choice can be
+// cut. named names the rules with other approvers. shorter are for a form with
+// no room for that: counted by approvers, then only counted. named is the
+// first of them when the names stopped short.
+func rulesPassed(moved int, kept []keptRule) (named string, shorter [2]string) {
+	var behind, ahead passedSide
+	for place, other := range kept {
+		switch {
+		case place < moved && other.was > kept[moved].was:
+			behind.add(other, kept[moved])
+		case place > moved && other.was < kept[moved].was:
+			ahead.add(other, kept[moved])
+		default:
+		}
+	}
+	var sides [3][]string
+	allNamed := true
+	for _, side := range []struct {
+		word  string
+		rules *passedSide
+	}{{"behind ", &behind}, {"ahead of ", &ahead}} {
+		if side.rules.total == 0 {
+			continue
+		}
+		names, ok := side.rules.named()
+		allNamed = allNamed && ok
+		for i, text := range []string{names, side.rules.counted(), side.rules.terse()} {
+			sides[i] = append(sides[i], side.word+text)
+		}
+	}
+	join := func(sides []string) string { return ", now " + strings.Join(sides, ", and ") }
+	shorter = [2]string{join(sides[1]), join(sides[2])}
+	if !allNamed {
+		return shorter[0], shorter
+	}
+	return join(sides[0]), shorter
+}
+
+// andList joins names as a sentence lists them.
+func andList(names []string) string {
+	if len(names) < 2 {
+		return strings.Join(names, "")
+	}
+	return strings.Join(names[:len(names)-1], ", ") + " and " + names[len(names)-1]
+}
+
 // keptRuleClauses states how a kept rule changes, one clause per field the
-// form shows: the approvers, the place, the title and the description.
-func keptRuleClauses(before, rule *v1pb.WorkspaceApprovalSetting_Rule, moved bool, position int) []string {
+// form shows: the approvers, the place, the title and the description. passed
+// is what rulesPassed says of a moved rule.
+func keptRuleClauses(before, rule *v1pb.WorkspaceApprovalSetting_Rule, moved bool, position int, passed string) []string {
 	var clauses []string
-	if !proto.Equal(before.GetTemplate().GetFlow(), rule.GetTemplate().GetFlow()) {
+	flowChanged := !proto.Equal(before.GetTemplate().GetFlow(), rule.GetTemplate().GetFlow())
+	if flowChanged {
 		clauses = append(clauses, fmt.Sprintf("change, %s to %s", approvers(before), approvers(rule)))
 	}
 	if moved {
-		clauses = append(clauses, fmt.Sprintf("move to rule %d", position))
+		clause := fmt.Sprintf("move to rule %d", position)
+		if !flowChanged {
+			clause += ", " + approvers(rule)
+		}
+		clauses = append(clauses, clause+passed)
 	}
 	if title := rule.GetTemplate().GetTitle(); title != before.GetTemplate().GetTitle() {
 		clauses = append(clauses, "rename to "+ruleTitle(rule))
@@ -631,10 +820,6 @@ type adminForm struct {
 // issues whose approval a plan edit would check again under the new rules, so
 // every step of the change shows it.
 func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues string, link string) (*adminForm, error) {
-	changes := make([]formChange, 0, len(diff.changes))
-	for _, change := range diff.changes {
-		changes = append(changes, formChange{text: change, effect: true})
-	}
 	// A count alone reads the same when approvers are replaced by none, so the
 	// count line also says how many new or changed rules end with no approvers.
 	unapproved := 0
@@ -665,7 +850,27 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 			list.rules = append(list.rules, text)
 		}
 	}
-	return approvalRules.form(ctx, changes, countLine(len(changes), diff.marks, unapproved), issues, list, link)
+	form := func(lines []string) (*adminForm, error) {
+		changes := make([]formChange, 0, len(lines))
+		for _, change := range lines {
+			changes = append(changes, formChange{text: change, effect: true})
+		}
+		return approvalRules.form(ctx, changes, countLine(len(changes), diff.marks, unapproved), issues, list, link)
+	}
+	// Only a refusal makes a move count the rules it passes: under the choice
+	// their names still say which rule now decides.
+	built, err := form(diff.changes)
+	tried := diff.changes
+	for _, lines := range diff.shorter {
+		if err == nil {
+			break
+		}
+		if !slices.Equal(lines, tried) {
+			built, err = form(lines)
+			tried = lines
+		}
+	}
+	return built, err
 }
 
 // fallbackRows bounds the fallback line. The stored fallback rules are not
@@ -701,14 +906,27 @@ func fallbackLine(rules []*v1pb.WorkspaceApprovalSetting_Rule) (string, bool) {
 	if !catchAll {
 		unmatched = " A change no fallback rule matches needs no approval."
 	}
-	for shown := len(named); shown > 0; shown-- {
-		line := "Unmatched changes go to the fallback rules: " + strings.Join(named[:shown], ", ")
-		if rest := len(named) - shown; rest > 0 {
+	// The line with the most names that fits is built from the first rule up,
+	// and stops where the names alone pass the rows: a workspace can store any
+	// number of fallback rules.
+	names, fits := "Unmatched changes go to the fallback rules: ", ""
+	for shown, name := range named {
+		if shown > 0 {
+			names += ", "
+		}
+		if names += name; lineColumns(names) > fallbackRows*descriptionLineWidth {
+			break
+		}
+		line := names
+		if rest := len(named) - shown - 1; rest > 0 {
 			line += fmt.Sprintf(" and %d more", rest)
 		}
 		if line += "." + unmatched; len(wrapLine(line, descriptionLineWidth)) <= fallbackRows {
-			return line, true
+			fits = line
 		}
+	}
+	if fits != "" {
+		return fits, true
 	}
 	if len(named) == 1 {
 		return "Unmatched changes go to a fallback rule too long to name here." + unmatched, true
@@ -844,11 +1062,7 @@ func countLine(changes int, marks []string, unapproved int) string {
 			parts = append(parts, fmt.Sprintf("%s %d", kind.verb, kind.n))
 		}
 	}
-	line := parts[0]
-	if len(parts) > 1 {
-		line = strings.Join(parts[:len(parts)-1], ", ") + " and " + parts[len(parts)-1]
-	}
-	line = capitalize(line) + ", listed under " + confirmChoiceTitle
+	line := capitalize(andList(parts)) + ", listed under " + confirmChoiceTitle
 	switch unapproved {
 	case 0:
 		return line + "."
@@ -1096,6 +1310,18 @@ func wrapLine(line string, width int) []string {
 	var rows []string
 	runes := []rune(line)
 	prefix := ""
+	// The loop below measures the rest of the line again for every row. A line
+	// of more rows than descriptionLines is in no form, only counted, so it is
+	// filled in one pass, which gives the same count.
+	if first := filledRunes(runes, width); first < len(runes) && 1+filledRows(runes[first:], width) > descriptionLines {
+		for len(runes) > 0 {
+			n := filledRunes(runes, width-lineColumns(prefix))
+			rows = append(rows, prefix+string(runes[:n]))
+			runes = runes[n:]
+			prefix = continuedLine
+		}
+		return rows
+	}
 	for lineColumns(prefix+string(runes)) > width {
 		full := filledRunes(runes, width-lineColumns(prefix))
 		rest := filledRows(runes[full:], width)
@@ -1117,11 +1343,13 @@ func wrapLine(line string, width int) []string {
 }
 
 // filledRunes returns how many of runes fit in columns, and at least one, so a
-// row always takes some.
+// row always takes some. A combining mark takes no column, so it stays on the
+// row of the character it marks.
 func filledRunes(runes []rune, columns int) int {
-	n := min(columns, len(runes))
-	for n > 1 && lineColumns(string(runes[:n])) > columns {
-		n--
+	n, used := 0, 0
+	for n < len(runes) && used+charColumns(runes[n]) <= columns {
+		used += charColumns(runes[n])
+		n++
 	}
 	return max(n, min(1, len(runes)))
 }

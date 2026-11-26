@@ -14,6 +14,7 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/text/unicode/norm"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
@@ -1083,6 +1084,30 @@ func TestGrantMaskingExemptionCountsTheReasonBesideItsColumns(t *testing.T) {
 	require.Positive(t, alone, "the sweep must reach a grant whose message names its columns")
 	require.Positive(t, formed)
 	require.Positive(t, refused)
+}
+
+// A reason takes the rows of its display columns: the same French text fits
+// beside eight rows of columns with its accents precomposed or as marks.
+func TestGrantMaskingExemptionCountsAReasonByItsDisplayColumns(t *testing.T) {
+	ctx := withUserEmail(context.Background(), "alice@example.com")
+	composed := norm.NFC.String("Accès demandé par l'équipe financière pour vérifier les données de paie agrégées à la clôture du T4, validé côté conformité")
+	require.Equal(t, 123, lineColumns(composed))
+	input := GrantMaskingExemptionInput{
+		Project: "projects/hr", Member: "user:bob@example.com", Database: "instances/prod-payments-us-east-1/databases/payments_ledger_prod",
+		Table: "salary", Columns: make([]string, 39),
+	}
+	for i := range input.Columns {
+		input.Columns[i] = fmt.Sprintf("column_%02d", i)
+	}
+	for name, reason := range map[string]string{"precomposed": composed, "as marks": norm.NFD.String(composed)} {
+		input.Reason = reason
+		g, err := parseExemptionGrant(input)
+		require.NoError(t, err)
+		form, tooLong, _ := describeExemptionGrant(ctx, g)
+		require.Empty(t, tooLong, name)
+		require.Len(t, form.columns, exemptionColumnRows)
+		require.Len(t, form.reason, descriptionLines-exemptionColumnRows, name)
+	}
 }
 
 func TestGrantMaskingExemptionShowsTheReasonUnderTheChoice(t *testing.T) {

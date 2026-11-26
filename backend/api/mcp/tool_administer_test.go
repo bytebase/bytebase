@@ -7,7 +7,10 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
+	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -18,6 +21,7 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/text/unicode/norm"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -614,6 +618,94 @@ func TestAdministerWorkspaceBoundsTheFallbackLine(t *testing.T) {
 	require.Contains(t, form.description, `1. "Prod" (new), "Workspace DBA"`)
 }
 
+// fallbackLineBefore is the fallback line as it was first built: every rule
+// named, then one fewer, until the line fit its rows.
+func fallbackLineBefore(rules []*v1pb.WorkspaceApprovalSetting_Rule) (string, bool) {
+	var named []string
+	catchAll := false
+	for _, rule := range rules {
+		condition := rule.GetCondition().GetExpression()
+		if condition == "" {
+			continue
+		}
+		text := fmt.Sprintf("%s (%s)", ruleTitle(rule), approvers(rule))
+		if condition == "true" {
+			catchAll = true
+		} else {
+			text += " when " + conditionText(condition)
+		}
+		named = append(named, text)
+	}
+	if len(named) == 0 {
+		return "A change no rule matches needs no approval.", false
+	}
+	unmatched := ""
+	if !catchAll {
+		unmatched = " A change no fallback rule matches needs no approval."
+	}
+	for shown := len(named); shown > 0; shown-- {
+		line := "Unmatched changes go to the fallback rules: " + strings.Join(named[:shown], ", ")
+		if rest := len(named) - shown; rest > 0 {
+			line += fmt.Sprintf(" and %d more", rest)
+		}
+		if line += "." + unmatched; len(wrapLine(line, descriptionLineWidth)) <= fallbackRows {
+			return line, true
+		}
+	}
+	if len(named) == 1 {
+		return "Unmatched changes go to a fallback rule too long to name here." + unmatched, true
+	}
+	return fmt.Sprintf("Unmatched changes go to %d fallback rules too long to name here.", len(named)) + unmatched, true
+}
+
+// The line is built from its first rule up and stops once its rows are full,
+// whatever the workspace stores. It names the same rules as trying every rule
+// and then one fewer did.
+func TestFallbackLineStopsOnceItsRowsAreFull(t *testing.T) {
+	random := rand.New(rand.NewPCG(22234, 2))
+	conditions := []string{"", "true", `resource.project_id == "hr"`, `resource.environment_id == "prod" && resource.project_id == "payments-platform"`}
+	flows := [][]string{nil, {"roles/projectOwner"}, {"roles/projectOwner", "roles/workspaceDBA"}}
+	counted, cut := 0, 0
+	for range 2000 {
+		var rules []*v1pb.WorkspaceApprovalSetting_Rule
+		for i := range random.IntN(12) {
+			condition := conditions[random.IntN(len(conditions))]
+			if condition != "" && condition != "true" {
+				condition += fmt.Sprintf(` && resource.database_name == "%s%d"`, strings.Repeat("d", random.IntN(60)), i)
+			}
+			rules = append(rules, &v1pb.WorkspaceApprovalSetting_Rule{
+				Condition: &expr.Expr{Expression: condition},
+				Template:  &v1pb.ApprovalTemplate{Title: strings.Repeat("t", random.IntN(30)), Flow: &v1pb.ApprovalFlow{Roles: flows[random.IntN(len(flows))]}},
+			})
+		}
+		wantLine, wantMatches := fallbackLineBefore(rules)
+		line, matches := fallbackLine(rules)
+		require.Equal(t, wantLine, line)
+		require.Equal(t, wantMatches, matches)
+		switch {
+		case strings.Contains(line, "too long to name"):
+			counted++
+		case strings.Contains(line, " more."):
+			cut++
+		default:
+		}
+	}
+	require.Positive(t, counted)
+	require.Greater(t, cut, 100)
+
+	var stored []*v1pb.WorkspaceApprovalSetting_Rule
+	for i := range 200 {
+		stored = append(stored, &v1pb.WorkspaceApprovalSetting_Rule{
+			Condition: &expr.Expr{Expression: fmt.Sprintf(`resource.project_id == "project-%03d"`, i)},
+			Template:  &v1pb.ApprovalTemplate{Title: fmt.Sprintf("Fallback for project-%03d", i), Flow: &v1pb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}},
+		})
+	}
+	var line string
+	bytes := allocated(func() { line, _ = fallbackLine(stored) })
+	require.Less(t, bytes, uint64(1<<20), "the line must not be formatted with every stored rule")
+	require.True(t, strings.HasSuffix(line, " and 199 more. A change no fallback rule matches needs no approval."), line)
+}
+
 func line0(rules []*v1pb.WorkspaceApprovalSetting_Rule) string {
 	line, _ := fallbackLine(rules)
 	return line
@@ -766,13 +858,274 @@ func TestAdministerWorkspaceStatesMovedAndChangedRules(t *testing.T) {
 	stagingWithDBA := changeRule("Staging", "resource.environment_id == 'staging'", "roles/workspaceDBA")
 
 	callAdminister(t, session, administerParams(approvalBody(t, fallbackRule(), stagingWithDBA, prodRule)))
-	lines := strings.Split(user.lastParams(t).Message, "\n")
-	require.Contains(t, user.lastParams(t).Message, `Change, "Project owner" to "Workspace DBA":`)
-	require.Contains(t, user.lastParams(t).Message, "Move to rule 2: `resource.environment_id == 'prod'`")
-	require.LessOrEqual(t, len(lines), messageLines)
-	for _, line := range lines {
-		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
+	asked := user.lastParams(t)
+	// The move says what it is now behind, so the two lines need five message
+	// rows and lead the description. Staging ends with Prod's approvers, which
+	// the line reads from the request.
+	require.Equal(t, strings.Join([]string{
+		"Change the approval rules for database changes, as alice@example.com?",
+		"Change 2 rules, listed under Action.",
+		approvalRulesApply,
+	}, "\n"), asked.Message)
+	require.True(t, strings.HasPrefix(choiceDescription(t, asked), strings.Join([]string{
+		`Change, "Project owner" to "Workspace DBA":`,
+		"> `resource.environment_id == 'staging'`",
+		`Move to rule 2, "Workspace DBA", now behind 1 rule with the same`,
+		"> approvers: `resource.environment_id == 'prod'`",
+	}, "\n")+"\n"), choiceDescription(t, asked))
+}
+
+// The rule list under the choice can be cut before the rules a move touches,
+// so the move's line says who approves on each side of it: it names a passed
+// rule with other approvers and counts those with the moved rule's own. Two
+// workspaces that differ in the moved rule's approvers, or in those of the rule
+// it passes, get different forms for the same move.
+func TestAdministerWorkspaceMoveNamesTheRulesItPasses(t *testing.T) {
+	message := func(production []string, finance ...string) string {
+		kept := []*v1pb.WorkspaceApprovalSetting_Rule{
+			changeRule("Staging schema changes", `resource.environment_id == "staging" && resource.project_id == "payments-platform"`, "roles/projectOwner"),
+			changeRule("Development", `resource.environment_id == "dev"`),
+			changeRule("Reporting warehouse", `resource.project_id == "reporting-warehouse" && resource.environment_id == "prod"`, "roles/projectOwner", "roles/workspaceDBA"),
+			changeRule("Sandbox", `resource.project_id == "sandbox"`),
+		}
+		fin := changeRule("Finance", `resource.project_id == "finance"`, finance...)
+		prod := changeRule("Production", `resource.environment_id == "prod"`, production...)
+		mock := &approvalMock{}
+		mock.setStored(slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, kept, []*v1pb.WorkspaceApprovalSetting_Rule{fin, prod})...)
+		user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+		_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+		res := callAdminister(t, session, administerParams(approvalBody(t, slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, kept, []*v1pb.WorkspaceApprovalSetting_Rule{prod, fin})...)))
+		require.False(t, res.IsError, resultText(t, res))
+		asked := user.lastParams(t)
+		require.Contains(t, choiceDescription(t, asked), "... and 4 more rules, tried after these.", "the list is cut before rules 5 and 6")
+		return asked.Message
 	}
+	dba := []string{"roles/workspaceDBA"}
+	require.Equal(t, strings.Join([]string{
+		"Change the approval rules for database changes, as alice@example.com?",
+		`Move to rule 6, "Workspace DBA", now behind "Production" (no`,
+		"> approval): `resource.project_id == \"finance\"`",
+		approvalRulesApply,
+	}, "\n"), message(nil, dba...))
+	require.Contains(t, message(nil), "Move to rule 6, no approval, now behind 1 rule with the same\n> approvers:")
+	require.Contains(t, message(dba, dba...), `Move to rule 6, "Workspace DBA", now behind 1 rule with the same`)
+	require.Contains(t, message([]string{"roles/projectOwner"}, dba...), `Move to rule 6, "Workspace DBA", now behind "Production" ("Project`)
+}
+
+// Reordering changes who approves only for two rules that trade order, and one
+// of the two is always a moved rule. So for each moved rule and each side of
+// it, the line accounts for every rule it traded order with: it names those
+// with other approvers, or counts them by their approvers, and counts those
+// with its own. The trades are counted here from the rules' places.
+func TestApprovalMoveLinesNameEveryPairThatChangedOrder(t *testing.T) {
+	random := rand.New(rand.NewPCG(22234, 6))
+	flows := [][]string{nil, {"roles/projectOwner"}, {"roles/workspaceDBA"}}
+	moveLine := regexp.MustCompile(`^Move to rule (\d+), (.*?), now (.*): ` + "`")
+	title := regexp.MustCompile(`"(R\d)" \(([^()]*)\)`)
+	same := regexp.MustCompile(`(\d+)(?: rules?)? with the same approvers`)
+	group := regexp.MustCompile(`(\d+)(?: rules?)? with ("[^:,]*"|no approval)`)
+	// sides splits what follows "now" into its behind and ahead parts.
+	sides := func(text string) map[string]string {
+		behind, ahead, _ := strings.Cut(strings.TrimPrefix(text, "behind "), "ahead of ")
+		if !strings.HasPrefix(text, "behind ") {
+			behind, ahead = "", strings.TrimPrefix(text, "ahead of ")
+		}
+		return map[string]string{"behind": strings.TrimSuffix(behind, ", and "), "ahead of": ahead}
+	}
+	count := func(match []string) int {
+		if match == nil {
+			return 0
+		}
+		n, err := strconv.Atoi(match[1])
+		require.NoError(t, err)
+		return n
+	}
+	moves, both, named, counted := 0, 0, 0, 0
+	for range 400 {
+		n := 2 + random.IntN(6)
+		stored := make([]*v1pb.WorkspaceApprovalSetting_Rule, n)
+		was := map[string]int{}
+		for i := range stored {
+			stored[i] = changeRule(fmt.Sprintf("R%d", i), fmt.Sprintf("resource.environment_id == 'e%d'", i), flows[random.IntN(len(flows))]...)
+			was[stored[i].GetTemplate().GetTitle()] = i
+		}
+		requested := slices.Clone(stored)
+		random.Shuffle(n, func(i, j int) { requested[i], requested[j] = requested[j], requested[i] })
+		diff, err := diffApprovalRules(stored, requested, "")
+		require.NoError(t, err)
+		require.Len(t, diff.shorter[0], len(diff.changes))
+		require.Len(t, diff.shorter[1], len(diff.changes))
+		now := map[string]int{}
+		for i, rule := range requested {
+			now[rule.GetTemplate().GetTitle()] = i
+		}
+		for i, line := range diff.changes {
+			match := moveLine.FindStringSubmatch(line)
+			require.NotNil(t, match, line)
+			place, err := strconv.Atoi(match[1])
+			require.NoError(t, err)
+			moved := requested[place-1]
+			require.Equal(t, approvers(moved), match[2], line)
+			countedMatch := moveLine.FindStringSubmatch(diff.shorter[0][i])
+			require.NotNil(t, countedMatch, diff.shorter[0][i])
+			require.Equal(t, match[1:3], countedMatch[1:3], "both lines are for the same move")
+			moves++
+			if strings.Contains(match[3], "behind ") && strings.Contains(match[3], "ahead of ") {
+				both++
+			}
+			for side, text := range sides(match[3]) {
+				// What the places say: the rules that traded order with the
+				// moved one on this side, by whether they share its approvers.
+				var others []string
+				shared := 0
+				byApprovers := map[string]int{}
+				for _, other := range requested {
+					x, y := moved.GetTemplate().GetTitle(), other.GetTemplate().GetTitle()
+					traded := x != y && (was[x] < was[y]) != (now[x] < now[y])
+					if !traded || (side == "behind") != (now[x] > now[y]) {
+						continue
+					}
+					if slices.Equal(other.GetTemplate().GetFlow().GetRoles(), moved.GetTemplate().GetFlow().GetRoles()) {
+						shared++
+						continue
+					}
+					others = append(others, fmt.Sprintf("%q (%s)", y, approvers(other)))
+					byApprovers[approvers(other)]++
+				}
+				var names []string
+				for _, found := range title.FindAllStringSubmatch(text, -1) {
+					names = append(names, fmt.Sprintf("%q (%s)", found[1], found[2]))
+				}
+				require.Equal(t, others, names, "%s, in %q", side, line)
+				require.Equal(t, shared, count(same.FindStringSubmatch(text)), "%s, in %q", side, line)
+				named += len(names)
+
+				countedText := sides(countedMatch[3])[side]
+				require.Empty(t, title.FindAllStringSubmatch(countedText, -1), "the counted line names no rule: %q", diff.shorter[0][i])
+				require.Equal(t, shared, count(same.FindStringSubmatch(countedText)), "%s, in %q", side, diff.shorter[0][i])
+				groups := map[string]int{}
+				for _, found := range group.FindAllStringSubmatch(same.ReplaceAllString(countedText, ""), -1) {
+					groups[found[2]] += count(found)
+				}
+				if len(byApprovers) == 0 {
+					require.Empty(t, groups, diff.shorter[0][i])
+				} else {
+					require.Equal(t, byApprovers, groups, "%s, in %q", side, diff.shorter[0][i])
+				}
+				counted += len(groups)
+
+				terse := sides(moveLine.FindStringSubmatch(diff.shorter[1][i])[3])[side]
+				want := ""
+				switch total := len(others) + shared; {
+				case total == 0:
+				case len(others) == 0:
+					want = countRules(shared) + " with the same approvers"
+				case shared == 0:
+					want = countRules(total) + " with other approvers"
+				default:
+					want = fmt.Sprintf("%s, %d of them with other approvers", countRules(total), len(others))
+				}
+				require.Equal(t, want, terse, "%s, in %q", side, diff.shorter[1][i])
+			}
+		}
+		// Every rule outside the lines kept its order with every other one.
+		movedTitles := map[string]bool{}
+		for _, line := range diff.changes {
+			place, _ := strconv.Atoi(moveLine.FindStringSubmatch(line)[1])
+			movedTitles[requested[place-1].GetTemplate().GetTitle()] = true
+		}
+		for x := range was {
+			for y := range was {
+				if x != y && (was[x] < was[y]) != (now[x] < now[y]) {
+					require.True(t, movedTitles[x] || movedTitles[y], "%q and %q traded order, and neither has a line: %q", x, y, diff.changes)
+				}
+			}
+		}
+	}
+	require.Greater(t, moves, 400)
+	require.Positive(t, both, "the sweep must reach a rule that is behind one rule and ahead of another")
+	require.Greater(t, named, 400)
+	require.Greater(t, counted, 400)
+}
+
+// A move that passes many rules with other approvers has no room for their
+// names. It counts them by their approvers, so it is not refused for them.
+func TestAdministerWorkspaceCountsTheRulesAFarMovePasses(t *testing.T) {
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	flows := [][]string{nil, {"roles/projectOwner"}, {"roles/workspaceDBA"}}
+	form := func(n int, condition string) (*adminForm, *approvalRulesDiff, error) {
+		stored := []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), changeRule("Finance", condition, "roles/workspaceDBA")}
+		for i := range n - 1 {
+			stored = append(stored, changeRule(fmt.Sprintf("Payments platform schema changes %02d", i), fmt.Sprintf(`resource.project_id == "payments-%02d"`, i), flows[i%len(flows)]...))
+		}
+		requested := slices.Concat(stored[:1], stored[2:], stored[1:2])
+		diff, err := diffApprovalRules(stored, requested, "LINK")
+		require.NoError(t, err)
+		require.Len(t, diff.changes, 1)
+		form, err := approvalRulesForm(alice, diff, "", "LINK")
+		return form, diff, err
+	}
+	const finance = `resource.project_id == "finance"`
+
+	// Three rules with other approvers: their names fit under the choice.
+	listed, diff, err := form(5, finance)
+	require.NoError(t, err)
+	require.Contains(t, listed.message, "Change 1 rule, listed under Action.")
+	require.True(t, strings.HasPrefix(unwrapMessage(listed.description), diff.changes[0]+"\n"), listed.description)
+	require.True(t, strings.HasPrefix(diff.changes[0], `Move to rule 5, "Workspace DBA", now behind "Payments platform schema changes 00" (no approval), `), diff.changes[0])
+	require.Contains(t, diff.changes[0], " and 1 rule with the same approvers: `")
+
+	// Eleven rules: the names have no room in any form, and the counts do.
+	countedForm, diff, err := form(12, finance)
+	require.NoError(t, err)
+	require.Contains(t, diff.changes[0], `"Payments platform schema changes 10" ("Project owner")`, "the line with names is the first one tried")
+	require.NotContains(t, countedForm.message, "Payments platform schema changes", "the message names no passed rule")
+	require.Equal(t, "Move to rule 12, \"Workspace DBA\", now behind 11 rules: 4 with no approval, 4 with \"Project owner\", 3 with the same approvers: `"+finance+"`", diff.shorter[0][0])
+	require.Contains(t, unwrapMessage(countedForm.message), diff.shorter[0][0], "and the counted line fits the message")
+
+	// A condition that leaves the counts by approvers no room: the line only
+	// counts the rules.
+	long := strings.Repeat(`resource.project_id == "p" || `, 14) + "false"
+	terse, diff, err := form(12, long)
+	require.NoError(t, err)
+	require.Equal(t, "Move to rule 12, \"Workspace DBA\", now behind 11 rules, 8 of them with other approvers: `"+long+"`", diff.shorter[1][0])
+	require.Greater(t, len(wrapLine(diff.shorter[0][0], descriptionLineWidth)), descriptionLines-2, "the counts by approvers pass the rows the fallback line leaves")
+	require.True(t, strings.HasPrefix(unwrapMessage(terse.description), diff.shorter[1][0]+"\n"), terse.description)
+
+	// A condition too long for any form is still refused, with its shortest line.
+	_, diff, err = form(12, strings.Repeat(`resource.project_id == "p" || `, 30)+"false")
+	var refused *toolError
+	require.ErrorAs(t, err, &refused)
+	require.Equal(t, "CHANGE_TOO_LONG", refused.Code)
+	require.Contains(t, refused.Message, strconv.Quote(diff.shorter[1][0]))
+	require.Contains(t, refused.Suggestion, "make that change signed in to the Bytebase console: LINK")
+}
+
+// A move's line is short whatever the workspace stores: it stops naming rules
+// that could not fit a description, and counts at most maxApproverGroups kinds
+// of approvers apart.
+func TestApprovalMoveLineIsBoundedForAnyStoredRules(t *testing.T) {
+	roles := []string{"roles/projectOwner", "roles/workspaceDBA", "roles/workspaceAdmin", "roles/projectDeveloper", "roles/sqlEditorUser", "roles/projectReleaser", "roles/gitopsServiceAgent", "roles/projectViewer"}
+	stored := []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}
+	for i := range 400 {
+		// Every rule gets its own list of approvers.
+		flow := []string{roles[i%len(roles)], roles[(i/len(roles))%len(roles)], roles[(i/len(roles)/len(roles))%len(roles)]}
+		stored = append(stored, changeRule(fmt.Sprintf("Rule %03d", i), fmt.Sprintf(`resource.project_id == "p%03d"`, i), flow...))
+	}
+	requested := slices.Clone(stored)
+	slices.Reverse(requested[1:])
+	diff, err := diffApprovalRules(stored, requested, "")
+	require.NoError(t, err)
+	require.Len(t, diff.changes, 399)
+	longest := 0
+	for i, line := range diff.changes {
+		require.LessOrEqual(t, lineColumns(line), 2*descriptionLines*descriptionLineWidth, "the names stop where they could not fit")
+		longest = max(longest, lineColumns(diff.shorter[0][i]))
+	}
+	require.LessOrEqual(t, longest, descriptionLines*descriptionLineWidth)
+	last := len(diff.changes) - 1
+	require.Equal(t, diff.shorter[0][last], diff.changes[last], "names that stopped short are not shown as the whole list")
+	require.Equal(t, "Move to rule 400, \"Project owner\" then \"Project owner\" then \"Project owner\", now behind 399 rules with other approvers: `resource.project_id == \"p000\"`", diff.shorter[0][len(diff.shorter[0])-1])
 }
 
 func TestAdministerWorkspaceStatesEachKindOfChange(t *testing.T) {
@@ -785,6 +1138,7 @@ func TestAdministerWorkspaceStatesEachKindOfChange(t *testing.T) {
 	}
 	described := prod(func(r *v1pb.WorkspaceApprovalSetting_Rule) { r.Template.Description = "Production" })
 	dev := changeRule("Dev", "resource.environment_id != 'dev'")
+	untitled := changeRule("", "resource.environment_id == 'x'", "roles/projectOwner")
 	for name, tc := range map[string]struct {
 		stored, requested []*v1pb.WorkspaceApprovalSetting_Rule
 		want              []string
@@ -808,6 +1162,15 @@ func TestAdministerWorkspaceStatesEachKindOfChange(t *testing.T) {
 			want: []string{"Add rule 1, no approval: `resource.environment_id != 'dev'`"}},
 		"added after the kept rules": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil)}, requested: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil), dev},
 			want: []string{"Add rule 2, no approval: `resource.environment_id != 'dev'`"}},
+		"moved behind a kept rule": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil), dev}, requested: []*v1pb.WorkspaceApprovalSetting_Rule{dev, prod(nil)},
+			want: []string{"Move to rule 2, \"Workspace DBA\", now behind \"Dev\" (no approval): `resource.environment_id == 'prod'`"}},
+		"moved, with other approvers": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil), dev},
+			requested: []*v1pb.WorkspaceApprovalSetting_Rule{dev, prod(func(r *v1pb.WorkspaceApprovalSetting_Rule) { r.Template.Flow.Roles = nil })},
+			want:      []string{"Change, \"Workspace DBA\" to no approval; move to rule 2, now behind 1 rule with the same approvers: `resource.environment_id == 'prod'`"}},
+		"moved behind a rule with no title": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil), untitled}, requested: []*v1pb.WorkspaceApprovalSetting_Rule{untitled, prod(nil)},
+			want: []string{"Move to rule 2, \"Workspace DBA\", now behind rule 1 (\"Project owner\"): `resource.environment_id == 'prod'`"}},
+		"moved ahead of two kept rules": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{dev, untitled, prod(nil)}, requested: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil), dev, untitled},
+			want: []string{"Move to rule 1, \"Workspace DBA\", now ahead of \"Dev\" (no approval) and rule 3 (\"Project owner\"): `resource.environment_id == 'prod'`"}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			diff, err := diffApprovalRules(append([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, tc.stored...),
@@ -1045,25 +1408,35 @@ func TestAdministerWorkspaceMarksEveryContinuationLine(t *testing.T) {
 	}
 }
 
+// fillRows counts the rows of line when every row is filled, without
+// wrapLine's helpers.
+func fillRows(line string, width int) int {
+	rows, room := 1, width
+	for _, r := range line {
+		columns := lineColumns(string(r))
+		if columns > room {
+			rows++
+			room = width - lineColumns(continuedLine)
+		}
+		room -= columns
+	}
+	return rows
+}
+
+// allocated returns the bytes f allocates.
+func allocated(f func()) uint64 {
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	f()
+	runtime.ReadMemStats(&after)
+	return after.TotalAlloc - before.TotalAlloc
+}
+
 // A row that ends at a space must not cost a row: a long quoted value after a
 // space would leave the row before it nearly empty, and a form has four.
 func TestWrapLineNeverTakesMoreRowsThanFillingThem(t *testing.T) {
-	// fillRows counts the rows of line when every row is filled, without
-	// wrapLine's helpers.
-	fillRows := func(line string, width int) int {
-		rows, room := 1, width
-		for _, r := range line {
-			columns := lineColumns(string(r))
-			if columns > room {
-				rows++
-				room = width - lineColumns(continuedLine)
-			}
-			room -= columns
-		}
-		return rows
-	}
 	random := rand.New(rand.NewPCG(10598, 22224))
-	alphabet := []rune(`abcdefghijklmnopqrstuvwxyz0123456789"',()=&|/.-_@名前`)
+	alphabet := []rune(`abcdefghijklmnopqrstuvwxyz0123456789"',()=&|/.-_@名前` + "\u0301\u0308")
 	for range 5000 {
 		var tokens []string
 		for range 1 + random.IntN(12) {
@@ -1139,6 +1512,8 @@ func TestWrapLineKeepsEveryBreakAtASpaceThatCostNoRow(t *testing.T) {
 		now := wrapMessageLine(line)
 		require.LessOrEqual(t, len(now), len(was), line)
 		switch {
+		case len(now) > descriptionLines:
+			// No form shows such a line, and it is filled.
 		case len(now) < len(was):
 			fewer++
 		case atSpaces:
@@ -1151,6 +1526,54 @@ func TestWrapLineKeepsEveryBreakAtASpaceThatCostNoRow(t *testing.T) {
 	}
 	require.Greater(t, same, 1000)
 	require.Greater(t, fewer, 100)
+}
+
+// A line of more rows than a form's description is in no form, only counted.
+// It is filled in one pass, since the rule that picks each break measures the
+// rest of the line again for every row.
+func TestWrapLineFillsALineNoFormShows(t *testing.T) {
+	words := func(n int) string { return strings.TrimSuffix(strings.Repeat("abcde ", n), " ") }
+	shown := wrapLine(words(105), descriptionLineWidth)
+	require.Len(t, shown, descriptionLines)
+	require.Equal(t, words(11), shown[0], "a line a form can show ends its rows at spaces")
+	counted := wrapLine(words(115), descriptionLineWidth)
+	require.Len(t, counted, descriptionLines+1)
+	require.Equal(t, words(11)+" ab", counted[0], "one row more, and the rows are filled")
+
+	long := strings.Repeat("名前 e\u0301te\u0301 payments-ledger.example.com ", 4000)
+	var rows []string
+	bytes := allocated(func() { rows = wrapLine(long, descriptionLineWidth) })
+	require.Less(t, bytes, uint64(64*len(long)), "the wrap must not copy the rest of the line for every row")
+	require.Len(t, rows, fillRows(long, descriptionLineWidth))
+	var joined strings.Builder
+	for i, row := range rows {
+		require.LessOrEqual(t, lineColumns(row), descriptionLineWidth)
+		if i > 0 {
+			require.True(t, strings.HasPrefix(row, continuedLine), row)
+			row = strings.TrimPrefix(row, continuedLine)
+		}
+		joined.WriteString(row)
+	}
+	require.Equal(t, long, joined.String(), "a break leaves nothing out")
+}
+
+// A combining mark takes no column, so a text takes the same rows with its
+// accents precomposed or as marks, and no row starts with a mark.
+func TestWrapLineCountsACombiningMarkWithItsCharacter(t *testing.T) {
+	for _, repeat := range []int{4, 30} {
+		composed := norm.NFC.String(strings.Repeat("vérifié à la clôture, côté données agrégées équipe ", repeat))
+		decomposed := norm.NFD.String(composed)
+		require.Greater(t, utf8.RuneCountInString(decomposed), utf8.RuneCountInString(composed))
+		for _, width := range []int{messageLineWidth, descriptionLineWidth, 40} {
+			rows := wrapLine(decomposed, width)
+			require.Len(t, rows, len(wrapLine(composed, width)), "%d columns at %d", lineColumns(composed), width)
+			for _, row := range rows {
+				require.LessOrEqual(t, lineColumns(row), width, row)
+				first, _ := utf8.DecodeRuneInString(strings.TrimPrefix(row, continuedLine))
+				require.False(t, unicode.Is(unicode.Mn, first), "%q starts with a mark", row)
+			}
+		}
+	}
 }
 
 func TestWrapLineBreaksWhereALineReadsBest(t *testing.T) {
