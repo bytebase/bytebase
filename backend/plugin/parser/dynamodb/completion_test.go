@@ -1,4 +1,4 @@
-package partiql
+package dynamodb
 
 import (
 	"context"
