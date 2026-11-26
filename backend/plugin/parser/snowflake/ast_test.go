@@ -45,8 +45,8 @@ func TestParseSnowflakeStatementsAST(t *testing.T) {
 }
 
 // TestParseSnowflakeStatementsEmptyAndError locks the surrounding behavior:
-// empty/comment-only inputs produce no statements (omni-based SplitSQL drops
-// empty segments), and an omni parse failure fails the whole batch exactly as
+// empty/comment-only inputs produce no statements (SplitSQL keeps them marked
+// Empty, and parsing skips them), and an omni parse failure fails the whole batch exactly as
 // the legacy ANTLR parser did.
 func TestParseSnowflakeStatementsEmptyAndError(t *testing.T) {
 	// Comments and bare semicolons yield no statements and no error.

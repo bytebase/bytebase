@@ -40,22 +40,24 @@ func GetNode(a base.AST) (omniast.Node, bool) {
 }
 
 // SplitSQL splits the input into statements, each with its trailing ';'.
+// A segment holding no statement (a lone ';', a comment) is kept, marked Empty.
 func SplitSQL(statement string) ([]base.Statement, error) {
 	return base.OmniStatements(statement, analysis.SplitStatements(statement)), nil
 }
 
+// parseSnowflakeStatements parses each non-empty segment; empty ones are skipped.
 func parseSnowflakeStatements(statement string) ([]base.ParsedStatement, error) {
-	return base.ParseSegmentedStatements(statement, SplitSQL, func(stmt base.Statement) (*AST, error) {
+	return base.ParseNonEmptyMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
 		node, err := parseStatementNode(stmt.Text)
 		if err != nil {
 			return nil, convertParseError(err, stmt)
 		}
-		return &AST{
+		return []base.AST{&AST{
 			Node: node,
 			Text: stmt.Text,
 			// Keep the 1-based line-only ASTStartPosition shape expected by callers.
 			StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + 1},
-		}, nil
+		}}, nil
 	})
 }
 
