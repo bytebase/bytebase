@@ -17,6 +17,7 @@ func TestAnalyzeMaskingStatementSeam(t *testing.T) {
 		Operation:       "find",
 		Collection:      "users",
 		PredicateFields: []string{"email", "name"},
+		Reads:           []base.MongoDBNamespace{{Collection: "users"}},
 	}, got)
 
 	// OpFindOne -> MongoDBMaskableAPIFindOne.
@@ -27,6 +28,7 @@ func TestAnalyzeMaskingStatementSeam(t *testing.T) {
 		Operation:       "findOne",
 		Collection:      "users",
 		PredicateFields: []string{"contact.phone"},
+		Reads:           []base.MongoDBNamespace{{Collection: "users"}},
 	}, got)
 
 	// OpAggregate with $lookup -> JoinedCollections conversion.
@@ -39,6 +41,7 @@ func TestAnalyzeMaskingStatementSeam(t *testing.T) {
 		JoinedCollections: []base.MongoDBJoinedCollection{
 			{Collection: "orders", AsField: "orders"},
 		},
+		Reads: []base.MongoDBNamespace{{Collection: "users"}, {Collection: "orders"}},
 	}, got)
 
 	// OpAggregate with unsupported stage -> MongoDBMaskableAPIUnsupportedRead.
@@ -49,6 +52,7 @@ func TestAnalyzeMaskingStatementSeam(t *testing.T) {
 		Operation:        "aggregate",
 		Collection:       "users",
 		UnsupportedStage: "$group",
+		Reads:            []base.MongoDBNamespace{{Collection: "users"}},
 	}, got)
 
 	// Other read op -> MongoDBMaskableAPIUnsupportedRead.

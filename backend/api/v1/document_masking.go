@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
+	metadatapb "github.com/bytebase/omni/metadata"
+	mongoanalysis "github.com/bytebase/omni/mongo/analysis"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -78,11 +80,19 @@ func preExecuteMaskingCheckMongoDB(
 	database *store.DatabaseMessage,
 	spans []*parserbase.QuerySpan,
 ) error {
+	databases := newMongoDBDatabases(ctx, stores, database)
 	for _, span := range spans {
 		if span.MongoDBAnalysis == nil {
 			continue
 		}
 		analysis := span.MongoDBAnalysis
+		if err := databases.checkReads(analysis); err != nil {
+			var refusal *errMongoDBUncoveredRead
+			if errors.As(err, &refusal) {
+				return connect.NewError(connect.CodeInvalidArgument, err)
+			}
+			return connect.NewError(connect.CodeInternal, err)
+		}
 		if analysis.Collection == "" {
 			continue
 		}
@@ -97,6 +107,140 @@ func preExecuteMaskingCheckMongoDB(
 
 		if err := checkMongoDBRequestBlocked(analysis); err != nil {
 			return connect.NewError(connect.CodeInvalidArgument, err)
+		}
+	}
+	return nil
+}
+
+// mongoDBDatabases reads, per database of the instance, the views a sync
+// stored and the collections that have masking, for the reads of a statement.
+type mongoDBDatabases struct {
+	current string
+	load    func(database string) (*metadatapb.DatabaseSchemaMetadata, *storepb.DatabaseConfig, error)
+	loaded  map[string]*mongoDBDatabase
+}
+
+type mongoDBDatabase struct {
+	views  map[string]string
+	masked map[string]bool
+}
+
+func newMongoDBDatabases(ctx context.Context, stores *store.Store, database *store.DatabaseMessage) *mongoDBDatabases {
+	return &mongoDBDatabases{
+		current: database.DatabaseName,
+		load: func(name string) (*metadatapb.DatabaseSchemaMetadata, *storepb.DatabaseConfig, error) {
+			dbSchema, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+				Workspace:    common.GetWorkspaceIDFromContext(ctx),
+				InstanceID:   database.InstanceID,
+				DatabaseName: name,
+			})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to get database schema: %q", name)
+			}
+			if dbSchema == nil {
+				return nil, nil, nil
+			}
+			return dbSchema.GetProto(), dbSchema.GetConfig(), nil
+		},
+		loaded: map[string]*mongoDBDatabase{},
+	}
+}
+
+func (d *mongoDBDatabases) get(name string) (*mongoDBDatabase, error) {
+	if db, ok := d.loaded[name]; ok {
+		return db, nil
+	}
+	metadata, config, err := d.load(name)
+	if err != nil {
+		return nil, err
+	}
+	db := &mongoDBDatabase{views: map[string]string{}, masked: map[string]bool{}}
+	for _, schema := range metadata.GetSchemas() {
+		for _, view := range schema.GetViews() {
+			db.views[view.GetName()] = view.GetDefinition()
+		}
+	}
+	for _, schema := range config.GetSchemas() {
+		for _, table := range schema.GetTables() {
+			if objectSchemaHasSemanticTypes(table.GetObjectSchema()) {
+				db.masked[table.GetName()] = true
+			}
+		}
+	}
+	d.loaded[name] = db
+	return db, nil
+}
+
+// namespace names ns by its database, the one the statement runs in for "".
+func (d *mongoDBDatabases) namespace(ns mongoanalysis.Namespace) mongoanalysis.Namespace {
+	if ns.Database == "" {
+		ns.Database = d.current
+	}
+	return ns
+}
+
+// errMongoDBUncoveredRead reports a read of a masked collection whose
+// documents masking cannot place in the result.
+type errMongoDBUncoveredRead struct {
+	read mongoanalysis.Namespace
+}
+
+func (e *errMongoDBUncoveredRead) Error() string {
+	return fmt.Sprintf("the query reads collection %q of database %q, which has data masking, through a view, another database, $unionWith, $facet, a $lookup pipeline or a $lookup whose \"as\" is a dotted path; MongoDB dynamic masking supports reading it directly or joining it by localField and foreignField", e.read.Collection, e.read.Database)
+}
+
+// checkReads refuses a read whose result may carry documents of a masked
+// collection that masking does not cover. find(), findOne() and a
+// shape-preserving aggregate() mask their collection, and an aggregate masks
+// the documents each $lookup or $graphLookup with a plain "as" joins by its
+// collection's schema. Any other read of a masked collection is refused: one
+// through a view, in another database, by $unionWith, $facet or a $lookup
+// pipeline, or by an operation masking does not cover.
+func (d *mongoDBDatabases) checkReads(analysis *parserbase.MongoDBAnalysis) error {
+	covered := map[mongoanalysis.Namespace]int{}
+	switch analysis.API {
+	case parserbase.MongoDBMaskableAPIFind, parserbase.MongoDBMaskableAPIFindOne, parserbase.MongoDBMaskableAPIAggregate:
+		covered[d.namespace(mongoanalysis.Namespace{Collection: analysis.Collection})]++
+		for _, join := range analysis.JoinedCollections {
+			if !strings.Contains(join.AsField, ".") {
+				covered[d.namespace(mongoanalysis.Namespace{Collection: join.Collection})]++
+			}
+		}
+	default:
+	}
+	for _, read := range analysis.Reads {
+		read := d.namespace(mongoanalysis.Namespace{Database: read.Database, Collection: read.Collection})
+		var loadErr error
+		expanded, err := mongoanalysis.ExpandViews([]mongoanalysis.Namespace{read}, func(ns mongoanalysis.Namespace) (string, bool) {
+			db, err := d.get(ns.Database)
+			if err != nil {
+				loadErr = err
+				return "", false
+			}
+			definition, ok := db.views[ns.Collection]
+			return definition, ok
+		})
+		if loadErr != nil {
+			return loadErr
+		}
+		if err != nil {
+			return &errMongoDBUncoveredRead{read: read}
+		}
+		for i, ns := range expanded {
+			db, err := d.get(ns.Database)
+			if err != nil {
+				return err
+			}
+			if !db.masked[ns.Collection] {
+				continue
+			}
+			// The read itself is covered once per place masking puts it; what
+			// a view reads is never covered, since a view has no schema.
+			if i == 0 && covered[ns] > 0 {
+				covered[ns]--
+				continue
+			}
+			return &errMongoDBUncoveredRead{read: ns}
 		}
 	}
 	return nil
@@ -152,10 +296,15 @@ func checkSensitivePredicates(
 	var err error
 
 	if analysis := span.MongoDBAnalysis; analysis != nil && analysis.Collection != "" {
-		objectSchema, err = getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+		source, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to get object schema for collection %q", analysis.Collection)
 		}
+		result, err := getMongoDBResultSchema(ctx, stores, database, analysis)
+		if err != nil {
+			return "", err
+		}
+		return mongoDBPredicateRefusal(span, source, result), nil
 	} else if analysis := span.ElasticsearchAnalysis; analysis != nil && analysis.Index != "" {
 		objectSchema, err = getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Index)
 		if err != nil {
@@ -163,17 +312,33 @@ func checkSensitivePredicates(
 		}
 	}
 
-	if objectSchema == nil {
-		return "", nil
-	}
+	return predicateRefusal(span, objectSchema), nil
+}
 
+// mongoDBPredicateRefusal checks a read's predicates against its collection's
+// schema and against its result's: a $match before a $lookup reads the source
+// fields, which the join's "as" may then overwrite, and one after it reads the
+// joined fields.
+func mongoDBPredicateRefusal(span *parserbase.QuerySpan, source, result *storepb.ObjectSchema) string {
+	if refusal := predicateRefusal(span, source); refusal != "" {
+		return refusal
+	}
+	return predicateRefusal(span, result)
+}
+
+// predicateRefusal returns the refusal for a span whose predicates use a field
+// the schema tags with a semantic type, or "" if none does.
+func predicateRefusal(span *parserbase.QuerySpan, objectSchema *storepb.ObjectSchema) string {
+	if objectSchema == nil {
+		return ""
+	}
 	for pathStr := range span.PredicatePaths {
 		semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
 		if semanticType != "" {
-			return fmt.Sprintf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType), nil
+			return fmt.Sprintf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType)
 		}
 	}
-	return "", nil
+	return ""
 }
 
 func getFirstSemanticTypeInPath(ast *parserbase.PathAST, objectSchema *storepb.ObjectSchema) string {
@@ -742,24 +907,12 @@ func (*mongoDBMasker) maskResults(
 			continue
 		}
 
-		objectSchema, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+		objectSchema, err := getMongoDBResultSchema(ctx, stores, database, analysis)
 		if err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get object schema for collection %q", analysis.Collection))
+			return connect.NewError(connect.CodeInternal, err)
 		}
 		if objectSchema == nil {
 			continue
-		}
-
-		if len(analysis.JoinedCollections) > 0 {
-			var joined []joinedSchema
-			for _, jc := range analysis.JoinedCollections {
-				js, jsErr := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, jc.Collection)
-				if jsErr != nil {
-					return connect.NewError(connect.CodeInternal, errors.Wrapf(jsErr, "failed to get object schema for joined collection %q", jc.Collection))
-				}
-				joined = append(joined, joinedSchema{asField: jc.AsField, schema: js})
-			}
-			objectSchema = injectJoinedSchemas(objectSchema, joined)
 		}
 
 		for _, row := range result.Rows {
@@ -803,22 +956,43 @@ func checkMongoDBRequestBlocked(analysis *parserbase.MongoDBAnalysis) error {
 	return nil
 }
 
+// getMongoDBResultSchema returns the schema a read's result documents are
+// masked by: its collection's, with each joined collection's schema at the
+// field its $lookup or $graphLookup writes. It is nil when none of them has a
+// schema.
+func getMongoDBResultSchema(ctx context.Context, stores *store.Store, database *store.DatabaseMessage, analysis *parserbase.MongoDBAnalysis) (*storepb.ObjectSchema, error) {
+	objectSchema, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get object schema for collection %q", analysis.Collection)
+	}
+	var joined []joinedSchema
+	for _, jc := range analysis.JoinedCollections {
+		js, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, jc.Collection)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get object schema for joined collection %q", jc.Collection)
+		}
+		if js != nil {
+			joined = append(joined, joinedSchema{asField: jc.AsField, schema: js})
+		}
+	}
+	return injectJoinedSchemas(objectSchema, joined), nil
+}
+
 // injectJoinedSchemas adds array-of-objects schemas for each $lookup/$graphLookup join
 // into the source objectSchema so masking covers the joined field.
 // The as field holds an array of joined documents, so the injected schema is ARRAY{item: joinedSchema}.
-// If the source schema has no StructKind or the joined collection has no schema, the join is skipped silently.
+// A source collection with no schema starts from an empty one, so its joins are
+// still masked; one whose whole document has a semantic type is masked whole.
+// A joined collection with no schema is skipped.
 func injectJoinedSchemas(objectSchema *storepb.ObjectSchema, joins []joinedSchema) *storepb.ObjectSchema {
-	if objectSchema == nil || len(joins) == 0 {
-		return objectSchema
-	}
-	structKind := objectSchema.GetStructKind()
-	if structKind == nil {
+	if len(joins) == 0 || objectSchema.GetSemanticType() != "" {
 		return objectSchema
 	}
 
 	// Clone properties map so we don't mutate the cached schema.
-	props := make(map[string]*storepb.ObjectSchema, len(structKind.Properties)+len(joins))
-	maps.Copy(props, structKind.Properties)
+	properties := objectSchema.GetStructKind().GetProperties()
+	props := make(map[string]*storepb.ObjectSchema, len(properties)+len(joins))
+	maps.Copy(props, properties)
 	for _, j := range joins {
 		if j.schema == nil {
 			continue
@@ -955,12 +1129,17 @@ func (*elasticsearchMasker) maskResults(
 	return nil
 }
 
-// lookupSemanticTypeByDotPath splits a dot-delimited field path and walks the ObjectSchema
-// to find the semantic type at the leaf.
+// lookupSemanticTypeByDotPath splits a dot-delimited field path and walks the ObjectSchema,
+// through the items of arrays, to find the semantic type at the leaf.
 func lookupSemanticTypeByDotPath(dotPath string, objectSchema *storepb.ObjectSchema) string {
 	parts := strings.Split(dotPath, ".")
 	current := objectSchema
 	for _, part := range parts {
+		// A dotted path reaches into the documents of an array, as a
+		// $lookup's joined field holds them.
+		for current != nil && current.SemanticType == "" && current.GetArrayKind() != nil {
+			current = current.GetArrayKind().GetKind()
+		}
 		if current == nil {
 			return ""
 		}
@@ -980,6 +1159,10 @@ func lookupSemanticTypeByDotPath(dotPath string, objectSchema *storepb.ObjectSch
 			return ""
 		}
 		current = child
+	}
+	// A condition on an array field matches its items too.
+	for current != nil && current.SemanticType == "" && current.GetArrayKind() != nil {
+		current = current.GetArrayKind().GetKind()
 	}
 	if current != nil {
 		return current.SemanticType
