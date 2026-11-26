@@ -59,6 +59,13 @@ describe("SplashLayout", () => {
     expect(rightColumn).toHaveClass("lg:w-1/2", "lg:flex-none");
   });
 
+  test("keeps the setup wizard's panel in view, one window tall, while the page scrolls", () => {
+    const { container } = renderLayout(AUTH_SETUP_MODULE);
+
+    const [leftColumn] = container.firstElementChild?.children ?? [];
+    expect(leftColumn).toHaveClass("lg:sticky", "lg:top-0", "lg:h-dvh");
+  });
+
   test.each([
     { route: AUTH_SIGNIN_MODULE, wide: true, aligned: "centered" },
     { route: AUTH_SETUP_MODULE, wide: true, aligned: "top" },

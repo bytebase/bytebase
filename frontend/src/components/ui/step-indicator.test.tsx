@@ -133,6 +133,27 @@ describe("StepIndicator", () => {
       });
     });
 
+    test("measures the same row on every step, so changing step never switches between full and compact", () => {
+      const steps = [{ title: "First" }, { title: "Second" }, { title: "Third" }];
+      const measured = (currentIndex: number) => {
+        const { container, unmount } = renderIntoContainer(
+          <StepIndicator fitOneRow currentIndex={currentIndex} steps={steps} />
+        );
+        // The out-of-sight row whose width decides the mode.
+        const titles = [
+          ...container.querySelectorAll('ol[aria-hidden="true"] li span'),
+        ].map((title) => ({
+          text: title.textContent,
+          bold: title.classList.contains("font-medium"),
+        }));
+        unmount();
+        return titles;
+      };
+
+      expect(measured(0)).toEqual(measured(2));
+      expect(measured(1).every(({ bold }) => bold)).toBe(true);
+    });
+
     test("keeps every title in sight when the steps fit one row", () => {
       withWidths(500, 600, () => {
         const { container, unmount } = renderIntoContainer(
