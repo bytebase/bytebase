@@ -67,9 +67,7 @@ type ParseStatementsFunc func(statement string) ([]ParsedStatement, error)
 type GetStatementTypesFunc func([]AST) ([]storepb.StatementType, error)
 
 // Engine defines the parser capabilities an engine plugin registers.
-// Any nil field is omitted. Separate Register calls may supply disjoint
-// capabilities for the same engine (for example, googlesql registers shared
-// capabilities while bigquery and spanner add ResultLimit).
+// Any nil field is omitted.
 type Engine struct {
 	Split                SplitMultiSQLFunc
 	Parse                ParseStatementsFunc
