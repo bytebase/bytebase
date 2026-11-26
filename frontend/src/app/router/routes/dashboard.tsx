@@ -89,6 +89,11 @@ import { sqlReviewV2Enabled } from "@/utils/featureGates";
 // Workspace and project routes nested under the dashboard layouts. Leaf route
 // modules are lazy-loaded from their owner under src/routes.
 
+// Whether SQL Review V2 is on comes from the server info, which the route table
+// is built before, so its V1 pages decide when they are opened.
+const leaveSQLReviewV1Page = () =>
+  sqlReviewV2Enabled() ? redirect("/sql-review") : null;
+
 // Workspace-level pages (the BodyLayout children).
 const workspaceLevelRoutes: RouteObject[] = [
   {
@@ -197,38 +202,36 @@ const workspaceLevelRoutes: RouteObject[] = [
           (m) => m.SQLReviewPage
         ),
       },
-      // The v1 review policy pages go away with SQL Review V2.
-      ...(sqlReviewV2Enabled()
-        ? []
-        : [
-            {
-              path: "new",
-              handle: {
-                name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
-                requiredPermissionList: (): Permission[] => [
-                  "bb.reviewConfigs.create",
-                ],
-              },
-              lazy: lazyPage(
-                () => import("@/routes/workspace/SQLReviewCreatePage"),
-                (m) => m.SQLReviewCreatePage
-              ),
-            },
-            {
-              path: ":sqlReviewPolicySlug",
-              handle: {
-                name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-                requiredPermissionList: (): Permission[] => [
-                  "bb.reviewConfigs.get",
-                  "bb.policies.get",
-                ],
-              },
-              lazy: lazyPage(
-                () => import("@/routes/workspace/SQLReviewDetailPage"),
-                (m) => m.SQLReviewDetailPage
-              ),
-            },
-          ]),
+      // The v1 review policy pages, which SQL Review V2 replaces.
+      {
+        path: "new",
+        handle: {
+          name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
+          requiredPermissionList: (): Permission[] => [
+            "bb.reviewConfigs.create",
+          ],
+        },
+        loader: leaveSQLReviewV1Page,
+        lazy: lazyPage(
+          () => import("@/routes/workspace/SQLReviewCreatePage"),
+          (m) => m.SQLReviewCreatePage
+        ),
+      },
+      {
+        path: ":sqlReviewPolicySlug",
+        handle: {
+          name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+          requiredPermissionList: (): Permission[] => [
+            "bb.reviewConfigs.get",
+            "bb.policies.get",
+          ],
+        },
+        loader: leaveSQLReviewV1Page,
+        lazy: lazyPage(
+          () => import("@/routes/workspace/SQLReviewDetailPage"),
+          (m) => m.SQLReviewDetailPage
+        ),
+      },
     ],
   },
   // /idps — SettingRouteShell layout. The parent carries the route permission

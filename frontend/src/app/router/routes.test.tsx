@@ -7,6 +7,7 @@ import {
   WORKSPACE_ROUTE_404,
   WORKSPACE_ROUTE_MCP,
 } from "@/app/router/handles";
+import { setDevSqlReviewVersion } from "@/utils/featureGates";
 import { buildReactRoute } from "./index";
 import { routes } from "./routes";
 import { sqlEditorRoutes } from "./routes/sqlEditor";
@@ -84,6 +85,24 @@ describe("workspace root", () => {
 
     expect(leaf).toBeDefined();
     expect(typeof leaf?.loader).toBe("function");
+  });
+});
+
+describe("SQL review V1 pages", () => {
+  it.each([
+    "/sql-review/new",
+    "/sql-review/a-policy",
+  ])("%s sends SQL Review V2 to the SQL review page", (path) => {
+    const leaf = matchRoutes(routes, path)?.at(-1)?.route;
+    const leave = leaf?.loader as () => Response | null;
+
+    expect(leave()?.headers.get("Location")).toBe("/sql-review");
+    setDevSqlReviewVersion("v1");
+    try {
+      expect(leave()).toBeNull();
+    } finally {
+      setDevSqlReviewVersion("v2");
+    }
   });
 });
 

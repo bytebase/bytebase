@@ -13,7 +13,8 @@ type Profile struct {
 	// Mode can be "prod" or "dev"
 	Mode common.ReleaseMode
 	// SQLReviewV2 replaces the plan check's SQL review (V1) with the review
-	// runs (V2). Only a dev build turns it on.
+	// runs (V2). Bytebase Cloud and dev builds turn it on; a self-hosted
+	// release build keeps V1.
 	SQLReviewV2 bool
 	// ExternalURL is the URL user visits Bytebase.
 	ExternalURL string

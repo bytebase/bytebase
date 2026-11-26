@@ -12,7 +12,8 @@ Playwright-based end-to-end tests for Bytebase. Starts a disposable Bytebase ser
    `build-server.sh` builds a dev binary, so the dev license validates, with
    dev-only product switches set to their release values: the suite tests what
    release builds ship. Today that switch is SQL review V2, which a plain dev
-   build turns on; the suite covers SQL review V1.
+   build turns on and a release build turns on only for Bytebase Cloud
+   (`--saas`); the suite boots a self-hosted server, so it covers SQL review V1.
 
 2. **`psql` client** on PATH — required for DDL setup (the Bytebase query API is read-only; tests connect directly to the sample Postgres via Unix socket).
 
