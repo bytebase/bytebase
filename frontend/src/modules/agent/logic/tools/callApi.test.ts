@@ -116,6 +116,46 @@ const getRequestBody = (): unknown => {
 };
 
 describe("callApi", () => {
+  test.each([
+    { status: 200, body: { results: [] }, kind: "response" },
+    {
+      status: 403,
+      body: { code: "permission_denied", message: "Denied" },
+      kind: "error",
+    },
+  ])(
+    "timestamps a known Query $kind at dispatch after preflight",
+    async ({ status, body, kind }) => {
+      let now = 1_000;
+      const clock = vi.spyOn(Date, "now").mockImplementation(() => now);
+      const sink = vi.fn();
+      mocks.fetch.mockImplementation(async () => {
+        now = 3_000;
+        return createResponse({ status, body });
+      });
+      try {
+        await dispatchPreparedApiCall(
+          {
+            operationId: "bytebase.v1.SQLService.Query",
+            path: "/bytebase.v1.SQLService/Query",
+            body: "{}",
+          },
+          {
+            validateBeforeSend: async () => {
+              now = 2_000;
+              return true;
+            },
+            onQueryObservation: sink,
+          }
+        );
+        expect(sink).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({ kind, beginTimestampMS: 2_000 })
+        );
+      } finally {
+        clock.mockRestore();
+      }
+    }
+  );
   test("publishes the single typed native Query observation even when native rendering fails", async () => {
     const sink = vi.fn(() => {
       throw Error("stale native view");

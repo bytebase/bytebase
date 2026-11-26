@@ -8,8 +8,8 @@ import { getSQLEditorTabsState } from "../store/tab";
 import { sqlEditorEvents } from "./events";
 
 export type AgentSqlQueryObservation =
-  | { kind: "response"; response: QueryResponse }
-  | { kind: "error"; error: ConnectError }
+  | { kind: "response"; response: QueryResponse; beginTimestampMS: number }
+  | { kind: "error"; error: ConnectError; beginTimestampMS: number }
   | { kind: "uncertain" };
 
 export function captureAgentQueryResultTarget(
@@ -53,6 +53,7 @@ export function captureAgentQueryResultTarget(
         id: uuidv4(),
         params,
         status: "DONE",
+        beginTimestampMS: observation.beginTimestampMS,
         resultSet:
           observation.kind === "response"
             ? queryResultSet(observation.response)

@@ -47,14 +47,20 @@ test("publishes the full typed result and masking and access-grant metadata once
       },
     ],
   });
-  expect(publish(params, { kind: "response", response })).toBe(true);
-  expect(publish(params, { kind: "response", response })).toBe(false);
+  const observation = {
+    kind: "response" as const,
+    response,
+    beginTimestampMS: 1_000,
+  };
+  expect(publish(params, observation)).toBe(true);
+  expect(publish(params, observation)).toBe(false);
   const results = getSQLEditorTabsState()
     .tabsById.get(tab.id)
     ?.databaseQueryContexts?.get(database);
   expect(results).toHaveLength(1);
   expect(results![0]).toMatchObject({
     status: "DONE",
+    beginTimestampMS: 1_000,
     params,
     resultSet: {
       error: "",
@@ -78,6 +84,7 @@ test("a known RPC error uses native status; uncertainty, newer results and anoth
   const error = {
     kind: "error" as const,
     error: new ConnectError("Denied", Code.PermissionDenied),
+    beginTimestampMS: 2_000,
   };
   expect(publish(params, error)).toBe(true);
   expect(old(params, error)).toBe(false);
@@ -90,4 +97,30 @@ test("a known RPC error uses native status; uncertainty, newer results and anoth
   useSQLEditorTabsStore.setState({ currentTabId: "another-tab" });
   expect(newer(params, error)).toBe(false);
   expect(merge).toHaveBeenCalledTimes(1);
+});
+test("retained results keep their request-start timestamps when a later query completes", () => {
+  const { tab, publish } = setup();
+  const clock = vi.spyOn(Date, "now").mockReturnValue(3_000);
+  expect(
+    publish(params, {
+      kind: "response",
+      response: create(QueryResponseSchema),
+      beginTimestampMS: 1_000,
+    })
+  ).toBe(true);
+  const next = captureAgentQueryResultTarget(tab.id, database, project)!;
+  clock.mockReturnValue(6_000);
+  expect(
+    next(params, {
+      kind: "error",
+      error: new ConnectError("Denied", Code.PermissionDenied),
+      beginTimestampMS: 4_000,
+    })
+  ).toBe(true);
+  const results = getSQLEditorTabsState()
+    .tabsById.get(tab.id)!
+    .databaseQueryContexts!.get(database)!;
+  expect(results.map((result) => result.beginTimestampMS)).toEqual([
+    4_000, 1_000,
+  ]);
 });

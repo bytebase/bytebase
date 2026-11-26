@@ -558,6 +558,7 @@ async function sendPreparedApiCall(
     fetchApi({ path: call.path, body: call.body, signal: controller.signal });
   let result: ObservedApiResponse;
 
+  const beginTimestampMS = Date.now();
   try {
     result = await send();
     if (
@@ -610,6 +611,7 @@ async function sendPreparedApiCall(
       ) {
         onQueryObservation({
           kind: "response",
+          beginTimestampMS,
           response: fromJsonString(QueryResponseSchema, observed.body, {
             registry: protobufJsonRegistry,
           }),
@@ -620,7 +622,9 @@ async function sendPreparedApiCall(
       ) {
         const error = parseAgentRpcError(observed.body, observed.status);
         onQueryObservation(
-          error ? { kind: "error", error } : { kind: "uncertain" }
+          error
+            ? { kind: "error", error, beginTimestampMS }
+            : { kind: "uncertain" }
         );
       } else onQueryObservation({ kind: "uncertain" });
     } catch {
