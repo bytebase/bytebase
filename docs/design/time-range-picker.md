@@ -58,8 +58,9 @@ consumer of the range: the issue filter, the plan filter, Audit Log and Access G
 added later without changing the UI.
 
 **D5 · To defaults to the end of the day.** A picked To day gets 23:59 and is sent as the last
-millisecond of that day. Any other typed time is exact to the minute. The filter formats bounds to
-the second, so the final fraction of a second of the day stays outside the range.
+millisecond of that day. Any other typed time is exact to the minute. The filter preserves
+milliseconds, so the upper bound includes timestamps through `23:59:59.999`; only the last sub-millisecond of the
+day stays outside the range.
 
 **D6 · Time of day is typed and optional.** Each end has a 24-hour text field: `9`, `930` and
 `9:30` all read as 09:30. An unreadable time is reported when the field loses focus and blocks
