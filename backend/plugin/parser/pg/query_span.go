@@ -101,11 +101,11 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 
 	stmts := make([]analysis.ChangeStatement, 0, len(asts))
 	for _, unifiedAST := range asts {
-		wrapped, ok := unifiedAST.(*AST)
+		node, ok := GetNode(unifiedAST)
 		if !ok {
 			return nil, errors.New("expected AST for PostgreSQL")
 		}
-		stmts = append(stmts, analysis.ChangeStatement{Node: wrapped.Node, Text: wrapped.Text})
+		stmts = append(stmts, analysis.ChangeStatement{Node: node, Text: base.ASTSource(unifiedAST)})
 	}
 	changes := analysis.ExtractChangedResources(stmts, database, searchPath, &changeMetadata{database: dbMetadata})
 

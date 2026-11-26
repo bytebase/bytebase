@@ -176,9 +176,9 @@ func TestWalkThroughCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
 	sm := sheet.NewManager()
 	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
 	asts := base.ExtractASTs(stmts)
-	node, ok := asts[0].(*mysqlparser.AST)
+	node, ok := mysqlparser.GetNode(asts[0])
 	require.True(t, ok)
-	createTable, ok := node.Node.(*omniast.CreateTableStmt)
+	createTable, ok := node.(*omniast.CreateTableStmt)
 	require.True(t, ok)
 	require.True(t, createTable.IfNotExists)
 

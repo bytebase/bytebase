@@ -19,7 +19,7 @@ func TestDiagnoseSeam(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, diags)
 
-	_, err = parseTrinoSQL("SELECT * FFROM users")
+	_, err = base.ParseStatements(storepb.Engine_TRINO, "SELECT * FFROM users")
 	var syntaxErr *base.SyntaxError
 	require.ErrorAs(t, err, &syntaxErr)
 	require.NotNil(t, syntaxErr.Position)

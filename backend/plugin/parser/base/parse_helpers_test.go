@@ -30,7 +30,7 @@ type sampleParseErr struct {
 
 func (e *sampleParseErr) Error() string { return fmt.Sprintf("parse error at %d: %s", e.pos, e.msg) }
 
-func TestParseSegmentedStatementsAndNonEmptySegments(t *testing.T) {
+func TestParseSegmentedStatements(t *testing.T) {
 	split := func(_ string) ([]Statement, error) {
 		return []Statement{
 			{Text: "SELECT 1;", Start: &storepb.Position{Line: 1, Column: 1}},
@@ -52,24 +52,14 @@ func TestParseSegmentedStatementsAndNonEmptySegments(t *testing.T) {
 	require.NotNil(t, parsed[3].AST)
 	require.Equal(t, "SELECT 2;", parsed[3].AST.(*stubNodeAST).text)
 
-	nonEmpty, err := ParseNonEmptySegments("ignored", split, parseSeg)
-	require.NoError(t, err)
-	require.Len(t, nonEmpty, 2)
-	require.Equal(t, "SELECT 1;", nonEmpty[0].text)
-	require.Equal(t, "SELECT 2;", nonEmpty[1].text)
-
 	// Error propagation from split and parseSegment.
 	splitErr := errors.New("split failed")
 	_, err = ParseSegmentedStatements("x", func(string) ([]Statement, error) { return nil, splitErr }, parseSeg)
-	require.ErrorIs(t, err, splitErr)
-	_, err = ParseNonEmptySegments("x", func(string) ([]Statement, error) { return nil, splitErr }, parseSeg)
 	require.ErrorIs(t, err, splitErr)
 
 	parseErr := errors.New("parse failed")
 	failParse := func(Statement) (*stubNodeAST, error) { return nil, parseErr }
 	_, err = ParseSegmentedStatements("x", split, failParse)
-	require.ErrorIs(t, err, parseErr)
-	_, err = ParseNonEmptySegments("x", split, failParse)
 	require.ErrorIs(t, err, parseErr)
 }
 

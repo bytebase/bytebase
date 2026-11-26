@@ -4,6 +4,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestStatementWithResultLimit(t *testing.T) {
@@ -17,7 +20,7 @@ func TestStatementWithResultLimit(t *testing.T) {
 		{"DELETE FROM t", 5, "WITH result AS (DELETE FROM t) SELECT * FROM result LIMIT 5;"},
 	}
 	for _, tc := range tests {
-		got := statementWithResultLimit(tc.statement, tc.limit, "")
+		got := base.StatementWithResultLimit(storepb.Engine_CLICKHOUSE, tc.statement, tc.limit, "")
 		require.Equalf(t, tc.want, got, "%q", tc.statement)
 	}
 }

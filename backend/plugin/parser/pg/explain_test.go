@@ -28,9 +28,4 @@ func TestExplainStatementSeam(t *testing.T) {
 
 	_, err := base.ExplainStatement(storepb.Engine_POSTGRES, "EXPLAIN ANALYZE SELECT 1", base.ExplainFormatJSON)
 	require.ErrorIs(t, err, base.ErrExplainAnalyzeExecutes)
-
-	format, executed, ok := DescribeExplain("EXPLAIN (ANALYZE, FORMAT JSON) SELECT 1")
-	require.True(t, ok)
-	require.True(t, executed)
-	require.Equal(t, "json", format)
 }

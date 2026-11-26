@@ -20,13 +20,13 @@ func TestGetStatementRangesSeam(t *testing.T) {
 	}, got)
 
 	// UTF-16 surrogate pair column conversion in utf16Mapper.
-	got, err = GetStatementRanges(context.Background(), base.StatementRangeContext{}, "/*🙂*/ SELECT 1;")
+	got, err = base.GetStatementRanges(context.Background(), base.StatementRangeContext{}, storepb.Engine_SNOWFLAKE, "/*🙂*/ SELECT 1;")
 	require.NoError(t, err)
 	require.Len(t, got, 1)
 	require.Equal(t, lsp.Position{Line: 0, Character: 0}, got[0].Start)
 	require.Equal(t, lsp.Position{Line: 0, Character: 16}, got[0].End)
 
-	got, err = GetStatementRanges(context.Background(), base.StatementRangeContext{}, "")
+	got, err = base.GetStatementRanges(context.Background(), base.StatementRangeContext{}, storepb.Engine_SNOWFLAKE, "")
 	require.NoError(t, err)
 	require.Nil(t, got)
 }

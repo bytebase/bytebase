@@ -18,7 +18,9 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	cassandraparser "github.com/bytebase/bytebase/backend/plugin/parser/cassandra"
+
+	// Registers the Cassandra splitter cassandraQuery splits through.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/cassandra"
 )
 
 var cassandraSpec = spec{
@@ -70,7 +72,7 @@ var cassandraQueryResultOptions = util.QueryResultOptions{
 // cassandraQuery runs a read-only script, one result per statement, and stops
 // at the first statement the editor refuses or the server fails.
 func cassandraQuery(ctx context.Context, d *Driver, rawStatement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	stmts, err := cassandraparser.SplitSQL(rawStatement)
+	stmts, err := base.SplitMultiSQL(storepb.Engine_CASSANDRA, rawStatement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split sql")
 	}

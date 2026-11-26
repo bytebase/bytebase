@@ -83,7 +83,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 // parseScript splits and parses a script for omni, with the line each
 // statement starts on.
 func parseScript(statement string) ([]analysis.ParsedStatement, error) {
-	parsedStatements, err := parseTSQLStatements(statement)
+	parsedStatements, err := base.ParseStatements(storepb.Engine_MSSQL, statement)
 	if err != nil {
 		return nil, err
 	}
