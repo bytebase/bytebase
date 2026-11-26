@@ -1115,11 +1115,12 @@ func TestGrantMaskingExemptionShowsTheReasonUnderTheChoice(t *testing.T) {
 	}
 }
 
-// The advice to exempt fewer columns at a time is given exactly when each
-// column gets a form alone, with the grant's reason, by the path a one-column
-// grant takes. A long column name fits a message only as a count, and the
-// count of one column is a character shorter than the count of two. Under the
-// choice, one such column leaves the reason nine rows.
+// A grant refused for its columns is told to exempt fewer at a time exactly
+// when each column gets a form alone, with the grant's reason, by the path a
+// one-column grant takes. A long column name fits a message only as a count,
+// and the count of one column is a character shorter than the count of two.
+// Under the choice, one such column leaves the reason nine rows. A grant
+// refused for its reason is told to shorten it, and the sweep skips it.
 func TestGrantMaskingExemptionAdvisesFewerColumnsWhenEachGetsAForm(t *testing.T) {
 	ctx := withUserEmail(context.Background(), "alice@example.com")
 	refused := func(input GrantMaskingExemptionInput) (bool, string) {
