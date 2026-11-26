@@ -78,6 +78,34 @@ describe("usePaginatedSelect", () => {
 
     expect(result.current.items.map((item) => item.name)).toEqual(["new"]);
   });
+  test("starts from the initial page without fetching, and loads more after it", async () => {
+    const fetchPage = vi.fn().mockResolvedValueOnce({
+      items: [{ name: "two" }],
+      nextPageToken: "",
+    });
+    const { result } = renderHook(() =>
+      usePaginatedSelect({
+        fetchPage,
+        initialPage: { items: [{ name: "one" }], nextPageToken: "page-2" },
+      })
+    );
+
+    expect(result.current.items).toEqual([{ name: "one" }]);
+    expect(result.current.hasMore).toBe(true);
+    expect(fetchPage).not.toHaveBeenCalled();
+
+    await act(() => result.current.loadMore());
+    expect(fetchPage).toHaveBeenLastCalledWith(
+      "",
+      "page-2",
+      expect.any(AbortSignal)
+    );
+    expect(result.current.items.map((item) => item.name)).toEqual([
+      "one",
+      "two",
+    ]);
+  });
+
   test("cancels load more on a new search and cancels on unmount", async () => {
     let resolvePage: (value: { items: { name: string }[] }) => void = () => {};
     const fetchPage = vi

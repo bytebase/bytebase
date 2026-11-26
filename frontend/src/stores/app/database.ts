@@ -50,15 +50,24 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
     return unknownDatabase;
   };
 
-  // Pre-caches the owning projects and guarantees `instanceResource` is
-  // populated (with a fallback) so consumers can read engine / instance off
-  // any database.
+  // Caches the owning projects and guarantees `instanceResource` is populated
+  // (with a fallback) so consumers can read engine / instance off any
+  // database. Only a project not yet in the store is waited for; one already
+  // there is refreshed without holding up the caller.
   const composeDatabases = async (
     databases: Database[],
     silent = false
   ): Promise<Database[]> => {
+    const { projectsByName } = get();
+    const names = uniq(databases.map((db) => db.project));
+    const cached = names.filter((name) => projectsByName[name]);
+    if (cached.length > 0) {
+      void get()
+        .batchFetchProjects(cached, true)
+        .catch(() => undefined);
+    }
     await get().batchFetchProjects(
-      databases.map((db) => db.project),
+      names.filter((name) => !projectsByName[name]),
       silent
     );
     for (const database of databases) {

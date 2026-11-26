@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import {
@@ -13,6 +13,7 @@ import { FormFieldGroup, ResponsiveFormLayout } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { WorkloadIdentitySheet } from "@/components/WorkloadIdentityFlow/WorkloadIdentitySheet";
 import { useServerState } from "@/hooks/useAppState";
+import type { SelectPage } from "@/hooks/usePaginatedSelect";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
@@ -56,15 +57,13 @@ import {
 const GITOPS_DOCS_URL =
   "https://docs.bytebase.com/gitops/overview?source=console";
 
-// What the page reads once when it opens: enough to know the preconditions. A
-// list that fails to load is undefined, and its precondition is not shown.
+// What the page reads once when it opens: enough to know the preconditions,
+// and the first page each picker starts from. A list that fails to load is
+// undefined: its precondition is not shown, and its picker loads its own.
 interface SetupData {
   groups: DatabaseGroup[];
-  // The first page of the project's databases.
-  databases: Database[] | undefined;
-  databasesComplete: boolean;
-  // The first page of the project's workload identities.
-  identities: WorkloadIdentity[] | undefined;
+  databasePage: SelectPage<Database> | undefined;
+  identityPage: SelectPage<WorkloadIdentity> | undefined;
 }
 
 // The GitOps page is the setup: the choices on top, then the steps to add the
@@ -112,14 +111,19 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
           silent: true,
         })
         .catch(() => undefined),
-      store.loadProjectIamPolicy(projectName, true),
+      store.loadProjectIamPolicy(projectName, true).catch(() => undefined),
     ]).then(([groups, databasePage, identityPage]) => {
       if (cancelled) return;
       setData({
         groups,
-        databases: databasePage?.databases,
-        databasesComplete: databasePage?.nextPageToken === "",
-        identities: identityPage?.workloadIdentities,
+        databasePage: databasePage && {
+          items: databasePage.databases,
+          nextPageToken: databasePage.nextPageToken,
+        },
+        identityPage: identityPage && {
+          items: identityPage.workloadIdentities,
+          nextPageToken: identityPage.nextPageToken,
+        },
       });
       // The tab follows what the project has.
       setTab(groups.length > 0 ? "group" : "databases");
@@ -182,14 +186,16 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
     project,
     "bb.workloadIdentities.create"
   );
-  const noDatabase = data?.databases?.length === 0;
+  const noDatabase = data?.databasePage?.items.length === 0;
   const noIdentity =
-    data?.identities?.length === 0 && !identityName && !canCreateIdentity;
+    data?.identityPage?.items.length === 0 &&
+    !identityName &&
+    !canCreateIdentity;
   // On a project with more databases than one page, a database with an
   // environment may be on a later page, so the picker stays.
   const noPickableDatabase =
-    data?.databasesComplete === true &&
-    (data.databases ?? []).every((database) => !database.effectiveEnvironment);
+    data?.databasePage?.nextPageToken === "" &&
+    data.databasePage.items.every((database) => !database.effectiveEnvironment);
 
   const urlMissing = needConfigureExternalUrl || externalUrl === "";
   const files = useMemo(() => {
@@ -303,7 +309,15 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
           </p>
         </ExternalUrlAlert>
 
-        {noDatabase ? (
+        {!data ? (
+          <div
+            role="status"
+            aria-label={t("common.loading")}
+            className="flex justify-center py-12"
+          >
+            <LoaderCircle className="size-5 animate-spin text-control-light" />
+          </div>
+        ) : noDatabase ? (
           <Alert
             variant="warning"
             title={t("gitops.setup.no-database.title")}
@@ -323,57 +337,56 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
             description={t("gitops.setup.no-identity.description")}
           />
         ) : (
-          data && (
-            <>
-              <ResponsiveFormLayout>
-                <FormFieldGroup>
-                  <WorkflowTypeField
-                    value={workflowType}
-                    onChange={setWorkflowType}
-                  />
-                  <DeployToField
-                    projectId={projectId}
-                    projectName={projectName}
-                    groups={data.groups}
-                    noPickableDatabase={noPickableDatabase}
-                    tab={tab}
-                    onTabChange={setTab}
-                    groupName={groupName}
-                    onGroupChange={setGroupName}
-                    databaseNames={databaseNames}
-                    onDatabasesChange={setDatabaseNames}
-                    targets={targets}
-                    unsupported={unsupported}
-                  />
-                  <SignInField
-                    projectId={projectId}
-                    projectName={projectName}
-                    hasIdentities={(data.identities?.length ?? 1) > 0}
-                    canCreate={canCreateIdentity}
-                    identityName={identityName}
-                    identity={identity}
-                    roles={roles}
-                    onChange={setIdentityName}
-                    onCreate={() => setDialogOpen(true)}
-                  />
-                  <FolderField
-                    declarative={declarative}
-                    value={folder}
-                    onChange={setTypedFolder}
-                  />
-                </FormFieldGroup>
-              </ResponsiveFormLayout>
+          <>
+            <ResponsiveFormLayout>
+              <FormFieldGroup>
+                <WorkflowTypeField
+                  value={workflowType}
+                  onChange={setWorkflowType}
+                />
+                <DeployToField
+                  projectId={projectId}
+                  projectName={projectName}
+                  groups={data.groups}
+                  databasePage={data.databasePage}
+                  noPickableDatabase={noPickableDatabase}
+                  tab={tab}
+                  onTabChange={setTab}
+                  groupName={groupName}
+                  onGroupChange={setGroupName}
+                  databaseNames={databaseNames}
+                  onDatabasesChange={setDatabaseNames}
+                  targets={targets}
+                  unsupported={unsupported}
+                />
+                <SignInField
+                  projectId={projectId}
+                  projectName={projectName}
+                  identityPage={data.identityPage}
+                  canCreate={canCreateIdentity}
+                  identityName={identityName}
+                  identity={identity}
+                  roles={roles}
+                  onChange={setIdentityName}
+                  onCreate={() => setDialogOpen(true)}
+                />
+                <FolderField
+                  declarative={declarative}
+                  value={folder}
+                  onChange={setTypedFolder}
+                />
+              </FormFieldGroup>
+            </ResponsiveFormLayout>
 
-              <Separator />
+            <Separator />
 
-              <FilesSection
-                declarative={declarative}
-                provider={provider}
-                waitingFor={waitingFor}
-                steps={steps}
-              />
-            </>
-          )
+            <FilesSection
+              declarative={declarative}
+              provider={provider}
+              waitingFor={waitingFor}
+              steps={steps}
+            />
+          </>
         )}
       </div>
 

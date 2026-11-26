@@ -3096,6 +3096,48 @@ describe("useAppStore", () => {
     expect(mocks.listDatabases).toHaveBeenCalledTimes(1);
   });
 
+  test("fetchDatabases waits only for the owning projects not in the store", async () => {
+    const dbA = createProto(DatabaseSchema$, {
+      name: "instances/i1/databases/db1",
+      project: projectA.name,
+    });
+    const dbB = createProto(DatabaseSchema$, {
+      name: "instances/i1/databases/db2",
+      project: projectB.name,
+    });
+    mocks.listDatabases.mockResolvedValue({
+      databases: [dbA, dbB],
+      nextPageToken: "",
+    });
+    const refreshedA = createProto(ProjectSchema, {
+      ...projectA,
+      title: "A renamed",
+    });
+    let finishRefresh = () => {};
+    mocks.batchGetProjects.mockImplementation((request: { names: string[] }) =>
+      request.names.includes(projectA.name)
+        ? new Promise((resolve) => {
+            finishRefresh = () => resolve({ projects: [refreshedA] });
+          })
+        : Promise.resolve({ projects: [projectB] })
+    );
+    const store = createAppStore();
+    store.setState({ projectsByName: { [projectA.name]: projectA } });
+
+    await store.getState().fetchDatabases({ parent: "-", pageSize: 50 });
+
+    expect(
+      mocks.batchGetProjects.mock.calls.map((call) => call[0].names)
+    ).toEqual([[projectA.name], [projectB.name]]);
+    expect(store.getState().projectsByName[projectB.name]).toBe(projectB);
+    expect(store.getState().projectsByName[projectA.name]).toBe(projectA);
+
+    finishRefresh();
+    await vi.waitFor(() =>
+      expect(store.getState().projectsByName[projectA.name]).toBe(refreshedA)
+    );
+  });
+
   test("deduplicates db group fetches and caches the result", async () => {
     const name = "projects/p1/databaseGroups/g1";
     const group = createProto(DatabaseGroupSchema, { name });

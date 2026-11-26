@@ -253,11 +253,17 @@ vi.mock("@/components/DatabaseSelect", () => ({
   DatabaseSelect: ({
     value,
     onChange,
+    initialPage,
   }: {
     value: string[];
     onChange: (names: string[]) => void;
+    initialPage?: { items: Database[] };
   }) => (
-    <div data-testid="database-select" data-value={value.join(",")}>
+    <div
+      data-testid="database-select"
+      data-value={value.join(",")}
+      data-initial={initialPage?.items.map((d) => d.name).join(",")}
+    >
       <button
         type="button"
         onClick={() => onChange(["instances/pg-prod/databases/shop"])}
@@ -328,15 +334,18 @@ vi.mock("./WorkloadIdentitySelect", () => ({
     value,
     onChange,
     disabledReason,
+    initialPage,
   }: {
     value: string;
     onChange: (name: string) => void;
     disabledReason: (wi: WorkloadIdentity) => string | undefined;
+    initialPage?: { items: WorkloadIdentity[] };
   }) => (
     <div
       data-testid="identity-select"
       data-slot="combobox-trigger"
       data-value={value}
+      data-initial={initialPage?.items.map((wi) => wi.name).join(",")}
     >
       {mocks.state.identities.map((wi) => {
         const reason = disabledReason(wi);
@@ -521,6 +530,63 @@ afterEach(() => {
 });
 
 describe("ProjectGitOpsPage", () => {
+  test("shows a loading region until the lists load", async () => {
+    setProject({ identities: [DEPLOY_CI], members: [DEPLOY_CI] });
+    let release = () => {};
+    mocks.store.fetchDatabases.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve({ databases: [SHOP], nextPageToken: "" });
+        })
+    );
+    await render();
+
+    expect(container.querySelector('[role="status"]')).not.toBeNull();
+    expect(container.querySelector('[role="radio"]')).toBeNull();
+
+    await act(async () => release());
+
+    expect(container.querySelector('[role="status"]')).toBeNull();
+    expect(container.querySelectorAll('[role="radio"]')).toHaveLength(2);
+  });
+
+  test("a failed policy load still shows the form", async () => {
+    setProject({ identities: [DEPLOY_CI], members: [DEPLOY_CI] });
+    mocks.store.loadProjectIamPolicy.mockRejectedValueOnce(new Error("down"));
+    await render();
+
+    expect(container.querySelector('[role="status"]')).toBeNull();
+    expect(container.querySelectorAll('[role="radio"]')).toHaveLength(2);
+  });
+
+  test("each picker starts from the first page the page loaded", async () => {
+    setProject({ identities: [DEPLOY_CI], members: [DEPLOY_CI] });
+    await render();
+
+    expect(
+      container
+        .querySelector('[data-testid="database-select"]')
+        ?.getAttribute("data-initial")
+    ).toBe(SHOP.name);
+    expect(
+      container
+        .querySelector('[data-testid="identity-select"]')
+        ?.getAttribute("data-initial")
+    ).toBe(DEPLOY_CI.name);
+  });
+
+  test("a picker loads its own list when the page's list failed", async () => {
+    setProject({ identities: [DEPLOY_CI], members: [DEPLOY_CI] });
+    mocks.store.listWorkloadIdentities.mockRejectedValueOnce(new Error("down"));
+    await render();
+
+    expect(
+      container
+        .querySelector('[data-testid="identity-select"]')
+        ?.hasAttribute("data-initial")
+    ).toBe(false);
+  });
+
   test("only the workflow type starts picked, even with one database and one identity", async () => {
     setProject({ identities: [DEPLOY_CI], members: [DEPLOY_CI] });
     await render();
