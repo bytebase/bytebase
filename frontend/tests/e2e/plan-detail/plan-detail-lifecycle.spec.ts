@@ -57,6 +57,7 @@ import { signInBrowserAs } from "../framework/sign-in";
 import { PlanDetailPage } from "./plan-detail.page";
 import {
   authorMayApprove,
+  headerFocusRingsPastClip,
   seedDraftPlan,
   seedReviewPlan,
   setPermissiveGates,
@@ -504,6 +505,8 @@ test.describe("Forced labels stay in metadata and block only submission (S3)", (
       .evaluateAll((parts) => parts.map((part) => part.getBoundingClientRect().height));
     expect(partHeights.length).toBeGreaterThan(2);
     expect(new Set(partHeights).size, `part heights ${partHeights.join(", ")}`).toBe(1);
+    // A chip's remove button and the add-label button may start a row.
+    expect(await headerFocusRingsPastClip(page)).toEqual([]);
 
     await planPage.headerReadyForReviewButton.click();
     await waitForIssueDraft(seeded.issueName, false);

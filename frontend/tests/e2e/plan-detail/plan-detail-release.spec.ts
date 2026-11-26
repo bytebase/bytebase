@@ -10,7 +10,7 @@ import { BytebaseApiClient } from "../framework/api-client";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { execSql, getInstancePgPort } from "../framework/psql";
 import { signInBrowserAs } from "../framework/sign-in";
-import { setPermissiveGates } from "./plan-helpers";
+import { headerFocusRingsPastClip, setPermissiveGates } from "./plan-helpers";
 
 test.setTimeout(240_000);
 
@@ -503,5 +503,7 @@ test("on a phone the lines under the title keep one row rhythm, keep the PR's nu
   for (const left of layout.startSeparators) expect(left).toBeLessThanOrEqual(-8);
   expect(layout.numberRight).toBeLessThanOrEqual(layout.boxRight);
   expect(layout.paneScrolls).toBe(false);
+  // The source link always starts its row.
+  expect(await headerFocusRingsPastClip(page)).toEqual([]);
   await page.context().close();
 });
