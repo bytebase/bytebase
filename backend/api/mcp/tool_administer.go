@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"connectrpc.com/connect"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -475,8 +476,8 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 		label := fmt.Sprintf("%s (%s)", name, who)
 		keptRules = append(keptRules, keptRule{
 			was: storedPlace[condition], flow: flows[key],
-			label: label, labelColumns: lineColumns(label),
-			approvers: who, approverColumns: lineColumns(who),
+			label: label, labelSize: textSize(label),
+			approvers: who, approverSize: textSize(who),
 		})
 	}
 	// A kept rule outside the longest common order moved: the first matching
@@ -544,9 +545,15 @@ type keptRule struct {
 	flow int
 	// label names the rule by its title, or by its place when it has none,
 	// with its approvers.
-	label                         string
-	approvers                     string
-	labelColumns, approverColumns int
+	label                   string
+	approvers               string
+	labelSize, approverSize int
+}
+
+// textSize is the room a text takes in a line: its columns, or its characters
+// when they are more, since a combining mark takes no column.
+func textSize(text string) int {
+	return max(lineColumns(text), utf8.RuneCountInString(text))
 }
 
 // maxApproverGroups is how many kinds of approvers a move's line counts apart.
@@ -558,16 +565,16 @@ const maxApproverGroups = 6
 // are named, and counted by their approvers, and the rest are only counted.
 type passedSide struct {
 	total, same int
-	// names and groups stop before the text that would take them past what a
-	// description holds: a workspace can store any number of rules, with
-	// titles and approvers of any length.
-	names        []string
-	nameColumns  int
-	stopped      bool
-	groups       []approverGroup
-	groupColumns int
+	// names and groups stop before the text that would take their size past
+	// what a description holds: a workspace can store any number of rules,
+	// with titles and approvers of any length.
+	names     []string
+	nameSize  int
+	stopped   bool
+	groups    []approverGroup
+	groupSize int
 	// ungrouped are the rules with approvers past maxApproverGroups kinds, or
-	// past those columns.
+	// past that size.
 	ungrouped int
 }
 
@@ -584,10 +591,10 @@ func (s *passedSide) add(other, moved keptRule) {
 		s.same++
 		return
 	}
-	s.stopped = s.stopped || s.nameColumns+other.labelColumns > most
+	s.stopped = s.stopped || s.nameSize+other.labelSize > most
 	if !s.stopped {
 		s.names = append(s.names, other.label)
-		s.nameColumns += other.labelColumns
+		s.nameSize += other.labelSize
 	}
 	for i := range s.groups {
 		if s.groups[i].flow == other.flow {
@@ -595,12 +602,12 @@ func (s *passedSide) add(other, moved keptRule) {
 			return
 		}
 	}
-	if len(s.groups) == maxApproverGroups || s.groupColumns+other.approverColumns > most {
+	if len(s.groups) == maxApproverGroups || s.groupSize+other.approverSize > most {
 		s.ungrouped++
 		return
 	}
 	s.groups = append(s.groups, approverGroup{flow: other.flow, approvers: other.approvers, rules: 1})
-	s.groupColumns += other.approverColumns
+	s.groupSize += other.approverSize
 }
 
 // named names each rule with other approvers and counts the rest. ok is false

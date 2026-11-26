@@ -1049,7 +1049,8 @@ func TestApprovalMoveLinesNameEveryPairThatChangedOrder(t *testing.T) {
 }
 
 // A move that passes many rules with other approvers has no room for their
-// names. It counts them by their approvers, so it is not refused for them.
+// names. It counts them by their approvers, so the clause about them stays
+// short.
 func TestAdministerWorkspaceCountsTheRulesAFarMovePasses(t *testing.T) {
 	alice := withUserEmail(context.Background(), "alice@example.com")
 	flows := [][]string{nil, {"roles/projectOwner"}, {"roles/workspaceDBA"}}
@@ -1206,14 +1207,21 @@ func TestApprovalMoveLineIsBoundedForAnyStoredRules(t *testing.T) {
 	}
 	reversed := slices.Clone(movers)
 	slices.Reverse(reversed)
-	// The first list has one rule with other approvers, the long title, and a
-	// rule with the movers' approvers, which keeps the two in the common order.
+	// The lists of two have one rule with other approvers and a rule with the
+	// movers' approvers, which keeps the two in the common order. A combining
+	// mark takes no column, so a title or a role of them is long in characters
+	// only, and a wide character takes two, so a title of them is long in
+	// columns first.
 	anchor := changeRule("Anchor", `resource.project_id == "anchor"`, "roles/workspaceDBA")
+	marks := strings.Repeat("\u0301", 20000)
 	for _, kept := range []struct {
 		rules  []*v1pb.WorkspaceApprovalSetting_Rule
 		others int
 	}{
 		{[]*v1pb.WorkspaceApprovalSetting_Rule{passed[0], anchor}, 1},
+		{[]*v1pb.WorkspaceApprovalSetting_Rule{changeRule("Marked"+marks, `resource.project_id == "marked"`, "roles/projectOwner"), anchor}, 1},
+		{[]*v1pb.WorkspaceApprovalSetting_Rule{changeRule("Marked role", `resource.project_id == "marked-role"`, "roles/marked"+marks), anchor}, 1},
+		{[]*v1pb.WorkspaceApprovalSetting_Rule{changeRule(strings.Repeat("\u5bbd", 400), `resource.project_id == "wide"`, "roles/projectOwner"), anchor}, 1},
 		{passed[:3], 3},
 		{passed[3:], maxApproverGroups},
 	} {
@@ -1233,6 +1241,7 @@ func TestApprovalMoveLineIsBoundedForAnyStoredRules(t *testing.T) {
 			require.Contains(t, moves.shorter[1][i], ahead)
 			for _, text := range []string{line, moves.shorter[1][i]} {
 				require.LessOrEqual(t, lineColumns(text), descriptionLines*descriptionLineWidth, "%.300s", text)
+				require.LessOrEqual(t, utf8.RuneCountInString(text), descriptionLines*descriptionLineWidth, "%.300s", text)
 			}
 		}
 	}
