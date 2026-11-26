@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-interface Page<T> {
+export interface SelectPage<T> {
   items: T[];
   nextPageToken?: string;
 }
@@ -10,14 +10,20 @@ interface UsePaginatedSelectOptions<T> {
     query: string,
     pageToken: string,
     signal: AbortSignal
-  ) => Promise<Page<T>>;
+  ) => Promise<SelectPage<T>>;
+  // The first page of the empty query, when the owner has already loaded it.
+  // Read once, on mount.
+  initialPage?: SelectPage<T>;
 }
 
 export function usePaginatedSelect<T extends { name: string }>({
   fetchPage,
+  initialPage,
 }: UsePaginatedSelectOptions<T>) {
-  const [items, setItems] = useState<T[]>([]);
-  const [nextPageToken, setNextPageToken] = useState("");
+  const [items, setItems] = useState<T[]>(initialPage?.items ?? []);
+  const [nextPageToken, setNextPageToken] = useState(
+    initialPage?.nextPageToken ?? ""
+  );
   const [loadingMore, setLoadingMore] = useState(false);
   const queryRef = useRef("");
   const requestGenerationRef = useRef(0);

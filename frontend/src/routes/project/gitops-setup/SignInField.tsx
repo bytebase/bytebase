@@ -5,6 +5,7 @@ import { RouterLink } from "@/components/RouterLink";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form";
+import type { SelectPage } from "@/hooks/usePaginatedSelect";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { getWorkloadIdentityProviderText } from "@/utils";
@@ -18,7 +19,7 @@ import { setupFieldId } from "./setupField";
 export function SignInField({
   projectId,
   projectName,
-  hasIdentities,
+  identityPage,
   canCreate,
   identityName,
   identity,
@@ -28,8 +29,9 @@ export function SignInField({
 }: {
   readonly projectId: string;
   readonly projectName: string;
-  // The project has at least one workload identity, or one was just created.
-  readonly hasIdentities: boolean;
+  // The project's first page of workload identities, or undefined when it did
+  // not load.
+  readonly identityPage: SelectPage<WorkloadIdentity> | undefined;
   readonly canCreate: boolean;
   readonly identityName: string;
   readonly identity: WorkloadIdentity | undefined;
@@ -71,7 +73,7 @@ export function SignInField({
       className="scroll-my-4"
       title={t("gitops.setup.identity.field-label")}
     >
-      {!hasIdentities && !identityName ? (
+      {identityPage?.items.length === 0 && !identityName ? (
         <div className="flex flex-col items-start gap-y-3 rounded-sm border border-block-border p-4">
           <p className="text-sm text-control-light">
             {t("gitops.setup.identity.none")}
@@ -83,6 +85,7 @@ export function SignInField({
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <WorkloadIdentitySelect
               projectName={projectName}
+              initialPage={identityPage}
               value={identityName}
               placeholder={t("gitops.setup.identity.placeholder")}
               describe={describe}

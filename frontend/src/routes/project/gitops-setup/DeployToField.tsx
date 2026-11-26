@@ -11,6 +11,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
+import type { SelectPage } from "@/hooks/usePaginatedSelect";
 import { getProjectNameAndDatabaseGroupName } from "@/stores/modules/v1/common";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -28,6 +29,7 @@ export function DeployToField({
   projectId,
   projectName,
   groups,
+  databasePage,
   noPickableDatabase,
   tab,
   onTabChange,
@@ -41,6 +43,8 @@ export function DeployToField({
   readonly projectId: string;
   readonly projectName: string;
   readonly groups: DatabaseGroup[];
+  // The project's first page of databases, or undefined when it did not load.
+  readonly databasePage: SelectPage<Database> | undefined;
   // Every database of the project has no environment.
   readonly noPickableDatabase: boolean;
   readonly tab: TargetTab;
@@ -144,6 +148,7 @@ export function DeployToField({
                   multiple
                   requireEnvironment
                   projectName={projectName}
+                  initialPage={databasePage}
                   value={databaseNames}
                   placeholder={t(
                     "gitops.setup.databases.databases-placeholder"

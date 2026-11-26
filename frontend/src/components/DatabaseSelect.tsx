@@ -3,7 +3,10 @@ import { useTranslation } from "react-i18next";
 import { DatabaseSelectOption } from "@/components/DatabaseSelectOption";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import { usePaginatedSelect } from "@/hooks/usePaginatedSelect";
+import {
+  type SelectPage,
+  usePaginatedSelect,
+} from "@/hooks/usePaginatedSelect";
 import { useAppStore } from "@/stores/app";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -19,6 +22,9 @@ interface BaseProps {
   // List a database with no environment as disabled, marked "No
   // environment". For pickers whose result is deployed by environment.
   requireEnvironment?: boolean;
+  // The first page of the same parent and filters, when the owner has already
+  // loaded it. The select starts from it instead of loading on mount.
+  initialPage?: SelectPage<Database>;
 }
 
 interface SingleProps {
@@ -47,6 +53,7 @@ export function DatabaseSelect(props: DatabaseSelectProps) {
     environmentName,
     allowedEngineTypeList,
     requireEnvironment,
+    initialPage,
   } = props;
   const { t } = useTranslation();
   const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
@@ -104,10 +111,13 @@ export function DatabaseSelect(props: DatabaseSelectProps) {
     hasMore,
     loadingMore,
     loadMore,
-  } = usePaginatedSelect({ fetchPage });
+  } = usePaginatedSelect({ fetchPage, initialPage });
 
+  // The initial page answers the first search only: a later change to what
+  // the list queries makes a new `search`, which loads.
+  const seededSearch = useRef(initialPage ? search : undefined);
   useEffect(() => {
-    search("");
+    if (seededSearch.current !== search) search("");
   }, [search]);
 
   const selectedValues: string[] = useMemo(() => {
