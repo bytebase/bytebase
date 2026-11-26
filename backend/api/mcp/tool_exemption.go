@@ -542,7 +542,7 @@ func fitExemptionScope(ctx context.Context, head, rest string, g *exemptionGrant
 	}
 	columns := wrapLine(label+quoteAll(g.columns), descriptionLineWidth)
 	if len(columns) > exemptionColumnRows {
-		if len(g.columns) > 1 {
+		if eachColumnFits(ctx, head, rest, g, effect) {
 			instead = fewerColumns
 		}
 		return exemptionForm{message: message}, fmt.Sprintf("the names of this exemption's columns need %d lines, more than the %d one confirmation form has room for under its choice, so nothing changed", len(columns), exemptionColumnRows), instead
@@ -560,8 +560,9 @@ func fitExemptionScope(ctx context.Context, head, rest string, g *exemptionGrant
 }
 
 // eachColumnFits reports whether an exemption that names several columns gets
-// a form for each of them alone, so fewer columns at a time can help. A scope
-// that counts several columns can be longer than one that names or counts one.
+// a form for each of them alone, with its reason, so fewer columns at a time
+// can help. A scope that counts several columns can be longer than one that
+// names or counts one.
 func eachColumnFits(ctx context.Context, head, rest string, g *exemptionGrant, effect string) bool {
 	if len(g.columns) < 2 {
 		return false

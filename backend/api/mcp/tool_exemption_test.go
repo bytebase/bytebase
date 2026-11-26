@@ -475,12 +475,29 @@ func TestMaskingExemptionToolsRefuseAFormTooLongBeforeAsking(t *testing.T) {
 	for i := range 60 {
 		manyColumns = append(manyColumns, fmt.Sprintf("column_%02d", i))
 	}
+	// Each of these gets a form alone only as a count, with its name under the
+	// choice, where a reason of ten rows has no room beside it.
+	var longColumns []string
+	for i := range 20 {
+		longColumns = append(longColumns, fmt.Sprintf("base_salary_before_tax_local_%02d", i))
+	}
+	longColumnsGrant := func(reason string) map[string]any {
+		return map[string]any{
+			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/inst-payments-eu-west/databases/" + strings.Repeat("d", 15),
+			"schema": "public", "table": "employee_compensation_hist", "columns": longColumns, "reason": reason,
+		}
+	}
+	const longColumnRows = "the names of this exemption's columns need 11 lines, more than the 8 one confirmation form has room for under its choice, so nothing changed"
 	for name, tc := range map[string]struct {
 		tool      string
 		arguments map[string]any
 		reason    string
 		want      string
 	}{
+		"a grant naming more long columns than the description has rows for": {"grant_masking_exemption", longColumnsGrant("payroll audit"), longColumnRows,
+			"exempt fewer columns at a time, or grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+		"a grant naming more long columns than the description has rows for, with a reason no column leaves room for": {"grant_masking_exemption", longColumnsGrant(strings.Repeat("r", 650)), longColumnRows,
+			"grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 		"a grant naming more columns than the description has rows for": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod-analytics-replica/databases/hr_reporting",
 			"table": "employee_compensation", "columns": manyColumns,
@@ -1081,7 +1098,6 @@ func TestGrantMaskingExemptionShowsTheReasonUnderTheChoice(t *testing.T) {
 			`Reason: "HR team needs to see employee personal details (birth`,
 			`> dates, salaries) in production"`,
 		}, "\n")},
-		// As on main, where no description lists columns.
 		"alone, as one line of any length": {[]string{"amount"}, long, fmt.Sprintf("Reason: %q", long)},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -1100,44 +1116,57 @@ func TestGrantMaskingExemptionShowsTheReasonUnderTheChoice(t *testing.T) {
 }
 
 // The advice to exempt fewer columns at a time is given exactly when each
-// column gets a form alone, by the path a one-column grant takes. A long
-// column name fits a message only as a count, and the count of one column is
-// a character shorter than the count of two.
+// column gets a form alone, with the grant's reason, by the path a one-column
+// grant takes. A long column name fits a message only as a count, and the
+// count of one column is a character shorter than the count of two. Under the
+// choice, one such column leaves the reason nine rows.
 func TestGrantMaskingExemptionAdvisesFewerColumnsWhenEachGetsAForm(t *testing.T) {
 	ctx := withUserEmail(context.Background(), "alice@example.com")
-	refused := func(input GrantMaskingExemptionInput) (bool, bool) {
+	refused := func(input GrantMaskingExemptionInput) (bool, string) {
 		g, err := parseExemptionGrant(input)
 		require.NoError(t, err)
 		_, tooLong, instead := describeExemptionGrant(ctx, g)
-		return tooLong != "", instead == fewerColumns
+		return tooLong != "", instead
 	}
-	advised, sent := 0, 0
-	for n := 1; n <= 63; n++ {
-		input := GrantMaskingExemptionInput{
-			Project: "projects/hr", Member: "user:bob@example.com",
-			Database: "instances/inst-payments-eu-west/databases/" + strings.Repeat("d", n),
-			Schema:   "public", Table: "employee_compensation_hist",
-			Columns: []string{"base_salary_before_tax_local", "bonus_paid_in_local_currency"},
-		}
-		isRefused, fewer := refused(input)
-		if !isRefused {
-			continue
-		}
-		alone := true
+	each := func(input GrantMaskingExemptionInput) bool {
 		for _, column := range input.Columns {
 			one := input
 			one.Columns = []string{column}
 			if oneRefused, _ := refused(one); oneRefused {
-				alone = false
+				return false
 			}
 		}
-		require.Equal(t, alone, fewer, "database name of %d", n)
-		if fewer {
-			advised++
-		} else {
-			sent++
+		return true
+	}
+	advised, sent, forTheReason := 0, 0, 0
+	for _, reason := range []string{"", strings.Repeat("r", 650)} {
+		for n := 1; n <= 63; n++ {
+			input := GrantMaskingExemptionInput{
+				Project: "projects/hr", Member: "user:bob@example.com",
+				Database: "instances/inst-payments-eu-west/databases/" + strings.Repeat("d", n),
+				Schema:   "public", Table: "employee_compensation_hist",
+				Columns: []string{"base_salary_before_tax_local", "bonus_paid_in_local_currency"},
+				Reason:  reason,
+			}
+			isRefused, instead := refused(input)
+			if !isRefused || instead == shorterReason {
+				continue
+			}
+			alone := each(input)
+			require.Equal(t, alone, instead == fewerColumns, "database name of %d, a reason of %d", n, len(reason))
+			plain := input
+			plain.Reason = ""
+			switch {
+			case alone:
+				advised++
+			case each(plain):
+				forTheReason++
+			default:
+				sent++
+			}
 		}
 	}
 	require.Positive(t, advised, "the sweep must reach a grant refused only for its count of columns")
 	require.Positive(t, sent, "and one whose columns fit no form")
+	require.Positive(t, forTheReason, "and one whose columns each get a form only with a shorter reason")
 }
