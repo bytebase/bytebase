@@ -1016,10 +1016,17 @@ func TestApprovalMoveLinesNameEveryPairThatChangedOrder(t *testing.T) {
 
 				terse := sides(moveLine.FindStringSubmatch(diff.shorter[1][i])[3])[side]
 				want := ""
+				none := byApprovers["no approval"]
 				switch total := len(others) + shared; {
 				case total == 0:
 				case len(others) == 0:
 					want = countRules(shared) + " with the same approvers"
+				case none == len(others) && shared == 0:
+					want = countRules(total) + " with no approval"
+				case none == len(others):
+					want = fmt.Sprintf("%s, %d of them with no approval", countRules(total), none)
+				case none > 0:
+					want = fmt.Sprintf("%s, %d with no approval and %d with other approvers", countRules(total), none, len(others)-none)
 				case shared == 0:
 					want = countRules(total) + " with other approvers"
 				default:
@@ -1089,7 +1096,7 @@ func TestAdministerWorkspaceCountsTheRulesAFarMovePasses(t *testing.T) {
 	long := strings.Repeat(`resource.project_id == "p" || `, 14) + "false"
 	terse, diff, err := form(12, long)
 	require.NoError(t, err)
-	require.Equal(t, "Move to rule 12, \"Workspace DBA\", now behind 11 rules, 8 of them with other approvers: `"+long+"`", diff.shorter[1][0])
+	require.Equal(t, "Move to rule 12, \"Workspace DBA\", now behind 11 rules, 4 with no approval and 4 with other approvers: `"+long+"`", diff.shorter[1][0])
 	require.Greater(t, len(wrapLine(diff.shorter[0][0], descriptionLineWidth)), descriptionLines-2, "the counts by approvers pass the rows the fallback line leaves")
 	require.True(t, strings.HasPrefix(unwrapMessage(terse.description), diff.shorter[1][0]+"\n"), terse.description)
 
@@ -1100,6 +1107,198 @@ func TestAdministerWorkspaceCountsTheRulesAFarMovePasses(t *testing.T) {
 	require.Equal(t, "CHANGE_TOO_LONG", refused.Code)
 	require.Contains(t, refused.Message, strconv.Quote(diff.shorter[1][0]))
 	require.Contains(t, refused.Suggestion, "make that change signed in to the Bytebase console: LINK")
+}
+
+// The shortest line of a move still says how many of the rules it passes need
+// no approval: a rule that moves behind one of them loses its approval there.
+func TestApprovalMoveShortestLineCountsTheRulesWithNoApproval(t *testing.T) {
+	dba, owner := []string{"roles/workspaceDBA"}, []string{"roles/projectOwner"}
+	for _, tc := range []struct {
+		moved            []string
+		none, other, dba int
+		want             string
+	}{
+		{dba, 2, 7, 3, "now behind 12 rules, 2 with no approval and 7 with other approvers"},
+		{dba, 1, 6, 0, "now behind 7 rules, 1 with no approval and 6 with other approvers"},
+		{dba, 3, 0, 0, "now behind 3 rules with no approval"},
+		{dba, 0, 9, 3, "now behind 12 rules, 9 of them with other approvers"},
+		{dba, 0, 7, 0, "now behind 7 rules with other approvers"},
+		{dba, 2, 0, 3, "now behind 5 rules, 2 of them with no approval"},
+		{dba, 0, 0, 4, "now behind 4 rules with the same approvers"},
+		// With no approval of its own, the moved rule has the same approvers as
+		// the rules with none.
+		{nil, 3, 2, 0, "now behind 5 rules, 2 of them with other approvers"},
+	} {
+		moved := changeRule("Finance", `resource.project_id == "finance"`, tc.moved...)
+		var passed []*v1pb.WorkspaceApprovalSetting_Rule
+		for kind, flow := range [][]string{nil, owner, dba} {
+			for i := range []int{tc.none, tc.other, tc.dba}[kind] {
+				passed = append(passed, changeRule(fmt.Sprintf("Rule %d-%d", kind, i), fmt.Sprintf(`resource.project_id == "p%d-%d"`, kind, i), flow...))
+			}
+		}
+		down, err := diffApprovalRules(slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), moved}, passed), slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, passed, []*v1pb.WorkspaceApprovalSetting_Rule{moved}), "")
+		require.NoError(t, err)
+		require.Len(t, down.shorter[1], 1)
+		require.Equal(t, fmt.Sprintf("Move to rule %d, %s, %s: `resource.project_id == \"finance\"`", len(passed)+1, approvers(moved), tc.want), down.shorter[1][0])
+		up, err := diffApprovalRules(slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, passed, []*v1pb.WorkspaceApprovalSetting_Rule{moved}), slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), moved}, passed), "")
+		require.NoError(t, err)
+		require.Equal(t, fmt.Sprintf("Move to rule 1, %s, %s: `resource.project_id == \"finance\"`", approvers(moved), strings.Replace(tc.want, "now behind", "now ahead of", 1)), up.shorter[1][0])
+	}
+}
+
+// A move behind rules with seven kinds of approvers has no room for their
+// names and room for its counts by approvers. So the form that takes away an
+// approval and the one that does not are not the same form.
+func TestAdministerWorkspaceMoveCountsEveryKindOfApproversItHasRowsFor(t *testing.T) {
+	description := func(condition string, production ...string) (string, string) {
+		finance := changeRule("Finance", condition, "roles/workspaceDBA")
+		var environments []*v1pb.WorkspaceApprovalSetting_Rule
+		for i, flow := range [][]string{
+			{"roles/projectOwner"}, {"roles/projectDeveloper"}, {"roles/sqlEditorUser"}, {"roles/workspaceAdmin"}, production,
+			{"roles/projectOwner", "roles/workspaceDBA"}, {"roles/workspaceAdmin", "roles/projectOwner"},
+		} {
+			environments = append(environments, changeRule(fmt.Sprintf("Environment %d schema and data changes, all projects", i), fmt.Sprintf(`resource.environment_id == "e%d"`, i), flow...))
+		}
+		mock := &approvalMock{}
+		mock.setStored(slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), finance}, environments)...)
+		user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+		_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+		res := callAdminister(t, session, administerParams(approvalBody(t, slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, environments, []*v1pb.WorkspaceApprovalSetting_Rule{finance})...)))
+		require.False(t, res.IsError, resultText(t, res))
+		asked := user.lastParams(t)
+		return asked.Message, unwrapMessage(choiceDescription(t, asked))
+	}
+	const finance = `resource.project_id == "finance"`
+	message, reviewed := description(finance, "roles/projectReleaser")
+	require.Contains(t, message, "Change 1 rule, listed under Action.")
+	_, unapproved := description(finance)
+	require.Contains(t, reviewed, `Move to rule 8, "Workspace DBA", now behind 7 rules: 1 with "Project owner", 1 with "Project developer", 1 with "SQL Editor User", 1 with "Workspace admin", 1 with "Project releaser", 1 with "Project owner" then "Workspace DBA", 1 with "Workspace admin" then "Project owner": `+"`"+finance+"`")
+	require.Contains(t, unapproved, `1 with "Workspace admin", 1 with no approval, 1 with "Project owner" then "Workspace DBA"`)
+
+	// A condition that leaves the counts by approvers no room: the shortest
+	// line still tells the two apart.
+	long := strings.Repeat(`resource.project_id == "p" || `, 12) + "false"
+	_, reviewed = description(long, "roles/projectReleaser")
+	_, unapproved = description(long)
+	require.Contains(t, reviewed, `Move to rule 8, "Workspace DBA", now behind 7 rules with other approvers: `)
+	require.Contains(t, unapproved, `Move to rule 8, "Workspace DBA", now behind 7 rules, 1 with no approval and 6 with other approvers: `)
+}
+
+// A reorder can be read by more than one set of moved rules, and its reverse
+// reads them the other way round. So before a form is refused the other
+// reading is tried: a swap that a form makes, a form swaps back.
+func TestAdministerWorkspaceSwapsBackWhatItSwaps(t *testing.T) {
+	swap := func(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule) (message, refusal string) {
+		mock := &approvalMock{}
+		mock.setStored(slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, stored)...)
+		user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+		_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+		res := callAdminister(t, session, administerParams(approvalBody(t, slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, requested)...)))
+		if user.asked.Load() == 0 {
+			return "", resultText(t, res)
+		}
+		return unwrapMessage(user.lastParams(t).Message), ""
+	}
+	projects := func(n int) string {
+		var terms []string
+		for i := range n {
+			terms = append(terms, fmt.Sprintf(`resource.project_id == "p%02d"`, i))
+		}
+		return strings.Join(terms, " || ")
+	}
+	production := changeRule("Production", `resource.environment_id == "prod"`, "roles/workspaceDBA")
+	for n := 4; n <= 26; n++ {
+		many := changeRule("Core projects", projects(n), "roles/projectOwner")
+		message, refusal := swap([]*v1pb.WorkspaceApprovalSetting_Rule{production, many}, []*v1pb.WorkspaceApprovalSetting_Rule{many, production})
+		require.Empty(t, refusal, "%d projects", n)
+		require.Contains(t, message, `Move to rule 2, "Workspace DBA", now behind "Core projects" ("Project owner")`)
+		_, refusal = swap([]*v1pb.WorkspaceApprovalSetting_Rule{many, production}, []*v1pb.WorkspaceApprovalSetting_Rule{production, many})
+		require.Empty(t, refusal, "%d projects, swapped back", n)
+	}
+
+	// The first reading stands wherever it gets a form: the rule that ends
+	// second is the moved one.
+	short := changeRule("Core projects", projects(4), "roles/projectOwner")
+	message, _ := swap([]*v1pb.WorkspaceApprovalSetting_Rule{short, production}, []*v1pb.WorkspaceApprovalSetting_Rule{production, short})
+	require.Contains(t, message, `Move to rule 2, "Project owner", now behind "Production" ("Workspace DBA"): `+"`"+projects(4)+"`")
+	// A rule too long for any form is not the moved one in the second reading.
+	long := changeRule("Core projects", projects(26), "roles/projectOwner")
+	message, _ = swap([]*v1pb.WorkspaceApprovalSetting_Rule{long, production}, []*v1pb.WorkspaceApprovalSetting_Rule{production, long})
+	require.Contains(t, message, `Move to rule 1, "Workspace DBA", now ahead of "Core projects" ("Project owner"): `+"`"+`resource.environment_id == "prod"`+"`")
+	// With no reading that fits, the refusal is the first reading's.
+	other := changeRule("Other projects", strings.ReplaceAll(projects(26), `"p`, `"q`), "roles/workspaceDBA")
+	_, refusal := swap([]*v1pb.WorkspaceApprovalSetting_Rule{long, other}, []*v1pb.WorkspaceApprovalSetting_Rule{other, long})
+	require.Contains(t, refusal, "CHANGE_TOO_LONG")
+	require.Contains(t, refusal, "Move to rule 2, ")
+	require.Contains(t, refusal, "now behind 1 rule with other approvers")
+	require.NotContains(t, refusal, "Move to rule 1, ")
+}
+
+// The second reading of a reorder is the first reading of its reverse, and it
+// is worth a form only when it differs and its moves could fit one.
+func TestMovesReadBothWays(t *testing.T) {
+	random := rand.New(rand.NewPCG(22234, 9))
+	kept := func(elements []string, inOrder []bool) []string {
+		var names []string
+		for i, name := range elements {
+			if inOrder[i] {
+				names = append(names, name)
+			}
+		}
+		slices.Sort(names)
+		return names
+	}
+	differ := 0
+	for range 400 {
+		n := 2 + random.IntN(7)
+		a := make([]string, n)
+		for i := range a {
+			a[i] = fmt.Sprintf("r%d", i)
+		}
+		b := slices.Clone(a)
+		random.Shuffle(n, func(i, j int) { b[i], b[j] = b[j], b[i] })
+		first, second := longestCommonOrders(a, b)
+		back, backSecond := longestCommonOrders(b, a)
+		require.Equal(t, kept(b, second), kept(a, back), "%v to %v", a, b)
+		require.Equal(t, kept(b, first), kept(a, backSecond), "%v to %v", a, b)
+		require.Len(t, kept(b, second), len(kept(b, first)), "both readings are as long")
+		for _, inOrder := range [][]bool{first, second} {
+			var order []string
+			for i, name := range b {
+				if inOrder[i] {
+					order = append(order, name)
+				}
+			}
+			require.True(t, slices.IsSorted(order), "the kept rules are in a's order: %v", order)
+		}
+		if !slices.Equal(first, second) {
+			differ++
+		}
+	}
+	require.Greater(t, differ, 100)
+
+	rules := func(n int) []string {
+		var names []string
+		for i := range n {
+			names = append(names, fmt.Sprintf("r%02d", i))
+		}
+		return names
+	}
+	reversed := func(n int) []string {
+		names := rules(n)
+		slices.Reverse(names)
+		return names
+	}
+	_, another := movesRead(rules(2), reversed(2), false)
+	require.True(t, another, "a swap has two readings")
+	_, another = movesRead(rules(2), reversed(2), true)
+	require.False(t, another, "the second reading has no other")
+	_, another = movesRead(rules(4), append(rules(4)[1:], "r00"), false)
+	require.False(t, another, "a move across the list has one reading")
+	_, another = movesRead(rules(descriptionLines+1), reversed(descriptionLines+1), false)
+	require.True(t, another, "ten moves can take a row each")
+	_, another = movesRead(rules(descriptionLines+2), reversed(descriptionLines+2), false)
+	require.False(t, another, "eleven moves fit no form by either reading")
 }
 
 // A step is a request of its own, and its rules decide which rules a move's
@@ -1158,8 +1357,8 @@ func TestAdministerWorkspaceOffersNoStepsForAMove(t *testing.T) {
 
 // What a move's line says of the rules it passes is short whatever the
 // workspace stores: it names no rule when the names could not fit a
-// description, and counts apart at most maxApproverGroups kinds of approvers
-// that could.
+// description, and counts kinds of approvers apart only while their texts
+// could.
 func TestApprovalMoveLineIsBoundedForAnyStoredRules(t *testing.T) {
 	roles := []string{"roles/projectOwner", "roles/workspaceDBA", "roles/workspaceAdmin", "roles/projectDeveloper", "roles/sqlEditorUser", "roles/projectReleaser", "roles/gitopsServiceAgent", "roles/projectViewer"}
 	stored := []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}
@@ -1173,12 +1372,13 @@ func TestApprovalMoveLineIsBoundedForAnyStoredRules(t *testing.T) {
 	diff, err := diffApprovalRules(stored, requested, "")
 	require.NoError(t, err)
 	require.Len(t, diff.changes, 399)
-	longest := 0
 	for i, line := range diff.changes {
-		require.LessOrEqual(t, lineColumns(line), 2*descriptionLines*descriptionLineWidth, "the names stop where they could not fit")
-		longest = max(longest, lineColumns(diff.shorter[0][i]))
+		// Each side's names, and its counts by approvers, stop at about one
+		// description's worth of text.
+		for _, text := range []string{line, diff.shorter[0][i]} {
+			require.LessOrEqual(t, lineColumns(text), 3*descriptionLines*descriptionLineWidth, "%.200s", text)
+		}
 	}
-	require.LessOrEqual(t, longest, descriptionLines*descriptionLineWidth)
 	last := len(diff.changes) - 1
 	require.Equal(t, diff.shorter[0][last], diff.changes[last], "names that stopped short are not shown as the whole list")
 	require.Equal(t, "Move to rule 400, \"Project owner\" then \"Project owner\" then \"Project owner\", now behind 399 rules with other approvers: `resource.project_id == \"p000\"`", diff.shorter[0][last])
@@ -1198,7 +1398,7 @@ func TestApprovalMoveLineIsBoundedForAnyStoredRules(t *testing.T) {
 		changeRule("Many approvers", `resource.project_id == "many"`, custom(0, 200)...),
 		changeRule("Short", `resource.project_id == "short"`, "roles/projectOwner"),
 	}
-	for i := range maxApproverGroups {
+	for i := range 6 {
 		passed = append(passed, changeRule(fmt.Sprintf("Ten approvers %d", i), fmt.Sprintf(`resource.project_id == "ten-%d"`, i), custom(200+10*i, 10)...))
 	}
 	var movers []*v1pb.WorkspaceApprovalSetting_Rule
@@ -1223,7 +1423,7 @@ func TestApprovalMoveLineIsBoundedForAnyStoredRules(t *testing.T) {
 		{[]*v1pb.WorkspaceApprovalSetting_Rule{changeRule("Marked role", `resource.project_id == "marked-role"`, "roles/marked"+marks), anchor}, 1},
 		{[]*v1pb.WorkspaceApprovalSetting_Rule{changeRule(strings.Repeat("\u5bbd", 400), `resource.project_id == "wide"`, "roles/projectOwner"), anchor}, 1},
 		{passed[:3], 3},
-		{passed[3:], maxApproverGroups},
+		{passed[3:], 6},
 	} {
 		before := slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, kept.rules, movers)
 		moves, err := diffApprovalRules(before, slices.Concat(before[:1], reversed, kept.rules), "")

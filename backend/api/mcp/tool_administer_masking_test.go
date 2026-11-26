@@ -822,6 +822,53 @@ func TestAdministerMaskingRulesCutsALongRuleListToTheDescription(t *testing.T) {
 	require.Equal(t, `... and 23 more rules, tried after these.`, rows[9])
 }
 
+// The masking form reads a reorder both ways too: a swap that a form makes, a
+// form swaps back, also when one of the two rules is too long for any form.
+func TestAdministerMaskingRulesSwapsBackWhatItSwaps(t *testing.T) {
+	swap := func(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule) (message, refusal string) {
+		mock := &maskingMock{}
+		mock.setStored(stored...)
+		user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+		_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+		res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, requested...))))
+		if user.asked.Load() == 0 {
+			return "", resultText(t, res)
+		}
+		return user.lastParams(t).Message, ""
+	}
+	columns := func(n int) string {
+		var terms []string
+		for i := range n {
+			terms = append(terms, fmt.Sprintf(`resource.column_name == "c%02d"`, i))
+		}
+		return `resource.table_name == "orders" && (` + strings.Join(terms, " || ") + ")"
+	}
+	short := maskingRule("r-short", "Short", `resource.column_name == "ssn"`, "bb.default")
+	for n := 2; n <= 30; n += 2 {
+		many := maskingRule("r-many", "Many columns", columns(n), "bb.default")
+		message, refusal := swap([]*v1pb.MaskingRulePolicy_MaskingRule{short, many}, []*v1pb.MaskingRulePolicy_MaskingRule{many, short})
+		require.Empty(t, refusal, "%d columns", n)
+		require.Contains(t, message, `Move to rule 2: any db, any table, column "ssn"`)
+		_, refusal = swap([]*v1pb.MaskingRulePolicy_MaskingRule{many, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, many})
+		require.Empty(t, refusal, "%d columns, swapped back", n)
+	}
+
+	// The first reading stands wherever it gets a form, and the second names
+	// the short rule as moved when the long one fits no form.
+	few := maskingRule("r-many", "Many columns", columns(2), "bb.default")
+	message, _ := swap([]*v1pb.MaskingRulePolicy_MaskingRule{few, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, few})
+	require.Contains(t, unwrapMessage(message), "Move to rule 2: `"+columns(2)+"`")
+	long := maskingRule("r-many", "Many columns", columns(30), "bb.default")
+	message, _ = swap([]*v1pb.MaskingRulePolicy_MaskingRule{long, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, long})
+	require.Contains(t, message, `Move to rule 1: any db, any table, column "ssn"`)
+	// With no reading that fits, the refusal is the first reading's.
+	other := maskingRule("r-other", "Other columns", strings.ReplaceAll(columns(30), `"c`, `"d`), "bb.default")
+	_, refusal := swap([]*v1pb.MaskingRulePolicy_MaskingRule{long, other}, []*v1pb.MaskingRulePolicy_MaskingRule{other, long})
+	require.Contains(t, refusal, "CHANGE_TOO_LONG")
+	require.Contains(t, refusal, "Move to rule 2: ")
+	require.NotContains(t, refusal, "Move to rule 1: ")
+}
+
 // On a form that lists its changes under the choice, a user who cannot read
 // them there can ask for the change in steps, which the message states whole.
 func TestAdministerMaskingRulesOffersStepsWhenAListedChangeIsChangedInChat(t *testing.T) {

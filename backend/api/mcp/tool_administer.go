@@ -386,6 +386,9 @@ type approvalRulesDiff struct {
 	shorter [2][]string
 	// moved reports that the request moves a kept rule.
 	moved bool
+	// other builds the change by the second reading of its moves. It is nil
+	// when that reading is not worth a form (movesRead).
+	other func() (*approvalRulesDiff, error)
 	// requested are the rules for database changes as the request orders them,
 	// and marks say of each whether it is new, changed or kept as stored.
 	requested []*v1pb.WorkspaceApprovalSetting_Rule
@@ -401,6 +404,12 @@ type approvalRulesDiff struct {
 // form does not show them. The rules for database changes are matched by their
 // condition, the text an approval check evaluates.
 func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, link string) (*approvalRulesDiff, error) {
+	return approvalRulesDiffBy(stored, requested, link, false)
+}
+
+// approvalRulesDiffBy is diffApprovalRules by the first or the second reading
+// of the moves (longestCommonOrders).
+func approvalRulesDiffBy(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, link string, second bool) (*approvalRulesDiff, error) {
 	// The request cannot carry such a field, so the write would drop it unstated.
 	for _, rule := range stored {
 		if field := unlistedField(rule.ProtoReflect(), approvalRulesPath, approvalRequestFields); field != "" {
@@ -457,6 +466,7 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 		storedPlace[condition] = place
 	}
 	var keptRules []keptRule
+	var kinds approverKinds
 	flows := map[string]int{}
 	for i, rule := range requestedDB {
 		condition := rule.GetCondition().GetExpression()
@@ -468,21 +478,26 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 		if rule.GetTemplate().GetTitle() == "" {
 			name = fmt.Sprintf("rule %d", i+1)
 		}
+		who := approvers(rule)
 		key := fmt.Sprintf("%q", rule.GetTemplate().GetFlow().GetRoles())
 		if _, ok := flows[key]; !ok {
 			flows[key] = len(flows)
+			kinds.texts = append(kinds.texts, who)
 		}
-		who := approvers(rule)
 		label := fmt.Sprintf("%s (%s)", name, who)
 		keptRules = append(keptRules, keptRule{
 			was: storedPlace[condition], flow: flows[key],
-			label: label, labelSize: textSize(label),
-			approvers: who, approverSize: textSize(who),
+			label: label, labelSize: textSize(label), approverSize: textSize(who),
+			unapproved: len(rule.GetTemplate().GetFlow().GetRoles()) == 0,
 		})
 	}
+	kinds.rules = [2][]int{make([]int, len(flows)), make([]int, len(flows))}
 	// A kept rule outside the longest common order moved: the first matching
 	// rule decides, so a move changes which rule decides some changes.
-	inOrder := longestCommonOrder(storedKept, requestedKept)
+	inOrder, another := movesRead(storedKept, requestedKept, second)
+	if another {
+		diff.other = func() (*approvalRulesDiff, error) { return approvalRulesDiffBy(stored, requested, link, true) }
+	}
 	kept := 0
 	for i, rule := range requestedDB {
 		condition := rule.GetCondition().GetExpression()
@@ -505,7 +520,7 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 		moved := !inOrder[kept]
 		named, shorter := "", [2]string{}
 		if moved {
-			named, shorter = rulesPassed(kept, keptRules)
+			named, shorter = rulesPassed(kept, keptRules, kinds)
 			diff.moved = true
 		}
 		kept++
@@ -546,8 +561,17 @@ type keptRule struct {
 	// label names the rule by its title, or by its place when it has none,
 	// with its approvers.
 	label                   string
-	approvers               string
 	labelSize, approverSize int
+	// unapproved reports that its changes need no approval.
+	unapproved bool
+}
+
+// approverKinds holds, by flow number, the text of each kind of approvers a
+// diff's kept rules have, and the counts its moves fill and empty in turn,
+// one for each side of a move.
+type approverKinds struct {
+	texts []string
+	rules [2][]int
 }
 
 // textSize is the room a text takes in a line: its columns, or its characters
@@ -556,32 +580,28 @@ func textSize(text string) int {
 	return max(lineColumns(text), utf8.RuneCountInString(text))
 }
 
-// maxApproverGroups is how many kinds of approvers a move's line counts apart.
-const maxApproverGroups = 6
-
 // passedSide is the kept rules that traded order with a moved rule, on one
 // side of it. The first matching rule decides, and its template carries the
 // approvers, so only a rule with other approvers changes who approves: those
 // are named, and counted by their approvers, and the rest are only counted.
 type passedSide struct {
 	total, same int
-	// names and groups stop before the text that would take their size past
+	// unapproved are the rules with no approval, when the moved rule has some:
+	// behind one of them a change loses its approval.
+	unapproved int
+	// names and kinds stop before the text that would take their size past
 	// what a description holds: a workspace can store any number of rules,
 	// with titles and approvers of any length.
-	names     []string
-	nameSize  int
-	stopped   bool
-	groups    []approverGroup
-	groupSize int
-	// ungrouped are the rules with approvers past maxApproverGroups kinds, or
-	// past that size.
-	ungrouped int
-}
-
-type approverGroup struct {
-	flow      int
-	approvers string
-	rules     int
+	names    []string
+	nameSize int
+	stopped  bool
+	// kinds are the flow numbers of the other approvers in the order met, and
+	// byKind counts the rules of each. byKind is the diff's: a move empties
+	// what it filled.
+	kinds     []int
+	byKind    []int
+	kindSize  int
+	ungrouped bool
 }
 
 func (s *passedSide) add(other, moved keptRule) {
@@ -591,23 +611,23 @@ func (s *passedSide) add(other, moved keptRule) {
 		s.same++
 		return
 	}
+	if other.unapproved {
+		s.unapproved++
+	}
 	s.stopped = s.stopped || s.nameSize+other.labelSize > most
 	if !s.stopped {
 		s.names = append(s.names, other.label)
 		s.nameSize += other.labelSize
 	}
-	for i := range s.groups {
-		if s.groups[i].flow == other.flow {
-			s.groups[i].rules++
+	if s.byKind[other.flow] == 0 {
+		// A kind takes its approvers and the words that count it.
+		if s.kindSize += other.approverSize + len("1 with , "); s.kindSize > most {
+			s.ungrouped = true
 			return
 		}
+		s.kinds = append(s.kinds, other.flow)
 	}
-	if len(s.groups) == maxApproverGroups || s.groupSize+other.approverSize > most {
-		s.ungrouped++
-		return
-	}
-	s.groups = append(s.groups, approverGroup{flow: other.flow, approvers: other.approvers, rules: 1})
-	s.groupSize += other.approverSize
+	s.byKind[other.flow]++
 }
 
 // named names each rule with other approvers and counts the rest. ok is false
@@ -620,19 +640,20 @@ func (s *passedSide) named() (text string, ok bool) {
 	return andList(items), !s.stopped
 }
 
-// counted counts the rules by their approvers, and names none.
-func (s *passedSide) counted() string {
+// counted counts the rules by their approvers, and names none. texts are the
+// approvers by flow number.
+func (s *passedSide) counted(texts []string) string {
 	other := s.total - s.same
 	switch {
-	case other == 0 || s.ungrouped > 0:
+	case other == 0 || s.ungrouped:
 		return s.terse()
-	case len(s.groups) == 1 && s.same == 0:
-		return countRules(other) + " with " + s.groups[0].approvers
+	case len(s.kinds) == 1 && s.same == 0:
+		return countRules(other) + " with " + texts[s.kinds[0]]
 	default:
 	}
-	parts := make([]string, 0, len(s.groups)+1)
-	for _, group := range s.groups {
-		parts = append(parts, fmt.Sprintf("%d with %s", group.rules, group.approvers))
+	parts := make([]string, 0, len(s.kinds)+1)
+	for _, kind := range s.kinds {
+		parts = append(parts, fmt.Sprintf("%d with %s", s.byKind[kind], texts[kind]))
 	}
 	if s.same > 0 {
 		parts = append(parts, fmt.Sprintf("%d with the same approvers", s.same))
@@ -640,12 +661,18 @@ func (s *passedSide) counted() string {
 	return countRules(s.total) + ": " + strings.Join(parts, ", ")
 }
 
-// terse says only how many rules there are and how many have other approvers:
-// the least a move's line says of them.
+// terse says only how many rules there are, how many of them need no approval
+// and how many have other approvers: the least a move's line says of them.
 func (s *passedSide) terse() string {
 	switch other := s.total - s.same; {
 	case other == 0:
 		return countRules(s.same) + " with the same approvers"
+	case s.unapproved == other && s.same == 0:
+		return countRules(s.total) + " with no approval"
+	case s.unapproved == other:
+		return fmt.Sprintf("%s, %d of them with no approval", countRules(s.total), other)
+	case s.unapproved > 0:
+		return fmt.Sprintf("%s, %d with no approval and %d with other approvers", countRules(s.total), s.unapproved, other-s.unapproved)
 	case s.same == 0:
 		return countRules(s.total) + " with other approvers"
 	default:
@@ -659,8 +686,8 @@ func (s *passedSide) terse() string {
 // cut. named names the rules with other approvers. shorter are for a form with
 // no room for that: counted by approvers, then only counted. named is the
 // first of them when the names stopped short.
-func rulesPassed(moved int, kept []keptRule) (named string, shorter [2]string) {
-	var behind, ahead passedSide
+func rulesPassed(moved int, kept []keptRule, kinds approverKinds) (named string, shorter [2]string) {
+	behind, ahead := passedSide{byKind: kinds.rules[0]}, passedSide{byKind: kinds.rules[1]}
 	for place, other := range kept {
 		switch {
 		case place < moved && other.was > kept[moved].was:
@@ -681,8 +708,11 @@ func rulesPassed(moved int, kept []keptRule) (named string, shorter [2]string) {
 		}
 		names, ok := side.rules.named()
 		allNamed = allNamed && ok
-		for i, text := range []string{names, side.rules.counted(), side.rules.terse()} {
+		for i, text := range []string{names, side.rules.counted(kinds.texts), side.rules.terse()} {
 			sides[i] = append(sides[i], side.word+text)
+		}
+		for _, kind := range side.rules.kinds {
+			side.rules.byKind[kind] = 0
 		}
 	}
 	join := func(sides []string) string { return ", now " + strings.Join(sides, ", and ") }
@@ -755,9 +785,12 @@ func rulesByCondition[R interface{ GetCondition() *expr.Expr }](rules []R) (map[
 	return byCondition, ""
 }
 
-// longestCommonOrder marks the elements of b that stay in the order a has
-// them, by the longest common subsequence; the rest moved.
-func longestCommonOrder(a, b []string) []bool {
+// longestCommonOrders marks the elements of b that stay in the order a has
+// them, by a longest common subsequence; the rest moved. A reorder can have
+// more than one. Where two are as long, first gives up a's element and second
+// gives up b's, so second is the first reading of the same reorder from b to
+// a: a move's reverse reads its moves the other way round.
+func longestCommonOrders(a, b []string) (first, second []bool) {
 	lengths := make([][]int, len(a)+1)
 	for i := range lengths {
 		lengths[i] = make([]int, len(b)+1)
@@ -771,20 +804,61 @@ func longestCommonOrder(a, b []string) []bool {
 			}
 		}
 	}
-	kept := make([]bool, len(b))
-	for i, j := 0, 0; i < len(a) && j < len(b); {
-		switch {
-		case a[i] == b[j]:
-			kept[j] = true
-			i++
-			j++
-		case lengths[i+1][j] >= lengths[i][j+1]:
-			i++
-		default:
-			j++
+	walk := func(giveUpB bool) []bool {
+		kept := make([]bool, len(b))
+		for i, j := 0, 0; i < len(a) && j < len(b); {
+			switch withoutA, withoutB := lengths[i+1][j], lengths[i][j+1]; {
+			case a[i] == b[j]:
+				kept[j] = true
+				i++
+				j++
+			case withoutA > withoutB || (withoutA == withoutB && !giveUpB):
+				i++
+			default:
+				j++
+			}
+		}
+		return kept
+	}
+	return walk(false), walk(true)
+}
+
+// movesRead returns which elements of b stay in order by the first or the
+// second reading, and for the first whether the second is worth a form: it
+// names other rules as moved, and the moves, which take a row each by either
+// reading, are no more than a description has rows.
+func movesRead(a, b []string, second bool) (inOrder []bool, another bool) {
+	first, other := longestCommonOrders(a, b)
+	if second {
+		return other, false
+	}
+	moves := 0
+	for _, kept := range first {
+		if !kept {
+			moves++
 		}
 	}
-	return kept
+	return first, moves <= descriptionLines && !slices.Equal(first, other)
+}
+
+// secondReading builds the form of a change by the second reading of its
+// moves, for a change whose first reading is refused; a rule form is refused
+// only for its length. The readings name different rules as moved, and a
+// reorder's reverse takes them the other way round, so without this a form
+// could make a swap that no form swaps back.
+func secondReading[D any](other func() (D, error), form func(D) (*adminForm, error)) *adminForm {
+	if other == nil {
+		return nil
+	}
+	diff, err := other()
+	if err != nil {
+		return nil
+	}
+	built, err := form(diff)
+	if err != nil {
+		return nil
+	}
+	return built
 }
 
 // approvers names a rule's approval flow: each step's role in order, a
@@ -909,6 +983,13 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 		if !slices.Equal(lines, tried) {
 			built, err = form(lines)
 			tried = lines
+		}
+	}
+	if err != nil {
+		if other := secondReading(diff.other, func(second *approvalRulesDiff) (*adminForm, error) {
+			return approvalRulesForm(ctx, second, issues, link)
+		}); other != nil {
+			return other, nil
 		}
 	}
 	return built, err

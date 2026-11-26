@@ -330,6 +330,9 @@ type maskingRulesDiff struct {
 	marks     []string
 	// types describe each rule's semantic type.
 	types map[string]*storepb.SemanticTypeSetting_SemanticType
+	// other builds the change by the second reading of its moves. It is nil
+	// when that reading is not worth a form (movesRead).
+	other func() (*maskingRulesDiff, error)
 }
 
 // diffMaskingRules compares the requested rule list with the stored one. Rules
@@ -342,6 +345,12 @@ type maskingRulesDiff struct {
 // hand columns to a rule that masks them less, and so can a rule given a type
 // that is not a full mask; these changes say they can unmask data.
 func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, types map[string]*storepb.SemanticTypeSetting_SemanticType, link string) (*maskingRulesDiff, error) {
+	return maskingRulesDiffBy(stored, requested, types, link, false)
+}
+
+// maskingRulesDiffBy is diffMaskingRules by the first or the second reading of
+// the moves (longestCommonOrders).
+func maskingRulesDiffBy(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, types map[string]*storepb.SemanticTypeSetting_SemanticType, link string, second bool) (*maskingRulesDiff, error) {
 	// The request cannot carry such a field, so the write would drop it unstated.
 	for _, rule := range stored {
 		if field := unlistedField(rule.ProtoReflect(), maskingRulesPath, maskingRequestFields); field != "" {
@@ -398,7 +407,10 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 	}
 	// A kept rule outside the longest common order moved, and an added rule's
 	// place is part of its change.
-	inOrder := longestCommonOrder(storedKept, requestedKept)
+	inOrder, another := movesRead(storedKept, requestedKept, second)
+	if another {
+		diff.other = func() (*maskingRulesDiff, error) { return maskingRulesDiffBy(stored, requested, types, link, true) }
+	}
 	kept := 0
 	for i, rule := range requested {
 		condition := rule.GetCondition().GetExpression()
@@ -519,8 +531,16 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 	alone := func(change formChange) bool {
 		return messageHolds(ctx, maskingRulesQuestion, change, maskingRulesUnmask) || messageHolds(ctx, maskingRulesQuestionWithEffect, change, "")
 	}
-	return rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, maskingRuleSection(diff, true), link,
+	form, err := rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, maskingRuleSection(diff, true), link,
 		!slices.ContainsFunc(diff.changes, func(change formChange) bool { return !alone(change) }))
+	if err != nil {
+		if other := secondReading(diff.other, func(second *maskingRulesDiff) (*adminForm, error) {
+			return maskingRulesForm(ctx, second, link)
+		}); other != nil {
+			return other, nil
+		}
+	}
+	return form, err
 }
 
 // maskingRuleSection is what the description says of the rules a change leaves.
