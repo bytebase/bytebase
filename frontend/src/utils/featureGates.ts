@@ -1,3 +1,4 @@
+import { useAppStore } from "@/stores/app";
 import { STORAGE_KEY_SQL_REVIEW_VERSION } from "./storage-keys";
 import { isDev } from "./util";
 
@@ -13,16 +14,17 @@ export const setDevSqlReviewVersion = (version: SqlReviewVersion): void => {
   localStorage.setItem(STORAGE_KEY_SQL_REVIEW_VERSION, version);
 };
 
-// SQL Review V2 is dark-launched: its settings and the plan page's SQL review
-// row stay on the Vite dev server only, unless that browser switched back to
-// V1. The review rule policy API stays live. On the server, the profile's
-// SQLReviewV2 is the same switch, on only in a dev build.
+// SQL Review V2 runs on Bytebase Cloud and on the Vite dev server, unless that
+// browser switched back to V1; a self-hosted release keeps V1. On the server,
+// the profile's SQLReviewV2 is the same switch.
 //
-// `isDev()` is a build-time constant, so a release bundle folds every call to
-// `false` and drops the UI rather than hiding it. Un-gating flips this and the
-// server switch together.
+// Cloud is known once the server info loads, which happens before the app
+// mounts for a signed-in user, so read the gate when rendering or navigating,
+// never at module load.
 export const sqlReviewV2Enabled = (): boolean =>
-  isDev() && devSqlReviewVersion() === "v2";
+  isDev()
+    ? devSqlReviewVersion() === "v2"
+    : useAppStore.getState().isSaaSMode();
 
 export const isSaaSOrDev = (isSaaSMode: boolean): boolean =>
   isSaaSMode || isDev();

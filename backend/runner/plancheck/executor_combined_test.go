@@ -37,8 +37,8 @@ func TestCombinedExecutorLeavesSQLReviewToV2(t *testing.T) {
 		require.NoError(t, err)
 	}
 	coversPostgres := func(engine storepb.Engine) bool { return engine == storepb.Engine_POSTGRES }
-	withV2 := NewCombinedExecutor(s, nil, nil, coversPostgres)
-	withoutV2 := NewCombinedExecutor(s, nil, nil, nil)
+	withV2 := NewCombinedExecutor(s, nil, nil, coversPostgres, false)
+	withoutV2 := NewCombinedExecutor(s, nil, nil, nil, false)
 	target := func(instanceID string) *CheckTarget {
 		return &CheckTarget{Target: "instances/" + instanceID + "/databases/app"}
 	}
@@ -90,12 +90,15 @@ func TestCombinedExecutorHandsSQLReviewToV1WhereEveryRuleIsOff(t *testing.T) {
 		})
 		require.NoError(t, err)
 	}
-	executor := NewCombinedExecutor(s, nil, nil, func(storepb.Engine) bool { return true })
+	coversAll := func(storepb.Engine) bool { return true }
+	executor := NewCombinedExecutor(s, nil, nil, coversAll, true)
+	withoutFallback := NewCombinedExecutor(s, nil, nil, coversAll, false)
 	target := &CheckTarget{Target: "instances/pg/databases/app"}
 	advise := storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE
 
 	setRules(storepb.Policy_WORKSPACE, common.FormatWorkspace("default"))
 	require.False(t, executor.supersededBySQLReviewV2(ctx, target, advise))
+	require.True(t, withoutFallback.supersededBySQLReviewV2(ctx, target, advise), "with every rule off, Cloud runs no SQL review advice")
 
 	setRules(storepb.Policy_PROJECT, common.FormatProject("project-a"), storepb.ReviewRuleType_SYNTAX)
 	require.True(t, executor.supersededBySQLReviewV2(ctx, target, advise), "the project's own policy wins over the workspace's")
