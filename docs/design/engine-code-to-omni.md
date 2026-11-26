@@ -125,11 +125,11 @@ explicit, documented legacy compatibility shims:
   omission of unspecified table charsets/collations so migrations stay valid on older MariaDB
   releases.
 
-**Drivers — in omni; product retains network, auth, and lifecycle glue.** All 23 driver packages
-under `backend/plugin/db/` (covering all 24 `storepb.Engine` values — `db/mysql` registers both
-`MYSQL` and `MARIADB`) delegate wire protocol, metadata sync, query, execute, explain, and dump to
-`omni/<engine>/driver` (24 engine driver packages) behind the shared `omni/driver` contract and
-`backend/plugin/db/util` (`OmniAdapter`, result/config/execute-log conversion).
+**Drivers — in omni; product retains network, auth, and lifecycle glue.** One package,
+`backend/plugin/db/drivers`, registers all 24 `storepb.Engine` values: a single `Driver` that
+delegates wire protocol, metadata sync, query, execute, explain, and dump to `omni/<engine>/driver`
+(24 engine driver packages) behind the shared `omni/driver` contract and `backend/plugin/db/util`
+(`OmniAdapter`, result/config/execute-log conversion).
 Bytebase keeps the product seam: `db.ConnectionConfig` / `*storepb.DataSource` translation into
 `omni/driver.Config`, SSH tunnels (`backend/plugin/db/util/ssh.go`), TLS material resolution
 (`backend/plugin/db/util/ssl.go`), AWS IAM / RDS auth (`backend/plugin/db/util/aws.go`), Google
@@ -151,7 +151,7 @@ Direct engine-related dependencies that intentionally remain in `go.mod`:
 - `github.com/jackc/pgx/v5` (and `github.com/jackc/pgconn` in `backend/bin/server/cmd/root.go`):
   Bytebase's own PostgreSQL metadata store (`backend/store`, `backend/runner/notifylistener`,
   `backend/resources/postgres`, tests), plus `*pgconn.PgError` decoding in
-  `backend/plugin/db/pg/pg.go`.
+  `backend/plugin/db/drivers/pg.go`.
 - `github.com/lib/pq`: Bytebase's metadata migrator (`backend/migrator`) and SQL identifier/literal
   quoting in `backend/component/export/sql.go`.
 - `github.com/go-sql-driver/mysql` (with the `gh-ost` replace): `gh-ost` online-migration
@@ -241,7 +241,7 @@ The contract style is the one `omni/review` already states:
 | `parser/base` | stays: unified `Engine` capability registry (`base.Register`), generic `NodeAST[N]` wrapper, dispatch, product/LSP conversions; shared semantic types (`QueryType`, `StatementType`, `CandidateType`, `WalkThroughStatement`, `ResolvedSpan`, etc.) live in `omni/analysis` |
 | `schema/<engine>` deparse/differ/migration (35k lines) | thin adapters (10 engines, 3.8k lines total including `schema/internal/omnicatalog`) delegating to `omni/<engine>/catalog` and `omni/{clickhouse,trino}/deparse` via `schema.Register`, plus explicit legacy compatibility shims |
 | `schema` comparers, `differ.go` | deleted; replaced by omni catalog diff via `schema/internal/omnicatalog` |
-| `db/<engine>`, `db/transaction`, `db/util` engine helpers (38k lines) | thin adapters (23 engine directories, 7.1k lines total including `db/util`) delegating protocol, sync, query, execute, explain, and dump to `omni/<engine>/driver` via `db/util.OmniAdapter` |
+| `db/<engine>`, `db/transaction`, `db/util` engine helpers (38k lines) | one package, `db/drivers` (5.8k lines total including `db/util`): a single `Driver` over `omni/<engine>/driver`, configured by one `spec` value per engine that maps the data source onto `omni/driver.Config` and states the engine's execute, query, and probe options; capabilities pass through to the omni driver via `db.As` |
 | `db` root, `db/util/aws.go`, `db/util/ssh.go`, `db/util/ssl.go` | stay: registry dispatch, `storepb.DataSource` → `omni/driver.Config` translation, IAM/RDS auth, Cloud SQL dialers, SSH tunnels, TLS material resolution, proto result and task-run log conversion |
 | YAML corpora, golden fixtures for the above | analysis, completion, schema, and driver corpora live in omni under its gates; advisor YAML parity fixtures (362 files) remain in `backend/plugin/advisor/*/test/*.yaml` |
 
@@ -335,19 +335,19 @@ metadata diff, SDL migration, and walk-through simulation to `omni/<engine>/cata
 
 **Status: Complete.**
 
-All 23 driver packages under `backend/plugin/db/` (registering all 24 `storepb.Engine` values;
-`db/mysql` covers both `MYSQL` and `MARIADB`) now delegate wire protocol, metadata sync, query,
-execute, explain, and dump to `omni/<engine>/driver` behind `omni/driver`, shrinking
-`backend/plugin/db` from ~38k to 7.1k non-test Go lines:
+`backend/plugin/db/drivers` registers all 24 `storepb.Engine` values and delegates wire protocol,
+metadata sync, query, execute, explain, and dump to `omni/<engine>/driver` behind `omni/driver`,
+shrinking `backend/plugin/db` from ~38k to 5.8k non-test Go lines:
 
 - `backend/plugin/db/util` (`OmniAdapter`, `omnidriver.go`, `config.go`) owns the
   shared lifecycle, held-session query serialization, `v1pb.QueryResult` conversion, and
   `ExecuteLogger` task-run log plumbing.
-- Per-engine directories remain as thin (~100–480 line) product adapters that translate
-  `db.ConnectionConfig` / `*storepb.DataSource` into `omni/driver.Config`, wire engine-specific
+- One `spec` value per engine (`drivers/<engine>.go`, 12–310 lines) translates
+  `db.ConnectionConfig` / `*storepb.DataSource` into `omni/driver.Config`, wires engine-specific
   credential/network paths (SSH tunnels, TLS material, AWS IAM / RDS auth, AWS SigV4 signing, Cloud
-  SQL dialers, Entra ID / OAuth token providers), and expose `db.Prober` / `db.RowEstimator` where
-  V1 live review uses them.
+  SQL dialers, Entra ID / OAuth token providers), and states the engine's execute, query, and
+  probe options. `db.Prober` and `db.TaskRunSessionReader` come from the spec; `db.RowEstimator`
+  and the other omni capabilities pass through via `db.As`.
 - Target-engine driver SDK dependencies (including `opensearch-go/v5` and the old `azcosmos`
   replace) were removed or moved to `// indirect` in `go.mod`, and unused engine testcontainers were
   pruned from `backend/common/testcontainer/`. Bytebase keeps direct driver dependencies only

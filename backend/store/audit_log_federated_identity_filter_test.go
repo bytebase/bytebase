@@ -10,7 +10,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 
-	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/drivers"
 )
 
 // The payload is protojson, so a predicate naming the proto field instead of

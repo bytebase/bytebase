@@ -20,7 +20,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 
-	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/drivers"
 )
 
 // TestIssueCommentsForMetadataEvents pins the record a metadata patch leaves
