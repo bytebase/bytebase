@@ -4,6 +4,8 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { MonacoEditor } from "./MonacoEditor";
+import { ReadonlyMonaco } from "./ReadonlyMonaco";
+import { MonacoThemeContext } from "./theme";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -67,23 +69,23 @@ const mocks = vi.hoisted(() => {
     editor,
     handlers,
     model,
+    setTheme: vi.fn(),
     subscription,
   };
 });
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    t: (key: string, params?: Record<string, string>) => {
-      const translations: Record<string, string> = {
-        "sql-editor.web-socket.connection-status.title": "Language server",
-        "sql-editor.web-socket.connection-status.connected": "connected",
-        "sql-editor.web-socket.connection-status.last-heartbeat":
-          "Last heartbeat at {{time}}",
-      };
-      return (translations[key] ?? key).replace("{{time}}", params?.time ?? "");
-    },
-  }),
-}));
+vi.mock("react-i18next", () => {
+  const t = (key: string, params?: Record<string, string>) => {
+    const translations: Record<string, string> = {
+      "sql-editor.web-socket.connection-status.title": "Language server",
+      "sql-editor.web-socket.connection-status.connected": "connected",
+      "sql-editor.web-socket.connection-status.last-heartbeat":
+        "Last heartbeat at {{time}}",
+    };
+    return (translations[key] ?? key).replace("{{time}}", params?.time ?? "");
+  };
+  return { useTranslation: () => ({ t }) };
+});
 
 vi.mock("@/components/ui/tooltip", () => ({
   Tooltip: ({
@@ -122,13 +124,13 @@ vi.mock("@/utils/v1/position", () => ({
 
 vi.mock("./core", () => ({
   createMonacoEditor: vi.fn(async () => mocks.editor),
-  getResolvedTheme: vi.fn(() => "vs"),
+  getResolvedTheme: vi.fn((theme = "vs") => theme),
   loadMonacoEditor: vi.fn(async () => ({
     editor: {
       EditorOption: {
         readOnly: 1,
       },
-      setTheme: vi.fn(),
+      setTheme: mocks.setTheme,
       TrackedRangeStickiness: {
         AlwaysGrowsWhenTypingAtEdges: 1,
       },
@@ -190,7 +192,7 @@ const renderIntoContainer = async (
   const container = document.createElement("div");
   const root = createRoot(container);
 
-  act(() => {
+  await act(async () => {
     root.render(element);
   });
   // The init effect awaits several times before it flips `ready`, which gates
@@ -252,6 +254,61 @@ const notifyConnectionState = async () => {
 };
 
 describe("MonacoEditor", () => {
+  test.each(["vs-dark", "Dark Modern"])(
+    "keeps the inherited %s theme when a readonly viewer opens",
+    async (theme) => {
+      const { createMonacoEditor } = await import("./core");
+      const { unmount } = await renderIntoContainer(
+        createElement(
+          MonacoThemeContext.Provider,
+          { value: theme },
+          createElement(ReadonlyMonaco, {
+            content: "CREATE TABLE notes (id INT);",
+            options: { automaticLayout: true },
+          })
+        )
+      );
+
+      try {
+        expect(createMonacoEditor).toHaveBeenCalledWith(
+          expect.objectContaining({
+            options: expect.objectContaining({ theme }),
+          })
+        );
+        expect(mocks.setTheme).toHaveBeenLastCalledWith(theme);
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test("keeps explicit editor themes ahead of the inherited default", async () => {
+    const { unmount } = await renderIntoContainer(
+      createElement(
+        MonacoThemeContext.Provider,
+        { value: "vs-dark" },
+        createElement(ReadonlyMonaco, {
+          content: "select 1",
+          options: { theme: "Light Modern" },
+        })
+      )
+    );
+
+    expect(mocks.setTheme).toHaveBeenLastCalledWith("Light Modern");
+
+    unmount();
+  });
+
+  test("defaults to the light theme outside a themed scope", async () => {
+    const { unmount } = await renderIntoContainer(
+      createElement(ReadonlyMonaco, { content: "select 1" })
+    );
+
+    expect(mocks.setTheme).toHaveBeenLastCalledWith("vs");
+
+    unmount();
+  });
+
   test("keeps the legacy heartbeat interpolation text", () => {
     const locale = JSON.parse(
       readFileSync(resolve("src/locales/en-US.json"), "utf-8")

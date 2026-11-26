@@ -1,11 +1,14 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { router } from "@/app/router";
 import { BannersWrapper } from "@/components/BannersWrapper";
+import { MonacoThemeContext } from "@/components/monaco/theme";
 import { useEnsureWorkspaceCommonData } from "@/hooks/useEnsureWorkspaceCommonData";
 import { provideSheetContext } from "@/modules/sql-editor/model/Sheet";
 import { RequestDrawerHost } from "./RequestDrawerHost";
 import { SQLEditorRouteShell } from "./SQLEditorRouteShell";
+import { monacoThemeName } from "./theme/derive";
 import { SQLEditorThemeScope } from "./theme/SQLEditorThemeScope";
+import { useActiveSQLEditorTheme } from "./theme/useActiveSQLEditorTheme";
 import { useMonacoThemeController } from "./theme/useMonacoThemeController";
 import { useSQLEditorOverlayTheme } from "./theme/useSQLEditorOverlayTheme";
 import { useWorkspaceSQLEditorTheme } from "./theme/useWorkspaceSQLEditorTheme";
@@ -13,6 +16,7 @@ import { useSQLEditorAutoSave } from "./useSQLEditorAutoSave";
 
 function SQLEditorThemeRoot({ children }: Readonly<{ children: ReactNode }>) {
   const theme = useWorkspaceSQLEditorTheme();
+  const activeTheme = useActiveSQLEditorTheme();
   // Live-applies the theme on switch. It deliberately does NOT call setTheme on
   // mount — editors theme themselves at construction via options.theme — so it
   // never races Monaco construction (see useMonacoThemeController).
@@ -21,9 +25,11 @@ function SQLEditorThemeRoot({ children }: Readonly<{ children: ReactNode }>) {
   // render outside the SQL Editor DOM subtree.
   useSQLEditorOverlayTheme();
   return (
-    <SQLEditorThemeScope theme={theme} asContents>
-      {children}
-    </SQLEditorThemeScope>
+    <MonacoThemeContext.Provider value={monacoThemeName(activeTheme)}>
+      <SQLEditorThemeScope theme={theme} asContents>
+        {children}
+      </SQLEditorThemeScope>
+    </MonacoThemeContext.Provider>
   );
 }
 
