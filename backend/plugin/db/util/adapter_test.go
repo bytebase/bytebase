@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
 	omnidriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
@@ -434,3 +435,41 @@ func TestOmniAdapterOpenWithAndSessionHelpers(t *testing.T) {
 		require.NotNil(t, opts.Log)
 	})
 }
+
+func TestExecuteScriptOptions(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("RangeIncludesTerminator logs the semicolon", func(t *testing.T) {
+		var logs []*storepb.TaskRunLog
+		_, opts := BuildExecuteOptions("SELECT 1;\nSELECT 2", db.ExecuteOptions{
+			CreateTaskRunLog: func(_ time.Time, entry *storepb.TaskRunLog) error {
+				logs = append(logs, entry)
+				return nil
+			},
+		}, ExecuteConfig{RangeIncludesTerminator: true})
+		opts.Log.CommandExecute(omnidriver.Command{Text: "SELECT 1", ByteStart: 0, ByteEnd: 8})
+		opts.Log.CommandExecute(omnidriver.Command{Text: "SELECT 2", ByteStart: 10, ByteEnd: 18})
+		require.Len(t, logs, 2)
+		require.Equal(t, int32(9), logs[0].GetCommandExecute().GetRange().GetEnd())
+		require.Equal(t, int32(18), logs[1].GetCommandExecute().GetRange().GetEnd())
+	})
+
+	t.Run("RefuseCreateDatabase fails before the driver runs", func(t *testing.T) {
+		fake := &fakeOmniDriver{}
+		adapter := &OmniAdapter{Driver: fake}
+		_, err := adapter.ExecuteScript(ctx, "CREATE TABLE t (id INT)", db.ExecuteOptions{CreateDatabase: true}, ExecuteConfig{RefuseCreateDatabase: true})
+		require.ErrorContains(t, err, "create database is not supported")
+		require.Empty(t, fake.execScript)
+	})
+
+	t.Run("a driver without an Executor is unimplemented", func(t *testing.T) {
+		adapter := &OmniAdapter{Driver: &pingOnlyDriver{}}
+		_, err := adapter.ExecuteScript(ctx, "SELECT 1", db.ExecuteOptions{}, ExecuteConfig{})
+		require.Equal(t, connect.CodeUnimplemented, connect.CodeOf(err))
+	})
+}
+
+type pingOnlyDriver struct{}
+
+func (*pingOnlyDriver) Ping(context.Context) error { return nil }
+func (*pingOnlyDriver) Close() error               { return nil }

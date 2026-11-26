@@ -4,27 +4,22 @@ import (
 	"context"
 	"strings"
 
-	omnianalysis "github.com/bytebase/omni/analysis"
 	"github.com/bytebase/omni/mongo"
 	"github.com/bytebase/omni/mongo/analysis"
 	"github.com/bytebase/omni/mongo/ast"
 	omnicompletion "github.com/bytebase/omni/mongo/completion"
-	omniparser "github.com/bytebase/omni/mongo/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {
-	base.Register(base.Engine{
-		Split:           SplitSQL,
-		Parse:           parseMongoShell,
-		StatementRanges: GetStatementRanges,
-		Diagnose:        Diagnose,
-		Complete:        Completion,
-		QuerySpan:       GetQuerySpan,
-		Explain:         explainStatement,
-	}, storepb.Engine_MONGODB)
+	engine := base.OmniEngine(analysis.Engine)
+	engine.Split = SplitSQL
+	engine.Parse = parseMongoShell
+	engine.Complete = Completion
+	engine.QuerySpan = GetQuerySpan
+	base.Register(engine, storepb.Engine_MONGODB)
 }
 
 // AST wraps an omni MongoDB AST node and implements the base.AST interface.
@@ -69,12 +64,6 @@ func parseMongoShell(statement string) ([]base.ParsedStatement, error) {
 	return convertStatements(statement, stmts), nil
 }
 
-// parseMongoShellBestEffort returns partial statements and parse errors for LSP callers.
-func parseMongoShellBestEffort(statement string) ([]base.ParsedStatement, []*omniparser.ParseError) {
-	result := mongo.ParseBestEffort(statement)
-	return convertStatements(statement, result.Statements), result.Errors
-}
-
 func convertStatements(input string, stmts []mongo.Statement) []base.ParsedStatement {
 	var result []base.ParsedStatement
 	positionMapper := base.NewByteOffsetPositionMapper(input)
@@ -92,48 +81,6 @@ func convertStatements(input string, stmts []mongo.Statement) []base.ParsedState
 		})
 	}
 	return result
-}
-
-// GetStatementRanges returns the ranges of statements in the MongoDB shell script.
-// Uses best-effort parsing so valid statements are returned while the user is mid-typing.
-func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
-	stmts, _ := parseMongoShellBestEffort(statement)
-	if len(stmts) == 0 {
-		return nil, nil
-	}
-
-	byteRanges := make([]omnianalysis.ByteRange, 0, len(stmts))
-	for _, stmt := range stmts {
-		if stmt.Range == nil {
-			continue
-		}
-		byteRanges = append(byteRanges, omnianalysis.ByteRange{
-			Start: int(stmt.Range.Start),
-			End:   int(stmt.Range.End),
-		})
-	}
-	return base.MapByteRangesToLSP(statement, byteRanges), nil
-}
-
-// Diagnose performs syntax checking on a MongoDB shell script, using best-effort
-// parsing to report all syntax errors rather than only the first.
-func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	_, parseErrors := parseMongoShellBestEffort(statement)
-
-	var diagnostics []base.Diagnostic
-	for _, parseErr := range parseErrors {
-		syntaxErr := &base.SyntaxError{
-			Position: &storepb.Position{
-				Line:   int32(parseErr.Line),
-				Column: int32(parseErr.Column),
-			},
-			RawMessage: parseErr.Message,
-			Message:    parseErr.Message,
-		}
-		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxErr, statement))
-	}
-
-	return diagnostics, nil
 }
 
 // Completion is the entry point for MongoDB code completion.
@@ -201,16 +148,4 @@ func dotPathToPathAST(dotPath string) *base.PathAST {
 		nodes[i] = base.NewItemSelector(part)
 	}
 	return base.BuildPathAST(nodes)
-}
-
-// explainStatement implements base.ExplainStatement. MongoDB states a plan as
-// one document and has no second format, so the format argument is ignored.
-func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
-	return analysis.ExplainStatement(statement)
-}
-
-// DescribeExplain returns the output format of a statement that asks for its
-// own plan, and whether producing that plan runs the statement.
-func DescribeExplain(statement string) (format string, executed bool, ok bool) {
-	return analysis.DescribeExplain(statement)
 }

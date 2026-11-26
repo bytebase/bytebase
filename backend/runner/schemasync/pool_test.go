@@ -18,7 +18,7 @@ import (
 )
 
 func init() {
-	db.Register(storepb.Engine_MYSQL, func() db.Driver { return &poolTestDriver{} })
+	db.Register(storepb.Engine_ENGINE_UNSPECIFIED, func() db.Driver { return &poolTestDriver{} })
 }
 
 // Only the target engine is stubbed; metadata reads and transactions use PostgreSQL.
@@ -47,7 +47,7 @@ func TestSyncDatabaseSchemaHoldsOnePoolConnection(t *testing.T) {
 		ResourceID: "instance-a",
 		Workspace:  "default",
 		Metadata: &storepb.Instance{
-			Engine:      storepb.Engine_MYSQL,
+			Engine:      storepb.Engine_ENGINE_UNSPECIFIED,
 			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
 		},
 	})

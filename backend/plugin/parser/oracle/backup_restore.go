@@ -32,7 +32,9 @@ func TransformDMLToSelect(_ context.Context, tCtx base.TransformContext, stateme
 
 func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
 	originalSQL, err := base.ExtractSingleStatement(statement, backupItem, base.ExtractStatementOptions{
-		SplitSQL:      SplitSQL,
+		SplitSQL: func(script string) ([]base.Statement, error) {
+			return base.SplitMultiSQL(storepb.Engine_ORACLE, script)
+		},
 		SplitErrMsg:   "failed to split SQL",
 		Match:         analysis.ReferencesTable,
 		MatchErrMsg:   "failed to prepare transformation",

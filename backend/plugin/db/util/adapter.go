@@ -6,6 +6,7 @@ import (
 	"io"
 	"sync"
 
+	"connectrpc.com/connect"
 	omnidriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
@@ -140,6 +141,11 @@ type ExecuteConfig struct {
 	Preprocess func(string) string
 	// LoggerOptions appends additional ExecuteLoggerOption values.
 	LoggerOptions []ExecuteLoggerOption
+	// RangeIncludesTerminator extends a logged command's range over the
+	// semicolon that ends it, which the contract leaves out of the command.
+	RangeIncludesTerminator bool
+	// RefuseCreateDatabase fails a script that asks to create a database.
+	RefuseCreateDatabase bool
 }
 
 // MySQLForkExecuteConfig is the ExecuteConfig shared by MySQL-protocol
@@ -416,6 +422,15 @@ func BuildExecuteOptions(statement string, opts db.ExecuteOptions, cfg ExecuteCo
 			return &storepb.Range{Start: int32(start), End: int32(end)}
 		}))
 	}
+	if cfg.RangeIncludesTerminator {
+		loggerOpts = append(loggerOpts, WithCommandRange(func(command omnidriver.Command) *storepb.Range {
+			end := command.ByteEnd
+			if end < len(statement) && statement[end] == ';' {
+				end++
+			}
+			return &storepb.Range{Start: int32(command.ByteStart), End: int32(end)}
+		}))
+	}
 	loggerOpts = append(loggerOpts, cfg.LoggerOptions...)
 
 	if cfg.Preprocess != nil {
@@ -440,9 +455,12 @@ func BuildExecuteOptions(statement string, opts db.ExecuteOptions, cfg ExecuteCo
 
 // ExecuteScript runs statement through the underlying omni Executor according to cfg.
 func (a *OmniAdapter) ExecuteScript(ctx context.Context, statement string, opts db.ExecuteOptions, cfg ExecuteConfig) (int64, error) {
+	if cfg.RefuseCreateDatabase && opts.CreateDatabase {
+		return 0, errors.New("create database is not supported")
+	}
 	executor, ok := a.Driver.(omnidriver.Executor)
 	if !ok {
-		return 0, errors.Errorf("driver %T does not implement omni/driver.Executor", a.Driver)
+		return 0, connect.NewError(connect.CodeUnimplemented, errors.New("method Execute unimplemented"))
 	}
 	cleaned, execOpts := BuildExecuteOptions(statement, opts, cfg)
 	return executor.Execute(ctx, cleaned, execOpts)

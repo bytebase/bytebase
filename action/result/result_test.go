@@ -8,9 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/dynamodb"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/dynamodb"
 )
 
 const (
@@ -867,7 +868,7 @@ func TestBuildCutsStatementsFromTheStoredFileWhenTheRangesNeedIt(t *testing.T) {
 
 func TestBuildLeavesEarlyDynamoDBFailureStatementUnavailable(t *testing.T) {
 	source := "-- txn-mode = off\nINSERT INTO missing VALUE {'id': 1};\nINSERT INTO another_table VALUE {'id': 2, 'description': 'long enough to cover the directive'};"
-	statements, err := dynamodb.SplitSQL(source)
+	statements, err := base.SplitMultiSQL(storepb.Engine_DYNAMODB, source)
 	require.NoError(t, err)
 	require.Len(t, statements, 2)
 	first := statements[0]

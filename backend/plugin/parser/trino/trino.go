@@ -7,9 +7,7 @@ import (
 	stderrors "errors"
 
 	"github.com/bytebase/omni/trino/analysis"
-	"github.com/bytebase/omni/trino/ast"
 	"github.com/bytebase/omni/trino/completion"
-	"github.com/bytebase/omni/trino/parser"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -17,55 +15,10 @@ import (
 )
 
 func init() {
-	base.Register(base.Engine{
-		Split:         SplitSQL,
-		Parse:         parseTrinoStatements,
-		Diagnose:      Diagnose,
-		Complete:      Completion,
-		ValidateQuery: validateQuery,
-		QuerySpan:     GetQuerySpan,
-		Explain:       explainStatement,
-	}, storepb.Engine_TRINO)
-}
-
-type astNode = base.NodeAST[ast.Node]
-
-// SplitSQL splits the input into multiple SQL statements using the omni Trino
-// splitter, re-attaching trailing ';' delimiters when present.
-func SplitSQL(statement string) ([]base.Statement, error) {
-	return base.BuildStatements(statement, parser.Split(statement), func(s parser.Segment) (int, int, bool) {
-		return s.ByteStart, s.ByteEnd, s.Empty()
-	}, true), nil
-}
-
-func parseTrinoStatements(statement string) ([]base.ParsedStatement, error) {
-	return base.ParseSegmentedStatements(statement, SplitSQL, parseSegment)
-}
-
-func parseTrinoSQL(statement string) ([]*astNode, error) {
-	return base.ParseNonEmptySegments(statement, SplitSQL, parseSegment)
-}
-
-func parseSegment(stmt base.Statement) (*astNode, error) {
-	// Parse each segment on its own so ParseError byte offsets align with stmt.Text
-	// before convertParseError shifts them into script coordinates.
-	file, err := parser.Parse(stmt.Text)
-	if err != nil {
-		return nil, convertParseError(stmt.Text, err, stmt.Start)
-	}
-	var node ast.Node
-	if file != nil && len(file.Stmts) > 0 {
-		node = file.Stmts[0]
-	}
-	return &astNode{Node: node, StartPosition: stmt.Start}, nil
-}
-
-// Diagnose returns syntax diagnostics for the given Trino statement,
-// delegating parse and stub filtering to omni's analysis package.
-func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	return base.ConvertOffsetDiagnostics(statement, analysis.Diagnose(statement), func(d parser.Diagnostic) (int, string) {
-		return d.Loc.Start, d.Msg
-	}), nil
+	engine := base.OmniEngine(analysis.Engine)
+	engine.Complete = Completion
+	engine.QuerySpan = GetQuerySpan
+	base.Register(engine, storepb.Engine_TRINO)
 }
 
 // Completion returns auto-completion candidates for a Trino statement at the
@@ -89,14 +42,6 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 		})
 	}
 	return result, nil
-}
-
-func validateQuery(statement string) (bool, bool, error) {
-	readOnly, returnsData, err := analysis.ValidateQuery(statement)
-	if err != nil {
-		return false, false, convertParseError(statement, err, nil)
-	}
-	return readOnly, returnsData, nil
 }
 
 // GetQuerySpan gets the query span for a Trino statement.
@@ -123,20 +68,4 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.
 		}
 	}
 	return span, nil
-}
-
-// explainStatement implements base.ExplainStatement. Trino spells its structured
-// plan (FORMAT JSON); any other format the caller names gets the engine's own
-// text plan (the driver capability table refuses the rest).
-func explainStatement(statement string, format base.ExplainFormat) (string, error) {
-	explain, err := analysis.ExplainStatement(statement, format == base.ExplainFormatJSON)
-	return base.ExplainStatementResult(explain, err, func(e error) error {
-		return convertParseError(statement, e, nil)
-	})
-}
-
-func convertParseError(statement string, err error, basePos *storepb.Position) error {
-	return base.ConvertParseError(statement, err, basePos, func(pe *parser.ParseError) (int, string, string) {
-		return pe.Position, pe.Error(), pe.Message
-	})
 }

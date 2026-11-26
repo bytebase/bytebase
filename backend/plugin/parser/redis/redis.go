@@ -8,5 +8,5 @@ import (
 )
 
 func init() {
-	base.Register(base.Engine{ValidateQuery: analysis.ValidateQuery}, storepb.Engine_REDIS)
+	base.Register(base.OmniEngine(analysis.Engine), storepb.Engine_REDIS)
 }

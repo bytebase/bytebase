@@ -2,30 +2,7 @@ package server
 
 import (
 	// Drivers.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/bigquery"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/cassandra"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/cockroachdb"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/cosmosdb"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/databricks"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/doris"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/dynamodb"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/elasticsearch"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/hive"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/mariadb"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/mongodb"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/mssql"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/oceanbase"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/oracle"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/redis"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/redshift"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/snowflake"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/spanner"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/starrocks"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/tidb"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/trino"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/drivers"
 
 	// Parsers.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"

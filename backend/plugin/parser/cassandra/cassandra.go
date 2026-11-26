@@ -3,9 +3,7 @@ package cassandra
 import (
 	"context"
 
-	omnicassandra "github.com/bytebase/omni/cassandra"
 	"github.com/bytebase/omni/cassandra/analysis"
-	"github.com/bytebase/omni/cassandra/ast"
 	omniparser "github.com/bytebase/omni/cassandra/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -13,40 +11,9 @@ import (
 )
 
 func init() {
-	base.Register(base.Engine{
-		Split:         SplitSQL,
-		Parse:         parseCassandraStatements,
-		ValidateQuery: analysis.ValidateQuery,
-		QuerySpan:     GetQuerySpan,
-	}, storepb.Engine_CASSANDRA)
-}
-
-// AST wraps an omni AST node and implements the base.AST interface.
-type AST = base.NodeAST[ast.Node]
-
-// GetNode extracts the omni AST node from a base.AST interface.
-func GetNode(a base.AST) (ast.Node, bool) {
-	return base.ExtractNode[ast.Node](a)
-}
-
-func SplitSQL(statement string) ([]base.Statement, error) {
-	return base.BuildStatements(statement, omnicassandra.Split(statement), func(s omnicassandra.Segment) (int, int, bool) {
-		return s.ByteStart, s.ByteEnd, s.Empty
-	}, false), nil
-}
-
-func parseCassandraStatements(statement string) ([]base.ParsedStatement, error) {
-	return base.ParseNonEmptyMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
-		parsed, err := omnicassandra.Parse(stmt.Text)
-		if err != nil {
-			return nil, convertError(err, stmt)
-		}
-		asts := make([]base.AST, len(parsed))
-		for i, os := range parsed {
-			asts[i] = &AST{Node: os.AST, Text: stmt.Text, StartPosition: stmt.Start}
-		}
-		return asts, nil
-	})
+	engine := base.OmniEngine(analysis.Engine)
+	engine.QuerySpan = GetQuerySpan
+	base.Register(engine, storepb.Engine_CASSANDRA)
 }
 
 // GetQuerySpan returns the query span for the given CQL statement.

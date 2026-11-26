@@ -67,9 +67,27 @@ type ColumnExtraLookup interface {
 
 // ProberOf returns the driver's probe, or nil when the driver has none.
 func ProberOf(driver Driver) Prober {
-	prober, ok := driver.(Prober)
+	prober, ok := As[Prober](driver)
 	if !ok {
 		return nil
 	}
 	return prober
+}
+
+// As returns v as a T, looking also through the values v's Unwrap() []any
+// returns. A driver that adapts another names the capabilities it has that way,
+// so a capability is asked for with As rather than a type assertion.
+func As[T any](v any) (T, bool) {
+	if t, ok := v.(T); ok {
+		return t, true
+	}
+	if u, ok := v.(interface{ Unwrap() []any }); ok {
+		for _, inner := range u.Unwrap() {
+			if t, ok := inner.(T); ok {
+				return t, true
+			}
+		}
+	}
+	var zero T
+	return zero, false
 }

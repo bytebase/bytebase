@@ -14,7 +14,7 @@ func TestExtractChangedResourcesSeam(t *testing.T) {
 	parsed, err := base.ParseStatements(storepb.Engine_MSSQL, "UPDATE dbo.users SET id = 2; INSERT INTO dbo.users VALUES (1);")
 	require.NoError(t, err)
 
-	asts := []base.AST{&AST{Node: nil}} // nil Node is skipped
+	asts := []base.AST{&base.NodeAST[any]{}} // nil Node is skipped
 	for _, stmt := range parsed {
 		asts = append(asts, stmt.AST)
 	}

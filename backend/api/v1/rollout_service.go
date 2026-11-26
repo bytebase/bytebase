@@ -682,7 +682,7 @@ func getSession(ctx context.Context, engine storepb.Engine, driver db.Driver, ap
 	if engine != storepb.Engine_POSTGRES && engine != storepb.Engine_COCKROACHDB {
 		return nil, errors.Errorf("session monitoring is only supported for PostgreSQL and CockroachDB")
 	}
-	reader, ok := driver.(db.TaskRunSessionReader)
+	reader, ok := db.As[db.TaskRunSessionReader](driver)
 	if !ok {
 		return nil, errors.Errorf("session monitoring for engine %v requires a driver implementing TaskRunSessionReader", engine.String())
 	}

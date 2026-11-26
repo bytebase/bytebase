@@ -2,96 +2,26 @@ package snowflake
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bytebase/omni/snowflake/analysis"
 	omniast "github.com/bytebase/omni/snowflake/ast"
-	"github.com/bytebase/omni/snowflake/diagnostics"
-	omniparser "github.com/bytebase/omni/snowflake/parser"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-var _ base.AST = (*AST)(nil)
-
 func init() {
-	base.Register(base.Engine{
-		Split:           SplitSQL,
-		Parse:           parseSnowflakeStatements,
-		StatementRanges: GetStatementRanges,
-		Diagnose:        Diagnose,
-		Complete:        Completion,
-		ValidateQuery:   analysis.ValidateQuery,
-		QuerySpan:       GetQuerySpan,
-		Explain:         explainStatement,
-		ResultLimit:     statementWithResultLimit,
-	}, storepb.Engine_SNOWFLAKE)
+	engine := base.OmniEngine(analysis.Engine)
+	engine.Complete = Completion
+	engine.QuerySpan = GetQuerySpan
+	base.Register(engine, storepb.Engine_SNOWFLAKE)
 }
-
-// AST wraps an omni AST node and implements the base.AST interface.
-type AST = base.NodeAST[omniast.Node]
 
 // GetNode extracts the omni AST node from a base.AST interface.
 func GetNode(a base.AST) (omniast.Node, bool) {
 	node, ok := base.ExtractNode[omniast.Node](a)
 	return node, ok && node != nil
-}
-
-// SplitSQL splits the input into statements, each with its trailing ';'.
-// A segment holding no statement (a lone ';', a comment) is kept, marked Empty.
-func SplitSQL(statement string) ([]base.Statement, error) {
-	return base.OmniStatements(statement, analysis.SplitStatements(statement)), nil
-}
-
-// parseSnowflakeStatements parses each non-empty segment; empty ones are skipped.
-func parseSnowflakeStatements(statement string) ([]base.ParsedStatement, error) {
-	return base.ParseNonEmptyMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
-		node, err := parseStatementNode(stmt.Text)
-		if err != nil {
-			return nil, convertParseError(err, stmt)
-		}
-		return []base.AST{&AST{
-			Node: node,
-			Text: stmt.Text,
-			// Keep the 1-based line-only ASTStartPosition shape expected by callers.
-			StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + 1},
-		}}, nil
-	})
-}
-
-func parseStatementNode(text string) (omniast.Node, error) {
-	file, err := omniparser.Parse(text)
-	if err != nil {
-		return nil, err
-	}
-	if file == nil || len(file.Stmts) == 0 {
-		return nil, errors.New("statement yielded no parse tree")
-	}
-	return file.Stmts[0], nil
-}
-
-func convertParseError(err error, stmt base.Statement) error {
-	return base.ConvertSyntaxError(stmt, err, true,
-		func(pe *omniparser.ParseError) (int, string) { return pe.Position, pe.Message },
-		func(pe *omniparser.ParseError, pos *storepb.Position) string {
-			return fmt.Sprintf("Syntax error at line %d:%d \n%s", pos.Line, pos.Column, pe.Message)
-		},
-	)
-}
-
-// GetStatementRanges returns the UTF-16 line/character ranges of statements in
-// the input, formatted for the LSP protocol.
-func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
-	return base.MapByteRangesToLSP(statement, analysis.StatementRanges(statement)), nil
-}
-
-// Diagnose returns syntax diagnostics for the given Snowflake statement.
-func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	return base.ConvertOffsetDiagnostics(statement, diagnostics.Analyze(statement), func(d diagnostics.Diagnostic) (int, string) {
-		return d.Range.Start.Offset, d.Message
-	}), nil
 }
 
 // GetQuerySpan returns the query span for the given statement.
@@ -180,20 +110,4 @@ func resolveTable(ctx context.Context, gCtx base.GetQuerySpanContext, normalized
 		}
 	}
 	return nil, errors.Errorf(`table %s.%s.%s is not found`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
-}
-
-// explainStatement implements base.ExplainStatement. Snowflake spells its
-// structured plan EXPLAIN USING JSON; any other format gets the tabular plan.
-func explainStatement(statement string, format base.ExplainFormat) (string, error) {
-	return analysis.ExplainStatement(statement, format == base.ExplainFormatJSON)
-}
-
-// DescribeExplain returns the output format of an EXPLAIN statement and whether
-// it executes the statement it plans.
-func DescribeExplain(statement string) (format string, executed bool, ok bool) {
-	return analysis.DescribeExplain(statement)
-}
-
-func statementWithResultLimit(statement string, limit int, _ string) string {
-	return base.RewriteResultLimit(statement, limit, analysis.RewriteResultLimit, "SELECT * FROM (%s) LIMIT %d")
 }

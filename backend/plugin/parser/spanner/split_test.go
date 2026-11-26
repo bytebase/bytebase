@@ -22,7 +22,7 @@ func TestSpannerSplitSQLSeam(t *testing.T) {
 	require.Equal(t, &storepb.Position{Line: 2, Column: 23}, stmts[1].End)
 
 	// CASE ... END blocks stay whole across statements.
-	stmts, err = SplitSQL("SELECT CASE WHEN a = 1 THEN 1 ELSE 0 END FROM users;\nSELECT * FROM orders;")
+	stmts, err = base.SplitMultiSQL(storepb.Engine_SPANNER, "SELECT CASE WHEN a = 1 THEN 1 ELSE 0 END FROM users;\nSELECT * FROM orders;")
 	require.NoError(t, err)
 	require.Len(t, stmts, 2)
 	require.False(t, stmts[0].Empty)

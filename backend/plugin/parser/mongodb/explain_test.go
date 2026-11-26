@@ -16,14 +16,4 @@ func TestExplainSeam(t *testing.T) {
 
 	_, err = base.ExplainStatement(storepb.Engine_MONGODB, `db.orders.insertOne({a: 1})`, base.ExplainFormatJSON)
 	require.Error(t, err)
-
-	format, executed, isExplain := DescribeExplain(`db.orders.find({}).explain("executionStats")`)
-	require.True(t, isExplain)
-	require.True(t, executed)
-	require.Equal(t, "json", format)
-
-	format, executed, isExplain = DescribeExplain(`db.orders.find({})`)
-	require.False(t, isExplain)
-	require.False(t, executed)
-	require.Empty(t, format)
 }
