@@ -44,6 +44,7 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { getUserEmailInBinding } from "@/types/v1/user";
 import { autoDatabaseRoute } from "@/utils/auto-route";
 import { isSaaSOrDev } from "@/utils/featureGates";
+import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { isBindingPolicyExpired } from "@/utils/v1/iam";
 import { getIssueRoute } from "@/utils/v1/issue/issue";
 import {
@@ -118,9 +119,6 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const fetchDatabases = useAppStore((state) => state.fetchDatabases);
   const fetchInstanceList = useAppStore((state) => state.fetchInstanceList);
   const listIssues = useAppStore((state) => state.listIssues);
-  const canListWorkspaceInstances = useAppStore((state) =>
-    state.hasWorkspacePermission("bb.instances.list")
-  );
   const canListWorkspaceDatabases = useAppStore((state) =>
     state.hasWorkspacePermission("bb.databases.list")
   );
@@ -205,19 +203,25 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     projectName: string;
     availability: ResourceAvailability;
   }>({ projectName, availability: "loading" });
-  const instanceAvailability =
-    instanceState.projectName === projectName
+  const instanceAvailability = !canListProjectInstances
+    ? "unknown"
+    : instanceState.projectName === projectName
       ? instanceState.availability
       : "loading";
   const [transferState, setTransferState] = useState<{
     projectName: string;
     availability: ResourceAvailability;
-  }>({ projectName, availability: "loading" });
+    databases: DatabaseResource[];
+  }>({ projectName, availability: "loading", databases: [] });
   const transferableDatabaseAvailability = !canTransferDatabases
     ? "empty"
     : transferState.projectName === projectName
       ? transferState.availability
       : "loading";
+  const transferableDatabases =
+    canTransferDatabases && transferState.projectName === projectName
+      ? transferState.databases
+      : [];
   const activeIssueKey = `${projectName}:${memberName}:${canReadIssues}`;
   const [activeIssueState, setActiveIssueState] = useState<{
     key: string;
@@ -274,45 +278,38 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   useEffect(() => {
     if (isArchived || availability !== "empty") return;
     let active = true;
-    if (!canListProjectInstances && !canListWorkspaceInstances) {
+    if (!canListProjectInstances) {
       setInstanceState({ projectName, availability: "unknown" });
       return;
     }
-    const inspectInstances = async (parent?: string) => {
-      const { instances } = await fetchInstanceList({
-        parent,
-        pageSize: 1,
-        filter: { state: State.ACTIVE },
-        silent: true,
-      });
-      return instances.length > 0 ? ("present" as const) : ("empty" as const);
-    };
-    const requests = [
-      ...(canListProjectInstances ? [inspectInstances(projectName)] : []),
-      ...(canListWorkspaceInstances ? [inspectInstances()] : []),
-    ];
     setInstanceState({ projectName, availability: "loading" });
-    void Promise.allSettled(requests).then((results) => {
-      if (!active) return;
-      const states = results.map((result) =>
-        result.status === "fulfilled" ? result.value : "unknown"
-      );
-      setInstanceState({
-        projectName,
-        availability: states.includes("present")
-          ? "present"
-          : states.includes("unknown")
-            ? "unknown"
-            : "empty",
+    void fetchInstanceList({
+      parent: projectName,
+      pageSize: 1,
+      filter: { state: State.ACTIVE },
+      silent: true,
+    })
+      .then(({ instances, nextPageToken }) => {
+        if (active) {
+          setInstanceState({
+            projectName,
+            availability: instances.length
+              ? "present"
+              : nextPageToken
+                ? "unknown"
+                : "empty",
+          });
+        }
+      })
+      .catch(() => {
+        if (active) setInstanceState({ projectName, availability: "unknown" });
       });
-    });
     return () => {
       active = false;
     };
   }, [
     availability,
     canListProjectInstances,
-    canListWorkspaceInstances,
     fetchInstanceList,
     isArchived,
     projectName,
@@ -322,14 +319,14 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   useEffect(() => {
     if (isArchived || availability !== "empty") return;
     if (!canTransferDatabases) {
-      setTransferState({ projectName, availability: "empty" });
+      setTransferState({ projectName, availability: "empty", databases: [] });
       return;
     }
     let active = true;
-    setTransferState({ projectName, availability: "loading" });
+    setTransferState({ projectName, availability: "loading", databases: [] });
     void fetchDatabases({
       parent: workspaceName,
-      pageSize: 1,
+      pageSize: 3,
       filter: { project: defaultProject },
       silent: true,
     })
@@ -338,11 +335,18 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
           setTransferState({
             projectName,
             availability: databases.length ? "present" : "empty",
+            databases: databases.slice(0, 3),
           });
         }
       })
       .catch(() => {
-        if (active) setTransferState({ projectName, availability: "unknown" });
+        if (active) {
+          setTransferState({
+            projectName,
+            availability: "unknown",
+            databases: [],
+          });
+        }
       });
     return () => {
       active = false;
@@ -502,6 +506,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const nextSteps = getProjectHomeNextSteps({
     database: availability,
     instance: instanceAvailability,
+    projectInstance: instanceAvailability,
     transferableDatabase: transferableDatabaseAvailability,
     change: changeStatus,
     membership,
@@ -514,6 +519,26 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     canManageMembers,
     goal: readSelectedGuideScenarioId(),
   });
+  let databaseSetupDescription: string | undefined;
+  if (nextSteps.includes("transferDatabases")) {
+    databaseSetupDescription = nextSteps.includes("connect")
+      ? t("project.home.no-databases-transfer-connect-description")
+      : nextSteps.includes("createDatabase")
+        ? t("project.home.no-databases-transfer-description")
+        : t("project.home.transfer-databases-description");
+  } else if (nextSteps.includes("connect")) {
+    databaseSetupDescription = t("project.home.no-databases-description");
+  } else if (nextSteps.includes("createDatabase")) {
+    databaseSetupDescription = t(
+      "project.home.no-databases-create-description"
+    );
+  } else if (
+    instanceAvailability === "empty" &&
+    transferableDatabaseAvailability !== "loading" &&
+    !canConnectInstance
+  ) {
+    databaseSetupDescription = t("project.home.no-databases-prerequisite");
+  }
   const landingStarterIds = getLandingStarterIds({
     scope: "project",
     activeWork:
@@ -649,6 +674,22 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
                 <div className="min-w-0 flex-1">
                   <h3 className="text-sm font-medium text-main">{title}</h3>
                   <p className="text-xs text-control-light">{description}</p>
+                  {step === "transferDatabases" &&
+                    transferableDatabases.length > 0 && (
+                      <ul className="mt-1 flex min-w-0 flex-wrap gap-x-3 gap-y-1 text-xs text-control-light">
+                        {transferableDatabases.map((database) => (
+                          <li
+                            key={database.name}
+                            className="min-w-0 max-w-full break-all"
+                          >
+                            {
+                              extractDatabaseResourceName(database.name)
+                                .databaseName
+                            }
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                 </div>
                 <RouterLink
                   to={nextStepTarget(step, projectId)}
@@ -810,29 +851,8 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
                       ? t("project.home.databases-load-error")
                       : t("project.home.databases-unavailable")}
               </p>
-              {availability === "empty" && (
-                <>
-                  {transferableDatabaseAvailability === "present" &&
-                    canTransferDatabases && (
-                      <p className="mt-1">
-                        {t("project.home.no-databases-transfer-description")}
-                      </p>
-                    )}
-                  {transferableDatabaseAvailability !== "present" &&
-                    instanceAvailability === "empty" && (
-                      <p className="mt-1">
-                        {canConnectInstance
-                          ? t("project.home.no-databases-description")
-                          : t("project.home.no-databases-prerequisite")}
-                      </p>
-                    )}
-                  {transferableDatabaseAvailability !== "present" &&
-                    instanceAvailability === "present" && (
-                      <p className="mt-1">
-                        {t("project.home.no-databases-create-description")}
-                      </p>
-                    )}
-                </>
+              {availability === "empty" && databaseSetupDescription && (
+                <p className="mt-1">{databaseSetupDescription}</p>
               )}
               {availability === "unknown" && canPreviewDatabases && (
                 <Button

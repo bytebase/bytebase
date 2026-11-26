@@ -811,24 +811,26 @@ describe("ProjectHomePage", () => {
     expect(within(next).queryByRole("link", { name: "project.home.connect" })).toBeNull();
   });
 
-  test("suggests creating when a workspace instance exists but has no database to transfer", async () => {
+  test("suggests connecting when only a workspace instance exists", async () => {
     mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
     mocks.state.fetchInstanceList.mockImplementation(async ({ parent }) => ({
       instances: parent ? [] : [{ name: "instances/shared" }],
     }));
     render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
-    expect(await within(next).findByRole("link", { name: "project.home.create-database" })).toBeTruthy();
-    expect(within(next).queryByRole("link", { name: "project.home.connect" })).toBeNull();
+    expect(await within(next).findByRole("link", { name: "project.home.connect" })).toBeTruthy();
+    expect(within(next).queryByRole("link", { name: "project.home.create-database" })).toBeNull();
+    expect(screen.getByText("project.home.no-databases-description")).toBeTruthy();
+    expect(screen.queryByText("project.home.no-databases-create-description")).toBeNull();
     expect(mocks.state.fetchInstanceList).toHaveBeenCalledWith(
       expect.objectContaining({ parent: "projects/orders" })
     );
-    expect(mocks.state.fetchInstanceList).toHaveBeenCalledWith(
+    expect(mocks.state.fetchInstanceList).not.toHaveBeenCalledWith(
       expect.objectContaining({ parent: undefined })
     );
   });
 
-  test("offers transfer first and creation second when unassigned databases exist", async () => {
+  test("offers transfer first and connect second when unassigned databases exist", async () => {
     mocks.state.fetchDatabases.mockImplementation(async ({ parent }) => ({
       databases: parent === "workspaces/demo"
         ? [create(DatabaseSchema$, {
@@ -845,8 +847,8 @@ describe("ProjectHomePage", () => {
     const transfer = await within(next).findByRole("link", {
       name: "project.home.transfer-databases",
     });
-    const createLink = within(next).getByRole("link", {
-      name: "project.home.create-database",
+    const connectLink = await within(next).findByRole("link", {
+      name: "project.home.connect",
     });
     expect(JSON.parse(transfer.getAttribute("data-to")!)).toEqual({
       name: "workspace.database",
@@ -857,13 +859,99 @@ describe("ProjectHomePage", () => {
       },
     });
     expect(transfer.classList.contains("bg-accent")).toBe(true);
-    expect(createLink.classList.contains("bg-accent")).toBe(false);
+    expect(connectLink.classList.contains("bg-accent")).toBe(false);
+    expect(within(next).queryByRole("link", { name: "project.home.create-database" })).toBeNull();
+    expect(screen.getByText("project.home.no-databases-transfer-connect-description")).toBeTruthy();
     expect(mocks.state.fetchDatabases).toHaveBeenCalledWith(
       expect.objectContaining({
         parent: "workspaces/demo",
+        pageSize: 3,
         filter: { project: "projects/default" },
       })
     );
+  });
+
+  test("shows up to three informational database names under Transfer", async () => {
+    mocks.state.fetchDatabases.mockImplementation(async ({ parent }) => ({
+      databases: parent === "workspaces/demo"
+        ? ["inventory", "reporting", "billing", "fourth"].map((name) =>
+            create(DatabaseSchema$, {
+              name: `instances/shared/databases/${name}`,
+              project: "projects/default",
+            })
+          )
+        : [],
+    }));
+    render(<ProjectHomePage projectId="orders" />);
+    const next = await screen.findByRole("region", { name: "project.home.next-step" });
+    await within(next).findByRole("link", { name: "project.home.transfer-databases" });
+    for (const name of ["inventory", "reporting", "billing"]) {
+      expect(within(next).getByText(name)).toBeTruthy();
+      expect(within(next).queryByRole("link", { name })).toBeNull();
+    }
+    expect(within(next).queryByText("fourth")).toBeNull();
+  });
+
+  test("does not suggest creation when project instance discovery fails but a workspace instance exists", async () => {
+    mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
+    mocks.state.fetchInstanceList.mockImplementation(async ({ parent }) => {
+      if (parent) throw new Error("unavailable");
+      return { instances: [{ name: "instances/shared" }] };
+    });
+    render(<ProjectHomePage projectId="orders" />);
+    await waitFor(() => expect(mocks.state.fetchInstanceList).toHaveBeenCalled());
+    expect(screen.queryByRole("link", { name: "project.home.create-database" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "project.home.connect" })).toBeNull();
+    expect(screen.queryByText("project.home.no-databases-create-description")).toBeNull();
+  });
+
+  test("falls back to connecting when transfer discovery fails", async () => {
+    mocks.state.fetchDatabases.mockImplementation(async ({ parent }) => {
+      if (parent === "workspaces/demo") throw new Error("unavailable");
+      return { databases: [] };
+    });
+    render(<ProjectHomePage projectId="orders" />);
+    expect(await screen.findByRole("link", { name: "project.home.connect" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "project.home.transfer-databases" })).toBeNull();
+    expect(screen.getByText("project.home.no-databases-description")).toBeTruthy();
+  });
+
+  test("only describes transfer when connecting is not permitted", async () => {
+    mocks.missedPermissions = ["bb.instances.create"];
+    mocks.state.fetchDatabases.mockImplementation(async ({ parent }) => ({
+      databases: parent === "workspaces/demo"
+        ? [create(DatabaseSchema$, {
+            name: "instances/shared/databases/existing",
+            project: "projects/default",
+          })]
+        : [],
+    }));
+    render(<ProjectHomePage projectId="orders" />);
+    await screen.findByRole("link", { name: "project.home.transfer-databases" });
+    const databases = screen.getByRole("region", { name: "project.home.databases" });
+    expect(within(databases).getByText("project.home.transfer-databases-description")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "project.home.connect" })).toBeNull();
+    expect(screen.queryByText("project.home.no-databases-transfer-description")).toBeNull();
+    expect(screen.queryByText("project.home.no-databases-prerequisite")).toBeNull();
+  });
+
+  test("keeps transfer and creation for an empty project with its own instance", async () => {
+    mocks.state.fetchDatabases.mockImplementation(async ({ parent }) => ({
+      databases: parent === "workspaces/demo"
+        ? [create(DatabaseSchema$, {
+            name: "instances/shared/databases/existing",
+            project: "projects/default",
+          })]
+        : [],
+    }));
+    mocks.state.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "projects/orders/instances/primary" }],
+    });
+    render(<ProjectHomePage projectId="orders" />);
+    await screen.findByRole("link", { name: "project.home.transfer-databases" });
+    expect(await screen.findByRole("link", { name: "project.home.create-database" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "project.home.connect" })).toBeNull();
+    expect(screen.getByText("project.home.no-databases-transfer-description")).toBeTruthy();
   });
 
   test("offers transfer without permission to list instances", async () => {
@@ -896,7 +984,7 @@ describe("ProjectHomePage", () => {
     const setTimeoutSpy = vi.spyOn(window, "setTimeout");
     mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
     mocks.state.fetchInstanceList.mockResolvedValue({
-      instances: [{ name: "instances/primary" }],
+      instances: [{ name: "projects/orders/instances/primary" }],
     });
     const view = render(<ProjectHomePage projectId="orders" />);
     try {
@@ -938,22 +1026,23 @@ describe("ProjectHomePage", () => {
 
   test("does not suggest transfer without workspace update permission", async () => {
     mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
-    mocks.state.fetchInstanceList.mockResolvedValue({
-      instances: [{ name: "instances/shared" }],
-    });
+    mocks.state.fetchInstanceList.mockImplementation(async ({ parent }) => ({
+      instances: parent ? [] : [{ name: "instances/shared" }],
+    }));
     mocks.state.hasWorkspacePermission.mockImplementation(
       (permission) => permission !== "bb.databases.update"
     );
     render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
-    expect(await within(next).findByRole("link", { name: "project.home.create-database" })).toBeTruthy();
+    expect(await within(next).findByRole("link", { name: "project.home.connect" })).toBeTruthy();
+    expect(within(next).queryByRole("link", { name: "project.home.create-database" })).toBeNull();
     expect(within(next).queryByRole("link", { name: "project.home.transfer-databases" })).toBeNull();
     expect(mocks.state.fetchDatabases).not.toHaveBeenCalledWith(
       expect.objectContaining({ parent: "workspaces/demo" })
     );
   });
 
-  test("checks only the first instance in each permitted scope", async () => {
+  test("checks only the first project-owned instance", async () => {
     mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
     mocks.state.fetchInstanceList.mockImplementation(async ({ parent }) => {
       if (parent) return { instances: [], nextPageToken: "" };
@@ -961,14 +1050,14 @@ describe("ProjectHomePage", () => {
     });
     render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
-    expect(await within(next).findByRole("link", { name: "project.home.create-database" })).toBeTruthy();
+    expect(await within(next).findByRole("link", { name: "project.home.connect" })).toBeTruthy();
     expect(mocks.state.fetchInstanceList).toHaveBeenCalledWith(
       expect.objectContaining({ parent: "projects/orders", pageSize: 1 })
     );
-    expect(mocks.state.fetchInstanceList).toHaveBeenCalledWith(
+    expect(mocks.state.fetchInstanceList).not.toHaveBeenCalledWith(
       expect.objectContaining({ parent: undefined, pageSize: 1 })
     );
-    expect(mocks.state.fetchInstanceList).toHaveBeenCalledTimes(2);
+    expect(mocks.state.fetchInstanceList).toHaveBeenCalledTimes(1);
   });
 
   test("does not claim a connection is needed when instance discovery fails", async () => {
@@ -979,6 +1068,55 @@ describe("ProjectHomePage", () => {
     const next = screen.getByRole("region", { name: "project.home.next-step" });
     expect(within(next).getByRole("link", { name: "project.home.members" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "project.home.connect" })).toBeNull();
+  });
+
+  test("does not infer instance absence from an incomplete empty page", async () => {
+    mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
+    mocks.state.fetchInstanceList.mockResolvedValue({
+      instances: [],
+      nextPageToken: "next",
+    });
+    render(<ProjectHomePage projectId="orders" />);
+    await waitFor(() => expect(mocks.state.fetchInstanceList).toHaveBeenCalled());
+    expect(screen.queryByRole("link", { name: "project.home.connect" })).toBeNull();
+    expect(screen.queryByText("project.home.no-databases-description")).toBeNull();
+  });
+
+  test("hides transfer previews when transfer permission is revoked", async () => {
+    mocks.state.fetchDatabases.mockImplementation(async ({ parent }) => ({
+      databases: parent === "workspaces/demo"
+        ? [create(DatabaseSchema$, {
+            name: "instances/shared/databases/unassigned-preview",
+            project: "projects/default",
+          })]
+        : [],
+    }));
+    const view = render(<ProjectHomePage projectId="orders" />);
+    await screen.findByText("unassigned-preview");
+    mocks.state.hasWorkspacePermission.mockImplementation(
+      (permission) => permission !== "bb.databases.update"
+    );
+    view.rerender(<ProjectHomePage projectId="orders" />);
+    expect(screen.queryByText("unassigned-preview")).toBeNull();
+    expect(screen.queryByRole("link", { name: "project.home.transfer-databases" })).toBeNull();
+    expect(await screen.findByRole("link", { name: "project.home.connect" })).toBeTruthy();
+  });
+
+  test("does not carry transfer names into another project's loading state", async () => {
+    mocks.state.fetchDatabases.mockImplementation(async ({ parent }) => ({
+      databases: parent === "workspaces/demo"
+        ? [create(DatabaseSchema$, {
+            name: "instances/shared/databases/unassigned-preview",
+            project: "projects/default",
+          })]
+        : [],
+    }));
+    const view = render(<ProjectHomePage projectId="orders" />);
+    await screen.findByText("unassigned-preview");
+    mocks.state.fetchDatabases.mockImplementation(() => new Promise(() => {}));
+    view.rerender(<ProjectHomePage projectId="second" />);
+    expect(screen.queryByText("unassigned-preview")).toBeNull();
+    expect(screen.queryByRole("link", { name: "project.home.transfer-databases" })).toBeNull();
   });
 
   test("does not suggest connecting when the member cannot create instances", async () => {

@@ -14,6 +14,7 @@ import {
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
 } from "@/app/router/handles";
 import {
+  getProjectSetupSteps,
   type ProjectSetupState,
   type ProjectSetupStep,
 } from "@/lib/projectSetup";
@@ -136,6 +137,9 @@ const isProjectSetupState = (value: unknown): value is ProjectSetupState =>
   (value.instance === "present" ||
     value.instance === "empty" ||
     value.instance === "unknown") &&
+  (value.projectInstance === "present" ||
+    value.projectInstance === "empty" ||
+    value.projectInstance === "unknown") &&
   (value.transferableDatabase === "present" ||
     value.transferableDatabase === "empty" ||
     value.transferableDatabase === "unknown") &&
@@ -149,8 +153,14 @@ const setupHandoffKinds = {
   createDatabase: "create-project-database",
 } as const;
 
-const getAgentSetupSteps = (setup: ProjectSetupState): ProjectSetupStep[] => {
+const getAgentSetupSteps = (
+  setup: ProjectSetupState,
+  emptyProject: boolean
+): ProjectSetupStep[] => {
   if (setup.isDefault) return [];
+  if (emptyProject && setup.projectInstance !== "present") {
+    return getProjectSetupSteps(setup);
+  }
   const steps: ProjectSetupStep[] = [];
   if (setup.canTransferDatabases && setup.transferableDatabase === "present") {
     steps.push("transferDatabases");
@@ -268,7 +278,11 @@ export function collectAgentHandoffs(
     ) {
       const setup = payload.setup;
       if (isProjectSetupState(setup)) {
-        for (const step of getAgentSetupSteps(setup)) {
+        const emptyProject =
+          payload.databases.partial === false &&
+          Array.isArray(payload.databases.databases) &&
+          payload.databases.databases.length === 0;
+        for (const step of getAgentSetupSteps(setup, emptyProject)) {
           result.push({ kind: setupHandoffKinds[step], project });
         }
       }

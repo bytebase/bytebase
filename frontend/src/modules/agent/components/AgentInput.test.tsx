@@ -6909,6 +6909,7 @@ describe("AgentInput", () => {
             setup: {
               isDefault: false,
               instance: "present",
+              projectInstance: "present",
               transferableDatabase: "present",
               canConnectInstance: true,
               canTransferDatabases: true,
@@ -7214,6 +7215,7 @@ describe("AgentInput", () => {
             setup: {
               isDefault: false,
               instance: "empty",
+              projectInstance: "empty",
               transferableDatabase: "empty",
               canConnectInstance: true,
               canTransferDatabases: true,
@@ -9001,6 +9003,7 @@ describe("AgentInput", () => {
             setup: {
               isDefault: false,
               instance: "empty",
+              projectInstance: "empty",
               transferableDatabase: "empty",
               canConnectInstance: true,
               canTransferDatabases: true,
@@ -9064,6 +9067,7 @@ describe("AgentInput", () => {
       setup: {
         isDefault: false,
         instance: "empty",
+        projectInstance: "empty",
         transferableDatabase: "empty",
         canConnectInstance: true,
         canTransferDatabases: true,
@@ -9240,6 +9244,7 @@ describe("AgentInput", () => {
             setup: {
               isDefault: false,
               instance: "empty",
+              projectInstance: "empty",
               transferableDatabase: "empty",
               canConnectInstance: true,
               canTransferDatabases: true,
@@ -9329,6 +9334,7 @@ describe("AgentInput", () => {
             setup: {
               isDefault: false,
               instance: "empty",
+              projectInstance: "empty",
               transferableDatabase: "empty",
               canConnectInstance: true,
               canTransferDatabases: true,
