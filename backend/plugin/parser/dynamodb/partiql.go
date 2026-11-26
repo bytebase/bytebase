@@ -1,4 +1,4 @@
-package partiql
+package dynamodb
 
 import (
 	"context"
@@ -6,13 +6,13 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	omnidynamodb "github.com/bytebase/omni/dynamodb"
+	"github.com/bytebase/omni/dynamodb/analysis"
+	"github.com/bytebase/omni/dynamodb/ast"
+	"github.com/bytebase/omni/dynamodb/catalog"
+	"github.com/bytebase/omni/dynamodb/completion"
+	"github.com/bytebase/omni/dynamodb/parser"
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/bytebase/omni/partiql"
-	"github.com/bytebase/omni/partiql/analysis"
-	"github.com/bytebase/omni/partiql/ast"
-	"github.com/bytebase/omni/partiql/catalog"
-	"github.com/bytebase/omni/partiql/completion"
-	"github.com/bytebase/omni/partiql/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -32,7 +32,7 @@ type astNode = base.NodeAST[ast.Node]
 
 // SplitSQL splits the input into multiple SQL statements using the omni splitter.
 func SplitSQL(statement string) ([]base.Statement, error) {
-	return base.BuildStatements(statement, partiql.Split(statement), func(s partiql.Segment) (int, int, bool) {
+	return base.BuildStatements(statement, omnidynamodb.Split(statement), func(s omnidynamodb.Segment) (int, int, bool) {
 		return s.ByteStart, s.ByteEnd, s.Empty()
 	}, false), nil
 }
