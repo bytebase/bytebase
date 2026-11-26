@@ -35,14 +35,36 @@ func (a *NodeAST[N]) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
-// ExtractNode unwraps the engine-specific AST node from a *NodeAST[N].
+// ExtractNode unwraps the engine-specific AST node from a *NodeAST[N], or from
+// the *NodeAST[any] an omni engine's parse produces.
 func ExtractNode[N any](a AST) (N, bool) {
 	var zero N
-	wrapped, ok := a.(*NodeAST[N])
-	if !ok || wrapped == nil {
+	switch wrapped := a.(type) {
+	case *NodeAST[N]:
+		if wrapped == nil {
+			return zero, false
+		}
+		return wrapped.Node, true
+	case *NodeAST[any]:
+		if wrapped == nil {
+			return zero, false
+		}
+		if wrapped.Node == nil {
+			return zero, true
+		}
+		node, ok := wrapped.Node.(N)
+		return node, ok
+	default:
 		return zero, false
 	}
-	return wrapped.Node, true
+}
+
+// ASTSource returns the statement text a *NodeAST carries, or "".
+func ASTSource(a AST) string {
+	if source, ok := a.(interface{ ASTSource() string }); ok {
+		return source.ASTSource()
+	}
+	return ""
 }
 
 // Statement is the result of splitting SQL (text + positions, no AST).

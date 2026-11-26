@@ -59,7 +59,7 @@ func TestParseVersion(t *testing.T) {
 }
 
 func TestOracleSplitKeepsTrailingFragmentForDatabaseExecution(t *testing.T) {
-	commands, err := oracleparser.SplitSQL("DROP TABLESPACE xxx; CASCADE")
+	commands, err := base.SplitMultiSQL(storepb.Engine_ORACLE, "DROP TABLESPACE xxx; CASCADE")
 	require.NoError(t, err)
 	commands = base.FilterEmptyStatements(commands)
 	require.Len(t, commands, 2)
@@ -95,7 +95,7 @@ IS
 BEGIN
   UPDATE employees SET salary = salary + 1 WHERE id = p_employee_id;
 END update_salary;`
-	commands, err := oracleparser.SplitSQL(statement)
+	commands, err := base.SplitMultiSQL(storepb.Engine_ORACLE, statement)
 	require.NoError(t, err)
 	commands = base.FilterEmptyStatements(commands)
 	require.Len(t, commands, 9)

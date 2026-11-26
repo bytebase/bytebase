@@ -16,19 +16,13 @@ import (
 )
 
 func init() {
-	base.Register(base.Engine{
-		Split:           SplitSQL,
-		Parse:           parseRedshiftStatements,
-		StatementTypes:  GetStatementTypes,
-		StatementRanges: GetStatementRanges,
-		Diagnose:        Diagnose,
-		Complete:        Completion,
-		ValidateQuery:   ValidateSQLForEditor,
-		QuerySpan:       GetQuerySpan,
-		Explain:         explainStatement,
-		ResultLimit:     statementWithResultLimit,
-		ExtractChanged:  extractChangedResources,
-	}, storepb.Engine_REDSHIFT)
+	engine := base.OmniEngine(analysis.Engine)
+	engine.Parse = parseRedshiftStatements
+	engine.StatementTypes = GetStatementTypes
+	engine.Complete = Completion
+	engine.QuerySpan = GetQuerySpan
+	engine.ExtractChanged = extractChangedResources
+	base.Register(engine, storepb.Engine_REDSHIFT)
 }
 
 // AST wraps an omni AST node and implements the base.AST interface.
@@ -39,15 +33,8 @@ func GetNode(a base.AST) (ast.Node, bool) {
 	return base.ExtractNode[ast.Node](a)
 }
 
-// SplitSQL splits the given SQL statement into multiple SQL statements.
-func SplitSQL(statement string) ([]base.Statement, error) {
-	return base.BuildStatements(statement, omniredshift.Split(statement), func(s omniredshift.Segment) (int, int, bool) {
-		return s.ByteStart, s.ByteEnd, s.Empty()
-	}, false), nil
-}
-
 func parseRedshiftStatements(statement string) ([]base.ParsedStatement, error) {
-	return base.ParseMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
+	return base.ParseMultiNodeStatements(statement, splitSQL, func(stmt base.Statement) ([]base.AST, error) {
 		if stmt.Empty {
 			return nil, nil
 		}
@@ -87,27 +74,6 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	return base.ExtractTypesFromPositions(results), nil
 }
 
-func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
-	rawRanges := analysis.StatementRanges(statement)
-	if len(rawRanges) == 0 {
-		return nil, nil
-	}
-	return base.MapByteRangesToLSP(statement, rawRanges), nil
-}
-
-func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	var syntaxErr *base.SyntaxError
-	if diag := analysis.Diagnose(statement); diag != nil {
-		position := base.ByteOffsetToRunePosition(statement, diag.Offset)
-		syntaxErr = &base.SyntaxError{
-			Position:   position,
-			Message:    base.FormatLineSyntaxError(position, diag.Message),
-			RawMessage: diag.Message,
-		}
-	}
-	return base.DiagnoseSyntaxError(statement, syntaxErr), nil
-}
-
 // Completion returns Redshift auto-completion candidates backed by omni's
 // session-aware Redshift completer.
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
@@ -121,18 +87,6 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	return base.ConvertOmniCandidates(candidates, func(c redshiftcompletion.Candidate) (string, redshiftcompletion.CandidateType, string, string) {
 		return c.Text, c.Type, c.Definition, c.Comment
 	}, base.CompareCandidate), nil
-}
-
-// ValidateSQLForEditor validates the SQL statement for SQL editor.
-func ValidateSQLForEditor(statement string) (bool, bool, error) {
-	readOnly, returnsData, err := analysis.ValidateQuery(statement)
-	if err != nil {
-		return false, false, convertError(err, base.Statement{
-			Text:  statement,
-			Start: &storepb.Position{Line: 1, Column: 1},
-		})
-	}
-	return readOnly, returnsData, nil
 }
 
 // GetQuerySpan returns the query span for the given statement.
@@ -164,17 +118,6 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.
 	return span, nil
 }
 
-// explainStatement implements base.ExplainStatement. Redshift EXPLAIN has no
-// machine-readable format, so every request gets the engine's default plan.
-func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
-	explained, err := analysis.ExplainStatement(statement)
-	return base.ExplainStatementResult(explained, err, nil)
-}
-
-func statementWithResultLimit(statement string, limit int, _ string) string {
-	return analysis.StatementWithResultLimit(statement, limit)
-}
-
 func extractChangedResources(database string, schema string, dbMetadata *model.DatabaseMetadata, _ []base.AST, statement string) (*base.ChangeSummary, error) {
 	changes, err := analysis.ExtractChangedResources(statement, database, schema)
 	if err != nil {
@@ -185,6 +128,10 @@ func extractChangedResources(database string, schema string, dbMetadata *model.D
 	}
 	base.AppendStatementChanges(summary, *changes, false)
 	return summary, nil
+}
+
+func splitSQL(statement string) ([]base.Statement, error) {
+	return base.SplitMultiSQL(storepb.Engine_REDSHIFT, statement)
 }
 
 func convertError(err error, stmt base.Statement) error {

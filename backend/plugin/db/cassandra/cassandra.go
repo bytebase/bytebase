@@ -27,7 +27,9 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	cassandraparser "github.com/bytebase/bytebase/backend/plugin/parser/cassandra"
+
+	// Registers the Cassandra splitter QueryConn splits through.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/cassandra"
 )
 
 var _ db.Driver = (*Driver)(nil)
@@ -94,7 +96,7 @@ var cassandraQueryResultOptions = util.QueryResultOptions{
 // QueryConn runs a read-only script, one result per statement, with the
 // editor's SELECT-only rule.
 func (d *Driver) QueryConn(ctx context.Context, rawStatement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	stmts, err := cassandraparser.SplitSQL(rawStatement)
+	stmts, err := base.SplitMultiSQL(storepb.Engine_CASSANDRA, rawStatement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split sql")
 	}

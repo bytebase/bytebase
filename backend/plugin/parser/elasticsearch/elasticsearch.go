@@ -14,12 +14,11 @@ import (
 )
 
 func init() {
-	base.Register(base.Engine{
-		Split:           SplitMultiSQL,
-		StatementRanges: GetStatementRanges,
-		Diagnose:        Diagnose,
-		QuerySpan:       GetQuerySpan,
-	}, storepb.Engine_ELASTICSEARCH)
+	engine := base.OmniEngine(es.Engine)
+	engine.Split = SplitMultiSQL
+	engine.Diagnose = Diagnose
+	engine.QuerySpan = GetQuerySpan
+	base.Register(engine, storepb.Engine_ELASTICSEARCH)
 }
 
 // SplitMultiSQL splits the input into individual ElasticSearch REST API requests.
@@ -55,31 +54,6 @@ func SplitMultiSQL(statement string) ([]base.Statement, error) {
 		})
 	}
 	return statements, nil
-}
-
-func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
-	rawRanges, err := es.GetStatementRanges(statement)
-	if err != nil {
-		return nil, err
-	}
-	if rawRanges == nil {
-		return []base.Range{}, nil
-	}
-
-	ranges := make([]base.Range, 0, len(rawRanges))
-	for _, r := range rawRanges {
-		ranges = append(ranges, base.Range{
-			Start: lsp.Position{
-				Line:      r.Start.Line,
-				Character: r.Start.Character,
-			},
-			End: lsp.Position{
-				Line:      r.End.Line,
-				Character: r.End.Character,
-			},
-		})
-	}
-	return ranges, nil
 }
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {

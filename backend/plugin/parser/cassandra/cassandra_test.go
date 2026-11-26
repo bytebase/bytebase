@@ -3,6 +3,7 @@ package cassandra
 import (
 	"testing"
 
+	"github.com/bytebase/omni/cassandra/ast"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -10,23 +11,23 @@ import (
 )
 
 func TestParseCassandraStatementsSeam(t *testing.T) {
-	// Registry dispatch, AST wrapping, GetNode, and multi-line start positions.
+	// Registry dispatch, AST wrapping, and multi-line start positions.
 	stmts, err := base.ParseStatements(storepb.Engine_CASSANDRA, "SELECT * FROM users;\nSELECT * FROM orders;")
 	require.NoError(t, err)
 	require.Len(t, stmts, 2)
 	require.Equal(t, int32(1), stmts[0].Start.Line)
 	require.Equal(t, int32(2), stmts[1].Start.Line)
-	node, ok := GetNode(stmts[0].AST)
+	node, ok := base.ExtractNode[ast.Node](stmts[0].AST)
 	require.True(t, ok)
 	require.NotNil(t, node)
 
 	// Empty input produces no statements.
-	stmts, err = parseCassandraStatements("")
+	stmts, err = base.ParseStatements(storepb.Engine_CASSANDRA, "")
 	require.NoError(t, err)
 	require.Empty(t, stmts)
 
 	// Syntax error position adjustment across lines and leading indentation.
-	_, err = parseCassandraStatements("SELECT * FROM t;\n  SELCT * FROM users")
+	_, err = base.ParseStatements(storepb.Engine_CASSANDRA, "SELECT * FROM t;\n  SELCT * FROM users")
 	var syntaxErr *base.SyntaxError
 	require.ErrorAs(t, err, &syntaxErr)
 	require.Equal(t, int32(2), syntaxErr.Position.Line)

@@ -5,11 +5,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestParseSnowflakeStatements(t *testing.T) {
-	stmts, err := parseSnowflakeStatements("SELECT 1;\n\nSELECT 2 FROM t;")
+	stmts, err := base.ParseStatements(storepb.Engine_SNOWFLAKE, "SELECT 1;\n\nSELECT 2 FROM t;")
 	require.NoError(t, err)
 	require.Len(t, stmts, 2)
 	for i, stmt := range stmts {
@@ -43,7 +44,7 @@ func TestParseSnowflakeStatementsSyntaxError(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		_, err := parseSnowflakeStatements(tc.sql)
+		_, err := base.ParseStatements(storepb.Engine_SNOWFLAKE, tc.sql)
 		require.Error(t, err, tc.sql)
 		syntaxErr, ok := err.(*base.SyntaxError)
 		require.True(t, ok, "expected *base.SyntaxError, got %T: %v", err, err)

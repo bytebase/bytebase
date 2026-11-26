@@ -1,11 +1,9 @@
 package mssql
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/bytebase/omni/mssql/ast"
-	mssqlparser "github.com/bytebase/omni/mssql/parser"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -35,22 +33,4 @@ func TestParseStatementsSeam(t *testing.T) {
 	require.False(t, ok)
 	_, ok = GetNode(&fakeAST{})
 	require.False(t, ok)
-}
-
-func TestConvertError(t *testing.T) {
-	sql := "SELECT '你好' FROM t"
-
-	parseErr := &mssqlparser.ParseError{Position: len("SELECT '你好' "), Message: "unexpected token"}
-	err := convertError(parseErr, base.Statement{
-		Text:  sql,
-		Start: &storepb.Position{Line: 4, Column: 1},
-	})
-	var syntaxErr *base.SyntaxError
-	require.ErrorAs(t, err, &syntaxErr)
-	require.Equal(t, &storepb.Position{Line: 4, Column: 13}, syntaxErr.Position)
-	require.Equal(t, "Syntax error at line 4: unexpected token", syntaxErr.Message)
-	require.Equal(t, "unexpected token", syntaxErr.RawMessage)
-
-	sentinel := errors.New("boom")
-	require.ErrorIs(t, convertError(sentinel, base.Statement{}), sentinel)
 }

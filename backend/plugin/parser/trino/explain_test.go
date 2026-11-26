@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -25,7 +26,7 @@ func TestExplainStatement(t *testing.T) {
 		{"EXPLAIN WITH x AS (SELECT 1) SELECT * FROM x", "EXPLAIN WITH x AS (SELECT 1) SELECT * FROM x"},
 	}
 	for _, tc := range tests {
-		got, err := explainStatement(tc.statement, base.ExplainFormatDefault)
+		got, err := base.ExplainStatement(storepb.Engine_TRINO, tc.statement, base.ExplainFormatDefault)
 		require.NoErrorf(t, err, "%q", tc.statement)
 		require.Equalf(t, tc.want, got, "%q", tc.statement)
 	}
@@ -45,7 +46,7 @@ func TestExplainStatementRejects(t *testing.T) {
 		"SELECT 1; SELECT 2",
 		"",
 	} {
-		_, err := explainStatement(statement, base.ExplainFormatDefault)
+		_, err := base.ExplainStatement(storepb.Engine_TRINO, statement, base.ExplainFormatDefault)
 		require.Errorf(t, err, "%q", statement)
 	}
 }
@@ -64,13 +65,13 @@ func TestExplainStatementJSON(t *testing.T) {
 		{"EXPLAIN (FORMAT JSON) SELECT 1", "EXPLAIN (FORMAT JSON) SELECT 1"},
 	}
 	for _, tc := range tests {
-		got, err := explainStatement(tc.statement, base.ExplainFormatJSON)
+		got, err := base.ExplainStatement(storepb.Engine_TRINO, tc.statement, base.ExplainFormatJSON)
 		require.NoErrorf(t, err, "%q", tc.statement)
 		require.Equalf(t, tc.want, got, "%q", tc.statement)
 	}
 	// Only JSON has a reader; the rest fall back to the engine's own plan.
 	for _, format := range []base.ExplainFormat{base.ExplainFormatText, base.ExplainFormatXML, base.ExplainFormatYAML} {
-		got, err := explainStatement("SELECT 1", format)
+		got, err := base.ExplainStatement(storepb.Engine_TRINO, "SELECT 1", format)
 		require.NoError(t, err)
 		require.Equal(t, "EXPLAIN SELECT 1", got)
 	}

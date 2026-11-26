@@ -2,11 +2,9 @@ package dynamodb
 
 import (
 	"context"
-	"errors"
 	"strings"
 	"unicode/utf8"
 
-	omnidynamodb "github.com/bytebase/omni/dynamodb"
 	"github.com/bytebase/omni/dynamodb/analysis"
 	"github.com/bytebase/omni/dynamodb/ast"
 	"github.com/bytebase/omni/dynamodb/catalog"
@@ -19,28 +17,19 @@ import (
 )
 
 func init() {
-	base.Register(base.Engine{
-		Split:         SplitSQL,
-		Parse:         parsePartiQLStatements,
-		Complete:      Completion,
-		ValidateQuery: validateQuery,
-	}, storepb.Engine_DYNAMODB)
+	engine := base.OmniEngine(analysis.Engine)
+	engine.Parse = parsePartiQLStatements
+	engine.Complete = Completion
+	base.Register(engine, storepb.Engine_DYNAMODB)
 }
 
 // astNode wraps an omni AST node to implement the base.AST interface.
 type astNode = base.NodeAST[ast.Node]
 
-// SplitSQL splits the input into multiple SQL statements using the omni splitter.
-func SplitSQL(statement string) ([]base.Statement, error) {
-	return base.BuildStatements(statement, omnidynamodb.Split(statement), func(s omnidynamodb.Segment) (int, int, bool) {
-		return s.ByteStart, s.ByteEnd, s.Empty()
-	}, false), nil
-}
-
 // parsePartiQLStatements is the ParseStatementsFunc for PartiQL (DynamoDB).
 // Returns []ParsedStatement with both text and AST populated.
 func parsePartiQLStatements(statement string) ([]base.ParsedStatement, error) {
-	stmts, err := SplitSQL(statement)
+	stmts, err := base.SplitMultiSQL(storepb.Engine_DYNAMODB, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -75,20 +64,6 @@ func parsePartiQLStatements(statement string) ([]base.ParsedStatement, error) {
 	}
 
 	return result, nil
-}
-
-func validateQuery(statement string) (bool, bool, error) {
-	err := analysis.ValidateQuery(statement)
-	if err == nil {
-		return true, true, nil
-	}
-	// Distinguish syntax errors (*parser.ParseError -> *base.SyntaxError) from
-	// validation rejections (syntactically valid DML/DDL/EXEC that is not read-only).
-	var parseErr *parser.ParseError
-	if errors.As(err, &parseErr) {
-		return false, false, convertParseError(statement, err, nil)
-	}
-	return false, false, nil
 }
 
 // Completion provides auto-complete candidates for PartiQL statements,

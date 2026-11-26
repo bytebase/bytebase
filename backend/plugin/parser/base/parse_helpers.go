@@ -36,31 +36,6 @@ func ParseSegmentedStatements[A AST](
 	return result, nil
 }
 
-// ParseNonEmptySegments splits statement and parses each non-empty segment, skipping empty or
-// whitespace-only segments.
-func ParseNonEmptySegments[A any](
-	statement string,
-	split func(string) ([]Statement, error),
-	parseSegment func(Statement) (A, error),
-) ([]A, error) {
-	stmts, err := split(statement)
-	if err != nil {
-		return nil, err
-	}
-	var result []A
-	for _, stmt := range stmts {
-		if stmt.Empty || strings.TrimSpace(stmt.Text) == "" {
-			continue
-		}
-		parsed, err := parseSegment(stmt)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, parsed)
-	}
-	return result, nil
-}
-
 // ParseMultiNodeStatements splits statement and expands each segment into zero or more
 // ParsedStatement entries. Segments producing no ASTs are preserved with a nil AST.
 func ParseMultiNodeStatements(

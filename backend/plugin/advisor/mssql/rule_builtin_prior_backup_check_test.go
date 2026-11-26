@@ -11,32 +11,13 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mssqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mssql"
 )
 
 func TestPrepareTransformationUsesAST(t *testing.T) {
 	sql := `UPDATE p SET c1 = 1 FROM dbo.pokes AS p WHERE p.c1 = 1;
 DELETE p FROM dbo.pokes AS p WHERE p.c1 = 1;`
-	stmts, err := mssqlparser.ParseTSQL(sql)
+	parsedStatements, err := base.ParseStatements(storepb.Engine_MSSQL, sql)
 	require.NoError(t, err)
-
-	var parsedStatements []base.ParsedStatement
-	for _, stmt := range stmts {
-		start := &storepb.Position{
-			Line:   int32(stmt.Start.Line),
-			Column: int32(stmt.Start.Column),
-		}
-		parsedStatements = append(parsedStatements, base.ParsedStatement{
-			Statement: base.Statement{
-				Text:  stmt.Text,
-				Start: start,
-			},
-			AST: &mssqlparser.AST{
-				Node:          stmt.AST,
-				StartPosition: start,
-			},
-		})
-	}
 
 	advices, err := advisor.Check(context.Background(), storepb.Engine_MSSQL, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK, advisor.Context{
 		DBType:            storepb.Engine_MSSQL,
