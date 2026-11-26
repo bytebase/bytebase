@@ -11,7 +11,7 @@ import type { AgentChatSnapshot, AgentMessage, AgentRunMode } from "./types";
 
 const MAX_ATTACHMENT_BYTES = 32_768;
 
-interface AgentSqlConnectionSnapshot {
+export interface AgentSqlConnectionSnapshot {
   database: string;
   project: string;
   engine: Engine;
@@ -20,15 +20,19 @@ interface AgentSqlConnectionSnapshot {
   dataSourceId?: string;
 }
 
-interface AgentSqlEditorTarget {
+export interface AgentSqlEditorTarget {
   actor: string;
   workspace: string;
   hostId: string;
+  mountId: string;
+  project?: string;
   tabId: string;
+  tabMode: "SAVED_QUERY";
+  savedQuery?: string;
   modelUri: string;
   modelVersion: number;
   connection?: AgentSqlConnectionSnapshot;
-  selection: { start: number; end: number };
+  selection: { start: number; end: number; caret: number };
 }
 
 type AgentSqlQueryOptions = Partial<
@@ -174,6 +178,7 @@ function normalizeConnection(
 
 function normalizeEditorTarget(
   value: unknown,
+  project: AgentSqlEditorSnapshot["project"],
   tab: AgentSqlEditorSnapshot["tab"],
   connection: AgentSqlEditorSnapshot["connection"]
 ): AgentSqlEditorTarget | undefined {
@@ -182,7 +187,18 @@ function normalizeEditorTarget(
     !resourceName(value.actor, "users") ||
     !resourceName(value.workspace, "workspaces") ||
     !text(value.hostId) ||
-    !tab ||
+    !text(value.mountId) ||
+    value.project !== project ||
+    tab?.mode !== "SAVED_QUERY" ||
+    value.tabMode !== tab.mode ||
+    (value.savedQuery !== undefined &&
+      (!project ||
+        typeof value.savedQuery !== "string" ||
+        !value.savedQuery.startsWith(`${project}/`) ||
+        !resourceName(
+          value.savedQuery.slice(project.length + 1),
+          "savedQueries"
+        ))) ||
     value.tabId !== tab.id ||
     !text(value.modelUri) ||
     !count(value.modelVersion) ||
@@ -190,7 +206,10 @@ function normalizeEditorTarget(
     !record(value.selection) ||
     !count(value.selection.start) ||
     !count(value.selection.end) ||
-    value.selection.start > value.selection.end
+    !count(value.selection.caret) ||
+    value.selection.start > value.selection.end ||
+    (value.selection.caret !== value.selection.start &&
+      value.selection.caret !== value.selection.end)
   )
     return undefined;
   const target = normalizeConnection(value.connection);
@@ -208,11 +227,19 @@ function normalizeEditorTarget(
     actor: value.actor,
     workspace: value.workspace,
     hostId: value.hostId,
+    mountId: value.mountId,
+    ...(project === undefined ? {} : { project }),
     tabId: tab.id,
+    tabMode: tab.mode,
+    ...(value.savedQuery === undefined ? {} : { savedQuery: value.savedQuery }),
     modelUri: value.modelUri,
     modelVersion: value.modelVersion,
     ...(target ? { connection: target } : {}),
-    selection: { start: value.selection.start, end: value.selection.end },
+    selection: {
+      start: value.selection.start,
+      end: value.selection.end,
+      caret: value.selection.caret,
+    },
   };
 }
 
@@ -298,6 +325,7 @@ export function normalizeAgentSqlEditorSnapshot(
   if (value.editorTarget !== undefined) {
     const target = normalizeEditorTarget(
       value.editorTarget,
+      snapshot.project,
       snapshot.tab,
       snapshot.connection
     );

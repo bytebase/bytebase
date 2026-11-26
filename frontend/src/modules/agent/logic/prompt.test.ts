@@ -109,6 +109,34 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("schema-dependent");
   });
 
+  test("offers marker guidance for a writable editor snapshot but never for a read-only answer", () => {
+    const page = {
+      ...sqlPage,
+      sqlEditor: {
+        ...sqlPage.sqlEditor,
+        editorTarget: {
+          actor: "users/member",
+          workspace: "workspaces/sample",
+          hostId: "host",
+          mountId: "mount",
+          tabId: "tab-one",
+          tabMode: "SAVED_QUERY" as const,
+          project: "projects/app",
+          modelUri: "file:///query.sql",
+          modelVersion: 3,
+          connection: sqlPage.sqlEditor.connection,
+          selection: { start: 0, end: 0, caret: 0 },
+        },
+      },
+    };
+    expect(buildSystemPrompt(page)).toContain(
+      'kind: "sql-editor-block", blockIndex'
+    );
+    expect(buildSystemPrompt({ ...page, runMode: "read-only" })).not.toContain(
+      "sql-editor-block"
+    );
+  });
+
   test.each([
     { referencedProject: "projects/ref" },
     {

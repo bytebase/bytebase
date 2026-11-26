@@ -100,6 +100,18 @@ describe("getAgentRunStartup", () => {
   });
   const transcript = () => messages.slice(0, 3);
 
+  test("never restarts or continues a member's deterministic Query action as a model turn", () => {
+    const rows = transcript();
+    rows[2] = {
+      ...rows[2],
+      metadata: { ...rows[2].metadata, sqlExecutionAction: true },
+    };
+    expect(getAgentRunStartup(startup(), rows)).toBeUndefined();
+    expect(
+      getAgentRunContinuation(chat, [...rows, ...messages.slice(3)])
+    ).toBeUndefined();
+  });
+
   test("recognizes a never-started run without enabling normal continuation or changing its allowance", () => {
     const value = startup();
     const before = structuredClone(value);

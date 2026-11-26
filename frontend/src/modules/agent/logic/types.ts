@@ -167,6 +167,7 @@ export type AgentHandoff =
   | { kind: "view-failed-task"; task: string };
 
 export type AgentResponseAction =
+  | { kind: "sql-editor-block"; blockIndex: number }
   | { kind: "open"; target: AgentHandoff }
   | { kind: "draft-plan"; project: string; database: string }
   | { kind: "draft-issue-comment"; issue: string; comment: string }
@@ -274,6 +275,8 @@ export interface AgentActionOrigin {
 }
 
 export interface AgentMessageMetadata {
+  // An invalid persisted origin stays passive instead of becoming a model prompt.
+  sqlExecutionAction?: AgentRunBindings["executionOrigin"] | true;
   sqlEditor?: AgentSqlEditorSnapshot;
   sqlActionProvenance?: AgentSqlActionProvenance;
   // Keep a malformed historical SQL turn distinct from a turn without SQL context.

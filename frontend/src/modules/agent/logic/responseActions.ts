@@ -10,6 +10,7 @@ import type { AgentHandoff, AgentResponseAction } from "./types";
 
 const MAX_ACTIONS = 4;
 const MAX_CONTINUE_ACTIONS = MAX_ACTIONS - 1;
+const MAX_SQL_BLOCK_ACTIONS = 4;
 const MAX_FOLLOW_UP_LENGTH = 140;
 const MAX_DRAFT_SQL_LENGTH = 100_000;
 const MAX_COMMENT_LENGTH = 10_000;
@@ -82,19 +83,39 @@ const normalizeOpenTarget = (raw: unknown): AgentHandoff | undefined => {
 };
 
 export function normalizeAgentResponseActions(
-  raw: unknown
+  raw: unknown,
+  sqlBlockAllowed?: (index: number) => boolean
 ): AgentResponseAction[] {
   if (!Array.isArray(raw)) return [];
 
   let primaryAction:
-    | Exclude<AgentResponseAction, { kind: "continue" }>
+    | Exclude<AgentResponseAction, { kind: "continue" | "sql-editor-block" }>
     | undefined;
   const continueActions: Extract<AgentResponseAction, { kind: "continue" }>[] =
     [];
   const seenPrompts = new Set<string>();
+  const sqlIndexes = new Set<number>();
   for (const candidate of raw) {
-    if (primaryAction && continueActions.length === MAX_CONTINUE_ACTIONS) break;
     if (!isRecord(candidate)) continue;
+    if (candidate.kind === "sql-editor-block") {
+      const { blockIndex } = candidate;
+      if (
+        sqlIndexes.size < MAX_SQL_BLOCK_ACTIONS &&
+        Object.keys(candidate).every(
+          (key) => key === "kind" || key === "blockIndex"
+        ) &&
+        typeof blockIndex === "number" &&
+        Number.isSafeInteger(blockIndex) &&
+        blockIndex >= 0 &&
+        !sqlIndexes.has(blockIndex) &&
+        (!sqlBlockAllowed || sqlBlockAllowed(blockIndex))
+      ) {
+        sqlIndexes.add(blockIndex);
+      }
+      continue;
+    }
+    if (primaryAction && continueActions.length === MAX_CONTINUE_ACTIONS)
+      continue;
     if (candidate.kind === "review-sql-fix") {
       if (
         Object.keys(candidate).every(
@@ -221,7 +242,17 @@ export function normalizeAgentResponseActions(
       }
     }
   }
-  return primaryAction ? [primaryAction, ...continueActions] : continueActions;
+  return [
+    ...(primaryAction ? [primaryAction] : []),
+    ...continueActions,
+    ...Array.from(
+      sqlIndexes,
+      (blockIndex): AgentResponseAction => ({
+        kind: "sql-editor-block",
+        blockIndex,
+      })
+    ),
+  ];
 }
 
 export function extractPlanDraftSQL(answer: string): string | undefined {
@@ -269,11 +300,15 @@ export function acceptAgentResponseActions(
   ) {
     return [
       preparedMaskingDraft,
-      ...normalizedActions.filter((action) => action.kind === "continue"),
+      ...normalizedActions.filter(
+        (action) =>
+          action.kind === "continue" || action.kind === "sql-editor-block"
+      ),
     ];
   }
   const actions = normalizedActions.filter((action) => {
-    if (action.kind === "continue") return true;
+    if (action.kind === "continue" || action.kind === "sql-editor-block")
+      return true;
     if (action.kind === "review-sql-fix") return false;
     if (
       action.kind === "draft-masking-rule" ||

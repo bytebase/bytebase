@@ -418,6 +418,20 @@ describe("getQueryMaskingSetupTarget", () => {
 });
 
 describe("getQueryResponseActions", () => {
+  test("retains an additive SQL marker without suppressing masking follow-ups", () => {
+    const marker = { kind: "sql-editor-block", blockIndex: 0 } as const;
+    const messages = turn(...query());
+    expect(
+      getQueryMaskingSetupTarget([rowCount, marker], messages, [reference])
+    ).toBe(database);
+    expect(
+      getQueryResponseActions([rowCount, marker], messages, [reference], {
+        database,
+        allowed: true,
+      })
+    ).toEqual([rowCount, setup, marker]);
+  });
+
   test("an existing Query response offers masking setup with runtime permission evidence and no model overview", () => {
     const messages = turn(...query());
     expect(

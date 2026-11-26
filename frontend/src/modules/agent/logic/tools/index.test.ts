@@ -1519,6 +1519,52 @@ describe("prepare_masking_exemption_draft target evidence", () => {
 });
 
 describe("done tool", () => {
+  test("offers SQL markers only in eligible turns and ignores invalid indexes before their quota", async () => {
+    const options = { enableSqlEditorBlocks: true };
+    const definition = getToolDefinitions(options).find(
+      (tool) => tool.name === "done"
+    );
+    expect(definition?.parametersSchema).toMatchObject({
+      properties: {
+        actions: {
+          maxItems: 8,
+          items: {
+            properties: {
+              kind: { enum: expect.arrayContaining(["sql-editor-block"]) },
+              blockIndex: { type: "integer", minimum: 0 },
+            },
+          },
+        },
+      },
+    });
+    const text = "```sql\r\n  SELECT 1;  \r\n```";
+    const action = { kind: "sql-editor-block", blockIndex: 0 };
+    const actions = [91, 92, 93, 94, 0].map((blockIndex) => ({
+      ...action,
+      blockIndex,
+    }));
+    const qualified = createToolExecutor({} as AppRouterInstance, options);
+    const readOnly = createToolExecutor({} as AppRouterInstance, {
+      ...options,
+      runMode: "read-only",
+    });
+    await expect(
+      qualified("done", { text, success: true, actions }, "done")
+    ).resolves.toEqual({
+      kind: "done",
+      text,
+      success: true,
+      actions: [action],
+    });
+    await expect(
+      readOnly("done", { text, success: true, actions }, "done")
+    ).resolves.toEqual({
+      kind: "done",
+      text,
+      success: true,
+    });
+  });
+
   test("identifies current unsaved existing-rule fields as review-only", async () => {
     const snapshot = {
       sessionId: "editor-existing",

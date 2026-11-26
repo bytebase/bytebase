@@ -365,6 +365,43 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
+  test("keeps each complete unmarked SQL block copyable inside its answer, not beside Ask next", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Show examples" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Examples:\n\n```sql\r\n  SELECT 1;  \r\n```\n\n```sql\nSELECT 2;\n```\n\n> ```sql\n> SELECT 3;\n> ```",
+      metadata: { actions: [{ kind: "continue", prompt: "What next?" }] },
+    });
+    const onRun = vi.fn();
+    const view = renderIntoContainer(<AgentChat onRun={onRun} />);
+    view.render();
+    try {
+      const answer = view.container.querySelector<HTMLElement>("[data-agent-answer]")!;
+      const blocks = answer.querySelectorAll<HTMLElement>("[data-agent-sql-block]");
+      expect(blocks).toHaveLength(2);
+      expect(answer.querySelectorAll("pre")).toHaveLength(3);
+      for (const block of blocks) {
+        expect(block.querySelector("pre")).not.toBeNull();
+        const actions = within(block).getByRole("group", { name: "agent.sql-block.actions" });
+        const copy = within(actions).getByRole("button", { name: "agent.sql-block.copy" });
+        await act(async () => copy.click());
+        expect(within(actions).getAllByRole("button")).toHaveLength(1);
+      }
+      expect(mocks.writeTextToClipboard.mock.calls).toEqual([
+        ["  SELECT 1;  "],
+        ["SELECT 2;"],
+      ]);
+      expect(answer.querySelector("[data-agent-message-timestamp], [data-agent-follow-up]")).toBeNull();
+      expect(view.container.querySelector("[data-agent-follow-up]")).not.toBeNull();
+      expect(onRun).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+    }
+  });
+
   test.each([1, 2])("keeps %i saved receipts in the action group instead of reopening their drafts", (count) => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "workspaces/demo", workspaceName: "workspaces/demo" });
@@ -559,6 +596,30 @@ describe("AgentChat", () => {
       expect(resend).toBeDisabled();
       act(() => resend?.click());
       expect(onResend).not.toHaveBeenCalled();
+      expect(view.container.querySelector('button[aria-label="common.copy"]')).toBeEnabled();
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("does not offer to resend or retry a deterministic SQL execution root", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "Run query",
+      metadata: { sqlExecutionAction: true },
+    });
+    store.setChatStatus(chat.id, "error", { lastError: "Could not run query" });
+    const view = renderIntoContainer(
+      <AgentChat onResend={vi.fn()} onRetry={vi.fn()} />
+    );
+    view.render();
+    try {
+      expect(view.container.textContent).toContain("Run query");
+      expect(view.container.querySelector('button[aria-label="agent.resend-message"]')).toBeNull();
+      expect(within(view.container).queryByRole("button", { name: "agent.retry-last-chat-turn" })).toBeNull();
       expect(view.container.querySelector('button[aria-label="common.copy"]')).toBeEnabled();
     } finally {
       view.unmount();

@@ -20,6 +20,7 @@ import {
   sameAgentDiagnosticCapability,
 } from "../diagnosticCapability";
 import { isAgentExecutionContextCurrent } from "../executionContext";
+import type { AgentSqlExecutionGuard } from "../sqlExecution";
 import type { AgentDiagnosticCapability } from "../types";
 import { checkPreparedApiPermission } from "./apiPermissionPreflight";
 import { dispatchApprovedApiCall, type PreparedApiCall } from "./callApi";
@@ -39,6 +40,7 @@ interface PendingApiCall {
   capability?: AgentDiagnosticCapability;
   issueDecision?: IssueDecisionPermission;
   domOrigin?: CapturedDomMutation;
+  sqlOrigin?: AgentSqlExecutionGuard;
   expiresAt: number;
   priorAttemptIds?: readonly string[];
   isScopeCurrent?: () => boolean;
@@ -112,6 +114,7 @@ export function createPendingApiCall({
   issueDecision,
   domOrigin,
   domContext,
+  sqlOrigin,
   priorAttemptIds,
   isScopeCurrent,
   capability,
@@ -123,6 +126,7 @@ export function createPendingApiCall({
   issueDecision?: IssueDecisionPermission;
   domOrigin?: CapturedDomMutation;
   domContext?: AgentDomContext;
+  sqlOrigin?: AgentSqlExecutionGuard;
   priorAttemptIds?: readonly string[];
   isScopeCurrent?: () => boolean;
   capability?: AgentDiagnosticCapability;
@@ -135,6 +139,15 @@ export function createPendingApiCall({
     throw new Error("The diagnostic API scope could not be verified.");
   }
   const now = Date.now();
+  if (
+    sqlOrigin &&
+    (diagnostic ||
+      domOrigin ||
+      call.operationId !== "bytebase.v1.SQLService.Query" ||
+      call.path !== "/bytebase.v1.SQLService/Query" ||
+      !sqlOrigin.isCurrent())
+  )
+    throw new Error("The prepared SQL action could not be verified.");
   if (
     domOrigin &&
     (domOrigin.chatId !== chatId ||
@@ -165,6 +178,7 @@ export function createPendingApiCall({
     toolCallId,
     userName,
     domOrigin,
+    sqlOrigin,
     call: Object.freeze({ ...call }),
     capability: diagnostic
       ? Object.freeze({
@@ -198,6 +212,7 @@ export function getPendingApiCallPreview({
   | {
       operationId: string;
       body: string;
+      sqlAction?: true;
       priorAttemptIds?: readonly string[];
       expiresAt: number;
       dom?: AgentDomMutationPreview & { resourceName: string };
@@ -215,6 +230,7 @@ export function getPendingApiCallPreview({
     pending.chatId !== chatId ||
     pending.toolCallId !== toolCallId ||
     pending.userName !== userName ||
+    pending.sqlOrigin?.isCurrent() === false ||
     (pending.domOrigin &&
       !isCurrentDomApiCall(pending.domOrigin, pending.call, domContext))
   ) {
@@ -223,6 +239,7 @@ export function getPendingApiCallPreview({
   return {
     operationId: pending.call.operationId,
     body: pending.call.body,
+    ...(pending.sqlOrigin && { sqlAction: true as const }),
     ...(pending.domOrigin
       ? {
           dom: {
@@ -308,7 +325,7 @@ export async function resolvePendingApiCall({
     isCurrentDomApiCall(origin, pending.call, domContext);
   const contextCurrent = () =>
     pending.isScopeCurrent?.() !== false &&
-    (!pending.capability || !!context) &&
+    (!(pending.capability || pending.sqlOrigin) || !!context) &&
     (!context ||
       (context.userName === userName &&
         context.chatId === chatId &&
@@ -327,6 +344,11 @@ export async function resolvePendingApiCall({
         "canceled-before-dispatch"
       );
     if (origin && !domCurrent()) return staleDomPermission;
+    if (pending.sqlOrigin?.isCurrent() === false)
+      return notSentApiResult(
+        "The SQL source changed before dispatch.",
+        "admission-rejected"
+      );
     if (Date.now() >= pending.expiresAt)
       return notSentApiResult(
         "Permission request expired.",
@@ -345,6 +367,18 @@ export async function resolvePendingApiCall({
   };
   let failure = checkContext();
   if (failure) return failure;
+  if (pending.sqlOrigin) {
+    const valid = await pending.sqlOrigin
+      .validateBeforeSend()
+      .catch(() => false);
+    failure = checkContext();
+    if (failure) return failure;
+    if (!valid)
+      return notSentApiResult(
+        "The database is no longer available in the original project.",
+        "preflight-rejected"
+      );
+  }
   if (diagnostic) {
     const inScope = await isDiagnosticApiCallInScope(
       pending.call,
@@ -387,10 +421,16 @@ export async function resolvePendingApiCall({
     isScopeCurrent: () =>
       (!!origin || Date.now() < pending.expiresAt) &&
       sameAgentDiagnosticCapability(pending.capability, capability) &&
+      pending.sqlOrigin?.isCurrent() !== false &&
       contextCurrent(),
-    ...(diagnostic && {
-      validateBeforeSend: () =>
-        isDiagnosticApiCallInScope(pending.call, diagnostic),
+    ...((diagnostic || pending.sqlOrigin) && {
+      validateBeforeSend: async () =>
+        (!diagnostic ||
+          (await isDiagnosticApiCallInScope(pending.call, diagnostic))) &&
+        (!pending.sqlOrigin || (await pending.sqlOrigin.validateBeforeSend())),
+    }),
+    ...(pending.sqlOrigin && {
+      onQueryObservation: pending.sqlOrigin.onQueryObservation,
     }),
     ...(origin && { dom: { expectedContext: origin, beforeSend: domCurrent } }),
   });

@@ -99,8 +99,10 @@ import {
   normalizeAgentResourceReferences,
 } from "../logic/resourceMention";
 import { normalizeAgentResponseActions } from "../logic/responseActions";
+import { supportsAgentRunRecovery } from "../logic/runOwnership";
 import { getAgentSourceSqlEditorContext } from "../logic/sqlEditorContext";
 import { getCurrentAgentSqlEditorContext } from "../logic/sqlEditorHost";
+import type { AgentSqlActionSource } from "../logic/sqlResponse";
 import type {
   AgentChat as AgentChatRecord,
   AgentChatSnapshot,
@@ -240,6 +242,21 @@ export function AgentWindow() {
   const messagesByChatId = useAgentStore((s) => s.messagesByChatId);
   const pendingAskByChatId = useAgentStore((s) => s.pendingAskByChatId);
   const currentChat = useAgentStore(selectCurrentChat);
+  const canStartSqlRun = useAgentStore((s) => {
+    const chat = selectCurrentChat(s);
+    return (
+      !!chat &&
+      supportsAgentRunRecovery() &&
+      s.canUseAgentExecution() &&
+      !s.storagePressure &&
+      chat.status === "idle" &&
+      !chat.interrupted &&
+      !chat.runId &&
+      !chat.runCheckpoint &&
+      !s.followUpDrainChatIds[chat.id] &&
+      !s.getPendingAsk(chat.id)
+    );
+  });
   const currentChatId = useAgentStore((s) => s.currentChatId);
   const landingDraft = useAgentStore((s) => s.landingDraft);
   const landingContext = useAgentStore((s) => s.landingContext);
@@ -1549,6 +1566,9 @@ export function AgentWindow() {
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const resizeCleanupRef = useRef<(() => void) | null>(null);
   const retryLastTurnRef = useRef<(() => void) | null>(null);
+  const sqlExecutionRef = useRef<
+    ((source: AgentSqlActionSource) => Promise<boolean>) | null
+  >(null);
   const retryLastTurn = useCallback(() => retryLastTurnRef.current?.(), []);
   const freeSpaceAndRetryRef = useRef<(() => Promise<boolean>) | null>(null);
   const freeSpaceAndRetry = useCallback(
@@ -2429,6 +2449,13 @@ export function AgentWindow() {
                   : workspace?.title || t("agent.context-workspace")
               }
               onRetry={retryLastTurn}
+              onRun={
+                canStartSqlRun
+                  ? (source) =>
+                      sqlExecutionRef.current?.(source) ??
+                      Promise.resolve(false)
+                  : undefined
+              }
               onFreeSpaceAndRetry={
                 currentChat && !currentChat.archived
                   ? freeSpaceAndRetry
@@ -2458,6 +2485,7 @@ export function AgentWindow() {
               <AgentInput
                 onNewChat={createChat}
                 retryActionRef={retryLastTurnRef}
+                sqlExecutionRef={sqlExecutionRef}
                 freeSpaceAndRetryActionRef={freeSpaceAndRetryRef}
                 resendActionRef={resendMessageRef}
                 focusActionRef={focusInputRef}

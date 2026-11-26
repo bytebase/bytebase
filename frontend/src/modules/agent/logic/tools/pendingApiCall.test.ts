@@ -86,6 +86,35 @@ const diagnosticCapability = (): AgentDiagnosticCapability => ({
   },
 });
 
+test("consumes SQL permission once and checks local freshness again after server scope validation", async () => {
+  const identity = { chatId: "sql", toolCallId: "query", userName: "users/1" };
+  let current = true;
+  const sqlOrigin = {
+    isCurrent: () => current,
+    validateBeforeSend: async () => {
+      current = false;
+      return true;
+    },
+  };
+  const pending = createPendingApiCall({
+    ...identity,
+    sqlOrigin,
+    call: {
+      operationId: "bytebase.v1.SQLService.Query",
+      path: "/bytebase.v1.SQLService/Query",
+      body: "{}",
+    },
+  });
+  const args = { ...identity, ...pending, approved: true };
+  mocks.checkPreparedApiPermission.mockResolvedValue({ kind: "allowed" });
+  expect(getPendingApiCallPreview(args)).toBeDefined();
+  expect(
+    JSON.parse(await resolvePendingApiCall(args)).agentExecution.result
+  ).toBe("not-sent");
+  expect(await resolvePendingApiCall(args)).toContain("already used");
+  expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
+});
+
 const disposers: (() => void)[] = [];
 afterEach(() => {
   for (const dispose of disposers.splice(0)) dispose();

@@ -440,6 +440,17 @@
       "unsaved": "Chỉ điền vào biểu mẫu chưa lưu. Kiểm tra trước khi chọn Tạo."
     },
     "send": "Gửi",
+    "sql-block": {
+      "actions": "Thao tác SQL",
+      "autosave": "Trình soạn thảo SQL có thể tự động tạo hoặc cập nhật truy vấn đã lưu sau khi chỉnh sửa.",
+      "copy": "Sao chép SQL",
+      "insert": "Chèn",
+      "readonly": "Trình soạn thảo SQL này ở chế độ chỉ đọc.",
+      "replace-selection": "Thay thế vùng chọn",
+      "run-query": "Chạy truy vấn",
+      "stale": "Trình soạn thảo hoặc cuộc trò chuyện ban đầu không còn sẵn sàng cho thao tác này.",
+      "unavailable": "Không thể truy cập trình soạn thảo SQL ban đầu."
+    },
     "sql-fix": {
       "applied": "Đã áp dụng SQL vào bản nháp",
       "apply": "Áp dụng vào bản nháp",

@@ -116,6 +116,35 @@ const getRequestBody = (): unknown => {
 };
 
 describe("callApi", () => {
+  test("publishes the single typed native Query observation even when native rendering fails", async () => {
+    const sink = vi.fn(() => {
+      throw Error("stale native view");
+    });
+    mocks.fetch.mockResolvedValue(
+      createResponse({
+        status: 200,
+        body: { results: [{ columnNames: ["example"] }] },
+      })
+    );
+    const result = await dispatchPreparedApiCall(
+      {
+        operationId: "bytebase.v1.SQLService.Query",
+        path: "/bytebase.v1.SQLService/Query",
+        body: "{}",
+      },
+      { onQueryObservation: sink }
+    );
+    expect(sink).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "response",
+        response: expect.objectContaining({
+          $typeName: "bytebase.v1.QueryResponse",
+        }),
+      })
+    );
+    expect(JSON.parse(result).agentExecution.reason).toBe("rpc-success");
+    expect(mocks.fetch).toHaveBeenCalledOnce();
+  });
   test("classifies a paid-feature response on direct READ dispatch without retrying", async () => {
     mocks.getEndpointPath.mockReturnValue(
       "/bytebase.v1.DatabaseGroupService/ListDatabaseGroups"

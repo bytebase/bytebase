@@ -1,8 +1,24 @@
+import type { captureAgentQueryResultTarget } from "@/modules/sql-editor/model/agentQueryResult";
 import { useAgentStore } from "../store/agent";
 import {
   type AgentSqlContextCapture,
+  type AgentSqlEditorTarget,
   normalizeAgentSqlEditorSnapshot,
 } from "./sqlEditorContext";
+
+export interface AgentSqlTargetState {
+  status: "ready" | "stale" | "readonly" | "unavailable";
+}
+
+export interface AgentSqlEditRequest {
+  target: AgentSqlEditorTarget;
+  sql: string;
+  mode: "insert" | "replace-selection";
+}
+
+export interface AgentSqlEditResult {
+  status: "applied" | Exclude<AgentSqlTargetState["status"], "ready">;
+}
 
 export interface AgentSqlEditorHost {
   id: string;
@@ -11,6 +27,9 @@ export interface AgentSqlEditorHost {
   resizer: HTMLElement;
   paneRatio: number;
   captureContext(): AgentSqlContextCapture;
+  captureQueryResultTarget?: typeof captureAgentQueryResultTarget;
+  inspect?(target: AgentSqlEditorTarget): AgentSqlTargetState;
+  applySql?(request: AgentSqlEditRequest): AgentSqlEditResult;
 }
 
 export function registerAgentSqlEditorHost(host: AgentSqlEditorHost) {
