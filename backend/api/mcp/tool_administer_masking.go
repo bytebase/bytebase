@@ -602,8 +602,8 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 		for _, change := range diff.changes {
 			lines = append(lines, change.text)
 		}
-		// The description by the fewest rows is the one whose refusal says
-		// whether smaller steps help.
+		// The cheapest moves avoid a line too long for a form before they
+		// save rows, so their refusal says whether smaller steps help.
 		if otherMovesHelp(diff.moves, lines, list.room()) {
 			return maskingRulesForm(ctx, diff.fewestRows(list.room()), link)
 		}

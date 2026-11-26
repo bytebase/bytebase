@@ -593,11 +593,14 @@ func (m *approvalRulesMatch) changeLines(kept int, moved bool) [3]string {
 }
 
 // byFewestRows describes the change by the moves whose lines take the fewest
-// rows, for a form with room rows for its changes. A reorder has more than one
-// description: when two rules trade places, either one moved. The wordings
-// differ in which moves are cheap, so each has its own description, in the
-// order a form tries the wordings. A form tries every wording of a
-// description, so one with the moves of the wording before it is left out.
+// rows, for a form with room rows for its changes; where no description is
+// free of a line too long for a form, by the moves with the fewest such lines
+// (moveCost). A reorder has more than one description: when two rules trade
+// places, either one moved. The wordings differ in which moves are cheap, so
+// each has its own description, stated in that wording alone, in the order a
+// form tries the wordings. The form then names the rules a move passed, or
+// counts them by their approvers, whenever one of these descriptions has room
+// for that.
 func (m *approvalRulesMatch) byFewestRows(room int) []*approvalRulesDiff {
 	was := make([]int, len(m.kept))
 	for kept, rule := range m.kept {
@@ -615,13 +618,11 @@ func (m *approvalRulesMatch) byFewestRows(room int) []*approvalRulesDiff {
 		}
 	}
 	var diffs []*approvalRulesDiff
-	var last []bool
 	for wording := range 3 {
-		order := cheapestOrder(was, traded, func(kept int) moveCost { return costs[kept][wording] })
-		if wording == 0 || !slices.Equal(order, last) {
-			diffs = append(diffs, m.described(order))
-		}
-		last = order
+		diff := m.described(cheapestOrder(was, traded, func(kept int) moveCost { return costs[kept][wording] }))
+		lines := [3][]string{diff.changes, diff.shorter[0], diff.shorter[1]}[wording]
+		diff.changes, diff.shorter = lines, [2][]string{lines, lines}
+		diffs = append(diffs, diff)
 	}
 	return diffs
 }
@@ -1111,9 +1112,9 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 		}
 	}
 	if err != nil && diff.fewestRows != nil && otherMovesHelp(diff.moves, tried, list.room()) {
-		// The last description tried takes the fewest rows in the shortest
-		// wording, so its refusal is the one that says whether smaller steps
-		// help.
+		// The last description has the shortest wording's cheapest moves,
+		// which avoid a line too long for a form before they save rows. So
+		// its refusal is the one that says whether smaller steps help.
 		for _, other := range diff.fewestRows(list.room()) {
 			if built, err = approvalRulesForm(ctx, other, issues, link); err == nil {
 				break

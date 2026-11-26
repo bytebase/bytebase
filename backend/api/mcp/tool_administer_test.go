@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
@@ -1299,10 +1300,10 @@ func TestAdministerWorkspaceDescribesAReorderByTheMovesThatFit(t *testing.T) {
 	require.Contains(t, message, "Change 1 rule, listed under Action.")
 }
 
-// A reorder too long for one form is sent to smaller steps whenever steps can
-// make it, however many rules moved, and to the console only when two rules
-// that are each too long for a form trade places. Each step here gets a form.
-func TestAdministerWorkspaceAdvisesStepsWheneverStepsCanMakeAReorder(t *testing.T) {
+// A reorder too long for one form is sent to smaller steps when steps can make
+// it, however many rules moved, and to the console when two rules that are
+// each too long for a form trade places. Each step here gets a form.
+func TestAdministerWorkspaceAdvisesStepsForAReorderThatStepsCanMake(t *testing.T) {
 	roles := []string{"roles/workspaceDBA", "roles/projectOwner", "roles/projectReleaser", "roles/workspaceAdmin", "roles/projectDeveloper", "roles/sqlEditorUser"}
 	for _, pairs := range []int{6, 11, 12} {
 		var stored, swapped []*v1pb.WorkspaceApprovalSetting_Rule
@@ -1416,7 +1417,9 @@ func advisesSteps(t *testing.T, err error) bool {
 
 // Whichever rules a tie-break calls moved, a reorder is refused only when no
 // description of it fits a form, and is sent to smaller steps whenever some
-// description has no line too long for one. Each description is tried here
+// description's refusal sends it there. A form that the fewest moves have no
+// room for is in the first wording some description has room for, and takes
+// the fewest rows a description takes in it. Each description is tried here
 // through the form builder itself.
 func TestApprovalReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
 	alice := withUserEmail(context.Background(), "alice@example.com")
@@ -1430,7 +1433,7 @@ func TestApprovalReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
 	}
 	fallbacks := [][]*v1pb.WorkspaceApprovalSetting_Rule{nil, {fallbackRule()}, {staging, fallbackRule()}}
 	rooms := map[int]int{}
-	var forms, rescued, toSteps, toConsole, adviceChanged int
+	var forms, rescued, later, toSteps, toConsole, adviceChanged int
 	for range 600 {
 		fallback := fallbacks[random.IntN(len(fallbacks))]
 		n := 2 + random.IntN(5)
@@ -1470,11 +1473,30 @@ func TestApprovalReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
 			was[kept] = rule.was
 		}
 		fits, bySteps := false, false
+		// The forms of each wording alone, by the rows their changes take.
+		var inWording [3]map[int][]adminForm
 		everyDescription(was, func(inOrder []bool) {
-			if _, err := approvalRulesForm(alice, match.described(inOrder), "", "LINK"); err == nil {
+			described := match.described(inOrder)
+			if _, err := approvalRulesForm(alice, described, "", "LINK"); err == nil {
 				fits = true
 			} else if advisesSteps(t, err) {
 				bySteps = true
+			}
+			for wording, lines := range [][]string{described.changes, described.shorter[0], described.shorter[1]} {
+				one := *described
+				one.changes, one.shorter = lines, [2][]string{lines, lines}
+				form, err := approvalRulesForm(alice, &one, "", "LINK")
+				if err != nil {
+					continue
+				}
+				rows := 0
+				for _, line := range lines {
+					rows += len(wrapLine(line, descriptionLineWidth))
+				}
+				if inWording[wording] == nil {
+					inWording[wording] = map[int][]adminForm{}
+				}
+				inWording[wording][rows] = append(inWording[wording][rows], *form)
 			}
 		})
 
@@ -1490,6 +1512,17 @@ func TestApprovalReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
 		case err == nil:
 			rescued++
 			require.NotContains(t, form.message+form.description, ", now :", "a rule that traded order with none is not moved")
+			for wording, byRows := range inWording {
+				if len(byRows) == 0 {
+					continue
+				}
+				fewest := slices.Min(slices.Collect(maps.Keys(byRows)))
+				require.Contains(t, byRows[fewest], *form, "wording %d, %d rows\nstored %v\nrequested %v", wording, fewest, stored, requested)
+				if wording > 0 {
+					later++
+				}
+				break
+			}
 		default:
 			require.Equal(t, bySteps, advisesSteps(t, err), "stored %v\nrequested %v", stored, requested)
 			if bySteps {
@@ -1505,6 +1538,7 @@ func TestApprovalReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
 	require.Len(t, rooms, 3, "the fallback line takes one, two and three rows: %v", rooms)
 	require.Greater(t, forms, 100)
 	require.Greater(t, rescued, 30, "forms that the description by the fewest moves has no room for")
+	require.Positive(t, later, "forms no description has room for with names")
 	require.Greater(t, toSteps, 50)
 	require.Greater(t, toConsole, 50)
 	require.Greater(t, adviceChanged, 15, "refusals whose advice the description by the fewest moves gets wrong")
@@ -1557,6 +1591,56 @@ func TestApprovalReorderTriesTheCheapestMovesOfEachWording(t *testing.T) {
 		require.NoError(t, err, tc.name)
 		require.Contains(t, unwrapMessage(form.description), `Move to rule 1, "Workspace DBA", `+tc.line, tc.name)
 	}
+}
+
+// A reorder that its fewest moves have no room for is stated in the first
+// wording some description has room for. Here the moves that take the fewest
+// rows with names fit only with the counts alone, and other moves fit with the
+// counts by approvers: the form states those, and does not hide who approves
+// the rules a move passed.
+func TestApprovalReorderByOtherMovesTakesTheFirstWordingWithRoom(t *testing.T) {
+	stored := []*v1pb.WorkspaceApprovalSetting_Rule{
+		changeRule("Customer data warehouse changes for regulated regions", projectsCondition("r0-", 2)+strings.Repeat(" ", 5), "roles/payments-platform-change-approvers", "roles/workspaceDBA"),
+		changeRule("Customer data warehouse changes for regulated regions", projectsCondition("r1-", 1)+strings.Repeat(" ", 3), "roles/projectOwner", "roles/workspaceDBA", "roles/workspaceAdmin"),
+		changeRule("Production", projectsCondition("r2-", 1)+strings.Repeat(" ", 8), "roles/projectOwner", "roles/workspaceDBA", "roles/workspaceAdmin"),
+		changeRule("QA", projectsCondition("r3-", 4)+strings.Repeat(" ", 3), "roles/payments-platform-change-approvers", "roles/workspaceDBA"),
+		changeRule("", projectsCondition("r4-", 8)+strings.Repeat(" ", 33), "roles/projectOwner", "roles/workspaceDBA"),
+		changeRule("Production", projectsCondition("r5-", 1)+strings.Repeat(" ", 17), "roles/projectOwner"),
+	}
+	requested := []*v1pb.WorkspaceApprovalSetting_Rule{stored[0], stored[3], stored[1], stored[2], stored[5], stored[4]}
+
+	// Every description, in each wording alone.
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	fallback := []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}
+	match, err := matchApprovalRules(slices.Concat(fallback, stored), slices.Concat(fallback, requested), "")
+	require.NoError(t, err)
+	_, err = approvalRulesForm(alice, match.described(match.inOrder), "", "")
+	require.Error(t, err, "the fewest moves have no room")
+	was := make([]int, len(match.kept))
+	for kept, rule := range match.kept {
+		was[kept] = rule.was
+	}
+	var fits [3][]int
+	everyDescription(was, func(inOrder []bool) {
+		described := match.described(inOrder)
+		for wording, lines := range [][]string{described.changes, described.shorter[0], described.shorter[1]} {
+			one := *described
+			one.changes, one.shorter = lines, [2][]string{lines, lines}
+			if _, err := approvalRulesForm(alice, &one, "", ""); err == nil {
+				fits[wording] = append(fits[wording], one.moves)
+			}
+		}
+	})
+	require.Empty(t, fits[0], "no description has room with names")
+	require.Equal(t, []int{2}, fits[1], "one has room with the counts by approvers")
+	require.Contains(t, fits[2], 3, "and the three moves that are cheapest with names fit with the counts alone")
+
+	message, description, refusal := askedApprovalChange(t, stored, requested)
+	require.Empty(t, refusal)
+	require.Contains(t, message, "Change 2 rules, listed under Action.")
+	require.True(t, strings.HasPrefix(description,
+		`Move to rule 2, "roles/payments-platform-change-approvers" then "Workspace DBA", now ahead of 2 rules with "Project owner" then "Workspace DBA" then "Workspace admin": `+"`"+stored[3].GetCondition().GetExpression()+"`\n"+
+			`Move to rule 5, "Project owner", now ahead of 1 rule with "Project owner" then "Workspace DBA": `+"`"+stored[5].GetCondition().GetExpression()+"`\n"), description)
 }
 
 // cheapestOrder leaves in place a run of rules in stored order, never moves a

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
@@ -988,7 +989,8 @@ func TestMaskingReorderPricesAMoveByItsOwnLine(t *testing.T) {
 
 // Whichever rules a tie-break calls moved, a masking reorder is refused only
 // when no description of it fits a form, and is sent to smaller steps whenever
-// some description has no line too long for one.
+// some description's refusal sends it there. A form that the fewest moves have
+// no room for takes the fewest rows a description takes.
 func TestMaskingReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
 	alice := withUserEmail(context.Background(), "alice@example.com")
 	types, err := semanticTypesFromSetting(nil)
@@ -1024,11 +1026,22 @@ func TestMaskingReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
 			continue
 		}
 		fits, bySteps := false, false
+		// Every description's form, built as one by the fewest rows is, by
+		// the rows its changes take.
+		byRows := map[int][]adminForm{}
 		everyDescription(match.was, func(inOrder []bool) {
 			if _, err := maskingRulesForm(alice, match.described(inOrder, false), "LINK"); err == nil {
 				fits = true
 			} else if advisesSteps(t, err) {
 				bySteps = true
+			}
+			described := match.described(inOrder, true)
+			if form, err := maskingRulesForm(alice, described, "LINK"); err == nil {
+				rows := 0
+				for _, change := range described.changes {
+					rows += len(wrapLine(change.text, descriptionLineWidth))
+				}
+				byRows[rows] = append(byRows[rows], *form)
 			}
 		})
 
@@ -1043,6 +1056,8 @@ func TestMaskingReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
 			require.Equal(t, byFewestMoves, form, "the description by the fewest moves stands where it gets a form")
 		case err == nil:
 			rescued++
+			fewest := slices.Min(slices.Collect(maps.Keys(byRows)))
+			require.Contains(t, byRows[fewest], *form, "%d rows\nstored %v\nrequested %v", fewest, stored, requested)
 		default:
 			require.Equal(t, bySteps, advisesSteps(t, err), "stored %v\nrequested %v", stored, requested)
 			if bySteps {
