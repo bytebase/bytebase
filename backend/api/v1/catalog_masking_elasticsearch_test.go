@@ -477,6 +477,7 @@ func TestElasticsearchMaskResultsByIndex(t *testing.T) {
 		columns     []string
 		values      []string
 		want        []string
+		wantDigits  string
 		wantError   string
 	}{
 		{
@@ -534,6 +535,14 @@ func TestElasticsearchMaskResultsByIndex(t *testing.T) {
 			columns:     []string{"hits"},
 			values:      []string{`{"hits":[{"_index":"orders-new","_source":{"email":"n@x"}}]}`},
 			wantError:   `index "orders-new", which is not synced`,
+		},
+		{
+			description: "numbers keep their digits, and a masked number is masked",
+			request:     "GET orders,users/_search",
+			columns:     []string{"hits"},
+			values:      []string{`{"total":{"value":2},"hits":[{"_index":"orders","_source":{"id":9007199254740993}},{"_index":"users","_source":{"id":9007199254740993,"age":30,"email":12345}}]}`},
+			want:        []string{`{"total":{"value":2},"hits":[{"_index":"orders","_source":{"id":9007199254740993}},{"_index":"users","_source":{"id":9007199254740993,"age":30,"email":"******"}}]}`},
+			wantDigits:  `"orders","_source":{"id":9007199254740993}`,
 		},
 		{
 			description: "a hit that names no index refuses the result",
@@ -596,6 +605,9 @@ func TestElasticsearchMaskResultsByIndex(t *testing.T) {
 			require.Empty(t, result.Error)
 			for i, want := range tc.want {
 				requireJSONEqual(t, want, result.Rows[0].Values[i].GetStringValue())
+			}
+			if tc.wantDigits != "" {
+				require.Contains(t, result.Rows[0].Values[0].GetStringValue(), tc.wantDigits)
 			}
 		})
 	}

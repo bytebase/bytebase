@@ -535,6 +535,15 @@ func getJSONMemberFromRowValue(rowValue *v1pb.RowValue) any {
 	return nil
 }
 
+// unmarshalKeepingNumbers decodes a response whose documents may be returned
+// unmasked, keeping each number's digits as a json.Number: a long past 2^53
+// read as a float64 would come back rounded.
+func unmarshalKeepingNumbers(text string, v any) error {
+	decoder := json.NewDecoder(strings.NewReader(text))
+	decoder.UseNumber()
+	return decoder.Decode(v)
+}
+
 func getRowValueFromJSONAtomicMember(data any) (result *v1pb.RowValue, ok bool) {
 	if data == nil {
 		return &v1pb.RowValue{
@@ -550,6 +559,16 @@ func getRowValueFromJSONAtomicMember(data any) (result *v1pb.RowValue, ok bool) 
 		// https://pkg.go.dev/encoding/json#Unmarshal
 		return &v1pb.RowValue{
 			Kind: &v1pb.RowValue_DoubleValue{DoubleValue: data},
+		}, true
+	case json.Number:
+		// A number about to be masked is masked as a double, as one decoded
+		// without UseNumber is.
+		f, err := data.Float64()
+		if err != nil {
+			return nil, false
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_DoubleValue{DoubleValue: f},
 		}, true
 	case bool:
 		return &v1pb.RowValue{
@@ -1394,7 +1413,7 @@ func maskElasticsearchInnerHitGroup(name string, ihVal any, sortFields []string,
 // sortFields is the ordered list of field names from the request's sort clause.
 func maskElasticsearchHitsColumn(hitsColumnJSON string, sortFields []string, lookup elasticsearchIndexLookup, semanticTypeToMasker map[string]masker.Masker) (string, error) {
 	var hitsObj map[string]any
-	if err := json.Unmarshal([]byte(hitsColumnJSON), &hitsObj); err != nil {
+	if err := unmarshalKeepingNumbers(hitsColumnJSON, &hitsObj); err != nil {
 		return "", errors.Wrap(err, "failed to unmarshal hits column")
 	}
 
@@ -1450,7 +1469,7 @@ func maskElasticsearchGetSourceColumn(fieldName, valueJSON string, objectSchema 
 // The docsColumnJSON is the JSON string from the "docs" column.
 func maskElasticsearchMGetSource(docsColumnJSON string, lookup elasticsearchIndexLookup, semanticTypeToMasker map[string]masker.Masker) (string, error) {
 	var docs []any
-	if err := json.Unmarshal([]byte(docsColumnJSON), &docs); err != nil {
+	if err := unmarshalKeepingNumbers(docsColumnJSON, &docs); err != nil {
 		return "", errors.Wrap(err, "failed to unmarshal docs column")
 	}
 
@@ -1485,7 +1504,7 @@ func maskElasticsearchMGetSource(docsColumnJSON string, lookup elasticsearchInde
 // Each element in the responses array is a full search response with hits.
 func maskElasticsearchMSearchResponses(responsesColumnJSON string, sortFields []string, lookup elasticsearchIndexLookup, semanticTypeToMasker map[string]masker.Masker) (string, error) {
 	var responses []any
-	if err := json.Unmarshal([]byte(responsesColumnJSON), &responses); err != nil {
+	if err := unmarshalKeepingNumbers(responsesColumnJSON, &responses); err != nil {
 		return "", errors.Wrap(err, "failed to unmarshal responses column")
 	}
 
