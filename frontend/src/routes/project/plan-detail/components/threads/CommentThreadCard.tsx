@@ -2,7 +2,6 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  ExternalLink,
   Loader2,
   RotateCcw,
 } from "lucide-react";
@@ -587,7 +586,6 @@ function ThreadBar({
               size="xs"
             >
               {t("plan.review.thread.anchor.view-in-statement")}
-              <ExternalLink className="size-3" />
             </Button>
           )}
         </span>
