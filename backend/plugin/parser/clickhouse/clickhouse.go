@@ -17,6 +17,7 @@ func init() {
 		Split:         splitSQL,
 		Diagnose:      diagnose,
 		Complete:      completion,
+		QuerySpan:     GetQuerySpan,
 		ValidateQuery: chanalysis.ValidateQuery,
 		Explain:       explainStatement,
 		ResultLimit:   statementWithResultLimit,
