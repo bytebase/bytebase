@@ -13,7 +13,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 
-	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/drivers"
 )
 
 // TestLoginAttemptClaim verifies the per-identity lockout slots

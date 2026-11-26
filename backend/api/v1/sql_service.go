@@ -677,7 +677,7 @@ func refuseLinkedReadsShadowedByPrivateLinks(ctx context.Context, driver db.Driv
 	if len(linked) == 0 {
 		return nil
 	}
-	owner, ok := driver.(privateDatabaseLinkOwner)
+	owner, ok := db.As[privateDatabaseLinkOwner](driver)
 	if !ok {
 		return privateLinkRefusal(ctx, linked, false, errors.New("the driver cannot report the executing account's private database links"))
 	}

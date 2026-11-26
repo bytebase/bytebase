@@ -178,7 +178,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		// Already checked in the Run().
 		return nil, "", nil
 	}
-	estimator, ok := driver.(db.RowEstimator)
+	estimator, ok := db.As[db.RowEstimator](driver)
 	if !ok {
 		return nil, "", errors.Errorf("the %s driver cannot estimate affected rows", instance.Metadata.GetEngine())
 	}
