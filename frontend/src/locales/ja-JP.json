@@ -93,6 +93,11 @@
     "archived-only-chats": "アーカイブ済みのチャットを表示",
     "args": "引数",
     "assistant-title": "AI アシスタント",
+    "attention": {
+      "needs-attention": "対応が必要です",
+      "needs-input": "Agent が入力を待っています",
+      "review-request": "続行する前にこのリクエストを確認してください。"
+    },
     "cancel": "キャンセル",
     "cancel-request": "リクエストをキャンセル",
     "chat-archived-notice": "このチャットはアーカイブされています。",

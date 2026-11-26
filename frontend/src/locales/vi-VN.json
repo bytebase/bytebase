@@ -93,6 +93,11 @@
     "archived-only-chats": "Xem các cuộc trò chuyện đã lưu trữ",
     "args": "Tham số",
     "assistant-title": "Trợ lý AI",
+    "attention": {
+      "needs-attention": "Cần chú ý",
+      "needs-input": "Agent cần phản hồi của bạn",
+      "review-request": "Xem lại yêu cầu này trước khi tiếp tục."
+    },
     "cancel": "Hủy",
     "cancel-request": "Hủy yêu cầu",
     "chat-archived-notice": "Cuộc trò chuyện này đã được lưu trữ.",

@@ -93,6 +93,11 @@
     "archived-only-chats": "查看已归档对话",
     "args": "参数",
     "assistant-title": "AI 助手",
+    "attention": {
+      "needs-attention": "需要关注",
+      "needs-input": "Agent 需要您的反馈",
+      "review-request": "请先查看此请求，再继续。"
+    },
     "cancel": "取消",
     "cancel-request": "取消请求",
     "chat-archived-notice": "此对话已归档。",

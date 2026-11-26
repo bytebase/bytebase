@@ -1,3 +1,4 @@
+import { screen, within } from "@testing-library/react";
 import { act, type ComponentProps } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -8,8 +9,28 @@ import { AgentMinimizedLauncher } from "./AgentMinimizedLauncher";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: () => "Agent" }),
+  useTranslation: () => ({
+    t: (key: string) =>
+      key === "agent.attention.needs-input" ? "Agent needs your input" : "Agent",
+  }),
 }));
+
+const attentionChats = [
+  {
+    chatId: "question",
+    title: "Investigate query latency",
+    prompt: "Which environment should I inspect?",
+  },
+  {
+    chatId: "approval",
+    title: "Update project settings",
+    prompt: "Allow this project title change?",
+  },
+];
+
+function getPreview() {
+  return screen.getByRole("region", { name: "Agent needs your input" });
+}
 
 let resizeCallbacks: (() => void)[];
 let disconnects: ReturnType<typeof vi.fn>[];
@@ -23,13 +44,16 @@ function renderLauncher(
   document.body.appendChild(container);
   const root = createRoot(container);
   const onOpen = vi.fn();
-  act(() => root.render(<AgentMinimizedLauncher {...props} onOpen={onOpen} />));
+  const render = (
+    nextProps: Partial<ComponentProps<typeof AgentMinimizedLauncher>>
+  ) => root.render(<AgentMinimizedLauncher {...nextProps} onOpen={onOpen} />);
+  act(() => render(props));
   const button = container.querySelector<HTMLButtonElement>("button")!;
   button.setPointerCapture = vi.fn();
   button.releasePointerCapture = vi.fn();
   const unmount = () => act(() => root.unmount());
   cleanups.push(unmount);
-  return { button, onOpen, unmount };
+  return { button, onOpen, render, unmount };
 }
 
 function createFooter(height: number, left = 0, width = window.innerWidth) {
@@ -144,10 +168,146 @@ describe("AgentMinimizedLauncher", () => {
     expect(button.getAttribute("aria-label")).toBe("Agent");
     expect(button.title).toBe("Agent");
     expect(button.querySelector(".lucide-bot")).toBeInstanceOf(SVGElement);
+    expect(screen.queryByRole("region", { name: "Agent needs your input" })).toBeNull();
     expect(button.style.bottom).toBe("16px");
     expect(onOpen).not.toHaveBeenCalled();
     act(() => button.click());
     expect(onOpen).toHaveBeenCalledOnce();
+  });
+
+  test("opens the selected waiting chat without taking action on its request", async () => {
+    const onOpenChat = vi.fn();
+    const { onOpen } = renderLauncher({ attentionChats, onOpenChat });
+
+    await act(async () => {});
+    const preview = getPreview();
+    expect(preview.closest('[data-bb-layer-family="agent"]')).not.toBeNull();
+    const rows = within(preview).getAllByRole("button");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent("Which environment should I inspect?");
+    expect(rows[1]).toHaveTextContent("Allow this project title change?");
+
+    await act(async () => rows[1].click());
+    expect(onOpenChat).toHaveBeenCalledExactlyOnceWith("approval");
+    expect(onOpen).not.toHaveBeenCalled();
+    expect(getPreview()).toBe(preview);
+  });
+
+  test("leaves page focus and Escape alone while a chat is waiting", async () => {
+    const pageButton = document.createElement("button");
+    document.body.appendChild(pageButton);
+    pageButton.focus();
+    const onEscape = vi.fn();
+    window.addEventListener("keydown", onEscape, { once: true });
+    cleanups.push(() => window.removeEventListener("keydown", onEscape));
+    renderLauncher({ attentionChats, onOpenChat: vi.fn() });
+
+    await act(async () => {});
+    const preview = getPreview();
+    expect(document.activeElement).toBe(pageButton);
+    expect(
+      pageButton.closest('[data-base-ui-inert], [inert], [aria-hidden="true"]')
+    ).toBeNull();
+    await act(async () => {
+      pageButton.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      pageButton.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+      pageButton.click();
+      const escape = new KeyboardEvent("keydown", {
+        key: "Escape",
+        bubbles: true,
+        cancelable: true,
+      });
+      pageButton.dispatchEvent(escape);
+      expect(escape.defaultPrevented).toBe(false);
+    });
+    expect(onEscape).toHaveBeenCalledOnce();
+    expect(document.activeElement).toBe(pageButton);
+    expect(getPreview()).toBe(preview);
+  });
+
+  test("keeps preview rows in the tab order after focus moves to the page or launcher", async () => {
+    const pageField = document.createElement("input");
+    document.body.appendChild(pageField);
+    const { button } = renderLauncher({ attentionChats, onOpenChat: vi.fn() });
+
+    await act(async () => {});
+    const preview = getPreview();
+    const rows = within(preview).getAllByRole("button");
+    for (const outside of [pageField, button]) {
+      await act(async () => rows[0].focus());
+      expect(rows[0]).toHaveFocus();
+      await act(async () => outside.focus());
+      expect(outside).toHaveFocus();
+      expect(pageField.closest("[data-base-ui-inert], [inert]")).toBeNull();
+      expect(rows.map((row) => row.tabIndex)).toEqual([0, 0]);
+    }
+  });
+
+  test("reflects the current requests and removes the preview when none remain", async () => {
+    const onOpenChat = vi.fn();
+    const { button, render, onOpen } = renderLauncher({ onOpenChat });
+
+    await act(async () => render({ attentionChats, onOpenChat }));
+    expect(within(getPreview()).getAllByRole("button")).toHaveLength(2);
+    await act(async () =>
+      render({
+        attentionChats: [{ ...attentionChats[0], prompt: "Which database?" }],
+        onOpenChat,
+      })
+    );
+    const row = within(getPreview()).getByRole("button");
+    expect(row).toHaveTextContent("Which database?");
+    expect(row).not.toHaveTextContent("Allow this project title change?");
+
+    await act(async () => render({ attentionChats: [], onOpenChat }));
+    expect(screen.queryByRole("region", { name: "Agent needs your input" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Agent" })).toBe(button);
+    act(() => button.click());
+    expect(onOpen).toHaveBeenCalledOnce();
+  });
+
+  test("keeps the waiting preview visible when the launcher is dragged", async () => {
+    const onOpenChat = vi.fn();
+    const { button, onOpen } = renderLauncher({ attentionChats, onOpenChat });
+    await act(async () => {});
+    const preview = getPreview();
+
+    await act(async () => {
+      pointer(button, "pointerdown");
+      pointer(button, "pointermove", { clientX: 1364, clientY: 864 });
+      pointer(button, "pointerup");
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 }));
+    });
+
+    expect(button.style.right).toBe("216px");
+    expect(button.style.bottom).toBe("116px");
+    expect(getPreview()).toBe(preview);
+    expect(onOpen).not.toHaveBeenCalled();
+    expect(onOpenChat).not.toHaveBeenCalled();
+  });
+
+  test("shows all waiting chats and renders long prompts as plain text", async () => {
+    const title = "LongTitle".repeat(50);
+    const prompt = '<strong id="unsafe-preview">Which database?</strong>'.repeat(10);
+    const { unmount } = renderLauncher({
+      attentionChats: Array.from({ length: 8 }, (_, index) => ({
+        chatId: `chat-${index}`,
+        title: index === 7 ? title : `Chat ${index}`,
+        prompt,
+      })),
+      onOpenChat: vi.fn(),
+    });
+
+    await act(async () => {});
+    const preview = getPreview();
+    const rows = within(preview).getAllByRole("button");
+    expect(rows).toHaveLength(8);
+    expect(rows[7]).toHaveTextContent(title);
+    expect(rows[7]).toHaveTextContent(prompt);
+    expect(preview.querySelector("#unsafe-preview")).toBeNull();
+    unmount();
+    cleanups = [];
+    expect(preview.isConnected).toBe(false);
   });
 
   test.each(["mouse", "touch", "pen"])(

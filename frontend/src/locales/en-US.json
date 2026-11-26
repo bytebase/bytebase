@@ -93,6 +93,11 @@
     "archived-only-chats": "View archived chats",
     "args": "Args",
     "assistant-title": "AI Assistant",
+    "attention": {
+      "needs-attention": "Needs attention",
+      "needs-input": "Agent needs your input",
+      "review-request": "Review this request before continuing."
+    },
     "cancel": "Cancel",
     "cancel-request": "Cancel request",
     "chat-archived-notice": "This chat is archived.",
