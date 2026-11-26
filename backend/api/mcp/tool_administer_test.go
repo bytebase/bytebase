@@ -1101,9 +1101,64 @@ func TestAdministerWorkspaceCountsTheRulesAFarMovePasses(t *testing.T) {
 	require.Contains(t, refused.Suggestion, "make that change signed in to the Bytebase console: LINK")
 }
 
-// A move's line is short whatever the workspace stores: it stops naming rules
-// that could not fit a description, and counts at most maxApproverGroups kinds
-// of approvers apart.
+// A step is a request of its own, and its rules decide which rules a move's
+// line names there. So a form that lists a move offers no steps, though each
+// of its lines fits a message alone, and a form with no move still does.
+func TestAdministerWorkspaceOffersNoStepsForAMove(t *testing.T) {
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	const issues = "Plan edits recheck your \"hr#101\" under these rules."
+	listed := func(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule) (*adminForm, *approvalRulesDiff) {
+		diff, err := diffApprovalRules(slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, stored), slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, requested), "")
+		require.NoError(t, err)
+		form, err := approvalRulesForm(alice, diff, issues, "")
+		require.NoError(t, err)
+		require.Contains(t, form.message, "listed under Action")
+		return form, diff
+	}
+	alone := func(change string) bool {
+		return messageHolds(alice, approvalRules.question, formChange{text: change, effect: true}, issues)
+	}
+	finance := changeRule("Finance", `resource.project_id == "finance"`, "roles/workspaceDBA")
+	ledger := changeRule("Ledger", `resource.project_id == "ledger"`, "roles/workspaceDBA")
+	prod := changeRule("Production", `resource.environment_id == "prod"`)
+	added := changeRule("Staging", `resource.environment_id == "staging"`, "roles/projectOwner")
+
+	form, diff := listed([]*v1pb.WorkspaceApprovalSetting_Rule{finance, prod}, []*v1pb.WorkspaceApprovalSetting_Rule{
+		changeRule("Finance", `resource.project_id == "finance"`, "roles/projectOwner"), prod, added,
+	})
+	require.False(t, diff.moved)
+	require.Len(t, diff.changes, 2)
+	require.Contains(t, form.inSteps, "a rule or two at a time")
+
+	form, diff = listed([]*v1pb.WorkspaceApprovalSetting_Rule{finance, prod}, []*v1pb.WorkspaceApprovalSetting_Rule{prod, finance, added})
+	require.True(t, diff.moved)
+	require.Len(t, diff.changes, 2)
+	for _, change := range diff.changes {
+		require.True(t, alone(change), change)
+	}
+	require.Empty(t, form.inSteps)
+
+	// Two moves that this form states by counts, since their lines with names
+	// need more rows than it has. Each count fits a message alone, and a step
+	// would still list its move, by its names, under the choice.
+	var payments []*v1pb.WorkspaceApprovalSetting_Rule
+	for i := range 4 {
+		payments = append(payments, changeRule(fmt.Sprintf("Payments platform schema changes %02d", i), fmt.Sprintf(`resource.project_id == "payments-%02d"`, i), [][]string{nil, {"roles/projectOwner"}}[i%2]...))
+	}
+	stored := slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{finance, ledger}, payments)
+	form, diff = listed(stored, slices.Concat(payments, []*v1pb.WorkspaceApprovalSetting_Rule{finance, ledger}))
+	require.Contains(t, unwrapMessage(form.description), diff.shorter[0][0])
+	require.True(t, alone(diff.shorter[0][0]))
+	require.Empty(t, form.inSteps)
+	form, diff = listed(stored, slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{ledger}, payments, []*v1pb.WorkspaceApprovalSetting_Rule{finance}))
+	require.Len(t, diff.changes, 1)
+	require.Contains(t, unwrapMessage(form.description), diff.changes[0])
+}
+
+// What a move's line says of the rules it passes is short whatever the
+// workspace stores: it names no rule when the names could not fit a
+// description, and counts apart at most maxApproverGroups kinds of approvers
+// that could.
 func TestApprovalMoveLineIsBoundedForAnyStoredRules(t *testing.T) {
 	roles := []string{"roles/projectOwner", "roles/workspaceDBA", "roles/workspaceAdmin", "roles/projectDeveloper", "roles/sqlEditorUser", "roles/projectReleaser", "roles/gitopsServiceAgent", "roles/projectViewer"}
 	stored := []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}
@@ -1125,7 +1180,62 @@ func TestApprovalMoveLineIsBoundedForAnyStoredRules(t *testing.T) {
 	require.LessOrEqual(t, longest, descriptionLines*descriptionLineWidth)
 	last := len(diff.changes) - 1
 	require.Equal(t, diff.shorter[0][last], diff.changes[last], "names that stopped short are not shown as the whole list")
-	require.Equal(t, "Move to rule 400, \"Project owner\" then \"Project owner\" then \"Project owner\", now behind 399 rules with other approvers: `resource.project_id == \"p000\"`", diff.shorter[0][len(diff.shorter[0])-1])
+	require.Equal(t, "Move to rule 400, \"Project owner\" then \"Project owner\" then \"Project owner\", now behind 399 rules with other approvers: `resource.project_id == \"p000\"`", diff.shorter[0][last])
+
+	// Rules that fifty moves pass, with a title or lists of approvers that a
+	// description has no room for, alone or together: no line of those moves
+	// carries one, and a rule with a short name after them is not named alone.
+	custom := func(first, count int) []string {
+		var ids []string
+		for i := range count {
+			ids = append(ids, fmt.Sprintf("roles/custom-approver-%03d", first+i))
+		}
+		return ids
+	}
+	passed := []*v1pb.WorkspaceApprovalSetting_Rule{
+		changeRule(strings.Repeat("T", 20000), `resource.project_id == "long-title"`, "roles/projectOwner"),
+		changeRule("Many approvers", `resource.project_id == "many"`, custom(0, 200)...),
+		changeRule("Short", `resource.project_id == "short"`, "roles/projectOwner"),
+	}
+	for i := range maxApproverGroups {
+		passed = append(passed, changeRule(fmt.Sprintf("Ten approvers %d", i), fmt.Sprintf(`resource.project_id == "ten-%d"`, i), custom(200+10*i, 10)...))
+	}
+	var movers []*v1pb.WorkspaceApprovalSetting_Rule
+	for i := range 50 {
+		movers = append(movers, changeRule(fmt.Sprintf("Rule %02d", i), fmt.Sprintf(`resource.project_id == "p%02d"`, i), "roles/workspaceDBA"))
+	}
+	reversed := slices.Clone(movers)
+	slices.Reverse(reversed)
+	// The first list has one rule with other approvers, the long title, and a
+	// rule with the movers' approvers, which keeps the two in the common order.
+	anchor := changeRule("Anchor", `resource.project_id == "anchor"`, "roles/workspaceDBA")
+	for _, kept := range []struct {
+		rules  []*v1pb.WorkspaceApprovalSetting_Rule
+		others int
+	}{
+		{[]*v1pb.WorkspaceApprovalSetting_Rule{passed[0], anchor}, 1},
+		{passed[:3], 3},
+		{passed[3:], maxApproverGroups},
+	} {
+		before := slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, kept.rules, movers)
+		moves, err := diffApprovalRules(before, slices.Concat(before[:1], reversed, kept.rules), "")
+		require.NoError(t, err)
+		require.Len(t, moves.changes, len(movers))
+		for i, line := range moves.changes {
+			// Reversed, mover i is ahead of the movers after it, which have its
+			// approvers, and of every kept rule.
+			total := len(movers) - 1 - i + len(kept.rules)
+			ahead := fmt.Sprintf("ahead of %d rules, %d of them with other approvers", total, kept.others)
+			if total == kept.others {
+				ahead = fmt.Sprintf("ahead of %d rules with other approvers", total)
+			}
+			require.Equal(t, moves.shorter[0][i], line, "names that stopped short give way to the counts")
+			require.Contains(t, moves.shorter[1][i], ahead)
+			for _, text := range []string{line, moves.shorter[1][i]} {
+				require.LessOrEqual(t, lineColumns(text), descriptionLines*descriptionLineWidth, "%.300s", text)
+			}
+		}
+	}
 }
 
 func TestAdministerWorkspaceStatesEachKindOfChange(t *testing.T) {

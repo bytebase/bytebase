@@ -383,6 +383,8 @@ type approvalRulesDiff struct {
 	// order it tries them: a move counts the rules it passes by their
 	// approvers and names none, and then only counts them.
 	shorter [2][]string
+	// moved reports that the request moves a kept rule.
+	moved bool
 	// requested are the rules for database changes as the request orders them,
 	// and marks say of each whether it is new, changed or kept as stored.
 	requested []*v1pb.WorkspaceApprovalSetting_Rule
@@ -454,6 +456,7 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 		storedPlace[condition] = place
 	}
 	var keptRules []keptRule
+	flows := map[string]int{}
 	for i, rule := range requestedDB {
 		condition := rule.GetCondition().GetExpression()
 		if storedByCondition[condition] == nil {
@@ -464,7 +467,17 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 		if rule.GetTemplate().GetTitle() == "" {
 			name = fmt.Sprintf("rule %d", i+1)
 		}
-		keptRules = append(keptRules, keptRule{was: storedPlace[condition], name: name, roles: rule.GetTemplate().GetFlow().GetRoles(), approvers: approvers(rule)})
+		key := fmt.Sprintf("%q", rule.GetTemplate().GetFlow().GetRoles())
+		if _, ok := flows[key]; !ok {
+			flows[key] = len(flows)
+		}
+		who := approvers(rule)
+		label := fmt.Sprintf("%s (%s)", name, who)
+		keptRules = append(keptRules, keptRule{
+			was: storedPlace[condition], flow: flows[key],
+			label: label, labelColumns: lineColumns(label),
+			approvers: who, approverColumns: lineColumns(who),
+		})
 	}
 	// A kept rule outside the longest common order moved: the first matching
 	// rule decides, so a move changes which rule decides some changes.
@@ -492,6 +505,7 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 		named, shorter := "", [2]string{}
 		if moved {
 			named, shorter = rulesPassed(kept, keptRules)
+			diff.moved = true
 		}
 		kept++
 		if clauses := keptRuleClauses(before, rule, moved, i+1, named); len(clauses) > 0 {
@@ -519,18 +533,23 @@ func (d *approvalRulesDiff) add(line string) {
 	}
 }
 
-// keptRule is a kept rule as a move's line refers to it: by its title, or by
-// its place when it has none.
+// keptRule is a kept rule as a move's line refers to it. Its texts are
+// measured, and its approvers numbered, once: every move of a request can
+// pass the same rule.
 type keptRule struct {
 	// was is its place among the kept rules as stored.
-	was       int
-	name      string
-	roles     []string
-	approvers string
+	was int
+	// flow numbers its list of approver roles: two rules with the same list
+	// have the same number.
+	flow int
+	// label names the rule by its title, or by its place when it has none,
+	// with its approvers.
+	label                         string
+	approvers                     string
+	labelColumns, approverColumns int
 }
 
-// maxApproverGroups bounds the kinds of approvers a move's line counts apart,
-// so the line stays short whatever the stored rules hold.
+// maxApproverGroups is how many kinds of approvers a move's line counts apart.
 const maxApproverGroups = 6
 
 // passedSide is the kept rules that traded order with a moved rule, on one
@@ -539,42 +558,49 @@ const maxApproverGroups = 6
 // are named, and counted by their approvers, and the rest are only counted.
 type passedSide struct {
 	total, same int
-	// names stop where they could no longer fit a description, since a
-	// workspace can store any number of rules.
-	names       []string
-	nameColumns int
-	groups      []approverGroup
-	// ungrouped are the rules with approvers past maxApproverGroups kinds.
+	// names and groups stop before the text that would take them past what a
+	// description holds: a workspace can store any number of rules, with
+	// titles and approvers of any length.
+	names        []string
+	nameColumns  int
+	stopped      bool
+	groups       []approverGroup
+	groupColumns int
+	// ungrouped are the rules with approvers past maxApproverGroups kinds, or
+	// past those columns.
 	ungrouped int
 }
 
 type approverGroup struct {
+	flow      int
 	approvers string
 	rules     int
 }
 
 func (s *passedSide) add(other, moved keptRule) {
+	const most = descriptionLines * descriptionLineWidth
 	s.total++
-	if slices.Equal(other.roles, moved.roles) {
+	if other.flow == moved.flow {
 		s.same++
 		return
 	}
-	if s.nameColumns <= descriptionLines*descriptionLineWidth {
-		name := fmt.Sprintf("%s (%s)", other.name, other.approvers)
-		s.names = append(s.names, name)
-		s.nameColumns += lineColumns(name)
+	s.stopped = s.stopped || s.nameColumns+other.labelColumns > most
+	if !s.stopped {
+		s.names = append(s.names, other.label)
+		s.nameColumns += other.labelColumns
 	}
 	for i := range s.groups {
-		if s.groups[i].approvers == other.approvers {
+		if s.groups[i].flow == other.flow {
 			s.groups[i].rules++
 			return
 		}
 	}
-	if len(s.groups) == maxApproverGroups {
+	if len(s.groups) == maxApproverGroups || s.groupColumns+other.approverColumns > most {
 		s.ungrouped++
 		return
 	}
-	s.groups = append(s.groups, approverGroup{approvers: other.approvers, rules: 1})
+	s.groups = append(s.groups, approverGroup{flow: other.flow, approvers: other.approvers, rules: 1})
+	s.groupColumns += other.approverColumns
 }
 
 // named names each rule with other approvers and counts the rest. ok is false
@@ -584,7 +610,7 @@ func (s *passedSide) named() (text string, ok bool) {
 	if s.same > 0 {
 		items = append(items, countRules(s.same)+" with the same approvers")
 	}
-	return andList(items), len(s.names) == s.total-s.same
+	return andList(items), !s.stopped
 }
 
 // counted counts the rules by their approvers, and names none.
@@ -607,8 +633,8 @@ func (s *passedSide) counted() string {
 	return countRules(s.total) + ": " + strings.Join(parts, ", ")
 }
 
-// terse says only how many rules there are and how many have other approvers,
-// so it has room wherever the move's own line has.
+// terse says only how many rules there are and how many have other approvers:
+// the least a move's line says of them.
 func (s *passedSide) terse() string {
 	switch other := s.total - s.same; {
 	case other == 0:
@@ -855,10 +881,18 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 		for _, change := range lines {
 			changes = append(changes, formChange{text: change, effect: true})
 		}
-		return approvalRules.form(ctx, changes, countLine(len(changes), diff.marks, unapproved), issues, list, link)
+		if whole := approvalRules.whole(ctx, approvalRules.question, changes, issues, list); whole != nil {
+			return whole, nil
+		}
+		// A step is a request of its own, and its rules decide which rules a
+		// move's line names there. So a change with a move is offered no steps.
+		eachAlone := !diff.moved && !slices.ContainsFunc(changes, func(change formChange) bool {
+			return !messageHolds(ctx, approvalRules.question, change, issues)
+		})
+		return approvalRules.listed(ctx, changes, countLine(len(changes), diff.marks, unapproved), issues, list, link, eachAlone)
 	}
-	// Only a refusal makes a move count the rules it passes: under the choice
-	// their names still say which rule now decides.
+	// A move counts the rules it passes only where their names have no room:
+	// under the choice the names still say which rule now decides.
 	built, err := form(diff.changes)
 	tried := diff.changes
 	for _, lines := range diff.shorter {
@@ -955,16 +989,6 @@ type ruleSection struct {
 	header string
 	rules  []string
 	empty  string
-}
-
-// form builds a rule entry's form: the change lines in the message when they
-// fit it, and counted there by count and listed under the choice otherwise.
-func (r adminRules) form(ctx context.Context, changes []formChange, count, effect string, list ruleSection, link string) (*adminForm, error) {
-	if form := r.whole(ctx, r.question, changes, effect, list); form != nil {
-		return form, nil
-	}
-	alone := func(change formChange) bool { return messageHolds(ctx, r.question, change, effect) }
-	return r.listed(ctx, changes, count, effect, list, link, !slices.ContainsFunc(changes, func(change formChange) bool { return !alone(change) }))
 }
 
 // messageHolds reports whether the message of a form under question has room
