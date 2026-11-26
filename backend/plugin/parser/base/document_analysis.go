@@ -17,6 +17,13 @@ type MongoDBJoinedCollection struct {
 	Collection string // The source collection being joined (the "from" argument).
 }
 
+// MongoDBNamespace names a collection or view a statement reads. An empty
+// Database is the database the statement runs in.
+type MongoDBNamespace struct {
+	Database   string
+	Collection string
+}
+
 // MongoDBAnalysis contains MongoDB statement data needed by masking checks.
 type MongoDBAnalysis struct {
 	API               MongoDBMaskableAPI
@@ -25,6 +32,7 @@ type MongoDBAnalysis struct {
 	PredicateFields   []string
 	UnsupportedStage  string                    // First pipeline stage that prevents masking. Only set when API == MongoDBMaskableAPIUnsupportedRead for aggregate pipelines.
 	JoinedCollections []MongoDBJoinedCollection // Join info extracted from $lookup and $graphLookup stages.
+	Reads             []MongoDBNamespace        // Every collection or view the read names, one entry per occurrence (omni's StatementAnalysis.Reads).
 }
 
 // ElasticsearchMaskableAPI categorizes ES endpoints for masking decisions.
