@@ -318,19 +318,15 @@ func (s *Server) handleGrantMaskingExemption(ctx context.Context, req *mcp.CallT
 	written := append(slices.Clone(exemptions), map[string]any{"members": []string{grant.member}, "condition": condition})
 	body := exemptionUpdateBody(write.policy, written)
 	output := &MaskingExemptionOutput{Project: grant.project, Member: grant.member, Condition: grant.condition(), Link: link}
-	form, tooLong, fewer := describeExemptionGrant(ctx, grant)
+	form, tooLong, instead := describeExemptionGrant(ctx, grant)
 	if tooLong != "" {
 		next := "grant it signed in to the Bytebase console: " + link
-		if fewer {
-			next = "exempt fewer columns at a time, or " + next
+		if instead != "" {
+			next = instead + ", or " + next
 		}
 		return formatToolError(&toolError{Code: "CHANGE_TOO_LONG", Message: tooLong, Suggestion: next}), nil, nil
 	}
-	under := form.columns
-	if grant.note != "" {
-		under = append(under, fmt.Sprintf("Reason: %q", grant.note))
-	}
-	choice := confirmChoice{action: "Exempt", description: strings.Join(under, "\n")}
+	choice := confirmChoice{action: "Exempt", description: strings.Join(slices.Concat(form.columns, form.reason), "\n")}
 	return s.confirmExemptionWrite(ctx, req, write, exemptions, body, form.message, choice, output,
 		fmt.Sprintf("the exemption for %s was not granted", grant.member),
 		fmt.Sprintf("Exempted %s from masking in %s.", grant.member, grant.project),
@@ -489,15 +485,24 @@ type exemptionForm struct {
 	message string
 	// columns name the columns, when the message only counts them.
 	columns []string
+	// reason is a grant's reason: its rows beside columns, and otherwise one
+	// line for the client to wrap.
+	reason []string
 	// expiry is when a revoked exemption would expire, when the scope's line
 	// has no room for it.
 	expiry string
 }
 
+// What gets a refused exemption a form, short of the console.
+const (
+	fewerColumns  = "exempt fewer columns at a time"
+	shorterReason = "give a shorter reason"
+)
+
 // describeExemptionGrant builds the grant's form. tooLong says why no form
-// states it, or is empty when one does, and fewer reports that a grant of
-// fewer columns would fit.
-func describeExemptionGrant(ctx context.Context, g *exemptionGrant) (form exemptionForm, tooLong string, fewer bool) {
+// states it, or is empty when one does, and instead is what gets it a form
+// short of the console, when something does.
+func describeExemptionGrant(ctx context.Context, g *exemptionGrant) (form exemptionForm, tooLong, instead string) {
 	effect := "Bypasses masking here, with no expiry; adds no masking."
 	if g.expireTime != "" {
 		effect = fmt.Sprintf("Bypasses masking until %q; adds no masking.", g.expireTime)
@@ -505,23 +510,31 @@ func describeExemptionGrant(ctx context.Context, g *exemptionGrant) (form exempt
 	return fitExemptionScope(ctx, fmt.Sprintf("Exempt %q", g.member), " from masking", g, effect)
 }
 
-// exemptionColumnRows are the rows of an exemption form's description that
-// name its columns. The reason, or a revoke's two notes, follow them in the
-// rows descriptionLines leaves.
+// exemptionColumnRows are the most rows of an exemption form's description
+// that name its columns. They leave two for a revoke's notes, and a grant
+// keeps to them so that its revoke gets a form.
 const exemptionColumnRows = descriptionLines - 2
 
-// fitExemptionScope builds the form of an exemption with g's scope. The
-// message names the columns when it has room, and counts them otherwise, with
-// their names first under the choice. A grant and the revoke of what it wrote
-// share this, so no form grants an exemption that no form revokes. fewer
-// reports that a refused exemption fits with fewer columns.
-func fitExemptionScope(ctx context.Context, head, rest string, g *exemptionGrant, effect string) (form exemptionForm, tooLong string, fewer bool) {
+// fitExemptionScope builds the form of an exemption with g's scope and
+// reason. The message names the columns when it has room, and counts them
+// otherwise, with their names first under the choice. A grant and the revoke
+// of what it wrote share this, so no form grants an exemption that no form
+// revokes. instead is what gets a refused exemption a form short of the
+// console, when something does.
+func fitExemptionScope(ctx context.Context, head, rest string, g *exemptionGrant, effect string) (form exemptionForm, tooLong, instead string) {
+	var reason []string
+	if g.note != "" {
+		reason = []string{fmt.Sprintf("Reason: %q", g.note)}
+	}
 	message, tooLong := fitExemption(ctx, head, rest, exemptionScope(g, false), effect)
 	if tooLong == "" || len(g.columns) == 0 {
-		return exemptionForm{message: message}, tooLong, false
+		return exemptionForm{message: message, reason: reason}, tooLong, ""
 	}
 	if message, tooLong = fitExemption(ctx, head, rest, exemptionScope(g, true), effect); tooLong != "" {
-		return exemptionForm{message: message}, tooLong, eachColumnFits(ctx, head, rest, g, effect)
+		if eachColumnFits(ctx, head, rest, g, effect) {
+			instead = fewerColumns
+		}
+		return exemptionForm{message: message}, tooLong, instead
 	}
 	label := "Columns: "
 	if len(g.columns) == 1 {
@@ -529,9 +542,21 @@ func fitExemptionScope(ctx context.Context, head, rest string, g *exemptionGrant
 	}
 	columns := wrapLine(label+quoteAll(g.columns), descriptionLineWidth)
 	if len(columns) > exemptionColumnRows {
-		return exemptionForm{message: message}, fmt.Sprintf("the names of this exemption's columns need %d lines, more than the %d one confirmation form has room for under its choice, so nothing changed", len(columns), exemptionColumnRows), len(g.columns) > 1
+		if len(g.columns) > 1 {
+			instead = fewerColumns
+		}
+		return exemptionForm{message: message}, fmt.Sprintf("the names of this exemption's columns need %d lines, more than the %d one confirmation form has room for under its choice, so nothing changed", len(columns), exemptionColumnRows), instead
 	}
-	return exemptionForm{message: message, columns: columns}, "", false
+	// A description that lists columns keeps to descriptionLines rows, so the
+	// reason beside them is wrapped and counted here. A reason alone is not:
+	// it goes as one line for the client to wrap.
+	if g.note != "" {
+		reason = wrapLine(reason[0], descriptionLineWidth)
+		if room := descriptionLines - len(columns); len(reason) > room {
+			return exemptionForm{message: message}, fmt.Sprintf("this exemption's reason needs %d lines under the form's choice, and the names of its columns leave it %d, so nothing changed", len(reason), room), shorterReason
+		}
+	}
+	return exemptionForm{message: message, columns: columns, reason: reason}, "", ""
 }
 
 // eachColumnFits reports whether an exemption that names several columns gets

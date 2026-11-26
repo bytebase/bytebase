@@ -486,6 +486,13 @@ func TestMaskingExemptionToolsRefuseAFormTooLongBeforeAsking(t *testing.T) {
 			"table": "employee_compensation", "columns": manyColumns,
 		}, "the names of this exemption's columns need 12 lines, more than the 8 one confirmation form has room for under its choice, so nothing changed",
 			"exempt fewer columns at a time, or grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+		// Fewer columns can leave the reason alone under the choice, where no
+		// row is counted, so the advice names the reason only.
+		"a grant whose reason needs more rows than its columns leave": {"grant_masking_exemption", map[string]any{
+			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod-analytics-replica/databases/hr_reporting",
+			"table": "employee_compensation", "columns": manyColumns[:39], "reason": strings.Repeat("HR needs birth dates and salaries for the payroll audit. ", 3)[:126],
+		}, "this exemption's reason needs 3 lines under the form's choice, and the names of its columns leave it 2, so nothing changed",
+			"give a shorter reason, or grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 		"a grant naming columns that do not fit even one at a time": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/" + longest + "/databases/" + longest,
 			"table": "employee", "columns": []string{"birth_date", "gender"},
@@ -974,9 +981,8 @@ func TestRevokeMaskingExemptionStatesEveryExemptionAFormGrants(t *testing.T) {
 	require.Positive(t, refused, "and one no form states")
 }
 
-// The rows that name the columns leave two: for a grant's reason, and for a
-// revoke's note on matching entries and its expiry. Only a reason longer than
-// two rows takes a description past the rows an 80-by-24 terminal shows.
+// The rows that name the columns leave two, for a revoke's note on matching
+// entries and its expiry.
 func TestMaskingExemptionColumnsLeaveTheNotesTheirRows(t *testing.T) {
 	ctx := withUserEmail(context.Background(), "alice@example.com")
 	input := GrantMaskingExemptionInput{
@@ -991,19 +997,106 @@ func TestMaskingExemptionColumnsLeaveTheNotesTheirRows(t *testing.T) {
 		}
 		g, err := parseExemptionGrant(input)
 		require.NoError(t, err)
-		grant, tooLong, fewer := describeExemptionGrant(ctx, g)
+		grant, tooLong, instead := describeExemptionGrant(ctx, g)
 		if tooLong != "" {
-			require.True(t, fewer, "%d columns", n)
+			require.Equal(t, fewerColumns, instead, "%d columns", n)
 			continue
 		}
 		revoke, tooLong := describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: input.Project, Member: input.Member, Condition: g.condition()})
 		require.Empty(t, tooLong)
 		require.NotEmpty(t, revoke.expiry, "the counted scope's line has no room for the expiry")
-		require.LessOrEqual(t, len(grant.columns)+1, descriptionLines)
 		require.LessOrEqual(t, len(revoke.columns)+2, descriptionLines)
 		most = max(most, len(grant.columns))
 	}
 	require.Equal(t, exemptionColumnRows, most, "the sweep must reach the most rows the columns take")
+}
+
+// Beside listed columns the reason is wrapped and counted, so a description
+// that lists columns keeps to the rows an 80-by-24 terminal shows: the grant
+// gets a form exactly when its reason fits the rows its columns leave. A
+// reason alone stays one line of any length.
+func TestGrantMaskingExemptionCountsTheReasonBesideItsColumns(t *testing.T) {
+	ctx := withUserEmail(context.Background(), "alice@example.com")
+	input := GrantMaskingExemptionInput{
+		Project: "projects/hr", Member: "user:bob@example.com", Database: "instances/prod-payments-us-east-1/databases/payments_ledger_prod",
+		Table: "salary", ExpireTime: "2026-12-01T00:00:00Z",
+	}
+	text := strings.Repeat("HR needs birth dates and salaries for the payroll audit. ", 13)
+	alone, formed, refused := 0, 0, 0
+	for n := 1; n <= 39; n++ {
+		input.Columns, input.Reason = make([]string, n), ""
+		for i := range input.Columns {
+			input.Columns[i] = fmt.Sprintf("column_%02d", i)
+		}
+		g, err := parseExemptionGrant(input)
+		require.NoError(t, err)
+		plain, tooLong, _ := describeExemptionGrant(ctx, g)
+		require.Empty(t, tooLong, "%d columns", n)
+		room := descriptionLines - len(plain.columns)
+		for length := 1; length <= len(text); length++ {
+			input.Reason = text[:length]
+			g, err := parseExemptionGrant(input)
+			require.NoError(t, err)
+			line := fmt.Sprintf("Reason: %q", input.Reason)
+			form, tooLong, instead := describeExemptionGrant(ctx, g)
+			if len(plain.columns) == 0 {
+				require.Empty(t, tooLong)
+				require.Equal(t, []string{line}, form.reason, "%d columns", n)
+				alone++
+				continue
+			}
+			// The fewest rows the line takes: 68 columns, then 67 after each mark.
+			rows := 1 + (max(0, len(line)-descriptionLineWidth)+descriptionLineWidth-2)/(descriptionLineWidth-1)
+			if rows > room {
+				require.Equal(t, fmt.Sprintf("this exemption's reason needs %d lines under the form's choice, and the names of its columns leave it %d, so nothing changed", rows, room), tooLong)
+				require.Equal(t, shorterReason, instead)
+				refused++
+				continue
+			}
+			require.Empty(t, tooLong, "%d columns, a reason of %d", n, length)
+			require.Equal(t, plain.columns, form.columns)
+			require.Len(t, form.reason, rows, "%d columns, a reason of %d", n, length)
+			require.Equal(t, line, unwrapMessage(strings.Join(form.reason, "\n")))
+			for _, row := range form.reason {
+				require.LessOrEqual(t, lineColumns(row), descriptionLineWidth)
+			}
+			formed++
+		}
+	}
+	require.Positive(t, alone, "the sweep must reach a grant whose message names its columns")
+	require.Positive(t, formed)
+	require.Positive(t, refused)
+}
+
+func TestGrantMaskingExemptionShowsTheReasonUnderTheChoice(t *testing.T) {
+	const reason = "HR team needs to see employee personal details (birth dates, salaries) in production"
+	long := strings.Repeat("HR needs birth dates and salaries for the payroll audit. ", 13)[:700]
+	for name, tc := range map[string]struct {
+		columns []string
+		reason  string
+		want    string
+	}{
+		"beside listed columns, in rows": {[]string{"amount", "bonus", "base_pay", "equity", "ssn", "iban"}, reason, strings.Join([]string{
+			`Columns: "amount", "bonus", "base_pay", "equity", "ssn", "iban"`,
+			`Reason: "HR team needs to see employee personal details (birth`,
+			`> dates, salaries) in production"`,
+		}, "\n")},
+		// As on main, where no description lists columns.
+		"alone, as one line of any length": {[]string{"amount"}, long, fmt.Sprintf("Reason: %q", long)},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := &policyMock{databaseProject: "projects/hr"}
+			user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+			session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+			res := callExemptionTool(t, session, "grant_masking_exemption", map[string]any{
+				"project": "projects/hr", "member": "user:bob@example.com",
+				"database": "instances/prod-payments-us-east-1/databases/payments_ledger_prod", "table": "salary",
+				"columns": tc.columns, "reason": tc.reason,
+			})
+			require.False(t, res.IsError, resultText(t, res))
+			require.Equal(t, tc.want, choiceDescription(t, user.lastParams(t)))
+		})
+	}
 }
 
 // The advice to exempt fewer columns at a time is given exactly when each
@@ -1015,8 +1108,8 @@ func TestGrantMaskingExemptionAdvisesFewerColumnsWhenEachGetsAForm(t *testing.T)
 	refused := func(input GrantMaskingExemptionInput) (bool, bool) {
 		g, err := parseExemptionGrant(input)
 		require.NoError(t, err)
-		_, tooLong, fewer := describeExemptionGrant(ctx, g)
-		return tooLong != "", fewer
+		_, tooLong, instead := describeExemptionGrant(ctx, g)
+		return tooLong != "", instead == fewerColumns
 	}
 	advised, sent := 0, 0
 	for n := 1; n <= 63; n++ {
