@@ -331,8 +331,10 @@ type maskingRulesDiff struct {
 	// types describe each rule's semantic type.
 	types map[string]*storepb.SemanticTypeSetting_SemanticType
 	// other builds the change by the second reading of its moves. It is nil
-	// when that reading is not worth a form (movesRead).
-	other func() (*maskingRulesDiff, error)
+	// when that reading is not worth a form (movesRead). second reports that
+	// this diff is that reading.
+	other  func() (*maskingRulesDiff, error)
+	second bool
 }
 
 // diffMaskingRules compares the requested rule list with the stored one. Rules
@@ -387,7 +389,7 @@ func maskingRulesDiffBy(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule,
 		}
 	}
 
-	diff := &maskingRulesDiff{requested: requested, types: types}
+	diff := &maskingRulesDiff{requested: requested, types: types, second: second}
 	var storedKept, requestedKept []string
 	for _, rule := range stored {
 		condition := rule.GetCondition().GetExpression()
@@ -531,8 +533,10 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 	alone := func(change formChange) bool {
 		return messageHolds(ctx, maskingRulesQuestion, change, maskingRulesUnmask) || messageHolds(ctx, maskingRulesQuestionWithEffect, change, "")
 	}
-	form, err := rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, maskingRuleSection(diff, true), link,
-		!slices.ContainsFunc(diff.changes, func(change formChange) bool { return !alone(change) }))
+	// A step is a request of its own and reads its moves the first way, so a
+	// form by the second reading offers no steps.
+	eachAlone := !diff.second && !slices.ContainsFunc(diff.changes, func(change formChange) bool { return !alone(change) })
+	form, err := rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, maskingRuleSection(diff, true), link, eachAlone)
 	if err != nil {
 		if other := secondReading(diff.other, func(second *maskingRulesDiff) (*adminForm, error) {
 			return maskingRulesForm(ctx, second, link)

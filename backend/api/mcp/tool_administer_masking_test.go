@@ -904,6 +904,31 @@ func TestAdministerMaskingRulesOffersStepsWhenAListedChangeIsChangedInChat(t *te
 	require.Equal(t, changed, alone)
 	both := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, long, rules[0])))))
 	require.Equal(t, changed, both)
+
+	// A form by the second reading of a reorder offers no steps, though each of
+	// its lines fits a message alone: a step that swaps one pair reads it the
+	// first way, by the wide rule, and lists that under the choice.
+	var pairs, swapped []*v1pb.MaskingRulePolicy_MaskingRule
+	for i := range 4 {
+		var columns []string
+		for c := range 10 {
+			columns = append(columns, fmt.Sprintf(`resource.column_name == "c%02d"`, c))
+		}
+		wide := maskingRule(fmt.Sprintf("r-wide-%d", i), "", fmt.Sprintf(`resource.table_name == "t%d" && (`, i)+strings.Join(columns, " || ")+")", "bb.default")
+		narrow := maskingRule(fmt.Sprintf("r-narrow-%d", i), "", fmt.Sprintf(`resource.column_name == "s%d"`, i), "bb.default")
+		pairs, swapped = append(pairs, wide, narrow), append(swapped, narrow, wide)
+	}
+	mock.setStored(pairs...)
+	bySecond := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, swapped...)))))
+	require.Equal(t, changed, bySecond)
+	asked := user.lastParams(t)
+	require.Contains(t, asked.Message, "Change 4 rules, listed under Action.")
+	require.Contains(t, choiceDescription(t, asked), `Move to rule 1: any db, any table, column "s0"`)
+	oneSwap := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, slices.Concat(swapped[:2], pairs[2:])...)))))
+	require.Equal(t, changed, oneSwap)
+	asked = user.lastParams(t)
+	require.Contains(t, asked.Message, "Change 1 rule, listed under Action.")
+	require.Contains(t, choiceDescription(t, asked), "Move to rule 2: `resource.table_name == \"t0\" &&")
 	require.Empty(t, mock.calls())
 }
 
