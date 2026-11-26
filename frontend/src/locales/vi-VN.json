@@ -4127,16 +4127,47 @@
     },
     "mcp": {
       "connect": {
-        "description": "Thêm Bytebase vào ứng dụng AI của bạn và bắt đầu hỏi. Ở lần kết nối đầu tiên, bạn đăng nhập và phê duyệt quyền truy cập trong trình duyệt.",
-        "desktop-note": "Claude Desktop đọc máy chủ từ xa từ tài khoản Claude của bạn, không phải từ tệp cấu hình. Hãy thêm URL này làm trình kết nối tùy chỉnh tại Customize > Connectors trên claude.ai, sau đó nó sẽ xuất hiện trong Claude Desktop.",
-        "json-note": "Đây là định dạng mcpServers. Mỗi client có định dạng cấu hình khác nhau: ví dụ VS Code dùng servers trong mcp.json của nó, nên hãy dùng tab VS Code cho trường hợp đó.",
-        "title": "Kết nối một client"
+        "copy-off": "Không thể sao chép cho đến khi External URL được thiết lập.",
+        "copy-prompt": "Sao chép lời nhắc",
+        "copy-setup": "Sao chép phần thiết lập cho {{tool}}",
+        "desktop": {
+          "add": "Thêm nội dung này vào tệp rồi lưu lại.",
+          "example": "Xem ví dụ",
+          "open-file": "Trong thư mục đó, mở <code>{{file}}</code> bằng trình soạn thảo văn bản.",
+          "open-folder": "Trong Claude Desktop, nhấp vào tên của bạn ở góc dưới bên trái, rồi chọn <ui>{{path}}</ui>. Một thư mục sẽ mở ra.",
+          "requirement": "Yêu cầu Node.js 20 trở lên."
+        },
+        "other": {
+          "note": "Định dạng có thể khác nhau tùy công cụ.",
+          "tab": "Khác",
+          "title": "Thêm vào cấu hình MCP của công cụ AI"
+        },
+        "prompt-title": "Hỏi công cụ AI của bạn",
+        "setup-guide": "Hướng dẫn thiết lập",
+        "sign-in": {
+          "claude-code": "Trong Claude Code, chạy /mcp, chọn bytebase rồi chọn Authenticate. Trong cửa sổ trình duyệt mở ra, đăng nhập vào Bytebase và nhấp {{allow}}.",
+          "claude-desktop": "Thoát rồi mở lại Claude Desktop. Trong cửa sổ trình duyệt mở ra, đăng nhập vào Bytebase và nhấp {{allow}}.",
+          "codex": "Lệnh sẽ mở một cửa sổ trình duyệt. Đăng nhập vào Bytebase và nhấp {{allow}}. Nếu không có cửa sổ nào mở ra, chạy codex mcp login bytebase.",
+          "copilot-cli": "Khởi động Copilot CLI. Trong cửa sổ trình duyệt mở ra, đăng nhập vào Bytebase và nhấp {{allow}}. Nếu không có cửa sổ nào mở ra, chạy /mcp auth bytebase trong Copilot CLI.",
+          "default": "Lần đầu công cụ AI của bạn dùng Bytebase, một cửa sổ trình duyệt sẽ mở ra. Đăng nhập vào Bytebase và nhấp {{allow}}.",
+          "gemini-cli": "Trong Gemini CLI, chạy /mcp auth bytebase. Trong cửa sổ trình duyệt mở ra, đăng nhập vào Bytebase và nhấp {{allow}}."
+        },
+        "step": {
+          "add": "Thêm Bytebase vào công cụ AI của bạn",
+          "prompt": "Thử một lời nhắc",
+          "sign-in": "Đăng nhập"
+        },
+        "terminal": "Chạy trong terminal",
+        "title": "Kết nối công cụ AI của bạn",
+        "vscode": {
+          "guide": "Hướng dẫn thiết lập VS Code",
+          "install": "Cài đặt trong VS Code",
+          "off": "Không thể cài đặt cho đến khi External URL được thiết lập."
+        }
       },
-      "description": "Kết nối trợ lý AI với Bytebase bằng Model Context Protocol.",
+      "description": "Kết nối các công cụ AI với Bytebase bằng Model Context Protocol.",
       "first-prompt": {
-        "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn:",
-        "example": "Liệt kê tất cả các dự án trong phiên bản Bytebase của tôi",
-        "title": "Lời nhắc đầu tiên của bạn"
+        "example": "Liệt kê tất cả các dự án trong phiên bản Bytebase của tôi"
       },
       "ladder": {
         "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",

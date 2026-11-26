@@ -4127,16 +4127,47 @@
     },
     "mcp": {
       "connect": {
-        "description": "Añada Bytebase a su cliente de IA y empiece a preguntar. En la primera conexión inicia sesión y aprueba el acceso en el navegador.",
-        "desktop-note": "Claude Desktop lee los servidores remotos de su cuenta de Claude, no del archivo de configuración. Añada esta URL como conector personalizado en Customize > Connectors de claude.ai y aparecerá en Claude Desktop.",
-        "json-note": "Este es el formato mcpServers. Los formatos de configuración varían según el cliente: VS Code, por ejemplo, espera servers en su propio mcp.json, así que use la pestaña de VS Code para eso.",
-        "title": "Conectar un cliente"
+        "copy-off": "Copiar está desactivado hasta que se configure la URL externa.",
+        "copy-prompt": "Copiar el prompt",
+        "copy-setup": "Copiar la configuración de {{tool}}",
+        "desktop": {
+          "add": "Añada esto al archivo y guárdelo.",
+          "example": "Ver un ejemplo",
+          "open-file": "En esa carpeta, abra <code>{{file}}</code> en un editor de texto.",
+          "open-folder": "En Claude Desktop, haga clic en su nombre en la esquina inferior izquierda y luego en <ui>{{path}}</ui>. Se abre una carpeta.",
+          "requirement": "Requiere Node.js 20 o posterior."
+        },
+        "other": {
+          "note": "El formato puede variar según la herramienta.",
+          "tab": "Otra",
+          "title": "Añada a la configuración MCP de su herramienta de IA"
+        },
+        "prompt-title": "Pregunte a su herramienta de IA",
+        "setup-guide": "Guía de configuración",
+        "sign-in": {
+          "claude-code": "En Claude Code, ejecute /mcp, seleccione bytebase y elija Authenticate. En la ventana del navegador que se abre, inicie sesión en Bytebase y haga clic en {{allow}}.",
+          "claude-desktop": "Cierre Claude Desktop y vuelva a abrirlo. En la ventana del navegador que se abre, inicie sesión en Bytebase y haga clic en {{allow}}.",
+          "codex": "El comando abre una ventana del navegador. Inicie sesión en Bytebase y haga clic en {{allow}}. Si no se abrió ninguna ventana, ejecute codex mcp login bytebase.",
+          "copilot-cli": "Inicie Copilot CLI. En la ventana del navegador que se abre, inicie sesión en Bytebase y haga clic en {{allow}}. Si no se abre ninguna ventana, ejecute /mcp auth bytebase en Copilot CLI.",
+          "default": "La primera vez que su herramienta de IA usa Bytebase, se abre una ventana del navegador. Inicie sesión en Bytebase y haga clic en {{allow}}.",
+          "gemini-cli": "En Gemini CLI, ejecute /mcp auth bytebase. En la ventana del navegador que se abre, inicie sesión en Bytebase y haga clic en {{allow}}."
+        },
+        "step": {
+          "add": "Añada Bytebase a su herramienta de IA",
+          "prompt": "Pruebe un prompt",
+          "sign-in": "Inicie sesión"
+        },
+        "terminal": "Ejecute en su terminal",
+        "title": "Conecte su herramienta de IA",
+        "vscode": {
+          "guide": "Guía de configuración de VS Code",
+          "install": "Instalar en VS Code",
+          "off": "Instalar está desactivado hasta que se configure la URL externa."
+        }
       },
-      "description": "Conecte asistentes de IA a Bytebase usando el Model Context Protocol.",
+      "description": "Conecte herramientas de IA a Bytebase usando el Model Context Protocol.",
       "first-prompt": {
-        "description": "Una vez conectado, intente preguntar a su asistente de IA:",
-        "example": "Enumera todos los proyectos de mi instancia de Bytebase",
-        "title": "Su primer prompt"
+        "example": "Enumera todos los proyectos de mi instancia de Bytebase"
       },
       "ladder": {
         "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
