@@ -91,7 +91,6 @@ import {
   getLandingStarterIdForText,
   type LandingStarterId,
 } from "../logic/landingStarters";
-import type { LegacySqlTranscript as SqlTranscript } from "../logic/legacySqlHistory";
 import {
   formatResourceMention,
   getDatabaseMentionLabel,
@@ -323,55 +322,11 @@ export function AgentWindow() {
     (state) => state.initializationFailureIdentity
   );
   const [initializationAttempt, setInitializationAttempt] = useState(0);
-  const [legacyFallback, setLegacyFallback] = useState<{
-    owner: string;
-    history: SqlTranscript[];
-    failedRead: boolean;
-  }>();
-  const [legacyDialog, setLegacyDialog] = useState<string | null>(null);
-  const [legacyRetry, setLegacyRetry] = useState(0);
   const legacyMessages = useAgentStore((s) =>
     currentChat?.legacySqlImport
       ? s.messagesByChatId[currentChat.id]
       : undefined
   );
-  useEffect(() => {
-    if (
-      !currentOwnerIdentity ||
-      !workspace?.name ||
-      storedWorkspaceName !== workspace.name ||
-      storedUserEmail !== userEmail ||
-      initializationFailure
-    )
-      return;
-    let active = true;
-    void useAgentStore
-      .getState()
-      .importLegacySqlHistory({ workspace: workspace.name, email: userEmail })
-      .then((result) => {
-        if (active)
-          setLegacyFallback(
-            "fallback" in result && result.status !== "identity-unavailable"
-              ? {
-                  owner: currentOwnerIdentity,
-                  history: result.fallback,
-                  failedRead: !result.fallback.length,
-                }
-              : undefined
-          );
-      });
-    return () => {
-      active = false;
-    };
-  }, [
-    currentOwnerIdentity,
-    workspace?.name,
-    storedWorkspaceName,
-    storedUserEmail,
-    userEmail,
-    initializationFailure,
-    legacyRetry,
-  ]);
   const accessGrantDraftSequence = useRef(0);
   const [accessGrantDraft, setAccessGrantDraft] = useState<{
     id: number;
@@ -2755,85 +2710,36 @@ export function AgentWindow() {
     );
 
   const renderHistoryRetentionInfo = () => (
-    <>
-      {legacyFallback && currentOwnerIdentity === legacyFallback.owner && (
-        <>
-          <Button
-            appearance="secondary"
-            size="xs"
-            onClick={() => setLegacyDialog(currentOwnerIdentity)}
-          >
-            {t("common.history")}
-          </Button>
-          <AgentDialog
-            open={legacyDialog === currentOwnerIdentity}
-            onOpenChange={(open) => {
-              if (!open) setLegacyDialog(null);
-            }}
-          >
-            <AgentDialogContent className="flex max-h-full flex-col gap-2 overflow-auto p-4">
-              <AgentDialogTitle>{t("common.history")}</AgentDialogTitle>
-              <AgentDialogDescription>
-                {t(
-                  legacyFallback.failedRead
-                    ? "agent.storage.load-unavailable-description"
-                    : "common.read-only"
-                )}
-              </AgentDialogDescription>
-              {legacyFallback.history
-                .filter(({ chat }) => matchesHistoryScope(chat))
-                .map((transcript) => (
-                  <LegacySqlTranscript
-                    key={transcript.chat.id}
-                    {...transcript}
-                  />
-                ))}
-              <Button
-                appearance="secondary"
-                size="sm"
-                onClick={() => setLegacyRetry((n) => n + 1)}
-              >
-                {t(
-                  legacyFallback.failedRead
-                    ? "agent.storage.retry-loading"
-                    : "agent.storage.retry"
-                )}
-              </Button>
-            </AgentDialogContent>
-          </AgentDialog>
-        </>
-      )}
-      <AgentPopover>
-        <AgentTooltip content={t("agent.storage.retention-info")}>
-          <AgentPopoverTrigger
-            render={
-              <Button
-                appearance="secondary"
-                size="xs"
-                data-agent-window-action
-                className="shrink-0 text-control-light hover:bg-control-bg-hover"
-                aria-label={t("agent.storage.retention-info")}
-                onClick={(event) => event.stopPropagation()}
-              >
-                <Info className="size-3.5" aria-hidden="true" />
-              </Button>
-            }
-          />
-        </AgentTooltip>
-        <AgentPopoverContent
-          side="bottom"
-          align="start"
-          className="w-64 max-w-[var(--available-width)] p-3"
-        >
-          <AgentPopoverTitle className="sr-only">
-            {t("agent.storage.retention-info")}
-          </AgentPopoverTitle>
-          <p className="text-xs text-control-light">
-            {t("agent.storage.retention-policy")}
-          </p>
-        </AgentPopoverContent>
-      </AgentPopover>
-    </>
+    <AgentPopover>
+      <AgentTooltip content={t("agent.storage.retention-info")}>
+        <AgentPopoverTrigger
+          render={
+            <Button
+              appearance="secondary"
+              size="xs"
+              data-agent-window-action
+              className="shrink-0 text-control-light hover:bg-control-bg-hover"
+              aria-label={t("agent.storage.retention-info")}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Info className="size-3.5" aria-hidden="true" />
+            </Button>
+          }
+        />
+      </AgentTooltip>
+      <AgentPopoverContent
+        side="bottom"
+        align="start"
+        className="w-64 max-w-[var(--available-width)] p-3"
+      >
+        <AgentPopoverTitle className="sr-only">
+          {t("agent.storage.retention-info")}
+        </AgentPopoverTitle>
+        <p className="text-xs text-control-light">
+          {t("agent.storage.retention-policy")}
+        </p>
+      </AgentPopoverContent>
+    </AgentPopover>
   );
 
   const renderRail = () => (

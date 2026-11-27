@@ -48,14 +48,6 @@ import type {
 } from "../logic/expressionDraft";
 import { normalizeAgentHandoff } from "../logic/handoff";
 import type { LandingStarterId } from "../logic/landingStarters";
-import {
-  type LegacySqlHistoryImportResult,
-  type LegacySqlIdentity,
-  legacySqlTranscript,
-  normalizeLegacySqlProject,
-  readLegacySqlHistory,
-  resolveLegacySqlHistoryProjects,
-} from "../logic/legacySqlHistory";
 import { omitAgentQueryRows } from "../logic/queryResultRetention";
 import {
   formatResourceMention,
@@ -884,7 +876,12 @@ const normalizeChat = (raw: unknown): AgentChat => {
       updatedTs: typeof chat.updatedTs === "number" ? chat.updatedTs : now,
       workspaceName:
         typeof chat.workspaceName === "string" ? chat.workspaceName : undefined,
-      context: normalizeLegacySqlProject(chat.context),
+      context:
+        typeof chat.context === "string" &&
+        chat.context.trim() === chat.context &&
+        /^projects\/(?!-$)[A-Za-z0-9_-]+$/.test(chat.context)
+          ? chat.context
+          : undefined,
       archived: Boolean(chat.archived),
       status: "idle",
       totalTokensUsed: 0,
@@ -1567,9 +1564,6 @@ export interface AgentState {
   // Chat CRUD
   createChat: (options?: CreateChatOptions) => AgentChat;
   queueUserMessage: (message: QueueUserMessageInput) => void;
-  importLegacySqlHistory: (
-    identity: LegacySqlIdentity
-  ) => Promise<LegacySqlHistoryImportResult>;
   enqueueFollowUp: (message: QueueUserMessageInput) => string | null;
   removeFollowUp: (chatId: string, messageId: string) => boolean;
   setFollowUpQueuePaused: (chatId: string, paused: boolean) => boolean;
@@ -3126,111 +3120,6 @@ export const createAgentStore = () => {
             }
           });
           return chat;
-        },
-
-        importLegacySqlHistory: async (identity) => {
-          const revision = scopeRevision;
-          const apiScope = get().captureApiScope();
-          const isCurrent = () =>
-            apiScope() &&
-            scopeRevision === revision &&
-            get().workspaceName === identity.workspace &&
-            get().userEmail === identity.email;
-          if (!isCurrent())
-            return { status: "identity-unavailable", fallback: [] };
-          const source = readLegacySqlHistory(identity);
-          if (source.status !== "ready")
-            return { status: source.status, fallback: [] };
-          const transcripts = source.conversations.map((c) =>
-            legacySqlTranscript(identity, c)
-          );
-          if (!transcripts.length)
-            return { status: "already-imported", unverifiedTargets: [] };
-          const key = currentScopeKey(get());
-          const remaining = () => {
-            const imported = new Set(
-              key ? storageSnapshotsByScope.get(key)?.legacySqlSourceIds : []
-            );
-            return transcripts.filter(
-              (t) => !imported.has(t.chat.legacySqlImport!.sourceId)
-            );
-          };
-          if (!key || !globalThis.navigator?.locks)
-            return { status: "storage-unavailable", fallback: remaining() };
-          const projects = await resolveLegacySqlHistoryProjects(
-            transcripts,
-            isCurrent
-          );
-          if (!isCurrent())
-            return { status: "identity-unavailable", fallback: [] };
-          for (const { chat } of transcripts)
-            chat.context = projects.get(chat.id);
-          try {
-            return await withAgentPersistenceLock(key, () =>
-              withAgentStorageBudgetLock((): LegacySqlHistoryImportResult => {
-                if (!isCurrent())
-                  return { status: "identity-unavailable", fallback: [] };
-                if (!synchronizeState(get(), false, true))
-                  return {
-                    status: "storage-unavailable",
-                    fallback: remaining(),
-                  };
-                const current = get();
-                const pending = remaining().filter(
-                  ({ chat }) => !current.chats.some((c) => c.id === chat.id)
-                );
-                const unverifiedTargets = transcripts
-                  .filter(
-                    (t) => t.chat.legacySqlImport?.database && !t.chat.context
-                  )
-                  .map((t) => t.chat.id);
-                const sourceById = new Map(
-                  transcripts.map((t) => [t.chat.id, t.chat])
-                );
-                const chats = current.chats.map((chat) => {
-                  const source = sourceById.get(chat.id);
-                  return source &&
-                    chat.workspaceName === source.workspaceName &&
-                    samePersistedValue(
-                      chat.legacySqlImport,
-                      source.legacySqlImport
-                    ) &&
-                    chat.context !== source.context
-                    ? { ...chat, context: source.context }
-                    : chat;
-                });
-                if (
-                  !pending.length &&
-                  chats.every((chat, index) => chat === current.chats[index])
-                )
-                  return { status: "already-imported", unverifiedTargets };
-                const candidate = {
-                  ...current,
-                  chats: [...chats, ...pending.map((t) => t.chat)],
-                  messagesByChatId: {
-                    ...current.messagesByChatId,
-                    ...Object.fromEntries(
-                      pending.map((t) => [t.chat.id, t.messages])
-                    ),
-                  },
-                };
-                if (
-                  !synchronizeState(candidate, true, true, {
-                    importingSqlHistory: source.conversations.map((c) => c.id),
-                  })
-                )
-                  return { status: "storage-unavailable", fallback: pending };
-                return {
-                  status: pending.length ? "imported" : "already-imported",
-                  unverifiedTargets,
-                };
-              })
-            );
-          } catch {
-            return isCurrent()
-              ? { status: "storage-unavailable", fallback: remaining() }
-              : { status: "identity-unavailable", fallback: [] };
-          }
         },
 
         queueUserMessage: (message) => {
@@ -6595,7 +6484,6 @@ export const createAgentStore = () => {
     reclamation?: {
       resetChatId?: string;
       discardLegacy?: boolean;
-      importingSqlHistory?: string[];
     }
   ): boolean => {
     const storage = getSafeStorage();
@@ -6712,9 +6600,6 @@ export const createAgentStore = () => {
       locallyBusy,
       state.remoteBusyChatIds
     );
-    // Retained source records outlive intentionally deleted Agent chats.
-    if (reclamation?.importingSqlHistory)
-      merged.legacySqlSourceIds = reclamation.importingSqlHistory;
     if (reclamation?.resetChatId) {
       const id = reclamation.resetChatId;
       const chat = local.chats.find((chat) => chat.id === id);
@@ -6747,10 +6632,7 @@ export const createAgentStore = () => {
         );
         merged = written.retained;
         serialized = written.serialized;
-        if (
-          !reclamation?.importingSqlHistory &&
-          written.bytes >= AGENT_STORAGE_CLEANUP_TRIGGER_BYTES
-        )
+        if (written.bytes >= AGENT_STORAGE_CLEANUP_TRIGGER_BYTES)
           scheduleAutomaticCleanup(key);
         if (
           state.storagePressure?.phase !== "admission" ||
@@ -6758,12 +6640,8 @@ export const createAgentStore = () => {
         )
           clearStoragePressure(key);
       } catch (error) {
-        if (!reclamation?.importingSqlHistory)
-          updateStoragePressure(key, error, "saving");
-        if (
-          !reclamation?.importingSqlHistory &&
-          error instanceof AgentStorageFullError
-        )
+        updateStoragePressure(key, error, "saving");
+        if (error instanceof AgentStorageFullError)
           scheduleAutomaticCleanup(key);
         if (underLock) throw error;
         return false;

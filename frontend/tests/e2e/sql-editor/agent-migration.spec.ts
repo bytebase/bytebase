@@ -791,7 +791,7 @@ test("live resizing preserves one running Agent and its draft across the dock bo
   }
 });
 
-test("legacy SQL chat is imported into shared history as a read-only transcript", async ({
+test("legacy SQL history remains untouched while the shared Agent handles new chats", async ({
   page,
   provider,
 }) => {
@@ -801,7 +801,9 @@ test("legacy SQL chat is imported into shared history as a read-only transcript"
   const key = storageKeyAiConversations(workspace, env.adminEmail);
   const title = "Legacy sample SQL chat";
   const inaccessibleTitle = "Legacy inaccessible SQL chat";
-  const prompt = "Show a sample query";
+  const legacyPrompt = "Show a sample query";
+  const prompt = "Explain SQL aliases without importing old chats.";
+  const response = "Only the new SQL Editor conversation is active.";
   const content = ["Historical example", "", "```sql", exampleSql, "```"].join("\n");
   const createdTs = Date.now() - 60_000;
   const source = JSON.stringify({
@@ -813,7 +815,7 @@ test("legacy SQL chat is imported into shared history as a read-only transcript"
       database: env.database,
       instance: env.instance,
       messageList: [
-        { id: "legacy-user", created_ts: createdTs, author: "USER", content: prompt, status: "DONE", error: "" },
+        { id: "legacy-user", created_ts: createdTs, author: "USER", content: legacyPrompt, status: "DONE", error: "" },
         { id: "legacy-answer", created_ts: createdTs + 1, author: "AI", content, status: "DONE", error: "" },
       ],
     }, {
@@ -825,31 +827,50 @@ test("legacy SQL chat is imported into shared history as a read-only transcript"
       messageList: [],
     }],
   });
-  await page.addInitScript(({ key, source }) => localStorage.setItem(key, source), { key, source });
-  await page.goto(`${env.baseURL}/sql-editor/${env.project}/instances/${env.instanceId}/databases/${env.databaseId}`);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${env.baseURL}/landing`);
+  await page.evaluate(({ key, source }) => localStorage.setItem(key, source), { key, source });
+  provider.respond(answer(undefined, response));
+  await page.goto(`${env.baseURL}/sql-editor/${env.project}`);
   const agent = await openAgent(page);
-  const historyRow = agent.getByRole("button", { name: title, exact: true });
-  const archived = agent.getByRole("button", { name: "View archived chats", exact: true });
-  if (!(await archived.isVisible())) {
-    await agent.getByRole("button", { name: "Chats", exact: true }).click();
-  }
-  await archived.click();
-  await expect(agent.getByRole("button", { name: inaccessibleTitle, exact: true })).toHaveCount(0);
-  await historyRow.click();
-  await expect(agent.getByText(prompt, { exact: true })).toBeVisible();
-  await expect(agent.getByText("Historical example", { exact: true })).toBeVisible();
-  await expect(agent.getByRole("button", { name: /^(Send|Resend|Insert|Replace selection|Run query)$/ })).toHaveCount(0);
-  expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBe(source);
+  const outgoing = page.waitForRequest(agentTurn);
+  await send(agent, prompt);
+  const snapshot = frozenContext(await outgoing);
+  expect(snapshot.project).toBe(env.project);
+  expect(snapshot.connection).toBeUndefined();
+  await expect(agent.getByText(response, { exact: true })).toBeVisible();
+  await expect(agent.getByText(legacyPrompt, { exact: true })).toHaveCount(0);
+  await expect(agent.getByText("Historical example", { exact: true })).toHaveCount(0);
+
+  const assertDeferredHistory = async () => {
+    await agent.getByRole("button", { name: "Chats", exact: true }).first().click();
+    await expect(agent.getByRole("button", { name: prompt, exact: true })).toHaveCount(1);
+    await expect(agent.getByRole("button", { name: prompt, exact: true })).toBeVisible();
+    await expect(agent.getByRole("button", { name: title, exact: true })).toHaveCount(0);
+    await expect(agent.getByRole("button", { name: inaccessibleTitle, exact: true })).toHaveCount(0);
+    await agent.getByRole("button", { name: "View archived chats", exact: true }).click();
+    await expect(agent.locator("[data-agent-chat-row]")).toHaveCount(0);
+    await expect(agent.getByRole("button", { name: title, exact: true })).toHaveCount(0);
+    await expect(agent.getByRole("button", { name: inaccessibleTitle, exact: true })).toHaveCount(0);
+    expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBe(source);
+  };
+  await assertDeferredHistory();
   await page.reload();
   await openAgent(page);
-  if (!(await archived.isVisible())) await agent.getByRole("button", { name: "Chats", exact: true }).click();
-  await archived.click();
-  await expect(historyRow).toHaveCount(1);
-  await expect(agent.getByRole("button", { name: inaccessibleTitle, exact: true })).toHaveCount(0);
-  await historyRow.click();
-  await expect(agent.getByText("Historical example", { exact: true })).toBeVisible();
-  await expect(agent.getByRole("button", { name: /^(Send|Resend|Insert|Replace selection|Run query)$/ })).toHaveCount(0);
-  expect(provider.calls).toBe(0);
+  await agent.getByRole("button", { name: "Continue last chat", exact: true }).click();
+  await expect(agent.getByText(response, { exact: true })).toBeVisible();
+  await assertDeferredHistory();
+
+  await page.goto(`${env.baseURL}/landing`);
+  await page.getByRole("button", { name: "Agent", exact: true }).click();
+  await expect(agent).toBeVisible();
+  await assertDeferredHistory();
+  await page.reload();
+  await page.getByRole("button", { name: "Agent", exact: true }).click();
+  await expect(agent).toBeVisible();
+  await assertDeferredHistory();
+  expect(provider.calls).toBe(1);
+  expect(provider.unexpectedCalls).toBe(0);
 });
 
 test("connected database suggestions remain stable when the Agent is reopened", async ({ page, provider }) => {

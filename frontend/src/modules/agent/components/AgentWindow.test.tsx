@@ -14,6 +14,7 @@ import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import { type AIChatResponse, AIChatResponseSchema } from "@/types/proto-es/v1/ai_service_pb";
 import { type DatabaseMetadata, DatabaseMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
+import { storageKeyAiConversations } from "@/utils/storage-keys";
 import { createAgentStore, getAgentStateKey, useAgentStore } from "../store/agent";
 import { DEFAULT_AGENT_PREFERENCES, getAgentPreferencesKey } from "../store/preferences";
 import type { AgentPageResource } from "../logic/chatContext";
@@ -1188,27 +1189,42 @@ describe("SQL Editor scoped history", () => {
     } finally { view.unmount(); host.cleanup(); }
   });
 
-  test("scopes read-only legacy fallback history to the selected SQL Project", async () => {
+  test("keeps already imported SQL history readable and read-only in its Project", async () => {
     const { store, project, foreign } = seed();
-    const importer = vi.fn<typeof store.importLegacySqlHistory>().mockResolvedValue({
-      status: "storage-unavailable",
-      fallback: [project, foreign].map(chat => ({ chat, messages: [] })),
-    });
-    useAgentStore.setState({ size: { width: 750, height: 600 }, importLegacySqlHistory: importer });
+    const messages = [{
+      id: "saved-answer", chatId: project.id, role: "assistant" as const,
+      content: "SELECT * FROM employee;", createdTs: 11,
+      metadata: { legacySqlStatus: "DONE" as const },
+    }];
+    useAgentStore.setState(state => ({
+      size: { width: 750, height: 600 },
+      chats: state.chats.map(chat => [project.id, foreign.id].includes(chat.id) ? {
+        ...chat,
+        archived: true,
+        title: chat.id === project.id ? "Saved SQL conversation" : "Foreign SQL conversation",
+        legacySqlImport: { version: 1 as const, sourceId: chat.id, readOnly: true as const, instance: "instances/main", database: "orders" },
+      } : chat),
+      messagesByChatId: { ...state.messagesByChatId, [project.id]: messages },
+    }));
     const host = sqlHost();
     host.update({ kind: "ready", snapshot: { version: 1, project: "projects/orders" } });
     const view = renderIntoContainer(<AgentWindow />);
     try {
       view.render();
-      const trigger = await screen.findByRole("button", { name: "common.history" });
-      act(() => trigger.click());
-      const history = await screen.findByRole("article", { name: project.title });
+      await openChatList(750, true);
+      expect(rowIds()).toEqual([project.id]);
+      const row = document.querySelector<HTMLElement>(`[data-agent-chat-row="${project.id}"]`)!;
+      act(() => row.click());
+      const history = await screen.findByRole("article", { name: "Saved SQL conversation" });
       expect(history).toBeVisible();
-      expect(screen.queryByRole("article", { name: foreign.title })).toBeNull();
-    } finally {
-      view.unmount(); host.cleanup();
-      useAgentStore.setState({ importLegacySqlHistory: store.importLegacySqlHistory });
-    }
+      expect(within(history).getByText("instances/main / orders")).toBeVisible();
+      expect(screen.getByText("common.read-only")).toBeVisible();
+      expect(screen.queryByTestId("agent-input")).toBeNull();
+      expect(store.getMessages(project.id)).toEqual(messages);
+      expect(store.addMessage({ chatId: project.id, role: "user", content: "Do not execute" })).toBeNull();
+      expect(store.getMessages(project.id)).toEqual(messages);
+      expect(screen.queryByRole("article", { name: "Foreign SQL conversation" })).toBeNull();
+    } finally { view.unmount(); host.cleanup(); }
   });
 
   test("keeps Project history on database changes and restores global groups outside SQL Editor", () => {
@@ -2003,43 +2019,34 @@ test("shows an empty start on general pages without discarding the previous disc
 });
 
 describe("AgentWindow", () => {
-  test.each(["storage-unavailable","invalid-source"] as const)("history offers retry after %s even without decoded rows",async(status)=>{
-    const store = useAgentStore.getState();
-    const importer=vi.fn<typeof store.importLegacySqlHistory>().mockResolvedValueOnce({status,fallback:[]}).mockResolvedValue({status:"already-imported",unverifiedTargets:[]});
-    useAgentStore.setState({size:{width:750,height:450},importLegacySqlHistory:importer});
-    const view=renderIntoContainer(<AgentWindow/>);
+  test.each(["console", "sql-editor"] as const)("opening %s leaves original SQL Assistant storage untouched", async (surface) => {
+    const key = storageKeyAiConversations(mocks.workspace.name, "first@example.com");
+    const raw = JSON.stringify({ version: 1, conversations: [{
+      id: "retained-source", name: "Original SQL history", created_ts: 10,
+      instance: "instances/main", database: "orders", messageList: [],
+    }] });
+    localStorage.setItem(key, raw);
+    const readSource = localStorage.getItem.bind(localStorage);
+    const reads = vi.spyOn(localStorage, "getItem");
+    const writes = vi.spyOn(localStorage, "setItem");
+    const removals = vi.spyOn(localStorage, "removeItem");
+    const host = surface === "sql-editor" ? sqlHost() : undefined;
+    host?.update({ kind: "ready", snapshot: { version: 1, project: "projects/orders" } });
+    const view = renderIntoContainer(<AgentWindow />);
     try {
-      view.render();
-      const history=await screen.findByRole("button",{name:"common.history"});
-      act(()=>history.click());
-      expect(screen.getByText("agent.storage.load-unavailable-description")).toBeTruthy();
-      act(()=>screen.getByRole("button",{name:"agent.storage.retry-loading"}).click());
-      await waitFor(()=>expect(importer).toHaveBeenCalledTimes(2));
-    } finally { view.unmount();useAgentStore.setState({importLegacySqlHistory:store.importLegacySqlHistory}); }
-  });
-  test("history offers bounded legacy transcripts after admission fails and retries without changing the active chat",async()=>{
-    const store = useAgentStore.getState();
-    const current = store.ensureCurrentChat();
-    const importer = vi.fn<typeof store.importLegacySqlHistory>()
-      .mockResolvedValueOnce({status:"storage-unavailable",fallback:[{
-        chat:{...current,id:"legacy",title:"Saved SQL conversation",legacySqlImport:{version:1,sourceId:"source",readOnly:true,instance:"instances/main",database:"orders"}},messages:[]
-      }]})
-      .mockResolvedValue({status:"imported",unverifiedTargets:[]});
-    useAgentStore.setState({size:{width:750,height:450},importLegacySqlHistory:importer});
-    const view = renderIntoContainer(<AgentWindow/>);
-    try {
-      view.render();
-      const history = await screen.findByRole("button",{name:"common.history"});
-      act(()=>history.click());
-      expect(screen.getByText("Saved SQL conversation")).toBeTruthy();
-      expect(screen.getByText("instances/main / orders")).toBeTruthy();
-      act(()=>screen.getByRole("button",{name:"agent.storage.retry"}).click());
-      await waitFor(()=>expect(screen.queryByText("Saved SQL conversation")).toBeNull());
-      expect(importer).toHaveBeenCalledTimes(2);
-      expect(useAgentStore.getState().currentChatId).toBe(current.id);
+      await act(async () => { view.render(); await Promise.resolve(); });
+      expect(document.querySelector("[data-agent-window]")).not.toBeNull();
+      expect(reads.mock.calls.filter(([name]) => name === key)).toEqual([]);
+      expect(writes.mock.calls.filter(([name]) => name === key)).toEqual([]);
+      expect(removals.mock.calls.filter(([name]) => name === key)).toEqual([]);
+      expect(readSource(key)).toBe(raw);
+      expect(useAgentStore.getState().chats.some(chat => chat.legacySqlImport?.sourceId === "retained-source")).toBe(false);
+      expect(mocks.getOrFetchDatabaseByName).not.toHaveBeenCalled();
+      expect(screen.queryByRole("button", { name: "common.history" })).toBeNull();
     } finally {
       view.unmount();
-      useAgentStore.setState({importLegacySqlHistory:store.importLegacySqlHistory});
+      host?.cleanup();
+      reads.mockRestore(); writes.mockRestore(); removals.mockRestore();
     }
   });
   test("tracks the SQL slot without remounting the composer or changing floating preferences", () => {
