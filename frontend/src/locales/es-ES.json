@@ -3897,7 +3897,8 @@
           "api-key": {
             "description": "Proporcionar clave API, solo lectura. {{viewDoc}}",
             "find-my-key": "Encuentra mi llave",
-            "self": "Clave de API"
+            "self": "Clave de API",
+            "stored-description": "Hay una clave de API configurada."
           },
           "description": "Utilice AI para ayudar en las tareas de desarrollo de bases de datos.",
           "enable-ai-assistant": "Habilitar el Asistente de IA",

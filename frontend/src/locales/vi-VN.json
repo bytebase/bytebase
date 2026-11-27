@@ -3897,7 +3897,8 @@
           "api-key": {
             "description": "Cung cấp Khóa API, chỉ đọc. {{viewDoc}}",
             "find-my-key": "Tìm khóa của tôi",
-            "self": "Khóa API"
+            "self": "Khóa API",
+            "stored-description": "Khóa API đã được cấu hình."
           },
           "description": "Sử dụng AI để hỗ trợ các tác vụ phát triển cơ sở dữ liệu.",
           "enable-ai-assistant": "Bật Trợ lý AI",

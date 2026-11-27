@@ -3897,7 +3897,8 @@
           "api-key": {
             "description": "Supply API Key, read-only. {{viewDoc}}",
             "find-my-key": "Find my key",
-            "self": "API Key"
+            "self": "API Key",
+            "stored-description": "An API key is configured."
           },
           "description": "Use AI to help with database development tasks.",
           "enable-ai-assistant": "Enable AI Assistant",

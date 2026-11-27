@@ -3897,7 +3897,8 @@
           "api-key": {
             "description": "提供 API 密钥，只读。{{viewDoc}}",
             "find-my-key": "找到我的 Key",
-            "self": "API Key"
+            "self": "API Key",
+            "stored-description": "已配置 API 密钥。"
           },
           "description": "使用 AI 来辅助数据库开发任务。",
           "enable-ai-assistant": "启用 AI 助手",

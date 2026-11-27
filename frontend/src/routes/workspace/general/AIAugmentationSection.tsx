@@ -14,6 +14,7 @@ import { ComponentPermissionGuard } from "@/components/ComponentPermissionGuard"
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { SecretInput } from "@/components/SecretInput";
+import { Badge } from "@/components/ui/badge";
 import {
   FormField,
   FormFieldGroup,
@@ -86,6 +87,7 @@ export const AIAugmentationSection = forwardRef<
   const { t } = useTranslation();
 
   const canEdit = hasWorkspacePermissionV2("bb.settings.set");
+  const canRead = hasWorkspacePermissionV2("bb.settings.get");
 
   const settingsByName = useAppStore((s) => s.settingsByName);
   const aiSetting = useMemo(() => {
@@ -141,6 +143,10 @@ export const AIAugmentationSection = forwardRef<
   const providerDefault =
     PROVIDER_DEFAULTS[state.provider] ??
     PROVIDER_DEFAULTS[AISetting_Provider.OPEN_AI];
+  const preservesStoredKey =
+    aiSetting?.enabled &&
+    state.provider === aiSetting.provider &&
+    state.endpoint === aiSetting.endpoint;
 
   const isDirty = useCallback(() => {
     const init = getInitialState();
@@ -280,7 +286,14 @@ export const AIAugmentationSection = forwardRef<
   return (
     <FormSection
       id={AI_ASSISTANT_PRODUCT_INTRO}
-      title={title}
+      title={
+        <span className="inline-flex flex-wrap items-center gap-2">
+          {title}
+          {canRead && aiSetting?.enabled && (
+            <Badge variant="success">{t("common.enabled")}</Badge>
+          )}
+        </span>
+      }
       data-product-intro-target={AI_ASSISTANT_PRODUCT_INTRO}
     >
       <ComponentPermissionGuard permissions={["bb.settings.get"]}>
@@ -381,7 +394,18 @@ export const AIAugmentationSection = forwardRef<
                     value={state.apiKey}
                     disabled={!canEdit}
                     resetKey={`${state.provider}:${apiKeyResetKey}`}
-                    placeholder={t("common.sensitive-placeholder")}
+                    aria-description={
+                      preservesStoredKey && !state.apiKey
+                        ? t(
+                            "settings.general.workspace.ai-assistant.api-key.stored-description"
+                          )
+                        : undefined
+                    }
+                    placeholder={
+                      preservesStoredKey
+                        ? "****************"
+                        : t("common.sensitive-placeholder")
+                    }
                     onValueChange={(apiKey) =>
                       setState((s) => ({ ...s, apiKey }))
                     }

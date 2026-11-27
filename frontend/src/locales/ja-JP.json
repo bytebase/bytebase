@@ -3897,7 +3897,8 @@
           "api-key": {
             "description": "読み取り専用の API キーを入力してください。{{viewDoc}}",
             "find-my-key": "鍵を探す",
-            "self": "APIキー"
+            "self": "APIキー",
+            "stored-description": "API キーが設定されています。"
           },
           "description": "AI を使用してデータベース開発タスクを支援します。",
           "enable-ai-assistant": "AIアシスタントを有効にする",
