@@ -32,6 +32,6 @@ func TestExtractChangedResourcesSeam(t *testing.T) {
 	require.Equal(t, []string{"UPDATE t SET a = 1;"}, summary.DMLStatements)
 	require.Equal(t, []string{"other"}, summary.ChangedResources.GetDatabaseOnlyTargets())
 
-	_, err = extractChangedResources("db", "", nil, []base.AST{&foreignAST{}}, "")
+	_, err = base.ExtractChangedResources(storepb.Engine_DORIS, "db", "", nil, []base.AST{&foreignAST{}}, "")
 	require.ErrorContains(t, err, "expected astNode for Doris")
 }

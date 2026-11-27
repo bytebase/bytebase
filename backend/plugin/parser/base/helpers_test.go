@@ -294,43 +294,60 @@ type dummyAST struct{}
 
 func (dummyAST) ASTStartPosition() *storepb.Position { return nil }
 
-func TestOmniResourceChanges(t *testing.T) {
-	summary, err := ExtractChangedResourcesFromASTs(nil, []AST{dummyAST{}}, true, func(_ AST) (omnianalysis.StatementChanges, bool, error) {
-		return omnianalysis.StatementChanges{
+// changeExtractorFunc is an omni ChangeExtractor in a function.
+type changeExtractorFunc func(omnianalysis.ChangeRequest, []omnianalysis.ParsedStatement) (*omnianalysis.Changes, error)
+
+func (f changeExtractorFunc) ExtractChanges(request omnianalysis.ChangeRequest, statements []omnianalysis.ParsedStatement) (*omnianalysis.Changes, error) {
+	return f(request, statements)
+}
+
+func TestOmniChanges(t *testing.T) {
+	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "db1"}, nil, nil, storepb.Engine_POSTGRES, true)
+	var nilAST *NodeAST[any]
+	asts := []AST{&NodeAST[any]{Node: "node", Text: "DELETE FROM t1"}, nilAST, dummyAST{}}
+	var gotRequest omnianalysis.ChangeRequest
+	var gotStatements []omnianalysis.ParsedStatement
+	extract := changeExtractorFunc(func(request omnianalysis.ChangeRequest, statements []omnianalysis.ParsedStatement) (*omnianalysis.Changes, error) {
+		gotRequest, gotStatements = request, statements
+		return &omnianalysis.Changes{
 			Resources: []omnianalysis.ChangedResource{
 				{Database: "db1", Schema: "public", Table: "t1", AffectsData: true},
-				{Database: "db1", Schema: "public", Table: ""},
 				{Database: "db2", DatabaseOnly: true},
 			},
-			DMLStatements: []string{"DELETE FROM t1"},
-			DMLCount:      1,
-			InsertCount:   2,
-		}, true, nil
+			DMLStatements: []omnianalysis.DMLStatement{{Text: "DELETE FROM t1;"}, {Text: "UPDATE t2 SET a = 1;", SearchPath: []string{"s1"}}},
+			DMLCount:      2,
+			InsertCount:   3,
+		}, nil
 	})
+	summary, err := omniChanges(extract, "db1", "public", dbMetadata, asts, "the script")
 	require.NoError(t, err)
-	require.Equal(t, 1, summary.DMLCount)
-	require.Equal(t, 2, summary.InsertCount)
-	require.Equal(t, []string{"DELETE FROM t1"}, summary.DMLStatements)
-	require.Equal(t, []string{"db2"}, summary.ChangedResources.GetDatabaseOnlyTargets())
-	built := summary.ChangedResources.Build()
-	require.Len(t, built.GetDatabases(), 1)
-	require.Equal(t, "db1", built.GetDatabases()[0].GetName())
-	require.Len(t, built.GetDatabases()[0].GetSchemas()[0].GetTables(), 1)
-	require.Equal(t, "t1", built.GetDatabases()[0].GetSchemas()[0].GetTables()[0].GetName())
 
-	// ExtractTypedChangedResources asserts concrete AST type and supports skipping entries.
-	typedSummary, err := ExtractTypedChangedResources(nil, []AST{dummyAST{}}, "expected dummy", false, func(dummyAST) (omnianalysis.StatementChanges, bool) {
-		return omnianalysis.StatementChanges{
-			Resources: []omnianalysis.ChangedResource{{Database: "db1", Table: "t2"}},
-		}, true
-	})
-	require.NoError(t, err)
-	require.Equal(t, "t2", typedSummary.ChangedResources.Build().GetDatabases()[0].GetSchemas()[0].GetTables()[0].GetName())
+	require.Equal(t, omnianalysis.ChangeRequest{
+		DefaultDatabase: "db1",
+		DefaultSchema:   "public",
+		Database:        &omnianalysis.Database{Name: "db1", Metadata: dbMetadata.GetProto(), ObjectCaseSensitive: true},
+		Script:          "the script",
+	}, gotRequest)
+	// A nil wrapper reaches the engine as a nil node, and a foreign AST as itself.
+	require.Equal(t, []omnianalysis.ParsedStatement{
+		{Statement: omnianalysis.Statement{Text: "DELETE FROM t1"}, Node: "node"},
+		{Node: nil},
+		{Node: dummyAST{}},
+	}, gotStatements)
 
-	_, err = ExtractTypedChangedResources(nil, []AST{otherStubAST{}}, "expected dummy", false, func(dummyAST) (omnianalysis.StatementChanges, bool) {
-		return omnianalysis.StatementChanges{}, true
-	})
-	require.EqualError(t, err, "expected dummy")
+	want := model.NewChangedResources(dbMetadata)
+	want.AddTable("db1", "public", &storepb.ChangedResourceTable{Name: "t1"}, true)
+	want.AddDatabase("db2")
+	require.Equal(t, want, summary.ChangedResources)
+	require.Equal(t, []string{"DELETE FROM t1;", WithSearchPath("UPDATE t2 SET a = 1;", []string{"s1"})}, summary.DMLStatements)
+	require.Equal(t, 2, summary.DMLCount)
+	require.Equal(t, 3, summary.InsertCount)
+
+	_, err = omniChanges(changeExtractorFunc(func(request omnianalysis.ChangeRequest, _ []omnianalysis.ParsedStatement) (*omnianalysis.Changes, error) {
+		require.Nil(t, request.Database)
+		return nil, errors.New("boom")
+	}), "db1", "", nil, nil, "")
+	require.EqualError(t, err, "boom")
 }
 
 func TestCompletionHelpers(t *testing.T) {

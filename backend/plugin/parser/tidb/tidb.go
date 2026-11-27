@@ -8,14 +8,12 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
 	engine := base.OmniEngine(analysis.Engine, omnicompletion.Engine)
 	engine.Parse = parseTiDBStatements
 	engine.StatementTypes = GetStatementTypes
-	engine.ExtractChanged = extractChangedResources
 	engine.TransformDMLToSelect = TransformDMLToSelect
 	engine.GenerateRestoreSQL = GenerateRestoreSQL
 	base.Register(engine, storepb.Engine_TIDB)
@@ -60,12 +58,6 @@ func parseTiDBStatements(statement string) ([]base.ParsedStatement, error) {
 
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	return base.CollectOmniStatementTypes(asts, GetNode, "expected TiDB AST", analysis.StatementTypeOf)
-}
-
-func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
-	return base.ExtractTypedChangedResources(dbMetadata, asts, "expected TiDB AST", false, func(wrapped *AST) (analysis.StatementChanges, bool) {
-		return analysis.ExtractChangedResources(wrapped.Node, database, wrapped.Text), true
-	})
 }
 
 func convertParseError(err error, stmt base.Statement) error {

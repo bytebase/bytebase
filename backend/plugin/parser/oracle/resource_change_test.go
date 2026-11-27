@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/bytebase/omni/oracle/analysis"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -55,17 +54,4 @@ func TestExtractChangedResourcesSeam(t *testing.T) {
 	want.AddTable("HR", "", &storepb.ChangedResourceTable{Name: "EMPLOYEES"}, true)
 	want.AddTable("HR", "", &storepb.ChangedResourceTable{Name: "DEPARTMENTS"}, false)
 	require.Equal(t, want, summary.ChangedResources)
-
-	// DatabaseOnly resources call AddDatabase.
-	dbOnlySummary, err := base.ExtractChangedResourcesFromASTs(nil, []base.AST{&fakeAST{}}, false, func(base.AST) (analysis.StatementChanges, bool, error) {
-		return analysis.StatementChanges{
-			Resources: []analysis.ChangedResource{
-				{Database: "APP", DatabaseOnly: true},
-			},
-		}, true, nil
-	})
-	require.NoError(t, err)
-	wantDBOnly := model.NewChangedResources(nil)
-	wantDBOnly.AddDatabase("APP")
-	require.Equal(t, wantDBOnly, dbOnlySummary.ChangedResources)
 }

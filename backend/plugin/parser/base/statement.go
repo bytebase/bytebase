@@ -25,9 +25,21 @@ type NodeAST[N any] struct {
 	StartPosition *storepb.Position
 }
 
-// ASTSource returns the statement's original SQL text.
+// ASTSource returns the statement's original SQL text, or "" for a nil
+// wrapper.
 func (a *NodeAST[N]) ASTSource() string {
+	if a == nil {
+		return ""
+	}
 	return a.Text
+}
+
+// ASTNode returns the wrapped node, or nil for a nil wrapper.
+func (a *NodeAST[N]) ASTNode() any {
+	if a == nil {
+		return nil
+	}
+	return a.Node
 }
 
 // ASTStartPosition implements AST.

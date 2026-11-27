@@ -8,6 +8,7 @@ import (
 	omnianalysis "github.com/bytebase/omni/analysis"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // OmniEngine converts the capabilities of omni engine values (an engine's
@@ -63,6 +64,11 @@ func OmniEngine(engines ...any) Engine {
 		if resolver, ok := engine.(omnianalysis.QuerySpanResolver); ok {
 			e.QuerySpans = func(ctx context.Context, gCtx GetQuerySpanContext, statements []Statement, database, schema string, ignoreCaseSensitive bool) ([]*QuerySpan, error) {
 				return omniQuerySpans(ctx, resolver, gCtx, statements, database, schema, ignoreCaseSensitive)
+			}
+		}
+		if extractor, ok := engine.(omnianalysis.ChangeExtractor); ok {
+			e.ExtractChanged = func(database, schema string, dbMetadata *model.DatabaseMetadata, asts []AST, script string) (*ChangeSummary, error) {
+				return omniChanges(extractor, database, schema, dbMetadata, asts, script)
 			}
 		}
 		if completer, ok := engine.(omnianalysis.Completer); ok {
@@ -306,4 +312,49 @@ func omniSpanError(err error) error {
 		return OmniTypeNotSupportedError(typeNotSupported)
 	}
 	return OmniError(err)
+}
+
+func omniChanges(extractor omnianalysis.ChangeExtractor, database, schema string, dbMetadata *model.DatabaseMetadata, asts []AST, script string) (*ChangeSummary, error) {
+	statements := make([]omnianalysis.ParsedStatement, 0, len(asts))
+	for _, a := range asts {
+		// An AST that wraps no omni node reaches the engine as is, which rejects
+		// it as a foreign node.
+		var node any = a
+		if parsed, ok := a.(interface{ ASTNode() any }); ok {
+			node = parsed.ASTNode()
+		}
+		statements = append(statements, omnianalysis.ParsedStatement{Statement: omnianalysis.Statement{Text: ASTSource(a)}, Node: node})
+	}
+	request := omnianalysis.ChangeRequest{DefaultDatabase: database, DefaultSchema: schema, Script: script}
+	if dbMetadata != nil {
+		request.Database = &omnianalysis.Database{
+			Name:                dbMetadata.DatabaseName(),
+			Metadata:            dbMetadata.GetProto(),
+			ObjectCaseSensitive: dbMetadata.GetIsObjectCaseSensitive(),
+		}
+	}
+	changes, err := extractor.ExtractChanges(request, statements)
+	if err != nil {
+		return nil, err
+	}
+	summary := &ChangeSummary{
+		ChangedResources: model.NewChangedResources(dbMetadata),
+		DMLCount:         changes.DMLCount,
+		InsertCount:      changes.InsertCount,
+	}
+	for _, resource := range changes.Resources {
+		if resource.DatabaseOnly {
+			summary.ChangedResources.AddDatabase(resource.Database)
+			continue
+		}
+		summary.ChangedResources.AddTable(resource.Database, resource.Schema, &storepb.ChangedResourceTable{Name: resource.Table}, resource.AffectsData)
+	}
+	for _, dml := range changes.DMLStatements {
+		text := dml.Text
+		if dml.SearchPath != nil {
+			text = WithSearchPath(text, dml.SearchPath)
+		}
+		summary.DMLStatements = append(summary.DMLStatements, text)
+	}
+	return summary, nil
 }

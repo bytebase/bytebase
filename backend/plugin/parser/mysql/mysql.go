@@ -8,13 +8,11 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
 	engine := base.OmniEngine(analysis.Engine, omnicompletion.Engine)
 	engine.StatementTypes = GetStatementTypes
-	engine.ExtractChanged = extractChangedResources
 	engine.TransformDMLToSelect = TransformDMLToSelect
 	engine.GenerateRestoreSQL = GenerateRestoreSQL
 	base.Register(engine, storepb.Engine_MYSQL)
@@ -50,15 +48,5 @@ func GetStatementTypesWithPositions(asts []base.AST) ([]StatementTypeWithPositio
 			return nil, "", false, nil
 		}
 		return []storepb.StatementType{base.OmniStatementType(analysis.StatementTypeOf(node))}, base.ASTSource(a), true, nil
-	})
-}
-
-func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
-	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, false, func(a base.AST) (analysis.StatementChanges, bool, error) {
-		node, ok := GetNode(a)
-		if !ok {
-			return analysis.StatementChanges{}, false, errors.New("expected AST for MySQL")
-		}
-		return analysis.ExtractChangedResources(node, currentDatabase, base.ASTSource(a)), true, nil
 	})
 }
