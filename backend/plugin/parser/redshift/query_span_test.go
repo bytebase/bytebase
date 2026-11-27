@@ -31,6 +31,14 @@ func redshiftMockDatabaseMetadataGetter(databaseMetadata []*metadatapb.DatabaseS
 		}
 }
 
+func redshiftQuerySpan(gCtx base.GetQuerySpanContext, stmt base.Statement, schema string) (*base.QuerySpan, error) {
+	spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_REDSHIFT, []base.Statement{stmt}, "db", schema, false)
+	if err != nil {
+		return nil, err
+	}
+	return spans[0], nil
+}
+
 func TestGetQuerySpanSeam(t *testing.T) {
 	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name:       "db",
@@ -78,44 +86,44 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	}}, spans[0].Results)
 
 	// Explicit schema argument overrides metadata SearchPath + PredicateColumns conversion.
-	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id FROM orders WHERE status = 'open'"}, "db", "public", false)
+	span, err := redshiftQuerySpan(gCtx, base.Statement{Text: "SELECT id FROM orders WHERE status = 'open'"}, "public")
 	require.NoError(t, err)
 	require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "public", Table: "orders", Column: "status"}: true}, span.PredicateColumns)
 
 	// ResourceNotFoundError conversion.
-	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id FROM missing_orders"}, "db", "public", false)
+	span, err = redshiftQuerySpan(gCtx, base.Statement{Text: "SELECT id FROM missing_orders"}, "public")
 	require.NoError(t, err)
 	var notFound *base.ResourceNotFoundError
 	require.ErrorAs(t, span.NotFoundError, &notFound)
 
 	// FunctionNotSupportedError conversion.
-	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT unsupported_fn()"}, "db", "public", false)
+	span, err = redshiftQuerySpan(gCtx, base.Statement{Text: "SELECT unsupported_fn()"}, "public")
 	require.NoError(t, err)
 	var unsupported *base.FunctionNotSupportedError
 	require.ErrorAs(t, span.FunctionNotSupportedError, &unsupported)
 
 	// MixUserSystemTablesError conversion.
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT orders.id FROM orders, pg_class"}, "db", "public", false)
+	_, err = redshiftQuerySpan(gCtx, base.Statement{Text: "SELECT orders.id FROM orders, pg_class"}, "public")
 	require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
 	// SyntaxError position offset using Statement.Start.
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{
+	_, err = redshiftQuerySpan(gCtx, base.Statement{
 		Text:  "SELECT * FORM orders;",
 		Start: &storepb.Position{Line: 7, Column: 1},
-	}, "db", "public", false)
+	}, "public")
 	var syntaxErr *base.SyntaxError
 	require.ErrorAs(t, err, &syntaxErr)
 	require.Equal(t, int32(7), syntaxErr.Position.Line)
 
 	// Unsynced database & nil callback guards.
-	_, err = GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: "SELECT 1"}, "db", "", false)
-	require.ErrorContains(t, err, "GetDatabaseMetadataFunc is not set")
+	_, err = redshiftQuerySpan(base.GetQuerySpanContext{}, base.Statement{Text: "SELECT 1"}, "")
+	require.ErrorContains(t, err, "the catalog cannot look databases up")
 
-	_, err = GetQuerySpan(context.Background(), base.GetQuerySpanContext{
+	_, err = redshiftQuerySpan(base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
 			return "", nil, nil
 		},
-	}, base.Statement{Text: "SELECT id FROM orders"}, "db", "", false)
+	}, base.Statement{Text: "SELECT id FROM orders"}, "")
 	require.ErrorContains(t, err, `database metadata for database "db" not found (database not synced)`)
 }
 

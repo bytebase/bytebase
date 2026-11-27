@@ -77,11 +77,18 @@ func TestGetQuerySpanSeam(t *testing.T) {
 		},
 	}
 
+	querySpan := func(text string) (*base.QuerySpan, error) {
+		spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_ORACLE, []base.Statement{{Text: text}}, "APP", "", false)
+		if err != nil {
+			return nil, err
+		}
+		require.Len(t, spans, 1)
+		return spans[0], nil
+	}
+
 	// Local table + invisible column skipping + QueryType mapping via registry.
-	spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_ORACLE, []base.Statement{{Text: "SELECT * FROM emp"}}, "APP", "", false)
+	span, err := querySpan("SELECT * FROM emp")
 	require.NoError(t, err)
-	require.Len(t, spans, 1)
-	span := spans[0]
 	require.Equal(t, base.Select, span.Type)
 	require.Len(t, span.Results, 1)
 	require.Equal(t, "ID", span.Results[0].Name)
@@ -95,29 +102,29 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	require.True(t, converted[0].Invisible)
 
 	// Linked database callback resolves @remote_link through GetLinkedDatabaseMetadataFunc.
-	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT name FROM dept@remote_link"}, "APP", "", false)
+	span, err = querySpan("SELECT name FROM dept@remote_link")
 	require.NoError(t, err)
 	require.Len(t, span.Results, 1)
 	require.True(t, span.Results[0].SourceColumns[base.ColumnResource{Instance: "inst-remote", Server: "REMOTE_LINK", Database: "REMOTE_APP", Table: "DEPT", Column: "NAME"}] ||
 		span.Results[0].SourceColumns[base.ColumnResource{Database: "REMOTE_APP", Table: "DEPT", Column: "NAME"}])
 
 	// ResourceNotFoundError returned from metadata callback round-trips onto QuerySpan.NotFoundError.
-	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id FROM missing.t"}, "APP", "", false)
+	span, err = querySpan("SELECT id FROM missing.t")
 	require.NoError(t, err)
 	var notFoundErr *base.ResourceNotFoundError
 	require.ErrorAs(t, span.NotFoundError, &notFoundErr)
 	require.Equal(t, strPtr("MISSING"), notFoundErr.Database)
 
 	// Mixing user and system tables directly maps to base.MixUserSystemTablesError.
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT e.id, u.username FROM emp e JOIN sys.all_users u ON 1=1"}, "APP", "", false)
+	_, err = querySpan("SELECT e.id, u.username FROM emp e JOIN sys.all_users u ON 1=1")
 	require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
 	// Mixing user and system tables inside a view wraps ErrMixUserSystemTables via mixedTablesError.
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id FROM v_mix"}, "APP", "", false)
+	_, err = querySpan("SELECT id FROM v_mix")
 	require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
 	// Syntax error wraps with statement context.
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT FROM ;"}, "APP", "", false)
+	_, err = querySpan("SELECT FROM ;")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to get query span from statement")
 

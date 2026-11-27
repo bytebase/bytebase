@@ -252,6 +252,7 @@ func omniQuerySpans(ctx context.Context, resolver omnianalysis.QuerySpanResolver
 		omniStatements = append(omniStatements, omnianalysis.QuerySpanStatement{Text: stmt.Text, Start: start})
 	}
 	spans, err := resolver.QuerySpans(ctx, omnianalysis.QuerySpanRequest{
+		Instance:            gCtx.InstanceID,
 		DefaultDatabase:     database,
 		DefaultSchema:       schema,
 		IgnoreCaseSensitive: ignoreCaseSensitive,
@@ -291,9 +292,22 @@ func omniSpanCatalog(gCtx GetQuerySpanContext) omnianalysis.Catalog {
 			return database, nil
 		}
 	}
+	if getDatabase := gCtx.GetDatabaseMetadataFunc; getDatabase != nil {
+		catalog.GetInstanceDatabase = func(ctx context.Context, instance, name string) (*omnianalysis.Database, error) {
+			resolved, database, err := getDatabase(ctx, instance, name)
+			if err != nil || database == nil {
+				return nil, ToOmniNotFoundError(err)
+			}
+			return &omnianalysis.Database{
+				Name:                resolved,
+				Metadata:            database.GetProto(),
+				ObjectCaseSensitive: database.GetIsObjectCaseSensitive(),
+			}, nil
+		}
+	}
 	if getLinked := gCtx.GetLinkedDatabaseMetadataFunc; getLinked != nil {
-		catalog.GetLinkedDatabase = func(ctx context.Context, link, schema string) (*omnianalysis.Database, error) {
-			_, name, database, err := getLinked(ctx, gCtx.InstanceID, link, schema)
+		catalog.GetLinkedDatabase = func(ctx context.Context, instance, link, schema string) (*omnianalysis.Database, error) {
+			linkedInstance, name, database, err := getLinked(ctx, instance, link, schema)
 			if err != nil || database == nil {
 				return nil, ToOmniNotFoundError(err)
 			}
@@ -301,6 +315,7 @@ func omniSpanCatalog(gCtx GetQuerySpanContext) omnianalysis.Catalog {
 				Name:                name,
 				Metadata:            database.GetProto(),
 				ObjectCaseSensitive: database.GetIsObjectCaseSensitive(),
+				Instance:            linkedInstance,
 			}, nil
 		}
 	}

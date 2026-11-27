@@ -1,14 +1,9 @@
 package base
 
 import (
-	"context"
 	"errors"
 
 	omnianalysis "github.com/bytebase/omni/analysis"
-	"github.com/bytebase/omni/metadata"
-	pkgerrors "github.com/pkg/errors"
-
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // OmniQueryType maps an omni shared analysis.QueryType onto QueryType.
@@ -86,18 +81,6 @@ func OmniResourceNotFoundError(err *omnianalysis.ResourceNotFoundError) *Resourc
 		Column:       err.Column,
 		Function:     err.Function,
 	}
-}
-
-// OmniNotFoundError translates an error carrying an omni ResourceNotFoundError into Bytebase's ResourceNotFoundError.
-func OmniNotFoundError(err error) error {
-	if err == nil {
-		return nil
-	}
-	var notFound *omnianalysis.ResourceNotFoundError
-	if errors.As(err, &notFound) {
-		return OmniResourceNotFoundError(notFound)
-	}
-	return err
 }
 
 // omniNotFoundError wraps a lookup error carrying a ResourceNotFoundError so
@@ -199,78 +182,13 @@ func OmniResolvedSpan(span *omnianalysis.ResolvedSpan) *QuerySpan {
 	}
 	if span.NotFoundError != nil {
 		out.NotFoundError = OmniResourceNotFoundError(span.NotFoundError)
+	} else if span.LookupError != nil {
+		out.NotFoundError = span.LookupError
 	}
 	if span.FunctionNotSupportedError != nil {
 		out.FunctionNotSupportedError = OmniFunctionNotSupportedError(span.FunctionNotSupportedError)
 	}
 	return out
-}
-
-// OmniResolvedSpanResult converts an omni ResolveQuerySpan (span, err) pair
-// into a Bytebase QuerySpan, translating ErrMixUserSystemTables when present.
-func OmniResolvedSpanResult(span *omnianalysis.ResolvedSpan, err error) (*QuerySpan, error) {
-	if err != nil {
-		if mixErr := ConvertOmniMixTablesError(err); mixErr != nil {
-			return nil, mixErr
-		}
-		return nil, err
-	}
-	return OmniResolvedSpan(span), nil
-}
-
-// OmniQuerySpan builds a Bytebase QuerySpan from engine-local omni span fields
-// whose NotFoundError is already an error interface.
-func OmniQuerySpan(
-	queryType omnianalysis.QueryType,
-	sourceColumns, predicateColumns omnianalysis.ColumnSet,
-	results []omnianalysis.QuerySpanResult,
-	notFoundErr error,
-) *QuerySpan {
-	return &QuerySpan{
-		Type:             OmniQueryType(queryType),
-		SourceColumns:    OmniColumnSet(sourceColumns),
-		PredicateColumns: OmniColumnSet(predicateColumns),
-		Results:          OmniQuerySpanResults(results),
-		NotFoundError:    OmniNotFoundError(notFoundErr),
-	}
-}
-
-// RequireDatabaseMetadata validates gCtx.GetDatabaseMetadataFunc and fetches
-// synced metadata for database, returning an error if the callback is unset,
-// fails, or reports an unsynced (nil) database.
-func RequireDatabaseMetadata(ctx context.Context, gCtx GetQuerySpanContext, database string) (*model.DatabaseMetadata, error) {
-	if gCtx.GetDatabaseMetadataFunc == nil {
-		return nil, pkgerrors.New("GetDatabaseMetadataFunc is not set in GetQuerySpanContext")
-	}
-	_, meta, err := gCtx.GetDatabaseMetadataFunc(ctx, gCtx.InstanceID, database)
-	if err != nil {
-		return nil, pkgerrors.Wrapf(err, "failed to get database metadata for instance %q and database %q", gCtx.InstanceID, database)
-	}
-	if meta == nil {
-		return nil, pkgerrors.Errorf("database metadata for database %q not found (database not synced)", database)
-	}
-	return meta, nil
-}
-
-// QuerySpanProtoMetadataFunc adapts gCtx.GetDatabaseMetadataFunc to return raw
-// omni DatabaseSchemaMetadata protos. Returns nil when unset.
-func QuerySpanProtoMetadataFunc(ctx context.Context, gCtx GetQuerySpanContext, translateNotFound bool) func(string) (*metadata.DatabaseSchemaMetadata, error) {
-	if gCtx.GetDatabaseMetadataFunc == nil {
-		return nil
-	}
-	return func(name string) (*metadata.DatabaseSchemaMetadata, error) {
-		_, database, err := gCtx.GetDatabaseMetadataFunc(ctx, gCtx.InstanceID, name)
-		if err != nil {
-			if translateNotFound {
-				return nil, ToOmniNotFoundError(err)
-			}
-			return nil, err
-		}
-		if database == nil {
-			return nil, nil
-		}
-		return database.GetProto(), nil
-	}
 }
 
 // ConvertOmniMixTablesError translates omni's ErrMixUserSystemTables into Bytebase's
@@ -307,55 +225,4 @@ func (*mixedTablesError) Is(target error) bool {
 // Unwrap returns the underlying engine error.
 func (e *mixedTablesError) Unwrap() error {
 	return e.Cause
-}
-
-// UnnamedSchemaDatabase adapts a DatabaseMetadata's unnamed ("") schema to omni catalog interfaces.
-type UnnamedSchemaDatabase struct {
-	Database *model.DatabaseMetadata
-}
-
-// Name returns the database's protobuf name.
-func (d *UnnamedSchemaDatabase) Name() string { return d.Database.GetProto().GetName() }
-
-// HasSchema reports whether the unnamed schema exists.
-func (d *UnnamedSchemaDatabase) HasSchema() bool {
-	return d.Database.GetSchemaMetadata("") != nil
-}
-
-// ListTableNames lists table names in the unnamed schema.
-func (d *UnnamedSchemaDatabase) ListTableNames() []string {
-	return d.Database.GetSchemaMetadata("").ListTableNames()
-}
-
-// GetTable returns the table metadata proto in the unnamed schema, or nil if missing.
-func (d *UnnamedSchemaDatabase) GetTable(name string) *metadata.TableMetadata {
-	table := d.Database.GetSchemaMetadata("").GetTable(name)
-	if table == nil {
-		return nil
-	}
-	return table.GetProto()
-}
-
-// ListViewNames lists view names in the unnamed schema.
-func (d *UnnamedSchemaDatabase) ListViewNames() []string {
-	return d.Database.GetSchemaMetadata("").ListViewNames()
-}
-
-// GetView returns the view metadata proto in the unnamed schema, or nil if missing.
-func (d *UnnamedSchemaDatabase) GetView(name string) *metadata.ViewMetadata {
-	return d.Database.GetSchemaMetadata("").GetView(name)
-}
-
-// GetMaterializedView returns the materialized view metadata proto in the unnamed schema, or nil if missing.
-func (d *UnnamedSchemaDatabase) GetMaterializedView(name string) *metadata.MaterializedViewMetadata {
-	return d.Database.GetSchemaMetadata("").GetMaterializedView(name)
-}
-
-// GetExternalTable returns the external table metadata proto in the unnamed schema, or nil if missing.
-func (d *UnnamedSchemaDatabase) GetExternalTable(name string) *metadata.ExternalTableMetadata {
-	table := d.Database.GetSchemaMetadata("").GetExternalTable(name)
-	if table == nil {
-		return nil
-	}
-	return table.GetProto()
 }
