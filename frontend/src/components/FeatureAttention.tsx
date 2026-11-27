@@ -6,6 +6,7 @@ import { router } from "@/app/router";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useServerState, useSubscriptionState } from "@/hooks/useAppState";
+import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import { ENTERPRISE_INQUIRE_LINK, instanceLimitFeature } from "@/types";
 import type {
@@ -159,11 +160,18 @@ export function FeatureAttention({
     <Button
       appearance={compact ? "outline" : "solid"}
       size="sm"
-      className="shrink-0 whitespace-nowrap"
+      className={cn(
+        "shrink-0",
+        compact
+          ? "whitespace-nowrap"
+          : "h-auto max-w-full whitespace-normal py-1.5"
+      )}
       disabled={startingTrial}
       onClick={() => void onAction()}
     >
-      {startingTrial && <LoaderCircle className="animate-spin" />}
+      {startingTrial && (
+        <LoaderCircle className="size-4 shrink-0 animate-spin" />
+      )}
       {actionText}
     </Button>
   );
@@ -184,11 +192,13 @@ export function FeatureAttention({
           variant={isWarning ? "warning" : "info"}
           title={title}
           description={
-            <span className="whitespace-pre-line">{descriptionText}</span>
+            <span className="block max-w-prose whitespace-pre-line">
+              {descriptionText}
+            </span>
           }
         >
           {actionButton && (
-            <div className="mt-3 flex justify-end">{actionButton}</div>
+            <div className="mt-3 flex justify-start">{actionButton}</div>
           )}
         </Alert>
       )}

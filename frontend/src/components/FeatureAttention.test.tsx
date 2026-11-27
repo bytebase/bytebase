@@ -166,6 +166,8 @@ describe("FeatureAttention", () => {
 
     const alert = container.querySelector('[role="alert"]');
     expect(alert).toBeTruthy();
+    expect(alert?.classList.contains("bg-warning/10")).toBe(true);
+    expect(alert?.querySelector("svg.lucide-triangle-alert")).toBeTruthy();
     expect(alert?.querySelectorAll("svg")).toHaveLength(1);
 
     const actionButton = [...container.querySelectorAll("button")].find(
@@ -186,6 +188,103 @@ describe("FeatureAttention", () => {
     unmount();
   });
 
+  test("bounds full explanatory copy without narrowing the alert", () => {
+    const description =
+      "A long feature explanation that remains readable on wide settings pages.";
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureAttention
+        feature={PlanFeature.FEATURE_AUDIT_LOG}
+        description={description}
+      />
+    );
+
+    render();
+
+    const alert = container.querySelector('[role="alert"]');
+    const copy = alert?.querySelector(".whitespace-pre-line");
+    expect(copy?.textContent).toBe(
+      `${description}\nsubscription.required-plan-with-trial`
+    );
+    expect(copy?.classList.contains("block")).toBe(true);
+    expect(copy?.classList.contains("max-w-prose")).toBe(true);
+    expect(alert?.classList.contains("w-full")).toBe(true);
+    expect(alert?.className).not.toContain("max-w-");
+
+    unmount();
+  });
+
+  test("places the full action immediately below the copy at its left edge", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureAttention feature={PlanFeature.FEATURE_AUDIT_LOG} />
+    );
+
+    render();
+
+    const copy = container.querySelector(".whitespace-pre-line");
+    const button = container.querySelector("button");
+    const actions = button?.parentElement;
+    expect(actions).toBe(copy?.parentElement?.nextElementSibling);
+    expect(actions?.classList.contains("mt-3")).toBe(true);
+    expect(actions?.classList.contains("flex")).toBe(true);
+    expect(actions?.classList.contains("justify-start")).toBe(true);
+    expect(actions?.classList.contains("justify-end")).toBe(false);
+
+    unmount();
+  });
+
+  test("allows long full-mode action labels to wrap within the notice", () => {
+    const label =
+      "Request a 14-day trial without providing any credit card details";
+    mocks.useTranslation.mockReturnValue({
+      t: (key: string) =>
+        key === "subscription.request-n-days-trial" ? label : key,
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureAttention feature={PlanFeature.FEATURE_AUDIT_LOG} />
+    );
+
+    render();
+
+    const button = container.querySelector("button");
+    expect(button?.textContent).toBe(label);
+    expect(button?.classList.contains("max-w-full")).toBe(true);
+    expect(button?.classList.contains("whitespace-normal")).toBe(true);
+    expect(button?.classList.contains("h-auto")).toBe(true);
+    expect(button?.classList.contains("whitespace-nowrap")).toBe(false);
+
+    unmount();
+  });
+
+  test("keeps a missing instance license informational with its assignment action", () => {
+    mocks.useAppStore.mockImplementation(
+      (selector: (state: Record<string, unknown>) => unknown) =>
+        selector({
+          hasInstanceFeature: () => true,
+          instanceMissingLicense: () => true,
+          hasUnifiedInstanceLicense: () => false,
+          getMinimumRequiredPlan: () => PlanType.TEAM,
+          hasFeature: () => true,
+        })
+    );
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
+    );
+
+    render();
+
+    const alert = container.querySelector('[role="alert"]');
+    expect(alert?.classList.contains("bg-info/10")).toBe(true);
+    expect(alert?.querySelector("svg.lucide-info")).toBeTruthy();
+    expect(container.textContent).toContain(
+      "subscription.instance-assignment.missing-license-attention"
+    );
+    expect(container.querySelector("button")?.textContent).toBe(
+      "subscription.instance-assignment.assign-license"
+    );
+
+    unmount();
+  });
+
   test("compact names only what the plan requires, with a short action", () => {
     mocks.useTranslation.mockReturnValue({
       t: (key: string) => translateFromDynamicEn(key),
@@ -199,7 +298,10 @@ describe("FeatureAttention", () => {
 
     const alert = container.querySelector('[role="alert"]');
     expect(alert).toBeTruthy();
+    expect(alert?.classList.contains("bg-info/10")).toBe(true);
+    expect(alert?.querySelector("svg.lucide-info")).toBeTruthy();
     expect(alert?.querySelector("h5")).toBeNull();
+    expect(alert?.querySelector(".max-w-prose")).toBeNull();
     expect(container.textContent).toContain(
       "subscription.required-plan-with-trial"
     );
@@ -210,6 +312,12 @@ describe("FeatureAttention", () => {
       (button) => button.textContent === "subscription.try-for-free"
     );
     expect(actionButton).toBeTruthy();
+    const copy = alert?.querySelector("p");
+    const row = copy?.parentElement;
+    expect(copy?.nextElementSibling).toBe(actionButton);
+    expect(row?.classList.contains("flex")).toBe(true);
+    expect(row?.classList.contains("flex-wrap")).toBe(true);
+    expect(row?.classList.contains("items-center")).toBe(true);
     act(() => {
       actionButton?.dispatchEvent(
         new MouseEvent("click", { bubbles: true, cancelable: true })
@@ -220,6 +328,26 @@ describe("FeatureAttention", () => {
     openSpy.mockRestore();
     unmount();
   });
+
+  test.each([false, true])(
+    "keeps actions hidden without management permission (compact: %s)",
+    (compact) => {
+      mocks.hasWorkspacePermissionV2.mockReturnValue(false);
+      const { container, render, unmount } = renderIntoContainer(
+        <FeatureAttention
+          feature={PlanFeature.FEATURE_AUDIT_LOG}
+          compact={compact}
+        />
+      );
+
+      render();
+
+      expect(container.querySelector('[role="alert"]')).toBeTruthy();
+      expect(container.querySelector("button")).toBeNull();
+
+      unmount();
+    }
+  );
 
   test("starts an eligible SaaS trial from the feature attention", async () => {
     mocks.useSubscriptionState.mockReturnValue({

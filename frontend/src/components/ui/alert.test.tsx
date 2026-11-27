@@ -42,6 +42,52 @@ describe("Alert", () => {
     expect(container.textContent).toContain(
       "A new version is ready to install."
     );
+    expect(container.querySelector("h5")?.classList.contains("font-semibold"))
+      .toBe(true);
+
+    unmount();
+  });
+
+  test("uses readable warning copy without fading rich descriptions", () => {
+    let clicks = 0;
+    const { container, unmount } = renderIntoContainer(
+      createElement(Alert, {
+        variant: "warning",
+        title: "Review required",
+        description: createElement(
+          "button",
+          { type: "button", onClick: () => clicks++ },
+          "Review changes"
+        ),
+      })
+    );
+
+    const alert = container.querySelector('[role="alert"]');
+    expect(alert?.classList.contains("text-main")).toBe(true);
+    expect(alert?.classList.contains("bg-warning/10")).toBe(true);
+    expect(alert?.querySelector("svg")?.classList.contains("text-warning-hover"))
+      .toBe(true);
+    const button = container.querySelector("button");
+    expect(button?.parentElement?.classList.contains("opacity-90")).toBe(false);
+    act(() => button?.click());
+    expect(clicks).toBe(1);
+
+    unmount();
+  });
+
+  test("preserves consumer foreground overrides and unstructured content", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        Alert,
+        { variant: "warning", className: "text-warning-hover" },
+        createElement("a", { href: "/settings" }, "Open settings")
+      )
+    );
+
+    const alert = container.querySelector('[role="alert"]');
+    expect(alert?.classList.contains("text-warning-hover")).toBe(true);
+    expect(alert?.classList.contains("text-main")).toBe(false);
+    expect(alert?.querySelector("a")?.getAttribute("href")).toBe("/settings");
 
     unmount();
   });
@@ -54,6 +100,7 @@ describe("Alert", () => {
     const alert = container.querySelector('[role="alert"]');
     expect(alert?.className).toContain("text-xs");
     expect(alert?.className).toContain("border-0");
+    expect(alert?.classList.contains("text-main")).toBe(true);
     expect(alert?.querySelector("svg")?.getAttribute("class")).toContain(
       "size-3.5"
     );
