@@ -2481,6 +2481,34 @@ func TestAdministerWorkspaceCountsATextOfMarksByItsCodeUnits(t *testing.T) {
 	require.Equal(t, "Unmatched changes go to a fallback rule too long to name here.\nRules for database changes in all: 2. Their list has no room here.", added.description)
 }
 
+// A row holds its width in columns and twice its width in UTF-16 code units,
+// whichever fills first. A combining mark is one unit, and a character outside
+// the basic plane two.
+func TestWrapLineFillsARowByItsCodeUnitsToo(t *testing.T) {
+	const width = descriptionLineWidth
+	marked, astral := "e\u0301", "\U0001D400"
+	for name, tc := range map[string]struct {
+		line string
+		rows []int
+	}{
+		"as many units as columns":          {strings.Repeat("e", width), []int{width}},
+		"one mark on each letter":           {strings.Repeat(marked, width), []int{2 * width}},
+		"one mark on each letter, one more": {strings.Repeat(marked, width) + "\u0301", []int{2 * width, 2}},
+		"two marks on each letter":          {strings.Repeat(marked+"\u0308", width), []int{2 * width, 1 + width}},
+		"marks alone":                       {"e" + strings.Repeat("\u0301", 3*width), []int{2 * width, 1 + width + 1}},
+		"characters of two units":           {strings.Repeat(astral, width), []int{2 * width}},
+		"characters of two units, marked":   {strings.Repeat(astral+"\u0301", width), []int{2*width - 1, 1 + width + 1}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var units []int
+			for _, row := range wrapLine(tc.line, width) {
+				units = append(units, codeUnits(row))
+			}
+			require.Equal(t, tc.rows, units)
+		})
+	}
+}
+
 // A row that ends at a space must not cost a row: a long quoted value after a
 // space would leave the row before it nearly empty, and a form has four.
 func TestWrapLineNeverTakesMoreRowsThanFillingThem(t *testing.T) {

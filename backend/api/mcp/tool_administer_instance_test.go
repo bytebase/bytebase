@@ -1215,3 +1215,32 @@ func TestAdministerInstanceNeverFitsOnlyWithWeakerTLS(t *testing.T) {
 		}
 	}
 }
+
+// A shorter ID is advised only when it gets a form with any TLS setting, as a
+// form is given: a host that fits with a one-letter ID only while TLS is not
+// required gets no such advice, whatever the request's TLS setting.
+func TestAdministerInstanceAdvisesAShorterIDWithRoomForAnyTLSSetting(t *testing.T) {
+	ctx := withUserEmail(context.Background(), "alice@example.com")
+	creation := func(id, host string) *instanceCreation {
+		c, err := parseInstanceCreation(instanceBody(t, func(request, instance, dataSource map[string]any) {
+			request["instanceId"], instance["activation"] = id, false
+			dataSource["host"], dataSource["useSsl"] = host, false
+		}), "ws-test")
+		require.NoError(t, err)
+		return c
+	}
+	checked := 0
+	for n := 1; n <= 200; n++ {
+		host := strings.Repeat("h", n)
+		short := creation(shortestID, host)
+		if _, err := instanceForm(ctx, short, true, ""); err == nil || !fitsALayout(ctx, instanceLayouts(short, shortestID, true, tlsNotRequired)) {
+			continue
+		}
+		checked++
+		_, err := instanceForm(ctx, creation("a"+strings.Repeat("b", 61)+"c", host), true, "LINK")
+		var refused *toolError
+		require.ErrorAs(t, err, &refused)
+		require.Equal(t, "add the instance signed in to the Bytebase console: LINK", refused.Suggestion, "host of %d", n)
+	}
+	require.Positive(t, checked, "the sweep must reach a host that fits only with TLS not required")
+}
