@@ -13,11 +13,7 @@ import {
 import { SwitchRow } from "@/components/sql-review/SwitchRow";
 import { Alert } from "@/components/ui/alert";
 import { FormFieldGroup, FormSection } from "@/components/ui/form";
-import {
-  usePlanFeature,
-  useServerState,
-  useWorkspaceResourceName,
-} from "@/hooks/useAppState";
+import { usePlanFeature, useWorkspaceResourceName } from "@/hooks/useAppState";
 import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
@@ -127,7 +123,6 @@ export function SQLReviewAIReviewSection({
   standardRules?: boolean;
 }) {
   const { t } = useTranslation();
-  const { isSaaSMode } = useServerState();
   // The AI review is an Enterprise feature: without it the review is off,
   // whatever the switch says.
   const licensed = usePlanFeature(PlanFeature.FEATURE_AI_SQL_REVIEW);
@@ -135,9 +130,9 @@ export function SQLReviewAIReviewSection({
   // AI is turned on in the general settings, whose AI section shows its
   // controls only to a user who can open that page and read the AI setting.
   const canTurnOnAI =
-    !isSaaSMode &&
     hasWorkspacePermissionV2("bb.settings.set") &&
     hasWorkspacePermissionV2("bb.settings.get") &&
+    hasWorkspacePermissionV2("bb.policies.get") &&
     hasWorkspacePermissionV2("bb.settings.getWorkspaceProfile");
 
   return (

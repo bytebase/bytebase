@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   isSaaSMode: false,
   aiEnabled: false as boolean | undefined,
   aiSetting: undefined as AISetting | undefined,
+  canEdit: true,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -29,7 +30,7 @@ vi.mock("@/lib/productIntro", () => ({
   useProductIntro: vi.fn(),
 }));
 vi.mock("@/utils", () => ({
-  hasWorkspacePermissionV2: () => true,
+  hasWorkspacePermissionV2: () => mocks.canEdit,
 }));
 vi.mock("@/stores/app", () => {
   const state = {
@@ -77,19 +78,13 @@ vi.mock("@/components/ui/form", () => ({
 vi.mock("@/components/ui/input", () => ({
   Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
 }));
-vi.mock("@/components/ui/select", () => ({
-  Select: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectItem: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectValue: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-}));
 vi.mock("@/components/ui/switch", () => ({
-  Switch: ({ checked, onCheckedChange }: { checked: boolean; onCheckedChange: (checked: boolean) => void }) => (
+  Switch: ({ checked, disabled, onCheckedChange }: { checked: boolean; disabled?: boolean; onCheckedChange: (checked: boolean) => void }) => (
     <input
       aria-label="enable-ai"
       type="checkbox"
       checked={checked}
+      disabled={disabled}
       onChange={(event) => onCheckedChange(event.target.checked)}
     />
   ),
@@ -103,42 +98,99 @@ describe("AIAugmentationSection", () => {
     mocks.isSaaSMode = false;
     mocks.aiEnabled = false;
     mocks.aiSetting = undefined;
+    mocks.canEdit = true;
     mocks.upsertSetting.mockResolvedValue(undefined);
     mocks.refreshServerInfo.mockResolvedValue(undefined);
   });
 
-  test.each([
-    [true, "available-in-saas"],
-    [false, "unavailable-in-saas"],
-  ])(
-    "shows actual SaaS AI availability when aiEnabled is %s",
-    (aiEnabled, message) => {
+  test.each([false, true])(
+    "allows toggling Cloud AI when enabled is %s without changing credentials",
+    async (enabled) => {
       mocks.isSaaSMode = true;
-      mocks.aiEnabled = aiEnabled;
-      render(<AIAugmentationSection title="AI" onDirtyChange={vi.fn()} />);
+      mocks.aiSetting = create(AISettingSchema, {
+        enabled,
+        provider: AISetting_Provider.GEMINI,
+        endpoint: "https://api.example.com",
+        model: "example-model",
+      });
+      const ref = createRef<SectionHandle>();
+      render(<AIAugmentationSection ref={ref} title="AI" onDirtyChange={vi.fn()} />);
 
-      expect(
-        screen.getByText(`settings.general.workspace.ai-assistant.${message}`)
-      ).toBeTruthy();
-      expect(
-        screen.queryByText(
-          "settings.general.workspace.ai-assistant.enabled-in-saas"
-        )
-      ).toBeNull();
-      expect(screen.queryByRole("checkbox", { name: "enable-ai" })).toBeNull();
+      const toggle = screen.getByRole("checkbox", { name: "enable-ai" });
+      expect(toggle).toBeEnabled();
+      expect(ref.current?.isDirty()).toBe(false);
+      fireEvent.click(toggle);
+      expect(ref.current?.isDirty()).toBe(true);
+      await act(async () => ref.current?.update());
+
+      const request = mocks.upsertSetting.mock.calls[0][0];
+      expect(request.updateMask.paths).toEqual(["value.ai.enabled"]);
+      expect(request.value.value.value.enabled).toBe(!enabled);
     }
   );
 
-  test("does not report AI unavailable before server info loads", () => {
+  test("allows Cloud users to change provider and credentials", async () => {
     mocks.isSaaSMode = true;
-    mocks.aiEnabled = undefined;
+    mocks.aiSetting = create(AISettingSchema, {
+      enabled: true,
+      provider: AISetting_Provider.GEMINI,
+      endpoint: "https://api.example.com",
+      model: "example-model",
+    });
+    const ref = createRef<SectionHandle>();
+    render(<AIAugmentationSection ref={ref} title="AI" onDirtyChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("combobox", { name: "settings.general.workspace.ai-assistant.provider.self" }));
+    const provider = await screen.findByRole("option", { name: "settings.general.workspace.ai-assistant.provider.claude" });
+    fireEvent.pointerDown(provider, { pointerType: "mouse" });
+    fireEvent.click(provider);
+    fireEvent.change(screen.getByLabelText("settings.general.workspace.ai-assistant.api-key.self"), {
+      target: { value: "user-api-key" },
+    });
+    await act(async () => ref.current?.update());
+
+    const request = mocks.upsertSetting.mock.calls[0][0];
+    expect(request.value.value.value.provider).toBe(AISetting_Provider.CLAUDE);
+    expect(request.value.value.value.apiKey).toBe("user-api-key");
+    expect(request.updateMask.paths).toEqual([
+      "value.ai.provider", "value.ai.endpoint", "value.ai.model", "value.ai.api_key",
+    ]);
+  });
+
+  test.each([false, true])("keeps settings read-only without permission in SaaS mode %s", (isSaaSMode) => {
+    mocks.isSaaSMode = isSaaSMode;
+    mocks.canEdit = false;
+    mocks.aiSetting = create(AISettingSchema, {
+      enabled: true,
+      provider: AISetting_Provider.GEMINI,
+      endpoint: "https://api.example.com",
+      model: "example-model",
+    });
     render(<AIAugmentationSection title="AI" onDirtyChange={vi.fn()} />);
 
-    expect(
-      screen.queryByText(
-        "settings.general.workspace.ai-assistant.unavailable-in-saas"
-      )
-    ).toBeNull();
+    expect(screen.getByRole("checkbox", { name: "enable-ai" })).toBeDisabled();
+    expect(screen.getByLabelText("settings.general.workspace.ai-assistant.api-key.self")).toBeDisabled();
+    for (const control of screen.getAllByRole("combobox")) expect(control).toBeDisabled();
+  });
+
+  test("explicitly updates the API key when changing the endpoint", async () => {
+    mocks.isSaaSMode = true;
+    mocks.aiSetting = create(AISettingSchema, {
+      enabled: true,
+      provider: AISetting_Provider.GEMINI,
+      endpoint: "https://api.example.com",
+      model: "example-model",
+    });
+    const ref = createRef<SectionHandle>();
+    render(<AIAugmentationSection ref={ref} title="AI" onDirtyChange={vi.fn()} />);
+    fireEvent.change(screen.getByDisplayValue("https://api.example.com"), {
+      target: { value: "https://custom.example.com" },
+    });
+    await act(async () => ref.current?.update());
+
+    const request = mocks.upsertSetting.mock.calls[0][0];
+    expect(request.updateMask.paths).toEqual(["value.ai.endpoint", "value.ai.api_key"]);
+    expect(request.value.value.value.apiKey).toBe("");
   });
 
   test("exposes the AI settings section as a hash target without scrolling itself", () => {

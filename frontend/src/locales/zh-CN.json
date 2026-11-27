@@ -3899,7 +3899,6 @@
             "find-my-key": "找到我的 Key",
             "self": "API Key"
           },
-          "available-in-saas": "AI 助手已在此工作空间中启用，并由 Bytebase 管理。",
           "description": "使用 AI 来辅助数据库开发任务。",
           "enable-ai-assistant": "启用 AI 助手",
           "endpoint": {
@@ -3922,8 +3921,7 @@
             "open_ai": "OpenAI",
             "self": "AI 提供方"
           },
-          "self": "AI 助手",
-          "unavailable-in-saas": "此工作空间尚未启用 AI 助手。请联系 Bytebase 管理员。"
+          "self": "AI 助手"
         },
         "allow-admin-data-source": {
           "description": "启用时，用户可以在主数据源和只读数据源之间进行选择。禁用时，如果配置了只读数据源，则强制用户使用只读数据源，否则回退到使用主数据源。",

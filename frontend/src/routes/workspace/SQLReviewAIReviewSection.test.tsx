@@ -396,7 +396,8 @@ describe("SQLReviewAIReviewSection", () => {
     ).not.toBeInTheDocument();
   });
 
-  test("shows the AI review as off and hides its policy while AI is off", () => {
+  test.each([false, true])("shows the AI review as off and links to settings in SaaS mode %s", (isSaaSMode) => {
+    mocks.saas.value = isSaaSMode;
     seedServerInfo({ aiEnabled: false, aiSqlReviewEnabled: true });
     render(<Harness />);
 
@@ -426,11 +427,11 @@ describe("SQLReviewAIReviewSection", () => {
   test.each([
     ["without bb.settings.set", () => (mocks.permissions["bb.settings.set"] = false)],
     ["without bb.settings.get", () => (mocks.permissions["bb.settings.get"] = false)],
+    ["without bb.policies.get", () => (mocks.permissions["bb.policies.get"] = false)],
     [
       "without bb.settings.getWorkspaceProfile",
       () => (mocks.permissions["bb.settings.getWorkspaceProfile"] = false),
     ],
-    ["in SaaS mode", () => (mocks.saas.value = true)],
   ])("warns without the link %s, where the user cannot turn AI on", (_name, arrange) => {
     arrange();
     seedServerInfo({ aiEnabled: false, aiSqlReviewEnabled: false });

@@ -472,7 +472,17 @@ export function LandingPage(_: Record<string, never> = {}) {
   const [showConfigDrawer, setShowConfigDrawer] = useState(false);
   const workspace = useWorkspace();
   const aiEnabled = useAppStore((state) => state.serverInfo?.aiEnabled);
-  const canConfigureAI = useWorkspacePermission("bb.settings.set");
+  const canSetSettings = useWorkspacePermission("bb.settings.set");
+  const canReadSettings = useWorkspacePermission("bb.settings.get");
+  const canReadWorkspaceProfile = useWorkspacePermission(
+    "bb.settings.getWorkspaceProfile"
+  );
+  const canReadPolicies = useWorkspacePermission("bb.policies.get");
+  const canConfigureAI =
+    canSetSettings &&
+    canReadSettings &&
+    canReadWorkspaceProfile &&
+    canReadPolicies;
 
   const currentUser = useOptionalCurrentUser();
   const email = currentUser?.email ?? "";
@@ -601,7 +611,7 @@ export function LandingPage(_: Record<string, never> = {}) {
             />
           )}
 
-          {aiEnabled === false && canConfigureAI && !isSaaSMode && (
+          {aiEnabled === false && canConfigureAI && (
             <Alert
               role="region"
               aria-label={t("landing.ai-setup.title")}

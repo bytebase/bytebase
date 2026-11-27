@@ -7,8 +7,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pkg/errors"
+
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
+
+const maxResponseBytes = 16 * 1024 * 1024
 
 func newAIChatUsage(totalTokens, inputTokens, outputTokens, cachedInputTokens *int32) *v1pb.AIChatUsage {
 	if totalTokens == nil {
@@ -37,7 +41,7 @@ func addOptionalTokenCounts(base *int32, counts ...*int32) *int32 {
 
 // doHTTPRequest executes an HTTP request and returns the response body. A
 // status other than 200 is an *HTTPError, to which readFailure adds what the
-// vendor's body format says. A call with no complete reply is a *TransportError.
+// vendor's body format says. A failed send or read is a *TransportError.
 func doHTTPRequest(_ context.Context, httpReq *http.Request, provider string, readFailure func(*HTTPError)) ([]byte, error) {
 	client := &http.Client{}
 	httpResp, err := client.Do(httpReq)
@@ -46,9 +50,12 @@ func doHTTPRequest(_ context.Context, httpReq *http.Request, provider string, re
 	}
 	defer httpResp.Body.Close()
 
-	body, err := io.ReadAll(httpResp.Body)
+	body, err := io.ReadAll(io.LimitReader(httpResp.Body, maxResponseBytes+1))
 	if err != nil {
 		return nil, &TransportError{message: fmt.Sprintf("failed to read %s response body: %s", provider, err)}
+	}
+	if len(body) > maxResponseBytes {
+		return nil, errors.Errorf("%s response exceeds maximum size of %d bytes", provider, maxResponseBytes)
 	}
 
 	if httpResp.StatusCode != http.StatusOK {

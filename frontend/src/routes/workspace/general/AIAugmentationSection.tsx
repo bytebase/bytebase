@@ -14,7 +14,6 @@ import { ComponentPermissionGuard } from "@/components/ComponentPermissionGuard"
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { SecretInput } from "@/components/SecretInput";
-import { Alert } from "@/components/ui/alert";
 import {
   FormField,
   FormFieldGroup,
@@ -30,7 +29,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { useServerState } from "@/hooks/useAppState";
 import {
   AI_ASSISTANT_PRODUCT_INTRO,
   useProductIntro,
@@ -87,9 +85,7 @@ export const AIAugmentationSection = forwardRef<
 >(function AIAugmentationSection({ title, onDirtyChange }, ref) {
   const { t } = useTranslation();
 
-  const { isSaaSMode } = useServerState();
-  const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
-  const canEdit = hasWorkspacePermissionV2("bb.settings.set") && !isSaaSMode;
+  const canEdit = hasWorkspacePermissionV2("bb.settings.set");
 
   const settingsByName = useAppStore((s) => s.settingsByName);
   const aiSetting = useMemo(() => {
@@ -171,7 +167,11 @@ export const AIAugmentationSection = forwardRef<
       paths.push("value.ai.provider");
     if (state.endpoint !== init.endpoint) paths.push("value.ai.endpoint");
     if (state.model !== init.model) paths.push("value.ai.model");
-    if (state.apiKey || state.provider !== init.provider)
+    if (
+      state.apiKey ||
+      state.provider !== init.provider ||
+      state.endpoint !== init.endpoint
+    )
       paths.push("value.ai.api_key");
 
     await useAppStore.getState().upsertSetting({
@@ -286,222 +286,216 @@ export const AIAugmentationSection = forwardRef<
       <ComponentPermissionGuard permissions={["bb.settings.get"]}>
         <PermissionGuard permissions={["bb.settings.set"]} display="block">
           <FormFieldGroup>
-            {isSaaSMode ? (
-              aiEnabled !== undefined && (
-                <Alert
-                  variant="info"
-                  description={
-                    aiEnabled
-                      ? t(
-                          "settings.general.workspace.ai-assistant.available-in-saas"
-                        )
-                      : t(
-                          "settings.general.workspace.ai-assistant.unavailable-in-saas"
-                        )
-                  }
-                />
-              )
-            ) : (
-              <>
-                {/* Enable toggle */}
-                <FormField
-                  title={
-                    <span className="flex items-center gap-x-2">
-                      <Switch
-                        checked={state.enabled}
-                        disabled={!canEdit}
-                        onCheckedChange={(checked) => toggleEnabled(checked)}
-                      />
-                      {t(
-                        "settings.general.workspace.ai-assistant.enable-ai-assistant"
-                      )}
-                    </span>
-                  }
-                  description={
-                    <>
-                      {t("settings.general.workspace.ai-assistant.description")}{" "}
-                      <LearnMoreLink href="https://docs.bytebase.com/ai-assistant?source=console" />
-                    </>
-                  }
-                />
+            <FormField
+              title={
+                <span className="flex items-center gap-x-2">
+                  <Switch
+                    aria-label={t(
+                      "settings.general.workspace.ai-assistant.enable-ai-assistant"
+                    )}
+                    checked={state.enabled}
+                    disabled={!canEdit}
+                    onCheckedChange={(checked) => toggleEnabled(checked)}
+                  />
+                  {t(
+                    "settings.general.workspace.ai-assistant.enable-ai-assistant"
+                  )}
+                </span>
+              }
+              description={
+                <>
+                  {t("settings.general.workspace.ai-assistant.description")}{" "}
+                  <LearnMoreLink href="https://docs.bytebase.com/ai-assistant?source=console" />
+                </>
+              }
+            />
 
-                {/* Collapsible fields when enabled */}
-                {state.enabled && (
-                  <>
-                    {/* Provider */}
-                    <FormField
-                      title={t(
+            {state.enabled && (
+              <>
+                <FormField
+                  title={t(
+                    "settings.general.workspace.ai-assistant.provider.self"
+                  )}
+                >
+                  <Select
+                    value={String(state.provider)}
+                    disabled={!canEdit}
+                    onValueChange={(value) =>
+                      onProviderChange(Number(value) as AISetting_Provider)
+                    }
+                  >
+                    <SelectTrigger
+                      className="w-48"
+                      aria-label={t(
                         "settings.general.workspace.ai-assistant.provider.self"
                       )}
                     >
-                      <Select
-                        value={String(state.provider)}
-                        disabled={!canEdit}
-                        onValueChange={(value) =>
-                          onProviderChange(Number(value) as AISetting_Provider)
-                        }
-                      >
-                        <SelectTrigger className="w-48">
-                          <SelectValue>
-                            {providerLabel(state.provider)}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PROVIDER_OPTIONS.map((provider) => (
-                            <SelectItem key={provider} value={String(provider)}>
-                              {providerLabel(provider)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormField>
+                      <SelectValue>{providerLabel(state.provider)}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROVIDER_OPTIONS.map((provider) => (
+                        <SelectItem key={provider} value={String(provider)}>
+                          {providerLabel(provider)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
 
-                    {/* API Key */}
-                    <FormField
-                      title={
-                        <FormLabel htmlFor="ai-api-key">
-                          {t(
-                            "settings.general.workspace.ai-assistant.api-key.self"
-                          )}
-                        </FormLabel>
-                      }
-                      description={t(
-                        "settings.general.workspace.ai-assistant.api-key.description",
-                        {
-                          viewDoc: "__LINK__",
-                          interpolation: { escapeValue: false },
-                        }
-                      )
-                        .split("__LINK__")
-                        .map((part, i) => (
-                          <span key={i}>
-                            {part}
-                            {i === 0 && (
-                              <a
-                                href={providerDefault.apiKeyDoc}
-                                className="normal-link"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                {t(
-                                  "settings.general.workspace.ai-assistant.api-key.find-my-key"
-                                )}
-                              </a>
+                <FormField
+                  title={
+                    <FormLabel htmlFor="ai-api-key">
+                      {t(
+                        "settings.general.workspace.ai-assistant.api-key.self"
+                      )}
+                    </FormLabel>
+                  }
+                  description={t(
+                    "settings.general.workspace.ai-assistant.api-key.description",
+                    {
+                      viewDoc: "__LINK__",
+                      interpolation: { escapeValue: false },
+                    }
+                  )
+                    .split("__LINK__")
+                    .map((part, i) => (
+                      <span key={i}>
+                        {part}
+                        {i === 0 && (
+                          <a
+                            href={providerDefault.apiKeyDoc}
+                            className="normal-link"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {t(
+                              "settings.general.workspace.ai-assistant.api-key.find-my-key"
                             )}
-                          </span>
-                        ))}
-                    >
-                      <SecretInput
-                        id="ai-api-key"
-                        value={state.apiKey}
-                        disabled={!canEdit}
-                        resetKey={`${state.provider}:${apiKeyResetKey}`}
-                        placeholder={t("common.sensitive-placeholder")}
-                        onValueChange={(apiKey) =>
-                          setState((s) => ({ ...s, apiKey }))
-                        }
-                      />
-                    </FormField>
+                          </a>
+                        )}
+                      </span>
+                    ))}
+                >
+                  <SecretInput
+                    id="ai-api-key"
+                    value={state.apiKey}
+                    disabled={!canEdit}
+                    resetKey={`${state.provider}:${apiKeyResetKey}`}
+                    placeholder={t("common.sensitive-placeholder")}
+                    onValueChange={(apiKey) =>
+                      setState((s) => ({ ...s, apiKey }))
+                    }
+                  />
+                </FormField>
 
-                    <FormField
-                      title={t(
+                <FormField
+                  title={t(
+                    "settings.general.workspace.ai-assistant.model.self"
+                  )}
+                  description={t(
+                    "settings.general.workspace.ai-assistant.model.description"
+                  )}
+                >
+                  <Select
+                    value={selectedModel}
+                    disabled={!canEdit}
+                    onValueChange={onModelChange}
+                  >
+                    <SelectTrigger
+                      className="w-48"
+                      aria-label={t(
                         "settings.general.workspace.ai-assistant.model.self"
                       )}
-                      description={t(
-                        "settings.general.workspace.ai-assistant.model.description"
-                      )}
                     >
-                      <Select
-                        value={selectedModel}
-                        disabled={!canEdit}
-                        onValueChange={onModelChange}
-                      >
-                        <SelectTrigger className="w-48">
-                          <SelectValue>
-                            {selectedModel === CUSTOM_MODEL
-                              ? t(
-                                  "settings.general.workspace.ai-assistant.model.custom"
-                                )
-                              : selectedModel}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(PROVIDER_MODELS[state.provider] ?? []).map(
-                            (model) => (
-                              <SelectItem key={model.value} value={model.value}>
-                                {model.value}
-                              </SelectItem>
-                            )
-                          )}
-                          <SelectItem value={CUSTOM_MODEL}>
-                            {t(
+                      <SelectValue>
+                        {selectedModel === CUSTOM_MODEL
+                          ? t(
                               "settings.general.workspace.ai-assistant.model.custom"
-                            )}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormField>
-
-                    {isCustomModel && (
-                      <FormField
-                        title={
-                          isAzureOpenAI
-                            ? t(
-                                "settings.general.workspace.ai-assistant.model.deployment"
-                              )
-                            : t(
-                                "settings.general.workspace.ai-assistant.model.name"
-                              )
-                        }
-                        description={
-                          isAzureOpenAI
-                            ? t(
-                                "settings.general.workspace.ai-assistant.model.deployment-description"
-                              )
-                            : undefined
-                        }
-                      >
-                        <Input
-                          value={state.model}
-                          required
-                          disabled={!canEdit}
-                          onChange={(e) =>
-                            setState((s) => ({ ...s, model: e.target.value }))
-                          }
-                        />
-                      </FormField>
-                    )}
-
-                    {(isCustomModel || isAzureOpenAI) && (
-                      <FormField
-                        title={t(
-                          "settings.general.workspace.ai-assistant.endpoint.self"
+                            )
+                          : selectedModel}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(PROVIDER_MODELS[state.provider] ?? []).map((model) => (
+                        <SelectItem key={model.value} value={model.value}>
+                          {model.value}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value={CUSTOM_MODEL}>
+                        {t(
+                          "settings.general.workspace.ai-assistant.model.custom"
                         )}
-                        description={
-                          isOpenAICompatible
-                            ? t(
-                                "settings.general.workspace.ai-assistant.endpoint.openai-description"
-                              )
-                            : t(
-                                "settings.general.workspace.ai-assistant.endpoint.description"
-                              )
-                        }
-                      >
-                        <Input
-                          value={state.endpoint}
-                          required
-                          disabled={!canEdit}
-                          placeholder={providerDefault.endpoint}
-                          onChange={(e) =>
-                            setState((s) => ({
-                              ...s,
-                              endpoint: e.target.value,
-                            }))
-                          }
-                        />
-                      </FormField>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormField>
+
+                {isCustomModel && (
+                  <FormField
+                    title={
+                      isAzureOpenAI
+                        ? t(
+                            "settings.general.workspace.ai-assistant.model.deployment"
+                          )
+                        : t(
+                            "settings.general.workspace.ai-assistant.model.name"
+                          )
+                    }
+                    description={
+                      isAzureOpenAI
+                        ? t(
+                            "settings.general.workspace.ai-assistant.model.deployment-description"
+                          )
+                        : undefined
+                    }
+                  >
+                    <Input
+                      value={state.model}
+                      aria-label={t(
+                        isAzureOpenAI
+                          ? "settings.general.workspace.ai-assistant.model.deployment"
+                          : "settings.general.workspace.ai-assistant.model.name"
+                      )}
+                      required
+                      disabled={!canEdit}
+                      onChange={(e) =>
+                        setState((s) => ({ ...s, model: e.target.value }))
+                      }
+                    />
+                  </FormField>
+                )}
+
+                {(isCustomModel || isAzureOpenAI) && (
+                  <FormField
+                    title={t(
+                      "settings.general.workspace.ai-assistant.endpoint.self"
                     )}
-                  </>
+                    description={
+                      isOpenAICompatible
+                        ? t(
+                            "settings.general.workspace.ai-assistant.endpoint.openai-description"
+                          )
+                        : t(
+                            "settings.general.workspace.ai-assistant.endpoint.description"
+                          )
+                    }
+                  >
+                    <Input
+                      value={state.endpoint}
+                      aria-label={t(
+                        "settings.general.workspace.ai-assistant.endpoint.self"
+                      )}
+                      required
+                      disabled={!canEdit}
+                      placeholder={providerDefault.endpoint}
+                      onChange={(e) =>
+                        setState((s) => ({
+                          ...s,
+                          endpoint: e.target.value,
+                        }))
+                      }
+                    />
+                  </FormField>
                 )}
               </>
             )}
