@@ -13,11 +13,9 @@ const alertVariants = cva(
   "relative flex w-full items-start gap-x-3 rounded-xs border px-4 py-3 text-sm leading-5 shadow-xs",
   {
     variants: {
-      // Text follows the variant's status color so a colored alert reads
-      // cohesively (info tracks the theme accent; warning/error stay semantic).
       variant: {
         info: "border-info/40 bg-info/10 text-info",
-        warning: "border-warning/40 bg-warning/10 text-warning",
+        warning: "border-warning/40 bg-warning/10 text-main",
         error: "border-error/40 bg-error/10 text-error",
       },
       appearance: {
@@ -37,7 +35,7 @@ const alertIconVariants = cva("shrink-0", {
   variants: {
     variant: {
       info: "text-info",
-      warning: "text-warning",
+      warning: "text-warning-hover",
       error: "text-error",
     },
     appearance: {
@@ -92,14 +90,12 @@ function Alert({
         {hasStructuredContent ? (
           <>
             {title !== undefined && (
-              <h5 className="font-medium leading-6">{title}</h5>
+              <h5 className="font-semibold leading-5">{title}</h5>
             )}
             {description !== undefined && (
               <div
                 className={cn(
-                  // Inherit the variant text color (slightly softened) so the
-                  // body follows the theme like the rest of the alert.
-                  "text-sm leading-6 opacity-90",
+                  "text-sm leading-5",
                   title !== undefined && "mt-1"
                 )}
               >

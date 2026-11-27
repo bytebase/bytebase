@@ -38,6 +38,52 @@ describe("themeToCssVars", () => {
     expect(vars["--color-control"]).toBe("1 2 3");
     expect(Object.keys(vars)).toHaveLength(SQL_EDITOR_THEME_TOKENS.length);
   });
+  test("normalizes the legacy warning foreground in saved dark token snapshots", () => {
+    const tokens = {
+      ...deriveThemeFromAnchors(darkAnchors, "Saved custom theme").tokens,
+      "--color-warning-hover": "#b45309",
+    };
+    const savedTokens = { ...tokens };
+
+    const vars = themeToCssVars(tokens);
+
+    expect(vars["--color-warning-hover"]).toBe("253 224 71");
+    expect(vars["--color-warning"]).toBe("245 158 11");
+    expect(vars["--color-error-hover"]).toBe("185 28 28");
+    expect(vars["--color-success-hover"]).toBe("21 128 61");
+    expect(tokens).toEqual(savedTokens);
+  });
+  test.each([
+    { id: "light", warningHover: "180 83 9" },
+    { id: "dark", warningHover: "253 224 71" },
+    { id: "solarized-dark", warningHover: "204 153 0" },
+  ])("preserves the $id preset warning foreground", ({ id, warningHover }) => {
+    expect(
+      themeToCssVars(PRESET_BY_ID[id].tokens)["--color-warning-hover"]
+    ).toBe(warningHover);
+  });
+  test.each([
+    {
+      warning: "#f59e0b",
+      warningHover: "#cc9900",
+      expected: "204 153 0",
+    },
+    {
+      warning: "#b58900",
+      warningHover: "#b45309",
+      expected: "180 83 9",
+    },
+  ])(
+    "preserves a custom dark warning pair $warning / $warningHover",
+    ({ warning, warningHover, expected }) => {
+      const tokens = {
+        ...deriveThemeFromAnchors(darkAnchors, "Custom").tokens,
+        "--color-warning": warning,
+        "--color-warning-hover": warningHover,
+      };
+      expect(themeToCssVars(tokens)["--color-warning-hover"]).toBe(expected);
+    }
+  );
 });
 
 describe("monacoThemeName", () => {
@@ -155,6 +201,25 @@ describe("deriveThemeFromAnchors", () => {
       "vs"
     );
   });
+  test.each([
+    { anchors: lightAnchors, warningHover: "#b45309" },
+    { anchors: darkAnchors, warningHover: "#fde047" },
+  ])(
+    "uses a readable warning foreground on $anchors.background",
+    ({ anchors, warningHover }) => {
+      const { tokens } = deriveThemeFromAnchors(anchors, "Brand");
+      expect(tokens["--color-warning-hover"]).toBe(warningHover);
+      expect(tokens).toMatchObject({
+        "--color-warning": "#f59e0b",
+        "--color-error": "#dc2626",
+        "--color-error-hover": "#b91c1c",
+        "--color-success": "#16a34a",
+        "--color-success-hover": "#15803d",
+        "--color-matrix-green": "#00cc00",
+        "--color-matrix-green-hover": "#88ff88",
+      });
+    }
+  );
   test("status + matrix fixed (anchor-independent)", () => {
     const a = deriveThemeFromAnchors(lightAnchors, "A").tokens;
     const b = deriveThemeFromAnchors(darkAnchors, "B").tokens;

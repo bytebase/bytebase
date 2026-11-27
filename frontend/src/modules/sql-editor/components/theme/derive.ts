@@ -19,6 +19,17 @@ export function themeToCssVars(
   for (const token of SQL_EDITOR_THEME_TOKENS) {
     vars[token] = hexToRgbString(tokens[token]);
   }
+  // Saved custom themes contain full token snapshots; normalize only the legacy warning pair.
+  if (
+    luminance(hexToRgb(tokens["--color-background"])) < 0.5 &&
+    tokens["--color-warning"] === FIXED_TOKEN_VALUES["--color-warning"] &&
+    tokens["--color-warning-hover"] ===
+      FIXED_TOKEN_VALUES["--color-warning-hover"]
+  ) {
+    vars["--color-warning-hover"] = hexToRgbString(
+      dark.tokens["--color-warning-hover"]
+    );
+  }
   return vars as CSSProperties & Record<string, string>;
 }
 
@@ -69,7 +80,7 @@ export function validateTheme(theme: SQLEditorTheme): void {
 /**
  * The 4 colors an admin picks (each a `#rrggbb` hex). We derive all 29 chrome
  * tokens from these — the elevated "surface" is the background nudged toward the
- * text, status + matrix-green are held fixed.
+ * text, status + matrix-green retain their semantic colors.
  */
 export interface ThemeAnchors {
   background: string;
@@ -78,10 +89,9 @@ export interface ThemeAnchors {
   border: string;
 }
 
-// Semantic status + matrix-green tokens — constant across brands so they stay
-// recognizable (warning=amber, error=red, success=green). Inlined (the light
-// preset's values) so `deriveThemeFromAnchors` has no dependency on the preset
-// catalog. NOTE: `--color-info` is intentionally NOT here — it's derived from
+// Semantic status + matrix-green defaults. Warning foreground is lightened on
+// dark backgrounds; the other tokens stay fixed across brands.
+// `--color-info` is intentionally NOT here — it's derived from
 // the accent (the least-semantic "brand" status) so info surfaces match the
 // theme instead of clashing with a fixed blue.
 const FIXED_TOKEN_VALUES: Record<string, string> = {
@@ -116,9 +126,9 @@ const luminance = ([r, g, b]: RGB3): number =>
   (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 
 /**
- * Derive a complete theme from 5 anchor colors. The 5 anchors map directly to
- * background/control-bg/main/accent/block-border; the rest are blended toward
- * the text or background to keep contrast. Status + matrix tokens are fixed.
+ * Derive a complete theme from 4 anchors: background, main text, accent, and
+ * block border. Other chrome tokens are blended to keep contrast; status and
+ * matrix colors stay semantic.
  * `monacoBase` defaults to the background luminance (dark background →
  * `vs-dark`), but callers may pass an explicit base to override that — the
  * editor's syntax palette (light/dark) is then admin-chosen, not inferred.
@@ -132,7 +142,7 @@ export function deriveThemeFromAnchors(
   const text = hexToRgb(anchors.text);
   const accent = hexToRgb(anchors.accent);
   const border = hexToRgb(anchors.border);
-  const dark = luminance(bg) < 0.5;
+  const isDark = luminance(bg) < 0.5;
   const elevate = (c: RGB3, t: number) => mix(c, text, t); // toward text (more contrast)
   const recede = (c: RGB3, t: number) => mix(c, bg, t); // toward background
 
@@ -140,7 +150,9 @@ export function deriveThemeFromAnchors(
   // text. Derived (not an anchor) so the admin only picks 4 colors.
   const surface = elevate(bg, 0.06);
   const accentHex = toHex(accent);
-  const accentHover = toHex(dark ? elevate(accent, 0.15) : recede(accent, 0.2));
+  const accentHover = toHex(
+    isDark ? elevate(accent, 0.15) : recede(accent, 0.2)
+  );
 
   const tokens: Record<string, string> = {
     "--color-background": toHex(bg),
@@ -174,13 +186,16 @@ export function deriveThemeFromAnchors(
     "--color-main-text": luminance(text) < 0.5 ? "#ffffff" : "#18181b",
   };
   Object.assign(tokens, FIXED_TOKEN_VALUES);
+  if (isDark) {
+    tokens["--color-warning-hover"] = dark.tokens["--color-warning-hover"];
+  }
 
   const theme: SQLEditorTheme = {
     id: "",
     name,
     monacoBase:
       monacoBase ??
-      (dark ? DEFAULT_DARK_EDITOR_THEME : DEFAULT_LIGHT_EDITOR_THEME),
+      (isDark ? DEFAULT_DARK_EDITOR_THEME : DEFAULT_LIGHT_EDITOR_THEME),
     tokens,
   };
   validateTheme(theme); // throws if a key is missing

@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import { Alert } from "@/components/ui/alert";
 
-// A warning alert whose text passes body contrast: the shared warning variant
-// sets title and body in the warning color itself.
 export function NeonWarning({
   title,
   description,
