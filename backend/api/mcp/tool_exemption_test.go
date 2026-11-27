@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -997,6 +999,47 @@ func TestRevokeMaskingExemptionStatesEveryExemptionAFormGrants(t *testing.T) {
 	require.Positive(t, listed, "the sweep must reach a grant that lists its columns under the choice")
 	require.Greater(t, granted, listed)
 	require.Positive(t, refused, "and one no form states")
+}
+
+// An exemption form keeps within the client's cut at 2,000 UTF-16 code units
+// too, for a grant and for the revoke of what it wrote. A reason with no
+// columns listed beside it is one line of any length, as on main: only its own
+// end can be cut.
+func TestMaskingExemptionFormsKeepWithinTheClientsCut(t *testing.T) {
+	ctx := withUserEmail(context.Background(), "alice@example.com")
+	random := rand.New(rand.NewPCG(22234, 2000))
+	granted, listed, refused := 0, 0, 0
+	for range 600 {
+		input := GrantMaskingExemptionInput{Project: "projects/hr", Member: "user:bob@example.com", Database: "instances/prod/databases/hr",
+			Schema: []string{"", "public"}[random.IntN(2)], Table: "t" + markedText(random, []int{0, 30, 300}[random.IntN(3)]), Reason: markedText(random, []int{0, 60, 600, 3000}[random.IntN(4)]),
+			ExpireTime: []string{"", "2026-12-01T00:00:00Z"}[random.IntN(2)]}
+		for i := range random.IntN(14) {
+			input.Columns = append(input.Columns, fmt.Sprintf("c%d%s", i, markedText(random, []int{0, 0, 20, 200, 2500}[random.IntN(5)])))
+		}
+		g, err := parseExemptionGrant(input)
+		require.NoError(t, err)
+		grant, tooLong, _ := describeExemptionGrant(ctx, g)
+		if tooLong != "" {
+			refused++
+			continue
+		}
+		granted++
+		require.LessOrEqual(t, codeUnits(grant.message), clientCut, "%q", grant.message)
+		if len(grant.columns) > 0 {
+			listed++
+			description := strings.Join(slices.Concat(grant.columns, grant.reason), "\n")
+			require.LessOrEqual(t, codeUnits(description), clientCut, "%q", description)
+			require.LessOrEqual(t, len(grant.columns)+len(grant.reason), descriptionLines)
+		}
+		revoke, tooLong := describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: g.project, Member: g.member, Condition: g.condition()})
+		require.Empty(t, tooLong, "a form revokes what a form grants: %q", grant.message)
+		require.LessOrEqual(t, codeUnits(revoke.message), clientCut, "%q", revoke.message)
+		notes := strings.Join(slices.Concat(revoke.columns, []string{"Removes the member from all 1000 exemptions with this condition.", revoke.expiry}), "\n")
+		require.LessOrEqual(t, codeUnits(notes), clientCut, "%q", notes)
+	}
+	require.Greater(t, listed, 30, "grants that list their columns under the choice")
+	require.Greater(t, granted, listed)
+	require.Greater(t, refused, 100, "and grants whose marks pass the rows")
 }
 
 // The rows that name the columns leave two, for a revoke's note on matching

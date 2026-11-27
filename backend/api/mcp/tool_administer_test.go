@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 	"unicode"
+	"unicode/utf16"
 	"unicode/utf8"
 
 	"github.com/labstack/echo/v5"
@@ -2286,18 +2287,136 @@ func TestAdministerWorkspaceMarksEveryContinuationLine(t *testing.T) {
 }
 
 // fillRows counts the rows of line when every row is filled, without
-// wrapLine's helpers.
+// wrapLine's helpers: a row holds width columns, and twice as many UTF-16 code
+// units.
 func fillRows(line string, width int) int {
-	rows, room := 1, width
+	rows, room, units := 1, width, 2*width
 	for _, r := range line {
-		columns := lineColumns(string(r))
-		if columns > room {
+		columns, size := lineColumns(string(r)), codeUnits(string(r))
+		if columns > room || size > units {
 			rows++
-			room = width - lineColumns(continuedLine)
+			room, units = width-1, 2*(width-1)
 		}
-		room -= columns
+		room, units = room-columns, units-size
 	}
 	return rows
+}
+
+// clientCut is the most UTF-16 code units of a form's message, and of a
+// description, that Claude Code 2.1.332 draws. It cuts the rest.
+const clientCut = 2000
+
+func codeUnits(text string) int {
+	return len(utf16.Encode([]rune(text)))
+}
+
+// markedText returns up to most code units of text whose rows hold more code
+// units than columns: letters under runs of combining marks, a narrow
+// character outside the basic plane, which is two code units, and a wide one.
+func markedText(random *rand.Rand, most int) string {
+	var text strings.Builder
+	for units := random.IntN(most + 1); units > 0; {
+		switch random.IntN(6) {
+		case 0:
+			marks := 1 + random.IntN(60)
+			text.WriteString("a" + strings.Repeat("\u0301", marks))
+			units -= 1 + marks
+		case 1:
+			text.WriteString("\U0001D400")
+			units -= 2
+		case 2:
+			text.WriteString("\u540d")
+			units--
+		case 3:
+			text.WriteString(" ")
+			units--
+		default:
+			text.WriteString("e\u0308")
+			units -= 2
+		}
+	}
+	return text.String()
+}
+
+// Claude Code cuts a form's message, and a description, at 2,000 UTF-16 code
+// units, and a combining mark is a unit that takes no column. So the rows a
+// form allows must keep both texts within the cut, whatever the request and
+// the stored rules hold: a change past the cut would be confirmed unseen.
+func TestRuleFormsKeepWithinTheClientsCut(t *testing.T) {
+	random := rand.New(rand.NewPCG(22234, 2000))
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	forms, refused := 0, 0
+	check := func(form *adminForm, err error) {
+		if err != nil {
+			var tooLong *toolError
+			require.ErrorAs(t, err, &tooLong)
+			require.Equal(t, "CHANGE_TOO_LONG", tooLong.Code)
+			refused++
+			return
+		}
+		forms++
+		require.LessOrEqual(t, codeUnits(form.message), clientCut, "%q", form.message)
+		require.LessOrEqual(t, len(strings.Split(form.message, "\n")), messageLines, "%q", form.message)
+		require.LessOrEqual(t, codeUnits(form.description), clientCut, "%q", form.description)
+		require.LessOrEqual(t, len(strings.Split(form.description, "\n")), descriptionLines, "%q", form.description)
+	}
+	text := func(most int) string {
+		if random.IntN(3) == 0 {
+			return fmt.Sprintf("Plain %d", random.IntN(1000))
+		}
+		return markedText(random, most)
+	}
+	types, err := semanticTypesFromSetting([]*v1pb.SemanticTypeSetting_SemanticType{semanticType("marked", markedText(random, 400), nil)})
+	require.NoError(t, err)
+	for range 600 {
+		fallback := fallbackRule()
+		fallback.Template.Title = text(3000)
+		stored := []*v1pb.WorkspaceApprovalSetting_Rule{fallback}
+		var masks []*v1pb.MaskingRulePolicy_MaskingRule
+		for i := range random.IntN(7) {
+			rule := changeRule(text(300), fmt.Sprintf(`resource.project_id == "p%d%s"`, i, text(40)), [][]string{nil, {"roles/workspaceDBA"}}[random.IntN(2)]...)
+			rule.Template.Description = text(200)
+			stored = append(stored, rule)
+			masks = append(masks, maskingRule(fmt.Sprintf("r%d", i), text(300), fmt.Sprintf(`resource.column_name == "c%d%s"`, i, text(40)), []string{"bb.default", "marked", ""}[random.IntN(3)]))
+		}
+		requested, requestedMasks := slices.Clone(stored), slices.Clone(masks)
+		for range 1 + random.IntN(3) {
+			at := 1 + random.IntN(len(stored))
+			switch {
+			case random.IntN(2) == 0 || at >= len(requested):
+				// One rule with a value of any size, among changes of a few
+				// units, or a few rules of middling size.
+				most := []int{60, 60, 300, 3000}[random.IntN(4)]
+				added := changeRule(text(most), fmt.Sprintf(`resource.project_id == "new%d%s"`, random.IntN(1<<30), text(most/10)), "roles/projectOwner")
+				added.Template.Description = text(most)
+				requested = append(requested, added)
+				requestedMasks = append(requestedMasks, maskingRule(fmt.Sprintf("n%d", random.IntN(1<<30)), text(most), fmt.Sprintf(`resource.column_name == "new%d%s"`, random.IntN(1<<30), text(most/10)), "marked"))
+			default:
+				renamed := proto.CloneOf(requested[at])
+				renamed.Template.Title, renamed.Template.Description = text(3000), text(300)
+				requested[at] = renamed
+				mask := proto.CloneOf(requestedMasks[at-1])
+				mask.Condition.Title = text(3000)
+				requestedMasks[at-1] = mask
+			}
+		}
+		if len(requested) > 2 && random.IntN(2) == 0 {
+			requested[1], requested[len(requested)-1] = requested[len(requested)-1], requested[1]
+			requestedMasks[0], requestedMasks[len(requestedMasks)-1] = requestedMasks[len(requestedMasks)-1], requestedMasks[0]
+		}
+		diff, err := diffApprovalRules(stored, requested, "")
+		require.NoError(t, err)
+		if len(diff.changes) > 0 {
+			check(approvalRulesForm(alice, diff, issuesLine([]string{"hr#12"}, false), ""))
+		}
+		maskDiff, err := diffMaskingRules(masks, requestedMasks, types, "")
+		require.NoError(t, err)
+		if len(maskDiff.changes) > 0 {
+			check(maskingRulesForm(alice, maskDiff, ""))
+		}
+	}
+	require.Greater(t, forms, 200, "requests of a few marks get a form")
+	require.Greater(t, refused, 200, "and a change whose marks pass the rows gets none")
 }
 
 // allocated returns the bytes f allocates.
@@ -2309,12 +2428,65 @@ func allocated(f func()) uint64 {
 	return after.TotalAlloc - before.TotalAlloc
 }
 
+// A title of combining marks takes one row by its columns. Its code units
+// decide its rows, so a change after it is never past the client's cut.
+func TestAdministerWorkspaceCountsATextOfMarksByItsCodeUnits(t *testing.T) {
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	marks := func(n int) string { return "a" + strings.Repeat("\u0301", n) }
+	a := changeRule("Team A", `resource.project_id == "a"`, "roles/workspaceDBA")
+	b := changeRule("Team B", `resource.project_id == "b"`, "roles/workspaceDBA")
+	c := changeRule("Team C", `resource.project_id == "c"`, "roles/workspaceDBA")
+	renamed := func(rule *v1pb.WorkspaceApprovalSetting_Rule, title string) *v1pb.WorkspaceApprovalSetting_Rule {
+		rule = proto.CloneOf(rule)
+		rule.Template.Title = title
+		return rule
+	}
+	form := func(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule) (*adminForm, error) {
+		diff, err := diffApprovalRules(slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, stored), slices.Concat([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, requested), "LINK")
+		require.NoError(t, err)
+		return approvalRulesForm(alice, diff, "", "LINK")
+	}
+
+	// 3,000 marks are one row by their columns and 23 by their code units, so
+	// no form states the rename, with or without another change after it.
+	open := changeRule("Team B", `resource.project_id == "b"`)
+	for _, requested := range [][]*v1pb.WorkspaceApprovalSetting_Rule{{renamed(a, marks(3000)), b}, {renamed(a, marks(3000)), open}} {
+		_, err := form([]*v1pb.WorkspaceApprovalSetting_Rule{a, b}, requested)
+		var refused *toolError
+		require.ErrorAs(t, err, &refused)
+		require.Equal(t, "CHANGE_TOO_LONG", refused.Code)
+		require.Contains(t, refused.Message, "needs more lines than the 8 one confirmation form has room for under its choice")
+	}
+
+	// Three titles of 150 marks take two rows each: the form lists them, and
+	// every change is within the cut.
+	listed, err := form([]*v1pb.WorkspaceApprovalSetting_Rule{a, b, c}, []*v1pb.WorkspaceApprovalSetting_Rule{renamed(a, marks(150)), renamed(b, marks(150)), renamed(c, marks(150))})
+	require.NoError(t, err)
+	require.Contains(t, listed.message, "Change 3 rules, listed under Action.")
+	require.LessOrEqual(t, codeUnits(listed.description), clientCut)
+	for _, project := range []string{"a", "b", "c"} {
+		require.Contains(t, unwrapMessage(listed.description), fmt.Sprintf("Rename to %q: `resource.project_id == %q`", marks(150), project))
+	}
+
+	// What the workspace stores cannot keep a change from its form: a kept
+	// rule and a fallback rule with titles of marks leave the form its rows.
+	fallback := fallbackRule()
+	fallback.Template.Title = marks(3000)
+	kept := renamed(a, marks(3000))
+	diff, err := diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallback, kept}, []*v1pb.WorkspaceApprovalSetting_Rule{fallback, kept, b}, "")
+	require.NoError(t, err)
+	added, err := approvalRulesForm(alice, diff, "", "")
+	require.NoError(t, err)
+	require.Contains(t, added.message, "Add rule 2, \"Workspace DBA\": `resource.project_id == \"b\"`")
+	require.Equal(t, "Unmatched changes go to a fallback rule too long to name here.\nRules for database changes in all: 2. Their list has no room here.", added.description)
+}
+
 // A row that ends at a space must not cost a row: a long quoted value after a
 // space would leave the row before it nearly empty, and a form has four.
 func TestWrapLineNeverTakesMoreRowsThanFillingThem(t *testing.T) {
 	random := rand.New(rand.NewPCG(10598, 22224))
 	alphabet := []rune(`abcdefghijklmnopqrstuvwxyz0123456789"',()=&|/.-_@名前` + "\u0301\u0308")
-	for range 5000 {
+	for n := range 5000 {
 		var tokens []string
 		for range 1 + random.IntN(12) {
 			token := make([]rune, 1+random.IntN(90))
@@ -2322,6 +2494,11 @@ func TestWrapLineNeverTakesMoreRowsThanFillingThem(t *testing.T) {
 				token[i] = alphabet[random.IntN(len(alphabet))]
 			}
 			tokens = append(tokens, string(token))
+			// Every tenth line holds runs of marks and of characters that are
+			// two code units, so that a row fills by its units first.
+			if n%10 == 0 {
+				tokens = append(tokens, markedText(random, 400))
+			}
 		}
 		line := strings.Join(tokens, " ")
 		for _, width := range []int{messageLineWidth, 40} {
@@ -2330,6 +2507,7 @@ func TestWrapLineNeverTakesMoreRowsThanFillingThem(t *testing.T) {
 			var joined strings.Builder
 			for i, row := range rows {
 				require.LessOrEqual(t, lineColumns(row), width, "%q", rows)
+				require.LessOrEqual(t, codeUnits(row), 2*width, "%q", rows)
 				if i > 0 {
 					require.True(t, strings.HasPrefix(row, continuedLine), "%q", rows)
 					row = strings.TrimPrefix(row, continuedLine)

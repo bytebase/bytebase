@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf16"
 	"unicode/utf8"
 
 	"connectrpc.com/connect"
@@ -1411,7 +1412,7 @@ func wrapLine(line string, width int) []string {
 		}
 		return rows
 	}
-	for lineColumns(prefix+string(runes)) > width {
+	for rowColumns(prefix+string(runes)) > width {
 		full := filledRunes(runes, width-lineColumns(prefix))
 		rest := filledRows(runes[full:], width)
 		cut := full
@@ -1431,13 +1432,29 @@ func wrapLine(line string, width int) []string {
 	return append(rows, prefix+string(runes))
 }
 
-// filledRunes returns how many of runes fit in columns, and at least one, so a
-// row always takes some. A combining mark takes no column, so it stays on the
-// row of the character it marks.
+// rowColumns is the room text takes in a row: the columns Claude Code gives
+// it, or half its UTF-16 code units when that is more. Claude Code cuts a
+// form's message, and a description, at 2,000 code units before it draws them
+// (2.1.332), and a combining mark is a unit that takes no column. A wrapped
+// row then holds at most twice as many units as columns, so a text wrapped to
+// the rows of a form keeps within that cut.
+func rowColumns(text string) int {
+	units := 0
+	for _, r := range text {
+		units += utf16.RuneLen(r)
+	}
+	return max(lineColumns(text), (units+1)/2)
+}
+
+// filledRunes returns how many of runes fit a row of columns, and at least
+// one, so a row always takes some. A combining mark takes no column, so it
+// stays on the row of the character it marks while the row has units left
+// (rowColumns).
 func filledRunes(runes []rune, columns int) int {
-	n, used := 0, 0
-	for n < len(runes) && used+charColumns(runes[n]) <= columns {
+	n, used, units := 0, 0, 0
+	for n < len(runes) && used+charColumns(runes[n]) <= columns && units+utf16.RuneLen(runes[n]) <= 2*columns {
 		used += charColumns(runes[n])
+		units += utf16.RuneLen(runes[n])
 		n++
 	}
 	return max(n, min(1, len(runes)))
