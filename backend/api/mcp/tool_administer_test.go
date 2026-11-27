@@ -1254,8 +1254,8 @@ func TestAdministerWorkspaceSwapsBackWhatItSwaps(t *testing.T) {
 		message, _ := swap([]*v1pb.WorkspaceApprovalSetting_Rule{core, production}, []*v1pb.WorkspaceApprovalSetting_Rule{production, core})
 		require.Contains(t, message, `Move to rule 1, "Workspace DBA", now ahead of "Core projects" ("Project owner"): `+"`"+`resource.environment_id == "prod"`+"`", "%d projects", n)
 	}
-	// Two moves that take the same rows: the rule that ends second is the
-	// moved one, as before a move had a cost.
+	// Two moves that take the same rows: the earlier rule of the request
+	// stays in place, so the rule that ends second is the moved one.
 	staging := changeRule("Staging", `resource.environment_id == "test"`, "roles/workspaceDBA")
 	message, _ := swap([]*v1pb.WorkspaceApprovalSetting_Rule{staging, production}, []*v1pb.WorkspaceApprovalSetting_Rule{production, staging})
 	require.Contains(t, message, `Move to rule 2, "Workspace DBA", now behind 1 rule with the same approvers: `+"`"+`resource.environment_id == "test"`+"`")
@@ -1691,10 +1691,10 @@ func TestApprovalReorderIsStatedByItsCheapestMoves(t *testing.T) {
 	require.Greater(t, fewerRows, 50, "reorders whose fewest moves can take more rows than the ones stated")
 }
 
-// mainLongestCommonOrder is longestCommonOrder as it was before a move had a
-// cost: the longest common subsequence, and of several the one its traceback
-// meets.
-func mainLongestCommonOrder(a, b []string) []bool {
+// unweightedLongestCommonOrder is the longest common subsequence alone, and of
+// several the one that keeps the earlier elements of b: what longestCommonOrder
+// returns when every move costs the same.
+func unweightedLongestCommonOrder(a, b []string) []bool {
 	lengths := make([][]int, len(a)+1)
 	for i := range lengths {
 		lengths[i] = make([]int, len(b)+1)
@@ -1727,8 +1727,8 @@ func mainLongestCommonOrder(a, b []string) []bool {
 // longestCommonOrder leaves in place a run of rules in stored order, never
 // moves a rule that traded order with none, and no other set of moves costs
 // less. Of the sets that cost the same it leaves in place the earlier rules of
-// the request, so moves that all cost the same leave the longest common
-// subsequence the forms took before a move had a cost.
+// the request, so moves that all cost the same leave the unweighted longest
+// common subsequence.
 func TestLongestCommonOrderLeavesTheCheapestMoves(t *testing.T) {
 	random := rand.New(rand.NewPCG(22234, 11))
 	untraded, moreMoves, otherRules := 0, 0, 0
@@ -1813,14 +1813,14 @@ func TestLongestCommonOrderLeavesTheCheapestMoves(t *testing.T) {
 			moreMoves++
 		}
 
-		main := mainLongestCommonOrder(stored, requested)
-		require.Equal(t, main, longestCommonOrder(stored, requested, make([]moveCost, n)), "%v with no costs", was)
+		unweighted := unweightedLongestCommonOrder(stored, requested)
+		require.Equal(t, unweighted, longestCommonOrder(stored, requested, make([]moveCost, n)), "%v with no costs", was)
 		even := make([]moveCost, n)
 		for i := range even {
 			even[i] = moveCost{tooLong: costs[0].tooLong, rows: costs[0].rows}
 		}
-		require.Equal(t, main, longestCommonOrder(stored, requested, even), "%v with the same cost for every move", was)
-		if !slices.Equal(main, inOrder) {
+		require.Equal(t, unweighted, longestCommonOrder(stored, requested, even), "%v with the same cost for every move", was)
+		if !slices.Equal(unweighted, inOrder) {
 			otherRules++
 		}
 	}

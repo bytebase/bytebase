@@ -880,8 +880,8 @@ func TestAdministerMaskingRulesSwapsBackWhatItSwaps(t *testing.T) {
 		message, _ := swap([]*v1pb.MaskingRulePolicy_MaskingRule{many, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, many})
 		require.Contains(t, message, `Move to rule 1: any db, any table, column "ssn"`, "%d columns", n)
 	}
-	// Two moves that take the same rows: the rule that ends second is the
-	// moved one, as before a move had a cost.
+	// Two moves that take the same rows: the earlier rule of the request
+	// stays in place, so the rule that ends second is the moved one.
 	email := maskingRule("r-email", "Email", `resource.column_name == "email"`, "bb.default")
 	message, _ := swap([]*v1pb.MaskingRulePolicy_MaskingRule{email, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, email})
 	require.Contains(t, message, `Move to rule 2: any db, any table, column "email"`)
