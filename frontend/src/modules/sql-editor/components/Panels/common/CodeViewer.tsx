@@ -14,15 +14,11 @@ import type { MonacoModule } from "@/components/monaco/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { aiContextEvents } from "@/modules/ai/logic";
-import * as promptUtils from "@/modules/ai/logic/prompt";
-import type { ChatAction } from "@/modules/ai/types";
-import { useSQLEditorStore } from "@/modules/sql-editor/store";
+import type { SqlEditorAgentAction as ChatAction } from "@/modules/sql-editor/model/agentHandoff";
 import { dialectOfEngineV1 } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   getInstanceResource,
-  nextAnimationFrame,
   STORAGE_KEY_SQL_EDITOR_CODE_VIEWER_FORMAT,
 } from "@/utils";
 import { OpenAIButton } from "../../OpenAIButton";
@@ -35,22 +31,11 @@ interface CodeViewerProps {
   title: string;
   code: string;
   onBack?: () => void;
-  /** Replaces the default back-button + title row in the header. */
   titlePrefix?: ReactNode;
-  /** Slot above the Monaco editor. */
   contentPrefix?: ReactNode;
   headerClassName?: string;
 }
 
-/**
- * Renders header (back button + format toggle + OpenAIButton) and a
- * read-only Monaco editor.
- *
- * Note on AI integration: the AIChatToSQL side pane lives in `Panels` and
- * is gated by `showAIPanel && isShowingCode`. This component flips
- * `isShowingCode` on mount so the host knows when to render the AI pane
- * next to it.
- */
 export function CodeViewer({
   db,
   title,
@@ -61,8 +46,6 @@ export function CodeViewer({
   headerClassName,
 }: CodeViewerProps) {
   const { t } = useTranslation();
-  const setIsShowingCode = useSQLEditorStore((s) => s.setIsShowingCode);
-  const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
 
   const [format, setFormat] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -99,7 +82,6 @@ export function CodeViewer({
 
   const content = format && !formatted.error ? formatted.data : code;
 
-  const [selectedStatement, setSelectedStatement] = useState("");
   const [monacoModule, setMonacoModule] = useState<MonacoModule | null>(null);
   const [editor, setEditor] =
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -112,52 +94,11 @@ export function CodeViewer({
     []
   );
 
-  // Tell `Panels` to host the AIChatToSQL pane while a code surface is
-  // mounted. Cleared on unmount so navigating back to the list view drops
-  // the pane.
-  useEffect(() => {
-    setIsShowingCode(true);
-    return () => {
-      setIsShowingCode(false);
-    };
-  }, [setIsShowingCode]);
-
-  const handleAIAction = useCallback(
-    (action: ChatAction) => {
-      const newChat = !useSQLEditorStore.getState().showAIPanel;
-      setShowAIPanel(true);
-      if (action !== "explain-code") return;
-      const statement = selectedStatement || content;
-      void nextAnimationFrame().then(() => {
-        void aiContextEvents.emit("send-chat", {
-          content: promptUtils.explainCode(statement, engine),
-          newChat,
-        });
-      });
-    },
-    [setShowAIPanel, selectedStatement, content, engine]
-  );
-
   useAIActions({
     monaco: monacoModule,
     editor,
     actions: AI_ACTIONS,
-    callback: handleAIAction,
   });
-
-  useEffect(() => {
-    if (!editor) return;
-    const sub = editor.onDidChangeCursorSelection(() => {
-      const selection = editor.getSelection();
-      const model = editor.getModel();
-      if (!selection || !model) {
-        setSelectedStatement("");
-        return;
-      }
-      setSelectedStatement(model.getValueInRange(selection));
-    });
-    return () => sub.dispose();
-  }, [editor]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden">

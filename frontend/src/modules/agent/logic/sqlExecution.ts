@@ -66,12 +66,12 @@ export function buildAgentSqlRequest(
 // permission below cannot be reconstructed by replaying the persisted transcript.
 export async function beginSqlResponseAction(
   source: AgentSqlActionSource,
+  snapshot: AgentSqlEditorSnapshot,
   page: AgentChatSnapshot,
   memberLabel: string,
   publish: ReturnType<typeof captureAgentQueryResultTarget>
 ): Promise<boolean> {
   const { chatId } = source;
-  const { snapshot } = source;
   const conn = snapshot.connection;
   const target = snapshot.editorTarget;
   const request = buildAgentSqlRequest(snapshot, source.sql);
@@ -80,7 +80,7 @@ export async function beginSqlResponseAction(
   const scope = store.captureApiScope();
   const idle = () =>
     scope() &&
-    canBeginAgentSqlResponseAction(source) &&
+    canBeginAgentSqlResponseAction(source, snapshot) &&
     Boolean(getCurrentAgentSqlActionSource(source));
   store.syncState();
   if (!idle()) return false;
@@ -135,7 +135,7 @@ export async function beginSqlResponseAction(
       !matchesRun() ||
       state.currentChatId !== chatId ||
       (chat?.status !== "running" && chat?.status !== "awaiting_user") ||
-      !isAgentSqlExecutionTargetCurrent(source)
+      !isAgentSqlExecutionTargetCurrent(source, snapshot)
     )
       return false;
     const messages = state.getMessages(chatId);

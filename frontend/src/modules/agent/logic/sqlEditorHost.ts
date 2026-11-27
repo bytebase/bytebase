@@ -10,6 +10,10 @@ export interface AgentSqlTargetState {
   status: "ready" | "stale" | "readonly" | "unavailable";
 }
 
+export type AgentSqlSelectionCapture =
+  | { status: "ready"; sql: string }
+  | { status: Exclude<AgentSqlTargetState["status"], "ready"> };
+
 export interface AgentSqlEditRequest {
   target: AgentSqlEditorTarget;
   sql: string;
@@ -26,7 +30,9 @@ export interface AgentSqlEditorHost {
   mainColumn: HTMLElement;
   resizer: HTMLElement;
   paneRatio: number;
+  settlePaneRatio?: (ratio: number) => void;
   captureContext(): AgentSqlContextCapture;
+  captureSelection?(target: AgentSqlEditorTarget): AgentSqlSelectionCapture;
   captureQueryResultTarget?: typeof captureAgentQueryResultTarget;
   inspect?(target: AgentSqlEditorTarget): AgentSqlTargetState;
   applySql?(request: AgentSqlEditRequest): AgentSqlEditResult;

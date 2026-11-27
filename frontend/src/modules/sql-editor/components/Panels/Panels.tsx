@@ -1,18 +1,8 @@
-import { Loader2, ShieldAlert } from "lucide-react";
-import { Suspense, useEffect, useMemo } from "react";
+import { ShieldAlert } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Panel,
-  Group as PanelGroup,
-  Separator as PanelResizeHandle,
-} from "react-resizable-panels";
-import { useShallow } from "zustand/react/shallow";
 import { Alert } from "@/components/ui/alert";
 import { useAppDatabaseMetadata } from "@/hooks/useAppDatabaseMetadata";
-import { useExecuteSQL } from "@/hooks/useExecuteSQL";
-import { AIChatToSQL, AIContextProvider } from "@/modules/ai/components";
-import { aiContextEvents } from "@/modules/ai/logic";
-import { resizeHandleClass } from "@/modules/schema-editor/resize";
 import { DatabaseChooser } from "@/modules/sql-editor/components/DatabaseChooser";
 import { DataExplorerPanel } from "@/modules/sql-editor/components/DataExplorer/DataExplorerPanel";
 import { DiagramPanel } from "@/modules/sql-editor/components/DiagramPanel";
@@ -30,46 +20,15 @@ import { TriggersPanel } from "@/modules/sql-editor/components/TriggersPanel";
 import { ViewsPanel } from "@/modules/sql-editor/components/ViewsPanel";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import {
-  selectEditorPanelSize,
-  useSQLEditorStore,
-} from "@/modules/sql-editor/store";
-import {
-  getSQLEditorTabsState,
   useCurrentSQLEditorTab,
   useSQLEditorTabState,
 } from "@/modules/sql-editor/store/tab";
-import { useAppStore } from "@/stores/app";
 import { isValidDatabaseName } from "@/types";
-import {
-  extractDatabaseResourceName,
-  getInstanceResource,
-  nextAnimationFrame,
-} from "@/utils";
+import { extractDatabaseResourceName } from "@/utils";
 import { useViewStateNav } from "./common/useViewStateNav";
 
-const AIPaneFallback = () => (
-  <div className="w-full h-full grow flex flex-col items-center justify-center">
-    <Loader2 className="size-6 animate-spin text-control-light" />
-  </div>
-);
-
-/**
- * The host shell beneath the `<TabList>` in `SQLEditorHomePage`'s main
- * column. Two render modes:
- * - `viewState.view === "CODE"` (or no viewState) — shows the saved query
- *   editor (`<StandardPanel>`) or terminal (`<TerminalPanel>`) based on
- *   the active tab's mode.
- * - any other `viewState.view` — shows a metadata browser surface
- *   (info / tables / views / functions / etc.) with the schema-select
- *   toolbar above. The AI pane mounts to the right via a horizontal
- *   resizable split when the user has both the AI panel and a
- *   "code-viewer" surface open (`isShowingCode`).
- */
 export function Panels() {
   const { t } = useTranslation();
-  const handleEditorPanelResize = useSQLEditorStore(
-    (s) => s.handleEditorPanelResize
-  );
   const { database } = useConnectionOfCurrentSQLEditorTab();
 
   const tab = useCurrentSQLEditorTab();
@@ -80,42 +39,8 @@ export function Panels() {
   const view = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.viewState?.view
   );
-  const showAIPanel = useSQLEditorStore((s) => s.showAIPanel);
-  const isShowingCode = useSQLEditorStore((s) => s.isShowingCode);
-  const editorPanelSize = useSQLEditorStore(useShallow(selectEditorPanelSize));
-
-  const showAIPaneAlongsidePanel = showAIPanel && isShowingCode;
   const effectiveView = tabMode === "DATA_EXPLORER" ? "CODE" : view;
-  const { setSchema, updateViewState } = useViewStateNav();
-  const { execute } = useExecuteSQL();
-
-  // Run statements the AI chat sends via the "run-statement" event.
-  useEffect(() => {
-    const off = aiContextEvents.on(
-      "run-statement",
-      async ({ data: { statement } }) => {
-        const tabsState = getSQLEditorTabsState();
-        const t = tabsState.tabsById.get(tabsState.currentTabId);
-        if (!t) return;
-        updateViewState({ view: "CODE" });
-        await nextAnimationFrame();
-        const connection = t.connection;
-        const database = await useAppStore
-          .getState()
-          .getOrFetchDatabaseByName(connection.database);
-        void execute({
-          connection,
-          statement,
-          engine: getInstanceResource(database).engine,
-          explain: false,
-          selection: t.editorState.selection,
-        });
-      }
-    );
-    return () => {
-      off();
-    };
-  }, [updateViewState, execute]);
+  const { setSchema } = useViewStateNav();
 
   // Parent drives the metadata fetch for the whole Panels subtree;
   // children call `useAppDatabaseMetadata(..., { autoFetch: false })`.
@@ -167,11 +92,6 @@ export function Panels() {
     ? renderSubPanel(effectiveView, tab?.id)
     : null;
 
-  const handleAiResize = (sizePct: number) => {
-    if (!Number.isFinite(sizePct)) return;
-    handleEditorPanelResize(sizePct / 100);
-  };
-
   return (
     <div className="flex-1 flex items-stretch overflow-hidden">
       <div className="flex-1 overflow-y-hidden overflow-x-auto">
@@ -197,35 +117,7 @@ export function Panels() {
                 <SchemaSelectToolbar />
               </div>
             </div>
-            {showAIPaneAlongsidePanel ? (
-              <PanelGroup orientation="horizontal" className="flex-1">
-                <Panel
-                  defaultSize={`${editorPanelSize.size * 100}%`}
-                  minSize={`${editorPanelSize.min * 100}%`}
-                  maxSize={`${editorPanelSize.max * 100}%`}
-                  onResize={(size) => handleAiResize(size.asPercentage)}
-                >
-                  {subPanel}
-                </Panel>
-                <PanelResizeHandle
-                  className={resizeHandleClass("vertical", "w-0.5")}
-                />
-                <Panel
-                  defaultSize={`${(1 - editorPanelSize.size) * 100}%`}
-                  minSize="10%"
-                >
-                  <div className="h-full overflow-hidden flex flex-col">
-                    <Suspense fallback={<AIPaneFallback />}>
-                      <AIContextProvider>
-                        <AIChatToSQL />
-                      </AIContextProvider>
-                    </Suspense>
-                  </div>
-                </Panel>
-              </PanelGroup>
-            ) : (
-              <div className="flex-1 min-h-0">{subPanel}</div>
-            )}
+            <div className="flex-1 min-h-0">{subPanel}</div>
           </div>
         )}
       </div>

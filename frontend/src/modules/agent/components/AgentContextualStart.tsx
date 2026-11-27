@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { projectNamePrefix } from "@/lib/resourceName";
 import type { AgentPageResource } from "../logic/chatContext";
 import { isAgentSendShortcut } from "../logic/sendShortcut";
+import type { AgentSqlContextCapture } from "../logic/sqlEditorContext";
 import type {
   AgentDraft,
   AgentResourceReference,
@@ -27,6 +28,22 @@ import { AgentAIConfigurationRecovery } from "./AgentAIConfigurationRecovery";
 import { AgentChatbox, AgentChatboxFooter } from "./AgentChatbox";
 import { AgentResourcePicker } from "./AgentResourcePicker";
 import { useAgentResourceDraft } from "./useAgentResourceDraft";
+import {
+  type AgentSqlSuggestionSource,
+  useSqlEditorSuggestions,
+} from "./useSqlEditorSuggestions";
+
+type AgentSqlTemplateStarterId =
+  | "write-query"
+  | "find-database"
+  | "fix-error"
+  | "explore-database"
+  | "table-relationships"
+  | "explain-selection"
+  | "review-selection"
+  | "improve-selection";
+
+export type AgentSqlStarterId = AgentSqlTemplateStarterId | "database-question";
 
 interface AgentContextualStartProps {
   page: AgentPageResource;
@@ -36,6 +53,9 @@ interface AgentContextualStartProps {
   loading: boolean;
   canStart: boolean;
   contextPending?: boolean;
+  sqlEditor?: AgentSqlContextCapture;
+  canCaptureSqlSelection?: boolean;
+  sqlSuggestionsEnabled?: boolean;
   hasCurrentChat: boolean;
   draft: AgentDraft;
   onDraftChange: (draft: AgentDraft) => void;
@@ -48,7 +68,9 @@ interface AgentContextualStartProps {
     prompt: string,
     reference?: AgentResourceReference,
     runMode?: AgentRunMode,
-    references?: AgentResourceReference[]
+    references?: AgentResourceReference[],
+    sqlStarter?: AgentSqlStarterId,
+    sqlSuggestionSource?: AgentSqlSuggestionSource
   ) => void;
   onContinue: () => void;
 }
@@ -61,6 +83,9 @@ export function AgentContextualStart({
   loading,
   canStart,
   contextPending = false,
+  sqlEditor,
+  canCaptureSqlSelection = false,
+  sqlSuggestionsEnabled = false,
   hasCurrentChat,
   draft,
   onDraftChange,
@@ -72,7 +97,8 @@ export function AgentContextualStart({
   onStart,
   onContinue,
 }: AgentContextualStartProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const userEmail = useAgentStore((state) => state.userEmail);
   const composerRef = useRef<HTMLDivElement>(null);
   const sendWithEnter = useAgentStore(
     (state) => state.preferences.sendWithEnter
@@ -232,6 +258,65 @@ export function AgentContextualStart({
       break;
   }
 
+  const sql = sqlEditor?.kind === "ready" ? sqlEditor.snapshot : undefined;
+  const selection = sql?.editorTarget?.selection;
+  const sqlStarters: AgentSqlTemplateStarterId[] | undefined = sqlEditor
+    ? canCaptureSqlSelection && selection && selection.end > selection.start
+      ? ["explain-selection", "review-selection", "improve-selection"]
+      : sql?.connection
+        ? ["explore-database", "write-query", "table-relationships"]
+        : sql?.project || sqlEditor.kind === "pending"
+          ? ["write-query", "find-database", "fix-error"]
+          : ["write-query", "fix-error"]
+    : undefined;
+  if (sqlEditor) heading = t("agent.contextual-start.sql-heading");
+  const canSuggestFromDatabase = Boolean(
+    sqlSuggestionsEnabled &&
+      sql?.connection &&
+      canStart &&
+      !contextPending &&
+      !showAIConfigurationRecovery &&
+      sqlStarters?.[0] === "explore-database"
+  );
+  const generatedSuggestions = useSqlEditorSuggestions({
+    enabled: canSuggestFromDatabase,
+    workspaceName: workspace?.name,
+    userEmail: userEmail ?? undefined,
+    connection: sql?.connection,
+    locale: i18n?.resolvedLanguage ?? i18n?.language ?? "en-US",
+  });
+  const suggestionsLoading =
+    canSuggestFromDatabase && generatedSuggestions.status === "loading";
+  const sqlPrompts: Record<AgentSqlTemplateStarterId, string> = {
+    "write-query": t("agent.contextual-start.sql-write-query"),
+    "find-database": t("agent.contextual-start.sql-find-database"),
+    "fix-error": t("agent.contextual-start.sql-fix-error"),
+    "explore-database": t("agent.contextual-start.sql-explore-database"),
+    "table-relationships": t("agent.contextual-start.sql-table-relationships"),
+    "explain-selection": t("agent.contextual-start.sql-explain-selection"),
+    "review-selection": t("agent.contextual-start.sql-review-selection"),
+    "improve-selection": t("agent.contextual-start.sql-improve-selection"),
+  };
+  const prompts: {
+    text: string;
+    starter?: AgentSqlStarterId;
+    source?: AgentSqlSuggestionSource;
+  }[] =
+    canSuggestFromDatabase && generatedSuggestions.status === "ready"
+      ? generatedSuggestions.questions.map((text) => ({
+          text,
+          starter: "database-question",
+          source: generatedSuggestions.source,
+        }))
+      : suggestionsLoading
+        ? []
+        : sqlStarters
+          ? sqlStarters.map((starter) => ({
+              text: sqlPrompts[starter],
+              starter,
+            }))
+          : suggestions.map((text) => ({ text }));
+
   return (
     <div
       className="flex min-h-0 flex-1 flex-col"
@@ -258,7 +343,31 @@ export function AgentContextualStart({
               <div className="mt-4 text-xs font-medium text-control-light">
                 {t("agent.empty-chat.suggestions")}
               </div>
-              <div className="mt-2 divide-y divide-block-border border-y border-block-border">
+              <div
+                className="mt-2 divide-y divide-block-border border-y border-block-border"
+                aria-busy={suggestionsLoading || undefined}
+              >
+                {suggestionsLoading && (
+                  <div
+                    role="status"
+                    aria-label={t("common.loading")}
+                    className="divide-y divide-block-border"
+                  >
+                    {[0, 1, 2].map((row) => (
+                      <div
+                        key={row}
+                        aria-hidden="true"
+                        data-agent-sql-suggestion-placeholder
+                        className="flex h-11 items-center px-2"
+                      >
+                        <div className="flex w-full flex-col gap-1 motion-safe:animate-pulse">
+                          <div className="h-3 w-4/5 rounded-xs bg-control-bg-hover" />
+                          <div className="h-3 w-3/5 rounded-xs bg-control-bg-hover" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {requiresReference && (
                   <Button
                     appearance="secondary"
@@ -286,23 +395,42 @@ export function AgentContextualStart({
                     />
                   </Button>
                 )}
-                {suggestions.map((suggestion) => (
+                {prompts.map(({ text, starter, source }) => (
                   <Button
-                    key={suggestion}
+                    key={source ? text : (starter ?? text)}
                     appearance="secondary"
                     size="sm"
                     className="h-auto w-full min-w-0 justify-between rounded-xs py-1.5 text-left whitespace-normal hover:text-accent"
                     disabled={
                       !canStart ||
                       contextPending ||
+                      (sqlEditor && showAIConfigurationRecovery) ||
                       (requiresReference && !reference)
                     }
-                    onClick={() => onStart(suggestion, reference)}
+                    onClick={() =>
+                      source
+                        ? onStart(
+                            text,
+                            reference,
+                            "default",
+                            undefined,
+                            "database-question",
+                            source
+                          )
+                        : starter
+                          ? onStart(
+                              text,
+                              reference,
+                              "default",
+                              undefined,
+                              starter
+                            )
+                          : onStart(text, reference)
+                    }
                     data-agent-contextual-suggestion
+                    data-agent-sql-starter={starter}
                   >
-                    <span className="min-w-0 flex-1 break-words">
-                      {suggestion}
-                    </span>
+                    <span className="min-w-0 flex-1 break-words">{text}</span>
                     <ArrowUpRight
                       className="size-4 shrink-0"
                       aria-hidden="true"

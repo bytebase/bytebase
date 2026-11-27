@@ -158,7 +158,16 @@
       "plan-risks": "此计划是否存在审核或部署风险？",
       "plan-status": "当前的审核和发布状态是什么？",
       "project-heading": "询问此项目",
-      "resource-unavailable": "此资源不可引用。"
+      "resource-unavailable": "此资源不可引用。",
+      "sql-explain-selection": "解释所选 SQL",
+      "sql-explore-database": "探索此数据库",
+      "sql-find-database": "显示此项目中的数据库",
+      "sql-fix-error": "帮我修复 SQL 错误",
+      "sql-heading": "询问 SQL",
+      "sql-improve-selection": "提出改进建议",
+      "sql-review-selection": "检查所选 SQL 中的问题",
+      "sql-table-relationships": "解释表之间的关系",
+      "sql-write-query": "帮我编写查询"
     },
     "custom-input-label": "详情",
     "custom-input-placeholder": "输入内容",
@@ -3278,32 +3287,15 @@
       "actions": {
         "explain-code": "解释代码",
         "find-problems": "找出问题",
-        "insert-at-caret": "在光标处插入",
-        "new-chat-using-selection": "使用选中内容新建对话"
+        "new-chat-using-selection": "使用选中内容新建对话",
+        "sql-attachment-unavailable": "无法附加 SQL。请检查当前编辑器，并选择不超过 32 KiB 的 SQL。"
       },
       "ai-assistant": "AI 助手",
-      "conversation": {
-        "delete": "删除会话",
-        "history-conversations": "历史对话",
-        "new-conversation": "开启新对话",
-        "no-message": "无消息",
-        "rename": "修改会话名称",
-        "select-or-create": "选择或{{create}}一个会话以开始。",
-        "tips": {
-          "no-more": "没有了",
-          "suggest-prompt": "生成提示词..."
-        },
-        "untitled": "未命名会话",
-        "view-history-conversations": "查看历史对话"
-      },
-      "new-line": "换行",
       "not-configured": {
         "contact-admin-to-configure": "请联系您的组织管理员。",
         "go-to-configure": "前往配置",
         "self": "AI 助手尚未配置。"
-      },
-      "send": "发送",
-      "text-to-sql-placeholder": "在此输入自然语言后，Bytebase 会将其转换成 SQL 语句"
+      }
     }
   },
   "policy": {

@@ -158,7 +158,16 @@
       "plan-risks": "このプランにレビューやデプロイ上のリスクはありますか？",
       "plan-status": "現在のレビューとロールアウトの状態は？",
       "project-heading": "このプロジェクトについて質問する",
-      "resource-unavailable": "このリソースは参照できません。"
+      "resource-unavailable": "このリソースは参照できません。",
+      "sql-explain-selection": "選択した SQL を説明して",
+      "sql-explore-database": "このデータベースを調べて",
+      "sql-find-database": "このプロジェクトのデータベースを表示して",
+      "sql-fix-error": "SQL エラーの修正を手伝って",
+      "sql-heading": "SQL について質問",
+      "sql-improve-selection": "改善案を提案して",
+      "sql-review-selection": "選択した SQL の問題を見つけて",
+      "sql-table-relationships": "テーブル間の関係を説明して",
+      "sql-write-query": "クエリの作成を手伝って"
     },
     "custom-input-label": "詳細",
     "custom-input-placeholder": "値を入力",
@@ -3278,32 +3287,15 @@
       "actions": {
         "explain-code": "コードの説明",
         "find-problems": "問題を見つける",
-        "insert-at-caret": "カーソル位置に挿入",
-        "new-chat-using-selection": "選択範囲を使用して新しいチャットを開始"
+        "new-chat-using-selection": "選択範囲を使用して新しいチャットを開始",
+        "sql-attachment-unavailable": "SQL を添付できませんでした。現在のエディタを確認し、32 KiB 以下の SQL を選択してください。"
       },
       "ai-assistant": "AI アシスタント",
-      "conversation": {
-        "delete": "セッションの削除",
-        "history-conversations": "歴史対話",
-        "new-conversation": "新しい会話を開始する",
-        "no-message": "この会話にはメッセージはありません",
-        "rename": "セッション名の変更",
-        "select-or-create": "開始するセッションを選択または {{create}} します。",
-        "tips": {
-          "no-more": "何も残っていない",
-          "suggest-prompt": "プロンプト単語を生成..."
-        },
-        "untitled": "名前のないセッション",
-        "view-history-conversations": "過去の会話を表示する"
-      },
-      "new-line": "改行",
       "not-configured": {
         "contact-admin-to-configure": "組織の管理者に問い合わせてください。",
         "go-to-configure": "設定に移動",
         "self": "AI アシスタントが設定されていません。"
-      },
-      "send": "送信",
-      "text-to-sql-placeholder": "ここに自然言語を入力すると、Bytebase はすぐにそれを SQL ステートメントに変換します。"
+      }
     }
   },
   "policy": {

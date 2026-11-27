@@ -247,7 +247,8 @@ export function isAgentSqlActionChat(
 }
 
 export function inspectAgentSqlAction(
-  source: AgentSqlActionSource
+  source: AgentSqlActionSource,
+  mode: "insert" | "replace-selection" = "insert"
 ): AgentSqlTargetState {
   const target = source.snapshot.editorTarget;
   const host = getRegisteredAgentSqlEditorHost();
@@ -255,41 +256,72 @@ export function inspectAgentSqlAction(
     return { status: "unavailable" };
   // Rendering receives an already bound source. The click path rebinds before editing.
   if (!getIdleAgentSqlActionChat(source)) return { status: "stale" };
-  return host.inspect(target);
+  if (mode === "replace-selection") return host.inspect(target);
+  const live = getCompatibleSqlSnapshot(source);
+  return live?.editorTarget
+    ? host.inspect(live.editorTarget)
+    : { status: "stale" };
+}
+
+function getCompatibleSqlSnapshot(source: AgentSqlActionSource) {
+  const original = source.snapshot;
+  const capture = getCurrentAgentSqlEditorContext();
+  const live = capture?.kind === "ready" ? capture.snapshot : undefined;
+  const target = live?.editorTarget;
+  const host = getRegisteredAgentSqlEditorHost();
+  if (
+    !original.editorTarget ||
+    !live ||
+    !target ||
+    !host ||
+    target.hostId !== host.id ||
+    target.actor !== original.editorTarget.actor ||
+    target.actor !== useAppStore.getState().currentUser?.name ||
+    target.workspace !== original.editorTarget.workspace ||
+    target.workspace !== useAgentStore.getState().workspaceName ||
+    live.tab?.mode !== "SAVED_QUERY" ||
+    live.project !== original.project ||
+    (live.connection && live.connection.project !== live.project) ||
+    (original.connection && !isEqual(original.connection, live.connection))
+  )
+    return undefined;
+  return live;
 }
 
 export function isAgentSqlExecutionTargetCurrent(
-  source: AgentSqlActionSource
+  source: AgentSqlActionSource,
+  snapshot: AgentSqlEditorSnapshot = source.snapshot
 ): boolean {
-  const { snapshot } = source;
   const target = snapshot.editorTarget;
-  const host = getRegisteredAgentSqlEditorHost();
-  if (
-    !target?.mountId ||
-    host?.id !== target.hostId ||
-    host.inspect?.(target).status !== "ready" ||
-    target.actor !== useAppStore.getState().currentUser?.name
-  )
-    return false;
-  const capture = getCurrentAgentSqlEditorContext();
+  const live = getCompatibleSqlSnapshot(source);
+  if (!target || !live?.editorTarget) return false;
+  const { selection: _selection, modelVersion: _version, ...binding } = target;
+  const {
+    selection: _liveSelection,
+    modelVersion: _liveVersion,
+    ...liveBinding
+  } = live.editorTarget;
+  // A Query does not edit Monaco. Its click-time destination and options stay
+  // fixed through approval, independently of later text and cursor changes.
   return (
-    capture?.kind === "ready" &&
-    !capture.snapshot.batchActive &&
-    isEqual(capture.snapshot.editorTarget, target) &&
-    isEqual(capture.snapshot.tab, snapshot.tab) &&
-    isEqual(capture.snapshot.connection, snapshot.connection) &&
-    capture.snapshot.project === snapshot.project &&
-    isEqual(capture.snapshot.queryOptions, snapshot.queryOptions) &&
-    capture.snapshot.rowLimit === snapshot.rowLimit
+    !live.batchActive &&
+    isEqual(liveBinding, binding) &&
+    isEqual(live.tab, snapshot.tab) &&
+    isEqual(live.connection, snapshot.connection) &&
+    live.project === snapshot.project &&
+    isEqual(live.queryOptions, snapshot.queryOptions) &&
+    live.rowLimit === snapshot.rowLimit
   );
 }
 
 export function canBeginAgentSqlResponseAction(
-  source: AgentSqlActionSource
+  source: AgentSqlActionSource,
+  captured?: AgentSqlEditorSnapshot
 ): boolean {
   const state = useAgentStore.getState();
   const chat = getIdleAgentSqlActionChat(source);
-  const { snapshot } = source;
+  const snapshot = captured ?? getCompatibleSqlSnapshot(source);
+  if (!snapshot?.editorTarget || !source.snapshot.connection) return false;
   return Boolean(
     chat &&
       supportsAgentRunRecovery() &&
@@ -305,8 +337,15 @@ export function canBeginAgentSqlResponseAction(
       snapshot.project &&
       snapshot.connection?.project === snapshot.project &&
       snapshot.rowLimit !== undefined &&
-      isAgentSqlExecutionTargetCurrent(source)
+      isAgentSqlExecutionTargetCurrent(source, snapshot)
   );
+}
+
+export function captureAgentSqlExecutionSnapshot(source: AgentSqlActionSource) {
+  const snapshot = getCompatibleSqlSnapshot(source);
+  return snapshot && canBeginAgentSqlResponseAction(source, snapshot)
+    ? structuredClone(snapshot)
+    : undefined;
 }
 
 export function applyAgentSqlAction(
@@ -314,7 +353,10 @@ export function applyAgentSqlAction(
   mode: "insert" | "replace-selection"
 ): boolean {
   const current = getCurrentAgentSqlActionSource(source);
-  const target = current?.snapshot.editorTarget;
+  const target =
+    mode === "replace-selection"
+      ? current?.snapshot.editorTarget
+      : current && getCompatibleSqlSnapshot(current)?.editorTarget;
   const host = getRegisteredAgentSqlEditorHost();
   if (
     !current ||

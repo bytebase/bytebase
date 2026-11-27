@@ -22,12 +22,9 @@ import {
   formatEditorContent,
 } from "@/components/monaco/utils";
 import { useSavedQueryAndTab } from "@/hooks/useSavedQueryAndTab";
-import { aiContextEvents } from "@/modules/ai/logic";
-import * as promptUtils from "@/modules/ai/logic/prompt";
-import type { ChatAction } from "@/modules/ai/types";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
+import type { SqlEditorAgentAction as ChatAction } from "@/modules/sql-editor/model/agentHandoff";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
-import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
@@ -39,13 +36,12 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { languageOfEngineV1 } from "@/types/sqlEditor/editor";
-import { instanceV1AllowsExplain, nextAnimationFrame } from "@/utils";
+import { instanceV1AllowsExplain } from "@/utils";
 import { explainQueryOption } from "@/utils/queryPlanEngines";
 import { useAIActions } from "../Panels/common/useAIActions";
 import { monacoThemeName } from "../theme/derive";
 import { useActiveSQLEditorTheme } from "../theme/useActiveSQLEditorTheme";
 import { computeAppendedSelection } from "./appendSelection";
-import { prepareSnippetInsertion } from "./prepareSnippetInsertion";
 import { SqlEditorTargetRegistrationContext } from "./sqlEditorAgentTarget";
 import { activeSQLEditorRef, activeStatementRef } from "./state";
 import { UploadFileButton } from "./UploadFileButton";
@@ -76,10 +72,6 @@ interface SQLEditorProps {
 export function SQLEditor({ onExecute }: SQLEditorProps) {
   const { t } = useTranslation();
   const { isReadOnly: readonly } = useSavedQueryAndTab();
-  const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
-  const setPendingInsertAtCaret = useSQLEditorStore(
-    (s) => s.setPendingInsertAtCaret
-  );
   const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 
   const tabId = useSQLEditorTabState((s) => s.tabsById.get(s.currentTabId)?.id);
@@ -122,8 +114,6 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
   );
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<MonacoModule | null>(null);
-  const activeContentRef = useRef<string>(content ?? "");
-  activeContentRef.current = content ?? "";
   const onExecuteRef = useRef(onExecute);
   onExecuteRef.current = onExecute;
   const engineRef = useRef(engine);
@@ -135,8 +125,10 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
   // statement under the cursor, or the full content as fallback —
   // to the module-level shared ref so the EditorMain toolbar can
   // read it.
+  const invokedStatement = useRef("");
   const handleActiveContentChange = useCallback((value: string) => {
     activeStatementRef.value = value;
+    invokedStatement.current = value;
   }, []);
 
   const getActiveStatement = useCallback(() => {
@@ -262,43 +254,12 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
   );
 
   // ----- AI Monaco actions (explain-code / find-problems / new-chat) -----
-  const handleAIAction = useCallback(
-    (action: ChatAction) => {
-      const newChat = !useSQLEditorStore.getState().showAIPanel;
-      setShowAIPanel(true);
-      const statement = getActiveStatement();
-      if (!statement) return;
-      const tabsState = getSQLEditorTabsState();
-      const tab = tabsState.tabsById.get(tabsState.currentTabId);
-      const eng = engineRef.current ?? Engine.MYSQL;
-      void nextAnimationFrame().then(() => {
-        if (action === "explain-code") {
-          void aiContextEvents.emit("send-chat", {
-            content: promptUtils.explainCode(statement, eng),
-            newChat,
-          });
-        } else if (action === "find-problems") {
-          void aiContextEvents.emit("send-chat", {
-            content: promptUtils.findProblems(statement, eng),
-            newChat,
-          });
-        } else if (action === "new-chat") {
-          const selected = tab?.selectedStatement ?? "";
-          if (!selected) return;
-          void aiContextEvents.emit("new-conversation", {
-            input: ["", promptUtils.wrapStatementMarkdown(selected)].join("\n"),
-          });
-        }
-      });
-    },
-    [setShowAIPanel, getActiveStatement]
-  );
-
+  const getInvokedStatement = useCallback(() => invokedStatement.current, []);
   useAIActions({
     monaco: monacoState,
     editor: editorState,
     actions: AI_ACTIONS,
-    callback: handleAIAction,
+    activeStatement: getInvokedStatement,
   });
 
   // ----- ExplainQuery action (engine-conditional) -----
@@ -323,48 +284,6 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
       action.dispose();
     };
   }, [engine, runQueryAction, editorState, monacoState, t]);
-
-  // ----- pendingInsertAtCaret -----
-  const pendingInsertAtCaret = useSQLEditorStore((s) => s.pendingInsertAtCaret);
-  useEffect(() => {
-    const editor = activeSQLEditorRef.value;
-    if (!editor) return;
-    const text = pendingInsertAtCaret;
-    if (!text) return;
-    setPendingInsertAtCaret(undefined);
-
-    requestAnimationFrame(() => {
-      const model = editor.getModel();
-      if (!model) return;
-      const selection = editor.getSelection();
-      const endPosition = model.getPositionAt(model.getValueLength());
-      const range = selection ?? monaco.Range.fromPositions(endPosition);
-      const startOffset = model.getOffsetAt({
-        lineNumber: range.startLineNumber,
-        column: range.startColumn,
-      });
-      const endOffset = model.getOffsetAt({
-        lineNumber: range.endLineNumber,
-        column: range.endColumn,
-      });
-      const value = model.getValue();
-      const insertion = prepareSnippetInsertion(
-        text,
-        value.slice(0, startOffset),
-        value.slice(endOffset),
-        model.getEOL()
-      );
-      editor.executeEdits("bb.event.insert-at-caret", [
-        { forceMoveMarkers: true, text: insertion.text, range },
-      ]);
-      const cursorPosition = model.getPositionAt(
-        startOffset + insertion.cursorOffset
-      );
-      editor.setPosition(cursorPosition);
-      editor.focus();
-      editor.revealLine(cursorPosition.lineNumber);
-    });
-  }, [pendingInsertAtCaret, setPendingInsertAtCaret]);
 
   // ----- file upload (triggered by UploadFileButton in cornerPrefix) -----
   const handleUploadFile = useCallback((uploaded: string) => {

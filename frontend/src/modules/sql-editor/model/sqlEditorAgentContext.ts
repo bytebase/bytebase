@@ -37,13 +37,23 @@ const VIEWER_OBJECTS: Partial<
 function captureViewerObject(tab: SQLEditorTab) {
   if (tab.mode === "DATA_EXPLORER") return;
   const view = tab.viewState;
-  const type = view && VIEWER_OBJECTS[view.view];
+  if (!view) return;
+  const type =
+    view.view === "TABLES" &&
+    view.detail.table &&
+    view.detail.trigger &&
+    view.detail.trigger !== "-1"
+      ? VIEWER_OBJECTS.TRIGGERS
+      : VIEWER_OBJECTS[view.view];
   if (!type) return;
   const [kind, field] = type;
   const key = view.detail[field];
   if (!key) return;
   const [name] =
-    field === "func" || field === "procedure" || field === "package"
+    field === "func" ||
+    field === "procedure" ||
+    field === "package" ||
+    field === "trigger"
       ? extractKeyWithPosition(key)
       : [key];
   if (typeof name !== "string" || name === "-1") return;

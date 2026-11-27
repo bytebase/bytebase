@@ -7,6 +7,7 @@ import type { AgentSqlEditorTarget } from "@/modules/agent/logic/sqlEditorContex
 import type {
   AgentSqlEditRequest,
   AgentSqlEditResult,
+  AgentSqlSelectionCapture,
   AgentSqlTargetState,
 } from "@/modules/agent/logic/sqlEditorHost";
 import type { SqlEditorTargetScope } from "../../model/sqlEditorAgentContext";
@@ -88,6 +89,19 @@ export function createSqlEditorAgentTarget(
   ): AgentSqlTargetState => ({
     status: validate(scope, target, expectedStatement).status,
   });
+  const captureSelection = (
+    scope: SqlEditorTargetScope,
+    target: AgentSqlEditorTarget,
+    expectedStatement?: string
+  ): AgentSqlSelectionCapture => {
+    const live = validate(scope, target, expectedStatement);
+    if (live.status !== "ready") return { status: live.status };
+    const sql = (live.value ?? live.model.getValue()).slice(
+      target.selection.start,
+      target.selection.end
+    );
+    return sql.trim() ? { status: "ready", sql } : { status: "unavailable" };
+  };
   const applySql = (
     scope: SqlEditorTargetScope,
     { target, sql, mode }: AgentSqlEditRequest,
@@ -145,5 +159,5 @@ export function createSqlEditorAgentTarget(
     editor.pushUndoStop();
     return { status: "applied" };
   };
-  return { capture, inspect, applySql };
+  return { capture, inspect, captureSelection, applySql };
 }

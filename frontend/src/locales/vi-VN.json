@@ -158,7 +158,16 @@
       "plan-risks": "Kế hoạch này có rủi ro nào về xét duyệt hoặc triển khai không?",
       "plan-status": "Trạng thái xét duyệt và triển khai hiện tại là gì?",
       "project-heading": "Hỏi về dự án này",
-      "resource-unavailable": "Không thể tham chiếu tài nguyên này."
+      "resource-unavailable": "Không thể tham chiếu tài nguyên này.",
+      "sql-explain-selection": "Giải thích SQL đã chọn",
+      "sql-explore-database": "Khám phá cơ sở dữ liệu này",
+      "sql-find-database": "Hiển thị cơ sở dữ liệu trong dự án này",
+      "sql-fix-error": "Giúp tôi sửa lỗi SQL",
+      "sql-heading": "Hỏi về SQL",
+      "sql-improve-selection": "Đề xuất cải tiến",
+      "sql-review-selection": "Tìm vấn đề trong SQL đã chọn",
+      "sql-table-relationships": "Giải thích mối quan hệ giữa các bảng",
+      "sql-write-query": "Giúp tôi viết truy vấn"
     },
     "custom-input-label": "Chi tiết",
     "custom-input-placeholder": "Nhập giá trị",
@@ -3278,32 +3287,15 @@
       "actions": {
         "explain-code": "Giải thích mã",
         "find-problems": "Tìm vấn đề",
-        "insert-at-caret": "Chèn tại con trỏ",
-        "new-chat-using-selection": "Cuộc trò chuyện mới bằng nội dung đã chọn"
+        "new-chat-using-selection": "Cuộc trò chuyện mới bằng nội dung đã chọn",
+        "sql-attachment-unavailable": "Không thể đính kèm SQL. Hãy kiểm tra trình soạn thảo hiện tại và chọn tối đa 32 KiB SQL."
       },
       "ai-assistant": "Trợ lý AI",
-      "conversation": {
-        "delete": "Xóa cuộc trò chuyện",
-        "history-conversations": "Cuộc trò chuyện lịch sử",
-        "new-conversation": "Bắt đầu cuộc trò chuyện mới",
-        "no-message": "Không có tin nhắn trong cuộc trò chuyện này",
-        "rename": "Đổi tên cuộc trò chuyện",
-        "select-or-create": "Chọn hoặc {{create}} một cuộc trò chuyện để bắt đầu.",
-        "tips": {
-          "no-more": "không còn nữa",
-          "suggest-prompt": "Gợi ý nhắc nhở..."
-        },
-        "untitled": "Cuộc trò chuyện không có tiêu đề",
-        "view-history-conversations": "Xem cuộc trò chuyện lịch sử"
-      },
-      "new-line": "Dòng mới",
       "not-configured": {
         "contact-admin-to-configure": "Vui lòng liên hệ với quản trị viên tổ chức của bạn.",
         "go-to-configure": "Đi tới cấu hình",
         "self": "Trợ lý AI chưa được định cấu hình."
-      },
-      "send": "Gửi",
-      "text-to-sql-placeholder": "Sử dụng ngôn ngữ tự nhiên và Bytebase sẽ chuyển đổi nó thành SQL"
+      }
     }
   },
   "policy": {

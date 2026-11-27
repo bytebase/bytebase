@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   SQL_EDITOR_HOME_MODULE,
@@ -14,6 +14,7 @@ import {
   useWorkspace,
 } from "@/hooks/useAppState";
 import { getProjectName, isValidProjectName } from "@/lib/resourceName";
+import { useSqlEditorAgentOverlay } from "@/modules/sql-editor/hooks/useSqlEditorAgentOverlay";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
@@ -24,6 +25,8 @@ import { isDarkTheme } from "./theme/derive";
 import { useSQLEditorTheme } from "./theme/SQLEditorThemeScope";
 
 export function SQLEditorHeader() {
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  useSqlEditorAgentOverlay(profileMenuOpen);
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { record } = useRecentVisit();
@@ -122,7 +125,11 @@ export function SQLEditorHeader() {
           onSelectProject={handleSelectProject}
         />
       </div>
-      <ProfileMenuTrigger size="medium" link />
+      <ProfileMenuTrigger
+        size="medium"
+        link
+        onOpenChange={setProfileMenuOpen}
+      />
     </header>
   );
 }

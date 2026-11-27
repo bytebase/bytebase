@@ -568,6 +568,17 @@ describe("AgentInput", () => {
       "before-final-send",
       "after-send",
       "queued",
+      "fresh-click",
+      "caret-after-click",
+      "edit-after-click",
+      "tab-after-click",
+      "mount-after-click",
+      "actor-after-click",
+      "workspace-after-click",
+      "database-after-click",
+      "schema-after-click",
+      "container-after-click",
+      "data-source-after-click",
     ] as const)(
       "deterministic SQL click and %s resolve through the common permission without a model",
       async (decision) => {
@@ -596,7 +607,12 @@ describe("AgentInput", () => {
             selection: { start: 0, end: 0, caret: 0 },
           },
         };
-        let current = snapshot;
+        const clickSnapshot: AgentSqlEditorSnapshot = decision === "fresh-click" ? {
+          ...snapshot,
+          tab: { id: "fresh-tab", mode: "SAVED_QUERY" },
+          editorTarget: { ...snapshot.editorTarget!, tabId: "fresh-tab", mountId: "fresh-mount", modelUri: "inmemory://fresh", modelVersion: 9, selection: { start: 4, end: 4, caret: 4 } },
+        } : snapshot;
+        let current = clickSnapshot;
         registerAgentSqlEditorHost({
           id: "sql",
           slot: document.body,
@@ -682,7 +698,7 @@ describe("AgentInput", () => {
         const previousTabs = tabs.getState();
         const nativeTab = {
           ...(await import("@/utils")).defaultSQLEditorTab(),
-          id: snapshot.tab!.id,
+          id: clickSnapshot.tab!.id,
           connection: {
             instance: "instances/prod",
             database: snapshot.connection!.database,
@@ -713,6 +729,8 @@ describe("AgentInput", () => {
             expect(await ref.current!(source)).toBe(true);
           });
           expect(store.getChat(chat.id)?.status).toBe("awaiting_user");
+          expect(store.getMessages(chat.id).findLast(m => m.role === "user")?.metadata?.sqlEditor).toEqual(clickSnapshot);
+          expect(source.snapshot).toEqual(snapshot);
           expect(
             store.getChat(chat.id)?.runCheckpoint?.bindings.executionOrigin
               ?.sourceHash
@@ -754,6 +772,27 @@ describe("AgentInput", () => {
             });
           }
           if (decision === "stale") current = { ...snapshot, rowLimit: 4 };
+          if (decision === "caret-after-click" || decision === "edit-after-click") {
+            current = { ...clickSnapshot, editorTarget: { ...clickSnapshot.editorTarget!,
+              ...(decision === "edit-after-click" ? { modelVersion: 10 } : {}),
+              selection: { start: 12, end: 12, caret: 12 },
+            } };
+          }
+          if (decision === "tab-after-click") current = { ...clickSnapshot, tab: { id: "other-tab", mode: "SAVED_QUERY" }, editorTarget: { ...clickSnapshot.editorTarget!, tabId: "other-tab" } };
+          if (["mount-after-click", "actor-after-click", "workspace-after-click"].includes(decision)) current = { ...clickSnapshot, editorTarget: { ...clickSnapshot.editorTarget!,
+            ...(decision === "mount-after-click" ? { mountId: "other-mount" } : {}),
+            ...(decision === "actor-after-click" ? { actor: "users/other" } : {}),
+            ...(decision === "workspace-after-click" ? { workspace: "workspaces/other" } : {}),
+          } };
+          if (["database-after-click", "schema-after-click", "container-after-click", "data-source-after-click"].includes(decision)) {
+            const connection = { ...clickSnapshot.connection!,
+              ...(decision === "database-after-click" ? { database: "instances/prod/databases/other" } : {}),
+              ...(decision === "schema-after-click" ? { querySchema: "other" } : {}),
+              ...(decision === "container-after-click" ? { container: "other" } : {}),
+              ...(decision === "data-source-after-click" ? { dataSourceId: "other" } : {}),
+            };
+            current = { ...clickSnapshot, connection, editorTarget: { ...clickSnapshot.editorTarget!, connection } };
+          }
           if (decision === "foreign") ownerProject = "projects/other";
           if (decision === "stop") stopBeforeSend = true;
           if (decision === "expired")
@@ -807,7 +846,7 @@ describe("AgentInput", () => {
             expect(store.getChat(chat.id)?.status).toBe("idle")
           );
           expect(post).toHaveBeenCalledTimes(
-            ["allow", "after-send", "queued"].includes(decision) ? 1 : 0
+            ["allow", "after-send", "queued", "fresh-click", "caret-after-click", "edit-after-click"].includes(decision) ? 1 : 0
           );
           expect(
             tabs
@@ -815,7 +854,7 @@ describe("AgentInput", () => {
               .tabsById.get(nativeTab.id)
               ?.databaseQueryContexts?.get(nativeTab.connection.database)?.length ??
               0
-          ).toBe(decision === "allow" || decision === "queued" ? 1 : 0);
+          ).toBe(["allow", "queued", "fresh-click", "caret-after-click", "edit-after-click"].includes(decision) ? 1 : 0);
           if (decision === "after-send")
             expect(
               store

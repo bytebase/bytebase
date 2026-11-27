@@ -1,9 +1,9 @@
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { DatabaseSelectOption } from "@/components/DatabaseSelectOption";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import { FormLabel } from "@/components/ui/form";
+import { FormTitle } from "@/components/ui/form";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
 
@@ -19,6 +19,7 @@ export function ExportSchemaField({
   readonly onChange: (name: string) => void;
 }) {
   const { t } = useTranslation();
+  const titleId = useId();
   const options = useMemo(
     () =>
       candidates.map((database): ComboboxOption => {
@@ -37,11 +38,15 @@ export function ExportSchemaField({
     [candidates]
   );
   return (
-    <div className="flex flex-col gap-y-1.5">
+    <div
+      role="group"
+      aria-labelledby={titleId}
+      className="flex flex-col gap-y-1.5"
+    >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <FormLabel className="whitespace-nowrap">
+        <FormTitle id={titleId} className="whitespace-nowrap">
           {t("gitops.setup.export-schema.label")}
-        </FormLabel>
+        </FormTitle>
         <Combobox
           className="w-full sm:w-80"
           value={value?.name ?? ""}

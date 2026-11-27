@@ -6,8 +6,15 @@ import {
   Repeat2,
   RotateCcw,
 } from "lucide-react";
-import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import type { ComponentProps, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -132,6 +139,7 @@ import { ToolCallCard } from "./ToolCallCard";
 import { AgentTooltip } from "./ui/AgentTooltip";
 
 interface AgentChatProps {
+  legacyTranscript?: import("../logic/legacySqlHistory").LegacySqlTranscript;
   onOpenAccessGrantDraft?: (
     draft: AccessGrantDraft,
     source: { chatId: string; messageId: string }
@@ -166,6 +174,23 @@ const EMPTY_CHAT_STARTERS: Record<"workspace" | "project", LandingStarterId[]> =
       "project-next",
     ],
   };
+
+const AgentCodeBlockContext = createContext(false);
+
+function AgentMarkdownCode({ children, className }: ComponentProps<"code">) {
+  const block = useContext(AgentCodeBlockContext);
+  return (
+    <code
+      className={cn(
+        "font-mono text-xs",
+        block ? "block" : "break-all rounded-xs bg-control-bg-hover px-1",
+        className
+      )}
+    >
+      {children}
+    </code>
+  );
+}
 
 const ISSUE_NAME_PATTERN = /^projects\/([^/]+)\/issues\/([^/]+)$/;
 const PLAN_NAME_PATTERN = /^projects\/([^/]+)\/plans\/([^/]+)$/;
@@ -880,6 +905,7 @@ function renderBoundMentions(
 }
 
 export function AgentChat({
+  legacyTranscript,
   onOpenAccessGrantDraft,
   className,
   contextLabel,
@@ -894,11 +920,41 @@ export function AgentChat({
   const { t } = useTranslation();
   const currentRoute = useReactiveRoute();
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const messages = useAgentStore(selectMessages);
-  const currentChat = useAgentStore(selectCurrentChat);
+  const selectedMessages = useAgentStore(selectMessages);
+  const selectedChat = useAgentStore(selectCurrentChat);
+  const passive = !!legacyTranscript || !!selectedChat?.legacySqlImport;
+  const sourceChat = legacyTranscript?.chat ?? selectedChat;
+  const currentChat =
+    passive && sourceChat
+      ? {
+          ...sourceChat,
+          archived: true,
+          capability: undefined,
+          apiAttempts: undefined,
+          runCheckpoint: undefined,
+        }
+      : sourceChat;
+  const sourceMessages = legacyTranscript?.messages ?? selectedMessages;
+  const messages = useMemo<AgentMessage[]>(
+    () =>
+      passive
+        ? sourceMessages.map((m) => ({
+            id: m.id,
+            chatId: m.chatId,
+            createdTs: m.createdTs,
+            role: m.role,
+            content: m.content,
+            metadata: {
+              error: m.metadata?.error,
+              legacySqlStatus: m.metadata?.legacySqlStatus,
+            },
+          }))
+        : sourceMessages,
+    [sourceMessages, passive]
+  );
   const workspaceName = useAgentStore((state) => state.workspaceName);
-  const loading = useAgentStore(selectLoading);
-  const error = useAgentStore(selectError);
+  const loading = useAgentStore((s) => !passive && selectLoading(s));
+  const error = useAgentStore((s) => (passive ? null : selectError(s)));
   const storagePressure = useAgentStore((state) => state.storagePressure);
   const storageStatusKey = useAgentStore((state) =>
     JSON.stringify([state.workspaceName, state.userEmail, state.currentChatId])
@@ -999,15 +1055,18 @@ export function AgentChat({
   const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
   const allMessages = useAgentStore(selectMessages);
 
-  const feedback = getAgentRunFeedback({
-    executionAvailable,
-    storageBlocked: Boolean(storagePressure),
-    aiConfigurationRequired: chatRequiresAIConfiguration || aiEnabled === false,
-    recoverySupported: supportsAgentRunRecovery(),
-    remoteBusy,
-    chat: currentChat,
-    messages,
-  });
+  const feedback = passive
+    ? undefined
+    : getAgentRunFeedback({
+        executionAvailable,
+        storageBlocked: Boolean(storagePressure),
+        aiConfigurationRequired:
+          chatRequiresAIConfiguration || aiEnabled === false,
+        recoverySupported: supportsAgentRunRecovery(),
+        remoteBusy,
+        chat: currentChat,
+        messages,
+      });
   const showAIConfigurationRecovery = feedback === "ai-configuration";
   const showStorageError = feedback === "storage";
 
@@ -1511,16 +1570,28 @@ export function AgentChat({
                             </p>
                           ),
                           pre: ({ children, node }) => {
-                            const pre = (
-                              <pre className="my-1 max-w-full overflow-x-auto rounded-xs bg-control-bg p-2 text-xs whitespace-pre">
-                                {children}
-                              </pre>
-                            );
                             const start = node?.position?.start.offset;
                             const block =
                               start === undefined
                                 ? undefined
                                 : sqlBlocks?.positions.get(start);
+                            const isSqlBlock =
+                              !!block &&
+                              block.end === node?.position?.end.offset;
+                            const pre = (
+                              <AgentCodeBlockContext.Provider value={true}>
+                                <pre
+                                  className={cn(
+                                    "max-w-full overflow-x-auto p-2 text-xs whitespace-pre",
+                                    isSqlBlock
+                                      ? "m-0 bg-background"
+                                      : "my-1 rounded-xs bg-control-bg-hover"
+                                  )}
+                                >
+                                  {children}
+                                </pre>
+                              </AgentCodeBlockContext.Provider>
+                            );
                             if (
                               !block ||
                               block.end !== node?.position?.end.offset
@@ -1550,11 +1621,7 @@ export function AgentChat({
                               </AgentSqlBlock>
                             );
                           },
-                          code: ({ children }) => (
-                            <code className="break-all rounded-xs bg-control-bg-hover px-1 text-xs">
-                              {children}
-                            </code>
-                          ),
+                          code: AgentMarkdownCode,
                           ul: ({ children }) => (
                             <ul className="my-1 list-disc pl-5">{children}</ul>
                           ),
@@ -1755,6 +1822,23 @@ export function AgentChat({
                   )}
               </div>
             )}
+            {passive &&
+              (msg.metadata?.error ||
+                (msg.metadata?.legacySqlStatus &&
+                  msg.metadata.legacySqlStatus !== "DONE")) && (
+                <p className="mt-1 text-xs text-error">
+                  {[
+                    msg.metadata.legacySqlStatus === "LOADING"
+                      ? t("agent.interrupted")
+                      : msg.metadata.legacySqlStatus === "FAILED"
+                        ? t("agent.request-failed")
+                        : "",
+                    msg.metadata.error,
+                  ]
+                    .filter(Boolean)
+                    .join(": ")}
+                </p>
+              )}
             {showInterruption && (
               <div
                 role="status"

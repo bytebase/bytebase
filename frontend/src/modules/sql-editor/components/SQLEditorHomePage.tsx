@@ -1,8 +1,17 @@
 import { ChevronLeft } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
+  type GroupImperativeHandle,
+  type Layout,
   Panel,
   Group as PanelGroup,
   type PanelImperativeHandle,
@@ -21,9 +30,12 @@ import { useAppProject } from "@/hooks/useAppProject";
 import { applyPlanTitleToQuery } from "@/lib/plan/title";
 import { cn } from "@/lib/utils";
 import { resizeHandleClass } from "@/modules/schema-editor/resize";
+import { AgentEntryPoints } from "@/modules/sql-editor/components/AgentEntryPoints";
 import { AsidePanel } from "@/modules/sql-editor/components/AsidePanel";
 import { ConnectionPanel } from "@/modules/sql-editor/components/ConnectionPanel";
+import { OpenAIButton } from "@/modules/sql-editor/components/OpenAIButton";
 import { Panels } from "@/modules/sql-editor/components/Panels/Panels";
+import { SQLEditorAgentHost } from "@/modules/sql-editor/components/SQLEditorAgentHost";
 import { SQLEditorHeader } from "@/modules/sql-editor/components/SQLEditorHeader";
 import { TabList } from "@/modules/sql-editor/components/TabList";
 import {
@@ -34,7 +46,6 @@ import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import {
-  getSQLEditorTabsState,
   useCurrentSQLEditorTab,
   useIsDisconnected,
 } from "@/modules/sql-editor/store/tab";
@@ -53,20 +64,11 @@ import {
  *    tree, etc.) and the main column (`<TabList>` + `<Panels>`).
  *  - mobile (window width < 800px): the aside collapses behind a
  *    floating chevron + drawer.
- *
- * Two emittery listeners:
- *  - `alter-schema` opens a new tab to the plan editor with a
- *    pre-filled `ALTER TABLE` statement.
- *  - `insert-at-caret` flips back to the CODE view and stages the
- *    content into `pendingInsertAtCaret`; `<SQLEditor>` reads it and
- *    inserts at the cursor.
  */
 export function SQLEditorHomePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const setPendingInsertAtCaret = useSQLEditorStore(
-    (s) => s.setPendingInsertAtCaret
-  );
+  const paneRatio = useSQLEditorStore((s) => s.aiPanelSize);
 
   const projectContextReady = useSQLEditorEditorState(
     (s) => s.projectContextReady
@@ -96,19 +98,30 @@ export function SQLEditorHomePage() {
   const isNarrowWindow = windowWidth < 800;
   const collapseSidebar = useSQLEditorStore((s) => s.resultPanelMaximized);
 
+  const sidebarPanelId = useId();
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
-  // `isNarrowWindow` is a dependency because the panel it drives only exists on
-  // the desktop layout: widening the window past the breakpoint mounts a fresh
-  // panel that still has to be collapsed for a pane maximized while narrow.
+  const sidebarGroupRef = useRef<GroupImperativeHandle | null>(null);
+  const pendingSidebarSync = useRef(false);
+  // A remounted sidebar's ref is available before its group has constraints.
+  // Replay only pending synchronization so ordinary resizing remains independent.
+  const syncSidebar = useCallback(
+    (layout: Layout) => {
+      const panel = sidebarPanelRef.current;
+      pendingSidebarSync.current =
+        !!panel && layout[sidebarPanelId] === undefined;
+      if (!panel || pendingSidebarSync.current) return;
+      if (collapseSidebar) panel.collapse();
+      else panel.expand();
+    },
+    [collapseSidebar, sidebarPanelId]
+  );
   useLayoutEffect(() => {
-    const panel = sidebarPanelRef.current;
-    if (!panel) return;
-    if (collapseSidebar) {
-      panel.collapse();
-    } else {
-      panel.expand();
+    if (isNarrowWindow) {
+      pendingSidebarSync.current = false;
+      return;
     }
-  }, [collapseSidebar, isNarrowWindow]);
+    syncSidebar(sidebarGroupRef.current?.getLayout() ?? {});
+  }, [syncSidebar, isNarrowWindow]);
 
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
@@ -154,29 +167,6 @@ export function SQLEditorHomePage() {
       off();
     };
   }, [navigate, t]);
-
-  // insert-at-caret: flip view to CODE, stage content into
-  // pendingInsertAtCaret. `<SQLEditor>` reads it from the SQL Editor
-  // store and inserts at the cursor.
-  useEffect(() => {
-    const off = sqlEditorEvents.on(
-      "insert-at-caret",
-      ({ data: { content } }) => {
-        const tabsState = getSQLEditorTabsState();
-        const t = tabsState.tabsById.get(tabsState.currentTabId);
-        if (!t) return;
-        tabsState.updateTab(t.id, {
-          viewState: { ...(t.viewState ?? {}), view: "CODE" },
-        });
-        requestAnimationFrame(() => {
-          setPendingInsertAtCaret(content);
-        });
-      }
-    );
-    return () => {
-      off();
-    };
-  }, [setPendingInsertAtCaret]);
 
   const mobileToggle = isNarrowWindow
     ? createPortal(
@@ -237,10 +227,18 @@ export function SQLEditorHomePage() {
           </SQLEditorThemeScope>,
           getLayerRoot("overlay")
         )}
-      <PanelGroup orientation="horizontal" className="h-full">
+      <PanelGroup
+        groupRef={sidebarGroupRef}
+        onLayoutChange={(layout) => {
+          if (pendingSidebarSync.current) syncSidebar(layout);
+        }}
+        orientation="horizontal"
+        className="h-full"
+      >
         {!isNarrowWindow && (
           <>
             <Panel
+              id={sidebarPanelId}
               panelRef={sidebarPanelRef}
               collapsible
               collapsedSize="0%"
@@ -261,14 +259,19 @@ export function SQLEditorHomePage() {
           </>
         )}
         <Panel>
-          <div className="h-full relative flex flex-col">
-            <div className="w-full">
-              <TabList />
-            </div>
-            <div className="flex-1 min-h-0 flex">
-              <Panels />
-            </div>
-          </div>
+          <SQLEditorAgentHost paneRatio={paneRatio}>
+            <AgentEntryPoints>
+              <div className="flex items-center">
+                <div className="flex-1 min-w-0">
+                  <TabList />
+                </div>
+                <OpenAIButton fallback size="sm" />
+              </div>
+              <div className="flex-1 min-h-0 flex">
+                <Panels />
+              </div>
+            </AgentEntryPoints>
+          </SQLEditorAgentHost>
         </Panel>
       </PanelGroup>
 

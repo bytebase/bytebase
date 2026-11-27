@@ -21,6 +21,12 @@ src/modules/agent/
 
 Keep agent-only UI and state inside this module. Shared application primitives still come from `@/components/ui`, but agent overlays must use the wrappers in `components/ui/` so they mount in the `agent` layer.
 
+## SQL Editor integration
+
+`RootLayout` owns one `AgentWindow` and its run coordinator. SQL Editor registers an ephemeral host for dock placement, automatic context, and member-clicked native editor actions; it must not own a separate chat runtime. Submitted, queued, and recovered turns retain their normalized SQL snapshots instead of borrowing current editor focus.
+
+Legacy SQL conversations are read-only transcripts with explicit import provenance. Import and fallback must preserve the original source storage, use the existing Agent persistence locks, and never restore executable runs, pending permissions, or editor targets. Unarchiving a transcript does not make it executable.
+
 ## Tool behavior
 
 - `search_api` discovers endpoints and request/response shapes from the generated OpenAPI index.

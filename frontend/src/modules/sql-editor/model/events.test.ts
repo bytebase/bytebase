@@ -20,15 +20,18 @@ describe("sqlEditorEvents", () => {
 
   test("listeners receive the emittery v2 {name, data} envelope", async () => {
     const handler = vi.fn();
-    const unsubscribe = sqlEditorEvents.on("insert-at-caret", handler);
+    const unsubscribe = sqlEditorEvents.on("append-editor-content", handler);
 
-    await sqlEditorEvents.emit("insert-at-caret", { content: "SELECT 1" });
+    await sqlEditorEvents.emit("append-editor-content", {
+      content: "SELECT 1",
+      select: true,
+    });
 
     // emittery v2 wraps the payload in an envelope; every listener in the
     // app destructures `data`. If this shape changes again, callsites break.
     expect(handler).toHaveBeenCalledWith({
-      name: "insert-at-caret",
-      data: { content: "SELECT 1" },
+      name: "append-editor-content",
+      data: { content: "SELECT 1", select: true },
     });
     unsubscribe();
   });

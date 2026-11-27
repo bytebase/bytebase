@@ -19,7 +19,6 @@ const mocks = vi.hoisted(() => ({
     | undefined,
   separatorDisabled: undefined as boolean | undefined,
   state: {
-    showAIPanel: false,
     resultPanelSize: 0.4,
     resultPanelMaximized: false,
     disconnected: false,
@@ -56,10 +55,6 @@ vi.mock("react-resizable-panels", () => ({
   },
 }));
 
-vi.mock("@/modules/ai/components", () => ({
-  AIChatToSQL: () => <div />,
-  AIContextProvider: ({ children }: { children: ReactElement }) => children,
-}));
 
 vi.mock("@/modules/schema-editor/resize", () => ({
   resizeHandleClass: () => "resize-handle",
@@ -80,7 +75,6 @@ vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
 vi.mock("@/modules/sql-editor/store", () => ({
   MINIMUM_RESULT_PANEL_SIZE: 0.2,
   MAXIMUM_RESULT_PANEL_SIZE: 0.8,
-  selectEditorPanelSize: () => ({ size: 1, min: 0.5, max: 1 }),
   useSQLEditorStore: Object.assign(
     (selector: (state: typeof mocks.state) => unknown) =>
       selector(mocks.state),
@@ -117,7 +111,6 @@ beforeEach(() => {
   mocks.collapse.mockClear();
   mocks.expand.mockClear();
   mocks.onEditorResize = undefined;
-  mocks.state.showAIPanel = false;
   mocks.state.resultPanelSize = 0.4;
   mocks.state.resultPanelMaximized = false;
   mocks.state.disconnected = false;

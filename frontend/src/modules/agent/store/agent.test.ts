@@ -1,6 +1,10 @@
 import { create } from "@bufbuild/protobuf";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { StoreApi } from "zustand";
+import {
+  databaseServiceClientConnect,
+  projectServiceClientConnect,
+} from "@/api";
 import type { AccessGrantDraft } from "@/modules/sql-editor/model/accessGrantDraft";
 import { useAppStore } from "@/stores/app";
 import {
@@ -8,7 +12,7 @@ import {
   AccessGrantSchema,
 } from "@/types/proto-es/v1/access_grant_service_pb";
 import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
-import { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
 import { actionReceiptKey } from "../logic/actionReceipt";
@@ -10089,6 +10093,140 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).currentChatId).toBeNull();
   });
 
+  test.each(
+    ["archive", "unarchive", "delete"].flatMap((operation) =>
+      ["projects/orders", "workspaces/alpha"].map((context) => ({
+        operation,
+        context,
+      }))
+    )
+  )(
+    "$operation bulk chats only in exact context $context without touching colliding history",
+    ({ operation, context }) => {
+      vi.stubGlobal("navigator", {});
+      const store = createAgentStore();
+      s(store).setWorkspaceName("workspaces/alpha");
+      const unscopedId = s(store).currentChatId!;
+      const archived = operation !== "archive";
+      s(store).renameChat(unscopedId, "Same thread");
+      if (archived) s(store).archiveChat(unscopedId);
+      const targets = [0, 1].map(() =>
+        s(store).createChat({
+          title: "Same thread",
+          context,
+          archived,
+          select: false,
+        })
+      );
+      const foreign = [
+        s(store).getChat(unscopedId)!,
+        ...["projects/orders", "projects/orders-other", "workspaces/alpha"]
+          .filter((candidate) => candidate !== context)
+          .map((candidate) =>
+            s(store).createChat({
+              title: "Same thread",
+              context: candidate,
+              archived,
+              select: false,
+            })
+          ),
+      ];
+      const page = { path: "/sql-editor", title: "Editor" };
+      const controllers = new Map<string, AbortController>();
+      for (const chat of foreign) {
+        s(store).setDraft(chat.id, { text: "Keep this draft" });
+        s(store).addMessage({
+          chatId: chat.id,
+          role: "user",
+          content: "Keep this history",
+        });
+        s(store).queueUserMessage({
+          chatId: chat.id,
+          text: "Keep this queued request",
+          page,
+        });
+        const controller = new AbortController();
+        controllers.set(chat.id, controller);
+        s(store).setAbortController(chat.id, controller);
+        if (!archived) {
+          s(store).startChatRun(chat.id, page, { runId: `run-${chat.id}` });
+          s(store).awaitUser(chat.id, {
+            kind: "confirm",
+            toolCallId: "permission",
+            prompt: "Allow this query?",
+            apiPermission: {
+              actionId: `permission-${chat.id}`,
+              operationId: "SQLService/Query",
+            },
+          });
+          expect(
+            s(store).enqueueFollowUp({
+              chatId: chat.id,
+              text: "Keep this follow-up",
+              page,
+            })
+          ).not.toBeNull();
+        }
+      }
+      s(store).setCurrentChat(foreign[0].id);
+      const before = s(store);
+      for (const { id } of foreign) {
+        expect(before.queuedUserMessagesByChatId[id]?.text).toBe(
+          "Keep this queued request"
+        );
+        if (!archived) {
+          expect(before.getPendingAsk(id)?.apiPermission?.actionId).toBe(
+            `permission-${id}`
+          );
+          expect(before.followUpQueuesByChatId[id]?.messages).toHaveLength(1);
+        }
+      }
+      const preserved = foreign.map(({ id }) => ({
+        id,
+        chat: structuredClone(before.getChat(id)),
+        messages: structuredClone(before.getMessages(id)),
+        draft: structuredClone(before.getDraft(id)),
+        queued: structuredClone(before.queuedUserMessagesByChatId[id]),
+        followUps: structuredClone(before.followUpQueuesByChatId[id]),
+        ask: structuredClone(before.getPendingAsk(id)),
+      }));
+      expect(new Set(s(store).chats.map((chat) => chat.title)).size).toBe(1);
+
+      const count =
+        operation === "archive"
+          ? s(store).archiveAllActiveChats(context)
+          : operation === "unarchive"
+            ? s(store).unarchiveAllArchivedChats(context)
+            : s(store).deleteAllArchivedChats(context);
+
+      expect(count).toBe(2);
+      for (const chat of targets) {
+        if (operation === "delete")
+          expect(s(store).getChat(chat.id)).toBeNull();
+        else
+          expect(s(store).getChat(chat.id)?.archived).toBe(
+            operation === "archive"
+          );
+      }
+      expect(s(store).currentChatId).toBe(foreign[0].id);
+      for (const saved of preserved) {
+        const state = s(store);
+        expect(state.getChat(saved.id)).toEqual(saved.chat);
+        expect(state.getMessages(saved.id)).toEqual(saved.messages);
+        expect(state.getDraft(saved.id)).toEqual(saved.draft);
+        expect(state.queuedUserMessagesByChatId[saved.id]).toEqual(
+          saved.queued
+        );
+        expect(state.followUpQueuesByChatId[saved.id]).toEqual(saved.followUps);
+        expect(state.getPendingAsk(saved.id)).toEqual(saved.ask);
+        expect(state.getAbortController(saved.id)).toBe(
+          controllers.get(saved.id)
+        );
+        expect(controllers.get(saved.id)?.signal.aborted).toBe(false);
+      }
+    }
+  );
+
   test("tracks abort controllers per chat and cancels only the requested chat", () => {
     const store = createAgentStore();
     const firstChatId = s(store).currentChatId!;
@@ -12081,6 +12219,12 @@ describe("automatic history cleanup integration", () => {
 
   beforeEach(async () => {
     stores.length = 0;
+    vi.spyOn(databaseServiceClientConnect, "getDatabase").mockRejectedValue(
+      new Error("Database unavailable")
+    );
+    vi.spyOn(projectServiceClientConnect, "getProject").mockRejectedValue(
+      new Error("Project unavailable")
+    );
     vi.stubGlobal("sessionStorage", createMockStorage());
     locks = createLockManager();
     vi.stubGlobal("navigator", { locks });
@@ -12117,6 +12261,519 @@ describe("automatic history cleanup integration", () => {
     s(store).setWorkspaceName(workspaceName);
     return store;
   };
+
+  const seedLegacySql = async () => {
+    const { storageKeyAiConversations } = await import("@/utils/storage-keys");
+    const identity = { workspace: workspaceName, email: TEST_USER_EMAIL };
+    const key = storageKeyAiConversations(identity.workspace, identity.email);
+    const raw = JSON.stringify({
+      version: 1,
+      conversations: [
+        {
+          id: "source",
+          name: "Saved conversation",
+          created_ts: 10,
+          instance: "instances/main",
+          database: "orders",
+          messageList: [
+            {
+              id: "u",
+              created_ts: 11,
+              author: "USER",
+              content: "question",
+              error: "",
+              status: "DONE",
+            },
+            {
+              id: "a",
+              created_ts: 12,
+              author: "AI",
+              content: "partial answer",
+              error: "server failed",
+              status: "LOADING",
+            },
+          ],
+        },
+      ],
+    });
+    mockStorage.setItem(key, raw);
+    return { identity, key, raw };
+  };
+
+  const makeLegacyTargetAccessible = () => {
+    vi.mocked(databaseServiceClientConnect.getDatabase).mockResolvedValue({
+      name: "instances/main/databases/orders",
+      project: "projects/orders",
+      state: State.ACTIVE,
+    } as never);
+    vi.mocked(projectServiceClientConnect.getProject).mockResolvedValue({
+      name: "projects/orders",
+      state: State.ACTIVE,
+    } as never);
+  };
+
+  test("legacy SQL import persists a freshly verified Project without changing its source", async () => {
+    const { identity, key, raw } = await seedLegacySql();
+    const store = create();
+    await s(store).flushRunPersistence();
+    const active = s(store).currentChatId;
+    makeLegacyTargetAccessible();
+
+    expect(await s(store).importLegacySqlHistory(identity)).toMatchObject({
+      status: "imported",
+      unverifiedTargets: [],
+    });
+    const chat = s(store).chats.find((c) => c.legacySqlImport)!;
+    expect(chat).toMatchObject({
+      context: "projects/orders",
+      archived: true,
+      createdTs: 10,
+      updatedTs: 12,
+      legacySqlImport: {
+        readOnly: true,
+        instance: "instances/main",
+        database: "orders",
+      },
+    });
+    const reloaded = create();
+    expect(s(reloaded).getChat(chat.id)).toEqual(chat);
+    expect(s(reloaded).currentChatId).toBe(active);
+    expect(s(reloaded).getMessages(chat.id)).toEqual(
+      s(store).getMessages(chat.id)
+    );
+    expect(mockStorage.getItem(key)).toBe(raw);
+    expect(
+      vi
+        .mocked(databaseServiceClientConnect.getDatabase)
+        .mock.calls.map(([request]) => request.name)
+    ).toEqual(["instances/main/databases/orders"]);
+    expect(
+      vi
+        .mocked(projectServiceClientConnect.getProject)
+        .mock.calls.map(([request]) => request.name)
+    ).toEqual(["projects/orders"]);
+  });
+
+  test("legacy SQL Project enrichment preserves existing transcript edits and timestamps across reload", async () => {
+    const { identity, key, raw } = await seedLegacySql();
+    const store = create();
+    await s(store).importLegacySqlHistory(identity);
+    const id = s(store).chats.find((c) => c.legacySqlImport)!.id;
+    expect(s(store).getChat(id)?.context).toBeUndefined();
+    s(store).renameChat(id, "Renamed imported transcript");
+    s(store).unarchiveChat(id);
+    await s(store).flushRunPersistence();
+    const before = structuredClone(s(store).getChat(id)!);
+    const messages = structuredClone(s(store).getMessages(id));
+    makeLegacyTargetAccessible();
+
+    const result = await s(store).importLegacySqlHistory(identity);
+    expect(result).toMatchObject({
+      status: "already-imported",
+      unverifiedTargets: [],
+    });
+    expect(s(store).getChat(id)).toEqual({
+      ...before,
+      context: "projects/orders",
+    });
+    expect(s(store).getMessages(id)).toEqual(messages);
+    const reloaded = create();
+    expect(s(reloaded).getChat(id)).toEqual({
+      ...before,
+      context: "projects/orders",
+    });
+    expect(s(reloaded).getMessages(id)).toEqual(messages);
+    expect(s(reloaded).chats.filter((c) => c.legacySqlImport)).toHaveLength(1);
+    expect(mockStorage.getItem(key)).toBe(raw);
+  });
+
+  test.each([
+    "denied",
+    "inactive",
+    "database-mismatch",
+    "project-mismatch",
+    "project-inactive",
+    "project-denied",
+  ] as const)(
+    "legacy SQL import keeps targets unscoped and read-only after %s",
+    async (failure) => {
+      const { identity, key, raw } = await seedLegacySql();
+      const store = create();
+      makeLegacyTargetAccessible();
+      if (failure === "denied")
+        vi.mocked(databaseServiceClientConnect.getDatabase).mockRejectedValue(
+          new Error("Permission denied")
+        );
+      if (failure === "inactive")
+        vi.mocked(databaseServiceClientConnect.getDatabase).mockResolvedValue({
+          name: "instances/main/databases/orders",
+          project: "projects/orders",
+          state: State.DELETED,
+        } as never);
+      if (failure === "database-mismatch")
+        vi.mocked(databaseServiceClientConnect.getDatabase).mockResolvedValue({
+          name: "instances/other/databases/orders",
+          project: "projects/orders",
+          state: State.ACTIVE,
+        } as never);
+      if (failure === "project-mismatch")
+        vi.mocked(projectServiceClientConnect.getProject).mockResolvedValue({
+          name: "projects/other",
+          state: State.ACTIVE,
+        } as never);
+      if (failure === "project-inactive")
+        vi.mocked(projectServiceClientConnect.getProject).mockResolvedValue({
+          name: "projects/orders",
+          state: State.DELETED,
+        } as never);
+      if (failure === "project-denied")
+        vi.mocked(projectServiceClientConnect.getProject).mockRejectedValue(
+          new Error("Permission denied")
+        );
+
+      const result = await s(store).importLegacySqlHistory(identity);
+      const chat = s(store).chats.find((c) => c.legacySqlImport)!;
+      expect(result).toMatchObject({
+        status: "imported",
+        unverifiedTargets: [chat.id],
+      });
+      expect(chat.context).toBeUndefined();
+      expect(chat.legacySqlImport?.readOnly).toBe(true);
+      s(store).unarchiveChat(chat.id);
+      expect(
+        s(store).addMessage({
+          chatId: chat.id,
+          role: "user",
+          content: "No execution",
+        })
+      ).toBeNull();
+      const reloaded = create();
+      expect(s(reloaded).getChat(chat.id)?.context).toBeUndefined();
+      expect(s(reloaded).getChat(chat.id)?.legacySqlImport?.readOnly).toBe(
+        true
+      );
+      expect(mockStorage.getItem(key)).toBe(raw);
+      expect(
+        vi
+          .mocked(databaseServiceClientConnect.getDatabase)
+          .mock.calls.map(([request]) => request.name)
+      ).toEqual(["instances/main/databases/orders"]);
+    }
+  );
+
+  test("legacy SQL Project lookup cannot publish after the account changes", async () => {
+    const { identity, key, raw } = await seedLegacySql();
+    const store = create();
+    await s(store).flushRunPersistence();
+    makeLegacyTargetAccessible();
+    let release!: () => void;
+    const waiting = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.mocked(databaseServiceClientConnect.getDatabase).mockImplementationOnce(
+      async () => {
+        await waiting;
+        return {
+          name: "instances/main/databases/orders",
+          project: "projects/orders",
+          state: State.ACTIVE,
+        } as never;
+      }
+    );
+    const importing = s(store).importLegacySqlHistory(identity);
+    try {
+      await vi.waitFor(
+        () =>
+          expect(databaseServiceClientConnect.getDatabase).toHaveBeenCalled(),
+        { timeout: 1_000 }
+      );
+      s(store).setWorkspaceName(workspaceName, "second@example.com");
+      release();
+      expect((await importing).status).toBe("identity-unavailable");
+      expect(s(store).chats.some((c) => c.legacySqlImport)).toBe(false);
+      expect(mockStorage.getItem(key)).toBe(raw);
+    } finally {
+      release();
+      await importing;
+    }
+  });
+
+  test("legacy SQL Project enrichment does not resurrect a transcript deleted during lookup", async () => {
+    const { identity, key, raw } = await seedLegacySql();
+    const store = create();
+    await s(store).importLegacySqlHistory(identity);
+    const id = s(store).chats.find((c) => c.legacySqlImport)!.id;
+    expect(s(store).getChat(id)?.context).toBeUndefined();
+    makeLegacyTargetAccessible();
+    vi.mocked(databaseServiceClientConnect.getDatabase).mockClear();
+    let release!: () => void;
+    const waiting = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.mocked(databaseServiceClientConnect.getDatabase).mockImplementationOnce(
+      async () => {
+        await waiting;
+        return {
+          name: "instances/main/databases/orders",
+          project: "projects/orders",
+          state: State.ACTIVE,
+        } as never;
+      }
+    );
+    const enriching = s(store).importLegacySqlHistory(identity);
+    try {
+      await vi.waitFor(
+        () =>
+          expect(
+            databaseServiceClientConnect.getDatabase
+          ).toHaveBeenCalledTimes(1),
+        { timeout: 1_000 }
+      );
+      expect(s(store).deleteChat(id)).toBe(true);
+      await s(store).flushRunPersistence();
+      expect(s(store).getChat(id)).toBeNull();
+      release();
+      expect((await enriching).status).toBe("already-imported");
+      expect(s(store).getChat(id)).toBeNull();
+      const reloaded = create();
+      expect(s(reloaded).getChat(id)).toBeNull();
+      expect((await s(reloaded).importLegacySqlHistory(identity)).status).toBe(
+        "already-imported"
+      );
+      expect(s(reloaded).getChat(id)).toBeNull();
+      expect(mockStorage.getItem(key)).toBe(raw);
+    } finally {
+      release();
+      await enriching;
+    }
+  });
+
+  test.each(["actor", "Workspace"] as const)(
+    "legacy SQL Project lookup rejects changed app %s before store identity catches up",
+    async (changed) => {
+      const { identity, key, raw } = await seedLegacySql();
+      const store = create();
+      await s(store).flushRunPersistence();
+      makeLegacyTargetAccessible();
+      let release!: () => void;
+      const waiting = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      vi.mocked(
+        databaseServiceClientConnect.getDatabase
+      ).mockImplementationOnce(async () => {
+        await waiting;
+        return {
+          name: "instances/main/databases/orders",
+          project: "projects/orders",
+          state: State.ACTIVE,
+        } as never;
+      });
+      const importing = s(store).importLegacySqlHistory(identity);
+      try {
+        await vi.waitFor(
+          () =>
+            expect(
+              databaseServiceClientConnect.getDatabase
+            ).toHaveBeenCalledTimes(1),
+          { timeout: 1_000 }
+        );
+        setAppIdentity(
+          changed === "actor"
+            ? { user: "users/another@example.com" }
+            : { workspace: "workspaces/another" }
+        );
+        expect(s(store).workspaceName).toBe(identity.workspace);
+        expect(s(store).userEmail).toBe(identity.email);
+        release();
+        expect((await importing).status).toBe("identity-unavailable");
+        expect(s(store).chats.some((c) => c.legacySqlImport)).toBe(false);
+        const reloaded = create();
+        expect(s(reloaded).chats.some((c) => c.legacySqlImport)).toBe(false);
+        expect(mockStorage.getItem(key)).toBe(raw);
+      } finally {
+        release();
+        await importing;
+      }
+    }
+  );
+
+  test("legacy SQL Project lookup deduplicates exact targets without merging distinct transcripts", async () => {
+    const { identity, key, raw } = await seedLegacySql();
+    const source = JSON.parse(raw);
+    source.conversations.push({
+      ...source.conversations[0],
+      id: "another-source",
+      name: "Another transcript",
+    });
+    const combined = JSON.stringify(source);
+    mockStorage.setItem(key, combined);
+    const store = create();
+    makeLegacyTargetAccessible();
+
+    expect(await s(store).importLegacySqlHistory(identity)).toMatchObject({
+      status: "imported",
+      unverifiedTargets: [],
+    });
+    const chats = s(store).chats.filter((c) => c.legacySqlImport);
+    expect(chats).toHaveLength(2);
+    expect(chats.map((c) => c.context)).toEqual([
+      "projects/orders",
+      "projects/orders",
+    ]);
+    expect(chats.map((c) => c.legacySqlImport?.sourceId).sort()).toEqual([
+      "another-source",
+      "source",
+    ]);
+    const reloaded = create();
+    expect(
+      s(reloaded)
+        .chats.filter((c) => c.legacySqlImport)
+        .map((c) => c.context)
+    ).toEqual(["projects/orders", "projects/orders"]);
+    expect(mockStorage.getItem(key)).toBe(combined);
+    expect(databaseServiceClientConnect.getDatabase).toHaveBeenCalledTimes(1);
+    expect(projectServiceClientConnect.getProject).toHaveBeenCalledTimes(1);
+  });
+
+  test("concurrent legacy SQL imports persist one passive transcript and retain existing chats", async () => {
+    const { identity, key, raw } = await seedLegacySql();
+    const first = create();
+    await s(first).flushRunPersistence();
+    const active = s(first).currentChatId;
+    const peer = create();
+    const results = await Promise.all([
+      s(first).importLegacySqlHistory(identity),
+      s(peer).importLegacySqlHistory(identity),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([
+      "already-imported",
+      "imported",
+    ]);
+    const restored = create();
+    const history = s(restored).chats.filter((c) => c.legacySqlImport);
+    expect(history).toHaveLength(1);
+    const chat = history[0];
+    expect(chat).toMatchObject({
+      title: "Saved conversation",
+      archived: true,
+      createdTs: 10,
+      legacySqlImport: { readOnly: true, database: "orders" },
+    });
+    expect(s(restored).getMessages(chat.id)[1]).toMatchObject({
+      content: "partial answer",
+      createdTs: 12,
+      metadata: { legacySqlStatus: "LOADING", error: "server failed" },
+    });
+    expect(s(restored).currentChatId).toBe(active);
+    s(restored).unarchiveChat(chat.id);
+    const page = { path: "/", title: "Home" };
+    s(restored).queueUserMessage({ chatId: chat.id, text: "no", page });
+    expect(s(restored).queuedUserMessagesByChatId[chat.id]).toBeUndefined();
+    expect(
+      s(restored).enqueueFollowUp({ chatId: chat.id, text: "no", page })
+    ).toBeNull();
+    expect(
+      s(restored).addMessage({ chatId: chat.id, role: "user", content: "no" })
+    ).toBeNull();
+    s(restored).startChatRun(chat.id, page);
+    expect(s(restored).getChat(chat.id)?.status).toBe("idle");
+    expect(
+      await s(restored).beginChatRun(chat.id, "u", {
+        page,
+        references: [],
+        runMode: "default",
+      })
+    ).toBeNull();
+    expect(mockStorage.getItem(key)).toBe(raw);
+  });
+
+  test.each(["deleteChat", "deleteAllArchivedChats"] as const)(
+    "legacy import respects %s across reload with retained source",
+    async (method) => {
+      const { identity, key, raw } = await seedLegacySql();
+      const store = create();
+      expect((await s(store).importLegacySqlHistory(identity)).status).toBe(
+        "imported"
+      );
+      const chat = s(store).chats.find((c) => c.legacySqlImport)!;
+      if (method === "deleteChat")
+        expect(s(store).deleteChat(chat.id)).toBe(true);
+      else expect(s(store).deleteAllArchivedChats()).toBe(1);
+      await s(store).flushRunPersistence();
+      const reloaded = create();
+      expect((await s(reloaded).importLegacySqlHistory(identity)).status).toBe(
+        "already-imported"
+      );
+      expect(s(reloaded).getChat(chat.id)).toBeNull();
+      expect(mockStorage.getItem(key)).toBe(raw);
+    }
+  );
+  test.each(["appendToolCall", "appendContinueActions"] as const)(
+    "legacy transcript rejects %s with a real assistant message ID",
+    async (method) => {
+      const { identity } = await seedLegacySql();
+      const store = create();
+      await s(store).importLegacySqlHistory(identity);
+      const chat = s(store).chats.find((c) => c.legacySqlImport)!;
+      const before = structuredClone(s(store).getMessages(chat.id));
+      const result =
+        method === "appendToolCall"
+          ? s(store).appendToolCall(chat.id, "a", {
+              id: "t",
+              name: "get_skill",
+              arguments: "{}",
+            })
+          : s(store).appendContinueActions(
+              chat.id,
+              "a",
+              [{ kind: "continue", prompt: "Continue?" }],
+              []
+            );
+      expect(result).toBeNull();
+      expect(s(store).getMessages(chat.id)).toEqual(before);
+    }
+  );
+
+  test("changing account while legacy SQL import waits cancels publication", async () => {
+    const { identity, key, raw } = await seedLegacySql();
+    const store = create();
+    await s(store).flushRunPersistence();
+    const blocked = locks.pauseNextExclusive(
+      `bb-agent-persistence:${JSON.stringify(getAgentStateKey(workspaceName))}`
+    );
+    const importing = s(store).importLegacySqlHistory(identity);
+    await blocked.reached;
+    s(store).setWorkspaceName(workspaceName, "second@example.com");
+    blocked.resume();
+    expect((await importing).status).toBe("identity-unavailable");
+    expect(s(store).chats.some((c) => c.legacySqlImport)).toBe(false);
+    expect(mockStorage.getItem(key)).toBe(raw);
+  });
+
+  test("quota failure retains the legacy source and active chat, and allows import retry", async () => {
+    const { identity, key, raw } = await seedLegacySql();
+    const store = create();
+    await s(store).flushRunPersistence();
+    const active = s(store).currentChatId!;
+    const before = mockStorage.getItem(getAgentStateKey(workspaceName));
+    const write = vi.spyOn(mockStorage, "setItem").mockImplementation(() => {
+      throw new DOMException("Quota exceeded", "QuotaExceededError");
+    });
+    const result = await s(store).importLegacySqlHistory(identity);
+    expect(result).toMatchObject({
+      status: "storage-unavailable",
+      fallback: [{ chat: { title: "Saved conversation" } }],
+    });
+    expect(s(store).getChat(active)).toBeTruthy();
+    expect(s(store).chats.some((c) => c.legacySqlImport)).toBe(false);
+    expect(mockStorage.getItem(key)).toBe(raw);
+    expect(mockStorage.getItem(getAgentStateKey(workspaceName))).toBe(before);
+    write.mockRestore();
+    expect((await s(store).importLegacySqlHistory(identity)).status).toBe(
+      "imported"
+    );
+  });
 
   test.each(["updated", "cleared"] as const)(
     "a delayed progress save preserves a draft %s after the save was scheduled",

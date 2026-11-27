@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import {
   type AgentSqlEditorHost,
@@ -12,6 +13,7 @@ import {
   registerAgentSqlEditorHost,
 } from "@/modules/agent/logic/sqlEditorHost";
 import { useAgentStore } from "@/modules/agent/store/agent";
+import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import { useAppStore } from "@/stores/app";
 import { UNKNOWN_USER_NAME } from "@/types/v1/user";
 import { captureAgentQueryResultTarget } from "../model/agentQueryResult";
@@ -76,6 +78,7 @@ export function SQLEditorAgentHost({
   const [id] = useState(() => uuidv4());
   const slotRef = useRef<HTMLDivElement>(null);
   const mainColumnRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
   const resizerRef = useRef<HTMLDivElement>(null);
   const unregisterRef = useRef<(() => void) | undefined>(undefined);
   const nativeRef = useRef<MountedTarget | undefined>(undefined);
@@ -196,6 +199,15 @@ export function SQLEditorAgentHost({
           ? live.adapter.applySql(live.scope, request, live.statement)
           : { status: live.status };
       };
+      const captureSelection: NonNullable<
+        AgentSqlEditorHost["captureSelection"]
+      > = (target) => {
+        if (!isCurrent()) return { status: "unavailable" };
+        const live = readNative(owner);
+        return live.status === "ready"
+          ? live.adapter.captureSelection(live.scope, target, live.statement)
+          : { status: live.status };
+      };
       // Preserve the mounted host identity and replace its registration without
       // briefly exposing a missing host to the Agent.
       unregisterRef.current = registerAgentSqlEditorHost({
@@ -204,8 +216,11 @@ export function SQLEditorAgentHost({
         mainColumn,
         resizer,
         paneRatio,
+        settlePaneRatio: (ratio) =>
+          useSQLEditorStore.getState().handleEditorPanelResize(1 - ratio),
         inspect,
         applySql,
+        captureSelection,
         captureQueryResultTarget: captureAgentQueryResultTarget,
         captureContext: () =>
           isCurrent() ? capture(owner) : { kind: "pending" },
@@ -250,13 +265,25 @@ export function SQLEditorAgentHost({
   }, [id, paneRatio]);
 
   return (
-    <div ref={mainColumnRef} className="flex h-full min-w-0 overflow-hidden">
+    <div
+      ref={mainColumnRef}
+      className="flex h-full min-w-0 overflow-hidden"
+      data-testid="sql-editor-agent-main-column"
+    >
       <div className="flex min-w-0 flex-1 flex-col">
         <SqlEditorTargetRegistrationContext.Provider value={registerTarget}>
           {children}
         </SqlEditorTargetRegistrationContext.Provider>
       </div>
-      <div ref={resizerRef} className="shrink-0" aria-hidden="true" />
+      <div
+        ref={resizerRef}
+        hidden
+        role="separator"
+        aria-label={t("plugin.ai.ai-assistant")}
+        aria-orientation="vertical"
+        tabIndex={0}
+        className="w-1 shrink-0 touch-none cursor-col-resize hover:bg-accent focus-visible:bg-accent"
+      />
       <div ref={slotRef} className="overflow-hidden" />
     </div>
   );

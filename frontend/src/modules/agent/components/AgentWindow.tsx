@@ -90,6 +90,7 @@ import {
   getLandingStarterIdForText,
   type LandingStarterId,
 } from "../logic/landingStarters";
+import type { LegacySqlTranscript as SqlTranscript } from "../logic/legacySqlHistory";
 import {
   formatResourceMention,
   getDatabaseMentionLabel,
@@ -100,8 +101,15 @@ import {
 } from "../logic/resourceMention";
 import { normalizeAgentResponseActions } from "../logic/responseActions";
 import { supportsAgentRunRecovery } from "../logic/runOwnership";
-import { getAgentSourceSqlEditorContext } from "../logic/sqlEditorContext";
-import { getCurrentAgentSqlEditorContext } from "../logic/sqlEditorHost";
+import {
+  getAgentSourceSqlEditorContext,
+  normalizeAgentChatSnapshot,
+} from "../logic/sqlEditorContext";
+import {
+  type AgentSqlSelectionCapture,
+  getCurrentAgentSqlEditorContext,
+  getRegisteredAgentSqlEditorHost,
+} from "../logic/sqlEditorHost";
 import type { AgentSqlActionSource } from "../logic/sqlResponse";
 import type {
   AgentChat as AgentChatRecord,
@@ -125,7 +133,10 @@ import {
 } from "../window";
 import { AgentActionGroup } from "./AgentActionGroup";
 import { AgentChat } from "./AgentChat";
-import { AgentContextualStart } from "./AgentContextualStart";
+import {
+  AgentContextualStart,
+  type AgentSqlStarterId,
+} from "./AgentContextualStart";
 import { AgentInput } from "./AgentInput";
 import {
   type AgentLauncherPosition,
@@ -133,6 +144,7 @@ import {
 } from "./AgentMinimizedLauncher";
 import { AgentPreferences } from "./AgentPreferences";
 import { AgentSurface, useAgentDockBounds } from "./AgentSurface";
+import { LegacySqlTranscript } from "./LegacySqlTranscript";
 import {
   RESIZE_POINTER_MEDIA_QUERY,
   supportsWindowBorderResize,
@@ -157,6 +169,10 @@ import {
   AgentPopoverTrigger,
 } from "./ui/AgentPopover";
 import { AgentTooltip } from "./ui/AgentTooltip";
+import {
+  type AgentSqlSuggestionSource,
+  isAgentSqlSuggestionSourceCurrent,
+} from "./useSqlEditorSuggestions";
 import {
   type ResizeBounds,
   type ResizeDirection,
@@ -246,6 +262,7 @@ export function AgentWindow() {
     const chat = selectCurrentChat(s);
     return (
       !!chat &&
+      !chat.legacySqlImport &&
       supportsAgentRunRecovery() &&
       s.canUseAgentExecution() &&
       !s.storagePressure &&
@@ -262,11 +279,6 @@ export function AgentWindow() {
   const landingContext = useAgentStore((s) => s.landingContext);
   const chatProtectionReady = useAgentStore(
     (s) => s.chatProtectionReady !== false
-  );
-  const queuedChatId = useAgentStore((s) =>
-    s.currentChatId && s.queuedUserMessagesByChatId[s.currentChatId]
-      ? s.currentChatId
-      : null
   );
   const hasRunningChat = useAgentStore(selectHasRunningChat);
   const storedWorkspaceName = useAgentStore((s) => s.workspaceName);
@@ -310,6 +322,55 @@ export function AgentWindow() {
     (state) => state.initializationFailureIdentity
   );
   const [initializationAttempt, setInitializationAttempt] = useState(0);
+  const [legacyFallback, setLegacyFallback] = useState<{
+    owner: string;
+    history: SqlTranscript[];
+    failedRead: boolean;
+  }>();
+  const [legacyDialog, setLegacyDialog] = useState<string | null>(null);
+  const [legacyRetry, setLegacyRetry] = useState(0);
+  const legacyMessages = useAgentStore((s) =>
+    currentChat?.legacySqlImport
+      ? s.messagesByChatId[currentChat.id]
+      : undefined
+  );
+  useEffect(() => {
+    if (
+      !currentOwnerIdentity ||
+      !workspace?.name ||
+      storedWorkspaceName !== workspace.name ||
+      storedUserEmail !== userEmail ||
+      initializationFailure
+    )
+      return;
+    let active = true;
+    void useAgentStore
+      .getState()
+      .importLegacySqlHistory({ workspace: workspace.name, email: userEmail })
+      .then((result) => {
+        if (active)
+          setLegacyFallback(
+            "fallback" in result && result.status !== "identity-unavailable"
+              ? {
+                  owner: currentOwnerIdentity,
+                  history: result.fallback,
+                  failedRead: !result.fallback.length,
+                }
+              : undefined
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, [
+    currentOwnerIdentity,
+    workspace?.name,
+    storedWorkspaceName,
+    storedUserEmail,
+    userEmail,
+    initializationFailure,
+    legacyRetry,
+  ]);
   const accessGrantDraftSequence = useRef(0);
   const [accessGrantDraft, setAccessGrantDraft] = useState<{
     id: number;
@@ -563,6 +624,19 @@ export function AgentWindow() {
     sqlEditorContext?.kind === "ready"
       ? (sqlEditorContext.snapshot.project ?? workspace?.name)
       : undefined;
+  const requestedChatId = useAgentStore((s) => {
+    const id = s.currentChatId;
+    if (!id || s.queuedUserMessagesByChatId[id]) return id;
+    const source = s.draftsByChatId[id]?.queuedSqlPage?.sqlEditor;
+    const chat = s.getChat(id);
+    return sqlScope &&
+      source?.attachment?.kind === "selection" &&
+      (source.project ?? s.workspaceName) === sqlScope &&
+      chat?.context === sqlScope &&
+      chat.workspaceName === s.workspaceName
+      ? id
+      : null;
+  });
   useEffect(() => {
     if (!sqlEditorHost) {
       previousSqlScopeRef.current = undefined;
@@ -648,10 +722,8 @@ export function AgentWindow() {
     const selected = store.currentChatId
       ? store.getChat(store.currentChatId)
       : undefined;
-    const hasQueuedChat = Boolean(
-      store.currentChatId &&
-        store.queuedUserMessagesByChatId[store.currentChatId] &&
-        !selected?.archived
+    const hasRequestedChat = Boolean(
+      selected && selected.id === requestedChatId && !selected.archived
     );
     const { workspaceName, userEmail: ownerEmail } = store;
     if (workspaceName !== workspace?.name || ownerEmail !== userEmail) return;
@@ -675,13 +747,15 @@ export function AgentWindow() {
       setMobileScreen("conversation");
     } else if (isOpen && (!hasOpenedForOwner || openingPreferenceChanged)) {
       setPreferencesOpen(false);
-      const pageResource = hasQueuedChat ? undefined : resetContextualStart();
-      if (hasQueuedChat) setContextualStart(null);
+      const pageResource = hasRequestedChat
+        ? undefined
+        : resetContextualStart();
+      if (hasRequestedChat) setContextualStart(null);
       const context = pageResource
         ? ("project" in pageResource && pageResource.project) || workspaceName
         : getCurrentChatContext() || workspaceName;
       const lastChat =
-        !hasQueuedChat && store.preferences.openingBehavior === "continue"
+        !hasRequestedChat && store.preferences.openingBehavior === "continue"
           ? selectContinueChatForContext(
               store,
               context ?? undefined,
@@ -699,7 +773,7 @@ export function AgentWindow() {
       }
       if (
         !pageResource &&
-        !hasQueuedChat &&
+        !hasRequestedChat &&
         !lastChat &&
         !getCurrentAgentSqlEditorContext()
       ) {
@@ -728,14 +802,15 @@ export function AgentWindow() {
           });
         }
       }
-      if (pageResource || hasQueuedChat || lastChat) {
+      if (pageResource || hasRequestedChat || lastChat) {
         setShowArchivedOnly(false);
         setRenamingChatId(null);
         setMobileScreen("conversation");
       }
-    } else if (isOpen && hasQueuedChat) {
+    } else if (isOpen && hasRequestedChat) {
       setPreferencesOpen(false);
       setContextualStart(null);
+      setCompactPanel(null);
       setShowArchivedOnly(false);
       setMobileScreen("conversation");
     }
@@ -753,7 +828,7 @@ export function AgentWindow() {
     currentChatId,
     minimized,
     openingBehavior,
-    queuedChatId,
+    requestedChatId,
     resetContextualStart,
     userEmail,
     visible,
@@ -1017,9 +1092,19 @@ export function AgentWindow() {
 
   // --- Derived chat data ---
 
+  const matchesHistoryScope = useCallback(
+    (chat: AgentChatRecord | null | undefined): chat is AgentChatRecord =>
+      !!chat &&
+      (!sqlEditorHost || (sqlScope !== undefined && chat.context === sqlScope)),
+    [sqlEditorHost, sqlScope]
+  );
+  const scopedChats = useMemo(
+    () => orderedChats.filter(matchesHistoryScope),
+    [orderedChats, matchesHistoryScope]
+  );
   const displayedChats = useMemo(
-    () => orderedChats.filter((chat) => chat.archived === showArchivedOnly),
-    [orderedChats, showArchivedOnly]
+    () => scopedChats.filter((chat) => chat.archived === showArchivedOnly),
+    [scopedChats, showArchivedOnly]
   );
   const displayedChatGroups = useMemo(
     () => groupChatsByContext(displayedChats),
@@ -1039,12 +1124,15 @@ export function AgentWindow() {
     [displayedChatGroups, projectErrorsByName, projectsByName]
   );
   const activeChats = useMemo(
-    () => orderedChats.filter((chat) => !chat.archived),
-    [orderedChats]
+    () => scopedChats.filter((chat) => !chat.archived),
+    [scopedChats]
   );
   const archivedChats = useMemo(
-    () => orderedChats.filter((chat) => chat.archived),
-    [orderedChats]
+    () => scopedChats.filter((chat) => chat.archived),
+    [scopedChats]
+  );
+  const hasRunningHistoryChat = scopedChats.some(
+    (chat) => chat.status === "running"
   );
   const attentionChatIds = useMemo(() => {
     if (
@@ -1076,6 +1164,16 @@ export function AgentWindow() {
     messagesByChatId,
     pendingAskByChatId,
   ]);
+
+  useEffect(() => {
+    if (
+      pendingDeleteChatId &&
+      !matchesHistoryScope(
+        useAgentStore.getState().getChat(pendingDeleteChatId)
+      )
+    )
+      setPendingDeleteChatId(null);
+  }, [pendingDeleteChatId, matchesHistoryScope]);
 
   useEffect(() => {
     if (
@@ -1112,11 +1210,11 @@ export function AgentWindow() {
   ]);
 
   const isArchiveAllDisabled =
-    hasRunningChat || showArchivedOnly || activeChats.length === 0;
+    hasRunningHistoryChat || showArchivedOnly || activeChats.length === 0;
   const isUnarchiveAllDisabled =
-    hasRunningChat || !showArchivedOnly || archivedChats.length === 0;
+    hasRunningHistoryChat || !showArchivedOnly || archivedChats.length === 0;
   const isDeleteAllDisabled =
-    hasRunningChat || !showArchivedOnly || archivedChats.length === 0;
+    hasRunningHistoryChat || !showArchivedOnly || archivedChats.length === 0;
   const canResizeWindow = supportsFinePointer && presentation === "floating";
 
   useEffect(() => {
@@ -1210,13 +1308,13 @@ export function AgentWindow() {
   const selectFirstDisplayedChat = useCallback(() => {
     const store = useAgentStore.getState();
     const first = selectOrderedChats(store).find(
-      (chat) => chat.archived === showArchivedOnly
+      (chat) => matchesHistoryScope(chat) && chat.archived === showArchivedOnly
     );
     if (!first || !useAgentStore.getState().canSelectChat(first.id))
       return false;
     useAgentStore.getState().setCurrentChat(first.id);
     return useAgentStore.getState().currentChatId === first.id;
-  }, [showArchivedOnly]);
+  }, [showArchivedOnly, matchesHistoryScope]);
 
   const ensureCurrentChatMatchesDisplayedMode = useCallback(
     (
@@ -1227,8 +1325,9 @@ export function AgentWindow() {
     ) => {
       const store = useAgentStore.getState();
       const chat = store.chats.find((c) => c.id === store.currentChatId);
-      if (chat?.status === "running") return;
-      const isInDisplayedMode = !!chat && chat.archived === showArchivedOnly;
+      if (matchesHistoryScope(chat) && chat.status === "running") return;
+      const isInDisplayedMode =
+        matchesHistoryScope(chat) && chat.archived === showArchivedOnly;
 
       if (isInDisplayedMode) return;
       if (selectFirstDisplayedChat()) return;
@@ -1244,11 +1343,12 @@ export function AgentWindow() {
         const chatNow = storeNow.chats.find(
           (c) => c.id === storeNow.currentChatId
         );
-        const isInActiveMode = !!chatNow && !chatNow.archived;
+        const isInActiveMode =
+          matchesHistoryScope(chatNow) && !chatNow.archived;
         if (isInActiveMode) return;
         // Try selecting first active chat
         const activeChats = [...storeNow.chats]
-          .filter((c) => !c.archived)
+          .filter((c) => matchesHistoryScope(c) && !c.archived)
           .sort((a, b) => b.updatedTs - a.updatedTs);
         if (activeChats[0] && storeNow.canSelectChat(activeChats[0].id)) {
           storeNow.setCurrentChat(activeChats[0].id);
@@ -1256,21 +1356,28 @@ export function AgentWindow() {
         }
       }
 
-      if (options.allowCreateWhenEmpty !== true || showArchivedOnly) {
+      if (
+        options.allowCreateWhenEmpty !== true ||
+        showArchivedOnly ||
+        (sqlEditorHost && !sqlScope)
+      ) {
         store.clearCurrentChat();
         return;
       }
 
       store.createChat({
         page: getCurrentPageSnapshot(),
-        context: getCurrentChatContext(),
+        context: sqlEditorHost ? sqlScope : getCurrentChatContext(),
         workspaceName: workspace?.name,
       });
     },
     [
       showArchivedOnly,
       selectFirstDisplayedChat,
+      matchesHistoryScope,
       getCurrentPageSnapshot,
+      sqlEditorHost,
+      sqlScope,
       workspace?.name,
     ]
   );
@@ -1441,6 +1548,8 @@ export function AgentWindow() {
 
   const handleChatRowClick = useCallback(
     (chatId: string) => {
+      if (!matchesHistoryScope(useAgentStore.getState().getChat(chatId)))
+        return;
       commitRenameChat(false);
       contextualPageHelpRef.current = null;
       setContextualPageHelp(null);
@@ -1454,54 +1563,64 @@ export function AgentWindow() {
       useAgentStore.getState().setCurrentChat(chatId);
       if (isCompactWindow) setCompactPanel(null);
     },
-    [isCompactWindow, contextualStart, commitRenameChat]
+    [isCompactWindow, contextualStart, commitRenameChat, matchesHistoryScope]
   );
 
   const archiveChat = useCallback(
     (chatId: string) => {
       const store = useAgentStore.getState();
       const chat = store.chats.find((c) => c.id === chatId);
-      if (!chat || chat.archived) return;
+      if (!matchesHistoryScope(chat) || chat.archived) return;
       const wasCurrentChat = store.currentChatId === chat.id;
       store.archiveChat(chat.id);
       if (wasCurrentChat) {
         ensureCurrentChatMatchesDisplayedMode({ allowCreateWhenEmpty: false });
       }
     },
-    [ensureCurrentChatMatchesDisplayedMode]
+    [ensureCurrentChatMatchesDisplayedMode, matchesHistoryScope]
   );
 
   const unarchiveChat = useCallback(
     (chatId: string) => {
       const store = useAgentStore.getState();
       const chat = store.chats.find((c) => c.id === chatId);
-      if (!chat?.archived) return;
+      if (!matchesHistoryScope(chat) || !chat.archived) return;
       const wasCurrentChat = store.currentChatId === chat.id;
       store.unarchiveChat(chat.id);
       if (wasCurrentChat) {
         ensureCurrentChatMatchesDisplayedMode({ allowCreateWhenEmpty: false });
       }
     },
-    [ensureCurrentChatMatchesDisplayedMode]
+    [ensureCurrentChatMatchesDisplayedMode, matchesHistoryScope]
   );
 
   const restoreCurrentChat = useCallback(() => {
     const store = useAgentStore.getState();
     const chat = currentChatId ? store.getChat(currentChatId) : undefined;
-    if (!chat?.archived || store.currentChatId !== chat.id) return;
+    if (
+      !matchesHistoryScope(chat) ||
+      !chat.archived ||
+      store.currentChatId !== chat.id
+    )
+      return;
     store.unarchiveChat(chat.id);
     setShowArchivedOnly(false);
     setCompactPanel(null);
     setMobileScreen("conversation");
-  }, [currentChatId]);
+  }, [currentChatId, matchesHistoryScope]);
 
   const archiveAllChats = useCallback(() => {
     if (isArchiveAllDisabled) return;
     const store = useAgentStore.getState();
     const currentChatWasActive = store.chats.some(
-      (chat) => chat.id === store.currentChatId && !chat.archived
+      (chat) =>
+        matchesHistoryScope(chat) &&
+        chat.id === store.currentChatId &&
+        !chat.archived
     );
-    const archivedCount = store.archiveAllActiveChats();
+    const archivedCount = store.archiveAllActiveChats(
+      sqlEditorHost ? sqlScope : undefined
+    );
     if (archivedCount === 0) return;
     if (currentChatWasActive) {
       cancelRenameChat();
@@ -1511,15 +1630,23 @@ export function AgentWindow() {
     cancelRenameChat,
     ensureCurrentChatMatchesDisplayedMode,
     isArchiveAllDisabled,
+    matchesHistoryScope,
+    sqlEditorHost,
+    sqlScope,
   ]);
 
   const unarchiveAllChats = useCallback(() => {
     if (isUnarchiveAllDisabled) return;
     const store = useAgentStore.getState();
     const currentChatWasArchived = store.chats.some(
-      (chat) => chat.id === store.currentChatId && chat.archived
+      (chat) =>
+        matchesHistoryScope(chat) &&
+        chat.id === store.currentChatId &&
+        chat.archived
     );
-    const unarchivedCount = store.unarchiveAllArchivedChats();
+    const unarchivedCount = store.unarchiveAllArchivedChats(
+      sqlEditorHost ? sqlScope : undefined
+    );
     if (unarchivedCount === 0) return;
     if (currentChatWasArchived) {
       cancelRenameChat();
@@ -1529,15 +1656,23 @@ export function AgentWindow() {
     cancelRenameChat,
     ensureCurrentChatMatchesDisplayedMode,
     isUnarchiveAllDisabled,
+    matchesHistoryScope,
+    sqlEditorHost,
+    sqlScope,
   ]);
 
   const deleteAllArchivedChats = useCallback(() => {
     if (isDeleteAllDisabled) return;
     const store = useAgentStore.getState();
     const currentChatWasArchived = store.chats.some(
-      (chat) => chat.id === store.currentChatId && chat.archived
+      (chat) =>
+        matchesHistoryScope(chat) &&
+        chat.id === store.currentChatId &&
+        chat.archived
     );
-    const deletedCount = store.deleteAllArchivedChats();
+    const deletedCount = store.deleteAllArchivedChats(
+      sqlEditorHost ? sqlScope : undefined
+    );
     if (deletedCount === 0) return;
     if (currentChatWasArchived) {
       cancelRenameChat();
@@ -1547,20 +1682,23 @@ export function AgentWindow() {
     cancelRenameChat,
     ensureCurrentChatMatchesDisplayedMode,
     isDeleteAllDisabled,
+    matchesHistoryScope,
+    sqlEditorHost,
+    sqlScope,
   ]);
 
   const deleteChat = useCallback(
     (chatId: string) => {
       const store = useAgentStore.getState();
       const chat = store.chats.find((c) => c.id === chatId);
-      if (!chat) return;
+      if (!matchesHistoryScope(chat)) return;
       const wasCurrentChat = store.currentChatId === chat.id;
       store.deleteChat(chat.id);
       if (wasCurrentChat) {
         ensureCurrentChatMatchesDisplayedMode({ allowCreateWhenEmpty: false });
       }
     },
-    [ensureCurrentChatMatchesDisplayedMode]
+    [ensureCurrentChatMatchesDisplayedMode, matchesHistoryScope]
   );
 
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
@@ -1690,10 +1828,13 @@ export function AgentWindow() {
       prompt: string,
       reference?: AgentResourceReference,
       runMode: AgentRunMode = "read-only",
-      resources?: AgentResourceReference[]
+      resources?: AgentResourceReference[],
+      sqlStarter?: AgentSqlStarterId,
+      sqlSuggestionSource?: AgentSqlSuggestionSource
     ) => {
       if (!contextualStart) return;
       const pageHelp = contextualPageHelpRef.current;
+      if (sqlStarter && pageHelp) return;
       if (pageHelp) {
         if (!canStartAgentPageHelp(pageHelp)) return;
         if (pageHelp.onStart) {
@@ -1747,7 +1888,7 @@ export function AgentWindow() {
         getCurrentChatContext();
       if (!chatContext) return;
       const store = useAgentStore.getState();
-      const page: AgentChatSnapshot | undefined = pageHelp
+      let page: AgentChatSnapshot | undefined = pageHelp
         ? getCurrentPageSnapshot()
         : captureAgentPageSnapshot();
       if (
@@ -1756,6 +1897,85 @@ export function AgentWindow() {
           chatContext !== (page.sqlEditor.project ?? workspace?.name))
       )
         return;
+      if (sqlStarter) {
+        if (!page.sqlEditor) return;
+        if (
+          sqlStarter === "database-question" &&
+          (!sqlSuggestionSource ||
+            !isAgentSqlSuggestionSourceCurrent(sqlSuggestionSource) ||
+            !isEqual(page.sqlEditor.connection, sqlSuggestionSource.connection))
+        )
+          return;
+        if (
+          (sqlStarter === "explore-database" ||
+            sqlStarter === "table-relationships") &&
+          !page.sqlEditor.connection
+        )
+          return;
+        if (sqlStarter === "find-database" && !page.sqlEditor.project) return;
+        if (
+          sqlStarter === "explain-selection" ||
+          sqlStarter === "review-selection" ||
+          sqlStarter === "improve-selection"
+        ) {
+          const unavailable = () =>
+            useAppStore.getState().notify({
+              module: "bytebase",
+              style: "WARN",
+              title: t("plugin.ai.actions.sql-attachment-unavailable"),
+            });
+          const host = getRegisteredAgentSqlEditorHost();
+          const target = page.sqlEditor.editorTarget;
+          if (
+            !host?.captureSelection ||
+            !target ||
+            target.selection.end <= target.selection.start
+          ) {
+            unavailable();
+            return;
+          }
+          let capture: AgentSqlSelectionCapture;
+          try {
+            capture = host.captureSelection(target);
+          } catch {
+            unavailable();
+            return;
+          }
+          const live = useAgentStore.getState();
+          const current = getCurrentAgentSqlEditorContext();
+          if (
+            capture.status !== "ready" ||
+            live.workspaceName !== store.workspaceName ||
+            live.userEmail !== store.userEmail ||
+            getRegisteredAgentSqlEditorHost() !== host ||
+            current?.kind !== "ready" ||
+            !isEqual(current.snapshot, page.sqlEditor)
+          ) {
+            unavailable();
+            return;
+          }
+          const attached = normalizeAgentChatSnapshot({
+            ...page,
+            sqlEditor: {
+              ...page.sqlEditor,
+              attachment: {
+                kind:
+                  sqlStarter === "explain-selection"
+                    ? "explain"
+                    : sqlStarter === "review-selection"
+                      ? "find-problems"
+                      : "selection",
+                sql: capture.sql,
+              },
+            },
+          });
+          if (!attached?.sqlEditor) {
+            unavailable();
+            return;
+          }
+          page = attached;
+        }
+      }
       const current = store.getChat(store.currentChatId);
       const canReusePlaceholder =
         current &&
@@ -2187,6 +2407,8 @@ export function AgentWindow() {
 
   const selectMobileChat = useCallback(
     (chatId: string) => {
+      if (!matchesHistoryScope(useAgentStore.getState().getChat(chatId)))
+        return;
       if (!useAgentStore.getState().canSelectChat(chatId)) return;
       commitRenameChat(false);
       contextualPageHelpRef.current = null;
@@ -2195,7 +2417,7 @@ export function AgentWindow() {
       useAgentStore.getState().setCurrentChat(chatId);
       setMobileScreen("conversation");
     },
-    [commitRenameChat]
+    [commitRenameChat, matchesHistoryScope]
   );
   const openAttentionChat = useCallback(
     (chatId: string) => {
@@ -2253,7 +2475,8 @@ export function AgentWindow() {
       <div
         key={chat.id}
         className={cn(
-          "group/agent-chat flex min-h-10 w-full min-w-0 items-center gap-x-2 py-1.5 pr-3 pl-5 text-left text-sm transition-colors",
+          "group/agent-chat flex min-h-10 w-full min-w-0 items-center gap-x-2 py-1.5 pr-3 text-left text-sm transition-colors",
+          sqlEditorHost ? "pl-3" : "pl-5",
           !contextualStart && chat.id === currentChatId
             ? "bg-accent/10 text-accent"
             : "text-control hover:bg-control-bg-hover"
@@ -2411,6 +2634,17 @@ export function AgentWindow() {
         contextPending={
           !contextualPageHelp && sqlEditorContext?.kind === "pending"
         }
+        sqlEditor={!contextualPageHelp ? sqlEditorContext : undefined}
+        canCaptureSqlSelection={Boolean(sqlEditorHost?.captureSelection)}
+        sqlSuggestionsEnabled={
+          visible &&
+          !minimized &&
+          !preferencesOpen &&
+          !isCompactDrawerOpen &&
+          aiEnabled === true &&
+          storedWorkspaceName === workspace?.name &&
+          storedUserEmail === userEmail
+        }
         hasCurrentChat={!contextualPageHelp?.onStart && !!continuableChat}
         showAIConfigurationRecovery={
           aiEnabled === false || currentChat?.requiresAIConfiguration === true
@@ -2439,35 +2673,53 @@ export function AgentWindow() {
               waitingForChatProtection ? "hidden" : "flex"
             )}
           >
-            <AgentChat
-              onOpenAccessGrantDraft={openAccessGrantDraft}
-              className="min-h-0 flex-1"
-              context={conversationContext}
-              contextLabel={
-                conversationContext
-                  ? getContextLabel(conversationContext)
-                  : workspace?.title || t("agent.context-workspace")
-              }
-              onRetry={retryLastTurn}
-              onRun={
-                canStartSqlRun
-                  ? (source) =>
-                      sqlExecutionRef.current?.(source) ??
-                      Promise.resolve(false)
-                  : undefined
-              }
-              onFreeSpaceAndRetry={
-                currentChat && !currentChat.archived
-                  ? freeSpaceAndRetry
-                  : undefined
-              }
-              onResend={resendMessage}
-              onSelectSuggestion={
-                showArchivedOnly ? undefined : selectEmptyChatSuggestion
-              }
-              onContinueAction={continueResponseAction}
-            />
-            {currentChat?.archived ? (
+            {currentChat?.legacySqlImport ? (
+              <div className="min-h-0 flex-1 overflow-auto">
+                <LegacySqlTranscript
+                  chat={currentChat}
+                  messages={legacyMessages ?? []}
+                />
+              </div>
+            ) : (
+              <AgentChat
+                onOpenAccessGrantDraft={openAccessGrantDraft}
+                className="min-h-0 flex-1"
+                context={conversationContext}
+                contextLabel={
+                  conversationContext
+                    ? getContextLabel(conversationContext)
+                    : workspace?.title || t("agent.context-workspace")
+                }
+                onRetry={retryLastTurn}
+                onRun={
+                  canStartSqlRun
+                    ? (source) =>
+                        sqlExecutionRef.current?.(source) ??
+                        Promise.resolve(false)
+                    : undefined
+                }
+                onFreeSpaceAndRetry={
+                  currentChat && !currentChat.archived
+                    ? freeSpaceAndRetry
+                    : undefined
+                }
+                onResend={resendMessage}
+                onSelectSuggestion={
+                  showArchivedOnly ? undefined : selectEmptyChatSuggestion
+                }
+                onContinueAction={continueResponseAction}
+              />
+            )}
+            {currentChat?.legacySqlImport ? (
+              <div className="flex shrink-0 items-center justify-between gap-3 border-t border-block-border p-3">
+                <span className="text-sm text-control-light">
+                  {t("common.read-only")}
+                </span>
+                <Button appearance="secondary" size="sm" onClick={createChat}>
+                  {t("agent.new-chat")}
+                </Button>
+              </div>
+            ) : currentChat?.archived ? (
               <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-block-border p-3">
                 <p role="status" className="text-sm text-control-light">
                   {t("agent.chat-archived-notice")}
@@ -2497,36 +2749,85 @@ export function AgentWindow() {
     );
 
   const renderHistoryRetentionInfo = () => (
-    <AgentPopover>
-      <AgentTooltip content={t("agent.storage.retention-info")}>
-        <AgentPopoverTrigger
-          render={
-            <Button
-              appearance="secondary"
-              size="xs"
-              data-agent-window-action
-              className="shrink-0 text-control-light hover:bg-control-bg-hover"
-              aria-label={t("agent.storage.retention-info")}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <Info className="size-3.5" aria-hidden="true" />
-            </Button>
-          }
-        />
-      </AgentTooltip>
-      <AgentPopoverContent
-        side="bottom"
-        align="start"
-        className="w-64 max-w-[var(--available-width)] p-3"
-      >
-        <AgentPopoverTitle className="sr-only">
-          {t("agent.storage.retention-info")}
-        </AgentPopoverTitle>
-        <p className="text-xs text-control-light">
-          {t("agent.storage.retention-policy")}
-        </p>
-      </AgentPopoverContent>
-    </AgentPopover>
+    <>
+      {legacyFallback && currentOwnerIdentity === legacyFallback.owner && (
+        <>
+          <Button
+            appearance="secondary"
+            size="xs"
+            onClick={() => setLegacyDialog(currentOwnerIdentity)}
+          >
+            {t("common.history")}
+          </Button>
+          <AgentDialog
+            open={legacyDialog === currentOwnerIdentity}
+            onOpenChange={(open) => {
+              if (!open) setLegacyDialog(null);
+            }}
+          >
+            <AgentDialogContent className="flex max-h-full flex-col gap-2 overflow-auto p-4">
+              <AgentDialogTitle>{t("common.history")}</AgentDialogTitle>
+              <AgentDialogDescription>
+                {t(
+                  legacyFallback.failedRead
+                    ? "agent.storage.load-unavailable-description"
+                    : "common.read-only"
+                )}
+              </AgentDialogDescription>
+              {legacyFallback.history
+                .filter(({ chat }) => matchesHistoryScope(chat))
+                .map((transcript) => (
+                  <LegacySqlTranscript
+                    key={transcript.chat.id}
+                    {...transcript}
+                  />
+                ))}
+              <Button
+                appearance="secondary"
+                size="sm"
+                onClick={() => setLegacyRetry((n) => n + 1)}
+              >
+                {t(
+                  legacyFallback.failedRead
+                    ? "agent.storage.retry-loading"
+                    : "agent.storage.retry"
+                )}
+              </Button>
+            </AgentDialogContent>
+          </AgentDialog>
+        </>
+      )}
+      <AgentPopover>
+        <AgentTooltip content={t("agent.storage.retention-info")}>
+          <AgentPopoverTrigger
+            render={
+              <Button
+                appearance="secondary"
+                size="xs"
+                data-agent-window-action
+                className="shrink-0 text-control-light hover:bg-control-bg-hover"
+                aria-label={t("agent.storage.retention-info")}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <Info className="size-3.5" aria-hidden="true" />
+              </Button>
+            }
+          />
+        </AgentTooltip>
+        <AgentPopoverContent
+          side="bottom"
+          align="start"
+          className="w-64 max-w-[var(--available-width)] p-3"
+        >
+          <AgentPopoverTitle className="sr-only">
+            {t("agent.storage.retention-info")}
+          </AgentPopoverTitle>
+          <p className="text-xs text-control-light">
+            {t("agent.storage.retention-policy")}
+          </p>
+        </AgentPopoverContent>
+      </AgentPopover>
+    </>
   );
 
   const renderRail = () => (
@@ -2963,6 +3264,7 @@ export function AgentWindow() {
               >
                 <div className="flex flex-col" data-agent-chat-list>
                   {displayedChatGroups.map((group) => {
+                    if (sqlEditorHost) return group.chats.map(renderChatRow);
                     const groupKey = getChatGroupStateKey(
                       group.context,
                       showArchivedOnly
@@ -3150,9 +3452,11 @@ export function AgentWindow() {
                                     </AgentTooltip>
                                   )}
                                   <ChatListMenu
-                                    key={
-                                      showArchivedOnly ? "archived" : "active"
-                                    }
+                                    key={JSON.stringify([
+                                      Boolean(sqlEditorHost),
+                                      sqlScope,
+                                      showArchivedOnly,
+                                    ])}
                                     archived={showArchivedOnly}
                                     hasRecoveryEvidence={archivedChats.some(
                                       (chat) => chat.apiAttempts?.length
@@ -3180,6 +3484,8 @@ export function AgentWindow() {
                           <div className="min-h-0 flex-1 overflow-y-auto">
                             <div className="flex flex-col" data-agent-chat-list>
                               {displayedChatGroups.map((group) => {
+                                if (sqlEditorHost)
+                                  return group.chats.map(renderChatRow);
                                 const groupKey = getChatGroupStateKey(
                                   group.context,
                                   showArchivedOnly

@@ -365,6 +365,28 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
+  test("controlled legacy transcript uses shared Markdown and only offers Copy even after unarchive",()=>{
+    const active = useAgentStore.getState().ensureCurrentChat();
+    useAgentStore.getState().addMessage({chatId:active.id,role:"user",content:"Other private chat"});
+    const chat = {...active,id:"legacy", archived:false,legacySqlImport:{version:1 as const,readOnly:true as const,sourceId:"old",instance:"",database:""}};
+    const view=renderIntoContainer(<AgentChat legacyTranscript={{chat,messages:[
+      {chatId:"legacy",id:"u",role:"user",createdTs:1,content:"Past question"},
+      {chatId:"legacy",id:"a",role:"assistant",createdTs:2,content:"```sql\nSELECT 1;\n```",metadata:{legacySqlStatus:"LOADING",error:"Source failure"}}
+    ]}} onRun={vi.fn()} onResend={vi.fn()} onContinueAction={vi.fn()}/>);
+    view.render();
+    try{
+      expect(view.container.textContent).toContain("Past question");
+      expect(view.container.textContent).not.toContain("Other private chat");
+      expect(view.container.textContent).toContain("agent.interrupted");
+      expect(view.container.textContent).toContain("Source failure");
+      expect(view.container.querySelector("[data-agent-user-message]")).not.toBeNull();
+      expect(view.container.querySelector("[data-agent-answer] pre")).not.toBeNull();
+      expect(view.container.querySelector('[aria-label="agent.resend-message"]')).toBeNull();
+      const actions = within(view.container).getByRole("group",{name:"agent.sql-block.actions"});
+      expect(within(actions).getAllByRole("button")).toHaveLength(1);
+      expect(within(actions).getByRole("button",{name:"agent.sql-block.copy"})).toBeTruthy();
+    }finally{view.unmount();}
+  });
   test("keeps each complete unmarked SQL block copyable inside its answer, not beside Ask next", async () => {
     const store = useAgentStore.getState();
     const chat = store.ensureCurrentChat();
@@ -4534,6 +4556,30 @@ describe("AgentChat", () => {
       }
     }
   );
+
+  test.each([
+    { fence: "sql", code: "SELECT * FROM employee;" },
+    { fence: "sql", code: "SELECT id, name\nFROM employee\nWHERE active = true;" },
+    { fence: "", code: "SELECT * FROM employee;" },
+    { fence: "json", code: '{ "name": "example" }' },
+  ])("separates fenced $fence code styling from inline code", ({ fence, code }) => {
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: `Select from \`employee\`:\n\n\`\`\`${fence}\n${code}\n\`\`\`\n\nI have not executed it.`,
+    });
+    const view = renderIntoContainer(<AgentChat />);
+    view.render();
+    try {
+      const answer = view.container.querySelector("[data-agent-answer]")!;
+      const inline = answer.querySelector("p code");
+      const fenced = answer.querySelector("pre code");
+      expect(inline).toHaveTextContent("employee");
+      expect(inline).toHaveClass("bg-control-bg-hover", "px-1");
+      expect(fenced?.textContent).toBe(`${code}\n`);
+      expect(fenced).not.toHaveClass("bg-control-bg-hover", "px-1", "break-all");
+      expect(answer.querySelector("pre")).toHaveClass("overflow-x-auto", "whitespace-pre");
+    } finally { view.unmount(); }
+  });
 
   test("keeps wide fenced SQL in its own horizontal scroller", () => {
     const sql = `SELECT '${"a".repeat(256)}';`;

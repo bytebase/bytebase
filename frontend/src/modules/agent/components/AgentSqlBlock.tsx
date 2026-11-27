@@ -31,6 +31,11 @@ export function AgentSqlBlock({
   const status = useAgentStore(() =>
     source ? inspectAgentSqlAction(source).status : undefined
   );
+  const replaceStatus = useAgentStore(() =>
+    source
+      ? inspectAgentSqlAction(source, "replace-selection").status
+      : undefined
+  );
   const runReady = useAgentStore(() =>
     Boolean(source && onRun && canBeginAgentSqlResponseAction(source))
   );
@@ -44,83 +49,120 @@ export function AgentSqlBlock({
           ? t("agent.sql-block.unavailable")
           : t("agent.sql-block.autosave");
   const selection = source?.snapshot.editorTarget?.selection;
+  const replaceHint =
+    replaceStatus === "ready"
+      ? editHint
+      : replaceStatus === "readonly"
+        ? t("agent.sql-block.readonly")
+        : replaceStatus === "unavailable"
+          ? t("agent.sql-block.unavailable")
+          : t("agent.sql-block.stale");
   const runHint = runReady ? undefined : t("agent.sql-block.stale");
 
   return (
-    <div className="my-1 min-w-0 max-w-full" data-agent-sql-block>
-      {children}
-      <AgentActionGroup role="group" aria-label={t("agent.sql-block.actions")}>
-        <CopyButton
-          content={sql}
-          label={t("agent.sql-block.copy")}
-          appearance="ghost"
-          tooltipLayer="agent"
-        />
-        {source && (
-          <>
-            <AgentTooltip content={editHint}>
-              <Button
-                type="button"
-                appearance="secondary"
-                size="xs"
-                disabled={status !== "ready"}
-                aria-description={editHint}
-                onClick={() => applyAgentSqlAction(source, "insert")}
+    <div
+      className="my-2 min-w-0 max-w-full overflow-hidden rounded-sm border border-block-border bg-background"
+      data-agent-sql-block
+    >
+      <div
+        className="flex items-center gap-2 border-b border-block-border bg-control-bg px-2 py-1"
+        data-agent-sql-toolbar
+      >
+        <span className="shrink-0 text-xs font-medium text-control-light">
+          {t("common.sql")}
+        </span>
+        <AgentActionGroup
+          role="group"
+          aria-label={t("agent.sql-block.actions")}
+          className="flex-1"
+        >
+          <CopyButton
+            content={sql}
+            label={t("agent.sql-block.copy")}
+            appearance="secondary"
+            tooltipLayer="agent"
+          />
+          {source && (
+            <>
+              <AgentTooltip
+                content={`${t("agent.sql-block.insert")}: ${editHint}`}
               >
-                <BetweenHorizontalEnd />
-                {t("agent.sql-block.insert")}
-              </Button>
-            </AgentTooltip>
-            {selection && selection.start < selection.end && (
-              <AgentTooltip content={editHint}>
                 <Button
                   type="button"
                   appearance="secondary"
                   size="xs"
+                  aria-label={t("agent.sql-block.insert")}
                   disabled={status !== "ready"}
                   aria-description={editHint}
-                  onClick={() =>
-                    applyAgentSqlAction(source, "replace-selection")
-                  }
+                  onClick={() => applyAgentSqlAction(source, "insert")}
                 >
-                  <Replace />
-                  {t("agent.sql-block.replace-selection")}
+                  <BetweenHorizontalEnd
+                    className="size-3.5"
+                    aria-hidden="true"
+                  />
                 </Button>
               </AgentTooltip>
-            )}
-            {onRun &&
-              source.snapshot.connection &&
-              source.snapshot.rowLimit !== undefined && (
+              {selection && selection.start < selection.end && (
                 <AgentTooltip
-                  content={runHint ?? t("agent.sql-block.run-query")}
+                  content={`${t("agent.sql-block.replace-selection")}: ${replaceHint}`}
                 >
                   <Button
                     type="button"
                     appearance="secondary"
                     size="xs"
-                    disabled={!runReady || running}
-                    aria-description={runHint}
-                    onClick={async () => {
-                      if (running) return;
-                      const current = getCurrentAgentSqlActionSource(source);
-                      if (!current || !canBeginAgentSqlResponseAction(current))
-                        return;
-                      setRunning(true);
-                      try {
-                        await onRun(current);
-                      } finally {
-                        setRunning(false);
-                      }
-                    }}
+                    aria-label={t("agent.sql-block.replace-selection")}
+                    disabled={replaceStatus !== "ready"}
+                    aria-description={replaceHint}
+                    onClick={() =>
+                      applyAgentSqlAction(source, "replace-selection")
+                    }
                   >
-                    <Play />
-                    {t("agent.sql-block.run-query")}
+                    <Replace className="size-3.5" aria-hidden="true" />
                   </Button>
                 </AgentTooltip>
               )}
-          </>
-        )}
-      </AgentActionGroup>
+              {onRun &&
+                source.snapshot.connection &&
+                source.snapshot.rowLimit !== undefined && (
+                  <AgentTooltip
+                    content={
+                      runHint
+                        ? `${t("agent.sql-block.run-query")}: ${runHint}`
+                        : t("agent.sql-block.run-query")
+                    }
+                  >
+                    <Button
+                      type="button"
+                      appearance="secondary"
+                      size="xs"
+                      aria-label={t("agent.sql-block.run-query")}
+                      disabled={!runReady || running}
+                      aria-description={runHint}
+                      onClick={async () => {
+                        if (running) return;
+                        const current = getCurrentAgentSqlActionSource(source);
+                        if (
+                          !current ||
+                          !canBeginAgentSqlResponseAction(current)
+                        )
+                          return;
+                        setRunning(true);
+                        try {
+                          await onRun(current);
+                        } finally {
+                          setRunning(false);
+                        }
+                      }}
+                    >
+                      <Play className="size-3.5" aria-hidden="true" />
+                    </Button>
+                  </AgentTooltip>
+                )}
+            </>
+          )}
+        </AgentActionGroup>
+      </div>
+      {children}
     </div>
   );
 }

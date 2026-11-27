@@ -7,6 +7,11 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+const overlay = vi.hoisted(() => vi.fn());
+vi.mock("@/modules/sql-editor/hooks/useSqlEditorAgentOverlay", () => ({
+  useSqlEditorAgentOverlay: overlay,
+}));
+
 const mocks = vi.hoisted(() => ({
   breadcrumbProps: undefined as
     | {
@@ -172,11 +177,13 @@ vi.mock("@/components/header/HeaderBreadcrumb", () => ({
 vi.mock("@/components/header/ProfileMenuTrigger", () => ({
   ProfileMenuTrigger: ({
     children,
+    onOpenChange,
   }: {
     children?: ReactNode;
+    onOpenChange?: (open: boolean) => void;
     size?: string;
     link?: boolean;
-  }) => <div data-testid="sql-editor-profile">{children}</div>,
+  }) => <button type="button" data-testid="sql-editor-profile" onClick={() => onOpenChange?.(true)}>{children}</button>,
 }));
 
 let SQLEditorHeader: typeof import("./SQLEditorHeader").SQLEditorHeader;
@@ -243,6 +250,9 @@ describe("SQLEditorHeader", () => {
       container.querySelector("[data-testid='sql-editor-profile']")
     ).not.toBeNull();
     expect(mocks.breadcrumbProps?.projectId).toBe("recent-project");
+    expect(overlay).toHaveBeenLastCalledWith(false);
+    act(() => container.querySelector<HTMLButtonElement>("[data-testid='sql-editor-profile']")?.click());
+    expect(overlay).toHaveBeenLastCalledWith(true);
     expect(mocks.breadcrumbProps?.currentProjectName).toBe(
       "projects/recent-project"
     );

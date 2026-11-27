@@ -14,30 +14,26 @@ import {
   PRODUCT_INTRO_QUERY_KEY,
 } from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
-import { useSQLEditorStore } from "@/modules/sql-editor/store";
-import {
-  useIsDisconnected,
-  useSQLEditorTabState,
-} from "@/modules/sql-editor/store/tab";
+import { getAgentAIConfigurationEnabled } from "@/modules/agent/logic/aiConfiguration";
+import { useAgentStore } from "@/modules/agent/store/agent";
 import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
+
+import { useToolbarEntry } from "./AgentEntryPoints";
 
 type Size = "sm" | "default";
 
 type Props = {
   readonly size?: Size;
+  readonly fallback?: boolean;
 };
 
-/**
- * Shows an AI-assistant toggle when the editor is connected + in saved query
- * mode. Clicking the button toggles the AI panel. Statement-specific AI
- * actions live in the editor context menu.
- */
-export function OpenAIButton({ size = "default" }: Props) {
+export function OpenAIButton({ size = "default", fallback = false }: Props) {
   const { t } = useTranslation();
-  const showAIPanel = useSQLEditorStore((s) => s.showAIPanel);
-  const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
+  const show = useToolbarEntry(fallback);
+  const isOpen = useAgentStore((s) => s.visible && !s.minimized);
+  const toggle = useAgentStore((s) => s.toggle);
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
 
   // Make sure the AI setting is resolved before we gate the enabled state.
@@ -45,22 +41,12 @@ export function OpenAIButton({ size = "default" }: Props) {
     void getOrFetchSettingByName(Setting_SettingName.AI, true /* silent */);
   }, [getOrFetchSettingByName]);
 
-  const isDisconnected = useIsDisconnected();
-  const currentMode = useSQLEditorTabState(
-    (s) => s.tabsById.get(s.currentTabId)?.mode
+  const enabled = useAppStore((s) =>
+    getAgentAIConfigurationEnabled(s.getSettingByName(Setting_SettingName.AI))
   );
-  const openAIEnabled = useAppStore((s) => {
-    const setting = s.getSettingByName(Setting_SettingName.AI);
-    return setting?.value?.value?.case === "ai"
-      ? setting.value.value.value.enabled
-      : false;
-  });
 
-  if (isDisconnected || currentMode !== "SAVED_QUERY") {
-    return null;
-  }
-
-  const buttonAppearance = showAIPanel ? "solid" : "outline";
+  if (!show) return null;
+  const buttonAppearance = isOpen ? "solid" : "outline";
 
   const icon = (
     <svg
@@ -77,15 +63,10 @@ export function OpenAIButton({ size = "default" }: Props) {
   const buttonClass = cn(
     // Match the connection chooser's h-8 so the AI button isn't visibly shorter.
     "h-8 px-1.5 gap-1",
-    showAIPanel && "bg-accent/10 text-accent hover:bg-accent/20"
+    isOpen && "bg-accent/10 text-accent hover:bg-accent/20"
   );
 
-  const handleToggle = () => {
-    setShowAIPanel(!showAIPanel);
-  };
-
-  // ---- Disabled state: AI feature not configured ---------------------------
-  if (!openAIEnabled) {
+  if (enabled === false) {
     return (
       <AINotConfiguredButton size={size} icon={icon} className={buttonClass} />
     );
@@ -98,7 +79,8 @@ export function OpenAIButton({ size = "default" }: Props) {
         size={size}
         className={buttonClass}
         aria-label={t("plugin.ai.ai-assistant")}
-        onClick={handleToggle}
+        aria-pressed={isOpen}
+        onClick={toggle}
       >
         {icon}
       </Button>

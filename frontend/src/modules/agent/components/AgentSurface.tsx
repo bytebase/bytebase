@@ -28,15 +28,24 @@ export function useAgentDockBounds(host: AgentSqlEditorHost | undefined) {
     const { mainColumn, resizer, slot } = host;
     const originalWidth = slot.style.width;
     const originalShrink = slot.style.flexShrink;
+    let transientWidth: number | undefined;
+    let pointer: { id: number; x: number; width: number } | undefined;
+    const settle = host.settlePaneRatio;
     function releaseSlot() {
+      resizer.hidden = true;
+      transientWidth = undefined;
+      pointer = undefined;
       slot.style.width = originalWidth;
       slot.style.flexShrink = originalShrink;
     }
     const measure = () => {
       const available = mainColumn.getBoundingClientRect().width;
-      const maxWidth = Math.min(
-        DOCK_MAX_WIDTH,
-        available - EDITOR_MIN_WIDTH - resizer.getBoundingClientRect().width
+      resizer.hidden = !settle || available < DOCK_MIN_COLUMN_WIDTH;
+      const maxWidth = Math.floor(
+        Math.min(
+          DOCK_MAX_WIDTH,
+          available - EDITOR_MIN_WIDTH - resizer.getBoundingClientRect().width
+        )
       );
       if (
         !slot.isConnected ||
@@ -49,8 +58,14 @@ export function useAgentDockBounds(host: AgentSqlEditorHost | undefined) {
       }
       const width = Math.min(
         maxWidth,
-        Math.max(MIN_WIDTH, Math.round(available * host.paneRatio))
+        Math.max(
+          MIN_WIDTH,
+          transientWidth ?? Math.round(available * host.paneRatio)
+        )
       );
+      resizer.setAttribute("aria-valuemin", String(MIN_WIDTH));
+      resizer.setAttribute("aria-valuemax", String(maxWidth));
+      resizer.setAttribute("aria-valuenow", String(width));
       slot.style.width = `${width}px`;
       slot.style.flexShrink = "0";
       const {
@@ -69,6 +84,65 @@ export function useAgentDockBounds(host: AgentSqlEditorHost | undefined) {
           : { host, bounds: { left, top, width: actualWidth, height } }
       );
     };
+    const commit = () => {
+      const width = slot.getBoundingClientRect().width;
+      const available = mainColumn.getBoundingClientRect().width;
+      if (available && !resizer.hidden) settle?.(width / available);
+    };
+    const down = (event: PointerEvent) => {
+      if (resizer.hidden || event.button !== 0 || pointer) return;
+      pointer = {
+        id: event.pointerId,
+        x: event.clientX,
+        width: slot.getBoundingClientRect().width,
+      };
+      resizer.setPointerCapture(event.pointerId);
+    };
+    const move = (event: PointerEvent) => {
+      if (pointer?.id !== event.pointerId || !pointer) return;
+      transientWidth = Math.round(pointer.width + pointer.x - event.clientX);
+      measure();
+    };
+    const end = (event: PointerEvent) => {
+      if (!pointer || pointer.id !== event.pointerId) return;
+      if (event.type === "pointerup" && pointer.x !== event.clientX) {
+        move(event);
+        commit();
+      }
+      pointer = undefined;
+      transientWidth = undefined;
+      measure();
+    };
+    const key = (event: KeyboardEvent) => {
+      if (resizer.hidden || pointer) return;
+      const width = slot.getBoundingClientRect().width;
+      switch (event.key) {
+        case "ArrowLeft":
+          transientWidth = width + 16;
+          break;
+        case "ArrowRight":
+          transientWidth = width - 16;
+          break;
+        case "Home":
+          transientWidth = MIN_WIDTH;
+          break;
+        case "End":
+          transientWidth = DOCK_MAX_WIDTH;
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+      measure();
+      commit();
+      transientWidth = undefined;
+    };
+    resizer.addEventListener("pointerdown", down);
+    resizer.addEventListener("pointermove", move);
+    resizer.addEventListener("pointerup", end);
+    resizer.addEventListener("pointercancel", end);
+    resizer.addEventListener("lostpointercapture", end);
+    resizer.addEventListener("keydown", key);
     measure();
     const observer = new ResizeObserver(measure);
     for (const element of [mainColumn, resizer, slot])
@@ -76,6 +150,12 @@ export function useAgentDockBounds(host: AgentSqlEditorHost | undefined) {
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
     return () => {
+      resizer.removeEventListener("pointerdown", down);
+      resizer.removeEventListener("pointermove", move);
+      resizer.removeEventListener("pointerup", end);
+      resizer.removeEventListener("pointercancel", end);
+      resizer.removeEventListener("lostpointercapture", end);
+      resizer.removeEventListener("keydown", key);
       observer.disconnect();
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);

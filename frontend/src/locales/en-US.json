@@ -158,7 +158,16 @@
       "plan-risks": "Are there any review or deployment risks in this plan?",
       "plan-status": "What is the current review and rollout status?",
       "project-heading": "Ask about this project",
-      "resource-unavailable": "This resource is not available to reference."
+      "resource-unavailable": "This resource is not available to reference.",
+      "sql-explain-selection": "Explain selected SQL",
+      "sql-explore-database": "Explore this database",
+      "sql-find-database": "Show databases in this project",
+      "sql-fix-error": "Help me fix a SQL error",
+      "sql-heading": "Ask about SQL",
+      "sql-improve-selection": "Suggest improvements",
+      "sql-review-selection": "Find problems in selected SQL",
+      "sql-table-relationships": "Explain table relationships",
+      "sql-write-query": "Help me write a query"
     },
     "custom-input-label": "Details",
     "custom-input-placeholder": "Enter a value",
@@ -3278,32 +3287,15 @@
       "actions": {
         "explain-code": "Explain code",
         "find-problems": "Find problems",
-        "insert-at-caret": "Insert at cursor",
-        "new-chat-using-selection": "New chat using selection"
+        "new-chat-using-selection": "New chat using selection",
+        "sql-attachment-unavailable": "Could not attach SQL. Check the active editor and select up to 32 KiB of SQL."
       },
       "ai-assistant": "AI Assistant",
-      "conversation": {
-        "delete": "Delete conversation",
-        "history-conversations": "Conversation history",
-        "new-conversation": "Start new conversation",
-        "no-message": "No message in this conversation",
-        "rename": "Rename conversation",
-        "select-or-create": "Select or {{create}} a conversation to start.",
-        "tips": {
-          "no-more": "no more",
-          "suggest-prompt": "Suggesting prompts..."
-        },
-        "untitled": "Untitled conversation",
-        "view-history-conversations": "View conversation history"
-      },
-      "new-line": "New line",
       "not-configured": {
         "contact-admin-to-configure": "Please contact your org administrator.",
         "go-to-configure": "Go to configure",
         "self": "AI Assistant is not configured."
-      },
-      "send": "Send",
-      "text-to-sql-placeholder": "Use natural language and Bytebase will convert it into SQL"
+      }
     }
   },
   "policy": {

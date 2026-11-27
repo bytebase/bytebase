@@ -8,38 +8,12 @@ import { useSharedGuideContext } from "@/modules/workspace-setup-guide/GuideCont
   true;
 
 const mocks = vi.hoisted(() => ({
-  setPendingInsertAtCaret: vi.fn(),
   state: { resultPanelMaximized: false },
-  collapse: vi.fn(),
-  expand: vi.fn(),
-  separatorDisabled: undefined as boolean | undefined,
 }));
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
   useTranslation: () => ({ t: (key: string) => key }),
-}));
-
-vi.mock("react-resizable-panels", () => ({
-  Group: ({ children }: { children: ReactElement | ReactElement[] }) => (
-    <div>{children}</div>
-  ),
-  Panel: ({
-    children,
-    panelRef,
-  }: {
-    children: ReactElement | ReactElement[];
-    panelRef?: { current: unknown };
-  }) => {
-    if (panelRef) {
-      panelRef.current = { collapse: mocks.collapse, expand: mocks.expand };
-    }
-    return <div>{children}</div>;
-  },
-  Separator: ({ disabled }: { disabled?: boolean }) => {
-    mocks.separatorDisabled = disabled;
-    return <div />;
-  },
 }));
 
 vi.mock("@/app/router", () => ({
@@ -101,16 +75,24 @@ vi.mock("@/modules/sql-editor/components/ConnectionPanel", () => ({
   ConnectionPanel: () => <div />,
 }));
 
+vi.mock("@/modules/sql-editor/components/OpenAIButton", () => ({ OpenAIButton: () => <div /> }));
+
 vi.mock("@/modules/sql-editor/components/SQLEditorHeader", () => ({
   SQLEditorHeader: () => <div />,
 }));
 
 vi.mock("@/modules/sql-editor/components/TabList", () => ({
-  TabList: () => <div />,
+  TabList: () => <div data-testid="tabs" />,
+}));
+
+vi.mock("@/modules/sql-editor/components/SQLEditorAgentHost", () => ({
+  SQLEditorAgentHost: ({ children }: { children: ReactElement }) => (
+    <div data-testid="agent-host">{children}</div>
+  ),
 }));
 
 vi.mock("@/modules/sql-editor/components/Panels/Panels", () => ({
-  Panels: () => <div />,
+  Panels: () => <div data-testid="panels" />,
 }));
 
 vi.mock(
@@ -128,7 +110,6 @@ vi.mock("@/modules/sql-editor/model/events", () => ({
 vi.mock("@/modules/sql-editor/store", () => ({
   useSQLEditorStore: (selector: (state: unknown) => unknown) =>
     selector({
-      setPendingInsertAtCaret: mocks.setPendingInsertAtCaret,
       resultPanelMaximized: mocks.state.resultPanelMaximized,
     }),
 }));
@@ -176,14 +157,14 @@ beforeEach(() => {
   root = createRoot(container);
   setWindowWidth(1440);
   mocks.state.resultPanelMaximized = false;
-  mocks.collapse.mockClear();
-  mocks.expand.mockClear();
-  mocks.separatorDisabled = undefined;
+  vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(1000);
+  vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(800);
 });
 
 afterEach(() => {
   act(() => root.unmount());
   container.remove();
+  vi.restoreAllMocks();
 });
 
 const render = () => {
@@ -191,6 +172,14 @@ const render = () => {
 };
 
 describe("SQLEditorHomePage guide", () => {
+  test("hosts tabs and panels in one Agent main column without a connection", () => {
+    render();
+    const hosts = container.querySelectorAll('[data-testid="agent-host"]');
+    expect(hosts).toHaveLength(1);
+    expect(hosts[0].querySelector('[data-testid="tabs"]')).not.toBeNull();
+    expect(hosts[0].querySelector('[data-testid="panels"]')).not.toBeNull();
+  });
+
   test("renders the unified guide", () => {
     render();
 
@@ -202,6 +191,14 @@ describe("SQLEditorHomePage guide", () => {
 // wants the phone treatment: a floating toggle over a drawer. A maximized
 // result pane must not drag that onto a desktop window.
 describe("SQLEditorHomePage sidebar", () => {
+  const sidebar = () => container.querySelector<HTMLElement>("[data-panel]")!;
+  const separator = () => container.querySelector<HTMLElement>('[role="separator"]')!;
+  const resize = (width: number) => {
+    act(() => {
+      setWindowWidth(width);
+      window.dispatchEvent(new Event("resize"));
+    });
+  };
   const sidebarToggles = () =>
     document.querySelectorAll(
       'button[aria-label="Expand sidebar"], button[aria-label="Collapse sidebar"]'
@@ -230,27 +227,45 @@ describe("SQLEditorHomePage sidebar", () => {
     mocks.state.resultPanelMaximized = true;
     render();
 
-    expect(mocks.separatorDisabled).toBe(true);
+    expect(separator().getAttribute("aria-disabled")).toBe("true");
   });
 
   test("leaves the sidebar separator draggable while the pane is docked", () => {
     render();
 
-    expect(mocks.separatorDisabled).toBe(false);
+    expect(separator().getAttribute("aria-disabled")).not.toBe("true");
   });
 
-  test("collapses the sidebar a maximized narrow window grows into", () => {
+  test.each([false, true])("restores the desktop sidebar after repeated narrow resizes with maximized=%s", (maximized) => {
     setWindowWidth(600);
+    mocks.state.resultPanelMaximized = maximized;
+    render();
+    const mainColumn = container.querySelector('[data-testid="agent-host"]');
+    for (let i = 0; i < 3; i++) {
+      resize(1440);
+      expect(Number(sidebar().style.flexGrow)).toBe(maximized ? 0 : 25);
+      expect(container.querySelector('[data-testid="agent-host"]')).toBe(mainColumn);
+      resize(600);
+      expect(sidebarToggles()).toHaveLength(1);
+    }
+  });
+
+  test("preserves manual sidebar collapse and the dragged width through maximize and restore", () => {
+    render();
+    const press = (key: string) => act(() => {
+      separator().dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    });
+    press("ArrowLeft");
+    expect(sidebar().style.flexGrow).toBe("20");
+    press("Enter");
+    expect(sidebar().style.flexGrow).toBe("0");
+    press("Enter");
+    expect(sidebar().style.flexGrow).toBe("20");
     mocks.state.resultPanelMaximized = true;
     render();
-    // The desktop panel the collapse acts on does not exist while narrow.
-    expect(mocks.collapse).not.toHaveBeenCalled();
-
-    act(() => {
-      setWindowWidth(1440);
-      window.dispatchEvent(new Event("resize"));
-    });
-
-    expect(mocks.collapse).toHaveBeenCalled();
+    expect(sidebar().style.flexGrow).toBe("0");
+    mocks.state.resultPanelMaximized = false;
+    render();
+    expect(sidebar().style.flexGrow).toBe("20");
   });
 });

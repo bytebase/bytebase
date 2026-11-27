@@ -20,7 +20,6 @@ export { idForSQLEditorTreeNodeTarget, selectAllTreeNodeKeys } from "./tree";
 export {
   MAXIMUM_RESULT_PANEL_SIZE,
   MINIMUM_RESULT_PANEL_SIZE,
-  selectEditorPanelSize,
 } from "./uiState";
 export { createWebTerminalQueryItemV1 } from "./webTerminal";
 

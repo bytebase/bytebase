@@ -120,6 +120,7 @@ import {
 import {
   type AgentSqlActionSource,
   canBeginAgentSqlResponseAction,
+  captureAgentSqlExecutionSnapshot,
   getCurrentAgentSqlActionSource,
 } from "../logic/sqlResponse";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
@@ -4177,7 +4178,9 @@ export function AgentInput({
       )
         return false;
       const source = structuredClone(input);
-      const { editorTarget, connection } = source.snapshot;
+      const executionSnapshot = captureAgentSqlExecutionSnapshot(source);
+      if (!executionSnapshot) return false;
+      const { editorTarget, connection } = executionSnapshot;
       if (!editorTarget || !connection) return false;
       const publish =
         getRegisteredAgentSqlEditorHost()?.captureQueryResultTarget?.(
@@ -4196,6 +4199,7 @@ export function AgentInput({
           if (messageActionInFlightRef.current !== token) return;
           accepted = await beginSqlResponseAction(
             source,
+            executionSnapshot,
             getCurrentPageSnapshot(),
             t("sql-editor.execute-query"),
             publish
