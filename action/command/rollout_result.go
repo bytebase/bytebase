@@ -45,6 +45,7 @@ func collectResult(commandCtx context.Context, w *world.World, client *client) *
 		TargetStage: w.TargetStage,
 		Rollout:     w.Rollout,
 		Logs:        map[string]*result.LogDigest{},
+		Statements:  result.NewStatementPool(),
 	}
 	rollout, err := client.getRollout(ctx, w.Rollout.GetName())
 	if err != nil {
@@ -82,7 +83,7 @@ func collectResult(commandCtx context.Context, w *world.World, client *client) *
 			// bounded by how many are read at once.
 			var digest *result.LogDigest
 			if err == nil {
-				digest = result.DigestLog(log)
+				digest = result.DigestLog(log, in.Statements)
 			}
 			mu.Lock()
 			defer mu.Unlock()
@@ -100,7 +101,8 @@ func collectResult(commandCtx context.Context, w *world.World, client *client) *
 	}
 	releases := newReleaseReader(w, client)
 	for _, task := range stage.GetTasks() {
-		// The release's file order says what a stopped run never reached.
+		// A stopped run's release says which files it never reached, and
+		// names a declarative file.
 		if name := task.GetDatabaseUpdate().GetRelease(); name != "" && task.GetStatus() != v1pb.Task_DONE {
 			releases.get(ctx, name)
 		}

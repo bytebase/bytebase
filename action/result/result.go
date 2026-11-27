@@ -35,6 +35,10 @@ type Result struct {
 	URL         string   `json:"url"`
 	TargetStage string   `json:"targetStage,omitempty"`
 	Stages      []*Stage `json:"stages"`
+
+	// sqlDropped means the declarative files' SQL passed maxResultSQL, so
+	// none of it is shown.
+	sqlDropped bool
 }
 
 type Stage struct {
@@ -77,6 +81,9 @@ type Task struct {
 	// LogUnavailable means the run's log could not be read, so the fields
 	// above carry no execution detail.
 	LogUnavailable bool `json:"logUnavailable,omitempty"`
+
+	// sheet names a sheet task's sheet, which identifies what it ran.
+	sheet string
 }
 
 // Run is an earlier task run of a task.
@@ -102,6 +109,15 @@ type File struct {
 	// cannot make the result unbounded; the counts cover all of them.
 	CommandCount int        `json:"commandCount,omitempty"`
 	Commands     []*Command `json:"commands,omitempty"`
+
+	// declarative is a file whose SQL the deploy generated. Its statements
+	// are all in sql, unless they passed maxDatabaseSQL and sqlOmitted is set.
+	declarative bool
+	sql         []sdlStatement
+	sqlOmitted  bool
+	// schema names a declarative file, which the log records without a
+	// path: its release's path, the file pattern the deploy read.
+	schema string
 }
 
 type Command struct {
@@ -213,8 +229,11 @@ type Input struct {
 	// missing is reported without its statement.
 	Sources map[string][]byte
 	// Releases are keyed by name. They give the order of a release's files,
-	// which says how many a stopped run never reached.
+	// which says how many a stopped run never reached, and the path that
+	// names a declarative file.
 	Releases map[string]*v1pb.Release
+	// Statements is the pool the logs were digested with.
+	Statements *StatementPool
 }
 
 // SourceKey is the Sources key of one file of a release.
@@ -277,6 +296,7 @@ func Build(in Input) *Result {
 		Outcome:     outcome,
 		URL:         in.URL + "/" + in.Rollout.GetName(),
 		TargetStage: in.TargetStage,
+		sqlDropped:  in.Statements.Full(),
 	}
 	runsByTask := GroupTaskRuns(in.TaskRuns)
 	for _, stage := range in.Rollout.GetStages() {
@@ -306,6 +326,7 @@ func buildTask(in Input, sources map[string]sourceText, task *v1pb.Task, runs []
 		SkippedReason: task.GetSkippedReason(),
 		Skipper:       task.GetSkipper(),
 		Attempt:       len(runs),
+		sheet:         task.GetDatabaseUpdate().GetSheet(),
 	}
 	if len(runs) == 0 {
 		return t
@@ -370,6 +391,12 @@ func buildTask(in Input, sources map[string]sourceText, task *v1pb.Task, runs []
 			Error:        scope.err,
 			CommandCount: scope.commandCount,
 			Commands:     scope.commands,
+			declarative:  scope.computedDiff,
+			sql:          scope.sql,
+			sqlOmitted:   scope.sqlOmitted,
+		}
+		if file.declarative {
+			file.schema = releaseFilePath(in.Releases[task.GetDatabaseUpdate().GetRelease()], file.Version)
 		}
 		if scope.failed || scope.err != "" {
 			file.Status = v1pb.TaskRun_FAILED.String()
@@ -392,6 +419,15 @@ func buildTask(in Input, sources map[string]sourceText, task *v1pb.Task, runs []
 		t.FilesNotRun = filesNotRun(task.GetDatabaseUpdate().GetReleaseState(), in.Releases[release], t.Files, len(runs))
 	}
 	return t
+}
+
+func releaseFilePath(release *v1pb.Release, version string) string {
+	for _, file := range release.GetFiles() {
+		if file.GetVersion() == version {
+			return file.GetPath()
+		}
+	}
+	return ""
 }
 
 // filesNotRun counts the files a stopped run never reached: the pending ones
@@ -427,8 +463,9 @@ type LogDigest struct {
 	scopes []*scopeDigest
 }
 
-// DigestLog reduces a task run's log.
-func DigestLog(log *v1pb.TaskRunLog) *LogDigest {
+// DigestLog reduces a task run's log. A declarative file's statements are
+// held in pool, which every log of the result shares.
+func DigestLog(log *v1pb.TaskRunLog, pool *StatementPool) *LogDigest {
 	digest := &LogDigest{}
 	for _, scope := range splitScopes(log.GetEntries()) {
 		commands, scopeErr := buildCommands(scope.entries)
@@ -444,6 +481,9 @@ func DigestLog(log *v1pb.TaskRunLog) *LogDigest {
 			d.rolledBack = d.rolledBack || command.RolledBack
 			d.rowsUnknown = d.rowsUnknown || command.CommitUnknown
 			d.maxRangeEnd = max(d.maxRangeEnd, command.byteRange.GetEnd())
+		}
+		if d.computedDiff {
+			d.sql, d.sqlOmitted = pool.keep(commands)
 		}
 		d.commands = commands
 		if len(commands) > KeptCommands {
@@ -479,6 +519,9 @@ type scopeDigest struct {
 	rolledBack   bool
 	err          string
 	computedDiff bool
+	// sql holds every statement of a declarative file. See File.
+	sql        []sdlStatement
+	sqlOmitted bool
 	// maxRangeEnd is the furthest any command reaches into its source.
 	maxRangeEnd int32
 }

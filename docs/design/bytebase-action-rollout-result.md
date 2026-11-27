@@ -9,6 +9,9 @@ ran, what it changed and why it failed are in Bytebase.
 **`bytebase-action rollout` builds one result from the rollout and its task-run logs, and renders
 it as the `--output` file, a block in the job log and the CI's summary.**
 
+How the job log and the summary show statements is revised in
+[bytebase-action-rollout-statements.md](bytebase-action-rollout-statements.md).
+
 ## Problem
 
 Verified on `main` at `f4937cda3a`:
@@ -135,9 +138,9 @@ One field says how the run ended. It restates today's behavior and changes none 
 | `STAGE_NOT_FOUND` | The rollout has no stage for `--target-stage` | 0 until BYT-10426 |
 | `INTERRUPTED` | The action stopped first: a signal, a lost sign-in or an API error | 1 |
 
-- **`DONE` is not "deployed".** The headline counts changed, unchanged and skipped databases
-  apart. A task is unchanged when it applied no file, or when a declarative release computed an
-  empty diff.
+- **`DONE` is not "deployed".** The headline says "Deployed" only when a database changed, and
+  the counts line counts changed, unchanged and skipped databases apart. A task is unchanged when
+  it applied no file, or when a declarative release computed an empty diff.
 - **`NOT_WAITED` and `STAGE_NOT_FOUND` never read as success.** Their headline says nothing was
   deployed by this job.
 - **`INTERRUPTED` reports the last state seen** and says it is not final.
@@ -151,8 +154,10 @@ One field says how the run ended. It restates today's behavior and changes none 
 - **Zero is real.** Most DDL reports zero.
 - **Counts are actual.** `check` reports an estimate before execution, and the summary labels the
   two differently.
-- **Each command shows its statement beside its count**, so the reader sees which statement
-  changed how many rows.
+- **Each command keeps its statement beside its count** in the output file. The log and the
+  summary give one count per statement for the databases that ran it: the count on each database
+  when they agree, and the sum when they differ. A count shows only when every one of them
+  reported one.
 - **No totals by insert, update and delete.** The log has one count per command and no statement
   kind. The first keyword is wrong for `MERGE`, an upsert, a CTE or a procedure call.
 
@@ -192,11 +197,11 @@ One field says how the run ended. It restates today's behavior and changes none 
 | Annotations report | GitLab | A link to the rollout on the job page |
 
 - **No new flag.** The block and the summary are always written, and `--output` gains keys.
-- **A link goes where the reader runs out of answers or has to act, never above the result.**
-  - A finished stage carries no rollout link. Each database links to its task.
+- **The summary links the rollout in its counts line**, under the headline, and on every line
+  that says what it left out.
+  - Each database links to its task.
   - A failed or canceled task links to itself beside its error, because retry and skip exist only
     in Bytebase.
-  - A result with no finished stage to show links the rollout under the headline.
   - The job log has no hyperlinks, so it ends with the rollout's URL.
 - **The plan and the release are never linked.** The plan link opens the page the rollout's does,
   and the release has no page of its own. Both stay in the file as names, which is what a script
@@ -320,7 +325,7 @@ A comment can still be rendered from the same result. See
 The block prints once, after the last log line, on every CI.
 
 ```text
-Rollout to prod: FAILED
+Deploy to prod failed on 1 of 3 databases
 1 changed · 1 failed · 1 skipped
 Other stages: test (2 done)
 
@@ -329,11 +334,16 @@ FAILED   instances/prod/databases/crm     attempt 2 · 1 file not run
            ALTER TABLE account ADD COLUMN risk_score int
            ERROR: column "risk_score" of relation "account" already exists (SQLSTATE 42701)
          Retry or skip: https://bytebase.example.com/projects/example/plans/101/rollout/stages/prod/tasks/2
-DONE     instances/prod/databases/hr      1 file · 2 statements · 1,204 rows · 3.2s
-         migrations/0003_backfill_grade.sql  1,204 rows
-           1,200 rows  UPDATE employee SET grade = 'L1' WHERE grade IS NULL
-               4 rows  DELETE FROM employee_draft WHERE stale
+DONE     instances/prod/databases/hr      script A · 1 file · 2 statements · 1,204 rows · 3.2s
 SKIPPED  instances/prod/databases/legacy  by dba@example.com: decommissioned
+
+Script A · 1 database
+  instances/prod/databases/hr
+  -- migrations/0003_backfill_grade.sql
+  -- 1,200 rows
+  UPDATE employee SET grade = 'L1' WHERE grade IS NULL;
+  -- 4 rows
+  DELETE FROM employee_draft WHERE stale;
 
 Rollout: https://bytebase.example.com/projects/example/plans/101/rollout
 ```
@@ -342,23 +352,26 @@ Rollout: https://bytebase.example.com/projects/example/plans/101/rollout
 - **A failed statement and its error are cut to 30 lines of 200 characters**, with a note that the
   full text is in the output file. The error is always kept, so a statement written on one long
   line cannot push it out.
-- **Other tasks show one line per file**, then the first ten commands that changed rows and a
-  count of the rest.
+- **Other tasks show one line**, with the letter of the script they ran. The scripts follow the
+  databases: databases that ran the same SQL share one, shown in the order it ran, within the
+  limits in [bytebase-action-rollout-statements.md](bytebase-action-rollout-statements.md#limits).
 - **The failure line names the cause.** `found failed tasks. view on Bytebase` becomes the first
   failed database, its file and its error.
-- **Each finished database folds on GitLab**, with section markers. A failure is never folded.
+- **A script longer than 12 lines folds on GitLab**, with section markers. A failure is never
+  folded.
 - **On GitHub the block is printed with workflow commands stopped.** A statement or a database
   error is printed as it is, and a line of either could otherwise be read as a command.
 
 ### GitHub
 
-- **The step summary is the block as Markdown**: the headline, one table row per database, each
-  failed statement with its error and a link to retry or skip it, and each changed database's
-  statements in a collapsed section. It replaces the stage table and the Release and Plan links.
-- **The table names the database and the instance** in two columns, not as a resource path.
-- **It stays under 1 MiB.** GitHub drops a larger summary. Failed tasks are written first, then
-  rows until the budget ends, then a count of the rest and the link. Failures that do not fit are
-  counted too.
+- **The step summary is the block as Markdown**: the headline and counts, each failed statement
+  with its error and a link to retry or skip it, one script per group of databases that ran the
+  same SQL, and a folded table of databases. It replaces the stage table and the Release and Plan
+  links.
+- **The table names a database by itself**, not as a resource path. An Instance column shows when
+  the stage spans more than one instance.
+- **It stays under 1 MiB.** GitHub drops a larger summary. Fixed counts bound each part, every
+  cut is counted with a link to the rollout, and a byte budget backs them up.
 - **One `::error::` annotation per failed task**, through `github.ErrorCommand`, up to GitHub's
   ten per step.
 

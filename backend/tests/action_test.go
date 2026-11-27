@@ -1657,9 +1657,11 @@ func TestActionRolloutCommand_ReportsAffectedRows(t *testing.T) {
 	a.Equal(1, promote.Commands[0].Index)
 	a.Equal(int64(1), *promote.Commands[0].AffectedRows)
 
-	a.Contains(actionResult.Stdout, "Rollout to prod: DONE")
+	a.Contains(actionResult.Stdout, "Deployed to prod")
 	a.Contains(actionResult.Stdout, "1 changed")
-	a.Contains(actionResult.Stdout, "3 rows  INSERT INTO account")
+	a.Contains(actionResult.Stdout, "Script A · 1 database")
+	a.Contains(actionResult.Stdout, "  -- 3 rows\n")
+	a.Contains(actionResult.Stdout, "INSERT INTO account")
 }
 
 func TestActionRolloutCommand_ReportsFailedStatement(t *testing.T) {
@@ -1717,7 +1719,7 @@ func TestActionRolloutCommand_ReportsFailedStatement(t *testing.T) {
 	a.Contains(failed.Commands[1].Statement, "INSERT INTO account VALUES (1, 'pro')")
 	a.Contains(failed.Commands[1].Error, "duplicate key")
 
-	a.Contains(actionResult.Stdout, "Rollout to prod: FAILED")
+	a.Contains(actionResult.Stdout, "Deploy to prod failed on 1 of 1 database")
 	a.Contains(actionResult.Stdout, "INSERT INTO account VALUES (1, 'pro')")
 	a.Contains(actionResult.Stdout, "duplicate key")
 }

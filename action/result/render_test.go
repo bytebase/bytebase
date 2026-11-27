@@ -8,6 +8,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/stretchr/testify/require"
+
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func rows(n int64) *int64 {
@@ -64,7 +66,7 @@ func sampleResult() *Result {
 }
 
 func TestRenderText(t *testing.T) {
-	want := `Rollout to prod: FAILED
+	want := `Deploy to prod failed on 1 of 3 databases
 1 changed · 1 failed · 1 skipped
 Other stages: test (2 done)
 
@@ -73,51 +75,71 @@ FAILED   instances/prod/databases/crm     attempt 2 · 1 file not run
            ALTER TABLE account ADD COLUMN risk_score int
            ERROR: column "risk_score" of relation "account" already exists (SQLSTATE 42701)
          Retry or skip: https://bytebase.example.com/projects/example/plans/101/rollout/stages/prod/tasks/2
-DONE     instances/prod/databases/hr      1 file · 3 statements · 1,204 rows · 3.2s
-         migrations/0003_backfill_grade.sql  1,204 rows
-           1,200 rows  UPDATE employee SET grade = 'L1' WHERE grade IS NULL
-               4 rows  DELETE FROM employee_draft WHERE stale
+DONE     instances/prod/databases/hr      script A · 1 file · 3 statements · 1,204 rows · 3.2s
 SKIPPED  instances/prod/databases/legacy  by dba@example.com: decommissioned
+
+Script A · 1 database
+  instances/prod/databases/hr
+  -- migrations/0003_backfill_grade.sql
+  -- 1,200 rows
+  UPDATE employee
+    SET grade = 'L1'
+    WHERE grade IS NULL;
+  ANALYZE employee;
+  -- 4 rows
+  DELETE FROM employee_draft WHERE stale;
 
 Rollout: https://bytebase.example.com/projects/example/plans/101/rollout
 `
 	require.Equal(t, want, RenderText(sampleResult(), nil))
 }
 
-func TestRenderTextFoldsOnlyDoneTasks(t *testing.T) {
+func TestRenderTextFoldsOnlyLongScripts(t *testing.T) {
 	fold := func(index int, header string, detail []string) []string {
-		return []string{fmt.Sprintf("<fold %d %d lines> %s", index, len(detail), strings.Fields(header)[1])}
+		return []string{fmt.Sprintf("<fold %d %d lines> %s", index, len(detail), header)}
 	}
 	text := RenderText(sampleResult(), fold)
-
-	require.Contains(t, text, "<fold 1 3 lines> instances/prod/databases/hr")
+	require.Contains(t, text, "DELETE FROM employee_draft", "a short script stays open")
 	require.Contains(t, text, "ALTER TABLE account ADD COLUMN risk_score int", "a failure is never folded away")
+
+	result := sampleResult()
+	file := result.Stages[1].Tasks[0].Files[0]
+	for i := range openScriptLines {
+		file.Commands = append(file.Commands, &Command{Statement: fmt.Sprintf("ANALYZE t%d", i), AffectedRows: rows(0)})
+	}
+	text = RenderText(result, fold)
+	require.Contains(t, text, "<fold 0 21 lines> Script A · 1 database · 15 statements\n", "a folded title counts its statements, as in the summary")
 	require.NotContains(t, text, "DELETE FROM employee_draft")
 }
 
 func TestRenderMarkdown(t *testing.T) {
-	want := "### Rollout to prod: FAILED\n\n" +
-		"1 changed · 1 failed · 1 skipped\n\n" +
+	want := "### ❌ Deploy to prod failed on 1 of 3 databases\n\n" +
+		"1 changed · 1 failed · 1 skipped · [Open the rollout in Bytebase](https://bytebase.example.com/projects/example/plans/101/rollout)\n\n" +
 		"Other stages: test (2 done)\n\n" +
-		"| Database | Instance | Status | Files | Statements | Rows | Duration |\n" +
-		"|---|---|---|---|---|---|---|\n" +
-		"| [crm](https://bytebase.example.com/projects/example/plans/101/rollout/stages/prod/tasks/2) | prod | ❌ FAILED, attempt 2 | 1 (1 not run) | 2 | 0 |  |\n" +
-		"| [hr](https://bytebase.example.com/projects/example/plans/101/rollout/stages/prod/tasks/1) | prod | ✅ DONE | 1 | 3 | 1,204 | 3.2s |\n" +
-		"| [legacy](https://bytebase.example.com/projects/example/plans/101/rollout/stages/prod/tasks/3) | prod | ⏭️ SKIPPED |  |  |  |  |\n" +
-		"\n" +
-		"#### crm on prod failed\n\n" +
-		"`migrations/0004_add_risk_score.sql` failed, rolled back\n\n" +
+		"#### ❌ Database crm failed\n\n" +
+		"Instance: `prod`<br>\n" +
+		"File: `migrations/0004_add_risk_score.sql` (rolled back)\n\n" +
 		"```sql\nALTER TABLE account ADD COLUMN risk_score int\n```\n\n" +
 		"```text\nERROR: column \"risk_score\" of relation \"account\" already exists (SQLSTATE 42701)\n```\n\n" +
 		"[Retry or skip this task in Bytebase](https://bytebase.example.com/projects/example/plans/101/rollout/stages/prod/tasks/2)\n\n" +
-		"<details><summary>Statements run on hr on prod</summary>\n\n" +
-		"```text\n" +
-		"migrations/0003_backfill_grade.sql  1,204 rows\n" +
-		"  1,200 rows  UPDATE employee SET grade = 'L1' WHERE grade IS NULL\n" +
-		"      4 rows  DELETE FROM employee_draft WHERE stale\n" +
+		"<details open><summary><strong>Script A · 1 database</strong></summary>\n\n" +
+		"hr\n\n" +
+		"```sql\n" +
+		"-- migrations/0003_backfill_grade.sql\n" +
+		"-- 1,200 rows\n" +
+		"UPDATE employee\n  SET grade = 'L1'\n  WHERE grade IS NULL;\n" +
+		"ANALYZE employee;\n" +
+		"-- 4 rows\n" +
+		"DELETE FROM employee_draft WHERE stale;\n" +
 		"```\n\n" +
-		"</details>\n\n"
-	require.NotContains(t, want, "](https://bytebase.example.com/projects/example/plans/101/rollout)", "a finished stage needs no link to the rollout")
+		"</details>\n\n" +
+		"<details><summary>All 3 databases</summary>\n\n" +
+		"| Database | Status | Script | Rows | Duration |\n" +
+		"|---|---|---|---|---|\n" +
+		"| [crm](https://bytebase.example.com/projects/example/plans/101/rollout/stages/prod/tasks/2) | ❌ Failed, attempt 2 | – | 0 |  |\n" +
+		"| [hr](https://bytebase.example.com/projects/example/plans/101/rollout/stages/prod/tasks/1) | ✅ Changed | A | 1,204 | 3.2s |\n" +
+		"| [legacy](https://bytebase.example.com/projects/example/plans/101/rollout/stages/prod/tasks/3) | ⏭️ Skipped | – |  |  |\n" +
+		"\n</details>\n\n"
 	require.Equal(t, want, RenderMarkdown(sampleResult()))
 }
 
@@ -136,28 +158,53 @@ func TestRenderMarkdownStaysUnderBudget(t *testing.T) {
 	markdown := RenderMarkdown(result)
 
 	require.Less(t, len(markdown), 1<<20)
-	require.Contains(t, markdown, "#### crm on prod failed", "the failure survives the cut")
-	require.Contains(t, markdown, " more databases are in the output file and [in Bytebase](https://bytebase.example.com/projects/example/plans/101/rollout).")
+	require.Contains(t, markdown, "20,000 changed · 1 failed · ")
+	require.Contains(t, markdown, "#### ❌ Database crm failed", "the failure survives the cut")
+	require.Equal(t, shownTableRows-1, strings.Count(markdown, "| ✅ Changed |"), "the failed database takes the first row")
+	require.Contains(t, markdown, "and 19,951 more databases, [in Bytebase](https://bytebase.example.com/projects/example/plans/101/rollout).")
+	require.Contains(t, markdown, "<summary><strong>Script A · 20,000 databases</strong></summary>\n\ntenant_00000, tenant_00001, tenant_00002, tenant_00003, tenant_00004 and 19,995 more", "identical scripts make one")
+	require.Contains(t, markdown, "tenant_00049 and 19,950 more databases\n\n</details>")
 }
 
 func TestHeadline(t *testing.T) {
 	tests := []struct {
+		name    string
 		outcome Outcome
+		edit    func(tasks []*Task)
 		want    string
 	}{
-		{Done, "Rollout to prod: DONE"},
-		{Canceled, "Rollout to prod: CANCELED"},
-		{Interrupted, "Rollout to prod: INTERRUPTED. The action stopped before the stage finished, so this state is not final."},
-		{NotWaited, "Rollout created. This job deployed nothing: no --target-stage was given."},
-		{StageNotFound, "This job deployed nothing: the rollout has no stage for environments/prod."},
+		{"failed", Failed, nil, "Deploy to prod failed on 1 of 3 databases"},
+		{"done", Done, func(tasks []*Task) { tasks[1].Status = "DONE" }, "Deployed to prod"},
+		{"done without a change", Done, func(tasks []*Task) {
+			tasks[0].Unchanged = true
+			tasks[1].Status = "SKIPPED"
+		}, "No changes to prod"},
+		{"canceled", Canceled, func(tasks []*Task) { tasks[1].Status = "CANCELED" }, "Deploy to prod canceled on 1 of 3 databases"},
+		{"interrupted", Interrupted, nil, "Rollout to prod: INTERRUPTED. The action stopped before the stage finished, so this state is not final."},
+		{"not waited", NotWaited, nil, "Rollout created. This job deployed nothing: no --target-stage was given."},
+		{"stage not found", StageNotFound, nil, "This job deployed nothing: the rollout has no stage for environments/prod."},
 	}
 	for _, tc := range tests {
-		t.Run(string(tc.outcome), func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			result := sampleResult()
 			result.Outcome = tc.outcome
+			if tc.edit != nil {
+				tc.edit(result.Stages[1].Tasks)
+			}
 			require.Equal(t, tc.want, result.Headline())
 		})
 	}
+}
+
+func TestRenderMarkdownMarksTheHeadline(t *testing.T) {
+	result := sampleResult()
+	require.True(t, strings.HasPrefix(RenderMarkdown(result), "### ❌ Deploy to prod failed"))
+
+	result.Outcome = Canceled
+	result.Stages[1].Tasks[1].Status = "CANCELED"
+	markdown := RenderMarkdown(result)
+	require.True(t, strings.HasPrefix(markdown, "### ⛔ Deploy to prod canceled on 1 of 3 databases"))
+	require.Contains(t, markdown, "#### ⛔ Database crm was canceled")
 }
 
 func TestRenderTextWithoutDetail(t *testing.T) {
@@ -174,7 +221,7 @@ Rollout: https://bytebase.example.com/projects/example/plans/101/rollout
 	require.Equal(t, want, RenderText(result, nil))
 
 	wantMarkdown := "### This job deployed nothing: the rollout has no stage for environments/prod.\n\n" +
-		"[Follow the rollout in Bytebase](https://bytebase.example.com/projects/example/plans/101/rollout)\n\n" +
+		"[Open the rollout in Bytebase](https://bytebase.example.com/projects/example/plans/101/rollout)\n\n" +
 		"Stages: test (2 not started)\n\n"
 	require.Equal(t, wantMarkdown, RenderMarkdown(result), "with no finished stage to show, the link is the content")
 }
@@ -183,7 +230,7 @@ func TestRenderMarkdownLinksTheRolloutWhileItIsNotFinal(t *testing.T) {
 	result := sampleResult()
 	result.Outcome = Interrupted
 
-	require.Contains(t, RenderMarkdown(result), "[Follow the rollout in Bytebase](https://bytebase.example.com/projects/example/plans/101/rollout)")
+	require.Contains(t, RenderMarkdown(result), "[Open the rollout in Bytebase](https://bytebase.example.com/projects/example/plans/101/rollout)")
 }
 
 func TestInstanceAndDatabase(t *testing.T) {
@@ -191,18 +238,16 @@ func TestInstanceAndDatabase(t *testing.T) {
 		target       string
 		wantInstance string
 		wantDatabase string
-		wantName     string
 	}{
-		{"instances/prod/databases/hr", "prod", "hr", "hr on prod"},
-		{"projects/example/instances/prod/databases/hr", "prod", "hr", "hr on prod"},
-		{"instances/prod", "prod", "", "prod"},
+		{"instances/prod/databases/hr", "prod", "hr"},
+		{"projects/example/instances/prod/databases/hr", "prod", "hr"},
+		{"instances/prod", "prod", ""},
 	}
 	for _, tc := range tests {
 		task := &Task{Target: tc.target}
 		instance, database := task.instanceAndDatabase()
 		require.Equal(t, tc.wantInstance, instance)
 		require.Equal(t, tc.wantDatabase, database)
-		require.Equal(t, tc.wantName, task.displayName())
 	}
 }
 
@@ -245,7 +290,7 @@ func TestTaskNoteDistinguishesMissingRowsFromZero(t *testing.T) {
 
 	require.Equal(t, "1 file · 0 rows", reported.note())
 	require.Equal(t, "1 file · rows not reported", missing.note())
-	require.Equal(t, "unchanged, nothing to apply", unchanged.note())
+	require.Equal(t, "already up to date", unchanged.note())
 }
 
 func TestCommandLinesCountsWhatItLeavesOut(t *testing.T) {
@@ -269,21 +314,24 @@ func TestCommandLinesCountsWhatItLeavesOut(t *testing.T) {
 }
 
 func TestShorten(t *testing.T) {
-	lines, cut := shorten("  SELECT 1;\n")
+	lines, cut := shorten("  SELECT 1;\n", sqlCut)
 	require.Equal(t, []string{"SELECT 1;"}, lines)
 	require.False(t, cut)
 
-	lines, cut = shorten("")
+	lines, cut = shorten("", sqlCut)
 	require.Empty(t, lines)
 	require.False(t, cut)
 
-	lines, cut = shorten(strings.Repeat("SELECT 1\n", 40))
+	lines, cut = shorten(strings.Repeat("SELECT 1\n", 40), sqlCut)
 	require.Len(t, lines, shownLines+1)
-	require.Equal(t, "... 10 more lines", lines[shownLines])
+	require.Equal(t, "-- 10 more lines", lines[shownLines], "a comment inside SQL")
 	require.True(t, cut)
 
+	lines, _ = shorten(strings.Repeat("ERROR\n", 40), textCut)
+	require.Equal(t, "... 10 more lines", lines[shownLines])
+
 	// A statement written on one line is cut by width, on a character boundary.
-	lines, cut = shorten("INSERT INTO t VALUES " + strings.Repeat("('你好'), ", 100000))
+	lines, cut = shorten("INSERT INTO t VALUES "+strings.Repeat("('你好'), ", 100000), sqlCut)
 	require.Len(t, lines, 1)
 	require.True(t, strings.HasSuffix(lines[0], "..."))
 	require.Equal(t, shownLineWidth+3, utf8.RuneCountInString(lines[0]))
@@ -311,7 +359,7 @@ func TestRenderKeepsAFailureWithAHugeStatement(t *testing.T) {
 
 	markdown := RenderMarkdown(result)
 	require.Less(t, len(markdown), 16<<10)
-	require.Contains(t, markdown, "#### crm on prod failed")
+	require.Contains(t, markdown, "#### ❌ Database crm failed")
 	require.Contains(t, markdown, `ERROR: column "risk_score" of relation "account" already exists (SQLSTATE 42701)`)
 	require.Contains(t, markdown, "[Retry or skip this task in Bytebase]")
 	require.Contains(t, markdown, shortenedNote)
@@ -341,11 +389,9 @@ func TestRenderMarkdownCountsTheFailuresItLeavesOut(t *testing.T) {
 	markdown := RenderMarkdown(result)
 
 	require.Less(t, len(markdown), 1<<20)
-	require.Contains(t, markdown, "#### tenant_000 on prod failed")
-	shown := strings.Count(markdown, " on prod failed\n")
-	require.Positive(t, shown)
-	require.Less(t, shown, 200)
-	require.Contains(t, markdown, fmt.Sprintf("%d more failures are in the output file and [in Bytebase](", 200-shown))
+	require.Contains(t, markdown, "#### ❌ Database tenant_000 failed")
+	require.Equal(t, shownFailures, strings.Count(markdown, "#### ❌ Database "))
+	require.Contains(t, markdown, "and 190 more failed databases, [in Bytebase](https://bytebase.example.com/projects/example/plans/101/rollout).")
 }
 
 func TestCommandsWithoutStatementAreNamedByPosition(t *testing.T) {
@@ -371,4 +417,20 @@ func TestCommandLinesMarkAnEarlierAttempt(t *testing.T) {
 func TestCommandLinesMarkAnUnknownCommit(t *testing.T) {
 	commands := []*Command{{Index: 1, AffectedRows: rows(1), CommitUnknown: true}}
 	require.Equal(t, []string{"1 row  statement 1  (commit outcome unknown)"}, commandLines(commands, 1, nil))
+}
+
+func TestFailedDeclarativeFileIsNamedByItsReleasePath(t *testing.T) {
+	const version = "20261127.100000"
+	failed := taskFixture{id: "hr", status: v1pb.Task_FAILED, release: true, runs: []v1pb.TaskRun_Status{v1pb.TaskRun_FAILED}, log: []*v1pb.TaskRunLogEntry{
+		fileEntry(version, ""), computeDiffEntry(), failedCommandEntry("ALTER TABLE t ADD COLUMN a int NOT NULL", "ERROR: column contains null values"),
+	}}
+	releases := map[string]*v1pb.Release{testReleaseName: {Name: testReleaseName, Files: []*v1pb.Release_File{{Version: version, Path: "schema/*.sql"}}}}
+
+	result := buildResult(t, Input{Releases: releases}, failed)
+	require.Contains(t, RenderMarkdown(result), "Instance: `prod`<br>\nFile: `schema/*.sql`")
+	require.Contains(t, result.Failures()[0], "failed at schema/*.sql: ")
+	require.Contains(t, RenderText(result, nil), "\n        schema/*.sql  failed")
+
+	withoutRelease := buildResult(t, Input{}, failed)
+	require.Contains(t, RenderMarkdown(withoutRelease), "File: `version "+version+"`")
 }
