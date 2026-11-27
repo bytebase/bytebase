@@ -2,17 +2,14 @@ package oracle
 
 import (
 	"context"
-	"log/slog"
 	"regexp"
 	"strconv"
 
 	"github.com/bytebase/omni/oracle/analysis"
 	"github.com/bytebase/omni/oracle/ast"
 	oraclecompletion "github.com/bytebase/omni/oracle/completion"
-	oracleparser "github.com/bytebase/omni/oracle/parser"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -21,23 +18,15 @@ import (
 var versionRe = regexp.MustCompile(`(\d+)\.(\d+)`)
 
 func init() {
-	base.Register(base.Engine{
-		Split:                SplitSQL,
-		Parse:                parsePLSQLStatements,
-		StatementTypes:       GetStatementTypes,
-		Diagnose:             Diagnose,
-		Complete:             Completion,
-		ValidateQuery:        validateQuery,
-		QuerySpan:            GetQuerySpan,
-		ResultLimit:          statementWithResultLimit,
-		ExtractChanged:       extractChangedResources,
-		TransformDMLToSelect: TransformDMLToSelect,
-		GenerateRestoreSQL:   GenerateRestoreSQL,
-	}, storepb.Engine_ORACLE)
+	engine := base.OmniEngine(analysis.Engine)
+	engine.StatementTypes = GetStatementTypes
+	engine.Complete = Completion
+	engine.QuerySpan = GetQuerySpan
+	engine.ExtractChanged = extractChangedResources
+	engine.TransformDMLToSelect = TransformDMLToSelect
+	engine.GenerateRestoreSQL = GenerateRestoreSQL
+	base.Register(engine, storepb.Engine_ORACLE)
 }
-
-// AST wraps an omni AST node and implements the base.AST interface.
-type AST = base.NodeAST[ast.Node]
 
 // GetNode extracts the omni AST node from a base.AST interface.
 func GetNode(a base.AST) (ast.Node, bool) {
@@ -63,43 +52,10 @@ func ParseVersion(banner string) (*Version, error) {
 	return nil, errors.Errorf("failed to parse version from banner: %s", banner)
 }
 
-// SplitSQL splits the given SQL statement into multiple SQL statements.
-// It uses omni's lexical Oracle splitter, which handles strings, comments,
-// SQL*Plus separators, and PL/SQL blocks without requiring valid SQL.
-func SplitSQL(statement string) ([]base.Statement, error) {
-	return base.OmniStatements(statement, analysis.SplitStatements(statement)), nil
-}
-
-func parsePLSQLStatements(statement string) ([]base.ParsedStatement, error) {
-	return base.ParseNonEmptyMultiNodeStatements(statement, SplitSQL, func(stmt base.Statement) ([]base.AST, error) {
-		list, err := analysis.Parse(stmt.Text)
-		if err != nil {
-			return nil, convertError(err, stmt)
-		}
-		if list == nil || len(list.Items) == 0 {
-			return nil, nil
-		}
-		asts := make([]base.AST, 0, len(list.Items))
-		for _, node := range list.Items {
-			raw, ok := node.(*ast.RawStmt)
-			if !ok {
-				continue
-			}
-			asts = append(asts, &AST{Node: raw.Stmt, Text: stmt.Text, StartPosition: stmt.Start})
-		}
-		return asts, nil
-	})
-}
-
+// GetStatementTypes returns the distinct types of the statements, including
+// STATEMENT_TYPE_UNSPECIFIED for one omni does not classify.
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	return base.CollectOmniStatementTypes(asts, GetNode, "expected Oracle omni AST", analysis.StatementTypeOf)
-}
-
-// Diagnose returns the script's first syntax error as a diagnostic.
-func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	return base.DiagnoseFirstError(statement, analysis.Diagnose(statement), func(e *analysis.SyntaxError) (string, int, string) {
-		return e.Text, e.Offset, e.Message
-	}), nil
 }
 
 // Completion returns Oracle auto-completion candidates backed by omni's
@@ -131,14 +87,6 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 			Comment:    c.Comment,
 		}, true
 	}, base.CompareCandidate), nil
-}
-
-func validateQuery(statement string) (bool, bool, error) {
-	readOnly, returnsData, err := analysis.ValidateQuery(statement)
-	if err != nil {
-		return false, false, convertError(err, base.Statement{Text: statement})
-	}
-	return readOnly, returnsData, nil
 }
 
 func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, _ string, _ bool) (*base.QuerySpan, error) {
@@ -184,19 +132,6 @@ func newCatalog(ctx context.Context, gCtx base.GetQuerySpanContext) analysis.Cat
 	return catalog
 }
 
-// statementWithResultLimit implements base.ResultLimitFunc for Oracle.
-// engineVersion picks the clause: ROWNUM before version 12, FETCH NEXT from
-// 12c on. A FETCH NEXT rewrite that fails falls back to ROWNUM.
-func statementWithResultLimit(statement string, limit int, engineVersion string) string {
-	stmt, err := analysis.RewriteResultLimit(statement, limit, engineVersion)
-	if err != nil {
-		slog.Error("failed to add FETCH NEXT clause, falling back to ROWNUM",
-			slog.String("statement", statement), log.BBError(err))
-		return analysis.RowNumResultLimit(statement, limit)
-	}
-	return stmt
-}
-
 // extractChangedResources treats currentDatabase as the current schema, as
 // Oracle does.
 func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
@@ -211,19 +146,10 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 		}
 	}
 	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, false, func(a base.AST) (analysis.StatementChanges, bool, error) {
-		wrapped, ok := a.(*AST)
-		if !ok || wrapped == nil {
+		node, ok := GetNode(a)
+		if !ok {
 			return analysis.StatementChanges{}, false, nil
 		}
-		return analysis.ExtractChangedResources(wrapped.Node, currentDatabase, wrapped.Text, indexTable), true, nil
+		return analysis.ExtractChangedResources(node, currentDatabase, base.ASTSource(a), indexTable), true, nil
 	})
-}
-
-func convertError(err error, stmt base.Statement) error {
-	return base.ConvertSyntaxError(stmt, err, true,
-		func(pe *oracleparser.ParseError) (int, string) { return pe.Position, pe.Message },
-		func(pe *oracleparser.ParseError, pos *storepb.Position) string {
-			return base.FormatLineColSyntaxError(pos, pe.Message, "")
-		},
-	)
 }

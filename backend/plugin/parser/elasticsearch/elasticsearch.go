@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"context"
+	"net/url"
 	"strings"
 
 	lsp "github.com/bytebase/lsp-protocol"
@@ -13,12 +14,11 @@ import (
 )
 
 func init() {
-	base.Register(base.Engine{
-		Split:           SplitMultiSQL,
-		StatementRanges: GetStatementRanges,
-		Diagnose:        Diagnose,
-		QuerySpan:       GetQuerySpan,
-	}, storepb.Engine_ELASTICSEARCH)
+	engine := base.OmniEngine(es.Engine)
+	engine.Split = SplitMultiSQL
+	engine.Diagnose = Diagnose
+	engine.QuerySpan = GetQuerySpan
+	base.Register(engine, storepb.Engine_ELASTICSEARCH)
 }
 
 // SplitMultiSQL splits the input into individual ElasticSearch REST API requests.
@@ -54,31 +54,6 @@ func SplitMultiSQL(statement string) ([]base.Statement, error) {
 		})
 	}
 	return statements, nil
-}
-
-func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
-	rawRanges, err := es.GetStatementRanges(statement)
-	if err != nil {
-		return nil, err
-	}
-	if rawRanges == nil {
-		return []base.Range{}, nil
-	}
-
-	ranges := make([]base.Range, 0, len(rawRanges))
-	for _, r := range rawRanges {
-		ranges = append(ranges, base.Range{
-			Start: lsp.Position{
-				Line:      r.Start.Line,
-				Character: r.Start.Character,
-			},
-			End: lsp.Position{
-				Line:      r.End.Line,
-				Character: r.End.Character,
-			},
-		})
-	}
-	return ranges, nil
 }
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
@@ -133,6 +108,7 @@ func GetQuerySpan(
 
 	if rawSpan.ElasticsearchAnalysis != nil {
 		span.ElasticsearchAnalysis = convertAnalysis(rawSpan.ElasticsearchAnalysis)
+		span.ElasticsearchAnalysis.ExpandsHidden = expandsHidden(stmt.Text)
 	}
 
 	if rawSpan.PredicatePaths != nil {
@@ -143,6 +119,35 @@ func GetQuerySpan(
 	}
 
 	return span, nil
+}
+
+// expandsHidden reports whether a request lets its wildcards reach hidden
+// indices, a data stream's backing indices among them: expand_wildcards is
+// hidden or all in the query string, or named anywhere in the body, where a
+// multi-search header may set it. Reading the body as text over-reports,
+// which only makes masking refuse more.
+func expandsHidden(statement string) bool {
+	parsed, err := es.ParseElasticsearchREST(statement)
+	if err != nil || parsed == nil || len(parsed.Requests) == 0 {
+		return false
+	}
+	request := parsed.Requests[0]
+	if strings.Contains(strings.Join(request.Data, "\n"), "expand_wildcards") {
+		return true
+	}
+	_, query, _ := strings.Cut(request.URL, "?")
+	values, err := url.ParseQuery(query)
+	if err != nil {
+		return strings.Contains(query, "expand_wildcards")
+	}
+	for _, value := range values["expand_wildcards"] {
+		for option := range strings.SplitSeq(value, ",") {
+			if option == "hidden" || option == "all" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func convertPathAST(p *es.PathAST) *base.PathAST {
@@ -163,6 +168,7 @@ func convertAnalysis(a *analysis.RequestAnalysis) *base.ElasticsearchAnalysis {
 	result := &base.ElasticsearchAnalysis{
 		API:             maskableAPIMap[a.API],
 		Index:           a.Index,
+		Targets:         a.Targets,
 		SourceFields:    a.SourceFields,
 		SourceDisabled:  a.SourceDisabled,
 		RequestedFields: a.RequestedFields,

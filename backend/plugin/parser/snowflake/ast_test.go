@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type testAST struct{}
@@ -19,13 +20,13 @@ func (testAST) ASTStartPosition() *storepb.Position {
 // non-empty statement carries an AST wrapping a non-nil omni node
 // (reachable via GetNode); the legacy ANTLR tree is gone.
 func TestParseSnowflakeStatementsAST(t *testing.T) {
-	parsed, err := parseSnowflakeStatements("CREATE TABLE t1(id INT);\nSELECT id FROM t1;")
+	parsed, err := base.ParseStatements(storepb.Engine_SNOWFLAKE, "CREATE TABLE t1(id INT);\nSELECT id FROM t1;")
 	require.NoError(t, err)
 	require.Len(t, parsed, 2)
 
 	for i, ps := range parsed {
-		wrapper, ok := ps.AST.(*AST)
-		require.True(t, ok, "stmt %d: AST must be *AST", i)
+		wrapper, ok := ps.AST.(*base.NodeAST[any])
+		require.True(t, ok, "stmt %d: AST must be *base.NodeAST[any]", i)
 		require.Equal(t, ps.Text, wrapper.Text, "stmt %d", i)
 
 		// The omni node must be reachable through GetNode.
@@ -45,17 +46,17 @@ func TestParseSnowflakeStatementsAST(t *testing.T) {
 }
 
 // TestParseSnowflakeStatementsEmptyAndError locks the surrounding behavior:
-// empty/comment-only inputs produce no statements (omni-based SplitSQL drops
-// empty segments), and an omni parse failure fails the whole batch exactly as
+// empty/comment-only inputs produce no statements (SplitSQL keeps them marked
+// Empty, and parsing skips them), and an omni parse failure fails the whole batch exactly as
 // the legacy ANTLR parser did.
 func TestParseSnowflakeStatementsEmptyAndError(t *testing.T) {
 	// Comments and bare semicolons yield no statements and no error.
-	parsed, err := parseSnowflakeStatements(";; -- only a comment\n;")
+	parsed, err := base.ParseStatements(storepb.Engine_SNOWFLAKE, ";; -- only a comment\n;")
 	require.NoError(t, err)
 	require.Empty(t, parsed)
 
 	// Comment-only prefix does not shift the statement pairing.
-	parsed, err = parseSnowflakeStatements("-- header\nSELECT 1;;SELECT 2;")
+	parsed, err = base.ParseStatements(storepb.Engine_SNOWFLAKE, "-- header\nSELECT 1;;SELECT 2;")
 	require.NoError(t, err)
 	require.Len(t, parsed, 2)
 	for i, ps := range parsed {
@@ -64,7 +65,7 @@ func TestParseSnowflakeStatementsEmptyAndError(t *testing.T) {
 	}
 
 	// Parse failure keeps the legacy error behavior: the whole batch fails.
-	_, err = parseSnowflakeStatements("SELECT 1;\nSELECT * FROM;")
+	_, err = base.ParseStatements(storepb.Engine_SNOWFLAKE, "SELECT 1;\nSELECT * FROM;")
 	require.Error(t, err)
 }
 

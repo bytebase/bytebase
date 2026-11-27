@@ -1,16 +1,19 @@
 package v1
 
 import (
+	"context"
 	"io"
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mongodbparser "github.com/bytebase/bytebase/backend/plugin/parser/mongodb"
 )
 
 type mongodbMaskingTestData struct {
@@ -302,6 +305,149 @@ func TestCheckMongoDBRequestBlocked(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+		})
+	}
+}
+
+// testMongoDBDatabases is an instance where mydb holds users (masked), orders
+// (no schema) and the view usersView on users, and other holds users (masked).
+func testMongoDBDatabases() *mongoDBDatabases {
+	masked := &storepb.DatabaseConfig{Schemas: []*storepb.SchemaCatalog{{
+		Tables: []*storepb.TableCatalog{{Name: "users", ObjectSchema: testMongoDBUsersSchema()}},
+	}}}
+	databases := map[string]*metadatapb.DatabaseSchemaMetadata{
+		"mydb": {Schemas: []*metadatapb.SchemaMetadata{{
+			Tables: []*metadatapb.TableMetadata{{Name: "orders"}, {Name: "users"}},
+			Views:  []*metadatapb.ViewMetadata{{Name: "usersView", Definition: `{"viewOn": "users", "pipeline": []}`}},
+		}}},
+		"other": {Schemas: []*metadatapb.SchemaMetadata{{Tables: []*metadatapb.TableMetadata{{Name: "users"}}}}},
+	}
+	return &mongoDBDatabases{
+		current: "mydb",
+		load: func(name string) (*metadatapb.DatabaseSchemaMetadata, *storepb.DatabaseConfig, error) {
+			if databases[name] == nil {
+				return nil, nil, nil
+			}
+			return databases[name], masked, nil
+		},
+		loaded: map[string]*mongoDBDatabase{},
+	}
+}
+
+func testMongoDBUsersSchema() *storepb.ObjectSchema {
+	return &storepb.ObjectSchema{
+		Type: storepb.ObjectSchema_OBJECT,
+		Kind: &storepb.ObjectSchema_StructKind_{StructKind: &storepb.ObjectSchema_StructKind{
+			Properties: map[string]*storepb.ObjectSchema{
+				"name":  {Type: storepb.ObjectSchema_STRING},
+				"email": {Type: storepb.ObjectSchema_STRING, SemanticType: masker.DefaultSemanticTypeID},
+			},
+		}},
+	}
+}
+
+func TestMongoDBCheckReads(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		statement string
+		wantError string
+	}{
+		{statement: `db.users.find()`},
+		{statement: `db.orders.find()`},
+		{statement: `db.orders.aggregate([{$lookup: {from: "users", localField: "u", foreignField: "_id", as: "u"}}])`},
+		{statement: `db.orders.aggregate([{$graphLookup: {from: "users", startWith: "$u", connectFromField: "u", connectToField: "_id", as: "u"}}])`},
+		{statement: `db.orders.aggregate([{$unionWith: "orders"}])`},
+		{statement: `db.orders.aggregate([{$unionWith: "users"}])`, wantError: `collection "users" of database "mydb"`},
+		{statement: `db.orders.aggregate([{$unionWith: {coll: "users", pipeline: [{$match: {}}]}}])`, wantError: `collection "users"`},
+		{statement: `db.orders.aggregate([{$facet: {a: [{$lookup: {from: "users", localField: "u", foreignField: "_id", as: "u"}}]}}])`, wantError: `collection "users"`},
+		{statement: `db.orders.aggregate([{$lookup: {from: "users", pipeline: [{$match: {}}], as: "u"}}])`, wantError: `collection "users"`},
+		{statement: `db.orders.aggregate([{$lookup: {from: "users", localField: "u", foreignField: "_id", as: "a.b"}}])`, wantError: `collection "users"`},
+		{statement: `db.orders.aggregate([{$lookup: {from: {db: "mydb", coll: "users"}, localField: "u", foreignField: "_id", as: "u"}}])`, wantError: `collection "users" of database "mydb"`},
+		{statement: `db.orders.aggregate([{$lookup: {from: {db: "other", coll: "users"}, localField: "u", foreignField: "_id", as: "u"}}])`, wantError: `collection "users" of database "other"`},
+		{
+			statement: `db.orders.aggregate([{$lookup: {from: "users", localField: "u", foreignField: "_id", as: "u"}}, {$lookup: {from: {db: "mydb", coll: "users"}, localField: "v", foreignField: "_id", as: "v"}}])`,
+			wantError: `collection "users"`,
+		},
+		{statement: `db.usersView.find()`, wantError: `collection "users"`},
+		{statement: `db.orders.aggregate([{$lookup: {from: "usersView", localField: "u", foreignField: "_id", as: "u"}}])`, wantError: `collection "users"`},
+		{statement: `db.users.aggregate([{$lookup: {from: "usersView", localField: "u", foreignField: "_id", as: "u"}}])`, wantError: `collection "users"`},
+		{statement: `db.runCommand({aggregate: "orders", pipeline: [{$unionWith: "users"}], cursor: {}})`, wantError: `collection "users"`},
+		{statement: `db.users.distinct("email")`, wantError: `collection "users"`},
+	}
+	for _, tc := range tests {
+		t.Run(tc.statement, func(t *testing.T) {
+			t.Parallel()
+			span, err := mongodbparser.GetQuerySpan(context.Background(), parserbase.GetQuerySpanContext{}, parserbase.Statement{Text: tc.statement}, "mydb", "", false)
+			require.NoError(t, err)
+			require.NotNil(t, span.MongoDBAnalysis)
+			err = testMongoDBDatabases().checkReads(span.MongoDBAnalysis)
+			if tc.wantError == "" {
+				require.NoError(t, err)
+				return
+			}
+			var refusal *errMongoDBUncoveredRead
+			require.ErrorAs(t, err, &refusal)
+			require.ErrorContains(t, err, tc.wantError)
+		})
+	}
+}
+
+func TestMongoDBJoinMaskedWithoutSourceSchema(t *testing.T) {
+	t.Parallel()
+	maskers := map[string]masker.Masker{masker.DefaultSemanticTypeID: masker.NewDefaultFullMasker()}
+	for _, source := range []*storepb.ObjectSchema{nil, {Type: storepb.ObjectSchema_OBJECT}} {
+		schema := injectJoinedSchemas(source, []joinedSchema{{asField: "u", schema: testMongoDBUsersSchema()}})
+		got, err := maskDocumentString(`{"item": "x", "u": [{"name": "n", "email": "e@x"}]}`, schema, maskers)
+		require.NoError(t, err)
+		requireJSONEqual(t, `{"item": "x", "u": [{"name": "n", "email": "******"}]}`, got)
+	}
+}
+
+func TestMongoDBPredicateRefusal(t *testing.T) {
+	t.Parallel()
+	orders := &storepb.ObjectSchema{Type: storepb.ObjectSchema_OBJECT}
+	joinedOverEmail := injectJoinedSchemas(testMongoDBUsersSchema(), []joinedSchema{{asField: "email", schema: orders}})
+	joinedUsers := injectJoinedSchemas(nil, []joinedSchema{{asField: "u", schema: testMongoDBUsersSchema()}})
+	tests := []struct {
+		statement string
+		source    *storepb.ObjectSchema
+		result    *storepb.ObjectSchema
+		want      string
+	}{
+		{
+			// The join overwrites email, but the $match before it reads the source field.
+			statement: `db.users.aggregate([{$match: {email: "guess@example.com"}}, {$lookup: {from: "orders", localField: "_id", foreignField: "userId", as: "email"}}])`,
+			source:    testMongoDBUsersSchema(),
+			result:    joinedOverEmail,
+			want:      `using field "email"`,
+		},
+		{
+			statement: `db.orders.aggregate([{$lookup: {from: "users", localField: "u", foreignField: "_id", as: "u"}}, {$match: {"u.email": "guess@example.com"}}])`,
+			result:    joinedUsers,
+			want:      `using field "u.email"`,
+		},
+		{
+			statement: `db.orders.aggregate([{$lookup: {from: "users", localField: "u", foreignField: "_id", as: "u"}}, {$match: {u: {$elemMatch: {name: "n"}}}}])`,
+			result:    injectJoinedSchemas(nil, []joinedSchema{{asField: "u", schema: &storepb.ObjectSchema{Type: storepb.ObjectSchema_OBJECT, SemanticType: masker.DefaultSemanticTypeID}}}),
+			want:      `using field "u"`,
+		},
+		{
+			statement: `db.users.find({name: "n"})`,
+			source:    testMongoDBUsersSchema(),
+			result:    testMongoDBUsersSchema(),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.statement, func(t *testing.T) {
+			t.Parallel()
+			span, err := mongodbparser.GetQuerySpan(context.Background(), parserbase.GetQuerySpanContext{}, parserbase.Statement{Text: tc.statement}, "mydb", "", false)
+			require.NoError(t, err)
+			got := mongoDBPredicateRefusal(span, tc.source, tc.result)
+			if tc.want == "" {
+				require.Empty(t, got)
+				return
+			}
+			require.Contains(t, got, tc.want)
 		})
 	}
 }

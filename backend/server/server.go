@@ -248,7 +248,8 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if profile.SQLReviewV2 {
 		ruleReviewCovers = reviewrun.ReviewsEngine
 	}
-	combinedExecutor := plancheck.NewCombinedExecutor(stores, sheetManager, s.dbFactory, ruleReviewCovers)
+	rulesOffMeansV1 := profile.Mode == common.ReleaseModeDev
+	combinedExecutor := plancheck.NewCombinedExecutor(stores, sheetManager, s.dbFactory, ruleReviewCovers, rulesOffMeansV1)
 	s.planCheckScheduler = plancheck.NewScheduler(stores, s.bus, combinedExecutor, s.licenseService, productMetrics)
 
 	var ruleReviewExecutor *reviewrun.RuleExecutor

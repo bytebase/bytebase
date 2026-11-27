@@ -16,11 +16,10 @@ import (
 )
 
 func init() {
-	base.Register(base.Engine{
-		Split:         SplitSQL,
-		ValidateQuery: validateQuery,
-		QuerySpan:     GetQuerySpan,
-	}, storepb.Engine_COSMOSDB)
+	engine := base.OmniEngine(analysis.Engine)
+	engine.Split = SplitSQL
+	engine.QuerySpan = GetQuerySpan
+	base.Register(engine, storepb.Engine_COSMOSDB)
 }
 
 // AST wraps an omni CosmosDB AST node and implements the base.AST interface.
@@ -61,15 +60,6 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	return base.BuildStatements(statement, stmts, func(s omnicosmosdb.Statement) (int, int, bool) {
 		return s.ByteStart, s.ByteEnd, s.Empty()
 	}, false), nil
-}
-
-func validateQuery(statement string) (bool, bool, error) {
-	_, err := parseCosmosDB(statement)
-	if err != nil {
-		return false, false, err
-	}
-
-	return true, true, nil
 }
 
 func GetQuerySpan(_ context.Context, _ base.GetQuerySpanContext, stmt base.Statement, _, _ string, _ bool) (*base.QuerySpan, error) {

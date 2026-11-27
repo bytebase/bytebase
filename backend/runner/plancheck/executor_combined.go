@@ -20,6 +20,10 @@ type CombinedExecutor struct {
 	// ruleReviewCovers reports whether SQL Review V2's standard rule review
 	// covers an engine; nil where SQL Review V2 is off.
 	ruleReviewCovers func(storepb.Engine) bool
+	// rulesOffMeansV1 hands a project whose standard rules are all off back to
+	// V1's advice. A dev build's SQL Review page switches between V1 and V2
+	// that way; Bytebase Cloud has no V1 settings to fall back to.
+	rulesOffMeansV1 bool
 }
 
 // NewCombinedExecutor creates a combined executor.
@@ -28,12 +32,14 @@ func NewCombinedExecutor(
 	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
 	ruleReviewCovers func(storepb.Engine) bool,
+	rulesOffMeansV1 bool,
 ) *CombinedExecutor {
 	return &CombinedExecutor{
 		store:            store,
 		sheetManager:     sheetManager,
 		dbFactory:        dbFactory,
 		ruleReviewCovers: ruleReviewCovers,
+		rulesOffMeansV1:  rulesOffMeansV1,
 	}
 }
 
@@ -72,12 +78,11 @@ func (e *CombinedExecutor) RunForTarget(ctx context.Context, target *CheckTarget
 }
 
 // supersededBySQLReviewV2 reports whether the standard rule review replaces
-// the check where SQL Review V2 is on: only the SQL review advice, only on an
-// engine the rule review covers, and only where the project's review rule
-// policy leaves a rule on. V1 advises everywhere else, so a policy with every
-// rule off hands the project back to V1. The gh-ost check stays, since it
-// dry-runs the migration against the instance, which the ONLINE_MIGRATION
-// rule, reading the SQL alone, cannot.
+// the check where SQL Review V2 is on: only the SQL review advice, and only on
+// an engine the rule review covers. With rulesOffMeansV1, V1 keeps advising a
+// project whose review rule policy leaves every rule off. The gh-ost check
+// stays, since it dry-runs the migration against the instance, which the
+// ONLINE_MIGRATION rule, reading the SQL alone, cannot.
 func (e *CombinedExecutor) supersededBySQLReviewV2(ctx context.Context, target *CheckTarget, checkType storepb.PlanCheckType) bool {
 	if e.ruleReviewCovers == nil || checkType != storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE {
 		return false
@@ -89,6 +94,9 @@ func (e *CombinedExecutor) supersededBySQLReviewV2(ctx context.Context, target *
 	}
 	if !e.ruleReviewCovers(instance.Metadata.GetEngine()) {
 		return false
+	}
+	if !e.rulesOffMeansV1 {
+		return true
 	}
 	policy, err := e.store.GetEffectiveReviewRulePolicy(ctx, instance.Workspace, database.ProjectID)
 	if err != nil {

@@ -1,20 +1,44 @@
 import { afterEach, expect, test, vi } from "vitest";
+import { STORAGE_KEY_SQL_REVIEW_VERSION } from "./storage-keys";
 
 afterEach(() => {
   localStorage.clear();
 });
 
-test("the gate follows the dev build flag", async () => {
+test("a release bundle turns the gate on for Bytebase Cloud only", async () => {
   vi.resetModules();
   vi.doMock("./util", () => ({ isDev: () => false }));
-  const disabled = await import("./featureGates");
-  expect(disabled.sqlReviewV2Enabled()).toBe(false);
+  const { sqlReviewV2Enabled } = await import("./featureGates");
+  const { useAppStore } = await import("@/stores/app");
 
+  useAppStore.setState({ serverInfo: undefined });
+  expect(sqlReviewV2Enabled()).toBe(false);
+
+  useAppStore.setState({ serverInfo: { saas: false } as never });
+  expect(sqlReviewV2Enabled()).toBe(false);
+
+  useAppStore.setState({ serverInfo: { saas: true } as never });
+  expect(sqlReviewV2Enabled()).toBe(true);
+
+  // Cloud has no V1/V2 switch to read.
+  localStorage.setItem(STORAGE_KEY_SQL_REVIEW_VERSION, "v1");
+  expect(sqlReviewV2Enabled()).toBe(true);
+
+  useAppStore.setState({ serverInfo: undefined });
+  vi.doUnmock("./util");
+  vi.resetModules();
+});
+
+test("a dev build turns the gate on whether or not it runs as Cloud", async () => {
   vi.resetModules();
   vi.doMock("./util", () => ({ isDev: () => true }));
-  const enabled = await import("./featureGates");
-  expect(enabled.sqlReviewV2Enabled()).toBe(true);
+  const { sqlReviewV2Enabled } = await import("./featureGates");
+  const { useAppStore } = await import("@/stores/app");
 
+  useAppStore.setState({ serverInfo: { saas: false } as never });
+  expect(sqlReviewV2Enabled()).toBe(true);
+
+  useAppStore.setState({ serverInfo: undefined });
   vi.doUnmock("./util");
   vi.resetModules();
 });

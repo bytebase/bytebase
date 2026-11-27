@@ -5,9 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"regexp"
+	"slices"
 	"strings"
 
 	"connectrpc.com/connect"
+	esanalysis "github.com/bytebase/omni/elasticsearch/analysis"
+	metadatapb "github.com/bytebase/omni/metadata"
+	mongoanalysis "github.com/bytebase/omni/mongo/analysis"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -78,11 +83,19 @@ func preExecuteMaskingCheckMongoDB(
 	database *store.DatabaseMessage,
 	spans []*parserbase.QuerySpan,
 ) error {
+	databases := newMongoDBDatabases(ctx, stores, database)
 	for _, span := range spans {
 		if span.MongoDBAnalysis == nil {
 			continue
 		}
 		analysis := span.MongoDBAnalysis
+		if err := databases.checkReads(analysis); err != nil {
+			var refusal *errMongoDBUncoveredRead
+			if errors.As(err, &refusal) {
+				return connect.NewError(connect.CodeInvalidArgument, err)
+			}
+			return connect.NewError(connect.CodeInternal, err)
+		}
 		if analysis.Collection == "" {
 			continue
 		}
@@ -102,34 +115,152 @@ func preExecuteMaskingCheckMongoDB(
 	return nil
 }
 
+// mongoDBDatabases reads, per database of the instance, the views a sync
+// stored and the collections that have masking, for the reads of a statement.
+type mongoDBDatabases struct {
+	current string
+	load    func(database string) (*metadatapb.DatabaseSchemaMetadata, *storepb.DatabaseConfig, error)
+	loaded  map[string]*mongoDBDatabase
+}
+
+type mongoDBDatabase struct {
+	views  map[string]string
+	masked map[string]bool
+}
+
+func newMongoDBDatabases(ctx context.Context, stores *store.Store, database *store.DatabaseMessage) *mongoDBDatabases {
+	return &mongoDBDatabases{
+		current: database.DatabaseName,
+		load: func(name string) (*metadatapb.DatabaseSchemaMetadata, *storepb.DatabaseConfig, error) {
+			dbSchema, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+				Workspace:    common.GetWorkspaceIDFromContext(ctx),
+				InstanceID:   database.InstanceID,
+				DatabaseName: name,
+			})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to get database schema: %q", name)
+			}
+			if dbSchema == nil {
+				return nil, nil, nil
+			}
+			return dbSchema.GetProto(), dbSchema.GetConfig(), nil
+		},
+		loaded: map[string]*mongoDBDatabase{},
+	}
+}
+
+func (d *mongoDBDatabases) get(name string) (*mongoDBDatabase, error) {
+	if db, ok := d.loaded[name]; ok {
+		return db, nil
+	}
+	metadata, config, err := d.load(name)
+	if err != nil {
+		return nil, err
+	}
+	db := &mongoDBDatabase{views: map[string]string{}, masked: map[string]bool{}}
+	for _, schema := range metadata.GetSchemas() {
+		for _, view := range schema.GetViews() {
+			db.views[view.GetName()] = view.GetDefinition()
+		}
+	}
+	for _, schema := range config.GetSchemas() {
+		for _, table := range schema.GetTables() {
+			if objectSchemaHasSemanticTypes(table.GetObjectSchema()) {
+				db.masked[table.GetName()] = true
+			}
+		}
+	}
+	d.loaded[name] = db
+	return db, nil
+}
+
+// namespace names ns by its database, the one the statement runs in for "".
+func (d *mongoDBDatabases) namespace(ns mongoanalysis.Namespace) mongoanalysis.Namespace {
+	if ns.Database == "" {
+		ns.Database = d.current
+	}
+	return ns
+}
+
+// errMongoDBUncoveredRead reports a read of a masked collection whose
+// documents masking cannot place in the result.
+type errMongoDBUncoveredRead struct {
+	read mongoanalysis.Namespace
+}
+
+func (e *errMongoDBUncoveredRead) Error() string {
+	return fmt.Sprintf("the query reads collection %q of database %q, which has data masking, through a view, another database, $unionWith, $facet, a $lookup pipeline or a $lookup whose \"as\" is a dotted path; MongoDB dynamic masking supports reading it directly or joining it by localField and foreignField", e.read.Collection, e.read.Database)
+}
+
+// checkReads refuses a read whose result may carry documents of a masked
+// collection that masking does not cover. find(), findOne() and a
+// shape-preserving aggregate() mask their collection, and an aggregate masks
+// the documents each $lookup or $graphLookup with a plain "as" joins by its
+// collection's schema. Any other read of a masked collection is refused: one
+// through a view, in another database, by $unionWith, $facet or a $lookup
+// pipeline, or by an operation masking does not cover.
+func (d *mongoDBDatabases) checkReads(analysis *parserbase.MongoDBAnalysis) error {
+	covered := map[mongoanalysis.Namespace]int{}
+	switch analysis.API {
+	case parserbase.MongoDBMaskableAPIFind, parserbase.MongoDBMaskableAPIFindOne, parserbase.MongoDBMaskableAPIAggregate:
+		covered[d.namespace(mongoanalysis.Namespace{Collection: analysis.Collection})]++
+		for _, join := range analysis.JoinedCollections {
+			if !strings.Contains(join.AsField, ".") {
+				covered[d.namespace(mongoanalysis.Namespace{Collection: join.Collection})]++
+			}
+		}
+	default:
+	}
+	for _, read := range analysis.Reads {
+		read := d.namespace(mongoanalysis.Namespace{Database: read.Database, Collection: read.Collection})
+		var loadErr error
+		expanded, err := mongoanalysis.ExpandViews([]mongoanalysis.Namespace{read}, func(ns mongoanalysis.Namespace) (string, bool) {
+			db, err := d.get(ns.Database)
+			if err != nil {
+				loadErr = err
+				return "", false
+			}
+			definition, ok := db.views[ns.Collection]
+			return definition, ok
+		})
+		if loadErr != nil {
+			return loadErr
+		}
+		if err != nil {
+			return &errMongoDBUncoveredRead{read: read}
+		}
+		for i, ns := range expanded {
+			db, err := d.get(ns.Database)
+			if err != nil {
+				return err
+			}
+			if !db.masked[ns.Collection] {
+				continue
+			}
+			// The read itself is covered once per place masking puts it; what
+			// a view reads is never covered, since a view has no schema.
+			if i == 0 && covered[ns] > 0 {
+				covered[ns]--
+				continue
+			}
+			return &errMongoDBUncoveredRead{read: ns}
+		}
+	}
+	return nil
+}
+
 func preExecuteMaskingCheckElasticsearch(
 	ctx context.Context,
 	stores *store.Store,
 	database *store.DatabaseMessage,
 	spans []*parserbase.QuerySpan,
 ) error {
-	for _, span := range spans {
-		if span.ElasticsearchAnalysis == nil {
-			continue
-		}
-		analysis := span.ElasticsearchAnalysis
-		if analysis.API == parserbase.ElasticsearchAPIUnsupported {
-			continue
-		}
-		indexName := analysis.Index
-		if indexName == "" {
-			continue
-		}
-		objectSchema, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, indexName)
-		if err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get object schema for index %q", indexName))
-		}
-		if objectSchema == nil || !objectSchemaHasSemanticTypes(objectSchema) {
-			continue
-		}
-		if err := checkElasticsearchRequestBlocked(analysis); err != nil {
-			return connect.NewError(connect.CodeInvalidArgument, err)
-		}
+	tables, err := loadElasticsearchTables(ctx, stores, database)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, err)
+	}
+	if err := tables.checkRequests(spans); err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	return nil
 }
@@ -148,32 +279,44 @@ func checkSensitivePredicates(
 		return "", nil
 	}
 
-	var objectSchema *storepb.ObjectSchema
-	var err error
-
 	if analysis := span.MongoDBAnalysis; analysis != nil && analysis.Collection != "" {
-		objectSchema, err = getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+		source, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to get object schema for collection %q", analysis.Collection)
 		}
-	} else if analysis := span.ElasticsearchAnalysis; analysis != nil && analysis.Index != "" {
-		objectSchema, err = getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Index)
+		result, err := getMongoDBResultSchema(ctx, stores, database, analysis)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to get object schema for index %q", analysis.Index)
+			return "", err
 		}
+		return mongoDBPredicateRefusal(span, source, result), nil
 	}
+	return "", nil
+}
 
+// mongoDBPredicateRefusal checks a read's predicates against its collection's
+// schema and against its result's: a $match before a $lookup reads the source
+// fields, which the join's "as" may then overwrite, and one after it reads the
+// joined fields.
+func mongoDBPredicateRefusal(span *parserbase.QuerySpan, source, result *storepb.ObjectSchema) string {
+	if refusal := predicateRefusal(span, source); refusal != "" {
+		return refusal
+	}
+	return predicateRefusal(span, result)
+}
+
+// predicateRefusal returns the refusal for a span whose predicates use a field
+// the schema tags with a semantic type, or "" if none does.
+func predicateRefusal(span *parserbase.QuerySpan, objectSchema *storepb.ObjectSchema) string {
 	if objectSchema == nil {
-		return "", nil
+		return ""
 	}
-
 	for pathStr := range span.PredicatePaths {
 		semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
 		if semanticType != "" {
-			return fmt.Sprintf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType), nil
+			return fmt.Sprintf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType)
 		}
 	}
-	return "", nil
+	return ""
 }
 
 func getFirstSemanticTypeInPath(ast *parserbase.PathAST, objectSchema *storepb.ObjectSchema) string {
@@ -547,6 +690,15 @@ func getJSONMemberFromRowValue(rowValue *v1pb.RowValue) any {
 	return nil
 }
 
+// unmarshalKeepingNumbers decodes a response whose documents may be returned
+// unmasked, keeping each number's digits as a json.Number: a long past 2^53
+// read as a float64 would come back rounded.
+func unmarshalKeepingNumbers(text string, v any) error {
+	decoder := json.NewDecoder(strings.NewReader(text))
+	decoder.UseNumber()
+	return decoder.Decode(v)
+}
+
 func getRowValueFromJSONAtomicMember(data any) (result *v1pb.RowValue, ok bool) {
 	if data == nil {
 		return &v1pb.RowValue{
@@ -562,6 +714,16 @@ func getRowValueFromJSONAtomicMember(data any) (result *v1pb.RowValue, ok bool) 
 		// https://pkg.go.dev/encoding/json#Unmarshal
 		return &v1pb.RowValue{
 			Kind: &v1pb.RowValue_DoubleValue{DoubleValue: data},
+		}, true
+	case json.Number:
+		// A number about to be masked is masked as a double, as one decoded
+		// without UseNumber is.
+		f, err := data.Float64()
+		if err != nil {
+			return nil, false
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_DoubleValue{DoubleValue: f},
 		}, true
 	case bool:
 		return &v1pb.RowValue{
@@ -742,24 +904,12 @@ func (*mongoDBMasker) maskResults(
 			continue
 		}
 
-		objectSchema, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+		objectSchema, err := getMongoDBResultSchema(ctx, stores, database, analysis)
 		if err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get object schema for collection %q", analysis.Collection))
+			return connect.NewError(connect.CodeInternal, err)
 		}
 		if objectSchema == nil {
 			continue
-		}
-
-		if len(analysis.JoinedCollections) > 0 {
-			var joined []joinedSchema
-			for _, jc := range analysis.JoinedCollections {
-				js, jsErr := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, jc.Collection)
-				if jsErr != nil {
-					return connect.NewError(connect.CodeInternal, errors.Wrapf(jsErr, "failed to get object schema for joined collection %q", jc.Collection))
-				}
-				joined = append(joined, joinedSchema{asField: jc.AsField, schema: js})
-			}
-			objectSchema = injectJoinedSchemas(objectSchema, joined)
 		}
 
 		for _, row := range result.Rows {
@@ -803,22 +953,43 @@ func checkMongoDBRequestBlocked(analysis *parserbase.MongoDBAnalysis) error {
 	return nil
 }
 
+// getMongoDBResultSchema returns the schema a read's result documents are
+// masked by: its collection's, with each joined collection's schema at the
+// field its $lookup or $graphLookup writes. It is nil when none of them has a
+// schema.
+func getMongoDBResultSchema(ctx context.Context, stores *store.Store, database *store.DatabaseMessage, analysis *parserbase.MongoDBAnalysis) (*storepb.ObjectSchema, error) {
+	objectSchema, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get object schema for collection %q", analysis.Collection)
+	}
+	var joined []joinedSchema
+	for _, jc := range analysis.JoinedCollections {
+		js, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, jc.Collection)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get object schema for joined collection %q", jc.Collection)
+		}
+		if js != nil {
+			joined = append(joined, joinedSchema{asField: jc.AsField, schema: js})
+		}
+	}
+	return injectJoinedSchemas(objectSchema, joined), nil
+}
+
 // injectJoinedSchemas adds array-of-objects schemas for each $lookup/$graphLookup join
 // into the source objectSchema so masking covers the joined field.
 // The as field holds an array of joined documents, so the injected schema is ARRAY{item: joinedSchema}.
-// If the source schema has no StructKind or the joined collection has no schema, the join is skipped silently.
+// A source collection with no schema starts from an empty one, so its joins are
+// still masked; one whose whole document has a semantic type is masked whole.
+// A joined collection with no schema is skipped.
 func injectJoinedSchemas(objectSchema *storepb.ObjectSchema, joins []joinedSchema) *storepb.ObjectSchema {
-	if objectSchema == nil || len(joins) == 0 {
-		return objectSchema
-	}
-	structKind := objectSchema.GetStructKind()
-	if structKind == nil {
+	if len(joins) == 0 || objectSchema.GetSemanticType() != "" {
 		return objectSchema
 	}
 
 	// Clone properties map so we don't mutate the cached schema.
-	props := make(map[string]*storepb.ObjectSchema, len(structKind.Properties)+len(joins))
-	maps.Copy(props, structKind.Properties)
+	properties := objectSchema.GetStructKind().GetProperties()
+	props := make(map[string]*storepb.ObjectSchema, len(properties)+len(joins))
+	maps.Copy(props, properties)
 	for _, j := range joins {
 		if j.schema == nil {
 			continue
@@ -855,6 +1026,211 @@ type joinedSchema struct {
 // elasticsearchMasker implements documentMasker for Elasticsearch.
 type elasticsearchMasker struct{}
 
+// elasticsearchTables is what a sync stored about an Elasticsearch database:
+// the indices, data streams and aliases a request's targets resolve against,
+// and the masking schema of each table that has one.
+type elasticsearchTables struct {
+	metadata *metadatapb.DatabaseSchemaMetadata
+	known    map[string]bool
+	masked   map[string]*storepb.ObjectSchema
+}
+
+func loadElasticsearchTables(ctx context.Context, stores *store.Store, database *store.DatabaseMessage) (*elasticsearchTables, error) {
+	dbSchema, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database schema: %q", database.DatabaseName)
+	}
+	if dbSchema == nil {
+		return newElasticsearchTables(nil, nil), nil
+	}
+	return newElasticsearchTables(dbSchema.GetProto(), dbSchema.GetConfig()), nil
+}
+
+func newElasticsearchTables(metadata *metadatapb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig) *elasticsearchTables {
+	t := &elasticsearchTables{
+		metadata: metadata,
+		known:    map[string]bool{},
+		masked:   map[string]*storepb.ObjectSchema{},
+	}
+	for _, schema := range metadata.GetSchemas() {
+		for _, table := range schema.GetTables() {
+			t.known[table.GetName()] = true
+		}
+	}
+	for _, schema := range config.GetSchemas() {
+		for _, table := range schema.GetTables() {
+			if objectSchemaHasSemanticTypes(table.GetObjectSchema()) {
+				t.masked[table.GetName()] = table.GetObjectSchema()
+			}
+		}
+	}
+	return t
+}
+
+// table returns the synced table an index name reads: the name itself, or the
+// data stream whose backing or failure-store index it is.
+func (t *elasticsearchTables) table(index string) (string, bool) {
+	if t.known[index] {
+		return index, true
+	}
+	rest, ok := strings.CutPrefix(index, ".ds-")
+	if !ok {
+		rest, ok = strings.CutPrefix(index, ".fs-")
+	}
+	if !ok {
+		return "", false
+	}
+	// .ds-<stream>-<yyyy.MM.dd>-<generation>, or .ds-<stream>-<generation>
+	// before Elasticsearch 7.11.
+	i := strings.LastIndexByte(rest, '-')
+	if i < 0 || !isDigits(rest[i+1:]) {
+		return "", false
+	}
+	rest = rest[:i]
+	if j := strings.LastIndexByte(rest, '-'); j >= 0 && backingIndexDate.MatchString(rest[j+1:]) && t.known[rest[:j]] {
+		return rest[:j], true
+	}
+	if t.known[rest] {
+		return rest, true
+	}
+	return "", false
+}
+
+var backingIndexDate = regexp.MustCompile(`^\d{4}\.\d{2}\.\d{2}$`)
+
+func isDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// schemaOf returns the masking schema of the table an index name reads, nil
+// when that table has none, and false when the name reads no synced table.
+func (t *elasticsearchTables) schemaOf(index string) (*storepb.ObjectSchema, bool) {
+	table, ok := t.table(index)
+	if !ok {
+		return nil, false
+	}
+	return t.masked[table], true
+}
+
+// resolve returns the synced tables a request reads and the target names it
+// cannot place: an index, alias or data stream created since the last sync, a
+// remote or date-math name, or a wildcard that may reach hidden indices.
+func (t *elasticsearchTables) resolve(analysis *parserbase.ElasticsearchAnalysis) (tables, unresolved []string) {
+	for _, names := range analysis.Targets {
+		if len(names) == 0 && analysis.ExpandsHidden {
+			unresolved = append(unresolved, "_all")
+		}
+		for i, name := range names {
+			if i > 0 && strings.HasPrefix(name, "-") {
+				continue
+			}
+			wildcard := name == "_all" || strings.Contains(name, "*")
+			if wildcard && (analysis.ExpandsHidden || strings.HasPrefix(name, ".")) {
+				unresolved = append(unresolved, name)
+			}
+		}
+	}
+	for _, name := range esanalysis.ExpandIndices(analysis.Targets, t.metadata) {
+		if table, ok := t.table(name); ok {
+			tables = append(tables, table)
+		} else {
+			unresolved = append(unresolved, name)
+		}
+	}
+	slices.Sort(tables)
+	slices.Sort(unresolved)
+	return slices.Compact(tables), slices.Compact(unresolved)
+}
+
+// maskedSchemas returns the masking schemas of the tables given.
+func (t *elasticsearchTables) maskedSchemas(tables []string) []*storepb.ObjectSchema {
+	var schemas []*storepb.ObjectSchema
+	for _, table := range tables {
+		if schema := t.masked[table]; schema != nil {
+			schemas = append(schemas, schema)
+		}
+	}
+	return schemas
+}
+
+// checkRequests refuses, before execution, a request masking cannot cover: one
+// whose targets name something the sync did not store while any table has
+// masking, since nothing tells what it reads, and a blocked API or feature, or
+// a _source read of more than one table, on a masked table.
+func (t *elasticsearchTables) checkRequests(spans []*parserbase.QuerySpan) error {
+	if len(t.masked) == 0 {
+		return nil
+	}
+	for _, span := range spans {
+		analysis := span.ElasticsearchAnalysis
+		if analysis == nil || analysis.API == parserbase.ElasticsearchAPIUnsupported {
+			continue
+		}
+		tables, unresolved := t.resolve(analysis)
+		if len(unresolved) > 0 {
+			return errors.Errorf("cannot tell which indices %s read when data masking is configured; name synced indices, aliases or data streams, or sync the database", quoteNames(unresolved))
+		}
+		if len(t.maskedSchemas(tables)) == 0 {
+			continue
+		}
+		if err := checkElasticsearchRequestBlocked(analysis); err != nil {
+			return err
+		}
+		if analysis.API == parserbase.ElasticsearchAPIMaskGetSource && len(tables) > 1 {
+			return errors.Errorf("a _source read of %s is not supported when data masking is configured; name one index", quoteNames(tables))
+		}
+	}
+	return nil
+}
+
+func quoteNames(names []string) string {
+	quoted := make([]string, len(names))
+	for i, name := range names {
+		quoted[i] = fmt.Sprintf("%q", name)
+	}
+	return strings.Join(quoted, ", ")
+}
+
+// elasticsearchIndexLookup returns the masking schema for the index a hit or
+// document names (nil when it has none), and false when it reads no synced table.
+type elasticsearchIndexLookup func(index string) (*storepb.ObjectSchema, bool)
+
+// errElasticsearchUnresolvedIndex reports a hit or document from an index the
+// sync did not store; its result is refused rather than returned unmasked.
+type errElasticsearchUnresolvedIndex struct {
+	index string
+}
+
+func (e *errElasticsearchUnresolvedIndex) Error() string {
+	return fmt.Sprintf("the result holds documents of index %q, which is not synced, and data masking is configured; sync the database and run the query again", e.index)
+}
+
+func hitSchema(doc map[string]any, lookup elasticsearchIndexLookup) (*storepb.ObjectSchema, error) {
+	// Elasticsearch names the index of every hit and document; one that names
+	// none looks up "", which no synced table is.
+	index, isString := doc["_index"].(string)
+	if !isString {
+		index = ""
+	}
+	schema, ok := lookup(index)
+	if !ok {
+		return nil, &errElasticsearchUnresolvedIndex{index: index}
+	}
+	return schema, nil
+}
+
 func (*elasticsearchMasker) maskResults(
 	ctx context.Context,
 	stores *store.Store,
@@ -864,103 +1240,133 @@ func (*elasticsearchMasker) maskResults(
 	semanticTypeToMaskerMap map[string]masker.Masker,
 	_ db.QueryContext,
 ) error {
+	tables, err := loadElasticsearchTables(ctx, stores, database)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, err)
+	}
+	return tables.maskResults(spans, results, semanticTypeToMaskerMap)
+}
+
+func (t *elasticsearchTables) maskResults(spans []*parserbase.QuerySpan, results []*v1pb.QueryResult, semanticTypeToMaskerMap map[string]masker.Masker) error {
+	if len(t.masked) == 0 {
+		return nil
+	}
 	for i, result := range results {
-		if i < len(spans) {
-			if errMsg, err := checkSensitivePredicates(ctx, stores, database, spans[i]); err != nil {
-				return connect.NewError(connect.CodeInternal, err)
-			} else if errMsg != "" {
-				result.Error = errMsg
-				result.Rows = nil
-				result.RowsCount = 0
-				continue
+		if i >= len(spans) {
+			continue
+		}
+		analysis := spans[i].ElasticsearchAnalysis
+		if analysis == nil || analysis.API == parserbase.ElasticsearchAPIUnsupported || analysis.API == parserbase.ElasticsearchAPIBlocked {
+			continue
+		}
+		tables, _ := t.resolve(analysis)
+		refusal := ""
+		for _, schema := range t.maskedSchemas(tables) {
+			if refusal = predicateRefusal(spans[i], schema); refusal != "" {
+				break
 			}
 		}
+		if refusal == "" {
+			err := maskElasticsearchResult(result, analysis, tables, t, semanticTypeToMaskerMap)
+			var unresolved *errElasticsearchUnresolvedIndex
+			if errors.As(err, &unresolved) {
+				refusal = unresolved.Error()
+			} else if err != nil {
+				return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to mask ES response"))
+			}
+		}
+		if refusal != "" {
+			result.Error = refusal
+			result.Rows = nil
+			result.RowsCount = 0
+		}
+	}
+	return nil
+}
 
-		var analysis *parserbase.ElasticsearchAnalysis
-		if i < len(spans) {
-			analysis = spans[i].ElasticsearchAnalysis
+// maskElasticsearchResult masks one request's result. A hit or document is
+// masked by the schema of the index it names in _index; a _source read names
+// none, so it takes the one table its target resolves to.
+func maskElasticsearchResult(result *v1pb.QueryResult, analysis *parserbase.ElasticsearchAnalysis, tables []string, t *elasticsearchTables, semanticTypeToMaskerMap map[string]masker.Masker) error {
+	lookup := t.schemaOf
+	for _, row := range result.Rows {
+		docIndex := ""
+		for colIdx, colName := range result.ColumnNames {
+			if colName == "_index" && colIdx < len(row.Values) {
+				_ = json.Unmarshal([]byte(row.Values[colIdx].GetStringValue()), &docIndex)
+			}
 		}
-		if analysis == nil {
-			continue
-		}
-		if analysis.API == parserbase.ElasticsearchAPIUnsupported || analysis.API == parserbase.ElasticsearchAPIBlocked {
-			continue
-		}
+		for colIdx, colName := range result.ColumnNames {
+			if colIdx >= len(row.Values) {
+				break
+			}
+			value := row.Values[colIdx].GetStringValue()
+			if value == "" {
+				continue
+			}
 
-		indexName := analysis.Index
-		if indexName == "" {
-			continue
-		}
-		objectSchema, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, indexName)
-		if err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get object schema for index %q", indexName))
-		}
-		if objectSchema == nil || !objectSchemaHasSemanticTypes(objectSchema) {
-			continue
-		}
-
-		for _, row := range result.Rows {
-			for colIdx, colName := range result.ColumnNames {
-				if colIdx >= len(row.Values) {
-					break
-				}
-				value := row.Values[colIdx].GetStringValue()
-				if value == "" {
-					continue
-				}
-
-				var maskedValue string
-				var maskErr error
-
-				switch analysis.API {
-				case parserbase.ElasticsearchAPIMaskSearch:
-					switch colName {
-					case "hits":
-						maskedValue, maskErr = maskElasticsearchHitsColumn(value, analysis.SortFields, objectSchema, semanticTypeToMaskerMap)
-					case "responses":
-						maskedValue, maskErr = maskElasticsearchMSearchResponses(value, analysis.SortFields, objectSchema, semanticTypeToMaskerMap)
-					default:
-						continue
-					}
-				case parserbase.ElasticsearchAPIMaskGetDoc, parserbase.ElasticsearchAPIMaskExplain:
-					if colName == "_source" {
-						maskedValue, maskErr = maskDocumentString(value, objectSchema, semanticTypeToMaskerMap)
-					} else {
-						continue
-					}
-				case parserbase.ElasticsearchAPIMaskGetSource:
-					maskedValue, maskErr = maskElasticsearchGetSourceColumn(colName, value, objectSchema, semanticTypeToMaskerMap)
-				case parserbase.ElasticsearchAPIMaskMGet:
-					if colName == "docs" {
-						maskedValue, maskErr = maskElasticsearchMGetSource(value, objectSchema, semanticTypeToMaskerMap)
-					} else {
-						continue
-					}
+			var maskedValue string
+			var err error
+			switch analysis.API {
+			case parserbase.ElasticsearchAPIMaskSearch:
+				switch colName {
+				case "hits":
+					maskedValue, err = maskElasticsearchHitsColumn(value, analysis.SortFields, lookup, semanticTypeToMaskerMap)
+				case "responses":
+					maskedValue, err = maskElasticsearchMSearchResponses(value, analysis.SortFields, lookup, semanticTypeToMaskerMap)
 				default:
 					continue
 				}
-
-				if maskErr != nil {
-					return connect.NewError(connect.CodeInternal, errors.Wrapf(maskErr, "failed to mask ES response"))
+			case parserbase.ElasticsearchAPIMaskGetDoc, parserbase.ElasticsearchAPIMaskExplain:
+				if colName != "_source" {
+					continue
 				}
-
-				row.Values[colIdx] = &v1pb.RowValue{
-					Kind: &v1pb.RowValue_StringValue{
-						StringValue: maskedValue,
-					},
+				schema, ok := lookup(docIndex)
+				if !ok {
+					return &errElasticsearchUnresolvedIndex{index: docIndex}
 				}
+				maskedValue, err = maskDocumentString(value, schema, semanticTypeToMaskerMap)
+			case parserbase.ElasticsearchAPIMaskGetSource:
+				schemas := t.maskedSchemas(tables)
+				if len(schemas) == 0 {
+					continue
+				}
+				if len(tables) != 1 {
+					return errors.Errorf("a _source read of %s cannot be masked", quoteNames(tables))
+				}
+				maskedValue, err = maskElasticsearchGetSourceColumn(colName, value, schemas[0], semanticTypeToMaskerMap)
+			case parserbase.ElasticsearchAPIMaskMGet:
+				if colName != "docs" {
+					continue
+				}
+				maskedValue, err = maskElasticsearchMGetSource(value, lookup, semanticTypeToMaskerMap)
+			default:
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			row.Values[colIdx] = &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: maskedValue,
+				},
 			}
 		}
 	}
 	return nil
 }
 
-// lookupSemanticTypeByDotPath splits a dot-delimited field path and walks the ObjectSchema
-// to find the semantic type at the leaf.
+// lookupSemanticTypeByDotPath splits a dot-delimited field path and walks the ObjectSchema,
+// through the items of arrays, to find the semantic type at the leaf.
 func lookupSemanticTypeByDotPath(dotPath string, objectSchema *storepb.ObjectSchema) string {
 	parts := strings.Split(dotPath, ".")
 	current := objectSchema
 	for _, part := range parts {
+		// A dotted path reaches into the documents of an array, as a
+		// $lookup's joined field holds them.
+		for current != nil && current.SemanticType == "" && current.GetArrayKind() != nil {
+			current = current.GetArrayKind().GetKind()
+		}
 		if current == nil {
 			return ""
 		}
@@ -980,6 +1386,10 @@ func lookupSemanticTypeByDotPath(dotPath string, objectSchema *storepb.ObjectSch
 			return ""
 		}
 		current = child
+	}
+	// A condition on an array field matches its items too.
+	for current != nil && current.SemanticType == "" && current.GetArrayKind() != nil {
+		current = current.GetArrayKind().GetKind()
 	}
 	if current != nil {
 		return current.SemanticType
@@ -1174,9 +1584,9 @@ func maskElasticsearchInnerHitGroup(name string, ihVal any, sortFields []string,
 // within a hits column value. The hitsColumnJSON is the JSON string from the "hits" column,
 // e.g. {"total":{"value":1},"hits":[{"_source":{...},"fields":{...},"highlight":{...},"sort":[...]}]}.
 // sortFields is the ordered list of field names from the request's sort clause.
-func maskElasticsearchHitsColumn(hitsColumnJSON string, sortFields []string, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (string, error) {
+func maskElasticsearchHitsColumn(hitsColumnJSON string, sortFields []string, lookup elasticsearchIndexLookup, semanticTypeToMasker map[string]masker.Masker) (string, error) {
 	var hitsObj map[string]any
-	if err := json.Unmarshal([]byte(hitsColumnJSON), &hitsObj); err != nil {
+	if err := unmarshalKeepingNumbers(hitsColumnJSON, &hitsObj); err != nil {
 		return "", errors.Wrap(err, "failed to unmarshal hits column")
 	}
 
@@ -1185,15 +1595,8 @@ func maskElasticsearchHitsColumn(hitsColumnJSON string, sortFields []string, obj
 		return hitsColumnJSON, nil
 	}
 
-	for i, hit := range hitsArray {
-		hitMap, ok := hit.(map[string]any)
-		if !ok {
-			continue
-		}
-		if err := maskElasticsearchSingleHit(hitMap, sortFields, objectSchema, semanticTypeToMasker); err != nil {
-			return "", errors.Wrapf(err, "failed to mask hit %d", i)
-		}
-		hitsArray[i] = hitMap
+	if err := maskElasticsearchHits(hitsArray, sortFields, lookup, semanticTypeToMasker); err != nil {
+		return "", err
 	}
 	hitsObj["hits"] = hitsArray
 
@@ -1237,9 +1640,9 @@ func maskElasticsearchGetSourceColumn(fieldName, valueJSON string, objectSchema 
 
 // maskElasticsearchMGetSource masks _source in each doc within a _mget response.
 // The docsColumnJSON is the JSON string from the "docs" column.
-func maskElasticsearchMGetSource(docsColumnJSON string, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (string, error) {
+func maskElasticsearchMGetSource(docsColumnJSON string, lookup elasticsearchIndexLookup, semanticTypeToMasker map[string]masker.Masker) (string, error) {
 	var docs []any
-	if err := json.Unmarshal([]byte(docsColumnJSON), &docs); err != nil {
+	if err := unmarshalKeepingNumbers(docsColumnJSON, &docs); err != nil {
 		return "", errors.Wrap(err, "failed to unmarshal docs column")
 	}
 
@@ -1248,14 +1651,19 @@ func maskElasticsearchMGetSource(docsColumnJSON string, objectSchema *storepb.Ob
 		if !ok {
 			continue
 		}
-		if source, ok := docMap["_source"].(map[string]any); ok {
-			masked, err := walkAndMaskJSONRecursive(source, objectSchema, semanticTypeToMasker)
-			if err != nil {
-				return "", errors.Wrapf(err, "failed to mask _source in doc %d", i)
-			}
-			docMap["_source"] = masked
+		source, ok := docMap["_source"].(map[string]any)
+		if !ok {
+			continue
 		}
-		docs[i] = docMap
+		objectSchema, err := hitSchema(docMap, lookup)
+		if err != nil {
+			return "", err
+		}
+		masked, err := walkAndMaskJSONRecursive(source, objectSchema, semanticTypeToMasker)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to mask _source in doc %d", i)
+		}
+		docMap["_source"] = masked
 	}
 
 	out, err := json.Marshal(docs)
@@ -1267,19 +1675,19 @@ func maskElasticsearchMGetSource(docsColumnJSON string, objectSchema *storepb.Ob
 
 // maskElasticsearchMSearchResponses masks the "responses" column from a _msearch response.
 // Each element in the responses array is a full search response with hits.
-func maskElasticsearchMSearchResponses(responsesColumnJSON string, sortFields []string, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (string, error) {
+func maskElasticsearchMSearchResponses(responsesColumnJSON string, sortFields []string, lookup elasticsearchIndexLookup, semanticTypeToMasker map[string]masker.Masker) (string, error) {
 	var responses []any
-	if err := json.Unmarshal([]byte(responsesColumnJSON), &responses); err != nil {
+	if err := unmarshalKeepingNumbers(responsesColumnJSON, &responses); err != nil {
 		return "", errors.Wrap(err, "failed to unmarshal responses column")
 	}
 
-	for i, resp := range responses {
+	for _, resp := range responses {
 		respMap, ok := resp.(map[string]any)
 		if !ok {
 			continue
 		}
-		if err := maskElasticsearchMSearchSingleResponse(respMap, sortFields, objectSchema, semanticTypeToMasker); err != nil {
-			return "", errors.Wrapf(err, "failed to mask response %d", i)
+		if err := maskElasticsearchMSearchSingleResponse(respMap, sortFields, lookup, semanticTypeToMasker); err != nil {
+			return "", err
 		}
 	}
 
@@ -1291,12 +1699,8 @@ func maskElasticsearchMSearchResponses(responsesColumnJSON string, sortFields []
 }
 
 // maskElasticsearchMSearchSingleResponse masks the hits in a single _msearch response element.
-func maskElasticsearchMSearchSingleResponse(respMap map[string]any, sortFields []string, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) error {
-	hitsVal, ok := respMap["hits"]
-	if !ok {
-		return nil
-	}
-	hitsObj, ok := hitsVal.(map[string]any)
+func maskElasticsearchMSearchSingleResponse(respMap map[string]any, sortFields []string, lookup elasticsearchIndexLookup, semanticTypeToMasker map[string]masker.Masker) error {
+	hitsObj, ok := respMap["hits"].(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -1304,15 +1708,29 @@ func maskElasticsearchMSearchSingleResponse(respMap map[string]any, sortFields [
 	if !ok {
 		return nil
 	}
-	for j, hit := range hitsArray {
+	return maskElasticsearchHits(hitsArray, sortFields, lookup, semanticTypeToMasker)
+}
+
+// maskElasticsearchHits masks each hit by the schema of the index it names in
+// _index, so a search over several indices, an alias or a data stream masks
+// every hit by its own table.
+func maskElasticsearchHits(hitsArray []any, sortFields []string, lookup elasticsearchIndexLookup, semanticTypeToMasker map[string]masker.Masker) error {
+	for i, hit := range hitsArray {
 		hitMap, ok := hit.(map[string]any)
 		if !ok {
 			continue
 		}
-		if err := maskElasticsearchSingleHit(hitMap, sortFields, objectSchema, semanticTypeToMasker); err != nil {
-			return errors.Wrapf(err, "failed to mask hit %d", j)
+		objectSchema, err := hitSchema(hitMap, lookup)
+		if err != nil {
+			return err
 		}
-		hitsArray[j] = hitMap
+		if objectSchema == nil {
+			continue
+		}
+		if err := maskElasticsearchSingleHit(hitMap, sortFields, objectSchema, semanticTypeToMasker); err != nil {
+			return errors.Wrapf(err, "failed to mask hit %d", i)
+		}
+		hitsArray[i] = hitMap
 	}
 	return nil
 }

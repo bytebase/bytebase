@@ -18,14 +18,15 @@ profile="$repo/backend/bin/server/cmd/profile_dev.go"
 overlay_dir="$(mktemp -d)"
 trap 'rm -rf "$overlay_dir"' EXIT
 
-# SQL review V2 is under development and on only in dev builds; release
-# builds run V1. A missing line means the switch moved: fail rather than
-# silently testing V2.
+# A dev build forces SQL review V2 on. Dropping that line leaves the release
+# value, which turns V2 on with --saas (Bytebase Cloud) and keeps V1 for the
+# self-hosted server the suite boots. A missing line means the switch moved:
+# fail rather than silently testing V2.
 if [ "$(grep -c '^[[:space:]]*p\.SQLReviewV2 = true$' "$profile")" != 1 ]; then
   echo "build-server.sh: expected one 'p.SQLReviewV2 = true' line in $profile; update this script" >&2
   exit 1
 fi
-sed 's/^\([[:space:]]*\)p\.SQLReviewV2 = true$/\1p.SQLReviewV2 = false/' "$profile" >"$overlay_dir/profile_dev.go"
+sed '/^[[:space:]]*p\.SQLReviewV2 = true$/d' "$profile" >"$overlay_dir/profile_dev.go"
 node -e 'require("fs").writeFileSync(process.argv[3], JSON.stringify({ Replace: { [process.argv[1]]: process.argv[2] } }))' \
   "$profile" "$overlay_dir/profile_dev.go" "$overlay_dir/overlay.json"
 

@@ -42,5 +42,5 @@ func TestGetStatementTypesSeam(t *testing.T) {
 	require.Empty(t, empty)
 
 	_, err = GetStatementTypes([]base.AST{wrongAST{}})
-	require.ErrorContains(t, err, "expected AST for PostgreSQL")
+	require.ErrorContains(t, err, "expected an AST from an omni engine")
 }

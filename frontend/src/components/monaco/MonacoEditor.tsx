@@ -3,6 +3,7 @@ import { debounce, orderBy } from "lodash-es";
 import { Loader2 } from "lucide-react";
 import {
   type ReactNode,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -46,6 +47,7 @@ import {
   restoreViewState,
   storeViewState,
 } from "./text-model";
+import { MonacoThemeContext } from "./theme";
 import type {
   AdviceOption,
   AutoCompleteContext,
@@ -155,6 +157,11 @@ export function MonacoEditor({
   formatContentOptions,
 }: MonacoEditorProps) {
   const { t } = useTranslation();
+  const inheritedTheme = useContext(MonacoThemeContext);
+  const resolvedOptions = useMemo(
+    () => ({ ...options, theme: options?.theme ?? inheritedTheme }),
+    [inheritedTheme, options]
+  );
   const safeContent = normalizeContent(content);
   const safeLanguage = normalizeLanguage(language);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -175,7 +182,7 @@ export function MonacoEditor({
   const contentRef = useRef(safeContent);
   const languageRef = useRef(safeLanguage);
   const readOnlyRef = useRef(readOnly);
-  const optionsRef = useRef(options);
+  const optionsRef = useRef(resolvedOptions);
   const onChangeRef = useRef(onChange);
   const onSelectContentRef = useRef(onSelectContent);
   const onSelectionChangeRef = useRef(onSelectionChange);
@@ -205,7 +212,7 @@ export function MonacoEditor({
   contentRef.current = safeContent;
   languageRef.current = safeLanguage;
   readOnlyRef.current = readOnly;
-  optionsRef.current = options;
+  optionsRef.current = resolvedOptions;
   onChangeRef.current = onChange;
   onSelectContentRef.current = onSelectContent;
   onSelectionChangeRef.current = onSelectionChange;
@@ -342,19 +349,9 @@ export function MonacoEditor({
 
         editorRef.current = editor;
         const monaco = await loadMonacoEditor();
-        // Re-apply the editor's intended theme after construction.
-        // Monaco's theme is global — when a previous editor was
-        // constructed with a different theme (e.g. CompactSQLEditor's
-        // `vs-dark` for admin mode), that theme persists across editor
-        // disposal. If the new editor's requested theme isn't
-        // registered (the custom `bb` theme is silently swallowed by
-        // the vscode-api theme service override in some runtime modes
-        // — see `initializeTheme` in core.ts), `setTheme` becomes a
-        // no-op and the dark theme stays stuck.
-        // `getResolvedTheme` returns the requested theme if it's known
-        // to be registered, otherwise falls back to the always-available
-        // built-in `vs`.
-        monaco.editor.setTheme(getResolvedTheme(optionsRef.current?.theme));
+        // Monaco themes are global. Reapply the host's resolved theme so a
+        // previously disposed editor cannot leave a stale theme behind.
+        monaco.editor.setTheme(getResolvedTheme(optionsRef.current.theme));
         const model = await getOrCreateTextModel(
           generatedFilename,
           contentRef.current,
@@ -552,9 +549,9 @@ export function MonacoEditor({
 
   useEffect(() => {
     const editor = editorRef.current;
-    if (!editor || !options) return;
-    editor.updateOptions(options);
-  }, [options]);
+    if (!editor) return;
+    editor.updateOptions(resolvedOptions);
+  }, [resolvedOptions]);
 
   useEffect(() => {
     const editor = editorRef.current;

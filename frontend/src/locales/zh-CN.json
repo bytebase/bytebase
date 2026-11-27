@@ -4119,16 +4119,47 @@
     },
     "mcp": {
       "connect": {
-        "description": "把 Bytebase 添加到你的 AI 客户端就可以开始提问。首次连接时会在浏览器中登录并批准访问。",
-        "desktop-note": "Claude Desktop 从你的 Claude 账户读取远程服务器，而不是配置文件。请在 claude.ai 的 Customize > Connectors 中将此 URL 添加为自定义连接器，随后它会出现在 Claude Desktop 中。",
-        "json-note": "这是 mcpServers 格式。各客户端的配置格式并不相同：例如 VS Code 在自己的 mcp.json 中使用 servers，此时请改用 VS Code 标签页。",
-        "title": "连接客户端"
+        "copy-off": "设置外部 URL 之前无法复制。",
+        "copy-prompt": "复制提示词",
+        "copy-setup": "复制 {{tool}} 的配置",
+        "desktop": {
+          "add": "把下面的内容添加到文件并保存。",
+          "example": "查看示例",
+          "open-file": "在该文件夹中，用文本编辑器打开 <code>{{file}}</code>。",
+          "open-folder": "在 Claude Desktop 中，点击左下角你的名字，然后选择 <ui>{{path}}</ui>。此时会打开一个文件夹。",
+          "requirement": "需要 Node.js 20 或更高版本。"
+        },
+        "other": {
+          "note": "不同工具的格式可能不同。",
+          "tab": "其他",
+          "title": "添加到 AI 工具的 MCP 配置"
+        },
+        "prompt-title": "向 AI 工具提问",
+        "setup-guide": "设置指南",
+        "sign-in": {
+          "claude-code": "在 Claude Code 中运行 /mcp，选择 bytebase，然后选择 Authenticate。在打开的浏览器窗口中登录 Bytebase，然后点击“{{allow}}”。",
+          "claude-desktop": "退出并重新打开 Claude Desktop。在打开的浏览器窗口中登录 Bytebase，然后点击“{{allow}}”。",
+          "codex": "该命令会打开浏览器窗口。登录 Bytebase，然后点击“{{allow}}”。如果没有打开窗口，请运行 codex mcp login bytebase。",
+          "copilot-cli": "启动 Copilot CLI。在打开的浏览器窗口中登录 Bytebase，然后点击“{{allow}}”。如果没有打开窗口，请在 Copilot CLI 中运行 /mcp auth bytebase。",
+          "default": "AI 工具首次使用 Bytebase 时会打开浏览器窗口。登录 Bytebase，然后点击“{{allow}}”。",
+          "gemini-cli": "在 Gemini CLI 中运行 /mcp auth bytebase。在打开的浏览器窗口中登录 Bytebase，然后点击“{{allow}}”。"
+        },
+        "step": {
+          "add": "把 Bytebase 添加到你的 AI 工具",
+          "prompt": "试一个提示词",
+          "sign-in": "登录"
+        },
+        "terminal": "在终端中运行",
+        "title": "连接你的 AI 工具",
+        "vscode": {
+          "guide": "VS Code 设置指南",
+          "install": "在 VS Code 中安装",
+          "off": "设置外部 URL 之前无法安装。"
+        }
       },
-      "description": "使用模型上下文协议将 AI 助手连接到 Bytebase。",
+      "description": "使用模型上下文协议将 AI 工具连接到 Bytebase。",
       "first-prompt": {
-        "description": "连接后，尝试向 AI 助手提问：",
-        "example": "列出我的 Bytebase 实例中的所有项目",
-        "title": "你的第一个提示词"
+        "example": "列出我的 Bytebase 实例中的所有项目"
       },
       "ladder": {
         "disabled": "不允许任何操作；MCP 会话无法连接。",

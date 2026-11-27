@@ -1,6 +1,7 @@
 package spanner
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -10,7 +11,7 @@ import (
 )
 
 func TestStatementTypeSeam(t *testing.T) {
-	stmts, err := ParseStatements("CALL cancel_query('12345');")
+	stmts, err := base.ParseStatements(storepb.Engine_SPANNER, "CALL cancel_query('12345');")
 	require.NoError(t, err)
 	got, err := GetStatementTypes(base.ExtractASTs(stmts))
 	require.NoError(t, err)
@@ -18,6 +19,10 @@ func TestStatementTypeSeam(t *testing.T) {
 }
 
 func TestDiagnoseSeam(t *testing.T) {
-	require.Empty(t, Diagnose("SELECT 1;"))
-	require.NotEmpty(t, Diagnose("SELECT FROM"))
+	diags, err := base.Diagnose(context.Background(), base.DiagnoseContext{}, storepb.Engine_SPANNER, "SELECT 1;")
+	require.NoError(t, err)
+	require.Empty(t, diags)
+	diags, err = base.Diagnose(context.Background(), base.DiagnoseContext{}, storepb.Engine_SPANNER, "SELECT FROM")
+	require.NoError(t, err)
+	require.NotEmpty(t, diags)
 }

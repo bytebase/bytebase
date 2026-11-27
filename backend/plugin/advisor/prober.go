@@ -47,7 +47,7 @@ func Estimate(ctx context.Context, engine storepb.Engine, prober db.Prober, stat
 	if prober == nil {
 		return v1review.Probe{}, &UnsupportedError{Engine: engine, Need: "probe the database"}
 	}
-	estimator, ok := prober.(db.RowEstimator)
+	estimator, ok := db.As[db.RowEstimator](prober)
 	if !ok {
 		return v1review.Probe{}, &UnsupportedError{Engine: engine, Need: "estimate affected rows"}
 	}
@@ -93,7 +93,7 @@ func ExplainPlanRows(
 // ColumnExtraOf returns the connection's catalogue lookup, or an
 // UnsupportedError.
 func ColumnExtraOf(checkCtx Context) (db.ColumnExtraLookup, error) {
-	if lookup, ok := checkCtx.Prober.(db.ColumnExtraLookup); ok {
+	if lookup, ok := db.As[db.ColumnExtraLookup](checkCtx.Prober); ok {
 		return lookup, nil
 	}
 	return nil, &UnsupportedError{Engine: checkCtx.DBType, Need: "read a column's catalogue extra"}

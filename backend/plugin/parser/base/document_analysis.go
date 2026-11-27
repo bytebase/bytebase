@@ -17,6 +17,13 @@ type MongoDBJoinedCollection struct {
 	Collection string // The source collection being joined (the "from" argument).
 }
 
+// MongoDBNamespace names a collection or view a statement reads. An empty
+// Database is the database the statement runs in.
+type MongoDBNamespace struct {
+	Database   string
+	Collection string
+}
+
 // MongoDBAnalysis contains MongoDB statement data needed by masking checks.
 type MongoDBAnalysis struct {
 	API               MongoDBMaskableAPI
@@ -25,6 +32,7 @@ type MongoDBAnalysis struct {
 	PredicateFields   []string
 	UnsupportedStage  string                    // First pipeline stage that prevents masking. Only set when API == MongoDBMaskableAPIUnsupportedRead for aggregate pipelines.
 	JoinedCollections []MongoDBJoinedCollection // Join info extracted from $lookup and $graphLookup stages.
+	Reads             []MongoDBNamespace        // Every collection or view the read names, one entry per occurrence (omni's StatementAnalysis.Reads).
 }
 
 // ElasticsearchMaskableAPI categorizes ES endpoints for masking decisions.
@@ -66,6 +74,8 @@ var ElasticsearchBlockedFeatureNames = map[ElasticsearchBlockedFeature]string{
 type ElasticsearchAnalysis struct {
 	API             ElasticsearchMaskableAPI      // Classification of the endpoint
 	Index           string                        // Target index name extracted from URL (empty if not applicable)
+	Targets         [][]string                    // Index expressions the request reads, as written (omni's RequestAnalysis.Targets)
+	ExpandsHidden   bool                          // True when expand_wildcards lets a wildcard reach hidden indices
 	BlockedFeatures []ElasticsearchBlockedFeature // Features found in request body that must be blocked
 	SourceFields    []string                      // Fields requested via _source filtering (nil = all fields, empty = _source disabled)
 	SourceDisabled  bool                          // True when _source: false is set

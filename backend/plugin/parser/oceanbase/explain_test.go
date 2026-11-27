@@ -24,9 +24,4 @@ func TestExplainStatementSeam(t *testing.T) {
 
 	_, err = base.ExplainStatement(storepb.Engine_OCEANBASE, "SELECT * FORM t", base.ExplainFormatDefault)
 	require.ErrorAs(t, err, new(*base.SyntaxError))
-
-	format, executed, isExplain := DescribeExplain("EXPLAIN FORMAT=JSON SELECT 1")
-	require.True(t, isExplain)
-	require.Equal(t, "json", format)
-	require.False(t, executed)
 }

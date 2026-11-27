@@ -117,17 +117,11 @@ export function useTableResize({
         startWidth,
       };
 
-      const isLast = colIndex === widths.length - 1;
       const handleMove = (ev: PointerEvent) => {
         const drag = dragRef.current;
         if (!drag) return;
         const offset = ev.clientX - drag.startX;
-        let next = drag.startWidth + offset;
-        if (widths.length === 1) {
-          next = Math.max(minWidth, Math.min(containerWidth - 1, next));
-        } else {
-          next = Math.max(minWidth, Math.min(maxWidth, next));
-        }
+        const next = Math.max(minWidth, drag.startWidth + offset);
         setWidths((prev) => {
           const out = [...prev];
           out[drag.colIndex] = next;
@@ -143,10 +137,8 @@ export function useTableResize({
       document.addEventListener("pointermove", handleMove);
       document.addEventListener("pointerup", handleUp);
       document.body.classList.add("cursor-col-resize");
-      // satisfy linter for unused var on cleanup path
-      void isLast;
     },
-    [widths, minWidth, maxWidth, containerWidth]
+    [widths, minWidth]
   );
 
   const totalWidth = sum(widths);

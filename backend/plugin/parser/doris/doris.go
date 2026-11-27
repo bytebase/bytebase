@@ -13,30 +13,23 @@ import (
 )
 
 func init() {
-	base.Register(base.Engine{
-		Split:           SplitSQL,
-		Parse:           parseDorisStatements,
-		StatementRanges: GetStatementRanges,
-		Diagnose:        Diagnose,
-		Complete:        Completion,
-		ValidateQuery:   validateQuery,
-		QuerySpan:       GetQuerySpan,
-		Explain:         explainStatement,
-		ResultLimit:     statementWithResultLimit,
-		ExtractChanged:  extractChangedResources,
-	}, storepb.Engine_DORIS)
+	engine := base.OmniEngine(analysis.Engine)
+	engine.Parse = parseDorisStatements
+	engine.Complete = Completion
+	engine.QuerySpan = GetQuerySpan
+	engine.ExtractChanged = extractChangedResources
+	base.Register(engine, storepb.Engine_DORIS)
 }
 
 type astNode = base.NodeAST[ast.Node]
 
-// SplitSQL splits the input into multiple SQL statements using omni's analysis
-// package, then attaches 1-based line and rune column positions.
-func SplitSQL(statement string) ([]base.Statement, error) {
-	return base.OmniStatements(statement, analysis.SplitStatements(statement)), nil
-}
-
+// parseDorisStatements is not omni's because it keeps a segment holding only
+// whitespace the lexer does not skip, such as U+00A0, as a statement without an
+// AST, which an omni ParsedStatement cannot express.
 func parseDorisStatements(statement string) ([]base.ParsedStatement, error) {
-	return base.ParseSegmentedStatements(statement, SplitSQL, parseSegment)
+	return base.ParseSegmentedStatements(statement, func(script string) ([]base.Statement, error) {
+		return base.SplitMultiSQL(storepb.Engine_DORIS, script)
+	}, parseSegment)
 }
 
 func parseSegment(stmt base.Statement) (*astNode, error) {
@@ -51,30 +44,6 @@ func parseSegment(stmt base.Statement) (*astNode, error) {
 		node = file.Stmts[0]
 	}
 	return &astNode{Node: node, Text: stmt.Text, StartPosition: stmt.Start}, nil
-}
-
-func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
-	rawRanges := analysis.StatementRanges(statement)
-	if len(rawRanges) == 0 {
-		return nil, nil
-	}
-	return base.MapByteRangesToLSP(statement, rawRanges), nil
-}
-
-// Diagnose returns syntax diagnostics for the given Doris statement,
-// delegating parse and stub filtering to omni's analysis package.
-func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	return base.ConvertOffsetDiagnostics(statement, analysis.Diagnose(statement), func(d analysis.SyntaxError) (int, string) {
-		return d.Offset, d.Message
-	}), nil
-}
-
-func validateQuery(statement string) (bool, bool, error) {
-	readOnly, returnsData, err := analysis.ValidateQuery(statement)
-	if err != nil {
-		return false, false, convertParseError(statement, err, nil)
-	}
-	return readOnly, returnsData, nil
 }
 
 func GetQuerySpan(
@@ -96,18 +65,6 @@ func GetQuerySpan(
 	}
 
 	return base.OmniTableQuerySpan(resolved.Type, resolved.SourceColumns), nil
-}
-
-func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
-	planned, err := analysis.ExplainStatement(statement)
-	if err != nil {
-		return "", convertParseError(statement, err, nil)
-	}
-	return planned, nil
-}
-
-func statementWithResultLimit(statement string, limit int, _ string) string {
-	return analysis.RewriteResultLimit(statement, limit)
 }
 
 func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {

@@ -129,7 +129,7 @@ jobs:
           cache: ''
       - uses: pnpm/setup@v3
         with:
-          version: '12.16.1'
+          version: '12.23.0'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: frontend

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/bytebase/omni/pg/analysis"
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/stretchr/testify/require"
 
@@ -47,10 +46,6 @@ func TestDiagnoseSeam(t *testing.T) {
 	require.Len(t, diags, 1)
 	require.Equal(t, uint32(1), diags[0].Range.Start.Line)
 
-	// Non-parse errors fall back to line 1, column 1.
-	syntaxErr := convertDiagnoseError(&analysis.DiagnoseError{Message: "unexpected", ParseError: false})
-	require.Equal(t, &storepb.Position{Line: 1, Column: 1}, syntaxErr.Position)
-	require.Nil(t, convertDiagnoseError(nil))
 	require.False(t, errors.Is(errors.New("other"), base.ErrExplainAnalyzeExecutes))
 }
 
