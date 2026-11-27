@@ -25,6 +25,7 @@ import type {
   AgentActionReceipt,
   AgentChat as AgentChatRecord,
   AgentHandoff,
+  AgentMessage,
   AgentMessageMetadata,
 } from "../logic/types";
 import { createAgentStore, useAgentStore } from "../store/agent";
@@ -365,14 +366,23 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
-  test("controlled legacy transcript uses shared Markdown and only offers Copy even after unarchive",()=>{
+  test("selected imported chat uses shared Markdown and stays read-only even after unarchive", async () => {
     const active = useAgentStore.getState().ensureCurrentChat();
     useAgentStore.getState().addMessage({chatId:active.id,role:"user",content:"Other private chat"});
     const chat = {...active,id:"legacy", archived:false,legacySqlImport:{version:1 as const,readOnly:true as const,sourceId:"old",instance:"",database:""}};
-    const view=renderIntoContainer(<AgentChat legacyTranscript={{chat,messages:[
+    const messages: AgentMessage[] = [
       {chatId:"legacy",id:"u",role:"user",createdTs:1,content:"Past question"},
-      {chatId:"legacy",id:"a",role:"assistant",createdTs:2,content:"```sql\nSELECT 1;\n```",metadata:{legacySqlStatus:"LOADING",error:"Source failure"}}
-    ]}} onRun={vi.fn()} onResend={vi.fn()} onContinueAction={vi.fn()}/>);
+      {chatId:"legacy",id:"a",role:"assistant",createdTs:2,content:"```sql\nSELECT 1;\n```",toolCalls:[{id:"unsafe-tool",name:"call_api",arguments:"{}"}],metadata:{legacySqlStatus:"LOADING",error:"Source failure",actions:[{kind:"continue",prompt:"Unsafe follow-up"}]}}
+    ];
+    useAgentStore.setState((state) => ({
+      chats: [...state.chats, chat], currentChatId: chat.id,
+      messagesByChatId: { ...state.messagesByChatId, [chat.id]: messages },
+    }));
+    const onRun = vi.fn();
+    const onRetry = vi.fn();
+    const onResend = vi.fn();
+    const onContinueAction = vi.fn();
+    const view=renderIntoContainer(<AgentChat onRun={onRun} onRetry={onRetry} onResend={onResend} onContinueAction={onContinueAction}/>);
     view.render();
     try{
       expect(view.container.textContent).toContain("Past question");
@@ -384,7 +394,18 @@ describe("AgentChat", () => {
       expect(view.container.querySelector('[aria-label="agent.resend-message"]')).toBeNull();
       const actions = within(view.container).getByRole("group",{name:"agent.sql-block.actions"});
       expect(within(actions).getAllByRole("button")).toHaveLength(1);
-      expect(within(actions).getByRole("button",{name:"agent.sql-block.copy"})).toBeTruthy();
+      const copy = within(actions).getByRole("button",{name:"agent.sql-block.copy"});
+      await act(async () => copy.click());
+      expect(mocks.writeTextToClipboard).toHaveBeenCalledExactlyOnceWith("SELECT 1;");
+      expect(view.container.textContent).not.toContain("Unsafe follow-up");
+      expect(view.container.textContent).not.toContain("call_api");
+      expect(onRun).not.toHaveBeenCalled();
+      expect(onRetry).not.toHaveBeenCalled();
+      expect(onResend).not.toHaveBeenCalled();
+      expect(onContinueAction).not.toHaveBeenCalled();
+      act(() => useAgentStore.getState().setCurrentChat(active.id));
+      expect(view.container.textContent).toContain("Other private chat");
+      expect(view.container.textContent).not.toContain("Past question");
     }finally{view.unmount();}
   });
   test("keeps each complete unmarked SQL block copyable inside its answer, not beside Ask next", async () => {

@@ -144,7 +144,6 @@ import {
 } from "./AgentMinimizedLauncher";
 import { AgentPreferences } from "./AgentPreferences";
 import { AgentSurface, useAgentDockBounds } from "./AgentSurface";
-import { LegacySqlTranscript } from "./LegacySqlTranscript";
 import {
   RESIZE_POINTER_MEDIA_QUERY,
   supportsWindowBorderResize,
@@ -322,11 +321,6 @@ export function AgentWindow() {
     (state) => state.initializationFailureIdentity
   );
   const [initializationAttempt, setInitializationAttempt] = useState(0);
-  const legacyMessages = useAgentStore((s) =>
-    currentChat?.legacySqlImport
-      ? s.messagesByChatId[currentChat.id]
-      : undefined
-  );
   const accessGrantDraftSequence = useRef(0);
   const [accessGrantDraft, setAccessGrantDraft] = useState<{
     id: number;
@@ -2634,43 +2628,34 @@ export function AgentWindow() {
               waitingForChatProtection ? "hidden" : "flex"
             )}
           >
-            {currentChat?.legacySqlImport ? (
-              <div className="min-h-0 flex-1 overflow-auto">
-                <LegacySqlTranscript
-                  chat={currentChat}
-                  messages={legacyMessages ?? []}
-                />
-              </div>
-            ) : (
-              <AgentChat
-                onOpenAccessGrantDraft={openAccessGrantDraft}
-                className="min-h-0 flex-1"
-                context={conversationContext}
-                contextLabel={
-                  conversationContext
-                    ? getContextLabel(conversationContext)
-                    : workspace?.title || t("agent.context-workspace")
-                }
-                onRetry={retryLastTurn}
-                onRun={
-                  canStartSqlRun
-                    ? (source) =>
-                        sqlExecutionRef.current?.(source) ??
-                        Promise.resolve(false)
-                    : undefined
-                }
-                onFreeSpaceAndRetry={
-                  currentChat && !currentChat.archived
-                    ? freeSpaceAndRetry
-                    : undefined
-                }
-                onResend={resendMessage}
-                onSelectSuggestion={
-                  showArchivedOnly ? undefined : selectEmptyChatSuggestion
-                }
-                onContinueAction={continueResponseAction}
-              />
-            )}
+            <AgentChat
+              onOpenAccessGrantDraft={openAccessGrantDraft}
+              className="min-h-0 flex-1"
+              context={conversationContext}
+              contextLabel={
+                conversationContext
+                  ? getContextLabel(conversationContext)
+                  : workspace?.title || t("agent.context-workspace")
+              }
+              onRetry={retryLastTurn}
+              onRun={
+                canStartSqlRun
+                  ? (source) =>
+                      sqlExecutionRef.current?.(source) ??
+                      Promise.resolve(false)
+                  : undefined
+              }
+              onFreeSpaceAndRetry={
+                currentChat && !currentChat.archived
+                  ? freeSpaceAndRetry
+                  : undefined
+              }
+              onResend={resendMessage}
+              onSelectSuggestion={
+                showArchivedOnly ? undefined : selectEmptyChatSuggestion
+              }
+              onContinueAction={continueResponseAction}
+            />
             {currentChat?.legacySqlImport ? (
               <div className="flex shrink-0 items-center justify-between gap-3 border-t border-block-border p-3">
                 <span className="text-sm text-control-light">

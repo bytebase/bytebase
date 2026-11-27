@@ -143,7 +143,6 @@ import { ToolCallCard } from "./ToolCallCard";
 import { AgentTooltip } from "./ui/AgentTooltip";
 
 interface AgentChatProps {
-  legacyTranscript?: import("../logic/legacySqlHistory").LegacySqlTranscript;
   onOpenAccessGrantDraft?: (
     draft: AccessGrantDraft,
     source: { chatId: string; messageId: string }
@@ -909,7 +908,6 @@ function renderBoundMentions(
 }
 
 export function AgentChat({
-  legacyTranscript,
   onOpenAccessGrantDraft,
   className,
   contextLabel,
@@ -926,23 +924,21 @@ export function AgentChat({
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const selectedMessages = useAgentStore(selectMessages);
   const selectedChat = useAgentStore(selectCurrentChat);
-  const passive = !!legacyTranscript || !!selectedChat?.legacySqlImport;
-  const sourceChat = legacyTranscript?.chat ?? selectedChat;
+  const passive = !!selectedChat?.legacySqlImport;
   const currentChat =
-    passive && sourceChat
+    passive && selectedChat
       ? {
-          ...sourceChat,
+          ...selectedChat,
           archived: true,
           capability: undefined,
           apiAttempts: undefined,
           runCheckpoint: undefined,
         }
-      : sourceChat;
-  const sourceMessages = legacyTranscript?.messages ?? selectedMessages;
+      : selectedChat;
   const messages = useMemo<AgentMessage[]>(
     () =>
       passive
-        ? sourceMessages.map((m) => ({
+        ? selectedMessages.map((m) => ({
             id: m.id,
             chatId: m.chatId,
             createdTs: m.createdTs,
@@ -953,8 +949,8 @@ export function AgentChat({
               legacySqlStatus: m.metadata?.legacySqlStatus,
             },
           }))
-        : sourceMessages,
-    [sourceMessages, passive]
+        : selectedMessages,
+    [selectedMessages, passive]
   );
   const workspaceName = useAgentStore((state) => state.workspaceName);
   const loading = useAgentStore((s) => !passive && selectLoading(s));

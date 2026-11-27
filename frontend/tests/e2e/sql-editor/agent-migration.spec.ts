@@ -2,6 +2,10 @@ import { fromBinary, fromJsonString, toBinary } from "@bufbuild/protobuf";
 import type { Locator, Page, Request } from "@playwright/test";
 import { AIChatRequestSchema, AIChatResponseSchema } from "../../../src/types/proto-es/v1/ai_service_pb";
 import {
+  GetSettingRequestSchema,
+  SettingSchema,
+} from "../../../src/types/proto-es/v1/setting_service_pb";
+import {
   QueryRequestSchema,
   QueryResponseSchema,
 } from "../../../src/types/proto-es/v1/sql_service_pb";
@@ -127,6 +131,79 @@ async function openSavedQuery(page: Page, run: (editor: SqlEditorPage) => Promis
     await page.close();
     await env.api.deleteSavedQuery(savedQuery.name);
   }
+}
+
+async function toolbarAgentGeometry(page: Page, chooser: Locator) {
+  const button = launcher(page);
+  await expect(button).toBeVisible();
+  await expect(chooser).toBeVisible();
+  const buttonBounds = (await button.boundingBox())!;
+  const chooserBounds = (await chooser.boundingBox())!;
+  expect(buttonBounds.height).toBe(chooserBounds.height);
+  expect(buttonBounds.height).toBe(28);
+  expect(Math.abs(
+    buttonBounds.y + buttonBounds.height / 2 - chooserBounds.y - chooserBounds.height / 2
+  )).toBeLessThan(1);
+  const logoBounds = (await button.locator("svg").boundingBox())!;
+  expect(logoBounds.width).toBe(16);
+  expect(logoBounds.height).toBe(16);
+  return buttonBounds;
+}
+
+for (const width of [1440, 390]) {
+  for (const connected of [false, true]) {
+    test(`SQL Editor Agent toolbar matches the ${connected ? "connected" : "disconnected"} chooser at ${width}px`, async ({ page, provider }, testInfo) => {
+      const env = loadTestEnv();
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(connected
+        ? `${env.baseURL}/sql-editor/${env.project}/instances/${env.instanceId}/databases/${env.databaseId}`
+        : `${env.baseURL}/sql-editor/${env.project}`);
+      const chooser = connected
+        ? page.getByRole("button").filter({ hasText: env.databaseId }).first()
+        : page.getByRole("button", { name: "Select a database to start", exact: true });
+      const closed = await toolbarAgentGeometry(page, chooser);
+      const agent = await openAgent(page);
+      await expect(launcher(page)).toHaveAttribute("aria-pressed", "true");
+      expect((await toolbarAgentGeometry(page, chooser)).width).toBe(closed.width);
+      await agent.getByTitle("Close", { exact: true }).click();
+      await expect(agent).toHaveCount(0);
+      await expect(launcher(page)).toHaveAttribute("aria-pressed", "false");
+      expect((await toolbarAgentGeometry(page, chooser)).width).toBe(closed.width);
+      await page.screenshot({ path: testInfo.outputPath("agent-toolbar-aligned.png") });
+      expect(provider.calls).toBe(0);
+      expect(provider.unexpectedCalls).toBe(0);
+    });
+  }
+
+  test(`SQL Editor unconfigured Agent toolbar matches the chooser at ${width}px`, async ({ page, provider }, testInfo) => {
+    const env = loadTestEnv();
+    await page.route(/\/bytebase\.v1\.SettingService\/GetSetting(?:\?|$)/, async route => {
+      const request = route.request();
+      const settingRequest = isProto(request)
+        ? fromBinary(GetSettingRequestSchema, requestBody(request))
+        : request.postDataJSON();
+      if (settingRequest.name !== "settings/AI") return route.fallback();
+      const body = JSON.stringify({ name: "settings/AI", value: { ai: { enabled: false } } });
+      await route.fulfill({
+        status: 200,
+        contentType: isProto(request) ? "application/proto" : "application/json",
+        body: isProto(request) ? Buffer.from(toBinary(SettingSchema, fromJsonString(SettingSchema, body))) : body,
+      });
+    });
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`${env.baseURL}/sql-editor/${env.project}`);
+    const button = launcher(page);
+    const chooser = page.getByRole("button", { name: "Select a database to start", exact: true });
+    await expect(button).toHaveAttribute("aria-disabled", "true");
+    const closed = await toolbarAgentGeometry(page, chooser);
+    await button.hover();
+    await expect(page.getByText("AI Assistant is not configured.")).toBeVisible();
+    expect((await toolbarAgentGeometry(page, chooser)).width).toBe(closed.width);
+    await expect(agentWindow(page)).toHaveCount(0);
+    await page.screenshot({ path: testInfo.outputPath("agent-toolbar-unconfigured-aligned.png") });
+    expect(provider.calls).toBe(0);
+    expect(provider.unexpectedCalls).toBe(0);
+  });
 }
 
 for (const width of [1440, 390]) {
@@ -870,6 +947,69 @@ test("legacy SQL history remains untouched while the shared Agent handles new ch
   await expect(agent).toBeVisible();
   await assertDeferredHistory();
   expect(provider.calls).toBe(1);
+  expect(provider.unexpectedCalls).toBe(0);
+});
+
+test("previously imported SQL chat stays read-only in the generic Agent after reload", async ({ page, provider }, testInfo) => {
+  const env = loadTestEnv();
+  await env.api.login(env.adminEmail, env.adminPassword);
+  const { workspace } = await env.api.getActuatorInfo();
+  const workspaceId = workspace.split("/").at(-1)!;
+  const key = `bb-agent-state-v3.${workspaceId.length}:${workspaceId}.${env.adminEmail}`;
+  const id = "legacy-sql:retained-shared-transcript-e2e";
+  const title = "Retained imported SQL conversation";
+  const prompt = "Explain this preserved historical query.";
+  const sql = "SELECT 763 AS historical_result;";
+  const content = ["Preserved historical SQL.", "", "```sql", sql, "```"].join("\n");
+  const createdTs = Date.now() - 60_000;
+  const state = {
+    currentChatId: id,
+    chats: [{
+      id, title, context: env.project, workspaceName: workspace,
+      createdTs, updatedTs: createdTs + 1, archived: false, status: "idle", totalTokensUsed: 0,
+      legacySqlImport: { version: 1, sourceId: "retained-shared-transcript", readOnly: true, instance: env.instance, database: env.database },
+    }],
+    messagesByChatId: {
+      [id]: [
+        { id: "retained-user", chatId: id, role: "user", content: prompt, createdTs, metadata: { legacySqlStatus: "DONE" } },
+        {
+          id: "retained-answer", chatId: id, role: "assistant", content, createdTs: createdTs + 1,
+          toolCalls: [{ id: "retained-tool", name: "call_api", arguments: "{}" }],
+          metadata: { legacySqlStatus: "DONE", actions: [{ kind: "sql-editor-block", blockIndex: 0 }, { kind: "continue", prompt: "Run the historical query now" }] },
+        },
+      ],
+    },
+    pendingAskByChatId: {}, draftsByChatId: {}, queuedUserMessagesByChatId: {},
+  };
+  let queries = 0;
+  page.on("request", request => { if (queryEndpoint.test(request.url())) queries++; });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${env.baseURL}/landing`);
+  await page.evaluate(({ key, state }) => localStorage.setItem(key, JSON.stringify(state)), { key, state });
+  await page.goto(`${env.baseURL}/sql-editor/${env.project}`);
+
+  const selectAndAssertReadOnly = async () => {
+    const agent = await openAgent(page);
+    await agent.getByRole("button", { name: "Chats", exact: true }).first().click();
+    await agent.getByRole("button", { name: title, exact: true }).click();
+    await expect(agent.locator("[data-agent-user-message]").getByText(prompt, { exact: true })).toBeVisible();
+    await expect(agent.locator("[data-agent-answer]").getByText("Preserved historical SQL.", { exact: true })).toBeVisible();
+    const block = agent.locator("[data-agent-sql-block]").filter({ hasText: sql });
+    await expect(block).toContainText(sql);
+    await expect(block.getByRole("button", { name: "Copy SQL", exact: true })).toBeVisible();
+    await expect(agent.getByText("Read-only", { exact: true })).toBeVisible();
+    await expect(agent.locator("textarea")).toHaveCount(0);
+    await expect(agent.getByRole("button", { name: /^(Send|Resend message|Retry|Insert|Replace selection|Run query|Run again|Queue)$/ })).toHaveCount(0);
+    await expect(agent.locator("[data-agent-follow-up], [data-agent-empty-suggestion]")).toHaveCount(0);
+    await expect(agent.getByText("call_api", { exact: true })).toHaveCount(0);
+    await expect(agent.getByText("Run the historical query now", { exact: true })).toHaveCount(0);
+  };
+  await selectAndAssertReadOnly();
+  await page.reload();
+  await selectAndAssertReadOnly();
+  await page.screenshot({ path: testInfo.outputPath("retained-imported-chat-read-only.png") });
+  expect(queries).toBe(0);
+  expect(provider.calls).toBe(0);
   expect(provider.unexpectedCalls).toBe(0);
 });
 

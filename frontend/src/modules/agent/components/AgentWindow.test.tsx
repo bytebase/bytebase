@@ -1215,15 +1215,14 @@ describe("SQL Editor scoped history", () => {
       expect(rowIds()).toEqual([project.id]);
       const row = document.querySelector<HTMLElement>(`[data-agent-chat-row="${project.id}"]`)!;
       act(() => row.click());
-      const history = await screen.findByRole("article", { name: "Saved SQL conversation" });
-      expect(history).toBeVisible();
-      expect(within(history).getByText("instances/main / orders")).toBeVisible();
+      expect(useAgentStore.getState().currentChatId).toBe(project.id);
+      expect(store.getChat(project.id)?.context).toBe("projects/orders");
       expect(screen.getByText("common.read-only")).toBeVisible();
       expect(screen.queryByTestId("agent-input")).toBeNull();
       expect(store.getMessages(project.id)).toEqual(messages);
       expect(store.addMessage({ chatId: project.id, role: "user", content: "Do not execute" })).toBeNull();
       expect(store.getMessages(project.id)).toEqual(messages);
-      expect(screen.queryByRole("article", { name: "Foreign SQL conversation" })).toBeNull();
+      expect(screen.queryByText("Foreign SQL conversation")).toBeNull();
     } finally { view.unmount(); host.cleanup(); }
   });
 
