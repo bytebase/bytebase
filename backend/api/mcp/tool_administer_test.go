@@ -1358,6 +1358,135 @@ func TestAdministerWorkspaceAdvisesStepsForAReorderThatStepsCanMake(t *testing.T
 	require.NotContains(t, refusal, "smaller steps")
 }
 
+// moveRows returns the rows the move of rule takes under the choice in each
+// wording, in the request that changes stored to requested.
+func moveRows(t *testing.T, stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, rule *v1pb.WorkspaceApprovalSetting_Rule) [3]int {
+	t.Helper()
+	fallback := []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}
+	match, err := matchApprovalRules(slices.Concat(fallback, stored), slices.Concat(fallback, requested), "")
+	require.NoError(t, err)
+	kept := slices.IndexFunc(match.kept, func(kept keptRule) bool { return kept.position == slices.Index(requested, rule)+1 })
+	require.GreaterOrEqual(t, kept, 0)
+	var rows [3]int
+	for wording, line := range match.changeLines(kept, true) {
+		rows[wording] = len(wrapLine(line, descriptionLineWidth))
+	}
+	return rows
+}
+
+// paddedRule returns a rule whose condition is 409 characters and pad more.
+func paddedRule(title string, pad int) *v1pb.WorkspaceApprovalSetting_Rule {
+	return changeRule(title, projectsCondition(title[:1], 12)+` || resource.project_id == "`+strings.Repeat("m", pad)+`"`, "roles/projectOwner")
+}
+
+// ruleWhoseMoveTakes returns the shortest paddedRule whose move takes rows
+// under the choice in the three wordings, in the request order makes of it.
+func ruleWhoseMoveTakes(t *testing.T, title string, rows [3]int, order func(rule *v1pb.WorkspaceApprovalSetting_Rule) (stored, requested []*v1pb.WorkspaceApprovalSetting_Rule)) (rule *v1pb.WorkspaceApprovalSetting_Rule, pad int) {
+	t.Helper()
+	for pad := range 200 {
+		rule := paddedRule(title, pad)
+		stored, requested := order(rule)
+		if moveRows(t, stored, requested, rule) == rows {
+			return rule, pad
+		}
+	}
+	require.FailNow(t, "no condition length gives the move these rows", "%s: %v", title, rows)
+	return nil, 0
+}
+
+// A step is a form of its own and takes the first wording it has room for. So
+// a refusal sends a change to smaller steps when each rule change fits a form
+// alone in one of its wordings, whichever wording the form tried last, and to
+// the console only when one fits in none. A count is not always the shorter
+// wording: the rule passed here has a two-letter title, and the move has room
+// with its name only. Each step then gets a form.
+func TestAdministerWorkspaceAdvisesStepsWhenEachChangeFitsAFormInSomeWording(t *testing.T) {
+	type rules = []*v1pb.WorkspaceApprovalSetting_Rule
+	qa := changeRule("QA", projectsCondition("q", 30), "roles/workspaceDBA")
+	staging := changeRule("Staging", `resource.environment_id == "staging"`, "roles/projectOwner")
+	reviewed := changeRule("Staging", `resource.environment_id == "staging"`, "roles/workspaceDBA")
+	for _, ahead := range []bool{false, true} {
+		// The swap of a rule with QA: the rule moves behind it, or ahead of it.
+		swap := func(rule *v1pb.WorkspaceApprovalSetting_Rule) (stored, requested rules) {
+			if ahead {
+				return rules{qa, rule}, rules{rule, qa}
+			}
+			return rules{rule, qa}, rules{qa, rule}
+		}
+		core, _ := ruleWhoseMoveTakes(t, "Core projects", [3]int{8, 9, 9}, swap)
+		stored, swapped := swap(core)
+		for wording, rows := range moveRows(t, stored, swapped, qa) {
+			require.Greater(t, rows, 8, "wording %d of the other rule's move fits no form", wording)
+		}
+		for _, tc := range []struct {
+			name              string
+			stored, requested rules
+		}{
+			{"and a rule added", stored, slices.Concat(swapped, rules{staging})},
+			{"and a rule removed", slices.Concat(stored, rules{staging}), swapped},
+			{"and a rule's approvers changed", slices.Concat(stored, rules{staging}), slices.Concat(swapped, rules{reviewed})},
+		} {
+			_, _, refusal := askedApprovalChange(t, tc.stored, tc.requested)
+			require.Contains(t, refusal, "CHANGE_TOO_LONG", "ahead %v, %s", ahead, tc.name)
+			require.Contains(t, refusal, "make the change in smaller steps, a few rules at a time", "ahead %v, %s", ahead, tc.name)
+			require.NotContains(t, refusal, "do not shorten", "ahead %v, %s", ahead, tc.name)
+			// The steps: the swap, then the other change.
+			step := slices.Concat(swapped, tc.stored[2:])
+			message, description, refusal := askedApprovalChange(t, tc.stored, step)
+			require.Empty(t, refusal, "ahead %v, %s: the swap alone", ahead, tc.name)
+			require.Contains(t, message, "Change 1 rule, listed under Action.")
+			require.Contains(t, description, `"QA" ("Workspace DBA"): `, "the move names the rule it passed")
+			_, _, refusal = askedApprovalChange(t, step, tc.requested)
+			require.Empty(t, refusal, "ahead %v, %s: the other change alone", ahead, tc.name)
+		}
+
+		// A few columns more, and the move has room in no wording: no step
+		// makes the swap, whichever change the form lists first.
+		long, _ := ruleWhoseMoveTakes(t, "Core projects", [3]int{9, 9, 9}, swap)
+		stored, swapped = swap(long)
+		for _, request := range [][2]rules{
+			{stored, swapped},
+			{stored, slices.Concat(swapped, rules{staging})},
+			{slices.Concat(stored, rules{staging}), swapped},
+		} {
+			_, _, refusal := askedApprovalChange(t, request[0], request[1])
+			require.Contains(t, refusal, "make that change signed in to the Bytebase console", "ahead %v", ahead)
+			require.NotContains(t, refusal, "smaller steps", "ahead %v", ahead)
+		}
+
+		// Two swaps that have room in different wordings: the first with the
+		// name of the rule it passes, the second with a count, since that rule
+		// has a long title. No wording has room for each of the two moves, and
+		// each step takes its own.
+		warehouse := changeRule("Payments platform schema changes for the data warehouse", projectsCondition("w", 30), "roles/workspaceDBA")
+		both := func(rule *v1pb.WorkspaceApprovalSetting_Rule) (stored, requested rules) {
+			if ahead {
+				return rules{qa, core, warehouse, rule}, rules{core, qa, rule, warehouse}
+			}
+			return rules{core, qa, rule, warehouse}, rules{qa, core, warehouse, rule}
+		}
+		data, _ := ruleWhoseMoveTakes(t, "Data projects", [3]int{9, 8, 8}, both)
+		stored, requested := both(data)
+		require.Equal(t, [3]int{8, 9, 9}, moveRows(t, stored, requested, core))
+		for _, rule := range (rules{qa, warehouse}) {
+			for wording, rows := range moveRows(t, stored, requested, rule) {
+				require.Greater(t, rows, 8, "wording %d of the move of %q fits no form", wording, rule.GetTemplate().GetTitle())
+			}
+		}
+		_, _, refusal := askedApprovalChange(t, stored, requested)
+		require.Contains(t, refusal, "CHANGE_TOO_LONG", "ahead %v", ahead)
+		require.Contains(t, refusal, "make the change in smaller steps, a few rules at a time", "ahead %v", ahead)
+		require.NotContains(t, refusal, "do not shorten", "ahead %v", ahead)
+		step := slices.Concat(requested[:2], stored[2:])
+		_, description, refusal := askedApprovalChange(t, stored, step)
+		require.Empty(t, refusal, "ahead %v: the first swap alone", ahead)
+		require.Contains(t, description, `"QA" ("Workspace DBA"): `)
+		_, description, refusal = askedApprovalChange(t, step, requested)
+		require.Empty(t, refusal, "ahead %v: the second swap alone", ahead)
+		require.Contains(t, description, `1 rule with "Workspace DBA": `, "the move counts the rule it passed")
+	}
+}
+
 // everyDescription calls try with each way to describe a reorder: every set of
 // rules that traded order with another whose moves leave the rest in stored
 // order. was is each kept rule's stored place, in the order the request has
@@ -1415,12 +1544,77 @@ func advisesSteps(t *testing.T, err error) bool {
 	return strings.Contains(refused.Suggestion, "smaller steps")
 }
 
+// everyWay is what describedEveryWay finds of a reorder.
+type everyWay struct {
+	// room is the rows a form has for the changes.
+	room int
+	// fits says that some description gets a form.
+	fits bool
+	// bySteps says that some description has room for each of its changes
+	// alone, in one wording or another; inOne, in one wording for them all;
+	// inLast, in the wording a form tries last.
+	bySteps, inOne, inLast bool
+	// inWording has the forms of each wording alone, by the rows their changes
+	// take.
+	inWording [3]map[int][]adminForm
+}
+
+// describedEveryWay tries every description of match's reorder through the
+// form builder, in every wording, and counts the rows of each line itself.
+func describedEveryWay(ctx context.Context, match *approvalRulesMatch) everyWay {
+	line, _ := fallbackLine(match.fallback)
+	every := everyWay{room: descriptionLines - len(wrapLine(line, descriptionLineWidth))}
+	was := make([]int, len(match.kept))
+	for kept, rule := range match.kept {
+		was[kept] = rule.was
+	}
+	everyDescription(was, func(inOrder []bool) {
+		described := match.described(inOrder)
+		if _, err := approvalRulesForm(ctx, described, "", "LINK"); err == nil {
+			every.fits = true
+		}
+		wordings := [][]string{described.changes, described.shorter[0], described.shorter[1]}
+		each, all := true, [3]bool{true, true, true}
+		for change := range described.changes {
+			some := false
+			for wording, lines := range wordings {
+				alone := len(wrapLine(lines[change], descriptionLineWidth)) <= every.room
+				some = some || alone
+				all[wording] = all[wording] && alone
+			}
+			each = each && some
+		}
+		every.bySteps = every.bySteps || each
+		every.inOne = every.inOne || slices.Contains(all[:], true)
+		every.inLast = every.inLast || all[2]
+		for wording, lines := range wordings {
+			one := *described
+			one.changes, one.shorter = lines, [2][]string{lines, lines}
+			form, err := approvalRulesForm(ctx, &one, "", "LINK")
+			if err != nil {
+				continue
+			}
+			rows := 0
+			for _, line := range lines {
+				rows += len(wrapLine(line, descriptionLineWidth))
+			}
+			if every.inWording[wording] == nil {
+				every.inWording[wording] = map[int][]adminForm{}
+			}
+			every.inWording[wording][rows] = append(every.inWording[wording][rows], *form)
+		}
+	})
+	return every
+}
+
 // Whichever rules a tie-break calls moved, a reorder is refused only when no
 // description of it fits a form, and is sent to smaller steps whenever some
-// description's refusal sends it there. A form that the fewest moves have no
-// room for is in the first wording some description has room for, and takes
-// the fewest rows a description takes in it. Each description is tried here
-// through the form builder itself.
+// description has room for each of its changes alone, in one wording or
+// another. A form that the fewest moves have no room for is in the first
+// wording some description has room for, and takes the fewest rows a
+// description takes in it. Each description is tried here through the form
+// builder itself, and the rows of a refused one are counted here, not read
+// from a refusal.
 func TestApprovalReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
 	alice := withUserEmail(context.Background(), "alice@example.com")
 	random := rand.New(rand.NewPCG(22234, 12))
@@ -1465,46 +1659,14 @@ func TestApprovalReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
 		if !slices.Contains(match.inOrder, false) {
 			continue
 		}
-		line, _ := fallbackLine(match.fallback)
-		rooms[descriptionLines-len(wrapLine(line, descriptionLineWidth))]++
-
-		was := make([]int, len(match.kept))
-		for kept, rule := range match.kept {
-			was[kept] = rule.was
-		}
-		fits, bySteps := false, false
-		// The forms of each wording alone, by the rows their changes take.
-		var inWording [3]map[int][]adminForm
-		everyDescription(was, func(inOrder []bool) {
-			described := match.described(inOrder)
-			if _, err := approvalRulesForm(alice, described, "", "LINK"); err == nil {
-				fits = true
-			} else if advisesSteps(t, err) {
-				bySteps = true
-			}
-			for wording, lines := range [][]string{described.changes, described.shorter[0], described.shorter[1]} {
-				one := *described
-				one.changes, one.shorter = lines, [2][]string{lines, lines}
-				form, err := approvalRulesForm(alice, &one, "", "LINK")
-				if err != nil {
-					continue
-				}
-				rows := 0
-				for _, line := range lines {
-					rows += len(wrapLine(line, descriptionLineWidth))
-				}
-				if inWording[wording] == nil {
-					inWording[wording] = map[int][]adminForm{}
-				}
-				inWording[wording][rows] = append(inWording[wording][rows], *form)
-			}
-		})
+		every := describedEveryWay(alice, match)
+		rooms[every.room]++
 
 		byFewestMoves, firstErr := approvalRulesForm(alice, match.described(match.inOrder), "", "LINK")
 		diff, err := diffApprovalRules(slices.Concat(fallback, stored), slices.Concat(fallback, requested), "LINK")
 		require.NoError(t, err)
 		form, err := approvalRulesForm(alice, diff, "", "LINK")
-		require.Equal(t, fits, err == nil, "stored %v\nrequested %v", stored, requested)
+		require.Equal(t, every.fits, err == nil, "stored %v\nrequested %v", stored, requested)
 		switch {
 		case err == nil && firstErr == nil:
 			forms++
@@ -1512,7 +1674,7 @@ func TestApprovalReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
 		case err == nil:
 			rescued++
 			require.NotContains(t, form.message+form.description, ", now :", "a rule that traded order with none is not moved")
-			for wording, byRows := range inWording {
+			for wording, byRows := range every.inWording {
 				if len(byRows) == 0 {
 					continue
 				}
@@ -1524,13 +1686,13 @@ func TestApprovalReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
 				break
 			}
 		default:
-			require.Equal(t, bySteps, advisesSteps(t, err), "stored %v\nrequested %v", stored, requested)
-			if bySteps {
+			require.Equal(t, every.bySteps, advisesSteps(t, err), "stored %v\nrequested %v", stored, requested)
+			if every.bySteps {
 				toSteps++
 			} else {
 				toConsole++
 			}
-			if bySteps != advisesSteps(t, firstErr) {
+			if every.bySteps != advisesSteps(t, firstErr) {
 				adviceChanged++
 			}
 		}
@@ -1544,12 +1706,82 @@ func TestApprovalReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
 	require.Greater(t, adviceChanged, 15, "refusals whose advice the description by the fewest moves gets wrong")
 }
 
-// The wordings differ in which move is cheap: a rule that passes one rule with
-// a short title has a shorter line with the name than with a count, and one
-// that passes a long title a longer one. So each wording is tried with its own
-// cheapest moves. Here the first rule fits no form as moved, and the second
-// fits one wording only.
-func TestApprovalReorderTriesTheCheapestMovesOfEachWording(t *testing.T) {
+// At the last row a form has for its changes, a wording a few columns shorter
+// decides whether a change fits a form alone, and a name is shorter than a
+// count where the title is. Each request here swaps a rule with QA, at the
+// condition lengths around the one where the move with the name passes that
+// row: alone, beside an added rule, and beside a second swap that has room
+// with a count only. A refusal's advice is checked against the rows of every
+// description, counted here.
+func TestApprovalRefusalAdvisesStepsWhenSomeDescriptionHasRoomForEachChange(t *testing.T) {
+	type rules = []*v1pb.WorkspaceApprovalSetting_Rule
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	fallback := rules{fallbackRule()}
+	qa := changeRule("QA", projectsCondition("q", 30), "roles/workspaceDBA")
+	warehouse := changeRule("Payments platform schema changes for the data warehouse", projectsCondition("w", 30), "roles/workspaceDBA")
+	staging := changeRule("Staging", `resource.environment_id == "staging"`, "roles/projectOwner")
+	var forms, toSteps, toConsole, notByTheLast, byWordings int
+	for _, ahead := range []bool{false, true} {
+		swap := func(first, second *v1pb.WorkspaceApprovalSetting_Rule) (stored, requested rules) {
+			if ahead {
+				return rules{second, first}, rules{first, second}
+			}
+			return rules{first, second}, rules{second, first}
+		}
+		data, _ := ruleWhoseMoveTakes(t, "Data projects", [3]int{9, 8, 8}, func(rule *v1pb.WorkspaceApprovalSetting_Rule) (stored, requested rules) {
+			return swap(rule, warehouse)
+		})
+		byCount, countSwapped := swap(data, warehouse)
+		_, byName := ruleWhoseMoveTakes(t, "Core projects", [3]int{8, 9, 9}, func(rule *v1pb.WorkspaceApprovalSetting_Rule) (stored, requested rules) {
+			return swap(rule, qa)
+		})
+		require.GreaterOrEqual(t, byName, 12)
+		for pad := byName - 12; pad < byName+12; pad++ {
+			stored, swapped := swap(paddedRule("Core projects", pad), qa)
+			for _, request := range [][2]rules{
+				{stored, swapped},
+				{stored, slices.Concat(swapped, rules{staging})},
+				{slices.Concat(stored, byCount), slices.Concat(swapped, countSwapped)},
+			} {
+				from, requested := slices.Concat(fallback, request[0]), slices.Concat(fallback, request[1])
+				match, err := matchApprovalRules(from, requested, "LINK")
+				require.NoError(t, err)
+				every := describedEveryWay(alice, match)
+				require.Equal(t, 8, every.room)
+				diff, err := diffApprovalRules(from, requested, "LINK")
+				require.NoError(t, err)
+				_, err = approvalRulesForm(alice, diff, "", "LINK")
+				require.Equal(t, every.fits, err == nil, "ahead %v, %d columns more, %d rules", ahead, pad, len(requested))
+				if err == nil {
+					forms++
+					continue
+				}
+				require.Equal(t, every.bySteps, advisesSteps(t, err), "ahead %v, %d columns more, %d rules", ahead, pad, len(requested))
+				switch {
+				case !every.bySteps:
+					toConsole++
+				case !every.inOne:
+					byWordings++
+				case !every.inLast:
+					notByTheLast++
+				default:
+					toSteps++
+				}
+			}
+		}
+	}
+	require.Greater(t, forms, 20)
+	require.Greater(t, toConsole, 20)
+	require.Greater(t, toSteps, 20)
+	require.Greater(t, notByTheLast, 5, "refusals to steps where no description has room for each change in the last wording a form tries")
+	require.Greater(t, byWordings, 5, "refusals to steps where no description has room for each change in any one wording")
+}
+
+// A move with room in one wording only is the one a refused reorder is
+// described by when the other rule fits none, and the form is in that wording:
+// with the name where the rule passed has a short title, and with a count
+// where it has a long one.
+func TestApprovalReorderGetsAFormByAMoveWithRoomInOneWording(t *testing.T) {
 	alice := withUserEmail(context.Background(), "alice@example.com")
 	hopeless := projectsCondition("h", 30)
 	for _, tc := range []struct {
@@ -1591,6 +1823,49 @@ func TestApprovalReorderTriesTheCheapestMovesOfEachWording(t *testing.T) {
 		require.NoError(t, err, tc.name)
 		require.Contains(t, unwrapMessage(form.description), `Move to rule 1, "Workspace DBA", `+tc.line, tc.name)
 	}
+}
+
+// The wordings differ in which move takes fewer rows: a rule that passes one
+// rule with a short title has a shorter line with the name than with a count,
+// and one that passes a long title a longer one. So each wording is tried with
+// its own cheapest moves. Here two such pairs trade places beside a rule too
+// long for any form: with names the first rule of each pair takes fewer rows
+// as moved, with counts the second, and the form has room with names.
+func TestApprovalReorderDescribesEachWordingByItsOwnCheapestMoves(t *testing.T) {
+	type rules = []*v1pb.WorkspaceApprovalSetting_Rule
+	short := rules{
+		changeRule("QA", `resource.environment_id == "qa"`, "roles/workspaceDBA"),
+		changeRule("QB", `resource.environment_id == "qb"`, "roles/workspaceDBA"),
+	}
+	titles := []string{"Payments platform schema changes for the data warehouse", "Customer data warehouse changes for regulated regions"}
+	var long rules
+	for pair, title := range titles {
+		// The condition at which the move ahead of the short rule takes a row
+		// more with a count than with the name.
+		for pad := 0; len(long) == pair; pad++ {
+			require.Less(t, pad, 100, title)
+			rule := changeRule(title, fmt.Sprintf(`resource.project_id == "p%d-%s"`, pair, strings.Repeat("m", pad)), "roles/projectOwner")
+			if moveRows(t, rules{short[pair], rule}, rules{rule, short[pair]}, rule) == [3]int{2, 3, 3} {
+				long = append(long, rule)
+			}
+		}
+	}
+	hopeless := changeRule("Core projects", projectsCondition("h", 30), "roles/projectOwner")
+	staging := changeRule("Staging", `resource.environment_id == "staging"`, "roles/projectReleaser")
+	stored := rules{short[0], long[0], short[1], long[1], hopeless, staging}
+	requested := rules{long[0], short[0], long[1], short[1], staging, hopeless}
+	for pair := range titles {
+		require.Equal(t, [3]int{2, 3, 3}, moveRows(t, stored, requested, long[pair]))
+		require.Equal(t, [3]int{3, 2, 2}, moveRows(t, stored, requested, short[pair]))
+	}
+
+	message, description, refusal := askedApprovalChange(t, stored, requested)
+	require.Empty(t, refusal)
+	require.Contains(t, message, "Change 3 rules, listed under Action.")
+	require.True(t, strings.HasPrefix(description,
+		`Move to rule 1, "Project owner", now ahead of "QA" ("Workspace DBA"): `+"`"+long[0].GetCondition().GetExpression()+"`\n"+
+			`Move to rule 3, "Project owner", now ahead of "QB" ("Workspace DBA"): `+"`"+long[1].GetCondition().GetExpression()+"`\n"+
+			`Move to rule 5, "Project releaser", now ahead of "Core projects" ("Project owner"): `+"`"+`resource.environment_id == "staging"`+"`\n"), description)
 }
 
 // A reorder that its fewest moves have no room for is stated in the first
@@ -1743,6 +2018,10 @@ func TestMoveLineCost(t *testing.T) {
 	require.Equal(t, moveCost{1, 0, 1}, moveLineCost(rows(9), rows(8), 8))
 	require.Equal(t, moveCost{0, 8, 1}, moveLineCost(rows(8), "", 9))
 	require.Equal(t, moveCost{0, 1, 1}, moveLineCost(rows(10), rows(9), 8), "a line too long without the move is too long by any description")
+	// A form with more than one wording: the line fits a form when one does.
+	require.Equal(t, moveCost{0, 9, 1}, moveLineCost(rows(9), "", 8, rows(9), rows(10), rows(8)), "a wording with room, and the move is priced by this wording's rows")
+	require.Equal(t, moveCost{1, 0, 1}, moveLineCost(rows(9), "", 8, rows(9), rows(10), rows(9)))
+	require.Equal(t, moveCost{0, 8, 1}, moveLineCost(rows(8), "", 8, rows(8), rows(9), rows(9)))
 }
 
 // A step is a request of its own, and its rules decide which rules a move's

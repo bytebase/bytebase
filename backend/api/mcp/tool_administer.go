@@ -386,6 +386,9 @@ type approvalRulesDiff struct {
 	// byFewestRows is in one wording, and holds that wording's lines here and
 	// in changes.
 	shorter [2][]string
+	// wordings are the lines in each of the three wordings, also for a
+	// description stated in one: fitsAForm reads them all.
+	wordings [][]string
 	// moves counts the kept rules the description calls moved.
 	moves int
 	// fewestRows describes the same change by other moves, for a form with
@@ -562,6 +565,7 @@ func (m *approvalRulesMatch) described(inOrder []bool) *approvalRulesDiff {
 		}
 		diff.marks = append(diff.marks, "changed")
 	}
+	diff.wordings = [][]string{diff.changes, diff.shorter[0], diff.shorter[1]}
 	return diff
 }
 
@@ -616,13 +620,13 @@ func (m *approvalRulesMatch) byFewestRows(room int) []*approvalRulesDiff {
 		}
 		moved, unmoved := m.changeLines(kept, true), m.changeLines(kept, false)
 		for wording := range costs[kept] {
-			costs[kept][wording] = moveLineCost(moved[wording], unmoved[wording], room)
+			costs[kept][wording] = moveLineCost(moved[wording], unmoved[wording], room, moved[:]...)
 		}
 	}
 	var diffs []*approvalRulesDiff
 	for wording := range 3 {
 		diff := m.described(cheapestOrder(was, traded, func(kept int) moveCost { return costs[kept][wording] }))
-		lines := [3][]string{diff.changes, diff.shorter[0], diff.shorter[1]}[wording]
+		lines := diff.wordings[wording]
 		diff.changes, diff.shorter = lines, [2][]string{lines, lines}
 		diffs = append(diffs, diff)
 	}
@@ -912,8 +916,10 @@ func longestCommonOrder(a, b []string) []bool {
 type moveCost [3]int
 
 // moveLineCost prices a move by the rule's change line with and without it,
-// for a form with room rows for its changes.
-func moveLineCost(moved, unmoved string, room int) moveCost {
+// for a form with room rows for its changes. Where the form has more than one
+// wording, reworded are the moved line's, and the line is too long for a form
+// only when each of them is.
+func moveLineCost(moved, unmoved string, room int, reworded ...string) moveCost {
 	rows := func(line string) int {
 		if line == "" {
 			return 0
@@ -921,10 +927,29 @@ func moveLineCost(moved, unmoved string, room int) moveCost {
 		return len(wrapLine(line, descriptionLineWidth))
 	}
 	with, without := rows(moved), rows(unmoved)
-	if with > room && without <= room {
+	tooLong := with > room && without <= room
+	// The last wording first, as in fitsAForm.
+	for i := len(reworded) - 1; tooLong && i >= 0; i-- {
+		tooLong = rows(reworded[i]) > room
+	}
+	if tooLong {
 		return moveCost{1, 0, 1}
 	}
 	return moveCost{0, with - without, 1}
+}
+
+// fitsAForm reports whether a rule change has room in a form alone: whether
+// its line takes no more than room rows in one of wordings, the form's change
+// lines in each wording, where change is its place. A step is a form of its
+// own and takes the first wording it has room for.
+func fitsAForm(room int, wordings [][]string, change int) bool {
+	// The last wording first: it is most often the shortest, and a long line is slow to wrap.
+	for _, lines := range slices.Backward(wordings) {
+		if len(wrapLine(lines[change], descriptionLineWidth)) <= room {
+			return true
+		}
+	}
+	return false
 }
 
 // tradedOrder marks the kept rules that traded order with another one. was is
@@ -1098,7 +1123,7 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 		eachAlone := diff.moves == 0 && !slices.ContainsFunc(changes, func(change formChange) bool {
 			return !messageHolds(ctx, approvalRules.question, change, issues)
 		})
-		return approvalRules.listed(ctx, changes, countLine(len(changes), diff.marks, unapproved), issues, list, link, eachAlone)
+		return approvalRules.listed(ctx, changes, diff.wordings, countLine(len(changes), diff.marks, unapproved), issues, list, link, eachAlone)
 	}
 	// A move counts the rules it passes only where their names have no room:
 	// under the choice the names still say which rule now decides.
@@ -1113,10 +1138,10 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 			tried = lines
 		}
 	}
-	if err != nil && diff.fewestRows != nil && otherMovesHelp(diff.moves, tried, list.room()) {
-		// The last description has the shortest wording's cheapest moves,
-		// which avoid a line too long for a form before they save rows. So
-		// its refusal is the one that says whether smaller steps help.
+	if err != nil && diff.fewestRows != nil && otherMovesHelp(diff.moves, list.room(), diff.wordings...) {
+		// Each of these descriptions has the fewest lines that fit no form
+		// (moveLineCost), so the last one's refusal says whether smaller
+		// steps help.
 		for _, other := range diff.fewestRows(list.room()) {
 			if built, err = approvalRulesForm(ctx, other, issues, link); err == nil {
 				break
@@ -1129,12 +1154,18 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 // otherMovesHelp reports whether a reorder that is refused as its fewest moves
 // is worth describing by other moves. They are never fewer, and each takes a
 // row, so they can fit only when the fewest are no more than the rows. And
-// they can change the refusal's advice only when one of lines, the refused
-// description's, fits no form.
-func otherMovesHelp(moves int, lines []string, room int) bool {
-	return moves <= room || slices.ContainsFunc(lines, func(line string) bool {
-		return len(wrapLine(line, descriptionLineWidth)) > room
-	})
+// they can change the refusal's advice only when a change of the refused
+// description fits no form: wordings are its lines in each wording.
+func otherMovesHelp(moves, room int, wordings ...[]string) bool {
+	if moves <= room {
+		return true
+	}
+	for change := range wordings[0] {
+		if !fitsAForm(room, wordings, change) {
+			return true
+		}
+	}
+	return false
 }
 
 // fallbackRows bounds the fallback line. The stored fallback rules are not
@@ -1254,19 +1285,20 @@ func (r adminRules) whole(ctx context.Context, question string, changes []formCh
 // listed returns the form whose message counts the changes and whose
 // description lists them first, or refuses a change it has no room for.
 // eachAlone says that a message has room for each change by itself, so the
-// agent may offer them in steps.
-func (r adminRules) listed(ctx context.Context, changes []formChange, count, effect string, list ruleSection, link string, eachAlone bool) (*adminForm, error) {
+// agent may offer them in steps. wordings are the changes' lines in each
+// wording of a form with more than one, for fitsAForm.
+func (r adminRules) listed(ctx context.Context, changes []formChange, wordings [][]string, count, effect string, list ruleSection, link string, eachAlone bool) (*adminForm, error) {
 	lines := append(questionLines(ctx, r.question, ""), wrapMessageLine(count)...)
 	room := list.room()
 	var texts []string
 	needed, tooLong := 0, ""
 	affected := false
-	for _, change := range changes {
+	for i, change := range changes {
 		texts = append(texts, change.text)
 		affected = affected || change.effect
 		rows := len(wrapLine(change.text, descriptionLineWidth))
 		needed += rows
-		if tooLong == "" && rows > room {
+		if tooLong == "" && rows > room && !fitsAForm(room, wordings, i) {
 			tooLong = change.text
 		}
 	}
@@ -1445,7 +1477,8 @@ func fitMessage(question []string, changes []formChange, effect string) []string
 
 // changeTooLong refuses a change whose lines need more rows than the room a
 // form has for them under its choice. Smaller steps help only when every rule
-// change fits there alone; tooLong is the first one that does not.
+// change fits there alone; tooLong is the first one that does not, in any
+// wording the form has.
 func changeTooLong(needed, room int, tooLong string, rules adminRules, link string) *toolError {
 	if tooLong != "" {
 		return &toolError{

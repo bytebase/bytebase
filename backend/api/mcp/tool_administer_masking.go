@@ -596,7 +596,7 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 	// a form by the fewest rows offers no steps.
 	eachAlone := !diff.byRows && !slices.ContainsFunc(diff.changes, func(change formChange) bool { return !alone(change) })
 	list := maskingRuleSection(diff, true)
-	form, err := rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, list, link, eachAlone)
+	form, err := rules.listed(ctx, diff.changes, nil, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, list, link, eachAlone)
 	if err != nil && diff.fewestRows != nil {
 		lines := make([]string, 0, len(diff.changes))
 		for _, change := range diff.changes {
@@ -604,7 +604,7 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 		}
 		// The cheapest moves avoid a line too long for a form before they
 		// save rows, so their refusal says whether smaller steps help.
-		if otherMovesHelp(diff.moves, lines, list.room()) {
+		if otherMovesHelp(diff.moves, list.room(), lines) {
 			return maskingRulesForm(ctx, diff.fewestRows(list.room()), link)
 		}
 	}
