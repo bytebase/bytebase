@@ -275,6 +275,7 @@ export interface AgentActionOrigin {
 }
 
 export interface AgentMessageMetadata {
+  legacySqlStatus?: "DONE" | "FAILED" | "LOADING";
   // An invalid persisted origin stays passive instead of becoming a model prompt.
   sqlExecutionAction?: AgentRunBindings["executionOrigin"] | true;
   sqlEditor?: AgentSqlEditorSnapshot;
@@ -325,6 +326,13 @@ export interface AgentMessage extends Message {
 }
 
 export interface AgentChat {
+  legacySqlImport?: {
+    version: 1;
+    sourceId: string;
+    readOnly: true;
+    instance: string;
+    database: string;
+  };
   apiAttempts?: import("./apiAttempt").AgentApiAttempt[];
   id: string;
   title: string;

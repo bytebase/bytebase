@@ -6,8 +6,15 @@ import {
   Repeat2,
   RotateCcw,
 } from "lucide-react";
-import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import type { ComponentProps, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -43,6 +50,7 @@ import {
   wasDeniedQueryRequestDraftDelivered,
 } from "@/modules/sql-editor/model/accessGrantDraft";
 import { useAppStore } from "@/stores/app";
+import { extractDatabaseResourceName } from "@/utils/v1/database";
 import {
   actionReceiptKey,
   normalizeActionReceipts,
@@ -51,6 +59,7 @@ import {
   type AgentApiAttempt,
   isAgentApiAttemptUncertain,
 } from "../logic/apiAttempt";
+import { getAgentCompletedQueries } from "../logic/completedQueries";
 import {
   type AccessGrantDraft,
   type DeniedQueryRequestDraft,
@@ -89,6 +98,7 @@ import { getAgentRunFeedback } from "../logic/runFeedback";
 import { supportsAgentRunRecovery } from "../logic/runOwnership";
 import {
   type AgentSqlActionSource,
+  bindAgentCompletedQueryActions,
   bindAgentSqlBlockActions,
   isAgentSqlActionChat,
   readAgentSqlBlocks,
@@ -122,6 +132,7 @@ import {
   AgentPrimaryAction,
   AgentPrimaryActionLink,
 } from "./AgentPrimaryAction";
+import { AgentQueryResult } from "./AgentQueryResult";
 import { AgentSqlBlock } from "./AgentSqlBlock";
 import { AgentSqlFixReviewAction } from "./AgentSqlFixReviewAction";
 import { AgentStorageStatus } from "./AgentStorageStatus";
@@ -166,6 +177,23 @@ const EMPTY_CHAT_STARTERS: Record<"workspace" | "project", LandingStarterId[]> =
       "project-next",
     ],
   };
+
+const AgentCodeBlockContext = createContext(false);
+
+function AgentMarkdownCode({ children, className }: ComponentProps<"code">) {
+  const block = useContext(AgentCodeBlockContext);
+  return (
+    <code
+      className={cn(
+        "font-mono text-xs",
+        block ? "block" : "break-all rounded-xs bg-control-bg-hover px-1",
+        className
+      )}
+    >
+      {children}
+    </code>
+  );
+}
 
 const ISSUE_NAME_PATTERN = /^projects\/([^/]+)\/issues\/([^/]+)$/;
 const PLAN_NAME_PATTERN = /^projects\/([^/]+)\/plans\/([^/]+)$/;
@@ -894,11 +922,39 @@ export function AgentChat({
   const { t } = useTranslation();
   const currentRoute = useReactiveRoute();
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const messages = useAgentStore(selectMessages);
-  const currentChat = useAgentStore(selectCurrentChat);
+  const selectedMessages = useAgentStore(selectMessages);
+  const selectedChat = useAgentStore(selectCurrentChat);
+  const passive = !!selectedChat?.legacySqlImport;
+  const currentChat =
+    passive && selectedChat
+      ? {
+          ...selectedChat,
+          archived: true,
+          capability: undefined,
+          apiAttempts: undefined,
+          runCheckpoint: undefined,
+        }
+      : selectedChat;
+  const messages = useMemo<AgentMessage[]>(
+    () =>
+      passive
+        ? selectedMessages.map((m) => ({
+            id: m.id,
+            chatId: m.chatId,
+            createdTs: m.createdTs,
+            role: m.role,
+            content: m.content,
+            metadata: {
+              error: m.metadata?.error,
+              legacySqlStatus: m.metadata?.legacySqlStatus,
+            },
+          }))
+        : selectedMessages,
+    [selectedMessages, passive]
+  );
   const workspaceName = useAgentStore((state) => state.workspaceName);
-  const loading = useAgentStore(selectLoading);
-  const error = useAgentStore(selectError);
+  const loading = useAgentStore((s) => !passive && selectLoading(s));
+  const error = useAgentStore((s) => (passive ? null : selectError(s)));
   const storagePressure = useAgentStore((state) => state.storagePressure);
   const storageStatusKey = useAgentStore((state) =>
     JSON.stringify([state.workspaceName, state.userEmail, state.currentChatId])
@@ -984,6 +1040,49 @@ export function AgentChat({
     }
     return answers;
   }, [messages]);
+  const completedQueryViews = useMemo(() => {
+    const byAnswerId = new Map<
+      string,
+      ReturnType<typeof getAgentCompletedQueries>
+    >();
+    const sourcesByAnswerId = new Map<
+      string,
+      Map<string, AgentSqlActionSource>
+    >();
+    const promotedResults = new Set<string>();
+    const claimedResults = new Set<string>();
+    if (!passive) {
+      for (const message of messages) {
+        if (
+          message.role !== "assistant" ||
+          !message.content ||
+          message.toolCalls?.length
+        )
+          continue;
+        const queries = getAgentCompletedQueries(message, messages).filter(
+          (query) => !claimedResults.has(query.resultMessageId)
+        );
+        if (!queries.length) continue;
+        byAnswerId.set(message.id, queries);
+        sourcesByAnswerId.set(
+          message.id,
+          new Map(
+            bindAgentCompletedQueryActions(message, messages).map((source) => [
+              source.queryResultMessageId!,
+              source,
+            ])
+          )
+        );
+        for (const query of queries) {
+          claimedResults.add(query.resultMessageId);
+          promotedResults.add(
+            `${query.callMessageId}:${query.toolCallIndex}:${query.resultMessageId}`
+          );
+        }
+      }
+    }
+    return { byAnswerId, sourcesByAnswerId, promotedResults };
+  }, [messages, passive]);
   const latestContinuePrompts = responseActionsByMessageId
     .get(messages.at(-1)?.id ?? "")
     ?.filter((action) => action.kind === "continue")
@@ -999,15 +1098,18 @@ export function AgentChat({
   const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
   const allMessages = useAgentStore(selectMessages);
 
-  const feedback = getAgentRunFeedback({
-    executionAvailable,
-    storageBlocked: Boolean(storagePressure),
-    aiConfigurationRequired: chatRequiresAIConfiguration || aiEnabled === false,
-    recoverySupported: supportsAgentRunRecovery(),
-    remoteBusy,
-    chat: currentChat,
-    messages,
-  });
+  const feedback = passive
+    ? undefined
+    : getAgentRunFeedback({
+        executionAvailable,
+        storageBlocked: Boolean(storagePressure),
+        aiConfigurationRequired:
+          chatRequiresAIConfiguration || aiEnabled === false,
+        recoverySupported: supportsAgentRunRecovery(),
+        remoteBusy,
+        chat: currentChat,
+        messages,
+      });
   const showAIConfigurationRecovery = feedback === "ai-configuration";
   const showStorageError = feedback === "storage";
 
@@ -1358,6 +1460,8 @@ export function AgentChat({
           onRetry;
         const isPending = msg.metadata?.pending === true;
         const sqlBlocks = sqlBlocksByMessageId.get(msg.id);
+        const completedQueries =
+          completedQueryViews.byAnswerId.get(msg.id) ?? [];
         const actions = responseActionsByMessageId.get(msg.id) ?? [];
         const actionReceipts = normalizeActionReceipts(
           msg.metadata?.actionReceipts,
@@ -1511,16 +1615,36 @@ export function AgentChat({
                             </p>
                           ),
                           pre: ({ children, node }) => {
-                            const pre = (
-                              <pre className="my-1 max-w-full overflow-x-auto rounded-xs bg-control-bg p-2 text-xs whitespace-pre">
-                                {children}
-                              </pre>
-                            );
                             const start = node?.position?.start.offset;
                             const block =
                               start === undefined
                                 ? undefined
                                 : sqlBlocks?.positions.get(start);
+                            const isSqlBlock =
+                              !!block &&
+                              block.end === node?.position?.end.offset;
+                            if (
+                              isSqlBlock &&
+                              completedQueries.some(
+                                (query) =>
+                                  query.statement.trim() === block.sql.trim()
+                              )
+                            )
+                              return null;
+                            const pre = (
+                              <AgentCodeBlockContext.Provider value={true}>
+                                <pre
+                                  className={cn(
+                                    "max-w-full overflow-x-auto p-2 text-xs whitespace-pre",
+                                    isSqlBlock
+                                      ? "m-0 bg-background"
+                                      : "my-1 rounded-xs bg-control-bg-hover"
+                                  )}
+                                >
+                                  {children}
+                                </pre>
+                              </AgentCodeBlockContext.Provider>
+                            );
                             if (
                               !block ||
                               block.end !== node?.position?.end.offset
@@ -1550,11 +1674,7 @@ export function AgentChat({
                               </AgentSqlBlock>
                             );
                           },
-                          code: ({ children }) => (
-                            <code className="break-all rounded-xs bg-control-bg-hover px-1 text-xs">
-                              {children}
-                            </code>
-                          ),
+                          code: AgentMarkdownCode,
                           ul: ({ children }) => (
                             <ul className="my-1 list-disc pl-5">{children}</ul>
                           ),
@@ -1609,6 +1729,50 @@ export function AgentChat({
                       >
                         {msg.content}
                       </ReactMarkdown>
+                      {completedQueries.map((query) => {
+                        const source = completedQueryViews.sourcesByAnswerId
+                          .get(msg.id)
+                          ?.get(query.resultMessageId);
+                        return (
+                          <div
+                            key={query.resultMessageId}
+                            className="min-w-0"
+                            data-agent-completed-query
+                          >
+                            <div
+                              className="mt-2 break-words text-xs text-control-light"
+                              title={query.database}
+                            >
+                              {t("common.database")}:{" "}
+                              {
+                                extractDatabaseResourceName(query.database)
+                                  .databaseName
+                              }
+                            </div>
+                            <AgentQueryResult preview={query.preview} />
+                            <AgentSqlBlock
+                              executed
+                              sql={query.statement}
+                              source={
+                                source &&
+                                currentChat &&
+                                isAgentSqlActionChat(
+                                  currentChat,
+                                  source.snapshot,
+                                  workspaceName
+                                )
+                                  ? source
+                                  : undefined
+                              }
+                              onRun={onRun}
+                            >
+                              <pre className="m-0 max-w-full overflow-x-auto bg-background p-2 text-xs whitespace-pre">
+                                <code>{query.statement}</code>
+                              </pre>
+                            </AgentSqlBlock>
+                          </div>
+                        );
+                      })}
                       <EvidenceReferences evidence={msg.metadata?.evidence} />
                       {!currentChat?.archived &&
                         !msg.metadata?.pending &&
@@ -1690,6 +1854,9 @@ export function AgentChat({
                     <ToolCallCard
                       key={`${msg.id}:${toolCall.id}:${index}`}
                       toolCall={toolCall}
+                      hideQueryPreview={completedQueryViews.promotedResults.has(
+                        `${msg.id}:${index}:${toolCallViews.byMessageId.get(msg.id)?.[index]?.result?.id}`
+                      )}
                       result={
                         toolCallViews.byMessageId.get(msg.id)?.[index]?.result
                           ?.content
@@ -1755,6 +1922,23 @@ export function AgentChat({
                   )}
               </div>
             )}
+            {passive &&
+              (msg.metadata?.error ||
+                (msg.metadata?.legacySqlStatus &&
+                  msg.metadata.legacySqlStatus !== "DONE")) && (
+                <p className="mt-1 text-xs text-error">
+                  {[
+                    msg.metadata.legacySqlStatus === "LOADING"
+                      ? t("agent.interrupted")
+                      : msg.metadata.legacySqlStatus === "FAILED"
+                        ? t("agent.request-failed")
+                        : "",
+                    msg.metadata.error,
+                  ]
+                    .filter(Boolean)
+                    .join(": ")}
+                </p>
+              )}
             {showInterruption && (
               <div
                 role="status"

@@ -57,11 +57,6 @@ vi.mock("@/stores/app", () => ({
   },
 }));
 
-vi.mock("@/modules/ai/store", () => ({
-  // Zustand store: the guard calls `useConversationStore.getState().reset()`.
-  useConversationStore: { getState: () => ({ reset: vi.fn() }) },
-}));
-
 vi.mock("@/modules/workspace-setup-guide/setup", () => ({
   readWorkspaceSetupFinished: () => session.workspaceSetupFinished,
 }));

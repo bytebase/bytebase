@@ -10089,6 +10089,140 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).currentChatId).toBeNull();
   });
 
+  test.each(
+    ["archive", "unarchive", "delete"].flatMap((operation) =>
+      ["projects/orders", "workspaces/alpha"].map((context) => ({
+        operation,
+        context,
+      }))
+    )
+  )(
+    "$operation bulk chats only in exact context $context without touching colliding history",
+    ({ operation, context }) => {
+      vi.stubGlobal("navigator", {});
+      const store = createAgentStore();
+      s(store).setWorkspaceName("workspaces/alpha");
+      const unscopedId = s(store).currentChatId!;
+      const archived = operation !== "archive";
+      s(store).renameChat(unscopedId, "Same thread");
+      if (archived) s(store).archiveChat(unscopedId);
+      const targets = [0, 1].map(() =>
+        s(store).createChat({
+          title: "Same thread",
+          context,
+          archived,
+          select: false,
+        })
+      );
+      const foreign = [
+        s(store).getChat(unscopedId)!,
+        ...["projects/orders", "projects/orders-other", "workspaces/alpha"]
+          .filter((candidate) => candidate !== context)
+          .map((candidate) =>
+            s(store).createChat({
+              title: "Same thread",
+              context: candidate,
+              archived,
+              select: false,
+            })
+          ),
+      ];
+      const page = { path: "/sql-editor", title: "Editor" };
+      const controllers = new Map<string, AbortController>();
+      for (const chat of foreign) {
+        s(store).setDraft(chat.id, { text: "Keep this draft" });
+        s(store).addMessage({
+          chatId: chat.id,
+          role: "user",
+          content: "Keep this history",
+        });
+        s(store).queueUserMessage({
+          chatId: chat.id,
+          text: "Keep this queued request",
+          page,
+        });
+        const controller = new AbortController();
+        controllers.set(chat.id, controller);
+        s(store).setAbortController(chat.id, controller);
+        if (!archived) {
+          s(store).startChatRun(chat.id, page, { runId: `run-${chat.id}` });
+          s(store).awaitUser(chat.id, {
+            kind: "confirm",
+            toolCallId: "permission",
+            prompt: "Allow this query?",
+            apiPermission: {
+              actionId: `permission-${chat.id}`,
+              operationId: "SQLService/Query",
+            },
+          });
+          expect(
+            s(store).enqueueFollowUp({
+              chatId: chat.id,
+              text: "Keep this follow-up",
+              page,
+            })
+          ).not.toBeNull();
+        }
+      }
+      s(store).setCurrentChat(foreign[0].id);
+      const before = s(store);
+      for (const { id } of foreign) {
+        expect(before.queuedUserMessagesByChatId[id]?.text).toBe(
+          "Keep this queued request"
+        );
+        if (!archived) {
+          expect(before.getPendingAsk(id)?.apiPermission?.actionId).toBe(
+            `permission-${id}`
+          );
+          expect(before.followUpQueuesByChatId[id]?.messages).toHaveLength(1);
+        }
+      }
+      const preserved = foreign.map(({ id }) => ({
+        id,
+        chat: structuredClone(before.getChat(id)),
+        messages: structuredClone(before.getMessages(id)),
+        draft: structuredClone(before.getDraft(id)),
+        queued: structuredClone(before.queuedUserMessagesByChatId[id]),
+        followUps: structuredClone(before.followUpQueuesByChatId[id]),
+        ask: structuredClone(before.getPendingAsk(id)),
+      }));
+      expect(new Set(s(store).chats.map((chat) => chat.title)).size).toBe(1);
+
+      const count =
+        operation === "archive"
+          ? s(store).archiveAllActiveChats(context)
+          : operation === "unarchive"
+            ? s(store).unarchiveAllArchivedChats(context)
+            : s(store).deleteAllArchivedChats(context);
+
+      expect(count).toBe(2);
+      for (const chat of targets) {
+        if (operation === "delete")
+          expect(s(store).getChat(chat.id)).toBeNull();
+        else
+          expect(s(store).getChat(chat.id)?.archived).toBe(
+            operation === "archive"
+          );
+      }
+      expect(s(store).currentChatId).toBe(foreign[0].id);
+      for (const saved of preserved) {
+        const state = s(store);
+        expect(state.getChat(saved.id)).toEqual(saved.chat);
+        expect(state.getMessages(saved.id)).toEqual(saved.messages);
+        expect(state.getDraft(saved.id)).toEqual(saved.draft);
+        expect(state.queuedUserMessagesByChatId[saved.id]).toEqual(
+          saved.queued
+        );
+        expect(state.followUpQueuesByChatId[saved.id]).toEqual(saved.followUps);
+        expect(state.getPendingAsk(saved.id)).toEqual(saved.ask);
+        expect(state.getAbortController(saved.id)).toBe(
+          controllers.get(saved.id)
+        );
+        expect(controllers.get(saved.id)?.signal.aborted).toBe(false);
+      }
+    }
+  );
+
   test("tracks abort controllers per chat and cancels only the requested chat", () => {
     const store = createAgentStore();
     const firstChatId = s(store).currentChatId!;
@@ -12117,6 +12251,104 @@ describe("automatic history cleanup integration", () => {
     s(store).setWorkspaceName(workspaceName);
     return store;
   };
+
+  test("previously imported SQL transcripts remain readable and read-only after migration is deferred", async () => {
+    const { storageKeyAiConversations } = await import("@/utils/storage-keys");
+    const sourceKey = storageKeyAiConversations(workspaceName, TEST_USER_EMAIL);
+    const source = '{"version":1,"conversations":[]}';
+    mockStorage.setItem(sourceKey, source);
+    const chat: AgentChat = {
+      id: "legacy-sql:existing",
+      title: "Saved SQL transcript",
+      context: "projects/orders",
+      workspaceName,
+      createdTs: 10,
+      updatedTs: 12,
+      archived: true,
+      status: "idle",
+      totalTokensUsed: 0,
+      legacySqlImport: {
+        version: 1,
+        sourceId: "existing",
+        readOnly: true,
+        instance: "instances/main",
+        database: "orders",
+      },
+    };
+    const message: AgentMessage = {
+      id: "answer",
+      chatId: chat.id,
+      role: "assistant",
+      createdTs: 12,
+      content: "SELECT * FROM orders;",
+      metadata: { legacySqlStatus: "DONE" },
+    };
+    mockStorage.setItem(
+      getAgentStateKey(workspaceName),
+      JSON.stringify({
+        currentChatId: null,
+        chats: [chat],
+        messagesByChatId: { [chat.id]: [message] },
+        legacySqlSourceIds: ["existing"],
+      })
+    );
+    const store = create();
+    expect(s(store).getChat(chat.id)).toMatchObject(chat);
+    expect(s(store).getMessages(chat.id)).toEqual([message]);
+    s(store).renameChat(chat.id, "Renamed SQL transcript");
+    s(store).unarchiveChat(chat.id);
+    const page = { path: "/sql-editor", title: "SQL Editor" };
+    expect(
+      s(store).addMessage({
+        chatId: chat.id,
+        role: "user",
+        content: "Do not run",
+      })
+    ).toBeNull();
+    expect(
+      s(store).appendToolCall(chat.id, message.id, {
+        id: "tool",
+        name: "get_skill",
+        arguments: "{}",
+      })
+    ).toBeNull();
+    expect(
+      s(store).appendContinueActions(
+        chat.id,
+        message.id,
+        [{ kind: "continue", prompt: "Continue?" }],
+        []
+      )
+    ).toBeNull();
+    s(store).queueUserMessage({ chatId: chat.id, text: "Do not queue", page });
+    expect(s(store).queuedUserMessagesByChatId[chat.id]).toBeUndefined();
+    expect(
+      s(store).enqueueFollowUp({ chatId: chat.id, text: "Do not queue", page })
+    ).toBeNull();
+    s(store).startChatRun(chat.id, page);
+    expect(s(store).getChat(chat.id)?.status).toBe("idle");
+    expect(
+      await s(store).beginChatRun(chat.id, "request", {
+        page,
+        references: [],
+        runMode: "default",
+      })
+    ).toBeNull();
+    await s(store).flushRunPersistence();
+    const reloaded = create();
+    expect(s(reloaded).getChat(chat.id)).toMatchObject({
+      ...chat,
+      title: "Renamed SQL transcript",
+      archived: false,
+      updatedTs: s(store).getChat(chat.id)!.updatedTs,
+    });
+    expect(s(reloaded).getMessages(chat.id)).toEqual([message]);
+    expect(
+      JSON.parse(mockStorage.getItem(getAgentStateKey(workspaceName))!)
+        .legacySqlSourceIds
+    ).toEqual(["existing"]);
+    expect(mockStorage.getItem(sourceKey)).toBe(source);
+  });
 
   test.each(["updated", "cleared"] as const)(
     "a delayed progress save preserves a draft %s after the save was scheduled",

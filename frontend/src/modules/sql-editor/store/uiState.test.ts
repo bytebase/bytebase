@@ -89,15 +89,12 @@ const makeStore = async (): Promise<StoreApi<SQLEditorStoreState>> => {
   }));
 };
 
-let selectEditorPanelSize: typeof import("./uiState").selectEditorPanelSize;
-
 beforeEach(async () => {
   storage.clear();
   Object.defineProperty(globalThis, "localStorage", {
     value: localStorageMock,
     configurable: true,
   });
-  ({ selectEditorPanelSize } = await import(`./uiState?t=${Date.now()}`));
 });
 
 afterEach(() => {
@@ -113,10 +110,7 @@ describe("sqlEditor uiState slice", () => {
     const s = useStore.getState();
     expect(s.asidePanelTab).toBe("SAVED_QUERY");
     expect(s.showConnectionPanel).toBe(false);
-    expect(s.showAIPanel).toBe(false);
-    expect(s.pendingInsertAtCaret).toBeUndefined();
     expect(s.highlightAccessGrantName).toBeUndefined();
-    expect(s.isShowingCode).toBe(false);
     expect(s.aiPanelSize).toBe(0.3);
     expect(s.resultPanelSize).toBe(0.4);
     expect(s.resultPanelMaximized).toBe(false);
@@ -191,40 +185,10 @@ describe("sqlEditor uiState slice", () => {
     }
   });
 
-  test("selectEditorPanelSize returns full-width when AI panel is hidden", async () => {
-    const useStore = await makeStore();
-    expect(selectEditorPanelSize(useStore.getState())).toEqual({
-      size: 1,
-      max: 1,
-      min: 1,
-    });
-  });
-
-  test("selectEditorPanelSize returns clamped split when AI panel is shown", async () => {
-    const useStore = await makeStore();
-    useStore.getState().setShowAIPanel(true);
-    expect(selectEditorPanelSize(useStore.getState())).toEqual({
-      size: 0.7,
-      max: 0.9,
-      min: 0.5,
-    });
-  });
-
-  test("selectEditorPanelSize clamps to minimum 0.5 when AI panel is huge", async () => {
-    localStorage.setItem(
-      STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE,
-      JSON.stringify(0.8)
-    );
-    const useStore = await makeStore();
-    useStore.getState().setShowAIPanel(true);
-    expect(selectEditorPanelSize(useStore.getState()).size).toBe(0.5);
-  });
-
   test("handleEditorPanelResize writes complement to aiPanelSize and persists it", async () => {
     const useStore = await makeStore();
-    useStore.getState().setShowAIPanel(true);
     useStore.getState().handleEditorPanelResize(0.6);
-    expect(selectEditorPanelSize(useStore.getState()).size).toBe(0.6);
+    expect(useStore.getState().aiPanelSize).toBe(0.4);
     expect(localStorage.getItem(STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE)).toBe(
       JSON.stringify(0.4)
     );
@@ -232,8 +196,7 @@ describe("sqlEditor uiState slice", () => {
 
   test("handleEditorPanelResize no-ops when size is >= 1", async () => {
     const useStore = await makeStore();
-    useStore.getState().setShowAIPanel(true);
     useStore.getState().handleEditorPanelResize(1);
-    expect(selectEditorPanelSize(useStore.getState()).size).toBe(0.7);
+    expect(useStore.getState().aiPanelSize).toBe(0.3);
   });
 });

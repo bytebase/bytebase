@@ -4,7 +4,6 @@ import {
 } from "@/utils/storage-keys";
 import type { SQLEditorSliceCreator, UIStateSlice } from "./types";
 
-const MINIMUM_EDITOR_PANEL_SIZE = 0.5;
 const DEFAULT_AI_PANEL_SIZE = 0.3;
 
 const DEFAULT_RESULT_PANEL_SIZE = 0.4;
@@ -91,10 +90,7 @@ export const createUIStateSlice: SQLEditorSliceCreator<UIStateSlice> = (
 ) => ({
   asidePanelTab: "SAVED_QUERY",
   showConnectionPanel: false,
-  showAIPanel: false,
-  pendingInsertAtCaret: undefined,
   highlightAccessGrantName: undefined,
-  isShowingCode: false,
   aiPanelSize: readAIPanelSize(),
   resultPanelSize: readResultPanelSize(),
   resultPanelMaximized: false,
@@ -110,12 +106,9 @@ export const createUIStateSlice: SQLEditorSliceCreator<UIStateSlice> = (
       linkedQueryHistoryBaseline: value ? meta?.baseline : undefined,
     }),
   setShowConnectionPanel: (v) => set({ showConnectionPanel: v }),
-  setShowAIPanel: (v) => set({ showAIPanel: v }),
-  setPendingInsertAtCaret: (v) => set({ pendingInsertAtCaret: v }),
   setHighlightAccessGrantName: (v) => set({ highlightAccessGrantName: v }),
-  setIsShowingCode: (v) => set({ isShowingCode: v }),
   handleEditorPanelResize: (size) => {
-    if (size >= 1) return;
+    if (!Number.isFinite(size) || size <= 0 || size >= 1) return;
     const next = 1 - size;
     writeAIPanelSize(next);
     set({ aiPanelSize: next });
@@ -131,16 +124,3 @@ export const createUIStateSlice: SQLEditorSliceCreator<UIStateSlice> = (
     set({ resultPanelSize: next });
   },
 });
-
-export const selectEditorPanelSize = (
-  state: UIStateSlice
-): { size: number; max: number; min: number } => {
-  if (!state.showAIPanel) {
-    return { size: 1, max: 1, min: 1 };
-  }
-  return {
-    size: Math.max(1 - state.aiPanelSize, MINIMUM_EDITOR_PANEL_SIZE),
-    max: 0.9,
-    min: MINIMUM_EDITOR_PANEL_SIZE,
-  };
-};

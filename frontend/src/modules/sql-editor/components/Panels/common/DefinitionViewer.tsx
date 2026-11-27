@@ -3,13 +3,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ReadonlyMonaco } from "@/components/monaco/ReadonlyMonaco";
 import { formatSQL } from "@/components/monaco/sqlFormatter";
 import type { MonacoModule } from "@/components/monaco/types";
-import { aiContextEvents } from "@/modules/ai/logic";
-import * as promptUtils from "@/modules/ai/logic/prompt";
-import type { ChatAction } from "@/modules/ai/types";
-import { useSQLEditorStore } from "@/modules/sql-editor/store";
+import type { SqlEditorAgentAction as ChatAction } from "@/modules/sql-editor/model/agentHandoff";
 import { dialectOfEngineV1 } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { getInstanceResource, nextAnimationFrame } from "@/utils";
+import { getInstanceResource } from "@/utils";
 import { useAIActions } from "./useAIActions";
 
 const AI_ACTIONS: readonly ChatAction[] = ["explain-code"];
@@ -20,14 +17,7 @@ interface DefinitionViewerProps {
   format?: boolean;
 }
 
-/**
- * Bare Monaco read-only viewer; `format` is owned by the parent (the
- * ViewsPanel detail header has the toggle). Sets `isShowingCode` on mount
- * so `Panels` renders the AIChatToSQL pane next to it.
- */
 export function DefinitionViewer({ db, code, format }: DefinitionViewerProps) {
-  const setIsShowingCode = useSQLEditorStore((s) => s.setIsShowingCode);
-  const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
   const engine = useMemo(() => getInstanceResource(db).engine, [db]);
 
   const [formatted, setFormatted] = useState<{
@@ -48,7 +38,6 @@ export function DefinitionViewer({ db, code, format }: DefinitionViewerProps) {
 
   const content = format && !formatted.error ? formatted.data : code;
 
-  const [selectedStatement, setSelectedStatement] = useState("");
   const [monacoModule, setMonacoModule] = useState<MonacoModule | null>(null);
   const [editor, setEditor] =
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -61,50 +50,11 @@ export function DefinitionViewer({ db, code, format }: DefinitionViewerProps) {
     []
   );
 
-  useEffect(() => {
-    setIsShowingCode(true);
-    return () => {
-      setIsShowingCode(false);
-    };
-  }, [setIsShowingCode]);
-
-  const handleAIAction = useCallback(
-    (action: ChatAction) => {
-      const newChat = !useSQLEditorStore.getState().showAIPanel;
-      setShowAIPanel(true);
-      if (action !== "explain-code") return;
-      const statement = selectedStatement || content;
-      void nextAnimationFrame().then(() => {
-        void aiContextEvents.emit("send-chat", {
-          content: promptUtils.explainCode(statement, engine),
-          newChat,
-        });
-      });
-    },
-    [setShowAIPanel, selectedStatement, content, engine]
-  );
-
   useAIActions({
     monaco: monacoModule,
     editor,
     actions: AI_ACTIONS,
-    callback: handleAIAction,
   });
-
-  useEffect(() => {
-    if (!editor) return;
-    const sub = editor.onDidChangeCursorSelection(() => {
-      const selection = editor.getSelection();
-      const model = editor.getModel();
-      if (!selection || !model) {
-        setSelectedStatement("");
-        return;
-      }
-      const selected = model.getValueInRange(selection);
-      setSelectedStatement(selected);
-    });
-    return () => sub.dispose();
-  }, [editor]);
 
   return (
     <ReadonlyMonaco

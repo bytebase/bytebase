@@ -47,11 +47,13 @@ import { VersionMenuItem } from "./VersionMenuItem";
 export interface ProfileMenuProps {
   size?: "small" | "medium";
   link?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function ProfileMenuTrigger({
   size = "medium",
   link = true,
+  onOpenChange,
 }: ProfileMenuProps) {
   const { t, i18n } = useTranslation();
   const currentUser = useOptionalCurrentUser();
@@ -90,7 +92,11 @@ export function ProfileMenuTrigger({
     },
   ];
   const customLogo = workspace?.logo ?? "";
-  const [open, setOpen] = useState(false);
+  const [open, setMenuOpen] = useState(false);
+  const setOpen = (next: boolean) => {
+    setMenuOpen(next);
+    onOpenChange?.(next);
+  };
 
   const wrapperClass = useMemo(() => {
     if (!customLogo) {

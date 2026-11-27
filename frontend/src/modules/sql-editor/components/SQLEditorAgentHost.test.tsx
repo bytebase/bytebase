@@ -1,7 +1,10 @@
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { act, render } from "@testing-library/react";
+import type { editor as MonacoEditor, IPosition } from "monaco-editor";
+import { useContext, useLayoutEffect } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import type { IStandaloneCodeEditor } from "@/components/monaco/types";
 import {
   getRegisteredAgentSqlEditorHost,
   registerAgentSqlEditorHost,
@@ -24,6 +27,7 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
 import { SQLEditorAgentHost } from "./SQLEditorAgentHost";
+import { SqlEditorTargetRegistrationContext } from "./StandardPanel/sqlEditorAgentTarget";
 
 const projectA = create(ProjectSchema, {
   name: "projects/alpha",
@@ -88,6 +92,47 @@ function readySnapshot() {
   return context?.kind === "ready" ? context.snapshot : undefined;
 }
 
+const readOnlyOption = 99 as MonacoEditor.EditorOption.readOnly;
+function selectedEditor() {
+  const node = document.createElement("div");
+  document.body.append(node);
+  const value = "before\r\n  SELECT '\u{1f680}';\r\n-- selected\r\nafter";
+  let readOnly = false;
+  const model = {
+    uri: { toString: () => "inmemory://selection/test" },
+    getVersionId: () => 1,
+    isDisposed: () => false,
+    getValue: () => value,
+    getEOL: () => "\r\n",
+    getOffsetAt: ({ lineNumber, column }: IPosition) => value.split("\r\n").slice(0, lineNumber - 1).reduce((sum, line) => sum + line.length + 2, 0) + column - 1,
+  };
+  const editor = {
+    getModel: () => model,
+    getDomNode: () => node,
+    getSelections: () => [{
+      getStartPosition: () => ({ lineNumber: 2, column: 1 }),
+      getEndPosition: () => ({ lineNumber: 3, column: 12 }),
+      getPosition: () => ({ lineNumber: 2, column: 1 }),
+    }],
+    getOption: () => readOnly,
+    onDidDispose: () => ({ dispose: () => {} }),
+    onDidChangeModelContent: () => ({ dispose: () => {} }),
+    onDidChangeCursorSelection: () => ({ dispose: () => {} }),
+    onDidChangeModel: () => ({ dispose: () => {} }),
+    onDidChangeConfiguration: () => ({ dispose: () => {} }),
+    executeEdits: vi.fn(),
+    pushUndoStop: vi.fn(),
+    focus: vi.fn(),
+  };
+  return { node, value, editor, setReadOnly: () => { readOnly = true; } };
+}
+
+function RegisteredEditor({ tabId, editor }: { tabId: string; editor: IStandaloneCodeEditor }) {
+  const register = useContext(SqlEditorTargetRegistrationContext);
+  useLayoutEffect(() => register?.(tabId, editor, readOnlyOption), [register, tabId, editor]);
+  return null;
+}
+
 beforeEach(() => {
   useAppStore.setState({
     workspace,
@@ -148,6 +193,48 @@ test("registers after the Agent binds when the editor mounted first", () => {
     connection: { database: workspaceDb.name },
   });
   view.unmount();
+});
+
+test.each([false, true])("captures exact selected SQL without executing, editing, or focusing (connected=%s)", connected => {
+  const native = selectedEditor();
+  focusProject(projectA.name);
+  const tab = connected ? addDatabaseTab(workspaceDb) : useSQLEditorTabsStore.getState().addTab();
+  useSQLEditorTabsStore.getState().updateCurrentTab({ statement: native.value });
+  const view = render(<SQLEditorAgentHost paneRatio={0.35}><RegisteredEditor tabId={tab.id} editor={native.editor as unknown as IStandaloneCodeEditor} /></SQLEditorAgentHost>);
+  try {
+    const host = getRegisteredAgentSqlEditorHost();
+    const snapshot = readySnapshot()!;
+    expect(snapshot.attachment).toBeUndefined();
+    expect(host?.captureSelection?.(snapshot.editorTarget!)).toEqual({ status: "ready", sql: "  SELECT '\u{1f680}';\r\n-- selected" });
+    expect(snapshot.connection?.database).toBe(connected ? workspaceDb.name : undefined);
+    expect(native.editor.executeEdits).not.toHaveBeenCalled();
+    expect(native.editor.pushUndoStop).not.toHaveBeenCalled();
+    expect(native.editor.focus).not.toHaveBeenCalled();
+    expect(useSQLEditorTabsStore.getState().tabsById.get(tab.id)?.statement).toBe(native.value);
+  } finally { view.unmount(); native.node.remove(); }
+});
+
+test.each(["owner", "host", "Project", "tab", "read-only"])("rejects selected SQL from a stale %s binding", change => {
+  const native = selectedEditor();
+  focusProject(projectA.name);
+  const tab = useSQLEditorTabsStore.getState().addTab({ statement: native.value });
+  const view = render(<SQLEditorAgentHost paneRatio={0.35}><RegisteredEditor tabId={tab.id} editor={native.editor as unknown as IStandaloneCodeEditor} /></SQLEditorAgentHost>);
+  let removeReplacement = () => {};
+  try {
+    const host = getRegisteredAgentSqlEditorHost()!;
+    const target = readySnapshot()!.editorTarget!;
+    expect(target).toBeDefined();
+    act(() => {
+      if (change === "owner") useAppStore.setState({ currentUserName: "users/another@example.com" });
+      else if (change === "host") removeReplacement = registerAgentSqlEditorHost({ ...host, id: "replacement" });
+      else if (change === "Project") focusProject(projectB.name);
+      else if (change === "tab") useSQLEditorTabsStore.getState().addTab();
+      else native.setReadOnly();
+    });
+    expect(host.captureSelection?.(target)).toEqual({ status: change === "read-only" ? "readonly" : change === "Project" || change === "tab" ? "stale" : "unavailable" });
+    expect(native.editor.executeEdits).not.toHaveBeenCalled();
+    expect(native.editor.focus).not.toHaveBeenCalled();
+  } finally { removeReplacement(); view.unmount(); native.node.remove(); }
 });
 
 test.each(["app first", "Agent first"])(
@@ -333,6 +420,20 @@ test("publishes a new pane ratio without clearing the mounted context", () => {
     unsubscribe();
     view.unmount();
   }
+});
+
+test.each(["TABLES", "TRIGGERS"] as const)("captures the visible trigger rather than its parent or positional key (%s)", (panel) => {
+  focusProject(projectA.name);
+  const view = render(<SQLEditorAgentHost paneRatio={0.35}>Editor</SQLEditorAgentHost>);
+  try {
+    act(() => {
+      addDatabaseTab(workspaceDb);
+      useSQLEditorTabsStore.getState().updateCurrentTab({viewState: {view: panel, schema: "app", detail: {table:"orders", trigger:"audit_order###1"}}});
+    });
+    expect(readySnapshot()?.viewerObject).toEqual({ kind:"trigger", name:"audit_order", schema:"app" });
+    act(() => useSQLEditorTabsStore.getState().updateCurrentTab({viewState: {view: panel, schema:"app", detail:{table:"orders", trigger:"-1"}}}));
+    expect(readySnapshot()?.viewerObject?.kind).toBe(panel === "TABLES" ? "table" : undefined);
+  } finally { view.unmount(); }
 });
 
 test("publishes live connection, viewer, options, tab and disconnect changes without attaching private editor data", () => {

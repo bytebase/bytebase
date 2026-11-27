@@ -18,5 +18,7 @@ src/modules/sql-editor/
 - Keep SQL Editor UI under `components/`; use `@/components/ui` for shared primitives.
 - `legacy/` may read old persisted formats but must not become a home for new runtime behavior.
 - The current React and Zustand imports are authoritative. Some parity comments retain historical implementation context; they do not describe active framework boundaries.
-- The AI module may consume SQL Editor hooks and state. Avoid the reverse dependency unless the UI is explicitly an AI integration surface.
+- `SQLEditorAgentHost` owns the dock slot and native editor adapter. The root-mounted page Agent remains the sole chat and execution owner; do not mount another Agent window or input here.
+- SQL-specific entry points pass bounded explicit attachments through the shared Agent context path. Native edits require a member click and a matching mounted editor target; they are not registered DOM actions.
+- The connection picker and SQL header profile menu temporarily minimize the Agent through `useSqlEditorAgentOverlay`. Their cleanup restores only unchanged visibility intent in the same identity; never raise ordinary overlays above the Agent family or stop a run to show them.
 - Run focused tests under this module, then `pnpm --dir frontend fix` and `pnpm --dir frontend test`.

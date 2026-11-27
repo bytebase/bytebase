@@ -13,9 +13,4 @@ export type TabListEventMap = {
   "rename-tab": { tab: SQLEditorTab; index: number };
 };
 
-/**
- * Module-level tab list event bus. Single shared instance so emit/on from
- * any component reaches the others — same pattern used for the AI events
- * singleton (see `src/modules/ai/logic/events.ts`).
- */
 export const tabListEvents: Emittery<TabListEventMap> = new Emittery();

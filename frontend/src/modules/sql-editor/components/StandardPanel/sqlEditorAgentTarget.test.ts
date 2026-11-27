@@ -4,7 +4,7 @@ import type {
   ISelection,
   editor as MonacoEditor,
 } from "monaco-editor";
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import type { IStandaloneCodeEditor } from "@/components/monaco/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { createSqlEditorAgentTarget } from "./sqlEditorAgentTarget";
@@ -206,6 +206,94 @@ test("does not replace the document when the captured selection is empty", () =>
   expect(model.getValue()).toBe("x\r\nSELECT 1;");
 });
 
+test.each([true, false])(
+  "captures only the exact selected SQL without changing the editor (connected=%s)",
+  (connected) => {
+    const value = "before\r\n  SELECT '\u{1f680}';\r\n-- selected\r\nafter";
+    const { adapter, editor, model, undoStops } = setup(value);
+    editor.setSelection({
+      selectionStartLineNumber: 3,
+      selectionStartColumn: 12,
+      positionLineNumber: 2,
+      positionColumn: 1,
+    });
+    const { connection, ...projectOnly } = source;
+    const scope = connected ? source : projectOnly;
+    const target = adapter.capture(scope)!;
+    const selection = structuredClone(target.selection);
+    expect(adapter.captureSelection?.(scope, target, value)).toEqual({
+      status: "ready",
+      sql: "  SELECT '\u{1f680}';\r\n-- selected",
+    });
+    expect(model.getValue()).toBe(value);
+    expect(undoStops).toEqual([]);
+    expect(adapter.capture(scope)?.selection).toEqual(selection);
+  }
+);
+
+test.each(["", " \t"])(
+  "does not capture an empty or whitespace-only selection %j",
+  (selected) => {
+    const { adapter, editor, model, undoStops } = setup(
+      `x\r\n${selected}\r\ny`
+    );
+    editor.setSelection({
+      selectionStartLineNumber: 2,
+      selectionStartColumn: 1,
+      positionLineNumber: 2,
+      positionColumn: selected.length + 1,
+    });
+    const target = adapter.capture(source)!;
+    expect(adapter.captureSelection?.(source, target)).toEqual({
+      status: "unavailable",
+    });
+    expect(model.getValue()).toBe(`x\r\n${selected}\r\ny`);
+    expect(undoStops).toEqual([]);
+  }
+);
+
+test.each([
+  "read-only",
+  "revision",
+  "selection",
+  "model",
+  "disposed",
+  "multiple selections",
+  "pending statement",
+])("does not capture selected SQL after %s changes", (change) => {
+  const { adapter, editor, model, undoStops } = setup();
+  editor.setSelection({
+    selectionStartLineNumber: 2,
+    selectionStartColumn: 1,
+    positionLineNumber: 2,
+    positionColumn: 10,
+  });
+  const target = adapter.capture(source)!;
+  if (change === "read-only") editor.updateOptions({ readOnly: true });
+  else if (change === "revision") model.setValue("x\r\nSELECT 2;");
+  else if (change === "selection")
+    editor.setPosition({ lineNumber: 2, column: 1 });
+  else if (change === "model") editor.setModel({ ...model });
+  else if (change === "disposed") editor.dispose();
+  else if (change === "multiple selections")
+    vi.spyOn(editor, "getSelections").mockReturnValue([]);
+  expect(
+    adapter.captureSelection?.(
+      source,
+      target,
+      change === "pending statement" ? "SELECT 3;" : undefined
+    )
+  ).toEqual({
+    status:
+      change === "read-only"
+        ? "readonly"
+        : change === "disposed" || change === "multiple selections"
+          ? "unavailable"
+          : "stale",
+  });
+  expect(undoStops).toEqual([]);
+});
+
 test.each([
   ["actor", { actor: "users/another@example.com" }],
   ["Workspace", { workspace: "workspaces/another" }],
@@ -233,6 +321,7 @@ test.each([
   const target = adapter.capture(source)!;
   const live = { ...source, ...change };
   expect(adapter.inspect(live, target)).toEqual({ status: "stale" });
+  expect(adapter.captureSelection?.(live, target)).toEqual({ status: "stale" });
   expect(
     adapter.applySql(live, { target, sql: "SELECT 2;", mode: "insert" })
   ).toEqual({ status: "stale" });

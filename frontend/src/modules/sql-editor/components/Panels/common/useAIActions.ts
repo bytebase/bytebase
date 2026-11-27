@@ -2,7 +2,11 @@ import type * as monaco from "monaco-editor";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { MonacoModule } from "@/components/monaco/types";
-import type { ChatAction } from "@/modules/ai/types";
+import { getAgentAIConfigurationEnabled } from "@/modules/agent/logic/aiConfiguration";
+import {
+  type SqlEditorAgentAction as ChatAction,
+  handoffSqlEditorAction,
+} from "@/modules/sql-editor/model/agentHandoff";
 import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 
@@ -10,11 +14,7 @@ interface UseAIActionsOptions {
   monaco: MonacoModule | null;
   editor: monaco.editor.IStandaloneCodeEditor | null;
   actions: readonly ChatAction[];
-  callback: (
-    action: ChatAction,
-    monaco: MonacoModule,
-    editor: monaco.editor.IStandaloneCodeEditor
-  ) => void;
+  activeStatement?: () => string;
 }
 
 /**
@@ -26,7 +26,7 @@ export function useAIActions({
   monaco,
   editor,
   actions,
-  callback,
+  activeStatement,
 }: UseAIActionsOptions) {
   const { t } = useTranslation();
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
@@ -35,9 +35,7 @@ export function useAIActions({
   // mounted.
   const aiEnabled = useAppStore((s) => {
     const setting = s.getSettingByName(Setting_SettingName.AI);
-    return setting?.value?.value?.case === "ai"
-      ? (setting.value.value.value.enabled ?? false)
-      : false;
+    return getAgentAIConfigurationEnabled(setting);
   });
   // Defensive fetch — the SQL editor route doesn't load the AI setting at
   // bootstrap, and a deep-link to a code panel can land here first.
@@ -46,9 +44,34 @@ export function useAIActions({
   }, [getOrFetchSettingByName]);
 
   useEffect(() => {
-    if (!monaco || !editor || !aiEnabled) return;
+    if (!monaco || !editor || aiEnabled !== true) return;
     if (editor.getModel()?.getLanguageId() !== "sql") return;
 
+    const invoke = (action: ChatAction) => {
+      const model = editor.getModel();
+      const range = editor.getSelection();
+      if (!model) return;
+      const selected = range ? model.getValueInRange(range) : "";
+      const sql =
+        selected ||
+        (action === "new-chat" ? "" : activeStatement?.() || model.getValue());
+      if (
+        sql &&
+        !handoffSqlEditorAction(
+          action,
+          sql,
+          t(
+            `plugin.ai.actions.${action === "new-chat" ? "new-chat-using-selection" : action}`
+          )
+        )
+      ) {
+        useAppStore.getState().notify({
+          module: "bytebase",
+          style: "WARN",
+          title: t("plugin.ai.actions.sql-attachment-unavailable"),
+        });
+      }
+    };
     const updateContentEmpty = () => {
       const content = editor.getModel()?.getValue() ?? "";
       contentEmpty.set(content.length === 0);
@@ -92,7 +115,7 @@ export function useAIActions({
           precondition: "!bb.ai.contentEmpty",
           contextMenuGroupId: "2_ai_assistant",
           contextMenuOrder: 1,
-          run: () => callback("explain-code", monaco, editor),
+          run: () => invoke("explain-code"),
         })
       );
     }
@@ -104,7 +127,7 @@ export function useAIActions({
           precondition: "!bb.ai.contentEmpty",
           contextMenuGroupId: "2_ai_assistant",
           contextMenuOrder: 2,
-          run: () => callback("find-problems", monaco, editor),
+          run: () => invoke("find-problems"),
         })
       );
     }
@@ -116,12 +139,12 @@ export function useAIActions({
           precondition: "!bb.ai.selectedContentEmpty",
           contextMenuGroupId: "2_ai_assistant",
           contextMenuOrder: 2,
-          run: () => callback("new-chat", monaco, editor),
+          run: () => invoke("new-chat"),
         })
       );
     }
     return () => {
       subscriptions.forEach((sub) => sub.dispose());
     };
-  }, [monaco, editor, aiEnabled, actions, callback, t]);
+  }, [monaco, editor, aiEnabled, actions, activeStatement, t]);
 }

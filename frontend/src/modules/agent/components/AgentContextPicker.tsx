@@ -148,6 +148,7 @@ export function AgentContextPicker(props: AgentContextPickerProps) {
           side="top"
           align="start"
           sideOffset={6}
+          positionMethod="fixed"
           className={LAYER_SURFACE_CLASS}
         >
           <BasePopover.Popup

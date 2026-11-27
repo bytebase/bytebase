@@ -203,6 +203,7 @@ export const getAgentWindowKey = (workspaceName: string) =>
   getWorkspaceStorageKey(AGENT_WINDOW_KEY, workspaceName) ?? AGENT_WINDOW_KEY;
 
 export interface PersistedAgentState {
+  legacySqlSourceIds?: string[];
   currentChatId: string | null;
   chats: AgentChat[];
   messagesByChatId: Record<string, AgentMessage[]>;
@@ -863,6 +864,36 @@ const normalizePendingAsk = (
 const normalizeChat = (raw: unknown): AgentChat => {
   const chat = isRecord(raw) ? raw : {};
   const now = Date.now();
+  if (
+    chat.legacySqlImport !== undefined ||
+    (typeof chat.id === "string" && chat.id.startsWith("legacy-sql:"))
+  ) {
+    const source = isRecord(chat.legacySqlImport) ? chat.legacySqlImport : {};
+    return {
+      id: typeof chat.id === "string" ? chat.id : uuidv4(),
+      title: typeof chat.title === "string" ? chat.title : "",
+      createdTs: typeof chat.createdTs === "number" ? chat.createdTs : now,
+      updatedTs: typeof chat.updatedTs === "number" ? chat.updatedTs : now,
+      workspaceName:
+        typeof chat.workspaceName === "string" ? chat.workspaceName : undefined,
+      context:
+        typeof chat.context === "string" &&
+        chat.context.trim() === chat.context &&
+        /^projects\/(?!-$)[A-Za-z0-9_-]+$/.test(chat.context)
+          ? chat.context
+          : undefined,
+      archived: Boolean(chat.archived),
+      status: "idle",
+      totalTokensUsed: 0,
+      legacySqlImport: {
+        version: 1,
+        readOnly: true,
+        sourceId: typeof source.sourceId === "string" ? source.sourceId : "",
+        instance: typeof source.instance === "string" ? source.instance : "",
+        database: typeof source.database === "string" ? source.database : "",
+      },
+    };
+  }
   const status =
     chat.status === "running" ||
     chat.status === "awaiting_user" ||
@@ -1172,6 +1203,22 @@ const normalizePersistedState = (
         )
       )
     );
+    if (chat.legacySqlImport) {
+      messagesByChatId[chat.id] = messages
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .map((m) => ({
+          id: m.id,
+          chatId: chat.id,
+          role: m.role,
+          createdTs: m.createdTs,
+          content: m.content,
+          metadata: {
+            legacySqlStatus: m.metadata?.legacySqlStatus,
+            error: m.metadata?.error,
+          },
+        }));
+      continue;
+    }
     if (userEmail && scopeKey?.startsWith(AGENT_RUN_STATE_KEY + ".")) {
       const legacyKey = scopeKey.replace(AGENT_RUN_STATE_KEY, AGENT_STATE_KEY);
       for (const attempt of chat.apiAttempts ?? []) {
@@ -1316,7 +1363,9 @@ const normalizePersistedState = (
     }
   }
 
-  const chatIds = new Set(chats.map((chat) => chat.id));
+  const chatIds = new Set(
+    chats.filter((chat) => !chat.legacySqlImport).map((chat) => chat.id)
+  );
   const queuedUserMessagesByChatId: Record<string, QueuedUserMessage> = {};
   for (const [chatId, value] of Object.entries(rawStartupMessages)) {
     if (isBlockedQueueEntry(value)) continue;
@@ -1339,7 +1388,12 @@ const normalizePersistedState = (
   if (Object.keys(rawFollowUpQueues).length) {
     for (const chat of chats) {
       const queue = rawFollowUpQueues[chat.id];
-      if (chat.archived || !isRecord(queue) || !Array.isArray(queue.messages))
+      if (
+        chat.legacySqlImport ||
+        chat.archived ||
+        !isRecord(queue) ||
+        !Array.isArray(queue.messages)
+      )
         continue;
       const seen = new Set(messagesByChatId[chat.id]?.map(({ id }) => id));
       const startup = queuedUserMessagesByChatId[chat.id];
@@ -1409,6 +1463,11 @@ const normalizePersistedState = (
 
   return {
     currentChatId,
+    ...(Array.isArray(raw.legacySqlSourceIds) &&
+    raw.legacySqlSourceIds.length <= 20 &&
+    raw.legacySqlSourceIds.every((id) => typeof id === "string")
+      ? { legacySqlSourceIds: raw.legacySqlSourceIds as string[] }
+      : {}),
     chats,
     messagesByChatId,
     pendingAskByChatId,
@@ -1431,6 +1490,7 @@ const normalizePersistedState = (
 // --- Zustand store types ---
 
 export interface AgentState {
+  legacySqlSourceIds?: string[];
   recoverLegacyApiAttempts: (
     chatId: string,
     lease?: AgentRunLease
@@ -1542,11 +1602,11 @@ export interface AgentState {
   updateChatPage: (chatId: string, page: AgentChatSnapshot) => AgentChat | null;
   renameChat: (chatId: string, title: string) => AgentChat | null;
   archiveChat: (chatId: string) => AgentChat | null;
-  archiveAllActiveChats: () => number;
+  archiveAllActiveChats: (context?: string) => number;
   unarchiveChat: (chatId: string) => AgentChat | null;
-  unarchiveAllArchivedChats: () => number;
+  unarchiveAllArchivedChats: (context?: string) => number;
   deleteChat: (chatId: string) => boolean;
-  deleteAllArchivedChats: () => number;
+  deleteAllArchivedChats: (context?: string) => number;
   registerExpressionDraftTarget: (
     chatId: string,
     target: AgentExpressionDraftTarget,
@@ -1689,9 +1749,9 @@ export interface AgentState {
   setPendingAsk: (
     chatId: string,
     pendingAsk: AgentPendingAsk
-  ) => AgentPendingAsk;
+  ) => AgentPendingAsk | undefined;
   clearPendingAsk: (chatId?: string | null) => void;
-  awaitUser: (chatId: string, pendingAsk: AgentPendingAsk) => AgentPendingAsk;
+  awaitUser: AgentState["setPendingAsk"];
   recoverPendingAsk: (chatId: string, runId: string) => Promise<boolean>;
   cancelPendingAsk: (chatId?: string | null) => boolean;
   answerPendingAsk: (
@@ -1939,6 +1999,9 @@ const selectPersistedChats = (
     )
   );
   return {
+    ...(state.legacySqlSourceIds
+      ? { legacySqlSourceIds: state.legacySqlSourceIds }
+      : {}),
     currentChatId: ids.has(state.currentChatId ?? "")
       ? state.currentChatId
       : (chats[0]?.id ?? null),
@@ -1986,6 +2049,16 @@ const mergePersistedStates = (
   }
   const chats = [...byId.values()].map(({ chat }) => chat);
   const merged: PersistedAgentState = {
+    ...(existing.legacySqlSourceIds || incoming.legacySqlSourceIds
+      ? {
+          legacySqlSourceIds: [
+            ...new Set([
+              ...(incoming.legacySqlSourceIds ?? []),
+              ...(existing.legacySqlSourceIds ?? []),
+            ]),
+          ].slice(-20),
+        }
+      : {}),
     currentChatId:
       existing.currentChatId && byId.has(existing.currentChatId)
         ? existing.currentChatId
@@ -2162,6 +2235,9 @@ const loadInitialState = (): {
 };
 
 const persistedSnapshot = (state: AgentState): PersistedAgentState => ({
+  ...(state.legacySqlSourceIds
+    ? { legacySqlSourceIds: state.legacySqlSourceIds }
+    : {}),
   currentChatId: state.currentChatId,
   chats: state.chats,
   messagesByChatId: state.messagesByChatId,
@@ -2458,6 +2534,8 @@ const rebasePersistedChanges = (
   const localChats = new Map(local.chats.map((chat) => [chat.id, chat]));
   const remoteChats = new Map(remote.chats.map((chat) => [chat.id, chat]));
   const result = createEmptyPersistedState();
+  if (remote.legacySqlSourceIds)
+    result.legacySqlSourceIds = remote.legacySqlSourceIds;
   result.activeChatIds = [];
   for (const id of new Set([...remoteChats.keys(), ...localChats.keys()])) {
     const previous = baseChats.get(id);
@@ -2721,7 +2799,7 @@ export const createAgentStore = () => {
         if (!synchronizeState(get(), false) || get().remoteBusyChatIds[chatId])
           return null;
         const chat = _getChat(chatId);
-        return chat && !chat.archived ? chat : null;
+        return chat && !chat.archived && !chat.legacySqlImport ? chat : null;
       };
 
       const pauseFollowUpQueue = (state: AgentState, chatId: string) => {
@@ -2926,6 +3004,7 @@ export const createAgentStore = () => {
         },
 
         setDraft: (chatId, draft) => {
+          if (_getChat(chatId)?.legacySqlImport) return;
           if (!_getChat(chatId)) return;
           const normalized = normalizeDraft(draft);
           if (!normalized) return;
@@ -3048,6 +3127,7 @@ export const createAgentStore = () => {
           const page = normalizeAgentChatSnapshot(message.page);
           if (
             !page ||
+            _getChat(message.chatId)?.legacySqlImport ||
             get().remoteBusyChatIds[message.chatId] ||
             _getChat(message.chatId)?.status !== "idle" ||
             _getChat(message.chatId)?.runCheckpoint?.suspension ===
@@ -3378,6 +3458,7 @@ export const createAgentStore = () => {
           }
 
           const isReusable = (chat: AgentChat) =>
+            !chat.legacySqlImport &&
             !chat.archived &&
             !get().remoteBusyChatIds[chat.id] &&
             chat.capability === undefined &&
@@ -3518,9 +3599,10 @@ export const createAgentStore = () => {
           return _getChat(chatId);
         },
 
-        archiveAllActiveChats: () => {
+        archiveAllActiveChats: (context) => {
           get().syncState();
           const canArchive = (state: AgentState, chat: AgentChat) =>
+            (context === undefined || chat.context === context) &&
             !chat.archived &&
             !(
               state.remoteBusyChatIds[chat.id] &&
@@ -3588,10 +3670,14 @@ export const createAgentStore = () => {
           return _getChat(chatId);
         },
 
-        unarchiveAllArchivedChats: () => {
+        unarchiveAllArchivedChats: (context) => {
           let unarchivedCount = 0;
           set((state) => {
-            const archivedChats = state.chats.filter((chat) => chat.archived);
+            const archivedChats = state.chats.filter(
+              (chat) =>
+                chat.archived &&
+                (context === undefined || chat.context === context)
+            );
             unarchivedCount = archivedChats.length;
             if (unarchivedCount === 0) return;
 
@@ -3647,11 +3733,14 @@ export const createAgentStore = () => {
           return true;
         },
 
-        deleteAllArchivedChats: () => {
+        deleteAllArchivedChats: (context) => {
           get().syncState();
           const archivedChatIds = get()
             .chats.filter(
-              (chat) => chat.archived && !get().remoteBusyChatIds[chat.id]
+              (chat) =>
+                chat.archived &&
+                (context === undefined || chat.context === context) &&
+                !get().remoteBusyChatIds[chat.id]
             )
             .map((chat) => chat.id);
           for (const chatId of archivedChatIds) {
@@ -3661,7 +3750,10 @@ export const createAgentStore = () => {
           let deletedCount = 0;
           set((state) => {
             const archivedChats = state.chats.filter(
-              (chat) => chat.archived && !state.remoteBusyChatIds[chat.id]
+              (chat) =>
+                chat.archived &&
+                (context === undefined || chat.context === context) &&
+                !state.remoteBusyChatIds[chat.id]
             );
             deletedCount = archivedChats.length;
             if (deletedCount === 0) return;
@@ -3767,6 +3859,7 @@ export const createAgentStore = () => {
           if (message.role === "user") get().syncState();
           if (message.chatId && !_getChat(message.chatId)) return null;
           const chatId = message.chatId ?? get().ensureCurrentChat().id;
+          if (_getChat(chatId)?.legacySqlImport) return null;
           if (
             message.role === "tool" &&
             message.toolCallId &&
@@ -3840,6 +3933,7 @@ export const createAgentStore = () => {
         },
 
         appendToolCall: (chatId, messageId, toolCall) => {
+          if (_getChat(chatId)?.legacySqlImport) return null;
           const messages = get().messagesByChatId[chatId] ?? [];
           const message = messages.find((m) => m.id === messageId);
           if (!message) return null;
@@ -3859,6 +3953,7 @@ export const createAgentStore = () => {
         },
 
         appendContinueActions: (chatId, messageId, newActions, references) => {
+          if (_getChat(chatId)?.legacySqlImport) return null;
           const messages = get().messagesByChatId[chatId];
           const message = messages?.at(-1);
           if (
@@ -4137,6 +4232,7 @@ export const createAgentStore = () => {
 
         // Status
         setChatStatus: (chatId, status, options = {}) => {
+          if (_getChat(chatId)?.legacySqlImport) return null;
           if (!_getChat(chatId) || get().remoteBusyChatIds[chatId]) return null;
           set((state) => {
             const chat = state.chats.find((c) => c.id === chatId);
@@ -4178,6 +4274,7 @@ export const createAgentStore = () => {
         },
 
         startChatRun: (chatId, page, options = {}) => {
+          if (_getChat(chatId)?.legacySqlImport) return;
           const normalizedPage = page && normalizeAgentChatSnapshot(page);
           const root = get()
             .getMessages(chatId)
@@ -4213,6 +4310,7 @@ export const createAgentStore = () => {
           const bindings = normalizeRunBindings(rawBindings);
           if (
             !chat ||
+            chat.legacySqlImport ||
             chat.archived ||
             chat.runCheckpoint ||
             (chat.runId && chat.runBudget) ||
@@ -5005,6 +5103,7 @@ export const createAgentStore = () => {
         },
 
         recoverChatRun: async (chatId, runId) => {
+          if (_getChat(chatId)?.legacySqlImport) return false;
           get().syncState();
           const chat = _getChat(chatId);
           const state = get();
@@ -5077,6 +5176,7 @@ export const createAgentStore = () => {
 
         // Pending ask
         setPendingAsk: (chatId, pendingAsk) => {
+          if (_getChat(chatId)?.legacySqlImport) return;
           set((state) => {
             state.pendingAskByChatId[chatId] = pendingAsk;
             if (
@@ -5320,6 +5420,7 @@ export const createAgentStore = () => {
               draft.userEmail = null;
               draft.sqlEditorHost = undefined;
               draft.chats = empty.chats;
+              draft.legacySqlSourceIds = undefined;
               draft.messagesByChatId = empty.messagesByChatId;
               draft.pendingAskByChatId = empty.pendingAskByChatId;
               draft.draftsByChatId = empty.draftsByChatId;
@@ -5448,6 +5549,7 @@ export const createAgentStore = () => {
             draft.userEmail = nextUserEmail;
             draft.sqlEditorHost = undefined;
             draft.chats = persistedState.chats;
+            draft.legacySqlSourceIds = persistedState.legacySqlSourceIds;
             draft.messagesByChatId = persistedState.messagesByChatId;
             draft.pendingAskByChatId = persistedState.pendingAskByChatId;
             draft.draftsByChatId = persistedState.draftsByChatId;
@@ -5600,6 +5702,7 @@ export const createAgentStore = () => {
           }
           set((draft) => {
             draft.chats = state.chats;
+            draft.legacySqlSourceIds = state.legacySqlSourceIds;
             draft.messagesByChatId = state.messagesByChatId;
             draft.pendingAskByChatId = state.pendingAskByChatId;
             draft.draftsByChatId = state.draftsByChatId;
@@ -6378,7 +6481,10 @@ export const createAgentStore = () => {
     state: AgentState,
     persist: boolean,
     underLock = false,
-    reclamation?: { resetChatId?: string; discardLegacy?: boolean }
+    reclamation?: {
+      resetChatId?: string;
+      discardLegacy?: boolean;
+    }
   ): boolean => {
     const storage = getSafeStorage();
     const workspaceName = state.workspaceName;
@@ -6579,6 +6685,13 @@ export const createAgentStore = () => {
     applyingSnapshot = true;
     try {
       store.setState((draft) => {
+        if (
+          !samePersistedValue(
+            draft.legacySqlSourceIds,
+            merged.legacySqlSourceIds
+          )
+        )
+          draft.legacySqlSourceIds = merged.legacySqlSourceIds;
         if (!samePersistedValue(draft.chats, merged.chats))
           draft.chats = merged.chats;
         if (

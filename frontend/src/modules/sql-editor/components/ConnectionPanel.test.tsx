@@ -6,6 +6,11 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+const overlay = vi.hoisted(() => vi.fn());
+vi.mock("@/modules/sql-editor/hooks/useSqlEditorAgentOverlay", () => ({
+  useSqlEditorAgentOverlay: overlay,
+}));
+
 const mocks = vi.hoisted(() => {
   const state = { showConnectionPanel: false };
   const setShowConnectionPanel = (next: boolean) => {
@@ -152,6 +157,7 @@ describe("ConnectionPanel", () => {
     );
     render();
     expect(container.querySelector("[data-testid='sheet']")).toBeNull();
+    expect(overlay).toHaveBeenLastCalledWith(false);
     unmount();
   });
 
@@ -164,6 +170,7 @@ describe("ConnectionPanel", () => {
     expect(
       container.querySelector("[data-testid='sheet-title']")?.textContent
     ).toBe("database.select");
+    expect(overlay).toHaveBeenLastCalledWith(true);
     expect(
       container
         .querySelector("[data-testid='connection-pane']")

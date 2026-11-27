@@ -1,3 +1,4 @@
+import { AgentEntryPoints } from "./AgentEntryPoints";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -14,11 +15,8 @@ const mocks = vi.hoisted(() => ({
     isDisconnected: false,
     currentMode: "SAVED_QUERY" as string | undefined,
   },
-  // New zustand state mirror.
-  state: { showAIPanel: false },
-  setShowAIPanel: vi.fn((v: boolean) => {
-    mocks.state.showAIPanel = v;
-  }),
+  state: { visible: false, minimized: false },
+  toggle: vi.fn(),
   useSettingV1Store: vi.fn(),
   // App-store AI setting + fetch — the component reads
   // `useAppStore((s) => s.getSettingByName(AI))` for the enabled state and
@@ -65,17 +63,8 @@ vi.mock("@/modules/sql-editor/store/tab", () => ({
     }),
 }));
 
-vi.mock("@/modules/sql-editor/store", () => ({
-  useSQLEditorStore: (
-    selector: (s: {
-      showAIPanel: boolean;
-      setShowAIPanel: (v: boolean) => void;
-    }) => unknown
-  ) =>
-    selector({
-      showAIPanel: mocks.state.showAIPanel,
-      setShowAIPanel: mocks.setShowAIPanel,
-    }),
+vi.mock("@/modules/agent/store/agent", () => ({
+  useAgentStore: (selector: (s: typeof mocks.state & { toggle: () => void }) => unknown) => selector({ ...mocks.state, toggle: mocks.toggle }),
 }));
 
 vi.mock("@/utils", () => ({
@@ -166,11 +155,11 @@ const renderIntoContainer = (element: ReactElement) => {
   };
 };
 
-// Default state: connected, saved query mode, AI enabled, showAIPanel=false
+// Default state: connected, saved query mode, AI enabled, visible=false
 type StateValues = {
   isDisconnected: boolean;
   currentMode: string | undefined;
-  showAIPanel: boolean;
+  visible: boolean;
   openAIEnabled: boolean;
 };
 
@@ -178,12 +167,12 @@ const setupDefaultMocks = (overrides: Partial<StateValues> = {}) => {
   const values: StateValues = {
     isDisconnected: false,
     currentMode: "SAVED_QUERY",
-    showAIPanel: false,
+    visible: false,
     openAIEnabled: true,
     ...overrides,
   };
 
-  mocks.state.showAIPanel = values.showAIPanel;
+  mocks.state.visible = values.visible;
   mocks.tabState.isDisconnected = values.isDisconnected;
   mocks.tabState.currentMode = values.currentMode;
 
@@ -191,9 +180,7 @@ const setupDefaultMocks = (overrides: Partial<StateValues> = {}) => {
   // component (`s.getSettingByName(AI)` → `.value.value.case === "ai"
   // ? .enabled : false`). Build a setting whose shape matches the
   // configured value.
-  mocks.aiSetting = values.openAIEnabled
-    ? { value: { value: { case: "ai", value: { enabled: true } } } }
-    : undefined;
+  mocks.aiSetting = { value: { value: { case: "ai", value: { enabled: values.openAIEnabled } } } };
 };
 
 beforeEach(async () => {
@@ -204,26 +191,56 @@ beforeEach(async () => {
 });
 
 describe("OpenAIButton", () => {
-  test("renders nothing when disconnected", () => {
+  test("exposes exactly one trigger as toolbars mount and unmount", () => {
+    setupDefaultMocks();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    const renderEntries = (toolbar: boolean) => act(() => root.render(
+      <AgentEntryPoints>
+        <div data-testid="fallback"><OpenAIButton fallback /></div>
+        {toolbar && <div data-testid="native"><OpenAIButton /></div>}
+      </AgentEntryPoints>
+    ));
+    try {
+      for (const toolbar of [false, true, false]) {
+        renderEntries(toolbar);
+        expect(container.querySelectorAll("button")).toHaveLength(1);
+        expect(container.querySelector(`[data-testid="${toolbar ? "native" : "fallback"}"] button`)).not.toBeNull();
+      }
+    } finally {
+      act(() => root.unmount());
+    }
+  });
+
+  test("does not show configuration recovery for an unresolved setting", () => {
+    setupDefaultMocks();
+    mocks.aiSetting = undefined;
+    const view = renderIntoContainer(<OpenAIButton />);
+    view.render();
+    expect(view.container.querySelector("button")?.getAttribute("aria-disabled")).toBeNull();
+    expect(view.container.querySelector("[data-testid='popover']")).toBeNull();
+    view.unmount();
+  });
+  test("offers the shared Agent when disconnected", () => {
     setupDefaultMocks({ isDisconnected: true });
     const { container, render, unmount } = renderIntoContainer(
       <OpenAIButton />
     );
     render();
 
-    expect(container.querySelector("[data-testid='button']")).toBeNull();
+    expect(container.querySelector("[data-testid='button']")).not.toBeNull();
 
     unmount();
   });
 
-  test("renders nothing when not in SAVED_QUERY mode", () => {
+  test("offers the shared Agent when not in SAVED_QUERY mode", () => {
     setupDefaultMocks({ currentMode: "ADMIN" });
     const { container, render, unmount } = renderIntoContainer(
       <OpenAIButton />
     );
     render();
 
-    expect(container.querySelector("[data-testid='button']")).toBeNull();
+    expect(container.querySelector("[data-testid='button']")).not.toBeNull();
 
     unmount();
   });
@@ -300,7 +317,7 @@ describe("OpenAIButton", () => {
       button?.click();
     });
 
-    expect(mocks.setShowAIPanel).toHaveBeenCalledWith(true);
+    expect(mocks.toggle).toHaveBeenCalledOnce();
 
     unmount();
   });

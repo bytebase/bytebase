@@ -14,6 +14,15 @@ describe("query skill", () => {
       "General SQL questions do not need a connection"
     );
   });
+  test("summarizes completed query results instead of proposing the executed SQL again", () => {
+    const guidance = getSkill({ name: "query" });
+    expect(guidance).toContain(
+      "After successful execution, summarize the returned results"
+    );
+    expect(guidance).toContain(
+      "Do not repeat already executed SQL as a new sql-editor-block proposal"
+    );
+  });
   test("keeps no-persistence SQL review out of the auto-saving editor", () => {
     const guidance = getSkill({ name: "query" });
 

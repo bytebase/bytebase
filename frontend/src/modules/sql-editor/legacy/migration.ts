@@ -52,8 +52,8 @@ type PersistentTab = Pick<
 > & { worksheet?: string };
 
 const LEGACY_POUCH_DATABASES = [
-  "_pouch_bb.plugin.ai.conversations",
-  "_pouch_bb.plugin.ai.messages",
+  // Origin-wide AI transcripts lack account ownership. Retain them for explicit
+  // recovery instead of deleting them or importing them into the current account.
   "_pouch_bb.sql-editor.extended-tab",
   "_pouch_bb.storage",
 ];

@@ -158,7 +158,16 @@
       "plan-risks": "¿Hay riesgos de revisión o despliegue en este plan?",
       "plan-status": "¿Cuál es el estado actual de revisión y despliegue?",
       "project-heading": "Preguntar sobre este proyecto",
-      "resource-unavailable": "Este recurso no está disponible para referenciarlo."
+      "resource-unavailable": "Este recurso no está disponible para referenciarlo.",
+      "sql-explain-selection": "Explica el SQL seleccionado",
+      "sql-explore-database": "Explora esta base de datos",
+      "sql-find-database": "Muestra las bases de datos de este proyecto",
+      "sql-fix-error": "Ayúdame a corregir un error de SQL",
+      "sql-heading": "Pregunta sobre SQL",
+      "sql-improve-selection": "Sugiere mejoras",
+      "sql-review-selection": "Busca problemas en el SQL seleccionado",
+      "sql-table-relationships": "Explica las relaciones entre tablas",
+      "sql-write-query": "Ayúdame a escribir una consulta"
     },
     "custom-input-label": "Detalles",
     "custom-input-placeholder": "Introduce un valor",
@@ -444,9 +453,11 @@
       "actions": "Acciones de SQL",
       "autosave": "El editor SQL puede crear o actualizar automáticamente una consulta guardada después de este cambio.",
       "copy": "Copiar SQL",
+      "executed-sql": "SQL ejecutado",
       "insert": "Insertar",
       "readonly": "Este editor SQL es de solo lectura.",
       "replace-selection": "Reemplazar selección",
+      "run-again": "Volver a ejecutar",
       "run-query": "Ejecutar consulta",
       "stale": "El editor o el chat original ya no está listo para esta acción.",
       "unavailable": "El editor SQL original no está disponible."
@@ -3280,32 +3291,15 @@
       "actions": {
         "explain-code": "Explicar el código",
         "find-problems": "encontrar problemas",
-        "insert-at-caret": "Insertar en el cursor",
-        "new-chat-using-selection": "Nuevo chat con la selección"
+        "new-chat-using-selection": "Nuevo chat con la selección",
+        "sql-attachment-unavailable": "No se pudo adjuntar el SQL. Comprueba el editor activo y selecciona hasta 32 KiB de SQL."
       },
       "ai-assistant": "Asistente de IA",
-      "conversation": {
-        "delete": "Eliminar conversación",
-        "history-conversations": "Historial de conversaciones",
-        "new-conversation": "Comenzar nueva conversación",
-        "no-message": "No hay mensajes en esta conversación",
-        "rename": "Renombrar conversación",
-        "select-or-create": "Seleccione o {{create}} una conversación para comenzar.",
-        "tips": {
-          "no-more": "No más",
-          "suggest-prompt": "Sugiriendo promts..."
-        },
-        "untitled": "Conversación sin título",
-        "view-history-conversations": "Ver historial de conversaciones"
-      },
-      "new-line": "Nueva linea",
       "not-configured": {
         "contact-admin-to-configure": "Comuníquese con el administrador de su organización.",
         "go-to-configure": "Ir a configurar",
         "self": "El Asistente AI no está configurado."
-      },
-      "send": "Enviar",
-      "text-to-sql-placeholder": "Utilice lenguaje natural y Bytebase lo convertirá en SQL"
+      }
     }
   },
   "policy": {

@@ -19,7 +19,6 @@ export type SQLEditorEvents = {
   "project-context-ready": { project: string };
   "set-editor-selection": IRange;
   "append-editor-content": { content: string; select: boolean };
-  "insert-at-caret": { content: string };
   // Fired after a SQL statement has finished executing — by both the
   // saved query (`useExecuteSQL`) and admin/terminal (`webTerminal`)
   // paths. `HistoryPane` listens and refetches. Bypasses store

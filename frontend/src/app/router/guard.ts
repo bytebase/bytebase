@@ -291,9 +291,6 @@ export function rootGuard({
     store.resetDatabases();
     store.resetInstances();
     store.resetProjects();
-    void import("@/modules/ai/store").then(({ useConversationStore }) => {
-      useConversationStore.getState().reset();
-    });
     return null;
   }
 

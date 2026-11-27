@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useSqlEditorAgentOverlay } from "@/modules/sql-editor/hooks/useSqlEditorAgentOverlay";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import type { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -25,6 +26,7 @@ import { ConnectionPane } from "./ConnectionPane/ConnectionPane";
 export function ConnectionPanel() {
   const { t } = useTranslation();
   const open = useSQLEditorStore((s) => s.showConnectionPanel);
+  useSqlEditorAgentOverlay(open);
   const setShowConnectionPanel = useSQLEditorStore(
     (s) => s.setShowConnectionPanel
   );

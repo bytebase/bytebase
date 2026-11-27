@@ -1,21 +1,17 @@
-import { Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
-import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Panel,
   Group as PanelGroup,
   type PanelImperativeHandle,
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
-import { useShallow } from "zustand/react/shallow";
-import { AIChatToSQL, AIContextProvider } from "@/modules/ai/components";
 import { resizeHandleClass } from "@/modules/schema-editor/resize";
 import { ResultPanel } from "@/modules/sql-editor/components/ResultPanel/ResultPanel";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import {
   MAXIMUM_RESULT_PANEL_SIZE,
   MINIMUM_RESULT_PANEL_SIZE,
-  selectEditorPanelSize,
   useSQLEditorStore,
 } from "@/modules/sql-editor/store";
 import {
@@ -28,31 +24,7 @@ import { EditorMain } from "./EditorMain";
 /** Panel sizes are CSS percentages; round so 1 - 0.8 reads as "20%". */
 const percent = (fraction: number) => `${Math.round(fraction * 1000) / 10}%`;
 
-const AIPaneFallback = () => (
-  <div className="w-full h-full grow flex flex-col items-center justify-center">
-    <Loader2 className="size-6 animate-spin text-control-light" />
-  </div>
-);
-
-/**
- * SavedQuery-mode editor host. Layout, ordered top-to-bottom:
- *   1. Optional outer vertical split — editor / `<ResultPanel>`.
- *      Only rendered when the tab is connected and the instance supports
- *      read-only queries (`showResultPanel`), so the editor isn't
- *      squeezed into an arbitrary top pane when the result pane wouldn't
- *      render anyway.
- *   2. Inner horizontal split — `<EditorMain>` / `<AIChatToSQL>`.
- *      `<AIContextProvider>` wraps `<AIChatToSQL>` to provide the per-tab
- *      AI state.
- *
- * State source: tab Zustand selectors for tab + disconnect state,
- * `useConnectionOfCurrentSQLEditorTab` for the current instance,
- * `useSQLEditorStore` (zustand) for AI-panel visibility / sizing.
- */
 export function StandardPanel() {
-  const handleEditorPanelResize = useSQLEditorStore(
-    (s) => s.handleEditorPanelResize
-  );
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const setShowConnectionPanel = useSQLEditorStore(
     (s) => s.setShowConnectionPanel
@@ -61,8 +33,6 @@ export function StandardPanel() {
 
   const tab = useCurrentSQLEditorTab();
   const isDisconnected = useIsDisconnected();
-  const showAIPanel = useSQLEditorStore((s) => s.showAIPanel);
-  const editorPanelSize = useSQLEditorStore(useShallow(selectEditorPanelSize));
   const setResultPanelMaximized = useSQLEditorStore(
     (s) => s.setResultPanelMaximized
   );
@@ -86,62 +56,18 @@ export function StandardPanel() {
     return null;
   }
 
-  const handleAiPanelResize = (sizePct: number) => {
-    // react-resizable-panels reports a `PanelSize` struct
-    // ({ asPercentage, inPixels }) on resize. The store keeps a 0-1
-    // fraction (`{size: 0.7, ...}`); convert and forward — the store's
-    // setter writes `1 - size` to localStorage.
-    if (!Number.isFinite(sizePct)) return;
-    handleEditorPanelResize(sizePct / 100);
-  };
-
   const handleChangeConnection = () => {
     setAsidePanelTab("SCHEMA");
     setShowConnectionPanel(true);
   };
 
-  const editorWithAi = (
-    <PanelGroup orientation="horizontal" className="h-full">
-      <Panel
-        defaultSize={`${editorPanelSize.size * 100}%`}
-        minSize={`${editorPanelSize.min * 100}%`}
-        maxSize={`${editorPanelSize.max * 100}%`}
-        onResize={(size) => {
-          // Only live-sync when the AI pane is visible. Without this
-          // guard, the resize fires on initial layout when AI is hidden
-          // and the editor occupies 100%, clobbering the persisted size.
-          if (showAIPanel) handleAiPanelResize(size.asPercentage);
-        }}
-      >
-        <EditorMain onChangeConnection={handleChangeConnection} />
-      </Panel>
-      {showAIPanel && tab && (
-        <>
-          <PanelResizeHandle
-            className={resizeHandleClass("vertical", "w-0.5")}
-          />
-          <Panel
-            defaultSize={`${(1 - editorPanelSize.size) * 100}%`}
-            minSize="10%"
-          >
-            <div className="h-full overflow-hidden flex flex-col">
-              <Suspense fallback={<AIPaneFallback />}>
-                <AIContextProvider>
-                  <AIChatToSQL />
-                </AIContextProvider>
-              </Suspense>
-            </div>
-          </Panel>
-        </>
-      )}
-    </PanelGroup>
-  );
+  const editor = <EditorMain onChangeConnection={handleChangeConnection} />;
 
   if (!showResultPanel) {
-    return <div className="h-full">{editorWithAi}</div>;
+    return <div className="h-full">{editor}</div>;
   }
 
-  return <EditorResultSplit>{editorWithAi}</EditorResultSplit>;
+  return <EditorResultSplit>{editor}</EditorResultSplit>;
 }
 
 /**

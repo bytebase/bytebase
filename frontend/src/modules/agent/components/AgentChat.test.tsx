@@ -25,6 +25,7 @@ import type {
   AgentActionReceipt,
   AgentChat as AgentChatRecord,
   AgentHandoff,
+  AgentMessage,
   AgentMessageMetadata,
 } from "../logic/types";
 import { createAgentStore, useAgentStore } from "../store/agent";
@@ -365,6 +366,48 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
+  test("selected imported chat uses shared Markdown and stays read-only even after unarchive", async () => {
+    const active = useAgentStore.getState().ensureCurrentChat();
+    useAgentStore.getState().addMessage({chatId:active.id,role:"user",content:"Other private chat"});
+    const chat = {...active,id:"legacy", archived:false,legacySqlImport:{version:1 as const,readOnly:true as const,sourceId:"old",instance:"",database:""}};
+    const messages: AgentMessage[] = [
+      {chatId:"legacy",id:"u",role:"user",createdTs:1,content:"Past question"},
+      {chatId:"legacy",id:"a",role:"assistant",createdTs:2,content:"```sql\nSELECT 1;\n```",toolCalls:[{id:"unsafe-tool",name:"call_api",arguments:"{}"}],metadata:{legacySqlStatus:"LOADING",error:"Source failure",actions:[{kind:"continue",prompt:"Unsafe follow-up"}]}}
+    ];
+    useAgentStore.setState((state) => ({
+      chats: [...state.chats, chat], currentChatId: chat.id,
+      messagesByChatId: { ...state.messagesByChatId, [chat.id]: messages },
+    }));
+    const onRun = vi.fn();
+    const onRetry = vi.fn();
+    const onResend = vi.fn();
+    const onContinueAction = vi.fn();
+    const view=renderIntoContainer(<AgentChat onRun={onRun} onRetry={onRetry} onResend={onResend} onContinueAction={onContinueAction}/>);
+    view.render();
+    try{
+      expect(view.container.textContent).toContain("Past question");
+      expect(view.container.textContent).not.toContain("Other private chat");
+      expect(view.container.textContent).toContain("agent.interrupted");
+      expect(view.container.textContent).toContain("Source failure");
+      expect(view.container.querySelector("[data-agent-user-message]")).not.toBeNull();
+      expect(view.container.querySelector("[data-agent-answer] pre")).not.toBeNull();
+      expect(view.container.querySelector('[aria-label="agent.resend-message"]')).toBeNull();
+      const actions = within(view.container).getByRole("group",{name:"agent.sql-block.actions"});
+      expect(within(actions).getAllByRole("button")).toHaveLength(1);
+      const copy = within(actions).getByRole("button",{name:"agent.sql-block.copy"});
+      await act(async () => copy.click());
+      expect(mocks.writeTextToClipboard).toHaveBeenCalledExactlyOnceWith("SELECT 1;");
+      expect(view.container.textContent).not.toContain("Unsafe follow-up");
+      expect(view.container.textContent).not.toContain("call_api");
+      expect(onRun).not.toHaveBeenCalled();
+      expect(onRetry).not.toHaveBeenCalled();
+      expect(onResend).not.toHaveBeenCalled();
+      expect(onContinueAction).not.toHaveBeenCalled();
+      act(() => useAgentStore.getState().setCurrentChat(active.id));
+      expect(view.container.textContent).toContain("Other private chat");
+      expect(view.container.textContent).not.toContain("Past question");
+    }finally{view.unmount();}
+  });
   test("keeps each complete unmarked SQL block copyable inside its answer, not beside Ask next", async () => {
     const store = useAgentStore.getState();
     const chat = store.ensureCurrentChat();
@@ -4535,6 +4578,30 @@ describe("AgentChat", () => {
     }
   );
 
+  test.each([
+    { fence: "sql", code: "SELECT * FROM employee;" },
+    { fence: "sql", code: "SELECT id, name\nFROM employee\nWHERE active = true;" },
+    { fence: "", code: "SELECT * FROM employee;" },
+    { fence: "json", code: '{ "name": "example" }' },
+  ])("separates fenced $fence code styling from inline code", ({ fence, code }) => {
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: `Select from \`employee\`:\n\n\`\`\`${fence}\n${code}\n\`\`\`\n\nI have not executed it.`,
+    });
+    const view = renderIntoContainer(<AgentChat />);
+    view.render();
+    try {
+      const answer = view.container.querySelector("[data-agent-answer]")!;
+      const inline = answer.querySelector("p code");
+      const fenced = answer.querySelector("pre code");
+      expect(inline).toHaveTextContent("employee");
+      expect(inline).toHaveClass("bg-control-bg-hover", "px-1");
+      expect(fenced?.textContent).toBe(`${code}\n`);
+      expect(fenced).not.toHaveClass("bg-control-bg-hover", "px-1", "break-all");
+      expect(answer.querySelector("pre")).toHaveClass("overflow-x-auto", "whitespace-pre");
+    } finally { view.unmount(); }
+  });
+
   test("keeps wide fenced SQL in its own horizontal scroller", () => {
     const sql = `SELECT '${"a".repeat(256)}';`;
     useAgentStore.getState().addMessage({
@@ -4901,6 +4968,59 @@ describe("AgentChat", () => {
     expect(container.textContent).toContain("The query returned one row.");
 
     unmount();
+  });
+
+  test("presents a completed query once inside its final answer, with executed SQL secondary", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Show records" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      toolCalls: [{
+        id: "completed-query",
+        name: "call_api",
+        arguments: JSON.stringify({ operationId: "SQLService/Query", body: {
+          name: "instances/example/databases/sample", statement: "SELECT private_value FROM records;",
+        } }),
+      }],
+      metadata: { runId: "query-run" },
+    });
+    store.addMessage({
+      chatId: chat.id,
+      role: "tool",
+      toolCallId: "completed-query",
+      content: JSON.stringify({
+        status: 200,
+        agentExecution: agentApiExecutionEvidence("rpc-success"),
+        response: { results: [{
+          columnNames: ["private_value"], columnTypeNames: ["TEXT"],
+          rows: [{ values: [{ stringValue: "******" }] }],
+          masked: [{ maskingRuleId: "example-rule" }],
+        }] },
+      }),
+      metadata: { runId: "query-run" },
+    });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Returned one masked row.\n\n```sql\nSELECT private_value FROM records;\n```\n\nValues remain masked.",
+      metadata: { runId: "query-run" },
+    });
+    const view = renderIntoContainer(<AgentChat />);
+    view.render();
+    try {
+      const answer = view.container.querySelector("[data-agent-answer]")!;
+      expect(answer.querySelector("[data-agent-query-result]")).not.toBeNull();
+      expect(view.container.querySelectorAll("[data-agent-query-result]")).toHaveLength(1);
+      expect(answer.textContent).toContain("******");
+      expect(answer.textContent).toContain("Values remain masked.");
+      expect(answer.querySelectorAll("[data-agent-sql-block]")).toHaveLength(1);
+      expect(answer.querySelector("pre")).toBeNull();
+      const details = within(answer as HTMLElement).getByRole("button", { name: "agent.sql-block.executed-sql" });
+      fireEvent.click(details);
+      expect(answer.querySelector("pre")?.textContent).toBe("SELECT private_value FROM records;");
+    } finally { view.unmount(); }
   });
 
   test("routes AI configuration recovery to general settings with intro", () => {
