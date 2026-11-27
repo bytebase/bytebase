@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
@@ -257,7 +258,7 @@ func TestAdministerMaskingRulesStatesEachKindOfChange(t *testing.T) {
 		"a partial mask added after the kept rules": {stored: rules(prod), requested: rules(prod, test),
 			want: []formChange{{"Add rule 2, Partial mask: env \"test\", every column", true}}},
 		"moved": {stored: rules(prod, test), requested: rules(test, prod),
-			want: []formChange{{"Move to rule 2: env \"prod\", every column", true}}},
+			want: []formChange{{"Move to rule 2, Full mask, now behind \"Test\" (Partial mask): env \"prod\", every column", true}}},
 		"given a partial mask": {stored: rules(prod),
 			requested: rules(with(prod, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.SemanticType = "bb.default-partial" })),
 			want:      []formChange{{"Change type, Full mask to Partial mask: env \"prod\", every column", true}}},
@@ -275,7 +276,7 @@ func TestAdministerMaskingRulesStatesEachKindOfChange(t *testing.T) {
 				r.SemanticType = "bb.default"
 				r.Condition.Title = "Testing"
 			})),
-			want: []formChange{{"Change type, Partial mask to Full mask; move to rule 2; rename to \"Testing\": env \"test\", every column", true}}},
+			want: []formChange{{"Change type, Partial mask to Full mask; move to rule 2, now behind 1 rule with the same type; rename to \"Testing\": env \"test\", every column", true}}},
 		"condition changed": {stored: rules(prod),
 			requested: rules(maskingRule("r3", "Prod", `resource.environment_id == "production"`, "bb.default")),
 			want: []formChange{
@@ -338,9 +339,10 @@ func TestAdministerMaskingRulesLeavesTheFixedSentenceToAFullDescription(t *testi
 		choiceDescription(t, user.lastParams(t)))
 }
 
-// A move's line in the message shows no type, and the order decides which rule
-// masks a column, so the description names the moved rule's type.
-func TestAdministerMaskingRulesNamesAMovedRulesType(t *testing.T) {
+// The first matching rule decides a column's mask, so a move's line gives the
+// moved rule's type and says what the rule passed: the rule it is now behind
+// takes the columns both match.
+func TestAdministerMaskingRulesMoveStatesItsTypeAndTheRuleItPasses(t *testing.T) {
 	types, err := semanticTypesFromSetting(nil)
 	require.NoError(t, err)
 	full := maskingRule("r1", "SSN", `resource.column_name == "ssn"`, "bb.default")
@@ -349,10 +351,114 @@ func TestAdministerMaskingRulesNamesAMovedRulesType(t *testing.T) {
 	require.NoError(t, err)
 	form, err := maskingRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, "")
 	require.NoError(t, err)
-	require.Contains(t, form.message, "Move to rule 2: any db, any table, column \"ssn\"")
+	require.Contains(t, unwrapMessage(form.message), `Move to rule 2, Full mask, now behind "PII" (Partial mask): any db, any table, column "ssn"`)
 	require.Equal(t, "The masking rules, in the order masking tries them:\n"+
 		"1. \"PII\" (kept), Partial mask: any db, any table, columns (\"email\", \"ssn\")\n"+
-		"2. \"SSN\" (changed), Full mask: `resource.column_name == \"ssn\"`", unwrapMessage(form.description))
+		"2. \"SSN\" (changed), Full mask: `resource.column_name == \"ssn\"`\n"+maskingRulesApply, unwrapMessage(form.description))
+}
+
+// The rule list under the choice is cut, so the move's line alone must tell
+// two moves apart that mask a column differently: after nine rules, a swap
+// that takes a column from a full mask to a partial one, and the same swap of
+// two partial masks.
+func TestAdministerMaskingRulesMoveTellsWhichMaskWinsPastTheListsCut(t *testing.T) {
+	asked := func(salaryType string) (message, description string) {
+		var kept []*v1pb.MaskingRulePolicy_MaskingRule
+		for i := range 9 {
+			kept = append(kept, maskingRule(fmt.Sprintf("r%d", i), fmt.Sprintf("Rule %d", i+1), fmt.Sprintf(`resource.column_name == "column_%02d"`, i), "bb.default"))
+		}
+		salary := maskingRule("r-salary", "Salary", `resource.table_name == "employee" && resource.column_name == "salary"`, salaryType)
+		table := maskingRule("r-table", "Employee table", `resource.table_name == "employee"`, "bb.default-partial")
+		message, description, refusal := askedMaskingChange(t, slices.Concat(kept, []*v1pb.MaskingRulePolicy_MaskingRule{salary, table}), slices.Concat(kept, []*v1pb.MaskingRulePolicy_MaskingRule{table, salary}))
+		require.Empty(t, refusal)
+		return unwrapMessage(message), description
+	}
+	full, description := asked("bb.default")
+	require.Contains(t, description, "... and 3 more rules, tried after these.", "the list is cut before the two rules")
+	require.NotContains(t, description, "Salary")
+	require.Contains(t, full, `Move to rule 11, Full mask, now behind "Employee table" (Partial mask): any db, "employee"."salary"`)
+	partial, _ := asked("bb.default-partial")
+	require.Contains(t, partial, `Move to rule 11, Partial mask, now behind 1 rule with the same type: any db, "employee"."salary"`)
+}
+
+// A masking move counts the rules it passes as an approval move does. A rule
+// of the moved rule's type changes no mask. Only a full mask hides every
+// value, so a rule with none is counted apart: a hash, a partial mask, a type
+// that masks nothing, an unknown type and no type.
+func TestMaskingMoveCountsTheRulesItPasses(t *testing.T) {
+	types, err := semanticTypesFromSetting([]*v1pb.SemanticTypeSetting_SemanticType{
+		semanticType("email", "Email", &v1pb.Algorithm{Mask: &v1pb.Algorithm_Md5Mask{Md5Mask: &v1pb.Algorithm_MD5Mask{}}}),
+		semanticType("plain", "Plain", nil),
+		semanticType("redacted", "Redacted", &v1pb.Algorithm{Mask: &v1pb.Algorithm_FullMask_{FullMask: &v1pb.Algorithm_FullMask{Substitution: "*"}}}),
+	})
+	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		mover  string
+		passed []string
+		want   string
+	}{
+		"rules of its type":                   {"bb.default", []string{"bb.default", "bb.default"}, "Full mask, now behind 2 rules with the same type"},
+		"a hash and a partial mask":           {"bb.default", []string{"email", "bb.default-partial"}, "Full mask, now behind 2 rules with no full mask"},
+		"a type that masks nothing":           {"bb.default", []string{"plain", "bb.default", "bb.default"}, "Full mask, now behind 3 rules, 1 of them with no full mask"},
+		"an unknown type and no type":         {"redacted", []string{"bb.typo", ""}, `"Redacted" (Full mask), now behind 2 rules with no full mask`},
+		"another full mask":                   {"bb.default", []string{"redacted", "redacted"}, "Full mask, now behind 2 rules with other types"},
+		"another full mask among its type":    {"bb.default", []string{"redacted", "bb.default"}, "Full mask, now behind 2 rules, 1 of them with other types"},
+		"every kind":                          {"bb.default", []string{"bb.default", "email", "", "redacted"}, "Full mask, now behind 4 rules, 2 with no full mask and 1 with other types"},
+		"two rules with no type, as its own":  {"", []string{"", ""}, "no type (each column's own type), now behind 2 rules with the same type"},
+		"a partial mask behind full masks":    {"bb.default-partial", []string{"bb.default", "redacted"}, "Partial mask, now behind 2 rules with other types"},
+		"a partial mask behind another's":     {"bb.default-partial", []string{"email", "email"}, "Partial mask, now behind 2 rules with no full mask"},
+		"a partial mask behind partial masks": {"bb.default-partial", []string{"bb.default-partial", "bb.default-partial"}, "Partial mask, now behind 2 rules with the same type"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mover := maskingRule("r-mover", "Mover", `resource.column_name == "mover"`, tc.mover)
+			var passed []*v1pb.MaskingRulePolicy_MaskingRule
+			for i, semanticType := range tc.passed {
+				passed = append(passed, maskingRule(fmt.Sprintf("r%d", i), fmt.Sprintf("Rule %d", i+1), fmt.Sprintf(`resource.column_name == "c%d"`, i), semanticType))
+			}
+			stored := slices.Concat([]*v1pb.MaskingRulePolicy_MaskingRule{mover}, passed)
+			requested := slices.Concat(passed, []*v1pb.MaskingRulePolicy_MaskingRule{mover})
+			diff, err := diffMaskingRules(stored, requested, types, "")
+			require.NoError(t, err)
+			require.Equal(t, []formChange{{text: fmt.Sprintf("Move to rule %d, %s: any db, any table, column \"mover\"", len(requested), tc.want), effect: true}}, diff.changes)
+			// The way back reads from the other side.
+			back, err := diffMaskingRules(requested, stored, types, "")
+			require.NoError(t, err)
+			require.Equal(t, []formChange{{text: fmt.Sprintf("Move to rule 1, %s: any db, any table, column \"mover\"", strings.Replace(tc.want, "now behind", "now ahead of", 1)), effect: true}}, back.changes)
+		})
+	}
+}
+
+// A move names the one rule it passes on a side when that rule has another
+// type and its label is within passedNameWidth: by its title, or by its place
+// when it has none, with its type.
+func TestMaskingMoveNamesAPassedRuleWithinItsWidth(t *testing.T) {
+	types, err := semanticTypesFromSetting([]*v1pb.SemanticTypeSetting_SemanticType{
+		semanticType("contact", "Customer contact data", &v1pb.Algorithm{Mask: &v1pb.Algorithm_Md5Mask{Md5Mask: &v1pb.Algorithm_MD5Mask{}}}),
+	})
+	require.NoError(t, err)
+	// Two rows of padding keep the padded rule in place: the other move is
+	// shorter.
+	const pad = `resource.table_name == "a_table_with_a_long_name_that_takes_the_row" && resource.schema_name == "a_schema_with_a_long_name_too" && `
+	for name, tc := range map[string]struct {
+		title, semanticType string
+		want                string
+	}{
+		"a title":                   {"Emails", "bb.default-partial", `now ahead of "Emails" (Partial mask)`},
+		"no title":                  {"", "bb.default-partial", "now ahead of rule 2 (Partial mask)"},
+		"a type with a title":       {"Emails", "contact", `now ahead of "Emails" ("Customer contact data" (Hash (MD5)))`},
+		"a label of 48 columns":     {strings.Repeat("T", 31), "bb.default-partial", `now ahead of "` + strings.Repeat("T", 31) + `" (Partial mask)`},
+		"a label of 49 columns":     {strings.Repeat("T", 32), "bb.default-partial", "now ahead of 1 rule with no full mask"},
+		"a type that takes it past": {"Emails here", "contact", "now ahead of 1 rule with no full mask"},
+		"its own type, any length":  {strings.Repeat("T", 60), "bb.default", "now ahead of 1 rule with the same type"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mover := maskingRule("r-mover", "Mover", `resource.column_name == "mover"`, "bb.default")
+			passed := maskingRule("r-passed", tc.title, pad+`resource.column_name == "passed"`, tc.semanticType)
+			diff, err := diffMaskingRules([]*v1pb.MaskingRulePolicy_MaskingRule{passed, mover}, []*v1pb.MaskingRulePolicy_MaskingRule{mover, passed}, types, "")
+			require.NoError(t, err)
+			require.Equal(t, []formChange{{text: "Move to rule 1, Full mask, " + tc.want + `: any db, any table, column "mover"`, effect: true}}, diff.changes)
+		})
+	}
 }
 
 func TestAdministerMaskingRulesRefusesBeforeAsking(t *testing.T) {
@@ -730,20 +836,28 @@ func TestAdministerMaskingRulesGivesEachChangedRuleOneLine(t *testing.T) {
 
 // BYT-10598: a removal states the unmask effect and adding a full-mask rule
 // does not, so a rule one form could add fit no form that removed it. Whatever
-// a form adds, a form removes or moves, and what the message states whole when
-// it is added, the message states whole when it goes.
+// a form adds, a form removes, and what the message states whole when it is
+// added, the message states whole when it is removed. The same holds when the
+// rule trades places with a shorter one, which is then the moved rule.
+//
+// A move's own line says what the rule passed, so it is longer than the add's,
+// by less than a row. When the rule it trades places with is longer still,
+// this rule moves: within that row of a limit its move goes under the choice,
+// or gets no form.
 func TestAdministerMaskingRulesRemovesOrMovesEveryRuleOneFormAdds(t *testing.T) {
 	types, err := semanticTypesFromSetting(nil)
 	require.NoError(t, err)
 	alice := withUserEmail(context.Background(), "alice@example.com")
 	// form reports whether a form states the change, and whether its message
-	// states it whole.
-	form := func(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule) (asked, whole bool) {
+	// states it whole, with the rows of its first change line.
+	form := func(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule) (asked, whole bool, rows int) {
 		diff, err := diffMaskingRules(stored, requested, types, "")
 		require.NoError(t, err)
+		require.Len(t, diff.changes, 1)
 		form, err := maskingRulesForm(alice, diff, "")
-		return err == nil, err == nil && !strings.Contains(form.message, "listed under Action")
+		return err == nil, err == nil && !strings.Contains(form.message, "listed under Action"), len(wrapLine(diff.changes[0].text, descriptionLineWidth))
 	}
+	short := maskingRule("r-short", "Short", `resource.column_name == "ssn"`, "bb.default-partial")
 	for _, condition := range []func(name string) string{
 		func(name string) string {
 			return `resource.database_name == "hr_test" && resource.table_name == "salary" && resource.column_name == "` + name + `"`
@@ -752,34 +866,45 @@ func TestAdministerMaskingRulesRemovesOrMovesEveryRuleOneFormAdds(t *testing.T) 
 			return `resource.environment_id == "prod" && (resource.column_name == "amount" || resource.column_name == "` + name + `")`
 		},
 	} {
-		added, addedWhole := 0, 0
+		added, addedWhole, noForm, listed := 0, 0, 0, 0
 		for n := 1; n <= 800; n++ {
 			for _, semanticType := range []string{"bb.default", "bb.default-partial"} {
 				rule := maskingRule("r1", "Long", condition(strings.Repeat("c", n)), semanticType)
-				asked, whole := form(nil, []*v1pb.MaskingRulePolicy_MaskingRule{rule})
+				asked, whole, addRows := form(nil, []*v1pb.MaskingRulePolicy_MaskingRule{rule})
 				if !asked {
 					continue
 				}
 				added++
-				removed, removedWhole := form([]*v1pb.MaskingRulePolicy_MaskingRule{rule}, nil)
+				removed, removedWhole, _ := form([]*v1pb.MaskingRulePolicy_MaskingRule{rule}, nil)
+				swapped, swappedWhole, _ := form([]*v1pb.MaskingRulePolicy_MaskingRule{rule, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, rule})
+				require.True(t, removed && swapped, "%q", rule.GetCondition().GetExpression())
+				if whole {
+					addedWhole++
+					require.True(t, removedWhole && swappedWhole, "%q", rule.GetCondition().GetExpression())
+				}
 				// The other rule's move takes more rows, so this rule is the
 				// one that moved.
 				longer := maskingRule("r0", "Longer", condition(strings.Repeat("c", n+2*descriptionLineWidth)), semanticType)
-				swap, err := diffMaskingRules([]*v1pb.MaskingRulePolicy_MaskingRule{rule, longer}, []*v1pb.MaskingRulePolicy_MaskingRule{longer, rule}, types, "")
-				require.NoError(t, err)
-				require.Len(t, swap.changes, 1)
-				require.True(t, strings.HasPrefix(swap.changes[0].text, "Move to rule 2: "), swap.changes[0].text)
-				moved, movedWhole := form([]*v1pb.MaskingRulePolicy_MaskingRule{rule, longer}, []*v1pb.MaskingRulePolicy_MaskingRule{longer, rule})
-				require.True(t, removed && moved, "%q", rule.GetCondition().GetExpression())
-				if whole {
-					addedWhole++
-					require.True(t, removedWhole && movedWhole, "%q", rule.GetCondition().GetExpression())
+				moved, movedWhole, moveRows := form([]*v1pb.MaskingRulePolicy_MaskingRule{rule, longer}, []*v1pb.MaskingRulePolicy_MaskingRule{longer, rule})
+				require.LessOrEqual(t, moveRows, addRows+1, "%q", rule.GetCondition().GetExpression())
+				require.Equal(t, moveRows <= descriptionLines, moved, "%q", rule.GetCondition().GetExpression())
+				if !moved {
+					noForm++
+				}
+				if whole && !movedWhole {
+					listed++
 				}
 			}
 		}
 		require.Greater(t, addedWhole, 0, "the sweep must reach a rule the message states whole")
 		require.Greater(t, added, addedWhole, "and one it lists under the choice")
 		require.Less(t, added, 1600, "and one no form states")
+		// Each name is one character longer, and each of the two types has
+		// its own limit.
+		require.Greater(t, noForm, 0)
+		require.Less(t, noForm, 2*descriptionLineWidth, "the names within one row of the longest a form adds")
+		require.Greater(t, listed, 0)
+		require.Less(t, listed, 2*messageLineWidth, "the names within one row of the longest the message states whole")
 	}
 }
 
@@ -917,7 +1042,7 @@ func TestAdministerMaskingRulesSwapsBackWhatItSwaps(t *testing.T) {
 		many := maskingRule("r-many", "Many columns", columns(n), "bb.default")
 		message, refusal := swap([]*v1pb.MaskingRulePolicy_MaskingRule{short, many}, []*v1pb.MaskingRulePolicy_MaskingRule{many, short})
 		require.Empty(t, refusal, "%d columns", n)
-		require.Contains(t, message, `Move to rule 2: any db, any table, column "ssn"`)
+		require.Contains(t, unwrapMessage(message), `Move to rule 2, Full mask, now behind 1 rule with the same type: any db, any table, column "ssn"`)
 		_, refusal = swap([]*v1pb.MaskingRulePolicy_MaskingRule{many, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, many})
 		require.Empty(t, refusal, "%d columns, swapped back", n)
 	}
@@ -927,28 +1052,29 @@ func TestAdministerMaskingRulesSwapsBackWhatItSwaps(t *testing.T) {
 	for _, n := range []int{2, 30} {
 		many := maskingRule("r-many", "Many columns", columns(n), "bb.default")
 		message, _ := swap([]*v1pb.MaskingRulePolicy_MaskingRule{many, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, many})
-		require.Contains(t, message, `Move to rule 1: any db, any table, column "ssn"`, "%d columns", n)
+		require.Contains(t, unwrapMessage(message), `Move to rule 1, Full mask, now ahead of 1 rule with the same type: any db, any table, column "ssn"`, "%d columns", n)
 	}
 	// Two moves that take the same rows: the earlier rule of the request
 	// stays in place, so the rule that ends second is the moved one.
 	email := maskingRule("r-email", "Email", `resource.column_name == "email"`, "bb.default")
 	message, _ := swap([]*v1pb.MaskingRulePolicy_MaskingRule{email, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, email})
-	require.Contains(t, message, `Move to rule 2: any db, any table, column "email"`)
+	require.Contains(t, unwrapMessage(message), `Move to rule 2, Full mask, now behind 1 rule with the same type: any db, any table, column "email"`)
 	long := maskingRule("r-many", "Many columns", columns(30), "bb.default")
 	// Two rules that are each too long for any form cannot trade places in
 	// one, by either description or in steps.
 	other := maskingRule("r-other", "Other columns", columnsCondition("orders", "d", 30), "bb.default")
 	_, refusal := swap([]*v1pb.MaskingRulePolicy_MaskingRule{long, other}, []*v1pb.MaskingRulePolicy_MaskingRule{other, long})
 	require.Contains(t, refusal, "CHANGE_TOO_LONG")
-	require.Contains(t, refusal, "Move to rule 2: ")
-	require.NotContains(t, refusal, "Move to rule 1: ")
+	require.Contains(t, refusal, "Move to rule 2, ")
+	require.NotContains(t, refusal, "Move to rule 1, ")
 	require.Contains(t, refusal, "make that change signed in to the Bytebase console")
 	require.NotContains(t, refusal, "smaller steps")
 }
 
 // Two swaps in one request, each of a long rule and a short one: the two short
-// rules are the moved ones, and their lines fit the message. A reorder with no
-// room in one form is sent to smaller steps, and each step gets a form.
+// rules are the moved ones. Each line takes two rows with what the move
+// passed, so the two are listed under the choice. A reorder with no room in
+// one form is sent to smaller steps, and each step gets a form.
 func TestAdministerMaskingRulesDescribesAReorderByTheMovesThatFit(t *testing.T) {
 	wideA := maskingRule("r-a", "Many columns A", columnsCondition("orders", "a", 24), "bb.default")
 	ssn := maskingRule("r-b", "SSN", `resource.column_name == "ssn"`, "bb.default")
@@ -957,46 +1083,48 @@ func TestAdministerMaskingRulesDescribesAReorderByTheMovesThatFit(t *testing.T) 
 	stored := []*v1pb.MaskingRulePolicy_MaskingRule{wideA, ssn, email, wideD}
 	swapped := []*v1pb.MaskingRulePolicy_MaskingRule{ssn, wideA, wideD, email}
 	for _, request := range [][2][]*v1pb.MaskingRulePolicy_MaskingRule{{stored, swapped}, {swapped, stored}} {
-		message, _, refusal := askedMaskingChange(t, request[0], request[1])
+		message, description, refusal := askedMaskingChange(t, request[0], request[1])
 		require.Empty(t, refusal)
-		rows := strings.Split(message, "\n")
-		require.Len(t, rows, 4)
-		require.Regexp(t, `^Move to rule [12]: any db, any table, column "ssn"$`, rows[1])
-		require.Regexp(t, `^Move to rule [34]: any db, any table, column "email"$`, rows[2])
+		require.Contains(t, message, "Change 2 rules, listed under Action.")
+		rows := strings.Split(unwrapMessage(description), "\n")
+		require.Regexp(t, `^Move to rule [12], Full mask, now (behind|ahead of) 1 rule with the same type: any db, any table, column "ssn"$`, rows[0])
+		require.Regexp(t, `^Move to rule [34], Partial mask, now (behind|ahead of) 1 rule with the same type: any db, any table, column "email"$`, rows[1])
 	}
 
-	// Ten swaps of a rule of two rows and a rule of one: the ten moves of two
-	// rows have no room, and the ten of one row take the ten rows a form has.
-	var pairs, traded []*v1pb.MaskingRulePolicy_MaskingRule
-	for i := range 10 {
-		twoRows := maskingRule(fmt.Sprintf("r-two-%d", i), "", columnsCondition(fmt.Sprintf("t%d", i), "c", 3), "bb.default")
-		narrow := maskingRule(fmt.Sprintf("r-narrow-%d", i), "", fmt.Sprintf(`resource.column_name == "s%d"`, i), "bb.default")
-		pairs, traded = append(pairs, twoRows, narrow), append(traded, narrow, twoRows)
+	// Swaps of a rule whose move takes three rows and a rule whose move takes
+	// two: the moves of three rows have no room, and five of two rows take the
+	// ten rows a form has.
+	swaps := func(n, columns int) (pairs, traded []*v1pb.MaskingRulePolicy_MaskingRule) {
+		for i := range n {
+			wide := maskingRule(fmt.Sprintf("r-wide-%d", i), "", columnsCondition(fmt.Sprintf("t%d", i), "c", columns), "bb.default")
+			narrow := maskingRule(fmt.Sprintf("r-narrow-%d", i), "", fmt.Sprintf(`resource.column_name == "s%d"`, i), "bb.default")
+			pairs, traded = append(pairs, wide, narrow), append(traded, narrow, wide)
+		}
+		return pairs, traded
 	}
+	narrowMove := func(pair int) string {
+		return fmt.Sprintf(`Move to rule %d, Full mask, now ahead of 1 rule with the same type: any db, any table, column "s%d"`, 2*pair+1, pair)
+	}
+	pairs, traded := swaps(5, 3)
 	message, description, refusal := askedMaskingChange(t, pairs, traded)
 	require.Empty(t, refusal)
-	require.Contains(t, message, "Change 10 rules, listed under Action.")
+	require.Contains(t, message, "Change 5 rules, listed under Action.")
 	require.Equal(t, descriptionLines, strings.Count(description, "\n")+1)
-	require.True(t, strings.HasSuffix(description, `Move to rule 19: any db, any table, column "s9"`), description)
+	require.True(t, strings.HasSuffix(unwrapMessage(description), narrowMove(4)), description)
 
-	// Eleven swaps of a wide rule and a narrow one have no room in one form,
-	// and each has room alone.
-	pairs, traded = nil, nil
-	for i := range 11 {
-		wide := maskingRule(fmt.Sprintf("r-wide-%d", i), "", columnsCondition(fmt.Sprintf("t%d", i), "c", 24), "bb.default")
-		narrow := maskingRule(fmt.Sprintf("r-narrow-%d", i), "", fmt.Sprintf(`resource.column_name == "s%d"`, i), "bb.default")
-		pairs, traded = append(pairs, wide, narrow), append(traded, narrow, wide)
-	}
+	// Six swaps of a wide rule and a narrow one have no room in one form, and
+	// each has room alone.
+	pairs, traded = swaps(6, 24)
 	_, _, refusal = askedMaskingChange(t, pairs, traded)
-	require.Contains(t, refusal, "this change needs 11 lines, more than the 10 one confirmation form has room for")
+	require.Contains(t, refusal, "this change needs 12 lines, more than the 10 one confirmation form has room for")
 	require.Contains(t, refusal, "make the change in smaller steps, a few rules at a time")
 	from := pairs
-	for pair := range 11 {
+	for pair := range 6 {
 		step := slices.Clone(from)
 		step[2*pair], step[2*pair+1] = traded[2*pair], traded[2*pair+1]
 		message, _, refusal := askedMaskingChange(t, from, step)
 		require.Empty(t, refusal, "pair %d alone", pair)
-		require.Contains(t, message, fmt.Sprintf(`Move to rule %d: any db, any table, column "s%d"`, 2*pair+1, pair))
+		require.Contains(t, unwrapMessage(message), narrowMove(pair))
 		from = step
 	}
 }
@@ -1023,7 +1151,7 @@ func TestMaskingReorderLeavesInPlaceARuleWhoseMoveFitsNoForm(t *testing.T) {
 	}
 	fits := diffOf(pad)
 	require.Len(t, fits.changes, 1)
-	require.True(t, strings.HasPrefix(fits.changes[0].text, "Move to rule 3: `resource.table_name == \"orders\" && ("), fits.changes[0].text)
+	require.True(t, strings.HasPrefix(fits.changes[0].text, "Move to rule 3, Full mask, now behind 2 rules, 1 of them with no full mask: `resource.table_name == \"orders\" && ("), fits.changes[0].text)
 	require.Len(t, wrapLine(fits.changes[0].text, descriptionLineWidth), descriptionLines, "the last move that fits takes every row a form has")
 	form, err := maskingRulesForm(alice, fits, "")
 	require.NoError(t, err)
@@ -1032,12 +1160,35 @@ func TestMaskingReorderLeavesInPlaceARuleWhoseMoveFitsNoForm(t *testing.T) {
 
 	stays := diffOf(pad + 1)
 	require.Equal(t, []formChange{
-		{text: `Move to rule 1: any db, any table, column "ssn"`, effect: true},
-		{text: `Move to rule 2: any db, any table, column "email"`, effect: true},
+		{text: `Move to rule 1, Full mask, now ahead of 1 rule with the same type: any db, any table, column "ssn"`, effect: true},
+		{text: `Move to rule 2, Partial mask, now ahead of rule 3 (Full mask): any db, any table, column "email"`, effect: true},
 	}, stays.changes)
 	form, err = maskingRulesForm(alice, stays, "")
 	require.NoError(t, err)
-	require.Contains(t, form.message, `Move to rule 1: any db, any table, column "ssn"`)
+	require.Contains(t, form.message, "Change 2 rules, listed under Action.")
+	require.True(t, strings.HasPrefix(unwrapMessage(form.description), stays.changes[0].text+"\n"+stays.changes[1].text+"\n"), form.description)
+}
+
+// wantMaskingMoveLine derives the change line of requested[moved] as a moved
+// rule that changes in no other way, from the two lists alone: a rule gives
+// its semantic type, and the least is a type that is not a full mask.
+func wantMaskingMoveLine(types map[string]*storepb.SemanticTypeSetting_SemanticType, stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, moved int) string {
+	diff := &maskingRulesDiff{types: types}
+	var conditions []string
+	for _, rule := range stored {
+		conditions = append(conditions, rule.GetCondition().GetExpression())
+	}
+	var rules []passedRule
+	for i, rule := range requested {
+		name := fmt.Sprintf("rule %d", i+1)
+		if title := rule.GetCondition().GetTitle(); title != "" {
+			name = fmt.Sprintf("%q", title)
+		}
+		rules = append(rules, passedRule{condition: rule.GetCondition().GetExpression(), gives: rule.GetSemanticType(),
+			least: !diff.masksEveryValue(rule.GetSemanticType()), label: fmt.Sprintf("%s (%s)", name, diff.typePhrase(rule.GetSemanticType()))})
+	}
+	passed, _, _ := wantPassedOf(conditions, rules, moved, "with the same type", "with no full mask", "with other types")
+	return fmt.Sprintf("Move to rule %d, %s, now %s: %s", moved+1, diff.typePhrase(requested[moved].GetSemanticType()), passed, maskingConditionText(requested[moved].GetCondition().GetExpression()))
 }
 
 // Of every description of a masking reorder, a form states one whose moves
@@ -1074,8 +1225,8 @@ func TestMaskingReorderIsStatedByItsCheapestMoves(t *testing.T) {
 			continue
 		}
 		lines, rows := make([]string, n), make([]int, n)
-		for i, rule := range requested {
-			lines[i] = fmt.Sprintf("Move to rule %d: %s", i+1, maskingConditionText(rule.GetCondition().GetExpression()))
+		for i := range requested {
+			lines[i] = wantMaskingMoveLine(types, stored, requested, i)
 			rows[i] = len(wrapLine(lines[i], descriptionLineWidth))
 		}
 		var least, fewest *moveTotal
@@ -1189,7 +1340,7 @@ func TestAdministerMaskingRulesOffersStepsWhenAListedChangeIsChangedInChat(t *te
 	require.Equal(t, changed, withMoves)
 	asked := user.lastParams(t)
 	require.Contains(t, asked.Message, "Change 4 rules, listed under Action.")
-	require.Contains(t, choiceDescription(t, asked), `Move to rule 1: any db, any table, column "s0"`)
+	require.Contains(t, unwrapMessage(choiceDescription(t, asked)), `Move to rule 1, Full mask, now ahead of 1 rule with the same type: any db, any table, column "s0"`)
 	require.Empty(t, mock.calls())
 }
 

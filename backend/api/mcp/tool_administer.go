@@ -466,19 +466,19 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 			continue
 		}
 		requestedKept = append(requestedKept, condition)
-		name := ruleTitle(rule)
-		if rule.GetTemplate().GetTitle() == "" {
-			name = fmt.Sprintf("rule %d", i+1)
-		}
 		key := fmt.Sprintf("%q", rule.GetTemplate().GetFlow().GetRoles())
 		if _, ok := flows[key]; !ok {
 			flows[key] = len(flows)
 		}
-		label := fmt.Sprintf("%s (%s)", name, approvers(rule))
 		kept = append(kept, keptRule{
-			before: before, after: rule, position: i + 1, was: storedPlace[condition], flow: flows[key],
-			label: label, labelSize: textSize(label),
-			unapproved: len(rule.GetTemplate().GetFlow().GetRoles()) == 0,
+			was: storedPlace[condition], kind: flows[key], weak: len(rule.GetTemplate().GetFlow().GetRoles()) == 0,
+			name: func() string {
+				if rule.GetTemplate().GetTitle() == "" {
+					return fmt.Sprintf("rule %d (%s)", i+1, approvers(rule))
+				}
+				return fmt.Sprintf("%s (%s)", ruleTitle(rule), approvers(rule))
+			},
+			line: func(moved bool, passed string) string { return keptRuleLine(before, rule, moved, i+1, passed) },
 		})
 	}
 	// A kept rule outside the common order moved: the first matching rule
@@ -486,7 +486,7 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 	// rules trade places either one moved, so each is priced as moved and the
 	// common order leaves the cheapest moves.
 	list, _ := approvalRuleSection(diff.fallback)
-	inPlace, moved, costs := keptRuleLines(kept, list.room())
+	inPlace, moved, costs := keptRuleLines(kept, list.room(), approversPassed)
 	inOrder := longestCommonOrder(storedKept, requestedKept, costs)
 	next := 0
 	for i, rule := range requestedDB {
@@ -514,51 +514,62 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 	return diff, nil
 }
 
-// keptRule is a kept rule as its change line and a move's line state it. Its
-// label is measured, and its approvers numbered, once: every move of a request
-// can pass the same rule.
+// keptRule is a kept rule of either rule form, as its change line and a
+// move's line state it.
 type keptRule struct {
-	before, after *v1pb.WorkspaceApprovalSetting_Rule
-	// position is its place among the requested rules, from 1, and was its
-	// place among the kept rules as stored.
-	position, was int
-	// flow numbers its list of approver roles: two rules with the same list
-	// have the same number.
-	flow int
-	// label names the rule by its title, or by its place when it has none,
-	// with its approvers.
+	// was is its place among the kept rules as stored.
+	was int
+	// kind numbers what the rule gives to what it matches, its approvers or
+	// its semantic type: two rules that give the same have the same number.
+	kind int
+	// weak reports that it gives the least a rule can: no approval, or no
+	// full mask.
+	weak bool
+	// name builds label, which names the rule by its title, or by its place
+	// when it has none, with what it gives. A move's line can name only a rule
+	// that traded order, so keptRuleLines builds and measures those labels,
+	// once: every move of a request can pass the same rule.
+	name      func() string
 	label     string
 	labelSize int
-	// unapproved reports that its changes need no approval.
-	unapproved bool
+	// line states how the rule changes, called moved or not, and is empty for
+	// a rule that does not change. passed is what rulesPassed says of a moved
+	// rule.
+	line func(moved bool, passed string) string
 }
 
-// line states how the rule changes, called moved or not, and is empty for a
-// rule that does not change. passed is what rulesPassed says of a moved rule.
-func (r *keptRule) line(moved bool, passed string) string {
-	clauses := keptRuleClauses(r.before, r.after, moved, r.position, passed)
+// keptRuleLine states how a kept approval rule changes, and is empty for one
+// that does not change.
+func keptRuleLine(before, rule *v1pb.WorkspaceApprovalSetting_Rule, moved bool, position int, passed string) string {
+	clauses := keptRuleClauses(before, rule, moved, position, passed)
 	if len(clauses) == 0 {
 		return ""
 	}
 	text := strings.Join(clauses, "; ")
-	return fmt.Sprintf("%s%s: %s", strings.ToUpper(text[:1]), text[1:], conditionText(r.after.GetCondition().GetExpression()))
+	return fmt.Sprintf("%s%s: %s", strings.ToUpper(text[:1]), text[1:], conditionText(rule.GetCondition().GetExpression()))
 }
 
 // keptRuleLines returns each kept rule's change line as its stored place
 // leaves it and, for a rule that traded order with another, as moved, with
 // what the move costs a form that has room rows for its changes. A rule that
 // traded order with none stays in every common order, so it has neither.
-func keptRuleLines(kept []keptRule, room int) (inPlace, moved []string, costs []moveCost) {
+func keptRuleLines(kept []keptRule, room int, words passedWords) (inPlace, moved []string, costs []moveCost) {
 	was := make([]int, len(kept))
 	for i := range kept {
 		was[i] = kept[i].was
 	}
 	traded := tradedOrder(was)
+	for i := range kept {
+		if traded[i] {
+			kept[i].label = kept[i].name()
+			kept[i].labelSize = textSize(kept[i].label)
+		}
+	}
 	inPlace, moved, costs = make([]string, len(kept)), make([]string, len(kept)), make([]moveCost, len(kept))
 	for i := range kept {
 		inPlace[i] = kept[i].line(false, "")
 		if traded[i] {
-			moved[i] = kept[i].line(true, rulesPassed(i, kept))
+			moved[i] = kept[i].line(true, rulesPassed(i, kept, words))
 			costs[i] = moveLineCost(lineRows(moved[i]), lineRows(inPlace[i]), room)
 		}
 	}
@@ -576,51 +587,59 @@ func textSize(text string) int {
 // more than the count it stands for.
 const passedNameWidth = 48
 
+// passedWords say of the rules a move passes that they give the same as the
+// moved rule, the least a rule can, or something else.
+type passedWords struct{ same, weak, other string }
+
+var approversPassed = passedWords{same: "with the same approvers", weak: "with no approval", other: "with other approvers"}
+
 // passedSide is the kept rules that traded order with a moved rule, on one
-// side of it. The first matching rule decides, and its template carries the
-// approvers, so only a rule with other approvers changes who approves.
+// side of it. The first matching rule decides: an approval rule's template
+// carries the approvers, and a masking rule gives its type. So only a rule
+// that gives something else changes who approves, or how a column is masked.
 type passedSide struct {
 	total, same int
-	// unapproved are the rules with no approval, when the moved rule has some:
-	// behind one of them a change loses its approval.
-	unapproved int
-	// other is a rule with other approvers: the side's one rule, when it has
-	// one.
+	// weak are the rules that give the least, when the moved rule gives
+	// something else: behind one of them a change loses its approval, or a
+	// column its full mask.
+	weak int
+	// other is a rule that gives something else: the side's one rule, when it
+	// has one.
 	other *keptRule
 }
 
 func (s *passedSide) add(rule, moved *keptRule) {
 	s.total++
-	if rule.flow == moved.flow {
+	if rule.kind == moved.kind {
 		s.same++
 		return
 	}
 	s.other = rule
-	if rule.unapproved {
-		s.unapproved++
+	if rule.weak {
+		s.weak++
 	}
 }
 
-// text says what the move passed on this side. A side of one rule whose
-// approvers differ names it, with those approvers, when its label is within
-// passedNameWidth: that rule now decides the changes both match, or no longer
-// does. Every other side is counted, the rules with no approval apart.
-func (s *passedSide) text() string {
+// text says what the move passed on this side. A side of one rule that gives
+// something else names it, with what it gives, when its label is within
+// passedNameWidth: that rule now decides what both match, or no longer does.
+// Every other side is counted, the rules that give the least apart.
+func (s *passedSide) text(words passedWords) string {
 	switch other := s.total - s.same; {
 	case s.total == 1 && other == 1 && s.other.labelSize <= passedNameWidth:
 		return s.other.label
 	case other == 0:
-		return countRules(s.same) + " with the same approvers"
-	case s.unapproved == other && s.same == 0:
-		return countRules(s.total) + " with no approval"
-	case s.unapproved == other:
-		return fmt.Sprintf("%s, %d of them with no approval", countRules(s.total), other)
-	case s.unapproved > 0:
-		return fmt.Sprintf("%s, %d with no approval and %d with other approvers", countRules(s.total), s.unapproved, other-s.unapproved)
+		return countRules(s.same) + " " + words.same
+	case s.weak == other && s.same == 0:
+		return countRules(s.total) + " " + words.weak
+	case s.weak == other:
+		return fmt.Sprintf("%s, %d of them %s", countRules(s.total), other, words.weak)
+	case s.weak > 0:
+		return fmt.Sprintf("%s, %d %s and %d %s", countRules(s.total), s.weak, words.weak, other-s.weak, words.other)
 	case s.same == 0:
-		return countRules(s.total) + " with other approvers"
+		return countRules(s.total) + " " + words.other
 	default:
-		return fmt.Sprintf("%s, %d of them with other approvers", countRules(s.total), other)
+		return fmt.Sprintf("%s, %d of them %s", countRules(s.total), other, words.other)
 	}
 }
 
@@ -628,7 +647,7 @@ func (s *passedSide) text() string {
 // rules it is now behind, which take the changes both match, and those it is
 // now ahead of. A line states it because the rule list under the choice can be
 // cut.
-func rulesPassed(moved int, kept []keptRule) string {
+func rulesPassed(moved int, kept []keptRule, words passedWords) string {
 	var behind, ahead passedSide
 	for place := range kept {
 		switch {
@@ -641,10 +660,10 @@ func rulesPassed(moved int, kept []keptRule) string {
 	}
 	var sides []string
 	if behind.total > 0 {
-		sides = append(sides, "behind "+behind.text())
+		sides = append(sides, "behind "+behind.text(words))
 	}
 	if ahead.total > 0 {
-		sides = append(sides, "ahead of "+ahead.text())
+		sides = append(sides, "ahead of "+ahead.text(words))
 	}
 	return ", now " + strings.Join(sides, ", and ")
 }

@@ -938,39 +938,43 @@ func TestAdministerWorkspaceMoveNamesTheRuleItPasses(t *testing.T) {
 	require.Contains(t, message([]string{"roles/projectOwner"}, dba...), `Move to rule 6, "Workspace DBA", now behind "Production" ("Project`)
 }
 
-// wantPassed derives what a move's line says of the rules that requested[moved]
-// traded order with, from the rules' places alone: on each side a lone rule
-// with other approvers by its label, when that is within passedNameWidth, and
-// any other side by its counts.
-func wantPassed(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, moved int) (clause string, named, counted int) {
+// passedRule is a requested rule as wantPassedOf reads it: its condition, what
+// it gives the changes or columns it matches, whether that is the least a rule
+// can give, and the label a move's line names it by.
+type passedRule struct {
+	condition, gives, label string
+	least                   bool
+}
+
+// wantPassedOf derives what a move's line says of the rules that
+// requested[moved] traded order with, from the rules' places alone: on each
+// side a lone rule that gives something else by its label, when that is within
+// passedNameWidth, and any other side by its counts, in the words of a rule
+// form: for the rules that give the same, the least, and something else.
+func wantPassedOf(stored []string, requested []passedRule, moved int, same, least, other string) (clause string, named, counted int) {
 	was := map[string]int{}
-	for i, rule := range stored {
-		was[rule.GetCondition().GetExpression()] = i
+	for i, condition := range stored {
+		was[condition] = i
 	}
-	place := func(i int) int { return was[requested[i].GetCondition().GetExpression()] }
-	roles := requested[moved].GetTemplate().GetFlow().GetRoles()
+	place := func(i int) int { return was[requested[i].condition] }
 	var sides []string
 	for _, behind := range []bool{true, false} {
 		label := ""
 		total, shared, none := 0, 0, 0
-		for i, other := range requested {
+		for i, rule := range requested {
 			if i == moved || (i < moved) != behind || (place(i) < place(moved)) == (i < moved) {
 				continue
 			}
 			total++
 			switch {
-			case slices.Equal(other.GetTemplate().GetFlow().GetRoles(), roles):
+			case rule.gives == requested[moved].gives:
 				shared++
 				continue
-			case len(other.GetTemplate().GetFlow().GetRoles()) == 0:
+			case rule.least:
 				none++
 			default:
 			}
-			name := fmt.Sprintf("rule %d", i+1)
-			if title := other.GetTemplate().GetTitle(); title != "" {
-				name = fmt.Sprintf("%q", title)
-			}
-			label = fmt.Sprintf("%s (%s)", name, approvers(other))
+			label = rule.label
 		}
 		others := total - shared
 		text := ""
@@ -981,17 +985,17 @@ func wantPassed(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, moved i
 			text = label
 			named++
 		case others == 0:
-			text = countRules(shared) + " with the same approvers"
+			text = countRules(shared) + " " + same
 		case none == others && shared == 0:
-			text = countRules(total) + " with no approval"
+			text = countRules(total) + " " + least
 		case none == others:
-			text = fmt.Sprintf("%s, %d of them with no approval", countRules(total), none)
+			text = fmt.Sprintf("%s, %d of them %s", countRules(total), none, least)
 		case none > 0:
-			text = fmt.Sprintf("%s, %d with no approval and %d with other approvers", countRules(total), none, others-none)
+			text = fmt.Sprintf("%s, %d %s and %d %s", countRules(total), none, least, others-none, other)
 		case shared == 0:
-			text = countRules(total) + " with other approvers"
+			text = countRules(total) + " " + other
 		default:
-			text = fmt.Sprintf("%s, %d of them with other approvers", countRules(total), others)
+			text = fmt.Sprintf("%s, %d of them %s", countRules(total), others, other)
 		}
 		if text != label {
 			counted++
@@ -999,6 +1003,25 @@ func wantPassed(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, moved i
 		sides = append(sides, map[bool]string{true: "behind ", false: "ahead of "}[behind]+text)
 	}
 	return strings.Join(sides, ", and "), named, counted
+}
+
+// wantPassed is wantPassedOf for approval rules: a rule gives its approvers,
+// and the least is no approval.
+func wantPassed(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, moved int) (clause string, named, counted int) {
+	var conditions []string
+	for _, rule := range stored {
+		conditions = append(conditions, rule.GetCondition().GetExpression())
+	}
+	var rules []passedRule
+	for i, rule := range requested {
+		name := fmt.Sprintf("rule %d", i+1)
+		if title := rule.GetTemplate().GetTitle(); title != "" {
+			name = fmt.Sprintf("%q", title)
+		}
+		roles := rule.GetTemplate().GetFlow().GetRoles()
+		rules = append(rules, passedRule{condition: rule.GetCondition().GetExpression(), gives: strings.Join(roles, "\n"), least: len(roles) == 0, label: fmt.Sprintf("%s (%s)", name, approvers(rule))})
+	}
+	return wantPassedOf(conditions, rules, moved, "with the same approvers", "with no approval", "with other approvers")
 }
 
 // wantMoveLine derives the change line of requested[moved] as a moved rule
@@ -1573,16 +1596,18 @@ func advisesSteps(t *testing.T, err error) bool {
 }
 
 // A rule that traded order with no other stays in every common order, so it is
-// not priced as moved: a workspace can store thousands of rules, and a request
-// leaves most of them in place.
+// not priced as moved and gets no label: a workspace can store thousands of
+// rules, and a request leaves most of them in place.
 func TestKeptRuleLinesPricesOnlyRulesThatTradedOrder(t *testing.T) {
+	named := 0
 	rule := func(title string, was, position int) keptRule {
 		stored := changeRule(title, fmt.Sprintf("resource.project_id == %q", title), "roles/workspaceDBA")
-		label := fmt.Sprintf("%q (%s)", title, approvers(stored))
-		return keptRule{before: stored, after: stored, position: position, was: was, label: label, labelSize: textSize(label)}
+		return keptRule{was: was,
+			name: func() string { named++; return fmt.Sprintf("%q (%s)", title, approvers(stored)) },
+			line: func(moved bool, passed string) string { return keptRuleLine(stored, stored, moved, position, passed) }}
 	}
 	// Stored A, B, C, and requested A, C, B.
-	inPlace, moved, costs := keptRuleLines([]keptRule{rule("A", 0, 1), rule("C", 2, 2), rule("B", 1, 3)}, 8)
+	inPlace, moved, costs := keptRuleLines([]keptRule{rule("A", 0, 1), rule("C", 2, 2), rule("B", 1, 3)}, 8, approversPassed)
 	require.Equal(t, []string{"", "", ""}, inPlace)
 	require.Equal(t, []string{
 		"",
@@ -1590,6 +1615,7 @@ func TestKeptRuleLinesPricesOnlyRulesThatTradedOrder(t *testing.T) {
 		"Move to rule 3, \"Workspace DBA\", now behind 1 rule with the same approvers: `resource.project_id == \"B\"`",
 	}, moved)
 	require.Equal(t, []moveCost{{}, {rows: 2}, {rows: 2}}, costs)
+	require.Equal(t, 2, named, "each rule that traded order is named once")
 }
 
 // moveTotal is what the moves of one description of a reorder cost together, in

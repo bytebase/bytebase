@@ -395,37 +395,42 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 			effect: true,
 		})
 	}
-	var was []int
-	for _, rule := range requested {
-		if condition := rule.GetCondition().GetExpression(); storedByCondition[condition] != nil {
-			requestedKept = append(requestedKept, condition)
-			was = append(was, storedPlace[condition])
+	var kept []keptRule
+	kinds := map[string]keptRule{}
+	for i, rule := range requested {
+		condition := rule.GetCondition().GetExpression()
+		before := storedByCondition[condition]
+		if before == nil {
+			continue
 		}
+		requestedKept = append(requestedKept, condition)
+		// A type's masker is built once for every rule that gives the type.
+		entry, ok := kinds[rule.GetSemanticType()]
+		if !ok {
+			entry = keptRule{kind: len(kinds), weak: !diff.masksEveryValue(rule.GetSemanticType())}
+			kinds[rule.GetSemanticType()] = entry
+		}
+		entry.was = storedPlace[condition]
+		entry.name = func() string {
+			if rule.GetCondition().GetTitle() == "" {
+				return fmt.Sprintf("rule %d (%s)", i+1, diff.typePhrase(rule.GetSemanticType()))
+			}
+			return fmt.Sprintf("%s (%s)", maskingRuleTitle(rule), diff.typePhrase(rule.GetSemanticType()))
+		}
+		entry.line = func(moved bool, passed string) string { return diff.keptRuleLine(before, rule, moved, i+1, passed) }
+		kept = append(kept, entry)
 	}
 	// A kept rule outside the common order moved. When two rules trade places
 	// either one moved, so each rule that traded order is priced as moved and
 	// the common order leaves the cheapest moves. Nothing comes before a
 	// masking form's rule list, so its changes have every row.
-	traded := tradedOrder(was)
-	inPlace, moved, costs := make([]formChange, len(was)), make([]formChange, len(was)), make([]moveCost, len(was))
-	kept := 0
-	for i, rule := range requested {
-		before := storedByCondition[rule.GetCondition().GetExpression()]
-		if before == nil {
-			continue
-		}
-		inPlace[kept] = diff.keptRuleChange(before, rule, false, i+1)
-		if traded[kept] {
-			moved[kept] = diff.keptRuleChange(before, rule, true, i+1)
-			costs[kept] = moveLineCost(lineRows(moved[kept].text), lineRows(inPlace[kept].text), descriptionLines)
-		}
-		kept++
-	}
+	inPlace, moved, costs := keptRuleLines(kept, descriptionLines, typesPassed)
 	inOrder := longestCommonOrder(storedKept, requestedKept, costs)
-	kept = 0
+	next := 0
 	for i, rule := range requested {
 		condition := rule.GetCondition().GetExpression()
-		if storedByCondition[condition] == nil {
+		before := storedByCondition[condition]
+		if before == nil {
 			// An added rule's place is part of its change.
 			diff.changes = append(diff.changes, formChange{
 				text:   fmt.Sprintf("Add rule %d, %s: %s", i+1, diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)),
@@ -434,12 +439,12 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 			diff.marks = append(diff.marks, "new")
 			continue
 		}
-		change := inPlace[kept]
-		if !inOrder[kept] {
-			change = moved[kept]
+		change := formChange{text: inPlace[next], effect: rule.GetSemanticType() != before.GetSemanticType() && !diff.masksEveryValue(rule.GetSemanticType())}
+		if !inOrder[next] {
+			change = formChange{text: moved[next], effect: true}
 			diff.moves++
 		}
-		kept++
+		next++
 		if change.text == "" {
 			diff.marks = append(diff.marks, "kept")
 			continue
@@ -450,30 +455,37 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 	return diff, nil
 }
 
-// keptRuleChange states how a kept rule changes, one clause per field the form
-// shows: the type, the place and the title. It has no text for a rule that
-// does not change.
-func (d *maskingRulesDiff) keptRuleChange(before, rule *v1pb.MaskingRulePolicy_MaskingRule, moved bool, position int) formChange {
+// typesPassed counts the rules a masking rule's move passes. Only a full mask
+// hides every value, so a rule with none is counted apart.
+var typesPassed = passedWords{same: "with the same type", weak: "with no full mask", other: "with other types"}
+
+// keptRuleLine states how a kept rule changes, one clause per field the form
+// shows: the type, the place and the title. It is empty for a rule that does
+// not change. A move gives the rule's type, unless the line states a change of
+// it, and passed, what rulesPassed says of the rules it traded order with: the
+// first matching rule decides a column's mask, and the rule list under the
+// choice can be cut.
+func (d *maskingRulesDiff) keptRuleLine(before, rule *v1pb.MaskingRulePolicy_MaskingRule, moved bool, position int, passed string) string {
 	var clauses []string
-	effect := moved
-	if rule.GetSemanticType() != before.GetSemanticType() {
+	typeChanged := rule.GetSemanticType() != before.GetSemanticType()
+	if typeChanged {
 		clauses = append(clauses, fmt.Sprintf("change type, %s to %s", d.typePhrase(before.GetSemanticType()), d.typePhrase(rule.GetSemanticType())))
-		effect = effect || !d.masksEveryValue(rule.GetSemanticType())
 	}
 	if moved {
-		clauses = append(clauses, fmt.Sprintf("move to rule %d", position))
+		clause := fmt.Sprintf("move to rule %d", position)
+		if !typeChanged {
+			clause += ", " + d.typePhrase(rule.GetSemanticType())
+		}
+		clauses = append(clauses, clause+passed)
 	}
 	if title := rule.GetCondition().GetTitle(); title != before.GetCondition().GetTitle() {
 		clauses = append(clauses, "rename to "+maskingRuleTitle(rule))
 	}
 	if len(clauses) == 0 {
-		return formChange{}
+		return ""
 	}
 	line := strings.Join(clauses, "; ")
-	return formChange{
-		text:   fmt.Sprintf("%s%s: %s", strings.ToUpper(line[:1]), line[1:], maskingConditionText(rule.GetCondition().GetExpression())),
-		effect: effect,
-	}
+	return fmt.Sprintf("%s%s: %s", strings.ToUpper(line[:1]), line[1:], maskingConditionText(rule.GetCondition().GetExpression()))
 }
 
 // typePhrase names a rule's semantic type and what masking does with it. A
@@ -555,8 +567,7 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 
 // maskingRuleSection is what the description says of the rules a change leaves.
 // Every line names its rule's type: the order decides which rule masks a
-// column, and a move's change line shows no type. A kept rule, which no change
-// line shows, gives its scope. A new or changed one gives the CEL it stores,
+// column. A kept rule, which no change line shows, gives its scope. A new or changed one gives the CEL it stores,
 // unless the description lists the changes itself, right above it.
 func maskingRuleSection(diff *maskingRulesDiff, listed bool) ruleSection {
 	if len(diff.requested) == 0 {
