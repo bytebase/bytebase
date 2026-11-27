@@ -165,13 +165,6 @@ func TestOmniSpanHelpers(t *testing.T) {
 	require.Len(t, qs.Results, 1)
 	require.ErrorAs(t, qs.NotFoundError, &nf)
 	require.Equal(t, "db", *nf.Database)
-
-	// OmniTableQuerySpan always initializes non-nil maps/slices.
-	emptyTableSpan := OmniTableQuerySpan(omnianalysis.DDL, nil)
-	require.Equal(t, DDL, emptyTableSpan.Type)
-	require.NotNil(t, emptyTableSpan.SourceColumns)
-	require.NotNil(t, emptyTableSpan.PredicateColumns)
-	require.NotNil(t, emptyTableSpan.Results)
 }
 
 func TestQuerySpanCatalogHelpers(t *testing.T) {
@@ -212,7 +205,6 @@ func TestQuerySpanCatalogHelpers(t *testing.T) {
 	require.Equal(t, dbMeta, gotMeta)
 
 	// Nil callbacks return nil closures.
-	require.Nil(t, QuerySpanListDatabasesFunc(ctx, GetQuerySpanContext{}, true))
 	require.Nil(t, QuerySpanProtoMetadataFunc(ctx, GetQuerySpanContext{}, true))
 
 	missingDB := "ghost"
@@ -236,12 +228,7 @@ func TestQuerySpanCatalogHelpers(t *testing.T) {
 		},
 	}
 
-	// Raw mode preserves Bytebase error; translated mode converts to omni ResourceNotFoundError.
-	rawList := QuerySpanListDatabasesFunc(ctx, gCtx, false)
-	_, err = rawList()
 	var baseNF *ResourceNotFoundError
-	require.ErrorAs(t, err, &baseNF)
-
 	rawProto := QuerySpanProtoMetadataFunc(ctx, gCtx, false)
 	gotProto, err := rawProto("app")
 	require.NoError(t, err)
@@ -251,19 +238,6 @@ func TestQuerySpanCatalogHelpers(t *testing.T) {
 	require.Nil(t, nilProto)
 	_, err = rawProto("ghost")
 	require.ErrorAs(t, err, &baseNF)
-
-	listDBs, getDB := UnnamedSchemaQuerySpanCatalog(ctx, gCtx, func(d *UnnamedSchemaDatabase) *UnnamedSchemaDatabase { return d })
-	_, err = listDBs()
-	var omniNF *omnianalysis.ResourceNotFoundError
-	require.ErrorAs(t, err, &omniNF)
-	wrappedDB, err := getDB("app")
-	require.NoError(t, err)
-	require.Equal(t, "app", wrappedDB.Name())
-	nilDB, err := getDB("unsynced")
-	require.NoError(t, err)
-	require.Nil(t, nilDB)
-	_, err = getDB("ghost")
-	require.ErrorAs(t, err, &omniNF)
 }
 
 func TestOmniErrorHelpers(t *testing.T) {

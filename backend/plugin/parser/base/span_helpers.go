@@ -200,6 +200,9 @@ func OmniResolvedSpan(span *omnianalysis.ResolvedSpan) *QuerySpan {
 	if span.NotFoundError != nil {
 		out.NotFoundError = OmniResourceNotFoundError(span.NotFoundError)
 	}
+	if span.FunctionNotSupportedError != nil {
+		out.FunctionNotSupportedError = OmniFunctionNotSupportedError(span.FunctionNotSupportedError)
+	}
 	return out
 }
 
@@ -232,21 +235,6 @@ func OmniQuerySpan(
 	}
 }
 
-// OmniTableQuerySpan builds a table-level QuerySpan with initialized empty
-// maps/slices for engines that report source tables without column lineage.
-func OmniTableQuerySpan(queryType omnianalysis.QueryType, sourceColumns omnianalysis.ColumnSet) *QuerySpan {
-	sources := OmniColumnSet(sourceColumns)
-	if sources == nil {
-		sources = SourceColumnSet{}
-	}
-	return &QuerySpan{
-		Type:             OmniQueryType(queryType),
-		SourceColumns:    sources,
-		PredicateColumns: SourceColumnSet{},
-		Results:          []QuerySpanResult{},
-	}
-}
-
 // RequireDatabaseMetadata validates gCtx.GetDatabaseMetadataFunc and fetches
 // synced metadata for database, returning an error if the callback is unset,
 // fails, or reports an unsynced (nil) database.
@@ -264,67 +252,25 @@ func RequireDatabaseMetadata(ctx context.Context, gCtx GetQuerySpanContext, data
 	return meta, nil
 }
 
-// QuerySpanListDatabasesFunc adapts gCtx.ListDatabaseNamesFunc for omni
-// query-span catalogs. Returns nil when ListDatabaseNamesFunc is nil.
-func QuerySpanListDatabasesFunc(ctx context.Context, gCtx GetQuerySpanContext, translateNotFound bool) func() ([]string, error) {
-	if gCtx.ListDatabaseNamesFunc == nil {
-		return nil
-	}
-	return func() ([]string, error) {
-		names, err := gCtx.ListDatabaseNamesFunc(ctx, gCtx.InstanceID)
-		if err != nil && translateNotFound {
-			return names, ToOmniNotFoundError(err)
-		}
-		return names, err
-	}
-}
-
-// QuerySpanDatabaseGetter adapts gCtx.GetDatabaseMetadataFunc for omni
-// query-span catalogs. Returns nil when GetDatabaseMetadataFunc is nil.
-func QuerySpanDatabaseGetter[D any](
-	ctx context.Context,
-	gCtx GetQuerySpanContext,
-	translateNotFound bool,
-	wrap func(*model.DatabaseMetadata) D,
-) func(string) (D, error) {
-	if gCtx.GetDatabaseMetadataFunc == nil {
-		return nil
-	}
-	return func(name string) (D, error) {
-		var zero D
-		_, database, err := gCtx.GetDatabaseMetadataFunc(ctx, gCtx.InstanceID, name)
-		if err != nil {
-			if translateNotFound {
-				return zero, ToOmniNotFoundError(err)
-			}
-			return zero, err
-		}
-		if database == nil {
-			return zero, nil
-		}
-		return wrap(database), nil
-	}
-}
-
 // QuerySpanProtoMetadataFunc adapts gCtx.GetDatabaseMetadataFunc to return raw
 // omni DatabaseSchemaMetadata protos. Returns nil when unset.
 func QuerySpanProtoMetadataFunc(ctx context.Context, gCtx GetQuerySpanContext, translateNotFound bool) func(string) (*metadata.DatabaseSchemaMetadata, error) {
-	return QuerySpanDatabaseGetter(ctx, gCtx, translateNotFound, (*model.DatabaseMetadata).GetProto)
-}
-
-// UnnamedSchemaQuerySpanCatalog builds ListDatabaseNames and GetDatabase
-// closures backed by gCtx for unnamed-schema engines, translating
-// ResourceNotFoundError into omni's counterpart so omni reports it on the span.
-func UnnamedSchemaQuerySpanCatalog[D any](
-	ctx context.Context,
-	gCtx GetQuerySpanContext,
-	wrap func(*UnnamedSchemaDatabase) D,
-) (list func() ([]string, error), get func(string) (D, error)) {
-	list = QuerySpanListDatabasesFunc(ctx, gCtx, true)
-	get = QuerySpanDatabaseGetter(ctx, gCtx, true, func(db *model.DatabaseMetadata) D {
-		return wrap(&UnnamedSchemaDatabase{Database: db})
-	})
-	return list, get
+	if gCtx.GetDatabaseMetadataFunc == nil {
+		return nil
+	}
+	return func(name string) (*metadata.DatabaseSchemaMetadata, error) {
+		_, database, err := gCtx.GetDatabaseMetadataFunc(ctx, gCtx.InstanceID, name)
+		if err != nil {
+			if translateNotFound {
+				return nil, ToOmniNotFoundError(err)
+			}
+			return nil, err
+		}
+		if database == nil {
+			return nil, nil
+		}
+		return database.GetProto(), nil
+	}
 }
 
 // ConvertOmniMixTablesError translates omni's ErrMixUserSystemTables into Bytebase's

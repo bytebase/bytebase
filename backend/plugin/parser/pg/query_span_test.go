@@ -24,6 +24,14 @@ func buildSeamMetadataGetter(metas ...*metadatapb.DatabaseSchemaMetadata) base.G
 	}
 }
 
+func querySpan(gCtx base.GetQuerySpanContext, statement, database string) (*base.QuerySpan, error) {
+	spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_POSTGRES, []base.Statement{{Text: statement}}, database, "", false)
+	if err != nil {
+		return nil, err
+	}
+	return spans[0], nil
+}
+
 func TestGetQuerySpanSeam(t *testing.T) {
 	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
@@ -62,37 +70,37 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "app", Table: "t", Column: "email"}: true}, spans[0].PredicateColumns)
 
 	// A view's column stops at the view, as PostgreSQL's result-set metadata does.
-	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT ssn FROM public.v"}, "db", "", false)
+	span, err := querySpan(gCtx, "SELECT ssn FROM public.v", "db")
 	require.NoError(t, err)
 	require.Equal(t, base.SourceColumnSet{{Database: "db", Schema: "public", Table: "v", Column: "ssn"}: true}, span.Results[0].SourceColumns)
 
 	// ExplainAnalyze and query types convert across the seam.
-	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "EXPLAIN ANALYZE DELETE FROM public.t"}, "db", "", false)
+	span, err = querySpan(gCtx, "EXPLAIN ANALYZE DELETE FROM public.t", "db")
 	require.NoError(t, err)
 	require.Equal(t, base.DML, span.Type)
 	require.True(t, span.ExplainAnalyze)
 
 	// UnresolvedColumnsError converts to base.UnresolvedColumnsError.
-	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT * FROM public.degraded"}, "db", "", false)
+	span, err = querySpan(gCtx, "SELECT * FROM public.degraded", "db")
 	require.NoError(t, err)
 	require.NotNil(t, span.UnresolvedColumnsError)
 	require.Equal(t, []string{"db"}, span.UnresolvedColumnsError.Databases())
 
 	// MixUserSystemTablesError and SyntaxError (with 1-based rune position) convert cleanly.
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT * FROM public.t, pg_catalog.pg_class"}, "db", "", false)
+	_, err = querySpan(gCtx, "SELECT * FROM public.t, pg_catalog.pg_class", "db")
 	require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT '你好' FROM WHERE"}, "db", "", false)
+	_, err = querySpan(gCtx, "SELECT '你好' FROM WHERE", "db")
 	var syntaxErr *base.SyntaxError
 	require.ErrorAs(t, err, &syntaxErr)
 	require.Equal(t, int32(1), syntaxErr.Position.Line)
 	require.Greater(t, syntaxErr.Position.Column, int32(1))
 
 	// Nil getter and unsynced (nil) metadata fail cleanly.
-	_, err = GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: "SELECT 1"}, "db", "", false)
-	require.ErrorContains(t, err, "GetDatabaseMetadataFunc is not set")
+	_, err = querySpan(base.GetQuerySpanContext{}, "SELECT 1", "db")
+	require.ErrorContains(t, err, "cannot look databases up")
 
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT 1"}, "unsynced", "", false)
+	_, err = querySpan(gCtx, "SELECT 1", "unsynced")
 	require.ErrorContains(t, err, `database metadata for database "unsynced" not found`)
 
 	errCtx := base.GetQuerySpanContext{
@@ -100,6 +108,6 @@ func TestGetQuerySpanSeam(t *testing.T) {
 			return "", nil, errors.New("boom")
 		},
 	}
-	_, err = GetQuerySpan(context.Background(), errCtx, base.Statement{Text: "SELECT 1"}, "db", "", false)
+	_, err = querySpan(errCtx, "SELECT 1", "db")
 	require.ErrorContains(t, err, "boom")
 }

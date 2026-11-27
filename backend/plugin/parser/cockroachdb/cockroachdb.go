@@ -14,7 +14,6 @@ func init() {
 	engine := base.OmniEngine(analysis.Engine, crdbcompletion.Engine)
 	engine.Parse = parseCockroachDBStatements
 	engine.StatementTypes = GetStatementTypes
-	engine.QuerySpan = getQuerySpan
 	engine.ExtractChanged = extractChangedResources
 	base.Register(engine, storepb.Engine_COCKROACHDB)
 }

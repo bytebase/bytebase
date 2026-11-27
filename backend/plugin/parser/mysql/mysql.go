@@ -1,12 +1,9 @@
 package mysql
 
 import (
-	"context"
-
 	"github.com/bytebase/omni/mysql/analysis"
 	"github.com/bytebase/omni/mysql/ast"
 	omnicompletion "github.com/bytebase/omni/mysql/completion"
-	mysqlparser "github.com/bytebase/omni/mysql/parser"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -17,7 +14,6 @@ import (
 func init() {
 	engine := base.OmniEngine(analysis.Engine, omnicompletion.Engine)
 	engine.StatementTypes = GetStatementTypes
-	engine.QuerySpan = GetQuerySpan
 	engine.ExtractChanged = extractChangedResources
 	engine.TransformDMLToSelect = TransformDMLToSelect
 	engine.GenerateRestoreSQL = GenerateRestoreSQL
@@ -57,26 +53,6 @@ func GetStatementTypesWithPositions(asts []base.AST) ([]StatementTypeWithPositio
 	})
 }
 
-// GetQuerySpan returns the query span for the given statement.
-func GetQuerySpan(
-	ctx context.Context,
-	gCtx base.GetQuerySpanContext,
-	stmt base.Statement,
-	database, _ string,
-	ignoreCaseSensitive bool,
-) (*base.QuerySpan, error) {
-	listDBs, getDB := base.UnnamedSchemaQuerySpanCatalog(ctx, gCtx, wrapDatabase)
-	querySpan, err := base.OmniResolvedSpanResult(analysis.ResolveQuerySpan(stmt.Text, analysis.ResolveOptions{
-		DefaultDatabase:     database,
-		IgnoreCaseSensitive: ignoreCaseSensitive,
-		Catalog:             analysis.Catalog{ListDatabaseNames: listDBs, GetDatabase: getDB},
-	}))
-	if err != nil {
-		return nil, convertError(err, stmt)
-	}
-	return querySpan, nil
-}
-
 func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
 	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, false, func(a base.AST) (analysis.StatementChanges, bool, error) {
 		node, ok := GetNode(a)
@@ -85,13 +61,4 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 		}
 		return analysis.ExtractChangedResources(node, currentDatabase, base.ASTSource(a)), true, nil
 	})
-}
-
-func convertError(err error, stmt base.Statement) error {
-	return base.ConvertSyntaxError(stmt, err, true,
-		func(pe *mysqlparser.ParseError) (int, string) { return pe.Position, pe.Message },
-		func(pe *mysqlparser.ParseError, pos *storepb.Position) string {
-			return base.FormatLineColSyntaxError(pos, pe.Message, pe.RelatedText)
-		},
-	)
 }

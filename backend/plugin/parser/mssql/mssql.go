@@ -14,7 +14,6 @@ import (
 func init() {
 	engine := base.OmniEngine(analysis.Engine, mssqlcompletion.Engine)
 	engine.StatementTypes = GetStatementTypes
-	engine.QuerySpan = GetQuerySpan
 	engine.ExtractChanged = extractChangedResources
 	engine.TransformDMLToSelect = TransformDMLToSelect
 	engine.GenerateRestoreSQL = GenerateRestoreSQL

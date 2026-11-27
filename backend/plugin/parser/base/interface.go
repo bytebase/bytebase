@@ -50,6 +50,9 @@ type CompletionFunc func(ctx context.Context, cCtx CompletionContext, statement 
 type DiagnoseFunc func(ctx context.Context, dCtx DiagnoseContext, statement string) ([]Diagnostic, error)
 type StatementRangeFunc func(ctx context.Context, sCtx StatementRangeContext, statement string) ([]Range, error)
 
+// GetQuerySpansFunc resolves the spans of a script's non-empty statements.
+type GetQuerySpansFunc func(ctx context.Context, gCtx GetQuerySpanContext, statements []Statement, database, schema string, ignoreCaseSensitive bool) ([]*QuerySpan, error)
+
 // GetQuerySpanFunc is the interface of getting the query span for a single statement.
 // It accepts a pre-split Statement instead of raw string to avoid redundant splitting.
 type GetQuerySpanFunc func(ctx context.Context, gCtx GetQuerySpanContext, stmt Statement, database, schema string, ignoreCaseSensitive bool) (*QuerySpan, error)
@@ -69,14 +72,17 @@ type GetStatementTypesFunc func([]AST) ([]storepb.StatementType, error)
 // Engine defines the parser capabilities an engine plugin registers.
 // Any nil field is omitted.
 type Engine struct {
-	Split                SplitMultiSQLFunc
-	Parse                ParseStatementsFunc
-	StatementTypes       GetStatementTypesFunc
-	StatementRanges      StatementRangeFunc
-	Diagnose             DiagnoseFunc
-	Complete             CompletionFunc
-	ValidateQuery        ValidateSQLForEditorFunc
-	QuerySpan            GetQuerySpanFunc
+	Split           SplitMultiSQLFunc
+	Parse           ParseStatementsFunc
+	StatementTypes  GetStatementTypesFunc
+	StatementRanges StatementRangeFunc
+	Diagnose        DiagnoseFunc
+	Complete        CompletionFunc
+	ValidateQuery   ValidateSQLForEditorFunc
+	QuerySpan       GetQuerySpanFunc
+	// QuerySpans resolves a whole script's spans in one call and takes
+	// precedence over QuerySpan.
+	QuerySpans           GetQuerySpansFunc
 	Explain              ExplainStatementFunc
 	ResultLimit          ResultLimitFunc
 	ExtractChanged       ExtractChangedResourcesFunc
@@ -133,6 +139,10 @@ func mergeEngine(cur *Engine, spec Engine, engine storepb.Engine) {
 	if spec.QuerySpan != nil {
 		checkDup(cur.QuerySpan != nil, "QuerySpan")
 		cur.QuerySpan = spec.QuerySpan
+	}
+	if spec.QuerySpans != nil {
+		checkDup(cur.QuerySpans != nil, "QuerySpans")
+		cur.QuerySpans = spec.QuerySpans
 	}
 	if spec.Explain != nil {
 		checkDup(cur.Explain != nil, "Explain")
@@ -242,35 +252,48 @@ func GetStatementRanges(ctx context.Context, sCtx StatementRangeContext, engine 
 // The interface will return the query spans with non-critical errors, or return an error if the query is invalid.
 // Callers should split the SQL first using SplitMultiSQL and pass the resulting []Statement.
 func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.Engine, statements []Statement, database, schema string, ignoreCaseSensitive bool) ([]*QuerySpan, error) {
+	gCtx.Engine = engine
+	var nonEmpty []Statement
+	for _, stmt := range statements {
+		if !stmt.Empty {
+			nonEmpty = append(nonEmpty, stmt)
+		}
+	}
+	if spans := engines[engine].QuerySpans; spans != nil {
+		results, err := spans(ctx, gCtx, nonEmpty, database, schema, ignoreCaseSensitive)
+		if err != nil {
+			return nil, querySpanError(err)
+		}
+		return results, nil
+	}
 	f := engines[engine].QuerySpan
 	if f == nil {
 		return nil, nil
 	}
-	gCtx.Engine = engine
-	gCtx.TempTables = make(map[string]*PhysicalTable)
-	gCtx.PlanOutput = make(PlanOutput)
 	var results []*QuerySpan
-	for _, stmt := range statements {
-		if stmt.Empty {
-			continue
-		}
+	for _, stmt := range nonEmpty {
 		result, err := f(ctx, gCtx, stmt, database, schema, ignoreCaseSensitive)
 		if err != nil {
-			// Try to unwrap the error to see if it's a ResourceNotFoundError to decrease the error noise.
-			// TODO(d): remove resource not found error checks.
-			var resourceNotFound *ResourceNotFoundError
-			if errors.As(err, &resourceNotFound) {
-				return nil, resourceNotFound
-			}
-			var typeNotSupported *TypeNotSupportedError
-			if errors.As(err, &typeNotSupported) {
-				return nil, typeNotSupported
-			}
-			return nil, err
+			return nil, querySpanError(err)
 		}
 		results = append(results, result)
 	}
 	return results, nil
+}
+
+// querySpanError returns the not-found or unsupported-type error inside err,
+// which carries less noise, or err.
+// TODO(d): remove resource not found error checks.
+func querySpanError(err error) error {
+	var resourceNotFound *ResourceNotFoundError
+	if errors.As(err, &resourceNotFound) {
+		return resourceNotFound
+	}
+	var typeNotSupported *TypeNotSupportedError
+	if errors.As(err, &typeNotSupported) {
+		return typeNotSupported
+	}
+	return err
 }
 
 // TransformDMLToSelect transforms the DML statement to SELECT statement.

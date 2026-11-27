@@ -60,6 +60,11 @@ func OmniEngine(engines ...any) Engine {
 		if limiter, ok := engine.(omnianalysis.ResultLimiter); ok {
 			e.ResultLimit = limiter.ResultLimit
 		}
+		if resolver, ok := engine.(omnianalysis.QuerySpanResolver); ok {
+			e.QuerySpans = func(ctx context.Context, gCtx GetQuerySpanContext, statements []Statement, database, schema string, ignoreCaseSensitive bool) ([]*QuerySpan, error) {
+				return omniQuerySpans(ctx, resolver, gCtx, statements, database, schema, ignoreCaseSensitive)
+			}
+		}
 		if completer, ok := engine.(omnianalysis.Completer); ok {
 			e.Complete = func(ctx context.Context, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error) {
 				return omniComplete(ctx, completer, cCtx, statement, caretLine, caretOffset), nil
@@ -69,19 +74,32 @@ func OmniEngine(engines ...any) Engine {
 	return e
 }
 
-// OmniError converts an omni *SyntaxError into the registry's; any other error
-// is returned as is.
+// OmniError converts an omni *SyntaxError into the registry's, keeping the
+// message of any error that wraps it; any other error is returned as is.
 func OmniError(err error) error {
 	var syntaxErr *omnianalysis.SyntaxError
 	if !errors.As(err, &syntaxErr) {
 		return err
 	}
-	return &SyntaxError{
+	converted := &SyntaxError{
 		Position:   omniPosition(syntaxErr.Position),
 		Message:    syntaxErr.Message,
 		RawMessage: syntaxErr.RawMessage,
 	}
+	if err == error(syntaxErr) {
+		return converted
+	}
+	return &wrappedError{message: err.Error(), err: converted}
 }
+
+// wrappedError is an omni error's message around its converted cause.
+type wrappedError struct {
+	message string
+	err     error
+}
+
+func (e *wrappedError) Error() string { return e.message }
+func (e *wrappedError) Unwrap() error { return e.err }
 
 // OmniStatementTypesWithPosition classifies each parsed statement, keeping the
 // line it starts on and its text.
@@ -203,4 +221,89 @@ func omniCatalog(instanceID string, getDatabase GetDatabaseMetadataFunc, listDat
 		}
 	}
 	return catalog
+}
+
+func omniQuerySpans(ctx context.Context, resolver omnianalysis.QuerySpanResolver, gCtx GetQuerySpanContext, statements []Statement, database, schema string, ignoreCaseSensitive bool) ([]*QuerySpan, error) {
+	if len(statements) == 0 {
+		return nil, nil
+	}
+	omniStatements := make([]omnianalysis.QuerySpanStatement, 0, len(statements))
+	for _, stmt := range statements {
+		start := omnianalysis.Position{Line: 1, Column: 1}
+		if stmt.Start != nil {
+			start = omnianalysis.Position{Line: int(stmt.Start.Line), Column: int(stmt.Start.Column)}
+		}
+		omniStatements = append(omniStatements, omnianalysis.QuerySpanStatement{Text: stmt.Text, Start: start})
+	}
+	spans, err := resolver.QuerySpans(ctx, omnianalysis.QuerySpanRequest{
+		DefaultDatabase:     database,
+		DefaultSchema:       schema,
+		IgnoreCaseSensitive: ignoreCaseSensitive,
+		Catalog:             omniSpanCatalog(gCtx),
+	}, omniStatements)
+	if err != nil {
+		return nil, omniSpanError(err)
+	}
+	result := make([]*QuerySpan, 0, len(spans))
+	for _, span := range spans {
+		result = append(result, OmniResolvedSpan(span))
+	}
+	return result, nil
+}
+
+// omniSpanCatalog gives omni the instance's synced databases for one script,
+// each read once. A Bytebase not-found error reaches omni as its own.
+func omniSpanCatalog(gCtx GetQuerySpanContext) omnianalysis.Catalog {
+	catalog := omniCatalog(gCtx.InstanceID, gCtx.GetDatabaseMetadataFunc, gCtx.ListDatabaseNamesFunc)
+	if list := catalog.ListDatabaseNames; list != nil {
+		catalog.ListDatabaseNames = func(ctx context.Context) ([]string, error) {
+			names, err := list(ctx)
+			return names, ToOmniNotFoundError(err)
+		}
+	}
+	if get := catalog.GetDatabase; get != nil {
+		databases := map[string]*omnianalysis.Database{}
+		catalog.GetDatabase = func(ctx context.Context, name string) (*omnianalysis.Database, error) {
+			if database, ok := databases[name]; ok {
+				return database, nil
+			}
+			database, err := get(ctx, name)
+			if err != nil {
+				return nil, ToOmniNotFoundError(err)
+			}
+			databases[name] = database
+			return database, nil
+		}
+	}
+	if getLinked := gCtx.GetLinkedDatabaseMetadataFunc; getLinked != nil {
+		catalog.GetLinkedDatabase = func(ctx context.Context, link, schema string) (*omnianalysis.Database, error) {
+			_, name, database, err := getLinked(ctx, gCtx.InstanceID, link, schema)
+			if err != nil || database == nil {
+				return nil, ToOmniNotFoundError(err)
+			}
+			return &omnianalysis.Database{
+				Name:                name,
+				Metadata:            database.GetProto(),
+				ObjectCaseSensitive: database.GetIsObjectCaseSensitive(),
+			}, nil
+		}
+	}
+	return catalog
+}
+
+// omniSpanError converts the errors an omni span resolution returns into the
+// registry's.
+func omniSpanError(err error) error {
+	if mixErr := ConvertOmniMixTablesError(err); mixErr != nil {
+		return mixErr
+	}
+	var notFound *omnianalysis.ResourceNotFoundError
+	if errors.As(err, &notFound) {
+		return OmniResourceNotFoundError(notFound)
+	}
+	var typeNotSupported *omnianalysis.TypeNotSupportedError
+	if errors.As(err, &typeNotSupported) {
+		return OmniTypeNotSupportedError(typeNotSupported)
+	}
+	return OmniError(err)
 }

@@ -159,31 +159,11 @@ func (c ColumnResource) String() string {
 	return strings.Join(list, ".")
 }
 
-// PhysicalTable is the resource of a physical table.
-type PhysicalTable struct {
-	// Server is the normalized server name, it's empty if the column comes from the connected server.
-	Server string
-	// Database is the normalized database name, it should not be empty.
-	Database string
-	// Schema is the normalized schema name, it should not be empty for the engines that support schema, and should be empty for the engines that don't support schema.
-	Schema string
-	// Name is the normalized table name, it should not be empty.
-	Name string
-	// Columns are the columns of the table.
-	Columns []string
-}
-
 type GetQuerySpanContext struct {
 	InstanceID                    string
 	GetDatabaseMetadataFunc       GetDatabaseMetadataFunc
 	ListDatabaseNamesFunc         ListDatabaseNamesFunc
 	GetLinkedDatabaseMetadataFunc GetLinkedDatabaseMetadataFunc
-	// TempTables is the temporary tables created in the query span.
-	// It's used to store the temporary tables declared in one batch for SQL Server.
-	TempTables map[string]*PhysicalTable
-	// PlanOutput is the plan output a SQL Server batch has turned on, carried to
-	// its later statements like TempTables.
-	PlanOutput PlanOutput
 
 	// Adding the engine information here is a trade-off between the copy-pasted and shared code.
 	// For engines with more different, we implement the getQuerySpan separately.
@@ -193,11 +173,6 @@ type GetQuerySpanContext struct {
 	// We'll deal this field in the base.GetQuerySpan.
 	Engine storepb.Engine
 }
-
-// PlanOutput is the SQL Server plan options a batch has turned on, keyed by
-// option name as the parser writes it, such as "SHOWPLAN_XML" or "STATISTICS
-// XML". Each stays on until its own SET ... OFF.
-type PlanOutput map[string]bool
 
 // GetDatabaseMetadataFunc is the function to get database metadata.
 // It may return nil metadata and a nil error when Bytebase has not synced the
