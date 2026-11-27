@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"maps"
 	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
@@ -721,7 +720,6 @@ func TestAdministerMaskingRulesRemovesOrMovesEveryRuleOneFormAdds(t *testing.T) 
 		form, err := maskingRulesForm(alice, diff, "")
 		return err == nil, err == nil && !strings.Contains(form.message, "listed under Action")
 	}
-	short := maskingRule("r0", "SSN", `resource.column_name == "ssn"`, "bb.default")
 	for _, condition := range []func(name string) string{
 		func(name string) string {
 			return `resource.database_name == "hr_test" && resource.table_name == "salary" && resource.column_name == "` + name + `"`
@@ -740,8 +738,14 @@ func TestAdministerMaskingRulesRemovesOrMovesEveryRuleOneFormAdds(t *testing.T) 
 				}
 				added++
 				removed, removedWhole := form([]*v1pb.MaskingRulePolicy_MaskingRule{rule}, nil)
-				// Stored first, so the diff reads this rule as the one that moved.
-				moved, movedWhole := form([]*v1pb.MaskingRulePolicy_MaskingRule{rule, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, rule})
+				// The other rule's move takes more rows, so this rule is the
+				// one that moved.
+				longer := maskingRule("r0", "Longer", condition(strings.Repeat("c", n+2*descriptionLineWidth)), semanticType)
+				swap, err := diffMaskingRules([]*v1pb.MaskingRulePolicy_MaskingRule{rule, longer}, []*v1pb.MaskingRulePolicy_MaskingRule{longer, rule}, types, "")
+				require.NoError(t, err)
+				require.Len(t, swap.changes, 1)
+				require.True(t, strings.HasPrefix(swap.changes[0].text, "Move to rule 2: "), swap.changes[0].text)
+				moved, movedWhole := form([]*v1pb.MaskingRulePolicy_MaskingRule{rule, longer}, []*v1pb.MaskingRulePolicy_MaskingRule{longer, rule})
 				require.True(t, removed && moved, "%q", rule.GetCondition().GetExpression())
 				if whole {
 					addedWhole++
@@ -850,9 +854,9 @@ func columnsCondition(table, prefix string, n int) string {
 	return `resource.table_name == "` + table + `" && (` + strings.Join(terms, " || ") + ")"
 }
 
-// The masking form describes a refused reorder by the moves that take the
-// fewest rows too: a swap that a form makes, a form swaps back, also when one
-// of the two rules is too long for any form.
+// The masking form states the move that takes fewer rows too: a swap that a
+// form makes, a form swaps back, also when one of the two rules is too long for
+// any form.
 func TestAdministerMaskingRulesSwapsBackWhatItSwaps(t *testing.T) {
 	swap := func(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule) (message, refusal string) {
 		message, _, refusal = askedMaskingChange(t, stored, requested)
@@ -869,14 +873,19 @@ func TestAdministerMaskingRulesSwapsBackWhatItSwaps(t *testing.T) {
 		require.Empty(t, refusal, "%d columns, swapped back", n)
 	}
 
-	// The description by the fewest moves stands wherever it gets a form, and
-	// the short rule is the moved one when the long one fits no form.
-	few := maskingRule("r-many", "Many columns", columns(2), "bb.default")
-	message, _ := swap([]*v1pb.MaskingRulePolicy_MaskingRule{few, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, few})
-	require.Contains(t, unwrapMessage(message), "Move to rule 2: `"+columns(2)+"`")
+	// The move that takes fewer rows is the one stated, whichever way the
+	// two rules trade places, also where both moves fit a form.
+	for _, n := range []int{2, 30} {
+		many := maskingRule("r-many", "Many columns", columns(n), "bb.default")
+		message, _ := swap([]*v1pb.MaskingRulePolicy_MaskingRule{many, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, many})
+		require.Contains(t, message, `Move to rule 1: any db, any table, column "ssn"`, "%d columns", n)
+	}
+	// Two moves that take the same rows: the rule that ends second is the
+	// moved one, as before a move had a cost.
+	email := maskingRule("r-email", "Email", `resource.column_name == "email"`, "bb.default")
+	message, _ := swap([]*v1pb.MaskingRulePolicy_MaskingRule{email, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, email})
+	require.Contains(t, message, `Move to rule 2: any db, any table, column "email"`)
 	long := maskingRule("r-many", "Many columns", columns(30), "bb.default")
-	message, _ = swap([]*v1pb.MaskingRulePolicy_MaskingRule{long, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, long})
-	require.Contains(t, message, `Move to rule 1: any db, any table, column "ssn"`)
 	// Two rules that are each too long for any form cannot trade places in
 	// one, by either description or in steps.
 	other := maskingRule("r-other", "Other columns", columnsCondition("orders", "d", 30), "bb.default")
@@ -888,10 +897,9 @@ func TestAdministerMaskingRulesSwapsBackWhatItSwaps(t *testing.T) {
 	require.NotContains(t, refusal, "smaller steps")
 }
 
-// Two swaps in one request, each of a long rule and a short one: the lines of
-// the two short rules fit a form, whichever rule a tie-break calls moved. A
-// reorder with no room in one form is sent to smaller steps whenever steps can
-// make it.
+// Two swaps in one request, each of a long rule and a short one: the two short
+// rules are the moved ones, and their lines fit the message. A reorder with no
+// room in one form is sent to smaller steps, and each step gets a form.
 func TestAdministerMaskingRulesDescribesAReorderByTheMovesThatFit(t *testing.T) {
 	wideA := maskingRule("r-a", "Many columns A", columnsCondition("orders", "a", 24), "bb.default")
 	ssn := maskingRule("r-b", "SSN", `resource.column_name == "ssn"`, "bb.default")
@@ -944,60 +952,58 @@ func TestAdministerMaskingRulesDescribesAReorderByTheMovesThatFit(t *testing.T) 
 	}
 }
 
-// A move is priced by the rows of its own line. Here the first rule fits no
-// form as moved, and the second one's line takes exactly the ten rows a form
-// has: one column more and it would take eleven.
-func TestMaskingReorderPricesAMoveByItsOwnLine(t *testing.T) {
+// A rule whose move fills the rows a form has for its changes is the moved
+// one. With one row more its move fits no form, so it stays in place and the
+// two rules it traded order with move instead.
+func TestMaskingReorderLeavesInPlaceARuleWhoseMoveFitsNoForm(t *testing.T) {
 	alice := withUserEmail(context.Background(), "alice@example.com")
 	types, err := semanticTypesFromSetting(nil)
 	require.NoError(t, err)
-	hopeless := maskingRule("r-hopeless", "", columnsCondition("orders", "h", 30), "bb.default")
-	moved := func(pad int) *v1pb.MaskingRulePolicy_MaskingRule {
-		return maskingRule("r-moved", "", columnsCondition("orders", "m", 16)+` || resource.column_name == "`+strings.Repeat("m", pad)+`"`, "bb.default")
-	}
-	rows := func(pad int) int {
-		diff, err := diffMaskingRules([]*v1pb.MaskingRulePolicy_MaskingRule{moved(pad), hopeless}, []*v1pb.MaskingRulePolicy_MaskingRule{hopeless, moved(pad)}, types, "")
+	ssn := maskingRule("r-ssn", "SSN", `resource.column_name == "ssn"`, "bb.default")
+	email := maskingRule("r-email", "Email", `resource.column_name == "email"`, "bb.default-partial")
+	diffOf := func(pad int) *maskingRulesDiff {
+		wide := maskingRule("r-wide", "", columnsCondition("orders", "m", 16)+` || resource.column_name == "`+strings.Repeat("m", pad)+`"`, "bb.default")
+		diff, err := diffMaskingRules([]*v1pb.MaskingRulePolicy_MaskingRule{wide, ssn, email}, []*v1pb.MaskingRulePolicy_MaskingRule{ssn, email, wide}, types, "")
 		require.NoError(t, err)
-		require.Len(t, diff.changes, 1)
-		require.True(t, strings.HasPrefix(diff.changes[0].text, "Move to rule 2: "), diff.changes[0].text)
-		return len(wrapLine(diff.changes[0].text, descriptionLineWidth))
+		return diff
 	}
 	pad := 0
-	for rows(pad+1) <= descriptionLines {
+	for diffOf(pad+1).moves == 1 {
 		pad++
 		require.Less(t, pad, 400)
 	}
-	require.Equal(t, descriptionLines, rows(pad))
-
-	// The fewest moves call the first rule moved, which fits no form.
-	stored := []*v1pb.MaskingRulePolicy_MaskingRule{hopeless, moved(pad)}
-	requested := []*v1pb.MaskingRulePolicy_MaskingRule{moved(pad), hopeless}
-	match, err := matchMaskingRules(stored, requested, types, "")
-	require.NoError(t, err)
-	require.Equal(t, []bool{true, false}, match.inOrder)
-	_, err = maskingRulesForm(alice, match.described(match.inOrder, false), "")
-	require.Error(t, err)
-
-	diff, err := diffMaskingRules(stored, requested, types, "")
-	require.NoError(t, err)
-	form, err := maskingRulesForm(alice, diff, "")
+	fits := diffOf(pad)
+	require.Len(t, fits.changes, 1)
+	require.True(t, strings.HasPrefix(fits.changes[0].text, "Move to rule 3: `resource.table_name == \"orders\" && ("), fits.changes[0].text)
+	require.Len(t, wrapLine(fits.changes[0].text, descriptionLineWidth), descriptionLines, "the last move that fits takes every row a form has")
+	form, err := maskingRulesForm(alice, fits, "")
 	require.NoError(t, err)
 	require.Contains(t, form.message, "Change 1 rule, listed under Action.")
-	require.True(t, strings.HasPrefix(form.description, "Move to rule 1: `resource.table_name == \"orders\" && ("), form.description)
 	require.Equal(t, descriptionLines, strings.Count(form.description, "\n")+1)
+
+	stays := diffOf(pad + 1)
+	require.Equal(t, []formChange{
+		{text: `Move to rule 1: any db, any table, column "ssn"`, effect: true},
+		{text: `Move to rule 2: any db, any table, column "email"`, effect: true},
+	}, stays.changes)
+	form, err = maskingRulesForm(alice, stays, "")
+	require.NoError(t, err)
+	require.Contains(t, form.message, `Move to rule 1: any db, any table, column "ssn"`)
 }
 
-// Whichever rules a tie-break calls moved, a masking reorder is refused only
-// when no description of it fits a form, and is sent to smaller steps whenever
-// some description's refusal sends it there. A form that the fewest moves have
-// no room for takes the fewest rows a description takes.
-func TestMaskingReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
+// Of every description of a masking reorder, a form states one whose moves
+// cost the least: the fewest lines too long for any form, then the fewest
+// moves, then the fewest rows. Each description's lines are derived here from
+// the rules' places. The request gets a form when the stated lines have room,
+// is sent to smaller steps when each of them has room alone, and to the
+// console otherwise.
+func TestMaskingReorderIsStatedByItsCheapestMoves(t *testing.T) {
 	alice := withUserEmail(context.Background(), "alice@example.com")
 	types, err := semanticTypesFromSetting(nil)
 	require.NoError(t, err)
 	random := rand.New(rand.NewPCG(22234, 13))
 	semanticTypes := []string{"bb.default", "bb.default-partial", ""}
-	var forms, rescued, toSteps, toConsole, adviceChanged int
+	var forms, toSteps, toConsole, moreMoves, fewerRows int
 	for range 500 {
 		n := 2 + random.IntN(5)
 		var stored []*v1pb.MaskingRulePolicy_MaskingRule
@@ -1008,73 +1014,76 @@ func TestMaskingReorderIsRefusedOnlyWhenNoDescriptionFits(t *testing.T) {
 			condition := columnsCondition(fmt.Sprintf("t%d", i), "c", columns) + strings.Repeat(" ", random.IntN(40))
 			stored = append(stored, maskingRule(fmt.Sprintf("r%d", i), []string{"", "Pay"}[random.IntN(2)], condition, semanticTypes[random.IntN(len(semanticTypes))]))
 		}
+		was := reorderedPlaces(random, n)
 		var requested []*v1pb.MaskingRulePolicy_MaskingRule
-		for _, place := range reorderedPlaces(random, n) {
-			rule := proto.CloneOf(stored[place])
-			switch random.IntN(8) {
-			case 0:
-				rule.SemanticType = semanticTypes[random.IntN(len(semanticTypes))]
-			case 1:
-				rule.Condition.Title = "Renamed"
-			default:
-			}
-			requested = append(requested, rule)
+		for _, place := range was {
+			requested = append(requested, proto.CloneOf(stored[place]))
 		}
-		match, err := matchMaskingRules(stored, requested, types, "LINK")
-		require.NoError(t, err)
-		if !slices.Contains(match.inOrder, false) {
-			continue
-		}
-		fits, bySteps := false, false
-		// Every description's form, built as one by the fewest rows is, by
-		// the rows its changes take.
-		byRows := map[int][]adminForm{}
-		everyDescription(match.was, func(inOrder []bool) {
-			if _, err := maskingRulesForm(alice, match.described(inOrder, false), "LINK"); err == nil {
-				fits = true
-			} else if advisesSteps(t, err) {
-				bySteps = true
-			}
-			described := match.described(inOrder, true)
-			if form, err := maskingRulesForm(alice, described, "LINK"); err == nil {
-				rows := 0
-				for _, change := range described.changes {
-					rows += len(wrapLine(change.text, descriptionLineWidth))
-				}
-				byRows[rows] = append(byRows[rows], *form)
-			}
-		})
-
-		byFewestMoves, firstErr := maskingRulesForm(alice, match.described(match.inOrder, false), "LINK")
 		diff, err := diffMaskingRules(stored, requested, types, "LINK")
 		require.NoError(t, err)
-		form, err := maskingRulesForm(alice, diff, "LINK")
-		require.Equal(t, fits, err == nil, "stored %v\nrequested %v", stored, requested)
+		if diff.moves == 0 {
+			continue
+		}
+		lines, rows := make([]string, n), make([]int, n)
+		for i, rule := range requested {
+			lines[i] = fmt.Sprintf("Move to rule %d: %s", i+1, maskingConditionText(rule.GetCondition().GetExpression()))
+			rows[i] = len(wrapLine(lines[i], descriptionLineWidth))
+		}
+		var least, fewest *moveTotal
+		everyDescription(was, func(inOrder []bool) {
+			total := &moveTotal{}
+			for i, in := range inOrder {
+				if !in {
+					total.add(rows[i], descriptionLines)
+				}
+			}
+			if least == nil || total.less(*least) {
+				least = total
+			}
+			if fewest == nil || total.moves < fewest.moves || total.moves == fewest.moves && total.rows > fewest.rows {
+				fewest = total
+			}
+		})
+		var stated moveTotal
+		var want []string
+		for i, mark := range diff.marks {
+			if mark == "changed" {
+				stated.add(rows[i], descriptionLines)
+				want = append(want, lines[i])
+			}
+		}
+		var got []string
+		for _, change := range diff.changes {
+			got = append(got, change.text)
+		}
+		require.Equal(t, want, got)
+		require.Equal(t, *least, stated, "stored %v\nrequested %v", stored, requested)
+		require.Equal(t, stated.moves, diff.moves)
+
+		_, err = maskingRulesForm(alice, diff, "LINK")
 		switch {
-		case err == nil && firstErr == nil:
-			forms++
-			require.Equal(t, byFewestMoves, form, "the description by the fewest moves stands where it gets a form")
-		case err == nil:
-			rescued++
-			fewest := slices.Min(slices.Collect(maps.Keys(byRows)))
-			require.Contains(t, byRows[fewest], *form, "%d rows\nstored %v\nrequested %v", fewest, stored, requested)
+		case stated.tooLong > 0:
+			require.False(t, advisesSteps(t, err), "stored %v\nrequested %v", stored, requested)
+			toConsole++
+		case stated.rows > descriptionLines:
+			require.True(t, advisesSteps(t, err), "stored %v\nrequested %v", stored, requested)
+			toSteps++
 		default:
-			require.Equal(t, bySteps, advisesSteps(t, err), "stored %v\nrequested %v", stored, requested)
-			if bySteps {
-				toSteps++
-			} else {
-				toConsole++
-			}
-			if bySteps != advisesSteps(t, firstErr) {
-				adviceChanged++
-			}
+			require.NoError(t, err, "stored %v\nrequested %v", stored, requested)
+			forms++
+		}
+		if stated.moves > fewest.moves {
+			moreMoves++
+		}
+		if stated.moves == fewest.moves && stated.rows < fewest.rows {
+			fewerRows++
 		}
 	}
 	require.Greater(t, forms, 100)
-	require.Greater(t, rescued, 30, "forms that the description by the fewest moves has no room for")
 	require.Greater(t, toSteps, 20)
 	require.Greater(t, toConsole, 50)
-	require.Greater(t, adviceChanged, 5, "refusals whose advice the description by the fewest moves gets wrong")
+	require.Greater(t, moreMoves, 15, "reorders stated by more moves than the fewest, since a rule too long for a form stays in place")
+	require.Greater(t, fewerRows, 50, "reorders whose fewest moves can take more rows than the ones stated")
 }
 
 // On a form that lists its changes under the choice, a user who cannot read
@@ -1113,9 +1122,9 @@ func TestAdministerMaskingRulesOffersStepsWhenAListedChangeIsChangedInChat(t *te
 	both := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, long, rules[0])))))
 	require.Equal(t, changed, both)
 
-	// A form by the fewest rows offers no steps, though each of its lines fits
-	// a message alone: a step that swaps one pair is described by its fewest
-	// moves first, by the wide rule, and lists that under the choice.
+	// A form that lists a move offers no steps, though each of its lines fits
+	// a message alone: a step is a request of its own, and its rules decide
+	// which of two rules that trade places it calls moved.
 	var pairs, swapped []*v1pb.MaskingRulePolicy_MaskingRule
 	for i := range 4 {
 		var columns []string
@@ -1127,16 +1136,11 @@ func TestAdministerMaskingRulesOffersStepsWhenAListedChangeIsChangedInChat(t *te
 		pairs, swapped = append(pairs, wide, narrow), append(swapped, narrow, wide)
 	}
 	mock.setStored(pairs...)
-	byRows := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, swapped...)))))
-	require.Equal(t, changed, byRows)
+	withMoves := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, swapped...)))))
+	require.Equal(t, changed, withMoves)
 	asked := user.lastParams(t)
 	require.Contains(t, asked.Message, "Change 4 rules, listed under Action.")
 	require.Contains(t, choiceDescription(t, asked), `Move to rule 1: any db, any table, column "s0"`)
-	oneSwap := resultText(t, callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, slices.Concat(swapped[:2], pairs[2:])...)))))
-	require.Equal(t, changed, oneSwap)
-	asked = user.lastParams(t)
-	require.Contains(t, asked.Message, "Change 1 rule, listed under Action.")
-	require.Contains(t, choiceDescription(t, asked), "Move to rule 2: `resource.table_name == \"t0\" &&")
 	require.Empty(t, mock.calls())
 }
 
