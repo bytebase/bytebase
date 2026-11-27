@@ -444,15 +444,20 @@ func TestAdministerIdentityRefusesBeforeAsking(t *testing.T) {
 	}
 }
 
-// A shorter identity ID helps only when it is the ID that takes the question
-// to a second row.
+// A shorter identity ID is advised only when one gets a form. The question's
+// rows alone do not tell: the repository's line needs rows too.
 func TestAdministerIdentityOffersAShorterIDOnlyWhenOneFits(t *testing.T) {
+	repository := func(path int) string {
+		return "repo:" + strings.Repeat("o", 39) + "/" + strings.Repeat("r", path-40) + ":*"
+	}
 	for name, tc := range map[string]struct {
-		parent, id string
-		shorter    bool
+		parent, id, pattern string
+		shorter             bool
 	}{
-		"an ID too long for its project":   {"projects/hr", strings.Repeat("a", 63), true},
-		"a project ID that leaves no room": {"projects/" + strings.Repeat("p", 63), "a", false},
+		"an ID too long for its project":                      {"projects/hr", strings.Repeat("a", 63), repository(100), true},
+		"a project ID that leaves no room":                    {"projects/" + strings.Repeat("p", 63), "a", repository(100), false},
+		"two IDs that take the question to two rows together": {"projects/" + strings.Repeat("p", 63), strings.Repeat("a", 63), "repo:example-org/hr-migrations:*", true},
+		"a repository path too long with any ID":              {"projects/hr", strings.Repeat("a", 63), repository(140), false},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := newIdentityMock()
@@ -460,7 +465,7 @@ func TestAdministerIdentityOffersAShorterIDOnlyWhenOneFits(t *testing.T) {
 			_, session := connectToIdentityServer(t, mock, newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: user.handle})
 			refusal := resultToolError(t, callAdminister(t, session, identityParams(identityBody(t, func(request, config map[string]any) {
 				request["parent"], request["workloadIdentityId"] = tc.parent, tc.id
-				config["subjectPattern"] = "repo:" + strings.Repeat("o", 39) + "/" + strings.Repeat("r", 60) + ":*"
+				config["subjectPattern"] = tc.pattern
 			}))))
 			require.Equal(t, "CHANGE_TOO_LONG", refusal.Code)
 			require.Equal(t, tc.shorter, strings.HasPrefix(refusal.Suggestion, "use a shorter identity ID"), refusal.Suggestion)

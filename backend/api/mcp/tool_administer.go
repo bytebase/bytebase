@@ -1218,6 +1218,19 @@ func fitLayout(ctx context.Context, layout formLayout) (*adminForm, int) {
 	return &adminForm{message: strings.Join(lines, "\n"), description: layout.description}, 0
 }
 
+// shortestID stands for the shortest resource ID a request could send. A
+// refused request is advised a shorter ID only when a form with this one fits:
+// its other values need rows too.
+const shortestID = "a"
+
+// fitsALayout reports whether one of layouts gets a form.
+func fitsALayout(ctx context.Context, layouts []formLayout) bool {
+	return slices.ContainsFunc(layouts, func(layout formLayout) bool {
+		form, _ := fitLayout(ctx, layout)
+		return form != nil
+	})
+}
+
 // fitMessage puts the question, each change line and the change's effect on
 // the user into the lines of a message, continuing a long line on the next.
 // The effect shows when a change has it.

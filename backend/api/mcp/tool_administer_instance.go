@@ -362,13 +362,7 @@ func instanceForm(ctx context.Context, c *instanceCreation, maskingSkips bool, l
 	notActivated := maskingSkips && !c.request.GetInstance().GetActivation()
 	// Whether any layout fits is decided as if the TLS mode had its longest
 	// wording, so a weaker TLS setting never turns a refusal into a form.
-	needed := 0
-	for _, layout := range instanceLayouts(c, c.request.GetInstanceId(), notActivated, tlsNotVerified) {
-		if _, needed = fitLayout(ctx, layout); needed == 0 {
-			break
-		}
-	}
-	if needed == 0 {
+	if fitsALayout(ctx, instanceLayouts(c, c.request.GetInstanceId(), notActivated, tlsNotVerified)) {
 		for _, layout := range instanceLayouts(c, c.request.GetInstanceId(), notActivated, tlsMode(c.dataSource())) {
 			if form, _ := fitLayout(ctx, layout); form != nil {
 				return form, nil
@@ -376,11 +370,7 @@ func instanceForm(ctx context.Context, c *instanceCreation, maskingSkips bool, l
 		}
 	}
 	suggestion := "add the instance signed in to the Bytebase console: " + link
-	rows := func(instanceID string) int {
-		layouts := instanceLayouts(c, instanceID, notActivated, tlsNotVerified)
-		return len(wrapMessageLine(layouts[len(layouts)-1].question))
-	}
-	if rows(c.request.GetInstanceId()) > 1 && rows("a") == 1 {
+	if fitsALayout(ctx, instanceLayouts(c, shortestID, notActivated, tlsNotVerified)) {
 		suggestion = "use a shorter instance ID, or " + suggestion
 	}
 	return nil, &toolError{

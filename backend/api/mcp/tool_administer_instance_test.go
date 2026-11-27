@@ -643,6 +643,16 @@ func TestAdministerInstanceRefusesBeforeAsking(t *testing.T) {
 			request["parent"] = "projects/" + strings.Repeat("p", 63)
 			dataSource["host"] = strings.Repeat("h", 100) + ".example.com"
 		}, "so no instance was added (add the instance signed in"},
+		// A shorter ID is advised only when one gets a form: the question's rows
+		// alone do not tell, since the host's line needs rows too.
+		"two long IDs that a shorter instance ID makes room for": {func(request, _, _ map[string]any) {
+			request["parent"] = "projects/" + strings.Repeat("p", 63)
+			request["instanceId"] = "a" + strings.Repeat("b", 61) + "c"
+		}, "so no instance was added (use a shorter instance ID, or add the instance signed in"},
+		"a long instance ID and a host too long with any ID": {func(request, _, dataSource map[string]any) {
+			request["instanceId"] = "a" + strings.Repeat("b", 61) + "c"
+			dataSource["host"] = strings.Repeat("h", 138) + ".example.com"
+		}, "so no instance was added (add the instance signed in"},
 		"a host too long for any form": {func(_, _, dataSource map[string]any) {
 			dataSource["host"] = strings.Repeat("h", 200) + ".example.com"
 		}, "CHANGE_TOO_LONG: " + instanceTooLong},

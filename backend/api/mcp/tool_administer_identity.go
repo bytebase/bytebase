@@ -357,11 +357,7 @@ func identityForm(ctx context.Context, c *identityCreation, link string) (*admin
 		}
 	}
 	suggestion := "create it signed in to the Bytebase console: " + link
-	rows := func(identityID string) int {
-		layouts := identityLayouts(c, identityID, repository)
-		return len(wrapMessageLine(layouts[len(layouts)-1].question))
-	}
-	if rows(c.request.GetWorkloadIdentityId()) > 1 && rows("a") == 1 {
+	if fitsALayout(ctx, identityLayouts(c, shortestID, repository)) {
 		suggestion = "use a shorter identity ID, or " + suggestion
 	}
 	return nil, &toolError{
