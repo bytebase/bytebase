@@ -30,6 +30,6 @@ func TestGenerateRestoreSQLSeam(t *testing.T) {
 		require.Equal(t, "/*\nOriginal SQL:\nDELETE FROM test WHERE b1 = 1;\n*/\nINSERT INTO `db`.`test` (`a`, `b`, `c`) SELECT `a`, `b`, `c` FROM `bbarchive`.`prefix_test`;", result)
 	}
 
-	_, err := GenerateRestoreSQL(context.Background(), rCtx, "DELETE FROM test;", nil)
+	_, err := base.GenerateRestoreSQL(context.Background(), store.Engine_MARIADB, rCtx, "DELETE FROM test;", nil)
 	require.ErrorContains(t, err, "backup item is nil")
 }

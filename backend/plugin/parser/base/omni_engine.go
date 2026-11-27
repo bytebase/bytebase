@@ -71,6 +71,16 @@ func OmniEngine(engines ...any) Engine {
 				return omniChanges(extractor, database, schema, dbMetadata, asts, script)
 			}
 		}
+		if generator, ok := engine.(omnianalysis.BackupGenerator); ok {
+			e.TransformDMLToSelect = func(ctx context.Context, tCtx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error) {
+				return omniBackups(ctx, generator, tCtx, statement, sourceDatabase, targetDatabase, tablePrefix)
+			}
+		}
+		if generator, ok := engine.(omnianalysis.RestoreGenerator); ok {
+			e.GenerateRestoreSQL = func(ctx context.Context, rCtx RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+				return omniRestoreSQL(ctx, generator, rCtx, statement, backupItem)
+			}
+		}
 		if completer, ok := engine.(omnianalysis.Completer); ok {
 			e.Complete = func(ctx context.Context, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error) {
 				return omniComplete(ctx, completer, cCtx, statement, caretLine, caretOffset), nil
@@ -357,4 +367,64 @@ func omniChanges(extractor omnianalysis.ChangeExtractor, database, schema string
 		summary.DMLStatements = append(summary.DMLStatements, text)
 	}
 	return summary, nil
+}
+
+func omniBackups(ctx context.Context, generator omnianalysis.BackupGenerator, tCtx TransformContext, statement, sourceDatabase, targetDatabase, tablePrefix string) ([]BackupStatement, error) {
+	backups, err := generator.Backups(ctx, omnianalysis.BackupRequest{
+		DefaultDatabase:      tCtx.DatabaseName,
+		SourceDatabase:       sourceDatabase,
+		BackupDatabase:       targetDatabase,
+		TablePrefix:          tablePrefix,
+		CaseSensitive:        tCtx.IsCaseSensitive,
+		Version:              tCtx.Version,
+		Catalog:              omniCatalog(tCtx.InstanceID, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc),
+		ReferencingDatabases: tCtx.ReferencingDatabases(ctx),
+	}, statement)
+	if err != nil || len(backups) == 0 {
+		return nil, err
+	}
+	result := make([]BackupStatement, 0, len(backups))
+	for _, backup := range backups {
+		result = append(result, BackupStatement{
+			Statement:       backup.Statement,
+			SourceSchema:    backup.SourceSchema,
+			SourceTableName: backup.SourceTable,
+			TargetTableName: backup.BackupTable,
+			StartPosition:   omniBackupPosition(backup.Start),
+			EndPosition:     omniBackupPosition(backup.End),
+		})
+	}
+	return result, nil
+}
+
+// omniBackupPosition is a backup's recorded position, nil when the engine could
+// not place the statement.
+func omniBackupPosition(p omnianalysis.Position) *storepb.Position {
+	if p == (omnianalysis.Position{}) {
+		return nil
+	}
+	return omniPosition(p)
+}
+
+func omniRestoreSQL(ctx context.Context, generator omnianalysis.RestoreGenerator, rCtx RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+	if err := ValidateBackupItem(backupItem); err != nil {
+		return "", err
+	}
+	sourceDatabase, backupDatabase, err := ParseBackupItemDatabases(backupItem)
+	if err != nil {
+		return "", err
+	}
+	return generator.RestoreSQL(ctx, omnianalysis.RestoreRequest{
+		Script:         statement,
+		SourceDatabase: sourceDatabase,
+		SourceSchema:   backupItem.SourceTable.Schema,
+		SourceTable:    backupItem.SourceTable.Table,
+		BackupDatabase: backupDatabase,
+		BackupSchema:   backupItem.TargetTable.Schema,
+		BackupTable:    backupItem.TargetTable.Table,
+		Start:          omnianalysis.Position{Line: int(backupItem.StartPosition.GetLine()), Column: int(backupItem.StartPosition.GetColumn())},
+		End:            omnianalysis.Position{Line: int(backupItem.EndPosition.GetLine()), Column: int(backupItem.EndPosition.GetColumn())},
+		CaseSensitive:  rCtx.IsCaseSensitive,
+		Catalog:        omniCatalog(rCtx.InstanceID, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc),
+	})
 }

@@ -88,7 +88,7 @@ func TestGenerateRestoreSQLSeam(t *testing.T) {
 	require.ErrorContains(t, err, "backup item is nil")
 
 	_, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_ORACLE, base.RestoreContext{}, script, item)
-	require.ErrorContains(t, err, "GetDatabaseMetadataFunc is required")
+	require.ErrorContains(t, err, "the catalog cannot look databases up")
 
 	unsyncedCtx := base.RestoreContext{
 		GetDatabaseMetadataFunc: func(_ context.Context, _, _ string) (string, *model.DatabaseMetadata, error) {

@@ -44,16 +44,16 @@ func TestRestoreSeam(t *testing.T) {
 		require.Contains(t, sql, `ON CONFLICT ON CONSTRAINT "t_pk" DO UPDATE SET "a" = EXCLUDED."a";`)
 	}
 
-	_, err := GenerateRestoreSQL(context.Background(), rCtx, script, nil)
+	_, err := base.GenerateRestoreSQL(context.Background(), storepb.Engine_POSTGRES, rCtx, script, nil)
 	require.ErrorContains(t, err, "backup item is nil")
 
-	_, err = GenerateRestoreSQL(context.Background(), base.RestoreContext{}, "DELETE FROM t;", &storepb.PriorBackupDetail_Item{
+	_, err = base.GenerateRestoreSQL(context.Background(), storepb.Engine_POSTGRES, base.RestoreContext{}, "DELETE FROM t;", &storepb.PriorBackupDetail_Item{
 		SourceTable:   &storepb.PriorBackupDetail_Item_Table{Database: "instances/i1/databases/db", Table: "t"},
 		TargetTable:   &storepb.PriorBackupDetail_Item_Table{Database: "instances/i1/databases/bb", Schema: "bb", Table: "b_t"},
 		StartPosition: &storepb.Position{Line: 1, Column: 0},
 		EndPosition:   &storepb.Position{Line: 1, Column: math.MaxInt32},
 	})
-	require.ErrorContains(t, err, "GetDatabaseMetadataFunc is required")
+	require.ErrorContains(t, err, "the catalog cannot look databases up")
 }
 
 func TestExtractPrependStatement(t *testing.T) {

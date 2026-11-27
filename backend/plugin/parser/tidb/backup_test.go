@@ -51,8 +51,8 @@ func TestTransformDMLToSelectSeam(t *testing.T) {
 	require.Equal(t, &store.Position{Line: 2, Column: 35}, result[0].EndPosition)
 	require.Contains(t, result[0].Statement, "CREATE TABLE `backupDB`.`_rollback_1_test` LIKE `db`.`test`;")
 
-	_, err = TransformDMLToSelect(context.Background(), base.TransformContext{}, "DELETE FROM test WHERE c = 1;", "db", "backupDB", "_rollback")
-	require.ErrorContains(t, err, "GetDatabaseMetadataFunc is not set")
+	_, err = base.TransformDMLToSelect(context.Background(), store.Engine_TIDB, base.TransformContext{}, "DELETE FROM test WHERE c = 1;", "db", "backupDB", "_rollback")
+	require.ErrorContains(t, err, "the catalog has no GetDatabase")
 }
 
 func TestBackupReadsReferencingDatabases(t *testing.T) {

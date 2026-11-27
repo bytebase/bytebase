@@ -20,8 +20,6 @@ func init() {
 	engine := base.OmniEngine(analysis.Engine, oraclecompletion.Engine)
 	engine.StatementTypes = GetStatementTypes
 	engine.QuerySpan = GetQuerySpan
-	engine.TransformDMLToSelect = TransformDMLToSelect
-	engine.GenerateRestoreSQL = GenerateRestoreSQL
 	base.Register(engine, storepb.Engine_ORACLE)
 }
 
