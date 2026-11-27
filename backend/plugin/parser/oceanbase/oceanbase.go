@@ -17,9 +17,8 @@ import (
 )
 
 func init() {
-	engine := base.OmniEngine(analysis.Engine)
+	engine := base.OmniEngine(analysis.Engine, omnicompletion.Engine)
 	engine.StatementTypes = GetStatementTypes
-	engine.Complete = Completion
 	engine.QuerySpan = GetQuerySpan
 	engine.ExtractChanged = extractChangedResources
 	base.Register(engine, storepb.Engine_OCEANBASE)
@@ -37,21 +36,6 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	return base.CollectOmniStatementTypes(asts, GetNode, "expected AST for OceanBase", analysis.StatementTypeOf)
-}
-
-// Completion provides auto-complete candidates for OceanBase statements using
-// the omni OceanBase completion engine.
-func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	loadDB, listDBs := base.MySQLFamilyDatabaseLoaders(cCtx)
-	raw := omnicompletion.CompleteSession(ctx, omnicompletion.SessionConfig{
-		ReadOnly:          cCtx.Scene == base.SceneTypeQuery,
-		DefaultDatabase:   cCtx.DefaultDatabase,
-		LoadDatabase:      loadDB,
-		ListDatabaseNames: listDBs,
-	}, statement, caretLine, caretOffset)
-	return base.ConvertOmniCandidates(raw, func(c omnicompletion.Candidate) (string, omnicompletion.CandidateType, string, string) {
-		return c.Text, c.Type, c.Definition, c.Comment
-	}, base.CompareCandidate), nil
 }
 
 // GetQuerySpan returns the query span for the given statement.

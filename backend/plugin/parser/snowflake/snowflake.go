@@ -5,6 +5,7 @@ import (
 
 	"github.com/bytebase/omni/snowflake/analysis"
 	omniast "github.com/bytebase/omni/snowflake/ast"
+	sfcompletion "github.com/bytebase/omni/snowflake/completion"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -12,8 +13,7 @@ import (
 )
 
 func init() {
-	engine := base.OmniEngine(analysis.Engine)
-	engine.Complete = Completion
+	engine := base.OmniEngine(analysis.Engine, sfcompletion.Engine)
 	engine.QuerySpan = GetQuerySpan
 	base.Register(engine, storepb.Engine_SNOWFLAKE)
 }

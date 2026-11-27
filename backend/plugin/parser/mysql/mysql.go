@@ -15,9 +15,8 @@ import (
 )
 
 func init() {
-	engine := base.OmniEngine(analysis.Engine)
+	engine := base.OmniEngine(analysis.Engine, omnicompletion.Engine)
 	engine.StatementTypes = GetStatementTypes
-	engine.Complete = Completion
 	engine.QuerySpan = GetQuerySpan
 	engine.ExtractChanged = extractChangedResources
 	engine.TransformDMLToSelect = TransformDMLToSelect
@@ -56,21 +55,6 @@ func GetStatementTypesWithPositions(asts []base.AST) ([]StatementTypeWithPositio
 		}
 		return []storepb.StatementType{base.OmniStatementType(analysis.StatementTypeOf(node))}, base.ASTSource(a), true, nil
 	})
-}
-
-// Completion provides auto-complete candidates for MySQL statements using the
-// omni MySQL completion engine.
-func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	loadDB, listDBs := base.MySQLFamilyDatabaseLoaders(cCtx)
-	raw := omnicompletion.CompleteSession(ctx, omnicompletion.SessionConfig{
-		ReadOnly:          cCtx.Scene == base.SceneTypeQuery,
-		DefaultDatabase:   cCtx.DefaultDatabase,
-		LoadDatabase:      loadDB,
-		ListDatabaseNames: listDBs,
-	}, statement, caretLine, caretOffset)
-	return base.ConvertOmniCandidates(raw, func(c omnicompletion.Candidate) (string, omnicompletion.CandidateType, string, string) {
-		return c.Text, c.Type, c.Definition, c.Comment
-	}, base.CompareCandidate), nil
 }
 
 // GetQuerySpan returns the query span for the given statement.

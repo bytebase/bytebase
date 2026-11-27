@@ -18,9 +18,8 @@ import (
 var versionRe = regexp.MustCompile(`(\d+)\.(\d+)`)
 
 func init() {
-	engine := base.OmniEngine(analysis.Engine)
+	engine := base.OmniEngine(analysis.Engine, oraclecompletion.Engine)
 	engine.StatementTypes = GetStatementTypes
-	engine.Complete = Completion
 	engine.QuerySpan = GetQuerySpan
 	engine.ExtractChanged = extractChangedResources
 	engine.TransformDMLToSelect = TransformDMLToSelect
@@ -56,37 +55,6 @@ func ParseVersion(banner string) (*Version, error) {
 // STATEMENT_TYPE_UNSPECIFIED for one omni does not classify.
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	return base.CollectOmniStatementTypes(asts, GetNode, "expected Oracle omni AST", analysis.StatementTypeOf)
-}
-
-// Completion returns Oracle auto-completion candidates backed by omni's
-// session-aware Oracle completer.
-func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	loadSchema, listSchemas := base.CompletionMetadataLoaders(cCtx)
-	raw := oraclecompletion.CompleteSession(ctx, oraclecompletion.SessionConfig{
-		ReadOnly:        cCtx.Scene == base.SceneTypeQuery,
-		DefaultSchema:   cCtx.DefaultDatabase,
-		LoadSchema:      loadSchema,
-		ListSchemaNames: listSchemas,
-	}, statement, caretLine, caretOffset)
-	if raw == nil {
-		return nil, nil
-	}
-	return base.DeduplicateCandidates(raw, func(c oraclecompletion.Candidate) (base.Candidate, bool) {
-		typ := base.OmniCandidateType(c.Type)
-		if c.Type == oraclecompletion.CandidateVariable {
-			// Oracle package variables are user variables rather than MySQL-style system variables.
-			typ = base.CandidateTypeUserVar
-		}
-		if typ == base.CandidateTypeNone {
-			return base.Candidate{}, false
-		}
-		return base.Candidate{
-			Type:       typ,
-			Text:       c.Text,
-			Definition: c.Definition,
-			Comment:    c.Comment,
-		}, true
-	}, base.CompareCandidate), nil
 }
 
 func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, _ string, _ bool) (*base.QuerySpan, error) {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/bytebase/omni/starrocks/analysis"
 	"github.com/bytebase/omni/starrocks/ast"
+	starrockscompletion "github.com/bytebase/omni/starrocks/completion"
 	"github.com/bytebase/omni/starrocks/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -13,9 +14,8 @@ import (
 )
 
 func init() {
-	engine := base.OmniEngine(analysis.Engine)
+	engine := base.OmniEngine(analysis.Engine, starrockscompletion.Engine)
 	engine.Parse = parseStarRocksStatements
-	engine.Complete = Completion
 	engine.QuerySpan = GetQuerySpan
 	engine.ExtractChanged = extractChangedResources
 	base.Register(engine, storepb.Engine_STARROCKS)

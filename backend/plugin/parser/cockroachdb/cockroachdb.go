@@ -1,8 +1,6 @@
 package cockroachdb
 
 import (
-	"context"
-
 	"github.com/bytebase/omni/cockroachdb/analysis"
 	crdbcompletion "github.com/bytebase/omni/cockroachdb/completion"
 	"github.com/pkg/errors"
@@ -13,25 +11,12 @@ import (
 )
 
 func init() {
-	engine := base.OmniEngine(analysis.Engine)
+	engine := base.OmniEngine(analysis.Engine, crdbcompletion.Engine)
 	engine.Parse = parseCockroachDBStatements
 	engine.StatementTypes = GetStatementTypes
-	engine.Complete = completion
 	engine.QuerySpan = getQuerySpan
 	engine.ExtractChanged = extractChangedResources
 	base.Register(engine, storepb.Engine_COCKROACHDB)
-}
-
-func completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	loadDB, _ := base.CompletionMetadataLoaders(cCtx)
-	candidates := crdbcompletion.CompleteSession(ctx, crdbcompletion.SessionConfig{
-		DefaultDatabase: cCtx.DefaultDatabase,
-		DefaultSchema:   cCtx.DefaultSchema,
-		LoadDatabase:    loadDB,
-	}, statement, caretLine, caretOffset)
-	return base.ConvertOmniCandidates(candidates, func(c crdbcompletion.Candidate) (string, crdbcompletion.CandidateType, string, string) {
-		return c.Text, c.Type, c.Definition, c.Comment
-	}, base.CompareCandidateByTypeText), nil
 }
 
 // AST is the AST implementation for CockroachDB parser.
