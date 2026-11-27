@@ -145,7 +145,7 @@ func TestCompletion_Seam(t *testing.T) {
 	require.True(t, hasCandidate(gotQueryStart, base.CandidateTypeKeyword, "SELECT"), "got %v", gotQueryStart)
 	gotDrop, err := base.Completion(context.Background(), storepb.Engine_ORACLE, queryCtx, "DROP TABLE ", 1, len("DROP TABLE "))
 	require.NoError(t, err)
-	require.Nil(t, gotDrop)
+	require.Empty(t, gotDrop)
 
 	// Nil or failing metadata callbacks degrade cleanly without object candidates.
 	for _, badCtx := range []base.CompletionContext{

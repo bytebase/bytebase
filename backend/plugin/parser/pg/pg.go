@@ -1,8 +1,6 @@
 package pg
 
 import (
-	"context"
-
 	"github.com/bytebase/omni/pg/analysis"
 	"github.com/bytebase/omni/pg/ast"
 	pgcompletion "github.com/bytebase/omni/pg/completion"
@@ -12,8 +10,7 @@ import (
 )
 
 func init() {
-	engine := base.OmniEngine(analysis.Engine)
-	engine.Complete = Completion
+	engine := base.OmniEngine(analysis.Engine, pgcompletion.Engine)
 	engine.QuerySpan = GetQuerySpan
 	engine.ExtractChanged = extractChangedResources
 	engine.TransformDMLToSelect = TransformDMLToSelect
@@ -33,19 +30,4 @@ type StatementTypeWithPosition = base.StatementTypeWithPosition
 // The line numbers are one-based.
 func GetStatementTypes(asts []base.AST) ([]StatementTypeWithPosition, error) {
 	return base.OmniStatementTypesWithPosition(analysis.Engine, asts)
-}
-
-// Completion returns PostgreSQL auto-completion candidates backed by omni's
-// session-aware PostgreSQL completer.
-func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	loadDB, _ := base.CompletionMetadataLoaders(cCtx)
-	candidates := pgcompletion.CompleteSession(ctx, pgcompletion.SessionConfig{
-		DefaultDatabase: cCtx.DefaultDatabase,
-		DefaultSchema:   cCtx.DefaultSchema,
-		LoadDatabase:    loadDB,
-	}, statement, caretLine, caretOffset)
-
-	return base.ConvertOmniCandidates(candidates, func(c pgcompletion.Candidate) (string, pgcompletion.CandidateType, string, string) {
-		return c.Text, c.Type, c.Definition, c.Comment
-	}, base.CompareCandidateByTypeText), nil
 }

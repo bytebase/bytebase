@@ -46,7 +46,7 @@ func TestCompletionSeam(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, fromCands, base.Candidate{Type: base.CandidateTypeTable, Text: "Music"})
 
-	// Column completion with multi-line + multi-byte UTF-8 lineOffsetToBytePos.
+	// Column completion on a line after multi-byte UTF-8.
 	colStmt := "-- 音乐\nSELECT  FROM Music"
 	colCands, err := base.Completion(context.Background(), storepb.Engine_DYNAMODB, base.CompletionContext{
 		Scene:           base.SceneTypeAll,

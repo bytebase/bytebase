@@ -14,10 +14,9 @@ import (
 )
 
 func init() {
-	engine := base.OmniEngine(analysis.Engine)
+	engine := base.OmniEngine(analysis.Engine, omnicompletion.Engine)
 	engine.Split = SplitSQL
 	engine.Parse = parseMongoShell
-	engine.Complete = Completion
 	engine.QuerySpan = GetQuerySpan
 	base.Register(engine, storepb.Engine_MONGODB)
 }
@@ -81,29 +80,6 @@ func convertStatements(input string, stmts []mongo.Statement) []base.ParsedState
 		})
 	}
 	return result
-}
-
-// Completion is the entry point for MongoDB code completion.
-func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	loadDatabase, _ := base.CompletionMetadataLoaders(cCtx)
-
-	candidates := omnicompletion.CompleteSession(ctx, omnicompletion.SessionConfig{
-		DefaultDatabase: cCtx.DefaultDatabase,
-		LoadDatabase:    loadDatabase,
-	}, statement, caretLine, caretOffset)
-
-	return base.DeduplicateCandidates(candidates, func(c omnicompletion.Candidate) (base.Candidate, bool) {
-		typ := base.OmniCandidateType(c.Type)
-		if typ == base.CandidateTypeNone {
-			typ = base.CandidateTypeFunction
-		}
-		return base.Candidate{
-			Type:       typ,
-			Text:       c.Text,
-			Definition: c.Definition,
-			Comment:    c.Comment,
-		}, true
-	}, base.CompareCandidate), nil
 }
 
 // GetQuerySpan returns a QuerySpan for a MongoDB shell statement, classifying

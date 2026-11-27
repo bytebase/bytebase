@@ -5,6 +5,7 @@ import (
 
 	"github.com/bytebase/omni/doris/analysis"
 	"github.com/bytebase/omni/doris/ast"
+	doriscompletion "github.com/bytebase/omni/doris/completion"
 	"github.com/bytebase/omni/doris/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -13,9 +14,8 @@ import (
 )
 
 func init() {
-	engine := base.OmniEngine(analysis.Engine)
+	engine := base.OmniEngine(analysis.Engine, doriscompletion.Engine)
 	engine.Parse = parseDorisStatements
-	engine.Complete = Completion
 	engine.QuerySpan = GetQuerySpan
 	engine.ExtractChanged = extractChangedResources
 	base.Register(engine, storepb.Engine_DORIS)
