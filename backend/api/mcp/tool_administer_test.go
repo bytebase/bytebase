@@ -450,6 +450,14 @@ func TestAdministerWorkspaceRefusesBeforeAsking(t *testing.T) {
 		"two stored rules, one condition": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), prodRule, changeRule("Again", "resource.environment_id == 'prod'")},
 			arguments: updateArguments(approvalBody(t, fallbackRule(), prodRule)),
 			want:      []string{"DUPLICATE_CONDITION", "two stored rules", "https://bb.example.com/custom-approval"}},
+		// The API takes a rule with no condition, and the form must not read
+		// two of them as no duplicate: it would call the renamed rule removed.
+		"two requested rules with no condition, and a rename": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), prodRule},
+			arguments: updateArguments(approvalBody(t, fallbackRule(), changeRule("Renamed", "resource.environment_id == 'prod'", "roles/workspaceDBA"), changeRule("One", ""), changeRule("Two", ""))),
+			want:      []string{"DUPLICATE_CONDITION", "two requested rules", "keep one rule per condition"}},
+		"two stored rules with no condition": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), prodRule, changeRule("One", ""), changeRule("Two", "")},
+			arguments: updateArguments(approvalBody(t, fallbackRule(), prodRule)),
+			want:      []string{"DUPLICATE_CONDITION", "two stored rules", "https://bb.example.com/custom-approval"}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := &approvalMock{}

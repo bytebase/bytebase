@@ -429,6 +429,30 @@ func TestAdministerMaskingRulesRefusesBeforeAsking(t *testing.T) {
 	}
 }
 
+// The entry refuses a requested rule with no condition before the rules are
+// compared, so only the comparison itself can see two of them.
+func TestMaskingRulesWithNoConditionAreADuplicateToo(t *testing.T) {
+	types, err := semanticTypesFromSetting(nil)
+	require.NoError(t, err)
+	prod := maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default")
+	empty := []*v1pb.MaskingRulePolicy_MaskingRule{maskingRule("r2", "One", "", "bb.default"), maskingRule("r3", "Two", "", "bb.default")}
+	for name, tc := range map[string]struct {
+		stored, requested []*v1pb.MaskingRulePolicy_MaskingRule
+		want              string
+	}{
+		"stored":    {stored: slices.Concat([]*v1pb.MaskingRulePolicy_MaskingRule{prod}, empty), requested: []*v1pb.MaskingRulePolicy_MaskingRule{prod}, want: `two stored masking rules have the condition ""`},
+		"requested": {stored: []*v1pb.MaskingRulePolicy_MaskingRule{prod}, requested: slices.Concat([]*v1pb.MaskingRulePolicy_MaskingRule{prod}, empty), want: `two requested masking rules have the condition ""`},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := diffMaskingRules(tc.stored, tc.requested, types, "")
+			var refused *toolError
+			require.ErrorAs(t, err, &refused)
+			require.Equal(t, "DUPLICATE_CONDITION", refused.Code)
+			require.Contains(t, refused.Message, tc.want)
+		})
+	}
+}
+
 func TestAdministerMaskingRulesRefusesAnAnswerOverRulesThatChanged(t *testing.T) {
 	mock := &maskingMock{}
 	mock.setStored(maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default"))

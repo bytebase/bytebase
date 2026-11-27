@@ -416,16 +416,16 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 			Suggestion: "give each rule for database changes the source CHANGE_DATABASE, and send every rule of another source as GetSetting returns it, in its order; or change the rules signed in to the Bytebase console: " + link,
 		}
 	}
-	storedByCondition, duplicate := rulesByCondition(storedDB)
-	if duplicate != "" {
+	storedByCondition, duplicate, shared := rulesByCondition(storedDB)
+	if shared {
 		return nil, &toolError{
 			Code:       "DUPLICATE_CONDITION",
 			Message:    fmt.Sprintf("two stored rules for database changes have the condition %q, so the form could not tell which one changes", duplicate),
 			Suggestion: "change the rules signed in to the Bytebase console: " + link,
 		}
 	}
-	requestedByCondition, duplicate := rulesByCondition(requestedDB)
-	if duplicate != "" {
+	requestedByCondition, duplicate, shared := rulesByCondition(requestedDB)
+	if shared {
 		return nil, &toolError{
 			Code:       "DUPLICATE_CONDITION",
 			Message:    fmt.Sprintf("two requested rules for database changes have the condition %q, so the form could not tell which one changes", duplicate),
@@ -697,18 +697,20 @@ func splitApprovalRules(rules []*v1pb.WorkspaceApprovalSetting_Rule) (other, dat
 	return other, database
 }
 
-// rulesByCondition maps rules by their condition. It returns the first
-// condition two rules share, if any.
-func rulesByCondition[R interface{ GetCondition() *expr.Expr }](rules []R) (map[string]R, string) {
-	byCondition := make(map[string]R, len(rules))
+// rulesByCondition maps rules by their condition. shared reports that two
+// rules have the condition duplicate, which can be the empty one: the API
+// takes an approval rule with no condition
+// (common.ValidateApprovalExprForSource).
+func rulesByCondition[R interface{ GetCondition() *expr.Expr }](rules []R) (byCondition map[string]R, duplicate string, shared bool) {
+	byCondition = make(map[string]R, len(rules))
 	for _, rule := range rules {
 		condition := rule.GetCondition().GetExpression()
 		if _, ok := byCondition[condition]; ok {
-			return nil, condition
+			return nil, condition, true
 		}
 		byCondition[condition] = rule
 	}
-	return byCondition, ""
+	return byCondition, "", false
 }
 
 // longestCommonOrder marks the elements of b that stay in the order a has

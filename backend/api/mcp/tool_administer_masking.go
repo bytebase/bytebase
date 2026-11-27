@@ -354,16 +354,16 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 			}
 		}
 	}
-	storedByCondition, duplicate := rulesByCondition(stored)
-	if duplicate != "" {
+	storedByCondition, duplicate, shared := rulesByCondition(stored)
+	if shared {
 		return nil, &toolError{
 			Code:       "DUPLICATE_CONDITION",
 			Message:    fmt.Sprintf("two stored masking rules have the condition %q, so the form could not tell which one changes", duplicate),
 			Suggestion: "change the rules signed in to the Bytebase console: " + link,
 		}
 	}
-	requestedByCondition, duplicate := rulesByCondition(requested)
-	if duplicate != "" {
+	requestedByCondition, duplicate, shared := rulesByCondition(requested)
+	if shared {
 		return nil, &toolError{
 			Code:       "DUPLICATE_CONDITION",
 			Message:    fmt.Sprintf("two requested masking rules have the condition %q, and only the first could ever match", duplicate),
