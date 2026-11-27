@@ -107,6 +107,51 @@ test.each(["database", "schema", "project", "owner", "workspace", "disconnect"] 
   expect(result.current?.questions ?? []).not.toContain("Old database question?");
 });
 
+test("regenerates suggestions when revisiting a database whose late response was discarded", async () => {
+  let finishOld!: (value: ReturnType<typeof response>) => void;
+  chat.mockImplementationOnce(() => new Promise(resolve => { finishOld = resolve; }));
+  const { result, rerender } = renderHook(value => useSqlEditorSuggestions(value), { initialProps: params });
+  await waitFor(() => expect(chat).toHaveBeenCalledTimes(1));
+
+  const otherConnection = { ...connection, database: "instances/main/databases/other" };
+  snapshot = { version: 1, project: otherConnection.project, connection: otherConnection };
+  chat.mockResolvedValue(response("How many rows are in the other database?"));
+  rerender({ ...params, connection: otherConnection });
+  await waitFor(() => expect(result.current.questions).toEqual(["How many rows are in the other database?"]));
+  await act(async () => finishOld(response("A discarded question?")));
+  expect(result.current.questions).toEqual(["How many rows are in the other database?"]);
+
+  snapshot = { version: 1, project: connection.project, connection };
+  chat.mockResolvedValue(response("A fresh question for the original database?"));
+  rerender(params);
+  await waitFor(() => expect(result.current.questions).toEqual(["A fresh question for the original database?"]));
+  expect(result.current.status).toBe("ready");
+  expect(chat).toHaveBeenCalledTimes(3);
+});
+
+test("an expired request completion does not evict a newer in-flight request", async () => {
+  vi.useFakeTimers();
+  const finishes: ((value: ReturnType<typeof response>) => void)[] = [];
+  chat.mockImplementation(() => new Promise(resolve => { finishes.push(resolve); }));
+  const first = renderHook(() => useSqlEditorSuggestions(params));
+  await act(async () => {});
+  expect(chat).toHaveBeenCalledTimes(1);
+  await act(async () => { await vi.advanceTimersByTimeAsync(15_000); });
+  expect(first.result.current.status).toBe("fallback");
+  first.unmount();
+
+  const second = renderHook(() => useSqlEditorSuggestions(params));
+  expect(chat).toHaveBeenCalledTimes(2);
+  await act(async () => finishes[0](response("An expired question?")));
+  expect(second.result.current.status).toBe("loading");
+  second.unmount();
+
+  const reopened = renderHook(() => useSqlEditorSuggestions(params));
+  expect(chat).toHaveBeenCalledTimes(2);
+  await act(async () => finishes[1](response("The replacement question?")));
+  expect(reopened.result.current).toMatchObject({ status: "ready", questions: ["The replacement question?"] });
+});
+
 test("invalidates immediately and regenerates on metadata and locale changes", async () => {
   const { result, rerender } = renderHook(({ locale }) => useSqlEditorSuggestions({ ...params, locale }), { initialProps: { locale: "en-US" } });
   await waitFor(() => expect(result.current?.questions?.length).toBe(1));

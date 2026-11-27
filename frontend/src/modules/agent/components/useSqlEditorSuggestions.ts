@@ -218,11 +218,11 @@ export function useSqlEditorSuggestions({
         .then((response) => parseSqlEditorSuggestions(response.content ?? ""))
         .catch(() => [])
         .then((questions) => {
-          if (
-            requests.get(requestKey) !== request ||
-            !isAgentSqlSuggestionSourceCurrent(source)
-          )
+          if (requests.get(requestKey) !== request) return undefined;
+          if (!isAgentSqlSuggestionSourceCurrent(source)) {
+            requests.delete(requestKey);
             return undefined;
+          }
           if (questions.length) request.questions = questions;
           else requests.delete(requestKey);
           return questions;
