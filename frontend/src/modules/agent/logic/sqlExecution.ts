@@ -18,6 +18,7 @@ import { supportsAgentRunRecovery } from "./runOwnership";
 import type { AgentSqlEditorSnapshot } from "./sqlEditorContext";
 import {
   type AgentSqlActionSource,
+  bindAgentCompletedQueryActions,
   bindAgentSqlBlockActions,
   canBeginAgentSqlResponseAction,
   getCurrentAgentSqlActionSource,
@@ -142,7 +143,10 @@ export async function beginSqlResponseAction(
     const msg = messages.find((m) => m.id === source.messageId);
     return (
       !!msg &&
-      bindAgentSqlBlockActions(msg, messages).some((x) => isEqual(source, x))
+      (source.queryResultMessageId
+        ? bindAgentCompletedQueryActions(msg, messages)
+        : bindAgentSqlBlockActions(msg, messages)
+      ).some((x) => isEqual(source, x))
     );
   };
   const controller = new AbortController();

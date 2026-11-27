@@ -49,7 +49,12 @@ Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
   value: () => ({ measureText: (text: string) => ({ width: text.length * 8 }) }),
 });
 
-const renderCard = (operationId: string, result: string, name = "call_api") => {
+const renderCard = (
+  operationId: string,
+  result: string,
+  name = "call_api",
+  hideQueryPreview = false
+) => {
   const container = document.createElement("div");
   const root = createRoot(container);
   act(() => {
@@ -61,6 +66,7 @@ const renderCard = (operationId: string, result: string, name = "call_api") => {
           arguments: JSON.stringify({ operationId }),
         }}
         result={result}
+        hideQueryPreview={hideQueryPreview}
       />
     );
   });
@@ -663,6 +669,29 @@ describe("ToolCallCard", () => {
     expect(container.querySelector("pre")).toBeNull();
 
     unmount();
+  });
+
+  test("keeps query activity details without duplicating an answer-owned preview", () => {
+    const { container, unmount } = renderCard(
+      "SQLService/Query",
+      queryResult,
+      "call_api",
+      true
+    );
+    try {
+      expect(container.querySelector("[data-agent-query-result]")).toBeNull();
+      expect(container.querySelector("button")).toHaveAttribute(
+        "aria-expanded",
+        "false"
+      );
+      expect(container.querySelector("button .text-success")).not.toBeNull();
+      act(() => (container.querySelector("button") as HTMLElement).click());
+      expect(container.querySelectorAll("pre")[1]).toHaveTextContent("Ada");
+      expect(container.querySelectorAll("pre")[1]).toHaveTextContent("Grace");
+      expect(container.querySelector("[data-agent-query-result]")).toBeNull();
+    } finally {
+      unmount();
+    }
   });
 
   test("switches a SQL query result between table and vertical views", () => {

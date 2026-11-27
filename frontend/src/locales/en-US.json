@@ -453,9 +453,11 @@
       "actions": "SQL actions",
       "autosave": "SQL Editor may automatically create or update a Saved Query after this edit.",
       "copy": "Copy SQL",
+      "executed-sql": "Executed SQL",
       "insert": "Insert",
       "readonly": "This SQL editor is read-only.",
       "replace-selection": "Replace selection",
+      "run-again": "Run again",
       "run-query": "Run query",
       "stale": "The original editor or chat is no longer ready for this action.",
       "unavailable": "The original SQL editor is unavailable."

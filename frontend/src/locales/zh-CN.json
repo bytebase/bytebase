@@ -453,9 +453,11 @@
       "actions": "SQL 操作",
       "autosave": "编辑后，SQL 编辑器可能会自动创建或更新已保存查询。",
       "copy": "复制 SQL",
+      "executed-sql": "已执行的 SQL",
       "insert": "插入",
       "readonly": "此 SQL 编辑器为只读。",
       "replace-selection": "替换所选内容",
+      "run-again": "再次运行",
       "run-query": "运行查询",
       "stale": "原编辑器或对话当前无法执行此操作。",
       "unavailable": "原 SQL 编辑器不可用。"

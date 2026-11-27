@@ -50,6 +50,7 @@ import {
   wasDeniedQueryRequestDraftDelivered,
 } from "@/modules/sql-editor/model/accessGrantDraft";
 import { useAppStore } from "@/stores/app";
+import { extractDatabaseResourceName } from "@/utils/v1/database";
 import {
   actionReceiptKey,
   normalizeActionReceipts,
@@ -58,6 +59,7 @@ import {
   type AgentApiAttempt,
   isAgentApiAttemptUncertain,
 } from "../logic/apiAttempt";
+import { getAgentCompletedQueries } from "../logic/completedQueries";
 import {
   type AccessGrantDraft,
   type DeniedQueryRequestDraft,
@@ -96,6 +98,7 @@ import { getAgentRunFeedback } from "../logic/runFeedback";
 import { supportsAgentRunRecovery } from "../logic/runOwnership";
 import {
   type AgentSqlActionSource,
+  bindAgentCompletedQueryActions,
   bindAgentSqlBlockActions,
   isAgentSqlActionChat,
   readAgentSqlBlocks,
@@ -129,6 +132,7 @@ import {
   AgentPrimaryAction,
   AgentPrimaryActionLink,
 } from "./AgentPrimaryAction";
+import { AgentQueryResult } from "./AgentQueryResult";
 import { AgentSqlBlock } from "./AgentSqlBlock";
 import { AgentSqlFixReviewAction } from "./AgentSqlFixReviewAction";
 import { AgentStorageStatus } from "./AgentStorageStatus";
@@ -1040,6 +1044,49 @@ export function AgentChat({
     }
     return answers;
   }, [messages]);
+  const completedQueryViews = useMemo(() => {
+    const byAnswerId = new Map<
+      string,
+      ReturnType<typeof getAgentCompletedQueries>
+    >();
+    const sourcesByAnswerId = new Map<
+      string,
+      Map<string, AgentSqlActionSource>
+    >();
+    const promotedResults = new Set<string>();
+    const claimedResults = new Set<string>();
+    if (!passive) {
+      for (const message of messages) {
+        if (
+          message.role !== "assistant" ||
+          !message.content ||
+          message.toolCalls?.length
+        )
+          continue;
+        const queries = getAgentCompletedQueries(message, messages).filter(
+          (query) => !claimedResults.has(query.resultMessageId)
+        );
+        if (!queries.length) continue;
+        byAnswerId.set(message.id, queries);
+        sourcesByAnswerId.set(
+          message.id,
+          new Map(
+            bindAgentCompletedQueryActions(message, messages).map((source) => [
+              source.queryResultMessageId!,
+              source,
+            ])
+          )
+        );
+        for (const query of queries) {
+          claimedResults.add(query.resultMessageId);
+          promotedResults.add(
+            `${query.callMessageId}:${query.toolCallIndex}:${query.resultMessageId}`
+          );
+        }
+      }
+    }
+    return { byAnswerId, sourcesByAnswerId, promotedResults };
+  }, [messages, passive]);
   const latestContinuePrompts = responseActionsByMessageId
     .get(messages.at(-1)?.id ?? "")
     ?.filter((action) => action.kind === "continue")
@@ -1417,6 +1464,8 @@ export function AgentChat({
           onRetry;
         const isPending = msg.metadata?.pending === true;
         const sqlBlocks = sqlBlocksByMessageId.get(msg.id);
+        const completedQueries =
+          completedQueryViews.byAnswerId.get(msg.id) ?? [];
         const actions = responseActionsByMessageId.get(msg.id) ?? [];
         const actionReceipts = normalizeActionReceipts(
           msg.metadata?.actionReceipts,
@@ -1578,6 +1627,14 @@ export function AgentChat({
                             const isSqlBlock =
                               !!block &&
                               block.end === node?.position?.end.offset;
+                            if (
+                              isSqlBlock &&
+                              completedQueries.some(
+                                (query) =>
+                                  query.statement.trim() === block.sql.trim()
+                              )
+                            )
+                              return null;
                             const pre = (
                               <AgentCodeBlockContext.Provider value={true}>
                                 <pre
@@ -1676,6 +1733,50 @@ export function AgentChat({
                       >
                         {msg.content}
                       </ReactMarkdown>
+                      {completedQueries.map((query) => {
+                        const source = completedQueryViews.sourcesByAnswerId
+                          .get(msg.id)
+                          ?.get(query.resultMessageId);
+                        return (
+                          <div
+                            key={query.resultMessageId}
+                            className="min-w-0"
+                            data-agent-completed-query
+                          >
+                            <div
+                              className="mt-2 break-words text-xs text-control-light"
+                              title={query.database}
+                            >
+                              {t("common.database")}:{" "}
+                              {
+                                extractDatabaseResourceName(query.database)
+                                  .databaseName
+                              }
+                            </div>
+                            <AgentQueryResult preview={query.preview} />
+                            <AgentSqlBlock
+                              executed
+                              sql={query.statement}
+                              source={
+                                source &&
+                                currentChat &&
+                                isAgentSqlActionChat(
+                                  currentChat,
+                                  source.snapshot,
+                                  workspaceName
+                                )
+                                  ? source
+                                  : undefined
+                              }
+                              onRun={onRun}
+                            >
+                              <pre className="m-0 max-w-full overflow-x-auto bg-background p-2 text-xs whitespace-pre">
+                                <code>{query.statement}</code>
+                              </pre>
+                            </AgentSqlBlock>
+                          </div>
+                        );
+                      })}
                       <EvidenceReferences evidence={msg.metadata?.evidence} />
                       {!currentChat?.archived &&
                         !msg.metadata?.pending &&
@@ -1757,6 +1858,9 @@ export function AgentChat({
                     <ToolCallCard
                       key={`${msg.id}:${toolCall.id}:${index}`}
                       toolCall={toolCall}
+                      hideQueryPreview={completedQueryViews.promotedResults.has(
+                        `${msg.id}:${index}:${toolCallViews.byMessageId.get(msg.id)?.[index]?.result?.id}`
+                      )}
                       result={
                         toolCallViews.byMessageId.get(msg.id)?.[index]?.result
                           ?.content

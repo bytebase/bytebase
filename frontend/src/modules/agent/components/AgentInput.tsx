@@ -3754,7 +3754,7 @@ export function AgentInput({
         return;
     }
     const sourceThread =
-      sqlScope && (!chat || !chat.context)
+      sqlScope && chat && !chat.context
         ? store.selectOrCreateChatForContext(
             sqlScope,
             currentPage,
@@ -3762,7 +3762,8 @@ export function AgentInput({
           )
         : store.ensureCurrentChat(
             currentPage,
-            (landingDraft ? store.landingContext : undefined) ??
+            sqlScope ??
+              (landingDraft ? store.landingContext : undefined) ??
               getCurrentChatContext(),
             workspace?.name
           );

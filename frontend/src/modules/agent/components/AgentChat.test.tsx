@@ -4949,6 +4949,59 @@ describe("AgentChat", () => {
     unmount();
   });
 
+  test("presents a completed query once inside its final answer, with executed SQL secondary", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Show records" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      toolCalls: [{
+        id: "completed-query",
+        name: "call_api",
+        arguments: JSON.stringify({ operationId: "SQLService/Query", body: {
+          name: "instances/example/databases/sample", statement: "SELECT private_value FROM records;",
+        } }),
+      }],
+      metadata: { runId: "query-run" },
+    });
+    store.addMessage({
+      chatId: chat.id,
+      role: "tool",
+      toolCallId: "completed-query",
+      content: JSON.stringify({
+        status: 200,
+        agentExecution: agentApiExecutionEvidence("rpc-success"),
+        response: { results: [{
+          columnNames: ["private_value"], columnTypeNames: ["TEXT"],
+          rows: [{ values: [{ stringValue: "******" }] }],
+          masked: [{ maskingRuleId: "example-rule" }],
+        }] },
+      }),
+      metadata: { runId: "query-run" },
+    });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Returned one masked row.\n\n```sql\nSELECT private_value FROM records;\n```\n\nValues remain masked.",
+      metadata: { runId: "query-run" },
+    });
+    const view = renderIntoContainer(<AgentChat />);
+    view.render();
+    try {
+      const answer = view.container.querySelector("[data-agent-answer]")!;
+      expect(answer.querySelector("[data-agent-query-result]")).not.toBeNull();
+      expect(view.container.querySelectorAll("[data-agent-query-result]")).toHaveLength(1);
+      expect(answer.textContent).toContain("******");
+      expect(answer.textContent).toContain("Values remain masked.");
+      expect(answer.querySelectorAll("[data-agent-sql-block]")).toHaveLength(1);
+      expect(answer.querySelector("pre")).toBeNull();
+      const details = within(answer as HTMLElement).getByRole("button", { name: "agent.sql-block.executed-sql" });
+      fireEvent.click(details);
+      expect(answer.querySelector("pre")?.textContent).toBe("SELECT private_value FROM records;");
+    } finally { view.unmount(); }
+  });
+
   test("routes AI configuration recovery to general settings with intro", () => {
     const chat = useAgentStore.getState().ensureCurrentChat();
     useAgentStore.setState((state) => ({

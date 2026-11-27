@@ -5005,6 +5005,96 @@ describe("AgentWindow", () => {
     } finally { view.unmount(); host.cleanup(); }
   });
 
+  test.each([
+    { connected: false, action: "send" },
+    { connected: true, action: "send" },
+    { connected: false, action: "starter" },
+    { connected: true, action: "starter" },
+  ] as const)("New Chat starts a separate SQL conversation with connected=$connected through $action", async ({ connected, action }) => {
+    const store = useAgentStore.getState();
+    const previous = store.createChat({ context: "projects/orders", workspaceName: mocks.workspace.name });
+    store.addMessage({ chatId: previous.id, role: "user", content: "Earlier SQL question" });
+    store.setDraft(previous.id, { text: "Keep the earlier draft" });
+    useAgentStore.setState((state) => ({ chats: state.chats.map((chat) => chat.id === previous.id ? { ...chat, totalTokensUsed: 1234 } : chat) }));
+    const previousMessages = structuredClone(store.getMessages(previous.id));
+    const previousDraft = structuredClone(store.getDraft(previous.id));
+    const count = useAgentStore.getState().chats.length;
+    mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+    const snapshot: AgentSqlEditorSnapshot = connected ? sqlSnapshot() : { version: 1, project: "projects/orders" };
+    if (connected) mocks.getOrFetchDatabaseMetadata.mockRejectedValueOnce(new Error("Metadata unavailable"));
+    const host = sqlHost();
+    host.update({ kind: "ready", snapshot });
+    const view = renderIntoContainer(<AgentWindow />);
+    try {
+      view.render();
+      act(() => document.querySelector<HTMLButtonElement>('[aria-label="agent.new-chat"]')!.click());
+      expect(useAgentStore.getState().currentChatId).toBeNull();
+      if (action === "send") {
+        fireEvent.change(document.querySelector<HTMLTextAreaElement>("[data-agent-contextual-input] textarea")!, { target: { value: "Write a new SQL statement" } });
+        act(() => document.querySelector<HTMLButtonElement>("[data-agent-contextual-input] [data-agent-send]")!.click());
+      } else {
+        const starter = await waitFor(() => {
+          const button = document.querySelector<HTMLButtonElement>('[data-agent-sql-starter="write-query"]');
+          expect(button).not.toBeNull();
+          return button!;
+        });
+        act(() => starter.click());
+      }
+      const currentId = useAgentStore.getState().currentChatId;
+      expect(currentId).not.toBe(previous.id);
+      expect(useAgentStore.getState().chats).toHaveLength(count + 1);
+      expect(store.getChat(currentId)).toMatchObject({ context: "projects/orders", totalTokensUsed: 0 });
+      expect(getCurrentQueuedUserMessage()).toMatchObject({
+        chatId: currentId,
+        text: action === "send" ? "Write a new SQL statement" : "agent.contextual-start.sql-write-query",
+        page: { sqlEditor: snapshot },
+      });
+      expect(store.getMessages(previous.id)).toEqual(previousMessages);
+      expect(store.getDraft(previous.id)).toEqual(previousDraft);
+      expect(store.getChat(previous.id)?.totalTokensUsed).toBe(1234);
+    } finally { view.unmount(); host.cleanup(); }
+  });
+
+  test("retries a rejected New Chat submission without creating another empty SQL chat", () => {
+    const store = useAgentStore.getState();
+    const previous = store.createChat({ context: "projects/orders", workspaceName: mocks.workspace.name });
+    store.addMessage({ chatId: previous.id, role: "user", content: "Earlier SQL question" });
+    const count = useAgentStore.getState().chats.length;
+    mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+    const host = sqlHost();
+    host.update({ kind: "ready", snapshot: { version: 1, project: "projects/orders" } });
+    const view = renderIntoContainer(<AgentWindow />);
+    let restoreQueue = () => {};
+    try {
+      view.render();
+      act(() => document.querySelector<HTMLButtonElement>('[aria-label="agent.new-chat"]')!.click());
+      fireEvent.change(document.querySelector<HTMLTextAreaElement>("[data-agent-contextual-input] textarea")!, { target: { value: "Keep my new question" } });
+      const current = useAgentStore.getState();
+      const enqueue = current.queueUserMessage;
+      let rejected = true;
+      const queue = vi.fn<typeof enqueue>((request) => {
+        if (!rejected) enqueue(request);
+      });
+      act(() => useAgentStore.setState({ queueUserMessage: queue }));
+      restoreQueue = () => act(() => useAgentStore.setState({ queueUserMessage: enqueue }));
+      const send = document.querySelector<HTMLButtonElement>("[data-agent-contextual-input] [data-agent-send]")!;
+      act(() => send.click());
+      const next = useAgentStore.getState().currentChatId;
+      expect(queue).toHaveBeenCalledTimes(1);
+      expect(next).not.toBe(previous.id);
+      expect(useAgentStore.getState().chats).toHaveLength(count + 1);
+      expect(getCurrentQueuedUserMessage()).toBeUndefined();
+      expect(document.querySelector("[data-agent-contextual-input] textarea")).toHaveValue("Keep my new question");
+      rejected = false;
+      act(() => send.click());
+      expect(queue).toHaveBeenCalledTimes(2);
+      expect(useAgentStore.getState().currentChatId).toBe(next);
+      expect(useAgentStore.getState().chats).toHaveLength(count + 1);
+      expect(getCurrentQueuedUserMessage()).toMatchObject({ chatId: next, text: "Keep my new question" });
+      expect(store.getMessages(previous.id)).toHaveLength(1);
+    } finally { restoreQueue(); view.unmount(); host.cleanup(); }
+  });
+
   test.each(["pending", "other-project"])("submits explicit page help without ambient %s SQL context", (change) => {
     const host = sqlHost();
     host.update({ kind: "ready", snapshot: sqlSnapshot() });
@@ -6336,10 +6426,19 @@ describe("AgentWindow", () => {
         document.body.querySelector("[data-agent-compact-rail]")
       ).toBeNull();
 
-      const back = document.body.querySelector(
+      const menu = document.body.querySelector(
         '[aria-label="agent.chat-list-label"]'
       ) as HTMLButtonElement;
-      act(() => back.click());
+      expect(menu.querySelector("svg.lucide-menu")).not.toBeNull();
+      expect(menu.querySelector("svg.lucide-chevron-left")).toBeNull();
+      const matches = menu.matches.bind(menu);
+      vi.spyOn(menu, "matches").mockImplementation(
+        (selector) => selector === ":focus-visible" || matches(selector)
+      );
+      await act(async () => menu.focus());
+      const tooltip = await screen.findByText("agent.chat-list-label");
+      expect(tooltip).toHaveAttribute("data-agent-tooltip-content");
+      act(() => menu.click());
       expect(
         document.body.querySelector("[data-agent-mobile-chat-list]")
       ).toBeInstanceOf(HTMLDivElement);

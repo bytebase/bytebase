@@ -453,9 +453,11 @@
       "actions": "Acciones de SQL",
       "autosave": "El editor SQL puede crear o actualizar automáticamente una consulta guardada después de este cambio.",
       "copy": "Copiar SQL",
+      "executed-sql": "SQL ejecutado",
       "insert": "Insertar",
       "readonly": "Este editor SQL es de solo lectura.",
       "replace-selection": "Reemplazar selección",
+      "run-again": "Volver a ejecutar",
       "run-query": "Ejecutar consulta",
       "stale": "El editor o el chat original ya no está listo para esta acción.",
       "unavailable": "El editor SQL original no está disponible."

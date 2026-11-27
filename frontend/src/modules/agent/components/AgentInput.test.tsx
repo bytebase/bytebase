@@ -556,6 +556,38 @@ describe("AgentInput", () => {
     };
     const publish = publishSqlEditor;
 
+    test.each([projectOnly, connected].flatMap((snapshot) =>
+      [undefined, "workspaces/demo", "projects/billing"].map((landingContext) => ({ snapshot, landingContext }))
+    ))("a fresh SQL landing Send does not resume an existing project chat: %j", async ({ snapshot, landingContext }) => {
+      enableRunRecovery();
+      const store = useAgentStore.getState();
+      const previous = store.createChat({ context: project, workspaceName: mocks.workspace.name });
+      store.addMessage({ chatId: previous.id, role: "user", content: "Earlier conversation" });
+      store.addMessage({ chatId: previous.id, role: "assistant", content: "Earlier answer" });
+      store.setDraft(previous.id, { text: "Unsent earlier draft" });
+      const history = store.getMessages(previous.id);
+      const chatCount = useAgentStore.getState().chats.length;
+      store.clearCurrentChat();
+      store.setLandingDraft({ text: "A separate question" }, landingContext);
+      publish(snapshot);
+      mocks.runAgentLoop.mockResolvedValue({ kind: "completed", success: true, totalTokensUsed: 0 });
+      const view = renderIntoContainer(<AgentInput />);
+      try {
+        view.render();
+        await act(async () => {
+          view.container.querySelector<HTMLButtonElement>("[data-agent-send]")!.click();
+          await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+        });
+        const state = useAgentStore.getState();
+        expect(state.currentChatId).not.toBe(previous.id);
+        expect(state.chats).toHaveLength(chatCount + 1);
+        expect(state.getChat(state.currentChatId)).toMatchObject({ context: project });
+        expect(state.getMessages(state.currentChatId).filter((message) => message.role === "user").map((message) => message.content)).toEqual(["A separate question"]);
+        expect(state.getMessages(previous.id)).toEqual(history);
+        expect(state.getDraft(previous.id).text).toBe("Unsent earlier draft");
+      } finally { view.unmount(); }
+    });
+
     test.each([
       "allow",
       "deny",

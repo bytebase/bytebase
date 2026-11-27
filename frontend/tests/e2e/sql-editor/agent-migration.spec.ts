@@ -171,6 +171,17 @@ for (const width of [1440, 390]) {
         .toBe(settledWidth);
     } else {
       await expect(separator).toHaveCount(0);
+      const chats = agent.getByRole("button", { name: "Chats", exact: true });
+      await expect(chats.locator("svg.lucide-menu")).toBeVisible();
+      await chats.hover();
+      await expect(page.locator("[data-agent-tooltip-content]").getByText("Chats", { exact: true })).toBeVisible();
+      await page.screenshot({ path: testInfo.outputPath("editor-agent-mobile-menu.png") });
+      await chats.click();
+      const rows = agent.locator("[data-agent-mobile-chat-list] [data-agent-chat-row]");
+      await expect(rows).toHaveCount(1);
+      await rows.getByRole("button", { name: "Explain what a SQL transaction is.", exact: true }).click();
+      await expect(agent.getByText("Project-only answer without a database.")).toBeVisible();
+      expect(provider.calls).toBe(1);
     }
     const bounds = (await agent.boundingBox())!;
     expect(bounds.x).toBeGreaterThanOrEqual(0);
@@ -189,6 +200,79 @@ for (const width of [1440, 390]) {
       await openAgent(page);
       await expect(separator).toHaveAttribute("aria-valuenow", String(settledWidth));
       expect(provider.calls).toBe(1);
+    }
+  });
+}
+
+for (const { entry, connected } of [
+  { entry: "manual Send", connected: false },
+  { entry: "suggested prompt", connected: false },
+  { entry: "manual Send", connected: true },
+]) {
+  test(`New Chat keeps a separate SQL Editor conversation after ${entry}${connected ? " with a database" : ""}`, async ({
+    page,
+    provider,
+  }, testInfo) => {
+    const env = loadTestEnv();
+    const firstPrompt = "Explain SQL comments in chat one.";
+    const firstAnswer = "The first owned chat contains only SQL comment guidance.";
+    const secondPrompt = entry === "manual Send"
+      ? "Explain SQL aliases in chat two."
+      : "Help me write a query";
+    const secondAnswer = "The second owned chat starts without the first conversation.";
+    provider.respond(answer(undefined, firstAnswer));
+    provider.respond(answer(undefined, secondAnswer));
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const verifySeparateChat = async () => {
+      const agent = await openAgent(page);
+      await page.getByRole("separator", { name: "AI Assistant", exact: true }).press("End");
+      await send(agent, firstPrompt);
+      await expect(agent.getByText(firstAnswer, { exact: true })).toBeVisible();
+
+      const rail = agent.locator("[data-agent-compact-rail]");
+      await rail.getByRole("button", { name: "New Chat", exact: true }).click();
+      await expect(agent.getByText(firstAnswer, { exact: true })).toHaveCount(0);
+      const outgoing = page.waitForRequest(agentTurn);
+      if (entry === "manual Send") {
+        await send(agent, secondPrompt);
+      } else {
+        await agent.getByRole("button", { name: secondPrompt, exact: true }).click();
+      }
+      const request = await outgoing;
+      const snapshot = frozenContext(request);
+      expect(snapshot.project).toBe(env.project);
+      expect(snapshot.connection?.database).toBe(connected ? env.database : undefined);
+      await expect(agent.getByText(secondAnswer, { exact: true })).toBeVisible();
+      await page.screenshot({ path: testInfo.outputPath("new-chat-separate-conversation.png") });
+      const chat = isProto(request)
+        ? fromBinary(AIChatRequestSchema, requestBody(request))
+        : fromJsonString(AIChatRequestSchema, requestBody(request).toString());
+      const history = chat.messages.map(message => message.content).join("\n");
+      expect(history).toContain(secondPrompt);
+      expect(history.includes(firstPrompt)).toBe(false);
+      expect(history.includes(firstAnswer)).toBe(false);
+      await expect(agent.locator("[data-agent-user-message]").getByText(firstPrompt, { exact: true })).toHaveCount(0);
+      await expect(agent.getByText(firstAnswer, { exact: true })).toHaveCount(0);
+
+      await rail.getByRole("button", { name: "Chats", exact: true }).click();
+      const rows = agent.locator("[data-agent-chat-row]");
+      await expect(rows).toHaveCount(2);
+      const oldChat = rows.filter({ hasText: firstPrompt });
+      await expect(oldChat).toHaveCount(1);
+      await expect(rows.filter({ hasText: secondPrompt })).toHaveCount(1);
+      await oldChat.getByRole("button", { name: firstPrompt, exact: true }).click();
+      await expect(agent.getByText(firstAnswer, { exact: true })).toBeVisible();
+      await expect(agent.locator("[data-agent-user-message]").getByText(firstPrompt, { exact: true })).toBeVisible();
+      await expect(agent.locator("[data-agent-user-message]").getByText(secondPrompt, { exact: true })).toHaveCount(0);
+      await expect(agent.getByText(secondAnswer, { exact: true })).toHaveCount(0);
+      expect(provider.calls).toBe(2);
+      expect(provider.unexpectedCalls).toBe(0);
+    };
+    if (connected) {
+      await openSavedQuery(page, verifySeparateChat);
+    } else {
+      await page.goto(`${env.baseURL}/sql-editor/${env.project}`);
+      await verifySeparateChat();
     }
   });
 }
@@ -246,6 +330,132 @@ test("only the marked SQL block can request a native Query, once allowed", async
     await page.screenshot({ path: testInfo.outputPath("approved-query-results.png") });
   });
 });
+
+for (const repeatsSql of [true, false]) {
+  test(`completed Query owns its result and requires fresh rerun approval (${repeatsSql ? "repeated SQL" : "summary only"})`, async ({
+    page,
+    provider,
+  }, testInfo) => {
+    const env = loadTestEnv();
+    const summary = "Returned a one-row preview from the selected database.";
+    await page.setViewportSize({ width: 1440, height: 900 });
+    provider.respond({
+      toolCalls: [{
+        id: "editor-completion-query",
+        name: "call_api",
+        arguments: JSON.stringify({
+          operationId: "SQLService/Query",
+          body: { name: env.database, statement: proposedSql, limit: 1 },
+        }),
+      }],
+      stopReason: "TURN_COMPLETED",
+    });
+    provider.respond({
+      toolCalls: [{
+        id: "editor-completion-done",
+        name: "done",
+        arguments: JSON.stringify({
+          text: repeatsSql
+            ? [summary, "```sql", proposedSql, "```"].join("\n")
+            : summary,
+          success: true,
+          actions: repeatsSql ? [{ kind: "sql-editor-block", blockIndex: 0 }] : [],
+        }),
+      }],
+      stopReason: "TURN_COMPLETED",
+    });
+
+    await openSavedQuery(page, async (editor) => {
+      const queries: Request[] = [];
+      page.on("request", (request) => {
+        if (queryEndpoint.test(request.url())) queries.push(request);
+      });
+      const agent = await openAgent(page);
+      await send(agent, "Run a harmless one-row query against the current database.");
+      const allow = agent.getByRole("button", { name: "Allow once", exact: true });
+      await expect(allow).toBeEnabled();
+      await expect(agent.locator("[data-agent-pending-preview]")).toContainText(proposedSql);
+      expect(queries).toHaveLength(0);
+      const query = page.waitForResponse((response) => queryEndpoint.test(response.url()));
+      await allow.click();
+      expect((await query).ok()).toBe(true);
+
+      const finalAnswer = agent.locator("[data-agent-answer]").filter({ hasText: summary });
+      await expect(finalAnswer).toBeVisible();
+      await page.screenshot({
+        path: testInfo.outputPath(`completed-query-${repeatsSql ? "repeated-sql" : "summary-only"}.png`),
+      });
+      const completed = finalAnswer.locator("[data-agent-completed-query]");
+      await expect(completed).toHaveCount(1);
+      await expect(completed.locator("[data-agent-query-result]")).toContainText("731");
+      await expect(agent.locator("[data-agent-query-result]")).toHaveCount(1);
+      await expect(finalAnswer.locator("[data-agent-sql-block]")).toHaveCount(1);
+      await expect(finalAnswer.getByRole("button", { name: "Run query", exact: true })).toHaveCount(0);
+
+      const executed = finalAnswer.locator("[data-agent-executed-sql]");
+      const details = executed.getByRole("button", { name: "Executed SQL", exact: true });
+      await expect(details).toHaveAttribute("aria-expanded", "false");
+      await expect(executed.locator("pre")).toBeHidden();
+      await expect(executed.getByRole("button", { name: "Run again", exact: true })).toBeEnabled();
+      await details.click();
+      await expect(executed.locator("pre")).toContainText(proposedSql);
+      await details.click();
+      await expect(details).toHaveAttribute("aria-expanded", "false");
+      await expect.poll(() => editor.readEditorContent()).toBe(initialSql);
+      expect(queries).toHaveLength(1);
+      expect(provider.calls).toBe(2);
+      expect(provider.unexpectedCalls).toBe(0);
+
+      if (repeatsSql) {
+        await page.setViewportSize({ width: 390, height: 900 });
+        await expect(agent).toHaveAttribute("data-agent-presentation", "sql-editor-overlay");
+        await expect(completed.locator("[data-agent-query-result]")).toContainText("731");
+        await executed.scrollIntoViewIfNeeded();
+        const mobileBounds = (await agent.boundingBox())!;
+        expect(mobileBounds.x).toBeGreaterThanOrEqual(0);
+        expect(mobileBounds.x + mobileBounds.width).toBeLessThanOrEqual(391);
+        expect(mobileBounds.y + mobileBounds.height).toBeLessThanOrEqual(901);
+        await page.screenshot({ path: testInfo.outputPath("completed-query-mobile.png") });
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await expect(agent).toHaveAttribute("data-agent-presentation", "sql-editor-docked");
+      }
+
+      await executed.getByRole("button", { name: "Run again", exact: true }).click();
+      await expect(allow).toBeEnabled();
+      await expect(agent.locator("[data-agent-pending-preview]")).toContainText(proposedSql);
+      expect(queries).toHaveLength(1);
+      if (repeatsSql) {
+        await agent.getByRole("button", { name: "Deny", exact: true }).click();
+      } else {
+        const rerun = page.waitForResponse((response) => queryEndpoint.test(response.url()));
+        await allow.click();
+        expect((await rerun).ok()).toBe(true);
+        await expect.poll(() => queries.length).toBe(2);
+        const request = queries[1]!;
+        const body = requestBody(request);
+        const parsed = isProto(request)
+          ? fromBinary(QueryRequestSchema, body)
+          : fromJsonString(QueryRequestSchema, body.toString());
+        expect(parsed).toMatchObject({ name: env.database, statement: proposedSql });
+      }
+      await expect(allow).toBeHidden();
+      await expect(agent.getByRole("button", { name: "Send", exact: true })).toBeDisabled();
+      expect(queries).toHaveLength(repeatsSql ? 1 : 2);
+      expect(provider.calls).toBe(2);
+
+      if (repeatsSql) {
+        await page.reload();
+        const restoredAgent = await openAgent(page);
+        await restoredAgent.getByRole("button", { name: "Continue last chat", exact: true }).click();
+        const restoredAnswer = restoredAgent.locator("[data-agent-answer]").filter({ hasText: summary });
+        await expect(restoredAnswer.locator("[data-agent-query-result]")).toContainText("731");
+        await expect(restoredAgent.locator("[data-agent-query-result]")).toHaveCount(1);
+        expect(queries).toHaveLength(1);
+        expect(provider.calls).toBe(2);
+      }
+    });
+  });
+}
 
 test("Project Viewer cannot execute the marked SQL through one-time Agent approval", async ({
   context,

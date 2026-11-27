@@ -1,8 +1,20 @@
-import { BetweenHorizontalEnd, Play, Replace } from "lucide-react";
+import {
+  BetweenHorizontalEnd,
+  ChevronRight,
+  Play,
+  Replace,
+  RotateCcw,
+} from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { CopyButton } from "@/components/ui/copy-button";
+import { cn } from "@/lib/utils";
 import {
   type AgentSqlActionSource,
   applyAgentSqlAction,
@@ -19,6 +31,7 @@ interface AgentSqlBlockProps {
   sql: string;
   source?: AgentSqlActionSource;
   onRun?: (source: AgentSqlActionSource) => Promise<boolean>;
+  executed?: boolean;
 }
 
 export function AgentSqlBlock({
@@ -26,6 +39,7 @@ export function AgentSqlBlock({
   sql,
   source,
   onRun,
+  executed = false,
 }: AgentSqlBlockProps) {
   const { t } = useTranslation();
   const status = useAgentStore(() =>
@@ -40,6 +54,10 @@ export function AgentSqlBlock({
     Boolean(source && onRun && canBeginAgentSqlResponseAction(source))
   );
   const [running, setRunning] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const runLabel = executed
+    ? t("agent.sql-block.run-again")
+    : t("agent.sql-block.run-query");
   const editHint =
     status === "stale"
       ? t("agent.sql-block.stale")
@@ -60,17 +78,30 @@ export function AgentSqlBlock({
   const runHint = runReady ? undefined : t("agent.sql-block.stale");
 
   return (
-    <div
+    <Collapsible
+      open={executed ? expanded : true}
+      onOpenChange={setExpanded}
       className="my-2 min-w-0 max-w-full overflow-hidden rounded-sm border border-block-border bg-background"
       data-agent-sql-block
+      data-agent-executed-sql={executed || undefined}
     >
       <div
         className="flex items-center gap-2 border-b border-block-border bg-control-bg px-2 py-1"
         data-agent-sql-toolbar
       >
-        <span className="shrink-0 text-xs font-medium text-control-light">
-          {t("common.sql")}
-        </span>
+        {executed ? (
+          <CollapsibleTrigger className="w-auto min-w-0 gap-1 text-xs font-medium text-control-light">
+            <ChevronRight
+              className={cn("size-3 shrink-0", expanded && "rotate-90")}
+              aria-hidden="true"
+            />
+            {t("agent.sql-block.executed-sql")}
+          </CollapsibleTrigger>
+        ) : (
+          <span className="shrink-0 text-xs font-medium text-control-light">
+            {t("common.sql")}
+          </span>
+        )}
         <AgentActionGroup
           role="group"
           aria-label={t("agent.sql-block.actions")}
@@ -125,17 +156,13 @@ export function AgentSqlBlock({
                 source.snapshot.connection &&
                 source.snapshot.rowLimit !== undefined && (
                   <AgentTooltip
-                    content={
-                      runHint
-                        ? `${t("agent.sql-block.run-query")}: ${runHint}`
-                        : t("agent.sql-block.run-query")
-                    }
+                    content={runHint ? `${runLabel}: ${runHint}` : runLabel}
                   >
                     <Button
                       type="button"
                       appearance="secondary"
                       size="xs"
-                      aria-label={t("agent.sql-block.run-query")}
+                      aria-label={runLabel}
                       disabled={!runReady || running}
                       aria-description={runHint}
                       onClick={async () => {
@@ -154,7 +181,11 @@ export function AgentSqlBlock({
                         }
                       }}
                     >
-                      <Play className="size-3.5" aria-hidden="true" />
+                      {executed ? (
+                        <RotateCcw className="size-3.5" aria-hidden="true" />
+                      ) : (
+                        <Play className="size-3.5" aria-hidden="true" />
+                      )}
                     </Button>
                   </AgentTooltip>
                 )}
@@ -162,7 +193,7 @@ export function AgentSqlBlock({
           )}
         </AgentActionGroup>
       </div>
-      {children}
-    </div>
+      <CollapsiblePanel>{children}</CollapsiblePanel>
+    </Collapsible>
   );
 }

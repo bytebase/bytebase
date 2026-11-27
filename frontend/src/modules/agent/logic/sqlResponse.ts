@@ -1,10 +1,18 @@
+import { create, fromJson, type JsonObject } from "@bufbuild/protobuf";
 import { SHA256 } from "crypto-js";
 import { isEqual } from "lodash-es";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
 import { useAppStore } from "@/stores/app";
+import {
+  QueryOption_RedisRunCommandsOn,
+  QueryOptionSchema,
+  type QueryRequest,
+  QueryRequestSchema,
+} from "@/types/proto-es/v1/sql_service_pb";
 import { useAgentStore } from "../store/agent";
+import { getAgentCompletedQueries } from "./completedQueries";
 import { getCurrentTurnQueryCalls } from "./queryFollowUps";
 import {
   getHumanInputResourceReferenceMap,
@@ -38,6 +46,7 @@ export interface AgentSqlActionSource {
   sourceHash: string;
   sql: string;
   snapshot: AgentSqlEditorSnapshot;
+  queryResultMessageId?: string;
 }
 
 const markdownParser = unified().use(remarkParse).use(remarkGfm);
@@ -136,19 +145,15 @@ function hasCompatibleSqlTargets(
   );
 }
 
-export function bindAgentSqlBlockActions(
+function getSqlActionSnapshot(
   message: AgentMessage,
-  messages: readonly AgentMessage[] = useAgentStore
-    .getState()
-    .getMessages(message.chatId)
-): AgentSqlActionSource[] {
+  messages: readonly AgentMessage[]
+) {
   const { metadata, content } = message;
   const provenance = normalizeAgentSqlActionProvenance(
     metadata?.sqlActionProvenance
   );
   if (
-    !Array.isArray(metadata?.actions) ||
-    !metadata.actions.some((action) => action?.kind === "sql-editor-block") ||
     !content?.isWellFormed() ||
     !provenance ||
     metadata?.runId !== provenance.runId ||
@@ -159,9 +164,9 @@ export function bindAgentSqlBlockActions(
       message
     )
   )
-    return [];
+    return;
   const context = getAgentSourceSqlEditorContext(messages, message.id);
-  if (context?.kind !== "ready") return [];
+  if (context?.kind !== "ready") return;
   const { snapshot } = context;
   if (
     snapshot.tab?.mode !== "SAVED_QUERY" ||
@@ -169,7 +174,24 @@ export function bindAgentSqlBlockActions(
     snapshot.batchActive ||
     !hasCompatibleSqlTargets(messages, message, snapshot)
   )
+    return;
+  return snapshot;
+}
+
+export function bindAgentSqlBlockActions(
+  message: AgentMessage,
+  messages: readonly AgentMessage[] = useAgentStore
+    .getState()
+    .getMessages(message.chatId)
+): AgentSqlActionSource[] {
+  const { metadata, content } = message;
+  if (
+    !Array.isArray(metadata?.actions) ||
+    !metadata.actions.some((action) => action?.kind === "sql-editor-block")
+  )
     return [];
+  const snapshot = getSqlActionSnapshot(message, messages);
+  if (!snapshot || !content) return [];
   const blocks = extractAgentSqlBlocks(content);
   const validIndexes = new Set(blocks.map(({ blockIndex }) => blockIndex));
   const markers = normalizeAgentResponseActions(metadata.actions, (index) =>
@@ -189,6 +211,80 @@ export function bindAgentSqlBlockActions(
     sql,
     snapshot,
   }));
+}
+
+function queryExecutionParameters(request: QueryRequest) {
+  const queryOption = request.queryOption ?? create(QueryOptionSchema);
+  return {
+    schema: request.schema ?? "",
+    container: request.container ?? "",
+    dataSourceId: request.dataSourceId,
+    queryOption: create(QueryOptionSchema, {
+      ...queryOption,
+      redisRunCommandsOn:
+        queryOption.redisRunCommandsOn ===
+        QueryOption_RedisRunCommandsOn.REDIS_RUN_COMMANDS_ON_UNSPECIFIED
+          ? QueryOption_RedisRunCommandsOn.SINGLE_NODE
+          : queryOption.redisRunCommandsOn,
+    }),
+  };
+}
+
+export function bindAgentCompletedQueryActions(
+  message: AgentMessage,
+  messages: readonly AgentMessage[] = useAgentStore
+    .getState()
+    .getMessages(message.chatId)
+): AgentSqlActionSource[] {
+  const snapshot = getSqlActionSnapshot(message, messages);
+  if (!snapshot) return [];
+  const expectedParameters = queryExecutionParameters(
+    create(QueryRequestSchema, {
+      schema: snapshot.connection?.querySchema,
+      container: snapshot.connection?.container,
+      dataSourceId: snapshot.connection?.dataSourceId,
+      queryOption: create(QueryOptionSchema, snapshot.queryOptions),
+    })
+  );
+  return getAgentCompletedQueries(message, messages).flatMap(
+    (query, blockIndex) => {
+      try {
+        const actualParameters = queryExecutionParameters(
+          fromJson(QueryRequestSchema, query.request as JsonObject)
+        );
+        if (!isEqual(actualParameters, expectedParameters)) return [];
+      } catch {
+        return [];
+      }
+      if (
+        query.database !== snapshot.connection?.database ||
+        query.statement.length > maxSqlBytes ||
+        encoder.encode(query.statement).byteLength > maxSqlBytes
+      )
+        return [];
+      return [
+        {
+          chatId: message.chatId,
+          messageId: message.id,
+          blockIndex,
+          queryResultMessageId: query.resultMessageId,
+          sourceHash: SHA256(
+            JSON.stringify([
+              message.content,
+              query.callMessageId,
+              query.resultMessageId,
+              query.toolCallIndex,
+              query.database,
+              query.statement,
+              query.request,
+            ])
+          ).toString(),
+          sql: query.statement,
+          snapshot,
+        },
+      ];
+    }
+  );
 }
 
 function getIdleAgentSqlActionChat(source: AgentSqlActionSource) {
@@ -220,8 +316,13 @@ export function getCurrentAgentSqlActionSource(
   const message = messages.find(({ id }) => id === messageId);
   const bound =
     message &&
-    bindAgentSqlBlockActions(message, messages).find(
-      (candidate) => candidate.blockIndex === blockIndex
+    (source.queryResultMessageId
+      ? bindAgentCompletedQueryActions(message, messages)
+      : bindAgentSqlBlockActions(message, messages)
+    ).find(
+      (candidate) =>
+        candidate.blockIndex === blockIndex &&
+        candidate.queryResultMessageId === source.queryResultMessageId
     );
   return bound && isEqual(source, bound) ? bound : undefined;
 }

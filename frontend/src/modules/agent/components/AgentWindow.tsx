@@ -13,6 +13,7 @@ import {
   FolderOpen,
   Info,
   LoaderCircle,
+  Menu,
   MessageSquare,
   Minus,
   Pencil,
@@ -1996,15 +1997,20 @@ export function AgentWindow() {
         !store.getPendingAsk(current.id) &&
         !store.draftsByChatId[current.id] &&
         !store.queuedUserMessagesByChatId[current.id];
-      const chat = page.sqlEditor
-        ? store.selectOrCreateChatForContext(chatContext, page, workspace?.name)
-        : canReusePlaceholder
-          ? store.ensureCurrentChat(page, chatContext, workspace?.name)
-          : store.createChat({
+      const chat =
+        page.sqlEditor && current
+          ? store.selectOrCreateChatForContext(
+              chatContext,
               page,
-              context: chatContext,
-              workspaceName: workspace?.name,
-            });
+              workspace?.name
+            )
+          : canReusePlaceholder
+            ? store.ensureCurrentChat(page, chatContext, workspace?.name)
+            : store.createChat({
+                page,
+                context: chatContext,
+                workspaceName: workspace?.name,
+              });
       if (!chat || useAgentStore.getState().currentChatId !== chat.id) return;
       const hasBoundMention =
         runMode === "default" &&
@@ -3104,19 +3110,21 @@ export function AgentWindow() {
               {!preferencesOpen &&
                 isMobileWindow &&
                 mobileScreen === "conversation" && (
-                  <Button
-                    appearance="secondary"
-                    size="xs"
-                    data-agent-window-action
-                    className="-ml-1 text-control-light hover:bg-control-bg-hover"
-                    aria-label={t("agent.chat-list-label")}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      returnToMobileChatList();
-                    }}
-                  >
-                    <ChevronLeft className="size-4" aria-hidden="true" />
-                  </Button>
+                  <AgentTooltip content={t("agent.chat-list-label")}>
+                    <Button
+                      appearance="secondary"
+                      size="xs"
+                      data-agent-window-action
+                      className="-ml-1 text-control-light hover:bg-control-bg-hover"
+                      aria-label={t("agent.chat-list-label")}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        returnToMobileChatList();
+                      }}
+                    >
+                      <Menu className="size-4" aria-hidden="true" />
+                    </Button>
+                  </AgentTooltip>
                 )}
               {!preferencesOpen &&
                 isMobileWindow &&

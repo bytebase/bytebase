@@ -50,7 +50,8 @@ afterEach(() => {
 
 function prepareBlock(
   selection: { start: number; end: number; caret: number },
-  connected = false
+  connected = false,
+  executed = false
 ) {
   const workspaceName = "workspaces/sample";
   useAppStore.setState({ currentUser: create(UserSchema, { name: "users/member" }) });
@@ -117,7 +118,7 @@ function prepareBlock(
   let unregister = registerAgentSqlEditorHost(host);
   const onRun = vi.fn(async () => true);
   const view = render(
-    <AgentSqlBlock source={source} sql={sql} onRun={onRun}>
+    <AgentSqlBlock source={source} sql={sql} onRun={onRun} executed={executed}>
       <pre>Highlighted SQL</pre>
     </AgentSqlBlock>
   );
@@ -142,6 +143,23 @@ function prepareBlock(
 }
 
 describe("AgentSqlBlock", () => {
+  test("collapses executed SQL while keeping explicit Run again available", async () => {
+    const view = prepareBlock({ start: 2, end: 2, caret: 2 }, true, true);
+    try {
+      const details = view.getByRole("button", { name: "agent.sql-block.executed-sql" });
+      expect(details).toHaveAttribute("aria-expanded", "false");
+      expect(view.queryByText("Highlighted SQL")).not.toBeInTheDocument();
+      expect(view.queryByRole("button", { name: "agent.sql-block.run-query" })).not.toBeInTheDocument();
+      const run = view.getByRole("button", { name: "agent.sql-block.run-again" });
+      expect(run).toBeEnabled();
+      await act(async () => fireEvent.click(run));
+      expect(view.onRun).toHaveBeenCalledExactlyOnceWith(view.source);
+      fireEvent.click(details);
+      expect(details).toHaveAttribute("aria-expanded", "true");
+      expect(view.getByText("Highlighted SQL")).toBeVisible();
+    } finally { view.dispose(); }
+  });
+
   test("keeps compact, labeled icon actions in the SQL block header", () => {
     const view = prepareBlock({ start: 2, end: 5, caret: 5 }, true);
     try {
