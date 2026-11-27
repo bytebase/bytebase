@@ -890,7 +890,9 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 		list.empty = "No rule for database changes is left."
 	default:
 		list.header = "The rules for database changes, in the order an approval check tries them:"
-		for i, rule := range diff.requested {
+		list.total = len(diff.requested)
+		list.rule = func(i int) string {
+			rule := diff.requested[i]
 			// As on the masking form, every line names its approvers, and a
 			// kept rule, which the message never shows, its condition.
 			text := fmt.Sprintf("%d. %s (%s), %s", i+1, ruleTitle(rule), diff.marks[i], approvers(rule))
@@ -900,7 +902,7 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 			if description := rule.GetTemplate().GetDescription(); description != "" {
 				text += fmt.Sprintf(" (description %q)", description)
 			}
-			list.rules = append(list.rules, text)
+			return text
 		}
 	}
 	changes := make([]formChange, 0, len(diff.changes))
@@ -1008,8 +1010,12 @@ type ruleSection struct {
 	// above it state some of the rules it counts.
 	name   string
 	header string
-	rules  []string
-	empty  string
+	// rule gives the row of the list's rule i, of total. A description has
+	// room for a few, so only the rows it tries are built: a workspace can
+	// store thousands of rules.
+	total int
+	rule  func(i int) string
+	empty string
 }
 
 // room is the rows a description has for a form's changes. Every step carries
@@ -1144,16 +1150,16 @@ func describeRules(changes []string, list ruleSection, fixed string) string {
 // left out can still be tried before one the change adds. When not even the
 // first rule fits, one row counts them all, and with no row left nothing does.
 func sectionRows(list ruleSection, room int) []string {
-	if len(list.rules) == 0 {
+	if list.total == 0 {
 		if rows := wrapLine(list.empty, descriptionLineWidth); list.empty != "" && len(rows) <= room {
 			return rows
 		}
 		return nil
 	}
 	rows := wrapLine(list.header, descriptionLineWidth)
-	for i, rule := range list.rules {
-		wrapped := wrapLine(rule, descriptionLineWidth)
-		left := len(list.rules) - i
+	for i := range list.total {
+		wrapped := wrapLine(list.rule(i), descriptionLineWidth)
+		left := list.total - i
 		if len(rows)+len(wrapped)+min(left-1, 1) <= room {
 			rows = append(rows, wrapped...)
 			continue

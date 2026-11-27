@@ -852,6 +852,31 @@ func TestAdministerMaskingRulesCutsALongRuleListToTheDescription(t *testing.T) {
 	require.Equal(t, `... and 23 more rules, tried after these.`, rows[9])
 }
 
+// A description shows a few rules of the list, so a form for one added rule
+// must not parse the condition of every rule the workspace keeps.
+func TestMaskingFormParsesNoRuleItCannotShow(t *testing.T) {
+	types, err := semanticTypesFromSetting(nil)
+	require.NoError(t, err)
+	ctx := withUserEmail(context.Background(), "alice@example.com")
+	var stored []*v1pb.MaskingRulePolicy_MaskingRule
+	for i := range 300 {
+		stored = append(stored, maskingRule(fmt.Sprintf("r%d", i), fmt.Sprintf("Rule %d", i+1), fmt.Sprintf(`resource.table_name == "t" && resource.column_name == "c%03d"`, i), "bb.default"))
+	}
+	requested := append(slices.Clone(stored), maskingRule("new", "New", `resource.column_name == "new"`, "bb.default"))
+	build := func() {
+		diff, err := diffMaskingRules(stored, requested, types, "")
+		require.NoError(t, err)
+		form, err := maskingRulesForm(ctx, diff, "")
+		require.NoError(t, err)
+		require.Contains(t, form.description, "... and 293 more rules, tried after these.")
+	}
+	// The first form builds the CEL environment every form shares.
+	build()
+	// The table of the common order takes 0.7 MB for 300 rules. A row for
+	// each rule, with its condition parsed, took 12 MB.
+	require.Less(t, allocated(build), uint64(3<<20))
+}
+
 // askedMaskingChange sends requested to a workspace that stores stored, and
 // returns the form the user was asked or the result when none was.
 func askedMaskingChange(t *testing.T, stored, requested []*v1pb.MaskingRulePolicy_MaskingRule) (message, description, refusal string) {

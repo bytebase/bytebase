@@ -3,6 +3,7 @@ package mcp
 import (
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
@@ -15,6 +16,14 @@ import (
 // the order a scope phrase names them.
 var maskingScopeAttributes = []string{"environment_id", "project_id", "instance_id", "database_name", "schema_name", "table_name", "column_name"}
 
+// maskingScopeEnv is the CEL environment a masking condition is parsed in,
+// built once: a form parses a condition for each rule it shows, and cel-go's
+// parser keeps its state per call (parser.Parser.Parse), so every form shares
+// one environment.
+var maskingScopeEnv = sync.OnceValues(func() (*cel.Env, error) {
+	return cel.NewEnv(common.MaskingRulePolicyCELAttributes...)
+})
+
 // maskingScope is what a masking condition matches when it is an && chain of
 // string tests: the values each attribute it names may hold.
 type maskingScope map[string][]string
@@ -25,7 +34,7 @@ type maskingScope map[string][]string
 // exactly the columns its terms name, in any term order. Any other condition
 // reports false.
 func parseMaskingScope(condition string) (maskingScope, bool) {
-	env, err := cel.NewEnv(common.MaskingRulePolicyCELAttributes...)
+	env, err := maskingScopeEnv()
 	if err != nil {
 		return nil, false
 	}

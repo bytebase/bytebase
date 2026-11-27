@@ -751,8 +751,9 @@ func TestAdministerWorkspaceSendsARuleWithNoRoomBesideTheFallbackLineToTheConsol
 
 // When the rows left hold no rule, one row still says how many there are.
 func TestSectionRowsCountsAListItCannotShow(t *testing.T) {
+	rules := []string{`1. "A" (kept), "Project owner": ` + "`resource.environment_id == 'a'`", `2. "B" (kept), no approval: ` + "`resource.environment_id == 'b'`", `3. "C" (new), no approval`}
 	list := ruleSection{name: "Rules for database changes", header: "The rules for database changes, in the order an approval check tries them:",
-		rules: []string{`1. "A" (kept), "Project owner": ` + "`resource.environment_id == 'a'`", `2. "B" (kept), no approval: ` + "`resource.environment_id == 'b'`", `3. "C" (new), no approval`}}
+		total: len(rules), rule: func(i int) string { return rules[i] }}
 	require.Nil(t, sectionRows(list, 0))
 	for room := 1; room <= 3; room++ {
 		require.Equal(t, []string{"Rules for database changes in all: 3. Their list has no room here."}, sectionRows(list, room), "room %d", room)
@@ -764,7 +765,21 @@ func TestSectionRowsCountsAListItCannotShow(t *testing.T) {
 		"... and 2 more rules, tried after these.",
 	}, sectionRows(list, 4))
 	require.Len(t, sectionRows(list, 5), 5)
-	require.Equal(t, []string{"Masking rules in all: 1. Their list has no room here."}, sectionRows(ruleSection{name: "Masking rules", header: list.header, rules: list.rules[:1]}, 2))
+	require.Equal(t, []string{"Masking rules in all: 1. Their list has no room here."}, sectionRows(ruleSection{name: "Masking rules", header: list.header, total: 1, rule: list.rule}, 2))
+}
+
+// The list's rows are built as they are tried: the rules a description shows
+// and the first it has no room for. A workspace can store thousands of rules.
+func TestSectionRowsBuildsOnlyTheRowsItTries(t *testing.T) {
+	built := 0
+	list := ruleSection{name: "Masking rules", header: "The masking rules, in the order masking tries them:", total: 5000, rule: func(i int) string {
+		built++
+		return fmt.Sprintf(`%d. "Rule" (kept), Full mask: every column`, i+1)
+	}}
+	rows := sectionRows(list, descriptionLines)
+	require.Len(t, rows, descriptionLines)
+	require.Equal(t, "... and 4992 more rules, tried after these.", rows[descriptionLines-1])
+	require.Equal(t, 9, built)
 }
 
 // A change that removes every rule says so while one row is free: the

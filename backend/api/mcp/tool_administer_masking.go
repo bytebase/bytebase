@@ -562,8 +562,8 @@ func maskingRuleSection(diff *maskingRulesDiff, listed bool) ruleSection {
 	if len(diff.requested) == 0 {
 		return ruleSection{empty: "No masking rule is left, so each column keeps its own semantic type."}
 	}
-	list := ruleSection{name: "Masking rules", header: "The masking rules, in the order masking tries them:"}
-	for i, rule := range diff.requested {
+	return ruleSection{name: "Masking rules", header: "The masking rules, in the order masking tries them:", total: len(diff.requested), rule: func(i int) string {
+		rule := diff.requested[i]
 		line := fmt.Sprintf("%d. %s (%s), %s", i+1, maskingRuleTitle(rule), diff.marks[i], diff.typePhrase(rule.GetSemanticType()))
 		switch {
 		case diff.marks[i] == "kept":
@@ -572,9 +572,8 @@ func maskingRuleSection(diff *maskingRulesDiff, listed bool) ruleSection {
 			line += ": " + conditionText(rule.GetCondition().GetExpression())
 		default:
 		}
-		list.rules = append(list.rules, line)
-	}
-	return list
+		return line
+	}}
 }
 
 // maskingFormDigest binds an answer to the form, the request, and the stored
