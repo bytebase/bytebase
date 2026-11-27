@@ -10,6 +10,14 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+func querySpan(gCtx base.GetQuerySpanContext, statement base.Statement, database string, ignoreCaseSensitive bool) (*base.QuerySpan, error) {
+	spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_DORIS, []base.Statement{statement}, database, "", ignoreCaseSensitive)
+	if err != nil {
+		return nil, err
+	}
+	return spans[0], nil
+}
+
 func TestGetQuerySpanSeam(t *testing.T) {
 	// Registry dispatch, default database resolution, and QueryType mapping.
 	spans, err := base.GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, storepb.Engine_DORIS, []base.Statement{
@@ -31,20 +39,20 @@ func TestGetQuerySpanSeam(t *testing.T) {
 		{"CREATE TABLE t (id INT)", false, base.DDL},
 		{"USE db1", false, base.QueryTypeUnknown},
 	} {
-		span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: tc.sql}, "testdb", "", tc.ignore)
+		span, err := querySpan(base.GetQuerySpanContext{}, base.Statement{Text: tc.sql}, "testdb", tc.ignore)
 		require.NoErrorf(t, err, "%q", tc.sql)
 		require.Equalf(t, tc.want, span.Type, "%q", tc.sql)
 	}
 
 	// MixUserSystemTablesError conversion.
-	_, err = GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: "SELECT * FROM users JOIN information_schema.tables"}, "testdb", "", false)
+	_, err = querySpan(base.GetQuerySpanContext{}, base.Statement{Text: "SELECT * FROM users JOIN information_schema.tables"}, "testdb", false)
 	require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
 	// SyntaxError position offset using Statement.Start.
-	_, err = GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{
+	_, err = querySpan(base.GetQuerySpanContext{}, base.Statement{
 		Text:  "SELECT a FROM secret xx yy zz",
 		Start: &storepb.Position{Line: 4, Column: 1},
-	}, "testdb", "", false)
+	}, "testdb", false)
 	var syntaxErr *base.SyntaxError
 	require.ErrorAs(t, err, &syntaxErr)
 	require.Equal(t, int32(4), syntaxErr.Position.Line)

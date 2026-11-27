@@ -12,6 +12,16 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
+// querySpanWithoutMetadata resolves one statement in test_keyspace with no
+// metadata callbacks.
+func querySpanWithoutMetadata(statement string) (*base.QuerySpan, error) {
+	spans, err := base.GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, storepb.Engine_CASSANDRA, []base.Statement{{Text: statement}}, "test_keyspace", "", false)
+	if err != nil {
+		return nil, err
+	}
+	return spans[0], nil
+}
+
 func TestGetQuerySpanSeam(t *testing.T) {
 	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "test_keyspace",
@@ -47,22 +57,22 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	require.Equal(t, "email", spans[0].Results[1].Name)
 
 	// Without metadata, SELECT * preserves SelectAsterisk.
-	span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: "SELECT * FROM users"}, "test_keyspace", "", false)
+	span, err := querySpanWithoutMetadata("SELECT * FROM users")
 	require.NoError(t, err)
 	require.Len(t, span.Results, 1)
 	require.True(t, span.Results[0].SelectAsterisk)
 
 	// QueryType conversion for DML and DDL.
-	span, err = GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: "INSERT INTO users (id) VALUES (1)"}, "test_keyspace", "", false)
+	span, err = querySpanWithoutMetadata("INSERT INTO users (id) VALUES (1)")
 	require.NoError(t, err)
 	require.Equal(t, base.DML, span.Type)
 
-	span, err = GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: "CREATE TABLE users (id int PRIMARY KEY)"}, "test_keyspace", "", false)
+	span, err = querySpanWithoutMetadata("CREATE TABLE users (id int PRIMARY KEY)")
 	require.NoError(t, err)
 	require.Equal(t, base.DDL, span.Type)
 
 	// Syntax error conversion.
-	_, err = GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: "SELECT FROM WHERE"}, "test_keyspace", "", false)
+	_, err = querySpanWithoutMetadata("SELECT FROM WHERE")
 	var syntaxErr *base.SyntaxError
 	require.ErrorAs(t, err, &syntaxErr)
 }

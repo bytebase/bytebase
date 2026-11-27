@@ -12,6 +12,14 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
+func querySpan(gCtx base.GetQuerySpanContext, statement string) (*base.QuerySpan, error) {
+	spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_BIGQUERY, []base.Statement{{Text: statement}}, "ds1", "", false)
+	if err != nil {
+		return nil, err
+	}
+	return spans[0], nil
+}
+
 func TestGetQuerySpanSeam(t *testing.T) {
 	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "ds1",
@@ -43,21 +51,21 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	require.Equal(t, []string{"users.email"}, sourcesOf(spans[0].Results[1]))
 
 	// BigQuery dialect flag: SET classifies as Select.
-	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SET x = 1"}, "ds1", "", false)
+	span, err := querySpan(gCtx, "SET x = 1")
 	require.NoError(t, err)
 	require.Equal(t, base.Select, span.Type)
 
 	// Non-SELECT query types map through base.OmniQueryType.
-	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "INSERT INTO users (id) VALUES (1)"}, "ds1", "", false)
+	span, err = querySpan(gCtx, "INSERT INTO users (id) VALUES (1)")
 	require.NoError(t, err)
 	require.Equal(t, base.DML, span.Type)
 
 	// MixUserSystemTablesError conversion.
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT * FROM users JOIN INFORMATION_SCHEMA.TABLES ON TRUE"}, "ds1", "", false)
+	_, err = querySpan(gCtx, "SELECT * FROM users JOIN INFORMATION_SCHEMA.TABLES ON TRUE")
 	require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
 	// ResourceNotFoundError conversion on missing table and callback returning ResourceNotFoundError.
-	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id FROM missing"}, "ds1", "", false)
+	span, err = querySpan(gCtx, "SELECT id FROM missing")
 	require.NoError(t, err)
 	var notFound *base.ResourceNotFoundError
 	require.ErrorAs(t, span.NotFoundError, &notFound)
@@ -70,7 +78,7 @@ func TestGetQuerySpanSeam(t *testing.T) {
 		ListDatabaseNamesFunc: lister,
 		Engine:                storepb.Engine_BIGQUERY,
 	}
-	span, err = GetQuerySpan(context.Background(), nfCtx, base.Statement{Text: "SELECT id FROM ghost.users"}, "ds1", "", false)
+	span, err = querySpan(nfCtx, "SELECT id FROM ghost.users")
 	require.NoError(t, err)
 	require.ErrorAs(t, span.NotFoundError, &notFound)
 	require.NotNil(t, notFound.Database)

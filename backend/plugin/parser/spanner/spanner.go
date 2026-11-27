@@ -9,9 +9,6 @@
 package spanner
 
 import (
-	"context"
-
-	"github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/spanner/analysis"
 	"github.com/bytebase/omni/spanner/ast"
 
@@ -22,7 +19,6 @@ import (
 func init() {
 	engine := base.OmniEngine(analysis.Engine)
 	engine.StatementTypes = GetStatementTypes
-	engine.QuerySpan = GetQuerySpan
 	base.Register(engine, storepb.Engine_SPANNER)
 }
 
@@ -41,36 +37,4 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 		types = append(types, base.OmniStatementType(analysis.StatementTypeOf(node)))
 	}
 	return types, nil
-}
-
-// GetQuerySpan is the registered query-span handler.
-func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, defaultDatabase, _ string, _ bool) (*base.QuerySpan, error) {
-	getMeta := base.QuerySpanProtoMetadataFunc(ctx, gCtx, true)
-	span, err := analysis.ResolveQuerySpan(stmt.Text, analysis.ResolveOptions{
-		DefaultDatabase: defaultDatabase,
-		// Named schemas under ONE database (the db part of a 3-part
-		// db.schema.table is ignored; schema names match case-sensitively),
-		// system-only queries (INFORMATION_SCHEMA / SPANNER_SYS) early-return
-		// an empty SelectInfoSchema span, SET classifies as Select, and JOIN
-		// USING coalesced keys keep their metadata case: each mirrors a
-		// documented legacy extractor behavior.
-		IgnoreWrittenDatabase:  true,
-		SchemaScopedMetadata:   true,
-		SystemOnlyEmptySpan:    true,
-		SetStatementIsSelect:   true,
-		CanonicalBaseFieldName: true,
-		GetDatabaseMetadata: func(database string) (*metadata.DatabaseSchemaMetadata, error) {
-			if getMeta == nil {
-				return nil, &analysis.ResourceNotFoundError{Database: &database}
-			}
-			return getMeta(database)
-		},
-	})
-	if err != nil {
-		if mixErr := base.ConvertOmniMixTablesError(err); mixErr != nil {
-			return nil, mixErr
-		}
-		return nil, err
-	}
-	return base.OmniQuerySpan(span.Type, span.SourceColumns, nil, span.Results, span.NotFoundError), nil
 }

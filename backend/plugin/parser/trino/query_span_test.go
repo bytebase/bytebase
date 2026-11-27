@@ -29,6 +29,14 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*metadatapb.DatabaseSche
 		}
 }
 
+func querySpan(gCtx base.GetQuerySpanContext, statement string) (*base.QuerySpan, error) {
+	spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_TRINO, []base.Statement{{Text: statement}}, "catalog1", "public", false)
+	if err != nil {
+		return nil, err
+	}
+	return spans[0], nil
+}
+
 func TestGetQuerySpanSeam(t *testing.T) {
 	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "catalog1",
@@ -73,7 +81,7 @@ func TestGetQuerySpanSeam(t *testing.T) {
 		{"INSERT INTO users (id) VALUES (1);", base.DML},
 		{"CREATE TABLE t (id INT);", base.DDL},
 	} {
-		span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: tc.sql}, "catalog1", "public", false)
+		span, err := querySpan(gCtx, tc.sql)
 		require.NoErrorf(t, err, "%q", tc.sql)
 		require.Equalf(t, tc.want, span.Type, "%q", tc.sql)
 	}
@@ -87,7 +95,7 @@ func TestGetQuerySpanSeam(t *testing.T) {
 		ListDatabaseNamesFunc: lister,
 		Engine:                storepb.Engine_TRINO,
 	}
-	span, err := GetQuerySpan(context.Background(), nfCtx, base.Statement{Text: "SELECT * FROM ghost.public.users"}, "catalog1", "public", false)
+	span, err := querySpan(nfCtx, "SELECT * FROM ghost.public.users")
 	require.NoError(t, err)
 	var notFound *base.ResourceNotFoundError
 	require.ErrorAs(t, span.NotFoundError, &notFound)

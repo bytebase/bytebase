@@ -1,13 +1,10 @@
 package tidb
 
 import (
-	"context"
-
 	"github.com/bytebase/omni/tidb/analysis"
 	"github.com/bytebase/omni/tidb/ast"
 	omnicompletion "github.com/bytebase/omni/tidb/completion"
 	omniparser "github.com/bytebase/omni/tidb/parser"
-	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -18,7 +15,6 @@ func init() {
 	engine := base.OmniEngine(analysis.Engine, omnicompletion.Engine)
 	engine.Parse = parseTiDBStatements
 	engine.StatementTypes = GetStatementTypes
-	engine.QuerySpan = GetQuerySpan
 	engine.ExtractChanged = extractChangedResources
 	engine.TransformDMLToSelect = TransformDMLToSelect
 	engine.GenerateRestoreSQL = GenerateRestoreSQL
@@ -64,19 +60,6 @@ func parseTiDBStatements(statement string) ([]base.ParsedStatement, error) {
 
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	return base.CollectOmniStatementTypes(asts, GetNode, "expected TiDB AST", analysis.StatementTypeOf)
-}
-
-// GetQuerySpan returns the query span for the given statement.
-func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, _ string, _ bool) (*base.QuerySpan, error) {
-	_, getDB := base.UnnamedSchemaQuerySpanCatalog(ctx, gCtx, wrapDatabase)
-	querySpan, err := base.OmniResolvedSpanResult(analysis.ResolveQuerySpan(stmt.Text, analysis.ResolveOptions{
-		DefaultDatabase: database,
-		Catalog:         analysis.Catalog{GetDatabase: getDB},
-	}))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get query span from statement: %s", stmt.Text)
-	}
-	return querySpan, nil
 }
 
 func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {

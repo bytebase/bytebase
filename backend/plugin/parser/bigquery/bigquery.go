@@ -9,11 +9,8 @@
 package bigquery
 
 import (
-	"context"
-
 	"github.com/bytebase/omni/bigquery/analysis"
 	"github.com/bytebase/omni/bigquery/ast"
-	"github.com/bytebase/omni/metadata"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -22,7 +19,6 @@ import (
 func init() {
 	engine := base.OmniEngine(analysis.Engine)
 	engine.StatementTypes = GetStatementTypes
-	engine.QuerySpan = GetQuerySpan
 	base.Register(engine, storepb.Engine_BIGQUERY)
 }
 
@@ -41,32 +37,4 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 		types = append(types, base.OmniStatementType(analysis.StatementTypeOf(node)))
 	}
 	return types, nil
-}
-
-// GetQuerySpan is the registered query-span handler.
-func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, defaultDatabase, _ string, _ bool) (*base.QuerySpan, error) {
-	getMeta := base.QuerySpanProtoMetadataFunc(ctx, gCtx, true)
-	span, err := analysis.ResolveQuerySpan(stmt.Text, analysis.ResolveOptions{
-		DefaultDatabase: defaultDatabase,
-		// The written dataset is the DATABASE (default fill-in, single
-		// unnamed metadata schema), system queries keep their table-level
-		// resources, SET classifies as Select (the legacy listener's "treat
-		// SAFE SET as select"), and set-operation star-merge names are
-		// upper-cased (the legacy BigQuery extractor's rendering).
-		SetStatementIsSelect:   true,
-		UppercaseStarMergeName: true,
-		GetDatabaseMetadata: func(database string) (*metadata.DatabaseSchemaMetadata, error) {
-			if getMeta == nil {
-				return nil, &analysis.ResourceNotFoundError{Database: &database}
-			}
-			return getMeta(database)
-		},
-	})
-	if err != nil {
-		if mixErr := base.ConvertOmniMixTablesError(err); mixErr != nil {
-			return nil, mixErr
-		}
-		return nil, err
-	}
-	return base.OmniQuerySpan(span.Type, span.SourceColumns, nil, span.Results, span.NotFoundError), nil
 }

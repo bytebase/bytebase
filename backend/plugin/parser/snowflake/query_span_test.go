@@ -80,23 +80,23 @@ func TestGetQuerySpanSeam(t *testing.T) {
 		ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) { return []string{"DB1"}, nil },
 		Engine:                storepb.Engine_SNOWFLAKE,
 	}
-	span, err := GetQuerySpan(context.Background(), nfCtx, base.Statement{Text: "SELECT A FROM T1"}, "DB1", "PUBLIC", false)
+	spans, err = base.GetQuerySpan(context.Background(), nfCtx, storepb.Engine_SNOWFLAKE, []base.Statement{{Text: "SELECT A FROM T1"}}, "DB1", "PUBLIC", false)
 	require.NoError(t, err)
 	var notFound *base.ResourceNotFoundError
-	require.ErrorAs(t, span.NotFoundError, &notFound)
+	require.ErrorAs(t, spans[0].NotFoundError, &notFound)
 
 	// Unsynced database error.
-	_, err = GetQuerySpan(context.Background(), base.GetQuerySpanContext{
+	_, err = base.GetQuerySpan(context.Background(), base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
 			return "", nil, nil
 		},
 		ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
 			return []string{"DB1"}, nil
 		},
-	}, base.Statement{Text: "SELECT * FROM T1"}, "DB1", "PUBLIC", false)
+	}, storepb.Engine_SNOWFLAKE, []base.Statement{{Text: "SELECT * FROM T1"}}, "DB1", "PUBLIC", false)
 	require.ErrorContains(t, err, `database metadata for database "DB1" not found (database not synced)`)
 
 	// Fail-closed error propagation for unsupported constructs.
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: `SHOW TABLES ->> SELECT * FROM T1;`}, "DB1", "PUBLIC", false)
+	_, err = base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_SNOWFLAKE, []base.Statement{{Text: `SHOW TABLES ->> SELECT * FROM T1;`}}, "DB1", "PUBLIC", false)
 	require.ErrorContains(t, err, "result-pipe")
 }

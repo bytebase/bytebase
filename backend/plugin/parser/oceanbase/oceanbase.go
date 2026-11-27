@@ -3,12 +3,9 @@
 package oceanbase
 
 import (
-	"context"
-
 	"github.com/bytebase/omni/oceanbase/analysis"
 	"github.com/bytebase/omni/oceanbase/ast"
 	omnicompletion "github.com/bytebase/omni/oceanbase/completion"
-	omniparser "github.com/bytebase/omni/oceanbase/parser"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -19,7 +16,6 @@ import (
 func init() {
 	engine := base.OmniEngine(analysis.Engine, omnicompletion.Engine)
 	engine.StatementTypes = GetStatementTypes
-	engine.QuerySpan = GetQuerySpan
 	engine.ExtractChanged = extractChangedResources
 	base.Register(engine, storepb.Engine_OCEANBASE)
 }
@@ -38,26 +34,6 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	return base.CollectOmniStatementTypes(asts, GetNode, "expected AST for OceanBase", analysis.StatementTypeOf)
 }
 
-// GetQuerySpan returns the query span for the given statement.
-func GetQuerySpan(
-	ctx context.Context,
-	gCtx base.GetQuerySpanContext,
-	stmt base.Statement,
-	database, _ string,
-	ignoreCaseSensitive bool,
-) (*base.QuerySpan, error) {
-	listDBs, getDB := base.UnnamedSchemaQuerySpanCatalog(ctx, gCtx, func(d *base.UnnamedSchemaDatabase) analysis.Database { return d })
-	querySpan, err := base.OmniResolvedSpanResult(analysis.ResolveQuerySpan(stmt.Text, analysis.ResolveOptions{
-		DefaultDatabase:     database,
-		IgnoreCaseSensitive: ignoreCaseSensitive,
-		Catalog:             analysis.Catalog{ListDatabaseNames: listDBs, GetDatabase: getDB},
-	}))
-	if err != nil {
-		return nil, convertError(err, stmt)
-	}
-	return querySpan, nil
-}
-
 // EstimateAffectedRowsFromExplainJSON returns the EST.ROWS estimate from OceanBase
 // `EXPLAIN FORMAT=JSON` output.
 func EstimateAffectedRowsFromExplainJSON(plan string) (int64, error) {
@@ -72,13 +48,4 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 		}
 		return analysis.ExtractChangedResources(node, currentDatabase, base.ASTSource(a)), true, nil
 	})
-}
-
-func convertError(err error, stmt base.Statement) error {
-	return base.ConvertSyntaxError(stmt, err, true,
-		func(pe *omniparser.ParseError) (int, string) { return pe.Position, pe.Message },
-		func(pe *omniparser.ParseError, pos *storepb.Position) string {
-			return base.FormatLineColSyntaxError(pos, pe.Message, pe.RelatedText)
-		},
-	)
 }

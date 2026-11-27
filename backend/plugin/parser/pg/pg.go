@@ -11,7 +11,6 @@ import (
 
 func init() {
 	engine := base.OmniEngine(analysis.Engine, pgcompletion.Engine)
-	engine.QuerySpan = GetQuerySpan
 	engine.ExtractChanged = extractChangedResources
 	engine.TransformDMLToSelect = TransformDMLToSelect
 	engine.GenerateRestoreSQL = GenerateRestoreSQL

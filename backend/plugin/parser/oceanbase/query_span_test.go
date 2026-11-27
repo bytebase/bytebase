@@ -30,6 +30,14 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*metadatapb.DatabaseSche
 		}
 }
 
+func querySpan(gCtx base.GetQuerySpanContext, statement base.Statement) (*base.QuerySpan, error) {
+	spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_OCEANBASE, []base.Statement{statement}, "db", "", false)
+	if err != nil {
+		return nil, err
+	}
+	return spans[0], nil
+}
+
 func TestGetQuerySpanSeam(t *testing.T) {
 	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
@@ -68,7 +76,7 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	}}, spans[0].Results)
 
 	// ResourceNotFoundError conversion.
-	span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT nope FROM t1"}, "db", "", false)
+	span, err := querySpan(gCtx, base.Statement{Text: "SELECT nope FROM t1"})
 	require.NoError(t, err)
 	var notFound *base.ResourceNotFoundError
 	require.ErrorAs(t, span.NotFoundError, &notFound)
@@ -76,22 +84,22 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	require.Equal(t, "nope", *notFound.Column)
 
 	// MixUserSystemTablesError conversion (direct and wrapped via view).
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT * FROM t1, mysql.user"}, "db", "", false)
+	_, err = querySpan(gCtx, base.Statement{Text: "SELECT * FROM t1, mysql.user"})
 	require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT * FROM mixed_v"}, "db", "", false)
+	_, err = querySpan(gCtx, base.Statement{Text: "SELECT * FROM mixed_v"})
 	require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
 	// SyntaxError position adjustment using Statement.Start.
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{
+	_, err = querySpan(gCtx, base.Statement{
 		Text:  "SELECT * FORM invalid_table;",
 		Start: &storepb.Position{Line: 3, Column: 1},
-	}, "db", "", false)
+	})
 	var syntaxErr *base.SyntaxError
 	require.ErrorAs(t, err, &syntaxErr)
 	require.Equal(t, int32(3), syntaxErr.Position.Line)
 
 	// Cyclic view reference error propagation.
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT * FROM v1"}, "db", "", false)
+	_, err = querySpan(gCtx, base.Statement{Text: "SELECT * FROM v1"})
 	require.ErrorContains(t, err, "cyclic view reference")
 }

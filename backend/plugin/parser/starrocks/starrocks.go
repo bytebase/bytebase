@@ -1,8 +1,6 @@
 package starrocks
 
 import (
-	"context"
-
 	"github.com/bytebase/omni/starrocks/analysis"
 	"github.com/bytebase/omni/starrocks/ast"
 	starrockscompletion "github.com/bytebase/omni/starrocks/completion"
@@ -16,7 +14,6 @@ import (
 func init() {
 	engine := base.OmniEngine(analysis.Engine, starrockscompletion.Engine)
 	engine.Parse = parseStarRocksStatements
-	engine.QuerySpan = GetQuerySpan
 	engine.ExtractChanged = extractChangedResources
 	base.Register(engine, storepb.Engine_STARROCKS)
 }
@@ -44,27 +41,6 @@ func parseSegment(stmt base.Statement) (*astNode, error) {
 		node = file.Stmts[0]
 	}
 	return &astNode{Node: node, Text: stmt.Text, StartPosition: stmt.Start}, nil
-}
-
-func GetQuerySpan(
-	_ context.Context,
-	_ base.GetQuerySpanContext,
-	stmt base.Statement,
-	database, _ string,
-	ignoreCaseSensitive bool,
-) (*base.QuerySpan, error) {
-	resolved, err := analysis.ResolveQuerySpan(stmt.Text, analysis.ResolveOptions{
-		DefaultDatabase:     database,
-		IgnoreCaseSensitive: ignoreCaseSensitive,
-	})
-	if err != nil {
-		if mixErr := base.ConvertOmniMixTablesError(err); mixErr != nil {
-			return nil, mixErr
-		}
-		return nil, convertParseError(stmt.Text, err, stmt.Start)
-	}
-
-	return base.OmniTableQuerySpan(resolved.Type, resolved.SourceColumns), nil
 }
 
 func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {

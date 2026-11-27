@@ -40,8 +40,6 @@ func TestGetQuerySpanSeam(t *testing.T) {
 
 	gCtx := base.GetQuerySpanContext{
 		InstanceID: "inst-1",
-		TempTables: make(map[string]*base.PhysicalTable),
-		PlanOutput: make(base.PlanOutput),
 		ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {
 			return []string{"app"}, nil
 		},
@@ -56,9 +54,16 @@ func TestGetQuerySpanSeam(t *testing.T) {
 			}
 		},
 	}
+	querySpans := func(statements ...string) ([]*base.QuerySpan, error) {
+		stmts := make([]base.Statement, 0, len(statements))
+		for _, s := range statements {
+			stmts = append(stmts, base.Statement{Text: s})
+		}
+		return base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_MSSQL, stmts, "app", "dbo", true)
+	}
 
 	// Table and predicate column mapping via registry.
-	spans, err := base.GetQuerySpan(context.Background(), gCtx, storepb.Engine_MSSQL, []base.Statement{{Text: "SELECT name FROM dbo.users WHERE id = 1;"}}, "app", "dbo", true)
+	spans, err := querySpans("SELECT name FROM dbo.users WHERE id = 1;")
 	require.NoError(t, err)
 	require.Len(t, spans, 1)
 	span := spans[0]
@@ -67,43 +72,41 @@ func TestGetQuerySpanSeam(t *testing.T) {
 	require.True(t, span.Results[0].SourceColumns[base.ColumnResource{Database: "app", Schema: "dbo", Table: "users", Column: "name"}])
 	require.True(t, span.PredicateColumns[base.ColumnResource{Database: "app", Schema: "dbo", Table: "users", Column: "id"}])
 
-	// TempTables round-trip across statements in the same batch.
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "CREATE TABLE #tmp (c1 INT);"}, "app", "dbo", true)
+	// Temp tables carry across the statements of a script.
+	spans, err = querySpans("CREATE TABLE #tmp (c1 INT);", "SELECT c1 FROM #tmp;")
 	require.NoError(t, err)
-	require.Contains(t, gCtx.TempTables, "#tmp")
-
-	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT c1 FROM #tmp;"}, "app", "dbo", true)
-	require.NoError(t, err)
-	require.Len(t, span.Results, 1)
-	require.Equal(t, "c1", span.Results[0].Name)
+	require.Len(t, spans[1].Results, 1)
+	require.Equal(t, "c1", spans[1].Results[0].Name)
 
 	// ResourceNotFoundError returned by metadata callback maps to span.NotFoundError.
-	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id FROM missing.dbo.users;"}, "app", "dbo", true)
+	spans, err = querySpans("SELECT id FROM missing.dbo.users;")
 	require.NoError(t, err)
 	var notFoundErr *base.ResourceNotFoundError
-	require.ErrorAs(t, span.NotFoundError, &notFoundErr)
+	require.ErrorAs(t, spans[0].NotFoundError, &notFoundErr)
 	require.Equal(t, strPtr("missing"), notFoundErr.Database)
 
-	// PlanOutput state persists across statements.
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SET SHOWPLAN_ALL ON;"}, "app", "dbo", true)
+	// Plan output carries across the statements of a script, and not into the next script.
+	spans, err = querySpans("SET SHOWPLAN_ALL ON;", "SELECT id FROM dbo.users;")
 	require.NoError(t, err)
-	require.NotEmpty(t, gCtx.PlanOutput)
-	span, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT id FROM dbo.users;"}, "app", "dbo", true)
+	require.Equal(t, base.Explain, spans[1].Type)
+	spans, err = querySpans("SELECT id FROM dbo.users;")
 	require.NoError(t, err)
-	require.Equal(t, base.Explain, span.Type)
-	clear(gCtx.PlanOutput)
+	require.Equal(t, base.Select, spans[0].Type)
 
 	// Mixing user and system tables maps to base.MixUserSystemTablesError.
-	_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{Text: "SELECT u.id, t.name FROM dbo.users u JOIN sys.tables t ON 1=1;"}, "app", "dbo", true)
+	_, err = querySpans("SELECT u.id, t.name FROM dbo.users u JOIN sys.tables t ON 1=1;")
 	require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
-	// Error wrapper conversions for TypeNotSupportedError and ResourceNotFoundError.
+	// TypeNotSupportedError and ResourceNotFoundError convert to base's.
 	var typeErr *base.TypeNotSupportedError
-	require.ErrorAs(t, convertQuerySpanError(&analysis.TypeNotSupportedError{Type: "xml", Name: "x"}), &typeErr)
-	require.Equal(t, "xml", typeErr.Type)
+	_, err = querySpans("SELECT * FROM CONTAINSTABLE(dbo.users, name, 'x');")
+	require.ErrorAs(t, err, &typeErr)
+	require.Equal(t, "*ast.FullTextTableRef", typeErr.Type)
 
 	var nfErr *base.ResourceNotFoundError
-	require.ErrorAs(t, convertQuerySpanError(&analysis.NotFoundError{Database: strPtr("app"), Table: strPtr("ghost")}), &nfErr)
+	spans, err = querySpans("SELECT id FROM dbo.ghost;")
+	require.NoError(t, err)
+	require.ErrorAs(t, spans[0].NotFoundError, &nfErr)
 	require.Equal(t, strPtr("ghost"), nfErr.Table)
 
 	require.Equal(t, base.SelectInfoSchema, base.OmniQueryType(analysis.SelectInfoSchema))
