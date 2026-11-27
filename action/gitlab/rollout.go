@@ -35,11 +35,11 @@ func WriteRolloutAnnotations(rolloutURL string) error {
 	return os.WriteFile(AnnotationsFile, data, 0644)
 }
 
-// FoldSection wraps a task's lines in a collapsed job log section.
+// FoldSection wraps a script of the result in a collapsed job log section.
 // https://docs.gitlab.com/ci/jobs/job_logs/#custom-collapsible-sections
 func FoldSection(now time.Time) result.Folder {
 	return func(index int, header string, detail []string) []string {
-		name := fmt.Sprintf("bytebase_task_%d", index)
+		name := fmt.Sprintf("bytebase_script_%d", index)
 		lines := []string{fmt.Sprintf("\x1b[0Ksection_start:%d:%s[collapsed=true]\r\x1b[0K%s", now.Unix(), name, header)}
 		lines = append(lines, detail...)
 		return append(lines, fmt.Sprintf("\x1b[0Ksection_end:%d:%s\r\x1b[0K", now.Unix(), name))

@@ -95,6 +95,19 @@ func buildStageWithSources(t *testing.T, sources map[string][]byte, fixtures ...
 // buildStageWithInput takes the sources and releases from extra.
 func buildStageWithInput(t *testing.T, extra Input, fixtures ...taskFixture) []*Task {
 	t.Helper()
+	result := buildResult(t, extra, fixtures...)
+	require.Len(t, result.Stages, 1)
+	return result.Stages[0].Tasks
+}
+
+// buildResult builds the result for one prod stage holding the fixtures. It
+// takes the sources, releases and statement pool from extra, and a new pool
+// when extra has none.
+func buildResult(t *testing.T, extra Input, fixtures ...taskFixture) *Result {
+	t.Helper()
+	if extra.Statements == nil {
+		extra.Statements = NewStatementPool()
+	}
 	created := time.Date(2026, 11, 12, 0, 0, 0, 0, time.UTC)
 	stage := &v1pb.Stage{Name: testStage, Environment: "environments/prod"}
 	in := Input{
@@ -104,6 +117,7 @@ func buildStageWithInput(t *testing.T, extra Input, fixtures ...taskFixture) []*
 		Logs:        map[string]*LogDigest{},
 		Sources:     extra.Sources,
 		Releases:    extra.Releases,
+		Statements:  extra.Statements,
 	}
 	for _, f := range fixtures {
 		task := &v1pb.Task{
@@ -130,13 +144,11 @@ func buildStageWithInput(t *testing.T, extra Input, fixtures ...taskFixture) []*
 			}
 			in.TaskRuns = append(in.TaskRuns, run)
 			if i == len(f.runs)-1 && f.log != nil {
-				in.Logs[run.Name] = DigestLog(&v1pb.TaskRunLog{Entries: f.log})
+				in.Logs[run.Name] = DigestLog(&v1pb.TaskRunLog{Entries: f.log}, in.Statements)
 			}
 		}
 	}
-	result := Build(in)
-	require.Len(t, result.Stages, 1)
-	return result.Stages[0].Tasks
+	return Build(in)
 }
 
 func TestDetailStage(t *testing.T) {
@@ -629,7 +641,7 @@ func TestNeededSources(t *testing.T) {
 		stage.Tasks = append(stage.Tasks, task)
 		run := &v1pb.TaskRun{Name: task.Name + "/taskRuns/a", Status: v1pb.TaskRun_DONE}
 		runs = append(runs, run)
-		logs[run.Name] = DigestLog(&v1pb.TaskRunLog{Entries: entries})
+		logs[run.Name] = DigestLog(&v1pb.TaskRunLog{Entries: entries}, NewStatementPool())
 	}
 	release := &v1pb.Task_DatabaseUpdate{Source: &v1pb.Task_DatabaseUpdate_Release{Release: "projects/example/releases/r1"}}
 	sheet := &v1pb.Task_DatabaseUpdate{Source: &v1pb.Task_DatabaseUpdate_Sheet{Sheet: "projects/example/sheets/s1"}}
@@ -945,7 +957,7 @@ func TestBuildKeepsABoundedNumberOfCommands(t *testing.T) {
 	}
 	entries = append(entries, failedCommandEntry("ALTER TABLE t ADD COLUMN b int", "column exists"))
 
-	digest := DigestLog(&v1pb.TaskRunLog{Entries: entries})
+	digest := DigestLog(&v1pb.TaskRunLog{Entries: entries}, NewStatementPool())
 	require.Len(t, digest.scopes[0].commands, KeptCommands+1, "the log's other commands are dropped with the log")
 
 	tasks := buildStageWithSources(t, map[string][]byte{SourceKey(testReleaseName, "0001"): []byte(source)}, taskFixture{

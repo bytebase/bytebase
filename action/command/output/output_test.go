@@ -274,7 +274,7 @@ func TestWriteResultBlock(t *testing.T) {
 		w.Result = failedResult()
 		var out bytes.Buffer
 		writeResultBlock(w, &out)
-		require.True(t, strings.HasPrefix(out.String(), "\nRollout to prod: FAILED\n"))
+		require.True(t, strings.HasPrefix(out.String(), "\nDeploy to prod failed on 1 of 1 database\n"))
 		require.True(t, strings.HasSuffix(out.String(), "\nRollout: https://bytebase.example.com/projects/example/plans/101/rollout\n"))
 		require.NotContains(t, out.String(), "::error::")
 	})
@@ -350,8 +350,8 @@ func TestWriteGitHubStepSummary(t *testing.T) {
 
 	data, err := os.ReadFile(summary)
 	require.NoError(t, err)
-	require.Contains(t, string(data), "### Rollout to prod: FAILED")
-	require.Contains(t, string(data), "#### crm on prod failed")
+	require.Contains(t, string(data), "### ❌ Deploy to prod failed on 1 of 1 database")
+	require.Contains(t, string(data), "#### ❌ Database crm failed")
 	require.NotContains(t, string(data), "View in Bytebase")
 	require.NotContains(t, string(data), "https://bytebase.example.com/projects/example/plans/101)", "the plan link is not in the summary")
 	require.NotContains(t, string(data), "/releases/")

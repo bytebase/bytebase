@@ -135,9 +135,10 @@ These flags are specific to the `rollout` subcommand (`bytebase-action rollout`)
 
 When `rollout` stops waiting, it reports how the rollout stands. The report is written whether the command passes or fails, and it never changes the exit code.
 
--   **Job log**: a block with one line per database, the files it ran, the statements that changed rows, and for a failure the statement and the database's error. A listed statement is cut to one line of 100 characters; a failed statement and its error are cut to 30 lines of 200 characters.
+-   **Job log**: a headline, a counts line, one line per database, and for a failure the file, the statement and the database's error. The scripts follow: databases that ran the same SQL share one script, shown as the SQL they ran, in order. A migration script lists its files, and a declarative one its generated statements. A failed statement, its error and each statement in a script are cut to 30 lines of 200 characters.
+-   **Limits**: the log and the summary show at most 5 scripts and 50 statements in a script, and list up to 50 databases under a script; the summary names the first 5 above a folded list. The summary also shows at most 10 failures and, in a folded table, 50 databases. Each cut says how much is left, and the rest is in Bytebase.
 -   **`--output` file**: the same result under the `result` key. Per file it keeps the first 100 commands and any that failed; `commandCount` says how many ran, and the counts and totals cover all of them.
--   **GitHub**: the block as the step summary, an error annotation for each failed database, and a warning annotation when the rollout has no stage for `--target-stage`.
+-   **GitHub**: the block as the step summary, with a link to the rollout in its counts line, an error annotation for each failed database, and a warning annotation when the rollout has no stage for `--target-stage`.
 -   **GitLab**: `bytebase_annotations.json`, an [annotations report](https://docs.gitlab.com/ci/yaml/artifacts_reports/#artifactsreportsannotations) that links the job page to the rollout.
 
 `result.outcome` says how the run ended:
