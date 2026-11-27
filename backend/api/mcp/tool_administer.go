@@ -382,7 +382,9 @@ type approvalRulesDiff struct {
 	changes []string
 	// shorter are the same lines for a form with no room for them, in the
 	// order it tries them: a move counts the rules it passes by their
-	// approvers and names none, and then only counts them.
+	// approvers and names none, and then only counts them. A description by
+	// byFewestRows is in one wording, and holds that wording's lines here and
+	// in changes.
 	shorter [2][]string
 	// moves counts the kept rules the description calls moved.
 	moves int
