@@ -12,7 +12,6 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
@@ -20,7 +19,6 @@ func init() {
 	engine.Parse = parseRedshiftStatements
 	engine.StatementTypes = GetStatementTypes
 	engine.QuerySpan = GetQuerySpan
-	engine.ExtractChanged = extractChangedResources
 	base.Register(engine, storepb.Engine_REDSHIFT)
 }
 
@@ -100,18 +98,6 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.
 	span := base.OmniQuerySpan(resolved.Type, resolved.SourceColumns, resolved.PredicateColumns, resolved.Results, resolved.NotFoundError)
 	span.FunctionNotSupportedError = base.OmniFunctionNotSupportedError(resolved.FunctionNotSupportedError)
 	return span, nil
-}
-
-func extractChangedResources(database string, schema string, dbMetadata *model.DatabaseMetadata, _ []base.AST, statement string) (*base.ChangeSummary, error) {
-	changes, err := analysis.ExtractChangedResources(statement, database, schema)
-	if err != nil {
-		return nil, err
-	}
-	summary := &base.ChangeSummary{
-		ChangedResources: model.NewChangedResources(dbMetadata),
-	}
-	base.AppendStatementChanges(summary, *changes, false)
-	return summary, nil
 }
 
 func splitSQL(statement string) ([]base.Statement, error) {

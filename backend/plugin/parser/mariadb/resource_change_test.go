@@ -43,6 +43,6 @@ func TestExtractChangedResourcesSeam(t *testing.T) {
 	require.Equal(t, int64(1000), replaceGot.ChangedResources.CountAffectedTableRows())
 
 	// Foreign AST rejection.
-	_, err = extractChangedResources("db", "", nil, []base.AST{foreignAST{}}, "CREATE TABLE t (a INT);")
+	_, err = base.ExtractChangedResources(storepb.Engine_MARIADB, "db", "", nil, []base.AST{foreignAST{}}, "CREATE TABLE t (a INT);")
 	require.ErrorContains(t, err, "expected AST for MariaDB")
 }

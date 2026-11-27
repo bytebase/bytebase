@@ -8,13 +8,11 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
 	engine := base.OmniEngine(analysis.Engine, doriscompletion.Engine)
 	engine.Parse = parseDorisStatements
-	engine.ExtractChanged = extractChangedResources
 	base.Register(engine, storepb.Engine_DORIS)
 }
 
@@ -41,15 +39,6 @@ func parseSegment(stmt base.Statement) (*astNode, error) {
 		node = file.Stmts[0]
 	}
 	return &astNode{Node: node, Text: stmt.Text, StartPosition: stmt.Start}, nil
-}
-
-func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
-	return base.ExtractTypedChangedResources(dbMetadata, asts, "expected astNode for Doris", true, func(parsed *astNode) (analysis.StatementChanges, bool) {
-		if parsed.Node == nil {
-			return analysis.StatementChanges{}, false
-		}
-		return analysis.ExtractChangedResources(parsed.Node, currentDatabase, parsed.Text), true
-	})
 }
 
 func convertParseError(statement string, err error, basePos *storepb.Position) error {

@@ -12,7 +12,6 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var versionRe = regexp.MustCompile(`(\d+)\.(\d+)`)
@@ -21,7 +20,6 @@ func init() {
 	engine := base.OmniEngine(analysis.Engine, oraclecompletion.Engine)
 	engine.StatementTypes = GetStatementTypes
 	engine.QuerySpan = GetQuerySpan
-	engine.ExtractChanged = extractChangedResources
 	engine.TransformDMLToSelect = TransformDMLToSelect
 	engine.GenerateRestoreSQL = GenerateRestoreSQL
 	base.Register(engine, storepb.Engine_ORACLE)
@@ -98,26 +96,4 @@ func newCatalog(ctx context.Context, gCtx base.GetQuerySpanContext) analysis.Cat
 		}
 	}
 	return catalog
-}
-
-// extractChangedResources treats currentDatabase as the current schema, as
-// Oracle does.
-func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
-	var indexTable analysis.IndexTableFunc
-	if dbMetadata != nil {
-		indexTable = func(schema, index string) (string, bool) {
-			foundIndex := dbMetadata.GetSchemaMetadata(schema).GetIndex(index)
-			if foundIndex == nil {
-				return "", false
-			}
-			return foundIndex.GetTableProto().GetName(), true
-		}
-	}
-	return base.ExtractChangedResourcesFromASTs(dbMetadata, asts, false, func(a base.AST) (analysis.StatementChanges, bool, error) {
-		node, ok := GetNode(a)
-		if !ok {
-			return analysis.StatementChanges{}, false, nil
-		}
-		return analysis.ExtractChangedResources(node, currentDatabase, base.ASTSource(a), indexTable), true, nil
-	})
 }
