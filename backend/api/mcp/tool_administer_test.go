@@ -2009,19 +2009,23 @@ func TestMoveLineCost(t *testing.T) {
 		require.Len(t, wrapLine(line, descriptionLineWidth), n)
 		return line
 	}
-	require.Equal(t, moveCost{0, 1, 1}, moveLineCost("Move to rule 2: a", "", 8))
-	require.Equal(t, moveCost{0, 0, 1}, moveLineCost("Change, a to b; move to rule 2: a", "Change, a to b: a", 8))
-	require.Equal(t, moveCost{0, 1, 1}, moveLineCost(rows(3)+" word", rows(3), 8))
-	require.Equal(t, moveCost{0, 8, 1}, moveLineCost(rows(8), "", 8))
-	require.Equal(t, moveCost{0, 3, 1}, moveLineCost(rows(8), rows(5), 8))
-	require.Equal(t, moveCost{1, 0, 1}, moveLineCost(rows(9), "", 8))
-	require.Equal(t, moveCost{1, 0, 1}, moveLineCost(rows(9), rows(8), 8))
-	require.Equal(t, moveCost{0, 8, 1}, moveLineCost(rows(8), "", 9))
-	require.Equal(t, moveCost{0, 1, 1}, moveLineCost(rows(10), rows(9), 8), "a line too long without the move is too long by any description")
-	// A form with more than one wording: the line fits a form when one does.
-	require.Equal(t, moveCost{0, 9, 1}, moveLineCost(rows(9), "", 8, rows(9), rows(10), rows(8)), "a wording with room, and the move is priced by this wording's rows")
-	require.Equal(t, moveCost{1, 0, 1}, moveLineCost(rows(9), "", 8, rows(9), rows(10), rows(9)))
-	require.Equal(t, moveCost{0, 8, 1}, moveLineCost(rows(8), "", 8, rows(8), rows(9), rows(9)))
+	cost := func(moved, unmoved string, room int) moveCost {
+		return moveLineCost([]int{lineRows(moved)}, lineRows(unmoved), room)[0]
+	}
+	require.Equal(t, moveCost{0, 1, 1}, cost("Move to rule 2: a", "", 8))
+	require.Equal(t, moveCost{0, 0, 1}, cost("Change, a to b; move to rule 2: a", "Change, a to b: a", 8))
+	require.Equal(t, moveCost{0, 1, 1}, cost(rows(3)+" word", rows(3), 8))
+	require.Equal(t, moveCost{0, 8, 1}, cost(rows(8), "", 8))
+	require.Equal(t, moveCost{0, 3, 1}, cost(rows(8), rows(5), 8))
+	require.Equal(t, moveCost{1, 0, 1}, cost(rows(9), "", 8))
+	require.Equal(t, moveCost{1, 0, 1}, cost(rows(9), rows(8), 8))
+	require.Equal(t, moveCost{0, 8, 1}, cost(rows(8), "", 9))
+	require.Equal(t, moveCost{0, 1, 1}, cost(rows(10), rows(9), 8), "a line too long without the move is too long by any description")
+	// A form with more than one wording: the line fits a form when one does,
+	// and each wording's move is priced by its own rows.
+	require.Equal(t, []moveCost{{0, 9, 1}, {0, 10, 1}, {0, 8, 1}}, moveLineCost([]int{9, 10, 8}, 0, 8))
+	require.Equal(t, []moveCost{{1, 0, 1}, {1, 0, 1}, {1, 0, 1}}, moveLineCost([]int{9, 10, 9}, 0, 8))
+	require.Equal(t, []moveCost{{0, 8, 1}, {0, 9, 1}, {0, 9, 1}}, moveLineCost([]int{8, 9, 9}, 0, 8))
 }
 
 // A step is a request of its own, and its rules decide which rules a move's

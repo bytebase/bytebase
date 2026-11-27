@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"iter"
 	"net/http"
 	"slices"
 	"strconv"
@@ -387,7 +388,7 @@ type approvalRulesDiff struct {
 	// in changes.
 	shorter [2][]string
 	// wordings are the lines in each of the three wordings, also for a
-	// description stated in one: fitsAForm reads them all.
+	// description stated in one: fitsAForm asks them all.
 	wordings [][]string
 	// moves counts the kept rules the description calls moved.
 	moves int
@@ -613,15 +614,16 @@ func (m *approvalRulesMatch) byFewestRows(room int) []*approvalRulesDiff {
 		was[kept] = rule.was
 	}
 	traded := tradedOrder(was)
-	costs := make([][3]moveCost, len(m.kept))
+	costs := make([][]moveCost, len(m.kept))
 	for kept := range m.kept {
 		if !traded[kept] {
 			continue
 		}
-		moved, unmoved := m.changeLines(kept, true), m.changeLines(kept, false)
-		for wording := range costs[kept] {
-			costs[kept][wording] = moveLineCost(moved[wording], unmoved[wording], room, moved[:]...)
+		var with [3]int
+		for wording, line := range m.changeLines(kept, true) {
+			with[wording] = lineRows(line)
 		}
+		costs[kept] = moveLineCost(with[:], lineRows(m.changeLines(kept, false)[0]), room)
 	}
 	var diffs []*approvalRulesDiff
 	for wording := range 3 {
@@ -915,41 +917,55 @@ func longestCommonOrder(a, b []string) []bool {
 // rule's line, and the move itself.
 type moveCost [3]int
 
-// moveLineCost prices a move by the rule's change line with and without it,
-// for a form with room rows for its changes. Where the form has more than one
-// wording, reworded are the moved line's, and the line is too long for a form
-// only when each of them is.
-func moveLineCost(moved, unmoved string, room int, reworded ...string) moveCost {
-	rows := func(line string) int {
-		if line == "" {
-			return 0
+// moveLineCost prices a move in each wording of the rule's change line, for a
+// form with room rows for its changes: with are the line's rows with the move,
+// and without its rows without it. A move that leaves the line with room in no
+// wording (fitsAForm) adds a line too long for any form.
+func moveLineCost(with []int, without, room int) []moveCost {
+	tooLong := without <= room && !fitsAForm(room, slices.Values(with))
+	costs := make([]moveCost, len(with))
+	for wording, rows := range with {
+		costs[wording] = moveCost{0, rows - without, 1}
+		if tooLong {
+			costs[wording] = moveCost{1, 0, 1}
 		}
-		return len(wrapLine(line, descriptionLineWidth))
 	}
-	with, without := rows(moved), rows(unmoved)
-	tooLong := with > room && without <= room
-	// The last wording first, as in fitsAForm.
-	for i := len(reworded) - 1; tooLong && i >= 0; i-- {
-		tooLong = rows(reworded[i]) > room
+	return costs
+}
+
+// lineRows counts the rows of a change line. A rule that does not change has
+// no line.
+func lineRows(line string) int {
+	if line == "" {
+		return 0
 	}
-	if tooLong {
-		return moveCost{1, 0, 1}
-	}
-	return moveCost{0, with - without, 1}
+	return len(wrapLine(line, descriptionLineWidth))
 }
 
 // fitsAForm reports whether a rule change has room in a form alone: whether
-// its line takes no more than room rows in one of wordings, the form's change
-// lines in each wording, where change is its place. A step is a form of its
-// own and takes the first wording it has room for.
-func fitsAForm(room int, wordings [][]string, change int) bool {
-	// The last wording first: it is most often the shortest, and a long line is slow to wrap.
-	for _, lines := range slices.Backward(wordings) {
-		if len(wrapLine(lines[change], descriptionLineWidth)) <= room {
+// its line takes no more than room rows in one of the form's wordings, where
+// rows are the rows it takes in each. A step is a form of its own and takes
+// the first wording it has room for.
+func fitsAForm(room int, rows iter.Seq[int]) bool {
+	for taken := range rows {
+		if taken <= room {
 			return true
 		}
 	}
 	return false
+}
+
+// changeRows are the rows of one change's line in each wording, where wordings
+// are a form's change lines in each. The last wording comes first: it is most
+// often the shortest, and a long line is slow to wrap.
+func changeRows(wordings [][]string, change int) iter.Seq[int] {
+	return func(yield func(int) bool) {
+		for _, lines := range slices.Backward(wordings) {
+			if !yield(lineRows(lines[change])) {
+				return
+			}
+		}
+	}
 }
 
 // tradedOrder marks the kept rules that traded order with another one. was is
@@ -1161,7 +1177,7 @@ func otherMovesHelp(moves, room int, wordings ...[]string) bool {
 		return true
 	}
 	for change := range wordings[0] {
-		if !fitsAForm(room, wordings, change) {
+		if !fitsAForm(room, changeRows(wordings, change)) {
 			return true
 		}
 	}
@@ -1298,7 +1314,7 @@ func (r adminRules) listed(ctx context.Context, changes []formChange, wordings [
 		affected = affected || change.effect
 		rows := len(wrapLine(change.text, descriptionLineWidth))
 		needed += rows
-		if tooLong == "" && rows > room && !fitsAForm(room, wordings, i) {
+		if tooLong == "" && rows > room && !fitsAForm(room, changeRows(wordings, i)) {
 			tooLong = change.text
 		}
 	}

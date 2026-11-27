@@ -489,7 +489,7 @@ func (m *maskingRulesMatch) byFewestRows(room int) *maskingRulesDiff {
 		if traded[kept] {
 			moved, _ := phrases.keptRuleChange(before, rule, true, i+1)
 			unmoved, _ := phrases.keptRuleChange(before, rule, false, i+1)
-			costs[kept] = moveLineCost(moved.text, unmoved.text, room)
+			costs[kept] = moveLineCost([]int{lineRows(moved.text)}, lineRows(unmoved.text), room)[0]
 		}
 		kept++
 	}
