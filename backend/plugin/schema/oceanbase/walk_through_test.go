@@ -22,6 +22,6 @@ func TestWalkThroughCrossDatabaseRename(t *testing.T) {
 	stmts, advices := sm.GetStatementsForChecks(storepb.Engine_OCEANBASE, statement)
 	require.Empty(t, advices)
 
-	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
+	advice := schema.WalkThroughWithContext(context.Background(), storepb.Engine_OCEANBASE, schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
 	require.Nil(t, advice, "a cross-database RENAME the server accepts must not fail the simulation")
 }

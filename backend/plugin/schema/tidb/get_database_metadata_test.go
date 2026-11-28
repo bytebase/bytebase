@@ -25,7 +25,7 @@ CREATE VIEW v AS SELECT id FROM t;
 		require.Empty(t, meta.Name)
 		require.Len(t, meta.Schemas, 1)
 		require.Len(t, meta.Schemas[0].Views, 1)
-		require.NotContains(t, meta.Schemas[0].Views[0].Definition, catalogDBName)
+		require.NotContains(t, meta.Schemas[0].Views[0].Definition, "_bytebase_schema_scratch")
 	})
 
 	t.Run("preserves explicit database name and view qualifier when DDL selects one", func(t *testing.T) {

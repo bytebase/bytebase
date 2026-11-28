@@ -46,7 +46,7 @@ func TestGetDatabaseMetadataParsesPrettyView(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, sdl, "AS\nselect\n  `t1`.`a` AS `a`,", "fixture must actually be pretty-printed")
 
-	meta, err := GetDatabaseMetadata(sdl)
+	meta, err := schema.GetDatabaseMetadata(storepb.Engine_MYSQL, sdl)
 	require.NoError(t, err)
 	require.Len(t, meta.Schemas, 1)
 	require.Len(t, meta.Schemas[0].Views, 1)
