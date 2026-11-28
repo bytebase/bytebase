@@ -4,14 +4,12 @@ import (
 	"context"
 	"testing"
 
-	omnianalysis "github.com/bytebase/omni/analysis"
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -295,15 +293,7 @@ func TestDefinitionAdaptersAndRegistrations(t *testing.T) {
 	require.Equal(t, "DROP TABLE `old`", migration)
 }
 
-type fakeSourceAST struct {
-	base.AST
-	node   string
-	source string
-}
-
-func (a fakeSourceAST) ASTSource() string { return a.source }
-
-func TestSDLAdviceHelpersAndInspectAST(t *testing.T) {
+func TestSDLAdviceHelpersAndMapExecResults(t *testing.T) {
 	drop := SDLDropAdvice("drop t")
 	require.Equal(t, storepb.Advice_WARNING, drop.Status)
 	require.Equal(t, code.SDLDropOperation.Int32(), drop.Code)
@@ -358,23 +348,6 @@ func TestSDLAdviceHelpersAndInspectAST(t *testing.T) {
 	require.Len(t, advices, 1)
 	require.Equal(t, "DROP TABLE t", advices[0].Content)
 
-	inspect := InspectAST(
-		func(a base.AST) (string, bool) {
-			f, ok := a.(fakeSourceAST)
-			return f.node, ok
-		},
-		func(n string) omnianalysis.WalkThroughStatement {
-			return omnianalysis.WalkThroughStatement{Database: n}
-		},
-	)
-	info, ok := inspect(fakeSourceAST{node: "db1", source: "  CREATE DATABASE db1; \n"})
-	require.True(t, ok)
-	require.Equal(t, "db1", info.Database)
-	require.Equal(t, "CREATE DATABASE db1;", info.Source)
-
-	_, ok = inspect(nil)
-	require.False(t, ok)
-
 	type rawExec struct {
 		idx  int
 		line int
@@ -391,19 +364,4 @@ func TestSDLAdviceHelpersAndInspectAST(t *testing.T) {
 		return ExecResult{Index: r.idx}
 	})
 	require.ErrorIs(t, err, boom)
-
-	extract := ExtractError(func(e *fakeCatalogError) (int, string) { return e.code, e.msg })
-	errCode, msg, ok := extract(&fakeCatalogError{code: 1050, msg: "exists"})
-	require.True(t, ok)
-	require.Equal(t, 1050, errCode)
-	require.Equal(t, "exists", msg)
-	_, _, ok = extract(boom)
-	require.False(t, ok)
 }
-
-type fakeCatalogError struct {
-	code int
-	msg  string
-}
-
-func (e *fakeCatalogError) Error() string { return e.msg }

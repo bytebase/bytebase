@@ -21,6 +21,7 @@ import (
 	// through that registry.
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 )

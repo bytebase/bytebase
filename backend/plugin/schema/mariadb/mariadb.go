@@ -3,18 +3,13 @@
 package mariadb
 
 import (
-	"context"
-
 	mariadbanalysis "github.com/bytebase/omni/mariadb/analysis"
 	"github.com/bytebase/omni/mariadb/catalog"
 	metadatapb "github.com/bytebase/omni/metadata"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/schema/internal/omnicatalog"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // Runs on MariaDB's own catalog fork rather than MySQL's: the MySQL loader
@@ -31,7 +26,7 @@ func init() {
 		}.SchemaDefinitions(),
 		DatabaseMetadata:      GetDatabaseMetadata,
 		DiffMetadataMigration: omnicatalog.MetadataMigrationFunc(mariaDBCatalog),
-		WalkThrough:           WalkThroughWithContext,
+		WalkThrough:           schema.OmniWalkThrough(storepb.Engine_MARIADB, mariadbanalysis.Engine),
 	}, storepb.Engine_MARIADB)
 }
 
@@ -82,32 +77,6 @@ func clearImplicitTableCharsets(c *catalog.Catalog, meta *metadatapb.DatabaseSch
 			}
 		}
 	}
-}
-
-var mariaDBWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
-	Engine: storepb.Engine_MARIADB,
-	New:    catalog.New,
-	Load: func(ctx context.Context, c *catalog.Catalog, meta *metadatapb.DatabaseSchemaMetadata) error {
-		_, err := c.LoadMetadata(ctx, meta)
-		return err
-	},
-	Exec: func(c *catalog.Catalog, sql string) ([]omnicatalog.ExecResult, error) {
-		return execCatalog(c, sql, true)
-	},
-	DatabaseMetadata: func(c *catalog.Catalog, dbName string) *metadatapb.DatabaseSchemaMetadata {
-		return c.DatabaseMetadata(dbName)
-	},
-	InspectAST: omnicatalog.InspectAST(mariadbparser.GetNode, mariadbanalysis.ClassifyWalkThroughStatement),
-	ExtractCatalogError: omnicatalog.ExtractError(func(e *catalog.Error) (int, string) {
-		return e.Code, e.Message
-	}),
-	SplitSQL: mariadbparser.SplitSQL,
-	IsCTAS:   mariadbanalysis.IsCreateTableAs,
-}
-
-// WalkThroughWithContext performs DDL simulation using the omni MariaDB catalog.
-func WalkThroughWithContext(ctx context.Context, wtCtx schema.WalkThroughContext, d *model.DatabaseMetadata, asts []base.AST) *storepb.Advice {
-	return omnicatalog.RunWalkThrough(ctx, mariaDBWalkThroughEngine, wtCtx.RawSQL, d, asts, nil)
 }
 
 func execCatalog(c *catalog.Catalog, sql string, continueOnError bool) ([]omnicatalog.ExecResult, error) {

@@ -55,7 +55,7 @@ func TestWalkThroughMariaDBSimulatesSharedStatements(t *testing.T) {
 	stmts, advices := sm.GetStatementsForChecks(storepb.Engine_MARIADB, statement)
 	require.Empty(t, advices)
 
-	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
+	advice := schema.WalkThroughWithContext(context.Background(), storepb.Engine_MARIADB, schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
 	require.Nil(t, advice)
 	require.NotNil(t, state.GetSchemaMetadata("").GetTable("t").GetColumn("b"))
 }
@@ -76,7 +76,7 @@ func TestWalkThroughMariaDBErrorAndPrecheck(t *testing.T) {
 		stmts, advices := sm.GetStatementsForChecks(storepb.Engine_MARIADB, statement)
 		require.Empty(t, advices)
 
-		advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
+		advice := schema.WalkThroughWithContext(context.Background(), storepb.Engine_MARIADB, schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
 		require.NotNil(t, advice)
 		require.Equal(t, code.TableExists.Int32(), advice.Code)
 	})
@@ -88,7 +88,7 @@ func TestWalkThroughMariaDBErrorAndPrecheck(t *testing.T) {
 		stmts, advices := sm.GetStatementsForChecks(storepb.Engine_MARIADB, statement)
 		require.Empty(t, advices)
 
-		advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
+		advice := schema.WalkThroughWithContext(context.Background(), storepb.Engine_MARIADB, schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
 		require.NotNil(t, advice)
 		require.Equal(t, code.NotCurrentDatabase.Int32(), advice.Code)
 	})
@@ -108,7 +108,7 @@ func TestWalkThroughMariaDBErrorAndPrecheck(t *testing.T) {
 		stmts, advices := sm.GetStatementsForChecks(storepb.Engine_MARIADB, statement)
 		require.Empty(t, advices)
 
-		advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
+		advice := schema.WalkThroughWithContext(context.Background(), storepb.Engine_MARIADB, schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
 		require.Nil(t, advice)
 		require.Nil(t, state.GetSchemaMetadata("").GetTable("t"))
 	})
