@@ -328,10 +328,21 @@ type maskingRulesDiff struct {
 	// each whether it is new, changed or kept as stored.
 	requested []*v1pb.MaskingRulePolicy_MaskingRule
 	marks     []string
-	// types describe each rule's semantic type.
-	types map[string]*storepb.SemanticTypeSetting_SemanticType
+	// types describe each rule's semantic type, and typeLabels memoizes how
+	// the form names each of them.
+	types      map[string]*storepb.SemanticTypeSetting_SemanticType
+	typeLabels map[string]string
 	// moves counts the kept rules the change lines call moved.
 	moves int
+	// conditions are the conditions of the stored and the requested rules, each
+	// once. scopes memoizes their parses and texts how the form states them;
+	// literals and unruled find the conditions that may read as one scope
+	// (indexLiterals).
+	conditions []string
+	scopes     map[string]maskingScope
+	texts      map[string]string
+	literals   map[string][]string
+	unruled    []string
 }
 
 // diffMaskingRules compares the requested rule list with the stored one. Rules
@@ -381,6 +392,14 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 	}
 
 	diff := &maskingRulesDiff{requested: requested, types: types}
+	for _, rule := range stored {
+		diff.conditions = append(diff.conditions, rule.GetCondition().GetExpression())
+	}
+	for _, rule := range requested {
+		if condition := rule.GetCondition().GetExpression(); storedByCondition[condition] == nil {
+			diff.conditions = append(diff.conditions, condition)
+		}
+	}
 	var storedKept, requestedKept []string
 	storedPlace := map[string]int{}
 	for _, rule := range stored {
@@ -391,7 +410,7 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 			continue
 		}
 		diff.changes = append(diff.changes, formChange{
-			text:   fmt.Sprintf("Remove, %s: %s", diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)),
+			text:   fmt.Sprintf("Remove, %s: %s", diff.typePhrase(rule.GetSemanticType()), diff.conditionText(condition)),
 			effect: true,
 		})
 	}
@@ -438,7 +457,7 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 			if title := rule.GetCondition().GetTitle(); title != "" {
 				line += fmt.Sprintf(" %q", title)
 			}
-			line += fmt.Sprintf(", %s: %s", diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition))
+			line += fmt.Sprintf(", %s: %s", diff.typePhrase(rule.GetSemanticType()), diff.conditionText(condition))
 			diff.changes = append(diff.changes, formChange{text: line, effect: !diff.masksEveryValue(rule.GetSemanticType())})
 			diff.marks = append(diff.marks, "new")
 			continue
@@ -489,7 +508,7 @@ func (d *maskingRulesDiff) keptRuleLine(before, rule *v1pb.MaskingRulePolicy_Mas
 		return ""
 	}
 	line := strings.Join(clauses, "; ")
-	return fmt.Sprintf("%s%s: %s", strings.ToUpper(line[:1]), line[1:], maskingConditionText(rule.GetCondition().GetExpression()))
+	return fmt.Sprintf("%s%s: %s", strings.ToUpper(line[:1]), line[1:], d.conditionText(rule.GetCondition().GetExpression()))
 }
 
 // typePhrase names a rule's semantic type and what masking does with it. A
@@ -508,10 +527,35 @@ func (d *maskingRulesDiff) typePhrase(id string) string {
 	if id == masker.DefaultSemanticTypeID || id == masker.DefaultPartialSemanticTypeID {
 		return masker.AlgorithmName(semanticType.GetAlgorithm())
 	}
-	if m := d.typeMasker(id); m == nil || !masker.MasksValues(m) {
-		return fmt.Sprintf("%q (masks nothing)", semanticType.GetTitle())
+	if d.typeLabels == nil {
+		d.typeLabels = d.customTypeLabels()
 	}
-	return fmt.Sprintf("%q (%s)", semanticType.GetTitle(), masker.AlgorithmName(semanticType.GetAlgorithm()))
+	return d.typeLabels[id]
+}
+
+// customTypeLabels names each stored type by its title and what masking does
+// with it. Two types can share both, and a rule can be given either, so each
+// of them is named with its ID as well.
+func (d *maskingRulesDiff) customTypeLabels() map[string]string {
+	labels, shared := make(map[string]string, len(d.types)), map[string]int{}
+	for id, semanticType := range d.types {
+		if id == masker.DefaultSemanticTypeID || id == masker.DefaultPartialSemanticTypeID {
+			continue
+		}
+		does := "masks nothing"
+		if m := d.typeMasker(id); m != nil && masker.MasksValues(m) {
+			does = masker.AlgorithmName(semanticType.GetAlgorithm())
+		}
+		labels[id] = fmt.Sprintf("%q (%s", semanticType.GetTitle(), does)
+		shared[labels[id]]++
+	}
+	for id, label := range labels {
+		if shared[label] > 1 {
+			label += fmt.Sprintf(", ID %q", id)
+		}
+		labels[id] = label + ")"
+	}
+	return labels
 }
 
 // masksEveryValue reports whether the semantic type id hides every value of
@@ -584,7 +628,7 @@ func maskingRuleSection(diff *maskingRulesDiff) ruleSection {
 		line := fmt.Sprintf("%d. %s (%s), %s", i+1, maskingRuleTitle(rule), diff.marks[i], diff.typePhrase(rule.GetSemanticType()))
 		switch {
 		case diff.marks[i] == "kept":
-			line += ": " + maskingConditionText(rule.GetCondition().GetExpression())
+			line += ": " + diff.conditionText(rule.GetCondition().GetExpression())
 		case !listed:
 			line += ": " + conditionText(rule.GetCondition().GetExpression())
 		default:
@@ -594,9 +638,10 @@ func maskingRuleSection(diff *maskingRulesDiff) ruleSection {
 }
 
 // maskingFormDigest binds an answer to the form, the request, and the stored
-// rules and semantic types the form was built from. A kept rule can move to
-// another type that reads the same, and a type's settings show only as its
-// algorithm's name, so the form alone does not cover them.
+// rules and semantic types the form was built from, as an MCP session reads
+// them: SettingService.GetSetting returns it no MD5 salt. A type's other
+// settings show only as its algorithm's name, so the form alone does not
+// cover them.
 func maskingFormDigest(form *adminForm, request *v1pb.UpdatePolicyRequest, stored []*v1pb.MaskingRulePolicy_MaskingRule, types []*v1pb.SemanticTypeSetting_SemanticType) []byte {
 	h := sha256.New()
 	_, _ = h.Write(adminFormDigest(form, request))

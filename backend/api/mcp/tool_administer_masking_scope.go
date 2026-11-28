@@ -128,11 +128,88 @@ func scopeValues(values []string) string {
 	return "(" + quoteAll(values) + ")"
 }
 
-// maskingConditionText shows a masking rule's condition as its scope phrase
-// when it has one, and as CEL otherwise.
-func maskingConditionText(condition string) string {
-	if scope, ok := parseMaskingScope(condition); ok {
-		return scope.phrase()
+// conditionText states a masking rule's condition: as its scope phrase, or as
+// typed when it has none, or when another rule of the stored or the requested
+// list reads as the same scope. Two conditions can spell one scope, and a line
+// that removes or changes one of the two rules has to say which.
+func (d *maskingRulesDiff) conditionText(condition string) string {
+	if text, ok := d.texts[condition]; ok {
+		return text
 	}
-	return conditionText(condition)
+	text := conditionText(condition)
+	if scope := d.scope(condition); scope != nil && !d.sharesScope(condition, scope) {
+		text = scope.phrase()
+	}
+	if d.texts == nil {
+		d.texts = map[string]string{}
+	}
+	d.texts[condition] = text
+	return text
+}
+
+// scope is condition's scope, or nil when it has none.
+func (d *maskingRulesDiff) scope(condition string) maskingScope {
+	if scope, ok := d.scopes[condition]; ok {
+		return scope
+	}
+	scope, _ := parseMaskingScope(condition)
+	if d.scopes == nil {
+		d.scopes = map[string]maskingScope{}
+	}
+	d.scopes[condition] = scope
+	return scope
+}
+
+// sharesScope reports whether another condition of the lists reads as scope.
+// A condition that does holds each value of the scope, so only the conditions
+// that hold the value the fewest hold are parsed: a form states a few rules of
+// a list that can hold thousands.
+func (d *maskingRulesDiff) sharesScope(condition string, scope maskingScope) bool {
+	if d.literals == nil {
+		d.indexLiterals()
+	}
+	var fewest []string
+	picked := false
+	for _, values := range scope {
+		for _, value := range values {
+			if held := d.literals[value]; !picked || len(held) < len(fewest) {
+				fewest, picked = held, true
+			}
+		}
+	}
+	phrase := scope.phrase()
+	for _, others := range [][]string{fewest, d.unruled} {
+		for _, other := range others {
+			if other == condition {
+				continue
+			}
+			if otherScope := d.scope(other); otherScope != nil && otherScope.phrase() == phrase {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// indexLiterals maps each text that stands between two quotes of one kind in
+// a condition to the conditions it stands in. A string literal with no escape
+// holds its value as written between two such quotes, unless it is
+// triple-quoted: only such a literal can hold a quote of its own kind, or a
+// carriage return, which the parser reads as a line feed (cel-go,
+// parser/gen/CEL.g4, STRING; parser/unescape.go). An escape starts with a
+// backslash. So a condition with a backslash or a triple quote goes to
+// unruled, which every search looks at.
+func (d *maskingRulesDiff) indexLiterals() {
+	d.literals = map[string][]string{}
+	for _, condition := range d.conditions {
+		if strings.Contains(condition, `\`) || strings.Contains(condition, `"""`) || strings.Contains(condition, `'''`) {
+			d.unruled = append(d.unruled, condition)
+			continue
+		}
+		for _, quote := range []string{`"`, `'`} {
+			for _, text := range strings.Split(condition, quote) {
+				d.literals[text] = append(d.literals[text], condition)
+			}
+		}
+	}
 }

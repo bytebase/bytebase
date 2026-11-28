@@ -63,8 +63,109 @@ func TestMaskingScopeLeavesOtherConditionsAsCEL(t *testing.T) {
 	} {
 		_, ok := parseMaskingScope(condition)
 		require.False(t, ok, condition)
-		require.Equal(t, conditionText(condition), maskingConditionText(condition), condition)
+		require.Equal(t, conditionText(condition), scopeText(condition), condition)
 	}
+}
+
+// scopeText is how a form states condition when no other rule reads the same.
+func scopeText(condition string) string {
+	return (&maskingRulesDiff{}).conditionText(condition)
+}
+
+// celStrings spells value as a CEL string literal in every way the grammar
+// has: either quote, both triple quotes, raw, and each kind of escape.
+func celStrings(value string) []string {
+	escape := func(quote byte) string {
+		var sb strings.Builder
+		for _, r := range value {
+			switch {
+			case r == '\\' || byte(r) == quote && r < 0x80:
+				sb.WriteString(`\` + string(r))
+			case r == '\n':
+				sb.WriteString(`\n`)
+			case r == '\t':
+				sb.WriteString(`\t`)
+			default:
+				sb.WriteRune(r)
+			}
+		}
+		return string(quote) + sb.String() + string(quote)
+	}
+	spellings := []string{escape('"'), escape('\'')}
+	ascii := !strings.ContainsFunc(value, func(r rune) bool { return r >= 0x80 })
+	if ascii && value != "" {
+		var hex, octal, unicode strings.Builder
+		for _, b := range []byte(value) {
+			hex.WriteString("\\x" + strconv.FormatInt(int64(b)+0x100, 16)[1:])
+			octal.WriteString("\\" + strconv.FormatInt(int64(b)+0o1000, 8)[1:])
+			unicode.WriteString("\\u" + strconv.FormatInt(int64(b)+0x10000, 16)[1:])
+		}
+		spellings = append(spellings, `"`+hex.String()+`"`, `'`+octal.String()+`'`, `"`+unicode.String()+`"`)
+	}
+	plain := !strings.Contains(value, `\`)
+	if plain && !strings.Contains(value, `"`) && !strings.Contains(value, "\n") {
+		spellings = append(spellings, `r"`+value+`"`, `R"`+value+`"`)
+	}
+	if plain && !strings.Contains(value, `'`) && !strings.Contains(value, "\n") {
+		spellings = append(spellings, `r'`+value+`'`)
+	}
+	// A triple-quoted string holds a quote of its own kind, though not at its
+	// end, and line breaks. The parser reads a carriage return as a line feed.
+	for _, quote := range []string{`"`, `'`} {
+		if !plain || strings.HasSuffix(value, quote) || strings.Contains(value, quote+quote+quote) {
+			continue
+		}
+		triple := quote + quote + quote
+		spellings = append(spellings, triple+value+triple, "r"+triple+value+triple)
+		if strings.Contains(value, "\n") {
+			spellings = append(spellings, triple+strings.ReplaceAll(value, "\n", "\r\n")+triple, triple+strings.ReplaceAll(value, "\n", "\r")+triple)
+		}
+	}
+	return spellings
+}
+
+// One scope has many spellings: its terms in any order, "==" or a list of one
+// value, and every way CEL writes a string. sharesScope parses only a
+// condition that may hold the scope's values, so no spelling may slip past
+// that test. The parser alone says first that each spelling reads as the
+// scope.
+func TestSharesScopeFindsEverySpellingOfAScope(t *testing.T) {
+	spelled := 0
+	for _, value := range []string{"pay", "it's", `a"b`, "", "naïve", `a\b`, "two\nlines", "tab\there", `C:\dir`, `'`, `"quoted" twice`} {
+		canonical := `resource.table_name == ` + strconv.Quote(value) + ` && resource.column_name == "amount"`
+		scope, ok := parseMaskingScope(canonical)
+		require.True(t, ok, canonical)
+		for _, literal := range celStrings(value) {
+			for _, condition := range []string{
+				`resource.column_name == "amount" && resource.table_name == ` + literal,
+				`resource.table_name in [` + literal + `] && resource.column_name in ['amount']`,
+				"(resource.table_name == " + literal + ")\n\t&& resource.column_name == 'amount' // it's \"a comment\"",
+			} {
+				if condition == canonical {
+					continue
+				}
+				other, ok := parseMaskingScope(condition)
+				require.True(t, ok, condition)
+				require.Equal(t, scope.phrase(), other.phrase(), condition)
+				diff := &maskingRulesDiff{conditions: []string{canonical, condition}}
+				require.Equal(t, conditionText(canonical), diff.conditionText(canonical), "beside %s", condition)
+				require.Equal(t, conditionText(condition), diff.conditionText(condition), "beside %s", canonical)
+				spelled++
+			}
+		}
+	}
+	require.Greater(t, spelled, 150)
+
+	// A condition with the same values in other places is another scope: the
+	// text test lets it through, and its parse tells the two apart. A
+	// condition that cannot hold the values is never parsed.
+	canonical := `resource.table_name == "pay" && resource.column_name == "amount"`
+	swapped, unrelated := `resource.table_name == "amount" && resource.column_name == "pay"`, `resource.table_name == "payroll" && resource.column_name == "amount"`
+	diff := &maskingRulesDiff{conditions: []string{canonical, swapped, unrelated}}
+	require.Equal(t, `any db, "pay"."amount"`, diff.conditionText(canonical))
+	require.Contains(t, diff.scopes, swapped)
+	require.NotContains(t, diff.scopes, unrelated)
+	require.Equal(t, `any db, "amount"."pay"`, diff.conditionText(swapped))
 }
 
 // The phrase is what the user approves, so it must state exactly what masking
