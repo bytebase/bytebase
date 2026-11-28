@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
@@ -221,24 +222,28 @@ func TestAdministerWorkspaceAppliesConfirmedApprovalRules(t *testing.T) {
 	res := callAdminister(t, session, administerParams(body))
 	require.False(t, res.IsError, resultText(t, res))
 	asked := user.lastParams(t)
+	// With its title, the second rule's line is one column past a row of the
+	// message, so the two lines and the issue line pass its four rows.
 	require.Equal(t, strings.Join([]string{
 		`Change the approval rules for database changes, as alice@example.com?`,
-		"Add rule 1, no approval: `resource.environment_id == 'test'`",
-		"Add rule 2, \"Workspace DBA\": `resource.environment_id == 'prod'`",
+		`Add 2 rules, listed under Action; 1 rule will need no approval.`,
 		`Plan edits recheck your "hr#12" under these rules.`,
+		approvalRulesApply,
 	}, "\n"), asked.Message)
 	for _, line := range strings.Split(asked.Message, "\n") {
 		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
 	}
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
-	description, err := json.Marshal("Unmatched changes go to the fallback rules: \"Fallback Rule\"\n" +
+	description, err := json.Marshal("Add rule 1 \"Test\", no approval: `resource.environment_id == 'test'`\n" +
+		"Add rule 2 \"Prod\", \"Workspace DBA\": `resource.environment_id ==\n" +
+		"> 'prod'`\n" +
+		"Unmatched changes go to the fallback rules: \"Fallback Rule\"\n" +
 		"> (\"Project owner\").\n" +
 		"The rules for database changes, in the order an approval check\n" +
 		"> tries them:\n" +
 		"1. \"Test\" (new), no approval\n" +
-		"2. \"Prod\" (new), \"Workspace DBA\"\n" +
-		approvalRulesApply)
+		"2. \"Prod\" (new), \"Workspace DBA\"")
 	require.NoError(t, err)
 	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
 		"title":"Action",
@@ -261,9 +266,10 @@ func TestAdministerWorkspaceAppliesConfirmedApprovalRules(t *testing.T) {
 		"link":"https://bb.example.com/custom-approval"}`, string(output))
 }
 
-// The rules as an agent sent them in Claude Code: prod first, and CEL in double
-// quotes, which escaped quoting lengthens past a line.
-func TestAdministerWorkspaceFitsTheTwoRulesAnAgentWrites(t *testing.T) {
+// The rules as an agent sent them in Claude Code: prod first, CEL in double
+// quotes, and a title each. A line that adds a rule states its title, so each
+// of the two takes two rows and the form lists them under the choice.
+func TestAdministerWorkspaceListsTheTwoRulesAnAgentWritesUnderTheChoice(t *testing.T) {
 	mock := &approvalMock{pendingIssues: []string{"projects/hr/issues/12"}}
 	mock.setStored(fallbackRule())
 	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
@@ -276,12 +282,22 @@ func TestAdministerWorkspaceFitsTheTwoRulesAnAgentWrites(t *testing.T) {
 	asked := user.lastParams(t)
 	require.Equal(t, strings.Join([]string{
 		`Change the approval rules for database changes, as alice@example.com?`,
-		"Add rule 1, \"Workspace DBA\": `resource.environment_id == \"prod\"`",
-		"Add rule 2, no approval: `resource.environment_id == \"test\"`",
+		`Add 2 rules, listed under Action; 1 rule will need no approval.`,
 		`Plan edits recheck your "hr#12" under these rules.`,
+		approvalRulesApply,
 	}, "\n"), asked.Message)
-	require.Contains(t, choiceDescription(t, asked), "1. \"Prod changes need DBA\" (new), \"Workspace DBA\"\n2. \"Test changes need no approval\" (new), no approval\n")
-	require.True(t, strings.HasSuffix(choiceDescription(t, asked), "\n"+approvalRulesApply), "a full message leaves the fixed sentence to the description")
+	require.Equal(t, strings.Join([]string{
+		`Add rule 1 "Prod changes need DBA", "Workspace DBA":`,
+		"> `resource.environment_id == \"prod\"`",
+		`Add rule 2 "Test changes need no approval", no approval:`,
+		"> `resource.environment_id == \"test\"`",
+		`Unmatched changes go to the fallback rules: "Fallback Rule"`,
+		`> ("Project owner").`,
+		`The rules for database changes, in the order an approval check`,
+		`> tries them:`,
+		`1. "Prod changes need DBA" (new), "Workspace DBA"`,
+		`2. "Test changes need no approval" (new), no approval`,
+	}, "\n"), choiceDescription(t, asked))
 	require.Len(t, mock.calls(), 1)
 }
 
@@ -568,7 +584,7 @@ func TestAdministerWorkspaceGivesEachChangedRuleOneLine(t *testing.T) {
 	require.Equal(t, []string{
 		"Remove, \"Project owner\": `resource.environment_id == 'c'`",
 		"Change, \"Project owner\" to \"Workspace DBA\"; move to rule 1, now ahead of \"A\" (\"Project owner\"); rename to \"B2\"; change description to \"now with a description\": `resource.environment_id == 'b'`",
-		"Add rule 2, no approval: `resource.environment_id == 'd'`",
+		"Add rule 2 \"D\", no approval: `resource.environment_id == 'd'`",
 	}, diff.changes)
 	require.Equal(t, "Remove 1 rule, add 1 and change 1, listed under Action.", countLine(len(diff.changes), diff.marks, 0))
 }
@@ -731,7 +747,7 @@ func line0(rules []*v1pb.WorkspaceApprovalSetting_Rule) string {
 // fits no form: the advice is the console, never smaller steps.
 func TestAdministerWorkspaceSendsARuleWithNoRoomBesideTheFallbackLineToTheConsole(t *testing.T) {
 	rule := changeRule("Long", strings.Repeat(`resource.project_id == "p" || `, 18)+"false", "roles/workspaceDBA")
-	change := "Add rule 1, \"Workspace DBA\": " + conditionText(rule.GetCondition().GetExpression())
+	change := "Add rule 1 \"Long\", \"Workspace DBA\": " + conditionText(rule.GetCondition().GetExpression())
 	require.LessOrEqual(t, len(wrapLine(change, descriptionLineWidth)), descriptionLines, "the rule fits the rows alone")
 	line, _ := fallbackLine([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()})
 	require.Greater(t, len(wrapLine(change, descriptionLineWidth))+len(wrapLine(line, descriptionLineWidth)), descriptionLines, "and not beside the fallback line")
@@ -744,9 +760,9 @@ func TestAdministerWorkspaceSendsARuleWithNoRoomBesideTheFallbackLineToTheConsol
 	require.Equal(t, "CHANGE_TOO_LONG", refused.Code)
 	// The message counts the rows the fallback line leaves, which the rule
 	// passes, and not the ten it fits alone.
-	require.True(t, strings.HasPrefix(refused.Message, `the rule change "Add rule 1, \"Workspace DBA\": `), refused.Message)
+	require.True(t, strings.HasPrefix(refused.Message, `the rule change "Add rule 1 \"Long\", \"Workspace DBA\": `), refused.Message)
 	require.True(t, strings.HasSuffix(refused.Message, " needs more lines than the 8 one confirmation form has room for under its choice, so the approval rules were not changed"), refused.Message)
-	require.Contains(t, refused.Suggestion, "make that change signed in to the Bytebase console: LINK")
+	require.Equal(t, "do not shorten the rule's condition to make it fit; give the rule a shorter title or description if one of them is what is long, or make that change signed in to the Bytebase console: LINK", refused.Suggestion)
 	require.NotContains(t, refused.Suggestion, "smaller steps")
 }
 
@@ -754,30 +770,30 @@ func TestAdministerWorkspaceSendsARuleWithNoRoomBesideTheFallbackLineToTheConsol
 func TestSectionRowsCountsAListItCannotShow(t *testing.T) {
 	rules := []string{`1. "A" (kept), "Project owner": ` + "`resource.environment_id == 'a'`", `2. "B" (kept), no approval: ` + "`resource.environment_id == 'b'`", `3. "C" (new), no approval`}
 	list := ruleSection{name: "Rules for database changes", header: "The rules for database changes, in the order an approval check tries them:",
-		total: len(rules), rule: func(i int) string { return rules[i] }}
-	require.Nil(t, sectionRows(list, 0))
+		total: len(rules), rule: func(i int, _ bool) string { return rules[i] }}
+	require.Nil(t, sectionRows(list, 0, false))
 	for room := 1; room <= 3; room++ {
-		require.Equal(t, []string{"Rules for database changes in all: 3. Their list has no room here."}, sectionRows(list, room), "room %d", room)
+		require.Equal(t, []string{"Rules for database changes in all: 3. Their list has no room here."}, sectionRows(list, room, false), "room %d", room)
 	}
 	require.Equal(t, []string{
 		"The rules for database changes, in the order an approval check",
 		"> tries them:",
 		`1. "A" (kept), "Project owner": ` + "`resource.environment_id == 'a'`",
 		"... and 2 more rules, tried after these.",
-	}, sectionRows(list, 4))
-	require.Len(t, sectionRows(list, 5), 5)
-	require.Equal(t, []string{"Masking rules in all: 1. Their list has no room here."}, sectionRows(ruleSection{name: "Masking rules", header: list.header, total: 1, rule: list.rule}, 2))
+	}, sectionRows(list, 4, false))
+	require.Len(t, sectionRows(list, 5, false), 5)
+	require.Equal(t, []string{"Masking rules in all: 1. Their list has no room here."}, sectionRows(ruleSection{name: "Masking rules", header: list.header, total: 1, rule: list.rule}, 2, false))
 }
 
 // The list's rows are built as they are tried: the rules a description shows
 // and the first it has no room for. A workspace can store thousands of rules.
 func TestSectionRowsBuildsOnlyTheRowsItTries(t *testing.T) {
 	built := 0
-	list := ruleSection{name: "Masking rules", header: "The masking rules, in the order masking tries them:", total: 5000, rule: func(i int) string {
+	list := ruleSection{name: "Masking rules", header: "The masking rules, in the order masking tries them:", total: 5000, rule: func(i int, _ bool) string {
 		built++
 		return fmt.Sprintf(`%d. "Rule" (kept), Full mask: every column`, i+1)
 	}}
-	rows := sectionRows(list, descriptionLines)
+	rows := sectionRows(list, descriptionLines, false)
 	require.Len(t, rows, descriptionLines)
 	require.Equal(t, "... and 4992 more rules, tried after these.", rows[descriptionLines-1])
 	require.Equal(t, 9, built)
@@ -814,7 +830,7 @@ func TestAdministerWorkspaceNamesTheRulesAListHasNoRoomFor(t *testing.T) {
 	require.NoError(t, err)
 	rows := strings.Split(form.description, "\n")
 	require.Equal(t, []string{
-		"Add rule 6, \"Workspace DBA\": `resource.environment_id == 'e4'`",
+		"Add rule 6 \"e4\", \"Workspace DBA\": `resource.environment_id == 'e4'`",
 		`Unmatched changes go to the fallback rules: "Fallback Rule"`,
 		`> ("Project owner").`,
 		"Rules for database changes in all: 6. Their list has no room here.",
@@ -2006,6 +2022,97 @@ func TestApprovalMoveLineIsBoundedForAnyStoredRules(t *testing.T) {
 	}
 }
 
+// requestRuleFields returns the fields a request can set on one rule: the
+// entries of fields under path that have no entry below them.
+func requestRuleFields(fields map[string]bool, path string) []string {
+	var leaves []string
+	for field := range fields {
+		leaf, ok := strings.CutPrefix(field, path+".")
+		if !ok {
+			continue
+		}
+		parent := false
+		for other := range fields {
+			parent = parent || strings.HasPrefix(other, field+".")
+		}
+		if !parent {
+			leaves = append(leaves, leaf)
+		}
+	}
+	slices.Sort(leaves)
+	return leaves
+}
+
+// The rule list under the choice is cut, so the line that adds a rule states
+// every field the request sets on it, wherever the rule lands in the list: a
+// field that only the rule's row showed would be written unseen.
+func TestAdministerWorkspaceAddedRuleLineStatesEveryFieldOfTheRule(t *testing.T) {
+	// Each field a request can set on a rule, and the words that state it.
+	stated := map[string]string{
+		// Only the rules for database changes are compared, and each has
+		// this source.
+		"source":               "Add rule ",
+		"condition.expression": "`resource.project_id == \"payments\"`",
+		"template.title":       `"Payments production", `,
+		"template.description": `description "Reviewed by the DBA team"`,
+		"template.flow.roles":  `"Workspace DBA" then "Project owner"`,
+	}
+	require.ElementsMatch(t, requestRuleFields(approvalRequestFields, approvalRulesPath), slices.Collect(maps.Keys(stated)))
+	added := changeRule("Payments production", `resource.project_id == "payments"`, "roles/workspaceDBA", "roles/projectOwner")
+	added.Template.Description = "Reviewed by the DBA team"
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	for _, kept := range []int{0, 2, 9, 40} {
+		stored := []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}
+		for i := range kept {
+			stored = append(stored, changeRule(fmt.Sprintf("Rule %d", i+1), fmt.Sprintf(`resource.project_id == "project-%02d"`, i), "roles/projectOwner"))
+		}
+		for _, place := range []int{1, len(stored)} {
+			diff, err := diffApprovalRules(stored, slices.Insert(slices.Clone(stored), place, added), "")
+			require.NoError(t, err)
+			require.Len(t, diff.changes, 1)
+			for field, words := range stated {
+				require.Contains(t, diff.changes[0], words, "%s, %d kept rules", field, kept)
+			}
+			form, err := approvalRulesForm(alice, diff, "", "")
+			require.NoError(t, err)
+			require.Contains(t, unwrapMessage(form.message+"\n"+form.description), diff.changes[0], "%d kept rules", kept)
+		}
+	}
+
+	// The rule list names each rule by its title and gives a description. A
+	// new rule's row leaves the description out when the rule's line stands
+	// right above the list, and keeps it when the message holds that line.
+	diff, err := diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), added}, "")
+	require.NoError(t, err)
+	whole, err := approvalRulesForm(alice, diff, "", "")
+	require.NoError(t, err)
+	require.Contains(t, unwrapMessage(whole.message), diff.changes[0])
+	require.Contains(t, unwrapMessage(whole.description), `1. "Payments production" (new), "Workspace DBA" then "Project owner" (description "Reviewed by the DBA team")`)
+	listed, err := approvalRulesForm(alice, diff, issuesLine([]string{"hr#12"}, false), "")
+	require.NoError(t, err)
+	require.Contains(t, listed.message, "Add 1 rule, listed under Action.")
+	require.True(t, strings.HasPrefix(unwrapMessage(listed.description), diff.changes[0]+"\n"), listed.description)
+	require.True(t, strings.HasSuffix(unwrapMessage(listed.description), "\n"+`1. "Payments production" (new), "Workspace DBA" then "Project owner"`), listed.description)
+	// A kept rule has no change line, so its row keeps its description there
+	// too.
+	kept := changeRule("Kept", `resource.project_id == "k"`)
+	kept.Template.Description = "Stays"
+	diff, err = diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), kept}, []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), kept, added}, "")
+	require.NoError(t, err)
+	listed, err = approvalRulesForm(alice, diff, issuesLine([]string{"hr#12"}, false), "")
+	require.NoError(t, err)
+	require.Contains(t, listed.message, "Add 1 rule, listed under Action.")
+	require.True(t, strings.HasSuffix(unwrapMessage(listed.description), "\n"+
+		"1. \"Kept\" (kept), no approval: `resource.project_id == \"k\"` (description \"Stays\")\n"+
+		`2. "Payments production" (new), "Workspace DBA" then "Project owner"`), listed.description)
+
+	// A rule with no title or description says nothing of them.
+	bare := changeRule("", `resource.project_id == "payments"`, "roles/workspaceDBA")
+	diff, err = diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), bare}, "")
+	require.NoError(t, err)
+	require.Equal(t, []string{"Add rule 1, \"Workspace DBA\": `resource.project_id == \"payments\"`"}, diff.changes)
+}
+
 func TestAdministerWorkspaceStatesEachKindOfChange(t *testing.T) {
 	prod := func(change func(*v1pb.WorkspaceApprovalSetting_Rule)) *v1pb.WorkspaceApprovalSetting_Rule {
 		rule := changeRule("Prod", "resource.environment_id == 'prod'", "roles/workspaceDBA")
@@ -2037,9 +2144,9 @@ func TestAdministerWorkspaceStatesEachKindOfChange(t *testing.T) {
 			})},
 			want: []string{"Change, \"Workspace DBA\" to no approval; rename to \"Production\": `resource.environment_id == 'prod'`"}},
 		"added ahead of a kept rule": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil)}, requested: []*v1pb.WorkspaceApprovalSetting_Rule{dev, prod(nil)},
-			want: []string{"Add rule 1, no approval: `resource.environment_id != 'dev'`"}},
+			want: []string{"Add rule 1 \"Dev\", no approval: `resource.environment_id != 'dev'`"}},
 		"added after the kept rules": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil)}, requested: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil), dev},
-			want: []string{"Add rule 2, no approval: `resource.environment_id != 'dev'`"}},
+			want: []string{"Add rule 2 \"Dev\", no approval: `resource.environment_id != 'dev'`"}},
 		"moved behind a kept rule": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil), dev}, requested: []*v1pb.WorkspaceApprovalSetting_Rule{dev, prod(nil)},
 			want: []string{"Move to rule 2, \"Workspace DBA\", now behind \"Dev\" (no approval): `resource.environment_id == 'prod'`"}},
 		"moved, with other approvers": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil), dev},
@@ -2097,7 +2204,7 @@ func TestAdministerWorkspaceStatesEveryRuleFieldItTakes(t *testing.T) {
 }
 
 func TestAdministerWorkspaceContinuesALongConditionOnTheNextLine(t *testing.T) {
-	long := changeRule("HR prod", "resource.environment_id == 'prod' && resource.project_id == 'hr' && resource.database_name == 'hr_prod'", "roles/workspaceDBA")
+	long := changeRule("", "resource.environment_id == 'prod' && resource.project_id == 'hr' && resource.database_name == 'hr_prod'", "roles/workspaceDBA")
 	mock := &approvalMock{}
 	mock.setStored(fallbackRule())
 	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
@@ -2123,7 +2230,7 @@ func TestAdministerWorkspaceContinuesALongConditionOnTheNextLine(t *testing.T) {
 // two columns wider wraps it to a third line, and beside an issue line the form
 // is refused.
 func TestAdministerWorkspaceFitsALongRuleBesideAnIssue(t *testing.T) {
-	long := changeRule("HR prod", "resource.environment_id == 'prod' && resource.project_id == 'hr' && resource.database_name == 'hr_prod'", "roles/workspaceDBA")
+	long := changeRule("", "resource.environment_id == 'prod' && resource.project_id == 'hr' && resource.database_name == 'hr_prod'", "roles/workspaceDBA")
 	diff, err := diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), long}, "")
 	require.NoError(t, err)
 	form, err := approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, issuesLine([]string{"hr#12"}, false), "")
@@ -2138,7 +2245,7 @@ func TestAdministerWorkspaceFitsALongRuleBesideAnIssue(t *testing.T) {
 // effect names the user's issues, which leave a question no room. A rule too
 // long to share the message with that line goes under the choice.
 func TestAdministerWorkspaceKeepsTheIssueLineOutOfTheQuestion(t *testing.T) {
-	long := changeRule("HR salary", `resource.environment_id == "prod" && resource.project_id == "hr" && resource.database_name == "hr_prod" && resource.table_name == "salary"`, "roles/workspaceDBA")
+	long := changeRule("", `resource.environment_id == "prod" && resource.project_id == "hr" && resource.database_name == "hr_prod" && resource.table_name == "salary"`, "roles/workspaceDBA")
 	diff, err := diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), long}, "")
 	require.NoError(t, err)
 	alice := withUserEmail(context.Background(), "alice@example.com")
@@ -2175,7 +2282,7 @@ func TestAdministerWorkspaceNamesTheUserIssuesAwaitingApproval(t *testing.T) {
 			user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
 			_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
-			callAdminister(t, session, administerParams(approvalBody(t, fallbackRule(), prodRule)))
+			callAdminister(t, session, administerParams(approvalBody(t, fallbackRule(), changeRule("", "resource.environment_id == 'prod'", "roles/workspaceDBA"))))
 			asked := user.lastParams(t)
 			require.Contains(t, asked.Message, tc.want)
 			lines := strings.Split(asked.Message, "\n")
@@ -2232,8 +2339,8 @@ func TestAdministerWorkspaceEscapesAConditionThatDoesNotPrintAtEverySite(t *test
 	require.Equal(t, []string{
 		`Remove, "Workspace DBA": "a\tb"`,
 		`Change, "Project owner" to "Workspace DBA": "x\u200by"`,
-		`Add rule 2, no approval: "pr\u202eod"`,
-		`Add rule 3, no approval: "resource.environment_id == \"prod\" &&\nresource.project_id == \"hr\""`,
+		`Add rule 2 "Added", no approval: "pr\u202eod"`,
+		`Add rule 3 "Console", no approval: "resource.environment_id == \"prod\" &&\nresource.project_id == \"hr\""`,
 	}, diff.changes)
 
 	oddFallback := &v1pb.WorkspaceApprovalSetting_Rule{Condition: &expr.Expr{Expression: "p\u200bq"},
@@ -2242,7 +2349,7 @@ func TestAdministerWorkspaceEscapesAConditionThatDoesNotPrintAtEverySite(t *test
 	require.NoError(t, err)
 	form, err := approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, "", "")
 	require.NoError(t, err)
-	require.Contains(t, form.message, `Add rule 2, no approval: "pr\u202eod"`)
+	require.Contains(t, form.message, `Add rule 2 "Added", no approval: "pr\u202eod"`)
 	require.Contains(t, unwrapMessage(form.description), `"Odd" ("Project owner") when "p\u200bq"`)
 	require.Contains(t, form.description, `1. "Kept" (kept), "Project owner": "x\u200by"`)
 	require.False(t, strings.ContainsAny(form.message+form.description, "\t\u200b\u202e"))
@@ -2252,8 +2359,13 @@ func TestAdministerWorkspaceEscapesAConditionThatDoesNotPrintAtEverySite(t *test
 // cannot wrap into a line that reads as one of the form's own.
 func TestAdministerWorkspaceMarksEveryContinuationLine(t *testing.T) {
 	for name, tc := range map[string]struct {
-		condition, forged string
+		title, condition, forged string
 	}{
+		"a change line in a title": {
+			title:     strings.Repeat("x", 57) + " Add rule 2, no approval: `resource.environment_id == 'dev'` yyy",
+			condition: "resource.environment_id == 'test'",
+			forged:    "Add rule 2, no approval: `resource.environment_id == 'dev'`",
+		},
 		"an issue line": {
 			condition: `resource.environment_id == "test" || 'x Plan edits recheck your "hr#12" under these rules.` + strings.Repeat(" ", 25) + `'.size() > 0`,
 			forged:    `Plan edits recheck your "hr#12" under these rules.`,
@@ -2269,13 +2381,13 @@ func TestAdministerWorkspaceMarksEveryContinuationLine(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			diff, err := diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()},
-				[]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), changeRule("t", tc.condition)}, "")
+				[]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), changeRule(tc.title, tc.condition)}, "")
 			require.NoError(t, err)
 			form, err := approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, "", "")
 			require.NoError(t, err)
-			require.Contains(t, form.message, tc.forged, "the fixture must wrap its forged line into the message")
+			require.Contains(t, form.message, "\n"+continuedLine+" "+tc.forged, "the fixture must wrap its forged line to the start of a row")
 			lines := strings.Split(form.message, "\n")
-			require.True(t, strings.HasPrefix(lines[1], "Add rule 1, no approval: "), lines[1])
+			require.True(t, strings.HasPrefix(lines[1], "Add rule 1"), lines[1])
 			for _, line := range lines[2:] {
 				require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
 				if first, _ := utf8.DecodeRuneInString(line); line != approvalRulesApply {
@@ -2477,7 +2589,7 @@ func TestAdministerWorkspaceCountsATextOfMarksByItsCodeUnits(t *testing.T) {
 	require.NoError(t, err)
 	added, err := approvalRulesForm(alice, diff, "", "")
 	require.NoError(t, err)
-	require.Contains(t, added.message, "Add rule 2, \"Workspace DBA\": `resource.project_id == \"b\"`")
+	require.Contains(t, added.message, "Add rule 2 \"Team B\", \"Workspace DBA\": `resource.project_id == \"b\"`")
 	require.Equal(t, "Unmatched changes go to a fallback rule too long to name here.\nRules for database changes in all: 2. Their list has no room here.", added.description)
 }
 

@@ -494,8 +494,18 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 		condition := rule.GetCondition().GetExpression()
 		if storedByCondition[condition] == nil {
 			// The first matching rule decides, so an added rule's place is part
-			// of the change.
-			diff.changes = append(diff.changes, fmt.Sprintf("Add rule %d, %s: %s", i+1, approvers(rule), conditionText(condition)))
+			// of the change. The line states every field of the rule, its
+			// title after its place as in the rule list: that list can be cut
+			// before the rule's row.
+			line := fmt.Sprintf("Add rule %d", i+1)
+			if title := rule.GetTemplate().GetTitle(); title != "" {
+				line += fmt.Sprintf(" %q", title)
+			}
+			line += ", " + approvers(rule)
+			if description := rule.GetTemplate().GetDescription(); description != "" {
+				line += fmt.Sprintf(", description %q", description)
+			}
+			diff.changes = append(diff.changes, line+": "+conditionText(condition))
 			diff.marks = append(diff.marks, "new")
 			continue
 		}
@@ -911,7 +921,7 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 	default:
 		list.header = "The rules for database changes, in the order an approval check tries them:"
 		list.total = len(diff.requested)
-		list.rule = func(i int) string {
+		list.rule = func(i int, listed bool) string {
 			rule := diff.requested[i]
 			// As on the masking form, every line names its approvers, and a
 			// kept rule, which the message never shows, its condition.
@@ -919,7 +929,7 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 			if diff.marks[i] == "kept" {
 				text += ": " + conditionText(rule.GetCondition().GetExpression())
 			}
-			if description := rule.GetTemplate().GetDescription(); description != "" {
+			if description := rule.GetTemplate().GetDescription(); description != "" && (!listed || diff.marks[i] != "new") {
 				text += fmt.Sprintf(" (description %q)", description)
 			}
 			return text
@@ -1032,9 +1042,11 @@ type ruleSection struct {
 	header string
 	// rule gives the row of the list's rule i, of total. A description has
 	// room for a few, so only the rows it tries are built: a workspace can
-	// store thousands of rules.
+	// store thousands of rules. listed says that the description lists the
+	// changes itself, right above the list, so the row of a new or changed
+	// rule leaves out what its change line states.
 	total int
-	rule  func(i int) string
+	rule  func(i int, listed bool) string
 	empty string
 }
 
@@ -1158,7 +1170,7 @@ func describeRules(changes []string, list ruleSection, fixed string) string {
 	for _, line := range slices.Concat(changes, list.before) {
 		rows = append(rows, wrapLine(line, descriptionLineWidth)...)
 	}
-	rows = append(rows, sectionRows(list, descriptionLines-len(rows))...)
+	rows = append(rows, sectionRows(list, descriptionLines-len(rows), len(changes) > 0)...)
 	if wrapped := wrapLine(fixed, descriptionLineWidth); fixed != "" && len(rows)+len(wrapped) <= descriptionLines {
 		rows = append(rows, wrapped...)
 	}
@@ -1169,7 +1181,7 @@ func describeRules(changes []string, list ruleSection, fixed string) string {
 // first tried, then a row that counts the rest and says where they sit: a rule
 // left out can still be tried before one the change adds. When not even the
 // first rule fits, one row counts them all, and with no row left nothing does.
-func sectionRows(list ruleSection, room int) []string {
+func sectionRows(list ruleSection, room int, listed bool) []string {
 	if list.total == 0 {
 		if rows := wrapLine(list.empty, descriptionLineWidth); list.empty != "" && len(rows) <= room {
 			return rows
@@ -1178,7 +1190,7 @@ func sectionRows(list ruleSection, room int) []string {
 	}
 	rows := wrapLine(list.header, descriptionLineWidth)
 	for i := range list.total {
-		wrapped := wrapLine(list.rule(i), descriptionLineWidth)
+		wrapped := wrapLine(list.rule(i, listed), descriptionLineWidth)
 		left := list.total - i
 		if len(rows)+len(wrapped)+min(left-1, 1) <= room {
 			rows = append(rows, wrapped...)
@@ -1281,7 +1293,7 @@ func changeTooLong(needed, room int, tooLong string, rules adminRules, link stri
 		return &toolError{
 			Code:       "CHANGE_TOO_LONG",
 			Message:    fmt.Sprintf("the rule change %q needs more lines than the %d one confirmation form has room for under its choice, so %s were not changed", tooLong, room, rules.name),
-			Suggestion: "do not shorten the rule's condition to make it fit; make that change signed in to the Bytebase console: " + link,
+			Suggestion: "do not shorten the rule's condition to make it fit; give the rule a shorter title or description if one of them is what is long, or make that change signed in to the Bytebase console: " + link,
 		}
 	}
 	return &toolError{

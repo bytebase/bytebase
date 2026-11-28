@@ -431,11 +431,15 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 		condition := rule.GetCondition().GetExpression()
 		before := storedByCondition[condition]
 		if before == nil {
-			// An added rule's place is part of its change.
-			diff.changes = append(diff.changes, formChange{
-				text:   fmt.Sprintf("Add rule %d, %s: %s", i+1, diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)),
-				effect: !diff.masksEveryValue(rule.GetSemanticType()),
-			})
+			// An added rule's place is part of its change, and its line states
+			// every field of the rule, its title after its place as in the
+			// rule list: that list can be cut before the rule's row.
+			line := fmt.Sprintf("Add rule %d", i+1)
+			if title := rule.GetCondition().GetTitle(); title != "" {
+				line += fmt.Sprintf(" %q", title)
+			}
+			line += fmt.Sprintf(", %s: %s", diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition))
+			diff.changes = append(diff.changes, formChange{text: line, effect: !diff.masksEveryValue(rule.GetSemanticType())})
 			diff.marks = append(diff.marks, "new")
 			continue
 		}
@@ -545,14 +549,15 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 	if len(diff.requested) < 2 {
 		rules.apply = ""
 	}
-	if form := rules.whole(ctx, maskingRulesQuestion, diff.changes, maskingRulesUnmask, maskingRuleSection(diff, false)); form != nil {
+	list := maskingRuleSection(diff)
+	if form := rules.whole(ctx, maskingRulesQuestion, diff.changes, maskingRulesUnmask, list); form != nil {
 		return form, nil
 	}
 	// A removal shows the effect and adding a full-mask rule does not, so
 	// without this the message could state a rule's add whole and only count
 	// its removal. The question may pass messageLineWidth: Claude Code cuts a
 	// long row, which costs a narrow terminal only the account at its end.
-	if form := rules.whole(ctx, maskingRulesQuestionWithEffect, diff.changes, "", maskingRuleSection(diff, false)); form != nil {
+	if form := rules.whole(ctx, maskingRulesQuestionWithEffect, diff.changes, "", list); form != nil {
 		return form, nil
 	}
 	alone := func(change formChange) bool {
@@ -562,18 +567,19 @@ func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) 
 	// that trade places it calls moved. So a change with a move is offered no
 	// steps, as on the approval form.
 	eachAlone := diff.moves == 0 && !slices.ContainsFunc(diff.changes, func(change formChange) bool { return !alone(change) })
-	return rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, maskingRuleSection(diff, true), link, eachAlone)
+	return rules.listed(ctx, diff.changes, countLine(len(diff.changes), diff.marks, 0), maskingRulesUnmask, list, link, eachAlone)
 }
 
 // maskingRuleSection is what the description says of the rules a change leaves.
 // Every line names its rule's type: the order decides which rule masks a
-// column. A kept rule, which no change line shows, gives its scope. A new or changed one gives the CEL it stores,
-// unless the description lists the changes itself, right above it.
-func maskingRuleSection(diff *maskingRulesDiff, listed bool) ruleSection {
+// column. A kept rule, which no change line shows, gives its scope. A new or
+// changed one gives the CEL it stores, unless the description lists the
+// changes itself, right above it.
+func maskingRuleSection(diff *maskingRulesDiff) ruleSection {
 	if len(diff.requested) == 0 {
 		return ruleSection{empty: "No masking rule is left, so each column keeps its own semantic type."}
 	}
-	return ruleSection{name: "Masking rules", header: "The masking rules, in the order masking tries them:", total: len(diff.requested), rule: func(i int) string {
+	return ruleSection{name: "Masking rules", header: "The masking rules, in the order masking tries them:", total: len(diff.requested), rule: func(i int, listed bool) string {
 		rule := diff.requested[i]
 		line := fmt.Sprintf("%d. %s (%s), %s", i+1, maskingRuleTitle(rule), diff.marks[i], diff.typePhrase(rule.GetSemanticType()))
 		switch {
