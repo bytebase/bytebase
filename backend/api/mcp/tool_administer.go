@@ -911,9 +911,10 @@ func approverError(rule *v1pb.WorkspaceApprovalSetting_Rule) error {
 // leaves alone is a summary: the rule list is cut from its end, and a move
 // counts the rules it passes.
 //
-// A client can show less than it is sent (messageLines, descriptionLines), so
-// what decides the answer is in the message, and a description's first row
-// holds what matters most: fullscreen shows that row alone.
+// A client can show less than it is sent (messageLines, descriptionLines). So
+// what decides the answer is in the message when it fits there. What does not
+// fit is under the choice, where the first row holds what matters most:
+// fullscreen shows that row alone.
 type adminForm struct {
 	message     string
 	description string

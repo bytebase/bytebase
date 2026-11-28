@@ -1154,7 +1154,8 @@ func TestAdministerMaskingRulesCutsALongRuleListToTheDescription(t *testing.T) {
 }
 
 // A description shows a few rules of the list, so a form for one added rule
-// must not parse the condition of every rule the workspace keeps.
+// must not parse the condition of every rule the workspace keeps: only of
+// those that could read as the scope of a rule it states, and here none can.
 func TestMaskingFormParsesNoRuleItCannotShow(t *testing.T) {
 	types, err := semanticTypesFromSetting(nil)
 	require.NoError(t, err)

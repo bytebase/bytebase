@@ -161,9 +161,10 @@ func (d *maskingRulesDiff) scope(condition string) maskingScope {
 }
 
 // sharesScope reports whether another condition of the lists reads as scope.
-// A condition that does holds each value of the scope, so only the conditions
-// that hold the value the fewest hold are parsed: a form states a few rules of
-// a list that can hold thousands.
+// A condition that does holds each value of the scope, so it parses the
+// conditions that hold the value the fewest hold, and those the index cannot
+// rule out (indexLiterals). It parses a whole list only when each of its
+// conditions holds that value, or has a backslash or a triple quote.
 func (d *maskingRulesDiff) sharesScope(condition string, scope maskingScope) bool {
 	if d.literals == nil {
 		d.indexLiterals()
