@@ -242,7 +242,7 @@ func TestDecideIssueApprovesOnConfirmation(t *testing.T) {
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
-		"title":"Approve this issue?",
+		"title":"Action",
 		"description":"Comment: \"checked the statement\"",
 		"oneOf":[{"const":"apply","title":"Approve"},{"const":"change","title":"Change it in chat"}],
 		"default":"apply"}}}`,
@@ -280,7 +280,7 @@ func TestDecideIssueRejectsOnConfirmation(t *testing.T) {
 	schema, err := json.Marshal(user.lastParams(t).RequestedSchema)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
-		"title":"Reject this issue?",
+		"title":"Action",
 		"description":"Comment: \"checked the statement\"",
 		"oneOf":[{"const":"apply","title":"Reject"},{"const":"change","title":"Change it in chat"}],
 		"default":"apply"}}}`, string(schema))

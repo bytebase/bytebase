@@ -127,7 +127,7 @@ func (s *Server) handleSetJustInTimeAccess(ctx context.Context, req *mcp.CallToo
 
 	action := "Turn " + change.state()
 	return s.askToConfirm(ctx, change, digest[:], describeJustInTimeChange(ctx, change),
-		confirmChoice{question: action + " just-in-time access?", action: action}), nil, nil
+		confirmChoice{action: action}), nil, nil
 }
 
 // describeJustInTimeChange builds the confirmation message. A project ID is at
@@ -136,15 +136,12 @@ func (s *Server) handleSetJustInTimeAccess(ctx context.Context, req *mcp.CallToo
 // message.
 func describeJustInTimeChange(ctx context.Context, change *justInTimeChange) string {
 	question := fmt.Sprintf("Turn %s just-in-time access", change.state())
-	if email := getUserEmail(ctx); email != "" {
-		question += ", as " + email
-	}
 	projectID, _ := common.GetProjectID(change.project)
 	effect := "Active grants that have not expired apply again at once."
 	if !change.enabled {
 		effect = "Grants here stop applying (not revoked), and new requests are refused."
 	}
-	lines, _ := fitMessage(question+"?", []formChange{{text: fmt.Sprintf("Project %q", projectID), effect: true}}, effect)
+	lines := fitMessage(questionLines(ctx, question, ""), []formChange{{text: fmt.Sprintf("Project %q", projectID), effect: true}}, effect)
 	return strings.Join(lines, "\n")
 }
 

@@ -318,19 +318,16 @@ func (s *Server) handleGrantMaskingExemption(ctx context.Context, req *mcp.CallT
 	written := append(slices.Clone(exemptions), map[string]any{"members": []string{grant.member}, "condition": condition})
 	body := exemptionUpdateBody(write.policy, written)
 	output := &MaskingExemptionOutput{Project: grant.project, Member: grant.member, Condition: grant.condition(), Link: link}
-	message, tooLong := describeExemptionGrant(ctx, grant)
+	form, tooLong, instead := describeExemptionGrant(ctx, grant)
 	if tooLong != "" {
 		next := "grant it signed in to the Bytebase console: " + link
-		if eachColumnFits(ctx, grant) {
-			next = "exempt fewer columns at a time, or " + next
+		if instead != "" {
+			next = instead + ", or " + next
 		}
 		return formatToolError(&toolError{Code: "CHANGE_TOO_LONG", Message: tooLong, Suggestion: next}), nil, nil
 	}
-	choice := confirmChoice{question: "Exempt this member from masking?", action: "Exempt"}
-	if grant.note != "" {
-		choice.description = fmt.Sprintf("Reason: %q", grant.note)
-	}
-	return s.confirmExemptionWrite(ctx, req, write, exemptions, body, message, choice, output,
+	choice := confirmChoice{action: "Exempt", description: strings.Join(slices.Concat(form.columns, form.reason), "\n")}
+	return s.confirmExemptionWrite(ctx, req, write, exemptions, body, form.message, choice, output,
 		fmt.Sprintf("the exemption for %s was not granted", grant.member),
 		fmt.Sprintf("Exempted %s from masking in %s.", grant.member, grant.project),
 		"such as the member, the scope, the expiry or the reason, then call grant_masking_exemption again",
@@ -369,19 +366,19 @@ func (s *Server) handleRevokeMaskingExemption(ctx context.Context, req *mcp.Call
 	}
 	body := exemptionUpdateBody(write.policy, remaining)
 	output := &MaskingExemptionOutput{Project: input.Project, Member: input.Member, Condition: input.Condition, Link: link}
-	message, expiry, tooLong := describeExemptionRevoke(ctx, input)
+	form, tooLong := describeExemptionRevoke(ctx, input)
 	if tooLong != "" {
 		return formatToolError(&toolError{Code: "CHANGE_TOO_LONG", Message: tooLong, Suggestion: "remove it signed in to the Bytebase console: " + link}), nil, nil
 	}
-	var notes []string
+	notes := form.columns
 	if matched > 1 {
 		notes = append(notes, fmt.Sprintf("Removes the member from all %d exemptions with this condition.", matched))
 	}
-	if expiry != "" {
-		notes = append(notes, expiry)
+	if form.expiry != "" {
+		notes = append(notes, form.expiry)
 	}
-	choice := confirmChoice{question: "Revoke this masking exemption?", action: "Revoke", description: strings.Join(notes, "\n")}
-	return s.confirmExemptionWrite(ctx, req, write, exemptions, body, message, choice, output,
+	choice := confirmChoice{action: "Revoke", description: strings.Join(notes, "\n")}
+	return s.confirmExemptionWrite(ctx, req, write, exemptions, body, form.message, choice, output,
 		fmt.Sprintf("the exemption for %s was not removed", input.Member),
 		fmt.Sprintf("Removed %s's masking exemption in %s.", input.Member, input.Project),
 		"such as the member or the exemption's condition, then call revoke_masking_exemption again",
@@ -482,75 +479,139 @@ func (s *Server) confirmExemptionWrite(ctx context.Context, req *mcp.CallToolReq
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: done + "\nMasking exemptions: " + output.Link}}}, output, nil
 }
 
-// describeExemptionGrant builds the grant's confirmation message. tooLong says
-// why it does not fit a form, or is empty when it does.
-func describeExemptionGrant(ctx context.Context, g *exemptionGrant) (message, tooLong string) {
+// exemptionForm is an exemption form's message, and what leads the choice's
+// description because the message has no room for it.
+type exemptionForm struct {
+	message string
+	// columns name the columns, when the message only counts them.
+	columns []string
+	// reason is a grant's reason: its rows beside columns, and otherwise one
+	// line for the client to wrap.
+	reason []string
+	// expiry is when a revoked exemption would expire, when the scope's line
+	// has no room for it.
+	expiry string
+}
+
+// What gets a refused exemption a form, short of the console.
+const (
+	fewerColumns  = "exempt fewer columns at a time"
+	shorterReason = "give a shorter reason"
+)
+
+// describeExemptionGrant builds the grant's form. tooLong says why no form
+// states it, or is empty when one does, and instead is what gets it a form
+// short of the console, when something does.
+func describeExemptionGrant(ctx context.Context, g *exemptionGrant) (form exemptionForm, tooLong, instead string) {
 	effect := "Bypasses masking here, with no expiry; adds no masking."
 	if g.expireTime != "" {
 		effect = fmt.Sprintf("Bypasses masking until %q; adds no masking.", g.expireTime)
 	}
-	return fitExemption(ctx, fmt.Sprintf("Exempt %q", g.member), " from masking", exemptionScope(g), effect)
+	return fitExemptionScope(ctx, fmt.Sprintf("Exempt %q", g.member), " from masking", g, effect)
 }
 
-// eachColumnFits reports whether every column of a grant naming several fits a
-// form alone, so granting fewer columns at a time can help.
-func eachColumnFits(ctx context.Context, g *exemptionGrant) bool {
+// exemptionColumnRows are the most rows of an exemption form's description
+// that name its columns. They leave two for a revoke's notes, and a grant
+// keeps to them so that its revoke gets a form.
+const exemptionColumnRows = descriptionLines - 2
+
+// fitExemptionScope builds the form of an exemption with g's scope and
+// reason. The message names the columns when it has room, and counts them
+// otherwise, with their names first under the choice. A grant and the revoke
+// of what it wrote share this, so no form grants an exemption that no form
+// revokes. instead is what gets a refused exemption a form short of the
+// console, when something does.
+func fitExemptionScope(ctx context.Context, head, rest string, g *exemptionGrant, effect string) (form exemptionForm, tooLong, instead string) {
+	var reason []string
+	if g.note != "" {
+		reason = []string{fmt.Sprintf("Reason: %q", g.note)}
+	}
+	message, tooLong := fitExemption(ctx, head, rest, exemptionScope(g, false), effect)
+	if tooLong == "" || len(g.columns) == 0 {
+		return exemptionForm{message: message, reason: reason}, tooLong, ""
+	}
+	if message, tooLong = fitExemption(ctx, head, rest, exemptionScope(g, true), effect); tooLong != "" {
+		if eachColumnFits(ctx, head, rest, g, effect) {
+			instead = fewerColumns
+		}
+		return exemptionForm{message: message}, tooLong, instead
+	}
+	label := "Columns: "
+	if len(g.columns) == 1 {
+		label = "Column: "
+	}
+	columns := wrapLine(label+quoteAll(g.columns), descriptionLineWidth)
+	if len(columns) > exemptionColumnRows {
+		if eachColumnFits(ctx, head, rest, g, effect) {
+			instead = fewerColumns
+		}
+		return exemptionForm{message: message}, fmt.Sprintf("the names of this exemption's columns need %d lines, more than the %d one confirmation form has room for under its choice, so nothing changed", len(columns), exemptionColumnRows), instead
+	}
+	// A description that lists columns keeps to descriptionLines rows, so the
+	// reason beside them is wrapped and counted here. A reason alone is not:
+	// it goes as one line for the client to wrap.
+	if g.note != "" {
+		reason = wrapLine(reason[0], descriptionLineWidth)
+		if room := descriptionLines - len(columns); len(reason) > room {
+			return exemptionForm{message: message}, fmt.Sprintf("this exemption's reason needs %d lines under the form's choice, and the names of its columns leave it %d, so nothing changed", len(reason), room), shorterReason
+		}
+	}
+	return exemptionForm{message: message, columns: columns, reason: reason}, "", ""
+}
+
+// eachColumnFits reports whether an exemption that names several columns gets
+// a form for each of them alone, with its reason, so fewer columns at a time
+// can help. A scope that counts several columns can be longer than one that
+// names or counts one.
+func eachColumnFits(ctx context.Context, head, rest string, g *exemptionGrant, effect string) bool {
 	if len(g.columns) < 2 {
 		return false
 	}
 	for _, column := range g.columns {
 		one := *g
 		one.columns = []string{column}
-		if _, tooLong := describeExemptionGrant(ctx, &one); tooLong != "" {
+		if _, tooLong, _ := fitExemptionScope(ctx, head, rest, &one, effect); tooLong != "" {
 			return false
 		}
 	}
 	return true
 }
 
-// exemptionScope names what the grant covers.
-func exemptionScope(g *exemptionGrant) string {
+// exemptionScope names what the grant covers. counted states the columns by
+// their number, for a message with no room for their names.
+func exemptionScope(g *exemptionGrant, counted bool) string {
 	if g.database == "" {
 		projectID, _ := common.GetProjectID(g.project)
 		return fmt.Sprintf("Project %q: all databases, current and future", projectID)
 	}
-	return fmt.Sprintf("Database %q on instance %q, %s", g.databaseName, g.instanceID, describeNarrowing(g))
+	return fmt.Sprintf("Database %q on instance %q, %s", g.databaseName, g.instanceID, describeNarrowing(g, counted))
 }
 
 // fitExemption puts an exemption form's question, its change and the change's
 // effect into the lines a form shows. The question starts with head, which
-// names the member and must fit one line: only the text after it, which ends
-// with the account's email, may run past the line. tooLong says why the form
+// names the member and shows whole; rest follows it. tooLong says why the form
 // does not fit, or is empty when it does. Values enter through %q or
 // conditionText, so none can pose as a line of the message.
 func fitExemption(ctx context.Context, head, rest, change, effect string) (message, tooLong string) {
-	question := head + rest
-	if email := getUserEmail(ctx); email != "" {
-		question += ", as " + email
-	}
-	lines, _ := fitMessage(question+"?", []formChange{{text: change, effect: true}}, effect)
+	lines := fitMessage(questionLines(ctx, head, rest), []formChange{{text: change, effect: true}}, effect)
 	message = strings.Join(lines, "\n")
-	switch {
-	case lineColumns(head) > messageLineWidth:
-		return message, fmt.Sprintf("the member does not fit the %d columns one line of the confirmation form shows, so nothing changed", messageLineWidth)
-	case len(lines) > messageLines:
+	if len(lines) > messageLines {
 		return message, fmt.Sprintf("this exemption needs %d lines, more than the %d one confirmation form shows, so nothing changed", len(lines), messageLines)
-	default:
-		return message, ""
 	}
+	return message, ""
 }
 
 // describeNarrowing names what the grant covers within the database. A table
 // named without a schema matches that table in every schema, so the text says
 // "any schema".
-func describeNarrowing(g *exemptionGrant) string {
+func describeNarrowing(g *exemptionGrant, counted bool) string {
 	switch {
 	case g.schema == "" && len(g.columns) > 0:
-		return "any schema, " + describeColumns(g.columns, strconv.Quote(g.table))
+		return "any schema, " + describeColumns(g.columns, strconv.Quote(g.table), counted)
 	case g.schema == "" && g.table != "":
 		return fmt.Sprintf("any schema, table %q", g.table)
 	case len(g.columns) > 0:
-		return describeColumns(g.columns, fmt.Sprintf("%q.%q", g.schema, g.table))
+		return describeColumns(g.columns, fmt.Sprintf("%q.%q", g.schema, g.table), counted)
 	case g.table != "":
 		return fmt.Sprintf("table %q.%q", g.schema, g.table)
 	case g.schema != "":
@@ -560,29 +621,55 @@ func describeNarrowing(g *exemptionGrant) string {
 	}
 }
 
-func describeColumns(columns []string, table string) string {
-	if len(columns) == 1 {
+func describeColumns(columns []string, table string, counted bool) string {
+	switch {
+	case counted && len(columns) == 1:
+		return fmt.Sprintf("1 column in %s, listed under %s", table, confirmChoiceTitle)
+	case counted:
+		return fmt.Sprintf("%d columns in %s, listed under %s", len(columns), table, confirmChoiceTitle)
+	case len(columns) == 1:
 		return fmt.Sprintf("column %q in %s", columns[0], table)
+	default:
+		return fmt.Sprintf("columns %s in %s", quoteAll(columns), table)
 	}
-	return fmt.Sprintf("columns %s in %s", quoteAll(columns), table)
 }
 
-// describeExemptionRevoke builds the revoke's confirmation message. The
-// exemption's expiry ends the scope's line when the message has room, and
-// otherwise moves under the choice, returned as expiry. tooLong says why the
-// message does not fit a form, or is empty when it does.
-func describeExemptionRevoke(ctx context.Context, input RevokeMaskingExemptionInput) (message, expiry, tooLong string) {
+// describeExemptionRevoke builds the revoke's form. The exemption's expiry ends
+// the scope's line when the message has room, and otherwise moves under the
+// choice. tooLong says why no form states the revoke, or is empty when one
+// does.
+func describeExemptionRevoke(ctx context.Context, input RevokeMaskingExemptionInput) (form exemptionForm, tooLong string) {
 	const effect = "Ends their bypass of masking here, unless another exemption covers it."
 	head, rest := fmt.Sprintf("Revoke %q", input.Member), "'s masking exemption"
 	scope, until := revokeScope(input)
 	if until != "" {
 		if message, tooLong := fitExemption(ctx, head, rest, fmt.Sprintf("%s, until %q", scope, until), effect); tooLong == "" {
-			return message, "", ""
+			return exemptionForm{message: message}, ""
 		}
-		expiry = fmt.Sprintf("It would expire %q.", until)
+		form.expiry = fmt.Sprintf("It would expire %q.", until)
 	}
-	message, tooLong = fitExemption(ctx, head, rest, scope, effect)
-	return message, expiry, tooLong
+	if g, ok := revokedGrant(input); ok {
+		scoped, tooLong, _ := fitExemptionScope(ctx, head, rest, g, effect)
+		scoped.expiry = form.expiry
+		return scoped, tooLong
+	}
+	form.message, tooLong = fitExemption(ctx, head, rest, scope, effect)
+	return form, tooLong
+}
+
+// revokedGrant returns the grant that wrote the revoke's condition, when one
+// could have.
+func revokedGrant(input RevokeMaskingExemptionInput) (*exemptionGrant, bool) {
+	// An all-databases grant with no expiry writes no condition, which CEL
+	// cannot parse.
+	if input.Condition == "" {
+		return &exemptionGrant{project: input.Project}, true
+	}
+	parsed, ok := parseExemptionCondition(input.Condition)
+	if !ok {
+		return nil, false
+	}
+	return exemptionGrantOf(input, parsed)
 }
 
 // revokeScope names the exemption the revoke ends, and its expiry apart. A
@@ -590,18 +677,13 @@ func describeExemptionRevoke(ctx context.Context, input RevokeMaskingExemptionIn
 // shows through conditionText, with its expiry apart when splitExemptionExpiry
 // can split one off.
 func revokeScope(input RevokeMaskingExemptionInput) (scope, expiry string) {
-	// An all-databases grant with no expiry writes no condition, which CEL
-	// cannot parse.
-	if input.Condition == "" {
-		return exemptionScope(&exemptionGrant{project: input.Project}), ""
+	if g, ok := revokedGrant(input); ok {
+		return exemptionScope(g, false), g.expireTime
 	}
 	projectID, _ := common.GetProjectID(input.Project)
 	parsed, ok := parseExemptionCondition(input.Condition)
 	if !ok {
 		return fmt.Sprintf("Project %q: %s", projectID, conditionText(input.Condition)), ""
-	}
-	if g, ok := exemptionGrantOf(input, parsed); ok {
-		return exemptionScope(g), g.expireTime
 	}
 	condition, expiry := splitExemptionExpiry(input.Condition, parsed)
 	if condition == "" {
@@ -730,34 +812,51 @@ func resourceValues(e celast.Expr) (string, []string, bool) {
 	if e.Kind() != celast.CallKind || len(e.AsCall().Args()) != 2 {
 		return "", nil, false
 	}
-	left, right := e.AsCall().Args()[0], e.AsCall().Args()[1]
-	if left.Kind() != celast.SelectKind {
+	attribute, ok := resourceAttribute(e.AsCall().Args()[0])
+	if !ok {
 		return "", nil, false
 	}
-	if operand := left.AsSelect().Operand(); operand.Kind() != celast.IdentKind || operand.AsIdent() != "resource" {
-		return "", nil, false
-	}
-	attribute := left.AsSelect().FieldName()
+	right := e.AsCall().Args()[1]
 	switch e.AsCall().FunctionName() {
 	case operators.Equals:
 		value, ok := stringLiteral(right)
 		return attribute, []string{value}, ok
 	case operators.In:
-		if attribute != "column_name" || right.Kind() != celast.ListKind {
+		if attribute != "column_name" {
 			return "", nil, false
 		}
-		var values []string
-		for _, element := range right.AsList().Elements() {
-			value, ok := stringLiteral(element)
-			if !ok {
-				return "", nil, false
-			}
-			values = append(values, value)
-		}
-		return attribute, values, true
+		values, ok := stringLiterals(right)
+		return attribute, values, ok
 	default:
 		return "", nil, false
 	}
+}
+
+// resourceAttribute returns x of the select resource.x.
+func resourceAttribute(e celast.Expr) (string, bool) {
+	if e.Kind() != celast.SelectKind {
+		return "", false
+	}
+	if operand := e.AsSelect().Operand(); operand.Kind() != celast.IdentKind || operand.AsIdent() != "resource" {
+		return "", false
+	}
+	return e.AsSelect().FieldName(), true
+}
+
+// stringLiterals returns the values of a list of string literals.
+func stringLiterals(e celast.Expr) ([]string, bool) {
+	if e.Kind() != celast.ListKind {
+		return nil, false
+	}
+	var values []string
+	for _, element := range e.AsList().Elements() {
+		value, ok := stringLiteral(element)
+		if !ok {
+			return nil, false
+		}
+		values = append(values, value)
+	}
+	return values, true
 }
 
 func stringLiteral(e celast.Expr) (string, bool) {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -321,6 +322,9 @@ func TestAdministerInstanceAddsJourneyOnesServer(t *testing.T) {
 	res := callAdminister(t, session, instanceParams(body))
 	require.False(t, res.IsError, resultText(t, res))
 	asked := user.lastParams(t)
+	title, labels := choiceLabels(t, asked)
+	require.Equal(t, "Action", title)
+	require.Equal(t, []string{"Add instance", "Change it in chat"}, labels)
 	require.Equal(t, strings.Join([]string{
 		`Add activated instance "hr-staging" to "hr", as alice@example.com?`,
 		`Host "localhost", port 5433, user "postgres", TLS not required`,
@@ -329,9 +333,7 @@ func TestAdministerInstanceAddsJourneyOnesServer(t *testing.T) {
 	for _, line := range strings.Split(asked.Message, "\n") {
 		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
 	}
-	require.Equal(t, "PostgreSQL instance \"hr-staging\", titled \"HR Staging\".\n"+
-		"After you apply, Bytebase tests the connection and adds nothing if it fails. "+
-		`It signs in as "postgres" with the password in the request; this form does not show it.`, choiceDescription(t, asked))
+	require.Equal(t, `Title "HR Staging", password set (not shown)`, choiceDescription(t, asked))
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
 	require.NotContains(t, asked.Message+string(schema), journeyOnePassword, "the form never shows the password")
@@ -469,20 +471,20 @@ func TestAdministerInstanceKeepsTheMaskingWarningInTheMessage(t *testing.T) {
 		require.NotContains(t, choiceDescription(t, asked), "ctivated")
 	})
 
-	t.Run("a cloud host, not activated, needs a fifth line and goes to the console", func(t *testing.T) {
+	t.Run("a cloud host, not activated, keeps the warning and moves the fixed sentence", func(t *testing.T) {
 		mock := newInstanceMock()
-		user := &asker{}
+		user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
 		_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
-		res := callAdminister(t, session, instanceParams(instanceBody(t, func(request, instance, dataSource map[string]any) {
+		callAdminister(t, session, instanceParams(instanceBody(t, func(request, instance, dataSource map[string]any) {
 			notActivated(request, instance, dataSource)
 			dataSource["host"] = cloudHost
 		})))
-		refusal := resultToolError(t, res)
-		require.Equal(t, "CHANGE_TOO_LONG", refusal.Code)
-		require.Equal(t, "this instance needs 5 lines, more than the 4 one confirmation form shows, so no instance was added", refusal.Message)
-		require.Contains(t, refusal.Suggestion, "https://bb.example.com/projects/hr/instances/new")
-		require.Zero(t, user.asked.Load())
-		require.Empty(t, mock.calls())
+		asked := user.lastParams(t)
+		lines := strings.Split(asked.Message, "\n")
+		require.Len(t, lines, messageLines)
+		require.Equal(t, `Host "`+cloudHost+`", port 5433, user "postgres", TLS not required. Environment "test". `+instanceNotActivated,
+			unwrapMessage(strings.Join(lines[1:], "\n")))
+		require.Equal(t, "Its databases join the project for good.\nTitle \"HR Staging\", password set (not shown)", choiceDescription(t, asked))
 	})
 
 	t.Run("no warning where masking would not skip it, so a cloud host fits", func(t *testing.T) {
@@ -551,12 +553,12 @@ func TestAdministerInstanceNamesTheActivationInTheQuestion(t *testing.T) {
 		require.Equal(t, messageLineWidth, lineColumns(strings.TrimSuffix(question, ", as alice@example.com?")+"?"))
 	})
 
-	t.Run("one column more is refused with the shorter-ID advice", func(t *testing.T) {
-		asked, res := ask(t, ids(fills+"x"))
-		require.Nil(t, asked)
-		refusal := resultToolError(t, res)
-		require.Equal(t, "CHANGE_TOO_LONG", refusal.Code)
-		require.Contains(t, refusal.Suggestion, "use a shorter instance ID, or add the instance signed in to the Bytebase console")
+	t.Run("a question past 70 columns takes a second row", func(t *testing.T) {
+		asked, res := ask(t, ids(fills+"xx"))
+		require.NotNil(t, asked, resultText(t, res))
+		lines := strings.Split(asked.Message, "\n")
+		require.Len(t, lines, messageLines)
+		require.Equal(t, []string{`Add activated instance "analytics-staging-pg-0001xx" to`, `> "data-platform", as alice@example.com?`}, lines[:2])
 	})
 
 	t.Run("the same IDs fit when not activated", func(t *testing.T) {
@@ -591,7 +593,7 @@ func TestAdministerInstanceStatesTheConnectionDatabaseInTheDescription(t *testin
 	asked := user.lastParams(t)
 	require.NotContains(t, asked.Message, "hr_staging")
 	description := choiceDescription(t, asked)
-	require.Contains(t, description, `It signs in as "postgres" with no password. It connects to database "hr_staging", and syncs every database on the server.`)
+	require.Equal(t, "Title \"HR Staging\", no password\nConnects to database \"hr_staging\", and syncs every database on the server.", description)
 }
 
 func TestAdministerInstanceRefusesBeforeAsking(t *testing.T) {
@@ -609,24 +611,21 @@ func TestAdministerInstanceRefusesBeforeAsking(t *testing.T) {
 		"two data sources": {func(_, instance, dataSource map[string]any) {
 			instance["dataSources"] = []any{dataSource, map[string]any{"id": "ro", "type": "READ_ONLY", "host": "localhost", "port": "5433", "username": "reader"}}
 		}, "has 2 data sources"},
-		"cloud IAM sign-in":       {func(_, _, dataSource map[string]any) { dataSource["authenticationType"] = "AWS_RDS_IAM" }, "signs in with AWS_RDS_IAM"},
-		"an invalid instance ID":  {func(request, _, _ map[string]any) { request["instanceId"] = "HR_Staging" }, `the instance ID "HR_Staging" is not valid`},
-		"no title":                {func(_, instance, _ map[string]any) { instance["title"] = "  " }, "the instance has no title"},
-		"an environment ID alone": {func(_, instance, _ map[string]any) { instance["environment"] = "test" }, `the environment "test" is not an environment's name`},
-		"a read-only data source": {func(_, _, dataSource map[string]any) { dataSource["type"] = "READ_ONLY" }, "the data source's type is READ_ONLY"},
-		"a host list":             {func(_, _, dataSource map[string]any) { dataSource["host"] = "db1,db2" }, `the host "db1,db2" is not one host name or IP address`},
-		"a trailing comma":        {func(_, _, dataSource map[string]any) { dataSource["host"] = "db," }, `the host "db," is not one host name or IP address`},
-		"a Unix socket":           {func(_, _, dataSource map[string]any) { dataSource["host"] = "/var/run/postgresql" }, `the host "/var/run/postgresql" is not one host name or IP address`},
-		"a Windows socket path":   {func(_, _, dataSource map[string]any) { dataSource["host"] = `C:\pg` }, `the host "C:\\pg" is not one host name or IP address`},
-		"no host":                 {func(_, _, dataSource map[string]any) { dataSource["host"] = " " }, "the data source has no host"},
-		"no port":                 {func(_, _, dataSource map[string]any) { delete(dataSource, "port") }, `the port "" is not a number`},
-		"options after the port":  {func(_, _, dataSource map[string]any) { dataSource["port"] = "5432 host=other.example" }, "is not a number from 1 to 65535"},
-		"port zero":               {func(_, _, dataSource map[string]any) { dataSource["port"] = "0" }, `the port "0" is not a number`},
-		"a port past 65535":       {func(_, _, dataSource map[string]any) { dataSource["port"] = "65536" }, `the port "65536" is not a number`},
-		"a signed port":           {func(_, _, dataSource map[string]any) { dataSource["port"] = "+5432" }, `the port "+5432" is not a number`},
-		"a question too wide for any instance ID": {func(request, _, _ map[string]any) {
-			request["parent"] = "projects/" + strings.Repeat("p", 40)
-		}, "is wider than one line of the confirmation form, so no instance was added (add the instance signed in"},
+		"cloud IAM sign-in":           {func(_, _, dataSource map[string]any) { dataSource["authenticationType"] = "AWS_RDS_IAM" }, "signs in with AWS_RDS_IAM"},
+		"an invalid instance ID":      {func(request, _, _ map[string]any) { request["instanceId"] = "HR_Staging" }, `the instance ID "HR_Staging" is not valid`},
+		"no title":                    {func(_, instance, _ map[string]any) { instance["title"] = "  " }, "the instance has no title"},
+		"an environment ID alone":     {func(_, instance, _ map[string]any) { instance["environment"] = "test" }, `the environment "test" is not an environment's name`},
+		"a read-only data source":     {func(_, _, dataSource map[string]any) { dataSource["type"] = "READ_ONLY" }, "the data source's type is READ_ONLY"},
+		"a host list":                 {func(_, _, dataSource map[string]any) { dataSource["host"] = "db1,db2" }, `the host "db1,db2" is not one host name or IP address`},
+		"a trailing comma":            {func(_, _, dataSource map[string]any) { dataSource["host"] = "db," }, `the host "db," is not one host name or IP address`},
+		"a Unix socket":               {func(_, _, dataSource map[string]any) { dataSource["host"] = "/var/run/postgresql" }, `the host "/var/run/postgresql" is not one host name or IP address`},
+		"a Windows socket path":       {func(_, _, dataSource map[string]any) { dataSource["host"] = `C:\pg` }, `the host "C:\\pg" is not one host name or IP address`},
+		"no host":                     {func(_, _, dataSource map[string]any) { dataSource["host"] = " " }, "the data source has no host"},
+		"no port":                     {func(_, _, dataSource map[string]any) { delete(dataSource, "port") }, `the port "" is not a number`},
+		"options after the port":      {func(_, _, dataSource map[string]any) { dataSource["port"] = "5432 host=other.example" }, "is not a number from 1 to 65535"},
+		"port zero":                   {func(_, _, dataSource map[string]any) { dataSource["port"] = "0" }, `the port "0" is not a number`},
+		"a port past 65535":           {func(_, _, dataSource map[string]any) { dataSource["port"] = "65536" }, `the port "65536" is not a number`},
+		"a signed port":               {func(_, _, dataSource map[string]any) { dataSource["port"] = "+5432" }, `the port "+5432" is not a number`},
 		"no username":                 {func(_, _, dataSource map[string]any) { delete(dataSource, "username") }, "the data source has no username"},
 		"a connection test requested": {func(request, _, _ map[string]any) { request["validateOnly"] = true }, "the request sets validate_only"},
 		"the instance's name":         {func(_, instance, _ map[string]any) { instance["name"] = "instances/hr-staging" }, "the request sets instance.name"},
@@ -636,12 +635,27 @@ func TestAdministerInstanceRefusesBeforeAsking(t *testing.T) {
 		"extra connection parameters": {func(_, _, dataSource map[string]any) {
 			dataSource["extraConnectionParameters"] = map[string]any{"sslrootcert": "/etc/passwd"}
 		}, "the request sets instance.data_sources.extra_connection_parameters"},
-		"a question too long for one line": {func(request, _, _ map[string]any) {
+		"a long instance ID and a host that leave no room": {func(request, _, dataSource map[string]any) {
 			request["instanceId"] = "a" + strings.Repeat("b", 61) + "c"
-		}, "is wider than one line of the confirmation form, so no instance was added (use a shorter instance ID, or add"},
+			dataSource["host"] = strings.Repeat("h", 100) + ".example.com"
+		}, "so no instance was added (use a shorter instance ID, or add the instance signed in"},
+		"a long project ID and a host that leave no room": {func(request, _, dataSource map[string]any) {
+			request["parent"] = "projects/" + strings.Repeat("p", 63)
+			dataSource["host"] = strings.Repeat("h", 100) + ".example.com"
+		}, "so no instance was added (add the instance signed in"},
+		// A shorter ID is advised only when one gets a form: the question's rows
+		// alone do not tell, since the host's line needs rows too.
+		"two long IDs that a shorter instance ID makes room for": {func(request, _, _ map[string]any) {
+			request["parent"] = "projects/" + strings.Repeat("p", 63)
+			request["instanceId"] = "a" + strings.Repeat("b", 61) + "c"
+		}, "so no instance was added (use a shorter instance ID, or add the instance signed in"},
+		"a long instance ID and a host too long with any ID": {func(request, _, dataSource map[string]any) {
+			request["instanceId"] = "a" + strings.Repeat("b", 61) + "c"
+			dataSource["host"] = strings.Repeat("h", 138) + ".example.com"
+		}, "so no instance was added (add the instance signed in"},
 		"a host too long for any form": {func(_, _, dataSource map[string]any) {
 			dataSource["host"] = strings.Repeat("h", 200) + ".example.com"
-		}, "CHANGE_TOO_LONG"},
+		}, "CHANGE_TOO_LONG: " + instanceTooLong},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := newInstanceMock()
@@ -1062,4 +1076,171 @@ func TestMaskingSkipsAnUnactivatedInstanceOnlyWithMaskingAndASeatLicense(t *test
 	} {
 		require.Equal(t, tc.want, maskingSkipsUnactivatedUnder(tc.license)(context.Background(), "ws-test"), "%+v", tc.license)
 	}
+}
+
+// An instance of a workspace with per-instance licenses is not activated unless
+// the request says so, and a cloud database requires TLS: these must fit.
+func TestAdministerInstanceFitsOrdinaryCloudHosts(t *testing.T) {
+	const (
+		rds        = "prod-payments-db.c1abcdefghij.us-east-1.rds.amazonaws.com"
+		aurora     = "payments-ledger-prod.cluster-c1abcdefghij.us-east-1.rds.amazonaws.com"
+		auroraRead = "payments-ledger-prod.cluster-ro-c1abcdefghij.ap-southeast-2.rds.amazonaws.com"
+	)
+	ask := func(t *testing.T, instanceID, project, host string, activation bool) *mcp.ElicitParams {
+		t.Helper()
+		user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+		_, session := connectToInstanceServer(t, newInstanceMock(), &mcp.ClientOptions{ElicitationHandler: user.handle})
+		res := callAdminister(t, session, instanceParams(instanceBody(t, func(request, instance, dataSource map[string]any) {
+			request["parent"], request["instanceId"] = "projects/"+project, instanceID
+			instance["environment"], instance["activation"] = "environments/prod", activation
+			dataSource["host"], dataSource["port"], dataSource["username"] = host, "5432", "bytebase"
+			dataSource["useSsl"], dataSource["verifyTlsCertificate"] = true, true
+		})))
+		require.False(t, res.IsError, resultText(t, res))
+		return user.lastParams(t)
+	}
+	const facts = `port 5432, user "bytebase", TLS required and verified. Environment "prod". `
+
+	for name, host := range map[string]string{"an IP address": "10.0.12.34", "an RDS endpoint": rds, "an Aurora endpoint": aurora, "an Aurora read-only endpoint": auroraRead} {
+		t.Run(name+", not activated", func(t *testing.T) {
+			asked := ask(t, "payments-prod", "payments", host, false)
+			lines := strings.Split(asked.Message, "\n")
+			require.LessOrEqual(t, len(lines), messageLines)
+			require.Equal(t, `Add instance "payments-prod" to "payments", as alice@example.com?`, lines[0])
+			require.Equal(t, `Host "`+host+`", `+facts+instanceNotActivated, unwrapMessage(strings.Join(lines[1:], "\n")))
+			require.True(t, strings.HasPrefix(choiceDescription(t, asked), "Its databases join the project for good.\n"), choiceDescription(t, asked))
+		})
+	}
+
+	t.Run("an Aurora endpoint, activated, reads as before", func(t *testing.T) {
+		asked := ask(t, "payments-prod", "payments", aurora, true)
+		require.Equal(t, []string{
+			`Add activated instance "payments-prod" to "payments", as alice@example.com?`,
+			`Host "payments-ledger-prod.cluster-c1abcdefghij.us-east-1.rds.`,
+			`>amazonaws.com", port 5432, user "bytebase", TLS required and verified`,
+			`Environment "prod". Its databases join the project for good.`,
+		}, strings.Split(asked.Message, "\n"))
+	})
+
+	// A question that names the activation in a second row would leave the
+	// host one row, so the activation goes beside the environment, and every
+	// value of the request stays in the message.
+	for name, host := range map[string]string{"an RDS endpoint": rds, "an Aurora read-only endpoint": auroraRead} {
+		t.Run("two long IDs, activated, and "+name, func(t *testing.T) {
+			asked := ask(t, "prod-payments-us-east-1", "payments-platform", host, true)
+			lines := strings.Split(asked.Message, "\n")
+			require.Len(t, lines, messageLines)
+			require.Equal(t, `Add instance "prod-payments-us-east-1" to "payments-platform", as alice@example.com?`, lines[0])
+			require.Equal(t, `Host "`+host+`", `+facts+"Activated.", unwrapMessage(strings.Join(lines[1:], "\n")))
+			require.True(t, strings.HasPrefix(choiceDescription(t, asked), "Its databases join the project for good.\n"), choiceDescription(t, asked))
+		})
+	}
+
+	t.Run("two IDs that fit one row keep the activation in the question", func(t *testing.T) {
+		asked := ask(t, "payments-prod", "payments", auroraRead, true)
+		lines := strings.Split(asked.Message, "\n")
+		require.Len(t, lines, messageLines)
+		require.Equal(t, `Add activated instance "payments-prod" to "payments", as alice@example.com?`, lines[0])
+		require.Equal(t, `Environment "prod". Its databases join the project for good.`, lines[3])
+	})
+
+	// The user is the one value of the request that can leave the message, and
+	// only for a host this long. It then leads the description, which both of
+	// Claude Code's renderers show.
+	t.Run("a host of 95 characters, not activated, moves the user under the choice", func(t *testing.T) {
+		host := strings.Repeat("h", 83) + ".example.com"
+		asked := ask(t, "payments-prod", "payments", host, false)
+		lines := strings.Split(asked.Message, "\n")
+		require.Len(t, lines, messageLines)
+		require.Equal(t, `Host "`+host+`", port 5432, TLS required and verified. Environment "prod". `+instanceNotActivated, unwrapMessage(strings.Join(lines[1:], "\n")))
+		require.True(t, strings.HasPrefix(choiceDescription(t, asked), "User \"bytebase\". Its databases join the project for good.\n"), choiceDescription(t, asked))
+	})
+}
+
+const instanceTooLong = "this instance's names and host are too long for one confirmation form, which keeps room for any TLS setting, so no instance was added"
+
+// The refusal is decided with the longest TLS wording, so the shortest host it
+// refuses with a weaker setting still fits the lines with its own wording. The
+// message states the rule, and no count of lines the request does not need.
+func TestAdministerInstanceRefusalStatesTheRuleAndNoLineCount(t *testing.T) {
+	ctx := withUserEmail(context.Background(), "alice@example.com")
+	for n := 1; n <= 200; n++ {
+		c, err := parseInstanceCreation(instanceBody(t, func(_, instance, dataSource map[string]any) {
+			instance["activation"] = false
+			dataSource["host"], dataSource["useSsl"] = strings.Repeat("h", n), false
+		}), "ws-test")
+		require.NoError(t, err)
+		_, err = instanceForm(ctx, c, true, "")
+		if err == nil {
+			continue
+		}
+		fits := slices.ContainsFunc(instanceLayouts(c, c.request.GetInstanceId(), true, tlsNotRequired), func(layout formLayout) bool {
+			form, _ := fitLayout(ctx, layout)
+			return form != nil
+		})
+		require.True(t, fits, "host of %d", n)
+		var refused *toolError
+		require.ErrorAs(t, err, &refused)
+		require.Equal(t, instanceTooLong, refused.Message)
+		return
+	}
+	t.Fatal("no host was refused")
+}
+
+// Whether a form fits is decided as if the TLS mode had its longest wording.
+// Otherwise a form refused with TLS required could fit with TLS off, and the
+// refusal would lead an agent to weaken the connection.
+func TestAdministerInstanceNeverFitsOnlyWithWeakerTLS(t *testing.T) {
+	for _, mode := range []string{tlsNotRequired, tlsVerified} {
+		require.LessOrEqual(t, len(mode), len(tlsNotVerified), "the layouts are measured with the longest wording")
+	}
+	ctx := withUserEmail(context.Background(), "alice@example.com")
+	outcome := func(host string, activation, useSSL, verify bool) string {
+		c, err := parseInstanceCreation(instanceBody(t, func(_, instance, dataSource map[string]any) {
+			instance["activation"] = activation
+			dataSource["host"], dataSource["useSsl"], dataSource["verifyTlsCertificate"] = host, useSSL, verify
+		}), "ws-test")
+		require.NoError(t, err)
+		if _, err := instanceForm(ctx, c, true, ""); err != nil {
+			return "refused"
+		}
+		return "fits"
+	}
+	for n := 1; n <= 200; n++ {
+		host := strings.Repeat("h", n)
+		for _, activation := range []bool{true, false} {
+			strict := outcome(host, activation, true, true)
+			require.Equal(t, strict, outcome(host, activation, true, false), "host of %d", n)
+			require.Equal(t, strict, outcome(host, activation, false, false), "host of %d", n)
+		}
+	}
+}
+
+// A shorter ID is advised only when it gets a form with any TLS setting, as a
+// form is given: a host that fits with a one-letter ID only while TLS is not
+// required gets no such advice, whatever the request's TLS setting.
+func TestAdministerInstanceAdvisesAShorterIDWithRoomForAnyTLSSetting(t *testing.T) {
+	ctx := withUserEmail(context.Background(), "alice@example.com")
+	creation := func(id, host string) *instanceCreation {
+		c, err := parseInstanceCreation(instanceBody(t, func(request, instance, dataSource map[string]any) {
+			request["instanceId"], instance["activation"] = id, false
+			dataSource["host"], dataSource["useSsl"] = host, false
+		}), "ws-test")
+		require.NoError(t, err)
+		return c
+	}
+	checked := 0
+	for n := 1; n <= 200; n++ {
+		host := strings.Repeat("h", n)
+		short := creation(shortestID, host)
+		if _, err := instanceForm(ctx, short, true, ""); err == nil || !fitsALayout(ctx, instanceLayouts(short, shortestID, true, tlsNotRequired)) {
+			continue
+		}
+		checked++
+		_, err := instanceForm(ctx, creation("a"+strings.Repeat("b", 61)+"c", host), true, "LINK")
+		var refused *toolError
+		require.ErrorAs(t, err, &refused)
+		require.Equal(t, "add the instance signed in to the Bytebase console: LINK", refused.Suggestion, "host of %d", n)
+	}
+	require.Positive(t, checked, "the sweep must reach a host that fits only with TLS not required")
 }

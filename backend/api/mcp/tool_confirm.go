@@ -51,19 +51,23 @@ func canShowConfirmation(req *mcp.CallToolRequest) bool {
 	return req != nil && req.Session != nil && clientSupportsElicitation(req.Session)
 }
 
-// confirmChoice is a confirmation form's one field: the question, the action
-// that makes the change, chosen when the form opens, and "Change it in chat".
-// description holds what the message leaves out, and is sent only when set.
+// confirmChoice is a confirmation form's one field, titled "Action": the
+// action that makes the change, chosen when the form opens, and "Change it in
+// chat". The message asks the question, and Claude Code draws the title before
+// the chosen label. description holds what the message leaves out, and is sent
+// only when set.
 type confirmChoice struct {
-	question    string
 	action      string
 	description string
 }
 
+// confirmChoiceTitle titles the choice field of every confirmation form.
+const confirmChoiceTitle = "Action"
+
 func (c confirmChoice) schema() map[string]any {
 	field := map[string]any{
 		"type":  "string",
-		"title": c.question,
+		"title": confirmChoiceTitle,
 		"oneOf": []any{
 			map[string]any{"const": confirmChoiceApply, "title": c.action},
 			map[string]any{"const": confirmChoiceChange, "title": "Change it in chat"},

@@ -37,6 +37,17 @@ const (
 	messageLineWidth = 70
 )
 
+// Claude Code's default renderer draws a form in 13 rows plus its
+// description's, and a form taller than the terminal loses its top: the
+// server's name, then the question. A description row holds the terminal's
+// width less 12. So a description that grows with a list keeps to 10 rows of
+// 68 columns, the most an 80-by-24 terminal shows whole. Fullscreen shows the
+// first row.
+const (
+	descriptionLines     = 10
+	descriptionLineWidth = 68
+)
+
 // runConfirmation is a statement query_database asks the user to run.
 type runConfirmation struct {
 	database string
@@ -137,7 +148,7 @@ func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirm
 		"properties": map[string]any{
 			runChoiceField: map[string]any{
 				"type":        "string",
-				"title":       "Run this request?",
+				"title":       confirmChoiceTitle,
 				"description": description,
 				"oneOf":       choices,
 				"default":     runChoiceRun,
@@ -202,15 +213,19 @@ func fitsMessageLines(lines []string) bool {
 func lineColumns(line string) int {
 	columns := 0
 	for _, r := range line {
-		if unicode.Is(unicode.Mn, r) {
-			continue
-		}
-		columns++
-		if kind := width.LookupRune(r).Kind(); kind == width.EastAsianWide || kind == width.EastAsianFullwidth {
-			columns++
-		}
+		columns += charColumns(r)
 	}
 	return columns
+}
+
+func charColumns(r rune) int {
+	if unicode.Is(unicode.Mn, r) {
+		return 0
+	}
+	if kind := width.LookupRune(r).Kind(); kind == width.EastAsianWide || kind == width.EastAsianFullwidth {
+		return 2
+	}
+	return 1
 }
 
 // answeredChoice returns the choice an answer acts on, Run now or Create an

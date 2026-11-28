@@ -250,6 +250,9 @@ func TestAdministerIdentityCreatesJourneyFoursIdentityWithItsRole(t *testing.T) 
 	res := callAdminister(t, session, identityParams(identityBody(t, nil)))
 	require.False(t, res.IsError, resultText(t, res))
 	asked := user.lastParams(t)
+	title, labels := choiceLabels(t, asked)
+	require.Equal(t, "Action", title)
+	require.Equal(t, []string{"Create identity", "Change it in chat"}, labels)
 	require.Equal(t, strings.Join([]string{
 		`Create workload identity "hr-migrations-ci" in "hr", as alice@example.com?`,
 		`Any GitHub Actions job in "example-org/hr-migrations" signs in as it,`,
@@ -261,8 +264,7 @@ func TestAdministerIdentityCreatesJourneyFoursIdentityWithItsRole(t *testing.T) 
 	}
 	require.Equal(t, strings.Join([]string{
 		`The rule trusts the owner's name: if "example-org" is renamed or deleted, whoever registers the name can sign in as it.`,
-		`It signs in as hr-migrations-ci@hr.workload.bytebase.com with tokens from https://token.actions.githubusercontent.com for audience "bytebase". It lasts until it is removed.`,
-		`GitOps Service Agent lets it create plans, releases and rollouts in this project and run their tasks in every environment. Its rollouts carry no issue, so no approval rule holds them. Titled "HR migrations CI".`,
+		`Titled "HR migrations CI". It signs in as hr-migrations-ci@hr.workload.bytebase.com, and its role runs tasks in every environment of the project.`,
 	}, "\n"), choiceDescription(t, asked))
 
 	creations, grants, _ := mock.calls()
@@ -349,7 +351,7 @@ func TestAdministerIdentityWarnsOfTheOwnersNameOnlyWithNeitherID(t *testing.T) {
 		"repo:example-org@111/hr-migrations:*":     `The pattern pins owner ID "111", so a new account under a freed name cannot sign in as it.`,
 		"repo:example-org/hr-migrations@456:*":     `The pattern pins repository ID "456", so a new account under a freed name cannot sign in as it.`,
 		"repo:example-org@111/hr-migrations@456:*": `The pattern pins owner ID "111" and repository ID "456", so a new account under a freed name cannot sign in as it.`,
-		"project_path:example-org/hr-migrations:*": `It signs in as hr-migrations-ci@hr.workload.bytebase.com with tokens from https://gitlab.com for audience "bytebase". It lasts until it is removed.`,
+		"project_path:example-org/hr-migrations:*": `Titled "HR migrations CI". It signs in as hr-migrations-ci@hr.workload.bytebase.com, and its role runs tasks in every environment of the project.`,
 	} {
 		t.Run(pattern, func(t *testing.T) {
 			user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
@@ -419,10 +421,9 @@ func TestAdministerIdentityRefusesBeforeAsking(t *testing.T) {
 		"a branch pattern": {func(_, config map[string]any) {
 			config["subjectPattern"] = "repo:example-org/hr-migrations:ref:refs/heads/main"
 		}, "UNSUPPORTED_CHANGE", "does not name one repository with every job in it"},
-		"every repository":    {func(_, config map[string]any) { config["subjectPattern"] = "repo:example-org/*" }, "UNSUPPORTED_CHANGE", "does not name one repository with every job in it"},
-		"a question too wide": {func(request, _ map[string]any) { request["workloadIdentityId"] = strings.Repeat("a", 35) }, "CHANGE_TOO_LONG", "the question naming identity"},
+		"every repository": {func(_, config map[string]any) { config["subjectPattern"] = "repo:example-org/*" }, "UNSUPPORTED_CHANGE", "does not name one repository with every job in it"},
 		"a path too long to fit": {func(_, config map[string]any) {
-			config["subjectPattern"] = "repo:" + strings.Repeat("o", 20) + "/" + strings.Repeat("r", 22) + ":*"
+			config["subjectPattern"] = "repo:" + strings.Repeat("o", 39) + "/" + strings.Repeat("r", 100) + ":*"
 		}, "CHANGE_TOO_LONG", "this workload identity needs 5 lines"},
 		"an unknown request body": {func(request, _ map[string]any) { request["parent"] = 7 }, "INVALID_REQUEST", ""},
 	} {
@@ -443,39 +444,156 @@ func TestAdministerIdentityRefusesBeforeAsking(t *testing.T) {
 	}
 }
 
+// A shorter identity ID is advised only when one gets a form. The question's
+// rows alone do not tell: the repository's line needs rows too.
 func TestAdministerIdentityOffersAShorterIDOnlyWhenOneFits(t *testing.T) {
+	repository := func(path int) string {
+		return "repo:" + strings.Repeat("o", 39) + "/" + strings.Repeat("r", path-40) + ":*"
+	}
 	for name, tc := range map[string]struct {
-		parent, id string
-		shorter    bool
+		parent, id, pattern string
+		shorter             bool
 	}{
-		"an ID too long for its project":   {"projects/hr", strings.Repeat("a", 35), true},
-		"a project ID that leaves no room": {"projects/" + strings.Repeat("p", 36), "a", false},
+		"an ID too long for its project":                      {"projects/hr", strings.Repeat("a", 63), repository(100), true},
+		"a project ID that leaves no room":                    {"projects/" + strings.Repeat("p", 63), "a", repository(100), false},
+		"two IDs that take the question to two rows together": {"projects/" + strings.Repeat("p", 63), strings.Repeat("a", 63), "repo:example-org/hr-migrations:*", true},
+		"a repository path too long with any ID":              {"projects/hr", strings.Repeat("a", 63), repository(140), false},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := newIdentityMock()
-			_, session := connectToIdentityServer(t, mock, newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
-			refusal := resultToolError(t, callAdminister(t, session, identityParams(identityBody(t, func(request, _ map[string]any) {
+			user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+			_, session := connectToIdentityServer(t, mock, newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: user.handle})
+			refusal := resultToolError(t, callAdminister(t, session, identityParams(identityBody(t, func(request, config map[string]any) {
 				request["parent"], request["workloadIdentityId"] = tc.parent, tc.id
+				config["subjectPattern"] = tc.pattern
 			}))))
 			require.Equal(t, "CHANGE_TOO_LONG", refusal.Code)
 			require.Equal(t, tc.shorter, strings.HasPrefix(refusal.Suggestion, "use a shorter identity ID"), refusal.Suggestion)
+			require.Zero(t, user.asked.Load())
 		})
 	}
 }
 
-func TestAdministerIdentityFitsTheLongestQuestionAndPath(t *testing.T) {
-	for name, edit := range map[string]func(request, config map[string]any){
-		"a question of 70 columns": func(request, _ map[string]any) { request["workloadIdentityId"] = strings.Repeat("a", 34) },
-		"a GitHub path of 41": func(_, config map[string]any) {
-			config["subjectPattern"] = "repo:" + strings.Repeat("o", 20) + "/" + strings.Repeat("r", 20) + ":*"
+// The repository decides who signs in, so it stays in the message. What moves
+// under the choice is text every identity's form carries.
+func TestAdministerIdentityFitsOrdinaryRepositoryPaths(t *testing.T) {
+	const policy = "The MCP access policy does not limit it."
+	for name, tc := range map[string]struct {
+		edit    func(request, config map[string]any)
+		message []string
+		lead    string
+		moved   string
+	}{
+		"a question of 70 columns": {
+			edit: func(request, _ map[string]any) { request["workloadIdentityId"] = strings.Repeat("a", 34) },
+			message: []string{
+				`Create workload identity "` + strings.Repeat("a", 34) + `" in "hr", as alice@example.com?`,
+				`Any GitHub Actions job in "example-org/hr-migrations" signs in as it,`,
+				`> and the MCP access policy does not limit it.`,
+				`Role: GitOps Service Agent. It can roll out without approval.`,
+			},
+		},
+		"a GitHub path of 47": {
+			edit: func(_, config map[string]any) {
+				config["subjectPattern"] = "repo:acme-corp/payments-platform-database-migrations:*"
+			},
+			message: []string{
+				`Create workload identity "hr-migrations-ci" in "hr", as alice@example.com?`,
+				`Any GitHub Actions job in "acme-corp/payments-platform-database-migrat`,
+				`>ions" signs in as it, and the MCP access policy does not limit it.`,
+				`Role: GitOps Service Agent. It can roll out without approval.`,
+			},
+		},
+		"a GitHub path of 57 moves the policy sentence": {
+			edit: func(_, config map[string]any) {
+				config["subjectPattern"] = "repo:acme-financial-services/payments-ledger-schema-migrations:*"
+			},
+			message: []string{
+				`Create workload identity "hr-migrations-ci" in "hr", as alice@example.com?`,
+				`Any GitHub Actions job in "acme-financial-services/payments-ledger-`,
+				`>schema-migrations" signs in as it.`,
+				`Role: GitOps Service Agent. It can roll out without approval.`,
+			},
+			moved: policy,
+		},
+		"a nested GitLab path of 80 moves the policy sentence": {
+			edit: func(_, config map[string]any) {
+				config["providerType"] = "GITLAB"
+				config["subjectPattern"] = "project_path:acme-financial-services/platform-engineering/data/payments-ledger/schema-migrations:*"
+			},
+			message: []string{
+				`Create workload identity "hr-migrations-ci" in "hr", as alice@example.com?`,
+				`Any GitLab CI job in "acme-financial-services/platform-engineering/`,
+				`>data/payments-ledger/schema-migrations" signs in as it.`,
+				`Role: GitOps Service Agent. It can roll out without approval.`,
+			},
+			moved: policy,
+		},
+		// The lines under the question say what kind of identity it is, so a
+		// question that needs a second row gives up the word.
+		"two long IDs shorten the question": {
+			edit: func(request, config map[string]any) {
+				request["parent"], request["workloadIdentityId"] = "projects/payments-platform", "payments-migrations-ci"
+				config["subjectPattern"] = "repo:acme-corp/payments-platform-database-migrations:*"
+			},
+			message: []string{
+				`Create identity "payments-migrations-ci" in "payments-platform", as alice@example.com?`,
+				`Any GitHub Actions job in`,
+				`> "acme-corp/payments-platform-database-migrations" signs in as it.`,
+				`Role: GitOps Service Agent. It can roll out without approval.`,
+			},
+			moved: policy,
+		},
+		"two long IDs and a nested GitLab path of 80": {
+			edit: func(request, config map[string]any) {
+				request["parent"], request["workloadIdentityId"] = "projects/payments-platform", "payments-migrations-ci"
+				config["providerType"] = "GITLAB"
+				config["subjectPattern"] = "project_path:acme-financial-services/platform-engineering/data/payments-ledger/schema-migrations:*"
+			},
+			message: []string{
+				`Create identity "payments-migrations-ci" in "payments-platform", as alice@example.com?`,
+				`Any GitLab CI job in "acme-financial-services/platform-engineering/`,
+				`>data/payments-ledger/schema-migrations" signs in as it.`,
+				`Role: GitOps Service Agent. It can roll out without approval.`,
+			},
+			moved: policy,
+		},
+		"two IDs that still need a second row move the role's name to the row fullscreen shows": {
+			edit: func(request, config map[string]any) {
+				request["parent"], request["workloadIdentityId"] = "projects/payments-platform-production", "payments-ledger-migrations-ci"
+				config["subjectPattern"] = "repo:acme-corp/payments-platform-database-migrations:*"
+			},
+			message: []string{
+				`Create workload identity "payments-ledger-migrations-ci" in`,
+				`> "payments-platform-production", as alice@example.com?`,
+				`Any GitHub Actions job in "acme-corp/payments-platform-database-`,
+				`>migrations" signs in as it. It can roll out without approval.`,
+			},
+			lead:  "Role: GitOps Service Agent.",
+			moved: policy,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
 			_, session := connectToIdentityServer(t, newIdentityMock(), newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: user.handle})
-			res := callAdminister(t, session, identityParams(identityBody(t, edit)))
+			res := callAdminister(t, session, identityParams(identityBody(t, tc.edit)))
 			require.False(t, res.IsError, resultText(t, res))
-			require.Len(t, strings.Split(user.lastParams(t).Message, "\n"), messageLines)
+			asked := user.lastParams(t)
+			require.Equal(t, tc.message, strings.Split(asked.Message, "\n"))
+			description := strings.Split(choiceDescription(t, asked), "\n")
+			require.True(t, strings.HasPrefix(description[len(description)-1], "Titled "), "%q", description)
+			// The role's name is in the message, or on the description's first
+			// row, which fullscreen shows.
+			require.Equal(t, tc.lead == "", strings.Contains(asked.Message, "GitOps Service Agent"), asked.Message)
+			require.Equal(t, tc.lead != "", strings.Contains(description[0], "GitOps Service Agent"), "%q", description)
+			if tc.lead != "" {
+				require.Equal(t, tc.lead, description[0])
+			}
+			if tc.moved == "" {
+				require.NotContains(t, choiceDescription(t, asked), policy)
+				return
+			}
+			require.Equal(t, tc.moved, description[len(description)-2], "what moves follows what the pattern pins and leads the rest")
 		})
 	}
 }
@@ -584,7 +702,6 @@ func TestAdministerIdentityCreatesAGitLabIdentityWithGitLabsIssuer(t *testing.T)
 		config["providerType"], config["subjectPattern"] = "GITLAB", "project_path:acme/team/deploy:*"
 	})))
 	require.False(t, res.IsError, resultText(t, res))
-	require.Contains(t, choiceDescription(t, user.lastParams(t)), "with tokens from https://gitlab.com for audience \"bytebase\".")
 	creations, grants, _ := mock.calls()
 	require.Len(t, creations, 1)
 	require.Len(t, grants, 1)

@@ -21,8 +21,8 @@ import (
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
-// instanceNotActivated is a change line, never description text, which Claude
-// Code's fullscreen renderer cuts to one line.
+// instanceNotActivated stays in the message, never the description, which
+// Claude Code's fullscreen renderer cuts to one line.
 const instanceNotActivated = "Not activated, so masking skips it."
 
 // instanceRequestFields are the CreateInstanceRequest fields the instance
@@ -106,7 +106,7 @@ func (s *Server) administerInstance(ctx context.Context, req *mcp.CallToolReques
 		return formatToolError(err), nil, nil
 	}
 	digest := adminFormDigest(form, change.request)
-	if result := s.confirmAdminChange(ctx, req, change, digest, form, creationSubject{nothing: "no instance was added"}, "this request and its form"); result != nil {
+	if result := s.confirmAdminChange(ctx, req, change, digest, form, creationSubject{nothing: "no instance was added", verb: "Add instance"}, "this request and its form"); result != nil {
 		return result, nil, nil
 	}
 
@@ -359,78 +359,105 @@ func (s *Server) checkEnvironment(ctx context.Context, c *instanceCreation) erro
 // instanceForm builds the form that asks to add the instance. The password
 // appears nowhere in it.
 func instanceForm(ctx context.Context, c *instanceCreation, maskingSkips bool, link string) (*adminForm, error) {
-	// Activation can take one of the license's fixed number of instance
-	// licenses (InstanceService.checkActivationLimit), so the question names it.
-	add := "Add instance"
-	if c.request.GetInstance().GetActivation() {
-		add = "Add activated instance"
-	}
-	question := func(instanceID string) string {
-		return fmt.Sprintf("%s %q to %q?", add, instanceID, c.projectID)
-	}
-	// Only the account's email may run past a line, so the IDs must fit.
-	if lineColumns(question(c.request.GetInstanceId())) > messageLineWidth {
-		suggestion := "add the instance signed in to the Bytebase console: " + link
-		if lineColumns(question("a")) <= messageLineWidth {
-			suggestion = "use a shorter instance ID, or " + suggestion
-		}
-		return nil, &toolError{
-			Code:       "CHANGE_TOO_LONG",
-			Message:    fmt.Sprintf("the question naming instance %q and project %q is wider than one line of the confirmation form, so no instance was added", c.request.GetInstanceId(), c.projectID),
-			Suggestion: suggestion,
+	notActivated := maskingSkips && !c.request.GetInstance().GetActivation()
+	// Whether any layout fits is decided as if the TLS mode had its longest
+	// wording, so a weaker TLS setting never turns a refusal into a form.
+	if fitsALayout(ctx, instanceLayouts(c, c.request.GetInstanceId(), notActivated, tlsNotVerified)) {
+		for _, layout := range instanceLayouts(c, c.request.GetInstanceId(), notActivated, tlsMode(c.dataSource())) {
+			if form, _ := fitLayout(ctx, layout); form != nil {
+				return form, nil
+			}
 		}
 	}
+	suggestion := "add the instance signed in to the Bytebase console: " + link
+	if fitsALayout(ctx, instanceLayouts(c, shortestID, notActivated, tlsNotVerified)) {
+		suggestion = "use a shorter instance ID, or " + suggestion
+	}
+	return nil, &toolError{
+		Code:       "CHANGE_TOO_LONG",
+		Message:    "this instance's names and host are too long for one confirmation form, which keeps room for any TLS setting, so no instance was added",
+		Suggestion: suggestion,
+	}
+}
+
+// instanceLayouts are the layouts of the form that adds instanceID, fullest
+// first; the form is the first that fits. Each keeps the host, the port, the
+// TLS mode, the environment and the activation in the message: the host
+// receives the password, and the rest decide how it travels and which rules,
+// licenses and masking apply.
+func instanceLayouts(c *instanceCreation, instanceID string, notActivated bool, tls string) []formLayout {
 	ds := c.dataSource()
+	host := fmt.Sprintf("Host %q, port %s", ds.GetHost(), ds.GetPort())
+	user := fmt.Sprintf("user %q", ds.GetUsername())
 	placement := "No environment."
 	if id := c.environmentID(); id != "" {
 		placement = fmt.Sprintf("Environment %q.", id)
 	}
-	changes := []formChange{
-		{text: fmt.Sprintf("Host %q, port %s, user %q, %s", ds.GetHost(), ds.GetPort(), ds.GetUsername(), tlsMode(ds))},
-		{text: placement + " Its databases join the project for good."},
+	const forGood = "Its databases join the project for good."
+	whole := []formChange{
+		{text: host + ", " + user + ", " + tls},
+		{text: placement + " " + forGood},
 	}
-	if maskingSkips && !c.request.GetInstance().GetActivation() {
-		changes = append(changes, formChange{text: instanceNotActivated})
+	notes := placement
+	if notActivated {
+		whole = append(whole, formChange{text: instanceNotActivated})
+		notes += " " + instanceNotActivated
 	}
-	return fitForm(ctx, strings.TrimSuffix(question(c.request.GetInstanceId()), "?"), changes, "", "", instanceDescription(c), func(needed int, _ string) error {
-		return &toolError{
-			Code:       "CHANGE_TOO_LONG",
-			Message:    fmt.Sprintf("this instance needs %d lines, more than the %d one confirmation form shows, so no instance was added", needed, messageLines),
-			Suggestion: "an instance cannot be added in steps, so add it signed in to the Bytebase console: " + link,
+	// Activation can take one of the license's fixed number of instance
+	// licenses (InstanceService.checkActivationLimit), so the form names it: in
+	// the question, or beside the environment when that keeps the question to
+	// one row.
+	plain := fmt.Sprintf("Add instance %q to %q", instanceID, c.projectID)
+	question, dense := plain, plain
+	if c.request.GetInstance().GetActivation() {
+		question = fmt.Sprintf("Add activated instance %q to %q", instanceID, c.projectID)
+		if dense = question; len(wrapMessageLine(plain)) < len(wrapMessageLine(question)) {
+			dense = plain
+			notes += " Activated."
 		}
-	})
+	}
+	details := instanceDescription(c)
+	return []formLayout{
+		{question: question, changes: whole, description: details},
+		{question: dense, changes: []formChange{{text: host + ", " + user + ", " + tls + ". " + notes}}, description: forGood + "\n" + details},
+		{question: dense, changes: []formChange{{text: host + ", " + tls + ". " + notes}}, description: capitalize(user) + ". " + forGood + "\n" + details},
+	}
 }
 
-// tlsMode names the TLS mode the PostgreSQL driver uses: sslmode=require with
-// the verification the data source's TLS settings carry when use_ssl is set
-// (with no CA or SSH tunnel, which the entry refuses), and pgx's default,
-// prefer, otherwise, which tries TLS and accepts plain text.
+// The TLS modes the PostgreSQL driver uses, as the form names them:
+// sslmode=require with the verification the data source's TLS settings carry
+// when use_ssl is set (with no CA or SSH tunnel, which the entry refuses), and
+// pgx's default, prefer, otherwise, which tries TLS and accepts plain text.
+const (
+	tlsNotRequired = "TLS not required"
+	tlsVerified    = "TLS required and verified"
+	tlsNotVerified = "TLS required, not verified"
+)
+
 func tlsMode(ds *v1pb.DataSource) string {
 	switch {
 	case !ds.GetUseSsl():
-		return "TLS not required"
+		return tlsNotRequired
 	case ds.GetVerifyTlsCertificate():
-		return "TLS required and verified"
+		return tlsVerified
 	default:
-		return "TLS required, not verified"
+		return tlsNotVerified
 	}
 }
 
-// instanceDescription is what the message leaves out.
+// instanceDescription is what the message leaves out: the title, whether the
+// request sets a password, and the database the instance connects to.
 func instanceDescription(c *instanceCreation) string {
 	ds := c.dataSource()
-	var sb strings.Builder
-	fmt.Fprintf(&sb, "PostgreSQL instance %q, titled %q.", c.request.GetInstanceId(), c.request.GetInstance().GetTitle())
-	sb.WriteString("\nAfter you apply, Bytebase tests the connection and adds nothing if it fails.")
-	if ds.GetPassword() == "" {
-		fmt.Fprintf(&sb, " It signs in as %q with no password.", ds.GetUsername())
-	} else {
-		fmt.Fprintf(&sb, " It signs in as %q with the password in the request; this form does not show it.", ds.GetUsername())
+	password := "no password"
+	if ds.GetPassword() != "" {
+		password = "password set (not shown)"
 	}
+	description := fmt.Sprintf("Title %q, %s", c.request.GetInstance().GetTitle(), password)
 	if database := ds.GetDatabase(); database != "" {
-		fmt.Fprintf(&sb, " It connects to database %q, and syncs every database on the server.", database)
+		description += fmt.Sprintf("\nConnects to database %q, and syncs every database on the server.", database)
 	}
-	return sb.String()
+	return description
 }
 
 // instanceAddedText reports the added instance: whether Bytebase synced it, and

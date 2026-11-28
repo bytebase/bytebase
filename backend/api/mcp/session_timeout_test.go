@@ -223,7 +223,7 @@ func addFormTool(t *testing.T, s *Server) {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{Name: formToolName, Description: "Asks to confirm a write."},
 		func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
 			return s.askToConfirm(ctx, formTestWrite{}, []byte("digest"), "Make the test write?",
-				confirmChoice{question: "Make the test write?", action: "Make it"}), nil, nil
+				confirmChoice{action: "Make it"}), nil, nil
 		})
 }
 

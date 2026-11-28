@@ -129,7 +129,7 @@ func (s *Server) administerIdentity(ctx context.Context, req *mcp.CallToolReques
 		return formatToolError(err), nil, nil
 	}
 	digest := adminFormDigest(form, change.request)
-	if result := s.confirmAdminChange(ctx, req, change, digest, form, creationSubject{nothing: "no workload identity was created"}, "this request and its form"); result != nil {
+	if result := s.confirmAdminChange(ctx, req, change, digest, form, creationSubject{nothing: "no workload identity was created", verb: "Create identity"}, "this request and its form"); result != nil {
 		return result, nil, nil
 	}
 
@@ -348,43 +348,64 @@ func (c *identityCreation) fill() {
 // identityForm builds the form that asks to create the identity: who signs in
 // as it, and the role it gets.
 func identityForm(ctx context.Context, c *identityCreation, link string) (*adminForm, error) {
-	question := func(identityID string) string {
-		return fmt.Sprintf("Create workload identity %q in %q", identityID, c.projectID)
-	}
-	// Only the account's email may run past a line, so the IDs must fit.
-	if lineColumns(question(c.request.GetWorkloadIdentityId())+"?") > messageLineWidth {
-		suggestion := "create it signed in to the Bytebase console: " + link
-		if lineColumns(question("a")+"?") <= messageLineWidth {
-			suggestion = "use a shorter identity ID, or " + suggestion
-		}
-		return nil, &toolError{
-			Code:       "CHANGE_TOO_LONG",
-			Message:    fmt.Sprintf("the question naming identity %q and project %q is wider than one line of the confirmation form, so no workload identity was created", c.request.GetWorkloadIdentityId(), c.projectID),
-			Suggestion: suggestion,
-		}
-	}
 	repository, _ := readIdentityRepository(c.config())
+	needed := 0
+	for _, layout := range identityLayouts(c, c.request.GetWorkloadIdentityId(), repository) {
+		var form *adminForm
+		if form, needed = fitLayout(ctx, layout); form != nil {
+			return form, nil
+		}
+	}
+	suggestion := "create it signed in to the Bytebase console: " + link
+	if fitsALayout(ctx, identityLayouts(c, shortestID, repository)) {
+		suggestion = "use a shorter identity ID, or " + suggestion
+	}
+	return nil, &toolError{
+		Code:       "CHANGE_TOO_LONG",
+		Message:    fmt.Sprintf("this workload identity needs %d lines, more than the %d one confirmation form shows, so no workload identity was created", needed, messageLines),
+		Suggestion: suggestion,
+	}
+}
+
+// identityLayouts are the layouts of the form that creates identityID, fullest
+// first; the form is the first that fits. Each keeps the repository, which
+// decides who signs in, and the rollouts without approval in the message. The
+// role's name is in the message too, or leads the description.
+func identityLayouts(c *identityCreation, identityID string, repository identityRepository) []formLayout {
 	jobs := "GitLab CI"
 	if repository.github {
 		jobs = "GitHub Actions"
 	}
-	changes := []formChange{
-		{text: fmt.Sprintf("Any %s job in %q signs in as it, and the MCP access policy does not limit it.", jobs, repository.path)},
-		{text: fmt.Sprintf("Role: %s. It can roll out without approval.", identityRoleTitle)},
+	signsIn := fmt.Sprintf("Any %s job in %q signs in as it", jobs, repository.path)
+	const unlimited = "the MCP access policy does not limit it"
+	// The role holds no issue permission, so its rollouts carry no issue, and
+	// approval checks apply only to a rollout with an issue
+	// (RolloutService.CreateRollout).
+	const rollsOut = "It can roll out without approval."
+	role := fmt.Sprintf("Role: %s.", identityRoleTitle)
+	question := fmt.Sprintf("Create workload identity %q in %q", identityID, c.projectID)
+	// The lines under the question say what kind of identity it is, so a
+	// question that needs a second row gives up the word for the repository's.
+	dense := question
+	if short := fmt.Sprintf("Create identity %q in %q", identityID, c.projectID); len(wrapMessageLine(short)) < len(wrapMessageLine(question)) {
+		dense = short
 	}
-	return fitForm(ctx, question(c.request.GetWorkloadIdentityId()), changes, "", "", identityDescription(c, repository), func(needed int, _ string) error {
-		return &toolError{
-			Code:       "CHANGE_TOO_LONG",
-			Message:    fmt.Sprintf("this workload identity needs %d lines, more than the %d one confirmation form shows, so no workload identity was created", needed, messageLines),
-			Suggestion: "create it signed in to the Bytebase console: " + link,
-		}
-	})
+	return []formLayout{
+		{question: question, changes: []formChange{{text: signsIn + ", and " + unlimited + "."}, {text: role + " " + rollsOut}}, description: identityDescription(c, repository, "", "")},
+		{question: dense, changes: []formChange{{text: signsIn + "."}, {text: role + " " + rollsOut}}, description: identityDescription(c, repository, "", capitalize(unlimited)+".")},
+		{question: dense, changes: []formChange{{text: signsIn + ". " + rollsOut}}, description: identityDescription(c, repository, role, capitalize(unlimited)+".")},
+	}
 }
 
-// identityDescription is what the message leaves out. Its first line is what
-// the pattern pins on GitHub, since fullscreen shows that line only.
-func identityDescription(c *identityCreation, repository identityRepository) string {
+// identityDescription is what the message leaves out. Fullscreen shows its
+// first row only. lead, the role's name when the message has no room for it,
+// comes first, and then what the pattern pins on GitHub. moved, the fixed text
+// a layout takes out of the message, follows them.
+func identityDescription(c *identityCreation, repository identityRepository, lead, moved string) string {
 	var sb strings.Builder
+	if lead != "" {
+		sb.WriteString(lead + "\n")
+	}
 	if repository.github {
 		var pins []string
 		if repository.ownerID != "" {
@@ -400,11 +421,10 @@ func identityDescription(c *identityCreation, repository identityRepository) str
 			fmt.Fprintf(&sb, "The pattern pins %s, so a new account under a freed name cannot sign in as it.\n", strings.Join(pins, " and "))
 		}
 	}
-	fmt.Fprintf(&sb, "It signs in as %s with tokens from %s for audience %q. It lasts until it is removed.", c.email, c.config().GetIssuerUrl(), identityAudience)
-	// The role holds bb.taskRuns.create, which runs tasks in every environment,
-	// and no issue permission, so its rollouts carry no issue; approval checks
-	// apply only to a rollout with an issue (RolloutService.CreateRollout).
-	fmt.Fprintf(&sb, "\n%s lets it create plans, releases and rollouts in this project and run their tasks in every environment. Its rollouts carry no issue, so no approval rule holds them.", identityRoleTitle)
-	fmt.Fprintf(&sb, " Titled %q.", c.request.GetWorkloadIdentity().GetTitle())
+	if moved != "" {
+		sb.WriteString(moved + "\n")
+	}
+	// The role holds bb.taskRuns.create, which runs tasks in every environment.
+	fmt.Fprintf(&sb, "Titled %q. It signs in as %s, and its role runs tasks in every environment of the project.", c.request.GetWorkloadIdentity().GetTitle(), c.email)
 	return sb.String()
 }
