@@ -622,7 +622,7 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 }
 
 // formChange is one change line of a form. effect marks a change that the
-// form's effect line is about, so a step that holds it shows that line too.
+// form's effect is about, so a step that holds it shows the effect too.
 type formChange struct {
 	text   string
 	effect bool

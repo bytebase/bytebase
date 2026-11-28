@@ -473,7 +473,7 @@ func TestAdministerMaskingRulesRefusesAChangeTooLongForTheForm(t *testing.T) {
 	require.Contains(t, resultText(t, res), "https://bb.example.com/global-masking")
 }
 
-// The unmask line belongs to the removal, so the long added full mask fits a
+// The unmask effect belongs to the removal, so the long added full mask fits a
 // form of its own, and smaller steps help. The edited rule keeps its id, which
 // the step that adds it before the removal cannot.
 func TestAdministerMaskingRulesSuggestsStepsForAChangeThatFitsAFormAlone(t *testing.T) {
@@ -487,7 +487,7 @@ func TestAdministerMaskingRulesSuggestsStepsForAChangeThatFitsAFormAlone(t *test
 
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, maskingRule("r1", "Personal data in prod", condition, "bb.default")))))
 	require.True(t, res.IsError)
-	require.Contains(t, resultText(t, res), "this change needs 6 lines")
+	require.Contains(t, resultText(t, res), "this change needs 5 lines")
 	require.Contains(t, resultText(t, res), "make the change in smaller steps")
 	require.Contains(t, resultText(t, res), "add a rule under a new UUID before removing the one it replaces")
 	require.Empty(t, mock.calls())
@@ -497,6 +497,118 @@ func TestAdministerMaskingRulesSuggestsStepsForAChangeThatFitsAFormAlone(t *test
 	require.False(t, res.IsError, resultText(t, res))
 	require.EqualValues(t, 1, user.asked.Load())
 	require.Len(t, mock.calls(), 1)
+}
+
+// The condition takes three of the four lines, which leaves the removal no line
+// for the unmask effect.
+func TestAdministerMaskingRulesRemovesALongRuleItAdded(t *testing.T) {
+	mock := &maskingMock{}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	rule := maskingRule("r1", "Salary amounts", `resource.database_name == "hr_test" && resource.table_name == "salary" && resource.column_name == "amount"`, "bb.default")
+
+	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(true, rule))))
+	require.False(t, res.IsError, resultText(t, res))
+	mock.setStored(rule)
+	res = callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false))))
+	require.False(t, res.IsError, resultText(t, res))
+	require.EqualValues(t, 2, user.asked.Load())
+	require.Len(t, mock.calls(), 2)
+	require.Contains(t, user.lastParams(t).Message, "can unmask data, for you too")
+}
+
+func TestAdministerMaskingRulesPutsTheUnmaskEffectInTheQuestionWhenItsLineDoesNotFit(t *testing.T) {
+	fullMask := &v1pb.Algorithm{Mask: &v1pb.Algorithm_FullMask_{FullMask: &v1pb.Algorithm_FullMask{Substitution: "*"}}}
+	mock := &maskingMock{types: []*v1pb.SemanticTypeSetting_SemanticType{semanticType("secret", "Secret", fullMask)}}
+	mock.setStored(maskingRule("r1", "Pay", `resource.database_name == "hr_test" && (resource.column_name == "amount" || resource.column_name == "bonus")`, "secret"))
+	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false))))
+	require.Contains(t, resultText(t, res), "Not changed: the user declined")
+	require.Equal(t, strings.Join([]string{
+		"Change the masking rules (can unmask data, for you too), as alice@example.com?",
+		"Remove, \"Secret\" (Full mask): `resource.database_name == \"hr_test\" &&",
+		"> (resource.column_name == \"amount\" || resource.column_name ==",
+		"> \"bonus\")`",
+	}, "\n"), user.lastParams(t).Message)
+	require.Equal(t, "No masking rule is left, so each column keeps its own semantic type.\n"+maskingRulesApply, choiceDescription(t, user.lastParams(t)))
+	require.LessOrEqual(t, lineColumns(maskingRulesQuestionWithEffect), messageLineWidth, "the effect comes before the account, which a narrow terminal cuts")
+}
+
+// With the unmask effect in the question, the long removal fits a form alone,
+// so a request that also adds a rule is told to take steps, and each step fits.
+func TestAdministerMaskingRulesReplacesALongRuleInSteps(t *testing.T) {
+	mock := &maskingMock{}
+	long := maskingRule("r1", "Salary amounts", `resource.database_name == "hr_test" && resource.table_name == "salary" && resource.column_name == "amount"`, "bb.default")
+	short := maskingRule("r2", "Amounts", `resource.column_name == "amount"`, "bb.default")
+	mock.setStored(long)
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, short))))
+	require.True(t, res.IsError, resultText(t, res))
+	require.Contains(t, resultText(t, res), "make the change in smaller steps")
+	require.NotContains(t, resultText(t, res), "make that change signed in")
+	require.Zero(t, user.asked.Load())
+	require.Empty(t, mock.calls())
+
+	res = callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, proto.CloneOf(long), short))))
+	require.False(t, res.IsError, resultText(t, res))
+	mock.setStored(long, short)
+	res = callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, proto.CloneOf(short)))))
+	require.False(t, res.IsError, resultText(t, res))
+	require.EqualValues(t, 2, user.asked.Load())
+	require.Len(t, mock.calls(), 2)
+}
+
+// A removal or a move states the unmask effect, and adding a full-mask rule does
+// not.
+func TestAdministerMaskingRulesRemovesOrMovesEveryRuleOneFormAdds(t *testing.T) {
+	types, err := semanticTypesFromSetting(nil)
+	require.NoError(t, err)
+	alice := withUserEmail(context.Background(), "alice@example.com")
+	fits := func(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule) bool {
+		diff, err := diffMaskingRules(stored, requested, types, "")
+		require.NoError(t, err)
+		_, err = maskingRulesForm(alice, diff, "")
+		return err == nil
+	}
+	short := maskingRule("r0", "SSN", `resource.column_name == "ssn"`, "bb.default")
+	for _, condition := range []func(name string) string{
+		func(name string) string {
+			return `resource.database_name == "hr_test" && resource.table_name == "salary" && resource.column_name == "` + name + `"`
+		},
+		func(name string) string {
+			return `resource.environment_id == "prod" && (resource.column_name == "amount" || resource.column_name == "` + name + `")`
+		},
+	} {
+		for n := 1; n <= 120; n++ {
+			for _, semanticType := range []string{"bb.default", "bb.default-partial"} {
+				rule := maskingRule("r1", "Long", condition(strings.Repeat("c", n)), semanticType)
+				if !fits(nil, []*v1pb.MaskingRulePolicy_MaskingRule{rule}) {
+					continue
+				}
+				require.True(t, fits([]*v1pb.MaskingRulePolicy_MaskingRule{rule}, nil), "remove %q", rule.GetCondition().GetExpression())
+				// Stored first, so the diff reads this rule as the one that moved.
+				require.True(t, fits([]*v1pb.MaskingRulePolicy_MaskingRule{rule, short}, []*v1pb.MaskingRulePolicy_MaskingRule{short, rule}), "move %q", rule.GetCondition().GetExpression())
+			}
+		}
+	}
+}
+
+func TestAdministerMaskingRulesSendsARemovalNoFormFitsToTheConsole(t *testing.T) {
+	mock := &maskingMock{}
+	mock.setStored(maskingRule("r1", "Pay", `resource.environment_id == "prod" && resource.database_name == "hr_prod" && (resource.column_name == "amount" || resource.column_name == "bonus" || resource.column_name == "commission" || resource.column_name == "allowance")`, "bb.default"))
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false))))
+	require.True(t, res.IsError, resultText(t, res))
+	require.Contains(t, resultText(t, res), "needs more lines than the 4 one confirmation form shows")
+	require.Contains(t, resultText(t, res), "make that change signed in to the Bytebase console")
+	require.Zero(t, user.asked.Load())
+	require.Empty(t, mock.calls())
 }
 
 func TestAdministerMaskingRulesAsksNothingWhenNothingChanges(t *testing.T) {
