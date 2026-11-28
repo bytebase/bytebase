@@ -4,3 +4,14 @@
 ***********************************************************************
 
 The bytebase is starting, use `kubectl get statefulset bytebase -n {{ .Release.Namespace }}` to check status.
+{{- if .Values.httpRoute.enabled }}
+
+An HTTPRoute was created. A Gateway serves it only after admitting it, so check that
+`kubectl get httproute {{ .Release.Name }} -n {{ template "bytebase.namespace" . }} -o yaml` reports Accepted=True under status.parents.
+{{- if index .Values.bytebase.option "metrics-remote-access" }}
+
+WARNING: bytebase.option.metrics-remote-access is on, and /metrics has no authentication.
+Every HTTPRoute rule that matches /metrics, the default rule included, publishes it to
+all clients that can reach the Gateway.
+{{- end }}
+{{- end }}
