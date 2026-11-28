@@ -75,3 +75,22 @@ func ExtractDatabaseMetadata[Catalog any](
 	}
 	return export(c, targetDB), nil
 }
+
+// ExecResult is the engine-neutral projection of an omni catalog execution result.
+type ExecResult struct {
+	Index int
+	Line  int
+	Error error
+}
+
+// MapExecResults converts engine-specific omni catalog Exec results into []ExecResult.
+func MapExecResults[R any](results []R, err error, project func(R) ExecResult) ([]ExecResult, error) {
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ExecResult, len(results))
+	for i, r := range results {
+		out[i] = project(r)
+	}
+	return out, nil
+}

@@ -137,7 +137,7 @@ func TestWalkThroughSessionUserAndConfiguredSearchPath(t *testing.T) {
 			}, nil, nil, storepb.Engine_POSTGRES, true)
 			wtCtx := tc.session
 			wtCtx.RawSQL = tc.sql
-			advice := WalkThroughWithContext(context.Background(), wtCtx, state, nil)
+			advice := schema.WalkThroughWithContext(context.Background(), storepb.Engine_POSTGRES, wtCtx, state, nil)
 			require.Nil(t, advice)
 			tc.assert(t, state)
 		})

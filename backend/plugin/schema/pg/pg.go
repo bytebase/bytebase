@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/bytebase/omni/pg/catalog"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -39,7 +40,7 @@ func init() {
 		SDLDropAdvices:        pgSDLDropAdvices,
 	}, storepb.Engine_POSTGRES)
 	schema.Register(schema.Engine{
-		WalkThrough: WalkThroughWithContext,
+		WalkThrough: schema.OmniWalkThrough(storepb.Engine_POSTGRES, pganalysis.Engine),
 	}, storepb.Engine_POSTGRES)
 }
 
@@ -113,13 +114,13 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	})
 }
 
-// getMigrationSearchPath is getConfiguredSearchPath but keeps an explicitly listed
-// pg_catalog, whose position lets an earlier user schema shadow a built-in.
+// getMigrationSearchPath returns the configured search path, keeping an explicitly
+// listed pg_catalog, whose position lets an earlier user schema shadow a built-in.
 func getMigrationSearchPath(d *model.DatabaseMetadata) []string {
 	if d == nil {
 		return nil
 	}
-	return formatSearchPath(model.ParsePGConfiguredSearchPathIncludingSystem(d.GetProto().GetSearchPath()))
+	return schema.FormatSearchPath(model.ParsePGConfiguredSearchPathIncludingSystem(d.GetProto().GetSearchPath()))
 }
 
 func buildMigrationPlan(sourceText, targetText string) (*catalog.MigrationPlan, error) {

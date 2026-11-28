@@ -1,15 +1,11 @@
 package mysql
 
 import (
-	"context"
-
 	metadatapb "github.com/bytebase/omni/metadata"
 	mysqlanalysis "github.com/bytebase/omni/mysql/analysis"
 	"github.com/bytebase/omni/mysql/catalog"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/schema/internal/omnicatalog"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -31,7 +27,7 @@ func init() {
 		DiffSDLMigration:      mysqlDiffSDLMigrationWithContext,
 		SDLDropAdvices:        mysqlSDLDropAdvices,
 		DiffMetadataMigration: omniDiffMetadataMigration,
-		WalkThrough:           WalkThroughWithContext,
+		WalkThrough:           schema.OmniWalkThrough(storepb.Engine_MYSQL, mysqlanalysis.Engine),
 	}, storepb.Engine_MYSQL)
 }
 
@@ -78,32 +74,6 @@ var mysqlCatalog = omnicatalog.MySQLFamilyEngine(
 
 func omniDiffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
 	return omnicatalog.DiffMetadataMigration(mysqlCatalog, oldSchema, newSchema)
-}
-
-var mysqlWalkThroughEngine = omnicatalog.WalkThroughEngine[catalog.Catalog]{
-	Engine: storepb.Engine_MYSQL,
-	New:    catalog.New,
-	Load: func(ctx context.Context, c *catalog.Catalog, meta *metadatapb.DatabaseSchemaMetadata) error {
-		_, err := c.LoadMetadata(ctx, meta)
-		return err
-	},
-	Exec: func(c *catalog.Catalog, sql string) ([]omnicatalog.ExecResult, error) {
-		return execCatalog(c, sql, true)
-	},
-	DatabaseMetadata: func(c *catalog.Catalog, dbName string) *metadatapb.DatabaseSchemaMetadata {
-		return c.DatabaseMetadata(dbName)
-	},
-	InspectAST: omnicatalog.InspectAST(mysqlparser.GetNode, mysqlanalysis.ClassifyWalkThroughStatement),
-	ExtractCatalogError: omnicatalog.ExtractError(func(e *catalog.Error) (int, string) {
-		return e.Code, e.Message
-	}),
-	SplitSQL: mysqlparser.SplitSQL,
-	IsCTAS:   mysqlanalysis.IsCreateTableAs,
-}
-
-// WalkThroughWithContext performs DDL simulation using the omni MySQL catalog.
-func WalkThroughWithContext(ctx context.Context, wtCtx schema.WalkThroughContext, d *model.DatabaseMetadata, asts []base.AST) *storepb.Advice {
-	return omnicatalog.RunWalkThrough(ctx, mysqlWalkThroughEngine, wtCtx.RawSQL, d, asts, nil)
 }
 
 func execCatalog(c *catalog.Catalog, sql string, continueOnError bool) ([]omnicatalog.ExecResult, error) {
