@@ -32,6 +32,6 @@ func TestGenerateRestoreSQLSeam(t *testing.T) {
 	}
 
 	// Nil backup item guard.
-	_, err := GenerateRestoreSQL(context.Background(), rCtx, "DELETE FROM test;", nil)
+	_, err := base.GenerateRestoreSQL(context.Background(), store.Engine_MYSQL, rCtx, "DELETE FROM test;", nil)
 	require.ErrorContains(t, err, "backup item is nil")
 }

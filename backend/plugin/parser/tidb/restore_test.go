@@ -68,7 +68,7 @@ func TestGenerateRestoreSQLNilBackupItemGuards(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			require.NotPanics(t, func() {
-				_, err := GenerateRestoreSQL(context.Background(), rCtx, "DELETE FROM test;", tc.backupItem)
+				_, err := base.GenerateRestoreSQL(context.Background(), store.Engine_TIDB, rCtx, "DELETE FROM test;", tc.backupItem)
 				require.ErrorContains(t, err, tc.wantErr)
 			})
 		})
@@ -85,7 +85,7 @@ func TestGenerateRestoreSQLEndPositionExclusive(t *testing.T) {
 	require.GreaterOrEqual(t, len(stmts), 2)
 
 	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
-	result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+	result, err := base.GenerateRestoreSQL(context.Background(), store.Engine_TIDB, base.RestoreContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
 		IsCaseSensitive:         false,

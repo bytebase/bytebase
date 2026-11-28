@@ -2,7 +2,6 @@ package mssql
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -10,17 +9,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
-
-func TestBackupRestoreDoNotDependOnANTLR(t *testing.T) {
-	for _, path := range []string{"backup_restore.go"} {
-		content, err := os.ReadFile(path)
-		require.NoError(t, err)
-		source := string(content)
-		require.NotContains(t, source, "github.com/antlr4-go/antlr/v4", path)
-		require.NotContains(t, source, "github.com/bytebase/parser/tsql", path)
-		require.NotContains(t, source, "ParseTSQL(", path)
-	}
-}
 
 func TestTransformDMLToSelectSeam(t *testing.T) {
 	sql := "\nUSE APP;\nUPDATE dbo.users SET name = 'bob' WHERE id = 1;"

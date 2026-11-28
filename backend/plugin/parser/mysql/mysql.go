@@ -13,8 +13,6 @@ import (
 func init() {
 	engine := base.OmniEngine(analysis.Engine, omnicompletion.Engine)
 	engine.StatementTypes = GetStatementTypes
-	engine.TransformDMLToSelect = TransformDMLToSelect
-	engine.GenerateRestoreSQL = GenerateRestoreSQL
 	base.Register(engine, storepb.Engine_MYSQL)
 }
 

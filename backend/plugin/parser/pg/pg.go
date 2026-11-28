@@ -11,8 +11,6 @@ import (
 
 func init() {
 	engine := base.OmniEngine(analysis.Engine, pgcompletion.Engine)
-	engine.TransformDMLToSelect = TransformDMLToSelect
-	engine.GenerateRestoreSQL = GenerateRestoreSQL
 	base.Register(engine, storepb.Engine_POSTGRES)
 }
 

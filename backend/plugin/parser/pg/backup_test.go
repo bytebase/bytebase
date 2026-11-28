@@ -40,10 +40,10 @@ func TestBackupSeam(t *testing.T) {
 	require.Equal(t, &storepb.Position{Line: 1, Column: 0}, backups[0].StartPosition)
 	require.Equal(t, &storepb.Position{Line: 1, Column: 32}, backups[0].EndPosition)
 
-	_, err = TransformDMLToSelect(context.Background(), base.TransformContext{DatabaseName: "db"}, "UPDATE t SET a = 1;", "db", "bbarchive", "rollback")
-	require.ErrorContains(t, err, "GetDatabaseMetadataFunc is not set")
+	_, err = base.TransformDMLToSelect(context.Background(), storepb.Engine_POSTGRES, base.TransformContext{DatabaseName: "db"}, "UPDATE t SET a = 1;", "db", "bbarchive", "rollback")
+	require.ErrorContains(t, err, "the catalog cannot look databases up")
 
-	_, err = TransformDMLToSelect(context.Background(), base.TransformContext{
+	_, err = base.TransformDMLToSelect(context.Background(), storepb.Engine_POSTGRES, base.TransformContext{
 		DatabaseName: "unsynced",
 		GetDatabaseMetadataFunc: func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
 			return "", nil, nil
