@@ -428,7 +428,9 @@ func TestAdministerMaskingRulesAddedRuleLineStatesEveryFieldOfTheRule(t *testing
 // A masking move counts the rules it passes as an approval move does. A rule
 // of the moved rule's type changes no mask. Only a full mask hides every
 // value, so a rule with none is counted apart: a hash, a partial mask, a type
-// that masks nothing, an unknown type and no type.
+// that masks nothing, an unknown type and no type. A moved rule with none
+// passes rules of its own type that have none either: its line then counts the
+// rules of other types, and in brackets how many of those have none.
 func TestMaskingMoveCountsTheRulesItPasses(t *testing.T) {
 	types, err := semanticTypesFromSetting([]*v1pb.SemanticTypeSetting_SemanticType{
 		semanticType("email", "Email", &v1pb.Algorithm{Mask: &v1pb.Algorithm_Md5Mask{Md5Mask: &v1pb.Algorithm_MD5Mask{}}}),
@@ -452,6 +454,12 @@ func TestMaskingMoveCountsTheRulesItPasses(t *testing.T) {
 		"a partial mask behind full masks":    {"bb.default-partial", []string{"bb.default", "redacted"}, "Partial mask, now behind 2 rules with other types"},
 		"a partial mask behind another's":     {"bb.default-partial", []string{"email", "email"}, "Partial mask, now behind 2 rules with no full mask"},
 		"a partial mask behind partial masks": {"bb.default-partial", []string{"bb.default-partial", "bb.default-partial"}, "Partial mask, now behind 2 rules with the same type"},
+		"a partial mask, its type and a hash": {"bb.default-partial", []string{"bb.default-partial", "email"}, "Partial mask, now behind 2 rules, 1 with other types (no full mask)"},
+		"a partial mask behind every kind":    {"bb.default-partial", []string{"bb.default-partial", "email", "bb.default"}, "Partial mask, now behind 3 rules, 2 with other types (1 with no full mask)"},
+		"a hash, its type and three types":    {"email", []string{"email", "plain", "bb.typo", ""}, `"Email" (Hash (MD5)), now behind 4 rules, 3 with other types (no full mask)`},
+		"two hashes among every kind":         {"email", []string{"email", "email", "plain", "", "bb.typo", "bb.default"}, `"Email" (Hash (MD5)), now behind 6 rules, 4 with other types (3 with no full mask)`},
+		"a partial mask, none of its type":    {"bb.default-partial", []string{"email", "bb.default", "plain"}, "Partial mask, now behind 3 rules, 2 with no full mask and 1 with other types"},
+		"a partial mask, its type and a full": {"bb.default-partial", []string{"bb.default-partial", "bb.default"}, "Partial mask, now behind 2 rules, 1 of them with other types"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mover := maskingRule("r-mover", "Mover", `resource.column_name == "mover"`, tc.mover)

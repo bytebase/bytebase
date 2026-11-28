@@ -634,13 +634,19 @@ func (s *passedSide) add(rule, moved *keptRule) {
 // text says what the move passed on this side. A side of one rule that gives
 // something else names it, with what it gives, when its label is within
 // passedNameWidth: that rule now decides what both match, or no longer does.
-// Every other side is counted, the weak rules apart.
-func (s *passedSide) text(words passedWords) string {
+// Every other side is counted, the weak rules apart. The rules that give the
+// same as a weak moved rule are weak as it is, so beside them the weak count is
+// stated within the rules that give something else.
+func (s *passedSide) text(words passedWords, movedWeak bool) string {
 	switch other := s.total - s.same; {
 	case s.total == 1 && other == 1 && s.other.labelSize <= passedNameWidth:
 		return s.other.label
 	case other == 0:
 		return countRules(s.same) + " " + words.same
+	case movedWeak && s.same > 0 && s.weak == other:
+		return fmt.Sprintf("%s, %d %s (%s)", countRules(s.total), other, words.other, strings.TrimPrefix(words.weak, "with "))
+	case movedWeak && s.same > 0 && s.weak > 0:
+		return fmt.Sprintf("%s, %d %s (%d %s)", countRules(s.total), other, words.other, s.weak, words.weak)
 	case s.weak == other && s.same == 0:
 		return countRules(s.total) + " " + words.weak
 	case s.weak == other:
@@ -671,10 +677,10 @@ func rulesPassed(moved int, kept []keptRule, words passedWords) string {
 	}
 	var sides []string
 	if behind.total > 0 {
-		sides = append(sides, "behind "+behind.text(words))
+		sides = append(sides, "behind "+behind.text(words, kept[moved].weak))
 	}
 	if ahead.total > 0 {
-		sides = append(sides, "ahead of "+ahead.text(words))
+		sides = append(sides, "ahead of "+ahead.text(words, kept[moved].weak))
 	}
 	return ", now " + strings.Join(sides, ", and ")
 }

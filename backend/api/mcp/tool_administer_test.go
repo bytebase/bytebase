@@ -967,7 +967,9 @@ type passedRule struct {
 // requested[moved] traded order with, from the rules' places alone: on each
 // side a lone rule that gives something else by its label, when that is within
 // passedNameWidth, and any other side by its counts, in the words of a rule
-// form: for the rules that give the same, the weak ones, and the others.
+// form: for the rules that give the same, the weak ones, and the others. The
+// rules that give the same as a weak moved rule are weak too: beside them the
+// weak count is in brackets, within the others.
 func wantPassedOf(stored []string, requested []passedRule, moved int, same, weak, other string) (clause string, named, counted int) {
 	was := map[string]int{}
 	for i, condition := range stored {
@@ -1003,6 +1005,10 @@ func wantPassedOf(stored []string, requested []passedRule, moved int, same, weak
 			named++
 		case others == 0:
 			text = countRules(shared) + " " + same
+		case requested[moved].weak && shared > 0 && none == others:
+			text = fmt.Sprintf("%s, %d %s (%s)", countRules(total), others, other, strings.TrimPrefix(weak, "with "))
+		case requested[moved].weak && shared > 0 && none > 0:
+			text = fmt.Sprintf("%s, %d %s (%d %s)", countRules(total), others, other, none, weak)
 		case none == others && shared == 0:
 			text = countRules(total) + " " + weak
 		case none == others:

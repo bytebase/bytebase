@@ -460,7 +460,7 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 }
 
 // typesPassed counts the rules a masking rule's move passes. Only a full mask
-// hides every value, so a rule with none is counted apart.
+// hides every value, so a rule of another type with none is counted apart.
 var typesPassed = passedWords{same: "with the same type", weak: "with no full mask", other: "with other types"}
 
 // keptRuleLine states how a kept rule changes, one clause per field the form
