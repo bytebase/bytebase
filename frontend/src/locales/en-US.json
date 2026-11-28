@@ -3891,9 +3891,9 @@
           "api-key": {
             "description": "Supply API Key, read-only. {{viewDoc}}",
             "find-my-key": "Find my key",
-            "self": "API Key"
+            "self": "API Key",
+            "stored-description": "An API key is configured."
           },
-          "available-in-saas": "AI Assistant is available in this workspace and managed by Bytebase.",
           "description": "Use AI to help with database development tasks.",
           "enable-ai-assistant": "Enable AI Assistant",
           "endpoint": {
@@ -3916,8 +3916,7 @@
             "open_ai": "OpenAI",
             "self": "AI Provider"
           },
-          "self": "AI Assistant",
-          "unavailable-in-saas": "AI Assistant isn't available in this workspace. Contact your Bytebase administrator."
+          "self": "AI Assistant"
         },
         "allow-admin-data-source": {
           "description": "When enabled, users can choose between admin and read-only data sources. When disabled, users are forced to use read-only data sources if configured, otherwise fall back to admin data sources.",

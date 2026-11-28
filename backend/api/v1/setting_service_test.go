@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -10,9 +11,13 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestValidateDomains(t *testing.T) {
@@ -388,6 +393,102 @@ func TestMergeAISetting(t *testing.T) {
 		require.False(t, merged.Enabled)
 		require.Equal(t, "stored-key", merged.ApiKey)
 	})
+
+	for _, enabled := range []bool{false, true} {
+		for _, path := range []string{"value.ai.provider", "value.ai.endpoint"} {
+			t.Run(path+" cannot reuse credentials with enabled="+strconv.FormatBool(enabled), func(t *testing.T) {
+				before := stored()
+				before.Enabled = enabled
+				payload := &storepb.AISetting{Provider: storepb.AISetting_GEMINI, Endpoint: "https://custom.example.com", ApiKey: "unmasked-key"}
+				_, err := mergeAISetting(before, payload, []string{path})
+				require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+			})
+		}
+	}
+
+	t.Run("a disabled destination change can explicitly clear credentials", func(t *testing.T) {
+		before := stored()
+		before.Enabled = false
+		merged, err := mergeAISetting(before, &storepb.AISetting{Endpoint: "https://custom.example.com"}, []string{"value.ai.endpoint", "value.ai.api_key"})
+		require.NoError(t, err)
+		require.Equal(t, "https://custom.example.com", merged.Endpoint)
+		require.Empty(t, merged.ApiKey)
+	})
+}
+
+func TestUpdateAISettingDeploymentParity(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		saas bool
+	}{
+		{name: "self-hosted"},
+		{name: "cloud", saas: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			_, stores, _ := testcontainer.NewMetadataDB(t)
+			_, err := stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
+				ResourceID: "default",
+				AdditionalSettings: []store.AdditionalSetting{{Name: storepb.SettingName_AI, Payload: &storepb.AISetting{
+					Enabled: true, Provider: storepb.AISetting_GEMINI, Endpoint: "https://api.example.com",
+					Model: "managed-model", ApiKey: "managed-key", SqlReviewEnabled: true,
+				}}},
+			}, "admin@example.com")
+			require.NoError(t, err)
+			iamManager, err := iam.NewManager(stores, nil, false)
+			require.NoError(t, err)
+			service := &SettingService{store: stores, profile: &config.Profile{SaaS: tc.saas}, iamManager: iamManager}
+			ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, "default")
+			ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{Email: "admin@example.com"})
+			update := func(payload *v1pb.AISetting, validateOnly bool, paths ...string) (*connect.Response[v1pb.Setting], error) {
+				return service.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+					Setting:    &v1pb.Setting{Name: "settings/AI", Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_Ai{Ai: payload}}},
+					UpdateMask: &fieldmaskpb.FieldMask{Paths: paths}, ValidateOnly: validateOnly,
+				}))
+			}
+			for _, enabled := range []bool{false, true} {
+				response, err := update(&v1pb.AISetting{Enabled: enabled}, false, "value.ai.enabled")
+				require.NoError(t, err)
+				require.Equal(t, enabled, response.Msg.GetValue().GetAi().GetEnabled())
+				require.Empty(t, response.Msg.GetValue().GetAi().GetApiKey())
+				setting, err := stores.GetAISettingUncached(ctx, "default")
+				require.NoError(t, err)
+				require.Equal(t, "managed-key", setting.ApiKey)
+				require.Equal(t, "https://api.example.com", setting.Endpoint)
+				require.True(t, setting.SqlReviewEnabled)
+			}
+
+			_, err = update(&v1pb.AISetting{Endpoint: "https://custom.example.com"}, true, "value.ai.endpoint")
+			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+			payload := &v1pb.AISetting{Provider: v1pb.AISetting_CLAUDE, Endpoint: "https://custom.example.com", Model: "custom-model", ApiKey: "user-key"}
+			paths := []string{"value.ai.provider", "value.ai.endpoint", "value.ai.model", "value.ai.api_key"}
+			preview, err := update(payload, true, paths...)
+			require.NoError(t, err)
+			require.Empty(t, preview.Msg.GetValue().GetAi().ApiKey)
+			require.True(t, preview.Msg.GetValue().GetAi().Enabled)
+			setting, err := stores.GetAISettingUncached(ctx, "default")
+			require.NoError(t, err)
+			require.Equal(t, "managed-key", setting.ApiKey)
+
+			response, err := update(payload, false, paths...)
+			require.NoError(t, err)
+			require.Equal(t, v1pb.AISetting_CLAUDE, response.Msg.GetValue().GetAi().Provider)
+			require.Empty(t, response.Msg.GetValue().GetAi().ApiKey)
+			setting, err = stores.GetAISettingUncached(ctx, "default")
+			require.NoError(t, err)
+			require.Equal(t, "https://custom.example.com", setting.Endpoint)
+			require.Equal(t, "custom-model", setting.Model)
+			require.Equal(t, "user-key", setting.ApiKey)
+			require.True(t, setting.Enabled)
+			require.True(t, setting.SqlReviewEnabled)
+
+			_, err = update(&v1pb.AISetting{}, false, "value.ai.api_key")
+			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+			ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{Email: "member@example.com"})
+			_, err = update(&v1pb.AISetting{}, false, "value.ai.enabled")
+			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+		})
+	}
 }
 
 func TestMergeExportSetting(t *testing.T) {
@@ -464,42 +565,4 @@ func TestTurnsOnAIReview(t *testing.T) {
 	require.True(t, turnsOnAIReview(&storepb.AISetting{SqlReviewEnabled: true}, []string{"value.ai.sql_review_enabled"}))
 	require.False(t, turnsOnAIReview(&storepb.AISetting{}, []string{"value.ai.sql_review_enabled"}), "switching it off needs no plan")
 	require.False(t, turnsOnAIReview(&storepb.AISetting{SqlReviewEnabled: true}, []string{"value.ai.model"}), "a field the mask leaves out is not written")
-}
-
-func TestCanUpdateAISettingInSaaS(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		name  string
-		paths []string
-		want  bool
-	}{
-		{
-			name:  "allows the AI SQL review switch",
-			paths: []string{"value.ai.sql_review_enabled"},
-			want:  true,
-		},
-		{
-			name:  "rejects enabling the AI assistant",
-			paths: []string{"value.ai.enabled"},
-		},
-		{
-			name:  "rejects provider credentials",
-			paths: []string{"value.ai.api_key"},
-		},
-		{
-			name:  "rejects a mixed update",
-			paths: []string{"value.ai.sql_review_enabled", "value.ai.model"},
-		},
-		{
-			name: "rejects an empty update",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			require.Equal(t, tc.want, canUpdateAISettingInSaaS(tc.paths))
-		})
-	}
 }

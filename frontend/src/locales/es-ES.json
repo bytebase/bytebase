@@ -3891,9 +3891,9 @@
           "api-key": {
             "description": "Proporcionar clave API, solo lectura. {{viewDoc}}",
             "find-my-key": "Encuentra mi llave",
-            "self": "Clave de API"
+            "self": "Clave de API",
+            "stored-description": "Hay una clave de API configurada."
           },
-          "available-in-saas": "El Asistente de IA está disponible en este espacio de trabajo y lo administra Bytebase.",
           "description": "Utilice AI para ayudar en las tareas de desarrollo de bases de datos.",
           "enable-ai-assistant": "Habilitar el Asistente de IA",
           "endpoint": {
@@ -3916,8 +3916,7 @@
             "open_ai": "OpenAI",
             "self": "Proveedor de IA"
           },
-          "self": "Asistente de AI",
-          "unavailable-in-saas": "El Asistente de IA no está disponible en este espacio de trabajo. Contacte con su administrador de Bytebase."
+          "self": "Asistente de AI"
         },
         "allow-admin-data-source": {
           "description": "Cuando está habilitado, los usuarios pueden elegir entre fuentes de datos de administración y de solo lectura. Cuando está deshabilitado, los usuarios se ven obligados a usar fuentes de datos de solo lectura si están configuradas; de lo contrario, vuelven a usar fuentes de datos de administración.",

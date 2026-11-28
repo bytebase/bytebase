@@ -3891,9 +3891,9 @@
           "api-key": {
             "description": "Cung cấp Khóa API, chỉ đọc. {{viewDoc}}",
             "find-my-key": "Tìm khóa của tôi",
-            "self": "Khóa API"
+            "self": "Khóa API",
+            "stored-description": "Khóa API đã được cấu hình."
           },
-          "available-in-saas": "Trợ lý AI có sẵn trong workspace này và do Bytebase quản lý.",
           "description": "Sử dụng AI để hỗ trợ các tác vụ phát triển cơ sở dữ liệu.",
           "enable-ai-assistant": "Bật Trợ lý AI",
           "endpoint": {
@@ -3916,8 +3916,7 @@
             "open_ai": "OpenAI",
             "self": "Nhà cung cấp AI"
           },
-          "self": "Trợ lý AI",
-          "unavailable-in-saas": "Trợ lý AI không khả dụng trong workspace này. Hãy liên hệ với quản trị viên Bytebase."
+          "self": "Trợ lý AI"
         },
         "allow-admin-data-source": {
           "description": "Khi được bật, người dùng có thể chọn giữa nguồn dữ liệu quản trị và nguồn dữ liệu chỉ đọc. Khi bị tắt, người dùng buộc phải sử dụng nguồn dữ liệu chỉ đọc nếu được cấu hình, nếu không sẽ quay lại sử dụng nguồn dữ liệu quản trị.",

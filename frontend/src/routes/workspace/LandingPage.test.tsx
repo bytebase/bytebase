@@ -27,6 +27,7 @@ import { LandingPage } from "./LandingPage";
 const mocks = vi.hoisted(() => ({
   aiEnabled: true as boolean | undefined,
   canConfigureAI: true,
+  deniedPermissions: [] as string[],
   canSearchAuditLogs: true,
   canListWorkspaceInstances: true,
   canListWorkspaceDatabases: true,
@@ -105,6 +106,7 @@ vi.mock("@/hooks/useAppState", () => ({
   useServerState: () => ({ isSaaSMode: mocks.isSaaSMode, version: "", changelogURL: "" }),
   usePlanFeature: () => mocks.hasAuditLogFeature,
   useWorkspacePermission: (permission: string) => {
+    if (mocks.deniedPermissions.includes(permission)) return false;
     if (permission === "bb.auditLogs.search") return mocks.canSearchAuditLogs;
     if (permission === "bb.instances.list") return mocks.canListWorkspaceInstances;
     if (permission === "bb.databases.list") return mocks.canListWorkspaceDatabases;
@@ -236,6 +238,7 @@ vi.mock("@/stores/app", () => ({
 beforeEach(() => {
   mocks.aiEnabled = true;
   mocks.canConfigureAI = true;
+  mocks.deniedPermissions = [];
   mocks.canSearchAuditLogs = true;
   mocks.canListWorkspaceInstances = true;
   mocks.canListWorkspaceDatabases = true;
@@ -817,7 +820,8 @@ describe("LandingPage", () => {
     );
   });
 
-  test("guides an eligible workspace admin to AI configuration", () => {
+  test.each([false, true])("guides an eligible workspace admin to AI configuration in SaaS mode %s", (isSaaSMode) => {
+    mocks.isSaaSMode = isSaaSMode;
     mocks.aiEnabled = false;
     const { rerender } = render(<LandingPage />);
 
@@ -840,8 +844,18 @@ describe("LandingPage", () => {
   });
 
   test.each([
+    "bb.settings.get", "bb.settings.getWorkspaceProfile", "bb.policies.get",
+  ])("does not offer AI setup without %s", (permission) => {
+    mocks.aiEnabled = false;
+    mocks.deniedPermissions = [permission];
+    render(<LandingPage />);
+
+    expect(screen.queryByRole("link", { name: "landing.ai-setup.action" })).not.toBeInTheDocument();
+  });
+
+  test.each([
     { aiEnabled: false, canConfigureAI: false, isSaaSMode: false },
-    { aiEnabled: false, canConfigureAI: true, isSaaSMode: true },
+    { aiEnabled: false, canConfigureAI: false, isSaaSMode: true },
     { aiEnabled: undefined, canConfigureAI: true, isSaaSMode: false },
   ])("does not offer AI setup when configuration is unavailable: %j", ({ aiEnabled, canConfigureAI, isSaaSMode }) => {
     mocks.aiEnabled = aiEnabled;

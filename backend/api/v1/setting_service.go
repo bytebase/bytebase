@@ -487,10 +487,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	return connect.NewResponse(settingMessage), nil
 }
 
-// updateAISetting merges the update mask onto the locked AI setting row, so a
-// save cannot restore a field outside its mask from a stale read, such as
-// turning AI or the AI SQL review back on after another admin turned it off.
-// Workspace creation does not seed this row, so a missing row starts empty.
 // turnsOnAIReview reports whether an AI setting update switches the AI SQL
 // review on, which the workspace's plan has to include. Switching it off needs
 // no plan.
@@ -498,15 +494,16 @@ func turnsOnAIReview(payload *storepb.AISetting, paths []string) bool {
 	return slices.Contains(paths, "value.ai.sql_review_enabled") && payload.GetSqlReviewEnabled()
 }
 
+// updateAISetting merges the update mask onto the locked AI setting row, so a
+// save cannot restore a field outside its mask from a stale read, such as
+// turning AI or the AI SQL review back on after another admin turned it off.
+// Workspaces without an AI setting row start with an empty setting.
 func (s *SettingService) updateAISetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string) (*connect.Response[v1pb.Setting], error) {
 	if request.Msg.UpdateMask == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
 	}
 	payload := convertAISetting(request.Msg.Setting.Value.GetAi())
 	paths := request.Msg.UpdateMask.Paths
-	if s.profile.SaaS && !canUpdateAISettingInSaaS(paths) {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("only the AI SQL review can be changed in SaaS mode"))
-	}
 	if turnsOnAIReview(payload, paths) {
 		if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AI_SQL_REVIEW); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
@@ -518,13 +515,17 @@ func (s *SettingService) updateAISetting(ctx context.Context, request *connect.R
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find AI setting: %v", err))
 		}
-		if _, err := mergeAISetting(stored, payload, paths); err != nil {
+		merged, err := mergeAISetting(stored, payload, paths)
+		if err != nil {
 			return nil, err
 		}
-		return connect.NewResponse(&v1pb.Setting{
-			Name:  request.Msg.Setting.Name,
-			Value: request.Msg.Setting.Value,
-		}), nil
+		preview, err := convertToSettingMessage(&store.SettingMessage{
+			Name: storepb.SettingName_AI, Workspace: workspaceID, Value: merged,
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
+		}
+		return connect.NewResponse(preview), nil
 	}
 
 	var lockedBefore *storepb.AISetting
@@ -573,10 +574,6 @@ func (s *SettingService) updateAISetting(ctx context.Context, request *connect.R
 	return connect.NewResponse(settingMessage), nil
 }
 
-func canUpdateAISettingInSaaS(paths []string) bool {
-	return len(paths) == 1 && paths[0] == "value.ai.sql_review_enabled"
-}
-
 // mergeAISetting applies the update mask to a copy of stored and validates
 // the result.
 func mergeAISetting(stored, payload *storepb.AISetting, paths []string) (*storepb.AISetting, error) {
@@ -598,6 +595,10 @@ func mergeAISetting(stored, payload *storepb.AISetting, paths []string) (*storep
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 		}
+	}
+	// A changed destination must not receive credentials retained from the old one.
+	if (merged.Provider != stored.Provider || merged.Endpoint != stored.Endpoint) && !slices.Contains(paths, "value.ai.api_key") {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("API key must be updated when changing AI provider or endpoint"))
 	}
 	if merged.Enabled {
 		if merged.Endpoint == "" || merged.Model == "" {

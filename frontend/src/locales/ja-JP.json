@@ -3891,9 +3891,9 @@
           "api-key": {
             "description": "読み取り専用の API キーを入力してください。{{viewDoc}}",
             "find-my-key": "鍵を探す",
-            "self": "APIキー"
+            "self": "APIキー",
+            "stored-description": "API キーが設定されています。"
           },
-          "available-in-saas": "AI アシスタントはこのワークスペースで利用でき、Bytebase によって管理されています。",
           "description": "AI を使用してデータベース開発タスクを支援します。",
           "enable-ai-assistant": "AIアシスタントを有効にする",
           "endpoint": {
@@ -3916,8 +3916,7 @@
             "open_ai": "OpenAI",
             "self": "AIプロバイダー"
           },
-          "self": "AI アシスタント",
-          "unavailable-in-saas": "このワークスペースでは AI アシスタントを利用できません。Bytebase 管理者にお問い合わせください。"
+          "self": "AI アシスタント"
         },
         "allow-admin-data-source": {
           "description": "有効にすると、ユーザーは管理データソースと読み取り専用データソースのどちらかを選択できます。無効にすると、読み取り専用データソースが設定されている場合は強制的に読み取り専用データソースを使用し、設定されていない場合は管理データソースにフォールバックします。",

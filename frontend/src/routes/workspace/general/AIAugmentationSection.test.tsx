@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { createRef, type ReactNode } from "react";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
   type AISetting,
@@ -16,6 +16,9 @@ const mocks = vi.hoisted(() => ({
   isSaaSMode: false,
   aiEnabled: false as boolean | undefined,
   aiSetting: undefined as AISetting | undefined,
+  canEdit: true,
+  canRead: true,
+  settingsByName: {},
 }));
 
 vi.mock("react-i18next", () => ({
@@ -29,11 +32,14 @@ vi.mock("@/lib/productIntro", () => ({
   useProductIntro: vi.fn(),
 }));
 vi.mock("@/utils", () => ({
-  hasWorkspacePermissionV2: () => true,
+  hasWorkspacePermissionV2: (permission: string) =>
+    permission === "bb.settings.get" ? mocks.canRead : mocks.canEdit,
 }));
 vi.mock("@/stores/app", () => {
   const state = {
-    settingsByName: {},
+    get settingsByName() {
+      return mocks.settingsByName;
+    },
     getSettingByName: () =>
       mocks.aiSetting
         ? { value: { value: { case: "ai", value: mocks.aiSetting } } }
@@ -70,26 +76,20 @@ vi.mock("@/components/ui/form", () => ({
     <div>{title}{children}</div>
   ),
   FormFieldGroup: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  FormSection: ({ children, id }: { children: ReactNode; id?: string }) => (
-    <section id={id}>{children}</section>
+  FormSection: ({ children, id, title }: { children: ReactNode; id?: string; title: ReactNode }) => (
+    <section id={id}><div role="heading" aria-level={2}>{title}</div>{children}</section>
   ),
 }));
 vi.mock("@/components/ui/input", () => ({
   Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
 }));
-vi.mock("@/components/ui/select", () => ({
-  Select: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectItem: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectValue: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-}));
 vi.mock("@/components/ui/switch", () => ({
-  Switch: ({ checked, onCheckedChange }: { checked: boolean; onCheckedChange: (checked: boolean) => void }) => (
+  Switch: ({ checked, disabled, onCheckedChange }: { checked: boolean; disabled?: boolean; onCheckedChange: (checked: boolean) => void }) => (
     <input
       aria-label="enable-ai"
       type="checkbox"
       checked={checked}
+      disabled={disabled}
       onChange={(event) => onCheckedChange(event.target.checked)}
     />
   ),
@@ -103,42 +103,175 @@ describe("AIAugmentationSection", () => {
     mocks.isSaaSMode = false;
     mocks.aiEnabled = false;
     mocks.aiSetting = undefined;
+    mocks.canEdit = true;
+    mocks.canRead = true;
+    mocks.settingsByName = {};
     mocks.upsertSetting.mockResolvedValue(undefined);
     mocks.refreshServerInfo.mockResolvedValue(undefined);
   });
 
-  test.each([
-    [true, "available-in-saas"],
-    [false, "unavailable-in-saas"],
-  ])(
-    "shows actual SaaS AI availability when aiEnabled is %s",
-    (aiEnabled, message) => {
-      mocks.isSaaSMode = true;
-      mocks.aiEnabled = aiEnabled;
-      render(<AIAugmentationSection title="AI" onDirtyChange={vi.fn()} />);
+  test("shows the saved enabled state beside the section title, not the draft toggle state", () => {
+    mocks.aiSetting = create(AISettingSchema, { enabled: true });
+    const { rerender } = render(<AIAugmentationSection title="AI" onDirtyChange={vi.fn()} />);
 
-      expect(
-        screen.getByText(`settings.general.workspace.ai-assistant.${message}`)
-      ).toBeTruthy();
-      expect(
-        screen.queryByText(
-          "settings.general.workspace.ai-assistant.enabled-in-saas"
-        )
-      ).toBeNull();
-      expect(screen.queryByRole("checkbox", { name: "enable-ai" })).toBeNull();
+    expect(within(screen.getByRole("heading", { name: /AI/ })).getByText("common.enabled")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("checkbox", { name: "enable-ai" }));
+    expect(screen.getByText("common.enabled")).toBeInTheDocument();
+
+    mocks.aiSetting = create(AISettingSchema, { enabled: false });
+    mocks.settingsByName = {};
+    rerender(<AIAugmentationSection title="AI" onDirtyChange={vi.fn()} />);
+    expect(screen.queryByText("common.enabled")).not.toBeInTheDocument();
+  });
+
+  test.each([undefined, false])("does not show Enabled while the saved state is %s", (enabled) => {
+    mocks.aiSetting = enabled === undefined ? undefined : create(AISettingSchema, { enabled });
+    render(<AIAugmentationSection title="AI" onDirtyChange={vi.fn()} />);
+
+    expect(screen.queryByText("common.enabled")).not.toBeInTheDocument();
+  });
+
+  test("does not reveal saved status to a user without permission to read AI settings", () => {
+    mocks.aiSetting = create(AISettingSchema, { enabled: true });
+    mocks.canRead = false;
+    render(<AIAugmentationSection title="AI" onDirtyChange={vi.fn()} />);
+
+    expect(screen.queryByText("common.enabled")).not.toBeInTheDocument();
+  });
+
+  test("uses a display-only mask for the existing key and never sends it when saving another field", async () => {
+    mocks.aiSetting = create(AISettingSchema, {
+      enabled: true,
+      provider: AISetting_Provider.GEMINI,
+      endpoint: "https://api.example.com",
+      model: "example-model",
+    });
+    const ref = createRef<SectionHandle>();
+    render(<AIAugmentationSection ref={ref} title="AI" onDirtyChange={vi.fn()} />);
+
+    const input = screen.getByLabelText("settings.general.workspace.ai-assistant.api-key.self");
+    expect(input).toHaveAttribute("placeholder", "****************");
+    expect(input).toHaveAccessibleDescription("settings.general.workspace.ai-assistant.api-key.stored-description");
+    expect(input).toHaveValue("");
+    expect(ref.current?.isDirty()).toBe(false);
+
+    fireEvent.change(input, { target: { value: "replacement-key" } });
+    expect(input).not.toHaveAttribute("aria-description");
+    fireEvent.change(input, { target: { value: "" } });
+
+    fireEvent.change(screen.getByDisplayValue("example-model"), { target: { value: "next-model" } });
+    await act(async () => ref.current?.update());
+
+    const request = mocks.upsertSetting.mock.calls[0][0];
+    expect(request.updateMask.paths).toEqual(["value.ai.model"]);
+    expect(request.value.value.value.apiKey).toBe("");
+  });
+
+  test("removes the stored-key mask when the endpoint changes and restores it on revert", () => {
+    mocks.aiSetting = create(AISettingSchema, {
+      enabled: true,
+      provider: AISetting_Provider.GEMINI,
+      endpoint: "https://api.example.com",
+      model: "example-model",
+    });
+    const ref = createRef<SectionHandle>();
+    render(<AIAugmentationSection ref={ref} title="AI" onDirtyChange={vi.fn()} />);
+
+    fireEvent.change(screen.getByDisplayValue("https://api.example.com"), { target: { value: "https://custom.example.com" } });
+    expect(screen.getByLabelText("settings.general.workspace.ai-assistant.api-key.self")).toHaveAttribute("placeholder", "common.sensitive-placeholder");
+    act(() => ref.current?.revert());
+    expect(screen.getByLabelText("settings.general.workspace.ai-assistant.api-key.self")).toHaveAttribute("placeholder", "****************");
+  });
+
+  test.each([false, true])(
+    "allows toggling Cloud AI when enabled is %s without changing credentials",
+    async (enabled) => {
+      mocks.isSaaSMode = true;
+      mocks.aiSetting = create(AISettingSchema, {
+        enabled,
+        provider: AISetting_Provider.GEMINI,
+        endpoint: "https://api.example.com",
+        model: "example-model",
+      });
+      const ref = createRef<SectionHandle>();
+      render(<AIAugmentationSection ref={ref} title="AI" onDirtyChange={vi.fn()} />);
+
+      const toggle = screen.getByRole("checkbox", { name: "enable-ai" });
+      expect(toggle).toBeEnabled();
+      expect(ref.current?.isDirty()).toBe(false);
+      fireEvent.click(toggle);
+      expect(ref.current?.isDirty()).toBe(true);
+      await act(async () => ref.current?.update());
+
+      const request = mocks.upsertSetting.mock.calls[0][0];
+      expect(request.updateMask.paths).toEqual(["value.ai.enabled"]);
+      expect(request.value.value.value.enabled).toBe(!enabled);
     }
   );
 
-  test("does not report AI unavailable before server info loads", () => {
+  test("allows Cloud users to change provider and credentials", async () => {
     mocks.isSaaSMode = true;
-    mocks.aiEnabled = undefined;
+    mocks.aiSetting = create(AISettingSchema, {
+      enabled: true,
+      provider: AISetting_Provider.GEMINI,
+      endpoint: "https://api.example.com",
+      model: "example-model",
+    });
+    const ref = createRef<SectionHandle>();
+    render(<AIAugmentationSection ref={ref} title="AI" onDirtyChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("combobox", { name: "settings.general.workspace.ai-assistant.provider.self" }));
+    const provider = await screen.findByRole("option", { name: "settings.general.workspace.ai-assistant.provider.claude" });
+    fireEvent.pointerDown(provider, { pointerType: "mouse" });
+    fireEvent.click(provider);
+    expect(screen.getByLabelText("settings.general.workspace.ai-assistant.api-key.self")).toHaveAttribute("placeholder", "common.sensitive-placeholder");
+    fireEvent.change(screen.getByLabelText("settings.general.workspace.ai-assistant.api-key.self"), {
+      target: { value: "user-api-key" },
+    });
+    await act(async () => ref.current?.update());
+
+    const request = mocks.upsertSetting.mock.calls[0][0];
+    expect(request.value.value.value.provider).toBe(AISetting_Provider.CLAUDE);
+    expect(request.value.value.value.apiKey).toBe("user-api-key");
+    expect(request.updateMask.paths).toEqual([
+      "value.ai.provider", "value.ai.endpoint", "value.ai.model", "value.ai.api_key",
+    ]);
+  });
+
+  test.each([false, true])("keeps settings read-only without permission in SaaS mode %s", (isSaaSMode) => {
+    mocks.isSaaSMode = isSaaSMode;
+    mocks.canEdit = false;
+    mocks.aiSetting = create(AISettingSchema, {
+      enabled: true,
+      provider: AISetting_Provider.GEMINI,
+      endpoint: "https://api.example.com",
+      model: "example-model",
+    });
     render(<AIAugmentationSection title="AI" onDirtyChange={vi.fn()} />);
 
-    expect(
-      screen.queryByText(
-        "settings.general.workspace.ai-assistant.unavailable-in-saas"
-      )
-    ).toBeNull();
+    expect(screen.getByRole("checkbox", { name: "enable-ai" })).toBeDisabled();
+    expect(screen.getByLabelText("settings.general.workspace.ai-assistant.api-key.self")).toBeDisabled();
+    for (const control of screen.getAllByRole("combobox")) expect(control).toBeDisabled();
+  });
+
+  test("explicitly updates the API key when changing the endpoint", async () => {
+    mocks.isSaaSMode = true;
+    mocks.aiSetting = create(AISettingSchema, {
+      enabled: true,
+      provider: AISetting_Provider.GEMINI,
+      endpoint: "https://api.example.com",
+      model: "example-model",
+    });
+    const ref = createRef<SectionHandle>();
+    render(<AIAugmentationSection ref={ref} title="AI" onDirtyChange={vi.fn()} />);
+    fireEvent.change(screen.getByDisplayValue("https://api.example.com"), {
+      target: { value: "https://custom.example.com" },
+    });
+    await act(async () => ref.current?.update());
+
+    const request = mocks.upsertSetting.mock.calls[0][0];
+    expect(request.updateMask.paths).toEqual(["value.ai.endpoint", "value.ai.api_key"]);
+    expect(request.value.value.value.apiKey).toBe("");
   });
 
   test("exposes the AI settings section as a hash target without scrolling itself", () => {
@@ -202,8 +335,8 @@ describe("AIAugmentationSection", () => {
     const ref = createRef<SectionHandle>();
     render(<AIAugmentationSection ref={ref} title="AI" onDirtyChange={vi.fn()} />);
 
-    const input = screen.getByPlaceholderText(
-      "common.sensitive-placeholder"
+    const input = screen.getByLabelText(
+      "settings.general.workspace.ai-assistant.api-key.self"
     ) as HTMLInputElement;
     expect(input.type).toBe("password");
     expect(input.autocomplete).toBe("new-password");
