@@ -968,8 +968,9 @@ type passedRule struct {
 // side a lone rule that gives something else by its label, when that is within
 // passedNameWidth, and any other side by its counts, in the words of a rule
 // form: for the rules that give the same, the weak ones, and the others. The
-// rules that give the same as a weak moved rule are weak too: beside them the
-// weak count is in brackets, within the others.
+// rules that give the same as a weak moved rule are weak too: a side that holds
+// one of them, and a weak rule among the others, counts the others and gives
+// the weak count in brackets, within them.
 func wantPassedOf(stored []string, requested []passedRule, moved int, same, weak, other string) (clause string, named, counted int) {
 	was := map[string]int{}
 	for i, condition := range stored {

@@ -428,9 +428,10 @@ func TestAdministerMaskingRulesAddedRuleLineStatesEveryFieldOfTheRule(t *testing
 // A masking move counts the rules it passes as an approval move does. A rule
 // of the moved rule's type changes no mask. Only a full mask hides every
 // value, so a rule with none is counted apart: a hash, a partial mask, a type
-// that masks nothing, an unknown type and no type. A moved rule with none
-// passes rules of its own type that have none either: its line then counts the
-// rules of other types, and in brackets how many of those have none.
+// that masks nothing, an unknown type and no type. A moved rule with none can
+// pass rules of its own type, which have none either. A side where it passes
+// one of them and a rule of another type with none counts the rules of other
+// types, and gives in brackets how many of those have none.
 func TestMaskingMoveCountsTheRulesItPasses(t *testing.T) {
 	types, err := semanticTypesFromSetting([]*v1pb.SemanticTypeSetting_SemanticType{
 		semanticType("email", "Email", &v1pb.Algorithm{Mask: &v1pb.Algorithm_Md5Mask{Md5Mask: &v1pb.Algorithm_MD5Mask{}}}),
