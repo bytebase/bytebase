@@ -1,14 +1,11 @@
 package redshift
 
 import (
-	"context"
-
 	omniredshift "github.com/bytebase/omni/redshift"
 	"github.com/bytebase/omni/redshift/analysis"
 	"github.com/bytebase/omni/redshift/ast"
 	redshiftcompletion "github.com/bytebase/omni/redshift/completion"
 	omniredshiftparser "github.com/bytebase/omni/redshift/parser"
-	pkgerrors "github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -18,7 +15,6 @@ func init() {
 	engine := base.OmniEngine(analysis.Engine, redshiftcompletion.Engine)
 	engine.Parse = parseRedshiftStatements
 	engine.StatementTypes = GetStatementTypes
-	engine.QuerySpan = GetQuerySpan
 	base.Register(engine, storepb.Engine_REDSHIFT)
 }
 
@@ -69,35 +65,6 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 		return nil, err
 	}
 	return base.ExtractTypesFromPositions(results), nil
-}
-
-// GetQuerySpan returns the query span for the given statement.
-func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, schema string, _ bool) (*base.QuerySpan, error) {
-	meta, err := base.RequireDatabaseMetadata(ctx, gCtx, database)
-	if err != nil {
-		return nil, err
-	}
-	searchPath := meta.GetSearchPath()
-	if schema != "" {
-		searchPath = []string{schema}
-	}
-
-	resolved, err := analysis.ResolveQuerySpan(stmt.Text, analysis.ResolveOptions{
-		DefaultDatabase:     database,
-		SearchPath:          searchPath,
-		GetDatabaseMetadata: base.QuerySpanProtoMetadataFunc(ctx, gCtx, false),
-	})
-	if err != nil {
-		if mixErr := base.ConvertOmniMixTablesError(err); mixErr != nil {
-			return nil, mixErr
-		}
-		err = convertError(err, stmt)
-		return nil, pkgerrors.Wrapf(err, "failed to get query span from statement: %s", stmt.Text)
-	}
-
-	span := base.OmniQuerySpan(resolved.Type, resolved.SourceColumns, resolved.PredicateColumns, resolved.Results, resolved.NotFoundError)
-	span.FunctionNotSupportedError = base.OmniFunctionNotSupportedError(resolved.FunctionNotSupportedError)
-	return span, nil
 }
 
 func splitSQL(statement string) ([]base.Statement, error) {

@@ -141,108 +141,13 @@ func TestOmniSpanHelpers(t *testing.T) {
 	require.NoError(t, noErrSpan.NotFoundError)
 	require.Nil(t, noErrSpan.UnresolvedColumnsError)
 
-	// OmniResolvedSpanResult translates ErrMixUserSystemTables and passes through other errors.
-	gotSpan, err := OmniResolvedSpanResult(&omnianalysis.ResolvedSpan{Type: omnianalysis.Select}, nil)
-	require.NoError(t, err)
-	require.Equal(t, Select, gotSpan.Type)
-	_, err = OmniResolvedSpanResult(nil, omnianalysis.ErrMixUserSystemTables)
-	require.ErrorIs(t, err, MixUserSystemTablesError)
-	otherErr := errors.New("parse boom")
-	_, err = OmniResolvedSpanResult(nil, otherErr)
-	require.ErrorIs(t, err, otherErr)
-
-	// OmniQuerySpan converts engine-local span fields and NotFoundError interface.
-	qs := OmniQuerySpan(
-		omnianalysis.Select,
-		omnianalysis.ColumnSet{omniCol: true},
-		omnianalysis.ColumnSet{omniCol: true},
-		omniResults,
-		&omnianalysis.ResourceNotFoundError{Database: &dbName},
-	)
-	require.Equal(t, Select, qs.Type)
-	require.Equal(t, SourceColumnSet{wantCol: true}, qs.SourceColumns)
-	require.Equal(t, SourceColumnSet{wantCol: true}, qs.PredicateColumns)
-	require.Len(t, qs.Results, 1)
-	require.ErrorAs(t, qs.NotFoundError, &nf)
-	require.Equal(t, "db", *nf.Database)
-}
-
-func TestQuerySpanCatalogHelpers(t *testing.T) {
-	ctx := context.Background()
-
-	// RequireDatabaseMetadata checks nil callback, lookup error, nil metadata, and success.
-	_, err := RequireDatabaseMetadata(ctx, GetQuerySpanContext{}, "app")
-	require.EqualError(t, err, "GetDatabaseMetadataFunc is not set in GetQuerySpanContext")
-
-	lookupErr := errors.New("db down")
-	_, err = RequireDatabaseMetadata(ctx, GetQuerySpanContext{
-		InstanceID: "inst-1",
-		GetDatabaseMetadataFunc: func(_ context.Context, _, _ string) (string, *model.DatabaseMetadata, error) {
-			return "", nil, lookupErr
-		},
-	}, "app")
-	require.ErrorIs(t, err, lookupErr)
-
-	_, err = RequireDatabaseMetadata(ctx, GetQuerySpanContext{
-		InstanceID: "inst-1",
-		GetDatabaseMetadataFunc: func(_ context.Context, _, _ string) (string, *model.DatabaseMetadata, error) {
-			return "", nil, nil
-		},
-	}, "app")
-	require.ErrorContains(t, err, "not synced")
-
-	wantProto := &metadatapb.DatabaseSchemaMetadata{Name: "app"}
-	dbMeta := model.NewDatabaseMetadata(wantProto, nil, nil, storepb.Engine_MYSQL, false)
-	gotMeta, err := RequireDatabaseMetadata(ctx, GetQuerySpanContext{
-		InstanceID: "inst-1",
-		GetDatabaseMetadataFunc: func(_ context.Context, inst, db string) (string, *model.DatabaseMetadata, error) {
-			require.Equal(t, "inst-1", inst)
-			require.Equal(t, "app", db)
-			return db, dbMeta, nil
-		},
-	}, "app")
-	require.NoError(t, err)
-	require.Equal(t, dbMeta, gotMeta)
-
-	// Nil callbacks return nil closures.
-	require.Nil(t, QuerySpanProtoMetadataFunc(ctx, GetQuerySpanContext{}, true))
-
-	missingDB := "ghost"
-	nfErr := &ResourceNotFoundError{Database: &missingDB}
-	gCtx := GetQuerySpanContext{
-		InstanceID: "inst-1",
-		ListDatabaseNamesFunc: func(_ context.Context, inst string) ([]string, error) {
-			require.Equal(t, "inst-1", inst)
-			return nil, nfErr
-		},
-		GetDatabaseMetadataFunc: func(_ context.Context, inst, name string) (string, *model.DatabaseMetadata, error) {
-			require.Equal(t, "inst-1", inst)
-			switch name {
-			case "app":
-				return "app", dbMeta, nil
-			case "ghost":
-				return "", nil, nfErr
-			default:
-				return "", nil, nil
-			}
-		},
-	}
-
-	var baseNF *ResourceNotFoundError
-	rawProto := QuerySpanProtoMetadataFunc(ctx, gCtx, false)
-	gotProto, err := rawProto("app")
-	require.NoError(t, err)
-	require.Equal(t, wantProto, gotProto)
-	nilProto, err := rawProto("unsynced")
-	require.NoError(t, err)
-	require.Nil(t, nilProto)
-	_, err = rawProto("ghost")
-	require.ErrorAs(t, err, &baseNF)
+	// A lookup error stands in for the span's not-found error.
+	lookupErr := errors.New(`ERROR: column "nope" does not exist (SQLSTATE 42703)`)
+	require.Equal(t, lookupErr, OmniResolvedSpan(&omnianalysis.ResolvedSpan{LookupError: lookupErr}).NotFoundError)
 }
 
 func TestOmniErrorHelpers(t *testing.T) {
 	require.Nil(t, OmniResourceNotFoundError(nil))
-	require.NoError(t, OmniNotFoundError(nil))
 	require.NoError(t, OmniFunctionNotSupportedError(nil))
 	require.Nil(t, OmniTypeNotSupportedError(nil))
 	require.Nil(t, omniUnresolvedColumnsError(nil))
@@ -259,15 +164,8 @@ func TestOmniErrorHelpers(t *testing.T) {
 	require.Equal(t, wrappedBaseNF.Error(), omniErr.Error())
 	require.ErrorIs(t, omniErr, baseNF)
 
-	backErr := OmniNotFoundError(errors.Wrap(omniErr, "wrapped"))
-	var roundTripped *ResourceNotFoundError
-	require.ErrorAs(t, backErr, &roundTripped)
-	require.Equal(t, "app", *roundTripped.Database)
-	require.Equal(t, "secret", *roundTripped.Column)
-
 	other := errors.New("other")
 	require.Equal(t, other, ToOmniNotFoundError(other))
-	require.Equal(t, other, OmniNotFoundError(other))
 
 	fnErr := OmniFunctionNotSupportedError(&omnianalysis.FunctionNotSupportedError{
 		Function:   "my_fn",
