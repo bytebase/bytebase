@@ -182,7 +182,7 @@ func TestWalkThroughCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
 	require.True(t, ok)
 	require.True(t, createTable.IfNotExists)
 
-	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, asts)
+	advice := schema.WalkThroughWithContext(context.Background(), storepb.Engine_MYSQL, schema.WalkThroughContext{RawSQL: statement}, state, asts)
 	require.Nil(t, advice)
 	require.NotNil(t, state.GetSchemaMetadata("").GetTable("t1"))
 }

@@ -1,3 +1,4 @@
+// Package omnicatalog holds the adapters the omni-backed schema engines share.
 package omnicatalog
 
 import (

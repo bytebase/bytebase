@@ -339,17 +339,23 @@ func omniSpanError(err error) error {
 	return OmniError(err)
 }
 
-func omniChanges(extractor omnianalysis.ChangeExtractor, database, schema string, dbMetadata *model.DatabaseMetadata, asts []AST, script string) (*ChangeSummary, error) {
+// OmniParsedStatements converts parsed ASTs into the statements an omni engine
+// reads. An AST that wraps no omni node reaches the engine as is, which rejects
+// it as a foreign node.
+func OmniParsedStatements(asts []AST) []omnianalysis.ParsedStatement {
 	statements := make([]omnianalysis.ParsedStatement, 0, len(asts))
 	for _, a := range asts {
-		// An AST that wraps no omni node reaches the engine as is, which rejects
-		// it as a foreign node.
 		var node any = a
 		if parsed, ok := a.(interface{ ASTNode() any }); ok {
 			node = parsed.ASTNode()
 		}
 		statements = append(statements, omnianalysis.ParsedStatement{Statement: omnianalysis.Statement{Text: ASTSource(a)}, Node: node})
 	}
+	return statements
+}
+
+func omniChanges(extractor omnianalysis.ChangeExtractor, database, schema string, dbMetadata *model.DatabaseMetadata, asts []AST, script string) (*ChangeSummary, error) {
+	statements := OmniParsedStatements(asts)
 	request := omnianalysis.ChangeRequest{DefaultDatabase: database, DefaultSchema: schema, Script: script}
 	if dbMetadata != nil {
 		request.Database = &omnianalysis.Database{

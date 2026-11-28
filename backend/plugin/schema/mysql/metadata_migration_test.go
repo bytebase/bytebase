@@ -5,6 +5,9 @@ import (
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
 func oneTableSnapshot(name string, columns []*metadatapb.ColumnMetadata, views ...*metadatapb.ViewMetadata) *metadatapb.DatabaseSchemaMetadata {
@@ -17,16 +20,16 @@ func oneTableSnapshot(name string, columns []*metadatapb.ColumnMetadata, views .
 	}
 }
 
-func TestOmniDiffMetadataMigrationRefusesAChangedUnloadableObject(t *testing.T) {
+func TestDiffMetadataMigrationRefusesAChangedUnloadableObject(t *testing.T) {
 	id := &metadatapb.ColumnMetadata{Name: "id", Type: "int"}
-	_, err := omniDiffMetadataMigration(
+	_, err := schema.DiffMigration(storepb.Engine_MYSQL,
 		metadataFromProto(oneTableSnapshot("d", []*metadatapb.ColumnMetadata{id}, &metadatapb.ViewMetadata{Name: "v", Definition: "select ((broken from"})),
 		metadataFromProto(oneTableSnapshot("d", []*metadatapb.ColumnMetadata{id}, &metadatapb.ViewMetadata{Name: "v", Definition: "select ((still broken from"})),
 	)
 	require.ErrorContains(t, err, "view:v")
 
 	// A default that does not parse leaves the table incomplete.
-	_, err = omniDiffMetadataMigration(
+	_, err = schema.DiffMigration(storepb.Engine_MYSQL,
 		metadataFromProto(oneTableSnapshot("d", []*metadatapb.ColumnMetadata{id})),
 		metadataFromProto(oneTableSnapshot("d", []*metadatapb.ColumnMetadata{{Name: "id", Type: "int", Default: "((("}})),
 	)
@@ -35,19 +38,19 @@ func TestOmniDiffMetadataMigrationRefusesAChangedUnloadableObject(t *testing.T) 
 
 // A database diffed against another database's changelog: sync qualifies each
 // view body with its own database.
-func TestOmniDiffMetadataMigrationAcrossDatabaseNames(t *testing.T) {
+func TestDiffMetadataMigrationAcrossDatabaseNames(t *testing.T) {
 	id := &metadatapb.ColumnMetadata{Name: "id", Type: "int"}
 	view := func(db string) *metadatapb.ViewMetadata {
 		return &metadatapb.ViewMetadata{Name: "v", Definition: "select `" + db + "`.`t`.`id` AS `id` from `" + db + "`.`t`"}
 	}
-	sql, err := omniDiffMetadataMigration(
+	sql, err := schema.DiffMigration(storepb.Engine_MYSQL,
 		metadataFromProto(oneTableSnapshot("prod", []*metadatapb.ColumnMetadata{id}, view("prod"))),
 		metadataFromProto(oneTableSnapshot("staging", []*metadatapb.ColumnMetadata{id}, view("staging"))),
 	)
 	require.NoError(t, err)
 	require.Empty(t, sql)
 
-	sql, err = omniDiffMetadataMigration(
+	sql, err = schema.DiffMigration(storepb.Engine_MYSQL,
 		metadataFromProto(oneTableSnapshot("prod", []*metadatapb.ColumnMetadata{id})),
 		metadataFromProto(oneTableSnapshot("staging", []*metadatapb.ColumnMetadata{id}, view("staging"))),
 	)
@@ -57,7 +60,7 @@ func TestOmniDiffMetadataMigrationAcrossDatabaseNames(t *testing.T) {
 	require.Contains(t, sql, "VIEW `v` AS select `t`.`id` AS `id` from `t`")
 }
 
-func TestOmniDiffMetadataMigrationIgnoresStatisticsOfAnIncompleteTable(t *testing.T) {
+func TestDiffMetadataMigrationIgnoresStatisticsOfAnIncompleteTable(t *testing.T) {
 	snapshot := func(rows int64, extra ...*metadatapb.ColumnMetadata) *metadatapb.DatabaseSchemaMetadata {
 		m := oneTableSnapshot("d", append([]*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}}, extra...))
 		m.Schemas[0].Tables = append(m.Schemas[0].Tables, &metadatapb.TableMetadata{
@@ -67,7 +70,7 @@ func TestOmniDiffMetadataMigrationIgnoresStatisticsOfAnIncompleteTable(t *testin
 		})
 		return m
 	}
-	sql, err := omniDiffMetadataMigration(
+	sql, err := schema.DiffMigration(storepb.Engine_MYSQL,
 		metadataFromProto(snapshot(10)),
 		metadataFromProto(snapshot(20, &metadatapb.ColumnMetadata{Name: "b", Type: "int", Nullable: true, Default: "NULL"})),
 	)
@@ -75,16 +78,16 @@ func TestOmniDiffMetadataMigrationIgnoresStatisticsOfAnIncompleteTable(t *testin
 	require.Equal(t, "ALTER TABLE `t` ADD COLUMN `b` int DEFAULT NULL", sql)
 }
 
-func TestOmniDiffMetadataMigrationRefusesCaseOnlyIdentities(t *testing.T) {
+func TestDiffMetadataMigrationRefusesCaseOnlyIdentities(t *testing.T) {
 	table := func(name string) *metadatapb.TableMetadata {
 		return &metadatapb.TableMetadata{Name: name, Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}}}
 	}
 	snapshot := func(tables ...*metadatapb.TableMetadata) *metadatapb.DatabaseSchemaMetadata {
 		return &metadatapb.DatabaseSchemaMetadata{Name: "d", Schemas: []*metadatapb.SchemaMetadata{{Tables: tables}}}
 	}
-	_, err := omniDiffMetadataMigration(metadataFromProto(snapshot(table("Foo"))), metadataFromProto(snapshot(table("foo"))))
+	_, err := schema.DiffMigration(storepb.Engine_MYSQL, metadataFromProto(snapshot(table("Foo"))), metadataFromProto(snapshot(table("foo"))))
 	require.ErrorContains(t, err, "case-only rename")
 
-	_, err = omniDiffMetadataMigration(metadataFromProto(snapshot(table("Foo"), table("foo"))), metadataFromProto(snapshot(table("Foo"))))
+	_, err = schema.DiffMigration(storepb.Engine_MYSQL, metadataFromProto(snapshot(table("Foo"), table("foo"))), metadataFromProto(snapshot(table("Foo"))))
 	require.ErrorContains(t, err, "cannot distinguish")
 }

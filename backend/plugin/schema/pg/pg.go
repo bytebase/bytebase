@@ -7,12 +7,12 @@
 package pg
 
 import (
-	"context"
 	"fmt"
 
 	"google.golang.org/protobuf/proto"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/bytebase/omni/pg/catalog"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -35,11 +35,11 @@ func init() {
 			MultiFileDatabase: GetMultiFileDatabaseDefinition,
 		},
 		DiffSDLMigration:      pgDiffSDLMigration,
-		DiffMetadataMigration: diffMetadataMigration,
+		DiffMetadataMigration: schema.OmniMetadataMigration(pganalysis.Engine, common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)),
 		SDLDropAdvices:        pgSDLDropAdvices,
 	}, storepb.Engine_POSTGRES)
 	schema.Register(schema.Engine{
-		WalkThrough: WalkThroughWithContext,
+		WalkThrough: schema.OmniWalkThrough(storepb.Engine_POSTGRES, pganalysis.Engine),
 	}, storepb.Engine_POSTGRES)
 }
 
@@ -101,25 +101,6 @@ func filterBackupSchemaIfNecessary(ctx schema.GetDefinitionContext, metadata *me
 		filtered.Schemas = append(filtered.Schemas, schema)
 	}
 	return filtered
-}
-
-// diffMetadataMigration generates the migration between two synced snapshots
-// with omni's catalog.
-func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-	return catalog.MetadataMigration(context.Background(), omnicatalog.DatabaseProto(oldSchema), omnicatalog.DatabaseProto(newSchema), catalog.MetadataMigrationOptions{
-		SourceSearchPath: getMigrationSearchPath(oldSchema),
-		TargetSearchPath: getMigrationSearchPath(newSchema),
-		SkipSchemas:      []string{common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)},
-	})
-}
-
-// getMigrationSearchPath is getConfiguredSearchPath but keeps an explicitly listed
-// pg_catalog, whose position lets an earlier user schema shadow a built-in.
-func getMigrationSearchPath(d *model.DatabaseMetadata) []string {
-	if d == nil {
-		return nil
-	}
-	return formatSearchPath(model.ParsePGConfiguredSearchPathIncludingSystem(d.GetProto().GetSearchPath()))
 }
 
 func buildMigrationPlan(sourceText, targetText string) (*catalog.MigrationPlan, error) {

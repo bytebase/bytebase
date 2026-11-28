@@ -42,8 +42,4 @@ func TestDiffMigrationSeam(t *testing.T) {
 	fromEmpty, err := schema.DiffMigration(storepb.Engine_MSSQL, blank, source)
 	require.NoError(t, err)
 	require.Contains(t, fromEmpty, "CREATE TABLE [dbo].[t]")
-
-	nilOld, nilNew := reconcileSkipDump(nil, nil, false)
-	require.Empty(t, nilOld.GetSchemas())
-	require.Empty(t, nilNew.GetSchemas())
 }

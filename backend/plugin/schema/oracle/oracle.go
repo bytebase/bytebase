@@ -5,16 +5,12 @@
 package oracle
 
 import (
-	"context"
-	"strings"
-
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/oracle/catalog"
 	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
-	"github.com/bytebase/bytebase/backend/plugin/schema/internal/omnicatalog"
 )
 
 // SCHEMA and SEQUENCE are deliberately left unregistered: Oracle schemas map
@@ -30,31 +26,9 @@ func init() {
 			Function:         GetFunctionDefinition,
 			Procedure:        GetProcedureDefinition,
 		},
-		DatabaseMetadata:      GetDatabaseMetadata,
-		DiffMetadataMigration: omnicatalog.MetadataMigrationFunc(oracleCatalog),
+		DatabaseMetadata:      schema.OmniDatabaseMetadata(catalog.Engine),
+		DiffMetadataMigration: schema.OmniMetadataMigration(catalog.Engine),
 	}, storepb.Engine_ORACLE)
-}
-
-var oracleCatalog = omnicatalog.Engine[catalog.Catalog, catalog.LoadMetadataReport]{
-	New: catalog.New,
-	Load: func(c *catalog.Catalog, meta *metadatapb.DatabaseSchemaMetadata) (*catalog.LoadMetadataReport, error) {
-		return c.LoadMetadata(context.Background(), stripUnrenderedFacts(meta))
-	},
-	Diff:                     omnicatalog.DiffSQL(catalog.Diff, catalog.GenerateMigration),
-	SkipStripDatabaseContext: true,
-	// The legacy generator ended every non-empty script with a newline; omni's plan does not.
-	PostProcess: func(migration string) string {
-		if migration != "" && !strings.HasSuffix(migration, "\n") {
-			return migration + "\n"
-		}
-		return migration
-	},
-}
-
-// GetDatabaseMetadata parses Oracle DDL text and returns database metadata
-// using omni's Oracle catalog.
-func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return catalog.GetDatabaseMetadata(schemaText)
 }
 
 // GetDatabaseDefinition renders a synced Oracle snapshot as the DDL that
@@ -86,8 +60,8 @@ func GetProcedureDefinition(_ string, procedure *metadatapb.ProcedureMetadata) (
 	return catalog.GetProcedureDefinition("", procedure)
 }
 
-// stripUnrenderedFacts keeps identity clauses and index visibility out of both
-// the definition and the migration until #22119 fixes them.
+// stripUnrenderedFacts keeps identity clauses and index visibility out of the
+// definition until #22119 fixes them.
 func stripUnrenderedFacts(metadata *metadatapb.DatabaseSchemaMetadata) *metadatapb.DatabaseSchemaMetadata {
 	if metadata == nil {
 		return nil

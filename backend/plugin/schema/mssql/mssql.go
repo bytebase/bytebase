@@ -21,17 +21,14 @@
 package mssql
 
 import (
-	"context"
 	"strings"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mssql/catalog"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
@@ -43,15 +40,9 @@ func init() {
 			Function:  GetFunctionDefinition,
 			Procedure: GetProcedureDefinition,
 		},
-		DatabaseMetadata:      GetDatabaseMetadata,
-		DiffMetadataMigration: diffMetadataMigration,
+		DatabaseMetadata:      schema.OmniDatabaseMetadata(catalog.Engine),
+		DiffMetadataMigration: schema.OmniMetadataMigration(catalog.Engine),
 	}, storepb.Engine_MSSQL)
-}
-
-// GetDatabaseMetadata parses SQL Server DDL text and returns database metadata
-// using omni's SQL Server catalog.
-func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return catalog.GetDatabaseMetadata(schemaText)
 }
 
 // GetTableDefinition renders one table as the T-SQL that recreates it.
@@ -320,188 +311,4 @@ func matchModuleSection(rest string, replacements []moduleReplacement) (moduleRe
 		}
 	}
 	return moduleReplacement{}, false
-}
-
-// reconcileSkipDump reproduces the legacy differ's treatment of SkipDump: an
-// object skipped on either side takes no part in the migration. Both snapshots
-// carry the source object unchanged in that case, or neither carries it when
-// the source lacks it, so the catalog emits neither a drop nor a create/alter.
-func reconcileSkipDump(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, caseSensitive bool) (*metadatapb.DatabaseSchemaMetadata, *metadatapb.DatabaseSchemaMetadata) {
-	normalize := func(name string) string {
-		if caseSensitive {
-			return name
-		}
-		return strings.ToLower(name)
-	}
-	if oldMeta == nil {
-		oldMeta = &metadatapb.DatabaseSchemaMetadata{}
-	}
-	if newMeta == nil {
-		newMeta = &metadatapb.DatabaseSchemaMetadata{}
-	}
-	oldOut, newOut := proto.CloneOf(oldMeta), proto.CloneOf(newMeta)
-	for _, schema := range oldOut.GetSchemas() {
-		schema.SkipDump = false
-	}
-	for _, schema := range newOut.GetSchemas() {
-		schema.SkipDump = false
-	}
-	for _, oldSchema := range oldOut.GetSchemas() {
-		if findByName(newOut.GetSchemas(), oldSchema.GetName(), normalize) == nil {
-			clearSkipDump(oldSchema)
-		}
-	}
-	for _, oldSchema := range oldOut.GetSchemas() {
-		newSchema := findByName(newOut.GetSchemas(), oldSchema.GetName(), normalize)
-		if newSchema == nil {
-			continue
-		}
-		newSchema.Tables = reconcileObjects(oldSchema.GetTables(), newSchema.GetTables(),
-			func(t *metadatapb.TableMetadata) string { return normalize(t.GetName()) },
-			func(t *metadatapb.TableMetadata) bool { return t.GetSkipDump() },
-			func(t *metadatapb.TableMetadata) { t.SkipDump = false })
-		newSchema.Views = reconcileObjects(oldSchema.GetViews(), newSchema.GetViews(),
-			func(v *metadatapb.ViewMetadata) string { return normalize(v.GetName()) },
-			func(v *metadatapb.ViewMetadata) bool { return v.GetSkipDump() },
-			func(v *metadatapb.ViewMetadata) { v.SkipDump = false })
-		newSchema.Functions = reconcileObjects(oldSchema.GetFunctions(), newSchema.GetFunctions(),
-			func(f *metadatapb.FunctionMetadata) string { return normalize(f.GetName()) },
-			func(f *metadatapb.FunctionMetadata) bool { return f.GetSkipDump() },
-			func(f *metadatapb.FunctionMetadata) { f.SkipDump = false })
-		newSchema.Procedures = reconcileObjects(oldSchema.GetProcedures(), newSchema.GetProcedures(),
-			func(p *metadatapb.ProcedureMetadata) string { return normalize(p.GetName()) },
-			func(p *metadatapb.ProcedureMetadata) bool { return p.GetSkipDump() },
-			func(p *metadatapb.ProcedureMetadata) { p.SkipDump = false })
-		newSchema.Sequences = reconcileObjects(oldSchema.GetSequences(), newSchema.GetSequences(),
-			func(s *metadatapb.SequenceMetadata) string { return normalize(s.GetName()) },
-			func(s *metadatapb.SequenceMetadata) bool { return s.GetSkipDump() },
-			func(s *metadatapb.SequenceMetadata) { s.SkipDump = false })
-	}
-	for _, newSchema := range newOut.GetSchemas() {
-		oldSchema := findByName(oldOut.GetSchemas(), newSchema.GetName(), normalize)
-		if oldSchema == nil {
-			continue
-		}
-		for _, table := range newSchema.GetTables() {
-			oldTable := findByName(oldSchema.GetTables(), table.GetName(), normalize)
-			if oldTable == nil {
-				continue
-			}
-			table.Triggers = reconcileObjects(oldTable.GetTriggers(), table.GetTriggers(),
-				func(t *metadatapb.TriggerMetadata) string { return normalize(t.GetName()) },
-				func(t *metadatapb.TriggerMetadata) bool { return t.GetSkipDump() },
-				func(t *metadatapb.TriggerMetadata) { t.SkipDump = false })
-		}
-		for _, view := range newSchema.GetViews() {
-			oldView := findByName(oldSchema.GetViews(), view.GetName(), normalize)
-			if oldView == nil {
-				continue
-			}
-			view.Triggers = reconcileObjects(oldView.GetTriggers(), view.GetTriggers(),
-				func(t *metadatapb.TriggerMetadata) string { return normalize(t.GetName()) },
-				func(t *metadatapb.TriggerMetadata) bool { return t.GetSkipDump() },
-				func(t *metadatapb.TriggerMetadata) { t.SkipDump = false })
-		}
-	}
-	return oldOut, newOut
-}
-
-func reconcileObjects[T any](oldObjs, newObjs []T, name func(T) string, skipped func(T) bool, unskip func(T)) []T {
-	oldByName := make(map[string]T, len(oldObjs))
-	for _, obj := range oldObjs {
-		oldByName[name(obj)] = obj
-	}
-	seen := make(map[string]bool, len(newObjs))
-	result := make([]T, 0, len(newObjs)+len(oldObjs))
-	for _, newObj := range newObjs {
-		objectName := name(newObj)
-		oldObj, hasOld := oldByName[objectName]
-		switch {
-		case hasOld && skipped(oldObj):
-			unskip(oldObj)
-			result = append(result, oldObj)
-		case skipped(newObj):
-			if hasOld {
-				unskip(oldObj)
-				result = append(result, oldObj)
-			}
-		default:
-			result = append(result, newObj)
-		}
-		seen[objectName] = true
-	}
-	for _, oldObj := range oldObjs {
-		if skipped(oldObj) && !seen[name(oldObj)] {
-			unskip(oldObj)
-			result = append(result, oldObj)
-		}
-	}
-	return result
-}
-
-// clearSkipDump exposes every object of a schema the target removes: the schema
-// cannot be dropped while a skipped table or view still occupies it, and the
-// legacy differ dropped those objects with the schema.
-func clearSkipDump(schema *metadatapb.SchemaMetadata) {
-	for _, table := range schema.GetTables() {
-		table.SkipDump = false
-		for _, trigger := range table.GetTriggers() {
-			trigger.SkipDump = false
-		}
-	}
-	for _, view := range schema.GetViews() {
-		view.SkipDump = false
-		for _, trigger := range view.GetTriggers() {
-			trigger.SkipDump = false
-		}
-	}
-	for _, function := range schema.GetFunctions() {
-		function.SkipDump = false
-	}
-	for _, procedure := range schema.GetProcedures() {
-		procedure.SkipDump = false
-	}
-	for _, sequence := range schema.GetSequences() {
-		sequence.SkipDump = false
-	}
-}
-
-func findByName[T interface{ GetName() string }](items []T, name string, normalize func(string) string) T {
-	want := normalize(name)
-	for _, item := range items {
-		if normalize(item.GetName()) == want {
-			return item
-		}
-	}
-	var zero T
-	return zero
-}
-
-// diffMetadataMigration diffs two synced snapshots with omni's catalog. The
-// catalog stores each snapshot as the sync reported it, so nothing can fail to
-// load; the diff and generator are the decisions.
-func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-	caseSensitive := oldSchema.GetIsObjectCaseSensitive() || newSchema.GetIsObjectCaseSensitive()
-	oldMeta, newMeta := reconcileSkipDump(oldSchema.GetProto(), newSchema.GetProto(), caseSensitive)
-	from, err := loadCatalogProto(oldMeta)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to load source schema")
-	}
-	to, err := loadCatalogProto(newMeta)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to load target schema")
-	}
-	diff := catalog.Diff(from, to)
-	if diff.IsEmpty() {
-		return "", nil
-	}
-	return catalog.GenerateMigration(from, to, diff).SQL(), nil
-}
-
-func loadCatalogProto(metadata *metadatapb.DatabaseSchemaMetadata) (*catalog.Catalog, error) {
-	c := catalog.New()
-	if err := c.LoadMetadata(context.Background(), metadata); err != nil {
-		return nil, err
-	}
-	return c, nil
 }

@@ -29,7 +29,7 @@ func init() {
 			MultiFileDatabase: GetMultiFileDatabaseDefinition,
 		},
 		DiffSDLMigration:      diffSDLMigration,
-		DiffMetadataMigration: diffMetadataMigration,
+		DiffMetadataMigration: schema.OmniMetadataMigration(catalog.Engine),
 		SDLDropAdvices:        sdlDropAdvices,
 	}, storepb.Engine_COCKROACHDB)
 }
@@ -59,12 +59,6 @@ func GetMultiFileDatabaseDefinition(_ schema.GetDefinitionContext, metadata *met
 		}
 	}
 	return result, nil
-}
-
-// diffMetadataMigration generates the migration between two synced snapshots
-// with omni's CockroachDB catalog.
-func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-	return catalog.MetadataMigration(omnicatalog.DatabaseProto(oldSchema), omnicatalog.DatabaseProto(newSchema), catalog.MetadataMigrationOptions{})
 }
 
 func buildMigrationPlan(sourceText, targetText string) (*catalog.MigrationPlan, error) {
