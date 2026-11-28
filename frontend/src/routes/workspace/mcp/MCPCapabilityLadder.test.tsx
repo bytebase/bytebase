@@ -79,15 +79,17 @@ describe("MCPCapabilityLadder", () => {
       ladder({ mode: MCPSetting_Capability.READ_ONLY })
     );
     expect(groupItems(readOnly.container)).toEqual([
-      ["read-schemas", "read-data", "read-workflow", "read-access"],
+      ["read-databases", "read-changes", "read-workspace", "read-policies"],
       [
-        "propose",
         "run-statements",
-        "request-access",
+        "export",
+        "saved-queries",
+        "propose",
         "approve",
-        "masking",
-        "add-instances",
-        "manage",
+        "data-access",
+        "instances",
+        "workload-identities",
+        "policies",
         "floor",
       ],
     ]);
@@ -108,10 +110,10 @@ describe("MCPCapabilityLadder", () => {
       ladder({ mode: MCPSetting_Capability.READ_ONLY })
     );
     expect(servedIds(readOnly.container)).toEqual([
-      "read-schemas",
-      "read-data",
-      "read-workflow",
-      "read-access",
+      "read-databases",
+      "read-changes",
+      "read-workspace",
+      "read-policies",
     ]);
     // No "write" badge may appear under a mode that serves no write row.
     expect(readOnly.container.textContent).not.toContain(
@@ -182,10 +184,10 @@ describe("MCPCapabilityLadder", () => {
   test("prioritizes granted capability titles over refused titles", () => {
     const { container, unmount } = renderIntoContainer(ladder({}));
     const allowed = [...container.querySelectorAll("span")].find((node) =>
-      node.textContent?.includes("settings.mcp.ladder.row.read-schemas.title")
+      node.textContent?.includes("settings.mcp.ladder.row.read-databases.title")
     );
     const refused = [...container.querySelectorAll("span")].find((node) =>
-      node.textContent?.includes("settings.mcp.ladder.row.propose.title")
+      node.textContent?.includes("settings.mcp.ladder.row.run-statements.title")
     );
 
     expect(allowed).toHaveClass("text-main");
@@ -226,7 +228,7 @@ describe("MCPCapabilityLadder", () => {
         .map((node) => node.textContent)
         .join("");
     };
-    expect(markOf("read-schemas")).toBe("settings.mcp.ladder.mark.allowed");
+    expect(markOf("read-databases")).toBe("settings.mcp.ladder.mark.allowed");
     expect(markOf("propose")).toBe("settings.mcp.ladder.mark.refused");
 
     const floor = rowItems(container).find((node) =>
@@ -236,6 +238,18 @@ describe("MCPCapabilityLadder", () => {
       "settings.mcp.ladder.mark.refused"
     );
     expect(floor?.textContent).not.toContain("settings.mcp.ladder.tier.");
+
+    // Lucide names each icon in its class, so the glyph is checked by name.
+    const iconOf = (rowId: string) =>
+      rowItems(container)
+        .find((node) => node.textContent?.includes(`row.${rowId}.title`))
+        ?.querySelector("svg")
+        ?.getAttribute("class");
+    expect(iconOf("read-databases")).toContain("lucide-check");
+    expect(iconOf("propose")).toContain("lucide-x");
+    expect(floor?.querySelector("svg")?.getAttribute("class")).toContain(
+      "lucide-x"
+    );
     unmount();
   });
 });

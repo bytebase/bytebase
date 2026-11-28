@@ -573,7 +573,7 @@ describe("OAuth2ConsentPage", () => {
     const [allowed, refused] = [...container.querySelectorAll("ul[role='list']")]
       .filter((list) => list.textContent?.includes("settings.mcp.ladder."))
       .map((list) => list.textContent ?? "");
-    expect(allowed).toContain("settings.mcp.ladder.row.read-schemas.title");
+    expect(allowed).toContain("settings.mcp.ladder.row.read-databases.title");
     expect(allowed).not.toContain("settings.mcp.ladder.row.run-statements.title");
     expect(refused).toContain("settings.mcp.ladder.row.run-statements.title");
     expect(refused.endsWith("settings.mcp.ladder.floor.text")).toBe(true);
@@ -697,7 +697,7 @@ describe("OAuth2ConsentPage", () => {
       retry?.click();
     });
     await flushPromises();
-    expect(container.textContent).toContain("settings.mcp.ladder.row.read-schemas.title");
+    expect(container.textContent).toContain("settings.mcp.ladder.row.read-databases.title");
     expect(container.textContent).toContain("oauth2.consent.allow-access");
     unmount();
   });

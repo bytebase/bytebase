@@ -10,40 +10,57 @@ import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
 export type MCPCapabilityTier = "read" | "write";
 
 /**
+ * The categories, in list order. A row's category comes from the two questions
+ * in D16 of docs/design/mcp-capability-ladder.md; it orders the list and is
+ * never drawn.
+ */
+export const MCP_CAPABILITY_CATEGORIES = [
+  "databases",
+  "changes",
+  "workspace",
+  "policies",
+] as const;
+
+export type MCPCapabilityCategory = (typeof MCP_CAPABILITY_CATEGORIES)[number];
+
+/**
  * The rows, by the id their copy is keyed under. A union rather than `string`
  * so the table and its consumers cannot drift to an id nothing else knows.
  * Locale coverage is not checked: these keys are built from the id, so a row
  * with no copy renders the raw key.
  */
 export type MCPCapabilityRowId =
-  | "read-schemas"
-  | "read-data"
-  | "read-workflow"
-  | "read-access"
-  | "propose"
+  | "read-databases"
+  | "read-changes"
+  | "read-workspace"
+  | "read-policies"
   | "run-statements"
-  | "request-access"
+  | "export"
+  | "saved-queries"
+  | "propose"
   | "approve"
-  | "masking"
-  | "add-instances"
-  | "manage";
+  | "data-access"
+  | "instances"
+  | "workload-identities"
+  | "policies";
 
 export interface MCPCapabilityRow {
   /** Keys the row's title under `settings.mcp.ladder.row.<id>.title`. */
   readonly id: MCPCapabilityRowId;
   readonly tier: MCPCapabilityTier;
+  readonly category: MCPCapabilityCategory;
 }
 
 /**
- * One ordered list in which every mode is a prefix. Read rows first, then write
- * rows.
+ * One ordered list in which every mode is a prefix: read rows first, then
+ * write rows, each tier in category order.
  *
- * Between them these titles claim to cover every READ and WRITE method, and
- * nothing checks that: a method annotated into either class is served the moment
- * it is annotated, whether or not a row names it. Which methods each row stands
- * for is NOT here — this file carries only the order and the tier. Reclassifying
- * an RPC means rereading the row table in docs/design/mcp-capability-ladder.md
- * and updating it in the same change.
+ * Between them the rows, titles with their docs sub-items, claim to cover every
+ * READ and WRITE method, and nothing checks that: a method annotated into either
+ * class is served the moment it is annotated, whether or not a row names it.
+ * Which methods each row stands for is NOT here. Reclassifying an RPC means
+ * rereading the row table in docs/design/mcp-capability-ladder.md and updating
+ * it in the same change.
  *
  * `run-statements` is the one row backed by no method: it names the statement
  * clamp (`mcp_sql_clamp.go`) that Read-write lifts, which is a real difference
@@ -51,17 +68,19 @@ export interface MCPCapabilityRow {
  * `MCPCapabilityList` renders it last among the refused rows.
  */
 export const MCP_CAPABILITY_ROWS: readonly MCPCapabilityRow[] = [
-  { id: "read-schemas", tier: "read" },
-  { id: "read-data", tier: "read" },
-  { id: "read-workflow", tier: "read" },
-  { id: "read-access", tier: "read" },
-  { id: "propose", tier: "write" },
-  { id: "run-statements", tier: "write" },
-  { id: "request-access", tier: "write" },
-  { id: "approve", tier: "write" },
-  { id: "masking", tier: "write" },
-  { id: "add-instances", tier: "write" },
-  { id: "manage", tier: "write" },
+  { id: "read-databases", tier: "read", category: "databases" },
+  { id: "read-changes", tier: "read", category: "changes" },
+  { id: "read-workspace", tier: "read", category: "workspace" },
+  { id: "read-policies", tier: "read", category: "policies" },
+  { id: "run-statements", tier: "write", category: "databases" },
+  { id: "export", tier: "write", category: "databases" },
+  { id: "saved-queries", tier: "write", category: "databases" },
+  { id: "propose", tier: "write", category: "changes" },
+  { id: "approve", tier: "write", category: "changes" },
+  { id: "data-access", tier: "write", category: "changes" },
+  { id: "instances", tier: "write", category: "workspace" },
+  { id: "workload-identities", tier: "write", category: "workspace" },
+  { id: "policies", tier: "write", category: "policies" },
 ];
 
 /**

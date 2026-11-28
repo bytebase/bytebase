@@ -181,7 +181,7 @@ test.describe("MCP access policy capability ladder", () => {
     // that keeps the sentence and drops the clause.
     await expect(
       page.getByText(
-        /Queries, exports, proposed changes and rollouts are recorded in the audit log/
+        /All operations executed via MCP will be recorded in the audit log/
       )
     ).toBeVisible();
 

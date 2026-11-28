@@ -4169,7 +4169,7 @@
         "disabled": "Nothing is allowed; no MCP session can connect.",
         "docs-link": "What each capability covers",
         "floor": {
-          "text": "Raise this policy, create a service account key, change a person's password, email or MFA, show a stored secret, open an Admin mode session, or read anyone else's query history"
+          "text": "Change the MCP access policy, create a service account key, change a user's password, email or MFA, show a stored secret, open an Admin mode session, read or export the audit log, or read other users' query history"
         },
         "heading": "This policy allows",
         "heading-refused": "This policy does not allow",
@@ -4178,43 +4178,49 @@
           "refused": "Not allowed"
         },
         "row": {
-          "add-instances": {
-            "title": "Add instances to projects and create CI identities"
-          },
           "approve": {
-            "title": "Approve or reject issues and manage approval rules for database changes"
+            "title": "Approve or reject issues"
           },
-          "manage": {
-            "title": "Sync instances and databases, and manage saved queries"
+          "data-access": {
+            "title": "Manage data access: access grants and masking exemptions"
           },
-          "masking": {
-            "title": "Set masking rules and grant or revoke exemptions"
+          "export": {
+            "title": "Export query results"
+          },
+          "instances": {
+            "title": "Add and sync instances and databases"
+          },
+          "policies": {
+            "title": "Change policies: approval rules, masking rules and access-grant settings"
           },
           "propose": {
             "title": "Propose and roll out database changes"
           },
-          "read-access": {
+          "read-changes": {
+            "title": "Read plans, rollouts, issues and access grants"
+          },
+          "read-databases": {
+            "title": "Read database schemas and data"
+          },
+          "read-policies": {
             "title": "Read members, roles and policies"
           },
-          "read-data": {
-            "title": "Read data by running queries"
-          },
-          "read-schemas": {
-            "title": "Read schemas and metadata"
-          },
-          "read-workflow": {
-            "title": "Read the change workflow"
-          },
-          "request-access": {
-            "title": "Request access grants and export query results"
+          "read-workspace": {
+            "title": "Read projects, instances and databases"
           },
           "run-statements": {
             "title": "Run DML and DDL statements"
+          },
+          "saved-queries": {
+            "title": "Manage saved queries"
+          },
+          "workload-identities": {
+            "title": "Create workload identities for GitOps"
           }
         },
         "summary": {
-          "read-only": "Read schemas, data, the change workflow, members, roles and policies; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported",
-          "read-write": "Read schemas, data, the change workflow, members, roles and policies; propose, request and revoke access, grant masking exemptions, approve, run, export and manage"
+          "read-only": "Read schemas, data, plans, rollouts, issues, access grants, projects, instances, databases, members, roles and policies; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported",
+          "read-write": "Read schemas, data, plans, rollouts, issues, access grants, projects, instances, databases, members, roles and policies; run statements, export, propose and roll out changes, approve, manage data access and saved queries, add instances, create workload identities and change policies"
         },
         "tier": {
           "read": "read",
@@ -4222,8 +4228,8 @@
         }
       },
       "policy": {
-        "audit": "Queries, exports, proposed changes and rollouts are recorded in the audit log.",
-        "bound": "Every MCP session is limited by the connected user's Bytebase permissions and the target database engine's supported operations.",
+        "audit": "All operations executed via MCP will be recorded in the audit log.",
+        "bound": "Every MCP session is limited by the connected user's Bytebase permissions.",
         "current": "Current policy: {{mode}}",
         "description": "{{bound}} {{audit}}",
         "edit": "Edit policy",
