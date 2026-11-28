@@ -17,9 +17,17 @@ import (
 )
 
 type maskingLevelEvaluator struct {
-	maskingRules            []*storepb.MaskingRulePolicy_MaskingRule
+	maskingRules            []compiledMaskingRule
+	usesPrincipalGroups     bool
+	principalGroups         []string
 	dataClassificationIDMap map[string]*storepb.DataClassificationSetting_DataClassificationConfig
 	semanticTypesMap        map[string]*storepb.SemanticTypeSetting_SemanticType
+}
+
+type compiledMaskingRule struct {
+	rule    *storepb.MaskingRulePolicy_MaskingRule
+	program cel.Program
+	err     error
 }
 
 // MaskingEvaluation contains the result of masking evaluation including the reason.
@@ -45,8 +53,35 @@ func (m *maskingLevelEvaluator) withMaskingRulePolicy(maskingRulePolicy *storepb
 		return m
 	}
 
-	m.maskingRules = make([]*storepb.MaskingRulePolicy_MaskingRule, 0, len(maskingRulePolicy.Rules))
-	m.maskingRules = append(m.maskingRules, maskingRulePolicy.Rules...)
+	m.maskingRules = make([]compiledMaskingRule, len(maskingRulePolicy.Rules))
+	m.usesPrincipalGroups = false
+	if len(m.maskingRules) == 0 {
+		return m
+	}
+	env, envErr := cel.NewEnv(common.MaskingRulePolicyCELAttributes...)
+	for i, rule := range maskingRulePolicy.Rules {
+		compiled := &m.maskingRules[i]
+		compiled.rule = rule
+		expression := rule.GetCondition().GetExpression()
+		if expression == "" {
+			continue
+		}
+		if envErr != nil {
+			compiled.err = envErr
+			continue
+		}
+		ast, issues := env.Compile(expression)
+		if compiled.err = issues.Err(); compiled.err != nil {
+			continue
+		}
+		for _, reference := range ast.NativeRep().ReferenceMap() {
+			if reference.Name == common.CELAttributePrincipalGroups {
+				m.usesPrincipalGroups = true
+				break
+			}
+		}
+		compiled.program, compiled.err = env.Program(ast)
+	}
 
 	return m
 }
@@ -95,21 +130,18 @@ func (m *maskingLevelEvaluator) evaluateSemanticTypeOfColumn(
 		semanticTypeID := columnConfig.GetSemanticType()
 		if semanticTypeID != "" {
 			semanticType := m.semanticTypesMap[semanticTypeID]
-			if semanticType != nil {
-				context := ""
-				if schemaName != "" {
-					context = fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s.%s", databaseMessage.InstanceID, databaseMessage.DatabaseName, schemaName, tableName, columnName)
-				} else {
-					context = fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", databaseMessage.InstanceID, databaseMessage.DatabaseName, tableName, columnName)
-				}
-				algorithmName := masker.AlgorithmName(semanticType.GetAlgorithm())
-				eval = &MaskingEvaluation{
-					SemanticTypeID:    semanticTypeID,
-					SemanticTypeTitle: semanticType.GetTitle(),
-					SemanticTypeIcon:  semanticType.GetIcon(),
-					Algorithm:         algorithmName,
-					Context:           context,
-				}
+			context := ""
+			if schemaName != "" {
+				context = fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s.%s", databaseMessage.InstanceID, databaseMessage.DatabaseName, schemaName, tableName, columnName)
+			} else {
+				context = fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", databaseMessage.InstanceID, databaseMessage.DatabaseName, tableName, columnName)
+			}
+			eval = &MaskingEvaluation{
+				SemanticTypeID:    semanticTypeID,
+				SemanticTypeTitle: semanticType.GetTitle(),
+				SemanticTypeIcon:  semanticType.GetIcon(),
+				Algorithm:         masker.AlgorithmName(semanticType.GetAlgorithm()),
+				Context:           context,
 			}
 		}
 	}
@@ -134,31 +166,34 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 	databaseProjectDataClassificationID string,
 	columnConfig *storepb.ColumnCatalog,
 ) (*MaskingEvaluation, error) {
+	if len(m.maskingRules) == 0 {
+		return nil, nil
+	}
 	dataClassificationConfig := m.getDataClassificationConfig(databaseProjectDataClassificationID)
-	// If the column has DEFAULT masking level in maskingPolicy or not set yet,
-	// we will eval the maskingRulePolicy to get the maskingLevel.
 	classificationLevel := getClassificationLevelOfColumn(columnConfig.GetClassification(), dataClassificationConfig)
-	for _, maskingRule := range m.maskingRules {
-		maskingRuleAttributes := map[string]any{
-			common.CELAttributeResourceEnvironmentID:       "",
-			common.CELAttributeResourceProjectID:           databaseMessage.ProjectID,
-			common.CELAttributeResourceInstanceID:          databaseMessage.InstanceID,
-			common.CELAttributeResourceDatabaseName:        databaseMessage.DatabaseName,
-			common.CELAttributeResourceSchemaName:          schemaName,
-			common.CELAttributeResourceTableName:           tableName,
-			common.CELAttributeResourceColumnName:          columnName,
-			common.CELAttributeResourceClassificationLevel: int64(classificationLevel),
-		}
-		if databaseMessage.EffectiveEnvironmentID != nil {
-			maskingRuleAttributes[common.CELAttributeResourceEnvironmentID] = *databaseMessage.EffectiveEnvironmentID
-		}
-		pass, err := evaluateMaskingRulePolicyCondition(maskingRule.Condition.Expression, maskingRuleAttributes)
+	maskingRuleAttributes := map[string]any{
+		common.CELAttributePrincipalGroups:             m.principalGroups,
+		common.CELAttributeResourceEnvironmentID:       "",
+		common.CELAttributeResourceProjectID:           databaseMessage.ProjectID,
+		common.CELAttributeResourceInstanceID:          databaseMessage.InstanceID,
+		common.CELAttributeResourceDatabaseName:        databaseMessage.DatabaseName,
+		common.CELAttributeResourceSchemaName:          schemaName,
+		common.CELAttributeResourceTableName:           tableName,
+		common.CELAttributeResourceColumnName:          columnName,
+		common.CELAttributeResourceClassificationLevel: int64(classificationLevel),
+	}
+	if databaseMessage.EffectiveEnvironmentID != nil {
+		maskingRuleAttributes[common.CELAttributeResourceEnvironmentID] = *databaseMessage.EffectiveEnvironmentID
+	}
+	for _, compiled := range m.maskingRules {
+		pass, err := compiled.matches(maskingRuleAttributes)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to evaluate masking rule policy condition")
 		}
 		if pass {
+			maskingRule := compiled.rule
 			semanticTypeID := maskingRule.GetSemanticType()
-			semanticType, ok := m.semanticTypesMap[semanticTypeID]
+			semanticType := m.semanticTypesMap[semanticTypeID]
 
 			ruleTitle := ""
 			if maskingRule.Condition != nil && maskingRule.Condition.Title != "" {
@@ -168,23 +203,12 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 				ruleTitle = maskingRule.Id
 			}
 
-			if !ok {
-				return &MaskingEvaluation{
-					SemanticTypeID:      semanticTypeID,
-					MaskingRuleID:       maskingRule.Id,
-					Context:             fmt.Sprintf("Global masking rule: %s", ruleTitle),
-					ClassificationLevel: classificationLevel,
-				}, nil
-			}
-
-			// Get algorithm name from semantic type
-			algorithmName := masker.AlgorithmName(semanticType.GetAlgorithm())
 			return &MaskingEvaluation{
 				SemanticTypeID:      semanticTypeID,
-				SemanticTypeTitle:   semanticType.Title,
-				SemanticTypeIcon:    semanticType.Icon,
+				SemanticTypeTitle:   semanticType.GetTitle(),
+				SemanticTypeIcon:    semanticType.GetIcon(),
 				MaskingRuleID:       maskingRule.Id,
-				Algorithm:           algorithmName,
+				Algorithm:           masker.AlgorithmName(semanticType.GetAlgorithm()),
 				Context:             fmt.Sprintf("Global masking rule: %s", ruleTitle),
 				ClassificationLevel: classificationLevel,
 			}, nil
@@ -271,23 +295,14 @@ func evaluateMaskingExemptionPolicyCondition(expression *expr.Expr, attributes m
 	return boolVar, nil
 }
 
-func evaluateMaskingRulePolicyCondition(expression string, attributes map[string]any) (bool, error) {
-	if expression == "" {
+func (r compiledMaskingRule) matches(attributes map[string]any) (bool, error) {
+	if r.err != nil {
+		return false, r.err
+	}
+	if r.program == nil {
 		return true, nil
 	}
-	maskingRulePolicyEnv, err := cel.NewEnv(common.MaskingRulePolicyCELAttributes...)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to create CEL environment for masking rule policy")
-	}
-	ast, issues := maskingRulePolicyEnv.Compile(expression)
-	if issues != nil && issues.Err() != nil {
-		return false, errors.Wrapf(issues.Err(), "failed to get the ast of CEL program for masking rule")
-	}
-	prg, err := maskingRulePolicyEnv.Program(ast)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to create CEL program for masking rule")
-	}
-	out, _, err := prg.Eval(attributes)
+	out, _, err := r.program.Eval(attributes)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to eval CEL program for masking rule")
 	}

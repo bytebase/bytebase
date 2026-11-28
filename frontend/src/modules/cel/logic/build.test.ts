@@ -6,8 +6,28 @@ import {
   CEL_ATTRIBUTE_STATEMENT_TEXT,
 } from "@/utils/cel-attributes";
 import { buildCELExpr } from "./build";
+import stringifyExpr from "./stringify";
 
 describe("buildCELExpr", () => {
+  it.each([
+    [
+      "@contains",
+      "groups/analysts@example.com",
+      '"groups/analysts@example.com" in principal.groups',
+    ],
+    ["@not_contains", "groups/42", '!("groups/42" in principal.groups)'],
+  ] as const)(
+    "builds group membership with %s",
+    async (operator, group, expected) => {
+      const built = await buildCELExpr({
+        type: ExprType.Condition,
+        operator,
+        args: ["principal.groups", group],
+      });
+      expect(built && stringifyExpr(built)).toBe(expected);
+    }
+  );
+
   it("builds label membership as value in issue.labels", async () => {
     const expr: SimpleExpr = {
       type: ExprType.Condition,

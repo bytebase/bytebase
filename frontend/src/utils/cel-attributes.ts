@@ -29,5 +29,8 @@ export const CEL_ATTRIBUTE_REQUEST_TIME = "request.time";
 // CEL attribute names for issue scope.
 export const CEL_ATTRIBUTE_ISSUE_LABELS = "issue.labels";
 
+// CEL attribute names for the authenticated principal.
+export const CEL_ATTRIBUTE_PRINCIPAL_GROUPS = "principal.groups";
+
 // CEL attribute names for risk scope.
 export const CEL_ATTRIBUTE_RISK_LEVEL = "risk.level";

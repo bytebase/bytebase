@@ -1188,19 +1188,24 @@ type MaskingRulePolicy_MaskingRule struct {
 	// resource.table_name: the table name.
 	// resource.column_name: the column name.
 	// resource.classification_level: the classification level (integer).
+	// principal.groups: the authenticated caller's direct workspace group names,
+	// in groups/{email} format, or groups/{id} for groups without an email.
 	//
-	// Each variable support following operations:
+	// Resource variables support the following operations:
 	// ==: the value equals the target.
 	// !=: the value not equals the target.
 	// in: the value matches one of the targets.
 	// !(in): the value not matches any of the targets.
 	// <, <=, >, >=: numeric comparison (classification_level only).
 	//
+	// Group membership uses "groups/{email}" in principal.groups, optionally negated.
+	//
 	// For example:
 	// resource.environment_id == "test" && resource.project_id == "sample-project"
 	// resource.instance_id == "sample-instance" && resource.database_name == "employee" && resource.table_name in ["table1", "table2"]
 	// resource.environment_id != "test" || !(resource.project_id in ["poject1", "prject2"])
 	// resource.instance_id == "sample-instance" && (resource.database_name == "db1" || resource.database_name == "db2")
+	// resource.environment_id == "prod" && "groups/analysts@example.com" in principal.groups
 	Condition *expr.Expr `protobuf:"bytes,2,opt,name=condition,proto3" json:"condition,omitempty"`
 	// The semantic type of data to mask (e.g., "SSN", "EMAIL").
 	SemanticType  string `protobuf:"bytes,3,opt,name=semantic_type,json=semanticType,proto3" json:"semantic_type,omitempty"`

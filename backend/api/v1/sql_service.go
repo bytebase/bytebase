@@ -846,10 +846,21 @@ func queryRetry(
 	maskingEnabled := !queryContext.Explain && !queryContext.SkipMasking &&
 		licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil
 	queryContext.MaskingEnabled = maskingEnabled
+	var (
+		resultMasker *queryResultMasker
+		docMasker    documentMasker
+	)
 
 	if maskingEnabled {
+		docMasker = getDocumentMasker(instance.Metadata.GetEngine())
+		if docMasker == nil {
+			resultMasker, err = newQueryResultMasker(ctx, stores, instance, user)
+			if err != nil {
+				return nil, nil, 0, connect.NewError(connect.CodeInternal, err)
+			}
+		}
 		// Columns a stale snapshot lacks can hide a condition from the predicate
-		// check, so sync before execution. MaskResults refuses the result if the
+		// check, so sync before execution. Result masking refuses it if the
 		// columns stay unresolved. Permanently empty tables re-sync on every query
 		// until BYT-10074 adds throttling.
 		if unresolved := unresolvedColumnDatabases(spans, instance); len(unresolved) > 0 {
@@ -860,12 +871,14 @@ func queryRetry(
 				return nil, nil, time.Duration(0), err
 			}
 		}
-		refusal, err := sensitivePredicateRefusal(ctx, stores, spans, instance, user)
-		if err != nil {
-			return nil, nil, time.Duration(0), err
-		}
-		if refusal != "" {
-			return refusedQueryResults(refusal, originalStatement), nil, time.Duration(0), nil
+		if resultMasker != nil {
+			refusal, err := resultMasker.sensitivePredicateRefusal(ctx, spans, instance)
+			if err != nil {
+				return nil, nil, time.Duration(0), err
+			}
+			if refusal != "" {
+				return refusedQueryResults(refusal, originalStatement), nil, time.Duration(0), nil
+			}
 		}
 		if err := preExecuteMaskingCheck(ctx, stores, instance.Metadata.GetEngine(), database, spans); err != nil {
 			return nil, nil, time.Duration(0), err
@@ -926,8 +939,8 @@ func queryRetry(
 		}
 		// A table the first span did not find may surface a condition the
 		// pre-execution check could not see.
-		if maskingEnabled {
-			refusal, err := sensitivePredicateRefusal(ctx, stores, spans, instance, user)
+		if resultMasker != nil {
+			refusal, err := resultMasker.sensitivePredicateRefusal(ctx, spans, instance)
 			if err != nil {
 				return nil, nil, duration, err
 			}
@@ -950,19 +963,16 @@ func queryRetry(
 
 	if maskingEnabled {
 		slog.Debug("mask query results", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
-		if dm := getDocumentMasker(instance.Metadata.GetEngine()); dm != nil {
+		if docMasker != nil {
 			semanticTypeToMaskerMap, err := buildSemanticTypeToMaskerMap(ctx, stores)
 			if err != nil {
 				return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 			}
-			if err := dm.maskResults(ctx, stores, database, spans, results, semanticTypeToMaskerMap, queryContext); err != nil {
+			if err := docMasker.maskResults(ctx, stores, database, spans, results, semanticTypeToMaskerMap, queryContext); err != nil {
 				return nil, nil, duration, err
 			}
-		} else {
-			masker := NewQueryResultMasker(stores)
-			if err := masker.MaskResults(ctx, spans, results, instance, user); err != nil {
-				return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
-			}
+		} else if err := resultMasker.maskResults(ctx, spans, results, instance); err != nil {
+			return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 		}
 	}
 	return results, spans, duration, nil

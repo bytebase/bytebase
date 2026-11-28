@@ -27,6 +27,9 @@ const (
 	CELAttributeResourceDatabaseLabels = "resource.database_labels"
 )
 
+// CELAttributePrincipalGroups is the authenticated principal's direct workspace groups.
+const CELAttributePrincipalGroups = "principal.groups"
+
 // CEL attribute names for statement scope.
 const (
 	// CELAttributeStatementAffectedRows is the number of affected rows by the statement.

@@ -26,6 +26,29 @@ const call = (fn: string, args: Expr[], target?: Expr) =>
 const table = ident("resource.table_name");
 
 describe("resolveCELExpr", () => {
+  it.each([
+    [false, "groups/analysts@example.com", "@contains"],
+    [true, "groups/42", "@not_contains"],
+  ] as const)(
+    "resolves saved group membership (negated=%s)",
+    (negated, group, operator) => {
+      const groups = create(ExprSchema, {
+        exprKind: {
+          case: "selectExpr",
+          value: { operand: ident("principal"), field: "groups" },
+        },
+      });
+      const membership = call("@in", [string(group), groups]);
+      expect(
+        resolveCELExpr(negated ? call("!_", [membership]) : membership)
+      ).toEqual({
+        type: ExprType.Condition,
+        operator,
+        args: ["principal.groups", group],
+      });
+    }
+  );
+
   describe.each(["_&&_", "_||_"] as const)("%s groups", (operator) => {
     const comparisons = [
       ["resource.project_id", "example"],

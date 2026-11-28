@@ -1,6 +1,6 @@
 import * as stylex from "@stylexjs/stylex";
 import { fromJson } from "@bufbuild/protobuf";
-import { fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { act, type ReactElement, StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -1355,6 +1355,101 @@ describe("ExprEditor", () => {
       expect(signals[3].aborted).toBe(true);
     }
   );
+
+  test.each(["@contains", "@not_contains"] as const)(
+    "selects a canonical group for %s",
+    async (operator) => {
+      const groupFactor = "principal.groups";
+      const onUpdate = vi.fn();
+      const { container, unmount } = renderIntoContainer(
+        <ExprEditor
+          expr={{
+            type: ExprType.ConditionGroup,
+            operator: "_&&_",
+            args: [{ type: ExprType.Condition, operator, args: [groupFactor, ""] }],
+          }}
+          factorList={[groupFactor]}
+          factorOperatorOverrideMap={new Map([[groupFactor, ["@contains", "@not_contains"]]])}
+          optionConfigMap={new Map([[groupFactor, {
+            options: [],
+            search: async ({ pageToken }) => pageToken
+              ? { options: [{ value: "groups/42", label: "On-call Analysts" }], nextPageToken: "" }
+              : { options: [{ value: "groups/reviewers@example.com", label: "Reviewers" }], nextPageToken: "next" },
+          }]])}
+          onUpdate={onUpdate}
+        />
+      );
+      const view = within(container);
+      expect(view.getByRole("combobox", { name: "cel.condition.factor" })).toHaveTextContent(groupFactor);
+
+      await act(async () => {
+        fireEvent.click(view.getByRole("button", { name: "cel.condition.select-value" }));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "common.load-more" }));
+      });
+      expect(screen.getByRole("button", { name: "Reviewers" })).toBeVisible();
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "On-call Analysts" }));
+      });
+      expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        args: [{
+          type: ExprType.Condition,
+          operator,
+          args: ["principal.groups", "groups/42"],
+        }],
+      }));
+      unmount();
+    }
+  );
+
+  test("retains an unavailable saved group when changing the membership operator", async () => {
+    const groupFactor = "principal.groups";
+    const onUpdate = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={{
+          type: ExprType.ConditionGroup,
+          operator: "_&&_",
+          args: [{
+            type: ExprType.Condition,
+            operator: "@contains",
+            args: [groupFactor, "groups/deleted@example.com"],
+          }],
+        }}
+        factorList={[groupFactor]}
+        factorOperatorOverrideMap={new Map([[groupFactor, ["@contains", "@not_contains"]]])}
+        optionConfigMap={new Map([[groupFactor, {
+          options: [],
+          fetch: async () => [],
+          search: async () => ({ options: [], nextPageToken: "" }),
+        }]])}
+        onUpdate={onUpdate}
+      />
+    );
+    await flushEffects();
+    expect(within(container).queryByRole("button", { name: "groups/deleted@example.com" })).not.toBeNull();
+    expect(onUpdate).not.toHaveBeenCalled();
+
+    const operator = within(container).getByRole("combobox", { name: "cel.condition.operator" });
+    expect(operator).toHaveTextContent("@contains");
+    await act(async () => {
+      fireEvent.click(operator);
+    });
+    const negated = screen.getByRole("option", { name: "@not_contains" });
+    await act(async () => {
+      fireEvent.pointerDown(negated, { pointerType: "mouse" });
+      fireEvent.click(negated);
+    });
+    expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      args: [{
+        type: ExprType.Condition,
+        operator: "@not_contains",
+        args: ["principal.groups", "groups/deleted@example.com"],
+      }],
+    }));
+    unmount();
+  });
 
   test("keeps the next condition value after deleting the first condition", async () => {
     const initialExpr: ConditionGroupExpr = {

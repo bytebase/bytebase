@@ -33,6 +33,7 @@ import {
 import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import { getSemanticTypeListWithBuiltins } from "@/types/semanticTypes";
 import {
+  CEL_ATTRIBUTE_PRINCIPAL_GROUPS,
   CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
   CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
   CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
@@ -94,6 +95,7 @@ const MAX_DRAFTS = 100;
 const MAX_CONDITION_LENGTH = 20_000;
 const drafts = new Map<string, DraftEntry>();
 const factors: Factor[] = [
+  CEL_ATTRIBUTE_PRINCIPAL_GROUPS,
   CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
   CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
   CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
@@ -103,6 +105,7 @@ const factors: Factor[] = [
   CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
 ];
 const projectPattern = /^projects\/(?!-$)[A-Za-z0-9_-]+$/;
+const groupPattern = /^groups\/[^/\s]+$/;
 const databasePattern =
   /^(?:projects\/[A-Za-z0-9_-]+\/)?instances\/([A-Za-z0-9_-]+)\/databases\/([^/]+)$/;
 
@@ -224,6 +227,26 @@ function assertPermissionEvidence(
   );
 }
 
+function assertCanonicalGroupTargets(expr: SimpleExpr): void {
+  if (expr.type === ExprType.ConditionGroup) {
+    expr.args.forEach(assertCanonicalGroupTargets);
+  } else if (
+    expr.type === ExprType.Condition &&
+    expr.args[0] === CEL_ATTRIBUTE_PRINCIPAL_GROUPS
+  ) {
+    const value = expr.args[1];
+    if (
+      typeof value !== "string" ||
+      !groupPattern.test(value) ||
+      value.includes("\0")
+    ) {
+      throw new Error(
+        "Masking group targets must use canonical groups/{email-or-id} names."
+      );
+    }
+  }
+}
+
 async function resolveCondition(condition: string) {
   if (!boundedText(condition, MAX_CONDITION_LENGTH))
     throw new Error("The masking rule condition is invalid or too long.");
@@ -235,6 +258,7 @@ async function resolveCondition(condition: string) {
     throw new Error(
       "The condition cannot be represented by the rule selector."
     );
+  assertCanonicalGroupTargets(resolved);
   const built = await buildCELExpr(resolved);
   if (
     !built ||

@@ -1,5 +1,6 @@
 import {
   CEL_ATTRIBUTE_ISSUE_LABELS,
+  CEL_ATTRIBUTE_PRINCIPAL_GROUPS,
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
   CEL_ATTRIBUTE_REQUEST_EXPORT,
   CEL_ATTRIBUTE_REQUEST_ROLE,
@@ -68,7 +69,10 @@ export type BooleanFactor = (typeof BooleanFactorList)[number];
 export const TimestampFactorList = [CEL_ATTRIBUTE_REQUEST_TIME] as const;
 export type TimestampFactor = (typeof TimestampFactorList)[number];
 
-export const ListFactorList = [CEL_ATTRIBUTE_ISSUE_LABELS] as const;
+export const ListFactorList = [
+  CEL_ATTRIBUTE_ISSUE_LABELS,
+  CEL_ATTRIBUTE_PRINCIPAL_GROUPS,
+] as const;
 export type ListFactor = (typeof ListFactorList)[number];
 
 export type Factor =

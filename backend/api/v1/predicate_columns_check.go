@@ -8,7 +8,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
@@ -18,11 +17,11 @@ import (
 // conditions read a column masked for user, or "" if none do. The database
 // evaluates conditions on unmasked values, so the rows it returns, their
 // count, and the time it takes would reveal them.
-func sensitivePredicateRefusal(ctx context.Context, stores *store.Store, spans []*base.QuerySpan, instance *store.InstanceMessage, user *store.UserMessage) (string, error) {
+func (s *queryResultMasker) sensitivePredicateRefusal(ctx context.Context, spans []*base.QuerySpan, instance *store.InstanceMessage) (string, error) {
 	if !isPredicateColumnsCheckEnabled(instance.Metadata.GetEngine()) {
 		return "", nil
 	}
-	sensitiveColumns, err := NewQueryResultMasker(stores).ExtractSensitivePredicateColumns(ctx, spans, instance, user)
+	sensitiveColumns, err := s.extractSensitivePredicateColumns(ctx, spans, instance)
 	if err != nil {
 		return "", connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
@@ -40,28 +39,8 @@ func sensitivePredicateRefusal(ctx context.Context, stores *store.Store, spans [
 	return "", nil
 }
 
-func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context, spans []*base.QuerySpan, instance *store.InstanceMessage, user *store.UserMessage) ([][]base.ColumnResource, error) {
+func (s *queryResultMasker) extractSensitivePredicateColumns(ctx context.Context, spans []*base.QuerySpan, instance *store.InstanceMessage) ([][]base.ColumnResource, error) {
 	var result [][]base.ColumnResource
-
-	classificationSetting, err := s.store.GetDataClassificationSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find classification setting")
-	}
-
-	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find masking rule policy")
-	}
-
-	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, s.store)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find semantic types setting")
-	}
-
-	m := newEmptyMaskingLevelEvaluator().
-		withMaskingRulePolicy(maskingRulePolicy).
-		withDataClassificationSetting(classificationSetting).
-		withSemanticTypeSetting(semanticTypesSetting)
 
 	// Collect all predicate columns from all spans for batch fetching.
 	allColumns := make(base.SourceColumnSet)
@@ -79,11 +58,9 @@ func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context
 	for _, span := range spans {
 		sensitiveColumns, err := s.getSensitiveColumnsForPredicate(
 			ctx,
-			m,
 			instance,
 			span.PredicateColumns,
 			data,
-			user,
 		)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sensitive columns for predicate")
@@ -94,13 +71,11 @@ func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context
 	return result, nil
 }
 
-func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
+func (s *queryResultMasker) getSensitiveColumnsForPredicate(
 	ctx context.Context,
-	m *maskingLevelEvaluator,
 	instance *store.InstanceMessage,
 	predicateColumns base.SourceColumnSet,
 	data *maskingDataProvider,
-	currentPrincipal *store.UserMessage,
 ) ([]base.ColumnResource, error) {
 	if instance != nil && !isPredicateColumnsCheckEnabled(instance.Metadata.GetEngine()) {
 		return nil, nil
@@ -124,9 +99,9 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 			continue
 		}
 
-		exemptions := s.exemptionsForPrincipal(ctx, data, database.ProjectID, currentPrincipal)
+		exemptions := s.exemptionsForPrincipal(ctx, data, database.ProjectID)
 
-		isSensitive, err := m.isSensitiveColumn(database, column, project.Setting.DataClassificationConfigId, config, exemptions)
+		isSensitive, err := s.evaluator.isSensitiveColumn(database, column, project.Setting.DataClassificationConfigId, config, exemptions)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to check if column is sensitive")
 		}

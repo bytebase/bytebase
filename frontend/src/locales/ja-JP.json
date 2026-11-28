@@ -732,6 +732,7 @@
       "add-root-condition-placeholder": "「条件を追加」または「条件グループを追加」をクリックして条件を追加します。",
       "cannot-convert-to-selection": "この条件は手動選択では表現できません。",
       "description-tips": "条件は、式を通じて設定されるルールです。たとえば、「環境は本番」という条件は、「本番」環境で実行されたイシューと一致します。",
+      "factor": "条件フィールド",
       "group": {
         "and": {
           "description": "以下はすべて真実です…"
@@ -743,6 +744,8 @@
       },
       "input-value": "入力値",
       "input-value-press-enter": "値を入力し、Enter キーを押して確定します",
+      "operator": "演算子",
+      "retry-loading-options": "読み込みを再試行",
       "select-value": "値を選択してください",
       "self": "状態"
     }

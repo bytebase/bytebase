@@ -77,7 +77,9 @@ import {
 } from "@/modules/cel";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
+import { groupNamePrefix } from "@/stores/modules/v1/common";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
+import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import type {
   MaskingRulePolicy_MaskingRule,
   Policy,
@@ -100,6 +102,7 @@ import {
   hasWorkspacePermissionV2,
 } from "@/utils";
 import {
+  CEL_ATTRIBUTE_PRINCIPAL_GROUPS,
   CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
   CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
   CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
@@ -108,6 +111,33 @@ import {
   CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
 } from "@/utils/cel-attributes";
+
+function groupOption(group: Group) {
+  const identifier = group.name.slice(groupNamePrefix.length);
+  return {
+    value: group.name,
+    label: group.title ? `${group.title} (${identifier})` : identifier,
+  };
+}
+
+const groupOptionConfig: OptionConfig = {
+  options: [],
+  fetch: async (names) => {
+    const groups = await useAppStore.getState().batchGetOrFetchGroups(names);
+    return groups.filter((group) => group !== undefined).map(groupOption);
+  },
+  search: async ({ search, pageToken, pageSize }) => {
+    const result = await useAppStore.getState().listGroups({
+      pageSize,
+      pageToken,
+      filter: { query: search },
+    });
+    return {
+      nextPageToken: result.nextPageToken,
+      options: result.groups.map(groupOption),
+    };
+  },
+};
 
 type MaskingRuleMode = "NORMAL" | "EDIT" | "CREATE";
 interface MaskingRuleItem {
@@ -1077,6 +1107,7 @@ export function GlobalMaskingPage() {
       CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
       CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
       CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
+      CEL_ATTRIBUTE_PRINCIPAL_GROUPS,
     ],
     []
   );
@@ -1098,6 +1129,9 @@ export function GlobalMaskingPage() {
     const workspaceName = useAppStore.getState().workspaceResourceName();
     return factorList.reduce((map, factor) => {
       switch (factor) {
+        case CEL_ATTRIBUTE_PRINCIPAL_GROUPS:
+          map.set(factor, groupOptionConfig);
+          break;
         case CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID:
           map.set(factor, { options: environmentOptions });
           break;

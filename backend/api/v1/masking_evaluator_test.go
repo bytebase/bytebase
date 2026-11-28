@@ -387,6 +387,54 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 	}
 }
 
+func TestEvalMaskingRuleForPrincipalGroups(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name       string
+		expression string
+		groups     []string
+		secondRule bool
+		columnType string
+		exemptions []*storepb.MaskingExemptionPolicy_Exemption
+		wantType   string
+		wantRule   string
+	}{
+		{name: "group rule wins over later resource rule", expression: `"groups/analysts" in principal.groups && resource.environment_id == "prod"`, groups: []string{"groups/analysts"}, secondRule: true, wantType: "full", wantRule: "group"},
+		{name: "nonmember reaches resource rule", expression: `"groups/analysts" in principal.groups`, groups: []string{"groups/operations"}, secondRule: true, wantType: "partial", wantRule: "resource"},
+		{name: "nonmatching group rule preserves column fallback", expression: `"groups/analysts" in principal.groups`, columnType: "partial", wantType: "partial"},
+		{name: "negated group matches empty membership", expression: `!("groups/analysts" in principal.groups)`, wantType: "full", wantRule: "group"},
+		{name: "exemption still applies to matched group rule", expression: `"groups/analysts" in principal.groups`, groups: []string{"groups/analysts"}, exemptions: []*storepb.MaskingExemptionPolicy_Exemption{{}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			rules := []*storepb.MaskingRulePolicy_MaskingRule{
+				{Id: "group", Condition: &expr.Expr{Expression: tc.expression}, SemanticType: "full"},
+			}
+			if tc.secondRule {
+				rules = append(rules, &storepb.MaskingRulePolicy_MaskingRule{
+					Id: "resource", Condition: &expr.Expr{Expression: `resource.environment_id == "prod"`}, SemanticType: "partial",
+				})
+			}
+			m := newEmptyMaskingLevelEvaluator().
+				withMaskingRulePolicy(&storepb.MaskingRulePolicy{Rules: rules}).
+				withSemanticTypeSetting(&storepb.SemanticTypeSetting{Types: []*storepb.SemanticTypeSetting_SemanticType{
+					{Id: "full"}, {Id: "partial"},
+				}})
+			m.principalGroups = tc.groups
+			database := &store.DatabaseMessage{InstanceID: "test", DatabaseName: "test", EffectiveEnvironmentID: new("prod")}
+			evaluation, err := m.evaluateSemanticTypeOfColumn(database, "public", "records", "contents", "", &storepb.ColumnCatalog{SemanticType: tc.columnType}, tc.exemptions)
+			require.NoError(t, err)
+			if tc.wantType == "" {
+				require.Nil(t, evaluation)
+				return
+			}
+			require.NotNil(t, evaluation)
+			require.Equal(t, tc.wantType, evaluation.SemanticTypeID)
+			require.Equal(t, tc.wantRule, evaluation.MaskingRuleID)
+		})
+	}
+}
+
 func TestEvaluateExemptionOfColumnStringOperators(t *testing.T) {
 	t.Parallel()
 

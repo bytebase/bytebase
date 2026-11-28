@@ -10439,11 +10439,13 @@ A rule that defines when and how to mask data.
 | id | [string](#string) |  | A unique identifier for the rule in UUID format. |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition for the masking rule. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Support variables: resource.environment_id: the environment resource id. resource.project_id: the project resource id. resource.instance_id: the instance resource id. resource.database_name: the database name. resource.table_name: the table name. resource.column_name: the column name. resource.classification_level: the classification level (integer).
+Support variables: resource.environment_id: the environment resource id. resource.project_id: the project resource id. resource.instance_id: the instance resource id. resource.database_name: the database name. resource.table_name: the table name. resource.column_name: the column name. resource.classification_level: the classification level (integer). principal.groups: the authenticated caller&#39;s direct workspace group names, in groups/{email} format, or groups/{id} for groups without an email.
 
-Each variable support following operations: ==: the value equals the target. !=: the value not equals the target. in: the value matches one of the targets. !(in): the value not matches any of the targets. &lt;, &lt;=, &gt;, &gt;=: numeric comparison (classification_level only).
+Resource variables support the following operations: ==: the value equals the target. !=: the value not equals the target. in: the value matches one of the targets. !(in): the value not matches any of the targets. &lt;, &lt;=, &gt;, &gt;=: numeric comparison (classification_level only).
 
-For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.project_id == &#34;sample-project&#34; resource.instance_id == &#34;sample-instance&#34; &amp;&amp; resource.database_name == &#34;employee&#34; &amp;&amp; resource.table_name in [&#34;table1&#34;, &#34;table2&#34;] resource.environment_id != &#34;test&#34; || !(resource.project_id in [&#34;poject1&#34;, &#34;prject2&#34;]) resource.instance_id == &#34;sample-instance&#34; &amp;&amp; (resource.database_name == &#34;db1&#34; || resource.database_name == &#34;db2&#34;) |
+Group membership uses &#34;groups/{email}&#34; in principal.groups, optionally negated.
+
+For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.project_id == &#34;sample-project&#34; resource.instance_id == &#34;sample-instance&#34; &amp;&amp; resource.database_name == &#34;employee&#34; &amp;&amp; resource.table_name in [&#34;table1&#34;, &#34;table2&#34;] resource.environment_id != &#34;test&#34; || !(resource.project_id in [&#34;poject1&#34;, &#34;prject2&#34;]) resource.instance_id == &#34;sample-instance&#34; &amp;&amp; (resource.database_name == &#34;db1&#34; || resource.database_name == &#34;db2&#34;) resource.environment_id == &#34;prod&#34; &amp;&amp; &#34;groups/analysts@example.com&#34; in principal.groups |
 | semantic_type | [string](#string) |  | The semantic type of data to mask (e.g., &#34;SSN&#34;, &#34;EMAIL&#34;). |
 
 

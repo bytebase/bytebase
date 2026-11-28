@@ -155,7 +155,7 @@ func TestSelectBestAccessGrantPrefersUnmask(t *testing.T) {
 // #20487: when an export is authorized by a JIT grant with unmask=true,
 // SkipMasking must reach db.QueryContext so the driver doesn't mask rows at
 // query time. The earlier code only consulted skipMasking around the
-// post-execution MaskResults pass — by then drivers like postgres with
+// post-execution masking pass — by then drivers like postgres with
 // query-time masking rewrites had already returned masked rows.
 func TestBuildExportQueryContextPropagatesSkipMasking(t *testing.T) {
 	restriction := &store.EffectiveQueryDataPolicy{

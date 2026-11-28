@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import { HelpCircle, Plus, Trash2, X } from "lucide-react";
+import { ChevronDown, HelpCircle, Plus, Trash2, X } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   createContext,
@@ -18,6 +18,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { SearchInput } from "@/components/ui/search-input";
 import {
   Select,
@@ -64,6 +69,7 @@ import {
 } from "@/modules/cel";
 import { buildSelectorCapabilities } from "@/modules/cel/logic/agentPrompt";
 import { canRenderAsSelector } from "@/modules/cel/logic/selector";
+import { isListFactor } from "@/modules/cel/types/factor";
 import { environmentNamePrefix } from "@/stores/modules/v1/common";
 import { getDefaultPagination } from "@/utils";
 import { CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID } from "@/utils/cel-attributes";
@@ -287,38 +293,58 @@ function SearchableSelect({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<SearchableSelectOption[]>([]);
+  const [selectedOption, setSelectedOption] =
+    useState<SearchableSelectOption>();
   const [loading, setLoading] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [searchFailed, setSearchFailed] = useState(false);
+  const [nextPageToken, setNextPageToken] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const queryRef = useRef("");
 
   const selectedLabel = useMemo(() => {
     const found = options.find((o) => o.value === value);
     if (found) return found.label;
+    if (selectedOption?.value === value) return selectedOption.label;
     if (optionConfig.fallback)
       return optionConfig.fallback(value)?.label ?? value;
     return value || "";
-  }, [options, value, optionConfig]);
+  }, [options, selectedOption, value, optionConfig]);
 
   const searchControllerRef = useRef<AbortController | null>(null);
   useEffect(() => () => searchControllerRef.current?.abort(), []);
   const doSearch = useCallback(
-    async (q: string) => {
+    async (q: string, pageToken = "") => {
       if (!optionConfig.search) return;
       searchControllerRef.current?.abort();
       const controller = new AbortController();
       searchControllerRef.current = controller;
+      queryRef.current = q;
+      if (!pageToken) {
+        setOptions([]);
+        setNextPageToken("");
+      }
       setLoading(true);
+      setSearchFailed(false);
       try {
         const resp = await optionConfig.search({
           signal: controller.signal,
           search: q,
-          pageToken: "",
+          pageToken,
           pageSize: getDefaultPagination(),
         });
-        if (!controller.signal.aborted)
-          setOptions(resp.options as SearchableSelectOption[]);
-      } catch (error) {
-        if (!controller.signal.aborted) throw error;
+        if (!controller.signal.aborted) {
+          setOptions((previous) => {
+            if (!pageToken) return resp.options;
+            const existing = new Set(previous.map((option) => option.value));
+            return [
+              ...previous,
+              ...resp.options.filter((option) => !existing.has(option.value)),
+            ];
+          });
+          setNextPageToken(resp.nextPageToken);
+        }
+      } catch {
+        if (!controller.signal.aborted) setSearchFailed(true);
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -328,121 +354,131 @@ function SearchableSelect({
 
   const initializedRef = useRef(false);
   useEffect(() => {
+    if (!value) return;
+    if (optionConfig.fetch) {
+      let cancelled = false;
+      void optionConfig
+        .fetch([value])
+        .then((opts) => {
+          if (!cancelled) {
+            setSelectedOption(opts.find((option) => option.value === value));
+          }
+        })
+        .catch(() => {
+          // Keep displaying the saved identifier when its label cannot be loaded.
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
     if (initializedRef.current && !searchControllerRef.current?.signal.aborted)
       return;
     initializedRef.current = true;
-    if (!value) return;
-    if (optionConfig.fetch) {
-      optionConfig.fetch([value]).then((opts) => {
-        setOptions(opts as SearchableSelectOption[]);
-      });
-    } else if (optionConfig.search) {
-      doSearch(value);
-    }
+    if (optionConfig.search) void doSearch(value);
   }, [value, optionConfig, doSearch]);
 
-  const handleOpen = () => {
-    setOpen(true);
-    doSearch("");
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen) void doSearch("");
   };
 
-  const handleSelect = (v: string) => {
-    onChange(v);
+  const handleSelect = (option: SearchableSelectOption) => {
+    setSelectedOption(option);
+    if (option.value !== value) onChange(option.value);
     setOpen(false);
   };
 
-  const close = useCallback(() => setOpen(false), []);
-  useClickOutside([triggerRef, dropdownRef], open, close);
-
-  if (!optionConfig.search) {
-    return (
-      <Select
-        value={value}
-        disabled={disabled}
-        onValueChange={(val) => {
-          if (val != null) onChange(val);
-        }}
-      >
-        <SelectTrigger className="min-w-28">
-          <SelectValue placeholder={placeholder}>
-            {(value: string | null) => {
-              if (!value) return null;
-              const found = optionConfig.options.find((o) => o.value === value);
-              return found?.label ?? value;
-            }}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {optionConfig.options.map((o) => (
-            <SelectItem key={o.value} value={o.value}>
-              {o.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    );
-  }
-
   return (
-    <div className="min-w-28">
-      <Button
-        ref={triggerRef}
-        type="button"
-        appearance="outline"
-        size="md"
-        className="w-full justify-start bg-background text-left text-control"
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger
         disabled={disabled}
-        onClick={handleOpen}
+        render={
+          <Button
+            type="button"
+            appearance="outline"
+            className="w-full justify-start text-left"
+          />
+        }
       >
-        <span className="min-w-0 flex-1 truncate">
+        <span
+          className="min-w-0 flex-1 truncate"
+          title={selectedLabel || undefined}
+        >
           {selectedLabel || (
             <span className="text-control-placeholder">
               {placeholder ?? ""}
             </span>
           )}
         </span>
-      </Button>
-      {open && (
-        <PortaledDropdown
-          anchorRef={triggerRef}
-          dropdownRef={dropdownRef}
-          matchAnchorWidth
-          className="bg-background border border-control-border rounded-sm shadow-md"
-        >
-          <div className="p-1 border-b border-control-border">
-            <SearchInput
-              autoFocus
-              size="sm"
-              placeholder={t("common.filter-by-name")}
-              onChange={(e) => void doSearch(e.target.value)}
-            />
-          </div>
-          <ul className="max-h-48 overflow-y-auto py-1">
-            {loading && (
-              <li className="px-3 py-1 text-sm text-control-placeholder">
-                {t("common.loading")}
-              </li>
-            )}
-            {!loading && options.length === 0 && (
-              <li className="px-3 py-1 text-sm text-control-placeholder">
+        <ChevronDown className="text-control-placeholder" />
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-(--anchor-width) min-w-0 p-2"
+        initialFocus={searchInputRef}
+        aria-label={placeholder}
+      >
+        <SearchInput
+          ref={searchInputRef}
+          size="sm"
+          aria-label={t("common.filter-by-name")}
+          placeholder={t("common.filter-by-name")}
+          onChange={(e) => void doSearch(e.target.value)}
+        />
+        <div className="mt-2 flex max-h-48 flex-col overflow-y-auto">
+          {options.map((option) => (
+            <Button
+              key={option.value}
+              type="button"
+              appearance="secondary"
+              size="md"
+              aria-pressed={option.value === value}
+              className={cn(
+                "w-full shrink-0 justify-start",
+                option.value === value && "text-accent"
+              )}
+              onClick={() => handleSelect(option)}
+            >
+              <span className="truncate" title={option.label}>
+                {option.label}
+              </span>
+            </Button>
+          ))}
+          {loading ? (
+            <p role="status" className="p-2 text-control-placeholder">
+              {t("common.loading")}
+            </p>
+          ) : searchFailed ? (
+            <Button
+              type="button"
+              appearance="secondary"
+              size="md"
+              className="shrink-0"
+              onClick={() => void doSearch(queryRef.current, nextPageToken)}
+            >
+              {t("cel.condition.retry-loading-options")}
+            </Button>
+          ) : (
+            options.length === 0 && (
+              <p className="p-2 text-control-placeholder">
                 {t("common.no-data")}
-              </li>
-            )}
-            {options.map((o) => (
-              <li
-                key={o.value}
-                className={`px-3 py-1 text-sm cursor-pointer hover:bg-control-bg ${
-                  o.value === value ? "font-medium text-accent" : ""
-                }`}
-                onMouseDown={() => handleSelect(o.value)}
-              >
-                {o.label}
-              </li>
-            ))}
-          </ul>
-        </PortaledDropdown>
-      )}
-    </div>
+              </p>
+            )
+          )}
+          {nextPageToken && !loading && !searchFailed && (
+            <Button
+              type="button"
+              appearance="secondary"
+              size="md"
+              className="shrink-0"
+              onClick={() => void doSearch(queryRef.current, nextPageToken)}
+            >
+              {t("common.load-more")}
+            </Button>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -868,6 +904,7 @@ function FactorSelect({
   groupPath: Path;
   operandIndex: number;
 }) {
+  const { t } = useTranslation();
   const {
     readonly,
     factorList,
@@ -897,6 +934,7 @@ function FactorSelect({
       value={factor}
       disabled={readonly}
       onValueChange={(val) => {
+        if (val == null || val === factor) return;
         doUpdate((group) => {
           const cond = group.args[operandIndex] as ConditionExpr;
           (cond.args as unknown[])[0] = val as Factor;
@@ -913,7 +951,10 @@ function FactorSelect({
         });
       }}
     >
-      <SelectTrigger className="min-w-0 max-w-xs flex-1 basis-32">
+      <SelectTrigger
+        aria-label={t("cel.condition.factor")}
+        className="min-w-0 max-w-xs flex-1 basis-32"
+      >
         <SelectValue className="truncate">
           {(value: string | null) => value}
         </SelectValue>
@@ -942,6 +983,7 @@ function OperatorSelect({
   groupPath: Path;
   operandIndex: number;
 }) {
+  const { t } = useTranslation();
   const { readonly, factorOperatorOverrideMap: overrideMap } =
     useExprEditorCtx();
   const doUpdate = useImmutableUpdate(groupPath);
@@ -971,18 +1013,23 @@ function OperatorSelect({
       value={expr.operator}
       disabled={readonly}
       onValueChange={(val) => {
-        if (val === expr.operator) return;
+        if (val == null || val === expr.operator) return;
         doUpdate((group) => {
           const cond = group.args[operandIndex] as ConditionExpr;
           cond.operator = val as ConditionOperator;
-          (cond.args as unknown[])[1] = getDefaultValue(
-            cond.args[0] as Factor,
-            cond.operator
-          );
+          if (!isListFactor(factor)) {
+            (cond.args as unknown[])[1] = getDefaultValue(
+              factor,
+              cond.operator
+            );
+          }
         });
       }}
     >
-      <SelectTrigger className="shrink-0">
+      <SelectTrigger
+        aria-label={t("cel.condition.operator")}
+        className="shrink-0"
+      >
         <SelectValue>
           {(value: string | null) =>
             value ? operatorDisplayLabel(value) : null
@@ -1046,7 +1093,7 @@ function ValueInput({
   let inputType: InputType;
   if (isArrayValue) {
     inputType = hasMultiOption ? "MULTI-SELECT" : "MULTI-INPUT";
-  } else if (isStringOperator(operator)) {
+  } else if (!isListFactor(factor) && isStringOperator(operator)) {
     inputType = "INPUT";
   } else if (hasOption) {
     inputType = "SINGLE-SELECT";

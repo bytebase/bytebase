@@ -305,6 +305,38 @@ func TestFallbackApprovalFactorsExcludeStringsExtension(t *testing.T) {
 	a.Error(issues.Err())
 }
 
+func TestMaskingRulePrincipalGroupsCEL(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name       string
+		expression string
+		groups     []string
+		want       bool
+	}{
+		{"member", `"groups/analysts@example.com" in principal.groups`, []string{"groups/analysts@example.com"}, true},
+		{"nonmember", `"groups/analysts@example.com" in principal.groups`, []string{"groups/other"}, false},
+		{"empty membership", `"groups/analysts@example.com" in principal.groups`, nil, false},
+		{"negated membership", `!("groups/analysts@example.com" in principal.groups)`, nil, true},
+		{"resource conjunction", `resource.environment_id == "prod" && "groups/analysts" in principal.groups`, []string{"groups/analysts"}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			program, err := ValidateMaskingRuleCELExpr(tc.expression)
+			require.NoError(t, err)
+			out, _, err := program.Eval(map[string]any{
+				"principal.groups":        tc.groups,
+				"resource.environment_id": "prod",
+			})
+			require.NoError(t, err)
+			require.Equal(t, tc.want, out.Value())
+		})
+	}
+	_, err := ValidateMaskingRuleCELExpr(`42 in principal.groups`)
+	require.Error(t, err)
+	_, err = ValidateMaskingExemptionCELExpr(&expr.Expr{Expression: `"groups/analysts" in principal.groups`})
+	require.Error(t, err)
+}
+
 func TestFallbackFactorsDoNotIncludeRiskLevel(t *testing.T) {
 	a := require.New(t)
 

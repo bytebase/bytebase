@@ -1,6 +1,7 @@
 import { uniq } from "lodash-es";
 import {
   CEL_ATTRIBUTE_ISSUE_LABELS,
+  CEL_ATTRIBUTE_PRINCIPAL_GROUPS,
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
   CEL_ATTRIBUTE_REQUEST_EXPORT,
   CEL_ATTRIBUTE_REQUEST_ROLE,
@@ -206,6 +207,7 @@ const OperatorList: Record<Factor, Operator[]> = {
   [CEL_ATTRIBUTE_REQUEST_TIME]: [],
 
   [CEL_ATTRIBUTE_ISSUE_LABELS]: uniq([...ListMembershipOperatorList]),
+  [CEL_ATTRIBUTE_PRINCIPAL_GROUPS]: uniq([...ListMembershipOperatorList]),
 };
 
 export const getOperatorListByFactor = (factor: Factor) => {

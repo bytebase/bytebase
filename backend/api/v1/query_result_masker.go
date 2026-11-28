@@ -16,39 +16,73 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
-type QueryResultMasker struct {
-	store *store.Store
+type queryResultMasker struct {
+	store                *store.Store
+	evaluator            *maskingLevelEvaluator
+	principal            *store.UserMessage
+	semanticTypeToMasker map[string]masker.Masker
 }
 
-func NewQueryResultMasker(store *store.Store) *QueryResultMasker {
-	return &QueryResultMasker{
-		store: store,
-	}
-}
-
-// MaskResults masks the result in-place based on the dynamic masking policy, query-span, instance and action.
-func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase.QuerySpan, results []*v1pb.QueryResult, instance *store.InstanceMessage, user *store.UserMessage) error {
+// newQueryResultMasker resolves groups before execution so predicate checks, result masking,
+// and error redaction all use the same membership, and a failed lookup cannot expose data.
+func newQueryResultMasker(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, principal *store.UserMessage) (*queryResultMasker, error) {
 	maskerWorkspaceID := common.GetWorkspaceIDFromContext(ctx)
-	classificationSetting, err := s.store.GetDataClassificationSetting(ctx, maskerWorkspaceID)
+	classificationSetting, err := stores.GetDataClassificationSetting(ctx, maskerWorkspaceID)
 	if err != nil {
-		return errors.Wrapf(err, "failed to find classification setting")
+		return nil, errors.Wrapf(err, "failed to find classification setting")
 	}
 
-	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx, maskerWorkspaceID)
+	maskingRulePolicy, err := stores.GetMaskingRulePolicy(ctx, maskerWorkspaceID)
 	if err != nil {
-		return errors.Wrapf(err, "failed to find masking rule policy")
+		return nil, errors.Wrapf(err, "failed to find masking rule policy")
 	}
 
-	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, s.store)
+	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, stores)
 	if err != nil {
-		return errors.Wrapf(err, "failed to find semantic types setting")
+		return nil, errors.Wrapf(err, "failed to find semantic types setting")
+	}
+	semanticTypeToMasker, err := semanticTypeMaskersFromSetting(semanticTypesSetting)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build semantic type to masker map")
 	}
 
 	m := newEmptyMaskingLevelEvaluator().
 		withMaskingRulePolicy(maskingRulePolicy).
 		withDataClassificationSetting(classificationSetting).
 		withSemanticTypeSetting(semanticTypesSetting)
+	if m.usesPrincipalGroups && common.EngineSupportMasking(instance.Metadata.GetEngine()) {
+		m.principalGroups, err = resolveMaskingPrincipalGroups(ctx, stores, maskerWorkspaceID, principal)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to resolve groups for masking")
+		}
+	}
 
+	return &queryResultMasker{store: stores, evaluator: m, principal: principal, semanticTypeToMasker: semanticTypeToMasker}, nil
+}
+
+func resolveMaskingPrincipalGroups(ctx context.Context, stores *store.Store, workspace string, principal *store.UserMessage) ([]string, error) {
+	if workspace == "" || principal == nil || principal.Email == "" {
+		return nil, errors.New("workspace and authenticated principal are required")
+	}
+	member := common.FormatPrincipalMember(principal.Email, principal.Type)
+	groups, err := stores.ListGroups(ctx, &store.FindGroupMessage{Workspace: workspace})
+	if err != nil {
+		return nil, err
+	}
+	var memberships []string
+	for _, group := range groups {
+		for _, groupMember := range group.Payload.GetMembers() {
+			if groupMember.GetMember() == member {
+				memberships = append(memberships, utils.FormatGroupName(group))
+				break
+			}
+		}
+	}
+	return memberships, nil
+}
+
+// maskResults masks the results in place based on the masking policies and query spans.
+func (s *queryResultMasker) maskResults(ctx context.Context, spans []*parserbase.QuerySpan, results []*v1pb.QueryResult, instance *store.InstanceMessage) error {
 	// We expect the len(spans) == len(results), but to avoid NPE, we use the min(len(spans), len(results)) here.
 	loopBoundary := min(len(spans), len(results))
 	for i := 0; i < loopBoundary; i++ {
@@ -76,19 +110,19 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		// just Results (SELECT output) to catch cases like:
 		//   SELECT name FROM t WHERE CAST(masked_col AS int) > 5
 		if results[i].Error != "" && len(results[i].Rows) == 0 {
-			if i < len(spans) && spans[i] != nil && s.spanTouchesMaskedColumns(ctx, m, instance, user, spans[i]) {
+			if i < len(spans) && spans[i] != nil && s.spanTouchesMaskedColumns(ctx, instance, spans[i]) {
 				results[i].Error = "Query execution failed. Error details are hidden because the query references columns with data masking policies."
 				// Structured error fields can contain sensitive values and SQL too.
 				results[i].DetailedError = nil
 			}
 			continue
 		}
-		if columnsMisalignedWithSpan(spans[i], results[i]) && s.spanTouchesMaskedColumns(ctx, m, instance, user, spans[i]) {
+		if columnsMisalignedWithSpan(spans[i], results[i]) && s.spanTouchesMaskedColumns(ctx, instance, spans[i]) {
 			return errors.Errorf(
 				"masking cannot be applied: the query returned %d columns but Bytebase resolved %d from the synced schema, so the query was not returned",
 				len(results[i].ColumnNames), len(spans[i].Results))
 		}
-		maskers, reasons, err := s.getMaskersForQuerySpan(ctx, m, instance, user, spans[i])
+		maskers, reasons, err := s.getMaskersForQuerySpan(ctx, instance, spans[i])
 		if err != nil {
 			return errors.Wrapf(err, "failed to get maskers for query span")
 		}
@@ -126,7 +160,7 @@ func columnsMisalignedWithSpan(span *parserbase.QuerySpan, result *v1pb.QueryRes
 // span.PredicateColumns rather than span.SourceColumns, because some engines
 // (e.g. MySQL) populate span.SourceColumns with table-level entries only
 // (Column field is empty), which cannot be matched against column configs.
-func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, user *store.UserMessage, span *parserbase.QuerySpan) bool {
+func (s *queryResultMasker) spanTouchesMaskedColumns(ctx context.Context, instance *store.InstanceMessage, span *parserbase.QuerySpan) bool {
 	// Collect all column-level source columns from SELECT results and predicates.
 	allColumns := make(parserbase.SourceColumnSet)
 	for _, r := range span.Results {
@@ -141,18 +175,13 @@ func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *mas
 		return false
 	}
 
-	semanticTypesToMasker, err := buildSemanticTypeToMaskerMap(ctx, s.store)
-	if err != nil {
-		return false
-	}
-
 	data, err := newMaskingDataProvider(ctx, s.store, instance, span)
 	if err != nil {
 		return false
 	}
 
 	for column := range allColumns {
-		mk, _, err := s.getMaskerForColumnResource(ctx, m, instance, column, data, user, semanticTypesToMasker)
+		mk, _, err := s.getMaskerForColumnResource(ctx, instance, column, data)
 		if err != nil {
 			continue
 		}
@@ -171,6 +200,10 @@ func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get semantic types setting")
 	}
+	return semanticTypeMaskersFromSetting(semanticTypesSetting)
+}
+
+func semanticTypeMaskersFromSetting(semanticTypesSetting *storepb.SemanticTypeSetting) (map[string]masker.Masker, error) {
 	semanticTypeToMasker := make(map[string]masker.Masker)
 	for _, semanticType := range semanticTypesSetting.GetTypes() {
 		m, err := masker.ForSemanticType(semanticType)
@@ -334,17 +367,12 @@ func (p *maskingDataProvider) getMaskingExemptionPolicy(projectID string) *store
 }
 
 // getMaskersForQuerySpan returns the maskers for the query span.
-func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, user *store.UserMessage, span *parserbase.QuerySpan) ([]masker.Masker, []*v1pb.MaskingReason, error) {
+func (s *queryResultMasker) getMaskersForQuerySpan(ctx context.Context, instance *store.InstanceMessage, span *parserbase.QuerySpan) ([]masker.Masker, []*v1pb.MaskingReason, error) {
 	if span == nil {
 		return nil, nil, nil
 	}
 	maskers := make([]masker.Masker, 0, len(span.Results))
 	masked := make([]*v1pb.MaskingReason, 0, len(span.Results))
-
-	semanticTypesToMasker, err := buildSemanticTypeToMaskerMap(ctx, s.store)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to build semantic type to masker map")
-	}
 
 	// Pre-fetch all required data to avoid N+1 queries in the loop.
 	data, err := newMaskingDataProvider(ctx, s.store, instance, span)
@@ -363,7 +391,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 		var effectiveMaskers []masker.Masker
 		var effectiveReasons []*MaskingEvaluation
 		for column := range spanResult.SourceColumns {
-			newMasker, reason, err := s.getMaskerForColumnResource(ctx, m, instance, column, data, user, semanticTypesToMasker)
+			newMasker, reason, err := s.getMaskerForColumnResource(ctx, instance, column, data)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -432,12 +460,8 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 	return maskers, masked, nil
 }
 
-// exemptionsForPrincipal is the one seam the caller's own masking provisioning
-// enters through: getMaskerForColumnResource and the MSSQL
-// getSensitiveColumnsForPredicate both reach evaluateSemanticTypeOfColumn with
-// exactly this slice. Filtering only the output path would mask the value and
-// still answer whether a WHERE on it matched.
-func (s *QueryResultMasker) exemptionsForPrincipal(ctx context.Context, data *maskingDataProvider, projectID string, currentPrincipal *store.UserMessage) []*storepb.MaskingExemptionPolicy_Exemption {
+// Apply the same exemptions to results and predicates so a predicate cannot expose a masked value.
+func (s *queryResultMasker) exemptionsForPrincipal(ctx context.Context, data *maskingDataProvider, projectID string) []*storepb.MaskingExemptionPolicy_Exemption {
 	policy := data.getMaskingExemptionPolicy(projectID)
 	if policy == nil {
 		return nil
@@ -445,7 +469,7 @@ func (s *QueryResultMasker) exemptionsForPrincipal(ctx context.Context, data *ma
 	var exemptions []*storepb.MaskingExemptionPolicy_Exemption
 	for _, e := range policy.Exemptions {
 		for _, member := range e.Members {
-			if utils.MemberContainsUser(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), member, currentPrincipal) {
+			if utils.MemberContainsUser(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), member, s.principal) {
 				exemptions = append(exemptions, e)
 				break
 			}
@@ -454,14 +478,11 @@ func (s *QueryResultMasker) exemptionsForPrincipal(ctx context.Context, data *ma
 	return exemptions
 }
 
-func (s *QueryResultMasker) getMaskerForColumnResource(
+func (s *queryResultMasker) getMaskerForColumnResource(
 	ctx context.Context,
-	m *maskingLevelEvaluator,
 	instance *store.InstanceMessage,
 	sourceColumn parserbase.ColumnResource,
 	data *maskingDataProvider,
-	currentPrincipal *store.UserMessage,
-	semanticTypeToMasker map[string]masker.Masker,
 ) (masker.Masker, *MaskingEvaluation, error) {
 	if instance != nil && !common.EngineSupportMasking(instance.Metadata.GetEngine()) {
 		return masker.NewNoneMasker(), nil, nil
@@ -482,9 +503,9 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		return masker.NewNoneMasker(), nil, nil
 	}
 
-	exemptions := s.exemptionsForPrincipal(ctx, data, database.ProjectID, currentPrincipal)
+	exemptions := s.exemptionsForPrincipal(ctx, data, database.ProjectID)
 
-	evaluation, err := m.evaluateSemanticTypeOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, project.Setting.DataClassificationConfigId, config, exemptions)
+	evaluation, err := s.evaluator.evaluateSemanticTypeOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, project.Setting.DataClassificationConfigId, config, exemptions)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", sourceColumn.Database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column)
 	}
@@ -493,12 +514,17 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		return masker.NewNoneMasker(), nil, nil
 	}
 
-	result, ok := semanticTypeToMasker[evaluation.SemanticTypeID]
-	if !ok {
+	if result, ok := s.semanticTypeToMasker[evaluation.SemanticTypeID]; ok {
+		return result, evaluation, nil
+	}
+	if _, known := s.evaluator.semanticTypesMap[evaluation.SemanticTypeID]; known {
 		return masker.NewNoneMasker(), nil, nil
 	}
 
-	return result, evaluation, nil
+	// A live catalog can reference a semantic type newer than the request's settings.
+	// Do not treat a missing definition as permission to return unmasked data.
+	evaluation.Algorithm = "Full mask"
+	return masker.NewDefaultFullMasker(), evaluation, nil
 }
 
 func doMaskResult(maskers []masker.Masker, reasons []*v1pb.MaskingReason, result *v1pb.QueryResult) {
