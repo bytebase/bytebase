@@ -17,8 +17,8 @@ import (
 )
 
 // sdlDatabaseContext is the synthetic database both SDL inputs are loaded under,
-// matching the metadata diff so unqualified DDL resolves consistently.
-const sdlDatabaseContext = omnicatalog.Database
+// so unqualified DDL resolves consistently.
+const sdlDatabaseContext = catalog.DefaultSDLDatabase
 
 // unsupportedSDLVersion returns why the declarative path refuses a MySQL server
 // older than 8.0 (omni canonicalizes against the 8.0 stored form), or "" when accepted.

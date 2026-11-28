@@ -8,7 +8,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/schema/internal/omnicatalog"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
@@ -23,10 +22,10 @@ func init() {
 			Function:          catalog.FunctionDefinition,
 			Procedure:         catalog.ProcedureDefinition,
 		}.SchemaDefinitions(),
-		DatabaseMetadata:      GetDatabaseMetadata,
+		DatabaseMetadata:      schema.OmniDatabaseMetadata(mysqlanalysis.Engine),
 		DiffSDLMigration:      mysqlDiffSDLMigrationWithContext,
 		SDLDropAdvices:        mysqlSDLDropAdvices,
-		DiffMetadataMigration: omniDiffMetadataMigration,
+		DiffMetadataMigration: schema.OmniMetadataMigration(mysqlanalysis.Engine),
 		WalkThrough:           schema.OmniWalkThrough(storepb.Engine_MYSQL, mysqlanalysis.Engine),
 	}, storepb.Engine_MYSQL)
 }
@@ -54,35 +53,4 @@ func GetMultiFileDatabaseDefinition(_ schema.GetDefinitionContext, metadata *met
 		result = append(result, schema.File{Name: file.Name, Content: file.Content})
 	}
 	return &schema.MultiFileSchemaResult{Files: result}, nil
-}
-
-// GetDatabaseMetadata parses MySQL schema DDL text and returns database metadata
-// using the omni catalog.
-func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return omnicatalog.ExtractSimpleDatabaseMetadata(schemaText, catalog.New, execCatalog)
-}
-
-var mysqlCatalog = omnicatalog.MySQLFamilyEngine(
-	catalog.New,
-	func(report *catalog.LoadMetadataReport) []map[string]error {
-		return []map[string]error{report.Degraded, report.Missing, report.Incomplete}
-	},
-	catalog.Diff,
-	catalog.GenerateMigration,
-	nil,
-)
-
-func omniDiffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-	return omnicatalog.DiffMetadataMigration(mysqlCatalog, oldSchema, newSchema)
-}
-
-func execCatalog(c *catalog.Catalog, sql string, continueOnError bool) ([]omnicatalog.ExecResult, error) {
-	var opts *catalog.ExecOptions
-	if continueOnError {
-		opts = &catalog.ExecOptions{ContinueOnError: true}
-	}
-	results, err := c.Exec(sql, opts)
-	return omnicatalog.MapExecResults(results, err, func(r catalog.ExecResult) omnicatalog.ExecResult {
-		return omnicatalog.ExecResult{Index: r.Index, Line: r.Line, Error: r.Error}
-	})
 }
