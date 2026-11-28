@@ -481,6 +481,7 @@ func TestAdministerIdentityFitsOrdinaryRepositoryPaths(t *testing.T) {
 	for name, tc := range map[string]struct {
 		edit    func(request, config map[string]any)
 		message []string
+		lead    string
 		moved   string
 	}{
 		"a question of 70 columns": {
@@ -557,7 +558,7 @@ func TestAdministerIdentityFitsOrdinaryRepositoryPaths(t *testing.T) {
 			},
 			moved: policy,
 		},
-		"two IDs that still need a second row move the role's name too": {
+		"two IDs that still need a second row move the role's name to the row fullscreen shows": {
 			edit: func(request, config map[string]any) {
 				request["parent"], request["workloadIdentityId"] = "projects/payments-platform-production", "payments-ledger-migrations-ci"
 				config["subjectPattern"] = "repo:acme-corp/payments-platform-database-migrations:*"
@@ -568,7 +569,8 @@ func TestAdministerIdentityFitsOrdinaryRepositoryPaths(t *testing.T) {
 				`Any GitHub Actions job in "acme-corp/payments-platform-database-`,
 				`>migrations" signs in as it. It can roll out without approval.`,
 			},
-			moved: "Role: GitOps Service Agent. " + policy,
+			lead:  "Role: GitOps Service Agent.",
+			moved: policy,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -580,11 +582,18 @@ func TestAdministerIdentityFitsOrdinaryRepositoryPaths(t *testing.T) {
 			require.Equal(t, tc.message, strings.Split(asked.Message, "\n"))
 			description := strings.Split(choiceDescription(t, asked), "\n")
 			require.True(t, strings.HasPrefix(description[len(description)-1], "Titled "), "%q", description)
+			// The role's name is in the message, or on the description's first
+			// row, which fullscreen shows.
+			require.Equal(t, tc.lead == "", strings.Contains(asked.Message, "GitOps Service Agent"), asked.Message)
+			require.Equal(t, tc.lead != "", strings.Contains(description[0], "GitOps Service Agent"), "%q", description)
+			if tc.lead != "" {
+				require.Equal(t, tc.lead, description[0])
+			}
 			if tc.moved == "" {
 				require.NotContains(t, choiceDescription(t, asked), policy)
 				return
 			}
-			require.Equal(t, tc.moved, description[len(description)-2], "what moves follows the line fullscreen shows and leads the rest")
+			require.Equal(t, tc.moved, description[len(description)-2], "what moves follows what the pattern pins and leads the rest")
 		})
 	}
 }

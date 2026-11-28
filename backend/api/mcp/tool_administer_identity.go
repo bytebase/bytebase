@@ -369,7 +369,8 @@ func identityForm(ctx context.Context, c *identityCreation, link string) (*admin
 
 // identityLayouts are the layouts of the form that creates identityID, fullest
 // first; the form is the first that fits. Each keeps the repository, which
-// decides who signs in, and the rollouts without approval in the message.
+// decides who signs in, and the rollouts without approval in the message. The
+// role's name is in the message too, or leads the description.
 func identityLayouts(c *identityCreation, identityID string, repository identityRepository) []formLayout {
 	jobs := "GitLab CI"
 	if repository.github {
@@ -390,17 +391,21 @@ func identityLayouts(c *identityCreation, identityID string, repository identity
 		dense = short
 	}
 	return []formLayout{
-		{question: question, changes: []formChange{{text: signsIn + ", and " + unlimited + "."}, {text: role + " " + rollsOut}}, description: identityDescription(c, repository, "")},
-		{question: dense, changes: []formChange{{text: signsIn + "."}, {text: role + " " + rollsOut}}, description: identityDescription(c, repository, capitalize(unlimited)+".")},
-		{question: dense, changes: []formChange{{text: signsIn + ". " + rollsOut}}, description: identityDescription(c, repository, role+" "+capitalize(unlimited)+".")},
+		{question: question, changes: []formChange{{text: signsIn + ", and " + unlimited + "."}, {text: role + " " + rollsOut}}, description: identityDescription(c, repository, "", "")},
+		{question: dense, changes: []formChange{{text: signsIn + "."}, {text: role + " " + rollsOut}}, description: identityDescription(c, repository, "", capitalize(unlimited)+".")},
+		{question: dense, changes: []formChange{{text: signsIn + ". " + rollsOut}}, description: identityDescription(c, repository, role, capitalize(unlimited)+".")},
 	}
 }
 
-// identityDescription is what the message leaves out. Its first line is what
-// the pattern pins on GitHub, since fullscreen shows that line only; moved,
-// the fixed text a layout takes out of the message, follows it.
-func identityDescription(c *identityCreation, repository identityRepository, moved string) string {
+// identityDescription is what the message leaves out. Fullscreen shows its
+// first row only. lead, the role's name when the message has no room for it,
+// comes first, and then what the pattern pins on GitHub. moved, the fixed text
+// a layout takes out of the message, follows them.
+func identityDescription(c *identityCreation, repository identityRepository, lead, moved string) string {
 	var sb strings.Builder
+	if lead != "" {
+		sb.WriteString(lead + "\n")
+	}
 	if repository.github {
 		var pins []string
 		if repository.ownerID != "" {
