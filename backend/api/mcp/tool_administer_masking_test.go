@@ -1041,8 +1041,8 @@ func TestMaskingFormParsesNoRuleItCannotShow(t *testing.T) {
 	}
 	// The first form builds the CEL environment every form shares.
 	build()
-	// The table of the common order takes 0.7 MB for 300 rules. A row for
-	// each rule, with its condition parsed, took 12 MB.
+	// The form takes 1.2 MB, most of it the diff's. A row for each rule of
+	// the list, with its condition parsed, takes 4.8 MB more.
 	require.Less(t, allocated(build), uint64(3<<20))
 }
 
@@ -1215,7 +1215,7 @@ func TestMaskingReorderLeavesInPlaceARuleWhoseMoveFitsNoForm(t *testing.T) {
 
 // wantMaskingMoveLine derives the change line of requested[moved] as a moved
 // rule that changes in no other way, from the two lists alone: a rule gives
-// its semantic type, and the least is a type that is not a full mask.
+// its semantic type, and a weak rule's type is not a full mask.
 func wantMaskingMoveLine(types map[string]*storepb.SemanticTypeSetting_SemanticType, stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, moved int) string {
 	diff := &maskingRulesDiff{types: types}
 	var conditions []string
@@ -1229,7 +1229,7 @@ func wantMaskingMoveLine(types map[string]*storepb.SemanticTypeSetting_SemanticT
 			name = fmt.Sprintf("%q", title)
 		}
 		rules = append(rules, passedRule{condition: rule.GetCondition().GetExpression(), gives: rule.GetSemanticType(),
-			least: !diff.masksEveryValue(rule.GetSemanticType()), label: fmt.Sprintf("%s (%s)", name, diff.typePhrase(rule.GetSemanticType()))})
+			weak: !diff.masksEveryValue(rule.GetSemanticType()), label: fmt.Sprintf("%s (%s)", name, diff.typePhrase(rule.GetSemanticType()))})
 	}
 	passed, _, _ := wantPassedOf(conditions, rules, moved, "with the same type", "with no full mask", "with other types")
 	return fmt.Sprintf("Move to rule %d, %s, now %s: %s", moved+1, diff.typePhrase(requested[moved].GetSemanticType()), passed, maskingConditionText(requested[moved].GetCondition().GetExpression()))

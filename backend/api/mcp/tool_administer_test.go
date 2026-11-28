@@ -956,19 +956,19 @@ func TestAdministerWorkspaceMoveNamesTheRuleItPasses(t *testing.T) {
 }
 
 // passedRule is a requested rule as wantPassedOf reads it: its condition, what
-// it gives the changes or columns it matches, whether that is the least a rule
-// can give, and the label a move's line names it by.
+// it gives the changes or columns it matches, whether it is weak, and the
+// label a move's line names it by.
 type passedRule struct {
 	condition, gives, label string
-	least                   bool
+	weak                    bool
 }
 
 // wantPassedOf derives what a move's line says of the rules that
 // requested[moved] traded order with, from the rules' places alone: on each
 // side a lone rule that gives something else by its label, when that is within
 // passedNameWidth, and any other side by its counts, in the words of a rule
-// form: for the rules that give the same, the least, and something else.
-func wantPassedOf(stored []string, requested []passedRule, moved int, same, least, other string) (clause string, named, counted int) {
+// form: for the rules that give the same, the weak ones, and the others.
+func wantPassedOf(stored []string, requested []passedRule, moved int, same, weak, other string) (clause string, named, counted int) {
 	was := map[string]int{}
 	for i, condition := range stored {
 		was[condition] = i
@@ -987,7 +987,7 @@ func wantPassedOf(stored []string, requested []passedRule, moved int, same, leas
 			case rule.gives == requested[moved].gives:
 				shared++
 				continue
-			case rule.least:
+			case rule.weak:
 				none++
 			default:
 			}
@@ -1004,11 +1004,11 @@ func wantPassedOf(stored []string, requested []passedRule, moved int, same, leas
 		case others == 0:
 			text = countRules(shared) + " " + same
 		case none == others && shared == 0:
-			text = countRules(total) + " " + least
+			text = countRules(total) + " " + weak
 		case none == others:
-			text = fmt.Sprintf("%s, %d of them %s", countRules(total), none, least)
+			text = fmt.Sprintf("%s, %d of them %s", countRules(total), none, weak)
 		case none > 0:
-			text = fmt.Sprintf("%s, %d %s and %d %s", countRules(total), none, least, others-none, other)
+			text = fmt.Sprintf("%s, %d %s and %d %s", countRules(total), none, weak, others-none, other)
 		case shared == 0:
 			text = countRules(total) + " " + other
 		default:
@@ -1023,7 +1023,7 @@ func wantPassedOf(stored []string, requested []passedRule, moved int, same, leas
 }
 
 // wantPassed is wantPassedOf for approval rules: a rule gives its approvers,
-// and the least is no approval.
+// and a weak rule needs no approval.
 func wantPassed(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, moved int) (clause string, named, counted int) {
 	var conditions []string
 	for _, rule := range stored {
@@ -1036,7 +1036,7 @@ func wantPassed(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, moved i
 			name = fmt.Sprintf("%q", title)
 		}
 		roles := rule.GetTemplate().GetFlow().GetRoles()
-		rules = append(rules, passedRule{condition: rule.GetCondition().GetExpression(), gives: strings.Join(roles, "\n"), least: len(roles) == 0, label: fmt.Sprintf("%s (%s)", name, approvers(rule))})
+		rules = append(rules, passedRule{condition: rule.GetCondition().GetExpression(), gives: strings.Join(roles, "\n"), weak: len(roles) == 0, label: fmt.Sprintf("%s (%s)", name, approvers(rule))})
 	}
 	return wantPassedOf(conditions, rules, moved, "with the same approvers", "with no approval", "with other approvers")
 }

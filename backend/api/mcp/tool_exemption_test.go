@@ -1003,8 +1003,8 @@ func TestRevokeMaskingExemptionStatesEveryExemptionAFormGrants(t *testing.T) {
 
 // An exemption form keeps within the client's cut at 2,000 UTF-16 code units
 // too, for a grant and for the revoke of what it wrote. A reason with no
-// columns listed beside it is one line of any length, as on main: only its own
-// end can be cut.
+// columns listed beside it is one line of any length: only its own end can be
+// cut.
 func TestMaskingExemptionFormsKeepWithinTheClientsCut(t *testing.T) {
 	ctx := withUserEmail(context.Background(), "alice@example.com")
 	random := rand.New(rand.NewPCG(22234, 2000))
