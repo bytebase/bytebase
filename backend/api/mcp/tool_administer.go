@@ -897,7 +897,23 @@ func approverError(rule *v1pb.WorkspaceApprovalSetting_Rule) error {
 	return nil
 }
 
-// adminForm is the message and the choice description of one confirmation.
+// adminForm is the message and the choice description of one confirmation, as
+// the server sends them.
+//
+// For a given stored state, two requests that would store different things
+// get different forms: a form names each rule or object its request adds,
+// removes, moves or changes, and states every value it stores. Four
+// differences are not stated: a password's value (the form says whether one is
+// set), an ID the request picks for a new rule or data source, a value with no
+// effect as stored (the TLS verification of a data source that does not
+// require TLS, a sign-in type left unset), and the spelling of a new masking
+// rule's condition, whose scope is stated. What a form says of the state it
+// leaves alone is a summary: the rule list is cut from its end, and a move
+// counts the rules it passes.
+//
+// A client can show less than it is sent (messageLines, descriptionLines), so
+// what decides the answer is in the message, and a description's first row
+// holds what matters most: fullscreen shows that row alone.
 type adminForm struct {
 	message     string
 	description string
