@@ -533,8 +533,8 @@ type keptRule struct {
 	// kind numbers what the rule gives to what it matches, its approvers or
 	// its semantic type: two rules that give the same have the same number.
 	kind int
-	// weak reports that it gives the least a rule can: no approval, or no
-	// full mask.
+	// weak reports that the rule needs no approval, or that its type does not
+	// hide every value.
 	weak bool
 	// name builds label, which names the rule by its title, or by its place
 	// when it has none, with what it gives. A move's line can name only a rule
@@ -599,7 +599,8 @@ func textSize(text string) int {
 const passedNameWidth = 48
 
 // passedWords say of the rules a move passes that they give the same as the
-// moved rule, the least a rule can, or something else.
+// moved rule, that they are weak (keptRule.weak), or that they give something
+// else.
 type passedWords struct{ same, weak, other string }
 
 var approversPassed = passedWords{same: "with the same approvers", weak: "with no approval", other: "with other approvers"}
@@ -610,9 +611,8 @@ var approversPassed = passedWords{same: "with the same approvers", weak: "with n
 // that gives something else changes who approves, or how a column is masked.
 type passedSide struct {
 	total, same int
-	// weak are the rules that give the least, when the moved rule gives
-	// something else: behind one of them a change loses its approval, or a
-	// column its full mask.
+	// weak counts the weak rules among those that give something else: what
+	// such a rule decides needs no approval, or is not fully masked.
 	weak int
 	// other is a rule that gives something else: the side's one rule, when it
 	// has one.
@@ -634,7 +634,7 @@ func (s *passedSide) add(rule, moved *keptRule) {
 // text says what the move passed on this side. A side of one rule that gives
 // something else names it, with what it gives, when its label is within
 // passedNameWidth: that rule now decides what both match, or no longer does.
-// Every other side is counted, the rules that give the least apart.
+// Every other side is counted, the weak rules apart.
 func (s *passedSide) text(words passedWords) string {
 	switch other := s.total - s.same; {
 	case s.total == 1 && other == 1 && s.other.labelSize <= passedNameWidth:
@@ -929,6 +929,9 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 			if diff.marks[i] == "kept" {
 				text += ": " + conditionText(rule.GetCondition().GetExpression())
 			}
+			// Only an added rule's change line always states its description,
+			// so only its row leaves the description out, and only when the
+			// description lists the changes.
 			if description := rule.GetTemplate().GetDescription(); description != "" && (!listed || diff.marks[i] != "new") {
 				text += fmt.Sprintf(" (description %q)", description)
 			}
@@ -1042,9 +1045,9 @@ type ruleSection struct {
 	header string
 	// rule gives the row of the list's rule i, of total. A description has
 	// room for a few, so only the rows it tries are built: a workspace can
-	// store thousands of rules. listed says that the description lists the
-	// changes itself, right above the list, so the row of a new or changed
-	// rule leaves out what its change line states.
+	// store thousands of rules. listed reports that the description states
+	// the changes itself, above the list: a row may then leave out what its
+	// rule's change line states.
 	total int
 	rule  func(i int, listed bool) string
 	empty string
